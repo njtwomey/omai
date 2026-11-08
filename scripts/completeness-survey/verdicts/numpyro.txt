@@ -1,0 +1,36 @@
+@lib numpyro
+S | enable_validation|enable_x64|get_mask|plate_stack|prng_key|render_model|set_host_device_count|set_platform|validation_enabled|find_valid_initial_params|get_potential_fn|initialize_model|Iterable|ABC|abstractmethod|is_identically_one|not_jax_tracer|safe_normalize|Reparam | | JAX runtime and platform plumbing | | | |
+F | render_model | exposition (structure of a program), probprog#analysisStructure | | | | |
+F | Predictive | probprog#priorPredictive, #posteriorPredictive | | | | |
+@area numpyro.distributions.constraints
+F | .* | dists#Support, #inSupport | supports are typed values | | | |
+@area numpyro.distributions.transforms
+F | AbsTransform|ComposeTransform|CorrCholeskyTransform|CholeskyTransform|ExpTransform|IdentityTransform|LowerCholeskyTransform|PowerTransform|SigmoidTransform|SoftplusTransform|StickBreakingTransform|biject_to|CorrMatrixCholeskyTransform|ScaledUnitLowerCholeskyTransform|SoftplusLowerCholeskyTransform|LowerCholeskyAffine|SimplexToOrderedTransform | dists/bijectors | | | | |
+A | CatTransform|ComplexTransform|DiscreteCosineTransform|HaarTransform|L1BallTransform|PackRealFastFourierCoefficientsTransform|PermuteTransform|RealFastFourierTransform|ReshapeTransform|UnpackTransform|ZeroSumTransform | dists/bijectors#permute | bijectors for structured parameters (permutations exist; DCT, Haar, zero-sum, L1 ball do not) | dists/bijectors | S | low | bijector odds and ends
+@area numpyro.distributions
+F | .*(Logits|Probs)|BernoulliLogits|BinomialLogits|CategoricalLogits|NegativeBinomialLogits|NegativeBinomial2|ExpandedDistribution|MaskedDistribution|TransformedDistribution|TruncatedDistribution|LeftTruncatedDistribution|RightTruncatedDistribution|TwoSidedTruncatedDistribution|IntervalCensoredDistribution|LeftCensoredDistribution|RightCensoredDistribution|ZeroInflatedDistribution|MixtureGeneral|FoldedDistribution|GammaPoisson|InverseWishartCholesky|WishartCholesky|Delta|Unit|ImproperUniform | dists (parameterisation by logits is an option of the family), dists/compose (truncated, censored, mixture, independent, transformed, empirical, deterministic), probprog#factor | | | | |
+F | MultivariateStudentT | | | | | |
+A | MultivariateStudentT|AsymmetricLaplace|AsymmetricLaplaceQuantile|BetaProportion|BetaNegativeBinomial|Dagum|Gompertz|Levy|LogUniform|SoftLaplace|TruncatedCauchy|TruncatedGamma|LeftTruncatedGamma|RightTruncatedGamma|TwoSidedTruncatedGamma|TruncatedPolyaGamma|LowerTruncatedPowerLaw|DoublyTruncatedPowerLaw|ProjectedNormal|SineBivariateVonMises|SineSkewed|ZeroSumNormal|CirculantNormal|GaussianCopulaBeta | dists | the rarer named families; the multivariate Student t is the one a regression or robust mixture model reaches for | dists/families | M | low | extra named distribution families (long tail)
+A | HurdleDistribution|HurdleGamma|HurdleLogNormal|HurdleLogits|HurdleNegativeBinomial2|HurdlePoisson|HurdleProbs | linear#hurdle, dists#zeroInflated | hurdle count models exist as a regression; not as a distribution to put in a probabilistic program | dists/compose/hurdle.ts | S | low |
+A | GaussianRandomWalk|GaussianStateSpace|EulerMaruyama|CAR | stochastic (Brownian motion, SDE solvers), pgm#linearDynamicalSystem | time-series and spatial priors as distributions (random walk, state space, SDE likelihood, conditional autoregressive) so they can be sampled and fitted inside a program | dists/processes.ts | M | medium | time-series priors for probabilistic programs
+@area numpyro.infer.autoguide
+F | AutoContinuous|AutoGuideList|AutoDiagonalNormal|AutoLaplaceApproximation|AutoBatchedMultivariateNormal|AutoBatchedLowRankMultivariateNormal | probprog#autoNormal, #autoMultivariateNormal, #autoLowRankMultivariateNormal, #autoLaplace | | | | |
+A | AutoBNAFNormal|AutoDAIS|AutoSemiDAIS|AutoSurrogateLikelihoodDAIS | probprog#autoIafNormal | flow-based and annealed guides; IAF is there | probprog/guides | M | low | extra guides
+@area numpyro.infer.reparam
+A | LocScaleReparam|TransformReparam|NeuTraReparam|ExplicitReparam|CircularReparam|DiscreteCosineReparam|HaarReparam|ProjectedNormalReparam|UnitJacobianReparam | probprog (handlers: scale, mask, condition) | reparametrisation handlers; the non-centred parametrisation of a hierarchical model (eight schools funnel) is the classic reason to reach for one | probprog/reparam.ts | S | high | reparametrisation handlers
+@area numpyro.handlers
+F | do | probprog#doIntervention | | | | |
+A | collapse|reparam|scope | probprog#handle | collapse (marginalise a conjugate site), reparam (rewrite a site) and scope (namespace sites) | probprog/handlers.ts | S | medium | reparametrisation handlers
+@area numpyro.infer
+F | ELBO|AIES|DiscreteHMCGibbs|HMCECS|CustomGibbs|psis_diagnostic | probprog (traceElbo, gibbs, mcmc), sampling#paretoKHat | | | | |
+P | TraceEnum_ELBO | probprog#traceElbo, probprog#enumerate | enumeration and ELBO exist separately; discrete latent variables are not summed out inside the ELBO | probprog/elbo.ts | M | low |
+A | AIES|BarkerMH|SA|MixedHMC|HMCGibbs|DiscreteHMCGibbs|HMCECS|TraceGraph_ELBO|CustomGibbs | sampling#hmc, sampling#blockedGibbs | ensemble sampler (emcee-style), Barker MH, sample-adaptive MCMC, HMC within Gibbs for mixed discrete/continuous models | sampling/ensemble.ts | M | medium | MCMC kernels beyond HMC
+@area numpyro.diagnostics
+F | gelman_rubin|split_gelman_rubin|hpdi|print_summary | sampling#rhat, #hdi, #summary | | | | |
+@area numpyro.optim
+F | ClippedAdam|Momentum|RMSPropMomentum | optim (adam with clipByGlobalNorm, sgd with momentum, rmsprop) | | | | |
+A | SM3 | optim | memory-efficient Adagrad variant | | | low |
+@area numpyro.infer.util
+F | .* | probprog | | | | |
+@area
+F | ZeroInflatedNegativeBinomial2|DiscreteGibbs | dists#zeroInflatedNegativeBinomial, probprog#gibbs | | | | |

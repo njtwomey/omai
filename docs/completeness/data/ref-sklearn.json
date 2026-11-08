@@ -1,0 +1,3169 @@
+{
+"library": "sklearn",
+"version": "1.9.1",
+"source": "introspection",
+"entries": [
+{
+"area": "sklearn.base",
+"name": "BaseEstimator",
+"kind": "class",
+"doc": "Base class for all estimators in scikit-learn."
+},
+{
+"area": "sklearn.base",
+"name": "BiclusterMixin",
+"kind": "class",
+"doc": "Mixin class for all bicluster estimators in scikit-learn."
+},
+{
+"area": "sklearn.base",
+"name": "ClassNamePrefixFeaturesOutMixin",
+"kind": "class",
+"doc": "Mixin class for transformers that generate their own names by prefixing."
+},
+{
+"area": "sklearn.base",
+"name": "ClassifierMixin",
+"kind": "class",
+"doc": "Mixin class for all classifiers in scikit-learn."
+},
+{
+"area": "sklearn.base",
+"name": "ClusterMixin",
+"kind": "class",
+"doc": "Mixin class for all cluster estimators in scikit-learn."
+},
+{
+"area": "sklearn.base",
+"name": "DensityMixin",
+"kind": "class",
+"doc": "Mixin class for all density estimators in scikit-learn."
+},
+{
+"area": "sklearn.base",
+"name": "MetaEstimatorMixin",
+"kind": "class",
+"doc": "Mixin class for all meta estimators in scikit-learn."
+},
+{
+"area": "sklearn.base",
+"name": "MultiOutputMixin",
+"kind": "class",
+"doc": "Mixin to mark estimators that support multioutput."
+},
+{
+"area": "sklearn.base",
+"name": "OneToOneFeatureMixin",
+"kind": "class",
+"doc": "Provides `get_feature_names_out` for simple transformers."
+},
+{
+"area": "sklearn.base",
+"name": "OutlierMixin",
+"kind": "class",
+"doc": "Mixin class for all outlier detection estimators in scikit-learn."
+},
+{
+"area": "sklearn.base",
+"name": "RegressorMixin",
+"kind": "class",
+"doc": "Mixin class for all regression estimators in scikit-learn."
+},
+{
+"area": "sklearn.base",
+"name": "TransformerMixin",
+"kind": "class",
+"doc": "Mixin class for all transformers in scikit-learn."
+},
+{
+"area": "sklearn.base",
+"name": "clone",
+"kind": "function",
+"doc": "Construct a new unfitted estimator with the same parameters."
+},
+{
+"area": "sklearn.base",
+"name": "is_classifier",
+"kind": "function",
+"doc": "Return True if the given estimator is (probably) a classifier."
+},
+{
+"area": "sklearn.base",
+"name": "is_clusterer",
+"kind": "function",
+"doc": "Return True if the given estimator is (probably) a clusterer."
+},
+{
+"area": "sklearn.base",
+"name": "is_outlier_detector",
+"kind": "function",
+"doc": "Return True if the given estimator is (probably) an outlier detector."
+},
+{
+"area": "sklearn.base",
+"name": "is_regressor",
+"kind": "function",
+"doc": "Return True if the given estimator is (probably) a regressor."
+},
+{
+"area": "sklearn.calibration",
+"name": "CalibratedClassifierCV",
+"kind": "class",
+"doc": "Calibrate probabilities using isotonic, sigmoid, or temperature scaling."
+},
+{
+"area": "sklearn.calibration",
+"name": "CalibrationDisplay",
+"kind": "class",
+"doc": "Calibration curve (also known as reliability diagram) visualization."
+},
+{
+"area": "sklearn.calibration",
+"name": "calibration_curve",
+"kind": "function",
+"doc": "Compute true and predicted probabilities for a calibration curve."
+},
+{
+"area": "sklearn.cluster",
+"name": "AffinityPropagation",
+"kind": "class",
+"doc": "Perform Affinity Propagation Clustering of data."
+},
+{
+"area": "sklearn.cluster",
+"name": "AgglomerativeClustering",
+"kind": "class",
+"doc": "Agglomerative Clustering."
+},
+{
+"area": "sklearn.cluster",
+"name": "Birch",
+"kind": "class",
+"doc": "Implements the BIRCH clustering algorithm."
+},
+{
+"area": "sklearn.cluster",
+"name": "BisectingKMeans",
+"kind": "class",
+"doc": "Bisecting K-Means clustering."
+},
+{
+"area": "sklearn.cluster",
+"name": "DBSCAN",
+"kind": "class",
+"doc": "Perform DBSCAN clustering from vector array or distance matrix."
+},
+{
+"area": "sklearn.cluster",
+"name": "FeatureAgglomeration",
+"kind": "class",
+"doc": "Agglomerate features."
+},
+{
+"area": "sklearn.cluster",
+"name": "HDBSCAN",
+"kind": "class",
+"doc": "Cluster data using hierarchical density-based clustering."
+},
+{
+"area": "sklearn.cluster",
+"name": "KMeans",
+"kind": "class",
+"doc": "K-Means clustering."
+},
+{
+"area": "sklearn.cluster",
+"name": "MeanShift",
+"kind": "class",
+"doc": "Mean shift clustering using a flat kernel."
+},
+{
+"area": "sklearn.cluster",
+"name": "MiniBatchKMeans",
+"kind": "class",
+"doc": "Mini-Batch K-Means clustering."
+},
+{
+"area": "sklearn.cluster",
+"name": "OPTICS",
+"kind": "class",
+"doc": "Estimate clustering structure from vector array."
+},
+{
+"area": "sklearn.cluster",
+"name": "SpectralBiclustering",
+"kind": "class",
+"doc": "Spectral biclustering (Kluger, 2003) [1]_."
+},
+{
+"area": "sklearn.cluster",
+"name": "SpectralClustering",
+"kind": "class",
+"doc": "Apply clustering to a projection of the normalized Laplacian."
+},
+{
+"area": "sklearn.cluster",
+"name": "SpectralCoclustering",
+"kind": "class",
+"doc": "Spectral Co-Clustering algorithm (Dhillon, 2001) [1]_."
+},
+{
+"area": "sklearn.cluster",
+"name": "affinity_propagation",
+"kind": "function",
+"doc": "Perform Affinity Propagation Clustering of data."
+},
+{
+"area": "sklearn.cluster",
+"name": "cluster_optics_dbscan",
+"kind": "function",
+"doc": "Perform DBSCAN extraction for an arbitrary epsilon."
+},
+{
+"area": "sklearn.cluster",
+"name": "cluster_optics_xi",
+"kind": "function",
+"doc": "Automatically extract clusters according to the Xi-steep method."
+},
+{
+"area": "sklearn.cluster",
+"name": "compute_optics_graph",
+"kind": "function",
+"doc": "Compute the OPTICS reachability graph."
+},
+{
+"area": "sklearn.cluster",
+"name": "dbscan",
+"kind": "function",
+"doc": "Perform DBSCAN clustering from vector array or distance matrix."
+},
+{
+"area": "sklearn.cluster",
+"name": "estimate_bandwidth",
+"kind": "function",
+"doc": "Estimate the bandwidth to use with the mean-shift algorithm."
+},
+{
+"area": "sklearn.cluster",
+"name": "get_bin_seeds",
+"kind": "function",
+"doc": "Find seeds for mean_shift."
+},
+{
+"area": "sklearn.cluster",
+"name": "k_means",
+"kind": "function",
+"doc": "Perform K-means clustering algorithm."
+},
+{
+"area": "sklearn.cluster",
+"name": "kmeans_plusplus",
+"kind": "function",
+"doc": "Init n_clusters seeds according to k-means++."
+},
+{
+"area": "sklearn.cluster",
+"name": "linkage_tree",
+"kind": "function",
+"doc": "Linkage agglomerative clustering based on a Feature matrix."
+},
+{
+"area": "sklearn.cluster",
+"name": "mean_shift",
+"kind": "function",
+"doc": "Perform mean shift clustering of data using a flat kernel."
+},
+{
+"area": "sklearn.cluster",
+"name": "spectral_clustering",
+"kind": "function",
+"doc": "Apply clustering to a projection of the normalized Laplacian."
+},
+{
+"area": "sklearn.cluster",
+"name": "ward_tree",
+"kind": "function",
+"doc": "Ward clustering based on a Feature matrix."
+},
+{
+"area": "sklearn.compose",
+"name": "ColumnTransformer",
+"kind": "class",
+"doc": "Applies transformers to columns of an array or pandas DataFrame."
+},
+{
+"area": "sklearn.compose",
+"name": "TransformedTargetRegressor",
+"kind": "class",
+"doc": "Meta-estimator to regress on a transformed target."
+},
+{
+"area": "sklearn.compose",
+"name": "make_column_selector",
+"kind": "class",
+"doc": "Create a callable to select columns to be used with"
+},
+{
+"area": "sklearn.compose",
+"name": "make_column_transformer",
+"kind": "function",
+"doc": "Construct a ColumnTransformer from the given transformers."
+},
+{
+"area": "sklearn.covariance",
+"name": "EllipticEnvelope",
+"kind": "class",
+"doc": "An object for detecting outliers in a Gaussian distributed dataset."
+},
+{
+"area": "sklearn.covariance",
+"name": "EmpiricalCovariance",
+"kind": "class",
+"doc": "Maximum likelihood covariance estimator."
+},
+{
+"area": "sklearn.covariance",
+"name": "GraphicalLasso",
+"kind": "class",
+"doc": "Sparse inverse covariance estimation with an l1-penalized estimator."
+},
+{
+"area": "sklearn.covariance",
+"name": "GraphicalLassoCV",
+"kind": "class",
+"doc": "Sparse inverse covariance w/ cross-validated choice of the l1 penalty."
+},
+{
+"area": "sklearn.covariance",
+"name": "LedoitWolf",
+"kind": "class",
+"doc": "LedoitWolf Estimator."
+},
+{
+"area": "sklearn.covariance",
+"name": "MinCovDet",
+"kind": "class",
+"doc": "Minimum Covariance Determinant (MCD): robust estimator of covariance."
+},
+{
+"area": "sklearn.covariance",
+"name": "OAS",
+"kind": "class",
+"doc": "Oracle Approximating Shrinkage Estimator."
+},
+{
+"area": "sklearn.covariance",
+"name": "ShrunkCovariance",
+"kind": "class",
+"doc": "Covariance estimator with shrinkage."
+},
+{
+"area": "sklearn.covariance",
+"name": "empirical_covariance",
+"kind": "function",
+"doc": "Compute the Maximum likelihood covariance estimator."
+},
+{
+"area": "sklearn.covariance",
+"name": "fast_mcd",
+"kind": "function",
+"doc": "Estimate the Minimum Covariance Determinant matrix."
+},
+{
+"area": "sklearn.covariance",
+"name": "graphical_lasso",
+"kind": "function",
+"doc": "L1-penalized covariance estimator."
+},
+{
+"area": "sklearn.covariance",
+"name": "ledoit_wolf",
+"kind": "function",
+"doc": "Estimate the shrunk Ledoit-Wolf covariance matrix."
+},
+{
+"area": "sklearn.covariance",
+"name": "ledoit_wolf_shrinkage",
+"kind": "function",
+"doc": "Estimate the shrunk Ledoit-Wolf covariance matrix."
+},
+{
+"area": "sklearn.covariance",
+"name": "log_likelihood",
+"kind": "function",
+"doc": "Compute the sample mean of the log_likelihood under a covariance model."
+},
+{
+"area": "sklearn.covariance",
+"name": "oas",
+"kind": "function",
+"doc": "Estimate covariance with the Oracle Approximating Shrinkage."
+},
+{
+"area": "sklearn.covariance",
+"name": "shrunk_covariance",
+"kind": "function",
+"doc": "Calculate covariance matrices shrunk on the diagonal."
+},
+{
+"area": "sklearn.cross_decomposition",
+"name": "CCA",
+"kind": "class",
+"doc": "Canonical Correlation Analysis, also known as \"Mode B\" PLS."
+},
+{
+"area": "sklearn.cross_decomposition",
+"name": "PLSCanonical",
+"kind": "class",
+"doc": "Partial Least Squares transformer and regressor."
+},
+{
+"area": "sklearn.cross_decomposition",
+"name": "PLSRegression",
+"kind": "class",
+"doc": "PLS regression."
+},
+{
+"area": "sklearn.cross_decomposition",
+"name": "PLSSVD",
+"kind": "class",
+"doc": "Partial Least Square SVD."
+},
+{
+"area": "sklearn.datasets",
+"name": "clear_data_home",
+"kind": "function",
+"doc": "Delete all the content of the data home cache."
+},
+{
+"area": "sklearn.datasets",
+"name": "dump_svmlight_file",
+"kind": "function",
+"doc": "Dump the dataset in svmlight / libsvm file format."
+},
+{
+"area": "sklearn.datasets",
+"name": "fetch_20newsgroups",
+"kind": "function",
+"doc": "Load the filenames and data from the 20 newsgroups dataset (classification)."
+},
+{
+"area": "sklearn.datasets",
+"name": "fetch_20newsgroups_vectorized",
+"kind": "function",
+"doc": "Load and vectorize the 20 newsgroups dataset (classification)."
+},
+{
+"area": "sklearn.datasets",
+"name": "fetch_california_housing",
+"kind": "function",
+"doc": "Load the California housing dataset (regression)."
+},
+{
+"area": "sklearn.datasets",
+"name": "fetch_covtype",
+"kind": "function",
+"doc": "Load the covertype dataset (classification)."
+},
+{
+"area": "sklearn.datasets",
+"name": "fetch_file",
+"kind": "function",
+"doc": "Fetch a file from the web if not already present in the local folder."
+},
+{
+"area": "sklearn.datasets",
+"name": "fetch_kddcup99",
+"kind": "function",
+"doc": "Load the kddcup99 dataset (classification)."
+},
+{
+"area": "sklearn.datasets",
+"name": "fetch_lfw_pairs",
+"kind": "function",
+"doc": "Load the Labeled Faces in the Wild (LFW) pairs dataset (classification)."
+},
+{
+"area": "sklearn.datasets",
+"name": "fetch_lfw_people",
+"kind": "function",
+"doc": "Load the Labeled Faces in the Wild (LFW) people dataset (classification)."
+},
+{
+"area": "sklearn.datasets",
+"name": "fetch_olivetti_faces",
+"kind": "function",
+"doc": "Load the Olivetti faces data-set from AT&T (classification)."
+},
+{
+"area": "sklearn.datasets",
+"name": "fetch_openml",
+"kind": "function",
+"doc": "Fetch dataset from openml by name or dataset id."
+},
+{
+"area": "sklearn.datasets",
+"name": "fetch_rcv1",
+"kind": "function",
+"doc": "Load the RCV1 multilabel dataset (classification)."
+},
+{
+"area": "sklearn.datasets",
+"name": "fetch_species_distributions",
+"kind": "function",
+"doc": "Loader for species distribution dataset from Phillips et. al. (2006)."
+},
+{
+"area": "sklearn.datasets",
+"name": "get_data_home",
+"kind": "function",
+"doc": "Return the path of the scikit-learn data directory."
+},
+{
+"area": "sklearn.datasets",
+"name": "load_breast_cancer",
+"kind": "function",
+"doc": "Load and return the breast cancer Wisconsin dataset (classification)."
+},
+{
+"area": "sklearn.datasets",
+"name": "load_diabetes",
+"kind": "function",
+"doc": "Load and return the diabetes dataset (regression)."
+},
+{
+"area": "sklearn.datasets",
+"name": "load_digits",
+"kind": "function",
+"doc": "Load and return the digits dataset (classification)."
+},
+{
+"area": "sklearn.datasets",
+"name": "load_files",
+"kind": "function",
+"doc": "Load text files with categories as subfolder names."
+},
+{
+"area": "sklearn.datasets",
+"name": "load_iris",
+"kind": "function",
+"doc": "Load and return the iris dataset (classification)."
+},
+{
+"area": "sklearn.datasets",
+"name": "load_linnerud",
+"kind": "function",
+"doc": "Load and return the physical exercise Linnerud dataset."
+},
+{
+"area": "sklearn.datasets",
+"name": "load_sample_image",
+"kind": "function",
+"doc": "Load the numpy array of a single sample image."
+},
+{
+"area": "sklearn.datasets",
+"name": "load_sample_images",
+"kind": "function",
+"doc": "Load sample images for image manipulation."
+},
+{
+"area": "sklearn.datasets",
+"name": "load_svmlight_file",
+"kind": "function",
+"doc": "Load datasets in the svmlight / libsvm format into sparse CSR matrix."
+},
+{
+"area": "sklearn.datasets",
+"name": "load_svmlight_files",
+"kind": "function",
+"doc": "Load dataset from multiple files in SVMlight format."
+},
+{
+"area": "sklearn.datasets",
+"name": "load_wine",
+"kind": "function",
+"doc": "Load and return the wine dataset (classification)."
+},
+{
+"area": "sklearn.datasets",
+"name": "make_biclusters",
+"kind": "function",
+"doc": "Generate a constant block diagonal structure array for biclustering."
+},
+{
+"area": "sklearn.datasets",
+"name": "make_blobs",
+"kind": "function",
+"doc": "Generate isotropic Gaussian blobs for clustering."
+},
+{
+"area": "sklearn.datasets",
+"name": "make_checkerboard",
+"kind": "function",
+"doc": "Generate an array with block checkerboard structure for biclustering."
+},
+{
+"area": "sklearn.datasets",
+"name": "make_circles",
+"kind": "function",
+"doc": "Make a large circle containing a smaller circle in 2d."
+},
+{
+"area": "sklearn.datasets",
+"name": "make_classification",
+"kind": "function",
+"doc": "Generate a random n-class classification problem."
+},
+{
+"area": "sklearn.datasets",
+"name": "make_friedman1",
+"kind": "function",
+"doc": "Generate the \"Friedman #1\" regression problem."
+},
+{
+"area": "sklearn.datasets",
+"name": "make_friedman2",
+"kind": "function",
+"doc": "Generate the \"Friedman #2\" regression problem."
+},
+{
+"area": "sklearn.datasets",
+"name": "make_friedman3",
+"kind": "function",
+"doc": "Generate the \"Friedman #3\" regression problem."
+},
+{
+"area": "sklearn.datasets",
+"name": "make_gaussian_quantiles",
+"kind": "function",
+"doc": "Generate isotropic Gaussian and label samples by quantile."
+},
+{
+"area": "sklearn.datasets",
+"name": "make_hastie_10_2",
+"kind": "function",
+"doc": "Generate data for binary classification used in Hastie et al. 2009, Example 10.2."
+},
+{
+"area": "sklearn.datasets",
+"name": "make_low_rank_matrix",
+"kind": "function",
+"doc": "Generate a mostly low rank matrix with bell-shaped singular values."
+},
+{
+"area": "sklearn.datasets",
+"name": "make_moons",
+"kind": "function",
+"doc": "Make two interleaving half circles."
+},
+{
+"area": "sklearn.datasets",
+"name": "make_multilabel_classification",
+"kind": "function",
+"doc": "Generate a random multilabel classification problem."
+},
+{
+"area": "sklearn.datasets",
+"name": "make_regression",
+"kind": "function",
+"doc": "Generate a random regression problem."
+},
+{
+"area": "sklearn.datasets",
+"name": "make_s_curve",
+"kind": "function",
+"doc": "Generate an S curve dataset."
+},
+{
+"area": "sklearn.datasets",
+"name": "make_sparse_coded_signal",
+"kind": "function",
+"doc": "Generate a signal as a sparse combination of dictionary elements."
+},
+{
+"area": "sklearn.datasets",
+"name": "make_sparse_spd_matrix",
+"kind": "function",
+"doc": "Generate a sparse symmetric definite positive matrix."
+},
+{
+"area": "sklearn.datasets",
+"name": "make_sparse_uncorrelated",
+"kind": "function",
+"doc": "Generate a random regression problem with sparse uncorrelated design."
+},
+{
+"area": "sklearn.datasets",
+"name": "make_spd_matrix",
+"kind": "function",
+"doc": "Generate a random symmetric, positive-definite matrix."
+},
+{
+"area": "sklearn.datasets",
+"name": "make_swiss_roll",
+"kind": "function",
+"doc": "Generate a swiss roll dataset."
+},
+{
+"area": "sklearn.decomposition",
+"name": "DictionaryLearning",
+"kind": "class",
+"doc": "Dictionary learning."
+},
+{
+"area": "sklearn.decomposition",
+"name": "FactorAnalysis",
+"kind": "class",
+"doc": "Factor Analysis (FA)."
+},
+{
+"area": "sklearn.decomposition",
+"name": "FastICA",
+"kind": "class",
+"doc": "FastICA: a fast algorithm for Independent Component Analysis."
+},
+{
+"area": "sklearn.decomposition",
+"name": "IncrementalPCA",
+"kind": "class",
+"doc": "Incremental principal components analysis (IPCA)."
+},
+{
+"area": "sklearn.decomposition",
+"name": "KernelPCA",
+"kind": "class",
+"doc": "Kernel Principal component analysis (KPCA)."
+},
+{
+"area": "sklearn.decomposition",
+"name": "LatentDirichletAllocation",
+"kind": "class",
+"doc": "Latent Dirichlet Allocation with online variational Bayes algorithm."
+},
+{
+"area": "sklearn.decomposition",
+"name": "MiniBatchDictionaryLearning",
+"kind": "class",
+"doc": "Mini-batch dictionary learning."
+},
+{
+"area": "sklearn.decomposition",
+"name": "MiniBatchNMF",
+"kind": "class",
+"doc": "Mini-Batch Non-Negative Matrix Factorization (NMF)."
+},
+{
+"area": "sklearn.decomposition",
+"name": "MiniBatchSparsePCA",
+"kind": "class",
+"doc": "Mini-batch Sparse Principal Components Analysis."
+},
+{
+"area": "sklearn.decomposition",
+"name": "NMF",
+"kind": "class",
+"doc": "Non-Negative Matrix Factorization (NMF)."
+},
+{
+"area": "sklearn.decomposition",
+"name": "PCA",
+"kind": "class",
+"doc": "Principal component analysis (PCA)."
+},
+{
+"area": "sklearn.decomposition",
+"name": "SparseCoder",
+"kind": "class",
+"doc": "Sparse coding."
+},
+{
+"area": "sklearn.decomposition",
+"name": "SparsePCA",
+"kind": "class",
+"doc": "Sparse Principal Components Analysis (SparsePCA)."
+},
+{
+"area": "sklearn.decomposition",
+"name": "TruncatedSVD",
+"kind": "class",
+"doc": "Dimensionality reduction using truncated SVD (aka LSA)."
+},
+{
+"area": "sklearn.decomposition",
+"name": "dict_learning",
+"kind": "function",
+"doc": "Solve a dictionary learning matrix factorization problem."
+},
+{
+"area": "sklearn.decomposition",
+"name": "dict_learning_online",
+"kind": "function",
+"doc": "Solve a dictionary learning matrix factorization problem online."
+},
+{
+"area": "sklearn.decomposition",
+"name": "fastica",
+"kind": "function",
+"doc": "Perform Fast Independent Component Analysis."
+},
+{
+"area": "sklearn.decomposition",
+"name": "non_negative_factorization",
+"kind": "function",
+"doc": "Compute Non-negative Matrix Factorization (NMF)."
+},
+{
+"area": "sklearn.decomposition",
+"name": "randomized_svd",
+"kind": "function",
+"doc": "Compute a truncated randomized SVD."
+},
+{
+"area": "sklearn.decomposition",
+"name": "sparse_encode",
+"kind": "function",
+"doc": "Sparse coding."
+},
+{
+"area": "sklearn.discriminant_analysis",
+"name": "LinearDiscriminantAnalysis",
+"kind": "class",
+"doc": "Linear Discriminant Analysis."
+},
+{
+"area": "sklearn.discriminant_analysis",
+"name": "QuadraticDiscriminantAnalysis",
+"kind": "class",
+"doc": "Quadratic Discriminant Analysis."
+},
+{
+"area": "sklearn.dummy",
+"name": "DummyClassifier",
+"kind": "class",
+"doc": "DummyClassifier makes predictions that ignore the input features."
+},
+{
+"area": "sklearn.dummy",
+"name": "DummyRegressor",
+"kind": "class",
+"doc": "Regressor that makes predictions using simple rules."
+},
+{
+"area": "sklearn.ensemble",
+"name": "AdaBoostClassifier",
+"kind": "class",
+"doc": "An AdaBoost classifier."
+},
+{
+"area": "sklearn.ensemble",
+"name": "AdaBoostRegressor",
+"kind": "class",
+"doc": "An AdaBoost regressor."
+},
+{
+"area": "sklearn.ensemble",
+"name": "BaggingClassifier",
+"kind": "class",
+"doc": "A Bagging classifier."
+},
+{
+"area": "sklearn.ensemble",
+"name": "BaggingRegressor",
+"kind": "class",
+"doc": "A Bagging regressor."
+},
+{
+"area": "sklearn.ensemble",
+"name": "BaseEnsemble",
+"kind": "class",
+"doc": "Base class for all ensemble classes."
+},
+{
+"area": "sklearn.ensemble",
+"name": "ExtraTreesClassifier",
+"kind": "class",
+"doc": "An extra-trees classifier."
+},
+{
+"area": "sklearn.ensemble",
+"name": "ExtraTreesRegressor",
+"kind": "class",
+"doc": "An extra-trees regressor."
+},
+{
+"area": "sklearn.ensemble",
+"name": "GradientBoostingClassifier",
+"kind": "class",
+"doc": "Gradient Boosting for classification."
+},
+{
+"area": "sklearn.ensemble",
+"name": "GradientBoostingRegressor",
+"kind": "class",
+"doc": "Gradient Boosting for regression."
+},
+{
+"area": "sklearn.ensemble",
+"name": "HistGradientBoostingClassifier",
+"kind": "class",
+"doc": "Histogram-based Gradient Boosting Classification Tree."
+},
+{
+"area": "sklearn.ensemble",
+"name": "HistGradientBoostingRegressor",
+"kind": "class",
+"doc": "Histogram-based Gradient Boosting Regression Tree."
+},
+{
+"area": "sklearn.ensemble",
+"name": "IsolationForest",
+"kind": "class",
+"doc": "Isolation Forest Algorithm."
+},
+{
+"area": "sklearn.ensemble",
+"name": "RandomForestClassifier",
+"kind": "class",
+"doc": "A random forest classifier."
+},
+{
+"area": "sklearn.ensemble",
+"name": "RandomForestRegressor",
+"kind": "class",
+"doc": "A random forest regressor."
+},
+{
+"area": "sklearn.ensemble",
+"name": "RandomTreesEmbedding",
+"kind": "class",
+"doc": "An ensemble of totally random trees."
+},
+{
+"area": "sklearn.ensemble",
+"name": "StackingClassifier",
+"kind": "class",
+"doc": "Stack of estimators with a final classifier."
+},
+{
+"area": "sklearn.ensemble",
+"name": "StackingRegressor",
+"kind": "class",
+"doc": "Stack of estimators with a final regressor."
+},
+{
+"area": "sklearn.ensemble",
+"name": "VotingClassifier",
+"kind": "class",
+"doc": "Soft Voting/Majority Rule classifier for unfitted estimators."
+},
+{
+"area": "sklearn.ensemble",
+"name": "VotingRegressor",
+"kind": "class",
+"doc": "Prediction voting regressor for unfitted estimators."
+},
+{
+"area": "sklearn.feature_extraction",
+"name": "DictVectorizer",
+"kind": "class",
+"doc": "Transforms lists of feature-value mappings to vectors."
+},
+{
+"area": "sklearn.feature_extraction",
+"name": "FeatureHasher",
+"kind": "class",
+"doc": "Implements feature hashing, aka the hashing trick."
+},
+{
+"area": "sklearn.feature_extraction",
+"name": "grid_to_graph",
+"kind": "function",
+"doc": "Graph of the pixel-to-pixel connections."
+},
+{
+"area": "sklearn.feature_extraction",
+"name": "img_to_graph",
+"kind": "function",
+"doc": "Graph of the pixel-to-pixel gradient connections."
+},
+{
+"area": "sklearn.feature_extraction.image",
+"name": "PatchExtractor",
+"kind": "class",
+"doc": "Extracts patches from a collection of images."
+},
+{
+"area": "sklearn.feature_extraction.image",
+"name": "extract_patches_2d",
+"kind": "function",
+"doc": "Reshape a 2D image into a collection of patches."
+},
+{
+"area": "sklearn.feature_extraction.image",
+"name": "grid_to_graph",
+"kind": "function",
+"doc": "Graph of the pixel-to-pixel connections."
+},
+{
+"area": "sklearn.feature_extraction.image",
+"name": "img_to_graph",
+"kind": "function",
+"doc": "Graph of the pixel-to-pixel gradient connections."
+},
+{
+"area": "sklearn.feature_extraction.image",
+"name": "reconstruct_from_patches_2d",
+"kind": "function",
+"doc": "Reconstruct the image from all of its patches."
+},
+{
+"area": "sklearn.feature_extraction.text",
+"name": "CountVectorizer",
+"kind": "class",
+"doc": "Convert a collection of text documents to a matrix of token counts."
+},
+{
+"area": "sklearn.feature_extraction.text",
+"name": "HashingVectorizer",
+"kind": "class",
+"doc": "Convert a collection of text documents to a matrix of token occurrences."
+},
+{
+"area": "sklearn.feature_extraction.text",
+"name": "TfidfTransformer",
+"kind": "class",
+"doc": "Transform a count matrix to a normalized tf or tf-idf representation."
+},
+{
+"area": "sklearn.feature_extraction.text",
+"name": "TfidfVectorizer",
+"kind": "class",
+"doc": "Convert a collection of raw documents to a matrix of TF-IDF features."
+},
+{
+"area": "sklearn.feature_extraction.text",
+"name": "strip_accents_ascii",
+"kind": "function",
+"doc": "Transform accentuated unicode symbols into ascii or nothing."
+},
+{
+"area": "sklearn.feature_extraction.text",
+"name": "strip_accents_unicode",
+"kind": "function",
+"doc": "Transform accentuated unicode symbols into their simple counterpart."
+},
+{
+"area": "sklearn.feature_extraction.text",
+"name": "strip_tags",
+"kind": "function",
+"doc": "Basic regexp based HTML / XML tag stripper function."
+},
+{
+"area": "sklearn.feature_selection",
+"name": "GenericUnivariateSelect",
+"kind": "class",
+"doc": "Univariate feature selector with configurable strategy."
+},
+{
+"area": "sklearn.feature_selection",
+"name": "RFE",
+"kind": "class",
+"doc": "Feature ranking with recursive feature elimination."
+},
+{
+"area": "sklearn.feature_selection",
+"name": "RFECV",
+"kind": "class",
+"doc": "Recursive feature elimination with cross-validation to select features."
+},
+{
+"area": "sklearn.feature_selection",
+"name": "SelectFdr",
+"kind": "class",
+"doc": "Filter: Select the p-values for an estimated false discovery rate."
+},
+{
+"area": "sklearn.feature_selection",
+"name": "SelectFpr",
+"kind": "class",
+"doc": "Filter: Select the pvalues below alpha based on a FPR test."
+},
+{
+"area": "sklearn.feature_selection",
+"name": "SelectFromModel",
+"kind": "class",
+"doc": "Meta-transformer for selecting features based on importance weights."
+},
+{
+"area": "sklearn.feature_selection",
+"name": "SelectFwe",
+"kind": "class",
+"doc": "Filter: Select the p-values corresponding to Family-wise error rate."
+},
+{
+"area": "sklearn.feature_selection",
+"name": "SelectKBest",
+"kind": "class",
+"doc": "Select features according to the k highest scores."
+},
+{
+"area": "sklearn.feature_selection",
+"name": "SelectPercentile",
+"kind": "class",
+"doc": "Select features according to a percentile of the highest scores."
+},
+{
+"area": "sklearn.feature_selection",
+"name": "SelectorMixin",
+"kind": "class",
+"doc": "Transformer mixin that performs feature selection given a support mask."
+},
+{
+"area": "sklearn.feature_selection",
+"name": "SequentialFeatureSelector",
+"kind": "class",
+"doc": "Transformer that performs Sequential Feature Selection."
+},
+{
+"area": "sklearn.feature_selection",
+"name": "VarianceThreshold",
+"kind": "class",
+"doc": "Feature selector that removes all low-variance features."
+},
+{
+"area": "sklearn.feature_selection",
+"name": "chi2",
+"kind": "function",
+"doc": "Compute chi-squared stats between each non-negative feature and class."
+},
+{
+"area": "sklearn.feature_selection",
+"name": "f_classif",
+"kind": "function",
+"doc": "Compute the ANOVA F-value for the provided sample."
+},
+{
+"area": "sklearn.feature_selection",
+"name": "f_oneway",
+"kind": "function",
+"doc": "Perform a 1-way ANOVA."
+},
+{
+"area": "sklearn.feature_selection",
+"name": "f_regression",
+"kind": "function",
+"doc": "Univariate linear regression tests returning F-statistic and p-values."
+},
+{
+"area": "sklearn.feature_selection",
+"name": "mutual_info_classif",
+"kind": "function",
+"doc": "Estimate mutual information for a discrete target variable."
+},
+{
+"area": "sklearn.feature_selection",
+"name": "mutual_info_regression",
+"kind": "function",
+"doc": "Estimate mutual information for a continuous target variable."
+},
+{
+"area": "sklearn.feature_selection",
+"name": "r_regression",
+"kind": "function",
+"doc": "Compute Pearson's r for each features and the target."
+},
+{
+"area": "sklearn.frozen",
+"name": "FrozenEstimator",
+"kind": "class",
+"doc": "Estimator that wraps a fitted estimator to prevent re-fitting."
+},
+{
+"area": "sklearn.gaussian_process",
+"name": "GaussianProcessClassifier",
+"kind": "class",
+"doc": "Gaussian process classification (GPC) based on Laplace approximation."
+},
+{
+"area": "sklearn.gaussian_process",
+"name": "GaussianProcessRegressor",
+"kind": "class",
+"doc": "Gaussian process regression (GPR)."
+},
+{
+"area": "sklearn.gaussian_process.kernels",
+"name": "CompoundKernel",
+"kind": "class",
+"doc": "Kernel which is composed of a set of other kernels."
+},
+{
+"area": "sklearn.gaussian_process.kernels",
+"name": "ConstantKernel",
+"kind": "class",
+"doc": "Constant kernel."
+},
+{
+"area": "sklearn.gaussian_process.kernels",
+"name": "DotProduct",
+"kind": "class",
+"doc": "Dot-Product kernel."
+},
+{
+"area": "sklearn.gaussian_process.kernels",
+"name": "ExpSineSquared",
+"kind": "class",
+"doc": "Exp-Sine-Squared kernel (aka periodic kernel)."
+},
+{
+"area": "sklearn.gaussian_process.kernels",
+"name": "Exponentiation",
+"kind": "class",
+"doc": "The Exponentiation kernel takes one base kernel and a scalar parameter"
+},
+{
+"area": "sklearn.gaussian_process.kernels",
+"name": "GenericKernelMixin",
+"kind": "class",
+"doc": "Mixin for kernels which operate on generic objects such as variable-"
+},
+{
+"area": "sklearn.gaussian_process.kernels",
+"name": "Hyperparameter",
+"kind": "class",
+"doc": "A kernel hyperparameter's specification in form of a namedtuple."
+},
+{
+"area": "sklearn.gaussian_process.kernels",
+"name": "Kernel",
+"kind": "class",
+"doc": "Base class for all kernels."
+},
+{
+"area": "sklearn.gaussian_process.kernels",
+"name": "KernelOperator",
+"kind": "class",
+"doc": "Base class for all kernel operators."
+},
+{
+"area": "sklearn.gaussian_process.kernels",
+"name": "Matern",
+"kind": "class",
+"doc": "Matern kernel."
+},
+{
+"area": "sklearn.gaussian_process.kernels",
+"name": "NormalizedKernelMixin",
+"kind": "class",
+"doc": "Mixin for kernels which are normalized: k(X, X)=1."
+},
+{
+"area": "sklearn.gaussian_process.kernels",
+"name": "PairwiseKernel",
+"kind": "class",
+"doc": "Wrapper for kernels in sklearn.metrics.pairwise."
+},
+{
+"area": "sklearn.gaussian_process.kernels",
+"name": "Product",
+"kind": "class",
+"doc": "The `Product` kernel takes two kernels :math:`k_1` and :math:`k_2`"
+},
+{
+"area": "sklearn.gaussian_process.kernels",
+"name": "RBF",
+"kind": "class",
+"doc": "Radial basis function kernel (aka squared-exponential kernel)."
+},
+{
+"area": "sklearn.gaussian_process.kernels",
+"name": "RationalQuadratic",
+"kind": "class",
+"doc": "Rational Quadratic kernel."
+},
+{
+"area": "sklearn.gaussian_process.kernels",
+"name": "StationaryKernelMixin",
+"kind": "class",
+"doc": "Mixin for kernels which are stationary: k(X, Y)= f(X-Y)."
+},
+{
+"area": "sklearn.gaussian_process.kernels",
+"name": "Sum",
+"kind": "class",
+"doc": "The `Sum` kernel takes two kernels :math:`k_1` and :math:`k_2`"
+},
+{
+"area": "sklearn.gaussian_process.kernels",
+"name": "WhiteKernel",
+"kind": "class",
+"doc": "White kernel."
+},
+{
+"area": "sklearn.impute",
+"name": "IterativeImputer",
+"kind": "class",
+"doc": "Multivariate imputer that estimates each feature from all the others."
+},
+{
+"area": "sklearn.impute",
+"name": "KNNImputer",
+"kind": "class",
+"doc": "Imputation for completing missing values using k-Nearest Neighbors."
+},
+{
+"area": "sklearn.impute",
+"name": "MissingIndicator",
+"kind": "class",
+"doc": "Binary indicators for missing values."
+},
+{
+"area": "sklearn.impute",
+"name": "SimpleImputer",
+"kind": "class",
+"doc": "Univariate imputer for completing missing values with simple strategies."
+},
+{
+"area": "sklearn.inspection",
+"name": "DecisionBoundaryDisplay",
+"kind": "class",
+"doc": "Decisions boundary visualization."
+},
+{
+"area": "sklearn.inspection",
+"name": "PartialDependenceDisplay",
+"kind": "class",
+"doc": "Partial Dependence Plot (PDP) and Individual Conditional Expectation (ICE)."
+},
+{
+"area": "sklearn.inspection",
+"name": "partial_dependence",
+"kind": "function",
+"doc": "Partial dependence of ``features``."
+},
+{
+"area": "sklearn.inspection",
+"name": "permutation_importance",
+"kind": "function",
+"doc": "Permutation importance for feature evaluation [BRE]_."
+},
+{
+"area": "sklearn.isotonic",
+"name": "IsotonicRegression",
+"kind": "class",
+"doc": "Isotonic regression model."
+},
+{
+"area": "sklearn.isotonic",
+"name": "check_increasing",
+"kind": "function",
+"doc": "Determine whether y is monotonically correlated with x."
+},
+{
+"area": "sklearn.isotonic",
+"name": "isotonic_regression",
+"kind": "function",
+"doc": "Solve the isotonic regression model."
+},
+{
+"area": "sklearn.kernel_approximation",
+"name": "AdditiveChi2Sampler",
+"kind": "class",
+"doc": "Approximate feature map for additive chi2 kernel."
+},
+{
+"area": "sklearn.kernel_approximation",
+"name": "Nystroem",
+"kind": "class",
+"doc": "Approximate a kernel map using a subset of the training data."
+},
+{
+"area": "sklearn.kernel_approximation",
+"name": "PolynomialCountSketch",
+"kind": "class",
+"doc": "Polynomial kernel approximation via Tensor Sketch."
+},
+{
+"area": "sklearn.kernel_approximation",
+"name": "RBFSampler",
+"kind": "class",
+"doc": "Approximate an RBF kernel feature map using random Fourier features."
+},
+{
+"area": "sklearn.kernel_approximation",
+"name": "SkewedChi2Sampler",
+"kind": "class",
+"doc": "Approximate feature map for \"skewed chi-squared\" kernel."
+},
+{
+"area": "sklearn.kernel_ridge",
+"name": "KernelRidge",
+"kind": "class",
+"doc": "Kernel ridge regression."
+},
+{
+"area": "sklearn.linear_model",
+"name": "ARDRegression",
+"kind": "class",
+"doc": "Bayesian ARD regression."
+},
+{
+"area": "sklearn.linear_model",
+"name": "BayesianRidge",
+"kind": "class",
+"doc": "Bayesian ridge regression."
+},
+{
+"area": "sklearn.linear_model",
+"name": "ElasticNet",
+"kind": "class",
+"doc": "Linear regression with combined L1 and L2 priors as regularizer."
+},
+{
+"area": "sklearn.linear_model",
+"name": "ElasticNetCV",
+"kind": "class",
+"doc": "Elastic Net model with iterative fitting along a regularization path."
+},
+{
+"area": "sklearn.linear_model",
+"name": "GammaRegressor",
+"kind": "class",
+"doc": "Generalized Linear Model with a Gamma distribution."
+},
+{
+"area": "sklearn.linear_model",
+"name": "HuberRegressor",
+"kind": "class",
+"doc": "L2-regularized linear regression model that is robust to outliers."
+},
+{
+"area": "sklearn.linear_model",
+"name": "Lars",
+"kind": "class",
+"doc": "Least Angle Regression model aka LAR."
+},
+{
+"area": "sklearn.linear_model",
+"name": "LarsCV",
+"kind": "class",
+"doc": "Cross-validated Least Angle Regression model."
+},
+{
+"area": "sklearn.linear_model",
+"name": "Lasso",
+"kind": "class",
+"doc": "Linear Model trained with L1 prior as regularizer (aka the Lasso)."
+},
+{
+"area": "sklearn.linear_model",
+"name": "LassoCV",
+"kind": "class",
+"doc": "Lasso linear model with iterative fitting along a regularization path."
+},
+{
+"area": "sklearn.linear_model",
+"name": "LassoLars",
+"kind": "class",
+"doc": "Lasso model fit with Least Angle Regression aka Lars."
+},
+{
+"area": "sklearn.linear_model",
+"name": "LassoLarsCV",
+"kind": "class",
+"doc": "Cross-validated Lasso, using the LARS algorithm."
+},
+{
+"area": "sklearn.linear_model",
+"name": "LassoLarsIC",
+"kind": "class",
+"doc": "Lasso model fit with Lars using BIC or AIC for model selection."
+},
+{
+"area": "sklearn.linear_model",
+"name": "LinearRegression",
+"kind": "class",
+"doc": "Ordinary least squares Linear Regression."
+},
+{
+"area": "sklearn.linear_model",
+"name": "LogisticRegression",
+"kind": "class",
+"doc": "Logistic Regression (aka logit, MaxEnt) classifier."
+},
+{
+"area": "sklearn.linear_model",
+"name": "LogisticRegressionCV",
+"kind": "class",
+"doc": "Logistic Regression CV (aka logit, MaxEnt) classifier."
+},
+{
+"area": "sklearn.linear_model",
+"name": "MultiTaskElasticNet",
+"kind": "class",
+"doc": "Multi-task ElasticNet model trained with L1/L2 mixed-norm as regularizer."
+},
+{
+"area": "sklearn.linear_model",
+"name": "MultiTaskElasticNetCV",
+"kind": "class",
+"doc": "Multi-task L1/L2 ElasticNet with built-in cross-validation."
+},
+{
+"area": "sklearn.linear_model",
+"name": "MultiTaskLasso",
+"kind": "class",
+"doc": "Multi-task Lasso model trained with L1/L2 mixed-norm as regularizer."
+},
+{
+"area": "sklearn.linear_model",
+"name": "MultiTaskLassoCV",
+"kind": "class",
+"doc": "Multi-task Lasso model trained with L1/L2 mixed-norm as regularizer."
+},
+{
+"area": "sklearn.linear_model",
+"name": "OrthogonalMatchingPursuit",
+"kind": "class",
+"doc": "Orthogonal Matching Pursuit model (OMP)."
+},
+{
+"area": "sklearn.linear_model",
+"name": "OrthogonalMatchingPursuitCV",
+"kind": "class",
+"doc": "Cross-validated Orthogonal Matching Pursuit model (OMP)."
+},
+{
+"area": "sklearn.linear_model",
+"name": "PassiveAggressiveClassifier",
+"kind": "class",
+"doc": "Passive Aggressive Classifier."
+},
+{
+"area": "sklearn.linear_model",
+"name": "PassiveAggressiveRegressor",
+"kind": "class",
+"doc": "Passive Aggressive Regressor."
+},
+{
+"area": "sklearn.linear_model",
+"name": "Perceptron",
+"kind": "class",
+"doc": "Linear perceptron classifier."
+},
+{
+"area": "sklearn.linear_model",
+"name": "PoissonRegressor",
+"kind": "class",
+"doc": "Generalized Linear Model with a Poisson distribution."
+},
+{
+"area": "sklearn.linear_model",
+"name": "QuantileRegressor",
+"kind": "class",
+"doc": "Linear regression model that predicts conditional quantiles."
+},
+{
+"area": "sklearn.linear_model",
+"name": "RANSACRegressor",
+"kind": "class",
+"doc": "RANSAC (RANdom SAmple Consensus) algorithm."
+},
+{
+"area": "sklearn.linear_model",
+"name": "Ridge",
+"kind": "class",
+"doc": "Linear least squares with l2 regularization."
+},
+{
+"area": "sklearn.linear_model",
+"name": "RidgeCV",
+"kind": "class",
+"doc": "Ridge regression with built-in cross-validation."
+},
+{
+"area": "sklearn.linear_model",
+"name": "RidgeClassifier",
+"kind": "class",
+"doc": "Classifier using Ridge regression."
+},
+{
+"area": "sklearn.linear_model",
+"name": "RidgeClassifierCV",
+"kind": "class",
+"doc": "Ridge classifier with built-in cross-validation."
+},
+{
+"area": "sklearn.linear_model",
+"name": "SGDClassifier",
+"kind": "class",
+"doc": "Linear classifiers (SVM, logistic regression, etc.) with SGD training."
+},
+{
+"area": "sklearn.linear_model",
+"name": "SGDOneClassSVM",
+"kind": "class",
+"doc": "Solves linear One-Class SVM using Stochastic Gradient Descent."
+},
+{
+"area": "sklearn.linear_model",
+"name": "SGDRegressor",
+"kind": "class",
+"doc": "Linear model fitted by minimizing a regularized empirical loss with SGD."
+},
+{
+"area": "sklearn.linear_model",
+"name": "TheilSenRegressor",
+"kind": "class",
+"doc": "Theil-Sen Estimator: robust multivariate regression model."
+},
+{
+"area": "sklearn.linear_model",
+"name": "TweedieRegressor",
+"kind": "class",
+"doc": "Generalized Linear Model with a Tweedie distribution."
+},
+{
+"area": "sklearn.linear_model",
+"name": "enet_path",
+"kind": "function",
+"doc": "Compute elastic net path with coordinate descent."
+},
+{
+"area": "sklearn.linear_model",
+"name": "lars_path",
+"kind": "function",
+"doc": "Compute Least Angle Regression or Lasso path using the LARS algorithm."
+},
+{
+"area": "sklearn.linear_model",
+"name": "lars_path_gram",
+"kind": "function",
+"doc": "The lars_path in the sufficient stats mode."
+},
+{
+"area": "sklearn.linear_model",
+"name": "lasso_path",
+"kind": "function",
+"doc": "Compute Lasso path with coordinate descent."
+},
+{
+"area": "sklearn.linear_model",
+"name": "orthogonal_mp",
+"kind": "function",
+"doc": "Orthogonal Matching Pursuit (OMP)."
+},
+{
+"area": "sklearn.linear_model",
+"name": "orthogonal_mp_gram",
+"kind": "function",
+"doc": "Gram Orthogonal Matching Pursuit (OMP)."
+},
+{
+"area": "sklearn.linear_model",
+"name": "ridge_regression",
+"kind": "function",
+"doc": "Solve the ridge equation by the method of normal equations."
+},
+{
+"area": "sklearn.manifold",
+"name": "ClassicalMDS",
+"kind": "class",
+"doc": "Classical multidimensional scaling (MDS)."
+},
+{
+"area": "sklearn.manifold",
+"name": "Isomap",
+"kind": "class",
+"doc": "Isomap Embedding."
+},
+{
+"area": "sklearn.manifold",
+"name": "LocallyLinearEmbedding",
+"kind": "class",
+"doc": "Locally Linear Embedding."
+},
+{
+"area": "sklearn.manifold",
+"name": "MDS",
+"kind": "class",
+"doc": "Multidimensional scaling."
+},
+{
+"area": "sklearn.manifold",
+"name": "SpectralEmbedding",
+"kind": "class",
+"doc": "Spectral embedding for non-linear dimensionality reduction."
+},
+{
+"area": "sklearn.manifold",
+"name": "TSNE",
+"kind": "class",
+"doc": "T-distributed Stochastic Neighbor Embedding."
+},
+{
+"area": "sklearn.manifold",
+"name": "locally_linear_embedding",
+"kind": "function",
+"doc": "Perform a Locally Linear Embedding analysis on the data."
+},
+{
+"area": "sklearn.manifold",
+"name": "smacof",
+"kind": "function",
+"doc": "Compute multidimensional scaling using the SMACOF algorithm."
+},
+{
+"area": "sklearn.manifold",
+"name": "spectral_embedding",
+"kind": "function",
+"doc": "Project the sample on the first eigenvectors of the graph Laplacian."
+},
+{
+"area": "sklearn.manifold",
+"name": "trustworthiness",
+"kind": "function",
+"doc": "Indicate to what extent the local structure is retained."
+},
+{
+"area": "sklearn.metrics",
+"name": "ConfusionMatrixDisplay",
+"kind": "class",
+"doc": "Confusion Matrix visualization."
+},
+{
+"area": "sklearn.metrics",
+"name": "DetCurveDisplay",
+"kind": "class",
+"doc": "Detection Error Tradeoff (DET) curve visualization."
+},
+{
+"area": "sklearn.metrics",
+"name": "DistanceMetric",
+"kind": "class",
+"doc": "Uniform interface for fast distance metric functions."
+},
+{
+"area": "sklearn.metrics",
+"name": "PrecisionRecallDisplay",
+"kind": "class",
+"doc": "Precision Recall visualization."
+},
+{
+"area": "sklearn.metrics",
+"name": "PredictionErrorDisplay",
+"kind": "class",
+"doc": "Visualization of the prediction error of a regression model."
+},
+{
+"area": "sklearn.metrics",
+"name": "RocCurveDisplay",
+"kind": "class",
+"doc": "ROC Curve visualization."
+},
+{
+"area": "sklearn.metrics",
+"name": "accuracy_score",
+"kind": "function",
+"doc": "Accuracy classification score."
+},
+{
+"area": "sklearn.metrics",
+"name": "adjusted_mutual_info_score",
+"kind": "function",
+"doc": "Adjusted Mutual Information between two clusterings."
+},
+{
+"area": "sklearn.metrics",
+"name": "adjusted_rand_score",
+"kind": "function",
+"doc": "Rand index adjusted for chance."
+},
+{
+"area": "sklearn.metrics",
+"name": "auc",
+"kind": "function",
+"doc": "Compute Area Under the Curve (AUC) using the trapezoidal rule."
+},
+{
+"area": "sklearn.metrics",
+"name": "average_precision_score",
+"kind": "function",
+"doc": "Compute average precision (AP) from prediction scores."
+},
+{
+"area": "sklearn.metrics",
+"name": "balanced_accuracy_score",
+"kind": "function",
+"doc": "Compute the balanced accuracy."
+},
+{
+"area": "sklearn.metrics",
+"name": "brier_score_loss",
+"kind": "function",
+"doc": "Compute the Brier score loss."
+},
+{
+"area": "sklearn.metrics",
+"name": "calinski_harabasz_score",
+"kind": "function",
+"doc": "Compute the Calinski and Harabasz score."
+},
+{
+"area": "sklearn.metrics",
+"name": "check_scoring",
+"kind": "function",
+"doc": "Determine scorer from user options."
+},
+{
+"area": "sklearn.metrics",
+"name": "class_likelihood_ratios",
+"kind": "function",
+"doc": "Compute binary classification positive and negative likelihood ratios."
+},
+{
+"area": "sklearn.metrics",
+"name": "classification_report",
+"kind": "function",
+"doc": "Build a text report showing the main classification metrics."
+},
+{
+"area": "sklearn.metrics",
+"name": "cohen_kappa_score",
+"kind": "function",
+"doc": "Compute Cohen's kappa: a statistic that measures inter-annotator agreement."
+},
+{
+"area": "sklearn.metrics",
+"name": "completeness_score",
+"kind": "function",
+"doc": "Compute completeness metric of a cluster labeling given a ground truth."
+},
+{
+"area": "sklearn.metrics",
+"name": "confusion_matrix",
+"kind": "function",
+"doc": "Compute confusion matrix to evaluate the accuracy of a classification."
+},
+{
+"area": "sklearn.metrics",
+"name": "confusion_matrix_at_thresholds",
+"kind": "function",
+"doc": "Calculate :term:`binary` confusion matrix terms per classification threshold."
+},
+{
+"area": "sklearn.metrics",
+"name": "consensus_score",
+"kind": "function",
+"doc": "The similarity of two sets of biclusters."
+},
+{
+"area": "sklearn.metrics",
+"name": "coverage_error",
+"kind": "function",
+"doc": "Coverage error measure."
+},
+{
+"area": "sklearn.metrics",
+"name": "d2_absolute_error_score",
+"kind": "function",
+"doc": ":math:`D^2` regression score function, fraction of absolute error explained."
+},
+{
+"area": "sklearn.metrics",
+"name": "d2_brier_score",
+"kind": "function",
+"doc": ":math:`D^2` score function, fraction of Brier score explained."
+},
+{
+"area": "sklearn.metrics",
+"name": "d2_log_loss_score",
+"kind": "function",
+"doc": ":math:`D^2` score function, fraction of log loss explained."
+},
+{
+"area": "sklearn.metrics",
+"name": "d2_pinball_score",
+"kind": "function",
+"doc": ":math:`D^2` regression score function, fraction of pinball loss explained."
+},
+{
+"area": "sklearn.metrics",
+"name": "d2_tweedie_score",
+"kind": "function",
+"doc": ":math:`D^2` regression score function, fraction of Tweedie deviance explained."
+},
+{
+"area": "sklearn.metrics",
+"name": "davies_bouldin_score",
+"kind": "function",
+"doc": "Compute the Davies-Bouldin score."
+},
+{
+"area": "sklearn.metrics",
+"name": "dcg_score",
+"kind": "function",
+"doc": "Compute Discounted Cumulative Gain."
+},
+{
+"area": "sklearn.metrics",
+"name": "det_curve",
+"kind": "function",
+"doc": "Compute Detection Error Tradeoff (DET) for different probability thresholds."
+},
+{
+"area": "sklearn.metrics",
+"name": "euclidean_distances",
+"kind": "function",
+"doc": "Compute the distance matrix between each pair from a feature array X and Y."
+},
+{
+"area": "sklearn.metrics",
+"name": "explained_variance_score",
+"kind": "function",
+"doc": "Explained variance regression score function."
+},
+{
+"area": "sklearn.metrics",
+"name": "f1_score",
+"kind": "function",
+"doc": "Compute the F1 score, also known as balanced F-score or F-measure."
+},
+{
+"area": "sklearn.metrics",
+"name": "fbeta_score",
+"kind": "function",
+"doc": "Compute the F-beta score."
+},
+{
+"area": "sklearn.metrics",
+"name": "fowlkes_mallows_score",
+"kind": "function",
+"doc": "Measure the similarity of two clusterings of a set of points."
+},
+{
+"area": "sklearn.metrics",
+"name": "get_scorer",
+"kind": "function",
+"doc": "Get a scorer from string."
+},
+{
+"area": "sklearn.metrics",
+"name": "get_scorer_names",
+"kind": "function",
+"doc": "Get the names of all available scorers."
+},
+{
+"area": "sklearn.metrics",
+"name": "hamming_loss",
+"kind": "function",
+"doc": "Compute the average Hamming loss."
+},
+{
+"area": "sklearn.metrics",
+"name": "hinge_loss",
+"kind": "function",
+"doc": "Average hinge loss (non-regularized)."
+},
+{
+"area": "sklearn.metrics",
+"name": "homogeneity_completeness_v_measure",
+"kind": "function",
+"doc": "Compute the homogeneity and completeness and V-Measure scores at once."
+},
+{
+"area": "sklearn.metrics",
+"name": "homogeneity_score",
+"kind": "function",
+"doc": "Homogeneity metric of a cluster labeling given a ground truth."
+},
+{
+"area": "sklearn.metrics",
+"name": "jaccard_score",
+"kind": "function",
+"doc": "Jaccard similarity coefficient score."
+},
+{
+"area": "sklearn.metrics",
+"name": "label_ranking_average_precision_score",
+"kind": "function",
+"doc": "Compute ranking-based average precision."
+},
+{
+"area": "sklearn.metrics",
+"name": "label_ranking_loss",
+"kind": "function",
+"doc": "Compute Ranking loss measure."
+},
+{
+"area": "sklearn.metrics",
+"name": "log_loss",
+"kind": "function",
+"doc": "Log loss, aka logistic loss or cross-entropy loss."
+},
+{
+"area": "sklearn.metrics",
+"name": "make_scorer",
+"kind": "function",
+"doc": "Make a scorer from a performance metric or loss function."
+},
+{
+"area": "sklearn.metrics",
+"name": "matthews_corrcoef",
+"kind": "function",
+"doc": "Compute the Matthews correlation coefficient (MCC)."
+},
+{
+"area": "sklearn.metrics",
+"name": "max_error",
+"kind": "function",
+"doc": "The max_error metric calculates the maximum residual error."
+},
+{
+"area": "sklearn.metrics",
+"name": "mean_absolute_error",
+"kind": "function",
+"doc": "Mean absolute error regression loss."
+},
+{
+"area": "sklearn.metrics",
+"name": "mean_absolute_percentage_error",
+"kind": "function",
+"doc": "Mean absolute percentage error (MAPE) regression loss."
+},
+{
+"area": "sklearn.metrics",
+"name": "mean_gamma_deviance",
+"kind": "function",
+"doc": "Mean Gamma deviance regression loss."
+},
+{
+"area": "sklearn.metrics",
+"name": "mean_pinball_loss",
+"kind": "function",
+"doc": "Pinball loss for quantile regression."
+},
+{
+"area": "sklearn.metrics",
+"name": "mean_poisson_deviance",
+"kind": "function",
+"doc": "Mean Poisson deviance regression loss."
+},
+{
+"area": "sklearn.metrics",
+"name": "mean_squared_error",
+"kind": "function",
+"doc": "Mean squared error regression loss."
+},
+{
+"area": "sklearn.metrics",
+"name": "mean_squared_log_error",
+"kind": "function",
+"doc": "Mean squared logarithmic error regression loss."
+},
+{
+"area": "sklearn.metrics",
+"name": "mean_tweedie_deviance",
+"kind": "function",
+"doc": "Mean Tweedie deviance regression loss."
+},
+{
+"area": "sklearn.metrics",
+"name": "median_absolute_error",
+"kind": "function",
+"doc": "Median absolute error regression loss."
+},
+{
+"area": "sklearn.metrics",
+"name": "metric_at_thresholds",
+"kind": "function",
+"doc": "Compute `metric_func` per threshold for :term:`binary` data."
+},
+{
+"area": "sklearn.metrics",
+"name": "multilabel_confusion_matrix",
+"kind": "function",
+"doc": "Compute a confusion matrix for each class or sample."
+},
+{
+"area": "sklearn.metrics",
+"name": "mutual_info_score",
+"kind": "function",
+"doc": "Mutual Information between two clusterings."
+},
+{
+"area": "sklearn.metrics",
+"name": "nan_euclidean_distances",
+"kind": "function",
+"doc": "Calculate the euclidean distances in the presence of missing values."
+},
+{
+"area": "sklearn.metrics",
+"name": "ndcg_score",
+"kind": "function",
+"doc": "Compute Normalized Discounted Cumulative Gain."
+},
+{
+"area": "sklearn.metrics",
+"name": "normalized_mutual_info_score",
+"kind": "function",
+"doc": "Normalized Mutual Information between two clusterings."
+},
+{
+"area": "sklearn.metrics",
+"name": "pair_confusion_matrix",
+"kind": "function",
+"doc": "Pair confusion matrix arising from two clusterings."
+},
+{
+"area": "sklearn.metrics",
+"name": "pairwise_distances",
+"kind": "function",
+"doc": "Compute the distance matrix from a feature array X and optional Y."
+},
+{
+"area": "sklearn.metrics",
+"name": "pairwise_distances_argmin",
+"kind": "function",
+"doc": "Compute minimum distances between one point and a set of points."
+},
+{
+"area": "sklearn.metrics",
+"name": "pairwise_distances_argmin_min",
+"kind": "function",
+"doc": "Compute minimum distances between one point and a set of points."
+},
+{
+"area": "sklearn.metrics",
+"name": "pairwise_distances_chunked",
+"kind": "function",
+"doc": "Generate a distance matrix chunk by chunk with optional reduction."
+},
+{
+"area": "sklearn.metrics",
+"name": "pairwise_kernels",
+"kind": "function",
+"doc": "Compute the kernel between arrays X and optional array Y."
+},
+{
+"area": "sklearn.metrics",
+"name": "precision_recall_curve",
+"kind": "function",
+"doc": "Compute precision-recall pairs for different probability thresholds."
+},
+{
+"area": "sklearn.metrics",
+"name": "precision_recall_fscore_support",
+"kind": "function",
+"doc": "Compute precision, recall, F-measure and support for each class."
+},
+{
+"area": "sklearn.metrics",
+"name": "precision_score",
+"kind": "function",
+"doc": "Compute the precision."
+},
+{
+"area": "sklearn.metrics",
+"name": "r2_score",
+"kind": "function",
+"doc": ":math:`R^2` (coefficient of determination) regression score function."
+},
+{
+"area": "sklearn.metrics",
+"name": "rand_score",
+"kind": "function",
+"doc": "Rand index."
+},
+{
+"area": "sklearn.metrics",
+"name": "recall_score",
+"kind": "function",
+"doc": "Compute the recall."
+},
+{
+"area": "sklearn.metrics",
+"name": "roc_auc_score",
+"kind": "function",
+"doc": "Compute Area Under the Receiver Operating Characteristic Curve (ROC AUC)     from prediction scores."
+},
+{
+"area": "sklearn.metrics",
+"name": "roc_curve",
+"kind": "function",
+"doc": "Compute Receiver operating characteristic (ROC)."
+},
+{
+"area": "sklearn.metrics",
+"name": "root_mean_squared_error",
+"kind": "function",
+"doc": "Root mean squared error regression loss."
+},
+{
+"area": "sklearn.metrics",
+"name": "root_mean_squared_log_error",
+"kind": "function",
+"doc": "Root mean squared logarithmic error regression loss."
+},
+{
+"area": "sklearn.metrics",
+"name": "silhouette_samples",
+"kind": "function",
+"doc": "Compute the Silhouette Coefficient for each sample."
+},
+{
+"area": "sklearn.metrics",
+"name": "silhouette_score",
+"kind": "function",
+"doc": "Compute the mean Silhouette Coefficient of all samples."
+},
+{
+"area": "sklearn.metrics",
+"name": "top_k_accuracy_score",
+"kind": "function",
+"doc": "Top-k Accuracy classification score."
+},
+{
+"area": "sklearn.metrics",
+"name": "v_measure_score",
+"kind": "function",
+"doc": "V-measure cluster labeling given a ground truth."
+},
+{
+"area": "sklearn.metrics",
+"name": "zero_one_loss",
+"kind": "function",
+"doc": "Zero-one classification loss."
+},
+{
+"area": "sklearn.metrics.pairwise",
+"name": "additive_chi2_kernel",
+"kind": "function",
+"doc": "Compute the additive chi-squared kernel between observations in X and Y."
+},
+{
+"area": "sklearn.metrics.pairwise",
+"name": "check_paired_arrays",
+"kind": "function",
+"doc": "Set X and Y appropriately and checks inputs for paired distances."
+},
+{
+"area": "sklearn.metrics.pairwise",
+"name": "check_pairwise_arrays",
+"kind": "function",
+"doc": "Set X and Y appropriately and checks inputs."
+},
+{
+"area": "sklearn.metrics.pairwise",
+"name": "chi2_kernel",
+"kind": "function",
+"doc": "Compute the exponential chi-squared kernel between X and Y."
+},
+{
+"area": "sklearn.metrics.pairwise",
+"name": "cosine_distances",
+"kind": "function",
+"doc": "Compute cosine distance between samples in X and Y."
+},
+{
+"area": "sklearn.metrics.pairwise",
+"name": "cosine_similarity",
+"kind": "function",
+"doc": "Compute cosine similarity between samples in X and Y."
+},
+{
+"area": "sklearn.metrics.pairwise",
+"name": "distance_metrics",
+"kind": "function",
+"doc": "Valid metrics for pairwise_distances."
+},
+{
+"area": "sklearn.metrics.pairwise",
+"name": "euclidean_distances",
+"kind": "function",
+"doc": "Compute the distance matrix between each pair from a feature array X and Y."
+},
+{
+"area": "sklearn.metrics.pairwise",
+"name": "haversine_distances",
+"kind": "function",
+"doc": "Compute the Haversine distance between samples in X and Y."
+},
+{
+"area": "sklearn.metrics.pairwise",
+"name": "kernel_metrics",
+"kind": "function",
+"doc": "Valid metrics for pairwise_kernels."
+},
+{
+"area": "sklearn.metrics.pairwise",
+"name": "laplacian_kernel",
+"kind": "function",
+"doc": "Compute the laplacian kernel between X and Y."
+},
+{
+"area": "sklearn.metrics.pairwise",
+"name": "linear_kernel",
+"kind": "function",
+"doc": "Compute the linear kernel between X and Y."
+},
+{
+"area": "sklearn.metrics.pairwise",
+"name": "manhattan_distances",
+"kind": "function",
+"doc": "Compute the L1 distances between the vectors in X and Y."
+},
+{
+"area": "sklearn.metrics.pairwise",
+"name": "nan_euclidean_distances",
+"kind": "function",
+"doc": "Calculate the euclidean distances in the presence of missing values."
+},
+{
+"area": "sklearn.metrics.pairwise",
+"name": "paired_cosine_distances",
+"kind": "function",
+"doc": "Compute the paired cosine distances between X and Y."
+},
+{
+"area": "sklearn.metrics.pairwise",
+"name": "paired_distances",
+"kind": "function",
+"doc": "Compute the paired distances between X and Y."
+},
+{
+"area": "sklearn.metrics.pairwise",
+"name": "paired_euclidean_distances",
+"kind": "function",
+"doc": "Compute the paired euclidean distances between X and Y."
+},
+{
+"area": "sklearn.metrics.pairwise",
+"name": "paired_manhattan_distances",
+"kind": "function",
+"doc": "Compute the paired L1 distances between X and Y."
+},
+{
+"area": "sklearn.metrics.pairwise",
+"name": "pairwise_distances",
+"kind": "function",
+"doc": "Compute the distance matrix from a feature array X and optional Y."
+},
+{
+"area": "sklearn.metrics.pairwise",
+"name": "pairwise_distances_argmin",
+"kind": "function",
+"doc": "Compute minimum distances between one point and a set of points."
+},
+{
+"area": "sklearn.metrics.pairwise",
+"name": "pairwise_distances_argmin_min",
+"kind": "function",
+"doc": "Compute minimum distances between one point and a set of points."
+},
+{
+"area": "sklearn.metrics.pairwise",
+"name": "pairwise_distances_chunked",
+"kind": "function",
+"doc": "Generate a distance matrix chunk by chunk with optional reduction."
+},
+{
+"area": "sklearn.metrics.pairwise",
+"name": "pairwise_kernels",
+"kind": "function",
+"doc": "Compute the kernel between arrays X and optional array Y."
+},
+{
+"area": "sklearn.metrics.pairwise",
+"name": "polynomial_kernel",
+"kind": "function",
+"doc": "Compute the polynomial kernel between X and Y."
+},
+{
+"area": "sklearn.metrics.pairwise",
+"name": "rbf_kernel",
+"kind": "function",
+"doc": "Compute the rbf (gaussian) kernel between X and Y."
+},
+{
+"area": "sklearn.metrics.pairwise",
+"name": "sigmoid_kernel",
+"kind": "function",
+"doc": "Compute the sigmoid kernel between X and Y."
+},
+{
+"area": "sklearn.mixture",
+"name": "BayesianGaussianMixture",
+"kind": "class",
+"doc": "Variational Bayesian estimation of a Gaussian mixture."
+},
+{
+"area": "sklearn.mixture",
+"name": "GaussianMixture",
+"kind": "class",
+"doc": "Gaussian Mixture."
+},
+{
+"area": "sklearn.model_selection",
+"name": "BaseCrossValidator",
+"kind": "class",
+"doc": "Base class for all cross-validators."
+},
+{
+"area": "sklearn.model_selection",
+"name": "BaseShuffleSplit",
+"kind": "class",
+"doc": "Base class for *ShuffleSplit."
+},
+{
+"area": "sklearn.model_selection",
+"name": "FixedThresholdClassifier",
+"kind": "class",
+"doc": "Binary classifier that manually sets the decision threshold."
+},
+{
+"area": "sklearn.model_selection",
+"name": "GridSearchCV",
+"kind": "class",
+"doc": "Exhaustive search over specified parameter values for an estimator."
+},
+{
+"area": "sklearn.model_selection",
+"name": "GroupKFold",
+"kind": "class",
+"doc": "K-fold iterator variant with non-overlapping groups."
+},
+{
+"area": "sklearn.model_selection",
+"name": "GroupShuffleSplit",
+"kind": "class",
+"doc": "Shuffle-Group(s)-Out cross-validation iterator."
+},
+{
+"area": "sklearn.model_selection",
+"name": "HalvingGridSearchCV",
+"kind": "class",
+"doc": "Search over specified parameter values with successive halving."
+},
+{
+"area": "sklearn.model_selection",
+"name": "HalvingRandomSearchCV",
+"kind": "class",
+"doc": "Randomized search on hyper parameters."
+},
+{
+"area": "sklearn.model_selection",
+"name": "KFold",
+"kind": "class",
+"doc": "K-Fold cross-validator."
+},
+{
+"area": "sklearn.model_selection",
+"name": "LearningCurveDisplay",
+"kind": "class",
+"doc": "Learning Curve visualization."
+},
+{
+"area": "sklearn.model_selection",
+"name": "LeaveOneGroupOut",
+"kind": "class",
+"doc": "Leave One Group Out cross-validator."
+},
+{
+"area": "sklearn.model_selection",
+"name": "LeaveOneOut",
+"kind": "class",
+"doc": "Leave-One-Out cross-validator."
+},
+{
+"area": "sklearn.model_selection",
+"name": "LeavePGroupsOut",
+"kind": "class",
+"doc": "Leave P Group(s) Out cross-validator."
+},
+{
+"area": "sklearn.model_selection",
+"name": "LeavePOut",
+"kind": "class",
+"doc": "Leave-P-Out cross-validator."
+},
+{
+"area": "sklearn.model_selection",
+"name": "ParameterGrid",
+"kind": "class",
+"doc": "Grid of parameters with a discrete number of values for each."
+},
+{
+"area": "sklearn.model_selection",
+"name": "ParameterSampler",
+"kind": "class",
+"doc": "Generator on parameters sampled from given distributions."
+},
+{
+"area": "sklearn.model_selection",
+"name": "PredefinedSplit",
+"kind": "class",
+"doc": "Predefined split cross-validator."
+},
+{
+"area": "sklearn.model_selection",
+"name": "RandomizedSearchCV",
+"kind": "class",
+"doc": "Randomized search on hyper parameters."
+},
+{
+"area": "sklearn.model_selection",
+"name": "RepeatedKFold",
+"kind": "class",
+"doc": "Repeated K-Fold cross validator."
+},
+{
+"area": "sklearn.model_selection",
+"name": "RepeatedStratifiedKFold",
+"kind": "class",
+"doc": "Repeated class-wise stratified K-Fold cross validator."
+},
+{
+"area": "sklearn.model_selection",
+"name": "ShuffleSplit",
+"kind": "class",
+"doc": "Random permutation cross-validator."
+},
+{
+"area": "sklearn.model_selection",
+"name": "StratifiedGroupKFold",
+"kind": "class",
+"doc": "Class-wise stratified K-Fold iterator variant with non-overlapping groups."
+},
+{
+"area": "sklearn.model_selection",
+"name": "StratifiedKFold",
+"kind": "class",
+"doc": "Class-wise stratified K-Fold cross-validator."
+},
+{
+"area": "sklearn.model_selection",
+"name": "StratifiedShuffleSplit",
+"kind": "class",
+"doc": "Class-wise stratified ShuffleSplit cross-validator."
+},
+{
+"area": "sklearn.model_selection",
+"name": "TimeSeriesSplit",
+"kind": "class",
+"doc": "Time Series cross-validator."
+},
+{
+"area": "sklearn.model_selection",
+"name": "TunedThresholdClassifierCV",
+"kind": "class",
+"doc": "Classifier that post-tunes the decision threshold using cross-validation."
+},
+{
+"area": "sklearn.model_selection",
+"name": "ValidationCurveDisplay",
+"kind": "class",
+"doc": "Validation Curve visualization."
+},
+{
+"area": "sklearn.model_selection",
+"name": "check_cv",
+"kind": "function",
+"doc": "Input checker utility for building a cross-validator."
+},
+{
+"area": "sklearn.model_selection",
+"name": "cross_val_predict",
+"kind": "function",
+"doc": "Generate cross-validated estimates for each input data point."
+},
+{
+"area": "sklearn.model_selection",
+"name": "cross_val_score",
+"kind": "function",
+"doc": "Evaluate a score by cross-validation."
+},
+{
+"area": "sklearn.model_selection",
+"name": "cross_validate",
+"kind": "function",
+"doc": "Evaluate metric(s) by cross-validation and also record fit/score times."
+},
+{
+"area": "sklearn.model_selection",
+"name": "learning_curve",
+"kind": "function",
+"doc": "Learning curve."
+},
+{
+"area": "sklearn.model_selection",
+"name": "permutation_test_score",
+"kind": "function",
+"doc": "Evaluate the significance of a cross-validated score with permutations."
+},
+{
+"area": "sklearn.model_selection",
+"name": "train_test_split",
+"kind": "function",
+"doc": "Split arrays or matrices into random train and test subsets."
+},
+{
+"area": "sklearn.model_selection",
+"name": "validation_curve",
+"kind": "function",
+"doc": "Validation curve."
+},
+{
+"area": "sklearn.multiclass",
+"name": "OneVsOneClassifier",
+"kind": "class",
+"doc": "One-vs-one multiclass strategy."
+},
+{
+"area": "sklearn.multiclass",
+"name": "OneVsRestClassifier",
+"kind": "class",
+"doc": "One-vs-the-rest (OvR) multiclass strategy."
+},
+{
+"area": "sklearn.multiclass",
+"name": "OutputCodeClassifier",
+"kind": "class",
+"doc": "(Error-Correcting) Output-Code multiclass strategy."
+},
+{
+"area": "sklearn.multioutput",
+"name": "ClassifierChain",
+"kind": "class",
+"doc": "A multi-label model that arranges binary classifiers into a chain."
+},
+{
+"area": "sklearn.multioutput",
+"name": "MultiOutputClassifier",
+"kind": "class",
+"doc": "Multi target classification."
+},
+{
+"area": "sklearn.multioutput",
+"name": "MultiOutputRegressor",
+"kind": "class",
+"doc": "Multi target regression."
+},
+{
+"area": "sklearn.multioutput",
+"name": "RegressorChain",
+"kind": "class",
+"doc": "A multi-label model that arranges regressions into a chain."
+},
+{
+"area": "sklearn.naive_bayes",
+"name": "BernoulliNB",
+"kind": "class",
+"doc": "Naive Bayes classifier for multivariate Bernoulli models."
+},
+{
+"area": "sklearn.naive_bayes",
+"name": "CategoricalNB",
+"kind": "class",
+"doc": "Naive Bayes classifier for categorical features."
+},
+{
+"area": "sklearn.naive_bayes",
+"name": "ComplementNB",
+"kind": "class",
+"doc": "The Complement Naive Bayes classifier described in Rennie et al. (2003)."
+},
+{
+"area": "sklearn.naive_bayes",
+"name": "GaussianNB",
+"kind": "class",
+"doc": "Gaussian Naive Bayes (GaussianNB)."
+},
+{
+"area": "sklearn.naive_bayes",
+"name": "MultinomialNB",
+"kind": "class",
+"doc": "Naive Bayes classifier for multinomial models."
+},
+{
+"area": "sklearn.neighbors",
+"name": "BallTree",
+"kind": "class",
+"doc": "BallTree for fast generalized N-point problems"
+},
+{
+"area": "sklearn.neighbors",
+"name": "KDTree",
+"kind": "class",
+"doc": "KDTree for fast generalized N-point problems"
+},
+{
+"area": "sklearn.neighbors",
+"name": "KNeighborsClassifier",
+"kind": "class",
+"doc": "Classifier implementing the k-nearest neighbors vote."
+},
+{
+"area": "sklearn.neighbors",
+"name": "KNeighborsRegressor",
+"kind": "class",
+"doc": "Regression based on k-nearest neighbors."
+},
+{
+"area": "sklearn.neighbors",
+"name": "KNeighborsTransformer",
+"kind": "class",
+"doc": "Transform X into a (weighted) graph of k nearest neighbors."
+},
+{
+"area": "sklearn.neighbors",
+"name": "KernelDensity",
+"kind": "class",
+"doc": "Kernel Density Estimation."
+},
+{
+"area": "sklearn.neighbors",
+"name": "LocalOutlierFactor",
+"kind": "class",
+"doc": "Unsupervised Outlier Detection using the Local Outlier Factor (LOF)."
+},
+{
+"area": "sklearn.neighbors",
+"name": "NearestCentroid",
+"kind": "class",
+"doc": "Nearest centroid classifier."
+},
+{
+"area": "sklearn.neighbors",
+"name": "NearestNeighbors",
+"kind": "class",
+"doc": "Unsupervised learner for implementing neighbor searches."
+},
+{
+"area": "sklearn.neighbors",
+"name": "NeighborhoodComponentsAnalysis",
+"kind": "class",
+"doc": "Neighborhood Components Analysis."
+},
+{
+"area": "sklearn.neighbors",
+"name": "RadiusNeighborsClassifier",
+"kind": "class",
+"doc": "Classifier implementing a vote among neighbors within a given radius."
+},
+{
+"area": "sklearn.neighbors",
+"name": "RadiusNeighborsRegressor",
+"kind": "class",
+"doc": "Regression based on neighbors within a fixed radius."
+},
+{
+"area": "sklearn.neighbors",
+"name": "RadiusNeighborsTransformer",
+"kind": "class",
+"doc": "Transform X into a (weighted) graph of neighbors nearer than a radius."
+},
+{
+"area": "sklearn.neighbors",
+"name": "kneighbors_graph",
+"kind": "function",
+"doc": "Compute the (weighted) graph of k-Neighbors for points in X."
+},
+{
+"area": "sklearn.neighbors",
+"name": "radius_neighbors_graph",
+"kind": "function",
+"doc": "Compute the (weighted) graph of Neighbors for points in X."
+},
+{
+"area": "sklearn.neighbors",
+"name": "sort_graph_by_row_values",
+"kind": "function",
+"doc": "Sort a sparse graph such that each row is stored with increasing values."
+},
+{
+"area": "sklearn.neural_network",
+"name": "BernoulliRBM",
+"kind": "class",
+"doc": "Bernoulli Restricted Boltzmann Machine (RBM)."
+},
+{
+"area": "sklearn.neural_network",
+"name": "MLPClassifier",
+"kind": "class",
+"doc": "Multi-layer Perceptron classifier."
+},
+{
+"area": "sklearn.neural_network",
+"name": "MLPRegressor",
+"kind": "class",
+"doc": "Multi-layer Perceptron regressor."
+},
+{
+"area": "sklearn.pipeline",
+"name": "FeatureUnion",
+"kind": "class",
+"doc": "Concatenates results of multiple transformer objects."
+},
+{
+"area": "sklearn.pipeline",
+"name": "Pipeline",
+"kind": "class",
+"doc": "A sequence of data transformers with an optional final predictor."
+},
+{
+"area": "sklearn.pipeline",
+"name": "make_pipeline",
+"kind": "function",
+"doc": "Construct a :class:`Pipeline` from the given estimators."
+},
+{
+"area": "sklearn.pipeline",
+"name": "make_union",
+"kind": "function",
+"doc": "Construct a :class:`FeatureUnion` from the given transformers."
+},
+{
+"area": "sklearn.preprocessing",
+"name": "Binarizer",
+"kind": "class",
+"doc": "Binarize data (set feature values to 0 or 1) according to a threshold."
+},
+{
+"area": "sklearn.preprocessing",
+"name": "FunctionTransformer",
+"kind": "class",
+"doc": "Constructs a transformer from an arbitrary callable."
+},
+{
+"area": "sklearn.preprocessing",
+"name": "KBinsDiscretizer",
+"kind": "class",
+"doc": "Bin continuous data into intervals."
+},
+{
+"area": "sklearn.preprocessing",
+"name": "KernelCenterer",
+"kind": "class",
+"doc": "Center an arbitrary kernel matrix :math:`K`."
+},
+{
+"area": "sklearn.preprocessing",
+"name": "LabelBinarizer",
+"kind": "class",
+"doc": "Binarize labels in a one-vs-all fashion."
+},
+{
+"area": "sklearn.preprocessing",
+"name": "LabelEncoder",
+"kind": "class",
+"doc": "Encode target labels with value between 0 and n_classes-1."
+},
+{
+"area": "sklearn.preprocessing",
+"name": "MaxAbsScaler",
+"kind": "class",
+"doc": "Scale each feature by its maximum absolute value."
+},
+{
+"area": "sklearn.preprocessing",
+"name": "MinMaxScaler",
+"kind": "class",
+"doc": "Transform features by scaling each feature to a given range."
+},
+{
+"area": "sklearn.preprocessing",
+"name": "MultiLabelBinarizer",
+"kind": "class",
+"doc": "Transform between iterable of iterables and a multilabel format."
+},
+{
+"area": "sklearn.preprocessing",
+"name": "Normalizer",
+"kind": "class",
+"doc": "Normalize samples individually to unit norm."
+},
+{
+"area": "sklearn.preprocessing",
+"name": "OneHotEncoder",
+"kind": "class",
+"doc": "Encode categorical features as a one-hot numeric array."
+},
+{
+"area": "sklearn.preprocessing",
+"name": "OrdinalEncoder",
+"kind": "class",
+"doc": "Encode categorical features as an integer array."
+},
+{
+"area": "sklearn.preprocessing",
+"name": "PolynomialFeatures",
+"kind": "class",
+"doc": "Generate polynomial and interaction features."
+},
+{
+"area": "sklearn.preprocessing",
+"name": "PowerTransformer",
+"kind": "class",
+"doc": "Apply a power transform featurewise to make data more Gaussian-like."
+},
+{
+"area": "sklearn.preprocessing",
+"name": "QuantileTransformer",
+"kind": "class",
+"doc": "Transform features using quantiles information."
+},
+{
+"area": "sklearn.preprocessing",
+"name": "RobustScaler",
+"kind": "class",
+"doc": "Scale features using statistics that are robust to outliers."
+},
+{
+"area": "sklearn.preprocessing",
+"name": "SplineTransformer",
+"kind": "class",
+"doc": "Generate univariate B-spline bases for features."
+},
+{
+"area": "sklearn.preprocessing",
+"name": "StandardScaler",
+"kind": "class",
+"doc": "Standardize features by removing the mean and scaling to unit variance."
+},
+{
+"area": "sklearn.preprocessing",
+"name": "TargetEncoder",
+"kind": "class",
+"doc": "Target Encoder for regression and classification targets."
+},
+{
+"area": "sklearn.preprocessing",
+"name": "add_dummy_feature",
+"kind": "function",
+"doc": "Augment dataset with an additional dummy feature."
+},
+{
+"area": "sklearn.preprocessing",
+"name": "binarize",
+"kind": "function",
+"doc": "Boolean thresholding of array-like or scipy.sparse matrix."
+},
+{
+"area": "sklearn.preprocessing",
+"name": "label_binarize",
+"kind": "function",
+"doc": "Binarize labels in a one-vs-all fashion."
+},
+{
+"area": "sklearn.preprocessing",
+"name": "maxabs_scale",
+"kind": "function",
+"doc": "Scale each feature to the [-1, 1] range without breaking the sparsity."
+},
+{
+"area": "sklearn.preprocessing",
+"name": "minmax_scale",
+"kind": "function",
+"doc": "Transform features by scaling each feature to a given range."
+},
+{
+"area": "sklearn.preprocessing",
+"name": "normalize",
+"kind": "function",
+"doc": "Scale input vectors individually to unit norm (vector length)."
+},
+{
+"area": "sklearn.preprocessing",
+"name": "power_transform",
+"kind": "function",
+"doc": "Parametric, monotonic transformation to make data more Gaussian-like."
+},
+{
+"area": "sklearn.preprocessing",
+"name": "quantile_transform",
+"kind": "function",
+"doc": "Transform features using quantiles information."
+},
+{
+"area": "sklearn.preprocessing",
+"name": "robust_scale",
+"kind": "function",
+"doc": "Standardize a dataset along any axis."
+},
+{
+"area": "sklearn.preprocessing",
+"name": "scale",
+"kind": "function",
+"doc": "Standardize a dataset along any axis."
+},
+{
+"area": "sklearn.random_projection",
+"name": "GaussianRandomProjection",
+"kind": "class",
+"doc": "Reduce dimensionality through Gaussian random projection."
+},
+{
+"area": "sklearn.random_projection",
+"name": "SparseRandomProjection",
+"kind": "class",
+"doc": "Reduce dimensionality through sparse random projection."
+},
+{
+"area": "sklearn.random_projection",
+"name": "johnson_lindenstrauss_min_dim",
+"kind": "function",
+"doc": "Find a 'safe' number of components to randomly project to."
+},
+{
+"area": "sklearn.semi_supervised",
+"name": "LabelPropagation",
+"kind": "class",
+"doc": "Label Propagation classifier."
+},
+{
+"area": "sklearn.semi_supervised",
+"name": "LabelSpreading",
+"kind": "class",
+"doc": "LabelSpreading model for semi-supervised learning."
+},
+{
+"area": "sklearn.semi_supervised",
+"name": "SelfTrainingClassifier",
+"kind": "class",
+"doc": "Self-training classifier."
+},
+{
+"area": "sklearn.svm",
+"name": "LinearSVC",
+"kind": "class",
+"doc": "Linear Support Vector Classification."
+},
+{
+"area": "sklearn.svm",
+"name": "LinearSVR",
+"kind": "class",
+"doc": "Linear Support Vector Regression."
+},
+{
+"area": "sklearn.svm",
+"name": "NuSVC",
+"kind": "class",
+"doc": "Nu-Support Vector Classification."
+},
+{
+"area": "sklearn.svm",
+"name": "NuSVR",
+"kind": "class",
+"doc": "Nu Support Vector Regression."
+},
+{
+"area": "sklearn.svm",
+"name": "OneClassSVM",
+"kind": "class",
+"doc": "Unsupervised Outlier Detection."
+},
+{
+"area": "sklearn.svm",
+"name": "SVC",
+"kind": "class",
+"doc": "C-Support Vector Classification."
+},
+{
+"area": "sklearn.svm",
+"name": "SVR",
+"kind": "class",
+"doc": "Epsilon-Support Vector Regression."
+},
+{
+"area": "sklearn.svm",
+"name": "l1_min_c",
+"kind": "function",
+"doc": "Return the lowest bound for `C`."
+},
+{
+"area": "sklearn.tree",
+"name": "BaseDecisionTree",
+"kind": "class",
+"doc": "Base class for decision trees."
+},
+{
+"area": "sklearn.tree",
+"name": "DecisionTreeClassifier",
+"kind": "class",
+"doc": "A decision tree classifier."
+},
+{
+"area": "sklearn.tree",
+"name": "DecisionTreeRegressor",
+"kind": "class",
+"doc": "A decision tree regressor."
+},
+{
+"area": "sklearn.tree",
+"name": "ExtraTreeClassifier",
+"kind": "class",
+"doc": "An extremely randomized tree classifier."
+},
+{
+"area": "sklearn.tree",
+"name": "ExtraTreeRegressor",
+"kind": "class",
+"doc": "An extremely randomized tree regressor."
+},
+{
+"area": "sklearn.tree",
+"name": "export_graphviz",
+"kind": "function",
+"doc": "Export a decision tree in DOT format."
+},
+{
+"area": "sklearn.tree",
+"name": "export_text",
+"kind": "function",
+"doc": "Build a text report showing the rules of a decision tree."
+},
+{
+"area": "sklearn.tree",
+"name": "plot_tree",
+"kind": "function",
+"doc": "Plot a decision tree."
+},
+{
+"area": "sklearn.utils",
+"name": "compute_class_weight",
+"kind": "function",
+"doc": "Estimate class weights for unbalanced datasets."
+},
+{
+"area": "sklearn.utils",
+"name": "compute_sample_weight",
+"kind": "function",
+"doc": "Estimate sample weights by class for unbalanced datasets."
+},
+{
+"area": "sklearn.utils",
+"name": "gen_batches",
+"kind": "function",
+"doc": "Generator to create slices containing `batch_size` elements from 0 to `n`."
+},
+{
+"area": "sklearn.utils",
+"name": "murmurhash3_32",
+"kind": "function",
+"doc": "Compute the 32bit murmurhash3 of key at seed."
+},
+{
+"area": "sklearn.utils",
+"name": "resample",
+"kind": "function",
+"doc": "Resample arrays or sparse matrices in a consistent way."
+},
+{
+"area": "sklearn.utils",
+"name": "shuffle",
+"kind": "function",
+"doc": "Shuffle arrays or sparse matrices in a consistent way."
+}
+]
+}

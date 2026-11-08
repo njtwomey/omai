@@ -1,0 +1,4507 @@
+{
+"library": "statsmodels",
+"version": "0.15.0",
+"source": "introspection",
+"entries": [
+{
+"area": "statsmodels.api",
+"name": "BayesGaussMI",
+"kind": "class",
+"doc": "Bayesian Imputation using a Gaussian model"
+},
+{
+"area": "statsmodels.api",
+"name": "BinomialBayesMixedGLM",
+"kind": "class",
+"doc": "Generalized Linear Mixed Model with Bayesian estimation"
+},
+{
+"area": "statsmodels.api",
+"name": "ConditionalLogit",
+"kind": "class",
+"doc": "Fit a conditional logistic regression model to grouped data."
+},
+{
+"area": "statsmodels.api",
+"name": "ConditionalMNLogit",
+"kind": "class",
+"doc": "Fit a conditional multinomial logit model to grouped data."
+},
+{
+"area": "statsmodels.api",
+"name": "ConditionalPoisson",
+"kind": "class",
+"doc": "Fit a conditional Poisson regression model to grouped data."
+},
+{
+"area": "statsmodels.api",
+"name": "Factor",
+"kind": "class",
+"doc": "Factor analysis"
+},
+{
+"area": "statsmodels.api",
+"name": "GEE",
+"kind": "class",
+"doc": "Marginal Regression Model using Generalized Estimating Equations."
+},
+{
+"area": "statsmodels.api",
+"name": "GLM",
+"kind": "class",
+"doc": "Generalized Linear Models"
+},
+{
+"area": "statsmodels.api",
+"name": "GLMGam",
+"kind": "class",
+"doc": "Generalized Additive Models (GAM)"
+},
+{
+"area": "statsmodels.api",
+"name": "GLS",
+"kind": "class",
+"doc": "Generalized Least Squares"
+},
+{
+"area": "statsmodels.api",
+"name": "GLSAR",
+"kind": "class",
+"doc": "Generalized Least Squares with AR covariance structure"
+},
+{
+"area": "statsmodels.api",
+"name": "GeneralizedPoisson",
+"kind": "class",
+"doc": "Generalized Poisson Model"
+},
+{
+"area": "statsmodels.api",
+"name": "HurdleCountModel",
+"kind": "class",
+"doc": "Hurdle model for count data"
+},
+{
+"area": "statsmodels.api",
+"name": "Logit",
+"kind": "class",
+"doc": "Logit Model"
+},
+{
+"area": "statsmodels.api",
+"name": "MANOVA",
+"kind": "class",
+"doc": "Multivariate Analysis of Variance"
+},
+{
+"area": "statsmodels.api",
+"name": "MI",
+"kind": "class",
+"doc": "MI performs multiple imputation using a provided imputer object"
+},
+{
+"area": "statsmodels.api",
+"name": "MICE",
+"kind": "class",
+"doc": "Multiple Imputation with Chained Equations"
+},
+{
+"area": "statsmodels.api",
+"name": "MICEData",
+"kind": "class",
+"doc": "Wrap a data set to allow missing data handling with MICE"
+},
+{
+"area": "statsmodels.api",
+"name": "MNLogit",
+"kind": "class",
+"doc": "Multinomial Logit Model"
+},
+{
+"area": "statsmodels.api",
+"name": "MixedLM",
+"kind": "class",
+"doc": "Linear Mixed Effects Model"
+},
+{
+"area": "statsmodels.api",
+"name": "MultivariateLS",
+"kind": "class",
+"doc": "Multivariate Linear Model estimated by least squares."
+},
+{
+"area": "statsmodels.api",
+"name": "NegativeBinomial",
+"kind": "class",
+"doc": "Negative Binomial Model"
+},
+{
+"area": "statsmodels.api",
+"name": "NegativeBinomialP",
+"kind": "class",
+"doc": "Generalized Negative Binomial (NB-P) Model"
+},
+{
+"area": "statsmodels.api",
+"name": "NominalGEE",
+"kind": "class",
+"doc": "Nominal Response Marginal Regression Model using GEE."
+},
+{
+"area": "statsmodels.api",
+"name": "OLS",
+"kind": "class",
+"doc": "Ordinary Least Squares"
+},
+{
+"area": "statsmodels.api",
+"name": "OrdinalGEE",
+"kind": "class",
+"doc": "Ordinal Response Marginal Regression Model using GEE"
+},
+{
+"area": "statsmodels.api",
+"name": "PCA",
+"kind": "class",
+"doc": "Principal Component Analysis"
+},
+{
+"area": "statsmodels.api",
+"name": "PHReg",
+"kind": "class",
+"doc": "Cox Proportional Hazards Regression Model"
+},
+{
+"area": "statsmodels.api",
+"name": "Poisson",
+"kind": "class",
+"doc": "Poisson Model"
+},
+{
+"area": "statsmodels.api",
+"name": "PoissonBayesMixedGLM",
+"kind": "class",
+"doc": "Generalized Linear Mixed Model with Bayesian estimation"
+},
+{
+"area": "statsmodels.api",
+"name": "ProbPlot",
+"kind": "class",
+"doc": "Q-Q and P-P Probability Plots"
+},
+{
+"area": "statsmodels.api",
+"name": "Probit",
+"kind": "class",
+"doc": "Probit Model"
+},
+{
+"area": "statsmodels.api",
+"name": "QIF",
+"kind": "class",
+"doc": "Fit a regression model using quadratic inference functions (QIF)."
+},
+{
+"area": "statsmodels.api",
+"name": "QuantReg",
+"kind": "class",
+"doc": "Quantile Regression"
+},
+{
+"area": "statsmodels.api",
+"name": "RLM",
+"kind": "class",
+"doc": "Robust Linear Model"
+},
+{
+"area": "statsmodels.api",
+"name": "RecursiveLS",
+"kind": "class",
+"doc": "Recursive least squares"
+},
+{
+"area": "statsmodels.api",
+"name": "SurvfuncRight",
+"kind": "class",
+"doc": "Estimation and inference for a survival function"
+},
+{
+"area": "statsmodels.api",
+"name": "TruncatedLFNegativeBinomialP",
+"kind": "class",
+"doc": "Truncated Generalized Negative Binomial model for count data"
+},
+{
+"area": "statsmodels.api",
+"name": "TruncatedLFPoisson",
+"kind": "class",
+"doc": "Truncated Poisson model for count data"
+},
+{
+"area": "statsmodels.api",
+"name": "VCSpec",
+"kind": "class",
+"doc": "Define the variance component structure of a multilevel model"
+},
+{
+"area": "statsmodels.api",
+"name": "WLS",
+"kind": "class",
+"doc": "Weighted Least Squares"
+},
+{
+"area": "statsmodels.api",
+"name": "ZeroInflatedGeneralizedPoisson",
+"kind": "class",
+"doc": "Zero-Inflated Generalized Poisson Model"
+},
+{
+"area": "statsmodels.api",
+"name": "ZeroInflatedNegativeBinomialP",
+"kind": "class",
+"doc": "Zero-Inflated Generalized Negative Binomial Model"
+},
+{
+"area": "statsmodels.api",
+"name": "ZeroInflatedPoisson",
+"kind": "class",
+"doc": "Poisson Zero-Inflated Model"
+},
+{
+"area": "statsmodels.api",
+"name": "add_constant",
+"kind": "function",
+"doc": "Add a column of ones to an array"
+},
+{
+"area": "statsmodels.api",
+"name": "impute_ros",
+"kind": "function",
+"doc": "Impute censored dataset using Regression on Order Statistics (ROS)"
+},
+{
+"area": "statsmodels.api",
+"name": "load",
+"kind": "function",
+"doc": "Load a previously saved object"
+},
+{
+"area": "statsmodels.api",
+"name": "load_pickle",
+"kind": "function",
+"doc": "Load a previously saved object"
+},
+{
+"area": "statsmodels.api",
+"name": "qqline",
+"kind": "function",
+"doc": "Plot a reference line for a qqplot"
+},
+{
+"area": "statsmodels.api",
+"name": "qqplot",
+"kind": "function",
+"doc": "Q-Q plot of the quantiles of x versus the quantiles/ppf of a distribution"
+},
+{
+"area": "statsmodels.api",
+"name": "qqplot_2samples",
+"kind": "function",
+"doc": "Q-Q Plot of two samples' quantiles"
+},
+{
+"area": "statsmodels.api",
+"name": "show_versions",
+"kind": "function",
+"doc": "List the versions of statsmodels and any installed dependencies"
+},
+{
+"area": "statsmodels.api",
+"name": "test",
+"kind": "function",
+"doc": "Run the test suite"
+},
+{
+"area": "statsmodels.api",
+"name": "webdoc",
+"kind": "function",
+"doc": "Open a browser and display online documentation"
+},
+{
+"area": "statsmodels.discrete.count_model",
+"name": "ZeroInflatedGeneralizedPoisson",
+"kind": "class",
+"doc": "Zero-Inflated Generalized Poisson Model"
+},
+{
+"area": "statsmodels.discrete.count_model",
+"name": "ZeroInflatedNegativeBinomialP",
+"kind": "class",
+"doc": "Zero-Inflated Generalized Negative Binomial Model"
+},
+{
+"area": "statsmodels.discrete.count_model",
+"name": "ZeroInflatedPoisson",
+"kind": "class",
+"doc": "Poisson Zero-Inflated Model"
+},
+{
+"area": "statsmodels.discrete.discrete_model",
+"name": "CountModel",
+"kind": "class",
+"doc": "Abstract class for discrete choice models."
+},
+{
+"area": "statsmodels.discrete.discrete_model",
+"name": "GeneralizedPoisson",
+"kind": "class",
+"doc": "Generalized Poisson Model"
+},
+{
+"area": "statsmodels.discrete.discrete_model",
+"name": "Logit",
+"kind": "class",
+"doc": "Logit Model"
+},
+{
+"area": "statsmodels.discrete.discrete_model",
+"name": "MNLogit",
+"kind": "class",
+"doc": "Multinomial Logit Model"
+},
+{
+"area": "statsmodels.discrete.discrete_model",
+"name": "NegativeBinomial",
+"kind": "class",
+"doc": "Negative Binomial Model"
+},
+{
+"area": "statsmodels.discrete.discrete_model",
+"name": "NegativeBinomialP",
+"kind": "class",
+"doc": "Generalized Negative Binomial (NB-P) Model"
+},
+{
+"area": "statsmodels.discrete.discrete_model",
+"name": "Poisson",
+"kind": "class",
+"doc": "Poisson Model"
+},
+{
+"area": "statsmodels.discrete.discrete_model",
+"name": "Probit",
+"kind": "class",
+"doc": "Probit Model"
+},
+{
+"area": "statsmodels.distributions.empirical_distribution",
+"name": "ECDF",
+"kind": "class",
+"doc": "Return the Empirical CDF of an array as a step function."
+},
+{
+"area": "statsmodels.distributions.empirical_distribution",
+"name": "ECDFDiscrete",
+"kind": "class",
+"doc": "Return the Empirical Weighted CDF of an array as a step function."
+},
+{
+"area": "statsmodels.distributions.empirical_distribution",
+"name": "StepFunction",
+"kind": "class",
+"doc": "A basic step function."
+},
+{
+"area": "statsmodels.distributions.empirical_distribution",
+"name": "monotone_fn_inverter",
+"kind": "function",
+"doc": "Given a monotone function fn (no checking is done to verify monotonicity)"
+},
+{
+"area": "statsmodels.duration.hazard_regression",
+"name": "PHReg",
+"kind": "class",
+"doc": "Cox Proportional Hazards Regression Model"
+},
+{
+"area": "statsmodels.duration.hazard_regression",
+"name": "PHRegResults",
+"kind": "class",
+"doc": "Class to contain results of fitting a Cox proportional hazards"
+},
+{
+"area": "statsmodels.duration.hazard_regression",
+"name": "PHSurvivalTime",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "statsmodels.duration.hazard_regression",
+"name": "rv_discrete_float",
+"kind": "class",
+"doc": "A class representing a collection of discrete distributions"
+},
+{
+"area": "statsmodels.duration.survfunc",
+"name": "CumIncidenceRight",
+"kind": "class",
+"doc": "Estimation and inference for a cumulative incidence function"
+},
+{
+"area": "statsmodels.duration.survfunc",
+"name": "SurvfuncRight",
+"kind": "class",
+"doc": "Estimation and inference for a survival function"
+},
+{
+"area": "statsmodels.duration.survfunc",
+"name": "plot_survfunc",
+"kind": "function",
+"doc": "Plot one or more survivor functions"
+},
+{
+"area": "statsmodels.duration.survfunc",
+"name": "survdiff",
+"kind": "function",
+"doc": "Test for the equality of two survival distributions"
+},
+{
+"area": "statsmodels.emplike.api",
+"name": "ANOVA",
+"kind": "class",
+"doc": "A class for ANOVA and comparing means"
+},
+{
+"area": "statsmodels.emplike.api",
+"name": "DescStat",
+"kind": "function",
+"doc": "Return an instance to conduct inference on descriptive statistics"
+},
+{
+"area": "statsmodels.emplike.api",
+"name": "DescStatMV",
+"kind": "class",
+"doc": "A class for conducting inference on multivariate means and correlation"
+},
+{
+"area": "statsmodels.emplike.api",
+"name": "DescStatUV",
+"kind": "class",
+"doc": "A class to compute confidence intervals and hypothesis tests involving"
+},
+{
+"area": "statsmodels.emplike.api",
+"name": "ELOriginRegress",
+"kind": "class",
+"doc": "Empirical Likelihood inference and estimation for linear regression"
+},
+{
+"area": "statsmodels.emplike.api",
+"name": "emplikeAFT",
+"kind": "class",
+"doc": "Class for estimating and conducting inference in an AFT model"
+},
+{
+"area": "statsmodels.gam.api",
+"name": "BSplines",
+"kind": "class",
+"doc": "additive smooth components using B-Splines"
+},
+{
+"area": "statsmodels.gam.api",
+"name": "CyclicCubicSplines",
+"kind": "class",
+"doc": "additive smooth components using cyclic cubic regression splines"
+},
+{
+"area": "statsmodels.gam.api",
+"name": "GLMGam",
+"kind": "class",
+"doc": "Generalized Additive Models (GAM)"
+},
+{
+"area": "statsmodels.gam.api",
+"name": "MultivariateGAMCVPath",
+"kind": "class",
+"doc": "K-fold cross-validation for GAM"
+},
+{
+"area": "statsmodels.genmod.families",
+"name": "Binomial",
+"kind": "class",
+"doc": "Binomial exponential family distribution."
+},
+{
+"area": "statsmodels.genmod.families",
+"name": "Family",
+"kind": "class",
+"doc": "The parent class for one-parameter exponential families."
+},
+{
+"area": "statsmodels.genmod.families",
+"name": "Gamma",
+"kind": "class",
+"doc": "Gamma exponential family distribution."
+},
+{
+"area": "statsmodels.genmod.families",
+"name": "Gaussian",
+"kind": "class",
+"doc": "Gaussian exponential family distribution."
+},
+{
+"area": "statsmodels.genmod.families",
+"name": "InverseGaussian",
+"kind": "class",
+"doc": "InverseGaussian exponential family."
+},
+{
+"area": "statsmodels.genmod.families",
+"name": "NegativeBinomial",
+"kind": "class",
+"doc": "Negative Binomial exponential family (corresponds to NB2)."
+},
+{
+"area": "statsmodels.genmod.families",
+"name": "Poisson",
+"kind": "class",
+"doc": "Poisson exponential family."
+},
+{
+"area": "statsmodels.genmod.families",
+"name": "Tweedie",
+"kind": "class",
+"doc": "Tweedie family."
+},
+{
+"area": "statsmodels.genmod.families",
+"name": "test",
+"kind": "function",
+"doc": "Run a package test suite using pytest"
+},
+{
+"area": "statsmodels.genmod.families.links",
+"name": "CDFLink",
+"kind": "class",
+"doc": "The use the CDF of a scipy.stats distribution"
+},
+{
+"area": "statsmodels.genmod.families.links",
+"name": "CLogLog",
+"kind": "class",
+"doc": "The complementary log-log transform"
+},
+{
+"area": "statsmodels.genmod.families.links",
+"name": "Cauchy",
+"kind": "class",
+"doc": "The Cauchy (standard Cauchy CDF) transform"
+},
+{
+"area": "statsmodels.genmod.families.links",
+"name": "Identity",
+"kind": "class",
+"doc": "The identity transform"
+},
+{
+"area": "statsmodels.genmod.families.links",
+"name": "InversePower",
+"kind": "class",
+"doc": "The inverse transform"
+},
+{
+"area": "statsmodels.genmod.families.links",
+"name": "InverseSquared",
+"kind": "class",
+"doc": "The inverse squared transform"
+},
+{
+"area": "statsmodels.genmod.families.links",
+"name": "Link",
+"kind": "class",
+"doc": "A generic link function for one-parameter exponential family."
+},
+{
+"area": "statsmodels.genmod.families.links",
+"name": "Log",
+"kind": "class",
+"doc": "The log transform"
+},
+{
+"area": "statsmodels.genmod.families.links",
+"name": "LogC",
+"kind": "class",
+"doc": "The log-complement transform"
+},
+{
+"area": "statsmodels.genmod.families.links",
+"name": "LogLog",
+"kind": "class",
+"doc": "The log-log transform"
+},
+{
+"area": "statsmodels.genmod.families.links",
+"name": "Logit",
+"kind": "class",
+"doc": "The logit transform"
+},
+{
+"area": "statsmodels.genmod.families.links",
+"name": "NegativeBinomial",
+"kind": "class",
+"doc": "The negative binomial link function"
+},
+{
+"area": "statsmodels.genmod.families.links",
+"name": "Power",
+"kind": "class",
+"doc": "The power transform"
+},
+{
+"area": "statsmodels.genmod.families.links",
+"name": "Probit",
+"kind": "class",
+"doc": "The probit (standard normal CDF) transform"
+},
+{
+"area": "statsmodels.genmod.families.links",
+"name": "Sqrt",
+"kind": "class",
+"doc": "The square-root transform"
+},
+{
+"area": "statsmodels.genmod.families.links",
+"name": "cauchy",
+"kind": "class",
+"doc": "The Cauchy (standard Cauchy CDF) transform"
+},
+{
+"area": "statsmodels.genmod.families.links",
+"name": "cloglog",
+"kind": "class",
+"doc": "The CLogLog transform link function."
+},
+{
+"area": "statsmodels.genmod.families.links",
+"name": "identity",
+"kind": "class",
+"doc": "Deprecated alias of Identity."
+},
+{
+"area": "statsmodels.genmod.families.links",
+"name": "inverse_power",
+"kind": "class",
+"doc": "Deprecated alias of InversePower."
+},
+{
+"area": "statsmodels.genmod.families.links",
+"name": "inverse_squared",
+"kind": "class",
+"doc": "Deprecated alias of InverseSquared."
+},
+{
+"area": "statsmodels.genmod.families.links",
+"name": "log",
+"kind": "class",
+"doc": "The log transform"
+},
+{
+"area": "statsmodels.genmod.families.links",
+"name": "logc",
+"kind": "class",
+"doc": "The log-complement transform"
+},
+{
+"area": "statsmodels.genmod.families.links",
+"name": "logit",
+"kind": "class",
+"doc": "Alias of Logit"
+},
+{
+"area": "statsmodels.genmod.families.links",
+"name": "loglog",
+"kind": "class",
+"doc": "The LogLog transform link function."
+},
+{
+"area": "statsmodels.genmod.families.links",
+"name": "nbinom",
+"kind": "class",
+"doc": "The negative binomial link function."
+},
+{
+"area": "statsmodels.genmod.families.links",
+"name": "probit",
+"kind": "class",
+"doc": "The probit (standard normal CDF) transform"
+},
+{
+"area": "statsmodels.genmod.families.links",
+"name": "sqrt",
+"kind": "class",
+"doc": "Deprecated alias of Sqrt."
+},
+{
+"area": "statsmodels.genmod.generalized_estimating_equations",
+"name": "GEE",
+"kind": "class",
+"doc": "Marginal Regression Model using Generalized Estimating Equations."
+},
+{
+"area": "statsmodels.genmod.generalized_estimating_equations",
+"name": "GEEMargins",
+"kind": "class",
+"doc": "Estimated marginal effects for a regression model fit with GEE."
+},
+{
+"area": "statsmodels.genmod.generalized_estimating_equations",
+"name": "GEEResults",
+"kind": "class",
+"doc": "This class summarizes the fit of a marginal regression model using GEE."
+},
+{
+"area": "statsmodels.genmod.generalized_estimating_equations",
+"name": "GEEResultsWrapper",
+"kind": "class",
+"doc": "Class which wraps a statsmodels estimation Results class and steps in to"
+},
+{
+"area": "statsmodels.genmod.generalized_estimating_equations",
+"name": "NominalGEE",
+"kind": "class",
+"doc": "Nominal Response Marginal Regression Model using GEE."
+},
+{
+"area": "statsmodels.genmod.generalized_estimating_equations",
+"name": "NominalGEEResults",
+"kind": "class",
+"doc": "This class summarizes the fit of a marginal regression modelfor a nominal response using GEE."
+},
+{
+"area": "statsmodels.genmod.generalized_estimating_equations",
+"name": "NominalGEEResultsWrapper",
+"kind": "class",
+"doc": "Class which wraps a statsmodels estimation Results class and steps in to"
+},
+{
+"area": "statsmodels.genmod.generalized_estimating_equations",
+"name": "OrdinalGEE",
+"kind": "class",
+"doc": "Ordinal Response Marginal Regression Model using GEE"
+},
+{
+"area": "statsmodels.genmod.generalized_estimating_equations",
+"name": "OrdinalGEEResults",
+"kind": "class",
+"doc": "This class summarizes the fit of a marginal regression modelfor an ordinal response using GEE."
+},
+{
+"area": "statsmodels.genmod.generalized_estimating_equations",
+"name": "OrdinalGEEResultsWrapper",
+"kind": "class",
+"doc": "Class which wraps a statsmodels estimation Results class and steps in to"
+},
+{
+"area": "statsmodels.genmod.generalized_estimating_equations",
+"name": "ParameterConstraint",
+"kind": "class",
+"doc": "A class for managing linear equality constraints for a parameter"
+},
+{
+"area": "statsmodels.genmod.generalized_linear_model",
+"name": "GLM",
+"kind": "class",
+"doc": "Generalized Linear Models"
+},
+{
+"area": "statsmodels.genmod.generalized_linear_model",
+"name": "PredictionResultsMean",
+"kind": "class",
+"doc": "Prediction results for GLM"
+},
+{
+"area": "statsmodels.graphics.api",
+"name": "abline_plot",
+"kind": "function",
+"doc": "Plot a line given an intercept and slope"
+},
+{
+"area": "statsmodels.graphics.api",
+"name": "add_ellipse",
+"kind": "function",
+"doc": "Add a confidence ellipse to a plot axis"
+},
+{
+"area": "statsmodels.graphics.api",
+"name": "add_lowess",
+"kind": "function",
+"doc": "Add Lowess line to a plot"
+},
+{
+"area": "statsmodels.graphics.api",
+"name": "added_variable_resids",
+"kind": "function",
+"doc": "Residualize the endog variable and a 'focus' exog variable in a"
+},
+{
+"area": "statsmodels.graphics.api",
+"name": "beanplot",
+"kind": "function",
+"doc": "Bean plot of each dataset in a sequence"
+},
+{
+"area": "statsmodels.graphics.api",
+"name": "ceres_resids",
+"kind": "function",
+"doc": "Calculate the CERES residuals (Conditional Expectation Partial"
+},
+{
+"area": "statsmodels.graphics.api",
+"name": "create_mpl_ax",
+"kind": "function",
+"doc": "Helper function for when a single plot axis is needed"
+},
+{
+"area": "statsmodels.graphics.api",
+"name": "create_mpl_fig",
+"kind": "function",
+"doc": "Helper function for when multiple plot axes are needed"
+},
+{
+"area": "statsmodels.graphics.api",
+"name": "fboxplot",
+"kind": "function",
+"doc": "Plot functional boxplot"
+},
+{
+"area": "statsmodels.graphics.api",
+"name": "hdrboxplot",
+"kind": "function",
+"doc": "High Density Region boxplot"
+},
+{
+"area": "statsmodels.graphics.api",
+"name": "influence_plot",
+"kind": "function",
+"doc": "Plot of influence in regression. Plots studentized resids vs. leverage"
+},
+{
+"area": "statsmodels.graphics.api",
+"name": "interaction_plot",
+"kind": "function",
+"doc": "Interaction plot for factor level statistics"
+},
+{
+"area": "statsmodels.graphics.api",
+"name": "mean_diff_plot",
+"kind": "function",
+"doc": "Construct a Tukey/Bland-Altman Mean Difference Plot"
+},
+{
+"area": "statsmodels.graphics.api",
+"name": "partial_resids",
+"kind": "function",
+"doc": "Return partial residuals for a fitted model with respect to a"
+},
+{
+"area": "statsmodels.graphics.api",
+"name": "plot_ccpr",
+"kind": "function",
+"doc": "Plot CCPR against one regressor"
+},
+{
+"area": "statsmodels.graphics.api",
+"name": "plot_ccpr_grid",
+"kind": "function",
+"doc": "Generate CCPR plots against a set of regressors, plot in a grid"
+},
+{
+"area": "statsmodels.graphics.api",
+"name": "plot_corr",
+"kind": "function",
+"doc": "Plot correlation of many variables in a tight color grid"
+},
+{
+"area": "statsmodels.graphics.api",
+"name": "plot_corr_grid",
+"kind": "function",
+"doc": "Create a grid of correlation plots"
+},
+{
+"area": "statsmodels.graphics.api",
+"name": "plot_fit",
+"kind": "function",
+"doc": "Plot fit against one regressor"
+},
+{
+"area": "statsmodels.graphics.api",
+"name": "plot_leverage_resid2",
+"kind": "function",
+"doc": "Plot leverage statistics vs. normalized residuals squared"
+},
+{
+"area": "statsmodels.graphics.api",
+"name": "plot_partregress",
+"kind": "function",
+"doc": "Plot partial regression for a single regressor"
+},
+{
+"area": "statsmodels.graphics.api",
+"name": "plot_partregress_grid",
+"kind": "function",
+"doc": "Plot partial regression for a set of regressors"
+},
+{
+"area": "statsmodels.graphics.api",
+"name": "plot_regress_exog",
+"kind": "function",
+"doc": "Plot regression results against one regressor"
+},
+{
+"area": "statsmodels.graphics.api",
+"name": "qqplot",
+"kind": "function",
+"doc": "Q-Q plot of the quantiles of x versus the quantiles/ppf of a distribution"
+},
+{
+"area": "statsmodels.graphics.api",
+"name": "rainbow",
+"kind": "function",
+"doc": "Return a list of colors sampled at equal intervals over the spectrum"
+},
+{
+"area": "statsmodels.graphics.api",
+"name": "rainbowplot",
+"kind": "function",
+"doc": "Create a rainbow plot for a set of curves"
+},
+{
+"area": "statsmodels.graphics.api",
+"name": "violinplot",
+"kind": "function",
+"doc": "Make a violin plot of each dataset in the `data` sequence"
+},
+{
+"area": "statsmodels.imputation.mice",
+"name": "MICE",
+"kind": "class",
+"doc": "Multiple Imputation with Chained Equations"
+},
+{
+"area": "statsmodels.imputation.mice",
+"name": "MICEData",
+"kind": "class",
+"doc": "Wrap a data set to allow missing data handling with MICE"
+},
+{
+"area": "statsmodels.imputation.mice",
+"name": "MICEResults",
+"kind": "class",
+"doc": "Results of a MICE analysis"
+},
+{
+"area": "statsmodels.imputation.mice",
+"name": "PatsyFormula",
+"kind": "class",
+"doc": "A simple wrapper for a string to be interpreted as a Patsy formula"
+},
+{
+"area": "statsmodels.miscmodels.ordinal_model",
+"name": "OrderedModel",
+"kind": "class",
+"doc": "Ordinal Model based on logistic or normal distribution"
+},
+{
+"area": "statsmodels.miscmodels.ordinal_model",
+"name": "OrderedResults",
+"kind": "class",
+"doc": "Results class for OrderedModel"
+},
+{
+"area": "statsmodels.miscmodels.ordinal_model",
+"name": "OrderedResultsWrapper",
+"kind": "class",
+"doc": "Class which wraps a statsmodels estimation Results class and steps in to"
+},
+{
+"area": "statsmodels.multivariate.cancorr",
+"name": "CanCorr",
+"kind": "class",
+"doc": "Canonical correlation analysis using singular value decomposition"
+},
+{
+"area": "statsmodels.multivariate.cancorr",
+"name": "CanCorrTestResults",
+"kind": "class",
+"doc": "Canonical correlation results class"
+},
+{
+"area": "statsmodels.multivariate.factor",
+"name": "Factor",
+"kind": "class",
+"doc": "Factor analysis"
+},
+{
+"area": "statsmodels.multivariate.factor",
+"name": "FactorResults",
+"kind": "class",
+"doc": "Factor results class"
+},
+{
+"area": "statsmodels.multivariate.factor",
+"name": "promax",
+"kind": "function",
+"doc": "Performs promax rotation of the matrix :math:`A`."
+},
+{
+"area": "statsmodels.multivariate.factor",
+"name": "rotate_factors",
+"kind": "function",
+"doc": "Subroutine for orthogonal and oblique rotation of the matrix :math:`A`"
+},
+{
+"area": "statsmodels.multivariate.manova",
+"name": "MANOVA",
+"kind": "class",
+"doc": "Multivariate Analysis of Variance"
+},
+{
+"area": "statsmodels.multivariate.pca",
+"name": "PCA",
+"kind": "class",
+"doc": "Principal Component Analysis"
+},
+{
+"area": "statsmodels.multivariate.pca",
+"name": "pca",
+"kind": "function",
+"doc": "Perform Principal Component Analysis (PCA)."
+},
+{
+"area": "statsmodels.nonparametric.api",
+"name": "EstimatorSettings",
+"kind": "class",
+"doc": "Object to specify settings for density estimation or regression"
+},
+{
+"area": "statsmodels.nonparametric.api",
+"name": "KDEMultivariate",
+"kind": "class",
+"doc": "Multivariate kernel density estimator"
+},
+{
+"area": "statsmodels.nonparametric.api",
+"name": "KDEMultivariateConditional",
+"kind": "class",
+"doc": "Conditional multivariate kernel density estimator"
+},
+{
+"area": "statsmodels.nonparametric.api",
+"name": "KDEUnivariate",
+"kind": "class",
+"doc": "Univariate Kernel Density Estimator."
+},
+{
+"area": "statsmodels.nonparametric.api",
+"name": "KernelCensoredReg",
+"kind": "class",
+"doc": "Nonparametric censored regression"
+},
+{
+"area": "statsmodels.nonparametric.api",
+"name": "KernelReg",
+"kind": "class",
+"doc": "Nonparametric kernel regression class"
+},
+{
+"area": "statsmodels.nonparametric.api",
+"name": "cdf_kernel_asym",
+"kind": "function",
+"doc": "Estimate of cumulative distribution based on asymmetric kernel"
+},
+{
+"area": "statsmodels.nonparametric.api",
+"name": "lowess",
+"kind": "function",
+"doc": "LOWESS (Locally Weighted Scatterplot Smoothing)"
+},
+{
+"area": "statsmodels.nonparametric.api",
+"name": "pdf_kernel_asym",
+"kind": "function",
+"doc": "Density estimate based on asymmetric kernel"
+},
+{
+"area": "statsmodels.othermod.betareg",
+"name": "BetaModel",
+"kind": "class",
+"doc": "Beta Regression"
+},
+{
+"area": "statsmodels.othermod.betareg",
+"name": "BetaResults",
+"kind": "class",
+"doc": "Results class for Beta regression"
+},
+{
+"area": "statsmodels.othermod.betareg",
+"name": "BetaResultsWrapper",
+"kind": "class",
+"doc": "Class which wraps a statsmodels estimation Results class and steps in to"
+},
+{
+"area": "statsmodels.regression.dimred",
+"name": "CORE",
+"kind": "class",
+"doc": "Dimension reduction for covariance matrices (CORE)"
+},
+{
+"area": "statsmodels.regression.dimred",
+"name": "CovarianceReduction",
+"kind": "class",
+"doc": "Dimension reduction for covariance matrices (CORE)"
+},
+{
+"area": "statsmodels.regression.dimred",
+"name": "DimReductionResults",
+"kind": "class",
+"doc": "Results class for a dimension reduction regression"
+},
+{
+"area": "statsmodels.regression.dimred",
+"name": "DimReductionResultsWrapper",
+"kind": "class",
+"doc": "Class which wraps a statsmodels estimation Results class and steps in to"
+},
+{
+"area": "statsmodels.regression.dimred",
+"name": "PHD",
+"kind": "class",
+"doc": "Principal Hessian Directions (PHD)"
+},
+{
+"area": "statsmodels.regression.dimred",
+"name": "PrincipalHessianDirections",
+"kind": "class",
+"doc": "Principal Hessian Directions (PHD)"
+},
+{
+"area": "statsmodels.regression.dimred",
+"name": "SAVE",
+"kind": "class",
+"doc": "Sliced Average Variance Estimation (SAVE)"
+},
+{
+"area": "statsmodels.regression.dimred",
+"name": "SIR",
+"kind": "class",
+"doc": "Sliced Inverse Regression (SIR)"
+},
+{
+"area": "statsmodels.regression.dimred",
+"name": "SlicedAverageVarianceEstimation",
+"kind": "class",
+"doc": "Sliced Average Variance Estimation (SAVE)"
+},
+{
+"area": "statsmodels.regression.dimred",
+"name": "SlicedInverseReg",
+"kind": "class",
+"doc": "Sliced Inverse Regression (SIR)"
+},
+{
+"area": "statsmodels.regression.linear_model",
+"name": "CompareLRTestResult",
+"kind": "class",
+"doc": "Result of :meth:`RegressionResults.compare_lr_test`."
+},
+{
+"area": "statsmodels.regression.linear_model",
+"name": "ELTestResult",
+"kind": "class",
+"doc": "Result of :meth:`RegressionResults.el_test`."
+},
+{
+"area": "statsmodels.regression.linear_model",
+"name": "GLS",
+"kind": "class",
+"doc": "Generalized Least Squares"
+},
+{
+"area": "statsmodels.regression.linear_model",
+"name": "GLSAR",
+"kind": "class",
+"doc": "Generalized Least Squares with AR covariance structure"
+},
+{
+"area": "statsmodels.regression.linear_model",
+"name": "OLS",
+"kind": "class",
+"doc": "Ordinary Least Squares"
+},
+{
+"area": "statsmodels.regression.linear_model",
+"name": "PredictionResults",
+"kind": "class",
+"doc": "Results class for predictions"
+},
+{
+"area": "statsmodels.regression.linear_model",
+"name": "RegressionResultsWrapper",
+"kind": "class",
+"doc": "Class which wraps a statsmodels estimation Results class and steps in to"
+},
+{
+"area": "statsmodels.regression.linear_model",
+"name": "WLS",
+"kind": "class",
+"doc": "Weighted Least Squares"
+},
+{
+"area": "statsmodels.regression.linear_model",
+"name": "YuleWalkerResult",
+"kind": "class",
+"doc": "Result of :func:`yule_walker`."
+},
+{
+"area": "statsmodels.regression.mixed_linear_model",
+"name": "MixedLM",
+"kind": "class",
+"doc": "Linear Mixed Effects Model"
+},
+{
+"area": "statsmodels.regression.mixed_linear_model",
+"name": "MixedLMParams",
+"kind": "class",
+"doc": "This class represents a parameter state for a mixed linear model"
+},
+{
+"area": "statsmodels.regression.mixed_linear_model",
+"name": "MixedLMResults",
+"kind": "class",
+"doc": "Class to contain results of fitting a linear mixed effects model"
+},
+{
+"area": "statsmodels.regression.mixed_linear_model",
+"name": "MixedLMResultsWrapper",
+"kind": "class",
+"doc": "Class which wraps a statsmodels estimation Results class and steps in to"
+},
+{
+"area": "statsmodels.regression.mixed_linear_model",
+"name": "VCSpec",
+"kind": "class",
+"doc": "Define the variance component structure of a multilevel model"
+},
+{
+"area": "statsmodels.regression.quantile_regression",
+"name": "QuantReg",
+"kind": "class",
+"doc": "Quantile Regression"
+},
+{
+"area": "statsmodels.regression.quantile_regression",
+"name": "QuantRegResults",
+"kind": "class",
+"doc": "Results instance for the QuantReg model"
+},
+{
+"area": "statsmodels.regression.quantile_regression",
+"name": "bofinger",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "statsmodels.regression.quantile_regression",
+"name": "chamberlain",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "statsmodels.regression.quantile_regression",
+"name": "hall_sheather",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "statsmodels.regression.recursive_ls",
+"name": "RecursiveLS",
+"kind": "class",
+"doc": "Recursive least squares"
+},
+{
+"area": "statsmodels.regression.recursive_ls",
+"name": "RecursiveLSResults",
+"kind": "class",
+"doc": "Class to hold results from fitting a recursive least squares model"
+},
+{
+"area": "statsmodels.regression.recursive_ls",
+"name": "RecursiveLSResultsWrapper",
+"kind": "class",
+"doc": "Class which wraps a statsmodels estimation Results class and steps in to"
+},
+{
+"area": "statsmodels.regression.rolling",
+"name": "RollingOLS",
+"kind": "class",
+"doc": "Rolling Ordinary Least Squares"
+},
+{
+"area": "statsmodels.regression.rolling",
+"name": "RollingRegressionResults",
+"kind": "class",
+"doc": "Results from rolling regressions"
+},
+{
+"area": "statsmodels.regression.rolling",
+"name": "RollingStore",
+"kind": "class",
+"doc": "RollingStore(params, ssr, llf, nobs, s2, xpxi, xeex, centered_tss, uncentered_tss)"
+},
+{
+"area": "statsmodels.regression.rolling",
+"name": "RollingWLS",
+"kind": "class",
+"doc": "Rolling Weighted Least Squares"
+},
+{
+"area": "statsmodels.regression.rolling",
+"name": "strip4",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "statsmodels.robust.norms",
+"name": "AndrewWave",
+"kind": "class",
+"doc": "Andrew's wave for M estimation"
+},
+{
+"area": "statsmodels.robust.norms",
+"name": "Hampel",
+"kind": "class",
+"doc": "Hampel function for M-estimation"
+},
+{
+"area": "statsmodels.robust.norms",
+"name": "HuberT",
+"kind": "class",
+"doc": "Huber's T for M estimation"
+},
+{
+"area": "statsmodels.robust.norms",
+"name": "LeastSquares",
+"kind": "class",
+"doc": "Least squares rho for M-estimation and its derived functions"
+},
+{
+"area": "statsmodels.robust.norms",
+"name": "MQuantileNorm",
+"kind": "class",
+"doc": "M-quantiles objective function based on a base norm"
+},
+{
+"area": "statsmodels.robust.norms",
+"name": "RamsayE",
+"kind": "class",
+"doc": "Ramsay's Ea for M estimation"
+},
+{
+"area": "statsmodels.robust.norms",
+"name": "RobustNorm",
+"kind": "class",
+"doc": "The parent class for the norms used for robust regression"
+},
+{
+"area": "statsmodels.robust.norms",
+"name": "StudentT",
+"kind": "class",
+"doc": "Robust norm based on t distribution"
+},
+{
+"area": "statsmodels.robust.norms",
+"name": "TrimmedMean",
+"kind": "class",
+"doc": "Trimmed mean function for M-estimation"
+},
+{
+"area": "statsmodels.robust.norms",
+"name": "TukeyBiweight",
+"kind": "class",
+"doc": "Tukey's biweight function for M-estimation"
+},
+{
+"area": "statsmodels.robust.norms",
+"name": "TukeyQuartic",
+"kind": "class",
+"doc": "Variant of Tukey's biweight function with power 4 for M-estimation"
+},
+{
+"area": "statsmodels.robust.norms",
+"name": "estimate_location",
+"kind": "function",
+"doc": "Estimate a robust location parameter using an M-estimator."
+},
+{
+"area": "statsmodels.robust.robust_linear_model",
+"name": "RLM",
+"kind": "class",
+"doc": "Robust Linear Model"
+},
+{
+"area": "statsmodels.sandbox.stats.multicomp",
+"name": "GroupsStats",
+"kind": "class",
+"doc": "statistics by groups (another version)"
+},
+{
+"area": "statsmodels.sandbox.stats.multicomp",
+"name": "MultiComparison",
+"kind": "class",
+"doc": "Tests for multiple comparisons"
+},
+{
+"area": "statsmodels.sandbox.stats.multicomp",
+"name": "StepDown",
+"kind": "class",
+"doc": "a class for step down methods"
+},
+{
+"area": "statsmodels.sandbox.stats.multicomp",
+"name": "TukeyHSDResults",
+"kind": "class",
+"doc": "Results from Tukey HSD test, with additional plot methods"
+},
+{
+"area": "statsmodels.sandbox.stats.multicomp",
+"name": "Tukeythreegene",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "statsmodels.sandbox.stats.multicomp",
+"name": "Tukeythreegene2",
+"kind": "function",
+"doc": "gend is a list, ie [first, second, third]"
+},
+{
+"area": "statsmodels.sandbox.stats.multicomp",
+"name": "catstack",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "statsmodels.sandbox.stats.multicomp",
+"name": "compare_ordered",
+"kind": "function",
+"doc": "simple ordered sequential comparison of means"
+},
+{
+"area": "statsmodels.sandbox.stats.multicomp",
+"name": "contrast_all_one",
+"kind": "function",
+"doc": "contrast or restriction matrix for all against first comparison"
+},
+{
+"area": "statsmodels.sandbox.stats.multicomp",
+"name": "contrast_allpairs",
+"kind": "function",
+"doc": "contrast or restriction matrix for all pairs of nm variables"
+},
+{
+"area": "statsmodels.sandbox.stats.multicomp",
+"name": "contrast_diff_mean",
+"kind": "function",
+"doc": "contrast or restriction matrix for all against mean comparison"
+},
+{
+"area": "statsmodels.sandbox.stats.multicomp",
+"name": "distance_st_range",
+"kind": "function",
+"doc": "pairwise distance matrix, outsourced from tukeyhsd"
+},
+{
+"area": "statsmodels.sandbox.stats.multicomp",
+"name": "fdrcorrection_bak",
+"kind": "function",
+"doc": "Reject False discovery rate correction for pvalues"
+},
+{
+"area": "statsmodels.sandbox.stats.multicomp",
+"name": "get_tukeyQcrit",
+"kind": "function",
+"doc": "return critical values for Tukey's HSD (Q)"
+},
+{
+"area": "statsmodels.sandbox.stats.multicomp",
+"name": "get_tukeyQcrit2",
+"kind": "function",
+"doc": "return critical values for Tukey's HSD (Q)"
+},
+{
+"area": "statsmodels.sandbox.stats.multicomp",
+"name": "get_tukey_pvalue",
+"kind": "function",
+"doc": "return adjusted p-values for Tukey's HSD"
+},
+{
+"area": "statsmodels.sandbox.stats.multicomp",
+"name": "homogeneous_subsets",
+"kind": "function",
+"doc": "recursively check all pairs of vals for minimum distance"
+},
+{
+"area": "statsmodels.sandbox.stats.multicomp",
+"name": "maxzero",
+"kind": "function",
+"doc": "find all up zero crossings and return the index of the highest"
+},
+{
+"area": "statsmodels.sandbox.stats.multicomp",
+"name": "maxzerodown",
+"kind": "function",
+"doc": "find all up zero crossings and return the index of the highest"
+},
+{
+"area": "statsmodels.sandbox.stats.multicomp",
+"name": "mcfdr",
+"kind": "function",
+"doc": "MonteCarlo to test fdrcorrection"
+},
+{
+"area": "statsmodels.sandbox.stats.multicomp",
+"name": "multicontrast_pvalues",
+"kind": "function",
+"doc": "pvalues for simultaneous tests"
+},
+{
+"area": "statsmodels.sandbox.stats.multicomp",
+"name": "randmvn",
+"kind": "function",
+"doc": "create random draws from equi-correlated multivariate normal distribution"
+},
+{
+"area": "statsmodels.sandbox.stats.multicomp",
+"name": "rankdata",
+"kind": "function",
+"doc": "rankdata, equivalent to scipy.stats.rankdata"
+},
+{
+"area": "statsmodels.sandbox.stats.multicomp",
+"name": "rejectionline",
+"kind": "function",
+"doc": "reference line for rejection in multiple tests"
+},
+{
+"area": "statsmodels.sandbox.stats.multicomp",
+"name": "set_partition",
+"kind": "function",
+"doc": "extract a partition from a list of tuples"
+},
+{
+"area": "statsmodels.sandbox.stats.multicomp",
+"name": "set_remove_subs",
+"kind": "function",
+"doc": "remove sets that are subsets of another set from a list of tuples"
+},
+{
+"area": "statsmodels.sandbox.stats.multicomp",
+"name": "simultaneous_ci",
+"kind": "function",
+"doc": "Compute simultaneous confidence intervals for comparison of means."
+},
+{
+"area": "statsmodels.sandbox.stats.multicomp",
+"name": "tiecorrect",
+"kind": "function",
+"doc": "should be equivalent of scipy.stats.tiecorrect"
+},
+{
+"area": "statsmodels.sandbox.stats.multicomp",
+"name": "tukey_pvalues",
+"kind": "function",
+"doc": "compute tukey p-values by numerical integration of multivariate-t distribution"
+},
+{
+"area": "statsmodels.sandbox.stats.multicomp",
+"name": "tukeyhsd",
+"kind": "function",
+"doc": "simultaneous Tukey HSD"
+},
+{
+"area": "statsmodels.sandbox.stats.multicomp",
+"name": "varcorrection_pairs_unbalanced",
+"kind": "function",
+"doc": "correction factor for variance with unequal sample sizes for all pairs"
+},
+{
+"area": "statsmodels.sandbox.stats.multicomp",
+"name": "varcorrection_pairs_unequal",
+"kind": "function",
+"doc": "return joint variance from samples with unequal variances and unequal"
+},
+{
+"area": "statsmodels.sandbox.stats.multicomp",
+"name": "varcorrection_unbalanced",
+"kind": "function",
+"doc": "correction factor for variance with unequal sample sizes"
+},
+{
+"area": "statsmodels.sandbox.stats.multicomp",
+"name": "varcorrection_unequal",
+"kind": "function",
+"doc": "return joint variance from samples with unequal variances and unequal"
+},
+{
+"area": "statsmodels.stats.anova",
+"name": "AnovaRM",
+"kind": "class",
+"doc": "Repeated measures Anova using least squares regression"
+},
+{
+"area": "statsmodels.stats.anova",
+"name": "AnovaResults",
+"kind": "class",
+"doc": "Anova results class"
+},
+{
+"area": "statsmodels.stats.anova",
+"name": "anova1_lm_single",
+"kind": "function",
+"doc": "Anova type I table for one fitted linear model"
+},
+{
+"area": "statsmodels.stats.anova",
+"name": "anova2_lm_single",
+"kind": "function",
+"doc": "Anova type II table for one fitted linear model"
+},
+{
+"area": "statsmodels.stats.anova",
+"name": "anova3_lm_single",
+"kind": "function",
+"doc": "Notes"
+},
+{
+"area": "statsmodels.stats.anova",
+"name": "anova_lm",
+"kind": "function",
+"doc": "Anova table for one or more fitted linear models"
+},
+{
+"area": "statsmodels.stats.anova",
+"name": "anova_single",
+"kind": "function",
+"doc": "Anova table for one fitted linear model"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "AnovaRM",
+"kind": "class",
+"doc": "Repeated measures Anova using least squares regression"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "CompareMeans",
+"kind": "class",
+"doc": "class for two sample comparison"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "DescrStatsW",
+"kind": "class",
+"doc": "Descriptive statistics and tests with weights for case weights"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "Describe",
+"kind": "class",
+"doc": "Removed"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "FTestAnovaPower",
+"kind": "class",
+"doc": "Statistical Power calculations F-test for one factor balanced ANOVA"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "FTestPower",
+"kind": "class",
+"doc": "Statistical Power calculations for generic F-test of a constraint"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "FactoredPSDMatrix",
+"kind": "class",
+"doc": "Representation of a positive semidefinite matrix in factored form"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "GofChisquarePower",
+"kind": "class",
+"doc": "Statistical Power calculations for one sample chisquare test"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "Mediation",
+"kind": "class",
+"doc": "Conduct a mediation analysis"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "NormalIndPower",
+"kind": "class",
+"doc": "Statistical Power calculations for z-test for two independent samples"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "NullDistribution",
+"kind": "class",
+"doc": "Estimate a Gaussian distribution for the null Z-scores"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "OaxacaBlinder",
+"kind": "class",
+"doc": "Class to perform Oaxaca-Blinder Decomposition"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "RegressionFDR",
+"kind": "class",
+"doc": "Control FDR in a regression procedure"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "Runs",
+"kind": "class",
+"doc": "class for runs in a binary sequence"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "SquareTable",
+"kind": "class",
+"doc": "Methods for analyzing a square contingency table"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "StratifiedTable",
+"kind": "class",
+"doc": "Analyses for a collection of 2x2 contingency tables"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "TTestIndPower",
+"kind": "class",
+"doc": "Statistical Power calculations for t-test for two independent sample"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "TTestPower",
+"kind": "class",
+"doc": "Statistical Power calculations for one sample or paired sample t-test"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "Table",
+"kind": "class",
+"doc": "A two-way contingency table"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "Table2x2",
+"kind": "class",
+"doc": "Analyses that can be performed on a 2x2 contingency table"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "acorr_breusch_godfrey",
+"kind": "function",
+"doc": "Breusch-Godfrey Lagrange Multiplier tests for residual autocorrelation"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "acorr_ljungbox",
+"kind": "function",
+"doc": "Ljung-Box test of autocorrelation in residuals"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "acorr_lm",
+"kind": "function",
+"doc": "Lagrange Multiplier tests for autocorrelation"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "anova_generic",
+"kind": "function",
+"doc": "Oneway Anova based on summary statistics"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "anova_lm",
+"kind": "function",
+"doc": "Anova table for one or more fitted linear models"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "anova_oneway",
+"kind": "function",
+"doc": "Oneway Anova"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "binom_test",
+"kind": "function",
+"doc": "Perform a test that the probability of success is p"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "binom_test_reject_interval",
+"kind": "function",
+"doc": "Rejection region for binomial test for one sample proportion"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "binom_tost",
+"kind": "function",
+"doc": "Exact TOST test for one proportion using binomial distribution"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "binom_tost_reject_interval",
+"kind": "function",
+"doc": "Rejection region for binomial TOST"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "breaks_cusumolsresid",
+"kind": "function",
+"doc": "Cusum test for parameter stability based on ols residuals"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "breaks_hansen",
+"kind": "function",
+"doc": "Test for model stability, breaks in parameters for ols, Hansen 1992"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "chisquare_effectsize",
+"kind": "function",
+"doc": "Effect size for a chisquare goodness-of-fit test"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "cochrans_q",
+"kind": "function",
+"doc": "Cochran's Q test for identical binomial proportions"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "cohens_kappa",
+"kind": "function",
+"doc": "Compute Cohen's kappa with variance and equal-zero test"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "combine_effects",
+"kind": "function",
+"doc": "Combining effect sizes for effect sizes using meta-analysis"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "compare_cox",
+"kind": "function",
+"doc": "Compute the Cox test for non-nested models"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "compare_encompassing",
+"kind": "function",
+"doc": "Davidson-MacKinnon encompassing test for comparing non-nested models"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "compare_j",
+"kind": "function",
+"doc": "Compute the J-test for non-nested models"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "confint_effectsize_oneway",
+"kind": "function",
+"doc": "Confidence interval for effect size in oneway anova for F distribution"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "confint_mvmean",
+"kind": "function",
+"doc": "Confidence interval for linear transformation of a multivariate mean"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "confint_mvmean_fromstats",
+"kind": "function",
+"doc": "Confidence interval for linear transformation of a multivariate mean"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "confint_noncentrality",
+"kind": "function",
+"doc": "Confidence interval for noncentrality parameter in F-test"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "confint_poisson",
+"kind": "function",
+"doc": "Confidence interval for a Poisson mean or rate"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "confint_poisson_2indep",
+"kind": "function",
+"doc": "Confidence interval for ratio or difference of 2 indep poisson rates"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "confint_proportions_2indep",
+"kind": "function",
+"doc": "Confidence intervals for comparing two independent proportions"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "confint_quantile_poisson",
+"kind": "function",
+"doc": "Confidence interval for quantile of poisson random variable"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "convert_effectsize_fsqu",
+"kind": "function",
+"doc": "Convert squared effect sizes in f family"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "corr_clipped",
+"kind": "function",
+"doc": "Find a near correlation matrix that is positive semi-definite"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "corr_nearest",
+"kind": "function",
+"doc": "Find the nearest correlation matrix that is positive semi-definite"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "corr_nearest_factor",
+"kind": "function",
+"doc": "Find the nearest correlation matrix with factor structure to a"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "corr_normal_scores",
+"kind": "function",
+"doc": "Gaussian rank (normal scores) correlation"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "corr_quadrant",
+"kind": "function",
+"doc": "Quadrant correlation"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "corr_rank",
+"kind": "function",
+"doc": "Spearman rank correlation"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "corr_thresholded",
+"kind": "function",
+"doc": "Construct a sparse matrix containing the thresholded row-wise"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "cov_cluster",
+"kind": "function",
+"doc": "Cluster robust covariance matrix"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "cov_cluster_2groups",
+"kind": "function",
+"doc": "Cluster robust covariance matrix for two groups/clusters"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "cov_hac",
+"kind": "function",
+"doc": "heteroscedasticity and autocorrelation robust covariance matrix (Newey-West)"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "cov_hc0",
+"kind": "function",
+"doc": "Heteroscedasticity robust covariance matrix, White's (1980) HC0"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "cov_hc1",
+"kind": "function",
+"doc": "Heteroscedasticity robust covariance matrix, MacKinnon-White's HC1"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "cov_hc2",
+"kind": "function",
+"doc": "Heteroscedasticity robust covariance matrix, MacKinnon-White's HC2"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "cov_hc3",
+"kind": "function",
+"doc": "Heteroscedasticity robust covariance matrix, MacKinnon-White's HC3"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "cov_nearest",
+"kind": "function",
+"doc": "Find the nearest covariance matrix that is positive (semi-) definite"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "cov_nearest_factor_homog",
+"kind": "function",
+"doc": "Approximate an arbitrary square matrix with a factor-structured"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "cov_nw_panel",
+"kind": "function",
+"doc": "Panel HAC robust covariance matrix"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "cov_white_simple",
+"kind": "function",
+"doc": "heteroscedasticity robust covariance matrix (White)"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "durbin_watson",
+"kind": "function",
+"doc": "Calculates the Durbin-Watson statistic"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "effectsize_2proportions",
+"kind": "function",
+"doc": "Effect sizes for two sample binomial proportions"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "effectsize_oneway",
+"kind": "function",
+"doc": "Effect size corresponding to Cohen's f = nc / nobs for oneway anova"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "effectsize_smd",
+"kind": "function",
+"doc": "Effect sizes for mean difference for use in meta-analysis"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "equivalence_oneway",
+"kind": "function",
+"doc": "Equivalence test for oneway anova (Wellek's Anova)"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "equivalence_oneway_generic",
+"kind": "function",
+"doc": "Equivalence test for oneway anova (Wellek and extensions)"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "equivalence_scale_oneway",
+"kind": "function",
+"doc": "Oneway Anova test for equivalence of scale, variance or dispersion"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "etest_poisson_2indep",
+"kind": "function",
+"doc": "E-test for ratio of two sample Poisson rates"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "f2_to_wellek",
+"kind": "function",
+"doc": "Convert Cohen's f-squared to Wellek's effect size (sqrt)"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "fdrcorrection",
+"kind": "function",
+"doc": "pvalue correction for false discovery rate"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "fdrcorrection_twostage",
+"kind": "function",
+"doc": "(iterated) two stage linear step-up procedure with estimation of number"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "fleiss_kappa",
+"kind": "function",
+"doc": "Fleiss' and Randolph's kappa multi-rater agreement measure"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "fstat_to_wellek",
+"kind": "function",
+"doc": "Convert F statistic to wellek's effect size eps squared"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "gof_chisquare_discrete",
+"kind": "function",
+"doc": "Perform chisquare test for random sample of a discrete distribution"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "het_arch",
+"kind": "function",
+"doc": "Engle's Test for Autoregressive Conditional Heteroscedasticity (ARCH)"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "het_breuschpagan",
+"kind": "function",
+"doc": "Breusch-Pagan Lagrange Multiplier test for heteroscedasticity"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "het_goldfeldquandt",
+"kind": "function",
+"doc": "Goldfeld-Quandt homoskedasticity test"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "het_white",
+"kind": "function",
+"doc": "White's Lagrange Multiplier Test for Heteroscedasticity"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "jarque_bera",
+"kind": "function",
+"doc": "The Jarque-Bera test of normality"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "jonckheere_terpstra",
+"kind": "function",
+"doc": "Jonckheere-Terpstra test for ordered k-sample alternatives."
+},
+{
+"area": "statsmodels.stats.api",
+"name": "lilliefors",
+"kind": "function",
+"doc": "Test assumed normal or exponential distribution using Lilliefors' test"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "linear_harvey_collier",
+"kind": "function",
+"doc": "Harvey Collier test for linearity"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "linear_lm",
+"kind": "function",
+"doc": "Lagrange multiplier test for linearity against functional alternative"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "linear_rainbow",
+"kind": "function",
+"doc": "Rainbow test for linearity"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "linear_reset",
+"kind": "function",
+"doc": "Ramsey's RESET test for neglected nonlinearity"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "local_fdr",
+"kind": "function",
+"doc": "Calculate local FDR values for a list of Z-scores"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "local_fdr_correction",
+"kind": "function",
+"doc": "Estimate local and tail false discovery rates for a list of p-values."
+},
+{
+"area": "statsmodels.stats.api",
+"name": "mcnemar",
+"kind": "function",
+"doc": "McNemar test of homogeneity"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "multinomial_proportions_confint",
+"kind": "function",
+"doc": "Confidence intervals for multinomial proportions"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "multipletests",
+"kind": "function",
+"doc": "Test results and p-value correction for multiple tests"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "nonequivalence_poisson_2indep",
+"kind": "function",
+"doc": "Test for non-equivalence, minimum effect for poisson"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "normal_ad",
+"kind": "function",
+"doc": "Anderson-Darling test for normal distribution unknown mean and variance"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "omni_normtest",
+"kind": "function",
+"doc": "Omnibus test for normality"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "pesaran_timmermann",
+"kind": "function",
+"doc": "Pesaran-Timmermann test of directional predictive accuracy."
+},
+{
+"area": "statsmodels.stats.api",
+"name": "power_binom_tost",
+"kind": "function",
+"doc": "Power for exact binomial equivalence test"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "power_equivalence_neginb_2indep",
+"kind": "function",
+"doc": "Power of equivalence test of ratio of 2 indep. negative binomial rates"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "power_equivalence_oneway",
+"kind": "function",
+"doc": "Power of oneway equivalence test"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "power_equivalence_poisson_2indep",
+"kind": "function",
+"doc": "Power of equivalence test of ratio of 2 independent poisson rates"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "power_negbin_ratio_2indep",
+"kind": "function",
+"doc": "Power of test of ratio of 2 independent negative binomial rates"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "power_poisson_diff_2indep",
+"kind": "function",
+"doc": "Power of ztest for the difference between two independent poisson rates"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "power_poisson_ratio_2indep",
+"kind": "function",
+"doc": "Power of test of ratio of 2 independent poisson rates"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "power_proportions_2indep",
+"kind": "function",
+"doc": "Power for ztest that two independent proportions are equal"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "power_ztost_prop",
+"kind": "function",
+"doc": "Power of proportions equivalence test based on normal distribution"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "powerdiscrepancy",
+"kind": "function",
+"doc": "Calculates power discrepancy, a class of goodness-of-fit tests"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "proportion_confint",
+"kind": "function",
+"doc": "Confidence interval for a binomial proportion"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "proportion_effectsize",
+"kind": "function",
+"doc": "Effect size for a test comparing two proportions"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "proportions_chisquare",
+"kind": "function",
+"doc": "Test for proportions based on chisquare test"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "proportions_chisquare_allpairs",
+"kind": "function",
+"doc": "Chisquare test of proportions for all pairs of k samples"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "proportions_chisquare_pairscontrol",
+"kind": "function",
+"doc": "Chisquare test of proportions for pairs of k samples compared to control"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "proportions_ztest",
+"kind": "function",
+"doc": "Test for proportions based on normal (z) test"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "proportions_ztost",
+"kind": "function",
+"doc": "Equivalence test based on normal distribution"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "recursive_olsresiduals",
+"kind": "function",
+"doc": "Calculate recursive ols with residuals and Cusum test statistic"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "runstest_1samp",
+"kind": "function",
+"doc": "use runs test on binary discretized data above/below cutoff"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "runstest_2samp",
+"kind": "function",
+"doc": "Wald-Wolfowitz runstest for two samples"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "samplesize_confint_proportion",
+"kind": "function",
+"doc": "Find sample size to get desired confidence interval length"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "samplesize_proportions_2indep_onetail",
+"kind": "function",
+"doc": "Required sample size assuming normal distribution based on one tail"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "se_cov",
+"kind": "function",
+"doc": "Get standard deviation from covariance matrix"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "simulate_power_equivalence_oneway",
+"kind": "function",
+"doc": "Simulate Power for oneway equivalence test (Wellek's Anova)"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "spec_white",
+"kind": "function",
+"doc": "White's Two-Moment Specification Test"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "test_cov",
+"kind": "function",
+"doc": "One sample hypothesis test for covariance equal to null covariance"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "test_cov_blockdiagonal",
+"kind": "function",
+"doc": "One sample hypothesis test that covariance is block diagonal"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "test_cov_diagonal",
+"kind": "function",
+"doc": "One sample hypothesis test that covariance matrix is diagonal matrix"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "test_cov_oneway",
+"kind": "function",
+"doc": "Multiple sample hypothesis test that covariance matrices are equal"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "test_cov_spherical",
+"kind": "function",
+"doc": "One sample hypothesis test that covariance matrix is spherical"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "test_mvmean",
+"kind": "function",
+"doc": "Hotelling's test for multivariate mean in one sample"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "test_mvmean_2indep",
+"kind": "function",
+"doc": "Hotelling's test for multivariate mean in two independent samples"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "test_poisson",
+"kind": "function",
+"doc": "Test for one sample poisson mean or rate"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "test_poisson_2indep",
+"kind": "function",
+"doc": "Test for comparing two sample Poisson intensity rates"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "test_proportions_2indep",
+"kind": "function",
+"doc": "Hypothesis test for comparing two independent proportions"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "test_scale_oneway",
+"kind": "function",
+"doc": "Oneway Anova test for equal scale, variance or dispersion"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "tolerance_int_poisson",
+"kind": "function",
+"doc": "Tolerance interval for a poisson observation"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "tost_poisson_2indep",
+"kind": "function",
+"doc": "Equivalence test based on two one-sided `test_poisson_2indep`"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "tost_proportions_2indep",
+"kind": "function",
+"doc": "Equivalence test based on two one-sided `test_proportions_2indep`"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "transform_corr_normal",
+"kind": "function",
+"doc": "Transform correlation matrix to be consistent at normal distribution"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "tt_ind_solve_power",
+"kind": "function",
+"doc": "Solve for any one parameter of the power of a two sample t-test"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "tt_solve_power",
+"kind": "function",
+"doc": "Solve for any one parameter of the power of a one sample t-test"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "ttest_ind",
+"kind": "function",
+"doc": "ttest independent sample"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "ttost_ind",
+"kind": "function",
+"doc": "test of (non-)equivalence for two independent samples"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "ttost_paired",
+"kind": "function",
+"doc": "test of (non-)equivalence for two dependent, paired sample"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "tukeyhsd",
+"kind": "function",
+"doc": "simultaneous Tukey HSD"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "weights_bartlett",
+"kind": "function",
+"doc": "Bartlett weights for HAC"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "weights_uniform",
+"kind": "function",
+"doc": "Uniform weights for HAC"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "wellek_to_f2",
+"kind": "function",
+"doc": "Convert Wellek's effect size (sqrt) to Cohen's f-squared"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "zconfint",
+"kind": "function",
+"doc": "confidence interval based on normal distribution z-test"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "zt_ind_solve_power",
+"kind": "function",
+"doc": "Solve for any one parameter of the power of a two sample z-test"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "ztest",
+"kind": "function",
+"doc": "test for mean based on normal distribution, one or two samples"
+},
+{
+"area": "statsmodels.stats.api",
+"name": "ztost",
+"kind": "function",
+"doc": "Equivalence test based on normal distribution"
+},
+{
+"area": "statsmodels.stats.contingency_tables",
+"name": "CochransQResult",
+"kind": "class",
+"doc": "Result of :func:`cochrans_q`."
+},
+{
+"area": "statsmodels.stats.contingency_tables",
+"name": "SquareTable",
+"kind": "class",
+"doc": "Methods for analyzing a square contingency table"
+},
+{
+"area": "statsmodels.stats.contingency_tables",
+"name": "StratifiedTable",
+"kind": "class",
+"doc": "Analyses for a collection of 2x2 contingency tables"
+},
+{
+"area": "statsmodels.stats.contingency_tables",
+"name": "Table",
+"kind": "class",
+"doc": "A two-way contingency table"
+},
+{
+"area": "statsmodels.stats.contingency_tables",
+"name": "Table2x2",
+"kind": "class",
+"doc": "Analyses that can be performed on a 2x2 contingency table"
+},
+{
+"area": "statsmodels.stats.contingency_tables",
+"name": "cochrans_q",
+"kind": "function",
+"doc": "Cochran's Q test for identical binomial proportions"
+},
+{
+"area": "statsmodels.stats.contingency_tables",
+"name": "mcnemar",
+"kind": "function",
+"doc": "McNemar test of homogeneity"
+},
+{
+"area": "statsmodels.stats.correlation_tools",
+"name": "CovNearestResult",
+"kind": "class",
+"doc": "Result of :func:`cov_nearest` when the intermediate results are"
+},
+{
+"area": "statsmodels.stats.correlation_tools",
+"name": "FactoredPSDMatrix",
+"kind": "class",
+"doc": "Representation of a positive semidefinite matrix in factored form"
+},
+{
+"area": "statsmodels.stats.correlation_tools",
+"name": "GaussianMultivariateKernel",
+"kind": "class",
+"doc": "The Gaussian (squared exponential) multivariate kernel"
+},
+{
+"area": "statsmodels.stats.correlation_tools",
+"name": "MultivariateKernel",
+"kind": "class",
+"doc": "Base class for multivariate kernels"
+},
+{
+"area": "statsmodels.stats.correlation_tools",
+"name": "clip_evals",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "statsmodels.stats.correlation_tools",
+"name": "corr_clipped",
+"kind": "function",
+"doc": "Find a near correlation matrix that is positive semi-definite"
+},
+{
+"area": "statsmodels.stats.correlation_tools",
+"name": "corr_nearest",
+"kind": "function",
+"doc": "Find the nearest correlation matrix that is positive semi-definite"
+},
+{
+"area": "statsmodels.stats.correlation_tools",
+"name": "corr_nearest_factor",
+"kind": "function",
+"doc": "Find the nearest correlation matrix with factor structure to a"
+},
+{
+"area": "statsmodels.stats.correlation_tools",
+"name": "corr_thresholded",
+"kind": "function",
+"doc": "Construct a sparse matrix containing the thresholded row-wise"
+},
+{
+"area": "statsmodels.stats.correlation_tools",
+"name": "cov_nearest",
+"kind": "function",
+"doc": "Find the nearest covariance matrix that is positive (semi-) definite"
+},
+{
+"area": "statsmodels.stats.correlation_tools",
+"name": "cov_nearest_factor_homog",
+"kind": "function",
+"doc": "Approximate an arbitrary square matrix with a factor-structured"
+},
+{
+"area": "statsmodels.stats.correlation_tools",
+"name": "kernel_covariance",
+"kind": "function",
+"doc": "Use kernel averaging to estimate a multivariate covariance function"
+},
+{
+"area": "statsmodels.stats.diagnostic",
+"name": "GoldfeldQuandtResult",
+"kind": "class",
+"doc": "Result of :func:`het_goldfeldquandt`."
+},
+{
+"area": "statsmodels.stats.diagnostic",
+"name": "LMTestResult",
+"kind": "class",
+"doc": "Result of :func:`acorr_lm`, :func:`het_arch`, and  :func:`acorr_breusch_godfrey`."
+},
+{
+"area": "statsmodels.stats.diagnostic",
+"name": "NonNestedTestResult",
+"kind": "class",
+"doc": "Result of :func:`compare_cox` and :func:`compare_j`."
+},
+{
+"area": "statsmodels.stats.diagnostic",
+"name": "PesaranTimmermannResult",
+"kind": "class",
+"doc": "Result of :func:`pesaran_timmermann`."
+},
+{
+"area": "statsmodels.stats.diagnostic",
+"name": "acorr_breusch_godfrey",
+"kind": "function",
+"doc": "Breusch-Godfrey Lagrange Multiplier tests for residual autocorrelation"
+},
+{
+"area": "statsmodels.stats.diagnostic",
+"name": "acorr_ljungbox",
+"kind": "function",
+"doc": "Ljung-Box test of autocorrelation in residuals"
+},
+{
+"area": "statsmodels.stats.diagnostic",
+"name": "acorr_lm",
+"kind": "function",
+"doc": "Lagrange Multiplier tests for autocorrelation"
+},
+{
+"area": "statsmodels.stats.diagnostic",
+"name": "anderson_statistic",
+"kind": "function",
+"doc": "Calculate the Anderson-Darling a2 statistic"
+},
+{
+"area": "statsmodels.stats.diagnostic",
+"name": "compare_cox",
+"kind": "function",
+"doc": "Compute the Cox test for non-nested models"
+},
+{
+"area": "statsmodels.stats.diagnostic",
+"name": "compare_j",
+"kind": "function",
+"doc": "Compute the J-test for non-nested models"
+},
+{
+"area": "statsmodels.stats.diagnostic",
+"name": "het_arch",
+"kind": "function",
+"doc": "Engle's Test for Autoregressive Conditional Heteroscedasticity (ARCH)"
+},
+{
+"area": "statsmodels.stats.diagnostic",
+"name": "het_breuschpagan",
+"kind": "function",
+"doc": "Breusch-Pagan Lagrange Multiplier test for heteroscedasticity"
+},
+{
+"area": "statsmodels.stats.diagnostic",
+"name": "het_goldfeldquandt",
+"kind": "function",
+"doc": "Goldfeld-Quandt homoskedasticity test"
+},
+{
+"area": "statsmodels.stats.diagnostic",
+"name": "het_white",
+"kind": "function",
+"doc": "White's Lagrange Multiplier Test for Heteroscedasticity"
+},
+{
+"area": "statsmodels.stats.diagnostic",
+"name": "kstest_fit",
+"kind": "function",
+"doc": "Test assumed normal or exponential distribution using Lilliefors' test"
+},
+{
+"area": "statsmodels.stats.diagnostic",
+"name": "kstest_normal",
+"kind": "function",
+"doc": "Test assumed normal or exponential distribution using Lilliefors' test"
+},
+{
+"area": "statsmodels.stats.diagnostic",
+"name": "lilliefors",
+"kind": "function",
+"doc": "Test assumed normal or exponential distribution using Lilliefors' test"
+},
+{
+"area": "statsmodels.stats.diagnostic",
+"name": "linear_harvey_collier",
+"kind": "function",
+"doc": "Harvey Collier test for linearity"
+},
+{
+"area": "statsmodels.stats.diagnostic",
+"name": "linear_lm",
+"kind": "function",
+"doc": "Lagrange multiplier test for linearity against functional alternative"
+},
+{
+"area": "statsmodels.stats.diagnostic",
+"name": "linear_rainbow",
+"kind": "function",
+"doc": "Rainbow test for linearity"
+},
+{
+"area": "statsmodels.stats.diagnostic",
+"name": "normal_ad",
+"kind": "function",
+"doc": "Anderson-Darling test for normal distribution unknown mean and variance"
+},
+{
+"area": "statsmodels.stats.diagnostic",
+"name": "pesaran_timmermann",
+"kind": "function",
+"doc": "Pesaran-Timmermann test of directional predictive accuracy."
+},
+{
+"area": "statsmodels.stats.diagnostic",
+"name": "spec_white",
+"kind": "function",
+"doc": "White's Two-Moment Specification Test"
+},
+{
+"area": "statsmodels.stats.multitest",
+"name": "LocalFDRCorrectionResult",
+"kind": "class",
+"doc": "Result of :func:`local_fdr_correction`."
+},
+{
+"area": "statsmodels.stats.multitest",
+"name": "NullDistribution",
+"kind": "class",
+"doc": "Estimate a Gaussian distribution for the null Z-scores"
+},
+{
+"area": "statsmodels.stats.multitest",
+"name": "RegressionFDR",
+"kind": "class",
+"doc": "Control FDR in a regression procedure"
+},
+{
+"area": "statsmodels.stats.multitest",
+"name": "fdrcorrection",
+"kind": "function",
+"doc": "pvalue correction for false discovery rate"
+},
+{
+"area": "statsmodels.stats.multitest",
+"name": "fdrcorrection_twostage",
+"kind": "function",
+"doc": "(iterated) two stage linear step-up procedure with estimation of number"
+},
+{
+"area": "statsmodels.stats.multitest",
+"name": "local_fdr",
+"kind": "function",
+"doc": "Calculate local FDR values for a list of Z-scores"
+},
+{
+"area": "statsmodels.stats.multitest",
+"name": "local_fdr_correction",
+"kind": "function",
+"doc": "Estimate local and tail false discovery rates for a list of p-values."
+},
+{
+"area": "statsmodels.stats.multitest",
+"name": "multipletests",
+"kind": "function",
+"doc": "Test results and p-value correction for multiple tests"
+},
+{
+"area": "statsmodels.stats.outliers_influence",
+"name": "GLMInfluence",
+"kind": "class",
+"doc": "Influence and outlier measures (experimental)"
+},
+{
+"area": "statsmodels.stats.outliers_influence",
+"name": "MLEInfluence",
+"kind": "class",
+"doc": "Global Influence and outlier measures (experimental)"
+},
+{
+"area": "statsmodels.stats.outliers_influence",
+"name": "OLSInfluence",
+"kind": "class",
+"doc": "Class to calculate outlier and influence measures for OLS result"
+},
+{
+"area": "statsmodels.stats.outliers_influence",
+"name": "outlier_test",
+"kind": "function",
+"doc": "Outlier Tests for RegressionResults instances"
+},
+{
+"area": "statsmodels.stats.outliers_influence",
+"name": "reset_ramsey",
+"kind": "function",
+"doc": "Ramsey's RESET specification test for linear models"
+},
+{
+"area": "statsmodels.stats.outliers_influence",
+"name": "summary_table",
+"kind": "function",
+"doc": "Generate summary table of outlier and influence similar to SAS"
+},
+{
+"area": "statsmodels.stats.outliers_influence",
+"name": "variance_inflation_factor",
+"kind": "function",
+"doc": "Variance inflation factor, VIF, for one exogenous variable"
+},
+{
+"area": "statsmodels.stats.power",
+"name": "FTestAnovaPower",
+"kind": "class",
+"doc": "Statistical Power calculations F-test for one factor balanced ANOVA"
+},
+{
+"area": "statsmodels.stats.power",
+"name": "FTestPower",
+"kind": "class",
+"doc": "Statistical Power calculations for generic F-test of a constraint"
+},
+{
+"area": "statsmodels.stats.power",
+"name": "FTestPowerF2",
+"kind": "class",
+"doc": "Statistical Power calculations for generic F-test of a constraint"
+},
+{
+"area": "statsmodels.stats.power",
+"name": "GofChisquarePower",
+"kind": "class",
+"doc": "Statistical Power calculations for one sample chisquare test"
+},
+{
+"area": "statsmodels.stats.power",
+"name": "NormalIndPower",
+"kind": "class",
+"doc": "Statistical Power calculations for z-test for two independent samples"
+},
+{
+"area": "statsmodels.stats.power",
+"name": "Power",
+"kind": "class",
+"doc": "Statistical Power calculations, Base Class"
+},
+{
+"area": "statsmodels.stats.power",
+"name": "TTestIndPower",
+"kind": "class",
+"doc": "Statistical Power calculations for t-test for two independent sample"
+},
+{
+"area": "statsmodels.stats.power",
+"name": "TTestPower",
+"kind": "class",
+"doc": "Statistical Power calculations for one sample or paired sample t-test"
+},
+{
+"area": "statsmodels.stats.power",
+"name": "ftest_anova_power",
+"kind": "function",
+"doc": "Power for ftest for one way anova with k equal sized groups"
+},
+{
+"area": "statsmodels.stats.power",
+"name": "ftest_power",
+"kind": "function",
+"doc": "Calculate the power of a F-test"
+},
+{
+"area": "statsmodels.stats.power",
+"name": "ftest_power_f2",
+"kind": "function",
+"doc": "Calculate the power of a F-test"
+},
+{
+"area": "statsmodels.stats.power",
+"name": "ncf_cdf",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "statsmodels.stats.power",
+"name": "ncf_ppf",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "statsmodels.stats.power",
+"name": "ncf_sf",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "statsmodels.stats.power",
+"name": "nct_cdf",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "statsmodels.stats.power",
+"name": "nct_sf",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "statsmodels.stats.power",
+"name": "normal_power",
+"kind": "function",
+"doc": "Calculate power of a normal distributed test statistic"
+},
+{
+"area": "statsmodels.stats.power",
+"name": "normal_power_het",
+"kind": "function",
+"doc": "Calculate power of a normal distributed test statistic"
+},
+{
+"area": "statsmodels.stats.power",
+"name": "normal_sample_size_one_tail",
+"kind": "function",
+"doc": "Explicit sample size computation if only one tail is relevant"
+},
+{
+"area": "statsmodels.stats.power",
+"name": "tt_ind_solve_power",
+"kind": "function",
+"doc": "Solve for any one parameter of the power of a two sample t-test"
+},
+{
+"area": "statsmodels.stats.power",
+"name": "tt_solve_power",
+"kind": "function",
+"doc": "Solve for any one parameter of the power of a one sample t-test"
+},
+{
+"area": "statsmodels.stats.power",
+"name": "ttest_power",
+"kind": "function",
+"doc": "Calculate power of a ttest"
+},
+{
+"area": "statsmodels.stats.power",
+"name": "zt_ind_solve_power",
+"kind": "function",
+"doc": "Solve for any one parameter of the power of a two sample z-test"
+},
+{
+"area": "statsmodels.stats.proportion",
+"name": "KoopmanConfintResult",
+"kind": "class",
+"doc": "Result of :func:`_confint_riskratio_koopman`."
+},
+{
+"area": "statsmodels.stats.proportion",
+"name": "PairedNamConfintResult",
+"kind": "class",
+"doc": "Result of :func:`_confint_riskratio_paired_nam`."
+},
+{
+"area": "statsmodels.stats.proportion",
+"name": "PowerProportionsResult",
+"kind": "class",
+"doc": "Result of :func:`power_proportions_2indep`."
+},
+{
+"area": "statsmodels.stats.proportion",
+"name": "Proportions2indepTestResult",
+"kind": "class",
+"doc": "Result of :func:`test_proportions_2indep`."
+},
+{
+"area": "statsmodels.stats.proportion",
+"name": "ScoreTestProportionsResult",
+"kind": "class",
+"doc": "Result of :func:`score_test_proportions_2indep`."
+},
+{
+"area": "statsmodels.stats.proportion",
+"name": "TostProportionsResult",
+"kind": "class",
+"doc": "Result of :func:`tost_proportions_2indep`."
+},
+{
+"area": "statsmodels.stats.proportion",
+"name": "binom_test",
+"kind": "function",
+"doc": "Perform a test that the probability of success is p"
+},
+{
+"area": "statsmodels.stats.proportion",
+"name": "binom_test_reject_interval",
+"kind": "function",
+"doc": "Rejection region for binomial test for one sample proportion"
+},
+{
+"area": "statsmodels.stats.proportion",
+"name": "binom_tost",
+"kind": "function",
+"doc": "Exact TOST test for one proportion using binomial distribution"
+},
+{
+"area": "statsmodels.stats.proportion",
+"name": "binom_tost_reject_interval",
+"kind": "function",
+"doc": "Rejection region for binomial TOST"
+},
+{
+"area": "statsmodels.stats.proportion",
+"name": "confint_proportions_2indep",
+"kind": "function",
+"doc": "Confidence intervals for comparing two independent proportions"
+},
+{
+"area": "statsmodels.stats.proportion",
+"name": "multinomial_proportions_confint",
+"kind": "function",
+"doc": "Confidence intervals for multinomial proportions"
+},
+{
+"area": "statsmodels.stats.proportion",
+"name": "power_binom_tost",
+"kind": "function",
+"doc": "Power for exact binomial equivalence test"
+},
+{
+"area": "statsmodels.stats.proportion",
+"name": "power_proportions_2indep",
+"kind": "function",
+"doc": "Power for ztest that two independent proportions are equal"
+},
+{
+"area": "statsmodels.stats.proportion",
+"name": "power_ztost_prop",
+"kind": "function",
+"doc": "Power of proportions equivalence test based on normal distribution"
+},
+{
+"area": "statsmodels.stats.proportion",
+"name": "proportion_confint",
+"kind": "function",
+"doc": "Confidence interval for a binomial proportion"
+},
+{
+"area": "statsmodels.stats.proportion",
+"name": "proportion_effectsize",
+"kind": "function",
+"doc": "Effect size for a test comparing two proportions"
+},
+{
+"area": "statsmodels.stats.proportion",
+"name": "proportions_chisquare",
+"kind": "function",
+"doc": "Test for proportions based on chisquare test"
+},
+{
+"area": "statsmodels.stats.proportion",
+"name": "proportions_chisquare_allpairs",
+"kind": "function",
+"doc": "Chisquare test of proportions for all pairs of k samples"
+},
+{
+"area": "statsmodels.stats.proportion",
+"name": "proportions_chisquare_pairscontrol",
+"kind": "function",
+"doc": "Chisquare test of proportions for pairs of k samples compared to control"
+},
+{
+"area": "statsmodels.stats.proportion",
+"name": "proportions_ztest",
+"kind": "function",
+"doc": "Test for proportions based on normal (z) test"
+},
+{
+"area": "statsmodels.stats.proportion",
+"name": "proportions_ztost",
+"kind": "function",
+"doc": "Equivalence test based on normal distribution"
+},
+{
+"area": "statsmodels.stats.proportion",
+"name": "samplesize_confint_proportion",
+"kind": "function",
+"doc": "Find sample size to get desired confidence interval length"
+},
+{
+"area": "statsmodels.stats.proportion",
+"name": "samplesize_proportions_2indep_onetail",
+"kind": "function",
+"doc": "Required sample size assuming normal distribution based on one tail"
+},
+{
+"area": "statsmodels.stats.proportion",
+"name": "score_test_proportions_2indep",
+"kind": "function",
+"doc": "Score test for two independent proportions"
+},
+{
+"area": "statsmodels.stats.proportion",
+"name": "std_prop",
+"kind": "function",
+"doc": "Standard error for the estimate of a proportion"
+},
+{
+"area": "statsmodels.stats.proportion",
+"name": "test_proportions_2indep",
+"kind": "function",
+"doc": "Hypothesis test for comparing two independent proportions"
+},
+{
+"area": "statsmodels.stats.proportion",
+"name": "tost_proportions_2indep",
+"kind": "function",
+"doc": "Equivalence test based on two one-sided `test_proportions_2indep`"
+},
+{
+"area": "statsmodels.stats.stattools",
+"name": "durbin_watson",
+"kind": "function",
+"doc": "Calculates the Durbin-Watson statistic"
+},
+{
+"area": "statsmodels.stats.stattools",
+"name": "expected_robust_kurtosis",
+"kind": "function",
+"doc": "Calculates the expected value of the robust kurtosis measures in Kim and"
+},
+{
+"area": "statsmodels.stats.stattools",
+"name": "jarque_bera",
+"kind": "function",
+"doc": "The Jarque-Bera test of normality"
+},
+{
+"area": "statsmodels.stats.stattools",
+"name": "medcouple",
+"kind": "function",
+"doc": "Calculate the medcouple robust measure of skew"
+},
+{
+"area": "statsmodels.stats.stattools",
+"name": "omni_normtest",
+"kind": "function",
+"doc": "Omnibus test for normality"
+},
+{
+"area": "statsmodels.stats.stattools",
+"name": "robust_kurtosis",
+"kind": "function",
+"doc": "Calculates the four kurtosis measures in Kim & White"
+},
+{
+"area": "statsmodels.stats.stattools",
+"name": "robust_skewness",
+"kind": "function",
+"doc": "Calculates the four skewness measures in Kim & White"
+},
+{
+"area": "statsmodels.stats.weightstats",
+"name": "CompareMeans",
+"kind": "class",
+"doc": "class for two sample comparison"
+},
+{
+"area": "statsmodels.stats.weightstats",
+"name": "DescrStatsW",
+"kind": "class",
+"doc": "Descriptive statistics and tests with weights for case weights"
+},
+{
+"area": "statsmodels.stats.weightstats",
+"name": "ttest_ind",
+"kind": "function",
+"doc": "ttest independent sample"
+},
+{
+"area": "statsmodels.stats.weightstats",
+"name": "ttost_ind",
+"kind": "function",
+"doc": "test of (non-)equivalence for two independent samples"
+},
+{
+"area": "statsmodels.stats.weightstats",
+"name": "ttost_paired",
+"kind": "function",
+"doc": "test of (non-)equivalence for two dependent, paired sample"
+},
+{
+"area": "statsmodels.stats.weightstats",
+"name": "zconfint",
+"kind": "function",
+"doc": "confidence interval based on normal distribution z-test"
+},
+{
+"area": "statsmodels.stats.weightstats",
+"name": "ztest",
+"kind": "function",
+"doc": "test for mean based on normal distribution, one or two samples"
+},
+{
+"area": "statsmodels.stats.weightstats",
+"name": "ztost",
+"kind": "function",
+"doc": "Equivalence test based on normal distribution"
+},
+{
+"area": "statsmodels.treatment.treatment_effects",
+"name": "TreatmentEffect",
+"kind": "class",
+"doc": "Estimate average treatment effect under conditional independence"
+},
+{
+"area": "statsmodels.treatment.treatment_effects",
+"name": "TreatmentEffectResults",
+"kind": "class",
+"doc": "Results class for treatment effect estimation"
+},
+{
+"area": "statsmodels.treatment.treatment_effects",
+"name": "ate_ipw",
+"kind": "function",
+"doc": "Average treatment effect based on basic inverse propensity weighting"
+},
+{
+"area": "statsmodels.tsa.api",
+"name": "AR",
+"kind": "class",
+"doc": "The AR class has been removed and replaced with AutoReg"
+},
+{
+"area": "statsmodels.tsa.api",
+"name": "ARDL",
+"kind": "class",
+"doc": "Autoregressive Distributed Lag (ARDL) Model"
+},
+{
+"area": "statsmodels.tsa.api",
+"name": "ARIMA",
+"kind": "class",
+"doc": "Autoregressive Integrated Moving Average (ARIMA) model, and extensions"
+},
+{
+"area": "statsmodels.tsa.api",
+"name": "ArmaProcess",
+"kind": "class",
+"doc": "Theoretical properties of an ARMA process for specified lag-polynomials"
+},
+{
+"area": "statsmodels.tsa.api",
+"name": "AutoReg",
+"kind": "class",
+"doc": "Autoregressive AR-X(p) model"
+},
+{
+"area": "statsmodels.tsa.api",
+"name": "DynamicFactor",
+"kind": "class",
+"doc": "Dynamic factor model"
+},
+{
+"area": "statsmodels.tsa.api",
+"name": "DynamicFactorMQ",
+"kind": "class",
+"doc": "Dynamic factor model with EM algorithm; option for monthly/quarterly data"
+},
+{
+"area": "statsmodels.tsa.api",
+"name": "ETSModel",
+"kind": "class",
+"doc": "ETS models"
+},
+{
+"area": "statsmodels.tsa.api",
+"name": "ExponentialSmoothing",
+"kind": "class",
+"doc": "Holt Winters' Exponential Smoothing"
+},
+{
+"area": "statsmodels.tsa.api",
+"name": "Holt",
+"kind": "class",
+"doc": "Holt's Exponential Smoothing"
+},
+{
+"area": "statsmodels.tsa.api",
+"name": "LocalProjections",
+"kind": "class",
+"doc": "Local Projections estimator for impulse response functions."
+},
+{
+"area": "statsmodels.tsa.api",
+"name": "MarkovAutoregression",
+"kind": "class",
+"doc": "Markov switching autoregression model"
+},
+{
+"area": "statsmodels.tsa.api",
+"name": "MarkovRegression",
+"kind": "class",
+"doc": "First-order k-regime Markov switching regression model"
+},
+{
+"area": "statsmodels.tsa.api",
+"name": "SARIMAX",
+"kind": "class",
+"doc": "Seasonal AutoRegressive Integrated Moving Average with eXogenous regressors"
+},
+{
+"area": "statsmodels.tsa.api",
+"name": "STL",
+"kind": "class",
+"doc": "STL(endog, period=None, seasonal=7, trend=None, low_pass=None, seasonal_deg=1, trend_deg=1, low_pass_deg=1, ro"
+},
+{
+"area": "statsmodels.tsa.api",
+"name": "STLForecast",
+"kind": "class",
+"doc": "Model-based forecasting using STL to remove seasonality"
+},
+{
+"area": "statsmodels.tsa.api",
+"name": "SVAR",
+"kind": "class",
+"doc": "Fit VAR and then estimate structural components of A and B, defined:"
+},
+{
+"area": "statsmodels.tsa.api",
+"name": "SimpleExpSmoothing",
+"kind": "class",
+"doc": "Simple Exponential Smoothing"
+},
+{
+"area": "statsmodels.tsa.api",
+"name": "UECM",
+"kind": "class",
+"doc": "Unconstrained Error Correction Model (UECM)"
+},
+{
+"area": "statsmodels.tsa.api",
+"name": "UnobservedComponents",
+"kind": "class",
+"doc": "Univariate unobserved components time series model"
+},
+{
+"area": "statsmodels.tsa.api",
+"name": "VAR",
+"kind": "class",
+"doc": "Fit VAR(p) process and do lag order selection"
+},
+{
+"area": "statsmodels.tsa.api",
+"name": "VARMAX",
+"kind": "class",
+"doc": "Vector Autoregressive Moving Average with eXogenous regressors model"
+},
+{
+"area": "statsmodels.tsa.api",
+"name": "VECM",
+"kind": "class",
+"doc": "Class representing a Vector Error Correction Model (VECM)."
+},
+{
+"area": "statsmodels.tsa.api",
+"name": "acf",
+"kind": "function",
+"doc": "Calculate the autocorrelation function"
+},
+{
+"area": "statsmodels.tsa.api",
+"name": "acovf",
+"kind": "function",
+"doc": "Estimate autocovariances"
+},
+{
+"area": "statsmodels.tsa.api",
+"name": "add_lag",
+"kind": "function",
+"doc": "Returns an array with lags included given an array"
+},
+{
+"area": "statsmodels.tsa.api",
+"name": "add_trend",
+"kind": "function",
+"doc": "Add a trend and/or constant to an array"
+},
+{
+"area": "statsmodels.tsa.api",
+"name": "adfuller",
+"kind": "function",
+"doc": "Augmented Dickey-Fuller unit root test"
+},
+{
+"area": "statsmodels.tsa.api",
+"name": "ardl_select_order",
+"kind": "function",
+"doc": "ARDL order selection"
+},
+{
+"area": "statsmodels.tsa.api",
+"name": "arma_generate_sample",
+"kind": "function",
+"doc": "Simulate data from an ARMA"
+},
+{
+"area": "statsmodels.tsa.api",
+"name": "arma_order_select_ic",
+"kind": "function",
+"doc": "Compute information criteria for many ARMA models"
+},
+{
+"area": "statsmodels.tsa.api",
+"name": "bds",
+"kind": "function",
+"doc": "BDS Test Statistic for Independence of a Time Series"
+},
+{
+"area": "statsmodels.tsa.api",
+"name": "block_jackknife",
+"kind": "function",
+"doc": "Delete-k (block) jackknife estimate of bias and standard error"
+},
+{
+"area": "statsmodels.tsa.api",
+"name": "breakvar_heteroskedasticity_test",
+"kind": "function",
+"doc": "Test for heteroskedasticity of residuals"
+},
+{
+"area": "statsmodels.tsa.api",
+"name": "ccf",
+"kind": "function",
+"doc": "The cross-correlation function"
+},
+{
+"area": "statsmodels.tsa.api",
+"name": "ccovf",
+"kind": "function",
+"doc": "Calculate the cross-covariance between two series"
+},
+{
+"area": "statsmodels.tsa.api",
+"name": "coint",
+"kind": "function",
+"doc": "Test for no-cointegration of a univariate equation"
+},
+{
+"area": "statsmodels.tsa.api",
+"name": "detrend",
+"kind": "function",
+"doc": "Detrend an array with a trend of given order along axis 0 or 1"
+},
+{
+"area": "statsmodels.tsa.api",
+"name": "diebold_mariano_test",
+"kind": "function",
+"doc": "Performs a Diebold-Mariano test under the null hypothesis of"
+},
+{
+"area": "statsmodels.tsa.api",
+"name": "hamilton_filter",
+"kind": "function",
+"doc": "Hamilton (2018) regression-based trend-cycle decomposition."
+},
+{
+"area": "statsmodels.tsa.api",
+"name": "kpss",
+"kind": "function",
+"doc": "Kwiatkowski-Phillips-Schmidt-Shin test for stationarity"
+},
+{
+"area": "statsmodels.tsa.api",
+"name": "lagmat",
+"kind": "function",
+"doc": "Create 2d array of lags"
+},
+{
+"area": "statsmodels.tsa.api",
+"name": "lagmat2ds",
+"kind": "function",
+"doc": "Generate lagmatrix for 2d array, columns arranged by variables"
+},
+{
+"area": "statsmodels.tsa.api",
+"name": "leybourne",
+"kind": "function",
+"doc": "Leybourne-McCabe stationarity test"
+},
+{
+"area": "statsmodels.tsa.api",
+"name": "pacf",
+"kind": "function",
+"doc": "Partial autocorrelation estimate"
+},
+{
+"area": "statsmodels.tsa.api",
+"name": "pacf_burg",
+"kind": "function",
+"doc": "Calculate Burg's partial autocorrelation estimator"
+},
+{
+"area": "statsmodels.tsa.api",
+"name": "pacf_ols",
+"kind": "function",
+"doc": "Calculate partial autocorrelations via OLS"
+},
+{
+"area": "statsmodels.tsa.api",
+"name": "pacf_yw",
+"kind": "function",
+"doc": "Partial autocorrelation estimated with non-recursive yule_walker"
+},
+{
+"area": "statsmodels.tsa.api",
+"name": "pccf",
+"kind": "function",
+"doc": "Partial Cross-Correlation Function"
+},
+{
+"area": "statsmodels.tsa.api",
+"name": "q_stat",
+"kind": "function",
+"doc": "Compute Ljung-Box Q Statistic"
+},
+{
+"area": "statsmodels.tsa.api",
+"name": "range_unit_root_test",
+"kind": "function",
+"doc": "Range unit-root test for stationarity"
+},
+{
+"area": "statsmodels.tsa.api",
+"name": "seasonal_decompose",
+"kind": "function",
+"doc": "Seasonal decomposition using moving averages."
+},
+{
+"area": "statsmodels.tsa.api",
+"name": "x13_arima_analysis",
+"kind": "function",
+"doc": "Perform x13-arima analysis for monthly or quarterly data"
+},
+{
+"area": "statsmodels.tsa.api",
+"name": "x13_arima_select_order",
+"kind": "function",
+"doc": "Perform automatic seasonal ARIMA order identification using x12/x13 ARIMA"
+},
+{
+"area": "statsmodels.tsa.api",
+"name": "zivot_andrews",
+"kind": "function",
+"doc": "Zivot-Andrews structural-break unit-root test"
+},
+{
+"area": "statsmodels.tsa.ar_model",
+"name": "AR",
+"kind": "class",
+"doc": "The AR class has been removed and replaced with AutoReg"
+},
+{
+"area": "statsmodels.tsa.ar_model",
+"name": "AutoReg",
+"kind": "class",
+"doc": "Autoregressive AR-X(p) model"
+},
+{
+"area": "statsmodels.tsa.ar_model",
+"name": "InformationCriteria",
+"kind": "class",
+"doc": "Result of order-selection information-criteria computations, shared"
+},
+{
+"area": "statsmodels.tsa.ardl",
+"name": "ARDL",
+"kind": "class",
+"doc": "Autoregressive Distributed Lag (ARDL) Model"
+},
+{
+"area": "statsmodels.tsa.ardl",
+"name": "ARDLOrderSelectionResults",
+"kind": "class",
+"doc": "Results from an ARDL order selection"
+},
+{
+"area": "statsmodels.tsa.ardl",
+"name": "ARDLResults",
+"kind": "class",
+"doc": "Class to hold results from fitting an ARDL model."
+},
+{
+"area": "statsmodels.tsa.ardl",
+"name": "BoundsTestResult",
+"kind": "class",
+"doc": "Result of :meth:`UECMResults.bounds_test`, the PSS cointegration"
+},
+{
+"area": "statsmodels.tsa.ardl",
+"name": "UECM",
+"kind": "class",
+"doc": "Unconstrained Error Correction Model (UECM)"
+},
+{
+"area": "statsmodels.tsa.ardl",
+"name": "UECMResults",
+"kind": "class",
+"doc": "Class to hold results from fitting an UECM model."
+},
+{
+"area": "statsmodels.tsa.ardl",
+"name": "ardl_select_order",
+"kind": "function",
+"doc": "ARDL order selection"
+},
+{
+"area": "statsmodels.tsa.arima.model",
+"name": "ARIMA",
+"kind": "class",
+"doc": "Autoregressive Integrated Moving Average (ARIMA) model, and extensions"
+},
+{
+"area": "statsmodels.tsa.arima.model",
+"name": "ARIMAResults",
+"kind": "class",
+"doc": "Class to hold results from fitting an SARIMAX model"
+},
+{
+"area": "statsmodels.tsa.arima.model",
+"name": "ARIMAResultsWrapper",
+"kind": "class",
+"doc": "Class which wraps a statsmodels estimation Results class and steps in to"
+},
+{
+"area": "statsmodels.tsa.arima_process",
+"name": "arma2ar",
+"kind": "function",
+"doc": "A finite-lag AR approximation of an ARMA process"
+},
+{
+"area": "statsmodels.tsa.arima_process",
+"name": "arma2ma",
+"kind": "function",
+"doc": "A finite-lag approximate MA representation of an ARMA process"
+},
+{
+"area": "statsmodels.tsa.arima_process",
+"name": "arma_acf",
+"kind": "function",
+"doc": "Theoretical autocorrelation function of an ARMA process"
+},
+{
+"area": "statsmodels.tsa.arima_process",
+"name": "arma_acovf",
+"kind": "function",
+"doc": "Theoretical autocovariances of stationary ARMA processes"
+},
+{
+"area": "statsmodels.tsa.arima_process",
+"name": "arma_generate_sample",
+"kind": "function",
+"doc": "Simulate data from an ARMA"
+},
+{
+"area": "statsmodels.tsa.arima_process",
+"name": "arma_impulse_response",
+"kind": "function",
+"doc": "Compute the impulse response function (MA representation) for ARMA process"
+},
+{
+"area": "statsmodels.tsa.arima_process",
+"name": "deconvolve",
+"kind": "function",
+"doc": "Deconvolves divisor out of signal, division of polynomials for n terms"
+},
+{
+"area": "statsmodels.tsa.arima_process",
+"name": "index2lpol",
+"kind": "function",
+"doc": "Expand coefficients to lag poly"
+},
+{
+"area": "statsmodels.tsa.arima_process",
+"name": "lpol2index",
+"kind": "function",
+"doc": "Remove zeros from lag polynomial"
+},
+{
+"area": "statsmodels.tsa.exponential_smoothing.ets",
+"name": "ETSModel",
+"kind": "class",
+"doc": "ETS models"
+},
+{
+"area": "statsmodels.tsa.exponential_smoothing.ets",
+"name": "ETSResults",
+"kind": "class",
+"doc": "Results from an error, trend, seasonal (ETS) exponential smoothing model"
+},
+{
+"area": "statsmodels.tsa.exponential_smoothing.ets",
+"name": "ETSResultsWrapper",
+"kind": "class",
+"doc": "Class which wraps a statsmodels estimation Results class and steps in to"
+},
+{
+"area": "statsmodels.tsa.exponential_smoothing.ets",
+"name": "PredictionResults",
+"kind": "class",
+"doc": "ETS mean prediction and prediction intervals"
+},
+{
+"area": "statsmodels.tsa.exponential_smoothing.ets",
+"name": "PredictionResultsWrapper",
+"kind": "class",
+"doc": "Class which wraps a statsmodels estimation Results class and steps in to"
+},
+{
+"area": "statsmodels.tsa.filters.bk_filter",
+"name": "bkfilter",
+"kind": "function",
+"doc": "Filter a time series using the Baxter-King bandpass filter"
+},
+{
+"area": "statsmodels.tsa.filters.cf_filter",
+"name": "cffilter",
+"kind": "function",
+"doc": "Christiano Fitzgerald asymmetric, random walk filter"
+},
+{
+"area": "statsmodels.tsa.filters.filtertools",
+"name": "CycleTrendResult",
+"kind": "class",
+"doc": "Result of :func:`cffilter`, :func:`hamilton_filter`, and"
+},
+{
+"area": "statsmodels.tsa.filters.filtertools",
+"name": "convolution_filter",
+"kind": "function",
+"doc": "Linear filtering via convolution. Centered and backward displaced moving"
+},
+{
+"area": "statsmodels.tsa.filters.filtertools",
+"name": "fftconvolve3",
+"kind": "function",
+"doc": "Convolve two N-dimensional arrays using FFT. See convolve"
+},
+{
+"area": "statsmodels.tsa.filters.filtertools",
+"name": "fftconvolveinv",
+"kind": "function",
+"doc": "Convolve two N-dimensional arrays using FFT. See convolve"
+},
+{
+"area": "statsmodels.tsa.filters.filtertools",
+"name": "miso_lfilter",
+"kind": "function",
+"doc": "Filter multiple time series into a single time series."
+},
+{
+"area": "statsmodels.tsa.filters.filtertools",
+"name": "recursive_filter",
+"kind": "function",
+"doc": "Autoregressive, or recursive, filtering."
+},
+{
+"area": "statsmodels.tsa.filters.hp_filter",
+"name": "hpfilter",
+"kind": "function",
+"doc": "Hodrick-Prescott filter"
+},
+{
+"area": "statsmodels.tsa.forecasting.stl",
+"name": "STLForecast",
+"kind": "class",
+"doc": "Model-based forecasting using STL to remove seasonality"
+},
+{
+"area": "statsmodels.tsa.forecasting.stl",
+"name": "STLForecastResults",
+"kind": "class",
+"doc": "Results for forecasting using STL to remove seasonality"
+},
+{
+"area": "statsmodels.tsa.forecasting.theta",
+"name": "ThetaModel",
+"kind": "class",
+"doc": "The Theta forecasting model of Assimakopoulos and Nikolopoulos (2000)"
+},
+{
+"area": "statsmodels.tsa.forecasting.theta",
+"name": "ThetaModelResults",
+"kind": "class",
+"doc": "Results class from estimated Theta Models"
+},
+{
+"area": "statsmodels.tsa.forecasting.theta",
+"name": "extend_index",
+"kind": "function",
+"doc": "Extend a pandas index by a number of periods"
+},
+{
+"area": "statsmodels.tsa.holtwinters",
+"name": "ExponentialSmoothing",
+"kind": "class",
+"doc": "Holt Winters' Exponential Smoothing"
+},
+{
+"area": "statsmodels.tsa.holtwinters",
+"name": "Holt",
+"kind": "class",
+"doc": "Holt's Exponential Smoothing"
+},
+{
+"area": "statsmodels.tsa.holtwinters",
+"name": "HoltWintersResults",
+"kind": "class",
+"doc": "Results from fitting Exponential Smoothing models"
+},
+{
+"area": "statsmodels.tsa.holtwinters",
+"name": "SimpleExpSmoothing",
+"kind": "class",
+"doc": "Simple Exponential Smoothing"
+},
+{
+"area": "statsmodels.tsa.regime_switching.markov_autoregression",
+"name": "MarkovAutoregression",
+"kind": "class",
+"doc": "Markov switching autoregression model"
+},
+{
+"area": "statsmodels.tsa.regime_switching.markov_autoregression",
+"name": "MarkovAutoregressionResults",
+"kind": "class",
+"doc": "Class to hold results from fitting a Markov switching autoregression model"
+},
+{
+"area": "statsmodels.tsa.regime_switching.markov_autoregression",
+"name": "MarkovAutoregressionResultsWrapper",
+"kind": "class",
+"doc": "Class which wraps a statsmodels estimation Results class and steps in to"
+},
+{
+"area": "statsmodels.tsa.regime_switching.markov_regression",
+"name": "MarkovRegression",
+"kind": "class",
+"doc": "First-order k-regime Markov switching regression model"
+},
+{
+"area": "statsmodels.tsa.regime_switching.markov_regression",
+"name": "MarkovRegressionResults",
+"kind": "class",
+"doc": "Class to hold results from fitting a Markov switching regression model"
+},
+{
+"area": "statsmodels.tsa.regime_switching.markov_regression",
+"name": "MarkovRegressionResultsWrapper",
+"kind": "class",
+"doc": "Class which wraps a statsmodels estimation Results class and steps in to"
+},
+{
+"area": "statsmodels.tsa.seasonal",
+"name": "DecomposeResult",
+"kind": "class",
+"doc": "Results class for seasonal decompositions"
+},
+{
+"area": "statsmodels.tsa.seasonal",
+"name": "MSTL",
+"kind": "class",
+"doc": "MSTL(endog, periods=None, windows=None, lmbda=None, iterate=2,"
+},
+{
+"area": "statsmodels.tsa.seasonal",
+"name": "STL",
+"kind": "class",
+"doc": "STL(endog, period=None, seasonal=7, trend=None, low_pass=None, seasonal_deg=1, trend_deg=1, low_pass_deg=1, ro"
+},
+{
+"area": "statsmodels.tsa.seasonal",
+"name": "seasonal_decompose",
+"kind": "function",
+"doc": "Seasonal decomposition using moving averages."
+},
+{
+"area": "statsmodels.tsa.seasonal",
+"name": "seasonal_mean",
+"kind": "function",
+"doc": "Return means for each period in x"
+},
+{
+"area": "statsmodels.tsa.statespace.dynamic_factor",
+"name": "DynamicFactor",
+"kind": "class",
+"doc": "Dynamic factor model"
+},
+{
+"area": "statsmodels.tsa.statespace.dynamic_factor",
+"name": "DynamicFactorResults",
+"kind": "class",
+"doc": "Class to hold results from fitting a DynamicFactor model"
+},
+{
+"area": "statsmodels.tsa.statespace.dynamic_factor",
+"name": "DynamicFactorResultsWrapper",
+"kind": "class",
+"doc": "Class which wraps a statsmodels estimation Results class and steps in to"
+},
+{
+"area": "statsmodels.tsa.statespace.sarimax",
+"name": "SARIMAX",
+"kind": "class",
+"doc": "Seasonal AutoRegressive Integrated Moving Average with eXogenous regressors"
+},
+{
+"area": "statsmodels.tsa.statespace.sarimax",
+"name": "SARIMAXResults",
+"kind": "class",
+"doc": "Class to hold results from fitting an SARIMAX model"
+},
+{
+"area": "statsmodels.tsa.statespace.sarimax",
+"name": "SARIMAXResultsWrapper",
+"kind": "class",
+"doc": "Class which wraps a statsmodels estimation Results class and steps in to"
+},
+{
+"area": "statsmodels.tsa.statespace.structural",
+"name": "UnobservedComponents",
+"kind": "class",
+"doc": "Univariate unobserved components time series model"
+},
+{
+"area": "statsmodels.tsa.statespace.structural",
+"name": "UnobservedComponentsResults",
+"kind": "class",
+"doc": "Class to hold results from fitting an unobserved components model"
+},
+{
+"area": "statsmodels.tsa.statespace.structural",
+"name": "UnobservedComponentsResultsWrapper",
+"kind": "class",
+"doc": "Class which wraps a statsmodels estimation Results class and steps in to"
+},
+{
+"area": "statsmodels.tsa.statespace.varmax",
+"name": "VARMAX",
+"kind": "class",
+"doc": "Vector Autoregressive Moving Average with eXogenous regressors model"
+},
+{
+"area": "statsmodels.tsa.statespace.varmax",
+"name": "VARMAXResults",
+"kind": "class",
+"doc": "Class to hold results from fitting a VARMAX model"
+},
+{
+"area": "statsmodels.tsa.statespace.varmax",
+"name": "VARMAXResultsWrapper",
+"kind": "class",
+"doc": "Class which wraps a statsmodels estimation Results class and steps in to"
+},
+{
+"area": "statsmodels.tsa.stattools",
+"name": "ADFullerResult",
+"kind": "class",
+"doc": "Result of :func:`adfuller`."
+},
+{
+"area": "statsmodels.tsa.stattools",
+"name": "AcfResult",
+"kind": "class",
+"doc": "Result of :func:`acf`."
+},
+{
+"area": "statsmodels.tsa.stattools",
+"name": "BreakvarHeteroskedasticityResult",
+"kind": "class",
+"doc": "Result of :func:`breakvar_heteroskedasticity_test`."
+},
+{
+"area": "statsmodels.tsa.stattools",
+"name": "CcfResult",
+"kind": "class",
+"doc": "Result of :func:`ccf`."
+},
+{
+"area": "statsmodels.tsa.stattools",
+"name": "CointResult",
+"kind": "class",
+"doc": "Result of :func:`coint`."
+},
+{
+"area": "statsmodels.tsa.stattools",
+"name": "DieboldMarianoResult",
+"kind": "class",
+"doc": "Result of :func:`diebold_mariano_test`."
+},
+{
+"area": "statsmodels.tsa.stattools",
+"name": "JackknifeResult",
+"kind": "class",
+"doc": "Result of :func:`block_jackknife`."
+},
+{
+"area": "statsmodels.tsa.stattools",
+"name": "KPSSResult",
+"kind": "class",
+"doc": "Result of :func:`kpss`."
+},
+{
+"area": "statsmodels.tsa.stattools",
+"name": "LevinsonDurbinPacfResult",
+"kind": "class",
+"doc": "Result of :func:`levinson_durbin_pacf`."
+},
+{
+"area": "statsmodels.tsa.stattools",
+"name": "LevinsonDurbinResult",
+"kind": "class",
+"doc": "Result of :func:`levinson_durbin`."
+},
+{
+"area": "statsmodels.tsa.stattools",
+"name": "PacfBurgResult",
+"kind": "class",
+"doc": "Result of :func:`pacf_burg`."
+},
+{
+"area": "statsmodels.tsa.stattools",
+"name": "PacfResult",
+"kind": "class",
+"doc": "Result of :func:`pacf`."
+},
+{
+"area": "statsmodels.tsa.stattools",
+"name": "PccfResult",
+"kind": "class",
+"doc": "Result of :func:`pccf`."
+},
+{
+"area": "statsmodels.tsa.stattools",
+"name": "QStatResult",
+"kind": "class",
+"doc": "Result of :func:`q_stat`."
+},
+{
+"area": "statsmodels.tsa.stattools",
+"name": "RURResult",
+"kind": "class",
+"doc": "Result of :func:`range_unit_root_test` when ``result_object=True``."
+},
+{
+"area": "statsmodels.tsa.stattools",
+"name": "acf",
+"kind": "function",
+"doc": "Calculate the autocorrelation function"
+},
+{
+"area": "statsmodels.tsa.stattools",
+"name": "acovf",
+"kind": "function",
+"doc": "Estimate autocovariances"
+},
+{
+"area": "statsmodels.tsa.stattools",
+"name": "adfuller",
+"kind": "function",
+"doc": "Augmented Dickey-Fuller unit root test"
+},
+{
+"area": "statsmodels.tsa.stattools",
+"name": "arma_order_select_ic",
+"kind": "function",
+"doc": "Compute information criteria for many ARMA models"
+},
+{
+"area": "statsmodels.tsa.stattools",
+"name": "bds",
+"kind": "function",
+"doc": "BDS Test Statistic for Independence of a Time Series"
+},
+{
+"area": "statsmodels.tsa.stattools",
+"name": "block_jackknife",
+"kind": "function",
+"doc": "Delete-k (block) jackknife estimate of bias and standard error"
+},
+{
+"area": "statsmodels.tsa.stattools",
+"name": "breakvar_heteroskedasticity_test",
+"kind": "function",
+"doc": "Test for heteroskedasticity of residuals"
+},
+{
+"area": "statsmodels.tsa.stattools",
+"name": "ccf",
+"kind": "function",
+"doc": "The cross-correlation function"
+},
+{
+"area": "statsmodels.tsa.stattools",
+"name": "ccovf",
+"kind": "function",
+"doc": "Calculate the cross-covariance between two series"
+},
+{
+"area": "statsmodels.tsa.stattools",
+"name": "coint",
+"kind": "function",
+"doc": "Test for no-cointegration of a univariate equation"
+},
+{
+"area": "statsmodels.tsa.stattools",
+"name": "diebold_mariano_test",
+"kind": "function",
+"doc": "Performs a Diebold-Mariano test under the null hypothesis of"
+},
+{
+"area": "statsmodels.tsa.stattools",
+"name": "grangercausalitytests",
+"kind": "function",
+"doc": "Four tests for Granger non-causality of 2 time series"
+},
+{
+"area": "statsmodels.tsa.stattools",
+"name": "innovations_algo",
+"kind": "function",
+"doc": "innovations_algo(acov, nobs=None, rtol=None)"
+},
+{
+"area": "statsmodels.tsa.stattools",
+"name": "innovations_filter",
+"kind": "function",
+"doc": "Filter observations using the innovations algorithm."
+},
+{
+"area": "statsmodels.tsa.stattools",
+"name": "kpss",
+"kind": "function",
+"doc": "Kwiatkowski-Phillips-Schmidt-Shin test for stationarity"
+},
+{
+"area": "statsmodels.tsa.stattools",
+"name": "lagmat",
+"kind": "function",
+"doc": "Create 2d array of lags"
+},
+{
+"area": "statsmodels.tsa.stattools",
+"name": "lagmat2ds",
+"kind": "function",
+"doc": "Generate lagmatrix for 2d array, columns arranged by variables"
+},
+{
+"area": "statsmodels.tsa.stattools",
+"name": "levinson_durbin",
+"kind": "function",
+"doc": "Levinson-Durbin recursion for autoregressive processes"
+},
+{
+"area": "statsmodels.tsa.stattools",
+"name": "levinson_durbin_pacf",
+"kind": "function",
+"doc": "Levinson-Durbin algorithm that returns the acf and ar coefficients"
+},
+{
+"area": "statsmodels.tsa.stattools",
+"name": "leybourne",
+"kind": "function",
+"doc": "Leybourne-McCabe stationarity test"
+},
+{
+"area": "statsmodels.tsa.stattools",
+"name": "pacf",
+"kind": "function",
+"doc": "Partial autocorrelation estimate"
+},
+{
+"area": "statsmodels.tsa.stattools",
+"name": "pacf_burg",
+"kind": "function",
+"doc": "Calculate Burg's partial autocorrelation estimator"
+},
+{
+"area": "statsmodels.tsa.stattools",
+"name": "pacf_ols",
+"kind": "function",
+"doc": "Calculate partial autocorrelations via OLS"
+},
+{
+"area": "statsmodels.tsa.stattools",
+"name": "pacf_yw",
+"kind": "function",
+"doc": "Partial autocorrelation estimated with non-recursive yule_walker"
+},
+{
+"area": "statsmodels.tsa.stattools",
+"name": "pccf",
+"kind": "function",
+"doc": "Partial Cross-Correlation Function"
+},
+{
+"area": "statsmodels.tsa.stattools",
+"name": "q_stat",
+"kind": "function",
+"doc": "Compute Ljung-Box Q Statistic"
+},
+{
+"area": "statsmodels.tsa.stattools",
+"name": "range_unit_root_test",
+"kind": "function",
+"doc": "Range unit-root test for stationarity"
+},
+{
+"area": "statsmodels.tsa.stattools",
+"name": "zivot_andrews",
+"kind": "function",
+"doc": "Zivot-Andrews structural-break unit-root test"
+},
+{
+"area": "statsmodels.tsa.vector_ar.var_model",
+"name": "FEVD",
+"kind": "class",
+"doc": "Compute and plot Forecast error variance decomposition and asymptotic"
+},
+{
+"area": "statsmodels.tsa.vector_ar.var_model",
+"name": "LagOrderResults",
+"kind": "class",
+"doc": "Results class for choosing a model's lag order"
+},
+{
+"area": "statsmodels.tsa.vector_ar.var_model",
+"name": "VAR",
+"kind": "class",
+"doc": "Fit VAR(p) process and do lag order selection"
+},
+{
+"area": "statsmodels.tsa.vector_ar.var_model",
+"name": "VARProcess",
+"kind": "class",
+"doc": "Class represents a known VAR(p) process"
+},
+{
+"area": "statsmodels.tsa.vector_ar.var_model",
+"name": "VARResults",
+"kind": "class",
+"doc": "Estimate VAR(p) process with fixed number of lags"
+},
+{
+"area": "statsmodels.tsa.vector_ar.var_model",
+"name": "VARResultsWrapper",
+"kind": "class",
+"doc": "Class which wraps a statsmodels estimation Results class and steps in to"
+},
+{
+"area": "statsmodels.tsa.vector_ar.var_model",
+"name": "forecast",
+"kind": "function",
+"doc": "Produce linear minimum MSE forecast"
+},
+{
+"area": "statsmodels.tsa.vector_ar.var_model",
+"name": "forecast_cov",
+"kind": "function",
+"doc": "Compute theoretical forecast error variance matrices"
+},
+{
+"area": "statsmodels.tsa.vector_ar.var_model",
+"name": "forecast_interval",
+"kind": "function",
+"doc": "Construct forecast interval estimates assuming the y are Gaussian"
+},
+{
+"area": "statsmodels.tsa.vector_ar.var_model",
+"name": "is_stable",
+"kind": "function",
+"doc": "Determine stability of VAR(p) system by examining the eigenvalues of the"
+},
+{
+"area": "statsmodels.tsa.vector_ar.var_model",
+"name": "ma_rep",
+"kind": "function",
+"doc": "MA(\\infty) representation of VAR(p) process"
+},
+{
+"area": "statsmodels.tsa.vector_ar.var_model",
+"name": "mse",
+"kind": "function",
+"doc": "Compute theoretical forecast error variance matrices"
+},
+{
+"area": "statsmodels.tsa.vector_ar.var_model",
+"name": "orth_ma_rep",
+"kind": "function",
+"doc": "Compute Orthogonalized MA coefficient matrices using P matrix such"
+},
+{
+"area": "statsmodels.tsa.vector_ar.var_model",
+"name": "test_normality",
+"kind": "function",
+"doc": "Test assumption of normal-distributed errors using Jarque-Bera-style"
+},
+{
+"area": "statsmodels.tsa.vector_ar.var_model",
+"name": "var_acf",
+"kind": "function",
+"doc": "Compute autocovariance function ACF_y(h) up to nlags of stable VAR(p)"
+},
+{
+"area": "statsmodels.tsa.vector_ar.var_model",
+"name": "var_loglike",
+"kind": "function",
+"doc": "Returns the value of the VAR(p) log-likelihood"
+},
+{
+"area": "statsmodels.tsa.vector_ar.vecm",
+"name": "CointRankResults",
+"kind": "class",
+"doc": "A class for holding the results from testing the cointegration rank"
+},
+{
+"area": "statsmodels.tsa.vector_ar.vecm",
+"name": "JohansenTestResult",
+"kind": "class",
+"doc": "Results class for Johansen's cointegration test"
+},
+{
+"area": "statsmodels.tsa.vector_ar.vecm",
+"name": "VECM",
+"kind": "class",
+"doc": "Class representing a Vector Error Correction Model (VECM)."
+},
+{
+"area": "statsmodels.tsa.vector_ar.vecm",
+"name": "VECMResults",
+"kind": "class",
+"doc": "Class for holding estimation related results of a vector error"
+},
+{
+"area": "statsmodels.tsa.vector_ar.vecm",
+"name": "coint_johansen",
+"kind": "function",
+"doc": "Johansen cointegration test of the cointegration rank of a VECM"
+},
+{
+"area": "statsmodels.tsa.vector_ar.vecm",
+"name": "select_coint_rank",
+"kind": "function",
+"doc": "Calculate the cointegration rank of a VECM"
+},
+{
+"area": "statsmodels.tsa.vector_ar.vecm",
+"name": "select_order",
+"kind": "function",
+"doc": "Compute lag order selections based on each of the available information"
+}
+]
+}

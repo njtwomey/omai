@@ -1,0 +1,100 @@
+# sklearn verdicts. status | name | nearest omai | note | home | size | priority | group
+@lib sklearn
+# ---- infrastructure that is not an API a learner calls
+S | .*Mixin|.*Tags|.*Warning|AttrsDict|ParamsDict|HasMethods|MetadataRouter|MethodMapping|process_routing|get_tags|get_config|config_context|set_config|BaseEstimator|Hidden|Options|Interval|StrOptions|ReprHTMLMixin|BaseCrossValidator|BaseShuffleSplit|BaseEnsemble|BaseDecisionTree | | scikit-learn plumbing (mixins, tags, metadata routing, parameter validation) | | | |
+S | check_.*|validate_.*|is_pandas_na|is_scalar_nan|column_or_1d|indexable|parse_version|delayed|get_namespace.*|move_to|safe_sparse_dot|get_chunk_n_rows|gen_even_slices|row_norms|estimator_html_repr|clear_data_home|get_data_home|dump_svmlight_file|load_svmlight_files?|load_files|fetch_file|MissingValues|ArgKmin|DataConversionWarning|class_distribution | | input validation and file plumbing; omai has typed Spaces and its own data schemas | | | |
+S | is_classifier|is_regressor|is_clusterer|is_outlier_detector | learn#isClassifier | estimator-kind predicates | | | |
+S | clone | learn#cloneEstimator | | | | |
+S | fetch_(20newsgroups|20newsgroups_vectorized|covtype|kddcup99|lfw_pairs|lfw_people|olivetti_faces|openml|rcv1|species_distributions) | | needs a download; omai vendors small datasets and generates the rest | | | |
+F | fetch_california_housing | datasets#californiaHousing | | | | |
+S | load_sample_images? | | sample photographs; omai vendors none | | | |
+F | load_(iris|wine|breast_cancer|diabetes|digits|linnerud) | datasets (vendored: iris, wine, breastCancer, diabetes, digits, linnerud) | iris and wine are vendored under other names | | | |
+F | make_(blobs|circles|friedman[123]|gaussian_quantiles|hastie_10_2|moons|s_curve|sparse_uncorrelated|swiss_roll) | datasets (blobs, circles, friedman1..3, moons, sCurve, swissRoll, ...) | each generator also carries its truth | | | |
+F | make_(classification|regression|multilabel_classification|biclusters|checkerboard|low_rank_matrix|spd_matrix|sparse_spd_matrix|sparse_coded_signal|regression|friedman1) | datasets | | | | |
+# ---- clustering
+P | KMeans|k_means|MiniBatchKMeans | cluster#lloydAlgorithm, cluster#miniBatchKMeansAlgorithm | the stepped algorithms exist; there is no fit/predict estimator wrapper for plain k-means | cluster/kmeans.ts | S | medium | estimator wrappers over existing algorithms
+A | kmeans_plusplus|get_bin_seeds | cluster#initialCentres | k-means++ seeding is an option of initialCentres (KMeansInit); no standalone function | | | |
+F | FeatureAgglomeration|ward_tree|linkage_tree | cluster#linkageMatrix, cluster#agglomerativeClustering | ward and linkage trees are in the agglomerative code; feature agglomeration (clustering columns) is not a named verb | | | |
+F | cluster_optics_dbscan|cluster_optics_xi|compute_optics_graph | cluster#optics, cluster#opticsClustersAt, cluster#opticsOrdering | | | | |
+A | SpectralBiclustering|SpectralCoclustering | datasets#makeBiclusters | only the generator of biclusters exists, not the algorithms | cluster/biclustering.ts | M | low | biclustering
+# ---- compose, pipeline
+F | make_column_transformer|make_column_selector|make_union | learn#columnTransformer, learn#featureUnion | | | | |
+# ---- covariance
+F | GraphicalLassoCV|fast_mcd|ledoit_wolf_shrinkage | covariance#graphicalLasso, covariance#fastMcdAlgorithm, stats#ledoitWolf | | | | |
+# ---- decomposition
+P | TruncatedSVD | numerics/linalg#svd, text#lsa | the SVD and LSA exist; no estimator that is PCA without centring on sparse input | decomposition/truncated-svd.ts | S | medium | decomposition wrappers
+A | DictionaryLearning|MiniBatchDictionaryLearning|SparseCoder|dict_learning|dict_learning_online | decomposition#convolutionalDictionaryMethod | only the convolutional version exists; plain sparse coding and dictionary learning (K-SVD, online) are absent | decomposition/dictionary-learning.ts | M | medium | dictionary learning and sparse coding
+A | LatentDirichletAllocation | text#topicCoherence, datasets#topicCorpus | a topic corpus generator and coherence measure exist, but not the model (variational Bayes or collapsed Gibbs); a probprog program could express it | decomposition/lda.ts (or probprog) | M | high | topic models
+A | MiniBatchNMF | decomposition#nmf | NMF exists; mini-batch form does not | | S | low |
+F | non_negative_factorization | decomposition#nmf | | | | |
+# ---- discriminant analysis, dummy
+F | LinearDiscriminantAnalysis|QuadraticDiscriminantAnalysis | learn#linearDiscriminant, learn#quadraticDiscriminant | | | | |
+A | DummyClassifier|DummyRegressor | | baselines (most frequent, prior, mean, median, constant) are the first thing a learner compares against | learn/dummy.ts | S | high | baselines
+# ---- feature extraction and selection
+A | DictVectorizer|FeatureHasher | text#hashingVectorize | hashing of strings exists for text; no dict-of-features vectoriser | text/vectorisers | S | low |
+A | PatchExtractor|extract_patches_2d|reconstruct_from_patches_2d|img_to_graph | graph#gridGraph | image patches and pixel-grid graphs for clustering | vision/patches.ts | S | low | image patches
+F | grid_to_graph | graph#gridGraph | | | | |
+F | HashingVectorizer | text#hashingVectorize | | | | |
+F | TfidfTransformer | text#tfidfWeights | | | | |
+F | strip_accents_(ascii|unicode) | text#stripAccents | | | | |
+F | GenericUnivariateSelect|SelectFdr|SelectFpr|SelectFwe|SelectorMixin | learn#selectByPValue, learn#selectKBest, learn#selectPercentile | p-value selectors share one function | | | | |
+# ---- gaussian process
+F | GaussianProcessRegressor | gp#gpRegression | | | | |
+F | GaussianProcessClassifier | gp#gpClassifier | | | | |
+F | RBF|Matern|RationalQuadratic|WhiteKernel|ExpSineSquared|DotProduct|ConstantKernel|Sum|Product|Exponentiation|Kernel|CompoundKernel|KernelOperator|PairwiseKernel | kernels (rbfKernel, maternKernel, rationalQuadraticKernel, whiteNoiseKernel, periodicKernel, sumKernel, productKernel, powerKernel, pairwiseKernels) | | | | |
+# ---- inspection, calibration, metrics displays
+F | DecisionBoundaryDisplay | learn#decisionSurfaceOf | | | | |
+F | PartialDependenceDisplay|PartialDependence.* | explain#partialDependence | | | | |
+F | CalibrationDisplay|ConfusionMatrixDisplay|DetCurveDisplay|PrecisionRecallDisplay|PredictionErrorDisplay|RocCurveDisplay|LearningCurveDisplay|ValidationCurveDisplay | metrics and exposition records plus omai-render charts | displays are plotting objects; omai returns records and draws them in render | | | | |
+F | IsotonicRegression|isotonic_regression|check_increasing | learn#poolAdjacentViolators, learn#isotonicCalibration | | | | |
+S | HalfBinomialLoss|HalfMultinomialLoss.*|FrozenEstimator|ClassifierMixin | | internal loss objects | | | |
+# ---- kernel approximation
+F | RBFSampler|Nystroem|AdditiveChi2Sampler|SkewedChi2Sampler|PolynomialCountSketch | kernels#randomFourierFeatures, kernels#nystroem, kernels#additiveChi2Sampler, kernels#skewedChi2Sampler, kernels#polynomialCountSketch | | | | |
+F | KernelCenterer | kernels#centerKernel | | | | |
+# ---- linear models
+F | LinearRegression|Ridge|RidgeCV|Lasso|LassoCV|ElasticNet|ElasticNetCV|LogisticRegression|LogisticRegressionCV|PoissonRegressor|GammaRegressor|TweedieRegressor|SGDClassifier|SGDRegressor|RidgeClassifier|RidgeClassifierCV|ridge_regression|MultiTaskElasticNet|MultiTaskElasticNetCV|MultiTaskLassoCV | linear#linearModel (family, penalty, solver slot: smoothSolvers incl. stochastic gradient) | one configurable estimator instead of one class per combination; CV variants are linear#pathOn plus learn model selection | | | | |
+F | HuberRegressor|TheilSenRegressor|RANSACRegressor|PassiveAggressiveClassifier|PassiveAggressiveRegressor|LarsCV|LassoLars|LassoLarsCV|lars_path_gram | linear#huber, linear#theilSen, stats#ransac, linear#passiveAggressive, linear#lars | | | | |
+P | LassoLarsIC | linear#lars | lars path exists; the AIC/BIC choice along it is not a single call | linear/lars.ts | S | low |
+F | BayesianRidge | linear#maximiseEvidence, linear#bayesianLinearFit | | | | |
+P | ARDRegression | gp#relevanceVectorMachine, kernels#ard | automatic relevance determination exists for kernel machines (RVM); not as a linear-model regressor | linear/ard.ts | S | low |
+F | OrthogonalMatchingPursuitCV|orthogonal_mp|orthogonal_mp_gram | optim#matchingPursuit | | | | |
+F | SGDOneClassSVM | svm#oneClassSvm | | | | |
+P | LinearSVR|LinearSVC | svm#svc, svm#svr | kernel SVM with a linear kernel; no liblinear-style primal solver | | | |
+F | l1_min_c | linear#alphaMax | | | | |
+# ---- manifold, metrics
+F | smacof | manifold#smacofAlgorithm | | | | |
+F | check_scoring|get_scorer_names | learn#scorerFor, learn#getScorer | | | | |
+A | class_likelihood_ratios | metrics | positive and negative likelihood ratio (diagnostic testing); easy | metrics/classification.ts | S | low |
+A | consensus_score | | biclustering metric; only needed with biclustering | | S | low | biclustering
+F | d2_brier_score | metrics#brierScoreLoss | | | | | |
+F | hinge_loss | losses#hinge | | | | | |
+F | root_mean_squared_log_error | metrics#meanSquaredLogError | root of an existing metric | | | | |
+S | metric_at_thresholds | | | | | |
+F | .*_distances|distance_metrics|kernel_metrics|pairwise_distances.*|paired_.*|nan_euclidean_distances|haversine_distances | distances#distance, distances#pairwiseDistances | | | | |
+F | gen_batches | data#batches | | | | |
+# ---- mixture, model selection, multiclass, naive bayes
+P | GaussianMixture | mixture#gaussianEmAlgorithm | the EM algorithm is stepped and traced; no fit/predict/score_samples estimator | mixture/gaussian.ts | S | high | estimator wrappers over existing algorithms
+P | BayesianGaussianMixture | mixture#variationalMixtureAlgorithm | same: algorithm only | mixture/variational.ts | S | medium | estimator wrappers over existing algorithms
+A | FixedThresholdClassifier|TunedThresholdClassifierCV | | decision-threshold tuning on a probabilistic classifier | learn/model-selection/threshold.ts | S | medium | threshold tuning
+F | OneVsOneClassifier|OneVsRestClassifier|OutputCodeClassifier | learn#oneVsOne, learn#oneVsRest, learn#outputCode | | | | |
+F | BernoulliNB|CategoricalNB|ComplementNB|GaussianNB|MultinomialNB | learn#naiveBayes (gaussianNaiveBayes, ...) | | | | |
+# ---- neighbours
+F | KNeighborsClassifier|KNeighborsRegressor|RadiusNeighborsClassifier|RadiusNeighborsRegressor | learn#kNeighboursClassifier, learn#kNeighboursRegressor, learn#radiusNeighboursClassifier | | | | |
+F | NearestNeighbors|KNeighborsTransformer|RadiusNeighborsTransformer|kneighbors_graph|radius_neighbors_graph|sort_graph_by_row_values | learn#neighbourIndex, numerics/spatial#kdTree, numerics/spatial#ballTree, graph | | | | |
+F | KernelDensity | stats#gaussianKde | Gaussian kernel only; sklearn offers tophat, epanechnikov and others on a tree | | | | |
+F | NeighborhoodComponentsAnalysis | learn#neighbourhoodComponentsAnalysis | | | | |
+F | BernoulliRBM | nn/blocks#RBM | | | | |
+F | MLPClassifier|MLPRegressor | nn#mlp with a trainer | a module plus a trainer, not a one-call estimator | | | | |
+# ---- preprocessing and others
+A | add_dummy_feature | linear#withIntercept | | | | |
+F | binarize|label_binarize | learn/preprocessing#labelBinarizer | | | | |
+F | maxabs_scale|minmax_scale|robust_scale|power_transform|quantile_transform|SplineTransformer | learn/preprocessing (maxAbsScaler, minMaxScaler, robustScaler, powerTransformer, quantileTransformer, splineFeatures) | | | | |
+F | GaussianRandomProjection|SparseRandomProjection|johnson_lindenstrauss_min_dim | decomposition#randomProjection | | | | |
+F | SelfTrainingClassifier | learn#selfTraining | | | | |
+F | export_graphviz|plot_tree | trees#exportText, trees#treeToStructure | text and structure export; drawn by render | | | | |
+F | compute_class_weight|compute_sample_weight | | | | | | |
+F | murmurhash3_32 | text#murmurhash3 | | | | |
+F | resample|shuffle | random | | | | |
+S | ConvergenceWarning|BiclusterMixin|DensityMixin|OutlierMixin|ClusterMixin|OneToOneFeatureMixin|TargetTags|get_scorer|InconsistentVersionWarning | | | | | |
+
+P | MiniBatchSparsePCA | decomposition#sparsePcaAlgorithm | sparse PCA exists; mini-batch variant does not | | S | low |

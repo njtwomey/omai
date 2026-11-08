@@ -1,0 +1,6031 @@
+{
+"library": "networkx",
+"version": "3.7",
+"source": "introspection",
+"entries": [
+{
+"area": "networkx.algorithms",
+"name": "ArborescenceIterator",
+"kind": "class",
+"doc": "Iterate over all spanning arborescences of a graph in either increasing or"
+},
+{
+"area": "networkx.algorithms",
+"name": "EdgePartition",
+"kind": "class",
+"doc": "An enum to store the state of an edge partition. The enum is written to the"
+},
+{
+"area": "networkx.algorithms",
+"name": "NetworkXTreewidthBoundExceeded",
+"kind": "class",
+"doc": "Exception raised when a treewidth bound has been provided and it has"
+},
+{
+"area": "networkx.algorithms",
+"name": "NotATree",
+"kind": "class",
+"doc": "Raised when a function expects a tree (that is, a connected"
+},
+{
+"area": "networkx.algorithms",
+"name": "PlanarEmbedding",
+"kind": "class",
+"doc": "Represents a planar graph with its planar embedding."
+},
+{
+"area": "networkx.algorithms",
+"name": "SpanningTreeIterator",
+"kind": "class",
+"doc": "Iterate over all spanning trees of a graph in either increasing or"
+},
+{
+"area": "networkx.algorithms",
+"name": "adamic_adar_index",
+"kind": "function",
+"doc": "Compute the Adamic-Adar index of all node pairs in ebunch."
+},
+{
+"area": "networkx.algorithms",
+"name": "all_node_cuts",
+"kind": "function",
+"doc": "Returns all minimum k cutsets of an undirected graph G."
+},
+{
+"area": "networkx.algorithms",
+"name": "all_pairs_all_shortest_paths",
+"kind": "function",
+"doc": "Compute all shortest paths between all nodes."
+},
+{
+"area": "networkx.algorithms",
+"name": "all_pairs_bellman_ford_path",
+"kind": "function",
+"doc": "Compute shortest paths between all nodes in a weighted graph."
+},
+{
+"area": "networkx.algorithms",
+"name": "all_pairs_bellman_ford_path_length",
+"kind": "function",
+"doc": "Compute shortest path lengths between all nodes in a weighted graph."
+},
+{
+"area": "networkx.algorithms",
+"name": "all_pairs_dijkstra",
+"kind": "function",
+"doc": "Find shortest weighted paths and lengths between all nodes."
+},
+{
+"area": "networkx.algorithms",
+"name": "all_pairs_dijkstra_path",
+"kind": "function",
+"doc": "Compute shortest paths between all nodes in a weighted graph."
+},
+{
+"area": "networkx.algorithms",
+"name": "all_pairs_dijkstra_path_length",
+"kind": "function",
+"doc": "Compute shortest path lengths between all nodes in a weighted graph."
+},
+{
+"area": "networkx.algorithms",
+"name": "all_pairs_lowest_common_ancestor",
+"kind": "function",
+"doc": "Return the lowest common ancestor of all pairs or the provided pairs"
+},
+{
+"area": "networkx.algorithms",
+"name": "all_pairs_node_connectivity",
+"kind": "function",
+"doc": "Compute node connectivity between all pairs of nodes of G."
+},
+{
+"area": "networkx.algorithms",
+"name": "all_pairs_shortest_path",
+"kind": "function",
+"doc": "Compute shortest paths between all nodes."
+},
+{
+"area": "networkx.algorithms",
+"name": "all_pairs_shortest_path_length",
+"kind": "function",
+"doc": "Computes the shortest path lengths between all nodes in `G`."
+},
+{
+"area": "networkx.algorithms",
+"name": "all_shortest_paths",
+"kind": "function",
+"doc": "Compute all shortest simple paths in the graph."
+},
+{
+"area": "networkx.algorithms",
+"name": "all_simple_edge_paths",
+"kind": "function",
+"doc": "Generate lists of edges for all simple paths in G from source to target."
+},
+{
+"area": "networkx.algorithms",
+"name": "all_simple_paths",
+"kind": "function",
+"doc": "Generate all simple paths in the graph G from source to target."
+},
+{
+"area": "networkx.algorithms",
+"name": "all_topological_sorts",
+"kind": "function",
+"doc": "Returns a generator of _all_ topological sorts of the directed graph G."
+},
+{
+"area": "networkx.algorithms",
+"name": "all_triads",
+"kind": "function",
+"doc": "A generator of all possible triads in G."
+},
+{
+"area": "networkx.algorithms",
+"name": "all_triangles",
+"kind": "function",
+"doc": "Yields all unique triangles in an undirected graph."
+},
+{
+"area": "networkx.algorithms",
+"name": "ancestors",
+"kind": "function",
+"doc": "Returns all nodes having a path to `source` in `G`."
+},
+{
+"area": "networkx.algorithms",
+"name": "antichains",
+"kind": "function",
+"doc": "Generates antichains from a directed acyclic graph (DAG)."
+},
+{
+"area": "networkx.algorithms",
+"name": "approximate_current_flow_betweenness_centrality",
+"kind": "function",
+"doc": "Compute the approximate current-flow betweenness centrality for nodes."
+},
+{
+"area": "networkx.algorithms",
+"name": "articulation_points",
+"kind": "function",
+"doc": "Yield the articulation points, or cut vertices, of a graph."
+},
+{
+"area": "networkx.algorithms",
+"name": "astar_path",
+"kind": "function",
+"doc": "Returns a list of nodes in a shortest path between source and target"
+},
+{
+"area": "networkx.algorithms",
+"name": "astar_path_length",
+"kind": "function",
+"doc": "Returns the length of the shortest path between source and target using"
+},
+{
+"area": "networkx.algorithms",
+"name": "attracting_components",
+"kind": "function",
+"doc": "Generates the attracting components in `G`."
+},
+{
+"area": "networkx.algorithms",
+"name": "attribute_assortativity_coefficient",
+"kind": "function",
+"doc": "Compute assortativity for node attributes."
+},
+{
+"area": "networkx.algorithms",
+"name": "attribute_mixing_dict",
+"kind": "function",
+"doc": "Returns dictionary representation of mixing matrix for attribute."
+},
+{
+"area": "networkx.algorithms",
+"name": "attribute_mixing_matrix",
+"kind": "function",
+"doc": "Returns mixing matrix for attribute."
+},
+{
+"area": "networkx.algorithms",
+"name": "average_clustering",
+"kind": "function",
+"doc": "Compute the average clustering coefficient for the graph G."
+},
+{
+"area": "networkx.algorithms",
+"name": "average_degree_connectivity",
+"kind": "function",
+"doc": "Compute the average degree connectivity of graph."
+},
+{
+"area": "networkx.algorithms",
+"name": "average_neighbor_degree",
+"kind": "function",
+"doc": "Returns the average degree of the neighborhood of each node."
+},
+{
+"area": "networkx.algorithms",
+"name": "average_node_connectivity",
+"kind": "function",
+"doc": "Returns the average connectivity of a graph G."
+},
+{
+"area": "networkx.algorithms",
+"name": "average_shortest_path_length",
+"kind": "function",
+"doc": "Returns the average shortest path length."
+},
+{
+"area": "networkx.algorithms",
+"name": "barycenter",
+"kind": "function",
+"doc": "Calculate centroid of a connected graph, optionally with edge weights."
+},
+{
+"area": "networkx.algorithms",
+"name": "bellman_ford_path",
+"kind": "function",
+"doc": "Returns the shortest path from source to target in a weighted graph G."
+},
+{
+"area": "networkx.algorithms",
+"name": "bellman_ford_path_length",
+"kind": "function",
+"doc": "Returns the shortest path length from source to target"
+},
+{
+"area": "networkx.algorithms",
+"name": "bellman_ford_predecessor_and_distance",
+"kind": "function",
+"doc": "Compute shortest path lengths and predecessors on shortest paths"
+},
+{
+"area": "networkx.algorithms",
+"name": "betweenness_centrality",
+"kind": "function",
+"doc": "Compute the shortest-path betweenness centrality for nodes."
+},
+{
+"area": "networkx.algorithms",
+"name": "betweenness_centrality_subset",
+"kind": "function",
+"doc": "Compute betweenness centrality for a subset of nodes."
+},
+{
+"area": "networkx.algorithms",
+"name": "bfs_beam_edges",
+"kind": "function",
+"doc": "Iterates over edges in a beam search."
+},
+{
+"area": "networkx.algorithms",
+"name": "bfs_edges",
+"kind": "function",
+"doc": "Iterate over edges in a breadth-first-search starting at source."
+},
+{
+"area": "networkx.algorithms",
+"name": "bfs_labeled_edges",
+"kind": "function",
+"doc": "Iterate over edges in a breadth-first search (BFS) labeled by type."
+},
+{
+"area": "networkx.algorithms",
+"name": "bfs_layers",
+"kind": "function",
+"doc": "Returns an iterator of all the layers in breadth-first search traversal."
+},
+{
+"area": "networkx.algorithms",
+"name": "bfs_predecessors",
+"kind": "function",
+"doc": "Returns an iterator of predecessors in breadth-first-search from source."
+},
+{
+"area": "networkx.algorithms",
+"name": "bfs_successors",
+"kind": "function",
+"doc": "Returns an iterator of successors in breadth-first-search from source."
+},
+{
+"area": "networkx.algorithms",
+"name": "bfs_tree",
+"kind": "function",
+"doc": "Returns an oriented tree constructed from of a breadth-first-search"
+},
+{
+"area": "networkx.algorithms",
+"name": "biconnected_component_edges",
+"kind": "function",
+"doc": "Returns a generator of lists of edges, one list for each biconnected"
+},
+{
+"area": "networkx.algorithms",
+"name": "biconnected_components",
+"kind": "function",
+"doc": "Returns a generator of sets of nodes, one set for each biconnected"
+},
+{
+"area": "networkx.algorithms",
+"name": "bidirectional_dijkstra",
+"kind": "function",
+"doc": "Dijkstra's algorithm for shortest paths using bidirectional search."
+},
+{
+"area": "networkx.algorithms",
+"name": "bidirectional_shortest_path",
+"kind": "function",
+"doc": "Returns a list of nodes in a shortest path between source and target."
+},
+{
+"area": "networkx.algorithms",
+"name": "boundary_expansion",
+"kind": "function",
+"doc": "Returns the boundary expansion of the set `S`."
+},
+{
+"area": "networkx.algorithms",
+"name": "bridges",
+"kind": "function",
+"doc": "Generate all bridges in a graph."
+},
+{
+"area": "networkx.algorithms",
+"name": "capacity_scaling",
+"kind": "function",
+"doc": "Find a minimum cost flow satisfying all demands in digraph G."
+},
+{
+"area": "networkx.algorithms",
+"name": "cartesian_product",
+"kind": "function",
+"doc": "Returns the Cartesian product of G and H."
+},
+{
+"area": "networkx.algorithms",
+"name": "cd_index",
+"kind": "function",
+"doc": "Compute the CD index for `node` within the graph `G`."
+},
+{
+"area": "networkx.algorithms",
+"name": "center",
+"kind": "function",
+"doc": "Returns the center of the graph G."
+},
+{
+"area": "networkx.algorithms",
+"name": "centroid",
+"kind": "function",
+"doc": "Calculate centroid of a connected graph, optionally with edge weights."
+},
+{
+"area": "networkx.algorithms",
+"name": "chain_decomposition",
+"kind": "function",
+"doc": "Returns the chain decomposition of a graph."
+},
+{
+"area": "networkx.algorithms",
+"name": "check_planarity",
+"kind": "function",
+"doc": "Check if a graph is planar and return a counterexample or an embedding."
+},
+{
+"area": "networkx.algorithms",
+"name": "chordal_graph_cliques",
+"kind": "function",
+"doc": "Returns all maximal cliques of a chordal graph."
+},
+{
+"area": "networkx.algorithms",
+"name": "chordal_graph_treewidth",
+"kind": "function",
+"doc": "Returns the treewidth of the chordal graph `G`."
+},
+{
+"area": "networkx.algorithms",
+"name": "chordless_cycles",
+"kind": "function",
+"doc": "Find simple chordless cycles of a graph."
+},
+{
+"area": "networkx.algorithms",
+"name": "chromatic_polynomial",
+"kind": "function",
+"doc": "Returns the chromatic polynomial of `G`"
+},
+{
+"area": "networkx.algorithms",
+"name": "closeness_centrality",
+"kind": "function",
+"doc": "Compute closeness centrality for nodes."
+},
+{
+"area": "networkx.algorithms",
+"name": "closeness_vitality",
+"kind": "function",
+"doc": "Returns the closeness vitality for nodes in the graph."
+},
+{
+"area": "networkx.algorithms",
+"name": "clustering",
+"kind": "function",
+"doc": "Compute the clustering coefficient for nodes."
+},
+{
+"area": "networkx.algorithms",
+"name": "cn_soundarajan_hopcroft",
+"kind": "function",
+"doc": "Count the number of common neighbors of all node pairs in ebunch"
+},
+{
+"area": "networkx.algorithms",
+"name": "combinatorial_embedding_to_pos",
+"kind": "function",
+"doc": "Assigns every node a (x, y) position based on the given embedding"
+},
+{
+"area": "networkx.algorithms",
+"name": "common_neighbor_centrality",
+"kind": "function",
+"doc": "Return the CCPA score for each pair of nodes."
+},
+{
+"area": "networkx.algorithms",
+"name": "communicability",
+"kind": "function",
+"doc": "Returns communicability between all pairs of nodes in `G`."
+},
+{
+"area": "networkx.algorithms",
+"name": "communicability_betweenness_centrality",
+"kind": "function",
+"doc": "Returns subgraph communicability for all pairs of nodes in G."
+},
+{
+"area": "networkx.algorithms",
+"name": "communicability_exp",
+"kind": "function",
+"doc": "Returns communicability between all pairs of nodes in `G`."
+},
+{
+"area": "networkx.algorithms",
+"name": "complement",
+"kind": "function",
+"doc": "Returns the graph complement of G."
+},
+{
+"area": "networkx.algorithms",
+"name": "complete_bipartite_graph",
+"kind": "function",
+"doc": "Returns the complete bipartite graph `K_{n_1,n_2}`."
+},
+{
+"area": "networkx.algorithms",
+"name": "complete_to_chordal_graph",
+"kind": "function",
+"doc": "Return a copy of G completed to a chordal graph"
+},
+{
+"area": "networkx.algorithms",
+"name": "compose",
+"kind": "function",
+"doc": "Compose graph G with H by combining nodes and edges into a single graph."
+},
+{
+"area": "networkx.algorithms",
+"name": "compose_all",
+"kind": "function",
+"doc": "Returns the composition of all graphs."
+},
+{
+"area": "networkx.algorithms",
+"name": "condensation",
+"kind": "function",
+"doc": "Returns the condensation of G."
+},
+{
+"area": "networkx.algorithms",
+"name": "conductance",
+"kind": "function",
+"doc": "Returns the conductance of two sets of nodes."
+},
+{
+"area": "networkx.algorithms",
+"name": "connected_components",
+"kind": "function",
+"doc": "Generate connected components."
+},
+{
+"area": "networkx.algorithms",
+"name": "connected_dominating_set",
+"kind": "function",
+"doc": "Returns a connected dominating set."
+},
+{
+"area": "networkx.algorithms",
+"name": "connected_double_edge_swap",
+"kind": "function",
+"doc": "Attempts the specified number of double-edge swaps in the graph `G`."
+},
+{
+"area": "networkx.algorithms",
+"name": "constraint",
+"kind": "function",
+"doc": "Returns the constraint on all nodes in the graph ``G``."
+},
+{
+"area": "networkx.algorithms",
+"name": "contracted_edge",
+"kind": "function",
+"doc": "Returns the graph that results from contracting the specified edge."
+},
+{
+"area": "networkx.algorithms",
+"name": "contracted_nodes",
+"kind": "function",
+"doc": "Returns the graph that results from contracting `u` and `v`."
+},
+{
+"area": "networkx.algorithms",
+"name": "core_number",
+"kind": "function",
+"doc": "Returns the core number for each node."
+},
+{
+"area": "networkx.algorithms",
+"name": "corona_product",
+"kind": "function",
+"doc": "Returns the Corona product of G and H."
+},
+{
+"area": "networkx.algorithms",
+"name": "cost_of_flow",
+"kind": "function",
+"doc": "Compute the cost of the flow given by flowDict on graph G."
+},
+{
+"area": "networkx.algorithms",
+"name": "could_be_isomorphic",
+"kind": "function",
+"doc": "Returns False if graphs are definitely not isomorphic."
+},
+{
+"area": "networkx.algorithms",
+"name": "current_flow_betweenness_centrality",
+"kind": "function",
+"doc": "Compute current-flow betweenness centrality for nodes."
+},
+{
+"area": "networkx.algorithms",
+"name": "current_flow_betweenness_centrality_subset",
+"kind": "function",
+"doc": "Compute current-flow betweenness centrality for subsets of nodes."
+},
+{
+"area": "networkx.algorithms",
+"name": "current_flow_closeness_centrality",
+"kind": "function",
+"doc": "Compute current-flow closeness centrality for nodes."
+},
+{
+"area": "networkx.algorithms",
+"name": "cut_size",
+"kind": "function",
+"doc": "Returns the size of the cut between two sets of nodes."
+},
+{
+"area": "networkx.algorithms",
+"name": "cycle_basis",
+"kind": "function",
+"doc": "Returns a list of cycles which form a basis for cycles of G."
+},
+{
+"area": "networkx.algorithms",
+"name": "dag_longest_path",
+"kind": "function",
+"doc": "Returns the longest path in a directed acyclic graph (DAG)."
+},
+{
+"area": "networkx.algorithms",
+"name": "dag_longest_path_length",
+"kind": "function",
+"doc": "Returns the longest path length in a DAG"
+},
+{
+"area": "networkx.algorithms",
+"name": "dag_to_branching",
+"kind": "function",
+"doc": "Returns a branching representing all (overlapping) paths from"
+},
+{
+"area": "networkx.algorithms",
+"name": "dedensify",
+"kind": "function",
+"doc": "Compresses neighborhoods around high-degree nodes"
+},
+{
+"area": "networkx.algorithms",
+"name": "degree_assortativity_coefficient",
+"kind": "function",
+"doc": "Compute degree assortativity of graph."
+},
+{
+"area": "networkx.algorithms",
+"name": "degree_centrality",
+"kind": "function",
+"doc": "Compute the degree centrality for nodes."
+},
+{
+"area": "networkx.algorithms",
+"name": "degree_mixing_dict",
+"kind": "function",
+"doc": "Returns dictionary representation of mixing matrix for degree."
+},
+{
+"area": "networkx.algorithms",
+"name": "degree_mixing_matrix",
+"kind": "function",
+"doc": "Returns mixing matrix for attribute."
+},
+{
+"area": "networkx.algorithms",
+"name": "degree_pearson_correlation_coefficient",
+"kind": "function",
+"doc": "Compute degree assortativity of graph."
+},
+{
+"area": "networkx.algorithms",
+"name": "descendants",
+"kind": "function",
+"doc": "Returns all nodes reachable from `source` in `G`."
+},
+{
+"area": "networkx.algorithms",
+"name": "descendants_at_distance",
+"kind": "function",
+"doc": "Returns all nodes at a fixed `distance` from `source` in `G`."
+},
+{
+"area": "networkx.algorithms",
+"name": "dfs_edges",
+"kind": "function",
+"doc": "Iterate over edges in a depth-first-search (DFS)."
+},
+{
+"area": "networkx.algorithms",
+"name": "dfs_labeled_edges",
+"kind": "function",
+"doc": "Iterate over edges in a depth-first-search (DFS) labeled by type."
+},
+{
+"area": "networkx.algorithms",
+"name": "dfs_postorder_nodes",
+"kind": "function",
+"doc": "Generate nodes in a depth-first-search post-ordering starting at source."
+},
+{
+"area": "networkx.algorithms",
+"name": "dfs_predecessors",
+"kind": "function",
+"doc": "Returns dictionary of predecessors in depth-first-search from source."
+},
+{
+"area": "networkx.algorithms",
+"name": "dfs_preorder_nodes",
+"kind": "function",
+"doc": "Generate nodes in a depth-first-search pre-ordering starting at source."
+},
+{
+"area": "networkx.algorithms",
+"name": "dfs_successors",
+"kind": "function",
+"doc": "Returns dictionary of successors in depth-first-search from source."
+},
+{
+"area": "networkx.algorithms",
+"name": "dfs_tree",
+"kind": "function",
+"doc": "Returns oriented tree constructed from a depth-first-search from source."
+},
+{
+"area": "networkx.algorithms",
+"name": "diameter",
+"kind": "function",
+"doc": "Returns the diameter of the graph G."
+},
+{
+"area": "networkx.algorithms",
+"name": "difference",
+"kind": "function",
+"doc": "Returns a new graph that contains the edges that exist in G but not in H."
+},
+{
+"area": "networkx.algorithms",
+"name": "dijkstra_path",
+"kind": "function",
+"doc": "Returns the shortest weighted path from source to target in G."
+},
+{
+"area": "networkx.algorithms",
+"name": "dijkstra_path_length",
+"kind": "function",
+"doc": "Returns the shortest weighted path length in G from source to target."
+},
+{
+"area": "networkx.algorithms",
+"name": "dijkstra_predecessor_and_distance",
+"kind": "function",
+"doc": "Compute weighted shortest path length and predecessors."
+},
+{
+"area": "networkx.algorithms",
+"name": "directed_edge_swap",
+"kind": "function",
+"doc": "Swap three edges in a directed graph while keeping the node degrees fixed."
+},
+{
+"area": "networkx.algorithms",
+"name": "disjoint_union",
+"kind": "function",
+"doc": "Combine graphs G and H. The nodes are assumed to be unique (disjoint)."
+},
+{
+"area": "networkx.algorithms",
+"name": "disjoint_union_all",
+"kind": "function",
+"doc": "Returns the disjoint union of all graphs."
+},
+{
+"area": "networkx.algorithms",
+"name": "dispersion",
+"kind": "function",
+"doc": "Calculate dispersion between `u` and `v` in `G`."
+},
+{
+"area": "networkx.algorithms",
+"name": "dominance_frontiers",
+"kind": "function",
+"doc": "Returns the dominance frontiers of all nodes of a directed graph."
+},
+{
+"area": "networkx.algorithms",
+"name": "dominating_set",
+"kind": "function",
+"doc": "Finds a dominating set for the graph G."
+},
+{
+"area": "networkx.algorithms",
+"name": "double_edge_swap",
+"kind": "function",
+"doc": "Swap two edges in the graph while keeping the node degrees fixed."
+},
+{
+"area": "networkx.algorithms",
+"name": "eccentricity",
+"kind": "function",
+"doc": "Returns the eccentricity of nodes in G."
+},
+{
+"area": "networkx.algorithms",
+"name": "edge_betweenness_centrality",
+"kind": "function",
+"doc": "Compute betweenness centrality for edges."
+},
+{
+"area": "networkx.algorithms",
+"name": "edge_betweenness_centrality_subset",
+"kind": "function",
+"doc": "Compute betweenness centrality for edges for a subset of nodes."
+},
+{
+"area": "networkx.algorithms",
+"name": "edge_bfs",
+"kind": "function",
+"doc": "A directed, breadth-first-search of edges in `G`, beginning at `source`."
+},
+{
+"area": "networkx.algorithms",
+"name": "edge_boundary",
+"kind": "function",
+"doc": "Returns the edge boundary of `nbunch1`."
+},
+{
+"area": "networkx.algorithms",
+"name": "edge_connectivity",
+"kind": "function",
+"doc": "Returns the edge connectivity of the graph or digraph G."
+},
+{
+"area": "networkx.algorithms",
+"name": "edge_current_flow_betweenness_centrality",
+"kind": "function",
+"doc": "Compute current-flow betweenness centrality for edges."
+},
+{
+"area": "networkx.algorithms",
+"name": "edge_current_flow_betweenness_centrality_subset",
+"kind": "function",
+"doc": "Compute current-flow betweenness centrality for edges using subsets"
+},
+{
+"area": "networkx.algorithms",
+"name": "edge_dfs",
+"kind": "function",
+"doc": "A directed, depth-first-search of edges in `G`, beginning at `source`."
+},
+{
+"area": "networkx.algorithms",
+"name": "edge_disjoint_paths",
+"kind": "function",
+"doc": "Returns the edges disjoint paths between source and target."
+},
+{
+"area": "networkx.algorithms",
+"name": "edge_expansion",
+"kind": "function",
+"doc": "Returns the edge expansion between two node sets."
+},
+{
+"area": "networkx.algorithms",
+"name": "edge_load_centrality",
+"kind": "function",
+"doc": "Compute edge load."
+},
+{
+"area": "networkx.algorithms",
+"name": "effective_graph_resistance",
+"kind": "function",
+"doc": "Returns the Effective graph resistance of G."
+},
+{
+"area": "networkx.algorithms",
+"name": "effective_size",
+"kind": "function",
+"doc": "Returns the effective size of all nodes in the graph ``G``."
+},
+{
+"area": "networkx.algorithms",
+"name": "efficiency",
+"kind": "function",
+"doc": "Returns the efficiency of a pair of nodes in a graph."
+},
+{
+"area": "networkx.algorithms",
+"name": "eigenvector_centrality",
+"kind": "function",
+"doc": "Compute the eigenvector centrality for the graph G."
+},
+{
+"area": "networkx.algorithms",
+"name": "eigenvector_centrality_numpy",
+"kind": "function",
+"doc": "Compute the eigenvector centrality for the graph `G`."
+},
+{
+"area": "networkx.algorithms",
+"name": "enumerate_all_cliques",
+"kind": "function",
+"doc": "Returns all cliques in an undirected graph."
+},
+{
+"area": "networkx.algorithms",
+"name": "equitable_color",
+"kind": "function",
+"doc": "Provides an equitable coloring for nodes of `G`."
+},
+{
+"area": "networkx.algorithms",
+"name": "equivalence_classes",
+"kind": "function",
+"doc": "Returns equivalence classes of `relation` when applied to `iterable`."
+},
+{
+"area": "networkx.algorithms",
+"name": "estrada_index",
+"kind": "function",
+"doc": "Returns the Estrada index of a the graph G."
+},
+{
+"area": "networkx.algorithms",
+"name": "eulerian_circuit",
+"kind": "function",
+"doc": "Returns an iterator over the edges of an Eulerian circuit in `G`."
+},
+{
+"area": "networkx.algorithms",
+"name": "eulerian_path",
+"kind": "function",
+"doc": "Return an iterator over the edges of an Eulerian path in `G`."
+},
+{
+"area": "networkx.algorithms",
+"name": "eulerize",
+"kind": "function",
+"doc": "Transforms a graph into an Eulerian graph."
+},
+{
+"area": "networkx.algorithms",
+"name": "fast_could_be_isomorphic",
+"kind": "function",
+"doc": "Returns False if graphs are definitely not isomorphic."
+},
+{
+"area": "networkx.algorithms",
+"name": "faster_could_be_isomorphic",
+"kind": "function",
+"doc": "Returns False if graphs are definitely not isomorphic."
+},
+{
+"area": "networkx.algorithms",
+"name": "find_asteroidal_triple",
+"kind": "function",
+"doc": "Find an asteroidal triple in the given graph."
+},
+{
+"area": "networkx.algorithms",
+"name": "find_cliques",
+"kind": "function",
+"doc": "Returns all maximal cliques in an undirected graph."
+},
+{
+"area": "networkx.algorithms",
+"name": "find_cliques_recursive",
+"kind": "function",
+"doc": "Returns all maximal cliques in a graph."
+},
+{
+"area": "networkx.algorithms",
+"name": "find_cycle",
+"kind": "function",
+"doc": "Returns a cycle found via depth-first traversal."
+},
+{
+"area": "networkx.algorithms",
+"name": "find_induced_nodes",
+"kind": "function",
+"doc": "Returns the set of induced nodes in the path from s to t."
+},
+{
+"area": "networkx.algorithms",
+"name": "find_minimal_d_separator",
+"kind": "function",
+"doc": "Returns a minimal d-separating set between `x` and `y` if possible"
+},
+{
+"area": "networkx.algorithms",
+"name": "find_negative_cycle",
+"kind": "function",
+"doc": "Returns a cycle with negative total weight if it exists."
+},
+{
+"area": "networkx.algorithms",
+"name": "flow_hierarchy",
+"kind": "function",
+"doc": "Returns the flow hierarchy of a directed network."
+},
+{
+"area": "networkx.algorithms",
+"name": "floyd_warshall",
+"kind": "function",
+"doc": "Find all-pairs shortest path lengths using Floyd's algorithm."
+},
+{
+"area": "networkx.algorithms",
+"name": "floyd_warshall_numpy",
+"kind": "function",
+"doc": "Find all-pairs shortest path lengths using Floyd's algorithm."
+},
+{
+"area": "networkx.algorithms",
+"name": "floyd_warshall_predecessor_and_distance",
+"kind": "function",
+"doc": "Find all-pairs shortest path lengths using Floyd's algorithm."
+},
+{
+"area": "networkx.algorithms",
+"name": "floyd_warshall_tree",
+"kind": "function",
+"doc": "Find all-pairs shortest path lengths using a Tree-based"
+},
+{
+"area": "networkx.algorithms",
+"name": "from_nested_tuple",
+"kind": "function",
+"doc": "Returns the rooted tree corresponding to the given nested tuple."
+},
+{
+"area": "networkx.algorithms",
+"name": "from_prufer_sequence",
+"kind": "function",
+"doc": "Returns the tree corresponding to the given Pr\u00fcfer sequence."
+},
+{
+"area": "networkx.algorithms",
+"name": "full_join",
+"kind": "function",
+"doc": "Returns the full join of graphs G and H."
+},
+{
+"area": "networkx.algorithms",
+"name": "generalized_degree",
+"kind": "function",
+"doc": "Compute the generalized degree for nodes."
+},
+{
+"area": "networkx.algorithms",
+"name": "generate_random_paths",
+"kind": "function",
+"doc": "Randomly generate `sample_size` paths of length `path_length`."
+},
+{
+"area": "networkx.algorithms",
+"name": "generic_bfs_edges",
+"kind": "function",
+"doc": "Iterate over edges in a breadth-first search."
+},
+{
+"area": "networkx.algorithms",
+"name": "girth",
+"kind": "function",
+"doc": "Returns the girth of the graph."
+},
+{
+"area": "networkx.algorithms",
+"name": "global_efficiency",
+"kind": "function",
+"doc": "Returns the average global efficiency of the graph."
+},
+{
+"area": "networkx.algorithms",
+"name": "global_parameters",
+"kind": "function",
+"doc": "Returns global parameters for a given intersection array."
+},
+{
+"area": "networkx.algorithms",
+"name": "global_reaching_centrality",
+"kind": "function",
+"doc": "Returns the global reaching centrality of a directed graph."
+},
+{
+"area": "networkx.algorithms",
+"name": "goldberg_radzik",
+"kind": "function",
+"doc": "Compute shortest path lengths and predecessors on shortest paths"
+},
+{
+"area": "networkx.algorithms",
+"name": "gomory_hu_tree",
+"kind": "function",
+"doc": "Returns the Gomory-Hu tree of an undirected graph G."
+},
+{
+"area": "networkx.algorithms",
+"name": "google_matrix",
+"kind": "function",
+"doc": "Returns the Google matrix of the graph."
+},
+{
+"area": "networkx.algorithms",
+"name": "graph_edit_distance",
+"kind": "function",
+"doc": "Returns GED (graph edit distance) between graphs G1 and G2."
+},
+{
+"area": "networkx.algorithms",
+"name": "greedy_color",
+"kind": "function",
+"doc": "Color a graph using various strategies of greedy graph coloring."
+},
+{
+"area": "networkx.algorithms",
+"name": "group_betweenness_centrality",
+"kind": "function",
+"doc": "Compute the group betweenness centrality for a group of nodes."
+},
+{
+"area": "networkx.algorithms",
+"name": "group_closeness_centrality",
+"kind": "function",
+"doc": "Compute the group closeness centrality for a group of nodes."
+},
+{
+"area": "networkx.algorithms",
+"name": "group_degree_centrality",
+"kind": "function",
+"doc": "Compute the group degree centrality for a group of nodes."
+},
+{
+"area": "networkx.algorithms",
+"name": "group_in_degree_centrality",
+"kind": "function",
+"doc": "Compute the group in-degree centrality for a group of nodes."
+},
+{
+"area": "networkx.algorithms",
+"name": "group_out_degree_centrality",
+"kind": "function",
+"doc": "Compute the group out-degree centrality for a group of nodes."
+},
+{
+"area": "networkx.algorithms",
+"name": "gutman_index",
+"kind": "function",
+"doc": "Returns the Gutman Index for the graph `G`."
+},
+{
+"area": "networkx.algorithms",
+"name": "harmonic_centrality",
+"kind": "function",
+"doc": "Compute harmonic centrality for nodes."
+},
+{
+"area": "networkx.algorithms",
+"name": "harmonic_diameter",
+"kind": "function",
+"doc": "Returns the harmonic diameter of the graph G."
+},
+{
+"area": "networkx.algorithms",
+"name": "has_bridges",
+"kind": "function",
+"doc": "Decide whether a graph has any bridges."
+},
+{
+"area": "networkx.algorithms",
+"name": "has_eulerian_path",
+"kind": "function",
+"doc": "Return True iff `G` has an Eulerian path."
+},
+{
+"area": "networkx.algorithms",
+"name": "has_path",
+"kind": "function",
+"doc": "Returns *True* if *G* has a path from *source* to *target*."
+},
+{
+"area": "networkx.algorithms",
+"name": "hits",
+"kind": "function",
+"doc": "Returns HITS hubs and authorities values for nodes."
+},
+{
+"area": "networkx.algorithms",
+"name": "hyper_wiener_index",
+"kind": "function",
+"doc": "Returns the Hyper-Wiener index of the graph `G`."
+},
+{
+"area": "networkx.algorithms",
+"name": "identified_nodes",
+"kind": "function",
+"doc": "Returns the graph that results from contracting `u` and `v`."
+},
+{
+"area": "networkx.algorithms",
+"name": "immediate_dominators",
+"kind": "function",
+"doc": "Returns the immediate dominators of all nodes of a directed graph."
+},
+{
+"area": "networkx.algorithms",
+"name": "in_degree_centrality",
+"kind": "function",
+"doc": "Compute the in-degree centrality for nodes."
+},
+{
+"area": "networkx.algorithms",
+"name": "incremental_closeness_centrality",
+"kind": "function",
+"doc": "Incremental closeness centrality for nodes."
+},
+{
+"area": "networkx.algorithms",
+"name": "information_centrality",
+"kind": "function",
+"doc": "Compute current-flow closeness centrality for nodes."
+},
+{
+"area": "networkx.algorithms",
+"name": "intersection",
+"kind": "function",
+"doc": "Returns a new graph that contains only the nodes and the edges that exist in"
+},
+{
+"area": "networkx.algorithms",
+"name": "intersection_all",
+"kind": "function",
+"doc": "Returns a new graph that contains only the nodes and the edges that exist in"
+},
+{
+"area": "networkx.algorithms",
+"name": "intersection_array",
+"kind": "function",
+"doc": "Returns the intersection array of a distance-regular graph."
+},
+{
+"area": "networkx.algorithms",
+"name": "is_aperiodic",
+"kind": "function",
+"doc": "Determine whether a directed graph is aperiodic."
+},
+{
+"area": "networkx.algorithms",
+"name": "is_arborescence",
+"kind": "function",
+"doc": "Returns True if `G` is an arborescence."
+},
+{
+"area": "networkx.algorithms",
+"name": "is_at_free",
+"kind": "function",
+"doc": "Check if a graph is AT-free."
+},
+{
+"area": "networkx.algorithms",
+"name": "is_attracting_component",
+"kind": "function",
+"doc": "Returns True if `G` consists of a single attracting component."
+},
+{
+"area": "networkx.algorithms",
+"name": "is_biconnected",
+"kind": "function",
+"doc": "Returns True if the graph is biconnected, False otherwise."
+},
+{
+"area": "networkx.algorithms",
+"name": "is_bipartite",
+"kind": "function",
+"doc": "Returns True if graph G is bipartite, False if not."
+},
+{
+"area": "networkx.algorithms",
+"name": "is_branching",
+"kind": "function",
+"doc": "Returns True if `G` is a branching."
+},
+{
+"area": "networkx.algorithms",
+"name": "is_chordal",
+"kind": "function",
+"doc": "Checks whether G is a chordal graph."
+},
+{
+"area": "networkx.algorithms",
+"name": "is_connected",
+"kind": "function",
+"doc": "Returns True if the graph is connected, False otherwise."
+},
+{
+"area": "networkx.algorithms",
+"name": "is_connected_dominating_set",
+"kind": "function",
+"doc": "Checks if `nbunch` is a connected dominating set for `G`."
+},
+{
+"area": "networkx.algorithms",
+"name": "is_d_separator",
+"kind": "function",
+"doc": "Return whether node sets `x` and `y` are d-separated by `z`."
+},
+{
+"area": "networkx.algorithms",
+"name": "is_digraphical",
+"kind": "function",
+"doc": "Returns True if some directed graph can realize the in- and out-degree"
+},
+{
+"area": "networkx.algorithms",
+"name": "is_directed_acyclic_graph",
+"kind": "function",
+"doc": "Returns True if the graph `G` is a directed acyclic graph (DAG) or"
+},
+{
+"area": "networkx.algorithms",
+"name": "is_distance_regular",
+"kind": "function",
+"doc": "Returns True if the graph is distance regular, False otherwise."
+},
+{
+"area": "networkx.algorithms",
+"name": "is_dominating_set",
+"kind": "function",
+"doc": "Checks if `nbunch` is a dominating set for `G`."
+},
+{
+"area": "networkx.algorithms",
+"name": "is_edge_cover",
+"kind": "function",
+"doc": "Decides whether a set of edges is a valid edge cover of the graph."
+},
+{
+"area": "networkx.algorithms",
+"name": "is_eulerian",
+"kind": "function",
+"doc": "Returns True if and only if `G` is Eulerian."
+},
+{
+"area": "networkx.algorithms",
+"name": "is_forest",
+"kind": "function",
+"doc": "Returns True if `G` is a forest."
+},
+{
+"area": "networkx.algorithms",
+"name": "is_graphical",
+"kind": "function",
+"doc": "Returns True if sequence is a valid degree sequence."
+},
+{
+"area": "networkx.algorithms",
+"name": "is_isolate",
+"kind": "function",
+"doc": "Determines whether a node is an isolate."
+},
+{
+"area": "networkx.algorithms",
+"name": "is_isomorphic",
+"kind": "function",
+"doc": "Returns True if the graphs G1 and G2 are isomorphic and False otherwise."
+},
+{
+"area": "networkx.algorithms",
+"name": "is_k_edge_connected",
+"kind": "function",
+"doc": "Tests to see if a graph is k-edge-connected."
+},
+{
+"area": "networkx.algorithms",
+"name": "is_k_regular",
+"kind": "function",
+"doc": "Determines whether the graph ``G`` is a k-regular graph."
+},
+{
+"area": "networkx.algorithms",
+"name": "is_kl_connected",
+"kind": "function",
+"doc": "Returns True if and only if `G` is locally `(k, l)`-connected."
+},
+{
+"area": "networkx.algorithms",
+"name": "is_matching",
+"kind": "function",
+"doc": "Return True if ``matching`` is a valid matching of ``G``"
+},
+{
+"area": "networkx.algorithms",
+"name": "is_maximal_matching",
+"kind": "function",
+"doc": "Return True if ``matching`` is a maximal matching of ``G``"
+},
+{
+"area": "networkx.algorithms",
+"name": "is_minimal_d_separator",
+"kind": "function",
+"doc": "Determine if `z` is a minimal d-separator for `x` and `y`."
+},
+{
+"area": "networkx.algorithms",
+"name": "is_multigraphical",
+"kind": "function",
+"doc": "Returns True if some multigraph can realize the sequence."
+},
+{
+"area": "networkx.algorithms",
+"name": "is_perfect_graph",
+"kind": "function",
+"doc": "Return True if G is a perfect graph, else False."
+},
+{
+"area": "networkx.algorithms",
+"name": "is_perfect_matching",
+"kind": "function",
+"doc": "Return True if ``matching`` is a perfect matching for ``G``"
+},
+{
+"area": "networkx.algorithms",
+"name": "is_planar",
+"kind": "function",
+"doc": "Returns True if and only if `G` is planar."
+},
+{
+"area": "networkx.algorithms",
+"name": "is_pseudographical",
+"kind": "function",
+"doc": "Returns True if some pseudograph can realize the sequence."
+},
+{
+"area": "networkx.algorithms",
+"name": "is_regular",
+"kind": "function",
+"doc": "Determines whether a graph is regular."
+},
+{
+"area": "networkx.algorithms",
+"name": "is_semiconnected",
+"kind": "function",
+"doc": "Returns True if the graph is semiconnected, False otherwise."
+},
+{
+"area": "networkx.algorithms",
+"name": "is_semieulerian",
+"kind": "function",
+"doc": "Return True iff `G` is semi-Eulerian."
+},
+{
+"area": "networkx.algorithms",
+"name": "is_simple_path",
+"kind": "function",
+"doc": "Returns True if and only if `nodes` form a simple path in `G`."
+},
+{
+"area": "networkx.algorithms",
+"name": "is_strongly_connected",
+"kind": "function",
+"doc": "Test directed graph for strong connectivity."
+},
+{
+"area": "networkx.algorithms",
+"name": "is_strongly_regular",
+"kind": "function",
+"doc": "Returns True if and only if the given graph is strongly"
+},
+{
+"area": "networkx.algorithms",
+"name": "is_tournament",
+"kind": "function",
+"doc": "Returns True if and only if `G` is a tournament."
+},
+{
+"area": "networkx.algorithms",
+"name": "is_tree",
+"kind": "function",
+"doc": "Returns True if `G` is a tree."
+},
+{
+"area": "networkx.algorithms",
+"name": "is_triad",
+"kind": "function",
+"doc": "Returns True if the graph G is a triad, else False."
+},
+{
+"area": "networkx.algorithms",
+"name": "is_valid_degree_sequence_erdos_gallai",
+"kind": "function",
+"doc": "Returns True if deg_sequence can be realized by a simple graph."
+},
+{
+"area": "networkx.algorithms",
+"name": "is_valid_degree_sequence_havel_hakimi",
+"kind": "function",
+"doc": "Returns True if deg_sequence can be realized by a simple graph."
+},
+{
+"area": "networkx.algorithms",
+"name": "is_weakly_connected",
+"kind": "function",
+"doc": "Test directed graph for weak connectivity."
+},
+{
+"area": "networkx.algorithms",
+"name": "isolates",
+"kind": "function",
+"doc": "Iterator over isolates in the graph."
+},
+{
+"area": "networkx.algorithms",
+"name": "jaccard_coefficient",
+"kind": "function",
+"doc": "Compute the Jaccard coefficient of all node pairs in ebunch."
+},
+{
+"area": "networkx.algorithms",
+"name": "johnson",
+"kind": "function",
+"doc": "Uses Johnson's Algorithm to compute shortest paths."
+},
+{
+"area": "networkx.algorithms",
+"name": "join_trees",
+"kind": "function",
+"doc": "Returns a new rooted tree made by joining `rooted_trees`"
+},
+{
+"area": "networkx.algorithms",
+"name": "junction_tree",
+"kind": "function",
+"doc": "Returns a junction tree of a given graph."
+},
+{
+"area": "networkx.algorithms",
+"name": "k_components",
+"kind": "function",
+"doc": "Returns the k-component structure of a graph G."
+},
+{
+"area": "networkx.algorithms",
+"name": "k_core",
+"kind": "function",
+"doc": "Returns the k-core of G."
+},
+{
+"area": "networkx.algorithms",
+"name": "k_corona",
+"kind": "function",
+"doc": "Returns the k-corona of G."
+},
+{
+"area": "networkx.algorithms",
+"name": "k_crust",
+"kind": "function",
+"doc": "Returns the k-crust of G."
+},
+{
+"area": "networkx.algorithms",
+"name": "k_edge_augmentation",
+"kind": "function",
+"doc": "Finds set of edges to k-edge-connect G."
+},
+{
+"area": "networkx.algorithms",
+"name": "k_edge_components",
+"kind": "function",
+"doc": "Generates nodes in each maximal k-edge-connected component in G."
+},
+{
+"area": "networkx.algorithms",
+"name": "k_edge_subgraphs",
+"kind": "function",
+"doc": "Generates nodes in each maximal k-edge-connected subgraph in G."
+},
+{
+"area": "networkx.algorithms",
+"name": "k_factor",
+"kind": "function",
+"doc": "Compute a `k`-factor of a graph."
+},
+{
+"area": "networkx.algorithms",
+"name": "k_shell",
+"kind": "function",
+"doc": "Returns the k-shell of G."
+},
+{
+"area": "networkx.algorithms",
+"name": "k_truss",
+"kind": "function",
+"doc": "Returns the k-truss of `G`."
+},
+{
+"area": "networkx.algorithms",
+"name": "katz_centrality",
+"kind": "function",
+"doc": "Compute the Katz centrality for the nodes of the graph G."
+},
+{
+"area": "networkx.algorithms",
+"name": "katz_centrality_numpy",
+"kind": "function",
+"doc": "Compute the Katz centrality for the graph G."
+},
+{
+"area": "networkx.algorithms",
+"name": "kemeny_constant",
+"kind": "function",
+"doc": "Returns the Kemeny constant of the given graph."
+},
+{
+"area": "networkx.algorithms",
+"name": "kl_connected_subgraph",
+"kind": "function",
+"doc": "Returns the maximum locally `(k, l)`-connected subgraph of `G`."
+},
+{
+"area": "networkx.algorithms",
+"name": "kosaraju_strongly_connected_components",
+"kind": "function",
+"doc": "Generate nodes in strongly connected components of graph."
+},
+{
+"area": "networkx.algorithms",
+"name": "laplacian_centrality",
+"kind": "function",
+"doc": "Compute the Laplacian centrality for nodes in the graph `G`."
+},
+{
+"area": "networkx.algorithms",
+"name": "lattice_reference",
+"kind": "function",
+"doc": "Latticize the given graph by swapping edges."
+},
+{
+"area": "networkx.algorithms",
+"name": "lexicographic_product",
+"kind": "function",
+"doc": "Returns the lexicographic product of G and H."
+},
+{
+"area": "networkx.algorithms",
+"name": "lexicographical_topological_sort",
+"kind": "function",
+"doc": "Generate the nodes in the unique lexicographical topological sort order."
+},
+{
+"area": "networkx.algorithms",
+"name": "load_centrality",
+"kind": "function",
+"doc": "Compute load centrality for nodes."
+},
+{
+"area": "networkx.algorithms",
+"name": "local_bridges",
+"kind": "function",
+"doc": "Iterate over local bridges of `G` optionally computing the span"
+},
+{
+"area": "networkx.algorithms",
+"name": "local_constraint",
+"kind": "function",
+"doc": "Returns the local constraint on the node ``u`` with respect to"
+},
+{
+"area": "networkx.algorithms",
+"name": "local_efficiency",
+"kind": "function",
+"doc": "Returns the average local efficiency of the graph."
+},
+{
+"area": "networkx.algorithms",
+"name": "local_reaching_centrality",
+"kind": "function",
+"doc": "Returns the local reaching centrality of a node in a directed"
+},
+{
+"area": "networkx.algorithms",
+"name": "lowest_common_ancestor",
+"kind": "function",
+"doc": "Compute the lowest common ancestor of the given pair of nodes."
+},
+{
+"area": "networkx.algorithms",
+"name": "make_clique_bipartite",
+"kind": "function",
+"doc": "Returns the bipartite clique graph corresponding to `G`."
+},
+{
+"area": "networkx.algorithms",
+"name": "make_max_clique_graph",
+"kind": "function",
+"doc": "Returns the maximal clique graph of the given graph."
+},
+{
+"area": "networkx.algorithms",
+"name": "max_flow_min_cost",
+"kind": "function",
+"doc": "Returns a maximum (s, t)-flow of minimum cost."
+},
+{
+"area": "networkx.algorithms",
+"name": "max_weight_clique",
+"kind": "function",
+"doc": "Find a maximum weight clique in G."
+},
+{
+"area": "networkx.algorithms",
+"name": "max_weight_matching",
+"kind": "function",
+"doc": "Compute a maximum-weighted matching of G."
+},
+{
+"area": "networkx.algorithms",
+"name": "maximal_independent_set",
+"kind": "function",
+"doc": "Returns a random maximal independent set guaranteed to contain"
+},
+{
+"area": "networkx.algorithms",
+"name": "maximal_matching",
+"kind": "function",
+"doc": "Find a maximal matching in the graph."
+},
+{
+"area": "networkx.algorithms",
+"name": "maximum_branching",
+"kind": "function",
+"doc": "Returns a maximum branching from G."
+},
+{
+"area": "networkx.algorithms",
+"name": "maximum_flow",
+"kind": "function",
+"doc": "Find a maximum single-commodity flow."
+},
+{
+"area": "networkx.algorithms",
+"name": "maximum_flow_value",
+"kind": "function",
+"doc": "Find the value of maximum single-commodity flow."
+},
+{
+"area": "networkx.algorithms",
+"name": "maximum_spanning_arborescence",
+"kind": "function",
+"doc": "Returns a maximum spanning arborescence from G."
+},
+{
+"area": "networkx.algorithms",
+"name": "maximum_spanning_edges",
+"kind": "function",
+"doc": "Generate edges in a maximum spanning forest of an undirected"
+},
+{
+"area": "networkx.algorithms",
+"name": "maximum_spanning_tree",
+"kind": "function",
+"doc": "Returns a maximum spanning tree or forest on an undirected graph `G`."
+},
+{
+"area": "networkx.algorithms",
+"name": "min_cost_flow",
+"kind": "function",
+"doc": "Returns a minimum cost flow satisfying all demands in digraph G."
+},
+{
+"area": "networkx.algorithms",
+"name": "min_cost_flow_cost",
+"kind": "function",
+"doc": "Find the cost of a minimum cost flow satisfying all demands in digraph G."
+},
+{
+"area": "networkx.algorithms",
+"name": "min_edge_cover",
+"kind": "function",
+"doc": "Returns the min cardinality edge cover of the graph as a set of edges."
+},
+{
+"area": "networkx.algorithms",
+"name": "min_weight_matching",
+"kind": "function",
+"doc": "Compute a minimum-weight maximum-cardinality matching of `G`."
+},
+{
+"area": "networkx.algorithms",
+"name": "minimum_branching",
+"kind": "function",
+"doc": "Returns a minimum branching from G."
+},
+{
+"area": "networkx.algorithms",
+"name": "minimum_cut",
+"kind": "function",
+"doc": "Compute the value and the node partition of a minimum (s, t)-cut."
+},
+{
+"area": "networkx.algorithms",
+"name": "minimum_cut_value",
+"kind": "function",
+"doc": "Compute the value of a minimum (s, t)-cut."
+},
+{
+"area": "networkx.algorithms",
+"name": "minimum_cycle_basis",
+"kind": "function",
+"doc": "Returns a minimum weight cycle basis for G"
+},
+{
+"area": "networkx.algorithms",
+"name": "minimum_edge_cut",
+"kind": "function",
+"doc": "Returns a set of edges of minimum cardinality that disconnects G."
+},
+{
+"area": "networkx.algorithms",
+"name": "minimum_node_cut",
+"kind": "function",
+"doc": "Returns a set of nodes of minimum cardinality that disconnects G."
+},
+{
+"area": "networkx.algorithms",
+"name": "minimum_spanning_arborescence",
+"kind": "function",
+"doc": "Returns a minimum spanning arborescence from G."
+},
+{
+"area": "networkx.algorithms",
+"name": "minimum_spanning_edges",
+"kind": "function",
+"doc": "Generate edges in a minimum spanning forest of an undirected"
+},
+{
+"area": "networkx.algorithms",
+"name": "minimum_spanning_tree",
+"kind": "function",
+"doc": "Returns a minimum spanning tree or forest on an undirected graph `G`."
+},
+{
+"area": "networkx.algorithms",
+"name": "mixing_dict",
+"kind": "function",
+"doc": "Returns a dictionary representation of mixing matrix."
+},
+{
+"area": "networkx.algorithms",
+"name": "mixing_expansion",
+"kind": "function",
+"doc": "Returns the mixing expansion between two node sets."
+},
+{
+"area": "networkx.algorithms",
+"name": "modular_product",
+"kind": "function",
+"doc": "Returns the Modular product of G and H."
+},
+{
+"area": "networkx.algorithms",
+"name": "moral_graph",
+"kind": "function",
+"doc": "Return the Moral Graph"
+},
+{
+"area": "networkx.algorithms",
+"name": "multi_source_dijkstra",
+"kind": "function",
+"doc": "Find shortest weighted paths and lengths from a given set of"
+},
+{
+"area": "networkx.algorithms",
+"name": "multi_source_dijkstra_path",
+"kind": "function",
+"doc": "Find shortest weighted paths in G from a given set of source"
+},
+{
+"area": "networkx.algorithms",
+"name": "multi_source_dijkstra_path_length",
+"kind": "function",
+"doc": "Find shortest weighted path lengths in G from a given set of"
+},
+{
+"area": "networkx.algorithms",
+"name": "negative_edge_cycle",
+"kind": "function",
+"doc": "Returns True if there exists a negative edge cycle anywhere in G."
+},
+{
+"area": "networkx.algorithms",
+"name": "network_simplex",
+"kind": "function",
+"doc": "Find a minimum cost flow satisfying all demands in digraph G."
+},
+{
+"area": "networkx.algorithms",
+"name": "node_attribute_xy",
+"kind": "function",
+"doc": "Yields 2-tuples of node attribute values for all edges in `G`."
+},
+{
+"area": "networkx.algorithms",
+"name": "node_boundary",
+"kind": "function",
+"doc": "Returns the node boundary of `nbunch1`."
+},
+{
+"area": "networkx.algorithms",
+"name": "node_clique_number",
+"kind": "function",
+"doc": "Returns the size of the largest maximal clique containing each given node."
+},
+{
+"area": "networkx.algorithms",
+"name": "node_connected_component",
+"kind": "function",
+"doc": "Returns the set of nodes in the component of graph containing node n."
+},
+{
+"area": "networkx.algorithms",
+"name": "node_connectivity",
+"kind": "function",
+"doc": "Returns node connectivity for a graph or digraph G."
+},
+{
+"area": "networkx.algorithms",
+"name": "node_degree_xy",
+"kind": "function",
+"doc": "Yields 2-tuples of ``(degree, degree)`` values for edges in `G`."
+},
+{
+"area": "networkx.algorithms",
+"name": "node_disjoint_paths",
+"kind": "function",
+"doc": "Computes node disjoint paths between source and target."
+},
+{
+"area": "networkx.algorithms",
+"name": "node_expansion",
+"kind": "function",
+"doc": "Returns the node expansion of the set `S`."
+},
+{
+"area": "networkx.algorithms",
+"name": "non_randomness",
+"kind": "function",
+"doc": "Compute the non-randomness of a graph."
+},
+{
+"area": "networkx.algorithms",
+"name": "normalized_cut_size",
+"kind": "function",
+"doc": "Returns the normalized size of the cut between two sets of nodes."
+},
+{
+"area": "networkx.algorithms",
+"name": "number_attracting_components",
+"kind": "function",
+"doc": "Returns the number of attracting components in `G`."
+},
+{
+"area": "networkx.algorithms",
+"name": "number_connected_components",
+"kind": "function",
+"doc": "Returns the number of connected components."
+},
+{
+"area": "networkx.algorithms",
+"name": "number_of_cliques",
+"kind": "function",
+"doc": "Return the number of maximal cliques each node is part of."
+},
+{
+"area": "networkx.algorithms",
+"name": "number_of_isolates",
+"kind": "function",
+"doc": "Returns the number of isolates in the graph."
+},
+{
+"area": "networkx.algorithms",
+"name": "number_of_spanning_trees",
+"kind": "function",
+"doc": "Returns the number of spanning trees in `G`."
+},
+{
+"area": "networkx.algorithms",
+"name": "number_of_walks",
+"kind": "function",
+"doc": "Returns the number of walks connecting each pair of nodes in `G`"
+},
+{
+"area": "networkx.algorithms",
+"name": "number_strongly_connected_components",
+"kind": "function",
+"doc": "Returns number of strongly connected components in graph."
+},
+{
+"area": "networkx.algorithms",
+"name": "number_weakly_connected_components",
+"kind": "function",
+"doc": "Returns the number of weakly connected components in G."
+},
+{
+"area": "networkx.algorithms",
+"name": "numeric_assortativity_coefficient",
+"kind": "function",
+"doc": "Compute assortativity for numerical node attributes."
+},
+{
+"area": "networkx.algorithms",
+"name": "omega",
+"kind": "function",
+"doc": "Returns the small-world coefficient (omega) of a graph"
+},
+{
+"area": "networkx.algorithms",
+"name": "onion_layers",
+"kind": "function",
+"doc": "Returns the layer of each vertex in an onion decomposition of the graph."
+},
+{
+"area": "networkx.algorithms",
+"name": "optimal_edit_paths",
+"kind": "function",
+"doc": "Returns all minimum-cost edit paths transforming G1 to G2."
+},
+{
+"area": "networkx.algorithms",
+"name": "optimize_edit_paths",
+"kind": "function",
+"doc": "GED (graph edit distance) calculation: advanced interface."
+},
+{
+"area": "networkx.algorithms",
+"name": "optimize_graph_edit_distance",
+"kind": "function",
+"doc": "Returns consecutive approximations of GED (graph edit distance)"
+},
+{
+"area": "networkx.algorithms",
+"name": "out_degree_centrality",
+"kind": "function",
+"doc": "Compute the out-degree centrality for nodes."
+},
+{
+"area": "networkx.algorithms",
+"name": "overall_reciprocity",
+"kind": "function",
+"doc": "Compute the reciprocity for the whole graph."
+},
+{
+"area": "networkx.algorithms",
+"name": "pagerank",
+"kind": "function",
+"doc": "Returns the PageRank of the nodes in the graph."
+},
+{
+"area": "networkx.algorithms",
+"name": "panther_similarity",
+"kind": "function",
+"doc": "Returns the Panther similarity of nodes in the graph `G` to node ``v``."
+},
+{
+"area": "networkx.algorithms",
+"name": "panther_vector_similarity",
+"kind": "function",
+"doc": "Returns the Panther vector similarity (Panther++) of nodes in `G`."
+},
+{
+"area": "networkx.algorithms",
+"name": "partition_spanning_tree",
+"kind": "function",
+"doc": "Find a spanning tree while respecting a partition of edges."
+},
+{
+"area": "networkx.algorithms",
+"name": "percolation_centrality",
+"kind": "function",
+"doc": "Compute the percolation centrality for nodes."
+},
+{
+"area": "networkx.algorithms",
+"name": "periphery",
+"kind": "function",
+"doc": "Returns the periphery of the graph G."
+},
+{
+"area": "networkx.algorithms",
+"name": "power",
+"kind": "function",
+"doc": "Returns the specified power of a graph."
+},
+{
+"area": "networkx.algorithms",
+"name": "predecessor",
+"kind": "function",
+"doc": "Returns dict of predecessors for the path from source to all nodes in G."
+},
+{
+"area": "networkx.algorithms",
+"name": "preferential_attachment",
+"kind": "function",
+"doc": "Compute the preferential attachment score of all node pairs in ebunch."
+},
+{
+"area": "networkx.algorithms",
+"name": "projected_graph",
+"kind": "function",
+"doc": "Returns the projection of B onto one of its node sets."
+},
+{
+"area": "networkx.algorithms",
+"name": "prominent_group",
+"kind": "function",
+"doc": "Find the prominent group of size $k$ in graph $G$. The prominence of the"
+},
+{
+"area": "networkx.algorithms",
+"name": "quotient_graph",
+"kind": "function",
+"doc": "Returns the quotient graph of `G` under the specified equivalence"
+},
+{
+"area": "networkx.algorithms",
+"name": "ra_index_soundarajan_hopcroft",
+"kind": "function",
+"doc": "Compute the resource allocation index of all node pairs in"
+},
+{
+"area": "networkx.algorithms",
+"name": "radius",
+"kind": "function",
+"doc": "Returns the radius of the graph G."
+},
+{
+"area": "networkx.algorithms",
+"name": "random_reference",
+"kind": "function",
+"doc": "Compute a random graph by swapping edges of a given graph."
+},
+{
+"area": "networkx.algorithms",
+"name": "random_spanning_tree",
+"kind": "function",
+"doc": "Sample a random spanning tree using the edges weights of `G`."
+},
+{
+"area": "networkx.algorithms",
+"name": "random_walk",
+"kind": "function",
+"doc": "Yields nodes visited by a random walk starting at `start`."
+},
+{
+"area": "networkx.algorithms",
+"name": "reciprocity",
+"kind": "function",
+"doc": "Compute the reciprocity in a directed graph."
+},
+{
+"area": "networkx.algorithms",
+"name": "reconstruct_path",
+"kind": "function",
+"doc": "Reconstruct a path from source to target using the predecessors"
+},
+{
+"area": "networkx.algorithms",
+"name": "recursive_simple_cycles",
+"kind": "function",
+"doc": "Find simple cycles (elementary circuits) of a directed graph."
+},
+{
+"area": "networkx.algorithms",
+"name": "resistance_distance",
+"kind": "function",
+"doc": "Returns the resistance distance between pairs of nodes in graph G."
+},
+{
+"area": "networkx.algorithms",
+"name": "resource_allocation_index",
+"kind": "function",
+"doc": "Compute the resource allocation index of all node pairs in ebunch."
+},
+{
+"area": "networkx.algorithms",
+"name": "reverse",
+"kind": "function",
+"doc": "Returns the reverse directed graph of G."
+},
+{
+"area": "networkx.algorithms",
+"name": "rich_club_coefficient",
+"kind": "function",
+"doc": "Returns the rich-club coefficient of the graph `G`."
+},
+{
+"area": "networkx.algorithms",
+"name": "rooted_product",
+"kind": "function",
+"doc": "Return the rooted product of graphs G and H rooted at root in H."
+},
+{
+"area": "networkx.algorithms",
+"name": "s_metric",
+"kind": "function",
+"doc": "Returns the s-metric [1]_ of graph."
+},
+{
+"area": "networkx.algorithms",
+"name": "schultz_index",
+"kind": "function",
+"doc": "Returns the Schultz Index (of the first kind) of `G`"
+},
+{
+"area": "networkx.algorithms",
+"name": "second_order_centrality",
+"kind": "function",
+"doc": "Compute the second order centrality for nodes of G."
+},
+{
+"area": "networkx.algorithms",
+"name": "shortest_path",
+"kind": "function",
+"doc": "Compute shortest paths in the graph."
+},
+{
+"area": "networkx.algorithms",
+"name": "shortest_path_length",
+"kind": "function",
+"doc": "Compute shortest path lengths in the graph."
+},
+{
+"area": "networkx.algorithms",
+"name": "shortest_simple_paths",
+"kind": "function",
+"doc": "Generate all simple paths in the graph G from source to target,"
+},
+{
+"area": "networkx.algorithms",
+"name": "sigma",
+"kind": "function",
+"doc": "Returns the small-world coefficient (sigma) of the given graph."
+},
+{
+"area": "networkx.algorithms",
+"name": "simple_cycles",
+"kind": "function",
+"doc": "Find simple cycles (elementary circuits) of a graph."
+},
+{
+"area": "networkx.algorithms",
+"name": "simrank_similarity",
+"kind": "function",
+"doc": "Returns the SimRank similarity of nodes in the graph ``G``."
+},
+{
+"area": "networkx.algorithms",
+"name": "single_source_all_shortest_paths",
+"kind": "function",
+"doc": "Compute all shortest simple paths from the given source in the graph."
+},
+{
+"area": "networkx.algorithms",
+"name": "single_source_bellman_ford",
+"kind": "function",
+"doc": "Compute shortest paths and lengths in a weighted graph G."
+},
+{
+"area": "networkx.algorithms",
+"name": "single_source_bellman_ford_path",
+"kind": "function",
+"doc": "Compute shortest path between source and all other reachable"
+},
+{
+"area": "networkx.algorithms",
+"name": "single_source_bellman_ford_path_length",
+"kind": "function",
+"doc": "Compute the shortest path length between source and all other"
+},
+{
+"area": "networkx.algorithms",
+"name": "single_source_dijkstra",
+"kind": "function",
+"doc": "Find shortest weighted paths and lengths from a source node."
+},
+{
+"area": "networkx.algorithms",
+"name": "single_source_dijkstra_path",
+"kind": "function",
+"doc": "Find shortest weighted paths in G from a source node."
+},
+{
+"area": "networkx.algorithms",
+"name": "single_source_dijkstra_path_length",
+"kind": "function",
+"doc": "Find shortest weighted path lengths in G from a source node."
+},
+{
+"area": "networkx.algorithms",
+"name": "single_source_shortest_path",
+"kind": "function",
+"doc": "Compute shortest path between source"
+},
+{
+"area": "networkx.algorithms",
+"name": "single_source_shortest_path_length",
+"kind": "function",
+"doc": "Compute the shortest path lengths from `source` to all reachable nodes in `G`."
+},
+{
+"area": "networkx.algorithms",
+"name": "single_target_shortest_path",
+"kind": "function",
+"doc": "Compute shortest path to target from all nodes that reach target."
+},
+{
+"area": "networkx.algorithms",
+"name": "single_target_shortest_path_length",
+"kind": "function",
+"doc": "Compute the shortest path lengths to target from all reachable nodes."
+},
+{
+"area": "networkx.algorithms",
+"name": "snap_aggregation",
+"kind": "function",
+"doc": "Creates a summary graph based on attributes and connectivity."
+},
+{
+"area": "networkx.algorithms",
+"name": "spanner",
+"kind": "function",
+"doc": "Returns a spanner of the given graph with the given stretch."
+},
+{
+"area": "networkx.algorithms",
+"name": "square_clustering",
+"kind": "function",
+"doc": "Compute the squares clustering coefficient for nodes."
+},
+{
+"area": "networkx.algorithms",
+"name": "stoer_wagner",
+"kind": "function",
+"doc": "Returns the weighted minimum edge cut using the Stoer-Wagner algorithm."
+},
+{
+"area": "networkx.algorithms",
+"name": "strong_product",
+"kind": "function",
+"doc": "Returns the strong product of G and H."
+},
+{
+"area": "networkx.algorithms",
+"name": "strongly_connected_components",
+"kind": "function",
+"doc": "Generate nodes in strongly connected components of graph."
+},
+{
+"area": "networkx.algorithms",
+"name": "subgraph_centrality",
+"kind": "function",
+"doc": "Returns subgraph centrality for each node in G."
+},
+{
+"area": "networkx.algorithms",
+"name": "subgraph_centrality_exp",
+"kind": "function",
+"doc": "Returns the subgraph centrality for each node of G."
+},
+{
+"area": "networkx.algorithms",
+"name": "symmetric_difference",
+"kind": "function",
+"doc": "Returns new graph with edges that exist in either G or H but not both."
+},
+{
+"area": "networkx.algorithms",
+"name": "tensor_product",
+"kind": "function",
+"doc": "Returns the tensor product of G and H."
+},
+{
+"area": "networkx.algorithms",
+"name": "to_nested_tuple",
+"kind": "function",
+"doc": "Returns a nested tuple representation of the given tree."
+},
+{
+"area": "networkx.algorithms",
+"name": "to_prufer_sequence",
+"kind": "function",
+"doc": "Returns the Pr\u00fcfer sequence of the given tree."
+},
+{
+"area": "networkx.algorithms",
+"name": "topological_generations",
+"kind": "function",
+"doc": "Stratifies a DAG into generations."
+},
+{
+"area": "networkx.algorithms",
+"name": "topological_sort",
+"kind": "function",
+"doc": "Returns a generator of nodes in topologically sorted order."
+},
+{
+"area": "networkx.algorithms",
+"name": "transitive_closure",
+"kind": "function",
+"doc": "Returns transitive closure of a graph"
+},
+{
+"area": "networkx.algorithms",
+"name": "transitive_closure_dag",
+"kind": "function",
+"doc": "Returns the transitive closure of a directed acyclic graph."
+},
+{
+"area": "networkx.algorithms",
+"name": "transitive_reduction",
+"kind": "function",
+"doc": "Returns transitive reduction of a directed graph"
+},
+{
+"area": "networkx.algorithms",
+"name": "transitivity",
+"kind": "function",
+"doc": "Compute graph transitivity, the fraction of all possible triangles"
+},
+{
+"area": "networkx.algorithms",
+"name": "tree_all_pairs_lowest_common_ancestor",
+"kind": "function",
+"doc": "Yield the lowest common ancestor for sets of pairs in a tree."
+},
+{
+"area": "networkx.algorithms",
+"name": "tree_broadcast_center",
+"kind": "function",
+"doc": "Return the broadcast center of a tree."
+},
+{
+"area": "networkx.algorithms",
+"name": "tree_broadcast_time",
+"kind": "function",
+"doc": "Return the minimum broadcast time of a (node in a) tree."
+},
+{
+"area": "networkx.algorithms",
+"name": "triad_type",
+"kind": "function",
+"doc": "Returns the sociological triad type for a triad."
+},
+{
+"area": "networkx.algorithms",
+"name": "triadic_census",
+"kind": "function",
+"doc": "Determines the triadic census of a directed graph."
+},
+{
+"area": "networkx.algorithms",
+"name": "triads_by_type",
+"kind": "function",
+"doc": "Returns a list of all triads for each triad type in a directed graph."
+},
+{
+"area": "networkx.algorithms",
+"name": "triangles",
+"kind": "function",
+"doc": "Compute the number of triangles."
+},
+{
+"area": "networkx.algorithms",
+"name": "trophic_differences",
+"kind": "function",
+"doc": "Compute the trophic differences of the edges of a directed graph."
+},
+{
+"area": "networkx.algorithms",
+"name": "trophic_incoherence_parameter",
+"kind": "function",
+"doc": "Compute the trophic incoherence parameter of a graph."
+},
+{
+"area": "networkx.algorithms",
+"name": "trophic_levels",
+"kind": "function",
+"doc": "Compute the trophic levels of nodes."
+},
+{
+"area": "networkx.algorithms",
+"name": "tutte_polynomial",
+"kind": "function",
+"doc": "Returns the Tutte polynomial of `G`"
+},
+{
+"area": "networkx.algorithms",
+"name": "union",
+"kind": "function",
+"doc": "Combine graphs G and H. The names of nodes must be unique."
+},
+{
+"area": "networkx.algorithms",
+"name": "union_all",
+"kind": "function",
+"doc": "Returns the union of all graphs."
+},
+{
+"area": "networkx.algorithms",
+"name": "vf2pp_all_isomorphisms",
+"kind": "function",
+"doc": "Yields all the possible mappings between FG and SG."
+},
+{
+"area": "networkx.algorithms",
+"name": "vf2pp_all_monomorphisms",
+"kind": "function",
+"doc": "Yields all the possible monomorphisms between nodes of FG and SG."
+},
+{
+"area": "networkx.algorithms",
+"name": "vf2pp_all_subgraph_isomorphisms",
+"kind": "function",
+"doc": "Yields all the possible subgraph isomorphisms between FG and SG."
+},
+{
+"area": "networkx.algorithms",
+"name": "vf2pp_is_isomorphic",
+"kind": "function",
+"doc": "Examines whether SG and FG are isomorphic."
+},
+{
+"area": "networkx.algorithms",
+"name": "vf2pp_is_monomorphic",
+"kind": "function",
+"doc": "Examines whether SG and FG are monomorphic."
+},
+{
+"area": "networkx.algorithms",
+"name": "vf2pp_isomorphism",
+"kind": "function",
+"doc": "Return an isomorphic mapping between `FG` and `SG` if it exists."
+},
+{
+"area": "networkx.algorithms",
+"name": "vf2pp_monomorphism",
+"kind": "function",
+"doc": "Return a monomorphic mapping between `FG` and `SG` if it exists."
+},
+{
+"area": "networkx.algorithms",
+"name": "vf2pp_subgraph_is_isomorphic",
+"kind": "function",
+"doc": "Examines whether SG and FG are isomorphic."
+},
+{
+"area": "networkx.algorithms",
+"name": "vf2pp_subgraph_isomorphism",
+"kind": "function",
+"doc": "Return an isomorphic mapping between nodes of `FG` and `SG` if it exists."
+},
+{
+"area": "networkx.algorithms",
+"name": "volume",
+"kind": "function",
+"doc": "Returns the volume of a set of nodes."
+},
+{
+"area": "networkx.algorithms",
+"name": "voronoi_cells",
+"kind": "function",
+"doc": "Returns the Voronoi cells centered at `center_nodes` with respect"
+},
+{
+"area": "networkx.algorithms",
+"name": "voterank",
+"kind": "function",
+"doc": "Select a list of influential nodes in a graph using VoteRank algorithm"
+},
+{
+"area": "networkx.algorithms",
+"name": "weakly_connected_components",
+"kind": "function",
+"doc": "Generate weakly connected components of G."
+},
+{
+"area": "networkx.algorithms",
+"name": "weisfeiler_lehman_graph_hash",
+"kind": "function",
+"doc": "Return Weisfeiler Lehman (WL) graph hash."
+},
+{
+"area": "networkx.algorithms",
+"name": "weisfeiler_lehman_subgraph_hashes",
+"kind": "function",
+"doc": "Return a dictionary of subgraph hashes by node."
+},
+{
+"area": "networkx.algorithms",
+"name": "wiener_index",
+"kind": "function",
+"doc": "Returns the Wiener index of the given graph."
+},
+{
+"area": "networkx.algorithms",
+"name": "within_inter_cluster",
+"kind": "function",
+"doc": "Compute the ratio of within- and inter-cluster common neighbors"
+},
+{
+"area": "networkx.approximation",
+"name": "all_pairs_node_connectivity",
+"kind": "function",
+"doc": "Compute node connectivity between all pairs of nodes."
+},
+{
+"area": "networkx.approximation",
+"name": "asadpour_atsp",
+"kind": "function",
+"doc": "Returns an approximate solution to the traveling salesman problem."
+},
+{
+"area": "networkx.approximation",
+"name": "average_clustering",
+"kind": "function",
+"doc": "Estimates the average clustering coefficient of G."
+},
+{
+"area": "networkx.approximation",
+"name": "christofides",
+"kind": "function",
+"doc": "Approximate a solution of the traveling salesman problem"
+},
+{
+"area": "networkx.approximation",
+"name": "clique_removal",
+"kind": "function",
+"doc": "Repeatedly remove cliques from the graph."
+},
+{
+"area": "networkx.approximation",
+"name": "densest_subgraph",
+"kind": "function",
+"doc": "Returns an approximate densest subgraph for a graph `G`."
+},
+{
+"area": "networkx.approximation",
+"name": "diameter",
+"kind": "function",
+"doc": "Returns a lower bound on the diameter of the graph G."
+},
+{
+"area": "networkx.approximation",
+"name": "greedy_tsp",
+"kind": "function",
+"doc": "Return a low cost cycle starting at `source` and its cost."
+},
+{
+"area": "networkx.approximation",
+"name": "k_components",
+"kind": "function",
+"doc": "Returns the approximate k-component structure of a graph G."
+},
+{
+"area": "networkx.approximation",
+"name": "large_clique_size",
+"kind": "function",
+"doc": "Find the size of a large clique in a graph."
+},
+{
+"area": "networkx.approximation",
+"name": "local_node_connectivity",
+"kind": "function",
+"doc": "Compute node connectivity between source and target."
+},
+{
+"area": "networkx.approximation",
+"name": "max_clique",
+"kind": "function",
+"doc": "Find the Maximum Clique"
+},
+{
+"area": "networkx.approximation",
+"name": "maximum_independent_set",
+"kind": "function",
+"doc": "Returns an approximate maximum independent set."
+},
+{
+"area": "networkx.approximation",
+"name": "metric_closure",
+"kind": "function",
+"doc": "Return the metric closure of a graph."
+},
+{
+"area": "networkx.approximation",
+"name": "min_edge_dominating_set",
+"kind": "function",
+"doc": "Returns minimum cardinality edge dominating set."
+},
+{
+"area": "networkx.approximation",
+"name": "min_maximal_matching",
+"kind": "function",
+"doc": "Returns the minimum maximal matching of G. That is, out of all maximal"
+},
+{
+"area": "networkx.approximation",
+"name": "min_weighted_dominating_set",
+"kind": "function",
+"doc": "Returns a dominating set that approximates the minimum weight node"
+},
+{
+"area": "networkx.approximation",
+"name": "min_weighted_vertex_cover",
+"kind": "function",
+"doc": "Returns an approximate minimum weighted vertex cover."
+},
+{
+"area": "networkx.approximation",
+"name": "node_connectivity",
+"kind": "function",
+"doc": "Returns an approximation for node connectivity for a graph or digraph G."
+},
+{
+"area": "networkx.approximation",
+"name": "one_exchange",
+"kind": "function",
+"doc": "Compute a partitioning of the graphs nodes and the corresponding cut value."
+},
+{
+"area": "networkx.approximation",
+"name": "ramsey_R2",
+"kind": "function",
+"doc": "Compute the largest clique and largest independent set in `G`."
+},
+{
+"area": "networkx.approximation",
+"name": "randomized_partitioning",
+"kind": "function",
+"doc": "Compute a random partitioning of the graph nodes and its cut value."
+},
+{
+"area": "networkx.approximation",
+"name": "simulated_annealing_tsp",
+"kind": "function",
+"doc": "Returns an approximate solution to the traveling salesman problem."
+},
+{
+"area": "networkx.approximation",
+"name": "steiner_tree",
+"kind": "function",
+"doc": "Return an approximation to the minimum Steiner tree of a graph."
+},
+{
+"area": "networkx.approximation",
+"name": "threshold_accepting_tsp",
+"kind": "function",
+"doc": "Returns an approximate solution to the traveling salesman problem."
+},
+{
+"area": "networkx.approximation",
+"name": "traveling_salesman_problem",
+"kind": "function",
+"doc": "Find the shortest path in `G` connecting specified nodes"
+},
+{
+"area": "networkx.approximation",
+"name": "treewidth_min_degree",
+"kind": "function",
+"doc": "Returns a treewidth decomposition using the Minimum Degree heuristic."
+},
+{
+"area": "networkx.approximation",
+"name": "treewidth_min_fill_in",
+"kind": "function",
+"doc": "Returns a treewidth decomposition using the Minimum Fill-in heuristic."
+},
+{
+"area": "networkx.bipartite",
+"name": "alternating_havel_hakimi_graph",
+"kind": "function",
+"doc": "Returns a bipartite graph from two given degree sequences using"
+},
+{
+"area": "networkx.bipartite",
+"name": "average_clustering",
+"kind": "function",
+"doc": "Compute the average bipartite clustering coefficient."
+},
+{
+"area": "networkx.bipartite",
+"name": "betweenness_centrality",
+"kind": "function",
+"doc": "Compute betweenness centrality for nodes in a bipartite network."
+},
+{
+"area": "networkx.bipartite",
+"name": "biadjacency_matrix",
+"kind": "function",
+"doc": "Returns the biadjacency matrix of the bipartite graph G."
+},
+{
+"area": "networkx.bipartite",
+"name": "birank",
+"kind": "function",
+"doc": "Compute the BiRank score for nodes in a bipartite network."
+},
+{
+"area": "networkx.bipartite",
+"name": "butterflies",
+"kind": "function",
+"doc": "Count the number of butterflies for each node in a bipartite graph."
+},
+{
+"area": "networkx.bipartite",
+"name": "closeness_centrality",
+"kind": "function",
+"doc": "Compute the closeness centrality for nodes in a bipartite network."
+},
+{
+"area": "networkx.bipartite",
+"name": "clustering",
+"kind": "function",
+"doc": "Compute a bipartite clustering coefficient for nodes."
+},
+{
+"area": "networkx.bipartite",
+"name": "collaboration_weighted_projected_graph",
+"kind": "function",
+"doc": "Newman's weighted projection of B onto one of its node sets."
+},
+{
+"area": "networkx.bipartite",
+"name": "color",
+"kind": "function",
+"doc": "Returns a two-coloring of the graph."
+},
+{
+"area": "networkx.bipartite",
+"name": "complete_bipartite_graph",
+"kind": "function",
+"doc": "Returns the complete bipartite graph `K_{n_1,n_2}`."
+},
+{
+"area": "networkx.bipartite",
+"name": "configuration_model",
+"kind": "function",
+"doc": "Returns a random bipartite graph from two given degree sequences."
+},
+{
+"area": "networkx.bipartite",
+"name": "degree_centrality",
+"kind": "function",
+"doc": "Compute the degree centrality for nodes in a bipartite network."
+},
+{
+"area": "networkx.bipartite",
+"name": "degrees",
+"kind": "function",
+"doc": "Returns the degrees of the two node sets in the bipartite graph B."
+},
+{
+"area": "networkx.bipartite",
+"name": "density",
+"kind": "function",
+"doc": "Returns density of bipartite graph B."
+},
+{
+"area": "networkx.bipartite",
+"name": "eppstein_matching",
+"kind": "function",
+"doc": "Returns the maximum cardinality matching of the bipartite graph `G`."
+},
+{
+"area": "networkx.bipartite",
+"name": "from_biadjacency_matrix",
+"kind": "function",
+"doc": "Creates a new bipartite graph from a biadjacency matrix given as a"
+},
+{
+"area": "networkx.bipartite",
+"name": "generate_edgelist",
+"kind": "function",
+"doc": "Generate a single line of the bipartite graph G in edge list format."
+},
+{
+"area": "networkx.bipartite",
+"name": "generic_weighted_projected_graph",
+"kind": "function",
+"doc": "Weighted projection of B with a user-specified weight function."
+},
+{
+"area": "networkx.bipartite",
+"name": "gnmk_random_graph",
+"kind": "function",
+"doc": "Returns a random bipartite graph G_{n,m,k}."
+},
+{
+"area": "networkx.bipartite",
+"name": "havel_hakimi_graph",
+"kind": "function",
+"doc": "Returns a bipartite graph from two given degree sequences using a"
+},
+{
+"area": "networkx.bipartite",
+"name": "hopcroft_karp_matching",
+"kind": "function",
+"doc": "Returns the maximum cardinality matching of the bipartite graph `G`."
+},
+{
+"area": "networkx.bipartite",
+"name": "is_bipartite",
+"kind": "function",
+"doc": "Returns True if graph G is bipartite, False if not."
+},
+{
+"area": "networkx.bipartite",
+"name": "is_bipartite_node_set",
+"kind": "function",
+"doc": "Returns True if nodes and G/nodes are a bipartition of G."
+},
+{
+"area": "networkx.bipartite",
+"name": "latapy_clustering",
+"kind": "function",
+"doc": "Compute a bipartite clustering coefficient for nodes."
+},
+{
+"area": "networkx.bipartite",
+"name": "maximal_extendability",
+"kind": "function",
+"doc": "Computes the extendability of a graph."
+},
+{
+"area": "networkx.bipartite",
+"name": "maximum_matching",
+"kind": "function",
+"doc": "Returns the maximum cardinality matching of the bipartite graph `G`."
+},
+{
+"area": "networkx.bipartite",
+"name": "min_edge_cover",
+"kind": "function",
+"doc": "Returns a set of edges which constitutes"
+},
+{
+"area": "networkx.bipartite",
+"name": "minimum_weight_full_matching",
+"kind": "function",
+"doc": "Returns a minimum weight full matching of the bipartite graph `G`."
+},
+{
+"area": "networkx.bipartite",
+"name": "modularity",
+"kind": "function",
+"doc": "Returns Barber's bipartite modularity of the given partition."
+},
+{
+"area": "networkx.bipartite",
+"name": "node_redundancy",
+"kind": "function",
+"doc": "Computes the node redundancy coefficients for the nodes in the bipartite"
+},
+{
+"area": "networkx.bipartite",
+"name": "overlap_weighted_projected_graph",
+"kind": "function",
+"doc": "Overlap weighted projection of B onto one of its node sets."
+},
+{
+"area": "networkx.bipartite",
+"name": "parse_edgelist",
+"kind": "function",
+"doc": "Parse lines of an edge list representation of a bipartite graph."
+},
+{
+"area": "networkx.bipartite",
+"name": "preferential_attachment_graph",
+"kind": "function",
+"doc": "Create a bipartite graph with a preferential attachment model from"
+},
+{
+"area": "networkx.bipartite",
+"name": "projected_graph",
+"kind": "function",
+"doc": "Returns the projection of B onto one of its node sets."
+},
+{
+"area": "networkx.bipartite",
+"name": "random_graph",
+"kind": "function",
+"doc": "Returns a bipartite random graph."
+},
+{
+"area": "networkx.bipartite",
+"name": "read_edgelist",
+"kind": "function",
+"doc": "Read a bipartite graph from a list of edges."
+},
+{
+"area": "networkx.bipartite",
+"name": "reverse_havel_hakimi_graph",
+"kind": "function",
+"doc": "Returns a bipartite graph from two given degree sequences using a"
+},
+{
+"area": "networkx.bipartite",
+"name": "robins_alexander_clustering",
+"kind": "function",
+"doc": "Compute the bipartite clustering of G."
+},
+{
+"area": "networkx.bipartite",
+"name": "sets",
+"kind": "function",
+"doc": "Returns bipartite node sets of graph G."
+},
+{
+"area": "networkx.bipartite",
+"name": "spectral_bipartivity",
+"kind": "function",
+"doc": "Returns the spectral bipartivity."
+},
+{
+"area": "networkx.bipartite",
+"name": "to_vertex_cover",
+"kind": "function",
+"doc": "Returns the minimum vertex cover corresponding to the given maximum"
+},
+{
+"area": "networkx.bipartite",
+"name": "weighted_projected_graph",
+"kind": "function",
+"doc": "Returns a weighted projection of B onto one of its node sets."
+},
+{
+"area": "networkx.bipartite",
+"name": "write_edgelist",
+"kind": "function",
+"doc": "Write a bipartite graph as a list of edges."
+},
+{
+"area": "networkx.centrality",
+"name": "approximate_current_flow_betweenness_centrality",
+"kind": "function",
+"doc": "Compute the approximate current-flow betweenness centrality for nodes."
+},
+{
+"area": "networkx.centrality",
+"name": "betweenness_centrality",
+"kind": "function",
+"doc": "Compute the shortest-path betweenness centrality for nodes."
+},
+{
+"area": "networkx.centrality",
+"name": "betweenness_centrality_subset",
+"kind": "function",
+"doc": "Compute betweenness centrality for a subset of nodes."
+},
+{
+"area": "networkx.centrality",
+"name": "closeness_centrality",
+"kind": "function",
+"doc": "Compute closeness centrality for nodes."
+},
+{
+"area": "networkx.centrality",
+"name": "communicability_betweenness_centrality",
+"kind": "function",
+"doc": "Returns subgraph communicability for all pairs of nodes in G."
+},
+{
+"area": "networkx.centrality",
+"name": "current_flow_betweenness_centrality",
+"kind": "function",
+"doc": "Compute current-flow betweenness centrality for nodes."
+},
+{
+"area": "networkx.centrality",
+"name": "current_flow_betweenness_centrality_subset",
+"kind": "function",
+"doc": "Compute current-flow betweenness centrality for subsets of nodes."
+},
+{
+"area": "networkx.centrality",
+"name": "current_flow_closeness_centrality",
+"kind": "function",
+"doc": "Compute current-flow closeness centrality for nodes."
+},
+{
+"area": "networkx.centrality",
+"name": "degree_centrality",
+"kind": "function",
+"doc": "Compute the degree centrality for nodes."
+},
+{
+"area": "networkx.centrality",
+"name": "dispersion",
+"kind": "function",
+"doc": "Calculate dispersion between `u` and `v` in `G`."
+},
+{
+"area": "networkx.centrality",
+"name": "edge_betweenness_centrality",
+"kind": "function",
+"doc": "Compute betweenness centrality for edges."
+},
+{
+"area": "networkx.centrality",
+"name": "edge_betweenness_centrality_subset",
+"kind": "function",
+"doc": "Compute betweenness centrality for edges for a subset of nodes."
+},
+{
+"area": "networkx.centrality",
+"name": "edge_current_flow_betweenness_centrality",
+"kind": "function",
+"doc": "Compute current-flow betweenness centrality for edges."
+},
+{
+"area": "networkx.centrality",
+"name": "edge_current_flow_betweenness_centrality_subset",
+"kind": "function",
+"doc": "Compute current-flow betweenness centrality for edges using subsets"
+},
+{
+"area": "networkx.centrality",
+"name": "edge_load_centrality",
+"kind": "function",
+"doc": "Compute edge load."
+},
+{
+"area": "networkx.centrality",
+"name": "eigenvector_centrality",
+"kind": "function",
+"doc": "Compute the eigenvector centrality for the graph G."
+},
+{
+"area": "networkx.centrality",
+"name": "eigenvector_centrality_numpy",
+"kind": "function",
+"doc": "Compute the eigenvector centrality for the graph `G`."
+},
+{
+"area": "networkx.centrality",
+"name": "estrada_index",
+"kind": "function",
+"doc": "Returns the Estrada index of a the graph G."
+},
+{
+"area": "networkx.centrality",
+"name": "global_reaching_centrality",
+"kind": "function",
+"doc": "Returns the global reaching centrality of a directed graph."
+},
+{
+"area": "networkx.centrality",
+"name": "group_betweenness_centrality",
+"kind": "function",
+"doc": "Compute the group betweenness centrality for a group of nodes."
+},
+{
+"area": "networkx.centrality",
+"name": "group_closeness_centrality",
+"kind": "function",
+"doc": "Compute the group closeness centrality for a group of nodes."
+},
+{
+"area": "networkx.centrality",
+"name": "group_degree_centrality",
+"kind": "function",
+"doc": "Compute the group degree centrality for a group of nodes."
+},
+{
+"area": "networkx.centrality",
+"name": "group_in_degree_centrality",
+"kind": "function",
+"doc": "Compute the group in-degree centrality for a group of nodes."
+},
+{
+"area": "networkx.centrality",
+"name": "group_out_degree_centrality",
+"kind": "function",
+"doc": "Compute the group out-degree centrality for a group of nodes."
+},
+{
+"area": "networkx.centrality",
+"name": "harmonic_centrality",
+"kind": "function",
+"doc": "Compute harmonic centrality for nodes."
+},
+{
+"area": "networkx.centrality",
+"name": "in_degree_centrality",
+"kind": "function",
+"doc": "Compute the in-degree centrality for nodes."
+},
+{
+"area": "networkx.centrality",
+"name": "incremental_closeness_centrality",
+"kind": "function",
+"doc": "Incremental closeness centrality for nodes."
+},
+{
+"area": "networkx.centrality",
+"name": "information_centrality",
+"kind": "function",
+"doc": "Compute current-flow closeness centrality for nodes."
+},
+{
+"area": "networkx.centrality",
+"name": "katz_centrality",
+"kind": "function",
+"doc": "Compute the Katz centrality for the nodes of the graph G."
+},
+{
+"area": "networkx.centrality",
+"name": "katz_centrality_numpy",
+"kind": "function",
+"doc": "Compute the Katz centrality for the graph G."
+},
+{
+"area": "networkx.centrality",
+"name": "laplacian_centrality",
+"kind": "function",
+"doc": "Compute the Laplacian centrality for nodes in the graph `G`."
+},
+{
+"area": "networkx.centrality",
+"name": "load_centrality",
+"kind": "function",
+"doc": "Compute load centrality for nodes."
+},
+{
+"area": "networkx.centrality",
+"name": "local_reaching_centrality",
+"kind": "function",
+"doc": "Returns the local reaching centrality of a node in a directed"
+},
+{
+"area": "networkx.centrality",
+"name": "out_degree_centrality",
+"kind": "function",
+"doc": "Compute the out-degree centrality for nodes."
+},
+{
+"area": "networkx.centrality",
+"name": "percolation_centrality",
+"kind": "function",
+"doc": "Compute the percolation centrality for nodes."
+},
+{
+"area": "networkx.centrality",
+"name": "prominent_group",
+"kind": "function",
+"doc": "Find the prominent group of size $k$ in graph $G$. The prominence of the"
+},
+{
+"area": "networkx.centrality",
+"name": "second_order_centrality",
+"kind": "function",
+"doc": "Compute the second order centrality for nodes of G."
+},
+{
+"area": "networkx.centrality",
+"name": "subgraph_centrality",
+"kind": "function",
+"doc": "Returns subgraph centrality for each node in G."
+},
+{
+"area": "networkx.centrality",
+"name": "subgraph_centrality_exp",
+"kind": "function",
+"doc": "Returns the subgraph centrality for each node of G."
+},
+{
+"area": "networkx.centrality",
+"name": "trophic_differences",
+"kind": "function",
+"doc": "Compute the trophic differences of the edges of a directed graph."
+},
+{
+"area": "networkx.centrality",
+"name": "trophic_incoherence_parameter",
+"kind": "function",
+"doc": "Compute the trophic incoherence parameter of a graph."
+},
+{
+"area": "networkx.centrality",
+"name": "trophic_levels",
+"kind": "function",
+"doc": "Compute the trophic levels of nodes."
+},
+{
+"area": "networkx.centrality",
+"name": "voterank",
+"kind": "function",
+"doc": "Select a list of influential nodes in a graph using VoteRank algorithm"
+},
+{
+"area": "networkx.clique",
+"name": "Counter",
+"kind": "class",
+"doc": "Dict subclass for counting hashable items.  Sometimes called a bag"
+},
+{
+"area": "networkx.clique",
+"name": "MaxWeightClique",
+"kind": "class",
+"doc": "A class for the maximum weight clique algorithm."
+},
+{
+"area": "networkx.clique",
+"name": "chain",
+"kind": "class",
+"doc": "Return a chain object whose .__next__() method returns elements from the"
+},
+{
+"area": "networkx.clique",
+"name": "combinations",
+"kind": "class",
+"doc": "Return successive r-length combinations of elements in the iterable."
+},
+{
+"area": "networkx.clique",
+"name": "defaultdict",
+"kind": "class",
+"doc": "defaultdict(default_factory=None, /, [...]) --> dict with default factory"
+},
+{
+"area": "networkx.clique",
+"name": "deque",
+"kind": "class",
+"doc": "A list-like sequence optimized for data accesses near its endpoints."
+},
+{
+"area": "networkx.clique",
+"name": "enumerate_all_cliques",
+"kind": "function",
+"doc": "Returns all cliques in an undirected graph."
+},
+{
+"area": "networkx.clique",
+"name": "find_cliques",
+"kind": "function",
+"doc": "Returns all maximal cliques in an undirected graph."
+},
+{
+"area": "networkx.clique",
+"name": "find_cliques_recursive",
+"kind": "function",
+"doc": "Returns all maximal cliques in a graph."
+},
+{
+"area": "networkx.clique",
+"name": "islice",
+"kind": "class",
+"doc": "islice(iterable, stop) --> islice object"
+},
+{
+"area": "networkx.clique",
+"name": "make_clique_bipartite",
+"kind": "function",
+"doc": "Returns the bipartite clique graph corresponding to `G`."
+},
+{
+"area": "networkx.clique",
+"name": "make_max_clique_graph",
+"kind": "function",
+"doc": "Returns the maximal clique graph of the given graph."
+},
+{
+"area": "networkx.clique",
+"name": "max_weight_clique",
+"kind": "function",
+"doc": "Find a maximum weight clique in G."
+},
+{
+"area": "networkx.clique",
+"name": "node_clique_number",
+"kind": "function",
+"doc": "Returns the size of the largest maximal clique containing each given node."
+},
+{
+"area": "networkx.clique",
+"name": "not_implemented_for",
+"kind": "function",
+"doc": "Decorator to mark algorithms as not implemented"
+},
+{
+"area": "networkx.clique",
+"name": "number_of_cliques",
+"kind": "function",
+"doc": "Return the number of maximal cliques each node is part of."
+},
+{
+"area": "networkx.coloring",
+"name": "equitable_color",
+"kind": "function",
+"doc": "Provides an equitable coloring for nodes of `G`."
+},
+{
+"area": "networkx.coloring",
+"name": "greedy_color",
+"kind": "function",
+"doc": "Color a graph using various strategies of greedy graph coloring."
+},
+{
+"area": "networkx.coloring",
+"name": "strategy_connected_sequential",
+"kind": "function",
+"doc": "Returns an iterable over nodes in ``G`` in the order given by a"
+},
+{
+"area": "networkx.coloring",
+"name": "strategy_connected_sequential_bfs",
+"kind": "function",
+"doc": "Returns an iterable over nodes in ``G`` in the order given by a"
+},
+{
+"area": "networkx.coloring",
+"name": "strategy_connected_sequential_dfs",
+"kind": "function",
+"doc": "Returns an iterable over nodes in ``G`` in the order given by a"
+},
+{
+"area": "networkx.coloring",
+"name": "strategy_independent_set",
+"kind": "function",
+"doc": "Uses a greedy independent set removal strategy to determine the"
+},
+{
+"area": "networkx.coloring",
+"name": "strategy_largest_first",
+"kind": "function",
+"doc": "Returns a list of the nodes of ``G`` in decreasing order by"
+},
+{
+"area": "networkx.coloring",
+"name": "strategy_random_sequential",
+"kind": "function",
+"doc": "Returns a random permutation of the nodes of ``G`` as a list."
+},
+{
+"area": "networkx.coloring",
+"name": "strategy_saturation_largest_first",
+"kind": "function",
+"doc": "Iterates over all the nodes of ``G`` in \"saturation order\" (also"
+},
+{
+"area": "networkx.coloring",
+"name": "strategy_smallest_last",
+"kind": "function",
+"doc": "Returns a deque of the nodes of ``G``, \"smallest\" last."
+},
+{
+"area": "networkx.community",
+"name": "asyn_fluidc",
+"kind": "function",
+"doc": "Returns communities in `G` as detected by Fluid Communities algorithm."
+},
+{
+"area": "networkx.community",
+"name": "asyn_lpa_communities",
+"kind": "function",
+"doc": "Returns communities in `G` as detected by asynchronous label"
+},
+{
+"area": "networkx.community",
+"name": "constant_potts_model",
+"kind": "function",
+"doc": "Computes the Constant Potts Model, which is a measure of quality of a"
+},
+{
+"area": "networkx.community",
+"name": "edge_betweenness_partition",
+"kind": "function",
+"doc": "Partition created by iteratively removing the highest edge betweenness edge."
+},
+{
+"area": "networkx.community",
+"name": "edge_current_flow_betweenness_partition",
+"kind": "function",
+"doc": "Partition created by removing the highest edge current flow betweenness edge."
+},
+{
+"area": "networkx.community",
+"name": "fast_label_propagation_communities",
+"kind": "function",
+"doc": "Returns communities in `G` as detected by fast label propagation."
+},
+{
+"area": "networkx.community",
+"name": "girvan_newman",
+"kind": "function",
+"doc": "Finds communities in a graph using the Girvan\u2013Newman method."
+},
+{
+"area": "networkx.community",
+"name": "greedy_modularity_communities",
+"kind": "function",
+"doc": "Find communities in G using greedy modularity maximization."
+},
+{
+"area": "networkx.community",
+"name": "greedy_node_swap_bipartition",
+"kind": "function",
+"doc": "Split the nodes into two communities based on greedy"
+},
+{
+"area": "networkx.community",
+"name": "greedy_source_expansion",
+"kind": "function",
+"doc": "Find the local community around a source node."
+},
+{
+"area": "networkx.community",
+"name": "is_cover",
+"kind": "function",
+"doc": "Returns *True* if `communities` is a cover of the nodes of `G`."
+},
+{
+"area": "networkx.community",
+"name": "is_partition",
+"kind": "function",
+"doc": "Returns *True* if `communities` is a partition of the nodes of `G`."
+},
+{
+"area": "networkx.community",
+"name": "k_clique_communities",
+"kind": "function",
+"doc": "Find k-clique communities in graph using the percolation method."
+},
+{
+"area": "networkx.community",
+"name": "kernighan_lin_bisection",
+"kind": "function",
+"doc": "Partition a graph into two blocks using the Kernighan\u2013Lin algorithm."
+},
+{
+"area": "networkx.community",
+"name": "label_propagation_communities",
+"kind": "function",
+"doc": "Generates community sets determined by label propagation"
+},
+{
+"area": "networkx.community",
+"name": "leiden_communities",
+"kind": "function",
+"doc": "Return best node communities of `G`."
+},
+{
+"area": "networkx.community",
+"name": "leiden_partitions",
+"kind": "function",
+"doc": "Yield partitions at each level of Leiden Community Detection"
+},
+{
+"area": "networkx.community",
+"name": "louvain_communities",
+"kind": "function",
+"doc": "Find the best partition of a graph using the Louvain Community Detection"
+},
+{
+"area": "networkx.community",
+"name": "louvain_partitions",
+"kind": "function",
+"doc": "Yield partitions for each level of the Louvain Community Detection Algorithm"
+},
+{
+"area": "networkx.community",
+"name": "lukes_partitioning",
+"kind": "function",
+"doc": "Optimal partitioning of a weighted tree using the Lukes algorithm."
+},
+{
+"area": "networkx.community",
+"name": "modularity",
+"kind": "function",
+"doc": "Returns the modularity of the given partition of the graph."
+},
+{
+"area": "networkx.community",
+"name": "naive_greedy_modularity_communities",
+"kind": "function",
+"doc": "Find communities in G using greedy modularity maximization."
+},
+{
+"area": "networkx.community",
+"name": "overlapping_modularity",
+"kind": "function",
+"doc": "Returns Shen et al.'s extended modularity for an overlapping cover."
+},
+{
+"area": "networkx.community",
+"name": "partition_quality",
+"kind": "function",
+"doc": "Returns the coverage and performance of a partition of G."
+},
+{
+"area": "networkx.community",
+"name": "spectral_modularity_bipartition",
+"kind": "function",
+"doc": "Return a bipartition of the nodes based on the spectrum of the"
+},
+{
+"area": "networkx.components",
+"name": "articulation_points",
+"kind": "function",
+"doc": "Yield the articulation points, or cut vertices, of a graph."
+},
+{
+"area": "networkx.components",
+"name": "attracting_components",
+"kind": "function",
+"doc": "Generates the attracting components in `G`."
+},
+{
+"area": "networkx.components",
+"name": "biconnected_component_edges",
+"kind": "function",
+"doc": "Returns a generator of lists of edges, one list for each biconnected"
+},
+{
+"area": "networkx.components",
+"name": "biconnected_components",
+"kind": "function",
+"doc": "Returns a generator of sets of nodes, one set for each biconnected"
+},
+{
+"area": "networkx.components",
+"name": "condensation",
+"kind": "function",
+"doc": "Returns the condensation of G."
+},
+{
+"area": "networkx.components",
+"name": "connected_components",
+"kind": "function",
+"doc": "Generate connected components."
+},
+{
+"area": "networkx.components",
+"name": "is_attracting_component",
+"kind": "function",
+"doc": "Returns True if `G` consists of a single attracting component."
+},
+{
+"area": "networkx.components",
+"name": "is_biconnected",
+"kind": "function",
+"doc": "Returns True if the graph is biconnected, False otherwise."
+},
+{
+"area": "networkx.components",
+"name": "is_connected",
+"kind": "function",
+"doc": "Returns True if the graph is connected, False otherwise."
+},
+{
+"area": "networkx.components",
+"name": "is_semiconnected",
+"kind": "function",
+"doc": "Returns True if the graph is semiconnected, False otherwise."
+},
+{
+"area": "networkx.components",
+"name": "is_strongly_connected",
+"kind": "function",
+"doc": "Test directed graph for strong connectivity."
+},
+{
+"area": "networkx.components",
+"name": "is_weakly_connected",
+"kind": "function",
+"doc": "Test directed graph for weak connectivity."
+},
+{
+"area": "networkx.components",
+"name": "kosaraju_strongly_connected_components",
+"kind": "function",
+"doc": "Generate nodes in strongly connected components of graph."
+},
+{
+"area": "networkx.components",
+"name": "node_connected_component",
+"kind": "function",
+"doc": "Returns the set of nodes in the component of graph containing node n."
+},
+{
+"area": "networkx.components",
+"name": "number_attracting_components",
+"kind": "function",
+"doc": "Returns the number of attracting components in `G`."
+},
+{
+"area": "networkx.components",
+"name": "number_connected_components",
+"kind": "function",
+"doc": "Returns the number of connected components."
+},
+{
+"area": "networkx.components",
+"name": "number_strongly_connected_components",
+"kind": "function",
+"doc": "Returns number of strongly connected components in graph."
+},
+{
+"area": "networkx.components",
+"name": "number_weakly_connected_components",
+"kind": "function",
+"doc": "Returns the number of weakly connected components in G."
+},
+{
+"area": "networkx.components",
+"name": "strongly_connected_components",
+"kind": "function",
+"doc": "Generate nodes in strongly connected components of graph."
+},
+{
+"area": "networkx.components",
+"name": "weakly_connected_components",
+"kind": "function",
+"doc": "Generate weakly connected components of G."
+},
+{
+"area": "networkx.connectivity",
+"name": "EdgeComponentAuxGraph",
+"kind": "class",
+"doc": "A simple algorithm to find all k-edge-connected components in a graph."
+},
+{
+"area": "networkx.connectivity",
+"name": "all_node_cuts",
+"kind": "function",
+"doc": "Returns all minimum k cutsets of an undirected graph G."
+},
+{
+"area": "networkx.connectivity",
+"name": "all_pairs_node_connectivity",
+"kind": "function",
+"doc": "Compute node connectivity between all pairs of nodes of G."
+},
+{
+"area": "networkx.connectivity",
+"name": "average_node_connectivity",
+"kind": "function",
+"doc": "Returns the average connectivity of a graph G."
+},
+{
+"area": "networkx.connectivity",
+"name": "bridge_components",
+"kind": "function",
+"doc": "Finds all bridge-connected components G."
+},
+{
+"area": "networkx.connectivity",
+"name": "build_auxiliary_edge_connectivity",
+"kind": "function",
+"doc": "Auxiliary digraph for computing flow based edge connectivity"
+},
+{
+"area": "networkx.connectivity",
+"name": "build_auxiliary_node_connectivity",
+"kind": "function",
+"doc": "Creates a directed graph D from an undirected graph G to compute flow"
+},
+{
+"area": "networkx.connectivity",
+"name": "edge_connectivity",
+"kind": "function",
+"doc": "Returns the edge connectivity of the graph or digraph G."
+},
+{
+"area": "networkx.connectivity",
+"name": "edge_disjoint_paths",
+"kind": "function",
+"doc": "Returns the edges disjoint paths between source and target."
+},
+{
+"area": "networkx.connectivity",
+"name": "is_k_edge_connected",
+"kind": "function",
+"doc": "Tests to see if a graph is k-edge-connected."
+},
+{
+"area": "networkx.connectivity",
+"name": "is_locally_k_edge_connected",
+"kind": "function",
+"doc": "Tests to see if an edge in a graph is locally k-edge-connected."
+},
+{
+"area": "networkx.connectivity",
+"name": "k_components",
+"kind": "function",
+"doc": "Returns the k-component structure of a graph G."
+},
+{
+"area": "networkx.connectivity",
+"name": "k_edge_augmentation",
+"kind": "function",
+"doc": "Finds set of edges to k-edge-connect G."
+},
+{
+"area": "networkx.connectivity",
+"name": "k_edge_components",
+"kind": "function",
+"doc": "Generates nodes in each maximal k-edge-connected component in G."
+},
+{
+"area": "networkx.connectivity",
+"name": "k_edge_subgraphs",
+"kind": "function",
+"doc": "Generates nodes in each maximal k-edge-connected subgraph in G."
+},
+{
+"area": "networkx.connectivity",
+"name": "local_edge_connectivity",
+"kind": "function",
+"doc": "Returns local edge connectivity for nodes s and t in G."
+},
+{
+"area": "networkx.connectivity",
+"name": "local_node_connectivity",
+"kind": "function",
+"doc": "Computes local node connectivity for nodes s and t."
+},
+{
+"area": "networkx.connectivity",
+"name": "minimum_edge_cut",
+"kind": "function",
+"doc": "Returns a set of edges of minimum cardinality that disconnects G."
+},
+{
+"area": "networkx.connectivity",
+"name": "minimum_node_cut",
+"kind": "function",
+"doc": "Returns a set of nodes of minimum cardinality that disconnects G."
+},
+{
+"area": "networkx.connectivity",
+"name": "minimum_st_edge_cut",
+"kind": "function",
+"doc": "Returns the edges of the cut-set of a minimum (s, t)-cut."
+},
+{
+"area": "networkx.connectivity",
+"name": "minimum_st_node_cut",
+"kind": "function",
+"doc": "Returns a set of nodes of minimum cardinality that disconnect source"
+},
+{
+"area": "networkx.connectivity",
+"name": "node_connectivity",
+"kind": "function",
+"doc": "Returns node connectivity for a graph or digraph G."
+},
+{
+"area": "networkx.connectivity",
+"name": "node_disjoint_paths",
+"kind": "function",
+"doc": "Computes node disjoint paths between source and target."
+},
+{
+"area": "networkx.connectivity",
+"name": "stoer_wagner",
+"kind": "function",
+"doc": "Returns the weighted minimum edge cut using the Stoer-Wagner algorithm."
+},
+{
+"area": "networkx.cycles",
+"name": "chordless_cycles",
+"kind": "function",
+"doc": "Find simple chordless cycles of a graph."
+},
+{
+"area": "networkx.cycles",
+"name": "combinations",
+"kind": "class",
+"doc": "Return successive r-length combinations of elements in the iterable."
+},
+{
+"area": "networkx.cycles",
+"name": "cycle_basis",
+"kind": "function",
+"doc": "Returns a list of cycles which form a basis for cycles of G."
+},
+{
+"area": "networkx.cycles",
+"name": "defaultdict",
+"kind": "class",
+"doc": "defaultdict(default_factory=None, /, [...]) --> dict with default factory"
+},
+{
+"area": "networkx.cycles",
+"name": "find_cycle",
+"kind": "function",
+"doc": "Returns a cycle found via depth-first traversal."
+},
+{
+"area": "networkx.cycles",
+"name": "girth",
+"kind": "function",
+"doc": "Returns the girth of the graph."
+},
+{
+"area": "networkx.cycles",
+"name": "minimum_cycle_basis",
+"kind": "function",
+"doc": "Returns a minimum weight cycle basis for G"
+},
+{
+"area": "networkx.cycles",
+"name": "not_implemented_for",
+"kind": "function",
+"doc": "Decorator to mark algorithms as not implemented"
+},
+{
+"area": "networkx.cycles",
+"name": "pairwise",
+"kind": "function",
+"doc": "Return successive overlapping pairs taken from an input iterable."
+},
+{
+"area": "networkx.cycles",
+"name": "product",
+"kind": "class",
+"doc": "Cartesian product of input iterables.  Equivalent to nested for-loops."
+},
+{
+"area": "networkx.cycles",
+"name": "recursive_simple_cycles",
+"kind": "function",
+"doc": "Find simple cycles (elementary circuits) of a directed graph."
+},
+{
+"area": "networkx.cycles",
+"name": "simple_cycles",
+"kind": "function",
+"doc": "Find simple cycles (elementary circuits) of a graph."
+},
+{
+"area": "networkx.dag",
+"name": "all_topological_sorts",
+"kind": "function",
+"doc": "Returns a generator of _all_ topological sorts of the directed graph G."
+},
+{
+"area": "networkx.dag",
+"name": "ancestors",
+"kind": "function",
+"doc": "Returns all nodes having a path to `source` in `G`."
+},
+{
+"area": "networkx.dag",
+"name": "antichain_width",
+"kind": "function",
+"doc": "Returns the width of the partial order defined by the DAG `G`."
+},
+{
+"area": "networkx.dag",
+"name": "antichains",
+"kind": "function",
+"doc": "Generates antichains from a directed acyclic graph (DAG)."
+},
+{
+"area": "networkx.dag",
+"name": "colliders",
+"kind": "function",
+"doc": "Yields 3-node tuples that represent the colliders in `G`."
+},
+{
+"area": "networkx.dag",
+"name": "combinations",
+"kind": "class",
+"doc": "Return successive r-length combinations of elements in the iterable."
+},
+{
+"area": "networkx.dag",
+"name": "dag_longest_path",
+"kind": "function",
+"doc": "Returns the longest path in a directed acyclic graph (DAG)."
+},
+{
+"area": "networkx.dag",
+"name": "dag_longest_path_length",
+"kind": "function",
+"doc": "Returns the longest path length in a DAG"
+},
+{
+"area": "networkx.dag",
+"name": "dag_to_branching",
+"kind": "function",
+"doc": "Returns a branching representing all (overlapping) paths from"
+},
+{
+"area": "networkx.dag",
+"name": "deque",
+"kind": "class",
+"doc": "A list-like sequence optimized for data accesses near its endpoints."
+},
+{
+"area": "networkx.dag",
+"name": "descendants",
+"kind": "function",
+"doc": "Returns all nodes reachable from `source` in `G`."
+},
+{
+"area": "networkx.dag",
+"name": "has_cycle",
+"kind": "function",
+"doc": "Decides whether the directed graph has a cycle."
+},
+{
+"area": "networkx.dag",
+"name": "is_aperiodic",
+"kind": "function",
+"doc": "Determine whether a directed graph is aperiodic."
+},
+{
+"area": "networkx.dag",
+"name": "is_directed_acyclic_graph",
+"kind": "function",
+"doc": "Returns True if the graph `G` is a directed acyclic graph (DAG) or"
+},
+{
+"area": "networkx.dag",
+"name": "lexicographical_topological_sort",
+"kind": "function",
+"doc": "Generate the nodes in the unique lexicographical topological sort order."
+},
+{
+"area": "networkx.dag",
+"name": "not_implemented_for",
+"kind": "function",
+"doc": "Decorator to mark algorithms as not implemented"
+},
+{
+"area": "networkx.dag",
+"name": "pairwise",
+"kind": "function",
+"doc": "Return successive overlapping pairs taken from an input iterable."
+},
+{
+"area": "networkx.dag",
+"name": "product",
+"kind": "class",
+"doc": "Cartesian product of input iterables.  Equivalent to nested for-loops."
+},
+{
+"area": "networkx.dag",
+"name": "root_to_leaf_paths",
+"kind": "function",
+"doc": "Yields root-to-leaf paths in a directed acyclic graph."
+},
+{
+"area": "networkx.dag",
+"name": "topological_generations",
+"kind": "function",
+"doc": "Stratifies a DAG into generations."
+},
+{
+"area": "networkx.dag",
+"name": "topological_sort",
+"kind": "function",
+"doc": "Returns a generator of nodes in topologically sorted order."
+},
+{
+"area": "networkx.dag",
+"name": "transitive_closure",
+"kind": "function",
+"doc": "Returns transitive closure of a graph"
+},
+{
+"area": "networkx.dag",
+"name": "transitive_closure_dag",
+"kind": "function",
+"doc": "Returns the transitive closure of a directed acyclic graph."
+},
+{
+"area": "networkx.dag",
+"name": "transitive_reduction",
+"kind": "function",
+"doc": "Returns transitive reduction of a directed graph"
+},
+{
+"area": "networkx.dag",
+"name": "v_structures",
+"kind": "function",
+"doc": "Yields 3-node tuples that represent the v-structures in `G`."
+},
+{
+"area": "networkx.flow",
+"name": "boykov_kolmogorov",
+"kind": "function",
+"doc": "Find a maximum single-commodity flow using Boykov-Kolmogorov algorithm."
+},
+{
+"area": "networkx.flow",
+"name": "build_flow_dict",
+"kind": "function",
+"doc": "Build a flow dictionary from a residual network."
+},
+{
+"area": "networkx.flow",
+"name": "build_residual_network",
+"kind": "function",
+"doc": "Build a residual network and initialize a zero flow."
+},
+{
+"area": "networkx.flow",
+"name": "capacity_scaling",
+"kind": "function",
+"doc": "Find a minimum cost flow satisfying all demands in digraph G."
+},
+{
+"area": "networkx.flow",
+"name": "cost_of_flow",
+"kind": "function",
+"doc": "Compute the cost of the flow given by flowDict on graph G."
+},
+{
+"area": "networkx.flow",
+"name": "dinitz",
+"kind": "function",
+"doc": "Find a maximum single-commodity flow using Dinitz' algorithm."
+},
+{
+"area": "networkx.flow",
+"name": "edmonds_karp",
+"kind": "function",
+"doc": "Find a maximum single-commodity flow using the Edmonds-Karp algorithm."
+},
+{
+"area": "networkx.flow",
+"name": "gomory_hu_tree",
+"kind": "function",
+"doc": "Returns the Gomory-Hu tree of an undirected graph G."
+},
+{
+"area": "networkx.flow",
+"name": "max_flow_min_cost",
+"kind": "function",
+"doc": "Returns a maximum (s, t)-flow of minimum cost."
+},
+{
+"area": "networkx.flow",
+"name": "maximum_flow",
+"kind": "function",
+"doc": "Find a maximum single-commodity flow."
+},
+{
+"area": "networkx.flow",
+"name": "maximum_flow_value",
+"kind": "function",
+"doc": "Find the value of maximum single-commodity flow."
+},
+{
+"area": "networkx.flow",
+"name": "min_cost_flow",
+"kind": "function",
+"doc": "Returns a minimum cost flow satisfying all demands in digraph G."
+},
+{
+"area": "networkx.flow",
+"name": "min_cost_flow_cost",
+"kind": "function",
+"doc": "Find the cost of a minimum cost flow satisfying all demands in digraph G."
+},
+{
+"area": "networkx.flow",
+"name": "minimum_cut",
+"kind": "function",
+"doc": "Compute the value and the node partition of a minimum (s, t)-cut."
+},
+{
+"area": "networkx.flow",
+"name": "minimum_cut_value",
+"kind": "function",
+"doc": "Compute the value of a minimum (s, t)-cut."
+},
+{
+"area": "networkx.flow",
+"name": "network_simplex",
+"kind": "function",
+"doc": "Find a minimum cost flow satisfying all demands in digraph G."
+},
+{
+"area": "networkx.flow",
+"name": "preflow_push",
+"kind": "function",
+"doc": "Find a maximum single-commodity flow using the highest-label"
+},
+{
+"area": "networkx.flow",
+"name": "shortest_augmenting_path",
+"kind": "function",
+"doc": "Find a maximum single-commodity flow using the shortest augmenting path"
+},
+{
+"area": "networkx.generators",
+"name": "LCF_graph",
+"kind": "function",
+"doc": "Return the cubic graph specified in LCF notation."
+},
+{
+"area": "networkx.generators",
+"name": "LFR_benchmark_graph",
+"kind": "function",
+"doc": "Returns the LFR benchmark graph."
+},
+{
+"area": "networkx.generators",
+"name": "balanced_tree",
+"kind": "function",
+"doc": "Returns the perfectly balanced `r`-ary tree of height `h`."
+},
+{
+"area": "networkx.generators",
+"name": "barabasi_albert_graph",
+"kind": "function",
+"doc": "Returns a random graph using Barab\u00e1si\u2013Albert preferential attachment"
+},
+{
+"area": "networkx.generators",
+"name": "barbell_graph",
+"kind": "function",
+"doc": "Returns the Barbell Graph: two complete graphs connected by a path."
+},
+{
+"area": "networkx.generators",
+"name": "binomial_graph",
+"kind": "function",
+"doc": "Returns a $G_{n,p}$ random graph, also known as an Erd\u0151s-R\u00e9nyi graph"
+},
+{
+"area": "networkx.generators",
+"name": "binomial_tree",
+"kind": "function",
+"doc": "Returns the Binomial Tree of order n."
+},
+{
+"area": "networkx.generators",
+"name": "bull_graph",
+"kind": "function",
+"doc": "Returns the Bull Graph"
+},
+{
+"area": "networkx.generators",
+"name": "caveman_graph",
+"kind": "function",
+"doc": "Returns a caveman graph of `l` cliques of size `k`."
+},
+{
+"area": "networkx.generators",
+"name": "chordal_cycle_graph",
+"kind": "function",
+"doc": "Returns the chordal cycle graph on `p` nodes."
+},
+{
+"area": "networkx.generators",
+"name": "chvatal_graph",
+"kind": "function",
+"doc": "Returns the Chv\u00e1tal Graph"
+},
+{
+"area": "networkx.generators",
+"name": "circulant_graph",
+"kind": "function",
+"doc": "Returns the circulant graph $Ci_n(x_1, x_2, ..., x_m)$ with $n$ nodes."
+},
+{
+"area": "networkx.generators",
+"name": "circular_ladder_graph",
+"kind": "function",
+"doc": "Returns the circular ladder graph $CL_n$ of length n."
+},
+{
+"area": "networkx.generators",
+"name": "complete_graph",
+"kind": "function",
+"doc": "Return the complete graph `K_n` with n nodes."
+},
+{
+"area": "networkx.generators",
+"name": "complete_multipartite_graph",
+"kind": "function",
+"doc": "Returns the complete multipartite graph with the specified subset sizes."
+},
+{
+"area": "networkx.generators",
+"name": "configuration_model",
+"kind": "function",
+"doc": "Returns a random graph with the given degree sequence."
+},
+{
+"area": "networkx.generators",
+"name": "connected_caveman_graph",
+"kind": "function",
+"doc": "Returns a connected caveman graph of `l` cliques of size `k`."
+},
+{
+"area": "networkx.generators",
+"name": "connected_watts_strogatz_graph",
+"kind": "function",
+"doc": "Returns a connected Watts\u2013Strogatz small-world graph."
+},
+{
+"area": "networkx.generators",
+"name": "cubical_graph",
+"kind": "function",
+"doc": "Returns the 3-regular Platonic Cubical Graph"
+},
+{
+"area": "networkx.generators",
+"name": "cycle_graph",
+"kind": "function",
+"doc": "Returns the cycle graph $C_n$ of cyclically connected nodes."
+},
+{
+"area": "networkx.generators",
+"name": "davis_southern_women_graph",
+"kind": "function",
+"doc": "Returns Davis Southern women social network."
+},
+{
+"area": "networkx.generators",
+"name": "degree_sequence_tree",
+"kind": "function",
+"doc": "Return a tree with the given degree sequence."
+},
+{
+"area": "networkx.generators",
+"name": "dense_gnm_random_graph",
+"kind": "function",
+"doc": "Returns a $G_{n,m}$ random graph."
+},
+{
+"area": "networkx.generators",
+"name": "desargues_graph",
+"kind": "function",
+"doc": "Returns the Desargues Graph"
+},
+{
+"area": "networkx.generators",
+"name": "diamond_graph",
+"kind": "function",
+"doc": "Returns the Diamond graph"
+},
+{
+"area": "networkx.generators",
+"name": "directed_configuration_model",
+"kind": "function",
+"doc": "Returns a directed_random graph with the given degree sequences."
+},
+{
+"area": "networkx.generators",
+"name": "directed_havel_hakimi_graph",
+"kind": "function",
+"doc": "Returns a directed graph with the given degree sequences."
+},
+{
+"area": "networkx.generators",
+"name": "directed_joint_degree_graph",
+"kind": "function",
+"doc": "Generates a random simple directed graph with the joint degree."
+},
+{
+"area": "networkx.generators",
+"name": "dodecahedral_graph",
+"kind": "function",
+"doc": "Returns the Platonic Dodecahedral graph."
+},
+{
+"area": "networkx.generators",
+"name": "dorogovtsev_goltsev_mendes_graph",
+"kind": "function",
+"doc": "Returns the hierarchically constructed Dorogovtsev--Goltsev--Mendes graph."
+},
+{
+"area": "networkx.generators",
+"name": "dual_barabasi_albert_graph",
+"kind": "function",
+"doc": "Returns a random graph using dual Barab\u00e1si\u2013Albert preferential attachment"
+},
+{
+"area": "networkx.generators",
+"name": "duplication_divergence_graph",
+"kind": "function",
+"doc": "Returns an undirected graph using the duplication-divergence model."
+},
+{
+"area": "networkx.generators",
+"name": "ego_graph",
+"kind": "function",
+"doc": "Returns induced subgraph of neighbors centered at node n within"
+},
+{
+"area": "networkx.generators",
+"name": "empty_graph",
+"kind": "function",
+"doc": "Returns the empty graph with n nodes and zero edges."
+},
+{
+"area": "networkx.generators",
+"name": "erdos_renyi_graph",
+"kind": "function",
+"doc": "Returns a $G_{n,p}$ random graph, also known as an Erd\u0151s-R\u00e9nyi graph"
+},
+{
+"area": "networkx.generators",
+"name": "expected_degree_graph",
+"kind": "function",
+"doc": "Returns a random graph with given expected degrees."
+},
+{
+"area": "networkx.generators",
+"name": "extended_barabasi_albert_graph",
+"kind": "function",
+"doc": "Returns an extended Barab\u00e1si\u2013Albert model graph."
+},
+{
+"area": "networkx.generators",
+"name": "fast_gnp_random_graph",
+"kind": "function",
+"doc": "Returns a $G_{n,p}$ random graph, also known as an Erd\u0151s-R\u00e9nyi graph or"
+},
+{
+"area": "networkx.generators",
+"name": "florentine_families_graph",
+"kind": "function",
+"doc": "Returns Florentine families graph."
+},
+{
+"area": "networkx.generators",
+"name": "frucht_graph",
+"kind": "function",
+"doc": "Returns the Frucht Graph."
+},
+{
+"area": "networkx.generators",
+"name": "full_rary_tree",
+"kind": "function",
+"doc": "Creates a full r-ary tree of `n` nodes."
+},
+{
+"area": "networkx.generators",
+"name": "gaussian_random_partition_graph",
+"kind": "function",
+"doc": "Generate a Gaussian random partition graph."
+},
+{
+"area": "networkx.generators",
+"name": "general_random_intersection_graph",
+"kind": "function",
+"doc": "Returns a random intersection graph with independent probabilities"
+},
+{
+"area": "networkx.generators",
+"name": "generalized_petersen_graph",
+"kind": "function",
+"doc": "Returns the Generalized Petersen Graph GP(n,k)."
+},
+{
+"area": "networkx.generators",
+"name": "geographical_threshold_graph",
+"kind": "function",
+"doc": "Returns a geographical threshold graph."
+},
+{
+"area": "networkx.generators",
+"name": "geometric_edges",
+"kind": "function",
+"doc": "Returns edge list of node pairs within `radius` of each other."
+},
+{
+"area": "networkx.generators",
+"name": "geometric_soft_configuration_graph",
+"kind": "function",
+"doc": "Returns a random graph from the geometric soft configuration model."
+},
+{
+"area": "networkx.generators",
+"name": "gn_graph",
+"kind": "function",
+"doc": "Returns the growing network (GN) digraph with `n` nodes."
+},
+{
+"area": "networkx.generators",
+"name": "gnc_graph",
+"kind": "function",
+"doc": "Returns the growing network with copying (GNC) digraph with `n` nodes."
+},
+{
+"area": "networkx.generators",
+"name": "gnm_random_graph",
+"kind": "function",
+"doc": "Returns a $G_{n,m}$ random graph."
+},
+{
+"area": "networkx.generators",
+"name": "gnp_random_graph",
+"kind": "function",
+"doc": "Returns a $G_{n,p}$ random graph, also known as an Erd\u0151s-R\u00e9nyi graph"
+},
+{
+"area": "networkx.generators",
+"name": "gnr_graph",
+"kind": "function",
+"doc": "Returns the growing network with redirection (GNR) digraph with `n`"
+},
+{
+"area": "networkx.generators",
+"name": "graph_atlas",
+"kind": "function",
+"doc": "Returns graph number `i` from the Graph Atlas."
+},
+{
+"area": "networkx.generators",
+"name": "graph_atlas_g",
+"kind": "function",
+"doc": "Returns the list of all graphs with up to seven nodes named in the"
+},
+{
+"area": "networkx.generators",
+"name": "grid_2d_graph",
+"kind": "function",
+"doc": "Returns the two-dimensional grid graph."
+},
+{
+"area": "networkx.generators",
+"name": "grid_graph",
+"kind": "function",
+"doc": "Returns the *n*-dimensional grid graph."
+},
+{
+"area": "networkx.generators",
+"name": "havel_hakimi_graph",
+"kind": "function",
+"doc": "Returns a simple graph with given degree sequence constructed"
+},
+{
+"area": "networkx.generators",
+"name": "heawood_graph",
+"kind": "function",
+"doc": "Returns the Heawood Graph, a (3,6) cage."
+},
+{
+"area": "networkx.generators",
+"name": "hexagonal_lattice_graph",
+"kind": "function",
+"doc": "Returns an `m` by `n` hexagonal lattice graph."
+},
+{
+"area": "networkx.generators",
+"name": "hkn_harary_graph",
+"kind": "function",
+"doc": "Return the Harary graph with given node connectivity and node number."
+},
+{
+"area": "networkx.generators",
+"name": "hnm_harary_graph",
+"kind": "function",
+"doc": "Return the Harary graph with given numbers of nodes and edges."
+},
+{
+"area": "networkx.generators",
+"name": "hoffman_singleton_graph",
+"kind": "function",
+"doc": "Returns the Hoffman-Singleton Graph."
+},
+{
+"area": "networkx.generators",
+"name": "house_graph",
+"kind": "function",
+"doc": "Returns the House graph (square with triangle on top)"
+},
+{
+"area": "networkx.generators",
+"name": "house_x_graph",
+"kind": "function",
+"doc": "Returns the House graph with a cross inside the house square."
+},
+{
+"area": "networkx.generators",
+"name": "hypercube_graph",
+"kind": "function",
+"doc": "Returns the *n*-dimensional hypercube graph."
+},
+{
+"area": "networkx.generators",
+"name": "icosahedral_graph",
+"kind": "function",
+"doc": "Returns the Platonic Icosahedral graph."
+},
+{
+"area": "networkx.generators",
+"name": "interval_graph",
+"kind": "function",
+"doc": "Generates an interval graph for a list of intervals given."
+},
+{
+"area": "networkx.generators",
+"name": "inverse_line_graph",
+"kind": "function",
+"doc": "Returns the inverse line graph of graph G."
+},
+{
+"area": "networkx.generators",
+"name": "is_regular_expander",
+"kind": "function",
+"doc": "Determines whether the graph G is a regular expander. [1]_"
+},
+{
+"area": "networkx.generators",
+"name": "is_valid_directed_joint_degree",
+"kind": "function",
+"doc": "Checks whether the given directed joint degree input is realizable"
+},
+{
+"area": "networkx.generators",
+"name": "is_valid_joint_degree",
+"kind": "function",
+"doc": "Checks whether the given joint degree dictionary is realizable."
+},
+{
+"area": "networkx.generators",
+"name": "joint_degree_graph",
+"kind": "function",
+"doc": "Generates a random simple graph with the given joint degree dictionary."
+},
+{
+"area": "networkx.generators",
+"name": "k_random_intersection_graph",
+"kind": "function",
+"doc": "Returns a intersection graph with randomly chosen attribute sets for"
+},
+{
+"area": "networkx.generators",
+"name": "karate_club_graph",
+"kind": "function",
+"doc": "Returns Zachary's Karate Club graph."
+},
+{
+"area": "networkx.generators",
+"name": "kneser_graph",
+"kind": "function",
+"doc": "Returns the Kneser Graph with parameters `n` and `k`."
+},
+{
+"area": "networkx.generators",
+"name": "krackhardt_kite_graph",
+"kind": "function",
+"doc": "Returns the Krackhardt Kite Social Network."
+},
+{
+"area": "networkx.generators",
+"name": "ladder_graph",
+"kind": "function",
+"doc": "Returns the Ladder graph of length n."
+},
+{
+"area": "networkx.generators",
+"name": "les_miserables_graph",
+"kind": "function",
+"doc": "Returns coappearance network of characters in the novel Les Miserables."
+},
+{
+"area": "networkx.generators",
+"name": "line_graph",
+"kind": "function",
+"doc": "Returns the line graph of the graph or digraph `G`."
+},
+{
+"area": "networkx.generators",
+"name": "lollipop_graph",
+"kind": "function",
+"doc": "Returns the Lollipop Graph; ``K_m`` connected to ``P_n``."
+},
+{
+"area": "networkx.generators",
+"name": "margulis_gabber_galil_graph",
+"kind": "function",
+"doc": "Returns the Margulis-Gabber-Galil undirected MultiGraph on `n^2` nodes."
+},
+{
+"area": "networkx.generators",
+"name": "maybe_regular_expander",
+"kind": "function",
+"doc": ".. deprecated:: 3.6"
+},
+{
+"area": "networkx.generators",
+"name": "maybe_regular_expander_graph",
+"kind": "function",
+"doc": "Utility for creating a random regular expander."
+},
+{
+"area": "networkx.generators",
+"name": "moebius_kantor_graph",
+"kind": "function",
+"doc": "Returns the Moebius-Kantor graph."
+},
+{
+"area": "networkx.generators",
+"name": "mycielski_graph",
+"kind": "function",
+"doc": "Generator for the n_th Mycielski Graph."
+},
+{
+"area": "networkx.generators",
+"name": "mycielskian",
+"kind": "function",
+"doc": "Returns the Mycielskian of a simple, undirected graph G"
+},
+{
+"area": "networkx.generators",
+"name": "navigable_small_world_graph",
+"kind": "function",
+"doc": "Returns a navigable small-world graph."
+},
+{
+"area": "networkx.generators",
+"name": "newman_watts_strogatz_graph",
+"kind": "function",
+"doc": "Returns a Newman\u2013Watts\u2013Strogatz small-world graph."
+},
+{
+"area": "networkx.generators",
+"name": "nonisomorphic_trees",
+"kind": "function",
+"doc": "Generate nonisomorphic trees of specified `order`."
+},
+{
+"area": "networkx.generators",
+"name": "null_graph",
+"kind": "function",
+"doc": "Returns the Null graph with no nodes or edges."
+},
+{
+"area": "networkx.generators",
+"name": "number_of_nonisomorphic_trees",
+"kind": "function",
+"doc": "Returns the number of nonisomorphic trees of the specified `order`."
+},
+{
+"area": "networkx.generators",
+"name": "octahedral_graph",
+"kind": "function",
+"doc": "Returns the Platonic Octahedral graph."
+},
+{
+"area": "networkx.generators",
+"name": "paley_graph",
+"kind": "function",
+"doc": "Returns the Paley $\\frac{(p-1)}{2}$ -regular graph on $p$ nodes."
+},
+{
+"area": "networkx.generators",
+"name": "pappus_graph",
+"kind": "function",
+"doc": "Returns the Pappus graph."
+},
+{
+"area": "networkx.generators",
+"name": "partial_duplication_graph",
+"kind": "function",
+"doc": "Returns a random graph using the partial duplication model."
+},
+{
+"area": "networkx.generators",
+"name": "path_graph",
+"kind": "function",
+"doc": "Returns the Path graph `P_n` of linearly connected nodes."
+},
+{
+"area": "networkx.generators",
+"name": "petersen_graph",
+"kind": "function",
+"doc": "Returns the Petersen Graph."
+},
+{
+"area": "networkx.generators",
+"name": "planted_partition_graph",
+"kind": "function",
+"doc": "Returns the planted l-partition graph."
+},
+{
+"area": "networkx.generators",
+"name": "powerlaw_cluster_graph",
+"kind": "function",
+"doc": "Holme and Kim algorithm for growing graphs with powerlaw"
+},
+{
+"area": "networkx.generators",
+"name": "prefix_tree",
+"kind": "function",
+"doc": "Creates a directed prefix tree from a list of paths."
+},
+{
+"area": "networkx.generators",
+"name": "prefix_tree_recursive",
+"kind": "function",
+"doc": "Recursively creates a directed prefix tree from a list of paths."
+},
+{
+"area": "networkx.generators",
+"name": "random_clustered_graph",
+"kind": "function",
+"doc": "Generate a random graph with the given joint independent edge degree and"
+},
+{
+"area": "networkx.generators",
+"name": "random_cograph",
+"kind": "function",
+"doc": "Returns a random cograph with $2 ^ n$ nodes."
+},
+{
+"area": "networkx.generators",
+"name": "random_degree_sequence_graph",
+"kind": "function",
+"doc": "Returns a simple random graph with the given degree sequence."
+},
+{
+"area": "networkx.generators",
+"name": "random_geometric_graph",
+"kind": "function",
+"doc": "Returns a random geometric graph in the unit cube of dimensions `dim`."
+},
+{
+"area": "networkx.generators",
+"name": "random_internet_as_graph",
+"kind": "function",
+"doc": "Generates a random undirected graph resembling the Internet AS network"
+},
+{
+"area": "networkx.generators",
+"name": "random_k_lift",
+"kind": "function",
+"doc": "Return a `k`-lift of a graph using random permutations."
+},
+{
+"area": "networkx.generators",
+"name": "random_k_out_graph",
+"kind": "function",
+"doc": "Returns a random `k`-out graph with preferential attachment."
+},
+{
+"area": "networkx.generators",
+"name": "random_kernel_graph",
+"kind": "function",
+"doc": "Returns an random graph based on the specified kernel."
+},
+{
+"area": "networkx.generators",
+"name": "random_labeled_rooted_forest",
+"kind": "function",
+"doc": "Returns a labeled rooted forest with `n` nodes."
+},
+{
+"area": "networkx.generators",
+"name": "random_labeled_rooted_tree",
+"kind": "function",
+"doc": "Returns a labeled rooted tree with `n` nodes."
+},
+{
+"area": "networkx.generators",
+"name": "random_labeled_tree",
+"kind": "function",
+"doc": "Returns a labeled tree on `n` nodes chosen uniformly at random."
+},
+{
+"area": "networkx.generators",
+"name": "random_lobster_graph",
+"kind": "function",
+"doc": "Returns a random lobster graph."
+},
+{
+"area": "networkx.generators",
+"name": "random_partition_graph",
+"kind": "function",
+"doc": "Returns the random partition graph with a partition of sizes."
+},
+{
+"area": "networkx.generators",
+"name": "random_powerlaw_tree",
+"kind": "function",
+"doc": "Returns a tree with a power law degree distribution."
+},
+{
+"area": "networkx.generators",
+"name": "random_powerlaw_tree_sequence",
+"kind": "function",
+"doc": "Returns a degree sequence for a tree with a power law distribution."
+},
+{
+"area": "networkx.generators",
+"name": "random_regular_expander_graph",
+"kind": "function",
+"doc": "Returns a random regular expander graph on $n$ nodes with degree $d$."
+},
+{
+"area": "networkx.generators",
+"name": "random_regular_graph",
+"kind": "function",
+"doc": "Returns a random $d$-regular graph on $n$ nodes."
+},
+{
+"area": "networkx.generators",
+"name": "random_shell_graph",
+"kind": "function",
+"doc": "Returns a random shell graph for the constructor given."
+},
+{
+"area": "networkx.generators",
+"name": "random_unlabeled_rooted_forest",
+"kind": "function",
+"doc": "Returns a forest or list of forests selected at random."
+},
+{
+"area": "networkx.generators",
+"name": "random_unlabeled_rooted_tree",
+"kind": "function",
+"doc": "Returns a number of unlabeled rooted trees uniformly at random"
+},
+{
+"area": "networkx.generators",
+"name": "random_unlabeled_tree",
+"kind": "function",
+"doc": "Returns a tree or list of trees chosen randomly."
+},
+{
+"area": "networkx.generators",
+"name": "relaxed_caveman_graph",
+"kind": "function",
+"doc": "Returns a relaxed caveman graph."
+},
+{
+"area": "networkx.generators",
+"name": "ring_of_cliques",
+"kind": "function",
+"doc": "Defines a \"ring of cliques\" graph."
+},
+{
+"area": "networkx.generators",
+"name": "scale_free_graph",
+"kind": "function",
+"doc": "Returns a scale-free directed graph."
+},
+{
+"area": "networkx.generators",
+"name": "sedgewick_maze_graph",
+"kind": "function",
+"doc": "Return a small maze with a cycle."
+},
+{
+"area": "networkx.generators",
+"name": "shrikhande_graph",
+"kind": "function",
+"doc": "Returns the Shrikhane Graph."
+},
+{
+"area": "networkx.generators",
+"name": "soft_random_geometric_graph",
+"kind": "function",
+"doc": "Returns a soft random geometric graph in the unit cube."
+},
+{
+"area": "networkx.generators",
+"name": "spectral_graph_forge",
+"kind": "function",
+"doc": "Returns a random simple graph with spectrum resembling that of `G`"
+},
+{
+"area": "networkx.generators",
+"name": "star_graph",
+"kind": "function",
+"doc": "Return a star graph."
+},
+{
+"area": "networkx.generators",
+"name": "stochastic_block_model",
+"kind": "function",
+"doc": "Returns a stochastic block model graph."
+},
+{
+"area": "networkx.generators",
+"name": "stochastic_graph",
+"kind": "function",
+"doc": "Returns a right-stochastic representation of directed graph `G`."
+},
+{
+"area": "networkx.generators",
+"name": "sudoku_graph",
+"kind": "function",
+"doc": "Returns the n-Sudoku graph. The default value of n is 3."
+},
+{
+"area": "networkx.generators",
+"name": "tadpole_graph",
+"kind": "function",
+"doc": "Returns the (m,n)-tadpole graph; ``C_m`` connected to ``P_n``."
+},
+{
+"area": "networkx.generators",
+"name": "tetrahedral_graph",
+"kind": "function",
+"doc": "Returns the 3-regular Platonic Tetrahedral graph."
+},
+{
+"area": "networkx.generators",
+"name": "thresholded_random_geometric_graph",
+"kind": "function",
+"doc": "Returns a thresholded random geometric graph in the unit cube."
+},
+{
+"area": "networkx.generators",
+"name": "triad_graph",
+"kind": "function",
+"doc": "Returns the triad graph with the given name."
+},
+{
+"area": "networkx.generators",
+"name": "triangular_lattice_graph",
+"kind": "function",
+"doc": "Returns the $m$ by $n$ triangular lattice graph."
+},
+{
+"area": "networkx.generators",
+"name": "trivial_graph",
+"kind": "function",
+"doc": "Return the Trivial graph with one node (with label 0) and no edges."
+},
+{
+"area": "networkx.generators",
+"name": "truncated_cube_graph",
+"kind": "function",
+"doc": "Returns the skeleton of the truncated cube."
+},
+{
+"area": "networkx.generators",
+"name": "truncated_tetrahedron_graph",
+"kind": "function",
+"doc": "Returns the skeleton of the truncated Platonic tetrahedron."
+},
+{
+"area": "networkx.generators",
+"name": "turan_graph",
+"kind": "function",
+"doc": "Return the Turan Graph"
+},
+{
+"area": "networkx.generators",
+"name": "tutte_graph",
+"kind": "function",
+"doc": "Returns the Tutte graph."
+},
+{
+"area": "networkx.generators",
+"name": "uniform_random_intersection_graph",
+"kind": "function",
+"doc": "Returns a uniform random intersection graph."
+},
+{
+"area": "networkx.generators",
+"name": "visibility_graph",
+"kind": "function",
+"doc": "Return a Visibility Graph of an input Time Series."
+},
+{
+"area": "networkx.generators",
+"name": "watts_strogatz_graph",
+"kind": "function",
+"doc": "Returns a Watts\u2013Strogatz small-world graph."
+},
+{
+"area": "networkx.generators",
+"name": "waxman_graph",
+"kind": "function",
+"doc": "Returns a Waxman random graph."
+},
+{
+"area": "networkx.generators",
+"name": "wheel_graph",
+"kind": "function",
+"doc": "Return the wheel graph"
+},
+{
+"area": "networkx.generators",
+"name": "windmill_graph",
+"kind": "function",
+"doc": "Generate a windmill graph."
+},
+{
+"area": "networkx.isomorphism",
+"name": "DiGraphMatcher",
+"kind": "class",
+"doc": "VF2 isomorphism checker for directed graphs."
+},
+{
+"area": "networkx.isomorphism",
+"name": "GraphMatcher",
+"kind": "class",
+"doc": "VF2 isomorphism checker for undirected graphs."
+},
+{
+"area": "networkx.isomorphism",
+"name": "ISMAGS",
+"kind": "class",
+"doc": "Implements the ISMAGS subgraph matching algorithm. [1]_ ISMAGS stands for"
+},
+{
+"area": "networkx.isomorphism",
+"name": "MultiDiGraphMatcher",
+"kind": "class",
+"doc": "VF2 isomorphism checker for directed multigraphs."
+},
+{
+"area": "networkx.isomorphism",
+"name": "MultiGraphMatcher",
+"kind": "class",
+"doc": "VF2 isomorphism checker for undirected multigraphs."
+},
+{
+"area": "networkx.isomorphism",
+"name": "TimeRespectingDiGraphMatcher",
+"kind": "class",
+"doc": "Implementation of VF2 algorithm for matching directed graphs."
+},
+{
+"area": "networkx.isomorphism",
+"name": "TimeRespectingGraphMatcher",
+"kind": "class",
+"doc": "Implementation of VF2 algorithm for matching undirected graphs."
+},
+{
+"area": "networkx.isomorphism",
+"name": "categorical_edge_match",
+"kind": "function",
+"doc": "Returns a comparison function for a categorical edge attribute."
+},
+{
+"area": "networkx.isomorphism",
+"name": "categorical_multiedge_match",
+"kind": "function",
+"doc": "Returns a comparison function for a categorical edge attribute."
+},
+{
+"area": "networkx.isomorphism",
+"name": "categorical_node_match",
+"kind": "function",
+"doc": "Returns a comparison function for a categorical node attribute."
+},
+{
+"area": "networkx.isomorphism",
+"name": "could_be_isomorphic",
+"kind": "function",
+"doc": "Returns False if graphs are definitely not isomorphic."
+},
+{
+"area": "networkx.isomorphism",
+"name": "fast_could_be_isomorphic",
+"kind": "function",
+"doc": "Returns False if graphs are definitely not isomorphic."
+},
+{
+"area": "networkx.isomorphism",
+"name": "faster_could_be_isomorphic",
+"kind": "function",
+"doc": "Returns False if graphs are definitely not isomorphic."
+},
+{
+"area": "networkx.isomorphism",
+"name": "generic_edge_match",
+"kind": "function",
+"doc": "Returns a comparison function for a generic attribute."
+},
+{
+"area": "networkx.isomorphism",
+"name": "generic_multiedge_match",
+"kind": "function",
+"doc": "Returns a comparison function for a generic attribute."
+},
+{
+"area": "networkx.isomorphism",
+"name": "generic_node_match",
+"kind": "function",
+"doc": "Returns a comparison function for a generic attribute."
+},
+{
+"area": "networkx.isomorphism",
+"name": "is_isomorphic",
+"kind": "function",
+"doc": "Returns True if the graphs G1 and G2 are isomorphic and False otherwise."
+},
+{
+"area": "networkx.isomorphism",
+"name": "numerical_edge_match",
+"kind": "function",
+"doc": "Returns a comparison function for a numerical edge attribute."
+},
+{
+"area": "networkx.isomorphism",
+"name": "numerical_multiedge_match",
+"kind": "function",
+"doc": "Returns a comparison function for a numerical edge attribute."
+},
+{
+"area": "networkx.isomorphism",
+"name": "numerical_node_match",
+"kind": "function",
+"doc": "Returns a comparison function for a numerical node attribute."
+},
+{
+"area": "networkx.isomorphism",
+"name": "rooted_tree_isomorphism",
+"kind": "function",
+"doc": "Return an isomorphic mapping between rooted trees `t1` and `t2` with roots"
+},
+{
+"area": "networkx.isomorphism",
+"name": "tree_isomorphism",
+"kind": "function",
+"doc": "Return an isomorphic mapping between two trees `t1` and `t2`."
+},
+{
+"area": "networkx.isomorphism",
+"name": "vf2pp_all_isomorphisms",
+"kind": "function",
+"doc": "Yields all the possible mappings between FG and SG."
+},
+{
+"area": "networkx.isomorphism",
+"name": "vf2pp_all_monomorphisms",
+"kind": "function",
+"doc": "Yields all the possible monomorphisms between nodes of FG and SG."
+},
+{
+"area": "networkx.isomorphism",
+"name": "vf2pp_all_subgraph_isomorphisms",
+"kind": "function",
+"doc": "Yields all the possible subgraph isomorphisms between FG and SG."
+},
+{
+"area": "networkx.isomorphism",
+"name": "vf2pp_is_isomorphic",
+"kind": "function",
+"doc": "Examines whether SG and FG are isomorphic."
+},
+{
+"area": "networkx.isomorphism",
+"name": "vf2pp_is_monomorphic",
+"kind": "function",
+"doc": "Examines whether SG and FG are monomorphic."
+},
+{
+"area": "networkx.isomorphism",
+"name": "vf2pp_isomorphism",
+"kind": "function",
+"doc": "Return an isomorphic mapping between `FG` and `SG` if it exists."
+},
+{
+"area": "networkx.isomorphism",
+"name": "vf2pp_monomorphism",
+"kind": "function",
+"doc": "Return a monomorphic mapping between `FG` and `SG` if it exists."
+},
+{
+"area": "networkx.isomorphism",
+"name": "vf2pp_subgraph_is_isomorphic",
+"kind": "function",
+"doc": "Examines whether SG and FG are isomorphic."
+},
+{
+"area": "networkx.isomorphism",
+"name": "vf2pp_subgraph_isomorphism",
+"kind": "function",
+"doc": "Return an isomorphic mapping between nodes of `FG` and `SG` if it exists."
+},
+{
+"area": "networkx.link_analysis",
+"name": "google_matrix",
+"kind": "function",
+"doc": "Returns the Google matrix of the graph."
+},
+{
+"area": "networkx.link_analysis",
+"name": "hits",
+"kind": "function",
+"doc": "Returns HITS hubs and authorities values for nodes."
+},
+{
+"area": "networkx.link_analysis",
+"name": "pagerank",
+"kind": "function",
+"doc": "Returns the PageRank of the nodes in the graph."
+},
+{
+"area": "networkx.link_prediction",
+"name": "adamic_adar_index",
+"kind": "function",
+"doc": "Compute the Adamic-Adar index of all node pairs in ebunch."
+},
+{
+"area": "networkx.link_prediction",
+"name": "cn_soundarajan_hopcroft",
+"kind": "function",
+"doc": "Count the number of common neighbors of all node pairs in ebunch"
+},
+{
+"area": "networkx.link_prediction",
+"name": "common_neighbor_centrality",
+"kind": "function",
+"doc": "Return the CCPA score for each pair of nodes."
+},
+{
+"area": "networkx.link_prediction",
+"name": "jaccard_coefficient",
+"kind": "function",
+"doc": "Compute the Jaccard coefficient of all node pairs in ebunch."
+},
+{
+"area": "networkx.link_prediction",
+"name": "not_implemented_for",
+"kind": "function",
+"doc": "Decorator to mark algorithms as not implemented"
+},
+{
+"area": "networkx.link_prediction",
+"name": "preferential_attachment",
+"kind": "function",
+"doc": "Compute the preferential attachment score of all node pairs in ebunch."
+},
+{
+"area": "networkx.link_prediction",
+"name": "ra_index_soundarajan_hopcroft",
+"kind": "function",
+"doc": "Compute the resource allocation index of all node pairs in"
+},
+{
+"area": "networkx.link_prediction",
+"name": "resource_allocation_index",
+"kind": "function",
+"doc": "Compute the resource allocation index of all node pairs in ebunch."
+},
+{
+"area": "networkx.link_prediction",
+"name": "within_inter_cluster",
+"kind": "function",
+"doc": "Compute the ratio of within- and inter-cluster common neighbors"
+},
+{
+"area": "networkx.matching",
+"name": "is_matching",
+"kind": "function",
+"doc": "Return True if ``matching`` is a valid matching of ``G``"
+},
+{
+"area": "networkx.matching",
+"name": "is_maximal_matching",
+"kind": "function",
+"doc": "Return True if ``matching`` is a maximal matching of ``G``"
+},
+{
+"area": "networkx.matching",
+"name": "is_perfect_matching",
+"kind": "function",
+"doc": "Return True if ``matching`` is a perfect matching for ``G``"
+},
+{
+"area": "networkx.matching",
+"name": "matching_dict_to_set",
+"kind": "function",
+"doc": "Converts matching dict format to matching set format"
+},
+{
+"area": "networkx.matching",
+"name": "max_weight_matching",
+"kind": "function",
+"doc": "Compute a maximum-weighted matching of G."
+},
+{
+"area": "networkx.matching",
+"name": "maximal_matching",
+"kind": "function",
+"doc": "Find a maximal matching in the graph."
+},
+{
+"area": "networkx.matching",
+"name": "min_weight_matching",
+"kind": "function",
+"doc": "Compute a minimum-weight maximum-cardinality matching of `G`."
+},
+{
+"area": "networkx.matching",
+"name": "not_implemented_for",
+"kind": "function",
+"doc": "Decorator to mark algorithms as not implemented"
+},
+{
+"area": "networkx.matching",
+"name": "repeat",
+"kind": "class",
+"doc": "repeat(object [,times]) -> create an iterator which returns the object"
+},
+{
+"area": "networkx.shortest_paths",
+"name": "all_pairs_all_shortest_paths",
+"kind": "function",
+"doc": "Compute all shortest paths between all nodes."
+},
+{
+"area": "networkx.shortest_paths",
+"name": "all_pairs_bellman_ford_path",
+"kind": "function",
+"doc": "Compute shortest paths between all nodes in a weighted graph."
+},
+{
+"area": "networkx.shortest_paths",
+"name": "all_pairs_bellman_ford_path_length",
+"kind": "function",
+"doc": "Compute shortest path lengths between all nodes in a weighted graph."
+},
+{
+"area": "networkx.shortest_paths",
+"name": "all_pairs_dijkstra",
+"kind": "function",
+"doc": "Find shortest weighted paths and lengths between all nodes."
+},
+{
+"area": "networkx.shortest_paths",
+"name": "all_pairs_dijkstra_path",
+"kind": "function",
+"doc": "Compute shortest paths between all nodes in a weighted graph."
+},
+{
+"area": "networkx.shortest_paths",
+"name": "all_pairs_dijkstra_path_length",
+"kind": "function",
+"doc": "Compute shortest path lengths between all nodes in a weighted graph."
+},
+{
+"area": "networkx.shortest_paths",
+"name": "all_pairs_shortest_path",
+"kind": "function",
+"doc": "Compute shortest paths between all nodes."
+},
+{
+"area": "networkx.shortest_paths",
+"name": "all_pairs_shortest_path_length",
+"kind": "function",
+"doc": "Computes the shortest path lengths between all nodes in `G`."
+},
+{
+"area": "networkx.shortest_paths",
+"name": "all_shortest_paths",
+"kind": "function",
+"doc": "Compute all shortest simple paths in the graph."
+},
+{
+"area": "networkx.shortest_paths",
+"name": "astar_path",
+"kind": "function",
+"doc": "Returns a list of nodes in a shortest path between source and target"
+},
+{
+"area": "networkx.shortest_paths",
+"name": "astar_path_length",
+"kind": "function",
+"doc": "Returns the length of the shortest path between source and target using"
+},
+{
+"area": "networkx.shortest_paths",
+"name": "average_shortest_path_length",
+"kind": "function",
+"doc": "Returns the average shortest path length."
+},
+{
+"area": "networkx.shortest_paths",
+"name": "bellman_ford_path",
+"kind": "function",
+"doc": "Returns the shortest path from source to target in a weighted graph G."
+},
+{
+"area": "networkx.shortest_paths",
+"name": "bellman_ford_path_length",
+"kind": "function",
+"doc": "Returns the shortest path length from source to target"
+},
+{
+"area": "networkx.shortest_paths",
+"name": "bellman_ford_predecessor_and_distance",
+"kind": "function",
+"doc": "Compute shortest path lengths and predecessors on shortest paths"
+},
+{
+"area": "networkx.shortest_paths",
+"name": "bidirectional_dijkstra",
+"kind": "function",
+"doc": "Dijkstra's algorithm for shortest paths using bidirectional search."
+},
+{
+"area": "networkx.shortest_paths",
+"name": "bidirectional_shortest_path",
+"kind": "function",
+"doc": "Returns a list of nodes in a shortest path between source and target."
+},
+{
+"area": "networkx.shortest_paths",
+"name": "dijkstra_path",
+"kind": "function",
+"doc": "Returns the shortest weighted path from source to target in G."
+},
+{
+"area": "networkx.shortest_paths",
+"name": "dijkstra_path_length",
+"kind": "function",
+"doc": "Returns the shortest weighted path length in G from source to target."
+},
+{
+"area": "networkx.shortest_paths",
+"name": "dijkstra_predecessor_and_distance",
+"kind": "function",
+"doc": "Compute weighted shortest path length and predecessors."
+},
+{
+"area": "networkx.shortest_paths",
+"name": "find_negative_cycle",
+"kind": "function",
+"doc": "Returns a cycle with negative total weight if it exists."
+},
+{
+"area": "networkx.shortest_paths",
+"name": "floyd_warshall",
+"kind": "function",
+"doc": "Find all-pairs shortest path lengths using Floyd's algorithm."
+},
+{
+"area": "networkx.shortest_paths",
+"name": "floyd_warshall_numpy",
+"kind": "function",
+"doc": "Find all-pairs shortest path lengths using Floyd's algorithm."
+},
+{
+"area": "networkx.shortest_paths",
+"name": "floyd_warshall_predecessor_and_distance",
+"kind": "function",
+"doc": "Find all-pairs shortest path lengths using Floyd's algorithm."
+},
+{
+"area": "networkx.shortest_paths",
+"name": "floyd_warshall_tree",
+"kind": "function",
+"doc": "Find all-pairs shortest path lengths using a Tree-based"
+},
+{
+"area": "networkx.shortest_paths",
+"name": "goldberg_radzik",
+"kind": "function",
+"doc": "Compute shortest path lengths and predecessors on shortest paths"
+},
+{
+"area": "networkx.shortest_paths",
+"name": "has_path",
+"kind": "function",
+"doc": "Returns *True* if *G* has a path from *source* to *target*."
+},
+{
+"area": "networkx.shortest_paths",
+"name": "johnson",
+"kind": "function",
+"doc": "Uses Johnson's Algorithm to compute shortest paths."
+},
+{
+"area": "networkx.shortest_paths",
+"name": "multi_source_dijkstra",
+"kind": "function",
+"doc": "Find shortest weighted paths and lengths from a given set of"
+},
+{
+"area": "networkx.shortest_paths",
+"name": "multi_source_dijkstra_path",
+"kind": "function",
+"doc": "Find shortest weighted paths in G from a given set of source"
+},
+{
+"area": "networkx.shortest_paths",
+"name": "multi_source_dijkstra_path_length",
+"kind": "function",
+"doc": "Find shortest weighted path lengths in G from a given set of"
+},
+{
+"area": "networkx.shortest_paths",
+"name": "negative_edge_cycle",
+"kind": "function",
+"doc": "Returns True if there exists a negative edge cycle anywhere in G."
+},
+{
+"area": "networkx.shortest_paths",
+"name": "predecessor",
+"kind": "function",
+"doc": "Returns dict of predecessors for the path from source to all nodes in G."
+},
+{
+"area": "networkx.shortest_paths",
+"name": "reconstruct_path",
+"kind": "function",
+"doc": "Reconstruct a path from source to target using the predecessors"
+},
+{
+"area": "networkx.shortest_paths",
+"name": "shortest_path",
+"kind": "function",
+"doc": "Compute shortest paths in the graph."
+},
+{
+"area": "networkx.shortest_paths",
+"name": "shortest_path_length",
+"kind": "function",
+"doc": "Compute shortest path lengths in the graph."
+},
+{
+"area": "networkx.shortest_paths",
+"name": "single_source_all_shortest_paths",
+"kind": "function",
+"doc": "Compute all shortest simple paths from the given source in the graph."
+},
+{
+"area": "networkx.shortest_paths",
+"name": "single_source_bellman_ford",
+"kind": "function",
+"doc": "Compute shortest paths and lengths in a weighted graph G."
+},
+{
+"area": "networkx.shortest_paths",
+"name": "single_source_bellman_ford_path",
+"kind": "function",
+"doc": "Compute shortest path between source and all other reachable"
+},
+{
+"area": "networkx.shortest_paths",
+"name": "single_source_bellman_ford_path_length",
+"kind": "function",
+"doc": "Compute the shortest path length between source and all other"
+},
+{
+"area": "networkx.shortest_paths",
+"name": "single_source_dijkstra",
+"kind": "function",
+"doc": "Find shortest weighted paths and lengths from a source node."
+},
+{
+"area": "networkx.shortest_paths",
+"name": "single_source_dijkstra_path",
+"kind": "function",
+"doc": "Find shortest weighted paths in G from a source node."
+},
+{
+"area": "networkx.shortest_paths",
+"name": "single_source_dijkstra_path_length",
+"kind": "function",
+"doc": "Find shortest weighted path lengths in G from a source node."
+},
+{
+"area": "networkx.shortest_paths",
+"name": "single_source_shortest_path",
+"kind": "function",
+"doc": "Compute shortest path between source"
+},
+{
+"area": "networkx.shortest_paths",
+"name": "single_source_shortest_path_length",
+"kind": "function",
+"doc": "Compute the shortest path lengths from `source` to all reachable nodes in `G`."
+},
+{
+"area": "networkx.shortest_paths",
+"name": "single_target_shortest_path",
+"kind": "function",
+"doc": "Compute shortest path to target from all nodes that reach target."
+},
+{
+"area": "networkx.shortest_paths",
+"name": "single_target_shortest_path_length",
+"kind": "function",
+"doc": "Compute the shortest path lengths to target from all reachable nodes."
+},
+{
+"area": "networkx.similarity",
+"name": "dataclass",
+"kind": "function",
+"doc": "Add dunder methods based on the fields defined in the class."
+},
+{
+"area": "networkx.similarity",
+"name": "generate_random_paths",
+"kind": "function",
+"doc": "Randomly generate `sample_size` paths of length `path_length`."
+},
+{
+"area": "networkx.similarity",
+"name": "graph_edit_distance",
+"kind": "function",
+"doc": "Returns GED (graph edit distance) between graphs G1 and G2."
+},
+{
+"area": "networkx.similarity",
+"name": "np_random_state",
+"kind": "function",
+"doc": "Decorator to generate a numpy RandomState or Generator instance."
+},
+{
+"area": "networkx.similarity",
+"name": "optimal_edit_paths",
+"kind": "function",
+"doc": "Returns all minimum-cost edit paths transforming G1 to G2."
+},
+{
+"area": "networkx.similarity",
+"name": "optimize_edit_paths",
+"kind": "function",
+"doc": "GED (graph edit distance) calculation: advanced interface."
+},
+{
+"area": "networkx.similarity",
+"name": "optimize_graph_edit_distance",
+"kind": "function",
+"doc": "Returns consecutive approximations of GED (graph edit distance)"
+},
+{
+"area": "networkx.similarity",
+"name": "panther_similarity",
+"kind": "function",
+"doc": "Returns the Panther similarity of nodes in the graph `G` to node ``v``."
+},
+{
+"area": "networkx.similarity",
+"name": "panther_vector_similarity",
+"kind": "function",
+"doc": "Returns the Panther vector similarity (Panther++) of nodes in `G`."
+},
+{
+"area": "networkx.similarity",
+"name": "product",
+"kind": "class",
+"doc": "Cartesian product of input iterables.  Equivalent to nested for-loops."
+},
+{
+"area": "networkx.similarity",
+"name": "simrank_similarity",
+"kind": "function",
+"doc": "Returns the SimRank similarity of nodes in the graph ``G``."
+},
+{
+"area": "networkx.traversal",
+"name": "bfs_beam_edges",
+"kind": "function",
+"doc": "Iterates over edges in a beam search."
+},
+{
+"area": "networkx.traversal",
+"name": "bfs_edges",
+"kind": "function",
+"doc": "Iterate over edges in a breadth-first-search starting at source."
+},
+{
+"area": "networkx.traversal",
+"name": "bfs_labeled_edges",
+"kind": "function",
+"doc": "Iterate over edges in a breadth-first search (BFS) labeled by type."
+},
+{
+"area": "networkx.traversal",
+"name": "bfs_layers",
+"kind": "function",
+"doc": "Returns an iterator of all the layers in breadth-first search traversal."
+},
+{
+"area": "networkx.traversal",
+"name": "bfs_predecessors",
+"kind": "function",
+"doc": "Returns an iterator of predecessors in breadth-first-search from source."
+},
+{
+"area": "networkx.traversal",
+"name": "bfs_successors",
+"kind": "function",
+"doc": "Returns an iterator of successors in breadth-first-search from source."
+},
+{
+"area": "networkx.traversal",
+"name": "bfs_tree",
+"kind": "function",
+"doc": "Returns an oriented tree constructed from of a breadth-first-search"
+},
+{
+"area": "networkx.traversal",
+"name": "descendants_at_distance",
+"kind": "function",
+"doc": "Returns all nodes at a fixed `distance` from `source` in `G`."
+},
+{
+"area": "networkx.traversal",
+"name": "dfs_edges",
+"kind": "function",
+"doc": "Iterate over edges in a depth-first-search (DFS)."
+},
+{
+"area": "networkx.traversal",
+"name": "dfs_labeled_edges",
+"kind": "function",
+"doc": "Iterate over edges in a depth-first-search (DFS) labeled by type."
+},
+{
+"area": "networkx.traversal",
+"name": "dfs_postorder_nodes",
+"kind": "function",
+"doc": "Generate nodes in a depth-first-search post-ordering starting at source."
+},
+{
+"area": "networkx.traversal",
+"name": "dfs_predecessors",
+"kind": "function",
+"doc": "Returns dictionary of predecessors in depth-first-search from source."
+},
+{
+"area": "networkx.traversal",
+"name": "dfs_preorder_nodes",
+"kind": "function",
+"doc": "Generate nodes in a depth-first-search pre-ordering starting at source."
+},
+{
+"area": "networkx.traversal",
+"name": "dfs_successors",
+"kind": "function",
+"doc": "Returns dictionary of successors in depth-first-search from source."
+},
+{
+"area": "networkx.traversal",
+"name": "dfs_tree",
+"kind": "function",
+"doc": "Returns oriented tree constructed from a depth-first-search from source."
+},
+{
+"area": "networkx.traversal",
+"name": "edge_bfs",
+"kind": "function",
+"doc": "A directed, breadth-first-search of edges in `G`, beginning at `source`."
+},
+{
+"area": "networkx.traversal",
+"name": "edge_dfs",
+"kind": "function",
+"doc": "A directed, depth-first-search of edges in `G`, beginning at `source`."
+},
+{
+"area": "networkx.traversal",
+"name": "generic_bfs_edges",
+"kind": "function",
+"doc": "Iterate over edges in a breadth-first search."
+},
+{
+"area": "networkx.tree",
+"name": "ArborescenceIterator",
+"kind": "class",
+"doc": "Iterate over all spanning arborescences of a graph in either increasing or"
+},
+{
+"area": "networkx.tree",
+"name": "EdgePartition",
+"kind": "class",
+"doc": "An enum to store the state of an edge partition. The enum is written to the"
+},
+{
+"area": "networkx.tree",
+"name": "NotATree",
+"kind": "class",
+"doc": "Raised when a function expects a tree (that is, a connected"
+},
+{
+"area": "networkx.tree",
+"name": "SpanningTreeIterator",
+"kind": "class",
+"doc": "Iterate over all spanning trees of a graph in either increasing or"
+},
+{
+"area": "networkx.tree",
+"name": "branching_weight",
+"kind": "function",
+"doc": "Returns the total weight of a branching."
+},
+{
+"area": "networkx.tree",
+"name": "center",
+"kind": "function",
+"doc": "Returns the center of an undirected tree graph."
+},
+{
+"area": "networkx.tree",
+"name": "centroid",
+"kind": "function",
+"doc": "Return the centroid of an unweighted tree."
+},
+{
+"area": "networkx.tree",
+"name": "from_nested_tuple",
+"kind": "function",
+"doc": "Returns the rooted tree corresponding to the given nested tuple."
+},
+{
+"area": "networkx.tree",
+"name": "from_prufer_sequence",
+"kind": "function",
+"doc": "Returns the tree corresponding to the given Pr\u00fcfer sequence."
+},
+{
+"area": "networkx.tree",
+"name": "greedy_branching",
+"kind": "function",
+"doc": "Returns a branching obtained through a greedy algorithm."
+},
+{
+"area": "networkx.tree",
+"name": "is_arborescence",
+"kind": "function",
+"doc": "Returns True if `G` is an arborescence."
+},
+{
+"area": "networkx.tree",
+"name": "is_branching",
+"kind": "function",
+"doc": "Returns True if `G` is a branching."
+},
+{
+"area": "networkx.tree",
+"name": "is_forest",
+"kind": "function",
+"doc": "Returns True if `G` is a forest."
+},
+{
+"area": "networkx.tree",
+"name": "is_tree",
+"kind": "function",
+"doc": "Returns True if `G` is a tree."
+},
+{
+"area": "networkx.tree",
+"name": "join_trees",
+"kind": "function",
+"doc": "Returns a new rooted tree made by joining `rooted_trees`"
+},
+{
+"area": "networkx.tree",
+"name": "junction_tree",
+"kind": "function",
+"doc": "Returns a junction tree of a given graph."
+},
+{
+"area": "networkx.tree",
+"name": "maximum_branching",
+"kind": "function",
+"doc": "Returns a maximum branching from G."
+},
+{
+"area": "networkx.tree",
+"name": "maximum_spanning_arborescence",
+"kind": "function",
+"doc": "Returns a maximum spanning arborescence from G."
+},
+{
+"area": "networkx.tree",
+"name": "maximum_spanning_edges",
+"kind": "function",
+"doc": "Generate edges in a maximum spanning forest of an undirected"
+},
+{
+"area": "networkx.tree",
+"name": "maximum_spanning_tree",
+"kind": "function",
+"doc": "Returns a maximum spanning tree or forest on an undirected graph `G`."
+},
+{
+"area": "networkx.tree",
+"name": "minimal_branching",
+"kind": "function",
+"doc": "Returns a minimal branching from `G`."
+},
+{
+"area": "networkx.tree",
+"name": "minimum_branching",
+"kind": "function",
+"doc": "Returns a minimum branching from G."
+},
+{
+"area": "networkx.tree",
+"name": "minimum_spanning_arborescence",
+"kind": "function",
+"doc": "Returns a minimum spanning arborescence from G."
+},
+{
+"area": "networkx.tree",
+"name": "minimum_spanning_edges",
+"kind": "function",
+"doc": "Generate edges in a minimum spanning forest of an undirected"
+},
+{
+"area": "networkx.tree",
+"name": "minimum_spanning_tree",
+"kind": "function",
+"doc": "Returns a minimum spanning tree or forest on an undirected graph `G`."
+},
+{
+"area": "networkx.tree",
+"name": "number_of_spanning_trees",
+"kind": "function",
+"doc": "Returns the number of spanning trees in `G`."
+},
+{
+"area": "networkx.tree",
+"name": "partition_spanning_tree",
+"kind": "function",
+"doc": "Find a spanning tree while respecting a partition of edges."
+},
+{
+"area": "networkx.tree",
+"name": "random_spanning_tree",
+"kind": "function",
+"doc": "Sample a random spanning tree using the edges weights of `G`."
+},
+{
+"area": "networkx.tree",
+"name": "to_nested_tuple",
+"kind": "function",
+"doc": "Returns a nested tuple representation of the given tree."
+},
+{
+"area": "networkx.tree",
+"name": "to_prufer_sequence",
+"kind": "function",
+"doc": "Returns the Pr\u00fcfer sequence of the given tree."
+}
+]
+}

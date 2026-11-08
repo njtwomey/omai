@@ -1,0 +1,1531 @@
+{
+"library": "nltk",
+"version": "3.10.4",
+"source": "introspection",
+"entries": [
+{
+"area": "nltk.chunk",
+"name": "ChunkParserI",
+"kind": "class",
+"doc": "A processing interface for identifying non-overlapping groups in"
+},
+{
+"area": "nltk.chunk",
+"name": "ChunkScore",
+"kind": "class",
+"doc": "A utility class for scoring chunk parsers.  ``ChunkScore`` can"
+},
+{
+"area": "nltk.chunk",
+"name": "Maxent_NE_Chunker",
+"kind": "class",
+"doc": "Expected input: list of pos-tagged words"
+},
+{
+"area": "nltk.chunk",
+"name": "RegexpChunkParser",
+"kind": "class",
+"doc": "A regular expression based chunk parser.  ``RegexpChunkParser`` uses a"
+},
+{
+"area": "nltk.chunk",
+"name": "RegexpParser",
+"kind": "class",
+"doc": "A grammar based chunk parser.  ``chunk.RegexpParser`` uses a set of"
+},
+{
+"area": "nltk.chunk",
+"name": "accuracy",
+"kind": "function",
+"doc": "Score the accuracy of the chunker against the gold standard."
+},
+{
+"area": "nltk.chunk",
+"name": "conllstr2tree",
+"kind": "function",
+"doc": "Return a chunk structure for a single sentence"
+},
+{
+"area": "nltk.chunk",
+"name": "conlltags2tree",
+"kind": "function",
+"doc": "Convert the CoNLL IOB format to a tree."
+},
+{
+"area": "nltk.chunk",
+"name": "ieerstr2tree",
+"kind": "function",
+"doc": "Return a chunk structure containing the chunked tagged text that is"
+},
+{
+"area": "nltk.chunk",
+"name": "ne_chunk",
+"kind": "function",
+"doc": "Use NLTK's currently recommended named entity chunker to"
+},
+{
+"area": "nltk.chunk",
+"name": "ne_chunk_sents",
+"kind": "function",
+"doc": "Use NLTK's currently recommended named entity chunker to chunk the"
+},
+{
+"area": "nltk.chunk",
+"name": "ne_chunker",
+"kind": "function",
+"doc": "Load NLTK's currently recommended named entity chunker."
+},
+{
+"area": "nltk.chunk",
+"name": "tagstr2tree",
+"kind": "function",
+"doc": "Divide a string of bracketted tagged text into"
+},
+{
+"area": "nltk.chunk",
+"name": "tree2conllstr",
+"kind": "function",
+"doc": "Return a multiline string where each line contains a word, tag and IOB tag."
+},
+{
+"area": "nltk.chunk",
+"name": "tree2conlltags",
+"kind": "function",
+"doc": "Return a list of 3-tuples containing ``(word, tag, IOB-tag)``."
+},
+{
+"area": "nltk.classify",
+"name": "BinaryMaxentFeatureEncoding",
+"kind": "class",
+"doc": "A feature encoding that generates vectors containing a binary"
+},
+{
+"area": "nltk.classify",
+"name": "ClassifierI",
+"kind": "class",
+"doc": "A processing interface for labeling tokens with a single category"
+},
+{
+"area": "nltk.classify",
+"name": "ConditionalExponentialClassifier",
+"kind": "class",
+"doc": "A maximum entropy classifier (also known as a \"conditional"
+},
+{
+"area": "nltk.classify",
+"name": "DecisionTreeClassifier",
+"kind": "class",
+"doc": "A processing interface for labeling tokens with a single category"
+},
+{
+"area": "nltk.classify",
+"name": "MaxentClassifier",
+"kind": "class",
+"doc": "A maximum entropy classifier (also known as a \"conditional"
+},
+{
+"area": "nltk.classify",
+"name": "MultiClassifierI",
+"kind": "class",
+"doc": "A processing interface for labeling tokens with zero or more"
+},
+{
+"area": "nltk.classify",
+"name": "NaiveBayesClassifier",
+"kind": "class",
+"doc": "A Naive Bayes classifier.  Naive Bayes classifiers are"
+},
+{
+"area": "nltk.classify",
+"name": "PositiveNaiveBayesClassifier",
+"kind": "class",
+"doc": "A Naive Bayes classifier.  Naive Bayes classifiers are"
+},
+{
+"area": "nltk.classify",
+"name": "RTEFeatureExtractor",
+"kind": "class",
+"doc": "This builds a bag of words for both the text and the hypothesis after"
+},
+{
+"area": "nltk.classify",
+"name": "Senna",
+"kind": "class",
+"doc": "A processing interface for assigning a tag to each token in a list."
+},
+{
+"area": "nltk.classify",
+"name": "SklearnClassifier",
+"kind": "class",
+"doc": "Wrapper for scikit-learn classifiers."
+},
+{
+"area": "nltk.classify",
+"name": "TextCat",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "nltk.classify",
+"name": "TypedMaxentFeatureEncoding",
+"kind": "class",
+"doc": "A feature encoding that generates vectors containing integer,"
+},
+{
+"area": "nltk.classify",
+"name": "WekaClassifier",
+"kind": "class",
+"doc": "A processing interface for labeling tokens with a single category"
+},
+{
+"area": "nltk.classify",
+"name": "accuracy",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "nltk.classify",
+"name": "apply_features",
+"kind": "function",
+"doc": "Use the ``LazyMap`` class to construct a lazy list-like"
+},
+{
+"area": "nltk.classify",
+"name": "call_megam",
+"kind": "function",
+"doc": "Call the ``megam`` binary with the given arguments."
+},
+{
+"area": "nltk.classify",
+"name": "config_megam",
+"kind": "function",
+"doc": "Configure NLTK's interface to the ``megam`` maxent optimization"
+},
+{
+"area": "nltk.classify",
+"name": "config_weka",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "nltk.classify",
+"name": "log_likelihood",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "nltk.classify",
+"name": "rte_classifier",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "nltk.classify",
+"name": "rte_features",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "nltk.cluster",
+"name": "Dendrogram",
+"kind": "class",
+"doc": "Represents a dendrogram, a tree with a specified branching order.  This"
+},
+{
+"area": "nltk.cluster",
+"name": "EMClusterer",
+"kind": "class",
+"doc": "The Gaussian EM clusterer models the vectors as being produced by"
+},
+{
+"area": "nltk.cluster",
+"name": "GAAClusterer",
+"kind": "class",
+"doc": "The Group Average Agglomerative starts with each of the N vectors as singleton"
+},
+{
+"area": "nltk.cluster",
+"name": "KMeansClusterer",
+"kind": "class",
+"doc": "The K-means clusterer starts with k arbitrary chosen means then allocates"
+},
+{
+"area": "nltk.cluster",
+"name": "VectorSpaceClusterer",
+"kind": "class",
+"doc": "Abstract clusterer which takes tokens and maps them into a vector space."
+},
+{
+"area": "nltk.cluster",
+"name": "cosine_distance",
+"kind": "function",
+"doc": "Returns 1 minus the cosine of the angle between vectors v and u. This is"
+},
+{
+"area": "nltk.cluster",
+"name": "euclidean_distance",
+"kind": "function",
+"doc": "Returns the euclidean distance between vectors u and v. This is equivalent"
+},
+{
+"area": "nltk.lm",
+"name": "AbsoluteDiscountingInterpolated",
+"kind": "class",
+"doc": "Interpolated version of smoothing with absolute discount."
+},
+{
+"area": "nltk.lm",
+"name": "KneserNeyInterpolated",
+"kind": "class",
+"doc": "Interpolated version of Kneser-Ney smoothing."
+},
+{
+"area": "nltk.lm",
+"name": "Laplace",
+"kind": "class",
+"doc": "Implements Laplace (add one) smoothing."
+},
+{
+"area": "nltk.lm",
+"name": "Lidstone",
+"kind": "class",
+"doc": "Provides Lidstone-smoothed scores."
+},
+{
+"area": "nltk.lm",
+"name": "MLE",
+"kind": "class",
+"doc": "Class for providing MLE ngram model scores."
+},
+{
+"area": "nltk.lm",
+"name": "NgramCounter",
+"kind": "class",
+"doc": "Class for counting ngrams."
+},
+{
+"area": "nltk.lm",
+"name": "StupidBackoff",
+"kind": "class",
+"doc": "Provides StupidBackoff scores."
+},
+{
+"area": "nltk.lm",
+"name": "Vocabulary",
+"kind": "class",
+"doc": "Stores language model vocabulary."
+},
+{
+"area": "nltk.lm",
+"name": "WittenBellInterpolated",
+"kind": "class",
+"doc": "Interpolated version of Witten-Bell smoothing."
+},
+{
+"area": "nltk.metrics",
+"name": "AnnotationTask",
+"kind": "class",
+"doc": "Represents an annotation task, i.e. people assign labels to items."
+},
+{
+"area": "nltk.metrics",
+"name": "BigramAssocMeasures",
+"kind": "class",
+"doc": "A collection of bigram association measures. Each association measure"
+},
+{
+"area": "nltk.metrics",
+"name": "ConfusionMatrix",
+"kind": "class",
+"doc": "The confusion matrix between a list of reference values and a"
+},
+{
+"area": "nltk.metrics",
+"name": "ContingencyMeasures",
+"kind": "class",
+"doc": "Wraps NgramAssocMeasures classes such that the arguments of association"
+},
+{
+"area": "nltk.metrics",
+"name": "NgramAssocMeasures",
+"kind": "class",
+"doc": "An abstract class defining a collection of generic association measures."
+},
+{
+"area": "nltk.metrics",
+"name": "Paice",
+"kind": "class",
+"doc": "Class for storing lemmas, stems and evaluation metrics."
+},
+{
+"area": "nltk.metrics",
+"name": "QuadgramAssocMeasures",
+"kind": "class",
+"doc": "A collection of quadgram association measures. Each association measure"
+},
+{
+"area": "nltk.metrics",
+"name": "TrigramAssocMeasures",
+"kind": "class",
+"doc": "A collection of trigram association measures. Each association measure"
+},
+{
+"area": "nltk.metrics",
+"name": "accuracy",
+"kind": "function",
+"doc": "Given a list of reference values and a corresponding list of test"
+},
+{
+"area": "nltk.metrics",
+"name": "align",
+"kind": "function",
+"doc": "Compute the alignment of two phonetic strings."
+},
+{
+"area": "nltk.metrics",
+"name": "approxrand",
+"kind": "function",
+"doc": "Returns an approximate significance level between two lists of"
+},
+{
+"area": "nltk.metrics",
+"name": "binary_distance",
+"kind": "function",
+"doc": "Simple equality test."
+},
+{
+"area": "nltk.metrics",
+"name": "custom_distance",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "nltk.metrics",
+"name": "edit_distance",
+"kind": "function",
+"doc": "Calculate the Levenshtein edit-distance between two strings."
+},
+{
+"area": "nltk.metrics",
+"name": "edit_distance_align",
+"kind": "function",
+"doc": "Calculate the minimum Levenshtein edit-distance based alignment"
+},
+{
+"area": "nltk.metrics",
+"name": "f_measure",
+"kind": "function",
+"doc": "Given a set of reference values and a set of test values, return"
+},
+{
+"area": "nltk.metrics",
+"name": "fractional_presence",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "nltk.metrics",
+"name": "ghd",
+"kind": "function",
+"doc": "Compute the Generalized Hamming Distance for a reference and a hypothetical"
+},
+{
+"area": "nltk.metrics",
+"name": "interval_distance",
+"kind": "function",
+"doc": "Krippendorff's interval distance metric"
+},
+{
+"area": "nltk.metrics",
+"name": "jaccard_distance",
+"kind": "function",
+"doc": "Distance metric comparing set-similarity."
+},
+{
+"area": "nltk.metrics",
+"name": "log_likelihood",
+"kind": "function",
+"doc": "Given a list of reference values and a corresponding list of test"
+},
+{
+"area": "nltk.metrics",
+"name": "masi_distance",
+"kind": "function",
+"doc": "Distance metric that takes into account partial agreement when multiple"
+},
+{
+"area": "nltk.metrics",
+"name": "pk",
+"kind": "function",
+"doc": "Compute the Pk metric for a pair of segmentations A segmentation"
+},
+{
+"area": "nltk.metrics",
+"name": "precision",
+"kind": "function",
+"doc": "Given a set of reference values and a set of test values, return"
+},
+{
+"area": "nltk.metrics",
+"name": "presence",
+"kind": "function",
+"doc": "Higher-order function to test presence of a given label"
+},
+{
+"area": "nltk.metrics",
+"name": "ranks_from_scores",
+"kind": "function",
+"doc": "Given a sequence of (key, score) tuples, yields each key with an"
+},
+{
+"area": "nltk.metrics",
+"name": "ranks_from_sequence",
+"kind": "function",
+"doc": "Given a sequence, yields each element with an increasing rank, suitable"
+},
+{
+"area": "nltk.metrics",
+"name": "recall",
+"kind": "function",
+"doc": "Given a set of reference values and a set of test values, return"
+},
+{
+"area": "nltk.metrics",
+"name": "spearman_correlation",
+"kind": "function",
+"doc": "Returns the Spearman correlation coefficient for two rankings, which"
+},
+{
+"area": "nltk.metrics",
+"name": "windowdiff",
+"kind": "function",
+"doc": "Compute the windowdiff score for a pair of segmentations.  A"
+},
+{
+"area": "nltk.parse",
+"name": "BllipParser",
+"kind": "class",
+"doc": "Interface for parsing with BLLIP Parser. BllipParser objects can be"
+},
+{
+"area": "nltk.parse",
+"name": "BottomUpChartParser",
+"kind": "class",
+"doc": "A ``ChartParser`` using a bottom-up parsing strategy."
+},
+{
+"area": "nltk.parse",
+"name": "BottomUpLeftCornerChartParser",
+"kind": "class",
+"doc": "A ``ChartParser`` using a bottom-up left-corner parsing strategy."
+},
+{
+"area": "nltk.parse",
+"name": "BottomUpProbabilisticChartParser",
+"kind": "class",
+"doc": "An abstract bottom-up parser for ``PCFG`` grammars that uses a ``Chart`` to"
+},
+{
+"area": "nltk.parse",
+"name": "ChartParser",
+"kind": "class",
+"doc": "A generic chart parser.  A \"strategy\", or list of"
+},
+{
+"area": "nltk.parse",
+"name": "CoreNLPDependencyParser",
+"kind": "class",
+"doc": "Dependency parser."
+},
+{
+"area": "nltk.parse",
+"name": "CoreNLPParser",
+"kind": "class",
+"doc": "Skip these tests if CoreNLP is likely not ready."
+},
+{
+"area": "nltk.parse",
+"name": "DependencyEvaluator",
+"kind": "class",
+"doc": "Class for measuring labelled and unlabelled attachment score for"
+},
+{
+"area": "nltk.parse",
+"name": "DependencyGraph",
+"kind": "class",
+"doc": "A container for the nodes and labelled edges of a dependency structure."
+},
+{
+"area": "nltk.parse",
+"name": "EarleyChartParser",
+"kind": "class",
+"doc": "An *incremental* chart parser implementing Jay Earley's"
+},
+{
+"area": "nltk.parse",
+"name": "FeatureBottomUpChartParser",
+"kind": "class",
+"doc": "A generic chart parser.  A \"strategy\", or list of"
+},
+{
+"area": "nltk.parse",
+"name": "FeatureBottomUpLeftCornerChartParser",
+"kind": "class",
+"doc": "A generic chart parser.  A \"strategy\", or list of"
+},
+{
+"area": "nltk.parse",
+"name": "FeatureChartParser",
+"kind": "class",
+"doc": "A generic chart parser.  A \"strategy\", or list of"
+},
+{
+"area": "nltk.parse",
+"name": "FeatureEarleyChartParser",
+"kind": "class",
+"doc": "An *incremental* chart parser implementing Jay Earley's"
+},
+{
+"area": "nltk.parse",
+"name": "FeatureIncrementalBottomUpChartParser",
+"kind": "class",
+"doc": "An *incremental* chart parser implementing Jay Earley's"
+},
+{
+"area": "nltk.parse",
+"name": "FeatureIncrementalBottomUpLeftCornerChartParser",
+"kind": "class",
+"doc": "An *incremental* chart parser implementing Jay Earley's"
+},
+{
+"area": "nltk.parse",
+"name": "FeatureIncrementalChartParser",
+"kind": "class",
+"doc": "An *incremental* chart parser implementing Jay Earley's"
+},
+{
+"area": "nltk.parse",
+"name": "FeatureIncrementalTopDownChartParser",
+"kind": "class",
+"doc": "An *incremental* chart parser implementing Jay Earley's"
+},
+{
+"area": "nltk.parse",
+"name": "FeatureTopDownChartParser",
+"kind": "class",
+"doc": "A generic chart parser.  A \"strategy\", or list of"
+},
+{
+"area": "nltk.parse",
+"name": "IncrementalBottomUpChartParser",
+"kind": "class",
+"doc": "An *incremental* chart parser implementing Jay Earley's"
+},
+{
+"area": "nltk.parse",
+"name": "IncrementalBottomUpLeftCornerChartParser",
+"kind": "class",
+"doc": "An *incremental* chart parser implementing Jay Earley's"
+},
+{
+"area": "nltk.parse",
+"name": "IncrementalChartParser",
+"kind": "class",
+"doc": "An *incremental* chart parser implementing Jay Earley's"
+},
+{
+"area": "nltk.parse",
+"name": "IncrementalLeftCornerChartParser",
+"kind": "class",
+"doc": "An *incremental* chart parser implementing Jay Earley's"
+},
+{
+"area": "nltk.parse",
+"name": "IncrementalTopDownChartParser",
+"kind": "class",
+"doc": "An *incremental* chart parser implementing Jay Earley's"
+},
+{
+"area": "nltk.parse",
+"name": "InsideChartParser",
+"kind": "class",
+"doc": "A bottom-up parser for ``PCFG`` grammars that tries edges in descending"
+},
+{
+"area": "nltk.parse",
+"name": "LeftCornerChartParser",
+"kind": "class",
+"doc": "A generic chart parser.  A \"strategy\", or list of"
+},
+{
+"area": "nltk.parse",
+"name": "LongestChartParser",
+"kind": "class",
+"doc": "A bottom-up parser for ``PCFG`` grammars that tries longer edges before"
+},
+{
+"area": "nltk.parse",
+"name": "MaltParser",
+"kind": "class",
+"doc": "A class for dependency parsing with MaltParser. The input is the paths to:"
+},
+{
+"area": "nltk.parse",
+"name": "NaiveBayesDependencyScorer",
+"kind": "class",
+"doc": "A dependency scorer built around a MaxEnt classifier.  In this"
+},
+{
+"area": "nltk.parse",
+"name": "NonprojectiveDependencyParser",
+"kind": "class",
+"doc": "A non-projective, rule-based, dependency parser.  This parser"
+},
+{
+"area": "nltk.parse",
+"name": "ParserI",
+"kind": "class",
+"doc": "A processing class for deriving trees that represent possible"
+},
+{
+"area": "nltk.parse",
+"name": "ProbabilisticNonprojectiveParser",
+"kind": "class",
+"doc": "A probabilistic non-projective dependency parser."
+},
+{
+"area": "nltk.parse",
+"name": "ProbabilisticProjectiveDependencyParser",
+"kind": "class",
+"doc": "A probabilistic, projective dependency parser."
+},
+{
+"area": "nltk.parse",
+"name": "ProjectiveDependencyParser",
+"kind": "class",
+"doc": "A projective, rule-based, dependency parser.  A ProjectiveDependencyParser"
+},
+{
+"area": "nltk.parse",
+"name": "RandomChartParser",
+"kind": "class",
+"doc": "A bottom-up parser for ``PCFG`` grammars that tries edges in random order."
+},
+{
+"area": "nltk.parse",
+"name": "RecursiveDescentParser",
+"kind": "class",
+"doc": "A simple top-down CFG parser that parses texts by recursively"
+},
+{
+"area": "nltk.parse",
+"name": "ShiftReduceParser",
+"kind": "class",
+"doc": "A simple bottom-up CFG parser that uses two operations, \"shift\""
+},
+{
+"area": "nltk.parse",
+"name": "SteppingChartParser",
+"kind": "class",
+"doc": "A ``ChartParser`` that allows you to step through the parsing"
+},
+{
+"area": "nltk.parse",
+"name": "SteppingRecursiveDescentParser",
+"kind": "class",
+"doc": "A ``RecursiveDescentParser`` that allows you to step through the"
+},
+{
+"area": "nltk.parse",
+"name": "SteppingShiftReduceParser",
+"kind": "class",
+"doc": "A ``ShiftReduceParser`` that allows you to setp through the parsing"
+},
+{
+"area": "nltk.parse",
+"name": "TestGrammar",
+"kind": "class",
+"doc": "Unit tests for  CFG."
+},
+{
+"area": "nltk.parse",
+"name": "TopDownChartParser",
+"kind": "class",
+"doc": "A ``ChartParser`` using a top-down parsing strategy."
+},
+{
+"area": "nltk.parse",
+"name": "TransitionParser",
+"kind": "class",
+"doc": "Class for transition based parser. Implement 2 algorithms which are \"arc-standard\" and \"arc-eager\""
+},
+{
+"area": "nltk.parse",
+"name": "UnsortedChartParser",
+"kind": "class",
+"doc": "A bottom-up parser for ``PCFG`` grammars that tries edges in whatever order."
+},
+{
+"area": "nltk.parse",
+"name": "ViterbiParser",
+"kind": "class",
+"doc": "A bottom-up ``PCFG`` parser that uses dynamic programming to find"
+},
+{
+"area": "nltk.parse",
+"name": "extract_test_sentences",
+"kind": "function",
+"doc": "Parses a string with one test sentence per line."
+},
+{
+"area": "nltk.parse",
+"name": "load_parser",
+"kind": "function",
+"doc": "Load a grammar from a file, and build a parser based on that grammar."
+},
+{
+"area": "nltk.probability",
+"name": "ConditionalFreqDist",
+"kind": "class",
+"doc": "A collection of frequency distributions for a single experiment"
+},
+{
+"area": "nltk.probability",
+"name": "ConditionalProbDist",
+"kind": "class",
+"doc": "A conditional probability distribution modeling the experiments"
+},
+{
+"area": "nltk.probability",
+"name": "ConditionalProbDistI",
+"kind": "class",
+"doc": "A collection of probability distributions for a single experiment"
+},
+{
+"area": "nltk.probability",
+"name": "CrossValidationProbDist",
+"kind": "class",
+"doc": "The cross-validation estimate for the probability distribution of"
+},
+{
+"area": "nltk.probability",
+"name": "DictionaryConditionalProbDist",
+"kind": "class",
+"doc": "An alternative ConditionalProbDist that simply wraps a dictionary of"
+},
+{
+"area": "nltk.probability",
+"name": "DictionaryProbDist",
+"kind": "class",
+"doc": "A probability distribution whose probabilities are directly"
+},
+{
+"area": "nltk.probability",
+"name": "ELEProbDist",
+"kind": "class",
+"doc": "The expected likelihood estimate for the probability distribution"
+},
+{
+"area": "nltk.probability",
+"name": "FreqDist",
+"kind": "class",
+"doc": "A frequency distribution for the outcomes of an experiment.  A"
+},
+{
+"area": "nltk.probability",
+"name": "HeldoutProbDist",
+"kind": "class",
+"doc": "The heldout estimate for the probability distribution of the"
+},
+{
+"area": "nltk.probability",
+"name": "ImmutableProbabilisticMixIn",
+"kind": "class",
+"doc": "A mix-in class to associate probabilities with other classes"
+},
+{
+"area": "nltk.probability",
+"name": "KneserNeyProbDist",
+"kind": "class",
+"doc": "Kneser-Ney estimate of a probability distribution. This is a version of"
+},
+{
+"area": "nltk.probability",
+"name": "LaplaceProbDist",
+"kind": "class",
+"doc": "The Laplace estimate for the probability distribution of the"
+},
+{
+"area": "nltk.probability",
+"name": "LidstoneProbDist",
+"kind": "class",
+"doc": "The Lidstone estimate for the probability distribution of the"
+},
+{
+"area": "nltk.probability",
+"name": "MLEProbDist",
+"kind": "class",
+"doc": "The maximum likelihood estimate for the probability distribution"
+},
+{
+"area": "nltk.probability",
+"name": "MutableProbDist",
+"kind": "class",
+"doc": "An mutable probdist where the probabilities may be easily modified. This"
+},
+{
+"area": "nltk.probability",
+"name": "ProbDistI",
+"kind": "class",
+"doc": "A probability distribution for the outcomes of an experiment.  A"
+},
+{
+"area": "nltk.probability",
+"name": "ProbabilisticMixIn",
+"kind": "class",
+"doc": "A mix-in class to associate probabilities with other classes"
+},
+{
+"area": "nltk.probability",
+"name": "SimpleGoodTuringProbDist",
+"kind": "class",
+"doc": "SimpleGoodTuring ProbDist approximates from frequency to frequency of"
+},
+{
+"area": "nltk.probability",
+"name": "UniformProbDist",
+"kind": "class",
+"doc": "A probability distribution that assigns equal probability to each"
+},
+{
+"area": "nltk.probability",
+"name": "WittenBellProbDist",
+"kind": "class",
+"doc": "The Witten-Bell estimate of a probability distribution. This distribution"
+},
+{
+"area": "nltk.probability",
+"name": "add_logs",
+"kind": "function",
+"doc": "Given two numbers ``logx`` = *log(x)* and ``logy`` = *log(y)*, return"
+},
+{
+"area": "nltk.probability",
+"name": "entropy",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "nltk.probability",
+"name": "log_likelihood",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "nltk.probability",
+"name": "sum_logs",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "nltk.sentiment",
+"name": "SentimentAnalyzer",
+"kind": "class",
+"doc": "A Sentiment Analysis tool based on machine learning approaches."
+},
+{
+"area": "nltk.sentiment",
+"name": "SentimentIntensityAnalyzer",
+"kind": "class",
+"doc": "Give a sentiment intensity score to sentences."
+},
+{
+"area": "nltk.stem",
+"name": "ARLSTem",
+"kind": "class",
+"doc": "ARLSTem stemmer : a light Arabic Stemming algorithm without any dictionary."
+},
+{
+"area": "nltk.stem",
+"name": "ARLSTem2",
+"kind": "class",
+"doc": "Return a stemmed Arabic word after removing affixes. This an improved"
+},
+{
+"area": "nltk.stem",
+"name": "Cistem",
+"kind": "class",
+"doc": "CISTEM Stemmer for German"
+},
+{
+"area": "nltk.stem",
+"name": "ISRIStemmer",
+"kind": "class",
+"doc": "ISRI Arabic stemmer based on algorithm: Arabic Stemming without a root dictionary."
+},
+{
+"area": "nltk.stem",
+"name": "LancasterStemmer",
+"kind": "class",
+"doc": "Lancaster Stemmer"
+},
+{
+"area": "nltk.stem",
+"name": "PorterStemmer",
+"kind": "class",
+"doc": "A word stemmer based on the Porter stemming algorithm."
+},
+{
+"area": "nltk.stem",
+"name": "RSLPStemmer",
+"kind": "class",
+"doc": "A stemmer for Portuguese."
+},
+{
+"area": "nltk.stem",
+"name": "RegexpStemmer",
+"kind": "class",
+"doc": "A stemmer that uses regular expressions to identify morphological"
+},
+{
+"area": "nltk.stem",
+"name": "SnowballStemmer",
+"kind": "class",
+"doc": "Snowball Stemmer"
+},
+{
+"area": "nltk.stem",
+"name": "StemmerI",
+"kind": "class",
+"doc": "A processing interface for removing morphological affixes from"
+},
+{
+"area": "nltk.stem",
+"name": "WordNetLemmatizer",
+"kind": "class",
+"doc": "WordNet Lemmatizer"
+},
+{
+"area": "nltk.tag",
+"name": "AffixTagger",
+"kind": "class",
+"doc": "A tagger that chooses a token's tag based on a leading or trailing"
+},
+{
+"area": "nltk.tag",
+"name": "BigramTagger",
+"kind": "class",
+"doc": "A tagger that chooses a token's tag based its word string and on"
+},
+{
+"area": "nltk.tag",
+"name": "BrillTagger",
+"kind": "class",
+"doc": "Brill's transformational rule-based tagger.  Brill taggers use an"
+},
+{
+"area": "nltk.tag",
+"name": "BrillTaggerTrainer",
+"kind": "class",
+"doc": "A trainer for tbl taggers."
+},
+{
+"area": "nltk.tag",
+"name": "CRFTagger",
+"kind": "class",
+"doc": "A module for POS tagging using CRFSuite https://pypi.python.org/pypi/python-crfsuite"
+},
+{
+"area": "nltk.tag",
+"name": "ClassifierBasedPOSTagger",
+"kind": "class",
+"doc": "A classifier based part of speech tagger."
+},
+{
+"area": "nltk.tag",
+"name": "ClassifierBasedTagger",
+"kind": "class",
+"doc": "A sequential tagger that uses a classifier to choose the tag for"
+},
+{
+"area": "nltk.tag",
+"name": "ContextTagger",
+"kind": "class",
+"doc": "An abstract base class for sequential backoff taggers that choose"
+},
+{
+"area": "nltk.tag",
+"name": "DefaultTagger",
+"kind": "class",
+"doc": "A tagger that assigns the same tag to every token."
+},
+{
+"area": "nltk.tag",
+"name": "HiddenMarkovModelTagger",
+"kind": "class",
+"doc": "Hidden Markov model class, a generative model for labelling sequence data."
+},
+{
+"area": "nltk.tag",
+"name": "HiddenMarkovModelTrainer",
+"kind": "class",
+"doc": "Algorithms for learning HMM parameters from training data. These include"
+},
+{
+"area": "nltk.tag",
+"name": "HunposTagger",
+"kind": "class",
+"doc": "A class for pos tagging with HunPos. The input is the paths to:"
+},
+{
+"area": "nltk.tag",
+"name": "NgramTagger",
+"kind": "class",
+"doc": "A tagger that chooses a token's tag based on its word string and"
+},
+{
+"area": "nltk.tag",
+"name": "PerceptronTagger",
+"kind": "class",
+"doc": "Greedy Averaged Perceptron tagger, as implemented by Matthew Honnibal."
+},
+{
+"area": "nltk.tag",
+"name": "RegexpTagger",
+"kind": "class",
+"doc": "Regular Expression Tagger"
+},
+{
+"area": "nltk.tag",
+"name": "SennaChunkTagger",
+"kind": "class",
+"doc": "A processing interface for assigning a tag to each token in a list."
+},
+{
+"area": "nltk.tag",
+"name": "SennaNERTagger",
+"kind": "class",
+"doc": "A processing interface for assigning a tag to each token in a list."
+},
+{
+"area": "nltk.tag",
+"name": "SennaTagger",
+"kind": "class",
+"doc": "A processing interface for assigning a tag to each token in a list."
+},
+{
+"area": "nltk.tag",
+"name": "SequentialBackoffTagger",
+"kind": "class",
+"doc": "An abstract base class for taggers that tags words sequentially,"
+},
+{
+"area": "nltk.tag",
+"name": "StanfordNERTagger",
+"kind": "class",
+"doc": "A class for Named-Entity Tagging with Stanford Tagger. The input is the paths to:"
+},
+{
+"area": "nltk.tag",
+"name": "StanfordPOSTagger",
+"kind": "class",
+"doc": "A class for pos tagging with Stanford Tagger. The input is the paths to:"
+},
+{
+"area": "nltk.tag",
+"name": "StanfordTagger",
+"kind": "class",
+"doc": "An interface to Stanford taggers. Subclasses must define:"
+},
+{
+"area": "nltk.tag",
+"name": "TaggerI",
+"kind": "class",
+"doc": "A processing interface for assigning a tag to each token in a list."
+},
+{
+"area": "nltk.tag",
+"name": "TnT",
+"kind": "class",
+"doc": "TnT statistical part of speech tagger."
+},
+{
+"area": "nltk.tag",
+"name": "TrigramTagger",
+"kind": "class",
+"doc": "A tagger that chooses a token's tag based its word string and on"
+},
+{
+"area": "nltk.tag",
+"name": "UnigramTagger",
+"kind": "class",
+"doc": "Unigram Tagger"
+},
+{
+"area": "nltk.tag",
+"name": "map_tag",
+"kind": "function",
+"doc": "Maps the tag from the source tagset to the target tagset."
+},
+{
+"area": "nltk.tag",
+"name": "pos_tag",
+"kind": "function",
+"doc": "Use NLTK's currently recommended part of speech tagger to"
+},
+{
+"area": "nltk.tag",
+"name": "pos_tag_sents",
+"kind": "function",
+"doc": "Use NLTK's currently recommended part of speech tagger to tag the"
+},
+{
+"area": "nltk.tag",
+"name": "str2tuple",
+"kind": "function",
+"doc": "Given the string representation of a tagged token, return the"
+},
+{
+"area": "nltk.tag",
+"name": "tagset_mapping",
+"kind": "function",
+"doc": "Retrieve the mapping dictionary between tagsets."
+},
+{
+"area": "nltk.tag",
+"name": "tuple2str",
+"kind": "function",
+"doc": "Given the tuple representation of a tagged token, return the"
+},
+{
+"area": "nltk.tag",
+"name": "untag",
+"kind": "function",
+"doc": "Given a tagged sentence, return an untagged version of that"
+},
+{
+"area": "nltk.tokenize",
+"name": "BlanklineTokenizer",
+"kind": "class",
+"doc": "Tokenize a string, treating any sequence of blank lines as a delimiter."
+},
+{
+"area": "nltk.tokenize",
+"name": "LegalitySyllableTokenizer",
+"kind": "class",
+"doc": "Syllabifies words based on the Legality Principle and Onset Maximization."
+},
+{
+"area": "nltk.tokenize",
+"name": "LineTokenizer",
+"kind": "class",
+"doc": "Tokenize a string into its lines, optionally discarding blank lines."
+},
+{
+"area": "nltk.tokenize",
+"name": "MWETokenizer",
+"kind": "class",
+"doc": "A tokenizer that processes tokenized text and merges multi-word expressions"
+},
+{
+"area": "nltk.tokenize",
+"name": "NLTKWordTokenizer",
+"kind": "class",
+"doc": "The NLTK tokenizer that has improved upon the TreebankWordTokenizer."
+},
+{
+"area": "nltk.tokenize",
+"name": "PunktSentenceTokenizer",
+"kind": "class",
+"doc": "A sentence tokenizer which uses an unsupervised algorithm to build"
+},
+{
+"area": "nltk.tokenize",
+"name": "PunktTokenizer",
+"kind": "class",
+"doc": "Punkt Sentence Tokenizer that loads/saves its parameters from/to data files"
+},
+{
+"area": "nltk.tokenize",
+"name": "RegexpTokenizer",
+"kind": "class",
+"doc": "A tokenizer that splits a string using a regular expression, which"
+},
+{
+"area": "nltk.tokenize",
+"name": "ReppTokenizer",
+"kind": "class",
+"doc": "A class for word tokenization using the REPP parser described in"
+},
+{
+"area": "nltk.tokenize",
+"name": "SExprTokenizer",
+"kind": "class",
+"doc": "A tokenizer that divides strings into s-expressions."
+},
+{
+"area": "nltk.tokenize",
+"name": "SpaceTokenizer",
+"kind": "class",
+"doc": "Tokenize a string using the space character as a delimiter,"
+},
+{
+"area": "nltk.tokenize",
+"name": "StanfordSegmenter",
+"kind": "class",
+"doc": "Interface to the Stanford Segmenter"
+},
+{
+"area": "nltk.tokenize",
+"name": "SyllableTokenizer",
+"kind": "class",
+"doc": "Syllabifies words based on the Sonority Sequencing Principle (SSP)."
+},
+{
+"area": "nltk.tokenize",
+"name": "TabTokenizer",
+"kind": "class",
+"doc": "Tokenize a string use the tab character as a delimiter,"
+},
+{
+"area": "nltk.tokenize",
+"name": "TextTilingTokenizer",
+"kind": "class",
+"doc": "Tokenize a document into topical sections using the TextTiling algorithm."
+},
+{
+"area": "nltk.tokenize",
+"name": "ToktokTokenizer",
+"kind": "class",
+"doc": "This is a Python port of the tok-tok.pl from"
+},
+{
+"area": "nltk.tokenize",
+"name": "TreebankWordDetokenizer",
+"kind": "class",
+"doc": "The Treebank detokenizer uses the reverse regex operations corresponding to"
+},
+{
+"area": "nltk.tokenize",
+"name": "TreebankWordTokenizer",
+"kind": "class",
+"doc": "The Treebank tokenizer uses regular expressions to tokenize text as in Penn Treebank."
+},
+{
+"area": "nltk.tokenize",
+"name": "TweetTokenizer",
+"kind": "class",
+"doc": "Tokenizer for tweets."
+},
+{
+"area": "nltk.tokenize",
+"name": "WhitespaceTokenizer",
+"kind": "class",
+"doc": "Tokenize a string on whitespace (space, tab, newline)."
+},
+{
+"area": "nltk.tokenize",
+"name": "WordPunctTokenizer",
+"kind": "class",
+"doc": "Tokenize a text into a sequence of alphabetic and"
+},
+{
+"area": "nltk.tokenize",
+"name": "blankline_tokenize",
+"kind": "function",
+"doc": "Return a tokenized copy of *s*."
+},
+{
+"area": "nltk.tokenize",
+"name": "casual_tokenize",
+"kind": "function",
+"doc": "Convenience function for wrapping the tokenizer."
+},
+{
+"area": "nltk.tokenize",
+"name": "line_tokenize",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "nltk.tokenize",
+"name": "punkt_model_available",
+"kind": "function",
+"doc": "Return whether the Punkt model that :func:`sent_tokenize` uses for"
+},
+{
+"area": "nltk.tokenize",
+"name": "regexp_span_tokenize",
+"kind": "function",
+"doc": "Return the offsets of the tokens in *s*, as a sequence of ``(start, end)``"
+},
+{
+"area": "nltk.tokenize",
+"name": "regexp_tokenize",
+"kind": "function",
+"doc": "Return a tokenized copy of *text*.  See :class:`.RegexpTokenizer`"
+},
+{
+"area": "nltk.tokenize",
+"name": "sent_tokenize",
+"kind": "function",
+"doc": "Return a sentence-tokenized copy of *text*,"
+},
+{
+"area": "nltk.tokenize",
+"name": "sexpr_tokenize",
+"kind": "function",
+"doc": "Return a list of s-expressions extracted from *text*."
+},
+{
+"area": "nltk.tokenize",
+"name": "string_span_tokenize",
+"kind": "function",
+"doc": "Return the offsets of the tokens in *s*, as a sequence of ``(start, end)``"
+},
+{
+"area": "nltk.tokenize",
+"name": "word_tokenize",
+"kind": "function",
+"doc": "Return a tokenized copy of *text*,"
+},
+{
+"area": "nltk.tokenize",
+"name": "wordpunct_tokenize",
+"kind": "function",
+"doc": "Return a tokenized copy of *s*."
+},
+{
+"area": "nltk.translate",
+"name": "AlignedSent",
+"kind": "class",
+"doc": "Return an aligned sentence object, which encapsulates two sentences"
+},
+{
+"area": "nltk.translate",
+"name": "Alignment",
+"kind": "class",
+"doc": "A storage class for representing alignment between two sequences, s1, s2."
+},
+{
+"area": "nltk.translate",
+"name": "IBMModel",
+"kind": "class",
+"doc": "Abstract base class for all IBM models"
+},
+{
+"area": "nltk.translate",
+"name": "IBMModel1",
+"kind": "class",
+"doc": "Lexical translation model that ignores word order"
+},
+{
+"area": "nltk.translate",
+"name": "IBMModel2",
+"kind": "class",
+"doc": "Lexical translation model that considers word order"
+},
+{
+"area": "nltk.translate",
+"name": "IBMModel3",
+"kind": "class",
+"doc": "Translation model that considers how a word can be aligned to"
+},
+{
+"area": "nltk.translate",
+"name": "IBMModel4",
+"kind": "class",
+"doc": "Translation model that reorders output words based on their type and"
+},
+{
+"area": "nltk.translate",
+"name": "IBMModel5",
+"kind": "class",
+"doc": "Translation model that keeps track of vacant positions in the target"
+},
+{
+"area": "nltk.translate",
+"name": "PhraseTable",
+"kind": "class",
+"doc": "In-memory store of translations for a given phrase, and the log"
+},
+{
+"area": "nltk.translate",
+"name": "StackDecoder",
+"kind": "class",
+"doc": "Phrase-based stack decoder for machine translation"
+},
+{
+"area": "nltk.translate",
+"name": "alignment_error_rate",
+"kind": "function",
+"doc": "Return the Alignment Error Rate (AER) of an alignment"
+},
+{
+"area": "nltk.translate",
+"name": "bleu",
+"kind": "function",
+"doc": "Calculate BLEU score (Bilingual Evaluation Understudy) from"
+},
+{
+"area": "nltk.translate",
+"name": "chrf",
+"kind": "function",
+"doc": "Calculates the sentence level CHRF (Character n-gram F-score) described in"
+},
+{
+"area": "nltk.translate",
+"name": "corpus_lepor",
+"kind": "function",
+"doc": "Calculate LEPOR score for list of sentences from Han, A. L.-F. (2017)."
+},
+{
+"area": "nltk.translate",
+"name": "extract",
+"kind": "function",
+"doc": "This function checks for alignment point consistency and extracts"
+},
+{
+"area": "nltk.translate",
+"name": "gleu",
+"kind": "function",
+"doc": "Calculates the sentence level GLEU (Google-BLEU) score described in"
+},
+{
+"area": "nltk.translate",
+"name": "grow_diag_final_and",
+"kind": "function",
+"doc": "This module symmetrisatizes the source-to-target and target-to-source"
+},
+{
+"area": "nltk.translate",
+"name": "lepor",
+"kind": "function",
+"doc": "Calculate LEPOR score a sentence from Han, A. L.-F. (2017)."
+},
+{
+"area": "nltk.translate",
+"name": "meteor",
+"kind": "function",
+"doc": "Calculates METEOR score for hypothesis with multiple references as"
+},
+{
+"area": "nltk.translate",
+"name": "nist",
+"kind": "function",
+"doc": "Calculate NIST score from"
+},
+{
+"area": "nltk.translate",
+"name": "ribes",
+"kind": "function",
+"doc": "The RIBES (Rank-based Intuitive Bilingual Evaluation Score) from"
+},
+{
+"area": "nltk.translate",
+"name": "trace",
+"kind": "function",
+"doc": "Traverse the alignment cost from the tracebacks and retrieves"
+}
+]
+}

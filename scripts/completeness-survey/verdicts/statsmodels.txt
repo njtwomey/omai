@@ -1,0 +1,126 @@
+@lib statsmodels
+S | .*Results|.*ResultsWrapper|.*Result|.*Warning|Appender|cache_.*|lzip|lrange|string_like|float_like|int_like|bool_like|array_like|Bunch|Docstring|PandasData|PandasWrapper|PytestTester|SimpleTable|FormulaManager|PatsyFormula|advance_eval_env|deprecate_kwarg|check_random_state|maybe_unwrap_results|forg|freq_to_period|indent|get_index.*|is_int_index|get_prediction_index|call_cached_func|get_cached_doc|strip4|show_versions|webdoc|load_pickle|create_mpl_.*|rv_discrete_float|OutputWarning|test|nbinom|.*Wrapper|MLEModel|LikelihoodModel|GenericLikelihoodModel|RegressionModel|TimeSeriesModel|Initialization|ARIMA|OLS|WLS|GLM|GMM|prepare_.*|unconstrain_.*|constrain_.*|duplication_matrix|vec|unvec|logdet_symm|rollingstore|RollingStore | | result containers, wrappers, formula plumbing and internal helpers | | | |
+F | add_constant | linear#withIntercept | | | | |
+@area statsmodels.regression.linear_model
+F | .* | linear#linearModel, #gls, #glsar, #olsSummary | | | | |
+@area statsmodels.regression.quantile_regression
+F | QuantReg|bofinger|chamberlain|hall_sheather | linear#quantileRegression | | | | |
+@area statsmodels.regression.mixed_linear_model
+F | MixedLM|MixedLMParams|VCSpec | linear#mixedModel | | | | |
+@area statsmodels.regression.rolling
+A | RollingOLS|RollingWLS | linear#linearModel | rolling-window regression (time-varying coefficients); a stepped window is a natural trace | linear/rolling.ts | S | medium | rolling and recursive regression
+@area statsmodels.regression.recursive_ls
+A | RecursiveLS | linear#bayesianUpdate, dynamics/filtering#kalmanFilter | recursive least squares with CUSUM stability tests; Kalman and Bayesian online linear updates exist | linear/recursive.ts | S | low | rolling and recursive regression
+@area statsmodels.regression.dimred
+A | SIR|SAVE|PHD|PrincipalHessianDirections|SlicedInverseReg|SlicedAverageVarianceEstimation|CORE|CovarianceReduction|DimReductionResults | decomposition#pcr, #plsRegression | sufficient dimension reduction (sliced inverse regression and relatives) | decomposition/sdr.ts | M | low | sufficient dimension reduction
+@area statsmodels.robust
+F | HuberT|TrimmedMean|TukeyQuartic|Hampel|AndrewWave|RamsayE|MQuantileNorm|estimate_location|RLM | stats#mEstimateLocation, #tukeyBiweight, linear#huber | | | | |
+@area statsmodels.genmod
+F | Binomial|Poisson|Gamma|Gaussian|InverseGaussian|NegativeBinomial|Tweedie|Family|Link|identity|log|logit|probit|cauchy|cloglog|loglog|sqrt|inverse_squared|Power|NegativeBinomial|CDFLink|InversePower|inverse_power|LogC|logc | dists/families#binomial, #poisson, ..., links (logit, probit, cloglog, ...) | | | | |
+A | GEE|NominalGEE|OrdinalGEE|GEEMargins|margeff_cov_with_se | | generalised estimating equations for clustered or longitudinal data | linear/gee.ts | M | medium | GEE
+F | GLMResults|PredictionResultsMean | linear#linearModel | | | | |
+@area statsmodels.discrete
+F | MNLogit|CountModel|GeneralizedPoisson|NegativeBinomialP | linear#multinomial, #countProblemOf, #linearModel (family negativeBinomial) | | | | |
+A | ConditionalLogit|ConditionalMNLogit|ConditionalPoisson|ZeroInflatedGeneralizedPoisson|ZeroInflatedNegativeBinomialP|HurdleCountModel|TruncatedLFPoisson|TruncatedLFNegativeBinomialP | linear#hurdle, linear#zeroInflated | conditional (fixed-effects) logit; truncated and generalised-Poisson count variants | linear/discrete-extras.ts | M | low | count and discrete models
+@area statsmodels.api
+F | ANOVA|DescStat.*|Poisson|Logit|Probit|OLS|WLS|GLS|GLM|QuantReg|RLM|OrderedModel|PHReg|MICE|MI|BayesGaussMI|BSplines|CyclicCubicSplines|GLMGam|MultivariateGAMCVPath|KDEUnivariate|KernelReg|KDEMultivariate|KDEMultivariateConditional|EstimatorSettings|cdf_kernel_asym|pdf_kernel_asym|BetaModel | linear, gam#gam, stats#gaussianKde, stats#nadarayaWatson, learn/preprocessing#iterativeImputer | | | | |
+P | MI|MICE|BayesGaussMI|MultivariateLS|KernelCensoredReg|KDEMultivariate|KDEMultivariateConditional | learn/preprocessing#iterativeImputer, stats#nadarayaWatson | iterative imputation exists as a transformer; multiple imputation with pooled estimates (Rubin's rules) does not | learn/preprocessing/multiple-imputation.ts | M | medium | multiple imputation
+A | BinomialBayesMixedGLM|PoissonBayesMixedGLM|QIF|ProbPlot|impute_ros|emplikeAFT|ELOriginRegress | | variational Bayes mixed GLMs, quasi-likelihood, regression on order statistics for censored data | | | low |
+A | Mediation|OaxacaBlinder | causal | causal mediation analysis and the Oaxaca-Blinder decomposition of group gaps | causal/mediation.ts | M | medium | mediation and decomposition
+F | qqplot|qqline|qqplot_2samp.*|violinplot|beanplot|plot_corr|plot_corr_grid|plot_fit|abline_plot|influence_plot|plot_leverage_resid2 | omai-render/charts#qqPlot, #violinPlot, #correlationChart | | | | |
+A | added_variable_resids|ceres_resids|partial_resids|plot_ccpr|plot_ccpr_grid|plot_partregress|plot_partregress_grid|plot_regress_exog|interaction_plot|mean_diff_plot|add_ellipse|add_lowess|fboxplot|hdrboxplot|rainbowplot | linear#regressionDiagnostics | regression diagnostic plots (partial regression, component-plus-residual, interaction plot); residual and influence numbers exist | omai-render/charts/regression-diagnostics.ts | M | medium | regression diagnostic plots
+@area statsmodels.stats.anova
+F | AnovaRM|anova_lm|anova_single|anova1_lm_single|anova2_lm_single|anova3_lm_single|AnovaResults | stats/tests#rmAnova, stats#oneWayAnova, stats#twoWayAnova, linear#olsSummary | | | | |
+@area statsmodels.stats.diagnostic
+F | acorr_ljungbox|het_breuschpagan|het_white|spec_white|anderson_statistic|normal_ad|kstest_fit|kstest_normal|linear_lm|acorr_lm | stats/tests#ljungBox, linear#breuschPagan, #whiteTest, stats/tests#andersonDarling, #lilliefors | | | | |
+A | acorr_breusch_godfrey|het_arch|het_goldfeldquandt|linear_harvey_collier|linear_rainbow|linear_reset|compare_cox|compare_j|pesaran_timmermann|GoldfeldQuandtResult|LMTestResult|NonNestedTestResult|PesaranTimmermannResult|reset_ramsey|breaks_cusumolsresid|breaks_hansen|compare_encompassing | stats/tests#durbinWatson, linear#breuschPagan | the other classic regression specification tests: Breusch-Godfrey serial correlation, ARCH LM, Goldfeld-Quandt, RESET, Harvey-Collier, Rainbow, non-nested J and Cox | linear/diagnostics.ts | M | medium | regression specification tests
+@area statsmodels.stats.outliers_influence
+F | variance_inflation_factor|summary_table|GLMInfluence|MLEInfluence|OLSInfluence | linear#varianceInflationFactors, #olsInfluence, #cooksDistance | | | | |
+A | outlier_test | linear#studentizedResiduals | Bonferroni outlier test on studentised residuals | linear/diagnostics.ts | S | low | regression specification tests
+@area statsmodels.stats.multitest
+F | fdrcorrection|fdrcorrection_twostage|fdrcorrection_bak | stats/tests#adjustPValues (benjaminiHochberg, ...) | | | | |
+A | local_fdr|local_fdr_correction|NullDistribution|RegressionFDR|LocalFDRCorrectionResult | stats/tests#adjustPValues | local false discovery rate and knockoff-style regression FDR (knockoffFilter exists in learn) | stats/tests/local-fdr.ts | S | low | multiple testing
+@area statsmodels.stats.proportion
+F | proportion_effectsize|proportions_ztost|proportions_chisquare|power_proportions_2indep|confint_proportions_2indep|std_prop|multinomial_proportions_confint|test_proportions_2indep|samplesize_proportions_2indep_onetail|score_test_proportions_2indep|tost_proportions_2indep|proportions_chisquare_allpairs|proportions_chisquare_pairscontrol|binom_test_reject_interval|binom_tost|binom_tost_reject_interval|binom_tost_reject_interval|power_binom_tost|power_ztost_prop|samplesize_confint_proportion|.*Result|.*Mixin | stats/tests#proportionsZtest, #proportionsDifference, #proportionConfint, #tostProportion, stats#powerProportions | the two-proportion tests and intervals are present under fewer entry points | | | | |
+@area statsmodels.stats.power
+F | .* | stats#powerTTest, #powerAnova, #powerChisquare, #powerProportions, #sampleSize* | | | | |
+@area statsmodels.stats.weightstats
+F | DescrStatsW|CompareMeans|ttost_ind|ttost_paired|zconfint|ztost | stats/tests#ttestInd, #tost, #ztest | | | | |
+@area statsmodels.stats.contingency_tables
+F | Table2x2|SquareTable|StratifiedTable|cochrans_q|CochransQResult | stats/tests#chi2Contingency, #oddsRatio, #mcnemar, #cochranQ | Cochran-Mantel-Haenszel stratified tables are the one piece to check | | | | |
+@area statsmodels.stats.correlation_tools
+A | corr_nearest|corr_nearest_factor|corr_clipped|corr_thresholded|cov_nearest|cov_nearest_factor_homog|clip_evals|kernel_covariance|CovNearestResult|FactoredPSDMatrix|GaussianMultivariateKernel|MultivariateKernel | covariance#shrunkCovariance | nearest positive-semi-definite correlation or covariance matrix (Higham) and thresholded estimators | covariance/nearest.ts | S | medium | covariance repair
+@area statsmodels.stats.stattools
+F | acovf|ccovf|q_stat|robust_skewness|robust_kurtosis|medcouple|omni_normtest|expected_robust_kurtosis|jarque_bera|durbin_watson|pacf_yw|pacf_ols|levinson_durbin_pacf|pacf_burg|innovations_algo|innovations_filter|block_jackknife|PacfResult|PccfResult|CcfResult|QStatResult|LevinsonDurbinPacfResult|LevinsonDurbinResult|PacfBurgResult | timeseries#autocovariance, #acf, #pacf, #ccf, stats/tests#ljungBox, stats#jackknife | | | | |
+A | bds|breakvar_heteroskedasticity_test|diebold_mariano_test|zivot_andrews|range_unit_root_test|leybourne|lagmat2ds|arma_order_select_ic|coint|grangercausalitytests|ADFullerResult|BreakvarHeteroskedasticityResult|CointResult|DieboldMarianoResult|KPSSResult|RURResult | timeseries#engleGranger, #grangerCausality, stats/tests#adfuller | BDS independence test, Diebold-Mariano forecast comparison, Zivot-Andrews unit root with a break, ARMA order selection by information criterion | timeseries/tests.ts | M | medium | time-series tests
+@area statsmodels.tsa.api
+F | .* | timeseries (acf, pacf, arimaFit, etsFit, stl, varFit, vecmFit, johansen, garchFit) | | | | |
+@area statsmodels.tsa.ar_model
+F | AR|AutoReg|InformationCriteria | timeseries#fitAr, #selectArOrder | | | | |
+@area statsmodels.tsa.arima
+F | .* | timeseries#arimaFit, #arimaForecast | | | | |
+P | SARIMAX|SARIMAXSpecification|SARIMAXParams|SARIMAXResults | timeseries#arimaFit | check whether ArimaSpec covers seasonal orders and exogenous regressors; the Kalman filter is there | timeseries/sarimax.ts | M | medium | seasonal ARIMA with regressors
+@area statsmodels.tsa.holtwinters
+F | .* | timeseries#holtWintersAdditive, #holtWintersMultiplicative, #etsFit | | | | |
+@area statsmodels.tsa.exponential_smoothing
+F | .* | timeseries#etsFit, #etsForecast | | | | |
+@area statsmodels.tsa.forecasting.theta
+A | ThetaModel|ThetaModelResults|DeterministicTerm|add_trend|ExponentialSmoothing | timeseries#etsFit | the Theta method (a strong simple forecasting baseline) | timeseries/theta.ts | S | low | forecasting baselines
+@area statsmodels.tsa.forecasting.stl
+F | STLForecast|STLForecastResults|DecomposeResult | timeseries#stl, #etsFit | | | | |
+@area statsmodels.tsa.stl
+F | .* | timeseries#stl, #mstl | | | | |
+@area statsmodels.tsa.seasonal
+F | seasonal_mean | timeseries#seasonalDecompose | | | | |
+@area statsmodels.tsa.arima_process
+F | arma2ar|arma2ma|arma_acovf|arma_generate_sample|arma_impulse_response|deconvolve|index2lpol|lpol2index | timeseries#armaPiWeights, #armaPsiWeights, #armaAutocovariance, #armaForm | | | | |
+@area statsmodels.tsa.statespace.sarimax
+F | .* | timeseries#arimaFit | | | | |
+@area statsmodels.tsa.statespace.structural
+A | UnobservedComponents|UnobservedComponentsResults|hpfilter|companion_matrix | dynamics/filtering#kalmanFilter | structural time series (local level, trend, seasonal, cycle) fitted by Kalman filter: the textbook state-space model | timeseries/structural.ts | M | high | structural time series
+@area statsmodels.tsa.statespace.dynamic_factor
+A | DynamicFactor|DynamicFactorResults | dynamics/filtering#kalmanFilter | dynamic factor models | timeseries/dynamic-factor.ts | M | low | multivariate state-space models
+@area statsmodels.tsa.statespace.varmax
+A | VARMAX|VARMAXResults | timeseries#varFit | VARMA with exogenous variables | timeseries/varma.ts | M | low | multivariate state-space models
+@area statsmodels.tsa.regime_switching
+A | MarkovRegression|MarkovAutoregression|MarkovRegressionResults|MarkovAutoregressionResults|lagmat | pgm#hiddenMarkovModel, pgm/learning#baumWelch | Hamilton regime-switching regression and autoregression: an HMM over regimes with regression emissions and the filtered regime probabilities as the picture | timeseries/regime-switching.ts | M | high | regime switching
+@area statsmodels.tsa.vector_ar.var_model
+F | VARProcess|VARResults|IRAnalysis|FEVD|forecast|forecast_cov|forecast_interval|ma_rep|orth_ma_rep|var_acf|var_loglike|test_normality|CausalityTestResults|ErrorBand|ForecastInterval|LagOrderResults|NormalityTestResults|VARSummary|WhitenessTestResults | timeseries#varFit, #varImpulseResponse, #varForecastErrorVarianceDecomposition, #grangerCausality, #varSelectOrder | | | | |
+@area statsmodels.tsa.vector_ar.vecm
+F | VECM|VECMResults|coint_johansen|JohansenTestResult|select_coint_rank|select_order|CointRankResults|c_sja|c_sjt|seasonal_dummies | timeseries#vecmFit, #johansen, #selectCointegrationRank | | | | |
+@area statsmodels.tsa.ardl
+A | ARDL|UECM|ardl_select_order|ARDLResults|UECMResults|BoundsTestResult|ARDLOrderSelectionResults | timeseries#fitAr | autoregressive distributed lag models and the bounds test for cointegration | timeseries/ardl.ts | M | low | ARDL
+@area statsmodels.tsa.filters
+A | bkfilter|cffilter|hpfilter|convolution_filter|recursive_filter|fftconvolve3|fftconvolveinv|miso_lfilter|CycleTrendResult | signal#lfilter | economic trend and cycle filters (Hodrick-Prescott, Baxter-King, Christiano-Fitzgerald) | timeseries/filters.ts | S | low | trend-cycle filters
+@area statsmodels.tsa.stattools
+F | .* | timeseries (acf, pacf, ccf, difference), stats/tests (adfuller, kpss, ljungBox) | | | | |
+@area statsmodels.duration
+F | PHReg|SurvfuncRight|survdiff|CumIncidenceRight|plot_survfunc|PHSurvivalTime | survival#coxPh, #kaplanMeier, #logRankTest | cumulative incidence under competing risks is the piece to check | | | | |
+@area statsmodels.gam
+F | .* | gam | | | | |
+@area statsmodels.imputation
+F | MICE|MICEData|MICEResults|PatsyFormula | learn/preprocessing#iterativeImputer | | | | |
+@area statsmodels.multivariate
+F | CanCorr|CanCorrTestResults|multivariate_stats|FactorResults|promax|rotate_factors|MultivariateTestResults|PCA|Factor|MANOVA | decomposition#cca, #factorAnalysis, #rotateLoadings, stats/tests#manova | | | | |
+@area statsmodels.miscmodels
+F | OrderedModel|OrderedResults | linear#ordinal | | | | |
+@area statsmodels.othermod
+F | .* | dists/families#betaRegression | | | | |
+@area statsmodels.emplike
+A | .* | | empirical likelihood inference | | | low |
+@area statsmodels.sandbox
+A | MultiComparison|TukeyHSDResults|GroupsStats|StepDown|Tukeythreegene.*|catstack|compare_ordered|contrast_.*|distance_st_range|get_tukeyQcrit.*|get_tukey_pvalue|homogeneous_subsets|maxzero.*|mcfdr|multicontrast_pvalues|randmvn|rejectionline|set_.*|simultaneous_ci|tiecorrect|tukey_pvalues|varcorrection_.* | stats/tests#tukeyHsd, #nemenyi | post-hoc multiple comparison; Tukey HSD and Nemenyi exist, Scheffe/Dunnett-style contrasts and homogeneous subsets do not | stats/tests/multiple-comparisons.ts | S | low | post-hoc comparisons
+@area statsmodels.stats.api
+F | cov_hc0|cov_hc1|cov_hc2|cov_hc3|cov_white_simple | linear#olsSummary (covarianceType HC0 to HC3) | | | | |
+A | cov_hac|cov_cluster|cov_cluster_2groups|cov_nw_panel | linear#olsSummary, causal#differenceInDifferences | autocorrelation-robust (Newey-West) and cluster-robust standard errors for any regression: HC0-3 exist in olsSummary and cluster-robust errors only inside difference-in-differences | linear/robust-cov.ts | S | medium | robust covariance
+P | anova_oneway|anova_generic|effectsize_oneway|effectsize_smd|effectsize_2proportions|confint_effectsize_oneway|convert_effectsize_fsqu|chisquare_effectsize|f2_to_wellek|fstat_to_wellek|equivalence_oneway.*|power_equivalence_.*|nonequivalence_poisson_2indep|etest_poisson_2indep|confint_poisson.*|confint_quantile_poisson|power_poisson_diff_2indep|power_negbin_ratio_2indep|corr_normal_scores|corr_quadrant|corr_rank|combine_effects|confint_mvmean.*|confint_noncentrality|cohens_kappa|jonckheere_terpstra|gof_chisquare_discrete|compare_means|.* | stats (cohensD, hedgesG, etaSquared, cliffsDelta, oneWayAnova, welchAnova), stats/tests | effect sizes, equivalence tests and Poisson rate comparisons exist in part; Cohen's kappa, Jonckheere-Terpstra and Poisson two-sample tests are absent | stats/tests | M | low | classical tests missing
+@area
+F | qqplot|qqline|violinplot|beanplot|plot_corr|plot_corr_grid|plot_fit|abline_plot|influence_plot|plot_leverage_resid2 | omai-render/charts#qqPlot, #violinPlot, #correlationChart | | | | |
+A | added_variable_resids|ceres_resids|partial_resids|plot_ccpr|plot_ccpr_grid|plot_partregress|plot_partregress_grid|plot_regress_exog|interaction_plot|mean_diff_plot|add_ellipse|add_lowess|fboxplot|hdrboxplot|rainbowplot | linear#regressionDiagnostics | regression diagnostic plots (partial regression, component-plus-residual, interaction plot); residual and influence numbers exist | omai-render/charts/regression-diagnostics.ts | M | medium | regression diagnostic plots
+F | KDEUnivariate|EstimatorSettings|cdf_kernel_asym|ECDFDiscrete|StepFunction|monotone_fn_inverter | stats#gaussianKde, stats#ecdf | | | | |
+P | KDEMultivariate|KDEMultivariateConditional|KernelReg|KernelCensoredReg | stats#nadarayaWatson, stats#localLinear | kernel regression exists in 1-d; multivariate kernel density and conditional density are absent | stats/kde.ts | S | low | multivariate kernel density
+A | ConditionalLogit|ConditionalMNLogit|ConditionalPoisson|HurdleCountModel|TruncatedLFNegativeBinomialP|TruncatedLFPoisson | linear#hurdle | conditional (fixed-effects) logit and truncated count models | linear/discrete-extras.ts | M | low | count and discrete models
+F | pdf_kernel_asym|TreatmentEffect|ate_ipw | stats#gaussianKde, causal#ipw | | | | |
+A | reset_ramsey | linear#regressionDiagnostics | RESET specification test | linear/diagnostics.ts | S | low | regression specification tests
+S | fdrcorrection_bak | | | | | |
+F | fleiss_kappa|tiecorrect|runstest_1samp|runstest_2samp | metrics#fleissKappa, stats#tieCorrection, stats/tests#runsTest | | | | |

@@ -1,0 +1,3601 @@
+{
+"library": "torch",
+"version": "2.14.1",
+"source": "introspection",
+"entries": [
+{
+"area": "torch.autograd",
+"name": "Function",
+"kind": "class",
+"doc": "Base class to create custom `autograd.Function`."
+},
+{
+"area": "torch.autograd",
+"name": "NestedIOFunction",
+"kind": "class",
+"doc": "This class is here only for backward compatibility reasons."
+},
+{
+"area": "torch.autograd",
+"name": "Variable",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "torch.autograd",
+"name": "backward",
+"kind": "function",
+"doc": "Compute the sum of gradients of given tensors with respect to graph leaves."
+},
+{
+"area": "torch.autograd",
+"name": "detect_anomaly",
+"kind": "class",
+"doc": "Context-manager that enables anomaly detection for the autograd engine."
+},
+{
+"area": "torch.autograd",
+"name": "enable_grad",
+"kind": "class",
+"doc": "Context-manager that enables gradient calculation."
+},
+{
+"area": "torch.autograd",
+"name": "enforce_grad_layout_policy",
+"kind": "class",
+"doc": "Context-manager that controls the gradient layout policy enforcement."
+},
+{
+"area": "torch.autograd",
+"name": "grad",
+"kind": "function",
+"doc": "Compute and return the sum of gradients of outputs with respect to the inputs."
+},
+{
+"area": "torch.autograd",
+"name": "gradcheck",
+"kind": "function",
+"doc": "Check gradients computed via small finite differences against analytical"
+},
+{
+"area": "torch.autograd",
+"name": "gradgradcheck",
+"kind": "function",
+"doc": "Check gradients of gradients computed via small finite differences"
+},
+{
+"area": "torch.autograd",
+"name": "inference_mode",
+"kind": "class",
+"doc": "Context manager that enables or disables inference mode."
+},
+{
+"area": "torch.autograd",
+"name": "no_grad",
+"kind": "class",
+"doc": "Context-manager that disables gradient calculation."
+},
+{
+"area": "torch.autograd",
+"name": "set_detect_anomaly",
+"kind": "class",
+"doc": "Context-manager that sets the anomaly detection for the autograd engine on or off."
+},
+{
+"area": "torch.autograd",
+"name": "set_grad_enabled",
+"kind": "class",
+"doc": "Context-manager that sets gradient calculation on or off."
+},
+{
+"area": "torch.autograd",
+"name": "set_multithreading_enabled",
+"kind": "class",
+"doc": "Context-manager that enables or disables multithreaded backward."
+},
+{
+"area": "torch.autograd",
+"name": "variable",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "torch.autograd.functional",
+"name": "hessian",
+"kind": "function",
+"doc": "Compute the Hessian of a given scalar function."
+},
+{
+"area": "torch.autograd.functional",
+"name": "hvp",
+"kind": "function",
+"doc": "Compute the dot product between the scalar function's Hessian and a vector ``v`` at a specified point."
+},
+{
+"area": "torch.autograd.functional",
+"name": "jacobian",
+"kind": "function",
+"doc": "Compute the Jacobian of a given function."
+},
+{
+"area": "torch.autograd.functional",
+"name": "jvp",
+"kind": "function",
+"doc": "Compute the dot product between the Jacobian of the given function at the point given by the inputs and a vect"
+},
+{
+"area": "torch.autograd.functional",
+"name": "vhp",
+"kind": "function",
+"doc": "Compute the dot product between vector ``v`` and Hessian of a  given scalar function at a specified point."
+},
+{
+"area": "torch.autograd.functional",
+"name": "vjp",
+"kind": "function",
+"doc": "Compute the dot product between a vector ``v`` and the Jacobian of the given function at the point given by th"
+},
+{
+"area": "torch.distributions",
+"name": "AbsTransform",
+"kind": "class",
+"doc": "Transform via the mapping :math:`y = |x|`."
+},
+{
+"area": "torch.distributions",
+"name": "AffineTransform",
+"kind": "class",
+"doc": "Transform via the pointwise affine mapping :math:`y = \\text{loc} + \\text{scale} \\times x`."
+},
+{
+"area": "torch.distributions",
+"name": "Bernoulli",
+"kind": "class",
+"doc": "Creates a Bernoulli distribution parameterized by :attr:`probs`"
+},
+{
+"area": "torch.distributions",
+"name": "Beta",
+"kind": "class",
+"doc": "Beta distribution parameterized by :attr:`concentration1` and :attr:`concentration0`."
+},
+{
+"area": "torch.distributions",
+"name": "Binomial",
+"kind": "class",
+"doc": "Creates a Binomial distribution parameterized by :attr:`total_count` and"
+},
+{
+"area": "torch.distributions",
+"name": "CatTransform",
+"kind": "class",
+"doc": "Transform functor that applies a sequence of transforms `tseq`"
+},
+{
+"area": "torch.distributions",
+"name": "Categorical",
+"kind": "class",
+"doc": "Creates a categorical distribution parameterized by either :attr:`probs` or"
+},
+{
+"area": "torch.distributions",
+"name": "Cauchy",
+"kind": "class",
+"doc": "Samples from a Cauchy (Lorentz) distribution. The distribution of the ratio of"
+},
+{
+"area": "torch.distributions",
+"name": "Chi2",
+"kind": "class",
+"doc": "Creates a Chi-squared distribution parameterized by shape parameter :attr:`df`."
+},
+{
+"area": "torch.distributions",
+"name": "ComposeTransform",
+"kind": "class",
+"doc": "Composes multiple transforms in a chain."
+},
+{
+"area": "torch.distributions",
+"name": "ContinuousBernoulli",
+"kind": "class",
+"doc": "Creates a continuous Bernoulli distribution parameterized by :attr:`probs`"
+},
+{
+"area": "torch.distributions",
+"name": "CorrCholeskyTransform",
+"kind": "class",
+"doc": "Transforms an unconstrained real vector :math:`x` with length :math:`D*(D-1)/2` into the"
+},
+{
+"area": "torch.distributions",
+"name": "CumulativeDistributionTransform",
+"kind": "class",
+"doc": "Transform via the cumulative distribution function of a probability distribution."
+},
+{
+"area": "torch.distributions",
+"name": "Dirichlet",
+"kind": "class",
+"doc": "Creates a Dirichlet distribution parameterized by concentration :attr:`concentration`."
+},
+{
+"area": "torch.distributions",
+"name": "Distribution",
+"kind": "class",
+"doc": "Distribution is the abstract base class for probability distributions."
+},
+{
+"area": "torch.distributions",
+"name": "ExpTransform",
+"kind": "class",
+"doc": "Transform via the mapping :math:`y = \\exp(x)`."
+},
+{
+"area": "torch.distributions",
+"name": "Exponential",
+"kind": "class",
+"doc": "Creates a Exponential distribution parameterized by :attr:`rate`."
+},
+{
+"area": "torch.distributions",
+"name": "ExponentialFamily",
+"kind": "class",
+"doc": "ExponentialFamily is the abstract base class for probability distributions belonging to an"
+},
+{
+"area": "torch.distributions",
+"name": "FisherSnedecor",
+"kind": "class",
+"doc": "Creates a Fisher-Snedecor distribution parameterized by :attr:`df1` and :attr:`df2`."
+},
+{
+"area": "torch.distributions",
+"name": "Gamma",
+"kind": "class",
+"doc": "Creates a Gamma distribution parameterized by shape :attr:`concentration` and :attr:`rate`."
+},
+{
+"area": "torch.distributions",
+"name": "GeneralizedPareto",
+"kind": "class",
+"doc": "Creates a Generalized Pareto distribution parameterized by :attr:`loc`, :attr:`scale`, and :attr:`concentratio"
+},
+{
+"area": "torch.distributions",
+"name": "Geometric",
+"kind": "class",
+"doc": "Creates a Geometric distribution parameterized by :attr:`probs`,"
+},
+{
+"area": "torch.distributions",
+"name": "Gumbel",
+"kind": "class",
+"doc": "Samples from a Gumbel Distribution."
+},
+{
+"area": "torch.distributions",
+"name": "HalfCauchy",
+"kind": "class",
+"doc": "Creates a half-Cauchy distribution parameterized by `scale` where::"
+},
+{
+"area": "torch.distributions",
+"name": "HalfNormal",
+"kind": "class",
+"doc": "Creates a half-normal distribution parameterized by `scale` where::"
+},
+{
+"area": "torch.distributions",
+"name": "Independent",
+"kind": "class",
+"doc": "Reinterprets some of the batch dims of a distribution as event dims."
+},
+{
+"area": "torch.distributions",
+"name": "IndependentTransform",
+"kind": "class",
+"doc": "Wrapper around another transform to treat"
+},
+{
+"area": "torch.distributions",
+"name": "InverseGamma",
+"kind": "class",
+"doc": "Creates an inverse gamma distribution parameterized by :attr:`concentration` and :attr:`rate`"
+},
+{
+"area": "torch.distributions",
+"name": "Kumaraswamy",
+"kind": "class",
+"doc": "Samples from a Kumaraswamy distribution."
+},
+{
+"area": "torch.distributions",
+"name": "LKJCholesky",
+"kind": "class",
+"doc": "LKJ distribution for lower Cholesky factor of correlation matrices."
+},
+{
+"area": "torch.distributions",
+"name": "Laplace",
+"kind": "class",
+"doc": "Creates a Laplace distribution parameterized by :attr:`loc` and :attr:`scale`."
+},
+{
+"area": "torch.distributions",
+"name": "LogNormal",
+"kind": "class",
+"doc": "Creates a log-normal distribution parameterized by"
+},
+{
+"area": "torch.distributions",
+"name": "LogisticNormal",
+"kind": "class",
+"doc": "Creates a logistic-normal distribution parameterized by :attr:`loc` and :attr:`scale`"
+},
+{
+"area": "torch.distributions",
+"name": "LowRankMultivariateNormal",
+"kind": "class",
+"doc": "Creates a multivariate normal distribution with covariance matrix having a low-rank form"
+},
+{
+"area": "torch.distributions",
+"name": "LowerCholeskyTransform",
+"kind": "class",
+"doc": "Transform from unconstrained matrices to lower-triangular matrices with"
+},
+{
+"area": "torch.distributions",
+"name": "MixtureSameFamily",
+"kind": "class",
+"doc": "The `MixtureSameFamily` distribution implements a (batch of) mixture"
+},
+{
+"area": "torch.distributions",
+"name": "Multinomial",
+"kind": "class",
+"doc": "Creates a Multinomial distribution parameterized by :attr:`total_count` and"
+},
+{
+"area": "torch.distributions",
+"name": "MultivariateNormal",
+"kind": "class",
+"doc": "Creates a multivariate normal (also called Gaussian) distribution"
+},
+{
+"area": "torch.distributions",
+"name": "NegativeBinomial",
+"kind": "class",
+"doc": "Creates a Negative Binomial distribution, i.e. distribution"
+},
+{
+"area": "torch.distributions",
+"name": "Normal",
+"kind": "class",
+"doc": "Creates a normal (also called Gaussian) distribution parameterized by"
+},
+{
+"area": "torch.distributions",
+"name": "OneHotCategorical",
+"kind": "class",
+"doc": "Creates a one-hot categorical distribution parameterized by :attr:`probs` or"
+},
+{
+"area": "torch.distributions",
+"name": "OneHotCategoricalStraightThrough",
+"kind": "class",
+"doc": "Creates a reparameterizable :class:`OneHotCategorical` distribution based on the straight-"
+},
+{
+"area": "torch.distributions",
+"name": "Pareto",
+"kind": "class",
+"doc": "Samples from a Pareto Type 1 distribution."
+},
+{
+"area": "torch.distributions",
+"name": "Poisson",
+"kind": "class",
+"doc": "Creates a Poisson distribution parameterized by :attr:`rate`, the rate parameter."
+},
+{
+"area": "torch.distributions",
+"name": "PositiveDefiniteTransform",
+"kind": "class",
+"doc": "Transform from unconstrained matrices to positive-definite matrices."
+},
+{
+"area": "torch.distributions",
+"name": "PowerTransform",
+"kind": "class",
+"doc": "Transform via the mapping :math:`y = x^{\\text{exponent}}`."
+},
+{
+"area": "torch.distributions",
+"name": "RelaxedBernoulli",
+"kind": "class",
+"doc": "Creates a RelaxedBernoulli distribution, parametrized by"
+},
+{
+"area": "torch.distributions",
+"name": "RelaxedOneHotCategorical",
+"kind": "class",
+"doc": "Creates a RelaxedOneHotCategorical distribution parametrized by"
+},
+{
+"area": "torch.distributions",
+"name": "ReshapeTransform",
+"kind": "class",
+"doc": "Unit Jacobian transform to reshape the rightmost part of a tensor."
+},
+{
+"area": "torch.distributions",
+"name": "SigmoidTransform",
+"kind": "class",
+"doc": "Transform via the mapping :math:`y = \\frac{1}{1 + \\exp(-x)}` and :math:`x = \\text{logit}(y)`."
+},
+{
+"area": "torch.distributions",
+"name": "SoftmaxTransform",
+"kind": "class",
+"doc": "Transform from unconstrained space to the simplex via :math:`y = \\exp(x)` then"
+},
+{
+"area": "torch.distributions",
+"name": "SoftplusTransform",
+"kind": "class",
+"doc": "Transform via the mapping :math:`\\text{Softplus}(x) = \\log(1 + \\exp(x))`."
+},
+{
+"area": "torch.distributions",
+"name": "StackTransform",
+"kind": "class",
+"doc": "Transform functor that applies a sequence of transforms `tseq`"
+},
+{
+"area": "torch.distributions",
+"name": "StickBreakingTransform",
+"kind": "class",
+"doc": "Transform from unconstrained space to the simplex of one additional"
+},
+{
+"area": "torch.distributions",
+"name": "StudentT",
+"kind": "class",
+"doc": "Creates a Student's t-distribution parameterized by degree of"
+},
+{
+"area": "torch.distributions",
+"name": "TanhTransform",
+"kind": "class",
+"doc": "Transform via the mapping :math:`y = \\tanh(x)`."
+},
+{
+"area": "torch.distributions",
+"name": "Transform",
+"kind": "class",
+"doc": "Abstract class for invertible transformations with computable log"
+},
+{
+"area": "torch.distributions",
+"name": "TransformedDistribution",
+"kind": "class",
+"doc": "Extension of the Distribution class, which applies a sequence of Transforms"
+},
+{
+"area": "torch.distributions",
+"name": "Uniform",
+"kind": "class",
+"doc": "Generates uniformly distributed random samples from the half-open interval"
+},
+{
+"area": "torch.distributions",
+"name": "VonMises",
+"kind": "class",
+"doc": "A circular von Mises distribution."
+},
+{
+"area": "torch.distributions",
+"name": "Weibull",
+"kind": "class",
+"doc": "Samples from a two-parameter Weibull distribution."
+},
+{
+"area": "torch.distributions",
+"name": "Wishart",
+"kind": "class",
+"doc": "Creates a Wishart distribution parameterized by a symmetric positive definite matrix :math:`\\Sigma`,"
+},
+{
+"area": "torch.distributions",
+"name": "biject_to",
+"kind": "function",
+"doc": "Registry to link constraints to transforms."
+},
+{
+"area": "torch.distributions",
+"name": "identity_transform",
+"kind": "function",
+"doc": "Composes multiple transforms in a chain."
+},
+{
+"area": "torch.distributions",
+"name": "kl_divergence",
+"kind": "function",
+"doc": "Compute Kullback-Leibler divergence :math:`KL(p \\| q)` between two distributions."
+},
+{
+"area": "torch.distributions",
+"name": "register_kl",
+"kind": "function",
+"doc": "Decorator to register a pairwise function with :meth:`kl_divergence`."
+},
+{
+"area": "torch.distributions",
+"name": "transform_to",
+"kind": "function",
+"doc": "Registry to link constraints to transforms."
+},
+{
+"area": "torch.distributions.constraints",
+"name": "Constraint",
+"kind": "class",
+"doc": "Abstract base class for constraints."
+},
+{
+"area": "torch.distributions.constraints",
+"name": "MixtureSameFamilyConstraint",
+"kind": "class",
+"doc": "Constraint for the :class:`~torch.distributions.MixtureSameFamily`"
+},
+{
+"area": "torch.distributions.constraints",
+"name": "cat",
+"kind": "class",
+"doc": "Constraint functor that applies a sequence of constraints"
+},
+{
+"area": "torch.distributions.constraints",
+"name": "dependent",
+"kind": "function",
+"doc": "Placeholder for variables whose support depends on other variables."
+},
+{
+"area": "torch.distributions.constraints",
+"name": "dependent_property",
+"kind": "class",
+"doc": "Decorator that extends @property to act like a `Dependent` constraint when"
+},
+{
+"area": "torch.distributions.constraints",
+"name": "greater_than",
+"kind": "class",
+"doc": "Constrain to a real half line `(lower_bound, inf]`."
+},
+{
+"area": "torch.distributions.constraints",
+"name": "greater_than_eq",
+"kind": "class",
+"doc": "Constrain to a real half line `[lower_bound, inf)`."
+},
+{
+"area": "torch.distributions.constraints",
+"name": "half_open_interval",
+"kind": "class",
+"doc": "Constrain to a real interval `[lower_bound, upper_bound)`."
+},
+{
+"area": "torch.distributions.constraints",
+"name": "independent",
+"kind": "class",
+"doc": "Wraps a constraint by aggregating over ``reinterpreted_batch_ndims``-many"
+},
+{
+"area": "torch.distributions.constraints",
+"name": "integer_interval",
+"kind": "class",
+"doc": "Constrain to an integer interval `[lower_bound, upper_bound]`."
+},
+{
+"area": "torch.distributions.constraints",
+"name": "interval",
+"kind": "class",
+"doc": "Constrain to a real interval `[lower_bound, upper_bound]`."
+},
+{
+"area": "torch.distributions.constraints",
+"name": "is_dependent",
+"kind": "function",
+"doc": "Checks if ``constraint`` is a ``_Dependent`` object."
+},
+{
+"area": "torch.distributions.constraints",
+"name": "less_than",
+"kind": "class",
+"doc": "Constrain to a real half line `[-inf, upper_bound)`."
+},
+{
+"area": "torch.distributions.constraints",
+"name": "multinomial",
+"kind": "class",
+"doc": "Constrain to nonnegative integer values summing to at most an upper bound."
+},
+{
+"area": "torch.distributions.constraints",
+"name": "stack",
+"kind": "class",
+"doc": "Constraint functor that applies a sequence of constraints"
+},
+{
+"area": "torch.distributions.transforms",
+"name": "AbsTransform",
+"kind": "class",
+"doc": "Transform via the mapping :math:`y = |x|`."
+},
+{
+"area": "torch.distributions.transforms",
+"name": "AffineTransform",
+"kind": "class",
+"doc": "Transform via the pointwise affine mapping :math:`y = \\text{loc} + \\text{scale} \\times x`."
+},
+{
+"area": "torch.distributions.transforms",
+"name": "CatTransform",
+"kind": "class",
+"doc": "Transform functor that applies a sequence of transforms `tseq`"
+},
+{
+"area": "torch.distributions.transforms",
+"name": "ComposeTransform",
+"kind": "class",
+"doc": "Composes multiple transforms in a chain."
+},
+{
+"area": "torch.distributions.transforms",
+"name": "CorrCholeskyTransform",
+"kind": "class",
+"doc": "Transforms an unconstrained real vector :math:`x` with length :math:`D*(D-1)/2` into the"
+},
+{
+"area": "torch.distributions.transforms",
+"name": "CumulativeDistributionTransform",
+"kind": "class",
+"doc": "Transform via the cumulative distribution function of a probability distribution."
+},
+{
+"area": "torch.distributions.transforms",
+"name": "ExpTransform",
+"kind": "class",
+"doc": "Transform via the mapping :math:`y = \\exp(x)`."
+},
+{
+"area": "torch.distributions.transforms",
+"name": "IndependentTransform",
+"kind": "class",
+"doc": "Wrapper around another transform to treat"
+},
+{
+"area": "torch.distributions.transforms",
+"name": "LowerCholeskyTransform",
+"kind": "class",
+"doc": "Transform from unconstrained matrices to lower-triangular matrices with"
+},
+{
+"area": "torch.distributions.transforms",
+"name": "PositiveDefiniteTransform",
+"kind": "class",
+"doc": "Transform from unconstrained matrices to positive-definite matrices."
+},
+{
+"area": "torch.distributions.transforms",
+"name": "PowerTransform",
+"kind": "class",
+"doc": "Transform via the mapping :math:`y = x^{\\text{exponent}}`."
+},
+{
+"area": "torch.distributions.transforms",
+"name": "ReshapeTransform",
+"kind": "class",
+"doc": "Unit Jacobian transform to reshape the rightmost part of a tensor."
+},
+{
+"area": "torch.distributions.transforms",
+"name": "SigmoidTransform",
+"kind": "class",
+"doc": "Transform via the mapping :math:`y = \\frac{1}{1 + \\exp(-x)}` and :math:`x = \\text{logit}(y)`."
+},
+{
+"area": "torch.distributions.transforms",
+"name": "SoftmaxTransform",
+"kind": "class",
+"doc": "Transform from unconstrained space to the simplex via :math:`y = \\exp(x)` then"
+},
+{
+"area": "torch.distributions.transforms",
+"name": "SoftplusTransform",
+"kind": "class",
+"doc": "Transform via the mapping :math:`\\text{Softplus}(x) = \\log(1 + \\exp(x))`."
+},
+{
+"area": "torch.distributions.transforms",
+"name": "StackTransform",
+"kind": "class",
+"doc": "Transform functor that applies a sequence of transforms `tseq`"
+},
+{
+"area": "torch.distributions.transforms",
+"name": "StickBreakingTransform",
+"kind": "class",
+"doc": "Transform from unconstrained space to the simplex of one additional"
+},
+{
+"area": "torch.distributions.transforms",
+"name": "TanhTransform",
+"kind": "class",
+"doc": "Transform via the mapping :math:`y = \\tanh(x)`."
+},
+{
+"area": "torch.distributions.transforms",
+"name": "Transform",
+"kind": "class",
+"doc": "Abstract class for invertible transformations with computable log"
+},
+{
+"area": "torch.distributions.transforms",
+"name": "identity_transform",
+"kind": "function",
+"doc": "Composes multiple transforms in a chain."
+},
+{
+"area": "torch.fft",
+"name": "Tensor",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "torch.fft",
+"name": "fft",
+"kind": "function",
+"doc": "fft(input, n=None, dim=-1, norm=None, *, out=None) -> Tensor"
+},
+{
+"area": "torch.fft",
+"name": "fft2",
+"kind": "function",
+"doc": "fft2(input, s=None, dim=(-2, -1), norm=None, *, out=None) -> Tensor"
+},
+{
+"area": "torch.fft",
+"name": "fftfreq",
+"kind": "function",
+"doc": "fftfreq(n, d=1.0, *, out=None, dtype=None, layout=torch.strided, device=None, requires_grad=False) -> Tensor"
+},
+{
+"area": "torch.fft",
+"name": "fftn",
+"kind": "function",
+"doc": "fftn(input, s=None, dim=None, norm=None, *, out=None) -> Tensor"
+},
+{
+"area": "torch.fft",
+"name": "fftshift",
+"kind": "function",
+"doc": "fftshift(input, dim=None) -> Tensor"
+},
+{
+"area": "torch.fft",
+"name": "hfft",
+"kind": "function",
+"doc": "hfft(input, n=None, dim=-1, norm=None, *, out=None) -> Tensor"
+},
+{
+"area": "torch.fft",
+"name": "ifft",
+"kind": "function",
+"doc": "ifft(input, n=None, dim=-1, norm=None, *, out=None) -> Tensor"
+},
+{
+"area": "torch.fft",
+"name": "ifft2",
+"kind": "function",
+"doc": "ifft2(input, s=None, dim=(-2, -1), norm=None, *, out=None) -> Tensor"
+},
+{
+"area": "torch.fft",
+"name": "ifftn",
+"kind": "function",
+"doc": "ifftn(input, s=None, dim=None, norm=None, *, out=None) -> Tensor"
+},
+{
+"area": "torch.fft",
+"name": "ifftshift",
+"kind": "function",
+"doc": "ifftshift(input, dim=None) -> Tensor"
+},
+{
+"area": "torch.fft",
+"name": "ihfft",
+"kind": "function",
+"doc": "ihfft(input, n=None, dim=-1, norm=None, *, out=None) -> Tensor"
+},
+{
+"area": "torch.fft",
+"name": "irfft",
+"kind": "function",
+"doc": "irfft(input, n=None, dim=-1, norm=None, *, out=None) -> Tensor"
+},
+{
+"area": "torch.fft",
+"name": "irfft2",
+"kind": "function",
+"doc": "irfft2(input, s=None, dim=(-2, -1), norm=None, *, out=None) -> Tensor"
+},
+{
+"area": "torch.fft",
+"name": "irfftn",
+"kind": "function",
+"doc": "irfftn(input, s=None, dim=None, norm=None, *, out=None) -> Tensor"
+},
+{
+"area": "torch.fft",
+"name": "rfft",
+"kind": "function",
+"doc": "rfft(input, n=None, dim=-1, norm=None, *, out=None) -> Tensor"
+},
+{
+"area": "torch.fft",
+"name": "rfft2",
+"kind": "function",
+"doc": "rfft2(input, s=None, dim=(-2, -1), norm=None, *, out=None) -> Tensor"
+},
+{
+"area": "torch.fft",
+"name": "rfftfreq",
+"kind": "function",
+"doc": "rfftfreq(n, d=1.0, *, out=None, dtype=None, layout=torch.strided, device=None, requires_grad=False) -> Tensor"
+},
+{
+"area": "torch.fft",
+"name": "rfftn",
+"kind": "function",
+"doc": "rfftn(input, s=None, dim=None, norm=None, *, out=None) -> Tensor"
+},
+{
+"area": "torch.func",
+"name": "debug_unwrap",
+"kind": "function",
+"doc": "Unwraps a functorch tensor (e.g. BatchedTensor, GradTrackingTensor) to its underlying tensor."
+},
+{
+"area": "torch.func",
+"name": "functional_call",
+"kind": "function",
+"doc": "Performs a functional call on the module by replacing the module parameters"
+},
+{
+"area": "torch.func",
+"name": "functionalize",
+"kind": "function",
+"doc": "functionalize is a transform that can be used to remove (intermediate)"
+},
+{
+"area": "torch.func",
+"name": "grad",
+"kind": "function",
+"doc": "``grad`` operator helps computing gradients of ``func`` with respect to the"
+},
+{
+"area": "torch.func",
+"name": "grad_and_value",
+"kind": "function",
+"doc": "Returns a function to compute a tuple of the gradient and primal, or"
+},
+{
+"area": "torch.func",
+"name": "hessian",
+"kind": "function",
+"doc": "Computes the Hessian of ``func`` with respect to the arg(s) at index"
+},
+{
+"area": "torch.func",
+"name": "jacfwd",
+"kind": "function",
+"doc": "Computes the Jacobian of ``func`` with respect to the arg(s) at index"
+},
+{
+"area": "torch.func",
+"name": "jacrev",
+"kind": "function",
+"doc": "Computes the Jacobian of ``func`` with respect to the arg(s) at index"
+},
+{
+"area": "torch.func",
+"name": "jvp",
+"kind": "function",
+"doc": "Standing for the Jacobian-vector product, returns a tuple containing"
+},
+{
+"area": "torch.func",
+"name": "linearize",
+"kind": "function",
+"doc": "Returns the value of ``func`` at ``primals`` and linear approximation"
+},
+{
+"area": "torch.func",
+"name": "rearrange",
+"kind": "function",
+"doc": "A native implementation of `einops.rearrange`, a reader-friendly smart element reordering for multidimensional"
+},
+{
+"area": "torch.func",
+"name": "replace_all_batch_norm_modules_",
+"kind": "function",
+"doc": "In place updates :attr:`root` by setting the ``running_mean`` and ``running_var`` to be None and"
+},
+{
+"area": "torch.func",
+"name": "stack_module_state",
+"kind": "function",
+"doc": "stack_module_state(models) -> params, buffers"
+},
+{
+"area": "torch.func",
+"name": "vjp",
+"kind": "function",
+"doc": "Standing for the vector-Jacobian product, returns a tuple containing the"
+},
+{
+"area": "torch.func",
+"name": "vmap",
+"kind": "function",
+"doc": "vmap is the vectorizing map; ``vmap(func)`` returns a new function that"
+},
+{
+"area": "torch.nn.functional",
+"name": "ScalingType",
+"kind": "class",
+"doc": "Supported Tensor scaling types"
+},
+{
+"area": "torch.nn.functional",
+"name": "SwizzleType",
+"kind": "class",
+"doc": "Supported scale swizzle types"
+},
+{
+"area": "torch.nn.functional",
+"name": "adaptive_avg_pool2d",
+"kind": "function",
+"doc": "Apply a 2D adaptive average pooling over an input signal composed of several input planes."
+},
+{
+"area": "torch.nn.functional",
+"name": "adaptive_avg_pool3d",
+"kind": "function",
+"doc": "Apply a 3D adaptive average pooling over an input signal composed of several input planes."
+},
+{
+"area": "torch.nn.functional",
+"name": "adaptive_max_pool1d",
+"kind": "function",
+"doc": "adaptive_max_pool1d(input, output_size, return_indices=False)"
+},
+{
+"area": "torch.nn.functional",
+"name": "adaptive_max_pool1d_with_indices",
+"kind": "function",
+"doc": "adaptive_max_pool1d(input, output_size, return_indices=False)"
+},
+{
+"area": "torch.nn.functional",
+"name": "adaptive_max_pool2d",
+"kind": "function",
+"doc": "adaptive_max_pool2d(input, output_size, return_indices=False)"
+},
+{
+"area": "torch.nn.functional",
+"name": "adaptive_max_pool2d_with_indices",
+"kind": "function",
+"doc": "adaptive_max_pool2d(input, output_size, return_indices=False)"
+},
+{
+"area": "torch.nn.functional",
+"name": "adaptive_max_pool3d",
+"kind": "function",
+"doc": "adaptive_max_pool3d(input, output_size, return_indices=False)"
+},
+{
+"area": "torch.nn.functional",
+"name": "adaptive_max_pool3d_with_indices",
+"kind": "function",
+"doc": "adaptive_max_pool3d(input, output_size, return_indices=False)"
+},
+{
+"area": "torch.nn.functional",
+"name": "affine_grid",
+"kind": "function",
+"doc": "Generate 2D or 3D flow field (sampling grid), given a batch of affine matrices :attr:`theta`."
+},
+{
+"area": "torch.nn.functional",
+"name": "alpha_dropout",
+"kind": "function",
+"doc": "Apply alpha dropout to the input."
+},
+{
+"area": "torch.nn.functional",
+"name": "assert_int_or_pair",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "torch.nn.functional",
+"name": "batch_norm",
+"kind": "function",
+"doc": "Apply Batch Normalization for each channel across a batch of data."
+},
+{
+"area": "torch.nn.functional",
+"name": "binary_cross_entropy",
+"kind": "function",
+"doc": "Compute Binary Cross Entropy between the target and input probabilities."
+},
+{
+"area": "torch.nn.functional",
+"name": "binary_cross_entropy_with_logits",
+"kind": "function",
+"doc": "Compute Binary Cross Entropy between target and input logits."
+},
+{
+"area": "torch.nn.functional",
+"name": "celu",
+"kind": "function",
+"doc": "celu(input, alpha=1., inplace=False) -> Tensor"
+},
+{
+"area": "torch.nn.functional",
+"name": "cosine_embedding_loss",
+"kind": "function",
+"doc": "Compute the cosine embedding loss."
+},
+{
+"area": "torch.nn.functional",
+"name": "cross_entropy",
+"kind": "function",
+"doc": "Compute the cross entropy loss between input logits and target."
+},
+{
+"area": "torch.nn.functional",
+"name": "ctc_loss",
+"kind": "function",
+"doc": "Compute the Connectionist Temporal Classification loss."
+},
+{
+"area": "torch.nn.functional",
+"name": "dropout",
+"kind": "function",
+"doc": "During training, randomly zeroes some elements of the input tensor with probability :attr:`p`."
+},
+{
+"area": "torch.nn.functional",
+"name": "dropout1d",
+"kind": "function",
+"doc": "Randomly zero out entire channels (a channel is a 1D feature map)."
+},
+{
+"area": "torch.nn.functional",
+"name": "dropout2d",
+"kind": "function",
+"doc": "Randomly zero out entire channels (a channel is a 2D feature map)."
+},
+{
+"area": "torch.nn.functional",
+"name": "dropout3d",
+"kind": "function",
+"doc": "Randomly zero out entire channels (a channel is a 3D feature map)."
+},
+{
+"area": "torch.nn.functional",
+"name": "elu",
+"kind": "function",
+"doc": "Apply the Exponential Linear Unit (ELU) function element-wise."
+},
+{
+"area": "torch.nn.functional",
+"name": "embedding",
+"kind": "function",
+"doc": "Generate a simple lookup table that looks up embeddings in a fixed dictionary and size."
+},
+{
+"area": "torch.nn.functional",
+"name": "embedding_bag",
+"kind": "function",
+"doc": "Compute sums, means or maxes of `bags` of embeddings."
+},
+{
+"area": "torch.nn.functional",
+"name": "feature_alpha_dropout",
+"kind": "function",
+"doc": "Randomly masks out entire channels (a channel is a feature map)."
+},
+{
+"area": "torch.nn.functional",
+"name": "fold",
+"kind": "function",
+"doc": "Combine an array of sliding local blocks into a large containing tensor."
+},
+{
+"area": "torch.nn.functional",
+"name": "fractional_max_pool2d",
+"kind": "function",
+"doc": "fractional_max_pool2d(input, kernel_size, output_size=None, output_ratio=None, return_indices=False, _random_s"
+},
+{
+"area": "torch.nn.functional",
+"name": "fractional_max_pool2d_with_indices",
+"kind": "function",
+"doc": "fractional_max_pool2d(input, kernel_size, output_size=None, output_ratio=None, return_indices=False, _random_s"
+},
+{
+"area": "torch.nn.functional",
+"name": "fractional_max_pool3d",
+"kind": "function",
+"doc": "fractional_max_pool3d(input, kernel_size, output_size=None, output_ratio=None, return_indices=False, _random_s"
+},
+{
+"area": "torch.nn.functional",
+"name": "fractional_max_pool3d_with_indices",
+"kind": "function",
+"doc": "fractional_max_pool3d(input, kernel_size, output_size=None, output_ratio=None, return_indices=False, _random_s"
+},
+{
+"area": "torch.nn.functional",
+"name": "gaussian_nll_loss",
+"kind": "function",
+"doc": "Compute the Gaussian negative log likelihood loss."
+},
+{
+"area": "torch.nn.functional",
+"name": "glu",
+"kind": "function",
+"doc": "glu(input, dim=-1) -> Tensor"
+},
+{
+"area": "torch.nn.functional",
+"name": "grid_sample",
+"kind": "function",
+"doc": "Compute grid sample."
+},
+{
+"area": "torch.nn.functional",
+"name": "group_norm",
+"kind": "function",
+"doc": "Apply Group Normalization for last certain number of dimensions."
+},
+{
+"area": "torch.nn.functional",
+"name": "grouped_mm",
+"kind": "function",
+"doc": "grouped_mm(mat_a, mat_b, *, offs=None, bias=None, out_dtype=None)"
+},
+{
+"area": "torch.nn.functional",
+"name": "gumbel_softmax",
+"kind": "function",
+"doc": "Sample from the Gumbel-Softmax distribution (`Link 1`_  `Link 2`_) and optionally discretize."
+},
+{
+"area": "torch.nn.functional",
+"name": "hardsigmoid",
+"kind": "function",
+"doc": "Apply the Hardsigmoid function element-wise."
+},
+{
+"area": "torch.nn.functional",
+"name": "hardswish",
+"kind": "function",
+"doc": "Apply hardswish function, element-wise."
+},
+{
+"area": "torch.nn.functional",
+"name": "hardtanh",
+"kind": "function",
+"doc": "hardtanh(input, min_val=-1., max_val=1., inplace=False) -> Tensor"
+},
+{
+"area": "torch.nn.functional",
+"name": "hinge_embedding_loss",
+"kind": "function",
+"doc": "Compute the hinge embedding loss."
+},
+{
+"area": "torch.nn.functional",
+"name": "huber_loss",
+"kind": "function",
+"doc": "Compute the Huber loss, with optional weighting."
+},
+{
+"area": "torch.nn.functional",
+"name": "instance_norm",
+"kind": "function",
+"doc": "Apply Instance Normalization independently for each channel in every data sample within a batch."
+},
+{
+"area": "torch.nn.functional",
+"name": "interpolate",
+"kind": "function",
+"doc": "Down/up samples the input."
+},
+{
+"area": "torch.nn.functional",
+"name": "kl_div",
+"kind": "function",
+"doc": "Compute the KL Divergence loss."
+},
+{
+"area": "torch.nn.functional",
+"name": "l1_loss",
+"kind": "function",
+"doc": "Compute the L1 loss, with optional weighting."
+},
+{
+"area": "torch.nn.functional",
+"name": "layer_norm",
+"kind": "function",
+"doc": "Apply Layer Normalization for last certain number of dimensions."
+},
+{
+"area": "torch.nn.functional",
+"name": "leaky_relu",
+"kind": "function",
+"doc": "leaky_relu(input, negative_slope=0.01, inplace=False) -> Tensor"
+},
+{
+"area": "torch.nn.functional",
+"name": "linear_cross_entropy",
+"kind": "function",
+"doc": "Compute the cross entropy loss between inputs, transformed linearly, and target."
+},
+{
+"area": "torch.nn.functional",
+"name": "local_response_norm",
+"kind": "function",
+"doc": "Apply local response normalization over an input signal."
+},
+{
+"area": "torch.nn.functional",
+"name": "log_softmax",
+"kind": "function",
+"doc": "Apply a softmax followed by a logarithm."
+},
+{
+"area": "torch.nn.functional",
+"name": "lp_pool1d",
+"kind": "function",
+"doc": "Apply a 1D power-average pooling over an input signal composed of several input planes."
+},
+{
+"area": "torch.nn.functional",
+"name": "lp_pool2d",
+"kind": "function",
+"doc": "Apply a 2D power-average pooling over an input signal composed of several input planes."
+},
+{
+"area": "torch.nn.functional",
+"name": "lp_pool3d",
+"kind": "function",
+"doc": "Apply a 3D power-average pooling over an input signal composed of several input planes."
+},
+{
+"area": "torch.nn.functional",
+"name": "margin_ranking_loss",
+"kind": "function",
+"doc": "Compute the margin ranking loss."
+},
+{
+"area": "torch.nn.functional",
+"name": "max_pool1d",
+"kind": "function",
+"doc": "max_pool1d(input, kernel_size, stride=None, padding=0, dilation=1, ceil_mode=False, return_indices=False)"
+},
+{
+"area": "torch.nn.functional",
+"name": "max_pool1d_with_indices",
+"kind": "function",
+"doc": "max_pool1d(input, kernel_size, stride=None, padding=0, dilation=1, ceil_mode=False, return_indices=False)"
+},
+{
+"area": "torch.nn.functional",
+"name": "max_pool2d",
+"kind": "function",
+"doc": "max_pool2d(input, kernel_size, stride=None, padding=0, dilation=1, ceil_mode=False, return_indices=False)"
+},
+{
+"area": "torch.nn.functional",
+"name": "max_pool2d_with_indices",
+"kind": "function",
+"doc": "max_pool2d(input, kernel_size, stride=None, padding=0, dilation=1, ceil_mode=False, return_indices=False)"
+},
+{
+"area": "torch.nn.functional",
+"name": "max_pool3d",
+"kind": "function",
+"doc": "max_pool3d(input, kernel_size, stride=None, padding=0, dilation=1, ceil_mode=False, return_indices=False)"
+},
+{
+"area": "torch.nn.functional",
+"name": "max_pool3d_with_indices",
+"kind": "function",
+"doc": "max_pool3d(input, kernel_size, stride=None, padding=0, dilation=1, ceil_mode=False, return_indices=False)"
+},
+{
+"area": "torch.nn.functional",
+"name": "max_unpool1d",
+"kind": "function",
+"doc": "Compute a partial inverse of :class:`MaxPool1d`."
+},
+{
+"area": "torch.nn.functional",
+"name": "max_unpool2d",
+"kind": "function",
+"doc": "Compute a partial inverse of :class:`MaxPool2d`."
+},
+{
+"area": "torch.nn.functional",
+"name": "max_unpool3d",
+"kind": "function",
+"doc": "Compute a partial inverse of :class:`MaxPool3d`."
+},
+{
+"area": "torch.nn.functional",
+"name": "mish",
+"kind": "function",
+"doc": "Apply the Mish function, element-wise."
+},
+{
+"area": "torch.nn.functional",
+"name": "mse_loss",
+"kind": "function",
+"doc": "Compute the element-wise mean squared error, with optional weighting."
+},
+{
+"area": "torch.nn.functional",
+"name": "multi_head_attention_forward",
+"kind": "function",
+"doc": "Forward method for MultiHeadAttention."
+},
+{
+"area": "torch.nn.functional",
+"name": "multi_margin_loss",
+"kind": "function",
+"doc": "Compute the multi margin loss, with optional weighting."
+},
+{
+"area": "torch.nn.functional",
+"name": "multilabel_margin_loss",
+"kind": "function",
+"doc": "Compute the multilabel margin loss."
+},
+{
+"area": "torch.nn.functional",
+"name": "multilabel_soft_margin_loss",
+"kind": "function",
+"doc": "Compute the multilabel soft margin loss."
+},
+{
+"area": "torch.nn.functional",
+"name": "nll_loss",
+"kind": "function",
+"doc": "Compute the negative log likelihood loss."
+},
+{
+"area": "torch.nn.functional",
+"name": "normalize",
+"kind": "function",
+"doc": "Perform :math:`L_p` normalization of inputs over specified dimension."
+},
+{
+"area": "torch.nn.functional",
+"name": "pad",
+"kind": "function",
+"doc": "pad(input, pad, mode=\"constant\", value=None) -> Tensor"
+},
+{
+"area": "torch.nn.functional",
+"name": "poisson_nll_loss",
+"kind": "function",
+"doc": "Compute the Poisson negative log likelihood loss."
+},
+{
+"area": "torch.nn.functional",
+"name": "relu",
+"kind": "function",
+"doc": "relu(input, inplace=False) -> Tensor"
+},
+{
+"area": "torch.nn.functional",
+"name": "relu6",
+"kind": "function",
+"doc": "relu6(input, inplace=False) -> Tensor"
+},
+{
+"area": "torch.nn.functional",
+"name": "rms_norm",
+"kind": "function",
+"doc": "Apply Root Mean Square Layer Normalization."
+},
+{
+"area": "torch.nn.functional",
+"name": "rrelu",
+"kind": "function",
+"doc": "rrelu(input, lower=1./8, upper=1./3, training=False, inplace=False) -> Tensor"
+},
+{
+"area": "torch.nn.functional",
+"name": "scaled_grouped_mm",
+"kind": "function",
+"doc": "scaled_grouped_mm(mat_a, mat_b, scale_a, scale_recipe_a, scale_b, scale_recipe_b, swizzle_a, swizzle_b, bias, "
+},
+{
+"area": "torch.nn.functional",
+"name": "scaled_mm",
+"kind": "function",
+"doc": "scaled_mm(mat_a, mat_b, scale_a, scale_recipe_a, scale_b, scale_recipe_b, swizzle_a, swizzle_b, bias, output_d"
+},
+{
+"area": "torch.nn.functional",
+"name": "selu",
+"kind": "function",
+"doc": "selu(input, inplace=False) -> Tensor"
+},
+{
+"area": "torch.nn.functional",
+"name": "sigmoid",
+"kind": "function",
+"doc": "sigmoid(input) -> Tensor"
+},
+{
+"area": "torch.nn.functional",
+"name": "silu",
+"kind": "function",
+"doc": "Apply the Sigmoid Linear Unit (SiLU) function, element-wise."
+},
+{
+"area": "torch.nn.functional",
+"name": "smooth_l1_loss",
+"kind": "function",
+"doc": "Compute the Smooth L1 loss."
+},
+{
+"area": "torch.nn.functional",
+"name": "soft_margin_loss",
+"kind": "function",
+"doc": "Compute the soft margin loss."
+},
+{
+"area": "torch.nn.functional",
+"name": "softmax",
+"kind": "function",
+"doc": "Apply a softmax function."
+},
+{
+"area": "torch.nn.functional",
+"name": "softmin",
+"kind": "function",
+"doc": "Apply a softmin function."
+},
+{
+"area": "torch.nn.functional",
+"name": "softsign",
+"kind": "function",
+"doc": "softsign(input) -> Tensor"
+},
+{
+"area": "torch.nn.functional",
+"name": "tanh",
+"kind": "function",
+"doc": "tanh(input) -> Tensor"
+},
+{
+"area": "torch.nn.functional",
+"name": "tanhshrink",
+"kind": "function",
+"doc": "tanhshrink(input) -> Tensor"
+},
+{
+"area": "torch.nn.functional",
+"name": "threshold",
+"kind": "function",
+"doc": "Apply a threshold to each element of the input Tensor."
+},
+{
+"area": "torch.nn.functional",
+"name": "triplet_margin_loss",
+"kind": "function",
+"doc": "Compute the triplet loss between given input tensors and a margin greater than 0."
+},
+{
+"area": "torch.nn.functional",
+"name": "triplet_margin_with_distance_loss",
+"kind": "function",
+"doc": "Compute the triplet margin loss for input tensors using a custom distance function."
+},
+{
+"area": "torch.nn.functional",
+"name": "unfold",
+"kind": "function",
+"doc": "Extract sliding local blocks from a batched input tensor."
+},
+{
+"area": "torch.nn.functional",
+"name": "upsample",
+"kind": "function",
+"doc": "Upsample input."
+},
+{
+"area": "torch.nn.functional",
+"name": "upsample_bilinear",
+"kind": "function",
+"doc": "Upsamples the input, using bilinear upsampling."
+},
+{
+"area": "torch.nn.functional",
+"name": "upsample_nearest",
+"kind": "function",
+"doc": "Upsamples the input, using nearest neighbours' pixel values."
+},
+{
+"area": "torch.nn.init",
+"name": "calculate_gain",
+"kind": "function",
+"doc": "Return the recommended gain value for the given nonlinearity function."
+},
+{
+"area": "torch.nn.init",
+"name": "constant",
+"kind": "function",
+"doc": "constant(...)"
+},
+{
+"area": "torch.nn.init",
+"name": "constant_",
+"kind": "function",
+"doc": "Fill the input Tensor with the value :math:`\\text{val}`."
+},
+{
+"area": "torch.nn.init",
+"name": "dirac",
+"kind": "function",
+"doc": "dirac(...)"
+},
+{
+"area": "torch.nn.init",
+"name": "dirac_",
+"kind": "function",
+"doc": "Fill the {3, 4, 5}-dimensional input `Tensor` with the Dirac delta function."
+},
+{
+"area": "torch.nn.init",
+"name": "eye",
+"kind": "function",
+"doc": "eye(...)"
+},
+{
+"area": "torch.nn.init",
+"name": "eye_",
+"kind": "function",
+"doc": "Fill the 2-dimensional input `Tensor` with the identity matrix."
+},
+{
+"area": "torch.nn.init",
+"name": "kaiming_normal",
+"kind": "function",
+"doc": "kaiming_normal(...)"
+},
+{
+"area": "torch.nn.init",
+"name": "kaiming_normal_",
+"kind": "function",
+"doc": "Fill the input `Tensor` with values using a Kaiming normal distribution."
+},
+{
+"area": "torch.nn.init",
+"name": "kaiming_uniform",
+"kind": "function",
+"doc": "kaiming_uniform(...)"
+},
+{
+"area": "torch.nn.init",
+"name": "kaiming_uniform_",
+"kind": "function",
+"doc": "Fill the input `Tensor` with values using a Kaiming uniform distribution."
+},
+{
+"area": "torch.nn.init",
+"name": "normal",
+"kind": "function",
+"doc": "normal(...)"
+},
+{
+"area": "torch.nn.init",
+"name": "normal_",
+"kind": "function",
+"doc": "Fill the input Tensor with values drawn from the normal distribution."
+},
+{
+"area": "torch.nn.init",
+"name": "ones_",
+"kind": "function",
+"doc": "Fill the input Tensor with the scalar value `1`."
+},
+{
+"area": "torch.nn.init",
+"name": "orthogonal",
+"kind": "function",
+"doc": "orthogonal(...)"
+},
+{
+"area": "torch.nn.init",
+"name": "orthogonal_",
+"kind": "function",
+"doc": "Fill the input `Tensor` with a (semi) orthogonal matrix."
+},
+{
+"area": "torch.nn.init",
+"name": "sparse",
+"kind": "function",
+"doc": "sparse(...)"
+},
+{
+"area": "torch.nn.init",
+"name": "sparse_",
+"kind": "function",
+"doc": "Fill the 2D input `Tensor` as a sparse matrix."
+},
+{
+"area": "torch.nn.init",
+"name": "trunc_normal_",
+"kind": "function",
+"doc": "Fill the input Tensor with values drawn from a truncated normal distribution."
+},
+{
+"area": "torch.nn.init",
+"name": "uniform",
+"kind": "function",
+"doc": "uniform(...)"
+},
+{
+"area": "torch.nn.init",
+"name": "uniform_",
+"kind": "function",
+"doc": "Fill the input Tensor with values drawn from the uniform distribution."
+},
+{
+"area": "torch.nn.init",
+"name": "xavier_normal",
+"kind": "function",
+"doc": "xavier_normal(...)"
+},
+{
+"area": "torch.nn.init",
+"name": "xavier_normal_",
+"kind": "function",
+"doc": "Fill the input `Tensor` with values using a Xavier normal distribution."
+},
+{
+"area": "torch.nn.init",
+"name": "xavier_uniform",
+"kind": "function",
+"doc": "xavier_uniform(...)"
+},
+{
+"area": "torch.nn.init",
+"name": "xavier_uniform_",
+"kind": "function",
+"doc": "Fill the input `Tensor` with values using a Xavier uniform distribution."
+},
+{
+"area": "torch.nn.init",
+"name": "zeros_",
+"kind": "function",
+"doc": "Fill the input Tensor with the scalar value `0`."
+},
+{
+"area": "torch.nn.modules",
+"name": "AdaptiveAvgPool1d",
+"kind": "class",
+"doc": "Applies a 1D adaptive average pooling over an input signal composed of several input planes."
+},
+{
+"area": "torch.nn.modules",
+"name": "AdaptiveAvgPool2d",
+"kind": "class",
+"doc": "Applies a 2D adaptive average pooling over an input signal composed of several input planes."
+},
+{
+"area": "torch.nn.modules",
+"name": "AdaptiveAvgPool3d",
+"kind": "class",
+"doc": "Applies a 3D adaptive average pooling over an input signal composed of several input planes."
+},
+{
+"area": "torch.nn.modules",
+"name": "AdaptiveLogSoftmaxWithLoss",
+"kind": "class",
+"doc": "Efficient softmax approximation."
+},
+{
+"area": "torch.nn.modules",
+"name": "AdaptiveMaxPool1d",
+"kind": "class",
+"doc": "Applies a 1D adaptive max pooling over an input signal composed of several input planes."
+},
+{
+"area": "torch.nn.modules",
+"name": "AdaptiveMaxPool2d",
+"kind": "class",
+"doc": "Applies a 2D adaptive max pooling over an input signal composed of several input planes."
+},
+{
+"area": "torch.nn.modules",
+"name": "AdaptiveMaxPool3d",
+"kind": "class",
+"doc": "Applies a 3D adaptive max pooling over an input signal composed of several input planes."
+},
+{
+"area": "torch.nn.modules",
+"name": "AlphaDropout",
+"kind": "class",
+"doc": "Applies Alpha Dropout over the input."
+},
+{
+"area": "torch.nn.modules",
+"name": "AvgPool1d",
+"kind": "class",
+"doc": "Applies a 1D average pooling over an input signal composed of several input planes."
+},
+{
+"area": "torch.nn.modules",
+"name": "AvgPool2d",
+"kind": "class",
+"doc": "Applies a 2D average pooling over an input signal composed of several input planes."
+},
+{
+"area": "torch.nn.modules",
+"name": "AvgPool3d",
+"kind": "class",
+"doc": "Applies a 3D average pooling over an input signal composed of several input planes."
+},
+{
+"area": "torch.nn.modules",
+"name": "BCELoss",
+"kind": "class",
+"doc": "Creates a criterion that measures the Binary Cross Entropy between the target and"
+},
+{
+"area": "torch.nn.modules",
+"name": "BCEWithLogitsLoss",
+"kind": "class",
+"doc": "This loss combines a `Sigmoid` layer and the `BCELoss` in one single"
+},
+{
+"area": "torch.nn.modules",
+"name": "BatchNorm1d",
+"kind": "class",
+"doc": "Applies Batch Normalization over a 2D or 3D input."
+},
+{
+"area": "torch.nn.modules",
+"name": "BatchNorm2d",
+"kind": "class",
+"doc": "Applies Batch Normalization over a 4D input."
+},
+{
+"area": "torch.nn.modules",
+"name": "BatchNorm3d",
+"kind": "class",
+"doc": "Applies Batch Normalization over a 5D input."
+},
+{
+"area": "torch.nn.modules",
+"name": "Bilinear",
+"kind": "class",
+"doc": "Applies a bilinear transformation to the incoming data: :math:`y = x_1^T A x_2 + b`."
+},
+{
+"area": "torch.nn.modules",
+"name": "CELU",
+"kind": "class",
+"doc": "Applies the CELU function element-wise."
+},
+{
+"area": "torch.nn.modules",
+"name": "CTCLoss",
+"kind": "class",
+"doc": "The Connectionist Temporal Classification loss."
+},
+{
+"area": "torch.nn.modules",
+"name": "ChannelShuffle",
+"kind": "class",
+"doc": "Divides and rearranges the channels in a tensor."
+},
+{
+"area": "torch.nn.modules",
+"name": "CircularPad1d",
+"kind": "class",
+"doc": "Pads the input tensor using circular padding of the input boundary."
+},
+{
+"area": "torch.nn.modules",
+"name": "CircularPad2d",
+"kind": "class",
+"doc": "Pads the input tensor using circular padding of the input boundary."
+},
+{
+"area": "torch.nn.modules",
+"name": "CircularPad3d",
+"kind": "class",
+"doc": "Pads the input tensor using circular padding of the input boundary."
+},
+{
+"area": "torch.nn.modules",
+"name": "ConstantPad1d",
+"kind": "class",
+"doc": "Pads the input tensor boundaries with a constant value."
+},
+{
+"area": "torch.nn.modules",
+"name": "ConstantPad2d",
+"kind": "class",
+"doc": "Pads the input tensor boundaries with a constant value."
+},
+{
+"area": "torch.nn.modules",
+"name": "ConstantPad3d",
+"kind": "class",
+"doc": "Pads the input tensor boundaries with a constant value."
+},
+{
+"area": "torch.nn.modules",
+"name": "Container",
+"kind": "class",
+"doc": "Base class for all neural network modules."
+},
+{
+"area": "torch.nn.modules",
+"name": "Conv1d",
+"kind": "class",
+"doc": "Applies a 1D convolution over an input signal composed of several input"
+},
+{
+"area": "torch.nn.modules",
+"name": "Conv2d",
+"kind": "class",
+"doc": "Applies a 2D convolution over an input signal composed of several input"
+},
+{
+"area": "torch.nn.modules",
+"name": "Conv3d",
+"kind": "class",
+"doc": "Applies a 3D convolution over an input signal composed of several input"
+},
+{
+"area": "torch.nn.modules",
+"name": "ConvTranspose1d",
+"kind": "class",
+"doc": "Applies a 1D transposed convolution operator over an input image"
+},
+{
+"area": "torch.nn.modules",
+"name": "ConvTranspose2d",
+"kind": "class",
+"doc": "Applies a 2D transposed convolution operator over an input image"
+},
+{
+"area": "torch.nn.modules",
+"name": "ConvTranspose3d",
+"kind": "class",
+"doc": "Applies a 3D transposed convolution operator over an input image composed of several input"
+},
+{
+"area": "torch.nn.modules",
+"name": "CosineEmbeddingLoss",
+"kind": "class",
+"doc": "Creates a criterion that measures the loss given input tensors"
+},
+{
+"area": "torch.nn.modules",
+"name": "CosineSimilarity",
+"kind": "class",
+"doc": "Returns cosine similarity between :math:`x_1` and :math:`x_2`, computed along `dim`."
+},
+{
+"area": "torch.nn.modules",
+"name": "CrossEntropyLoss",
+"kind": "class",
+"doc": "This criterion computes the cross entropy loss between input logits"
+},
+{
+"area": "torch.nn.modules",
+"name": "CrossMapLRN2d",
+"kind": "class",
+"doc": "Base class for all neural network modules."
+},
+{
+"area": "torch.nn.modules",
+"name": "DataParallel",
+"kind": "class",
+"doc": "Implements data parallelism at the module level."
+},
+{
+"area": "torch.nn.modules",
+"name": "Dropout",
+"kind": "class",
+"doc": "During training, randomly zeroes some of the elements of the input tensor with probability :attr:`p`."
+},
+{
+"area": "torch.nn.modules",
+"name": "Dropout1d",
+"kind": "class",
+"doc": "Randomly zero out entire channels."
+},
+{
+"area": "torch.nn.modules",
+"name": "Dropout2d",
+"kind": "class",
+"doc": "Randomly zero out entire channels."
+},
+{
+"area": "torch.nn.modules",
+"name": "Dropout3d",
+"kind": "class",
+"doc": "Randomly zero out entire channels."
+},
+{
+"area": "torch.nn.modules",
+"name": "ELU",
+"kind": "class",
+"doc": "Applies the Exponential Linear Unit (ELU) function, element-wise."
+},
+{
+"area": "torch.nn.modules",
+"name": "Embedding",
+"kind": "class",
+"doc": "A simple lookup table that stores embeddings of a fixed dictionary and size."
+},
+{
+"area": "torch.nn.modules",
+"name": "EmbeddingBag",
+"kind": "class",
+"doc": "Compute sums or means of 'bags' of embeddings, without instantiating the intermediate embeddings."
+},
+{
+"area": "torch.nn.modules",
+"name": "FeatureAlphaDropout",
+"kind": "class",
+"doc": "Randomly masks out entire channels."
+},
+{
+"area": "torch.nn.modules",
+"name": "Flatten",
+"kind": "class",
+"doc": "Flattens a contiguous range of dims into a tensor."
+},
+{
+"area": "torch.nn.modules",
+"name": "Fold",
+"kind": "class",
+"doc": "Combines an array of sliding local blocks into a large containing tensor."
+},
+{
+"area": "torch.nn.modules",
+"name": "FractionalMaxPool2d",
+"kind": "class",
+"doc": "Applies a 2D fractional max pooling over an input signal composed of several input planes."
+},
+{
+"area": "torch.nn.modules",
+"name": "FractionalMaxPool3d",
+"kind": "class",
+"doc": "Applies a 3D fractional max pooling over an input signal composed of several input planes."
+},
+{
+"area": "torch.nn.modules",
+"name": "GELU",
+"kind": "class",
+"doc": "Applies the Gaussian Error Linear Units function."
+},
+{
+"area": "torch.nn.modules",
+"name": "GLU",
+"kind": "class",
+"doc": "Applies the gated linear unit function."
+},
+{
+"area": "torch.nn.modules",
+"name": "GRU",
+"kind": "class",
+"doc": "__init__(input_size,hidden_size,num_layers=1,bias=True,batch_first=False,dropout=0.0,bidirectional=False,devic"
+},
+{
+"area": "torch.nn.modules",
+"name": "GRUCell",
+"kind": "class",
+"doc": "A gated recurrent unit (GRU) cell."
+},
+{
+"area": "torch.nn.modules",
+"name": "GaussianNLLLoss",
+"kind": "class",
+"doc": "Gaussian negative log likelihood loss."
+},
+{
+"area": "torch.nn.modules",
+"name": "GroupNorm",
+"kind": "class",
+"doc": "Applies Group Normalization over a mini-batch of inputs."
+},
+{
+"area": "torch.nn.modules",
+"name": "Hardshrink",
+"kind": "class",
+"doc": "Applies the Hard Shrinkage (Hardshrink) function element-wise."
+},
+{
+"area": "torch.nn.modules",
+"name": "Hardsigmoid",
+"kind": "class",
+"doc": "Applies the Hardsigmoid function element-wise."
+},
+{
+"area": "torch.nn.modules",
+"name": "Hardswish",
+"kind": "class",
+"doc": "Applies the Hardswish function, element-wise."
+},
+{
+"area": "torch.nn.modules",
+"name": "Hardtanh",
+"kind": "class",
+"doc": "Applies the HardTanh function element-wise."
+},
+{
+"area": "torch.nn.modules",
+"name": "HingeEmbeddingLoss",
+"kind": "class",
+"doc": "Measures the loss given an input tensor :math:`x` and a labels tensor :math:`y`"
+},
+{
+"area": "torch.nn.modules",
+"name": "HuberLoss",
+"kind": "class",
+"doc": "Creates a criterion that uses a squared term if the absolute"
+},
+{
+"area": "torch.nn.modules",
+"name": "Identity",
+"kind": "class",
+"doc": "A placeholder identity operator that is argument-insensitive."
+},
+{
+"area": "torch.nn.modules",
+"name": "InstanceNorm1d",
+"kind": "class",
+"doc": "Applies Instance Normalization."
+},
+{
+"area": "torch.nn.modules",
+"name": "InstanceNorm2d",
+"kind": "class",
+"doc": "Applies Instance Normalization."
+},
+{
+"area": "torch.nn.modules",
+"name": "InstanceNorm3d",
+"kind": "class",
+"doc": "Applies Instance Normalization."
+},
+{
+"area": "torch.nn.modules",
+"name": "KLDivLoss",
+"kind": "class",
+"doc": "The Kullback-Leibler divergence loss."
+},
+{
+"area": "torch.nn.modules",
+"name": "L1Loss",
+"kind": "class",
+"doc": "Creates a criterion that measures the mean absolute error (MAE) between each element in"
+},
+{
+"area": "torch.nn.modules",
+"name": "LPPool1d",
+"kind": "class",
+"doc": "Applies a 1D power-average pooling over an input signal composed of several input planes."
+},
+{
+"area": "torch.nn.modules",
+"name": "LPPool2d",
+"kind": "class",
+"doc": "Applies a 2D power-average pooling over an input signal composed of several input planes."
+},
+{
+"area": "torch.nn.modules",
+"name": "LPPool3d",
+"kind": "class",
+"doc": "Applies a 3D power-average pooling over an input signal composed of several input planes."
+},
+{
+"area": "torch.nn.modules",
+"name": "LSTM",
+"kind": "class",
+"doc": "__init__(input_size,hidden_size,num_layers=1,bias=True,batch_first=False,dropout=0.0,bidirectional=False,proj_"
+},
+{
+"area": "torch.nn.modules",
+"name": "LSTMCell",
+"kind": "class",
+"doc": "A long short-term memory (LSTM) cell."
+},
+{
+"area": "torch.nn.modules",
+"name": "LayerNorm",
+"kind": "class",
+"doc": "Applies Layer Normalization over a mini-batch of inputs."
+},
+{
+"area": "torch.nn.modules",
+"name": "LazyBatchNorm1d",
+"kind": "class",
+"doc": "A :class:`torch.nn.BatchNorm1d` module with lazy initialization."
+},
+{
+"area": "torch.nn.modules",
+"name": "LazyBatchNorm2d",
+"kind": "class",
+"doc": "A :class:`torch.nn.BatchNorm2d` module with lazy initialization."
+},
+{
+"area": "torch.nn.modules",
+"name": "LazyBatchNorm3d",
+"kind": "class",
+"doc": "A :class:`torch.nn.BatchNorm3d` module with lazy initialization."
+},
+{
+"area": "torch.nn.modules",
+"name": "LazyConv1d",
+"kind": "class",
+"doc": "A :class:`torch.nn.Conv1d` module with lazy initialization of the ``in_channels`` argument."
+},
+{
+"area": "torch.nn.modules",
+"name": "LazyConv2d",
+"kind": "class",
+"doc": "A :class:`torch.nn.Conv2d` module with lazy initialization of the ``in_channels`` argument."
+},
+{
+"area": "torch.nn.modules",
+"name": "LazyConv3d",
+"kind": "class",
+"doc": "A :class:`torch.nn.Conv3d` module with lazy initialization of the ``in_channels`` argument."
+},
+{
+"area": "torch.nn.modules",
+"name": "LazyConvTranspose1d",
+"kind": "class",
+"doc": "A :class:`torch.nn.ConvTranspose1d` module with lazy initialization of the ``in_channels`` argument."
+},
+{
+"area": "torch.nn.modules",
+"name": "LazyConvTranspose2d",
+"kind": "class",
+"doc": "A :class:`torch.nn.ConvTranspose2d` module with lazy initialization of the ``in_channels`` argument."
+},
+{
+"area": "torch.nn.modules",
+"name": "LazyConvTranspose3d",
+"kind": "class",
+"doc": "A :class:`torch.nn.ConvTranspose3d` module with lazy initialization of the ``in_channels`` argument."
+},
+{
+"area": "torch.nn.modules",
+"name": "LazyInstanceNorm1d",
+"kind": "class",
+"doc": "A :class:`torch.nn.InstanceNorm1d` module with lazy initialization of the ``num_features`` argument."
+},
+{
+"area": "torch.nn.modules",
+"name": "LazyInstanceNorm2d",
+"kind": "class",
+"doc": "A :class:`torch.nn.InstanceNorm2d` module with lazy initialization of the ``num_features`` argument."
+},
+{
+"area": "torch.nn.modules",
+"name": "LazyInstanceNorm3d",
+"kind": "class",
+"doc": "A :class:`torch.nn.InstanceNorm3d` module with lazy initialization of the ``num_features`` argument."
+},
+{
+"area": "torch.nn.modules",
+"name": "LazyLinear",
+"kind": "class",
+"doc": "A :class:`torch.nn.Linear` module where `in_features` is inferred."
+},
+{
+"area": "torch.nn.modules",
+"name": "LeakyReLU",
+"kind": "class",
+"doc": "Applies the LeakyReLU function element-wise."
+},
+{
+"area": "torch.nn.modules",
+"name": "Linear",
+"kind": "class",
+"doc": "Applies an affine linear transformation to the incoming data: :math:`y = xA^T + b`."
+},
+{
+"area": "torch.nn.modules",
+"name": "LinearCrossEntropyLoss",
+"kind": "class",
+"doc": "This criterion computes the cross entropy loss between input,"
+},
+{
+"area": "torch.nn.modules",
+"name": "LocalResponseNorm",
+"kind": "class",
+"doc": "Applies local response normalization over an input signal."
+},
+{
+"area": "torch.nn.modules",
+"name": "LogSigmoid",
+"kind": "class",
+"doc": "Applies the Logsigmoid function element-wise."
+},
+{
+"area": "torch.nn.modules",
+"name": "LogSoftmax",
+"kind": "class",
+"doc": "Applies the :math:`\\log(\\text{Softmax}(x))` function to an n-dimensional input Tensor."
+},
+{
+"area": "torch.nn.modules",
+"name": "MSELoss",
+"kind": "class",
+"doc": "Creates a criterion that measures the mean squared error (squared L2 norm) between"
+},
+{
+"area": "torch.nn.modules",
+"name": "MarginRankingLoss",
+"kind": "class",
+"doc": "Creates a criterion that measures the loss given"
+},
+{
+"area": "torch.nn.modules",
+"name": "MaxPool1d",
+"kind": "class",
+"doc": "Applies a 1D max pooling over an input signal composed of several input planes."
+},
+{
+"area": "torch.nn.modules",
+"name": "MaxPool2d",
+"kind": "class",
+"doc": "Applies a 2D max pooling over an input signal composed of several input planes."
+},
+{
+"area": "torch.nn.modules",
+"name": "MaxPool3d",
+"kind": "class",
+"doc": "Applies a 3D max pooling over an input signal composed of several input planes."
+},
+{
+"area": "torch.nn.modules",
+"name": "MaxUnpool1d",
+"kind": "class",
+"doc": "Computes a partial inverse of :class:`MaxPool1d`."
+},
+{
+"area": "torch.nn.modules",
+"name": "MaxUnpool2d",
+"kind": "class",
+"doc": "Computes a partial inverse of :class:`MaxPool2d`."
+},
+{
+"area": "torch.nn.modules",
+"name": "MaxUnpool3d",
+"kind": "class",
+"doc": "Computes a partial inverse of :class:`MaxPool3d`."
+},
+{
+"area": "torch.nn.modules",
+"name": "Mish",
+"kind": "class",
+"doc": "Applies the Mish function, element-wise."
+},
+{
+"area": "torch.nn.modules",
+"name": "ModuleDict",
+"kind": "class",
+"doc": "Holds submodules in a dictionary."
+},
+{
+"area": "torch.nn.modules",
+"name": "ModuleList",
+"kind": "class",
+"doc": "Holds submodules in a list."
+},
+{
+"area": "torch.nn.modules",
+"name": "MultiLabelMarginLoss",
+"kind": "class",
+"doc": "Creates a criterion that optimizes a multi-class multi-classification"
+},
+{
+"area": "torch.nn.modules",
+"name": "MultiLabelSoftMarginLoss",
+"kind": "class",
+"doc": "Creates a criterion that optimizes a multi-label one-versus-all"
+},
+{
+"area": "torch.nn.modules",
+"name": "MultiMarginLoss",
+"kind": "class",
+"doc": "Creates a criterion that optimizes a multi-class classification hinge"
+},
+{
+"area": "torch.nn.modules",
+"name": "MultiheadAttention",
+"kind": "class",
+"doc": "Allows the model to jointly attend to information from different representation subspaces."
+},
+{
+"area": "torch.nn.modules",
+"name": "NLLLoss",
+"kind": "class",
+"doc": "The negative log likelihood loss. It is useful to train a classification"
+},
+{
+"area": "torch.nn.modules",
+"name": "NLLLoss2d",
+"kind": "class",
+"doc": "The negative log likelihood loss. It is useful to train a classification"
+},
+{
+"area": "torch.nn.modules",
+"name": "PReLU",
+"kind": "class",
+"doc": "Applies the element-wise PReLU function."
+},
+{
+"area": "torch.nn.modules",
+"name": "PairwiseDistance",
+"kind": "class",
+"doc": "Computes the pairwise distance between input vectors, or between columns of input matrices."
+},
+{
+"area": "torch.nn.modules",
+"name": "ParameterDict",
+"kind": "class",
+"doc": "Holds parameters in a dictionary."
+},
+{
+"area": "torch.nn.modules",
+"name": "ParameterList",
+"kind": "class",
+"doc": "Holds parameters in a list."
+},
+{
+"area": "torch.nn.modules",
+"name": "PixelShuffle",
+"kind": "class",
+"doc": "Rearrange elements in a tensor according to an upscaling factor."
+},
+{
+"area": "torch.nn.modules",
+"name": "PixelUnshuffle",
+"kind": "class",
+"doc": "Reverse the PixelShuffle operation."
+},
+{
+"area": "torch.nn.modules",
+"name": "PoissonNLLLoss",
+"kind": "class",
+"doc": "Negative log likelihood loss with Poisson distribution of target."
+},
+{
+"area": "torch.nn.modules",
+"name": "RMSNorm",
+"kind": "class",
+"doc": "Applies Root Mean Square Layer Normalization over a mini-batch of inputs."
+},
+{
+"area": "torch.nn.modules",
+"name": "RNN",
+"kind": "class",
+"doc": "__init__(input_size,hidden_size,num_layers=1,nonlinearity='tanh',bias=True,batch_first=False,dropout=0.0,bidir"
+},
+{
+"area": "torch.nn.modules",
+"name": "RNNBase",
+"kind": "class",
+"doc": "Base class for RNN modules (RNN, LSTM, GRU)."
+},
+{
+"area": "torch.nn.modules",
+"name": "RNNCell",
+"kind": "class",
+"doc": "An Elman RNN cell with tanh or ReLU non-linearity."
+},
+{
+"area": "torch.nn.modules",
+"name": "RNNCellBase",
+"kind": "class",
+"doc": "Base class for all neural network modules."
+},
+{
+"area": "torch.nn.modules",
+"name": "RReLU",
+"kind": "class",
+"doc": "Applies the randomized leaky rectified linear unit function, element-wise."
+},
+{
+"area": "torch.nn.modules",
+"name": "ReLU",
+"kind": "class",
+"doc": "Applies the rectified linear unit function element-wise."
+},
+{
+"area": "torch.nn.modules",
+"name": "ReLU6",
+"kind": "class",
+"doc": "Applies the ReLU6 function element-wise."
+},
+{
+"area": "torch.nn.modules",
+"name": "ReflectionPad1d",
+"kind": "class",
+"doc": "Pads the input tensor using the reflection of the input boundary."
+},
+{
+"area": "torch.nn.modules",
+"name": "ReflectionPad2d",
+"kind": "class",
+"doc": "Pads the input tensor using the reflection of the input boundary."
+},
+{
+"area": "torch.nn.modules",
+"name": "ReflectionPad3d",
+"kind": "class",
+"doc": "Pads the input tensor using the reflection of the input boundary."
+},
+{
+"area": "torch.nn.modules",
+"name": "ReplicationPad1d",
+"kind": "class",
+"doc": "Pads the input tensor using replication of the input boundary."
+},
+{
+"area": "torch.nn.modules",
+"name": "ReplicationPad2d",
+"kind": "class",
+"doc": "Pads the input tensor using replication of the input boundary."
+},
+{
+"area": "torch.nn.modules",
+"name": "ReplicationPad3d",
+"kind": "class",
+"doc": "Pads the input tensor using replication of the input boundary."
+},
+{
+"area": "torch.nn.modules",
+"name": "SELU",
+"kind": "class",
+"doc": "Applies the SELU function element-wise."
+},
+{
+"area": "torch.nn.modules",
+"name": "Sequential",
+"kind": "class",
+"doc": "A sequential container."
+},
+{
+"area": "torch.nn.modules",
+"name": "SiLU",
+"kind": "class",
+"doc": "Applies the Sigmoid Linear Unit (SiLU) function, element-wise."
+},
+{
+"area": "torch.nn.modules",
+"name": "Sigmoid",
+"kind": "class",
+"doc": "Applies the Sigmoid function element-wise."
+},
+{
+"area": "torch.nn.modules",
+"name": "SmoothL1Loss",
+"kind": "class",
+"doc": "Creates a criterion that uses a squared term if the absolute"
+},
+{
+"area": "torch.nn.modules",
+"name": "SoftMarginLoss",
+"kind": "class",
+"doc": "Creates a criterion that optimizes a two-class classification"
+},
+{
+"area": "torch.nn.modules",
+"name": "Softmax",
+"kind": "class",
+"doc": "Applies the Softmax function to an n-dimensional input Tensor."
+},
+{
+"area": "torch.nn.modules",
+"name": "Softmax2d",
+"kind": "class",
+"doc": "Applies SoftMax over features to each spatial location."
+},
+{
+"area": "torch.nn.modules",
+"name": "Softmin",
+"kind": "class",
+"doc": "Applies the Softmin function to an n-dimensional input Tensor."
+},
+{
+"area": "torch.nn.modules",
+"name": "Softplus",
+"kind": "class",
+"doc": "Applies the Softplus function element-wise."
+},
+{
+"area": "torch.nn.modules",
+"name": "Softshrink",
+"kind": "class",
+"doc": "Applies the soft shrinkage function element-wise."
+},
+{
+"area": "torch.nn.modules",
+"name": "Softsign",
+"kind": "class",
+"doc": "Applies the element-wise Softsign function."
+},
+{
+"area": "torch.nn.modules",
+"name": "SyncBatchNorm",
+"kind": "class",
+"doc": "Applies Batch Normalization over a N-Dimensional input."
+},
+{
+"area": "torch.nn.modules",
+"name": "Tanh",
+"kind": "class",
+"doc": "Applies the Hyperbolic Tangent (Tanh) function element-wise."
+},
+{
+"area": "torch.nn.modules",
+"name": "Tanhshrink",
+"kind": "class",
+"doc": "Applies the element-wise Tanhshrink function."
+},
+{
+"area": "torch.nn.modules",
+"name": "Threshold",
+"kind": "class",
+"doc": "Thresholds each element of the input Tensor."
+},
+{
+"area": "torch.nn.modules",
+"name": "Transformer",
+"kind": "class",
+"doc": "A basic transformer layer."
+},
+{
+"area": "torch.nn.modules",
+"name": "TransformerDecoder",
+"kind": "class",
+"doc": "TransformerDecoder is a stack of N decoder layers."
+},
+{
+"area": "torch.nn.modules",
+"name": "TransformerDecoderLayer",
+"kind": "class",
+"doc": "TransformerDecoderLayer is made up of self-attn, multi-head-attn and feedforward network."
+},
+{
+"area": "torch.nn.modules",
+"name": "TransformerEncoder",
+"kind": "class",
+"doc": "TransformerEncoder is a stack of N encoder layers."
+},
+{
+"area": "torch.nn.modules",
+"name": "TransformerEncoderLayer",
+"kind": "class",
+"doc": "TransformerEncoderLayer is made up of self-attn and feedforward network."
+},
+{
+"area": "torch.nn.modules",
+"name": "TripletMarginLoss",
+"kind": "class",
+"doc": "Creates a criterion that measures the triplet loss given an input"
+},
+{
+"area": "torch.nn.modules",
+"name": "TripletMarginWithDistanceLoss",
+"kind": "class",
+"doc": "Creates a criterion that measures the triplet loss given input"
+},
+{
+"area": "torch.nn.modules",
+"name": "Unflatten",
+"kind": "class",
+"doc": "Unflattens a tensor dim expanding it to a desired shape. For use with :class:`~nn.Sequential`."
+},
+{
+"area": "torch.nn.modules",
+"name": "Unfold",
+"kind": "class",
+"doc": "Extracts sliding local blocks from a batched input tensor."
+},
+{
+"area": "torch.nn.modules",
+"name": "Upsample",
+"kind": "class",
+"doc": "Upsamples a given multi-channel 1D (temporal), 2D (spatial) or 3D (volumetric) data."
+},
+{
+"area": "torch.nn.modules",
+"name": "UpsamplingBilinear2d",
+"kind": "class",
+"doc": "Applies a 2D bilinear upsampling to an input signal composed of several input channels."
+},
+{
+"area": "torch.nn.modules",
+"name": "UpsamplingNearest2d",
+"kind": "class",
+"doc": "Applies a 2D nearest neighbor upsampling to an input signal composed of several input channels."
+},
+{
+"area": "torch.nn.modules",
+"name": "ZeroPad1d",
+"kind": "class",
+"doc": "Pads the input tensor boundaries with zero."
+},
+{
+"area": "torch.nn.modules",
+"name": "ZeroPad2d",
+"kind": "class",
+"doc": "Pads the input tensor boundaries with zero."
+},
+{
+"area": "torch.nn.modules",
+"name": "ZeroPad3d",
+"kind": "class",
+"doc": "Pads the input tensor boundaries with zero."
+},
+{
+"area": "torch.nn.utils",
+"name": "clip_grad_norm",
+"kind": "function",
+"doc": "Clip the gradient norm of an iterable of parameters."
+},
+{
+"area": "torch.nn.utils",
+"name": "clip_grad_norm_",
+"kind": "function",
+"doc": "Clip the gradient norm of an iterable of parameters."
+},
+{
+"area": "torch.nn.utils",
+"name": "clip_grad_value_",
+"kind": "function",
+"doc": "Clip the gradients of an iterable of parameters at specified value."
+},
+{
+"area": "torch.nn.utils",
+"name": "clip_grads_with_norm_",
+"kind": "function",
+"doc": "Scale the gradients of an iterable of parameters given a pre-calculated total norm and desired max norm."
+},
+{
+"area": "torch.nn.utils",
+"name": "convert_conv2d_weight_memory_format",
+"kind": "function",
+"doc": "Convert ``memory_format`` of ``nn.Conv2d.weight`` to ``memory_format``."
+},
+{
+"area": "torch.nn.utils",
+"name": "convert_conv3d_weight_memory_format",
+"kind": "function",
+"doc": "Convert ``memory_format`` of ``nn.Conv3d.weight`` to ``memory_format``"
+},
+{
+"area": "torch.nn.utils",
+"name": "fuse_conv_bn_eval",
+"kind": "function",
+"doc": "Fuse a convolutional module and a BatchNorm module into a single, new convolutional module."
+},
+{
+"area": "torch.nn.utils",
+"name": "fuse_conv_bn_weights",
+"kind": "function",
+"doc": "Fuse convolutional module parameters and BatchNorm module parameters into new convolutional module parameters."
+},
+{
+"area": "torch.nn.utils",
+"name": "fuse_linear_bn_eval",
+"kind": "function",
+"doc": "Fuse a linear module and a BatchNorm module into a single, new linear module."
+},
+{
+"area": "torch.nn.utils",
+"name": "fuse_linear_bn_weights",
+"kind": "function",
+"doc": "Fuse linear module parameters and BatchNorm module parameters into new linear module parameters."
+},
+{
+"area": "torch.nn.utils",
+"name": "get_total_norm",
+"kind": "function",
+"doc": "Compute the norm of an iterable of tensors."
+},
+{
+"area": "torch.nn.utils",
+"name": "parameters_to_vector",
+"kind": "function",
+"doc": "Flatten an iterable of parameters into a single vector."
+},
+{
+"area": "torch.nn.utils",
+"name": "remove_spectral_norm",
+"kind": "function",
+"doc": "Remove the spectral normalization reparameterization from a module."
+},
+{
+"area": "torch.nn.utils",
+"name": "remove_weight_norm",
+"kind": "function",
+"doc": "Remove the weight normalization reparameterization from a module."
+},
+{
+"area": "torch.nn.utils",
+"name": "skip_init",
+"kind": "function",
+"doc": "Given a module class object and args / kwargs, instantiate the module without initializing parameters / buffer"
+},
+{
+"area": "torch.nn.utils",
+"name": "spectral_norm",
+"kind": "function",
+"doc": "Apply spectral normalization to a parameter in the given module."
+},
+{
+"area": "torch.nn.utils",
+"name": "vector_to_parameters",
+"kind": "function",
+"doc": "Copy slices of a vector into an iterable of parameters."
+},
+{
+"area": "torch.nn.utils",
+"name": "weight_norm",
+"kind": "function",
+"doc": "Apply weight normalization to a parameter in the given module."
+},
+{
+"area": "torch.nn.utils.parametrizations",
+"name": "orthogonal",
+"kind": "function",
+"doc": "Apply an orthogonal or unitary parametrization to a matrix or a batch of matrices."
+},
+{
+"area": "torch.nn.utils.parametrizations",
+"name": "spectral_norm",
+"kind": "function",
+"doc": "Apply spectral normalization to a parameter in the given module."
+},
+{
+"area": "torch.nn.utils.parametrizations",
+"name": "weight_norm",
+"kind": "function",
+"doc": "Apply weight normalization to a parameter in the given module."
+},
+{
+"area": "torch.nn.utils.parametrize",
+"name": "ParametrizationList",
+"kind": "class",
+"doc": "A sequential container that holds and manages the original parameters or buffers of a parametrized :class:`tor"
+},
+{
+"area": "torch.nn.utils.parametrize",
+"name": "cached",
+"kind": "function",
+"doc": "Context manager that enables the caching system within parametrizations registered with :func:`register_parame"
+},
+{
+"area": "torch.nn.utils.parametrize",
+"name": "is_parametrized",
+"kind": "function",
+"doc": "Determine if a module has a parametrization."
+},
+{
+"area": "torch.nn.utils.parametrize",
+"name": "register_parametrization",
+"kind": "function",
+"doc": "Register a parametrization to a tensor in a module."
+},
+{
+"area": "torch.nn.utils.parametrize",
+"name": "remove_parametrizations",
+"kind": "function",
+"doc": "Remove the parametrizations on a tensor in a module."
+},
+{
+"area": "torch.nn.utils.parametrize",
+"name": "transfer_parametrizations_and_params",
+"kind": "function",
+"doc": "Transfer parametrizations and the parameters they parametrize from :attr:`from_module` to :attr:`to_module`."
+},
+{
+"area": "torch.nn.utils.parametrize",
+"name": "type_before_parametrizations",
+"kind": "function",
+"doc": "Return the module type before parametrizations were applied and if not, then it returns the module type."
+},
+{
+"area": "torch.nn.utils.rnn",
+"name": "PackedSequence",
+"kind": "class",
+"doc": "Holds the data and list of :attr:`batch_sizes` of a packed sequence."
+},
+{
+"area": "torch.nn.utils.rnn",
+"name": "invert_permutation",
+"kind": "function",
+"doc": "Returns the inverse of ``permutation``."
+},
+{
+"area": "torch.nn.utils.rnn",
+"name": "pack_padded_sequence",
+"kind": "function",
+"doc": "Packs a Tensor containing padded sequences of variable length."
+},
+{
+"area": "torch.nn.utils.rnn",
+"name": "pack_sequence",
+"kind": "function",
+"doc": "Packs a list of variable length Tensors."
+},
+{
+"area": "torch.nn.utils.rnn",
+"name": "pad_packed_sequence",
+"kind": "function",
+"doc": "Pad a packed batch of variable length sequences."
+},
+{
+"area": "torch.nn.utils.rnn",
+"name": "pad_sequence",
+"kind": "function",
+"doc": "Pad a list of variable length Tensors with :attr:`padding_value`."
+},
+{
+"area": "torch.nn.utils.rnn",
+"name": "unpack_sequence",
+"kind": "function",
+"doc": "Unpack PackedSequence into a list of variable length Tensors."
+},
+{
+"area": "torch.nn.utils.rnn",
+"name": "unpad_sequence",
+"kind": "function",
+"doc": "Unpad padded Tensor into a list of variable length Tensors."
+},
+{
+"area": "torch.optim",
+"name": "ASGD",
+"kind": "class",
+"doc": "Implements Averaged Stochastic Gradient Descent."
+},
+{
+"area": "torch.optim",
+"name": "Adadelta",
+"kind": "class",
+"doc": "Implements Adadelta algorithm."
+},
+{
+"area": "torch.optim",
+"name": "Adafactor",
+"kind": "class",
+"doc": "Implements Adafactor algorithm."
+},
+{
+"area": "torch.optim",
+"name": "Adagrad",
+"kind": "class",
+"doc": "Implements Adagrad algorithm."
+},
+{
+"area": "torch.optim",
+"name": "Adam",
+"kind": "class",
+"doc": "Implements Adam algorithm."
+},
+{
+"area": "torch.optim",
+"name": "AdamW",
+"kind": "class",
+"doc": "Implements AdamW algorithm, where weight decay does not accumulate in the momentum nor variance."
+},
+{
+"area": "torch.optim",
+"name": "Adamax",
+"kind": "class",
+"doc": "Implements Adamax algorithm (a variant of Adam based on infinity norm)."
+},
+{
+"area": "torch.optim",
+"name": "LBFGS",
+"kind": "class",
+"doc": "Implements L-BFGS algorithm."
+},
+{
+"area": "torch.optim",
+"name": "Muon",
+"kind": "class",
+"doc": "Implements Muon algorithm."
+},
+{
+"area": "torch.optim",
+"name": "NAdam",
+"kind": "class",
+"doc": "Implements NAdam algorithm."
+},
+{
+"area": "torch.optim",
+"name": "RAdam",
+"kind": "class",
+"doc": "Implements RAdam algorithm."
+},
+{
+"area": "torch.optim",
+"name": "RMSprop",
+"kind": "class",
+"doc": "Implements RMSprop algorithm."
+},
+{
+"area": "torch.optim",
+"name": "Rprop",
+"kind": "class",
+"doc": "Implements the resilient backpropagation algorithm."
+},
+{
+"area": "torch.optim",
+"name": "SGD",
+"kind": "class",
+"doc": "Implements stochastic gradient descent (optionally with momentum)."
+},
+{
+"area": "torch.optim",
+"name": "SparseAdam",
+"kind": "class",
+"doc": "SparseAdam implements a masked version of the Adam algorithm"
+},
+{
+"area": "torch.optim.lr_scheduler",
+"name": "ConstantLR",
+"kind": "class",
+"doc": "Multiply the learning rate of each parameter group by a small constant factor."
+},
+{
+"area": "torch.optim.lr_scheduler",
+"name": "CosineAnnealingLR",
+"kind": "class",
+"doc": "Set the learning rate of each parameter group using a cosine annealing schedule."
+},
+{
+"area": "torch.optim.lr_scheduler",
+"name": "CosineAnnealingWarmRestarts",
+"kind": "class",
+"doc": "Set the learning rate of each parameter group using a cosine annealing schedule."
+},
+{
+"area": "torch.optim.lr_scheduler",
+"name": "CyclicLR",
+"kind": "class",
+"doc": "Sets the learning rate of each parameter group according to cyclical learning rate policy (CLR)."
+},
+{
+"area": "torch.optim.lr_scheduler",
+"name": "ExponentialLR",
+"kind": "class",
+"doc": "Decays the learning rate of each parameter group by gamma every epoch."
+},
+{
+"area": "torch.optim.lr_scheduler",
+"name": "LambdaLR",
+"kind": "class",
+"doc": "Sets the initial learning rate."
+},
+{
+"area": "torch.optim.lr_scheduler",
+"name": "LinearLR",
+"kind": "class",
+"doc": "Decays the learning rate of each parameter group by linearly changing small multiplicative factor."
+},
+{
+"area": "torch.optim.lr_scheduler",
+"name": "MultiStepLR",
+"kind": "class",
+"doc": "Decays the learning rate of each parameter group by gamma once the number of epoch reaches one of the mileston"
+},
+{
+"area": "torch.optim.lr_scheduler",
+"name": "MultiplicativeLR",
+"kind": "class",
+"doc": "Multiply the learning rate of each parameter group by the factor given in the specified function."
+},
+{
+"area": "torch.optim.lr_scheduler",
+"name": "OneCycleLR",
+"kind": "class",
+"doc": "Sets the learning rate of each parameter group according to the 1cycle learning rate policy."
+},
+{
+"area": "torch.optim.lr_scheduler",
+"name": "PolynomialLR",
+"kind": "class",
+"doc": "Decays the learning rate of each parameter group using a polynomial function in the given total_iters."
+},
+{
+"area": "torch.optim.lr_scheduler",
+"name": "ReduceLROnPlateau",
+"kind": "class",
+"doc": "Reduce learning rate when a metric has stopped improving."
+},
+{
+"area": "torch.optim.lr_scheduler",
+"name": "SequentialLR",
+"kind": "class",
+"doc": "Contains a list of schedulers expected to be called sequentially during the optimization process."
+},
+{
+"area": "torch.optim.lr_scheduler",
+"name": "StepLR",
+"kind": "class",
+"doc": "Decays the learning rate of each parameter group by gamma every step_size epochs."
+},
+{
+"area": "torch.optim.swa_utils",
+"name": "AveragedModel",
+"kind": "class",
+"doc": "Implements averaged model for Stochastic Weight Averaging (SWA) and Exponential Moving Average (EMA)."
+},
+{
+"area": "torch.optim.swa_utils",
+"name": "SWALR",
+"kind": "class",
+"doc": "Anneals the learning rate in each parameter group to a fixed value."
+},
+{
+"area": "torch.optim.swa_utils",
+"name": "update_bn",
+"kind": "class",
+"doc": "Update BatchNorm running_mean, running_var buffers in the model."
+},
+{
+"area": "torch.special",
+"name": "airy_ai",
+"kind": "function",
+"doc": "airy_ai(input, *, out=None) -> Tensor"
+},
+{
+"area": "torch.special",
+"name": "bessel_j0",
+"kind": "function",
+"doc": "bessel_j0(input, *, out=None) -> Tensor"
+},
+{
+"area": "torch.special",
+"name": "bessel_j1",
+"kind": "function",
+"doc": "bessel_j1(input, *, out=None) -> Tensor"
+},
+{
+"area": "torch.special",
+"name": "bessel_y0",
+"kind": "function",
+"doc": "bessel_y0(input, *, out=None) -> Tensor"
+},
+{
+"area": "torch.special",
+"name": "bessel_y1",
+"kind": "function",
+"doc": "bessel_y1(input, *, out=None) -> Tensor"
+},
+{
+"area": "torch.special",
+"name": "chebyshev_polynomial_t",
+"kind": "function",
+"doc": "chebyshev_polynomial_t(input, n, *, out=None) -> Tensor"
+},
+{
+"area": "torch.special",
+"name": "chebyshev_polynomial_u",
+"kind": "function",
+"doc": "chebyshev_polynomial_u(input, n, *, out=None) -> Tensor"
+},
+{
+"area": "torch.special",
+"name": "chebyshev_polynomial_v",
+"kind": "function",
+"doc": "chebyshev_polynomial_v(input, n, *, out=None) -> Tensor"
+},
+{
+"area": "torch.special",
+"name": "chebyshev_polynomial_w",
+"kind": "function",
+"doc": "chebyshev_polynomial_w(input, n, *, out=None) -> Tensor"
+},
+{
+"area": "torch.special",
+"name": "digamma",
+"kind": "function",
+"doc": "digamma(input, *, out=None) -> Tensor"
+},
+{
+"area": "torch.special",
+"name": "entr",
+"kind": "function",
+"doc": "entr(input, *, out=None) -> Tensor"
+},
+{
+"area": "torch.special",
+"name": "erf",
+"kind": "function",
+"doc": "erf(input, *, out=None) -> Tensor"
+},
+{
+"area": "torch.special",
+"name": "erfc",
+"kind": "function",
+"doc": "erfc(input, *, out=None) -> Tensor"
+},
+{
+"area": "torch.special",
+"name": "erfcx",
+"kind": "function",
+"doc": "erfcx(input, *, out=None) -> Tensor"
+},
+{
+"area": "torch.special",
+"name": "erfinv",
+"kind": "function",
+"doc": "erfinv(input, *, out=None) -> Tensor"
+},
+{
+"area": "torch.special",
+"name": "exp2",
+"kind": "function",
+"doc": "exp2(input, *, out=None) -> Tensor"
+},
+{
+"area": "torch.special",
+"name": "expit",
+"kind": "function",
+"doc": "expit(input, *, out=None) -> Tensor"
+},
+{
+"area": "torch.special",
+"name": "expm1",
+"kind": "function",
+"doc": "expm1(input, *, out=None) -> Tensor"
+},
+{
+"area": "torch.special",
+"name": "gammainc",
+"kind": "function",
+"doc": "gammainc(input, other, *, out=None) -> Tensor"
+},
+{
+"area": "torch.special",
+"name": "gammaincc",
+"kind": "function",
+"doc": "gammaincc(input, other, *, out=None) -> Tensor"
+},
+{
+"area": "torch.special",
+"name": "gammaln",
+"kind": "function",
+"doc": "gammaln(input, *, out=None) -> Tensor"
+},
+{
+"area": "torch.special",
+"name": "hermite_polynomial_h",
+"kind": "function",
+"doc": "hermite_polynomial_h(input, n, *, out=None) -> Tensor"
+},
+{
+"area": "torch.special",
+"name": "hermite_polynomial_he",
+"kind": "function",
+"doc": "hermite_polynomial_he(input, n, *, out=None) -> Tensor"
+},
+{
+"area": "torch.special",
+"name": "i0",
+"kind": "function",
+"doc": "i0(input, *, out=None) -> Tensor"
+},
+{
+"area": "torch.special",
+"name": "i0e",
+"kind": "function",
+"doc": "i0e(input, *, out=None) -> Tensor"
+},
+{
+"area": "torch.special",
+"name": "i1",
+"kind": "function",
+"doc": "i1(input, *, out=None) -> Tensor"
+},
+{
+"area": "torch.special",
+"name": "i1e",
+"kind": "function",
+"doc": "i1e(input, *, out=None) -> Tensor"
+},
+{
+"area": "torch.special",
+"name": "laguerre_polynomial_l",
+"kind": "function",
+"doc": "laguerre_polynomial_l(input, n, *, out=None) -> Tensor"
+},
+{
+"area": "torch.special",
+"name": "legendre_polynomial_p",
+"kind": "function",
+"doc": "legendre_polynomial_p(input, n, *, out=None) -> Tensor"
+},
+{
+"area": "torch.special",
+"name": "log1p",
+"kind": "function",
+"doc": "log1p(input, *, out=None) -> Tensor"
+},
+{
+"area": "torch.special",
+"name": "log_ndtr",
+"kind": "function",
+"doc": "log_ndtr(input, *, out=None) -> Tensor"
+},
+{
+"area": "torch.special",
+"name": "log_softmax",
+"kind": "function",
+"doc": "log_softmax(input, dim, *, dtype=None) -> Tensor"
+},
+{
+"area": "torch.special",
+"name": "logit",
+"kind": "function",
+"doc": "logit(input, eps=None, *, out=None) -> Tensor"
+},
+{
+"area": "torch.special",
+"name": "logsumexp",
+"kind": "function",
+"doc": "logsumexp(input, dim, keepdim=False, *, out=None)"
+},
+{
+"area": "torch.special",
+"name": "modified_bessel_i0",
+"kind": "function",
+"doc": "modified_bessel_i0(input, *, out=None) -> Tensor"
+},
+{
+"area": "torch.special",
+"name": "modified_bessel_i1",
+"kind": "function",
+"doc": "modified_bessel_i1(input, *, out=None) -> Tensor"
+},
+{
+"area": "torch.special",
+"name": "modified_bessel_k0",
+"kind": "function",
+"doc": "modified_bessel_k0(input, *, out=None) -> Tensor"
+},
+{
+"area": "torch.special",
+"name": "modified_bessel_k1",
+"kind": "function",
+"doc": "modified_bessel_k1(input, *, out=None) -> Tensor"
+},
+{
+"area": "torch.special",
+"name": "multigammaln",
+"kind": "function",
+"doc": "multigammaln(input, p, *, out=None) -> Tensor"
+},
+{
+"area": "torch.special",
+"name": "ndtr",
+"kind": "function",
+"doc": "ndtr(input, *, out=None) -> Tensor"
+},
+{
+"area": "torch.special",
+"name": "ndtri",
+"kind": "function",
+"doc": "ndtri(input, *, out=None) -> Tensor"
+},
+{
+"area": "torch.special",
+"name": "polygamma",
+"kind": "function",
+"doc": "polygamma(n, input, *, out=None) -> Tensor"
+},
+{
+"area": "torch.special",
+"name": "psi",
+"kind": "function",
+"doc": "psi(input, *, out=None) -> Tensor"
+},
+{
+"area": "torch.special",
+"name": "round",
+"kind": "function",
+"doc": "round(input, *, out=None) -> Tensor"
+},
+{
+"area": "torch.special",
+"name": "scaled_modified_bessel_k0",
+"kind": "function",
+"doc": "scaled_modified_bessel_k0(input, *, out=None) -> Tensor"
+},
+{
+"area": "torch.special",
+"name": "scaled_modified_bessel_k1",
+"kind": "function",
+"doc": "scaled_modified_bessel_k1(input, *, out=None) -> Tensor"
+},
+{
+"area": "torch.special",
+"name": "shifted_chebyshev_polynomial_t",
+"kind": "function",
+"doc": "shifted_chebyshev_polynomial_t(input, n, *, out=None) -> Tensor"
+},
+{
+"area": "torch.special",
+"name": "shifted_chebyshev_polynomial_u",
+"kind": "function",
+"doc": "shifted_chebyshev_polynomial_u(input, n, *, out=None) -> Tensor"
+},
+{
+"area": "torch.special",
+"name": "shifted_chebyshev_polynomial_v",
+"kind": "function",
+"doc": "shifted_chebyshev_polynomial_v(input, n, *, out=None) -> Tensor"
+},
+{
+"area": "torch.special",
+"name": "shifted_chebyshev_polynomial_w",
+"kind": "function",
+"doc": "shifted_chebyshev_polynomial_w(input, n, *, out=None) -> Tensor"
+},
+{
+"area": "torch.special",
+"name": "sinc",
+"kind": "function",
+"doc": "sinc(input, *, out=None) -> Tensor"
+},
+{
+"area": "torch.special",
+"name": "softmax",
+"kind": "function",
+"doc": "softmax(input, dim, *, dtype=None) -> Tensor"
+},
+{
+"area": "torch.special",
+"name": "spherical_bessel_j0",
+"kind": "function",
+"doc": "spherical_bessel_j0(input, *, out=None) -> Tensor"
+},
+{
+"area": "torch.special",
+"name": "xlog1py",
+"kind": "function",
+"doc": "xlog1py(input, other, *, out=None) -> Tensor"
+},
+{
+"area": "torch.special",
+"name": "xlogy",
+"kind": "function",
+"doc": "xlogy(input, other, *, out=None) -> Tensor"
+},
+{
+"area": "torch.special",
+"name": "zeta",
+"kind": "function",
+"doc": "zeta(input, other, *, out=None) -> Tensor"
+},
+{
+"area": "torch.utils.data",
+"name": "BatchSampler",
+"kind": "class",
+"doc": "Wraps another sampler to yield a mini-batch of indices."
+},
+{
+"area": "torch.utils.data",
+"name": "ChainDataset",
+"kind": "class",
+"doc": "Dataset for chaining multiple :class:`IterableDataset` s."
+},
+{
+"area": "torch.utils.data",
+"name": "ConcatDataset",
+"kind": "class",
+"doc": "Dataset as a concatenation of multiple datasets."
+},
+{
+"area": "torch.utils.data",
+"name": "DFIterDataPipe",
+"kind": "class",
+"doc": "Iterable-style DataPipe."
+},
+{
+"area": "torch.utils.data",
+"name": "DataChunk",
+"kind": "class",
+"doc": "Built-in mutable sequence."
+},
+{
+"area": "torch.utils.data",
+"name": "DataLoader",
+"kind": "class",
+"doc": "Data loader combines a dataset and a sampler, and provides an iterable over the given dataset."
+},
+{
+"area": "torch.utils.data",
+"name": "Dataset",
+"kind": "class",
+"doc": "An abstract class representing a :class:`Dataset`."
+},
+{
+"area": "torch.utils.data",
+"name": "DistributedSampler",
+"kind": "class",
+"doc": "Sampler that restricts data loading to a subset of the dataset."
+},
+{
+"area": "torch.utils.data",
+"name": "IterDataPipe",
+"kind": "class",
+"doc": "Iterable-style DataPipe."
+},
+{
+"area": "torch.utils.data",
+"name": "IterableDataset",
+"kind": "class",
+"doc": "An iterable Dataset."
+},
+{
+"area": "torch.utils.data",
+"name": "MapDataPipe",
+"kind": "class",
+"doc": "Map-style DataPipe."
+},
+{
+"area": "torch.utils.data",
+"name": "RandomSampler",
+"kind": "class",
+"doc": "Samples elements randomly. If without replacement, then sample from a shuffled dataset."
+},
+{
+"area": "torch.utils.data",
+"name": "Sampler",
+"kind": "class",
+"doc": "Base class for all Samplers."
+},
+{
+"area": "torch.utils.data",
+"name": "SequentialSampler",
+"kind": "class",
+"doc": "Samples elements sequentially, always in the same order."
+},
+{
+"area": "torch.utils.data",
+"name": "StackDataset",
+"kind": "class",
+"doc": "Dataset as a stacking of multiple datasets."
+},
+{
+"area": "torch.utils.data",
+"name": "Subset",
+"kind": "class",
+"doc": "Subset of a dataset at specified indices."
+},
+{
+"area": "torch.utils.data",
+"name": "SubsetRandomSampler",
+"kind": "class",
+"doc": "Samples elements randomly from a given list of indices, without replacement."
+},
+{
+"area": "torch.utils.data",
+"name": "TensorDataset",
+"kind": "class",
+"doc": "Dataset wrapping tensors."
+},
+{
+"area": "torch.utils.data",
+"name": "WeightedRandomSampler",
+"kind": "class",
+"doc": "Samples elements from ``[0,..,len(weights)-1]`` with given probabilities (weights)."
+},
+{
+"area": "torch.utils.data",
+"name": "_DatasetKind",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "torch.utils.data",
+"name": "argument_validation",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "torch.utils.data",
+"name": "default_collate",
+"kind": "function",
+"doc": "Take in a batch of data and put the elements within the batch into a tensor with an additional outer dimension"
+},
+{
+"area": "torch.utils.data",
+"name": "default_convert",
+"kind": "function",
+"doc": "Convert each NumPy array element into a :class:`torch.Tensor`."
+},
+{
+"area": "torch.utils.data",
+"name": "functional_datapipe",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "torch.utils.data",
+"name": "get_worker_info",
+"kind": "function",
+"doc": "Returns the information about the current"
+},
+{
+"area": "torch.utils.data",
+"name": "guaranteed_datapipes_determinism",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "torch.utils.data",
+"name": "non_deterministic",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "torch.utils.data",
+"name": "random_split",
+"kind": "function",
+"doc": "Randomly split a dataset into non-overlapping new datasets of given lengths."
+},
+{
+"area": "torch.utils.data",
+"name": "runtime_validation",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "torch.utils.data",
+"name": "runtime_validation_disabled",
+"kind": "class",
+"doc": ""
+}
+]
+}

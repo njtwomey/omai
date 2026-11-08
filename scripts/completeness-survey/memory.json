@@ -1,0 +1,108 @@
+{
+  "note": "Public API names of libraries that are not installed in the oracle environment, written from memory of their documentation. Names only; accurate to the level a reader of the docs would recognise, not checked against a release.",
+  "libraries": {
+    "torch_geometric": {
+      "conv": "GCNConv GATConv GATv2Conv SAGEConv GINConv GINEConv ChebConv GraphConv GatedGraphConv ResGatedGraphConv TransformerConv TAGConv ARMAConv SGConv SSGConv APPNP MFConv AGNNConv EdgeConv DynamicEdgeConv PNAConv RGCNConv RGATConv HGTConv HANConv NNConv CGConv PointNetConv GeneralConv FiLMConv SuperGATConv LEConv ClusterGCNConv GENConv PDNConv FAConv EGConv GMMConv SplineConv XConv FeaStConv GravNetConv WLConv MessagePassing SimpleConv HypergraphConv LGConv TWIRLSConv DNAConv GCN2Conv MixHopConv GPSConv HeteroConv",
+      "models": "GCN GraphSAGE GIN GAT PNA EdgeCNN JumpingKnowledge DeepGCNLayer Node2Vec MetaPath2Vec GAE VGAE ARGA DeepGraphInfomax InfoGraph GraphUNet LightGCN DimeNet SchNet AttentiveFP MLP LabelPropagation CorrectAndSmooth GNNExplainer PGExplainer Explainer CaptumExplainer TGNMemory SIGN LINKX DeepSets GraphMultisetTransformer",
+      "pool": "global_add_pool global_mean_pool global_max_pool global_sort_pool GlobalAttention Set2Set TopKPooling SAGPooling EdgePooling ASAPooling PANPooling MemPooling dense_diff_pool dense_mincut_pool graclus voxel_grid avg_pool max_pool nearest",
+      "norm": "BatchNorm LayerNorm GraphNorm InstanceNorm PairNorm MessageNorm DiffGroupNorm GraphSizeNorm",
+      "data": "Data HeteroData Batch DataLoader NeighborLoader ClusterData ClusterLoader GraphSAINTSampler RandomNodeLoader ShaDowKHopSampler LinkNeighborLoader",
+      "transforms": "NormalizeFeatures AddSelfLoops ToUndirected RandomLinkSplit RandomNodeSplit Compose KNNGraph RadiusGraph GCNNorm AddLaplacianEigenvectorPE AddRandomWalkPE Constant OneHotDegree LocalDegreeProfile ToDense Distance Cartesian Polar SVDFeatureReduction VirtualNode RemoveIsolatedNodes LargestConnectedComponents GDC NormalizeScale SamplePoints",
+      "utils": "to_networkx from_networkx degree softmax scatter add_self_loops remove_self_loops to_undirected subgraph k_hop_subgraph negative_sampling dropout_edge to_dense_adj to_dense_batch get_laplacian homophily dense_to_sparse coalesce is_undirected structured_negative_sampling mask_to_index spmm to_scipy_sparse_matrix one_hot to_hetero",
+      "datasets": "Planetoid KarateClub TUDataset Amazon Coauthor WikiCS CitationFull Reddit PPI Flickr Yelp QM9 ZINC MoleculeNet MNISTSuperpixels ModelNet ShapeNet FakeDataset SBMDataset ErdosRenyiGraph BAShapes ExplainerDataset Twitch Actor WebKB WikipediaNetwork LastFMAsia FacebookPagePage GitHub DBLP MovieLens OGB_MAG"
+    },
+    "stable_baselines3": {
+      "algorithms": "A2C DDPG DQN PPO SAC TD3 HER TRPO QRDQN RecurrentPPO MaskablePPO ARS TQC CrossQ",
+      "policies": "MlpPolicy CnnPolicy MultiInputPolicy RecurrentActorCriticPolicy BaseFeaturesExtractor CombinedExtractor NatureCNN FlattenExtractor",
+      "buffers": "ReplayBuffer RolloutBuffer DictReplayBuffer DictRolloutBuffer HerReplayBuffer",
+      "noise": "NormalActionNoise OrnsteinUhlenbeckActionNoise VectorizedActionNoise",
+      "vec_env": "DummyVecEnv SubprocVecEnv VecNormalize VecFrameStack VecMonitor VecVideoRecorder VecTransposeImage VecCheckNan make_vec_env make_atari_env",
+      "callbacks": "EvalCallback CheckpointCallback StopTrainingOnRewardThreshold StopTrainingOnNoModelImprovement EveryNTimesteps CallbackList ProgressBarCallback",
+      "utils": "evaluate_policy check_env Monitor",
+      "distributions": "CategoricalDistribution DiagGaussianDistribution SquashedDiagGaussianDistribution StateDependentNoiseDistribution BernoulliDistribution MultiCategoricalDistribution",
+      "tools": "load save set_random_seed get_linear_fn constant_fn linear_schedule TensorBoardOutputFormat"
+    },
+    "cleanrl": {
+      "algorithms": "dqn dqn_atari c51 c51_atari ppo ppo_atari ppo_continuous_action ppg_procgen ddpg_continuous_action td3_continuous_action sac_continuous_action sac_atari rainbow_atari qdagger_dqn ppo_rnd_envpool rpo_continuous_action ppo_atari_lstm ppo_pettingzoo_ma_atari"
+    },
+    "pettingzoo": {
+      "classic": "chess go connect_four tictactoe texas_holdem texas_holdem_no_limit leduc_holdem hanabi rps backgammon checkers gin_rummy dou_dizhu mahjong uno",
+      "mpe": "simple simple_adversary simple_crypto simple_push simple_reference simple_speaker_listener simple_spread simple_tag simple_world_comm",
+      "sisl": "multiwalker pursuit waterworld",
+      "butterfly": "cooperative_pong knights_archers_zombies pistonball",
+      "atari": "pong boxing tennis",
+      "wrappers": "AssertOutOfBoundsWrapper BaseWrapper CaptureStdoutWrapper OrderEnforcingWrapper TerminateIllegalWrapper ClipOutOfBoundsWrapper AECToParallel ParallelToAEC parallel_to_aec aec_to_parallel",
+      "utils": "agent_selector parallel_api_test api_test performance_benchmark save_observation random_demo"
+    },
+    "pymc": {
+      "distributions": "Normal HalfNormal Beta Gamma Exponential StudentT Cauchy HalfCauchy Uniform LogNormal Bernoulli Binomial Poisson NegativeBinomial Categorical Multinomial Dirichlet MvNormal LKJCholeskyCov LKJCorr Wishart GaussianRandomWalk AR GARCH11 ZeroInflatedPoisson Mixture NormalMixture Potential DensityDist CustomDist",
+      "gp": "Latent Marginal MarginalSparse HSGP gp.cov.ExpQuad gp.cov.Matern32 gp.cov.Periodic",
+      "sampling": "sample sample_prior_predictive sample_posterior_predictive find_MAP fit sample_smc",
+      "step_methods": "NUTS HamiltonianMC Metropolis Slice CompoundStep BinaryGibbsMetropolis CategoricalGibbsMetropolis",
+      "model": "Model Deterministic Data MutableData",
+      "tools": "do observe set_data model_to_graphviz compute_log_likelihood"
+    },
+    "tensorflow_probability": {
+      "distributions": "Normal Beta Gamma Poisson MultivariateNormalTriL MultivariateNormalDiag Mixture MixtureSameFamily Independent TransformedDistribution JointDistributionSequential JointDistributionCoroutine JointDistributionNamed LinearGaussianStateSpaceModel HiddenMarkovModel GaussianProcess Autoregressive Wishart LKJ VonMises GeneralizedExtremeValue Weibull PlackettLuce",
+      "bijectors": "Affine Chain Exp Softplus Sigmoid RealNVP MaskedAutoregressiveFlow Permute Reshape FFJORD GlowBlock Cumsum",
+      "mcmc": "HamiltonianMonteCarlo NoUTurnSampler RandomWalkMetropolis MetropolisAdjustedLangevinAlgorithm TransformedTransitionKernel SimpleStepSizeAdaptation DualAveragingStepSizeAdaptation ReplicaExchangeMC SliceSampler sample_chain effective_sample_size potential_scale_reduction",
+      "vi": "fit_surrogate_posterior build_factored_surrogate_posterior build_affine_surrogate_posterior",
+      "layers": "DenseVariational DenseFlipout Convolution2DFlipout DenseReparameterization DistributionLambda VariationalGaussianProcess",
+      "sts": "LocalLevel LocalLinearTrend Seasonal Autoregressive Regression Sum build_factored_surrogate_posterior forecast decompose_by_component",
+      "math": "minimize find_root bracket_root ode odeint psd_kernels"
+    },
+    "lifelines": {
+      "fitters": "KaplanMeierFitter NelsonAalenFitter CoxPHFitter CoxTimeVaryingFitter WeibullFitter ExponentialFitter LogNormalFitter LogLogisticFitter GeneralizedGammaFitter WeibullAFTFitter LogNormalAFTFitter LogLogisticAFTFitter AalenAdditiveFitter PiecewiseExponentialFitter SplineFitter AalenJohansenFitter BreslowFlemingHarringtonFitter",
+      "statistics": "logrank_test multivariate_logrank_test pairwise_logrank_test survival_difference_at_fixed_point_in_time_test proportional_hazard_test",
+      "utils": "concordance_index survival_table_from_events median_survival_times k_fold_cross_validation add_covariate_to_timeline to_long_format",
+      "datasets": "load_rossi load_waltons load_lung load_regression_dataset"
+    },
+    "scikit_survival": {
+      "models": "CoxPHSurvivalAnalysis CoxnetSurvivalAnalysis RandomSurvivalForest GradientBoostingSurvivalAnalysis ComponentwiseGradientBoostingSurvivalAnalysis FastSurvivalSVM FastKernelSurvivalSVM SurvivalTree ExtraSurvivalTrees IPCRidge",
+      "metrics": "concordance_index_censored concordance_index_ipcw cumulative_dynamic_auc integrated_brier_score brier_score as_concordance_index_ipcw_scorer",
+      "nonparametric": "kaplan_meier_estimator nelson_aalen_estimator cumulative_incidence_competing_risks ipcw_estimator",
+      "utils": "Surv"
+    },
+    "pyod": {
+      "models": "IForest LOF KNN HBOS OCSVM PCA COPOD ECOD ABOD CBLOF COF SOD LODA SOS MCD LMDD LSCP FeatureBagging AutoEncoder VAE DeepSVDD SO_GAAL MO_GAAL ROD CD DIF INNE KDE SUOD LUNAR GMM Sampling LOCI RGraph XGBOD",
+      "utils": "generate_data evaluate_print standardizer precision_n_scores"
+    },
+    "dowhy": {
+      "api": "CausalModel identify_effect estimate_effect refute_estimate do gcm.StructuralCausalModel gcm.fit gcm.draw_samples gcm.interventional_samples gcm.counterfactual_samples gcm.arrow_strength gcm.intrinsic_causal_influence gcm.distribution_change gcm.anomaly_scores gcm.auto.assign_causal_mechanisms gcm.falsify_graph",
+      "estimators": "backdoor.linear_regression backdoor.propensity_score_matching backdoor.propensity_score_stratification backdoor.propensity_score_weighting iv.instrumental_variable iv.regression_discontinuity frontdoor.two_stage_regression",
+      "refuters": "placebo_treatment_refuter random_common_cause data_subset_refuter add_unobserved_common_cause bootstrap_refuter dummy_outcome_refuter"
+    },
+    "econml": {
+      "dml": "DML LinearDML SparseLinearDML CausalForestDML KernelDML NonParamDML",
+      "metalearners": "SLearner TLearner XLearner DomainAdaptationLearner",
+      "drlearner": "DRLearner LinearDRLearner SparseLinearDRLearner ForestDRLearner",
+      "iv": "DMLIV NonParamDMLIV OrthoIV DRIV LinearDRIV IntentToTreatDRIV NonParamIV DeepIV",
+      "forest": "CausalForest CausalIVForest RegressionForest",
+      "policy": "DRPolicyTree DRPolicyForest PolicyTree",
+      "validate": "DRTester BLPEvaluator",
+      "inference": "BootstrapInference StatsModelsInference"
+    },
+    "sktime": {
+      "forecasting": "NaiveForecaster ThetaForecaster ExponentialSmoothing AutoETS ARIMA AutoARIMA TBATS BATS Prophet PolynomialTrendForecaster TrendForecaster STLForecaster ReducedForecaster DirectTabularRegressionForecaster RecursiveTabularRegressionForecaster EnsembleForecaster StackingForecaster TransformedTargetForecaster ForecastingPipeline ForecastingGridSearchCV ConformalIntervals",
+      "forecasting_selection": "ExpandingWindowSplitter SlidingWindowSplitter SingleWindowSplitter temporal_train_test_split evaluate",
+      "classification": "KNeighborsTimeSeriesClassifier TimeSeriesForestClassifier ShapeletTransformClassifier Arsenal RocketClassifier HIVECOTEV2 CanonicalIntervalForest ElasticEnsemble",
+      "clustering": "TimeSeriesKMeans TimeSeriesKMedoids TimeSeriesKernelKMeans",
+      "annotation": "ClaSPSegmentation GreedyGaussianSegmentation HMM STRAY",
+      "transformations": "Detrender Deseasonalizer BoxCoxTransformer LogTransformer Differencer WindowSummarizer Lag Imputer HampelFilter MiniRocket Rocket TSFreshFeatureExtractor Catch22 PaddingTransformer",
+      "distances": "dtw_distance erp_distance lcss_distance wdtw_distance msm_distance twe_distance edr_distance"
+    },
+    "tslearn": {
+      "metrics": "dtw dtw_path soft_dtw gak lb_keogh cdist_dtw cdist_soft_dtw sigma_gak",
+      "clustering": "TimeSeriesKMeans KernelKMeans KShape",
+      "neighbors": "KNeighborsTimeSeries KNeighborsTimeSeriesClassifier",
+      "barycenters": "dtw_barycenter_averaging softdtw_barycenter euclidean_barycenter",
+      "preprocessing": "TimeSeriesScalerMeanVariance TimeSeriesScalerMinMax TimeSeriesResampler",
+      "piecewise": "PiecewiseAggregateApproximation SymbolicAggregateApproximation OneD_SymbolicAggregateApproximation",
+      "shapelets": "LearningShapelets",
+      "svm": "TimeSeriesSVC TimeSeriesSVR"
+    },
+    "prophet": {
+      "model": "Prophet add_seasonality add_regressor add_country_holidays make_future_dataframe predict fit plot plot_components cross_validation performance_metrics diagnostics plot_cross_validation_metric changepoint_prior_scale seasonality_mode"
+    }
+  }
+}

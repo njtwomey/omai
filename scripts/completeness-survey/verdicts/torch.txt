@@ -1,0 +1,59 @@
+@lib torch
+@area torch.autograd
+S | enable_grad|no_grad|set_grad_enabled|inference_mode|set_multithreading_enabled|enforce_grad_layout_policy | autodiff | differentiation is opt-in per call in omai (grad(f)(x)), so there is no grad mode to switch | | | |
+F | Function|NestedIOFunction | tensor#definePrimitive | custom forward/backward is a primitive with jvp/vjp rules | | | |
+A | detect_anomaly|set_detect_anomaly | autodiff#checkPrimitive | NaN/Inf tracing in backward; low value without a global graph | | S | low |
+F | gradgradcheck | autodiff#gradCheck | | | | |
+@area torch.func
+F | grad_and_value | autodiff#valueAndGrad | | | | |
+F | functional_call|stack_module_state | nn (modules expose params), ensembles#deepEnsemble | | | | |
+S | functionalize|debug_unwrap|replace_all_batch_norm_modules_|rearrange | | | | | |
+@area torch.linalg
+F | matrix_exp|matrix_norm|vector_norm|cross|multi_dot|vander|vecdot|lu|qr|householder_product|matrix_sqrth|tensorinv|tensorsolve | numerics/linalg (expm, norm, lu, qr), tensor ops | | | | |
+S | .*_ex|ldl_.*|LinAlgError | | | | | |
+@area torch.fft
+F | ihfft|irfft2|irfftn|rfft2|rfftn | numerics/fourier | | | | |
+@area torch.special
+F | .* | numerics/special (i0, i1, digamma as psi, lgamma as gammaln, Bessel, Chebyshev/Hermite/Laguerre/Legendre in numerics/polynomial) | | | | |
+A | airy_ai|spherical_bessel_j0 | numerics/special | Airy function and spherical Bessel | numerics/special | S | low | special functions long tail
+@area torch.distributions
+A | ContinuousBernoulli | dists#bernoulli | the continuous Bernoulli (VAE decoders on [0,1] data) | dists/families | S | medium | extra named distribution families
+F | FisherSnedecor|GeneralizedPareto|OneHotCategoricalStraightThrough|TransformedDistribution|biject_to|transform_to|register_kl | dists#fDistribution, #generalisedPareto, #straightThrough, dists/compose#transformed, dists/bijectors#bijectorForSupport, dists#klDivergence | | | | |
+@area torch.distributions.constraints
+F | .* | dists#Support, #inSupport, #ParameterConstraint | supports are typed values, not constraint objects | | | |
+@area torch.distributions.transforms
+F | AbsTransform|CompositeTransform|ComposeTransform|CorrCholeskyTransform|CumulativeDistributionTransform|ExpTransform|IndependentTransform|LowerCholeskyTransform|PowerTransform|SigmoidTransform|SoftplusTransform|StickBreakingTransform|TanhTransform|identity_transform | dists/bijectors (chain, exp, sigmoid, softplus, tanh, power, normalCdf, lowerCholesky, correlationCholesky, stickBreaking) | | | | |
+A | CatTransform|PositiveDefiniteTransform|ReshapeTransform|SoftmaxTransform|StackTransform | dists/bijectors | | dists/bijectors | S | low | bijector odds and ends
+@area torch.nn.modules
+F | .*Loss|PairwiseDistance|CTCLoss | losses (mse, crossEntropy, huber, klDiv, ctc, tripletMargin, ...) | torch loss modules are functions of the losses domain in omai | | | |
+S | Lazy.*|DataParallel|SyncBatchNorm|RNNCellBase|Container|NLLLoss2d|CrossMapLRN2d | | lazy shape inference, data-parallel wrappers and legacy containers | | | |
+P | ParameterDict|ParameterList | nn#ModuleList, nn#ModuleDict | containers for raw parameters; Module list/dict exist | nn/containers.ts | S | low |
+A | AdaptiveLogSoftmaxWithLoss|ChannelShuffle|FractionalMaxPool[23]d|RReLU|Softmax2d | losses#hierarchicalSoftmax | niche layers | nn/layers | S | low | niche nn layers
+F | MaxUnpool[123]d | nn#maxUnpool | | | | |
+@area torch.nn.functional
+F | .*_loss|pairwise_distance|ctc_loss|.*_with_indices|max_unpool[123]d|multi_head_attention_forward|upsample_.*|gaussian_nll_loss|poisson_nll_loss|huber_loss|l1_loss|mse_loss|smooth_l1_loss|margin_ranking_loss|hinge_embedding_loss|cosine_embedding_loss|multi_margin_loss|multilabel_.*|soft_margin_loss|triplet_.* | losses, nn (maxPoolWithIndices, maxUnpool, interpolate, multiHeadAttention) | | | | |
+P | gumbel_softmax | sampling#gumbelSoftmaxGradient, dists#relaxedOneHotCategorical | the Gumbel-softmax trick exists as a gradient estimator and a relaxed distribution; no one-call relaxation function | nn/functional | S | low |
+A | channel_shuffle|native_channel_shuffle|fractional_max_pool.*|rrelu.*|conv_tbc|grouped_mm|scaled_grouped_mm|scaled_mm|linear_cross_entropy|swizzle.*|ScalingType|SwizzleType | | niche or hardware-specific | | | low |
+S | Callable|Optional|ScalingType|SwizzleType|assert_int_or_pair|boolean_dispatch|has_torch_function.*|handle_torch_function | | | | | |
+@area torch.nn.init
+F | trunc_normal_ | nn#TruncatedNormalInitOptions | | | | |
+S | constant|constant_ | | | | | |
+F | dirac|dirac_ | nn#diracInit | | | | |
+A | sparse|sparse_ | nn init | | nn/init.ts | S | low |
+@area torch.nn.utils.parametrize
+A | .* | nn#weightNorm, nn#spectralNorm | general parametrisation API (register_parametrization); weight and spectral norm exist as functions | nn/parametrize.ts | M | low | nn.utils extras
+@area torch.nn.utils.rnn
+F | pack_sequence|unpack_sequence|pad_sequence|unpad_sequence|invert_permutation | nn#packPaddedSequence, data#padSequences | | | | |
+@area torch.nn.utils
+F | clip_grad_norm_?|clip_grad_value_|clip_grads_with_norm_|get_total_norm | optim#clipByGlobalNorm, #clipByValue, #globalNorm | | | | |
+A | parameters_to_vector|vector_to_parameters | nn#swagUnravel | flatten and restore all parameters of a module (used by Hessian-vector products, SWAG, natural gradient) | nn/params.ts | S | medium | nn.utils extras
+A | fuse_.*|convert_conv.*|remove_weight_norm|remove_spectral_norm|skip_init | | inference-time fusion and memory formats; not teaching-relevant | | | low |
+@area torch.optim.lr_scheduler
+F | .* | optim#schedules (constantSchedule, stepDecay, multiStepDecay, exponentialDecay, cosineDecay, cosineWarmRestarts, cyclical, oneCycle, polynomialDecay, linearSchedule, joinSchedules, reduceOnPlateau) | schedules are plain functions of the step, so Lambda/Multiplicative/Sequential are function composition | | | | |
+@area torch.optim.swa_utils
+P | .* | optim#ema, nn#swagAlgorithm | exponential moving average and SWAG exist; SWA averaging of weights with an SWALR schedule is not a named verb | optim/swa.ts | S | low |
+@area torch.optim
+A | Muon | optim#shampoo | orthogonalised-momentum optimiser (Newton-Schulz); would pair with the NU Newton-Schulz item of algorithm-gaps | optim/muon.ts | S | low | optimisers
+@area torch.utils.data
+F | Dataset|IterableDataset|TensorDataset|ConcatDataset|Subset|ChainDataset|StackDataset|DistributedSampler|default_collate|default_convert|get_worker_info | data#dataLoader, data#collate, data#batchSampler | dataset containers are typed `data` schemas rather than classes; no worker processes | | | |
+S | .*DataPipe.*|DataChunk|functional_datapipe|argument_validation|runtime_validation.*|guaranteed_datapipes_determinism|non_deterministic | | deprecated datapipe machinery | | | |

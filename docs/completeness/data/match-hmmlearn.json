@@ -1,0 +1,9 @@
+[
+{"lib":"hmmlearn","area":"hmmlearn.hmm","name":"CategoricalHMM","status":"full","how":"verdict","omai":"pgm#hiddenMarkovModel, pgm/learning#baumWelch, #gmmHmmAlgorithm"},
+{"lib":"hmmlearn","area":"hmmlearn.hmm","name":"GMMHMM","status":"full","how":"verdict","omai":"pgm#hiddenMarkovModel, pgm/learning#baumWelch, #gmmHmmAlgorithm"},
+{"lib":"hmmlearn","area":"hmmlearn.hmm","name":"GaussianHMM","status":"partial","how":"verdict","omai":"pgm/learning#baumWelch, #HmmEmission","note":"continuous and count emissions are available through the emission slot of the HMM; check that Gaussian and Poisson are named options"},
+{"lib":"hmmlearn","area":"hmmlearn.hmm","name":"MultinomialHMM","status":"full","how":"verdict","omai":"pgm#hiddenMarkovModel, pgm/learning#baumWelch, #gmmHmmAlgorithm"},
+{"lib":"hmmlearn","area":"hmmlearn.hmm","name":"PoissonHMM","status":"partial","how":"verdict","omai":"pgm/learning#baumWelch, #HmmEmission","note":"continuous and count emissions are available through the emission slot of the HMM; check that Gaussian and Poisson are named options"},
+{"lib":"hmmlearn","area":"hmmlearn.vhmm","name":"VariationalCategoricalHMM","status":"absent","how":"verdict","note":"variational Bayes for HMMs (VB Baum-Welch)","home":"pgm/learning/hmm-variational.ts","size":"M","priority":"low","group":"variational HMMs"},
+{"lib":"hmmlearn","area":"hmmlearn.vhmm","name":"VariationalGaussianHMM","status":"absent","how":"verdict","note":"variational Bayes for HMMs (VB Baum-Welch)","home":"pgm/learning/hmm-variational.ts","size":"M","priority":"low","group":"variational HMMs"}
+]

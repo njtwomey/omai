@@ -1,0 +1,403 @@
+{
+"library": "optuna",
+"version": "5.0.0",
+"source": "introspection",
+"entries": [
+{
+"area": "optuna.importance",
+"name": "BaseImportanceEvaluator",
+"kind": "class",
+"doc": "Abstract parameter importance evaluator."
+},
+{
+"area": "optuna.importance",
+"name": "FanovaImportanceEvaluator",
+"kind": "class",
+"doc": "fANOVA importance evaluator."
+},
+{
+"area": "optuna.importance",
+"name": "MeanDecreaseImpurityImportanceEvaluator",
+"kind": "class",
+"doc": "Mean Decrease Impurity (MDI) parameter importance evaluator."
+},
+{
+"area": "optuna.importance",
+"name": "PedAnovaImportanceEvaluator",
+"kind": "class",
+"doc": "PED-ANOVA importance evaluator."
+},
+{
+"area": "optuna.importance",
+"name": "get_param_importances",
+"kind": "function",
+"doc": "Evaluate parameter importances (:class:`~optuna.importance.PedAnovaImportanceEvaluator` by"
+},
+{
+"area": "optuna.pruners",
+"name": "BasePruner",
+"kind": "class",
+"doc": "Base class for pruners."
+},
+{
+"area": "optuna.pruners",
+"name": "HyperbandPruner",
+"kind": "class",
+"doc": "Pruner using Hyperband."
+},
+{
+"area": "optuna.pruners",
+"name": "MedianPruner",
+"kind": "class",
+"doc": "Pruner using the median stopping rule."
+},
+{
+"area": "optuna.pruners",
+"name": "NopPruner",
+"kind": "class",
+"doc": "Pruner which never prunes trials."
+},
+{
+"area": "optuna.pruners",
+"name": "PatientPruner",
+"kind": "class",
+"doc": "Pruner which wraps another pruner with tolerance."
+},
+{
+"area": "optuna.pruners",
+"name": "PercentilePruner",
+"kind": "class",
+"doc": "Pruner to keep the specified percentile of the trials."
+},
+{
+"area": "optuna.pruners",
+"name": "SuccessiveHalvingPruner",
+"kind": "class",
+"doc": "Pruner using Asynchronous Successive Halving Algorithm."
+},
+{
+"area": "optuna.pruners",
+"name": "ThresholdPruner",
+"kind": "class",
+"doc": "Pruner to detect outlying metrics of the trials."
+},
+{
+"area": "optuna.pruners",
+"name": "WilcoxonPruner",
+"kind": "class",
+"doc": "Pruner based on the `Wilcoxon signed-rank test <https://en.wikipedia.org/w/index.php?title=Wilcoxon_signed-ran"
+},
+{
+"area": "optuna.samplers",
+"name": "BaseGASampler",
+"kind": "class",
+"doc": "Base class for Genetic Algorithm (GA) samplers."
+},
+{
+"area": "optuna.samplers",
+"name": "BaseSampler",
+"kind": "class",
+"doc": "Base class for samplers."
+},
+{
+"area": "optuna.samplers",
+"name": "BruteForceSampler",
+"kind": "class",
+"doc": "Sampler that performs exhaustive search over the define-by-run search space."
+},
+{
+"area": "optuna.samplers",
+"name": "CmaEsSampler",
+"kind": "class",
+"doc": "A sampler using `cmaes <https://github.com/CyberAgentAILab/cmaes>`__ as the backend."
+},
+{
+"area": "optuna.samplers",
+"name": "GPSampler",
+"kind": "class",
+"doc": "Sampler using Gaussian process-based Bayesian optimization."
+},
+{
+"area": "optuna.samplers",
+"name": "GridSampler",
+"kind": "class",
+"doc": "Sampler that performs exhaustive search over the define-and-run user-specified grids."
+},
+{
+"area": "optuna.samplers",
+"name": "NSGAIIISampler",
+"kind": "class",
+"doc": "Multi-objective sampler using the NSGA-III algorithm."
+},
+{
+"area": "optuna.samplers",
+"name": "NSGAIISampler",
+"kind": "class",
+"doc": "Multi-objective sampler using the NSGA-II algorithm."
+},
+{
+"area": "optuna.samplers",
+"name": "PartialFixedSampler",
+"kind": "class",
+"doc": "Sampler with partially fixed parameters."
+},
+{
+"area": "optuna.samplers",
+"name": "QMCSampler",
+"kind": "class",
+"doc": "A Quasi Monte Carlo Sampler that generates low-discrepancy sequences."
+},
+{
+"area": "optuna.samplers",
+"name": "RandomSampler",
+"kind": "class",
+"doc": "Sampler using random sampling."
+},
+{
+"area": "optuna.samplers",
+"name": "TPESampler",
+"kind": "class",
+"doc": "Sampler using TPE (Tree-structured Parzen Estimator) algorithm."
+},
+{
+"area": "optuna.storages",
+"name": "BaseJournalLogStorage",
+"kind": "class",
+"doc": "Base class for Journal storages."
+},
+{
+"area": "optuna.storages",
+"name": "BaseStorage",
+"kind": "class",
+"doc": "Base class for storages."
+},
+{
+"area": "optuna.storages",
+"name": "GrpcStorageProxy",
+"kind": "class",
+"doc": "gRPC client for :func:`~optuna.storages.run_grpc_proxy_server`."
+},
+{
+"area": "optuna.storages",
+"name": "InMemoryStorage",
+"kind": "class",
+"doc": "Storage class that stores data in memory of the Python process."
+},
+{
+"area": "optuna.storages",
+"name": "JournalFileOpenLock",
+"kind": "class",
+"doc": ".. warning::"
+},
+{
+"area": "optuna.storages",
+"name": "JournalFileStorage",
+"kind": "class",
+"doc": ".. warning::"
+},
+{
+"area": "optuna.storages",
+"name": "JournalFileSymlinkLock",
+"kind": "class",
+"doc": ".. warning::"
+},
+{
+"area": "optuna.storages",
+"name": "JournalRedisStorage",
+"kind": "class",
+"doc": ".. warning::"
+},
+{
+"area": "optuna.storages",
+"name": "JournalStorage",
+"kind": "class",
+"doc": "Storage class for Journal storage backend."
+},
+{
+"area": "optuna.storages",
+"name": "RDBStorage",
+"kind": "class",
+"doc": "Storage class for RDB backend."
+},
+{
+"area": "optuna.storages",
+"name": "RetryFailedTrialCallback",
+"kind": "class",
+"doc": "Deprecated alias of :class:`~optuna.storages.RetryHeartbeatStaleTrialCallback`."
+},
+{
+"area": "optuna.storages",
+"name": "RetryHeartbeatStaleTrialCallback",
+"kind": "class",
+"doc": "Retry a heartbeat-stale trial up to a maximum number of times."
+},
+{
+"area": "optuna.storages",
+"name": "_CachedStorage",
+"kind": "class",
+"doc": "A wrapper class of storage backends."
+},
+{
+"area": "optuna.storages",
+"name": "fail_stale_trials",
+"kind": "function",
+"doc": "Fail stale trials and run their failure callbacks."
+},
+{
+"area": "optuna.storages",
+"name": "run_grpc_proxy_server",
+"kind": "function",
+"doc": "Run a gRPC server for the given storage URL, host, and port."
+},
+{
+"area": "optuna.terminator",
+"name": "BaseErrorEvaluator",
+"kind": "class",
+"doc": "Base class for error evaluators."
+},
+{
+"area": "optuna.terminator",
+"name": "BaseImprovementEvaluator",
+"kind": "class",
+"doc": "Base class for improvement evaluators."
+},
+{
+"area": "optuna.terminator",
+"name": "BaseTerminator",
+"kind": "class",
+"doc": "Base class for terminators."
+},
+{
+"area": "optuna.terminator",
+"name": "BestValueStagnationEvaluator",
+"kind": "class",
+"doc": "Evaluates the stagnation period of the best value in an optimization process."
+},
+{
+"area": "optuna.terminator",
+"name": "CrossValidationErrorEvaluator",
+"kind": "class",
+"doc": "An error evaluator for objective functions based on cross-validation."
+},
+{
+"area": "optuna.terminator",
+"name": "EMMREvaluator",
+"kind": "class",
+"doc": "Evaluates a kind of regrets, called the Expected Minimum Model Regret(EMMR)."
+},
+{
+"area": "optuna.terminator",
+"name": "MedianErrorEvaluator",
+"kind": "class",
+"doc": "An error evaluator that returns the ratio to initial median."
+},
+{
+"area": "optuna.terminator",
+"name": "RegretBoundEvaluator",
+"kind": "class",
+"doc": "An error evaluator for upper bound on the regret with high-probability confidence."
+},
+{
+"area": "optuna.terminator",
+"name": "StaticErrorEvaluator",
+"kind": "class",
+"doc": "An error evaluator that always returns a constant value."
+},
+{
+"area": "optuna.terminator",
+"name": "Terminator",
+"kind": "class",
+"doc": "Automatic stopping mechanism for Optuna studies."
+},
+{
+"area": "optuna.terminator",
+"name": "TerminatorCallback",
+"kind": "class",
+"doc": "A callback that terminates the optimization using Terminator."
+},
+{
+"area": "optuna.terminator",
+"name": "report_cross_validation_scores",
+"kind": "function",
+"doc": "A function to report cross-validation scores of a trial."
+},
+{
+"area": "optuna.visualization",
+"name": "is_available",
+"kind": "function",
+"doc": "Returns whether visualization with plotly is available or not."
+},
+{
+"area": "optuna.visualization",
+"name": "plot_contour",
+"kind": "function",
+"doc": "Plot the parameter relationship as contour plot in a study."
+},
+{
+"area": "optuna.visualization",
+"name": "plot_edf",
+"kind": "function",
+"doc": "Plot the objective value EDF (empirical distribution function) of a study."
+},
+{
+"area": "optuna.visualization",
+"name": "plot_hypervolume_history",
+"kind": "function",
+"doc": "Plot hypervolume history of all trials in a study."
+},
+{
+"area": "optuna.visualization",
+"name": "plot_intermediate_values",
+"kind": "function",
+"doc": "Plot intermediate values of all trials in a study."
+},
+{
+"area": "optuna.visualization",
+"name": "plot_optimization_history",
+"kind": "function",
+"doc": "Plot optimization history of all trials in a study."
+},
+{
+"area": "optuna.visualization",
+"name": "plot_parallel_coordinate",
+"kind": "function",
+"doc": "Plot the high-dimensional parameter relationships in a study."
+},
+{
+"area": "optuna.visualization",
+"name": "plot_param_importances",
+"kind": "function",
+"doc": "Plot hyperparameter importances (:class:`~optuna.importance.PedAnovaImportanceEvaluator` by"
+},
+{
+"area": "optuna.visualization",
+"name": "plot_pareto_front",
+"kind": "function",
+"doc": "Plot the Pareto front of a study."
+},
+{
+"area": "optuna.visualization",
+"name": "plot_rank",
+"kind": "function",
+"doc": "Plot parameter relations as scatter plots with colors indicating ranks of target value."
+},
+{
+"area": "optuna.visualization",
+"name": "plot_slice",
+"kind": "function",
+"doc": "Plot the parameter relationship as slice plot in a study."
+},
+{
+"area": "optuna.visualization",
+"name": "plot_terminator_improvement",
+"kind": "function",
+"doc": "Plot the potentials for future objective improvement."
+},
+{
+"area": "optuna.visualization",
+"name": "plot_timeline",
+"kind": "function",
+"doc": "Plot the timeline of a study."
+}
+]
+}
