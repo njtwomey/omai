@@ -24,7 +24,14 @@ const ROOT = join(import.meta.dirname, '..')
 const EXAMPLES = join(ROOT, 'examples')
 
 if (!process.execArgv.some((a) => a.includes('tsx'))) {
-  const flags = ['--conditions=source', '--import', 'tsx', '--no-warnings']
+  const flags = [
+    '--conditions=source',
+    '--import',
+    'tsx',
+    '--import',
+    fileURLToPath(new URL('./css-hook.mjs', import.meta.url)),
+    '--no-warnings',
+  ]
   const again = spawnSync(process.execPath, [...flags, fileURLToPath(import.meta.url), ...process.argv.slice(2)], {
     stdio: 'inherit',
     cwd: ROOT,

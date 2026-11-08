@@ -6,9 +6,13 @@
 import type { Timeline } from 'mdml-engine/scene'
 import { encodeGif, timelineFrames } from 'mdml-render/animation'
 import { tapeOf } from 'mdml-render/producer'
+import * as React from 'react'
 import { createElement, type ReactElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import type { Tape } from './contract.ts'
+
+// The render package's .tsx files are compiled by tsx with the classic JSX transform, which reads a global `React`.
+;(globalThis as { React?: unknown }).React = React
 
 /**
  * zrender names the ids and classes of each chart it draws from counters shared by the whole process (`zr20-c0`,

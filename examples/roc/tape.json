@@ -2,7 +2,7 @@
   "schema": "mdml.tape/1",
   "method": "svm/svc",
   "seed": 0,
-  "title": "A metric curve",
+  "title": "The metrics of a classifier",
   "variants": [
     {
       "label": "session",

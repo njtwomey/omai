@@ -20,7 +20,7 @@ A Normal through exp is a log-normal; a coupling layer turns a Gaussian into a b
 
 grad of the marginal likelihood written as a plain function, and a Gaussian process fitted on that gradient.
 
-![A Gaussian process fitted to noisy sine data, with its uncertainty band](gp/figure.svg)
+![A Gaussian process on noisy sine data, before and after its hyperparameters are learned, each with its uncertainty band](gp/figure.svg)
 
 [gp/main.tsx](gp/main.tsx), tape: [tape.json](gp/tape.json)
 
@@ -55,6 +55,14 @@ Q-learning on the cliff-walking gridworld: the return of each episode, drawn fro
 ![Episode returns while Q-learning learns to walk along the cliff](qlearning/figure.svg)
 
 [qlearning/main.tsx](qlearning/main.tsx), tape: [tape.json](qlearning/tape.json)
+
+## The metrics of a classifier
+
+The ROC curve, the precision-recall curve, the precision-recall gain curve and the contingency table of a support vector classifier on held-out data.
+
+![The ROC, precision-recall and precision-recall gain curves of a classifier, and its contingency table with totals and rates](roc/figure.svg)
+
+[roc/main.tsx](roc/main.tsx), tape: [tape.json](roc/tape.json)
 
 ## Pause, jump back, compare with the truth
 
@@ -129,14 +137,6 @@ A small Prolog family database; the query is answered by SLD resolution and the 
 ![The search tree of the query grandparent(tom, W): the answers, and the branches that fail and backtrack](prolog/figure.svg)
 
 [prolog/main.tsx](prolog/main.tsx), [prolog/README.md](prolog/README.md), tape: [tape.json](prolog/tape.json)
-
-## A metric curve
-
-The ROC curve and AUC of a support vector classifier on held-out data.
-
-![The ROC curve of the support vector classifier on 300 test points](roc/figure.svg)
-
-[roc/main.tsx](roc/main.tsx), tape: [tape.json](roc/tape.json)
 
 ## A sampler on a banana
 

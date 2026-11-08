@@ -109,7 +109,10 @@ export function run(): Outcome<Result> {
   // The predicted probability: the NUTS draws pushed through the logistic function over the plane, averaged.
   const keep = draws(nuts, 5).filter((_, i) => i % 10 === 0)
   const probability = cells.map(([a = 0, b = 0]) => {
-    const total = keep.reduce((acc, w) => acc + 1 / (1 + Math.exp(-((w[0] ?? 0) + (w[1] ?? 0) * a + (w[2] ?? 0) * b))), 0)
+    const total = keep.reduce(
+      (acc, w) => acc + 1 / (1 + Math.exp(-((w[0] ?? 0) + (w[1] ?? 0) * a + (w[2] ?? 0) * b))),
+      0,
+    )
     return total / keep.length
   })
   const result: Result = {
@@ -151,7 +154,10 @@ function ellipse(draws: number[][]): { x: number[]; y: number[] } {
 export function View({ result }: { result: Result }) {
   const thin = result.nuts.filter((_, i) => i % 16 === 0)
   const curves = result.ellipses.map((e) => ({ ...ellipse(e.sample), name: e.name, colour: e.colour, width: 2 }))
-  const window = windowOf([...thin.map((r) => [r[1] ?? 0, r[2] ?? 0]), ...curves.flatMap((c) => c.x.map((x, i) => [x, c.y[i] ?? 0]))], 0.04)
+  const window = windowOf(
+    [...thin.map((r) => [r[1] ?? 0, r[2] ?? 0]), ...curves.flatMap((c) => c.x.map((x, i) => [x, c.y[i] ?? 0]))],
+    0.04,
+  )
   const left = cartesian(
     [
       points([
@@ -184,6 +190,7 @@ export function View({ result }: { result: Result }) {
     range: [0, 1],
     label: 'P(class 1)',
     boundary: 0.5,
+    dashed: [0.05, 0.25, 0.75, 0.95],
     extra: [
       contours(result.trueProbability, {
         x: axes.x,
@@ -207,7 +214,13 @@ export function View({ result }: { result: Result }) {
   return (
     <Figure width={1000} height={426} title={meta.alt}>
       <Panel x={0} width={470} height={400} title="posterior of the two slope weights: 95% regions" still={left} />
-      <Panel x={470} width={530} height={400} title="P(class 1) from NUTS, boundary at 0.5, true boundary dashed" still={right} />
+      <Panel
+        x={470}
+        width={530}
+        height={400}
+        title="P(class 1) from NUTS: contours at 5, 25, 50, 75 and 95%; true boundary dashed"
+        still={right}
+      />
     </Figure>
   )
 }

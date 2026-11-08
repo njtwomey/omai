@@ -21,10 +21,17 @@ export const meta: ExampleModule['meta'] = {
   summary:
     'grad of the marginal likelihood written as a plain function, and a Gaussian process fitted on that gradient.',
   readme: true,
-  alt: 'A Gaussian process fitted to noisy sine data, with its uncertainty band',
+  alt: 'A Gaussian process on noisy sine data, before and after its hyperparameters are learned, each with its uncertainty band',
 }
 
-export function run(): Outcome<Exposition> {
+interface Result {
+  readonly initial: Exposition
+  readonly learned: Exposition
+  readonly initialTitle: string
+  readonly learnedTitle: string
+}
+
+export function run(): Outcome<Result> {
   // The gradient, as an ordinary function of the log hyperparameter.
   const x = tensor([[0], [0.7], [1.5], [2.2]])
   const y = tensor([0.1, 0.9, 0.8, -0.2])
@@ -41,20 +48,48 @@ export function run(): Outcome<Exposition> {
   const fitKernel = productKernel(constantKernel({ value: 1 }), rbfKernel({ lengthScale: 0.5 }))
   const fit = gpRegression.with({ kernel: fitKernel, alpha: 0.03 }).session(data, { key: key(1) })
   fit.advance()
-  const fitted = fit.fittedAt(fit.t)
-  const theta = (fitted.params.theta as number[]).map((t) => Math.exp(t).toFixed(3))
-  const posterior = fit.probe(fit.t, 'model/posterior', { resolution: 120, samples: 3, seed: 3 }) as Exposition
+  const describe = (t: number): string => {
+    const params = fit.fittedAt(t).params
+    const [amplitude, lengthScale] = (params.theta as number[]).map((v) => Math.exp(v))
+    return `amplitude ${amplitude?.toFixed(2)}, length scale ${lengthScale?.toFixed(2)}, log marginal likelihood ${params.logMarginalLikelihood.toFixed(2)}`
+  }
+  const look = { resolution: 120, samples: 3, seed: 3 }
+  const initial = fit.probe(0, 'model/posterior', look) as Exposition
+  const learned = fit.probe(fit.t, 'model/posterior', look) as Exposition
   const notes = [
     `grad(nll)(tensor([0])) = ${toFlat(grad(nll)(tensor([0])))}`,
-    `${fit.t} steps, log marginal likelihood ${fitted.params.logMarginalLikelihood.toFixed(3)}, amplitude and length scale ${theta}`,
+    `before learning: ${describe(0)}`,
+    `after ${fit.t} steps: ${describe(fit.t)}`,
   ]
-  return { result: posterior, tapes: { session: fit }, notes }
+  return {
+    result: {
+      initial,
+      learned,
+      initialTitle: `before learning: ${describe(0)}`,
+      learnedTitle: `after ${fit.t} steps: ${describe(fit.t)}`,
+    },
+    tapes: { session: fit },
+    notes,
+  }
 }
 
-export function View({ result }: { result: Exposition }) {
+export function View({ result }: { result: Result }) {
   return (
-    <Figure width={640} height={380} title={meta.alt}>
-      <Panel width={640} height={380} still={stillOf(result, { mode: 'light' })} />
+    <Figure width={1160} height={436} title={meta.alt}>
+      <Panel
+        x={0}
+        width={580}
+        height={400}
+        title={result.initialTitle}
+        still={stillOf(result.initial, { mode: 'light' })}
+      />
+      <Panel
+        x={580}
+        width={580}
+        height={400}
+        title={result.learnedTitle}
+        still={stillOf(result.learned, { mode: 'light' })}
+      />
     </Figure>
   )
 }
