@@ -11,7 +11,7 @@ import {
   type PipelineStage,
   pipelineStages,
   type StageData,
-} from 'mdml-engine/exposition'
+} from 'omai-engine/exposition'
 import type { ReactElement } from 'react'
 import { renderToString } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
@@ -39,7 +39,7 @@ import {
 
 /** The drawing area of the first framed figure in the markup: the size the view asked its frame for. */
 function chartSize(html: string): [number, number] {
-  const m = /style="width:(\d+)px;height:(\d+)px;max-width:100%" data-mdml-chart/.exec(html)
+  const m = /style="width:(\d+)px;height:(\d+)px;max-width:100%" data-omai-chart/.exec(html)
   return [Number(m?.[1]), Number(m?.[2])]
 }
 const heightFor = (aspect: number): number => Math.round(640 / aspect)

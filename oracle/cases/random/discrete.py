@@ -7,8 +7,8 @@ import math
 
 import numpy as np
 import scipy
-from mdml_oracle.distributions import Frozen
-from mdml_oracle.fixture import Case, encode, encode_params
+from omai_oracle.distributions import Frozen
+from omai_oracle.fixture import Case, encode, encode_params
 from scipy import stats
 
 REFERENCE: dict[str, str] = {"numpy": np.__version__, "scipy": scipy.__version__}

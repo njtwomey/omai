@@ -80,7 +80,7 @@ function trackingError(seq: Sequence, s: KltState): number {
  *
  * @example
  * ```ts
- * import type { KltTrackingPath } from 'mdml-engine/methods/vision'
+ * import type { KltTrackingPath } from 'omai-engine/methods/vision'
  * const path: KltTrackingPath = 'track/points'
  * path // => 'track/points'
  * ```

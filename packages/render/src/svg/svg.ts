@@ -4,7 +4,7 @@
  * browser.
  */
 
-import { type Paint, projectLayers, type Scene, type SceneNode, type Style } from 'mdml-engine/scene'
+import { type Paint, projectLayers, type Scene, type SceneNode, type Style } from 'omai-engine/scene'
 import { texToHtml } from '../maths/tex.ts'
 import { type ColourMode, resolvePaint } from '../theme/tokens.ts'
 import { arrowHeadPoints, smoothPathData, straightPathData } from './paths.ts'
@@ -17,7 +17,7 @@ import { pngDataUrl } from './png.ts'
  * @returns The escaped text.
  * @example
  * ```ts
- * import { escapeXml } from 'mdml-render/svg'
+ * import { escapeXml } from 'omai-render/svg'
  * escapeXml('a < b & "c"') // => 'a &lt; b &amp; &quot;c&quot;'
  * ```
  */
@@ -133,8 +133,8 @@ export interface SceneSvgOptions {
  * @index function A Scene to standalone SVG text: `sceneToSvg(scene, { mode: 'dark' })`.
  * @example
  * ```ts
- * import { sceneToSvg } from 'mdml-render/svg'
- * import { circle, scene } from 'mdml-engine/scene'
+ * import { sceneToSvg } from 'omai-render/svg'
+ * import { circle, scene } from 'omai-engine/scene'
  * sceneToSvg(scene(10, 10, [circle(5, 5, 2, { fill: 'tab1' })])).includes('<circle cx="5" cy="5" r="2" fill="#ff7f0e"') // => true
  * ```
  */

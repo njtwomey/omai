@@ -6,8 +6,8 @@ import numpy as np
 import sklearn
 import statsmodels
 import statsmodels.api as sm
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import rng
 from sklearn.linear_model import LogisticRegression
 from statsmodels.discrete.discrete_model import MNLogit
 

@@ -1,7 +1,7 @@
-import { normal as normalDist } from 'mdml-engine/dists'
-import { key, normal } from 'mdml-engine/random'
-import { cartesian, density, histogram, kde, rug } from 'mdml-render/charts'
-import { Chart, ControlPanel, FigureFrame, NumberField, Select, useColourMode } from 'mdml-render/react'
+import { normal as normalDist } from 'omai-engine/dists'
+import { key, normal } from 'omai-engine/random'
+import { cartesian, density, histogram, kde, rug } from 'omai-render/charts'
+import { Chart, ControlPanel, FigureFrame, NumberField, Select, useColourMode } from 'omai-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 

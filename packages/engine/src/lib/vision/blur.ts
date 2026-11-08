@@ -5,7 +5,7 @@
  * `signal/image`.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import type { BorderMode } from '../numerics/convolution/index.ts'
 import { image } from '../signal/index.ts'
 import { primalOf, type Tensor, type TensorLike } from '../tensor/index.ts'
@@ -29,13 +29,13 @@ const NDIMAGE: Readonly<Record<CvBorder, BorderMode>> = {
  * @returns The ndimage mode.
  * @example
  * ```ts
- * import { borderMode } from 'mdml-engine/vision'
+ * import { borderMode } from 'omai-engine/vision'
  * borderMode('replicate') // => 'nearest'
  * ```
  */
 export function borderMode(border: CvBorder = 'reflect101'): BorderMode {
   const m = NDIMAGE[border]
-  if (m === undefined) throw new MdmlError('value', `unknown border ${String(border)}`)
+  if (m === undefined) throw new OmaiError('value', `unknown border ${String(border)}`)
   return m
 }
 
@@ -58,12 +58,12 @@ const SMALL: readonly (readonly number[])[] = [
  * @concept gaussian-filter
  * @example
  * ```ts
- * import { getGaussianKernel } from 'mdml-engine/vision'
+ * import { getGaussianKernel } from 'omai-engine/vision'
  * Array.from(getGaussianKernel(3)) // => [0.25, 0.5, 0.25]
  * ```
  */
 export function getGaussianKernel(ksize: number, sigma = 0): Float64Array {
-  if (!(Number.isInteger(ksize) && ksize >= 1)) throw new MdmlError('value', 'getGaussianKernel: ksize must be >= 1')
+  if (!(Number.isInteger(ksize) && ksize >= 1)) throw new OmaiError('value', 'getGaussianKernel: ksize must be >= 1')
   const fixed = ksize % 2 === 1 && ksize <= 9 && sigma <= 0 ? SMALL[ksize >> 1] : undefined
   if (fixed !== undefined) return Float64Array.from(fixed)
   const s = sigma > 0 ? sigma : ksize * 0.15 + 0.35
@@ -104,8 +104,8 @@ function separable(x: TensorLike, kx: Float64Array, ky: Float64Array, border: Cv
  * @concept gaussian-filter
  * @example
  * ```ts
- * import { gaussianBlur } from 'mdml-engine/vision'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { gaussianBlur } from 'omai-engine/vision'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(gaussianBlur([[0, 0, 0], [0, 1, 0], [0, 0, 0]], [3, 3], 0, { border: 'constant' })) // => [[0.0625, 0.125, 0.0625], [0.125, 0.25, 0.125], [0.0625, 0.125, 0.0625]]
  * ```
  */
@@ -120,7 +120,7 @@ export function gaussianBlur(
   const size = (k: number, s: number): number => (k > 0 ? k : Math.max(1, Math.round(s * 4 * 2 + 1) | 1))
   const kw = size(ksize[0], sx)
   const kh = size(ksize[1], sy)
-  if (kw % 2 === 0 || kh % 2 === 0) throw new MdmlError('value', 'gaussianBlur: kernel sizes must be odd')
+  if (kw % 2 === 0 || kh % 2 === 0) throw new OmaiError('value', 'gaussianBlur: kernel sizes must be odd')
   return separable(
     x,
     getGaussianKernel(kw, sx),
@@ -140,8 +140,8 @@ export function gaussianBlur(
  * @concept uniform-filter
  * @example
  * ```ts
- * import { blur } from 'mdml-engine/vision'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { blur } from 'omai-engine/vision'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(blur([[0, 3, 0]], [3, 1])) // => [[2, 1, 2]]
  * ```
  */
@@ -151,7 +151,7 @@ export function blur(
   options: { readonly border?: CvBorder } = {},
 ): Tensor {
   const [kw, kh] = ksize
-  if (!(kw >= 1 && kh >= 1)) throw new MdmlError('value', 'blur: the window must be positive')
+  if (!(kw >= 1 && kh >= 1)) throw new OmaiError('value', 'blur: the window must be positive')
   return separable(
     x,
     new Float64Array(kw).fill(1 / kw),
@@ -170,13 +170,13 @@ export function blur(
  * @concept rank-filter
  * @example
  * ```ts
- * import { medianBlur } from 'mdml-engine/vision'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { medianBlur } from 'omai-engine/vision'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(medianBlur([[0, 0, 0], [0, 9, 0], [0, 0, 0]], 3)) // => [[0, 0, 0], [0, 0, 0], [0, 0, 0]]
  * ```
  */
 export function medianBlur(x: TensorLike, ksize: number): Tensor {
-  if (!(Number.isInteger(ksize) && ksize % 2 === 1)) throw new MdmlError('value', 'medianBlur: ksize must be odd')
+  if (!(Number.isInteger(ksize) && ksize % 2 === 1)) throw new OmaiError('value', 'medianBlur: ksize must be odd')
   const r = rasterOf(x, 'medianBlur')
   const size = r.rank === 3 ? [ksize, ksize, 1] : [ksize, ksize]
   return image.medianFilter(rasterTensor(r), size, { mode: 'nearest' })
@@ -193,15 +193,15 @@ export function medianBlur(x: TensorLike, ksize: number): Tensor {
  * @concept correlation
  * @example
  * ```ts
- * import { filter2D } from 'mdml-engine/vision'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { filter2D } from 'omai-engine/vision'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(filter2D([[1, 2, 3]], [[-1, 0, 1]], { border: 'replicate' })) // => [[1, 2, 1]]
  * ```
  */
 export function filter2D(x: TensorLike, kernel: TensorLike, options: { readonly border?: CvBorder } = {}): Tensor {
   const r = rasterOf(x, 'filter2D')
   const k = rasterOf(kernel, 'filter2D')
-  if (k.c !== 1 || k.rank !== 2) throw new MdmlError('shape', 'filter2D: the kernel is [kh, kw]')
+  if (k.c !== 1 || k.rank !== 2) throw new OmaiError('shape', 'filter2D: the kernel is [kh, kw]')
   const kt = r.rank === 3 ? rasterTensor({ ...k, rank: 3 }) : rasterTensor(k)
   // ndimage centres a kernel of even length at k // 2 as OpenCV's default anchor does.
   return primalOf(

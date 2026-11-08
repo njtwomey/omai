@@ -4,8 +4,8 @@ smallest admissible root of the quadratic (numpy.roots), plane hits from the pla
 keeping the nearest point that lies on its face. Misses are NaN."""
 
 import numpy as np
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray, rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray, rng
 
 REFERENCE: dict[str, str] = {"numpy": np.__version__}
 

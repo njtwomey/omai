@@ -4,7 +4,7 @@
  * consistent by Newton's method.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { fsolve } from '../../numerics/roots/index.ts'
 import { concat, reshape, sliceAxis, stack, type Tensor, type TensorLike, type Value } from '../../tensor/index.ts'
 import type { JacobianOption } from './_newton.ts'
@@ -31,12 +31,12 @@ export interface SemiExplicitDae {
  * @param z0 - Guess for the algebraic state `[nz]`.
  * @param options - Residual tolerance (default 1e-12) and iteration cap (default 50).
  * @returns The consistent z0.
- * @throws MdmlError with code `convergence` when Newton fails.
+ * @throws OmaiError with code `convergence` when Newton fails.
  * @concept differential-algebraic-equation
  * @example
  * ```ts
- * import { consistentInitialConditions } from 'mdml-engine/dynamics/ode'
- * import { add, sub, sum } from 'mdml-engine/tensor'
+ * import { consistentInitialConditions } from 'omai-engine/dynamics/ode'
+ * import { add, sub, sum } from 'omai-engine/tensor'
  * const dae = { f: (_t, y) => y, g: (_t, y, z) => sub(add(sum(y), z), 1) }
  * Array.from(consistentInitialConditions(dae, 0, [0.25, 0.25], [0]).data) // => [0.5]
  * ```
@@ -54,7 +54,7 @@ export function consistentInitialConditions(
     ftol: options.ftol ?? 1e-12,
     maxIterations: options.maxIterations ?? 50,
   })
-  if (!r.converged) throw new MdmlError('convergence', `consistentInitialConditions: ${r.message}`)
+  if (!r.converged) throw new OmaiError('convergence', `consistentInitialConditions: ${r.message}`)
   return fromNumbers(numbersOf(r.x), z.shape)
 }
 
@@ -93,8 +93,8 @@ export interface DaeSolution extends OdeSolution {
  * @concept differential-algebraic-equation
  * @example
  * ```ts
- * import { solveDae } from 'mdml-engine/dynamics/ode'
- * import { neg, sub, toFlat } from 'mdml-engine/tensor'
+ * import { solveDae } from 'omai-engine/dynamics/ode'
+ * import { neg, sub, toFlat } from 'omai-engine/tensor'
  * // y' = -z, 0 = z - y: y = e^{-t}.
  * const s = solveDae({ f: (_t, _y, z) => neg(z), g: (_t, y, z) => sub(z, y) }, [0, 1], [1], [0], { rtol: 1e-8, atol: 1e-10, tEval: [1] })
  * Math.abs((toFlat(s.yDiff)[0] ?? 0) - Math.exp(-1)) < 1e-6 // => true

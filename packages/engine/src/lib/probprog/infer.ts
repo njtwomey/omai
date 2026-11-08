@@ -5,7 +5,7 @@
  * posterior.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import { type ContextOptions, resolveKey, resolvePolicy, resolveTracer } from '../context/index.ts'
 import { startRun } from '../trace/index.ts'
 import { analyse, type ProgramAnalysis } from './analysis.ts'
@@ -33,7 +33,7 @@ import type { Model } from './primitives.ts'
  * @concept inference-engines
  * @example
  * ```ts
- * import { defaultEngines } from 'mdml-engine/probprog'
+ * import { defaultEngines } from 'omai-engine/probprog'
  * defaultEngines().map((e) => e.name).length // => 12
  * ```
  */
@@ -93,8 +93,8 @@ export interface PlanOptions {
  * @concept inference-engines
  * @example
  * ```ts
- * import { observe, plan, plate, sample } from 'mdml-engine/probprog'
- * import { beta, bernoulli } from 'mdml-engine/dists'
+ * import { observe, plan, plate, sample } from 'omai-engine/probprog'
+ * import { beta, bernoulli } from 'omai-engine/dists'
  * const coin = () => { const p = sample('p', beta(1, 1)); plate('n', 3, () => observe('y', bernoulli({ probs: p }), [1, 0, 1])) }
  * plan(coin, undefined).entries[0]?.engine.name // => 'conjugate'
  * ```
@@ -136,8 +136,8 @@ export function plan<D = void>(model: Model<D>, data: D, options: PlanOptions = 
  * @concept inference-engines
  * @example
  * ```ts
- * import { explainPlan, observe, plan, sample } from 'mdml-engine/probprog'
- * import { normal } from 'mdml-engine/dists'
+ * import { explainPlan, observe, plan, sample } from 'omai-engine/probprog'
+ * import { normal } from 'omai-engine/dists'
  * explainPlan(plan(() => { const m = sample('m', normal(0, 1)); observe('y', normal(m, 1), 0) }, undefined)).split('\n')[0] // => '1. conjugate (exact, cost 1): every latent site is a conjugate prior (normal-normal)'
  * ```
  */
@@ -179,13 +179,13 @@ export interface InferOptions extends ContextOptions {
  * @param data - Its data.
  * @param options - Engine choice, budget, engines, and key, context, tracer and policy.
  * @returns The posterior.
- * @throws MdmlError with code `value` for an unknown engine name, or when no engine applies.
+ * @throws OmaiError with code `value` for an unknown engine name, or when no engine applies.
  * @concept inference-engines
  * @example
  * ```ts
- * import { infer, observe, plate, sample } from 'mdml-engine/probprog'
- * import { gamma, poisson } from 'mdml-engine/dists'
- * import { item } from 'mdml-engine/tensor'
+ * import { infer, observe, plate, sample } from 'omai-engine/probprog'
+ * import { gamma, poisson } from 'omai-engine/dists'
+ * import { item } from 'omai-engine/tensor'
  * const model = () => { const r = sample('rate', gamma(2, 1)); plate('n', 4, () => observe('k', poisson(r), [3, 1, 4, 2])) }
  * const post = infer(model, undefined)
  * post.engine // => 'conjugate'
@@ -203,11 +203,11 @@ export function infer<D = void>(model: Model<D>, data: D, options: InferOptions 
   if (chosen === 'auto') candidates = p.entries.filter((e) => e.withinBudget).map((e) => e.engine)
   else if (typeof chosen === 'string') {
     const e = engines.find((x) => x.name === chosen)
-    if (e === undefined) throw new MdmlError('value', `infer: no engine named ${chosen}`)
+    if (e === undefined) throw new OmaiError('value', `infer: no engine named ${chosen}`)
     candidates = [e]
   } else candidates = [chosen]
   if (candidates.length === 0)
-    throw new MdmlError('value', `infer: no engine applies within the budget\n${explainPlan(p)}`)
+    throw new OmaiError('value', `infer: no engine applies within the budget\n${explainPlan(p)}`)
   const run = startRun(tracer, {
     name: 'infer',
     seed: null,
@@ -248,7 +248,7 @@ export function infer<D = void>(model: Model<D>, data: D, options: InferOptions 
     return withDiagnostics(post, { reason, tried: [...tried] })
   }
   run.end('failed', 1, {})
-  throw new MdmlError('value', `infer: every engine failed: ${JSON.stringify(tried)}`)
+  throw new OmaiError('value', `infer: every engine failed: ${JSON.stringify(tried)}`)
 }
 
 /**
@@ -259,7 +259,7 @@ export function infer<D = void>(model: Model<D>, data: D, options: InferOptions 
  * @returns The posterior with the merged diagnostics.
  * @example
  * ```ts
- * import { pointPosterior, withDiagnostics } from 'mdml-engine/probprog'
+ * import { pointPosterior, withDiagnostics } from 'omai-engine/probprog'
  * withDiagnostics(pointPosterior({ a: 1 }, { engine: 'x' }), { note: 'hi' }).diagnostics['note'] // => 'hi'
  * ```
  */

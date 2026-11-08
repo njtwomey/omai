@@ -3,7 +3,7 @@
 import numpy as np
 import torch
 
-from mdml_oracle.helpers import FloatArray
+from omai_oracle.helpers import FloatArray
 
 
 def to_torch(x: FloatArray) -> torch.Tensor:

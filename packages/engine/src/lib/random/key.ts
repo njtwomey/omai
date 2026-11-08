@@ -6,7 +6,7 @@
  * @index structure Immutable counter-based keys: key, split and foldIn.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { bitsBlock } from './_bits.ts'
 import { philox4x32 } from './philox.ts'
 
@@ -32,18 +32,18 @@ const FOLD_TAG = 0x464f4c44
  *
  * @param seed - A non-negative safe integer.
  * @returns The key.
- * @throws MdmlError with code `value` for negative or non-integer seeds.
+ * @throws OmaiError with code `value` for negative or non-integer seeds.
  * @concept counter-based-rng
  * @index function Create a random key from an integer seed.
  * @example
  * ```ts
- * import { key } from 'mdml-engine/random'
+ * import { key } from 'omai-engine/random'
  * key(42).words // => [42, 0]
  * ```
  */
 export function key(seed: number): Key {
   if (!Number.isSafeInteger(seed) || seed < 0) {
-    throw new MdmlError('value', `key: seed must be a non-negative safe integer, got ${seed}`, { seed })
+    throw new OmaiError('value', `key: seed must be a non-negative safe integer, got ${seed}`, { seed })
   }
   return { kind: 'key', words: [seed >>> 0, Math.floor(seed / 2 ** 32) >>> 0] }
 }
@@ -57,7 +57,7 @@ export function key(seed: number): Key {
  * @index function Derive n independent keys from one key.
  * @example
  * ```ts
- * import { key, split } from 'mdml-engine/random'
+ * import { key, split } from 'omai-engine/random'
  * const [a, b] = split(key(0))
  * a?.words[0] === b?.words[0] // => false
  * ```
@@ -77,18 +77,18 @@ export function split(k: Key, n = 2): Key[] {
  * @param k - The parent key.
  * @param data - An unsigned 32-bit integer.
  * @returns The derived key; the same inputs always give the same key.
- * @throws MdmlError with code `value` unless `data` is an integer in `[0, 2^32)` (a wrapped or truncated part would
+ * @throws OmaiError with code `value` unless `data` is an integer in `[0, 2^32)` (a wrapped or truncated part would
  *   share its key with another).
  * @index function Derive a key from a parent key and an integer (a step).
  * @example
  * ```ts
- * import { key, foldIn } from 'mdml-engine/random'
+ * import { key, foldIn } from 'omai-engine/random'
  * foldIn(key(0), 3).words[0] === foldIn(key(0), 3).words[0] // => true
  * ```
  */
 export function foldIn(k: Key, data: number): Key {
   if (!Number.isInteger(data) || data < 0 || data > 0xffffffff) {
-    throw new MdmlError('value', `foldIn: data must be an integer in [0, 2^32), got ${data}`)
+    throw new OmaiError('value', `foldIn: data must be an integer in [0, 2^32), got ${data}`)
   }
   const [w0, w1] = philox4x32([data >>> 0, 0, 0, FOLD_TAG], k.words)
   return { kind: 'key', words: [w0, w1] }
@@ -102,7 +102,7 @@ export function foldIn(k: Key, data: number): Key {
  * @returns The words.
  * @example
  * ```ts
- * import { key, randomBits } from 'mdml-engine/random'
+ * import { key, randomBits } from 'omai-engine/random'
  * randomBits(key(0), 4).length // => 4
  * ```
  */
@@ -122,7 +122,7 @@ export function randomBits(k: Key, n: number): Uint32Array {
  * @returns `true` for keys.
  * @example
  * ```ts
- * import { isKey, key } from 'mdml-engine/random'
+ * import { isKey, key } from 'omai-engine/random'
  * isKey(key(1)) // => true
  * ```
  */
@@ -147,11 +147,11 @@ function hashName(name: string): number {
  * @param seed - The root seed.
  * @param path - Names (hashed) and non-negative integers below 2^32 (folded in directly).
  * @returns The derived key.
- * @throws MdmlError with code `value` for a numeric part that is not an integer in `[0, 2^32)`.
+ * @throws OmaiError with code `value` for a numeric part that is not an integer in `[0, 2^32)`.
  * @concept counter-based-rng
  * @example
  * ```ts
- * import { keyFromPath } from 'mdml-engine/random'
+ * import { keyFromPath } from 'omai-engine/random'
  * keyFromPath(0, 'init', 3).words[0] === keyFromPath(0, 'init', 3).words[0] // => true
  * keyFromPath(0, 'init').words[0] === keyFromPath(0, 'data').words[0] // => false
  * ```

@@ -5,8 +5,8 @@ The full file is 700 KB of text, over the size a vendored dataset may take, so t
 `stratified_subsample`), so regeneration gives the same rows.
 """
 
-from mdml_oracle.uci import source_note, stratified_subsample, table_rows, zip_member
-from mdml_oracle.vendor import render_classification
+from omai_oracle.uci import source_note, stratified_subsample, table_rows, zip_member
+from omai_oracle.vendor import render_classification
 
 TARGET = "packages/engine/src/lib/datasets/_data/spambase.data.ts"
 ID, SLUG = 94, "spambase"

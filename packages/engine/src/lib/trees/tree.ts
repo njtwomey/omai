@@ -7,7 +7,7 @@
  * extraction read (moved here from `explain`) is a view of a tree, made by `treeModel`.
  */
 
-import { argmaxOf, MdmlError } from '../base/index.ts'
+import { argmaxOf, OmaiError } from '../base/index.ts'
 import { type MatrixView, matrixView } from '../learn/validation.ts'
 import { type Structure, structure } from '../scene/index.ts'
 import { fromStorage, type Tensor, type TensorLike } from '../tensor/index.ts'
@@ -60,8 +60,8 @@ export interface TreeModel {
  * @returns Predictions `[n]`.
  * @example
  * ```ts
- * import { treePredict } from 'mdml-engine/trees'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { treePredict } from 'omai-engine/trees'
+ * import { toFlat } from 'omai-engine/tensor'
  * const stump = { childrenLeft: [1, -1, -1], childrenRight: [2, -1, -1], feature: [0, -2, -2], threshold: [0.5, 0, 0], value: [0.5, 0, 1], cover: [2, 1, 1] }
  * toFlat(treePredict(stump, [[0], [1]])) // => [0, 1]
  * ```
@@ -84,8 +84,8 @@ export function treePredict(tree: TreeModel, x: TensorLike): Tensor {
  * @returns The leaf's node id.
  * @example
  * ```ts
- * import { leafOfModel } from 'mdml-engine/trees'
- * import { matrixView } from 'mdml-engine/learn'
+ * import { leafOfModel } from 'omai-engine/trees'
+ * import { matrixView } from 'omai-engine/learn'
  * const stump = { childrenLeft: [1, -1, -1], childrenRight: [2, -1, -1], feature: [0, -2, -2], threshold: [0.5, 0, 0], value: [0.5, 0, 1], cover: [2, 1, 1] }
  * leafOfModel(stump, matrixView([[0], [1]], 'demo'), 1) // => 2
  * ```
@@ -110,7 +110,7 @@ export function leafOfModel(tree: TreeModel, m: MatrixView, i: number): number {
  * @returns `true` for leaves.
  * @example
  * ```ts
- * import { isLeaf, stumpTree } from 'mdml-engine/trees'
+ * import { isLeaf, stumpTree } from 'omai-engine/trees'
  * const t = stumpTree({ feature: 0, threshold: 0.5, left: 0, right: 1 })
  * isLeaf(t, 1) // => true
  * ```
@@ -126,8 +126,8 @@ export function isLeaf(tree: FittedTree, node: number): boolean {
  * @returns The tree over `feature + 1` features.
  * @example
  * ```ts
- * import { predictTree, stumpTree } from 'mdml-engine/trees'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { predictTree, stumpTree } from 'omai-engine/trees'
+ * import { toFlat } from 'omai-engine/tensor'
  * toFlat(predictTree(stumpTree({ feature: 0, threshold: 0.5, left: 0, right: 1 }), [[0], [1]])) // => [0, 1]
  * ```
  */
@@ -169,7 +169,7 @@ function goesLeft(tree: FittedTree, node: number, v: number): boolean {
  * @returns Leaf ids, one per row.
  * @example
  * ```ts
- * import { applyTree, stumpTree } from 'mdml-engine/trees'
+ * import { applyTree, stumpTree } from 'omai-engine/trees'
  * Array.from(applyTree(stumpTree({ feature: 0, threshold: 0.5, left: 0, right: 1 }), [[0], [1], [0.2]])) // => [1, 2, 1]
  * ```
  */
@@ -195,7 +195,7 @@ export function applyTree(tree: FittedTree, x: TensorLike): Int32Array {
  * @returns One path of node ids per row.
  * @example
  * ```ts
- * import { decisionPath, stumpTree } from 'mdml-engine/trees'
+ * import { decisionPath, stumpTree } from 'omai-engine/trees'
  * decisionPath(stumpTree({ feature: 0, threshold: 0.5, left: 0, right: 1 }), [[0], [1]]) // => [[0, 1], [0, 2]]
  * ```
  */
@@ -222,8 +222,8 @@ export function decisionPath(tree: FittedTree, x: TensorLike): number[][] {
  * @returns The outputs.
  * @example
  * ```ts
- * import { stumpTree, treeOutputs } from 'mdml-engine/trees'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { stumpTree, treeOutputs } from 'omai-engine/trees'
+ * import { toFlat } from 'omai-engine/tensor'
  * toFlat(treeOutputs(stumpTree({ feature: 0, threshold: 0.5, left: 3, right: 5 }), [[0], [1]])) // => [3, 5]
  * ```
  */
@@ -253,8 +253,8 @@ export function treeOutputs(tree: FittedTree, x: TensorLike): Tensor {
  * @returns Class labels or means, `[m]`.
  * @example
  * ```ts
- * import { predictTree, stumpTree } from 'mdml-engine/trees'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { predictTree, stumpTree } from 'omai-engine/trees'
+ * import { toFlat } from 'omai-engine/tensor'
  * toFlat(predictTree(stumpTree({ feature: 0, threshold: 0.5, left: 1, right: 2 }), [[0.9]])) // => [2]
  * ```
  */
@@ -275,7 +275,7 @@ export function predictTree(tree: FittedTree, x: TensorLike): Tensor {
  * @returns The longest root-to-leaf path in edges.
  * @example
  * ```ts
- * import { stumpTree, treeDepth } from 'mdml-engine/trees'
+ * import { stumpTree, treeDepth } from 'omai-engine/trees'
  * treeDepth(stumpTree({ feature: 0, threshold: 0, left: 0, right: 1 })) // => 1
  * ```
  */
@@ -292,7 +292,7 @@ export function treeDepth(tree: FittedTree): number {
  * @returns The leaf count.
  * @example
  * ```ts
- * import { leafCount, stumpTree } from 'mdml-engine/trees'
+ * import { leafCount, stumpTree } from 'omai-engine/trees'
  * leafCount(stumpTree({ feature: 0, threshold: 0, left: 0, right: 1 })) // => 2
  * ```
  */
@@ -316,7 +316,7 @@ export interface NodeRegion {
  * @returns One region per node, by node id.
  * @example
  * ```ts
- * import { nodeRegions, stumpTree } from 'mdml-engine/trees'
+ * import { nodeRegions, stumpTree } from 'omai-engine/trees'
  * const r = nodeRegions(stumpTree({ feature: 0, threshold: 0.5, left: 0, right: 1 }))
  * r[1]?.upper[0] // => 0.5
  * ```
@@ -362,7 +362,7 @@ export function nodeRegions(tree: FittedTree): NodeRegion[] {
  * @returns One importance per feature (all zero for a single leaf).
  * @example
  * ```ts
- * import { stumpTree, treeFeatureImportances } from 'mdml-engine/trees'
+ * import { stumpTree, treeFeatureImportances } from 'omai-engine/trees'
  * treeFeatureImportances({ ...stumpTree({ feature: 1, threshold: 0, left: 0, right: 1 }), impurity: [0.5, 0, 0] }) // => [0, 1]
  * ```
  */
@@ -388,16 +388,16 @@ export function treeFeatureImportances(tree: FittedTree): number[] {
  * @param tree - The tree.
  * @param output - A class index (default the last class, the positive class of a binary problem), or `'label'`.
  * @returns The scalar-valued tree. Categorical splits are not representable and are refused.
- * @throws MdmlError with code `value` when the tree has categorical splits.
+ * @throws OmaiError with code `value` when the tree has categorical splits.
  * @example
  * ```ts
- * import { stumpTree, treeModel } from 'mdml-engine/trees'
+ * import { stumpTree, treeModel } from 'omai-engine/trees'
  * treeModel(stumpTree({ feature: 0, threshold: 0.5, left: 0, right: 1 })).value // => [0.5, 0, 1]
  * ```
  */
 export function treeModel(tree: FittedTree, output?: number | 'label'): TreeModel {
   if (tree.categories.some((c) => c.length > 0))
-    throw new MdmlError('value', 'treeModel: categorical splits have no scalar-valued form')
+    throw new OmaiError('value', 'treeModel: categorical splits have no scalar-valued form')
   const k = tree.classes.length
   const value = tree.value.map((v) => {
     if (tree.task === 'regression') return v[0] ?? 0
@@ -433,7 +433,7 @@ function testText(tree: FittedTree, node: number, name: (j: number) => string): 
  * @returns The structure.
  * @example
  * ```ts
- * import { stumpTree, treeToStructure } from 'mdml-engine/trees'
+ * import { stumpTree, treeToStructure } from 'omai-engine/trees'
  * treeToStructure(stumpTree({ feature: 0, threshold: 0.5, left: 0, right: 1 })).nodes.map((n) => n.label) // => ['x0 <= 0.500', '0', '1']
  * ```
  */
@@ -477,7 +477,7 @@ export function treeToStructure(
  * @returns The text, one line per test or leaf.
  * @example
  * ```ts
- * import { exportText, stumpTree } from 'mdml-engine/trees'
+ * import { exportText, stumpTree } from 'omai-engine/trees'
  * exportText(stumpTree({ feature: 0, threshold: 0.5, left: 0, right: 1 })).split('\n')[0] // => '|--- x0 <= 0.50'
  * ```
  */

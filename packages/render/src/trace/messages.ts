@@ -5,9 +5,9 @@
  */
 
 import type { SeriesOption } from 'echarts'
-import { maxOf, minOf } from 'mdml-engine/base'
-import { type Frame, type Structure, type StructureOverlay, type Timeline, timeline } from 'mdml-engine/scene'
-import { messages, type Run } from 'mdml-engine/trace'
+import { maxOf, minOf } from 'omai-engine/base'
+import { type Frame, type Structure, type StructureOverlay, type Timeline, timeline } from 'omai-engine/scene'
+import { messages, type Run } from 'omai-engine/trace'
 import { type Layer, layer } from '../charts/plot.ts'
 import { categoricalColour } from '../theme/palettes.ts'
 
@@ -21,9 +21,9 @@ import { categoricalColour } from '../theme/palettes.ts'
  * @index function When each message passed along each edge: `messageTimeline(run)`.
  * @example
  * ```ts
- * import { messageTimeline } from 'mdml-render/trace'
+ * import { messageTimeline } from 'omai-render/trace'
  * const m = (step: number, from: string, to: string) => ({ type: 'message' as const, runId: 'r', step, kind: 'belief', from, to, payload: null })
- * messageTimeline({ schema: 'mdml.run/1', events: [m(0, 'a', 'b'), m(1, 'b', 'c')] }).yCategories // => ['a → b', 'b → c']
+ * messageTimeline({ schema: 'omai.run/1', events: [m(0, 'a', 'b'), m(1, 'b', 'c')] }).yCategories // => ['a → b', 'b → c']
  * ```
  */
 export function messageTimeline(run: Run, options: { readonly kind?: string } = {}): Layer {
@@ -62,10 +62,10 @@ export function messageTimeline(run: Run, options: { readonly kind?: string } = 
  * @returns The timeline, one frame per step with messages.
  * @example
  * ```ts
- * import { messageFrames } from 'mdml-render/trace'
- * import { structure } from 'mdml-engine/scene'
+ * import { messageFrames } from 'omai-render/trace'
+ * import { structure } from 'omai-engine/scene'
  * const s = structure('g', [{ id: 'a', label: 'a', role: 'latent' }, { id: 'b', label: 'b', role: 'latent' }], [{ from: 'a', to: 'b' }])
- * const run = { schema: 'mdml.run/1' as const, events: [{ type: 'message' as const, runId: 'r', step: 2, kind: 'm', from: 'a', to: 'b', payload: 0.5 }] }
+ * const run = { schema: 'omai.run/1' as const, events: [{ type: 'message' as const, runId: 'r', step: 2, kind: 'm', from: 'a', to: 'b', payload: 0.5 }] }
  * messageFrames(s, run).frames[0].overlay.badges // => { b: { message: 0.5 } }
  * ```
  */

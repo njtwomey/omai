@@ -3,8 +3,8 @@ scipy.integrate.quad on each knot span) and scipy.linalg.qr (the sum-to-zero con
 
 import numpy as np
 import scipy
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray, rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray, rng
 from scipy import linalg
 from scipy.integrate import quad
 from scipy.interpolate import BSpline

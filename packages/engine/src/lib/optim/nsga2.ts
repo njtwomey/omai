@@ -4,7 +4,7 @@
  * traced algorithm whose populations can be shown generation by generation.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { Generator, type Key, latinHypercube } from '../random/index.ts'
 import { fromStorage, type Tensor, type TensorLike, toFlat, toVector } from '../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, type RunStatus, runAlgorithm } from '../trace/index.ts'
@@ -38,13 +38,13 @@ export interface SbxOptions {
  * @param bounds - Box bounds of the variables.
  * @param options - Distribution index and probabilities.
  * @returns The two children, `[n]` tensors.
- * @throws MdmlError with code `shape` unless a parent has rank 1, and `not-differentiable` for a traced one.
+ * @throws OmaiError with code `shape` unless a parent has rank 1, and `not-differentiable` for a traced one.
  * @concept genetic-operators
  * @example
  * ```ts
- * import { sbxCrossover } from 'mdml-engine/optim'
- * import { key } from 'mdml-engine/random'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { sbxCrossover } from 'omai-engine/optim'
+ * import { key } from 'omai-engine/random'
+ * import { toFlat } from 'omai-engine/tensor'
  * const [c1, c2] = sbxCrossover(key(0), [0, 1], [1, 0], [[0, 1], [0, 1]], { probability: 1 })
  * toFlat(c1).every((v) => v >= 0 && v <= 1) && toFlat(c2).every((v) => v >= 0 && v <= 1) // => true
  * ```
@@ -124,13 +124,13 @@ export interface PolynomialMutationOptions {
  * @param bounds - Box bounds.
  * @param options - Distribution index and per-variable probability.
  * @returns The mutated individual, an `[n]` tensor.
- * @throws MdmlError with code `shape` unless `x` has rank 1, and `not-differentiable` for a traced one.
+ * @throws OmaiError with code `shape` unless `x` has rank 1, and `not-differentiable` for a traced one.
  * @concept genetic-operators
  * @example
  * ```ts
- * import { polynomialMutation } from 'mdml-engine/optim'
- * import { key } from 'mdml-engine/random'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { polynomialMutation } from 'omai-engine/optim'
+ * import { key } from 'omai-engine/random'
+ * import { toFlat } from 'omai-engine/tensor'
  * const y = toFlat(polynomialMutation(key(1), [0.5, 0.5], [[0, 1], [0, 1]], { probability: 1 }))
  * y.every((v) => v >= 0 && v <= 1) && (y[0] !== 0.5 || y[1] !== 0.5) // => true
  * ```
@@ -271,8 +271,8 @@ function constrainedDominates(a: Individual, b: Individual): boolean {
  * @concept nsga-ii
  * @example
  * ```ts
- * import { nsga2Algorithm } from 'mdml-engine/optim'
- * import { square, stack, sub, sum, type Value } from 'mdml-engine/tensor'
+ * import { nsga2Algorithm } from 'omai-engine/optim'
+ * import { square, stack, sub, sum, type Value } from 'omai-engine/tensor'
  * const f = (x: unknown) => stack([sum(square(x as Value)), sum(square(sub(x as Value, 2)))])
  * nsga2Algorithm(f, [0], { bounds: [[-5, 5]] }).name // => 'nsga2'
  * ```
@@ -280,10 +280,10 @@ function constrainedDominates(a: Individual, b: Individual): boolean {
 export function nsga2Algorithm(f: VectorObjective, x0: Parameters, options: Nsga2Options): Algorithm<Nsga2State> {
   const shape = flatObjective(() => fromStorage(new Float64Array([0]), [], 'float64'), x0)
   const n = shape.n
-  if (n === 0) throw new MdmlError('value', 'nsga2: no parameters')
+  if (n === 0) throw new OmaiError('value', 'nsga2: no parameters')
   const box = finiteBounds(options.bounds, n, 'nsga2')
   const size = 2 * Math.ceil((options.popSize ?? 100) / 2)
-  if (size < 4) throw new MdmlError('value', 'nsga2: popSize must be at least 4')
+  if (size < 4) throw new OmaiError('value', 'nsga2: popSize must be at least 4')
   const constraints = options.constraints ?? []
   const evaluate = (x: Float64Array): Individual => {
     const tree = shape.unravel(x)
@@ -407,8 +407,8 @@ export function nsga2Algorithm(f: VectorObjective, x0: Parameters, options: Nsga
  * @concept nsga-ii
  * @example
  * ```ts
- * import { nsga2 } from 'mdml-engine/optim'
- * import { square, stack, sub, sum, toArray, type Value } from 'mdml-engine/tensor'
+ * import { nsga2 } from 'omai-engine/optim'
+ * import { square, stack, sub, sum, toArray, type Value } from 'omai-engine/tensor'
  * // Schaffer's problem: f1 = x^2, f2 = (x - 2)^2, Pareto set [0, 2]
  * const f = (x: unknown) => stack([sum(square(x as Value)), sum(square(sub(x as Value, 2)))])
  * const r = nsga2(f, [0], { bounds: [[-5, 5]], popSize: 20, maxIterations: 30, seed: 0 })

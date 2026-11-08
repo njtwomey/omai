@@ -7,7 +7,7 @@
  * rows. `neighbourIndex` is the search itself, usable by anything that needs the neighbours of a point.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import {
   type DistanceAlias,
   type DistanceName,
@@ -34,7 +34,7 @@ export type NeighbourAlgorithm = 'auto' | 'brute' | 'kd-tree' | 'ball-tree'
 
 /** The search settings every neighbour learner shares. */
 export interface NeighbourSearch {
-  /** Any distance of `mdml-engine/distances` (default `euclidean`). */
+  /** Any distance of `omai-engine/distances` (default `euclidean`). */
   readonly metric: DistanceName | DistanceAlias
   /** The metric's parameters (`p`, `weights`, `variance`, `covariance`); seuclidean and mahalanobis default to the training statistics. */
   readonly metricOptions: DistanceOptions
@@ -112,7 +112,7 @@ function withStatistics(name: DistanceName, m: MatrixView, options: DistanceOpti
  * @returns The index.
  * @example
  * ```ts
- * import { neighbourIndex } from 'mdml-engine/learn'
+ * import { neighbourIndex } from 'omai-engine/learn'
  * const index = neighbourIndex([[0, 0], [1, 0], [5, 5]])
  * index.nearest([[0.9, 0.1]], 2)[0].indices // => [1, 0]
  * index.within([[0, 0]], 1.5)[0].indices // => [0, 1]
@@ -129,7 +129,7 @@ export function neighbourIndex(points: TensorLike, search: Partial<NeighbourSear
   const treeCapable = treeMetric !== undefined
   const wanted = s.algorithm
   if ((wanted === 'kd-tree' || wanted === 'ball-tree') && !treeCapable) {
-    throw new MdmlError(
+    throw new OmaiError(
       'value',
       `neighbourIndex: the ${wanted} supports euclidean, manhattan, chebyshev and minkowski, not ${name}`,
     )
@@ -214,7 +214,7 @@ export function neighbourIndex(points: TensorLike, search: Partial<NeighbourSear
  * @returns One weight per neighbour.
  * @example
  * ```ts
- * import { neighbourWeights } from 'mdml-engine/learn'
+ * import { neighbourWeights } from 'omai-engine/learn'
  * neighbourWeights([1, 2, 4], 'distance') // => [1, 0.5, 0.25]
  * neighbourWeights([0, 2], 'distance') // => [1, 0]
  * ```
@@ -302,7 +302,7 @@ function memoryOf(data: LearnData, n: number, who: string): { readonly m: Matrix
 type Finder = (queries: TensorLike) => NeighbourHits[]
 
 function finderOf(x: number[][], h: KNeighboursHyper | RadiusNeighboursHyper, who: string): Finder {
-  if (x.length === 0) throw new MdmlError('value', `${who}: no training rows yet`)
+  if (x.length === 0) throw new OmaiError('value', `${who}: no training rows yet`)
   const index = neighbourIndex(arraysToTensor(x), readSearch(h))
   if ('nNeighbors' in h) return (q) => index.nearest(q, h.nNeighbors)
   return (q) => index.within(q, h.radius)
@@ -327,7 +327,7 @@ function classifierVerbs(
     hits.forEach((hit, i) => {
       if (hit.indices.length === 0) {
         if (outlier === undefined) {
-          throw new MdmlError(
+          throw new OmaiError(
             'value',
             `${who}: no neighbours within radius ${'radius' in h ? h.radius : ''}; set outlierLabel`,
           )
@@ -443,8 +443,8 @@ function regressorParams(data: LearnData, n: number, who: string): NeighbourRegr
  * @index estimator k-nearest-neighbour classifier under any distance.
  * @example
  * ```ts
- * import { kNeighboursClassifier } from 'mdml-engine/learn'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { kNeighboursClassifier } from 'omai-engine/learn'
+ * import { toFlat } from 'omai-engine/tensor'
  * const knn = kNeighboursClassifier({ nNeighbors: 3 }).fit({ x: [[0], [1], [2], [10], [11], [12]], y: [0, 0, 0, 1, 1, 1] })
  * toFlat(knn.predict([[1.5], [10.5]])) // => [0, 1]
  * ```
@@ -476,8 +476,8 @@ export function kNeighboursClassifier(
  * @returns The estimator.
  * @example
  * ```ts
- * import { kNeighboursRegressor } from 'mdml-engine/learn'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { kNeighboursRegressor } from 'omai-engine/learn'
+ * import { toFlat } from 'omai-engine/tensor'
  * const knn = kNeighboursRegressor({ nNeighbors: 2 }).fit({ x: [[0], [1], [2], [3]], y: [0, 2, 4, 6] })
  * toFlat(knn.predict([[1.4]])) // => [3]
  * ```
@@ -510,8 +510,8 @@ export function kNeighboursRegressor(
  * @returns The estimator.
  * @example
  * ```ts
- * import { radiusNeighboursClassifier } from 'mdml-engine/learn'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { radiusNeighboursClassifier } from 'omai-engine/learn'
+ * import { toFlat } from 'omai-engine/tensor'
  * const c = radiusNeighboursClassifier({ radius: 1.5, outlierLabel: -1 }).fit({ x: [[0], [1], [10]], y: [0, 0, 1] })
  * toFlat(c.predict([[0.5], [10.2], [50]])) // => [0, 1, -1]
  * ```
@@ -543,8 +543,8 @@ export function radiusNeighboursClassifier(
  * @returns The estimator.
  * @example
  * ```ts
- * import { radiusNeighboursRegressor } from 'mdml-engine/learn'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { radiusNeighboursRegressor } from 'omai-engine/learn'
+ * import { toFlat } from 'omai-engine/tensor'
  * const r = radiusNeighboursRegressor({ radius: 1.1 }).fit({ x: [[0], [1], [2]], y: [0, 3, 6] })
  * toFlat(r.predict([[1]])) // => [3]
  * ```
@@ -718,8 +718,8 @@ function centroidVerbs(p: NearestCentroidParams, h: NearestCentroidHyper): Neare
  * centroids of gene expression, PNAS 99 (2002).
  * @example
  * ```ts
- * import { nearestCentroid } from 'mdml-engine/learn'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { nearestCentroid } from 'omai-engine/learn'
+ * import { toFlat } from 'omai-engine/tensor'
  * const c = nearestCentroid().fit({ x: [[0, 0], [0, 1], [9, 9], [9, 8]], y: [0, 0, 1, 1] })
  * toFlat(c.predict([[1, 1], [8, 8]])) // => [0, 1]
  * ```
@@ -790,7 +790,7 @@ export interface ShrunkenCentroids {
  * @returns One entry per threshold.
  * @example
  * ```ts
- * import { shrunkenCentroidPath } from 'mdml-engine/learn'
+ * import { shrunkenCentroidPath } from 'omai-engine/learn'
  * const x = [[0, 5], [0.2, 4], [4, 5.1], [4.2, 4.9]]
  * shrunkenCentroidPath({ x, y: [0, 0, 1, 1] }, [0, 100]).map((p) => p.nActive) // => [2, 0]
  * ```

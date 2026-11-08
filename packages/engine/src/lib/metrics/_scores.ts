@@ -1,4 +1,4 @@
-import { MdmlError, type MetricSpec } from '../base/index.ts'
+import { type MetricSpec, OmaiError } from '../base/index.ts'
 import { type Label, labelValues, sortLabels } from './_labels.ts'
 import { specOf } from './_spec.ts'
 import type { MetricInput } from './metric.ts'
@@ -19,7 +19,7 @@ export function positives(yTrue: MetricInput, posLabel: Label | undefined): Floa
   let pos = posLabel
   if (pos === undefined) {
     const classes = sortLabels(t)
-    if (classes.length > 2) throw new MdmlError('value', 'binary curves need two classes or a posLabel')
+    if (classes.length > 2) throw new OmaiError('value', 'binary curves need two classes or a posLabel')
     // sklearn's rule: labels within {0, 1} or {-1, 1} take 1 as the positive class even when it is absent (all negatives
     // then have no positives); otherwise the larger of two labels.
     const onlyNegative = classes.length === 1 && (classes[0] === 0 || classes[0] === -1)

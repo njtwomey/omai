@@ -4,7 +4,7 @@
  * probabilities, the Polya urn, the Indian buffet process for latent feature allocations, and beta and gamma processes.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { beta as betaLaw, type Distribution, gamma as gammaLaw } from '../dists/index.ts'
 import { lgamma } from '../numerics/special/index.ts'
 import { categorical, foldIn, type Key, poisson, uniform } from '../random/index.ts'
@@ -37,8 +37,8 @@ export interface DiscreteMeasure {
 }
 
 function checkConcentration(alpha: number, discount: number, where: string): void {
-  if (!(discount >= 0 && discount < 1)) throw new MdmlError('value', `${where}: the discount must be in [0, 1)`)
-  if (!(alpha > -discount)) throw new MdmlError('value', `${where}: need alpha > -discount`)
+  if (!(discount >= 0 && discount < 1)) throw new OmaiError('value', `${where}: the discount must be in [0, 1)`)
+  if (!(alpha > -discount)) throw new OmaiError('value', `${where}: need alpha > -discount`)
 }
 
 /**
@@ -54,9 +54,9 @@ function checkConcentration(alpha: number, discount: number, where: string): voi
  * @concept dirichlet-process
  * @example
  * ```ts
- * import { key } from 'mdml-engine/random'
- * import { stickBreaking } from 'mdml-engine/stochastic'
- * import { sum, item } from 'mdml-engine/tensor'
+ * import { key } from 'omai-engine/random'
+ * import { stickBreaking } from 'omai-engine/stochastic'
+ * import { sum, item } from 'omai-engine/tensor'
  * item(sum(stickBreaking(key(0), 1, 200))) > 0.999 // => true
  * ```
  */
@@ -94,9 +94,9 @@ export function stickBreaking(
  * @concept dirichlet-process
  * @example
  * ```ts
- * import { normal } from 'mdml-engine/dists'
- * import { key } from 'mdml-engine/random'
- * import { dirichletProcess } from 'mdml-engine/stochastic'
+ * import { normal } from 'omai-engine/dists'
+ * import { key } from 'omai-engine/random'
+ * import { dirichletProcess } from 'omai-engine/stochastic'
  * dirichletProcess(key(0), 2, normal(0, 1), 50).atoms.shape // => [50]
  * ```
  */
@@ -123,9 +123,9 @@ export function dirichletProcess(
  * @concept dirichlet-process
  * @example
  * ```ts
- * import { key } from 'mdml-engine/random'
- * import { sampleFromMeasure } from 'mdml-engine/stochastic'
- * import { toArray, tensor } from 'mdml-engine/tensor'
+ * import { key } from 'omai-engine/random'
+ * import { sampleFromMeasure } from 'omai-engine/stochastic'
+ * import { toArray, tensor } from 'omai-engine/tensor'
  * toArray(sampleFromMeasure(key(0), { atoms: tensor([5, 7]), weights: tensor([1, 0]) }, 3)) // => [5, 5, 5]
  * ```
  */
@@ -159,7 +159,7 @@ export interface RestaurantState {
  * @concept chinese-restaurant-process
  * @example
  * ```ts
- * import { chineseRestaurantAlgorithm } from 'mdml-engine/stochastic'
+ * import { chineseRestaurantAlgorithm } from 'omai-engine/stochastic'
  * chineseRestaurantAlgorithm(1).name // => 'chinese-restaurant'
  * ```
  */
@@ -196,8 +196,8 @@ export function chineseRestaurantAlgorithm(
  * @concept chinese-restaurant-process
  * @example
  * ```ts
- * import { key } from 'mdml-engine/random'
- * import { chineseRestaurant } from 'mdml-engine/stochastic'
+ * import { key } from 'omai-engine/random'
+ * import { chineseRestaurant } from 'omai-engine/stochastic'
  * const r = chineseRestaurant(key(0), 1, 20)
  * r.sizes.reduce((a, b) => a + b, 0) // => 20
  * ```
@@ -226,8 +226,8 @@ export function chineseRestaurant(
  * @concept chinese-restaurant-process
  * @example
  * ```ts
- * import { expectedTables } from 'mdml-engine/stochastic'
- * import { item } from 'mdml-engine/tensor'
+ * import { expectedTables } from 'omai-engine/stochastic'
+ * import { item } from 'omai-engine/tensor'
  * item(expectedTables(1, 3)) // => 1.8333333333333333
  * ```
  */
@@ -260,8 +260,8 @@ export function expectedTables(alpha: TensorLike, n: number, options: { readonly
  * @concept chinese-restaurant-process
  * @example
  * ```ts
- * import { partitionLogProbability } from 'mdml-engine/stochastic'
- * import { item } from 'mdml-engine/tensor'
+ * import { partitionLogProbability } from 'omai-engine/stochastic'
+ * import { item } from 'omai-engine/tensor'
  * // two customers at one table: 1 / (1 + alpha)
  * Math.round(Math.exp(item(partitionLogProbability([2], 1))) * 1e12) / 1e12 // => 0.5
  * ```
@@ -274,7 +274,7 @@ export function partitionLogProbability(
   const [a] = promoteFloat(alpha) as [Value]
   const d = options.discount ?? 0
   checkConcentration(primalNumbers(a)[0] ?? Number.NaN, d, 'partitionLogProbability')
-  for (const s of sizes) if (!(Number.isInteger(s) && s >= 1)) throw new MdmlError('value', 'partition: bad size')
+  for (const s of sizes) if (!(Number.isInteger(s) && s >= 1)) throw new OmaiError('value', 'partition: bad size')
   const n = sizes.reduce((x, y) => x + y, 0)
   const k = sizes.length
   // log prod_{i=1}^{K-1} (alpha + i d)
@@ -304,8 +304,8 @@ export interface UrnState {
  * @concept polya-urn
  * @example
  * ```ts
- * import { normal } from 'mdml-engine/dists'
- * import { polyaUrnAlgorithm } from 'mdml-engine/stochastic'
+ * import { normal } from 'omai-engine/dists'
+ * import { polyaUrnAlgorithm } from 'omai-engine/stochastic'
  * polyaUrnAlgorithm(1, normal(0, 1)).name // => 'polya-urn'
  * ```
  */
@@ -343,9 +343,9 @@ export function polyaUrnAlgorithm(alpha: number, base: Distribution): Algorithm<
  * @concept polya-urn
  * @example
  * ```ts
- * import { normal } from 'mdml-engine/dists'
- * import { key } from 'mdml-engine/random'
- * import { polyaUrn } from 'mdml-engine/stochastic'
+ * import { normal } from 'omai-engine/dists'
+ * import { key } from 'omai-engine/random'
+ * import { polyaUrn } from 'omai-engine/stochastic'
  * new Set(polyaUrn(key(0), 1e-9, normal(0, 1), 10)).size // => 1
  * ```
  */
@@ -378,12 +378,12 @@ export interface BuffetState {
  * @concept indian-buffet-process
  * @example
  * ```ts
- * import { indianBuffetAlgorithm } from 'mdml-engine/stochastic'
+ * import { indianBuffetAlgorithm } from 'omai-engine/stochastic'
  * indianBuffetAlgorithm(2).name // => 'indian-buffet'
  * ```
  */
 export function indianBuffetAlgorithm(alpha: number): Algorithm<BuffetState> {
-  if (!(alpha > 0)) throw new MdmlError('value', 'indianBuffet: alpha must be positive')
+  if (!(alpha > 0)) throw new OmaiError('value', 'indianBuffet: alpha must be positive')
   return {
     name: 'indian-buffet',
     config: { alpha },
@@ -413,8 +413,8 @@ export function indianBuffetAlgorithm(alpha: number): Algorithm<BuffetState> {
  * @concept indian-buffet-process
  * @example
  * ```ts
- * import { key } from 'mdml-engine/random'
- * import { indianBuffet } from 'mdml-engine/stochastic'
+ * import { key } from 'omai-engine/random'
+ * import { indianBuffet } from 'omai-engine/stochastic'
  * indianBuffet(key(0), 2, 5).shape[0] // => 5
  * ```
  */
@@ -438,7 +438,7 @@ export function indianBuffet(key: Key, alpha: number, n: number, options: TraceO
  * @concept indian-buffet-process
  * @example
  * ```ts
- * import { expectedDishes } from 'mdml-engine/stochastic'
+ * import { expectedDishes } from 'omai-engine/stochastic'
  * expectedDishes(2, 2) // => 3
  * ```
  */
@@ -463,9 +463,9 @@ export function expectedDishes(alpha: number, n: number): number {
  * @concept beta-process
  * @example
  * ```ts
- * import { uniform } from 'mdml-engine/dists'
- * import { key } from 'mdml-engine/random'
- * import { betaProcess } from 'mdml-engine/stochastic'
+ * import { uniform } from 'omai-engine/dists'
+ * import { key } from 'omai-engine/random'
+ * import { betaProcess } from 'omai-engine/stochastic'
  * betaProcess(key(0), { mass: 2 }, uniform(0, 1), 30).weights.shape // => [30]
  * ```
  */
@@ -478,13 +478,13 @@ export function betaProcess(
   positiveInteger(truncation, 'truncation', 'betaProcess')
   const alpha = params.mass
   const c = params.concentration ?? 1
-  if (!(alpha > 0 && c > 0)) throw new MdmlError('value', 'betaProcess: mass and concentration must be positive')
+  if (!(alpha > 0 && c > 0)) throw new OmaiError('value', 'betaProcess: mass and concentration must be positive')
   let weights: Value
   if (c === 1) {
     const nu = betaLaw(alpha, 1).rsample(foldIn(key, 0), [truncation])
     weights = cumprod(nu, 0)
   } else {
-    if (!(alpha < truncation)) throw new MdmlError('value', 'betaProcess: the truncation must exceed the mass')
+    if (!(alpha < truncation)) throw new OmaiError('value', 'betaProcess: the truncation must exceed the mass')
     weights = betaLaw((c * alpha) / truncation, c * (1 - alpha / truncation)).rsample(foldIn(key, 0), [truncation])
   }
   return { atoms: base.sample(foldIn(key, 1), [truncation]), weights }
@@ -503,9 +503,9 @@ export function betaProcess(
  * @concept gamma-process
  * @example
  * ```ts
- * import { normal } from 'mdml-engine/dists'
- * import { key } from 'mdml-engine/random'
- * import { gammaProcess } from 'mdml-engine/stochastic'
+ * import { normal } from 'omai-engine/dists'
+ * import { key } from 'omai-engine/random'
+ * import { gammaProcess } from 'omai-engine/stochastic'
  * gammaProcess(key(0), { alpha: 3 }, normal(0, 1), 100).weights.shape // => [100]
  * ```
  */
@@ -533,8 +533,8 @@ export function gammaProcess(
  * @concept gamma-process
  * @example
  * ```ts
- * import { key } from 'mdml-engine/random'
- * import { gammaSubordinator, timeGrid } from 'mdml-engine/stochastic'
+ * import { key } from 'omai-engine/random'
+ * import { gammaSubordinator, timeGrid } from 'omai-engine/stochastic'
  * gammaSubordinator(key(0), timeGrid(1, 5), { rate: 2, paths: 3 }).values.shape // => [3, 6]
  * ```
  */

@@ -41,7 +41,7 @@ export const AGENT_INDEX_ROOT_FILE = 'llms.txt'
 
 /** What collecting the index finds. */
 export interface CollectedIndex {
-  /** The package name, such as `mdml-engine`. */
+  /** The package name, such as `omai-engine`. */
   readonly packageName: string
   /** The package description from its `package.json`. */
   readonly description: string
@@ -96,7 +96,7 @@ export function collectAgentIndex(root: string, pkg: AgentIndexPackage = ENGINE)
   const { files, symbols, folders, indexProblems } = readSymbols(project)
   const pkgDir = `packages/${pkg.package}/`
   const libDir = `${pkgDir}${pkg.lib}/`
-  const packageName = project.packages[0]?.name ?? `mdml-${pkg.package}`
+  const packageName = project.packages[0]?.name ?? `omai-${pkg.package}`
   const description = project.packages[0]?.description ?? ''
   const entries: IndexEntry[] = []
   const place = (file: string): { domain: string; folder: string; path: string } | undefined => {
@@ -191,7 +191,7 @@ function cutPoint(text: string, limit: number): number {
  * @returns The opening, on one line.
  * @example
  * ```ts
- * import { openingSentences } from 'mdml-meta/extract'
+ * import { openingSentences } from 'omai-meta/extract'
  * openingSentences('One. Two.') // => 'One. Two.'
  * ```
  */
@@ -282,7 +282,7 @@ function renderJson(packageName: string, entries: readonly IndexEntry[]): string
  * @returns The files by path relative to the package root. Deterministic: the same input gives the same text.
  * @example
  * ```ts
- * import { renderAgentIndex } from 'mdml-meta/extract'
+ * import { renderAgentIndex } from 'omai-meta/extract'
  * const out = renderAgentIndex({ packageName: 'x', source: 'packages/x/src', entries: [], summaries: {}, header: '# x\n' })
  * [...out.keys()] // => ['index/index.json', 'llms.txt']
  * ```
@@ -350,8 +350,8 @@ export function buildAgentIndex(root: string, pkg: AgentIndexPackage = ENGINE): 
  * @returns The text of `llms.txt`.
  * @example
  * ```ts
- * import { renderRootIndex } from 'mdml-meta/extract'
- * renderRootIndex([], [{ name: 'mdml-meta', description: 'Docs tooling.' }]).includes('mdml-meta: Docs tooling.') // => true
+ * import { renderRootIndex } from 'omai-meta/extract'
+ * renderRootIndex([], [{ name: 'omai-meta', description: 'Docs tooling.' }]).includes('omai-meta: Docs tooling.') // => true
  * ```
  */
 export function renderRootIndex(
@@ -359,7 +359,7 @@ export function renderRootIndex(
   others: readonly { readonly name: string; readonly description: string }[],
 ): string {
   const out = [
-    '# mdml-js',
+    '# omai',
     '',
     '> A traced, self-documenting ML library in TypeScript, in packages. Each indexed package has an `llms.txt` that',
     '> lists its main things, one line each with `path:line` and the import path: start there, then open the source.',
@@ -426,7 +426,7 @@ export function buildRepositoryIndex(root: string): BuiltRepositoryIndex {
  * @returns The stale paths, sorted; an orphan carries ` (no longer generated)`.
  * @example
  * ```ts
- * import { staleAgentIndex } from 'mdml-meta/extract'
+ * import { staleAgentIndex } from 'omai-meta/extract'
  * staleAgentIndex(new Map([['a', '1'], ['b', '2']]), new Map([['a', '1'], ['b', 'old'], ['c', 'x']]))
  * // => ['b', 'c (no longer generated)']
  * ```

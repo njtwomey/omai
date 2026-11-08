@@ -46,8 +46,8 @@ const normOf = (kind: 'rms' | 'layer', dim: number): RMSNorm | LayerNorm =>
  * @concept sequence-models
  * @example
  * ```ts
- * import { MixerBlock, MambaBlock } from 'mdml-engine/nn/blocks'
- * import { zeros } from 'mdml-engine/tensor'
+ * import { MixerBlock, MambaBlock } from 'omai-engine/nn/blocks'
+ * import { zeros } from 'omai-engine/tensor'
  * new MixerBlock(new MambaBlock(8, { stateSize: 4 })).forward(zeros([1, 3, 8])).output.shape // => [1, 3, 8]
  * ```
  */
@@ -130,7 +130,7 @@ export type SequenceModelState = Readonly<Record<string, MixerState>>
  * @concept sequence-models
  * @example
  * ```ts
- * import { MambaBlock, SequenceModel } from 'mdml-engine/nn/blocks'
+ * import { MambaBlock, SequenceModel } from 'omai-engine/nn/blocks'
  * const m = new SequenceModel(8, 2, (dim) => new MambaBlock(dim, { stateSize: 4 }), { inputSize: 11 })
  * m.forward([[1, 2, 3]]).shape // => [1, 3, 11]
  * ```

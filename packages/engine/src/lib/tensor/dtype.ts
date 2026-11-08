@@ -4,7 +4,7 @@
  * `finfo` and `iinfo` for the properties of float and integer types.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 
 /** Element types a tensor can hold. Arithmetic is defined on floats; `int32` and `bool` hold indices and masks. */
 export type DType = 'float64' | 'float32' | 'int32' | 'bool'
@@ -32,7 +32,7 @@ const BY_RANK: readonly DType[] = ['bool', 'int32', 'float32', 'float64']
  * @returns A zero-filled typed array of the matching class.
  * @example
  * ```ts
- * import { allocate } from 'mdml-engine/tensor'
+ * import { allocate } from 'omai-engine/tensor'
  * allocate('int32', 3) instanceof Int32Array // => true
  * ```
  */
@@ -47,7 +47,7 @@ export function allocate<D extends DType>(dtype: D, size: number): Storage<D> {
     case 'bool':
       return new Uint8Array(size) as Storage<D>
     default:
-      throw new MdmlError('dtype', `unknown dtype ${String(dtype)}`)
+      throw new OmaiError('dtype', `unknown dtype ${String(dtype)}`)
   }
 }
 
@@ -58,7 +58,7 @@ export function allocate<D extends DType>(dtype: D, size: number): Storage<D> {
  * @returns `true` for `float64` and `float32`.
  * @example
  * ```ts
- * import { isFloat } from 'mdml-engine/tensor'
+ * import { isFloat } from 'omai-engine/tensor'
  * isFloat('float32') // => true
  * isFloat('bool') // => false
  * ```
@@ -76,7 +76,7 @@ export function isFloat(dtype: DType): dtype is FloatDType {
  * @returns The common dtype.
  * @example
  * ```ts
- * import { resultType } from 'mdml-engine/tensor'
+ * import { resultType } from 'omai-engine/tensor'
  * resultType('int32', 'float32') // => 'float64'
  * resultType('bool', 'int32') // => 'int32'
  * ```
@@ -95,7 +95,7 @@ export function resultType(a: DType, b: DType): DType {
  * @returns The result dtype.
  * @example
  * ```ts
- * import { weakResultType } from 'mdml-engine/tensor'
+ * import { weakResultType } from 'omai-engine/tensor'
  * weakResultType('float32', 2.5) // => 'float32'
  * weakResultType('int32', 2.5) // => 'float64'
  * ```
@@ -114,7 +114,7 @@ export function weakResultType(dtype: DType, scalar: number): DType {
  * @returns Machine epsilon, the largest finite value and the smallest normal value.
  * @example
  * ```ts
- * import { finfo } from 'mdml-engine/tensor'
+ * import { finfo } from 'omai-engine/tensor'
  * finfo('float64').eps // => 2.220446049250313e-16
  * ```
  */
@@ -131,7 +131,7 @@ export function finfo(dtype: FloatDType): { readonly eps: number; readonly max: 
  * @returns The smallest and largest values and the number of bits.
  * @example
  * ```ts
- * import { iinfo } from 'mdml-engine/tensor'
+ * import { iinfo } from 'omai-engine/tensor'
  * iinfo('int32').max // => 2147483647
  * ```
  */

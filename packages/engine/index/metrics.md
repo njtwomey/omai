@@ -4,12 +4,12 @@
 
 Evaluation metrics, scikit-learn and torchmetrics style: classification, regression, ranking, clustering, probabilistic, calibration and many more categories, with metric specs (`defineMetric`, each metric returns a `MetricResult`), sample weights, confidence intervals and comparisons, and `evaluate` to compute many metrics of the same predictions in one pass, following the encyclopedia's evaluation chapters.
 
-- structure `metric.ts` (file): The metric contract: a spec plus a function returning a MetricResult. `src/lib/metrics/metric.ts:1` `mdml-engine/metrics`
+- structure `metric.ts` (file): The metric contract: a spec plus a function returning a MetricResult. `src/lib/metrics/metric.ts:1` `omai-engine/metrics`
 
-- function `accuracyScore`: Classification accuracy, optionally weighted. `src/lib/metrics/classification.ts:434` `mdml-engine/metrics`
-- function `confusionMatrix`: Confusion matrix of labels and predictions. `src/lib/metrics/classification.ts:547` `mdml-engine/metrics`
-- function `evaluate`: Compute many metrics of the same predictions in one pass. `src/lib/metrics/foundations.ts:375` `mdml-engine/metrics`
-- function `f1Score`: F1 score, with precision, recall and F-beta beside it. `src/lib/metrics/classification.ts:335` `mdml-engine/metrics`
-- function `meanSquaredError`: Mean squared error; R2, MAE and the rest sit beside it. `src/lib/metrics/regression.ts:35` `mdml-engine/metrics`
-- function `r2Score`: Coefficient of determination. `src/lib/metrics/regression.ts:145` `mdml-engine/metrics`
-- function `rocAucScore`: Area under the ROC curve; rocCurve gives the curve. `src/lib/metrics/curves.ts:185` `mdml-engine/metrics`
+- function `accuracyScore`: Classification accuracy, optionally weighted. `src/lib/metrics/classification.ts:434` `omai-engine/metrics`
+- function `confusionMatrix`: Confusion matrix of labels and predictions. `src/lib/metrics/classification.ts:547` `omai-engine/metrics`
+- function `evaluate`: Compute many metrics of the same predictions in one pass. `src/lib/metrics/foundations.ts:375` `omai-engine/metrics`
+- function `f1Score`: F1 score, with precision, recall and F-beta beside it. `src/lib/metrics/classification.ts:335` `omai-engine/metrics`
+- function `meanSquaredError`: Mean squared error; R2, MAE and the rest sit beside it. `src/lib/metrics/regression.ts:35` `omai-engine/metrics`
+- function `r2Score`: Coefficient of determination. `src/lib/metrics/regression.ts:145` `omai-engine/metrics`
+- function `rocAucScore`: Area under the ROC curve; rocCurve gives the curve. `src/lib/metrics/curves.ts:185` `omai-engine/metrics`

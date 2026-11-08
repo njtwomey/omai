@@ -1,4 +1,4 @@
-// Canonical construction against SymPy's automatic evaluation. Equality here is textual: mdml-js parses SymPy's
+// Canonical construction against SymPy's automatic evaluation. Equality here is textual: omai parses SymPy's
 // input text and must print exactly what SymPy's str() prints for the evaluated expression; the values at the sample
 // points must agree too.
 import { describe, expect, it } from 'vitest'

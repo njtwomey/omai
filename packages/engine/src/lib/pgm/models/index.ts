@@ -1,5 +1,5 @@
 /**
- * The graphical model types, part of `mdml-engine/pgm`: Bayes networks, Markov networks and factor graphs,
+ * The graphical model types, part of `omai-engine/pgm`: Bayes networks, Markov networks and factor graphs,
  * linear-Gaussian networks and Gaussian Markov random fields, dynamic Bayes networks, hidden Markov models and linear
  * dynamical systems, plate models, influence diagrams and conditional random fields.
  *

@@ -68,8 +68,8 @@ export interface SlsqpState extends VectorState {
  * @reference D. Kraft, A software package for sequential quadratic programming, DFVLR-FB 88-28 (1988).
  * @example
  * ```ts
- * import { slsqpAlgorithm } from 'mdml-engine/optim'
- * import { square, sum, type Value } from 'mdml-engine/tensor'
+ * import { slsqpAlgorithm } from 'omai-engine/optim'
+ * import { square, sum, type Value } from 'omai-engine/tensor'
  * slsqpAlgorithm((x: Value) => sum(square(x)), [1, 2]).name // => 'slsqp'
  * ```
  */
@@ -324,8 +324,8 @@ export function slsqpAlgorithm(f: Objective, x0: Parameters, options: SlsqpOptio
  * @concept constrained-optimisation
  * @example
  * ```ts
- * import { slsqp } from 'mdml-engine/optim'
- * import { mul, square, sub, sum, tensor, toFlat, type Value } from 'mdml-engine/tensor'
+ * import { slsqp } from 'omai-engine/optim'
+ * import { mul, square, sub, sum, tensor, toFlat, type Value } from 'omai-engine/tensor'
  * // The closest point to (1, 2.5) in scipy's tutorial region.
  * const r = slsqp((x: Value) => sum(square(sub(x, tensor([1, 2.5])))), [2, 0], {
  *   constraints: [{ type: 'ineq', fun: (x: Value) => sub(tensor([2, 6, 2]), sum(mul(x, tensor([[-1, 2], [1, 2], [1, -2]])), 1)) }],

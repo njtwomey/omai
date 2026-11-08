@@ -1,5 +1,5 @@
 import { expect, describe as group, it } from 'vitest'
-import { isMdmlError } from '../base/index.ts'
+import { isOmaiError } from '../base/index.ts'
 import { toFlat } from '../tensor/index.ts'
 import { type AssetCache, type Fetcher, load, memoryCache, sha256Hex, xy } from './index.ts'
 
@@ -22,7 +22,7 @@ const code = async (f: () => Promise<unknown>): Promise<string> => {
   try {
     await f()
   } catch (e) {
-    return isMdmlError(e) ? e.code : `not an MdmlError: ${String(e)}`
+    return isOmaiError(e) ? e.code : `not an OmaiError: ${String(e)}`
   }
   return 'returned'
 }

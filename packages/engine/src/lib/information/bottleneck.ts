@@ -7,7 +7,7 @@
  * first breaks, and a planted joint distribution whose optimal clustering is known.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { svdvals } from '../numerics/linalg/index.ts'
 import { foldIn, uniform } from '../random/index.ts'
 import { fromStorage, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
@@ -39,12 +39,12 @@ interface Joint {
 
 function readJoint(joint: TensorLike, name: string): Joint {
   const v = float(joint)
-  if (v.shape.length !== 2) throw new MdmlError('shape', `${name}: the joint distribution must be a matrix [nx, ny]`)
+  if (v.shape.length !== 2) throw new OmaiError('shape', `${name}: the joint distribution must be a matrix [nx, ny]`)
   const [nx, ny] = v.shape as [number, number]
   const raw = toFlat(v)
   const total = raw.reduce((a, b) => a + b, 0)
   if (raw.some((x) => !(x >= 0)) || !(total > 0))
-    throw new MdmlError('value', `${name}: the joint must be non-negative and not all zero`)
+    throw new OmaiError('value', `${name}: the joint must be non-negative and not all zero`)
   const pxy = Float64Array.from(raw, (x) => x / total)
   const px = new Float64Array(nx)
   const py = new Float64Array(ny)
@@ -225,12 +225,12 @@ export const bottleneckContract: Contract<BottleneckState, BottleneckPath> = def
  * @param joint - The joint distribution p(x, y), a matrix `[nx, ny]` of probabilities or counts.
  * @param options - Beta, the number of clusters, the tolerance and the start's jitter.
  * @returns The algorithm; it converges when the encoder stops changing.
- * @throws MdmlError with code `shape` unless the joint is a matrix, `value` for a negative beta or fewer than two clusters.
+ * @throws OmaiError with code `shape` unless the joint is a matrix, `value` for a negative beta or fewer than two clusters.
  * @concept information-bottleneck
  * @example
  * ```ts
- * import { informationBottleneckAlgorithm } from 'mdml-engine/information'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { informationBottleneckAlgorithm } from 'omai-engine/information'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * // X is a noiseless copy of Y: a large beta keeps all of its one bit with two clusters.
  * const run = runAlgorithm(informationBottleneckAlgorithm([[0.5, 0], [0, 0.5]], { beta: 50, clusters: 2 }), { seed: 0, maxSteps: 500 })
  * Math.round(run.state.relevance * 1e6) / 1e6 // => 1
@@ -245,9 +245,9 @@ export function informationBottleneckAlgorithm(
   const nt = options.clusters ?? 4
   const tolerance = options.tolerance ?? 1e-9
   const perturbation = options.perturbation ?? 0.1
-  if (!(beta >= 0)) throw new MdmlError('value', 'informationBottleneckAlgorithm: beta must be non-negative')
+  if (!(beta >= 0)) throw new OmaiError('value', 'informationBottleneckAlgorithm: beta must be non-negative')
   if (!(Number.isInteger(nt) && nt >= 2))
-    throw new MdmlError('value', 'informationBottleneckAlgorithm: need at least two clusters')
+    throw new OmaiError('value', 'informationBottleneckAlgorithm: need at least two clusters')
   const state = (encoder: Float64Array, change: number, iteration: number): BottleneckState => {
     const m = marginals(j, nt, encoder)
     return { encoder, compression: m.ixt / LN2, relevance: m.ity / LN2, change, iteration }
@@ -342,13 +342,13 @@ export const bottleneckCurveContract: Contract<BottleneckCurveState, BottleneckC
  * @param betas - The values of beta, in the order they are visited.
  * @param options - Clusters, iterations per beta, tolerance and jitter.
  * @returns The algorithm; it completes after one step per beta.
- * @throws MdmlError with code `shape` unless the joint is a matrix, `value` for no betas, a negative beta or fewer than
+ * @throws OmaiError with code `shape` unless the joint is a matrix, `value` for no betas, a negative beta or fewer than
  *   two clusters.
  * @concept information-bottleneck
  * @example
  * ```ts
- * import { bottleneckCurveAlgorithm } from 'mdml-engine/information'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { bottleneckCurveAlgorithm } from 'omai-engine/information'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const run = runAlgorithm(bottleneckCurveAlgorithm([[0.5, 0], [0, 0.5]], [0, 50], { clusters: 2 }), { seed: 0, maxSteps: 5 })
  * run.state.points.map((x) => Math.round(x * 1e6) / 1e6) // => [0, 0, 1, 1]
  * ```
@@ -364,9 +364,9 @@ export function bottleneckCurveAlgorithm(
   const tolerance = options.tolerance ?? 1e-9
   const perturbation = options.perturbation ?? 0.05
   if (betas.length === 0 || betas.some((b) => !(b >= 0)))
-    throw new MdmlError('value', 'bottleneckCurveAlgorithm: need one or more non-negative betas')
+    throw new OmaiError('value', 'bottleneckCurveAlgorithm: need one or more non-negative betas')
   if (!(Number.isInteger(nt) && nt >= 2))
-    throw new MdmlError('value', 'bottleneckCurveAlgorithm: need at least two clusters')
+    throw new OmaiError('value', 'bottleneckCurveAlgorithm: need at least two clusters')
   return {
     name: 'information/bottleneck-curve',
     config: { betas: [...betas], clusters: nt, iterations, tolerance, perturbation },
@@ -430,11 +430,11 @@ export function bottleneckCurveAlgorithm(
  *
  * @param joint - The joint distribution p(x, y).
  * @returns beta_c (infinity when lambda_2 = 0).
- * @throws MdmlError with code `shape` unless the joint is a matrix.
+ * @throws OmaiError with code `shape` unless the joint is a matrix.
  * @concept information-bottleneck
  * @example
  * ```ts
- * import { bottleneckCriticalBeta } from 'mdml-engine/information'
+ * import { bottleneckCriticalBeta } from 'omai-engine/information'
  * bottleneckCriticalBeta([[0.25, 0.25], [0.25, 0.25]]) // => Infinity
  * bottleneckCriticalBeta([[0.5, 0], [0, 0.5]]) // => 1
  * ```
@@ -533,12 +533,12 @@ function mergeCost(m1: number, c1: readonly number[], m2: number, c2: readonly n
  *
  * @param joint - The joint distribution p(x, y).
  * @returns The algorithm; it completes when one cluster is left.
- * @throws MdmlError with code `shape` unless the joint is a matrix.
+ * @throws OmaiError with code `shape` unless the joint is a matrix.
  * @concept information-bottleneck
  * @example
  * ```ts
- * import { agglomerativeBottleneckAlgorithm } from 'mdml-engine/information'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { agglomerativeBottleneckAlgorithm } from 'omai-engine/information'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * // Two values of X with the same conditional merge at no cost.
  * const run = runAlgorithm(agglomerativeBottleneckAlgorithm([[0.25, 0.25], [0.125, 0.125], [0.25, 0]]), { seed: 0, maxSteps: 1 })
  * [run.state.clusters, run.state.last?.cost] // => [[[0, 1], [2]], 0]
@@ -632,11 +632,11 @@ export interface PlantedBottleneckOptions {
  *
  * @param options - Number of groups, group size, outputs and signal strength.
  * @returns The joint, the groups and the truth.
- * @throws MdmlError with code `value` for fewer than two groups or a signal outside [0, 1].
+ * @throws OmaiError with code `value` for fewer than two groups or a signal outside [0, 1].
  * @concept information-bottleneck
  * @example
  * ```ts
- * import { plantedBottleneck } from 'mdml-engine/information'
+ * import { plantedBottleneck } from 'omai-engine/information'
  * const p = plantedBottleneck({ groups: 2, perGroup: 3, signal: 1 })
  * [p.groups, p.mutualInformation, p.groupEntropy] // => [[0, 0, 0, 1, 1, 1], 1, 1]
  * ```
@@ -656,8 +656,8 @@ export function plantedBottleneck(options: PlantedBottleneckOptions = {}): Plant
       outputs >= 2
     )
   )
-    throw new MdmlError('value', 'plantedBottleneck: need at least two groups, one value per group and two outputs')
-  if (!(signal >= 0 && signal <= 1)) throw new MdmlError('value', 'plantedBottleneck: signal must be in [0, 1]')
+    throw new OmaiError('value', 'plantedBottleneck: need at least two groups, one value per group and two outputs')
+  if (!(signal >= 0 && signal <= 1)) throw new OmaiError('value', 'plantedBottleneck: signal must be in [0, 1]')
   const nx = groups * perGroup
   const data = new Float64Array(nx * outputs)
   const labels: number[] = []

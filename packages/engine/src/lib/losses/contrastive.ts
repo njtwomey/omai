@@ -74,8 +74,8 @@ export interface InfoNceOptions {
  * @concept contrastive-learning
  * @example
  * ```ts
- * import { infoNce } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { infoNce } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * Math.abs(item(infoNce([[1, 0], [0, 1]], [[1, 0], [0, 1]], { temperature: 1 })) - Math.log(1 + Math.exp(-1))) < 1e-15 // => true
  * ```
  */
@@ -113,8 +113,8 @@ export function infoNce(query: TensorLike, positive: TensorLike, options: InfoNc
  * @returns The scalar loss, differentiable in the embeddings.
  * @example
  * ```ts
- * import { ntXent } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { ntXent } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * const loss = ntXent([[1, 0], [1, 0], [0, 1], [0, 1]], [0, 0, 1, 1], { temperature: 1 })
  * Math.abs(item(loss) - Math.log(1 + 2 * Math.exp(-1))) < 1e-15 // => true
  * ```
@@ -150,8 +150,8 @@ export function ntXent(
  * @returns The loss, differentiable away from the hinge.
  * @example
  * ```ts
- * import { tripletMargin } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { tripletMargin } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * item(tripletMargin([[0, 0]], [[3, 4]], [[0, 1]], { eps: 0 })) // => 5
  * ```
  */
@@ -187,8 +187,8 @@ export function tripletMargin(
  * @returns The loss, differentiable (away from coincident dissimilar pairs).
  * @example
  * ```ts
- * import { contrastive } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { contrastive } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * item(contrastive([[0, 0], [0, 0]], [[0, 2], [0, 0.5]], [1, 0], { reduction: 'sum' })) // => 2.125
  * ```
  */
@@ -217,8 +217,8 @@ export function contrastive(
  * @returns The loss, differentiable.
  * @example
  * ```ts
- * import { cosineEmbedding } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { cosineEmbedding } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * item(cosineEmbedding([[1, 0]], [[0, 1]], [1])) // => 1
  * ```
  */
@@ -244,8 +244,8 @@ export function cosineEmbedding(
  * @returns The loss, differentiable away from the hinge.
  * @example
  * ```ts
- * import { hingeEmbedding } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { hingeEmbedding } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * item(hingeEmbedding([0.25, 2], [-1, 1], { reduction: 'sum' })) // => 2.75
  * ```
  */
@@ -270,8 +270,8 @@ export function hingeEmbedding(
  * @returns The scalar loss, differentiable in the features.
  * @example
  * ```ts
- * import { supervisedContrastive } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { supervisedContrastive } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * const loss = supervisedContrastive([[1, 0], [1, 0], [0, 1]], [0, 0, 1], { temperature: 1, baseTemperature: 1 })
  * Math.abs(item(loss) - Math.log(1 + Math.exp(-1))) < 1e-15 // => true
  * ```
@@ -311,8 +311,8 @@ export function supervisedContrastive(
  * @returns The scalar loss, differentiable in both embeddings (and in a traced logit scale).
  * @example
  * ```ts
- * import { clipLoss } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { clipLoss } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * const loss = clipLoss([[1, 0], [0, 1]], [[1, 0], [0, 1]], { logitScale: 1 })
  * Math.abs(item(loss) - Math.log(1 + Math.exp(-1))) < 1e-15 // => true
  * ```
@@ -362,8 +362,8 @@ const targetMask = (labels: TensorLike, c: number): Value => oneHot(asTensor(lab
  * @returns Logits `[N, C]` for a softmax cross-entropy, differentiable.
  * @example
  * ```ts
- * import { arcFaceLogits } from 'mdml-engine/losses'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { arcFaceLogits } from 'omai-engine/losses'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(arcFaceLogits([[1, 0]], [[1, 0], [0, 1]], [1], { scale: 1, margin: 0 })) // => [[1, 0]]
  * ```
  */
@@ -399,8 +399,8 @@ export function arcFaceLogits(
  * @returns Logits `[N, C]`, differentiable.
  * @example
  * ```ts
- * import { cosFaceLogits } from 'mdml-engine/losses'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { cosFaceLogits } from 'omai-engine/losses'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(cosFaceLogits([[1, 0]], [[1, 0], [0, 1]], [0], { scale: 2, margin: 0.25 })) // => [[1.5, 0]]
  * ```
  */
@@ -427,8 +427,8 @@ export function cosFaceLogits(
  * @returns The loss, differentiable in embeddings and centres.
  * @example
  * ```ts
- * import { arcFace } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { arcFace } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * Math.abs(item(arcFace([[1, 0]], [[1, 0], [-1, 0]], [0], { scale: 1, margin: 0 })) - Math.log(1 + Math.exp(-2))) < 1e-15 // => true
  * ```
  */
@@ -453,8 +453,8 @@ export function arcFace(
  * @returns The loss, differentiable in embeddings and centres.
  * @example
  * ```ts
- * import { cosFace } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { cosFace } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * Math.abs(item(cosFace([[1, 0]], [[1, 0], [-1, 0]], [0], { scale: 1, margin: 0 })) - Math.log(1 + Math.exp(-2))) < 1e-15 // => true
  * ```
  */
@@ -487,8 +487,8 @@ function offDiagonalSquares(m: Value): Value {
  * @concept self-supervised-learning
  * @example
  * ```ts
- * import { barlowTwins } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { barlowTwins } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * const z = [[1, -1], [-1, 1], [1, 1], [-1, -1]]
  * item(barlowTwins(z, z, { eps: 0 })) // => 0
  * ```
@@ -533,8 +533,8 @@ export interface VicregOptions {
  * @returns The scalar loss, differentiable in both views.
  * @example
  * ```ts
- * import { vicreg } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { vicreg } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * item(vicreg([[1, 1], [-1, -1]], [[1, 1], [-1, -1]], { eps: 0, covariance: 0 })) // => 0
  * ```
  */
@@ -566,8 +566,8 @@ export function vicreg(z1: TensorLike, z2: TensorLike, options: VicregOptions = 
  * @returns The scalar alignment.
  * @example
  * ```ts
- * import { alignment } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { alignment } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * item(alignment([[1, 0]], [[0, 1]])) // => 2
  * ```
  */
@@ -588,8 +588,8 @@ export function alignment(x: TensorLike, y: TensorLike, options: { readonly alph
  * @returns The scalar uniformity (more negative is more uniform).
  * @example
  * ```ts
- * import { uniformity } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { uniformity } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * Math.abs(item(uniformity([[1, 0], [-1, 0]], { t: 1 })) + 4) < 1e-12 // => true
  * ```
  */

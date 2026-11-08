@@ -30,7 +30,7 @@ import type { Backend } from './backend.ts'
  * @concept tensor-backend
  * @example
  * ```ts
- * import { cpu } from 'mdml-engine/tensor'
+ * import { cpu } from 'omai-engine/tensor'
  * cpu.name // => 'cpu'
  * ```
  */

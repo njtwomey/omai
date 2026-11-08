@@ -64,7 +64,7 @@ def well_conditioned(g: np.random.Generator, m: int, n: int, batch: tuple[int, .
 
 
 def sign_fixed(v: FloatArray) -> FloatArray:
-    """Flip each column so that its largest-magnitude entry is positive (the convention mdml-js uses)."""
+    """Flip each column so that its largest-magnitude entry is positive (the convention omai uses)."""
     idx = np.argmax(np.abs(v), axis=-2, keepdims=True)
     signs = np.sign(np.take_along_axis(v, idx, axis=-2))
     return v * np.where(signs == 0, 1, signs)

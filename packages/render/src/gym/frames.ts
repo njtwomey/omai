@@ -2,7 +2,7 @@
  * Filmstrips of an environment's rendered frames: every few frames of an episode side by side in one scene.
  */
 
-import { grid, type Scene } from 'mdml-engine/scene'
+import { grid, type Scene } from 'omai-engine/scene'
 
 /**
  * A filmstrip: every `every`-th frame (and the last) side by side in rows of `columns`, each in a cell of the given size.

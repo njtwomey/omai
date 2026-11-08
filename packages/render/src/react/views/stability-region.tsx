@@ -3,7 +3,7 @@
  * that says in words whether the method is stable for every one of them.
  */
 
-import type { StabilityRegion } from 'mdml-engine/exposition'
+import type { StabilityRegion } from 'omai-engine/exposition'
 import { type ReactElement, useCallback } from 'react'
 import type { Figure } from '../../figure/figure.ts'
 import { stabilityRegionView, stabilityVerdict } from '../../views/stability-region.ts'

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isMdmlError } from '../base/index.ts'
+import { isOmaiError } from '../base/index.ts'
 import { evaluateComplex, parse, solve, solveLinearSystem, solveSteps, sym, toText } from './index.ts'
 
 const x = sym('x')
@@ -39,7 +39,7 @@ describe('solve', () => {
       solve(parse('x - x'), x)
       expect.unreachable()
     } catch (e) {
-      expect(isMdmlError(e)).toBe(true)
+      expect(isOmaiError(e)).toBe(true)
     }
     expect(() => solve(parse('x - cos(x)'), x)).toThrow()
   })

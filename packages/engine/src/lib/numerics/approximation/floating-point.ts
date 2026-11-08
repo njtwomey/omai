@@ -6,7 +6,7 @@
  */
 
 import { grad } from '../../autodiff/index.ts'
-import { kahanSum, MdmlError, pairwiseSum, roundHalfEven } from '../../base/index.ts'
+import { kahanSum, OmaiError, pairwiseSum, roundHalfEven } from '../../base/index.ts'
 import { item, type TensorLike, tensor, toVector, type Value } from '../../tensor/index.ts'
 
 const buffer = new DataView(new ArrayBuffer(8))
@@ -30,7 +30,7 @@ function fromBits(b: bigint): number {
  * @concept floating-point
  * @example
  * ```ts
- * import { nextAfter } from 'mdml-engine/numerics/approximation'
+ * import { nextAfter } from 'omai-engine/numerics/approximation'
  * nextAfter(1, 2) - 1 // => 2.220446049250313e-16
  * ```
  */
@@ -49,7 +49,7 @@ export function nextAfter(x: number, y: number): number {
  * @returns The spacing.
  * @example
  * ```ts
- * import { ulp } from 'mdml-engine/numerics/approximation'
+ * import { ulp } from 'omai-engine/numerics/approximation'
  * ulp(1) // => 2.220446049250313e-16
  * ```
  */
@@ -79,7 +79,7 @@ export interface FloatFormat {
  *
  * @example
  * ```ts
- * import { FLOAT_FORMATS } from 'mdml-engine/numerics/approximation'
+ * import { FLOAT_FORMATS } from 'omai-engine/numerics/approximation'
  * FLOAT_FORMATS.float16.max // => 65504
  * ```
  */
@@ -97,7 +97,7 @@ export const FLOAT_FORMATS: Readonly<Record<FloatFormatName, FloatFormat>> = {
  * @returns Epsilon.
  * @example
  * ```ts
- * import { machineEpsilon } from 'mdml-engine/numerics/approximation'
+ * import { machineEpsilon } from 'omai-engine/numerics/approximation'
  * machineEpsilon('float32') // => 1.1920928955078125e-7
  * ```
  */
@@ -112,7 +112,7 @@ export function machineEpsilon(dtype: FloatFormatName = 'float64'): number {
  * @returns The float32 value.
  * @example
  * ```ts
- * import { toFloat32 } from 'mdml-engine/numerics/approximation'
+ * import { toFloat32 } from 'omai-engine/numerics/approximation'
  * toFloat32(0.1) // => 0.10000000149011612
  * ```
  */
@@ -135,7 +135,7 @@ function exponentOf(x: number): number {
  * @returns The value of `format` nearest to `x`.
  * @example
  * ```ts
- * import { roundToFormat } from 'mdml-engine/numerics/approximation'
+ * import { roundToFormat } from 'omai-engine/numerics/approximation'
  * roundToFormat(1 + 2 ** -11, 'float16') // => 1
  * ```
  */
@@ -159,7 +159,7 @@ export function roundToFormat(x: number, format: FloatFormatName = 'float16'): n
  * @returns The float16 value, as a double.
  * @example
  * ```ts
- * import { toFloat16 } from 'mdml-engine/numerics/approximation'
+ * import { toFloat16 } from 'omai-engine/numerics/approximation'
  * toFloat16(0.1) // => 0.0999755859375
  * ```
  */
@@ -174,7 +174,7 @@ export function toFloat16(x: number): number {
  * @returns The bfloat16 value, as a double.
  * @example
  * ```ts
- * import { toBfloat16 } from 'mdml-engine/numerics/approximation'
+ * import { toBfloat16 } from 'omai-engine/numerics/approximation'
  * toBfloat16(0.1) // => 0.10009765625
  * ```
  */
@@ -190,7 +190,7 @@ export function toBfloat16(x: number): number {
  * @returns [s, e] with a + b = s + e exactly.
  * @example
  * ```ts
- * import { twoSum } from 'mdml-engine/numerics/approximation'
+ * import { twoSum } from 'omai-engine/numerics/approximation'
  * twoSum(1, 1e-16) // => [1, 1e-16]
  * ```
  */
@@ -215,7 +215,7 @@ function split(a: number): [number, number] {
  * @returns [p, e] with a b = p + e exactly (barring overflow).
  * @example
  * ```ts
- * import { twoProduct } from 'mdml-engine/numerics/approximation'
+ * import { twoProduct } from 'omai-engine/numerics/approximation'
  * const [p, e] = twoProduct(0.1, 0.1)
  * e !== 0 // => true
  * ```
@@ -242,7 +242,7 @@ export type SumMethod = 'naive' | 'kahan' | 'neumaier' | 'pairwise'
  * @concept floating-point
  * @example
  * ```ts
- * import { compensatedSum } from 'mdml-engine/numerics/approximation'
+ * import { compensatedSum } from 'omai-engine/numerics/approximation'
  * compensatedSum([1, 1e100, 1, -1e100], 'neumaier') // => 2
  * compensatedSum([1, 1e100, 1, -1e100], 'kahan') // => 0
  * ```
@@ -281,8 +281,8 @@ export function compensatedSum(xs: ArrayLike<number>, method: SumMethod = 'neuma
  * @returns The condition number.
  * @example
  * ```ts
- * import { conditionNumber } from 'mdml-engine/numerics/approximation'
- * import { log } from 'mdml-engine/tensor'
+ * import { conditionNumber } from 'omai-engine/numerics/approximation'
+ * import { log } from 'omai-engine/tensor'
  * // log is ill-conditioned near 1: cond = 1 / |log x|.
  * Math.round(conditionNumber((x) => log(x), 1.001)) // => 1000
  * ```
@@ -290,7 +290,7 @@ export function compensatedSum(xs: ArrayLike<number>, method: SumMethod = 'neuma
 export function conditionNumber(f: (x: Value) => Value, x: number): number {
   const fx = item(f(tensor(x)))
   const d = item(grad(f)(tensor(x)) as Value)
-  if (fx === 0) throw new MdmlError('value', 'conditionNumber: f(x) = 0')
+  if (fx === 0) throw new OmaiError('value', 'conditionNumber: f(x) = 0')
   return Math.abs((x * d) / fx)
 }
 
@@ -302,12 +302,12 @@ export function conditionNumber(f: (x: Value) => Value, x: number): number {
  * @param x - The point `[n]`.
  * @param sigma - Input standard deviations `[n]`.
  * @returns The propagated standard deviation.
- * @throws MdmlError with code `shape` unless `x` and `sigma` are vectors, and `not-differentiable` for a traced
+ * @throws OmaiError with code `shape` unless `x` and `sigma` are vectors, and `not-differentiable` for a traced
  *   value.
  * @example
  * ```ts
- * import { propagateError } from 'mdml-engine/numerics/approximation'
- * import { prod } from 'mdml-engine/tensor'
+ * import { propagateError } from 'omai-engine/numerics/approximation'
+ * import { prod } from 'omai-engine/tensor'
  * // The area of a 2 x 3 rectangle with sides known to 0.1: sqrt((3 * 0.1)^2 + (2 * 0.1)^2).
  * Math.abs(propagateError((v) => prod(v), [2, 3], [0.1, 0.1]) - Math.sqrt(0.13)) < 1e-12 // => true
  * ```
@@ -326,7 +326,7 @@ export function propagateError(f: (x: Value) => Value, x: TensorLike, sigma: Ten
  * @returns Digits (Infinity when equal).
  * @example
  * ```ts
- * import { significantDigits } from 'mdml-engine/numerics/approximation'
+ * import { significantDigits } from 'omai-engine/numerics/approximation'
  * Math.round(significantDigits(3.14159, Math.PI)) // => 6
  * ```
  */

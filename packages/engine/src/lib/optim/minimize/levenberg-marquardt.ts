@@ -126,13 +126,13 @@ const columnNorms = (J: Float64Array, m: number, n: number): Float64Array => {
  * @param x0 - The start.
  * @param options - Variable scaling, factor, tolerances (ftol, xtol, gtol: default 1e-8) and the evaluation cap.
  * @returns The algorithm.
- * @throws MdmlError with code `shape` when there are fewer residuals than parameters.
+ * @throws OmaiError with code `shape` when there are fewer residuals than parameters.
  * @concept least-squares
  * @reference J. J. More, The Levenberg-Marquardt algorithm: implementation and theory, Numerical Analysis (1978).
  * @example
  * ```ts
- * import { levenbergMarquardtAlgorithm } from 'mdml-engine/optim'
- * import { sub, type Value } from 'mdml-engine/tensor'
+ * import { levenbergMarquardtAlgorithm } from 'omai-engine/optim'
+ * import { sub, type Value } from 'omai-engine/tensor'
  * levenbergMarquardtAlgorithm((p: Value) => sub(p, 1), [0]).name // => 'levenbergMarquardt'
  * ```
  */
@@ -298,8 +298,8 @@ function lmOn(res: FlatResiduals, options: LevenbergMarquardtOptions): Algorithm
  * @concept least-squares
  * @example
  * ```ts
- * import { levenbergMarquardt } from 'mdml-engine/optim'
- * import { mul, sub, tensor, toFlat, type Value } from 'mdml-engine/tensor'
+ * import { levenbergMarquardt } from 'omai-engine/optim'
+ * import { mul, sub, tensor, toFlat, type Value } from 'omai-engine/tensor'
  * // Fit y = a x through (1, 2), (2, 4), (3, 6).
  * const r = levenbergMarquardt((a: Value) => sub(mul(a, tensor([1, 2, 3])), tensor([2, 4, 6])), [0])
  * toFlat(r.x as Value).map((v) => Math.round(v * 1e8) / 1e8) // => [2]

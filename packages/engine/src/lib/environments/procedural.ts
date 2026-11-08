@@ -5,7 +5,7 @@
  * where each coloured door opens only with its key, with disjoint training and test level ranges.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { foldIn, Generator, type Key, key as makeKey } from '../random/index.ts'
 import type { Env, EnvDefinition, EnvModel, Outcome } from '../rl/index.ts'
 import { circle, type Paint, rect, type Scene, scene } from '../scene/index.ts'
@@ -68,8 +68,8 @@ const NEIGHBOURS: readonly (readonly [number, number])[] = [
  * @concept procedural-generation
  * @example
  * ```ts
- * import { braidMaze, deadEnds, generateMaze } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { braidMaze, deadEnds, generateMaze } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * deadEnds(braidMaze(generateMaze(key(0)), key(1), 1)).length // => 0
  * ```
  */
@@ -103,7 +103,7 @@ function gridMaze(rows: number, cols: number, w: World): Maze {
  * @concept procedural-generation
  * @example
  * ```ts
- * import { deadEnds } from 'mdml-engine/environments'
+ * import { deadEnds } from 'omai-engine/environments'
  * deadEnds({ rows: 1, cols: 2, grid: ['#####', '#...#', '#####'] }) // => [0, 1]
  * ```
  */
@@ -127,12 +127,12 @@ export function deadEnds(maze: Maze): number[] {
  * @param key - The key; the same key gives the same maze.
  * @param options - Size in cells, algorithm and braiding.
  * @returns The maze.
- * @throws MdmlError with code `value` for sizes below one cell.
+ * @throws OmaiError with code `value` for sizes below one cell.
  * @concept procedural-generation
  * @example
  * ```ts
- * import { generateMaze } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { generateMaze } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * generateMaze(key(0), { rows: 3, cols: 4 }).grid.length // => 7
  * ```
  */
@@ -140,7 +140,7 @@ export function generateMaze(key: Key, options: MazeOptions = {}): Maze {
   const rows = options.rows ?? 5
   const cols = options.cols ?? 5
   if (!(Number.isInteger(rows) && Number.isInteger(cols) && rows >= 1 && cols >= 1)) {
-    throw new MdmlError('value', 'generateMaze: rows and cols must be positive integers')
+    throw new OmaiError('value', 'generateMaze: rows and cols must be positive integers')
   }
   // Worlds' maze generators on a blank grid, drawn as the character grid; braiding by worlds' braid.
   const base = fromAscii(Array.from({ length: rows }, () => '.'.repeat(cols)))
@@ -160,7 +160,7 @@ export function generateMaze(key: Key, options: MazeOptions = {}): Maze {
  * @concept procedural-generation
  * @example
  * ```ts
- * import { gridDistances } from 'mdml-engine/environments'
+ * import { gridDistances } from 'omai-engine/environments'
  * Array.from(gridDistances(['...', '#.#'], [0, 0])) // => [0, 1, 2, -1, 2, -1]
  * ```
  */
@@ -234,18 +234,18 @@ const cellPos = (maze: Maze, i: number): [number, number] => [
  * @param level - The level number.
  * @param options - Maze, keys, seed and goal placement.
  * @returns The level.
- * @throws MdmlError with code `value` when the maze is too small for its doors.
+ * @throws OmaiError with code `value` when the maze is too small for its doors.
  * @concept procedural-generation
  * @example
  * ```ts
- * import { proceduralLevel } from 'mdml-engine/environments'
+ * import { proceduralLevel } from 'omai-engine/environments'
  * proceduralLevel(3, { rows: 4, cols: 4, keys: 1 }).doors.length // => 1
  * ```
  */
 export function proceduralLevel(level: number, options: ProceduralOptions = {}): ProceduralLevel {
   const nKeys = options.keys ?? 0
   if (!(Number.isInteger(nKeys) && nKeys >= 0 && nKeys <= MAX_KEYS)) {
-    throw new MdmlError('value', `proceduralLevel: keys must be an integer from 0 to ${MAX_KEYS}`)
+    throw new OmaiError('value', `proceduralLevel: keys must be an integer from 0 to ${MAX_KEYS}`)
   }
   const lk = foldIn(makeKey(options.levelSeed ?? 0), level)
   const perfect = generateMaze(foldIn(lk, 0), { ...options, braid: 0 })
@@ -283,7 +283,7 @@ export function proceduralLevel(level: number, options: ProceduralOptions = {}):
   path.reverse()
   const interior = path.slice(1, -1)
   if (interior.length < 2 * nKeys) {
-    throw new MdmlError('value', `proceduralLevel: the path to the goal is too short for ${nKeys} doors`)
+    throw new OmaiError('value', `proceduralLevel: the path to the goal is too short for ${nKeys} doors`)
   }
   // Doors at increasing positions along the path, leaving room before each for its key's region to grow.
   const doorIdx: number[] = []
@@ -405,11 +405,11 @@ const isDoorChar = (ch: string): boolean => ch >= 'A' && ch <= 'D'
  * @param options - Maze, keys, levels, observation and rewards.
  * @param id - The environment id.
  * @returns The environment.
- * @throws MdmlError with code `value` for index observations over unlimited levels.
+ * @throws OmaiError with code `value` for index observations over unlimited levels.
  * @concept procedural-generation
  * @example
  * ```ts
- * import { makeProcedural } from 'mdml-engine/environments'
+ * import { makeProcedural } from 'omai-engine/environments'
  * makeProcedural({ rows: 3, cols: 3, numLevels: 2, observation: 'index' }).observationSpace.kind // => 'discrete'
  * ```
  */
@@ -427,7 +427,7 @@ export function makeProcedural(options: ProceduralOptions = {}, id = 'Procedural
   const goalReward = options.goalReward ?? 1
   const stepReward = options.stepReward ?? 0
   if (mode === 'index' && numLevels === 0) {
-    throw new MdmlError('value', 'procedural: index observations need a finite numLevels')
+    throw new OmaiError('value', 'procedural: index observations need a finite numLevels')
   }
   const cache = new Map<number, ProceduralLevel>()
   const level = (n: number): ProceduralLevel => {
@@ -604,7 +604,7 @@ export function makeProcedural(options: ProceduralOptions = {}, id = 'Procedural
  * @concept generalisation
  * @example
  * ```ts
- * import { levelSplit } from 'mdml-engine/environments'
+ * import { levelSplit } from 'omai-engine/environments'
  * levelSplit(200, 50).test // => { startLevel: 200, numLevels: 50 }
  * ```
  */
@@ -642,8 +642,8 @@ const levelOptions = {
  * @concept procedural-generation
  * @example
  * ```ts
- * import { proceduralMaze } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { proceduralMaze } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * const level = proceduralMaze.create({ numLevels: 10, startLevel: 5 }).reset(key(0)).info['level'] as number
  * level >= 5 && level < 15 // => true
  * ```
@@ -662,7 +662,7 @@ export const proceduralMaze: ProceduralDefinition = {
  * @concept procedural-generation
  * @example
  * ```ts
- * import { keyDoor } from 'mdml-engine/environments'
+ * import { keyDoor } from 'omai-engine/environments'
  * keyDoor.create({ keys: 2, numLevels: 1 }).level(0).keys.length // => 2
  * ```
  */

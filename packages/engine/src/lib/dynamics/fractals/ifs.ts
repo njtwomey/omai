@@ -7,7 +7,7 @@
  * iterations as traced algorithms.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { foldIn } from '../../random/index.ts'
 import {
   type Algorithm,
@@ -78,7 +78,7 @@ export const BARNSLEY_FERN: Ifs = {
  * @concept iterated-function-systems
  * @example
  * ```ts
- * import { fractals } from 'mdml-engine/dynamics'
+ * import { fractals } from 'omai-engine/dynamics'
  * fractals.applyAffine({ a: 0.5, b: 0, c: 0, d: 0.5, e: 1, f: 2 }, 2, 4) // => [2, 4]
  * ```
  */
@@ -92,11 +92,11 @@ export function applyAffine(m: PlanarAffineMap, x: number, y: number): [number, 
  *
  * @param ifs - The system.
  * @returns Probabilities summing to 1.
- * @throws MdmlError with code `value` for given probabilities that are negative, the wrong number, or do not sum to 1.
+ * @throws OmaiError with code `value` for given probabilities that are negative, the wrong number, or do not sum to 1.
  * @concept iterated-function-systems
  * @example
  * ```ts
- * import { fractals } from 'mdml-engine/dynamics'
+ * import { fractals } from 'omai-engine/dynamics'
  * fractals.ifsProbabilities(fractals.SIERPINSKI).map((p) => p.toFixed(3)) // => ['0.333', '0.333', '0.333']
  * ```
  */
@@ -108,7 +108,7 @@ export function ifsProbabilities(ifs: Ifs): number[] {
       ifs.probabilities.some((p) => !(p >= 0)) ||
       Math.abs(sum - 1) > 1e-9
     )
-      throw new MdmlError(
+      throw new OmaiError(
         'value',
         `ifsProbabilities: ${ifs.name} needs one non-negative probability per map, summing to 1`,
       )
@@ -116,7 +116,7 @@ export function ifsProbabilities(ifs: Ifs): number[] {
   }
   const areas = ifs.maps.map((m) => Math.abs(m.a * m.d - m.b * m.c))
   const total = areas.reduce((a, b) => a + b, 0)
-  if (!(total > 0)) throw new MdmlError('value', `ifsProbabilities: ${ifs.name} has only degenerate maps`)
+  if (!(total > 0)) throw new OmaiError('value', `ifsProbabilities: ${ifs.name} has only degenerate maps`)
   return areas.map((a) => a / total)
 }
 
@@ -127,18 +127,18 @@ export function ifsProbabilities(ifs: Ifs): number[] {
  *
  * @param ifs - The system.
  * @returns D, found by bisection.
- * @throws MdmlError with code `value` if a map is not a contraction (scaling at least 1) or is degenerate in every map.
+ * @throws OmaiError with code `value` if a map is not a contraction (scaling at least 1) or is degenerate in every map.
  * @concept iterated-function-systems
  * @example
  * ```ts
- * import { fractals } from 'mdml-engine/dynamics'
+ * import { fractals } from 'omai-engine/dynamics'
  * Math.round(fractals.similarityDimension(fractals.SIERPINSKI) * 1e9) / 1e9 // => 1.584962501
  * ```
  */
 export function similarityDimension(ifs: Ifs): number {
   const r = ifs.maps.map((m) => Math.sqrt(Math.abs(m.a * m.d - m.b * m.c))).filter((x) => x > 0)
   if (r.length === 0 || r.some((x) => x >= 1))
-    throw new MdmlError('value', `similarityDimension: ${ifs.name} must be made of contractions`)
+    throw new OmaiError('value', `similarityDimension: ${ifs.name} must be made of contractions`)
   const f = (D: number): number => r.reduce((s, x) => s + x ** D, 0) - 1
   let lo = 0
   let hi = 10
@@ -192,12 +192,12 @@ const mapRows = (ifs: Ifs): number[] => ifs.maps.flatMap((m) => [m.a, m.b, m.c, 
  *
  * @param options - The system, batch, burn-in and the most points kept.
  * @returns The algorithm.
- * @throws MdmlError with code `value` for bad probabilities, a non-contraction (for the dimension) or a non-positive batch.
+ * @throws OmaiError with code `value` for bad probabilities, a non-contraction (for the dimension) or a non-positive batch.
  * @concept iterated-function-systems
  * @example
  * ```ts
- * import { fractals } from 'mdml-engine/dynamics'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { fractals } from 'omai-engine/dynamics'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * runAlgorithm(fractals.chaosGame({ batch: 50 }), { seed: 0, maxSteps: 4 }).state.cloud.length // => 400
  * ```
  */
@@ -304,12 +304,12 @@ export const ifsDeterministicContract: Contract<IfsDeterministicState, IfsDeterm
  *
  * @param options - The system, the window and the resolution.
  * @returns The algorithm.
- * @throws MdmlError with code `value` for a resolution below 2 or an empty window.
+ * @throws OmaiError with code `value` for a resolution below 2 or an empty window.
  * @concept iterated-function-systems
  * @example
  * ```ts
- * import { fractals } from 'mdml-engine/dynamics'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { fractals } from 'omai-engine/dynamics'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const s = runAlgorithm(fractals.ifsDeterministic({ resolution: 8 }), { seed: 0, maxSteps: 30 })
  * [s.status, s.state.changed] // => ['converged', 0]
  * ```
@@ -321,8 +321,8 @@ export function ifsDeterministic(
   const [x0, x1, y0, y1] = options.box ?? [0, 1, 0, 1]
   const N = options.resolution ?? 256
   if (!(Number.isInteger(N) && N >= 2))
-    throw new MdmlError('value', `ifsDeterministic: resolution must be an integer of at least 2, got ${N}`)
-  if (!(x1 > x0 && y1 > y0)) throw new MdmlError('value', 'ifsDeterministic: the window is empty')
+    throw new OmaiError('value', `ifsDeterministic: resolution must be an integer of at least 2, got ${N}`)
+  if (!(x1 > x0 && y1 > y0)) throw new OmaiError('value', 'ifsDeterministic: the window is empty')
   const cx = (c: number): number => x0 + ((c + 0.5) / N) * (x1 - x0)
   const cy = (r: number): number => y1 - ((r + 0.5) / N) * (y1 - y0)
   return {

@@ -2,7 +2,7 @@
 
 Written 2026-11-07 for P3.20 (the convention part) and the remaining certain items of P3.30, under decision D-015 (failure
 convention (a): numeric routines return a result with one `status` vocabulary and never throw for non-convergence; invalid
-arguments throw `MdmlError('value')`; NaN rule (a): elementwise operations propagate, everything that summarises or decides
+arguments throw `OmaiError('value')`; NaN rule (a): elementwise operations propagate, everything that summarises or decides
 rejects non-finite input at its boundary). Sources: register rows ND-10, ND-11, OL-5, OL-7, OL-16, DSM-4, KDES-17, FD-16 and
 the evidence in `numerics.md` F10 and F11, `optim-losses.md` F5, F7 and F16, `dists-stats-metrics.md` F4; every claim below was
 re-checked against the code on main at `4ef92911`. The convention itself is in `docs/structure.md` section 2 ("Failure and
@@ -15,8 +15,8 @@ interface that carries `converged` is counted with the results).
 
 | way of reporting                                                                 | where                                                                                                                                                                                                                                                                                  | what a caller has to write                                 |
 | -------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
-| throws `MdmlError('convergence')` (64 sites)                                     | wrappers that return a bare value: `sqrtm`, `signm`, `solveCare`, `solveDare`, `chebfun`, `remez` (approximation), `continuedFraction`, `eigsh`, `schur`, kernels `eigh` and `svd`, `sparseSolve`, `emd`, `auction`, `bracket`, `curveFit`; and, as a defect, `fixedPoint`, `homotopy` | `try`/`catch` on a code                                    |
-| throws `MdmlError('value')` for non-convergence or a bad input                   | `solve` of a singular matrix (numerics has no `singular` site; optim 3, glm and the Newton helpers), `choleskyJitter`, NaN in `eigh` ("QL iteration did not converge"), `cholesky` of a NaN matrix ("not positive definite"), the three LP solvers on NaN data                         | `catch`, then read the message                             |
+| throws `OmaiError('convergence')` (64 sites)                                     | wrappers that return a bare value: `sqrtm`, `signm`, `solveCare`, `solveDare`, `chebfun`, `remez` (approximation), `continuedFraction`, `eigsh`, `schur`, kernels `eigh` and `svd`, `sparseSolve`, `emd`, `auction`, `bracket`, `curveFit`; and, as a defect, `fixedPoint`, `homotopy` | `try`/`catch` on a code                                    |
+| throws `OmaiError('value')` for non-convergence or a bad input                   | `solve` of a singular matrix (numerics has no `singular` site; optim 3, glm and the Newton helpers), `choleskyJitter`, NaN in `eigh` ("QL iteration did not converge"), `cholesky` of a NaN matrix ("not positive definite"), the three LP solvers on NaN data                         | `catch`, then read the message                             |
 | `converged: boolean` alone (108 declarations, states included; about 70 results) | `Krylov`, `quad`, `romberg`, `remez`, eigenvalue iterations, `SmoResult`, `DualCdResult`, `ScalarResult`, `GlmFit`, `BoxQpResult`, `L1Result`, `nnls`/`lsqLinear`, `gam`, `linear`, `gp`, `pgm`, `foundations`, `dynamics` solvers                                                     | `if (!r.converged)`; the budget and the failure look alike |
 | `converged` and `status: RunStatus` (25 declarations)                            | `MinimizeResult`, `AdmmResult`, `SparseResult`, the dictionary, Gromov, Wasserstein, transport, NSGA-II results, the `pgm` inference results, best-arm                                                                                                                                 | `r.status`                                                 |
 | `status: string` and `success: boolean`                                          | `LinprogResult` (`optimal`, `infeasible`, `unbounded`, `iteration limit`, `numerical difficulties`), `QuadprogResult`, `ConicResult`, `MilpResult` (`node limit`), `games` and `fields`/`nn` results with free strings                                                                 | a second check beside the `RunStatus` one                  |
@@ -67,10 +67,10 @@ number of iterations reached" in `optim/minimize/_shared.ts`); `stopped` is for 
 
 1. A routine that returns a result record has `status: RunStatus` and `converged: boolean` (`converged === (status ===
    'converged')`), and does not throw because it did not converge.
-2. Invalid arguments throw `MdmlError('value')`: a shape is `shape`; a NaN or an infinity where a number is needed, crossed
+2. Invalid arguments throw `OmaiError('value')`: a shape is `shape`; a NaN or an infinity where a number is needed, crossed
    bounds, a negative weight are `value`.
 3. A routine that returns a bare value (a matrix function, a fitted polynomial, a differentiable solve) has no place for a
-   status: it throws `MdmlError('convergence')` and its `@throws` says so. This is the one reading of D-015 that I had to
+   status: it throws `OmaiError('convergence')` and its `@throws` says so. This is the one reading of D-015 that I had to
    interpret: D-015 says "never throw for non-convergence", but making these return a record would change their return types,
    a break of the public surface. The 12 + 7 sites are listed in section 5.
 4. A result whose `status` field already holds an older vocabulary keeps it (additions only). The `RunStatus` is then beside

@@ -6,7 +6,7 @@
  * @index structure First-order terms and clauses, the data of logic programming.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 
 /** A constant symbol (Prolog atom): `a`, `'hello world'`, `[]`. */
 export interface Atom {
@@ -56,7 +56,7 @@ export interface Clause {
  *
  * @example
  * ```ts
- * import { NIL, termToString } from 'mdml-engine/logic'
+ * import { NIL, termToString } from 'omai-engine/logic'
  * termToString(NIL) // => '[]'
  * ```
  */
@@ -67,7 +67,7 @@ export const NIL: Atom = { kind: 'atom', name: '[]' }
  *
  * @example
  * ```ts
- * import { LIST_FUNCTOR, parseTerm } from 'mdml-engine/logic'
+ * import { LIST_FUNCTOR, parseTerm } from 'omai-engine/logic'
  * parseTerm('[a]').functor === LIST_FUNCTOR // => true
  * ```
  */
@@ -80,7 +80,7 @@ export const LIST_FUNCTOR = '.'
  * @returns The atom.
  * @example
  * ```ts
- * import { atom } from 'mdml-engine/logic'
+ * import { atom } from 'omai-engine/logic'
  * atom('socrates') // => { kind: 'atom', name: 'socrates' }
  * ```
  */
@@ -95,7 +95,7 @@ export function atom(name: string): Atom {
  * @returns The variable.
  * @example
  * ```ts
- * import { variable } from 'mdml-engine/logic'
+ * import { variable } from 'omai-engine/logic'
  * variable('X').kind // => 'var'
  * ```
  */
@@ -109,16 +109,16 @@ export function variable(name: string): Var {
  * @param value - The value.
  * @param float - Whether it is a float (default: when the value is not an integer).
  * @returns The number.
- * @throws MdmlError with code `value` for an integer term that is not an integer.
+ * @throws OmaiError with code `value` for an integer term that is not an integer.
  * @example
  * ```ts
- * import { num } from 'mdml-engine/logic'
+ * import { num } from 'omai-engine/logic'
  * [num(3).float, num(2.5).float, num(2, true).float] // => [false, true, true]
  * ```
  */
 export function num(value: number, float?: boolean): Num {
   const isFloat = float ?? !Number.isInteger(value)
-  if (!isFloat && !Number.isInteger(value)) throw new MdmlError('value', `num: ${value} is not an integer`)
+  if (!isFloat && !Number.isInteger(value)) throw new OmaiError('value', `num: ${value} is not an integer`)
   return { kind: 'num', value, float: isFloat }
 }
 
@@ -130,7 +130,7 @@ export function num(value: number, float?: boolean): Num {
  * @returns The term.
  * @example
  * ```ts
- * import { atom, compound, termToString, variable } from 'mdml-engine/logic'
+ * import { atom, compound, termToString, variable } from 'omai-engine/logic'
  * termToString(compound('parent', [atom('tom'), variable('X')])) // => 'parent(tom,X)'
  * compound('nil', []).kind // => 'atom'
  * ```
@@ -147,7 +147,7 @@ export function compound(functor: string, args: readonly Term[]): Compound | Ato
  * @returns The list term.
  * @example
  * ```ts
- * import { atom, list, termToString, variable } from 'mdml-engine/logic'
+ * import { atom, list, termToString, variable } from 'omai-engine/logic'
  * termToString(list([atom('a'), atom('b')])) // => '[a,b]'
  * termToString(list([atom('a')], variable('T'))) // => '[a|T]'
  * ```
@@ -167,7 +167,7 @@ export function list(items: readonly Term[], tail: Term = NIL): Term {
  * @returns The elements, or null.
  * @example
  * ```ts
- * import { listItems, parseTerm } from 'mdml-engine/logic'
+ * import { listItems, parseTerm } from 'omai-engine/logic'
  * listItems(parseTerm('[1,2,3]')).length // => 3
  * listItems(parseTerm('[1|T]')) // => null
  * ```
@@ -189,7 +189,7 @@ export function listItems(t: Term): Term[] | null {
  * @returns True when ground.
  * @example
  * ```ts
- * import { isGround, parseTerm } from 'mdml-engine/logic'
+ * import { isGround, parseTerm } from 'omai-engine/logic'
  * [isGround(parseTerm('f(a,[b])')), isGround(parseTerm('f(a,X)'))] // => [true, false]
  * ```
  */
@@ -209,7 +209,7 @@ export function isGround(t: Term): boolean {
  * @returns The variables.
  * @example
  * ```ts
- * import { parseTerm, termVariables } from 'mdml-engine/logic'
+ * import { parseTerm, termVariables } from 'omai-engine/logic'
  * termVariables(parseTerm('f(Y,g(X,Y),Z)')).map((v) => v.name) // => ['Y', 'X', 'Z']
  * ```
  */
@@ -237,7 +237,7 @@ export function termVariables(terms: Term | readonly Term[]): Var[] {
  * @returns True when identical.
  * @example
  * ```ts
- * import { parseTerm, termEquals } from 'mdml-engine/logic'
+ * import { parseTerm, termEquals } from 'omai-engine/logic'
  * [termEquals(parseTerm('f(X,a)'), parseTerm('f(X,a)')), termEquals(parseTerm('f(X)'), parseTerm('f(Y)'))] // => [true, false]
  * ```
  */
@@ -261,9 +261,9 @@ function compareStrings(a: string, b: string): number {
  * @returns A negative number, zero or a positive number.
  * @example
  * ```ts
- * import { compareTerms, parseTerm } from 'mdml-engine/logic'
+ * import { compareTerms, parseTerm } from 'omai-engine/logic'
  * const ts = ['f(a)', 'b', '1', 'X', 'g(a,b)', '2.0', 'a'].map((s) => parseTerm(s))
- * import { termToString } from 'mdml-engine/logic'
+ * import { termToString } from 'omai-engine/logic'
  * ts.sort(compareTerms).map((t) => termToString(t)) // => ['X', '1', '2.0', 'a', 'b', 'f(a)', 'g(a,b)']
  * ```
  */
@@ -298,17 +298,17 @@ export function compareTerms(a: Term, b: Term): number {
  *
  * @param t - An atom or compound.
  * @returns The indicator.
- * @throws MdmlError with code `value` for a variable or number.
+ * @throws OmaiError with code `value` for a variable or number.
  * @example
  * ```ts
- * import { indicator, parseTerm } from 'mdml-engine/logic'
+ * import { indicator, parseTerm } from 'omai-engine/logic'
  * [indicator(parseTerm('parent(a,b)')), indicator(parseTerm('halt'))] // => ['parent/2', 'halt/0']
  * ```
  */
 export function indicator(t: Term): string {
   if (t.kind === 'atom') return `${t.name}/0`
   if (t.kind === 'compound') return `${t.functor}/${t.args.length}`
-  throw new MdmlError('value', `indicator: ${termToString(t)} is not callable`)
+  throw new OmaiError('value', `indicator: ${termToString(t)} is not callable`)
 }
 
 /**
@@ -318,7 +318,7 @@ export function indicator(t: Term): string {
  * @returns The conjuncts.
  * @example
  * ```ts
- * import { conjuncts, parseTerm } from 'mdml-engine/logic'
+ * import { conjuncts, parseTerm } from 'omai-engine/logic'
  * conjuncts(parseTerm('(a, (b, c))')).length // => 3
  * ```
  */
@@ -340,7 +340,7 @@ export function conjuncts(t: Term): Term[] {
  * @returns The term `(g1, (g2, ...))`.
  * @example
  * ```ts
- * import { conjunction, parseTerm, termToString } from 'mdml-engine/logic'
+ * import { conjunction, parseTerm, termToString } from 'omai-engine/logic'
  * termToString(conjunction([parseTerm('a'), parseTerm('b')])) // => 'a,b'
  * ```
  */
@@ -358,7 +358,7 @@ export function conjunction(goals: readonly Term[]): Term {
  * @returns The clause.
  * @example
  * ```ts
- * import { parseTerm, termToClause } from 'mdml-engine/logic'
+ * import { parseTerm, termToClause } from 'omai-engine/logic'
  * termToClause(parseTerm('p(X) :- q(X), r(X)')).body.length // => 2
  * ```
  */
@@ -376,7 +376,7 @@ export function termToClause(t: Term): Clause {
  * @returns The term.
  * @example
  * ```ts
- * import { clauseToTerm, parseClause, termToString } from 'mdml-engine/logic'
+ * import { clauseToTerm, parseClause, termToString } from 'omai-engine/logic'
  * termToString(clauseToTerm(parseClause('p(X) :- q(X).'))) // => 'p(X):-q(X)'
  * ```
  */
@@ -434,7 +434,7 @@ function table(rows: readonly [number, OperatorDef['type'], string][]): Map<stri
  * @returns A fresh table.
  * @example
  * ```ts
- * import { standardOperators } from 'mdml-engine/logic'
+ * import { standardOperators } from 'omai-engine/logic'
  * standardOperators().infix.get(':-') // => { priority: 1200, type: 'xfx' }
  * ```
  */
@@ -456,7 +456,7 @@ const isAlnum = (c: string): boolean => /[A-Za-z0-9_]/.test(c)
  * @returns True when no quotes are needed.
  * @example
  * ```ts
- * import { isPlainAtom } from 'mdml-engine/logic'
+ * import { isPlainAtom } from 'omai-engine/logic'
  * ['foo', 'Foo', 'a b', '+', '[]', ''].map(isPlainAtom) // => [true, false, false, true, true, false]
  * ```
  */
@@ -512,7 +512,7 @@ export interface WriteOptions {
  * @returns The text.
  * @example
  * ```ts
- * import { parseTerm, termToString } from 'mdml-engine/logic'
+ * import { parseTerm, termToString } from 'omai-engine/logic'
  * termToString(parseTerm('(1+2)*3-f(-1)')) // => '(1+2)*3-f(-1)'
  * termToString(parseTerm('a:-b,c;d')) // => 'a:-b,c;d'
  * termToString(parseTerm("'hello world'(X)"), { quoted: false }) // => 'hello world(X)'
@@ -602,7 +602,7 @@ export function termToString(t: Term, options: WriteOptions = {}): string {
  * @returns The text.
  * @example
  * ```ts
- * import { clauseToString, parseClause } from 'mdml-engine/logic'
+ * import { clauseToString, parseClause } from 'omai-engine/logic'
  * clauseToString(parseClause('grandparent(X,Z) :- parent(X,Y), parent(Y,Z).')) // => 'grandparent(X,Z) :- parent(X,Y), parent(Y,Z).'
  * ```
  */
@@ -619,7 +619,7 @@ export function clauseToString(c: Clause, options: WriteOptions = {}): string {
  * @returns The size.
  * @example
  * ```ts
- * import { parseTerm, termSize } from 'mdml-engine/logic'
+ * import { parseTerm, termSize } from 'omai-engine/logic'
  * termSize(parseTerm('f(a,g(X))')) // => 4
  * ```
  */

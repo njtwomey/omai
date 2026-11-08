@@ -7,7 +7,7 @@
  * @index function Solvers of the penalised GLM core: Cholesky, QR, SVD, coordinate descent.
  */
 
-import { type Json, MdmlError, toRows } from '../base/index.ts'
+import { type Json, OmaiError, toRows } from '../base/index.ts'
 import type { DispersionFamily, Link } from '../dists/families/index.ts'
 import { collecting, type MatrixView } from '../learn/index.ts'
 import { cholesky, choSolve, ddot, lstsq, svd } from '../numerics/linalg/index.ts'
@@ -153,11 +153,11 @@ const isConfig = (solver: SolveOptions['solver']): solver is Exclude<SolveOption
  * @param problem - The problem.
  * @param start - Coefficients and intercept to start from.
  * @returns The factory problem, to be solved by any mode of `glmSolvers`.
- * @throws MdmlError `value` when the penalty has an L1 part.
+ * @throws OmaiError `value` when the penalty has an L1 part.
  */
 export function factoryProblem(problem: GlmDesignProblem, start?: SolveOptions['start']): FactoryProblem {
   if (problem.alpha * problem.l1Ratio > 0)
-    throw new MdmlError('value', 'a penalty with an L1 part is non-smooth: use the elastic-net solvers, not glmSolvers')
+    throw new OmaiError('value', 'a penalty with an L1 part is non-smooth: use the elastic-net solvers, not glmSolvers')
   const { x, y, w } = problem.design
   return {
     x: fromStorage(x.data, [x.n, x.d], 'float64'),
@@ -259,7 +259,7 @@ export function leastSquaresSolve(
     }
     try {
       coef = Float64Array.from(toFlat(primalOf(choSolve(cholesky(matrixTensor(g, d, d)), vectorTensor(r)))))
-      if (coef.some((v) => !Number.isFinite(v))) throw new MdmlError('value', 'singular')
+      if (coef.some((v) => !Number.isFinite(v))) throw new OmaiError('value', 'singular')
     } catch {
       // A singular Gram matrix (collinear features): fall back to the minimum-norm SVD solution.
       coef = svdRidge(c.x, n, d, c.y, [lambda])[0] ?? new Float64Array(d)
@@ -589,7 +589,7 @@ export function quasiNewtonSolve(problem: GlmDesignProblem, options: SolveOption
  * @param problem - The problem.
  * @param options - Solver, iterations, tolerance, warm start and run options.
  * @returns The solution.
- * @throws MdmlError `value` when a direct least-squares solver is asked for a problem it cannot solve.
+ * @throws OmaiError `value` when a direct least-squares solver is asked for a problem it cannot solve.
  */
 export function solveGlm(problem: GlmDesignProblem, options: SolveOptions = {}): GlmSolution {
   if (isConfig(options.solver)) return solveGlmWith(problem, options.solver, options)
@@ -599,7 +599,7 @@ export function solveGlm(problem: GlmDesignProblem, options: SolveOptions = {}):
   const s = sumOf(problem.design.w)
   if (solver === 'cholesky' || solver === 'qr' || solver === 'svd') {
     if (!isLeastSquares(problem) || l1)
-      throw new MdmlError('value', `solveGlm: ${solver} solves least squares without an L1 penalty only`)
+      throw new OmaiError('value', `solveGlm: ${solver} solves least squares without an L1 penalty only`)
     const r = leastSquaresSolve(problem.design, problem.alpha * s, problem.fitIntercept, solver)
     const objective = glmObjective(problem, r.coef, r.intercept)
     return { ...r, solver, iterations: 1, converged: true, objective, history: [objective] }

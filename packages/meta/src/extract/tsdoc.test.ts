@@ -11,14 +11,14 @@ const COMMENT = `/**
  * @param options.tol - Tolerance,
  *   on two lines.
  * @returns \`a + b\`.
- * @throws MdmlError with code \`shape\`.
+ * @throws OmaiError with code \`shape\`.
  * @concept broadcasting tensor
  * @see numpy.add
  * @reference Golub and Van Loan (2013).
  * @remarks Pure.
  * @example Adding rows
  * \`\`\`ts
- * import { add } from 'mdml-engine/tensor'
+ * import { add } from 'omai-engine/tensor'
  * // @param inside code is not a tag
  * add(1, 2) // => 3
  * \`\`\`
@@ -45,7 +45,7 @@ describe('parseDocComment', () => {
       { name: 'options.tol', description: 'Tolerance, on two lines.' },
     ])
     expect(doc.returns).toBe('`a + b`.')
-    expect(doc.throws).toEqual(['MdmlError with code `shape`.'])
+    expect(doc.throws).toEqual(['OmaiError with code `shape`.'])
     expect(doc.concepts).toEqual(['broadcasting', 'tensor'])
     expect(doc.see).toEqual(['numpy.add'])
     expect(doc.references).toEqual(['Golub and Van Loan (2013).'])
@@ -55,10 +55,10 @@ describe('parseDocComment', () => {
     expect(doc.examples).toHaveLength(2)
     expect(doc.examples[0]?.title).toBe('Adding rows')
     expect(doc.examples[0]?.code).toBe(
-      "import { add } from 'mdml-engine/tensor'\n// @param inside code is not a tag\nadd(1, 2) // => 3",
+      "import { add } from 'omai-engine/tensor'\n// @param inside code is not a tag\nadd(1, 2) // => 3",
     )
     const lines = unframeComment(COMMENT).split('\n')
-    expect(lines[doc.examples[0]?.source?.line ?? -1]).toBe("import { add } from 'mdml-engine/tensor'")
+    expect(lines[doc.examples[0]?.source?.line ?? -1]).toBe("import { add } from 'omai-engine/tensor'")
     expect(doc.examples[1]).toMatchObject({ title: '', code: 'add(0, 0) // => 0' })
   })
 

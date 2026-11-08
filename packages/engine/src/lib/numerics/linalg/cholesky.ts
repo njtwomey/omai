@@ -4,7 +4,7 @@
  * singular matrices, and rank-one updates and downdates.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import {
   add,
   arg,
@@ -86,14 +86,14 @@ const choleskyPrimitive: Primitive<null> = definePrimitive<null>({
  *
  * @param a - Symmetric positive-definite matrix `[..., n, n]`.
  * @returns Lower-triangular L, differentiable (the derivative treats A as symmetric).
- * @throws MdmlError with code `value` when the input has a NaN or infinite entry.
- * @throws MdmlError with code `value` when A is not positive definite.
+ * @throws OmaiError with code `value` when the input has a NaN or infinite entry.
+ * @throws OmaiError with code `value` when A is not positive definite.
  * @concept linear-algebra
  * @index function Cholesky factor of a symmetric positive-definite matrix.
  * @example
  * ```ts
- * import { cholesky } from 'mdml-engine/numerics/linalg'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { cholesky } from 'omai-engine/numerics/linalg'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(cholesky([[4, 2], [2, 2]])) // => [[2, 0], [1, 1]]
  * ```
  */
@@ -110,8 +110,8 @@ export function cholesky(a: TensorLike): Value {
  * @returns The solution, differentiable in both arguments.
  * @example
  * ```ts
- * import { cholesky, choSolve } from 'mdml-engine/numerics/linalg'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { cholesky, choSolve } from 'omai-engine/numerics/linalg'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(choSolve(cholesky([[4, 2], [2, 2]]), [6, 4])) // => [1, 1]
  * ```
  */
@@ -130,8 +130,8 @@ export function choSolve(l: TensorLike, b: TensorLike): Value {
  * @returns log det A, differentiable.
  * @example
  * ```ts
- * import { choleskyLogdet } from 'mdml-engine/numerics/linalg'
- * import { item } from 'mdml-engine/tensor'
+ * import { choleskyLogdet } from 'omai-engine/numerics/linalg'
+ * import { item } from 'omai-engine/tensor'
  * item(choleskyLogdet([[2, 0], [1, 1]])) === 2 * Math.log(2) // => true
  * ```
  */
@@ -154,11 +154,11 @@ export interface JitteredCholesky {
  * @param a - Symmetric matrix `[n, n]`.
  * @param maxJitter - The largest relative jitter to try (default 1e-4).
  * @returns The factor and the jitter added.
- * @throws MdmlError with code `value` when even the largest jitter fails, or when `a` has a NaN or infinite entry (a
+ * @throws OmaiError with code `value` when even the largest jitter fails, or when `a` has a NaN or infinite entry (a
  *   jitter does not repair that, so the ladder is not walked).
  * @example
  * ```ts
- * import { choleskyJitter } from 'mdml-engine/numerics/linalg'
+ * import { choleskyJitter } from 'omai-engine/numerics/linalg'
  * choleskyJitter([[1, 1], [1, 1]]).jitter > 0 // => true
  * ```
  */
@@ -180,7 +180,7 @@ export function choleskyJitter(a: TensorLike, maxJitter = 1e-4): JitteredCholesk
       // Try the next rung.
     }
   }
-  throw new MdmlError('value', `choleskyJitter: not positive definite even with relative jitter ${maxJitter}`)
+  throw new OmaiError('value', `choleskyJitter: not positive definite even with relative jitter ${maxJitter}`)
 }
 
 function sumDiagonal(a: Value): number {
@@ -194,7 +194,7 @@ function sumDiagonal(a: Value): number {
  * @returns The lower factor and `lower: true`.
  * @example
  * ```ts
- * import { choFactor } from 'mdml-engine/numerics/linalg'
+ * import { choFactor } from 'omai-engine/numerics/linalg'
  * choFactor([[4, 2], [2, 2]]).lower // => true
  * ```
  */
@@ -211,7 +211,7 @@ function rankOne(l: TensorLike, x: TensorLike, sign: 1 | -1, name: string): Tens
     const lkk = lv[k * n + k] ?? 0
     const xk = v[k] ?? 0
     const r2 = lkk * lkk + sign * xk * xk
-    if (!(r2 > 0)) throw new MdmlError('value', `${name}: the result is not positive definite`)
+    if (!(r2 > 0)) throw new OmaiError('value', `${name}: the result is not positive definite`)
     const r = Math.sqrt(r2)
     const c = r / lkk
     const s = xk / lkk
@@ -232,8 +232,8 @@ function rankOne(l: TensorLike, x: TensorLike, sign: 1 | -1, name: string): Tens
  * @returns The updated factor.
  * @example
  * ```ts
- * import { choleskyUpdate } from 'mdml-engine/numerics/linalg'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { choleskyUpdate } from 'omai-engine/numerics/linalg'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(choleskyUpdate([[1]], [Math.sqrt(3)])) // => [[2]]
  * ```
  */
@@ -247,11 +247,11 @@ export function choleskyUpdate(l: TensorLike, x: TensorLike): Tensor {
  * @param l - Lower Cholesky factor of A.
  * @param x - Downdate vector.
  * @returns The downdated factor.
- * @throws MdmlError with code `value` when A - x x^T is not positive definite.
+ * @throws OmaiError with code `value` when A - x x^T is not positive definite.
  * @example
  * ```ts
- * import { choleskyDowndate } from 'mdml-engine/numerics/linalg'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { choleskyDowndate } from 'omai-engine/numerics/linalg'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(choleskyDowndate([[2]], [Math.sqrt(3)])) // => [[1]]
  * ```
  */

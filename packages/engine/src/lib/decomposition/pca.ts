@@ -5,7 +5,7 @@
  * in constant memory, and sparse PCA finds one sparse component per step by a thresholded power iteration.
  */
 
-import { MdmlError, maxOf } from '../base/index.ts'
+import { maxOf, OmaiError } from '../base/index.ts'
 import { type Fitted, type IterativeEstimator, iterative, type LearnData, matrixView } from '../learn/index.ts'
 import { linalg } from '../numerics/index.ts'
 import { normal } from '../random/index.ts'
@@ -78,7 +78,7 @@ const observePca = (s: PcaState, d: number) => ({
  * @returns The mean log likelihood.
  * @example
  * ```ts
- * import { pcaLogLikelihood } from 'mdml-engine/decomposition'
+ * import { pcaLogLikelihood } from 'omai-engine/decomposition'
  * const p = { mean: [0, 0], components: [[1, 0]], explainedVariance: [4], explainedVarianceRatio: [0.8], singularValues: [2], noiseVariance: 1, whiten: false }
  * pcaLogLikelihood(p, [[0, 0]]) // => -2.531024
  * ```
@@ -118,8 +118,8 @@ export function pcaLogLikelihood(p: PcaParams, x: TensorLike): number {
  * @returns Projection, reconstruction and the probabilistic score.
  * @example
  * ```ts
- * import { pcaVerbs } from 'mdml-engine/decomposition'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { pcaVerbs } from 'omai-engine/decomposition'
+ * import { toArray } from 'omai-engine/tensor'
  * const p = { mean: [1, 1], components: [[1, 0]], explainedVariance: [4], explainedVarianceRatio: [1], singularValues: [2], noiseVariance: 0, whiten: false }
  * toArray(pcaVerbs(p).transform([[3, 5]])) // => [[2]]
  * ```
@@ -183,8 +183,8 @@ export interface PcaAlgorithmOptions {
  * @returns The algorithm.
  * @example
  * ```ts
- * import { pcaSvdAlgorithm } from 'mdml-engine/decomposition'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { pcaSvdAlgorithm } from 'omai-engine/decomposition'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const x = [[-2, 0], [-1, 0.1], [1, -0.1], [2, 0]]
  * runAlgorithm(pcaSvdAlgorithm(x, 1), { maxSteps: 2 }).state.explainedVarianceRatio[0] // => 0.998404
  * ```
@@ -193,7 +193,7 @@ export function pcaSvdAlgorithm(x: TensorLike, k: number, options: PcaAlgorithmO
   const m = matrixView(x, 'pca', { minSamples: 2 })
   const full = Math.min(m.n, m.d)
   if (!(Number.isInteger(k) && k >= 1 && k <= full))
-    throw new MdmlError('value', `pca: nComponents must be in 1..${full}, got ${k}`)
+    throw new OmaiError('value', `pca: nComponents must be in 1..${full}, got ${k}`)
   const solver = options.solver ?? 'full'
   const mean = columnMeans(m)
   const xc = centred(m, mean)
@@ -257,9 +257,9 @@ function normalMatvec(xc: Float64Array, n: number, d: number, v: ArrayLike<numbe
  * @returns The algorithm; k steps.
  * @example
  * ```ts
- * import { powerPcaAlgorithm } from 'mdml-engine/decomposition'
- * import { key } from 'mdml-engine/random'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { powerPcaAlgorithm } from 'omai-engine/decomposition'
+ * import { key } from 'omai-engine/random'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const x = [[-2, -1], [-1, -0.5], [1, 0.5], [2, 1]]
  * runAlgorithm(powerPcaAlgorithm(x, 1), { maxSteps: 1, key: key(0) }).state.components[0]?.map((v) => Math.round(v * 100) / 100) // => [0.89, 0.45]
  * ```
@@ -272,7 +272,7 @@ export function powerPcaAlgorithm(
   const m = matrixView(x, 'pca', { minSamples: 2 })
   const full = Math.min(m.n, m.d)
   if (!(Number.isInteger(k) && k >= 1 && k <= full))
-    throw new MdmlError('value', `pca: nComponents must be in 1..${full}, got ${k}`)
+    throw new OmaiError('value', `pca: nComponents must be in 1..${full}, got ${k}`)
   const tol = options.tol ?? 1e-12
   const maxIter = options.maxIter ?? 2000
   const mean = columnMeans(m)
@@ -358,7 +358,7 @@ const paramsOf = (s: PcaState, whiten: boolean): PcaParams => ({
  * @index estimator PCA, exact or by power iteration, with whitening and inverse transform.
  * @example
  * ```ts
- * import { pca } from 'mdml-engine/decomposition'
+ * import { pca } from 'omai-engine/decomposition'
  * const fit = pca.with({ nComponents: 1 }).fit({ x: [[-2, 0], [-1, 0.1], [1, -0.1], [2, 0]] })
  * fit.params.explainedVarianceRatio[0] // => 0.998404
  * ```
@@ -407,7 +407,7 @@ export interface IncrementalPcaState extends PcaState {
  * @returns [start, end) per batch.
  * @example
  * ```ts
- * import { batchRanges } from 'mdml-engine/decomposition'
+ * import { batchRanges } from 'omai-engine/decomposition'
  * batchRanges(10, 4) // => [[0, 4], [4, 8], [8, 10]]
  * batchRanges(10, 4, 3) // => [[0, 4], [4, 10]]
  * ```
@@ -436,8 +436,8 @@ export function batchRanges(n: number, size: number, min = 0): [number, number][
  * @returns The algorithm; one step per batch.
  * @example
  * ```ts
- * import { incrementalPcaAlgorithm } from 'mdml-engine/decomposition'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { incrementalPcaAlgorithm } from 'omai-engine/decomposition'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const x = [[-2, 0], [-1, 0.1], [1, -0.1], [2, 0]]
  * runAlgorithm(incrementalPcaAlgorithm(x, 1, [[0, 2], [2, 4]]), { maxSteps: 2 }).state.seen // => 4
  * ```
@@ -530,7 +530,7 @@ export interface IncrementalPcaHyper {
  *
  * @example
  * ```ts
- * import { incrementalPca } from 'mdml-engine/decomposition'
+ * import { incrementalPca } from 'omai-engine/decomposition'
  * const x = [[-2, 0], [-1, 0.1], [1, -0.1], [2, 0], [3, 0.2], [-3, -0.2]]
  * incrementalPca.with({ nComponents: 1, batchSize: 3 }).fit({ x }).params.components.length // => 1
  * ```
@@ -549,7 +549,7 @@ export const incrementalPca: IterativeEstimator<IncrementalPcaHyper, Incremental
       const m = matrixView(data.x, 'incrementalPca', { minSamples: 2 })
       const batches = batchRanges(m.n, h.batchSize ?? 5 * m.d, h.nComponents)
       if (batches.some(([a, b]) => b - a < h.nComponents))
-        throw new MdmlError('value', 'incrementalPca: every batch needs at least nComponents rows')
+        throw new OmaiError('value', 'incrementalPca: every batch needs at least nComponents rows')
       return incrementalPcaAlgorithm(data.x, h.nComponents, batches)
     },
     maxSteps: (h, data) => {
@@ -575,9 +575,9 @@ export const incrementalPca: IterativeEstimator<IncrementalPcaHyper, Incremental
  * @returns The algorithm; k steps.
  * @example
  * ```ts
- * import { sparsePcaAlgorithm } from 'mdml-engine/decomposition'
- * import { key } from 'mdml-engine/random'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { sparsePcaAlgorithm } from 'omai-engine/decomposition'
+ * import { key } from 'omai-engine/random'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const x = [[-2, -2, 0.1], [-1, -1, -0.1], [1, 1, 0.1], [2, 2, -0.1]]
  * runAlgorithm(sparsePcaAlgorithm(x, 1, { alpha: 0.6 }), { maxSteps: 1, key: key(0) }).state.components[0]?.map((v) => Math.round(v * 100) / 100) // => [0.71, 0.71, 0]
  * ```
@@ -589,7 +589,7 @@ export function sparsePcaAlgorithm(
 ): Algorithm<PcaState> {
   const m = matrixView(x, 'sparsePca', { minSamples: 2 })
   const alpha = options.alpha ?? 0.3
-  if (!(alpha >= 0 && alpha < 1)) throw new MdmlError('value', `sparsePca: alpha must be in [0, 1), got ${alpha}`)
+  if (!(alpha >= 0 && alpha < 1)) throw new OmaiError('value', `sparsePca: alpha must be in [0, 1), got ${alpha}`)
   const tol = options.tol ?? 1e-9
   const maxIter = options.maxIter ?? 500
   const mean = columnMeans(m)
@@ -678,7 +678,7 @@ export interface SparsePcaVerbs {
  *
  * @example
  * ```ts
- * import { sparsePca } from 'mdml-engine/decomposition'
+ * import { sparsePca } from 'omai-engine/decomposition'
  * const x = [[-2, -2, 0.1], [-1, -1, -0.1], [1, 1, 0.1], [2, 2, -0.1]]
  * sparsePca.with({ nComponents: 1, alpha: 0.6 }).fit({ x }).params.components.length // => 1
  * ```

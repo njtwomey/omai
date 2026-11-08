@@ -6,9 +6,9 @@
  */
 
 import type { SeriesOption } from 'echarts'
-import { maxOf, minOf } from 'mdml-engine/base'
-import { toFlat } from 'mdml-engine/tensor'
-import { type Session, tensorSeries } from 'mdml-engine/trace'
+import { maxOf, minOf } from 'omai-engine/base'
+import { toFlat } from 'omai-engine/tensor'
+import { type Session, tensorSeries } from 'omai-engine/trace'
 import { lines, polygons } from '../../charts/lines.ts'
 import { type Layer, layer } from '../../charts/plot.ts'
 import { categoricalColour, colourScale, divergingRamp, sampleRamp, sequentialRamp } from '../../theme/palettes.ts'

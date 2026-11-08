@@ -5,7 +5,7 @@
  * autocovariance sequence into one-step predictors, one lag per step.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { solve } from '../numerics/linalg/index.ts'
 import { polyroots } from '../numerics/polynomial/index.ts'
 import { toFlat } from '../tensor/index.ts'
@@ -22,7 +22,7 @@ import { arToPacf } from './_params.ts'
  * @returns psi_0..psi_(n-1).
  * @example
  * ```ts
- * import { armaPsiWeights } from 'mdml-engine/timeseries'
+ * import { armaPsiWeights } from 'omai-engine/timeseries'
  * Array.from(armaPsiWeights([0.5], [0.4], 4)) // => [1, 0.9, 0.45, 0.225]
  * ```
  */
@@ -47,7 +47,7 @@ export function armaPsiWeights(ar: ArrayLike<number>, ma: ArrayLike<number>, n: 
  * @returns pi_1..pi_n.
  * @example
  * ```ts
- * import { armaPiWeights } from 'mdml-engine/timeseries'
+ * import { armaPiWeights } from 'omai-engine/timeseries'
  * // An MA(1) with theta = 0.5 inverts to pi_j = -(-0.5)^j.
  * Array.from(armaPiWeights([], [0.5], 3)) // => [0.5, -0.25, 0.125]
  * ```
@@ -72,7 +72,7 @@ export function armaPiWeights(ar: ArrayLike<number>, ma: ArrayLike<number>, n: n
  * @returns True for a causal (stationary) process.
  * @example
  * ```ts
- * import { isStationary } from 'mdml-engine/timeseries'
+ * import { isStationary } from 'omai-engine/timeseries'
  * [isStationary([0.5, 0.3]), isStationary([1.1]), isStationary([])] // => [true, false, true]
  * ```
  */
@@ -87,7 +87,7 @@ export function isStationary(ar: ArrayLike<number>): boolean {
  * @returns True for an invertible process.
  * @example
  * ```ts
- * import { isInvertible } from 'mdml-engine/timeseries'
+ * import { isInvertible } from 'omai-engine/timeseries'
  * [isInvertible([0.5]), isInvertible([2])] // => [true, false]
  * ```
  */
@@ -112,15 +112,15 @@ function rootsOutside(poly: number[]): boolean {
  * @param sigma2 - The innovation variance (default 1).
  * @param nlags - The largest lag.
  * @returns gamma(0), ..., gamma(nlags).
- * @throws MdmlError with code `value` when the process is not stationary.
+ * @throws OmaiError with code `value` when the process is not stationary.
  * @example
  * ```ts
- * import { armaAutocovariance } from 'mdml-engine/timeseries'
+ * import { armaAutocovariance } from 'omai-engine/timeseries'
  * Array.from(armaAutocovariance([0.5], [], 1, 3)) // => [1.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.16666666666666666]
  * ```
  */
 export function armaAutocovariance(ar: ArrayLike<number>, ma: ArrayLike<number>, sigma2 = 1, nlags = 10): Float64Array {
-  if (!isStationary(ar)) throw new MdmlError('value', 'armaAutocovariance: the process is not stationary')
+  if (!isStationary(ar)) throw new OmaiError('value', 'armaAutocovariance: the process is not stationary')
   const p = ar.length
   const q = ma.length
   const theta = [1, ...Array.from(ma)]
@@ -174,7 +174,7 @@ function reshapeSquare(a: Float64Array, n: number): number[][] {
  * @returns rho(0) = 1, ..., rho(nlags).
  * @example
  * ```ts
- * import { armaAcf } from 'mdml-engine/timeseries'
+ * import { armaAcf } from 'omai-engine/timeseries'
  * Array.from(armaAcf([0.5], [], 3)) // => [1, 0.5, 0.25, 0.125]
  * ```
  */
@@ -194,7 +194,7 @@ export function armaAcf(ar: ArrayLike<number>, ma: ArrayLike<number>, nlags = 10
  * @returns The partial autocorrelations at lags 0..nlags.
  * @example
  * ```ts
- * import { armaPacf } from 'mdml-engine/timeseries'
+ * import { armaPacf } from 'omai-engine/timeseries'
  * // An AR(1) has a single non-zero partial autocorrelation.
  * Array.from(armaPacf([0.5], [], 3)).map((v) => Math.round(v * 1e12) / 1e12) // => [1, 0.5, 0, 0]
  * ```
@@ -229,7 +229,7 @@ export function armaPacf(ar: ArrayLike<number>, ma: ArrayLike<number>, nlags = 1
  * @returns phi_11, ..., phi_pp.
  * @example
  * ```ts
- * import { arToPartialAutocorrelations } from 'mdml-engine/timeseries'
+ * import { arToPartialAutocorrelations } from 'omai-engine/timeseries'
  * Array.from(arToPartialAutocorrelations([0.5, 0.2])).map((v) => Math.round(v * 1e12) / 1e12) // => [0.625, 0.2]
  * ```
  */
@@ -257,8 +257,8 @@ export interface InnovationsState {
  * @returns The algorithm; its state has the rows computed so far.
  * @example
  * ```ts
- * import { innovationsAlgorithm } from 'mdml-engine/timeseries'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { innovationsAlgorithm } from 'omai-engine/timeseries'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * // MA(1), theta = 0.5, sigma2 = 1: gamma = (1.25, 0.5, 0, 0).
  * const s = runAlgorithm(innovationsAlgorithm([1.25, 0.5, 0, 0]), { maxSteps: 3 }).state
  * s.v.map((v) => Math.round(v * 1e6) / 1e6) // => [1.25, 1.05, 1.011905, 1.002941]
@@ -305,7 +305,7 @@ export function innovationsAlgorithm(gamma: ArrayLike<number>): Algorithm<Innova
  * @returns `theta` (row m has m entries) and `v` (N + 1 entries).
  * @example
  * ```ts
- * import { innovations } from 'mdml-engine/timeseries'
+ * import { innovations } from 'omai-engine/timeseries'
  * innovations([2, 1, 0]).v // => [2, 1.5, 1.3333333333333333]
  * ```
  */

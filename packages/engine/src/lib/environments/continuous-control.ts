@@ -87,7 +87,7 @@ export interface PointMassParameters {
  * @returns The parameters.
  * @example
  * ```ts
- * import { pointMassParameters } from 'mdml-engine/environments'
+ * import { pointMassParameters } from 'omai-engine/environments'
  * pointMassParameters({ goalRange: 0.2 }).margin // => 0.015
  * ```
  */
@@ -120,7 +120,7 @@ export type PointMassState = readonly number[]
  * @concept environments
  * @example
  * ```ts
- * import { pointMassDynamics, pointMassParameters } from 'mdml-engine/environments'
+ * import { pointMassDynamics, pointMassParameters } from 'omai-engine/environments'
  * pointMassDynamics([0, 0, 0, 0, 0, 0], [0, 0], pointMassParameters()) // => [0, 0, 0, 0, 0, 0]
  * ```
  */
@@ -181,8 +181,8 @@ const POINT_MASS_DESCRIPTION = 'Push a point mass in a walled square arena to a 
  * @concept environments
  * @example
  * ```ts
- * import { makePointMass } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { makePointMass } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * makePointMass().reset(key(0)).observation.length // => 6
  * ```
  */
@@ -224,8 +224,8 @@ export function makePointMass(
  * @concept environments
  * @example
  * ```ts
- * import { pointMass } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { pointMass } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * const env = pointMass.create()
  * env.step([0, 0, 0, 0, 0, 0], [0, 0], key(0)).reward // => 1
  * ```
@@ -280,7 +280,7 @@ export interface Reacher2DParameters extends ArmParameters {
  * @returns The parameters.
  * @example
  * ```ts
- * import { reacher2dParameters } from 'mdml-engine/environments'
+ * import { reacher2dParameters } from 'omai-engine/environments'
  * reacher2dParameters().lengths // => [0.1, 0.11]
  * ```
  */
@@ -311,7 +311,7 @@ export type Reacher2DState = readonly number[]
  * @concept environments
  * @example
  * ```ts
- * import { reacher2dDerivatives, reacher2dParameters } from 'mdml-engine/environments'
+ * import { reacher2dDerivatives, reacher2dParameters } from 'omai-engine/environments'
  * reacher2dDerivatives([0, 0, 1, 0], [0, 0], reacher2dParameters({ damping: 0 }))[0] // => 1
  * ```
  */
@@ -334,7 +334,7 @@ export function reacher2dDerivatives(
  * @concept environments
  * @example
  * ```ts
- * import { reacher2dDynamics, reacher2dParameters } from 'mdml-engine/environments'
+ * import { reacher2dDynamics, reacher2dParameters } from 'omai-engine/environments'
  * reacher2dDynamics([0, 0, 0, 0, 0.1, 0], [0, 0], reacher2dParameters()) // => [0, 0, 0, 0, 0.1, 0]
  * ```
  */
@@ -356,7 +356,7 @@ export function reacher2dDynamics(
  * @returns `qd^T M(q) qd / 2`.
  * @example
  * ```ts
- * import { reacher2dEnergy, reacher2dParameters } from 'mdml-engine/environments'
+ * import { reacher2dEnergy, reacher2dParameters } from 'omai-engine/environments'
  * reacher2dEnergy([0, 0, 0, 0, 0, 0], reacher2dParameters()) // => 0
  * ```
  */
@@ -406,8 +406,8 @@ const REACHER_DESCRIPTION = 'Move the tip of a two-link planar arm to a random t
  * @concept environments
  * @example
  * ```ts
- * import { makeReacher2d } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { makeReacher2d } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * makeReacher2d().reset(key(0)).observation.length // => 10
  * ```
  */
@@ -455,8 +455,8 @@ export function makeReacher2d(
  * @concept environments
  * @example
  * ```ts
- * import { reacher2d } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { reacher2d } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * const r = reacher2d.create().step([0, 0, 0, 0, 0.21, 0], [1, 0], key(0)).reward
  * Number(r.toFixed(12)) // => -0.1
  * ```
@@ -510,7 +510,7 @@ export interface DoubleIntegratorParameters {
  * @returns The parameters.
  * @example
  * ```ts
- * import { doubleIntegratorParameters } from 'mdml-engine/environments'
+ * import { doubleIntegratorParameters } from 'omai-engine/environments'
  * doubleIntegratorParameters().dt // => 0.1
  * ```
  */
@@ -536,7 +536,7 @@ export function doubleIntegratorParameters(options: DoubleIntegratorOptions = {}
  * @concept environments
  * @example
  * ```ts
- * import { doubleIntegratorMatrices } from 'mdml-engine/environments'
+ * import { doubleIntegratorMatrices } from 'omai-engine/environments'
  * doubleIntegratorMatrices({ mass: 1, dt: 0.5 }) // => { A: [[1, 0.5], [0, 1]], B: [[0.125], [0.5]] }
  * ```
  */
@@ -571,7 +571,7 @@ export type DoubleIntegratorState = readonly [position: number, velocity: number
  * @concept environments
  * @example
  * ```ts
- * import { doubleIntegratorDynamics, doubleIntegratorParameters } from 'mdml-engine/environments'
+ * import { doubleIntegratorDynamics, doubleIntegratorParameters } from 'omai-engine/environments'
  * doubleIntegratorDynamics([0, 1], [0], doubleIntegratorParameters({ dt: 0.5 })) // => [0.5, 1]
  * ```
  */
@@ -614,8 +614,8 @@ const DI_DESCRIPTION = 'Drive a unit mass on a line to the origin at rest, payin
  * @concept environments
  * @example
  * ```ts
- * import { makeDoubleIntegrator } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { makeDoubleIntegrator } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * makeDoubleIntegrator().step([1, 0], [0], key(0)).reward // => -1
  * ```
  */
@@ -651,8 +651,8 @@ export function makeDoubleIntegrator(
  * @concept environments
  * @example
  * ```ts
- * import { doubleIntegrator } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { doubleIntegrator } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * doubleIntegrator.create().step([0, 0], [1], key(0)).reward // => -1
  * ```
  */
@@ -707,7 +707,7 @@ export interface PlanarQuadrotorParameters extends QuadrotorParameters {
  * @returns The parameters.
  * @example
  * ```ts
- * import { planarQuadrotorParameters } from 'mdml-engine/environments'
+ * import { planarQuadrotorParameters } from 'omai-engine/environments'
  * planarQuadrotorParameters().maxThrust // => 9.81
  * ```
  */
@@ -741,7 +741,7 @@ export type PlanarQuadrotorState = readonly number[]
  * @concept environments
  * @example
  * ```ts
- * import { planarQuadrotorDerivatives, planarQuadrotorParameters } from 'mdml-engine/environments'
+ * import { planarQuadrotorDerivatives, planarQuadrotorParameters } from 'omai-engine/environments'
  * planarQuadrotorDerivatives([0, 0, 0, 0, 0, 0], [0, 0], planarQuadrotorParameters({ g: 10 }))[4] // => -10
  * ```
  */
@@ -764,7 +764,7 @@ export function planarQuadrotorDerivatives(
  * @concept environments
  * @example
  * ```ts
- * import { planarQuadrotorDynamics, planarQuadrotorParameters } from 'mdml-engine/environments'
+ * import { planarQuadrotorDynamics, planarQuadrotorParameters } from 'omai-engine/environments'
  * const p = planarQuadrotorParameters({ g: 10 })
  * planarQuadrotorDynamics([0, 0, 0, 0, 0, 0, 0, 0], [5, 5], p) // => [0, 0, 0, 0, 0, 0, 0, 0]
  * ```
@@ -829,8 +829,8 @@ const QUAD_DESCRIPTION = 'Fly a planar quadrotor with two rotor thrusts to a goa
  * @concept environments
  * @example
  * ```ts
- * import { makePlanarQuadrotor } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { makePlanarQuadrotor } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * makePlanarQuadrotor().reset(key(0)).observation.length // => 8
  * ```
  */
@@ -867,8 +867,8 @@ export function makePlanarQuadrotor(
  * @concept environments
  * @example
  * ```ts
- * import { planarQuadrotor } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { planarQuadrotor } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * planarQuadrotor.create({ g: 10 }).step([0, 0, 0, 0, 0, 0, 1, 0], [5, 5], key(0)).reward // => -1
  * ```
  */
@@ -929,7 +929,7 @@ export interface CartDoublePendulumEnvParameters extends CartDoublePendulumParam
  * @returns The parameters.
  * @example
  * ```ts
- * import { cartDoublePendulumParameters } from 'mdml-engine/environments'
+ * import { cartDoublePendulumParameters } from 'omai-engine/environments'
  * cartDoublePendulumParameters().terminateHeight // => 1
  * ```
  */
@@ -964,7 +964,7 @@ export type CartDoublePendulumState = readonly number[]
  * @concept environments
  * @example
  * ```ts
- * import { cartDoublePendulumDerivatives, cartDoublePendulumParameters } from 'mdml-engine/environments'
+ * import { cartDoublePendulumDerivatives, cartDoublePendulumParameters } from 'omai-engine/environments'
  * cartDoublePendulumDerivatives([0, 0, 0, 0, 0, 0], 0, cartDoublePendulumParameters()) // => [0, 0, 0, 0, 0, 0]
  * ```
  */
@@ -987,7 +987,7 @@ export function cartDoublePendulumDerivatives(
  * @concept environments
  * @example
  * ```ts
- * import { cartDoublePendulumDynamics, cartDoublePendulumParameters } from 'mdml-engine/environments'
+ * import { cartDoublePendulumDynamics, cartDoublePendulumParameters } from 'omai-engine/environments'
  * cartDoublePendulumDynamics([0, 0, 0, 0, 0, 0], [0], cartDoublePendulumParameters()) // => [0, 0, 0, 0, 0, 0]
  * ```
  */
@@ -1009,7 +1009,7 @@ export function cartDoublePendulumDynamics(
  * @returns The energy.
  * @example
  * ```ts
- * import { cartDoublePendulumEnergy, cartDoublePendulumParameters } from 'mdml-engine/environments'
+ * import { cartDoublePendulumEnergy, cartDoublePendulumParameters } from 'omai-engine/environments'
  * const p = cartDoublePendulumParameters({ g: 10, masses: [1, 1], lengths: [1, 1] })
  * cartDoublePendulumEnergy([0, 0, 0, 0, 0, 0], p) // => 20
  * ```
@@ -1054,8 +1054,8 @@ const CDP_DESCRIPTION = 'Balance (or swing up) two linked poles on a cart pushed
  * @concept environments
  * @example
  * ```ts
- * import { makeCartDoublePendulum } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { makeCartDoublePendulum } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * makeCartDoublePendulum({ swingUp: true }).reset(key(0)).state[1] > 3 // => true
  * ```
  */
@@ -1098,8 +1098,8 @@ export function makeCartDoublePendulum(
  * @concept environments
  * @example
  * ```ts
- * import { cartDoublePendulum } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { cartDoublePendulum } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * cartDoublePendulum.create().step([0, 0, 0, 0, 0, 0], [0], key(0)).reward // => 10
  * ```
  */

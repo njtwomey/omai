@@ -3,7 +3,7 @@
  * labels, bounding boxes and segmentation masks. The `images` constructor checks that they agree.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import type { Tensor, TensorLike } from '../../tensor/index.ts'
 import { checkRows, concrete, concreteFloat, metaFor } from './_coerce.ts'
 import type { DatasetMeta } from './common.ts'
@@ -45,17 +45,17 @@ export interface ImageOptions {
  * @param pixels - The images.
  * @param options - Labels, classes, boxes, box labels, masks and metadata.
  * @returns The dataset.
- * @throws MdmlError with code `shape` when the images are not 3-D or 4-D, or a mask's size differs.
+ * @throws OmaiError with code `shape` when the images are not 3-D or 4-D, or a mask's size differs.
  * @example
  * ```ts
- * import { images } from 'mdml-engine/data'
+ * import { images } from 'omai-engine/data'
  * images([[[0, 1], [1, 0]]], { labels: [1] }).images.shape // => [1, 2, 2, 1]
  * ```
  */
 export function images(pixels: TensorLike, options: ImageOptions = {}): ImageData {
   let x = concreteFloat(pixels, 'images')
   if (x.shape.length === 3) x = x.backend.wrap(x.dtype, [...x.shape, 1], x.data)
-  if (x.shape.length !== 4) throw new MdmlError('shape', `images: expected [n, h, w, c], got [${x.shape}]`)
+  if (x.shape.length !== 4) throw new OmaiError('shape', `images: expected [n, h, w, c], got [${x.shape}]`)
   const [n = 0, h = 0, w = 0] = x.shape
   const labels = options.labels === undefined ? undefined : concrete(options.labels, 'int32', 'images')
   const boxes = options.boxes?.map((b) => {
@@ -65,7 +65,7 @@ export function images(pixels: TensorLike, options: ImageOptions = {}): ImageDat
   const boxLabels = options.boxLabels?.map((b) => concrete(b, 'int32', 'images'))
   const masks = options.masks === undefined ? undefined : concrete(options.masks, 'int32', 'images')
   if (masks !== undefined && (masks.shape[1] !== h || masks.shape[2] !== w))
-    throw new MdmlError('shape', `images: masks must be [${n}, ${h}, ${w}]`)
+    throw new OmaiError('shape', `images: masks must be [${n}, ${h}, ${w}]`)
   checkRows('images', n, { labels, boxes, boxLabels, masks })
   return {
     kind: 'image',

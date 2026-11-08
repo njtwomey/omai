@@ -4,7 +4,7 @@
  * kernel, the median-heuristic bandwidth and Gram-matrix centring they use.
  */
 
-import { MdmlError, type TestResult } from '../../base/index.ts'
+import { OmaiError, type TestResult } from '../../base/index.ts'
 import { gammaincc } from '../../numerics/special/index.ts'
 import { foldIn, key as makeKey, permutation } from '../../random/index.ts'
 import { item, type TensorLike } from '../../tensor/index.ts'
@@ -33,12 +33,12 @@ export type KernelFunction = (a: ArrayLike<number>, b: ArrayLike<number>) => num
  * @returns The kernel.
  * @example
  * ```ts
- * import { gaussianKernel } from 'mdml-engine/stats/tests'
+ * import { gaussianKernel } from 'omai-engine/stats/tests'
  * gaussianKernel(1)([0, 0], [1, 1]) // => 0.367879
  * ```
  */
 export function gaussianKernel(sigma: number): KernelFunction {
-  if (!(sigma > 0)) throw new MdmlError('value', 'gaussianKernel: sigma must be positive')
+  if (!(sigma > 0)) throw new OmaiError('value', 'gaussianKernel: sigma must be positive')
   const c = 1 / (2 * sigma * sigma)
   return (a, b) => {
     let s = 0
@@ -59,7 +59,7 @@ function rowAt(m: Rows, i: number): Float64Array {
  * @returns The bandwidth.
  * @example
  * ```ts
- * import { medianHeuristic } from 'mdml-engine/stats/tests'
+ * import { medianHeuristic } from 'omai-engine/stats/tests'
  * medianHeuristic([0, 1, 2]) // => 0.707107
  * ```
  */
@@ -83,7 +83,7 @@ function gram(a: Rows, b: Rows, k: KernelFunction): Float64Array {
 }
 
 function stack(a: Rows, b: Rows): Rows {
-  if (a.cols !== b.cols) throw new MdmlError('shape', 'kernel test: samples differ in dimension')
+  if (a.cols !== b.cols) throw new OmaiError('shape', 'kernel test: samples differ in dimension')
   return { rows: a.rows + b.rows, cols: a.cols, data: Float64Array.from([...a.data, ...b.data]) }
 }
 
@@ -127,7 +127,7 @@ export interface KernelTestOptions extends Partial<Omit<RunOptions, 'maxSteps' |
  * @returns MMD^2.
  * @example
  * ```ts
- * import { gaussianKernel, mmd2 } from 'mdml-engine/stats/tests'
+ * import { gaussianKernel, mmd2 } from 'omai-engine/stats/tests'
  * mmd2([0], [0], { kernel: gaussianKernel(1) }) // => 0
  * ```
  */
@@ -187,7 +187,7 @@ export const nullContract: Contract<KernelTestState, NullPath> = defineContract(
  * @returns The algorithm; its state is a {@link KernelTestState}.
  * @example
  * ```ts
- * import { permutationNullAlgorithm } from 'mdml-engine/stats/tests'
+ * import { permutationNullAlgorithm } from 'omai-engine/stats/tests'
  * permutationNullAlgorithm('demo', 300, 10, (perm) => perm[0] ?? 0).name // => 'demo'
  * ```
  */
@@ -242,7 +242,7 @@ const gammaSf = (x: number, shape: number, scale: number): number => item(gammai
  * Machine Learning Research 13 (2012).
  * @example
  * ```ts
- * import { mmdTest } from 'mdml-engine/stats/tests'
+ * import { mmdTest } from 'omai-engine/stats/tests'
  * mmdTest([0, 0.1, 0.2, 0.3, 0.4], [5, 5.1, 5.2, 5.3, 5.4], { seed: 0, nResamples: 199 }).pValue // => 0.025
  * ```
  */
@@ -257,7 +257,7 @@ export function mmdTest(x: TensorLike, y: TensorLike, options: KernelTestOptions
   const identity = Int32Array.from({ length: N }, (_, i) => i)
   const stat = mmd2Of(K, N, identity, m, false)
   if (options.null === 'gamma') {
-    if (a.rows !== b.rows) throw new MdmlError('value', 'mmdTest: the gamma approximation needs equal sample sizes')
+    if (a.rows !== b.rows) throw new OmaiError('value', 'mmdTest: the gamma approximation needs equal sample sizes')
     // Gretton et al. (2009): m MMD^2_b against a gamma with matched mean and variance (kernels with k(x, x) = 1).
     let diagXY = 0
     for (let i = 0; i < m; i++) diagXY += K[i * N + (m + i)] ?? 0
@@ -308,7 +308,7 @@ export function mmdTest(x: TensorLike, y: TensorLike, options: KernelTestOptions
  * @returns The centred matrix, `[n, n]` row-major (every row and column sums to 0).
  * @example
  * ```ts
- * import { centreGram } from 'mdml-engine/stats/tests'
+ * import { centreGram } from 'omai-engine/stats/tests'
  * Array.from(centreGram(Float64Array.of(1, 0, 0, 1), 2)) // => [0.5, -0.5, -0.5, 0.5]
  * ```
  */
@@ -338,7 +338,7 @@ function hsicGrams(
 ): { Kc: Float64Array; Lc: Float64Array; K: Float64Array; L: Float64Array; n: number } {
   const a = rowsOf('hsic', x)
   const b = rowsOf('hsic', y)
-  if (a.rows !== b.rows) throw new MdmlError('shape', 'hsic: x and y differ in length')
+  if (a.rows !== b.rows) throw new OmaiError('shape', 'hsic: x and y differ in length')
   const n = a.rows
   const kx = options.kernel ?? gaussianKernel(medianHeuristic(toNested(a)))
   const ky = options.kernelY ?? gaussianKernel(medianHeuristic(toNested(b)))
@@ -356,7 +356,7 @@ function hsicGrams(
  * @returns HSIC.
  * @example
  * ```ts
- * import { hsic } from 'mdml-engine/stats/tests'
+ * import { hsic } from 'omai-engine/stats/tests'
  * hsic([1, 2, 3, 4], [1, 2, 3, 4]) > hsic([1, 2, 3, 4], [2, 4, 1, 3]) // => true
  * ```
  */
@@ -377,7 +377,7 @@ export function hsic(x: TensorLike, y: TensorLike, options: HsicOptions = {}): n
  * @returns HSIC and its p-value.
  * @example
  * ```ts
- * import { hsicTest } from 'mdml-engine/stats/tests'
+ * import { hsicTest } from 'omai-engine/stats/tests'
  * const x = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
  * hsicTest(x, x.map((v) => v * v), { null: 'gamma' }).pValue < 0.01 // => true
  * ```

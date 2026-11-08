@@ -6,7 +6,7 @@
  */
 
 import { grad } from '../autodiff/index.ts'
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { entr, klDiv, relEntr } from '../numerics/special/index.ts'
 import {
   abs,
@@ -58,14 +58,14 @@ function gridWeights(shape: readonly number[], options: GridOptions): Value | un
   const rank = shape.length
   const axis = (options.axis ?? -1) < 0 ? (options.axis ?? -1) + rank : (options.axis ?? -1)
   const n = shape[axis] ?? 0
-  if (n < 2) throw new MdmlError('shape', 'divergences: a grid needs at least two points')
+  if (n < 2) throw new OmaiError('shape', 'divergences: a grid needs at least two points')
   const w = new Float64Array(n)
   if (options.x !== undefined) {
     const xs = toFlat(float(options.x))
-    if (xs.length !== n) throw new MdmlError('shape', `divergences: ${xs.length} grid points for an axis of ${n}`)
+    if (xs.length !== n) throw new OmaiError('shape', `divergences: ${xs.length} grid points for an axis of ${n}`)
     for (let i = 0; i + 1 < n; i++) {
       const h = (xs[i + 1] ?? 0) - (xs[i] ?? 0)
-      if (!(h > 0)) throw new MdmlError('value', 'divergences: grid points must increase')
+      if (!(h > 0)) throw new OmaiError('value', 'divergences: grid points must increase')
       w[i] = (w[i] ?? 0) + h / 2
       w[i + 1] = (w[i + 1] ?? 0) + h / 2
     }
@@ -152,8 +152,8 @@ const NAMED: Readonly<Record<FGeneratorName, (p: Value, q: Value) => Value>> = {
  * @concept f-divergence
  * @example
  * ```ts
- * import { fDivergence } from 'mdml-engine/information'
- * import { item, log, mul, sub, type Value } from 'mdml-engine/tensor'
+ * import { fDivergence } from 'omai-engine/information'
+ * import { item, log, mul, sub, type Value } from 'omai-engine/tensor'
  * item(fDivergence([0.5, 0.5], [1, 0], 'totalVariation')) // => 0.5
  * // A custom generator: f(t) = t log t is the KL divergence.
  * item(fDivergence([0.5, 0.5], [0.5, 0.5], (t: Value) => mul(t, log(t)))) // => 0
@@ -179,13 +179,13 @@ export function fDivergence(p: TensorLike, q: TensorLike, f: FGenerator, options
  * @concept renyi-divergence
  * @example
  * ```ts
- * import { renyiDivergence } from 'mdml-engine/information'
- * import { item } from 'mdml-engine/tensor'
+ * import { renyiDivergence } from 'omai-engine/information'
+ * import { item } from 'omai-engine/tensor'
  * item(renyiDivergence([1, 0], [0.5, 0.5], 2, { base: 2 })) // => 1
  * ```
  */
 export function renyiDivergence(p: TensorLike, q: TensorLike, alpha: number, options: GridOptions = {}): Value {
-  if (!(alpha >= 0)) throw new MdmlError('value', `renyiDivergence: alpha must be >= 0, got ${alpha}`)
+  if (!(alpha >= 0)) throw new OmaiError('value', `renyiDivergence: alpha must be >= 0, got ${alpha}`)
   const [a, b] = pair(p, q)
   if (Math.abs(alpha - 1) < NEAR) return inBase(integrate(relEntr(a, b), options), options.base)
   if (alpha === Number.POSITIVE_INFINITY) {
@@ -208,13 +208,13 @@ export function renyiDivergence(p: TensorLike, q: TensorLike, alpha: number, opt
  * @concept renyi-entropy
  * @example
  * ```ts
- * import { renyiEntropy } from 'mdml-engine/information'
- * import { item } from 'mdml-engine/tensor'
+ * import { renyiEntropy } from 'omai-engine/information'
+ * import { item } from 'omai-engine/tensor'
  * item(renyiEntropy([0.25, 0.25, 0.25, 0.25], 2, { base: 2 })) // => 2
  * ```
  */
 export function renyiEntropy(p: TensorLike, alpha: number, options: GridOptions = {}): Value {
-  if (!(alpha >= 0)) throw new MdmlError('value', `renyiEntropy: alpha must be >= 0, got ${alpha}`)
+  if (!(alpha >= 0)) throw new OmaiError('value', `renyiEntropy: alpha must be >= 0, got ${alpha}`)
   const a = float(p)
   if (Math.abs(alpha - 1) < NEAR) return inBase(integrate(entr(a), options), options.base)
   if (alpha === Number.POSITIVE_INFINITY) return inBase(neg(log(max(a, options.axis ?? -1))), options.base)
@@ -237,8 +237,8 @@ export function renyiEntropy(p: TensorLike, alpha: number, options: GridOptions 
  * @concept alpha-divergence
  * @example
  * ```ts
- * import { alphaDivergence } from 'mdml-engine/information'
- * import { item } from 'mdml-engine/tensor'
+ * import { alphaDivergence } from 'omai-engine/information'
+ * import { item } from 'omai-engine/tensor'
  * item(alphaDivergence([1, 0], [0, 1], 0.5)) // => 4
  * ```
  */
@@ -265,8 +265,8 @@ export function alphaDivergence(p: TensorLike, q: TensorLike, alpha: number, opt
  * @concept beta-divergence
  * @example
  * ```ts
- * import { betaDivergence } from 'mdml-engine/information'
- * import { item } from 'mdml-engine/tensor'
+ * import { betaDivergence } from 'omai-engine/information'
+ * import { item } from 'omai-engine/tensor'
  * item(betaDivergence([1, 2], [3, 2], 2)) // => 2
  * ```
  */
@@ -304,8 +304,8 @@ export type BregmanName = 'squaredEuclidean' | 'negativeEntropy' | 'itakuraSaito
  * @concept bregman-divergence
  * @example
  * ```ts
- * import { bregmanDivergence } from 'mdml-engine/information'
- * import { item, square, sum, type Value } from 'mdml-engine/tensor'
+ * import { bregmanDivergence } from 'omai-engine/information'
+ * import { item, square, sum, type Value } from 'omai-engine/tensor'
  * item(bregmanDivergence([1, 2], [3, 2], 'squaredEuclidean')) // => 4
  * item(bregmanDivergence([1, 2], [3, 2], (x: Value) => sum(square(x)))) // => 4
  * ```

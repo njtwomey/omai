@@ -4,7 +4,7 @@
  * samples accumulate. Grey levels or colour.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { sameLength, seal } from './_check.ts'
 
 /**
@@ -50,11 +50,11 @@ export interface ImageSteps {
  *
  * @param record - The record without its `kind`.
  * @returns The record.
- * @throws MdmlError `shape` when a step has the wrong number of groups or an image the wrong number of pixels;
+ * @throws OmaiError `shape` when a step has the wrong number of groups or an image the wrong number of pixels;
  *   `value` when the size is not a positive integer.
  * @example
  * ```ts
- * import { imageSteps } from 'mdml-engine/exposition'
+ * import { imageSteps } from 'omai-engine/exposition'
  * const r = imageSteps({
  *   method: 'vae',
  *   height: 1,
@@ -69,8 +69,8 @@ export function imageSteps(record: Omit<ImageSteps, 'kind'>): ImageSteps {
   const { height, width } = record
   const channels = record.channels ?? 1
   if (!(Number.isInteger(height) && height > 0 && Number.isInteger(width) && width > 0))
-    throw new MdmlError('value', `imageSteps: the size ${height} by ${width} is not positive whole pixels`)
-  if (channels !== 1 && channels !== 3) throw new MdmlError('value', `imageSteps: ${channels} channels, not 1 or 3`)
+    throw new OmaiError('value', `imageSteps: the size ${height} by ${width} is not positive whole pixels`)
+  if (channels !== 1 && channels !== 3) throw new OmaiError('value', `imageSteps: ${channels} channels, not 1 or 3`)
   for (const [t, step] of record.steps.entries()) {
     sameLength('imageSteps', `steps[${t}].images`, step.images.length, record.groups.length)
     for (const [g, group] of step.images.entries())

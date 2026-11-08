@@ -6,7 +6,7 @@
  * seasonal amplitude growing with the level calls for.
  */
 
-import { MdmlError, meanOf, minOf, varianceOf } from '../base/index.ts'
+import { meanOf, minOf, OmaiError, varianceOf } from '../base/index.ts'
 import { fminbound } from '../optim/index.ts'
 import { boxcoxNormmax } from '../stats/index.ts'
 import { asSeries } from './_series.ts'
@@ -26,7 +26,7 @@ const inverse = (w: number, lambda: number): number => (lambda === 0 ? Math.exp(
  * @returns The exponent.
  * @example
  * ```ts
- * import { guerreroLambda } from 'mdml-engine/timeseries'
+ * import { guerreroLambda } from 'omai-engine/timeseries'
  * // Blocks whose spread is proportional to their level call for the logarithm.
  * const y = [1, 2, 3, 2, 10, 20, 30, 20, 100, 200, 300, 200]
  * Math.abs(guerreroLambda(y, 4)) < 0.01 // => true
@@ -38,9 +38,9 @@ export function guerreroLambda(
   bounds: readonly [number, number] = [-1, 2],
 ): number {
   const x = asSeries(Float64Array.from(y), 'guerreroLambda')
-  if (x.some((v) => !(v > 0))) throw new MdmlError('value', 'guerreroLambda: the series must be positive')
+  if (x.some((v) => !(v > 0))) throw new OmaiError('value', 'guerreroLambda: the series must be positive')
   const blocks = Math.floor(x.length / period)
-  if (blocks < 2) throw new MdmlError('value', 'guerreroLambda: need at least two blocks of one period')
+  if (blocks < 2) throw new OmaiError('value', 'guerreroLambda: need at least two blocks of one period')
   const tail = x.slice(x.length - blocks * period)
   const means: number[] = []
   const sds: number[] = []
@@ -86,7 +86,7 @@ export interface BoxCoxMstlResult {
  * @returns The exponent, the decomposition on the transformed scale and the original-scale fit, trend and seasonal factors.
  * @example
  * ```ts
- * import { boxCoxMstl } from 'mdml-engine/timeseries'
+ * import { boxCoxMstl } from 'omai-engine/timeseries'
  * const y = Array.from({ length: 96 }, (_, t) => Math.exp(0.02 * t) * (2 + Math.sin((2 * Math.PI * t) / 12)))
  * boxCoxMstl(y, { periods: [12], lambda: 0 }).lambda // => 0
  * ```

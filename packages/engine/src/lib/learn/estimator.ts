@@ -8,7 +8,7 @@
  * @index structure The estimator protocol: hyperparameters, fitted values with verbs, cloning, serialisation.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import type { Context } from '../context/index.ts'
 import type { Distribution } from '../dists/index.ts'
 import { accuracyScore, r2Score } from '../metrics/index.ts'
@@ -156,7 +156,7 @@ function defaultScore(kind: EstimatorKind, verbs: Verbs): ((data: LearnData) => 
  * @returns The same verbs plus `score`, when the kind has a default and the verbs predict.
  * @example
  * ```ts
- * import { withDefaultScore } from 'mdml-engine/learn'
+ * import { withDefaultScore } from 'omai-engine/learn'
  * const verbs = withDefaultScore('regressor', { predict: (x) => x })
  * verbs.score({ x: [1, 2], y: [1, 2] }) // => 1
  * ```
@@ -179,16 +179,16 @@ function optionalWeights(data: LearnData): { readonly sampleWeight?: TensorLike 
  * @param data - The data.
  * @param who - The caller (for the error).
  * @returns `data.y`.
- * @throws MdmlError with code `value` when `y` is missing.
+ * @throws OmaiError with code `value` when `y` is missing.
  * @example
  * ```ts
- * import { requireTargets } from 'mdml-engine/learn'
+ * import { requireTargets } from 'omai-engine/learn'
  * requireTargets({ x: [[1]], y: [2] }, 'demo') // => [2]
  * requireTargets({ x: [[1]] }, 'demo') // => throws value
  * ```
  */
 export function requireTargets(data: LearnData, who: string): TensorLike {
-  if (data.y === undefined) throw new MdmlError('value', `${who}: this step needs targets y`)
+  if (data.y === undefined) throw new OmaiError('value', `${who}: this step needs targets y`)
   return data.y
 }
 
@@ -203,8 +203,8 @@ export function requireTargets(data: LearnData, who: string): TensorLike {
  * @concept estimator-protocol
  * @example
  * ```ts
- * import { defineEstimator } from 'mdml-engine/learn'
- * import { full, mean, item, toFlat } from 'mdml-engine/tensor'
+ * import { defineEstimator } from 'omai-engine/learn'
+ * import { full, mean, item, toFlat } from 'omai-engine/tensor'
  * const meanRegressor = defineEstimator(
  *   {
  *     name: 'mean',
@@ -260,8 +260,8 @@ export function defineEstimator<H extends Hyper, P extends Json, V extends Verbs
  * @returns The new estimator.
  * @example
  * ```ts
- * import { cloneEstimator } from 'mdml-engine/learn'
- * import { standardScaler } from 'mdml-engine/learn/preprocessing'
+ * import { cloneEstimator } from 'omai-engine/learn'
+ * import { standardScaler } from 'omai-engine/learn/preprocessing'
  * cloneEstimator(standardScaler(), { withMean: false }).hyper.withMean // => false
  * ```
  */
@@ -279,8 +279,8 @@ export function cloneEstimator<H extends Hyper, F extends Fitted>(
  * @returns `true` for an estimator.
  * @example
  * ```ts
- * import { isEstimator } from 'mdml-engine/learn'
- * import { standardScaler } from 'mdml-engine/learn/preprocessing'
+ * import { isEstimator } from 'omai-engine/learn'
+ * import { standardScaler } from 'omai-engine/learn/preprocessing'
  * isEstimator(standardScaler()) // => true
  * isEstimator({ fit: 1 }) // => false
  * ```
@@ -307,8 +307,8 @@ export type With<V extends keyof Verbs> = Fitted & Required<Pick<Verbs, V>>
  * @returns `true` when the verb is available; the type narrows.
  * @example
  * ```ts
- * import { can } from 'mdml-engine/learn'
- * import { standardScaler } from 'mdml-engine/learn/preprocessing'
+ * import { can } from 'omai-engine/learn'
+ * import { standardScaler } from 'omai-engine/learn/preprocessing'
  * const f = standardScaler().fit({ x: [[1], [3]] })
  * can(f, 'inverseTransform') // => true
  * can(f, 'predictProba') // => false
@@ -325,11 +325,11 @@ export function can<V extends keyof Verbs>(fitted: Fitted, verb: V): fitted is W
  * @param verb - The verb.
  * @param who - The caller (for the error).
  * @returns The verb's function.
- * @throws MdmlError with code `value` when the estimator lacks the verb.
+ * @throws OmaiError with code `value` when the estimator lacks the verb.
  * @example
  * ```ts
- * import { requireVerb } from 'mdml-engine/learn'
- * import { standardScaler } from 'mdml-engine/learn/preprocessing'
+ * import { requireVerb } from 'omai-engine/learn'
+ * import { standardScaler } from 'omai-engine/learn/preprocessing'
  * const f = standardScaler().fit({ x: [[1], [3]] })
  * typeof requireVerb(f, 'transform', 'demo') // => 'function'
  * requireVerb(f, 'predict', 'demo') // => throws value
@@ -338,7 +338,7 @@ export function can<V extends keyof Verbs>(fitted: Fitted, verb: V): fitted is W
 export function requireVerb<V extends keyof Verbs>(fitted: Fitted, verb: V, who: string): NonNullable<Verbs[V]> {
   const f = fitted[verb]
   if (typeof f !== 'function') {
-    throw new MdmlError('value', `${who}: ${fitted.estimator} has no ${verb}`, { estimator: fitted.estimator })
+    throw new OmaiError('value', `${who}: ${fitted.estimator} has no ${verb}`, { estimator: fitted.estimator })
   }
   return f as NonNullable<Verbs[V]>
 }
@@ -350,8 +350,8 @@ export function requireVerb<V extends keyof Verbs>(fitted: Fitted, verb: V, who:
  * @returns `true` for classifiers.
  * @example
  * ```ts
- * import { isClassifier } from 'mdml-engine/learn'
- * import { standardScaler } from 'mdml-engine/learn/preprocessing'
+ * import { isClassifier } from 'omai-engine/learn'
+ * import { standardScaler } from 'omai-engine/learn/preprocessing'
  * isClassifier(standardScaler().fit({ x: [[1], [3]] })) // => false
  * ```
  */
@@ -372,8 +372,8 @@ export interface SerialisedFitted {
  * @returns `{ estimator, params }`.
  * @example
  * ```ts
- * import { serialiseFitted } from 'mdml-engine/learn'
- * import { standardScaler } from 'mdml-engine/learn/preprocessing'
+ * import { serialiseFitted } from 'omai-engine/learn'
+ * import { standardScaler } from 'omai-engine/learn/preprocessing'
  * serialiseFitted(standardScaler().fit({ x: [[1], [3]] })).estimator // => 'standard-scaler'
  * ```
  */
@@ -387,12 +387,12 @@ export function serialiseFitted(fitted: Fitted): SerialisedFitted {
  * @param estimator - The estimator (same name and hyperparameters as at fit time).
  * @param json - What {@link serialiseFitted} produced.
  * @returns The fitted value with its verbs.
- * @throws MdmlError with code `value` when the names differ.
+ * @throws OmaiError with code `value` when the names differ.
  * @example
  * ```ts
- * import { revive, serialiseFitted } from 'mdml-engine/learn'
- * import { standardScaler } from 'mdml-engine/learn/preprocessing'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { revive, serialiseFitted } from 'omai-engine/learn'
+ * import { standardScaler } from 'omai-engine/learn/preprocessing'
+ * import { toArray } from 'omai-engine/tensor'
  * const est = standardScaler()
  * const json = JSON.parse(JSON.stringify(serialiseFitted(est.fit({ x: [[1], [3]] }))))
  * toArray(revive(est, json).transform([[3]])) // => [[1]]
@@ -400,7 +400,7 @@ export function serialiseFitted(fitted: Fitted): SerialisedFitted {
  */
 export function revive<H extends Hyper, F extends Fitted>(estimator: Estimator<H, F>, json: SerialisedFitted): F {
   if (json.estimator !== estimator.name) {
-    throw new MdmlError('value', `revive: parameters of ${json.estimator} given to ${estimator.name}`)
+    throw new OmaiError('value', `revive: parameters of ${json.estimator} given to ${estimator.name}`)
   }
   return estimator.revive(json.params)
 }
@@ -413,9 +413,9 @@ export function revive<H extends Hyper, F extends Fitted>(estimator: Estimator<H
  * @concept estimator-protocol
  * @example
  * ```ts
- * import { EstimatorClass } from 'mdml-engine/learn'
- * import { standardScaler } from 'mdml-engine/learn/preprocessing'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { EstimatorClass } from 'omai-engine/learn'
+ * import { standardScaler } from 'omai-engine/learn/preprocessing'
+ * import { toArray } from 'omai-engine/tensor'
  * const scaler = new EstimatorClass(standardScaler())
  * toArray(scaler.fitTransform([[1], [3]])) // => [[-1], [1]]
  * scaler.getParams().withMean // => true
@@ -439,7 +439,7 @@ export class EstimatorClass<H extends Hyper = Hyper, F extends Fitted = Fitted> 
 
   /** The fitted value, or an error when `fit` has not been called. */
   get model(): F {
-    if (this.fitted === undefined) throw new MdmlError('value', `${this.estimator.name}: call fit first`)
+    if (this.fitted === undefined) throw new OmaiError('value', `${this.estimator.name}: call fit first`)
     return this.fitted
   }
 

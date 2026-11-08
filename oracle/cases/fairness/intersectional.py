@@ -5,9 +5,9 @@ import aif360
 import numpy as np
 from aif360.algorithms.inprocessing.gerryfair.auditor import Auditor
 from aif360.metrics import ClassificationMetric
-from mdml_oracle.fairness import binary_dataset, with_labels
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray, rng
+from omai_oracle.fairness import binary_dataset, with_labels
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray, rng
 
 REFERENCE: dict[str, str] = {"aif360": aif360.__version__}
 

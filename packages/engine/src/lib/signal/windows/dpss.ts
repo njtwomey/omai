@@ -4,7 +4,7 @@
  * ratios. They are the tapers of the multitaper spectrum.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { type Tensor, toFlat } from '../../tensor/index.ts'
 import { constant } from '../_shared.ts'
 import { dpssTapers } from './_tridiagonal.ts'
@@ -28,12 +28,12 @@ export interface DpssOptions extends WindowOptions {
  * @param nw - Time-halfbandwidth product (less than M / 2).
  * @param options - Number of tapers, symmetry and normalisation.
  * @returns One window `[M]`, or the tapers `[kmax, M]`.
- * @throws MdmlError with code `value` for an invalid NW or taper count.
+ * @throws OmaiError with code `value` for an invalid NW or taper count.
  * @concept window-functions
  * @example
  * ```ts
- * import { dpss } from 'mdml-engine/signal'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { dpss } from 'omai-engine/signal'
+ * import { toFlat } from 'omai-engine/tensor'
  * const w = toFlat(dpss(8, 2, { kmax: 2 }))
  * Math.round(w.slice(0, 8).reduce((a, v) => a + v * v, 0) * 1e12) / 1e12 // => 1
  * ```
@@ -44,8 +44,8 @@ export function dpss(m: number, nw: number, options: DpssOptions = {}): Tensor {
   const norm = options.norm ?? (single ? 'approximate' : 2)
   const sym = options.sym ?? true
   if (m <= 1) return constant(new Float64Array(single ? m : kmax * m).fill(1), single ? [m] : [kmax, m])
-  if (!Number.isInteger(kmax) || kmax < 1 || kmax > m) throw new MdmlError('value', 'dpss: kmax must be in 1 .. M')
-  if (!(nw > 0) || nw >= m / 2) throw new MdmlError('value', 'dpss: NW must be positive and less than M / 2')
+  if (!Number.isInteger(kmax) || kmax < 1 || kmax > m) throw new OmaiError('value', 'dpss: kmax must be in 1 .. M')
+  if (!(nw > 0) || nw >= m / 2) throw new OmaiError('value', 'dpss: NW must be positive and less than M / 2')
   const len = sym ? m : m + 1
   const tapers = dpssTapers(len, nw, kmax)
   if (norm !== 2) {
@@ -97,8 +97,8 @@ export function dpss(m: number, nw: number, options: DpssOptions = {}): Tensor {
  * @returns The ratios `[kmax]`.
  * @example
  * ```ts
- * import { dpssRatios } from 'mdml-engine/signal'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { dpssRatios } from 'omai-engine/signal'
+ * import { toFlat } from 'omai-engine/tensor'
  * (toFlat(dpssRatios(64, 4, 2))[0] ?? 0) > 0.9999 // => true
  * ```
  */

@@ -1,6 +1,6 @@
 // Private helpers of the survival domain: scalar views of the special functions that p-values and intervals need, and
 // the symmetric positive-definite inverse the covariances come from.
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { dpotrf, dpotrs } from '../numerics/linalg/index.ts'
 import { chdtrc, ndtr, ndtri } from '../numerics/special/index.ts'
 import { item } from '../tensor/index.ts'
@@ -31,5 +31,5 @@ export function rowsOfMatrix(a: ArrayLike<number>, n: number): number[][] {
 
 /** Throw unless `ok`, with a `value` error. */
 export function require(ok: boolean, message: string): void {
-  if (!ok) throw new MdmlError('value', message)
+  if (!ok) throw new OmaiError('value', message)
 }

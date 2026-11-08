@@ -8,8 +8,8 @@ from typing import Any
 
 import numpy as np
 import numpy.typing as npt
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import rng
 from statsmodels.tsa.api import VAR
 
 REFERENCE: dict[str, str] = {"statsmodels": version("statsmodels"), "numpy": np.__version__}

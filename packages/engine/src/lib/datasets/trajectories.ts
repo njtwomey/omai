@@ -22,8 +22,8 @@ const logistic = (z: number): number => 1 / (1 + Math.exp(-z))
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { loggedBandit } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { loggedBandit } from 'omai-engine/datasets'
  * generate(loggedBandit, { knobs: { rounds: 50, actions: 3 } }).data.nActions // => 3
  * ```
  */
@@ -144,7 +144,7 @@ export interface TabularMdp {
  * @returns The state values `V[s]` and the start-distribution value.
  * @example
  * ```ts
- * import { policyEvaluation } from 'mdml-engine/datasets'
+ * import { policyEvaluation } from 'omai-engine/datasets'
  * const mdp = { states: 1, actions: 1, transitions: [[[1]]], rewards: [[1]], start: [1], gamma: 0.5 }
  * policyEvaluation(mdp, [[1]]).value // => 2
  * ```
@@ -230,8 +230,8 @@ function makeMdp(k: Key, layout: MdpLayout, states: number, actions: number, gam
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { offlineMdp } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { offlineMdp } from 'omai-engine/datasets'
  * generate(offlineMdp, { knobs: { episodes: 5, horizon: 10 } }).data.rewards.shape // => [50]
  * ```
  */

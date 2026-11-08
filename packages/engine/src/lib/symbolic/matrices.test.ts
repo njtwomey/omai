@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isMdmlError } from '../base/index.ts'
+import { isOmaiError } from '../base/index.ts'
 import {
   charpoly,
   det,
@@ -146,7 +146,7 @@ describe('matrices', () => {
       matrix([[1, 2], [3]])
       expect.unreachable()
     } catch (e) {
-      expect(isMdmlError(e) && e.code === 'shape').toBe(true)
+      expect(isOmaiError(e) && e.code === 'shape').toBe(true)
     }
   })
 })

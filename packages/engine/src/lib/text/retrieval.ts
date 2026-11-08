@@ -5,7 +5,7 @@
  * smoothing), each term's contribution to a score, and phrase, proximity and boolean queries answered from the postings.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import type { Algorithm } from '../trace/index.ts'
 
 /** One document's entry in a term's postings list. */
@@ -36,7 +36,7 @@ export interface InvertedIndex {
  * @concept information-retrieval
  * @example
  * ```ts
- * import { invertedIndex } from 'mdml-engine/text'
+ * import { invertedIndex } from 'omai-engine/text'
  * const ix = invertedIndex()
  * ix.add(['to', 'be', 'or', 'not', 'to', 'be'])
  * ix.add(['to', 'do'])
@@ -82,7 +82,7 @@ export function invertedIndex(): InvertedIndex {
  * @concept information-retrieval
  * @example
  * ```ts
- * import { indexCorpus } from 'mdml-engine/text'
+ * import { indexCorpus } from 'omai-engine/text'
  * indexCorpus([['a', 'b'], ['b', 'c']]).postings.get('b')?.length // => 2
  * ```
  */
@@ -107,8 +107,8 @@ export interface IndexingState {
  * @concept information-retrieval
  * @example
  * ```ts
- * import { indexingAlgorithm } from 'mdml-engine/text'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { indexingAlgorithm } from 'omai-engine/text'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * runAlgorithm(indexingAlgorithm([['a'], ['a', 'b']]), { maxSteps: 5 }).state.index.postings.size // => 2
  * ```
  */
@@ -142,7 +142,7 @@ export function indexingAlgorithm(corpus: readonly (readonly string[])[]): Algor
  * @concept information-retrieval
  * @example
  * ```ts
- * import { documentFrequency, indexCorpus } from 'mdml-engine/text'
+ * import { documentFrequency, indexCorpus } from 'omai-engine/text'
  * documentFrequency(indexCorpus([['a', 'b'], ['b']]), 'b') // => 2
  * ```
  */
@@ -189,11 +189,11 @@ const countOf = (q: readonly string[]): Map<string, number> => {
  * @param query - The query tokens.
  * @param model - The model (default BM25 with k1 = 1.2, b = 0.75).
  * @returns The scores, one per document in order, each with its term contributions.
- * @throws MdmlError with code `value` for a bad parameter.
+ * @throws OmaiError with code `value` for a bad parameter.
  * @concept information-retrieval
  * @example
  * ```ts
- * import { indexCorpus, scoreDocuments } from 'mdml-engine/text'
+ * import { indexCorpus, scoreDocuments } from 'omai-engine/text'
  * const ix = indexCorpus([['a', 'b'], ['b', 'c'], ['c', 'c']])
  * scoreDocuments(ix, ['a'], { kind: 'bim' }).map((s) => Math.round(s.score * 100) / 100) // => [0.51, 0, 0]
  * ```
@@ -235,7 +235,7 @@ export function scoreDocuments(
   } else if (model.kind === 'bm25') {
     const k1 = model.k1 ?? 1.2
     const b = model.b ?? 0.75
-    if (!(k1 >= 0 && b >= 0 && b <= 1)) throw new MdmlError('value', 'scoreDocuments: need k1 >= 0 and b in [0, 1]')
+    if (!(k1 >= 0 && b >= 0 && b <= 1)) throw new OmaiError('value', 'scoreDocuments: need k1 >= 0 and b in [0, 1]')
     for (const [t, f] of qtf) {
       const list = index.postings.get(t)
       if (list === undefined) continue
@@ -263,11 +263,11 @@ export function scoreDocuments(
     const mu = model.mu ?? 2000
     const lambda = model.lambda ?? 0.1
     const delta = model.delta ?? 0.7
-    if (smoothing === 'dirichlet' && !(mu > 0)) throw new MdmlError('value', 'scoreDocuments: mu must be positive')
+    if (smoothing === 'dirichlet' && !(mu > 0)) throw new OmaiError('value', 'scoreDocuments: mu must be positive')
     if (smoothing === 'jelinek-mercer' && !(lambda > 0 && lambda < 1))
-      throw new MdmlError('value', 'scoreDocuments: lambda must be in (0, 1)')
+      throw new OmaiError('value', 'scoreDocuments: lambda must be in (0, 1)')
     if (smoothing === 'absolute' && !(delta >= 0 && delta < 1))
-      throw new MdmlError('value', 'scoreDocuments: delta must be in [0, 1)')
+      throw new OmaiError('value', 'scoreDocuments: delta must be in [0, 1)')
     const uniqueTerms: number[] = new Array<number>(N).fill(0)
     if (smoothing === 'absolute')
       for (const list of index.postings.values())
@@ -303,7 +303,7 @@ export function scoreDocuments(
  * @concept information-retrieval
  * @example
  * ```ts
- * import { indexCorpus, search } from 'mdml-engine/text'
+ * import { indexCorpus, search } from 'omai-engine/text'
  * const ix = indexCorpus([['a', 'b'], ['b', 'c'], ['c', 'c'], ['d'], ['e'], ['f']])
  * search(ix, ['c'], { kind: 'bm25' }, 1).map((r) => r.doc) // => [2]
  * ```
@@ -331,7 +331,7 @@ export function search(
  * @concept information-retrieval
  * @example
  * ```ts
- * import { indexCorpus, phraseSearch } from 'mdml-engine/text'
+ * import { indexCorpus, phraseSearch } from 'omai-engine/text'
  * const ix = indexCorpus([['new', 'york', 'city'], ['york', 'new'], ['new', 'big', 'york']])
  * [phraseSearch(ix, ['new', 'york']), phraseSearch(ix, ['new', 'york'], 1)] // => [[0], [0, 2]]
  * ```
@@ -371,7 +371,7 @@ export function phraseSearch(index: InvertedIndex, phrase: readonly string[], sl
  * @concept information-retrieval
  * @example
  * ```ts
- * import { booleanSearch, indexCorpus } from 'mdml-engine/text'
+ * import { booleanSearch, indexCorpus } from 'omai-engine/text'
  * const ix = indexCorpus([['a', 'b'], ['a', 'c'], ['b', 'c']])
  * booleanSearch(ix, { all: ['a'], none: ['c'] }) // => [0]
  * ```

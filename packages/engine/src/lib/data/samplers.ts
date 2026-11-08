@@ -4,7 +4,7 @@
  * plus `balancedWeights` for inverse-frequency class weights.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { categorical, foldIn, type Key, permutation, randint, uniform } from '../random/index.ts'
 import { fromStorage, type Tensor, type TensorLike, toVector } from '../tensor/index.ts'
 
@@ -23,7 +23,7 @@ export type RowOrder = (epoch: number) => Int32Array
  * @returns The sampler.
  * @example
  * ```ts
- * import { sequentialSampler } from 'mdml-engine/data'
+ * import { sequentialSampler } from 'omai-engine/data'
  * Array.from(sequentialSampler(3)(0)) // => [0, 1, 2]
  * ```
  */
@@ -46,22 +46,22 @@ export interface RandomSamplerOptions {
  * @param key - The base key; epoch `e` uses `foldIn(key, e)`.
  * @param options - Replacement and samples per epoch.
  * @returns The sampler.
- * @throws MdmlError with code `value` when more samples than rows are asked for without replacement, the number of
+ * @throws OmaiError with code `value` when more samples than rows are asked for without replacement, the number of
  *   samples is not a whole number, or samples are drawn with replacement from no rows.
  * @example
  * ```ts
- * import { randomSampler } from 'mdml-engine/data'
- * import { key } from 'mdml-engine/random'
+ * import { randomSampler } from 'omai-engine/data'
+ * import { key } from 'omai-engine/random'
  * Array.from(randomSampler(4, key(0))(0)).sort() // => [0, 1, 2, 3]
  * ```
  */
 export function randomSampler(n: number, key: Key, options: RandomSamplerOptions = {}): RowOrder {
   const m = options.numSamples ?? n
   if (!Number.isInteger(m) || m < 0)
-    throw new MdmlError('value', `randomSampler: the number of samples must be a whole number, got ${m}`)
+    throw new OmaiError('value', `randomSampler: the number of samples must be a whole number, got ${m}`)
   if (options.replacement !== true && m > n)
-    throw new MdmlError('value', `randomSampler: ${m} samples from ${n} rows need replacement`)
-  if (m > 0 && n === 0) throw new MdmlError('value', `randomSampler: cannot draw ${m} samples from no rows`)
+    throw new OmaiError('value', `randomSampler: ${m} samples from ${n} rows need replacement`)
+  if (m > 0 && n === 0) throw new OmaiError('value', `randomSampler: cannot draw ${m} samples from no rows`)
   return (epoch) => {
     const k = foldIn(key, epoch)
     if (options.replacement === true) return Int32Array.from(randint(k, [m], 0, n).data)
@@ -79,12 +79,12 @@ export function randomSampler(n: number, key: Key, options: RandomSamplerOptions
  * @param key - The base key.
  * @param options - Whether to draw with replacement (default true).
  * @returns The sampler.
- * @throws MdmlError with code `value` when too few rows have positive weight for sampling without replacement or no row
+ * @throws OmaiError with code `value` when too few rows have positive weight for sampling without replacement or no row
  * has positive weight, and `shape` unless `weights` is a vector.
  * @example
  * ```ts
- * import { weightedRandomSampler } from 'mdml-engine/data'
- * import { key } from 'mdml-engine/random'
+ * import { weightedRandomSampler } from 'omai-engine/data'
+ * import { key } from 'omai-engine/random'
  * Array.from(weightedRandomSampler([0, 1, 0], 3, key(0))(0)) // => [1, 1, 1]
  * ```
  */
@@ -97,9 +97,9 @@ export function weightedRandomSampler(
   const score = toVector(weights, 'weightedRandomSampler')
   const positive = score.filter((w) => w > 0).length
   if (numSamples > 0 && positive === 0)
-    throw new MdmlError('value', 'weightedRandomSampler: the weights have no positive entry to draw from')
+    throw new OmaiError('value', 'weightedRandomSampler: the weights have no positive entry to draw from')
   if (options.replacement === false && numSamples > positive)
-    throw new MdmlError('value', `weightedRandomSampler: ${numSamples} draws from ${positive} rows without replacement`)
+    throw new OmaiError('value', `weightedRandomSampler: ${numSamples} draws from ${positive} rows without replacement`)
   return (epoch) => {
     const k = foldIn(key, epoch)
     if (options.replacement !== false) return Int32Array.from(categorical(k, score, [numSamples]).data)
@@ -119,8 +119,8 @@ export function weightedRandomSampler(
  * @returns The sampler.
  * @example
  * ```ts
- * import { subsetRandomSampler } from 'mdml-engine/data'
- * import { key } from 'mdml-engine/random'
+ * import { subsetRandomSampler } from 'omai-engine/data'
+ * import { key } from 'omai-engine/random'
  * Array.from(subsetRandomSampler([5, 7], key(0))(0)).sort() // => [5, 7]
  * ```
  */
@@ -138,10 +138,10 @@ export function subsetRandomSampler(indices: readonly number[], key: Key): RowOr
  *
  * @param labels - The class of each row: a vector (a tensor such as a dataset's `y`, a typed array or a nested array).
  * @returns A float64 tensor of shape `[n]`, a weight per row.
- * @throws MdmlError with code `shape` unless `labels` is a vector.
+ * @throws OmaiError with code `shape` unless `labels` is a vector.
  * @example
  * ```ts
- * import { balancedWeights } from 'mdml-engine/data'
+ * import { balancedWeights } from 'omai-engine/data'
  * Array.from(balancedWeights([0, 0, 0, 1]).data) // => [0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 2]
  * ```
  */
@@ -164,16 +164,16 @@ export function balancedWeights(labels: TensorLike): Tensor<'float64'> {
  * @param batchSize - Rows per batch.
  * @param dropLast - Drop a final batch smaller than `batchSize` (default false).
  * @returns A function from the epoch to its batches of indices.
- * @throws MdmlError with code `value` unless `batchSize` is a whole number of at least 1.
+ * @throws OmaiError with code `value` unless `batchSize` is a whole number of at least 1.
  * @example
  * ```ts
- * import { batchSampler, sequentialSampler } from 'mdml-engine/data'
+ * import { batchSampler, sequentialSampler } from 'omai-engine/data'
  * batchSampler(sequentialSampler(5), 2)(0).map((b) => Array.from(b)) // => [[0, 1], [2, 3], [4]]
  * ```
  */
 export function batchSampler(sampler: RowOrder, batchSize: number, dropLast = false): (epoch: number) => Int32Array[] {
   if (!(Number.isInteger(batchSize) && batchSize >= 1))
-    throw new MdmlError('value', `batchSampler: the batch size must be a whole number of at least 1, got ${batchSize}`)
+    throw new OmaiError('value', `batchSampler: the batch size must be a whole number of at least 1, got ${batchSize}`)
   return (epoch) => {
     const order = sampler(epoch)
     const out: Int32Array[] = []

@@ -5,7 +5,7 @@
  * `SearchProblem` the algorithms of `search` run on.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { foldIn, type Key, uniform } from '../random/index.ts'
 import { aStarSearch, type SearchProblem } from '../search/index.ts'
 
@@ -22,12 +22,12 @@ export type TileBoard = readonly number[]
  * @returns The board.
  * @example
  * ```ts
- * import { solvedBoard } from 'mdml-engine/problems'
+ * import { solvedBoard } from 'omai-engine/problems'
  * solvedBoard(3) // => [1, 2, 3, 4, 5, 6, 7, 8, 0]
  * ```
  */
 export function solvedBoard(n: number): TileBoard {
-  if (!(Number.isInteger(n) && n >= 2)) throw new MdmlError('value', `solvedBoard: side ${n} must be an integer >= 2`)
+  if (!(Number.isInteger(n) && n >= 2)) throw new OmaiError('value', `solvedBoard: side ${n} must be an integer >= 2`)
   return Array.from({ length: n * n }, (_, i) => (i + 1) % (n * n))
 }
 
@@ -40,13 +40,13 @@ export function solvedBoard(n: number): TileBoard {
  * @returns Whether some sequence of moves reaches the solved board.
  * @example
  * ```ts
- * import { isSolvable } from 'mdml-engine/problems'
+ * import { isSolvable } from 'omai-engine/problems'
  * [isSolvable([1, 2, 3, 4, 5, 6, 8, 7, 0]), isSolvable([1, 2, 3, 4, 5, 6, 7, 8, 0])] // => [false, true]
  * ```
  */
 export function isSolvable(board: TileBoard): boolean {
   const n = Math.round(Math.sqrt(board.length))
-  if (n * n !== board.length) throw new MdmlError('shape', 'isSolvable: the board is not square')
+  if (n * n !== board.length) throw new OmaiError('shape', 'isSolvable: the board is not square')
   const tiles = board.filter((t) => t !== 0)
   let inversions = 0
   for (let i = 0; i < tiles.length; i++)
@@ -74,11 +74,11 @@ function manhattan(board: TileBoard, n: number): number {
  *
  * @param board - The start board (default solved 8-puzzle).
  * @returns The problem.
- * @throws MdmlError with code `value` for a board that is not a permutation of `0 .. n^2 - 1`.
+ * @throws OmaiError with code `value` for a board that is not a permutation of `0 .. n^2 - 1`.
  * @example
  * ```ts
- * import { slidingPuzzle } from 'mdml-engine/problems'
- * import { aStarSearch } from 'mdml-engine/search'
+ * import { slidingPuzzle } from 'omai-engine/problems'
+ * import { aStarSearch } from 'omai-engine/search'
  * aStarSearch(slidingPuzzle([1, 2, 3, 4, 5, 6, 0, 7, 8])).cost // => 2
  * ```
  */
@@ -86,7 +86,7 @@ export function slidingPuzzle(board: TileBoard = solvedBoard(3)): SearchProblem<
   const n = Math.round(Math.sqrt(board.length))
   const goal = solvedBoard(n)
   if (n * n !== board.length || [...board].sort((a, b) => a - b).some((t, i) => t !== i))
-    throw new MdmlError('value', 'slidingPuzzle: the board must be a permutation of 0 .. n^2 - 1')
+    throw new OmaiError('value', 'slidingPuzzle: the board must be a permutation of 0 .. n^2 - 1')
   const deltas: Readonly<Record<TileMove, readonly [number, number]>> = {
     up: [-1, 0],
     down: [1, 0],
@@ -137,8 +137,8 @@ export interface ScrambledPuzzle {
  * @returns The board and the number of moves.
  * @example
  * ```ts
- * import { isSolvable, scrambledBoard } from 'mdml-engine/problems'
- * import { key } from 'mdml-engine/random'
+ * import { isSolvable, scrambledBoard } from 'omai-engine/problems'
+ * import { key } from 'omai-engine/random'
  * isSolvable(scrambledBoard(key(0), 4, 30).board) // => true
  * ```
  */
@@ -165,7 +165,7 @@ export function scrambledBoard(key: Key, n = 3, moves = 20): ScrambledPuzzle {
  * @returns The optimal number of moves.
  * @example
  * ```ts
- * import { optimalMoves } from 'mdml-engine/problems'
+ * import { optimalMoves } from 'omai-engine/problems'
  * optimalMoves([1, 2, 3, 4, 5, 6, 0, 7, 8]) // => 2
  * ```
  */
@@ -189,13 +189,13 @@ export type HanoiMove = readonly [disc: number, peg: number]
  * @returns The problem.
  * @example
  * ```ts
- * import { towersOfHanoi } from 'mdml-engine/problems'
- * import { breadthFirstSearch } from 'mdml-engine/search'
+ * import { towersOfHanoi } from 'omai-engine/problems'
+ * import { breadthFirstSearch } from 'omai-engine/search'
  * breadthFirstSearch(towersOfHanoi(4)).cost // => 15
  * ```
  */
 export function towersOfHanoi(discs: number): SearchProblem<HanoiState, HanoiMove> {
-  if (!(Number.isInteger(discs) && discs >= 1)) throw new MdmlError('value', `towersOfHanoi: ${discs} discs`)
+  if (!(Number.isInteger(discs) && discs >= 1)) throw new OmaiError('value', `towersOfHanoi: ${discs} discs`)
   return {
     initial: new Array<number>(discs).fill(0),
     actions: (s) => {

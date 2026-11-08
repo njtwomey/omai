@@ -41,8 +41,8 @@ export interface HomotopyResult extends SystemResult {
  * @concept continuation
  * @example
  * ```ts
- * import { homotopy } from 'mdml-engine/numerics/roots'
- * import { pow, sub, tensor, toArray } from 'mdml-engine/tensor'
+ * import { homotopy } from 'omai-engine/numerics/roots'
+ * import { pow, sub, tensor, toArray } from 'omai-engine/tensor'
  * Math.abs(toArray(homotopy((x) => sub(pow(x, 3), tensor([8])), [10]).x)[0] - 2) < 1e-10 // => true
  * ```
  */
@@ -114,8 +114,8 @@ export interface ContinuationOptions {
  * @concept continuation
  * @example
  * ```ts
- * import { arcLengthContinuation } from 'mdml-engine/numerics/roots'
- * import { add, square } from 'mdml-engine/tensor'
+ * import { arcLengthContinuation } from 'omai-engine/numerics/roots'
+ * import { add, square } from 'omai-engine/tensor'
  * // x^2 + lambda = 0 folds at lambda = 0.
  * arcLengthContinuation((x, l) => add(square(x), l), [-1], -1, { ds: 0.1, steps: 30 }).folds.length // => 1
  * ```

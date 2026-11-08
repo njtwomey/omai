@@ -6,7 +6,7 @@
  */
 
 import { grad, hessian } from '../autodiff/index.ts'
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { qr } from '../numerics/linalg/index.ts'
 import { foldIn, type Key, normal } from '../random/index.ts'
 import { type DictSpace, dict, real } from '../space/index.ts'
@@ -93,13 +93,13 @@ const box = (d: number, lo: number, hi: number): [number, number][] => Array.fro
  * @returns The test function.
  * @example
  * ```ts
- * import { rosenbrock } from 'mdml-engine/datasets'
- * import { item, tensor } from 'mdml-engine/tensor'
+ * import { rosenbrock } from 'omai-engine/datasets'
+ * import { item, tensor } from 'omai-engine/tensor'
  * item(rosenbrock().f(tensor([0, 0]))) // => 1
  * ```
  */
 export function rosenbrock(dim = 2): TestFunction {
-  if (dim < 2) throw new MdmlError('value', 'rosenbrock: needs at least two dimensions')
+  if (dim < 2) throw new OmaiError('value', 'rosenbrock: needs at least two dimensions')
   const f = (x: Value): Value => {
     const last = x.shape.length - 1
     const head = sliceAxis(x, last, 0, dim - 1)
@@ -115,7 +115,7 @@ export function rosenbrock(dim = 2): TestFunction {
  * @returns The test function.
  * @example
  * ```ts
- * import { himmelblau } from 'mdml-engine/datasets'
+ * import { himmelblau } from 'omai-engine/datasets'
  * himmelblau().minimizers.length // => 4
  * ```
  */
@@ -146,8 +146,8 @@ export function himmelblau(): TestFunction {
  * @returns The test function.
  * @example
  * ```ts
- * import { beale } from 'mdml-engine/datasets'
- * import { item, tensor } from 'mdml-engine/tensor'
+ * import { beale } from 'omai-engine/datasets'
+ * import { item, tensor } from 'omai-engine/tensor'
  * item(beale().f(tensor([3, 0.5]))) // => 0
  * ```
  */
@@ -169,8 +169,8 @@ export function beale(): TestFunction {
  * @returns The test function.
  * @example
  * ```ts
- * import { rastrigin } from 'mdml-engine/datasets'
- * import { item, tensor } from 'mdml-engine/tensor'
+ * import { rastrigin } from 'omai-engine/datasets'
+ * import { item, tensor } from 'omai-engine/tensor'
  * item(rastrigin(3).f(tensor([0, 0, 0]))) // => 0
  * ```
  */
@@ -186,8 +186,8 @@ export function rastrigin(dim = 2): TestFunction {
  * @returns The test function.
  * @example
  * ```ts
- * import { ackley } from 'mdml-engine/datasets'
- * import { item, tensor } from 'mdml-engine/tensor'
+ * import { ackley } from 'omai-engine/datasets'
+ * import { item, tensor } from 'omai-engine/tensor'
  * Math.abs(item(ackley().f(tensor([0, 0])))) < 1e-12 // => true
  * ```
  */
@@ -208,7 +208,7 @@ export function ackley(dim = 2): TestFunction {
  * @returns The test function.
  * @example
  * ```ts
- * import { branin } from 'mdml-engine/datasets'
+ * import { branin } from 'omai-engine/datasets'
  * branin().minimizers.length // => 3
  * ```
  */
@@ -246,8 +246,8 @@ export function branin(): TestFunction {
  * @returns The test function, of dimension 1.
  * @example
  * ```ts
- * import { forrester } from 'mdml-engine/datasets'
- * import { item, tensor } from 'mdml-engine/tensor'
+ * import { forrester } from 'omai-engine/datasets'
+ * import { item, tensor } from 'omai-engine/tensor'
  * Math.abs(item(forrester().f(tensor([0.7572487578418559]))) + 6.0207400557670825) < 1e-12 // => true
  * ```
  */
@@ -266,8 +266,8 @@ export function forrester(): TestFunction {
  * @returns The test function, of dimension 1.
  * @example
  * ```ts
- * import { gramacyLee } from 'mdml-engine/datasets'
- * import { item, tensor } from 'mdml-engine/tensor'
+ * import { gramacyLee } from 'omai-engine/datasets'
+ * import { item, tensor } from 'omai-engine/tensor'
  * Math.abs(item(gramacyLee().f(tensor([0.5485634445276051]))) + 0.8690111349894999) < 1e-12 // => true
  * ```
  */
@@ -286,8 +286,8 @@ export function gramacyLee(): TestFunction {
  * @returns The test function, of dimension 1.
  * @example
  * ```ts
- * import { dampedSine } from 'mdml-engine/datasets'
- * import { item, tensor } from 'mdml-engine/tensor'
+ * import { dampedSine } from 'omai-engine/datasets'
+ * import { item, tensor } from 'omai-engine/tensor'
  * item(dampedSine().f(tensor([0]))) // => 0
  * ```
  */
@@ -319,8 +319,8 @@ export interface QuadraticOptions {
  * @returns The test function and its Hessian matrix.
  * @example
  * ```ts
- * import { quadraticBowl } from 'mdml-engine/datasets'
- * import { item, tensor } from 'mdml-engine/tensor'
+ * import { quadraticBowl } from 'omai-engine/datasets'
+ * import { item, tensor } from 'omai-engine/tensor'
  * item(quadraticBowl({ dim: 2, condition: 4 }).f(tensor([1, 1]))) // => 2.5
  * ```
  */
@@ -368,7 +368,7 @@ export interface TuningSurface {
  * @returns The surface.
  * @example
  * ```ts
- * import { learningRateSurface } from 'mdml-engine/datasets'
+ * import { learningRateSurface } from 'omai-engine/datasets'
  * const s = learningRateSurface()
  * s.mean(s.optimum, s.maxBudget) === s.optimalValue // => true
  * ```
@@ -408,7 +408,7 @@ export function learningRateSurface(noise = 0.02): TuningSurface {
  * @returns The surface.
  * @example
  * ```ts
- * import { braninSurface } from 'mdml-engine/datasets'
+ * import { braninSurface } from 'omai-engine/datasets'
  * braninSurface().optimalValue // => 0.39788735772973816
  * ```
  */

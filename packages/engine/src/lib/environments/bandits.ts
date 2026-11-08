@@ -5,7 +5,7 @@
  * oracle of the best expected reward, so an agent's regret can be measured.
  */
 
-import { argmaxOf, MdmlError, maxOf, minOf } from '../base/index.ts'
+import { argmaxOf, maxOf, minOf, OmaiError } from '../base/index.ts'
 import { foldIn, type Key, key as makeKey, normal, uniform } from '../random/index.ts'
 import type { BanditEnv, EnvDefinition } from '../rl/index.ts'
 import { rect, type Scene, scene, text } from '../scene/index.ts'
@@ -63,7 +63,7 @@ function stationary(
   horizon: number,
   draw: (arm: number, k: Key) => number,
 ): BanditEnv<BanditState, number> {
-  if (means.length < 1) throw new MdmlError('value', `${id}: need at least one arm`)
+  if (means.length < 1) throw new OmaiError('value', `${id}: need at least one arm`)
   const best = maxOf(means)
   const bestArm = argmaxOf(means)
   return {
@@ -96,7 +96,7 @@ function stationary(
  * @concept bandits
  * @example
  * ```ts
- * import { bernoulliBandit } from 'mdml-engine/environments'
+ * import { bernoulliBandit } from 'omai-engine/environments'
  * bernoulliBandit.create({ probs: [0.2, 0.8] }).oracle?.optimalExpectedReward({ t: 0 }) // => 0.8
  * ```
  */
@@ -124,7 +124,7 @@ export const bernoulliBandit: EnvDefinition<BanditState, number, number> = {
  * @concept bandits
  * @example
  * ```ts
- * import { gaussianBandit } from 'mdml-engine/environments'
+ * import { gaussianBandit } from 'omai-engine/environments'
  * gaussianBandit.create().actionSpace // => { kind: 'discrete', n: 10, label: 'arm' }
  * ```
  */
@@ -167,8 +167,8 @@ export interface ContextualBanditState {
  * @concept bandits
  * @example
  * ```ts
- * import { contextualLinearBandit } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { contextualLinearBandit } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * contextualLinearBandit.create({ arms: 3, dimension: 4 }).reset(key(0)).observation.length // => 3
  * ```
  */
@@ -242,7 +242,7 @@ export const contextualLinearBandit: EnvDefinition<ContextualBanditState, readon
  * @concept bandits
  * @example
  * ```ts
- * import { adversarialBandit } from 'mdml-engine/environments'
+ * import { adversarialBandit } from 'omai-engine/environments'
  * adversarialBandit.create({ arms: 3, horizon: 10 }).spec.maxEpisodeSteps // => 10
  * ```
  */
@@ -320,8 +320,8 @@ export interface DriftingBanditState {
  * @concept bandits
  * @example
  * ```ts
- * import { nonStationaryBandit } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { nonStationaryBandit } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * nonStationaryBandit.create().reset(key(0)).state.means.length // => 10
  * ```
  */
@@ -378,7 +378,7 @@ export const nonStationaryBandit: EnvDefinition<DriftingBanditState, number, num
  * @concept bandits
  * @example
  * ```ts
- * import { changePointBandit } from 'mdml-engine/environments'
+ * import { changePointBandit } from 'omai-engine/environments'
  * const env = changePointBandit.create({ probs: [0.2, 0.8], changeAt: 10 })
  * [env.oracle?.optimalAction?.({ t: 0 }), env.oracle?.optimalAction?.({ t: 10 })] // => [1, 0]
  * ```

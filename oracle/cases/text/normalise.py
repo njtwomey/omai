@@ -5,7 +5,7 @@ import unicodedata
 from importlib.metadata import version
 from typing import Literal
 
-from mdml_oracle.fixture import Case, case
+from omai_oracle.fixture import Case, case
 from sklearn.feature_extraction.text import strip_accents_ascii, strip_accents_unicode
 from tokenizers import normalizers
 

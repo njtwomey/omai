@@ -4,8 +4,8 @@ NaN outside the domain, as numpy)."""
 import numpy as np
 import scipy.special as sps
 import sympy as sp
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.symbolic import SYMBOLS, parse
+from omai_oracle.fixture import Case, case
+from omai_oracle.symbolic import SYMBOLS, parse
 
 REFERENCE: dict[str, str] = {"sympy": sp.__version__, "numpy": np.__version__}
 

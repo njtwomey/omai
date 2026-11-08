@@ -3,7 +3,7 @@
  * path and the marked positions.
  */
 
-import type { Strip } from 'mdml-engine/exposition'
+import type { Strip } from 'omai-engine/exposition'
 import { type ReactElement, useCallback, useMemo } from 'react'
 import type { Figure } from '../../figure/figure.ts'
 import { stripAspect, stripView } from '../../views/strips.ts'

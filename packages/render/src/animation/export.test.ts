@@ -1,4 +1,4 @@
-import { circle, rect, scene, structure, timeline } from 'mdml-engine/scene'
+import { circle, rect, scene, structure, timeline } from 'omai-engine/scene'
 import { describe, expect, it } from 'vitest'
 import { rasteriseScene, timelineFrames, timelineScenes } from './frames.ts'
 import { animatedSvg } from './svg.ts'

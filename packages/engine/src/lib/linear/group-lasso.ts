@@ -7,7 +7,7 @@
  * the iterative base, so a session shows groups appearing along the optimisation.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import {
   type IterativeEstimator,
   iterative,
@@ -47,10 +47,10 @@ export interface GroupStructure {
  * `scaleByGroupSize`, else one).
  * @param scaleByGroupSize - Whether the default weights are sqrt(size).
  * @returns The structure.
- * @throws MdmlError `shape` for a wrong number of labels or weights, `value` for a negative weight.
+ * @throws OmaiError `shape` for a wrong number of labels or weights, `value` for a negative weight.
  * @example
  * ```ts
- * import { groupStructure } from 'mdml-engine/linear'
+ * import { groupStructure } from 'omai-engine/linear'
  * const g = groupStructure(4, [7, 7, 3, 3])
  * g.labels // => [3, 7]
  * g.members // => [[2, 3], [0, 1]]
@@ -64,7 +64,7 @@ export function groupStructure(
 ): GroupStructure {
   const raw = groups === undefined ? Array.from({ length: d }, (_, j) => j) : [...groups]
   if (raw.length !== d)
-    throw new MdmlError('shape', `groupStructure: ${raw.length} group labels for ${d} features`, { d, got: raw.length })
+    throw new OmaiError('shape', `groupStructure: ${raw.length} group labels for ${d} features`, { d, got: raw.length })
   const labels = [...new Set(raw)].sort((a, b) => a - b)
   const position = new Map(labels.map((l, i) => [l, i]))
   const positions = raw.map((l) => position.get(l) ?? 0)
@@ -73,10 +73,10 @@ export function groupStructure(
     members[g]?.push(j)
   })
   if (groupWeights !== undefined && groupWeights.length !== labels.length)
-    throw new MdmlError('shape', `groupStructure: ${groupWeights.length} weights for ${labels.length} groups`)
+    throw new OmaiError('shape', `groupStructure: ${groupWeights.length} weights for ${labels.length} groups`)
   const weights = members.map((m, g) => {
     const w = groupWeights === undefined ? (scaleByGroupSize ? Math.sqrt(m.length) : 1) : (groupWeights[g] ?? 1)
-    if (!(w >= 0)) throw new MdmlError('value', 'groupStructure: group weights must be non-negative')
+    if (!(w >= 0)) throw new OmaiError('value', 'groupStructure: group weights must be non-negative')
     return w
   })
   return { labels, positions, members, weights }
@@ -155,8 +155,8 @@ function subGram(x: Float64Array, n: number, d: number, cols: readonly number[],
  * @reference M. Yuan and Y. Lin, Model selection and estimation in regression with grouped variables, JRSS B 68 (2006).
  * @example
  * ```ts
- * import { designOf, groupLassoAlgorithm } from 'mdml-engine/linear'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { designOf, groupLassoAlgorithm } from 'omai-engine/linear'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const design = designOf({ x: [[1, 0, 2], [0, 1, 1], [1, 1, 0], [2, 1, 1], [0, 2, 1]], y: [1, 2, 2, 4, 3] }, 'demo')
  * const run = runAlgorithm(groupLassoAlgorithm(design, { groups: [0, 0, 1], alpha: 5 }), { maxSteps: 50 })
  * run.state.coef // => [0, 0, 0]
@@ -168,7 +168,7 @@ export function groupLassoAlgorithm(design: Design, options: GroupLassoOptions =
   const ridge = options.ridge ?? 0
   const solver = options.solver ?? 'bcd'
   const tol = options.tol ?? 1e-9
-  if (!(alpha >= 0) || !(ridge >= 0)) throw new MdmlError('value', 'groupLasso: alpha and ridge must be >= 0')
+  if (!(alpha >= 0) || !(ridge >= 0)) throw new OmaiError('value', 'groupLasso: alpha and ridge must be >= 0')
   const structure = groupStructure(d, options.groups, options.groupWeights, options.scaleByGroupSize ?? true)
   const c = centre(design, options.fitIntercept ?? true)
   const x = c.x
@@ -379,7 +379,7 @@ const GROUP_LASSO_DEFAULTS: GroupLassoHyper = {
  * @returns The estimator.
  * @example
  * ```ts
- * import { groupLasso } from 'mdml-engine/linear'
+ * import { groupLasso } from 'omai-engine/linear'
  * const x = [[1, 0.9, 5], [2, 2.1, 1], [3, 2.8, 4], [4, 4.2, 2], [5, 4.9, 6], [6, 6.1, 3]]
  * const f = groupLasso({ groups: [0, 0, 1], alpha: 0.3 }).fit({ x, y: [1.1, 2.0, 3.2, 3.9, 5.1, 6.0] })
  * f.params.activeGroups // => [0]
@@ -447,7 +447,7 @@ export function groupLasso(
  * @returns alpha_max.
  * @example
  * ```ts
- * import { groupLassoAlphaMax } from 'mdml-engine/linear'
+ * import { groupLassoAlphaMax } from 'omai-engine/linear'
  * groupLassoAlphaMax({ x: [[1], [2], [3]], y: [1, 2, 3] }) // => 0.6666666666666666
  * ```
  */
@@ -508,18 +508,18 @@ export interface MultiTaskDesign {
  * @param data - The data, with a matrix `y`.
  * @param who - The caller, for errors.
  * @returns The design (its `y` is the first task) and all the responses.
- * @throws MdmlError `shape` unless `y` is a matrix with one row per sample.
+ * @throws OmaiError `shape` unless `y` is a matrix with one row per sample.
  * @example
  * ```ts
- * import { multiTaskDesign } from 'mdml-engine/linear'
+ * import { multiTaskDesign } from 'omai-engine/linear'
  * multiTaskDesign({ x: [[1], [2]], y: [[1, 2], [3, 4]] }, 'demo').k // => 2
  * ```
  */
 export function multiTaskDesign(data: LearnData, who: string): MultiTaskDesign {
   const x = matrixView(data.x, who)
-  if (data.y === undefined) throw new MdmlError('value', `${who}: needs the responses y`)
+  if (data.y === undefined) throw new OmaiError('value', `${who}: needs the responses y`)
   const y = matrixView(data.y, who, { minSamples: 1 })
-  if (y.n !== x.n) throw new MdmlError('shape', `${who}: x has ${x.n} rows but y has ${y.n}`)
+  if (y.n !== x.n) throw new OmaiError('shape', `${who}: x has ${x.n} rows but y has ${y.n}`)
   const first = Float64Array.from({ length: y.n }, (_, i) => y.data[i * y.d] ?? 0)
   return { design: { x, y: first, w: sampleWeightsOf(data.weights, x.n, who) }, y: y.data, k: y.d }
 }
@@ -536,8 +536,8 @@ export function multiTaskDesign(data: LearnData, who: string): MultiTaskDesign {
  * @returns The algorithm.
  * @example
  * ```ts
- * import { multiTaskDesign, multiTaskLassoAlgorithm } from 'mdml-engine/linear'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { multiTaskDesign, multiTaskLassoAlgorithm } from 'omai-engine/linear'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const problem = multiTaskDesign({ x: [[1, 0], [0, 1], [1, 1], [2, 1]], y: [[1, 2], [0, 1], [1, 3], [2, 5]] }, 'demo')
  * runAlgorithm(multiTaskLassoAlgorithm(problem, { alpha: 100 }), { maxSteps: 20 }).state.coef // => [0, 0, 0, 0]
  * ```
@@ -552,7 +552,7 @@ export function multiTaskLassoAlgorithm(
   const l1Ratio = options.l1Ratio ?? 1
   const tol = options.tol ?? 1e-9
   if (!(alpha >= 0) || !(l1Ratio >= 0 && l1Ratio <= 1))
-    throw new MdmlError('value', 'multiTaskLasso: alpha >= 0 and l1Ratio in [0, 1]')
+    throw new OmaiError('value', 'multiTaskLasso: alpha >= 0 and l1Ratio in [0, 1]')
   const l1 = alpha * l1Ratio
   const l2 = alpha * (1 - l1Ratio)
   const c = centre(design, options.fitIntercept ?? true)
@@ -712,7 +712,7 @@ const MULTI_TASK_DEFAULTS: MultiTaskLassoHyper = {
  * @returns The estimator.
  * @example
  * ```ts
- * import { multiTaskLasso } from 'mdml-engine/linear'
+ * import { multiTaskLasso } from 'omai-engine/linear'
  * const x = [[1, 0.2], [2, -0.1], [3, 0.3], [4, 0], [5, 0.1]]
  * const y = [[1, 2], [2, 4.1], [3, 5.9], [4, 8], [5, 10.1]]
  * multiTaskLasso({ alpha: 0.05 }).fit({ x, y }).params.support // => [0]

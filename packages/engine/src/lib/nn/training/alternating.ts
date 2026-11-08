@@ -10,7 +10,7 @@
  */
 
 import { valueAndGrad } from '../../autodiff/index.ts'
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { discriminatorLoss, type GanObjective, generatorLoss, gradientPenalty } from '../../losses/index.ts'
 import { applyUpdates, type GradientTransformation, globalNorm } from '../../optim/index.ts'
 import { foldIn, type Key, normal } from '../../random/index.ts'
@@ -113,10 +113,10 @@ export interface AlternatingOptions<B, N extends string, K extends string> {
  * @concept alternating-optimisation
  * @example
  * ```ts
- * import { alternatingAlgorithm, Linear } from 'mdml-engine/nn'
- * import { sgd } from 'mdml-engine/optim'
- * import { sum, square } from 'mdml-engine/tensor'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { alternatingAlgorithm, Linear } from 'omai-engine/nn'
+ * import { sgd } from 'omai-engine/optim'
+ * import { sum, square } from 'omai-engine/tensor'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const a = new Linear(1, 1)
  * const alg = alternatingAlgorithm({
  *   players: [{ name: 'a', module: a, optimizer: sgd({ learningRate: 0.1 }), loss: (own, _all, _b, scope) => sum(square(scope.apply('a', own, [[1]] as never))) }],
@@ -132,7 +132,7 @@ export function alternatingAlgorithm<B, N extends string, K extends string = nev
   const players = new Map<string, Player<B>>(options.players.map((p) => [p.name, p]))
   const schedule: readonly ScheduleEntry[] = options.schedule ?? options.players.map((p) => ({ player: p.name }))
   for (const e of schedule)
-    if (!players.has(e.player)) throw new MdmlError('value', `alternatingAlgorithm: no player ${e.player}`)
+    if (!players.has(e.player)) throw new OmaiError('value', `alternatingAlgorithm: no player ${e.player}`)
   const modules = new Map<string, Module<Value, Value>>(options.players.map((p) => [p.name, p.module]))
   const names = [...players.keys()]
   const masks = new Map<string, Params>(options.players.map((p) => [p.name, p.module.trainableMask()]))
@@ -149,7 +149,7 @@ export function alternatingAlgorithm<B, N extends string, K extends string = nev
       key: foldIn(key, 1),
       apply: (name, params, x) => {
         const m = modules.get(name)
-        if (m === undefined) throw new MdmlError('value', `no player ${name}`)
+        if (m === undefined) throw new OmaiError('value', `no player ${name}`)
         return m.apply(params, x, {
           train: true,
           key: foldIn(key, 2 + names.indexOf(name)),
@@ -292,9 +292,9 @@ interface GanBatch {
  * @concept generative-adversarial-networks
  * @example
  * ```ts
- * import { ganAlgorithm, mlp } from 'mdml-engine/nn'
- * import { adam } from 'mdml-engine/optim'
- * import { key, normal } from 'mdml-engine/random'
+ * import { ganAlgorithm, mlp } from 'omai-engine/nn'
+ * import { adam } from 'omai-engine/optim'
+ * import { key, normal } from 'omai-engine/random'
  * ganAlgorithm({
  *   generator: mlp([2, 8, 2], { key: key(0) }), discriminator: mlp([2, 8, 1], { key: key(1) }),
  *   generatorOptimizer: adam({ learningRate: 1e-3 }), discriminatorOptimizer: adam({ learningRate: 1e-3 }),
@@ -406,7 +406,7 @@ export interface ModeCoverage {
  * @concept generative-adversarial-networks
  * @example
  * ```ts
- * import { modeCoverage } from 'mdml-engine/nn'
+ * import { modeCoverage } from 'omai-engine/nn'
  * modeCoverage([[0, 0], [0.1, 0], [5, 5]], [[0, 0], [5, 5]], 0.5).covered // => 2
  * ```
  */

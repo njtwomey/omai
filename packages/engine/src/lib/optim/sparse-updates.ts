@@ -4,7 +4,7 @@
  * penalty, truncated gradient (Langford et al.) and FTRL-Proximal (McMahan et al.).
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import {
   abs,
   add,
@@ -49,8 +49,8 @@ const rate = (lr: LearningRate, step: number): number => (typeof lr === 'number'
  * @returns The mask, with the gradient's shape.
  * @example
  * ```ts
- * import { activeMask } from 'mdml-engine/optim'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { activeMask } from 'omai-engine/optim'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * toArray(activeMask(tensor([[0, 2], [0, 0]]), true)) // => [[1, 1], [0, 0]]
  * toArray(activeMask(tensor([[0, 2], [0, 0]]))) // => [[0, 1], [0, 0]]
  * ```
@@ -82,8 +82,8 @@ export interface SparseAdamState {
  * @returns The transformation.
  * @example
  * ```ts
- * import { scaleBySparseAdam } from 'mdml-engine/optim'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { scaleBySparseAdam } from 'omai-engine/optim'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * const t = scaleBySparseAdam(0.9, 0.999, 0)
  * toArray(t.update(tensor([2, 0]), t.init(tensor([0, 0]))).updates as never).map((v) => Math.round(v * 1e12) / 1e12) // => [1, 0]
  * ```
@@ -127,7 +127,7 @@ export interface SparseAdamOptions {
  * @concept sparse-optimisers
  * @example
  * ```ts
- * import { sparseAdam } from 'mdml-engine/optim'
+ * import { sparseAdam } from 'omai-engine/optim'
  * sparseAdam({ learningRate: 1e-3 }).name // => 'chain(scaleBySparseAdam, scaleByLearningRate)'
  * ```
  */
@@ -165,8 +165,8 @@ export interface LazyAdagradState {
  * @returns The optimiser (needs `params` in `update` when weight decay is used).
  * @example
  * ```ts
- * import { lazyAdagrad } from 'mdml-engine/optim'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { lazyAdagrad } from 'omai-engine/optim'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * const opt = lazyAdagrad({ learningRate: 0.5, eps: 0 })
  * toArray(opt.update(tensor([4, 0]), opt.init(tensor([1, 1])), tensor([1, 1])).updates as never) // => [-0.5, 0]
  * ```
@@ -182,7 +182,7 @@ export function lazyAdagrad(options: LazyAdagradOptions): GradientTransformation
     init: (params) => ({ count: 0, sum: treeMap((p) => add(zerosLike(p), init), params) }),
     update: (grads, state, params) => {
       if (wd !== 0 && params === undefined)
-        throw new MdmlError('value', 'lazyAdagrad weight decay needs the parameters')
+        throw new OmaiError('value', 'lazyAdagrad weight decay needs the parameters')
       const clr = rate(options.learningRate, state.count) / (1 + state.count * decay)
       const masks = treeMap((g) => activeMask(g, rowwise), grads)
       const g = wd === 0 ? grads : treeMap((gi, p, a) => add(gi, mul(mul(p, wd), a)), grads, params, masks)
@@ -221,8 +221,8 @@ export interface CumulativeL1State {
  * @concept sparse-optimisers
  * @example
  * ```ts
- * import { sgdCumulativeL1 } from 'mdml-engine/optim'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { sgdCumulativeL1 } from 'omai-engine/optim'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * const opt = sgdCumulativeL1({ learningRate: 1, l1: 0.5 })
  * toArray(opt.update(tensor([0.2, -1]), opt.init(tensor([1, 0])), tensor([1, 0])).updates as never) // => [-0.7, 0.5]
  * ```
@@ -233,7 +233,7 @@ export function sgdCumulativeL1(options: CumulativeL1Options): GradientTransform
     name: 'sgdCumulativeL1',
     init: (params) => ({ count: 0, u: 0, q: treeZeros(params) }),
     update: (grads, state, params) => {
-      if (params === undefined) throw new MdmlError('value', 'sgdCumulativeL1 needs the parameters')
+      if (params === undefined) throw new OmaiError('value', 'sgdCumulativeL1 needs the parameters')
       const eta = rate(options.learningRate, state.count)
       const u = state.u + eta * options.l1
       const stepped = treeMap((p, g) => sub(p, mul(g, eta)), params, grads)
@@ -266,8 +266,8 @@ export function sgdCumulativeL1(options: CumulativeL1Options): GradientTransform
  * @returns T1(v).
  * @example
  * ```ts
- * import { truncate } from 'mdml-engine/optim'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { truncate } from 'omai-engine/optim'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * toArray(truncate(tensor([0.3, -0.05, 2]), 0.1, 1)) // => [0.19999999999999998, 0, 2]
  * ```
  */
@@ -297,8 +297,8 @@ export interface TruncatedGradientOptions {
  * @concept sparse-optimisers
  * @example
  * ```ts
- * import { truncatedGradient } from 'mdml-engine/optim'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { truncatedGradient } from 'omai-engine/optim'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * const opt = truncatedGradient({ learningRate: 0.5, gravity: 0.2 })
  * const u = opt.update(tensor([0.4, 0]), opt.init(tensor([1, 0.05])), tensor([1, 0.05])).updates
  * toArray(u as never).map((v) => Math.round(v * 1e12) / 1e12) // => [-0.3, -0.05]
@@ -313,7 +313,7 @@ export function truncatedGradient(
     name: 'truncatedGradient',
     init: () => ({ count: 0 }),
     update: (grads, state, params) => {
-      if (params === undefined) throw new MdmlError('value', 'truncatedGradient needs the parameters')
+      if (params === undefined) throw new OmaiError('value', 'truncatedGradient needs the parameters')
       const eta = rate(options.learningRate, state.count)
       const count = state.count + 1
       const alpha = count % k === 0 ? k * eta * options.gravity : 0
@@ -359,8 +359,8 @@ export interface FtrlProximalState {
  * @concept sparse-optimisers
  * @example
  * ```ts
- * import { ftrlProximal } from 'mdml-engine/optim'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { ftrlProximal } from 'omai-engine/optim'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * const opt = ftrlProximal({ alpha: 1, beta: 0, l1: 1 })
  * const p = tensor([0, 0])
  * toArray(opt.update(tensor([3, 0.5]), opt.init(p), p).updates as never) // => [-0.6666666666666666, 0]
@@ -376,7 +376,7 @@ export function ftrlProximal(options: FtrlProximalOptions = {}): GradientTransfo
     name: 'ftrlProximal',
     init: (params) => ({ z: treeZeros(params), n: treeZeros(params) }),
     update: (grads, state, params) => {
-      if (params === undefined) throw new MdmlError('value', 'ftrlProximal needs the parameters')
+      if (params === undefined) throw new OmaiError('value', 'ftrlProximal needs the parameters')
       const masks = treeMap((g) => activeMask(g, rowwise), grads)
       const sigma = treeMap((g, n) => div(sub(sqrt(add(n, square(g))), sqrt(n)), alpha), grads, state.n)
       const z = treeMap((zi, g, s, w, a) => add(zi, mul(sub(g, mul(s, w)), a)), state.z, grads, sigma, params, masks)
@@ -405,8 +405,8 @@ export function ftrlProximal(options: FtrlProximalOptions = {}): GradientTransfo
  * @returns A tree of 0/1 masks.
  * @example
  * ```ts
- * import { ftrlProximal, ftrlSupport } from 'mdml-engine/optim'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { ftrlProximal, ftrlSupport } from 'omai-engine/optim'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * const opt = ftrlProximal({ l1: 1 })
  * const p = tensor([0, 0])
  * toArray(ftrlSupport(opt.update(tensor([3, 0.5]), opt.init(p), p).state, 1) as never) // => [1, 0]

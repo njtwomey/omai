@@ -8,7 +8,7 @@
  */
 
 import { grad } from '../autodiff/index.ts'
-import { MdmlError, maxOf } from '../base/index.ts'
+import { maxOf, OmaiError } from '../base/index.ts'
 import { crossEntropy } from '../losses/index.ts'
 import { rocAucScore, rocCurve } from '../metrics/index.ts'
 import type { LogitsFunction, Params } from '../nn/index.ts'
@@ -58,7 +58,7 @@ function exampleLosses(model: LogitsFunction, x: TensorLike, y: TensorLike): num
  * @concept membership-inference
  * @example
  * ```ts
- * import { exampleLoss } from 'mdml-engine/learn'
+ * import { exampleLoss } from 'omai-engine/learn'
  * exampleLoss((x) => x, [[0, 0]], [1])[0]?.toFixed(6) // => '0.693147'
  * ```
  */
@@ -94,7 +94,7 @@ export interface MembershipReport {
  * @concept membership-inference
  * @example
  * ```ts
- * import { membershipReport } from 'mdml-engine/learn'
+ * import { membershipReport } from 'omai-engine/learn'
  * membershipReport([3, 4, 5], [0, 1, 2]).auc // => 1
  * ```
  */
@@ -139,7 +139,7 @@ export function membershipReport(
  * @concept membership-inference
  * @example
  * ```ts
- * import { lossThresholdAttack } from 'mdml-engine/learn'
+ * import { lossThresholdAttack } from 'omai-engine/learn'
  * lossThresholdAttack([0.01, 0.02, 0.05], [1, 2, 0.8]).auc // => 1
  * ```
  */
@@ -209,9 +209,9 @@ export interface ShadowAttackResult extends MembershipReport {
  * @concept membership-inference
  * @example
  * ```ts
- * import { shadowModelAttack } from 'mdml-engine/learn'
- * import { key } from 'mdml-engine/random'
- * import { tensor } from 'mdml-engine/tensor'
+ * import { shadowModelAttack } from 'omai-engine/learn'
+ * import { key } from 'omai-engine/random'
+ * import { tensor } from 'omai-engine/tensor'
  * const trainer = () => (x) => x
  * const pool = { x: tensor([[2, 0], [0, 2], [3, 0], [0, 3]]), y: tensor([0, 1, 0, 1]) }
  * shadowModelAttack((x) => x, pool, pool, { pool, trainer, shadows: 2, key: key(0) }).auc >= 0 // => true
@@ -285,7 +285,7 @@ function labelLogit(model: LogitsFunction, x: Tensor, y: Tensor): number[] {
  * @concept membership-inference
  * @example
  * ```ts
- * import { confidenceLogit } from 'mdml-engine/learn'
+ * import { confidenceLogit } from 'omai-engine/learn'
  * confidenceLogit((x) => x, [[0, Math.log(3)]], [1])[0]?.toFixed(6) // => '1.098612'
  * ```
  */
@@ -329,9 +329,9 @@ const logNormal = (x: number, m: number, v: number): number => -0.5 * (Math.log(
  * @concept membership-inference
  * @example
  * ```ts
- * import { likelihoodRatioAttack } from 'mdml-engine/learn'
- * import { key } from 'mdml-engine/random'
- * import { matmul, tensor } from 'mdml-engine/tensor'
+ * import { likelihoodRatioAttack } from 'omai-engine/learn'
+ * import { key } from 'omai-engine/random'
+ * import { matmul, tensor } from 'omai-engine/tensor'
  * const pool = { x: tensor([[0], [1], [2], [3]]), y: tensor([0, 1, 0, 1]) }
  * const logits = (x) => matmul(x, tensor([[-1, 1]]))
  * likelihoodRatioAttack(logits, 4, [true, true, false, false], { pool, trainer: () => logits, shadows: 4, key: key(0) }).scores.length // => 4
@@ -346,7 +346,7 @@ export function likelihoodRatioAttack(
   const px = asTensor(options.pool.x) as Tensor
   const py = asTensor(options.pool.y) as Tensor
   const n = px.shape[0] ?? 0
-  if (queries > n) throw new MdmlError('value', 'likelihoodRatioAttack: the queries must be the first rows of the pool')
+  if (queries > n) throw new OmaiError('value', 'likelihoodRatioAttack: the queries must be the first rows of the pool')
   const shadows = options.shadows ?? 16
   const qx = rowsOf(
     px,
@@ -416,7 +416,7 @@ export interface AttributeInferenceResult {
  * @concept attribute-inference
  * @example
  * ```ts
- * import { attributeInference } from 'mdml-engine/learn'
+ * import { attributeInference } from 'omai-engine/learn'
  * // The logit of class 0 is the hidden column itself, so label 1 means the column is low and label 0 that it is high.
  * attributeInference((x) => x, [[0, 0], [0, 0]], [1, 0], 0, [0, 1], { truth: [0, 1] }).predicted // => [0, 1]
  * ```
@@ -491,9 +491,9 @@ export interface InversionState {
  * @concept model-inversion
  * @example
  * ```ts
- * import { modelInversionAlgorithm } from 'mdml-engine/learn'
- * import { runAlgorithm } from 'mdml-engine/trace'
- * import { matmul } from 'mdml-engine/tensor'
+ * import { modelInversionAlgorithm } from 'omai-engine/learn'
+ * import { runAlgorithm } from 'omai-engine/trace'
+ * import { matmul } from 'omai-engine/tensor'
  * const model = (x) => matmul(x, [[1, -1], [1, -1]])
  * runAlgorithm(modelInversionAlgorithm(model, 0, [2], { steps: 30 }), { maxSteps: 30 }).state.confidence > 0.9 // => true
  * ```
@@ -561,7 +561,7 @@ const oneAt = (n: number, i: number): Value =>
  * @concept gradient-leakage
  * @example
  * ```ts
- * import { analyticGradientLeak } from 'mdml-engine/learn'
+ * import { analyticGradientLeak } from 'omai-engine/learn'
  * analyticGradientLeak([[2, 4, 6], [0, 0, 0]], [2, 0]).data // => Float64Array.of(1, 2, 3)
  * ```
  */
@@ -573,7 +573,7 @@ export function analyticGradientLeak(weightGrad: TensorLike, biasGrad: TensorLik
   b.forEach((v, i) => {
     if (Math.abs(v) > Math.abs(b[best] as number)) best = i
   })
-  if (Math.abs(b[best] ?? 0) < 1e-300) throw new MdmlError('value', 'analyticGradientLeak: every bias gradient is zero')
+  if (Math.abs(b[best] ?? 0) < 1e-300) throw new OmaiError('value', 'analyticGradientLeak: every bias gradient is zero')
   return fromStorage(
     Float64Array.from(w.data.subarray(best * cols, (best + 1) * cols), (v) => v / (b[best] as number)),
     [cols],
@@ -615,8 +615,8 @@ export interface LeakageState {
  * @concept gradient-leakage
  * @example
  * ```ts
- * import { gradientLeakageAlgorithm } from 'mdml-engine/learn'
- * import { Linear } from 'mdml-engine/nn'
+ * import { gradientLeakageAlgorithm } from 'omai-engine/learn'
+ * import { Linear } from 'omai-engine/nn'
  * const m = new Linear(2, 2)
  * gradientLeakageAlgorithm((p, x) => m.apply(p, x), m.params, m.params, 0, [2], { steps: 3 }).name // => 'gradientLeakage'
  * ```
@@ -675,7 +675,7 @@ export function gradientLeakageAlgorithm(
  * @concept model-extraction
  * @example
  * ```ts
- * import { extractionAttack } from 'mdml-engine/learn'
+ * import { extractionAttack } from 'omai-engine/learn'
  * const victim = (x) => x
  * extractionAttack(victim, [[1, 0]], () => victim, [[0, 1]]).agreement // => 1
  * ```

@@ -4,7 +4,7 @@
  * keeps what was planted, so a leak detector, a validation scheme or a pipeline can be scored against it.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { foldIn, type Key, normal, permutation } from '../../random/index.ts'
 import { choice, dict, real } from '../../space/index.ts'
 import { fromStorage, isTensor, sliceAxis, type Value } from '../../tensor/index.ts'
@@ -42,8 +42,8 @@ export interface LeakOptions {
  * @returns The data with a `leak` column appended.
  * @example
  * ```ts
- * import { asGenerated, withLeak, xy } from 'mdml-engine/data'
- * import { key } from 'mdml-engine/random'
+ * import { asGenerated, withLeak, xy } from 'omai-engine/data'
+ * import { key } from 'omai-engine/random'
  * const out = withLeak(asGenerated(xy([[1], [2], [3]], [1, 2, 3])), { noise: 0, key: key(0) })
  * Array.from(out.data.x.data) // => [1, 1, 2, 2, 3, 3]
  * ```
@@ -51,11 +51,11 @@ export interface LeakOptions {
 export function withLeak<D extends TabularData>(input: Generated<D>, options: LeakOptions): Generated<D> {
   const { data, truth } = requireTabular(input, 'withLeak') as Generated<D>
   if (data.kind !== 'classification' && data.kind !== 'regression')
-    throw new MdmlError('value', `withLeak: needs classification or regression data, got ${data.kind}`)
+    throw new OmaiError('value', `withLeak: needs classification or regression data, got ${data.kind}`)
   const [n = 0, d = 1] = data.x.shape
   const kind = options.kind ?? 'target'
   const y = Float64Array.from(data.y.data as ArrayLike<number>)
-  if (y.length !== n) throw new MdmlError('shape', 'withLeak: needs a single target per row')
+  if (y.length !== n) throw new OmaiError('shape', 'withLeak: needs a single target per row')
   const leak = new Float64Array(n)
   if (kind === 'target') {
     const mean = y.reduce((a, b) => a + b, 0) / Math.max(1, n)
@@ -121,9 +121,9 @@ export interface DuplicateOptions {
  *   row, `isDuplicate` `[n']` marks the copies, and per-row latents the input had are carried along.
  * @example
  * ```ts
- * import { asGenerated, withDuplicates, xy } from 'mdml-engine/data'
- * import { rowCount } from 'mdml-engine/data'
- * import { key } from 'mdml-engine/random'
+ * import { asGenerated, withDuplicates, xy } from 'omai-engine/data'
+ * import { rowCount } from 'omai-engine/data'
+ * import { key } from 'omai-engine/random'
  * const out = withDuplicates(asGenerated(xy([[1], [2], [3], [4]], [1, 2, 3, 4])), { fraction: 0.5, key: key(0) })
  * rowCount(out.data) // => 6
  * ```
@@ -144,7 +144,7 @@ export function withDuplicates<D extends Dataset>(input: Generated<D>, options: 
   const jitter = options.jitter ?? 0
   if (jitter > 0) {
     if (!('x' in enlarged) || !isTensor((enlarged as unknown as TabularData).x))
-      throw new MdmlError('value', 'withDuplicates: jitter needs data with a feature matrix')
+      throw new OmaiError('value', 'withDuplicates: jitter needs data with a feature matrix')
     const tab = enlarged as unknown as TabularData
     const [rowsN = 0, d = 1] = tab.x.shape
     const sd = Array.from({ length: d }, (_, j) => {
@@ -186,7 +186,7 @@ export function withDuplicates<D extends Dataset>(input: Generated<D>, options: 
  *
  * @example
  * ```ts
- * import { leakModifier } from 'mdml-engine/data'
+ * import { leakModifier } from 'omai-engine/data'
  * leakModifier.name // => 'leak'
  * ```
  */
@@ -210,7 +210,7 @@ export const leakModifier: Modifier = {
  *
  * @example
  * ```ts
- * import { duplicatesModifier } from 'mdml-engine/data'
+ * import { duplicatesModifier } from 'omai-engine/data'
  * duplicatesModifier.name // => 'duplicates'
  * ```
  */

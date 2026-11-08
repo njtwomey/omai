@@ -4,7 +4,7 @@
  * symmetric channels, and decoding by belief propagation on the Tanner graph (also as a traced algorithm).
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import { foldIn, type Key, permutation } from '../random/index.ts'
 import { type TensorLike, toFlat } from '../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../trace/index.ts'
@@ -33,8 +33,8 @@ export interface LdpcCode extends LinearCode {
  * @concept ldpc-codes
  * @example
  * ```ts
- * import { gallagerParityCheck } from 'mdml-engine/information'
- * import { key } from 'mdml-engine/random'
+ * import { gallagerParityCheck } from 'omai-engine/information'
+ * import { key } from 'omai-engine/random'
  * const h = gallagerParityCheck(12, 3, 4, key(0))
  * h.length // => 9
  * h.every((row) => row.reduce((a, b) => a + b, 0) === 4) // => true
@@ -42,9 +42,9 @@ export interface LdpcCode extends LinearCode {
  */
 export function gallagerParityCheck(n: number, columnWeight: number, rowWeight: number, key: Key): number[][] {
   if (!Number.isInteger(n) || !Number.isInteger(columnWeight) || !Number.isInteger(rowWeight) || n % rowWeight !== 0)
-    throw new MdmlError('value', 'gallagerParityCheck: n must be a multiple of rowWeight')
+    throw new OmaiError('value', 'gallagerParityCheck: n must be a multiple of rowWeight')
   if (columnWeight < 2 || rowWeight <= columnWeight)
-    throw new MdmlError('value', 'gallagerParityCheck: need 2 <= columnWeight < rowWeight')
+    throw new OmaiError('value', 'gallagerParityCheck: need 2 <= columnWeight < rowWeight')
   const band = n / rowWeight
   const rows: number[][] = []
   for (let b = 0; b < columnWeight; b++) {
@@ -64,11 +64,11 @@ export function gallagerParityCheck(n: number, columnWeight: number, rowWeight: 
  *
  * @param parityCheck - The parity-check matrix.
  * @returns The code.
- * @throws MdmlError with code `value` when the matrix has full column rank (no codewords but zero).
+ * @throws OmaiError with code `value` when the matrix has full column rank (no codewords but zero).
  * @concept ldpc-codes
  * @example
  * ```ts
- * import { ldpcCode } from 'mdml-engine/information'
+ * import { ldpcCode } from 'omai-engine/information'
  * ldpcCode([[1, 1, 0, 1, 0, 0], [0, 1, 1, 0, 1, 0], [1, 0, 0, 0, 1, 1], [0, 0, 1, 1, 0, 1]]).k // => 3
  * ```
  */
@@ -76,7 +76,7 @@ export function ldpcCode(parityCheck: BitMatrix): LdpcCode {
   const h = bitMatrix(parityCheck, 'ldpcCode')
   const n = h[0]?.length ?? 0
   const basis = nullSpace(h)
-  if (basis.length === 0) throw new MdmlError('value', 'ldpcCode: the only codeword is zero')
+  if (basis.length === 0) throw new OmaiError('value', 'ldpcCode: the only codeword is zero')
   const { rows, pivots } = rref(basis)
   return {
     n,
@@ -97,13 +97,13 @@ export function ldpcCode(parityCheck: BitMatrix): LdpcCode {
  * @concept ldpc-codes
  * @example
  * ```ts
- * import { ldpcCode, ldpcEncode } from 'mdml-engine/information'
+ * import { ldpcCode, ldpcEncode } from 'omai-engine/information'
  * const code = ldpcCode([[1, 1, 0, 1, 0, 0], [0, 1, 1, 0, 1, 0], [1, 0, 0, 0, 1, 1], [0, 0, 1, 1, 0, 1]])
  * ldpcEncode(code, [1, 0, 1]).length // => 6
  * ```
  */
 export function ldpcEncode(code: LdpcCode, message: readonly number[]): number[] {
-  if (message.length !== code.k) throw new MdmlError('shape', `ldpcEncode: expected ${code.k} message bits`)
+  if (message.length !== code.k) throw new OmaiError('shape', `ldpcEncode: expected ${code.k} message bits`)
   return vecMat(message, code.generator)
 }
 
@@ -116,12 +116,12 @@ export function ldpcEncode(code: LdpcCode, message: readonly number[]): number[]
  * @concept ldpc-codes
  * @example
  * ```ts
- * import { bpskLlr } from 'mdml-engine/information'
+ * import { bpskLlr } from 'omai-engine/information'
  * bpskLlr([1, -0.5], 0.5) // => [4, -2]
  * ```
  */
 export function bpskLlr(received: TensorLike, noiseVariance: number): number[] {
-  if (!(noiseVariance > 0)) throw new MdmlError('value', 'bpskLlr: noiseVariance must be positive')
+  if (!(noiseVariance > 0)) throw new OmaiError('value', 'bpskLlr: noiseVariance must be positive')
   return toFlat(float(received)).map((y) => (2 * y) / noiseVariance)
 }
 
@@ -134,12 +134,12 @@ export function bpskLlr(received: TensorLike, noiseVariance: number): number[] {
  * @concept ldpc-codes
  * @example
  * ```ts
- * import { bscLlr } from 'mdml-engine/information'
+ * import { bscLlr } from 'omai-engine/information'
  * bscLlr([0, 1], 0.2).map((l) => Math.round(l * 1000) / 1000) // => [1.386, -1.386]
  * ```
  */
 export function bscLlr(bits: readonly number[], p: number): number[] {
-  if (!(p > 0 && p <= 0.5)) throw new MdmlError('value', 'bscLlr: p must lie in (0, 1/2]')
+  if (!(p > 0 && p <= 0.5)) throw new OmaiError('value', 'bscLlr: p must lie in (0, 1/2]')
   const l = Math.log((1 - p) / p)
   return bits.map((b) => (b === 1 ? -l : l))
 }
@@ -177,8 +177,8 @@ const CLIP = 1 - 1e-15
  * @concept belief-propagation
  * @example
  * ```ts
- * import { beliefPropagationAlgorithm } from 'mdml-engine/information'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { beliefPropagationAlgorithm } from 'omai-engine/information'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const h = [[1, 1, 0, 1, 0, 0], [0, 1, 1, 0, 1, 0], [1, 0, 0, 0, 1, 1], [0, 0, 1, 1, 0, 1]]
  * runAlgorithm(beliefPropagationAlgorithm(h, [2, 2, -1, 2, 2, 2]), { maxSteps: 20 }).status // => 'converged'
  * ```
@@ -190,7 +190,7 @@ export function beliefPropagationAlgorithm(
 ): Algorithm<BeliefPropagationState> {
   const h = bitMatrix(parityCheck, 'beliefPropagation')
   const n = h[0]?.length ?? 0
-  if (llr.length !== n) throw new MdmlError('shape', `beliefPropagation: expected ${n} LLRs`)
+  if (llr.length !== n) throw new OmaiError('shape', `beliefPropagation: expected ${n} LLRs`)
   const minSum = options.method === 'minSum'
   const scale = options.scale ?? 1
   const edgeCheck: number[] = []
@@ -285,7 +285,7 @@ export interface LdpcDecodeResult {
  * @concept belief-propagation
  * @example
  * ```ts
- * import { bscLlr, ldpcCode, ldpcDecode, ldpcEncode } from 'mdml-engine/information'
+ * import { bscLlr, ldpcCode, ldpcDecode, ldpcEncode } from 'omai-engine/information'
  * const code = ldpcCode([[1, 1, 0, 1, 0, 0], [0, 1, 1, 0, 1, 0], [1, 0, 0, 0, 1, 1], [0, 0, 1, 1, 0, 1]])
  * const word = ldpcEncode(code, [1, 0, 1])
  * const noisy = word.map((b, i) => (i === 2 ? 1 - b : b))

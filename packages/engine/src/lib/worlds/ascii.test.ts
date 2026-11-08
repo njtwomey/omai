@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { isMdmlError } from '../base/index.ts'
+import { isOmaiError } from '../base/index.ts'
 import { fromAscii, fromRows, terrainOf, toAscii } from './index.ts'
 
 const code = (f: () => unknown): string | undefined => {
   try {
     f()
   } catch (e) {
-    return isMdmlError(e) ? e.code : 'other'
+    return isOmaiError(e) ? e.code : 'other'
   }
   return undefined
 }

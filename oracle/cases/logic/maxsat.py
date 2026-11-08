@@ -3,8 +3,8 @@ and of unweighted MaxSAT over unsatisfiable random 3-CNF, plus an instance whose
 
 from importlib.metadata import version
 
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import rng
 from pysat.examples.rc2 import RC2
 from pysat.formula import WCNF
 

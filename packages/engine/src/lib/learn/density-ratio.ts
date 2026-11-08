@@ -7,7 +7,7 @@
  * beside every generic smooth solver, KLIEP's own projected gradient is one beside them too.
  */
 
-import { type Json, MdmlError, maxOf } from '../base/index.ts'
+import { type Json, maxOf, OmaiError } from '../base/index.ts'
 import { ddot, dgemv, dnrm2, solve } from '../numerics/linalg/index.ts'
 import { loggedSolver, type SmoothProblem, smoothSolvers, type VectorParams } from '../optim/index.ts'
 import type { Key } from '../random/index.ts'
@@ -92,8 +92,8 @@ export interface ClassifierDensityRatioOptions extends FitOptions {
  * @concept covariate-shift
  * @example
  * ```ts
- * import { classifierDensityRatio } from 'mdml-engine/learn'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { classifierDensityRatio } from 'omai-engine/learn'
+ * import { toFlat } from 'omai-engine/tensor'
  * const w = toFlat(classifierDensityRatio([[-2], [-1], [0], [1]], [[0], [1], [2], [3]]).trainWeights)
  * w[3] > w[0] // => true
  * ```
@@ -180,7 +180,7 @@ function kernelModel(
   const tr = matrixView(xTrain, who)
   const te = matrixView(xTest, who, { nFeatures: tr.d })
   const width = sigma ?? pooledWidth(tr, te)
-  if (!(width > 0)) throw new MdmlError('value', `${who}: sigma must be > 0`)
+  if (!(width > 0)) throw new OmaiError('value', `${who}: sigma must be > 0`)
   return { tr, te, centres: chooseCentres(te, integerOption(nCentres, 'nCentres', who, 1)), sigma: width }
 }
 
@@ -240,7 +240,7 @@ export interface KliepProblem extends SmoothProblem {
  * @concept covariate-shift
  * @example
  * ```ts
- * import { kliepProblem } from 'mdml-engine/learn'
+ * import { kliepProblem } from 'omai-engine/learn'
  * kliepProblem([[0], [1], [2]], [[1], [2], [3]], { sigma: 1 }).x0 // => [0, 0, 0]
  * ```
  */
@@ -493,7 +493,7 @@ function kliepSetup(
  * @concept covariate-shift
  * @example
  * ```ts
- * import { kliepAlgorithm } from 'mdml-engine/learn'
+ * import { kliepAlgorithm } from 'omai-engine/learn'
  * kliepAlgorithm([[0], [1], [2]], [[1], [2], [3]], { sigma: 1 }).name // => 'kliep'
  * ```
  */
@@ -528,8 +528,8 @@ export interface KliepResult extends DensityRatioResult {
  * @concept covariate-shift
  * @example
  * ```ts
- * import { kliep } from 'mdml-engine/learn'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { kliep } from 'omai-engine/learn'
+ * import { toFlat } from 'omai-engine/tensor'
  * const w = toFlat(kliep([[-1], [-0.5], [0], [0.5], [1]], [[0], [0.5], [1], [1.5], [2]], { sigma: 1 }).trainWeights)
  * Math.abs(w.reduce((a, b) => a + b, 0) / w.length - 1) < 1e-9 // => true
  * ```
@@ -621,16 +621,16 @@ function momentsOf(
  * @concept covariate-shift
  * @example
  * ```ts
- * import { ulsifProblem } from 'mdml-engine/learn'
+ * import { ulsifProblem } from 'omai-engine/learn'
  * ulsifProblem([[0], [1], [2]], [[1], [2], [3]], { sigma: 1 }).h.length // => 3
  * ```
  */
 export function ulsifProblem(xTrain: TensorLike, xTest: TensorLike, options: UlsifProblemOptions = {}): UlsifProblem {
   const who = 'ulsif'
   const alpha = options.alpha ?? 0
-  if (!(alpha >= 0 && alpha < 1)) throw new MdmlError('value', `${who}: alpha must lie in [0, 1)`)
+  if (!(alpha >= 0 && alpha < 1)) throw new OmaiError('value', `${who}: alpha must lie in [0, 1)`)
   const lambda = options.lambda ?? 0.1
-  if (!(lambda > 0)) throw new MdmlError('value', `${who}: lambda must be > 0`)
+  if (!(lambda > 0)) throw new OmaiError('value', `${who}: lambda must be > 0`)
   const model = kernelModel(who, xTrain, xTest, options.nCentres ?? 100, options.sigma)
   const b = model.centres.n
   const { H, h } = momentsOf(design(model, model.tr), model.tr.n, design(model, model.te), model.te.n, b, alpha)
@@ -694,7 +694,7 @@ export const ulsifSolvers: ModeTable<UlsifProblem, VectorParams> = modes<UlsifPr
  * @concept covariate-shift
  * @example
  * ```ts
- * import { ulsifLoo } from 'mdml-engine/learn'
+ * import { ulsifLoo } from 'omai-engine/learn'
  * Number.isFinite(ulsifLoo(Float64Array.of(1, 0.5, 0.5, 1, 0.2, 0.2), Float64Array.of(0.5, 1, 1, 0.5, 0.3, 0.3), 2, 0.1, 0)) // => true
  * ```
  */
@@ -706,7 +706,7 @@ export function ulsifLoo(
   alpha: number,
 ): number {
   const n = Math.min(phiTrain.length, phiTest.length) / b
-  if (n < 2) throw new MdmlError('value', 'ulsifLoo: need at least two paired rows')
+  if (n < 2) throw new OmaiError('value', 'ulsifLoo: need at least two paired rows')
   const rows = (phi: Float64Array): Float64Array[] =>
     Array.from({ length: n }, (_, i) => phi.subarray(i * b, (i + 1) * b))
   const U = rows(phiTrain)
@@ -789,8 +789,8 @@ export interface UlsifResult extends DensityRatioResult {
  * @concept covariate-shift
  * @example
  * ```ts
- * import { ulsif } from 'mdml-engine/learn'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { ulsif } from 'omai-engine/learn'
+ * import { toFlat } from 'omai-engine/tensor'
  * const r = ulsif([[-1], [-0.5], [0], [0.5], [1]], [[0], [0.5], [1], [1.5], [2]], { sigma: 1, lambda: 0.1 })
  * const w = toFlat(r.trainWeights)
  * w[4] > w[0] // => true
@@ -804,17 +804,17 @@ export function ulsif(xTrain: TensorLike, xTest: TensorLike, options: UlsifOptio
     options.sigmas ?? (options.sigma === undefined ? [0.25, 0.5, 1, 2, 4].map((f) => f * base.sigma) : [base.sigma])
   const lambdas = options.lambdas ?? (options.lambda === undefined ? [1e-3, 1e-2, 1e-1, 1, 10] : [options.lambda])
   if (sigmas.length === 0 || lambdas.length === 0)
-    throw new MdmlError('value', `${who}: candidate lists must be non-empty`)
+    throw new OmaiError('value', `${who}: candidate lists must be non-empty`)
   const b = base.centres.n
   const paired = Math.min(base.tr.n, base.te.n) >= 2
 
   let best = { sigma: sigmas[0] as number, lambda: lambdas[0] as number, loo: Number.POSITIVE_INFINITY }
   for (const sigma of sigmas) {
-    if (!(sigma > 0)) throw new MdmlError('value', `${who}: sigma must be > 0`)
+    if (!(sigma > 0)) throw new OmaiError('value', `${who}: sigma must be > 0`)
     const phiTr = design(base, base.tr, sigma)
     const phiTe = design(base, base.te, sigma)
     for (const lambda of lambdas) {
-      if (!(lambda > 0)) throw new MdmlError('value', `${who}: lambda must be > 0`)
+      if (!(lambda > 0)) throw new OmaiError('value', `${who}: lambda must be > 0`)
       const loo = paired ? ulsifLoo(phiTr, phiTe, b, lambda, alpha) : 0
       if (loo < best.loo || best.loo === Number.POSITIVE_INFINITY) best = { sigma, lambda, loo }
     }

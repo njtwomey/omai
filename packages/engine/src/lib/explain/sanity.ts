@@ -7,7 +7,7 @@
  * with one layer randomised per step, so the similarity falling layer by layer can be watched.
  */
 import type { Json } from '../base/index.ts'
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { foldIn, type Key, normal, permutation } from '../random/index.ts'
 import { asTensor, mul, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
 import {
@@ -80,10 +80,10 @@ function randomLike(layer: Tensor, key: Key): Tensor {
  * @concept explanation-evaluation
  * @example
  * ```ts
- * import { randomisationTestAlgorithm } from 'mdml-engine/explain'
- * import { key } from 'mdml-engine/random'
- * import { runAlgorithm } from 'mdml-engine/trace'
- * import { tensor, toFlat } from 'mdml-engine/tensor'
+ * import { randomisationTestAlgorithm } from 'omai-engine/explain'
+ * import { key } from 'omai-engine/random'
+ * import { runAlgorithm } from 'omai-engine/trace'
+ * import { tensor, toFlat } from 'omai-engine/tensor'
  * // An explainer that ignores the model: its map never changes.
  * const alg = randomisationTestAlgorithm(() => [3, 1, 2], [tensor([1, 2]), tensor([3, 4])], { key: key(0) })
  * runAlgorithm(alg, { maxSteps: 5 }).state.similarity // => [1, 1]
@@ -98,7 +98,7 @@ export function randomisationTestAlgorithm(
   const order = options.order ?? 'cascading'
   const baseline = explain(trained)
   const layers = trained.length
-  if (layers === 0) throw new MdmlError('value', 'randomisationTestAlgorithm: give at least one layer')
+  if (layers === 0) throw new OmaiError('value', 'randomisationTestAlgorithm: give at least one layer')
   return {
     name: 'randomisationTest',
     config: { layers, order, metric: options.metric ?? 'spearman' } as Json,
@@ -153,9 +153,9 @@ export interface RandomisationResult {
  * @concept explanation-evaluation
  * @example
  * ```ts
- * import { modelRandomisationTest } from 'mdml-engine/explain'
- * import { key } from 'mdml-engine/random'
- * import { tensor } from 'mdml-engine/tensor'
+ * import { modelRandomisationTest } from 'omai-engine/explain'
+ * import { key } from 'omai-engine/random'
+ * import { tensor } from 'omai-engine/tensor'
  * modelRandomisationTest(() => [1, 2, 3], [tensor([1]), tensor([2])], { key: key(1) }).layers // => [1, 0]
  * ```
  */
@@ -182,8 +182,8 @@ export function modelRandomisationTest(
  * @concept explanation-evaluation
  * @example
  * ```ts
- * import { dataRandomisationTest } from 'mdml-engine/explain'
- * import { key } from 'mdml-engine/random'
+ * import { dataRandomisationTest } from 'omai-engine/explain'
+ * import { key } from 'omai-engine/random'
  * // A "model" whose explanation is the label mean pattern: permuting labels changes it.
  * dataRandomisationTest((y) => [y[0] ?? 0, y[1] ?? 0, y[2] ?? 0], [1, 2, 3], { key: key(3) }) <= 1 // => true
  * ```

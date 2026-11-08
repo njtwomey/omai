@@ -3,7 +3,7 @@
  * readout, a marker on a curve, a slice through a field).
  */
 
-import type { Point2 } from 'mdml-engine/numerics/geometry'
+import type { Point2 } from 'omai-engine/numerics/geometry'
 import { type ReactNode, useState } from 'react'
 import { Backdrop, useOverlay } from './InteractionOverlay.tsx'
 

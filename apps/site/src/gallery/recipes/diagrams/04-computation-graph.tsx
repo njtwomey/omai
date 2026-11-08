@@ -1,5 +1,5 @@
-import { type StructureOverlay, structure } from 'mdml-engine/scene'
-import { Player, StructureView, usePlayback } from 'mdml-render/react'
+import { type StructureOverlay, structure } from 'omai-engine/scene'
+import { Player, StructureView, usePlayback } from 'omai-render/react'
 import { type ReactNode, useMemo } from 'react'
 import type { Recipe } from '../../recipe.ts'
 

@@ -55,7 +55,7 @@ function numericClassification(
  * @concept datasets
  * @example
  * ```ts
- * import { iris } from 'mdml-engine/datasets'
+ * import { iris } from 'omai-engine/datasets'
  * iris().classes // => ['setosa', 'versicolor', 'virginica']
  * ```
  */
@@ -77,7 +77,7 @@ export function iris(): ClassificationData {
  * @returns The dataset.
  * @example
  * ```ts
- * import { wine } from 'mdml-engine/datasets'
+ * import { wine } from 'omai-engine/datasets'
  * wine().x.shape // => [178, 13]
  * ```
  */
@@ -99,7 +99,7 @@ export function wine(): ClassificationData {
  * @returns The dataset.
  * @example
  * ```ts
- * import { breastCancer } from 'mdml-engine/datasets'
+ * import { breastCancer } from 'omai-engine/datasets'
  * breastCancer().classes // => ['malignant', 'benign']
  * ```
  */
@@ -145,7 +145,7 @@ const DIGITS_META = {
  * @index dataset Vendored 8x8 handwritten digits.
  * @example
  * ```ts
- * import { digits } from 'mdml-engine/datasets'
+ * import { digits } from 'omai-engine/datasets'
  * digits().x.shape // => [1797, 64]
  * ```
  */
@@ -165,7 +165,7 @@ export function digits(): ClassificationData {
  * @returns The image dataset.
  * @example
  * ```ts
- * import { digitImages } from 'mdml-engine/datasets'
+ * import { digitImages } from 'omai-engine/datasets'
  * digitImages().images.shape // => [1797, 8, 8, 1]
  * ```
  */
@@ -194,7 +194,7 @@ export function digitImages(): ImageData {
  * @returns The table.
  * @example
  * ```ts
- * import { penguins } from 'mdml-engine/datasets'
+ * import { penguins } from 'omai-engine/datasets'
  * penguins().columns['species']?.kind // => 'categorical'
  * ```
  */
@@ -221,7 +221,7 @@ export function penguins(): TableData {
  * @returns The dataset.
  * @example
  * ```ts
- * import { penguinsClassification } from 'mdml-engine/datasets'
+ * import { penguinsClassification } from 'omai-engine/datasets'
  * penguinsClassification().x.shape // => [342, 4]
  * ```
  */
@@ -259,8 +259,8 @@ export function penguinsClassification(): ClassificationData {
  * @returns The table.
  * @example
  * ```ts
- * import { titanic } from 'mdml-engine/datasets'
- * import { rowCount } from 'mdml-engine/data'
+ * import { titanic } from 'omai-engine/datasets'
+ * import { rowCount } from 'omai-engine/data'
  * rowCount(titanic()) // => 2201
  * ```
  */

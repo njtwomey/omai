@@ -7,7 +7,7 @@
  * reweighted least squares), and `expectileRegressor` is the estimator, with the sandwich covariance of the estimates.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import type { CoefficientTable, Exposition } from '../exposition/index.ts'
 import { type IterativeEstimator, iterative, type LearnData } from '../learn/index.ts'
 import { analyticObjective, type SmoothProblem, smoothSolvers } from '../optim/index.ts'
@@ -43,10 +43,10 @@ export interface ExpectileProblem {
  * @param options - The expectile level (default 0.5), the ridge penalty (default 0) and the intercept (default true).
  * @param who - The caller, for errors.
  * @returns The problem.
- * @throws MdmlError `value` for a level outside (0, 1) or a negative penalty.
+ * @throws OmaiError `value` for a level outside (0, 1) or a negative penalty.
  * @example
  * ```ts
- * import { expectileProblemOf } from 'mdml-engine/linear'
+ * import { expectileProblemOf } from 'omai-engine/linear'
  * expectileProblemOf({ x: [[0], [1], [2]], y: [0, 1, 3] }, { tau: 0.8 }, 'demo').p // => 2
  * ```
  */
@@ -58,8 +58,8 @@ export function expectileProblemOf(
   const tau = options.tau ?? 0.5
   const alpha = options.alpha ?? 0
   const fitIntercept = options.fitIntercept ?? true
-  if (!(tau > 0 && tau < 1)) throw new MdmlError('value', `${who}: the expectile level must be in (0, 1), got ${tau}`)
-  if (!(alpha >= 0)) throw new MdmlError('value', `${who}: the penalty must be non-negative, got ${alpha}`)
+  if (!(tau > 0 && tau < 1)) throw new OmaiError('value', `${who}: the expectile level must be in (0, 1), got ${tau}`)
+  if (!(alpha >= 0)) throw new OmaiError('value', `${who}: the penalty must be non-negative, got ${alpha}`)
   const design: Design = designOf(data, who)
   const { a, p } = withIntercept(design, fitIntercept)
   return { n: design.x.n, p, d: design.x.d, a, y: design.y, w: design.w, tau, alpha, fitIntercept }
@@ -127,7 +127,7 @@ export function expectileObjective(
  * @returns The smooth problem.
  * @example
  * ```ts
- * import { expectileProblemOf, expectileSmoothProblem } from 'mdml-engine/linear'
+ * import { expectileProblemOf, expectileSmoothProblem } from 'omai-engine/linear'
  * const problem = expectileProblemOf({ x: [[0], [1], [2]], y: [0, 1, 3] }, { tau: 0.8 }, 'demo')
  * expectileSmoothProblem(problem).x0.length // => 2
  * ```
@@ -179,8 +179,8 @@ export type ExpectileState = SlotState & {
  * @returns The algorithm.
  * @example
  * ```ts
- * import { expectileAlgorithm, expectileProblemOf } from 'mdml-engine/linear'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { expectileAlgorithm, expectileProblemOf } from 'omai-engine/linear'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const problem = expectileProblemOf({ x: [[0], [1], [2], [3]], y: [0, 1.2, 1.9, 3.4] }, { tau: 0.9 }, 'demo')
  * runAlgorithm(expectileAlgorithm(problem), { maxSteps: 50 }).status // => 'converged'
  * ```
@@ -312,8 +312,8 @@ function tableOf(par: ExpectileParams, fitIntercept: boolean): CoefficientTable 
  * @reference W. K. Newey and J. L. Powell, Asymmetric least squares estimation and testing, Econometrica 55 (1987).
  * @example
  * ```ts
- * import { expectileRegressor } from 'mdml-engine/linear'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { expectileRegressor } from 'omai-engine/linear'
+ * import { toFlat } from 'omai-engine/tensor'
  * const x = [[0], [1], [2], [3], [4], [5]]
  * const y = [0.1, 1.3, 1.8, 3.4, 3.7, 5.2]
  * const upper = toFlat(expectileRegressor({ tau: 0.9 }).fit({ x, y }).predict([[2.5]]))[0] ?? 0

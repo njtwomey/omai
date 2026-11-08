@@ -16,8 +16,8 @@
  * (`dispose`).
  */
 
-import { MdmlError } from 'mdml-engine/base'
-import type { Config, Method, Session, SessionOptions, SliceBudget } from 'mdml-engine/trace'
+import { OmaiError } from 'omai-engine/base'
+import type { Config, Method, Session, SessionOptions, SliceBudget } from 'omai-engine/trace'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { inlineProducer } from '../../producer/inline.ts'
 import type { Variant } from '../../producer/make.ts'
@@ -434,6 +434,6 @@ export function useSession<S, C extends Config>(
   hook: SessionHookOptions = {},
 ): LiveSession<S, C> {
   const [only] = useSessions(method, options, SINGLE as readonly Variant<C>[], deps, hook).variants
-  if (only === undefined) throw new MdmlError('value', 'useSession: the session was not made')
+  if (only === undefined) throw new OmaiError('value', 'useSession: the session was not made')
   return only.live
 }

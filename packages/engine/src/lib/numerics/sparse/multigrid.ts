@@ -5,7 +5,7 @@
  * coarse-grid correction, post-smooth) are reported separately.
  */
 
-import { type Json, MdmlError } from '../../base/index.ts'
+import { type Json, OmaiError } from '../../base/index.ts'
 import {
   fromStorage,
   primalOf,
@@ -32,12 +32,12 @@ import type { StationaryMethod } from './stationary.ts'
  * @returns The `[n, n]` CSR matrix.
  * @example
  * ```ts
- * import { poisson1d } from 'mdml-engine/numerics/sparse'
+ * import { poisson1d } from 'omai-engine/numerics/sparse'
  * Array.from(poisson1d(3).indices) // => [0, 1, 0, 1, 2, 1, 2]
  * ```
  */
 export function poisson1d(n: number): CsrMatrix {
-  if (!Number.isInteger(n) || n < 1) throw new MdmlError('value', 'poisson1d needs a positive size')
+  if (!Number.isInteger(n) || n < 1) throw new OmaiError('value', 'poisson1d needs a positive size')
   const rows: number[] = []
   const cols: number[] = []
   const vals: number[] = []
@@ -68,13 +68,13 @@ export function poisson1d(n: number): CsrMatrix {
  * @returns The `[nx ny, nx ny]` CSR matrix.
  * @example
  * ```ts
- * import { poisson2d } from 'mdml-engine/numerics/sparse'
+ * import { poisson2d } from 'omai-engine/numerics/sparse'
  * poisson2d(3).shape // => [9, 9]
  * ```
  */
 export function poisson2d(nx: number, ny: number = nx): CsrMatrix {
   if (!Number.isInteger(nx) || !Number.isInteger(ny) || nx < 1 || ny < 1)
-    throw new MdmlError('value', 'poisson2d needs positive sizes')
+    throw new OmaiError('value', 'poisson2d needs positive sizes')
   const rows: number[] = []
   const cols: number[] = []
   const vals: number[] = []
@@ -128,16 +128,16 @@ function interpolation1d(nc: number): Float64Array {
  * @returns The `[fineSize, coarseSize]` CSR matrix.
  * @example
  * ```ts
- * import { prolongation } from 'mdml-engine/numerics/sparse'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { prolongation } from 'omai-engine/numerics/sparse'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(prolongation([3]).values) // => [0.5, 1, 0.5]
  * ```
  */
 export function prolongation(fine: readonly number[]): CsrMatrix {
-  if (fine.length < 1 || fine.length > 2) throw new MdmlError('value', 'prolongation takes one or two axis sizes')
+  if (fine.length < 1 || fine.length > 2) throw new OmaiError('value', 'prolongation takes one or two axis sizes')
   const coarse = fine.map((n) => {
     if (!Number.isInteger(n) || n < 3 || n % 2 === 0)
-      throw new MdmlError('value', 'prolongation needs an odd number (at least 3) of interior points per axis')
+      throw new OmaiError('value', 'prolongation needs an odd number (at least 3) of interior points per axis')
     return (n - 1) / 2
   })
   const [nx, ny] = fine as [number, number?]
@@ -274,12 +274,12 @@ function hierarchy(a: CsrMatrix | TensorLike, options: MultigridOptions): Level[
   let ps: CsrMatrix[]
   if (options.prolongations !== undefined) ps = options.prolongations.map(csrOf)
   else if (options.shape !== undefined) ps = geometricProlongations(options.shape, options.levels ?? 2)
-  else throw new MdmlError('value', 'multigrid needs a grid `shape` or explicit `prolongations`')
+  else throw new OmaiError('value', 'multigrid needs a grid `shape` or explicit `prolongations`')
   const levels: Level[] = []
   let current = fine
   for (const p of ps) {
     if (p.shape[0] !== current.shape[0])
-      throw new MdmlError(
+      throw new OmaiError(
         'shape',
         `multigrid: a prolongation has ${p.shape[0]} rows, its grid has ${current.shape[0]} points`,
       )
@@ -358,7 +358,7 @@ function settingsOf(options: MultigridOptions): CycleSettings {
   const pre = options.preSweeps ?? 1
   const post = options.postSweeps ?? 1
   if (!Number.isInteger(pre) || !Number.isInteger(post) || pre < 0 || post < 0)
-    throw new MdmlError('value', 'multigrid sweep counts are non-negative integers')
+    throw new OmaiError('value', 'multigrid sweep counts are non-negative integers')
   return { smoother, omega, pre, post, corrections: options.cycle === 'w' ? 2 : 1 }
 }
 
@@ -386,7 +386,7 @@ const SCHEMA = channels({
  * @returns The algorithm, named `two-grid`, `v-cycle` or `w-cycle`.
  * @example
  * ```ts
- * import { multigridAlgorithm, poisson1d } from 'mdml-engine/numerics/sparse'
+ * import { multigridAlgorithm, poisson1d } from 'omai-engine/numerics/sparse'
  * multigridAlgorithm(poisson1d(7), new Array(7).fill(1), { shape: [7], levels: 3 }).name // => 'v-cycle'
  * ```
  */
@@ -399,12 +399,12 @@ export function multigridAlgorithm(
   const top = levels[0] as Level
   const settings = settingsOf(options)
   const bv = Float64Array.from(toFlat(primalOf(promoteFloat(b)[0] as Tensor)))
-  if (bv.length !== top.rows.n) throw new MdmlError('shape', 'multigrid needs b with one entry per grid point')
+  if (bv.length !== top.rows.n) throw new OmaiError('shape', 'multigrid needs b with one entry per grid point')
   const rtol = options.rtol ?? 1e-8
   const atol = options.atol ?? 0
   const tol = Math.max(rtol * norm(bv), atol)
   const x0 = options.x0 === undefined ? new Array<number>(top.rows.n).fill(0) : Array.from(options.x0)
-  if (x0.length !== top.rows.n) throw new MdmlError('shape', 'multigrid needs x0 with one entry per grid point')
+  if (x0.length !== top.rows.n) throw new OmaiError('shape', 'multigrid needs x0 with one entry per grid point')
   const name = levels.length === 2 ? 'two-grid' : settings.corrections === 2 ? 'w-cycle' : 'v-cycle'
   return {
     name,
@@ -464,10 +464,10 @@ export function multigridAlgorithm(
  * @param x - The iterate to start from `[n]`.
  * @param options - The grids, smoother, sweeps and cycle shape.
  * @returns The iterate after pre-smoothing, after the coarse-grid correction, and after post-smoothing.
- * @throws MdmlError with code `shape` unless `x` is a vector, and `not-differentiable` for a traced value.
+ * @throws OmaiError with code `shape` unless `x` is a vector, and `not-differentiable` for a traced value.
  * @example
  * ```ts
- * import { multigridCycle, poisson1d } from 'mdml-engine/numerics/sparse'
+ * import { multigridCycle, poisson1d } from 'omai-engine/numerics/sparse'
  * multigridCycle(poisson1d(7), new Array(7).fill(1), new Array(7).fill(0), { shape: [7] }).post.shape // => [7]
  * ```
  */
@@ -496,7 +496,7 @@ export function multigridCycle(
  * @returns The solution with its residual history (one entry per cycle).
  * @example
  * ```ts
- * import { multigridSolve, poisson1d } from 'mdml-engine/numerics/sparse'
+ * import { multigridSolve, poisson1d } from 'omai-engine/numerics/sparse'
  * multigridSolve(poisson1d(15), new Array(15).fill(1), { shape: [15], levels: 3 }).converged // => true
  * ```
  */

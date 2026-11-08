@@ -1,12 +1,12 @@
 @import "tailwindcss";
-/* The site and mdml-render's React components carry the class names Tailwind generates. */
+/* The site and omai-render's React components carry the class names Tailwind generates. */
 @source "../../";
 @source "../../../../packages/render/src";
 @source "../../../../packages/hub/src";
 @custom-variant dark (&:where(.dark, .dark *));
 
 /*
- * Colours are mdml-render's theme tokens as CSS variables (`--wb-fg`, `--wb-bg`, `--wb-surface`, `--wb-muted`,
+ * Colours are omai-render's theme tokens as CSS variables (`--wb-fg`, `--wb-bg`, `--wb-surface`, `--wb-muted`,
  * `--wb-grid`, `--wb-accent`, ...): the shell writes `cssText('light')` on :root and `cssText('dark')` on .dark, and
  * render's React controls read the same variables. The values here are only a fallback for the first paint, before
  * the shell's rule arrives. The site's own Tailwind colours map onto the tokens below (`bg-surface`, `text-muted`).

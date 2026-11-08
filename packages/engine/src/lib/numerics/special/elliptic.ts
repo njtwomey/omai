@@ -102,8 +102,8 @@ const amP = special('ellipjPh', (u, m) => e.ellipj(u, m).ph, [([u, m]) => dnP(u 
  * @concept special-functions
  * @example
  * ```ts
- * import { ellipk } from 'mdml-engine/numerics/special'
- * import { item } from 'mdml-engine/tensor'
+ * import { ellipk } from 'omai-engine/numerics/special'
+ * import { item } from 'omai-engine/tensor'
  * item(ellipk(0)) === Math.PI / 2 // => true
  * ```
  */
@@ -118,8 +118,8 @@ export function ellipk(m: TensorLike): Value {
  * @returns E(m), differentiable.
  * @example
  * ```ts
- * import { ellipe } from 'mdml-engine/numerics/special'
- * import { item } from 'mdml-engine/tensor'
+ * import { ellipe } from 'omai-engine/numerics/special'
+ * import { item } from 'omai-engine/tensor'
  * item(ellipe(1)) // => 1
  * ```
  */
@@ -135,8 +135,8 @@ export function ellipe(m: TensorLike): Value {
  * @returns F(phi | m), differentiable in both arguments.
  * @example
  * ```ts
- * import { ellipkinc } from 'mdml-engine/numerics/special'
- * import { item } from 'mdml-engine/tensor'
+ * import { ellipkinc } from 'omai-engine/numerics/special'
+ * import { item } from 'omai-engine/tensor'
  * item(ellipkinc(0.3, 0)) // => 0.3
  * ```
  */
@@ -152,8 +152,8 @@ export function ellipkinc(phi: TensorLike, m: TensorLike): Value {
  * @returns E(phi | m), differentiable in both arguments.
  * @example
  * ```ts
- * import { ellipeinc } from 'mdml-engine/numerics/special'
- * import { item } from 'mdml-engine/tensor'
+ * import { ellipeinc } from 'omai-engine/numerics/special'
+ * import { item } from 'omai-engine/tensor'
  * item(ellipeinc(0.3, 0)) // => 0.3
  * ```
  */
@@ -170,8 +170,8 @@ export function ellipeinc(phi: TensorLike, m: TensorLike): Value {
  * @returns `{ sn, cn, dn, am }`, differentiable (exactly in u, by finite differences in m).
  * @example
  * ```ts
- * import { ellipj } from 'mdml-engine/numerics/special'
- * import { item } from 'mdml-engine/tensor'
+ * import { ellipj } from 'omai-engine/numerics/special'
+ * import { item } from 'omai-engine/tensor'
  * item(ellipj(0, 0.5).cn) // => 1
  * ```
  */

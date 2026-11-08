@@ -49,7 +49,7 @@ function update(
  * @concept bayesian-linear-regression
  * @example
  * ```ts
- * import { evidenceUpdates } from 'mdml-engine/linear'
+ * import { evidenceUpdates } from 'omai-engine/linear'
  * const next = evidenceUpdates.make({ kind: 'em' })({ n: 4, p: 1, mean: [2], covariance: [[0.25]], gram: [4], residual: 1, gamma: 0.8 })
  * [next.alpha, next.beta].map((v) => Math.round(v * 1000) / 1000) // => [0.235, 2]
  * ```

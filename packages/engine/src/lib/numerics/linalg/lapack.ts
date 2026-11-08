@@ -18,7 +18,7 @@ import { eighQlKernel, qrKernel, solveKernel, svdKernel, triangularKernel } from
  * @returns The upper factor (zero below the diagonal) and `info`.
  * @example
  * ```ts
- * import { dpotrf } from 'mdml-engine/numerics/linalg'
+ * import { dpotrf } from 'omai-engine/numerics/linalg'
  * Array.from(dpotrf([4, 2, 2, 2], 2).factor) // => [2, 1, 0, 1]
  * dpotrf([1, 2, 2, 1], 2).info // => 2
  * ```
@@ -49,7 +49,7 @@ export function dpotrf(a: ArrayLike<number>, n: number): { readonly factor: Floa
  * @returns x.
  * @example
  * ```ts
- * import { dpotrf, dpotrs } from 'mdml-engine/numerics/linalg'
+ * import { dpotrf, dpotrs } from 'omai-engine/numerics/linalg'
  * Array.from(dpotrs(dpotrf([4, 2, 2, 2], 2).factor, [6, 4], 2)) // => [1, 1]
  * ```
  */
@@ -67,10 +67,10 @@ export function dpotrs(u: ArrayLike<number>, b: ArrayLike<number>, n: number): F
  * @param n - The order.
  * @param options - `lower` (default false: upper), `transpose` and `unitDiagonal`.
  * @returns x.
- * @throws MdmlError with code `value` when the diagonal (not taken as 1) has a zero.
+ * @throws OmaiError with code `value` when the diagonal (not taken as 1) has a zero.
  * @example
  * ```ts
- * import { dtrsv } from 'mdml-engine/numerics/linalg'
+ * import { dtrsv } from 'omai-engine/numerics/linalg'
  * Array.from(dtrsv([2, 1, 0, 4], [4, 8], 2)) // => [1, 2]
  * ```
  */
@@ -96,10 +96,10 @@ export function dtrsv(
  * @param n - The order.
  * @param nrhs - The number of right-hand sides (default 1).
  * @returns X, n x nrhs row-major.
- * @throws MdmlError with code `value` when A is exactly singular.
+ * @throws OmaiError with code `value` when A is exactly singular.
  * @example
  * ```ts
- * import { dgesv } from 'mdml-engine/numerics/linalg'
+ * import { dgesv } from 'omai-engine/numerics/linalg'
  * Array.from(dgesv([0, 1, 1, 0], [2, 3], 2)) // => [3, 2]
  * Array.from(dgesv([2, 0, 0, 4], [2, 4, 8, 4], 2, 2)) // => [1, 2, 2, 1]
  * ```
@@ -117,7 +117,7 @@ export function dgesv(a: ArrayLike<number>, b: ArrayLike<number>, n: number, nrh
  * @returns The eigenvalues and eigenvectors.
  * @example
  * ```ts
- * import { dsyev } from 'mdml-engine/numerics/linalg'
+ * import { dsyev } from 'omai-engine/numerics/linalg'
  * Array.from(dsyev([2, 1, 1, 2], 2).w).map((x) => Math.round(x * 1e12) / 1e12) // => [1, 3]
  * ```
  */
@@ -134,7 +134,7 @@ export function dsyev(a: ArrayLike<number>, n: number): { readonly w: Float64Arr
  * @returns Q (m x k) and R (k x n), k = min(m, n).
  * @example
  * ```ts
- * import { dgeqrf } from 'mdml-engine/numerics/linalg'
+ * import { dgeqrf } from 'omai-engine/numerics/linalg'
  * Array.from(dgeqrf([3, 4], 2, 1).r).map((x) => Math.abs(x)) // => [5]
  * ```
  */
@@ -155,7 +155,7 @@ export function dgeqrf(
  * @returns U (m x k), s (k) and V (n x k), k = min(m, n).
  * @example
  * ```ts
- * import { dgesvd } from 'mdml-engine/numerics/linalg'
+ * import { dgesvd } from 'omai-engine/numerics/linalg'
  * Array.from(dgesvd([3, 0, 0, 4], 2, 2).s) // => [4, 3]
  * ```
  */

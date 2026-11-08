@@ -4,40 +4,40 @@
 
 Differential equations, nonlinear dynamics, control and filtering: ODE and PDE solvers with dense output, events and adjoint gradients; vector fields, named systems (predator and prey, Lorenz, Van der Pol, a pendulum, an epidemic), maps and chaos; LQR, MPC, PID and trajectory optimisation; Kalman, particle and changepoint filters; and system identification.
 
-- function `fields.ts` (file): Vector-field analysis: equilibria, Jacobians, divergence for phase portraits. `src/lib/dynamics/fields.ts:1` `mdml-engine/dynamics`
-- function `maps.ts` (file): Iterated maps and chaos: logistic, Henon, standard map. `src/lib/dynamics/maps.ts:1` `mdml-engine/dynamics`
+- function `fields.ts` (file): Vector-field analysis: equilibria, Jacobians, divergence for phase portraits. `src/lib/dynamics/fields.ts:1` `omai-engine/dynamics`
+- function `maps.ts` (file): Iterated maps and chaos: logistic, Henon, standard map. `src/lib/dynamics/maps.ts:1` `omai-engine/dynamics`
 
-- table `namedSystems`: Lorenz, Van der Pol, Lotka-Volterra and other systems with start and span. `src/lib/dynamics/named-systems.ts:290` `mdml-engine/dynamics`
+- table `namedSystems`: Lorenz, Van der Pol, Lotka-Volterra and other systems with start and span. `src/lib/dynamics/named-systems.ts:290` `omai-engine/dynamics`
 
 ## dynamics/control
 
-Control theory for steering dynamical systems: linear-quadratic regulators and estimators, PID controllers and their tuning, pole placement, model predictive control and trajectory optimisation (iLQR, DDP, shooting and collocation). Imported as `mdml-engine/dynamics/control`.
+Control theory for steering dynamical systems: linear-quadratic regulators and estimators, PID controllers and their tuning, pole placement, model predictive control and trajectory optimisation (iLQR, DDP, shooting and collocation). Imported as `omai-engine/dynamics/control`.
 
-- function `lqr`: Continuous-time linear-quadratic regulator. `src/lib/dynamics/control/optimal.ts:68` `mdml-engine/dynamics/control`
-- function `pid`: Discrete PID controller with anti-windup. `src/lib/dynamics/control/pid.ts:77` `mdml-engine/dynamics/control`
+- function `lqr`: Continuous-time linear-quadratic regulator. `src/lib/dynamics/control/optimal.ts:68` `omai-engine/dynamics/control`
+- function `pid`: Discrete PID controller with anti-windup. `src/lib/dynamics/control/pid.ts:77` `omai-engine/dynamics/control`
 
 ## dynamics/filtering
 
-State estimation and change detection for time series: Kalman filters and smoothers (linear, extended, unscented, ensemble), EM learning of linear-Gaussian models, particle filters and smoothers, and online and offline changepoint detection. Imported as `mdml-engine/dynamics/filtering`.
+State estimation and change detection for time series: Kalman filters and smoothers (linear, extended, unscented, ensemble), EM learning of linear-Gaussian models, particle filters and smoothers, and online and offline changepoint detection. Imported as `omai-engine/dynamics/filtering`.
 
-- function `kalmanFilter`: Kalman filter over a sequence; rtsSmoother smooths it. `src/lib/dynamics/filtering/kalman.ts:310` `mdml-engine/dynamics/filtering`
+- function `kalmanFilter`: Kalman filter over a sequence; rtsSmoother smooths it. `src/lib/dynamics/filtering/kalman.ts:310` `omai-engine/dynamics/filtering`
 
-- algorithm `kalmanFilterAlgorithm`: Kalman filter, one observation per step, logging the likelihood. `src/lib/dynamics/filtering/kalman.ts:215` `mdml-engine/dynamics/filtering`
+- algorithm `kalmanFilterAlgorithm`: Kalman filter, one observation per step, logging the likelihood. `src/lib/dynamics/filtering/kalman.ts:215` `omai-engine/dynamics/filtering`
 
 ## dynamics/ode
 
 Ordinary differential equation solvers, scipy, torchdiffeq and diffrax style: explicit, adaptive, implicit, multistep, exponential, symplectic and Taylor integrators behind one stepper contract, with dense output, events, boundary value problems, DAEs, adjoint gradients and tools for studying method order and stability.
 
-- function `solve-ivp.ts` (file): ODE front doors: solveIvp, odeint and diffeqsolve. `src/lib/dynamics/ode/solve-ivp.ts:1` `mdml-engine/dynamics/ode`
+- function `solve-ivp.ts` (file): ODE front doors: solveIvp, odeint and diffeqsolve. `src/lib/dynamics/ode/solve-ivp.ts:1` `omai-engine/dynamics/ode`
 
-- function `odeintAdjoint`: ODE solve differentiable in initial state and parameters by the adjoint method. `src/lib/dynamics/ode/adjoint.ts:299` `mdml-engine/dynamics/ode`
-- function `solveBvp`: Boundary value problems by collocation. `src/lib/dynamics/ode/boundary.ts:377` `mdml-engine/dynamics/ode`
-- function `solveIvp`: Solve an initial value problem with scipy's solve_ivp semantics. `src/lib/dynamics/ode/solve-ivp.ts:672` `mdml-engine/dynamics/ode`
+- function `odeintAdjoint`: ODE solve differentiable in initial state and parameters by the adjoint method. `src/lib/dynamics/ode/adjoint.ts:299` `omai-engine/dynamics/ode`
+- function `solveBvp`: Boundary value problems by collocation. `src/lib/dynamics/ode/boundary.ts:377` `omai-engine/dynamics/ode`
+- function `solveIvp`: Solve an initial value problem with scipy's solve_ivp semantics. `src/lib/dynamics/ode/solve-ivp.ts:672` `omai-engine/dynamics/ode`
 
-- algorithm `solveIvpAlgorithm`: An ODE solve stepped one accepted step at a time. `src/lib/dynamics/ode/solve-ivp.ts:416` `mdml-engine/dynamics/ode`
+- algorithm `solveIvpAlgorithm`: An ODE solve stepped one accepted step at a time. `src/lib/dynamics/ode/solve-ivp.ts:416` `omai-engine/dynamics/ode`
 
 ## dynamics/pde
 
 Partial differential equation solvers: finite differences, finite elements, finite volumes, spectral methods and the method of lines on grids with boundary conditions, plus the Fokker-Planck equation, autodiff differential operators for physics-informed losses, and von Neumann stability analysis of schemes.
 
-- function `heat`: Heat equation on a 1-D or 2-D grid with boundary conditions. `src/lib/dynamics/pde/finite-difference.ts:295` `mdml-engine/dynamics/pde`
+- function `heat`: Heat equation on a 1-D or 2-D grid with boundary conditions. `src/lib/dynamics/pde/finite-difference.ts:295` `omai-engine/dynamics/pde`

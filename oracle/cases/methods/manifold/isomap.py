@@ -3,8 +3,8 @@
 from importlib.metadata import version
 
 import numpy as np
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray, rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray, rng
 from scipy.spatial.distance import pdist
 from sklearn.manifold import Isomap
 

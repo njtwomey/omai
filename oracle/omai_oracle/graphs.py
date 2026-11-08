@@ -1,5 +1,5 @@
 """Shared pieces for the graph case modules: seeded example graphs on nodes 0 .. n - 1 built in sorted edge order (so
-NetworkX's adjacency order matches mdml-js's sorted adjacency), their encoding for fixtures, and dense and sparse
+NetworkX's adjacency order matches omai's sorted adjacency), their encoding for fixtures, and dense and sparse
 matrices for scipy.sparse.csgraph."""
 
 from collections.abc import Iterable

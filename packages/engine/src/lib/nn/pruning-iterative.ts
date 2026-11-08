@@ -4,7 +4,7 @@
  * (`pruneRoundSchedules`) as slots. `iterativeMagnitudePruning` in this file is that run to the end.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import type { SpaceValue } from '../space/index.ts'
 import { fromStorage, type Tensor, toFlat, treeMap, treePaths, type Value } from '../tensor/index.ts'
 import {
@@ -22,7 +22,7 @@ import { applyMasks, type Masks, rewind } from './pruning.ts'
 import { pruneRoundSchedules, pruneScopes } from './pruning-options.ts'
 
 const checkSparsity = (s: number, name: string): void => {
-  if (!(s >= 0 && s <= 1)) throw new MdmlError('value', `${name}: sparsity must be in [0, 1], got ${s}`)
+  if (!(s >= 0 && s <= 1)) throw new OmaiError('value', `${name}: sparsity must be in [0, 1], got ${s}`)
 }
 
 const onesOf = (v: Value): Tensor =>
@@ -95,13 +95,13 @@ export interface PruningState {
  * @param train - Trains from parameters under masks (it should keep pruned weights at zero) and returns the result.
  * @param options - Rounds, final sparsity, rewinding point, leaf filter, scope, schedule and an evaluator.
  * @returns The algorithm, one step per round.
- * @throws MdmlError with code `value` for a final sparsity outside [0, 1].
+ * @throws OmaiError with code `value` for a final sparsity outside [0, 1].
  * @concept pruning
  * @example
  * ```ts
- * import { iterativeMagnitudePruningAlgorithm } from 'mdml-engine/nn'
- * import { runAlgorithm } from 'mdml-engine/trace'
- * import { tensor } from 'mdml-engine/tensor'
+ * import { iterativeMagnitudePruningAlgorithm } from 'omai-engine/nn'
+ * import { runAlgorithm } from 'omai-engine/trace'
+ * import { tensor } from 'omai-engine/tensor'
  * const alg = iterativeMagnitudePruningAlgorithm({ w: tensor([[1, 2, 3, 4]]) }, (p) => p, { finalSparsity: 0.5, rounds: 2 })
  * runAlgorithm(alg, { maxSteps: 5 }).state.round // => 2
  * ```
@@ -169,8 +169,8 @@ export function iterativeMagnitudePruningAlgorithm(
  * @returns The final masks, the ticket and each round.
  * @example
  * ```ts
- * import { iterativeMagnitudePruning } from 'mdml-engine/nn'
- * import { tensor } from 'mdml-engine/tensor'
+ * import { iterativeMagnitudePruning } from 'omai-engine/nn'
+ * import { tensor } from 'omai-engine/tensor'
  * iterativeMagnitudePruning({ w: tensor([[1, 2, 3, 4]]) }, (p) => p, { finalSparsity: 0.5, rounds: 2 }).rounds.length // => 2
  * ```
  */

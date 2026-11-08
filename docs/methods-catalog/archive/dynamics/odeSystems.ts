@@ -5,7 +5,7 @@
  */
 
 import type { Json } from '../../lib/base/index.ts'
-import { MdmlError } from '../../lib/base/index.ts'
+import { OmaiError } from '../../lib/base/index.ts'
 import { type NamedSystemName, namedSystems } from '../../lib/dynamics/index.ts'
 import { stepperFor } from '../../lib/dynamics/ode/index.ts'
 import { choice, dict, real } from '../../lib/space/index.ts'
@@ -45,7 +45,7 @@ const SYSTEMS = Object.keys(namedSystems) as NamedSystemName[]
  *
  * @example
  * ```ts
- * import type { OdeSystemsPath } from 'mdml-engine/methods/dynamics'
+ * import type { OdeSystemsPath } from 'omai-engine/methods/dynamics'
  * const path: OdeSystemsPath = 'y'
  * path // => 'y'
  * ```
@@ -60,8 +60,8 @@ export type OdeSystemsPath = 't' | 'y' | 'h' | 'evaluations'
  *
  * @example
  * ```ts
- * import { odeSystems } from 'mdml-engine/methods/dynamics'
- * import { session } from 'mdml-engine/trace'
+ * import { odeSystems } from 'omai-engine/methods/dynamics'
+ * import { session } from 'omai-engine/trace'
  * const s = session(odeSystems, { mode: 'eager', steps: 10, config: { system: 'lorenz' } })
  * s.state.y.length // => 3
  * ```
@@ -80,7 +80,7 @@ export const odeSystems: Method<OdeSystemsState, Config, OdeSystemsPath> = defin
   make: (c) => {
     const name = c['system'] as NamedSystemName
     const system = namedSystems[name]
-    if (system === undefined) throw new MdmlError('value', `odeSystems: unknown system ${String(name)}`)
+    if (system === undefined) throw new OmaiError('value', `odeSystems: unknown system ${String(name)}`)
     const method = c['method'] as 'RK45' | 'RK23' | 'DOP853'
     const rtol = c['rtol'] as number
     const atol = Math.max(1e-14, rtol * 1e-3)

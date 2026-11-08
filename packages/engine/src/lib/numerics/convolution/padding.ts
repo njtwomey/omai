@@ -4,7 +4,7 @@
  * array's edges.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import {
   concat,
   fromStorage,
@@ -41,7 +41,7 @@ export type BorderMode =
  * @returns The numpy mode.
  * @example
  * ```ts
- * import { padModeOf } from 'mdml-engine/numerics/convolution'
+ * import { padModeOf } from 'omai-engine/numerics/convolution'
  * padModeOf('mirror') // => 'reflect'
  * ```
  */
@@ -72,7 +72,7 @@ export function padModeOf(mode: BorderMode): PadMode {
  * @returns The index into the array, or -1.
  * @example
  * ```ts
- * import { extendIndex } from 'mdml-engine/numerics/convolution'
+ * import { extendIndex } from 'omai-engine/numerics/convolution'
  * [-2, -1, 4, 5].map((i) => extendIndex(i, 4, 'symmetric')) // => [1, 0, 3, 2]
  * ```
  */
@@ -113,8 +113,8 @@ export function extendIndex(i: number, n: number, mode: PadMode): number {
  * @returns The padded array.
  * @example
  * ```ts
- * import { padArray } from 'mdml-engine/numerics/convolution'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { padArray } from 'omai-engine/numerics/convolution'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(padArray([1, 2, 3], [[2, 2]], 'reflect')) // => [3, 2, 1, 2, 3, 2, 1]
  * ```
  */
@@ -127,12 +127,12 @@ export function padArray(
   const [v] = promoteFloat(x) as [Value]
   const rank = v.shape.length
   const all = widths.length === 1 && rank > 1 ? new Array(rank).fill(widths[0]) : widths
-  if (all.length !== rank) throw new MdmlError('shape', `padArray: ${rank} axes need ${rank} width pairs`)
+  if (all.length !== rank) throw new OmaiError('shape', `padArray: ${rank} axes need ${rank} width pairs`)
   let out = v
   all.forEach(([before, after], axis) => {
     if (before === 0 && after === 0) return
     const n = out.shape[axis] ?? 0
-    if (n === 0) throw new MdmlError('value', 'padArray: cannot pad an empty axis')
+    if (n === 0) throw new OmaiError('value', 'padArray: cannot pad an empty axis')
     if (mode === 'constant' || mode === 'maximum' || mode === 'minimum' || mode === 'mean') {
       const fill = (count: number): Value => {
         if (count === 0) return sliceAxis(out, axis, 0, 0)

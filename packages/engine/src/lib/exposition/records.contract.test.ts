@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { SEAL_OPTIONS, seal } from './_check.ts'
 import { curveSet } from './curves.ts'
 import { isExposition } from './record.ts'
@@ -84,8 +84,8 @@ describe('the contract of the exposition records', () => {
       () => curveSet({ x: [0, 1], xLabel: 'e', series: [{ name: 'a', y: [Number.NaN, 2] }] }),
       () => curveSet({ x: [0, 1], xLabel: 'e', series: [{ name: 'a', y: [1] }] }),
     ])
-      expect(make).toThrow(MdmlError)
+      expect(make).toThrow(OmaiError)
     const sweep = expositionSamples.thresholdSweep()
-    expect(() => thresholdSweep({ ...sweep, thresholds: [Number.NaN] })).toThrow(MdmlError)
+    expect(() => thresholdSweep({ ...sweep, thresholds: [Number.NaN] })).toThrow(OmaiError)
   })
 })

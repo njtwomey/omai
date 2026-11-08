@@ -15,7 +15,7 @@ import { dict, type Option, type OptionTable, optionTable } from '../space/index
  * @returns The ascending cut points (one fewer than the bins).
  * @example
  * ```ts
- * import { quantileEdges } from 'mdml-engine/ensembles'
+ * import { quantileEdges } from 'omai-engine/ensembles'
  * quantileEdges([1, 2, 3, 4], 2) // => [2.5]
  * quantileEdges([1, 2, 3], 8) // => [1.5, 2.5]
  * ```
@@ -45,7 +45,7 @@ export function quantileEdges(col: ArrayLike<number>, bins: number): number[] {
  * @returns The bin index.
  * @example
  * ```ts
- * import { binIndex } from 'mdml-engine/ensembles'
+ * import { binIndex } from 'omai-engine/ensembles'
  * binIndex([1, 2], 1.5) // => 1
  * binIndex([1, 2], 5) // => 2
  * ```
@@ -69,7 +69,7 @@ export function binIndex(edges: readonly number[], v: number): number {
  * @returns The ascending cut points (one fewer than the bins).
  * @example
  * ```ts
- * import { uniformEdges } from 'mdml-engine/ensembles'
+ * import { uniformEdges } from 'omai-engine/ensembles'
  * uniformEdges([0, 1, 2, 3, 4, 8], 4) // => [2, 4, 6]
  * ```
  */
@@ -98,7 +98,7 @@ export interface BinningProperties {
  * @concept boosting
  * @example
  * ```ts
- * import { boostingBinnings } from 'mdml-engine/ensembles'
+ * import { boostingBinnings } from 'omai-engine/ensembles'
  * boostingBinnings.make({ kind: 'uniform' })([0, 1, 2, 3, 4, 8], 4) // => [2, 4, 6]
  * ```
  */
@@ -136,7 +136,7 @@ export interface BoostingLossProperties {
  * @concept boosting
  * @example
  * ```ts
- * import { boostingLosses } from 'mdml-engine/ensembles'
+ * import { boostingLosses } from 'omai-engine/ensembles'
  * boostingLosses.make({ kind: 'logistic' }) // => 'classification'
  * ```
  */

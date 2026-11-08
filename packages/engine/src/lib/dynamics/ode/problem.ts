@@ -4,7 +4,7 @@
  * in scipy's `OdeResult` shape, and the `Stepper` contract every integrator implements.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { stack, type TensorLike, type Value } from '../../tensor/index.ts'
 import { combine, floatState } from './_vec.ts'
 
@@ -46,12 +46,12 @@ export interface OdeProblemOptions {
  * @param tspan - The interval [t0, t1] (t1 < t0 integrates backwards).
  * @param options - Parameters, mass matrix and Jacobian.
  * @returns The problem.
- * @throws MdmlError with code `value` when the time span is not finite.
+ * @throws OmaiError with code `value` when the time span is not finite.
  * @concept initial-value-problem
  * @example
  * ```ts
- * import { odeProblem } from 'mdml-engine/dynamics/ode'
- * import { mul, neg } from 'mdml-engine/tensor'
+ * import { odeProblem } from 'omai-engine/dynamics/ode'
+ * import { mul, neg } from 'omai-engine/tensor'
  * const p = odeProblem((_t, y, k) => neg(mul(k, y)), [1], [0, 1], { params: 2 })
  * p.tspan // => [0, 1]
  * ```
@@ -63,7 +63,7 @@ export function odeProblem(
   options: OdeProblemOptions = {},
 ): OdeProblem {
   if (!Number.isFinite(tspan[0]) || !Number.isFinite(tspan[1])) {
-    throw new MdmlError('value', 'odeProblem: the time span must be finite')
+    throw new OmaiError('value', 'odeProblem: the time span must be finite')
   }
   return {
     f,
@@ -83,8 +83,8 @@ export function odeProblem(
  * @returns The field.
  * @example
  * ```ts
- * import { fieldOf, odeProblem } from 'mdml-engine/dynamics/ode'
- * import { mul, neg, tensor, toArray } from 'mdml-engine/tensor'
+ * import { fieldOf, odeProblem } from 'omai-engine/dynamics/ode'
+ * import { mul, neg, tensor, toArray } from 'omai-engine/tensor'
  * const p = odeProblem((_t, y, k) => neg(mul(k, y)), [1], [0, 1], { params: 2 })
  * toArray(fieldOf(p)(0, tensor([3]))) // => [-6]
  * ```
@@ -114,8 +114,8 @@ export interface EventSpec {
  * @returns The event.
  * @example
  * ```ts
- * import { event } from 'mdml-engine/dynamics/ode'
- * import { item, sliceAxis } from 'mdml-engine/tensor'
+ * import { event } from 'omai-engine/dynamics/ode'
+ * import { item, sliceAxis } from 'omai-engine/tensor'
  * event((_t, y) => item(sliceAxis(y, 0, 0, 1)), { terminal: true, direction: -1 }).direction // => -1
  * ```
  */
@@ -149,11 +149,11 @@ export interface DenseSolution {
  *
  * @param segments - The interpolants, in integration order.
  * @returns The continuous solution.
- * @throws MdmlError with code `value` when there are no segments.
+ * @throws OmaiError with code `value` when there are no segments.
  * @example
  * ```ts
- * import { denseSolution, hermiteSegment } from 'mdml-engine/dynamics/ode'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { denseSolution, hermiteSegment } from 'omai-engine/dynamics/ode'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * const s = denseSolution([hermiteSegment(0, tensor([0]), tensor([0]), 1, tensor([1]), tensor([2]))])
  * toArray(s.at(1)) // => [1]
  * ```
@@ -161,7 +161,7 @@ export interface DenseSolution {
 export function denseSolution(segments: readonly DenseSegment[]): DenseSolution {
   const first = segments[0]
   const last = segments[segments.length - 1]
-  if (first === undefined || last === undefined) throw new MdmlError('value', 'denseSolution: no segments')
+  if (first === undefined || last === undefined) throw new OmaiError('value', 'denseSolution: no segments')
   const ascending = first.t1 >= first.t0
   const lo = ascending ? first.t0 : last.t1
   const hi = ascending ? last.t1 : first.t0
@@ -200,8 +200,8 @@ export function denseSolution(segments: readonly DenseSegment[]): DenseSolution 
  * @returns The interpolant.
  * @example
  * ```ts
- * import { hermiteSegment } from 'mdml-engine/dynamics/ode'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { hermiteSegment } from 'omai-engine/dynamics/ode'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * // y = t^2 on [0, 1] is reproduced exactly.
  * toArray(hermiteSegment(0, tensor([0]), tensor([0]), 1, tensor([1]), tensor([2])).at(0.5)) // => [0.25]
  * ```

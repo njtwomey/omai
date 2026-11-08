@@ -6,7 +6,7 @@
  * solution of {@link gamAlgorithm}, which is what makes the two checks of each other.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { type Algorithm, channels, stateFromJson, stateToJson } from '../trace/index.ts'
 import { assemblePenalty, gram, solvePenalised } from './penalised.ts'
 import type { GamHyper, GamProblem } from './pirls.ts'
@@ -33,13 +33,13 @@ export type BackfitState = {
  * @param problem - The prepared problem.
  * @param hyper - The family and `sp`; `tol` is the tolerance on the change.
  * @returns The algorithm.
- * @throws MdmlError `shape` for an `sp` of the wrong length.
+ * @throws OmaiError `shape` for an `sp` of the wrong length.
  * @concept generalized-additive-models
  * @reference T. Hastie and R. Tibshirani, Generalized Additive Models (1990), chapter 5.
  * @example
  * ```ts
- * import { GAM_DEFAULTS, backfittingAlgorithm, gamProblem, s } from 'mdml-engine/gam'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { GAM_DEFAULTS, backfittingAlgorithm, gamProblem, s } from 'omai-engine/gam'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const x = Array.from({ length: 40 }, (_, i) => [i / 39, ((i * 7) % 40) / 39])
  * const y = x.map((r) => Math.sin(5 * (r[0] ?? 0)) + (r[1] ?? 0))
  * const hyper = { ...GAM_DEFAULTS, terms: [s(0, { k: 6 }), s(1, { k: 6 })], tol: 1e-9 }
@@ -52,9 +52,9 @@ export function backfittingAlgorithm(problem: GamProblem, hyper: GamHyper): Algo
   const { n, p } = design
   const nPen = structure.blocks.length
   if (design.constraints !== undefined)
-    throw new MdmlError('value', 'backfitting: shape-constrained terms need gamAlgorithm')
+    throw new OmaiError('value', 'backfitting: shape-constrained terms need gamAlgorithm')
   if (hyper.sp !== undefined && hyper.sp.length !== nPen) {
-    throw new MdmlError('shape', `backfitting: sp has ${hyper.sp.length} entries for ${nPen} penalties`)
+    throw new OmaiError('shape', `backfitting: sp has ${hyper.sp.length} entries for ${nPen} penalties`)
   }
   const logLambda = Array.from({ length: nPen }, (_, r) => Math.log(Math.max(hyper.sp?.[r] ?? 1, 1e-300)))
   const S = assemblePenalty(structure, logLambda)

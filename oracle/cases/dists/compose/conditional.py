@@ -3,8 +3,8 @@
 import numpy as np
 import statsmodels
 import statsmodels.api as sm
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import rng
 
 REFERENCE: dict[str, str] = {"statsmodels": statsmodels.__version__}
 

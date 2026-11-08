@@ -4,7 +4,7 @@
  * weights, and `approximateQuery` for posteriors estimated from samples.
  */
 
-import { type Json, logSumExpOf, MdmlError } from '../../base/index.ts'
+import { type Json, logSumExpOf, OmaiError } from '../../base/index.ts'
 import { foldIn, type Key, uniform } from '../../random/index.ts'
 import { dict, type OptionTable, optionTable } from '../../space/index.ts'
 import {
@@ -108,9 +108,9 @@ function logImportance(
  * @concept sampling
  * @example
  * ```ts
- * import { bayesNet, rejectionSampleAlgorithm } from 'mdml-engine/pgm'
- * import { key } from 'mdml-engine/random'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { bayesNet, rejectionSampleAlgorithm } from 'omai-engine/pgm'
+ * import { key } from 'omai-engine/random'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const bn = bayesNet([{ name: 'a', states: ['0', '1'], parents: [], cpt: [0.5, 0.5] }, { name: 'b', states: ['0', '1'], parents: ['a'], cpt: [1, 0, 0, 1] }])
  * runAlgorithm(rejectionSampleAlgorithm(bn, key(0), 20, { b: '1' }), { maxSteps: 20 }).state.drawn // => 20
  * ```
@@ -155,8 +155,8 @@ export function rejectionSampleAlgorithm(
  * @concept sampling
  * @example
  * ```ts
- * import { bayesNet, rejectionSample } from 'mdml-engine/pgm'
- * import { key } from 'mdml-engine/random'
+ * import { bayesNet, rejectionSample } from 'omai-engine/pgm'
+ * import { key } from 'omai-engine/random'
  * const bn = bayesNet([{ name: 'a', states: ['0', '1'], parents: [], cpt: [0.5, 0.5] }, { name: 'b', states: ['0', '1'], parents: ['a'], cpt: [1, 0, 0, 1] }])
  * rejectionSample(bn, key(0), 100, { b: '1' }).samples.every((s) => s['a'] === 1) // => true
  * ```
@@ -184,9 +184,9 @@ export function rejectionSample(
  * @concept sampling
  * @example
  * ```ts
- * import { bayesNet, likelihoodWeightingAlgorithm } from 'mdml-engine/pgm'
- * import { key } from 'mdml-engine/random'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { bayesNet, likelihoodWeightingAlgorithm } from 'omai-engine/pgm'
+ * import { key } from 'omai-engine/random'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const bn = bayesNet([{ name: 'a', states: ['0', '1'], parents: [], cpt: [0.5, 0.5] }, { name: 'b', states: ['0', '1'], parents: ['a'], cpt: [0.9, 0.1, 0.2, 0.8] }])
  * runAlgorithm(likelihoodWeightingAlgorithm(bn, key(0), 5, { b: '1' }), { maxSteps: 5 }).state.samples.length // => 5
  * ```
@@ -266,7 +266,7 @@ export interface ImportanceProperties {
  * @concept sampling
  * @example
  * ```ts
- * import { importanceSamplers } from 'mdml-engine/pgm'
+ * import { importanceSamplers } from 'omai-engine/pgm'
  * importanceSamplers.where((p) => p.discards) // => ['rejection']
  * ```
  */
@@ -304,8 +304,8 @@ export const importanceSamplers: OptionTable<ImportanceBuilder, ImportanceProper
  * @concept sampling
  * @example
  * ```ts
- * import { bayesNet, likelihoodWeighting } from 'mdml-engine/pgm'
- * import { key } from 'mdml-engine/random'
+ * import { bayesNet, likelihoodWeighting } from 'omai-engine/pgm'
+ * import { key } from 'omai-engine/random'
  * const bn = bayesNet([{ name: 'a', states: ['0', '1'], parents: [], cpt: [0.5, 0.5] }, { name: 'b', states: ['0', '1'], parents: ['a'], cpt: [0.9, 0.1, 0.2, 0.8] }])
  * const r = likelihoodWeighting(bn, key(0), 3, { b: '1' })
  * r.logWeights.map((w) => Math.round(Math.exp(w) * 10) / 10).every((w) => w === 0.1 || w === 0.8) // => true
@@ -331,7 +331,7 @@ export function likelihoodWeighting(
  * @concept sampling
  * @example
  * ```ts
- * import { effectiveSampleSize } from 'mdml-engine/pgm'
+ * import { effectiveSampleSize } from 'omai-engine/pgm'
  * effectiveSampleSize([0, 0, 0, 0]) // => 4
  * ```
  */
@@ -349,11 +349,11 @@ export function effectiveSampleSize(logWeights: readonly number[]): number {
  * @param variables - The variables to estimate (a joint over all of them, in this order).
  * @param logWeights - Log importance weights (default: equal).
  * @returns The estimated distribution as a normalised factor.
- * @throws MdmlError with code `value` when there are no samples or every weight is zero.
+ * @throws OmaiError with code `value` when there are no samples or every weight is zero.
  * @concept sampling
  * @example
  * ```ts
- * import { bayesNet, sampleMarginal, factorValues } from 'mdml-engine/pgm'
+ * import { bayesNet, sampleMarginal, factorValues } from 'omai-engine/pgm'
  * const bn = bayesNet([{ name: 'a', states: ['0', '1'], parents: [], cpt: [0.5, 0.5] }])
  * factorValues(sampleMarginal(bn, [{ a: 0 }, { a: 1 }, { a: 1 }, { a: 1 }], ['a'])) // => [0.25, 0.75]
  * ```
@@ -375,7 +375,7 @@ export function sampleMarginal(
   const logs = cells.map(logSumExpOf)
   const total = logSumExpOf(logs)
   if (total === Number.NEGATIVE_INFINITY)
-    throw new MdmlError('value', 'sampleMarginal: no samples with positive weight')
+    throw new OmaiError('value', 'sampleMarginal: no samples with positive weight')
   return logFactor(
     variables,
     card,
@@ -436,12 +436,12 @@ function logProbabilityOf(c: Compiled, x: Int32Array): number {
  * @param model - The model.
  * @param options - Evidence and the starting state.
  * @returns The algorithm.
- * @throws MdmlError with code `value` when the starting state has zero probability.
+ * @throws OmaiError with code `value` when the starting state has zero probability.
  * @concept gibbs-sampling
  * @example
  * ```ts
- * import { isingModel, gibbsSamplingAlgorithm } from 'mdml-engine/pgm'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { isingModel, gibbsSamplingAlgorithm } from 'omai-engine/pgm'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * runAlgorithm(gibbsSamplingAlgorithm(isingModel({ rows: 2, cols: 2 })), { maxSteps: 10, seed: 1 }).steps // => 10
  * ```
  */
@@ -466,7 +466,7 @@ export function gibbsSamplingAlgorithm(model: DiscreteModel, options: GibbsOptio
       const x = start()
       const lp = logProbabilityOf(c, x)
       if (lp === Number.NEGATIVE_INFINITY)
-        throw new MdmlError('value', 'gibbs: the starting state has zero probability')
+        throw new OmaiError('value', 'gibbs: the starting state has zero probability')
       return { x, logProbability: lp }
     },
     step: (state, ctx) => {
@@ -483,7 +483,7 @@ export function gibbsSamplingAlgorithm(model: DiscreteModel, options: GibbsOptio
         }
         const z = logSumExpOf(logs)
         if (z === Number.NEGATIVE_INFINITY)
-          throw new MdmlError('value', `gibbs: ${c.names[i]} has no state of positive probability`)
+          throw new OmaiError('value', `gibbs: ${c.names[i]} has no state of positive probability`)
         let acc = 0
         let pick = k - 1
         for (let s = 0; s < k; s++) {
@@ -513,8 +513,8 @@ export function gibbsSamplingAlgorithm(model: DiscreteModel, options: GibbsOptio
  * @concept gibbs-sampling
  * @example
  * ```ts
- * import { bayesNet, gibbsSample } from 'mdml-engine/pgm'
- * import { key } from 'mdml-engine/random'
+ * import { bayesNet, gibbsSample } from 'omai-engine/pgm'
+ * import { key } from 'omai-engine/random'
  * const bn = bayesNet([{ name: 'a', states: ['0', '1'], parents: [], cpt: [0.5, 0.5] }, { name: 'b', states: ['0', '1'], parents: ['a'], cpt: [1, 0, 0, 1] }])
  * gibbsSample(bn, key(0), 5, { evidence: { b: '1' } }).every((s) => s['a'] === 1) // => true
  * ```
@@ -557,12 +557,12 @@ export function gibbsSample(model: DiscreteModel, key: Key, n: number, options: 
  * @param options - The method (default `likelihoodWeighting` for Bayes networks, `gibbs` otherwise), number of
  * samples (default 10000), key, evidence and Gibbs options.
  * @returns The estimated posterior over the query, in query order.
- * @throws MdmlError with code `value` for rejection or likelihood weighting on a model that is not a Bayes network.
+ * @throws OmaiError with code `value` for rejection or likelihood weighting on a model that is not a Bayes network.
  * @concept sampling
  * @example
  * ```ts
- * import { bayesNet, approximateQuery, factorValues } from 'mdml-engine/pgm'
- * import { key } from 'mdml-engine/random'
+ * import { bayesNet, approximateQuery, factorValues } from 'omai-engine/pgm'
+ * import { key } from 'omai-engine/random'
  * const bn = bayesNet([{ name: 'a', states: ['0', '1'], parents: [], cpt: [0.5, 0.5] }, { name: 'b', states: ['0', '1'], parents: ['a'], cpt: [1, 0, 0, 1] }])
  * factorValues(approximateQuery(bn, ['a'], { evidence: { b: '1' }, key: key(0), n: 200 })) // => [0, 1]
  * ```
@@ -580,10 +580,10 @@ export function approximateQuery(
   const method = options.method ?? (model.kind === 'bayesNet' ? 'likelihoodWeighting' : 'gibbs')
   const evidence = options.evidence ?? {}
   for (const q of query) {
-    if (q in evidenceIndices(model, evidence)) throw new MdmlError('value', `approximateQuery: ${q} is observed`)
+    if (q in evidenceIndices(model, evidence)) throw new OmaiError('value', `approximateQuery: ${q} is observed`)
   }
   if (method === 'gibbs') return sampleMarginal(model, gibbsSample(model, options.key, n, options), query)
-  if (model.kind !== 'bayesNet') throw new MdmlError('value', `approximateQuery: ${method} needs a Bayes network`)
+  if (model.kind !== 'bayesNet') throw new OmaiError('value', `approximateQuery: ${method} needs a Bayes network`)
   for (const q of query) bayesNode(model, q)
   if (method === 'rejection')
     return sampleMarginal(model, rejectionSample(model, options.key, n, evidence).samples, query)

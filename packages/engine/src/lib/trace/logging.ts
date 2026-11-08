@@ -5,7 +5,7 @@
  * contract paths, lets through only what is subscribed and due, and holds no more of a path than its `keep` allows.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import { isTensor, type Value } from '../tensor/index.ts'
 import {
   type Concrete,
@@ -48,7 +48,7 @@ export interface Scheduler<S = unknown> {
  * @returns The scheduler.
  * @example
  * ```ts
- * import { Log, resolve, scalar, scheduler } from 'mdml-engine/trace'
+ * import { Log, resolve, scalar, scheduler } from 'omai-engine/trace'
  * const s = scheduler(resolve({ 'a/x': scalar() }, { 'a/x': Log({ every: 4 }) }))
  * [s.due('a/x', 0), s.due('a/x', 3), s.due('a/x', 8), s.due('a/y', 8)] // => [true, false, true, false]
  * ```
@@ -120,7 +120,7 @@ export function scheduler<S>(resolved: Resolved<S>): Scheduler<S> {
 /**
  * What an algorithm logs through: values by path, events by path, and taps under a prefix. Every call is a no-op for
  * a path nobody subscribed to, so algorithms log freely. A path the contract does not have is another matter: in a
- * session (not in a bare run, which has no contract) `log` and `emit` throw `MdmlError('value')` for it, since it could
+ * session (not in a bare run, which has no contract) `log` and `emit` throw `OmaiError('value')` for it, since it could
  * only be a typo that would otherwise drop the value silently. `wants` is a question, not a statement, and answers
  * `false` (an algorithm shared by methods may ask about a path only some of them have); a typo in a `wants` guard is
  * caught by the path type, not at run time.
@@ -206,10 +206,10 @@ export function logContext<S>(
   const log = (path: Path, value: LogValue): void => {
     if (!enabled) return
     if (sched.due(path, t)) put(path, value)
-    else if (!sched.known(path)) throw new MdmlError('value', `log: the contract has no path '${path}'`)
+    else if (!sched.known(path)) throw new OmaiError('value', `log: the contract has no path '${path}'`)
   }
   const emit = (path: Path, context: Json = {}): void => {
-    if (enabled && !sched.known(path)) throw new MdmlError('value', `emit: the contract has no path '${path}'`)
+    if (enabled && !sched.known(path)) throw new OmaiError('value', `emit: the contract has no path '${path}'`)
     sched.fired(path, t)
     if (wants(path)) run.message(t, path, context)
     const hooks: readonly Hook[] = resolved.hooks.get(path) ?? []
@@ -249,7 +249,7 @@ export function logContext<S>(
  * @returns The context.
  * @example
  * ```ts
- * import { defaultLogContext, recorder, startRun } from 'mdml-engine/trace'
+ * import { defaultLogContext, recorder, startRun } from 'omai-engine/trace'
  * const rec = recorder()
  * defaultLogContext(startRun(rec, { name: 'x', seed: 0, config: {} }), 3).log('a/loss', 0.5)
  * rec.events.at(-1) // => { type: 'metric', runId: 'x:0', step: 3, name: 'a/loss', value: 0.5 }
@@ -294,7 +294,7 @@ export function defaultLogContext(run: RunHandle, t: number): LogContext {
  * @returns The gating tracer.
  * @example
  * ```ts
- * import { gated, Log, recorder, resolve, scalar, scheduler, startRun } from 'mdml-engine/trace'
+ * import { gated, Log, recorder, resolve, scalar, scheduler, startRun } from 'omai-engine/trace'
  * const r = resolve({ 'a/x': scalar() }, { 'a/x': Log({ keep: 2 }) })
  * const rec = recorder()
  * const run = startRun(gated(rec, r, scheduler(r)), { name: 'x', seed: 0, config: {}, policy: r.policy })

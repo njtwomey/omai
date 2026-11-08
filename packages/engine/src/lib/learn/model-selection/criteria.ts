@@ -6,7 +6,7 @@
  * @index function AIC, BIC, GCV and other model-selection criteria.
  */
 
-import { MdmlError, meanOf } from '../../base/index.ts'
+import { meanOf, OmaiError } from '../../base/index.ts'
 import { bootstrapIndices, foldIn } from '../../random/index.ts'
 import { asTensor, isTensor, type TensorLike, toFlat } from '../../tensor/index.ts'
 import {
@@ -33,7 +33,7 @@ import { scoresFromJson, scoresToJson } from './_state.ts'
  * @concept information-criteria
  * @example
  * ```ts
- * import { aic } from 'mdml-engine/learn/model-selection'
+ * import { aic } from 'omai-engine/learn/model-selection'
  * aic(-10, 3) // => 26
  * ```
  */
@@ -48,15 +48,15 @@ export function aic(logLikelihood: number, k: number): number {
  * @param k - The number of parameters.
  * @param n - The number of observations (more than k + 1).
  * @returns AICc.
- * @throws MdmlError with code `domain` when n <= k + 1.
+ * @throws OmaiError with code `domain` when n <= k + 1.
  * @example
  * ```ts
- * import { aicc } from 'mdml-engine/learn/model-selection'
+ * import { aicc } from 'omai-engine/learn/model-selection'
  * aicc(-10, 3, 10) // => 30
  * ```
  */
 export function aicc(logLikelihood: number, k: number, n: number): number {
-  if (n <= k + 1) throw new MdmlError('domain', `aicc: needs n > k + 1 (n = ${n}, k = ${k})`)
+  if (n <= k + 1) throw new OmaiError('domain', `aicc: needs n > k + 1 (n = ${n}, k = ${k})`)
   return aic(logLikelihood, k) + (2 * k * (k + 1)) / (n - k - 1)
 }
 
@@ -69,7 +69,7 @@ export function aicc(logLikelihood: number, k: number, n: number): number {
  * @returns BIC (lower is better).
  * @example
  * ```ts
- * import { bic } from 'mdml-engine/learn/model-selection'
+ * import { bic } from 'omai-engine/learn/model-selection'
  * bic(-10, 2, Math.E ** 2) // => 24
  * ```
  */
@@ -85,7 +85,7 @@ export function bic(logLikelihood: number, k: number, n: number): number {
  * @returns The log-likelihood.
  * @example
  * ```ts
- * import { gaussianLogLikelihood } from 'mdml-engine/learn/model-selection'
+ * import { gaussianLogLikelihood } from 'omai-engine/learn/model-selection'
  * gaussianLogLikelihood(10, 10) === -5 * (Math.log(2 * Math.PI) + 1) // => true
  * ```
  */
@@ -103,7 +103,7 @@ export function gaussianLogLikelihood(rss: number, n: number): number {
  * @returns Cp (close to p for an unbiased model).
  * @example
  * ```ts
- * import { mallowsCp } from 'mdml-engine/learn/model-selection'
+ * import { mallowsCp } from 'omai-engine/learn/model-selection'
  * mallowsCp(20, 2, 12, 3) // => 4
  * ```
  */
@@ -119,15 +119,15 @@ export function mallowsCp(rss: number, sigma2: number, n: number, p: number): nu
  * @param n - The number of observations.
  * @param df - The effective degrees of freedom (trace of the hat matrix).
  * @returns The GCV score (lower is better).
- * @throws MdmlError with code `domain` when df >= n.
+ * @throws OmaiError with code `domain` when df >= n.
  * @example
  * ```ts
- * import { gcv } from 'mdml-engine/learn/model-selection'
+ * import { gcv } from 'omai-engine/learn/model-selection'
  * gcv(8, 10, 2) // => 1.25
  * ```
  */
 export function gcv(rss: number, n: number, df: number): number {
-  if (df >= n) throw new MdmlError('domain', 'gcv: the degrees of freedom must be below n')
+  if (df >= n) throw new OmaiError('domain', 'gcv: the degrees of freedom must be below n')
   return (n * rss) / (n - df) ** 2
 }
 
@@ -150,10 +150,10 @@ export interface SmootherLoo {
  * @param hat - The smoother (hat) matrix `[n, n]`.
  * @param y - The targets `[n]`.
  * @returns The LOO residuals, LOO MSE, GCV and degrees of freedom.
- * @throws MdmlError with code `domain` when some S_ii is 1 (a point fitted exactly by itself).
+ * @throws OmaiError with code `domain` when some S_ii is 1 (a point fitted exactly by itself).
  * @example
  * ```ts
- * import { linearSmootherLoo } from 'mdml-engine/learn/model-selection'
+ * import { linearSmootherLoo } from 'omai-engine/learn/model-selection'
  * // The mean as a smoother: S = J / n, so the LOO residual is (y_i - mean) n / (n - 1).
  * linearSmootherLoo([[0.5, 0.5], [0.5, 0.5]], [1, 3]).residuals // => [-2, 2]
  * ```
@@ -161,7 +161,7 @@ export interface SmootherLoo {
 export function linearSmootherLoo(hat: TensorLike, y: TensorLike): SmootherLoo {
   const s = asTensor(hat)
   if (!isTensor(s) || s.shape.length !== 2 || s.shape[0] !== s.shape[1]) {
-    throw new MdmlError('shape', 'linearSmootherLoo: the hat matrix must be square')
+    throw new OmaiError('shape', 'linearSmootherLoo: the hat matrix must be square')
   }
   const n = s.shape[0] ?? 0
   const v = targetVector(y, 'linearSmootherLoo', n)
@@ -173,7 +173,7 @@ export function linearSmootherLoo(hat: TensorLike, y: TensorLike): SmootherLoo {
     let fit = 0
     for (let j = 0; j < n; j++) fit += (sv[i * n + j] ?? 0) * (v[j] ?? 0)
     const h = sv[i * n + i] ?? 0
-    if (Math.abs(1 - h) < 1e-12) throw new MdmlError('domain', `linearSmootherLoo: leverage of point ${i} is 1`)
+    if (Math.abs(1 - h) < 1e-12) throw new OmaiError('domain', `linearSmootherLoo: leverage of point ${i} is 1`)
     const r = (v[i] ?? 0) - fit
     rss += r * r
     df += h
@@ -198,7 +198,7 @@ export interface OneStandardErrorOptions {
  * @returns The index of the chosen candidate.
  * @example
  * ```ts
- * import { oneStandardErrorRule } from 'mdml-engine/learn/model-selection'
+ * import { oneStandardErrorRule } from 'omai-engine/learn/model-selection'
  * oneStandardErrorRule([0.70, 0.78, 0.80, 0.79], [0.03, 0.03, 0.03, 0.03]) // => 1
  * ```
  */
@@ -208,7 +208,7 @@ export function oneStandardErrorRule(
   options: OneStandardErrorOptions = {},
 ): number {
   if (means.length === 0 || means.length !== standardErrors.length) {
-    throw new MdmlError('shape', 'oneStandardErrorRule: needs one standard error per mean')
+    throw new OmaiError('shape', 'oneStandardErrorRule: needs one standard error per mean')
   }
   let best = 0
   means.forEach((m, i) => {
@@ -286,7 +286,7 @@ function bootstrapRun(estimator: Estimator, data: LearnData, options: Bootstrap6
   const n = rowsOf(data.x)
   const y = targetVector(data.y ?? [], 'bootstrap632', n)
   const nBoot = options.nBootstraps ?? 200
-  if (!(Number.isInteger(nBoot) && nBoot >= 1)) throw new MdmlError('value', 'bootstrap632: nBootstraps must be >= 1')
+  if (!(Number.isInteger(nBoot) && nBoot >= 1)) throw new OmaiError('value', 'bootstrap632: nBootstraps must be >= 1')
   const loss =
     options.loss ??
     (estimator.kind === 'classifier'
@@ -349,14 +349,14 @@ function bootstrapRun(estimator: Estimator, data: LearnData, options: Bootstrap6
  * @param data - The data.
  * @param options - nBootstraps, loss and key (`plus` only matters to {@link bootstrap632}).
  * @returns The algorithm, one step per replicate.
- * @throws MdmlError with code `value` for fewer than one replicate.
+ * @throws OmaiError with code `value` for fewer than one replicate.
  * @concept bootstrap
  * @example
  * ```ts
- * import { bootstrap632Algorithm } from 'mdml-engine/learn/model-selection'
- * import { defineEstimator, rowsOf } from 'mdml-engine/learn'
- * import { runAlgorithm } from 'mdml-engine/trace'
- * import { full } from 'mdml-engine/tensor'
+ * import { bootstrap632Algorithm } from 'omai-engine/learn/model-selection'
+ * import { defineEstimator, rowsOf } from 'omai-engine/learn'
+ * import { runAlgorithm } from 'omai-engine/trace'
+ * import { full } from 'omai-engine/tensor'
  * const zero = defineEstimator({ name: 'zero', kind: 'regressor', fit: () => ({}), methods: () => ({ predict: (x) => full([rowsOf(x)], 0) }) }, {})
  * const alg = bootstrap632Algorithm(zero, { x: [[0], [1], [2], [3]], y: [1, 1, 1, 1] }, { nBootstraps: 10 })
  * runAlgorithm(alg, { maxSteps: 20 }).state.done // => 10
@@ -383,9 +383,9 @@ export function bootstrap632Algorithm(
  * @concept bootstrap
  * @example
  * ```ts
- * import { bootstrap632 } from 'mdml-engine/learn/model-selection'
- * import { defineEstimator, rowsOf } from 'mdml-engine/learn'
- * import { full } from 'mdml-engine/tensor'
+ * import { bootstrap632 } from 'omai-engine/learn/model-selection'
+ * import { defineEstimator, rowsOf } from 'omai-engine/learn'
+ * import { full } from 'omai-engine/tensor'
  * const zero = defineEstimator({ name: 'zero', kind: 'regressor', fit: () => ({}), methods: () => ({ predict: (x) => full([rowsOf(x)], 0) }) }, {})
  * bootstrap632(zero, { x: [[0], [1], [2], [3]], y: [1, 1, 1, 1] }, { nBootstraps: 20 }).error // => 1
  * ```
@@ -399,7 +399,7 @@ export function bootstrap632(
   const n = y.length
   const end = runAlgorithm(algorithm, { ...runOptionsFor(options, 'bootstrap632'), maxSteps: nBoot }).state
   const bag = outOfBagOf(end)
-  if (bag.seen === 0) throw new MdmlError('value', 'bootstrap632: no sample was ever out of bag; use more replicates')
+  if (bag.seen === 0) throw new OmaiError('value', 'bootstrap632: no sample was ever out of bag; use more replicates')
   const outOfBagError = bag.error
   let gamma = 0
   for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) gamma += loss(y[i] ?? 0, fullPred[j] ?? 0)

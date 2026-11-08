@@ -5,8 +5,8 @@
  */
 
 import type { EChartsOption, SeriesOption } from 'echarts'
-import { MdmlError, maxOf, minOf } from 'mdml-engine/base'
-import type { TensorLike } from 'mdml-engine/tensor'
+import { maxOf, minOf, OmaiError } from 'omai-engine/base'
+import type { TensorLike } from 'omai-engine/tensor'
 import { extentOf } from '../figure/limits.ts'
 import { colourScale, sequentialRamp } from '../theme/palettes.ts'
 import { type ColourMode, tokens } from '../theme/tokens.ts'
@@ -48,11 +48,11 @@ function coordinates(p: PointSet): { x: number[]; y: number[] } {
   if (p.y !== undefined) {
     const x = numbers(p.x)
     const y = numbers(p.y)
-    if (x.length !== y.length) throw new MdmlError('shape', 'points: x and y must have the same length')
+    if (x.length !== y.length) throw new OmaiError('shape', 'points: x and y must have the same length')
     return { x, y }
   }
   const flat = numbers(p.x)
-  if (flat.length % 2 !== 0) throw new MdmlError('shape', 'points: give x and y, or [n, 2] points')
+  if (flat.length % 2 !== 0) throw new OmaiError('shape', 'points: give x and y, or [n, 2] points')
   return { x: flat.filter((_, i) => i % 2 === 0), y: flat.filter((_, i) => i % 2 === 1) }
 }
 
@@ -65,7 +65,7 @@ function coordinates(p: PointSet): { x: number[]; y: number[] } {
  * @returns The layer.
  * @example
  * ```ts
- * import { points } from 'mdml-render/charts'
+ * import { points } from 'omai-render/charts'
  * const l = points([{ x: [0, 1, 2], y: [1, 0, 1], groups: [0, 1, 0], groupNames: { 0: 'a', 1: 'b' } }])
  * l.series.map((s) => s.name) // => ['a', 'b']
  * l.extent // => { x: [0, 2], y: [0, 1] }
@@ -104,7 +104,7 @@ export function points(
         ? undefined
         : colourScale(sequentialRamp('viridis'), (extentOf(p.values) ?? [0, 1]) as [number, number])
     const groups = p.groups ?? new Array<string | number>(n).fill('__all')
-    if (groups.length !== n) throw new MdmlError('shape', 'points: give one group per point')
+    if (groups.length !== n) throw new OmaiError('shape', 'points: give one group per point')
     const order: (string | number)[] = []
     for (const g of groups) if (!order.includes(g)) order.push(g)
     if (p.groups !== undefined) order.sort((a, b) => (typeof a === 'number' && typeof b === 'number' ? a - b : 0))
@@ -160,7 +160,7 @@ interface RugApi {
  * @returns The layer.
  * @example
  * ```ts
- * import { rug } from 'mdml-render/charts'
+ * import { rug } from 'omai-render/charts'
  * rug([0.5, 1.5]).extent // => { x: [0.5, 1.5] }
  * ```
  */
@@ -222,7 +222,7 @@ export function rug(
  * @index function A scatter plot coloured by group: `scatterChart([{ x, y, groups }])`.
  * @example
  * ```ts
- * import { scatterChart } from 'mdml-render/charts'
+ * import { scatterChart } from 'omai-render/charts'
  * scatterChart([{ x: [[0, 0], [1, 1]] }], { aspect: 'equal' }).series.length // => 1
  * ```
  */
@@ -239,7 +239,7 @@ export function scatterChart(sets: readonly PointSet[], options: PlotOptions = {
  * @returns The layer.
  * @example
  * ```ts
- * import { errorBars } from 'mdml-render/charts'
+ * import { errorBars } from 'omai-render/charts'
  * errorBars([{ x: 1, y: 2, yErr: 0.5 }]).extent.y // => [1.5, 2.5]
  * ```
  */

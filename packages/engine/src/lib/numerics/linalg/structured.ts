@@ -4,7 +4,7 @@
  * without forming the product.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import {
   add,
   concat,
@@ -37,8 +37,8 @@ const indexMatrix = (rows: number, cols: number, f: (i: number, j: number) => nu
  * @concept structured-matrices
  * @example
  * ```ts
- * import { toeplitz } from 'mdml-engine/numerics/linalg'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { toeplitz } from 'omai-engine/numerics/linalg'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(toeplitz([1, 2, 3], [1, 4])) // => [[1, 4], [2, 1], [3, 2]]
  * ```
  */
@@ -65,8 +65,8 @@ export function toeplitz(c: TensorLike, r?: TensorLike): Value {
  * @returns The matrix `[n, n]`, differentiable.
  * @example
  * ```ts
- * import { circulant } from 'mdml-engine/numerics/linalg'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { circulant } from 'omai-engine/numerics/linalg'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(circulant([1, 2, 3])) // => [[1, 3, 2], [2, 1, 3], [3, 2, 1]]
  * ```
  */
@@ -91,8 +91,8 @@ export function circulant(c: TensorLike): Value {
  * @returns The matrix `[m, n]`, differentiable.
  * @example
  * ```ts
- * import { hankel } from 'mdml-engine/numerics/linalg'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { hankel } from 'omai-engine/numerics/linalg'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(hankel([1, 2, 3])) // => [[1, 2, 3], [2, 3, 0], [3, 0, 0]]
  * ```
  */
@@ -118,8 +118,8 @@ export function hankel(c: TensorLike, r?: TensorLike): Value {
  * @returns The block-diagonal matrix, differentiable in every block.
  * @example
  * ```ts
- * import { blockDiag } from 'mdml-engine/numerics/linalg'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { blockDiag } from 'omai-engine/numerics/linalg'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(blockDiag([[1]], [[2, 3]])) // => [[1, 0, 0], [0, 2, 3]]
  * ```
  */
@@ -150,8 +150,8 @@ export function blockDiag(...blocks: readonly TensorLike[]): Value {
  * @returns The solution, differentiable in every argument.
  * @example
  * ```ts
- * import { solveTridiagonal } from 'mdml-engine/numerics/linalg'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { solveTridiagonal } from 'omai-engine/numerics/linalg'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(solveTridiagonal([1], [2, 2], [1], [3, 3])) // => [1, 1]
  * ```
  */
@@ -174,8 +174,8 @@ export function solveTridiagonal(lower: TensorLike, diagonal: TensorLike, upper:
  * @returns The solution, differentiable.
  * @example
  * ```ts
- * import { solveBanded } from 'mdml-engine/numerics/linalg'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { solveBanded } from 'omai-engine/numerics/linalg'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(solveBanded([1, 1], [[0, 1], [2, 2], [1, 0]], [3, 3])) // => [1, 1]
  * ```
  */
@@ -183,7 +183,7 @@ export function solveBanded(bandwidths: readonly [number, number], ab: TensorLik
   const [band] = promoteFloat(ab) as [Value]
   const [l, u] = bandwidths
   const n = band.shape[1] ?? 0
-  if ((band.shape[0] ?? 0) !== l + u + 1) throw new MdmlError('shape', `solveBanded: ab needs ${l + u + 1} rows`)
+  if ((band.shape[0] ?? 0) !== l + u + 1) throw new OmaiError('shape', `solveBanded: ab needs ${l + u + 1} rows`)
   const flat = concat([reshape(band, [(l + u + 1) * n]), zeros([1])])
   const zero = (l + u + 1) * n
   const idx = indexMatrix(n, n, (i, j) => (i - j > l || j - i > u ? zero : (u + i - j) * n + j))
@@ -199,8 +199,8 @@ export function solveBanded(bandwidths: readonly [number, number], ab: TensorLik
  * @returns The solution, differentiable.
  * @example
  * ```ts
- * import { solveToeplitz } from 'mdml-engine/numerics/linalg'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { solveToeplitz } from 'omai-engine/numerics/linalg'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(solveToeplitz([2, 1], undefined, [3, 3])) // => [1, 1]
  * ```
  */
@@ -218,8 +218,8 @@ export function solveToeplitz(c: TensorLike, r: TensorLike | undefined, b: Tenso
  * @returns x `[m n]`, differentiable.
  * @example
  * ```ts
- * import { kroneckerSolve } from 'mdml-engine/numerics/linalg'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { kroneckerSolve } from 'omai-engine/numerics/linalg'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(kroneckerSolve([[2]], [[1, 0], [0, 4]], [2, 8])) // => [1, 1]
  * ```
  */

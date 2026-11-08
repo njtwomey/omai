@@ -1,6 +1,6 @@
 /**
  * Bijectors, the invertible differentiable maps behind transformed distributions, normalising flows and unconstrained
- * parameterisations (TFP and torch.distributions style), available as `mdml-engine/dists/bijectors`: the contract
+ * parameterisations (TFP and torch.distributions style), available as `omai-engine/dists/bijectors`: the contract
  * and its composition, elementwise and structured maps, coupling and autoregressive flow layers, and the maps from
  * unconstrained reals onto each support.
  */

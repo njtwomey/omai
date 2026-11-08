@@ -5,7 +5,7 @@
  * risk score (Uno et al.). With no censoring the weights are 1 and they reduce to the plain Brier score and AUC.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { asTensor, type TensorLike, toFlat } from '../tensor/index.ts'
 import { type SurvivalSample, survivalSample } from './data.ts'
 
@@ -18,7 +18,7 @@ import { type SurvivalSample, survivalSample } from './data.ts'
  * @returns The left-limit function.
  * @example
  * ```ts
- * import { censoringSurvival, survivalSample } from 'mdml-engine/survival'
+ * import { censoringSurvival, survivalSample } from 'omai-engine/survival'
  * const g = censoringSurvival(survivalSample([1, 2, 3, 4], [1, 0, 1, 0]))
  * g(2) // => 1
  * g(2.5) // => 0.666667
@@ -66,17 +66,17 @@ export function censoringSurvival(sample: SurvivalSample): (t: number) => number
  * @param survival - The predicted survival probability of every subject at `t`.
  * @param t - The horizon.
  * @returns The Brier score.
- * @throws MdmlError with code `value` when the censoring distribution has no mass left at `t`.
+ * @throws OmaiError with code `value` when the censoring distribution has no mass left at `t`.
  * @example
  * ```ts
- * import { brierScore } from 'mdml-engine/survival'
+ * import { brierScore } from 'omai-engine/survival'
  * brierScore([1, 2, 3, 4], undefined, [0.1, 0.4, 0.6, 0.9], 2.5) // => 0.085
  * ```
  */
 export function brierScore(time: TensorLike, event: TensorLike | undefined, survival: TensorLike, t: number): number {
   const sample = survivalSample(time, event, 'brierScore')
   const s = toFlat(asTensor(survival))
-  if (s.length !== sample.n) throw new MdmlError('shape', `brierScore: ${s.length} predictions for ${sample.n} times`)
+  if (s.length !== sample.n) throw new OmaiError('shape', `brierScore: ${s.length} predictions for ${sample.n} times`)
   const g = censoringSurvival(sample)
   const gt = g(t)
   let total = 0
@@ -85,10 +85,10 @@ export function brierScore(time: TensorLike, event: TensorLike | undefined, surv
     const si = s[i] ?? 0
     if (ti <= t && sample.event[i] === 1) {
       const w = g(ti)
-      if (!(w > 0)) throw new MdmlError('value', 'brierScore: the censoring distribution has no mass at an event time')
+      if (!(w > 0)) throw new OmaiError('value', 'brierScore: the censoring distribution has no mass at an event time')
       total += (si * si) / w
     } else if (ti > t) {
-      if (!(gt > 0)) throw new MdmlError('value', 'brierScore: the censoring distribution has no mass at the horizon')
+      if (!(gt > 0)) throw new OmaiError('value', 'brierScore: the censoring distribution has no mass at the horizon')
       total += (1 - si) ** 2 / gt
     }
   }
@@ -106,7 +106,7 @@ export function brierScore(time: TensorLike, event: TensorLike | undefined, surv
  * @returns The integrated score.
  * @example
  * ```ts
- * import { integratedBrierScore } from 'mdml-engine/survival'
+ * import { integratedBrierScore } from 'omai-engine/survival'
  * integratedBrierScore([1, 2, 3, 4], undefined, [[0.9, 0.5], [0.8, 0.4], [0.9, 0.7], [1, 0.9]], [0.5, 2.5]) // => 0.07125
  * ```
  */
@@ -118,10 +118,10 @@ export function integratedBrierScore(
 ): number {
   const sample = survivalSample(time, event, 'integratedBrierScore')
   const m = times.length
-  if (m < 2) throw new MdmlError('value', 'integratedBrierScore: needs at least two horizons')
+  if (m < 2) throw new OmaiError('value', 'integratedBrierScore: needs at least two horizons')
   const flat = toFlat(asTensor(survival))
   if (flat.length !== sample.n * m)
-    throw new MdmlError('shape', `integratedBrierScore: expected ${sample.n} x ${m} predictions, got ${flat.length}`)
+    throw new OmaiError('shape', `integratedBrierScore: expected ${sample.n} x ${m} predictions, got ${flat.length}`)
   const scores = times.map((t, k) =>
     brierScore(
       sample.time,
@@ -146,10 +146,10 @@ export function integratedBrierScore(
  * @param risk - The risk score of every subject (higher: earlier failure).
  * @param t - The horizon.
  * @returns The AUC.
- * @throws MdmlError with code `value` when no subject has failed by `t` or none survives past it.
+ * @throws OmaiError with code `value` when no subject has failed by `t` or none survives past it.
  * @example
  * ```ts
- * import { cumulativeDynamicAuc } from 'mdml-engine/survival'
+ * import { cumulativeDynamicAuc } from 'omai-engine/survival'
  * cumulativeDynamicAuc([1, 2, 3, 4], undefined, [4, 3, 2, 1], 2.5) // => 1
  * ```
  */
@@ -162,7 +162,7 @@ export function cumulativeDynamicAuc(
   const sample = survivalSample(time, event, 'cumulativeDynamicAuc')
   const r = toFlat(asTensor(risk))
   if (r.length !== sample.n)
-    throw new MdmlError('shape', `cumulativeDynamicAuc: ${r.length} scores for ${sample.n} times`)
+    throw new OmaiError('shape', `cumulativeDynamicAuc: ${r.length} scores for ${sample.n} times`)
   const g = censoringSurvival(sample)
   let numerator = 0
   let weightSum = 0
@@ -172,7 +172,7 @@ export function cumulativeDynamicAuc(
     if (!(sample.event[i] === 1 && (sample.time[i] ?? 0) <= t)) continue
     const gi = g(sample.time[i] ?? 0)
     if (!(gi > 0))
-      throw new MdmlError('value', 'cumulativeDynamicAuc: the censoring distribution has no mass at an event time')
+      throw new OmaiError('value', 'cumulativeDynamicAuc: the censoring distribution has no mass at an event time')
     const w = 1 / (gi * gi)
     weightSum += w
     for (let j = 0; j < sample.n; j++) {
@@ -183,6 +183,6 @@ export function cumulativeDynamicAuc(
     }
   }
   if (weightSum === 0 || survivors === 0)
-    throw new MdmlError('value', 'cumulativeDynamicAuc: needs a failure by t and a survivor past it')
+    throw new OmaiError('value', 'cumulativeDynamicAuc: needs a failure by t and a survivor past it')
   return numerator / (weightSum * survivors)
 }

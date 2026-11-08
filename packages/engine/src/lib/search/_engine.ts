@@ -1,4 +1,4 @@
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import { type Algorithm, channels, type Observation, runAlgorithm, type TraceSchema } from '../trace/index.ts'
 import {
   effectiveBranchingFactor,
@@ -209,6 +209,6 @@ export function solved<S, A>(c: Core<S, A>, node: SearchNode<S, A>): void {
 /** Validate an expansion budget. */
 export function budgetOf(options: SearchOptions, name: string): number {
   const m = options.maxExpansions ?? DEFAULT_EXPANSIONS
-  if (!(m >= 0)) throw new MdmlError('value', `${name}: maxExpansions must be non-negative`)
+  if (!(m >= 0)) throw new OmaiError('value', `${name}: maxExpansions must be non-negative`)
   return m
 }

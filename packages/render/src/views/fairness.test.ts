@@ -1,4 +1,4 @@
-import { groupReport, groupReportFromTables } from 'mdml-engine/exposition'
+import { groupReport, groupReportFromTables } from 'omai-engine/exposition'
 import { describe, expect, it } from 'vitest'
 import { groupReportView, groupSweepView } from './fairness.ts'
 import { stillOf, viewFor } from './registry.ts'

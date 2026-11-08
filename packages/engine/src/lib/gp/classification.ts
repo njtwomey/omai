@@ -7,7 +7,7 @@
  * time.
  */
 
-import { MdmlError, maxOf, minOf } from '../base/index.ts'
+import { maxOf, minOf, OmaiError } from '../base/index.ts'
 import { type PosteriorGrid, posteriorGrid } from '../exposition/index.ts'
 import { hyperparameters, type Kernel, rbfKernel, scaleKernel, theta as thetaOf, withTheta } from '../kernels/index.ts'
 import {
@@ -154,11 +154,11 @@ interface Prepared {
 
 function prepare(data: LearnData, h: GpClassifierHyper): Prepared {
   if (h.method === 'ep' && h.likelihood !== 'probit')
-    throw new MdmlError('value', `${WHO}: expectation propagation is implemented for the probit likelihood`)
+    throw new OmaiError('value', `${WHO}: expectation propagation is implemented for the probit likelihood`)
   const m = matrixView(data.x, WHO)
   const { classes, codes } = encodeLabels(data.y ?? [], WHO, m.n)
   if (classes.length !== 2)
-    throw new MdmlError(
+    throw new OmaiError(
       'value',
       `${WHO}: needs exactly two classes, got ${classes.length}; fit one classifier per class`,
     )
@@ -325,7 +325,7 @@ function verbsOf(params: GpcParams, h: GpClassifierHyper): GpcVerbs {
  *
  * @example
  * ```ts
- * import type { GpcPath } from 'mdml-engine/gp'
+ * import type { GpcPath } from 'omai-engine/gp'
  * const path: GpcPath = 'gp/latent'
  * path // => 'gp/latent'
  * ```
@@ -346,8 +346,8 @@ export type GpcPath = 'gp/logMarginalLikelihood' | 'gp/hyper' | 'gp/latent' | 'm
  * @index estimator Gaussian process classification by Laplace or EP.
  * @example
  * ```ts
- * import { gpClassifier } from 'mdml-engine/gp'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { gpClassifier } from 'omai-engine/gp'
+ * import { toFlat } from 'omai-engine/tensor'
  * const x = [[-2], [-1.5], [-1], [1], [1.5], [2]]
  * const fitted = gpClassifier.fit({ x, y: [0, 0, 0, 1, 1, 1] })
  * toFlat(fitted.predict([[-1.8], [1.8]])) // => [0, 1]

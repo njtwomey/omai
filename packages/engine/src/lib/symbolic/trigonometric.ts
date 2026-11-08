@@ -19,7 +19,7 @@ const apply =
  * @returns sin(x).
  * @example
  * ```ts
- * import { mul, pi, rational, sin, toText } from 'mdml-engine/symbolic'
+ * import { mul, pi, rational, sin, toText } from 'omai-engine/symbolic'
  * toText(sin(mul(rational(1, 6), pi))) // => '1/2'
  * ```
  */
@@ -32,7 +32,7 @@ export const sin: (x: ExprLike) => Expr = apply('sin')
  * @returns cos(x).
  * @example
  * ```ts
- * import { cos, mul, pi, rational, toText } from 'mdml-engine/symbolic'
+ * import { cos, mul, pi, rational, toText } from 'omai-engine/symbolic'
  * toText(cos(mul(rational(1, 4), pi))) // => 'sqrt(2)/2'
  * ```
  */
@@ -45,7 +45,7 @@ export const cos: (x: ExprLike) => Expr = apply('cos')
  * @returns tan(x).
  * @example
  * ```ts
- * import { mul, pi, rational, tan, toText } from 'mdml-engine/symbolic'
+ * import { mul, pi, rational, tan, toText } from 'omai-engine/symbolic'
  * toText(tan(mul(rational(1, 3), pi))) // => 'sqrt(3)'
  * ```
  */
@@ -58,7 +58,7 @@ export const tan: (x: ExprLike) => Expr = apply('tan')
  * @returns cot(x).
  * @example
  * ```ts
- * import { cot, mul, pi, rational, toText } from 'mdml-engine/symbolic'
+ * import { cot, mul, pi, rational, toText } from 'omai-engine/symbolic'
  * toText(cot(mul(rational(1, 4), pi))) // => '1'
  * ```
  */
@@ -71,7 +71,7 @@ export const cot: (x: ExprLike) => Expr = apply('cot')
  * @returns sec(x).
  * @example
  * ```ts
- * import { sec, toText } from 'mdml-engine/symbolic'
+ * import { sec, toText } from 'omai-engine/symbolic'
  * toText(sec(0)) // => '1'
  * ```
  */
@@ -84,7 +84,7 @@ export const sec: (x: ExprLike) => Expr = apply('sec')
  * @returns csc(x).
  * @example
  * ```ts
- * import { csc, sym, toText } from 'mdml-engine/symbolic'
+ * import { csc, sym, toText } from 'omai-engine/symbolic'
  * toText(csc(sym('x'))) // => 'csc(x)'
  * ```
  */
@@ -97,7 +97,7 @@ export const csc: (x: ExprLike) => Expr = apply('csc')
  * @returns asin(x).
  * @example
  * ```ts
- * import { asin, rational, toText } from 'mdml-engine/symbolic'
+ * import { asin, rational, toText } from 'omai-engine/symbolic'
  * toText(asin(rational(1, 2))) // => 'pi/6'
  * ```
  */
@@ -110,7 +110,7 @@ export const asin: (x: ExprLike) => Expr = apply('asin')
  * @returns acos(x).
  * @example
  * ```ts
- * import { acos, toText } from 'mdml-engine/symbolic'
+ * import { acos, toText } from 'omai-engine/symbolic'
  * toText(acos(-1)) // => 'pi'
  * ```
  */
@@ -123,7 +123,7 @@ export const acos: (x: ExprLike) => Expr = apply('acos')
  * @returns atan(x).
  * @example
  * ```ts
- * import { atan, toText } from 'mdml-engine/symbolic'
+ * import { atan, toText } from 'omai-engine/symbolic'
  * toText(atan(1)) // => 'pi/4'
  * ```
  */
@@ -136,7 +136,7 @@ export const atan: (x: ExprLike) => Expr = apply('atan')
  * @returns acot(x).
  * @example
  * ```ts
- * import { acot, toText } from 'mdml-engine/symbolic'
+ * import { acot, toText } from 'omai-engine/symbolic'
  * toText(acot(0)) // => 'pi/2'
  * ```
  */
@@ -150,7 +150,7 @@ export const acot: (x: ExprLike) => Expr = apply('acot')
  * @returns atan2(y, x).
  * @example
  * ```ts
- * import { atan2, toText } from 'mdml-engine/symbolic'
+ * import { atan2, toText } from 'omai-engine/symbolic'
  * toText(atan2(1, 1)) // => 'pi/4'
  * ```
  */
@@ -165,7 +165,7 @@ export function atan2(y: ExprLike, x: ExprLike): Expr {
  * @returns sinh(x).
  * @example
  * ```ts
- * import { sinh, toText } from 'mdml-engine/symbolic'
+ * import { sinh, toText } from 'omai-engine/symbolic'
  * toText(sinh(0)) // => '0'
  * ```
  */
@@ -178,7 +178,7 @@ export const sinh: (x: ExprLike) => Expr = apply('sinh')
  * @returns cosh(x).
  * @example
  * ```ts
- * import { cosh, neg, sym, toText } from 'mdml-engine/symbolic'
+ * import { cosh, neg, sym, toText } from 'omai-engine/symbolic'
  * toText(cosh(neg(sym('x')))) // => 'cosh(x)'
  * ```
  */
@@ -191,7 +191,7 @@ export const cosh: (x: ExprLike) => Expr = apply('cosh')
  * @returns tanh(x).
  * @example
  * ```ts
- * import { tanh, toText } from 'mdml-engine/symbolic'
+ * import { tanh, toText } from 'omai-engine/symbolic'
  * toText(tanh(0)) // => '0'
  * ```
  */
@@ -204,7 +204,7 @@ export const tanh: (x: ExprLike) => Expr = apply('tanh')
  * @returns coth(x).
  * @example
  * ```ts
- * import { coth, sym, toText } from 'mdml-engine/symbolic'
+ * import { coth, sym, toText } from 'omai-engine/symbolic'
  * toText(coth(sym('x'))) // => 'coth(x)'
  * ```
  */
@@ -217,7 +217,7 @@ export const coth: (x: ExprLike) => Expr = apply('coth')
  * @returns asinh(x).
  * @example
  * ```ts
- * import { asinh, toText } from 'mdml-engine/symbolic'
+ * import { asinh, toText } from 'omai-engine/symbolic'
  * toText(asinh(0)) // => '0'
  * ```
  */
@@ -230,7 +230,7 @@ export const asinh: (x: ExprLike) => Expr = apply('asinh')
  * @returns acosh(x).
  * @example
  * ```ts
- * import { acosh, toText } from 'mdml-engine/symbolic'
+ * import { acosh, toText } from 'omai-engine/symbolic'
  * toText(acosh(1)) // => '0'
  * ```
  */
@@ -243,7 +243,7 @@ export const acosh: (x: ExprLike) => Expr = apply('acosh')
  * @returns atanh(x).
  * @example
  * ```ts
- * import { atanh, toText } from 'mdml-engine/symbolic'
+ * import { atanh, toText } from 'omai-engine/symbolic'
  * toText(atanh(0)) // => '0'
  * ```
  */

@@ -7,9 +7,9 @@ from typing import cast
 
 import networkx as nx
 import numpy as np
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.graphs import NxGraph, digraph, directed_family, spec, undirected_family, weighted_family
-from mdml_oracle.helpers import FloatArray, rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.graphs import NxGraph, digraph, directed_family, spec, undirected_family, weighted_family
+from omai_oracle.helpers import FloatArray, rng
 
 REFERENCE: dict[str, str] = {"networkx": nx.__version__}
 

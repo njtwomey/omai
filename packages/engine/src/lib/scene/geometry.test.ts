@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isMdmlError } from '../base/index.ts'
+import { isOmaiError } from '../base/index.ts'
 import { circle, group, line, path, rect, scene, text } from './build.ts'
 import { bounds, fit, grid, invertTransform, rotate, scaleTo, translate } from './geometry.ts'
 
@@ -56,7 +56,7 @@ describe('geometry', () => {
       invertTransform({ scale: 0 })
       expect.unreachable()
     } catch (e) {
-      expect(isMdmlError(e, 'singular')).toBe(true)
+      expect(isOmaiError(e, 'singular')).toBe(true)
     }
   })
 

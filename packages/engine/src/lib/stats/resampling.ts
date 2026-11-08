@@ -9,8 +9,8 @@ import {
   type Alternative,
   type Estimate,
   factorialOf,
-  MdmlError,
   meanOf,
+  OmaiError,
   type TestResult,
   varianceOf,
 } from '../base/index.ts'
@@ -217,8 +217,8 @@ const RESAMPLING_SCHEMA = channels({
  * @returns The algorithm; run it with `runAlgorithm`, or call {@link permutationTest}.
  * @example
  * ```ts
- * import { permutationTestAlgorithm, meanDifference } from 'mdml-engine/stats'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { permutationTestAlgorithm, meanDifference } from 'omai-engine/stats'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const alg = permutationTestAlgorithm([[1, 2], [3, 4]], meanDifference)
  * runAlgorithm(alg, { maxSteps: 10 }).state.nullDistribution.length // => 6
  * ```
@@ -231,8 +231,8 @@ export function permutationTestAlgorithm(
   const data = samples.map((s) => sample('permutationTest', s, 1))
   const type = options.permutationType ?? 'independent'
   if (type !== 'independent' && data.some((d) => d.length !== data[0]?.length))
-    throw new MdmlError('shape', `permutationTest: '${type}' permutations need samples of equal length`)
-  if (type === 'independent' && data.length < 2) throw new MdmlError('value', 'permutationTest: needs two samples')
+    throw new OmaiError('shape', `permutationTest: '${type}' permutations need samples of equal length`)
+  if (type === 'independent' && data.length < 2) throw new OmaiError('value', 'permutationTest: needs two samples')
   const nResamples = options.nResamples ?? 9999
   const count = arrangements(type, data)
   const exact = count <= nResamples
@@ -272,7 +272,7 @@ export function permutationTestAlgorithm(
  * @index function Permutation test of any statistic, exact when feasible.
  * @example
  * ```ts
- * import { meanDifference, permutationTest } from 'mdml-engine/stats'
+ * import { meanDifference, permutationTest } from 'omai-engine/stats'
  * permutationTest([[1, 2, 3], [4, 5, 6]], meanDifference).pValue // => 0.1
  * ```
  */
@@ -308,10 +308,10 @@ export function permutationTest(
  * @param x - First sample: a vector (a tensor, a typed array or a flat array).
  * @param y - Second sample.
  * @returns mean(x) - mean(y).
- * @throws MdmlError with code `shape` unless both are vectors.
+ * @throws OmaiError with code `shape` unless both are vectors.
  * @example
  * ```ts
- * import { meanDifference } from 'mdml-engine/stats'
+ * import { meanDifference } from 'omai-engine/stats'
  * meanDifference(Float64Array.of(3, 5), Float64Array.of(1, 2)) // => 2.5
  * ```
  */
@@ -406,8 +406,8 @@ function jackknifeSe(values: readonly number[]): number {
  * @returns The algorithm.
  * @example
  * ```ts
- * import { bootstrapAlgorithm } from 'mdml-engine/stats'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { bootstrapAlgorithm } from 'omai-engine/stats'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const alg = bootstrapAlgorithm([[1, 2, 3, 4]], (x) => x[0] ?? 0, { nResamples: 50 })
  * runAlgorithm(alg, { seed: 1, maxSteps: 10 }).state.distribution.length // => 50
  * ```
@@ -420,7 +420,7 @@ export function bootstrapAlgorithm(
   const data = samples.map((s) => sample('bootstrap', s, 2))
   const paired = options.paired ?? false
   if (paired && data.some((d) => d.length !== data[0]?.length))
-    throw new MdmlError('shape', 'bootstrap: paired samples must have equal lengths')
+    throw new OmaiError('shape', 'bootstrap: paired samples must have equal lengths')
   const total = options.nResamples ?? 9999
   const batch = options.batch ?? 200
   const studentize = options.method === 'studentized'
@@ -462,7 +462,7 @@ export function bootstrapAlgorithm(
  * @index function Bootstrap confidence intervals for any statistic.
  * @example
  * ```ts
- * import { bootstrap, mean } from 'mdml-engine/stats'
+ * import { bootstrap, mean } from 'omai-engine/stats'
  * const r = bootstrap([[2, 4, 3, 5, 4, 6, 5, 3]], (x) => mean(x), { seed: 0, nResamples: 500, method: 'percentile' })
  * r.estimate.value // => 4
  * ```
@@ -544,7 +544,7 @@ export interface JackknifeResult {
  * @returns The corrected estimate with its standard error, the plain statistic, the bias and the values.
  * @example
  * ```ts
- * import { jackknife, mean } from 'mdml-engine/stats'
+ * import { jackknife, mean } from 'omai-engine/stats'
  * jackknife([1, 2, 3, 4], (x) => mean(x)).estimate.standardError // => 0.6454972243679028
  * ```
  */
@@ -600,8 +600,8 @@ export interface MonteCarloOptions extends ResamplingRunOptions {
  * @returns The statistic, its p-value and the null distribution.
  * @example
  * ```ts
- * import { monteCarloTest, mean } from 'mdml-engine/stats'
- * import { normal as gaussian } from 'mdml-engine/random'
+ * import { monteCarloTest, mean } from 'omai-engine/stats'
+ * import { normal as gaussian } from 'omai-engine/random'
  * const r = monteCarloTest([[0.1, -0.3, 0.2, 0.4]], (k, n) => gaussian(k, [n]).data, (x) => mean(x), { seed: 3, nResamples: 99 })
  * r.pValue > 0.05 // => true
  * ```
@@ -615,7 +615,7 @@ export function monteCarloTest(
   const data = samples.map((s) => sample('monteCarloTest', s, 1))
   const samplers = typeof rvs === 'function' ? data.map(() => rvs) : rvs
   if (samplers.length !== data.length)
-    throw new MdmlError('value', 'monteCarloTest: give one sampler per sample (or one for all)')
+    throw new OmaiError('value', 'monteCarloTest: give one sampler per sample (or one for all)')
   const alternative = resolveAlternative(options.alternative)
   const total = options.nResamples ?? 9999
   const batch = options.batch ?? 200
@@ -632,7 +632,7 @@ export function monteCarloTest(
         const k = foldIn(ctx.key, r)
         const sim = data.map((d, g) => {
           const f = samplers[g]
-          if (f === undefined) throw new MdmlError('value', 'monteCarloTest: missing sampler')
+          if (f === undefined) throw new OmaiError('value', 'monteCarloTest: missing sampler')
           return Float64Array.from(f(foldIn(k, g), d.length))
         })
         next.push(statistic(...sim))

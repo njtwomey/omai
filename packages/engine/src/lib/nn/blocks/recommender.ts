@@ -6,7 +6,7 @@
  * block that crosses dense and embedded sparse features by pairwise dot products.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { foldIn, type Key } from '../../random/index.ts'
 import {
   add,
@@ -66,8 +66,8 @@ const valuesOf = (input: FeatureInput, ids: Value): Value =>
  * @returns The scores `[B]`.
  * @example
  * ```ts
- * import { fmScore } from 'mdml-engine/nn/blocks'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { fmScore } from 'omai-engine/nn/blocks'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(fmScore(0, [[0, 0]], [[[1, 2], [3, 4]]], [[1, 1]])) // => [11]
  * ```
  */
@@ -96,8 +96,8 @@ export interface FmOptions {
  * @reference Rendle (2010), Factorization machines.
  * @example
  * ```ts
- * import { FactorisationMachine } from 'mdml-engine/nn/blocks'
- * import { key } from 'mdml-engine/random'
+ * import { FactorisationMachine } from 'omai-engine/nn/blocks'
+ * import { key } from 'omai-engine/random'
  * new FactorisationMachine(20, 4, { key: key(0) }).forward({ ids: [[0, 10], [3, 12]] }).shape // => [2]
  * ```
  */
@@ -174,8 +174,8 @@ function upperPairs(n: number): Tensor {
  * @reference Juan, Zhuang, Chin and Lin (2016), Field-aware factorization machines for CTR prediction.
  * @example
  * ```ts
- * import { FieldAwareFm } from 'mdml-engine/nn/blocks'
- * import { key } from 'mdml-engine/random'
+ * import { FieldAwareFm } from 'omai-engine/nn/blocks'
+ * import { key } from 'omai-engine/random'
  * new FieldAwareFm(20, 2, 3, { key: key(0) }).forward({ ids: [[0, 10]] }).shape // => [1]
  * ```
  */
@@ -210,7 +210,7 @@ export class FieldAwareFm extends Module<FeatureInput, Value> {
   apply(params: Params, input: FeatureInput): Value {
     const ids = asTensor(input.ids, 'int32')
     const [b, f] = ids.shape as [number, number]
-    if (f !== this.fields) throw new MdmlError('shape', `FieldAwareFm: expected ${this.fields} fields, got ${f}`)
+    if (f !== this.fields) throw new OmaiError('shape', `FieldAwareFm: expected ${this.fields} fields, got ${f}`)
     const x = valuesOf(input, ids)
     const table = reshape(params['factors'] as Value, [this.numFeatures, f * this.factorCount])
     // v[b, p, q, :] is the vector of the feature in field p for interacting with field q.
@@ -240,8 +240,8 @@ export interface DeepFmOptions extends FmOptions {
  * @reference Guo, Tang, Ye, Li and He (2017), DeepFM: a factorization-machine based neural network for CTR prediction.
  * @example
  * ```ts
- * import { DeepFm } from 'mdml-engine/nn/blocks'
- * import { key } from 'mdml-engine/random'
+ * import { DeepFm } from 'omai-engine/nn/blocks'
+ * import { key } from 'omai-engine/random'
  * new DeepFm(20, 3, 4, { key: key(0) }).forward({ ids: [[0, 10, 15]] }).shape // => [1]
  * ```
  */
@@ -308,8 +308,8 @@ export interface WideAndDeepOptions {
  * @reference Cheng et al. (2016), Wide & deep learning for recommender systems.
  * @example
  * ```ts
- * import { WideAndDeep } from 'mdml-engine/nn/blocks'
- * import { key } from 'mdml-engine/random'
+ * import { WideAndDeep } from 'omai-engine/nn/blocks'
+ * import { key } from 'omai-engine/random'
  * new WideAndDeep(20, 3, { key: key(0) }).forward({ ids: [[0, 10, 15]] }).shape // => [1]
  * ```
  */
@@ -388,8 +388,8 @@ export interface NeuralCfOptions {
  * @reference He, Liao, Zhang, Nie, Hu and Chua (2017), Neural collaborative filtering.
  * @example
  * ```ts
- * import { NeuralCF } from 'mdml-engine/nn/blocks'
- * import { key } from 'mdml-engine/random'
+ * import { NeuralCF } from 'omai-engine/nn/blocks'
+ * import { key } from 'omai-engine/random'
  * new NeuralCF(10, 20, { key: key(0) }).forward({ user: [0, 1, 2], item: [5, 6, 7] }).shape // => [3]
  * ```
  */
@@ -505,8 +505,8 @@ export interface TwoTowerOptions {
  * @reference Yi et al. (2019), Sampling-bias-corrected neural modeling for large corpus item recommendations.
  * @example
  * ```ts
- * import { TwoTower, embeddingTower } from 'mdml-engine/nn/blocks'
- * import { key } from 'mdml-engine/random'
+ * import { TwoTower, embeddingTower } from 'omai-engine/nn/blocks'
+ * import { key } from 'omai-engine/random'
  * const model = new TwoTower(embeddingTower(10, 4, [8], key(0)), embeddingTower(20, 4, [8], key(1)))
  * model.forward({ user: [0, 1, 2], item: [5, 6, 7] }).logits.shape // => [3, 3]
  * ```
@@ -567,8 +567,8 @@ function normaliseRows(e: Value): Value {
  * @returns The tower.
  * @example
  * ```ts
- * import { embeddingTower } from 'mdml-engine/nn/blocks'
- * import { key } from 'mdml-engine/random'
+ * import { embeddingTower } from 'omai-engine/nn/blocks'
+ * import { key } from 'omai-engine/random'
  * embeddingTower(10, 4, [8], key(0)).forward([1, 2]).shape // => [2, 4]
  * ```
  */
@@ -588,8 +588,8 @@ export function embeddingTower(vocabulary: number, width: number, hidden: readon
  * @returns The corrected logits `[B, B]`.
  * @example
  * ```ts
- * import { logQCorrection } from 'mdml-engine/nn/blocks'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { logQCorrection } from 'omai-engine/nn/blocks'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(logQCorrection([[1, 1], [1, 1]], [0, -1])) // => [[1, 2], [1, 2]]
  * ```
  */
@@ -609,8 +609,8 @@ export interface CrossNetworkOptions {
  * @reference Wang, Fu, Fu and Wang (2017), Deep & cross network for ad click predictions.
  * @example
  * ```ts
- * import { CrossNetwork } from 'mdml-engine/nn/blocks'
- * import { key } from 'mdml-engine/random'
+ * import { CrossNetwork } from 'omai-engine/nn/blocks'
+ * import { key } from 'omai-engine/random'
  * new CrossNetwork(4, 2, { key: key(0) }).forward([[1, 2, 3, 4]]).shape // => [1, 4]
  * ```
  */
@@ -676,8 +676,8 @@ export interface DlrmOptions {
  * @returns The pairwise products.
  * @example
  * ```ts
- * import { dotInteraction } from 'mdml-engine/nn/blocks'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { dotInteraction } from 'omai-engine/nn/blocks'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(dotInteraction([[[1, 0], [1, 2], [0, 3]]])) // => [[1, 0, 6]]
  * ```
  */
@@ -703,8 +703,8 @@ function sliceTwo(gram: Value, i: number, j: number): Value {
  * @reference Naumov et al. (2019), Deep learning recommendation model for personalization and recommendation systems.
  * @example
  * ```ts
- * import { Dlrm } from 'mdml-engine/nn/blocks'
- * import { key } from 'mdml-engine/random'
+ * import { Dlrm } from 'omai-engine/nn/blocks'
+ * import { key } from 'omai-engine/random'
  * new Dlrm(3, [10, 20], 4, { key: key(0) }).forward({ dense: [[0.1, 0.2, 0.3]], sparse: [[1, 5]] }).shape // => [1]
  * ```
  */

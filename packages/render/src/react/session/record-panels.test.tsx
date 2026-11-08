@@ -9,9 +9,9 @@ import {
   simplexRecord,
   stripRecord,
   structureSteps,
-} from 'mdml-engine/exposition'
-import { circle, scene, structure } from 'mdml-engine/scene'
-import { dict, int } from 'mdml-engine/space'
+} from 'omai-engine/exposition'
+import { circle, scene, structure } from 'omai-engine/scene'
+import { dict, int } from 'omai-engine/space'
 import {
   type Config,
   defineMethod,
@@ -22,7 +22,7 @@ import {
   stateFromJson,
   stateToJson,
   tensor,
-} from 'mdml-engine/trace'
+} from 'omai-engine/trace'
 import { renderToString } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { SessionPanels } from './SessionPanels.tsx'

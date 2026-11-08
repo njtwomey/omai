@@ -4,7 +4,7 @@
  * each step, as `scipy.optimize.minimize(method='COBYLA')`.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { daxpy, ddot, dnrm2, inv, solve } from '../../numerics/linalg/index.ts'
 import { fromStorage, toFlat, type Value } from '../../tensor/index.ts'
 import type { Algorithm } from '../../trace/index.ts'
@@ -169,15 +169,15 @@ function shape(d: Float64Array, w: Float64Array, n: number): { veta: number[]; v
  * @concept derivative-free-optimisation
  * @example
  * ```ts
- * import { cobylaAlgorithm } from 'mdml-engine/optim'
- * import { square, sum, type Value } from 'mdml-engine/tensor'
+ * import { cobylaAlgorithm } from 'omai-engine/optim'
+ * import { square, sum, type Value } from 'omai-engine/tensor'
  * cobylaAlgorithm((x) => sum(square(x as Value)), [1, 2]).name // => 'cobyla'
  * ```
  */
 export function cobylaAlgorithm(f: Objective, x0: Parameters, options: CobylaOptions = {}): Algorithm<CobylaState> {
   const obj = flatObjective(f, x0)
   const n = obj.n
-  if (n === 0) throw new MdmlError('value', 'cobyla: no parameters')
+  if (n === 0) throw new OmaiError('value', 'cobyla: no parameters')
   const constraints = options.constraints ?? []
   const linear: { i: number; sign: number; bound: number }[] = []
   if (options.bounds !== undefined) {
@@ -437,8 +437,8 @@ export function cobylaAlgorithm(f: Objective, x0: Parameters, options: CobylaOpt
  * @concept derivative-free-optimisation
  * @example
  * ```ts
- * import { cobyla } from 'mdml-engine/optim'
- * import { square, sub, sum, toFlat, type Value } from 'mdml-engine/tensor'
+ * import { cobyla } from 'omai-engine/optim'
+ * import { square, sub, sum, toFlat, type Value } from 'omai-engine/tensor'
  * // minimise |x - (2, 2)|^2 subject to 1 - x - y >= 0: the answer is (0.5, 0.5)
  * const r = cobyla((x) => sum(square(sub(x as Value, 2))), [0, 0], {
  *   constraints: [(x) => sub(1, sum(x as Value))],

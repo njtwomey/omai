@@ -21,7 +21,7 @@ import { neighbourEdges } from './isomap.ts'
  * @returns The weights per row, aligned with its neighbours.
  * @example
  * ```ts
- * import { barycentreWeights } from 'mdml-engine/manifold'
+ * import { barycentreWeights } from 'omai-engine/manifold'
  * barycentreWeights([[0], [1], [2]], [[1, 2], [0, 2], [0, 1]], 1e-3)[1] // => [0.5, 0.5]
  * ```
  */
@@ -64,7 +64,7 @@ export interface LleHyper {
  * @returns The estimator.
  * @example
  * ```ts
- * import { locallyLinearEmbedding } from 'mdml-engine/manifold'
+ * import { locallyLinearEmbedding } from 'omai-engine/manifold'
  * const x = Array.from({ length: 12 }, (_, i) => [Math.cos(i / 2), Math.sin(i / 2), i / 6])
  * locallyLinearEmbedding({ nNeighbors: 4 }).fit({ x }).params.embedding.length // => 12
  * ```

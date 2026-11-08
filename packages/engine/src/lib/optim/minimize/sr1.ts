@@ -71,7 +71,7 @@ function quasiHessian(
  * @concept quasi-newton
  * @example
  * ```ts
- * import { sr1Hessian } from 'mdml-engine/optim'
+ * import { sr1Hessian } from 'omai-engine/optim'
  * sr1Hessian().name // => 'sr1'
  * ```
  */
@@ -97,7 +97,7 @@ export function sr1Hessian(options: QuasiNewtonHessianOptions = {}): HessianMode
  * @concept quasi-newton
  * @example
  * ```ts
- * import { bfgsHessian } from 'mdml-engine/optim'
+ * import { bfgsHessian } from 'omai-engine/optim'
  * bfgsHessian().name // => 'bfgsHessian'
  * ```
  */
@@ -129,8 +129,8 @@ export interface Sr1Options extends TrustRegionOptions, QuasiNewtonHessianOption
  * @concept quasi-newton
  * @example
  * ```ts
- * import { sr1Algorithm } from 'mdml-engine/optim'
- * import { square, sum, type Value } from 'mdml-engine/tensor'
+ * import { sr1Algorithm } from 'omai-engine/optim'
+ * import { square, sum, type Value } from 'omai-engine/tensor'
  * sr1Algorithm((x: Value) => sum(square(x)), [1, 2]).name // => 'trustRegion'
  * ```
  */
@@ -149,8 +149,8 @@ export function sr1Algorithm(f: Objective, x0: Parameters, options: Sr1Options =
  * @concept quasi-newton
  * @example
  * ```ts
- * import { sr1 } from 'mdml-engine/optim'
- * import { square, sub, sum, type Value } from 'mdml-engine/tensor'
+ * import { sr1 } from 'omai-engine/optim'
+ * import { square, sub, sum, type Value } from 'omai-engine/tensor'
  * sr1((x: Value) => sum(square(sub(x, 3))), [0, 0], { gradTol: 1e-8 }).converged // => true
  * ```
  */

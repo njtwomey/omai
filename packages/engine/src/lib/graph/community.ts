@@ -5,7 +5,7 @@
  * the iterative ones as traced algorithms (as in NetworkX).
  */
 
-import { type Json, MdmlError, maxOf } from '../base/index.ts'
+import { type Json, maxOf, OmaiError } from '../base/index.ts'
 import { foldIn, type Key, permutation, uniform } from '../random/index.ts'
 import { type Algorithm, channels, runAlgorithm } from '../trace/index.ts'
 import { partitionFromLabels } from './_build.ts'
@@ -37,15 +37,15 @@ function labelsOf(n: number, communities: CommunitiesLike): Int32Array {
     const labels = new Int32Array(n).fill(-1)
     for (const [c, members] of (communities as readonly (readonly number[])[]).entries()) {
       for (const v of members) {
-        if (labels[v] !== -1) throw new MdmlError('value', `communities: node ${v} is in two communities`)
+        if (labels[v] !== -1) throw new OmaiError('value', `communities: node ${v} is in two communities`)
         labels[v] = c
       }
     }
-    if (labels.includes(-1)) throw new MdmlError('value', 'communities: every node needs a community')
+    if (labels.includes(-1)) throw new OmaiError('value', 'communities: every node needs a community')
     return labels
   }
   if ((communities as ArrayLike<number>).length !== n) {
-    throw new MdmlError('value', 'communities: give one label per node')
+    throw new OmaiError('value', 'communities: give one label per node')
   }
   return Int32Array.from(communities as ArrayLike<number>)
 }
@@ -58,7 +58,7 @@ function labelsOf(n: number, communities: CommunitiesLike): Int32Array {
  * @returns The canonical partition.
  * @example
  * ```ts
- * import { partition } from 'mdml-engine/graph'
+ * import { partition } from 'omai-engine/graph'
  * partition([5, 5, 2, 5]).components // => [[0, 1, 3], [2]]
  * ```
  */
@@ -80,12 +80,12 @@ export function partition(labels: CommunitiesLike, n?: number): Partition {
  * @param communities - Communities as node lists, or a label per node.
  * @param options - `resolution` (default 1) and `weighted` (default true).
  * @returns The modularity, in [-1/2, 1].
- * @throws MdmlError with code `value` when the communities do not partition the nodes.
+ * @throws OmaiError with code `value` when the communities do not partition the nodes.
  * @concept modularity
  * @reference M. E. J. Newman, Modularity and community structure in networks, PNAS 103 (2006).
  * @example
  * ```ts
- * import { barbellGraph, modularity } from 'mdml-engine/graph'
+ * import { barbellGraph, modularity } from 'omai-engine/graph'
  * modularity(barbellGraph(3, 0), [[0, 1, 2], [3, 4, 5]]).toFixed(4) // => '0.3571'
  * ```
  */
@@ -193,7 +193,7 @@ function qualityOf(
  * @concept community-detection
  * @example
  * ```ts
- * import { karateClubGraph, louvainAlgorithm } from 'mdml-engine/graph'
+ * import { karateClubGraph, louvainAlgorithm } from 'omai-engine/graph'
  * louvainAlgorithm(karateClubGraph()).name // => 'louvain'
  * ```
  */
@@ -261,7 +261,7 @@ export function louvainAlgorithm(
  * @index function Louvain community detection.
  * @example
  * ```ts
- * import { barbellGraph, louvain } from 'mdml-engine/graph'
+ * import { barbellGraph, louvain } from 'omai-engine/graph'
  * louvain(barbellGraph(4, 0), { seed: 1 }).components // => [[0, 1, 2, 3], [4, 5, 6, 7]]
  * ```
  */
@@ -297,7 +297,7 @@ export interface LeidenOptions extends Omit<MultilevelOptions, 'threshold'> {
  *   communities, Scientific Reports 9 (2019).
  * @example
  * ```ts
- * import { karateClubGraph, leidenAlgorithm } from 'mdml-engine/graph'
+ * import { karateClubGraph, leidenAlgorithm } from 'omai-engine/graph'
  * leidenAlgorithm(karateClubGraph()).name // => 'leiden'
  * ```
  */
@@ -375,7 +375,7 @@ export function leidenAlgorithm(
  * @concept community-detection
  * @example
  * ```ts
- * import { karateClubGraph, leiden, modularity } from 'mdml-engine/graph'
+ * import { karateClubGraph, leiden, modularity } from 'omai-engine/graph'
  * const g = karateClubGraph()
  * modularity(g, leiden(g, { seed: 0 }).labels) > 0.41 // => true
  * ```
@@ -411,7 +411,7 @@ export interface LabelPropagationState {
  *   large-scale networks, Phys. Rev. E 76 (2007).
  * @example
  * ```ts
- * import { karateClubGraph, labelPropagationAlgorithm } from 'mdml-engine/graph'
+ * import { karateClubGraph, labelPropagationAlgorithm } from 'omai-engine/graph'
  * labelPropagationAlgorithm(karateClubGraph()).name // => 'label-propagation'
  * ```
  */
@@ -469,7 +469,7 @@ export function labelPropagationAlgorithm(
  * @concept community-detection
  * @example
  * ```ts
- * import { barbellGraph, labelPropagation } from 'mdml-engine/graph'
+ * import { barbellGraph, labelPropagation } from 'omai-engine/graph'
  * labelPropagation(barbellGraph(5, 0), { seed: 0 }).count // => 2
  * ```
  */
@@ -504,7 +504,7 @@ export interface GirvanNewmanState {
  * @reference M. Girvan and M. E. J. Newman, Community structure in social and biological networks, PNAS 99 (2002).
  * @example
  * ```ts
- * import { girvanNewmanAlgorithm, karateClubGraph } from 'mdml-engine/graph'
+ * import { girvanNewmanAlgorithm, karateClubGraph } from 'omai-engine/graph'
  * girvanNewmanAlgorithm(karateClubGraph()).name // => 'girvan-newman'
  * ```
  */
@@ -568,7 +568,7 @@ export function girvanNewmanAlgorithm(
  * @concept community-detection
  * @example
  * ```ts
- * import { barbellGraph, girvanNewman } from 'mdml-engine/graph'
+ * import { barbellGraph, girvanNewman } from 'omai-engine/graph'
  * girvanNewman(barbellGraph(3, 0), { levels: 1 })[0]?.components // => [[0, 1, 2], [3, 4, 5]]
  * ```
  */
@@ -596,7 +596,7 @@ export function girvanNewman(
  * @concept spectral-clustering
  * @example
  * ```ts
- * import { barbellGraph, spectralBisection } from 'mdml-engine/graph'
+ * import { barbellGraph, spectralBisection } from 'omai-engine/graph'
  * spectralBisection(barbellGraph(4, 0)).map((side) => side.length) // => [4, 4]
  * ```
  */

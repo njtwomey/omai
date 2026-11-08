@@ -1,6 +1,6 @@
-import { type MazeAlgorithmName, type MazeState, mazeAlgorithm, mazeOf } from 'mdml-engine/worlds'
-import { worldView } from 'mdml-render/gym'
-import { ControlPanel, Player, SceneFrame, SeedInput, Select, useLiveRun } from 'mdml-render/react'
+import { type MazeAlgorithmName, type MazeState, mazeAlgorithm, mazeOf } from 'omai-engine/worlds'
+import { worldView } from 'omai-render/gym'
+import { ControlPanel, Player, SceneFrame, SeedInput, Select, useLiveRun } from 'omai-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 

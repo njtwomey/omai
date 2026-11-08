@@ -7,7 +7,7 @@
  * @index structure CausalData: covariates, binary treatment and outcome shared by estimators.
  */
 
-import { type Estimate, estimate, MdmlError } from '../base/index.ts'
+import { type Estimate, estimate, OmaiError } from '../base/index.ts'
 import type { LearnData } from '../learn/estimator.ts'
 import { matrixView } from '../learn/validation.ts'
 import { fromStorage, type TensorLike } from '../tensor/index.ts'
@@ -44,17 +44,17 @@ export interface EffectEstimate {
  * @returns The causal data; the covariates are the other columns.
  * @example
  * ```ts
- * import { splitTreatment } from 'mdml-engine/causal'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { splitTreatment } from 'omai-engine/causal'
+ * import { toArray } from 'omai-engine/tensor'
  * const d = splitTreatment({ x: [[0.5, 1], [1.5, 0]], y: [3, 4] })
  * [toArray(d.x), toArray(d.treatment)] // => [[[0.5], [1.5]], [1, 0]]
  * ```
  */
 export function splitTreatment(data: LearnData, treatmentColumn = -1): CausalData {
-  if (data.y === undefined) throw new MdmlError('value', 'splitTreatment: the data need an outcome y')
+  if (data.y === undefined) throw new OmaiError('value', 'splitTreatment: the data need an outcome y')
   const m = matrixView(data.x, 'splitTreatment')
   const c = treatmentColumn < 0 ? m.d + treatmentColumn : treatmentColumn
-  if (c < 0 || c >= m.d) throw new MdmlError('value', `splitTreatment: no column ${treatmentColumn}`)
+  if (c < 0 || c >= m.d) throw new OmaiError('value', `splitTreatment: no column ${treatmentColumn}`)
   const x = new Float64Array(m.n * (m.d - 1))
   const t = new Float64Array(m.n)
   for (let i = 0; i < m.n; i++) {
@@ -77,7 +77,7 @@ export function splitTreatment(data: LearnData, treatmentColumn = -1): CausalDat
  * @returns The estimate.
  * @example
  * ```ts
- * import { effectFromSe } from 'mdml-engine/causal'
+ * import { effectFromSe } from 'omai-engine/causal'
  * effectFromSe('ate', 2, 0.5, 100).estimate.interval // => [1.020018, 2.979982]
  * ```
  */
@@ -110,7 +110,7 @@ export function effectFromSe(
  * @returns The estimate, keeping the influence values.
  * @example
  * ```ts
- * import { effectFromInfluence } from 'mdml-engine/causal'
+ * import { effectFromInfluence } from 'omai-engine/causal'
  * effectFromInfluence('ate', 1, [1, -1, 1, -1]).estimate.standardError // => 0.5773502691896257
  * ```
  */

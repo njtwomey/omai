@@ -6,8 +6,8 @@ import gymnasium as gym
 import numpy as np
 import numpy.typing as npt
 from gymnasium.wrappers import NormalizeObservation, NormalizeReward, RescaleAction
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import rng
 
 REFERENCE: dict[str, str] = {"gymnasium": gym.__version__}
 

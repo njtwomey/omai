@@ -4,7 +4,7 @@
  * `invres` rebuilds the rational function from its expansion.
  */
 
-import { type Complex, cabs, cadd, cdiv, cmul, csub, MdmlError } from '../../base/index.ts'
+import { type Complex, cabs, cadd, cdiv, cmul, csub, OmaiError } from '../../base/index.ts'
 import { type Tensor, type TensorLike, toVector } from '../../tensor/index.ts'
 import { vectorOf } from '../_vector.ts'
 import { divKernel, rootsKernel } from './_power.ts'
@@ -133,13 +133,13 @@ export interface PartialFractions {
  * @param a - Denominator `[q]`, highest degree first.
  * @param tol - Tolerance for repeated poles (default 1e-3).
  * @returns Residues, poles (as {@link ComplexRoots}) and the direct term, all tensors (they were plain arrays).
- * @throws MdmlError with code `value` for a zero denominator, `shape` unless `b` and `a` are vectors, and
+ * @throws OmaiError with code `value` for a zero denominator, `shape` unless `b` and `a` are vectors, and
  *   `not-differentiable` for a traced value.
  * @concept partial-fractions
  * @example
  * ```ts
- * import { residue } from 'mdml-engine/numerics/polynomial'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { residue } from 'omai-engine/numerics/polynomial'
+ * import { toFlat } from 'omai-engine/tensor'
  * // 1 / (s^2 + 3s + 2) = 1 / (s + 1) - 1 / (s + 2).
  * toFlat(residue([1], [1, 3, 2]).residues.re).map((v) => Math.round(v * 1e12) / 1e12) // => [1, -1]
  * ```
@@ -147,7 +147,7 @@ export interface PartialFractions {
 export function residue(b: TensorLike, a: TensorLike, tol = 1e-3): PartialFractions {
   const bt = trimLeading(toVector(b, 'residue'))
   const at = trimLeading(toVector(a, 'residue'))
-  if (at.length === 0 || at[0] === 0) throw new MdmlError('value', 'residue: the denominator is zero')
+  if (at.length === 0 || at[0] === 0) throw new OmaiError('value', 'residue: the denominator is zero')
   let numerator = bt
   let direct: number[] = []
   if (bt.length >= at.length) {
@@ -177,11 +177,11 @@ export function residue(b: TensorLike, a: TensorLike, tol = 1e-3): PartialFracti
  * @param a - Denominator coefficients `[q]` of z^0, z^-1, ... (a[0] != 0).
  * @param tol - Tolerance for repeated poles (default 1e-3).
  * @returns Residues, poles and the direct term (in z^-1, lowest power first), all tensors (they were plain arrays).
- * @throws MdmlError with code `value` when a[0] is zero, `shape` unless `b` and `a` are vectors, and
+ * @throws OmaiError with code `value` when a[0] is zero, `shape` unless `b` and `a` are vectors, and
  *   `not-differentiable` for a traced value.
  * @example
  * ```ts
- * import { residuez } from 'mdml-engine/numerics/polynomial'
+ * import { residuez } from 'omai-engine/numerics/polynomial'
  * // 1 / (1 - 0.5 z^-1): one pole at 0.5 with residue 1.
  * residuez([1], [1, -0.5]).poles.re // => [0.5]
  * ```
@@ -190,7 +190,7 @@ export function residuez(b: TensorLike, a: TensorLike, tol = 1e-3): PartialFract
   const trimEnd = (c: readonly number[]): number[] => [...trimLeading([...c].reverse())].reverse()
   const bt = trimEnd(toVector(b, 'residuez'))
   const at = trimEnd(toVector(a, 'residuez'))
-  if (at.length === 0 || at[0] === 0) throw new MdmlError('value', 'residuez: a[0] must be non-zero')
+  if (at.length === 0 || at[0] === 0) throw new OmaiError('value', 'residuez: a[0] must be non-zero')
   // In w = z^-1: b(w) = sum b_i w^i, so the arrays are already lowest first in w.
   let numerator = bt
   let direct: number[] = []
@@ -237,11 +237,11 @@ export function residuez(b: TensorLike, a: TensorLike, tol = 1e-3): PartialFract
  * @param k - Direct term `[m]` (highest first).
  * @param tol - Tolerance for grouping (default 1e-3).
  * @returns Numerator and denominator, highest first, complex in general.
- * @throws MdmlError with code `shape` unless the parts and `k` are vectors, and `not-differentiable` for a traced
+ * @throws OmaiError with code `shape` unless the parts and `k` are vectors, and `not-differentiable` for a traced
  *   value.
  * @example
  * ```ts
- * import { invres } from 'mdml-engine/numerics/polynomial'
+ * import { invres } from 'omai-engine/numerics/polynomial'
  * invres({ re: [1, -1], im: [0, 0] }, { re: [-1, -2], im: [0, 0] }, []).denominator.re // => [1, 3, 2]
  * ```
  */

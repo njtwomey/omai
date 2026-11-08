@@ -300,8 +300,8 @@ function locate(data: DecisionTransformerData, g: number): readonly [number, num
  * @concept offline-rl
  * @example
  * ```ts
- * import { decisionTransformerLearner } from 'mdml-engine/agents'
- * import { cartPole } from 'mdml-engine/environments'
+ * import { decisionTransformerLearner } from 'omai-engine/agents'
+ * import { cartPole } from 'omai-engine/environments'
  * decisionTransformerLearner(cartPole.create(), { context: 4 }).config // => { context: 4, embedding: 32, heads: 2, layers: 1 }
  * ```
  */
@@ -441,9 +441,9 @@ export interface DecisionTransformerAgentState {
  * @concept offline-rl
  * @example
  * ```ts
- * import { decisionTransformerAgent, decisionTransformerLearner } from 'mdml-engine/agents'
- * import { cartPole } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { decisionTransformerAgent, decisionTransformerLearner } from 'omai-engine/agents'
+ * import { cartPole } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * const env = cartPole.create()
  * const t = { observation: [0, 0, 0, 0], action: 1, reward: 1, nextObservation: [0, 0, 0, 0], terminated: true, truncated: false }
  * const s = decisionTransformerLearner(env, { context: 2, embedding: 4 }).init(key(0), [t])
@@ -506,8 +506,8 @@ export interface DecisionTransformerResult<O, A> {
  * @concept offline-rl
  * @example
  * ```ts
- * import { decisionTransformer } from 'mdml-engine/agents'
- * import { cartPole } from 'mdml-engine/environments'
+ * import { decisionTransformer } from 'omai-engine/agents'
+ * import { cartPole } from 'omai-engine/environments'
  * const t = { observation: [0, 0, 0, 0], action: 1, reward: 1, nextObservation: [0, 0, 0, 0], terminated: true, truncated: false }
  * decisionTransformer(cartPole.create(), [t], { context: 2, embedding: 4, steps: 2 }).steps // => 2
  * ```
@@ -532,9 +532,9 @@ export function decisionTransformer<O, A>(
  * @concept offline-rl
  * @example
  * ```ts
- * import { evaluateInContext } from 'mdml-engine/agents'
- * import { cartPole } from 'mdml-engine/environments'
- * import { make, policyAgent } from 'mdml-engine/rl'
+ * import { evaluateInContext } from 'omai-engine/agents'
+ * import { cartPole } from 'omai-engine/environments'
+ * import { make, policyAgent } from 'omai-engine/rl'
  * evaluateInContext(make(cartPole), policyAgent(() => 0), { episodes: 2 }).returns.length // => 2
  * ```
  */

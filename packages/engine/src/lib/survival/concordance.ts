@@ -4,7 +4,7 @@
  * one half. 0.5 is a coin flip and 1 a perfect ranking; it is the AUC of a survival model.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { asTensor, type TensorLike, toFlat } from '../tensor/index.ts'
 import { survivalSample } from './data.ts'
 
@@ -41,10 +41,10 @@ export interface ConcordanceOptions {
  * @param score - The prediction for every subject.
  * @param options - Whether the score is a risk (default) or a time.
  * @returns The index and the pair counts.
- * @throws MdmlError with code `value` when no pair is comparable.
+ * @throws OmaiError with code `value` when no pair is comparable.
  * @example
  * ```ts
- * import { concordanceIndex } from 'mdml-engine/survival'
+ * import { concordanceIndex } from 'omai-engine/survival'
  * concordanceIndex([1, 2, 3, 4], [1, 1, 0, 1], [4, 3, 2, 1]).concordance // => 1
  * concordanceIndex([1, 2, 3, 4], [1, 1, 0, 1], [1, 2, 3, 4]).concordance // => 0
  * ```
@@ -57,7 +57,7 @@ export function concordanceIndex(
 ): Concordance {
   const sample = survivalSample(time, event, 'concordanceIndex')
   const s = toFlat(asTensor(score))
-  if (s.length !== sample.n) throw new MdmlError('shape', `concordanceIndex: ${s.length} scores for ${sample.n} times`)
+  if (s.length !== sample.n) throw new OmaiError('shape', `concordanceIndex: ${s.length} scores for ${sample.n} times`)
   const sign = options.score === 'time' ? -1 : 1
   let concordant = 0
   let discordant = 0
@@ -78,6 +78,6 @@ export function concordanceIndex(
     }
   }
   const comparable = concordant + discordant + tied
-  if (comparable === 0) throw new MdmlError('value', 'concordanceIndex: no comparable pairs')
+  if (comparable === 0) throw new OmaiError('value', 'concordanceIndex: no comparable pairs')
   return { concordance: (concordant + tied / 2) / comparable, concordant, discordant, tied, comparable }
 }

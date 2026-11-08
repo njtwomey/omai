@@ -4,7 +4,7 @@
  * disjunctive normal forms, algebraic simplification, and Quine-McCluskey prime implicants with minimal DNF and CNF.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import {
   type Algorithm,
   type Contract,
@@ -108,7 +108,7 @@ function lex(text: string): Tok[] {
       continue
     }
     const m = /^[A-Za-z_][A-Za-z0-9_]*/.exec(text.slice(i))
-    if (m === null) throw new MdmlError('value', `parseFormula: unexpected ${JSON.stringify(c)} at ${i}`)
+    if (m === null) throw new OmaiError('value', `parseFormula: unexpected ${JSON.stringify(c)} at ${i}`)
     const word = m[0]
     out.push({ t: WORDS[word] ?? `v:${word}`, at: i })
     i += word.length
@@ -123,11 +123,11 @@ function lex(text: string): Tok[] {
  *
  * @param text - The formula.
  * @returns The formula.
- * @throws MdmlError with code `value` on a syntax error.
+ * @throws OmaiError with code `value` on a syntax error.
  * @concept propositional-logic
  * @example
  * ```ts
- * import { formulaToString, parseFormula } from 'mdml-engine/logic'
+ * import { formulaToString, parseFormula } from 'omai-engine/logic'
  * formulaToString(parseFormula('p & q -> ~r | s')) // => '(p & q) -> (~r | s)'
  * ```
  */
@@ -136,7 +136,7 @@ export function parseFormula(text: string): Formula {
   let pos = 0
   const peek = (): string | undefined => toks[pos]?.t
   const fail = (what: string): never => {
-    throw new MdmlError('value', `parseFormula: ${what} at ${toks[pos]?.at ?? text.length}`)
+    throw new OmaiError('value', `parseFormula: ${what} at ${toks[pos]?.at ?? text.length}`)
   }
   const binary =
     (op: string, next: () => Formula, build: (args: Formula[]) => Formula): (() => Formula) =>
@@ -202,7 +202,7 @@ export interface FormulaStyle {
  * @returns The text.
  * @example
  * ```ts
- * import { formulaToString, parseFormula } from 'mdml-engine/logic'
+ * import { formulaToString, parseFormula } from 'omai-engine/logic'
  * const f = parseFormula('(p -> q) <-> ~(p & ~q)')
  * formulaToString(f, { style: 'unicode' }) // => '(p → q) ↔ ¬(p ∧ ¬q)'
  * formulaToString(f, { style: 'sympy' }) // => 'Equivalent(Implies(p, q), ~(p & ~q))'
@@ -251,7 +251,7 @@ export function formulaToString(f: Formula, options: FormulaStyle = {}): string 
  * @returns The variable names.
  * @example
  * ```ts
- * import { formulaVariables, parseFormula } from 'mdml-engine/logic'
+ * import { formulaVariables, parseFormula } from 'omai-engine/logic'
  * formulaVariables(parseFormula('q | (p & ~q) -> r')) // => ['p', 'q', 'r']
  * ```
  */
@@ -276,10 +276,10 @@ export function formulaVariables(f: Formula): string[] {
  * @param f - The formula.
  * @param valuation - The truth value of each variable.
  * @returns The truth value.
- * @throws MdmlError with code `value` for a variable without a value.
+ * @throws OmaiError with code `value` for a variable without a value.
  * @example
  * ```ts
- * import { evaluateFormula, parseFormula } from 'mdml-engine/logic'
+ * import { evaluateFormula, parseFormula } from 'omai-engine/logic'
  * evaluateFormula(parseFormula('p -> q'), { p: true, q: false }) // => false
  * ```
  */
@@ -287,7 +287,7 @@ export function evaluateFormula(f: Formula, valuation: Valuation): boolean {
   switch (f.kind) {
     case 'var': {
       const x = valuation[f.name]
-      if (x === undefined) throw new MdmlError('value', `evaluateFormula: no value for ${f.name}`)
+      if (x === undefined) throw new OmaiError('value', `evaluateFormula: no value for ${f.name}`)
       return x
     }
     case 'const':
@@ -319,16 +319,16 @@ export interface TruthTable {
  * @param f - The formula.
  * @param variables - The variables to tabulate (default the formula's own, sorted); at most 20.
  * @returns The table.
- * @throws MdmlError with code `value` for more than 20 variables.
+ * @throws OmaiError with code `value` for more than 20 variables.
  * @concept propositional-logic
  * @example
  * ```ts
- * import { parseFormula, truthTable } from 'mdml-engine/logic'
+ * import { parseFormula, truthTable } from 'omai-engine/logic'
  * truthTable(parseFormula('p ^ q')).rows.map((r) => r.value) // => [false, true, true, false]
  * ```
  */
 export function truthTable(f: Formula, variables: readonly string[] = formulaVariables(f)): TruthTable {
-  if (variables.length > 20) throw new MdmlError('value', 'truthTable: more than 20 variables')
+  if (variables.length > 20) throw new OmaiError('value', 'truthTable: more than 20 variables')
   const k = variables.length
   const rows: { valuation: Valuation; value: boolean }[] = []
   for (let m = 0; m < 2 ** k; m++) {
@@ -349,7 +349,7 @@ export function truthTable(f: Formula, variables: readonly string[] = formulaVar
  * @returns The models.
  * @example
  * ```ts
- * import { models, parseFormula } from 'mdml-engine/logic'
+ * import { models, parseFormula } from 'omai-engine/logic'
  * models(parseFormula('p & ~q')) // => [{ p: true, q: false }]
  * ```
  */
@@ -367,7 +367,7 @@ export function models(f: Formula, variables?: readonly string[]): Valuation[] {
  * @concept propositional-logic
  * @example
  * ```ts
- * import { isSatisfiable, parseFormula } from 'mdml-engine/logic'
+ * import { isSatisfiable, parseFormula } from 'omai-engine/logic'
  * [isSatisfiable(parseFormula('p & ~p')), isSatisfiable(parseFormula('p | q'))] // => [false, true]
  * ```
  */
@@ -383,7 +383,7 @@ export function isSatisfiable(f: Formula): boolean {
  * @returns A model over the formula's variables, or null.
  * @example
  * ```ts
- * import { findModel, parseFormula } from 'mdml-engine/logic'
+ * import { findModel, parseFormula } from 'omai-engine/logic'
  * findModel(parseFormula('(p | q) & ~p')) // => { p: false, q: true }
  * ```
  */
@@ -403,7 +403,7 @@ export function findModel(f: Formula): Valuation | null {
  * @returns True when valid.
  * @example
  * ```ts
- * import { isValid, parseFormula } from 'mdml-engine/logic'
+ * import { isValid, parseFormula } from 'omai-engine/logic'
  * [isValid(parseFormula('p | ~p')), isValid(parseFormula('p -> q'))] // => [true, false]
  * ```
  */
@@ -420,7 +420,7 @@ export function isValid(f: Formula): boolean {
  * @concept propositional-logic
  * @example
  * ```ts
- * import { entails, parseFormula } from 'mdml-engine/logic'
+ * import { entails, parseFormula } from 'omai-engine/logic'
  * entails([parseFormula('p -> q'), parseFormula('p')], parseFormula('q')) // => true
  * entails([parseFormula('p -> q'), parseFormula('q')], parseFormula('p')) // => false
  * ```
@@ -437,7 +437,7 @@ export function entails(premises: readonly Formula[], conclusion: Formula): bool
  * @returns True when they have the same models.
  * @example
  * ```ts
- * import { equivalent, parseFormula } from 'mdml-engine/logic'
+ * import { equivalent, parseFormula } from 'omai-engine/logic'
  * equivalent(parseFormula('~(p & q)'), parseFormula('~p | ~q')) // => true
  * ```
  */
@@ -456,7 +456,7 @@ export function equivalent(a: Formula, b: Formula): boolean {
  * @concept normal-forms
  * @example
  * ```ts
- * import { formulaToString, parseFormula, toNnf } from 'mdml-engine/logic'
+ * import { formulaToString, parseFormula, toNnf } from 'omai-engine/logic'
  * formulaToString(toNnf(parseFormula('~(p -> (q & ~r))'))) // => 'p & (~q | r)'
  * ```
  */
@@ -548,7 +548,7 @@ function clausesOf(f: Formula, outer: 'and' | 'or'): { name: string; positive: b
       }
       return acc
     }
-    throw new MdmlError('value', 'normal form: unexpected connective after NNF')
+    throw new OmaiError('value', 'normal form: unexpected connective after NNF')
   }
   const r = go(nnf)
   if (r === 'true') return []
@@ -592,7 +592,7 @@ function fromGroups(groups: readonly NamedClause[], outer: 'and' | 'or'): Formul
  * @concept normal-forms
  * @example
  * ```ts
- * import { formulaToString, parseFormula, toCnf } from 'mdml-engine/logic'
+ * import { formulaToString, parseFormula, toCnf } from 'omai-engine/logic'
  * formulaToString(toCnf(parseFormula('(p & q) | r'))) // => '(p | r) & (q | r)'
  * ```
  */
@@ -608,7 +608,7 @@ export function toCnf(f: Formula): Formula {
  * @concept normal-forms
  * @example
  * ```ts
- * import { formulaToString, parseFormula, toDnf } from 'mdml-engine/logic'
+ * import { formulaToString, parseFormula, toDnf } from 'omai-engine/logic'
  * formulaToString(toDnf(parseFormula('(p | q) & ~p'))) // => '~p & q'
  * ```
  */
@@ -624,7 +624,7 @@ export function toDnf(f: Formula): Formula {
  * @returns The clauses.
  * @example
  * ```ts
- * import { cnfClauses, parseFormula } from 'mdml-engine/logic'
+ * import { cnfClauses, parseFormula } from 'omai-engine/logic'
  * cnfClauses(parseFormula('p -> q')) // => [[{ name: 'p', positive: false }, { name: 'q', positive: true }]]
  * ```
  */
@@ -651,7 +651,7 @@ export interface TseitinEncoding {
  * @concept normal-forms
  * @example
  * ```ts
- * import { parseFormula, tseitin } from 'mdml-engine/logic'
+ * import { parseFormula, tseitin } from 'omai-engine/logic'
  * const t = tseitin(parseFormula('(p & q) | ~p'))
  * [t.cnf.numVars, t.cnf.clauses.length] // => [4, 7]
  * ```
@@ -714,7 +714,7 @@ export function tseitin(f: Formula): TseitinEncoding {
  * @concept normal-forms
  * @example
  * ```ts
- * import { formulaToString, parseFormula, simplifyFormula } from 'mdml-engine/logic'
+ * import { formulaToString, parseFormula, simplifyFormula } from 'omai-engine/logic'
  * formulaToString(simplifyFormula(parseFormula('~~p & (p | q) & true'))) // => 'p'
  * formulaToString(simplifyFormula(parseFormula('(q -> false) | (r & ~r)'))) // => '~q'
  * ```
@@ -854,12 +854,12 @@ function primeValuations(primes: readonly string[], variables: readonly string[]
  * @param f - The formula.
  * @param options - The variables (at most 16) and the cover method (default `none`).
  * @returns The algorithm.
- * @throws MdmlError with code `value` for more than 16 variables.
+ * @throws OmaiError with code `value` for more than 16 variables.
  * @concept normal-forms
  * @example
  * ```ts
- * import { parseFormula, primesOf, quineMcCluskeyAlgorithm } from 'mdml-engine/logic'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { parseFormula, primesOf, quineMcCluskeyAlgorithm } from 'omai-engine/logic'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const f = parseFormula('(p & q) | (p & ~q) | (~p & q)')
  * const run = runAlgorithm(quineMcCluskeyAlgorithm(f), { maxSteps: 10 })
  * [run.steps, primesOf(run.state, ['p', 'q'])] // => [2, [{ p: true }, { q: true }]]
@@ -870,7 +870,7 @@ export function quineMcCluskeyAlgorithm(
   options: QuineMcCluskeyOptions = {},
 ): Algorithm<QuineMcCluskeyState, QmPath> {
   const variables = options.variables ?? formulaVariables(f)
-  if (variables.length > 16) throw new MdmlError('value', 'primeImplicants: more than 16 variables')
+  if (variables.length > 16) throw new OmaiError('value', 'primeImplicants: more than 16 variables')
   const cover = options.cover ?? 'none'
   const k = variables.length
   const rows = truthTable(f, variables).rows
@@ -1001,8 +1001,8 @@ export function quineMcCluskeyAlgorithm(
  * @concept normal-forms
  * @example
  * ```ts
- * import { parseFormula, primesOf, quineMcCluskeyAlgorithm } from 'mdml-engine/logic'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { parseFormula, primesOf, quineMcCluskeyAlgorithm } from 'omai-engine/logic'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * primesOf(runAlgorithm(quineMcCluskeyAlgorithm(parseFormula('p')), { maxSteps: 5 }).state, ['p']) // => [{ p: true }]
  * ```
  */
@@ -1020,8 +1020,8 @@ export function primesOf(state: QuineMcCluskeyState, variables: readonly string[
  * @concept normal-forms
  * @example
  * ```ts
- * import { formulaToString, minimalFormOf, parseFormula, quineMcCluskeyAlgorithm } from 'mdml-engine/logic'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { formulaToString, minimalFormOf, parseFormula, quineMcCluskeyAlgorithm } from 'omai-engine/logic'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const f = parseFormula('(p & q) | (p & ~q) | (~p & q)')
  * const run = runAlgorithm(quineMcCluskeyAlgorithm(f, { cover: 'exact' }), { maxSteps: 10 })
  * formulaToString(minimalFormOf(run.state, ['p', 'q'], f)) // => 'p | q'
@@ -1050,11 +1050,11 @@ export function minimalFormOf(state: QuineMcCluskeyState, variables: readonly st
  * @param f - The formula.
  * @param variables - The variables (default the formula's own; at most 16).
  * @returns The prime implicants, sorted by size then text.
- * @throws MdmlError with code `value` for more than 16 variables.
+ * @throws OmaiError with code `value` for more than 16 variables.
  * @concept normal-forms
  * @example
  * ```ts
- * import { parseFormula, primeImplicants } from 'mdml-engine/logic'
+ * import { parseFormula, primeImplicants } from 'omai-engine/logic'
  * primeImplicants(parseFormula('(p & q) | (p & ~q) | (~p & q)')) // => [{ p: true }, { q: true }]
  * ```
  */
@@ -1071,11 +1071,11 @@ export function primeImplicants(f: Formula, variables: readonly string[] = formu
  * @param f - The formula.
  * @param variables - The variables (default the formula's own; at most 16).
  * @returns An equivalent DNF with the fewest terms, then literals.
- * @throws MdmlError with code `value` for more than 16 variables.
+ * @throws OmaiError with code `value` for more than 16 variables.
  * @concept normal-forms
  * @example
  * ```ts
- * import { formulaToString, minimalDnf, parseFormula } from 'mdml-engine/logic'
+ * import { formulaToString, minimalDnf, parseFormula } from 'omai-engine/logic'
  * formulaToString(minimalDnf(parseFormula('(p & q) | (p & ~q) | (~p & q)'))) // => 'p | q'
  * formulaToString(minimalDnf(parseFormula('p & ~p'))) // => 'false'
  * ```
@@ -1093,11 +1093,11 @@ export function minimalDnf(f: Formula, variables: readonly string[] = formulaVar
  * @param f - The formula.
  * @param variables - The variables (default the formula's own; at most 16).
  * @returns An equivalent CNF with the fewest clauses, then literals.
- * @throws MdmlError with code `value` for more than 16 variables.
+ * @throws OmaiError with code `value` for more than 16 variables.
  * @concept normal-forms
  * @example
  * ```ts
- * import { formulaToString, minimalCnf, parseFormula } from 'mdml-engine/logic'
+ * import { formulaToString, minimalCnf, parseFormula } from 'omai-engine/logic'
  * formulaToString(minimalCnf(parseFormula('(p | q) & (p | ~q) & r'))) // => 'p & r'
  * ```
  */

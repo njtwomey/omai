@@ -5,7 +5,7 @@
  * traced algorithm.
  */
 
-import { type Json, logSumExpOf, MdmlError } from '../../base/index.ts'
+import { type Json, logSumExpOf, OmaiError } from '../../base/index.ts'
 import { type Key, uniform } from '../../random/index.ts'
 import {
   type Algorithm,
@@ -133,7 +133,7 @@ function meanFieldLike(model: DiscreteModel, options: MeanFieldOptions, parallel
   const c = compile(model, options.evidence ?? {})
   const damping = options.damping ?? 0
   const tol = options.tol ?? 1e-10
-  if (!(damping >= 0 && damping < 1)) throw new MdmlError('value', 'variational: damping must be in [0, 1)')
+  if (!(damping >= 0 && damping < 1)) throw new OmaiError('value', 'variational: damping must be in [0, 1)')
   const name = parallel ? 'variationalMessagePassing' : 'meanField'
   return {
     name,
@@ -197,8 +197,8 @@ function finish(c: Compiled, q: readonly Float64Array[]): Record<string, Factor>
  * @concept mean-field
  * @example
  * ```ts
- * import { isingModel, meanFieldAlgorithm } from 'mdml-engine/pgm'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { isingModel, meanFieldAlgorithm } from 'omai-engine/pgm'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * runAlgorithm(meanFieldAlgorithm(isingModel({ rows: 2, cols: 2, coupling: 0.3, field: 0.1 })), { maxSteps: 100 }).status // => 'converged'
  * ```
  */
@@ -218,8 +218,8 @@ export function meanFieldAlgorithm(model: DiscreteModel, options: MeanFieldOptio
  * @concept variational-message-passing
  * @example
  * ```ts
- * import { isingModel, variationalMessagePassingAlgorithm } from 'mdml-engine/pgm'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { isingModel, variationalMessagePassingAlgorithm } from 'omai-engine/pgm'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * runAlgorithm(variationalMessagePassingAlgorithm(isingModel({ rows: 2, cols: 2, coupling: 0.3, field: 0.1 }), { damping: 0.5 }), { maxSteps: 200 }).status // => 'converged'
  * ```
  */
@@ -256,7 +256,7 @@ function runVariational(model: DiscreteModel, options: MeanFieldOptions, paralle
  * @concept mean-field
  * @example
  * ```ts
- * import { isingModel, meanField, logPartition } from 'mdml-engine/pgm'
+ * import { isingModel, meanField, logPartition } from 'omai-engine/pgm'
  * const m = isingModel({ rows: 2, cols: 2, coupling: 0.3, field: 0.1 })
  * meanField(m).logPartitionBound <= logPartition(m) // => true
  * ```
@@ -274,7 +274,7 @@ export function meanField(model: DiscreteModel, options: MeanFieldOptions = {}):
  * @concept variational-message-passing
  * @example
  * ```ts
- * import { isingModel, variationalMessagePassing, meanField } from 'mdml-engine/pgm'
+ * import { isingModel, variationalMessagePassing, meanField } from 'omai-engine/pgm'
  * const m = isingModel({ rows: 2, cols: 2, coupling: 0.3, field: 0.1 })
  * Math.abs(variationalMessagePassing(m).logPartitionBound - meanField(m).logPartitionBound) < 1e-8 // => true
  * ```
@@ -361,7 +361,7 @@ function pairwise(model: DiscreteModel, options: TreeReweightedOptions): Pairwis
       continue
     }
     if (f.vars.length !== 2)
-      throw new MdmlError('value', 'treeReweighted: needs a pairwise model (factors of one or two variables)')
+      throw new OmaiError('value', 'treeReweighted: needs a pairwise model (factors of one or two variables)')
     const [a, b] = [f.vars[0] ?? 0, f.vars[1] ?? 0]
     const [s, t] = a < b ? [a, b] : [b, a]
     const key = `${s},${t}`
@@ -396,7 +396,7 @@ function pairwise(model: DiscreteModel, options: TreeReweightedOptions): Pairwis
         : typeof rhoOption === 'number'
           ? rhoOption
           : (rhoOption[named] ?? rhoOption[reversed] ?? 1)
-    if (!(rho > 0 && rho <= 1)) throw new MdmlError('value', `treeReweighted: edge appearance ${rho} must be in (0, 1]`)
+    if (!(rho > 0 && rho <= 1)) throw new OmaiError('value', `treeReweighted: edge appearance ${rho} must be in (0, 1]`)
     return { ...e, rho }
   })
   const touching = c.names.map(() => [] as number[])
@@ -507,12 +507,12 @@ function trwBound(p: Pairwise, st: TreeReweightedState): { unary: Float64Array[]
  * @param model - A pairwise model (factors of one or two variables).
  * @param options - Evidence, edge appearance probabilities, damping and stopping rule.
  * @returns The algorithm.
- * @throws MdmlError with code `value` for factors of three or more variables or rho outside (0, 1].
+ * @throws OmaiError with code `value` for factors of three or more variables or rho outside (0, 1].
  * @concept tree-reweighted
  * @example
  * ```ts
- * import { isingModel, treeReweightedAlgorithm } from 'mdml-engine/pgm'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { isingModel, treeReweightedAlgorithm } from 'omai-engine/pgm'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * runAlgorithm(treeReweightedAlgorithm(isingModel({ rows: 3, cols: 3, coupling: 0.4 })), { maxSteps: 500 }).status // => 'converged'
  * ```
  */
@@ -560,7 +560,7 @@ export function treeReweightedAlgorithm(
  * @concept tree-reweighted
  * @example
  * ```ts
- * import { isingModel, treeReweighted, logPartition } from 'mdml-engine/pgm'
+ * import { isingModel, treeReweighted, logPartition } from 'omai-engine/pgm'
  * const m = isingModel({ rows: 3, cols: 3, coupling: 0.4 })
  * treeReweighted(m).logPartitionBound >= logPartition(m) // => true
  * ```
@@ -592,7 +592,7 @@ export function treeReweighted(model: DiscreteModel, options: TreeReweightedOpti
  * @concept tree-reweighted
  * @example
  * ```ts
- * import { isingModel, spanningTreeEdgeProbabilities } from 'mdml-engine/pgm'
+ * import { isingModel, spanningTreeEdgeProbabilities } from 'omai-engine/pgm'
  * Object.values(spanningTreeEdgeProbabilities(isingModel({ rows: 1, cols: 3 }))) // => [1, 1]
  * ```
  */

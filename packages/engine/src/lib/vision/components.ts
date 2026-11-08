@@ -4,7 +4,7 @@
  * (`cv2.floodFill`, OpenCV's scanline algorithm with floating or fixed tolerance ranges and 4- or 8-connectivity).
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { image } from '../signal/index.ts'
 import { type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
 import { type Algorithm, runAlgorithm, stateFromJson, stateToJson } from '../trace/index.ts'
@@ -33,7 +33,7 @@ export interface ComponentStats {
  * @concept connected-components
  * @example
  * ```ts
- * import { connectedComponentsWithStats } from 'mdml-engine/vision'
+ * import { connectedComponentsWithStats } from 'omai-engine/vision'
  * const r = connectedComponentsWithStats([[1, 1, 0], [0, 0, 0], [0, 1, 1]])
  * [r.count, r.stats[1], r.centroids[2]] // => [3, [0, 0, 2, 1, 2], [1.5, 2]]
  * ```
@@ -45,7 +45,7 @@ export function connectedComponentsWithStats(
   const r = greyOf(x, 'connectedComponentsWithStats')
   const connectivity = options.connectivity ?? 8
   if (connectivity !== 4 && connectivity !== 8)
-    throw new MdmlError('value', 'connectedComponentsWithStats: connectivity is 4 or 8')
+    throw new OmaiError('value', 'connectedComponentsWithStats: connectivity is 4 or 8')
   const { labels, count } = image.label(
     rasterTensor({ ...r, rank: 2 }),
     image.generateBinaryStructure(2, connectivity === 4 ? 1 : 2),
@@ -148,13 +148,13 @@ export interface FloodFillState {
  * @param newVal - The fill value (one per channel or shared).
  * @param options - Tolerances, connectivity, fixed range and a barrier mask.
  * @returns The algorithm.
- * @throws MdmlError with code `value` for a seed outside the image or a negative tolerance, and `shape` for a mask of
+ * @throws OmaiError with code `value` for a seed outside the image or a negative tolerance, and `shape` for a mask of
  * the wrong shape.
  * @concept flood-fill
  * @example
  * ```ts
- * import { floodFillAlgorithm, floodFillResult } from 'mdml-engine/vision'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { floodFillAlgorithm, floodFillResult } from 'omai-engine/vision'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const run = runAlgorithm(floodFillAlgorithm([[0, 0, 1], [0, 1, 0], [1, 0, 0]], [0, 0], 0.5), { maxSteps: 20 })
  * floodFillResult(run.state).area // => 3
  * ```
@@ -169,12 +169,12 @@ export function floodFillAlgorithm(
   const { h, w, c } = r
   const [sx, sy] = seed
   if (!(Number.isInteger(sx) && Number.isInteger(sy) && sx >= 0 && sy >= 0 && sx < w && sy < h))
-    throw new MdmlError('value', 'floodFill: the seed lies outside the image')
+    throw new OmaiError('value', 'floodFill: the seed lies outside the image')
   const perChannel = (v: number | readonly number[] | undefined): number[] =>
     Array.from({ length: c }, (_, k) => f32(typeof v === 'number' ? v : (v?.[k] ?? v?.[0] ?? 0)))
   const lo = perChannel(options.loDiff)
   const up = perChannel(options.upDiff)
-  if (lo.some((v) => v < 0) || up.some((v) => v < 0)) throw new MdmlError('value', 'floodFill: negative tolerance')
+  if (lo.some((v) => v < 0) || up.some((v) => v < 0)) throw new OmaiError('value', 'floodFill: negative tolerance')
   const fill = perChannel(newVal)
   const img32 = Float64Array.from(r.data, f32)
   const mw = w + 2
@@ -189,7 +189,7 @@ export function floodFillAlgorithm(
   }
   if (options.mask !== undefined) {
     const m = greyOf(options.mask, 'floodFill')
-    if (m.h !== h || m.w !== w) throw new MdmlError('shape', 'floodFill: the mask is [H, W]')
+    if (m.h !== h || m.w !== w) throw new OmaiError('shape', 'floodFill: the mask is [H, W]')
     for (let y = 0; y < h; y++)
       for (let xx = 0; xx < w; xx++) if ((m.data[y * w + xx] ?? 0) !== 0) barriers[(y + 1) * mw + xx + 1] = 1
   }
@@ -328,8 +328,8 @@ export function floodFillAlgorithm(
  * @concept flood-fill
  * @example
  * ```ts
- * import { floodFillAlgorithm, floodFillResult } from 'mdml-engine/vision'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { floodFillAlgorithm, floodFillResult } from 'omai-engine/vision'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * floodFillResult(runAlgorithm(floodFillAlgorithm([[0, 1]], [0, 0], 0.5), { maxSteps: 5 }).state).rect // => [0, 0, 1, 1]
  * ```
  */
@@ -356,8 +356,8 @@ export function floodFillResult(state: FloodFillState): FloodFillResult {
  * @concept flood-fill
  * @example
  * ```ts
- * import { floodFill } from 'mdml-engine/vision'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { floodFill } from 'omai-engine/vision'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(floodFill([[0, 0, 1], [0, 1, 0], [1, 0, 0]], [0, 0], 0.5).image) // => [[0.5, 0.5, 1], [0.5, 1, 0], [1, 0, 0]]
  * ```
  */

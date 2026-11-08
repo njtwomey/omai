@@ -73,7 +73,7 @@ function parseInteger(body: string, hex: boolean): number | undefined {
  * @concept tokenisation
  * @example
  * ```ts
- * import { replaceHtmlEntities } from 'mdml-engine/text'
+ * import { replaceHtmlEntities } from 'omai-engine/text'
  * replaceHtmlEntities('Price: &pound;100 &#8364;5 &#x41; &#128; &bogus;') // => 'Price: £100 €5 A € '
  * ```
  */
@@ -113,7 +113,7 @@ export function replaceHtmlEntities(
  * @returns The text without handles.
  * @example
  * ```ts
- * import { removeHandles } from 'mdml-engine/text'
+ * import { removeHandles } from 'omai-engine/text'
  * removeHandles('@remy: hi a@b.com') // => ' : hi a@b.com'
  * ```
  */
@@ -128,7 +128,7 @@ export function removeHandles(text: string): string {
  * @returns The shortened text.
  * @example
  * ```ts
- * import { reduceLengthening } from 'mdml-engine/text'
+ * import { reduceLengthening } from 'omai-engine/text'
  * reduceLengthening('waaaaayyyy!!!!') // => 'waaayyy!!!'
  * ```
  */
@@ -159,7 +159,7 @@ export interface TweetOptions {
  * @concept tokenisation
  * @example
  * ```ts
- * import { tweetTokenize } from 'mdml-engine/text'
+ * import { tweetTokenize } from 'omai-engine/text'
  * tweetTokenize('This is a cooool #dummysmiley: :-) :-P <3 and some arrows < > -> <--') // => ['This', 'is', 'a', 'cooool', '#dummysmiley', ':', ':-)', ':-P', '<3', 'and', 'some', 'arrows', '<', '>', '->', '<--']
  * tweetTokenize('@remy: This is waaaaayyyy too much for you!!!!!!', { stripHandles: true, reduceLen: true }) // => [':', 'This', 'is', 'waaayyy', 'too', 'much', 'for', 'you', '!', '!', '!']
  * ```

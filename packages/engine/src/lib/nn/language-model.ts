@@ -4,7 +4,7 @@
  * any module mapping token ids to logits, and helpers for next-token logits, sequence log-probability and perplexity.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import {
   asTensor,
   isValue,
@@ -63,7 +63,7 @@ function batchTensor(tokens: TokenBatch): Value {
   if (isValue(tokens)) return tokens.dtype === 'int32' ? tokens : asTensor(tokens, 'int32')
   const t = tokens[0]?.length ?? 0
   if (tokens.some((r) => r.length !== t))
-    throw new MdmlError('shape', 'language model: rows of a batch must have equal length')
+    throw new OmaiError('shape', 'language model: rows of a batch must have equal length')
   return tensor(
     tokens.map((r) => [...r]),
     { dtype: 'int32' },
@@ -79,7 +79,7 @@ function batchTensor(tokens: TokenBatch): Value {
  * @returns The tokenizer.
  * @example
  * ```ts
- * import { characterTokenizer } from 'mdml-engine/nn'
+ * import { characterTokenizer } from 'omai-engine/nn'
  * const tok = characterTokenizer('ab', { eos: true })
  * [tok.encode('ba'), tok.eosId, tok.decode([1, 0, 2])] // => [[1, 0], 2, 'ba']
  * ```
@@ -89,7 +89,7 @@ export function characterTokenizer(
   specials: { readonly bos?: boolean; readonly eos?: boolean; readonly pad?: boolean } = {},
 ): Tokenizer {
   const chars = [...alphabet]
-  if (new Set(chars).size !== chars.length) throw new MdmlError('value', 'characterTokenizer: repeated characters')
+  if (new Set(chars).size !== chars.length) throw new OmaiError('value', 'characterTokenizer: repeated characters')
   const index = new Map(chars.map((c, i) => [c, i]))
   let next = chars.length
   const bosId = specials.bos === true ? next++ : undefined
@@ -100,7 +100,7 @@ export function characterTokenizer(
     encode: (text) =>
       [...text].map((c) => {
         const i = index.get(c)
-        if (i === undefined) throw new MdmlError('value', `characterTokenizer: '${c}' is not in the alphabet`)
+        if (i === undefined) throw new OmaiError('value', `characterTokenizer: '${c}' is not in the alphabet`)
         return i
       }),
     decode: (ids) =>
@@ -125,7 +125,7 @@ export function characterTokenizer(
  * @concept language-models
  * @example
  * ```ts
- * import { bigramLanguageModel } from 'mdml-engine/nn'
+ * import { bigramLanguageModel } from 'omai-engine/nn'
  * bigramLanguageModel([[0, 1], [1, 0]]).logits([[0, 1, 1]]).shape // => [1, 3, 2]
  * ```
  */
@@ -133,9 +133,9 @@ export function bigramLanguageModel(table: TensorLikeTable, tokenizer?: Tokenize
   const t = asTensor(table)
   const v = t.shape[0] ?? 0
   if (t.shape.length !== 2 || t.shape[1] !== v)
-    throw new MdmlError('shape', 'bigramLanguageModel: table must be [V, V]')
+    throw new OmaiError('shape', 'bigramLanguageModel: table must be [V, V]')
   const tok = tokenizer ?? characterTokenizer(Array.from({ length: v }, (_, i) => String.fromCharCode(97 + i)).join(''))
-  if (tok.vocabSize !== v) throw new MdmlError('value', 'bigramLanguageModel: the tokenizer and table sizes differ')
+  if (tok.vocabSize !== v) throw new OmaiError('value', 'bigramLanguageModel: the tokenizer and table sizes differ')
   const logits = (tokens: TokenBatch): Value => {
     const ids = batchTensor(tokens)
     const [b = 0, n = 0] = ids.shape
@@ -163,8 +163,8 @@ export type TensorLikeTable = readonly (readonly number[])[] | Value
  * @returns The language model.
  * @example
  * ```ts
- * import { languageModelFromModule, characterTokenizer, Embedding } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
+ * import { languageModelFromModule, characterTokenizer, Embedding } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
  * const lm = languageModelFromModule(new Embedding(3, 3, { key: key(0) }), characterTokenizer('abc'))
  * lm.logits([[0, 2]]).shape // => [1, 2, 3]
  * ```
@@ -177,10 +177,10 @@ export function languageModelFromModule(
   const run = (tokens: TokenBatch): Value => {
     const ids = batchTensor(tokens)
     if (options.maxLength !== undefined && (ids.shape[1] ?? 0) > options.maxLength)
-      throw new MdmlError('value', `language model: sequences longer than ${options.maxLength}`)
+      throw new OmaiError('value', `language model: sequences longer than ${options.maxLength}`)
     const y = module.apply(module.params, ids, { train: false, buffers: module.buffers })
     if (y.shape.length !== 3 || y.shape[2] !== tokenizer.vocabSize)
-      throw new MdmlError('shape', 'languageModelFromModule: the module must return [B, T, vocabSize]')
+      throw new OmaiError('shape', 'languageModelFromModule: the module must return [B, T, vocabSize]')
     return y
   }
   const embed = options.embed
@@ -201,12 +201,12 @@ export function languageModelFromModule(
  * @returns V logits.
  * @example
  * ```ts
- * import { bigramLanguageModel, nextTokenLogits } from 'mdml-engine/nn'
+ * import { bigramLanguageModel, nextTokenLogits } from 'omai-engine/nn'
  * nextTokenLogits(bigramLanguageModel([[0, 1], [2, 3]]), [0, 1]) // => [2, 3]
  * ```
  */
 export function nextTokenLogits(lm: LanguageModel, prefix: readonly number[]): number[] {
-  if (prefix.length === 0) throw new MdmlError('value', 'nextTokenLogits: need at least one token')
+  if (prefix.length === 0) throw new OmaiError('value', 'nextTokenLogits: need at least one token')
   const y = lm.logits([prefix])
   const n = y.shape[1] ?? 0
   return toFlat(sliceAxis(y, 1, n - 1, n))
@@ -221,7 +221,7 @@ export function nextTokenLogits(lm: LanguageModel, prefix: readonly number[]): n
  * @returns The total log-probability (natural log).
  * @example
  * ```ts
- * import { bigramLanguageModel, sequenceLogProb } from 'mdml-engine/nn'
+ * import { bigramLanguageModel, sequenceLogProb } from 'omai-engine/nn'
  * sequenceLogProb(bigramLanguageModel([[0, 0], [0, 0]]), [0, 1, 1]) // => -1.3862943611198906
  * ```
  */
@@ -242,11 +242,11 @@ export function sequenceLogProb(lm: LanguageModel, tokens: readonly number[]): n
  * @returns The perplexity (V for a uniform model).
  * @example
  * ```ts
- * import { bigramLanguageModel, perplexity } from 'mdml-engine/nn'
+ * import { bigramLanguageModel, perplexity } from 'omai-engine/nn'
  * perplexity(bigramLanguageModel([[0, 0], [0, 0]]), [0, 1, 0]) // => 2
  * ```
  */
 export function perplexity(lm: LanguageModel, tokens: readonly number[]): number {
-  if (tokens.length < 2) throw new MdmlError('value', 'perplexity: need at least two tokens')
+  if (tokens.length < 2) throw new OmaiError('value', 'perplexity: need at least two tokens')
   return Math.exp(-sequenceLogProb(lm, tokens) / (tokens.length - 1))
 }

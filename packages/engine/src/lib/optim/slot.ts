@@ -43,7 +43,7 @@ export interface SlotState {
  * @returns A complete configuration of `smoothSolvers`: Newton with its other knobs at their defaults.
  * @example
  * ```ts
- * import { newtonAt } from 'mdml-engine/optim'
+ * import { newtonAt } from 'omai-engine/optim'
  * newtonAt(1e-9) // => { modification: 'cholesky', beta: 0.001, gradTol: 1e-9, kind: 'newton' }
  * ```
  */
@@ -59,7 +59,7 @@ export const newtonAt = (gradTol: number): SpaceValue => smoothSolverConfig({ ki
  * @returns The table.
  * @example
  * ```ts
- * import { analyticObjective, familySolvers } from 'mdml-engine/optim'
+ * import { analyticObjective, familySolvers } from 'omai-engine/optim'
  * const objective = analyticObjective({ value: (x) => (x[0] ?? 0) ** 2, gradient: (x) => [2 * (x[0] ?? 0)] })
  * familySolvers({}, () => ({ objective, x0: [1] }), { default: 'newton' }).names.includes('lbfgs') // => true
  * ```
@@ -117,9 +117,9 @@ export interface SlotSpec<S extends SlotState, Problem = SmoothProblem> {
  * @returns The algorithm, whose state is the model's fields and the solver's state.
  * @example
  * ```ts
- * import { type SlotState, slotAlgorithm } from 'mdml-engine/optim'
- * import { runAlgorithm } from 'mdml-engine/trace'
- * import { square, sum, type Value } from 'mdml-engine/tensor'
+ * import { type SlotState, slotAlgorithm } from 'omai-engine/optim'
+ * import { runAlgorithm } from 'omai-engine/trace'
+ * import { square, sum, type Value } from 'omai-engine/tensor'
  * const algorithm = slotAlgorithm<SlotState>({
  *   name: 'bowl',
  *   config: {},

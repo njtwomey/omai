@@ -5,7 +5,7 @@
 
 import type { SeriesOption } from 'echarts'
 import type { EChartsCoreOption, ECharts as EChartsInstance } from 'echarts/core'
-import type { Pixels } from 'mdml-engine/scene'
+import type { Pixels } from 'omai-engine/scene'
 import { type CSSProperties, type ReactElement, useEffect, useRef, useState } from 'react'
 import { reencodeImages } from '../charts/matrices.ts'
 import { colourSelection, type ImageEncoder } from '../charts/selection.ts'
@@ -70,7 +70,7 @@ function labelled(option: EChartsCoreOption, label: string | undefined): ECharts
 
 /** Props of {@link Chart}. */
 export interface ChartProps {
-  /** The option, from a `mdml-render/charts` builder or written by hand. */
+  /** The option, from a `omai-render/charts` builder or written by hand. */
   readonly option: EChartsCoreOption
   /** A figure giving the chart's fixed width and height (the builders' default figure is 640 by 400). */
   readonly figure?: Figure
@@ -202,7 +202,7 @@ export function Chart(props: ChartProps): ReactElement {
       aria-label={label ?? textOf(option) ?? 'Chart'}
       className={props.className}
       style={{ width, height, maxWidth: '100%', ...props.style }}
-      data-mdml-chart=""
+      data-omai-chart=""
     />
   )
 }

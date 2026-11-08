@@ -3,7 +3,7 @@
  * and lattices whose row-major node order matches grid graphs and Ising-style models.
  */
 
-import { maxOf } from 'mdml-engine/base'
+import { maxOf } from 'omai-engine/base'
 import { type GraphLayout, type LayoutBox, type LayoutGraph, normaliseLayout, straightRoutes } from './graph.ts'
 
 /**
@@ -14,7 +14,7 @@ import { type GraphLayout, type LayoutBox, type LayoutGraph, normaliseLayout, st
  * @returns The layout.
  * @example
  * ```ts
- * import { gridLayout } from 'mdml-render/layout'
+ * import { gridLayout } from 'omai-render/layout'
  * const g = { nodes: ['a', 'b', 'c', 'd'].map((id) => ({ id, width: 10, height: 10 })), edges: [] }
  * const l = gridLayout(g, { columns: 2, cell: 50 })
  * [l.nodes['b'].x - l.nodes['a'].x, l.nodes['c'].y - l.nodes['a'].y] // => [50, 50]
@@ -44,7 +44,7 @@ export function gridLayout(
  * @returns The layout.
  * @example
  * ```ts
- * import { bipartiteLayout } from 'mdml-render/layout'
+ * import { bipartiteLayout } from 'omai-render/layout'
  * const g = { nodes: ['u', 'v', 'a'].map((id) => ({ id, width: 10, height: 10 })), edges: [{ from: 'u', to: 'a' }] }
  * const l = bipartiteLayout(g, ['u', 'v'])
  * l.nodes['a'].x - l.nodes['u'].x // => 200
@@ -90,7 +90,7 @@ export function bipartiteLayout(
  * @returns The layout.
  * @example
  * ```ts
- * import { latticeLayout } from 'mdml-render/layout'
+ * import { latticeLayout } from 'omai-render/layout'
  * const g = { nodes: ['a', 'b', 'c', 'd'].map((id) => ({ id, width: 8, height: 8 })), edges: [] }
  * latticeLayout(g, 2, { spacing: 30 }).nodes['d'].x - latticeLayout(g, 2, { spacing: 30 }).nodes['c'].x // => 30
  * ```

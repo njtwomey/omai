@@ -4,9 +4,9 @@
  * which the field panel also lays over a vector field.
  */
 
-import { covarianceEllipse } from 'mdml-engine/numerics/geometry'
-import { toFlat } from 'mdml-engine/tensor'
-import { type Run, type TensorEvent, tensorSeries } from 'mdml-engine/trace'
+import { covarianceEllipse } from 'omai-engine/numerics/geometry'
+import { toFlat } from 'omai-engine/tensor'
+import { type Run, type TensorEvent, tensorSeries } from 'omai-engine/trace'
 import { lines } from '../../charts/lines.ts'
 import type { Layer } from '../../charts/plot.ts'
 import { points } from '../../charts/points.ts'

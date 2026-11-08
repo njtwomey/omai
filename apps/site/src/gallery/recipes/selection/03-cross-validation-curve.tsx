@@ -1,5 +1,5 @@
-import { cvPath } from 'mdml-engine/linear'
-import { ControlPanel, ExpositionView, NumberField, SeedInput } from 'mdml-render/react'
+import { cvPath } from 'omai-engine/linear'
+import { ControlPanel, ExpositionView, NumberField, SeedInput } from 'omai-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 import { sparseRegression } from '../../toys/synthetic.ts'

@@ -23,8 +23,8 @@ import scipy.optimize
 import scipy.special
 import scipy.stats
 import statsmodels
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray, rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray, rng
 from statsmodels.gam.api import BSplines
 
 REFERENCE: dict[str, str] = {"statsmodels": statsmodels.__version__, "scipy": scipy.__version__}

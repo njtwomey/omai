@@ -4,7 +4,7 @@
  * as transformer and U-Net blocks), `Lambda` for small glue functions, and the `mlp` builder.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { foldIn, type Key } from '../../random/index.ts'
 import { add, concat, stack, type Value } from '../../tensor/index.ts'
 import { ReLU } from './activations.ts'
@@ -27,8 +27,8 @@ const sub = (tree: Params, name: string): Params => (tree[name] ?? {}) as Params
  * @index module Modules applied in order.
  * @example
  * ```ts
- * import { Sequential, Linear, ReLU } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
+ * import { Sequential, Linear, ReLU } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
  * const net = new Sequential(new Linear(2, 8, { key: key(0) }), new ReLU(), new Linear(8, 1, { key: key(1) }))
  * Object.keys(net.stateDict()) // => ['0.bias', '0.weight', '2.bias', '2.weight']
  * ```
@@ -66,8 +66,8 @@ export class Sequential extends Module {
  * @concept modules
  * @example
  * ```ts
- * import { ModuleList, Linear } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
+ * import { ModuleList, Linear } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
  * new ModuleList([new Linear(2, 2, { key: key(0) }), new Linear(2, 2, { key: key(1) })]).parameterCount() // => 12
  * ```
  */
@@ -84,7 +84,7 @@ export class ModuleList<M extends AnyModule = Module> extends Module<never, neve
   /** The module at an index. */
   at(i: number): M {
     const m = this.modules[i]
-    if (m === undefined) throw new MdmlError('value', `ModuleList: no module at ${i}`)
+    if (m === undefined) throw new OmaiError('value', `ModuleList: no module at ${i}`)
     return m
   }
 
@@ -94,11 +94,11 @@ export class ModuleList<M extends AnyModule = Module> extends Module<never, neve
   }
 
   apply(): never {
-    throw new MdmlError('value', 'ModuleList has no forward; call its modules')
+    throw new OmaiError('value', 'ModuleList has no forward; call its modules')
   }
 
   outputShape(): number[] {
-    throw new MdmlError('value', 'ModuleList has no forward')
+    throw new OmaiError('value', 'ModuleList has no forward')
   }
 
   override children(): readonly (readonly [string, AnyModule])[] {
@@ -112,8 +112,8 @@ export class ModuleList<M extends AnyModule = Module> extends Module<never, neve
  * @concept modules
  * @example
  * ```ts
- * import { ModuleDict, Linear, ReLU } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
+ * import { ModuleDict, Linear, ReLU } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
  * Object.keys(new ModuleDict({ proj: new Linear(2, 1, { key: key(0) }), act: new ReLU() }).stateDict()) // => ['proj.bias', 'proj.weight']
  * ```
  */
@@ -129,7 +129,7 @@ export class ModuleDict<M extends AnyModule = Module> extends Module<never, neve
   /** The module of a name. */
   get(name: string): M {
     const m = this.modules[name]
-    if (m === undefined) throw new MdmlError('value', `ModuleDict: no module ${name}`)
+    if (m === undefined) throw new OmaiError('value', `ModuleDict: no module ${name}`)
     return m
   }
 
@@ -139,11 +139,11 @@ export class ModuleDict<M extends AnyModule = Module> extends Module<never, neve
   }
 
   apply(): never {
-    throw new MdmlError('value', 'ModuleDict has no forward; call its modules')
+    throw new OmaiError('value', 'ModuleDict has no forward; call its modules')
   }
 
   outputShape(): number[] {
-    throw new MdmlError('value', 'ModuleDict has no forward')
+    throw new OmaiError('value', 'ModuleDict has no forward')
   }
 
   override children(): readonly (readonly [string, AnyModule])[] {
@@ -158,8 +158,8 @@ export class ModuleDict<M extends AnyModule = Module> extends Module<never, neve
  * @concept residual-connections
  * @example
  * ```ts
- * import { Residual, Linear } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
+ * import { Residual, Linear } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
  * new Residual(new Linear(3, 3, { key: key(0) })).outputShape([2, 3]) // => [2, 3]
  * ```
  */
@@ -209,8 +209,8 @@ export type Combine = 'sum' | 'concat' | 'stack' | ((outputs: readonly Value[]) 
  * @concept modules
  * @example
  * ```ts
- * import { Parallel, Linear } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
+ * import { Parallel, Linear } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
  * new Parallel([new Linear(3, 2, { key: key(0) }), new Linear(3, 4, { key: key(1) })], 'concat').outputShape([5, 3]) // => [5, 6]
  * ```
  */
@@ -297,7 +297,7 @@ export abstract class Composite<I = Value, O = Value> extends Module<I, O> {
   /** A part by name. */
   part<M extends AnyModule = Module>(name: string): M {
     const found = this.partList.find(([n]) => n === name)
-    if (found === undefined) throw new MdmlError('value', `${this.kind}: no part ${name}`)
+    if (found === undefined) throw new OmaiError('value', `${this.kind}: no part ${name}`)
     return found[1] as M
   }
 
@@ -325,8 +325,8 @@ export abstract class Composite<I = Value, O = Value> extends Module<I, O> {
  *
  * @example
  * ```ts
- * import { Lambda } from 'mdml-engine/nn'
- * import { mul } from 'mdml-engine/tensor'
+ * import { Lambda } from 'omai-engine/nn'
+ * import { mul } from 'omai-engine/tensor'
  * new Lambda((x) => mul(x, 2)).outputShape([3]) // => [3]
  * ```
  */
@@ -359,7 +359,7 @@ export class Lambda extends Module {
  * @index function A multilayer perceptron from layer widths and an activation.
  * @example
  * ```ts
- * import { mlp } from 'mdml-engine/nn'
+ * import { mlp } from 'omai-engine/nn'
  * mlp([4, 16, 16, 1]).parameterCount() // => 369
  * ```
  */

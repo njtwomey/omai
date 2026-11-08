@@ -4,7 +4,7 @@
  * and `LocalResponseNorm`.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { full, item, tensor, type Value, zeros } from '../../tensor/index.ts'
 import {
   batchNorm,
@@ -74,7 +74,7 @@ abstract class StatNorm extends Module {
 
   protected check(x: Value): void {
     if (!this.ranks.includes(x.shape.length) || x.shape[1] !== this.numFeatures)
-      throw new MdmlError(
+      throw new OmaiError(
         'shape',
         `${this.kind}: expected ${this.numFeatures} channels on axis 1 of a ${this.ranks.join(' or ')}-D input, got [${x.shape.join(', ')}]`,
       )
@@ -94,7 +94,7 @@ abstract class StatNorm extends Module {
  *
  * @example
  * ```ts
- * import { BatchNormNd } from 'mdml-engine/nn'
+ * import { BatchNormNd } from 'omai-engine/nn'
  * new BatchNormNd('BatchNorm2d', 3, [4]).parameterCount() // => 6
  * ```
  */
@@ -137,7 +137,7 @@ export class BatchNormNd extends StatNorm {
  * @index module Batch normalisation with running statistics.
  * @example
  * ```ts
- * import { BatchNorm1d } from 'mdml-engine/nn'
+ * import { BatchNorm1d } from 'omai-engine/nn'
  * Object.keys(new BatchNorm1d(4).stateDict()) // => ['bias', 'weight', 'num_batches_tracked', 'running_mean', 'running_var']
  * ```
  */
@@ -153,7 +153,7 @@ export class BatchNorm1d extends BatchNormNd {
  * @concept batch-normalisation
  * @example
  * ```ts
- * import { BatchNorm2d } from 'mdml-engine/nn'
+ * import { BatchNorm2d } from 'omai-engine/nn'
  * new BatchNorm2d(8).parameterCount() // => 16
  * ```
  */
@@ -175,7 +175,7 @@ export class BatchNorm3d extends BatchNormNd {
  *
  * @example
  * ```ts
- * import { InstanceNormNd } from 'mdml-engine/nn'
+ * import { InstanceNormNd } from 'omai-engine/nn'
  * new InstanceNormNd('InstanceNorm1d', 3, [3]).parameterCount() // => 0
  * ```
  */
@@ -218,7 +218,7 @@ export class InstanceNorm1d extends InstanceNormNd {
  *
  * @example
  * ```ts
- * import { InstanceNorm2d } from 'mdml-engine/nn'
+ * import { InstanceNorm2d } from 'omai-engine/nn'
  * new InstanceNorm2d(3, { affine: true }).parameterCount() // => 6
  * ```
  */
@@ -253,7 +253,7 @@ const shapeOf = (s: number | readonly number[]): number[] => (typeof s === 'numb
  * @index module Layer normalisation.
  * @example
  * ```ts
- * import { LayerNorm } from 'mdml-engine/nn'
+ * import { LayerNorm } from 'omai-engine/nn'
  * new LayerNorm(16).parameterCount() // => 32
  * ```
  */
@@ -301,7 +301,7 @@ export class LayerNorm extends Module {
  *
  * @example
  * ```ts
- * import { RMSNorm } from 'mdml-engine/nn'
+ * import { RMSNorm } from 'omai-engine/nn'
  * new RMSNorm(16).parameterCount() // => 16
  * ```
  */
@@ -344,7 +344,7 @@ export class RMSNorm extends Module {
  *
  * @example
  * ```ts
- * import { GroupNorm } from 'mdml-engine/nn'
+ * import { GroupNorm } from 'omai-engine/nn'
  * new GroupNorm(4, 16).parameterCount() // => 32
  * ```
  */
@@ -362,7 +362,7 @@ export class GroupNorm extends Module {
   ) {
     super()
     if (numChannels % numGroups !== 0)
-      throw new MdmlError('value', `GroupNorm: ${numChannels} channels do not divide into ${numGroups} groups`)
+      throw new OmaiError('value', `GroupNorm: ${numChannels} channels do not divide into ${numGroups} groups`)
     this.numGroups = numGroups
     this.numChannels = numChannels
     this.eps = options.eps ?? 1e-5
@@ -396,7 +396,7 @@ export class GroupNorm extends Module {
  *
  * @example
  * ```ts
- * import { LocalResponseNorm } from 'mdml-engine/nn'
+ * import { LocalResponseNorm } from 'omai-engine/nn'
  * new LocalResponseNorm(5).kind // => 'LocalResponseNorm'
  * ```
  */

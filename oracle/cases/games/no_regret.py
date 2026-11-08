@@ -5,8 +5,8 @@ three-player games."""
 from importlib.metadata import version
 
 import numpy as np
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray, rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray, rng
 from open_spiel.python.algorithms import regret_matching
 
 REFERENCE: dict[str, str] = {"open_spiel": version("open_spiel")}

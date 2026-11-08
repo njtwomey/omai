@@ -4,7 +4,7 @@
  * matched segments of both things and stuff.
  */
 
-import { MdmlError, type MetricResult } from '../base/index.ts'
+import { type MetricResult, OmaiError } from '../base/index.ts'
 import type { TensorLike } from '../tensor/index.ts'
 import { classCounts, encodeLabels, labelValues } from './_labels.ts'
 import { specOf } from './_spec.ts'
@@ -25,7 +25,7 @@ const mask = (x: TensorLike): Mask => {
 
 const sameShape = (name: string, a: Mask, b: Mask): void => {
   if (a.shape.length !== b.shape.length || a.shape.some((d, i) => d !== b.shape[i]))
-    throw new MdmlError('shape', `${name}: masks differ in shape`)
+    throw new OmaiError('shape', `${name}: masks differ in shape`)
 }
 
 /**
@@ -38,7 +38,7 @@ const sameShape = (name: string, a: Mask, b: Mask): void => {
  * @concept segmentation-evaluation
  * @example
  * ```ts
- * import { diceCoefficient } from 'mdml-engine/metrics'
+ * import { diceCoefficient } from 'omai-engine/metrics'
  * diceCoefficient([[1, 1], [0, 0]], [[1, 0], [0, 0]]).estimate.value // => 0.6666666666666666
  * ```
  */
@@ -68,7 +68,7 @@ export const diceCoefficient: MetricFunction<[TensorLike, TensorLike]> = defineM
  * @returns The metric result.
  * @example
  * ```ts
- * import { maskIou } from 'mdml-engine/metrics'
+ * import { maskIou } from 'omai-engine/metrics'
  * maskIou([[1, 1], [0, 0]], [[1, 0], [0, 0]]).estimate.value // => 0.5
  * ```
  */
@@ -99,7 +99,7 @@ export const maskIou: MetricFunction<[TensorLike, TensorLike]> = defineMetric(
  * @returns The metric result, with each class's IoU in the breakdown.
  * @example
  * ```ts
- * import { meanIou } from 'mdml-engine/metrics'
+ * import { meanIou } from 'omai-engine/metrics'
  * meanIou([[0, 1], [1, 1]], [[0, 1], [0, 1]]).estimate.value // => 0.5833333333333333
  * ```
  */
@@ -114,7 +114,7 @@ export const meanIou: MetricFunction<
   ): MetricResult => {
     let p = labelValues(pred) as number[]
     let t = labelValues(target) as number[]
-    if (p.length !== t.length) throw new MdmlError('shape', 'meanIou: maps differ in size')
+    if (p.length !== t.length) throw new OmaiError('shape', 'meanIou: maps differ in size')
     if (options.ignoreIndex !== undefined) {
       const keep = t.map((v) => v !== options.ignoreIndex)
       p = p.filter((_, i) => keep[i])
@@ -206,7 +206,7 @@ export interface MaskHausdorffOptions {
  * @returns The metric result (Infinity when exactly one mask is empty, NaN when both are).
  * @example
  * ```ts
- * import { maskHausdorffDistance } from 'mdml-engine/metrics'
+ * import { maskHausdorffDistance } from 'omai-engine/metrics'
  * maskHausdorffDistance([[1, 0, 0, 0]], [[0, 0, 0, 1]]).estimate.value // => 3
  * ```
  */
@@ -238,7 +238,7 @@ export const maskHausdorffDistance: MetricFunction<[TensorLike, TensorLike, Mask
  * @returns The metric result, with boundary precision and recall in the breakdown.
  * @example
  * ```ts
- * import { boundaryF1 } from 'mdml-engine/metrics'
+ * import { boundaryF1 } from 'omai-engine/metrics'
  * boundaryF1([[1, 1], [1, 1]], [[1, 1], [1, 1]]).estimate.value // => 1
  * ```
  */
@@ -281,7 +281,7 @@ export interface PanopticOptions {
  * @returns The metric result: PQ, with SQ, RQ and the per-category PQ in the breakdown.
  * @example
  * ```ts
- * import { panopticQuality } from 'mdml-engine/metrics'
+ * import { panopticQuality } from 'omai-engine/metrics'
  * panopticQuality([[[0, 1], [0, 1]], [[1, 0], [1, 0]]], [[[0, 1], [0, 1]], [[1, 0], [1, 0]]], { things: [0], stuffs: [1] }).estimate.value // => 1
  * ```
  */
@@ -305,7 +305,7 @@ export const panopticQuality: MetricFunction<[TensorLike, TensorLike, PanopticOp
     }
     const p = colours(pred)
     const t = colours(target)
-    if (p.length !== t.length) throw new MdmlError('shape', 'panopticQuality: maps differ in shape')
+    if (p.length !== t.length) throw new OmaiError('shape', 'panopticQuality: maps differ in shape')
     const voidColour = `${voidCat},0`
     const count = (xs: readonly string[]): Map<string, number> => {
       const m = new Map<string, number>()

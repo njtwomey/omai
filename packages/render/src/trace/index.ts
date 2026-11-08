@@ -1,5 +1,5 @@
 /**
- * The standard figures of traced runs (`Run` from `mdml-engine/trace`): `metricChart` and `runsChart` for metric
+ * The standard figures of traced runs (`Run` from `omai-engine/trace`): `metricChart` and `runsChart` for metric
  * curves with smoothing and overlaid runs, `parameterTrajectories`, `histogramsOverTime` and `normHeatmap` for
  * tensors, `messageTimeline` and `messageFrames` for message passing, `episodeChart` and `cumulativeRegret` for
  * returns and regret, `optimisationPaths` over contours, and `runTable` for run summaries.

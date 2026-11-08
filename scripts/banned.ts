@@ -1,5 +1,5 @@
 /**
- * Fail on banned globals in published source: Math.random (use keys from mdml-engine/random), Date.now and
+ * Fail on banned globals in published source: Math.random (use keys from omai-engine/random), Date.now and
  * performance.now in algorithms (traces must be deterministic), and console output (use trace events). The engine, which
  * is deterministic by contract, also bans the other clocks and sources of entropy: `new Date(`, `crypto.getRandomValues`,
  * `crypto.randomUUID`, `process.hrtime` and timers (`setTimeout`, `setInterval`, `requestAnimationFrame`).
@@ -13,13 +13,13 @@ import { join, relative } from 'node:path'
 
 const ROOT = join(import.meta.dirname, '..')
 const RULES: readonly { readonly pattern: RegExp; readonly message: string; readonly engineOnly?: true }[] = [
-  { pattern: /\bMath\.random\s*\(/, message: 'use keys from mdml-engine/random' },
+  { pattern: /\bMath\.random\s*\(/, message: 'use keys from omai-engine/random' },
   { pattern: /\b(Date\.now|performance\.now)\s*\(/, message: 'clocks make traces non-deterministic' },
   { pattern: /\bconsole\.(log|info|warn|error|debug)\s*\(/, message: 'emit trace events instead of logging' },
   { pattern: /\bnew Date\s*\(/, message: 'clocks make traces non-deterministic', engineOnly: true },
   {
     pattern: /\bcrypto\.(getRandomValues|randomUUID)\b/,
-    message: 'use keys from mdml-engine/random',
+    message: 'use keys from omai-engine/random',
     engineOnly: true,
   },
   { pattern: /\bprocess\.hrtime\b/, message: 'clocks make traces non-deterministic', engineOnly: true },

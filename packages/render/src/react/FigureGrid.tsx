@@ -115,7 +115,7 @@ export function FigureGrid(props: FigureGridProps): ReactElement {
     return [
       <div
         key={c.id}
-        data-mdml-overlay=""
+        data-omai-overlay=""
         {...(c.kind === 'tex' && cells?.[c.id] === undefined ? { 'data-tex': c.content ?? '' } : {})}
         style={{
           position: 'absolute',

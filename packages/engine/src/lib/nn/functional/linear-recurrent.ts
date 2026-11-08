@@ -63,8 +63,8 @@ export interface DecayedLinearAttentionInput {
  *   hardware-efficient training.
  * @example
  * ```ts
- * import { decayedLinearAttention } from 'mdml-engine/nn'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { decayedLinearAttention } from 'omai-engine/nn'
+ * import { toFlat } from 'omai-engine/tensor'
  * const q = [[[[1], [1]]]]
  * toFlat(decayedLinearAttention({ q, k: q, v: [[[[1], [1]]]], logDecay: [[[Math.log(0.5), Math.log(0.5)]]] }).output) // => [1, 1.5]
  * ```
@@ -179,8 +179,8 @@ export function wkvInitialState(batch: number, width: number): WkvState {
  * @reference Peng et al. (2023), RWKV: reinventing RNNs for the transformer era.
  * @example
  * ```ts
- * import { wkv } from 'mdml-engine/nn'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { wkv } from 'omai-engine/nn'
+ * import { toFlat } from 'omai-engine/tensor'
  * toFlat(wkv([[[0], [0]]], [[[1], [3]]], [0], [0]).output) // => [1, 2]
  * ```
  */

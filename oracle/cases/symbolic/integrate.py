@@ -1,11 +1,11 @@
 """Integrals against SymPy's `integrate`. Antiderivatives are compared by value up to a constant (SymPy and
-mdml-js may choose different but equivalent forms, such as log(sec + tan) against a difference of logs), and every
-mdml-js antiderivative is also differentiated back to the integrand in the test. Definite integrals compare the
+omai may choose different but equivalent forms, such as log(sec + tan) against a difference of logs), and every
+omai antiderivative is also differentiated back to the integrand in the test. Definite integrals compare the
 exact value."""
 
 import sympy as sp
-from mdml_oracle.fixture import Case
-from mdml_oracle.symbolic import SYMBOLS, expr_case, parse
+from omai_oracle.fixture import Case
+from omai_oracle.symbolic import SYMBOLS, expr_case, parse
 
 REFERENCE: dict[str, str] = {"sympy": sp.__version__}
 

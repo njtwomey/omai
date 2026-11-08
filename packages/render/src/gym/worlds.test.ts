@@ -1,5 +1,5 @@
-import type { SceneNode } from 'mdml-engine/scene'
-import { fromAscii } from 'mdml-engine/worlds'
+import type { SceneNode } from 'omai-engine/scene'
+import { fromAscii } from 'omai-engine/worlds'
 import { describe, expect, it } from 'vitest'
 import { pathFrames, raycastViews, worldView } from './worlds.ts'
 

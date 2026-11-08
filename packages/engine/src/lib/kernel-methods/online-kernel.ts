@@ -7,7 +7,7 @@
  * with serialisable state and an estimator on the iterative base, so `fittedAt(t)` is the predictor after `t` observations.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { type Distribution, normal } from '../dists/index.ts'
 import {
   type Kernel,
@@ -65,7 +65,7 @@ export interface OnlineKernelHyper {
  *
  * @example
  * ```ts
- * import type { KrlsPath } from 'mdml-engine/kernel-methods'
+ * import type { KrlsPath } from 'omai-engine/kernel-methods'
  * const path: KrlsPath = 'model/dictionary'
  * path // => 'model/dictionary'
  * ```
@@ -142,10 +142,10 @@ const matVec = (m: readonly (readonly number[])[], v: readonly number[]): number
 
 function validate(h: OnlineKernelHyper, who: string): void {
   if (!Number.isInteger(h.budget) || h.budget < 1)
-    throw new MdmlError('value', `${who}: budget must be a positive integer`)
-  if (!(h.regularisation > 0)) throw new MdmlError('value', `${who}: regularisation must be positive`)
-  if (!(h.aldThreshold >= 0)) throw new MdmlError('value', `${who}: aldThreshold must not be negative`)
-  if (!(h.coherence > 0 && h.coherence <= 1)) throw new MdmlError('value', `${who}: coherence must be in (0, 1]`)
+    throw new OmaiError('value', `${who}: budget must be a positive integer`)
+  if (!(h.regularisation > 0)) throw new OmaiError('value', `${who}: regularisation must be positive`)
+  if (!(h.aldThreshold >= 0)) throw new OmaiError('value', `${who}: aldThreshold must not be negative`)
+  if (!(h.coherence > 0 && h.coherence <= 1)) throw new OmaiError('value', `${who}: coherence must be in (0, 1]`)
 }
 
 /**
@@ -153,17 +153,17 @@ function validate(h: OnlineKernelHyper, who: string): void {
  *
  * @param nFeatures - The number of features `d >= 1`.
  * @returns A state with an empty dictionary.
- * @throws MdmlError `value` for a non-positive `nFeatures`.
+ * @throws OmaiError `value` for a non-positive `nFeatures`.
  * @concept online-kernel
  * @example
  * ```ts
- * import { createKrlsState } from 'mdml-engine/kernel-methods'
+ * import { createKrlsState } from 'omai-engine/kernel-methods'
  * createKrlsState(2).dictionary.length // => 0
  * ```
  */
 export function createKrlsState(nFeatures: number): KrlsState {
   if (!Number.isInteger(nFeatures) || nFeatures < 1) {
-    throw new MdmlError('value', `createKrlsState: nFeatures must be a positive integer, got ${nFeatures}`)
+    throw new OmaiError('value', `createKrlsState: nFeatures must be a positive integer, got ${nFeatures}`)
   }
   return {
     step: 0,
@@ -198,14 +198,14 @@ export function createKrlsState(nFeatures: number): KrlsState {
  * @param hyper - The hyperparameters.
  * @param kernel - The resolved kernel (default: resolved from the hyperparameters on this one row).
  * @returns The next state.
- * @throws MdmlError `shape` for a wrong feature count.
+ * @throws OmaiError `shape` for a wrong feature count.
  * @concept online-kernel
  * @reference Y. Engel, S. Mannor and R. Meir, The kernel recursive least-squares algorithm (IEEE Trans. Signal
  *   Processing 52, 2004); S. Van Vaerenbergh, J. Via and I. Santamaria, A sliding-window kernel RLS algorithm and its
  *   application to nonlinear channel identification (ICASSP 2006).
  * @example
  * ```ts
- * import { createKrlsState, krlsStep } from 'mdml-engine/kernel-methods'
+ * import { createKrlsState, krlsStep } from 'omai-engine/kernel-methods'
  * const hyper = { criterion: 'ald', budget: 10, aldThreshold: 0.05, coherence: 0.9, regularisation: 1e-3,
  *   kernel: 'linear', gamma: 1, degree: 3, coef0: 0 } as const
  * const s = krlsStep(createKrlsState(1), [2], 4, hyper)
@@ -220,7 +220,7 @@ export function krlsStep(
   kernel: ResolvedKernel = resolveKernel(hyper as KernelChoice, [Array.from(x)]),
 ): KrlsState {
   if (x.length !== state.nFeatures) {
-    throw new MdmlError('shape', `krlsStep: expected ${state.nFeatures} features, got ${x.length}`)
+    throw new OmaiError('shape', `krlsStep: expected ${state.nFeatures} features, got ${x.length}`)
   }
   validate(hyper, 'krlsStep')
   const point = Array.from(x)
@@ -359,8 +359,8 @@ export function krlsStep(
  * @concept online-kernel
  * @example
  * ```ts
- * import { createKrlsState, krlsPredict, krlsStep } from 'mdml-engine/kernel-methods'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { createKrlsState, krlsPredict, krlsStep } from 'omai-engine/kernel-methods'
+ * import { toFlat } from 'omai-engine/tensor'
  * const hyper = { criterion: 'ald', budget: 10, aldThreshold: 0.05, coherence: 0.9, regularisation: 1e-3,
  *   kernel: 'linear', gamma: 1, degree: 3, coef0: 0 } as const
  * const s = krlsStep(createKrlsState(1), [2], 4, hyper)
@@ -399,8 +399,8 @@ export function krlsPredict(
  * @concept online-kernel
  * @example
  * ```ts
- * import { krlsAlgorithm, krlsDefaults } from 'mdml-engine/kernel-methods'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { krlsAlgorithm, krlsDefaults } from 'omai-engine/kernel-methods'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const hyper = { ...krlsDefaults, kernel: 'linear', gamma: 1, aldThreshold: 1e-6 } as const
  * const alg = krlsAlgorithm({ x: [[1], [2], [3]], y: [2, 4, 6] }, hyper)
  * runAlgorithm(alg, { maxSteps: 10 }).state.dictionary.length // => 1
@@ -499,7 +499,7 @@ function expansionVerbs(
  *   Processing 52, 2004).
  * @example
  * ```ts
- * import { krls } from 'mdml-engine/kernel-methods'
+ * import { krls } from 'omai-engine/kernel-methods'
  * const fitted = krls.with({ kernel: 'rbf', gamma: 0.5, aldThreshold: 0.01 }).fit({ x: [[0], [1], [2], [3]], y: [0, 1, 0, -1] })
  * fitted.dictionarySize <= 4 // => true
  * ```
@@ -624,18 +624,18 @@ const NORMA_DEFAULTS: NormaHyper = {
  *   52, 2004).
  * @example
  * ```ts
- * import { normaAlgorithm, normaDefaults } from 'mdml-engine/kernel-methods'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { normaAlgorithm, normaDefaults } from 'omai-engine/kernel-methods'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const alg = normaAlgorithm({ x: [[0], [1], [2]], y: [0, 1, 2] }, { ...normaDefaults, kernel: 'linear', gamma: 1 })
  * runAlgorithm(alg, { maxSteps: 10 }).state.step // => 3
  * ```
  */
 export function normaAlgorithm(data: LearnData, hyper: NormaHyper): Algorithm<NormaState, never> {
   const who = 'norma'
-  if (!(hyper.eta > 0)) throw new MdmlError('value', `${who}: eta must be positive`)
-  if (!(hyper.lambda >= 0)) throw new MdmlError('value', `${who}: lambda must not be negative`)
+  if (!(hyper.eta > 0)) throw new OmaiError('value', `${who}: eta must be positive`)
+  if (!(hyper.lambda >= 0)) throw new OmaiError('value', `${who}: lambda must not be negative`)
   if (!Number.isInteger(hyper.budget) || hyper.budget < 1)
-    throw new MdmlError('value', `${who}: budget must be a positive integer`)
+    throw new OmaiError('value', `${who}: budget must be a positive integer`)
   const m = matrixView(data.x, who)
   const y = targetVector(data.y ?? [], who, m.n)
   const kernel = resolveKernel(hyper as KernelChoice, data.x)
@@ -708,7 +708,7 @@ export const normaDefaults: NormaHyper = NORMA_DEFAULTS
  *   52, 2004).
  * @example
  * ```ts
- * import { norma } from 'mdml-engine/kernel-methods'
+ * import { norma } from 'omai-engine/kernel-methods'
  * const f = norma.with({ kernel: 'linear', gamma: 1, lambda: 0, epochs: 50 }).fit({ x: [[1], [2], [3]], y: [2, 4, 6] })
  * f.dictionarySize <= 100 // => true
  * ```

@@ -33,7 +33,7 @@ export interface LiveExampleState {
 
 /** Options of {@link useLiveExample}. */
 export interface LiveExampleOptions {
-  /** The module map for the example's imports (normally `moduleLoaders` from `mdml-meta/modules`). */
+  /** The module map for the example's imports (normally `moduleLoaders` from `omai-meta/modules`). */
   readonly loaders: Readonly<Record<string, ModuleLoader>>
   /** The longest an example may wait on promises (default 10 s). */
   readonly timeoutMs?: number
@@ -42,7 +42,7 @@ export interface LiveExampleOptions {
 }
 
 /**
- * Hold a live example: its editable code and the result of running it with mdml-meta's runner.
+ * Hold a live example: its editable code and the result of running it with omai-meta's runner.
  *
  * @param example - The example.
  * @param options - The module map, the time limit, and whether to run on first view.

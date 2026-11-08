@@ -1,13 +1,13 @@
 {
-  "name": "mdml-engine",
+  "name": "omai-engine",
   "version": "0.1.3",
-  "description": "mdml-js compute: tensors, autodiff, numerics, probability, learning, neural networks, RL and datasets, all traced.",
+  "description": "omai compute: tensors, autodiff, numerics, probability, learning, neural networks, RL and datasets, all traced.",
   "license": "MIT",
   "type": "module",
   "sideEffects": false,
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/njtwomey/mdml-js.git",
+    "url": "git+https://github.com/njtwomey/omai.git",
     "directory": "packages/engine"
   },
   "files": [

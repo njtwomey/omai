@@ -10,10 +10,10 @@ import numpy as np
 import scipy.ndimage as ndi
 import sklearn.metrics as M
 import torch
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray, rng
 from monai.metrics.hausdorff_distance import compute_hausdorff_distance
 from monai.metrics.meandice import compute_dice
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray, rng
 from torchmetrics.functional.detection import panoptic_quality
 
 REFERENCE: dict[str, str] = {"monai": monai.__version__, "torchmetrics": version("torchmetrics")}

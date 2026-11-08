@@ -4,7 +4,7 @@
  * which embed by the leading eigenvectors of a random walk on the data so distances reflect diffusion over `t` steps.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { type Affinity, affinityMatrix } from '../cluster/index.ts'
 import { distanceMatrix } from '../distances/index.ts'
 import { spectralEmbedding as graphSpectralEmbedding } from '../graph/index.ts'
@@ -30,7 +30,7 @@ export interface SpectralEmbeddingHyper {
  * @returns The estimator.
  * @example
  * ```ts
- * import { spectralEmbedding } from 'mdml-engine/manifold'
+ * import { spectralEmbedding } from 'omai-engine/manifold'
  * const x = Array.from({ length: 10 }, (_, i) => [i, (i % 3) * 0.1])
  * spectralEmbedding({ nNeighbors: 3 }).fit({ x }).params.embedding.length // => 10
  * ```
@@ -63,7 +63,7 @@ export function spectralEmbedding(
           for (let j = 0; j < m.n; j++) s += a[i * m.n + j] ?? 0
           return Math.sqrt(s)
         })
-        if (degree.some((v) => v === 0)) throw new MdmlError('value', 'spectralEmbedding: a row has no neighbours')
+        if (degree.some((v) => v === 0)) throw new OmaiError('value', 'spectralEmbedding: a row has no neighbours')
         const u = toArray(
           graphSpectralEmbedding(fromStorage(Float64Array.from(a), [m.n, m.n], 'float64'), h.nComponents, {
             dropFirst: true,
@@ -102,7 +102,7 @@ export interface DiffusionMapHyper {
  * @returns The estimator.
  * @example
  * ```ts
- * import { diffusionMap } from 'mdml-engine/manifold'
+ * import { diffusionMap } from 'omai-engine/manifold'
  * const x = Array.from({ length: 10 }, (_, i) => [i, (i % 3) * 0.1])
  * diffusionMap({ nComponents: 2 }).fit({ x }).params.embedding.length // => 10
  * ```

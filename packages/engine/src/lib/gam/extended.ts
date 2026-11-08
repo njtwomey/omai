@@ -14,7 +14,7 @@
  * predictor-based families and the Cox partial likelihood implement.
  */
 
-import { MdmlError, maxOf } from '../base/index.ts'
+import { maxOf, OmaiError } from '../base/index.ts'
 import type { AuxParameter, ExtendedFamily, Link } from '../dists/families/index.ts'
 import { matrixView, targetVector } from '../learn/index.ts'
 import { ddot, dgemv, dpotrf, dpotrs, dsyev } from '../numerics/linalg/index.ts'
@@ -141,8 +141,8 @@ function crossBlock(
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { etaLikelihood } from 'mdml-engine/gam'
- * import { families } from 'mdml-engine/dists'
+ * import { etaLikelihood } from 'omai-engine/gam'
+ * import { families } from 'omai-engine/dists'
  * const lik = etaLikelihood(families.gaussianLocationScale(), Float64Array.of(1, 2, 3), Float64Array.of(1, 1, 1), [
  *   { X: Float64Array.of(1, 1, 1), p: 1 }, { X: Float64Array.of(1, 1, 1), p: 1 },
  * ])
@@ -266,7 +266,7 @@ export function etaLikelihood(
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { differencedLikelihood } from 'mdml-engine/gam'
+ * import { differencedLikelihood } from 'omai-engine/gam'
  * // l(b) = -b^2 / 2 - b^4 / 12: information 1 + b^2
  * const lik = differencedLikelihood(1, (b) => ({
  *   logLik: -(b[0] ** 2) / 2 - b[0] ** 4 / 12, gradient: Float64Array.of(-b[0] - b[0] ** 3 / 3),
@@ -337,13 +337,13 @@ export interface ExtendedModelOptions {
  * @param terms - For each predictor of the family, its terms (default one smooth per column for each).
  * @param options - Prior weights.
  * @returns The model.
- * @throws MdmlError `shape` if the number of term lists differs from the number of predictors; `value` for fewer
+ * @throws OmaiError `shape` if the number of term lists differs from the number of predictors; `value` for fewer
  *   observations than coefficients or a shape-constrained term.
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { extendedModel, s } from 'mdml-engine/gam'
- * import { families } from 'mdml-engine/dists'
+ * import { extendedModel, s } from 'omai-engine/gam'
+ * import { families } from 'omai-engine/dists'
  * const x = Array.from({ length: 30 }, (_, i) => [i / 29])
  * const y = x.map((r) => 0.2 + 0.6 * (r[0] ?? 0))
  * const model = extendedModel(x, y, families.betaRegression(), [[s(0, { k: 5 })]])
@@ -361,7 +361,7 @@ export function extendedModel(
   const response = targetVector(y, 'gam', m.n)
   const K = family.predictors.length
   if (terms !== undefined && terms.length !== K) {
-    throw new MdmlError('shape', `gam: ${family.name} has ${K} predictors but ${terms.length} term lists were given`)
+    throw new OmaiError('shape', `gam: ${family.name} has ${K} predictors but ${terms.length} term lists were given`)
   }
   const weights =
     options.weights === undefined ? new Float64Array(m.n).fill(1) : targetVector(options.weights, 'gam', m.n)
@@ -390,11 +390,11 @@ export function extendedModel(
  * @param aux - The aux parameters.
  * @param constants - The starting value of each predictor's intercept (ignored where it is dropped).
  * @returns The model.
- * @throws MdmlError `value` for a shape-constrained term.
+ * @throws OmaiError `value` for a shape-constrained term.
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { buildDesign, differencedLikelihood, linear, modelFromDesigns } from 'mdml-engine/gam'
+ * import { buildDesign, differencedLikelihood, linear, modelFromDesigns } from 'omai-engine/gam'
  * const design = buildDesign([[0], [1], [2]], [linear(0)])
  * const model = modelFromDesigns(3, [{ name: 'mean', design, dropIntercept: false }], (cols) =>
  *   differencedLikelihood(cols[0].p, () => ({ logLik: 0, gradient: new Float64Array(2), information: new Float64Array(4) })), [], [0])
@@ -414,7 +414,7 @@ export function modelFromDesigns(
   let P = 0
   for (const { name, design, dropIntercept } of parts) {
     if (design.constraints !== undefined) {
-      throw new MdmlError('value', 'gam: shape-constrained terms are not supported by the extended models')
+      throw new OmaiError('value', 'gam: shape-constrained terms are not supported by the extended models')
     }
     const drop = dropIntercept ? 1 : 0
     const width = design.p - drop
@@ -458,7 +458,7 @@ export interface Inverted {
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { invertSafely } from 'mdml-engine/gam'
+ * import { invertSafely } from 'omai-engine/gam'
  * const r = invertSafely(Float64Array.of(2, 0, 0, -2), 2)
  * [r.modified, Array.from(r.inverse)] // => [true, [0.5, 0, 0, 0.5]]
  * ```
@@ -530,12 +530,12 @@ export interface InnerOptions {
  * @param aux - The aux parameters.
  * @param options - The warm start, the solver, tolerance and iteration cap.
  * @returns The fit.
- * @throws MdmlError `value` if the log-likelihood is not finite at the starting point.
+ * @throws OmaiError `value` if the log-likelihood is not finite at the starting point.
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { extendedModel, innerExtendedFit, assemblePenalty, s } from 'mdml-engine/gam'
- * import { families } from 'mdml-engine/dists'
+ * import { extendedModel, innerExtendedFit, assemblePenalty, s } from 'omai-engine/gam'
+ * import { families } from 'omai-engine/dists'
  * const x = Array.from({ length: 30 }, (_, i) => [i / 29])
  * const y = x.map((r) => 0.2 + 0.6 * (r[0] ?? 0))
  * const model = extendedModel(x, y, families.betaRegression(), [[s(0, { k: 5 })]])
@@ -585,7 +585,7 @@ export function innerExtendedFit(
   }
   let f = objective(beta)
   if (!Number.isFinite(f))
-    throw new MdmlError('value', 'gam: the log-likelihood is not finite at the starting coefficients')
+    throw new OmaiError('value', 'gam: the log-likelihood is not finite at the starting coefficients')
   let iterations = 0
   let gradNorm = Number.POSITIVE_INFINITY
   for (; iterations < (options.maxIter ?? 100); iterations++) {
@@ -683,8 +683,8 @@ function valueOnly(
  *   (JASA 111, 2016).
  * @example
  * ```ts
- * import { evaluateExtended, extendedModel, s } from 'mdml-engine/gam'
- * import { families } from 'mdml-engine/dists'
+ * import { evaluateExtended, extendedModel, s } from 'omai-engine/gam'
+ * import { families } from 'omai-engine/dists'
  * const x = Array.from({ length: 40 }, (_, i) => [i / 39])
  * const y = x.map((r, i) => 0.5 + 0.3 * Math.sin(5 * (r[0] ?? 0)) + 0.05 * Math.sin(i * 7.3))
  * const model = extendedModel(x, y, families.betaRegression(), [[s(0, { k: 6 })]])
@@ -778,8 +778,8 @@ export function evaluateExtended(
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { evaluateExtended, extendedHessian, extendedModel, s } from 'mdml-engine/gam'
- * import { families } from 'mdml-engine/dists'
+ * import { evaluateExtended, extendedHessian, extendedModel, s } from 'omai-engine/gam'
+ * import { families } from 'omai-engine/dists'
  * const x = Array.from({ length: 40 }, (_, i) => [i / 39])
  * const y = x.map((r, i) => 0.5 + 0.3 * Math.sin(5 * (r[0] ?? 0)) + 0.05 * Math.sin(i * 7.3))
  * const model = extendedModel(x, y, families.betaRegression(), [[s(0, { k: 6 })]])
@@ -793,7 +793,7 @@ export function extendedHessian(
   options: EvaluateOptions = {},
   h = 0.02,
 ): Float64Array {
-  if (at.gradient === undefined) throw new MdmlError('value', 'extendedHessian: needs the gradient')
+  if (at.gradient === undefined) throw new OmaiError('value', 'extendedHessian: needs the gradient')
   const m = at.logLambda.length
   const d = at.gradient.length
   const out = new Float64Array(d * d)
@@ -904,13 +904,13 @@ function startingLogLambda(model: ExtendedModel, sp: readonly number[] | undefin
  * @param hyper - The method, starting or fixed smoothing and aux parameters, the iteration cap and the inner solver.
  * @param key - The run's key (for a stochastic inner solver).
  * @returns The algorithm.
- * @throws MdmlError `shape` if `sp` or `aux` has the wrong length.
+ * @throws OmaiError `shape` if `sp` or `aux` has the wrong length.
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { EXTENDED_DEFAULTS, extendedAlgorithm, extendedModel, s } from 'mdml-engine/gam'
- * import { families } from 'mdml-engine/dists'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { EXTENDED_DEFAULTS, extendedAlgorithm, extendedModel, s } from 'omai-engine/gam'
+ * import { families } from 'omai-engine/dists'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const x = Array.from({ length: 50 }, (_, i) => [i / 49])
  * const y = x.map((r, i) => 0.5 + 0.3 * Math.sin(5 * (r[0] ?? 0)) + 0.04 * Math.sin(i * 7.3))
  * const model = extendedModel(x, y, families.betaRegression(), [[s(0, { k: 6 })]])
@@ -925,13 +925,13 @@ export function extendedAlgorithm(
   const m = model.structure.blocks.length
   const q = model.aux.length
   if (hyper.sp !== undefined && hyper.sp.length !== m) {
-    throw new MdmlError('shape', `gam: sp has ${hyper.sp.length} entries for ${m} penalties`)
+    throw new OmaiError('shape', `gam: sp has ${hyper.sp.length} entries for ${m} penalties`)
   }
   if (hyper.aux !== undefined && hyper.aux.length !== q) {
-    throw new MdmlError('shape', `gam: aux has ${hyper.aux.length} entries for ${q} parameters`)
+    throw new OmaiError('shape', `gam: aux has ${hyper.aux.length} entries for ${q} parameters`)
   }
   if (hyper.method === 'fixed' && m > 0 && hyper.sp === undefined)
-    throw new MdmlError('value', 'gam: method "fixed" needs sp')
+    throw new OmaiError('value', 'gam: method "fixed" needs sp')
   const reml = hyper.method === 'reml'
   const fixedAux = !reml || q === 0
   const inner: InnerOptions = { ...(hyper.solver === undefined ? {} : { solver: hyper.solver }), key }
@@ -1060,8 +1060,8 @@ export interface ExtendedFitResult {
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { extendedModel, fitExtended, s } from 'mdml-engine/gam'
- * import { families } from 'mdml-engine/dists'
+ * import { extendedModel, fitExtended, s } from 'omai-engine/gam'
+ * import { families } from 'omai-engine/dists'
  * const x = Array.from({ length: 50 }, (_, i) => [i / 49])
  * const y = x.map((r, i) => 0.5 + 0.3 * Math.sin(5 * (r[0] ?? 0)) + 0.04 * Math.sin(i * 7.3))
  * const fit = fitExtended(extendedModel(x, y, families.betaRegression(), [[s(0, { k: 6 })]]))
@@ -1105,8 +1105,8 @@ export function fitExtended(
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { extendedModel, linear, predictorsAt } from 'mdml-engine/gam'
- * import { families } from 'mdml-engine/dists'
+ * import { extendedModel, linear, predictorsAt } from 'omai-engine/gam'
+ * import { families } from 'omai-engine/dists'
  * const m = extendedModel([[0], [1], [2], [3]], [0.2, 0.4, 0.5, 0.8], families.betaRegression(), [[linear(0)]])
  * predictorsAt(m, Float64Array.of(0, 1))[0]?.length // => 4
  * ```
@@ -1148,8 +1148,8 @@ export interface ExtendedPrediction {
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { extendedModel, fitExtended, predictExtended, s } from 'mdml-engine/gam'
- * import { families } from 'mdml-engine/dists'
+ * import { extendedModel, fitExtended, predictExtended, s } from 'omai-engine/gam'
+ * import { families } from 'omai-engine/dists'
  * const x = Array.from({ length: 40 }, (_, i) => [i / 39])
  * const y = x.map((r, i) => 0.5 + 0.2 * (r[0] ?? 0) + 0.03 * Math.sin(i * 7.3))
  * const model = extendedModel(x, y, families.betaRegression(), [[s(0, { k: 5 })]])
@@ -1216,8 +1216,8 @@ export interface ExtendedTermTest {
  * @reference S. N. Wood, On p-values for smooth components of an extended empirical Bayesian GAM (Biometrika 100, 2013).
  * @example
  * ```ts
- * import { extendedModel, extendedTermTests, fitExtended, s } from 'mdml-engine/gam'
- * import { families } from 'mdml-engine/dists'
+ * import { extendedModel, extendedTermTests, fitExtended, s } from 'omai-engine/gam'
+ * import { families } from 'omai-engine/dists'
  * const x = Array.from({ length: 80 }, (_, i) => [i / 79])
  * const y = x.map((r, i) => Math.min(0.95, Math.max(0.05, 0.2 + 0.6 * (r[0] ?? 0) + 0.1 * Math.sin(i * 12.9898))))
  * const model = extendedModel(x, y, families.betaRegression(), [[s(0, { k: 5 })]])

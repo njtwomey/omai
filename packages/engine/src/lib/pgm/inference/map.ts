@@ -52,7 +52,7 @@ function resultOf(model: DiscreteModel, c: Compiled, x: Int32Array): MapResult {
  * @concept map-inference
  * @example
  * ```ts
- * import { isingModel, maxProductMap } from 'mdml-engine/pgm'
+ * import { isingModel, maxProductMap } from 'omai-engine/pgm'
  * maxProductMap(isingModel({ rows: 1, cols: 3, coupling: 1, field: { s_0_0: 0.5 } })).assignment // => { s_0_0: '+1', s_0_1: '+1', s_0_2: '+1' }
  * ```
  */
@@ -105,8 +105,8 @@ export interface MplpState {
  * @concept map-inference
  * @example
  * ```ts
- * import { isingModel, mplpAlgorithm } from 'mdml-engine/pgm'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { isingModel, mplpAlgorithm } from 'omai-engine/pgm'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * runAlgorithm(mplpAlgorithm(isingModel({ rows: 3, cols: 3, coupling: 0.5, field: 0.2 })), { maxSteps: 200 }).status // => 'converged'
  * ```
  */
@@ -216,7 +216,7 @@ export function mplpAlgorithm(model: DiscreteModel, options: MplpOptions = {}): 
  * @concept map-inference
  * @example
  * ```ts
- * import { isingModel, mplp } from 'mdml-engine/pgm'
+ * import { isingModel, mplp } from 'omai-engine/pgm'
  * const r = mplp(isingModel({ rows: 1, cols: 3, coupling: 1, field: { s_0_0: -0.5 } }))
  * [r.assignment.s_0_2, Math.abs(r.integralityGap) < 1e-9] // => ['-1', true]
  * ```
@@ -273,8 +273,8 @@ export interface IcmState {
  * @concept map-inference
  * @example
  * ```ts
- * import { isingModel, iteratedConditionalModes } from 'mdml-engine/pgm'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { isingModel, iteratedConditionalModes } from 'omai-engine/pgm'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const r = runAlgorithm(iteratedConditionalModes(isingModel({ rows: 1, cols: 3, coupling: 1 }), { s_0_0: 1, s_0_1: 0, s_0_2: 1 }), { maxSteps: 10 })
  * Array.from(r.state.x) // => [0, 0, 0]
  * ```
@@ -335,8 +335,8 @@ export function iteratedConditionalModes(
  * @concept map-inference
  * @example
  * ```ts
- * import { isingModel, localSearchMap } from 'mdml-engine/pgm'
- * import { key } from 'mdml-engine/random'
+ * import { isingModel, localSearchMap } from 'omai-engine/pgm'
+ * import { key } from 'omai-engine/random'
  * localSearchMap(isingModel({ rows: 2, cols: 2, coupling: 1, field: 0.1 }), { key: key(0) }).assignment // => { s_0_0: '+1', s_0_1: '+1', s_1_0: '+1', s_1_1: '+1' }
  * ```
  */

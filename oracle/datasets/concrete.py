@@ -4,8 +4,8 @@ The repository publishes a spreadsheet; this reads the CSV rendering of the same
 dataset.
 """
 
-from mdml_oracle.uci import BASE, table_rows
-from mdml_oracle.vendor import fetch_pinned, render_regression
+from omai_oracle.uci import BASE, table_rows
+from omai_oracle.vendor import fetch_pinned, render_regression
 
 TARGET = "packages/engine/src/lib/datasets/_data/concrete.data.ts"
 URL = f"{BASE}/165/data.csv"

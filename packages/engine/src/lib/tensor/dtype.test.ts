@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import * as T from './index.ts'
 
 const nan = Number.NaN
@@ -275,6 +275,6 @@ describe('the dtype of every operation family, for every input dtype', () => {
       [0, 0],
       [1.5, 3],
     ] as const)
-      expect(() => normaliseAxis(axis, rank), `${axis} ${rank}`).toThrow(MdmlError)
+      expect(() => normaliseAxis(axis, rank), `${axis} ${rank}`).toThrow(OmaiError)
   })
 })

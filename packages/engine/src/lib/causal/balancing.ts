@@ -5,7 +5,7 @@
  * default; every solver of `smoothSolvers` reaches the same weights) and as a logged algorithm.
  */
 
-import { MdmlError, maxOf } from '../base/index.ts'
+import { maxOf, OmaiError } from '../base/index.ts'
 import {
   analyticObjective,
   type GradientPath,
@@ -34,7 +34,7 @@ import { type BalanceRow, balanceTable } from './nuisance.ts'
  * @returns The objective and the start `lambda = 0`.
  * @example
  * ```ts
- * import { entropyBalancingProblem } from 'mdml-engine/causal'
+ * import { entropyBalancingProblem } from 'omai-engine/causal'
  * entropyBalancingProblem([-1, 0, 1, 2], 1, [0.5]).x0 // => [0]
  * ```
  */
@@ -112,8 +112,8 @@ export function entropyBalancingProblem(
  * @returns The algorithm; its state holds the dual coefficients `x`.
  * @example
  * ```ts
- * import { entropyBalancingAlgorithm } from 'mdml-engine/causal'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { entropyBalancingAlgorithm } from 'omai-engine/causal'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const alg = entropyBalancingAlgorithm([-1, 0, 1, 2], 1, [0.5])
  * runAlgorithm(alg, { maxSteps: 50 }).status // => 'converged'
  * ```
@@ -176,7 +176,7 @@ function momentFeatures(p: Prepared, order: 1 | 2): { z: Float64Array; q: number
  * @returns The effect with the weights, the balance table and the dual coefficients.
  * @example
  * ```ts
- * import { entropyBalancing } from 'mdml-engine/causal'
+ * import { entropyBalancing } from 'omai-engine/causal'
  * const x = [[0], [1], [2], [3], [1], [2], [3], [4]]
  * const r = entropyBalancing({ x, treatment: [0, 0, 0, 0, 1, 1, 1, 1], outcome: [0, 1, 2, 3, 3, 4, 5, 6] })
  * r.estimate.value // => 2
@@ -204,7 +204,7 @@ export function entropyBalancing(data: CausalData, options: EntropyBalancingOpti
     )
     const solved = solveSmooth(entropyBalancingProblem(moments, q, target), solver, key, 500, 'entropyBalancing')
     if (!(solved.gradNorm < 1e-6))
-      throw new MdmlError(
+      throw new OmaiError(
         'value',
         `entropyBalancing: the ${name} arm cannot be balanced to the target (it lies outside their convex hull)`,
       )

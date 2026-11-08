@@ -5,7 +5,7 @@
  * generating functions, Cauchy products and linear recurrences.
  */
 
-import { kahanSum, MdmlError } from '../base/index.ts'
+import { kahanSum, OmaiError } from '../base/index.ts'
 import { wynnEpsilon } from '../numerics/approximation/index.ts'
 import { polymul } from '../numerics/polynomial/index.ts'
 import { quad } from '../numerics/quadrature/index.ts'
@@ -36,7 +36,7 @@ export type Sequence = (n: number) => number
  * @concept sequences
  * @example
  * ```ts
- * import { sequenceTerms } from 'mdml-engine/foundations'
+ * import { sequenceTerms } from 'omai-engine/foundations'
  * sequenceTerms((n) => 1 / n, 4, 1) // => [1, 0.5, 0.3333333333333333, 0.25]
  * ```
  */
@@ -52,7 +52,7 @@ export function sequenceTerms(a: Sequence, count: number, start = 0): number[] {
  * @concept partial-sums
  * @example
  * ```ts
- * import { partialSums } from 'mdml-engine/foundations'
+ * import { partialSums } from 'omai-engine/foundations'
  * partialSums([1, 0.5, 0.25, 0.125]) // => [1, 1.5, 1.75, 1.875]
  * ```
  */
@@ -83,7 +83,7 @@ export function partialSums(terms: readonly number[]): number[] {
  * @concept series
  * @example
  * ```ts
- * import { seriesSum } from 'mdml-engine/foundations'
+ * import { seriesSum } from 'omai-engine/foundations'
  * // 1 - 1/2 + 1/3 - ... = ln 2
  * Math.abs(seriesSum((n) => (-1) ** n / (n + 1), 20).accelerated - Math.LN2) < 1e-12 // => true
  * seriesSum((n) => 1 / (n + 1) ** 2).method // => 'richardson'
@@ -151,7 +151,7 @@ function settle(ks: readonly number[], g: (k: number) => number): { value: numbe
  * @concept convergence-tests
  * @example
  * ```ts
- * import { nthTermTest } from 'mdml-engine/foundations'
+ * import { nthTermTest } from 'omai-engine/foundations'
  * nthTermTest((n) => n / (n + 1)).verdict // => 'diverges'
  * nthTermTest((n) => 1 / n).verdict // => 'inconclusive'
  * ```
@@ -179,7 +179,7 @@ export function nthTermTest(
  * @concept ratio-test
  * @example
  * ```ts
- * import { ratioTest } from 'mdml-engine/foundations'
+ * import { ratioTest } from 'omai-engine/foundations'
  * ratioTest((n) => 2 ** n / (n + 1) ** 3).verdict // => 'diverges'
  * Math.round(ratioTest((n) => 1 / 3 ** n).statistic * 1e9) / 1e9 // => 0.333333333
  * ```
@@ -202,7 +202,7 @@ export function ratioTest(a: Sequence, options: { readonly n?: number; readonly 
  * @concept root-test
  * @example
  * ```ts
- * import { rootTest } from 'mdml-engine/foundations'
+ * import { rootTest } from 'omai-engine/foundations'
  * rootTest((n) => (n / (2 * n + 1)) ** n).verdict // => 'converges'
  * ```
  */
@@ -230,8 +230,8 @@ export function rootTest(
  * @concept integral-test
  * @example
  * ```ts
- * import { integralTest } from 'mdml-engine/foundations'
- * import { div, mul, type Value } from 'mdml-engine/tensor'
+ * import { integralTest } from 'omai-engine/foundations'
+ * import { div, mul, type Value } from 'omai-engine/tensor'
  * integralTest((x: Value) => div(1, mul(x, x))).statistic // => 1
  * integralTest((x: Value) => div(1, x)).verdict // => 'diverges'
  * ```
@@ -256,7 +256,7 @@ export function integralTest(f: (x: Value) => Value, from = 1): ConvergenceTest 
  * @concept p-series
  * @example
  * ```ts
- * import { pSeriesTest } from 'mdml-engine/foundations'
+ * import { pSeriesTest } from 'omai-engine/foundations'
  * pSeriesTest(2).verdict // => 'converges'
  * pSeriesTest(1).verdict // => 'diverges'
  * ```
@@ -277,7 +277,7 @@ export function pSeriesTest(p: number): ConvergenceTest {
  * @concept comparison-test
  * @example
  * ```ts
- * import { limitComparisonTest } from 'mdml-engine/foundations'
+ * import { limitComparisonTest } from 'omai-engine/foundations'
  * limitComparisonTest((n) => 1 / (n * n + n + 1), (n) => 1 / (n * n), true).verdict // => 'converges'
  * ```
  */
@@ -298,7 +298,7 @@ export function limitComparisonTest(a: Sequence, b: Sequence, bConverges: boolea
  * @concept alternating-series
  * @example
  * ```ts
- * import { alternatingSeriesTest } from 'mdml-engine/foundations'
+ * import { alternatingSeriesTest } from 'omai-engine/foundations'
  * alternatingSeriesTest((n) => (-1) ** n / (n + 1)).verdict // => 'converges'
  * ```
  */
@@ -334,7 +334,7 @@ export function alternatingSeriesTest(a: Sequence, n = 200): ConvergenceTest {
  * @concept radius-of-convergence
  * @example
  * ```ts
- * import { radiusOfConvergence } from 'mdml-engine/foundations'
+ * import { radiusOfConvergence } from 'omai-engine/foundations'
  * Math.round(radiusOfConvergence((n) => 2 ** -n * (n + 1)).ratio * 1e6) / 1e6 // => 2
  * ```
  */
@@ -369,8 +369,8 @@ export interface FourierCoefficients {
  * @concept fourier-series
  * @example
  * ```ts
- * import { fourierCoefficients } from 'mdml-engine/foundations'
- * import { sign } from 'mdml-engine/tensor'
+ * import { fourierCoefficients } from 'omai-engine/foundations'
+ * import { sign } from 'omai-engine/tensor'
  * fourierCoefficients(sign, 2 * Math.PI, 3, { points: [0] }).b.map((v) => Math.round(v * 1e10) / 1e10) // => [0, 1.2732395447, 0, 0.4244131816]
  * ```
  */
@@ -405,8 +405,8 @@ export function fourierCoefficients(
  * @concept fourier-series
  * @example
  * ```ts
- * import { fourierPartialSum } from 'mdml-engine/foundations'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { fourierPartialSum } from 'omai-engine/foundations'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(fourierPartialSum({ period: 2 * Math.PI, a: [2, 0], b: [0, 1] }, [Math.PI / 2])) // => [2]
  * ```
  */
@@ -433,7 +433,7 @@ export function fourierPartialSum(coefficients: FourierCoefficients, x: TensorLi
  * @concept gibbs-phenomenon
  * @example
  * ```ts
- * import { squareWaveCoefficients } from 'mdml-engine/foundations'
+ * import { squareWaveCoefficients } from 'omai-engine/foundations'
  * squareWaveCoefficients(3).b // => [0, 1.2732395447351628, 0, 0.4244131815783876]
  * ```
  */
@@ -465,7 +465,7 @@ export interface GibbsOvershoot {
  * @concept gibbs-phenomenon
  * @example
  * ```ts
- * import { gibbsOvershoot, squareWaveCoefficients } from 'mdml-engine/foundations'
+ * import { gibbsOvershoot, squareWaveCoefficients } from 'omai-engine/foundations'
  * Math.round(gibbsOvershoot(squareWaveCoefficients(401), 401, { at: 0, left: -1, right: 1 }).fraction * 1e4) / 1e4 // => 0.0895
  * ```
  */
@@ -474,7 +474,7 @@ export function gibbsOvershoot(
   terms: number,
   jump: { readonly at: number; readonly left: number; readonly right: number },
 ): GibbsOvershoot {
-  if (!(terms >= 1)) throw new MdmlError('value', 'gibbsOvershoot: need at least one term')
+  if (!(terms >= 1)) throw new OmaiError('value', 'gibbsOvershoot: need at least one term')
   const size = jump.right - jump.left
   const sign = size >= 0 ? 1 : -1
   // The first peak lies within about one period of the highest harmonic past the jump.
@@ -515,18 +515,18 @@ function fourierValues(coefficients: FourierCoefficients, xs: readonly number[],
  * @param denominator - Q, lowest degree first.
  * @param n - How many coefficients.
  * @returns `c_0, ..., c_{n-1}`.
- * @throws MdmlError with code `value` when Q(0) = 0.
+ * @throws OmaiError with code `value` when Q(0) = 0.
  * @concept generating-functions
  * @example
  * ```ts
- * import { rationalSeries } from 'mdml-engine/foundations'
+ * import { rationalSeries } from 'omai-engine/foundations'
  * // x / (1 - x - x^2) generates the Fibonacci numbers.
  * rationalSeries([0, 1], [1, -1, -1], 8) // => [0, 1, 1, 2, 3, 5, 8, 13]
  * ```
  */
 export function rationalSeries(numerator: readonly number[], denominator: readonly number[], n: number): number[] {
   const q0 = denominator[0] ?? 0
-  if (q0 === 0) throw new MdmlError('value', 'rationalSeries: the denominator must not vanish at 0')
+  if (q0 === 0) throw new OmaiError('value', 'rationalSeries: the denominator must not vanish at 0')
   const c: number[] = []
   for (let k = 0; k < n; k++) {
     let s = numerator[k] ?? 0
@@ -547,7 +547,7 @@ export function rationalSeries(numerator: readonly number[], denominator: readon
  * @concept generating-functions
  * @example
  * ```ts
- * import { seriesProduct } from 'mdml-engine/foundations'
+ * import { seriesProduct } from 'omai-engine/foundations'
  * // (1 + x + x^2 + ...)^2 = 1 + 2x + 3x^2 + ...
  * seriesProduct([1, 1, 1, 1], [1, 1, 1, 1], 4) // => [1, 2, 3, 4]
  * ```
@@ -568,13 +568,13 @@ export function seriesProduct(a: readonly number[], b: readonly number[], n?: nu
  * @concept recurrences
  * @example
  * ```ts
- * import { linearRecurrence } from 'mdml-engine/foundations'
+ * import { linearRecurrence } from 'omai-engine/foundations'
  * linearRecurrence([1, 1], [2, 1], 6) // => [2, 1, 3, 4, 7, 11]
  * ```
  */
 export function linearRecurrence(coefficients: readonly number[], initial: readonly number[], n: number): number[] {
   const d = coefficients.length
-  if (initial.length !== d) throw new MdmlError('value', 'linearRecurrence: give one initial term per coefficient')
+  if (initial.length !== d) throw new OmaiError('value', 'linearRecurrence: give one initial term per coefficient')
   const out = initial.slice(0, n)
   for (let k = d; k < n; k++) {
     out.push(kahanSum(coefficients.map((c, j) => c * (out[k - 1 - j] ?? 0))))
@@ -592,7 +592,7 @@ export function linearRecurrence(coefficients: readonly number[], initial: reado
  * @concept generating-functions
  * @example
  * ```ts
- * import { recurrenceGeneratingFunction } from 'mdml-engine/foundations'
+ * import { recurrenceGeneratingFunction } from 'omai-engine/foundations'
  * recurrenceGeneratingFunction([1, 1], [0, 1]) // => { numerator: [0, 1], denominator: [1, -1, -1] }
  * ```
  */

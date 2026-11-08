@@ -4,7 +4,7 @@
  * so the simplex can be animated.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import type { Algorithm } from '../../trace/index.ts'
 import { boundArrays, clipInto } from './_bounds.ts'
 import { counted, isBudget } from './_budget.ts'
@@ -94,8 +94,8 @@ function simplexSpread(sim: readonly Float64Array[], fsim: Float64Array): { dx: 
  * @concept derivative-free-optimisation
  * @example
  * ```ts
- * import { nelderMeadAlgorithm } from 'mdml-engine/optim'
- * import { square, sum, type Value } from 'mdml-engine/tensor'
+ * import { nelderMeadAlgorithm } from 'omai-engine/optim'
+ * import { square, sum, type Value } from 'omai-engine/tensor'
  * nelderMeadAlgorithm((x) => sum(square(x as Value)), [1, 2]).name // => 'nelderMead'
  * ```
  */
@@ -106,7 +106,7 @@ export function nelderMeadAlgorithm(
 ): Algorithm<NelderMeadState> {
   const obj = flatObjective(f, x0)
   const n = obj.n
-  if (n === 0) throw new MdmlError('value', 'nelderMead: no parameters')
+  if (n === 0) throw new OmaiError('value', 'nelderMead: no parameters')
   const box = options.bounds === undefined ? undefined : boundArrays(options.bounds, n, 'nelderMead')
   const clip = (x: Float64Array): Float64Array => (box === undefined ? x : clipInto(x, box))
   const adaptive = options.adaptive ?? false
@@ -119,7 +119,7 @@ export function nelderMeadAlgorithm(
   const maxfun = options.maxEvaluations ?? 200 * n
   const simplex0 = options.initialSimplex
   if (simplex0 !== undefined && (simplex0.length !== n + 1 || simplex0.some((v) => v.length !== n)))
-    throw new MdmlError('shape', `nelderMead: initialSimplex must be ${n + 1} points of length ${n}`)
+    throw new OmaiError('shape', `nelderMead: initialSimplex must be ${n + 1} points of length ${n}`)
 
   const decide = (s: Omit<NelderMeadState, 'stop'>): NelderMeadState => {
     const { dx, df } = simplexSpread(s.simplex, s.fsim)
@@ -282,8 +282,8 @@ export function nelderMeadAlgorithm(
  * @index function Derivative-free Nelder-Mead simplex minimiser.
  * @example
  * ```ts
- * import { nelderMead } from 'mdml-engine/optim'
- * import { square, sub, sum, toFlat, type Value } from 'mdml-engine/tensor'
+ * import { nelderMead } from 'omai-engine/optim'
+ * import { square, sub, sum, toFlat, type Value } from 'omai-engine/tensor'
  * const r = nelderMead((x) => sum(square(sub(x as Value, [1, -2]))), [0, 0], { xatol: 1e-8, fatol: 1e-12 })
  * r.converged // => true
  * toFlat(r.x as Value).map((v) => Math.round(v * 1e6) / 1e6) // => [1, -2]

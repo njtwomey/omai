@@ -1,4 +1,4 @@
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { allocate, type DType } from '../dtype.ts'
 import { broadcastShapes, formatShape, type Shape, sizeOf, stridesOf } from '../shape.ts'
 import type { Tensor } from '../tensor.ts'
@@ -13,7 +13,7 @@ export function matmul<D extends DType>(a: Tensor<D>, b: Tensor<D>): Tensor<D> {
   const k2 = b.shape[rb - 2] ?? 1
   const n = b.shape[rb - 1] ?? 1
   if (ra < 2 || rb < 2 || k !== k2) {
-    throw new MdmlError('shape', `matmul: shapes ${formatShape(a.shape)} and ${formatShape(b.shape)} do not align`)
+    throw new OmaiError('shape', `matmul: shapes ${formatShape(a.shape)} and ${formatShape(b.shape)} do not align`)
   }
   const batchA = a.shape.slice(0, -2)
   const batchB = b.shape.slice(0, -2)
@@ -42,7 +42,7 @@ export function matmul<D extends DType>(a: Tensor<D>, b: Tensor<D>): Tensor<D> {
 export function transpose<D extends DType>(x: Tensor<D>, perm: readonly number[]): Tensor<D> {
   const rank = x.shape.length
   if (perm.length !== rank || new Set(perm).size !== rank || perm.some((p) => p < 0 || p >= rank)) {
-    throw new MdmlError('shape', `transpose: [${perm.join(', ')}] is not a permutation of ${rank} axes`)
+    throw new OmaiError('shape', `transpose: [${perm.join(', ')}] is not a permutation of ${rank} axes`)
   }
   const outShape = perm.map((p) => x.shape[p] ?? 1)
   const inStrides = stridesOf(x.shape)
@@ -60,7 +60,7 @@ export function transpose<D extends DType>(x: Tensor<D>, perm: readonly number[]
 export function broadcastTo<D extends DType>(x: Tensor<D>, shape: Shape): Tensor<D> {
   const target = broadcastShapes(x.shape, shape)
   if (target.length !== shape.length || target.some((n, i) => n !== shape[i])) {
-    throw new MdmlError('shape', `cannot broadcast ${formatShape(x.shape)} to ${formatShape(shape)}`)
+    throw new OmaiError('shape', `cannot broadcast ${formatShape(x.shape)} to ${formatShape(shape)}`)
   }
   const index = broadcastIndex(shape, x.shape)
   const out = allocate(x.dtype, index.length)
@@ -119,7 +119,7 @@ export function sliceScatter<D extends DType>(
 
 export function concat<D extends DType>(xs: readonly Tensor<D>[], axis: number): Tensor<D> {
   const first = xs[0]
-  if (first === undefined) throw new MdmlError('value', 'concat: need at least one tensor')
+  if (first === undefined) throw new OmaiError('value', 'concat: need at least one tensor')
   const total = xs.reduce((acc, x) => acc + (x.shape[axis] ?? 0), 0)
   const shape = first.shape.map((n, a) => (a === axis ? total : n))
   const { outer, inner } = lanes(shape, axis)
@@ -164,7 +164,7 @@ export function take<D extends DType>(x: Tensor<D>, indices: Int32Array, axis: n
   for (let o = 0; o < outer; o++) {
     for (let t = 0; t < indices.length; t++) {
       const index = indices[t] ?? 0
-      if (index < 0 || index >= n) throw new MdmlError('value', `take: index ${index} out of range for length ${n}`)
+      if (index < 0 || index >= n) throw new OmaiError('value', `take: index ${index} out of range for length ${n}`)
       const src = (o * n + index) * inner
       const dst = (o * indices.length + t) * inner
       for (let k = 0; k < inner; k++) out[dst + k] = x.data[src + k] ?? 0
@@ -206,7 +206,7 @@ export function takeAlongAxis<D extends DType>(x: Tensor<D>, indices: Tensor<'in
         const pos = (o * m + t) * inner + k
         const index = indices.data[pos] ?? 0
         if (index < 0 || index >= n) {
-          throw new MdmlError('value', `takeAlongAxis: index ${index} out of range for length ${n}`)
+          throw new OmaiError('value', `takeAlongAxis: index ${index} out of range for length ${n}`)
         }
         out[pos] = x.data[(o * n + index) * inner + k] ?? 0
       }

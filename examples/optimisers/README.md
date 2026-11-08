@@ -9,7 +9,7 @@ either as the Hessian itself (Newton) or as an estimate built from the last grad
 ## The method
 
 The function is `f(x, y) = (1 - x)^2 + 10 (y - x^2)^2`, started at (-1.2, 1). The first-order methods are built with
-`minimizer(f, start, optimiser)` from `mdml-engine/optim` and run by `runAlgorithm` (gradient descent with learning rate
+`minimizer(f, start, optimiser)` from `omai-engine/optim` and run by `runAlgorithm` (gradient descent with learning rate
 0.01, momentum with 0.005 and 0.9, Adam with 0.1). `bfgs`, `lbfgs` and `newton` are called with their default settings.
 Every run is recorded with a policy that keeps the parameters and the loss at every step.
 

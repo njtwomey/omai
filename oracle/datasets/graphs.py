@@ -3,7 +3,7 @@
 import json
 
 import networkx as nx
-from mdml_oracle.vendor import number_list, string_list
+from omai_oracle.vendor import number_list, string_list
 
 TARGET = "packages/engine/src/lib/datasets/_data/graphs.data.ts"
 

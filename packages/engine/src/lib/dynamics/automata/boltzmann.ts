@@ -7,7 +7,7 @@
  * velocity, the conserved mass and the Reynolds number.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import {
   type Algorithm,
   type Contract,
@@ -36,7 +36,7 @@ const OPP = [0, 3, 4, 1, 2, 7, 8, 5, 6] as const
  * @concept lattice-boltzmann
  * @example
  * ```ts
- * import { automata } from 'mdml-engine/dynamics'
+ * import { automata } from 'omai-engine/dynamics'
  * [automata.d2q9Equilibrium(0, 1, 0, 0), automata.d2q9Equilibrium(1, 1, 0, 0)] // => [0.4444444444444444, 0.1111111111111111]
  * ```
  */
@@ -92,7 +92,7 @@ export type LatticeBoltzmannPath =
  * @concept lattice-boltzmann
  * @example
  * ```ts
- * import { automata } from 'mdml-engine/dynamics'
+ * import { automata } from 'omai-engine/dynamics'
  * const f = Float64Array.from({ length: 9 }, (_, k) => automata.d2q9Equilibrium(k, 1.2, 0.05, 0))
  * const m = automata.d2q9Moments(f, 1)
  * [m.rho[0]?.toFixed(6), m.ux[0]?.toFixed(6)] // => ['1.200000', '0.050000']
@@ -135,7 +135,7 @@ export function d2q9Moments(
  * @concept lattice-boltzmann
  * @example
  * ```ts
- * import { automata } from 'mdml-engine/dynamics'
+ * import { automata } from 'omai-engine/dynamics'
  * automata.poiseuilleProfile(3, 1e-4, 1).map((u) => u.toExponential(3)) // => ['3.750e-4', '6.750e-4', '3.750e-4']
  * ```
  */
@@ -153,7 +153,7 @@ export function poiseuilleProfile(height: number, force: number, tau: number): n
  * @returns The contract.
  * @example
  * ```ts
- * import { automata } from 'mdml-engine/dynamics'
+ * import { automata } from 'omai-engine/dynamics'
  * Object.keys(automata.latticeBoltzmannContract(8, 8, [0, 0])).length // => 7
  * ```
  */
@@ -195,12 +195,12 @@ export function latticeBoltzmannContract(
  *
  * @param options - Size, relaxation time, force, boundaries, obstacle and starting fields.
  * @returns The algorithm.
- * @throws MdmlError with code `value` for a relaxation time of at most 1/2, a bad size or a solid mask of the wrong size.
+ * @throws OmaiError with code `value` for a relaxation time of at most 1/2, a bad size or a solid mask of the wrong size.
  * @concept lattice-boltzmann
  * @example
  * ```ts
- * import { automata } from 'mdml-engine/dynamics'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { automata } from 'omai-engine/dynamics'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * // A fluid at rest stays at rest, with its mass.
  * const s = runAlgorithm(automata.latticeBoltzmann({ width: 8, height: 8 }), { seed: 0, maxSteps: 20 }).state
  * automata.d2q9Moments(s.f, 64).rho.every((r) => Math.abs(r - 1) < 1e-12) // => true
@@ -217,9 +217,9 @@ export function latticeBoltzmann(
   const inflow = options.inflow
   positiveInt('latticeBoltzmann', 'width', width)
   positiveInt('latticeBoltzmann', 'height', height)
-  if (!(tau > 0.5)) throw new MdmlError('value', `latticeBoltzmann: tau must exceed 1/2, got ${tau}`)
+  if (!(tau > 0.5)) throw new OmaiError('value', `latticeBoltzmann: tau must exceed 1/2, got ${tau}`)
   if (options.solid !== undefined && options.solid.length !== width * height)
-    throw new MdmlError('value', 'latticeBoltzmann: solid must be width x height')
+    throw new OmaiError('value', 'latticeBoltzmann: solid must be width x height')
   const sites = width * height
   const nu = (tau - 0.5) / 3
   const solid = new Uint8Array(sites)

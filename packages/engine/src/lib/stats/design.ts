@@ -7,7 +7,7 @@
  * with Type I, II, and III sums of squares (`oneWayAnova`, `twoWayAnova`).
  */
 
-import { type Json, MdmlError, meanOf, type TestResult } from '../base/index.ts'
+import { type Json, meanOf, OmaiError, type TestResult } from '../base/index.ts'
 import { categorical, foldIn, type Key, key as makeKey, permutation, split, uniform } from '../random/index.ts'
 import { fromStorage, type Tensor, type TensorLike } from '../tensor/index.ts'
 import {
@@ -46,32 +46,32 @@ export interface SimpleRandomisationOptions {
  * @param n - Number of units $n \ge 1$ to assign.
  * @param options - `nArms` (default `2`), `probabilities`, and `exact` (default `false`).
  * @returns An `int32` tensor of shape `[n]` with arm indices in `0 .. K - 1`.
- * @throws MdmlError with code `value` if `n < 1`, `nArms < 2`, or probabilities are invalid.
+ * @throws OmaiError with code `value` if `n < 1`, `nArms < 2`, or probabilities are invalid.
  * @example
  * ```ts
- * import { key } from 'mdml-engine/random'
- * import { simpleRandomisation } from 'mdml-engine/stats'
+ * import { key } from 'omai-engine/random'
+ * import { simpleRandomisation } from 'omai-engine/stats'
  * const arms = simpleRandomisation(key(0), 6, { exact: true })
  * arms.data.filter((a) => a === 1).length // => 3
  * ```
  */
 export function simpleRandomisation(k: Key, n: number, options: SimpleRandomisationOptions = {}): Tensor<'int32'> {
   if (!Number.isInteger(n) || n < 1) {
-    throw new MdmlError('value', `simpleRandomisation: n must be a positive integer, got ${n}`)
+    throw new OmaiError('value', `simpleRandomisation: n must be a positive integer, got ${n}`)
   }
   const nArms = options.nArms ?? (options.probabilities !== undefined ? options.probabilities.length : 2)
   if (!Number.isInteger(nArms) || nArms < 2) {
-    throw new MdmlError('value', `simpleRandomisation: nArms must be an integer >= 2, got ${nArms}`)
+    throw new OmaiError('value', `simpleRandomisation: nArms must be an integer >= 2, got ${nArms}`)
   }
   const probs = options.probabilities ?? new Array<number>(nArms).fill(1 / nArms)
   if (probs.length !== nArms) {
-    throw new MdmlError('shape', `simpleRandomisation: probabilities length ${probs.length} must equal nArms=${nArms}`)
+    throw new OmaiError('shape', `simpleRandomisation: probabilities length ${probs.length} must equal nArms=${nArms}`)
   }
   let pSum = 0
   for (let a = 0; a < nArms; a++) {
     const p = probs[a] ?? 0
     if (!(p > 0) || !Number.isFinite(p)) {
-      throw new MdmlError('value', `simpleRandomisation: probabilities[${a}] must be > 0, got ${p}`)
+      throw new OmaiError('value', `simpleRandomisation: probabilities[${a}] must be > 0, got ${p}`)
     }
     pSum += p
   }
@@ -110,8 +110,8 @@ export function simpleRandomisation(k: Key, n: number, options: SimpleRandomisat
  * @returns An `int32` tensor of shape `[n]` with arm indices in `0 .. K - 1`.
  * @example
  * ```ts
- * import { key } from 'mdml-engine/random'
- * import { completelyRandomised } from 'mdml-engine/stats'
+ * import { key } from 'omai-engine/random'
+ * import { completelyRandomised } from 'omai-engine/stats'
  * completelyRandomised(key(1), 8, { exact: true }).shape // => [8]
  * ```
  */
@@ -134,23 +134,23 @@ export interface PermutedBlockOptions {
 function buildBlockTemplate(options: PermutedBlockOptions, name: string): Int32Array {
   const nArms = options.nArms ?? (options.ratios !== undefined ? options.ratios.length : 2)
   if (!Number.isInteger(nArms) || nArms < 2) {
-    throw new MdmlError('value', `${name}: nArms must be an integer >= 2, got ${nArms}`)
+    throw new OmaiError('value', `${name}: nArms must be an integer >= 2, got ${nArms}`)
   }
   const ratios = options.ratios ?? new Array<number>(nArms).fill(1)
   if (ratios.length !== nArms) {
-    throw new MdmlError('shape', `${name}: ratios length ${ratios.length} must equal nArms=${nArms}`)
+    throw new OmaiError('shape', `${name}: ratios length ${ratios.length} must equal nArms=${nArms}`)
   }
   let ratioSum = 0
   for (let a = 0; a < nArms; a++) {
     const r = ratios[a] ?? 0
     if (!Number.isInteger(r) || r < 1) {
-      throw new MdmlError('value', `${name}: ratios[${a}] must be a positive integer, got ${r}`)
+      throw new OmaiError('value', `${name}: ratios[${a}] must be a positive integer, got ${r}`)
     }
     ratioSum += r
   }
   const blockSize = options.blockSize ?? 2 * ratioSum
   if (!Number.isInteger(blockSize) || blockSize < ratioSum || blockSize % ratioSum !== 0) {
-    throw new MdmlError(
+    throw new OmaiError(
       'value',
       `${name}: blockSize (${blockSize}) must be a positive integer multiple of sum(ratios)=${ratioSum}`,
     )
@@ -174,11 +174,11 @@ function buildBlockTemplate(options: PermutedBlockOptions, name: string): Int32A
  * @param n - Number of units $n \ge 1$.
  * @param options - `nArms` (default `2`), integer `ratios` (default all `1`), and `blockSize` (default `2 * sum(ratios)`).
  * @returns An `int32` tensor of shape `[n]` with arm indices in `0 .. K - 1`.
- * @throws MdmlError with code `value` if `blockSize` is not a positive multiple of `sum(ratios)`.
+ * @throws OmaiError with code `value` if `blockSize` is not a positive multiple of `sum(ratios)`.
  * @example
  * ```ts
- * import { key } from 'mdml-engine/random'
- * import { permutedBlockRandomisation } from 'mdml-engine/stats'
+ * import { key } from 'omai-engine/random'
+ * import { permutedBlockRandomisation } from 'omai-engine/stats'
  * const arms = permutedBlockRandomisation(key(0), 8, { blockSize: 4 })
  * arms.data.slice(0, 4).reduce((a, b) => a + b, 0) // => 2
  * arms.data.slice(4, 8).reduce((a, b) => a + b, 0) // => 2
@@ -186,7 +186,7 @@ function buildBlockTemplate(options: PermutedBlockOptions, name: string): Int32A
  */
 export function permutedBlockRandomisation(k: Key, n: number, options: PermutedBlockOptions = {}): Tensor<'int32'> {
   if (!Number.isInteger(n) || n < 1) {
-    throw new MdmlError('value', `permutedBlockRandomisation: n must be a positive integer, got ${n}`)
+    throw new OmaiError('value', `permutedBlockRandomisation: n must be a positive integer, got ${n}`)
   }
   const template = buildBlockTemplate(options, 'permutedBlockRandomisation')
   const B = template.length
@@ -211,8 +211,8 @@ export function permutedBlockRandomisation(k: Key, n: number, options: PermutedB
  * @returns An `int32` tensor of shape `[n]` with arm indices in `0 .. K - 1`.
  * @example
  * ```ts
- * import { key } from 'mdml-engine/random'
- * import { blockedDesign } from 'mdml-engine/stats'
+ * import { key } from 'omai-engine/random'
+ * import { blockedDesign } from 'omai-engine/stats'
  * blockedDesign(key(0), 4, { blockSize: 4 }).data.reduce((a, b) => a + b, 0) // => 2
  * ```
  */
@@ -230,8 +230,8 @@ export function blockedDesign(k: Key, n: number, options: PermutedBlockOptions =
  * @returns An `int32` tensor of shape `[n]` with arm indices in `0 .. K - 1`.
  * @example
  * ```ts
- * import { key } from 'mdml-engine/random'
- * import { stratifiedRandomisation } from 'mdml-engine/stats'
+ * import { key } from 'omai-engine/random'
+ * import { stratifiedRandomisation } from 'omai-engine/stats'
  * const strata = [0, 0, 0, 0, 1, 1, 1, 1]
  * const arms = stratifiedRandomisation(key(7), strata, { blockSize: 4 })
  * arms.data.slice(0, 4).reduce((a, b) => a + b, 0) // => 2
@@ -247,7 +247,7 @@ export function stratifiedRandomisation(
   const n = m.rows
   const p = m.cols
   if (n < 1) {
-    throw new MdmlError('value', 'stratifiedRandomisation: strata must have at least 1 row')
+    throw new OmaiError('value', 'stratifiedRandomisation: strata must have at least 1 row')
   }
   buildBlockTemplate(options, 'stratifiedRandomisation')
 
@@ -397,8 +397,8 @@ function candidateImbalanceForUnit(
  * @returns A stepped `Algorithm<MinimizationState>` advancing one unit arrival per step; run it for `n` steps.
  * @example
  * ```ts
- * import { minimizationAlgorithm } from 'mdml-engine/stats'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { minimizationAlgorithm } from 'omai-engine/stats'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const algo = minimizationAlgorithm([[0, 1], [0, 1], [1, 0], [1, 0]], { pBiased: 1 })
  * runAlgorithm(algo, { seed: 0, maxSteps: 4 }).state.imbalance // => 0
  * ```
@@ -411,25 +411,25 @@ export function minimizationAlgorithm(
   const n = m.rows
   const p = m.cols
   if (n < 1) {
-    throw new MdmlError('value', 'minimizationAlgorithm: covariates must have at least 1 row')
+    throw new OmaiError('value', 'minimizationAlgorithm: covariates must have at least 1 row')
   }
   const nArms = options.nArms ?? 2
   if (!Number.isInteger(nArms) || nArms < 2) {
-    throw new MdmlError('value', `minimizationAlgorithm: nArms must be an integer >= 2, got ${nArms}`)
+    throw new OmaiError('value', `minimizationAlgorithm: nArms must be an integer >= 2, got ${nArms}`)
   }
   const pBiased = options.pBiased ?? 0.8
   if (!(pBiased >= 1 / nArms && pBiased <= 1) || !Number.isFinite(pBiased)) {
-    throw new MdmlError('value', `minimizationAlgorithm: pBiased must be in [1/nArms, 1], got ${pBiased}`)
+    throw new OmaiError('value', `minimizationAlgorithm: pBiased must be in [1/nArms, 1], got ${pBiased}`)
   }
   const wArr = new Float64Array(p)
   if (options.weights !== undefined) {
     if (options.weights.length !== p) {
-      throw new MdmlError('shape', `minimizationAlgorithm: weights length ${options.weights.length} must equal p=${p}`)
+      throw new OmaiError('shape', `minimizationAlgorithm: weights length ${options.weights.length} must equal p=${p}`)
     }
     for (let j = 0; j < p; j++) {
       const wj = options.weights[j] ?? 0
       if (!(wj > 0) || !Number.isFinite(wj)) {
-        throw new MdmlError('value', `minimizationAlgorithm: weights[${j}] must be > 0, got ${wj}`)
+        throw new OmaiError('value', `minimizationAlgorithm: weights[${j}] must be > 0, got ${wj}`)
       }
       wArr[j] = wj
     }
@@ -544,8 +544,8 @@ export interface MinimizationResult {
  * @returns `MinimizationResult` with `assignments`, `imbalance`, `imbalanceHistory`, and final `state`.
  * @example
  * ```ts
- * import { key } from 'mdml-engine/random'
- * import { minimizationAllocation } from 'mdml-engine/stats'
+ * import { key } from 'omai-engine/random'
+ * import { minimizationAllocation } from 'omai-engine/stats'
  * const cov = [[0, 0], [0, 0], [1, 1], [1, 1]]
  * const res = minimizationAllocation(cov, { key: key(0), pBiased: 1 })
  * res.imbalance // => 0
@@ -602,11 +602,11 @@ export interface MatchedPairsResult {
  * @param covariates - 1-D vector or 2-D matrix of baseline covariates of shape `[n, p]` ($n \ge 2$).
  * @param options - `distance` (`'mahalanobis'` default or `'euclidean'`) and optional PRNG `key`.
  * @returns Matched pairs, pairwise distances, `meanDistance`, `pairIds`, and binary `assignments`.
- * @throws MdmlError with code `value` if fewer than 2 units are provided.
+ * @throws OmaiError with code `value` if fewer than 2 units are provided.
  * @example
  * ```ts
- * import { key } from 'mdml-engine/random'
- * import { matchedPairsDesign } from 'mdml-engine/stats'
+ * import { key } from 'omai-engine/random'
+ * import { matchedPairsDesign } from 'omai-engine/stats'
  * const res = matchedPairsDesign([1.0, 1.1, 10.0, 10.2], { key: key(0) })
  * res.pairs // => [[0, 1], [2, 3]]
  * res.assignments.data[0] !== res.assignments.data[1] // => true
@@ -617,7 +617,7 @@ export function matchedPairsDesign(covariates: TensorLike, options: MatchedPairs
   const n = m.rows
   const p = m.cols
   if (n < 2) {
-    throw new MdmlError('value', `matchedPairsDesign: need at least 2 units, got ${n}`)
+    throw new OmaiError('value', `matchedPairsDesign: need at least 2 units, got ${n}`)
   }
 
   const metric = options.distance ?? 'mahalanobis'
@@ -745,7 +745,7 @@ export function matchedPairsDesign(covariates: TensorLike, options: MatchedPairs
  * @returns Matched-pairs design result.
  * @example
  * ```ts
- * import { matchedPairs } from 'mdml-engine/stats'
+ * import { matchedPairs } from 'omai-engine/stats'
  * matchedPairs([0, 0.1, 5, 5.1]).pairs // => [[0, 1], [2, 3]]
  * ```
  */
@@ -774,10 +774,10 @@ export interface FullFactorialOptions {
  * @param levels - Number of two-level factors $k \ge 1$, or array of level counts `[L_1, ..., L_k]` ($L_j \ge 2$).
  * @param options - `coding` (`'coded'` default or `'index'`).
  * @returns Design matrix `Tensor` of shape `[nRuns, k]`.
- * @throws MdmlError with code `value` for invalid factor counts or level counts.
+ * @throws OmaiError with code `value` for invalid factor counts or level counts.
  * @example
  * ```ts
- * import { fullFactorialDesign } from 'mdml-engine/stats'
+ * import { fullFactorialDesign } from 'omai-engine/stats'
  * const X = fullFactorialDesign(3)
  * X.shape // => [8, 3]
  * Array.from(X.data.slice(0, 3)) // => [-1, -1, -1]
@@ -788,7 +788,7 @@ export function fullFactorialDesign(levels: number | readonly number[], options:
     typeof levels === 'number'
       ? (() => {
           if (!Number.isInteger(levels) || levels < 1 || levels > 20) {
-            throw new MdmlError('value', `fullFactorialDesign: k must be an integer in 1..20, got ${levels}`)
+            throw new OmaiError('value', `fullFactorialDesign: k must be an integer in 1..20, got ${levels}`)
           }
           return new Array<number>(levels).fill(2)
         })()
@@ -796,13 +796,13 @@ export function fullFactorialDesign(levels: number | readonly number[], options:
 
   const k = levelArr.length
   if (k < 1) {
-    throw new MdmlError('value', 'fullFactorialDesign: levels array must be non-empty')
+    throw new OmaiError('value', 'fullFactorialDesign: levels array must be non-empty')
   }
   let nRuns = 1
   for (let j = 0; j < k; j++) {
     const lj = levelArr[j] ?? 0
     if (!Number.isInteger(lj) || lj < 2) {
-      throw new MdmlError('value', `fullFactorialDesign: levels[${j}] must be an integer >= 2, got ${lj}`)
+      throw new OmaiError('value', `fullFactorialDesign: levels[${j}] must be an integer >= 2, got ${lj}`)
     }
     nRuns *= lj
   }
@@ -829,7 +829,7 @@ export function fullFactorialDesign(levels: number | readonly number[], options:
  * @returns Design matrix `Tensor` of shape `[nRuns, k]`.
  * @example
  * ```ts
- * import { fullFactorial } from 'mdml-engine/stats'
+ * import { fullFactorial } from 'omai-engine/stats'
  * fullFactorial(2).shape // => [4, 2]
  * ```
  */
@@ -866,7 +866,7 @@ function parseGeneratorSpecs(
 ): { readonly nBase: number; readonly genMasks: readonly number[]; readonly definingMasks: readonly number[] } {
   const p = generators.length
   if (p < 1 || p >= k) {
-    throw new MdmlError('value', `fractionalFactorialDesign: number of generators p=${p} must satisfy 1 <= p < k=${k}`)
+    throw new OmaiError('value', `fractionalFactorialDesign: number of generators p=${p} must satisfy 1 <= p < k=${k}`)
   }
   const nBase = k - p
   const genMasks: number[] = []
@@ -884,7 +884,7 @@ function parseGeneratorSpecs(
         const lhs = parts[0] ?? ''
         const lhsIdx = lhs.charCodeAt(0) - 65
         if (lhs.length !== 1 || lhsIdx !== targetFactor) {
-          throw new MdmlError(
+          throw new OmaiError(
             'value',
             `fractionalFactorialDesign: generator '${spec}' must define factor ${factorLabel(targetFactor)}`,
           )
@@ -893,7 +893,7 @@ function parseGeneratorSpecs(
       for (let c = 0; c < rhs.length; c++) {
         const fIdx = rhs.charCodeAt(c) - 65
         if (fIdx < 0 || fIdx >= nBase) {
-          throw new MdmlError(
+          throw new OmaiError(
             'value',
             `fractionalFactorialDesign: generator '${spec}' RHS must reference base factors A..${factorLabel(nBase - 1)}`,
           )
@@ -904,13 +904,13 @@ function parseGeneratorSpecs(
       for (let c = 0; c < spec.length; c++) {
         const fIdx = spec[c] ?? -1
         if (!Number.isInteger(fIdx) || fIdx < 0 || fIdx >= nBase) {
-          throw new MdmlError('value', `fractionalFactorialDesign: generator index ${fIdx} must be in 0..${nBase - 1}`)
+          throw new OmaiError('value', `fractionalFactorialDesign: generator index ${fIdx} must be in 0..${nBase - 1}`)
         }
         rhsMask ^= 1 << fIdx
       }
     }
     if (rhsMask === 0) {
-      throw new MdmlError('value', `fractionalFactorialDesign: generator ${gIdx} cannot be empty`)
+      throw new OmaiError('value', `fractionalFactorialDesign: generator ${gIdx} cannot be empty`)
     }
     genMasks.push(rhsMask)
     definingWords.push(rhsMask | (1 << targetFactor))
@@ -944,10 +944,10 @@ export interface AliasStructureResult {
  * @param k - Total number of two-level factors ($3 \le k \le 15$).
  * @param generators - Array of $p$ generator specifications (e.g. `['D=ABC']` or `[[0, 1, 2]]`).
  * @returns `AliasStructureResult` with `resolution`, `definingRelation`, and `aliases` for main effects and 2FIs.
- * @throws MdmlError with code `value` if generators are invalid.
+ * @throws OmaiError with code `value` if generators are invalid.
  * @example
  * ```ts
- * import { aliasStructure } from 'mdml-engine/stats'
+ * import { aliasStructure } from 'omai-engine/stats'
  * const info = aliasStructure(4, ['D=ABC'])
  * info.resolution // => 4
  * info.definingRelation // => ['I', 'ABCD']
@@ -957,7 +957,7 @@ export interface AliasStructureResult {
  */
 export function aliasStructure(k: number, generators: readonly (string | readonly number[])[]): AliasStructureResult {
   if (!Number.isInteger(k) || k < 3 || k > 15) {
-    throw new MdmlError('value', `aliasStructure: k must be an integer in 3..15, got ${k}`)
+    throw new OmaiError('value', `aliasStructure: k must be an integer in 3..15, got ${k}`)
   }
   const { nBase, definingMasks } = parseGeneratorSpecs(k, generators)
   const p = generators.length
@@ -1029,7 +1029,7 @@ export interface FractionalFactorialResult extends AliasStructureResult {
  * @returns `FractionalFactorialResult` containing the `[2^(k-p), k]` `design` matrix, `resolution`, `definingRelation`, and `aliases`.
  * @example
  * ```ts
- * import { fractionalFactorialDesign } from 'mdml-engine/stats'
+ * import { fractionalFactorialDesign } from 'omai-engine/stats'
  * const ff = fractionalFactorialDesign(4, ['D=ABC'])
  * ff.design.shape // => [8, 4]
  * ff.resolution // => 4
@@ -1076,7 +1076,7 @@ export function fractionalFactorialDesign(
  * @returns Fractional factorial design matrix and alias structure.
  * @example
  * ```ts
- * import { fractionalFactorial } from 'mdml-engine/stats'
+ * import { fractionalFactorial } from 'omai-engine/stats'
  * fractionalFactorial(3, ['C=AB']).resolution // => 3
  * ```
  */
@@ -1095,10 +1095,10 @@ export function fractionalFactorial(
  * @param n - Side length / number of treatments ($n \ge 1$).
  * @param options - Optional PRNG `key` for randomizing rows, columns, and symbols.
  * @returns An `int32` tensor of shape `[n, n]` with entries in `0 .. n - 1`.
- * @throws MdmlError with code `value` if `n < 1`.
+ * @throws OmaiError with code `value` if `n < 1`.
  * @example
  * ```ts
- * import { latinSquareDesign } from 'mdml-engine/stats'
+ * import { latinSquareDesign } from 'omai-engine/stats'
  * const sq = latinSquareDesign(3)
  * sq.shape // => [3, 3]
  * Array.from(sq.data) // => [0, 1, 2, 1, 2, 0, 2, 0, 1]
@@ -1106,7 +1106,7 @@ export function fractionalFactorial(
  */
 export function latinSquareDesign(n: number, options: { readonly key?: Key } = {}): Tensor<'int32'> {
   if (!Number.isInteger(n) || n < 1) {
-    throw new MdmlError('value', `latinSquareDesign: n must be a positive integer, got ${n}`)
+    throw new OmaiError('value', `latinSquareDesign: n must be a positive integer, got ${n}`)
   }
   let rowPerm: Int32Array = new Int32Array(n)
   let colPerm: Int32Array = new Int32Array(n)
@@ -1166,10 +1166,10 @@ export interface OneWayAnovaResult extends TestResult {
  * @param groups - Array of $k \ge 2$ 1-D group samples.
  * @param options - Optional confidence `level`.
  * @returns `OneWayAnovaResult` (`TestResult` plus ANOVA table and effect sizes).
- * @throws MdmlError with code `value` if fewer than 2 groups or total degrees of freedom $N - k < 1$.
+ * @throws OmaiError with code `value` if fewer than 2 groups or total degrees of freedom $N - k < 1$.
  * @example
  * ```ts
- * import { oneWayAnova } from 'mdml-engine/stats'
+ * import { oneWayAnova } from 'omai-engine/stats'
  * const res = oneWayAnova([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
  * Number(res.statistic.toFixed(4)) // => 27
  * Number(res.etaSquared.toFixed(4)) // => 0.9
@@ -1193,7 +1193,7 @@ export function oneWayAnova(groups: readonly TensorLike[]): OneWayAnovaResult {
   const dfBetween = k - 1
   const dfWithin = N - k
   if (dfWithin < 1) {
-    throw new MdmlError('value', `oneWayAnova: need total sample size N > k (got N=${N}, k=${k})`)
+    throw new OmaiError('value', `oneWayAnova: need total sample size N > k (got N=${N}, k=${k})`)
   }
   const grandMean = grandSum / N
   let ssBetween = 0
@@ -1339,10 +1339,10 @@ function combineDesignBlocks(
  * @param factorB - 1-D vector of numeric/integer level labels for Factor B (length $n$).
  * @param options - `ssType` (`'I'`, `'II'`, or `'III'`, default `'III'`), and `interaction` (default `true`).
  * @returns `TwoWayAnovaResult` with `factorA`, `factorB`, optional `interaction`, `residual`, `total`, and $R^2$.
- * @throws MdmlError with code `shape` or `value` if a factor has fewer than 2 levels or residual degrees of freedom $< 1$.
+ * @throws OmaiError with code `shape` or `value` if a factor has fewer than 2 levels or residual degrees of freedom $< 1$.
  * @example
  * ```ts
- * import { twoWayAnova } from 'mdml-engine/stats'
+ * import { twoWayAnova } from 'omai-engine/stats'
  * const y = [2, 3, 4, 5, 6, 7, 8, 9]
  * const a = [0, 0, 0, 0, 1, 1, 1, 1]
  * const b = [0, 0, 1, 1, 0, 0, 1, 1]
@@ -1363,7 +1363,7 @@ export function twoWayAnova(
   const fa = sample('twoWayAnova.factorA', factorA, n)
   const fb = sample('twoWayAnova.factorB', factorB, n)
   if (fa.length !== n || fb.length !== n) {
-    throw new MdmlError('shape', `twoWayAnova: factorA (${fa.length}) and factorB (${fb.length}) must match y (${n})`)
+    throw new OmaiError('shape', `twoWayAnova: factorA (${fa.length}) and factorB (${fb.length}) must match y (${n})`)
   }
 
   const levelsA = Array.from(new Set(fa)).sort((u, v) => u - v)
@@ -1371,7 +1371,7 @@ export function twoWayAnova(
   const a = levelsA.length
   const b = levelsB.length
   if (a < 2 || b < 2) {
-    throw new MdmlError('value', `twoWayAnova: both factors must have at least 2 levels (got a=${a}, b=${b})`)
+    throw new OmaiError('value', `twoWayAnova: both factors must have at least 2 levels (got a=${a}, b=${b})`)
   }
 
   const includeInteraction = options.interaction ?? true
@@ -1407,7 +1407,7 @@ export function twoWayAnova(
   const fullBlocks = includeInteraction ? [blockA, blockB, blockAB] : [blockA, blockB]
   const fullDesign = combineDesignBlocks(n, fullBlocks)
   if (n <= fullDesign.cols) {
-    throw new MdmlError(
+    throw new OmaiError(
       'shape',
       `twoWayAnova: need n > ${fullDesign.cols} observations for residual degrees of freedom, got n=${n}`,
     )

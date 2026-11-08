@@ -2,8 +2,8 @@
 score.
 """
 
-from mdml_oracle.uci import source_note, table_rows, zip_member
-from mdml_oracle.vendor import render_regression
+from omai_oracle.uci import source_note, table_rows, zip_member
+from omai_oracle.vendor import render_regression
 
 TARGET = "packages/engine/src/lib/datasets/_data/wine-quality-white.data.ts"
 ID, SLUG = 186, "wine+quality"

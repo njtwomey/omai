@@ -5,7 +5,7 @@
  * pentadiagonal matrix. Contours are (x, y) points.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import { image } from '../signal/index.ts'
 import { primalOf, type TensorLike } from '../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../trace/index.ts'
@@ -48,7 +48,7 @@ export interface ActiveContourState {
  * @concept active-contours
  * @example
  * ```ts
- * import { activeContourAlgorithm } from 'mdml-engine/vision'
+ * import { activeContourAlgorithm } from 'omai-engine/vision'
  * activeContourAlgorithm([[0, 1], [1, 0]], [[0, 0], [1, 0], [1, 1]]).name // => 'active-contour'
  * ```
  */
@@ -60,7 +60,7 @@ export function activeContourAlgorithm(
   const r = greyOf(x, 'activeContour')
   const start = pointsOf(init, 'activeContour')
   const n = start.length
-  if (n < 3) throw new MdmlError('value', 'activeContour: at least three points are needed')
+  if (n < 3) throw new OmaiError('value', 'activeContour: at least three points are needed')
   const alpha = options.alpha ?? 0.01
   const beta = options.beta ?? 0.1
   const gamma = options.gamma ?? 0.01
@@ -156,7 +156,7 @@ export function activeContourAlgorithm(
  * @concept active-contours
  * @example
  * ```ts
- * import { activeContour } from 'mdml-engine/vision'
+ * import { activeContour } from 'omai-engine/vision'
  * const img = Array.from({ length: 32 }, (_, i) => Array.from({ length: 32 }, (_, j) => ((i - 16) ** 2 + (j - 16) ** 2 < 64 ? 1 : 0)))
  * const init = Array.from({ length: 20 }, (_, k) => [16 + 12 * Math.cos((k * Math.PI) / 10), 16 + 12 * Math.sin((k * Math.PI) / 10)])
  * const r = activeContour(img, init, { sigma: 1, gamma: 0.05 }).map(([x, y]) => Math.hypot(x - 16, y - 16))

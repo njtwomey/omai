@@ -4,7 +4,7 @@
  * fastText's character n-grams with their hash buckets.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { fnv1a, utf8Bytes } from './hashing.ts'
 
 /** Padding of n-grams (nltk's pad_sequence): n - 1 symbols on the left and/or right. */
@@ -18,7 +18,7 @@ export interface Padding<T> {
 }
 
 function checkOrder(n: number, name: string): void {
-  if (!Number.isInteger(n) || n < 1) throw new MdmlError('value', `${name}: n must be a positive integer`)
+  if (!Number.isInteger(n) || n < 1) throw new OmaiError('value', `${name}: n must be a positive integer`)
 }
 
 function pad<T>(items: readonly T[], n: number, p: Padding<T>): (T | string)[] {
@@ -34,11 +34,11 @@ function pad<T>(items: readonly T[], n: number, p: Padding<T>): (T | string)[] {
  * @param n - The order.
  * @param padding - Boundary padding.
  * @returns The n-grams, in order.
- * @throws MdmlError with code `value` for an order below 1.
+ * @throws OmaiError with code `value` for an order below 1.
  * @concept n-grams
  * @example
  * ```ts
- * import { ngrams } from 'mdml-engine/text'
+ * import { ngrams } from 'omai-engine/text'
  * ngrams(['a', 'b', 'c'], 2, { padLeft: true }) // => [['<s>', 'a'], ['a', 'b'], ['b', 'c']]
  * ```
  */
@@ -60,7 +60,7 @@ export function ngrams<T>(items: readonly T[], n: number, padding: Padding<T> = 
  * @concept n-grams
  * @example
  * ```ts
- * import { everygrams } from 'mdml-engine/text'
+ * import { everygrams } from 'omai-engine/text'
  * everygrams(['a', 'b', 'c'], 1, 2) // => [['a'], ['a', 'b'], ['b'], ['b', 'c'], ['c']]
  * ```
  */
@@ -79,17 +79,17 @@ export function everygrams<T>(items: readonly T[], minLength = 1, maxLength: num
  * @param n - The order (at least 2).
  * @param k - The largest total skip.
  * @returns The skip-grams.
- * @throws MdmlError with code `value` for an order below 2 or a negative skip.
+ * @throws OmaiError with code `value` for an order below 2 or a negative skip.
  * @concept n-grams
  * @example
  * ```ts
- * import { skipgrams } from 'mdml-engine/text'
+ * import { skipgrams } from 'omai-engine/text'
  * skipgrams(['a', 'b', 'c', 'd'], 2, 1) // => [['a', 'b'], ['a', 'c'], ['b', 'c'], ['b', 'd'], ['c', 'd']]
  * ```
  */
 export function skipgrams<T>(items: readonly T[], n: number, k: number): T[][] {
-  if (!Number.isInteger(n) || n < 2) throw new MdmlError('value', 'skipgrams: n must be an integer >= 2')
-  if (!Number.isInteger(k) || k < 0) throw new MdmlError('value', 'skipgrams: k must be a non-negative integer')
+  if (!Number.isInteger(n) || n < 2) throw new OmaiError('value', 'skipgrams: n must be an integer >= 2')
+  if (!Number.isInteger(k) || k < 0) throw new OmaiError('value', 'skipgrams: k must be a non-negative integer')
   const out: T[][] = []
   const w = n + k
   for (let i = 0; i < items.length; i++) {
@@ -124,7 +124,7 @@ export function skipgrams<T>(items: readonly T[], n: number, k: number): T[][] {
  * @concept n-grams
  * @example
  * ```ts
- * import { ngramCounts } from 'mdml-engine/text'
+ * import { ngramCounts } from 'omai-engine/text'
  * [...ngramCounts(['a', 'b', 'a', 'b'], 2, ' ')] // => [['a b', 2], ['b a', 1]]
  * ```
  */
@@ -156,11 +156,11 @@ export interface ShingleOptions {
  * @param input - A text (character shingles) or a token list (word shingles).
  * @param options - Size, unit, padding and separator.
  * @returns The shingles in order.
- * @throws MdmlError with code `value` for a size below 1.
+ * @throws OmaiError with code `value` for a size below 1.
  * @concept shingling
  * @example
  * ```ts
- * import { shingles } from 'mdml-engine/text'
+ * import { shingles } from 'omai-engine/text'
  * [shingles('abcd'), shingles(['a', 'rose', 'is', 'a'], { size: 2 })] // => [['abc', 'bcd'], ['a rose', 'rose is', 'is a']]
  * ```
  */
@@ -197,7 +197,7 @@ export function shingles(input: string | readonly string[], options: ShingleOpti
  * @concept shingling
  * @example
  * ```ts
- * import { characterShingles } from 'mdml-engine/text'
+ * import { characterShingles } from 'omai-engine/text'
  * [...characterShingles('abab', 2)] // => ['ab', 'ba']
  * ```
  */
@@ -214,7 +214,7 @@ export function characterShingles(text: string, k = 3): Set<string> {
  * @concept shingling
  * @example
  * ```ts
- * import { wShingling } from 'mdml-engine/text'
+ * import { wShingling } from 'omai-engine/text'
  * [...wShingling(['a', 'rose', 'is', 'a', 'rose', 'is', 'a', 'rose'], 4)] // => ['a rose is a', 'rose is a rose', 'is a rose is']
  * ```
  */
@@ -232,7 +232,7 @@ export function wShingling(tokens: readonly string[], w = 4): Set<string> {
  * @concept shingling
  * @example
  * ```ts
- * import { weightedShingles } from 'mdml-engine/text'
+ * import { weightedShingles } from 'omai-engine/text'
  * [...weightedShingles('aaaa', { size: 2 })] // => [['aa', 3]]
  * ```
  */
@@ -259,7 +259,7 @@ export function weightedShingles(
  * @concept subword-embeddings
  * @example
  * ```ts
- * import { fastTextNgrams } from 'mdml-engine/text'
+ * import { fastTextNgrams } from 'omai-engine/text'
  * fastTextNgrams('where', 3, 4) // => ['<wh', '<whe', 'whe', 'wher', 'her', 'here', 'ere', 'ere>', 're>']
  * ```
  */
@@ -285,16 +285,16 @@ export function fastTextNgrams(word: string, minn = 3, maxn = 6): string[] {
  * @param maxn - The largest n-gram (default 6).
  * @param buckets - The number of hash buckets (default 2,000,000, fastText's default).
  * @returns The bucket of each n-gram, in {@link fastTextNgrams} order.
- * @throws MdmlError with code `value` for a non-positive bucket count.
+ * @throws OmaiError with code `value` for a non-positive bucket count.
  * @concept subword-embeddings
  * @example
  * ```ts
- * import { fastTextBuckets } from 'mdml-engine/text'
+ * import { fastTextBuckets } from 'omai-engine/text'
  * fastTextBuckets('a', 3, 3, 1000) // => [600]
  * ```
  */
 export function fastTextBuckets(word: string, minn = 3, maxn = 6, buckets = 2_000_000): number[] {
   if (!Number.isInteger(buckets) || buckets < 1)
-    throw new MdmlError('value', 'fastTextBuckets: buckets must be a positive integer')
+    throw new OmaiError('value', 'fastTextBuckets: buckets must be a positive integer')
   return fastTextNgrams(word, minn, maxn).map((g) => fnv1a(utf8Bytes(g), { signedBytes: true }) % buckets)
 }

@@ -1,6 +1,6 @@
 // Dense kernels on single row-major matrices (Float64Array): the textbook algorithms, as in Golub and Van Loan.
 // The primitives in this folder apply them matrix by matrix over batch axes.
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { dnrm2 } from './blas.ts'
 
 const EPS = Number.EPSILON
@@ -24,7 +24,7 @@ export function choleskyKernel(input: Float64Array, n: number): Float64Array {
   for (let j = 0; j < n; j++) {
     let d = a[j * n + j] ?? 0
     for (let k = 0; k < j; k++) d -= (l[j * n + k] ?? 0) ** 2
-    if (!(d > 0)) throw new MdmlError('value', 'cholesky: matrix is not positive definite')
+    if (!(d > 0)) throw new OmaiError('value', 'cholesky: matrix is not positive definite')
     const ljj = Math.sqrt(d)
     l[j * n + j] = ljj
     for (let i = j + 1; i < n; i++) {
@@ -58,7 +58,7 @@ export function triangularKernel(
   if (!o.unitDiagonal)
     for (let i = 0; i < n; i++)
       if (at(i, i) === 0)
-        throw new MdmlError(
+        throw new OmaiError(
           'value',
           `solveTriangular: the triangular factor is singular (zero on the diagonal at ${i})`,
         )
@@ -121,7 +121,7 @@ export function luKernel(
 export function solveKernel(a: Float64Array, b: Float64Array, n: number, k: number): Float64Array {
   const { lu, perm } = luKernel(a, n)
   for (let i = 0; i < n; i++) {
-    if ((lu[i * n + i] ?? 0) === 0) throw new MdmlError('value', 'solve: matrix is singular')
+    if ((lu[i * n + i] ?? 0) === 0) throw new OmaiError('value', 'solve: matrix is singular')
   }
   const pb = new Float64Array(n * k)
   for (let i = 0; i < n; i++) for (let c = 0; c < k; c++) pb[i * k + c] = b[(perm[i] ?? 0) * k + c] ?? 0
@@ -373,7 +373,7 @@ export function eighQlKernel(input: Float64Array, n: number): { w: Float64Array;
         if (off <= EPS * dd || off <= floor) break
       }
       if (m !== l) {
-        if (iterations++ === 60) throw new MdmlError('convergence', 'eigh: QL iteration did not converge')
+        if (iterations++ === 60) throw new OmaiError('convergence', 'eigh: QL iteration did not converge')
         let g = ((d[l + 1] ?? 0) - (d[l] ?? 0)) / (2 * (e[l] ?? 0))
         let r = Math.hypot(g, 1)
         g = (d[m] ?? 0) - (d[l] ?? 0) + (e[l] ?? 0) / (g + (g >= 0 ? Math.abs(r) : -Math.abs(r)))
@@ -715,7 +715,7 @@ function svdGolubKahan(
         }
         break
       }
-      if (its === 75) throw new MdmlError('convergence', 'svd: Golub-Kahan iteration did not converge')
+      if (its === 75) throw new OmaiError('convergence', 'svd: Golub-Kahan iteration did not converge')
       let x = w[l] ?? 0
       nm = k - 1
       let y = w[nm] ?? 0

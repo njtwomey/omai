@@ -4,7 +4,7 @@
  * (extents, padding, nice rounding, and widening a range too narrow to tick).
  */
 
-import { MdmlError } from 'mdml-engine/base'
+import { OmaiError } from 'omai-engine/base'
 import { niceTicks } from '../theme/format.ts'
 import type { Range } from './aspect.ts'
 
@@ -31,7 +31,7 @@ export type Limits = LimitPolicy | Range
  * @returns The extent.
  * @example
  * ```ts
- * import { extentOf } from 'mdml-render/figure'
+ * import { extentOf } from 'omai-render/figure'
  * extentOf([3, Number.NaN, -1, 2]) // => [-1, 3]
  * extentOf([]) // => undefined
  * ```
@@ -54,7 +54,7 @@ export function extentOf(values: Iterable<number>): Range | undefined {
  * @returns The union, or `undefined` when none is given.
  * @example
  * ```ts
- * import { unionRange } from 'mdml-render/figure'
+ * import { unionRange } from 'omai-render/figure'
  * unionRange([[0, 1], undefined, [-2, 0.5]]) // => [-2, 1]
  * ```
  */
@@ -75,7 +75,7 @@ export function unionRange(ranges: Iterable<Range | undefined>): Range | undefin
  * @returns The padded range.
  * @example
  * ```ts
- * import { padRange } from 'mdml-render/figure'
+ * import { padRange } from 'omai-render/figure'
  * padRange([0, 10]) // => [-0.5, 10.5]
  * padRange([2, 2]) // => [1.8, 2.2]
  * ```
@@ -96,7 +96,7 @@ export function padRange(range: Range, fraction = 0.05): Range {
  * @returns The rounded range.
  * @example
  * ```ts
- * import { niceRange } from 'mdml-render/figure'
+ * import { niceRange } from 'omai-render/figure'
  * niceRange([0.13, 0.92]) // => [0, 1]
  * ```
  */
@@ -112,7 +112,7 @@ export function niceRange(range: Range, count = 5): Range {
  * @returns The range, wide enough to tick.
  * @example
  * ```ts
- * import { legibleRange } from 'mdml-render/figure'
+ * import { legibleRange } from 'omai-render/figure'
  * legibleRange([2, 4]) // => [2, 4]
  * legibleRange([-1e-26, 1e-26]) // => [-5e-13, 5e-13]
  * legibleRange([3, 3]) // => [2.7, 3.3]
@@ -136,11 +136,11 @@ export function legibleRange(range: Range): Range {
  * @param extent - The current data extent (undefined when there is no data).
  * @param previous - The range shown before (used by `expand`).
  * @returns The range to show.
- * @throws MdmlError with code `value` for an empty fixed range or a non-positive follow window.
+ * @throws OmaiError with code `value` for an empty fixed range or a non-positive follow window.
  * @index function Turn an axis limit policy into a range: `resolveLimits(policy, extent)`.
  * @example
  * ```ts
- * import { resolveLimits } from 'mdml-render/figure'
+ * import { resolveLimits } from 'omai-render/figure'
  * resolveLimits({ kind: 'auto', pad: 0 }, [1, 3]) // => [1, 3]
  * resolveLimits([-5, 5], [1, 3]) // => [-5, 5]
  * resolveLimits({ kind: 'expand', pad: 0 }, [1, 3], [0, 2]) // => [0, 3]
@@ -151,7 +151,7 @@ export function resolveLimits(limits: Limits, extent: Range | undefined, previou
   const policy: LimitPolicy = isRange(limits) ? { kind: 'fixed', range: limits } : limits
   switch (policy.kind) {
     case 'fixed': {
-      if (!(policy.range[1] > policy.range[0])) throw new MdmlError('value', 'limits: a fixed range must increase')
+      if (!(policy.range[1] > policy.range[0])) throw new OmaiError('value', 'limits: a fixed range must increase')
       return policy.range
     }
     case 'auto': {
@@ -169,7 +169,7 @@ export function resolveLimits(limits: Limits, extent: Range | undefined, previou
       return previous === undefined ? fit : [Math.min(fit[0], previous[0]), Math.max(fit[1], previous[1])]
     }
     case 'follow': {
-      if (!(policy.window > 0)) throw new MdmlError('value', 'limits: the follow window must be positive')
+      if (!(policy.window > 0)) throw new OmaiError('value', 'limits: the follow window must be positive')
       const end = (extent?.[1] ?? policy.window) + (policy.lead ?? 0)
       return [end - policy.window, end]
     }

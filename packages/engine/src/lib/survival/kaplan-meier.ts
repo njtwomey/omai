@@ -5,7 +5,7 @@
  * which adds one subject (an event or a censoring) per step so the curve can be watched forming.
  */
 
-import { type Json, MdmlError, resolveConfidenceLevel } from '../base/index.ts'
+import { type Json, OmaiError, resolveConfidenceLevel } from '../base/index.ts'
 import type { TensorLike } from '../tensor/index.ts'
 import { type Algorithm, type Observation, type RunStatus, stateFromJson, stateToJson } from '../trace/index.ts'
 import { normPpf } from './_util.ts'
@@ -79,7 +79,7 @@ function intervalBounds(
  * @index function Kaplan-Meier survival curve for right-censored data.
  * @example
  * ```ts
- * import { kaplanMeier } from 'mdml-engine/survival'
+ * import { kaplanMeier } from 'omai-engine/survival'
  * const km = kaplanMeier([1, 2, 2, 3, 4, 5], [1, 1, 0, 1, 0, 1])
  * km.survival.map((s) => Number(s.toFixed(4))) // => [0.8333, 0.6667, 0.4444, 0]
  * km.median // => 3
@@ -97,7 +97,7 @@ export function kaplanMeier(time: TensorLike, event?: TensorLike, options: Kapla
  * @returns The curve.
  * @example
  * ```ts
- * import { kaplanMeierOf, survivalSample } from 'mdml-engine/survival'
+ * import { kaplanMeierOf, survivalSample } from 'omai-engine/survival'
  * kaplanMeierOf(survivalSample([1, 2, 3])).survival.map((s) => Number(s.toFixed(4))) // => [0.6667, 0.3333, 0]
  * ```
  */
@@ -151,7 +151,7 @@ export function kaplanMeierOf(sample: SurvivalSample, options: KaplanMeierOption
  * @returns S(t).
  * @example
  * ```ts
- * import { kaplanMeier, survivalAt } from 'mdml-engine/survival'
+ * import { kaplanMeier, survivalAt } from 'omai-engine/survival'
  * survivalAt(kaplanMeier([1, 2, 3, 4], [1, 1, 0, 1]), 2.5) // => 0.5
  * ```
  */
@@ -170,12 +170,12 @@ export function survivalAt(curve: Pick<SurvivalCurve, 'time' | 'survival'>, t: n
  * @returns The time.
  * @example
  * ```ts
- * import { kaplanMeier, survivalQuantile } from 'mdml-engine/survival'
+ * import { kaplanMeier, survivalQuantile } from 'omai-engine/survival'
  * survivalQuantile(kaplanMeier([1, 2, 3, 4, 5, 6, 7, 8]), 0.25) // => 2
  * ```
  */
 export function survivalQuantile(curve: Pick<SurvivalCurve, 'time' | 'survival'>, p: number): number {
-  if (!(p > 0 && p < 1)) throw new MdmlError('value', `survivalQuantile: p must be in (0, 1), got ${p}`)
+  if (!(p > 0 && p < 1)) throw new OmaiError('value', `survivalQuantile: p must be in (0, 1), got ${p}`)
   for (let k = 0; k < curve.time.length; k++)
     if ((curve.survival[k] ?? 1) <= 1 - p + 1e-12) return curve.time[k] ?? Number.NaN
   return Number.POSITIVE_INFINITY
@@ -189,7 +189,7 @@ export function survivalQuantile(curve: Pick<SurvivalCurve, 'time' | 'survival'>
  * @returns The area.
  * @example
  * ```ts
- * import { kaplanMeier, restrictedMeanSurvival } from 'mdml-engine/survival'
+ * import { kaplanMeier, restrictedMeanSurvival } from 'omai-engine/survival'
  * restrictedMeanSurvival(kaplanMeier([1, 2, 3, 4]), 4) // => 2.5
  * ```
  */
@@ -237,7 +237,7 @@ export interface CumulativeHazardCurve {
  * @returns The curve.
  * @example
  * ```ts
- * import { nelsonAalen } from 'mdml-engine/survival'
+ * import { nelsonAalen } from 'omai-engine/survival'
  * nelsonAalen([1, 2, 3, 4], [1, 1, 0, 1]).cumulativeHazard.map((h) => Number(h.toFixed(4))) // => [0.25, 0.5833, 1.5833]
  * ```
  */
@@ -308,8 +308,8 @@ export type KaplanMeierState = {
  * @returns The algorithm.
  * @example
  * ```ts
- * import { kaplanMeierAlgorithm } from 'mdml-engine/survival'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { kaplanMeierAlgorithm } from 'omai-engine/survival'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const run = runAlgorithm(kaplanMeierAlgorithm([1, 2, 3, 4], [1, 0, 1, 1]), { seed: 0, maxSteps: 4 })
  * run.state.survival // => 0
  * run.status // => 'completed'

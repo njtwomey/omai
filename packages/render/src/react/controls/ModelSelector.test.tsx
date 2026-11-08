@@ -1,4 +1,4 @@
-import { dict, int, real, union } from 'mdml-engine/space'
+import { dict, int, real, union } from 'omai-engine/space'
 import { renderToString } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { ModelSelector } from './ModelSelector.tsx'

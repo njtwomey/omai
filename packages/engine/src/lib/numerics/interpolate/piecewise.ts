@@ -4,7 +4,7 @@
  * roots of a polynomial by companion-matrix eigenvalues polished with Newton steps.
  */
 
-import { MdmlError, maxOf } from '../../base/index.ts'
+import { maxOf, OmaiError } from '../../base/index.ts'
 import {
   add,
   concat,
@@ -73,8 +73,8 @@ function power(t: Value, trailing: number): Value {
  * @concept piecewise-polynomials
  * @example
  * ```ts
- * import { ppoly } from 'mdml-engine/numerics/interpolate'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { ppoly } from 'omai-engine/numerics/interpolate'
+ * import { toArray } from 'omai-engine/tensor'
  * // x^2 on [0, 1] and 1 + 2(x - 1) on [1, 2].
  * toArray(ppoly([[1, 0], [0, 2], [0, 1]], [0, 1, 2]).evaluate([0.5, 1.5])) // => [0.25, 2]
  * ```
@@ -85,9 +85,9 @@ export function ppoly(coefficients: TensorLike, breakpoints: TensorLike, extrapo
   const xs = toFlat(x)
   const m = xs.length - 1
   if (c.shape.length < 2 || c.shape[1] !== m)
-    throw new MdmlError('shape', 'ppoly: coefficients must be [k + 1, m, ...]')
+    throw new OmaiError('shape', 'ppoly: coefficients must be [k + 1, m, ...]')
   for (let i = 0; i < m; i++) {
-    if (!((xs[i + 1] ?? 0) > (xs[i] ?? 0))) throw new MdmlError('value', 'ppoly: breakpoints must increase')
+    if (!((xs[i + 1] ?? 0) > (xs[i] ?? 0))) throw new OmaiError('value', 'ppoly: breakpoints must increase')
   }
   const k = (c.shape[0] ?? 1) - 1
   const trailing = c.shape.length - 2
@@ -170,7 +170,7 @@ export function ppoly(coefficients: TensorLike, breakpoints: TensorLike, extrapo
   }
 
   const roots = (): number[] => {
-    if (trailing !== 0) throw new MdmlError('shape', 'ppoly roots: only for a single output component')
+    if (trailing !== 0) throw new OmaiError('shape', 'ppoly roots: only for a single output component')
     const cs = toFlat(primalOf(c))
     const found: number[] = []
     for (let i = 0; i < m; i++) {
@@ -207,11 +207,11 @@ export function ppoly(coefficients: TensorLike, breakpoints: TensorLike, extrapo
  *
  * @param coefficients - Coefficients `[k]`, highest power first.
  * @returns The real roots `[r]` (none for a constant).
- * @throws MdmlError with code `shape` unless `coefficients` is a vector, and `not-differentiable` for a traced value.
+ * @throws OmaiError with code `shape` unless `coefficients` is a vector, and `not-differentiable` for a traced value.
  * @example
  * ```ts
- * import { realRoots } from 'mdml-engine/numerics/interpolate'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { realRoots } from 'omai-engine/numerics/interpolate'
+ * import { toFlat } from 'omai-engine/tensor'
  * toFlat(realRoots([1, -3, 2])).map((r) => Math.round(r * 1e9) / 1e9).sort((a, b) => a - b) // => [1, 2]
  * ```
  */

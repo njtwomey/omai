@@ -12,7 +12,7 @@
  */
 
 import type { Json } from '../base/index.ts'
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import type { DispersionFamily, Link } from '../dists/families/index.ts'
 import { ddot, dpotrf, dpotrs } from '../numerics/linalg/index.ts'
 import { type Key, key as makeKey } from '../random/index.ts'
@@ -129,7 +129,7 @@ interface Prepared {
 function requireFinite(values: ArrayLike<number>, name: string): void {
   for (let i = 0; i < values.length; i++)
     if (!Number.isFinite(values[i]))
-      throw new MdmlError('value', `glm: ${name} must be finite, entry ${i} is ${values[i]}`)
+      throw new OmaiError('value', `glm: ${name} must be finite, entry ${i} is ${values[i]}`)
 }
 
 const vec = (a: ArrayLike<number>): Tensor => fromStorage(Float64Array.from(a), [a.length], 'float64')
@@ -144,7 +144,7 @@ function prepared(problem: GlmProblem): Prepared {
   const intercept = problem.fitIntercept === true
   const p = d + (intercept ? 1 : 0)
   const yIn = toVector(problem.y, 'glm: y')
-  if (yIn.length !== n) throw new MdmlError('shape', `glm: y has ${yIn.length} entries for ${n} rows`)
+  if (yIn.length !== n) throw new OmaiError('shape', `glm: y has ${yIn.length} entries for ${n} rows`)
   requireFinite(x, 'x')
   requireFinite(yIn, 'y')
   const a = new Float64Array(n * p)
@@ -156,20 +156,20 @@ function prepared(problem: GlmProblem): Prepared {
     problem.weights === undefined
       ? new Float64Array(n).fill(1)
       : Float64Array.from(toVector(problem.weights, 'glm: weights'))
-  if (w.length !== n) throw new MdmlError('shape', `glm: ${w.length} weights for ${n} rows`)
+  if (w.length !== n) throw new OmaiError('shape', `glm: ${w.length} weights for ${n} rows`)
   requireFinite(w, 'weights')
   const offset =
     problem.offset === undefined ? new Float64Array(n) : Float64Array.from(toVector(problem.offset, 'glm: offset'))
-  if (offset.length !== n) throw new MdmlError('shape', `glm: ${offset.length} offsets for ${n} rows`)
+  if (offset.length !== n) throw new OmaiError('shape', `glm: ${offset.length} offsets for ${n} rows`)
   requireFinite(offset, 'offset')
   const penalty = problem.penalty ?? {}
   const l2 = penalty.l2 ?? 0
-  if (!(l2 >= 0)) throw new MdmlError('value', 'glm: the penalty weight must be non-negative')
+  if (!(l2 >= 0)) throw new OmaiError('value', 'glm: the penalty weight must be non-negative')
   const free = new Set(penalty.unpenalised ?? [])
   const l2v = Float64Array.from({ length: p }, (_, j) => (j < d && !free.has(j) ? l2 : 0))
   const matrix = penalty.matrix === undefined ? undefined : matrixOf(penalty.matrix, 'glm: penalty').data
   if (matrix !== undefined && matrix.length !== p * p)
-    throw new MdmlError('shape', `glm: the penalty matrix has ${matrix.length} entries for [${p}, ${p}]`)
+    throw new OmaiError('shape', `glm: the penalty matrix has ${matrix.length} entries for [${p}, ${p}]`)
   let sw = 0
   for (const v of w) sw += v
   const scale = problem.normalise === false ? 1 : sw
@@ -177,7 +177,7 @@ function prepared(problem: GlmProblem): Prepared {
   let start: Float64Array
   if (problem.start !== undefined) {
     start = Float64Array.from(toVector(problem.start, 'glm: start'))
-    if (start.length !== p) throw new MdmlError('shape', `glm: the start has ${start.length} entries for ${p}`)
+    if (start.length !== p) throw new OmaiError('shape', `glm: the start has ${start.length} entries for ${p}`)
     requireFinite(start, 'start')
   } else {
     start = new Float64Array(p)
@@ -270,11 +270,11 @@ function gradientAt(P: Prepared, beta: ArrayLike<number>): Float64Array {
  * @param problem - The problem.
  * @param beta - The coefficients, a vector: slopes then the intercept.
  * @returns The objective.
- * @throws MdmlError with code `shape` unless `beta` has rank 1, and `not-differentiable` for a traced one.
+ * @throws OmaiError with code `shape` unless `beta` has rank 1, and `not-differentiable` for a traced one.
  * @example
  * ```ts
- * import { families } from 'mdml-engine/dists'
- * import { glmValue } from 'mdml-engine/optim'
+ * import { families } from 'omai-engine/dists'
+ * import { glmValue } from 'omai-engine/optim'
  * const problem = { x: [[0], [1]], y: [0, 1], family: families.binomial(), link: families.logit() }
  * glmValue(problem, [0]).toFixed(4) // => '0.6931'
  * ```
@@ -290,12 +290,12 @@ export function glmValue(problem: GlmProblem, beta: TensorLike): number {
  * @param problem - The problem.
  * @param beta - The coefficients, a vector: slopes then the intercept.
  * @returns The gradient, a `[p]` tensor.
- * @throws MdmlError with code `shape` unless `beta` has rank 1, and `not-differentiable` for a traced one.
+ * @throws OmaiError with code `shape` unless `beta` has rank 1, and `not-differentiable` for a traced one.
  * @example
  * ```ts
- * import { families } from 'mdml-engine/dists'
- * import { glmGradient } from 'mdml-engine/optim'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { families } from 'omai-engine/dists'
+ * import { glmGradient } from 'omai-engine/optim'
+ * import { toFlat } from 'omai-engine/tensor'
  * const problem = { x: [[0], [1]], y: [0, 1], family: families.binomial(), link: families.logit() }
  * toFlat(glmGradient(problem, [0])).map((v) => v.toFixed(2)) // => ['-0.25']
  * ```
@@ -314,8 +314,8 @@ export function glmGradient(problem: GlmProblem, beta: TensorLike): Tensor<'floa
  * @returns The smooth problem.
  * @example
  * ```ts
- * import { families } from 'mdml-engine/dists'
- * import { glmSmoothProblem } from 'mdml-engine/optim'
+ * import { families } from 'omai-engine/dists'
+ * import { glmSmoothProblem } from 'omai-engine/optim'
  * const problem = { x: [[0], [1]], y: [0, 1], family: families.binomial(), link: families.logit() }
  * glmSmoothProblem(problem).batches?.n // => 2
  * ```
@@ -401,7 +401,7 @@ function solveNormal(P: Prepared, ww: Float64Array, z: Float64Array): Float64Arr
     }
     shift = shift === 0 ? 1e-12 * Math.max(diag, 1) : shift * 10
   }
-  throw new MdmlError('singular', 'glm: the weighted normal equations are singular')
+  throw new OmaiError('singular', 'glm: the weighted normal equations are singular')
 }
 
 // ------------------------------------------------------------------------------------------ the IRLS family
@@ -577,9 +577,9 @@ export interface GlmFit {
  * @returns The fit, with the coefficients, the objective history and the path as tensors (they were plain arrays).
  * @example
  * ```ts
- * import { families } from 'mdml-engine/dists'
- * import { fitGlm } from 'mdml-engine/optim'
- * import { item } from 'mdml-engine/tensor'
+ * import { families } from 'omai-engine/dists'
+ * import { fitGlm } from 'omai-engine/optim'
+ * import { item } from 'omai-engine/tensor'
  * const problem = { x: [[0], [1], [2], [3], [4], [5]], y: [0, 0, 1, 0, 1, 1], family: families.binomial(), link: families.logit(), fitIntercept: true }
  * const irls = fitGlm(problem, { kind: 'irls' })
  * const lbfgs = fitGlm(problem, { kind: 'lbfgs', gradTol: 1e-10 })

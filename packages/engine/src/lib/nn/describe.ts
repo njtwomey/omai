@@ -60,8 +60,8 @@ const parseShape = (s: unknown): number[] =>
  * @concept flops
  * @example
  * ```ts
- * import { functionFlops } from 'mdml-engine/nn'
- * import { matmul, zeros, type Value } from 'mdml-engine/tensor'
+ * import { functionFlops } from 'omai-engine/nn'
+ * import { matmul, zeros, type Value } from 'omai-engine/tensor'
  * functionFlops((x: Value) => matmul(x, zeros([3, 4])), zeros([2, 3])) // => 48
  * ```
  */
@@ -152,7 +152,7 @@ function trainableCount(m: Module): number {
  * @returns The rows.
  * @example
  * ```ts
- * import { layerTable, mlp } from 'mdml-engine/nn'
+ * import { layerTable, mlp } from 'omai-engine/nn'
  * layerTable(mlp([2, 4, 1]), [8, 2]).map((r) => r.flops) // => [160, 32, 72]
  * ```
  */
@@ -206,7 +206,7 @@ export interface MemoryEstimate {
  * @returns Bytes by category and the total.
  * @example
  * ```ts
- * import { memoryEstimate, Linear } from 'mdml-engine/nn'
+ * import { memoryEstimate, Linear } from 'omai-engine/nn'
  * memoryEstimate(new Linear(4, 2), [8, 4]).params // => 80
  * ```
  */
@@ -227,7 +227,7 @@ export function memoryEstimate(module: Module, inputShape: readonly number[]): M
  * @returns The count (layers whose input cannot be built from a shape count zero).
  * @example
  * ```ts
- * import { flops, Conv2d } from 'mdml-engine/nn'
+ * import { flops, Conv2d } from 'omai-engine/nn'
  * flops(new Conv2d(1, 1, 3, { bias: false }), [1, 1, 5, 5]) // => 162
  * ```
  */
@@ -245,7 +245,7 @@ export interface DescribeOptions {
  * A module as a {@link Structure}: an input node, one block per layer with its configuration, output shape, parameter
  * count and estimated FLOPs, and the output. Sequential containers become chains (nested ones are groups), residual
  * connections become skip edges into an `add` node, parallel branches fan out and join at their combination, and
- * composite blocks (transformer layers, ResNet blocks) are blocks that list their parts and repeats. mdml-render
+ * composite blocks (transformer layers, ResNet blocks) are blocks that list their parts and repeats. omai-render
  * draws it as an architecture diagram.
  *
  * @param module - The module.
@@ -256,7 +256,7 @@ export interface DescribeOptions {
  * @index function A module as a drawable Structure: layers, shapes, parameters.
  * @example
  * ```ts
- * import { describe, mlp } from 'mdml-engine/nn'
+ * import { describe, mlp } from 'omai-engine/nn'
  * describe(mlp([2, 4, 1]), [8, 2]).nodes.map((n) => n.label) // => ['input', 'Linear', 'ReLU', 'Linear', 'output']
  * ```
  */
@@ -377,7 +377,7 @@ const human = (n: number): string =>
  * @index function A torchinfo-style text summary of a module.
  * @example
  * ```ts
- * import { summary, mlp } from 'mdml-engine/nn'
+ * import { summary, mlp } from 'omai-engine/nn'
  * summary(mlp([2, 4, 1]), [8, 2]).split('\n').find((l) => l.startsWith('Total params')) // => 'Total params: 17'
  * ```
  */
@@ -424,8 +424,8 @@ export function summary(module: Module, inputShape: readonly number[]): string {
  * @returns The structure (type `computation-graph`).
  * @example
  * ```ts
- * import { describeFunction, linear } from 'mdml-engine/nn'
- * import { zeros, type Value } from 'mdml-engine/tensor'
+ * import { describeFunction, linear } from 'omai-engine/nn'
+ * import { zeros, type Value } from 'omai-engine/tensor'
  * const g = describeFunction((p: { w: Value }, x: Value) => linear(x, p.w), { w: zeros([2, 3]) }, zeros([1, 3]))
  * g.nodes.filter((n) => n.role === 'input').map((n) => n.label).sort() // => ['w', 'x']
  * ```

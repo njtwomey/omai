@@ -6,8 +6,8 @@ TruncatedLFNegativeBinomialP) for the positive counts. Coefficients, dispersion 
 import numpy as np
 import statsmodels
 import statsmodels.api as sm
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import rng
 from statsmodels.discrete.count_model import ZeroInflatedNegativeBinomialP, ZeroInflatedPoisson
 from statsmodels.discrete.truncated_model import TruncatedLFNegativeBinomialP, TruncatedLFPoisson
 

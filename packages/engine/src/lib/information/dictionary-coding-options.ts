@@ -32,7 +32,7 @@ function windowOption(
  * @concept dictionary-coding
  * @example
  * ```ts
- * import { lz77Windows } from 'mdml-engine/information'
+ * import { lz77Windows } from 'omai-engine/information'
  * lz77Windows.make({ kind: 'deflate' }) // => { window: 32768, maxLength: 258 }
  * ```
  */
@@ -53,7 +53,7 @@ export const lz77Windows: OptionTable<Lz77Options, Record<string, never>> = opti
  * @concept reed-solomon
  * @example
  * ```ts
- * import { reedSolomonFields } from 'mdml-engine/information'
+ * import { reedSolomonFields } from 'omai-engine/information'
  * reedSolomonFields.make({ kind: 'gf16', nsym: 4 }).field.size // => 16
  * ```
  */

@@ -7,7 +7,7 @@
  * @index structure Methods and sessions: drive, seek and fork a run step by step.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import { foldIn, type Key, key as makeKey } from '../random/index.ts'
 import { contains, type DictSpace, defaults, type SpaceValue } from '../space/index.ts'
 import { keyTags } from './_keys.ts'
@@ -65,12 +65,12 @@ export interface Method<S, C extends Config = Config, K extends string = string>
  *
  * @param method - The method.
  * @returns The method.
- * @throws MdmlError with code `value` for an empty or malformed path, or defaults the contract cannot satisfy.
+ * @throws OmaiError with code `value` for an empty or malformed path, or defaults the contract cannot satisfy.
  * @index function Declare how to build a run from its configuration and contract.
  * @example
  * ```ts
- * import { defineMethod, scalar } from 'mdml-engine/trace'
- * import { dict } from 'mdml-engine/space'
+ * import { defineMethod, scalar } from 'omai-engine/trace'
+ * import { dict } from 'omai-engine/space'
  * const m = defineMethod({
  *   name: 'count', config: dict({}),
  *   make: () => ({ name: 'count', config: {}, init: () => 0, step: (s: number, ctx) => { ctx.log('n', s); return s + 1 } }),
@@ -83,7 +83,7 @@ export function defineMethod<S, C extends Config, K extends string = string>(met
   const contract = contractOf(method, defaults(method.config) as C, makeKey(0))
   for (const path of Object.keys(contract)) {
     if (path === '' || path.split('/').some((seg) => seg === ''))
-      throw new MdmlError('value', `defineMethod: ${method.name} has a malformed path '${path}'`)
+      throw new OmaiError('value', `defineMethod: ${method.name} has a malformed path '${path}'`)
   }
   resolve<S, K>(contract, method.defaults ?? 'off', { ...(method.hooks === undefined ? {} : { hooks: method.hooks }) })
   return method
@@ -98,9 +98,9 @@ export function defineMethod<S, C extends Config, K extends string = string>(met
  * @returns The contract.
  * @example
  * ```ts
- * import { dict } from 'mdml-engine/space'
- * import { key } from 'mdml-engine/random'
- * import { contractOf, defineMethod, scalar } from 'mdml-engine/trace'
+ * import { dict } from 'omai-engine/space'
+ * import { key } from 'omai-engine/random'
+ * import { contractOf, defineMethod, scalar } from 'omai-engine/trace'
  * const m = defineMethod({
  *   name: 'count', config: dict({}),
  *   make: () => ({ name: 'count', config: {}, init: () => 0, step: (s: number, ctx) => { ctx.log('n', s); return s + 1 } }),
@@ -178,7 +178,7 @@ export interface Session<S, C extends Config = Config, K extends string = string
 
 function configOf<C extends Config>(space: DictSpace, given: Partial<C> | undefined, who: string): C {
   const config = { ...(defaults(space) as Config), ...given } as C
-  if (!contains(space, config)) throw new MdmlError('value', `${who}: the configuration is outside the method's space`)
+  if (!contains(space, config)) throw new OmaiError('value', `${who}: the configuration is outside the method's space`)
   return config
 }
 
@@ -188,14 +188,14 @@ function configOf<C extends Config>(space: DictSpace, given: Partial<C> | undefi
  * @param method - The method.
  * @param options - Configuration, seed, subscription, mode and budgets.
  * @returns The session.
- * @throws MdmlError with code `value` for a configuration outside the method's space or a subscription the contract
+ * @throws OmaiError with code `value` for a configuration outside the method's space or a subscription the contract
  *   cannot satisfy.
  * @concept log-contract
  * @index function Open a session on a method to step, seek and fork.
  * @example
  * ```ts
- * import { defineMethod, Log, metricSeries, scalar, session } from 'mdml-engine/trace'
- * import { dict } from 'mdml-engine/space'
+ * import { defineMethod, Log, metricSeries, scalar, session } from 'omai-engine/trace'
+ * import { dict } from 'omai-engine/space'
  * const count = defineMethod({
  *   name: 'count', config: dict({}),
  *   make: () => ({
@@ -288,10 +288,10 @@ export function session<S, C extends Config, K extends string = string>(
   const stateAt = (t: number): S => {
     const now = current()
     if (t === now.t) return now.state
-    if (t > now.t || t < 0) throw new MdmlError('value', `${method.name}: step ${t} has not been reached`)
-    if (rec === undefined) throw new MdmlError('value', `${method.name}: a session without a past keeps no checkpoints`)
+    if (t > now.t || t < 0) throw new OmaiError('value', `${method.name}: step ${t} has not been reached`)
+    if (rec === undefined) throw new OmaiError('value', `${method.name}: a session without a past keeps no checkpoints`)
     // `seek` only reads the tape: hand it the live events, not a copy of all of them.
-    return seek(raw, { schema: 'mdml.run/1', events: rec.events }, t, { key: root })
+    return seek(raw, { schema: 'omai.run/1', events: rec.events }, t, { key: root })
   }
   const self: Session<S, C, K> = {
     method,
@@ -323,15 +323,15 @@ export function session<S, C extends Config, K extends string = string>(
     probe: (t, path, args) => {
       const source = contract[path]
       if (source === undefined || source.kind !== 'derived')
-        throw new MdmlError('value', `${method.name}: '${path}' is not a derived path`)
+        throw new OmaiError('value', `${method.name}: '${path}' is not a derived path`)
       return source.compute(stateAt(t), args)
     },
     project: (name, projectOptions) => {
       const p = method.projections?.[name]
-      if (p === undefined) throw new MdmlError('value', `${method.name}: no projection '${name}'`)
+      if (p === undefined) throw new OmaiError('value', `${method.name}: no projection '${name}'`)
       return p(self.run(), projectOptions)
     },
-    run: () => (rec === undefined ? { schema: 'mdml.run/1', events: [] } : rec.run()),
+    run: () => (rec === undefined ? { schema: 'omai.run/1', events: [] } : rec.run()),
     stepsOf: (ev) => sched.stepsOf(ev).slice(),
   }
   const mode = options.mode ?? 'live'

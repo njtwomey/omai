@@ -4,7 +4,7 @@
  * two dimensions, with pywt's signal extension modes.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import {
   add,
   concat,
@@ -96,7 +96,7 @@ function idwtRows(ca: Value, cd: Value, w: DiscreteWavelet, mode: WaveletMode): 
   const [batch = 1, k = 0] = ca.shape
   const f = w.recLo.length
   const out = mode === 'periodization' ? 2 * k : 2 * k - f + 2
-  if (out < 1) throw new MdmlError('value', 'idwt: too few coefficients for this wavelet')
+  if (out < 1) throw new OmaiError('value', 'idwt: too few coefficients for this wavelet')
   const idx = new Int32Array(batch * k * f)
   for (let b = 0; b < batch; b++) {
     for (let i = 0; i < k; i++) {
@@ -126,8 +126,8 @@ function idwtRows(ca: Value, cd: Value, w: DiscreteWavelet, mode: WaveletMode): 
  * @concept discrete-wavelet-transform
  * @example
  * ```ts
- * import { dwt } from 'mdml-engine/signal'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { dwt } from 'omai-engine/signal'
+ * import { toFlat } from 'omai-engine/tensor'
  * toFlat(dwt([1, 1, 2, 2], 'haar').cA).map((v) => Math.round(v * 1e12) / 1e12) // => [1.414213562373, 2.828427124746]
  * ```
  */
@@ -149,8 +149,8 @@ export function dwt(x: TensorLike, w: WaveletSpec, options: DwtOptions = {}): Dw
  * @concept discrete-wavelet-transform
  * @example
  * ```ts
- * import { dwt, idwt } from 'mdml-engine/signal'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { dwt, idwt } from 'omai-engine/signal'
+ * import { toFlat } from 'omai-engine/tensor'
  * const { cA, cD } = dwt([3, 1, 4, 1, 5, 9], 'db2')
  * toFlat(idwt(cA, cD, 'db2')).map((v) => Math.round(v * 1e12) / 1e12) // => [3, 1, 4, 1, 5, 9]
  * ```
@@ -159,7 +159,7 @@ export function idwt(ca: TensorLike, cd: TensorLike, w: WaveletSpec, options: Dw
   const a = float(ca)
   const d = float(cd)
   if (a.shape.length !== d.shape.length || a.shape.some((s, i) => s !== d.shape[i]))
-    throw new MdmlError('shape', 'idwt: cA and cD must have the same shape')
+    throw new OmaiError('shape', 'idwt: cA and cD must have the same shape')
   const ra = rowsOf(a, options.axis ?? -1, 'idwt')
   const rd = rowsOf(d, options.axis ?? -1, 'idwt')
   return ra.restore(idwtRows(ra.rows, rd.rows, wavelet(w), options.mode ?? 'symmetric'))
@@ -175,7 +175,7 @@ export function idwt(ca: TensorLike, cd: TensorLike, w: WaveletSpec, options: Dw
  * @concept discrete-wavelet-transform
  * @example
  * ```ts
- * import { wavedec } from 'mdml-engine/signal'
+ * import { wavedec } from 'omai-engine/signal'
  * wavedec(new Array(16).fill(1), 'haar', { level: 2 }).map((c) => c.shape[0]) // => [4, 4, 8]
  * ```
  */
@@ -189,7 +189,7 @@ export function wavedec(
   const axis = options.axis ?? -1
   const a = axis < 0 ? axis + v.shape.length : axis
   const level = options.level ?? dwtMaxLevel(v.shape[a] ?? 0, wv)
-  if (level < 0) throw new MdmlError('value', 'wavedec: the level must be non-negative')
+  if (level < 0) throw new OmaiError('value', 'wavedec: the level must be non-negative')
   const details: Value[] = []
   let approx = v
   for (let l = 0; l < level; l++) {
@@ -210,15 +210,15 @@ export function wavedec(
  * @concept discrete-wavelet-transform
  * @example
  * ```ts
- * import { wavedec, waverec } from 'mdml-engine/signal'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { wavedec, waverec } from 'omai-engine/signal'
+ * import { toFlat } from 'omai-engine/tensor'
  * const x = [3, 1, 4, 1, 5, 9, 2, 6]
  * toFlat(waverec(wavedec(x, 'db1', { level: 3 }), 'db1')).map((v) => Math.round(v * 1e12) / 1e12) // => [3, 1, 4, 1, 5, 9, 2, 6]
  * ```
  */
 export function waverec(coeffs: readonly TensorLike[], w: WaveletSpec, options: DwtOptions = {}): Value {
   const first = coeffs[0]
-  if (first === undefined) throw new MdmlError('value', 'waverec: no coefficients')
+  if (first === undefined) throw new OmaiError('value', 'waverec: no coefficients')
   let a = float(first)
   const axis = options.axis ?? -1
   for (const dl of coeffs.slice(1)) {
@@ -227,7 +227,7 @@ export function waverec(coeffs: readonly TensorLike[], w: WaveletSpec, options: 
     const la = a.shape[ax] ?? 0
     const ld = d.shape[ax] ?? 0
     if (la === ld + 1) a = sliceAxis(a, ax, 0, ld)
-    else if (la !== ld) throw new MdmlError('shape', 'waverec: coefficient lengths do not match')
+    else if (la !== ld) throw new OmaiError('shape', 'waverec: coefficient lengths do not match')
     a = idwt(a, d, w, options)
   }
   return a
@@ -252,13 +252,13 @@ export interface Dwt2Coefficients {
  * @concept discrete-wavelet-transform
  * @example
  * ```ts
- * import { dwt2 } from 'mdml-engine/signal'
+ * import { dwt2 } from 'omai-engine/signal'
  * dwt2([[1, 2], [3, 4]], 'haar').cA.shape // => [1, 1]
  * ```
  */
 export function dwt2(x: TensorLike, w: WaveletSpec, mode: WaveletMode = 'symmetric'): Dwt2Coefficients {
   const v = float(x)
-  if (v.shape.length < 2) throw new MdmlError('shape', 'dwt2: expected at least two axes')
+  if (v.shape.length < 2) throw new OmaiError('shape', 'dwt2: expected at least two axes')
   const rows = dwt(v, w, { mode, axis: -2 })
   const a = dwt(rows.cA, w, { mode, axis: -1 })
   const d = dwt(rows.cD, w, { mode, axis: -1 })
@@ -275,8 +275,8 @@ export function dwt2(x: TensorLike, w: WaveletSpec, mode: WaveletMode = 'symmetr
  * @concept discrete-wavelet-transform
  * @example
  * ```ts
- * import { dwt2, idwt2 } from 'mdml-engine/signal'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { dwt2, idwt2 } from 'omai-engine/signal'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(idwt2(dwt2([[1, 2], [3, 4]], 'haar'), 'haar')).flat().map((v) => Math.round(Number(v) * 1e12) / 1e12) // => [1, 2, 3, 4]
  * ```
  */
@@ -302,7 +302,7 @@ export interface Wavedec2Coefficients {
  * @concept discrete-wavelet-transform
  * @example
  * ```ts
- * import { wavedec2 } from 'mdml-engine/signal'
+ * import { wavedec2 } from 'omai-engine/signal'
  * wavedec2(new Array(8).fill(new Array(8).fill(1)), 'haar', { level: 2 }).details.length // => 2
  * ```
  */
@@ -336,7 +336,7 @@ export function wavedec2(
  * @concept discrete-wavelet-transform
  * @example
  * ```ts
- * import { wavedec2, waverec2 } from 'mdml-engine/signal'
+ * import { wavedec2, waverec2 } from 'omai-engine/signal'
  * waverec2(wavedec2([[1, 2, 3, 4], [5, 6, 7, 8], [9, 1, 2, 3], [4, 5, 6, 7]], 'haar'), 'haar').shape // => [4, 4]
  * ```
  */

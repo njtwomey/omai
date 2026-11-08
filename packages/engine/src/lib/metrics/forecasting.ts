@@ -4,7 +4,7 @@
  * multi-quantile loss, the continuous ranked probability score (CRPS) for ensembles and Gaussians, and Theil's U2.
  */
 
-import { MdmlError, type MetricResult } from '../base/index.ts'
+import { type MetricResult, OmaiError } from '../base/index.ts'
 import { normal } from '../dists/index.ts'
 import type { TensorLike } from '../tensor/index.ts'
 import { rejectSampleWeight } from './_labels.ts'
@@ -40,7 +40,7 @@ const spec = specOf('forecasting', 'values', 'forecast-evaluation', {
  * @concept forecast-evaluation
  * @example
  * ```ts
- * import { mape } from 'mdml-engine/metrics'
+ * import { mape } from 'omai-engine/metrics'
  * mape([2, 4], [1, 5]).estimate.value // => 0.375
  * ```
  */
@@ -56,7 +56,7 @@ export const mape: Metric = meanAbsolutePercentageError
  * @returns The metric result.
  * @example
  * ```ts
- * import { symmetricMeanAbsolutePercentageError } from 'mdml-engine/metrics'
+ * import { symmetricMeanAbsolutePercentageError } from 'omai-engine/metrics'
  * symmetricMeanAbsolutePercentageError([1, 2], [3, 2]).estimate.value // => 0.5
  * ```
  */
@@ -79,7 +79,7 @@ export const symmetricMeanAbsolutePercentageError: Metric = perOutputMetric(
  * @returns The metric result.
  * @example
  * ```ts
- * import { weightedMeanAbsolutePercentageError } from 'mdml-engine/metrics'
+ * import { weightedMeanAbsolutePercentageError } from 'omai-engine/metrics'
  * weightedMeanAbsolutePercentageError([0, 4], [1, 5]).estimate.value // => 0.5
  * ```
  */
@@ -107,7 +107,7 @@ export interface ScaledErrorOptions extends MetricOptions {
 /** The in-sample error of the seasonal naive forecast, mean |y_t - y_{t-m}|^p. */
 function naiveScale(yTrain: TensorLike, m: number, p: number): number {
   const y = flat(yTrain)
-  if (y.length <= m) throw new MdmlError('value', 'scaled errors need a training series longer than the seasonality')
+  if (y.length <= m) throw new OmaiError('value', 'scaled errors need a training series longer than the seasonality')
   let s = 0
   for (let t = m; t < y.length; t++) s += Math.abs((y[t] ?? 0) - (y[t - m] ?? 0)) ** p
   return s / (y.length - m)
@@ -123,7 +123,7 @@ function naiveScale(yTrain: TensorLike, m: number, p: number): number {
  * @returns The metric result (below 1 beats the naive forecast).
  * @example
  * ```ts
- * import { meanAbsoluteScaledError } from 'mdml-engine/metrics'
+ * import { meanAbsoluteScaledError } from 'omai-engine/metrics'
  * meanAbsoluteScaledError([5, 6], [5, 8], { yTrain: [1, 2, 3, 4] }).estimate.value // => 1
  * ```
  */
@@ -155,7 +155,7 @@ export const meanAbsoluteScaledError: Metric<ScaledErrorOptions> = Object.assign
  * @returns The metric result.
  * @example
  * ```ts
- * import { rootMeanSquaredScaledError } from 'mdml-engine/metrics'
+ * import { rootMeanSquaredScaledError } from 'omai-engine/metrics'
  * rootMeanSquaredScaledError([5, 6], [6, 7], { yTrain: [1, 2, 3, 4] }).estimate.value // => 1
  * ```
  */
@@ -206,7 +206,7 @@ function intervalScores(lower: TensorLike, upper: TensorLike, y: TensorLike, alp
  * @returns The metric result.
  * @example
  * ```ts
- * import { intervalScore } from 'mdml-engine/metrics'
+ * import { intervalScore } from 'omai-engine/metrics'
  * intervalScore([0], [2], [3], { alpha: 0.5 }).estimate.value // => 6
  * ```
  */
@@ -229,7 +229,7 @@ export const intervalScore: MetricFunction<[TensorLike, TensorLike, TensorLike, 
  * @returns The metric result.
  * @example
  * ```ts
- * import { meanScaledIntervalScore } from 'mdml-engine/metrics'
+ * import { meanScaledIntervalScore } from 'omai-engine/metrics'
  * meanScaledIntervalScore([4], [6], [5], { yTrain: [1, 2, 3] }).estimate.value // => 2
  * ```
  */
@@ -264,7 +264,7 @@ export const meanScaledIntervalScore: MetricFunction<
  * @returns The metric result.
  * @example
  * ```ts
- * import { intervalCoverage } from 'mdml-engine/metrics'
+ * import { intervalCoverage } from 'omai-engine/metrics'
  * intervalCoverage([0, 0], [1, 1], [0.5, 2]).estimate.value // => 0.5
  * ```
  */
@@ -297,7 +297,7 @@ export interface QuantileLossOptions {
  * @returns The metric result, with the per-level losses in the breakdown.
  * @example
  * ```ts
- * import { quantileLoss } from 'mdml-engine/metrics'
+ * import { quantileLoss } from 'omai-engine/metrics'
  * quantileLoss([1], [[0, 2]], { quantiles: [0.25, 0.75] }).estimate.value // => 0.25
  * ```
  */
@@ -307,7 +307,7 @@ export const quantileLoss: MetricFunction<[TensorLike, TensorLike, QuantileLossO
     const t = flat(yTrue)
     const p = shapedArray(yPred)
     const q = options.quantiles.length
-    if ((p.shape[1] ?? 1) !== q) throw new MdmlError('shape', 'quantileLoss: one forecast column per quantile')
+    if ((p.shape[1] ?? 1) !== q) throw new OmaiError('shape', 'quantileLoss: one forecast column per quantile')
     const absTotal = t.reduce((a, v) => a + Math.abs(v), 0)
     const per = options.quantiles.map((tau, j) => {
       let s = 0
@@ -336,7 +336,7 @@ export const quantileLoss: MetricFunction<[TensorLike, TensorLike, QuantileLossO
  * @returns The metric result.
  * @example
  * ```ts
- * import { crpsEnsemble } from 'mdml-engine/metrics'
+ * import { crpsEnsemble } from 'omai-engine/metrics'
  * crpsEnsemble([0], [[0, 0]]).estimate.value // => 0
  * ```
  */
@@ -373,7 +373,7 @@ export const crpsEnsemble: MetricFunction<[TensorLike, TensorLike, (MetricOption
  * @returns The metric result.
  * @example
  * ```ts
- * import { crpsNormal } from 'mdml-engine/metrics'
+ * import { crpsNormal } from 'omai-engine/metrics'
  * Math.abs(crpsNormal([0], [0], [1]).estimate.value - (Math.SQRT2 - 1) / Math.sqrt(Math.PI)) < 1e-15 // => true
  * ```
  */
@@ -395,7 +395,7 @@ export const crpsNormal: MetricFunction<[TensorLike, TensorLike, TensorLike]> = 
  * @returns The metric result.
  * @example
  * ```ts
- * import { theilsU2 } from 'mdml-engine/metrics'
+ * import { theilsU2 } from 'omai-engine/metrics'
  * theilsU2([1, 2, 4], [1, 2, 4]).estimate.value // => 0
  * ```
  */

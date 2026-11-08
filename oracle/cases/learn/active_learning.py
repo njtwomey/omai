@@ -4,8 +4,6 @@ sampling, and query-by-committee (vote entropy, consensus entropy, maximum disag
 from typing import Any
 
 import numpy as np
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import rng
 from modAL.batch import uncertainty_batch_sampling
 from modAL.disagreement import (
     consensus_entropy_sampling,
@@ -21,6 +19,8 @@ from modAL.uncertainty import (
     margin_sampling,
     uncertainty_sampling,
 )
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import rng
 from sklearn.naive_bayes import GaussianNB
 
 REFERENCE: dict[str, str] = {"modAL-python": "0.4.2.1"}

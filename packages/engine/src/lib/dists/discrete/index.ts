@@ -1,5 +1,5 @@
 /**
- * Discrete distributions, scipy.stats and torch.distributions style, part of `mdml-engine/dists`: Bernoulli,
+ * Discrete distributions, scipy.stats and torch.distributions style, part of `omai-engine/dists`: Bernoulli,
  * binomial and beta-binomial successes, categorical, uniform and ordinal outcomes, and Poisson, negative binomial,
  * hypergeometric and zero-inflated counts.
  *

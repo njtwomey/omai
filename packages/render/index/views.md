@@ -2,15 +2,15 @@
 
 # views
 
-Headless views of exposition records (`mdml-engine/exposition`): for each kind of record a method returns (decision surfaces, regularisation paths, trees, clustering steps, attributions and many more), the chart option, scene or player frames that explain it. `viewFor(kind)` is the registry naming each kind's standard view and `stillOf(record)` draws any record as a headless still.
+Headless views of exposition records (`omai-engine/exposition`): for each kind of record a method returns (decision surfaces, regularisation paths, trees, clustering steps, attributions and many more), the chart option, scene or player frames that explain it. `viewFor(kind)` is the registry naming each kind's standard view and `stillOf(record)` draws any record as a headless still.
 
-- table `registry.ts` (file): Open first: the standard view of each exposition record kind. `src/views/registry.ts:1` `mdml-render/views`
+- table `registry.ts` (file): Open first: the standard view of each exposition record kind. `src/views/registry.ts:1` `omai-render/views`
 
-- function `componentsView`: Biplot, scree and loadings of PCA-like components: `componentsView(record)`. `src/views/components.ts:225` `mdml-render/views`
-- function `decisionSurfaceView`: A classifier's decision surface with its rows: `decisionSurfaceView(record)`. `src/views/surfaces.ts:338` `mdml-render/views`
-- function `regularisationPathView`: Coefficients against the penalty, lasso style: `regularisationPathView(path)`. `src/views/paths.ts:175` `mdml-render/views`
-- function `stillOf`: The chart option or scene that explains a record: `stillOf(record)`. `src/views/registry.ts:671` `mdml-render/views`
-- function `treeScene`: A decision tree as a scene of cards: `treeScene(record)`. `src/views/trees.ts:85` `mdml-render/views`
-- function `viewFor`: The standard view of a record kind: `viewFor('regularisationPath')`. `src/views/registry.ts:645` `mdml-render/views`
+- function `componentsView`: Biplot, scree and loadings of PCA-like components: `componentsView(record)`. `src/views/components.ts:225` `omai-render/views`
+- function `decisionSurfaceView`: A classifier's decision surface with its rows: `decisionSurfaceView(record)`. `src/views/surfaces.ts:338` `omai-render/views`
+- function `regularisationPathView`: Coefficients against the penalty, lasso style: `regularisationPathView(path)`. `src/views/paths.ts:175` `omai-render/views`
+- function `stillOf`: The chart option or scene that explains a record: `stillOf(record)`. `src/views/registry.ts:671` `omai-render/views`
+- function `treeScene`: A decision tree as a scene of cards: `treeScene(record)`. `src/views/trees.ts:85` `omai-render/views`
+- function `viewFor`: The standard view of a record kind: `viewFor('regularisationPath')`. `src/views/registry.ts:645` `omai-render/views`
 
-- structure `StandardView`: A record kind's view: component name, title, whether it plays, and its still. `src/views/registry.ts:71` `mdml-render/views`
+- structure `StandardView`: A record kind's view: component name, title, whether it plays, and its still. `src/views/registry.ts:71` `omai-render/views`

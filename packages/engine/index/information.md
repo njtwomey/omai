@@ -4,9 +4,9 @@
 
 Information theory and coding: entropies and divergences of distributions, estimators of entropy and mutual information from samples, source and dictionary coding (Huffman, arithmetic, LZ), channels and their capacity, error-correcting codes and complexity measures.
 
-- function `channels.ts` (file): Channel capacity by Blahut-Arimoto, for discrete channels. `src/lib/information/channels.ts:1` `mdml-engine/information`
+- function `channels.ts` (file): Channel capacity by Blahut-Arimoto, for discrete channels. `src/lib/information/channels.ts:1` `omai-engine/information`
 
-- function `entropy`: Shannon entropy of a probability vector; relativeEntropy (KL) and crossEntropy beside it. `src/lib/information/discrete.ts:79` `mdml-engine/information`
-- function `huffman`: Huffman code for a source distribution. `src/lib/information/source-coding.ts:325` `mdml-engine/information`
-- function `mutualInformation`: Mutual information of a joint probability table. `src/lib/information/discrete.ts:275` `mdml-engine/information`
-- function `plugInEntropy`: Entropy and mutual information estimated from samples. `src/lib/information/estimators.ts:65` `mdml-engine/information`
+- function `entropy`: Shannon entropy of a probability vector; relativeEntropy (KL) and crossEntropy beside it. `src/lib/information/discrete.ts:79` `omai-engine/information`
+- function `huffman`: Huffman code for a source distribution. `src/lib/information/source-coding.ts:325` `omai-engine/information`
+- function `mutualInformation`: Mutual information of a joint probability table. `src/lib/information/discrete.ts:275` `omai-engine/information`
+- function `plugInEntropy`: Entropy and mutual information estimated from samples. `src/lib/information/estimators.ts:65` `omai-engine/information`

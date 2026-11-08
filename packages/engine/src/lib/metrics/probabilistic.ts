@@ -4,7 +4,7 @@
  * classwise calibration errors.
  */
 
-import { MdmlError, type MetricResult } from '../base/index.ts'
+import { type MetricResult, OmaiError } from '../base/index.ts'
 import { fromVector, type Tensor, type TensorLike } from '../tensor/index.ts'
 import { type Label, labelValues, rejectSampleWeight, sortLabels } from './_labels.ts'
 import { binarise, type Grid } from './_scores.ts'
@@ -47,9 +47,9 @@ function probabilityTable(
     }
     p = { shape: [n, 2], data }
   }
-  for (const v of p.data) if (v < 0 || v > 1) throw new MdmlError('value', `${name}: probabilities must lie in [0, 1]`)
+  for (const v of p.data) if (v < 0 || v > 1) throw new OmaiError('value', `${name}: probabilities must lie in [0, 1]`)
   if (classes.length !== (p.shape[1] ?? 0)) {
-    throw new MdmlError('shape', `${name}: ${classes.length} classes but ${p.shape[1]} probability columns`)
+    throw new OmaiError('shape', `${name}: ${classes.length} classes but ${p.shape[1]} probability columns`)
   }
   return { t: binarise(y, classes), p, n: y.length, classes }
 }
@@ -80,7 +80,7 @@ function sampleLogLoss(t: Grid, p: Grid): number[] {
  * @concept proper-scoring-rules
  * @example
  * ```ts
- * import { logLoss } from 'mdml-engine/metrics'
+ * import { logLoss } from 'omai-engine/metrics'
  * logLoss([0, 1], [[0.5, 0.5], [0.5, 0.5]]).estimate.value === Math.LN2 // => true
  * ```
  */
@@ -111,7 +111,7 @@ export const logLoss: Metric<ProbabilityOptions & { readonly normalize?: boolean
  * @returns The metric result.
  * @example
  * ```ts
- * import { d2LogLossScore } from 'mdml-engine/metrics'
+ * import { d2LogLossScore } from 'omai-engine/metrics'
  * d2LogLossScore([0, 1], [[0.5, 0.5], [0.5, 0.5]]).estimate.value // => 0
  * ```
  */
@@ -153,7 +153,7 @@ export interface BrierOptions extends ProbabilityOptions {
  * @returns The metric result.
  * @example
  * ```ts
- * import { brierScoreLoss } from 'mdml-engine/metrics'
+ * import { brierScoreLoss } from 'omai-engine/metrics'
  * brierScoreLoss([0, 1, 1, 0], [0, 1, 0.5, 0.5]).estimate.value // => 0.125
  * ```
  */
@@ -211,10 +211,10 @@ function binIndices(prob: Float64Array, nBins: number, strategy: 'uniform' | 'qu
 function binaryForecast(yTrue: MetricInput, yProb: TensorLike, posLabel?: Label): { y: Float64Array; p: Float64Array } {
   const labels = labelValues(yTrue)
   const classes = sortLabels(labels)
-  if (classes.length > 2) throw new MdmlError('value', 'needs binary labels')
+  if (classes.length > 2) throw new OmaiError('value', 'needs binary labels')
   const pos = posLabel ?? (classes.includes(1) ? 1 : classes[classes.length - 1])
   const p = shapedArray(yProb).data
-  if (p.length !== labels.length) throw new MdmlError('shape', 'yTrue and yProb have different lengths')
+  if (p.length !== labels.length) throw new OmaiError('shape', 'yTrue and yProb have different lengths')
   return { y: Float64Array.from(labels, (l) => (l === pos ? 1 : 0)), p }
 }
 
@@ -248,7 +248,7 @@ export interface CalibrationCurve {
  * @concept calibration
  * @example
  * ```ts
- * import { calibrationCurve } from 'mdml-engine/metrics'
+ * import { calibrationCurve } from 'omai-engine/metrics'
  * calibrationCurve([0, 0, 1, 1], [0.1, 0.2, 0.8, 0.9], { nBins: 2 }).probTrue // => [0, 1]
  * ```
  */
@@ -297,7 +297,7 @@ function calibrationRows(
  * @returns The Brier score (mean (p - y)^2), with the three components in the breakdown.
  * @example
  * ```ts
- * import { brierDecomposition } from 'mdml-engine/metrics'
+ * import { brierDecomposition } from 'omai-engine/metrics'
  * brierDecomposition([0, 1, 0, 1], [0.5, 0.5, 0.5, 0.5]).breakdown?.uncertainty // => 0.25
  * ```
  */
@@ -380,7 +380,7 @@ function confidences(name: string, yTrue: MetricInput, yProba: TensorLike): { co
   const labels = labelValues(yTrue)
   const n = raw.shape[0] ?? 0
   const c = raw.shape[1] ?? 0
-  if (labels.length !== n) throw new MdmlError('shape', `${name}: yTrue and yProba have different lengths`)
+  if (labels.length !== n) throw new OmaiError('shape', `${name}: yTrue and yProba have different lengths`)
   const conf = new Float64Array(n)
   const hit = new Float64Array(n)
   for (let i = 0; i < n; i++) {
@@ -404,7 +404,7 @@ function confidences(name: string, yTrue: MetricInput, yProba: TensorLike): { co
  * @concept calibration
  * @example
  * ```ts
- * import { expectedCalibrationError } from 'mdml-engine/metrics'
+ * import { expectedCalibrationError } from 'omai-engine/metrics'
  * expectedCalibrationError([0, 1, 1, 0], [0.25, 0.75, 0.75, 0.25], { nBins: 4 }).estimate.value // => 0.25
  * ```
  */
@@ -428,7 +428,7 @@ export const expectedCalibrationError: Metric<CalibrationErrorOptions, MetricInp
  * @returns The metric result.
  * @example
  * ```ts
- * import { maximumCalibrationError } from 'mdml-engine/metrics'
+ * import { maximumCalibrationError } from 'omai-engine/metrics'
  * maximumCalibrationError([0, 1, 1, 0], [0.25, 0.75, 0.75, 0.25], { nBins: 4 }).estimate.value // => 0.25
  * ```
  */
@@ -450,7 +450,7 @@ export const maximumCalibrationError: Metric<Omit<CalibrationErrorOptions, 'norm
  * @returns The metric result, with the per-class errors in the breakdown.
  * @example
  * ```ts
- * import { classwiseCalibrationError } from 'mdml-engine/metrics'
+ * import { classwiseCalibrationError } from 'omai-engine/metrics'
  * classwiseCalibrationError([0, 1], [[1, 0], [0, 1]]).estimate.value // => 0
  * ```
  */
@@ -461,7 +461,7 @@ export const classwiseCalibrationError: Metric<CalibrationErrorOptions, MetricIn
     const labels = labelValues(yTrue)
     const n = raw.shape[0] ?? 0
     const c = raw.shape[1] ?? 0
-    if (raw.shape.length !== 2) throw new MdmlError('shape', `${name}: needs [N, C] probabilities`)
+    if (raw.shape.length !== 2) throw new OmaiError('shape', `${name}: needs [N, C] probabilities`)
     const w = sampleWeights(name, n, options.sampleWeight)
     const per = Array.from({ length: c }, (_, j) => {
       const conf = Float64Array.from({ length: n }, (_, i) => raw.data[i * c + j] ?? 0)

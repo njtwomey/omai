@@ -10,7 +10,7 @@ import {
   jacobian as jacobianOf,
   valueAndGrad,
 } from '../../autodiff/index.ts'
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { idamax } from '../../numerics/linalg/index.ts'
 import {
   asTensor,
@@ -96,7 +96,7 @@ function asTree(x0: unknown): ParamTree {
     for (const [k, v] of Object.entries(x0)) out[k] = asTree(v)
     return out
   }
-  throw new MdmlError('value', `parameters must be numbers, arrays or tensors, got ${typeof x0}`)
+  throw new OmaiError('value', `parameters must be numbers, arrays or tensors, got ${typeof x0}`)
 }
 
 const vectorOf = (x: ArrayLike<number>): Value => fromStorage(Float64Array.from(x), [x.length], 'float64')
@@ -107,12 +107,12 @@ const vectorOf = (x: ArrayLike<number>): Value => fromStorage(Float64Array.from(
  * @param f - The objective, a scalar function of a tree.
  * @param x0 - The starting parameters (a tree, or anything tensor-like such as `[1, 2]`).
  * @returns The flat objective.
- * @throws MdmlError with code `shape` when `f` does not return a single value.
+ * @throws OmaiError with code `shape` when `f` does not return a single value.
  * @concept optimisation
  * @example
  * ```ts
- * import { flatObjective } from 'mdml-engine/optim'
- * import { add, mul, square, sum, type Value } from 'mdml-engine/tensor'
+ * import { flatObjective } from 'omai-engine/optim'
+ * import { add, mul, square, sum, type Value } from 'omai-engine/tensor'
  * const obj = flatObjective((p) => {
  *   const { a, b } = p as { a: Value; b: Value }
  *   return add(sum(square(a)), mul(b, 3))
@@ -126,7 +126,7 @@ export function flatObjective(f: Objective, x0: Parameters): FlatObjective {
   const ofValue = (v: Value): Value => {
     const out = f(toTree(v))
     if (sizeOf(out.shape) !== 1)
-      throw new MdmlError('shape', `objective must return a single value, got shape [${out.shape.join(', ')}]`)
+      throw new OmaiError('shape', `objective must return a single value, got shape [${out.shape.join(', ')}]`)
     return reshape(out, [])
   }
   const vg = valueAndGrad(ofValue)
@@ -192,8 +192,8 @@ export interface FlatResiduals {
  * @concept least-squares
  * @example
  * ```ts
- * import { flatResiduals } from 'mdml-engine/optim'
- * import { mul, sub, type Value } from 'mdml-engine/tensor'
+ * import { flatResiduals } from 'omai-engine/optim'
+ * import { mul, sub, type Value } from 'omai-engine/tensor'
  * const res = flatResiduals((p: Value) => sub(mul(p, p), 4), [1, 3])
  * [res.m, Array.from(res.jacobian([1, 3]))] // => [2, [2, 0, 0, 6]]
  * ```
@@ -233,11 +233,11 @@ export interface BoundVectors {
  * @param bounds - Pairs, or lower and upper arrays or scalars (undefined for none).
  * @param n - The number of variables.
  * @returns The box.
- * @throws MdmlError with code `shape` when the bounds do not match n, and `value` when a lower bound exceeds its
+ * @throws OmaiError with code `shape` when the bounds do not match n, and `value` when a lower bound exceeds its
  * upper bound.
  * @example
  * ```ts
- * import { boxOf } from 'mdml-engine/optim'
+ * import { boxOf } from 'omai-engine/optim'
  * const b = boxOf([[0, 1], [null, 2]], 2)
  * [Array.from(b.lower), Array.from(b.upper)] // => [[0, -Infinity], [1, 2]]
  * ```
@@ -248,7 +248,7 @@ export function boxOf(bounds: Bounds | undefined, n: number): BoundVectors {
   if (bounds === undefined) return { lower, upper }
   if (Array.isArray(bounds)) {
     const pairs = bounds as readonly (readonly [number | null, number | null])[]
-    if (pairs.length !== n) throw new MdmlError('shape', `bounds: expected ${n} pairs, got ${pairs.length}`)
+    if (pairs.length !== n) throw new OmaiError('shape', `bounds: expected ${n} pairs, got ${pairs.length}`)
     for (const [i, [lo, hi]] of pairs.entries()) {
       lower[i] = lo ?? -Infinity
       upper[i] = hi ?? Infinity
@@ -259,7 +259,7 @@ export function boxOf(bounds: Bounds | undefined, n: number): BoundVectors {
       if (v === undefined) return
       if (typeof v === 'number') target.fill(v)
       else {
-        if (v.length !== n) throw new MdmlError('shape', `bounds: expected ${n} values, got ${v.length}`)
+        if (v.length !== n) throw new OmaiError('shape', `bounds: expected ${n} values, got ${v.length}`)
         for (let i = 0; i < n; i++) target[i] = v[i] ?? Number.NaN
       }
     }
@@ -268,7 +268,7 @@ export function boxOf(bounds: Bounds | undefined, n: number): BoundVectors {
   }
   for (let i = 0; i < n; i++) {
     if ((lower[i] ?? 0) > (upper[i] ?? 0))
-      throw new MdmlError('value', `bounds: lower bound ${lower[i]} exceeds upper bound ${upper[i]} for variable ${i}`)
+      throw new OmaiError('value', `bounds: lower bound ${lower[i]} exceeds upper bound ${upper[i]} for variable ${i}`)
   }
   return { lower, upper }
 }
@@ -281,7 +281,7 @@ export function boxOf(bounds: Bounds | undefined, n: number): BoundVectors {
  * @returns The projection.
  * @example
  * ```ts
- * import { boxOf, clipToBox } from 'mdml-engine/optim'
+ * import { boxOf, clipToBox } from 'omai-engine/optim'
  * Array.from(clipToBox([-1, 5], boxOf({ lower: 0, upper: 2 }, 2))) // => [0, 2]
  * ```
  */
@@ -325,7 +325,7 @@ export interface MinimizeResult {
  * @returns max |x_i| (0 for an empty vector).
  * @example
  * ```ts
- * import { infNorm } from 'mdml-engine/optim'
+ * import { infNorm } from 'omai-engine/optim'
  * infNorm([1, -3, 2]) // => 3
  * ```
  */

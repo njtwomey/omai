@@ -26,8 +26,8 @@ export type PlantedRule = { readonly literals: readonly PlantedLiteral[]; readon
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { plantedRuleList } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { plantedRuleList } from 'omai-engine/datasets'
  * generate(plantedRuleList, { knobs: { n: 50, rules: 2, noise: 0 } }).data.classes // => ['0', '1']
  * ```
  */

@@ -8,7 +8,7 @@
  */
 
 import { valueAndGrad } from '../autodiff/index.ts'
-import { MdmlError, maxOf, minOf } from '../base/index.ts'
+import { maxOf, minOf, OmaiError } from '../base/index.ts'
 import { lstsq } from '../numerics/linalg/index.ts'
 import { lbfgs, slsqp } from '../optim/index.ts'
 import { foldIn, type Key, key as makeKey, normal } from '../random/index.ts'
@@ -40,12 +40,12 @@ function design(
 ): { readonly t: Tensor; readonly n: number; readonly d: number } {
   const n = x.length
   const d = (x[0]?.length ?? 0) + 1
-  if (n === 0) throw new MdmlError('value', `${name}: needs at least one row`)
+  if (n === 0) throw new OmaiError('value', `${name}: needs at least one row`)
   const data = new Float64Array(n * d)
   for (let i = 0; i < n; i++) {
     data[i * d] = 1
     const row = x[i] ?? []
-    if (row.length !== d - 1) throw new MdmlError('shape', `${name}: rows differ in length`)
+    if (row.length !== d - 1) throw new OmaiError('shape', `${name}: rows differ in length`)
     for (let j = 1; j < d; j++) data[i * d + j] = row[j - 1] ?? 0
   }
   return { t: fromStorage(data, [n, d], 'float64'), n, d }
@@ -72,7 +72,7 @@ export interface LinearClassifier {
  * @returns P(positive) for each row.
  * @example
  * ```ts
- * import { linearProbabilities } from 'mdml-engine/fairness'
+ * import { linearProbabilities } from 'omai-engine/fairness'
  * linearProbabilities({ intercept: 0, weights: [1] }, [[0]]) // => [0.5]
  * ```
  */
@@ -113,7 +113,7 @@ export interface PrejudiceRemover {
  * @concept algorithmic-fairness
  * @example
  * ```ts
- * import { prejudiceRemover } from 'mdml-engine/fairness'
+ * import { prejudiceRemover } from 'omai-engine/fairness'
  * const x = [[0], [1], [2], [3], [1], [2], [3], [4]]
  * const loose = prejudiceRemover(x, [0, 0, 1, 1, 0, 1, 1, 1], [0, 0, 0, 0, 1, 1, 1, 1], { eta: 0 })
  * const tight = prejudiceRemover(x, [0, 0, 1, 1, 0, 1, 1, 1], [0, 0, 0, 0, 1, 1, 1, 1], { eta: 25 })
@@ -128,7 +128,7 @@ export function prejudiceRemover(
 ): PrejudiceRemover {
   const { t: X, n, d } = design('prejudiceRemover', x)
   if (labels.length !== n || groups.length !== n)
-    throw new MdmlError('shape', 'prejudiceRemover: one label and group per row')
+    throw new OmaiError('shape', 'prejudiceRemover: one label and group per row')
   const k = maxOf(groups) + 1
   const eta = options.eta ?? 1
   const l2 = options.l2 ?? 1e-2
@@ -232,7 +232,7 @@ export interface AdversarialDebiasing {
  * @concept algorithmic-fairness
  * @example
  * ```ts
- * import { adversarialDebiasing } from 'mdml-engine/fairness'
+ * import { adversarialDebiasing } from 'omai-engine/fairness'
  * const x = [[0, 0], [1, 0], [2, 0], [3, 0], [1, 1], [2, 1], [3, 1], [4, 1]]
  * const r = adversarialDebiasing(x, [0, 0, 1, 1, 0, 1, 1, 1], [0, 0, 0, 0, 1, 1, 1, 1], { steps: 50 })
  * r.steps.length // => 50
@@ -246,7 +246,7 @@ export function adversarialDebiasing(
 ): AdversarialDebiasing {
   const { t: X, n, d } = design('adversarialDebiasing', x)
   if (labels.length !== n || groups.length !== n)
-    throw new MdmlError('shape', 'adversarialDebiasing: one label and group per row')
+    throw new OmaiError('shape', 'adversarialDebiasing: one label and group per row')
   const eo = options.constraint === 'equalisedOdds'
   const alpha = options.adversaryWeight ?? 1
   const lr = options.learningRate ?? 0.05
@@ -348,7 +348,7 @@ export interface FairConstrainedLogistic {
  * @concept algorithmic-fairness
  * @example
  * ```ts
- * import { fairConstrainedLogistic } from 'mdml-engine/fairness'
+ * import { fairConstrainedLogistic } from 'omai-engine/fairness'
  * const x = [[0], [1], [2], [3], [1], [2], [3], [4]]
  * const r = fairConstrainedLogistic(x, [0, 0, 1, 1, 0, 1, 1, 1], [0, 0, 0, 0, 1, 1, 1, 1])
  * Math.abs(r.covariance) < 1e-6 // => true
@@ -362,7 +362,7 @@ export function fairConstrainedLogistic(
 ): FairConstrainedLogistic {
   const { t: X, n, d } = design('fairConstrainedLogistic', x)
   if (labels.length !== n || groups.length !== n)
-    throw new MdmlError('shape', 'fairConstrainedLogistic: one label and group per row')
+    throw new OmaiError('shape', 'fairConstrainedLogistic: one label and group per row')
   const y = column(labels.map((v) => (v === 1 ? 1 : 0)))
   const zs = groups.map((g) => (g === 0 ? 0 : 1))
   const zbar = zs.reduce((s: number, v) => s + v, 0) / n
@@ -427,7 +427,7 @@ export interface MetaFair {
  * @concept algorithmic-fairness
  * @example
  * ```ts
- * import { metaFairClassifier } from 'mdml-engine/fairness'
+ * import { metaFairClassifier } from 'omai-engine/fairness'
  * const r = metaFairClassifier([0.9, 0.8, 0.7, 0.3, 0.6, 0.4, 0.2, 0.1], [0, 0, 0, 0, 1, 1, 1, 1], { tau: 1 })
  * r.selectionRates // => [0.5, 0.5]
  * ```
@@ -437,9 +437,9 @@ export function metaFairClassifier(
   groups: readonly number[],
   options: MetaFairOptions = {},
 ): MetaFair {
-  if (posteriors.length !== groups.length) throw new MdmlError('shape', 'metaFairClassifier: one group per row')
+  if (posteriors.length !== groups.length) throw new OmaiError('shape', 'metaFairClassifier: one group per row')
   const tau = options.tau ?? 0.8
-  if (!(tau > 0 && tau <= 1)) throw new MdmlError('value', 'metaFairClassifier: tau is in (0, 1]')
+  if (!(tau > 0 && tau <= 1)) throw new OmaiError('value', 'metaFairClassifier: tau is in (0, 1]')
   const k = maxOf(groups) + 1
   const n = posteriors.length
   // Each group's posteriors, highest first, and the expected accuracy gain of selecting its top j: sum of (2 eta - 1).
@@ -528,7 +528,7 @@ export interface GerryFair {
  * @concept algorithmic-fairness
  * @example
  * ```ts
- * import { gerryFairClassifier } from 'mdml-engine/fairness'
+ * import { gerryFairClassifier } from 'omai-engine/fairness'
  * const x = [[0, 0], [1, 0], [2, 0], [3, 0], [0, 1], [1, 1], [2, 1], [3, 1]]
  * const r = gerryFairClassifier(x, x.map((r) => [r[1] ?? 0]), [0, 0, 1, 1, 0, 1, 1, 1], { iterations: 4 })
  * r.steps.length // => 3
@@ -542,7 +542,7 @@ export function gerryFairClassifier(
 ): GerryFair {
   const n = x.length
   if (protectedFeatures.length !== n || labels.length !== n)
-    throw new MdmlError('shape', 'gerryFairClassifier: one protected row and label per row')
+    throw new OmaiError('shape', 'gerryFairClassifier: one protected row and label per row')
   const rate = options.rate ?? 'falsePositive'
   const C = options.C ?? 10
   const gamma = options.gamma ?? 0.01

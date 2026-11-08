@@ -6,7 +6,7 @@
  * @index function RFE, sequential selection and stability selection around any estimator.
  */
 
-import { type Json, MdmlError, meanOf, varianceOf } from '../base/index.ts'
+import { type Json, meanOf, OmaiError, varianceOf } from '../base/index.ts'
 import { foldIn, type Key, subsample } from '../random/index.ts'
 import { dict, int, type SpaceValue } from '../space/index.ts'
 import { type TensorLike, toFlat } from '../tensor/index.ts'
@@ -54,7 +54,7 @@ function columns(data: LearnData, support: readonly boolean[]): LearnData {
 
 function importancesOf(fitted: Fitted, who: string): readonly number[] {
   const imp = fitted.featureImportances
-  if (imp === undefined) throw new MdmlError('value', `${who}: ${fitted.estimator} reports no featureImportances`)
+  if (imp === undefined) throw new OmaiError('value', `${who}: ${fitted.estimator} reports no featureImportances`)
   return imp
 }
 
@@ -145,7 +145,7 @@ export interface RfeSettings {
 function stepSize(step: number, d: number, who: string): number {
   if (step > 0 && step < 1) return Math.max(1, Math.floor(step * d))
   if (!(Number.isInteger(step) && step >= 1))
-    throw new MdmlError('value', `${who}: step must be an integer >= 1 or a fraction`)
+    throw new OmaiError('value', `${who}: step must be an integer >= 1 or a fraction`)
   return step
 }
 
@@ -165,13 +165,13 @@ function targetCount(n: number | undefined, d: number): number {
  * @param data - The data.
  * @param settings - nFeaturesToSelect, step or schedule, evaluation data and scoring.
  * @returns The algorithm, one step per round.
- * @throws MdmlError with code `value` for a step that is neither an integer >= 1 nor a fraction.
+ * @throws OmaiError with code `value` for a step that is neither an integer >= 1 nor a fraction.
  * @concept feature-selection
  * @example
  * ```ts
- * import { defineEstimator, rfeAlgorithm } from 'mdml-engine/learn'
- * import { runAlgorithm } from 'mdml-engine/trace'
- * import { sum, toFlat } from 'mdml-engine/tensor'
+ * import { defineEstimator, rfeAlgorithm } from 'omai-engine/learn'
+ * import { runAlgorithm } from 'omai-engine/trace'
+ * import { sum, toFlat } from 'omai-engine/tensor'
  * const byColumnSum = defineEstimator(
  *   { name: 'sums', kind: 'regressor', fit: (d) => ({ imp: toFlat(sum(d.x, 0)) }), methods: (p) => ({ featureImportances: p.imp }) },
  *   {},
@@ -283,8 +283,8 @@ const rfeVerbs = (p: RfeParams, h: { readonly estimator: Estimator }, who: strin
  * @returns The estimator.
  * @example
  * ```ts
- * import { defineEstimator, rfe } from 'mdml-engine/learn'
- * import { sum, toFlat } from 'mdml-engine/tensor'
+ * import { defineEstimator, rfe } from 'omai-engine/learn'
+ * import { sum, toFlat } from 'omai-engine/tensor'
  * const byColumnSum = defineEstimator(
  *   { name: 'sums', kind: 'regressor', fit: (d) => ({ imp: toFlat(sum(d.x, 0)) }), methods: (p) => ({ featureImportances: p.imp }) },
  *   {},
@@ -384,9 +384,9 @@ export interface RfecvState {
  * @concept feature-selection
  * @example
  * ```ts
- * import { defineEstimator, rfecvAlgorithm } from 'mdml-engine/learn'
- * import { runAlgorithm } from 'mdml-engine/trace'
- * import { full } from 'mdml-engine/tensor'
+ * import { defineEstimator, rfecvAlgorithm } from 'omai-engine/learn'
+ * import { runAlgorithm } from 'omai-engine/trace'
+ * import { full } from 'omai-engine/tensor'
  * const constant = defineEstimator(
  *   { name: 'c', kind: 'regressor', fit: (d) => ({ d: d.x.shape[1] }), methods: (p) => ({ featureImportances: Array.from({ length: p.d }, (_, j) => j), predict: (x) => full([x.shape[0]], 0) }) },
  *   {},
@@ -404,7 +404,7 @@ export function rfecvAlgorithm(
   const d = matrixView(data.x, 'rfecv', { allowNaN: true }).d
   const minFeatures = Math.min(options.minFeaturesToSelect ?? 1, d)
   const scorer = Object.values(scorersOf(options.scoring))[0]
-  if (scorer === undefined) throw new MdmlError('value', 'rfecv: no scorer')
+  if (scorer === undefined) throw new OmaiError('value', 'rfecv: no scorer')
   const folds = splitIndices(checkCv(options.cv, estimator), splitInputOf(data, options.groups), foldIn(key, 0))
   const settings = (target: number): RfeSettings => ({
     nFeaturesToSelect: target,
@@ -492,9 +492,9 @@ export function rfecvAlgorithm(
  * @returns The estimator.
  * @example
  * ```ts
- * import { rfecv } from 'mdml-engine/learn'
- * import { defineEstimator } from 'mdml-engine/learn'
- * import { full } from 'mdml-engine/tensor'
+ * import { rfecv } from 'omai-engine/learn'
+ * import { defineEstimator } from 'omai-engine/learn'
+ * import { full } from 'omai-engine/tensor'
  * const constant = defineEstimator(
  *   { name: 'c', kind: 'regressor', fit: (d) => ({ d: d.x.shape[1] }), methods: (p) => ({ featureImportances: Array.from({ length: p.d }, (_, j) => j), predict: (x) => full([x.shape[0]], 0) }) },
  *   {},
@@ -574,9 +574,9 @@ export type SequentialParams = { readonly support: boolean[]; readonly order: nu
  * @returns The estimator.
  * @example
  * ```ts
- * import { sequentialFeatureSelector } from 'mdml-engine/learn'
- * import { defineEstimator } from 'mdml-engine/learn'
- * import { tensor } from 'mdml-engine/tensor'
+ * import { sequentialFeatureSelector } from 'omai-engine/learn'
+ * import { defineEstimator } from 'omai-engine/learn'
+ * import { tensor } from 'omai-engine/tensor'
  * const firstColumn = defineEstimator(
  *   { name: 'first', kind: 'regressor', fit: () => ({}), methods: () => ({ predict: (x) => tensor(Array.from({ length: x.shape[0] }, (_, i) => x.data[i * x.shape[1]])) }) },
  *   {},
@@ -604,7 +604,7 @@ export function sequentialFeatureSelector(
             ? Math.floor((h.nFeaturesToSelect as number) * d)
             : (h.nFeaturesToSelect as number)
         if (!(Number.isInteger(wanted) && wanted >= 1 && wanted < d)) {
-          throw new MdmlError('value', `sequentialFeatureSelector: nFeaturesToSelect must be in [1, ${d - 1}]`)
+          throw new OmaiError('value', `sequentialFeatureSelector: nFeaturesToSelect must be in [1, ${d - 1}]`)
         }
         const iterations = auto || forward ? wanted : d - wanted
         const key = keyFor(fitOptions, 'sequentialFeatureSelector')
@@ -685,7 +685,7 @@ export type StabilityParams = { readonly support: boolean[]; readonly frequencie
  * @returns The estimator.
  * @example
  * ```ts
- * import { selectKBest, fRegression, stabilitySelection } from 'mdml-engine/learn'
+ * import { selectKBest, fRegression, stabilitySelection } from 'omai-engine/learn'
  * const x = Array.from({ length: 40 }, (_, i) => [i, Math.sin(7 * i), (i * 13) % 7])
  * const y = x.map(([a]) => a)
  * stabilitySelection({ selector: selectKBest({ scoreFunc: fRegression, k: 1 }), nSubsamples: 20 }).fit({ x, y }).support // => [true, false, false]
@@ -702,9 +702,9 @@ export function stabilitySelection(
         const m = matrixView(data.x, 'stabilitySelection', { allowNaN: true })
         const b = h.nSubsamples ?? 100
         if (!(Number.isInteger(b) && b >= 1))
-          throw new MdmlError('value', 'stabilitySelection: nSubsamples must be >= 1')
+          throw new OmaiError('value', 'stabilitySelection: nSubsamples must be >= 1')
         const half = Math.floor(m.n / 2)
-        if (half < 2) throw new MdmlError('value', 'stabilitySelection: needs at least 4 samples')
+        if (half < 2) throw new OmaiError('value', 'stabilitySelection: needs at least 4 samples')
         const key = keyFor(fitOptions, 'stabilitySelection')
         const counts = new Float64Array(m.d)
         const algorithm: Algorithm<number> = {

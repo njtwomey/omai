@@ -114,7 +114,7 @@ function slices(
  * @concept structures
  * @example
  * ```ts
- * import { bayesNet, toStructure } from 'mdml-engine/pgm'
+ * import { bayesNet, toStructure } from 'omai-engine/pgm'
  * const bn = bayesNet([{ name: 'a', states: ['0', '1'], parents: [], cpt: [0.5, 0.5] }, { name: 'b', states: ['0', '1'], parents: ['a'], cpt: [1, 0, 0, 1] }])
  * toStructure(bn).edges // => [{ from: 'a', to: 'b', directed: true, kind: 'dependency' }]
  * ```

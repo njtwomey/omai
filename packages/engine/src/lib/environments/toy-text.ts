@@ -34,7 +34,7 @@ const usableAce = (hand: readonly number[]): boolean => hand.includes(1) && hand
  * @returns The total.
  * @example
  * ```ts
- * import { blackjackSum } from 'mdml-engine/environments'
+ * import { blackjackSum } from 'omai-engine/environments'
  * blackjackSum([1, 6]) // => 17
  * ```
  */
@@ -71,7 +71,7 @@ export interface BlackjackOptions {
  * @returns The next hands, the reward and whether the hand is over.
  * @example
  * ```ts
- * import { blackjackStep } from 'mdml-engine/environments'
+ * import { blackjackStep } from 'omai-engine/environments'
  * blackjackStep({ player: [10, 9], dealer: [10, 7] }, 0, () => 2).reward // => 1
  * ```
  */
@@ -146,8 +146,8 @@ function renderBlackjack(s: BlackjackState): Scene {
  * @concept environments
  * @example
  * ```ts
- * import { blackjack } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { blackjack } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * blackjack.create().reset(key(0)).observation.length // => 3
  * ```
  */
@@ -209,7 +209,7 @@ export const TAXI_LOCATIONS: readonly (readonly [number, number])[] = ['R', 'G',
  * @returns The state index in 0..499.
  * @example
  * ```ts
- * import { taxiEncode } from 'mdml-engine/environments'
+ * import { taxiEncode } from 'omai-engine/environments'
  * taxiEncode(3, 1, 2, 0) // => 328
  * ```
  */
@@ -224,7 +224,7 @@ export function taxiEncode(row: number, col: number, passenger: number, destinat
  * @returns The parts.
  * @example
  * ```ts
- * import { taxiDecode } from 'mdml-engine/environments'
+ * import { taxiDecode } from 'omai-engine/environments'
  * taxiDecode(328) // => [3, 1, 2, 0]
  * ```
  */
@@ -253,7 +253,7 @@ const locIndex = (loc: readonly [number, number]): number => TAXI_LOCATIONS.find
  * @returns Six flags (south, north, east, west, pick-up, drop-off).
  * @example
  * ```ts
- * import { taxiActionMask } from 'mdml-engine/environments'
+ * import { taxiActionMask } from 'omai-engine/environments'
  * taxiActionMask(0) // => [1, 0, 1, 0, 1, 0]
  * ```
  */
@@ -294,7 +294,7 @@ const moveOrStay = (row: number, col: number, move: number): [number, number] =>
  * @returns The outcomes.
  * @example
  * ```ts
- * import { taxiTransitions, taxiEncode } from 'mdml-engine/environments'
+ * import { taxiTransitions, taxiEncode } from 'omai-engine/environments'
  * taxiTransitions(taxiEncode(0, 0, 4, 0), 5)[0]?.reward // => 20
  * ```
  */
@@ -395,7 +395,7 @@ export interface TaxiOptions {
  * @returns The environment, with its model.
  * @example
  * ```ts
- * import { makeTaxi } from 'mdml-engine/environments'
+ * import { makeTaxi } from 'omai-engine/environments'
  * makeTaxi().model?.states.length // => 500
  * ```
  */
@@ -451,7 +451,7 @@ export function makeTaxi(options: TaxiOptions = {}): Env<number, number, number>
  * @concept environments
  * @example
  * ```ts
- * import { taxi } from 'mdml-engine/environments'
+ * import { taxi } from 'omai-engine/environments'
  * taxi.create().actionSpace.kind // => 'discrete'
  * ```
  */
@@ -489,7 +489,7 @@ function renderChain(n: number, s: number, title: string, labels: readonly strin
  * @returns The environment, with its model.
  * @example
  * ```ts
- * import { makeNChain } from 'mdml-engine/environments'
+ * import { makeNChain } from 'omai-engine/environments'
  * makeNChain().model?.transitions(4, 0) // => [{ probability: 0.8, state: 4, reward: 10, terminated: false }, { probability: 0.2, state: 0, reward: 2, terminated: false }]
  * ```
  */
@@ -532,7 +532,7 @@ export function makeNChain(
  * @concept environments
  * @example
  * ```ts
- * import { nChain } from 'mdml-engine/environments'
+ * import { nChain } from 'omai-engine/environments'
  * nChain.create().spec.maxEpisodeSteps // => 1000
  * ```
  */
@@ -553,7 +553,7 @@ export const nChain: EnvDefinition<number, number, number> = {
  * @returns The environment, with its model.
  * @example
  * ```ts
- * import { makeRiverSwim } from 'mdml-engine/environments'
+ * import { makeRiverSwim } from 'omai-engine/environments'
  * makeRiverSwim().model?.transitions(0, 0)[0]?.reward // => 0.005
  * ```
  */
@@ -605,7 +605,7 @@ export function makeRiverSwim(
  * @concept environments
  * @example
  * ```ts
- * import { riverSwim } from 'mdml-engine/environments'
+ * import { riverSwim } from 'omai-engine/environments'
  * riverSwim.create().observationSpace // => { kind: 'discrete', n: 6, label: 'position across the river' }
  * ```
  */

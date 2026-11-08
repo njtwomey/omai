@@ -7,7 +7,7 @@
  * grid in its table, through the library's autodiff.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { foldIn, type Key, normal } from '../../random/index.ts'
 import {
   asTensor,
@@ -35,7 +35,7 @@ import {
 /** The rows of a value of shape `[..., d]` as a matrix `[n, d]`, with the way back to the leading shape. */
 function asRows(x: TensorLike, who: string): { rows: Value; lead: number[]; d: number } {
   const v = asTensor(x) as Value
-  if (v.shape.length === 0) throw new MdmlError('shape', `${who}: expected coordinates [..., d], got a scalar`)
+  if (v.shape.length === 0) throw new OmaiError('shape', `${who}: expected coordinates [..., d], got a scalar`)
   const d = v.shape[v.shape.length - 1] as number
   const lead = v.shape.slice(0, -1)
   return { rows: v.shape.length === 2 ? v : reshape(v, [-1, d]), lead, d }
@@ -57,7 +57,7 @@ export interface PositionalEncodingOptions {
  * @returns The output width.
  * @example
  * ```ts
- * import { positionalEncodingWidth } from 'mdml-engine/nn'
+ * import { positionalEncodingWidth } from 'omai-engine/nn'
  * positionalEncodingWidth(3, { octaves: 10, includeInput: true }) // => 63
  * ```
  */
@@ -74,14 +74,14 @@ export function positionalEncodingWidth(inputDim: number, options: PositionalEnc
  * @param x - Coordinates `[..., d]`, conventionally scaled to `[-1, 1]`.
  * @param options - Octaves `L` and whether to include the input.
  * @returns The encoding `[..., d * 2 L (+ d)]`.
- * @throws MdmlError with code `value` for fewer than one octave.
+ * @throws OmaiError with code `value` for fewer than one octave.
  * @concept coordinate-encoding
  * @reference Mildenhall, Srinivasan, Tancik, Barron, Ramamoorthi and Ng (2020), NeRF: representing scenes as neural
  *   radiance fields for view synthesis.
  * @example
  * ```ts
- * import { positionalEncoding } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { positionalEncoding } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * // One coordinate, two octaves, at x = 0.5: sin(pi/2), cos(pi/2), sin(pi), cos(pi).
  * toArray(positionalEncoding([[0.5]], { octaves: 2 })).map((row) => (row as number[]).map((v) => Math.round(v * 1e9) / 1e9)) // => [[1, 0, 0, -1]]
  * ```
@@ -89,7 +89,7 @@ export function positionalEncodingWidth(inputDim: number, options: PositionalEnc
 export function positionalEncoding(x: TensorLike, options: PositionalEncodingOptions): Value {
   const L = options.octaves
   if (!(Number.isInteger(L) && L >= 1))
-    throw new MdmlError('value', 'positionalEncoding: octaves must be an integer >= 1')
+    throw new OmaiError('value', 'positionalEncoding: octaves must be an integer >= 1')
   const { rows, lead, d } = asRows(x, 'positionalEncoding')
   const freqs = asTensor(Array.from({ length: L }, (_, l) => 2 ** l * Math.PI)) as Value
   // [n, L, d]: every coordinate at every frequency.
@@ -111,8 +111,8 @@ export function positionalEncoding(x: TensorLike, options: PositionalEncodingOpt
  * @concept coordinate-encoding
  * @example
  * ```ts
- * import { gaussianFrequencies } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
+ * import { gaussianFrequencies } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
  * gaussianFrequencies(key(0), 2, 16, 5).shape // => [2, 16]
  * ```
  */
@@ -128,14 +128,14 @@ export function gaussianFrequencies(key: Key, inputDim: number, features: number
  * @param v - Coordinates `[..., d]`.
  * @param frequencies - `B` `[d, m]`.
  * @returns The encoding `[..., 2 m]`: the `m` sines, then the `m` cosines.
- * @throws MdmlError with code `shape` when the coordinate dimension is not `B`'s first.
+ * @throws OmaiError with code `shape` when the coordinate dimension is not `B`'s first.
  * @concept coordinate-encoding
  * @reference Tancik, Srinivasan, Mildenhall, Fridovich-Keil, Raghavan, Singhal, Ramamoorthi, Barron and Ng (2020),
  *   Fourier features let networks learn high frequency functions in low dimensional domains.
  * @example
  * ```ts
- * import { fourierFeatures } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { fourierFeatures } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * // B = [[0.25]]: the angle is 2 pi * 1 * 0.25 = pi / 2.
  * toArray(fourierFeatures([[1]], [[0.25]])).map((row) => (row as number[]).map((v) => Math.round(v * 1e9) / 1e9)) // => [[1, 0]]
  * ```
@@ -144,7 +144,7 @@ export function fourierFeatures(v: TensorLike, frequencies: TensorLike): Value {
   const { rows, lead, d } = asRows(v, 'fourierFeatures')
   const b = asTensor(frequencies) as Value
   if (b.shape.length !== 2 || b.shape[0] !== d)
-    throw new MdmlError('shape', `fourierFeatures: B must be [${d}, m], got [${b.shape.join(', ')}]`)
+    throw new OmaiError('shape', `fourierFeatures: B must be [${d}, m], got [${b.shape.join(', ')}]`)
   const angles = mul(matmul(rows, b), 2 * Math.PI)
   const out = concat([sin(angles), cos(angles)], -1)
   return reshape(out, [...lead, 2 * (b.shape[1] as number)])
@@ -176,11 +176,11 @@ export type ResolvedHashGrid = Required<HashGridConfig>
  *
  * @param config - The configuration.
  * @returns The complete configuration.
- * @throws MdmlError with code `value` for a dimension outside 1 to 3, no levels or features, or a finest resolution
+ * @throws OmaiError with code `value` for a dimension outside 1 to 3, no levels or features, or a finest resolution
  *   below the base resolution.
  * @example
  * ```ts
- * import { resolveHashGrid } from 'mdml-engine/nn'
+ * import { resolveHashGrid } from 'omai-engine/nn'
  * resolveHashGrid({ dim: 2 }).log2TableSize // => 14
  * ```
  */
@@ -195,14 +195,14 @@ export function resolveHashGrid(config: HashGridConfig): ResolvedHashGrid {
     bounds: config.bounds ?? [-1, 1],
   }
   if (!(Number.isInteger(c.dim) && c.dim >= 1 && c.dim <= 3))
-    throw new MdmlError('value', 'hashGrid: the dimension must be 1, 2 or 3')
+    throw new OmaiError('value', 'hashGrid: the dimension must be 1, 2 or 3')
   if (!(Number.isInteger(c.levels) && c.levels >= 1 && Number.isInteger(c.featuresPerLevel) && c.featuresPerLevel >= 1))
-    throw new MdmlError('value', 'hashGrid: levels and featuresPerLevel must be positive integers')
+    throw new OmaiError('value', 'hashGrid: levels and featuresPerLevel must be positive integers')
   if (!(Number.isInteger(c.log2TableSize) && c.log2TableSize >= 1 && c.log2TableSize <= 24))
-    throw new MdmlError('value', 'hashGrid: log2TableSize must be an integer in 1..24')
+    throw new OmaiError('value', 'hashGrid: log2TableSize must be an integer in 1..24')
   if (!(c.baseResolution >= 1 && c.finestResolution >= c.baseResolution))
-    throw new MdmlError('value', 'hashGrid: need 1 <= baseResolution <= finestResolution')
-  if (!(c.bounds[1] > c.bounds[0])) throw new MdmlError('value', 'hashGrid: bounds must be increasing')
+    throw new OmaiError('value', 'hashGrid: need 1 <= baseResolution <= finestResolution')
+  if (!(c.bounds[1] > c.bounds[0])) throw new OmaiError('value', 'hashGrid: bounds must be increasing')
   return c
 }
 
@@ -214,7 +214,7 @@ export function resolveHashGrid(config: HashGridConfig): ResolvedHashGrid {
  * @returns The resolutions, coarse to fine.
  * @example
  * ```ts
- * import { hashGridResolutions } from 'mdml-engine/nn'
+ * import { hashGridResolutions } from 'omai-engine/nn'
  * hashGridResolutions({ dim: 2, levels: 3, baseResolution: 4, finestResolution: 16 }) // => [4, 8, 16]
  * ```
  */
@@ -240,7 +240,7 @@ const PRIMES = [1, 2654435761, 805459861] as const
  * @returns The slot in `0..T-1`.
  * @example
  * ```ts
- * import { hashGridIndex } from 'mdml-engine/nn'
+ * import { hashGridIndex } from 'omai-engine/nn'
  * hashGridIndex([2, 1], 4, 14) // => 7
  * hashGridIndex([2, 1], 4000, 4) < 16 // => true
  * ```
@@ -265,7 +265,7 @@ export function hashGridIndex(coords: readonly number[], resolution: number, log
  * @returns The table shape.
  * @example
  * ```ts
- * import { hashGridTableShape } from 'mdml-engine/nn'
+ * import { hashGridTableShape } from 'omai-engine/nn'
  * hashGridTableShape({ dim: 2, levels: 4, log2TableSize: 6, featuresPerLevel: 2 }) // => [256, 2]
  * ```
  */
@@ -286,14 +286,14 @@ export function hashGridTableShape(config: HashGridConfig): [number, number] {
  * @param table - The table `[L * 2^log2TableSize, F]` (see {@link hashGridTableShape}).
  * @param config - The grid.
  * @returns The features `[..., L F]`.
- * @throws MdmlError with code `shape` when `x` or the table disagrees with the configuration.
+ * @throws OmaiError with code `shape` when `x` or the table disagrees with the configuration.
  * @concept coordinate-encoding
  * @reference Mueller, Evans, Schied and Keller (2022), Instant neural graphics primitives with a multiresolution hash
  *   encoding.
  * @example
  * ```ts
- * import { hashGridEncode } from 'mdml-engine/nn'
- * import { fromStorage, toArray } from 'mdml-engine/tensor'
+ * import { hashGridEncode } from 'omai-engine/nn'
+ * import { fromStorage, toArray } from 'omai-engine/tensor'
  * // A 1-D grid with 2 cells and a 3-vertex table holding 0, 1, 4: the value at x = 0.75 (half way from vertex 1 to 2) is 2.5.
  * const config = { dim: 1, levels: 1, log2TableSize: 2, featuresPerLevel: 1, baseResolution: 2, finestResolution: 2, bounds: [0, 1] as const }
  * const table = fromStorage(Float64Array.of(0, 1, 4, 0), [4, 1], 'float64')
@@ -305,9 +305,9 @@ export function hashGridEncode(x: TensorLike, table: Value, config: HashGridConf
   const T = 2 ** c.log2TableSize
   const F = c.featuresPerLevel
   const { rows, lead, d } = asRows(x, 'hashGridEncode')
-  if (d !== c.dim) throw new MdmlError('shape', `hashGridEncode: expected ${c.dim} coordinates, got ${d}`)
+  if (d !== c.dim) throw new OmaiError('shape', `hashGridEncode: expected ${c.dim} coordinates, got ${d}`)
   if (table.shape.length !== 2 || table.shape[0] !== c.levels * T || table.shape[1] !== F)
-    throw new MdmlError(
+    throw new OmaiError(
       'shape',
       `hashGridEncode: the table must be [${c.levels * T}, ${F}], got [${table.shape.join(', ')}]`,
     )

@@ -5,7 +5,7 @@
  * the engine that offers them to the planner.
  */
 
-import { type Json, logSumExpOf, MdmlError, quantileOf } from '../../base/index.ts'
+import { type Json, logSumExpOf, OmaiError, quantileOf } from '../../base/index.ts'
 import { bijectors, type Distribution, defineDistribution, multivariateNormal, unavailable } from '../../dists/index.ts'
 import { cholesky } from '../../numerics/linalg/index.ts'
 import { choice, foldIn, type Key, normal as normalDraws } from '../../random/index.ts'
@@ -48,8 +48,8 @@ import { type EngineRunOptions, feasibility, type InferenceEngine } from './engi
  * @concept approximate-bayesian-computation
  * @example
  * ```ts
- * import { simulator } from 'mdml-engine/probprog'
- * import { key, normal } from 'mdml-engine/random'
+ * import { simulator } from 'omai-engine/probprog'
+ * import { key, normal } from 'omai-engine/random'
  * const sim = simulator('noisy', (k) => normal(k, [2]), { eventShape: [2] })
  * sim.sample(key(0), [3]).shape // => [3, 2]
  * ```
@@ -91,8 +91,8 @@ export type SummaryStatistics = (observed: Readonly<Record<string, Value>>) => r
  * @concept approximate-bayesian-computation
  * @example
  * ```ts
- * import { defaultSummaries } from 'mdml-engine/probprog'
- * import { tensor } from 'mdml-engine/tensor'
+ * import { defaultSummaries } from 'omai-engine/probprog'
+ * import { tensor } from 'omai-engine/tensor'
  * defaultSummaries({ y: tensor([1, 2, 3, 4, 5]) }) // => [3, 1.5811388300841898, 2, 3, 4]
  * ```
  */
@@ -150,7 +150,7 @@ function setting<D = void>(model: Model<D>, data: D, summary: SummaryStatistics 
   const observed = [...proto.sites.values()]
     .filter((s) => s.type === 'sample' && s.isObserved && !s.isFactor)
     .map((s) => s.name)
-  if (observed.length === 0) throw new MdmlError('value', 'abc: the program has no observed sites')
+  if (observed.length === 0) throw new OmaiError('value', 'abc: the program has no observed sites')
   const latent = [...proto.sites.values()]
     .filter((s) => (s.type === 'sample' && !s.isObserved) || s.type === 'deterministic')
     .map((s) => s.name)
@@ -194,10 +194,10 @@ export interface AbcOptions {
  * @concept approximate-bayesian-computation
  * @example
  * ```ts
- * import { abcRejection, observe, plate, sample } from 'mdml-engine/probprog'
- * import { normal } from 'mdml-engine/dists'
- * import { key } from 'mdml-engine/random'
- * import { item } from 'mdml-engine/tensor'
+ * import { abcRejection, observe, plate, sample } from 'omai-engine/probprog'
+ * import { normal } from 'omai-engine/dists'
+ * import { key } from 'omai-engine/random'
+ * import { item } from 'omai-engine/tensor'
  * const y = [0.5, 1.2, 1.6, 1.9, 2, 2.1, 2.4, 2.8, 3.5, 2]
  * const model = () => { const m = sample('m', normal(0, 3)); plate('n', y.length, () => observe('y', normal(m, 1), y)) }
  * Math.abs(item(abcRejection(model, undefined, { key: key(0), numSamples: 1000, quantile: 0.05 }).mean('m')) - 2) < 0.5 // => true
@@ -283,13 +283,13 @@ export interface AbcSmcOptions {
  * @param data - Its data.
  * @param options - Particles, quantile, stopping rules and summaries.
  * @returns The algorithm.
- * @throws MdmlError with code `value` for discrete latent sites.
+ * @throws OmaiError with code `value` for discrete latent sites.
  * @concept approximate-bayesian-computation
  * @example
  * ```ts
- * import { abcSmcAlgorithm, observe, sample } from 'mdml-engine/probprog'
- * import { normal } from 'mdml-engine/dists'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { abcSmcAlgorithm, observe, sample } from 'omai-engine/probprog'
+ * import { normal } from 'omai-engine/dists'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const model = () => { const m = sample('m', normal(0, 3)); observe('y', normal(m, 1), 1) }
  * runAlgorithm(abcSmcAlgorithm(model, undefined, { numParticles: 50 }), { seed: 0, maxSteps: 3 }).state.generation // => 3
  * ```
@@ -353,7 +353,7 @@ export function abcSmcAlgorithm<D = void>(
       const proto = traceOf(seed(model, foldIn(key, 0)), data)
       const lay = latentLayout(proto)
       if (lay.enumerated.length > 0)
-        throw new MdmlError('value', 'abcSmc: discrete latent sites are not supported; use abcRejection')
+        throw new OmaiError('value', 'abcSmc: discrete latent sites are not supported; use abcRejection')
       layout = lay.layout
       dim = layout.reduce((a, l) => a + l.size, 0)
       const traces: ProgramTrace[] = []
@@ -382,7 +382,7 @@ export function abcSmcAlgorithm<D = void>(
     },
     step: (state, ctx) => {
       const st = s
-      if (st === undefined) throw new MdmlError('value', 'abcSmc: not initialised')
+      if (st === undefined) throw new OmaiError('value', 'abcSmc: not initialised')
       const eps = quantileOf(state.distances, q)
       const w = Array.from(state.logWeights, (v) => Math.exp(v))
       // Twice the weighted covariance of the population.
@@ -474,10 +474,10 @@ export function abcSmcAlgorithm<D = void>(
  * @concept approximate-bayesian-computation
  * @example
  * ```ts
- * import { abcSmc, observe, plate, sample } from 'mdml-engine/probprog'
- * import { normal } from 'mdml-engine/dists'
- * import { key } from 'mdml-engine/random'
- * import { item } from 'mdml-engine/tensor'
+ * import { abcSmc, observe, plate, sample } from 'omai-engine/probprog'
+ * import { normal } from 'omai-engine/dists'
+ * import { key } from 'omai-engine/random'
+ * import { item } from 'omai-engine/tensor'
  * const y = [0.5, 1.2, 1.6, 1.9, 2, 2.1, 2.4, 2.8, 3.5, 2]
  * const model = () => { const m = sample('m', normal(0, 3)); plate('n', y.length, () => observe('y', normal(m, 1), y)) }
  * Math.abs(item(abcSmc(model, undefined, { key: key(0), numParticles: 200, numGenerations: 4 }).mean('m')) - 2) < 0.5 // => true
@@ -525,7 +525,7 @@ export function abcSmc<D = void>(
  * @concept inference-engines
  * @example
  * ```ts
- * import { abcEngine } from 'mdml-engine/probprog'
+ * import { abcEngine } from 'omai-engine/probprog'
  * abcEngine().name // => 'abc'
  * ```
  */

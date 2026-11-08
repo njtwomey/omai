@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isMdmlError } from '../base/index.ts'
+import { isOmaiError } from '../base/index.ts'
 import { key } from '../random/index.ts'
 import { policies, recorder } from '../trace/index.ts'
 import {
@@ -21,7 +21,7 @@ describe('maze generators', () => {
         mazeAlgorithm({ algorithm, topology: 'hex' })
         expect.unreachable()
       } catch (e) {
-        expect(isMdmlError(e, 'value')).toBe(true)
+        expect(isOmaiError(e, 'value')).toBe(true)
       }
     }
     const base = fromAscii(['S~.', '..G'])

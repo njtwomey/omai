@@ -9,8 +9,8 @@ import pingouin as pg
 import scipy
 import scipy.stats as st
 import statsmodels
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray, rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray, rng
 from statsmodels.stats.weightstats import ztest
 
 REFERENCE: dict[str, str] = {

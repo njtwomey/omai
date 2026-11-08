@@ -14,8 +14,8 @@ import {
   findEnvironment,
   type ObservationKind,
   whereEnvironments,
-} from 'mdml-engine/environments'
-import type { SpaceValue } from 'mdml-engine/space'
+} from 'omai-engine/environments'
+import type { SpaceValue } from 'omai-engine/space'
 import { type ReactNode, useMemo } from 'react'
 import { useByContent } from '../_content.ts'
 import { cx, labelClass } from './classes.ts'

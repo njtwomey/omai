@@ -37,8 +37,8 @@ export interface ProfiledFit {
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { GAM_DEFAULTS, profileFamilyParameter, s } from 'mdml-engine/gam'
- * import { families } from 'mdml-engine/dists'
+ * import { GAM_DEFAULTS, profileFamilyParameter, s } from 'omai-engine/gam'
+ * import { families } from 'omai-engine/dists'
  * const x = Array.from({ length: 80 }, (_, i) => [i / 79])
  * const y = x.map((r, i) => Math.round(3 * Math.exp(Math.sin(4 * (r[0] ?? 0))) + ((i * 7) % 5) - 2))
  * const fit = profileFamilyParameter(x, y.map((v) => Math.max(0, v)), { ...GAM_DEFAULTS, terms: [s(0, { k: 6 })] }, {

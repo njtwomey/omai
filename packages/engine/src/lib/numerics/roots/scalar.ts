@@ -30,7 +30,7 @@ import {
  * @concept root-finding
  * @example
  * ```ts
- * import { bisect } from 'mdml-engine/numerics/roots'
+ * import { bisect } from 'omai-engine/numerics/roots'
  * Math.abs(bisect((x) => x * x - 2, 0, 2).root - Math.SQRT2) < 1e-11 // => true
  * ```
  */
@@ -51,7 +51,7 @@ export function bisect(f: (x: number) => number, a: number, b: number, options: 
  * @index function Brent's bracketing root finder for a scalar function.
  * @example
  * ```ts
- * import { brentq } from 'mdml-engine/numerics/roots'
+ * import { brentq } from 'omai-engine/numerics/roots'
  * Math.abs(brentq(Math.cos, 0, 2).root - Math.PI / 2) < 1e-12 // => true
  * ```
  */
@@ -69,7 +69,7 @@ export function brentq(f: (x: number) => number, a: number, b: number, options: 
  * @returns The root with its history.
  * @example
  * ```ts
- * import { ridder } from 'mdml-engine/numerics/roots'
+ * import { ridder } from 'omai-engine/numerics/roots'
  * Math.abs(ridder((x) => Math.exp(x) - 2, 0, 1).root - Math.LN2) < 1e-11 // => true
  * ```
  */
@@ -89,7 +89,7 @@ export function ridder(f: (x: number) => number, a: number, b: number, options: 
  * @returns The root with its history.
  * @example
  * ```ts
- * import { toms748 } from 'mdml-engine/numerics/roots'
+ * import { toms748 } from 'omai-engine/numerics/roots'
  * Math.abs(toms748((x) => x ** 3 - x - 1, 1, 2).root - 1.324717957244746) < 1e-12 // => true
  * ```
  */
@@ -108,7 +108,7 @@ export function toms748(f: (x: number) => number, a0: number, b0: number, option
  * @concept root-finding
  * @example
  * ```ts
- * import { newton } from 'mdml-engine/numerics/roots'
+ * import { newton } from 'omai-engine/numerics/roots'
  * Math.abs(newton((x) => x * x - 2, 1, { fprime: (x) => 2 * x }).root - Math.SQRT2) < 1e-12 // => true
  * ```
  */
@@ -126,7 +126,7 @@ export function newton(f: (x: number) => number, x0: number, options: NewtonOpti
  * @returns The root with its history.
  * @example
  * ```ts
- * import { secant } from 'mdml-engine/numerics/roots'
+ * import { secant } from 'omai-engine/numerics/roots'
  * secant((x) => x - 3, 0, 1).root // => 3
  * ```
  */
@@ -150,7 +150,7 @@ export function secant(
  * @returns The root with its history.
  * @example
  * ```ts
- * import { halley } from 'mdml-engine/numerics/roots'
+ * import { halley } from 'omai-engine/numerics/roots'
  * Math.abs(halley((x) => x ** 3 - 8, 3, (x) => 3 * x * x, (x) => 6 * x).root - 2) < 1e-12 // => true
  * ```
  */
@@ -175,9 +175,9 @@ export function halley(
  * @concept implicit-differentiation
  * @example
  * ```ts
- * import { scalarRootOf, brentq } from 'mdml-engine/numerics/roots'
- * import { grad } from 'mdml-engine/autodiff'
- * import { item, mul, square, sub, tensor } from 'mdml-engine/tensor'
+ * import { scalarRootOf, brentq } from 'omai-engine/numerics/roots'
+ * import { grad } from 'omai-engine/autodiff'
+ * import { item, mul, square, sub, tensor } from 'omai-engine/tensor'
  * // x^2 = theta, so dx/dtheta = 1 / (2 sqrt(theta)) = 0.25 at theta = 4.
  * const root = (t) => scalarRootOf((x, th) => sub(square(x), th), t, (g) => brentq(g, 0, 10).root)
  * item(grad(root)(tensor(4))) // => 0.25

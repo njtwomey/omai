@@ -6,7 +6,7 @@
  * grids and tuners, and builds the library's `ConjugateModel` or hazard function from a configuration.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import {
   type DictSpace,
   defaults,
@@ -78,7 +78,7 @@ const shape = (label: string, def: number): RealSpace => real(0.01, 100, { log: 
  * @concept bayesian-changepoint-detection
  * @example
  * ```ts
- * import { filtering } from 'mdml-engine/dynamics'
+ * import { filtering } from 'omai-engine/dynamics'
  * filtering.segmentModels.make({ kind: 'bernoulli', alpha: 1, beta: 2 }) // => { kind: 'bernoulli-beta', alpha: 1, beta: 2 }
  * ```
  */
@@ -180,7 +180,7 @@ export const segmentModels: OptionTable<ConjugateModel, SegmentModelProperties> 
  * @concept hazard-function
  * @example
  * ```ts
- * import { filtering } from 'mdml-engine/dynamics'
+ * import { filtering } from 'omai-engine/dynamics'
  * filtering.hazards.make({ kind: 'minimum-segment', rate: 0.1, minSegment: 3 })(2) // => 0
  * ```
  */
@@ -243,10 +243,10 @@ export const hazards: OptionTable<Hazard, HazardProperties> = optionTable(
  * @param kind - The option: `mean`, `variance`, `mean-variance`, `rate`, `bernoulli`, `ar` or `trend`.
  * @param knobs - Values for some of the option's own knobs.
  * @returns The configuration, `{ kind, ...knobs }` with every knob of the option.
- * @throws MdmlError with code `value` for an option the table lacks.
+ * @throws OmaiError with code `value` for an option the table lacks.
  * @example
  * ```ts
- * import { filtering } from 'mdml-engine/dynamics'
+ * import { filtering } from 'omai-engine/dynamics'
  * filtering.segmentModelValue('rate', { shape: 4 }) // => { kind: 'rate', shape: 4, rate: 0.4 }
  * ```
  */
@@ -260,10 +260,10 @@ export function segmentModelValue(kind: string, knobs: Readonly<Record<string, n
  * @param kind - The option: `constant`, `minimum-segment`, `weibull`, `gamma` or `negative-binomial`.
  * @param knobs - Values for some of the option's own knobs.
  * @returns The configuration, `{ kind, ...knobs }` with every knob of the option.
- * @throws MdmlError with code `value` for an option the table lacks.
+ * @throws OmaiError with code `value` for an option the table lacks.
  * @example
  * ```ts
- * import { filtering } from 'mdml-engine/dynamics'
+ * import { filtering } from 'omai-engine/dynamics'
  * filtering.hazardValue('minimum-segment', { minSegment: 8 }) // => { kind: 'minimum-segment', rate: 0.01, minSegment: 8 }
  * ```
  */
@@ -274,10 +274,10 @@ export function hazardValue(kind: string, knobs: Readonly<Record<string, number>
 function optionValue(space: UnionSpace, kind: string, knobs: Readonly<Record<string, number>>): SpaceValue {
   const option = space.options[kind]
   if (option === undefined)
-    throw new MdmlError('value', `'${kind}' is not one of ${Object.keys(space.options).join(', ')}`)
+    throw new OmaiError('value', `'${kind}' is not one of ${Object.keys(space.options).join(', ')}`)
   const tag = space.tag ?? 'kind'
   for (const name of Object.keys(knobs))
-    if (!(name in option.spaces)) throw new MdmlError('value', `'${kind}' has no knob '${name}'`)
+    if (!(name in option.spaces)) throw new OmaiError('value', `'${kind}' has no knob '${name}'`)
   return { [tag]: kind, ...(defaults(option) as Readonly<Record<string, SpaceValue>>), ...knobs }
 }
 
@@ -289,7 +289,7 @@ function optionValue(space: UnionSpace, kind: string, knobs: Readonly<Record<str
  * @returns The configuration.
  * @example
  * ```ts
- * import { filtering } from 'mdml-engine/dynamics'
+ * import { filtering } from 'omai-engine/dynamics'
  * filtering.segmentModelValueOf({ kind: 'bernoulli-beta', alpha: 2, beta: 3 }) // => { kind: 'bernoulli', alpha: 2, beta: 3 }
  * ```
  */

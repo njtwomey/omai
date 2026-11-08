@@ -6,7 +6,7 @@
  * examples that is invariant to rotations and isotropic scaling.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { svd } from '../numerics/linalg/index.ts'
 import { asTensor, type TensorLike, toFlat } from '../tensor/index.ts'
 import { squaredDistances } from './_shared.ts'
@@ -44,7 +44,7 @@ function rowsOf(who: string, x: TensorLike, normalise: boolean): { n: number; d:
  * @concept representation-learning
  * @example
  * ```ts
- * import { alignment } from 'mdml-engine/learn'
+ * import { alignment } from 'omai-engine/learn'
  * alignment([[1, 0], [0, 1]], [[1, 0], [0, 1]]) // => 0
  * alignment([[1, 0]], [[0, 1]]) // => 2
  * ```
@@ -53,7 +53,7 @@ export function alignment(x: TensorLike, y: TensorLike, alpha = 2, options: Repr
   const a = rowsOf('alignment', x, options.normalise ?? true)
   const b = rowsOf('alignment', y, options.normalise ?? true)
   if (a.n !== b.n || a.d !== b.d)
-    throw new MdmlError('shape', 'alignment: the two sets of representations must have the same shape')
+    throw new OmaiError('shape', 'alignment: the two sets of representations must have the same shape')
   let total = 0
   for (let i = 0; i < a.n; i++) {
     let s = 0
@@ -75,13 +75,13 @@ export function alignment(x: TensorLike, y: TensorLike, alpha = 2, options: Repr
  * @concept representation-learning
  * @example
  * ```ts
- * import { uniformity } from 'mdml-engine/learn'
+ * import { uniformity } from 'omai-engine/learn'
  * uniformity([[1, 0], [1, 0], [1, 0]]) // => 0
  * ```
  */
 export function uniformity(x: TensorLike, t = 2, options: RepresentationOptions = {}): number {
   const m = rowsOf('uniformity', x, options.normalise ?? true)
-  if (m.n < 2) throw new MdmlError('value', 'uniformity: needs at least two points')
+  if (m.n < 2) throw new OmaiError('value', 'uniformity: needs at least two points')
   const d2 = squaredDistances({ n: m.n, d: m.d, data: m.data })
   let total = 0
   let pairs = 0
@@ -103,7 +103,7 @@ export function uniformity(x: TensorLike, t = 2, options: RepresentationOptions 
  * @concept representation-learning
  * @example
  * ```ts
- * import { effectiveRank } from 'mdml-engine/learn'
+ * import { effectiveRank } from 'omai-engine/learn'
  * effectiveRank([[1, 0], [0, 1]]) // => 2
  * ```
  */
@@ -111,7 +111,7 @@ export function effectiveRank(x: TensorLike): number {
   matrixView(x, 'effectiveRank')
   const s = toFlat(svd(asTensor(x)).s)
   const total = s.reduce((a, b) => a + b, 0)
-  if (!(total > 0)) throw new MdmlError('value', 'effectiveRank: the matrix is zero')
+  if (!(total > 0)) throw new OmaiError('value', 'effectiveRank: the matrix is zero')
   let h = 0
   for (const v of s) {
     const p = v / total
@@ -175,14 +175,14 @@ function centredGram(m: { n: number; d: number; data: Float64Array }, options: C
  * @concept representation-learning
  * @example
  * ```ts
- * import { cka } from 'mdml-engine/learn'
+ * import { cka } from 'omai-engine/learn'
  * cka([[1, 0], [0, 1], [2, 1], [1, 3]], [[0, 2], [2, 0], [2, 4], [6, 2]]) // => 1
  * ```
  */
 export function cka(x: TensorLike, y: TensorLike, options: CkaOptions = {}): number {
   const a = rowsOf('cka', x, false)
   const b = rowsOf('cka', y, false)
-  if (a.n !== b.n) throw new MdmlError('shape', 'cka: the representations must describe the same examples')
+  if (a.n !== b.n) throw new OmaiError('shape', 'cka: the representations must describe the same examples')
   const k = centredGram(a, options)
   const l = centredGram(b, options)
   const hsic = (p: Float64Array, q: Float64Array): number => {

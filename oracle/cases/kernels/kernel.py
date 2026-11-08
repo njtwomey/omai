@@ -5,10 +5,10 @@ log-hyperparameters (`eval_gradient=True`), with theta for the ordering; and GPy
 import gpytorch
 import sklearn
 import torch
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray, rng, uniform
-from mdml_oracle.kernels import anisotropic, gp_case
-from mdml_oracle.torch_helpers import to_numpy, to_torch
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray, rng, uniform
+from omai_oracle.kernels import anisotropic, gp_case
+from omai_oracle.torch_helpers import to_numpy, to_torch
 from sklearn.gaussian_process.kernels import (
     RBF,
     ConstantKernel,

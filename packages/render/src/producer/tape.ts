@@ -5,7 +5,7 @@
  * file. Probes are stored at the steps exported; between them a replayed session answers with the nearest stored one.
  */
 
-import { type Json, MdmlError } from 'mdml-engine/base'
+import { type Json, OmaiError } from 'omai-engine/base'
 import {
   type Algorithm,
   type Config,
@@ -19,7 +19,7 @@ import {
   type Slice,
   stateFromJson,
   stateToJson,
-} from 'mdml-engine/trace'
+} from 'omai-engine/trace'
 import type { MethodRegistry } from './registry.ts'
 import { canProbeAsync, contractOfKinds } from './remote.ts'
 
@@ -51,7 +51,7 @@ export interface TapeVariant {
 
 /** The tape of a page as a file. */
 export interface TapeFile {
-  readonly schema: 'mdml.tape/1'
+  readonly schema: 'omai.tape/1'
   /** The method's name in a registry, so the page can be rebuilt without running it. */
   readonly method: string
   readonly seed: number
@@ -159,7 +159,7 @@ export async function tapeOf(
     })
   }
   return {
-    schema: 'mdml.tape/1',
+    schema: 'omai.tape/1',
     method,
     seed: sessions[0]?.session.seed ?? 0,
     ...(options.title === undefined ? {} : { title: options.title }),
@@ -179,7 +179,7 @@ const isObject = (x: unknown): x is Record<string, unknown> => typeof x === 'obj
  *
  * @param input - The text or value.
  * @returns The file.
- * @throws MdmlError with code `schema` when it is not a tape file (or its events are not a valid run, a head is not a
+ * @throws OmaiError with code `schema` when it is not a tape file (or its events are not a valid run, a head is not a
  *   non-negative integer, a path has an unknown kind, or a probe has no step and path).
  * @index function Validate a tape file read back from JSON: `parseTape(json)`.
  */
@@ -188,33 +188,33 @@ export function parseTape(input: unknown): TapeFile {
   try {
     value = typeof input === 'string' ? JSON.parse(input) : input
   } catch {
-    throw new MdmlError('schema', 'a tape file is JSON: this is not')
+    throw new OmaiError('schema', 'a tape file is JSON: this is not')
   }
-  if (!isObject(value) || value['schema'] !== 'mdml.tape/1')
-    throw new MdmlError('schema', "not a tape file (its schema should be 'mdml.tape/1')")
+  if (!isObject(value) || value['schema'] !== 'omai.tape/1')
+    throw new OmaiError('schema', "not a tape file (its schema should be 'omai.tape/1')")
   if (typeof value['method'] !== 'string' || typeof value['seed'] !== 'number' || !Array.isArray(value['variants']))
-    throw new MdmlError('schema', 'a tape file names a method and a seed and holds its variants')
+    throw new OmaiError('schema', 'a tape file names a method and a seed and holds its variants')
   const variants = (value['variants'] as unknown[]).map((v, i): TapeVariant => {
     if (!isObject(v) || typeof v['label'] !== 'string' || typeof v['head'] !== 'number' || !isObject(v['kinds']))
-      throw new MdmlError('schema', `variant ${i} of the tape file is malformed`)
+      throw new OmaiError('schema', `variant ${i} of the tape file is malformed`)
     const head = v['head']
     if (!Number.isInteger(head) || head < 0)
-      throw new MdmlError('schema', `variant ${i} of the tape file has head ${head}, a step is a non-negative integer`)
+      throw new OmaiError('schema', `variant ${i} of the tape file has head ${head}, a step is a non-negative integer`)
     const kinds = v['kinds']
     for (const [path, kind] of Object.entries(kinds))
       if (typeof kind !== 'string' || !PATH_KINDS.includes(kind))
-        throw new MdmlError(
+        throw new OmaiError(
           'schema',
           `variant ${i} of the tape file: path '${path}' has the unknown kind ${String(kind)}`,
         )
     const fired = isObject(v['fired']) ? v['fired'] : {}
     for (const [path, steps] of Object.entries(fired))
       if (!Array.isArray(steps) || !steps.every((t) => typeof t === 'number'))
-        throw new MdmlError('schema', `variant ${i} of the tape file: the steps of '${path}' are not numbers`)
+        throw new OmaiError('schema', `variant ${i} of the tape file: the steps of '${path}' are not numbers`)
     const probes = Array.isArray(v['probes']) ? v['probes'] : []
     for (const [k, probe] of probes.entries())
       if (!isObject(probe) || typeof probe['t'] !== 'number' || typeof probe['path'] !== 'string')
-        throw new MdmlError('schema', `variant ${i} of the tape file: probe ${k} needs a step t and a path`)
+        throw new OmaiError('schema', `variant ${i} of the tape file: probe ${k} needs a step t and a path`)
     return {
       label: v['label'],
       config: (v['config'] ?? {}) as Json,
@@ -227,7 +227,7 @@ export function parseTape(input: unknown): TapeFile {
     }
   })
   return {
-    schema: 'mdml.tape/1',
+    schema: 'omai.tape/1',
     method: value['method'],
     seed: value['seed'],
     ...(typeof value['title'] === 'string' ? { title: value['title'] } : {}),
@@ -238,7 +238,7 @@ export function parseTape(input: unknown): TapeFile {
 }
 
 const unavailable = (what: string): never => {
-  throw new MdmlError('value', `${what} is not available on a session replayed from a tape file`)
+  throw new OmaiError('value', `${what} is not available on a session replayed from a tape file`)
 }
 
 /**
@@ -307,11 +307,11 @@ export class ReplaySession<S, C extends Config = Config, K extends string = stri
   probe(t: number, path: K, args?: Json): Derived {
     const entry = this.byPath.get(keyOf(path, args))
     if (entry === undefined || entry.steps.length === 0)
-      throw new MdmlError('value', `the tape file holds no probe of '${path}'`)
+      throw new OmaiError('value', `the tape file holds no probe of '${path}'`)
     let step = entry.steps[0] as number
     for (const s of entry.steps) if (Math.abs(s - t) < Math.abs(step - t)) step = s
     const p = entry.at.get(step) as TapeProbe
-    if (p.error !== undefined) throw new MdmlError('value', p.error)
+    if (p.error !== undefined) throw new OmaiError('value', p.error)
     let value = this.decoded.get(p)
     if (value === undefined) {
       value = stateFromJson(p.value ?? null) as Derived
@@ -322,7 +322,7 @@ export class ReplaySession<S, C extends Config = Config, K extends string = stri
 
   project(name: string, options?: Json): Derived | undefined {
     const p = this.method.projections?.[name]
-    if (p === undefined) throw new MdmlError('value', `${this.method.name}: no projection '${name}'`)
+    if (p === undefined) throw new OmaiError('value', `${this.method.name}: no projection '${name}'`)
     return p(this.run(), options)
   }
 
@@ -341,7 +341,7 @@ export class ReplaySession<S, C extends Config = Config, K extends string = stri
  * @param file - The tape file.
  * @param registry - The methods on offer.
  * @returns A replayed session per variant, with its label.
- * @throws MdmlError with code `value` when the registry does not know the file's method.
+ * @throws OmaiError with code `value` when the registry does not know the file's method.
  * @index function Sessions replayed from a tape file, nothing recomputed: `replaySessions(file, registry)`.
  */
 export function replaySessions(

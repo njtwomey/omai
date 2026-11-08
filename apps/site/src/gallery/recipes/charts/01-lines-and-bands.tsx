@@ -1,5 +1,5 @@
-import { band, cartesian, lines, points } from 'mdml-render/charts'
-import { Chart, ControlPanel, FigureFrame, NumberField, Toggle, useColourMode } from 'mdml-render/react'
+import { band, cartesian, lines, points } from 'omai-render/charts'
+import { Chart, ControlPanel, FigureFrame, NumberField, Toggle, useColourMode } from 'omai-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 

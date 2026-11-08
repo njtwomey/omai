@@ -4,7 +4,7 @@
  * algorithm, started from k-means++ centres.
  */
 
-import { MdmlError, maxOf, toRows } from '../base/index.ts'
+import { maxOf, OmaiError, toRows } from '../base/index.ts'
 import { type IterativeEstimator, iterative, matrixView } from '../learn/index.ts'
 import { dict, int, real } from '../space/index.ts'
 import { fromStorage, type Tensor, type TensorLike, tensor } from '../tensor/index.ts'
@@ -29,7 +29,7 @@ export interface FuzzyState {
  * @returns Memberships `[n, c]` flat, and the objective sum u^m d^2.
  * @example
  * ```ts
- * import { fuzzyMemberships } from 'mdml-engine/cluster'
+ * import { fuzzyMemberships } from 'omai-engine/cluster'
  * fuzzyMemberships([[0], [1]], [[0], [1]], 2).memberships // => [1, 0, 0, 1]
  * ```
  */
@@ -79,14 +79,14 @@ const hardLabels = (u: readonly number[], c: number): number[] =>
  * @returns The algorithm.
  * @example
  * ```ts
- * import { fuzzyCMeansAlgorithm } from 'mdml-engine/cluster'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { fuzzyCMeansAlgorithm } from 'omai-engine/cluster'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const out = runAlgorithm(fuzzyCMeansAlgorithm([[0], [1], [9], [10]], [[0], [10]]), { maxSteps: 100 })
  * out.state.centres.map((c) => Math.round((c[0] ?? 0) / 10)) // => [0, 1]
  * ```
  */
 export function fuzzyCMeansAlgorithm(x: TensorLike, init: Rows, m = 2, tol = 1e-5): Algorithm<FuzzyState> {
-  if (!(m > 1)) throw new MdmlError('value', 'fuzzyCMeansAlgorithm: the fuzzifier must exceed 1')
+  if (!(m > 1)) throw new OmaiError('value', 'fuzzyCMeansAlgorithm: the fuzzifier must exceed 1')
   const v = matrixView(x, 'fuzzyCMeansAlgorithm')
   const c = init.length
   return {
@@ -166,7 +166,7 @@ export interface FuzzyVerbs {
  *
  * @example
  * ```ts
- * import { fuzzyCMeans } from 'mdml-engine/cluster'
+ * import { fuzzyCMeans } from 'omai-engine/cluster'
  * fuzzyCMeans.with({ nClusters: 2 }).fit({ x: [[0], [0.5], [10], [10.5]] }).params.labels.length // => 4
  * ```
  */

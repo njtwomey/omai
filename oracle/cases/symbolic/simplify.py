@@ -1,11 +1,11 @@
 """Rewrites against SymPy: expand, factor (over the rationals, several variables), collect, together, cancel, apart,
 trigsimp and simplify. Each output carries SymPy's text and values; `exact` marks the cases whose printed form
-mdml-js reproduces, the others (trigsimp and simplify, whose choices between equivalent forms differ) are compared
+omai reproduces, the others (trigsimp and simplify, whose choices between equivalent forms differ) are compared
 by value."""
 
 import sympy as sp
-from mdml_oracle.fixture import Case
-from mdml_oracle.symbolic import SYMBOLS, expr_case, parse
+from omai_oracle.fixture import Case
+from omai_oracle.symbolic import SYMBOLS, expr_case, parse
 
 REFERENCE: dict[str, str] = {"sympy": sp.__version__}
 

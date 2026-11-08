@@ -6,7 +6,7 @@
  */
 
 import { grad } from '../autodiff/index.ts'
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import type { LearnData } from '../learn/estimator.ts'
 import { matrixView, targetVector } from '../learn/validation.ts'
 import { cholesky, choleskyLogdet } from '../numerics/linalg/index.ts'
@@ -63,7 +63,7 @@ export interface MmdCriticResult {
  * @returns The prototypes, criticisms, witness values and the MMD as prototypes were added.
  * @example
  * ```ts
- * import * as explain from 'mdml-engine/explain'
+ * import * as explain from 'omai-engine/explain'
  * // Two clusters: one prototype each; the outlier is the criticism.
  * const x = [[0, 0], [0.1, 0], [0, 0.1], [5, 5], [5.1, 5], [5, 5.1], [2.5, -3]]
  * const r = explain.mmdCritic(x, { nPrototypes: 2, nCriticisms: 1, gamma: 1 })
@@ -157,7 +157,7 @@ export interface NearestExamples {
  * @returns Their indices and distances, nearest first.
  * @example
  * ```ts
- * import * as explain from 'mdml-engine/explain'
+ * import * as explain from 'omai-engine/explain'
  * explain.nearestExamples([0, 0], [[3, 4], [1, 0], [0, 2]], { k: 2 }) // => { indices: [1, 2], distances: [1, 2] }
  * ```
  */
@@ -201,7 +201,7 @@ export interface TrustScoreOptions {
  * @returns The scores and, for each point, the closest other class.
  * @example
  * ```ts
- * import * as explain from 'mdml-engine/explain'
+ * import * as explain from 'omai-engine/explain'
  * const train = { x: [[0], [0.2], [0.4], [5], [5.2], [5.4]], y: [0, 0, 0, 1, 1, 1] }
  * const r = explain.trustScores(train, [[0.1], [0.1]], [0, 1], { alpha: 0, kFilter: 1 })
  * r.scores.map((s) => s > 1) // => [true, false]
@@ -214,10 +214,10 @@ export function trustScores(
   options: TrustScoreOptions = {},
 ): { readonly scores: readonly number[]; readonly closestOther: readonly number[] } {
   const tr = rowsOfView(train.x, 'trustScores')
-  if (train.y === undefined) throw new MdmlError('value', 'trustScores: the training data need labels')
+  if (train.y === undefined) throw new OmaiError('value', 'trustScores: the training data need labels')
   const y = targetVector(train.y, 'trustScores', tr.n)
   const test = rowsOfView(x, 'trustScores')
-  if (predicted.length !== test.n) throw new MdmlError('shape', 'trustScores: one predicted label per test point')
+  if (predicted.length !== test.n) throw new OmaiError('shape', 'trustScores: one predicted label per test point')
   const alpha = options.alpha ?? 0.1
   const kf = options.kFilter ?? 10
   const k = options.k ?? 1
@@ -281,8 +281,8 @@ export interface GradientSimilarityOptions {
  * @returns For each test point, all scores and the top k training rows.
  * @example
  * ```ts
- * import * as explain from 'mdml-engine/explain'
- * import { dot, square, sub } from 'mdml-engine/tensor'
+ * import * as explain from 'omai-engine/explain'
+ * import { dot, square, sub } from 'omai-engine/tensor'
  * // Squared error of a linear model through the origin: gradients 2 (w x - y) x.
  * const loss = (w, x, y) => square(sub(dot(w, x), y))
  * const r = explain.gradientSimilarity(loss, [1], { x: [[1], [-1]], y: [2, -2] }, { x: [[2]], y: [3] })
@@ -299,7 +299,7 @@ export function gradientSimilarity(
   const tr = rowsOfView(train.x, 'gradientSimilarity')
   const te = rowsOfView(test.x, 'gradientSimilarity')
   if (train.y === undefined || test.y === undefined)
-    throw new MdmlError('value', 'gradientSimilarity: train and test need targets')
+    throw new OmaiError('value', 'gradientSimilarity: train and test need targets')
   const ytr = targetVector(train.y, 'gradientSimilarity', tr.n)
   const yte = targetVector(test.y, 'gradientSimilarity', te.n)
   const gradOf = (x: readonly number[], y: number): number[] =>

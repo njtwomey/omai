@@ -7,7 +7,7 @@
  * planted effect.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { matrixView } from '../learn/validation.ts'
 import { fromStorage, type TensorLike } from '../tensor/index.ts'
 import { type Prepared, pick, pickRows, prepare, withTreatment } from './_dense.ts'
@@ -62,7 +62,7 @@ function fitMean(
 
 const readX = (x: TensorLike, d: number, who: string): Float64Array => {
   const m = matrixView(x, who)
-  if (m.d !== d) throw new MdmlError('shape', `${who}: expected ${d} covariates, got ${m.d}`)
+  if (m.d !== d) throw new OmaiError('shape', `${who}: expected ${d} covariates, got ${m.d}`)
   return m.data
 }
 
@@ -75,7 +75,7 @@ const readX = (x: TensorLike, d: number, who: string): Float64Array => {
  * @returns The CATE model.
  * @example
  * ```ts
- * import { sLearner } from 'mdml-engine/causal'
+ * import { sLearner } from 'omai-engine/causal'
  * const x = [[0], [1], [2], [3], [4], [5]]
  * const m = sLearner({ x, treatment: [0, 1, 0, 1, 0, 1], outcome: [0, 3, 2, 5, 4, 7] })
  * m.predict([[1], [3]])[0] // => 2
@@ -123,7 +123,7 @@ function armModel(
 ): (q: TensorLike) => Float64Array {
   const rows = Array.from(allRows(p.n)).filter((i) => p.t[i] === arm)
   if (rows.length < 2)
-    throw new MdmlError('value', `the ${arm === 1 ? 'treated' : 'control'} arm has fewer than two units`)
+    throw new OmaiError('value', `the ${arm === 1 ? 'treated' : 'control'} arm has fewer than two units`)
   return fitMean(learner, pickRows(p.x, p.d, rows), p.d, pick(p.y, rows), key, binary)
 }
 
@@ -136,7 +136,7 @@ function armModel(
  * @returns The CATE model.
  * @example
  * ```ts
- * import { tLearner } from 'mdml-engine/causal'
+ * import { tLearner } from 'omai-engine/causal'
  * const x = [[0], [1], [2], [3], [4], [5]]
  * tLearner({ x, treatment: [0, 1, 0, 1, 0, 1], outcome: [0, 3, 2, 5, 4, 7] }).predict([[2]])[0] // => 2
  * ```
@@ -168,7 +168,7 @@ export function tLearner(data: CausalData, options: MetaOptions = {}): CateModel
  * @returns The CATE model.
  * @example
  * ```ts
- * import { xLearner } from 'mdml-engine/causal'
+ * import { xLearner } from 'omai-engine/causal'
  * const x = [[0], [1], [2], [3], [4], [5], [6], [7]]
  * xLearner({ x, treatment: [0, 1, 0, 1, 0, 1, 0, 1], outcome: [0, 3, 2, 5, 4, 7, 6, 9] }).learner // => 'x-learner'
  * ```
@@ -213,7 +213,7 @@ export function xLearner(data: CausalData, options: MetaOptions = {}): CateModel
  * @returns The CATE model.
  * @example
  * ```ts
- * import { rLearner } from 'mdml-engine/causal'
+ * import { rLearner } from 'omai-engine/causal'
  * const x = Array.from({ length: 40 }, (_, i) => [Math.sin(i), Math.cos(2 * i)])
  * const t = x.map((_, i) => (Math.sin(3 * i) > 0 ? 1 : 0))
  * const y = x.map((r, i) => (r[0] ?? 0) + 2 * (t[i] ?? 0))
@@ -247,7 +247,7 @@ export function rLearner(data: CausalData, options: MetaOptions = {}): CateModel
  * @returns The CATE model.
  * @example
  * ```ts
- * import { drLearner } from 'mdml-engine/causal'
+ * import { drLearner } from 'omai-engine/causal'
  * const x = Array.from({ length: 40 }, (_, i) => [Math.sin(i), Math.cos(2 * i)])
  * const t = x.map((_, i) => (Math.sin(3 * i) > 0 ? 1 : 0))
  * const y = x.map((r, i) => (r[0] ?? 0) + 2 * (t[i] ?? 0))
@@ -282,13 +282,13 @@ export function drLearner(data: CausalData, options: MetaOptions = {}): CateMode
  * @returns The PEHE.
  * @example
  * ```ts
- * import { pehe } from 'mdml-engine/causal'
+ * import { pehe } from 'omai-engine/causal'
  * pehe([1, 2, 3], [1, 2, 5]) // => 1.1547005383792515
  * ```
  */
 export function pehe(estimated: ArrayLike<number>, truth: ArrayLike<number>): number {
   if (estimated.length !== truth.length)
-    throw new MdmlError('shape', 'pehe: estimated and true effects must have the same length')
+    throw new OmaiError('shape', 'pehe: estimated and true effects must have the same length')
   let s = 0
   for (let i = 0; i < estimated.length; i++) s += ((estimated[i] ?? 0) - (truth[i] ?? 0)) ** 2
   return Math.sqrt(s / estimated.length)

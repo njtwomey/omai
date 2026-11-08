@@ -4,9 +4,9 @@
  */
 
 import type { EChartsOption, SeriesOption } from 'echarts'
-import { MdmlError } from 'mdml-engine/base'
-import type { Point2 } from 'mdml-engine/numerics/geometry'
-import { asTensor, type TensorLike, toFlat } from 'mdml-engine/tensor'
+import { OmaiError } from 'omai-engine/base'
+import type { Point2 } from 'omai-engine/numerics/geometry'
+import { asTensor, type TensorLike, toFlat } from 'omai-engine/tensor'
 import { extentOf, unionRange } from '../figure/limits.ts'
 import type { ColourMode } from '../theme/tokens.ts'
 import { colourFor, dashType, modeOf, numbers } from './_data.ts'
@@ -40,7 +40,7 @@ export interface LineOptions {
 function pairs(c: Curve): [number, number][] {
   const y = numbers(c.y)
   const x = c.x === undefined ? y.map((_, i) => i) : numbers(c.x)
-  if (x.length !== y.length) throw new MdmlError('shape', 'lines: x and y must have the same length')
+  if (x.length !== y.length) throw new OmaiError('shape', 'lines: x and y must have the same length')
   return y.map((v, i) => [x[i] ?? i, v])
 }
 
@@ -53,7 +53,7 @@ function pairs(c: Curve): [number, number][] {
  * @index function A layer of lines, steps or areas to combine: `lines([{ y: [1, 3, 2] }])`.
  * @example
  * ```ts
- * import { lines } from 'mdml-render/charts'
+ * import { lines } from 'omai-render/charts'
  * const l = lines([{ y: [1, 3, 2], name: 'loss' }])
  * l.extent // => { x: [0, 2], y: [1, 3] }
  * l.series[0].name // => 'loss'
@@ -119,7 +119,7 @@ interface PolygonApi {
  * @index function A filled band between two curves: `band([{ x, lower, upper }])`.
  * @example
  * ```ts
- * import { band } from 'mdml-render/charts'
+ * import { band } from 'omai-render/charts'
  * band([{ x: [0, 1, 2], lower: [0, 0, 1], upper: [1, 2, 2] }]).extent // => { x: [0, 2], y: [0, 2] }
  * ```
  */
@@ -133,7 +133,7 @@ export function band(bands: readonly Band[], options: LineOptions = {}): Layer {
     const lo = numbers(b.lower)
     const hi = numbers(b.upper)
     if (lo.length !== x.length || hi.length !== x.length)
-      throw new MdmlError('shape', 'band: x, lower and upper must have the same length')
+      throw new OmaiError('shape', 'band: x, lower and upper must have the same length')
     const polygons: Point2[][] = []
     let run: number[] = []
     const flush = (): void => {
@@ -202,7 +202,7 @@ export interface Polygon {
  * @returns The layer.
  * @example
  * ```ts
- * import { polygons } from 'mdml-render/charts'
+ * import { polygons } from 'omai-render/charts'
  * polygons([{ points: [[0, 0], [2, 0], [1, 3]] }]).extent // => { x: [0, 2], y: [0, 3] }
  * ```
  */
@@ -269,7 +269,7 @@ export function polygons(shapes: readonly Polygon[], options: LineOptions = {}):
  * @returns The curves.
  * @example
  * ```ts
- * import { curvesFromTensor } from 'mdml-render/charts'
+ * import { curvesFromTensor } from 'omai-render/charts'
  * curvesFromTensor([1, 2, 3]).length // => 1
  * curvesFromTensor([[0, 1], [1, 3], [2, 5]])[0].y // => [1, 3, 5]
  * curvesFromTensor([[1, 2, 3], [4, 5, 6]], { names: ['a', 'b'] })[1].name // => 'b'
@@ -284,7 +284,7 @@ export function curvesFromTensor(t: TensorLike, options: { readonly names?: read
     return name === undefined ? {} : { name }
   }
   if (shape.length <= 1) return [{ y: flat, ...named(0) }]
-  if (shape.length !== 2) throw new MdmlError('shape', 'curvesFromTensor: give a 1-D or 2-D tensor')
+  if (shape.length !== 2) throw new OmaiError('shape', 'curvesFromTensor: give a 1-D or 2-D tensor')
   const [k = 0, n = 0] = shape
   if (n === 2 && k !== 2)
     return [{ x: flat.filter((_, i) => i % 2 === 0), y: flat.filter((_, i) => i % 2 === 1), ...named(0) }]
@@ -300,7 +300,7 @@ export function curvesFromTensor(t: TensorLike, options: { readonly names?: read
  * @index function A line chart of curves: `lineChart([{ y: [3, 1, 2], name: 'loss' }])`.
  * @example
  * ```ts
- * import { lineChart } from 'mdml-render/charts'
+ * import { lineChart } from 'omai-render/charts'
  * const o = lineChart([{ y: [3, 1, 2], name: 'a' }, { y: [1, 2, 3], name: 'b' }])
  * o.legend.show // => true
  * ```

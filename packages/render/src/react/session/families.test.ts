@@ -1,4 +1,4 @@
-import type { Run } from 'mdml-engine/trace'
+import type { Run } from 'omai-engine/trace'
 import { describe, expect, it } from 'vitest'
 import type { Layer } from '../../charts/plot.ts'
 import { figure } from '../../figure/index.ts'
@@ -8,7 +8,7 @@ import { curveFamily, eventSteps, familyOption, hasFamily, intervalStrip, logAxe
 const metric = (name: string, values: number[]): Run['events'] =>
   values.map((value, i) => ({ type: 'metric' as const, runId: 'r', step: i + 1, name, value }))
 const run = (loss: number[], extra: Run['events'] = []): Run => ({
-  schema: 'mdml.run/1',
+  schema: 'omai.run/1',
   events: [...metric('loss', loss), ...extra],
 })
 const names = (l: { series: readonly unknown[] }): (string | undefined)[] =>
@@ -46,7 +46,7 @@ describe('curve families', () => {
   it('adds bands beneath, a truth line, slopes and event marks over the curves', () => {
     const events = metric('alarm', [0, 0, 1, 0])
     const r: Run = {
-      schema: 'mdml.run/1',
+      schema: 'omai.run/1',
       events: [
         ...metric('loss', [4, 3, 2, 1]),
         ...metric('lo', [3, 2, 1, 0.5]),

@@ -4,7 +4,7 @@
  * world, a key-and-door maze, and MiniGrid-style layouts.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { type Key, uniformStream } from '../random/index.ts'
 import { fromAscii, type Legend } from './ascii.ts'
 import {
@@ -74,7 +74,7 @@ export interface FrozenLakeOptions {
  * @concept grid-worlds
  * @example
  * ```ts
- * import { frozenLakeWorld, toAscii, transitionModel } from 'mdml-engine/worlds'
+ * import { frozenLakeWorld, toAscii, transitionModel } from 'omai-engine/worlds'
  * const t = frozenLakeWorld()
  * toAscii(t.world, { legend: { F: { terrain: 'ice' }, S: { terrain: 'ice', start: true }, G: { terrain: 'ice', goal: true } } }) // => ['SFFF', 'FHFH', 'FFFH', 'HFFG']
  * transitionModel(t.world, t.rules, t.options).outcomes(14, 2)[1] // => { probability: 1 / 3, state: 15, reward: 1, terminated: true, cost: 1 }
@@ -123,7 +123,7 @@ export const CLIFF_WALKING_MAP: readonly string[] = ['............', '..........
  * @concept grid-worlds
  * @example
  * ```ts
- * import { cliffWalkingWorld, transitionModel } from 'mdml-engine/worlds'
+ * import { cliffWalkingWorld, transitionModel } from 'omai-engine/worlds'
  * const t = cliffWalkingWorld()
  * transitionModel(t.world, t.rules, t.options).outcomes(36, 1) // => [{ probability: 1, state: 36, reward: -100, terminated: false, cost: 1 }]
  * ```
@@ -165,7 +165,7 @@ export const AIMA_GRID: readonly string[] = ['...G', '.#.X', 'S...']
  * @concept grid-worlds
  * @example
  * ```ts
- * import { aimaGridWorld, transitionModel } from 'mdml-engine/worlds'
+ * import { aimaGridWorld, transitionModel } from 'omai-engine/worlds'
  * const t = aimaGridWorld()
  * transitionModel(t.world, t.rules, t.options).outcomes(2, 1).map((o) => o.state) // => [3, 6, 2]
  * ```
@@ -223,11 +223,11 @@ export const FOUR_ROOMS: readonly string[] = [
  *
  * @param options - The goal `[row, col]` and the success probability.
  * @returns The task.
- * @throws MdmlError with code `value` when the goal is not a free cell.
+ * @throws OmaiError with code `value` when the goal is not a free cell.
  * @concept grid-worlds
  * @example
  * ```ts
- * import { fourRoomsWorld, transitionModel } from 'mdml-engine/worlds'
+ * import { fourRoomsWorld, transitionModel } from 'omai-engine/worlds'
  * const t = fourRoomsWorld()
  * transitionModel(t.world, t.rules, t.options).nStates // => 104
  * ```
@@ -239,7 +239,7 @@ export function fourRoomsWorld(
   const base = fromAscii(FOUR_ROOMS, { legend: { w: { terrain: 'wall' } }, name: 'FourRooms' })
   const goal = gr * 13 + gc
   if (!(gr >= 0 && gr < 13 && gc >= 0 && gc < 13) || FOUR_ROOMS[gr]?.[gc] === 'w') {
-    throw new MdmlError('value', 'fourRoomsWorld: the goal is not a free cell')
+    throw new OmaiError('value', 'fourRoomsWorld: the goal is not a free cell')
   }
   return {
     world: { ...base, goals: [goal] },
@@ -261,7 +261,7 @@ export const WINDY_STRENGTHS: readonly number[] = [0, 0, 0, 1, 1, 1, 2, 2, 1, 0]
  * @concept grid-worlds
  * @example
  * ```ts
- * import { transitionModel, windyGridWorld } from 'mdml-engine/worlds'
+ * import { transitionModel, windyGridWorld } from 'omai-engine/worlds'
  * const t = windyGridWorld()
  * transitionModel(t.world, t.rules, t.options).outcomes(33, 1)[0]?.state // => 24
  * ```
@@ -303,7 +303,7 @@ export const KEY_MAZE: readonly string[] = [
  * @concept grid-worlds
  * @example
  * ```ts
- * import { keyMazeWorld, transitionModel } from 'mdml-engine/worlds'
+ * import { keyMazeWorld, transitionModel } from 'omai-engine/worlds'
  * const t = keyMazeWorld()
  * transitionModel(t.world, t.rules, t.options).nStates // => 108
  * ```
@@ -362,7 +362,7 @@ export const TAXI_ACTIONS: ActionSet = {
  * @concept grid-worlds
  * @example
  * ```ts
- * import { destination, taxiWorld } from 'mdml-engine/worlds'
+ * import { destination, taxiWorld } from 'omai-engine/worlds'
  * const t = taxiWorld()
  * [t.world.landmarks, destination(t.world, 1, 1)] // => [{ R: [0], G: [4], Y: [20], B: [23] }, -1]
  * ```
@@ -405,12 +405,12 @@ export interface MiniGridOptions {
  * @param key - The key for the randomised parts.
  * @param options - Size and river crossings.
  * @returns The task.
- * @throws MdmlError with code `value` for a size too small for the layout.
+ * @throws OmaiError with code `value` for a size too small for the layout.
  * @concept grid-worlds
  * @example
  * ```ts
- * import { miniGridWorld, toAscii } from 'mdml-engine/worlds'
- * import { key } from 'mdml-engine/random'
+ * import { miniGridWorld, toAscii } from 'omai-engine/worlds'
+ * import { key } from 'omai-engine/random'
  * toAscii(miniGridWorld('empty', key(0), { size: 5 }).world) // => ['#####', '#S..#', '#...#', '#..G#', '#####']
  * ```
  */
@@ -418,7 +418,7 @@ export function miniGridWorld(layout: MiniGridLayout, key: Key, options: MiniGri
   const size = options.size ?? (layout === 'fourRooms' ? 19 : layout === 'lavaGap' ? 7 : layout === 'crossing' ? 9 : 8)
   const minimum = layout === 'fourRooms' ? 7 : layout === 'crossing' ? 5 : layout === 'empty' ? 3 : 5
   if (!Number.isInteger(size) || size < minimum) {
-    throw new MdmlError('value', `miniGridWorld: '${layout}' needs a size of at least ${minimum}`)
+    throw new OmaiError('value', `miniGridWorld: '${layout}' needs a size of at least ${minimum}`)
   }
   const next = uniformStream(key)
   const int = (lo: number, hi: number): number => lo + Math.min(hi - lo - 1, Math.floor(next() * (hi - lo)))

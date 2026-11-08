@@ -42,8 +42,8 @@ function gaussianClasses(
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { labellingFunctions } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { labellingFunctions } from 'omai-engine/datasets'
  * generate(labellingFunctions, { knobs: { functions: 4 } }).data.featureNames // => ['lf0', 'lf1', 'lf2', 'lf3']
  * ```
  */
@@ -146,8 +146,8 @@ export const labellingFunctions: DatasetGenerator<ClassificationData> = {
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { crowdLabels } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { crowdLabels } from 'omai-engine/datasets'
  * generate(crowdLabels, { knobs: { items: 10, perItem: 3 } }).data.values.shape // => [30]
  * ```
  */
@@ -254,8 +254,8 @@ export const crowdLabels: DatasetGenerator<InteractionData> = {
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { positiveUnlabelled } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { positiveUnlabelled } from 'omai-engine/datasets'
  * generate(positiveUnlabelled).data.classes // => ['unlabelled', 'labelled']
  * ```
  */
@@ -322,8 +322,8 @@ export const positiveUnlabelled: DatasetGenerator<ClassificationData> = {
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { labelProportionBags } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { labelProportionBags } from 'omai-engine/datasets'
  * (generate(labelProportionBags, { knobs: { n: 100, bagSize: 10 } }).truth.extra?.['proportions'] as number[][]).length // => 10
  * ```
  */
@@ -386,8 +386,8 @@ export const labelProportionBags: DatasetGenerator<ClassificationData> = {
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { multipleInstanceBags } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { multipleInstanceBags } from 'omai-engine/datasets'
  * generate(multipleInstanceBags, { knobs: { bags: 6, bagSize: 4 } }).data.x.shape // => [24, 2]
  * ```
  */
@@ -456,8 +456,8 @@ export const multipleInstanceBags: DatasetGenerator<ClassificationData> = {
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { clusterAssumption } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { clusterAssumption } from 'omai-engine/datasets'
  * generate(clusterAssumption, { knobs: { n: 20 } }).data.x.shape // => [20, 2]
  * ```
  */

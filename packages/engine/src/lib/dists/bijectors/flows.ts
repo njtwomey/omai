@@ -8,7 +8,7 @@
  */
 
 import { jacobian, jvp } from '../../autodiff/index.ts'
-import { MdmlError, maxOf } from '../../base/index.ts'
+import { maxOf, OmaiError } from '../../base/index.ts'
 import { inv, lu, norm, slogdet } from '../../numerics/linalg/index.ts'
 import { foldIn, type Key, normal } from '../../random/index.ts'
 import {
@@ -91,8 +91,8 @@ function bisect(f: (a: Value) => Value, target: Value, low: Value, high: Value):
  * @concept normalizing-flows
  * @example
  * ```ts
- * import { bijectors } from 'mdml-engine/dists'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { bijectors } from 'omai-engine/dists'
+ * import { toArray } from 'omai-engine/tensor'
  * const layer = bijectors.planar([1, 0], [1, 0], 0)
  * Math.abs(toArray(layer.inverse(layer.forward([1, 2])))[0] - 1) < 1e-10 // => true
  * ```
@@ -135,8 +135,8 @@ export function planar(u: TensorLike, w: TensorLike, b: TensorLike): Bijector {
  * @returns The bijector (vector-valued).
  * @example
  * ```ts
- * import { bijectors } from 'mdml-engine/dists'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { bijectors } from 'omai-engine/dists'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(bijectors.radial([0, 0], 1, -50).forward([0, 0])) // => [0, 0]
  * ```
  */
@@ -186,8 +186,8 @@ export function radial(center: TensorLike, alpha: TensorLike, beta: TensorLike):
  * @concept normalizing-flows
  * @example
  * ```ts
- * import { bijectors } from 'mdml-engine/dists'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { bijectors } from 'omai-engine/dists'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(bijectors.actNorm([1, 0], [0, Math.LN2]).forward([1, 3])) // => [2, 6]
  * ```
  */
@@ -216,8 +216,8 @@ export function actNorm(
  * @returns The bias and log-scale.
  * @example
  * ```ts
- * import { actNormInitialise } from 'mdml-engine/dists/bijectors'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { actNormInitialise } from 'omai-engine/dists/bijectors'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(actNormInitialise([[1], [3]]).bias) // => [-2]
  * ```
  */
@@ -241,8 +241,8 @@ export function actNormInitialise(
  * @returns The bijector acting on the last axis.
  * @example
  * ```ts
- * import { bijectors } from 'mdml-engine/dists'
- * import { item } from 'mdml-engine/tensor'
+ * import { bijectors } from 'omai-engine/dists'
+ * import { item } from 'omai-engine/tensor'
  * item(bijectors.invertibleLinear([[2, 0], [0, 3]]).forwardLogDetJacobian([1, 1])) === Math.log(6) // => true
  * ```
  */
@@ -283,7 +283,7 @@ export interface LuParameters {
  * @returns W = P L U in the layer's parameters.
  * @example
  * ```ts
- * import { luParameters } from 'mdml-engine/dists/bijectors'
+ * import { luParameters } from 'omai-engine/dists/bijectors'
  * luParameters([[0, 1], [1, 0]]).permutation // => [1, 0]
  * ```
  */
@@ -314,8 +314,8 @@ export function luParameters(weight: TensorLike): LuParameters {
  * @returns The bijector acting on the last axis.
  * @example
  * ```ts
- * import { luLinear, luParameters } from 'mdml-engine/dists/bijectors'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { luLinear, luParameters } from 'omai-engine/dists/bijectors'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(luLinear(luParameters([[2, 0], [0, 3]])).forward([1, 1])) // => [2, 3]
  * ```
  */
@@ -341,8 +341,8 @@ export function luLinear(parameters: LuParameters, options: { readonly positions
  * @concept normalizing-flows
  * @example
  * ```ts
- * import { bijectors } from 'mdml-engine/dists'
- * import { concat, mul, sliceAxis, toArray, zerosLike } from 'mdml-engine/tensor'
+ * import { bijectors } from 'omai-engine/dists'
+ * import { concat, mul, sliceAxis, toArray, zerosLike } from 'omai-engine/tensor'
  * const shiftByPrevious = (x) => ({ shift: concat([zerosLike(sliceAxis(x, -1, 0, 1)), sliceAxis(x, -1, 0, 1)], -1), logScale: mul(x, 0) })
  * toArray(bijectors.inverseAutoregressive(shiftByPrevious).forward([1, 1])) // => [1, 2]
  * ```
@@ -384,8 +384,8 @@ export interface MadeParameters {
  * @returns The weights and biases.
  * @example
  * ```ts
- * import { madeParameters } from 'mdml-engine/dists/bijectors'
- * import { key } from 'mdml-engine/random'
+ * import { madeParameters } from 'omai-engine/dists/bijectors'
+ * import { key } from 'omai-engine/random'
  * madeParameters(3, [8], key(0)).weights.map((w) => w.shape) // => [[3, 8], [8, 6]]
  * ```
  */
@@ -411,8 +411,8 @@ export function madeParameters(inputDim: number, hiddenSizes: readonly number[],
  * @returns The conditioner `[..., d]` to `{ shift, logScale }`.
  * @example
  * ```ts
- * import { madeConditioner, madeParameters } from 'mdml-engine/dists/bijectors'
- * import { key } from 'mdml-engine/random'
+ * import { madeConditioner, madeParameters } from 'omai-engine/dists/bijectors'
+ * import { key } from 'omai-engine/random'
  * const conditioner = madeConditioner(madeParameters(3, [8], key(1)))
  * conditioner([[1, 2, 3]]).shift.shape // => [1, 3]
  * ```
@@ -484,8 +484,8 @@ interface SplineResult {
  * @concept normalizing-flows
  * @example
  * ```ts
- * import { rationalQuadraticSplineMap } from 'mdml-engine/dists/bijectors'
- * import { item, zeros } from 'mdml-engine/tensor'
+ * import { rationalQuadraticSplineMap } from 'omai-engine/dists/bijectors'
+ * import { item, zeros } from 'omai-engine/tensor'
  * // Outside [-3, 3] the spline is the identity.
  * const p = { widths: zeros([4]), heights: zeros([4]), derivatives: zeros([3]) }
  * item(rationalQuadraticSplineMap(5, p, false).value) // => 5
@@ -562,8 +562,8 @@ export function rationalQuadraticSplineMap(
  * @returns The parameters with a trailing axis of K (or K - 1) per coordinate `[..., dim, ...]`.
  * @example
  * ```ts
- * import { splineParametersFromVector } from 'mdml-engine/dists/bijectors'
- * import { zeros } from 'mdml-engine/tensor'
+ * import { splineParametersFromVector } from 'omai-engine/dists/bijectors'
+ * import { zeros } from 'omai-engine/tensor'
  * splineParametersFromVector(zeros([1, 2 * 11]), 4).derivatives.shape // => [1, 2, 3]
  * ```
  */
@@ -572,7 +572,7 @@ export function splineParametersFromVector(raw: TensorLike, bins: number): Splin
   const per = 3 * bins - 1
   const dim = lastSize(r) / per
   if (!Number.isInteger(dim))
-    throw new MdmlError('shape', `splineParametersFromVector: ${lastSize(r)} is not a multiple of ${per}`)
+    throw new OmaiError('shape', `splineParametersFromVector: ${lastSize(r)} is not a multiple of ${per}`)
   const rows = reshape(r, [...r.shape.slice(0, -1), dim, per])
   return {
     widths: sliceAxis(rows, -1, 0, bins),
@@ -590,8 +590,8 @@ export function splineParametersFromVector(raw: TensorLike, bins: number): Splin
  * @returns The bijector (log-determinant per coordinate; use `inputRank` 0 semantics).
  * @example
  * ```ts
- * import { bijectors } from 'mdml-engine/dists'
- * import { zeros } from 'mdml-engine/tensor'
+ * import { bijectors } from 'omai-engine/dists'
+ * import { zeros } from 'omai-engine/tensor'
  * bijectors.rationalQuadraticSpline({ widths: zeros([2, 4]), heights: zeros([2, 4]), derivatives: zeros([2, 3]) }).name // => 'rationalQuadraticSpline'
  * ```
  */
@@ -619,8 +619,8 @@ export function rationalQuadraticSpline(parameters: SplineParameters, options: S
  * @concept normalizing-flows
  * @example
  * ```ts
- * import { bijectors } from 'mdml-engine/dists'
- * import { zeros } from 'mdml-engine/tensor'
+ * import { bijectors } from 'omai-engine/dists'
+ * import { zeros } from 'omai-engine/tensor'
  * const layer = bijectors.rationalQuadraticCoupling(1, () => ({ widths: zeros([1, 4]), heights: zeros([1, 4]), derivatives: zeros([1, 3]) }))
  * layer.forward([0.3, 5]).shape // => [2]
  * ```
@@ -673,9 +673,9 @@ export interface ResidualFlowOptions {
  * @returns The scaled matrix, differentiable.
  * @example
  * ```ts
- * import { lipschitzNormalise } from 'mdml-engine/dists/bijectors'
- * import { item, mul } from 'mdml-engine/tensor'
- * import { norm } from 'mdml-engine/numerics/linalg'
+ * import { lipschitzNormalise } from 'omai-engine/dists/bijectors'
+ * import { item, mul } from 'omai-engine/tensor'
+ * import { norm } from 'omai-engine/numerics/linalg'
  * Math.abs(item(norm(lipschitzNormalise([[3, 0], [0, 1]], 0.5), 2)) - 0.5) < 1e-12 // => true
  * ```
  */
@@ -694,12 +694,12 @@ export function lipschitzNormalise(weight: TensorLike, coefficient = 0.9): Value
  * @param g - The residual map on `[..., d]`, acting on each row independently and able to take a single vector.
  * @param options - Terms, estimator and its key and samples, and the inverse's tolerance.
  * @returns The bijector (vector-valued).
- * @throws MdmlError with code `value` for the Hutchinson estimator without a key.
+ * @throws OmaiError with code `value` for the Hutchinson estimator without a key.
  * @concept normalizing-flows
  * @example
  * ```ts
- * import { bijectors } from 'mdml-engine/dists'
- * import { item, mul } from 'mdml-engine/tensor'
+ * import { bijectors } from 'omai-engine/dists'
+ * import { item, mul } from 'omai-engine/tensor'
  * // g(x) = x / 2: y = 1.5 x, log det = 2 log 1.5.
  * const layer = bijectors.residualFlow((x) => mul(x, 0.5), { terms: 60 })
  * Math.abs(item(layer.forwardLogDetJacobian([1, 2])) - 2 * Math.log(1.5)) < 1e-12 // => true
@@ -709,7 +709,7 @@ export function residualFlow(g: (x: Value) => Value, options: ResidualFlowOption
   const terms = options.terms ?? 20
   const estimator = options.estimator ?? 'exact'
   if (estimator === 'hutchinson' && options.key === undefined)
-    throw new MdmlError('value', 'residualFlow: the Hutchinson estimator needs a key')
+    throw new OmaiError('value', 'residualFlow: the Hutchinson estimator needs a key')
   const exactSeries = (x: Value): Value => {
     const d = lastSize(x)
     const rows = reshape(x, [-1, d])

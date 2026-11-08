@@ -8,7 +8,7 @@
  * @index function Conformal prediction: split, cross and adaptive prediction sets.
  */
 
-import { MdmlError, maxOf } from '../base/index.ts'
+import { maxOf, OmaiError } from '../base/index.ts'
 import { foldIn, type Key, permutation, uniform } from '../random/index.ts'
 import type { SpaceValue } from '../space/index.ts'
 import { asTensor, fromStorage, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
@@ -50,7 +50,7 @@ const EPSILON = 1e-8
  * @concept conformal-prediction
  * @example
  * ```ts
- * import { conformalQuantile } from 'mdml-engine/learn'
+ * import { conformalQuantile } from 'omai-engine/learn'
  * conformalQuantile([5, 1, 4, 2, 3, 9, 7, 8, 6], 0.2) // => 8
  * conformalQuantile([1, 2], 0.1) // => Infinity
  * ```
@@ -60,7 +60,7 @@ export function conformalQuantile(scores: ArrayLike<number>, alpha: number): num
   const s = Array.from(scores)
     .filter((v) => !Number.isNaN(v))
     .sort((a, b) => a - b)
-  if (s.length === 0) throw new MdmlError('value', 'conformalQuantile: no calibration scores')
+  if (s.length === 0) throw new OmaiError('value', 'conformalQuantile: no calibration scores')
   const k = Math.ceil((1 - alpha) * (s.length + 1))
   return k > s.length ? Number.POSITIVE_INFINITY : (s[k - 1] ?? Number.POSITIVE_INFINITY)
 }
@@ -115,8 +115,8 @@ const vec = (v: ArrayLike<number>): Tensor => fromStorage(Float64Array.from(v), 
  * @returns The conformal regressor.
  * @example
  * ```ts
- * import { splitConformalRegressor } from 'mdml-engine/learn'
- * import { tensor, toFlat } from 'mdml-engine/tensor'
+ * import { splitConformalRegressor } from 'omai-engine/learn'
+ * import { tensor, toFlat } from 'omai-engine/tensor'
  * const zero = { estimator: 'zero', kind: 'regressor', params: {}, predict: (x) => tensor(x.map(() => 0)) }
  * const c = splitConformalRegressor(zero, { x: [[0], [0], [0], [0]], y: [1, -2, 3, -4] }, { alpha: 0.2 })
  * toFlat(c.predictInterval([[0]]).upper) // => [4]
@@ -135,14 +135,14 @@ export function splitConformalRegressor(
   const scaleOf = (x: TensorLike, yhat: Float64Array): Float64Array => {
     if (score === 'absolute') return new Float64Array(yhat.length).fill(1)
     if (options.scale === undefined)
-      throw new MdmlError('value', 'splitConformalRegressor: normalised scores need a scale')
+      throw new OmaiError('value', 'splitConformalRegressor: normalised scores need a scale')
     return predictOf(options.scale, 'splitConformalRegressor')(x)
   }
   const yhat = predict(calibration.x)
   if (score === 'gamma') {
     // MAPIE's gamma score is signed and asymmetric: (y - yhat) / yhat, each tail at alpha / 2.
     if (Array.from(y).some((v) => v <= 0) || Array.from(yhat).some((v) => v <= 0)) {
-      throw new MdmlError('domain', 'splitConformalRegressor: gamma scores need positive targets and predictions')
+      throw new OmaiError('domain', 'splitConformalRegressor: gamma scores need positive targets and predictions')
     }
     const signed = Array.from(y, (v, i) => (v - (yhat[i] ?? 1)) / (yhat[i] ?? 1)).sort((a, b) => a - b)
     const k = Math.ceil((1 - alpha / 2) * (signed.length + 1))
@@ -193,8 +193,8 @@ export interface CqrOptions {
  * @returns The conformal regressor (its `quantile` is the lower correction).
  * @example
  * ```ts
- * import { conformalizedQuantileRegressor } from 'mdml-engine/learn'
- * import { tensor, toFlat } from 'mdml-engine/tensor'
+ * import { conformalizedQuantileRegressor } from 'omai-engine/learn'
+ * import { tensor, toFlat } from 'omai-engine/tensor'
  * const constant = (c) => ({ estimator: 'c', kind: 'regressor', params: {}, predict: (x) => tensor(x.map(() => c)) })
  * const c = conformalizedQuantileRegressor({ lower: constant(-1), upper: constant(1) }, { x: [[0], [0], [0]], y: [0, 2, -3] }, { alpha: 0.5, symmetric: true })
  * toFlat(c.predictInterval([[0]]).upper) // => [2]
@@ -286,7 +286,7 @@ function crossConformalRun(
   const y = targetVector(requireTargets(data, 'crossConformalRegressor'), 'crossConformalRegressor', n)
   const splitter = checkCv(options.cv, estimator)
   if (!splitter.partition)
-    throw new MdmlError('value', 'crossConformalRegressor: the splitter must partition the samples')
+    throw new OmaiError('value', 'crossConformalRegressor: the splitter must partition the samples')
   const key = keyFor(options, 'crossConformalRegressor')
   const folds = splitIndices(splitter, splitInputOf(data), foldIn(key, 0))
   const models: Fitted[] = []
@@ -335,13 +335,13 @@ const meanOfRows = (values: readonly number[], rows: ArrayLike<number>): number 
  * @param data - The training data.
  * @param options - alpha, cv (a partitioning splitter), method and key.
  * @returns The algorithm, one step per fold.
- * @throws MdmlError with code `value` when the splitter does not partition the samples.
+ * @throws OmaiError with code `value` when the splitter does not partition the samples.
  * @concept conformal-prediction
  * @example
  * ```ts
- * import { crossConformalAlgorithm, defineEstimator, rowsOf } from 'mdml-engine/learn'
- * import { runAlgorithm } from 'mdml-engine/trace'
- * import { full, item, mean } from 'mdml-engine/tensor'
+ * import { crossConformalAlgorithm, defineEstimator, rowsOf } from 'omai-engine/learn'
+ * import { runAlgorithm } from 'omai-engine/trace'
+ * import { full, item, mean } from 'omai-engine/tensor'
  * const meanModel = defineEstimator(
  *   { name: 'mean', kind: 'regressor', fit: (d) => ({ m: item(mean(d.y)) }), methods: (p) => ({ predict: (x) => full([rowsOf(x)], p.m) }) },
  *   {},
@@ -371,9 +371,9 @@ export function crossConformalAlgorithm(
  * @returns The conformal regressor (prediction: the mean of the fold models; its `quantile` is the residual quantile).
  * @example
  * ```ts
- * import { crossConformalRegressor, defineEstimator, rowsOf } from 'mdml-engine/learn'
- * import { leaveOneOut } from 'mdml-engine/learn/model-selection'
- * import { full, item, mean, toFlat } from 'mdml-engine/tensor'
+ * import { crossConformalRegressor, defineEstimator, rowsOf } from 'omai-engine/learn'
+ * import { leaveOneOut } from 'omai-engine/learn/model-selection'
+ * import { full, item, mean, toFlat } from 'omai-engine/tensor'
  * const meanModel = defineEstimator(
  *   { name: 'mean', kind: 'regressor', fit: (d) => ({ m: item(mean(d.y)) }), methods: (p) => ({ predict: (x) => full([rowsOf(x)], p.m) }) },
  *   {},
@@ -451,8 +451,8 @@ export function crossConformalRegressor(
  * @returns The quantile of each group and an interval map that takes the test rows' groups.
  * @example
  * ```ts
- * import { mondrianConformalRegressor } from 'mdml-engine/learn'
- * import { tensor, toFlat } from 'mdml-engine/tensor'
+ * import { mondrianConformalRegressor } from 'omai-engine/learn'
+ * import { tensor, toFlat } from 'omai-engine/tensor'
  * const zero = { estimator: 'zero', kind: 'regressor', params: {}, predict: (x) => tensor(x.map(() => 0)) }
  * const c = mondrianConformalRegressor(zero, { x: [[0], [0], [0], [0]], y: [1, 1, 5, 5] }, [0, 0, 1, 1], { alpha: 0.4 })
  * toFlat(c.predictInterval([[0], [0]], [0, 1]).upper) // => [1, 5]
@@ -470,7 +470,7 @@ export function mondrianConformalRegressor(
   const alpha = fractionOption(options.alpha ?? 0.1, 'alpha', 'mondrianConformalRegressor')
   const predict = predictOf(fitted, 'mondrianConformalRegressor')
   const n = rowsOf(calibration.x)
-  if (groups.length !== n) throw new MdmlError('shape', 'mondrianConformalRegressor: one group per calibration row')
+  if (groups.length !== n) throw new OmaiError('shape', 'mondrianConformalRegressor: one group per calibration row')
   const y = targetVector(requireTargets(calibration, 'mondrian'), 'mondrian', n)
   const p = predict(calibration.x)
   const byGroup = new Map<number, number[]>()
@@ -549,8 +549,8 @@ function sortedDesc(p: ArrayLike<number>): number[] {
  * @returns The conformal classifier.
  * @example
  * ```ts
- * import { splitConformalClassifier } from 'mdml-engine/learn'
- * import { tensor } from 'mdml-engine/tensor'
+ * import { splitConformalClassifier } from 'omai-engine/learn'
+ * import { tensor } from 'omai-engine/tensor'
  * const fixed = { estimator: 'fixed', kind: 'classifier', params: {}, classes: [0, 1], predictProba: (x) => tensor(x.map((r) => [r[0], 1 - r[0]])) }
  * const x = [[0.9], [0.8], [0.3], [0.6], [0.2], [0.1], [0.7], [0.4], [0.95]]
  * const c = splitConformalClassifier(fixed, { x, y: [0, 0, 1, 0, 1, 1, 0, 1, 0] }, { alpha: 0.2 })
@@ -571,7 +571,7 @@ export function splitConformalClassifier(
   const index = new Map(classes.map((c, i) => [c, i]))
   const labels = Array.from(targetVector(y, 'splitConformalClassifier'), (v) => {
     const c = index.get(v)
-    if (c === undefined) throw new MdmlError('value', `splitConformalClassifier: calibration label ${v} is not a class`)
+    if (c === undefined) throw new OmaiError('value', `splitConformalClassifier: calibration label ${v} is not a class`)
     return c
   })
   const k = classes.length
@@ -679,8 +679,8 @@ export interface TuneRapsOptions {
  * @returns kReg, lambda, and the row indices left for calibration.
  * @example
  * ```ts
- * import { tuneRaps } from 'mdml-engine/learn'
- * import { asTensor, tensor, toArray } from 'mdml-engine/tensor'
+ * import { tuneRaps } from 'omai-engine/learn'
+ * import { asTensor, tensor, toArray } from 'omai-engine/tensor'
  * const fixed = { estimator: 'f', kind: 'classifier', params: {}, classes: [0, 1, 2], predictProba: (x) => tensor(toArray(asTensor(x)).map((r) => [r[0], (1 - r[0]) * 0.7, (1 - r[0]) * 0.3])) }
  * const x = Array.from({ length: 50 }, (_, i) => [(i % 10) / 10])
  * const t = tuneRaps(fixed, { x, y: x.map((r, i) => (r[0] > 0.4 ? 0 : i % 2 === 0 ? 1 : 2)) }, { alpha: 0.2 })
@@ -695,7 +695,7 @@ export function tuneRaps(
   const alpha = fractionOption(options.alpha ?? 0.1, 'alpha', 'tuneRaps')
   const n = rowsOf(calibration.x)
   const nTune = Math.max(1, Math.round((options.fraction ?? 0.2) * n))
-  if (nTune >= n) throw new MdmlError('value', 'tuneRaps: no calibration rows left after tuning')
+  if (nTune >= n) throw new OmaiError('value', 'tuneRaps: no calibration rows left after tuning')
   const order = toFlat(permutation(options.key ?? keyFor({}, 'tuneRaps'), n))
   const tuneRows = order.slice(0, nTune)
   const rest = order.slice(nTune).sort((a, b) => a - b)
@@ -793,12 +793,12 @@ const aciResult = (s: AciState): AciResult => ({
  * @param targets - The realised values y_t.
  * @param options - alpha, gamma, window or memory, and initialScores.
  * @returns The algorithm, one step per time.
- * @throws MdmlError with code `value` for a non-positive gamma and `shape` for mismatched lengths.
+ * @throws OmaiError with code `value` for a non-positive gamma and `shape` for mismatched lengths.
  * @concept conformal-prediction
  * @example
  * ```ts
- * import { adaptiveConformalAlgorithm } from 'mdml-engine/learn'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { adaptiveConformalAlgorithm } from 'omai-engine/learn'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const y = [1, -1, 2, -2, 1, -1]
  * const run = runAlgorithm(adaptiveConformalAlgorithm(y.map(() => 0), y, { alpha: 0.2, gamma: 0.1 }), { maxSteps: 10 })
  * run.state.errors.length // => 6
@@ -811,9 +811,9 @@ export function adaptiveConformalAlgorithm(
 ): Algorithm<AciState, AciPath> {
   const alpha = fractionOption(options.alpha ?? 0.1, 'alpha', 'adaptiveConformalInference')
   const gamma = options.gamma ?? 0.005
-  if (!(gamma > 0)) throw new MdmlError('value', 'adaptiveConformalInference: gamma must be positive')
+  if (!(gamma > 0)) throw new OmaiError('value', 'adaptiveConformalInference: gamma must be positive')
   const T = predictions.length
-  if (targets.length !== T) throw new MdmlError('shape', 'adaptiveConformalInference: one target per prediction')
+  if (targets.length !== T) throw new OmaiError('shape', 'adaptiveConformalInference: one target per prediction')
   const memory = scoreMemories.make(
     options.memory ?? (options.window === undefined ? undefined : { kind: 'window', size: options.window }),
   )
@@ -921,7 +921,7 @@ export function adaptiveConformalAlgorithm(
  * @returns The intervals, working levels, errors and coverage.
  * @example
  * ```ts
- * import { adaptiveConformalInference } from 'mdml-engine/learn'
+ * import { adaptiveConformalInference } from 'omai-engine/learn'
  * const y = Array.from({ length: 200 }, (_, t) => Math.sin(t) * (1 + t / 50))
  * const r = adaptiveConformalInference(y.map(() => 0), y, { alpha: 0.1, gamma: 0.05 })
  * Math.abs(r.coverage - 0.9) < 0.05 // => true
@@ -949,8 +949,8 @@ export function adaptiveConformalInference(
  * @returns Coverage (fraction inside) and mean width.
  * @example
  * ```ts
- * import { intervalCoverage } from 'mdml-engine/learn'
- * import { tensor } from 'mdml-engine/tensor'
+ * import { intervalCoverage } from 'omai-engine/learn'
+ * import { tensor } from 'omai-engine/tensor'
  * intervalCoverage({ prediction: tensor([0, 0]), lower: tensor([-1, -1]), upper: tensor([1, 1]) }, [0.5, 2]) // => { coverage: 0.5, width: 2 }
  * ```
  */
@@ -984,7 +984,7 @@ export function intervalCoverage(
  * @concept conformal-prediction
  * @example
  * ```ts
- * import { weightedConformalQuantile } from 'mdml-engine/learn'
+ * import { weightedConformalQuantile } from 'omai-engine/learn'
  * weightedConformalQuantile([1, 2, 3, 4], [1, 1, 1, 1], 1, 0.4) // => 3
  * weightedConformalQuantile([1, 2, 3, 4], [1, 1, 1, 5], 1, 0.4) // => 4
  * ```
@@ -997,13 +997,13 @@ export function weightedConformalQuantile(
 ): number {
   fractionOption(alpha, 'alpha', 'weightedConformalQuantile')
   if (scores.length !== weights.length)
-    throw new MdmlError('shape', 'weightedConformalQuantile: scores and weights differ')
-  if (scores.length === 0) throw new MdmlError('value', 'weightedConformalQuantile: no calibration scores')
+    throw new OmaiError('shape', 'weightedConformalQuantile: scores and weights differ')
+  if (scores.length === 0) throw new OmaiError('value', 'weightedConformalQuantile: no calibration scores')
   if (!(testWeight >= 0) || Array.from(weights).some((w) => !(w >= 0)))
-    throw new MdmlError('value', 'weightedConformalQuantile: weights must be >= 0')
+    throw new OmaiError('value', 'weightedConformalQuantile: weights must be >= 0')
   const order = Array.from(scores, (s, i) => ({ s, w: weights[i] ?? 0 })).sort((a, b) => a.s - b.s)
   const total = order.reduce((a, o) => a + o.w, 0) + testWeight
-  if (!(total > 0)) throw new MdmlError('value', 'weightedConformalQuantile: all weights are zero')
+  if (!(total > 0)) throw new OmaiError('value', 'weightedConformalQuantile: all weights are zero')
   let cumulative = 0
   for (const o of order) {
     cumulative += o.w
@@ -1040,8 +1040,8 @@ export interface WeightedConformalRegressor extends Omit<ConformalRegressor, 'qu
  * @concept conformal-prediction
  * @example
  * ```ts
- * import { weightedConformalRegressor } from 'mdml-engine/learn'
- * import { tensor } from 'mdml-engine/tensor'
+ * import { weightedConformalRegressor } from 'omai-engine/learn'
+ * import { tensor } from 'omai-engine/tensor'
  * const zero = { estimator: 'zero', kind: 'regressor', params: {}, predict: (x) => tensor(x.map(() => 0)) }
  * const cal = { x: [[0], [1], [2], [3]], y: [1, 2, 3, 4] }
  * // Test points far to the right of the calibration data carry weight: the large residuals count for more.

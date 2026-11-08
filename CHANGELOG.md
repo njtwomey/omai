@@ -1,6 +1,19 @@
 # Changelog
 
-Versions are released in lockstep for mdml-engine, mdml-render and mdml-meta.
+Versions are released in lockstep for omai-engine, omai-render and omai-meta. Up to 0.1.3 the packages were published as
+mdml-engine, mdml-render and mdml-meta.
+
+## 0.1.4
+
+The project is renamed omai (Observable Methods in Machine Learning); the repository is `njtwomey/omai`. Nothing else
+changes in what the code does. The renames are the breaking part:
+- The packages are `omai-engine`, `omai-render` and `omai-meta` (were `mdml-*`), so every import path changes:
+  `omai-engine/tensor` for `mdml-engine/tensor`.
+- `MdmlError` is `OmaiError` and `isMdmlError` is `isOmaiError`.
+- The environment variables `MDML_*` are `OMAI_*` (`OMAI_TEST_WORKERS`, `OMAI_SITE_BASE`, ...).
+- The schema strings of saved files start with `omai.` (`omai.run/1` for a trace, `omai.fixture/` for fixtures). Tapes saved
+  by 0.1.3 and earlier carry the old strings and do not load.
+- The Python package of the oracle is `omai_oracle`.
 
 ## 0.1.3
 

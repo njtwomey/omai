@@ -3,7 +3,7 @@
  * style), the Procrustes disparity between configurations, and the Hausdorff and Chamfer distances between point sets.
  */
 
-import { MdmlError, type MetricResult } from '../base/index.ts'
+import { type MetricResult, OmaiError } from '../base/index.ts'
 import { cdist, metricFunction, procrustes } from '../numerics/geometry/index.ts'
 import { item, type TensorLike } from '../tensor/index.ts'
 import { specOf } from './_spec.ts'
@@ -14,7 +14,7 @@ const spec = specOf('distance', 'values', 'distances', { direction: 'lower', ran
 const vectors = (name: string, u: TensorLike, v: TensorLike): [Float64Array, Float64Array] => {
   const a = flat(u)
   const b = flat(v)
-  if (a.length !== b.length) throw new MdmlError('shape', `${name}: vectors differ in length`)
+  if (a.length !== b.length) throw new OmaiError('shape', `${name}: vectors differ in length`)
   return [a, b]
 }
 
@@ -29,7 +29,7 @@ const vectors = (name: string, u: TensorLike, v: TensorLike): [Float64Array, Flo
  * @concept distances
  * @example
  * ```ts
- * import { minkowskiDistance } from 'mdml-engine/metrics'
+ * import { minkowskiDistance } from 'omai-engine/metrics'
  * minkowskiDistance([0, 0], [3, 4]).estimate.value // => 5
  * ```
  */
@@ -55,7 +55,7 @@ export const minkowskiDistance: MetricFunction<
  * @returns The metric result, in [-1, 1].
  * @example
  * ```ts
- * import { cosineSimilarity } from 'mdml-engine/metrics'
+ * import { cosineSimilarity } from 'omai-engine/metrics'
  * Math.abs(cosineSimilarity([1, 0], [1, 1]).estimate.value - Math.SQRT1_2) < 1e-15 // => true
  * ```
  */
@@ -66,7 +66,7 @@ export const cosineSimilarity: MetricFunction<[TensorLike, TensorLike]> = define
     const b = shapedArray(v)
     const d = a.shape[a.shape.length - 1] ?? 1
     const rows = a.data.length / d
-    if (b.data.length !== a.data.length) throw new MdmlError('shape', 'cosineSimilarity: inputs differ in shape')
+    if (b.data.length !== a.data.length) throw new OmaiError('shape', 'cosineSimilarity: inputs differ in shape')
     let total = 0
     for (let r = 0; r < rows; r++) {
       let dot = 0
@@ -95,7 +95,7 @@ export const cosineSimilarity: MetricFunction<[TensorLike, TensorLike]> = define
  * @returns The metric result.
  * @example
  * ```ts
- * import { mahalanobisDistance } from 'mdml-engine/metrics'
+ * import { mahalanobisDistance } from 'omai-engine/metrics'
  * mahalanobisDistance([0, 0], [2, 0], [[0.25, 0], [0, 1]]).estimate.value // => 1
  * ```
  */
@@ -116,7 +116,7 @@ export const mahalanobisDistance: MetricFunction<[TensorLike, TensorLike, Tensor
  * @returns The metric result, in [0, 1].
  * @example
  * ```ts
- * import { procrustesDisparity } from 'mdml-engine/metrics'
+ * import { procrustesDisparity } from 'omai-engine/metrics'
  * procrustesDisparity([[0, 0], [1, 0], [0, 1]], [[0, 0], [2, 0], [0, 2]]).estimate.value < 1e-24 // => true
  * ```
  */
@@ -154,7 +154,7 @@ function nearest(a: TensorLike, b: TensorLike): { ab: number[]; ba: number[] } {
  * @returns The metric result.
  * @example
  * ```ts
- * import { hausdorffDistance } from 'mdml-engine/metrics'
+ * import { hausdorffDistance } from 'omai-engine/metrics'
  * hausdorffDistance([[0, 0], [1, 0]], [[0, 0], [4, 0]]).estimate.value // => 3
  * ```
  */
@@ -185,7 +185,7 @@ export const hausdorffDistance: MetricFunction<[TensorLike, TensorLike, { readon
  * @returns The metric result.
  * @example
  * ```ts
- * import { chamferDistance } from 'mdml-engine/metrics'
+ * import { chamferDistance } from 'omai-engine/metrics'
  * chamferDistance([[0, 0]], [[0, 2], [0, 0]]).estimate.value // => 2
  * ```
  */

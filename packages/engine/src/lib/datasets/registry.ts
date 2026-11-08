@@ -9,7 +9,7 @@
  * @index structure Registry machinery: entries, tags, queries, load and fetch.
  */
 
-import { find, MdmlError, matchesText, type Registry, register } from '../base/index.ts'
+import { find, matchesText, OmaiError, type Registry, register } from '../base/index.ts'
 import {
   asGenerated,
   type Dataset,
@@ -116,7 +116,7 @@ export interface GeneratorEntryTags extends Partial<Omit<DatasetTags, 'kind' | '
  * @concept datasets
  * @example
  * ```ts
- * import { generatorEntry, moons } from 'mdml-engine/datasets'
+ * import { generatorEntry, moons } from 'omai-engine/datasets'
  * generatorEntry(moons, { title: 'Two moons', modality: 'tabular' }).kind // => 'classification'
  * ```
  */
@@ -161,7 +161,7 @@ function isGenerated(value: Dataset | Generated): value is Generated {
  * @concept datasets
  * @example
  * ```ts
- * import { iris, vendoredEntry } from 'mdml-engine/datasets'
+ * import { iris, vendoredEntry } from 'omai-engine/datasets'
  * const entry = vendoredEntry('iris', iris, {
  *   title: 'Iris', description: 'Fisher’s irises.', kind: 'classification', modality: 'tabular', size: 150,
  * })
@@ -198,7 +198,7 @@ export interface RemoteEntryTags extends Omit<DatasetTags, 'real'> {
  * @concept datasets
  * @example
  * ```ts
- * import { californiaHousing, remoteEntry } from 'mdml-engine/datasets'
+ * import { californiaHousing, remoteEntry } from 'omai-engine/datasets'
  * remoteEntry(californiaHousing, {
  *   title: 'California housing', description: 'Census block groups.', kind: 'regression', modality: 'tabular',
  * }).licence // => 'Public domain (US Census data)'
@@ -234,8 +234,8 @@ const oneOf = <T>(filter: T | readonly T[] | undefined, value: T): boolean =>
  * @concept datasets
  * @example
  * ```ts
- * import { lookup } from 'mdml-engine/base'
- * import { datasetRegistry, matchesDatasetQuery } from 'mdml-engine/datasets'
+ * import { lookup } from 'omai-engine/base'
+ * import { datasetRegistry, matchesDatasetQuery } from 'omai-engine/datasets'
  * const moons = lookup(datasetRegistry, 'moons')
  * matchesDatasetQuery(moons, { kind: ['classification', 'regression'], real: false }) // => true
  * matchesDatasetQuery(moons, { text: 'real' }) // => false
@@ -261,7 +261,7 @@ export function matchesDatasetQuery(entry: DatasetEntry, query: DatasetQuery): b
  * @index function Registry entries matching kind, modality, size or free text.
  * @example
  * ```ts
- * import { datasetRegistry, whereDatasets } from 'mdml-engine/datasets'
+ * import { datasetRegistry, whereDatasets } from 'omai-engine/datasets'
  * whereDatasets(datasetRegistry, { kind: 'image', real: true }).map((e) => e.name) // => ['digitImages', 'fashionMnistTest']
  * whereDatasets(datasetRegistry, { modality: 'tabular', text: 'penguins' }).length // => 2
  * ```
@@ -277,11 +277,11 @@ export function whereDatasets(reg: DatasetRegistry, query: DatasetQuery = {}): D
  * @param reg - The registry to extend (usually `datasetRegistry`).
  * @param entries - The entries to add.
  * @returns The extended registry.
- * @throws MdmlError with code `value` for a generator entry whose kind is not its generator's, or a name added twice.
+ * @throws OmaiError with code `value` for a generator entry whose kind is not its generator's, or a name added twice.
  * @concept datasets
  * @example
  * ```ts
- * import { datasetRegistry, generatorEntry, moons, registerDatasets, whereDatasets } from 'mdml-engine/datasets'
+ * import { datasetRegistry, generatorEntry, moons, registerDatasets, whereDatasets } from 'omai-engine/datasets'
  * const mine = registerDatasets(datasetRegistry, [
  *   generatorEntry(moons, { name: 'noisyMoons', title: 'Noisy moons', modality: 'tabular', knobs: { noise: 0.4 } }),
  * ])
@@ -292,7 +292,7 @@ export function whereDatasets(reg: DatasetRegistry, query: DatasetQuery = {}): D
 export function registerDatasets(reg: DatasetRegistry, entries: readonly DatasetEntry[]): DatasetRegistry {
   for (const e of entries) {
     if (e.form === 'generator' && e.kind !== e.generator.kind) {
-      throw new MdmlError(
+      throw new OmaiError(
         'value',
         `registerDatasets: '${e.name}' is tagged ${e.kind} but its generator makes ${e.generator.kind}`,
       )
@@ -310,7 +310,7 @@ export function registerDatasets(reg: DatasetRegistry, entries: readonly Dataset
  * @concept datasets
  * @example
  * ```ts
- * import { datasetRegistry, findDataset } from 'mdml-engine/datasets'
+ * import { datasetRegistry, findDataset } from 'omai-engine/datasets'
  * findDataset(datasetRegistry, 'wine')?.title // => 'Wine'
  * ```
  */
@@ -328,15 +328,15 @@ export function findDataset(reg: DatasetRegistry, name: string): DatasetEntry | 
  * @param entry - The entry.
  * @param options - Knobs, key or context for a generator.
  * @returns The data with its truth (empty for a vendored dataset without one).
- * @throws MdmlError with code `value` for a remote entry, or a knob outside the generator's space.
+ * @throws OmaiError with code `value` for a remote entry, or a knob outside the generator's space.
  * @concept datasets
  * @index function Make or load a registry entry's data synchronously.
  * @example
  * ```ts
- * import { lookup } from 'mdml-engine/base'
- * import { rowCount } from 'mdml-engine/data'
- * import { datasetRegistry, loadDataset } from 'mdml-engine/datasets'
- * import { key } from 'mdml-engine/random'
+ * import { lookup } from 'omai-engine/base'
+ * import { rowCount } from 'omai-engine/data'
+ * import { datasetRegistry, loadDataset } from 'omai-engine/datasets'
+ * import { key } from 'omai-engine/random'
  * rowCount(loadDataset(lookup(datasetRegistry, 'moons'), { key: key(0), knobs: { n: 10 } }).data) // => 10
  * loadDataset(lookup(datasetRegistry, 'iris')).data.kind // => 'classification'
  * loadDataset(lookup(datasetRegistry, 'californiaHousing')) // => throws value
@@ -349,7 +349,7 @@ export function loadDataset(entry: DatasetEntry, options: GenerateOptions = {}):
     case 'vendored':
       return entry.load()
     default:
-      throw new MdmlError('value', `loadDataset: '${entry.name}' is a remote dataset; use fetchDataset`)
+      throw new OmaiError('value', `loadDataset: '${entry.name}' is a remote dataset; use fetchDataset`)
   }
 }
 
@@ -360,12 +360,12 @@ export function loadDataset(entry: DatasetEntry, options: GenerateOptions = {}):
  * @param entry - The entry.
  * @param options - Knobs, key or context for a generator; cache and fetch for a remote asset.
  * @returns The data with its truth (empty for real data).
- * @throws MdmlError with code `value` when a download fails or its checksum differs.
+ * @throws OmaiError with code `value` when a download fails or its checksum differs.
  * @concept datasets
  * @example
  * ```ts
- * import { lookup } from 'mdml-engine/base'
- * import { datasetRegistry, fetchDataset } from 'mdml-engine/datasets'
+ * import { lookup } from 'omai-engine/base'
+ * import { datasetRegistry, fetchDataset } from 'omai-engine/datasets'
  * (await fetchDataset(lookup(datasetRegistry, 'wine'))).data.kind // => 'classification'
  * ```
  */

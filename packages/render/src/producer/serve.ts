@@ -7,8 +7,8 @@
  * injected, so it runs under a test double as well as in a real worker.
  */
 
-import { MdmlError } from 'mdml-engine/base'
-import type { Run, RunStatus, Session, TraceEvent } from 'mdml-engine/trace'
+import { OmaiError } from 'omai-engine/base'
+import type { Run, RunStatus, Session, TraceEvent } from 'omai-engine/trace'
 import { makeSessions } from './make.ts'
 import {
   type IdleReason,
@@ -209,7 +209,7 @@ export function serveProducer(
       const t0 = clock()
       const session = h.sessions[r.variant]
       try {
-        if (session === undefined) throw new MdmlError('value', `no variant ${r.variant}`)
+        if (session === undefined) throw new OmaiError('value', `no variant ${r.variant}`)
         const value = session.probe(r.t, r.path, r.args)
         send(h, (seq) => ({ type: 'probed', id: h.id, seq, req: r.req, ok: true, value }))
       } catch (e) {
@@ -344,7 +344,7 @@ export function serveProducer(
       hosted.delete(req.id)
       return
     }
-    if (h === undefined) throw new MdmlError('value', `no producer '${req.id}' (it was disposed, or never made)`)
+    if (h === undefined) throw new OmaiError('value', `no producer '${req.id}' (it was disposed, or never made)`)
     switch (req.type) {
       case 'run':
         if (h.failed) return

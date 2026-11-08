@@ -1,5 +1,5 @@
-import { neighbourRecord } from 'mdml-engine/exposition'
-import { ControlPanel, ExpositionView, NumberField, SeedInput } from 'mdml-render/react'
+import { neighbourRecord } from 'omai-engine/exposition'
+import { ControlPanel, ExpositionView, NumberField, SeedInput } from 'omai-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 import { blobs } from '../../toys/synthetic.ts'

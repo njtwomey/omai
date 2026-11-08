@@ -5,7 +5,7 @@
  * scipy.sparse.csgraph.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { eigh } from '../numerics/linalg/index.ts'
 import { type CsrMatrix, csr, primalValues } from '../numerics/sparse/index.ts'
 import {
@@ -45,8 +45,8 @@ export type GraphOrMatrix = Graph | TensorLike
  * @concept graph-matrices
  * @example
  * ```ts
- * import { adjacencyMatrix, graph } from 'mdml-engine/graph'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { adjacencyMatrix, graph } from 'omai-engine/graph'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(adjacencyMatrix(graph([[0, 1, 2], [1, 2]]))) // => [[0, 2, 0], [2, 0, 1], [0, 1, 0]]
  * ```
  */
@@ -72,8 +72,8 @@ export function adjacencyMatrix(g: Graph, options: { readonly weighted?: boolean
  * @concept graph-matrices
  * @example
  * ```ts
- * import { adjacencyCsr, pathGraph } from 'mdml-engine/graph'
- * import { nnz } from 'mdml-engine/numerics/sparse'
+ * import { adjacencyCsr, pathGraph } from 'omai-engine/graph'
+ * import { nnz } from 'omai-engine/numerics/sparse'
  * nnz(adjacencyCsr(pathGraph(4))) // => 6
  * ```
  */
@@ -96,11 +96,11 @@ export function adjacencyCsr(g: Graph, options: { readonly weighted?: boolean } 
  * @param a - A dense `[n, n]` matrix or a CSR matrix.
  * @param options - `directed` (default false) and node labels.
  * @returns The graph.
- * @throws MdmlError with code `shape` when the matrix is not square.
+ * @throws OmaiError with code `shape` when the matrix is not square.
  * @concept graph-matrices
  * @example
  * ```ts
- * import { fromAdjacency } from 'mdml-engine/graph'
+ * import { fromAdjacency } from 'omai-engine/graph'
  * fromAdjacency([[0, 2], [2, 0]]).edges // => [{ source: 0, target: 1, weight: 2 }]
  * fromAdjacency([[0, 1], [0, 0]], { directed: true }).edges.length // => 1
  * ```
@@ -115,14 +115,14 @@ export function fromAdjacency(
   if (typeof a === 'object' && a !== null && 'indptr' in a) {
     const m = a as CsrMatrix
     n = m.shape[0]
-    if (m.shape[1] !== n) throw new MdmlError('shape', 'fromAdjacency: the matrix must be square')
+    if (m.shape[1] !== n) throw new OmaiError('shape', 'fromAdjacency: the matrix must be square')
     const v = primalValues(m)
     entries = Array.from(m.indices, (j, k): [number, number, number] => [m.rows[k] ?? 0, j, v[k] ?? 0])
   } else {
     const t = concreteOrThrow(promoteFloat(a as TensorLike)[0] as Tensor, 'fromAdjacency')
     n = t.shape[0] ?? 0
     if (t.shape.length !== 2 || t.shape[1] !== n) {
-      throw new MdmlError('shape', 'fromAdjacency: the matrix must be square')
+      throw new OmaiError('shape', 'fromAdjacency: the matrix must be square')
     }
     entries = []
     for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) entries.push([i, j, t.data[i * n + j] ?? 0])
@@ -150,8 +150,8 @@ export function fromAdjacency(
  * @concept graph-matrices
  * @example
  * ```ts
- * import { incidenceMatrix, pathGraph } from 'mdml-engine/graph'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { incidenceMatrix, pathGraph } from 'omai-engine/graph'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(incidenceMatrix(pathGraph(3), { oriented: true })) // => [[-1, 0], [1, -1], [0, 1]]
  * ```
  */
@@ -177,7 +177,7 @@ function dense(a: GraphOrMatrix, weighted = true): Value {
   const [v] = promoteFloat(a) as [Value]
   const n = v.shape[v.shape.length - 1]
   if (v.shape.length < 2 || v.shape[v.shape.length - 2] !== n) {
-    throw new MdmlError('shape', 'graph matrices need a square adjacency matrix [..., n, n]')
+    throw new OmaiError('shape', 'graph matrices need a square adjacency matrix [..., n, n]')
   }
   return v
 }
@@ -202,8 +202,8 @@ function safeInverse(d: Value, root: boolean): Value {
  * @concept graph-matrices
  * @example
  * ```ts
- * import { degreeMatrix, pathGraph } from 'mdml-engine/graph'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { degreeMatrix, pathGraph } from 'omai-engine/graph'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(degreeMatrix(pathGraph(3))) // => [[1, 0, 0], [0, 2, 0], [0, 0, 1]]
  * ```
  */
@@ -223,8 +223,8 @@ export function degreeMatrix(a: GraphOrMatrix, options: { readonly weighted?: bo
  * @concept graph-laplacian
  * @example
  * ```ts
- * import { laplacian, pathGraph } from 'mdml-engine/graph'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { laplacian, pathGraph } from 'omai-engine/graph'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(laplacian(pathGraph(3))) // => [[1, -1, 0], [-1, 2, -1], [0, -1, 1]]
  * ```
  */
@@ -244,8 +244,8 @@ export function laplacian(a: GraphOrMatrix, options: { readonly weighted?: boole
  * @concept graph-laplacian
  * @example
  * ```ts
- * import { completeGraph, normalisedLaplacian } from 'mdml-engine/graph'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { completeGraph, normalisedLaplacian } from 'omai-engine/graph'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(normalisedLaplacian(completeGraph(2))) // => [[1, -1], [-1, 1]]
  * ```
  */
@@ -266,8 +266,8 @@ export function normalisedLaplacian(a: GraphOrMatrix, options: { readonly weight
  * @concept graph-laplacian
  * @example
  * ```ts
- * import { pathGraph, randomWalkLaplacian } from 'mdml-engine/graph'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { pathGraph, randomWalkLaplacian } from 'omai-engine/graph'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(randomWalkLaplacian(pathGraph(3)))[1] // => [-0.5, 1, -0.5]
  * ```
  */
@@ -287,8 +287,8 @@ export function randomWalkLaplacian(a: GraphOrMatrix, options: { readonly weight
  * @concept random-walks
  * @example
  * ```ts
- * import { pathGraph, transitionMatrix } from 'mdml-engine/graph'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { pathGraph, transitionMatrix } from 'omai-engine/graph'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(transitionMatrix(pathGraph(3))) // => [[0, 1, 0], [0.5, 0, 0.5], [0, 1, 0]]
  * toArray(transitionMatrix(pathGraph(2), { laziness: 0.5 })) // => [[0.5, 0.5], [0.5, 0.5]]
  * ```
@@ -314,7 +314,7 @@ export function transitionMatrix(
         : fromStorage(new Float64Array(n * n), [n, n], 'float64')
   const p = where(positive, div(adj, where(positive, d, 1)), fallback)
   const lazy = options.laziness ?? 0
-  if (!(lazy >= 0 && lazy <= 1)) throw new MdmlError('value', 'transitionMatrix: laziness must be in [0, 1]')
+  if (!(lazy >= 0 && lazy <= 1)) throw new OmaiError('value', 'transitionMatrix: laziness must be in [0, 1]')
   return lazy === 0 ? p : add(mul(eye(n), lazy), mul(p, 1 - lazy))
 }
 
@@ -328,8 +328,8 @@ export function transitionMatrix(
  * @concept modularity
  * @example
  * ```ts
- * import { completeGraph, modularityMatrix } from 'mdml-engine/graph'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { completeGraph, modularityMatrix } from 'omai-engine/graph'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(modularityMatrix(completeGraph(2))) // => [[-0.5, 0.5], [0.5, -0.5]]
  * ```
  */
@@ -352,8 +352,8 @@ export function modularityMatrix(a: GraphOrMatrix, options: { readonly weighted?
  * @reference T. N. Kipf and M. Welling, Semi-supervised classification with graph convolutional networks (ICLR 2017).
  * @example
  * ```ts
- * import { normalisedAdjacency, pathGraph } from 'mdml-engine/graph'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { normalisedAdjacency, pathGraph } from 'omai-engine/graph'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(normalisedAdjacency(pathGraph(2), { kind: 'rw' })) // => [[0.5, 0.5], [0.5, 0.5]]
  * (toArray(normalisedAdjacency(pathGraph(2))) as number[][])[0]?.map((v) => Math.round(v * 1e12) / 1e12) // => [0.5, 0.5]
  * toArray(normalisedAdjacency(pathGraph(3), { kind: 'rw', selfLoops: false }))[1] // => [0.5, 0, 0.5]
@@ -385,7 +385,7 @@ export function normalisedAdjacency(
  * @reference V. P. Dwivedi et al., Benchmarking graph neural networks (2020).
  * @example
  * ```ts
- * import { cycleGraph, laplacianPositionalEncoding } from 'mdml-engine/graph'
+ * import { cycleGraph, laplacianPositionalEncoding } from 'omai-engine/graph'
  * laplacianPositionalEncoding(cycleGraph(6), 2).shape // => [6, 2]
  * ```
  */
@@ -397,7 +397,7 @@ export function laplacianPositionalEncoding(
   const l = normalisedLaplacian(a, options)
   const n = sizeOf(l)
   if (!(Number.isInteger(k) && k >= 1 && k < n)) {
-    throw new MdmlError('value', `laplacianPositionalEncoding: k must be in [1, ${n - 1}]`)
+    throw new OmaiError('value', `laplacianPositionalEncoding: k must be in [1, ${n - 1}]`)
   }
   return sliceAxis(eigh(l).eigenvectors, -1, 1, k + 1)
 }
@@ -416,8 +416,8 @@ export function laplacianPositionalEncoding(
  *   (ICLR 2022).
  * @example
  * ```ts
- * import { cycleGraph, randomWalkPositionalEncoding } from 'mdml-engine/graph'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { cycleGraph, randomWalkPositionalEncoding } from 'omai-engine/graph'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(randomWalkPositionalEncoding(cycleGraph(4), 2))[0] // => [0, 0.5]
  * ```
  */
@@ -426,7 +426,7 @@ export function randomWalkPositionalEncoding(
   k: number,
   options: { readonly weighted?: boolean } = {},
 ): Value {
-  if (!(Number.isInteger(k) && k >= 1)) throw new MdmlError('value', 'randomWalkPositionalEncoding: k must be >= 1')
+  if (!(Number.isInteger(k) && k >= 1)) throw new OmaiError('value', 'randomWalkPositionalEncoding: k must be >= 1')
   const p = transitionMatrix(a, { dangling: 'zero', ...options })
   const columns: Value[] = []
   let power = p
@@ -439,7 +439,7 @@ export function randomWalkPositionalEncoding(
 
 /**
  * The sparse combinatorial or symmetric normalised Laplacian in CSR form, for spectral methods on large graphs (with
- * the Lanczos solver of `mdml-engine/numerics/sparse`).
+ * the Lanczos solver of `omai-engine/numerics/sparse`).
  *
  * @param g - The graph.
  * @param options - `normalised` (default false) and `weighted` (default true).
@@ -447,9 +447,9 @@ export function randomWalkPositionalEncoding(
  * @concept graph-laplacian
  * @example
  * ```ts
- * import { laplacianCsr, pathGraph } from 'mdml-engine/graph'
- * import { toDense } from 'mdml-engine/numerics/sparse'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { laplacianCsr, pathGraph } from 'omai-engine/graph'
+ * import { toDense } from 'omai-engine/numerics/sparse'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(toDense(laplacianCsr(pathGraph(2)))) // => [[1, -1], [-1, 1]]
  * ```
  */

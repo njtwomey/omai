@@ -5,7 +5,7 @@
  * forecasts with prediction intervals on the original scale. A fitted model is plain JSON, so it serialises.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { ndtri } from '../numerics/special/index.ts'
 import type { BfgsState } from '../optim/index.ts'
 import { yuleWalker } from '../signal/index.ts'
@@ -214,7 +214,7 @@ export interface ArimaProblem {
  * @returns The algorithm and the map from its state to the fit.
  * @example
  * ```ts
- * import { arimaFitAlgorithm } from 'mdml-engine/timeseries'
+ * import { arimaFitAlgorithm } from 'omai-engine/timeseries'
  * const y = [0.3, 0.9, 0.4, -0.2, 0.5, 1.1, 0.6, -0.1, 0.2, 0.8, 0.5, -0.3]
  * arimaFitAlgorithm(y, { order: [1, 0, 0] }).algorithm.name // => 'arima-mle'
  * ```
@@ -253,7 +253,7 @@ export function arimaFitAlgorithm(y: ArrayLike<number>, spec: ArimaSpec, options
  * @index function Fit ARIMA or seasonal ARIMA by exact Gaussian likelihood.
  * @example
  * ```ts
- * import { arimaFit } from 'mdml-engine/timeseries'
+ * import { arimaFit } from 'omai-engine/timeseries'
  * const y = [0.3, 0.9, 0.4, -0.2, 0.5, 1.1, 0.6, -0.1, 0.2, 0.8, 0.5, -0.3, 0.1, 0.7, 0.4, 0.0]
  * arimaFit(y, { order: [1, 0, 0], trend: 'n' }).ar.length // => 1
  * ```
@@ -279,7 +279,7 @@ export function arimaFit(y: ArrayLike<number>, spec: ArimaSpec, options: ArimaOp
  * @returns The innovations, `d + D s` fewer than the series, and their variances relative to `sigma2`.
  * @example
  * ```ts
- * import { arimaFit, arimaResiduals } from 'mdml-engine/timeseries'
+ * import { arimaFit, arimaResiduals } from 'omai-engine/timeseries'
  * const y = [0.3, 0.9, 0.4, -0.2, 0.5, 1.1, 0.6, -0.1, 0.2, 0.8, 0.5, -0.3, 0.1, 0.7, 0.4, 0.0]
  * arimaResiduals(arimaFit(y, { order: [1, 0, 0] }), y).innovations.length // => 16
  * ```
@@ -330,7 +330,7 @@ export interface ArimaForecastOptions {
  * @returns Means, standard errors and intervals.
  * @example
  * ```ts
- * import { arimaForecast } from 'mdml-engine/timeseries'
+ * import { arimaForecast } from 'omai-engine/timeseries'
  * const fit = { order: [0, 1, 0], seasonalOrder: [0, 0, 0], period: 1, trend: 'n', regressionNames: [], regression: [],
  *   ar: [], ma: [], seasonalAr: [], seasonalMa: [], sigma2: 4, logLikelihood: 0, aic: 0, bic: 0, nobs: 3, stdErrors: [],
  *   method: 'mle', converged: true, iterations: 0 } as const
@@ -345,13 +345,13 @@ export function arimaForecast(
   steps: number,
   options: ArimaForecastOptions = {},
 ): ArimaForecast {
-  if (!(Number.isInteger(steps) && steps >= 1)) throw new MdmlError('value', 'arimaForecast: steps must be at least 1')
+  if (!(Number.isInteger(steps) && steps >= 1)) throw new OmaiError('value', 'arimaForecast: steps must be at least 1')
   const n = y.length
   const all = options.exog
   const nTrend = fit.trend === 'ct' ? 2 : fit.trend === 'n' ? 0 : 1
   const kExog = fit.regression.length - nTrend
   if (kExog > 0 && (all === undefined || all.length !== n + steps || (all[0]?.length ?? 0) !== kExog))
-    throw new MdmlError('shape', `arimaForecast: exog needs ${n + steps} rows of ${kExog} columns (history and future)`)
+    throw new OmaiError('shape', `arimaForecast: exog needs ${n + steps} rows of ${kExog} columns (history and future)`)
   const rs = resolveSpec(specOf(fit, all))
   const nat = naturalOf(fit)
   const columns = regressionColumns(n + steps, rs, all)
@@ -360,7 +360,7 @@ export function arimaForecast(
   const poly = differencingOf(rs)
   const kd = poly.length - 1
   const z = u.length > kd ? differenceFrom(u, rs) : new Float64Array(0)
-  if (z.length === 0) throw new MdmlError('value', 'arimaForecast: the series is too short')
+  if (z.length === 0) throw new OmaiError('value', 'arimaForecast: the series is too short')
   const { ar, ma } = expandPolynomials(nat.ar, nat.ma, nat.sar, nat.sma, rs.s)
   const form = armaForm(ar, ma)
   const f = filterForm(z, form)

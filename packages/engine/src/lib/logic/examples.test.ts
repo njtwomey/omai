@@ -8,10 +8,10 @@ import * as ilp from './ilp/index.ts'
 import * as logic from './index.ts'
 
 const MODULES: Readonly<Record<string, Readonly<Record<string, unknown>>>> = {
-  'mdml-engine/logic': logic,
-  'mdml-engine/logic/ilp': ilp,
-  'mdml-engine/random': random,
-  'mdml-engine/trace': trace,
+  'omai-engine/logic': logic,
+  'omai-engine/logic/ilp': ilp,
+  'omai-engine/random': random,
+  'omai-engine/trace': trace,
 }
 
 interface Example {

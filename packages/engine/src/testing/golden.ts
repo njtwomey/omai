@@ -1,4 +1,4 @@
-// Loading golden fixtures written by the Python oracle (oracle/mdml_oracle/fixture.py). Node only; not published.
+// Loading golden fixtures written by the Python oracle (oracle/omai_oracle/fixture.py). Node only; not published.
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { z } from 'zod'
@@ -34,14 +34,14 @@ export interface GoldenCase {
 
 /** A fixture file. */
 export interface Fixture {
-  readonly schema: 'mdml.fixture/1'
+  readonly schema: 'omai.fixture/1'
   readonly source: string
   readonly reference: Readonly<Record<string, string>>
   readonly cases: readonly GoldenCase[]
 }
 
 const FixtureSchema: z.ZodType<Fixture> = z.object({
-  schema: z.literal('mdml.fixture/1'),
+  schema: z.literal('omai.fixture/1'),
   source: z.string(),
   reference: z.record(z.string(), z.string()),
   cases: z.array(

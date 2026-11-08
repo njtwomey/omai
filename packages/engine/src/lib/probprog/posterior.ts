@@ -4,7 +4,7 @@
  * density and evidence where available, diagnostics and a summary table. Constructors for each form.
  */
 
-import { type Estimate, type Json, MdmlError, quantileOf } from '../base/index.ts'
+import { type Estimate, type Json, OmaiError, quantileOf } from '../base/index.ts'
 import { compose, type Distribution } from '../dists/index.ts'
 import { weightedPercentile } from '../metrics/index.ts'
 import { choice, foldIn, type Key, key as makeKey } from '../random/index.ts'
@@ -161,12 +161,12 @@ function quantileOfCol(col: Float64Array, q: number, w?: Float64Array): number {
  *
  * @param spec - The parts.
  * @returns The posterior.
- * @throws MdmlError with code `value` for an unknown site, or when nothing can produce draws.
+ * @throws OmaiError with code `value` for an unknown site, or when nothing can produce draws.
  * @concept posterior-distributions
  * @example
  * ```ts
- * import { definePosterior } from 'mdml-engine/probprog'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { definePosterior } from 'omai-engine/probprog'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * const post = definePosterior({ form: 'samples', engine: 'test', sites: ['x'], draws: { x: tensor([1, 2, 3, 6]) } })
  * toArray(post.mean('x')) // => 3
  * post.summary()[0]?.median // => 2.5
@@ -177,7 +177,7 @@ export function definePosterior(spec: PosteriorSpec): Posterior {
   let cache: Record<string, Tensor> | undefined
   const known = new Set(spec.sites)
   const check = (site: string): void => {
-    if (!known.has(site)) throw new MdmlError('value', `posterior: no site ${site}`, { site })
+    if (!known.has(site)) throw new OmaiError('value', `posterior: no site ${site}`, { site })
   }
   const sample = (key: Key, n: number): Record<string, Tensor> => {
     if (spec.sampler !== undefined) return spec.sampler(key, n)
@@ -185,7 +185,7 @@ export function definePosterior(spec: PosteriorSpec): Posterior {
     if (draws !== undefined) {
       const first = Object.values(draws)[0]
       const m = first?.shape[0] ?? 0
-      if (m === 0) throw new MdmlError('value', 'posterior: no draws to resample')
+      if (m === 0) throw new OmaiError('value', 'posterior: no draws to resample')
       const idx = choice(key, m, n, weights === undefined ? {} : { weights: Array.from(weights) })
       return Object.fromEntries(Object.entries(draws).map(([k, v]) => [k, primalOf(take(v, idx, 0))]))
     }
@@ -195,7 +195,7 @@ export function definePosterior(spec: PosteriorSpec): Posterior {
         Object.entries(marginals).map(([k, d], i) => [k, primalOf(d.sample(foldIn(key, i), [n]))]),
       )
     }
-    throw new MdmlError('value', 'posterior: nothing to draw from')
+    throw new OmaiError('value', 'posterior: nothing to draw from')
   }
   const monteCarlo = (): Record<string, Tensor> => {
     if (cache === undefined) cache = sample(makeKey(0x5eed), spec.monteCarloDraws ?? 4000)
@@ -205,7 +205,7 @@ export function definePosterior(spec: PosteriorSpec): Posterior {
     const d = spec.draws?.[site]
     if (d !== undefined) return weights === undefined ? { x: d } : { x: d, w: weights }
     const mc = monteCarlo()[site]
-    if (mc === undefined) throw new MdmlError('value', `posterior: no draws of ${site}`)
+    if (mc === undefined) throw new OmaiError('value', `posterior: no draws of ${site}`)
     return { x: mc }
   }
   const closed = (site: string): Distribution | undefined => spec.marginals?.[site]
@@ -325,8 +325,8 @@ export function definePosterior(spec: PosteriorSpec): Posterior {
  * @concept posterior-distributions
  * @example
  * ```ts
- * import { samplePosterior } from 'mdml-engine/probprog'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { samplePosterior } from 'omai-engine/probprog'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * toArray(samplePosterior({ x: tensor([[0, 1], [2, 3]]) }, { engine: 'test' }).mean('x')) // => [1, 2]
  * ```
  */
@@ -347,8 +347,8 @@ export function samplePosterior(
  * @concept posterior-distributions
  * @example
  * ```ts
- * import { weightedPosterior } from 'mdml-engine/probprog'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { weightedPosterior } from 'omai-engine/probprog'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * toArray(weightedPosterior({ x: tensor([0, 10]) }, [0, Math.log(3)], { engine: 'test' }).mean('x')) // => 7.5
  * ```
  */
@@ -375,8 +375,8 @@ export function weightedPosterior(
  * @concept posterior-distributions
  * @example
  * ```ts
- * import { pointPosterior } from 'mdml-engine/probprog'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { pointPosterior } from 'omai-engine/probprog'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(pointPosterior({ mu: 1.5 }, { engine: 'map' }).mean('mu')) // => 1.5
  * ```
  */

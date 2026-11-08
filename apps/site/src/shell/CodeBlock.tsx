@@ -1,4 +1,4 @@
-import { CheckIcon, CopyIcon } from 'mdml-render/react'
+import { CheckIcon, CopyIcon } from 'omai-render/react'
 import { type ReactNode, useState } from 'react'
 import { highlight } from './highlight.ts'
 

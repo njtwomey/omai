@@ -5,8 +5,8 @@ bin per value, and a coarser case checks the percentile binning."""
 
 import numpy as np
 import sklearn
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray, rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray, rng
 from sklearn.ensemble import HistGradientBoostingClassifier, HistGradientBoostingRegressor
 
 REFERENCE: dict[str, str] = {"scikit-learn": sklearn.__version__}

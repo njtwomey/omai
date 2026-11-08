@@ -59,7 +59,7 @@ const rate = (label: string, def: number): ReturnType<typeof real> =>
  * @concept poisson-process
  * @example
  * ```ts
- * import { pointProcesses } from 'mdml-engine/stochastic'
+ * import { pointProcesses } from 'omai-engine/stochastic'
  * pointProcesses.names // => ['poisson', 'sinusoidal', 'renewal-gamma', 'renewal-weibull', 'hawkes']
  * ```
  */
@@ -127,11 +127,11 @@ export const pointProcesses: OptionTable<PointProcessSimulator, PointProcessProp
  * @param config - The option and its knobs, such as `{ kind: 'hawkes', alpha: 0.8 }`.
  * @param horizon - T.
  * @returns The algorithm; one step is one candidate event, and the seed is the run's.
- * @throws MdmlError with code `value` for a horizon that is not positive.
+ * @throws OmaiError with code `value` for a horizon that is not positive.
  * @concept poisson-process
  * @example
  * ```ts
- * import { pointProcess } from 'mdml-engine/stochastic'
+ * import { pointProcess } from 'omai-engine/stochastic'
  * pointProcess({ kind: 'hawkes' }, 10).name // => 'hawkes-ogata'
  * ```
  */

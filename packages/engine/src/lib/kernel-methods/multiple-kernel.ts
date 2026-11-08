@@ -8,7 +8,7 @@
  * as a `Kernel` object and its Gram matrix, ready for `kernelRidge`, the support vector machines or a Gaussian process.
  */
 
-import { MdmlError, maxOf } from '../base/index.ts'
+import { maxOf, OmaiError } from '../base/index.ts'
 import { type Kernel, scaleKernel, sumKernel } from '../kernels/index.ts'
 import { eigvalsh, inv, solve } from '../numerics/linalg/index.ts'
 import {
@@ -45,22 +45,22 @@ import {
 import { type Algorithm, type Contract, defineContract, runAlgorithm, tensor } from '../trace/index.ts'
 
 function gramsOf(grams: readonly TensorLike[], who: string): { flat: Float64Array[]; n: number } {
-  if (grams.length === 0) throw new MdmlError('value', `${who}: need at least one kernel matrix`)
+  if (grams.length === 0) throw new OmaiError('value', `${who}: need at least one kernel matrix`)
   const flat = grams.map((g) => {
     const t = primalOf(asTensor(g))
     if (t.shape.length !== 2 || t.shape[0] !== t.shape[1])
-      throw new MdmlError('shape', `${who}: expected square Gram matrices, got [${t.shape.join(', ')}]`)
+      throw new OmaiError('shape', `${who}: expected square Gram matrices, got [${t.shape.join(', ')}]`)
     return Float64Array.from(toFlat(t))
   })
   const n = Math.sqrt(flat[0]?.length ?? 0)
-  if (flat.some((g) => g.length !== n * n)) throw new MdmlError('shape', `${who}: the Gram matrices differ in size`)
+  if (flat.some((g) => g.length !== n * n)) throw new OmaiError('shape', `${who}: the Gram matrices differ in size`)
   return { flat, n }
 }
 
 function targets(y: TensorLike, n: number, who: string): Float64Array {
   const v = Float64Array.from(toFlat(primalOf(asTensor(y))))
   if (v.length !== n)
-    throw new MdmlError('shape', `${who}: y has ${v.length} entries but the Gram matrices have ${n} rows`)
+    throw new OmaiError('shape', `${who}: y has ${v.length} entries but the Gram matrices have ${n} rows`)
   return v
 }
 
@@ -125,13 +125,13 @@ export interface AlignmentWeights {
  * @param y - Targets `[n]` (labels in plus and minus one for classification).
  * @param options - The solver, whether to centre, the iteration budget.
  * @returns The weights and the alignments.
- * @throws MdmlError `value` for no kernels; `shape` for mismatched sizes.
+ * @throws OmaiError `value` for no kernels; `shape` for mismatched sizes.
  * @concept multiple-kernel-learning
  * @reference C. Cortes, M. Mohri and A. Rostamizadeh, Algorithms for learning kernels based on centered alignment
  *   (JMLR 13, 2012).
  * @example
  * ```ts
- * import { alignmentWeights } from 'mdml-engine/kernel-methods'
+ * import { alignmentWeights } from 'omai-engine/kernel-methods'
  * const informative = [[1, -1, -1, 1], [-1, 1, 1, -1], [-1, 1, 1, -1], [1, -1, -1, 1]]
  * const noise = [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]
  * alignmentWeights([informative, noise], [1, -1, -1, 1]).weights[0] > 0.9 // => true
@@ -220,12 +220,12 @@ export interface EasyMklResult {
  * @param y - Two-class labels `[n]` (any two values; the larger is positive).
  * @param options - `lambda` and the iteration budget.
  * @returns The weights and the example distribution.
- * @throws MdmlError `value` unless there are two classes.
+ * @throws OmaiError `value` unless there are two classes.
  * @concept multiple-kernel-learning
  * @reference F. Aiolli and M. Donini, EasyMKL: a scalable multiple kernel learning algorithm (Neurocomputing 169, 2015).
  * @example
  * ```ts
- * import { easyMkl } from 'mdml-engine/kernel-methods'
+ * import { easyMkl } from 'omai-engine/kernel-methods'
  * const informative = [[1, 1, -1, -1], [1, 1, -1, -1], [-1, -1, 1, 1], [-1, -1, 1, 1]]
  * const noise = [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]
  * easyMkl([informative, noise], [1, 1, -1, -1]).weights[0] > 0.5 // => true
@@ -235,7 +235,7 @@ export function easyMkl(grams: readonly TensorLike[], y: TensorLike, options: Ea
   const { flat, n } = gramsOf(grams, 'easyMkl')
   const t = targets(y, n, 'easyMkl')
   const values = Array.from(new Set(t)).sort((x, z) => x - z)
-  if (values.length !== 2) throw new MdmlError('value', `easyMkl: expected two classes, got ${values.length}`)
+  if (values.length !== 2) throw new OmaiError('value', `easyMkl: expected two classes, got ${values.length}`)
   const sign = Float64Array.from(t, (v) => (v === values[1] ? 1 : -1))
   const lambda = options.lambda ?? 0.1
   const normal = flat.map((g) => {
@@ -295,17 +295,17 @@ const softmaxOf = (u: ArrayLike<number>): number[] => {
  * @param y - Targets `[n]`.
  * @param lambda - The ridge `lambda > 0` (default 1).
  * @returns The problem over `u`, starting at uniform weights.
- * @throws MdmlError `value` for a non-positive ridge.
+ * @throws OmaiError `value` for a non-positive ridge.
  * @concept multiple-kernel-learning
  * @reference A. Rakotomamonjy, F. Bach, S. Canu and Y. Grandvalet, SimpleMKL (JMLR 9, 2008).
  * @example
  * ```ts
- * import { mklProblem } from 'mdml-engine/kernel-methods'
+ * import { mklProblem } from 'omai-engine/kernel-methods'
  * mklProblem([[[1, 0], [0, 1]], [[1, 1], [1, 1]]], [1, -1]).x0 // => [0, 0]
  * ```
  */
 export function mklProblem(grams: readonly TensorLike[], y: TensorLike, lambda = 1): SmoothProblem {
-  if (!(lambda > 0)) throw new MdmlError('value', `mklProblem: lambda must be positive, got ${lambda}`)
+  if (!(lambda > 0)) throw new OmaiError('value', `mklProblem: lambda must be positive, got ${lambda}`)
   const { flat, n } = gramsOf(grams, 'mklProblem')
   const t = targets(y, n, 'mklProblem')
   const stackK = stack(
@@ -348,8 +348,8 @@ export const mklContract: Contract<unknown, MklPath> = defineContract({
  * @concept multiple-kernel-learning
  * @example
  * ```ts
- * import { mklAlgorithm } from 'mdml-engine/kernel-methods'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { mklAlgorithm } from 'omai-engine/kernel-methods'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const alg = mklAlgorithm([[[1, 0], [0, 1]], [[1, 1], [1, 1]]], [1, -1])
  * runAlgorithm(alg, { maxSteps: 20 }).steps > 0 // => true
  * ```
@@ -406,8 +406,8 @@ export interface MultipleKernelFit {
  * @concept multiple-kernel-learning
  * @example
  * ```ts
- * import { fitMultipleKernel } from 'mdml-engine/kernel-methods'
- * import { linearKernel, rbfKernel } from 'mdml-engine/kernels'
+ * import { fitMultipleKernel } from 'omai-engine/kernel-methods'
+ * import { linearKernel, rbfKernel } from 'omai-engine/kernels'
  * const fit = fitMultipleKernel([linearKernel(), rbfKernel()], [[0], [1], [2], [3]], [1, 1, -1, -1])
  * fit.weights.length // => 2
  * ```
@@ -418,7 +418,7 @@ export function fitMultipleKernel(
   y: TensorLike,
   options: MultipleKernelOptions = {},
 ): MultipleKernelFit {
-  if (kernels.length === 0) throw new MdmlError('value', 'fitMultipleKernel: need at least one kernel')
+  if (kernels.length === 0) throw new OmaiError('value', 'fitMultipleKernel: need at least one kernel')
   const method = options.method ?? 'alignment'
   const grams = kernels.map((k) => primalOf(k.k(x)) as Tensor)
   let weights: number[]

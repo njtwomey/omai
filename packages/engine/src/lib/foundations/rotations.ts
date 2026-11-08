@@ -5,7 +5,7 @@
  * scipy's Rotation where they overlap.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { type Rotation, rotationFromMatrix, rotationFromQuat, rotationFromRotvec } from '../numerics/geometry/index.ts'
 import { det, eigh } from '../numerics/linalg/index.ts'
 import {
@@ -55,8 +55,8 @@ const rows3 = (r: readonly (readonly Value[])[]): Value =>
  * @concept rotation-matrix
  * @example
  * ```ts
- * import { rotation2d } from 'mdml-engine/foundations'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { rotation2d } from 'omai-engine/foundations'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(rotation2d(0)) // => [[1, 0], [0, 1]]
  * ```
  */
@@ -80,8 +80,8 @@ export function rotation2d(theta: TensorLike): Value {
  * @concept rotation-matrix
  * @example
  * ```ts
- * import { rotate2d } from 'mdml-engine/foundations'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { rotate2d } from 'omai-engine/foundations'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(rotate2d([2, 1], Math.PI, [1, 1])).map((v) => Math.round(v * 1e12) / 1e12) // => [0, 1]
  * ```
  */
@@ -102,8 +102,8 @@ export type Axis = 'x' | 'y' | 'z'
  * @concept rotation-matrix
  * @example
  * ```ts
- * import { elementaryRotation } from 'mdml-engine/foundations'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { elementaryRotation } from 'omai-engine/foundations'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(elementaryRotation('z', Math.PI / 2)).map((r) => r.map(Math.round)) // => [[0, -1, 0], [1, 0, 0], [0, 0, 1]]
  * ```
  */
@@ -144,8 +144,8 @@ export function elementaryRotation(axis: Axis, angle: TensorLike): Value {
  * @concept axis-angle
  * @example
  * ```ts
- * import { axisAngleToMatrix } from 'mdml-engine/foundations'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { axisAngleToMatrix } from 'omai-engine/foundations'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(axisAngleToMatrix([0, 0, 2], Math.PI)).map((r) => r.map(Math.round)) // => [[-1, 0, 0], [0, -1, 0], [0, 0, 1]]
  * ```
  */
@@ -174,8 +174,8 @@ export function axisAngleToMatrix(axis: TensorLike, angle: TensorLike): Value {
  * @concept axis-angle
  * @example
  * ```ts
- * import { rotateAboutAxis } from 'mdml-engine/foundations'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { rotateAboutAxis } from 'omai-engine/foundations'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(rotateAboutAxis([1, 0, 0], [0, 0, 1], Math.PI / 2)).map(Math.round) // => [0, 1, 0]
  * ```
  */
@@ -195,7 +195,7 @@ export function rotateAboutAxis(v: TensorLike, axis: TensorLike, angle: TensorLi
  * @concept axis-angle
  * @example
  * ```ts
- * import { elementaryRotation, matrixToAxisAngle } from 'mdml-engine/foundations'
+ * import { elementaryRotation, matrixToAxisAngle } from 'omai-engine/foundations'
  * matrixToAxisAngle(elementaryRotation('y', 0.5)).angle // => 0.5
  * ```
  */
@@ -219,7 +219,7 @@ export interface EulerSequence {
  * @concept euler-angles
  * @example
  * ```ts
- * import { eulerSequences } from 'mdml-engine/foundations'
+ * import { eulerSequences } from 'omai-engine/foundations'
  * eulerSequences.length // => 24
  * eulerSequences.filter((s) => s.kind === 'proper' && s.extrinsic).map((s) => s.seq) // => ['xyx', 'xzx', 'yxy', 'yzy', 'zxz', 'zyz']
  * ```
@@ -242,9 +242,9 @@ export const eulerSequences: readonly EulerSequence[] = (() => {
 })()
 
 function parseSequence(seq: string): { axes: Axis[]; extrinsic: boolean } {
-  if (!/^([xyz]{3}|[XYZ]{3})$/.test(seq)) throw new MdmlError('value', `bad Euler sequence ${seq}`)
+  if (!/^([xyz]{3}|[XYZ]{3})$/.test(seq)) throw new OmaiError('value', `bad Euler sequence ${seq}`)
   const axes = [...seq.toLowerCase()] as Axis[]
-  if (axes[0] === axes[1] || axes[1] === axes[2]) throw new MdmlError('value', 'consecutive Euler axes must differ')
+  if (axes[0] === axes[1] || axes[1] === axes[2]) throw new OmaiError('value', 'consecutive Euler axes must differ')
   return { axes, extrinsic: seq === seq.toLowerCase() }
 }
 
@@ -256,12 +256,12 @@ function parseSequence(seq: string): { axes: Axis[]; extrinsic: boolean } {
  * @param seq - The sequence, such as 'xyz', 'ZYX' or 'zxz'.
  * @param angles - Angles `[..., 3]` in radians.
  * @returns Matrices `[..., 3, 3]`.
- * @throws MdmlError with code `value` for a malformed sequence.
+ * @throws OmaiError with code `value` for a malformed sequence.
  * @concept euler-angles
  * @example
  * ```ts
- * import { eulerToMatrix } from 'mdml-engine/foundations'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { eulerToMatrix } from 'omai-engine/foundations'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(eulerToMatrix('ZYX', [Math.PI / 2, 0, 0])).map((r) => r.map(Math.round)) // => [[0, -1, 0], [1, 0, 0], [0, 0, 1]]
  * ```
  */
@@ -283,7 +283,7 @@ export function eulerToMatrix(seq: string, angles: TensorLike): Value {
  * @concept euler-angles
  * @example
  * ```ts
- * import { eulerToMatrix, matrixToEuler } from 'mdml-engine/foundations'
+ * import { eulerToMatrix, matrixToEuler } from 'omai-engine/foundations'
  * matrixToEuler('xyz', eulerToMatrix('xyz', [0.1, 0.2, 0.3])).map((v) => Math.round(v * 1e12) / 1e12) // => [0.1, 0.2, 0.3]
  * ```
  */
@@ -314,7 +314,7 @@ export interface GimbalLock {
  * @concept gimbal-lock
  * @example
  * ```ts
- * import { gimbalLock } from 'mdml-engine/foundations'
+ * import { gimbalLock } from 'omai-engine/foundations'
  * gimbalLock('xyz', [0.3, Math.PI / 2, 0.2]).locked // => true
  * gimbalLock('zxz', [0.3, 1, 0.2]).margin // => 1
  * ```
@@ -351,8 +351,8 @@ const quatParts = (q: Value): [Value, Value, Value, Value] => [part(q, 0), part(
  * @concept quaternions
  * @example
  * ```ts
- * import { quatMultiply } from 'mdml-engine/foundations'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { quatMultiply } from 'omai-engine/foundations'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(quatMultiply([1, 0, 0, 0], [0, 1, 0, 0])) // => [0, 0, 1, 0]
  * ```
  */
@@ -379,8 +379,8 @@ export function quatMultiply(p: TensorLike, q: TensorLike): Value {
  * @concept quaternions
  * @example
  * ```ts
- * import { quatConjugate } from 'mdml-engine/foundations'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { quatConjugate } from 'omai-engine/foundations'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(quatConjugate([1, 2, 3, 4])) // => [-1, -2, -3, 4]
  * ```
  */
@@ -397,8 +397,8 @@ export function quatConjugate(q: TensorLike): Value {
  * @concept quaternions
  * @example
  * ```ts
- * import { quatInverse } from 'mdml-engine/foundations'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { quatInverse } from 'omai-engine/foundations'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(quatInverse([0, 0, 0, 2])) // => [0, 0, 0, 0.5]
  * ```
  */
@@ -415,8 +415,8 @@ export function quatInverse(q: TensorLike): Value {
  * @concept quaternions
  * @example
  * ```ts
- * import { quatNormalize } from 'mdml-engine/foundations'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { quatNormalize } from 'omai-engine/foundations'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(quatNormalize([0, 0, 3, 4])) // => [0, 0, 0.6, 0.8]
  * ```
  */
@@ -435,8 +435,8 @@ export function quatNormalize(q: TensorLike): Value {
  * @concept quaternions
  * @example
  * ```ts
- * import { quatFromAxisAngle } from 'mdml-engine/foundations'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { quatFromAxisAngle } from 'omai-engine/foundations'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(quatFromAxisAngle([0, 0, 1], Math.PI)).map((v) => Math.round(v * 1e12) / 1e12) // => [0, 0, 1, 0]
  * ```
  */
@@ -455,7 +455,7 @@ export function quatFromAxisAngle(axis: TensorLike, angle: TensorLike): Value {
  * @concept quaternions
  * @example
  * ```ts
- * import { quatToAxisAngle } from 'mdml-engine/foundations'
+ * import { quatToAxisAngle } from 'omai-engine/foundations'
  * quatToAxisAngle([0, Math.SQRT1_2, 0, Math.SQRT1_2]).angle // => 1.5707963267948966
  * ```
  */
@@ -473,8 +473,8 @@ export function quatToAxisAngle(q: readonly number[]): { readonly axis: number[]
  * @concept quaternions
  * @example
  * ```ts
- * import { quatToMatrix } from 'mdml-engine/foundations'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { quatToMatrix } from 'omai-engine/foundations'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(quatToMatrix([0, 0, 0, 1])) // => [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
  * ```
  */
@@ -496,7 +496,7 @@ export function quatToMatrix(q: TensorLike): Value {
  * @concept quaternions
  * @example
  * ```ts
- * import { matrixToQuat } from 'mdml-engine/foundations'
+ * import { matrixToQuat } from 'omai-engine/foundations'
  * matrixToQuat([[1, 0, 0], [0, 1, 0], [0, 0, 1]]) // => [0, 0, 0, 1]
  * ```
  */
@@ -513,8 +513,8 @@ export function matrixToQuat(matrix: TensorLike): [number, number, number, numbe
  * @concept quaternions
  * @example
  * ```ts
- * import { quatFromAxisAngle, quatRotate } from 'mdml-engine/foundations'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { quatFromAxisAngle, quatRotate } from 'omai-engine/foundations'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(quatRotate(quatFromAxisAngle([0, 0, 1], Math.PI / 2), [1, 0, 0])).map(Math.round) // => [0, 1, 0]
  * ```
  */
@@ -539,8 +539,8 @@ export function quatRotate(q: TensorLike, v: TensorLike): Value {
  * @concept slerp
  * @example
  * ```ts
- * import { quatSlerp } from 'mdml-engine/foundations'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { quatSlerp } from 'omai-engine/foundations'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(quatSlerp([0, 0, 0, 1], [0, 0, 1, 0], 0.5)).map((v) => Math.round(v * 1e12) / 1e12) // => [0, 0, 0.707106781187, 0.707106781187]
  * ```
  */
@@ -571,8 +571,8 @@ export function quatSlerp(p: TensorLike, q: TensorLike, t: TensorLike): Value {
  * @concept rotation-distance
  * @example
  * ```ts
- * import { quatFromAxisAngle, rotationDistance } from 'mdml-engine/foundations'
- * import { item } from 'mdml-engine/tensor'
+ * import { quatFromAxisAngle, rotationDistance } from 'omai-engine/foundations'
+ * import { item } from 'omai-engine/tensor'
  * item(rotationDistance([0, 0, 0, 1], quatFromAxisAngle([1, 0, 0], 0.5))) // => 0.5
  * ```
  */
@@ -597,8 +597,8 @@ const canonical = (q: readonly number[]): number[] => ((q[3] ?? 0) < 0 ? q.map((
  * @concept rotation-averaging
  * @example
  * ```ts
- * import { meanRotation, quatFromAxisAngle } from 'mdml-engine/foundations'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { meanRotation, quatFromAxisAngle } from 'omai-engine/foundations'
+ * import { toFlat } from 'omai-engine/tensor'
  * const qs = [toFlat(quatFromAxisAngle([0, 0, 1], 0.2)), toFlat(quatFromAxisAngle([0, 0, 1], -0.2))]
  * meanRotation(qs) // => [0, 0, 0, 1]
  * ```
@@ -606,7 +606,7 @@ const canonical = (q: readonly number[]): number[] => ((q[3] ?? 0) < 0 ? q.map((
 export function meanRotation(quats: TensorLike, weights?: TensorLike): [number, number, number, number] {
   const [q] = promoteFloat(quats) as [Value]
   const qs = concreteOrThrow(q, 'meanRotation') as Tensor
-  if (qs.shape.length !== 2 || qs.shape[1] !== 4) throw new MdmlError('shape', 'meanRotation: quaternions [n, 4]')
+  if (qs.shape.length !== 2 || qs.shape[1] !== 4) throw new OmaiError('shape', 'meanRotation: quaternions [n, 4]')
   const n = qs.shape[0] ?? 0
   const w = weights === undefined ? Array.from({ length: n }, () => 1) : toFlat(promoteFloat(weights)[0] as Value)
   const unit = toArray(quatNormalize(qs)) as number[][]
@@ -643,8 +643,8 @@ export interface KarcherMean {
  * @concept rotation-averaging
  * @example
  * ```ts
- * import { karcherMean, quatFromAxisAngle } from 'mdml-engine/foundations'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { karcherMean, quatFromAxisAngle } from 'omai-engine/foundations'
+ * import { toFlat } from 'omai-engine/tensor'
  * const qs = [0.1, 0.4, 0.7].map((t) => toFlat(quatFromAxisAngle([1, 0, 0], t)))
  * Math.round(karcherMean(qs).quaternion[0] * 1e12) / 1e12 // => 0.198669330795
  * ```
@@ -684,7 +684,7 @@ export function karcherMean(
  * @concept rotation-matrix
  * @example
  * ```ts
- * import { isRotationMatrix } from 'mdml-engine/foundations'
+ * import { isRotationMatrix } from 'omai-engine/foundations'
  * isRotationMatrix([[0, -1], [1, 0]]) // => true
  * isRotationMatrix([[1, 0], [0, -1]]) // => false
  * ```

@@ -209,9 +209,9 @@ export interface PetsState extends ModelBasedState {
  * @concept model-based-rl
  * @example
  * ```ts
- * import { pets } from 'mdml-engine/agents'
- * import { pendulum } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { pets } from 'omai-engine/agents'
+ * import { pendulum } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * const agent = pets(pendulum.create(), { hidden: [8], members: 2 })
  * agent.act(agent.init(key(0)), [1, 0, 0], key(1)).length // => 1
  * ```
@@ -334,8 +334,8 @@ export interface MbpoState<G> extends ModelBasedState {
  * @concept model-based-rl
  * @example
  * ```ts
- * import { dqn, mbpo } from 'mdml-engine/agents'
- * import { cartPole } from 'mdml-engine/environments'
+ * import { dqn, mbpo } from 'omai-engine/agents'
+ * import { cartPole } from 'omai-engine/environments'
  * const env = cartPole.create()
  * mbpo(env, dqn(env, { hidden: [8] }), { hidden: [8] }).name // => 'mbpo-dqn'
  * ```
@@ -478,9 +478,9 @@ export interface DreamerState {
  * @index agent Dreamer world-model agent.
  * @example
  * ```ts
- * import { dreamer } from 'mdml-engine/agents'
- * import { pendulum } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { dreamer } from 'omai-engine/agents'
+ * import { pendulum } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * const agent = dreamer(pendulum.create(), { hidden: 8 })
  * agent.act(agent.init(key(0)), [1, 0, 0], key(1)).length // => 1
  * ```
@@ -773,9 +773,9 @@ export interface MuZeroState {
  * @concept model-based-rl
  * @example
  * ```ts
- * import { muZero } from 'mdml-engine/agents'
- * import { cartPole } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { muZero } from 'omai-engine/agents'
+ * import { cartPole } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * const agent = muZero(cartPole.create(), { hidden: 8, simulations: 4 })
  * [0, 1].includes(agent.greedy(agent.init(key(0)), [0, 0, 0, 0])) // => true
  * ```

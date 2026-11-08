@@ -6,7 +6,7 @@
  * @index function KL and other divergences between distributions.
  */
 
-import { EULER_GAMMA, MdmlError } from '../base/index.ts'
+import { EULER_GAMMA, OmaiError } from '../base/index.ts'
 import { cholesky, funmSymmetric, solveTriangular } from '../numerics/linalg/index.ts'
 import { digamma, gamma as gammaFn, ive, lbeta, lgamma, logIv, logSigmoid } from '../numerics/special/index.ts'
 import type { Key } from '../random/index.ts'
@@ -47,7 +47,7 @@ import { exponentialFamily } from './exponential-family.ts'
 
 const P = (d: Distribution, name: string): Value => {
   const v = d.params[name]
-  if (v === undefined) throw new MdmlError('value', `divergences: ${d.name} has no parameter ${name}`)
+  if (v === undefined) throw new OmaiError('value', `divergences: ${d.name} has no parameter ${name}`)
   return v
 }
 const transposeLast = (m: Value): Value => swapaxes(m, -1, -2)
@@ -243,9 +243,9 @@ export interface DivergenceOptions {
  * @returns The estimate, with the batch shape.
  * @example
  * ```ts
- * import { klMonteCarlo, normal } from 'mdml-engine/dists'
- * import { key } from 'mdml-engine/random'
- * import { item } from 'mdml-engine/tensor'
+ * import { klMonteCarlo, normal } from 'omai-engine/dists'
+ * import { key } from 'omai-engine/random'
+ * import { item } from 'omai-engine/tensor'
  * Math.abs(item(klMonteCarlo(normal(0, 1), normal(1, 1), key(0), 20000)) - 0.5) < 0.05 // => true
  * ```
  */
@@ -267,11 +267,11 @@ export function klMonteCarlo(p: Distribution, q: Distribution, key: Key, samples
  * @param q - The second.
  * @param options - A key (and sample count) for the Monte Carlo fallback.
  * @returns KL(p || q) with the batch shape (Infinity where p is not absolutely continuous with respect to q).
- * @throws MdmlError with code `not-implemented` when there is no closed form and no key.
+ * @throws OmaiError with code `not-implemented` when there is no closed form and no key.
  * @example
  * ```ts
- * import { klDivergence, normal } from 'mdml-engine/dists'
- * import { item } from 'mdml-engine/tensor'
+ * import { klDivergence, normal } from 'omai-engine/dists'
+ * import { item } from 'omai-engine/tensor'
  * item(klDivergence(normal(0, 1), normal(1, 1))) // => 0.5
  * ```
  */
@@ -295,7 +295,7 @@ export function klDivergence(p: Distribution, q: Distribution, options: Divergen
   const ef = klExponentialFamily(p, q)
   if (ef) return ef
   if (options.key !== undefined) return klMonteCarlo(p, q, options.key, options.samples ?? 1000)
-  throw new MdmlError(
+  throw new OmaiError(
     'not-implemented',
     `klDivergence: no closed form for ${p.name} and ${q.name}; pass a key for a Monte Carlo estimate`,
   )
@@ -323,11 +323,11 @@ function sameFixed(p: Distribution, q: Distribution, names: readonly string[]): 
  * @param q - The second.
  * @param options - A key (and sample count) for the Monte Carlo fallback.
  * @returns BC in [0, 1].
- * @throws MdmlError with code `not-implemented` when there is no closed form and no key.
+ * @throws OmaiError with code `not-implemented` when there is no closed form and no key.
  * @example
  * ```ts
- * import { bhattacharyyaCoefficient, normal } from 'mdml-engine/dists'
- * import { item } from 'mdml-engine/tensor'
+ * import { bhattacharyyaCoefficient, normal } from 'omai-engine/dists'
+ * import { item } from 'omai-engine/tensor'
  * item(bhattacharyyaCoefficient(normal(0, 1), normal(0, 1))) // => 1
  * ```
  */
@@ -378,7 +378,7 @@ export function bhattacharyyaCoefficient(p: Distribution, q: Distribution, optio
       : p.sample(options.key, [options.samples ?? 1000])
     return mean(exp(mul(sub(q.logProb(x), p.logProb(x)), 0.5)), 0)
   }
-  throw new MdmlError(
+  throw new OmaiError(
     'not-implemented',
     `bhattacharyyaCoefficient: no closed form for ${p.name} and ${q.name}; pass a key for a Monte Carlo estimate`,
   )
@@ -393,8 +393,8 @@ export function bhattacharyyaCoefficient(p: Distribution, q: Distribution, optio
  * @returns The distance (non-negative).
  * @example
  * ```ts
- * import { bhattacharyyaDistance, normal } from 'mdml-engine/dists'
- * import { item } from 'mdml-engine/tensor'
+ * import { bhattacharyyaDistance, normal } from 'omai-engine/dists'
+ * import { item } from 'omai-engine/tensor'
  * // Equal scales: (mu_p - mu_q)^2 / (8 sigma^2).
  * Math.abs(item(bhattacharyyaDistance(normal(0, 1), normal(2, 1))) - 0.5) < 1e-15 // => true
  * ```
@@ -412,8 +412,8 @@ export function bhattacharyyaDistance(p: Distribution, q: Distribution, options:
  * @returns The distance in [0, 1].
  * @example
  * ```ts
- * import { hellinger, normal } from 'mdml-engine/dists'
- * import { item } from 'mdml-engine/tensor'
+ * import { hellinger, normal } from 'omai-engine/dists'
+ * import { item } from 'omai-engine/tensor'
  * item(hellinger(normal(0, 1), normal(0, 1))) // => 0
  * ```
  */
@@ -429,11 +429,11 @@ export function hellinger(p: Distribution, q: Distribution, options: DivergenceO
  * @param p - A normal or multivariate normal.
  * @param q - Another of the same kind.
  * @returns W_2(p, q).
- * @throws MdmlError with code `value` for other distributions.
+ * @throws OmaiError with code `value` for other distributions.
  * @example
  * ```ts
- * import { normal, wasserstein2Gaussian } from 'mdml-engine/dists'
- * import { item } from 'mdml-engine/tensor'
+ * import { normal, wasserstein2Gaussian } from 'omai-engine/dists'
+ * import { item } from 'omai-engine/tensor'
  * item(wasserstein2Gaussian(normal(0, 1), normal(3, 5))) // => 5
  * ```
  */
@@ -442,7 +442,7 @@ export function wasserstein2Gaussian(p: Distribution, q: Distribution): Value {
     return sqrt(add(square(sub(P(p, 'loc'), P(q, 'loc'))), square(sub(P(p, 'scale'), P(q, 'scale')))))
   const gp = gaussianParts(p)
   const gq = gaussianParts(q)
-  if (!gp || !gq) throw new MdmlError('value', 'wasserstein2Gaussian: needs two (multivariate) normals')
+  if (!gp || !gq) throw new OmaiError('value', 'wasserstein2Gaussian: needs two (multivariate) normals')
   const sp = matmul(gp.l, transposeLast(gp.l))
   const sq = matmul(gq.l, transposeLast(gq.l))
   const root = (m: Value): Value => funmSymmetric(m, (lam) => sqrt(maximum(lam, 0)))

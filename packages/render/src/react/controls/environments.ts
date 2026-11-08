@@ -4,11 +4,11 @@
  * spaces formatted gymnasium-style (`Box(-1, 1, [2])`, `Discrete(4)`) for display.
  */
 
-import { type EnvironmentEntry, type EnvironmentRegistry, findEnvironment } from 'mdml-engine/environments'
-import { key } from 'mdml-engine/random'
-import type { AecEnv, Env, ParallelEnv } from 'mdml-engine/rl'
-import type { Scene } from 'mdml-engine/scene'
-import { defaults, type Space, type SpaceValue } from 'mdml-engine/space'
+import { type EnvironmentEntry, type EnvironmentRegistry, findEnvironment } from 'omai-engine/environments'
+import { key } from 'omai-engine/random'
+import type { AecEnv, Env, ParallelEnv } from 'omai-engine/rl'
+import type { Scene } from 'omai-engine/scene'
+import { defaults, type Space, type SpaceValue } from 'omai-engine/space'
 
 /** What an environment selector has chosen: an entry of its registry and the option values to make it with. */
 export interface EnvironmentSelection {

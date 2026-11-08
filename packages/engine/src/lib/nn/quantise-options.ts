@@ -23,7 +23,7 @@ export interface ColumnOrderProperties {
  * @concept quantisation
  * @example
  * ```ts
- * import { gptqOrders } from 'mdml-engine/nn'
+ * import { gptqOrders } from 'omai-engine/nn'
  * gptqOrders.make({ kind: 'activation' })([1, 5, 3]) // => [1, 2, 0]
  * ```
  */

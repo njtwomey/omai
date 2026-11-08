@@ -6,7 +6,7 @@
  * which rays are captured, and Flamm's paraboloid, the embedding of the curved space.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { fixedQuad } from '../../numerics/quadrature/index.ts'
 import { brentq } from '../../numerics/roots/index.ts'
 import { add, div, item, tensor as makeTensor, mul, sliceAxis, sqrt, stack, sub, sum } from '../../tensor/index.ts'
@@ -21,7 +21,7 @@ import type { OdeVectorField } from '../ode/problem.ts'
  * @returns 3 M.
  * @example
  * ```ts
- * import { photonSphereRadius } from 'mdml-engine/dynamics/celestial'
+ * import { photonSphereRadius } from 'omai-engine/dynamics/celestial'
  * photonSphereRadius(1) // => 3
  * ```
  */
@@ -37,7 +37,7 @@ export function photonSphereRadius(M: number): number {
  * @returns 3 sqrt(3) M.
  * @example
  * ```ts
- * import { criticalImpactParameter } from 'mdml-engine/dynamics/celestial'
+ * import { criticalImpactParameter } from 'omai-engine/dynamics/celestial'
  * criticalImpactParameter(1) // => 5.196152422706632
  * ```
  */
@@ -56,7 +56,7 @@ export function criticalImpactParameter(M: number): number {
  * @concept gravitational-lensing
  * @example
  * ```ts
- * import { weakFieldDeflection } from 'mdml-engine/dynamics/celestial'
+ * import { weakFieldDeflection } from 'omai-engine/dynamics/celestial'
  * weakFieldDeflection(1000, 1) // => 0.004
  * ```
  */
@@ -80,17 +80,17 @@ function turningPoint(b: number, M: number): number {
  * @param b - The impact parameter.
  * @param M - The mass.
  * @returns The deflection in radians (Infinity when the ray is captured).
- * @throws MdmlError with code `value` for non-positive arguments.
+ * @throws OmaiError with code `value` for non-positive arguments.
  * @concept gravitational-lensing
  * @example
  * ```ts
- * import { deflectionAngle } from 'mdml-engine/dynamics/celestial'
+ * import { deflectionAngle } from 'omai-engine/dynamics/celestial'
  * // Far from the mass the exact deflection is the weak-field 4 M / b plus 15 pi M^2 / (4 b^2) and terms of order (M / b)^3.
  * Math.abs(deflectionAngle(1000, 1) - 0.004 - (15 * Math.PI) / 4e6) < 1e-7 // => true
  * ```
  */
 export function deflectionAngle(b: number, M: number): number {
-  if (!(b > 0) || !(M > 0)) throw new MdmlError('value', 'deflectionAngle: b and M must be positive')
+  if (!(b > 0) || !(M > 0)) throw new OmaiError('value', 'deflectionAngle: b and M must be positive')
   if (b <= criticalImpactParameter(M)) return Number.POSITIVE_INFINITY
   const um = turningPoint(b, M)
   const c = 1 - 2 * M * um
@@ -135,8 +135,8 @@ function startAngle(b: number, M: number, u0: number): number {
  * @concept gravitational-lensing
  * @example
  * ```ts
- * import { schwarzschildNullGeodesicField } from 'mdml-engine/dynamics/celestial'
- * import { tensor, toFlat } from 'mdml-engine/tensor'
+ * import { schwarzschildNullGeodesicField } from 'omai-engine/dynamics/celestial'
+ * import { tensor, toFlat } from 'omai-engine/tensor'
  * // At u = 1 / (3 M) (the photon sphere) with no radial motion the ray stays: u'' = 0.
  * toFlat(schwarzschildNullGeodesicField(1)(0, tensor([1 / 3, 0])))[1] // => 0
  * ```
@@ -157,7 +157,7 @@ export function schwarzschildNullGeodesicField(M: number): OdeVectorField {
  * @returns The value of the invariant.
  * @example
  * ```ts
- * import { nullInvariant } from 'mdml-engine/dynamics/celestial'
+ * import { nullInvariant } from 'omai-engine/dynamics/celestial'
  * nullInvariant([0, 0.5], 1) // => 0.25
  * ```
  */
@@ -175,15 +175,15 @@ export function nullInvariant(state: ArrayLike<number>, M: number): number {
  * @param M - The mass.
  * @param r - The radius (at least 2 M).
  * @returns The height z.
- * @throws MdmlError with code `value` for a radius inside the horizon.
+ * @throws OmaiError with code `value` for a radius inside the horizon.
  * @example
  * ```ts
- * import { flammParaboloid } from 'mdml-engine/dynamics/celestial'
+ * import { flammParaboloid } from 'omai-engine/dynamics/celestial'
  * flammParaboloid(1, 6) // => 5.656854249492381
  * ```
  */
 export function flammParaboloid(M: number, r: number): number {
-  if (r < 2 * M) throw new MdmlError('value', 'flammParaboloid: inside the horizon')
+  if (r < 2 * M) throw new OmaiError('value', 'flammParaboloid: inside the horizon')
   return 2 * Math.sqrt(2 * M * (r - 2 * M))
 }
 
@@ -242,23 +242,23 @@ export interface RayOptions {
  * @param b - The impact parameter.
  * @param options - Step, start radius and step budget.
  * @returns The algorithm.
- * @throws MdmlError with code `value` for non-positive arguments or a start radius not far outside the ray.
+ * @throws OmaiError with code `value` for non-positive arguments or a start radius not far outside the ray.
  * @concept gravitational-lensing
  * @example
  * ```ts
- * import { lightRayAlgorithm } from 'mdml-engine/dynamics/celestial'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { lightRayAlgorithm } from 'omai-engine/dynamics/celestial'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const { state } = runAlgorithm(lightRayAlgorithm(1, 8), { maxSteps: 20000 })
  * state.fate // => 'escaped'
  * ```
  */
 export function lightRayAlgorithm(M: number, b: number, options: RayOptions = {}): Algorithm<RayState, RayPath> {
-  if (!(M > 0) || !(b > 0)) throw new MdmlError('value', 'lightRayAlgorithm: M and b must be positive')
+  if (!(M > 0) || !(b > 0)) throw new OmaiError('value', 'lightRayAlgorithm: M and b must be positive')
   const dphi = options.dphi ?? 0.002
   const rStart = options.startRadius ?? 200 * b
   const u0 = 1 / rStart
   if (!(u0 * b < 0.1))
-    throw new MdmlError('value', 'lightRayAlgorithm: start well outside the ray (radius at least 10 b)')
+    throw new OmaiError('value', 'lightRayAlgorithm: start well outside the ray (radius at least 10 b)')
   const field = schwarzschildNullGeodesicField(M)
   const f0 = (u: number): number => Math.sqrt(1 / (b * b) - u * u + 2 * M * u ** 3)
   // The angle from infinity to the start radius, so that the incoming asymptote is at phi = 0.
@@ -321,8 +321,8 @@ export function lightRayAlgorithm(M: number, b: number, options: RayOptions = {}
  * @concept gravitational-lensing
  * @example
  * ```ts
- * import { lightRayAlgorithm, measuredDeflection } from 'mdml-engine/dynamics/celestial'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { lightRayAlgorithm, measuredDeflection } from 'omai-engine/dynamics/celestial'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const { state } = runAlgorithm(lightRayAlgorithm(1, 30, { startRadius: 3000 }), { maxSteps: 40000 })
  * Math.abs(measuredDeflection(state, 30, 1, 3000) - 4 / 30) < 0.02 // => true
  * ```

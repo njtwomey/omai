@@ -6,7 +6,7 @@
  * solvers.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { tensor, type Value } from '../../tensor/index.ts'
 import {
   type Algorithm,
@@ -62,13 +62,13 @@ export const mapCloudContract: Contract<MapCloudState, MapCloudPath> = defineCon
  * @param map - A map of states of length `start.length`.
  * @param options - The start, batch, transient and the most points kept.
  * @returns The algorithm.
- * @throws MdmlError with code `value` for a non-positive batch or an empty start.
+ * @throws OmaiError with code `value` for a non-positive batch or an empty start.
  * @concept strange-attractors
  * @example
  * ```ts
- * import { henonMap } from 'mdml-engine/dynamics'
- * import { fractals } from 'mdml-engine/dynamics'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { henonMap } from 'omai-engine/dynamics'
+ * import { fractals } from 'omai-engine/dynamics'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * runAlgorithm(fractals.mapCloud(henonMap()), { seed: 0, maxSteps: 3 }).state.cloud.length // => 600
  * ```
  */
@@ -79,7 +79,7 @@ export function mapCloud(map: IteratedMap, options: MapCloudOptions = {}): Algor
   const keep = options.keep ?? 200_000
   positiveInt('mapCloud', 'batch', batch)
   positiveInt('mapCloud', 'keep', keep)
-  if (start.length === 0) throw new MdmlError('value', 'mapCloud: the start must have at least one component')
+  if (start.length === 0) throw new OmaiError('value', 'mapCloud: the start must have at least one component')
   const d = start.length
   const next = (x: Float64Array): Float64Array => Float64Array.from(numbersOf(map(tensor(Array.from(x)) as Value)))
   return {
@@ -124,7 +124,7 @@ export function mapCloud(map: IteratedMap, options: MapCloudOptions = {}): Algor
  * @concept strange-attractors
  * @example
  * ```ts
- * import { fractals } from 'mdml-engine/dynamics'
+ * import { fractals } from 'omai-engine/dynamics'
  * fractals.lobeSwitches([1, 2, -1, -3, 4, 5, -2]) // => 3
  * ```
  */

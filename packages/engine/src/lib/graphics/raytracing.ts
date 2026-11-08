@@ -5,7 +5,7 @@
  * single ray for figures.
  */
 
-import { type Json, MdmlError, type Vec3 } from '../base/index.ts'
+import { type Json, OmaiError, type Vec3 } from '../base/index.ts'
 import { dotProduct } from '../foundations/index.ts'
 import type { Key } from '../random/index.ts'
 import {
@@ -80,7 +80,7 @@ export interface RayScene {
  * @concept ray-tracing
  * @example
  * ```ts
- * import { material, plane, rayScene, sphere } from 'mdml-engine/graphics'
+ * import { material, plane, rayScene, sphere } from 'omai-engine/graphics'
  * const s = rayScene([{ shape: sphere([0, 1, 0], 1), material: material() }, { shape: plane([0, 0, 0], [0, 1, 0]), material: material() }])
  * [s.bvhObjects, s.planes] // => [[0], [1]]
  * ```
@@ -120,7 +120,7 @@ export function rayScene(
  * @concept ray-tracing
  * @example
  * ```ts
- * import { material, rayScene, sceneHit, sphere } from 'mdml-engine/graphics'
+ * import { material, rayScene, sceneHit, sphere } from 'omai-engine/graphics'
  * const s = rayScene([{ shape: sphere([0, 0, 0], 1), material: material() }])
  * sceneHit(s, { origin: [0, 0, 3], direction: [0, 0, -1] })?.t // => 2
  * ```
@@ -163,7 +163,7 @@ export function sceneHit(
  * @concept shadows
  * @example
  * ```ts
- * import { material, rayScene, sceneOccluded, sphere } from 'mdml-engine/graphics'
+ * import { material, rayScene, sceneOccluded, sphere } from 'omai-engine/graphics'
  * const s = rayScene([{ shape: sphere([0, 0, 0], 1), material: material() }])
  * sceneOccluded(s, { origin: [0, 0, 3], direction: [0, 0, -1] }, 10) // => true
  * ```
@@ -187,7 +187,7 @@ export function sceneOccluded(s: RayScene, ray: Ray, tMax: number, tMin: number 
  * @concept texture-mapping
  * @example
  * ```ts
- * import { albedoAt, material, sphere } from 'mdml-engine/graphics'
+ * import { albedoAt, material, sphere } from 'omai-engine/graphics'
  * const o = { shape: sphere([0, 0, 0], 1), material: material(), albedoMap: (u, v) => [u, v, 0] }
  * albedoAt(o, { t: 1, point: [0, 0, 1], normal: [0, 0, 1], frontFace: true, uv: [0.25, 0.5] }) // => [0.25, 0.5, 0]
  * ```
@@ -214,8 +214,8 @@ export function albedoAt(o: SceneObject, hit: Hit): Vec3 {
  * @concept snells-law
  * @example
  * ```ts
- * import { refract } from 'mdml-engine/graphics'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { refract } from 'omai-engine/graphics'
+ * import { toFlat } from 'omai-engine/tensor'
  * toFlat(refract([0, -1, 0], [0, 1, 0], 1 / 1.5)) // => [0, -1, 0]
  * toFlat(refract([0.8, -0.6, 0], [0, 1, 0], 1.5)) // => [0, 0, 0]
  * ```
@@ -243,8 +243,8 @@ export function refract(d: TensorLike, n: TensorLike, eta: TensorLike): Value {
  * @concept fresnel-equations
  * @example
  * ```ts
- * import { schlick } from 'mdml-engine/graphics'
- * import { item } from 'mdml-engine/tensor'
+ * import { schlick } from 'omai-engine/graphics'
+ * import { item } from 'omai-engine/tensor'
  * Math.round(item(schlick(1, 1, 1.5)) * 1e12) / 1e12 // => 0.04
  * item(schlick(0.2, 1.5, 1)) // => 1
  * ```
@@ -283,7 +283,7 @@ function schlickScalar(cosI: number, n1: number, n2: number): number {
  * @concept ray-tracing
  * @example
  * ```ts
- * import { material, splitWeights } from 'mdml-engine/graphics'
+ * import { material, splitWeights } from 'omai-engine/graphics'
  * const w = splitWeights(material({ transparency: 1 }), 1, true)
  * [w.local, Math.round(w.reflect * 1e12) / 1e12, Math.round(w.refract * 1e12) / 1e12] // => [0, 0.04, 0.96]
  * ```
@@ -532,8 +532,8 @@ function initialState(tasks: Task[], pixels: number): WhittedState {
  * @index algorithm Whitted ray tracing, a batch of rays per step.
  * @example
  * ```ts
- * import { material, pinholeCamera, pointLight, rayScene, sphere, whittedAlgorithm } from 'mdml-engine/graphics'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { material, pinholeCamera, pointLight, rayScene, sphere, whittedAlgorithm } from 'omai-engine/graphics'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const s = rayScene([{ shape: sphere([0, 0, 0], 1), material: material({ mirror: 0.5 }) }], { lights: [pointLight([0, 5, 5], [50, 50, 50])] })
  * runAlgorithm(whittedAlgorithm(s, pinholeCamera(), 8, 6), { maxSteps: 10 }).status // => 'converged'
  * ```
@@ -600,7 +600,7 @@ export function whittedAlgorithm(
  * @index function Whitted ray tracing with reflection, refraction and shadows.
  * @example
  * ```ts
- * import { material, pinholeCamera, rayScene, renderWhitted, sphere } from 'mdml-engine/graphics'
+ * import { material, pinholeCamera, rayScene, renderWhitted, sphere } from 'omai-engine/graphics'
  * const s = rayScene([{ shape: sphere([0, 0, 0], 1), material: material({ emission: [1, 0, 0] }) }])
  * const r = renderWhitted(s, pinholeCamera(), 4, 4)
  * [r.image.rgb[3 * 5], r.image.rgb[0], r.stats.rays] // => [1, 0, 16]
@@ -640,11 +640,11 @@ export function renderWhitted(
  * @param ray - The ray (its direction is normalised here).
  * @param options - Depth and weight caps and area-light jitter.
  * @returns The radiance and the records of every ray.
- * @throws MdmlError with code `value` for a zero or non-finite direction, or a negative depth cap.
+ * @throws OmaiError with code `value` for a zero or non-finite direction, or a negative depth cap.
  * @concept ray-tracing
  * @example
  * ```ts
- * import { material, plane, rayScene, sphere, traceRay } from 'mdml-engine/graphics'
+ * import { material, plane, rayScene, sphere, traceRay } from 'omai-engine/graphics'
  * const s = rayScene([{ shape: sphere([0, 0, 0], 1), material: material({ mirror: 1 }) }], { background: [0.5, 0.5, 0.5] })
  * const r = traceRay(s, { origin: [0, 0, 3], direction: [0, 0, -1] })
  * [r.radiance, r.records.map((x) => x.kind)] // => [[0.5, 0.5, 0.5], ['camera', 'reflection']]
@@ -656,7 +656,7 @@ export function traceRay(
   options: Omit<WhittedOptions, 'record'> = {},
 ): { readonly radiance: Vec3; readonly records: readonly RayRecord[] } {
   const maxDepth = options.maxDepth ?? 5
-  if (!(Number.isInteger(maxDepth) && maxDepth >= 0)) throw new MdmlError('value', 'traceRay: maxDepth must be >= 0')
+  if (!(Number.isInteger(maxDepth) && maxDepth >= 0)) throw new OmaiError('value', 'traceRay: maxDepth must be >= 0')
   const direction = normalise3(ray.direction, 'the ray direction')
   let state = initialState(
     [

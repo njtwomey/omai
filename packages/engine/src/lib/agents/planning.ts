@@ -6,7 +6,7 @@
  * baseline.
  */
 
-import { argmaxOf, type Json, MdmlError } from '../base/index.ts'
+import { argmaxOf, type Json, OmaiError } from '../base/index.ts'
 import { crossEntropy, mse } from '../losses/index.ts'
 import { mlp } from '../nn/index.ts'
 import { adamw, type ParamTree } from '../optim/index.ts'
@@ -51,7 +51,7 @@ const identity = <O, S>(o: O): S => o as unknown as S
 const GREEDY_KEY = makeKey(0x6d637473)
 
 function discreteCount(space: Space | undefined, name: string): number {
-  if (space?.kind !== 'discrete') throw new MdmlError('value', `${name}: needs discrete action spaces`)
+  if (space?.kind !== 'discrete') throw new OmaiError('value', `${name}: needs discrete action spaces`)
   return space.n
 }
 
@@ -81,7 +81,7 @@ function tabularPlanner<S, O, A>(
   options: DynamicProgrammingOptions<O, S>,
 ): Agent<TabularPlanState, O, A> {
   const model = env.model
-  if (model === undefined) throw new MdmlError('value', `${name}Agent: ${env.spec.id} has no model`)
+  if (model === undefined) throw new OmaiError('value', `${name}Agent: ${env.spec.id} has no model`)
   const gamma = options.gamma ?? 0.99
   const toState = options.toState ?? identity<O, S>
   const act = (s: TabularPlanState, o: O): A => model.actions[s.policy[model.stateIndex(toState(o))] ?? 0] as A
@@ -119,13 +119,13 @@ function tabularPlanner<S, O, A>(
  * @param env - An environment with a tabular model (`env.model`).
  * @param options - Discount, tolerance and the map from observations to model states.
  * @returns The agent.
- * @throws MdmlError with code `value` when the environment has no model.
+ * @throws OmaiError with code `value` when the environment has no model.
  * @concept value-iteration
  * @example
  * ```ts
- * import { valueIterationAgent } from 'mdml-engine/agents'
- * import { cliffWalking } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { valueIterationAgent } from 'omai-engine/agents'
+ * import { cliffWalking } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * const agent = valueIterationAgent(cliffWalking.create(), { gamma: 1 })
  * agent.greedy(agent.init(key(0)), 36) // => 0
  * ```
@@ -144,13 +144,13 @@ export function valueIterationAgent<S, O, A>(
  * @param env - An environment with a tabular model.
  * @param options - Discount, iteration cap and the map from observations to model states.
  * @returns The agent.
- * @throws MdmlError with code `value` when the environment has no model.
+ * @throws OmaiError with code `value` when the environment has no model.
  * @concept policy-iteration
  * @example
  * ```ts
- * import { policyIterationAgent } from 'mdml-engine/agents'
- * import { cliffWalking } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { policyIterationAgent } from 'omai-engine/agents'
+ * import { cliffWalking } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * const agent = policyIterationAgent(cliffWalking.create(), { gamma: 0.9 })
  * agent.greedy(agent.init(key(0)), 36) // => 0
  * ```
@@ -197,13 +197,13 @@ export interface SweepingPlanState {
  * @param env - An environment with a tabular model (`env.model`).
  * @param options - The planner, discount, sweeps per block, episodes per block and the map to model states.
  * @returns The agent.
- * @throws MdmlError with code `value` when the environment has no model.
+ * @throws OmaiError with code `value` when the environment has no model.
  * @concept value-iteration
  * @example
  * ```ts
- * import { sweepingPlannerAgent } from 'mdml-engine/agents'
- * import { cliffWalking } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { sweepingPlannerAgent } from 'omai-engine/agents'
+ * import { cliffWalking } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * const agent = sweepingPlannerAgent(cliffWalking.create(), { gamma: 1 })
  * agent.init(key(0)).iterations // => 0
  * ```
@@ -213,7 +213,7 @@ export function sweepingPlannerAgent<S, O, A>(
   options: SweepingPlannerOptions<O, S> = {},
 ): Agent<SweepingPlanState, O, A> {
   const model = env.model
-  if (model === undefined) throw new MdmlError('value', `sweepingPlannerAgent: ${env.spec.id} has no model`)
+  if (model === undefined) throw new OmaiError('value', `sweepingPlannerAgent: ${env.spec.id} has no model`)
   const planner = options.planner ?? 'valueIteration'
   const gamma = options.gamma ?? 0.99
   const sweeps = options.sweeps ?? 1
@@ -287,9 +287,9 @@ export interface MctsAgentOptions<S, O, A> extends MctsOptions<S, O, A> {
  * @index agent Monte Carlo tree search planning agent.
  * @example
  * ```ts
- * import { mctsAgent } from 'mdml-engine/agents'
- * import { cartPole } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { mctsAgent } from 'omai-engine/agents'
+ * import { cartPole } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * const agent = mctsAgent(cartPole.create(), { simulations: 300, depth: 25, c: 5 })
  * agent.greedy(agent.init(key(0)), [0, 0, 0.12, 0]) // => 1
  * ```
@@ -329,9 +329,9 @@ export interface GameMctsAgentOptions<S, O> {
  * @concept monte-carlo-tree-search
  * @example
  * ```ts
- * import { gameMctsAgent } from 'mdml-engine/agents'
- * import { nim } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { gameMctsAgent } from 'omai-engine/agents'
+ * import { nim } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * const env = nim.create({ heaps: [2] })
  * gameMctsAgent(env, { simulations: 100 }).greedy(null, env.reset(key(0))) // => 1
  * ```
@@ -397,13 +397,13 @@ interface TableEntry {
  * @param state - The position.
  * @param options - Depth, evaluation, move ordering and the transposition key.
  * @returns The best move, its value and the number of positions searched.
- * @throws MdmlError with code `value` when the game is over.
+ * @throws OmaiError with code `value` when the game is over.
  * @concept game-tree-search
  * @example
  * ```ts
- * import { alphaBeta } from 'mdml-engine/agents'
- * import { ticTacToe } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { alphaBeta } from 'omai-engine/agents'
+ * import { ticTacToe } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * const env = ticTacToe.create()
  * alphaBeta(env, env.reset(key(0))).value // => 0
  * ```
@@ -461,7 +461,7 @@ export function alphaBeta<S, O>(
     }
     return { value, best }
   }
-  if (env.currentAgent(state) === undefined) throw new MdmlError('value', 'alphaBeta: the game is over')
+  if (env.currentAgent(state) === undefined) throw new OmaiError('value', 'alphaBeta: the game is over')
   const root = search(state, maxDepth, -Infinity, Infinity)
   return { action: root.best ?? 0, value: root.value, nodes }
 }
@@ -482,9 +482,9 @@ export interface MinimaxAgentOptions<S, O> extends AlphaBetaOptions<S> {
  * @concept game-tree-search
  * @example
  * ```ts
- * import { minimaxAgent } from 'mdml-engine/agents'
- * import { nim } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { minimaxAgent } from 'omai-engine/agents'
+ * import { nim } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * const env = nim.create({ heaps: [1, 2] })
  * minimaxAgent(env).greedy(null, env.reset(key(0))) // => 2
  * ```
@@ -529,9 +529,9 @@ export interface PolicyValueNetwork {
  * @concept alphazero
  * @example
  * ```ts
- * import { policyValueNetwork } from 'mdml-engine/agents'
- * import { key } from 'mdml-engine/random'
- * import { tensor } from 'mdml-engine/tensor'
+ * import { policyValueNetwork } from 'omai-engine/agents'
+ * import { key } from 'omai-engine/random'
+ * import { tensor } from 'omai-engine/tensor'
  * const net = policyValueNetwork(4, 3, [8], key(0))
  * net.apply(net.params, tensor([[0, 1, 0, 1]])).logits.shape // => [1, 3]
  * ```
@@ -621,7 +621,7 @@ function resolve<S, O>(env: AecEnv<S, O, number>, options: AlphaZeroOptions<S>):
     ((s: S, p: string): readonly number[] => {
       const o = env.observe(s, p)
       if (!Array.isArray(o))
-        throw new MdmlError('value', 'alphaZero: observations must be number arrays (or pass encode)')
+        throw new OmaiError('value', 'alphaZero: observations must be number arrays (or pass encode)')
       return o as readonly number[]
     })
   const space = env.observationSpaces[first]
@@ -736,8 +736,8 @@ function selfPlayGame<S, O>(
  * @concept alphazero
  * @example
  * ```ts
- * import { alphaZeroAlgorithm } from 'mdml-engine/agents'
- * import { nim } from 'mdml-engine/environments'
+ * import { alphaZeroAlgorithm } from 'omai-engine/agents'
+ * import { nim } from 'omai-engine/environments'
  * alphaZeroAlgorithm(nim.create({ heaps: [2, 2] }), { hidden: [8] }).name // => 'alphaZero'
  * ```
  */
@@ -854,8 +854,8 @@ export interface AlphaZeroResult {
  * @concept alphazero
  * @example
  * ```ts
- * import { alphaZero } from 'mdml-engine/agents'
- * import { nim } from 'mdml-engine/environments'
+ * import { alphaZero } from 'omai-engine/agents'
+ * import { nim } from 'omai-engine/environments'
  * const r = alphaZero(nim.create({ heaps: [1, 2] }), { hidden: [8], iterations: 1, gamesPerIteration: 1, simulations: 4, trainSteps: 1 })
  * r.state.games // => 1
  * ```
@@ -894,9 +894,9 @@ export function alphaZero<S, O>(
  * @concept alphazero
  * @example
  * ```ts
- * import { alphaZero, alphaZeroAgent } from 'mdml-engine/agents'
- * import { nim } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { alphaZero, alphaZeroAgent } from 'omai-engine/agents'
+ * import { nim } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * const env = nim.create({ heaps: [2] })
  * const opts = { hidden: [8], iterations: 1, gamesPerIteration: 1, simulations: 4, trainSteps: 1 }
  * const agent = alphaZeroAgent(env, alphaZero(env, opts).params, { ...opts, simulations: 50 })
@@ -913,7 +913,7 @@ export function alphaZeroAgent<S, O>(
   const choose = (p: ParamTree, o: O | S, k: Key): number => {
     const s = toState(o)
     const player = env.currentAgent(s)
-    if (player === undefined) throw new MdmlError('value', 'alphaZeroAgent: the game is over')
+    if (player === undefined) throw new OmaiError('value', 'alphaZeroAgent: the game is over')
     const ev = evaluator(env, r, p)
     if (r.simulations === 0) {
       const legal = env.legalActions?.(s, player) ?? []
@@ -941,9 +941,9 @@ export function alphaZeroAgent<S, O>(
  * @concept agents
  * @example
  * ```ts
- * import { randomLegalPolicy } from 'mdml-engine/agents'
- * import { nim } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { randomLegalPolicy } from 'omai-engine/agents'
+ * import { nim } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * const env = nim.create({ heaps: [1] })
  * randomLegalPolicy(env, 'player_0')(env.reset(key(0)), key(1)) // => 0
  * ```
@@ -951,7 +951,7 @@ export function alphaZeroAgent<S, O>(
 export function randomLegalPolicy<S, O>(env: AecEnv<S, O, number>, agent: string): Policy<S, number> {
   return (s, k) => {
     const legal = env.legalActions?.(s, agent) ?? []
-    if (legal.length === 0) throw new MdmlError('value', `randomLegalPolicy: ${agent} has no legal move`)
+    if (legal.length === 0) throw new OmaiError('value', `randomLegalPolicy: ${agent} has no legal move`)
     return (
       legal[
         categorical(

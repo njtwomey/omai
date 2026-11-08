@@ -4,7 +4,7 @@
  * grid have optima known in closed form, so a heuristic's tour can be scored against the truth at any size.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { foldIn, type Key, uniform } from '../random/index.ts'
 
 /** A travelling-salesman instance: city coordinates, the distance matrix and the best tour known with its length. */
@@ -28,7 +28,7 @@ export interface TspInstance {
  * @returns The length, returning to the start.
  * @example
  * ```ts
- * import { tourLength } from 'mdml-engine/problems'
+ * import { tourLength } from 'omai-engine/problems'
  * tourLength(Float64Array.of(0, 1, 2, 1, 0, 1, 2, 1, 0), [0, 1, 2]) // => 4
  * ```
  */
@@ -45,10 +45,10 @@ export function tourLength(distances: ArrayLike<number>, tour: readonly number[]
  * @param distances - The row-major `n x n` distance matrix.
  * @param n - The number of cities.
  * @returns An optimal tour starting at city 0, and its length.
- * @throws MdmlError with code `value` for more than 16 cities.
+ * @throws OmaiError with code `value` for more than 16 cities.
  * @example
  * ```ts
- * import { heldKarp } from 'mdml-engine/problems'
+ * import { heldKarp } from 'omai-engine/problems'
  * heldKarp(Float64Array.of(0, 1, 5, 1, 0, 1, 5, 1, 0), 3).length // => 7
  * ```
  */
@@ -56,7 +56,7 @@ export function heldKarp(
   distances: ArrayLike<number>,
   n: number,
 ): { readonly tour: number[]; readonly length: number } {
-  if (n > 16) throw new MdmlError('value', `heldKarp: ${n} cities is too many for the exact method`)
+  if (n > 16) throw new OmaiError('value', `heldKarp: ${n} cities is too many for the exact method`)
   if (n === 1) return { tour: [0], length: 0 }
   const m = n - 1
   const full = 1 << m
@@ -127,12 +127,12 @@ function instanceOf(
  * @returns The instance.
  * @example
  * ```ts
- * import { circleTour } from 'mdml-engine/problems'
+ * import { circleTour } from 'omai-engine/problems'
  * circleTour(4).optimalLength // => 5.656854249492381
  * ```
  */
 export function circleTour(n: number): TspInstance {
-  if (!(Number.isInteger(n) && n >= 3)) throw new MdmlError('value', `circleTour: ${n} cities`)
+  if (!(Number.isInteger(n) && n >= 3)) throw new OmaiError('value', `circleTour: ${n} cities`)
   const cities = Array.from(
     { length: n },
     (_, i) => [Math.cos((2 * Math.PI * i) / n), Math.sin((2 * Math.PI * i) / n)] as const,
@@ -151,16 +151,16 @@ export function circleTour(n: number): TspInstance {
  * @param rows - The rows (at least 2).
  * @param cols - The columns (at least 2).
  * @returns The instance.
- * @throws MdmlError with code `value` when both sides are odd (no tour of unit steps exists).
+ * @throws OmaiError with code `value` when both sides are odd (no tour of unit steps exists).
  * @example
  * ```ts
- * import { gridTour } from 'mdml-engine/problems'
+ * import { gridTour } from 'omai-engine/problems'
  * gridTour(4, 5).optimalLength // => 20
  * ```
  */
 export function gridTour(rows: number, cols: number): TspInstance {
   if (rows < 2 || cols < 2 || (rows % 2 === 1 && cols % 2 === 1))
-    throw new MdmlError('value', `gridTour: a ${rows} x ${cols} lattice has no tour of unit steps`)
+    throw new OmaiError('value', `gridTour: a ${rows} x ${cols} lattice has no tour of unit steps`)
   const cities: (readonly [number, number])[] = []
   for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) cities.push([c, r])
   const at = (r: number, c: number): number => r * cols + c
@@ -195,8 +195,8 @@ export function gridTour(rows: number, cols: number): TspInstance {
  * @returns The instance.
  * @example
  * ```ts
- * import { randomTour } from 'mdml-engine/problems'
- * import { key } from 'mdml-engine/random'
+ * import { randomTour } from 'omai-engine/problems'
+ * import { key } from 'omai-engine/random'
  * randomTour(key(0), 8).optimalTour.length // => 8
  * ```
  */
@@ -223,7 +223,7 @@ export interface HamiltonianPuzzle {
  * @returns Whether every vertex appears once and consecutive vertices (the last and first too) are adjacent.
  * @example
  * ```ts
- * import { isHamiltonianCycle } from 'mdml-engine/problems'
+ * import { isHamiltonianCycle } from 'omai-engine/problems'
  * isHamiltonianCycle([[1, 2], [0, 2], [0, 1]], [0, 1, 2]) // => true
  * ```
  */
@@ -243,14 +243,14 @@ export function isHamiltonianCycle(adjacency: readonly (readonly number[])[], or
  * @returns The graph and the planted cycle.
  * @example
  * ```ts
- * import { isHamiltonianCycle, plantedHamiltonian } from 'mdml-engine/problems'
- * import { key } from 'mdml-engine/random'
+ * import { isHamiltonianCycle, plantedHamiltonian } from 'omai-engine/problems'
+ * import { key } from 'omai-engine/random'
  * const p = plantedHamiltonian(key(0), 8)
  * isHamiltonianCycle(p.adjacency, p.planted) // => true
  * ```
  */
 export function plantedHamiltonian(key: Key, n: number, extra: number = n): HamiltonianPuzzle {
-  if (!(Number.isInteger(n) && n >= 3)) throw new MdmlError('value', `plantedHamiltonian: ${n} vertices`)
+  if (!(Number.isInteger(n) && n >= 3)) throw new OmaiError('value', `plantedHamiltonian: ${n} vertices`)
   const u = uniform(foldIn(key, 0), [n]).data
   const planted = Array.from({ length: n }, (_, i) => i).sort((a, b) => (u[a] ?? 0) - (u[b] ?? 0))
   const edges = new Set<string>()
@@ -277,7 +277,7 @@ export function plantedHamiltonian(key: Key, n: number, extra: number = n): Hami
  * @returns A cycle starting at vertex 0.
  * @example
  * ```ts
- * import { findHamiltonianCycle } from 'mdml-engine/problems'
+ * import { findHamiltonianCycle } from 'omai-engine/problems'
  * findHamiltonianCycle([[1], [0, 2], [1]]) // => undefined
  * ```
  */

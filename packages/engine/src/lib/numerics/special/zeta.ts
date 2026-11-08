@@ -53,8 +53,8 @@ const fresnelCP = special('fresnelC', (x) => misc.fresnel(x).c, [([x]) => cos(ha
  * @concept special-functions
  * @example
  * ```ts
- * import { zeta } from 'mdml-engine/numerics/special'
- * import { item } from 'mdml-engine/tensor'
+ * import { zeta } from 'omai-engine/numerics/special'
+ * import { item } from 'omai-engine/tensor'
  * Math.abs(item(zeta(2)) - Math.PI ** 2 / 6) < 1e-15 // => true
  * ```
  */
@@ -71,8 +71,8 @@ export function zeta(s: TensorLike): Value {
  * @returns zeta(s, q), differentiable in both arguments.
  * @example
  * ```ts
- * import { hurwitzZeta } from 'mdml-engine/numerics/special'
- * import { item } from 'mdml-engine/tensor'
+ * import { hurwitzZeta } from 'omai-engine/numerics/special'
+ * import { item } from 'omai-engine/tensor'
  * Math.abs(item(hurwitzZeta(2, 2)) - (Math.PI ** 2 / 6 - 1)) < 1e-15 // => true
  * ```
  */
@@ -87,8 +87,8 @@ export function hurwitzZeta(s: TensorLike, q: TensorLike): Value {
  * @returns W(x), differentiable (W' = 1 / (exp(W) (1 + W))).
  * @example
  * ```ts
- * import { lambertW } from 'mdml-engine/numerics/special'
- * import { item } from 'mdml-engine/tensor'
+ * import { lambertW } from 'omai-engine/numerics/special'
+ * import { item } from 'omai-engine/tensor'
  * Math.abs(item(lambertW(Math.E)) - 1) < 1e-15 // => true
  * ```
  */
@@ -104,8 +104,8 @@ export function lambertW(x: TensorLike): Value {
  * @returns E_n(x), differentiable in x (E_n' = -E_{n-1}).
  * @example
  * ```ts
- * import { expn } from 'mdml-engine/numerics/special'
- * import { item } from 'mdml-engine/tensor'
+ * import { expn } from 'omai-engine/numerics/special'
+ * import { item } from 'omai-engine/tensor'
  * item(expn(1, 0)) // => Infinity
  * ```
  */
@@ -132,8 +132,8 @@ export function expn(n: number, x: TensorLike): Value {
  * @returns Ei(x), differentiable (Ei' = exp(x) / x).
  * @example
  * ```ts
- * import { expi } from 'mdml-engine/numerics/special'
- * import { item } from 'mdml-engine/tensor'
+ * import { expi } from 'omai-engine/numerics/special'
+ * import { item } from 'omai-engine/tensor'
  * item(expi(0)) // => -Infinity
  * ```
  */
@@ -149,8 +149,8 @@ export function expi(x: TensorLike): Value {
  * @returns `[Si(x), Ci(x)]`, both differentiable.
  * @example
  * ```ts
- * import { sici } from 'mdml-engine/numerics/special'
- * import { item } from 'mdml-engine/tensor'
+ * import { sici } from 'omai-engine/numerics/special'
+ * import { item } from 'omai-engine/tensor'
  * item(sici(0)[0]) // => 0
  * ```
  */
@@ -166,8 +166,8 @@ export function sici(x: TensorLike): [Value, Value] {
  * @returns `[S(x), C(x)]` (scipy's order), both differentiable.
  * @example
  * ```ts
- * import { fresnel } from 'mdml-engine/numerics/special'
- * import { item } from 'mdml-engine/tensor'
+ * import { fresnel } from 'omai-engine/numerics/special'
+ * import { item } from 'omai-engine/tensor'
  * item(fresnel(Infinity)[1]) // => 0.5
  * ```
  */

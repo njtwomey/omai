@@ -5,7 +5,7 @@
  * gradient as its derivative rule, so that any `optim` minimiser can use it.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { gramGradient, type Kernel, theta as thetaOf, withTheta } from '../kernels/index.ts'
 import { cholesky, choSolve } from '../numerics/linalg/index.ts'
 import {
@@ -61,13 +61,13 @@ const diagonalNoise = (alpha: number | TensorLike, n: number): Value => {
  * @param y - Observations `[n]`.
  * @param options - The noise, and a theta to evaluate at.
  * @returns The value and the gradient.
- * @throws MdmlError `shape` when y is not `[n]`.
+ * @throws OmaiError `shape` when y is not `[n]`.
  * @concept gaussian-process-regression
  * @reference C. E. Rasmussen and C. K. I. Williams, Gaussian Processes for Machine Learning (2006), equation 5.9.
  * @example
  * ```ts
- * import { logMarginalLikelihood } from 'mdml-engine/gp'
- * import { rbfKernel } from 'mdml-engine/kernels'
+ * import { logMarginalLikelihood } from 'omai-engine/gp'
+ * import { rbfKernel } from 'omai-engine/kernels'
  * const { value, gradient } = logMarginalLikelihood(rbfKernel({ lengthScale: 1 }), [[0], [1]], [0, 1], { alpha: 0.1 })
  * [Math.round(value * 1e6) / 1e6, gradient.length] // => [-2.405074, 1]
  * ```
@@ -82,7 +82,7 @@ export function logMarginalLikelihood(
   const target = asTensor(y)
   const n = target.shape[0] ?? 0
   if (target.shape.length !== 1)
-    throw new MdmlError('shape', `logMarginalLikelihood: y must be [n], got [${target.shape.join(', ')}]`)
+    throw new OmaiError('shape', `logMarginalLikelihood: y must be [n], got [${target.shape.join(', ')}]`)
   const { gram, gradient } = gramGradient(at, x)
   const p = gradient.shape[2] ?? 0
   const K = add(gram, diagonalNoise(options.alpha ?? 1e-10, n))
@@ -115,10 +115,10 @@ export function logMarginalLikelihood(
  * @concept gaussian-process-regression
  * @example
  * ```ts
- * import { negativeLogMarginalLikelihood } from 'mdml-engine/gp'
- * import { rbfKernel } from 'mdml-engine/kernels'
- * import { grad } from 'mdml-engine/autodiff'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { negativeLogMarginalLikelihood } from 'omai-engine/gp'
+ * import { rbfKernel } from 'omai-engine/kernels'
+ * import { grad } from 'omai-engine/autodiff'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * const f = negativeLogMarginalLikelihood(rbfKernel(), [[0], [1], [2]], [0, 1, 0], { alpha: 0.1 })
  * toArray(grad(f)(tensor([0]))).length // => 1
  * ```
@@ -142,8 +142,8 @@ export function negativeLogMarginalLikelihood(
  * @concept gaussian-process-regression
  * @example
  * ```ts
- * import { hyperparameterCount } from 'mdml-engine/gp'
- * import { rationalQuadraticKernel } from 'mdml-engine/kernels'
+ * import { hyperparameterCount } from 'omai-engine/gp'
+ * import { rationalQuadraticKernel } from 'omai-engine/kernels'
  * hyperparameterCount(rationalQuadraticKernel()) // => 2
  * ```
  */

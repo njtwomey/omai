@@ -4,7 +4,7 @@
  * it exists, the true regression function.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { type GeneratingProgram, posteriorFromJoint } from '../data/index.ts'
 import { foldIn, type Key, key as makeKey } from '../random/index.ts'
 import {
@@ -74,14 +74,14 @@ function withoutDensity<D>(model: Model<D>, site: string): Model<D> {
  * @param model - The program.
  * @param options - The feature and target sites and the number of classes.
  * @returns The generating program.
- * @throws MdmlError with code `value` (from its methods) when a site is missing or E[y | x] is not direct.
+ * @throws OmaiError with code `value` (from its methods) when a site is missing or E[y | x] is not direct.
  * @concept dataset-truth
  * @example
  * ```ts
- * import { generatingProgram, plate, type RowsData, sample } from 'mdml-engine/probprog'
- * import { normal } from 'mdml-engine/dists'
- * import { key } from 'mdml-engine/random'
- * import { item, mul, tensor, toArray } from 'mdml-engine/tensor'
+ * import { generatingProgram, plate, type RowsData, sample } from 'omai-engine/probprog'
+ * import { normal } from 'omai-engine/dists'
+ * import { key } from 'omai-engine/random'
+ * import { item, mul, tensor, toArray } from 'omai-engine/tensor'
  * const line = (d: RowsData) => plate('rows', d.n, () => {
  *   const x = sample('x', normal(0, 1), { obs: d.x })
  *   sample('y', normal(mul(x, 2), 0.5), { obs: d.y })
@@ -116,7 +116,7 @@ export function generatingProgram(model: Model<RowsData>, options: GeneratingPro
     const rowModel = y === undefined && target !== undefined && !discreteTarget ? withoutDensity(model, target) : model
     for (const s of latent)
       if (!isDiscrete(s.fn.support))
-        throw new MdmlError(
+        throw new OmaiError(
           'value',
           `generatingProgram: the latent site ${s.name} is not discrete, so log p(x, y) is not exact`,
         )
@@ -148,9 +148,9 @@ export function generatingProgram(model: Model<RowsData>, options: GeneratingPro
           regressionFunction: (x: Value): Value => {
             const t = traceOf(seed(model, makeKey(0)), { x, n: x.shape[0] ?? 0 })
             const s = t.sites.get(target)
-            if (s?.type !== 'sample') throw new MdmlError('value', `generatingProgram: no target site ${target}`)
+            if (s?.type !== 'sample') throw new OmaiError('value', `generatingProgram: no target site ${target}`)
             if (otherLatents(t).length > 0)
-              throw new MdmlError(
+              throw new OmaiError(
                 'value',
                 'generatingProgram: the target depends on latent sites, so E[y | x] is not direct',
               )
@@ -163,7 +163,7 @@ export function generatingProgram(model: Model<RowsData>, options: GeneratingPro
     sample: (k: Key, n: number) => {
       const t = traceOf(seed(model, foldIn(k, 0)), { n })
       const fx = t.sites.get(features)
-      if (fx?.type !== 'sample') throw new MdmlError('value', `generatingProgram: no feature site ${features}`)
+      if (fx?.type !== 'sample') throw new OmaiError('value', `generatingProgram: no feature site ${features}`)
       const x = primalOf(fx.value) as Tensor
       const fy = target === undefined ? undefined : t.sites.get(target)
       return fy?.type === 'sample' ? { x, y: primalOf(fy.value) } : { x }

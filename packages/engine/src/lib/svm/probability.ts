@@ -3,7 +3,7 @@
  * the pairwise probabilities into one distribution over the classes (Wu, Lin and Weng's second method, libsvm's).
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 
 /**
  * Couple pairwise probabilities into class probabilities (libsvm's `multiclass_probability`, the second method of Wu,
@@ -12,13 +12,13 @@ import { MdmlError } from '../base/index.ts'
  *
  * @param r - `r[i][j]` is the probability of class i given that the class is i or j (`r[j][i] = 1 - r[i][j]`).
  * @returns The class probabilities.
- * @throws MdmlError `shape` unless `r` is square with at least two classes.
+ * @throws OmaiError `shape` unless `r` is square with at least two classes.
  * @concept support-vector-machines
  * @reference T.-F. Wu, C.-J. Lin and R. C. Weng, Probability estimates for multi-class classification by pairwise
  * coupling (2004).
  * @example
  * ```ts
- * import { pairwiseCoupling } from 'mdml-engine/svm'
+ * import { pairwiseCoupling } from 'omai-engine/svm'
  * const p = pairwiseCoupling([[0, 0.8, 0.9], [0.2, 0, 0.6], [0.1, 0.4, 0]])
  * p.map((v) => Math.round(v * 1000) / 1000) // => [0.733, 0.175, 0.092]
  * ```
@@ -26,7 +26,7 @@ import { MdmlError } from '../base/index.ts'
 export function pairwiseCoupling(r: readonly (readonly number[])[]): number[] {
   const k = r.length
   if (k < 2 || r.some((row) => row.length !== k))
-    throw new MdmlError('shape', 'pairwiseCoupling: r must be k x k, k >= 2')
+    throw new OmaiError('shape', 'pairwiseCoupling: r must be k x k, k >= 2')
   const at = (i: number, j: number): number => r[i]?.[j] ?? 0
   const Q = Array.from({ length: k }, () => new Array<number>(k).fill(0))
   for (let t = 0; t < k; t++) {

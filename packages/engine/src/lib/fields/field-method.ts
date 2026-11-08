@@ -61,8 +61,8 @@ export interface FieldProblem {
  * @returns The data, the model and the options.
  * @example
  * ```ts
- * import { fieldProblem } from 'mdml-engine/fields'
- * import { key } from 'mdml-engine/random'
+ * import { fieldProblem } from 'omai-engine/fields'
+ * import { key } from 'omai-engine/random'
  * fieldProblem({ signal: 'image', resolution: 8, dim: 2, encoding: { kind: 'none' }, backbone: { kind: 'mlp' }, width: 8, depth: 1, optimiser: { kind: 'adam' }, learningRate: 0.01, batchSize: 0, eikonalWeight: 0, probeResolution: 8 }, key(0)).data.x.shape // => [64, 2]
  * ```
  */
@@ -105,8 +105,8 @@ export function fieldProblem(config: FieldMethodConfig, key: Key): FieldProblem 
  * @index estimator Fit an image or SDF with a neural field as a session.
  * @example
  * ```ts
- * import { fitFieldMethod } from 'mdml-engine/fields'
- * import { metricSeries, Log, session } from 'mdml-engine/trace'
+ * import { fitFieldMethod } from 'omai-engine/fields'
+ * import { metricSeries, Log, session } from 'omai-engine/trace'
  * const s = session(fitFieldMethod, {
  *   config: { resolution: 8, width: 8, depth: 1, encoding: { kind: 'frequency', octaves: 3, includeInput: true } },
  *   logs: { 'field/loss': Log() },

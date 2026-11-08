@@ -5,7 +5,7 @@
  * outer pass; MSTL steps through the STL fits of its periods. Both record the residual variance and the components.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { type Algorithm, channels, runAlgorithm, stateFromJson, stateToJson } from '../trace/index.ts'
 import { asSeries } from './_series.ts'
 import type { DecompositionResult } from './decomposition.ts'
@@ -57,23 +57,23 @@ const isOdd = (v: number): boolean => Number.isInteger(v) && v > 0 && v % 2 === 
 function configOf(n: number, o: StlOptions): Config {
   const np = o.period
   if (!(Number.isInteger(np) && np >= 2))
-    throw new MdmlError('value', 'stl: the period must be an integer of at least 2')
+    throw new OmaiError('value', 'stl: the period must be an integer of at least 2')
   const ns = o.seasonal ?? 7
-  if (!(isOdd(ns) && ns >= 3)) throw new MdmlError('value', 'stl: seasonal must be an odd integer of at least 3')
+  if (!(isOdd(ns) && ns >= 3)) throw new OmaiError('value', 'stl: seasonal must be an odd integer of at least 3')
   let nt = o.trend ?? Math.ceil((1.5 * np) / (1 - 1.5 / ns))
   if (o.trend === undefined && nt % 2 === 0) nt += 1
-  if (!(isOdd(nt) && nt >= 3 && nt > np)) throw new MdmlError('value', 'stl: trend must be odd and above the period')
+  if (!(isOdd(nt) && nt >= 3 && nt > np)) throw new OmaiError('value', 'stl: trend must be odd and above the period')
   let nl = o.lowPass ?? np + 1
   if (o.lowPass === undefined && nl % 2 === 0) nl += 1
-  if (!(isOdd(nl) && nl >= 3 && nl > np)) throw new MdmlError('value', 'stl: lowPass must be odd and above the period')
+  if (!(isOdd(nl) && nl >= 3 && nl > np)) throw new OmaiError('value', 'stl: lowPass must be odd and above the period')
   const robust = o.robust ?? false
   for (const [name, v] of [
     ['seasonalJump', o.seasonalJump ?? 1],
     ['trendJump', o.trendJump ?? 1],
     ['lowPassJump', o.lowPassJump ?? 1],
   ] as const)
-    if (!(Number.isInteger(v) && v >= 1)) throw new MdmlError('value', `stl: ${name} must be a positive integer`)
-  if (n < 2 * np) throw new MdmlError('value', 'stl: the series must cover at least two periods')
+    if (!(Number.isInteger(v) && v >= 1)) throw new OmaiError('value', `stl: ${name} must be a positive integer`)
+  if (n < 2 * np) throw new OmaiError('value', 'stl: the series must cover at least two periods')
   return {
     n,
     np,
@@ -304,7 +304,7 @@ export interface StlState {
  * @returns The algorithm and its total number of steps (`innerIterations * (outerIterations + 1)`).
  * @example
  * ```ts
- * import { stlAlgorithm } from 'mdml-engine/timeseries'
+ * import { stlAlgorithm } from 'omai-engine/timeseries'
  * const y = Array.from({ length: 24 }, (_, t) => t + [2, 0, -2, 0][t % 4])
  * stlAlgorithm(y, { period: 4 }).steps // => 5
  * ```
@@ -373,7 +373,7 @@ function residualVariance(y: Float64Array, s: StlState): number {
  * @index function STL seasonal-trend decomposition; mstl handles several seasons.
  * @example
  * ```ts
- * import { stl } from 'mdml-engine/timeseries'
+ * import { stl } from 'omai-engine/timeseries'
  * const y = Array.from({ length: 32 }, (_, t) => 10 + t + [3, 0, -3, 0][t % 4])
  * const d = stl(y, { period: 4 })
  * Math.abs((d.seasonal[0] as number) - 3) < 0.5 // => true
@@ -428,7 +428,7 @@ export interface MstlState {
 
 function boxCox(y: readonly number[], lambda: number): number[] {
   return y.map((v) => {
-    if (!(v > 0)) throw new MdmlError('value', 'mstl: a Box-Cox transform needs positive data')
+    if (!(v > 0)) throw new OmaiError('value', 'mstl: a Box-Cox transform needs positive data')
     return lambda === 0 ? Math.log(v) : (v ** lambda - 1) / lambda
   })
 }
@@ -442,7 +442,7 @@ function boxCox(y: readonly number[], lambda: number): number[] {
  * @returns The algorithm, the number of steps (`passes * periods`) and the periods in processing order.
  * @example
  * ```ts
- * import { mstlAlgorithm } from 'mdml-engine/timeseries'
+ * import { mstlAlgorithm } from 'omai-engine/timeseries'
  * const y = Array.from({ length: 96 }, (_, t) => Math.sin(t) + Math.sin(t / 4) + 0.01 * t)
  * mstlAlgorithm(y, { periods: [24, 6] }).steps // => 4
  * ```
@@ -457,12 +457,12 @@ export function mstlAlgorithm(
   const defaults = options.periods.map((_, i) => 7 + 4 * (i + 1))
   const windows = options.windows ?? defaults
   if (windows.length !== options.periods.length)
-    throw new MdmlError('shape', 'mstl: periods and windows must have the same length')
+    throw new OmaiError('shape', 'mstl: periods and windows must have the same length')
   const pairs = options.periods
     .map((p, i) => [p, windows[i] ?? 7] as const)
     .sort((a, b) => a[0] - b[0])
     .filter(([p]) => p < n / 2)
-  if (pairs.length === 0) throw new MdmlError('value', 'mstl: no period shorter than half the series')
+  if (pairs.length === 0) throw new OmaiError('value', 'mstl: no period shorter than half the series')
   const periods = pairs.map(([p]) => p)
   const passes = pairs.length === 1 ? 1 : (options.iterate ?? 2)
   const total = passes * pairs.length
@@ -518,7 +518,7 @@ export function mstlAlgorithm(
  * @returns The trend, one seasonal component per period (shortest first) and the residual.
  * @example
  * ```ts
- * import { mstl } from 'mdml-engine/timeseries'
+ * import { mstl } from 'omai-engine/timeseries'
  * const y = Array.from({ length: 96 }, (_, t) => Math.sin((2 * Math.PI * t) / 24) + 0.5 * Math.sin((2 * Math.PI * t) / 6) + 0.02 * t)
  * mstl(y, { periods: [6, 24] }).seasonal.length // => 2
  * ```

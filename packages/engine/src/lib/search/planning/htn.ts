@@ -4,7 +4,7 @@
  * decomposition as a drawable tree.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { type Structure, type StructureNode, structure } from '../../scene/index.ts'
 import { type Algorithm, channels, runAlgorithm } from '../../trace/index.ts'
 import type { SearchRunOptions } from '../problem.ts'
@@ -74,7 +74,7 @@ function htnEngine(domain: HtnDomain, initial: readonly string[], tasks: readonl
   const methods = new Map<string, HtnMethod[]>()
   for (const m of domain.methods) methods.set(m.task, [...(methods.get(m.task) ?? []), m])
   for (const t of tasks) {
-    if (!actions.has(t) && !methods.has(t)) throw new MdmlError('value', `htnPlan: task ${t} has no action or method`)
+    if (!actions.has(t) && !methods.has(t)) throw new OmaiError('value', `htnPlan: task ${t} has no action or method`)
   }
   return {
     name: 'htn',
@@ -162,11 +162,11 @@ function htnEngine(domain: HtnDomain, initial: readonly string[], tasks: readonl
  * @param initial - The initial facts.
  * @param tasks - The top-level tasks, in order.
  * @returns The algorithm.
- * @throws MdmlError with code `value` when a top-level task has neither an action nor a method.
+ * @throws OmaiError with code `value` when a top-level task has neither an action nor a method.
  * @concept hierarchical-planning
  * @example
  * ```ts
- * import { htnPlanAlgorithm } from 'mdml-engine/search'
+ * import { htnPlanAlgorithm } from 'omai-engine/search'
  * htnPlanAlgorithm({ actions: [{ name: 'wave', pre: [], add: [], del: [] }], methods: [] }, [], ['wave']).name // => 'htn'
  * ```
  */
@@ -186,11 +186,11 @@ export function htnPlanAlgorithm(
  * @param tasks - The top-level tasks, in order.
  * @param options - The expansion budget (default 100000) and tracing.
  * @returns The plan, its decomposition and the final state.
- * @throws MdmlError with code `value` when a top-level task has neither an action nor a method.
+ * @throws OmaiError with code `value` when a top-level task has neither an action nor a method.
  * @concept hierarchical-planning
  * @example
  * ```ts
- * import { htnPlan } from 'mdml-engine/search'
+ * import { htnPlan } from 'omai-engine/search'
  * // Travel: take a taxi when the destination is near and cash is at hand, else walk.
  * const domain = {
  *   actions: [
@@ -234,7 +234,7 @@ export function htnPlan(
  * @concept hierarchical-planning
  * @example
  * ```ts
- * import { htnPlan, htnTree } from 'mdml-engine/search'
+ * import { htnPlan, htnTree } from 'omai-engine/search'
  * const domain = { actions: [{ name: 'a', pre: [], add: [], del: [] }], methods: [{ name: 'm', task: 't', subtasks: ['a', 'a'] }] }
  * htnTree(htnPlan(domain, [], ['t'])).edges.length // => 2
  * ```

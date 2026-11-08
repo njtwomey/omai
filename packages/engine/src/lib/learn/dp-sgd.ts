@@ -7,7 +7,7 @@
  */
 
 import { valueAndGrad, vmap } from '../autodiff/index.ts'
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { applyGradients, concreteTree, type Module, type Params, type TrainState, trainState } from '../nn/index.ts'
 import { type GradientTransformation, globalNorm } from '../optim/index.ts'
 import { bernoulli, foldIn, type Key, normal } from '../random/index.ts'
@@ -68,9 +68,9 @@ export interface PerExampleGradients {
  * @concept differential-privacy
  * @example
  * ```ts
- * import { perExampleGradients } from 'mdml-engine/learn'
- * import { Linear } from 'mdml-engine/nn'
- * import { sum } from 'mdml-engine/tensor'
+ * import { perExampleGradients } from 'omai-engine/learn'
+ * import { Linear } from 'omai-engine/nn'
+ * import { sum } from 'omai-engine/tensor'
  * const m = new Linear(2, 1)
  * perExampleGradients(m, m.params, [[1, 2], [3, 4]], [[0], [0]], (o) => sum(o)).grads.weight.shape // => [2, 1, 2]
  * ```
@@ -128,13 +128,13 @@ function exampleNorms(grads: Params): Value {
  * @concept differential-privacy
  * @example
  * ```ts
- * import { clipPerExample } from 'mdml-engine/learn'
- * import { tensor } from 'mdml-engine/tensor'
+ * import { clipPerExample } from 'omai-engine/learn'
+ * import { tensor } from 'omai-engine/tensor'
  * clipPerExample({ w: tensor([[3, 4], [0.3, 0.4]]) }, 1).clippedShare // => 0.5
  * ```
  */
 export function clipPerExample(grads: Params, clipNorm: number): Clipped {
-  if (!(clipNorm > 0)) throw new MdmlError('value', 'clipPerExample: the clip norm must be positive')
+  if (!(clipNorm > 0)) throw new OmaiError('value', 'clipPerExample: the clip norm must be positive')
   const norms = exampleNorms(grads)
   const factor = minimum(div(clipNorm, add(norms, 1e-6)), 1)
   const n = norms.shape[0] ?? 0
@@ -164,9 +164,9 @@ export interface DpOptions {
  * @concept differential-privacy
  * @example
  * ```ts
- * import { privateGradient } from 'mdml-engine/learn'
- * import { key } from 'mdml-engine/random'
- * import { tensor } from 'mdml-engine/tensor'
+ * import { privateGradient } from 'omai-engine/learn'
+ * import { key } from 'omai-engine/random'
+ * import { tensor } from 'omai-engine/tensor'
  * privateGradient({ w: tensor([[1, 0], [1, 0]]) }, { clipNorm: 1, noiseMultiplier: 0 }, key(0)).w.data // => Float64Array.of(1, 0)
  * ```
  */
@@ -206,9 +206,9 @@ export interface DpNoiseState {
  * @concept differential-privacy
  * @example
  * ```ts
- * import { dpGradientTransformation } from 'mdml-engine/learn'
- * import { key } from 'mdml-engine/random'
- * import { tensor } from 'mdml-engine/tensor'
+ * import { dpGradientTransformation } from 'omai-engine/learn'
+ * import { key } from 'omai-engine/random'
+ * import { tensor } from 'omai-engine/tensor'
  * const t = dpGradientTransformation({ clipNorm: 1, noiseMultiplier: 0, expectedBatchSize: 2, key: key(0) })
  * t.update(tensor([2, 4]), t.init(tensor([0, 0]))).updates // => tensor([1, 2])
  * ```
@@ -259,10 +259,10 @@ export interface DpStepReport {
  * @concept differential-privacy
  * @example
  * ```ts
- * import { dpSgdStep } from 'mdml-engine/learn'
- * import { Linear, trainState } from 'mdml-engine/nn'
- * import { sgd } from 'mdml-engine/optim'
- * import { sum } from 'mdml-engine/tensor'
+ * import { dpSgdStep } from 'omai-engine/learn'
+ * import { Linear, trainState } from 'omai-engine/nn'
+ * import { sgd } from 'omai-engine/optim'
+ * import { sum } from 'omai-engine/tensor'
  * const m = new Linear(2, 1)
  * const opt = sgd({ learningRate: 0.1 })
  * dpSgdStep(m, trainState(m, opt), [[1, 2], [3, 4]], [[0], [0]], (o) => sum(o), opt, { clipNorm: 1, noiseMultiplier: 1 }).state.step // => 1
@@ -315,7 +315,7 @@ export function dpSgdStep(
  * @concept differential-privacy
  * @example
  * ```ts
- * import { dpEpsilon } from 'mdml-engine/learn'
+ * import { dpEpsilon } from 'omai-engine/learn'
  * // Abadi et al.'s MNIST setting, q = 0.01, sigma = 4, 10000 steps.
  * dpEpsilon({ sampleRate: 0.01, noiseMultiplier: 4, steps: 10000, delta: 1e-5 }).epsilon < 2 // => true
  * ```
@@ -341,11 +341,11 @@ export function dpEpsilon(options: {
  *
  * @param options - Target epsilon, delta, sampling rate, steps; the tolerance on epsilon (default 0.01).
  * @returns The noise multiplier.
- * @throws MdmlError with code `convergence` when no sigma up to 1000 reaches the target.
+ * @throws OmaiError with code `convergence` when no sigma up to 1000 reaches the target.
  * @concept differential-privacy
  * @example
  * ```ts
- * import { noiseMultiplierFor, dpEpsilon } from 'mdml-engine/learn'
+ * import { noiseMultiplierFor, dpEpsilon } from 'omai-engine/learn'
  * const sigma = noiseMultiplierFor({ targetEpsilon: 3, delta: 1e-5, sampleRate: 0.01, steps: 1000 })
  * dpEpsilon({ sampleRate: 0.01, noiseMultiplier: sigma, steps: 1000, delta: 1e-5 }).epsilon <= 3 // => true
  * ```
@@ -363,7 +363,7 @@ export function noiseMultiplierFor(options: {
   while (eps(hi) > options.targetEpsilon) {
     hi *= 2
     if (hi > 1000)
-      throw new MdmlError('convergence', 'noiseMultiplierFor: no noise multiplier up to 1000 reaches the target')
+      throw new OmaiError('convergence', 'noiseMultiplierFor: no noise multiplier up to 1000 reaches the target')
   }
   let lo = hi / 2
   const tol = options.epsilonTolerance ?? 0.01
@@ -434,11 +434,11 @@ export interface DpSgdOptions extends DpOptions {
  * @concept differential-privacy
  * @example
  * ```ts
- * import { dpSgdAlgorithm } from 'mdml-engine/learn'
- * import { Linear } from 'mdml-engine/nn'
- * import { sgd } from 'mdml-engine/optim'
- * import { runAlgorithm } from 'mdml-engine/trace'
- * import { sum, square, sub } from 'mdml-engine/tensor'
+ * import { dpSgdAlgorithm } from 'omai-engine/learn'
+ * import { Linear } from 'omai-engine/nn'
+ * import { sgd } from 'omai-engine/optim'
+ * import { runAlgorithm } from 'omai-engine/trace'
+ * import { sum, square, sub } from 'omai-engine/tensor'
  * const alg = dpSgdAlgorithm(new Linear(1, 1), { x: [[1], [2], [3], [4]], y: [[1], [2], [3], [4]] }, {
  *   loss: (o, t) => sum(square(sub(o, t))), optimizer: sgd({ learningRate: 0.01 }), sampleRate: 0.5, clipNorm: 1, noiseMultiplier: 1, steps: 5, delta: 1e-5,
  * })

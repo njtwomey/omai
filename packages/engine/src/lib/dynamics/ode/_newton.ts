@@ -1,6 +1,6 @@
 // Jacobians, LU factorisations and implicit-function corrections shared by the implicit solvers.
 import { jacfwd, stopGradient } from '../../autodiff/index.ts'
-import { MdmlError, minOf } from '../../base/index.ts'
+import { minOf, OmaiError } from '../../base/index.ts'
 import { type LuFactorisation, luFactor, luSolve, solve } from '../../numerics/linalg/index.ts'
 import { isTensor, matmul, primalOf, reshape, sub, type TensorLike, type Value } from '../../tensor/index.ts'
 import { floatState, fromNumbers, numbersOf, type Tol } from './_vec.ts'
@@ -18,7 +18,7 @@ export function jacobianAt(f: OdeVectorField, t: number, y: Value, jac: Jacobian
   const shape = y.shape
   if (typeof jac === 'function') {
     const j = numbersOf(jac(t, y))
-    if (j.length !== n * n) throw new MdmlError('shape', `the Jacobian must be ${n} x ${n}`)
+    if (j.length !== n * n) throw new OmaiError('shape', `the Jacobian must be ${n} x ${n}`)
     return Float64Array.from(j)
   }
   if (jac === 'autodiff') {
@@ -134,7 +134,7 @@ export function massNumbers(mass: TensorLike | undefined): Float64Array | undefi
 }
 
 export function checkMass(mass: Float64Array | undefined, n: number): Float64Array | undefined {
-  if (mass !== undefined && mass.length !== n * n) throw new MdmlError('shape', `the mass matrix must be ${n} x ${n}`)
+  if (mass !== undefined && mass.length !== n * n) throw new OmaiError('shape', `the mass matrix must be ${n} x ${n}`)
   return mass
 }
 

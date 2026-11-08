@@ -5,8 +5,8 @@ coordinates of the two realisations differ by a similarity).
 
 import numpy as np
 import slycot
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray
 
 REFERENCE: dict[str, str] = {"slycot": str(getattr(slycot, "__version__", "0.7"))}
 

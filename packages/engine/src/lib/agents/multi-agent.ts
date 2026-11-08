@@ -5,7 +5,7 @@
  * games such as poker.
  */
 
-import { argmaxOf, type Json, MdmlError, meanOf } from '../base/index.ts'
+import { argmaxOf, type Json, meanOf, OmaiError } from '../base/index.ts'
 import { solveZeroSum } from '../games/index.ts'
 import { crossEntropy } from '../losses/index.ts'
 import { mlp } from '../nn/index.ts'
@@ -99,9 +99,9 @@ export interface IndependentLearnersOptions<O, A> extends TabularQOptions {
  * @concept multi-agent-learning
  * @example
  * ```ts
- * import { independentLearners } from 'mdml-engine/agents'
- * import { matrixGame } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { independentLearners } from 'omai-engine/agents'
+ * import { matrixGame } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * const agent = independentLearners(matrixGame.create())
  * Object.keys(agent.init(key(0))) // => ['player_0', 'player_1']
  * ```
@@ -191,12 +191,12 @@ export interface MinimaxQOptions {
  * @param env - The two-agent parallel environment.
  * @param options - Step sizes, discount and exploration.
  * @returns The joint agent (both players learn by minimax-Q).
- * @throws MdmlError with code `value` unless there are exactly two agents with discrete actions.
+ * @throws OmaiError with code `value` unless there are exactly two agents with discrete actions.
  * @concept multi-agent-learning
  * @example
  * ```ts
- * import { minimaxQ } from 'mdml-engine/agents'
- * import { matrixGame } from 'mdml-engine/environments'
+ * import { minimaxQ } from 'omai-engine/agents'
+ * import { matrixGame } from 'omai-engine/environments'
  * minimaxQ(matrixGame.create({ game: 'matchingPennies' })).name // => 'minimaxQ'
  * ```
  */
@@ -204,7 +204,7 @@ export function minimaxQ(
   env: MultiAgentSpaces,
   options: MinimaxQOptions = {},
 ): Agent<MinimaxQState, PerAgent<unknown>, PerAgent<number>> {
-  if (env.possibleAgents.length !== 2) throw new MdmlError('value', 'minimaxQ: needs exactly two agents')
+  if (env.possibleAgents.length !== 2) throw new OmaiError('value', 'minimaxQ: needs exactly two agents')
   const [p0, p1] = env.possibleAgents as [string, string]
   const n: Record<string, number> = {
     [p0]: actionCount(env.actionSpaces[p0] as Space, 'minimaxQ'),
@@ -282,9 +282,9 @@ export function minimaxQ(
  * @concept multi-agent-learning
  * @example
  * ```ts
- * import { minimaxQ, minimaxQStrategy } from 'mdml-engine/agents'
- * import { matrixGame } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { minimaxQ, minimaxQStrategy } from 'omai-engine/agents'
+ * import { matrixGame } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * const agent = minimaxQ(matrixGame.create({ game: 'rockPaperScissors' }))
  * minimaxQStrategy(agent.init(key(0)), 'player_0', 0).length // => 0
  * ```
@@ -338,8 +338,8 @@ const isAec = <S, O, A>(env: AecEnv<S, O, A> | ParallelEnv<S, O, A>): env is Aec
  * @concept self-play
  * @example
  * ```ts
- * import { dqn, selfPlayAlgorithm } from 'mdml-engine/agents'
- * import { nim } from 'mdml-engine/environments'
+ * import { dqn, selfPlayAlgorithm } from 'omai-engine/agents'
+ * import { nim } from 'omai-engine/environments'
  * const env = nim.create({ heaps: [1, 2] })
  * const spaces = { observationSpace: env.observationSpaces['player_0'], actionSpace: env.actionSpaces['player_0'] }
  * selfPlayAlgorithm(env, dqn(spaces, { hidden: [8] })).name // => 'selfPlay:dqn'
@@ -425,9 +425,9 @@ export interface SelfPlayResult<G> {
  * @concept self-play
  * @example
  * ```ts
- * import { selfPlay } from 'mdml-engine/agents'
- * import { matrixGame } from 'mdml-engine/environments'
- * import { policyAgent } from 'mdml-engine/rl'
+ * import { selfPlay } from 'omai-engine/agents'
+ * import { matrixGame } from 'omai-engine/environments'
+ * import { policyAgent } from 'omai-engine/rl'
  * selfPlay(matrixGame.create({ rounds: 5 }), policyAgent(() => 1), { generations: 2, stepsPerGeneration: 5 }).state.meanReturn // => 5
  * ```
  */
@@ -544,8 +544,8 @@ function averageProbabilities(
  * @concept fictitious-play
  * @example
  * ```ts
- * import { fictitiousSelfPlayAlgorithm } from 'mdml-engine/agents'
- * import { kuhnPoker } from 'mdml-engine/environments'
+ * import { fictitiousSelfPlayAlgorithm } from 'omai-engine/agents'
+ * import { kuhnPoker } from 'omai-engine/environments'
  * fictitiousSelfPlayAlgorithm(kuhnPoker.create(), { hidden: [16] }).name // => 'fictitiousSelfPlay'
  * ```
  */
@@ -691,8 +691,8 @@ export interface FictitiousSelfPlayResult {
  * @concept fictitious-play
  * @example
  * ```ts
- * import { fictitiousSelfPlay } from 'mdml-engine/agents'
- * import { kuhnPoker } from 'mdml-engine/environments'
+ * import { fictitiousSelfPlay } from 'omai-engine/agents'
+ * import { kuhnPoker } from 'omai-engine/environments'
  * const r = fictitiousSelfPlay(kuhnPoker.create(), { hidden: [8], averageHidden: [8], episodes: 3 })
  * r.averagePolicy('player_0', [1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0]).length // => 2
  * ```
@@ -719,7 +719,7 @@ export function fictitiousSelfPlay<S>(
   })
   const params = (agent: string): ParamTree => {
     const p = result.state.players[agent]
-    if (p === undefined) throw new MdmlError('value', `fictitiousSelfPlay: no agent ${agent}`)
+    if (p === undefined) throw new OmaiError('value', `fictitiousSelfPlay: no agent ${agent}`)
     return p.average
   }
   return {

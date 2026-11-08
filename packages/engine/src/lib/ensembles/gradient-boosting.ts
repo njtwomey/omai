@@ -64,8 +64,8 @@ const boostingDefaults = (
  * @concept boosting
  * @example
  * ```ts
- * import { gradientBoostingRegressor } from 'mdml-engine/ensembles'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { gradientBoostingRegressor } from 'omai-engine/ensembles'
+ * import { toFlat } from 'omai-engine/tensor'
  * const x = Array.from({ length: 40 }, (_, i) => [i / 40])
  * const y = x.map(([a = 0]) => (a < 0.5 ? 1 : 3))
  * const fitted = gradientBoostingRegressor({ nEstimators: 30, maxDepth: 1 }).fit({ x, y })
@@ -89,8 +89,8 @@ export function gradientBoostingRegressor(
  * @index estimator Gradient boosting over trees; regressor twin beside it.
  * @example
  * ```ts
- * import { gradientBoostingClassifier } from 'mdml-engine/ensembles'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { gradientBoostingClassifier } from 'omai-engine/ensembles'
+ * import { toFlat } from 'omai-engine/tensor'
  * const x = Array.from({ length: 40 }, (_, i) => [i / 40])
  * const y = x.map(([a = 0]) => (a < 0.5 ? 0 : 1))
  * toFlat(gradientBoostingClassifier({ nEstimators: 20, maxDepth: 1 }).fit({ x, y }).predict([[0.1], [0.9]])) // => [0, 1]
@@ -109,7 +109,7 @@ export function gradientBoostingClassifier(
  * @returns Leaves per stage.
  * @example
  * ```ts
- * import { stageLeaves } from 'mdml-engine/ensembles'
+ * import { stageLeaves } from 'omai-engine/ensembles'
  * stageLeaves({ init: [0], stages: [], learningRate: 0.1, loss: 'squared_error', classes: [], nFeatures: 1 }) // => []
  * ```
  */

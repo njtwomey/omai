@@ -35,8 +35,8 @@ import {
  * @returns expit(x), differentiable.
  * @example
  * ```ts
- * import { expit } from 'mdml-engine/numerics/special'
- * import { item } from 'mdml-engine/tensor'
+ * import { expit } from 'omai-engine/numerics/special'
+ * import { item } from 'omai-engine/tensor'
  * item(expit(0)) // => 0.5
  * ```
  */
@@ -51,8 +51,8 @@ export function expit(x: TensorLike): Value {
  * @returns logit(p), differentiable.
  * @example
  * ```ts
- * import { logit } from 'mdml-engine/numerics/special'
- * import { item } from 'mdml-engine/tensor'
+ * import { logit } from 'omai-engine/numerics/special'
+ * import { item } from 'omai-engine/tensor'
  * item(logit(0.5)) // => 0
  * ```
  */
@@ -68,8 +68,8 @@ export function logit(p: TensorLike): Value {
  * @returns softplus(x), differentiable.
  * @example
  * ```ts
- * import { softplus } from 'mdml-engine/numerics/special'
- * import { item } from 'mdml-engine/tensor'
+ * import { softplus } from 'omai-engine/numerics/special'
+ * import { item } from 'omai-engine/tensor'
  * item(softplus(0)) === Math.LN2 // => true
  * ```
  */
@@ -84,8 +84,8 @@ export function softplus(x: TensorLike): Value {
  * @returns log1pexp(x), differentiable.
  * @example
  * ```ts
- * import { log1pexp } from 'mdml-engine/numerics/special'
- * import { item } from 'mdml-engine/tensor'
+ * import { log1pexp } from 'omai-engine/numerics/special'
+ * import { item } from 'omai-engine/tensor'
  * item(log1pexp(-1000)) // => 0
  * ```
  */
@@ -100,8 +100,8 @@ export function log1pexp(x: TensorLike): Value {
  * @returns log(expit(x)), differentiable.
  * @example
  * ```ts
- * import { logSigmoid } from 'mdml-engine/numerics/special'
- * import { item } from 'mdml-engine/tensor'
+ * import { logSigmoid } from 'omai-engine/numerics/special'
+ * import { item } from 'omai-engine/tensor'
  * item(logSigmoid(-1000)) // => -1000
  * ```
  */
@@ -116,8 +116,8 @@ export function logSigmoid(x: TensorLike): Value {
  * @returns log1mexp(x), differentiable.
  * @example
  * ```ts
- * import { log1mexp } from 'mdml-engine/numerics/special'
- * import { item } from 'mdml-engine/tensor'
+ * import { log1mexp } from 'omai-engine/numerics/special'
+ * import { item } from 'omai-engine/tensor'
  * item(log1mexp(-Math.LN2)) === Math.log(0.5) // => true
  * ```
  */
@@ -138,8 +138,8 @@ export function log1mexp(x: TensorLike): Value {
  * @returns logaddexp(a, b), differentiable.
  * @example
  * ```ts
- * import { logaddexp } from 'mdml-engine/numerics/special'
- * import { item } from 'mdml-engine/tensor'
+ * import { logaddexp } from 'omai-engine/numerics/special'
+ * import { item } from 'omai-engine/tensor'
  * item(logaddexp(0, 0)) === Math.LN2 // => true
  * ```
  */
@@ -157,8 +157,8 @@ export function logaddexp(a: TensorLike, b: TensorLike): Value {
  * @returns xlogy(x, y), differentiable.
  * @example
  * ```ts
- * import { xlogy } from 'mdml-engine/numerics/special'
- * import { item } from 'mdml-engine/tensor'
+ * import { xlogy } from 'omai-engine/numerics/special'
+ * import { item } from 'omai-engine/tensor'
  * item(xlogy(0, 0)) // => 0
  * ```
  */
@@ -176,8 +176,8 @@ export function xlogy(x: TensorLike, y: TensorLike): Value {
  * @returns xlog1py(x, y), differentiable.
  * @example
  * ```ts
- * import { xlog1py } from 'mdml-engine/numerics/special'
- * import { item } from 'mdml-engine/tensor'
+ * import { xlog1py } from 'omai-engine/numerics/special'
+ * import { item } from 'omai-engine/tensor'
  * item(xlog1py(0, -1)) // => 0
  * ```
  */
@@ -194,8 +194,8 @@ export function xlog1py(x: TensorLike, y: TensorLike): Value {
  * @returns entr(x), differentiable for x > 0.
  * @example
  * ```ts
- * import { entr } from 'mdml-engine/numerics/special'
- * import { item } from 'mdml-engine/tensor'
+ * import { entr } from 'omai-engine/numerics/special'
+ * import { item } from 'omai-engine/tensor'
  * item(entr(1)) // => 0
  * ```
  */
@@ -214,8 +214,8 @@ export function entr(x: TensorLike): Value {
  * @returns relEntr(x, y), differentiable on x, y > 0.
  * @example
  * ```ts
- * import { relEntr } from 'mdml-engine/numerics/special'
- * import { item } from 'mdml-engine/tensor'
+ * import { relEntr } from 'omai-engine/numerics/special'
+ * import { item } from 'omai-engine/tensor'
  * item(relEntr(1, 1)) // => 0
  * ```
  */
@@ -236,8 +236,8 @@ export function relEntr(x: TensorLike, y: TensorLike): Value {
  * @returns klDiv(x, y), differentiable on x, y > 0.
  * @example
  * ```ts
- * import { klDiv } from 'mdml-engine/numerics/special'
- * import { item } from 'mdml-engine/tensor'
+ * import { klDiv } from 'omai-engine/numerics/special'
+ * import { item } from 'omai-engine/tensor'
  * item(klDiv(2, 2)) // => 0
  * ```
  */

@@ -6,7 +6,7 @@
  * this composes them into one embedding.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { cooccurrence, pmi, svdWordVectors, type WordMatrix } from '../text/index.ts'
 
 /** Options of {@link ppmiEmbedding}. */
@@ -33,11 +33,11 @@ export interface PpmiOptions {
  * @param sentences - Token lists.
  * @param options - Window, dimension, context smoothing, shift and eigenvalue weighting.
  * @returns The word vectors, words in code point order.
- * @throws MdmlError with code `value` for a dimension above the vocabulary size.
+ * @throws OmaiError with code `value` for a dimension above the vocabulary size.
  * @concept word-embeddings
  * @example
  * ```ts
- * import { ppmiEmbedding } from 'mdml-engine/embedding'
+ * import { ppmiEmbedding } from 'omai-engine/embedding'
  * ppmiEmbedding([['a', 'b', 'c', 'a', 'b', 'c']], { dimension: 2, window: 1 }).words // => ['a', 'b', 'c']
  * ```
  */
@@ -48,7 +48,7 @@ export function ppmiEmbedding(sentences: readonly (readonly string[])[], options
     minCount: options.minCount ?? 1,
   })
   const d = options.dimension ?? 50
-  if (d > counts.words.length) throw new MdmlError('value', 'ppmiEmbedding: the dimension exceeds the vocabulary')
+  if (d > counts.words.length) throw new OmaiError('value', 'ppmiEmbedding: the dimension exceeds the vocabulary')
   const m = pmi(counts, { positive: true, shift: options.shift ?? 1, alpha: options.alpha ?? 0.75 })
   return svdWordVectors(m, d, { power: options.power ?? 0.5 })
 }

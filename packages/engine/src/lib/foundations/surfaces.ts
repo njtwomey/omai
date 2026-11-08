@@ -6,7 +6,7 @@
  */
 
 import { jvp } from '../autodiff/index.ts'
-import { MdmlError, type Vec3 } from '../base/index.ts'
+import { OmaiError, type Vec3 } from '../base/index.ts'
 import { cubature, productGaussRule } from '../numerics/quadrature/index.ts'
 import { type Face3D, face3d, type Paint, type Style } from '../scene/index.ts'
 import {
@@ -44,7 +44,7 @@ const dotLast = (a: Value, b: Value): Value => sum(mul(a, b), -1)
 
 function params(uv: TensorLike): Value {
   const [v] = promoteFloat(uv) as [Value]
-  if (v.shape[v.shape.length - 1] !== 2) throw new MdmlError('shape', 'surface parameters must be [n, 2]')
+  if (v.shape[v.shape.length - 1] !== 2) throw new OmaiError('shape', 'surface parameters must be [n, 2]')
   return v.shape.length === 1 ? stack([v]) : v
 }
 
@@ -81,8 +81,8 @@ export interface SurfaceDerivatives {
  * @concept parametric-surfaces
  * @example
  * ```ts
- * import { surfaceDerivatives } from 'mdml-engine/foundations'
- * import { mul, sliceAxis, squeeze, stack, toArray, type Value } from 'mdml-engine/tensor'
+ * import { surfaceDerivatives } from 'omai-engine/foundations'
+ * import { mul, sliceAxis, squeeze, stack, toArray, type Value } from 'omai-engine/tensor'
  * const saddle = (p: Value) => {
  *   const [u, v] = [0, 1].map((i) => squeeze(sliceAxis(p, -1, i, i + 1), -1))
  *   return stack([u, v, mul(u, v)], -1)
@@ -106,8 +106,8 @@ export function surfaceDerivatives(r: ParametricSurface, uv: TensorLike): Surfac
  * @concept surface-normal
  * @example
  * ```ts
- * import { graphSurface, surfaceNormal } from 'mdml-engine/foundations'
- * import { mul, sum, toArray, type Value } from 'mdml-engine/tensor'
+ * import { graphSurface, surfaceNormal } from 'omai-engine/foundations'
+ * import { mul, sum, toArray, type Value } from 'omai-engine/tensor'
  * toArray(surfaceNormal(graphSurface((p: Value) => sum(mul(p, p), -1)), [0, 0])) // => [[0, 0, 1]]
  * ```
  */
@@ -126,8 +126,8 @@ export function surfaceNormal(r: ParametricSurface, uv: TensorLike): Value {
  * @concept tangent-plane
  * @example
  * ```ts
- * import { graphSurface, tangentPlane } from 'mdml-engine/foundations'
- * import { mul, sum, type Value } from 'mdml-engine/tensor'
+ * import { graphSurface, tangentPlane } from 'omai-engine/foundations'
+ * import { mul, sum, type Value } from 'omai-engine/tensor'
  * tangentPlane(graphSurface((p: Value) => sum(mul(p, p), -1)), [1, 0]).point // => [1, 0, 1]
  * ```
  */
@@ -156,8 +156,8 @@ export interface FundamentalForm {
  * @concept fundamental-forms
  * @example
  * ```ts
- * import { firstFundamentalForm, sphere } from 'mdml-engine/foundations'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { firstFundamentalForm, sphere } from 'omai-engine/foundations'
+ * import { toFlat } from 'omai-engine/tensor'
  * toFlat(firstFundamentalForm(sphere(2), [Math.PI / 2, 0]).vv) // => [4]
  * ```
  */
@@ -178,8 +178,8 @@ export function firstFundamentalForm(r: ParametricSurface, uv: TensorLike): Fund
  * @concept fundamental-forms
  * @example
  * ```ts
- * import { secondFundamentalForm, sphere } from 'mdml-engine/foundations'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { secondFundamentalForm, sphere } from 'omai-engine/foundations'
+ * import { toFlat } from 'omai-engine/tensor'
  * toFlat(secondFundamentalForm(sphere(2), [Math.PI / 2, 0]).uu) // => [-2]
  * ```
  */
@@ -200,8 +200,8 @@ export function secondFundamentalForm(r: ParametricSurface, uv: TensorLike): Fun
  * @concept gaussian-curvature
  * @example
  * ```ts
- * import { gaussianCurvature, sphere } from 'mdml-engine/foundations'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { gaussianCurvature, sphere } from 'omai-engine/foundations'
+ * import { toFlat } from 'omai-engine/tensor'
  * toFlat(gaussianCurvature(sphere(2), [1, 0.5])) // => [0.25]
  * ```
  */
@@ -221,8 +221,8 @@ export function gaussianCurvature(r: ParametricSurface, uv: TensorLike): Value {
  * @concept mean-curvature
  * @example
  * ```ts
- * import { meanCurvature, sphere } from 'mdml-engine/foundations'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { meanCurvature, sphere } from 'omai-engine/foundations'
+ * import { toFlat } from 'omai-engine/tensor'
  * toFlat(meanCurvature(sphere(2), [1, 0.5])) // => [-0.5]
  * ```
  */
@@ -253,7 +253,7 @@ export interface PrincipalCurvatures {
  * @concept principal-curvatures
  * @example
  * ```ts
- * import { principalCurvatures, torus } from 'mdml-engine/foundations'
+ * import { principalCurvatures, torus } from 'omai-engine/foundations'
  * principalCurvatures(torus(2, 1), [0, 0]).curvatures.map((k) => Math.round(k * 1e12) / 1e12) // => [1, 0.333333333333]
  * ```
  */
@@ -301,8 +301,8 @@ export function principalCurvatures(r: ParametricSurface, uv: readonly [number, 
  * @concept parametric-surfaces
  * @example
  * ```ts
- * import { graphSurface } from 'mdml-engine/foundations'
- * import { mul, sum, tensor, toArray, type Value } from 'mdml-engine/tensor'
+ * import { graphSurface } from 'omai-engine/foundations'
+ * import { mul, sum, tensor, toArray, type Value } from 'omai-engine/tensor'
  * toArray(graphSurface((p: Value) => sum(mul(p, p), -1))(tensor([[1, 2]]))) // => [[1, 2, 5]]
  * ```
  */
@@ -319,8 +319,8 @@ export function graphSurface(f: (xy: Value) => Value): ParametricSurface {
  * @concept surfaces-of-revolution
  * @example
  * ```ts
- * import { surfaceOfRevolution } from 'mdml-engine/foundations'
- * import { onesLike, stack, tensor, toArray, type Value } from 'mdml-engine/tensor'
+ * import { surfaceOfRevolution } from 'omai-engine/foundations'
+ * import { onesLike, stack, tensor, toArray, type Value } from 'omai-engine/tensor'
  * const cylinder = surfaceOfRevolution((t: Value) => stack([onesLike(t), t], -1))
  * toArray(cylinder(tensor([[2, 0]]))) // => [[1, 0, 2]]
  * ```
@@ -348,8 +348,8 @@ const uvParts = (uv: Value): [Value, Value] => [
  * @concept parametric-surfaces
  * @example
  * ```ts
- * import { sphere } from 'mdml-engine/foundations'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { sphere } from 'omai-engine/foundations'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * toArray(sphere(2)(tensor([[0, 0]]))) // => [[0, 0, 2]]
  * ```
  */
@@ -371,8 +371,8 @@ export function sphere(radius = 1): ParametricSurface {
  * @concept parametric-surfaces
  * @example
  * ```ts
- * import { torus } from 'mdml-engine/foundations'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { torus } from 'omai-engine/foundations'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * toArray(torus(2, 1)(tensor([[0, 0]]))) // => [[3, 0, 0]]
  * ```
  */
@@ -396,7 +396,7 @@ export function torus(major: number, minor: number): ParametricSurface {
  * @concept surface-area
  * @example
  * ```ts
- * import { sphere, surfaceArea } from 'mdml-engine/foundations'
+ * import { sphere, surfaceArea } from 'omai-engine/foundations'
  * surfaceArea(sphere(1), [0, Math.PI], [0, 2 * Math.PI]) / Math.PI // => 4.000000000000001
  * ```
  */
@@ -425,7 +425,7 @@ export function surfaceArea(
  * @concept christoffel-symbols
  * @example
  * ```ts
- * import { christoffelSymbols, sphere } from 'mdml-engine/foundations'
+ * import { christoffelSymbols, sphere } from 'omai-engine/foundations'
  * christoffelSymbols(sphere(1), [Math.PI / 4, 0])[0][1][1] // => -0.5000000000000001
  * ```
  */
@@ -477,7 +477,7 @@ export interface Geodesic {
  * @concept geodesics
  * @example
  * ```ts
- * import { geodesic, sphere } from 'mdml-engine/foundations'
+ * import { geodesic, sphere } from 'omai-engine/foundations'
  * const g = geodesic(sphere(1), [Math.PI / 2, 0], [0, 1], { length: Math.PI / 2, steps: 50 })
  * g.points[50].map((x) => Math.round(x * 1e8) / 1e8) // => [0, 1, 0]
  * ```
@@ -494,7 +494,7 @@ export function geodesic(
   const speed = Math.sqrt(
     item(I.uu) * velocity[0] ** 2 + 2 * item(I.uv) * velocity[0] * velocity[1] + item(I.vv) * velocity[1] ** 2,
   )
-  if (!(speed > 0)) throw new MdmlError('value', 'geodesic: the initial velocity is zero')
+  if (!(speed > 0)) throw new OmaiError('value', 'geodesic: the initial velocity is zero')
   // State (u, v, u', v').
   const rhs = (s: readonly number[]): number[] => {
     const g = christoffelSymbols(r, [s[0] ?? 0, s[1] ?? 0])
@@ -538,7 +538,7 @@ export function geodesic(
  * @concept parametric-surfaces
  * @example
  * ```ts
- * import { sphere, surfaceFaces } from 'mdml-engine/foundations'
+ * import { sphere, surfaceFaces } from 'omai-engine/foundations'
  * surfaceFaces(sphere(1), [0, Math.PI], [0, 2 * Math.PI], [4, 8]).length // => 32
  * ```
  */

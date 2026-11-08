@@ -4,7 +4,7 @@
  * ECharts chart.
  */
 
-import type { Point2 } from 'mdml-engine/numerics/geometry'
+import type { Point2 } from 'omai-engine/numerics/geometry'
 
 /**
  * The map between a figure's data coordinates and the pixels of its drawing area (origin top left, y down), which

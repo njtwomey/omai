@@ -1,5 +1,5 @@
-import { dict, int } from 'mdml-engine/space'
-import { tensor } from 'mdml-engine/tensor'
+import { dict, int } from 'omai-engine/space'
+import { tensor } from 'omai-engine/tensor'
 import {
   type Config,
   defineMethod,
@@ -10,7 +10,7 @@ import {
   session,
   stateFromJson,
   stateToJson,
-} from 'mdml-engine/trace'
+} from 'omai-engine/trace'
 import { renderToString } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import {

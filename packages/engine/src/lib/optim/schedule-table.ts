@@ -48,7 +48,7 @@ const endRatio = real(0, 1, { default: 0.01, label: 'end, as a share of the peak
  * @index table Learning-rate schedules as one slot.
  * @example
  * ```ts
- * import { schedules } from 'mdml-engine/optim'
+ * import { schedules } from 'omai-engine/optim'
  * schedules.names.slice(0, 3) // => ['constant', 'step', 'exponential']
  * schedules.optionOf({ kind: 'cosine' }).name // => 'cosine'
  * ```

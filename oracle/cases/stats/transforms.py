@@ -5,8 +5,8 @@ import numpy as np
 import scipy
 import scipy.stats as st
 import sklearn
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import rng
 from scipy.special import inv_boxcox
 from sklearn.preprocessing import PowerTransformer, StandardScaler
 

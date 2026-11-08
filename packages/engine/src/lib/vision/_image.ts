@@ -4,7 +4,7 @@
  * and the conversions between them and tensors. Private to vision.
  */
 
-import { MdmlError, roundHalfEven } from '../base/index.ts'
+import { OmaiError, roundHalfEven } from '../base/index.ts'
 import { type Point2, toPoints } from '../numerics/geometry/index.ts'
 import { fromStorage, primalOf, promoteFloat, type Tensor, type TensorLike, type Value } from '../tensor/index.ts'
 
@@ -32,20 +32,20 @@ export function rasterOf(x: TensorLike, name: string): Raster {
   const { data, shape } = valuesOf(x)
   if (shape.length === 2) return { h: shape[0] ?? 0, w: shape[1] ?? 0, c: 1, rank: 2, data }
   if (shape.length === 3) return { h: shape[0] ?? 0, w: shape[1] ?? 0, c: shape[2] ?? 1, rank: 3, data }
-  throw new MdmlError('shape', `${name}: images are [H, W] or [H, W, C]`)
+  throw new OmaiError('shape', `${name}: images are [H, W] or [H, W, C]`)
 }
 
 /** A single-channel image (`[H, W]` or `[H, W, 1]`). */
 export function greyOf(x: TensorLike, name: string): Raster {
   const r = rasterOf(x, name)
-  if (r.c !== 1) throw new MdmlError('shape', `${name}: expected a single-channel image`)
+  if (r.c !== 1) throw new OmaiError('shape', `${name}: expected a single-channel image`)
   return r
 }
 
 /** A three-channel image `[H, W, 3]`. */
 export function rgbOf(x: TensorLike, name: string): Raster {
   const r = rasterOf(x, name)
-  if (r.rank !== 3 || r.c !== 3) throw new MdmlError('shape', `${name}: expected an image [H, W, 3]`)
+  if (r.rank !== 3 || r.c !== 3) throw new OmaiError('shape', `${name}: expected an image [H, W, 3]`)
   return r
 }
 
@@ -65,7 +65,7 @@ export function pointsOf(points: PointsLike, name: string): Point2[] {
   try {
     return toPoints(points as TensorLike)
   } catch {
-    throw new MdmlError('shape', `${name}: points are [n, 2]`)
+    throw new OmaiError('shape', `${name}: points are [n, 2]`)
   }
 }
 

@@ -1,7 +1,7 @@
 """The UCI E. coli data (Nakai), CC BY 4.0: 336 proteins in eight localisation sites, seven scores."""
 
-from mdml_oracle.uci import source_note, table_rows, zip_member
-from mdml_oracle.vendor import render_classification
+from omai_oracle.uci import source_note, table_rows, zip_member
+from omai_oracle.vendor import render_classification
 
 TARGET = "packages/engine/src/lib/datasets/_data/ecoli.data.ts"
 ID, SLUG = 39, "ecoli"

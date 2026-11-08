@@ -6,7 +6,7 @@
  * cousin whose agreement rate is the graph's algebraic connectivity.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { fixedQuad } from '../numerics/quadrature/index.ts'
 import { ndtri } from '../numerics/special/index.ts'
 import { cauchy, type Key, normal } from '../random/index.ts'
@@ -52,12 +52,12 @@ export interface KuramotoOptions {
  *
  * @param options - Frequencies, coupling, network and normalisation.
  * @returns The field on the phases `[n]`.
- * @throws MdmlError with code `shape` when the adjacency is not `[n, n]`.
+ * @throws OmaiError with code `shape` when the adjacency is not `[n, n]`.
  * @concept kuramoto-model
  * @example
  * ```ts
- * import { kuramotoField } from 'mdml-engine/dynamics'
- * import { tensor, toFlat } from 'mdml-engine/tensor'
+ * import { kuramotoField } from 'omai-engine/dynamics'
+ * import { tensor, toFlat } from 'omai-engine/tensor'
  * // Two oscillators a quarter turn apart, K = 2: each is pulled towards the other at K / 2 = 1.
  * toFlat(kuramotoField({ omega: [0, 0], K: 2 })(0, tensor([0, Math.PI / 2]))).map((v) => Math.round(v * 1e12) / 1e12) // => [1, -1]
  * ```
@@ -70,7 +70,7 @@ export function kuramotoField(options: KuramotoOptions): OdeVectorField {
     adjacency !== undefined &&
     (adjacency.shape.length !== 2 || adjacency.shape[0] !== n || adjacency.shape[1] !== n)
   ) {
-    throw new MdmlError('shape', `kuramotoField: the adjacency must be [${n}, ${n}]`)
+    throw new OmaiError('shape', `kuramotoField: the adjacency must be [${n}, ${n}]`)
   }
   const normalisation = options.normalisation ?? (adjacency === undefined ? 'n' : 'none')
   const degrees =
@@ -115,7 +115,7 @@ export interface OrderParameter {
  * @concept kuramoto-model
  * @example
  * ```ts
- * import { orderParameter } from 'mdml-engine/dynamics'
+ * import { orderParameter } from 'omai-engine/dynamics'
  * orderParameter([0, Math.PI]).r < 1e-15 // => true
  * ```
  */
@@ -141,11 +141,11 @@ export type FrequencyDistribution = 'lorentzian' | 'gaussian'
  * @param spread - The width.
  * @param key - A random key for independent draws.
  * @returns The frequencies.
- * @throws MdmlError with code `value` for a non-positive width or count.
+ * @throws OmaiError with code `value` for a non-positive width or count.
  * @concept kuramoto-model
  * @example
  * ```ts
- * import { kuramotoFrequencies } from 'mdml-engine/dynamics'
+ * import { kuramotoFrequencies } from 'omai-engine/dynamics'
  * kuramotoFrequencies(3, 'lorentzian', 1).map((w) => Math.round(w * 1e6) / 1e6) // => [-1.732051, 0, 1.732051]
  * ```
  */
@@ -155,7 +155,7 @@ export function kuramotoFrequencies(
   spread: number,
   key?: Key,
 ): number[] {
-  if (!(n >= 1) || !(spread > 0)) throw new MdmlError('value', 'kuramotoFrequencies: need n >= 1 and a positive spread')
+  if (!(n >= 1) || !(spread > 0)) throw new OmaiError('value', 'kuramotoFrequencies: need n >= 1 and a positive spread')
   if (key !== undefined) {
     const draws = distribution === 'lorentzian' ? cauchy(key, [n], 0, spread) : normal(key, [n], { scale: spread })
     return Array.from(draws.data)
@@ -182,7 +182,7 @@ const density = (distribution: FrequencyDistribution, spread: number, w: number)
  * @concept kuramoto-model
  * @example
  * ```ts
- * import { kuramotoCriticalCoupling } from 'mdml-engine/dynamics'
+ * import { kuramotoCriticalCoupling } from 'omai-engine/dynamics'
  * kuramotoCriticalCoupling('lorentzian', 0.5) // => 1
  * ```
  */
@@ -203,7 +203,7 @@ export function kuramotoCriticalCoupling(distribution: FrequencyDistribution, sp
  * @concept kuramoto-model
  * @example
  * ```ts
- * import { kuramotoTheoreticalOrder } from 'mdml-engine/dynamics'
+ * import { kuramotoTheoreticalOrder } from 'omai-engine/dynamics'
  * kuramotoTheoreticalOrder(4, 'lorentzian', 1) // => 0.7071067811865476
  * ```
  */
@@ -278,8 +278,8 @@ const wrap = (x: number): number => x - 2 * Math.PI * Math.round(x / (2 * Math.P
  * @concept kuramoto-model
  * @example
  * ```ts
- * import { kuramotoAlgorithm } from 'mdml-engine/dynamics'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { kuramotoAlgorithm } from 'omai-engine/dynamics'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * // Identical oscillators with identical frequencies synchronise from any start when coupled.
  * const alg = kuramotoAlgorithm({ omega: [1, 1, 1], K: 1 }, [0, 1, 2], { dt: 0.05, steps: 600 })
  * (runAlgorithm(alg, { maxSteps: 1000 }).state.t).toFixed(1) // => '30.0'
@@ -333,8 +333,8 @@ export function kuramotoAlgorithm(
  * @concept consensus
  * @example
  * ```ts
- * import { consensusField } from 'mdml-engine/dynamics'
- * import { tensor, toFlat } from 'mdml-engine/tensor'
+ * import { consensusField } from 'omai-engine/dynamics'
+ * import { tensor, toFlat } from 'omai-engine/tensor'
  * // Two nodes joined by an edge of weight 1: each moves towards the other at the rate of their difference.
  * toFlat(consensusField([[0, 1], [1, 0]])(0, tensor([1, 0]))) // => [-1, 1]
  * ```

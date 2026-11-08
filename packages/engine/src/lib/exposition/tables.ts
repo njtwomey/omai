@@ -4,7 +4,7 @@
  * with their direction, or data with its missing and outlying cells flagged.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { sameLength, seal } from './_check.ts'
 
 /**
@@ -42,11 +42,11 @@ export interface MarkedTable {
  *
  * @param record - The record without its `kind`.
  * @returns The record.
- * @throws MdmlError `shape` when a row or the row names do not match the columns; `value` when a mark names a row or
+ * @throws OmaiError `shape` when a row or the row names do not match the columns; `value` when a mark names a row or
  *   a column the table lacks, or names neither.
  * @example
  * ```ts
- * import { markedTable } from 'mdml-engine/exposition'
+ * import { markedTable } from 'omai-engine/exposition'
  * const r = markedTable({
  *   columns: ['test', 'p'],
  *   cells: [['t', 0.03], ['z', 0.4]],
@@ -61,11 +61,11 @@ export function markedTable(record: Omit<MarkedTable, 'kind'>): MarkedTable {
   if (record.rowNames !== undefined) sameLength('markedTable', 'rowNames', record.rowNames.length, record.cells.length)
   for (const [k, m] of (record.marks ?? []).entries()) {
     if (m.row === undefined && m.col === undefined)
-      throw new MdmlError('value', `markedTable: marks[${k}] names neither a row nor a column`)
+      throw new OmaiError('value', `markedTable: marks[${k}] names neither a row nor a column`)
     if (m.row !== undefined && !(Number.isInteger(m.row) && m.row >= 0 && m.row < record.cells.length))
-      throw new MdmlError('value', `markedTable: marks[${k}] names the row ${m.row}, which the table lacks`)
+      throw new OmaiError('value', `markedTable: marks[${k}] names the row ${m.row}, which the table lacks`)
     if (m.col !== undefined && !(Number.isInteger(m.col) && m.col >= 0 && m.col < record.columns.length))
-      throw new MdmlError('value', `markedTable: marks[${k}] names the column ${m.col}, which the table lacks`)
+      throw new OmaiError('value', `markedTable: marks[${k}] names the column ${m.col}, which the table lacks`)
   }
   return seal({ kind: 'markedTable', ...record })
 }

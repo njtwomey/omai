@@ -3,7 +3,7 @@
  * of the parameter vector, the expansion of seasonal polynomials, and the two objectives (conditional sum of squares
  * and the exact concentrated likelihood) on the differenced series.
  */
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { polymul } from '../numerics/polynomial/index.ts'
 import { toFlat } from '../tensor/index.ts'
 import { constrainStationary } from './_params.ts'
@@ -44,9 +44,9 @@ export function resolveSpec(spec: ArimaSpec): ResolvedSpec {
   const [P, D, Q] = spec.seasonal?.order ?? [0, 0, 0]
   const s = spec.seasonal?.period ?? 1
   for (const v of [p, d, q, P, D, Q])
-    if (!(Number.isInteger(v) && v >= 0)) throw new MdmlError('value', 'ARIMA orders must be non-negative integers')
+    if (!(Number.isInteger(v) && v >= 0)) throw new OmaiError('value', 'ARIMA orders must be non-negative integers')
   if ((P > 0 || D > 0 || Q > 0) && !(Number.isInteger(s) && s >= 2))
-    throw new MdmlError('value', 'a seasonal ARIMA needs a period of at least 2')
+    throw new OmaiError('value', 'a seasonal ARIMA needs a period of at least 2')
   const trend = spec.trend ?? (d + D === 0 ? 'c' : 'n')
   return { p, d, q, P, D, Q, s, trend, kExog: spec.exog?.[0]?.length ?? 0 }
 }
@@ -66,7 +66,7 @@ export function regressionColumns(n: number, rs: ResolvedSpec, exog: ArimaSpec['
   if (rs.trend === 'c' || rs.trend === 'ct') cols.push(new Array<number>(n).fill(1))
   if (rs.trend === 't' || rs.trend === 'ct') cols.push(Array.from({ length: n }, (_, i) => start + i + 1))
   for (let k = 0; k < rs.kExog; k++) {
-    if (exog === undefined || exog.length !== n) throw new MdmlError('shape', `the exogenous regressors need ${n} rows`)
+    if (exog === undefined || exog.length !== n) throw new OmaiError('shape', `the exogenous regressors need ${n} rows`)
     cols.push(exog.map((row) => row[k] ?? Number.NaN))
   }
   return cols
@@ -150,14 +150,14 @@ export interface Prepared {
 export function prepare(y: ArrayLike<number>, spec: ArimaSpec): Prepared {
   const rs = resolveSpec(spec)
   if ((rs.trend === 'c' || rs.trend === 'ct') && rs.d + rs.D > 0)
-    throw new MdmlError('value', "ARIMA: a differenced series has no constant; use trend 't' for a drift")
+    throw new OmaiError('value', "ARIMA: a differenced series has no constant; use trend 't' for a drift")
   const columns = regressionColumns(y.length, rs, spec.exog).map((c) => Float64Array.from(differenceSeries(c, rs)))
   for (const c of columns)
     if (c.length > 0 && c.every((v) => v === 0))
-      throw new MdmlError('value', 'ARIMA: a regressor is zero after differencing')
+      throw new OmaiError('value', 'ARIMA: a regressor is zero after differencing')
   const z = Float64Array.from(differenceSeries(y, rs))
   const parameters = columns.length + rs.p + rs.q + rs.P + rs.Q + 1
-  if (z.length < parameters + 1) throw new MdmlError('value', 'ARIMA: the series is too short for the model')
+  if (z.length < parameters + 1) throw new OmaiError('value', 'ARIMA: the series is too short for the model')
   return { rs, z, columns }
 }
 

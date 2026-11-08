@@ -1,6 +1,6 @@
-import { kernelShap } from 'mdml-engine/explain'
-import { featureAttributions } from 'mdml-engine/exposition'
-import { tensor } from 'mdml-engine/tensor'
+import { kernelShap } from 'omai-engine/explain'
+import { featureAttributions } from 'omai-engine/exposition'
+import { tensor } from 'omai-engine/tensor'
 import {
   AttributionBarView,
   Choice,
@@ -10,7 +10,7 @@ import {
   NumberField,
   SeedInput,
   Select,
-} from 'mdml-render/react'
+} from 'omai-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 import { CREDIT_FEATURES, creditPredict, creditRows, creditScore } from '../../toys/synthetic.ts'

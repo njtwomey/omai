@@ -7,8 +7,8 @@
  * `RunStatus` is also the one status vocabulary of the numeric routines (the failure convention, `docs/structure.md`
  * section 2). A routine that returns a result record reports how it ended in `status: RunStatus` and `converged:
  * boolean` (true exactly when the status is `converged`) and does not throw because it failed to converge; invalid
- * arguments throw `MdmlError('value')`; a routine that returns a bare value (a matrix function, a polynomial) has no
- * place for a status and throws `MdmlError('convergence')`, which its `@throws` says. Where a result already had a
+ * arguments throw `OmaiError('value')`; a routine that returns a bare value (a matrix function, a polynomial) has no
+ * place for a status and throws `OmaiError('convergence')`, which its `@throws` says. Where a result already had a
  * `status` field with an older vocabulary (the mathematical-programming results) the older field stays and the
  * `RunStatus` is `runStatus` beside it; {@link runStatusOf} is the table of the older words:
  *
@@ -75,7 +75,7 @@ const OUTCOME_STATUS: Readonly<Record<OutcomeWord, RunStatus>> = {
  * @returns The run status.
  * @example
  * ```ts
- * import { runStatusOf } from 'mdml-engine/trace'
+ * import { runStatusOf } from 'omai-engine/trace'
  * runStatusOf('optimal') // => 'converged'
  * runStatusOf('iteration limit') // => 'completed'
  * runStatusOf('infeasible') // => 'failed'
@@ -214,7 +214,7 @@ export type TraceEvent =
  * @concept tracing
  */
 export interface Run {
-  readonly schema: 'mdml.run/1'
+  readonly schema: 'omai.run/1'
   readonly events: readonly TraceEvent[]
 }
 
@@ -239,7 +239,7 @@ const id = z.string()
  * @concept tracing
  * @example
  * ```ts
- * import { TraceEventSchema } from 'mdml-engine/trace'
+ * import { TraceEventSchema } from 'omai-engine/trace'
  * TraceEventSchema.parse({ type: 'metric', runId: 'r', step: 0, name: 'loss', value: 1 }).type // => 'metric'
  * ```
  */
@@ -303,11 +303,11 @@ export const TraceEventSchema: z.ZodType<TraceEvent> = z.discriminatedUnion('typ
  * @returns Parses a run.
  * @example
  * ```ts
- * import { RunSchema } from 'mdml-engine/trace'
- * RunSchema.parse({ schema: 'mdml.run/1', events: [] }).events.length // => 0
+ * import { RunSchema } from 'omai-engine/trace'
+ * RunSchema.parse({ schema: 'omai.run/1', events: [] }).events.length // => 0
  * ```
  */
 export const RunSchema: z.ZodType<Run> = z.object({
-  schema: z.literal('mdml.run/1'),
+  schema: z.literal('omai.run/1'),
   events: z.array(TraceEventSchema),
 })

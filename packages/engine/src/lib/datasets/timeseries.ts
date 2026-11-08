@@ -4,7 +4,7 @@
  * an ECG record shipped with SciPy as a pinned remote asset.
  */
 
-import { MdmlError, maxOf } from '../base/index.ts'
+import { maxOf, OmaiError } from '../base/index.ts'
 import {
   type DatasetGenerator,
   type DatasetRef,
@@ -75,8 +75,8 @@ export interface ArmaOptions {
  * @returns The series and its truth.
  * @example
  * ```ts
- * import { armaProcess } from 'mdml-engine/datasets'
- * import { key } from 'mdml-engine/random'
+ * import { armaProcess } from 'omai-engine/datasets'
+ * import { key } from 'omai-engine/random'
  * armaProcess(key(0), { ar: [0.5], n: 10 }).truth.extra?.['stationary'] // => true
  * ```
  */
@@ -118,7 +118,7 @@ export function armaProcess(key: Key, options: ArmaOptions = {}): Generated<Time
   const name = `arma(${ar.length},${ma.length})`
   return {
     data: timeSeries(series, {
-      meta: { name, description: `A Gaussian ${name.toUpperCase()} process.`, source: 'mdml-js generator' },
+      meta: { name, description: `A Gaussian ${name.toUpperCase()} process.`, source: 'omai generator' },
     }),
     truth: {
       noiseScale: sigma,
@@ -143,8 +143,8 @@ export function armaProcess(key: Key, options: ArmaOptions = {}): Generated<Time
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { arma } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { arma } from 'omai-engine/datasets'
  * generate(arma, { knobs: { n: 50, phi1: 0.9 } }).data.values.shape // => [50, 1]
  * ```
  */
@@ -189,8 +189,8 @@ export const arma: DatasetGenerator<TimeSeriesData> = {
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { sinusoids } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { sinusoids } from 'omai-engine/datasets'
  * (generate(sinusoids, { knobs: { components: 2 } }).truth.extra?.['frequencies'] as number[]).length // => 2
  * ```
  */
@@ -258,8 +258,8 @@ export const sinusoids: DatasetGenerator<TimeSeriesData> = {
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { seasonalSeries } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { seasonalSeries } from 'omai-engine/datasets'
  * generate(seasonalSeries, { knobs: { period: 7 } }).data.period // => 7
  * ```
  */
@@ -350,17 +350,17 @@ export const seasonalSeries: DatasetGenerator<TimeSeriesData> = {
  * @param key - The random key.
  * @param fraction - The fraction of steps kept (default 0.5).
  * @returns The thinned series (without a sampling rate).
- * @throws MdmlError with code `value` for a fraction outside (0, 1].
+ * @throws OmaiError with code `value` for a fraction outside (0, 1].
  * @example
  * ```ts
- * import { timeSeries } from 'mdml-engine/data'
- * import { subsampleSeries } from 'mdml-engine/datasets'
- * import { key } from 'mdml-engine/random'
+ * import { timeSeries } from 'omai-engine/data'
+ * import { subsampleSeries } from 'omai-engine/datasets'
+ * import { key } from 'omai-engine/random'
  * subsampleSeries(timeSeries([1, 2, 3, 4]), key(0), 0.5).values.shape // => [2, 1]
  * ```
  */
 export function subsampleSeries(data: TimeSeriesData, key: Key, fraction = 0.5): TimeSeriesData {
-  if (!(fraction > 0 && fraction <= 1)) throw new MdmlError('value', 'subsampleSeries: fraction must be in (0, 1]')
+  if (!(fraction > 0 && fraction <= 1)) throw new OmaiError('value', 'subsampleSeries: fraction must be in (0, 1]')
   const n = data.times.shape[0] ?? 0
   const m = Math.max(1, Math.round(fraction * n))
   const u = uniform(key, [n]).data
@@ -397,7 +397,7 @@ export function subsampleSeries(data: TimeSeriesData, key: Key, fraction = 0.5):
  * @index dataset Vendored monthly airline passenger series.
  * @example
  * ```ts
- * import { airPassengers } from 'mdml-engine/datasets'
+ * import { airPassengers } from 'omai-engine/datasets'
  * airPassengers().values.shape // => [144, 1]
  * ```
  */
@@ -425,7 +425,7 @@ export function airPassengers(): TimeSeriesData {
  * @returns The series.
  * @example
  * ```ts
- * import { sunspots } from 'mdml-engine/datasets'
+ * import { sunspots } from 'omai-engine/datasets'
  * sunspots().times.data[0] // => 1700
  * ```
  */
@@ -462,7 +462,7 @@ const COAL_META = {
  * @returns The events.
  * @example
  * ```ts
- * import { coalMiningDisasters } from 'mdml-engine/datasets'
+ * import { coalMiningDisasters } from 'omai-engine/datasets'
  * coalMiningDisasters().times?.shape // => [191]
  * ```
  */
@@ -477,7 +477,7 @@ export function coalMiningDisasters(): EventData {
  * @returns The series of counts.
  * @example
  * ```ts
- * import { coalMiningCounts } from 'mdml-engine/datasets'
+ * import { coalMiningCounts } from 'omai-engine/datasets'
  * coalMiningCounts().values.shape // => [112, 1]
  * ```
  */
@@ -505,7 +505,7 @@ export function coalMiningCounts(): TimeSeriesData {
  * @concept datasets
  * @example
  * ```ts
- * import { nile } from 'mdml-engine/datasets'
+ * import { nile } from 'omai-engine/datasets'
  * nile().values.shape // => [100, 1]
  * ```
  */
@@ -533,17 +533,17 @@ export function nile(): TimeSeriesData {
  *
  * @param bytes - The archive.
  * @returns The series.
- * @throws MdmlError with code `value` when the archive has no `ecg.npy`.
+ * @throws OmaiError with code `value` when the archive has no `ecg.npy`.
  * @example
  * ```ts
- * import { parseElectrocardiogram } from 'mdml-engine/datasets'
+ * import { parseElectrocardiogram } from 'omai-engine/datasets'
  * typeof parseElectrocardiogram // => 'function'
  * ```
  */
 export async function parseElectrocardiogram(bytes: Uint8Array): Promise<TimeSeriesData> {
   const files = await unzip(bytes)
   const npy = files.get('ecg.npy')
-  if (npy === undefined) throw new MdmlError('value', 'parseElectrocardiogram: no ecg.npy in the archive')
+  if (npy === undefined) throw new OmaiError('value', 'parseElectrocardiogram: no ecg.npy in the archive')
   const { values } = parseNpy(npy)
   return timeSeries(
     Float64Array.from(values, (v) => (v - 1024) / 200),
@@ -568,7 +568,7 @@ export async function parseElectrocardiogram(bytes: Uint8Array): Promise<TimeSer
  *
  * @example
  * ```ts
- * import { electrocardiogram } from 'mdml-engine/datasets'
+ * import { electrocardiogram } from 'omai-engine/datasets'
  * electrocardiogram.kind // => 'remote'
  * ```
  */
@@ -591,8 +591,8 @@ export const electrocardiogram: DatasetRef<TimeSeriesData> = {
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { plantedSeries } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { plantedSeries } from 'omai-engine/datasets'
  * (generate(plantedSeries, { knobs: { n: 600 } }).truth.extra?.['motifStarts'] as number[]).length // => 2
  * ```
  */
@@ -639,7 +639,7 @@ export const plantedSeries: DatasetGenerator<TimeSeriesData> = {
     order.sort((a, b) => (u[a] ?? 0) - (u[b] ?? 0))
     const slot = (j: number): number => (order[j] ?? 0) * 2 * m + Math.floor(m / 2)
     if (cells < occ + 1)
-      throw new MdmlError('value', 'plantedSeries: the series is too short for that many motifs of this length')
+      throw new OmaiError('value', 'plantedSeries: the series is too short for that many motifs of this length')
     const shape = Array.from(
       { length: m },
       (_, i) => 2.5 * Math.sin((2 * Math.PI * 1.5 * i) / m) * Math.sin((Math.PI * i) / m) ** 0.5,
@@ -674,8 +674,8 @@ export const plantedSeries: DatasetGenerator<TimeSeriesData> = {
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { garchReturns } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { garchReturns } from 'omai-engine/datasets'
  * generate(garchReturns, { knobs: { n: 100 } }).data.values.shape // => [100, 1]
  * ```
  */
@@ -709,7 +709,7 @@ export const garchReturns: DatasetGenerator<TimeSeriesData> = {
     const alpha = knobs['alpha'] as number
     const beta = knobs['beta'] as number
     if (alpha + beta >= 1)
-      throw new MdmlError('value', 'garchReturns: alpha + beta must be below one for a stationary series')
+      throw new OmaiError('value', 'garchReturns: alpha + beta must be below one for a stationary series')
     const nu = 5
     const z =
       knobs['innovations'] === 'student'
@@ -742,8 +742,8 @@ export const garchReturns: DatasetGenerator<TimeSeriesData> = {
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { coupledSeries } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { coupledSeries } from 'omai-engine/datasets'
  * generate(coupledSeries, { knobs: { n: 50, series: 3 } }).data.values.shape // => [50, 3]
  * ```
  */

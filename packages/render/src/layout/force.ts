@@ -5,10 +5,10 @@
  * so well-connected nodes sit together.
  */
 
-import { maxOf, minOf } from 'mdml-engine/base'
-import { eigh } from 'mdml-engine/numerics/linalg'
-import { key as makeKey, uniform } from 'mdml-engine/random'
-import { toArray } from 'mdml-engine/tensor'
+import { maxOf, minOf } from 'omai-engine/base'
+import { eigh } from 'omai-engine/numerics/linalg'
+import { key as makeKey, uniform } from 'omai-engine/random'
+import { toArray } from 'omai-engine/tensor'
 import { type GraphLayout, type LayoutBox, type LayoutGraph, normaliseLayout, straightRoutes } from './graph.ts'
 
 /** Options of {@link forceLayout}. */
@@ -51,7 +51,7 @@ function boxes(graph: LayoutGraph, xy: readonly (readonly [number, number])[]): 
  * @index function A seeded force-directed layout: `forceLayout(graph, { seed: 1 })`.
  * @example
  * ```ts
- * import { forceLayout } from 'mdml-render/layout'
+ * import { forceLayout } from 'omai-render/layout'
  * const g = { nodes: ['a', 'b', 'c'].map((id) => ({ id, width: 10, height: 10 })), edges: [{ from: 'a', to: 'b' }, { from: 'b', to: 'c' }] }
  * forceLayout(g, { seed: 1 }).nodes['a'].x === forceLayout(g, { seed: 1 }).nodes['a'].x // => true
  * ```
@@ -145,7 +145,7 @@ export function forceLayout(graph: LayoutGraph, options: ForceOptions = {}): For
  * @returns The layout.
  * @example
  * ```ts
- * import { circularLayout } from 'mdml-render/layout'
+ * import { circularLayout } from 'omai-render/layout'
  * const g = { nodes: ['a', 'b', 'c', 'd'].map((id) => ({ id, width: 10, height: 10 })), edges: [] }
  * const l = circularLayout(g, { radius: 50 })
  * Math.round(l.nodes['c'].y - l.nodes['a'].y) // => 100
@@ -175,7 +175,7 @@ export function circularLayout(
  * @returns The layout.
  * @example
  * ```ts
- * import { spectralLayout } from 'mdml-render/layout'
+ * import { spectralLayout } from 'omai-render/layout'
  * const g = { nodes: ['a', 'b', 'c', 'd'].map((id) => ({ id, width: 10, height: 10 })), edges: [{ from: 'a', to: 'b' }, { from: 'b', to: 'c' }, { from: 'c', to: 'd' }] }
  * Object.keys(spectralLayout(g).nodes).length // => 4
  * ```

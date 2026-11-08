@@ -6,7 +6,7 @@ from importlib.metadata import version
 from typing import cast
 
 import numpy as np
-from mdml_oracle.fixture import Case, case
+from omai_oracle.fixture import Case, case
 from statsmodels.tsa.arima.estimators.innovations import innovations_algo
 from statsmodels.tsa.arima_process import arma2ar, arma2ma, arma_acf, arma_acovf, arma_pacf
 

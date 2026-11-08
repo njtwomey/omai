@@ -6,7 +6,7 @@
  * itself) is not available on this side of the wire.
  */
 
-import { type Json, MdmlError } from 'mdml-engine/base'
+import { type Json, OmaiError } from 'omai-engine/base'
 import type {
   Algorithm,
   Config,
@@ -19,11 +19,11 @@ import type {
   Slice,
   SliceBudget,
   TraceEvent,
-} from 'mdml-engine/trace'
+} from 'omai-engine/trace'
 import type { TapeDelta } from './protocol.ts'
 
 /** Thrown by a probe whose answer is still on its way from the worker. */
-export class ProbePending extends MdmlError {
+export class ProbePending extends OmaiError {
   constructor(what: string) {
     super('value', `computing ${what} in the worker`)
     this.name = 'ProbePending'
@@ -64,7 +64,7 @@ function stubSource(kind: string): Contract<never>[string] {
         kind: 'derived',
         description: '',
         compute: () => {
-          throw new MdmlError('value', 'a derived path of a worker session is computed in the worker')
+          throw new OmaiError('value', 'a derived path of a worker session is computed in the worker')
         },
       }
     case 'tensor':
@@ -92,7 +92,7 @@ export function contractOfKinds(kinds: Readonly<Record<string, string>>): Contra
 }
 
 const unavailable = (what: string): never => {
-  throw new MdmlError('value', `${what} is not available on a session computed in a worker`)
+  throw new OmaiError('value', `${what} is not available on a session computed in a worker`)
 }
 
 /**
@@ -210,12 +210,12 @@ export class RemoteSession<S, C extends Config = Config, K extends string = stri
 
   project(name: string, options?: Json): Derived | undefined {
     const p = this.method.projections?.[name]
-    if (p === undefined) throw new MdmlError('value', `${this.method.name}: no projection '${name}'`)
+    if (p === undefined) throw new OmaiError('value', `${this.method.name}: no projection '${name}'`)
     return p(this.run(), options)
   }
 
   run(): Run {
-    this.cached ??= { schema: 'mdml.run/1', events: [...this.events] }
+    this.cached ??= { schema: 'omai.run/1', events: [...this.events] }
     return this.cached
   }
 

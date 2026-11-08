@@ -6,7 +6,7 @@
  */
 
 import { customVjp } from '../autodiff/index.ts'
-import { MdmlError, maxOf, minOf } from '../base/index.ts'
+import { maxOf, minOf, OmaiError } from '../base/index.ts'
 import { cholesky, inv } from '../numerics/linalg/index.ts'
 import type { SpaceValue } from '../space/index.ts'
 import {
@@ -96,14 +96,14 @@ function channels(x: Tensor, axis: number | undefined): number[][] {
  * @concept quantisation
  * @example
  * ```ts
- * import { quantParams } from 'mdml-engine/nn'
+ * import { quantParams } from 'omai-engine/nn'
  * quantParams([-1, 0.5, 2], { bits: 8, symmetric: false }).zeroPoint // => [85]
  * ```
  */
 export function quantParams(x: TensorLike, options: QuantOptions = {}): QuantParams {
   const t = primalOf(asTensor(x))
   const bits = options.bits ?? 8
-  if (!(bits >= 2 && bits <= 16)) throw new MdmlError('value', `quantParams: bits must be in [2, 16], got ${bits}`)
+  if (!(bits >= 2 && bits <= 16)) throw new OmaiError('value', `quantParams: bits must be in [2, 16], got ${bits}`)
   const symmetric = options.symmetric ?? true
   const qmin = symmetric ? -(2 ** (bits - 1)) : 0
   const qmax = symmetric ? 2 ** (bits - 1) - 1 : 2 ** bits - 1
@@ -152,8 +152,8 @@ function broadcastParams(x: Value, qp: QuantParams): { scale: Value; zero: Value
  * @returns int32 codes.
  * @example
  * ```ts
- * import { quantise, quantParams } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { quantise, quantParams } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(quantise([-1, 0.5, 1], quantParams([-1, 0.5, 1], { bits: 4 }))) // => [-7, 4, 7]
  * ```
  */
@@ -171,8 +171,8 @@ export function quantise(x: TensorLike, qp: QuantParams): Tensor<'int32'> {
  * @returns The dequantised tensor.
  * @example
  * ```ts
- * import { dequantise, quantParams } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { dequantise, quantParams } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(dequantise([-7, 7], quantParams([-1, 1], { bits: 4 }))) // => [-1, 1]
  * ```
  */
@@ -193,8 +193,8 @@ export function dequantise(q: TensorLike, qp: QuantParams): Tensor {
  * @concept quantisation-aware-training
  * @example
  * ```ts
- * import { fakeQuantise, quantParams } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { fakeQuantise, quantParams } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(fakeQuantise([0.3, 1], quantParams([0.3, 1], { bits: 2 }))) // => [0, 1]
  * ```
  */
@@ -232,7 +232,7 @@ export interface QuantError {
  * @returns The errors.
  * @example
  * ```ts
- * import { quantisationError } from 'mdml-engine/nn'
+ * import { quantisationError } from 'omai-engine/nn'
  * quantisationError([1, 2], [1, 2]).sqnr // => Infinity
  * ```
  */
@@ -264,7 +264,7 @@ export function quantisationError(x: TensorLike, xq: TensorLike): QuantError {
  * @returns The mean squared output error per sample.
  * @example
  * ```ts
- * import { outputError } from 'mdml-engine/nn'
+ * import { outputError } from 'omai-engine/nn'
  * outputError([[1, 2]], [[1, 1]], [[1, 1]]) // => 1
  * ```
  */
@@ -337,7 +337,7 @@ function gptqRun(
   const w0 = primalOf(asTensor(weight))
   const x = primalOf(asTensor(inputs))
   const [rows = 0, cols = 0] = w0.shape
-  if (x.shape[1] !== cols) throw new MdmlError('shape', 'gptq: inputs must be [n, in] with in the weight width')
+  if (x.shape[1] !== cols) throw new OmaiError('shape', 'gptq: inputs must be [n, in] with in the weight width')
   const n = x.shape[0] ?? 1
   const h = toFlat(mul(matmul(swapaxes(x, 0, 1), x), 2 / n))
   const w = toFlat(w0)
@@ -453,12 +453,12 @@ function gptqRun(
  * @param inputs - Calibration inputs `[n, in]`.
  * @param options - Bits (4), symmetric (false), dampening, order or act-order.
  * @returns The algorithm, one step per column.
- * @throws MdmlError with code `shape` when the inputs are not as wide as the weight.
+ * @throws OmaiError with code `shape` when the inputs are not as wide as the weight.
  * @concept quantisation
  * @example
  * ```ts
- * import { gptqAlgorithm } from 'mdml-engine/nn'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { gptqAlgorithm } from 'omai-engine/nn'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * runAlgorithm(gptqAlgorithm([[0.5, -1], [2, 0.1]], [[1, 0], [0, 1], [1, 1]], { bits: 4 }), { maxSteps: 5 }).state.j // => 2
  * ```
  */
@@ -484,7 +484,7 @@ export function gptqAlgorithm(
  *   pre-trained transformers (Algorithm 1).
  * @example
  * ```ts
- * import { gptq } from 'mdml-engine/nn'
+ * import { gptq } from 'omai-engine/nn'
  * gptq([[0.5, -1], [2, 0.1]], [[1, 0], [0, 1], [1, 1]], { bits: 4 }).weight.shape // => [2, 2]
  * ```
  */
@@ -606,8 +606,8 @@ function awqRun(
  * @concept quantisation
  * @example
  * ```ts
- * import { awqAlgorithm } from 'mdml-engine/nn'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { awqAlgorithm } from 'omai-engine/nn'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * runAlgorithm(awqAlgorithm([[0.5, -1], [2, 0.1]], [[1, 0], [0, 3]], { bits: 3, gridSize: 4 }), { maxSteps: 10 }).steps // => 5
  * ```
  */
@@ -633,7 +633,7 @@ export function awqAlgorithm(
  *   and acceleration.
  * @example
  * ```ts
- * import { awq } from 'mdml-engine/nn'
+ * import { awq } from 'omai-engine/nn'
  * awq([[0.5, -1], [2, 0.1]], [[1, 0], [0, 3]], { bits: 3 }).scales.length // => 2
  * ```
  */
@@ -671,8 +671,8 @@ export interface QuantisedParams {
  * @concept quantisation
  * @example
  * ```ts
- * import { quantiseModule, Linear } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
+ * import { quantiseModule, Linear } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
  * Object.keys(quantiseModule(new Linear(4, 2, { key: key(0) }).params, { bits: 4 }).report) // => ['weight']
  * ```
  */

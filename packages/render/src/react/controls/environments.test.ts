@@ -1,5 +1,5 @@
-import { environmentRegistry } from 'mdml-engine/environments'
-import { bool, box, choice, dict, discrete, int, multiBinary, multiDiscrete, real, tuple } from 'mdml-engine/space'
+import { environmentRegistry } from 'omai-engine/environments'
+import { bool, box, choice, dict, discrete, int, multiBinary, multiDiscrete, real, tuple } from 'omai-engine/space'
 import { describe, expect, it } from 'vitest'
 import { entryOf, firstFrame, formatSpace, makeSelection, selectEnvironment } from './environments.ts'
 

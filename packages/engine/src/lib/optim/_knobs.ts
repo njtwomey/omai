@@ -5,7 +5,7 @@
  * the domain.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { type ModeConfig, type RealSpace, real, type SpaceValue } from '../space/index.ts'
 
 /** The default gradient tolerance of the vector methods (scipy's gtol): absolute, on the infinity norm. */
@@ -40,12 +40,12 @@ export const ftolKnob: RealSpace = real(1e-16, 1e-3, {
  * @param name - The knob.
  * @returns The number, or `undefined` when the knob is absent (a partial configuration, or a conditional knob of an
  *   inactive branch).
- * @throws MdmlError with code `value` when the knob is present and not a number.
+ * @throws OmaiError with code `value` when the knob is present and not a number.
  */
 export function numberKnob(k: ModeConfig, name: string): number | undefined {
   const v: SpaceValue | undefined = k[name]
   if (v === undefined || typeof v === 'number') return v
-  throw new MdmlError('value', `knob '${name}': expected a number, got ${typeof v}`)
+  throw new OmaiError('value', `knob '${name}': expected a number, got ${typeof v}`)
 }
 
 /**
@@ -54,12 +54,12 @@ export function numberKnob(k: ModeConfig, name: string): number | undefined {
  * @param k - The mode's knobs.
  * @param name - The knob.
  * @returns The flag, or `undefined` when the knob is absent.
- * @throws MdmlError with code `value` when the knob is present and not a boolean.
+ * @throws OmaiError with code `value` when the knob is present and not a boolean.
  */
 export function boolKnob(k: ModeConfig, name: string): boolean | undefined {
   const v: SpaceValue | undefined = k[name]
   if (v === undefined || typeof v === 'boolean') return v
-  throw new MdmlError('value', `knob '${name}': expected a boolean, got ${typeof v}`)
+  throw new OmaiError('value', `knob '${name}': expected a boolean, got ${typeof v}`)
 }
 
 /**
@@ -68,13 +68,13 @@ export function boolKnob(k: ModeConfig, name: string): boolean | undefined {
  * @param k - The mode's knobs.
  * @param name - The knob.
  * @returns The chosen string, or `undefined` when the knob is absent.
- * @throws MdmlError with code `value` when the knob is present and not a string.
+ * @throws OmaiError with code `value` when the knob is present and not a string.
  */
 export function choiceKnob<T extends string>(k: ModeConfig, name: string): T | undefined {
   const v: SpaceValue | undefined = k[name]
   if (v === undefined) return undefined
   if (typeof v === 'string') return v as T
-  throw new MdmlError('value', `knob '${name}': expected a choice, got ${typeof v}`)
+  throw new OmaiError('value', `knob '${name}': expected a choice, got ${typeof v}`)
 }
 
 /**

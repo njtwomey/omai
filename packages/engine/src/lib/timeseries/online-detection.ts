@@ -6,7 +6,7 @@
  * detection lives in `dynamics/filtering/changepoint.ts`.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { type Algorithm, channels, runAlgorithm, stateFromJson, stateToJson } from '../trace/index.ts'
 import { asSeries } from './_series.ts'
 
@@ -55,8 +55,8 @@ export interface CusumState {
  * @returns The algorithm; it is done after the last observation.
  * @example
  * ```ts
- * import { cusumAlgorithm } from 'mdml-engine/timeseries'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { cusumAlgorithm } from 'omai-engine/timeseries'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const x = [...new Array(10).fill(0), ...new Array(10).fill(3)]
  * const s = runAlgorithm(cusumAlgorithm(x, { target: 0, sigma: 1 }), { maxSteps: 100 }).state
  * s.alarms[0] // => { index: 12, direction: 'up' }
@@ -68,8 +68,8 @@ export function cusumAlgorithm(x: ArrayLike<number>, options: CusumOptions = {})
   const h = options.threshold ?? 5
   const warmup = options.warmup ?? 20
   const known = options.target !== undefined && options.sigma !== undefined
-  if (!(h > 0 && k >= 0)) throw new MdmlError('value', 'cusum: need a positive threshold and a non-negative allowance')
-  if (options.sigma !== undefined && !(options.sigma > 0)) throw new MdmlError('value', 'cusum: sigma must be positive')
+  if (!(h > 0 && k >= 0)) throw new OmaiError('value', 'cusum: need a positive threshold and a non-negative allowance')
+  if (options.sigma !== undefined && !(options.sigma > 0)) throw new OmaiError('value', 'cusum: sigma must be positive')
   const reset = options.resetOnAlarm ?? true
   return {
     name: 'cusum',
@@ -130,7 +130,7 @@ export interface DetectionRun {
  * @returns The alarms.
  * @example
  * ```ts
- * import { cusum } from 'mdml-engine/timeseries'
+ * import { cusum } from 'omai-engine/timeseries'
  * const x = [...new Array(30).fill(0).map((_, t) => (t % 2 ? 0.2 : -0.2)), ...new Array(10).fill(2)]
  * cusum(x, { warmup: 10 }).alarms[0]?.index // => 30
  * ```
@@ -182,8 +182,8 @@ export interface PageHinkleyState {
  * @returns The algorithm; it is done after the last observation.
  * @example
  * ```ts
- * import { pageHinkleyAlgorithm } from 'mdml-engine/timeseries'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { pageHinkleyAlgorithm } from 'omai-engine/timeseries'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const x = [...new Array(40).fill(0), ...new Array(20).fill(5)]
  * runAlgorithm(pageHinkleyAlgorithm(x, { threshold: 20, direction: 'up' }), { maxSteps: 100 }).state.alarms[0]?.index // => 44
  * ```
@@ -200,7 +200,7 @@ export function pageHinkleyAlgorithm(
   const direction = options.direction ?? 'both'
   const reset = options.resetOnAlarm ?? true
   if (!(lambda > 0 && alpha > 0 && alpha <= 1))
-    throw new MdmlError('value', 'pageHinkley: need a positive threshold and a forgetting factor in (0, 1]')
+    throw new OmaiError('value', 'pageHinkley: need a positive threshold and a forgetting factor in (0, 1]')
   const fresh = (t: number, alarms: readonly Alarm[]): PageHinkleyState => ({
     n: 0,
     t,
@@ -259,7 +259,7 @@ export function pageHinkleyAlgorithm(
  * @returns The alarms.
  * @example
  * ```ts
- * import { pageHinkley } from 'mdml-engine/timeseries'
+ * import { pageHinkley } from 'omai-engine/timeseries'
  * const x = [...new Array(40).fill(0), ...new Array(20).fill(-5)]
  * pageHinkley(x, { threshold: 20 }).alarms[0] // => { index: 44, direction: 'down' }
  * ```

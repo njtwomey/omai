@@ -3,7 +3,7 @@
  * state (active nodes and edges, badges) for animations, with node sizes fixed once for a whole animation.
  */
 
-import type { Structure, StructureNode, StructureOverlay } from 'mdml-engine/scene'
+import type { Structure, StructureNode, StructureOverlay } from 'omai-engine/scene'
 import { type ReactElement, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { type DiagramOptions, diagram } from '../structures/diagram.ts'
 import { cx, iconButtonClass } from './controls/classes.ts'
@@ -35,7 +35,7 @@ export interface StructureViewProps extends Omit<DiagramOptions, 'overlay' | 'fr
 type View = readonly [x: number, y: number, width: number, height: number]
 
 /**
- * A `Structure` drawn as a diagram (`diagram` in `mdml-render/structures`), with pan (drag) and zoom (the buttons
+ * A `Structure` drawn as a diagram (`diagram` in `omai-render/structures`), with pan (drag) and zoom (the buttons
  * under it, or the wheel with Ctrl or Cmd held), the hovered node's role, detail and badges shown beneath, and an
  * optional overlay of active nodes, edges and badges.
  *

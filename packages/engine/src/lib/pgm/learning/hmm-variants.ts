@@ -7,7 +7,7 @@
  * the paths stop changing.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { type Algorithm, channels, stateFromJson, stateToJson } from '../../trace/index.ts'
 import { viterbi } from '../inference/chain.ts'
 import { hmmChain } from '../models/state-space.ts'
@@ -24,7 +24,7 @@ const vector = (o: HmmObservation): readonly number[] => (typeof o === 'number' 
  * @returns The parameters with a banded upper-triangular transition matrix, rows renormalised.
  * @example
  * ```ts
- * import { learning } from 'mdml-engine/pgm'
+ * import { learning } from 'omai-engine/pgm'
  * const p = { kind: 'categorical', start: [0.5, 0.5], transition: [[0.5, 0.5], [0.5, 0.5]], emission: [[0.5, 0.5], [0.5, 0.5]] } as const
  * learning.leftRightParameters({ ...p, start: [0.5, 0.5], transition: [[0.5, 0.5], [0.5, 0.5]], emission: [[0.5, 0.5], [0.5, 0.5]] }).transition // => [[0.5, 0.5], [0, 1]]
  */
@@ -74,7 +74,7 @@ export interface ViterbiTrainingOptions {
  * @returns The algorithm.
  * @example
  * ```ts
- * import { learning } from 'mdml-engine/pgm'
+ * import { learning } from 'omai-engine/pgm'
  * const start = { kind: 'categorical', start: [0.5, 0.5], transition: [[0.6, 0.4], [0.4, 0.6]], emission: [[0.7, 0.3], [0.2, 0.8]] } as const
  * learning.viterbiTrainingAlgorithm([[0, 0, 1, 1]], { ...start, start: [0.5, 0.5], transition: [[0.6, 0.4], [0.4, 0.6]], emission: [[0.7, 0.3], [0.2, 0.8]] }).name // => 'viterbi-training'
  */
@@ -86,7 +86,7 @@ export function viterbiTrainingAlgorithm(
   const K = start.start.length
   const smoothing = options.smoothing ?? 1e-3
   const prior = options.covariancePrior ?? 1e-2
-  if (sequences.length === 0) throw new MdmlError('value', 'viterbiTraining: no sequences')
+  if (sequences.length === 0) throw new OmaiError('value', 'viterbiTraining: no sequences')
   const observations = sequences.map((s) => s.map((o) => (start.kind === 'categorical' ? o : vector(o))))
   const decode = (params: HmmParameters): { paths: number[][]; score: number } => {
     const model = hmmFromParameters(params)

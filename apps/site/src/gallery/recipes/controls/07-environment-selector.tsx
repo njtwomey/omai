@@ -4,7 +4,7 @@ import {
   type EnvironmentFamily,
   environmentRegistry,
   type ObservationKind,
-} from 'mdml-engine/environments'
+} from 'omai-engine/environments'
 import {
   ControlPanel,
   EnvironmentSelector,
@@ -15,7 +15,7 @@ import {
   selectEnvironment,
   tagLabel,
   useEnvironment,
-} from 'mdml-render/react'
+} from 'omai-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 
@@ -23,7 +23,7 @@ export const recipe: Recipe = {
   title: 'Environment selector',
   question: 'How do I let the reader choose an environment by its family and its spaces?',
   explain:
-    '`EnvironmentSelector` lists the tagged environment registry of mdml-engine (`environmentRegistry`: every environment definition and the differentiable control models, tagged by family, by whether episodes end at terminal states, and by the kinds of action and observation derived from their spaces). Its props are the filters (`family`, `actions`, `observations`, `episodic`, `multiAgent`), a search box narrows further, and the chosen entry shows its description, its spaces as gymnasium prints them and its definition’s options as controls. `useEnvironment` makes the selection once per change; here its first frame is drawn from a seed.',
+    '`EnvironmentSelector` lists the tagged environment registry of omai-engine (`environmentRegistry`: every environment definition and the differentiable control models, tagged by family, by whether episodes end at terminal states, and by the kinds of action and observation derived from their spaces). Its props are the filters (`family`, `actions`, `observations`, `episodic`, `multiAgent`), a search box narrows further, and the chosen entry shows its description, its spaces as gymnasium prints them and its definition’s options as controls. `useEnvironment` makes the selection once per change; here its first frame is drawn from a seed.',
 }
 
 type Any<T extends string> = 'any' | T

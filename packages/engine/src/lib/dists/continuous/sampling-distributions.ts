@@ -83,8 +83,8 @@ function poissonTerms(m: Value, rank: number): { readonly j: Value; readonly log
  *   differentiate in both degrees of freedom.
  * @example
  * ```ts
- * import { fDistribution } from 'mdml-engine/dists'
- * import { item } from 'mdml-engine/tensor'
+ * import { fDistribution } from 'omai-engine/dists'
+ * import { item } from 'omai-engine/tensor'
  * Math.abs(item(fDistribution(4, 4).cdf(1)) - 0.5) < 1e-14 // => true
  * item(fDistribution(3, 6).mean()) // => 1.5
  * ```
@@ -161,8 +161,8 @@ export function fDistribution(d1: TensorLike, d2: TensorLike): Distribution {
  *   mode and entropy numerically, and `rsample` by implicit reparameterisation of the mixture sampler.
  * @example
  * ```ts
- * import { noncentralChi2 } from 'mdml-engine/dists'
- * import { item } from 'mdml-engine/tensor'
+ * import { noncentralChi2 } from 'omai-engine/dists'
+ * import { item } from 'omai-engine/tensor'
  * item(noncentralChi2(3, 2).mean()) // => 5
  * Math.abs(item(noncentralChi2(2, 0).cdf(2)) - (1 - Math.exp(-1))) < 1e-15 // => true
  * ```
@@ -251,8 +251,8 @@ export function noncentralChi2(df: TensorLike, nc: TensorLike): Distribution {
  *   quantiles, mode and entropy, and `rsample` by implicit reparameterisation of the ratio sampler.
  * @example
  * ```ts
- * import { fDistribution, noncentralF } from 'mdml-engine/dists'
- * import { item } from 'mdml-engine/tensor'
+ * import { fDistribution, noncentralF } from 'omai-engine/dists'
+ * import { item } from 'omai-engine/tensor'
  * item(noncentralF(4, 10, 2).mean()) // => 1.875
  * Math.abs(item(noncentralF(4, 10, 0).cdf(1.5)) - item(fDistribution(4, 10).cdf(1.5))) < 1e-14 // => true
  * ```
@@ -361,8 +361,8 @@ export function noncentralF(d1: TensorLike, d2: TensorLike, nc: TensorLike): Dis
  *   Like the reference implementations, the series loses relative accuracy in the far tail opposite to nc.
  * @example
  * ```ts
- * import { noncentralT } from 'mdml-engine/dists'
- * import { item } from 'mdml-engine/tensor'
+ * import { noncentralT } from 'omai-engine/dists'
+ * import { item } from 'omai-engine/tensor'
  * Math.abs(item(noncentralT(5, 0).cdf(0)) - 0.5) < 1e-15 // => true
  * ```
  */

@@ -6,8 +6,8 @@ fixed by the SHA-256 of `mushroom:<row index>` (see `stratified_subsample`). The
 codes; the 2480 missing `stalk-root` values of the full file (marked `?`) stay missing (`null`) in the sample.
 """
 
-from mdml_oracle.uci import source_note, stratified_subsample, table_rows, zip_member
-from mdml_oracle.vendor import render_ordered_table
+from omai_oracle.uci import source_note, stratified_subsample, table_rows, zip_member
+from omai_oracle.vendor import render_ordered_table
 
 TARGET = "packages/engine/src/lib/datasets/_data/mushroom.data.ts"
 ID, SLUG = 73, "mushroom"

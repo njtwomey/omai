@@ -4,7 +4,7 @@
  * `identifyEffect` for the simple cases of the ID algorithm, and checks for instrumental variables.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { type Factor, factor, factorValues } from '../factor.ts'
 import { type DagNode, type DirectedModel, descendants } from '../graphs.ts'
 import { variableElimination } from '../inference/elimination.ts'
@@ -21,7 +21,7 @@ function nodeNames(g: DirectedModel): string[] {
 
 function check(g: DirectedModel, ...names: string[]): void {
   const known = new Set(nodeNames(g))
-  for (const v of names) if (!known.has(v)) throw new MdmlError('value', `unknown variable ${v}`)
+  for (const v of names) if (!known.has(v)) throw new OmaiError('value', `unknown variable ${v}`)
 }
 
 /** The graph with every edge out of x removed (the back-door graph). */
@@ -46,8 +46,8 @@ function directedPath(g: DirectedModel, a: string, b: string): boolean {
  * @concept identification
  * @example
  * ```ts
- * import { dag } from 'mdml-engine/pgm'
- * import { isBackdoorAdjustmentSet } from 'mdml-engine/pgm/causal'
+ * import { dag } from 'omai-engine/pgm'
+ * import { isBackdoorAdjustmentSet } from 'omai-engine/pgm/causal'
  * const g = dag([['z', 'x'], ['z', 'y'], ['x', 'y']])
  * [isBackdoorAdjustmentSet(g, 'x', 'y', []), isBackdoorAdjustmentSet(g, 'x', 'y', ['z'])] // => [false, true]
  * ```
@@ -85,8 +85,8 @@ function* subsetsOf(items: readonly string[]): Generator<string[]> {
  * @concept identification
  * @example
  * ```ts
- * import { dag } from 'mdml-engine/pgm'
- * import { backdoorAdjustmentSets } from 'mdml-engine/pgm/causal'
+ * import { dag } from 'omai-engine/pgm'
+ * import { backdoorAdjustmentSets } from 'omai-engine/pgm/causal'
  * const g = dag([['a', 'x'], ['a', 'b'], ['b', 'y'], ['x', 'y']])
  * backdoorAdjustmentSets(g, 'x', 'y') // => [['a'], ['b']]
  * ```
@@ -124,8 +124,8 @@ export function backdoorAdjustmentSets(
  * @concept identification
  * @example
  * ```ts
- * import { dag } from 'mdml-engine/pgm'
- * import { minimalAdjustmentSet } from 'mdml-engine/pgm/causal'
+ * import { dag } from 'omai-engine/pgm'
+ * import { minimalAdjustmentSet } from 'omai-engine/pgm/causal'
  * minimalAdjustmentSet(dag([['z', 'x'], ['z', 'y'], ['x', 'm'], ['m', 'y']]), 'x', 'y') // => ['z']
  * ```
  */
@@ -182,8 +182,8 @@ export function minimalAdjustmentSet(
  * @concept identification
  * @example
  * ```ts
- * import { dag } from 'mdml-engine/pgm'
- * import { isFrontdoorAdjustmentSet } from 'mdml-engine/pgm/causal'
+ * import { dag } from 'omai-engine/pgm'
+ * import { isFrontdoorAdjustmentSet } from 'omai-engine/pgm/causal'
  * const g = dag([['u', 'x'], ['u', 'y'], ['x', 'm'], ['m', 'y']])
  * isFrontdoorAdjustmentSet(g, 'x', 'y', ['m']) // => true
  * ```
@@ -214,8 +214,8 @@ export function isFrontdoorAdjustmentSet(g: DirectedModel, x: string, y: string,
  * @concept identification
  * @example
  * ```ts
- * import { dag } from 'mdml-engine/pgm'
- * import { frontdoorAdjustmentSets } from 'mdml-engine/pgm/causal'
+ * import { dag } from 'omai-engine/pgm'
+ * import { frontdoorAdjustmentSets } from 'omai-engine/pgm/causal'
  * frontdoorAdjustmentSets(dag([['u', 'x'], ['u', 'y'], ['x', 'm'], ['m', 'y']]), 'x', 'y', { latent: ['u'] }) // => [['m']]
  * ```
  */
@@ -236,7 +236,7 @@ export function frontdoorAdjustmentSets(
 function stateOf(bn: BayesNet, v: string, s: string | number): number {
   const states = bayesNode(bn, v).states
   const i = typeof s === 'number' ? s : states.indexOf(s)
-  if (!(i >= 0 && i < states.length)) throw new MdmlError('value', `${v} has no state ${String(s)}`)
+  if (!(i >= 0 && i < states.length)) throw new OmaiError('value', `${v} has no state ${String(s)}`)
   return i
 }
 
@@ -253,8 +253,8 @@ function stateOf(bn: BayesNet, v: string, s: string | number): number {
  * @concept identification
  * @example
  * ```ts
- * import { bayesNet, factorValues } from 'mdml-engine/pgm'
- * import { backdoorAdjustment } from 'mdml-engine/pgm/causal'
+ * import { bayesNet, factorValues } from 'omai-engine/pgm'
+ * import { backdoorAdjustment } from 'omai-engine/pgm/causal'
  * const bn = bayesNet([
  *   { name: 'z', states: ['0', '1'], parents: [], cpt: [0.5, 0.5] },
  *   { name: 'x', states: ['0', '1'], parents: ['z'], cpt: [0.8, 0.2, 0.2, 0.8] },
@@ -303,8 +303,8 @@ function allConfigs(bn: BayesNet, vars: readonly string[]): Record<string, numbe
  * @concept identification
  * @example
  * ```ts
- * import { bayesNet, factorValues } from 'mdml-engine/pgm'
- * import { frontdoorAdjustment, interventionalDistribution } from 'mdml-engine/pgm/causal'
+ * import { bayesNet, factorValues } from 'omai-engine/pgm'
+ * import { frontdoorAdjustment, interventionalDistribution } from 'omai-engine/pgm/causal'
  * const bn = bayesNet([
  *   { name: 'u', states: ['0', '1'], parents: [], cpt: [0.6, 0.4] },
  *   { name: 'x', states: ['0', '1'], parents: ['u'], cpt: [0.7, 0.3, 0.2, 0.8] },
@@ -363,8 +363,8 @@ export interface Identification {
  * @concept identification
  * @example
  * ```ts
- * import { dag } from 'mdml-engine/pgm'
- * import { identifyEffect } from 'mdml-engine/pgm/causal'
+ * import { dag } from 'omai-engine/pgm'
+ * import { identifyEffect } from 'omai-engine/pgm/causal'
  * identifyEffect(dag([['u', 'x'], ['u', 'y'], ['x', 'm'], ['m', 'y']]), 'x', 'y', { latent: ['u'] }).method // => 'frontdoor'
  * ```
  */
@@ -420,8 +420,8 @@ export function identifyEffect(
  * @concept identification
  * @example
  * ```ts
- * import { dag } from 'mdml-engine/pgm'
- * import { isInstrument } from 'mdml-engine/pgm/causal'
+ * import { dag } from 'omai-engine/pgm'
+ * import { isInstrument } from 'omai-engine/pgm/causal'
  * const g = dag([['z', 'x'], ['u', 'x'], ['u', 'y'], ['x', 'y']])
  * [isInstrument(g, 'z', 'x', 'y'), isInstrument(g, 'u', 'x', 'y')] // => [true, false]
  * ```
@@ -452,8 +452,8 @@ export function isInstrument(
  * @concept identification
  * @example
  * ```ts
- * import { dag } from 'mdml-engine/pgm'
- * import { instrumentalVariables } from 'mdml-engine/pgm/causal'
+ * import { dag } from 'omai-engine/pgm'
+ * import { instrumentalVariables } from 'omai-engine/pgm/causal'
  * instrumentalVariables(dag([['z', 'x'], ['u', 'x'], ['u', 'y'], ['x', 'y']]), 'x', 'y', { latent: ['u'] }) // => ['z']
  * ```
  */

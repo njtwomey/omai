@@ -5,7 +5,7 @@
  * (the moments of the response) for the location, scale and shape.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { fromStorage } from '../../tensor/index.ts'
 import {
   type DistributionalFamily,
@@ -40,11 +40,11 @@ const moments = (y: Float64Array, w: Float64Array): { mean: number; variance: nu
  *
  * @param name - The distribution.
  * @returns The family, one predictor per parameter.
- * @throws MdmlError `value` for an unknown name.
+ * @throws OmaiError `value` for an unknown name.
  * @concept distributional-regression
  * @example
  * ```ts
- * import { families } from 'mdml-engine/dists'
+ * import { families } from 'omai-engine/dists'
  * families.gamlssExtended('studentT').predictors // => ['mu', 'sigma', 'nu']
  * ```
  */
@@ -92,6 +92,6 @@ export function gamlssExtended(name: GamlssName): ExtendedFamily {
         return [m.mean, 0.5 * Math.log(m.variance)]
       })
     default:
-      throw new MdmlError('value', `gamlssExtended: unknown family "${String(name)}"`)
+      throw new OmaiError('value', `gamlssExtended: unknown family "${String(name)}"`)
   }
 }

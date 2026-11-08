@@ -5,7 +5,7 @@
  * strategies (`initToMedian`, `initToSample` and others) for finding a valid starting point.
  */
 
-import { type Json, MdmlError, quantileOf } from '../base/index.ts'
+import { type Json, OmaiError, quantileOf } from '../base/index.ts'
 import { bijectors, type Support } from '../dists/index.ts'
 import { foldIn, type Key, key as makeKey, uniform } from '../random/index.ts'
 import { type LogDensity, target } from '../sampling/index.ts'
@@ -88,13 +88,13 @@ export interface LogJointResult {
  * @param values - Values of latent sites (and params) by name.
  * @param options - A key for any latent site left without a value, and the plate nesting.
  * @returns The log joint and the trace it was computed from.
- * @throws MdmlError with code `value` when a latent site has no value and no key was given.
+ * @throws OmaiError with code `value` when a latent site has no value and no key was given.
  * @concept probabilistic-programs
  * @example
  * ```ts
- * import { logJoint, observe, sample } from 'mdml-engine/probprog'
- * import { normal } from 'mdml-engine/dists'
- * import { item } from 'mdml-engine/tensor'
+ * import { logJoint, observe, sample } from 'omai-engine/probprog'
+ * import { normal } from 'omai-engine/dists'
+ * import { item } from 'omai-engine/tensor'
  * const model = () => { const mu = sample('mu', normal(0, 1)); observe('y', normal(mu, 1), 1) }
  * // log N(0; 0, 1) + log N(1; 0, 1) = -log(2 pi) - 1/2
  * Math.abs(item(logJoint(model, undefined, { mu: 0 }).logJoint) + Math.log(2 * Math.PI) + 0.5) < 1e-14 // => true
@@ -134,9 +134,9 @@ export function logJoint<D = void>(
  * @concept probabilistic-programs
  * @example
  * ```ts
- * import { observe, traceLogJoint, traceOf } from 'mdml-engine/probprog'
- * import { normal } from 'mdml-engine/dists'
- * import { item } from 'mdml-engine/tensor'
+ * import { observe, traceLogJoint, traceOf } from 'omai-engine/probprog'
+ * import { normal } from 'omai-engine/dists'
+ * import { item } from 'omai-engine/tensor'
  * const t = traceOf(() => observe('y', normal(0, 1), 0), undefined)
  * Math.abs(item(traceLogJoint(t)) + 0.5 * Math.log(2 * Math.PI)) < 1e-15 // => true
  * ```
@@ -163,9 +163,9 @@ export function traceLogJoint(t: ProgramTrace, plateDepth: number = maxPlateNest
  * @concept probabilistic-programs
  * @example
  * ```ts
- * import { observe, siteLogProbs, traceOf } from 'mdml-engine/probprog'
- * import { normal } from 'mdml-engine/dists'
- * import { item } from 'mdml-engine/tensor'
+ * import { observe, siteLogProbs, traceOf } from 'omai-engine/probprog'
+ * import { normal } from 'omai-engine/dists'
+ * import { item } from 'omai-engine/tensor'
  * const t = traceOf(() => observe('y', normal(0, 1), 0), undefined)
  * Object.keys(siteLogProbs(t)) // => ['y']
  * ```
@@ -238,12 +238,12 @@ function coordinateNames(layout: readonly LatentLayout[]): string[] {
  *
  * @param t - A trace of the program.
  * @returns The layout and the enumerated sites.
- * @throws MdmlError with code `value` for discrete latent sites that are not marked for enumeration.
+ * @throws OmaiError with code `value` for discrete latent sites that are not marked for enumeration.
  * @example
  * ```ts
- * import { latentLayout, sample, seed, traceOf } from 'mdml-engine/probprog'
- * import { dirichlet } from 'mdml-engine/dists'
- * import { key } from 'mdml-engine/random'
+ * import { latentLayout, sample, seed, traceOf } from 'omai-engine/probprog'
+ * import { dirichlet } from 'omai-engine/dists'
+ * import { key } from 'omai-engine/random'
  * const t = traceOf(seed(() => sample('p', dirichlet([1, 1, 1])), key(0)), undefined)
  * latentLayout(t).layout[0]?.unconstrainedShape // => [2]
  * ```
@@ -262,7 +262,7 @@ export function latentLayout(t: ProgramTrace): {
         enumerated.push(site.name)
         continue
       }
-      throw new MdmlError(
+      throw new OmaiError(
         'value',
         isFiniteDiscrete(site.fn.support)
           ? `site ${site.name} is a discrete latent variable; mark it with enumerate(...) to sum it out`
@@ -290,13 +290,13 @@ export function latentLayout(t: ProgramTrace): {
  * @param data - Its data.
  * @param options - The prototype key and whether to enumerate discrete sites.
  * @returns The unconstrained model.
- * @throws MdmlError with code `value` for discrete latent sites when enumeration is off, or for a program without
+ * @throws OmaiError with code `value` for discrete latent sites when enumeration is off, or for a program without
  *   continuous latent sites.
  * @concept log-density
  * @example
  * ```ts
- * import { observe, potentialEnergy, sample } from 'mdml-engine/probprog'
- * import { exponential, normal } from 'mdml-engine/dists'
+ * import { observe, potentialEnergy, sample } from 'omai-engine/probprog'
+ * import { exponential, normal } from 'omai-engine/dists'
  * const model = () => { const s = sample('s', exponential(1)); observe('y', normal(0, s), 0) }
  * const pe = potentialEnergy(model, undefined)
  * // At u = 0: s = 1, so -(log Exp(1; 1) + log N(0; 0, 1) + log|ds/du|) = 1 + log(2 pi) / 2.
@@ -344,7 +344,7 @@ export function potentialEnergy<D = void>(
     const out = new Float64Array(dim)
     for (const l of layout) {
       const v = values[l.name]
-      if (v === undefined) throw new MdmlError('value', `unconstrain: no value for site ${l.name}`)
+      if (v === undefined) throw new OmaiError('value', `unconstrain: no value for site ${l.name}`)
       const x = broadcastTo(asTensor(v), l.shape)
       out.set(toFlat(primalOf(l.bijector.inverse(x))), l.offset)
     }
@@ -365,7 +365,7 @@ export function potentialEnergy<D = void>(
     return unconstrain(record)
   }
   if (dim === 0)
-    throw new MdmlError('value', 'potentialEnergy: the program has no continuous latent sites', {
+    throw new OmaiError('value', 'potentialEnergy: the program has no continuous latent sites', {
       enumerated: enumerated.length,
     })
   const base = target(fn, dim, { names: coordinateNames(layout) })
@@ -397,9 +397,9 @@ export function potentialEnergy<D = void>(
  * @concept log-density
  * @example
  * ```ts
- * import { constrainSites, sample } from 'mdml-engine/probprog'
- * import { gamma } from 'mdml-engine/dists'
- * import { item } from 'mdml-engine/tensor'
+ * import { constrainSites, sample } from 'omai-engine/probprog'
+ * import { gamma } from 'omai-engine/dists'
+ * import { item } from 'omai-engine/tensor'
  * item(constrainSites(() => sample('s', gamma(2, 1)), undefined, { s: 0 })['s'] ?? 0) // => 1
  * ```
  */
@@ -434,9 +434,9 @@ export function constrainSites<D = void>(
  * @concept log-density
  * @example
  * ```ts
- * import { sample, unconstrainSites } from 'mdml-engine/probprog'
- * import { gamma } from 'mdml-engine/dists'
- * import { item } from 'mdml-engine/tensor'
+ * import { sample, unconstrainSites } from 'omai-engine/probprog'
+ * import { gamma } from 'omai-engine/dists'
+ * import { item } from 'omai-engine/tensor'
  * item(unconstrainSites(() => sample('s', gamma(2, 1)), undefined, { s: 1 })['s'] ?? 1) // => 0
  * ```
  */
@@ -477,7 +477,7 @@ function sampleShapeOf(site: SampleSite): number[] {
  * @returns The strategy.
  * @example
  * ```ts
- * import { initToSample } from 'mdml-engine/probprog'
+ * import { initToSample } from 'omai-engine/probprog'
  * typeof initToSample() // => 'function'
  * ```
  */
@@ -492,7 +492,7 @@ export function initToSample(): InitStrategy {
  * @returns The strategy.
  * @example
  * ```ts
- * import { initToMedian } from 'mdml-engine/probprog'
+ * import { initToMedian } from 'omai-engine/probprog'
  * typeof initToMedian({ numSamples: 5 }) // => 'function'
  * ```
  */
@@ -520,7 +520,7 @@ export function initToMedian(options: { readonly numSamples?: number } = {}): In
  * @returns The strategy.
  * @example
  * ```ts
- * import { initToMean } from 'mdml-engine/probprog'
+ * import { initToMean } from 'omai-engine/probprog'
  * typeof initToMean() // => 'function'
  * ```
  */
@@ -545,7 +545,7 @@ export function initToMean(): InitStrategy {
  * @returns The strategy.
  * @example
  * ```ts
- * import { initToUniform } from 'mdml-engine/probprog'
+ * import { initToUniform } from 'omai-engine/probprog'
  * typeof initToUniform({ radius: 1 }) // => 'function'
  * ```
  */
@@ -565,7 +565,7 @@ export function initToUniform(options: { readonly radius?: number } = {}): InitS
  * @returns The strategy.
  * @example
  * ```ts
- * import { initToFeasible } from 'mdml-engine/probprog'
+ * import { initToFeasible } from 'omai-engine/probprog'
  * typeof initToFeasible() // => 'function'
  * ```
  */
@@ -581,7 +581,7 @@ export function initToFeasible(): InitStrategy {
  * @returns The strategy.
  * @example
  * ```ts
- * import { initToValue } from 'mdml-engine/probprog'
+ * import { initToValue } from 'omai-engine/probprog'
  * typeof initToValue({ mu: 0 }) // => 'function'
  * ```
  */
@@ -638,14 +638,14 @@ export interface InitialParamsState {
  * @param data - Its data.
  * @param options - Key, strategy (default {@link initToUniform}) and the number of tries (default 100).
  * @returns The algorithm; the point is the final state's `last`.
- * @throws MdmlError (while stepping) when the program fails on the last try.
+ * @throws OmaiError (while stepping) when the program fails on the last try.
  * @concept log-density
  * @example
  * ```ts
- * import { initialParamsAlgorithm, potentialEnergy, sample } from 'mdml-engine/probprog'
- * import { normal } from 'mdml-engine/dists'
- * import { key } from 'mdml-engine/random'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { initialParamsAlgorithm, potentialEnergy, sample } from 'omai-engine/probprog'
+ * import { normal } from 'omai-engine/dists'
+ * import { key } from 'omai-engine/random'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const model = () => { sample('x', normal(0, 1)) }
  * runAlgorithm(initialParamsAlgorithm(potentialEnergy(model, undefined), model, undefined, { key: key(0) }), { maxSteps: 5 }).status // => 'converged'
  * ```
@@ -763,9 +763,9 @@ export function initialParamsAlgorithm<D = void>(
  * @concept log-density
  * @example
  * ```ts
- * import { findInitialParams, potentialEnergy, sample } from 'mdml-engine/probprog'
- * import { normal } from 'mdml-engine/dists'
- * import { key } from 'mdml-engine/random'
+ * import { findInitialParams, potentialEnergy, sample } from 'omai-engine/probprog'
+ * import { normal } from 'omai-engine/dists'
+ * import { key } from 'omai-engine/random'
  * const model = () => { sample('x', normal(0, 1)) }
  * findInitialParams(potentialEnergy(model, undefined), model, undefined, { key: key(0) }).valid // => true
  * ```
@@ -798,8 +798,8 @@ export function findInitialParams<D = void>(
  * @returns Stacked constrained values by site (latent and deterministic).
  * @example
  * ```ts
- * import { constrainDraws, potentialEnergy, sample } from 'mdml-engine/probprog'
- * import { exponential } from 'mdml-engine/dists'
+ * import { constrainDraws, potentialEnergy, sample } from 'omai-engine/probprog'
+ * import { exponential } from 'omai-engine/dists'
  * const um = potentialEnergy(() => { sample('s', exponential(1)) }, undefined)
  * constrainDraws(um, new Float64Array([0, 0]))['s']?.shape // => [2]
  * ```
@@ -834,8 +834,8 @@ export function constrainDraws(um: UnconstrainedModel, draws: Float64Array): Rec
  * @returns log density at u.
  * @example
  * ```ts
- * import { logDensityAt, potentialEnergy, sample } from 'mdml-engine/probprog'
- * import { normal } from 'mdml-engine/dists'
+ * import { logDensityAt, potentialEnergy, sample } from 'omai-engine/probprog'
+ * import { normal } from 'omai-engine/dists'
  * const um = potentialEnergy(() => { sample('x', normal(0, 1)) }, undefined)
  * Math.abs(logDensityAt(um, [0]) + 0.5 * Math.log(2 * Math.PI)) < 1e-15 // => true
  * ```
@@ -853,8 +853,8 @@ export function logDensityAt(um: UnconstrainedModel, u: ArrayLike<number>): numb
  * @returns The `[dim]` vector.
  * @example
  * ```ts
- * import { packLatents, potentialEnergy, sample } from 'mdml-engine/probprog'
- * import { normal } from 'mdml-engine/dists'
+ * import { packLatents, potentialEnergy, sample } from 'omai-engine/probprog'
+ * import { normal } from 'omai-engine/dists'
  * const um = potentialEnergy(() => { sample('x', normal(0, 1), { sampleShape: [2] }) }, undefined)
  * packLatents(um.layout, { x: [1, 2] }).shape // => [2]
  * ```
@@ -863,7 +863,7 @@ export function packLatents(layout: readonly LatentLayout[], values: Readonly<Re
   return concat(
     layout.map((l) => {
       const v = values[l.name]
-      if (v === undefined) throw new MdmlError('value', `packLatents: no value for ${l.name}`)
+      if (v === undefined) throw new OmaiError('value', `packLatents: no value for ${l.name}`)
       return reshape(asTensor(v), [l.size])
     }),
   )

@@ -4,7 +4,7 @@
  * frame of an analysis, the window of a transform) and a step can be found from a time clicked in the picture.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { seal } from './_check.ts'
 
 /** A magnitude spectrogram: `magnitude[f][k]` at `frequencies[f]` Hz and `times[k]` seconds. */
@@ -42,26 +42,26 @@ export interface AudioClip {
  *
  * @param record - The record without its `kind`.
  * @returns The record.
- * @throws MdmlError `value` for a rate that is not positive or frames out of order; `shape` when the spectrogram's
+ * @throws OmaiError `value` for a rate that is not positive or frames out of order; `shape` when the spectrogram's
  *   rows or columns do not match its axes.
  * @example
  * ```ts
- * import { audioClip } from 'mdml-engine/exposition'
+ * import { audioClip } from 'omai-engine/exposition'
  * audioClip({ sampleRate: 4, samples: [0, 1, 0, -1] }).samples.length // => 4
  * ```
  */
 export function audioClip(record: Omit<AudioClip, 'kind'>): AudioClip {
-  if (!(record.sampleRate > 0)) throw new MdmlError('value', 'audioClip: the sample rate must be positive')
+  if (!(record.sampleRate > 0)) throw new OmaiError('value', 'audioClip: the sample rate must be positive')
   const s = record.spectrogram
   if (s !== undefined) {
     if (s.magnitude.length !== s.frequencies.length)
-      throw new MdmlError(
+      throw new OmaiError(
         'shape',
         `audioClip: spectrogram has ${s.magnitude.length} rows, expected ${s.frequencies.length}`,
       )
     for (const [f, row] of s.magnitude.entries())
       if (row.length !== s.times.length)
-        throw new MdmlError(
+        throw new OmaiError(
           'shape',
           `audioClip: spectrogram row ${f} has ${row.length} entries, expected ${s.times.length}`,
         )
@@ -69,7 +69,7 @@ export function audioClip(record: Omit<AudioClip, 'kind'>): AudioClip {
   const frames = record.frames ?? []
   for (let k = 1; k < frames.length; k++)
     if ((frames[k]?.step ?? 0) <= (frames[k - 1]?.step ?? 0) || (frames[k]?.time ?? 0) < (frames[k - 1]?.time ?? 0))
-      throw new MdmlError('value', `audioClip: frames[${k}] is out of order`)
+      throw new OmaiError('value', `audioClip: frames[${k}] is out of order`)
   return seal({ kind: 'audio', ...record })
 }
 
@@ -80,7 +80,7 @@ export function audioClip(record: Omit<AudioClip, 'kind'>): AudioClip {
  * @returns The duration.
  * @example
  * ```ts
- * import { audioClip, audioDuration } from 'mdml-engine/exposition'
+ * import { audioClip, audioDuration } from 'omai-engine/exposition'
  * audioDuration(audioClip({ sampleRate: 8, samples: new Array(16).fill(0) })) // => 2
  * ```
  */
@@ -97,7 +97,7 @@ export function audioDuration(clip: AudioClip): number {
  * @returns Seconds from the start.
  * @example
  * ```ts
- * import { audioClip, playheadAt } from 'mdml-engine/exposition'
+ * import { audioClip, playheadAt } from 'omai-engine/exposition'
  * const c = audioClip({ sampleRate: 1, samples: [0, 0, 0, 0], frames: [{ step: 0, time: 0 }, { step: 10, time: 2 }] })
  * playheadAt(c, 5) // => 1
  * playheadAt(c, 99) // => 2
@@ -125,7 +125,7 @@ export function playheadAt(clip: AudioClip, step: number): number {
  * @returns The step.
  * @example
  * ```ts
- * import { audioClip, stepAt } from 'mdml-engine/exposition'
+ * import { audioClip, stepAt } from 'omai-engine/exposition'
  * const c = audioClip({ sampleRate: 1, samples: [0, 0, 0, 0], frames: [{ step: 0, time: 0 }, { step: 10, time: 2 }] })
  * stepAt(c, 1.01) // => 5
  * stepAt(c, -3) // => 0

@@ -7,7 +7,7 @@
  * @index structure The Bijector contract: invertible maps with log-Jacobian, for flows.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { add, asTensor, neg, type TensorLike, type Value } from '../../tensor/index.ts'
 import { type Support, sumRightmost } from '../distribution.ts'
 
@@ -64,8 +64,8 @@ export interface BijectorSpec {
  * @concept normalizing-flows
  * @example
  * ```ts
- * import { bijectors } from 'mdml-engine/dists'
- * import { add, item, mul } from 'mdml-engine/tensor'
+ * import { bijectors } from 'omai-engine/dists'
+ * import { add, item, mul } from 'omai-engine/tensor'
  * const double = bijectors.defineBijector({
  *   name: 'double', sign: 1, forward: (x) => mul(x, 2), inverse: (y) => mul(y, 0.5),
  *   forwardLogDetJacobian: (x) => add(mul(x, 0), Math.LN2),
@@ -101,12 +101,12 @@ export function defineBijector(spec: BijectorSpec): Bijector {
  *
  * @param parts - The bijectors, first applied first.
  * @returns The composite bijector.
- * @throws MdmlError with code `value` for an empty chain.
+ * @throws OmaiError with code `value` for an empty chain.
  * @concept normalizing-flows
  * @example
  * ```ts
- * import { bijectors } from 'mdml-engine/dists'
- * import { item } from 'mdml-engine/tensor'
+ * import { bijectors } from 'omai-engine/dists'
+ * import { item } from 'omai-engine/tensor'
  * const b = bijectors.chain([bijectors.exp(), bijectors.affine(1, 2)])
  * item(b.forward(0)) // => 3
  * item(b.inverse(3)) // => 0
@@ -115,7 +115,7 @@ export function defineBijector(spec: BijectorSpec): Bijector {
 export function chain(parts: readonly Bijector[]): Bijector {
   const first = parts[0]
   const last = parts[parts.length - 1]
-  if (first === undefined || last === undefined) throw new MdmlError('value', 'chain: needs at least one bijector')
+  if (first === undefined || last === undefined) throw new OmaiError('value', 'chain: needs at least one bijector')
   // The smallest input rank that every part's input rank fits inside, given the rank changes before it.
   let shift = 0
   let inputRank = 0
@@ -173,8 +173,8 @@ export function chain(parts: readonly Bijector[]): Bijector {
  * @concept normalizing-flows
  * @example
  * ```ts
- * import { bijectors } from 'mdml-engine/dists'
- * import { item } from 'mdml-engine/tensor'
+ * import { bijectors } from 'omai-engine/dists'
+ * import { item } from 'omai-engine/tensor'
  * item(bijectors.invert(bijectors.exp()).forward(Math.E)) // => 1
  * ```
  */

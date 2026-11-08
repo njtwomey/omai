@@ -7,7 +7,7 @@
  * algorithm).
  */
 
-import { MdmlError, minOf } from '../base/index.ts'
+import { minOf, OmaiError } from '../base/index.ts'
 import type { LearnData } from '../learn/estimator.ts'
 import { matrixView, targetVector } from '../learn/validation.ts'
 import { quadprog } from '../optim/index.ts'
@@ -35,7 +35,7 @@ export interface PanelData {
  * @returns The panel.
  * @example
  * ```ts
- * import { splitPanel } from 'mdml-engine/causal'
+ * import { splitPanel } from 'omai-engine/causal'
  * splitPanel({ x: [[0, 0, 0], [0, 1, 1]], y: [1, 3] }).treated // => [0, 1]
  * ```
  */
@@ -44,7 +44,7 @@ export function splitPanel(
   columns: { readonly unit?: number; readonly period?: number; readonly treated?: number } = {},
 ): PanelData {
   const m = matrixView(data.x, 'splitPanel')
-  if (data.y === undefined) throw new MdmlError('value', 'splitPanel: the data need an outcome y')
+  if (data.y === undefined) throw new OmaiError('value', 'splitPanel: the data need an outcome y')
   const [cu, cp, ct] = [columns.unit ?? 0, columns.period ?? 1, columns.treated ?? 2]
   const col = (c: number): number[] => Array.from({ length: m.n }, (_, i) => m.data[i * m.d + c] ?? 0)
   return { unit: col(cu), period: col(cp), treated: col(ct), outcome: targetVector(data.y, 'splitPanel', m.n) }
@@ -145,7 +145,7 @@ export interface DidResult extends EffectEstimate {
  * @index function Difference-in-differences with event studies and synthetic control.
  * @example
  * ```ts
- * import { differenceInDifferences } from 'mdml-engine/causal'
+ * import { differenceInDifferences } from 'omai-engine/causal'
  * const panel = { unit: [0, 0, 1, 1, 2, 2], period: [0, 1, 0, 1, 0, 1], treated: [0, 1, 0, 1, 0, 0], outcome: [1, 4, 2, 5, 1, 2] }
  * differenceInDifferences(panel).estimate.value // => 2
  * ```
@@ -156,7 +156,7 @@ export function differenceInDifferences(
 ): DidResult {
   const ix = index(panel)
   const first = minOf(Array.from(ix.adoption).filter((a) => a >= 0))
-  if (!Number.isFinite(first)) throw new MdmlError('value', 'differenceInDifferences: no unit is ever treated')
+  if (!Number.isFinite(first)) throw new OmaiError('value', 'differenceInDifferences: no unit is ever treated')
   const cutoff = options.cutoff === undefined ? first : ix.periods.findIndex((p) => p >= (options.cutoff ?? 0))
   const rows = Array.from({ length: ix.n }, (_, i) => i).filter((i) => {
     const a = ix.adoption[ix.u[i] ?? 0] ?? -1
@@ -209,7 +209,7 @@ export function differenceInDifferences(
  * @returns The coefficient of the treatment.
  * @example
  * ```ts
- * import { twoWayFixedEffects } from 'mdml-engine/causal'
+ * import { twoWayFixedEffects } from 'omai-engine/causal'
  * const panel = { unit: [0, 0, 1, 1, 2, 2], period: [0, 1, 0, 1, 0, 1], treated: [0, 1, 0, 1, 0, 0], outcome: [1, 4, 2, 5, 1, 2] }
  * twoWayFixedEffects(panel).estimate.value // => 2
  * ```
@@ -337,7 +337,7 @@ function groupTimeEffects(
  * @returns The coefficients by relative time, their errors, the pre-trend test and the mean post effect.
  * @example
  * ```ts
- * import { eventStudy } from 'mdml-engine/causal'
+ * import { eventStudy } from 'omai-engine/causal'
  * const unit = [0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3]
  * const period = [0, 1, 2, 0, 1, 2, 0, 1, 2, 0, 1, 2]
  * const treated = [0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0]
@@ -391,7 +391,7 @@ export function eventStudy(panel: PanelData, options: EventStudyOptions = {}): E
     pre = wald(Array.from(fit.beta), cov, leadIdx, k)
   } else {
     if (!Array.from(ix.adoption).some((a) => a < 0))
-      throw new MdmlError('value', "eventStudy: Callaway-Sant'Anna needs never-treated units")
+      throw new OmaiError('value', "eventStudy: Callaway-Sant'Anna needs never-treated units")
     const all = Int32Array.from({ length: ix.units.length }, (_, i) => i)
     coefficients = groupTimeEffects(ix, all, relative, reference)
     const key = options.key ?? makeKey(0)
@@ -447,7 +447,7 @@ export interface WideOutcomes {
  * @returns Units, periods and the matrix.
  * @example
  * ```ts
- * import { wideOutcomes } from 'mdml-engine/causal'
+ * import { wideOutcomes } from 'omai-engine/causal'
  * Array.from(wideOutcomes({ unit: [5, 5, 7, 7], period: [0, 1, 0, 1], treated: [0, 0, 0, 0], outcome: [1, 2, 3, 4] }).matrix) // => [1, 3, 2, 4]
  * ```
  */
@@ -456,7 +456,7 @@ export function wideOutcomes(panel: PanelData): WideOutcomes {
   const nu = ix.units.length
   const matrix = new Float64Array(ix.periods.length * nu).fill(Number.NaN)
   for (let i = 0; i < ix.n; i++) matrix[(ix.t[i] ?? 0) * nu + (ix.u[i] ?? 0)] = ix.y[i] ?? 0
-  if (matrix.some(Number.isNaN)) throw new MdmlError('value', 'wideOutcomes: the panel is not balanced')
+  if (matrix.some(Number.isNaN)) throw new OmaiError('value', 'wideOutcomes: the panel is not balanced')
   return { units: ix.units, periods: ix.periods, matrix }
 }
 
@@ -499,7 +499,7 @@ function fitSynthetic(
   const t = treated.length
   const pre = start
   if (pre < 1 || pre >= t)
-    throw new MdmlError('value', 'syntheticControl: the start must leave at least one pre- and one post-period')
+    throw new OmaiError('value', 'syntheticControl: the start must leave at least one pre- and one post-period')
   const p = new Float64Array(j * j)
   const q = new Float64Array(j)
   for (let s = 0; s < pre; s++)
@@ -550,7 +550,7 @@ function fitSynthetic(
  * @returns The weights, the synthetic path, the gap and the pre- and post-treatment fit.
  * @example
  * ```ts
- * import { syntheticControl } from 'mdml-engine/causal'
+ * import { syntheticControl } from 'omai-engine/causal'
  * const donors = [1, 5, 2, 6, 3, 7, 4, 8, 5, 9]
  * const treated = [3, 4, 5, 6, 7].map((v, s) => (s >= 3 ? v + 10 : v))
  * syntheticControl({ treated, donors, donorCount: 2, start: 3 }).effect // => 10
@@ -600,8 +600,8 @@ export type PlaceboState = {
  * @returns The algorithm; it observes `donor`, `ratio` and `rank`.
  * @example
  * ```ts
- * import { placeboInSpaceAlgorithm } from 'mdml-engine/causal'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { placeboInSpaceAlgorithm } from 'omai-engine/causal'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const donors = [1, 5, 2, 2, 6, 3, 3, 7, 4, 4, 8, 5, 5, 9, 6]
  * const treated = [2, 3, 4, 5, 6].map((v, s) => (s >= 3 ? v + 9 : v))
  * runAlgorithm(placeboInSpaceAlgorithm({ treated, donors, donorCount: 3, start: 3 }), { maxSteps: 10 }).steps // => 3
@@ -651,7 +651,7 @@ export function placeboInSpaceAlgorithm(data: SyntheticControlData): Algorithm<P
  * @returns The ratios (the treated unit's first), its rank, the p-value and the placebo gaps.
  * @example
  * ```ts
- * import { placeboInSpace } from 'mdml-engine/causal'
+ * import { placeboInSpace } from 'omai-engine/causal'
  * const donors = [1, 5, 2, 2, 6, 3, 3, 7, 4, 4, 8, 5, 5, 9, 6]
  * const treated = [2, 3, 4, 5, 6].map((v, s) => (s >= 3 ? v + 9 : v))
  * placeboInSpace({ treated, donors, donorCount: 3, start: 3 }).pValue // => 0.25

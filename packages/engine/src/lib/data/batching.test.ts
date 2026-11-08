@@ -1,6 +1,6 @@
 import fc from 'fast-check'
 import { expect, describe as group, it } from 'vitest'
-import { isMdmlError } from '../base/index.ts'
+import { isOmaiError } from '../base/index.ts'
 import { key } from '../random/index.ts'
 import { type DType, tensor, toFlat } from '../tensor/index.ts'
 import {
@@ -30,7 +30,7 @@ function codeOf(f: () => unknown): string | undefined {
   try {
     f()
   } catch (e) {
-    return isMdmlError(e) ? e.code : `not an MdmlError: ${String(e)}`
+    return isOmaiError(e) ? e.code : `not an OmaiError: ${String(e)}`
   }
   return undefined
 }

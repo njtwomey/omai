@@ -1,5 +1,5 @@
 // Helpers shared by the learn modules (not exported from the domain).
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { resolveKey } from '../context/index.ts'
 import { dgemm } from '../numerics/linalg/index.ts'
 import type { Key } from '../random/index.ts'
@@ -13,7 +13,7 @@ const EPS = Number.EPSILON
 /** Default input feature names `x0, x1, ...` (sklearn's), or the given ones checked for length. */
 export function inputNames(d: number, input: readonly string[] | undefined, who: string): string[] {
   if (input === undefined) return Array.from({ length: d }, (_, j) => `x${j}`)
-  if (input.length !== d) throw new MdmlError('shape', `${who}: ${input.length} feature names for ${d} features`)
+  if (input.length !== d) throw new OmaiError('shape', `${who}: ${input.length} feature names for ${d} features`)
   return [...input]
 }
 
@@ -97,7 +97,7 @@ export function plain(xs: ArrayLike<number>): number[] {
  * `|a - b|^2 = |a|^2 + |b|^2 - 2 a . b` on one product (clamped at zero against rounding). `b` defaults to `a`.
  */
 export function squaredDistances(a: MatrixView, b: MatrixView = a): Float64Array {
-  if (a.d !== b.d) throw new MdmlError('shape', `squaredDistances: ${a.d} and ${b.d} columns`)
+  if (a.d !== b.d) throw new OmaiError('shape', `squaredDistances: ${a.d} and ${b.d} columns`)
   const norms = (m: MatrixView): Float64Array =>
     Float64Array.from({ length: m.n }, (_, i) => {
       let s = 0

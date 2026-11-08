@@ -83,7 +83,7 @@ const build = (data: LearnData, h: SequenceModelHyper, key: Key): SequenceModel 
  * @returns The accuracy in [0, 1] (0 when no position carries a target).
  * @example
  * ```ts
- * import { tokenAccuracy } from 'mdml-engine/learn'
+ * import { tokenAccuracy } from 'omai-engine/learn'
  * tokenAccuracy([[[0, 1], [1, 0]]], [[0, 1]]) // => 0
  * ```
  */
@@ -119,7 +119,7 @@ const stateNormSquared = (state: object): number =>
  * @concept sequence-models
  * @example
  * ```ts
- * import { sequenceModelTrainer } from 'mdml-engine/learn'
+ * import { sequenceModelTrainer } from 'omai-engine/learn'
  * sequenceModelTrainer().hyper.layers // => 1
  * ```
  */

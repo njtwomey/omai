@@ -6,7 +6,7 @@
  * decision, the clusters that matched pairs form, and the pairwise precision and recall against a known truth.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import { connectedComponents, graph } from '../graph/index.ts'
 import type { Algorithm } from '../trace/index.ts'
 import { runAlgorithm } from '../trace/index.ts'
@@ -28,7 +28,7 @@ export type RecordPair = readonly [left: number, right: number]
  * @concept record-linkage
  * @example
  * ```ts
- * import { standardBlocking } from 'mdml-engine/text'
+ * import { standardBlocking } from 'omai-engine/text'
  * standardBlocking([['ann', 'x'], ['bob', 'y']], [['anna', 'x'], ['bo', 'z']], (r) => r[1] ?? '') // => [[0, 0]]
  * ```
  */
@@ -66,11 +66,11 @@ export function standardBlocking(
  * @param key - The sorting key of a record.
  * @param window - The window size, at least 2: records at most `window - 1` apart are paired.
  * @returns The candidate pairs, ordered by left then right index.
- * @throws MdmlError with code `value` for a window below 2.
+ * @throws OmaiError with code `value` for a window below 2.
  * @concept record-linkage
  * @example
  * ```ts
- * import { sortedNeighbourhoodBlocking } from 'mdml-engine/text'
+ * import { sortedNeighbourhoodBlocking } from 'omai-engine/text'
  * sortedNeighbourhoodBlocking([['smith'], ['jones']], [['smyth'], ['zed']], (r) => r[0] ?? '', 2) // => [[0, 0]]
  * ```
  */
@@ -81,7 +81,7 @@ export function sortedNeighbourhoodBlocking(
   window: number,
 ): RecordPair[] {
   if (!Number.isInteger(window) || window < 2)
-    throw new MdmlError('value', 'sortedNeighbourhoodBlocking: window must be at least 2')
+    throw new OmaiError('value', 'sortedNeighbourhoodBlocking: window must be at least 2')
   const all = [
     ...left.map((r, i) => ({ k: key(r), side: 0, i })),
     ...right.map((r, j) => ({ k: key(r), side: 1, i: j })),
@@ -119,7 +119,7 @@ export interface FieldComparator {
  * @concept record-linkage
  * @example
  * ```ts
- * import { comparisonVectors } from 'mdml-engine/text'
+ * import { comparisonVectors } from 'omai-engine/text'
  * comparisonVectors([[0, 0]], [['smith', '1980']], [['smyth', '1980']], [{ field: 0, thresholds: [0.99, 0.8] }, { field: 1, compare: (a, b) => (a === b ? 1 : 0), thresholds: [1] }]) // => [Int32Array.of(1, 1)]
  * ```
  */
@@ -186,7 +186,7 @@ function patternsOf(vectors: readonly Int32Array[]): { patterns: Int32Array[]; c
  * @concept record-linkage
  * @example
  * ```ts
- * import { matchPosterior } from 'mdml-engine/text'
+ * import { matchPosterior } from 'omai-engine/text'
  * matchPosterior({ lambda: 0.5, m: [[0.1, 0.9]], u: [[0.9, 0.1]] }, Int32Array.of(1)) // => 0.9
  * ```
  */
@@ -210,7 +210,7 @@ export function matchPosterior(model: FellegiSunterModel, levels: ArrayLike<numb
  * @concept record-linkage
  * @example
  * ```ts
- * import { matchWeight } from 'mdml-engine/text'
+ * import { matchWeight } from 'omai-engine/text'
  * matchWeight({ lambda: 0.1, m: [[0.1, 0.9]], u: [[0.9, 0.1]] }, Int32Array.of(1)) // => 3.169925001442312
  * ```
  */
@@ -231,11 +231,11 @@ export function matchWeight(model: FellegiSunterModel, levels: ArrayLike<number>
  * @param levels - The number of levels of each field.
  * @param options - The starting prior (default 0.1) and the tolerance on parameter change (default 1e-8).
  * @returns The algorithm; its state serialises.
- * @throws MdmlError with code `value` for no pairs.
+ * @throws OmaiError with code `value` for no pairs.
  * @concept record-linkage
  * @example
  * ```ts
- * import { fellegiSunterAlgorithm } from 'mdml-engine/text'
+ * import { fellegiSunterAlgorithm } from 'omai-engine/text'
  * fellegiSunterAlgorithm([Int32Array.of(1), Int32Array.of(0)], [2]).name // => 'fellegiSunterEm'
  * ```
  */
@@ -244,7 +244,7 @@ export function fellegiSunterAlgorithm(
   levels: readonly number[],
   options: { readonly lambda?: number; readonly tol?: number } = {},
 ): Algorithm<FellegiSunterState> {
-  if (vectors.length === 0) throw new MdmlError('value', 'fellegiSunter: needs at least one pair')
+  if (vectors.length === 0) throw new OmaiError('value', 'fellegiSunter: needs at least one pair')
   const { patterns, counts } = patternsOf(vectors)
   const N = vectors.length
   const tol = options.tol ?? 1e-8
@@ -322,7 +322,7 @@ export function fellegiSunterAlgorithm(
  * @concept record-linkage
  * @example
  * ```ts
- * import { fellegiSunter } from 'mdml-engine/text'
+ * import { fellegiSunter } from 'omai-engine/text'
  * const v = [...Array(90).fill(0), ...Array(10).fill(1)].map((l) => Int32Array.of(l))
  * fellegiSunter(v, [2]).model.lambda > 0 // => true
  * ```
@@ -357,7 +357,7 @@ export interface LinkageScores {
  * @concept record-linkage
  * @example
  * ```ts
- * import { linkageScores } from 'mdml-engine/text'
+ * import { linkageScores } from 'omai-engine/text'
  * linkageScores([[0, 0], [1, 2]], [[0, 0], [1, 1]]).f1 // => 0.5
  * ```
  */
@@ -385,7 +385,7 @@ export function linkageScores(predicted: readonly RecordPair[], truth: readonly 
  * @concept record-linkage
  * @example
  * ```ts
- * import { clusterMatches } from 'mdml-engine/text'
+ * import { clusterMatches } from 'omai-engine/text'
  * Array.from(clusterMatches([[0, 0]], 2, 1)) // => [0, 1, 0]
  * ```
  */

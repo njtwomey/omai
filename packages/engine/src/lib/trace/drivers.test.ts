@@ -104,7 +104,7 @@ describe('the four drivers compute one run', () => {
     const merged = mergeRuns([a, a])
     expect(merged.events).toHaveLength(2 * a.events.length)
     expect(isRun(merged)).toBe(true)
-    expect([isRun({ schema: 'mdml.run/1' }), isRun(null), isRun({ schema: 'other', events: [] })]).toEqual([
+    expect([isRun({ schema: 'omai.run/1' }), isRun(null), isRun({ schema: 'other', events: [] })]).toEqual([
       false,
       false,
       false,

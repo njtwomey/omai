@@ -3,8 +3,8 @@ treewidth upper bounds, on seeded random graphs, grids and cycles."""
 
 import networkx as nx
 import numpy as np
-from mdml_oracle.fixture import Case, case
 from networkx.algorithms.approximation import treewidth_min_degree, treewidth_min_fill_in
+from omai_oracle.fixture import Case, case
 
 REFERENCE: dict[str, str] = {"networkx": nx.__version__}
 

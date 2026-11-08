@@ -70,8 +70,8 @@ export interface SplatsProblem {
  * @returns The starting Gaussians, the data and the fit's options.
  * @example
  * ```ts
- * import { splatsProblem } from 'mdml-engine/fields'
- * import { key } from 'mdml-engine/random'
+ * import { splatsProblem } from 'omai-engine/fields'
+ * import { key } from 'omai-engine/random'
  * const config = { views: 3, heldOut: 1, resolution: 4, objects: 1, gaussians: 6, boxHalfWidth: 0.8, initialScale: 0.25, initialOpacity: 0.3, shDegree: 0, optimiser: { kind: 'adam' }, meansRate: 0.005, scalesRate: 0.005, rotationsRate: 0.001, opacitiesRate: 0.05, coloursRate: 0.02, l2Weight: 0, densify: false, densifyFrom: 20, densifyUntil: 400, densifyEvery: 20, gradientThreshold: 0.0005, maxGaussians: 100 }
  * splatsProblem(config, key(0)).initial.means.shape // => [6, 3]
  * ```
@@ -133,8 +133,8 @@ export function splatsProblem(config: SplatsMethodConfig, key: Key): SplatsProbl
  * @index estimator Fit 3-D Gaussian splats to multi-view images as a session.
  * @example
  * ```ts
- * import { fitSplatsMethod } from 'mdml-engine/fields'
- * import { Log, metricSeries, session } from 'mdml-engine/trace'
+ * import { fitSplatsMethod } from 'omai-engine/fields'
+ * import { Log, metricSeries, session } from 'omai-engine/trace'
  * const s = session(fitSplatsMethod, {
  *   config: { views: 3, heldOut: 1, resolution: 4, objects: 1, gaussians: 8 },
  *   logs: { 'splats/loss': Log(), 'splats/count': Log() },

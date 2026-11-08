@@ -1,13 +1,13 @@
-import { generate, type RegressionData } from 'mdml-engine/data'
-import { lineData } from 'mdml-engine/datasets'
-import { bayesianOnlineLinear } from 'mdml-engine/linear'
-import { key } from 'mdml-engine/random'
-import { defaults, dict, int, real } from 'mdml-engine/space'
-import { asTensor, toFlat } from 'mdml-engine/tensor'
-import type { Config } from 'mdml-engine/trace'
-import { metricSeries } from 'mdml-engine/trace'
-import { band, cartesian, heatmap, lines, points } from 'mdml-render/charts'
-import { figure } from 'mdml-render/figure'
+import { generate, type RegressionData } from 'omai-engine/data'
+import { lineData } from 'omai-engine/datasets'
+import { bayesianOnlineLinear } from 'omai-engine/linear'
+import { key } from 'omai-engine/random'
+import { defaults, dict, int, real } from 'omai-engine/space'
+import { asTensor, toFlat } from 'omai-engine/tensor'
+import type { Config } from 'omai-engine/trace'
+import { metricSeries } from 'omai-engine/trace'
+import { band, cartesian, heatmap, lines, points } from 'omai-render/charts'
+import { figure } from 'omai-render/figure'
 import {
   Chart,
   ControlPanel,
@@ -19,7 +19,7 @@ import {
   useRun,
   useSession,
   useSessionPreferences,
-} from 'mdml-render/react'
+} from 'omai-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
 import { StaleVeil } from '../../shared/StaleVeil.tsx'
 

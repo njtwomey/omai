@@ -8,7 +8,7 @@ import scipy
 import scipy.stats as st
 import sympy
 import sympy.stats as ss
-from mdml_oracle.fixture import Case, case
+from omai_oracle.fixture import Case, case
 from sympy.logic.boolalg import Boolean
 from sympy.stats.frv import FiniteDensity
 

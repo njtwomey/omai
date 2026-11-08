@@ -83,8 +83,8 @@ export interface Utterance {
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { spokenDigits } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { spokenDigits } from 'omai-engine/datasets'
  * (generate(spokenDigits, { knobs: { utterances: 3 } }).truth.extra?.['utterances'] as unknown[]).length // => 3
  * ```
  */

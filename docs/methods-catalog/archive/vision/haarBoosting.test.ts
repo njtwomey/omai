@@ -1,4 +1,4 @@
-import type { CurveSet, DecisionSurface } from 'mdml-engine/exposition'
+import type { CurveSet, DecisionSurface } from 'omai-engine/exposition'
 import { describe, expect, it } from 'vitest'
 import { metricSeries, session } from '../../lib/trace/index.ts'
 import { haarBoosting } from './haarBoosting.ts'

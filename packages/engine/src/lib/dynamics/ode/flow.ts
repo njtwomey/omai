@@ -6,7 +6,7 @@
  * seeks and resumes, and a session can fork it at any step.
  */
 
-import { type Json, MdmlError } from '../../base/index.ts'
+import { type Json, OmaiError } from '../../base/index.ts'
 import type { TensorLike } from '../../tensor/index.ts'
 import { type Algorithm, type RunStatus, type StepContext, stateFromJson, stateToJson } from '../../trace/index.ts'
 import { floatState, fromNumbers, numbersOf } from './_vec.ts'
@@ -53,13 +53,13 @@ export interface FlowOptions<K extends string> {
  * @param y0 - The initial state.
  * @param options - Step, step count, method, the observer and a stopping rule.
  * @returns The algorithm.
- * @throws MdmlError with code `value` for a non-positive step.
+ * @throws OmaiError with code `value` for a non-positive step.
  * @concept runge-kutta
  * @example
  * ```ts
- * import { flowAlgorithm } from 'mdml-engine/dynamics/ode'
- * import { neg } from 'mdml-engine/tensor'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { flowAlgorithm } from 'omai-engine/dynamics/ode'
+ * import { neg } from 'omai-engine/tensor'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const alg = flowAlgorithm((_t, y) => neg(y), [1], { dt: 0.1, steps: 10 })
  * Math.abs((runAlgorithm(alg, { maxSteps: 100 }).state.y[0] ?? 0) - Math.exp(-1)) < 1e-6 // => true
  * ```
@@ -70,7 +70,7 @@ export function flowAlgorithm<K extends string = string>(
   options: FlowOptions<K>,
 ): Algorithm<FlowState, K> {
   const { dt, steps } = options
-  if (!(dt > 0)) throw new MdmlError('value', 'flowAlgorithm: dt must be positive')
+  if (!(dt > 0)) throw new OmaiError('value', 'flowAlgorithm: dt must be positive')
   const method = options.method ?? RK4
   const start = floatState(y0)
   const shape = options.shape ?? start.shape

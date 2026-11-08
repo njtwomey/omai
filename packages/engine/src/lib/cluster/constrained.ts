@@ -4,7 +4,7 @@
  * `brokenConstraints` for the pairs a labelling violates.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { type IterativeEstimator, iterative, matrixView } from '../learn/index.ts'
 import { dict, int } from '../space/index.ts'
 import { type Tensor, type TensorLike, tensor } from '../tensor/index.ts'
@@ -45,10 +45,10 @@ export interface ConstrainedAssignment {
  * @param constraints - Must-link and cannot-link pairs.
  * @param strict - Throw instead of relaxing (default false).
  * @returns Labels, inertia and the relaxed rows.
- * @throws MdmlError `value` when `strict` and some row has no feasible cluster.
+ * @throws OmaiError `value` when `strict` and some row has no feasible cluster.
  * @example
  * ```ts
- * import { constrainedAssignment } from 'mdml-engine/cluster'
+ * import { constrainedAssignment } from 'omai-engine/cluster'
  * constrainedAssignment([[0], [1]], [[0], [1]], { cannotLink: [[0, 1]] }).labels // => [0, 1]
  * constrainedAssignment([[0], [0.1]], [[0], [5]], { cannotLink: [[0, 1]] }).labels // => [0, 1]
  * ```
@@ -91,7 +91,7 @@ export function constrainedAssignment(
       }
     }
     if (bestBroken > 0) {
-      if (strict) throw new MdmlError('value', `copKMeans: row ${i} has no cluster satisfying its constraints`)
+      if (strict) throw new OmaiError('value', `copKMeans: row ${i} has no cluster satisfying its constraints`)
       relaxed.push(i)
     }
     labels[i] = best
@@ -109,7 +109,7 @@ export function constrainedAssignment(
  * @returns The broken must-link and cannot-link pairs, by index.
  * @example
  * ```ts
- * import { brokenConstraints } from 'mdml-engine/cluster'
+ * import { brokenConstraints } from 'omai-engine/cluster'
  * brokenConstraints([0, 1, 1], { mustLink: [[0, 1]], cannotLink: [[1, 2]] }) // => { mustLink: [0], cannotLink: [0] }
  * ```
  */
@@ -135,8 +135,8 @@ export function brokenConstraints(
  * @returns The algorithm.
  * @example
  * ```ts
- * import { copKMeansAlgorithm } from 'mdml-engine/cluster'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { copKMeansAlgorithm } from 'omai-engine/cluster'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const x = [[0], [1], [10], [11]]
  * runAlgorithm(copKMeansAlgorithm(x, [[0], [10]], { mustLink: [[0, 1]] }), { maxSteps: 20 }).state.labels // => [0, 0, 1, 1]
  * ```
@@ -222,7 +222,7 @@ export interface CopKMeansVerbs {
  *
  * @example
  * ```ts
- * import { copKMeans } from 'mdml-engine/cluster'
+ * import { copKMeans } from 'omai-engine/cluster'
  * const fit = copKMeans.with({ nClusters: 2, mustLink: [[0, 3]] }).fit({ x: [[0], [1], [10], [11]] })
  * fit.params.labels[0] === fit.params.labels[3] // => true
  * ```

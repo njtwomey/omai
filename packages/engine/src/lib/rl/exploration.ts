@@ -4,7 +4,7 @@
  * of predicting a fixed random network's features), and the intrinsic curiosity module's forward-model error.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { type Key, normal } from '../random/index.ts'
 import { asTensor, mean, square, sub, sum, type TensorLike, toFlat, type Value } from '../tensor/index.ts'
 
@@ -21,7 +21,7 @@ export interface CountTable {
  * @concept exploration
  * @example
  * ```ts
- * import { countTable } from 'mdml-engine/rl'
+ * import { countTable } from 'omai-engine/rl'
  * countTable().total // => 0
  * ```
  */
@@ -38,7 +38,7 @@ export function countTable(): CountTable {
  * @concept exploration
  * @example
  * ```ts
- * import { countTable, countVisit, visits } from 'mdml-engine/rl'
+ * import { countTable, countVisit, visits } from 'omai-engine/rl'
  * visits(countVisit(countVisit(countTable(), 's'), 's'), 's') // => 2
  * ```
  */
@@ -56,7 +56,7 @@ export function countVisit(table: CountTable, code: string | number): CountTable
  * @concept exploration
  * @example
  * ```ts
- * import { countTable, visits } from 'mdml-engine/rl'
+ * import { countTable, visits } from 'omai-engine/rl'
  * visits(countTable(), 3) // => 0
  * ```
  */
@@ -74,7 +74,7 @@ export function visits(table: CountTable, code: string | number): number {
  * @concept exploration
  * @example
  * ```ts
- * import { countBonus } from 'mdml-engine/rl'
+ * import { countBonus } from 'omai-engine/rl'
  * countBonus(4, 0.5) // => 0.25
  * ```
  */
@@ -92,7 +92,7 @@ export function countBonus(count: number, beta = 1): number {
  * @concept exploration
  * @example
  * ```ts
- * import { pseudoCount } from 'mdml-engine/rl'
+ * import { pseudoCount } from 'omai-engine/rl'
  * pseudoCount(0.25, 0.5) // => 0.5
  * ```
  */
@@ -112,14 +112,14 @@ export function pseudoCount(rho: number, rhoPrime: number): number {
  * @concept exploration
  * @example
  * ```ts
- * import { simHash } from 'mdml-engine/rl'
- * import { key } from 'mdml-engine/random'
+ * import { simHash } from 'omai-engine/rl'
+ * import { key } from 'omai-engine/random'
  * const h = simHash(key(0), 2, 8)
  * h([1, 2]) === h([1.000001, 2]) // => true
  * ```
  */
 export function simHash(key: Key, dimension: number, bits = 16): (observation: readonly number[]) => string {
-  if (!(bits >= 1)) throw new MdmlError('value', 'simHash: need at least one bit')
+  if (!(bits >= 1)) throw new OmaiError('value', 'simHash: need at least one bit')
   const a = normal(key, [bits, dimension]).data
   return (x) => {
     let code = ''
@@ -156,8 +156,8 @@ export interface RandomNetworkDistillation<P> {
  * @concept exploration
  * @example
  * ```ts
- * import { rndBonus } from 'mdml-engine/rl'
- * import { mul } from 'mdml-engine/tensor'
+ * import { rndBonus } from 'omai-engine/rl'
+ * import { mul } from 'omai-engine/tensor'
  * const rnd = { target: (x: never) => mul(x, 2), predictor: (w: number, x: never) => mul(x, w) }
  * rndBonus(rnd, 1, [[1, 2]]) // => [5]
  * ```
@@ -178,8 +178,8 @@ export function rndBonus<P>(rnd: RandomNetworkDistillation<P>, params: P, observ
  * @concept exploration
  * @example
  * ```ts
- * import { rndLoss } from 'mdml-engine/rl'
- * import { item, mul } from 'mdml-engine/tensor'
+ * import { rndLoss } from 'omai-engine/rl'
+ * import { item, mul } from 'omai-engine/tensor'
  * const rnd = { target: (x: never) => mul(x, 2), predictor: (w: number, x: never) => mul(x, w) }
  * item(rndLoss(rnd, 1, [[1, 2]])) // => 2.5
  * ```
@@ -217,8 +217,8 @@ export interface CuriosityModule<P> {
  * @concept exploration
  * @example
  * ```ts
- * import { curiosityBonus } from 'mdml-engine/rl'
- * import { add } from 'mdml-engine/tensor'
+ * import { curiosityBonus } from 'omai-engine/rl'
+ * import { add } from 'omai-engine/tensor'
  * const icm = { encode: (_: null, x: never) => x, forward: (_: null, f: never, a: never) => add(f, a), inverse: (_: null, f: never) => f }
  * curiosityBonus(icm, null, [[0]], [[1]], [[3]]) // => [2]
  * ```

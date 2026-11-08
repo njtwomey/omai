@@ -2,7 +2,7 @@
  * The React player of agent steps: agents moving in their world, frame by frame, with their series beneath.
  */
 
-import type { AgentSteps } from 'mdml-engine/exposition'
+import type { AgentSteps } from 'omai-engine/exposition'
 import { type ReactElement, useCallback, useMemo } from 'react'
 import type { Figure } from '../../figure/figure.ts'
 import { agentAspect, agentFrames } from '../../views/agents.ts'

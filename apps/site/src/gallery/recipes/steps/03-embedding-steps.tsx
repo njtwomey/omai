@@ -1,5 +1,5 @@
-import { embeddingSteps } from 'mdml-engine/exposition'
-import { ControlPanel, ExpositionView, NumberField, SeedInput } from 'mdml-render/react'
+import { embeddingSteps } from 'omai-engine/exposition'
+import { ControlPanel, ExpositionView, NumberField, SeedInput } from 'omai-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 import { gaussianRows, normals } from '../../toys/synthetic.ts'

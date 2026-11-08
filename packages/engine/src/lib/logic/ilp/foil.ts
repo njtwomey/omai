@@ -5,7 +5,7 @@
  * Prolog clauses.
  */
 
-import { type Json, MdmlError } from '../../base/index.ts'
+import { type Json, OmaiError } from '../../base/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm, type TraceSchema } from '../../trace/index.ts'
 import { atom, type Clause, compound, type Term, variable } from '../terms.ts'
 
@@ -116,8 +116,8 @@ function letters(i: number): string {
  * @returns The clause.
  * @example
  * ```ts
- * import { foilClause } from 'mdml-engine/logic/ilp'
- * import { clauseToString } from 'mdml-engine/logic'
+ * import { foilClause } from 'omai-engine/logic/ilp'
+ * import { clauseToString } from 'omai-engine/logic'
  * clauseToString(foilClause('p', 1, [{ predicate: 'q', args: [0, 1], negated: false }, { predicate: 'r', args: [1], negated: true }])) // => 'p(A) :- q(A,B), \\+r(B).'
  * ```
  */
@@ -246,7 +246,7 @@ function candidates(
  * @concept inductive-logic-programming
  * @example
  * ```ts
- * import { foilGain } from 'mdml-engine/logic/ilp'
+ * import { foilGain } from 'omai-engine/logic/ilp'
  * foilGain(2, 2, 2, 0, 2) // => 2
  * ```
  */
@@ -262,7 +262,7 @@ function foilMachine(task: FoilTask, options: FoilOptions): Algorithm<FoilMachin
   const recursion = options.recursion ?? false
   const negation = options.negation ?? false
   for (const t of [...task.positive, ...(task.negative ?? [])]) {
-    if (t.length !== task.arity) throw new MdmlError('value', `foil: tuple (${t.join(', ')}) has the wrong arity`)
+    if (t.length !== task.arity) throw new OmaiError('value', `foil: tuple (${t.join(', ')}) has the wrong arity`)
   }
   const relations = new Map<string, Relation>()
   const preds: [string, number][] = []
@@ -380,11 +380,11 @@ function foilMachine(task: FoilTask, options: FoilOptions): Algorithm<FoilMachin
  * @param task - The target, examples and background relations.
  * @param options - Clause length, theory size, new variables, recursion and negation.
  * @returns The algorithm.
- * @throws MdmlError with code `value` for a tuple of the wrong arity.
+ * @throws OmaiError with code `value` for a tuple of the wrong arity.
  * @concept inductive-logic-programming
  * @example
  * ```ts
- * import { foilAlgorithm } from 'mdml-engine/logic/ilp'
+ * import { foilAlgorithm } from 'omai-engine/logic/ilp'
  * foilAlgorithm({ target: 'p', arity: 1, positive: [['a']], background: { q: [['a']] } }).name // => 'foil'
  * ```
  */
@@ -407,13 +407,13 @@ export interface FoilResult {
  * @param task - The target, examples and background relations.
  * @param options - Clause length, theory size, new variables, recursion, negation and tracing.
  * @returns The status, the clauses (variables A, B, C, ...) and any positives left uncovered.
- * @throws MdmlError with code `value` for a tuple of the wrong arity.
+ * @throws OmaiError with code `value` for a tuple of the wrong arity.
  * @concept inductive-logic-programming
  * @reference J. R. Quinlan, Learning logical definitions from relations, Machine Learning 5 (1990).
  * @example
  * ```ts
- * import { foil } from 'mdml-engine/logic/ilp'
- * import { clauseToString } from 'mdml-engine/logic'
+ * import { foil } from 'omai-engine/logic/ilp'
+ * import { clauseToString } from 'omai-engine/logic'
  * const parent = [['tom', 'bob'], ['tom', 'liz'], ['bob', 'ann'], ['bob', 'pat'], ['pat', 'jim']]
  * const r = foil({ target: 'grandparent', arity: 2, positive: [['tom', 'ann'], ['tom', 'pat'], ['bob', 'jim']], background: { parent } })
  * r.clauses.map((c) => clauseToString(c)) // => ['grandparent(A,B) :- parent(A,C), parent(C,B).']

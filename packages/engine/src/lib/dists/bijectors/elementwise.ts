@@ -41,8 +41,8 @@ const zerosLikeValue = (x: Value): Value => mul(x, 0)
  * @returns The bijector (log-determinant 0).
  * @example
  * ```ts
- * import { bijectors } from 'mdml-engine/dists'
- * import { item } from 'mdml-engine/tensor'
+ * import { bijectors } from 'omai-engine/dists'
+ * import { item } from 'omai-engine/tensor'
  * item(bijectors.identity().forward(2)) // => 2
  * ```
  */
@@ -62,8 +62,8 @@ export function identity(): Bijector {
  * @returns The bijector.
  * @example
  * ```ts
- * import { bijectors } from 'mdml-engine/dists'
- * import { item } from 'mdml-engine/tensor'
+ * import { bijectors } from 'omai-engine/dists'
+ * import { item } from 'omai-engine/tensor'
  * item(bijectors.exp().forwardLogDetJacobian(1.5)) // => 1.5
  * ```
  */
@@ -86,8 +86,8 @@ export function exp(): Bijector {
  * @returns The bijector.
  * @example
  * ```ts
- * import { bijectors } from 'mdml-engine/dists'
- * import { item } from 'mdml-engine/tensor'
+ * import { bijectors } from 'omai-engine/dists'
+ * import { item } from 'omai-engine/tensor'
  * item(bijectors.softplus().forward(0)) === Math.LN2 // => true
  * ```
  */
@@ -109,8 +109,8 @@ export function softplus(): Bijector {
  * @returns The bijector.
  * @example
  * ```ts
- * import { bijectors } from 'mdml-engine/dists'
- * import { item } from 'mdml-engine/tensor'
+ * import { bijectors } from 'omai-engine/dists'
+ * import { item } from 'omai-engine/tensor'
  * item(bijectors.sigmoid().forward(0)) // => 0.5
  * ```
  */
@@ -131,8 +131,8 @@ export function sigmoid(): Bijector {
  * @returns The bijector.
  * @example
  * ```ts
- * import { bijectors } from 'mdml-engine/dists'
- * import { item } from 'mdml-engine/tensor'
+ * import { bijectors } from 'omai-engine/dists'
+ * import { item } from 'omai-engine/tensor'
  * item(bijectors.tanh().forwardLogDetJacobian(0)) // => 0
  * ```
  */
@@ -168,8 +168,8 @@ function signOf(scale: Value): 1 | -1 | 0 {
  * @returns The bijector, differentiable in loc and scale.
  * @example
  * ```ts
- * import { bijectors } from 'mdml-engine/dists'
- * import { item } from 'mdml-engine/tensor'
+ * import { bijectors } from 'omai-engine/dists'
+ * import { item } from 'omai-engine/tensor'
  * item(bijectors.affine(1, 2).forward(3)) // => 7
  * ```
  */
@@ -192,8 +192,8 @@ export function affine(loc: TensorLike = 0, scale: TensorLike = 1): Bijector {
  * @returns The bijector.
  * @example
  * ```ts
- * import { bijectors } from 'mdml-engine/dists'
- * import { item } from 'mdml-engine/tensor'
+ * import { bijectors } from 'omai-engine/dists'
+ * import { item } from 'omai-engine/tensor'
  * item(bijectors.power(2).inverse(9)) // => 3
  * ```
  */
@@ -217,8 +217,8 @@ export function power(exponent: TensorLike): Bijector {
  * @returns The bijector.
  * @example
  * ```ts
- * import { bijectors } from 'mdml-engine/dists'
- * import { item } from 'mdml-engine/tensor'
+ * import { bijectors } from 'omai-engine/dists'
+ * import { item } from 'omai-engine/tensor'
  * item(bijectors.normalCdf().forward(0)) // => 0.5
  * ```
  */
@@ -244,8 +244,8 @@ export function normalCdf(): Bijector {
  * @concept normalizing-flows
  * @example
  * ```ts
- * import { bijectors } from 'mdml-engine/dists'
- * import { item } from 'mdml-engine/tensor'
+ * import { bijectors } from 'omai-engine/dists'
+ * import { item } from 'omai-engine/tensor'
  * item(bijectors.sinhArcsinh(0, 1).forward(0.7)) // => 0.7
  * ```
  */
@@ -275,8 +275,8 @@ export function sinhArcsinh(skewness: TensorLike = 0, tailweight: TensorLike = 1
  * @returns The bijector, with log |dy/dx| = log a + log b + (a - 1) log x + (b - 1) log(1 - x^a).
  * @example
  * ```ts
- * import { bijectors } from 'mdml-engine/dists'
- * import { item } from 'mdml-engine/tensor'
+ * import { bijectors } from 'omai-engine/dists'
+ * import { item } from 'omai-engine/tensor'
  * item(bijectors.kumaraswamyCdf(1, 1).forward(0.3)) // => 0.3
  * ```
  */

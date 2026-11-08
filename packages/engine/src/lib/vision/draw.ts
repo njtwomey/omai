@@ -6,7 +6,7 @@
  * is out of scope.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import type { Point2 } from '../numerics/geometry/index.ts'
 import type { Tensor, TensorLike } from '../tensor/index.ts'
 import { type Raster, rasterOf, rasterTensor } from './_image.ts'
@@ -79,7 +79,7 @@ class Canvas {
  * @concept rasterisation
  * @example
  * ```ts
- * import { linePixels } from 'mdml-engine/vision'
+ * import { linePixels } from 'omai-engine/vision'
  * linePixels([0, 0], [3, 1]) // => [[0, 0], [1, 0], [2, 1], [3, 1]]
  * ```
  */
@@ -216,8 +216,8 @@ function fill(c: Canvas, polys: readonly (readonly Point2[])[]): void {
  * @concept rasterisation
  * @example
  * ```ts
- * import { line } from 'mdml-engine/vision'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { line } from 'omai-engine/vision'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(line([[0, 0, 0], [0, 0, 0]], [0, 0], [2, 1], 1)) // => [[1, 1, 0], [0, 0, 1]]
  * ```
  */
@@ -245,8 +245,8 @@ export function line(
  * @concept rasterisation
  * @example
  * ```ts
- * import { polylines } from 'mdml-engine/vision'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { polylines } from 'omai-engine/vision'
+ * import { toFlat } from 'omai-engine/tensor'
  * toFlat(polylines(Array.from({ length: 4 }, () => [0, 0, 0, 0]), [[0, 0], [3, 0], [3, 3]], false, 1)).reduce((a, b) => a + b, 0) // => 7
  * ```
  */
@@ -278,8 +278,8 @@ export function polylines(
  * @concept rasterisation
  * @example
  * ```ts
- * import { fillPoly } from 'mdml-engine/vision'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { fillPoly } from 'omai-engine/vision'
+ * import { toFlat } from 'omai-engine/tensor'
  * toFlat(fillPoly(Array.from({ length: 5 }, () => new Array(5).fill(0)), [[[1, 1], [3, 1], [3, 3], [1, 3]]], 1)).reduce((a, b) => a + b, 0) // => 9
  * ```
  */
@@ -305,8 +305,8 @@ export function fillPoly(
  * @concept rasterisation
  * @example
  * ```ts
- * import { rectangle } from 'mdml-engine/vision'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { rectangle } from 'omai-engine/vision'
+ * import { toFlat } from 'omai-engine/tensor'
  * toFlat(rectangle(Array.from({ length: 5 }, () => new Array(5).fill(0)), [1, 1], [3, 3], 1)).reduce((a, b) => a + b, 0) // => 8
  * ```
  */
@@ -347,7 +347,7 @@ export function rectangle(
  * @concept rasterisation
  * @example
  * ```ts
- * import { ellipsePoints } from 'mdml-engine/vision'
+ * import { ellipsePoints } from 'omai-engine/vision'
  * ellipsePoints([0, 0], [2, 1], 0, 0, 180, 90) // => [[2, 0], [0, 1], [-2, 0]]
  * ```
  */
@@ -388,8 +388,8 @@ export function ellipsePoints(
  * @concept rasterisation
  * @example
  * ```ts
- * import { circle } from 'mdml-engine/vision'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { circle } from 'omai-engine/vision'
+ * import { toFlat } from 'omai-engine/tensor'
  * toFlat(circle(Array.from({ length: 7 }, () => new Array(7).fill(0)), [3, 3], 2, 1, { thickness: -1 })).reduce((a, b) => a + b, 0) // => 13
  * ```
  */
@@ -400,7 +400,7 @@ export function circle(
   colour: Colour,
   options: StrokeOptions = {},
 ): Tensor {
-  if (!(radius >= 0)) throw new MdmlError('value', 'circle: the radius must be non-negative')
+  if (!(radius >= 0)) throw new OmaiError('value', 'circle: the radius must be non-negative')
   const c = new Canvas(rasterOf(x, 'circle'), colour)
   const cx = Math.round(center[0])
   const cy = Math.round(center[1])
@@ -449,7 +449,7 @@ export function circle(
  * @concept rasterisation
  * @example
  * ```ts
- * import { ellipse } from 'mdml-engine/vision'
+ * import { ellipse } from 'omai-engine/vision'
  * ellipse(Array.from({ length: 9 }, () => new Array(9).fill(0)), [4, 4], [3, 2], 30, 1).shape // => [9, 9]
  * ```
  */
@@ -479,8 +479,8 @@ export function ellipse(
  * @concept contours
  * @example
  * ```ts
- * import { drawContours } from 'mdml-engine/vision'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { drawContours } from 'omai-engine/vision'
+ * import { toFlat } from 'omai-engine/tensor'
  * toFlat(drawContours(Array.from({ length: 4 }, () => new Array(4).fill(0)), [[[1, 1], [2, 1], [2, 2], [1, 2]]], -1, 1)).reduce((a, b) => a + b, 0) // => 4
  * ```
  */
@@ -509,7 +509,7 @@ export function drawContours(
  * @concept keypoints
  * @example
  * ```ts
- * import { drawKeypoints } from 'mdml-engine/vision'
+ * import { drawKeypoints } from 'omai-engine/vision'
  * drawKeypoints(Array.from({ length: 9 }, () => new Array(9).fill(0)), [{ x: 4, y: 4, size: 4, angle: 0, response: 1, octave: 0 }]).shape // => [9, 9]
  * ```
  */
@@ -540,7 +540,7 @@ export function drawKeypoints(x: TensorLike, keypoints: readonly Keypoint[], col
  * @concept descriptor-matching
  * @example
  * ```ts
- * import { drawMatches } from 'mdml-engine/vision'
+ * import { drawMatches } from 'omai-engine/vision'
  * const a = Array.from({ length: 6 }, () => new Array(6).fill(0))
  * const k = [{ x: 2, y: 2, size: 2, angle: -1, response: 1, octave: 0 }]
  * drawMatches(a, k, a, k, [{ queryIdx: 0, trainIdx: 0, distance: 0 }]).shape // => [6, 12]

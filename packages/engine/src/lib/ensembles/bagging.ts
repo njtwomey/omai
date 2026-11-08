@@ -73,7 +73,7 @@ export interface BaggingVerbs extends Verbs, FittedFacts {
  *
  * @example
  * ```ts
- * import type { BaggingPath } from 'mdml-engine/ensembles'
+ * import type { BaggingPath } from 'omai-engine/ensembles'
  * const path: BaggingPath = 'model/memberSurface'
  * path // => 'model/memberSurface'
  * ```
@@ -301,8 +301,8 @@ function baggingDefaults(hyper: Partial<BaggingHyper>, estimator: Estimator): Ba
  * @index estimator Bagging with out-of-bag bookkeeping.
  * @example
  * ```ts
- * import { baggingClassifier } from 'mdml-engine/ensembles'
- * import { key } from 'mdml-engine/random'
+ * import { baggingClassifier } from 'omai-engine/ensembles'
+ * import { key } from 'omai-engine/random'
  * const x = Array.from({ length: 40 }, (_, i) => [i / 40, ((i * 7) % 11) / 11])
  * const y = x.map(([a = 0]) => (a < 0.5 ? 0 : 1))
  * const fitted = baggingClassifier({ nEstimators: 5 }).fit({ x, y }, { key: key(0) })
@@ -322,8 +322,8 @@ export function baggingClassifier(hyper: Partial<BaggingHyper> = {}): BaggingEst
  * @concept ensembles
  * @example
  * ```ts
- * import { baggingRegressor } from 'mdml-engine/ensembles'
- * import { key } from 'mdml-engine/random'
+ * import { baggingRegressor } from 'omai-engine/ensembles'
+ * import { key } from 'omai-engine/random'
  * const x = Array.from({ length: 30 }, (_, i) => [i / 30])
  * baggingRegressor({ nEstimators: 4 }).fit({ x, y: x.map(([a = 0]) => 2 * a) }, { key: key(0) }).params.members.length // => 4
  * ```

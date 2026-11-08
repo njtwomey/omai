@@ -1,5 +1,5 @@
-import { defaults } from 'mdml-engine/space'
-import type { Config } from 'mdml-engine/trace'
+import { defaults } from 'omai-engine/space'
+import type { Config } from 'omai-engine/trace'
 import {
   Choice,
   ControlPanel,
@@ -9,7 +9,7 @@ import {
   SpaceControls,
   useSession,
   useSessionPreferences,
-} from 'mdml-render/react'
+} from 'omai-render/react'
 import { type ReactNode, useEffect, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 import { heavyDescent } from '../../toys/heavy.ts'

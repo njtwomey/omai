@@ -7,7 +7,7 @@
 
 // TODO: OpenCV's cascade XML format, tilted (45 degree) features and Gentle or Real AdaBoost.
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import { bestStump, sortedRows } from '../ensembles/index.ts'
 import { image } from '../signal/index.ts'
 import { type Tensor, type TensorLike, tensor, toFlat } from '../tensor/index.ts'
@@ -38,7 +38,7 @@ export interface HaarFeature {
  * @concept haar-features
  * @example
  * ```ts
- * import { haarFeatures } from 'mdml-engine/vision'
+ * import { haarFeatures } from 'omai-engine/vision'
  * haarFeatures(2, 2, 'type-2-x').map((f) => f.rects) // => [[[0, 0, 1, 1], [0, 1, 1, 1]], [[0, 0, 2, 1], [0, 1, 2, 1]], [[1, 0, 1, 1], [1, 1, 1, 1]]]
  * ```
  */
@@ -48,7 +48,7 @@ export function haarFeatures(
   types: HaarType | readonly HaarType[] = HAAR_TYPES,
 ): HaarFeature[] {
   if (!(Number.isInteger(width) && Number.isInteger(height) && width >= 1 && height >= 1))
-    throw new MdmlError('value', 'haarFeatures: the window is positive integers')
+    throw new OmaiError('value', 'haarFeatures: the window is positive integers')
   const out: HaarFeature[] = []
   for (const type of typeof types === 'string' ? [types] : types)
     for (let y = 0; y < height; y++)
@@ -132,9 +132,9 @@ function featureValue(t: Table, f: HaarFeature, r: number, c: number, scale = 1)
  * @concept haar-features
  * @example
  * ```ts
- * import { haarLikeFeature } from 'mdml-engine/vision'
- * import { image } from 'mdml-engine/signal'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { haarLikeFeature } from 'omai-engine/vision'
+ * import { image } from 'omai-engine/signal'
+ * import { toFlat } from 'omai-engine/tensor'
  * toFlat(haarLikeFeature(image.integralImage([[1, 2], [8, 16]]), 0, 0, 2, 2, 'type-4')) // => [-7]
  * ```
  */
@@ -148,7 +148,7 @@ export function haarLikeFeature(
 ): Tensor {
   const t = tableOf(integral)
   if (r < 0 || c < 0 || r + height > t.h || c + width > t.w)
-    throw new MdmlError('value', 'haarLikeFeature: the window must lie inside the image')
+    throw new OmaiError('value', 'haarLikeFeature: the window must lie inside the image')
   const list =
     typeof features === 'string' || (features.length > 0 && typeof features[0] === 'string')
       ? haarFeatures(width, height, features as HaarType | readonly HaarType[])
@@ -241,8 +241,8 @@ const voteOf = (weak: readonly WeakClassifier[], value: (f: HaarFeature) => numb
  * @concept boosting
  * @example
  * ```ts
- * import { adaBoostAlgorithm } from 'mdml-engine/vision'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { adaBoostAlgorithm } from 'omai-engine/vision'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const pos = [[[0, 1], [0, 1]], [[0.1, 0.9], [0, 1]]]
  * const neg = [[[1, 0], [1, 0]], [[0.5, 0.5], [0.4, 0.6]]]
  * runAlgorithm(adaBoostAlgorithm(pos, neg), { maxSteps: 3 }).state.trainingError // => 0
@@ -254,13 +254,13 @@ export function adaBoostAlgorithm(
   options: AdaBoostOptions = {},
 ): Algorithm<AdaBoostState> {
   if (positives.length === 0 || negatives.length === 0)
-    throw new MdmlError('value', 'adaBoostAlgorithm: positives and negatives are needed')
+    throw new OmaiError('value', 'adaBoostAlgorithm: positives and negatives are needed')
   const windows = [...positives, ...negatives].map(windowOf)
   const { h, w } = windows[0]?.sum ?? { h: 0, w: 0 }
   if (windows.some((v) => v.sum.h !== h || v.sum.w !== w))
-    throw new MdmlError('shape', 'adaBoostAlgorithm: the windows must share one size')
+    throw new OmaiError('shape', 'adaBoostAlgorithm: the windows must share one size')
   const pool = options.features ?? haarFeatures(w, h)
-  if (pool.length === 0) throw new MdmlError('value', 'adaBoostAlgorithm: the feature pool is empty')
+  if (pool.length === 0) throw new OmaiError('value', 'adaBoostAlgorithm: the feature pool is empty')
   const n = windows.length
   const m = positives.length
   const label = (i: number): number => (i < m ? 1 : 0)
@@ -346,7 +346,7 @@ export interface TrainCascadeOptions extends AdaBoostOptions {
  * @concept boosting
  * @example
  * ```ts
- * import { trainCascade } from 'mdml-engine/vision'
+ * import { trainCascade } from 'omai-engine/vision'
  * const pos = [[[0, 1], [0, 1]], [[0.1, 0.9], [0, 1]]]
  * const neg = [[[1, 0], [1, 0]], [[0.5, 0.5], [0.4, 0.6]]]
  * trainCascade(pos, neg, { stages: [1, 2] }).stages.length // => 1
@@ -391,7 +391,7 @@ export function trainCascade(
  * @concept boosting
  * @example
  * ```ts
- * import { cascadeClassify, trainCascade } from 'mdml-engine/vision'
+ * import { cascadeClassify, trainCascade } from 'omai-engine/vision'
  * const pos = [[[0, 1], [0, 1]], [[0.1, 0.9], [0, 1]]]
  * const neg = [[[1, 0], [1, 0]], [[0.5, 0.5], [0.4, 0.6]]]
  * cascadeClassify(trainCascade(pos, neg), [[0, 0.8], [0.1, 1]]).pass // => true
@@ -403,7 +403,7 @@ export function cascadeClassify(
 ): { readonly pass: boolean; readonly stages: number; readonly margin: number } {
   const win = windowOf(x)
   if (win.sum.h !== cascade.height || win.sum.w !== cascade.width)
-    throw new MdmlError('shape', 'cascadeClassify: the window must have the cascade size')
+    throw new OmaiError('shape', 'cascadeClassify: the window must have the cascade size')
   return evaluate(cascade, win, 0, 0, 1)
 }
 
@@ -448,7 +448,7 @@ export interface DetectMultiScaleOptions {
  * @concept object-detection
  * @example
  * ```ts
- * import { detectMultiScale, trainCascade } from 'mdml-engine/vision'
+ * import { detectMultiScale, trainCascade } from 'omai-engine/vision'
  * const pos = [[[0, 1], [0, 1]], [[0.1, 0.9], [0, 1]]]
  * const neg = [[[1, 0], [1, 0]], [[0.5, 0.5], [0.4, 0.6]]]
  * const img = [[0.5, 0.5, 0.5, 0.5], [0.5, 0, 1, 0.5], [0.5, 0, 1, 0.5], [0.5, 0.5, 0.5, 0.5]]
@@ -463,7 +463,7 @@ export function detectMultiScale(
   const win = windowOf(x)
   const { h: H, w: W } = win.sum
   const factor = options.scaleFactor ?? 1.25
-  if (!(factor > 1)) throw new MdmlError('value', 'detectMultiScale: the scale factor must exceed 1')
+  if (!(factor > 1)) throw new OmaiError('value', 'detectMultiScale: the scale factor must exceed 1')
   const maxScale = Math.min(options.maxScale ?? Number.POSITIVE_INFINITY, H / cascade.height, W / cascade.width)
   const boxes: number[][] = []
   const scores: number[] = []

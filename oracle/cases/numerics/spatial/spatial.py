@@ -4,8 +4,8 @@ from typing import Literal
 
 import numpy as np
 import sklearn
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import rng
 from sklearn.cluster import KMeans
 from sklearn.neighbors import BallTree, KDTree, NearestNeighbors, kneighbors_graph, radius_neighbors_graph
 

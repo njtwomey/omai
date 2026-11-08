@@ -4,7 +4,7 @@
  * bidiagonalisation), as algorithms, with `regularise` to run one and collect residual, solution and error curves.
  */
 
-import { type Json, MdmlError } from '../../base/index.ts'
+import { type Json, OmaiError } from '../../base/index.ts'
 import { primalOf, promoteFloat, type TensorLike, toFlat, type Value } from '../../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../../trace/index.ts'
 import { dgemv, ddot as dot, dnrm2 as norm } from '../linalg/index.ts'
@@ -18,7 +18,7 @@ function operator(a: TensorLike): {
   norm2: number
 } {
   const [av] = promoteFloat(a) as [Value]
-  if (av.shape.length !== 2) throw new MdmlError('shape', 'regularising iterations need a matrix')
+  if (av.shape.length !== 2) throw new OmaiError('shape', 'regularising iterations need a matrix')
   const [m = 0, n = 0] = av.shape
   const d = toFlat(primalOf(av))
   const mv = (x: Float64Array): Float64Array => dgemv(d, m, n, x)
@@ -104,7 +104,7 @@ const observeState = (s: RegularisingState) => ({
  * @concept semi-convergence
  * @example
  * ```ts
- * import { landweberAlgorithm } from 'mdml-engine/numerics/inverse'
+ * import { landweberAlgorithm } from 'omai-engine/numerics/inverse'
  * landweberAlgorithm([[1, 0], [0, 2]], [1, 2]).name // => 'landweber'
  * ```
  */
@@ -149,7 +149,7 @@ export function landweberAlgorithm(
  * @returns The algorithm.
  * @example
  * ```ts
- * import { cglsAlgorithm } from 'mdml-engine/numerics/inverse'
+ * import { cglsAlgorithm } from 'omai-engine/numerics/inverse'
  * cglsAlgorithm([[1, 0], [0, 2]], [1, 2]).name // => 'cgls'
  * ```
  */
@@ -201,7 +201,7 @@ export function cglsAlgorithm(
  * @returns The algorithm.
  * @example
  * ```ts
- * import { lsqrAlgorithm } from 'mdml-engine/numerics/inverse'
+ * import { lsqrAlgorithm } from 'omai-engine/numerics/inverse'
  * lsqrAlgorithm([[1, 0], [0, 2]], [1, 2]).name // => 'lsqr'
  * ```
  */
@@ -285,7 +285,7 @@ export interface RegularisingResult {
  * @returns The final iterate and the curves.
  * @example
  * ```ts
- * import { cglsAlgorithm, regularise } from 'mdml-engine/numerics/inverse'
+ * import { cglsAlgorithm, regularise } from 'omai-engine/numerics/inverse'
  * regularise(cglsAlgorithm([[1, 0], [0, 2]], [1, 2]), 2).x.map((v) => Math.round(v * 1e12) / 1e12) // => [1, 1]
  * ```
  */

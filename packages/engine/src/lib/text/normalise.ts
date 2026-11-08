@@ -5,7 +5,7 @@
  * report offsets.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { CASE_FOLDING_EXCEPTIONS, COMBINING_RANGES } from './_unicode.data.ts'
 
 /** A Unicode normalisation form (UAX #15). */
@@ -18,18 +18,18 @@ export type NormalForm = 'NFC' | 'NFD' | 'NFKC' | 'NFKD'
  * @param text - The text.
  * @param form - The normal form (default NFC).
  * @returns The normalised text.
- * @throws MdmlError with code `value` for an unknown form.
+ * @throws OmaiError with code `value` for an unknown form.
  * @concept unicode-normalisation
  * @example
  * ```ts
- * import { normalizeUnicode } from 'mdml-engine/text'
+ * import { normalizeUnicode } from 'omai-engine/text'
  * normalizeUnicode('é') === 'é' // => true
  * normalizeUnicode('ﬁ', 'NFKC') // => 'fi'
  * ```
  */
 export function normalizeUnicode(text: string, form: NormalForm = 'NFC'): string {
   if (form !== 'NFC' && form !== 'NFD' && form !== 'NFKC' && form !== 'NFKD')
-    throw new MdmlError('value', `normalizeUnicode: unknown form ${String(form)}`)
+    throw new OmaiError('value', `normalizeUnicode: unknown form ${String(form)}`)
   return text.normalize(form)
 }
 
@@ -48,7 +48,7 @@ function folding(): Map<number, string> {
  * @concept case-folding
  * @example
  * ```ts
- * import { caseFold } from 'mdml-engine/text'
+ * import { caseFold } from 'omai-engine/text'
  * caseFold('Straße') // => 'strasse'
  * caseFold('ΌΣΟΣ') === caseFold('όσος') // => true
  * ```
@@ -71,7 +71,7 @@ export function caseFold(text: string): string {
  * @returns True for a combining character.
  * @example
  * ```ts
- * import { isCombining } from 'mdml-engine/text'
+ * import { isCombining } from 'omai-engine/text'
  * [isCombining(0x301), isCombining(0x61)] // => [true, false]
  * ```
  */
@@ -111,7 +111,7 @@ export type AccentStripping = 'unicode' | 'ascii' | 'nonspacing'
  * @concept unicode-normalisation
  * @example
  * ```ts
- * import { stripAccents } from 'mdml-engine/text'
+ * import { stripAccents } from 'omai-engine/text'
  * stripAccents('café naïve') // => 'cafe naive'
  * stripAccents('Ωmega ½', 'ascii') // => 'mega 12'
  * ```
@@ -128,7 +128,7 @@ export function stripAccents(text: string, mode: AccentStripping = 'unicode'): s
     for (const ch of nfkd) if ((ch.codePointAt(0) ?? 0) < 128) out += ch
     return out
   }
-  if (mode !== 'unicode') throw new MdmlError('value', `stripAccents: unknown mode ${String(mode)}`)
+  if (mode !== 'unicode') throw new OmaiError('value', `stripAccents: unknown mode ${String(mode)}`)
   if (isAscii(text)) return text
   let out = ''
   for (const ch of nfkd) if (!isCombining(ch.codePointAt(0) ?? 0)) out += ch
@@ -145,7 +145,7 @@ export const WHITESPACE: RegExp = /[\p{White_Space}]/u
  * @returns The collapsed text.
  * @example
  * ```ts
- * import { collapseWhitespace } from 'mdml-engine/text'
+ * import { collapseWhitespace } from 'omai-engine/text'
  * collapseWhitespace('  a \t b\n\nc ') // => 'a b c'
  * ```
  */
@@ -178,7 +178,7 @@ export interface NormaliseOptions {
  * @returns The normalised text.
  * @example
  * ```ts
- * import { normaliseText } from 'mdml-engine/text'
+ * import { normaliseText } from 'omai-engine/text'
  * normaliseText(' Crème  BRÛLÉE ', { stripAccents: 'unicode', lowercase: true, collapseWhitespace: true }) // => 'creme brulee'
  * ```
  */
@@ -231,7 +231,7 @@ function codePoints(text: string): { readonly ch: string; readonly at: number }[
  * @concept text-alignment
  * @example
  * ```ts
- * import { alignedText } from 'mdml-engine/text'
+ * import { alignedText } from 'omai-engine/text'
  * alignedText('ab').alignments // => [[0, 1], [1, 2]]
  * ```
  */
@@ -258,7 +258,7 @@ function alignmentAt(a: AlignedText, at: number, length: number): [number, numbe
  * @concept text-alignment
  * @example
  * ```ts
- * import { alignedText, mapAligned } from 'mdml-engine/text'
+ * import { alignedText, mapAligned } from 'omai-engine/text'
  * const r = mapAligned(alignedText('Aß'), (c) => (c === 'ß' ? 'ss' : c.toLowerCase()))
  * [r.text, r.alignments] // => ['ass', [[0, 1], [1, 2], [1, 2]]]
  * ```
@@ -284,7 +284,7 @@ export function mapAligned(a: AlignedText, f: (codePoint: string) => string): Al
  * @concept text-alignment
  * @example
  * ```ts
- * import { alignedText, filterAligned } from 'mdml-engine/text'
+ * import { alignedText, filterAligned } from 'omai-engine/text'
  * filterAligned(alignedText('a-b'), (c) => c !== '-').alignments // => [[0, 1], [2, 3]]
  * ```
  */
@@ -304,7 +304,7 @@ export function filterAligned(a: AlignedText, keep: (codePoint: string) => boole
  * @concept text-alignment
  * @example
  * ```ts
- * import { alignedText, normaliseAligned } from 'mdml-engine/text'
+ * import { alignedText, normaliseAligned } from 'omai-engine/text'
  * const r = normaliseAligned(alignedText('ﬁx'), 'NFKD')
  * [r.text, r.alignments] // => ['fix', [[0, 1], [0, 1], [1, 2]]]
  * ```
@@ -362,7 +362,7 @@ export function normaliseAligned(a: AlignedText, form: NormalForm): AlignedText 
  * @concept text-alignment
  * @example
  * ```ts
- * import { alignedText, replaceAligned } from 'mdml-engine/text'
+ * import { alignedText, replaceAligned } from 'omai-engine/text'
  * const r = replaceAligned(alignedText('a  b'), / +/, '_')
  * [r.text, r.alignments] // => ['a_b', [[0, 1], [2, 3], [3, 4]]]
  * ```
@@ -400,7 +400,7 @@ export function replaceAligned(a: AlignedText, pattern: string | RegExp, replace
  * @concept text-alignment
  * @example
  * ```ts
- * import { alignedText, prependAligned } from 'mdml-engine/text'
+ * import { alignedText, prependAligned } from 'omai-engine/text'
  * prependAligned(alignedText('ab'), '_').alignments // => [[0, 1], [0, 1], [1, 2]]
  * ```
  */
@@ -423,7 +423,7 @@ export function prependAligned(a: AlignedText, prefix: string): AlignedText {
  * @concept text-alignment
  * @example
  * ```ts
- * import { alignedText, stripAligned } from 'mdml-engine/text'
+ * import { alignedText, stripAligned } from 'omai-engine/text'
  * stripAligned(alignedText(' ab ')).alignments // => [[1, 2], [2, 3]]
  * ```
  */
@@ -448,7 +448,7 @@ export function stripAligned(
  * @concept text-alignment
  * @example
  * ```ts
- * import { alignedText, sliceAligned } from 'mdml-engine/text'
+ * import { alignedText, sliceAligned } from 'omai-engine/text'
  * sliceAligned(alignedText('abc'), 1, 3).text // => 'bc'
  * ```
  */
@@ -467,7 +467,7 @@ export function sliceAligned(a: AlignedText, start: number, end: number): Aligne
  * @concept text-alignment
  * @example
  * ```ts
- * import { alignedText, normaliseAligned, originalSpan } from 'mdml-engine/text'
+ * import { alignedText, normaliseAligned, originalSpan } from 'omai-engine/text'
  * const r = normaliseAligned(alignedText('xﬁ'), 'NFKC')
  * originalSpan(r, 2, 3) // => [1, 2]
  * ```

@@ -42,7 +42,7 @@ export interface KMeansVerbs {
  *
  * @example
  * ```ts
- * import type { KMeansPath } from 'mdml-engine/methods/cluster'
+ * import type { KMeansPath } from 'omai-engine/methods/cluster'
  * const path: KMeansPath = 'model/centres'
  * path // => 'model/centres'
  * ```
@@ -54,7 +54,7 @@ export type KMeansPath = 'model/centres'
  *
  * @example
  * ```ts
- * import { kmeans } from 'mdml-engine/methods/cluster'
+ * import { kmeans } from 'omai-engine/methods/cluster'
  * kmeans.with({ nClusters: 2 }).fit({ x: [[0, 0], [0, 1], [9, 9], [9, 8]] }).params.centres.length // => 2
  * ```
  */

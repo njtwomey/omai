@@ -5,7 +5,7 @@
  * literals not linked to the head.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { type FolClause, type FolLiteral, subsumes } from '../first-order.ts'
 import {
   type Clause,
@@ -35,8 +35,8 @@ function asLiterals(c: Clause): FolClause {
  * @concept inductive-logic-programming
  * @example
  * ```ts
- * import { thetaSubsumes } from 'mdml-engine/logic/ilp'
- * import { parseClause } from 'mdml-engine/logic'
+ * import { thetaSubsumes } from 'omai-engine/logic/ilp'
+ * import { parseClause } from 'omai-engine/logic'
  * thetaSubsumes(parseClause('p(X) :- q(X, Y).'), parseClause('p(a) :- q(a, b), r(b).')) === null // => false
  * thetaSubsumes(parseClause('p(X) :- q(X, X).'), parseClause('p(a) :- q(a, b).')) // => null
  * ```
@@ -58,8 +58,8 @@ export function thetaSubsumes(c: Clause, d: Clause): Substitution | null {
  * @returns True when equivalent.
  * @example
  * ```ts
- * import { isThetaEquivalent } from 'mdml-engine/logic/ilp'
- * import { parseClause } from 'mdml-engine/logic'
+ * import { isThetaEquivalent } from 'omai-engine/logic/ilp'
+ * import { parseClause } from 'omai-engine/logic'
  * isThetaEquivalent(parseClause('p(X) :- q(X, Y), q(X, Z).'), parseClause('p(A) :- q(A, B).')) // => true
  * ```
  */
@@ -102,8 +102,8 @@ class LggTable {
  * @concept inductive-logic-programming
  * @example
  * ```ts
- * import { lgg } from 'mdml-engine/logic/ilp'
- * import { parseTerm, termToString } from 'mdml-engine/logic'
+ * import { lgg } from 'omai-engine/logic/ilp'
+ * import { parseTerm, termToString } from 'omai-engine/logic'
  * termToString(lgg(parseTerm('p(f(a), a, g(b))'), parseTerm('p(f(b), b, g(c))'))) // => 'p(f(G0),G0,g(G1))'
  * ```
  */
@@ -119,19 +119,19 @@ export function lgg(a: Term, b: Term): Term {
  * @param c - A clause.
  * @param d - Another.
  * @returns The generalisation.
- * @throws MdmlError with code `value` when the heads have different predicates.
+ * @throws OmaiError with code `value` when the heads have different predicates.
  * @concept inductive-logic-programming
  * @example
  * ```ts
- * import { lggClauses } from 'mdml-engine/logic/ilp'
- * import { clauseToString, parseClause } from 'mdml-engine/logic'
+ * import { lggClauses } from 'omai-engine/logic/ilp'
+ * import { clauseToString, parseClause } from 'omai-engine/logic'
  * const c = lggClauses(parseClause('likes(ann, X) :- red(X), round(X).'), parseClause('likes(bob, Y) :- red(Y), soft(Y).'))
  * clauseToString(c) // => 'likes(G0,G1) :- red(G1).'
  * ```
  */
 export function lggClauses(c: Clause, d: Clause): Clause {
   if (indicator(c.head) !== indicator(d.head)) {
-    throw new MdmlError('value', `lggClauses: heads ${indicator(c.head)} and ${indicator(d.head)} differ`)
+    throw new OmaiError('value', `lggClauses: heads ${indicator(c.head)} and ${indicator(d.head)} differ`)
   }
   // Rename apart so that variables of the two clauses never coincide.
   const cc = renameClauseVars(c, 'L')
@@ -177,8 +177,8 @@ function renumber(c: Clause, prefix = 'G'): Clause {
  * @concept inductive-logic-programming
  * @example
  * ```ts
- * import { reduceClause } from 'mdml-engine/logic/ilp'
- * import { clauseToString, parseClause } from 'mdml-engine/logic'
+ * import { reduceClause } from 'omai-engine/logic/ilp'
+ * import { clauseToString, parseClause } from 'omai-engine/logic'
  * clauseToString(reduceClause(parseClause('p(X) :- q(X, Y), q(X, Z), r(Z), q(X, a).'))) // => 'p(X) :- q(X,Z), r(Z), q(X,a).'
  * ```
  */
@@ -217,12 +217,12 @@ export interface RlggOptions {
  * @param background - Ground background facts.
  * @param options - Connectedness filtering, reduction and a size limit.
  * @returns The generalisation.
- * @throws MdmlError with code `value` for no examples, different predicates, or a clause over the size limit.
+ * @throws OmaiError with code `value` for no examples, different predicates, or a clause over the size limit.
  * @concept inductive-logic-programming
  * @example
  * ```ts
- * import { rlgg } from 'mdml-engine/logic/ilp'
- * import { clauseToString, parseTerm } from 'mdml-engine/logic'
+ * import { rlgg } from 'omai-engine/logic/ilp'
+ * import { clauseToString, parseTerm } from 'omai-engine/logic'
  * // Lavrač and Džeroski's daughter example.
  * const bk = ['parent(ann, mary)', 'parent(ann, tom)', 'parent(tom, eve)', 'parent(tom, ian)', 'female(ann)', 'female(mary)', 'female(eve)'].map((s) => parseTerm(s))
  * clauseToString(rlgg([parseTerm('daughter(mary, ann)'), parseTerm('daughter(eve, tom)')], bk)) // => 'daughter(G0,G1) :- parent(G1,G0), female(G0).'
@@ -230,13 +230,13 @@ export interface RlggOptions {
  */
 export function rlgg(examples: readonly Term[], background: readonly Term[], options: RlggOptions = {}): Clause {
   const first = examples[0]
-  if (first === undefined) throw new MdmlError('value', 'rlgg: no examples')
+  if (first === undefined) throw new OmaiError('value', 'rlgg: no examples')
   const maxLiterals = options.maxLiterals ?? 20_000
   let acc: Clause = { head: first, body: [...background] }
   for (const e of examples.slice(1)) {
     const next = lggClauses(acc, { head: e, body: [...background] })
     if (next.body.length > maxLiterals) {
-      throw new MdmlError('value', `rlgg: ${next.body.length} body literals exceed maxLiterals ${maxLiterals}`)
+      throw new OmaiError('value', `rlgg: ${next.body.length} body literals exceed maxLiterals ${maxLiterals}`)
     }
     acc = next
   }
@@ -253,8 +253,8 @@ export function rlgg(examples: readonly Term[], background: readonly Term[], opt
  * @returns The clause restricted to head-connected literals.
  * @example
  * ```ts
- * import { headConnected } from 'mdml-engine/logic/ilp'
- * import { clauseToString, parseClause } from 'mdml-engine/logic'
+ * import { headConnected } from 'omai-engine/logic/ilp'
+ * import { clauseToString, parseClause } from 'omai-engine/logic'
  * clauseToString(headConnected(parseClause('p(X) :- q(X, Y), r(Y), s(Z), t(a).'))) // => 'p(X) :- q(X,Y), r(Y).'
  * ```
  */

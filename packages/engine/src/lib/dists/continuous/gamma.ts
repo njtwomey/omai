@@ -64,8 +64,8 @@ import { batchShapeOf, broadcastBatch, type Distribution, defineDistribution, va
  * @index distribution Gamma distribution with shape and rate.
  * @example
  * ```ts
- * import { gamma } from 'mdml-engine/dists'
- * import { item } from 'mdml-engine/tensor'
+ * import { gamma } from 'omai-engine/dists'
+ * import { item } from 'omai-engine/tensor'
  * item(gamma(2, 4).mean()) // => 0.5
  * ```
  */
@@ -108,11 +108,11 @@ export function gamma(concentration: TensorLike, rate: TensorLike = 1): Distribu
  * @param k - Number of events (a positive integer).
  * @param rate - Rate (positive).
  * @returns The distribution (the gamma's methods, named `erlang`).
- * @throws MdmlError with code `value` when k is not a positive integer.
+ * @throws OmaiError with code `value` when k is not a positive integer.
  * @example
  * ```ts
- * import { erlang } from 'mdml-engine/dists'
- * import { item } from 'mdml-engine/tensor'
+ * import { erlang } from 'omai-engine/dists'
+ * import { item } from 'omai-engine/tensor'
  * item(erlang(3, 2).mean()) // => 1.5
  * ```
  */
@@ -129,8 +129,8 @@ export function erlang(k: TensorLike, rate: TensorLike = 1): Distribution {
  * @returns The distribution; `rsample` is E / rate for unit exponential noise E.
  * @example
  * ```ts
- * import { exponential } from 'mdml-engine/dists'
- * import { item } from 'mdml-engine/tensor'
+ * import { exponential } from 'omai-engine/dists'
+ * import { item } from 'omai-engine/tensor'
  * item(exponential(2).mean()) // => 0.5
  * ```
  */
@@ -169,8 +169,8 @@ export function exponential(rate: TensorLike = 1): Distribution {
  * @returns The distribution; `rsample` is beta / G with G an implicitly reparameterised gamma sample.
  * @example
  * ```ts
- * import { inverseGamma } from 'mdml-engine/dists'
- * import { item } from 'mdml-engine/tensor'
+ * import { inverseGamma } from 'omai-engine/dists'
+ * import { item } from 'omai-engine/tensor'
  * item(inverseGamma(3, 4).mean()) // => 2
  * ```
  */
@@ -221,8 +221,8 @@ export function inverseGamma(concentration: TensorLike, scale: TensorLike = 1): 
  * @returns The distribution (named `chi2`), with implicit reparameterisation in df.
  * @example
  * ```ts
- * import { chi2 } from 'mdml-engine/dists'
- * import { item } from 'mdml-engine/tensor'
+ * import { chi2 } from 'omai-engine/dists'
+ * import { item } from 'omai-engine/tensor'
  * item(chi2(4).variance()) // => 8
  * ```
  */
@@ -241,8 +241,8 @@ export function chi2(df: TensorLike): Distribution {
  * @returns The distribution; `rsample` is the quantile of uniform noise.
  * @example
  * ```ts
- * import { weibull } from 'mdml-engine/dists'
- * import { item } from 'mdml-engine/tensor'
+ * import { weibull } from 'omai-engine/dists'
+ * import { item } from 'omai-engine/tensor'
  * item(weibull(1, 2).mean()) // => 2
  * ```
  */
@@ -294,8 +294,8 @@ export function weibull(concentration: TensorLike, scale: TensorLike = 1): Distr
  *   entropy are numerical.
  * @example
  * ```ts
- * import { inverseGaussian } from 'mdml-engine/dists'
- * import { item } from 'mdml-engine/tensor'
+ * import { inverseGaussian } from 'omai-engine/dists'
+ * import { item } from 'omai-engine/tensor'
  * item(inverseGaussian(2, 4).variance()) // => 2
  * ```
  */

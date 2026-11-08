@@ -1,7 +1,7 @@
-import { key, normal } from 'mdml-engine/random'
-import { axes3d, point3d, scene3d, surface3d } from 'mdml-engine/scene'
-import { toArray } from 'mdml-engine/tensor'
-import { Choice, ControlPanel, FigureFrame, NumberField, Scene3DView } from 'mdml-render/react'
+import { key, normal } from 'omai-engine/random'
+import { axes3d, point3d, scene3d, surface3d } from 'omai-engine/scene'
+import { toArray } from 'omai-engine/tensor'
+import { Choice, ControlPanel, FigureFrame, NumberField, Scene3DView } from 'omai-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 

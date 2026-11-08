@@ -4,7 +4,7 @@
  * and Gaussian thresholds, multi-level Otsu, and the local Niblack and Sauvola thresholds for documents.
  */
 
-import { MdmlError, roundHalfEven } from '../base/index.ts'
+import { OmaiError, roundHalfEven } from '../base/index.ts'
 import { image } from '../signal/index.ts'
 import { histogram } from '../stats/index.ts'
 import { fromStorage, primalOf, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
@@ -31,8 +31,8 @@ export type ThresholdChoice = number | 'otsu' | 'li' | 'triangle'
  * @index function Global thresholding: binary, truncate, to-zero and inverse variants.
  * @example
  * ```ts
- * import { threshold } from 'mdml-engine/vision'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { threshold } from 'omai-engine/vision'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(threshold([0.2, 0.5, 0.8], 0.5).image) // => [0, 0, 1]
  * toArray(threshold([0.2, 0.5, 0.8], 0.5, { type: 'trunc' }).image) // => [0.2, 0.5, 0.5]
  * ```
@@ -61,7 +61,7 @@ export function threshold(
     'tozero-inv': (v) => (v > t ? 0 : v),
   }
   const f = rule[type]
-  if (f === undefined) throw new MdmlError('value', `threshold: unknown type ${String(type)}`)
+  if (f === undefined) throw new OmaiError('value', `threshold: unknown type ${String(type)}`)
   return { threshold: t, image: fromStorage(Float64Array.from(data, f), [...shape], 'float64') }
 }
 
@@ -74,7 +74,7 @@ export function threshold(
  * @concept thresholding
  * @example
  * ```ts
- * import { thresholdTriangle } from 'mdml-engine/vision'
+ * import { thresholdTriangle } from 'omai-engine/vision'
  * const x = [...new Array(40).fill(0.1), ...Array.from({ length: 20 }, (_, i) => 0.2 + i / 30)]
  * thresholdTriangle(x) * 255 // => 28
  * ```
@@ -157,8 +157,8 @@ export interface AdaptiveThresholdOptions {
  * @concept thresholding
  * @example
  * ```ts
- * import { adaptiveThreshold } from 'mdml-engine/vision'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { adaptiveThreshold } from 'omai-engine/vision'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(adaptiveThreshold([[0.2, 0.2, 0.9, 0.2, 0.2]], { blockSize: 3 })) // => [[0, 0, 1, 0, 0]]
  * ```
  */
@@ -166,7 +166,7 @@ export function adaptiveThreshold(x: TensorLike, options: AdaptiveThresholdOptio
   const r = greyOf(x, 'adaptiveThreshold')
   const block = options.blockSize ?? 11
   if (!(Number.isInteger(block) && block % 2 === 1 && block > 1))
-    throw new MdmlError('value', 'adaptiveThreshold: the block size must be odd and above 1')
+    throw new OmaiError('value', 'adaptiveThreshold: the block size must be odd and above 1')
   const levels = Float64Array.from(r.data, level)
   const lt = imageTensor(levels, r.h, r.w)
   const local =
@@ -197,7 +197,7 @@ export function adaptiveThreshold(x: TensorLike, options: AdaptiveThresholdOptio
  * @concept thresholding
  * @example
  * ```ts
- * import { thresholdMultiOtsu } from 'mdml-engine/vision'
+ * import { thresholdMultiOtsu } from 'omai-engine/vision'
  * thresholdMultiOtsu([0, 0, 0.1, 0.5, 0.5, 0.6, 1, 1, 0.9], { classes: 3, nbins: 10 }) // => [0.15, 0.55]
  * ```
  */
@@ -207,7 +207,7 @@ export function thresholdMultiOtsu(
 ): number[] {
   const classes = options.classes ?? 3
   const nbins = options.nbins ?? 256
-  if (!(Number.isInteger(classes) && classes >= 2)) throw new MdmlError('value', 'thresholdMultiOtsu: classes >= 2')
+  if (!(Number.isInteger(classes) && classes >= 2)) throw new OmaiError('value', 'thresholdMultiOtsu: classes >= 2')
   const h = histogram(x, { bins: nbins })
   const counts = toFlat(h.counts)
   const edges = toFlat(h.edges)
@@ -216,7 +216,7 @@ export function thresholdMultiOtsu(
   const centres = counts.map((_, i) => ((edges[i] ?? 0) + (edges[i + 1] ?? 0)) / 2)
   const occupied = prob.flatMap((p, i) => (p > 0 ? [i] : []))
   if (occupied.length < classes)
-    throw new MdmlError('value', 'thresholdMultiOtsu: fewer distinct histogram bins than classes')
+    throw new OmaiError('value', 'thresholdMultiOtsu: fewer distinct histogram bins than classes')
   if (occupied.length === classes) return occupied.slice(0, -1).map((i) => centres[i] ?? 0)
   // Cumulative zeroth and first moments (bin index as the value), so a range's term is M^2 / P.
   const P = new Float64Array(nbins + 1)
@@ -255,7 +255,7 @@ export function thresholdMultiOtsu(
 /** The local mean and standard deviation over a window (scikit-image's integral-image pass, by box filters). */
 function localMeanStd(x: TensorLike, windowSize: number, name: string): { m: Float64Array; s: Float64Array } {
   if (!(Number.isInteger(windowSize) && windowSize % 2 === 1 && windowSize > 1))
-    throw new MdmlError('value', `${name}: the window size must be odd and above 1`)
+    throw new OmaiError('value', `${name}: the window size must be odd and above 1`)
   const r = rasterOf(x, name)
   const t = rasterTensor(r)
   const sq = rasterTensor({ ...r, data: Float64Array.from(r.data, (v) => v * v) })
@@ -275,8 +275,8 @@ function localMeanStd(x: TensorLike, windowSize: number, name: string): { m: Flo
  * @concept thresholding
  * @example
  * ```ts
- * import { thresholdNiblack } from 'mdml-engine/vision'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { thresholdNiblack } from 'omai-engine/vision'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(thresholdNiblack([[0.5, 0.5, 0.5]], { windowSize: 3 })) // => [[0.5, 0.5, 0.5]]
  * ```
  */
@@ -303,8 +303,8 @@ export function thresholdNiblack(
  * @concept thresholding
  * @example
  * ```ts
- * import { thresholdSauvola } from 'mdml-engine/vision'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { thresholdSauvola } from 'omai-engine/vision'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(thresholdSauvola([[0.5, 0.5, 0.5]], { windowSize: 3 })) // => [[0.4, 0.4, 0.4]]
  * ```
  */

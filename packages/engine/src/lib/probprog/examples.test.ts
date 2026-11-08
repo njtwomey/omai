@@ -21,21 +21,21 @@ import * as trace from '../trace/index.ts'
 import * as probprog from './index.ts'
 
 const MODULES: Readonly<Record<string, Readonly<Record<string, unknown>>>> = {
-  'mdml-engine/probprog': probprog,
-  'mdml-engine/sampling': sampling,
-  'mdml-engine/pgm': pgm,
-  'mdml-engine/optim': optim,
-  'mdml-engine/data': data,
-  'mdml-engine/scene': scene,
-  'mdml-engine/stats': stats,
-  'mdml-engine/dists/compose': dists.compose,
-  'mdml-engine/tensor': tensor,
-  'mdml-engine/random': random,
-  'mdml-engine/dists': dists,
-  'mdml-engine/trace': trace,
-  'mdml-engine/autodiff': autodiff,
-  'mdml-engine/base': base,
-  'mdml-engine/numerics/linalg': linalg,
+  'omai-engine/probprog': probprog,
+  'omai-engine/sampling': sampling,
+  'omai-engine/pgm': pgm,
+  'omai-engine/optim': optim,
+  'omai-engine/data': data,
+  'omai-engine/scene': scene,
+  'omai-engine/stats': stats,
+  'omai-engine/dists/compose': dists.compose,
+  'omai-engine/tensor': tensor,
+  'omai-engine/random': random,
+  'omai-engine/dists': dists,
+  'omai-engine/trace': trace,
+  'omai-engine/autodiff': autodiff,
+  'omai-engine/base': base,
+  'omai-engine/numerics/linalg': linalg,
 }
 
 interface Example {

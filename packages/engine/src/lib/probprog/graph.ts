@@ -29,8 +29,8 @@ const ROLE: Readonly<Record<SiteRole, NodeRole>> = {
  * @concept structures
  * @example
  * ```ts
- * import { observe, plate, toStructure, sample } from 'mdml-engine/probprog'
- * import { normal } from 'mdml-engine/dists'
+ * import { observe, plate, toStructure, sample } from 'omai-engine/probprog'
+ * import { normal } from 'omai-engine/dists'
  * const model = () => { const mu = sample('mu', normal(0, 1)); plate('data', 3, () => observe('y', normal(mu, 1), [1, 2, 3])) }
  * const s = toStructure(model, undefined)
  * s.nodes.map((n) => [n.id, n.role, n.group ?? '']) // => [['mu', 'latent', ''], ['y', 'observed', 'plate:data']]
@@ -53,8 +53,8 @@ export function toStructure<D = void>(
  * @concept structures
  * @example
  * ```ts
- * import { analyse, analysisStructure, sample } from 'mdml-engine/probprog'
- * import { normal } from 'mdml-engine/dists'
+ * import { analyse, analysisStructure, sample } from 'omai-engine/probprog'
+ * import { normal } from 'omai-engine/dists'
  * analysisStructure(analyse(() => { sample('x', normal(0, 1)) }, undefined)).type // => 'probabilistic-program'
  * ```
  */

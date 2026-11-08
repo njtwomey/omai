@@ -4,7 +4,7 @@
  * encoder, which replaces each category by a shrunk mean of the target over its rows.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { choice, dict, real, type Space } from '../../space/index.ts'
 import { fromStorage, type Tensor, type TensorLike } from '../../tensor/index.ts'
 import { inputNames, keyFor } from '../_shared.ts'
@@ -62,7 +62,7 @@ function categoryIndex(f: FeatureCategories, v: number): number {
  * @returns One {@link FeatureCategories} per feature.
  * @example
  * ```ts
- * import { preprocessing } from 'mdml-engine/learn'
+ * import { preprocessing } from 'omai-engine/learn'
  * const [f] = preprocessing.fitCategories([[1], [1], [2], [3], [1], [3]], { minFrequency: 2 })
  * f.categories // => [1, 2, 3]
  * f.grouped // => [0, 2, 1]
@@ -157,13 +157,13 @@ export interface EncoderVerbs {
  *
  * @param hyper - drop (default `'none'`), handleUnknown (default `'error'`), categories and grouping.
  * @returns The estimator.
- * @throws MdmlError with code `value` in transform for an unknown category with `handleUnknown: 'error'`.
+ * @throws OmaiError with code `value` in transform for an unknown category with `handleUnknown: 'error'`.
  * @concept categorical-encoding
  * @index estimator One-hot encode categorical columns.
  * @example
  * ```ts
- * import { oneHotEncoder } from 'mdml-engine/learn/preprocessing'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { oneHotEncoder } from 'omai-engine/learn/preprocessing'
+ * import { toArray } from 'omai-engine/tensor'
  * const e = oneHotEncoder().fit({ x: [[1, 0], [2, 1], [3, 0]] })
  * toArray(e.transform([[2, 1]])) // => [[0, 1, 0, 0, 1]]
  * e.featureNamesOut() // => ['x0_1', 'x0_2', 'x0_3', 'x1_0', 'x1_1']
@@ -206,7 +206,7 @@ export function oneHotEncoder(
                 let g: number
                 if (c >= 0) g = f.grouped[c] ?? 0
                 else if (h.handleUnknown === 'error') {
-                  throw new MdmlError('value', `oneHotEncoder: unknown category ${v} in feature ${j}`)
+                  throw new OmaiError('value', `oneHotEncoder: unknown category ${v} in feature ${j}`)
                 } else if (h.handleUnknown === 'infrequent_if_exist' && f.infrequent.length > 0) g = f.nGrouped - 1
                 else g = -1
                 const dropped = p.drop[j] ?? null
@@ -291,8 +291,8 @@ export type OrdinalParams = { readonly features: FeatureCategories[] }
  * @returns The estimator.
  * @example
  * ```ts
- * import { ordinalEncoder } from 'mdml-engine/learn/preprocessing'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { ordinalEncoder } from 'omai-engine/learn/preprocessing'
+ * import { toArray } from 'omai-engine/tensor'
  * const e = ordinalEncoder({ handleUnknown: 'use_encoded_value', unknownValue: -1 }).fit({ x: [[10], [30], [20]] })
  * toArray(e.transform([[30], [99]])) // => [[2], [-1]]
  * toArray(e.inverseTransform([[1]])) // => [[20]]
@@ -321,7 +321,7 @@ export function ordinalEncoder(
                 if (Number.isNaN(v) && c >= 0) out[i * d + j] = h.encodedMissingValue
                 else if (c >= 0) out[i * d + j] = f.grouped[c] ?? 0
                 else if (h.handleUnknown === 'error') {
-                  throw new MdmlError('value', `ordinalEncoder: unknown category ${v} in feature ${j}`)
+                  throw new OmaiError('value', `ordinalEncoder: unknown category ${v} in feature ${j}`)
                 } else out[i * d + j] = h.unknownValue
               }
             }
@@ -370,11 +370,11 @@ export interface LabelVerbs {
  * Encode target labels as 0..k-1 (sklearn.preprocessing.LabelEncoder). It fits `y` (the features are ignored).
  *
  * @returns The estimator.
- * @throws MdmlError with code `value` in transform for an unseen label.
+ * @throws OmaiError with code `value` in transform for an unseen label.
  * @example
  * ```ts
- * import { labelEncoder } from 'mdml-engine/learn/preprocessing'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { labelEncoder } from 'omai-engine/learn/preprocessing'
+ * import { toArray } from 'omai-engine/tensor'
  * const e = labelEncoder().fit({ x: [[0], [0], [0]], y: [10, 5, 10] })
  * e.classes // => [5, 10]
  * toArray(e.transform([10, 5])) // => [1, 0]
@@ -395,7 +395,7 @@ export function labelEncoder(): Estimator<Record<string, never>, Fitted<LabelPar
             fromStorage(
               Float64Array.from(targetVector(y, 'labelEncoder'), (v) => {
                 const c = index.get(v)
-                if (c === undefined) throw new MdmlError('value', `labelEncoder: unseen label ${v}`)
+                if (c === undefined) throw new OmaiError('value', `labelEncoder: unseen label ${v}`)
                 return c
               }),
               [targetVector(y, 'labelEncoder').length],
@@ -407,7 +407,7 @@ export function labelEncoder(): Estimator<Record<string, never>, Fitted<LabelPar
               Float64Array.from(c, (v) => {
                 const label = p.classes[v]
                 if (label === undefined || !Number.isInteger(v))
-                  throw new MdmlError('value', `labelEncoder: bad code ${v}`)
+                  throw new OmaiError('value', `labelEncoder: bad code ${v}`)
                 return label
               }),
               [c.length],
@@ -436,8 +436,8 @@ export interface LabelBinarizerHyper {
  * @returns The estimator.
  * @example
  * ```ts
- * import { labelBinarizer } from 'mdml-engine/learn/preprocessing'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { labelBinarizer } from 'omai-engine/learn/preprocessing'
+ * import { toArray } from 'omai-engine/tensor'
  * const b = labelBinarizer().fit({ x: [[0], [0], [0]], y: [1, 2, 3] })
  * toArray(b.transform([2])) // => [[0, 1, 0]]
  * toArray(labelBinarizer().fit({ x: [[0], [0]], y: [4, 7] }).transform([7, 4])) // => [[1], [0]]
@@ -448,7 +448,7 @@ export function labelBinarizer(
   hyper: Partial<LabelBinarizerHyper> = {},
 ): Estimator<LabelBinarizerHyper, Fitted<LabelParams> & LabelVerbs> {
   const h = { negLabel: hyper.negLabel ?? 0, posLabel: hyper.posLabel ?? 1 }
-  if (!(h.negLabel < h.posLabel)) throw new MdmlError('value', 'labelBinarizer: negLabel must be below posLabel')
+  if (!(h.negLabel < h.posLabel)) throw new OmaiError('value', 'labelBinarizer: negLabel must be below posLabel')
   return defineEstimator(
     {
       name: 'label-binarizer',
@@ -465,7 +465,7 @@ export function labelBinarizer(
             const out = new Float64Array(v.length * cols).fill(hp.negLabel)
             v.forEach((label, i) => {
               const c = index.get(label)
-              if (c === undefined) throw new MdmlError('value', `labelBinarizer: unseen label ${label}`)
+              if (c === undefined) throw new OmaiError('value', `labelBinarizer: unseen label ${label}`)
               if (cols === 1) out[i] = c === 1 ? hp.posLabel : hp.negLabel
               else out[i * cols + c] = hp.posLabel
             })
@@ -510,11 +510,11 @@ export interface MultiLabelBinarizer {
  * @param sets - The training label sets.
  * @param options - Fixed classes (in that order), and whether to ignore unknown labels in transform (default false).
  * @returns The fitted binariser.
- * @throws MdmlError with code `value` for an unknown label unless ignored.
+ * @throws OmaiError with code `value` for an unknown label unless ignored.
  * @example
  * ```ts
- * import { multiLabelBinarizer } from 'mdml-engine/learn/preprocessing'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { multiLabelBinarizer } from 'omai-engine/learn/preprocessing'
+ * import { toArray } from 'omai-engine/tensor'
  * const b = multiLabelBinarizer([[1, 3], [2], []])
  * b.classes // => [1, 2, 3]
  * toArray(b.transform([[3], [1, 2]])) // => [[0, 0, 1], [1, 1, 0]]
@@ -537,7 +537,7 @@ export function multiLabelBinarizer(
           const c = index.get(label)
           if (c === undefined) {
             if (options.ignoreUnknown === true) continue
-            throw new MdmlError('value', `multiLabelBinarizer: unknown label ${label}`)
+            throw new OmaiError('value', `multiLabelBinarizer: unknown label ${label}`)
           }
           out[i * k + c] = 1
         }
@@ -629,8 +629,8 @@ function encodeColumn(
  * @returns The estimator.
  * @example
  * ```ts
- * import { targetEncoder } from 'mdml-engine/learn/preprocessing'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { targetEncoder } from 'omai-engine/learn/preprocessing'
+ * import { toArray } from 'omai-engine/tensor'
  * const e = targetEncoder({ smooth: 0, targetType: 'continuous', nSplits: 2 }).fit({ x: [[0], [0], [1], [1]], y: [1, 3, 10, 20] })
  * toArray(e.transform([[0], [1], [7]])) // => [[2], [15], [8.5]]
  * ```
@@ -712,7 +712,7 @@ export function targetEncoder(
             return fromStorage(out, [m.n, d * k], 'float64')
           },
           inverseTransform: () => {
-            throw new MdmlError('not-implemented', 'targetEncoder: target encodings are not invertible')
+            throw new OmaiError('not-implemented', 'targetEncoder: target encodings are not invertible')
           },
           featureNamesOut: (input) => {
             const names = inputNames(d, input, 'targetEncoder')

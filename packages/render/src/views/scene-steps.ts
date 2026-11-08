@@ -3,8 +3,8 @@
  * along the bottom edge. The scenes are drawn as they were recorded, so the headless view is a choice among them.
  */
 
-import { type SceneSteps, sceneStepAt } from 'mdml-engine/exposition'
-import { type Scene, scene, text } from 'mdml-engine/scene'
+import { type SceneSteps, sceneStepAt } from 'omai-engine/exposition'
+import { type Scene, scene, text } from 'omai-engine/scene'
 
 /**
  * The scene to show at a step, with the step's caption added.
@@ -14,9 +14,9 @@ import { type Scene, scene, text } from 'mdml-engine/scene'
  * @returns The scene (an empty one of 1 by 1 when the record has none).
  * @example
  * ```ts
- * import { sceneSteps } from 'mdml-engine/exposition'
- * import { scene } from 'mdml-engine/scene'
- * import { sceneStepsScene } from 'mdml-render/views'
+ * import { sceneSteps } from 'omai-engine/exposition'
+ * import { scene } from 'omai-engine/scene'
+ * import { sceneStepsScene } from 'omai-render/views'
  * const r = sceneSteps({ steps: [{ step: 0, scene: scene(80, 40, []) }, { step: 3, scene: scene(80, 40, []), caption: 'later' }] })
  * sceneStepsScene(r, 4).children.length // => 1
  * ```

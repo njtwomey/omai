@@ -1,8 +1,8 @@
-import { spectrogram } from 'mdml-engine/signal'
-import { toArray } from 'mdml-engine/tensor'
-import { cartesian, heatmap } from 'mdml-render/charts'
-import { figure } from 'mdml-render/figure'
-import { Chart, ControlPanel, FigureFrame, NumberField, Toggle, useColourMode } from 'mdml-render/react'
+import { spectrogram } from 'omai-engine/signal'
+import { toArray } from 'omai-engine/tensor'
+import { cartesian, heatmap } from 'omai-render/charts'
+import { figure } from 'omai-render/figure'
+import { Chart, ControlPanel, FigureFrame, NumberField, Toggle, useColourMode } from 'omai-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 

@@ -5,8 +5,8 @@ from typing import Any
 import numpy as np
 import scipy
 import scipy.signal as S
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.signal_helpers import pair
+from omai_oracle.fixture import Case, case
+from omai_oracle.signal_helpers import pair
 
 REFERENCE: dict[str, str] = {"scipy": scipy.__version__}
 

@@ -4,7 +4,7 @@
  * marks which frames hold speech.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { fromStorage, primalOf, type Tensor, type TensorLike } from '../../tensor/index.ts'
 import { samples } from '../_shared.ts'
 import { librosaIstft, librosaStft } from './_stft.ts'
@@ -47,7 +47,7 @@ function spectra(x: Float64Array, nFft: number, hop: number): Spectra {
 function noisePower(s: Spectra, options: EnhancementOptions, nFft: number, hop: number): Float64Array {
   const src = options.noise === undefined ? s : spectra(samples(options.noise, 'noise'), nFft, hop)
   const frames = options.noise === undefined ? Math.min(src.frames, options.noiseFrames ?? 6) : src.frames
-  if (frames < 1) throw new MdmlError('value', 'enhancement: no noise frames')
+  if (frames < 1) throw new OmaiError('value', 'enhancement: no noise frames')
   const p = new Float64Array(s.bins)
   for (let b = 0; b < s.bins; b++) {
     let acc = 0
@@ -79,7 +79,7 @@ function resynthesise(s: Spectra, gain: Float64Array, nFft: number, hop: number,
  * @concept speech-enhancement
  * @example
  * ```ts
- * import { audio } from 'mdml-engine/signal'
+ * import { audio } from 'omai-engine/signal'
  * const y = Array.from({ length: 4000 }, (_, i) => (i > 1500 ? Math.sin(i / 5) : 0) + 0.1 * Math.sin(i * 2.1))
  * audio.spectralSubtraction(y, { nFft: 256 }).length // => 4000
  * ```
@@ -116,7 +116,7 @@ export function spectralSubtraction(
  * @concept speech-enhancement
  * @example
  * ```ts
- * import { audio } from 'mdml-engine/signal'
+ * import { audio } from 'omai-engine/signal'
  * const y = Array.from({ length: 4000 }, (_, i) => (i > 1500 ? Math.sin(i / 5) : 0) + 0.1 * Math.sin(i * 2.1))
  * audio.wienerDenoise(y, { nFft: 256 }).length // => 4000
  * ```
@@ -161,8 +161,8 @@ export function wienerDenoise(
  * @concept voice-activity-detection
  * @example
  * ```ts
- * import { audio } from 'mdml-engine/signal'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { audio } from 'omai-engine/signal'
+ * import { toFlat } from 'omai-engine/tensor'
  * const y = Array.from({ length: 8000 }, (_, i) => (i > 4000 ? Math.sin(i / 5) : 0.001 * Math.sin(i * 2.1)))
  * const v = toFlat(audio.voiceActivity(y))
  * [v[0], v[v.length - 1]] // => [0, 1]
@@ -181,7 +181,7 @@ export function voiceActivity(
   const x = samples(y, 'voiceActivity')
   const fl = options.frameLength ?? 400
   const hop = options.hopLength ?? 160
-  if (x.length < fl) throw new MdmlError('value', 'voiceActivity: the signal is shorter than a frame')
+  if (x.length < fl) throw new OmaiError('value', 'voiceActivity: the signal is shorter than a frame')
   const frames = 1 + Math.floor((x.length - fl) / hop)
   const energy = Float64Array.from({ length: frames }, (_, t) => {
     let e = 0

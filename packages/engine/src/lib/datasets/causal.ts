@@ -45,8 +45,8 @@ function totalEffects(b: readonly (readonly number[])[], order: readonly number[
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { linearScm } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { linearScm } from 'omai-engine/datasets'
  * generate(linearScm, { knobs: { variables: 4 } }).truth.structure?.nodes.length // => 4
  * ```
  */
@@ -142,8 +142,8 @@ export const linearScm: DatasetGenerator<RegressionData> = {
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { treatmentEffects } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { treatmentEffects } from 'omai-engine/datasets'
  * generate(treatmentEffects, { knobs: { ate: 2 } }).truth.effects?.ate // => 2
  * ```
  */
@@ -262,8 +262,8 @@ function matrixSlice(v: Value, d: number): Value {
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { instrumentalVariables } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { instrumentalVariables } from 'omai-engine/datasets'
  * generate(instrumentalVariables, { knobs: { effect: 1.5 } }).truth.effects?.ate // => 1.5
  * ```
  */
@@ -331,8 +331,8 @@ export const instrumentalVariables: DatasetGenerator<RegressionData> = {
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { panelEffects } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { panelEffects } from 'omai-engine/datasets'
  * generate(panelEffects, { knobs: { units: 10, periods: 6 } }).data.x.shape // => [60, 4]
  * ```
  */
@@ -455,8 +455,8 @@ export const panelEffects: DatasetGenerator<RegressionData> = {
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { discontinuityDesign } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { discontinuityDesign } from 'omai-engine/datasets'
  * generate(discontinuityDesign, { knobs: { n: 50, effect: 3 } }).truth.effects?.ate // => 3
  * ```
  */
@@ -549,8 +549,8 @@ export const discontinuityDesign: DatasetGenerator<RegressionData> = {
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { syntheticControlPanel } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { syntheticControlPanel } from 'omai-engine/datasets'
  * generate(syntheticControlPanel, { knobs: { donors: 9, periods: 12 } }).data.x.shape // => [120, 3]
  * ```
  */
@@ -676,8 +676,8 @@ export const syntheticControlPanel: DatasetGenerator<RegressionData> = {
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { upliftData } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { upliftData } from 'omai-engine/datasets'
  * generate(upliftData, { knobs: { n: 50, covariates: 3 } }).data.x.shape // => [50, 4]
  * ```
  */

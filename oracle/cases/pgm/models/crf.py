@@ -19,8 +19,8 @@ from typing import cast
 import numpy as np
 import sklearn_crfsuite
 import torch
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import rng
 from torchcrf import CRF
 
 REFERENCE: dict[str, str] = {"pytorch-crf": version("pytorch-crf"), "sklearn-crfsuite": version("sklearn-crfsuite")}

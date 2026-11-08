@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { isTensor, mul, square, sum, toFlat, type Value } from '../../tensor/index.ts'
 import * as O from '../index.ts'
 
@@ -26,7 +26,7 @@ describe('the minimise family on degenerate input', () => {
       expect(relative.converged, name).toBe(true)
       expect(Math.max(...toFlat(relative.x as Value)), name).toBeLessThan(1e-2)
     }
-    expect(() => O.bfgs(tiny, [1, 1], { gradTolRel: 0 })).toThrow(MdmlError)
+    expect(() => O.bfgs(tiny, [1, 1], { gradTolRel: 0 })).toThrow(OmaiError)
   })
 
   // An empty parameter vector has nothing to minimise: `converged` after no steps, for every method (OL-26).
@@ -78,8 +78,8 @@ describe('the minimise family on degenerate input', () => {
       try {
         verdict = run().status
       } catch (error) {
-        expect(error, name).toBeInstanceOf(MdmlError)
-        verdict = `threw ${(error as MdmlError).code}`
+        expect(error, name).toBeInstanceOf(OmaiError)
+        verdict = `threw ${(error as OmaiError).code}`
       }
       expect(['diverged', 'failed', 'threw value'], name).toContain(verdict)
     }

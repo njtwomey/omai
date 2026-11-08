@@ -4,7 +4,7 @@
  * `Math.max`, stable log-sum-exp and softmax, ranges, quantiles, means and variances, and bit counts, with the few constants that more than one domain needs.
  */
 
-import { MdmlError } from './errors.ts'
+import { OmaiError } from './errors.ts'
 
 /** The Euler-Mascheroni constant, the limit of the harmonic sum minus the logarithm. */
 export const EULER_GAMMA: number = 0.5772156649015329
@@ -22,7 +22,7 @@ export const LOG_SQRT_2PI: number = 0.5 * Math.log(2 * Math.PI)
  * @returns The rounded number (NaN and infinities pass through).
  * @example
  * ```ts
- * import { roundHalfEven } from 'mdml-engine/base'
+ * import { roundHalfEven } from 'omai-engine/base'
  * [roundHalfEven(0.5), roundHalfEven(1.5), roundHalfEven(2.5), roundHalfEven(-2.5)] // => [0, 2, 2, -2]
  * ```
  */
@@ -42,7 +42,7 @@ export function roundHalfEven(x: number): number {
  * @returns `true` when close.
  * @example
  * ```ts
- * import { isClose } from 'mdml-engine/base'
+ * import { isClose } from 'omai-engine/base'
  * isClose(0.1 + 0.2, 0.3) // => true
  * ```
  */
@@ -62,7 +62,7 @@ export function isClose(a: number, b: number, rtol = 1e-9, atol = 0): boolean {
  * @returns `true` when the lengths match and every pair is close.
  * @example
  * ```ts
- * import { allClose } from 'mdml-engine/base'
+ * import { allClose } from 'omai-engine/base'
  * allClose([1, 2], [1, 2 + 1e-12]) // => true
  * ```
  */
@@ -81,7 +81,7 @@ export function allClose(a: ArrayLike<number>, b: ArrayLike<number>, rtol = 1e-9
  * @returns `x` limited to `[lo, hi]`.
  * @example
  * ```ts
- * import { clamp } from 'mdml-engine/base'
+ * import { clamp } from 'omai-engine/base'
  * clamp(5, 0, 1) // => 1
  * ```
  */
@@ -96,7 +96,7 @@ export function clamp(x: number, lo: number, hi: number): number {
  * @returns Their sum.
  * @example
  * ```ts
- * import { kahanSum } from 'mdml-engine/base'
+ * import { kahanSum } from 'omai-engine/base'
  * kahanSum([1e16, 1, -1e16]) // => 1
  * ```
  */
@@ -121,7 +121,7 @@ export function kahanSum(xs: ArrayLike<number>): number {
  * @returns Their sum.
  * @example
  * ```ts
- * import { pairwiseSum } from 'mdml-engine/base'
+ * import { pairwiseSum } from 'omai-engine/base'
  * pairwiseSum([1, 2, 3, 4]) // => 10
  * ```
  */
@@ -145,7 +145,7 @@ export function pairwiseSum(xs: ArrayLike<number>): number {
  * @returns The maximum, `-Infinity` for an empty list, `NaN` if any element is NaN.
  * @example
  * ```ts
- * import { maxOf } from 'mdml-engine/base'
+ * import { maxOf } from 'omai-engine/base'
  * maxOf([3, 9, 2]) // => 9
  * ```
  */
@@ -166,7 +166,7 @@ export function maxOf(xs: ArrayLike<number>): number {
  * @returns The minimum, `Infinity` for an empty list, `NaN` if any element is NaN.
  * @example
  * ```ts
- * import { minOf } from 'mdml-engine/base'
+ * import { minOf } from 'omai-engine/base'
  * minOf([3, 9, 2]) // => 2
  * ```
  */
@@ -188,7 +188,7 @@ export function minOf(xs: ArrayLike<number>): number {
  * @returns The log-sum-exp, `-Infinity` for an empty list or all `-Infinity`, `NaN` if any element is NaN.
  * @example
  * ```ts
- * import { logSumExpOf } from 'mdml-engine/base'
+ * import { logSumExpOf } from 'omai-engine/base'
  * logSumExpOf([1000, 1000]) === 1000 + Math.LN2 // => true
  * ```
  */
@@ -208,7 +208,7 @@ export function logSumExpOf(xs: ArrayLike<number>): number {
  * @returns The index, or -1 for an empty list.
  * @example
  * ```ts
- * import { argmaxOf } from 'mdml-engine/base'
+ * import { argmaxOf } from 'omai-engine/base'
  * argmaxOf([3, 9, 9, 2]) // => 1
  * ```
  */
@@ -232,7 +232,7 @@ export function argmaxOf(xs: ArrayLike<number>): number {
  * @returns The index, or -1 for an empty list.
  * @example
  * ```ts
- * import { argminOf } from 'mdml-engine/base'
+ * import { argminOf } from 'omai-engine/base'
  * argminOf([3, 1, 1, 2]) // => 1
  * ```
  */
@@ -259,7 +259,7 @@ for (let i = 1; i <= 170; i++) FACTORIALS.push((FACTORIALS[i - 1] ?? 1) * i)
  * @returns n!, `Infinity` above 170 and `NaN` for a negative or non-integer argument.
  * @example
  * ```ts
- * import { factorialOf } from 'mdml-engine/base'
+ * import { factorialOf } from 'omai-engine/base'
  * factorialOf(5) // => 120
  * ```
  */
@@ -276,7 +276,7 @@ export function factorialOf(n: number): number {
  * @returns The gcd.
  * @example
  * ```ts
- * import { gcdOf } from 'mdml-engine/base'
+ * import { gcdOf } from 'omai-engine/base'
  * gcdOf(12, -18) // => 6
  * ```
  */
@@ -295,7 +295,7 @@ export function gcdOf(a: number, b: number): number {
  * @returns The logistic of `x`, in [0, 1].
  * @example
  * ```ts
- * import { sigmoidOf } from 'mdml-engine/base'
+ * import { sigmoidOf } from 'omai-engine/base'
  * sigmoidOf(0) // => 0.5
  * ```
  */
@@ -310,7 +310,7 @@ export function sigmoidOf(x: number): number {
  * @returns `true` for an empty list and when no entry is NaN or infinite.
  * @example
  * ```ts
- * import { allFinite } from 'mdml-engine/base'
+ * import { allFinite } from 'omai-engine/base'
  * allFinite([1, 2, 3]) // => true
  * allFinite([1, Infinity]) // => false
  * ```
@@ -327,16 +327,16 @@ export function allFinite(xs: ArrayLike<number>): boolean {
  * @param stop - Exclusive end.
  * @param step - Spacing (default 1).
  * @returns The list.
- * @throws MdmlError with code `value` for a zero or NaN `step` (the tensor `arange` does the same).
+ * @throws OmaiError with code `value` for a zero or NaN `step` (the tensor `arange` does the same).
  * @example
  * ```ts
- * import { range } from 'mdml-engine/base'
+ * import { range } from 'omai-engine/base'
  * range(4) // => [0, 1, 2, 3]
  * range(1, 7, 2) // => [1, 3, 5]
  * ```
  */
 export function range(start: number, stop?: number, step = 1): number[] {
-  if (step === 0 || Number.isNaN(step)) throw new MdmlError('value', `range: step must be non-zero, got ${step}`)
+  if (step === 0 || Number.isNaN(step)) throw new OmaiError('value', `range: step must be non-zero, got ${step}`)
   const [lo, hi] = stop === undefined ? [0, start] : [start, stop]
   const out: number[] = []
   if (step > 0) for (let i = lo; i < hi; i += step) out.push(i)
@@ -353,7 +353,7 @@ export function range(start: number, stop?: number, step = 1): number[] {
  * @returns The list.
  * @example
  * ```ts
- * import { linspaceNumbers } from 'mdml-engine/base'
+ * import { linspaceNumbers } from 'omai-engine/base'
  * linspaceNumbers(0, 1, 5) // => [0, 0.25, 0.5, 0.75, 1]
  * ```
  */
@@ -372,7 +372,7 @@ export function linspaceNumbers(start: number, stop: number, n = 50): number[] {
  * @returns Probabilities summing to one.
  * @example
  * ```ts
- * import { softmaxOf } from 'mdml-engine/base'
+ * import { softmaxOf } from 'omai-engine/base'
  * softmaxOf([0, 0]) // => [0.5, 0.5]
  * ```
  */
@@ -388,16 +388,16 @@ export function softmaxOf(xs: ArrayLike<number>): number[] {
  * @param xs - The numbers (NaN entries make the result NaN).
  * @param q - The level in [0, 1].
  * @returns The quantile, `NaN` for an empty list.
- * @throws MdmlError with code `value` unless `q` is in [0, 1].
+ * @throws OmaiError with code `value` unless `q` is in [0, 1].
  * @example
  * ```ts
- * import { quantileOf } from 'mdml-engine/base'
+ * import { quantileOf } from 'omai-engine/base'
  * quantileOf([4, 1, 3, 2], 0.5) // => 2.5
  * quantileOf([1, 2, 3, 4, 5], 0.25) // => 2
  * ```
  */
 export function quantileOf(xs: ArrayLike<number>, q: number): number {
-  if (!(q >= 0 && q <= 1)) throw new MdmlError('value', `quantileOf: q must be in [0, 1], got ${q}`)
+  if (!(q >= 0 && q <= 1)) throw new OmaiError('value', `quantileOf: q must be in [0, 1], got ${q}`)
   const n = xs.length
   if (n === 0) return Number.NaN
   const sorted = Float64Array.from(xs as ArrayLike<number>)
@@ -420,7 +420,7 @@ export function quantileOf(xs: ArrayLike<number>, q: number): number {
  * @returns The log of the sum; `-Infinity` when both are `-Infinity`.
  * @example
  * ```ts
- * import { logAddExp } from 'mdml-engine/base'
+ * import { logAddExp } from 'omai-engine/base'
  * logAddExp(0, 0) === Math.LN2 // => true
  * logAddExp(-Infinity, 2) // => 2
  * ```
@@ -441,7 +441,7 @@ export function logAddExp(a: number, b: number): number {
  * @returns The rows, as new arrays.
  * @example
  * ```ts
- * import { toRows } from 'mdml-engine/base'
+ * import { toRows } from 'omai-engine/base'
  * toRows([1, 2, 3, 4, 5, 6], 2, 3) // => [[1, 2, 3], [4, 5, 6]]
  * ```
  */
@@ -456,7 +456,7 @@ export function toRows(flat: ArrayLike<number>, n: number, d: number): number[][
  * @returns The mean.
  * @example
  * ```ts
- * import { meanOf } from 'mdml-engine/base'
+ * import { meanOf } from 'omai-engine/base'
  * meanOf([1, 2, 6]) // => 3
  * ```
  */
@@ -473,7 +473,7 @@ export function meanOf(xs: ArrayLike<number>): number {
  * @returns The variance.
  * @example
  * ```ts
- * import { varianceOf } from 'mdml-engine/base'
+ * import { varianceOf } from 'omai-engine/base'
  * varianceOf([1, 2, 3, 4], 1) // => 1.6666666666666667
  * ```
  */
@@ -493,7 +493,7 @@ export function varianceOf(xs: ArrayLike<number>, ddof = 0): number {
  * @returns How many bits are 1.
  * @example
  * ```ts
- * import { popcount } from 'mdml-engine/base'
+ * import { popcount } from 'omai-engine/base'
  * popcount(0b1011) // => 3
  * popcount(0) // => 0
  * ```

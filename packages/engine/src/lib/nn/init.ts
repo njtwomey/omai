@@ -7,7 +7,7 @@
  * @index function Weight initialisers: Xavier, Kaiming, LeCun, orthogonal.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { qr } from '../numerics/linalg/index.ts'
 import { foldIn, type Key, normal, permutation, truncatedNormal, uniform } from '../random/index.ts'
 import {
@@ -30,12 +30,12 @@ import {
  * @returns `fanIn` (inputs times receptive field) and `fanOut` (outputs times receptive field).
  * @example
  * ```ts
- * import { fans } from 'mdml-engine/nn'
+ * import { fans } from 'omai-engine/nn'
  * fans([8, 4, 3, 3]) // => { fanIn: 36, fanOut: 72 }
  * ```
  */
 export function fans(shape: readonly number[]): { readonly fanIn: number; readonly fanOut: number } {
-  if (shape.length < 2) throw new MdmlError('shape', 'fans: need at least two dimensions')
+  if (shape.length < 2) throw new OmaiError('shape', 'fans: need at least two dimensions')
   const receptive = shape.slice(2).reduce((a, b) => a * b, 1)
   return { fanIn: (shape[1] ?? 0) * receptive, fanOut: (shape[0] ?? 0) * receptive }
 }
@@ -65,7 +65,7 @@ export type GainNonlinearity =
  * @returns The gain.
  * @example
  * ```ts
- * import { calculateGain } from 'mdml-engine/nn'
+ * import { calculateGain } from 'omai-engine/nn'
  * calculateGain('tanh') // => 1.6666666666666667
  * ```
  */
@@ -94,8 +94,8 @@ export function calculateGain(nonlinearity: GainNonlinearity, param = 0.01): num
  * @concept initialisation
  * @example
  * ```ts
- * import { xavierUniform } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
+ * import { xavierUniform } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
  * xavierUniform(key(0), [3, 2]).shape // => [3, 2]
  * ```
  */
@@ -114,8 +114,8 @@ export function xavierUniform(key: Key, shape: readonly number[], gain = 1): Ten
  * @returns The weights.
  * @example
  * ```ts
- * import { xavierNormal } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
+ * import { xavierNormal } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
  * xavierNormal(key(0), [3, 2]).shape // => [3, 2]
  * ```
  */
@@ -149,8 +149,8 @@ const kaimingStd = (shape: readonly number[], options: KaimingOptions): number =
  * @returns The weights.
  * @example
  * ```ts
- * import { kaimingUniform } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
+ * import { kaimingUniform } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
  * kaimingUniform(key(0), [4, 3]).shape // => [4, 3]
  * ```
  */
@@ -168,8 +168,8 @@ export function kaimingUniform(key: Key, shape: readonly number[], options: Kaim
  * @returns The weights.
  * @example
  * ```ts
- * import { kaimingNormal } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
+ * import { kaimingNormal } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
  * kaimingNormal(key(0), [4, 3]).shape // => [4, 3]
  * ```
  */
@@ -187,8 +187,8 @@ export function kaimingNormal(key: Key, shape: readonly number[], options: Kaimi
  * @returns The values.
  * @example
  * ```ts
- * import { torchDefaultUniform } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
+ * import { torchDefaultUniform } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
  * torchDefaultUniform(key(0), [3], 4).data.every((v) => Math.abs(v) <= 0.5) // => true
  * ```
  */
@@ -204,7 +204,7 @@ export function torchDefaultUniform(key: Key, shape: readonly number[], fanIn: n
  * @returns The zeros.
  * @example
  * ```ts
- * import { zerosInit } from 'mdml-engine/nn'
+ * import { zerosInit } from 'omai-engine/nn'
  * zerosInit([2]).data // => Float64Array [0, 0]
  * ```
  */
@@ -219,7 +219,7 @@ export function zerosInit(shape: readonly number[]): Tensor {
  * @returns The ones.
  * @example
  * ```ts
- * import { onesInit } from 'mdml-engine/nn'
+ * import { onesInit } from 'omai-engine/nn'
  * onesInit([2]).data // => Float64Array [1, 1]
  * ```
  */
@@ -235,7 +235,7 @@ export function onesInit(shape: readonly number[]): Tensor {
  * @returns The filled tensor.
  * @example
  * ```ts
- * import { constantInit } from 'mdml-engine/nn'
+ * import { constantInit } from 'omai-engine/nn'
  * constantInit([2], 0.5).data // => Float64Array [0.5, 0.5]
  * ```
  */
@@ -253,8 +253,8 @@ export function constantInit(shape: readonly number[], value: number): Tensor {
  * @returns The values.
  * @example
  * ```ts
- * import { uniformInit } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
+ * import { uniformInit } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
  * uniformInit(key(0), [5], -1, 1).data.every((v) => v >= -1 && v < 1) // => true
  * ```
  */
@@ -272,8 +272,8 @@ export function uniformInit(key: Key, shape: readonly number[], low = 0, high = 
  * @returns The values.
  * @example
  * ```ts
- * import { normalInit } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
+ * import { normalInit } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
  * normalInit(key(0), [2, 3], 0, 0.02).shape // => [2, 3]
  * ```
  */
@@ -300,8 +300,8 @@ export interface TruncatedNormalInitOptions {
  * @returns The values.
  * @example
  * ```ts
- * import { truncatedNormalInit } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
+ * import { truncatedNormalInit } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
  * truncatedNormalInit(key(0), [100], { std: 0.02, a: -0.04, b: 0.04 }).data.every((v) => Math.abs(v) <= 0.04) // => true
  * ```
  */
@@ -330,8 +330,8 @@ export function truncatedNormalInit(
  * @returns The weights.
  * @example
  * ```ts
- * import { lecunUniform } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
+ * import { lecunUniform } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
  * lecunUniform(key(0), [4, 3]).data.every((v) => Math.abs(v) <= 1) // => true
  * ```
  */
@@ -349,8 +349,8 @@ export function lecunUniform(key: Key, shape: readonly number[]): Tensor {
  * @returns The weights.
  * @example
  * ```ts
- * import { lecunNormal } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
+ * import { lecunNormal } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
  * lecunNormal(key(0), [4, 3]).shape // => [4, 3]
  * ```
  */
@@ -378,15 +378,15 @@ export function lecunNormal(key: Key, shape: readonly number[]): Tensor {
  *   neural networks.
  * @example
  * ```ts
- * import { orthogonal } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
- * import { matmul, transpose, toArray } from 'mdml-engine/tensor'
+ * import { orthogonal } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
+ * import { matmul, transpose, toArray } from 'omai-engine/tensor'
  * const q = orthogonal(key(0), [2, 2])
  * toArray(matmul(q, transpose(q))).flat().map((v) => Math.round(v * 1e9) / 1e9) // => [1, 0, 0, 1]
  * ```
  */
 export function orthogonal(key: Key, shape: readonly number[], gain = 1): Tensor {
-  if (shape.length < 2) throw new MdmlError('shape', 'orthogonal: need at least two dimensions')
+  if (shape.length < 2) throw new OmaiError('shape', 'orthogonal: need at least two dimensions')
   const rows = shape[0] ?? 0
   const cols = sizeOf(shape) / rows
   const wide = rows < cols
@@ -408,8 +408,8 @@ export function orthogonal(key: Key, shape: readonly number[], gain = 1): Tensor
  * @returns Ones on the diagonal.
  * @example
  * ```ts
- * import { eyeInit } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { eyeInit } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(eyeInit([2, 3])) // => [[1, 0, 0], [0, 1, 0]]
  * ```
  */
@@ -429,15 +429,15 @@ export function eyeInit(shape: readonly [number, number]): Tensor {
  * @returns The weights.
  * @example
  * ```ts
- * import { diracInit } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { diracInit } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(diracInit([1, 1, 3])) // => [[[0, 1, 0]]]
  * ```
  */
 export function diracInit(shape: readonly number[], groups = 1): Tensor {
-  if (shape.length < 3 || shape.length > 5) throw new MdmlError('shape', 'diracInit: need a 3-, 4- or 5-D weight')
+  if (shape.length < 3 || shape.length > 5) throw new OmaiError('shape', 'diracInit: need a 3-, 4- or 5-D weight')
   const [out = 0, cin = 0, ...kernel] = shape
-  if (out % groups !== 0) throw new MdmlError('value', 'diracInit: out channels must divide by groups')
+  if (out % groups !== 0) throw new OmaiError('value', 'diracInit: out channels must divide by groups')
   const perGroup = out / groups
   const ksize = sizeOf(kernel)
   const centre = kernel.reduce((acc, k, i) => acc + Math.floor(k / 2) * sizeOf(kernel.slice(i + 1)), 0)
@@ -459,8 +459,8 @@ export function diracInit(shape: readonly number[], groups = 1): Tensor {
  * @returns The weights.
  * @example
  * ```ts
- * import { sparseInit } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
+ * import { sparseInit } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
  * sparseInit(key(0), [10, 4], 0.5).data.filter((v) => v === 0).length // => 20
  * ```
  */

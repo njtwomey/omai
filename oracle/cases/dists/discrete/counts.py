@@ -3,8 +3,8 @@
 import numpy as np
 import scipy
 import statsmodels
-from mdml_oracle.distributions import distribution_cases
-from mdml_oracle.fixture import Case
+from omai_oracle.distributions import distribution_cases
+from omai_oracle.fixture import Case
 from scipy import stats
 from statsmodels.distributions.discrete import zinegbin, zipoisson
 

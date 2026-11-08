@@ -92,7 +92,7 @@ function weightsRecord(w: Windows, s: AdaBoostState): CurveSet {
  *
  * @example
  * ```ts
- * import type { HaarBoostingPath } from 'mdml-engine/methods/vision'
+ * import type { HaarBoostingPath } from 'omai-engine/methods/vision'
  * const path: HaarBoostingPath = 'boost/alpha'
  * path // => 'boost/alpha'
  * ```

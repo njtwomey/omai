@@ -7,7 +7,7 @@
  * fitted values together with the bound `||K - K~||_2 ||y|| / alpha` it satisfies, which falls as the features grow.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { resolveKey } from '../context/index.ts'
 import {
   type FeatureMap,
@@ -37,7 +37,7 @@ export interface RidgeSolution {
 function targetRows(y: TensorLike, who: string): { rows: Float64Array; n: number; k: number; multi: boolean } {
   const t = primalOf(asTensor(y))
   if (t.shape.length !== 1 && t.shape.length !== 2) {
-    throw new MdmlError('shape', `${who}: expected y to be 1-D or 2-D, got [${t.shape.join(', ')}]`)
+    throw new OmaiError('shape', `${who}: expected y to be 1-D or 2-D, got [${t.shape.join(', ')}]`)
   }
   return { rows: Float64Array.from(toFlat(t)), n: t.shape[0] ?? 0, k: t.shape[1] ?? 1, multi: t.shape.length === 2 }
 }
@@ -45,13 +45,13 @@ function targetRows(y: TensorLike, who: string): { rows: Float64Array; n: number
 function featureRows(z: TensorLike, who: string): { rows: Float64Array; n: number; d: number } {
   const t = primalOf(asTensor(z))
   if (t.shape.length !== 2)
-    throw new MdmlError('shape', `${who}: expected features [n, D], got [${t.shape.join(', ')}]`)
+    throw new OmaiError('shape', `${who}: expected features [n, D], got [${t.shape.join(', ')}]`)
   return { rows: Float64Array.from(toFlat(t)), n: t.shape[0] ?? 0, d: t.shape[1] ?? 0 }
 }
 
 function checkAlpha(alpha: number, who: string): number {
   if (!Number.isFinite(alpha) || alpha <= 0) {
-    throw new MdmlError('value', `${who}: alpha must be a positive finite number, got ${alpha}`)
+    throw new OmaiError('value', `${who}: alpha must be a positive finite number, got ${alpha}`)
   }
   return alpha
 }
@@ -71,11 +71,11 @@ const columnMeans = (a: Float64Array, n: number, d: number): Float64Array => {
  * @param alpha - Ridge penalty `alpha > 0` (default 1).
  * @param fitIntercept - Whether to fit an intercept (default false, as kernel ridge has none).
  * @returns The weights (`D * k`, row-major) and the intercepts (`k`).
- * @throws MdmlError `shape` if `z` and `y` disagree; `value` for a non-positive `alpha`.
+ * @throws OmaiError `shape` if `z` and `y` disagree; `value` for a non-positive `alpha`.
  * @concept kernel-ridge
  * @example
  * ```ts
- * import { ridgeSolve } from 'mdml-engine/kernel-methods'
+ * import { ridgeSolve } from 'omai-engine/kernel-methods'
  * Array.from(ridgeSolve([[1], [2], [3]], [2, 4, 6], 1e-9).weights).map((v) => Math.round(v * 1e6) / 1e6) // => [2]
  * ```
  */
@@ -83,7 +83,7 @@ export function ridgeSolve(z: TensorLike, y: TensorLike, alpha = 1, fitIntercept
   checkAlpha(alpha, 'ridgeSolve')
   const f = featureRows(z, 'ridgeSolve')
   const t = targetRows(y, 'ridgeSolve')
-  if (f.n !== t.n) throw new MdmlError('shape', `ridgeSolve: z has ${f.n} rows but y has ${t.n}`)
+  if (f.n !== t.n) throw new OmaiError('shape', `ridgeSolve: z has ${f.n} rows but y has ${t.n}`)
   const { n, d } = f
   const k = t.k
   const zMean = fitIntercept ? columnMeans(f.rows, n, d) : new Float64Array(d)
@@ -183,7 +183,7 @@ function ridgeSmooth(
  * @concept kernel-ridge
  * @example
  * ```ts
- * import { featureRidgeProblem } from 'mdml-engine/kernel-methods'
+ * import { featureRidgeProblem } from 'omai-engine/kernel-methods'
  * featureRidgeProblem([[1, 0], [0, 1], [1, 1]], [1, 2, 3], 0.5).x0.length // => 2
  * ```
  */
@@ -191,7 +191,7 @@ export function featureRidgeProblem(z: TensorLike, y: TensorLike, alpha = 1, fit
   checkAlpha(alpha, 'featureRidgeProblem')
   const f = featureRows(z, 'featureRidgeProblem')
   const t = targetRows(y, 'featureRidgeProblem')
-  if (f.n !== t.n) throw new MdmlError('shape', `featureRidgeProblem: z has ${f.n} rows but y has ${t.n}`)
+  if (f.n !== t.n) throw new OmaiError('shape', `featureRidgeProblem: z has ${f.n} rows but y has ${t.n}`)
   const p = f.d * t.k + (fitIntercept ? t.k : 0)
   return problemOf(ridgeSmooth(f.rows, t.rows, f.n, f.d, t.k, alpha, fitIntercept), new Array<number>(p).fill(0))
 }
@@ -220,9 +220,9 @@ export interface FeatureRidge {
  * @concept kernel-ridge
  * @example
  * ```ts
- * import { featureRidge } from 'mdml-engine/kernel-methods'
- * import { linearKernel, nystroem } from 'mdml-engine/kernels'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { featureRidge } from 'omai-engine/kernel-methods'
+ * import { linearKernel, nystroem } from 'omai-engine/kernels'
+ * import { toFlat } from 'omai-engine/tensor'
  * const x = [[0], [1], [2], [3]]
  * const fit = featureRidge(nystroem(linearKernel(), x, { indices: [1, 2] }), x, [0, 2, 4, 6], 1e-9)
  * toFlat(fit.predict([[4]])).map((v) => Math.round(v * 1e4) / 1e4) // => [8]
@@ -286,8 +286,8 @@ export interface RidgeGap {
  * @reference C. Cortes, M. Mohri and A. Talwalkar, On the impact of kernel approximation on learning accuracy (AISTATS 2010).
  * @example
  * ```ts
- * import { ridgeGap } from 'mdml-engine/kernel-methods'
- * import { gram, nystroem, rbfKernel } from 'mdml-engine/kernels'
+ * import { ridgeGap } from 'omai-engine/kernel-methods'
+ * import { gram, nystroem, rbfKernel } from 'omai-engine/kernels'
  * const x = [[0], [1], [2], [3], [4]]
  * const k = rbfKernel()
  * const g = ridgeGap(gram(k, x), nystroem(k, x, { indices: [0, 2, 4] }), x, [0, 1, 0, -1, 0], 0.1)
@@ -417,7 +417,7 @@ function rbfLengthScale(kernel: Kernel): number {
   const l = kernel.params['lengthScale']
   const values = l === undefined ? [] : toFlat(primalOf(asTensor(l as TensorLike)))
   if (kernel.name !== 'rbf' || values.length !== 1) {
-    throw new MdmlError('value', 'approximateKernelRidge: orthogonal features need an isotropic rbf kernel')
+    throw new OmaiError('value', 'approximateKernelRidge: orthogonal features need an isotropic rbf kernel')
   }
   return values[0] ?? 1
 }
@@ -465,8 +465,8 @@ function drawMap(
  *   and M. Seeger, Using the Nystrom method to speed up kernel machines (NeurIPS 2001).
  * @example
  * ```ts
- * import { approximateKernelRidge } from 'mdml-engine/kernel-methods'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { approximateKernelRidge } from 'omai-engine/kernel-methods'
+ * import { toFlat } from 'omai-engine/tensor'
  * const x = [[0], [1], [2], [3], [4], [5]]
  * const fit = approximateKernelRidge({ nComponents: 6, alpha: 1e-3 }).fit({ x, y: [0, 1, 0, -1, 0, 1] })
  * toFlat(fit.predict([[2]])).map((v) => Math.round(v * 10) / 10) // => [0]
@@ -507,7 +507,7 @@ export function approximateKernelRidge(
       algorithm: (data, h, key) => {
         const m = matrixView(data.x, who)
         const t = targetRows(data.y ?? [], who)
-        if (t.n !== m.n) throw new MdmlError('shape', `${who}: x has ${m.n} rows but y has ${t.n}`)
+        if (t.n !== m.n) throw new OmaiError('shape', `${who}: x has ${m.n} rows but y has ${t.n}`)
         checkAlpha(h.alpha, who)
         const recipe = drawMap(data, h, who, resolveKey({ key }, 'approximateKernelRidge'))
         const z = Float64Array.from(

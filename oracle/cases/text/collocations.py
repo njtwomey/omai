@@ -4,9 +4,9 @@ every association measure of BigramAssocMeasures and TrigramAssocMeasures (Fishe
 from collections.abc import Callable
 from importlib.metadata import version
 
-from mdml_oracle.fixture import Case, case
 from nltk.collocations import BigramCollocationFinder, TrigramCollocationFinder
 from nltk.metrics import BigramAssocMeasures, TrigramAssocMeasures
+from omai_oracle.fixture import Case, case
 
 REFERENCE: dict[str, str] = {"nltk": version("nltk"), "scipy": version("scipy")}
 

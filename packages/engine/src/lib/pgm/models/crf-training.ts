@@ -12,7 +12,7 @@
  * sequence error of the weights on the tape.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import {
   analyticObjective,
   familySolvers,
@@ -55,7 +55,7 @@ export interface CrfTrainingProblem {
  * @concept conditional-random-fields
  * @example
  * ```ts
- * import { crfSmoothProblem, linearChainCrf } from 'mdml-engine/pgm'
+ * import { crfSmoothProblem, linearChainCrf } from 'omai-engine/pgm'
  * crfSmoothProblem({ crf: linearChainCrf(['A', 'B'], ['f']), data: [{ x: [{ f: 1 }], y: ['A'] }] }).x0.length // => 6
  * ```
  */
@@ -276,8 +276,8 @@ export type CrfTrainState = {
  * @concept conditional-random-fields
  * @example
  * ```ts
- * import { crfTrainAlgorithm, linearChainCrf } from 'mdml-engine/pgm'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { crfTrainAlgorithm, linearChainCrf } from 'omai-engine/pgm'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const data = [{ x: [{ 'w=a': 1 }, { 'w=b': 1 }], y: ['X', 'Y'] }]
  * const crf = linearChainCrf(['X', 'Y'], ['w=a', 'w=b'])
  * runAlgorithm(crfTrainAlgorithm({ crf, data, penalty: { c2: 0.1 } }), { maxSteps: 100 }).state.sequenceError // => 0
@@ -290,7 +290,7 @@ export function crfTrainAlgorithm(
   const solver = options.solver ?? { kind: 'lbfgs' }
   const tol = options.tol ?? 1e-6
   const P = problem.crf.stateWeights.length + problem.crf.transitionWeights.length + problem.crf.bigramWeights.length
-  if (problem.data.length === 0) throw new MdmlError('value', 'crfTrain: no training sequences')
+  if (problem.data.length === 0) throw new OmaiError('value', 'crfTrain: no training sequences')
   return slotAlgorithm<CrfTrainState, CrfTrainingProblem>({
     name: 'crf-training',
     config: { solver, sequences: problem.data.length, c2: problem.penalty?.c2 ?? 0 } as never,
@@ -341,7 +341,7 @@ export function crfTrainAlgorithm(
  * @concept conditional-random-fields
  * @example
  * ```ts
- * import { linearChainCrf, trainCrf } from 'mdml-engine/pgm'
+ * import { linearChainCrf, trainCrf } from 'omai-engine/pgm'
  * const data = [{ x: [{ 'w=a': 1 }, { 'w=b': 1 }], y: ['X', 'Y'] }]
  * trainCrf(linearChainCrf(['X', 'Y'], ['w=a', 'w=b']), data, { c2: 0.1 }).sequenceError // => 0
  * ```

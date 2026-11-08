@@ -4,9 +4,9 @@
  * the scrubbed step, messages a list, and derived records their exposition view. Plus play, step and scrub controls.
  */
 
-import { isExposition } from 'mdml-engine/exposition'
-import type { Scene } from 'mdml-engine/scene'
-import { type Config, episodes, frames, messages, type Run, type TensorEvent } from 'mdml-engine/trace'
+import { isExposition } from 'omai-engine/exposition'
+import type { Scene } from 'omai-engine/scene'
+import { type Config, episodes, frames, messages, type Run, type TensorEvent } from 'omai-engine/trace'
 import { type ReactElement, type ReactNode, useMemo } from 'react'
 import { lines } from '../../charts/lines.ts'
 import { heatmapChart } from '../../charts/matrices.ts'

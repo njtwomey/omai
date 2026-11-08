@@ -3,7 +3,7 @@
  * beside the objective.
  */
 
-import type { ImageSteps } from 'mdml-engine/exposition'
+import type { ImageSteps } from 'omai-engine/exposition'
 import { type ReactElement, useCallback, useMemo } from 'react'
 import type { Figure } from '../../figure/figure.ts'
 import { imageAspect, imageFrames, imageGridFigure, imageGridView } from '../../views/images.ts'

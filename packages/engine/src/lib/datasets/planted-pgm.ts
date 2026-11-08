@@ -27,8 +27,8 @@ import { matrix, stamp, vector } from './_util.ts'
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { irtResponses } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { irtResponses } from 'omai-engine/datasets'
  * generate(irtResponses, { knobs: { respondents: 30, items: 6 } }).data.x.shape // => [30, 6]
  * ```
  */
@@ -73,8 +73,8 @@ export const irtResponses: DatasetGenerator<RegressionData> = {
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { pottsSamples } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { pottsSamples } from 'omai-engine/datasets'
  * generate(pottsSamples, { knobs: { samples: 5, side: 6, burnIn: 10 } }).data.x.shape // => [5, 36]
  * ```
  */

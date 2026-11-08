@@ -1,5 +1,5 @@
 /**
- * Kolmogorov-Arnold networks, part of `mdml-engine/nn`: layers whose edges carry learnable univariate functions
+ * Kolmogorov-Arnold networks, part of `omai-engine/nn`: layers whose edges carry learnable univariate functions
  * (splines, or radial, Chebyshev and Fourier bases) and whose nodes sum, networks of them, and the machinery of the
  * paper around them: refitting the grid, sparsity regularisation, pruning, and symbolic regression on the edges.
  *

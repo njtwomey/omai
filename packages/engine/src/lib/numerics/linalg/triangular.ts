@@ -88,8 +88,8 @@ export interface SolveTriangularOptions {
  * @returns The solution `[n, k]`.
  * @example
  * ```ts
- * import { triangularSolve } from 'mdml-engine/numerics/linalg'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { triangularSolve } from 'omai-engine/numerics/linalg'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * toArray(triangularSolve(tensor([[2, 0], [1, 1]]), tensor([[2], [3]]), { lower: true, transpose: false, unitDiagonal: false })) // => [[1], [2]]
  * ```
  */
@@ -108,8 +108,8 @@ export function triangularSolve(a: Value, b: Value, options: TriangularOptions):
  * @concept linear-algebra
  * @example
  * ```ts
- * import { solveTriangular } from 'mdml-engine/numerics/linalg'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { solveTriangular } from 'omai-engine/numerics/linalg'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(solveTriangular([[2, 0], [1, 1]], [2, 3], { lower: true })) // => [1, 2]
  * ```
  */
@@ -133,8 +133,8 @@ export function solveTriangular(a: TensorLike, b: TensorLike, options: SolveTria
  * @returns The inverse (triangular of the same kind), differentiable.
  * @example
  * ```ts
- * import { invTriangular } from 'mdml-engine/numerics/linalg'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { invTriangular } from 'omai-engine/numerics/linalg'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(invTriangular([[2, 0], [0, 4]], { lower: true })) // => [[0.5, 0], [0, 0.25]]
  * ```
  */

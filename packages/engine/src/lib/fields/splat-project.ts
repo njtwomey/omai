@@ -8,7 +8,7 @@
  * it is differentiable in the means, scales, rotations, opacities and colours.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { cameraBasis, type PinholeCamera } from '../graphics/index.ts'
 import {
   add,
@@ -98,15 +98,15 @@ export function cameraFrame(
  * @param height - Image height in pixels.
  * @param options - Screen offsets for reading view-space gradients, and `keepAll`.
  * @returns The projected Gaussians.
- * @throws MdmlError with code `value` for a camera whose near plane is not positive.
+ * @throws OmaiError with code `value` for a camera whose near plane is not positive.
  * @concept gaussian-splatting
  * @reference Kerbl, Kopanas, Leimkuehler and Drettakis (2023), 3D Gaussian splatting for real-time radiance field
  *   rendering; Zwicker, Pfister, van Baar and Gross (2001), EWA splatting.
  * @example
  * ```ts
- * import { gaussiansFromPoints, projectGaussians } from 'mdml-engine/fields'
- * import { pinholeCamera } from 'mdml-engine/graphics'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { gaussiansFromPoints, projectGaussians } from 'omai-engine/fields'
+ * import { pinholeCamera } from 'omai-engine/graphics'
+ * import { toArray } from 'omai-engine/tensor'
  * // A Gaussian of standard deviation 0.5 at the origin, seen from 4 away with a 90 degree field of view in a 64 pixel
  * // image: its 2-D variance is (32 * 0.5 / 4)^2 = 16, plus the dilation 0.3.
  * const g = gaussiansFromPoints([[0, 0, 0]], undefined, { scale: 0.5 })
@@ -121,7 +121,7 @@ export function projectGaussians(
   height: number,
   options: ProjectOptions = {},
 ): ProjectedGaussians {
-  if (!(camera.near > 0)) throw new MdmlError('value', 'projectGaussians: the camera’s near plane must be positive')
+  if (!(camera.near > 0)) throw new OmaiError('value', 'projectGaussians: the camera’s near plane must be positive')
   const { rotation, focal, tanX, tanY } = cameraFrame(camera, width, height)
   const R = fromStorage(Float64Array.from(rotation.flat()), [3, 3], 'float64')
   const eye = fromStorage(Float64Array.from(camera.eye), [3], 'float64')

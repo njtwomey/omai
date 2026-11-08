@@ -96,8 +96,8 @@ const shuffleKnob = bool({
  * @index dataset Isotropic Gaussian blobs with the exact class posterior.
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { blobs } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { blobs } from 'omai-engine/datasets'
  * generate(blobs, { knobs: { n: 30, centers: 3 } }).data.classes // => ['0', '1', '2']
  * ```
  */
@@ -187,7 +187,7 @@ export const blobs: DatasetGenerator<ClassificationData> = {
  * @returns The points `[n, 2]` and their classes.
  * @example
  * ```ts
- * import { moonPoints } from 'mdml-engine/datasets'
+ * import { moonPoints } from 'omai-engine/datasets'
  * moonPoints(4).y // => [0, 0, 1, 1]
  * ```
  */
@@ -224,7 +224,7 @@ export function moonPoints(n: number): { readonly x: Tensor; readonly y: number[
  * @returns The points `[n, 2]` and their classes.
  * @example
  * ```ts
- * import { circlePoints } from 'mdml-engine/datasets'
+ * import { circlePoints } from 'omai-engine/datasets'
  * circlePoints(4, 0.5).y // => [0, 0, 1, 1]
  * ```
  */
@@ -315,8 +315,8 @@ function noisyPoints(
  * @index dataset Two interleaving half circles.
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { moons } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { moons } from 'omai-engine/datasets'
  * generate(moons, { knobs: { n: 50, noise: 0.1 } }).data.x.shape // => [50, 2]
  * ```
  */
@@ -342,8 +342,8 @@ export const moons: DatasetGenerator<ClassificationData> = {
  * @index dataset A large circle containing a smaller one.
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { circles } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { circles } from 'omai-engine/datasets'
  * generate(circles, { knobs: { n: 40, factor: 0.5 } }).data.classes // => ['0', '1']
  * ```
  */
@@ -385,8 +385,8 @@ export const circles: DatasetGenerator<ClassificationData> = {
  * @index dataset The XOR problem as four Gaussian blobs.
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { xor } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { xor } from 'omai-engine/datasets'
  * generate(xor, { knobs: { separation: 1, noise: 0.5 } }).truth.bayesError // => 0.0445
  * ```
  */
@@ -452,8 +452,8 @@ export const xor: DatasetGenerator<ClassificationData> = {
  * @index dataset Interleaved spiral arms.
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { spirals } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { spirals } from 'omai-engine/datasets'
  * generate(spirals, { knobs: { n: 60, arms: 3 } }).data.classes // => ['0', '1', '2']
  * ```
  */
@@ -550,8 +550,8 @@ export const spirals: DatasetGenerator<ClassificationData> = {
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { checkerboard } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { checkerboard } from 'omai-engine/datasets'
  * generate(checkerboard, { knobs: { labelNoise: 0.1 } }).truth.bayesError // => 0.1
  * ```
  */
@@ -598,7 +598,7 @@ export const checkerboard: DatasetGenerator<ClassificationData> = {
  * @returns A class per row.
  * @example
  * ```ts
- * import { gaussianQuantileLabels } from 'mdml-engine/datasets'
+ * import { gaussianQuantileLabels } from 'omai-engine/datasets'
  * gaussianQuantileLabels([[3], [0.1], [-1], [2]], 2) // => [1, 0, 0, 1]
  * ```
  */
@@ -630,8 +630,8 @@ export function gaussianQuantileLabels(
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { gaussianQuantiles } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { gaussianQuantiles } from 'omai-engine/datasets'
  * generate(gaussianQuantiles, { knobs: { n: 30 } }).truth.bayesError // => 0
  * ```
  */
@@ -683,8 +683,8 @@ export const gaussianQuantiles: DatasetGenerator<ClassificationData> = {
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { hastie10_2 } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { hastie10_2 } from 'omai-engine/datasets'
  * generate(hastie10_2).data.x.shape // => [100, 10]
  * ```
  */

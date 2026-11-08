@@ -5,7 +5,7 @@
  * before deciding.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { allAssignments, factorValues } from '../factor.ts'
 import { descendants, topologicalOrder } from '../graphs.ts'
 import { logPartition, variableElimination } from '../inference/elimination.ts'
@@ -52,11 +52,11 @@ export type Policy = Readonly<Record<string, readonly number[]>>
  * @param decisions - The decisions, in temporal order.
  * @param utilities - The utility nodes.
  * @returns The diagram.
- * @throws MdmlError with code `value` for invalid structure or tables.
+ * @throws OmaiError with code `value` for invalid structure or tables.
  * @concept influence-diagrams
  * @example
  * ```ts
- * import { influenceDiagram } from 'mdml-engine/pgm'
+ * import { influenceDiagram } from 'omai-engine/pgm'
  * const id = influenceDiagram(
  *   [{ name: 'weather', states: ['dry', 'rain'], parents: [], cpt: [0.7, 0.3] }],
  *   [{ name: 'umbrella', states: ['leave', 'take'], parents: [] }],
@@ -72,29 +72,29 @@ export function influenceDiagram(
 ): InfluenceDiagram {
   const states = new Map<string, readonly string[]>([...chance, ...decisions].map((n) => [n.name, n.states]))
   const all = [...chance.map((n) => n.name), ...decisions.map((n) => n.name), ...utilities.map((n) => n.name)]
-  if (new Set(all).size !== all.length) throw new MdmlError('value', 'influenceDiagram: node names must be distinct')
+  if (new Set(all).size !== all.length) throw new OmaiError('value', 'influenceDiagram: node names must be distinct')
   for (const n of [...chance, ...decisions, ...utilities]) {
     for (const p of n.parents) {
       if (!states.has(p))
-        throw new MdmlError('value', `influenceDiagram: ${n.name} has unknown parent ${p} (utilities have no children)`)
+        throw new OmaiError('value', `influenceDiagram: ${n.name} has unknown parent ${p} (utilities have no children)`)
     }
   }
   for (const u of utilities) {
     const size = u.parents.reduce((k, p) => k * (states.get(p)?.length ?? 1), 1)
     if (u.values.length !== size)
-      throw new MdmlError('value', `influenceDiagram: utility ${u.name} needs ${size} values`)
+      throw new OmaiError('value', `influenceDiagram: utility ${u.name} needs ${size} values`)
   }
   const net: InfluenceDiagram = { kind: 'influenceDiagram', chance, decisions, utilities }
   try {
     topologicalOrder([...chance, ...decisions])
   } catch (e) {
-    throw new MdmlError('value', `influenceDiagram: ${(e as Error).message}`)
+    throw new OmaiError('value', `influenceDiagram: ${(e as Error).message}`)
   }
   // Every decision's information set must precede it.
   for (const d of decisions) {
     const after = new Set(descendants({ nodes: [...chance, ...decisions] }, d.name))
     for (const v of informationSet(net, d.name)) {
-      if (after.has(v)) throw new MdmlError('value', `influenceDiagram: ${v} is known at ${d.name} but depends on it`)
+      if (after.has(v)) throw new OmaiError('value', `influenceDiagram: ${v} is known at ${d.name} but depends on it`)
     }
   }
   policyNetwork(net, 'uniform') // validates the CPTs
@@ -103,7 +103,7 @@ export function influenceDiagram(
 
 function decisionIndex(id: InfluenceDiagram, name: string): number {
   const k = id.decisions.findIndex((d) => d.name === name)
-  if (k < 0) throw new MdmlError('value', `unknown decision ${name}`)
+  if (k < 0) throw new OmaiError('value', `unknown decision ${name}`)
   return k
 }
 
@@ -114,11 +114,11 @@ function decisionIndex(id: InfluenceDiagram, name: string): number {
  * @param id - The diagram.
  * @param decision - The decision.
  * @returns The variables known when it is made.
- * @throws MdmlError with code `value` for an unknown decision.
+ * @throws OmaiError with code `value` for an unknown decision.
  * @concept influence-diagrams
  * @example
  * ```ts
- * import { influenceDiagram, informationSet } from 'mdml-engine/pgm'
+ * import { influenceDiagram, informationSet } from 'omai-engine/pgm'
  * const id = influenceDiagram(
  *   [{ name: 'test', states: ['neg', 'pos'], parents: [], cpt: [0.5, 0.5] }],
  *   [{ name: 'd1', states: ['a', 'b'], parents: ['test'] }, { name: 'd2', states: ['a', 'b'], parents: [] }],
@@ -149,11 +149,11 @@ function statesOf(id: InfluenceDiagram, name: string): readonly string[] {
  * @param id - The diagram.
  * @param policy - The policy, or `'uniform'` for randomised decisions.
  * @returns The network.
- * @throws MdmlError with code `value` for policy tables of the wrong size.
+ * @throws OmaiError with code `value` for policy tables of the wrong size.
  * @concept influence-diagrams
  * @example
  * ```ts
- * import { influenceDiagram, policyNetwork } from 'mdml-engine/pgm'
+ * import { influenceDiagram, policyNetwork } from 'omai-engine/pgm'
  * const id = influenceDiagram([], [{ name: 'd', states: ['a', 'b'], parents: [] }], [])
  * policyNetwork(id, { d: [1] }).nodes[0]?.cpt // => [0, 1]
  * ```
@@ -165,7 +165,7 @@ export function policyNetwork(id: InfluenceDiagram, policy: Policy | 'uniform'):
     const k = d.states.length
     const choice = policy === 'uniform' ? undefined : policy[d.name]
     if (choice !== undefined && choice.length !== configs)
-      throw new MdmlError('value', `policy for ${d.name} needs ${configs} entries`)
+      throw new OmaiError('value', `policy for ${d.name} needs ${configs} entries`)
     const cpt = Array.from({ length: configs }, (_, c) =>
       Array.from({ length: k }, (_, s) => (choice === undefined ? 1 / k : (choice[c] ?? 0) === s ? 1 : 0)),
     ).flat()
@@ -207,7 +207,7 @@ function conditionalUtility(bn: BayesNet, id: InfluenceDiagram, evidence: Readon
  * @concept influence-diagrams
  * @example
  * ```ts
- * import { influenceDiagram, expectedUtility } from 'mdml-engine/pgm'
+ * import { influenceDiagram, expectedUtility } from 'omai-engine/pgm'
  * const id = influenceDiagram(
  *   [{ name: 'weather', states: ['dry', 'rain'], parents: [], cpt: [0.7, 0.3] }],
  *   [{ name: 'umbrella', states: ['leave', 'take'], parents: [] }],
@@ -230,7 +230,7 @@ export function expectedUtility(id: InfluenceDiagram, policy: Policy): number {
  * @concept influence-diagrams
  * @example
  * ```ts
- * import { influenceDiagram, solveInfluenceDiagram } from 'mdml-engine/pgm'
+ * import { influenceDiagram, solveInfluenceDiagram } from 'omai-engine/pgm'
  * const id = influenceDiagram(
  *   [{ name: 'weather', states: ['dry', 'rain'], parents: [], cpt: [0.7, 0.3] }],
  *   [{ name: 'umbrella', states: ['leave', 'take'], parents: [] }],
@@ -289,11 +289,11 @@ export function solveInfluenceDiagram(id: InfluenceDiagram): {
  * @param decision - The decision.
  * @param variables - The variables that would be observed.
  * @returns The value of the information.
- * @throws MdmlError with code `value` when a variable depends on the decision.
+ * @throws OmaiError with code `value` when a variable depends on the decision.
  * @concept influence-diagrams
  * @example
  * ```ts
- * import { influenceDiagram, valueOfInformation } from 'mdml-engine/pgm'
+ * import { influenceDiagram, valueOfInformation } from 'omai-engine/pgm'
  * const id = influenceDiagram(
  *   [{ name: 'weather', states: ['dry', 'rain'], parents: [], cpt: [0.7, 0.3] }],
  *   [{ name: 'umbrella', states: ['leave', 'take'], parents: [] }],

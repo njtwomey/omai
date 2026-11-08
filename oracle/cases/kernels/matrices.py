@@ -8,8 +8,8 @@ al. 2012; Gretton et al. 2005 and 2012; Song et al. 2012; Zhang 2005) on rbf_ker
 
 import numpy as np
 import sklearn
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray, rng, sign_fixed, uniform
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray, rng, sign_fixed, uniform
 from sklearn.decomposition import KernelPCA
 from sklearn.metrics.pairwise import pairwise_kernels, rbf_kernel
 from sklearn.preprocessing import KernelCenterer

@@ -1,5 +1,5 @@
-import { lineChart } from 'mdml-render/charts'
-import { figure } from 'mdml-render/figure'
+import { lineChart } from 'omai-render/charts'
+import { figure } from 'omai-render/figure'
 import {
   Chart,
   Choice,
@@ -11,7 +11,7 @@ import {
   PanelArea,
   Toggle,
   useColourMode,
-} from 'mdml-render/react'
+} from 'omai-render/react'
 import { type ReactNode, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 

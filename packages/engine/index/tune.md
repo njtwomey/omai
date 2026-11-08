@@ -4,12 +4,12 @@
 
 Parameter selection for anything, Optuna style: studies of trials over spaces, objectives, samplers (grid, random, quasi-random, CMA-ES, Nelder-Mead, evolutionary, TPE, Gaussian-process Bayesian optimisation), pruners, multi-fidelity schedules, search wrappers and analysis of finished studies.
 
-- function `samplers.ts` (file): Optuna-style samplers: random, grid, Sobol, CMA-ES, evolutionary. `src/lib/tune/samplers.ts:1` `mdml-engine/tune`
+- function `samplers.ts` (file): Optuna-style samplers: random, grid, Sobol, CMA-ES, evolutionary. `src/lib/tune/samplers.ts:1` `omai-engine/tune`
 
-- structure `study.ts` (file): Studies and trials: the record of a parameter search. `src/lib/tune/study.ts:1` `mdml-engine/tune`
+- structure `study.ts` (file): Studies and trials: the record of a parameter search. `src/lib/tune/study.ts:1` `omai-engine/tune`
 
-- function `tune`: Run a study of an objective over a space with a sampler. `src/lib/tune/tuning.ts:386` `mdml-engine/tune`
+- function `tune`: Run a study of an objective over a space with a sampler. `src/lib/tune/tuning.ts:386` `omai-engine/tune`
 
-- estimator `gridSearchCv`: Grid search over hyperparameters with cross-validation. `src/lib/tune/wrappers.ts:318` `mdml-engine/tune`
+- estimator `gridSearchCv`: Grid search over hyperparameters with cross-validation. `src/lib/tune/wrappers.ts:318` `omai-engine/tune`
 
-- algorithm `studyAlgorithm`: A parameter search where each step is one trial. `src/lib/tune/tuning.ts:266` `mdml-engine/tune`
+- algorithm `studyAlgorithm`: A parameter search where each step is one trial. `src/lib/tune/tuning.ts:266` `omai-engine/tune`

@@ -4,7 +4,7 @@
  * `scipy.optimize.minimize(method='Powell')`.
  */
 
-import { isMdmlError, MdmlError } from '../../base/index.ts'
+import { isOmaiError, OmaiError } from '../../base/index.ts'
 import { metricFunction } from '../../numerics/geometry/index.ts'
 import type { Algorithm } from '../../trace/index.ts'
 import { brent, fminbound } from '../scalar.ts'
@@ -47,7 +47,7 @@ function bracketBrent(g: (a: number) => number, tol: number): LineMin {
     const r = brent(g, { tol })
     return { x: r.x, fun: r.fun }
   } catch (e) {
-    if (!isMdmlError(e, 'convergence') || !('fb' in e.details)) throw e
+    if (!isOmaiError(e, 'convergence') || !('fb' in e.details)) throw e
     const d = e.details as Readonly<Record<'xa' | 'xb' | 'xc' | 'fa' | 'fb' | 'fc', number>>
     const xs = [d.xa, d.xb, d.xc]
     const fs = [d.fa, d.fb, d.fc]
@@ -151,15 +151,15 @@ export interface PowellState extends VectorState {
  * @concept derivative-free-optimisation
  * @example
  * ```ts
- * import { powellAlgorithm } from 'mdml-engine/optim'
- * import { square, sum, type Value } from 'mdml-engine/tensor'
+ * import { powellAlgorithm } from 'omai-engine/optim'
+ * import { square, sum, type Value } from 'omai-engine/tensor'
  * powellAlgorithm((x) => sum(square(x as Value)), [1, 2]).name // => 'powell'
  * ```
  */
 export function powellAlgorithm(f: Objective, x0: Parameters, options: PowellOptions = {}): Algorithm<PowellState> {
   const obj = flatObjective(f, x0)
   const n = obj.n
-  if (n === 0) throw new MdmlError('value', 'powell: no parameters')
+  if (n === 0) throw new OmaiError('value', 'powell: no parameters')
   const euclid = metricFunction('euclidean', n)
   const box = options.bounds === undefined ? undefined : boundArrays(options.bounds, n, 'powell')
   const xtol = options.xtol ?? 1e-4
@@ -169,10 +169,10 @@ export function powellAlgorithm(f: Objective, x0: Parameters, options: PowellOpt
   const directions0 = (
     options.directions ?? Array.from({ length: n }, (_, i) => Array.from({ length: n }, (_, j) => (i === j ? 1 : 0)))
   ).map((d) => {
-    if (d.length !== n) throw new MdmlError('shape', `powell: directions must have length ${n}`)
+    if (d.length !== n) throw new OmaiError('shape', `powell: directions must have length ${n}`)
     return Float64Array.from(d)
   })
-  if (directions0.length !== n) throw new MdmlError('shape', `powell: ${n} directions are needed`)
+  if (directions0.length !== n) throw new OmaiError('shape', `powell: ${n} directions are needed`)
   return {
     name: 'powell',
     config: configOf({ xtol, ftol, maxEvaluations: maxfun }),
@@ -295,8 +295,8 @@ export function powellAlgorithm(f: Objective, x0: Parameters, options: PowellOpt
  * @concept derivative-free-optimisation
  * @example
  * ```ts
- * import { powell } from 'mdml-engine/optim'
- * import { square, sub, sum, toFlat, type Value } from 'mdml-engine/tensor'
+ * import { powell } from 'omai-engine/optim'
+ * import { square, sub, sum, toFlat, type Value } from 'omai-engine/tensor'
  * const r = powell((x) => sum(square(sub(x as Value, [1, -2]))), [0, 0])
  * toFlat(r.x as Value).map((v) => Math.round(v * 1e6) / 1e6) // => [1, -2]
  * ```

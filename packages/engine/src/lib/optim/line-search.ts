@@ -4,7 +4,7 @@
  * fallbacks between searches, and `lineSearch` on a vector objective. Trial points are recorded for figures.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { daxpy, ddot } from '../numerics/linalg/index.ts'
 import { type TensorLike, toVector } from '../tensor/index.ts'
 import { runAlgorithm } from '../trace/index.ts'
@@ -111,7 +111,7 @@ export interface BacktrackingOptions {
  * @concept line-search
  * @example
  * ```ts
- * import { backtracking } from 'mdml-engine/optim'
+ * import { backtracking } from 'omai-engine/optim'
  * // phi(alpha) = (alpha - 0.3)^2 from phi(0) = 0.09, phi'(0) = -0.6
  * const phi = { at: (a: number) => ({ value: (a - 0.3) ** 2, slope: 2 * (a - 0.3) }) }
  * const r = backtracking()(phi, { value: 0.09, slope: -0.6 })
@@ -185,7 +185,7 @@ function quadmin(a: number, fa: number, fpa: number, b: number, fb: number): num
  * @concept line-search
  * @example
  * ```ts
- * import { strongWolfe } from 'mdml-engine/optim'
+ * import { strongWolfe } from 'omai-engine/optim'
  * // phi(alpha) = (alpha - 0.25)^2: the first trial (alpha = 1) overshoots, interpolation finds the minimum
  * const phi = { at: (a: number) => ({ value: (a - 0.25) ** 2, slope: 2 * (a - 0.25) }) }
  * const r = strongWolfe()(phi, { value: 0.0625, slope: -0.5 })
@@ -321,7 +321,7 @@ export function strongWolfe(options: StrongWolfeOptions = {}): LineSearch {
  * @returns The combined line search (its evaluation counts and trials include both).
  * @example
  * ```ts
- * import { moreThuente, strongWolfe, withFallback } from 'mdml-engine/optim'
+ * import { moreThuente, strongWolfe, withFallback } from 'omai-engine/optim'
  * // phi(alpha) = (alpha - 0.25)^2: the first trial (alpha = 1) overshoots, interpolation finds the minimum
  * const phi = { at: (a: number) => ({ value: (a - 0.25) ** 2, slope: 2 * (a - 0.25) }) }
  * withFallback(moreThuente(), strongWolfe())(phi, { value: 0.0625, slope: -0.5 }).alpha // => 0.25
@@ -352,8 +352,8 @@ export function withFallback(primary: LineSearch, fallback: LineSearch): LineSea
  * @returns The line function.
  * @example
  * ```ts
- * import { flatObjective, lineFunction } from 'mdml-engine/optim'
- * import { square, sum, type Value } from 'mdml-engine/tensor'
+ * import { flatObjective, lineFunction } from 'omai-engine/optim'
+ * import { square, sum, type Value } from 'omai-engine/tensor'
  * const phi = lineFunction(flatObjective((x) => sum(square(x as Value)), [1, 1]), [1, 1], [-1, -1])
  * phi.at(0.5).value // => 0.5
  * ```
@@ -401,12 +401,12 @@ export interface VectorLineSearchResult extends LineSearchResult {
  *   accepted any `ArrayLike<number>`, which a tensor-like now covers).
  * @param options - The line search, known value and gradient, the previous value and the first step.
  * @returns The step, the new point and value, the gradient there, evaluation counts and the trial points.
- * @throws MdmlError with code `value` when the direction is not a descent direction.
+ * @throws OmaiError with code `value` when the direction is not a descent direction.
  * @concept line-search
  * @example
  * ```ts
- * import { lineSearch } from 'mdml-engine/optim'
- * import { square, sum, type Value } from 'mdml-engine/tensor'
+ * import { lineSearch } from 'omai-engine/optim'
+ * import { square, sum, type Value } from 'omai-engine/tensor'
  * const r = lineSearch((x) => sum(square(x as Value)), [1, 2], [-1, -2])
  * [r.success, r.alpha, Array.from(r.x)] // => [true, 1, [0, 0]]
  * ```
@@ -424,7 +424,7 @@ export function lineSearch(
       ? { value: options.value, grad: Float64Array.from(toVector(options.grad, 'lineSearch')) }
       : obj.valueAndGrad(obj.x0)
   const slope = ddot(start.grad, p)
-  if (!(slope < 0)) throw new MdmlError('value', `lineSearch: direction is not a descent direction (slope ${slope})`)
+  if (!(slope < 0)) throw new OmaiError('value', `lineSearch: direction is not a descent direction (slope ${slope})`)
   const r = (options.method ?? strongWolfe())(lineFunction(obj, obj.x0, p), {
     value: start.value,
     slope,

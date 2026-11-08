@@ -131,7 +131,7 @@ function keyOf(plan: PartialPlan): string {
  * @concept partial-order-planning
  * @example
  * ```ts
- * import { partialOrderProblem, strips } from 'mdml-engine/search'
+ * import { partialOrderProblem, strips } from 'omai-engine/search'
  * const p = strips([], ['done'], [{ name: 'do', pre: [], add: ['done'], del: [] }])
  * partialOrderProblem(p).initial.open // => [{ step: 1, fact: 'done' }]
  * ```
@@ -169,7 +169,7 @@ export function partialOrderProblem(problem: StripsProblem): SearchProblem<Parti
  * @concept partial-order-planning
  * @example
  * ```ts
- * import { linearize } from 'mdml-engine/search'
+ * import { linearize } from 'omai-engine/search'
  * const step = (name: string) => ({ name, pre: [], add: [], del: [] })
  * linearize({ steps: [step('start'), step('finish'), step('b'), step('a')], orderings: [[0, 1], [0, 2], [0, 3], [3, 2], [2, 1], [3, 1]], links: [], open: [] }) // => ['a', 'b']
  * ```
@@ -203,7 +203,7 @@ export interface PartialOrderResult {
  * @concept partial-order-planning
  * @example
  * ```ts
- * import { partialOrderPlan, strips } from 'mdml-engine/search'
+ * import { partialOrderPlan, strips } from 'omai-engine/search'
  * // Socks and shoes (AIMA figure 10.12): each sock before its shoe, the two feet independent.
  * const p = strips([], ['right-shoe-on', 'left-shoe-on'], [
  *   { name: 'right-shoe', pre: ['right-sock-on'], add: ['right-shoe-on'], del: [] },

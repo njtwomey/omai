@@ -1,5 +1,5 @@
-import { type DictSpace, defaults, dict, int } from 'mdml-engine/space'
-import { type Tensor, toFlat } from 'mdml-engine/tensor'
+import { type DictSpace, defaults, dict, int } from 'omai-engine/space'
+import { type Tensor, toFlat } from 'omai-engine/tensor'
 import {
   type Config,
   defineMethod,
@@ -9,7 +9,7 @@ import {
   scalar,
   stateFromJson,
   stateToJson,
-} from 'mdml-engine/trace'
+} from 'omai-engine/trace'
 import {
   ControlPanel,
   DatasetPicker,
@@ -21,7 +21,7 @@ import {
   useDataset,
   useSession,
   useSessionPreferences,
-} from 'mdml-render/react'
+} from 'omai-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 

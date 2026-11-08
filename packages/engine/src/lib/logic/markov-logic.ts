@@ -9,7 +9,7 @@
  * and the query probabilities on the tape. Weight learning is in `mln-learning.ts`.
  */
 
-import { type Json, MdmlError, sigmoidOf } from '../base/index.ts'
+import { type Json, OmaiError, sigmoidOf } from '../base/index.ts'
 import { categorical, type Key, uniformStream } from '../random/index.ts'
 import {
   type Algorithm,
@@ -124,12 +124,12 @@ function collectPredicates(f: FolFormula, out: Map<string, number>): void {
     case 'atom': {
       const t = f.atom
       const name = t.kind === 'compound' ? t.functor : t.kind === 'atom' ? t.name : null
-      if (name === null) throw new MdmlError('value', 'a formula atom must be a predicate application')
+      if (name === null) throw new OmaiError('value', 'a formula atom must be a predicate application')
       if (name === '=') return
       const arity = t.kind === 'compound' ? t.args.length : 0
       const known = out.get(name)
       if (known !== undefined && known !== arity)
-        throw new MdmlError('value', `predicate ${name} is used with arities ${known} and ${arity}`)
+        throw new OmaiError('value', `predicate ${name} is used with arities ${known} and ${arity}`)
       out.set(name, arity)
       return
     }
@@ -162,7 +162,7 @@ function groundFormula(f: FolFormula, s: Substitution, domain: readonly Term[]):
         const [a, b] = t.args as [Term, Term]
         return { kind: 'const', value: termEquals(a, b) }
       }
-      if (termVariables(t).length > 0) throw new MdmlError('value', `unbound variable in ${termToString(t)}`)
+      if (termVariables(t).length > 0) throw new OmaiError('value', `unbound variable in ${termToString(t)}`)
       return { kind: 'var', name: termToString(t) }
     }
     case 'const':
@@ -190,7 +190,7 @@ function compileFormula(f: Formula, index: ReadonlyMap<string, number>): (w: Arr
   switch (f.kind) {
     case 'var': {
       const i = index.get(f.name)
-      if (i === undefined) throw new MdmlError('value', `unknown ground atom ${f.name}`)
+      if (i === undefined) throw new OmaiError('value', `unknown ground atom ${f.name}`)
       return (w) => (w[i] ?? 0) === 1
     }
     case 'const':
@@ -231,11 +231,11 @@ function compileFormula(f: Formula, index: ReadonlyMap<string, number>): (w: Arr
  *
  * @param network - The domain and weighted formulas.
  * @returns The ground network.
- * @throws MdmlError with code `value` for a domain constant that is not a plain lower-case identifier, a repeated
+ * @throws OmaiError with code `value` for a domain constant that is not a plain lower-case identifier, a repeated
  *   constant, a predicate used with two arities or a weight that is NaN.
  * @example
  * ```ts
- * import { groundMln } from 'mdml-engine/logic'
+ * import { groundMln } from 'omai-engine/logic'
  * const g = groundMln({
  *   domain: ['a', 'b'],
  *   formulas: [{ weight: 1.5, formula: 'smokes(X) -> cancer(X)' }],
@@ -245,13 +245,13 @@ function compileFormula(f: Formula, index: ReadonlyMap<string, number>): (w: Arr
  */
 export function groundMln(network: MarkovLogicNetwork): GroundMln {
   const { domain } = network
-  if (domain.length > DOMAIN_SIZE_LIMIT) throw new MdmlError('value', 'groundMln: the domain is too large')
-  if (new Set(domain).size !== domain.length) throw new MdmlError('value', 'groundMln: repeated constant in the domain')
+  if (domain.length > DOMAIN_SIZE_LIMIT) throw new OmaiError('value', 'groundMln: the domain is too large')
+  if (new Set(domain).size !== domain.length) throw new OmaiError('value', 'groundMln: repeated constant in the domain')
   for (const c of domain)
     if (!isPlainAtom(c) || !/^[a-z]/.test(c))
-      throw new MdmlError('value', `groundMln: constant '${c}' must be a lower-case identifier`)
+      throw new OmaiError('value', `groundMln: constant '${c}' must be a lower-case identifier`)
   const parsed = network.formulas.map((wf) => {
-    if (Number.isNaN(wf.weight)) throw new MdmlError('value', 'groundMln: a weight is NaN')
+    if (Number.isNaN(wf.weight)) throw new OmaiError('value', 'groundMln: a weight is NaN')
     return parseFol(wf.formula)
   })
   const predicates = new Map<string, number>()
@@ -259,13 +259,13 @@ export function groundMln(network: MarkovLogicNetwork): GroundMln {
   for (const p of network.predicates ?? []) {
     const known = predicates.get(p.name)
     if (known !== undefined && known !== p.arity)
-      throw new MdmlError('value', `predicate ${p.name} is used with arities ${known} and ${p.arity}`)
+      throw new OmaiError('value', `predicate ${p.name} is used with arities ${known} and ${p.arity}`)
     predicates.set(p.name, p.arity)
   }
   const atoms: string[] = []
   for (const [name, arity] of predicates) {
     const total = domain.length ** arity
-    if (total > 1_000_000) throw new MdmlError('value', `groundMln: predicate ${name} has too many groundings`)
+    if (total > 1_000_000) throw new OmaiError('value', `groundMln: predicate ${name} has too many groundings`)
     for (let m = 0; m < total; m++) {
       const args: string[] = []
       let k = m
@@ -318,17 +318,17 @@ export function groundMln(network: MarkovLogicNetwork): GroundMln {
  * @param ground - The ground network.
  * @param weights - One weight per first-order formula.
  * @returns The reweighted network.
- * @throws MdmlError with code `value` when the weights do not match the formulas.
+ * @throws OmaiError with code `value` when the weights do not match the formulas.
  * @example
  * ```ts
- * import { groundMln, withWeights } from 'mdml-engine/logic'
+ * import { groundMln, withWeights } from 'omai-engine/logic'
  * const g = groundMln({ domain: ['a'], formulas: [{ weight: 1, formula: 'p(X)' }] })
  * withWeights(g, [2]).formulas[0]?.weight // => 2
  * ```
  */
 export function withWeights(ground: GroundMln, weights: readonly number[]): GroundMln {
   if (weights.length !== ground.weights.length)
-    throw new MdmlError('value', `withWeights: expected ${ground.weights.length} weights, got ${weights.length}`)
+    throw new OmaiError('value', `withWeights: expected ${ground.weights.length} weights, got ${weights.length}`)
   return {
     ...ground,
     weights,
@@ -344,10 +344,10 @@ export function withWeights(ground: GroundMln, weights: readonly number[]): Grou
  * @param ground - The ground network.
  * @param world - Truth values by atom name (unlisted atoms are false).
  * @returns The array.
- * @throws MdmlError with code `value` for an atom the network does not have.
+ * @throws OmaiError with code `value` for an atom the network does not have.
  * @example
  * ```ts
- * import { groundMln, worldVector } from 'mdml-engine/logic'
+ * import { groundMln, worldVector } from 'omai-engine/logic'
  * const g = groundMln({ domain: ['a', 'b'], formulas: [{ weight: 1, formula: 'p(X)' }] })
  * Array.from(worldVector(g, { 'p(b)': true })) // => [0, 1]
  * ```
@@ -356,7 +356,7 @@ export function worldVector(ground: GroundMln, world: World): Uint8Array {
   const out = new Uint8Array(ground.atoms.length)
   for (const [name, value] of Object.entries(world)) {
     const i = ground.atomIndex.get(name)
-    if (i === undefined) throw new MdmlError('value', `unknown ground atom ${name}`)
+    if (i === undefined) throw new OmaiError('value', `unknown ground atom ${name}`)
     out[i] = value ? 1 : 0
   }
   return out
@@ -370,7 +370,7 @@ export function worldVector(ground: GroundMln, world: World): Uint8Array {
  * @returns The record.
  * @example
  * ```ts
- * import { groundMln, worldRecord } from 'mdml-engine/logic'
+ * import { groundMln, worldRecord } from 'omai-engine/logic'
  * const g = groundMln({ domain: ['a'], formulas: [{ weight: 1, formula: 'p(X)' }] })
  * worldRecord(g, Uint8Array.of(1)) // => { 'p(a)': true }
  * ```
@@ -387,7 +387,7 @@ export function worldRecord(ground: GroundMln, vector: ArrayLike<number>): Recor
  * @returns One count per first-order formula.
  * @example
  * ```ts
- * import { groundMln, mlnCounts, worldVector } from 'mdml-engine/logic'
+ * import { groundMln, mlnCounts, worldVector } from 'omai-engine/logic'
  * const g = groundMln({ domain: ['a', 'b'], formulas: [{ weight: 1, formula: 'p(X)' }] })
  * mlnCounts(g, worldVector(g, { 'p(a)': true })) // => [1]
  * ```
@@ -406,7 +406,7 @@ export function mlnCounts(ground: GroundMln, world: ArrayLike<number>): number[]
  * @returns The log weight.
  * @example
  * ```ts
- * import { groundMln, mlnLogWeight, worldVector } from 'mdml-engine/logic'
+ * import { groundMln, mlnLogWeight, worldVector } from 'omai-engine/logic'
  * const g = groundMln({ domain: ['a', 'b'], formulas: [{ weight: 2, formula: 'p(X)' }] })
  * mlnLogWeight(g, worldVector(g, { 'p(a)': true, 'p(b)': true })) // => 4
  * ```
@@ -430,10 +430,10 @@ export function mlnLogWeight(ground: GroundMln, world: ArrayLike<number>): numbe
  * @param ground - The ground network.
  * @param text - The query in `parseFol` syntax over ground atoms (`cancer(a) & smokes(b)`).
  * @returns The function.
- * @throws MdmlError with code `value` for a free variable or an unknown atom.
+ * @throws OmaiError with code `value` for a free variable or an unknown atom.
  * @example
  * ```ts
- * import { groundMln, groundQuery, worldVector } from 'mdml-engine/logic'
+ * import { groundMln, groundQuery, worldVector } from 'omai-engine/logic'
  * const g = groundMln({ domain: ['a', 'b'], formulas: [{ weight: 1, formula: 'p(X)' }] })
  * groundQuery(g, 'p(a) & -p(b)')(worldVector(g, { 'p(a)': true })) // => true
  * ```
@@ -442,7 +442,7 @@ export function groundQuery(ground: GroundMln, text: string): (world: ArrayLike<
   const f = parseFol(text)
   const free = new Set<string>()
   freeVariables(f, new Set(), free)
-  if (free.size > 0) throw new MdmlError('value', `groundQuery: free variable ${[...free][0]} in '${text}'`)
+  if (free.size > 0) throw new OmaiError('value', `groundQuery: free variable ${[...free][0]} in '${text}'`)
   return compileFormula(
     groundFormula(
       f,
@@ -479,11 +479,11 @@ const ENUMERATION_LIMIT = 22
  * @param ground - The ground network.
  * @param options - Evidence atoms and ground query formulas.
  * @returns The exact quantities.
- * @throws MdmlError with code `value` for more than 22 unobserved atoms, an unknown atom, or evidence that is
+ * @throws OmaiError with code `value` for more than 22 unobserved atoms, an unknown atom, or evidence that is
  *   impossible under the hard formulas.
  * @example
  * ```ts
- * import { groundMln, mlnExact } from 'mdml-engine/logic'
+ * import { groundMln, mlnExact } from 'omai-engine/logic'
  * const g = groundMln({ domain: ['a'], formulas: [{ weight: Math.log(3), formula: 'p(a)' }] })
  * (mlnExact(g).marginals['p(a)'] ?? 0).toFixed(4) // => '0.7500'
  * ```
@@ -496,12 +496,12 @@ export function mlnExact(
   const fixed = new Map<number, number>()
   for (const [name, v] of Object.entries(options.evidence ?? {})) {
     const i = ground.atomIndex.get(name)
-    if (i === undefined) throw new MdmlError('value', `mlnExact: unknown ground atom ${name}`)
+    if (i === undefined) throw new OmaiError('value', `mlnExact: unknown ground atom ${name}`)
     fixed.set(i, v ? 1 : 0)
   }
   const free = [...Array(n).keys()].filter((i) => !fixed.has(i))
   if (free.length > ENUMERATION_LIMIT)
-    throw new MdmlError('value', `mlnExact: ${free.length} unobserved atoms is too many to enumerate`)
+    throw new OmaiError('value', `mlnExact: ${free.length} unobserved atoms is too many to enumerate`)
   const queries = (options.queries ?? []).map((q) => groundQuery(ground, q))
   const world = new Uint8Array(n)
   for (const [i, v] of fixed) world[i] = v
@@ -514,7 +514,7 @@ export function mlnExact(
     logWeights[m] = lw
     if (lw > max) max = lw
   }
-  if (max === Number.NEGATIVE_INFINITY) throw new MdmlError('value', 'mlnExact: the evidence has probability zero')
+  if (max === Number.NEGATIVE_INFINITY) throw new OmaiError('value', 'mlnExact: the evidence has probability zero')
   let z = 0
   for (let m = 0; m < total; m++) z += Math.exp((logWeights[m] as number) - max)
   const marginals = new Float64Array(n)
@@ -552,11 +552,11 @@ export function mlnExact(
  * @param k - The random key.
  * @param options - Evidence atoms the worlds are conditioned on.
  * @returns The worlds as records of every atom's truth value.
- * @throws MdmlError with code `value` for more than 22 unobserved atoms or impossible evidence.
+ * @throws OmaiError with code `value` for more than 22 unobserved atoms or impossible evidence.
  * @example
  * ```ts
- * import { groundMln, mlnSampleWorlds } from 'mdml-engine/logic'
- * import { key } from 'mdml-engine/random'
+ * import { groundMln, mlnSampleWorlds } from 'omai-engine/logic'
+ * import { key } from 'omai-engine/random'
  * const g = groundMln({ domain: ['a'], formulas: [{ weight: 30, formula: 'p(a)' }] })
  * mlnSampleWorlds(g, 2, key(0)) // => [{ 'p(a)': true }, { 'p(a)': true }]
  * ```
@@ -571,12 +571,12 @@ export function mlnSampleWorlds(
   const fixed = new Map<number, number>()
   for (const [name, v] of Object.entries(options.evidence ?? {})) {
     const i = ground.atomIndex.get(name)
-    if (i === undefined) throw new MdmlError('value', `mlnSampleWorlds: unknown ground atom ${name}`)
+    if (i === undefined) throw new OmaiError('value', `mlnSampleWorlds: unknown ground atom ${name}`)
     fixed.set(i, v ? 1 : 0)
   }
   const free = [...Array(n).keys()].filter((i) => !fixed.has(i))
   if (free.length > ENUMERATION_LIMIT)
-    throw new MdmlError('value', `mlnSampleWorlds: ${free.length} unobserved atoms is too many to enumerate`)
+    throw new OmaiError('value', `mlnSampleWorlds: ${free.length} unobserved atoms is too many to enumerate`)
   const world = new Uint8Array(n)
   for (const [i, v] of fixed) world[i] = v
   const logits = new Array<number>(2 ** free.length)
@@ -585,7 +585,7 @@ export function mlnSampleWorlds(
     logits[m] = mlnLogWeight(ground, world)
   }
   if (!logits.some((l) => l > Number.NEGATIVE_INFINITY))
-    throw new MdmlError('value', 'mlnSampleWorlds: the evidence has probability zero')
+    throw new OmaiError('value', 'mlnSampleWorlds: the evidence has probability zero')
   const picks = categorical(k, logits, [count], { logits: true }).data
   return Array.from(picks, (m) => {
     for (let j = 0; j < free.length; j++) world[free[j] as number] = (m >> j) & 1
@@ -862,9 +862,9 @@ function sampleSatMachine(
  * @returns The algorithm.
  * @example
  * ```ts
- * import { sampleSatAlgorithm } from 'mdml-engine/logic'
- * import { key } from 'mdml-engine/random'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { sampleSatAlgorithm } from 'omai-engine/logic'
+ * import { key } from 'omai-engine/random'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const run = runAlgorithm(sampleSatAlgorithm([[1, 2], [-1, -2]], 2, key(0)), { maxSteps: 1000 })
  * [run.status, run.state.value[0] !== run.state.value[1]] // => ['converged', true]
  * ```
@@ -930,8 +930,8 @@ export function sampleSatAlgorithm(
  * @returns A model as an array of 0 and 1 by variable (index 0 is variable 1), or null when none was found in budget.
  * @example
  * ```ts
- * import { sampleSat } from 'mdml-engine/logic'
- * import { key, uniformStream } from 'mdml-engine/random'
+ * import { sampleSat } from 'omai-engine/logic'
+ * import { key, uniformStream } from 'omai-engine/random'
  * const m = sampleSat([[1, 2], [-1, -2]], 2, uniformStream(key(0)))
  * m !== null && m[0] !== m[1] // => true
  * ```
@@ -954,7 +954,7 @@ function exactModel(
   numVars: number,
   uniform: () => number,
 ): Uint8Array | null {
-  if (numVars > ENUMERATION_LIMIT) throw new MdmlError('value', 'MC-SAT exact slice: too many variables to enumerate')
+  if (numVars > ENUMERATION_LIMIT) throw new OmaiError('value', 'MC-SAT exact slice: too many variables to enumerate')
   const pos = new Int32Array(clauses.length)
   const neg = new Int32Array(clauses.length)
   clauses.forEach((c, i) => {
@@ -1059,12 +1059,12 @@ function prepare(ground: GroundMln, options: MlnSamplerOptions, who: string): Pr
   const fixed = new Int8Array(n).fill(-1)
   for (const [name, v] of Object.entries(options.evidence ?? {})) {
     const i = ground.atomIndex.get(name)
-    if (i === undefined) throw new MdmlError('value', `${who}: unknown ground atom ${name}`)
+    if (i === undefined) throw new OmaiError('value', `${who}: unknown ground atom ${name}`)
     fixed[i] = v ? 1 : 0
   }
   const burnIn = options.burnIn ?? 100
   if (!(Number.isInteger(burnIn) && burnIn >= 0))
-    throw new MdmlError('value', `${who}: burnIn must be a non-negative integer`)
+    throw new OmaiError('value', `${who}: burnIn must be a non-negative integer`)
   return {
     n,
     fixed,
@@ -1090,7 +1090,7 @@ function initialWorld(ground: GroundMln, p: Prepared, key: Key, who: string): Ui
   }
   for (let i = 0; i < p.n; i++) if (p.fixed[i] !== -1) clauses.push([p.fixed[i] === 1 ? i + 1 : -(i + 1)])
   const model = sampleSat(clauses, enc.next, u, { maxFlips: 2_000_000 })
-  if (model === null) throw new MdmlError('value', `${who}: the hard formulas and the evidence are unsatisfiable`)
+  if (model === null) throw new OmaiError('value', `${who}: the hard formulas and the evidence are unsatisfiable`)
   for (let i = 0; i < p.n; i++) world[i] = model[i] as number
   return world
 }
@@ -1166,11 +1166,11 @@ function conditional(ground: GroundMln, world: Uint8Array, a: number): number {
  * @param ground - The ground network.
  * @param options - Evidence, query formulas, burn-in and the scan order.
  * @returns The algorithm, whose state is the world and the running frequencies.
- * @throws MdmlError with code `value` for an unknown evidence atom or hard formulas that cannot be satisfied.
+ * @throws OmaiError with code `value` for an unknown evidence atom or hard formulas that cannot be satisfied.
  * @example
  * ```ts
- * import { groundMln, mlnGibbsAlgorithm } from 'mdml-engine/logic'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { groundMln, mlnGibbsAlgorithm } from 'omai-engine/logic'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const g = groundMln({ domain: ['a'], formulas: [{ weight: Math.log(3), formula: 'p(a)' }] })
  * const s = runAlgorithm(mlnGibbsAlgorithm(g, { burnIn: 10 }), { seed: 1, maxSteps: 4000 }).state
  * Math.abs(s.atomCounts[0] / s.samples - 0.75) < 0.05 // => true
@@ -1221,11 +1221,11 @@ export function mlnGibbsAlgorithm(
  * @param ground - The ground network.
  * @param options - Evidence, query formulas, burn-in, the slice sampler and its knobs.
  * @returns The algorithm.
- * @throws MdmlError with code `value` for an unknown evidence atom or unsatisfiable hard formulas.
+ * @throws OmaiError with code `value` for an unknown evidence atom or unsatisfiable hard formulas.
  * @example
  * ```ts
- * import { groundMln, mlnMcSatAlgorithm } from 'mdml-engine/logic'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { groundMln, mlnMcSatAlgorithm } from 'omai-engine/logic'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const g = groundMln({ domain: ['a'], formulas: [{ weight: Math.log(3), formula: 'p(a)' }] })
  * const s = runAlgorithm(mlnMcSatAlgorithm(g, { burnIn: 10, sampler: 'exact' }), { seed: 1, maxSteps: 4000 }).state
  * Math.abs(s.atomCounts[0] / s.samples - 0.75) < 0.05 // => true
@@ -1274,7 +1274,7 @@ export function mlnMcSatAlgorithm(
         sampler === 'exact'
           ? exactModel(compact, usedVars.size, u)
           : sampleSat(compact, usedVars.size, u, options.sampleSat)
-      if (model === null) throw new MdmlError('value', 'mlnMcSat: the slice has no model within budget')
+      if (model === null) throw new OmaiError('value', 'mlnMcSat: the slice has no model within budget')
       const world = new Uint8Array(p.n)
       for (let i = 0; i < p.n; i++) {
         const v = usedVars.get(i + 1)
@@ -1318,7 +1318,7 @@ function resultOf(ground: GroundMln, s: MlnSamplerState): MlnSampleResult {
  * @returns The estimates.
  * @example
  * ```ts
- * import { groundMln, mlnGibbs } from 'mdml-engine/logic'
+ * import { groundMln, mlnGibbs } from 'omai-engine/logic'
  * const g = groundMln({ domain: ['a'], formulas: [{ weight: Math.log(3), formula: 'p(a)' }] })
  * Math.abs((mlnGibbs(g, { samples: 4000, seed: 3 }).marginals['p(a)'] ?? 0) - 0.75) < 0.05 // => true
  * ```
@@ -1341,7 +1341,7 @@ export function mlnGibbs(
  * @returns The estimates.
  * @example
  * ```ts
- * import { groundMln, mlnMcSat } from 'mdml-engine/logic'
+ * import { groundMln, mlnMcSat } from 'omai-engine/logic'
  * const g = groundMln({ domain: ['a'], formulas: [{ weight: Math.log(3), formula: 'p(a)' }] })
  * Math.abs((mlnMcSat(g, { samples: 4000, seed: 3 }).marginals['p(a)'] ?? 0) - 0.75) < 0.05 // => true
  * ```
@@ -1377,10 +1377,10 @@ export interface MlnMap {
  * @param ground - The ground network.
  * @param options - Evidence atoms and a node budget.
  * @returns The world, its cost and its log weight.
- * @throws MdmlError with code `value` for an unknown evidence atom.
+ * @throws OmaiError with code `value` for an unknown evidence atom.
  * @example
  * ```ts
- * import { groundMln, mlnMap } from 'mdml-engine/logic'
+ * import { groundMln, mlnMap } from 'omai-engine/logic'
  * const g = groundMln({
  *   domain: ['a'],
  *   formulas: [{ weight: 2, formula: 'smokes(X) -> cancer(X)' }, { weight: 1, formula: 'smokes(X)' }],
@@ -1410,7 +1410,7 @@ export function mlnMap(
   }
   for (const [name, v] of Object.entries(options.evidence ?? {})) {
     const i = ground.atomIndex.get(name)
-    if (i === undefined) throw new MdmlError('value', `mlnMap: unknown ground atom ${name}`)
+    if (i === undefined) throw new OmaiError('value', `mlnMap: unknown ground atom ${name}`)
     hard.push([v ? i + 1 : -(i + 1)])
   }
   const r = maxsat(

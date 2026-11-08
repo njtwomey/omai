@@ -4,7 +4,7 @@
  * the central path, and semidefinite programs in standard form (`sdp`) built on it.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { cholesky, choSolve, ddot, dnrm2, eigvalsh } from '../numerics/linalg/index.ts'
 import { fromStorage, primalOf, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, type RunStatus, runAlgorithm, runStatusOf } from '../trace/index.ts'
@@ -73,7 +73,7 @@ function blocksOf(problem: ConicProgram): Blocks {
   const lmi = (problem.lmi ?? []).map((l) => {
     const F0 = finiteVectorFrom(l.F0, 'lmi F0')
     const p = Math.round(Math.sqrt(F0.length))
-    if (l.F.length !== n) throw new MdmlError('shape', `each LMI needs one matrix per variable (${n})`)
+    if (l.F.length !== n) throw new OmaiError('shape', `each LMI needs one matrix per variable (${n})`)
     return { p, F0, F: l.F.map((f) => finiteVectorFrom(f, 'lmi F')) }
   })
   return { n, c, G, h: finiteVectorFrom(problem.h, 'h'), A, b: finiteVectorFrom(problem.b, 'b'), soc, lmi }
@@ -283,8 +283,8 @@ export interface ConicOptions extends Partial<Omit<RunOptions, 'maxSteps' | 'sta
  * @reference S. Boyd and L. Vandenberghe, Convex Optimization (2004), chapter 11.
  * @example
  * ```ts
- * import { conicBarrierAlgorithm } from 'mdml-engine/optim'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { conicBarrierAlgorithm } from 'omai-engine/optim'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * // minimise x + y over the disc |(x, y)| <= 1
  * const alg = conicBarrierAlgorithm({ c: [1, 1], soc: [{ A: [[1, 0], [0, 1]], b: [0, 0], c: [0, 0], d: 1 }] })
  * const s = runAlgorithm(alg, { maxSteps: 100 }).state
@@ -490,11 +490,11 @@ export interface ConicResult {
  * @param problem - The program.
  * @param options - Tolerance, mu, t0, iteration cap and run options.
  * @returns The solution, its status, gap and duals.
- * @throws MdmlError with code `value` when the program data is NaN or infinite (bounds may be infinite, not NaN).
+ * @throws OmaiError with code `value` when the program data is NaN or infinite (bounds may be infinite, not NaN).
  * @concept conic-programming
  * @example
  * ```ts
- * import { conicProgram } from 'mdml-engine/optim'
+ * import { conicProgram } from 'omai-engine/optim'
  * // minimise t subject to |(x - 3, x + 1)| <= t (the best x is 1)
  * const r = conicProgram({ c: [0, 1], soc: [{ A: [[1, 0], [1, 0]], b: [-3, 1], c: [0, 1], d: 0 }] })
  * Math.round(r.fun * 1e6) / 1e6 // => 2.828427
@@ -590,7 +590,7 @@ export interface SdpResult {
  * @concept conic-programming
  * @example
  * ```ts
- * import { sdp } from 'mdml-engine/optim'
+ * import { sdp } from 'omai-engine/optim'
  * // The smallest eigenvalue of C as min tr(C X) with tr(X) = 1.
  * const r = sdp([[2, 1], [1, 2]], [[[1, 0], [0, 1]]], [1])
  * Math.round(r.fun * 1e6) / 1e6 // => 1

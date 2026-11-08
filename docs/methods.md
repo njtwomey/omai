@@ -337,7 +337,7 @@ same session (a Bayesian mixture trained once; its components dying off in one p
 training in another). Live is the default mode. Layouts are data, like entries, so the same panel can be placed on
 any page that holds a session.
 
-The panel vocabulary and everything that runs a session in a page live in `mdml-render` (`react/session/`): the hook
+The panel vocabulary and everything that runs a session in a page live in `omai-render` (`react/session/`): the hook
 that runs a method live, the player, the settings, the layout type and the panels. A page anywhere (the encyclopedia, a notebook,
 someone else's app) composes them. The panels share one
 **step cursor**: the viewed step is a single value, panels of a step (rows, a probe, a tensor, a trajectory) read it,

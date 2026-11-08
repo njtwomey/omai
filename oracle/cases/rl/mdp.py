@@ -9,7 +9,7 @@ from typing import Any, cast
 import gymnasium as gym
 import numpy as np
 import numpy.typing as npt
-from mdml_oracle.fixture import Case, case
+from omai_oracle.fixture import Case, case
 
 REFERENCE: dict[str, str] = {"gymnasium": gym.__version__, "numpy": np.__version__}
 

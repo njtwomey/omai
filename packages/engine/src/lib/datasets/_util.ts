@@ -60,7 +60,7 @@ export function columns(cols: readonly Value[]): Value {
 
 /** Metadata for generated data: name, description and the recipe. */
 export function stamp(name: string, description: string, knobs: GeneratorKnobs): Partial<DatasetMeta> {
-  return { name, description, source: 'mdml-js generator', recipe: { generator: name, knobs } }
+  return { name, description, source: 'omai generator', recipe: { generator: name, knobs } }
 }
 
 /** A constant row vector as a tensor. */

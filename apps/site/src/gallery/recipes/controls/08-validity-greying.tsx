@@ -1,5 +1,5 @@
-import { classificationLosses, penalties } from 'mdml-engine/losses'
-import { defaults, dict, type SpaceValue } from 'mdml-engine/space'
+import { classificationLosses, penalties } from 'omai-engine/losses'
+import { defaults, dict, type SpaceValue } from 'omai-engine/space'
 import {
   Choice,
   ControlPanel,
@@ -8,7 +8,7 @@ import {
   type TableSlot,
   tableRules,
   tableSlot,
-} from 'mdml-render/react'
+} from 'omai-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
 import { CodeBlock } from '../../../shell/CodeBlock.tsx'
 import type { Recipe } from '../../recipe.ts'

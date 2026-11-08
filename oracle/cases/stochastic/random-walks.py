@@ -6,7 +6,7 @@ import networkx as nx
 import numpy as np
 import scipy
 import scipy.stats as st
-from mdml_oracle.fixture import Case, case
+from omai_oracle.fixture import Case, case
 
 REFERENCE: dict[str, str] = {"numpy": np.__version__, "scipy": scipy.__version__, "networkx": nx.__version__}
 

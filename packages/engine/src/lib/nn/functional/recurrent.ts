@@ -4,7 +4,7 @@
  * of torch.nn.RNN, LSTM and GRU), and packing and unpacking of variable-length batches.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { foldIn, type Key } from '../../random/index.ts'
 import {
   add,
@@ -66,8 +66,8 @@ const hiddenPart = (h: Value, p: CellParams): Value => affine(h, p.weightHh, p.b
  * @concept recurrent-networks
  * @example
  * ```ts
- * import { rnnCell } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { rnnCell } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(rnnCell([[1]], [[0]], { weightIh: [[2]], weightHh: [[1]] }, 'relu')) // => [[2]]
  * ```
  */
@@ -139,8 +139,8 @@ function gruStep(xi: Value, h: Value, p: CellParams): Value {
  * @concept recurrent-networks
  * @example
  * ```ts
- * import { lstmCell } from 'mdml-engine/nn'
- * import { zeros } from 'mdml-engine/tensor'
+ * import { lstmCell } from 'omai-engine/nn'
+ * import { zeros } from 'omai-engine/tensor'
  * lstmCell(zeros([2, 3]), [zeros([2, 4]), zeros([2, 4])], { weightIh: zeros([16, 3]), weightHh: zeros([16, 4]) })[1].shape // => [2, 4]
  * ```
  */
@@ -170,8 +170,8 @@ export function lstmCell(
  * @concept recurrent-networks
  * @example
  * ```ts
- * import { gruCell } from 'mdml-engine/nn'
- * import { toArray, zeros } from 'mdml-engine/tensor'
+ * import { gruCell } from 'omai-engine/nn'
+ * import { toArray, zeros } from 'omai-engine/tensor'
  * toArray(gruCell(zeros([1, 2]), [[1]], { weightIh: zeros([3, 2]), weightHh: zeros([3, 1]) })) // => [[0.5]]
  * ```
  */
@@ -207,8 +207,8 @@ export interface ScanOptions {
  * @concept recurrent-networks
  * @example
  * ```ts
- * import { scan } from 'mdml-engine/nn'
- * import { add, toArray } from 'mdml-engine/tensor'
+ * import { scan } from 'omai-engine/nn'
+ * import { add, toArray } from 'omai-engine/tensor'
  * toArray(scan((c, x) => { const s = add(c, x); return [s, s] }, [0], [[1], [2], [3]]).ys) // => [[1], [3], [6]]
  * ```
  */
@@ -338,8 +338,8 @@ function runDirection(
  * @concept recurrent-networks
  * @example
  * ```ts
- * import { recurrent } from 'mdml-engine/nn'
- * import { zeros } from 'mdml-engine/tensor'
+ * import { recurrent } from 'omai-engine/nn'
+ * import { zeros } from 'omai-engine/tensor'
  * const cell = { weightIh: zeros([2, 3]), weightHh: zeros([2, 2]) }
  * recurrent(zeros([5, 4, 3]), [[cell, cell]], { mode: 'RNN_TANH', bidirectional: true }).output.shape // => [5, 4, 4]
  * ```
@@ -357,12 +357,12 @@ export function recurrent(
   const dirs = options.bidirectional === true ? 2 : 1
   const numLayers = options.numLayers ?? layers.length
   if (layers.length !== numLayers || layers.some((l) => l.length !== dirs))
-    throw new MdmlError('shape', 'recurrent: need weights for every layer and direction')
+    throw new OmaiError('shape', 'recurrent: need weights for every layer and direction')
   if (
     options.lengths !== undefined &&
     (options.lengths.length !== b || options.lengths.some((len) => len < 0 || len > t))
   )
-    throw new MdmlError('value', 'recurrent: one length in [0, T] per sequence')
+    throw new OmaiError('value', 'recurrent: one length in [0, T] per sequence')
   const lstm = options.mode === 'LSTM'
   const hiddenOf = (p: CellParams): number => (p.weightHh.shape[0] ?? 0) / (lstm ? 4 : options.mode === 'GRU' ? 3 : 1)
   const outOf = (p: CellParams): number => (p.weightHr === undefined ? hiddenOf(p) : (p.weightHr.shape[0] ?? 0))
@@ -429,7 +429,7 @@ export interface PackOptions {
  * @returns The packed sequence.
  * @example
  * ```ts
- * import { packPaddedSequence } from 'mdml-engine/nn'
+ * import { packPaddedSequence } from 'omai-engine/nn'
  * packPaddedSequence([[[1], [4]], [[2], [5]], [[3], [0]]], [3, 2]).batchSizes // => [2, 2, 1]
  * ```
  */
@@ -441,12 +441,12 @@ export function packPaddedSequence(
   let x = fl(padded)
   if (options.batchFirst === true) x = swapaxes(x, 0, 1)
   const [t = 0, b = 0, ...rest] = x.shape
-  if (lengths.length !== b) throw new MdmlError('shape', 'packPaddedSequence: one length per sequence')
+  if (lengths.length !== b) throw new OmaiError('shape', 'packPaddedSequence: one length per sequence')
   const order = Array.from({ length: b }, (_, i) => i).sort((i, j) => (lengths[j] ?? 0) - (lengths[i] ?? 0) || i - j)
   if (options.enforceSorted === true && order.some((v, i) => v !== i))
-    throw new MdmlError('value', 'packPaddedSequence: lengths are not sorted in decreasing order')
+    throw new OmaiError('value', 'packPaddedSequence: lengths are not sorted in decreasing order')
   const maxLen = lengths[order[0] ?? 0] ?? 0
-  if (maxLen > t) throw new MdmlError('value', 'packPaddedSequence: a length exceeds the time axis')
+  if (maxLen > t) throw new OmaiError('value', 'packPaddedSequence: a length exceeds the time axis')
   const rows: number[] = []
   const batchSizes: number[] = []
   for (let s = 0; s < maxLen; s++) {
@@ -477,7 +477,7 @@ export function packPaddedSequence(
  * @returns One length per sequence.
  * @example
  * ```ts
- * import { packPaddedSequence, packedLengths } from 'mdml-engine/nn'
+ * import { packPaddedSequence, packedLengths } from 'omai-engine/nn'
  * packedLengths(packPaddedSequence([[[1], [4]], [[2], [5]]], [1, 2])) // => [1, 2]
  * ```
  */
@@ -494,7 +494,7 @@ export function packedLengths(packed: PackedSequence): number[] {
  * @returns The padded batch and the lengths.
  * @example
  * ```ts
- * import { packPaddedSequence, padPackedSequence } from 'mdml-engine/nn'
+ * import { packPaddedSequence, padPackedSequence } from 'omai-engine/nn'
  * padPackedSequence(packPaddedSequence([[[1], [4]], [[2], [5]], [[3], [0]]], [3, 2])).lengths // => [3, 2]
  * ```
  */
@@ -536,7 +536,7 @@ export function padPackedSequence(
  * @returns One length per row.
  * @example
  * ```ts
- * import { lengthsFromMask } from 'mdml-engine/nn'
+ * import { lengthsFromMask } from 'omai-engine/nn'
  * lengthsFromMask([[1, 1, 0], [1, 0, 0]]) // => [2, 1]
  * ```
  */

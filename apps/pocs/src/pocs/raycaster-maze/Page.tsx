@@ -6,9 +6,9 @@ import {
   renderRaycast,
   type Surface,
   viewConeScene,
-} from 'mdml-engine/graphics'
-import { key } from 'mdml-engine/random'
-import { choice, dict, int, real } from 'mdml-engine/space'
+} from 'omai-engine/graphics'
+import { key } from 'omai-engine/random'
+import { choice, dict, int, real } from 'omai-engine/space'
 import {
   cellCentre,
   generateMaze,
@@ -16,8 +16,8 @@ import {
   type Pose,
   stepPose,
   worldGeometry,
-} from 'mdml-engine/worlds'
-import { ControlPanel, SceneView, SpaceControls } from 'mdml-render/react'
+} from 'omai-engine/worlds'
+import { ControlPanel, SceneView, SpaceControls } from 'omai-render/react'
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import { useGameLoop } from '../../shared/useGameLoop.ts'
 

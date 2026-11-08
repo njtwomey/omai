@@ -1,6 +1,6 @@
 // Row-wise numerics shared by the stationary iterations and multigrid: a CSR matrix as plain arrays with its
 // diagonal, the residual norm, and one Jacobi / Gauss-Seidel / SOR sweep.
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import type { TensorLike } from '../../tensor/index.ts'
 import { dnrm2 as norm } from '../linalg/blas.ts'
 import { type CsrMatrix, csr, primalValues } from './csr.ts'
@@ -20,14 +20,14 @@ export interface Rows {
 export function rowsOf(a: CsrMatrix | TensorLike): Rows {
   const m = csrOf(a)
   const [rows, cols] = m.shape
-  if (rows !== cols) throw new MdmlError('shape', 'stationary iterations need a square matrix')
+  if (rows !== cols) throw new OmaiError('shape', 'stationary iterations need a square matrix')
   const values = Float64Array.from(primalValues(m))
   const diagonal = new Float64Array(rows)
   for (let i = 0; i < rows; i++)
     for (let k = m.indptr[i] ?? 0; k < (m.indptr[i + 1] ?? 0); k++)
       if (m.indices[k] === i) diagonal[i] = (diagonal[i] ?? 0) + (values[k] ?? 0)
   const zero = diagonal.indexOf(0)
-  if (zero >= 0) throw new MdmlError('value', `stationary iterations need a nonzero diagonal (row ${zero} has none)`)
+  if (zero >= 0) throw new OmaiError('value', `stationary iterations need a nonzero diagonal (row ${zero} has none)`)
   return { n: rows, indptr: m.indptr, indices: m.indices, values, diagonal }
 }
 

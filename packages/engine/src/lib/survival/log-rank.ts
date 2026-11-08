@@ -6,7 +6,7 @@
  * early times more, Peto-Peto and Fleming-Harrington choose by the pooled survival curve). Strata are summed over.
  */
 
-import { MdmlError, type TestResult } from '../base/index.ts'
+import { OmaiError, type TestResult } from '../base/index.ts'
 import { asTensor, type TensorLike, toFlat } from '../tensor/index.ts'
 import { chi2Sf, inverseSpd, normCdf } from './_util.ts'
 import { type SurvivalSample, survivalSample } from './data.ts'
@@ -87,11 +87,11 @@ function weightOf(
  * @param group - The group of every subject (numbers).
  * @param options - `weight`, Fleming-Harrington's `p` and `q`, and `strata`.
  * @returns The test, with observed and expected events per group.
- * @throws MdmlError with code `value` for fewer than two groups or lengths that differ.
+ * @throws OmaiError with code `value` for fewer than two groups or lengths that differ.
  * @index function Log-rank test between survival curves.
  * @example
  * ```ts
- * import { logRankTest } from 'mdml-engine/survival'
+ * import { logRankTest } from 'omai-engine/survival'
  * const r = logRankTest([1, 2, 3, 4, 5, 6, 7, 8], [1, 1, 1, 1, 1, 1, 1, 1], [0, 0, 0, 0, 1, 1, 1, 1])
  * r.df // => 1
  * r.observed // => [4, 4]
@@ -107,13 +107,13 @@ export function logRankTest(
   const sample: SurvivalSample = survivalSample(time, event, 'logRankTest')
   const n = sample.n
   const g = toFlat(asTensor(group))
-  if (g.length !== n) throw new MdmlError('shape', `logRankTest: ${g.length} groups for ${n} times`)
+  if (g.length !== n) throw new OmaiError('shape', `logRankTest: ${g.length} groups for ${n} times`)
   const labels = Array.from(new Set(g)).sort((a, b) => a - b)
   const K = labels.length
-  if (K < 2) throw new MdmlError('value', 'logRankTest: needs at least two groups')
+  if (K < 2) throw new OmaiError('value', 'logRankTest: needs at least two groups')
   const gi = Int32Array.from(g, (v) => labels.indexOf(v))
   const strataRaw = options.strata === undefined ? new Array<number>(n).fill(0) : toFlat(asTensor(options.strata))
-  if (strataRaw.length !== n) throw new MdmlError('shape', `logRankTest: ${strataRaw.length} strata for ${n} times`)
+  if (strataRaw.length !== n) throw new OmaiError('shape', `logRankTest: ${strataRaw.length} strata for ${n} times`)
   const weight = options.weight ?? 'logrank'
   const p = options.p ?? 0
   const q = options.q ?? 0
@@ -215,16 +215,16 @@ export function logRankTest(
  *
  * @param result - A {@link logRankTest} of two groups.
  * @returns The z statistic and p-value.
- * @throws MdmlError with code `value` for more than two groups.
+ * @throws OmaiError with code `value` for more than two groups.
  * @example
  * ```ts
- * import { logRankTest, logRankZ } from 'mdml-engine/survival'
+ * import { logRankTest, logRankZ } from 'omai-engine/survival'
  * const r = logRankTest([1, 2, 3, 4, 5, 6, 7, 8], undefined, [0, 0, 0, 0, 1, 1, 1, 1])
  * logRankZ(r).z > 0 // => true
  * ```
  */
 export function logRankZ(result: LogRankResult): { readonly z: number; readonly pValue: number } {
-  if (result.groups.length !== 2) throw new MdmlError('value', 'logRankZ: needs a test of two groups')
+  if (result.groups.length !== 2) throw new OmaiError('value', 'logRankZ: needs a test of two groups')
   const z = (result.score[0] ?? 0) / Math.sqrt(result.covariance[0] ?? Number.NaN)
   return { z, pValue: 2 * (1 - normCdf(Math.abs(z))) }
 }

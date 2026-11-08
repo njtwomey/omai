@@ -7,7 +7,7 @@ from typing import cast
 
 import numpy as np
 import sklearn
-from mdml_oracle.vendor import sha256_of
+from omai_oracle.vendor import sha256_of
 from sklearn.datasets import load_digits
 from sklearn.utils import Bunch
 

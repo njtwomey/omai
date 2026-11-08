@@ -7,7 +7,7 @@ at a tight tolerance instead.
 import numpy as np
 import scipy.optimize
 import statsmodels
-from mdml_oracle.fixture import Case, case
+from omai_oracle.fixture import Case, case
 from statsmodels.stats.power import NormalIndPower
 
 REFERENCE: dict[str, str] = {"statsmodels": statsmodels.__version__}

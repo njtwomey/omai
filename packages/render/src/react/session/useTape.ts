@@ -17,7 +17,7 @@ import { type LiveSessions, type LiveVariant, STILL_HANDLE } from './useSession.
  * @param file - The tape file.
  * @param registry - The methods on offer; the file's method is looked up by name.
  * @returns A comparison of the file's variants (one for a single session), all done.
- * @throws MdmlError with code `value` when the registry does not know the file's method.
+ * @throws OmaiError with code `value` when the registry does not know the file's method.
  */
 // biome-ignore lint/suspicious/noExplicitAny: the host is generic over methods
 export function replayLive(file: TapeFile, registry: MethodRegistry): LiveSessions<any, any> {

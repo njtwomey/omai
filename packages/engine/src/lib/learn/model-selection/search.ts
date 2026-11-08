@@ -4,7 +4,7 @@
  * refit the best, and nested cross-validation for an unbiased estimate of the tuned model's performance.
  */
 
-import { type Json, MdmlError, meanOf, varianceOf } from '../../base/index.ts'
+import { type Json, meanOf, OmaiError, varianceOf } from '../../base/index.ts'
 import { crossValidationCurve, type Explained, type Exposition, searchTrials } from '../../exposition/index.ts'
 import { foldIn, permutation } from '../../random/index.ts'
 import { type Space, type SpaceValue, sample } from '../../space/index.ts'
@@ -44,10 +44,10 @@ export const MAX_CANDIDATES = 100000
  *
  * @param grid - A grid or a list of grids.
  * @returns The candidates.
- * @throws MdmlError with code `value` beyond {@link MAX_CANDIDATES} candidates.
+ * @throws OmaiError with code `value` beyond {@link MAX_CANDIDATES} candidates.
  * @example
  * ```ts
- * import { parameterGrid } from 'mdml-engine/learn/model-selection'
+ * import { parameterGrid } from 'omai-engine/learn/model-selection'
  * parameterGrid({ b: [1, 2], a: ['x', 'y'] }) // => [{ a: 'x', b: 1 }, { a: 'x', b: 2 }, { a: 'y', b: 1 }, { a: 'y', b: 2 }]
  * ```
  */
@@ -58,7 +58,7 @@ export function parameterGrid(grid: ParamGrid): Candidate[] {
     const keys = Object.keys(g).sort()
     const total = keys.reduce((p, k) => p * (g[k]?.length ?? 0), 1)
     if (out.length + total > MAX_CANDIDATES)
-      throw new MdmlError('value', `parameterGrid: more than ${MAX_CANDIDATES} candidates`)
+      throw new OmaiError('value', `parameterGrid: more than ${MAX_CANDIDATES} candidates`)
     for (let i = 0; i < total; i++) {
       let r = i
       const c: Record<string, unknown> = {}
@@ -97,8 +97,8 @@ function flattenValue(v: SpaceValue, prefix = ''): Record<string, unknown> {
  * @returns The candidates (nested space values flattened to `step.param` names).
  * @example
  * ```ts
- * import { parameterSampler } from 'mdml-engine/learn/model-selection'
- * import { key } from 'mdml-engine/random'
+ * import { parameterSampler } from 'omai-engine/learn/model-selection'
+ * import { key } from 'omai-engine/random'
  * parameterSampler({ a: [1, 2, 3] }, 5, key(0)).length // => 3
  * ```
  */
@@ -107,7 +107,7 @@ export function parameterSampler(
   nIter: number,
   key: Parameters<typeof sample>[1],
 ): Candidate[] {
-  if (!(Number.isInteger(nIter) && nIter >= 1)) throw new MdmlError('value', 'parameterSampler: nIter must be >= 1')
+  if (!(Number.isInteger(nIter) && nIter >= 1)) throw new OmaiError('value', 'parameterSampler: nIter must be >= 1')
   if (typeof (distributions as Space).kind === 'string') {
     const space = distributions as Space
     return Array.from({ length: nIter }, (_, i) => flattenValue(sample(space, foldIn(key, i))))
@@ -189,7 +189,7 @@ function evaluateRun(
   readonly refitBy: string
   readonly key: ReturnType<typeof keyFor>
 } {
-  if (candidates.length === 0) throw new MdmlError('value', 'search: no candidates')
+  if (candidates.length === 0) throw new OmaiError('value', 'search: no candidates')
   const key = keyFor(options, 'search')
   const splitter = checkCv(options.cv, estimator)
   const folds = splitIndices(splitter, splitInputOf(data, options.groups), foldIn(key, 0))
@@ -204,7 +204,7 @@ function evaluateRun(
   const scorerNames = Object.keys(scorersOf(options.scoring))
   const refitBy = typeof options.refit === 'string' ? options.refit : scorerNames[0]
   if (refitBy === undefined || !scorerNames.includes(refitBy))
-    throw new MdmlError('value', `search: refit by unknown scorer ${String(refitBy)}`)
+    throw new OmaiError('value', `search: refit by unknown scorer ${String(refitBy)}`)
   const algorithm: Algorithm<SearchState, SearchPath> = {
     name: 'search',
     config: { estimator: estimator.name, candidates: candidates.length, folds: folds.length },
@@ -278,14 +278,14 @@ function evaluateRun(
  * @param data - The data.
  * @param options - cv, scoring, refit (which scorer ranks), returnTrainScore, groups, errorScore and key.
  * @returns The algorithm, one step per candidate.
- * @throws MdmlError with code `value` for no candidates or a refit by an unknown scorer.
+ * @throws OmaiError with code `value` for no candidates or a refit by an unknown scorer.
  * @concept hyperparameter-search
  * @example
  * ```ts
- * import { evaluateCandidatesAlgorithm } from 'mdml-engine/learn/model-selection'
- * import { defineEstimator } from 'mdml-engine/learn'
- * import { runAlgorithm } from 'mdml-engine/trace'
- * import { full } from 'mdml-engine/tensor'
+ * import { evaluateCandidatesAlgorithm } from 'omai-engine/learn/model-selection'
+ * import { defineEstimator } from 'omai-engine/learn'
+ * import { runAlgorithm } from 'omai-engine/trace'
+ * import { full } from 'omai-engine/tensor'
  * const constant = defineEstimator({ name: 'c', kind: 'regressor', fit: () => ({}), methods: (_, h) => ({ predict: (x) => full([x.shape[0]], h.c) }) }, { c: 0 })
  * const alg = evaluateCandidatesAlgorithm(constant, [{ c: 0 }, { c: 2 }], { x: [[0], [1]], y: [2, 2] }, { cv: 2, scoring: 'neg_mean_absolute_error' })
  * runAlgorithm(alg, { maxSteps: 5 }).state.rows.length // => 2
@@ -312,9 +312,9 @@ export function evaluateCandidatesAlgorithm(
  * @returns The results.
  * @example
  * ```ts
- * import { evaluateCandidates } from 'mdml-engine/learn/model-selection'
- * import { defineEstimator } from 'mdml-engine/learn'
- * import { full } from 'mdml-engine/tensor'
+ * import { evaluateCandidates } from 'omai-engine/learn/model-selection'
+ * import { defineEstimator } from 'omai-engine/learn'
+ * import { full } from 'omai-engine/tensor'
  * const constant = defineEstimator({ name: 'c', kind: 'regressor', fit: () => ({}), methods: (_, h) => ({ predict: (x) => full([x.shape[0]], h.c) }) }, { c: 0 })
  * const r = evaluateCandidates(constant, [{ c: 0 }, { c: 2 }], { x: [[0], [1]], y: [2, 2] }, { cv: 2, scoring: 'neg_mean_absolute_error' })
  * r.bestParams // => { c: 2 }
@@ -376,9 +376,9 @@ export function evaluateCandidates(
  * @concept hyperparameter-search
  * @example
  * ```ts
- * import { gridSearchCV } from 'mdml-engine/learn/model-selection'
- * import { defineEstimator } from 'mdml-engine/learn'
- * import { full } from 'mdml-engine/tensor'
+ * import { gridSearchCV } from 'omai-engine/learn/model-selection'
+ * import { defineEstimator } from 'omai-engine/learn'
+ * import { full } from 'omai-engine/tensor'
  * const constant = defineEstimator({ name: 'c', kind: 'regressor', fit: () => ({}), methods: (_, h) => ({ predict: (x) => full([x.shape[0]], h.c) }) }, { c: 0 })
  * const r = gridSearchCV(constant, { c: [0, 1, 2, 3] }, { x: [[0], [1], [2]], y: [1, 1, 1] }, { cv: 3, scoring: 'neg_mean_squared_error' })
  * r.rankTestScore.neg_mean_squared_error // => [2, 1, 2, 4]
@@ -456,9 +456,9 @@ function searchExposition(result: SearchResult, method: string): Exposition[] {
  * @returns The search results.
  * @example
  * ```ts
- * import { randomizedSearchCV } from 'mdml-engine/learn/model-selection'
- * import { defineEstimator } from 'mdml-engine/learn'
- * import { full } from 'mdml-engine/tensor'
+ * import { randomizedSearchCV } from 'omai-engine/learn/model-selection'
+ * import { defineEstimator } from 'omai-engine/learn'
+ * import { full } from 'omai-engine/tensor'
  * const constant = defineEstimator({ name: 'c', kind: 'regressor', fit: () => ({}), methods: (_, h) => ({ predict: (x) => full([x.shape[0]], h.c) }) }, { c: 0 })
  * const r = randomizedSearchCV(constant, { c: [0, 1, 2] }, { x: [[0], [1]], y: [1, 1] }, { cv: 2, nIter: 3, scoring: 'neg_mean_absolute_error' })
  * r.bestParams // => { c: 1 }
@@ -471,7 +471,7 @@ export function randomizedSearchCV(
   options: SearchOptions & { readonly nIter?: number } = {},
 ): Explained<SearchResult> {
   const space = distributions ?? estimator.hyperSpace
-  if (space === undefined) throw new MdmlError('value', `randomizedSearchCV: ${estimator.name} declares no hyperSpace`)
+  if (space === undefined) throw new OmaiError('value', `randomizedSearchCV: ${estimator.name} declares no hyperSpace`)
   const candidates = parameterSampler(space, options.nIter ?? 10, foldIn(keyFor(options, 'randomizedSearchCV'), 0))
   const result = evaluateCandidates(estimator, candidates, data, options)
   return { ...result, exposition: searchExposition(result, 'random') }
@@ -526,7 +526,7 @@ function nestedRun(
   const outer = splitIndices(checkCv(options.outerCv ?? 5, estimator), splitInputOf(data), foldIn(key, 0))
   const candidates = parameterGrid(grid)
   const scorer = Object.values(scorersOf(options.scoring))[0]
-  if (scorer === undefined) throw new MdmlError('value', 'nestedCrossValidation: no scorer')
+  if (scorer === undefined) throw new OmaiError('value', 'nestedCrossValidation: no scorer')
   const algorithm: Algorithm<NestedState, NestedPath> = {
     name: 'nested-cross-validation',
     config: { estimator: estimator.name, outer: outer.length, candidates: candidates.length },
@@ -541,7 +541,7 @@ function nestedRun(
         ...(options.scoring === undefined ? {} : { scoring: options.scoring }),
       })
       const best = inner.bestEstimator
-      if (best === undefined) throw new MdmlError('value', 'nestedCrossValidation: the inner search did not refit')
+      if (best === undefined) throw new OmaiError('value', 'nestedCrossValidation: the inner search did not refit')
       const score = scorer.score(best, takeData(data, fold.test))
       const scores = [...s.scores, score]
       ctx.log('nested/outer', s.scores.length)
@@ -573,10 +573,10 @@ function nestedRun(
  * @returns The algorithm, one step per outer fold.
  * @example
  * ```ts
- * import { nestedCrossValidationAlgorithm } from 'mdml-engine/learn/model-selection'
- * import { defineEstimator } from 'mdml-engine/learn'
- * import { runAlgorithm } from 'mdml-engine/trace'
- * import { full } from 'mdml-engine/tensor'
+ * import { nestedCrossValidationAlgorithm } from 'omai-engine/learn/model-selection'
+ * import { defineEstimator } from 'omai-engine/learn'
+ * import { runAlgorithm } from 'omai-engine/trace'
+ * import { full } from 'omai-engine/tensor'
  * const constant = defineEstimator({ name: 'c', kind: 'regressor', fit: () => ({}), methods: (_, h) => ({ predict: (x) => full([x.shape[0]], h.c) }) }, { c: 0 })
  * const x = [[0], [1], [2], [3], [4], [5]]
  * const alg = nestedCrossValidationAlgorithm(constant, { c: [0, 1] }, { x, y: [1, 1, 1, 1, 1, 1] }, { outerCv: 2, innerCv: 3, scoring: 'neg_mean_absolute_error' })
@@ -605,9 +605,9 @@ export function nestedCrossValidationAlgorithm(
  * @returns The outer scores, the chosen candidates and their mean and deviation.
  * @example
  * ```ts
- * import { nestedCrossValidation } from 'mdml-engine/learn/model-selection'
- * import { defineEstimator } from 'mdml-engine/learn'
- * import { full } from 'mdml-engine/tensor'
+ * import { nestedCrossValidation } from 'omai-engine/learn/model-selection'
+ * import { defineEstimator } from 'omai-engine/learn'
+ * import { full } from 'omai-engine/tensor'
  * const constant = defineEstimator({ name: 'c', kind: 'regressor', fit: () => ({}), methods: (_, h) => ({ predict: (x) => full([x.shape[0]], h.c) }) }, { c: 0 })
  * const x = [[0], [1], [2], [3], [4], [5]]
  * const r = nestedCrossValidation(constant, { c: [0, 1] }, { x, y: [1, 1, 1, 1, 1, 1] }, { outerCv: 2, innerCv: 3, scoring: 'neg_mean_absolute_error' })

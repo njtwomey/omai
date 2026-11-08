@@ -1,4 +1,4 @@
-import { type Exposition, type ExpositionKind, expositionSamples } from 'mdml-engine/exposition'
+import { type Exposition, type ExpositionKind, expositionSamples } from 'omai-engine/exposition'
 import type { ReactElement } from 'react'
 import { renderToString } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'

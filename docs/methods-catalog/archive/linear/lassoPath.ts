@@ -41,7 +41,7 @@ export interface LassoPathState {
  *
  * @example
  * ```ts
- * import { lassoPath } from 'mdml-engine/methods/linear'
+ * import { lassoPath } from 'omai-engine/methods/linear'
  * lassoPath.with({ nAlphas: 5 }).fit({ x: [[0], [1], [2], [3]], y: [0, 1, 2, 3] }).params.coef.length // => 1
  * ```
  */

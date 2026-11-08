@@ -4,7 +4,7 @@
  * its demo knobs, and generating or loading the selected dataset with its generating truth.
  */
 
-import type { Dataset, Generated, GeneratorKnobs } from 'mdml-engine/data'
+import type { Dataset, Generated, GeneratorKnobs } from 'omai-engine/data'
 import {
   type CollectionEntry,
   type DatasetCollection,
@@ -14,9 +14,9 @@ import {
   datasetGenerators,
   loadDataset,
   loadEntry,
-} from 'mdml-engine/datasets'
-import { key } from 'mdml-engine/random'
-import { type DictSpace, defaults } from 'mdml-engine/space'
+} from 'omai-engine/datasets'
+import { key } from 'omai-engine/random'
+import { type DictSpace, defaults } from 'omai-engine/space'
 
 /** What a dataset picker has chosen: an entry of its source, the seed it is generated with, and its knobs. */
 export interface DatasetSelection {

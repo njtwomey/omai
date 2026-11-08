@@ -3,9 +3,9 @@ centre frequencies against pywt.central_frequency."""
 
 import numpy as np
 import pywt
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import rng
-from mdml_oracle.signal_helpers import pair
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import rng
+from omai_oracle.signal_helpers import pair
 from pywt._extensions._pywt import ContinuousWavelet  # pywt re-exports it untyped
 
 REFERENCE: dict[str, str] = {"pywt": pywt.__version__}

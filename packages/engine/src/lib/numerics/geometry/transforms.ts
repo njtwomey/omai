@@ -4,7 +4,7 @@
  * fundamental matrix by the eight-point algorithm, and the Procrustes and Kabsch alignments of point sets.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import {
   add,
   concreteOrThrow,
@@ -34,7 +34,7 @@ type Mat3 = readonly number[]
 
 const qnorm = (q: Quat): Quat => {
   const n = Math.hypot(q[0], q[1], q[2], q[3])
-  if (n === 0) throw new MdmlError('value', 'rotation: zero quaternion')
+  if (n === 0) throw new OmaiError('value', 'rotation: zero quaternion')
   return [q[0] / n, q[1] / n, q[2] / n, q[3] / n]
 }
 
@@ -122,17 +122,17 @@ export interface Rotation {
  *
  * @param q - The quaternion: four numbers (a tensor `[4]`, a typed array, an array or a `Vec4`).
  * @returns The rotation.
- * @throws MdmlError with code `shape` unless `q` has four entries, and `not-differentiable` for a traced value.
+ * @throws OmaiError with code `shape` unless `q` has four entries, and `not-differentiable` for a traced value.
  * @concept rotations
  * @example
  * ```ts
- * import { rotationFromQuat } from 'mdml-engine/numerics/geometry'
+ * import { rotationFromQuat } from 'omai-engine/numerics/geometry'
  * rotationFromQuat([0, 0, Math.SQRT1_2, Math.SQRT1_2]).asEuler('xyz', true).map((v) => Math.round(v * 1e10) / 1e10) // => [0, 0, 90]
  * ```
  */
 export function rotationFromQuat(q: TensorLike): Rotation {
   const entries = toVector(q, 'rotationFromQuat')
-  if (entries.length !== 4) throw new MdmlError('shape', 'rotationFromQuat: a quaternion has four entries')
+  if (entries.length !== 4) throw new OmaiError('shape', 'rotationFromQuat: a quaternion has four entries')
   const quat = qnorm([entries[0] ?? 0, entries[1] ?? 0, entries[2] ?? 0, entries[3] ?? 0])
   const matrix = quatToMatrix(quat)
   const self: Rotation = {
@@ -170,11 +170,11 @@ export function rotationFromQuat(q: TensorLike): Rotation {
 }
 
 function parseSeq(seq: string): { axes: number[]; extrinsic: boolean } {
-  if (!/^([xyz]{3}|[XYZ]{3})$/.test(seq)) throw new MdmlError('value', `rotation: bad Euler sequence ${seq}`)
+  if (!/^([xyz]{3}|[XYZ]{3})$/.test(seq)) throw new OmaiError('value', `rotation: bad Euler sequence ${seq}`)
   const lower = seq.toLowerCase()
   const axes = [...lower].map((c) => AXES[c] ?? 0)
   if (axes[0] === axes[1] || axes[1] === axes[2])
-    throw new MdmlError('value', 'rotation: consecutive Euler axes must differ')
+    throw new OmaiError('value', 'rotation: consecutive Euler axes must differ')
   return { axes, extrinsic: seq === lower }
 }
 
@@ -237,14 +237,14 @@ function eulerFromQuat(quat: Quat, seq: string, degrees: boolean): [number, numb
  * @returns The rotation.
  * @example
  * ```ts
- * import { rotationFromMatrix } from 'mdml-engine/numerics/geometry'
+ * import { rotationFromMatrix } from 'omai-engine/numerics/geometry'
  * rotationFromMatrix([[0, -1, 0], [1, 0, 0], [0, 0, 1]]).magnitude() // => 1.5707963267948966
  * ```
  */
 export function rotationFromMatrix(m: TensorLike): Rotation {
   const t = concreteOrThrow(promoteFloat(m)[0] as Tensor, 'rotationFromMatrix')
   if (t.shape.length !== 2 || t.shape[0] !== 3 || t.shape[1] !== 3)
-    throw new MdmlError('shape', 'rotationFromMatrix: expected a 3 x 3 matrix')
+    throw new OmaiError('shape', 'rotationFromMatrix: expected a 3 x 3 matrix')
   return rotationFromQuat([...matrixToQuat(toFlat(t))])
 }
 
@@ -255,10 +255,10 @@ export function rotationFromMatrix(m: TensorLike): Rotation {
  * @param v - The vector: three numbers (a tensor `[3]`, a typed array, an array or a `Vec3`).
  * @param degrees - Whether the angle is in degrees.
  * @returns The rotation.
- * @throws MdmlError with code `shape` unless `v` is a vector, and `not-differentiable` for a traced value.
+ * @throws OmaiError with code `shape` unless `v` is a vector, and `not-differentiable` for a traced value.
  * @example
  * ```ts
- * import { rotationFromRotvec } from 'mdml-engine/numerics/geometry'
+ * import { rotationFromRotvec } from 'omai-engine/numerics/geometry'
  * rotationFromRotvec([0, 0, Math.PI]).asQuat().map((v) => Math.round(v * 1e12) / 1e12) // => [0, 0, 1, 0]
  * ```
  */
@@ -279,19 +279,19 @@ export function rotationFromRotvec(v: TensorLike, degrees = false): Rotation {
  * @param angles - One angle per axis: a vector (a tensor, a typed array or an array).
  * @param degrees - Whether the angles are in degrees.
  * @returns The rotation.
- * @throws MdmlError with code `value` for a bad sequence or a wrong number of angles, `shape` unless `angles` is a
+ * @throws OmaiError with code `value` for a bad sequence or a wrong number of angles, `shape` unless `angles` is a
  *   vector, and `not-differentiable` for a traced value.
  * @example
  * ```ts
- * import { rotationFromEuler } from 'mdml-engine/numerics/geometry'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { rotationFromEuler } from 'omai-engine/numerics/geometry'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(rotationFromEuler('z', [90], true).apply([1, 0, 0])).map((v) => Math.round(v * 1e12) / 1e12) // => [0, 1, 0]
  * ```
  */
 export function rotationFromEuler(seq: string, angles: TensorLike, degrees = false): Rotation {
   const turns = toVector(angles, 'rotationFromEuler')
   if (!/^([xyz]{1,3}|[XYZ]{1,3})$/.test(seq) || turns.length !== seq.length) {
-    throw new MdmlError('value', `rotationFromEuler: ${seq} needs one angle per axis`)
+    throw new OmaiError('value', `rotationFromEuler: ${seq} needs one angle per axis`)
   }
   const k = degrees ? Math.PI / 180 : 1
   const extrinsic = seq === seq.toLowerCase()
@@ -313,7 +313,7 @@ export function rotationFromEuler(seq: string, angles: TensorLike, degrees = fal
  * @returns The interpolated rotation.
  * @example
  * ```ts
- * import { rotationFromEuler, slerp } from 'mdml-engine/numerics/geometry'
+ * import { rotationFromEuler, slerp } from 'omai-engine/numerics/geometry'
  * Math.round(slerp(rotationFromEuler('z', [0]), rotationFromEuler('z', [90], true), 0.5).asEuler('xyz', true)[2]) // => 45
  * ```
  */
@@ -344,15 +344,15 @@ export interface AffineMap {
  * @returns The map.
  * @example
  * ```ts
- * import { affine } from 'mdml-engine/numerics/geometry'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { affine } from 'omai-engine/numerics/geometry'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(affine([[2, 0], [0, 1]], [1, 1]).apply([[1, 1]])) // => [[3, 2]]
  * ```
  */
 export function affine(matrix: TensorLike, translation?: TensorLike): AffineMap {
   const [m] = promoteFloat(matrix) as [Value]
   const d = m.shape[0] ?? 0
-  if (m.shape.length !== 2 || m.shape[1] !== d) throw new MdmlError('shape', 'affine: the linear part must be square')
+  if (m.shape.length !== 2 || m.shape[1] !== d) throw new OmaiError('shape', 'affine: the linear part must be square')
   const [t] = promoteFloat(translation ?? new Array<number>(d).fill(0)) as [Value]
   const self: AffineMap = {
     matrix: m,
@@ -398,8 +398,8 @@ export interface NormalisedPoints {
  * @returns The normalised points and the transform (a `[3, 3]` tensor; was `number[][]`).
  * @example
  * ```ts
- * import { normalisePoints } from 'mdml-engine/numerics/geometry'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { normalisePoints } from 'omai-engine/numerics/geometry'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(normalisePoints([[0, 0], [2, 0], [0, 2], [2, 2]]).transform)[0][0] // => 1
  * ```
  */
@@ -421,7 +421,7 @@ function normalisedRows(points: TensorLike): { readonly points: Tensor; readonly
   }
   let meanSquare = 0
   for (let i = 0; i < n; i++) meanSquare += (((f[2 * i] ?? 0) - cx) ** 2 + ((f[2 * i + 1] ?? 0) - cy) ** 2) / n
-  if (meanSquare === 0) throw new MdmlError('value', 'normalisePoints: all points coincide')
+  if (meanSquare === 0) throw new OmaiError('value', 'normalisePoints: all points coincide')
   const s = Math.SQRT2 / Math.sqrt(meanSquare)
   const out = new Float64Array(2 * n)
   for (let i = 0; i < n; i++) {
@@ -472,13 +472,13 @@ function nullVector(rows: readonly number[][]): number[] {
  * @param src - Source points `[n, 2]`, n >= 4.
  * @param dst - Destination points `[n, 2]`.
  * @returns The 3 x 3 homography `[3, 3]`.
- * @throws MdmlError with code `value` when fewer than four correspondences are given or they are degenerate (the
+ * @throws OmaiError with code `value` when fewer than four correspondences are given or they are degenerate (the
  * homography would not be finite).
  * @concept homography
  * @example
  * ```ts
- * import { homography } from 'mdml-engine/numerics/geometry'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { homography } from 'omai-engine/numerics/geometry'
+ * import { toArray } from 'omai-engine/tensor'
  * (toArray(homography([[0, 0], [1, 0], [1, 1], [0, 1]], [[0, 0], [2, 0], [2, 2], [0, 2]])) as number[][]).map((r) => r.map((v) => Math.round(v * 1e10) / 1e10)) // => [[2, 0, 0], [0, 2, 0], [0, 0, 1]]
  * ```
  */
@@ -487,7 +487,7 @@ export function homography(src: TensorLike, dst: TensorLike): Tensor<'float64', 
   const b = normalisedRows(dst)
   const n = a.points.shape[0] ?? 0
   if (n < 4 || b.points.shape[0] !== n)
-    throw new MdmlError('value', 'homography: at least four correspondences are needed')
+    throw new OmaiError('value', 'homography: at least four correspondences are needed')
   const p = toFlat(a.points)
   const q = toFlat(b.points)
   const rows: number[][] = []
@@ -504,7 +504,7 @@ export function homography(src: TensorLike, dst: TensorLike): Tensor<'float64', 
   const s = full[2]?.[2] ?? 1
   const h33 = full.map((r) => r.map((v) => v / s))
   if (!h33.every((r) => r.every(Number.isFinite)))
-    throw new MdmlError('value', 'homography: the correspondences are degenerate (collinear points, or H[2][2] = 0)')
+    throw new OmaiError('value', 'homography: the correspondences are degenerate (collinear points, or H[2][2] = 0)')
   return matrixOf(Float64Array.from(h33.flat()), 3, 3)
 }
 
@@ -515,18 +515,18 @@ export function homography(src: TensorLike, dst: TensorLike): Tensor<'float64', 
  * @param h - The 3 x 3 matrix `[3, 3]`.
  * @param points - Points `[n, 2]`.
  * @returns Mapped points `[n, 2]` (differentiable in the points and the matrix).
- * @throws MdmlError with code `shape` unless `h` is 3 x 3.
+ * @throws OmaiError with code `shape` unless `h` is 3 x 3.
  * @example
  * ```ts
- * import { applyHomography } from 'mdml-engine/numerics/geometry'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { applyHomography } from 'omai-engine/numerics/geometry'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(applyHomography([[1, 0, 0], [0, 1, 0], [0, 1, 1]], [[2, 1]])) // => [[1, 0.5]]
  * ```
  */
 export function applyHomography(h: TensorLike, points: TensorLike): Value {
   const [hv, p] = promoteFloat(h, points) as [Value, Value]
   if (hv.shape.length !== 2 || hv.shape[0] !== 3 || hv.shape[1] !== 3)
-    throw new MdmlError('shape', 'applyHomography: expected a 3 x 3 matrix')
+    throw new OmaiError('shape', 'applyHomography: expected a 3 x 3 matrix')
   // [x, y] -> H [x, y, 1]: the first two columns of H act on the points, the third is added.
   const hom = add(matmul(p, swapaxes(sliceAxis(hv, 1, 0, 2), 0, 1)), reshape(sliceAxis(hv, 1, 2, 3), [1, 3]))
   return div(sliceAxis(hom, 1, 0, 2), sliceAxis(hom, 1, 2, 3))
@@ -543,7 +543,7 @@ export function applyHomography(h: TensorLike, points: TensorLike): Value {
  * @concept epipolar-geometry
  * @example
  * ```ts
- * import { fundamentalMatrix } from 'mdml-engine/numerics/geometry'
+ * import { fundamentalMatrix } from 'omai-engine/numerics/geometry'
  * const x1 = [[0, 0], [1, 0], [0, 1], [1, 1], [2, 1], [1, 2], [3, 1], [2, 3]]
  * fundamentalMatrix(x1, x1.map(([x, y]) => [x + 1, y])).shape // => [3, 3]
  * ```
@@ -553,7 +553,7 @@ export function fundamentalMatrix(x1: TensorLike, x2: TensorLike): Tensor<'float
   const b = normalisedRows(x2)
   const n = a.points.shape[0] ?? 0
   if (n < 8 || b.points.shape[0] !== n)
-    throw new MdmlError('value', 'fundamentalMatrix: at least eight correspondences are needed')
+    throw new OmaiError('value', 'fundamentalMatrix: at least eight correspondences are needed')
   const p = toFlat(a.points)
   const q = toFlat(b.points)
   const rows: number[][] = []
@@ -596,8 +596,8 @@ export function fundamentalMatrix(x1: TensorLike, x2: TensorLike): Tensor<'float
  * @returns R and the scale.
  * @example
  * ```ts
- * import { orthogonalProcrustes } from 'mdml-engine/numerics/geometry'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { orthogonalProcrustes } from 'omai-engine/numerics/geometry'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(orthogonalProcrustes([[1, 0], [0, 1]], [[0, 1], [-1, 0]]).rotation).map((r) => r.map((v) => Math.round(v * 1e12) / 1e12)) // => [[0, 1], [-1, 0]]
  * ```
  */
@@ -616,8 +616,8 @@ export function orthogonalProcrustes(a: TensorLike, b: TensorLike): { rotation: 
  * @returns The standardised first configuration, the fitted second, and the disparity.
  * @example
  * ```ts
- * import { procrustes } from 'mdml-engine/numerics/geometry'
- * import { item } from 'mdml-engine/tensor'
+ * import { procrustes } from 'omai-engine/numerics/geometry'
+ * import { item } from 'omai-engine/tensor'
  * // A rotated, scaled and shifted copy fits perfectly.
  * item(procrustes([[0, 0], [1, 0], [0, 2]], [[5, 5], [5, 7], [1, 5]]).disparity) < 1e-24 // => true
  * ```
@@ -625,7 +625,7 @@ export function orthogonalProcrustes(a: TensorLike, b: TensorLike): { rotation: 
 export function procrustes(data1: TensorLike, data2: TensorLike): { mtx1: Value; mtx2: Value; disparity: Value } {
   const [a0, b0] = promoteFloat(data1, data2) as [Value, Value]
   if (a0.shape.length !== 2 || a0.shape[0] !== b0.shape[0] || a0.shape[1] !== b0.shape[1])
-    throw new MdmlError('shape', 'procrustes: inputs must have the same shape')
+    throw new OmaiError('shape', 'procrustes: inputs must have the same shape')
   const centre = (x: Value): Value => sub(x, mean(x, 0, true))
   const unit = (x: Value): Value => div(x, sqrt(sum(mul(x, x))))
   const mtx1 = unit(centre(a0))
@@ -647,8 +647,8 @@ export function procrustes(data1: TensorLike, data2: TensorLike): { mtx1: Value;
  * @concept rigid-alignment
  * @example
  * ```ts
- * import { kabsch } from 'mdml-engine/numerics/geometry'
- * import { item } from 'mdml-engine/tensor'
+ * import { kabsch } from 'omai-engine/numerics/geometry'
+ * import { item } from 'omai-engine/tensor'
  * item(kabsch([[0, 0], [1, 0], [0, 1]], [[1, 1], [1, 2], [0, 1]]).rmsd) < 1e-12 // => true
  * ```
  */

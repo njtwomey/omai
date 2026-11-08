@@ -4,7 +4,7 @@
  * state), so a view can play the swarm beside its summary.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { sameLength, seal } from './_check.ts'
 
 /** One frame: every agent's position, and its heading (radians) and state when the record has them. */
@@ -52,11 +52,11 @@ export interface AgentSteps {
  *
  * @param record - The record without its `kind`.
  * @returns The record.
- * @throws MdmlError `shape` when a frame's arrays or a series differ in length; `value` for a world that is not
+ * @throws OmaiError `shape` when a frame's arrays or a series differ in length; `value` for a world that is not
  *   positive.
  * @example
  * ```ts
- * import { agentSteps } from 'mdml-engine/exposition'
+ * import { agentSteps } from 'omai-engine/exposition'
  * const r = agentSteps({
  *   method: 'boids',
  *   world: { width: 10, height: 10, wrap: true },
@@ -68,7 +68,7 @@ export interface AgentSteps {
  */
 export function agentSteps(record: Omit<AgentSteps, 'kind'>): AgentSteps {
   if (!(record.world.width > 0 && record.world.height > 0))
-    throw new MdmlError('value', 'agentSteps: the world must have a positive size')
+    throw new OmaiError('value', 'agentSteps: the world must have a positive size')
   for (const [f, frame] of record.frames.entries()) {
     sameLength('agentSteps', `frames[${f}].y`, frame.y.length, frame.x.length)
     if (frame.heading !== undefined)

@@ -12,12 +12,12 @@ import { drawsOf, isMatrix, rowAutocovariance } from './_draws.ts'
  *
  * @param x - Draws `[draw]` or `[chain, draw]`.
  * @returns The autocovariances, the same shape as the input.
- * @throws MdmlError with code `shape` for inputs with more than two axes.
+ * @throws OmaiError with code `shape` for inputs with more than two axes.
  * @concept autocorrelation
  * @example
  * ```ts
- * import { autocovariance } from 'mdml-engine/sampling'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { autocovariance } from 'omai-engine/sampling'
+ * import { toArray } from 'omai-engine/tensor'
  * (toArray(autocovariance([1, -1, 1, -1])) as number[]).map((v) => Math.round(v * 1e12) / 1e12) // => [1, -0.75, 0.5, -0.25]
  * ```
  */
@@ -32,12 +32,12 @@ export function autocovariance(x: TensorLike): Tensor<'float64'> {
  *
  * @param x - Draws `[draw]` or `[chain, draw]`.
  * @returns The autocorrelations, the same shape as the input (lag 0 is 1).
- * @throws MdmlError with code `shape` for inputs with more than two axes.
+ * @throws OmaiError with code `shape` for inputs with more than two axes.
  * @concept autocorrelation
  * @example
  * ```ts
- * import { autocorrelation } from 'mdml-engine/sampling'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { autocorrelation } from 'omai-engine/sampling'
+ * import { toArray } from 'omai-engine/tensor'
  * (toArray(autocorrelation([1, 2, 3, 4])) as number[]).map((v) => Math.round(v * 1e12) / 1e12) // => [1, 0.25, -0.3, -0.45]
  * ```
  */

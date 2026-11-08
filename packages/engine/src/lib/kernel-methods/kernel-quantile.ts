@@ -7,7 +7,7 @@
  * `linear` on the Gram matrix.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { type KernelChoice, kernelMatrix, kernelSpace, type ResolvedKernel, resolveKernel } from '../kernels/index.ts'
 import { type IterativeEstimator, iterative, matrixView, targetVector } from '../learn/index.ts'
 import { quantileRegression } from '../linear/index.ts'
@@ -92,7 +92,7 @@ function expectileIrls(
 }
 
 function checkTau(tau: number, who: string): void {
-  if (!(tau > 0 && tau < 1)) throw new MdmlError('value', `${who}: the level must be in (0, 1), got ${tau}`)
+  if (!(tau > 0 && tau < 1)) throw new OmaiError('value', `${who}: the level must be in (0, 1), got ${tau}`)
 }
 
 /**
@@ -106,22 +106,22 @@ function checkTau(tau: number, who: string): void {
  * @param tau - The expectile level in (0, 1) (default 0.5).
  * @param alpha - The penalty `alpha > 0` (default 1).
  * @returns The problem, starting at zero.
- * @throws MdmlError `value` for a level outside (0, 1) or a non-positive penalty; `shape` for a mismatched Gram matrix.
+ * @throws OmaiError `value` for a level outside (0, 1) or a non-positive penalty; `shape` for a mismatched Gram matrix.
  * @concept kernel-regression
  * @reference W. K. Newey and J. L. Powell, Asymmetric least squares estimation and testing (Econometrica 55, 1987);
  *   Y. Yang, T. Zhang and H. Zou, Flexible expectile regression in reproducing kernel Hilbert spaces (Technometrics 60, 2018).
  * @example
  * ```ts
- * import { kernelExpectileProblem } from 'mdml-engine/kernel-methods'
+ * import { kernelExpectileProblem } from 'omai-engine/kernel-methods'
  * kernelExpectileProblem([[1, 0], [0, 1]], [1, 2], 0.8, 0.5).x0 // => [0, 0]
  * ```
  */
 export function kernelExpectileProblem(k: TensorLike, y: TensorLike, tau = 0.5, alpha = 1): SmoothProblem {
   checkTau(tau, 'kernelExpectileProblem')
-  if (!(alpha > 0)) throw new MdmlError('value', `kernelExpectileProblem: alpha must be positive, got ${alpha}`)
+  if (!(alpha > 0)) throw new OmaiError('value', `kernelExpectileProblem: alpha must be positive, got ${alpha}`)
   const g = primalOf(asTensor(k))
   const n = g.shape[0] ?? 0
-  if (g.shape.length !== 2 || g.shape[1] !== n) throw new MdmlError('shape', 'kernelExpectileProblem: k must be square')
+  if (g.shape.length !== 2 || g.shape[1] !== n) throw new OmaiError('shape', 'kernelExpectileProblem: k must be square')
   const t = targetVector(y, 'kernelExpectileProblem', n)
   return problemOf(expectileSmooth(Float64Array.from(toFlat(g)), t, n, tau, alpha), new Array<number>(n).fill(0))
 }
@@ -166,8 +166,8 @@ const EXPECTILE_DEFAULTS: KernelExpectileHyper = {
  * @concept kernel-regression
  * @example
  * ```ts
- * import { kernelExpectileRegression } from 'mdml-engine/kernel-methods'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { kernelExpectileRegression } from 'omai-engine/kernel-methods'
+ * import { toFlat } from 'omai-engine/tensor'
  * const x = [[0], [1], [2], [3], [4], [5]]
  * const y = [0.1, 1.3, 1.8, 3.4, 3.7, 5.2]
  * const hi = toFlat(kernelExpectileRegression({ kernel: 'linear', tau: 0.9, alpha: 0.1 }).fit({ x, y }).predict([[2.5]]))[0] ?? 0
@@ -181,7 +181,7 @@ export function kernelExpectileRegression(
   const who = 'kernelExpectileRegression'
   const setup = (data: { readonly x: TensorLike; readonly y?: TensorLike }, h: KernelExpectileHyper) => {
     checkTau(h.tau, who)
-    if (!(h.alpha > 0)) throw new MdmlError('value', `${who}: alpha must be positive, got ${h.alpha}`)
+    if (!(h.alpha > 0)) throw new OmaiError('value', `${who}: alpha must be positive, got ${h.alpha}`)
     const m = matrixView(data.x, who)
     const y = targetVector(data.y ?? [], who, m.n)
     const resolved = resolveKernel(h as KernelChoice, data.x)
@@ -280,14 +280,14 @@ export interface KernelQuantileFit {
  * @param y - Targets `[n]`.
  * @param options - The kernel, the quantile and the penalty.
  * @returns The fit, with a `predict`.
- * @throws MdmlError `value` for a quantile outside (0, 1) or a failed programme.
+ * @throws OmaiError `value` for a quantile outside (0, 1) or a failed programme.
  * @concept kernel-regression
  * @reference I. Takeuchi, Q. V. Le, T. D. Sears and A. J. Smola, Nonparametric quantile estimation (JMLR 7, 2006);
  *   Y. Li, Y. Liu and J. Zhu, Quantile regression in reproducing kernel Hilbert spaces (JASA 102, 2007).
  * @example
  * ```ts
- * import { kernelQuantileRegression } from 'mdml-engine/kernel-methods'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { kernelQuantileRegression } from 'omai-engine/kernel-methods'
+ * import { toFlat } from 'omai-engine/tensor'
  * const x = [[0], [1], [2], [3], [4]]
  * const fit = kernelQuantileRegression(x, [0, 1, 2, 3, 50], { kernel: { kernel: 'linear', gamma: 1, degree: 1, coef0: 0 }, alpha: 0 })
  * toFlat(fit.predict([[2]]))[0]?.toFixed(2) // => '2.00'

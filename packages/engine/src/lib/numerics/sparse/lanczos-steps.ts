@@ -5,7 +5,7 @@
  * in the state. The state serialises.
  */
 
-import { type Json, MdmlError, maxOf } from '../../base/index.ts'
+import { type Json, maxOf, OmaiError } from '../../base/index.ts'
 import { type Key, normal } from '../../random/index.ts'
 import { fromStorage, primalOf, type TensorLike, toFlat } from '../../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../../trace/index.ts'
@@ -90,7 +90,7 @@ function orthogonalityLossOf(basis: readonly (readonly number[])[]): number {
  * @returns The algorithm.
  * @example
  * ```ts
- * import { lanczosAlgorithm } from 'mdml-engine/numerics/sparse'
+ * import { lanczosAlgorithm } from 'omai-engine/numerics/sparse'
  * lanczosAlgorithm([[2, 1], [1, 2]], { v0: [1, 0] }).name // => 'lanczos'
  * ```
  */
@@ -100,7 +100,7 @@ export function lanczosAlgorithm(
 ): Algorithm<LanczosStepsState> {
   const op = asOperator(a)
   const n = op.shape[0]
-  if (op.shape[1] !== n) throw new MdmlError('shape', 'lanczosAlgorithm needs a square operator')
+  if (op.shape[1] !== n) throw new OmaiError('shape', 'lanczosAlgorithm needs a square operator')
   const apply = (x: ArrayLike<number>): Float64Array =>
     Float64Array.from(toFlat(primalOf(op.matvec(fromStorage(Float64Array.from(x), [n], 'float64')))))
   const mode = options.reorthogonalise ?? 'full'
@@ -110,9 +110,9 @@ export function lanczosAlgorithm(
     schema: SCHEMA,
     init: (key: Key) => {
       const v0 = options.v0 !== undefined ? Float64Array.from(options.v0) : Float64Array.from(normal(key, [n]).data)
-      if (v0.length !== n) throw new MdmlError('shape', 'lanczosAlgorithm: v0 must have one entry per row')
+      if (v0.length !== n) throw new OmaiError('shape', 'lanczosAlgorithm: v0 must have one entry per row')
       const nv = norm(v0)
-      if (!(nv > 0)) throw new MdmlError('value', 'lanczosAlgorithm: v0 must be nonzero')
+      if (!(nv > 0)) throw new OmaiError('value', 'lanczosAlgorithm: v0 must be nonzero')
       return {
         alpha: [],
         beta: [],
@@ -191,7 +191,7 @@ export function lanczosAlgorithm(
  * @returns The state: `T`'s diagonals, the basis and the Ritz values with their residuals.
  * @example
  * ```ts
- * import { lanczosSteps } from 'mdml-engine/numerics/sparse'
+ * import { lanczosSteps } from 'omai-engine/numerics/sparse'
  * lanczosSteps([[2, 1], [1, 2]], 2, { v0: [1, 0] }).ritzValues // => [1, 3]
  * ```
  */

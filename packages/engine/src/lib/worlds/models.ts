@@ -1,10 +1,10 @@
 /**
  * Transition models of worlds under rules, for planning and reinforcement learning: the full stochastic model as
  * gymnasium's `P[s][a]` tables of outcomes with probabilities, rewards and termination, sampling of outcomes and start
- * states, and the deterministic model shaped as a search problem for `mdml-engine/search`.
+ * states, and the deterministic model shaped as a search problem for `omai-engine/search`.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { type Key, uniform } from '../random/index.ts'
 import {
   ACTIONS,
@@ -20,7 +20,7 @@ import { cellCoords, passable, type World } from './world.ts'
 
 /**
  * One outcome of an action in a tabular model: gymnasium's `P[s][a]` entries (probability, next state, reward,
- * terminated), plus the path cost the rules assigned. Structurally an `Outcome<number>` of `mdml-engine/rl`.
+ * terminated), plus the path cost the rules assigned. Structurally an `Outcome<number>` of `omai-engine/rl`.
  */
 export interface WorldOutcome {
   readonly probability: number
@@ -33,7 +33,7 @@ export interface WorldOutcome {
 /**
  * A finite transition model of a world under rules: states are numbered `slot + slots * (heading + headings *
  * items)` (a cell's slot, then the heading if actions turn, then the held items), and every action of every state
- * has its outcomes. It feeds tabular MDPs (`mdml-engine/rl`'s `tabularEnv` takes `outcomes` as its transitions),
+ * has its outcomes. It feeds tabular MDPs (`omai-engine/rl`'s `tabularEnv` takes `outcomes` as its transitions),
  * planners and exact solvers.
  *
  * @concept markov-decision-processes
@@ -69,11 +69,11 @@ const turns = (a: ActionSet): boolean => a.actions.some((x) => x.kind === 'turn'
  * @param options - Actions, which cells are states, merging, absorption, edge clamping, the initial distribution and
  *   move options.
  * @returns The model.
- * @throws MdmlError with code `value` with more than 16 tracked items, or no start when `initial` is `'starts'`.
+ * @throws OmaiError with code `value` with more than 16 tracked items, or no start when `initial` is `'starts'`.
  * @concept markov-decision-processes
  * @example
  * ```ts
- * import { fromAscii, rules, stepReward, terminateOn, transitionModel } from 'mdml-engine/worlds'
+ * import { fromAscii, rules, stepReward, terminateOn, transitionModel } from 'omai-engine/worlds'
  * const m = transitionModel(fromAscii(['S.G']), rules(stepReward(-1), terminateOn('goals')))
  * [m.nStates, m.nActions] // => [3, 4]
  * m.outcomes(1, 1) // => [{ probability: 1, state: 2, reward: -1, terminated: true, cost: 1 }]
@@ -86,7 +86,7 @@ export function transitionModel(w: World, ruleSet: readonly Rule[], options: Mod
     (w.topology.kind === 'square' ? ACTIONS.urdl : w.topology.kind === 'hex' ? ACTIONS.hex : slotActions(w))
   const opts: ModelOptions = { ...options, actions }
   const tracked = trackedItems(w)
-  if (tracked.length > 16) throw new MdmlError('value', 'transitionModel: at most 16 tracked keys and pickups')
+  if (tracked.length > 16) throw new OmaiError('value', 'transitionModel: at most 16 tracked keys and pickups')
   const cells: number[] = []
   for (let c = 0; c < w.n; c++) if (options.cells !== 'passable' || passable(w, c)) cells.push(c)
   const slotOf = new Int32Array(w.n).fill(-1)
@@ -96,11 +96,11 @@ export function transitionModel(w: World, ruleSet: readonly Rule[], options: Mod
   const nStates = slots * headings * 2 ** tracked.length
   const stateIndex = (s: AgentState): number => {
     const slot = slotOf[s.cell] ?? -1
-    if (slot < 0) throw new MdmlError('value', `transitionModel: cell ${s.cell} is not a state`)
+    if (slot < 0) throw new OmaiError('value', `transitionModel: cell ${s.cell} is not a state`)
     return slot + slots * ((headings > 1 ? s.heading : 0) + headings * s.items)
   }
   const state = (i: number): AgentState => {
-    if (!Number.isInteger(i) || i < 0 || i >= nStates) throw new MdmlError('value', `transitionModel: state ${i}`)
+    if (!Number.isInteger(i) || i < 0 || i >= nStates) throw new OmaiError('value', `transitionModel: state ${i}`)
     const slot = i % slots
     const rest = Math.floor(i / slots)
     return { cell: cells[slot] ?? 0, items: Math.floor(rest / headings), heading: headings > 1 ? rest % headings : -1 }
@@ -132,7 +132,7 @@ export function transitionModel(w: World, ruleSet: readonly Rule[], options: Mod
     options.initial === 'uniform'
       ? cells.filter((c) => passable(w, c) && !isTerminal({ cell: c, items: 0, heading: heading0 }))
       : w.starts
-  if (starts.length === 0) throw new MdmlError('value', 'transitionModel: the world has no start')
+  if (starts.length === 0) throw new OmaiError('value', 'transitionModel: the world has no start')
   for (const c of starts) {
     const i = stateIndex({ cell: c, items: 0, heading: heading0 })
     initial[i] = (initial[i] ?? 0) + 1 / starts.length
@@ -163,8 +163,8 @@ export function transitionModel(w: World, ruleSet: readonly Rule[], options: Mod
  * @returns The outcome drawn.
  * @example
  * ```ts
- * import { fromAscii, rules, slip, transitionModel, sampleOutcome } from 'mdml-engine/worlds'
- * import { key } from 'mdml-engine/random'
+ * import { fromAscii, rules, slip, transitionModel, sampleOutcome } from 'omai-engine/worlds'
+ * import { key } from 'omai-engine/random'
  * const m = transitionModel(fromAscii(['S..']), rules(slip([[-1, 0.5], [1, 0.5]])))
  * [0, 2].includes(sampleOutcome(m, 1, 0, key(3)).state) // => true
  * ```
@@ -178,7 +178,7 @@ export function sampleOutcome(model: TransitionModel, state: number, action: num
     if (u < acc) return o
   }
   const last = os[os.length - 1]
-  if (last === undefined) throw new MdmlError('value', 'sampleOutcome: the action has no outcomes')
+  if (last === undefined) throw new OmaiError('value', 'sampleOutcome: the action has no outcomes')
   return last
 }
 
@@ -190,8 +190,8 @@ export function sampleOutcome(model: TransitionModel, state: number, action: num
  * @returns The state index.
  * @example
  * ```ts
- * import { fromAscii, sampleInitial, transitionModel } from 'mdml-engine/worlds'
- * import { key } from 'mdml-engine/random'
+ * import { fromAscii, sampleInitial, transitionModel } from 'omai-engine/worlds'
+ * import { key } from 'omai-engine/random'
  * sampleInitial(transitionModel(fromAscii(['.S.']), []), key(0)) // => 1
  * ```
  */
@@ -210,7 +210,7 @@ export function sampleInitial(model: TransitionModel, key: Key): number {
 }
 
 /**
- * A deterministic model of a world under rules, shaped as a search problem (`mdml-engine/search`'s
+ * A deterministic model of a world under rules, shaped as a search problem (`omai-engine/search`'s
  * `SearchProblem<AgentState, number>`): the start, the actions that change the state, their results and costs, the
  * goal test (a goal cell), a state key and a label. Use it for breadth-first search, A* and planning.
  *
@@ -237,11 +237,11 @@ export interface DeterministicModel {
  * @param ruleSet - The rules (deterministic).
  * @param options - Actions and move options, as {@link transitionModel}.
  * @returns The model.
- * @throws MdmlError with code `value` when the world has no start, or (when queried) an action branches.
+ * @throws OmaiError with code `value` when the world has no start, or (when queried) an action branches.
  * @concept state-space-search
  * @example
  * ```ts
- * import { deterministicModel, fromAscii } from 'mdml-engine/worlds'
+ * import { deterministicModel, fromAscii } from 'omai-engine/worlds'
  * const m = deterministicModel(fromAscii(['S.', '.G']), [])
  * m.actions(m.initial) // => [1, 2]
  * m.isGoal(m.result(m.result(m.initial, 1), 2)) // => true
@@ -253,14 +253,14 @@ export function deterministicModel(w: World, ruleSet: readonly Rule[], options: 
     const os = tm.outcomes(tm.stateIndex(s), a)
     const o = os[0]
     if (o === undefined || os.length !== 1 || o.probability !== 1) {
-      throw new MdmlError('value', `deterministicModel: action ${a} branches in cell ${s.cell}`)
+      throw new OmaiError('value', `deterministicModel: action ${a} branches in cell ${s.cell}`)
     }
     return o
   }
   const starts: AgentState[] = []
   for (let i = 0; i < tm.nStates; i++) if ((tm.initial[i] ?? 0) > 0) starts.push(tm.state(i))
   const first = starts[0]
-  if (first === undefined) throw new MdmlError('value', 'deterministicModel: the world has no start')
+  if (first === undefined) throw new OmaiError('value', 'deterministicModel: the world has no start')
   const label = (s: AgentState): string => {
     const where = w.topology.kind === 'graph' ? String(s.cell) : `(${cellCoords(w, s.cell).join(', ')})`
     const extra = [s.heading >= 0 ? `heading ${s.heading}` : '', s.items > 0 ? `items ${s.items}` : '']

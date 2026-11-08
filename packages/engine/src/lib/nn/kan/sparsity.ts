@@ -59,9 +59,9 @@ export interface KanPenalties {
  * @concept regularisation
  * @example
  * ```ts
- * import { KAN, kanPenalties } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { KAN, kanPenalties } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
+ * import { toFlat } from 'omai-engine/tensor'
  * const net = new KAN([2, 3, 1], { key: key(0) })
  * const p = kanPenalties(net, net.params, [[0.1, 0.2], [0.5, -0.3]], { l1: 1 })
  * toFlat(p.total)[0] === toFlat(p.l1)[0] // => true
@@ -120,8 +120,8 @@ export interface KanSparsity {
  * @concept regularisation
  * @example
  * ```ts
- * import { KAN, edgeSparsity } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
+ * import { KAN, edgeSparsity } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
  * const net = new KAN([2, 3, 1], { key: key(0) })
  * edgeSparsity(net, net.state, [[0.1, 0.2], [0.5, -0.3]]).edges // => 9
  * ```

@@ -4,7 +4,7 @@
  * first and second order, Friedman's H-statistic and the functional ANOVA decomposition.
  */
 
-import { MdmlError, meanOf, quantileOf, varianceOf } from '../base/index.ts'
+import { meanOf, OmaiError, quantileOf, varianceOf } from '../base/index.ts'
 import { keyFor, runOptionsFor } from '../learn/_shared.ts'
 import { type Estimator, type FitOptions, type Fitted, type LearnData, requireTargets } from '../learn/estimator.ts'
 import { type Scoring, scorersOf } from '../learn/scoring.ts'
@@ -85,14 +85,14 @@ function permutationImportanceRun(
   const m = matrixView(data.x, 'permutationImportance', { allowNaN: true })
   requireTargets(data, 'permutationImportance')
   const scorer = Object.values(scorersOf(options.scoring))[0]
-  if (scorer === undefined) throw new MdmlError('value', 'permutationImportance: no scorer')
+  if (scorer === undefined) throw new OmaiError('value', 'permutationImportance: no scorer')
   const key = keyFor(options, 'permutationImportance')
   const nRepeats = options.permutations?.length ?? options.nRepeats ?? 5
   const perms =
     options.permutations ?? Array.from({ length: nRepeats }, (_, r) => toFlat(permutation(foldIn(key, r), m.n)))
   for (const p of perms) {
     if (p.length !== m.n)
-      throw new MdmlError('shape', `permutationImportance: a permutation of ${p.length} rows for ${m.n}`)
+      throw new OmaiError('shape', `permutationImportance: a permutation of ${p.length} rows for ${m.n}`)
   }
   const groups = options.features ?? Array.from({ length: m.d }, (_, j) => [j])
   const evalData = { ...data, x: fromView(m) }
@@ -141,9 +141,9 @@ function permutationImportanceRun(
  * @concept feature-importance
  * @example
  * ```ts
- * import { permutationImportanceAlgorithm } from 'mdml-engine/explain'
- * import { runAlgorithm } from 'mdml-engine/trace'
- * import { tensor } from 'mdml-engine/tensor'
+ * import { permutationImportanceAlgorithm } from 'omai-engine/explain'
+ * import { runAlgorithm } from 'omai-engine/trace'
+ * import { tensor } from 'omai-engine/tensor'
  * const firstColumn = { estimator: 'f', kind: 'regressor', params: {}, predict: (x) => tensor(Array.from({ length: x.shape[0] }, (_, i) => x.data[i * 2])) }
  * const x = [[1, 9], [2, 8], [3, 7], [4, 6]]
  * const alg = permutationImportanceAlgorithm(firstColumn, { x, y: [1, 2, 3, 4] }, { scoring: 'neg_mean_squared_error', permutations: [[3, 2, 1, 0]] })
@@ -172,8 +172,8 @@ export function permutationImportanceAlgorithm(
  * @index function Permutation feature importance; PDP, ICE and ALE sit beside it.
  * @example
  * ```ts
- * import { permutationImportance } from 'mdml-engine/explain'
- * import { tensor } from 'mdml-engine/tensor'
+ * import { permutationImportance } from 'omai-engine/explain'
+ * import { tensor } from 'omai-engine/tensor'
  * const firstColumn = { estimator: 'f', kind: 'regressor', params: {}, predict: (x) => tensor(Array.from({ length: x.shape[0] }, (_, i) => x.data[i * 2])) }
  * const x = [[1, 9], [2, 8], [3, 7], [4, 6]]
  * const r = permutationImportance(firstColumn, { x, y: [1, 2, 3, 4] }, { scoring: 'neg_mean_squared_error', permutations: [[3, 2, 1, 0]] })
@@ -208,12 +208,12 @@ function responseFn(
   const pick = (): ((x: TensorLike) => Tensor) => {
     if (kind === 'predict' || (kind === 'auto' && fitted.kind !== 'classifier')) {
       if (fitted.predict === undefined)
-        throw new MdmlError('value', `partialDependence: ${fitted.estimator} cannot predict`)
+        throw new OmaiError('value', `partialDependence: ${fitted.estimator} cannot predict`)
       return fitted.predict
     }
     const f = kind === 'decisionFunction' ? fitted.decisionFunction : (fitted.predictProba ?? fitted.decisionFunction)
     if (f === undefined)
-      throw new MdmlError(
+      throw new OmaiError(
         'value',
         `partialDependence: ${fitted.estimator} has no ${kind === 'auto' ? 'predictProba' : kind}`,
       )
@@ -284,8 +284,8 @@ export interface PartialDependenceResult {
  * @index function Partial dependence of a model on chosen features.
  * @example
  * ```ts
- * import { partialDependence } from 'mdml-engine/explain'
- * import { tensor } from 'mdml-engine/tensor'
+ * import { partialDependence } from 'omai-engine/explain'
+ * import { tensor } from 'omai-engine/tensor'
  * const sumModel = { estimator: 's', kind: 'regressor', params: {}, predict: (x) => tensor(Array.from({ length: x.shape[0] }, (_, i) => x.data[2 * i] + x.data[2 * i + 1])) }
  * const r = partialDependence(sumModel, [[0, 1], [1, 3]], [0], { values: [[0, 10]] })
  * r.average // => [[2, 12]]
@@ -298,10 +298,10 @@ export function partialDependence(
   options: PartialDependenceOptions = {},
 ): PartialDependenceResult {
   const m = matrixView(x, 'partialDependence', { allowNaN: true })
-  if (features.length === 0) throw new MdmlError('value', 'partialDependence: no features')
+  if (features.length === 0) throw new OmaiError('value', 'partialDependence: no features')
   for (const f of features) {
     if (!(Number.isInteger(f) && f >= 0 && f < m.d))
-      throw new MdmlError('value', `partialDependence: feature ${f} out of range`)
+      throw new OmaiError('value', `partialDependence: feature ${f} out of range`)
   }
   const resolution = options.gridResolution ?? 100
   const [pLo, pHi] = options.percentiles ?? [0.05, 0.95]
@@ -315,7 +315,7 @@ export function partialDependence(
     const lo = mquantile(sorted, pLo)
     const hi = mquantile(sorted, pHi)
     if (Math.abs(hi - lo) <= 1e-8 + 1e-5 * Math.abs(lo)) {
-      throw new MdmlError('value', `partialDependence: percentiles too close for feature ${f}`)
+      throw new OmaiError('value', `partialDependence: percentiles too close for feature ${f}`)
     }
     return Array.from({ length: resolution }, (_, i) => lo + ((hi - lo) * i) / (resolution - 1))
   })
@@ -390,8 +390,8 @@ export interface AleResult {
  * @returns The edges, centred effects and bin counts.
  * @example
  * ```ts
- * import { accumulatedLocalEffects } from 'mdml-engine/explain'
- * import { tensor } from 'mdml-engine/tensor'
+ * import { accumulatedLocalEffects } from 'omai-engine/explain'
+ * import { tensor } from 'omai-engine/tensor'
  * const twice = { estimator: 't', kind: 'regressor', params: {}, predict: (x) => tensor(Array.from({ length: x.shape[0] }, (_, i) => 2 * x.data[i])) }
  * const r = accumulatedLocalEffects(twice, [[0], [1], [2], [3], [4]], 0, { bins: 2 })
  * // Steps of 4 per bin, centred on the data: -3.6, 0.4, 4.4.
@@ -406,7 +406,7 @@ export function accumulatedLocalEffects(
 ): AleResult {
   const m = matrixView(x, 'accumulatedLocalEffects')
   if (!(Number.isInteger(feature) && feature >= 0 && feature < m.d))
-    throw new MdmlError('value', 'accumulatedLocalEffects: feature out of range')
+    throw new OmaiError('value', 'accumulatedLocalEffects: feature out of range')
   const K = options.bins ?? 10
   const col = columnOf(m, feature)
   const sorted = Float64Array.from(col).sort()
@@ -416,7 +416,7 @@ export function accumulatedLocalEffects(
     return (sorted[lo] ?? 0) + (h - lo) * ((sorted[Math.min(lo + 1, sorted.length - 1)] ?? 0) - (sorted[lo] ?? 0))
   }
   const edges = Array.from(new Set(Array.from({ length: K + 1 }, (_, k) => q(k / K)))).sort((a, b) => a - b)
-  if (edges.length < 2) throw new MdmlError('value', 'accumulatedLocalEffects: the feature is constant')
+  if (edges.length < 2) throw new OmaiError('value', 'accumulatedLocalEffects: the feature is constant')
   const nb = edges.length - 1
   const binOf = (v: number): number => {
     let b = 0
@@ -492,8 +492,8 @@ export interface HStatisticOptions {
  * @returns H squared, in [0, 1] up to estimation noise.
  * @example
  * ```ts
- * import { hStatistic } from 'mdml-engine/explain'
- * import { tensor } from 'mdml-engine/tensor'
+ * import { hStatistic } from 'omai-engine/explain'
+ * import { tensor } from 'omai-engine/tensor'
  * const additive = { estimator: 'a', kind: 'regressor', params: {}, predict: (x) => tensor(Array.from({ length: x.shape[0] }, (_, i) => x.data[2 * i] + x.data[2 * i + 1])) }
  * hStatistic(additive, [[0, 1], [1, 0], [2, 2], [3, 1]], 0, 1) < 1e-20 // => true
  * ```
@@ -558,8 +558,8 @@ export interface AnovaComponent {
  * @returns The constant, the components and the share of variance left to higher orders.
  * @example
  * ```ts
- * import { functionalAnova } from 'mdml-engine/explain'
- * import { tensor } from 'mdml-engine/tensor'
+ * import { functionalAnova } from 'omai-engine/explain'
+ * import { tensor } from 'omai-engine/tensor'
  * const grid = [[-1, -1], [-1, 1], [1, -1], [1, 1]]
  * const f = { estimator: 'f', kind: 'regressor', params: {}, predict: (x) => tensor(Array.from({ length: x.shape[0] }, (_, i) => x.data[2 * i] + x.data[2 * i] * x.data[2 * i + 1])) }
  * functionalAnova(f, grid).components.map((c) => c.share) // => [0.5, 0, 0.5]
@@ -609,14 +609,14 @@ export function functionalAnova(
  * @returns The centred curves.
  * @example
  * ```ts
- * import { centredIce } from 'mdml-engine/explain'
+ * import { centredIce } from 'omai-engine/explain'
  * centredIce([[1, 2, 4], [5, 6, 8]]) // => [[0, 1, 3], [0, 1, 3]]
  * ```
  */
 export function centredIce(individual: readonly (readonly number[])[], at = 0): number[][] {
   return individual.map((curve) => {
     if (!(Number.isInteger(at) && at >= 0 && at < curve.length))
-      throw new MdmlError('value', `centredIce: grid index ${at} out of range`)
+      throw new OmaiError('value', `centredIce: grid index ${at} out of range`)
     const c = curve[at] ?? 0
     return curve.map((v) => v - c)
   })
@@ -632,15 +632,15 @@ export function centredIce(individual: readonly (readonly number[])[], at = 0): 
  * @returns The derivative curves.
  * @example
  * ```ts
- * import { iceDerivative } from 'mdml-engine/explain'
+ * import { iceDerivative } from 'omai-engine/explain'
  * iceDerivative([0, 1, 2], [[0, 1, 4]]) // => [[1, 2, 3]]
  * ```
  */
 export function iceDerivative(grid: readonly number[], individual: readonly (readonly number[])[]): number[][] {
   const g = grid.length
-  if (g < 2) throw new MdmlError('value', 'iceDerivative: needs at least two grid points')
+  if (g < 2) throw new OmaiError('value', 'iceDerivative: needs at least two grid points')
   return individual.map((curve) => {
-    if (curve.length !== g) throw new MdmlError('shape', 'iceDerivative: a curve does not match the grid')
+    if (curve.length !== g) throw new OmaiError('shape', 'iceDerivative: a curve does not match the grid')
     return curve.map((_, i) => {
       if (i === 0) return ((curve[1] ?? 0) - (curve[0] ?? 0)) / ((grid[1] ?? 0) - (grid[0] ?? 0))
       if (i === g - 1) return ((curve[i] ?? 0) - (curve[i - 1] ?? 0)) / ((grid[i] ?? 0) - (grid[i - 1] ?? 0))
@@ -663,7 +663,7 @@ function quantileBins(col: Float64Array, bins: number, who: string): { edges: nu
     return (sorted[lo] ?? 0) + (h - lo) * ((sorted[Math.min(lo + 1, sorted.length - 1)] ?? 0) - (sorted[lo] ?? 0))
   }
   const edges = Array.from(new Set(Array.from({ length: bins + 1 }, (_, k) => q(k / bins)))).sort((a, b) => a - b)
-  if (edges.length < 2) throw new MdmlError('value', `${who}: the feature is constant`)
+  if (edges.length < 2) throw new OmaiError('value', `${who}: the feature is constant`)
   const nb = edges.length - 1
   const bin = Array.from(col, (v) => {
     let b = 0
@@ -696,8 +696,8 @@ export interface Ale2DResult {
  * @returns The edges, the interaction surface and the cell counts.
  * @example
  * ```ts
- * import { accumulatedLocalEffects2D } from 'mdml-engine/explain'
- * import { tensor } from 'mdml-engine/tensor'
+ * import { accumulatedLocalEffects2D } from 'omai-engine/explain'
+ * import { tensor } from 'omai-engine/tensor'
  * const additive = { estimator: 'a', kind: 'regressor', params: {}, predict: (x) => tensor(Array.from({ length: x.shape[0] }, (_, i) => x.data[2 * i] + 3 * x.data[2 * i + 1])) }
  * const x = [[0, 0], [1, 2], [2, 1], [3, 3], [1, 0], [2, 3]]
  * // No interaction: the surface is flat.
@@ -714,8 +714,8 @@ export function accumulatedLocalEffects2D(
   const [j, k] = features
   for (const f of features)
     if (!(Number.isInteger(f) && f >= 0 && f < m.d))
-      throw new MdmlError('value', 'accumulatedLocalEffects2D: feature out of range')
-  if (j === k) throw new MdmlError('value', 'accumulatedLocalEffects2D: the two features must differ')
+      throw new OmaiError('value', 'accumulatedLocalEffects2D: feature out of range')
+  if (j === k) throw new OmaiError('value', 'accumulatedLocalEffects2D: the two features must differ')
   const K = options.bins ?? 10
   const a = quantileBins(columnOf(m, j), K, 'accumulatedLocalEffects2D')
   const b = quantileBins(columnOf(m, k), K, 'accumulatedLocalEffects2D')
@@ -839,9 +839,9 @@ export interface DropColumnResult {
  * @returns The baseline score, the score of each refit and the importances.
  * @example
  * ```ts
- * import { dropColumnImportance } from 'mdml-engine/explain'
- * import { defineEstimator } from 'mdml-engine/learn'
- * import { tensor } from 'mdml-engine/tensor'
+ * import { dropColumnImportance } from 'omai-engine/explain'
+ * import { defineEstimator } from 'omai-engine/learn'
+ * import { tensor } from 'omai-engine/tensor'
  * // Predicts the first column (0 when it is dropped).
  * const firstOrZero = defineEstimator({ name: 'first', kind: 'regressor', fit: () => ({}), methods: () => ({ predict: (x) => tensor(x.map((row) => row[0] ?? 0)) }) }, {})
  * dropColumnImportance(firstOrZero, { x: [[1], [2]], y: [1, 2] }, { scoring: 'neg_mean_squared_error' }).importances // => [2.5]
@@ -855,7 +855,7 @@ export function dropColumnImportance(
   const m = matrixView(train.x, 'dropColumnImportance', { allowNaN: true })
   requireTargets(train, 'dropColumnImportance')
   const scorer = Object.values(scorersOf(options.scoring))[0]
-  if (scorer === undefined) throw new MdmlError('value', 'dropColumnImportance: no scorer')
+  if (scorer === undefined) throw new OmaiError('value', 'dropColumnImportance: no scorer')
   const test = options.test ?? train
   const t = matrixView(test.x, 'dropColumnImportance', { allowNaN: true, nFeatures: m.d })
   const fitOptions: FitOptions = { ...options, explain: false }
@@ -924,8 +924,8 @@ function pearsonOf(a: ArrayLike<number>, b: ArrayLike<number>): number {
  * @returns The baseline, the importances per repeat, their mean and spread, and the conditioning features.
  * @example
  * ```ts
- * import { conditionalPermutationImportance } from 'mdml-engine/explain'
- * import { tensor } from 'mdml-engine/tensor'
+ * import { conditionalPermutationImportance } from 'omai-engine/explain'
+ * import { tensor } from 'omai-engine/tensor'
  * const firstColumn = { estimator: 'f', kind: 'regressor', params: {}, predict: (x) => tensor(Array.from({ length: x.shape[0] }, (_, i) => x.data[i * 2])) }
  * // The second column copies the first: conditioned on it, permuting the first changes nothing.
  * const x = [[1, 1], [2, 2], [3, 3], [4, 4]]
@@ -940,7 +940,7 @@ export function conditionalPermutationImportance(
   const m = matrixView(data.x, 'conditionalPermutationImportance')
   requireTargets(data, 'conditionalPermutationImportance')
   const scorer = Object.values(scorersOf(options.scoring))[0]
-  if (scorer === undefined) throw new MdmlError('value', 'conditionalPermutationImportance: no scorer')
+  if (scorer === undefined) throw new OmaiError('value', 'conditionalPermutationImportance: no scorer')
   const key = keyFor(options, 'conditionalPermutationImportance')
   const nRepeats = options.nRepeats ?? 5
   const bins = options.bins ?? 4

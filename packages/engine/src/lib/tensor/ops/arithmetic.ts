@@ -154,7 +154,7 @@ export const stopGradientPrimitive: Primitive<null> = definePrimitive<null>({
  * @concept broadcasting
  * @example
  * ```ts
- * import { add, tensor, toArray } from 'mdml-engine/tensor'
+ * import { add, tensor, toArray } from 'omai-engine/tensor'
  * toArray(add(tensor([[1], [2]]), tensor([10, 20]))) // => [[11, 21], [12, 22]]
  * ```
  */
@@ -170,7 +170,7 @@ export function add(a: TensorLike, b: TensorLike): Value {
  * @returns `a - b`.
  * @example
  * ```ts
- * import { sub, tensor, toArray } from 'mdml-engine/tensor'
+ * import { sub, tensor, toArray } from 'omai-engine/tensor'
  * toArray(sub(tensor([5, 7]), 2)) // => [3, 5]
  * ```
  */
@@ -186,7 +186,7 @@ export function sub(a: TensorLike, b: TensorLike): Value {
  * @returns `a * b`.
  * @example
  * ```ts
- * import { mul, tensor, toArray } from 'mdml-engine/tensor'
+ * import { mul, tensor, toArray } from 'omai-engine/tensor'
  * toArray(mul(tensor([1, 2]), tensor([3, 4]))) // => [3, 8]
  * ```
  */
@@ -202,7 +202,7 @@ export function mul(a: TensorLike, b: TensorLike): Value {
  * @returns `a / b`.
  * @example
  * ```ts
- * import { div, tensor, toArray } from 'mdml-engine/tensor'
+ * import { div, tensor, toArray } from 'omai-engine/tensor'
  * toArray(div(tensor([1, 3]), 2)) // => [0.5, 1.5]
  * ```
  */
@@ -219,7 +219,7 @@ export function div(a: TensorLike, b: TensorLike): Value {
  * @returns `a ** b`.
  * @example
  * ```ts
- * import { pow, tensor, toArray } from 'mdml-engine/tensor'
+ * import { pow, tensor, toArray } from 'omai-engine/tensor'
  * toArray(pow(tensor([2, 3]), 2)) // => [4, 9]
  * ```
  */
@@ -235,7 +235,7 @@ export function pow(a: TensorLike, b: TensorLike): Value {
  * @returns `max(a, b)`.
  * @example
  * ```ts
- * import { maximum, tensor, toArray } from 'mdml-engine/tensor'
+ * import { maximum, tensor, toArray } from 'omai-engine/tensor'
  * toArray(maximum(tensor([-1, 2]), 0)) // => [0, 2]
  * ```
  */
@@ -251,7 +251,7 @@ export function maximum(a: TensorLike, b: TensorLike): Value {
  * @returns `min(a, b)`.
  * @example
  * ```ts
- * import { minimum, tensor, toArray } from 'mdml-engine/tensor'
+ * import { minimum, tensor, toArray } from 'omai-engine/tensor'
  * toArray(minimum(tensor([-1, 2]), 0)) // => [-1, 0]
  * ```
  */
@@ -268,7 +268,7 @@ export function minimum(a: TensorLike, b: TensorLike): Value {
  * @returns `floor(a / b)` computed from the exact remainder.
  * @example
  * ```ts
- * import { floorDiv, tensor, toArray } from 'mdml-engine/tensor'
+ * import { floorDiv, tensor, toArray } from 'omai-engine/tensor'
  * toArray(floorDiv(tensor([7, -7]), 2)) // => [3, -4]
  * ```
  */
@@ -284,7 +284,7 @@ export function floorDiv(a: TensorLike, b: TensorLike): Value {
  * @returns `a - b * floor(a / b)`, without the rounding of `a / b`.
  * @example
  * ```ts
- * import { mod, tensor, toArray } from 'mdml-engine/tensor'
+ * import { mod, tensor, toArray } from 'omai-engine/tensor'
  * toArray(mod(tensor([7, -7]), 3)) // => [1, 2]
  * ```
  */
@@ -299,7 +299,7 @@ export function mod(a: TensorLike, b: TensorLike): Value {
  * @returns `-x`.
  * @example
  * ```ts
- * import { neg, tensor, toArray } from 'mdml-engine/tensor'
+ * import { neg, tensor, toArray } from 'omai-engine/tensor'
  * toArray(neg(tensor([1, -2]))) // => [-1, 2]
  * ```
  */
@@ -315,7 +315,7 @@ export function neg(x: TensorLike): Value {
  * @returns `|x|`.
  * @example
  * ```ts
- * import { abs, tensor, toArray } from 'mdml-engine/tensor'
+ * import { abs, tensor, toArray } from 'omai-engine/tensor'
  * toArray(abs(tensor([-3, 2]))) // => [3, 2]
  * ```
  */
@@ -330,7 +330,7 @@ export function abs(x: TensorLike): Value {
  * @returns `sign(x)`.
  * @example
  * ```ts
- * import { sign, tensor, toArray } from 'mdml-engine/tensor'
+ * import { sign, tensor, toArray } from 'omai-engine/tensor'
  * toArray(sign(tensor([-3, 0, 2]))) // => [-1, 0, 1]
  * ```
  */
@@ -345,7 +345,7 @@ export function sign(x: TensorLike): Value {
  * @returns `x * x`.
  * @example
  * ```ts
- * import { square, tensor, toArray } from 'mdml-engine/tensor'
+ * import { square, tensor, toArray } from 'omai-engine/tensor'
  * toArray(square(tensor([-3, 2]))) // => [9, 4]
  * ```
  */
@@ -361,7 +361,7 @@ export function square(x: TensorLike): Value {
  * @returns `1 / x`.
  * @example
  * ```ts
- * import { reciprocal, tensor, toArray } from 'mdml-engine/tensor'
+ * import { reciprocal, tensor, toArray } from 'omai-engine/tensor'
  * toArray(reciprocal(tensor([2, 4]))) // => [0.5, 0.25]
  * ```
  */
@@ -378,7 +378,7 @@ export function reciprocal(x: TensorLike): Value {
  * @returns `min(max(x, lo), hi)`.
  * @example
  * ```ts
- * import { clip, tensor, toArray } from 'mdml-engine/tensor'
+ * import { clip, tensor, toArray } from 'omai-engine/tensor'
  * toArray(clip(tensor([-2, 0.5, 3]), 0, 1)) // => [0, 0.5, 1]
  * ```
  */
@@ -394,7 +394,7 @@ export function clip(x: TensorLike, lo: TensorLike, hi: TensorLike): Value {
  * @returns The converted value (the input itself when the dtype already matches).
  * @example
  * ```ts
- * import { cast, tensor, toArray } from 'mdml-engine/tensor'
+ * import { cast, tensor, toArray } from 'omai-engine/tensor'
  * toArray(cast(tensor([1.7, -1.7]), 'int32')) // => [1, -1]
  * ```
  */
@@ -411,7 +411,7 @@ export function cast(x: TensorLike, dtype: DType): Value {
  * @concept stop-gradient
  * @example
  * ```ts
- * import { stopGradient, tensor, toArray } from 'mdml-engine/tensor'
+ * import { stopGradient, tensor, toArray } from 'omai-engine/tensor'
  * toArray(stopGradient(tensor([1, 2]))) // => [1, 2]
  * ```
  */
@@ -426,7 +426,7 @@ export function stopGradient(x: TensorLike): Value {
  * @returns A float value.
  * @example
  * ```ts
- * import { asFloat, tensor } from 'mdml-engine/tensor'
+ * import { asFloat, tensor } from 'omai-engine/tensor'
  * asFloat(tensor([1, 2], { dtype: 'int32' })).dtype // => 'float64'
  * ```
  */
@@ -441,7 +441,7 @@ export function asFloat(x: TensorLike): Value {
  * @returns The operands in a common float dtype.
  * @example
  * ```ts
- * import { promoteFloat, tensor } from 'mdml-engine/tensor'
+ * import { promoteFloat, tensor } from 'omai-engine/tensor'
  * promoteFloat(tensor([1], { dtype: 'float32' }), 2)[1].dtype // => 'float32'
  * ```
  */

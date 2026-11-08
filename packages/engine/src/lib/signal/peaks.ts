@@ -4,7 +4,7 @@
  * (`argrelextrema`), and zero crossings (librosa.zero_crossings).
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import type { TensorLike } from '../tensor/index.ts'
 import { samples } from './_shared.ts'
 
@@ -79,7 +79,7 @@ function within(values: readonly number[], c: PeakCondition): boolean[] {
  * @concept peak-finding
  * @example
  * ```ts
- * import { peakProminences } from 'mdml-engine/signal'
+ * import { peakProminences } from 'omai-engine/signal'
  * peakProminences([0, 2, 1, 3, 0], [1, 3]).prominences // => [1, 3]
  * ```
  */
@@ -90,7 +90,7 @@ export function peakProminences(
 ): { readonly prominences: number[]; readonly leftBases: number[]; readonly rightBases: number[] } {
   const s = samples(x, 'peakProminences')
   const w = wlen === undefined ? -1 : Math.ceil(wlen)
-  if (wlen !== undefined && !(wlen > 1)) throw new MdmlError('value', 'peakProminences: wlen must be larger than 1')
+  if (wlen !== undefined && !(wlen > 1)) throw new OmaiError('value', 'peakProminences: wlen must be larger than 1')
   const prominences: number[] = []
   const leftBases: number[] = []
   const rightBases: number[] = []
@@ -98,7 +98,7 @@ export function peakProminences(
     let iMin = 0
     let iMax = s.length - 1
     if (!(peak >= iMin && peak <= iMax))
-      throw new MdmlError('value', `peakProminences: peak ${peak} is not a valid index`)
+      throw new OmaiError('value', `peakProminences: peak ${peak} is not a valid index`)
     if (w >= 2) {
       iMin = Math.max(peak - Math.floor(w / 2), iMin)
       iMax = Math.min(peak + Math.floor(w / 2), iMax)
@@ -142,7 +142,7 @@ export function peakProminences(
  * @concept peak-finding
  * @example
  * ```ts
- * import { peakWidths } from 'mdml-engine/signal'
+ * import { peakWidths } from 'omai-engine/signal'
  * peakWidths([0, 1, 2, 1, 0], [2]).widths // => [2]
  * ```
  */
@@ -166,7 +166,7 @@ export function peakWidths(
 } {
   const s = samples(x, 'peakWidths')
   const rel = options.relHeight ?? 0.5
-  if (rel < 0) throw new MdmlError('value', 'peakWidths: relHeight must be non-negative')
+  if (rel < 0) throw new OmaiError('value', 'peakWidths: relHeight must be non-negative')
   const pd = options.prominenceData ?? peakProminences(s, peaks, options.wlen)
   const widths: number[] = []
   const widthHeights: number[] = []
@@ -204,7 +204,7 @@ export function peakWidths(
  * @index function Peaks of a signal with prominence and width filters.
  * @example
  * ```ts
- * import { findPeaks } from 'mdml-engine/signal'
+ * import { findPeaks } from 'omai-engine/signal'
  * findPeaks([0, 3, 1, 5, 1, 2, 0], { height: 2.5 }).peaks // => [1, 3]
  * findPeaks([0, 3, 1, 5, 1, 2, 0], { distance: 3 }).peaks // => [3]
  * ```
@@ -212,7 +212,7 @@ export function peakWidths(
 export function findPeaks(x: TensorLike, options: FindPeaksOptions = {}): PeakResult {
   const s = samples(x, 'findPeaks')
   if (options.distance !== undefined && options.distance < 1)
-    throw new MdmlError('value', 'findPeaks: distance must be at least 1')
+    throw new OmaiError('value', 'findPeaks: distance must be at least 1')
   const lm = localMaxima(s)
   let peaks = lm.mid
   let props: Record<string, number[]> = {}
@@ -290,7 +290,7 @@ export function findPeaks(x: TensorLike, options: FindPeaksOptions = {}): PeakRe
  * @concept peak-finding
  * @example
  * ```ts
- * import { argrelextrema } from 'mdml-engine/signal'
+ * import { argrelextrema } from 'omai-engine/signal'
  * argrelextrema([1, 3, 2, 5, 4, 4, 1], 'max') // => [1, 3]
  * ```
  */
@@ -302,7 +302,7 @@ export function argrelextrema(
   const s = samples(x, 'argrelextrema')
   const order = options.order ?? 1
   if (!Number.isInteger(order) || order < 1)
-    throw new MdmlError('value', 'argrelextrema: order must be a positive integer')
+    throw new OmaiError('value', 'argrelextrema: order must be a positive integer')
   const n = s.length
   const at = (i: number): number => {
     if (options.mode === 'wrap') return s[((i % n) + n) % n] ?? 0
@@ -340,7 +340,7 @@ export interface ZeroCrossingOptions {
  * @concept zero-crossings
  * @example
  * ```ts
- * import { zeroCrossings } from 'mdml-engine/signal'
+ * import { zeroCrossings } from 'omai-engine/signal'
  * zeroCrossings([1, -1, -2, 3, 0, 1], { pad: false }) // => [false, true, false, true, false, false]
  * ```
  */

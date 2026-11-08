@@ -5,7 +5,7 @@
  * the fitted value predicts the posterior mean, standard deviation and covariance and draws posterior samples.
  */
 
-import { MdmlError, maxOf, minOf } from '../base/index.ts'
+import { maxOf, minOf, OmaiError } from '../base/index.ts'
 import { type Distribution, normal as normalDistribution } from '../dists/index.ts'
 import {
   type HyperparameterSurface,
@@ -259,7 +259,7 @@ function verbsOf(params: GpParams, h: GpHyper): GpVerbs {
  *
  * @example
  * ```ts
- * import type { GpPath } from 'mdml-engine/gp'
+ * import type { GpPath } from 'omai-engine/gp'
  * const path: GpPath = 'gp/hyper'
  * path // => 'gp/hyper'
  * ```
@@ -267,7 +267,7 @@ function verbsOf(params: GpParams, h: GpHyper): GpVerbs {
 export type GpPath = 'gp/logMarginalLikelihood' | 'gp/hyper' | 'model/posterior' | 'model/samples' | 'solver/surface'
 
 /**
- * Gaussian-process regression over any kernel of `mdml-engine/kernels`. The fit maximises the exact log marginal
+ * Gaussian-process regression over any kernel of `omai-engine/kernels`. The fit maximises the exact log marginal
  * likelihood over the kernel's free hyperparameters with L-BFGS-B, the gradient coming from `gramGradient`, restarting from
  * random points inside the bounds `restarts` times and keeping the best; each step is one L-BFGS-B iteration, logging
  * `gp/logMarginalLikelihood` and `gp/hyper` (the hyperparameters in natural units), so the fit can be watched climbing.
@@ -279,8 +279,8 @@ export type GpPath = 'gp/logMarginalLikelihood' | 'gp/hyper' | 'model/posterior'
  * @index estimator Gaussian process regression with exact marginal likelihood.
  * @example
  * ```ts
- * import { gpRegression } from 'mdml-engine/gp'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { gpRegression } from 'omai-engine/gp'
+ * import { toFlat } from 'omai-engine/tensor'
  * const x = [[0], [1], [2], [3], [4]]
  * const fitted = gpRegression.with({ alpha: 1e-4 }).fit({ x, y: [0, 0.8, 0.9, 0.1, -0.8] })
  * toFlat(fitted.predict([[0], [4]])).map((v) => Math.round(v * 100) / 100) // => [0, -0.8]
@@ -468,7 +468,7 @@ import { key as keyOf } from '../random/index.ts'
 function surfaceOf(h: GpHyper, p: Prepared, s: GpState, resolution: number): HyperparameterSurface {
   const model = modelOf(s)
   const free = hyperparameters(h.kernel).filter((hp) => hp.size > 0)
-  if (model.theta.length < 2) throw new MdmlError('value', 'solver/surface: needs at least two free hyperparameters')
+  if (model.theta.length < 2) throw new OmaiError('value', 'solver/surface: needs at least two free hyperparameters')
   const names = free.flatMap((hp) =>
     Array.from({ length: hp.size }, (_, i) => (hp.size === 1 ? hp.name : `${hp.name}[${i}]`)),
   )

@@ -18,8 +18,8 @@ import { stamp } from './_util.ts'
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { plantedTransactions } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { plantedTransactions } from 'omai-engine/datasets'
  * generate(plantedTransactions, { knobs: { transactions: 50, patterns: 2 } }).data.tokens?.length // => 50
  * ```
  */

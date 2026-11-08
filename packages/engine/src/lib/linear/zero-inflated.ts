@@ -8,7 +8,7 @@
  * the counts part, the inflation part and Wald tables of both.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import type { CoefficientTable, Exposition } from '../exposition/index.ts'
 import {
   type IterativeEstimator,
@@ -58,12 +58,12 @@ export function countProblemOf(data: LearnData, inflation: Inflation, who: strin
   const m = matrixView(data.x, who)
   const y = targetVector(data.y ?? [], who, m.n)
   for (const v of y)
-    if (!(v >= 0) || !Number.isInteger(v)) throw new MdmlError('value', `${who}: counts must be non-negative integers`)
+    if (!(v >= 0) || !Number.isInteger(v)) throw new OmaiError('value', `${who}: counts must be non-negative integers`)
   const zeroFeatures =
     inflation === 'constant' ? [] : inflation === 'all' ? Array.from({ length: m.d }, (_, j) => j) : [...inflation]
   for (const j of zeroFeatures)
     if (!Number.isInteger(j) || j < 0 || j >= m.d)
-      throw new MdmlError('value', `${who}: inflation feature ${j} is not a column`)
+      throw new OmaiError('value', `${who}: inflation feature ${j} is not a column`)
   const p = m.d + 1
   const q = zeroFeatures.length + 1
   const x = new Float64Array(m.n * p)
@@ -213,7 +213,7 @@ export type CountModelState = SlotState & {
  * @returns The objective and the start.
  * @example
  * ```ts
- * import { countModelSmoothProblem, countProblemOf } from 'mdml-engine/linear'
+ * import { countModelSmoothProblem, countProblemOf } from 'omai-engine/linear'
  * const x = [[0.1], [0.4], [0.9], [1.3], [1.8], [2.2], [2.6], [3.1], [0.2], [1.1], [2.9], [1.6]]
  * const y = [0, 0, 1, 0, 3, 2, 0, 5, 0, 2, 6, 0]
  * countModelSmoothProblem(countProblemOf({ x, y }, 'constant', 'demo')).x0.length // => 3
@@ -257,8 +257,8 @@ export function countModelSmoothProblem(problem: CountProblem, options: CountMod
  * @returns The algorithm.
  * @example
  * ```ts
- * import { countModelAlgorithm, countProblemOf } from 'mdml-engine/linear'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { countModelAlgorithm, countProblemOf } from 'omai-engine/linear'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const x = [[0.1], [0.4], [0.9], [1.3], [1.8], [2.2], [2.6], [3.1], [0.2], [1.1], [2.9], [1.6]]
  * const y = [0, 0, 1, 0, 3, 2, 0, 5, 0, 2, 6, 0]
  * const problem = countProblemOf({ x, y }, 'constant', 'demo')
@@ -519,7 +519,7 @@ function countEstimator(
  * Technometrics 34 (1992).
  * @example
  * ```ts
- * import { zeroInflated } from 'mdml-engine/linear'
+ * import { zeroInflated } from 'omai-engine/linear'
  * const x = [[0.1], [0.4], [0.9], [1.3], [1.8], [2.2], [2.6], [3.1], [0.2], [1.1], [2.9], [1.6]]
  * const y = [0, 0, 1, 0, 3, 2, 0, 5, 0, 2, 6, 0]
  * const f = zeroInflated().fit({ x, y })
@@ -541,8 +541,8 @@ export function zeroInflated(
  * @returns The estimator.
  * @example
  * ```ts
- * import { hurdle } from 'mdml-engine/linear'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { hurdle } from 'omai-engine/linear'
+ * import { toFlat } from 'omai-engine/tensor'
  * const x = [[0.1], [0.4], [0.9], [1.3], [1.8], [2.2], [2.6], [3.1], [0.2], [1.1], [2.9], [1.6]]
  * const y = [0, 0, 1, 0, 3, 2, 0, 5, 0, 2, 6, 0]
  * const f = hurdle().fit({ x, y })

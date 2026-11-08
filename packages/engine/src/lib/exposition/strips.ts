@@ -5,7 +5,7 @@
  * run-length posterior of a changepoint detector over time (`runLengthStrip`).
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { sameLength, seal } from './_check.ts'
 
 /** One track: a value at each position, drawn as a row of cells beneath the tokens. */
@@ -46,11 +46,11 @@ export interface Strip {
  *
  * @param record - The record without its `kind`.
  * @returns The record.
- * @throws MdmlError `shape` when a track, a row of tags or the path does not have one entry per token; `value` when a
+ * @throws OmaiError `shape` when a track, a row of tags or the path does not have one entry per token; `value` when a
  *   mark or a path entry is not a position or a track.
  * @example
  * ```ts
- * import { stripRecord } from 'mdml-engine/exposition'
+ * import { stripRecord } from 'omai-engine/exposition'
  * const r = stripRecord({
  *   tokens: ['the', 'cat', 'sat'],
  *   tracks: [{ name: 'noun', values: [0.1, 0.9, 0.2] }, { name: 'verb', values: [0.1, 0.05, 0.8] }],
@@ -68,11 +68,11 @@ export function stripRecord(record: Omit<Strip, 'kind'>): Strip {
     sameLength('strip', 'path', record.path.length, n)
     for (const k of record.path)
       if (!(Number.isInteger(k) && k >= 0 && k < record.tracks.length))
-        throw new MdmlError('value', `strip: path holds ${k}, not a track`)
+        throw new OmaiError('value', `strip: path holds ${k}, not a track`)
   }
   for (const m of record.marks ?? [])
     if (!(Number.isInteger(m) && m >= 0 && m < n))
-      throw new MdmlError('value', `strip: marks holds ${m}, not a position`)
+      throw new OmaiError('value', `strip: marks holds ${m}, not a position`)
   return seal({ kind: 'strip', ...record })
 }
 
@@ -96,11 +96,11 @@ export interface RunLengthStripInput {
  *
  * @param input - The posterior rows, the MAP run lengths, the true changepoints and a cap on the run length shown.
  * @returns The strip.
- * @throws MdmlError `shape` for a MAP run length per step that does not match the rows; `value` for a changepoint that
+ * @throws OmaiError `shape` for a MAP run length per step that does not match the rows; `value` for a changepoint that
  *   is not a step.
  * @example
  * ```ts
- * import { runLengthStrip } from 'mdml-engine/exposition'
+ * import { runLengthStrip } from 'omai-engine/exposition'
  * const s = runLengthStrip({ runLength: [[0, 1], [0, 0.1, 0.9], [0, 0.8, 0.1, 0.1]], changepoints: [2] })
  * [s.tracks.length, s.path, s.marks] // => [3, [0, 1, 0], [2]]
  * ```

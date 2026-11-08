@@ -6,8 +6,8 @@
  */
 
 import type { EChartsOption } from 'echarts'
-import type { LandscapeSlice } from 'mdml-engine/exposition'
-import { axes3d, type Paint, point3d, polyline3d, type Scene3D, scene3d, surface3d } from 'mdml-engine/scene'
+import type { LandscapeSlice } from 'omai-engine/exposition'
+import { axes3d, type Paint, point3d, polyline3d, type Scene3D, scene3d, surface3d } from 'omai-engine/scene'
 import { contours } from '../charts/fields.ts'
 import { lines } from '../charts/lines.ts'
 import { cartesian, type Layer } from '../charts/plot.ts'
@@ -24,8 +24,8 @@ import { ariaOf, short, spanOf, type ViewOptions, viewFigure, wantsLog } from '.
  * @returns The loss.
  * @example
  * ```ts
- * import { landscapeSlice } from 'mdml-engine/exposition'
- * import { curveLossAt } from 'mdml-render/views'
+ * import { landscapeSlice } from 'omai-engine/exposition'
+ * import { curveLossAt } from 'omai-render/views'
  * const r = landscapeSlice({ dims: 1, axes: ['a'], x: [0, 2], curve: [1, 5] })
  * curveLossAt(r, 1) // => 3
  * ```
@@ -50,8 +50,8 @@ export function curveLossAt(record: LandscapeSlice, alpha: number): number {
  * @returns The coordinates (`[alpha]` or `[alpha, beta]`) and the loss.
  * @example
  * ```ts
- * import { landscapeSlice } from 'mdml-engine/exposition'
- * import { sliceMinimum } from 'mdml-render/views'
+ * import { landscapeSlice } from 'omai-engine/exposition'
+ * import { sliceMinimum } from 'omai-render/views'
  * sliceMinimum(landscapeSlice({ dims: 1, axes: ['a'], x: [0, 1, 2], curve: [3, 1, 2] })) // => { at: [1], loss: 1 }
  * ```
  */
@@ -77,7 +77,7 @@ export function sliceMinimum(record: LandscapeSlice): { at: number[]; loss: numb
  * @returns The levels, ascending.
  * @example
  * ```ts
- * import { contourLevels } from 'mdml-render/views'
+ * import { contourLevels } from 'omai-render/views'
  * contourLevels([1, 100], 3) // => [1, 10, 100]
  * contourLevels([0, 4], 3) // => [0, 2, 4]
  * ```
@@ -104,8 +104,8 @@ export function contourLevels(values: readonly number[], count = 12): number[] {
  * @returns The layers.
  * @example
  * ```ts
- * import { landscapeSlice } from 'mdml-engine/exposition'
- * import { landscapeSliceLayers } from 'mdml-render/views'
+ * import { landscapeSlice } from 'omai-engine/exposition'
+ * import { landscapeSliceLayers } from 'omai-render/views'
  * const r = landscapeSlice({ dims: 1, axes: ['a'], x: [0, 1, 2], curve: [3, 1, 2], paths: [{ coords: [[0], [1]] }] })
  * landscapeSliceLayers(r).length // => 3
  * ```
@@ -197,8 +197,8 @@ export function landscapeSliceLayers(record: LandscapeSlice, options: ViewOption
  * @returns The ECharts option.
  * @example
  * ```ts
- * import { sampleLandscape } from 'mdml-engine/exposition'
- * import { landscapeSliceView } from 'mdml-render/views'
+ * import { sampleLandscape } from 'omai-engine/exposition'
+ * import { landscapeSliceView } from 'omai-render/views'
  * landscapeSliceView(sampleLandscape((a) => a * a, [-1, 0, 1])).series.length // => 1
  * ```
  */
@@ -237,8 +237,8 @@ export function landscapeSliceView(record: LandscapeSlice, options: ViewOptions 
  * @returns The scene.
  * @example
  * ```ts
- * import { sampleLandscape } from 'mdml-engine/exposition'
- * import { landscapeSliceScene3d } from 'mdml-render/views'
+ * import { sampleLandscape } from 'omai-engine/exposition'
+ * import { landscapeSliceScene3d } from 'omai-render/views'
  * const r = sampleLandscape((a, b) => a * a + b * b, [-1, 0, 1], [-1, 0, 1])
  * landscapeSliceScene3d(r).items.length // => 10
  * ```

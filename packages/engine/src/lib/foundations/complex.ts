@@ -6,7 +6,7 @@
  */
 
 import { jvp } from '../autodiff/index.ts'
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { complexOps as C, type ComplexNumber } from '../numerics/differentiate/index.ts'
 import { quad } from '../numerics/quadrature/index.ts'
 import type { Pixels } from '../scene/index.ts'
@@ -62,8 +62,8 @@ const pair = (z: ComplexNumber | number): ComplexValue => {
  * @concept complex-polar-form
  * @example
  * ```ts
- * import { toPolarForm } from 'mdml-engine/foundations'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { toPolarForm } from 'omai-engine/foundations'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(toPolarForm({ re: [0], im: [2] }).theta) // => [1.5707963267948966]
  * ```
  */
@@ -80,8 +80,8 @@ export function toPolarForm(z: ComplexLike): { readonly r: Value; readonly theta
  * @concept complex-logarithm
  * @example
  * ```ts
- * import { complexLog } from 'mdml-engine/foundations'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { complexLog } from 'omai-engine/foundations'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(complexLog({ re: [-1], im: [0] }).im) // => [3.141592653589793]
  * ```
  */
@@ -99,8 +99,8 @@ export function complexLog(z: ComplexLike): ComplexValue {
  * @concept complex-powers
  * @example
  * ```ts
- * import { complexPow } from 'mdml-engine/foundations'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { complexPow } from 'omai-engine/foundations'
+ * import { toArray } from 'omai-engine/tensor'
  * // i^i = e^(-pi/2), a real number.
  * toArray(complexPow({ re: [0], im: [1] }, { re: [0], im: [1] }).re) // => [0.20787957635076193]
  * ```
@@ -121,8 +121,8 @@ export function complexPow(z: ComplexLike, w: ComplexLike): ComplexValue {
  * @concept complex-powers
  * @example
  * ```ts
- * import { complexSqrt } from 'mdml-engine/foundations'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { complexSqrt } from 'omai-engine/foundations'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(complexSqrt({ re: [-4], im: [0] }).im) // => [2]
  * ```
  */
@@ -147,8 +147,8 @@ export function complexSqrt(z: ComplexLike): ComplexValue {
  * @concept complex-functions
  * @example
  * ```ts
- * import { complexSin } from 'mdml-engine/foundations'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { complexSin } from 'omai-engine/foundations'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(complexSin({ re: [0], im: [1] }).im) // => [1.1752011936438014]
  * ```
  */
@@ -165,8 +165,8 @@ export function complexSin(z: ComplexLike): ComplexValue {
  * @concept complex-functions
  * @example
  * ```ts
- * import { complexCos } from 'mdml-engine/foundations'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { complexCos } from 'omai-engine/foundations'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(complexCos({ re: [0], im: [1] }).re) // => [1.5430806348152437]
  * ```
  */
@@ -185,13 +185,13 @@ export function complexCos(z: ComplexLike): ComplexValue {
  * @concept roots-of-unity
  * @example
  * ```ts
- * import { nthRoots } from 'mdml-engine/foundations'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { nthRoots } from 'omai-engine/foundations'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(nthRoots(-8, 3).re).map((v) => Math.round(v * 1e12) / 1e12) // => [1, -2, 1]
  * ```
  */
 export function nthRoots(z: ComplexNumber | number, n: number): ComplexValue {
-  if (!(Number.isInteger(n) && n >= 1)) throw new MdmlError('value', 'nthRoots: n must be a positive integer')
+  if (!(Number.isInteger(n) && n >= 1)) throw new OmaiError('value', 'nthRoots: n must be a positive integer')
   const w = lit(z)
   const r = Math.hypot(w.re, w.im) ** (1 / n)
   const theta = Math.atan2(w.im, w.re)
@@ -209,8 +209,8 @@ export function nthRoots(z: ComplexNumber | number, n: number): ComplexValue {
  * @concept roots-of-unity
  * @example
  * ```ts
- * import { rootsOfUnity } from 'mdml-engine/foundations'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { rootsOfUnity } from 'omai-engine/foundations'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(rootsOfUnity(4).im).map((v) => Math.round(v)) // => [0, 1, 0, -1]
  * ```
  */
@@ -231,8 +231,8 @@ export type ComplexBox = readonly [readonly [number, number], readonly [number, 
  * @concept domain-colouring
  * @example
  * ```ts
- * import { complexGrid } from 'mdml-engine/foundations'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { complexGrid } from 'omai-engine/foundations'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(complexGrid([[-1, 1], [-1, 1]], [3, 2]).im) // => [[1, 1, 1], [-1, -1, -1]]
  * ```
  */
@@ -275,8 +275,8 @@ export interface DomainColouring {
  * @concept domain-colouring
  * @example
  * ```ts
- * import { domainColouring } from 'mdml-engine/foundations'
- * import { cMul } from 'mdml-engine/tensor'
+ * import { domainColouring } from 'omai-engine/foundations'
+ * import { cMul } from 'omai-engine/tensor'
  * domainColouring((z) => cMul(z, z), [[-1, 1], [-1, 1]], { size: [8, 6] }).pixels.rgba.length // => 192
  * ```
  */
@@ -329,11 +329,11 @@ export type MobiusKind = 'identity' | 'elliptic' | 'parabolic' | 'hyperbolic' | 
  * @param c - Coefficient.
  * @param d - Coefficient.
  * @returns The transformation.
- * @throws MdmlError with code `value` when `ad - bc = 0`.
+ * @throws OmaiError with code `value` when `ad - bc = 0`.
  * @concept mobius-transformations
  * @example
  * ```ts
- * import { mobius } from 'mdml-engine/foundations'
+ * import { mobius } from 'omai-engine/foundations'
  * mobius(1, 0, 0, 2).d // => { re: 2, im: 0 }
  * ```
  */
@@ -345,7 +345,7 @@ export function mobius(
 ): Mobius {
   const m = { a: lit(a), b: lit(b), c: lit(c), d: lit(d) }
   const det = C.sub(C.mul(m.a, m.d), C.mul(m.b, m.c))
-  if (Math.hypot(det.re, det.im) === 0) throw new MdmlError('value', 'mobius: ad - bc must not vanish')
+  if (Math.hypot(det.re, det.im) === 0) throw new OmaiError('value', 'mobius: ad - bc must not vanish')
   return m
 }
 
@@ -358,8 +358,8 @@ export function mobius(
  * @concept mobius-transformations
  * @example
  * ```ts
- * import { mobius, mobiusApply } from 'mdml-engine/foundations'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { mobius, mobiusApply } from 'omai-engine/foundations'
+ * import { toArray } from 'omai-engine/tensor'
  * // The Cayley map sends i to 0.
  * toArray(mobiusApply(mobius({ re: 1, im: 0 }, { re: 0, im: -1 }, 1, { re: 0, im: 1 }), { re: [0], im: [1] }).re) // => [0]
  * ```
@@ -382,7 +382,7 @@ const add2 = (p: ComplexValue, q: ComplexValue): ComplexValue => ({ re: add(p.re
  * @concept mobius-transformations
  * @example
  * ```ts
- * import { mobius, mobiusCompose } from 'mdml-engine/foundations'
+ * import { mobius, mobiusCompose } from 'omai-engine/foundations'
  * mobiusCompose(mobius(2, 0, 0, 1), mobius(1, 1, 0, 1)).b // => { re: 2, im: 0 }
  * ```
  */
@@ -403,7 +403,7 @@ export function mobiusCompose(m1: Mobius, m2: Mobius): Mobius {
  * @concept mobius-transformations
  * @example
  * ```ts
- * import { mobius, mobiusInverse } from 'mdml-engine/foundations'
+ * import { mobius, mobiusInverse } from 'omai-engine/foundations'
  * mobiusInverse(mobius(1, 3, 0, 1)).b // => { re: -3, im: 0 }
  * ```
  */
@@ -421,7 +421,7 @@ export function mobiusInverse(m: Mobius): Mobius {
  * @concept mobius-transformations
  * @example
  * ```ts
- * import { mobius, mobiusFixedPoints } from 'mdml-engine/foundations'
+ * import { mobius, mobiusFixedPoints } from 'omai-engine/foundations'
  * mobiusFixedPoints(mobius(0, 1, 1, 0)).points // => [{ re: -1, im: 0 }, { re: 1, im: 0 }]
  * ```
  */
@@ -456,7 +456,7 @@ export function mobiusFixedPoints(m: Mobius): { readonly points: ComplexNumber[]
  * @concept mobius-transformations
  * @example
  * ```ts
- * import { classifyMobius, mobius } from 'mdml-engine/foundations'
+ * import { classifyMobius, mobius } from 'omai-engine/foundations'
  * classifyMobius(mobius(1, 1, 0, 1)).kind // => 'parabolic'
  * classifyMobius(mobius(2, 0, 0, 1)).kind // => 'hyperbolic'
  * ```
@@ -491,8 +491,8 @@ export function classifyMobius(m: Mobius, tol = 1e-12): { readonly kind: MobiusK
  * @concept mobius-transformations
  * @example
  * ```ts
- * import { mobiusApply, mobiusFromPoints } from 'mdml-engine/foundations'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { mobiusApply, mobiusFromPoints } from 'omai-engine/foundations'
+ * import { toArray } from 'omai-engine/tensor'
  * const m = mobiusFromPoints([0, 1, 2], [1, 2, 3])
  * toArray(mobiusApply(m, [5]).re).map((v) => Math.round(v * 1e12) / 1e12) // => [6]
  * ```
@@ -519,8 +519,8 @@ export function mobiusFromPoints(
  * @concept conformal-maps
  * @example
  * ```ts
- * import { conformalMaps } from 'mdml-engine/foundations'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { conformalMaps } from 'omai-engine/foundations'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(conformalMaps.joukowski({ re: [1], im: [0] }).re) // => [2]
  * ```
  */
@@ -556,7 +556,7 @@ export interface ConformalGrid {
  * @concept conformal-maps
  * @example
  * ```ts
- * import { conformalGrid, conformalMaps } from 'mdml-engine/foundations'
+ * import { conformalGrid, conformalMaps } from 'omai-engine/foundations'
  * conformalGrid(conformalMaps.square, [[0, 1], [0, 1]], { lines: 3, samples: 5 }).after.length // => 6
  * ```
  */
@@ -596,8 +596,8 @@ export function conformalGrid(
  * @concept cauchy-riemann
  * @example
  * ```ts
- * import { cauchyRiemann, conformalMaps } from 'mdml-engine/foundations'
- * import { neg } from 'mdml-engine/tensor'
+ * import { cauchyRiemann, conformalMaps } from 'omai-engine/foundations'
+ * import { neg } from 'omai-engine/tensor'
  * cauchyRiemann(conformalMaps.square, { re: 1, im: 2 }).derivative // => { re: 2, im: 4 }
  * cauchyRiemann((z) => ({ re: z.re, im: neg(z.im) }), { re: 1, im: 2 }).conformal // => false
  * ```
@@ -630,8 +630,8 @@ export type ComplexContour = (t: Value) => ComplexValue
  * @concept contour-integrals
  * @example
  * ```ts
- * import { circleContour } from 'mdml-engine/foundations'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { circleContour } from 'omai-engine/foundations'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * toArray(circleContour(0, 2)(tensor([0])).re) // => [2]
  * ```
  */
@@ -657,8 +657,8 @@ export function circleContour(centre: ComplexNumber | number, radius: number): C
  * @concept contour-integrals
  * @example
  * ```ts
- * import { circleContour, contourIntegral } from 'mdml-engine/foundations'
- * import { cDiv, complex, onesLike } from 'mdml-engine/tensor'
+ * import { circleContour, contourIntegral } from 'omai-engine/foundations'
+ * import { cDiv, complex, onesLike } from 'omai-engine/tensor'
  * // The integral of 1/z round the unit circle is 2 pi i.
  * Math.round(contourIntegral((z) => cDiv(complex(onesLike(z.re)), z), circleContour(0, 1)).im * 1e12) / 1e12 // => 6.283185307180
  * ```
@@ -700,8 +700,8 @@ export function contourIntegral(
  * @concept residues
  * @example
  * ```ts
- * import { residueAt } from 'mdml-engine/foundations'
- * import { cDiv, cMul, complex, onesLike, sub, type ComplexValue } from 'mdml-engine/tensor'
+ * import { residueAt } from 'omai-engine/foundations'
+ * import { cDiv, cMul, complex, onesLike, sub, type ComplexValue } from 'omai-engine/tensor'
  * // 1 / (z (z - 1)) has residue -1 at 0.
  * const f = (z: ComplexValue) => cDiv(complex(onesLike(z.re)), cMul(z, { re: sub(z.re, 1), im: z.im }))
  * Math.round(residueAt(f, 0).re * 1e12) / 1e12 // => -1
@@ -728,8 +728,8 @@ export function residueAt(
  * @concept laurent-series
  * @example
  * ```ts
- * import { laurentCoefficient } from 'mdml-engine/foundations'
- * import { cExp } from 'mdml-engine/tensor'
+ * import { laurentCoefficient } from 'omai-engine/foundations'
+ * import { cExp } from 'omai-engine/tensor'
  * Math.round(laurentCoefficient(cExp, 0, 3, { radius: 1 }).re * 1e12) / 1e12 // => 0.166666666667
  * ```
  */
@@ -762,7 +762,7 @@ export function laurentCoefficient(
  * @concept winding-number
  * @example
  * ```ts
- * import { circleContour, windingNumber } from 'mdml-engine/foundations'
+ * import { circleContour, windingNumber } from 'omai-engine/foundations'
  * windingNumber(circleContour(0, 1), 0.5).winding // => 1
  * windingNumber(circleContour(0, 1), 3).winding // => 0
  * ```
@@ -796,8 +796,8 @@ export function windingNumber(
  * @concept argument-principle
  * @example
  * ```ts
- * import { argumentPrinciple, circleContour } from 'mdml-engine/foundations'
- * import { cMul } from 'mdml-engine/tensor'
+ * import { argumentPrinciple, circleContour } from 'omai-engine/foundations'
+ * import { cMul } from 'omai-engine/tensor'
  * argumentPrinciple((z) => cMul(z, cMul(z, z)), circleContour(0, 1)).count // => 3
  * ```
  */

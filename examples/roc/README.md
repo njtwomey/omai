@@ -8,7 +8,7 @@ table).
 
 - It fits a support vector classifier on 120 points of the two-moons data, as a session, so the run has a tape.
 - It scores 300 held-out points with the classifier's decision function.
-- `mdml-engine/metrics` makes the ROC curve, the precision-recall curve, the precision-recall gain curve and the
+- `omai-engine/metrics` makes the ROC curve, the precision-recall curve, the precision-recall gain curve and the
   confusion matrix at threshold 0. The render package draws the three curves with its own charts and the table with its own
   `ContingencyTable` component.
 

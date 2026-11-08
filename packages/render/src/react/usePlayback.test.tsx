@@ -1,4 +1,4 @@
-import type { Algorithm } from 'mdml-engine/trace'
+import type { Algorithm } from 'omai-engine/trace'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { type FakeFrames, fakeFrames, inAct, mountHook, resetGlobals } from './_harness.tsx'
 import { type LiveRunOptions, useLiveRun } from './usePlayback.ts'

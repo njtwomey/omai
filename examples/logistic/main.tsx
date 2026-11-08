@@ -4,13 +4,13 @@
  * dataset knows the true class boundary. The figure draws the weight posteriors and the predicted probability from the
  * posteriors the engines return; the tape is the full-rank variational run (its ELBO).
  */
-import { hessian } from 'mdml-engine/autodiff'
-import { generate } from 'mdml-engine/data'
-import { blobs } from 'mdml-engine/datasets'
-import { bernoulli, multivariateNormal } from 'mdml-engine/dists'
-import { inv } from 'mdml-engine/numerics/linalg'
-import { ndtr } from 'mdml-engine/numerics/special'
-import { lbfgs } from 'mdml-engine/optim'
+import { hessian } from 'omai-engine/autodiff'
+import { generate } from 'omai-engine/data'
+import { blobs } from 'omai-engine/datasets'
+import { bernoulli, multivariateNormal } from 'omai-engine/dists'
+import { inv } from 'omai-engine/numerics/linalg'
+import { ndtr } from 'omai-engine/numerics/special'
+import { lbfgs } from 'omai-engine/optim'
 import {
   autoMultivariateNormal,
   laplaceApproximation,
@@ -21,12 +21,12 @@ import {
   potentialEnergy,
   sample,
   svi,
-} from 'mdml-engine/probprog'
-import { key } from 'mdml-engine/random'
-import { eye, matmul, mul, neg, tensor, toArray, toFlat, type Value } from 'mdml-engine/tensor'
-import { recorder, tracePolicy } from 'mdml-engine/trace'
-import { cartesian, contours, lines, points } from 'mdml-render/charts'
-import { figure } from 'mdml-render/figure'
+} from 'omai-engine/probprog'
+import { key } from 'omai-engine/random'
+import { eye, matmul, mul, neg, tensor, toArray, toFlat, type Value } from 'omai-engine/tensor'
+import { recorder, tracePolicy } from 'omai-engine/trace'
+import { cartesian, contours, lines, points } from 'omai-render/charts'
+import { figure } from 'omai-render/figure'
 import type { ExampleModule, Outcome } from '../_shared/contract.ts'
 import { Figure, Panel } from '../_shared/figure.tsx'
 import { axesOf, classMap, gridOfValues, gridRows, windowOf } from '../_shared/maps.ts'

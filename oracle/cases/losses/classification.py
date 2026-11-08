@@ -6,9 +6,9 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 import torchvision
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray, rng
-from mdml_oracle.torch_helpers import to_numpy, to_torch
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray, rng
+from omai_oracle.torch_helpers import to_numpy, to_torch
 from torchvision.ops import sigmoid_focal_loss
 
 REFERENCE: dict[str, str] = {"torch": torch.__version__, "torchvision": torchvision.__version__}

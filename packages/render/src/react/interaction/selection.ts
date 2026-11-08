@@ -3,11 +3,11 @@
  * figures share, and the point nearest a pixel position within a radius.
  */
 
-import type { Point2 } from 'mdml-engine/numerics/geometry'
+import type { Point2 } from 'omai-engine/numerics/geometry'
 import type { Projection } from './projection.ts'
 
 /**
- * A rectangle in data coordinates as x and y ranges, low end first: the shape of a brush in `mdml-render/figure`'s
+ * A rectangle in data coordinates as x and y ranges, low end first: the shape of a brush in `omai-render/figure`'s
  * link state, so a brushed rectangle goes straight to `brushSelection` or a `LinkStore`.
  */
 export interface DataRect {

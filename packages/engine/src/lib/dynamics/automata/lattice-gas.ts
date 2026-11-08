@@ -7,7 +7,7 @@
  * the coarse-graining and the gas as a traced algorithm that logs the occupancy and the conserved mass and momentum.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { foldIn } from '../../random/index.ts'
 import {
   type Algorithm,
@@ -107,7 +107,7 @@ const FHP_TABLES = [collisionTable('fhp', 0), collisionTable('fhp', 1)] as const
  * @concept lattice-gas
  * @example
  * ```ts
- * import { automata } from 'mdml-engine/dynamics'
+ * import { automata } from 'omai-engine/dynamics'
  * [automata.gasNeighbour('hpp', 2, 3, 1, 8, 8), automata.gasNeighbour('fhp', 1, 3, 1, 8, 8)] // => [[1, 3], [0, 4]]
  * ```
  */
@@ -140,7 +140,7 @@ export function gasNeighbour(
  * @concept lattice-gas
  * @example
  * ```ts
- * import { automata } from 'mdml-engine/dynamics'
+ * import { automata } from 'omai-engine/dynamics'
  * const g = automata.gasMassMomentum(Uint8Array.of(0b0011, 0b0100), 'hpp') // east+north, west
  * [g.mass, g.momentum.map(Math.round)] // => [3, [0, 1]]
  * ```
@@ -175,11 +175,11 @@ export function gasMassMomentum(
  * @param block - The block side (the sizes must divide).
  * @param model - The lattice.
  * @returns Density and velocity per block, row-major `[height / block, width / block]`.
- * @throws MdmlError with code `value` if the block does not divide the lattice.
+ * @throws OmaiError with code `value` if the block does not divide the lattice.
  * @concept lattice-gas
  * @example
  * ```ts
- * import { automata } from 'mdml-engine/dynamics'
+ * import { automata } from 'omai-engine/dynamics'
  * const f = automata.coarseGrainGas(Uint8Array.of(0b0001, 0b0001, 0, 0), 2, 2, 2, 'hpp')
  * [Array.from(f.density), Array.from(f.vx), Array.from(f.vy)] // => [[0.5], [1], [0]]
  * ```
@@ -192,7 +192,7 @@ export function coarseGrainGas(
   model: LatticeGasModel,
 ): { density: Float64Array; vx: Float64Array; vy: Float64Array; columns: number; rows: number } {
   if (!(Number.isInteger(block) && block >= 1 && width % block === 0 && height % block === 0))
-    throw new MdmlError('value', `coarseGrainGas: block ${block} must divide ${width} by ${height}`)
+    throw new OmaiError('value', `coarseGrainGas: block ${block} must divide ${width} by ${height}`)
   const columns = width / block
   const rows = height / block
   const e = gasVelocities(model)
@@ -230,7 +230,7 @@ export function coarseGrainGas(
  * @returns The contract.
  * @example
  * ```ts
- * import { automata } from 'mdml-engine/dynamics'
+ * import { automata } from 'omai-engine/dynamics'
  * Object.keys(automata.latticeGasContract('hpp', 8, 8, 4)).length // => 6
  * ```
  */
@@ -280,7 +280,7 @@ export function latticeGasContract(
  * @concept lattice-gas
  * @example
  * ```ts
- * import { automata } from 'mdml-engine/dynamics'
+ * import { automata } from 'omai-engine/dynamics'
  * // Solid-body rotation u = (-y, x) about the middle of a 5 x 5 patch has vorticity 2 (rows run down, so y = -row).
  * const ux = Float64Array.from({ length: 25 }, (_, i) => Math.floor(i / 5) - 2)
  * const uy = Float64Array.from({ length: 25 }, (_, i) => (i % 5) - 2)
@@ -308,12 +308,12 @@ export function curl2d(ux: ArrayLike<number>, uy: ArrayLike<number>, width: numb
  *
  * @param options - The lattice, size, density, bias, solids and coarse-graining block.
  * @returns The algorithm.
- * @throws MdmlError with code `value` for a bad size, density, solid mask, a block that does not divide the lattice, or odd rows for `fhp`.
+ * @throws OmaiError with code `value` for a bad size, density, solid mask, a block that does not divide the lattice, or odd rows for `fhp`.
  * @concept lattice-gas
  * @example
  * ```ts
- * import { automata } from 'mdml-engine/dynamics'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { automata } from 'omai-engine/dynamics'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const alg = automata.latticeGas({ width: 16, height: 16, block: 4 })
  * const [m0, m1] = [0, 50].map((t) => automata.gasMassMomentum(runAlgorithm(alg, { seed: 1, maxSteps: t }).state.cells, 'hpp').mass)
  * m1 === m0 // => true
@@ -331,11 +331,11 @@ export function latticeGas(options: LatticeGasOptions = {}): Algorithm<LatticeGa
   positiveInt('latticeGas', 'height', height)
   unit('latticeGas', 'density', density)
   if (model === 'fhp' && height % 2 !== 0)
-    throw new MdmlError('value', 'latticeGas: the fhp lattice needs an even number of rows')
+    throw new OmaiError('value', 'latticeGas: the fhp lattice needs an even number of rows')
   if (solid !== undefined && solid.length !== width * height)
-    throw new MdmlError('value', 'latticeGas: solid must be width x height')
+    throw new OmaiError('value', 'latticeGas: solid must be width x height')
   if (width % block !== 0 || height % block !== 0)
-    throw new MdmlError('value', `latticeGas: block ${block} must divide ${width} by ${height}`)
+    throw new OmaiError('value', `latticeGas: block ${block} must divide ${width} by ${height}`)
   const n = DIRECTIONS[model]
   const e = gasVelocities(model)
   const sites = width * height

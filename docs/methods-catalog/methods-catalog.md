@@ -100,7 +100,7 @@ Three kinds of file in a folder:
   standard probes for the folder's kind of model, the folder's exposition records when the generic ones do not fit,
   and data slots with their truths.
 
-Nothing under `methods/` draws. Rendering lives in `mdml-render`; a folder's README says what it needs drawn.
+Nothing under `methods/` draws. Rendering lives in `omai-render`; a folder's README says what it needs drawn.
 
 **The tree today.** The fifty-odd folders named after the encyclopedia's chapters, each with a page, were written
 before this layout was decided and mirror the encyclopedia too literally. They stay for now as the catalogue of

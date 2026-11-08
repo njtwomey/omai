@@ -33,8 +33,8 @@ import { LRUMixer, S4, S4D, S5 } from './state-space.ts'
  * @concept sequence-models
  * @example
  * ```ts
- * import { AttentionMixer } from 'mdml-engine/nn/blocks'
- * import { zeros } from 'mdml-engine/tensor'
+ * import { AttentionMixer } from 'omai-engine/nn/blocks'
+ * import { zeros } from 'omai-engine/tensor'
  * new AttentionMixer(8, { heads: 2 }).forward(zeros([1, 5, 8])).output.shape // => [1, 5, 8]
  * ```
  */
@@ -110,7 +110,7 @@ const form3 = choice(['parallel', 'recurrent', 'chunked'] as const, { default: '
  * @index table Every sequence mixer (Mamba, RetNet, RWKV, attention) as one slot.
  * @example
  * ```ts
- * import { sequenceMixers } from 'mdml-engine/nn/blocks'
+ * import { sequenceMixers } from 'omai-engine/nn/blocks'
  * sequenceMixers.names.slice(0, 3) // => ['mamba', 'mamba2', 's4d']
  * ```
  */

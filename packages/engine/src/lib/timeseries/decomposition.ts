@@ -5,7 +5,7 @@
  * {@link DecompositionResult} defined here.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { leastSquares } from './_ml.ts'
 import { asSeries } from './_series.ts'
 
@@ -47,10 +47,10 @@ function filterWeights(period: number): number[] {
  * @param period - The seasonal period.
  * @param options - The model, the filter side and the trend extrapolation.
  * @returns The components; the trend is NaN at the ends where the centred filter does not fit.
- * @throws MdmlError with code `value` for a series shorter than two periods or a non-positive multiplicative series.
+ * @throws OmaiError with code `value` for a series shorter than two periods or a non-positive multiplicative series.
  * @example
  * ```ts
- * import { seasonalDecompose } from 'mdml-engine/timeseries'
+ * import { seasonalDecompose } from 'omai-engine/timeseries'
  * const y = Array.from({ length: 12 }, (_, t) => t + [2, 0, -2, 0][t % 4])
  * const d = seasonalDecompose(y, 4)
  * [d.seasonal.slice(0, 4), d.trend.slice(2, 5)] // => [[2, 0, -2, 0], [2, 3, 4]]
@@ -64,10 +64,10 @@ export function seasonalDecompose(
   const x = asSeries(Float64Array.from(y), 'seasonalDecompose')
   const n = x.length
   if (!(Number.isInteger(period) && period >= 2) || n < 2 * period)
-    throw new MdmlError('value', 'seasonalDecompose: need an integer period of at least 2 and two periods of data')
+    throw new OmaiError('value', 'seasonalDecompose: need an integer period of at least 2 and two periods of data')
   const multiplicative = options.model === 'multiplicative'
   if (multiplicative && x.some((v) => !(v > 0)))
-    throw new MdmlError('value', 'seasonalDecompose: a multiplicative model needs a positive series')
+    throw new OmaiError('value', 'seasonalDecompose: a multiplicative model needs a positive series')
   const weights = filterWeights(period)
   const half = Math.floor(weights.length / 2)
   const trend = new Float64Array(n).fill(Number.NaN)

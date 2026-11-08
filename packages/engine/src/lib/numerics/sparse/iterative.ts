@@ -7,7 +7,7 @@
  */
 
 import { customVjp } from '../../autodiff/index.ts'
-import { type Json, MdmlError } from '../../base/index.ts'
+import { type Json, OmaiError } from '../../base/index.ts'
 import {
   fromStorage,
   mul,
@@ -82,7 +82,7 @@ function setup(name: string, a: CsrMatrix | TensorLike | LinearOperator, b: Tens
   if (options.x0 !== undefined) assertFinite(name, options.x0, 'x0')
   assertFiniteOperand(name, a)
   if (op.shape[0] !== bv.length || op.shape[1] !== bv.length)
-    throw new MdmlError('shape', 'Krylov solvers need a square operator matching b')
+    throw new OmaiError('shape', 'Krylov solvers need a square operator matching b')
   const x0 = options.x0 === undefined ? new Float64Array(bv.length) : Float64Array.from(options.x0)
   const tol = Math.max((options.rtol ?? 1e-5) * norm(bv), options.atol ?? 0)
   const precondition = options.preconditioner ?? ((r: Float64Array) => Float64Array.from(r))
@@ -119,10 +119,10 @@ const observe = (s: KrylovState) => ({
  * @param b - Right-hand side.
  * @param options - Start, tolerances and preconditioner.
  * @returns The algorithm.
- * @throws MdmlError with code `value` when `b`, `x0` or the matrix has a NaN or infinite entry (an operator is not scanned).
+ * @throws OmaiError with code `value` when `b`, `x0` or the matrix has a NaN or infinite entry (an operator is not scanned).
  * @example
  * ```ts
- * import { cgAlgorithm } from 'mdml-engine/numerics/sparse'
+ * import { cgAlgorithm } from 'omai-engine/numerics/sparse'
  * cgAlgorithm([[4, 1], [1, 3]], [1, 2]).name // => 'cg'
  * ```
  */
@@ -166,13 +166,13 @@ export function cgAlgorithm(
  * @param b - Right-hand side.
  * @param options - Tolerances, start, preconditioner, iteration cap (default 10 n) and trace options.
  * @returns The solution with its residual history.
- * @throws MdmlError with code `value` when `b`, `x0` or the matrix has a NaN or infinite entry (an operator is not scanned).
+ * @throws OmaiError with code `value` when `b`, `x0` or the matrix has a NaN or infinite entry (an operator is not scanned).
  * @concept krylov-methods
  * @index function Conjugate gradients for symmetric positive-definite systems.
  * @example
  * ```ts
- * import { cg } from 'mdml-engine/numerics/sparse'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { cg } from 'omai-engine/numerics/sparse'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(cg([[4, 1], [1, 3]], [1, 2], { rtol: 1e-12 }).x).map((v) => Math.round(v * 1e10) / 1e10) // => [0.0909090909, 0.6363636364]
  * ```
  */
@@ -202,10 +202,10 @@ export function cg(
  * @param b - Right-hand side.
  * @param options - Start, tolerances and (right) preconditioner.
  * @returns The algorithm.
- * @throws MdmlError with code `value` when `b`, `x0` or the matrix has a NaN or infinite entry (an operator is not scanned).
+ * @throws OmaiError with code `value` when `b`, `x0` or the matrix has a NaN or infinite entry (an operator is not scanned).
  * @example
  * ```ts
- * import { bicgstabAlgorithm } from 'mdml-engine/numerics/sparse'
+ * import { bicgstabAlgorithm } from 'omai-engine/numerics/sparse'
  * bicgstabAlgorithm([[4, 1], [2, 3]], [1, 2]).name // => 'bicgstab'
  * ```
  */
@@ -285,11 +285,11 @@ export function bicgstabAlgorithm(
  * @param b - Right-hand side.
  * @param options - Tolerances, start, preconditioner, iteration cap and trace options.
  * @returns The solution with its residual history.
- * @throws MdmlError with code `value` when `b`, `x0` or the matrix has a NaN or infinite entry (an operator is not scanned).
+ * @throws OmaiError with code `value` when `b`, `x0` or the matrix has a NaN or infinite entry (an operator is not scanned).
  * @example
  * ```ts
- * import { bicgstab } from 'mdml-engine/numerics/sparse'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { bicgstab } from 'omai-engine/numerics/sparse'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(bicgstab([[4, 1], [2, 3]], [1, 2], { rtol: 1e-12 }).x).map((v) => Math.round(v * 1e10) / 1e10) // => [0.1, 0.6]
  * ```
  */
@@ -320,10 +320,10 @@ export function bicgstab(
  * @param b - Right-hand side.
  * @param options - Start, tolerances, preconditioner and restart length.
  * @returns The algorithm.
- * @throws MdmlError with code `value` when `b`, `x0` or the matrix has a NaN or infinite entry (an operator is not scanned).
+ * @throws OmaiError with code `value` when `b`, `x0` or the matrix has a NaN or infinite entry (an operator is not scanned).
  * @example
  * ```ts
- * import { gmresAlgorithm } from 'mdml-engine/numerics/sparse'
+ * import { gmresAlgorithm } from 'omai-engine/numerics/sparse'
  * gmresAlgorithm([[4, 1], [2, 3]], [1, 2]).name // => 'gmres'
  * ```
  */
@@ -437,11 +437,11 @@ export function gmresAlgorithm(
  * @param b - Right-hand side.
  * @param options - Tolerances, start, preconditioner, restart, iteration cap and trace options.
  * @returns The solution with its residual history.
- * @throws MdmlError with code `value` when `b`, `x0` or the matrix has a NaN or infinite entry (an operator is not scanned).
+ * @throws OmaiError with code `value` when `b`, `x0` or the matrix has a NaN or infinite entry (an operator is not scanned).
  * @example
  * ```ts
- * import { gmres } from 'mdml-engine/numerics/sparse'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { gmres } from 'omai-engine/numerics/sparse'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(gmres([[4, 1], [2, 3]], [1, 2], { rtol: 1e-12 }).x).map((v) => Math.round(v * 1e10) / 1e10) // => [0.1, 0.6]
  * ```
  */
@@ -483,11 +483,11 @@ export function gmres(
  * @param b - Right-hand side.
  * @param options - Start, tolerances and the preconditioner.
  * @returns The algorithm.
- * @throws MdmlError with code `value` when `b`, `x0` or the matrix has a NaN or infinite entry, or when the
+ * @throws OmaiError with code `value` when `b`, `x0` or the matrix has a NaN or infinite entry, or when the
  *   preconditioner is not positive definite.
  * @example
  * ```ts
- * import { minresAlgorithm } from 'mdml-engine/numerics/sparse'
+ * import { minresAlgorithm } from 'omai-engine/numerics/sparse'
  * minresAlgorithm([[1, 2], [2, -1]], [1, 0]).name // => 'minres'
  * ```
  */
@@ -504,7 +504,7 @@ export function minresAlgorithm(
     const z = m(r)
     const square = dot(r, z)
     if (!(square >= 0))
-      throw new MdmlError('value', 'minres: the preconditioner is not positive definite (r^T M^-1 r < 0)')
+      throw new OmaiError('value', 'minres: the preconditioner is not positive definite (r^T M^-1 r < 0)')
     return { z, length: Math.sqrt(square) }
   }
   const tol = m === undefined ? rawTol : Math.max((options.rtol ?? 1e-5) * measure(bv).length, options.atol ?? 0)
@@ -613,12 +613,12 @@ export function minresAlgorithm(
  * @param b - Right-hand side.
  * @param options - Tolerances, start, preconditioner, iteration cap (default 10 n) and trace options.
  * @returns The solution with its residual history; `status` is `failed` when the system is singular and inconsistent.
- * @throws MdmlError with code `value` when `b`, `x0` or the matrix has a NaN or infinite entry, or when the
+ * @throws OmaiError with code `value` when `b`, `x0` or the matrix has a NaN or infinite entry, or when the
  *   preconditioner is not positive definite.
  * @example
  * ```ts
- * import { minres } from 'mdml-engine/numerics/sparse'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { minres } from 'omai-engine/numerics/sparse'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(minres([[1, 2], [2, -1]], [1, 0], { rtol: 1e-12 }).x).map((v) => Math.round(v * 1e10) / 1e10) // => [0.2, 0.4]
  * ```
  */
@@ -647,7 +647,7 @@ export function minres(
  * @returns The preconditioner.
  * @example
  * ```ts
- * import { csr, jacobiPreconditioner } from 'mdml-engine/numerics/sparse'
+ * import { csr, jacobiPreconditioner } from 'omai-engine/numerics/sparse'
  * Array.from(jacobiPreconditioner(csr([[2, 0], [0, 4]]))(Float64Array.from([2, 2]))) // => [1, 0.5]
  * ```
  */
@@ -669,7 +669,7 @@ export function jacobiPreconditioner(a: CsrMatrix | TensorLike): Preconditioner 
  * @returns The preconditioner.
  * @example
  * ```ts
- * import { csr, incompleteCholesky } from 'mdml-engine/numerics/sparse'
+ * import { csr, incompleteCholesky } from 'omai-engine/numerics/sparse'
  * // For a tridiagonal matrix IC(0) is the exact Cholesky factor, so the preconditioner solves A z = r.
  * Array.from(incompleteCholesky(csr([[4, 1], [1, 3]]))(Float64Array.from([5, 4]))).map((v) => Math.round(v * 1e12) / 1e12) // => [1, 1]
  * ```
@@ -694,7 +694,7 @@ export function incompleteCholesky(a: CsrMatrix | TensorLike): Preconditioner {
       if (j < i) row.set(j, s / (rowJ.get(j) ?? 1))
       else {
         if (!(s > 0))
-          throw new MdmlError('value', 'incompleteCholesky: breakdown (the matrix is not positive definite enough)')
+          throw new OmaiError('value', 'incompleteCholesky: breakdown (the matrix is not positive definite enough)')
         row.set(i, Math.sqrt(s))
       }
     }
@@ -732,13 +732,13 @@ export type SolveMethod = 'cg' | 'bicgstab' | 'gmres' | 'minres'
  * @param b - Right-hand side.
  * @param options - Method (default gmres, or cg for symmetric positive definite A) and tolerances (default rtol 1e-12).
  * @returns The solution.
- * @throws MdmlError with code `convergence` when the iteration does not converge: the return is a bare value, with no
+ * @throws OmaiError with code `convergence` when the iteration does not converge: the return is a bare value, with no
  *   place for a status (the Krylov solvers `cg`, `gmres`, `minres` and `bicgstab` return one).
  * @concept implicit-differentiation
  * @example
  * ```ts
- * import { csr, sparseSolve } from 'mdml-engine/numerics/sparse'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { csr, sparseSolve } from 'omai-engine/numerics/sparse'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(sparseSolve(csr([[2, 0], [0, 4]]), [2, 2])) // => [1, 0.5]
  * ```
  */
@@ -762,7 +762,7 @@ export function sparseSolve(
     const f = method === 'cg' ? cg : method === 'bicgstab' ? bicgstab : method === 'minres' ? minres : gmres
     const r = f(m, rhs, opts)
     if (!r.converged)
-      throw new MdmlError('convergence', `sparseSolve: ${method} did not converge (residual ${r.residualNorm})`)
+      throw new OmaiError('convergence', `sparseSolve: ${method} did not converge (residual ${r.residualNorm})`)
     return Float64Array.from(r.x.data)
   }
   const [bv] = promoteFloat(b) as [Value]

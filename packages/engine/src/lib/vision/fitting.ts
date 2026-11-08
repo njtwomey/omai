@@ -7,7 +7,7 @@
 
 // TODO: fitEllipseDirect and fitEllipseAMS.
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import type { Point2 } from '../numerics/geometry/index.ts'
 import { dgesvd } from '../numerics/linalg/index.ts'
 import { type Algorithm, runAlgorithm, stateFromJson, stateToJson } from '../trace/index.ts'
@@ -138,7 +138,7 @@ function calipers(points: readonly Point2[]): [number, number, number, number, n
  * @concept minimum-bounding-box
  * @example
  * ```ts
- * import { minAreaRect } from 'mdml-engine/vision'
+ * import { minAreaRect } from 'omai-engine/vision'
  * minAreaRect([[0, 0], [4, 0], [4, 2], [0, 2]]) // => { center: [2, 1], size: [2, 4], angle: -90 }
  * ```
  */
@@ -179,7 +179,7 @@ export function minAreaRect(points: PointsLike): RotatedRect {
  * @concept minimum-bounding-box
  * @example
  * ```ts
- * import { boxPoints } from 'mdml-engine/vision'
+ * import { boxPoints } from 'omai-engine/vision'
  * boxPoints({ center: [2, 1], size: [4, 2], angle: 0 }) // => [[0, 2], [0, 0], [4, 0], [4, 2]]
  * ```
  */
@@ -232,8 +232,8 @@ export interface EnclosingCircleState {
  * @concept minimum-enclosing-circle
  * @example
  * ```ts
- * import { enclosingCircleOf, minEnclosingCircleAlgorithm } from 'mdml-engine/vision'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { enclosingCircleOf, minEnclosingCircleAlgorithm } from 'omai-engine/vision'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * enclosingCircleOf(runAlgorithm(minEnclosingCircleAlgorithm([[0, 0], [4, 0], [2, 1]]), { maxSteps: 10 }).state).center // => [2, 0]
  * ```
  */
@@ -293,8 +293,8 @@ export function minEnclosingCircleAlgorithm(points: PointsLike): Algorithm<Enclo
  * @concept minimum-enclosing-circle
  * @example
  * ```ts
- * import { enclosingCircleOf, minEnclosingCircleAlgorithm } from 'mdml-engine/vision'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { enclosingCircleOf, minEnclosingCircleAlgorithm } from 'omai-engine/vision'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * enclosingCircleOf(runAlgorithm(minEnclosingCircleAlgorithm([[1, 1]]), { maxSteps: 5 }).state).radius // => 0.0001
  * ```
  */
@@ -315,7 +315,7 @@ export function enclosingCircleOf(state: EnclosingCircleState): {
  * @concept minimum-enclosing-circle
  * @example
  * ```ts
- * import { minEnclosingCircle } from 'mdml-engine/vision'
+ * import { minEnclosingCircle } from 'omai-engine/vision'
  * const { center, radius } = minEnclosingCircle([[0, 0], [4, 0], [2, 1]])
  * [center, Math.round(radius * 1e3) / 1e3] // => [[2, 0], 2]
  * ```
@@ -351,11 +351,11 @@ function svdSolve(a: Float64Array, b: Float64Array, m: number, n: number): Float
  *
  * @param points - At least five points `[n, 2]`.
  * @returns The ellipse as a rotated rectangle.
- * @throws MdmlError with code `value` for fewer than five points.
+ * @throws OmaiError with code `value` for fewer than five points.
  * @concept ellipse-fitting
  * @example
  * ```ts
- * import { fitEllipse } from 'mdml-engine/vision'
+ * import { fitEllipse } from 'omai-engine/vision'
  * const pts = Array.from({ length: 12 }, (_, i) => [3 * Math.cos((Math.PI * i) / 6) + 5, Math.sin((Math.PI * i) / 6) + 2])
  * const e = fitEllipse(pts)
  * [e.center, e.size, e.angle].flat().map((v) => Math.round(v * 1e4) / 1e4) // => [5, 2, 2, 6, 90]
@@ -364,7 +364,7 @@ function svdSolve(a: Float64Array, b: Float64Array, m: number, n: number): Float
 export function fitEllipse(points: PointsLike): RotatedRect {
   const pts = pointsOf(points, 'fitEllipse').map(([x, y]): Point2 => [f32(x), f32(y)])
   const n = pts.length
-  if (n < 5) throw new MdmlError('value', 'fitEllipse: at least five points are needed')
+  if (n < 5) throw new OmaiError('value', 'fitEllipse: at least five points are needed')
   let cx = 0
   let cy = 0
   for (const [x, y] of pts) {
@@ -478,7 +478,7 @@ function weightedLine(pts: readonly Point2[], w: Float64Array | undefined): [num
  * @concept line-fitting
  * @example
  * ```ts
- * import { fitLine } from 'mdml-engine/vision'
+ * import { fitLine } from 'omai-engine/vision'
  * fitLine([[0, 1], [1, 3], [2, 5]]).map((v) => Math.round(v * 1e4) / 1e4) // => [0.4472, 0.8944, 1, 3]
  * ```
  */
@@ -492,12 +492,12 @@ export function fitLine(
   } = {},
 ): [number, number, number, number] {
   const pts = pointsOf(points, 'fitLine')
-  if (pts.length < 2) throw new MdmlError('value', 'fitLine: at least two points are needed')
+  if (pts.length < 2) throw new OmaiError('value', 'fitLine: at least two points are needed')
   const dist = options.distance ?? 'l2'
   let line = weightedLine(pts, undefined)
   if (dist === 'l2') return line
   const weight = WEIGHTS[dist]
-  if (weight === undefined) throw new MdmlError('value', `fitLine: unknown distance ${String(dist)}`)
+  if (weight === undefined) throw new OmaiError('value', `fitLine: unknown distance ${String(dist)}`)
   const c = options.param !== undefined && options.param > 0 ? options.param : DEFAULT_C[dist]
   const reps = options.reps ?? 0.01
   const aeps = options.aeps ?? 0.01

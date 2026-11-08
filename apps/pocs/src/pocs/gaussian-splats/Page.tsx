@@ -1,4 +1,4 @@
-import { multiViewScene, renderMultiView } from 'mdml-engine/datasets'
+import { multiViewScene, renderMultiView } from 'omai-engine/datasets'
 import {
   fitSplatsMethod,
   gaussianEllipsoids,
@@ -6,15 +6,15 @@ import {
   renderSplatView,
   type SplatState,
   splatsProblem,
-} from 'mdml-engine/fields'
-import { foldIn, key } from 'mdml-engine/random'
-import { face3d, type Item3D } from 'mdml-engine/scene'
-import { bool, defaults, dict, int } from 'mdml-engine/space'
-import { asTensor, toFlat } from 'mdml-engine/tensor'
-import { type Config, Log, metricSeries, type Session } from 'mdml-engine/trace'
-import { cartesian, lines } from 'mdml-render/charts'
-import { figure } from 'mdml-render/figure'
-import { Chart, ControlPanel, SpaceControls, useColourMode } from 'mdml-render/react'
+} from 'omai-engine/fields'
+import { foldIn, key } from 'omai-engine/random'
+import { face3d, type Item3D } from 'omai-engine/scene'
+import { bool, defaults, dict, int } from 'omai-engine/space'
+import { asTensor, toFlat } from 'omai-engine/tensor'
+import { type Config, Log, metricSeries, type Session } from 'omai-engine/trace'
+import { cartesian, lines } from 'omai-render/charts'
+import { figure } from 'omai-render/figure'
+import { Chart, ControlPanel, SpaceControls, useColourMode } from 'omai-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
 import { BakedSession, type BakedView } from '../../shared/BakedSession.tsx'
 import { OrbitImage, type Pose, poseCamera, START_POSE, useProgressiveImage } from '../../shared/orbit.tsx'

@@ -4,7 +4,7 @@
  * slope limiters, Godunov and MUSCL-Hancock schemes, and the exact Burgers Riemann solution for comparison.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { fromStorage, type Tensor } from '../../tensor/index.ts'
 import {
   type Algorithm,
@@ -37,7 +37,7 @@ export const BURGERS: Flux = { f: (u) => 0.5 * u * u, df: (u) => u, critical: 0 
  * @returns The flux.
  * @example
  * ```ts
- * import { linearFlux } from 'mdml-engine/dynamics/pde'
+ * import { linearFlux } from 'omai-engine/dynamics/pde'
  * linearFlux(2).f(3) // => 6
  * ```
  */
@@ -60,7 +60,7 @@ export type NumericalFlux = (flux: Flux, uL: number, uR: number) => number
  * @concept godunov-method
  * @example
  * ```ts
- * import { BURGERS, godunovFlux } from 'mdml-engine/dynamics/pde'
+ * import { BURGERS, godunovFlux } from 'omai-engine/dynamics/pde'
  * // A transonic rarefaction takes the sonic value f(0) = 0.
  * godunovFlux(BURGERS, -1, 1) // => 0
  * ```
@@ -88,7 +88,7 @@ export function godunovFlux(flux: Flux, uL: number, uR: number): number {
  * @returns The interface flux.
  * @example
  * ```ts
- * import { BURGERS, rusanovFlux } from 'mdml-engine/dynamics/pde'
+ * import { BURGERS, rusanovFlux } from 'omai-engine/dynamics/pde'
  * rusanovFlux(BURGERS, 1, 1) // => 0.5
  * ```
  */
@@ -183,12 +183,12 @@ function totalVariation(u: Float64Array, periodic: boolean): number {
  * @param cells - The number of cells.
  * @param options - Flux, final time, step or CFL, scheme, limiter, Riemann solver and boundary.
  * @returns The algorithm; it is done when t reaches `tEnd` (or `diverged`). It logs the paths of {@link fvContract}.
- * @throws MdmlError with code `value` for a non-positive cell count or a mismatched initial condition.
+ * @throws OmaiError with code `value` for a non-positive cell count or a mismatched initial condition.
  * @concept finite-volume
  * @example
  * ```ts
- * import { BURGERS, conservationLawAlgorithm } from 'mdml-engine/dynamics/pde'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { BURGERS, conservationLawAlgorithm } from 'omai-engine/dynamics/pde'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const alg = conservationLawAlgorithm((x) => (x < 0.5 ? 1 : 0), [0, 1], 50, { flux: BURGERS, tEnd: 0.1, boundary: 'outflow' })
  * runAlgorithm(alg, { maxSteps: 1000 }).state.t // => 0.1
  * ```
@@ -200,12 +200,12 @@ export function conservationLawAlgorithm(
   options: ConservationOptions,
 ): Algorithm<FvState, FvPath> {
   if (!Number.isInteger(cells) || cells < 2)
-    throw new MdmlError('value', 'conservationLawAlgorithm: at least two cells')
+    throw new OmaiError('value', 'conservationLawAlgorithm: at least two cells')
   const [a, b] = domain
   const dx = (b - a) / cells
   const x = Array.from({ length: cells }, (_, i) => a + (i + 0.5) * dx)
   const init = typeof u0 === 'function' ? Float64Array.from(x, (xi) => u0(xi)) : Float64Array.from(u0)
-  if (init.length !== cells) throw new MdmlError('value', `conservationLawAlgorithm: give ${cells} cell averages`)
+  if (init.length !== cells) throw new OmaiError('value', `conservationLawAlgorithm: give ${cells} cell averages`)
   const flux = options.flux
   const periodic = (options.boundary ?? 'periodic') === 'periodic'
   const limiter = typeof options.limiter === 'function' ? options.limiter : LIMITERS[options.limiter ?? 'minmod']
@@ -304,11 +304,11 @@ export function conservationLawAlgorithm(
  * @param cells - The number of cells.
  * @param options - Flux, final time, step or CFL, scheme, limiter, Riemann solver and boundary.
  * @returns Snapshots with mass and total variation.
- * @throws MdmlError with code `value` for a non-positive cell count or a mismatched initial condition.
+ * @throws OmaiError with code `value` for a non-positive cell count or a mismatched initial condition.
  * @concept finite-volume
  * @example
  * ```ts
- * import { BURGERS, conservationLaw } from 'mdml-engine/dynamics/pde'
+ * import { BURGERS, conservationLaw } from 'omai-engine/dynamics/pde'
  * const s = conservationLaw((x) => (x < 0.5 ? 1 : 0), [0, 1], 100, { flux: BURGERS, tEnd: 0.2, boundary: 'outflow' })
  * Math.abs((s.mass.at(-1) ?? 0) - (s.mass[0] ?? 0) - 0.2 * 0.5) < 1e-12 // => true
  * ```
@@ -353,7 +353,7 @@ export function conservationLaw(
  * @concept riemann-problem
  * @example
  * ```ts
- * import { burgersRiemann } from 'mdml-engine/dynamics/pde'
+ * import { burgersRiemann } from 'omai-engine/dynamics/pde'
  * [burgersRiemann(1, 0, 0.4, 1), burgersRiemann(1, 0, 0.6, 1), burgersRiemann(0, 1, 0.5, 1)] // => [1, 0, 0.5]
  * ```
  */

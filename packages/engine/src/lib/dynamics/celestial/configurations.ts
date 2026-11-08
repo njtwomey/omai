@@ -5,7 +5,7 @@
  * Burrau; and the planets from their mean elements, in astronomical units, days and solar masses.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { type OrbitalElements, orbitalPeriod, stateFromElements } from './elements.ts'
 import { trueFromMean, wrapAngle } from './kepler.ts'
 import { type NBodyOptions, type NBodySystem, nBodyHamiltonian } from './nbody.ts'
@@ -37,7 +37,7 @@ export interface NBodyConfiguration {
  * @returns The system.
  * @example
  * ```ts
- * import { configurationSystem, PYTHAGOREAN } from 'mdml-engine/dynamics/celestial'
+ * import { configurationSystem, PYTHAGOREAN } from 'omai-engine/dynamics/celestial'
  * configurationSystem(PYTHAGOREAN).masses // => [3, 4, 5]
  * ```
  */
@@ -52,7 +52,7 @@ export function configurationSystem(c: NBodyConfiguration, options: Pick<NBodyOp
  * @returns Positions and momenta.
  * @example
  * ```ts
- * import { configurationState, PYTHAGOREAN } from 'mdml-engine/dynamics/celestial'
+ * import { configurationState, PYTHAGOREAN } from 'omai-engine/dynamics/celestial'
  * Array.from(configurationState(PYTHAGOREAN).q) // => [1, 3, -2, -1, 1, -1]
  * ```
  */
@@ -121,15 +121,15 @@ export const FIGURE_EIGHT: NBodyConfiguration = {
  * @param m - The mass of each body (default 1).
  * @param G - The gravitational constant (default 1).
  * @returns The configuration, with its period and energy.
- * @throws MdmlError with code `value` for a non-positive side, mass or G.
+ * @throws OmaiError with code `value` for a non-positive side, mass or G.
  * @example
  * ```ts
- * import { lagrangeTriangle } from 'mdml-engine/dynamics/celestial'
+ * import { lagrangeTriangle } from 'omai-engine/dynamics/celestial'
  * lagrangeTriangle().period // => 3.6275987284684357
  * ```
  */
 export function lagrangeTriangle(s = 1, m = 1, G = 1): NBodyConfiguration {
-  if (!(s > 0 && m > 0 && G > 0)) throw new MdmlError('value', 'lagrangeTriangle: side, mass and G must be positive')
+  if (!(s > 0 && m > 0 && G > 0)) throw new OmaiError('value', 'lagrangeTriangle: side, mass and G must be positive')
   const omega = Math.sqrt((3 * G * m) / s ** 3)
   const radius = s / Math.sqrt(3)
   const angles = [0, (2 * Math.PI) / 3, (4 * Math.PI) / 3]
@@ -157,11 +157,11 @@ export function lagrangeTriangle(s = 1, m = 1, G = 1): NBodyConfiguration {
  * @param speed - The launch speed as a multiple of the circular speed at the separation.
  * @param options - The masses (default 1 and 1), the closest separation (default 1) and G (default 1).
  * @returns The configuration with its kind, and its period and energy where the orbit is bound.
- * @throws MdmlError with code `value` for non-positive arguments.
+ * @throws OmaiError with code `value` for non-positive arguments.
  * @concept two-body-problem
  * @example
  * ```ts
- * import { twoBody } from 'mdml-engine/dynamics/celestial'
+ * import { twoBody } from 'omai-engine/dynamics/celestial'
  * const c = twoBody(1.1)
  * [c.kind, Math.round(c.period ?? 0)] // => ['elliptic', 6]
  * ```
@@ -172,7 +172,7 @@ export function twoBody(
 ): NBodyConfiguration {
   const { m1 = 1, m2 = 1, rp = 1, G = 1 } = options
   if (!(speed > 0 && m1 > 0 && m2 > 0 && rp > 0 && G > 0))
-    throw new MdmlError('value', 'twoBody: arguments must be positive')
+    throw new OmaiError('value', 'twoBody: arguments must be positive')
   const M = m1 + m2
   const mu = G * M
   const vc = Math.sqrt(mu / rp)
@@ -339,11 +339,11 @@ export function planetElements(planet: Planet): OrbitalElements {
  *
  * @param names - Which planets (default all eight).
  * @returns The configuration, Sun first.
- * @throws MdmlError with code `value` for an unknown name.
+ * @throws OmaiError with code `value` for an unknown name.
  * @concept solar-system
  * @example
  * ```ts
- * import { solarSystem } from 'mdml-engine/dynamics/celestial'
+ * import { solarSystem } from 'omai-engine/dynamics/celestial'
  * solarSystem(['Earth']).masses.length // => 2
  * ```
  */
@@ -353,7 +353,7 @@ export function solarSystem(names?: readonly string[]): NBodyConfiguration {
       ? PLANETS
       : names.map((n) => {
           const p = PLANETS.find((q) => q.name.toLowerCase() === n.toLowerCase())
-          if (p === undefined) throw new MdmlError('value', `solarSystem: unknown planet '${n}'`)
+          if (p === undefined) throw new OmaiError('value', `solarSystem: unknown planet '${n}'`)
           return p
         })
   const G = GAUSS_K * GAUSS_K

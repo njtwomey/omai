@@ -1,10 +1,10 @@
-import { additiveRegressor, gam, s as splineOf } from 'mdml-engine/gam'
-import { netTerm, splineTerm } from 'mdml-engine/nn'
-import { choice, defaults, dict, int, real } from 'mdml-engine/space'
-import type { Config } from 'mdml-engine/trace'
-import { metricSeries } from 'mdml-engine/trace'
-import { cartesian, lines, points } from 'mdml-render/charts'
-import { figure } from 'mdml-render/figure'
+import { additiveRegressor, gam, s as splineOf } from 'omai-engine/gam'
+import { netTerm, splineTerm } from 'omai-engine/nn'
+import { choice, defaults, dict, int, real } from 'omai-engine/space'
+import type { Config } from 'omai-engine/trace'
+import { metricSeries } from 'omai-engine/trace'
+import { cartesian, lines, points } from 'omai-render/charts'
+import { figure } from 'omai-render/figure'
 import {
   Chart,
   ControlPanel,
@@ -21,7 +21,7 @@ import {
   useScrubClick,
   useSession,
   useSessionPreferences,
-} from 'mdml-render/react'
+} from 'omai-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
 import { type CurveData, curveData, gridOf } from '../../shared/curve-data.ts'
 import { StaleVeil } from '../../shared/StaleVeil.tsx'

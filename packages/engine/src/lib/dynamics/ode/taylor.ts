@@ -4,7 +4,7 @@
  */
 
 import { jet } from '../../autodiff/index.ts'
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import type { TensorLike, Value } from '../../tensor/index.ts'
 import {
   atBound,
@@ -31,18 +31,18 @@ import type { DenseSegment, OdeVectorField, Stepper, StepperOptions, StepperStat
  * @param y - The point.
  * @param order - The highest coefficient.
  * @returns `[y_0, ..., y_order]`, each with the state's shape.
- * @throws MdmlError with code `value` for a negative order.
+ * @throws OmaiError with code `value` for a negative order.
  * @concept taylor-mode-autodiff
  * @example
  * ```ts
- * import { taylorSeriesCoefficients } from 'mdml-engine/dynamics/ode'
- * import { tensor, toFlat } from 'mdml-engine/tensor'
+ * import { taylorSeriesCoefficients } from 'omai-engine/dynamics/ode'
+ * import { tensor, toFlat } from 'omai-engine/tensor'
  * // y' = y from 1: the coefficients of e^t.
  * taylorSeriesCoefficients((y) => y, tensor([1]), 3).map((c) => toFlat(c)[0]) // => [1, 1, 0.5, 0.16666666666666666]
  * ```
  */
 export function taylorSeriesCoefficients(f: (y: Value) => Value, y: TensorLike, order: number): Value[] {
-  if (!Number.isInteger(order) || order < 0) throw new MdmlError('value', 'taylorSeriesCoefficients: order >= 0')
+  if (!Number.isInteger(order) || order < 0) throw new OmaiError('value', 'taylorSeriesCoefficients: order >= 0')
   const y0 = floatState(y)
   const coeffs: Value[] = [y0]
   let fact = 1
@@ -86,21 +86,21 @@ export interface TaylorState extends StepperState {
  *
  * @param options - Tolerances (default rtol 1e-10, atol 1e-12), order (default 12) and step limits.
  * @returns The stepper.
- * @throws MdmlError with code `value` for an order below 2.
+ * @throws OmaiError with code `value` for an order below 2.
  * @concept taylor-series-method
  * @reference Jorba and Zou (2005), A software package for the numerical integration of ODEs by means of high-order
  * Taylor methods.
  * @example
  * ```ts
- * import { solveIvp, taylor } from 'mdml-engine/dynamics/ode'
- * import { neg, toFlat } from 'mdml-engine/tensor'
+ * import { solveIvp, taylor } from 'omai-engine/dynamics/ode'
+ * import { neg, toFlat } from 'omai-engine/tensor'
  * const y = toFlat(solveIvp((_t, y) => neg(y), [0, 1], [1], { method: taylor(), tEval: [1] }).y)[0] ?? 0
  * Math.abs(y - Math.exp(-1)) < 1e-10 // => true
  * ```
  */
 export function taylor(options: TaylorOptions = {}): Stepper<TaylorState> {
   const order = options.order ?? 12
-  if (!Number.isInteger(order) || order < 2) throw new MdmlError('value', 'taylor: the order must be at least 2')
+  if (!Number.isInteger(order) || order < 2) throw new OmaiError('value', 'taylor: the order must be at least 2')
   const { rtol, atol } = validTolerances(options.rtol ?? 1e-10, options.atol ?? 1e-12)
   const maxStep = validMaxStep(options.maxStep)
   const stepFor = (series: readonly Value[], y: Value): number => {
@@ -125,7 +125,7 @@ export function taylor(options: TaylorOptions = {}): Stepper<TaylorState> {
       return { ...initialState(t0, y0, tBound, 0, c, order), f, series: [], h: 0, counts: snapshot(c) }
     },
     step: (s) => {
-      if (s.status !== 'running') throw new MdmlError('value', 'taylor: the integration has ended')
+      if (s.status !== 'running') throw new OmaiError('value', 'taylor: the integration has ended')
       if (atBound(s)) return { ...s, tOld: s.t, t: s.tBound, status: 'finished', attempts: [] }
       const c: Counter = { ...s.counts }
       const series = taylorSeriesCoefficients((y) => s.f(s.t, y), s.y, order)

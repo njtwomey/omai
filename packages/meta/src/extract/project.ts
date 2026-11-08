@@ -19,7 +19,7 @@ export interface PackageInfo {
 
 /** One public entry point and the source it owns. */
 export interface EntryPoint {
-  /** The import specifier, such as `mdml-engine/numerics/linalg`. */
+  /** The import specifier, such as `omai-engine/numerics/linalg`. */
   readonly specifier: string
   readonly package: string
   /** The path below the package (`''` for the root). */
@@ -105,7 +105,7 @@ function exposure(index: string): Map<string, 'namespace' | 'flat'> {
 }
 
 function layerOf(pkg: string): ModuleLayer {
-  if (pkg !== 'mdml-engine') return 'part'
+  if (pkg !== 'omai-engine') return 'part'
   return 'core'
 }
 
@@ -179,7 +179,7 @@ export function readProject(root: string, packages: readonly string[]): Project 
       }
     }
   }
-  // A package root (`mdml-render`) is the parent of the package's top-level parts.
+  // A package root (`omai-render`) is the parent of the package's top-level parts.
   const roots = new Set(entries.filter((e) => e.path === '').map((e) => e.package))
   const linked = entries.map(
     (e): EntryPoint =>

@@ -7,7 +7,7 @@
  * `feature-selection-wrappers.ts`; this one adds the bound, the threshold that achieves a target, and the lasso procedure.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import { lassoCoordinateDescent } from '../optim/sparse.ts'
 import { type Key, key as makeKey, subsample } from '../random/index.ts'
 import { fromStorage, type TensorLike, toFlat } from '../tensor/index.ts'
@@ -23,18 +23,18 @@ import { matrixView, targetVector } from './validation.ts'
  * @param p - The number of variables.
  * @param threshold - The selection frequency threshold pi.
  * @returns The bound on E[V].
- * @throws MdmlError with code `value` unless 1/2 < pi <= 1.
+ * @throws OmaiError with code `value` unless 1/2 < pi <= 1.
  * @concept feature-selection
  * @example
  * ```ts
- * import { stabilitySelectionBound } from 'mdml-engine/learn'
+ * import { stabilitySelectionBound } from 'omai-engine/learn'
  * stabilitySelectionBound(8, 40, 0.9) // => 2
  * ```
  */
 export function stabilitySelectionBound(q: number, p: number, threshold: number): number {
   if (!(threshold > 0.5 && threshold <= 1))
-    throw new MdmlError('value', 'stabilitySelectionBound: threshold must be in (1/2, 1]')
-  if (!(q > 0 && p > 0)) throw new MdmlError('value', 'stabilitySelectionBound: q and p must be positive')
+    throw new OmaiError('value', 'stabilitySelectionBound: threshold must be in (1/2, 1]')
+  if (!(q > 0 && p > 0)) throw new OmaiError('value', 'stabilitySelectionBound: q and p must be positive')
   return (q * q) / ((2 * threshold - 1) * p)
 }
 
@@ -46,18 +46,18 @@ export function stabilitySelectionBound(q: number, p: number, threshold: number)
  * @param p - The number of variables.
  * @param expectedFalse - The tolerated expected number of false selections.
  * @returns pi.
- * @throws MdmlError with code `value` when even pi = 1 does not reach the target (take a smaller q).
+ * @throws OmaiError with code `value` when even pi = 1 does not reach the target (take a smaller q).
  * @concept feature-selection
  * @example
  * ```ts
- * import { stabilityThreshold } from 'mdml-engine/learn'
+ * import { stabilityThreshold } from 'omai-engine/learn'
  * stabilityThreshold(4, 40, 1) // => 0.7
  * ```
  */
 export function stabilityThreshold(q: number, p: number, expectedFalse: number): number {
-  if (!(expectedFalse > 0)) throw new MdmlError('value', 'stabilityThreshold: expectedFalse must be positive')
+  if (!(expectedFalse > 0)) throw new OmaiError('value', 'stabilityThreshold: expectedFalse must be positive')
   const pi = (1 + (q * q) / (p * expectedFalse)) / 2
-  if (pi > 1) throw new MdmlError('value', 'stabilityThreshold: no threshold reaches this target with this q; lower q')
+  if (pi > 1) throw new OmaiError('value', 'stabilityThreshold: no threshold reaches this target with this q; lower q')
   return pi
 }
 
@@ -116,7 +116,7 @@ function firstQ(design: Float64Array, y: Float64Array, n: number, p: number, q: 
  * @concept feature-selection
  * @example
  * ```ts
- * import { lassoStabilityAlgorithm } from 'mdml-engine/learn'
+ * import { lassoStabilityAlgorithm } from 'omai-engine/learn'
  * lassoStabilityAlgorithm([[1, 0], [0, 1], [1, 1], [2, 0], [0, 2], [3, 1]], [1, 0, 1, 2, 0, 3], { q: 1 }).name // => 'lasso-stability-selection'
  * ```
  */
@@ -129,7 +129,7 @@ export function lassoStabilityAlgorithm(
   const yv = targetVector(y, 'lassoStabilitySelection', m.n)
   const { n, d: p } = m
   const half = Math.floor(n / 2)
-  if (half < 3) throw new MdmlError('value', 'lassoStabilitySelection: needs at least 6 samples')
+  if (half < 3) throw new OmaiError('value', 'lassoStabilitySelection: needs at least 6 samples')
   const q = options.q ?? Math.max(1, Math.round(Math.sqrt(0.8 * p)))
   const subsamples = options.subsamples ?? 100
   return {
@@ -197,9 +197,9 @@ export interface StabilitySelectionResult {
  * @concept feature-selection
  * @example
  * ```ts
- * import { lassoStabilitySelection } from 'mdml-engine/learn'
- * import { key, normal } from 'mdml-engine/random'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { lassoStabilitySelection } from 'omai-engine/learn'
+ * import { key, normal } from 'omai-engine/random'
+ * import { toFlat } from 'omai-engine/tensor'
  * const z = toFlat(normal(key(1), [60 * 5]))
  * const x = Array.from({ length: 60 }, (_, i) => Array.from({ length: 5 }, (_, j) => z[i * 5 + j] ?? 0))
  * const y = x.map((r) => 3 * (r[1] ?? 0))

@@ -10,7 +10,7 @@
  * degree) the old function lies in the new space and is reproduced to the precision of the solve.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { lstsq } from '../../numerics/linalg/index.ts'
 import { key as makeKey } from '../../random/index.ts'
 import { asTensor, fromStorage, type TensorLike, toFlat, type Value } from '../../tensor/index.ts'
@@ -87,7 +87,7 @@ function regrid(
   const buffers: Record<string, unknown> = {}
   kan.layers.forEach((oldLayer, l) => {
     const newLayer = next.layers[l]
-    if (newLayer === undefined) throw new MdmlError('value', 'regrid: layer mismatch')
+    if (newLayer === undefined) throw new OmaiError('value', 'regrid: layer mismatch')
     const [din, dout, kNew] = [oldLayer.inFeatures, oldLayer.outFeatures, newLayer.edge.basisSize]
     const oldP = layerOf(state.params, l)
     const oldB = layerOf(state.buffers, l)
@@ -158,8 +158,8 @@ function regrid(
  * @concept splines
  * @example
  * ```ts
- * import { KAN, updateGrid } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
+ * import { KAN, updateGrid } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
  * const net = new KAN([1, 1], { grid: 4, key: key(0) })
  * const x = [[-3], [0], [3]]
  * const moved = updateGrid(net, net.state, x)
@@ -186,8 +186,8 @@ export function updateGrid(kan: KAN, state: KanState, x: TensorLike, options: Re
  * @concept splines
  * @example
  * ```ts
- * import { KAN, refineGrid } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
+ * import { KAN, refineGrid } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
  * const net = new KAN([2, 3, 1], { grid: 3, noise: 2, key: key(0) })
  * const x = [[0.1, 0.2], [-0.4, 0.7], [0.5, -0.5]]
  * const fine = refineGrid(net, net.state, 6, x)

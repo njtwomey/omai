@@ -5,9 +5,9 @@ import itertools
 
 import numpy as np
 import pgmpy
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray, rng
-from mdml_oracle.pgm import (
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray, rng
+from omai_oracle.pgm import (
     Potential,
     checked,
     joint_table,
@@ -34,7 +34,7 @@ QUERIES: list[tuple[list[str], dict[str, int]]] = [
 
 
 def grid(rows: int, cols: int) -> tuple[list[str], list[tuple[str, str]]]:
-    """Vertices s_r_c and the right and down edges of a grid, in mdml-js's order."""
+    """Vertices s_r_c and the right and down edges of a grid, in omai's order."""
     name = [[f"s_{r}_{c}" for c in range(cols)] for r in range(rows)]
     vertices = [name[r][c] for r in range(rows) for c in range(cols)]
     edges: list[tuple[str, str]] = []

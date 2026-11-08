@@ -2,9 +2,9 @@
 
 import numpy as np
 import scipy
-from mdml_oracle.distributions import method_case
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray, rng
+from omai_oracle.distributions import method_case
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray, rng
 from scipy import special, stats
 
 REFERENCE: dict[str, str] = {"scipy": scipy.__version__}

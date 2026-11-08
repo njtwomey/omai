@@ -15,8 +15,8 @@ from typing import Any, cast
 import numpy as np
 import scipy
 import sympy as sp
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray, rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray, rng
 from scipy.integrate import solve_ivp
 from scipy.signal import cont2discrete
 

@@ -8,7 +8,7 @@
  * known noise level).
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { dgemm, inv } from '../numerics/linalg/index.ts'
 import { brentq } from '../numerics/roots/index.ts'
 import { logNdtr, ndtr } from '../numerics/special/index.ts'
@@ -44,14 +44,14 @@ export interface Polyhedron {
  * @concept selective-inference
  * @example
  * ```ts
- * import { truncatedNormalCdf } from 'mdml-engine/learn'
+ * import { truncatedNormalCdf } from 'omai-engine/learn'
  * truncatedNormalCdf(0, 0, 1, -Infinity, Infinity) // => 0.5
  * truncatedNormalCdf(1, 0, 1, 0, 2) // => 0.7152
  * ```
  */
 export function truncatedNormalCdf(x: number, mean: number, sd: number, lower: number, upper: number): number {
-  if (!(sd > 0)) throw new MdmlError('value', 'truncatedNormalCdf: sd must be positive')
-  if (!(lower < upper)) throw new MdmlError('value', 'truncatedNormalCdf: needs lower < upper')
+  if (!(sd > 0)) throw new OmaiError('value', 'truncatedNormalCdf: sd must be positive')
+  if (!(lower < upper)) throw new OmaiError('value', 'truncatedNormalCdf: needs lower < upper')
   const a = (lower - mean) / sd
   const b = (upper - mean) / sd
   const z = Math.min(Math.max((x - mean) / sd, a), b)
@@ -95,7 +95,7 @@ export interface PolyhedralBounds {
  * @concept selective-inference
  * @example
  * ```ts
- * import { polyhedralBounds } from 'mdml-engine/learn'
+ * import { polyhedralBounds } from 'omai-engine/learn'
  * // The event y_1 >= 1 (that is, -y_1 <= -1) in two dimensions, contrast y_1: z is truncated below at 1.
  * polyhedralBounds({ a: Float64Array.from([-1, 0]), b: Float64Array.from([-1]), rows: 1, n: 2 }, [1, 0], [3, 7]).vMinus // => 1
  * ```
@@ -162,11 +162,11 @@ export interface SelectiveResult {
  * @param y - The observed response.
  * @param options - sigma, the level and the null value.
  * @returns The estimate, p-value, interval and truncation limits.
- * @throws MdmlError with code `value` when y is not in the polyhedron.
+ * @throws OmaiError with code `value` when y is not in the polyhedron.
  * @concept selective-inference
  * @example
  * ```ts
- * import { selectiveInference } from 'mdml-engine/learn'
+ * import { selectiveInference } from 'omai-engine/learn'
  * // After seeing y_1 >= 1 (observed 1.5): the selective p-value for mu_1 = 0 is far larger than the naive one.
  * const r = selectiveInference({ a: Float64Array.from([-1]), b: Float64Array.from([-1]), rows: 1, n: 1 }, [1], [1.5], { sigma: 1 })
  * Math.round(r.pValue * 1000) / 1000 // => 0.842
@@ -178,7 +178,7 @@ export function selectiveInference(
   y: ArrayLike<number>,
   options: SelectiveInferenceOptions,
 ): SelectiveResult {
-  if (!(options.sigma > 0)) throw new MdmlError('value', 'selectiveInference: sigma must be positive')
+  if (!(options.sigma > 0)) throw new OmaiError('value', 'selectiveInference: sigma must be positive')
   const level = options.level ?? 0.95
   let ee = 0
   let z = 0
@@ -190,7 +190,7 @@ export function selectiveInference(
   const { vMinus, vPlus, vZero } = polyhedralBounds(poly, eta, y)
   const tol = 1e-6 * (1 + sd)
   if (vZero < -tol || z < vMinus - tol || z > vPlus + tol)
-    throw new MdmlError('value', 'selectiveInference: y is not in the selection polyhedron')
+    throw new OmaiError('value', 'selectiveInference: y is not in the selection polyhedron')
   const cdf = (theta: number): number => truncatedNormalCdf(z, theta, sd, vMinus, vPlus)
   const nullValue = options.null ?? 0
   const f0 = cdf(nullValue)
@@ -235,7 +235,7 @@ export interface RegressionInference {
 
 function noiseLevel(x: Float64Array, y: Float64Array, n: number, p: number, given: number | undefined): number {
   if (given !== undefined) return given
-  if (n <= p + 1) throw new MdmlError('value', 'selective inference: pass sigma when n <= p + 1')
+  if (n <= p + 1) throw new OmaiError('value', 'selective inference: pass sigma when n <= p + 1')
   // Residual standard deviation of the full least-squares fit by the normal equations.
   const xtx = dgemm(x, x, p, n, p, { transposeA: true })
   const xty = dgemm(x, y, p, n, 1, { transposeA: true })
@@ -307,7 +307,7 @@ function inferModel(
  * @concept selective-inference
  * @example
  * ```ts
- * import { lassoPolyhedron } from 'mdml-engine/learn'
+ * import { lassoPolyhedron } from 'omai-engine/learn'
  * lassoPolyhedron([[1, 0], [0, 1], [1, 1]], [0], [1], 0.5).rows // => 3
  * ```
  */
@@ -320,7 +320,7 @@ export function lassoPolyhedron(
   const m0 = matrixView(x, 'lassoPolyhedron')
   const { n, d: p } = m0
   const e = active.length
-  if (e === 0) throw new MdmlError('value', 'lassoPolyhedron: the active set is empty')
+  if (e === 0) throw new OmaiError('value', 'lassoPolyhedron: the active set is empty')
   const inactive = Array.from({ length: p }, (_, j) => j).filter((j) => !active.includes(j))
   const xe = new Float64Array(n * e)
   active.forEach((c, k) => {
@@ -374,11 +374,11 @@ export function lassoPolyhedron(
  * @param lambda - The penalty.
  * @param options - sigma and the level.
  * @returns The selected model with selective and naive p-values and intervals.
- * @throws MdmlError with code `value` when the lasso selects nothing.
+ * @throws OmaiError with code `value` when the lasso selects nothing.
  * @concept selective-inference
  * @example
  * ```ts
- * import { lassoSelectiveInference } from 'mdml-engine/learn'
+ * import { lassoSelectiveInference } from 'omai-engine/learn'
  * const x = [[1, 0], [0, 1], [1, 1], [-1, 0.5], [0.5, -1], [2, 0.2], [-0.3, 1.5], [1.2, -0.7]]
  * const y = [2.1, 0.1, 2.4, -2.2, 1.1, 4.2, -0.4, 2.9]
  * lassoSelectiveInference(x, y, 2, { sigma: 0.5 }).variables // => [0]
@@ -399,7 +399,7 @@ export function lassoSelectiveInference(
   const coef = flat(fit.coef)
   const active = Array.from(coef.keys()).filter((j) => coef[j] !== 0)
   if (active.length === 0)
-    throw new MdmlError('value', 'lassoSelectiveInference: the lasso selected no variables at this penalty')
+    throw new OmaiError('value', 'lassoSelectiveInference: the lasso selected no variables at this penalty')
   const signs = active.map((j) => Math.sign(coef[j] ?? 0))
   const poly = lassoPolyhedron(x, active, signs, lambda)
   const sigma = noiseLevel(m.data, yv, m.n, m.d, options.sigma)
@@ -419,7 +419,7 @@ export function lassoSelectiveInference(
  * @concept selective-inference
  * @example
  * ```ts
- * import { forwardStepwisePolyhedron } from 'mdml-engine/learn'
+ * import { forwardStepwisePolyhedron } from 'omai-engine/learn'
  * forwardStepwisePolyhedron([[1, 0, 0.1], [0, 1, 0.2], [1, 1, 0.1], [0.5, -1, 0.3], [2, 0.2, -0.2]], [2, 0.1, 2.2, -0.6, 4.1], 1).variables // => [0]
  * ```
  */
@@ -432,7 +432,7 @@ export function forwardStepwisePolyhedron(
   const yv = targetVector(y, 'forwardStepwisePolyhedron', m.n)
   const { n, d: p } = m
   if (!(Number.isInteger(steps) && steps >= 1 && steps <= Math.min(p, n - 1)))
-    throw new MdmlError('value', 'forwardStepwisePolyhedron: steps must be between 1 and min(p, n - 1)')
+    throw new OmaiError('value', 'forwardStepwisePolyhedron: steps must be between 1 and min(p, n - 1)')
   // Columns residualised against the chosen variables, kept as an orthonormal basis of the chosen span.
   const cols: Float64Array[] = Array.from({ length: p }, (_, j) =>
     Float64Array.from({ length: n }, (_, i) => m.data[i * p + j] ?? 0),
@@ -510,7 +510,7 @@ export function forwardStepwisePolyhedron(
  * @concept selective-inference
  * @example
  * ```ts
- * import { forwardStepwiseInference } from 'mdml-engine/learn'
+ * import { forwardStepwiseInference } from 'omai-engine/learn'
  * const x = [[1, 0, 0.1], [0, 1, 0.2], [1, 1, 0.1], [0.5, -1, 0.3], [2, 0.2, -0.2], [-1, 0.4, 0.5]]
  * const r = forwardStepwiseInference(x, [2, 0.1, 2.2, -0.6, 4.1, -2.2], 1, { sigma: 0.5 })
  * r.variables // => [0]

@@ -1,7 +1,7 @@
 // Private: what the kernel classifiers of this folder share: the kernel options as the estimators take them, the
 // training setup (rows, Gram matrix, encoded labels), cross-kernels against the stored rows, and the classifier verbs
 // built from per-class decision values.
-import { argmaxOf, MdmlError, sigmoidOf } from '../base/index.ts'
+import { argmaxOf, OmaiError, sigmoidOf } from '../base/index.ts'
 import {
   type Kernel,
   type KernelChoice,
@@ -44,8 +44,8 @@ export const rowsOfView = (m: MatrixView): number[][] =>
 /** Read labelled data for a kernel classifier: the Gram matrix of the training rows and the encoded labels. */
 export function classificationSetup(data: LearnData, h: KernelOptions, who: string): ClassificationSetup {
   const m = matrixView(data.x, who)
-  if (data.y === undefined) throw new MdmlError('value', `${who}: labels are required`)
-  if (data.weights !== undefined) throw new MdmlError('value', `${who}: sample weights are not supported`)
+  if (data.y === undefined) throw new OmaiError('value', `${who}: labels are required`)
+  if (data.weights !== undefined) throw new OmaiError('value', `${who}: sample weights are not supported`)
   const enc = encodeLabels(data.y, who, m.n)
   const resolved = resolveKernel(h as KernelChoice, data.x)
   return {

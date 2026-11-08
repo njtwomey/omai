@@ -38,7 +38,7 @@ const WORD = /[\p{L}\p{N}_+/-]+/gu
  * @concept keyword-extraction
  * @example
  * ```ts
- * import { rake } from 'mdml-engine/text'
+ * import { rake } from 'omai-engine/text'
  * rake('linear constraints over natural numbers; minimal set of solutions', { stopWords: ['over', 'of'] })[0] // => { phrase: 'linear constraints', score: 4 }
  * ```
  */
@@ -103,7 +103,7 @@ export interface TextRankGraphOptions {
  * @concept keyword-extraction
  * @example
  * ```ts
- * import { textRankGraph } from 'mdml-engine/text'
+ * import { textRankGraph } from 'omai-engine/text'
  * const g = textRankGraph(['graph', 'ranks', 'words', 'graph'], { keep: () => true, window: 2 })
  * [g.words, g.graph.edges.length] // => [['graph', 'ranks', 'words'], 3]
  * ```
@@ -141,7 +141,7 @@ export function textRankGraph(tokens: readonly string[], options: TextRankGraphO
  * @concept keyword-extraction
  * @example
  * ```ts
- * import { textRank } from 'mdml-engine/text'
+ * import { textRank } from 'omai-engine/text'
  * textRank(['graph', 'model', 'graph', 'node', 'graph', 'edge'], { keep: () => true, topK: 1 }).words[0]?.word // => 'graph'
  * ```
  */
@@ -180,7 +180,7 @@ export function textRank(
  * @concept keyword-extraction
  * @example
  * ```ts
- * import { overlapSimilarity } from 'mdml-engine/text'
+ * import { overlapSimilarity } from 'omai-engine/text'
  * Math.round(overlapSimilarity(['a', 'b', 'c'], ['b', 'c', 'd', 'e']) * 1000) // => 805
  * ```
  */
@@ -201,7 +201,7 @@ export function overlapSimilarity(a: readonly string[], b: readonly string[]): n
  * @concept keyword-extraction
  * @example
  * ```ts
- * import { sentenceGraph } from 'mdml-engine/text'
+ * import { sentenceGraph } from 'omai-engine/text'
  * sentenceGraph([['a', 'b'], ['a', 'b', 'c'], ['x', 'y']]).edges.length // => 1
  * ```
  */
@@ -228,7 +228,7 @@ export function sentenceGraph(
  * @concept keyword-extraction
  * @example
  * ```ts
- * import { textRankSentences } from 'mdml-engine/text'
+ * import { textRankSentences } from 'omai-engine/text'
  * const s = [['cat', 'sat', 'mat'], ['cat', 'sat', 'rug'], ['dog', 'ran', 'far'], ['cat', 'mat', 'rug']]
  * textRankSentences(s, 1).chosen.length // => 1
  * ```

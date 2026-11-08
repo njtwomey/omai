@@ -1,4 +1,4 @@
-import { sampleGrid } from 'mdml-engine/exposition'
+import { sampleGrid } from 'omai-engine/exposition'
 import { describe, expect, it } from 'vitest'
 import { sampleGridScene } from './sample-grid.ts'
 

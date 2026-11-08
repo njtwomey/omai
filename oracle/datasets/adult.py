@@ -7,8 +7,8 @@ and the original order of the rows; which rows is fixed by the SHA-256 of `adult
 `adult.test` is not used.
 """
 
-from mdml_oracle.uci import source_note, stratified_subsample, table_rows, zip_member
-from mdml_oracle.vendor import render_ordered_table
+from omai_oracle.uci import source_note, stratified_subsample, table_rows, zip_member
+from omai_oracle.vendor import render_ordered_table
 
 TARGET = "packages/engine/src/lib/datasets/_data/adult.data.ts"
 ID, SLUG = 2, "adult"

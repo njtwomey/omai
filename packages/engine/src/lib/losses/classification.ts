@@ -7,7 +7,7 @@
  * matrix, and the bi-tempered logistic loss.
  */
 
-import { MdmlError, type Reduction } from '../base/index.ts'
+import { OmaiError, type Reduction } from '../base/index.ts'
 import { inv } from '../numerics/linalg/index.ts'
 import { logSigmoid } from '../numerics/special/index.ts'
 import {
@@ -59,8 +59,8 @@ import { checkScalar, checkWeights, type LossOptions, reduce } from './_reduce.t
  * @concept losses
  * @example
  * ```ts
- * import { binaryCrossEntropyWithLogits } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { binaryCrossEntropyWithLogits } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * item(binaryCrossEntropyWithLogits([0], [1])) === Math.LN2 // => true
  * ```
  */
@@ -93,8 +93,8 @@ const smoothBinary = (y: Value, eps: number | undefined): Value =>
  * @returns The loss, differentiable.
  * @example
  * ```ts
- * import { binaryCrossEntropy } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { binaryCrossEntropy } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * item(binaryCrossEntropy([0.5], [0])) === Math.LN2 // => true
  * ```
  */
@@ -123,8 +123,8 @@ export function binaryCrossEntropy(
  * @concept losses
  * @example
  * ```ts
- * import { focal } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { focal } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * item(focal([0], [1], { alpha: -1, gamma: 1 })) === Math.LN2 / 2 // => true
  * ```
  */
@@ -156,8 +156,8 @@ export function focal(
  * @returns The loss, differentiable in the logits.
  * @example
  * ```ts
- * import { categoricalFocal } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { categoricalFocal } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * item(categoricalFocal([[0, 0]], [1], { gamma: 1 })) === Math.LN2 / 2 // => true
  * ```
  */
@@ -196,8 +196,8 @@ export function categoricalFocal(
  * @returns The loss, differentiable.
  * @example
  * ```ts
- * import { multiLabelSoftMargin } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { multiLabelSoftMargin } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * item(multiLabelSoftMargin([[0, 0]], [[1, 0]])) === Math.LN2 // => true
  * ```
  */
@@ -236,8 +236,8 @@ export interface CrossEntropyOptions {
  * @index function Categorical cross-entropy from logits.
  * @example
  * ```ts
- * import { crossEntropy } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { crossEntropy } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * Math.abs(item(crossEntropy([[0, 0]], [1])) - Math.LN2) < 1e-15 // => true
  * ```
  */
@@ -257,7 +257,7 @@ export function crossEntropy(logits: TensorLike, target: TensorLike, options: Cr
     return reduce(terms, { reduction: options.reduction ?? 'mean' })
   }
   if (t.shape.length !== z.shape.length - 1)
-    throw new MdmlError('shape', 'crossEntropy: targets must be [...] or [..., C]')
+    throw new OmaiError('shape', 'crossEntropy: targets must be [...] or [..., C]')
   const ignore = options.ignoreIndex
   const keep = ignore === undefined ? undefined : cast(sub(1, cast(equal(t, ignore), 'float64')), 'float64')
   // Ignored targets gather class 0 (any valid class) and are then masked out.
@@ -285,8 +285,8 @@ export function crossEntropy(logits: TensorLike, target: TensorLike, options: Cr
  * @returns The loss, differentiable in the log-probabilities.
  * @example
  * ```ts
- * import { nllLoss } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { nllLoss } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * item(nllLoss([[-1, -2]], [1])) // => 2
  * ```
  */
@@ -319,7 +319,7 @@ function classProbabilities(
   const [z] = promoteFloat(logits) as [Value]
   const c = z.shape[z.shape.length - 1] ?? 0
   const t = promoteFloat(target)[0] as Value
-  if (t.shape.length !== z.shape.length - 1) throw new MdmlError('shape', 'targets must be class indices [...]')
+  if (t.shape.length !== z.shape.length - 1) throw new OmaiError('shape', 'targets must be class indices [...]')
   const logp = logSoftmax(z, -1)
   const index = expandDims(cast(t, 'int32'), -1)
   const pickedLog = squeeze(takeAlongAxis(logp, index, -1), -1)
@@ -338,8 +338,8 @@ function classProbabilities(
  * @concept noise-robust-losses
  * @example
  * ```ts
- * import { generalisedCrossEntropy } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { generalisedCrossEntropy } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * Math.abs(item(generalisedCrossEntropy([[0, 0]], [0], { q: 1 })) - 0.5) < 1e-15 // => true
  * ```
  */
@@ -349,7 +349,7 @@ export function generalisedCrossEntropy(
   options: { readonly q?: number; readonly reduction?: Reduction } = {},
 ): Value {
   const q = options.q ?? 0.7
-  if (!(q > 0 && q <= 1)) throw new MdmlError('value', 'generalisedCrossEntropy: q must lie in (0, 1]')
+  if (!(q > 0 && q <= 1)) throw new OmaiError('value', 'generalisedCrossEntropy: q must lie in (0, 1]')
   const { pickedLog } = classProbabilities(logits, target)
   return reduce(div(sub(1, exp(mul(pickedLog, q))), q), { reduction: options.reduction ?? 'mean' })
 }
@@ -365,8 +365,8 @@ export function generalisedCrossEntropy(
  * @returns The loss, differentiable in the logits (zero gradient below the threshold).
  * @example
  * ```ts
- * import { truncatedCrossEntropy } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { truncatedCrossEntropy } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * Math.abs(item(truncatedCrossEntropy([[0, 5]], [0], { q: 1, k: 0.5 })) - 0.5) < 1e-15 // => true
  * ```
  */
@@ -377,7 +377,7 @@ export function truncatedCrossEntropy(
 ): Value {
   const q = options.q ?? 0.7
   const k = options.k ?? 0.5
-  if (!(q > 0 && q <= 1)) throw new MdmlError('value', 'truncatedCrossEntropy: q must lie in (0, 1]')
+  if (!(q > 0 && q <= 1)) throw new OmaiError('value', 'truncatedCrossEntropy: q must lie in (0, 1]')
   const { picked } = classProbabilities(logits, target)
   const floor = (1 - k ** q) / q
   const terms = where(greater(picked, k), div(sub(1, pow(picked, q)), q), floor)
@@ -395,8 +395,8 @@ export function truncatedCrossEntropy(
  * @returns The loss, differentiable in the logits.
  * @example
  * ```ts
- * import { symmetricCrossEntropy } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { symmetricCrossEntropy } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * Math.abs(item(symmetricCrossEntropy([[0, 0]], [0], { alpha: 1, beta: 1, A: -2 })) - (Math.LN2 + 1)) < 1e-15 // => true
  * ```
  */
@@ -426,8 +426,8 @@ export function symmetricCrossEntropy(
  * @returns The loss, differentiable in the logits.
  * @example
  * ```ts
- * import { probabilityMae } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { probabilityMae } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * item(probabilityMae([[0, 0]], [1])) // => 1
  * ```
  */
@@ -452,8 +452,8 @@ export function probabilityMae(
  * @returns The loss, differentiable in the logits (the model's own belief is held constant).
  * @example
  * ```ts
- * import { bootstrapped } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { bootstrapped } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * Math.abs(item(bootstrapped([[0, 0]], [0], { beta: 1 })) - Math.LN2) < 1e-15 // => true
  * ```
  */
@@ -483,8 +483,8 @@ export function bootstrapped(
  * @returns The loss, differentiable in the logits.
  * @example
  * ```ts
- * import { forwardCorrected } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { forwardCorrected } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * Math.abs(item(forwardCorrected([[0, 0]], [1], [[1, 0], [0.5, 0.5]])) - Math.log(4)) < 1e-15 // => true
  * ```
  */
@@ -514,8 +514,8 @@ export function forwardCorrected(
  * @returns The loss, differentiable in the logits.
  * @example
  * ```ts
- * import { backwardCorrected, crossEntropy } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { backwardCorrected, crossEntropy } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * item(backwardCorrected([[1, 2]], [1], [[1, 0], [0, 1]])) === item(crossEntropy([[1, 2]], [1])) // => true
  * ```
  */
@@ -540,8 +540,8 @@ export function backwardCorrected(
  * @returns The tempered logarithm of each element, differentiable.
  * @example
  * ```ts
- * import { logTemperature } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { logTemperature } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * item(logTemperature(5, 0)) // => 4
  * item(logTemperature(1, 1)) // => 0
  * ```
@@ -559,8 +559,8 @@ export function logTemperature(x: TensorLike, t: number): Value {
  * @returns The tempered exponential of each element, differentiable.
  * @example
  * ```ts
- * import { expTemperature } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { expTemperature } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * item(expTemperature(3, 0)) // => 4
  * item(expTemperature(0, 1)) // => 1
  * ```
@@ -581,8 +581,8 @@ export function expTemperature(x: TensorLike, t: number): Value {
  * @returns Probabilities `[..., C]`, differentiable.
  * @example
  * ```ts
- * import { temperedSoftmax } from 'mdml-engine/losses'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { temperedSoftmax } from 'omai-engine/losses'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(temperedSoftmax([0, 0], 1)) // => [0.5, 0.5]
  * ```
  */
@@ -611,8 +611,8 @@ export function temperedSoftmax(activations: TensorLike, t: number, iterations =
  * @returns The loss, differentiable in the activations.
  * @example
  * ```ts
- * import { biTemperedLogistic, crossEntropy } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { biTemperedLogistic, crossEntropy } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * Math.abs(item(biTemperedLogistic([[1, 2, 0]], [1], { t1: 1, t2: 1 })) - item(crossEntropy([[1, 2, 0]], [1]))) < 1e-14 // => true
  * ```
  */

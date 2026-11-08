@@ -10,7 +10,7 @@
 // TODO: stereoRectify's alpha-dependent new camera matrices (OpenCV fits them to the undistorted image corners);
 // here both views share the smaller focal length and the mean principal point.
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { homography } from '../numerics/geometry/index.ts'
 import { concat, reshape, sliceAxis, sub, tensor, toArray, type Value } from '../tensor/index.ts'
 import type { Algorithm } from '../trace/index.ts'
@@ -62,7 +62,7 @@ function zhangIntrinsics(hs: readonly MutableRows[]): MutableRows {
   const beta = Math.sqrt((lambda * B11) / (B11 * B22 - B12 * B12))
   const u0 = (-B13 * alpha * alpha) / lambda
   if (!(Number.isFinite(alpha) && Number.isFinite(beta)))
-    throw new MdmlError('value', 'calibrateCamera: the views do not determine the intrinsics')
+    throw new OmaiError('value', 'calibrateCamera: the views do not determine the intrinsics')
   return [
     [alpha, 0, u0],
     [0, beta, v0],
@@ -108,11 +108,11 @@ function zhangPose(h: MutableRows, k: MutableRows): Pose {
  * @param imagePoints - Per view, their image points `[n, 2]`.
  * @param options - The number of refinement iterations (default 100) and whether to fix k3 at 0 (default false).
  * @returns The RMS error, camera matrix, distortion and poses.
- * @throws MdmlError with code `value` for fewer than two views or a non-planar target.
+ * @throws OmaiError with code `value` for fewer than two views or a non-planar target.
  * @concept camera-calibration
  * @example
  * ```ts
- * import { calibrateCamera, projectPoints } from 'mdml-engine/vision'
+ * import { calibrateCamera, projectPoints } from 'omai-engine/vision'
  * const K = [[300, 0, 160], [0, 310, 120], [0, 0, 1]]
  * const board = Array.from({ length: 20 }, (_, i) => [i % 5, Math.floor(i / 5), 0])
  * const poses = [{ rvec: [0.2, 0.1, 0], tvec: [-2, -1.5, 8] }, { rvec: [-0.1, 0.3, 0.1], tvec: [-2, -2, 9] }, { rvec: [0.3, -0.2, 0.2], tvec: [-1.5, -1, 7] }]
@@ -146,13 +146,13 @@ function calibrationProblem(
 ): CalibrationProblem {
   const views = objectPoints.length
   if (views < 2 || imagePoints.length !== views)
-    throw new MdmlError('value', 'calibrateCamera: at least two views, one image point set per view')
+    throw new OmaiError('value', 'calibrateCamera: at least two views, one image point set per view')
   const X = objectPoints.map((o) => points3Of(o, 'calibrateCamera'))
   const x = imagePoints.map((p) => pointsOf(p, 'calibrateCamera'))
   for (const [v, o] of X.entries()) {
     if (o.some((p) => Math.abs(p[2]) > 1e-12))
-      throw new MdmlError('value', 'calibrateCamera: the target must be planar (z = 0)')
-    if (o.length !== x[v]?.length) throw new MdmlError('shape', 'calibrateCamera: one image point per target point')
+      throw new OmaiError('value', 'calibrateCamera: the target must be planar (z = 0)')
+    if (o.length !== x[v]?.length) throw new OmaiError('shape', 'calibrateCamera: one image point per target point')
   }
   const hs = X.map(
     (o, v) =>
@@ -222,12 +222,12 @@ export type CalibrationState = RefinementState<Calibration>
  * @param imagePoints - Per view, their image points `[n, 2]`.
  * @param options - The most iterations (default 100) and whether to fix k3 at 0 (default false).
  * @returns The algorithm; read `state.decoded` for the camera matrix, distortion and poses, `state.rms` for the error.
- * @throws MdmlError with code `value` for fewer than two views or a non-planar target.
+ * @throws OmaiError with code `value` for fewer than two views or a non-planar target.
  * @concept camera-calibration
  * @example
  * ```ts
- * import { calibrationAlgorithm, projectPoints } from 'mdml-engine/vision'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { calibrationAlgorithm, projectPoints } from 'omai-engine/vision'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const K = [[300, 0, 160], [0, 310, 120], [0, 0, 1]]
  * const board = Array.from({ length: 20 }, (_, i) => [i % 5, Math.floor(i / 5), 0])
  * const poses = [{ rvec: [0.2, 0.1, 0], tvec: [-2, -1.5, 8] }, { rvec: [-0.1, 0.3, 0.1], tvec: [-2, -2, 9] }, { rvec: [0.3, -0.2, 0.2], tvec: [-1.5, -1, 7] }]
@@ -280,7 +280,7 @@ export interface StereoRectification {
  * @concept stereo-rectification
  * @example
  * ```ts
- * import { stereoRectify } from 'mdml-engine/vision'
+ * import { stereoRectify } from 'omai-engine/vision'
  * const K = [[100, 0, 50], [0, 100, 40], [0, 0, 1]]
  * const r = stereoRectify(K, [], K, [], [100, 80], [[1, 0, 0], [0, 1, 0], [0, 0, 1]], [-1, 0, 0])
  * r.R1.map((row) => row.map((v) => Math.round(v * 1e12) / 1e12)) // => [[1, 0, 0], [0, 1, 0], [0, 0, 1]]

@@ -3,8 +3,8 @@
  * axes.
  */
 
-import type { ComplexPlane } from 'mdml-engine/exposition'
-import { isStablePole } from 'mdml-engine/exposition'
+import type { ComplexPlane } from 'omai-engine/exposition'
+import { isStablePole } from 'omai-engine/exposition'
 import { type ReactElement, useCallback } from 'react'
 import type { Figure } from '../../figure/figure.ts'
 import { complexPlaneView } from '../../views/complex-plane.ts'

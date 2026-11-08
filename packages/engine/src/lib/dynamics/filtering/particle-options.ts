@@ -48,7 +48,7 @@ function resampler(
  * @concept particle-filter
  * @example
  * ```ts
- * import { filtering } from 'mdml-engine/dynamics'
+ * import { filtering } from 'omai-engine/dynamics'
  * filtering.resamplers.make({ kind: 'residual' }) // => 'residual'
  * ```
  */
@@ -106,7 +106,7 @@ export interface ProposalProperties {
  * @concept particle-filter
  * @example
  * ```ts
- * import { filtering } from 'mdml-engine/dynamics'
+ * import { filtering } from 'omai-engine/dynamics'
  * filtering.particleProposals.make({ kind: 'bootstrap', essThreshold: 0.3 }).essThreshold // => 0.3
  * ```
  */
@@ -150,8 +150,8 @@ const mapRows = (f: (x: Value) => Value, x: Value): Value => stack(rows(x, x.sha
  * @concept particle-filter
  * @example
  * ```ts
- * import { filtering } from 'mdml-engine/dynamics'
- * import { key } from 'mdml-engine/random'
+ * import { filtering } from 'omai-engine/dynamics'
+ * import { key } from 'omai-engine/random'
  * const m = filtering.gaussianParticleModel({ f: (x) => x, h: (x) => x, Q: [[0.1]], R: [[1]], x0: [0], P0: [[1]] })
  * m.initial(key(0), 4).shape // => [4, 1]
  * ```

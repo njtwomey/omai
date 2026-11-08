@@ -92,8 +92,8 @@ export class NeuralField extends Sequential {
  * @index module A coordinate encoding plus backbone as one network.
  * @example
  * ```ts
- * import { neuralField } from 'mdml-engine/fields'
- * import { key } from 'mdml-engine/random'
+ * import { neuralField } from 'omai-engine/fields'
+ * import { key } from 'omai-engine/random'
  * const f = neuralField({ inputDim: 2, outputDim: 3, encoding: { kind: 'frequency', octaves: 4 }, width: 16, depth: 2, key: key(0) })
  * [f.encodedDim, f.forward([[0.1, 0.2]]).shape] // => [18, [1, 3]]
  * ```

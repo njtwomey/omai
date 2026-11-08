@@ -41,7 +41,7 @@ function pattern(
  * @concept dynamic-time-warping
  * @example
  * ```ts
- * import { dtwStepPatterns } from 'mdml-engine/signal'
+ * import { dtwStepPatterns } from 'omai-engine/signal'
  * dtwStepPatterns.make({ kind: 'asymmetric', window: 3 }) // => { stepPattern: 'asymmetric', window: 3 }
  * ```
  */

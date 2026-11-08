@@ -7,7 +7,7 @@
  * cases, instruments) is `pgm/causal`.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { frontdoorAdjustmentSets, minimalAdjustmentSet } from '../pgm/causal/identification.ts'
 import type { DirectedModel } from '../pgm/graphs.ts'
 import { bootstrapIndices, foldIn, type Key, key as makeKey } from '../random/index.ts'
@@ -39,7 +39,7 @@ export interface BackdoorOptions {
 
 const column = (data: NamedData, name: string): ArrayLike<number> => {
   const c = data[name]
-  if (c === undefined) throw new MdmlError('value', `no column named ${name}`)
+  if (c === undefined) throw new OmaiError('value', `no column named ${name}`)
   return c
 }
 
@@ -54,11 +54,11 @@ const column = (data: NamedData, name: string): ArrayLike<number> => {
  * @param outcome - The outcome variable.
  * @param options - Latent variables, the estimator and the interval level.
  * @returns The adjustment set and the effect.
- * @throws MdmlError with code `value` when no back-door set exists among the observed variables.
+ * @throws OmaiError with code `value` when no back-door set exists among the observed variables.
  * @example
  * ```ts
- * import { backdoorEffect } from 'mdml-engine/causal'
- * import { dag } from 'mdml-engine/pgm'
+ * import { backdoorEffect } from 'omai-engine/causal'
+ * import { dag } from 'omai-engine/pgm'
  * const z = [0, 1, 2, 3, 4, 5, 6, 7]
  * const x = [0, 0, 1, 0, 1, 1, 1, 0]
  * const y = z.map((v, i) => v + 2 * (x[i] ?? 0) + 0.1 * Math.sin(i))
@@ -80,7 +80,7 @@ export function backdoorEffect(
     options.latent === undefined ? {} : { latent: options.latent },
   )
   if (set === null)
-    throw new MdmlError(
+    throw new OmaiError(
       'value',
       `backdoorEffect: no back-door adjustment set for ${treatment} -> ${outcome} among the observed variables`,
     )
@@ -208,11 +208,11 @@ function frontdoorValue(
  * @param outcome - The outcome variable.
  * @param options - Latent variables, resamples and key.
  * @returns The front-door set and the average treatment effect.
- * @throws MdmlError with code `value` when the graph has no front-door set.
+ * @throws OmaiError with code `value` when the graph has no front-door set.
  * @example
  * ```ts
- * import { frontdoorEffect } from 'mdml-engine/causal'
- * import { dag } from 'mdml-engine/pgm'
+ * import { frontdoorEffect } from 'omai-engine/causal'
+ * import { dag } from 'omai-engine/pgm'
  * const x = [0, 0, 0, 0, 1, 1, 1, 1]
  * const m = [0, 0, 0, 1, 0, 1, 1, 1]
  * const y = m.map((v) => 2 * v)
@@ -235,7 +235,7 @@ export function frontdoorEffect(
   )
   const set = sets[0]
   if (set === undefined)
-    throw new MdmlError('value', `frontdoorEffect: no front-door set for ${treatment} -> ${outcome}`)
+    throw new OmaiError('value', `frontdoorEffect: no front-door set for ${treatment} -> ${outcome}`)
   const t = column(data, treatment)
   const y = column(data, outcome)
   const n = t.length

@@ -1,5 +1,5 @@
-import type { Dataset } from 'mdml-engine/data'
-import { asTensor, fromStorage, toFlat } from 'mdml-engine/tensor'
+import type { Dataset } from 'omai-engine/data'
+import { asTensor, fromStorage, toFlat } from 'omai-engine/tensor'
 
 /** A one-dimensional regression problem as plain arrays, with the true curve when the data carries it. */
 export interface CurveData {

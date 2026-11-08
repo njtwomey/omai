@@ -9,7 +9,7 @@
  */
 import { valueAndGrad } from '../autodiff/index.ts'
 import type { Json } from '../base/index.ts'
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { affineGrid, gridSample } from '../nn/index.ts'
 import { ifft2 } from '../numerics/fourier/index.ts'
 import { adam, applyUpdates, type LearningRate, sgd } from '../optim/index.ts'
@@ -59,8 +59,8 @@ export type UnitObjective = (output: Value) => Value
  * @returns The objective.
  * @example
  * ```ts
- * import { unitObjective } from 'mdml-engine/explain'
- * import { tensor, toFlat } from 'mdml-engine/tensor'
+ * import { unitObjective } from 'omai-engine/explain'
+ * import { tensor, toFlat } from 'omai-engine/tensor'
  * toFlat(unitObjective(1)(tensor([[3, 5, 9]]))) // => [5]
  * ```
  */
@@ -75,8 +75,8 @@ export function unitObjective(unit: number): UnitObjective {
  * @returns The objective.
  * @example
  * ```ts
- * import { channelObjective } from 'mdml-engine/explain'
- * import { tensor, toFlat } from 'mdml-engine/tensor'
+ * import { channelObjective } from 'omai-engine/explain'
+ * import { tensor, toFlat } from 'omai-engine/tensor'
  * toFlat(channelObjective(1)(tensor([[[[1, 1]], [[2, 4]]]]))) // => [3]
  * ```
  */
@@ -149,8 +149,8 @@ export const featureVisualisationContract: Contract<FeatureVisualisationState, F
  * @returns The sum.
  * @example
  * ```ts
- * import { totalVariation } from 'mdml-engine/explain'
- * import { tensor, toFlat } from 'mdml-engine/tensor'
+ * import { totalVariation } from 'omai-engine/explain'
+ * import { tensor, toFlat } from 'omai-engine/tensor'
  * toFlat(totalVariation(tensor([[[[0, 1], [1, 0]]]]))) // => [4]
  * ```
  */
@@ -187,9 +187,9 @@ function spectrumScale(c: number, h: number, w: number, decay: number): Tensor {
  * @concept feature-visualisation
  * @example
  * ```ts
- * import { featureVisualisation, unitObjective } from 'mdml-engine/explain'
- * import { runAlgorithm } from 'mdml-engine/trace'
- * import { mean } from 'mdml-engine/tensor'
+ * import { featureVisualisation, unitObjective } from 'omai-engine/explain'
+ * import { runAlgorithm } from 'omai-engine/trace'
+ * import { mean } from 'omai-engine/tensor'
  * // A "network" whose logit is the mean brightness: ascent makes the image brighter.
  * const alg = featureVisualisation((x) => mean(x, [1, 2, 3], true), { shape: [1, 4, 4], steps: 20, objective: unitObjective(0), parametrisation: 'pixel', optimiser: 'sgd', learningRate: 5 })
  * runAlgorithm(alg, { maxSteps: 20, seed: 0 }).state.activation > 0.6 // => true
@@ -201,11 +201,11 @@ export function featureVisualisation(
 ): Algorithm<FeatureVisualisationState, FeatureVisualisationPath> {
   const [c, h, w] = options.shape
   if (![c, h, w].every((n) => Number.isInteger(n) && n >= 1))
-    throw new MdmlError('shape', 'featureVisualisation: shape must be [channels, height, width]')
+    throw new OmaiError('shape', 'featureVisualisation: shape must be [channels, height, width]')
   const objective = options.objective ?? unitObjective(0)
   const fourier = (options.parametrisation ?? 'fourier') === 'fourier'
   if (fourier && options.blur !== undefined)
-    throw new MdmlError(
+    throw new OmaiError(
       'value',
       'featureVisualisation: blur needs the pixel parametrisation (the Fourier one is already low-pass)',
     )

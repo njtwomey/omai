@@ -77,7 +77,7 @@ function toView(x: TensorLike | MatrixView, who: string): MatrixView {
  * @returns The expected path length `c(n)`.
  * @example
  * ```ts
- * import { averagePathLength } from 'mdml-engine/anomaly'
+ * import { averagePathLength } from 'omai-engine/anomaly'
  * [averagePathLength(1), averagePathLength(2)] // => [0, 1]
  * ```
  */
@@ -99,8 +99,8 @@ export function averagePathLength(n: number): number {
  * @returns The grown isolation tree.
  * @example
  * ```ts
- * import { isolationTree } from 'mdml-engine/anomaly'
- * import { key } from 'mdml-engine/random'
+ * import { isolationTree } from 'omai-engine/anomaly'
+ * import { key } from 'omai-engine/random'
  * isolationTree([[0], [1], [10]], [0, 1, 2], key(0), { maxDepth: 2 }).length > 1 // => true
  * ```
  */
@@ -166,8 +166,8 @@ export function isolationTree(
  * @returns The adjusted path length.
  * @example
  * ```ts
- * import { isolationTree, pathLength } from 'mdml-engine/anomaly'
- * import { key } from 'mdml-engine/random'
+ * import { isolationTree, pathLength } from 'omai-engine/anomaly'
+ * import { key } from 'omai-engine/random'
  * const t = isolationTree([[0], [0.1], [0.2], [10]], [0, 1, 2, 3], key(0), { maxDepth: 3 })
  * pathLength(t, [10]) <= pathLength(t, [0.1]) // => true
  * ```
@@ -193,8 +193,8 @@ export function pathLength(tree: IsolationTree, point: readonly number[]): numbe
  * @returns The steps from root to leaf.
  * @example
  * ```ts
- * import { isolationPath, isolationTree } from 'mdml-engine/anomaly'
- * import { key } from 'mdml-engine/random'
+ * import { isolationPath, isolationTree } from 'omai-engine/anomaly'
+ * import { key } from 'omai-engine/random'
  * const t = isolationTree([[0], [10]], [0, 1], key(0), { maxDepth: 2 })
  * isolationPath(t, [10]).at(-1)?.leaf // => true
  * ```
@@ -266,8 +266,8 @@ export interface IsolationForestAlgorithmOptions {
  * @returns The algorithm.
  * @example
  * ```ts
- * import { isolationForestAlgorithm } from 'mdml-engine/anomaly'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { isolationForestAlgorithm } from 'omai-engine/anomaly'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const out = runAlgorithm(isolationForestAlgorithm([[0], [0.1], [0.2], [10]], { nEstimators: 10 }), { maxSteps: 10 })
  * out.state.trees.length // => 10
  * ```
@@ -341,8 +341,8 @@ export function isolationForestAlgorithm(
  * @returns The algorithm.
  * @example
  * ```ts
- * import { extendedIsolationForestAlgorithm } from 'mdml-engine/anomaly'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { extendedIsolationForestAlgorithm } from 'omai-engine/anomaly'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const out = runAlgorithm(extendedIsolationForestAlgorithm([[0, 0], [0.1, 0.1], [10, 10]], { nEstimators: 5 }), { maxSteps: 5 })
  * out.state.trees.length // => 5
  * ```
@@ -396,7 +396,7 @@ function forestVerbs(p: IsolationForestParams): OutlierVerbs {
  *
  * @example
  * ```ts
- * import type { IsolationForestPath } from 'mdml-engine/anomaly'
+ * import type { IsolationForestPath } from 'omai-engine/anomaly'
  * const path: IsolationForestPath = 'forest/trees'
  * path // => 'forest/trees'
  * ```
@@ -414,9 +414,9 @@ export type IsolationForestPath = 'forest/trees' | 'forest/scoreChange' | 'model
  * @index estimator Isolation forest outlier detector.
  * @example
  * ```ts
- * import { isolationForest } from 'mdml-engine/anomaly'
- * import { key } from 'mdml-engine/random'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { isolationForest } from 'omai-engine/anomaly'
+ * import { key } from 'omai-engine/random'
+ * import { toFlat } from 'omai-engine/tensor'
  * const x = [[0], [0.1], [-0.1], [0.2], [-0.2], [20]]
  * toFlat(isolationForest({ nEstimators: 30, contamination: 0.2 }).fit({ x }, { key: key(0) }).predict([[0], [20]])) // => [1, -1]
  * ```
@@ -534,9 +534,9 @@ export function isolationForest(
  * @returns The iterative outlier estimator.
  * @example
  * ```ts
- * import { extendedIsolationForest } from 'mdml-engine/anomaly'
- * import { key } from 'mdml-engine/random'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { extendedIsolationForest } from 'omai-engine/anomaly'
+ * import { key } from 'omai-engine/random'
+ * import { toFlat } from 'omai-engine/tensor'
  * const x = [[0, 0], [0.1, 0.1], [-0.1, -0.1], [0.2, -0.1], [-0.1, 0.2], [20, 20]]
  * toFlat(extendedIsolationForest({ nEstimators: 30, contamination: 0.2 }).fit({ x }, { key: key(0) }).predict([[0, 0], [20, 20]])) // => [1, -1]
  * ```
@@ -552,9 +552,9 @@ export function extendedIsolationForest(
  *
  * @example
  * ```ts
- * import { IsolationForest } from 'mdml-engine/anomaly'
- * import { key } from 'mdml-engine/random'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { IsolationForest } from 'omai-engine/anomaly'
+ * import { key } from 'omai-engine/random'
+ * import { toFlat } from 'omai-engine/tensor'
  * const x = [[0], [0.1], [-0.1], [0.2], [-0.2], [20]]
  * toFlat(new IsolationForest({ nEstimators: 30, contamination: 0.2 }).fit(x, undefined, { key: key(0) }).predict([[0], [20]])) // => [1, -1]
  * ```
@@ -578,9 +578,9 @@ export class IsolationForest extends ExplainedEstimatorClass<
  *
  * @example
  * ```ts
- * import { ExtendedIsolationForest } from 'mdml-engine/anomaly'
- * import { key } from 'mdml-engine/random'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { ExtendedIsolationForest } from 'omai-engine/anomaly'
+ * import { key } from 'omai-engine/random'
+ * import { toFlat } from 'omai-engine/tensor'
  * const x = [[0, 0], [0.1, 0.1], [-0.1, -0.1], [0.2, -0.1], [-0.1, 0.2], [20, 20]]
  * toFlat(new ExtendedIsolationForest({ nEstimators: 30, contamination: 0.2 }).fit(x, undefined, { key: key(0) }).predict([[0, 0], [20, 20]])) // => [1, -1]
  * ```

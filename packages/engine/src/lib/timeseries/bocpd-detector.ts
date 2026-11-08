@@ -8,7 +8,7 @@
  * overlaid when the data carries them.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import type { TimeSeriesData } from '../data/index.ts'
 import {
   type BocpdPath,
@@ -78,10 +78,10 @@ export type BocpdDetectorPath = BocpdPath | 'model/run-length' | 'model/changepo
  * @param series - The observations, one per step.
  * @param truth - The steps at which a segment truly starts, when known (overrides what the series carries).
  * @returns Data the detector fits.
- * @throws MdmlError with code `shape` for a series with more than one channel.
+ * @throws OmaiError with code `shape` for a series with more than one channel.
  * @example
  * ```ts
- * import { changepointData } from 'mdml-engine/timeseries'
+ * import { changepointData } from 'omai-engine/timeseries'
  * changepointData([0, 0, 5, 5], [2]).changepoints // => [2]
  * ```
  */
@@ -94,7 +94,7 @@ export function changepointData(
     return { x, ...(truth === undefined ? {} : { changepoints: [...truth] }) }
   }
   const ts = series as TimeSeriesData
-  if ((ts.values.shape[1] ?? 1) !== 1) throw new MdmlError('shape', 'changepointData: expected a single-channel series')
+  if ((ts.values.shape[1] ?? 1) !== 1) throw new OmaiError('shape', 'changepointData: expected a single-channel series')
   const labels = ts.segments === undefined ? undefined : toFlat(ts.segments)
   const fromLabels = labels?.flatMap((v, t) => (t > 0 && v !== labels[t - 1] ? [t] : []))
   const fromEvents = ts.events
@@ -116,11 +116,11 @@ function truthOf(data: LearnData): readonly number[] | undefined {
 /** The series of the data, checked against what the model can score. */
 function seriesOf(data: LearnData, model: ConjugateModel): readonly number[] {
   const y = Array.from(asSeries(data.x, 'bocpdDetector'))
-  if (y.some((v) => !Number.isFinite(v))) throw new MdmlError('value', 'bocpdDetector: the series must be finite')
+  if (y.some((v) => !Number.isFinite(v))) throw new OmaiError('value', 'bocpdDetector: the series must be finite')
   if (model.kind === 'poisson-gamma' && y.some((v) => v < 0 || !Number.isInteger(v)))
-    throw new MdmlError('value', 'bocpdDetector: the rate model scores counts (non-negative integers)')
+    throw new OmaiError('value', 'bocpdDetector: the rate model scores counts (non-negative integers)')
   if (model.kind === 'bernoulli-beta' && y.some((v) => v !== 0 && v !== 1))
-    throw new MdmlError('value', 'bocpdDetector: the bernoulli model scores bits (0 or 1)')
+    throw new OmaiError('value', 'bocpdDetector: the bernoulli model scores bits (0 or 1)')
   return y
 }
 
@@ -140,7 +140,7 @@ const pruning: RealSpace = real(-100, -2, { default: -40, label: 'pruning thresh
  * @index estimator Bayesian online changepoint detection.
  * @example
  * ```ts
- * import { bocpdDetector, changepointData } from 'mdml-engine/timeseries'
+ * import { bocpdDetector, changepointData } from 'omai-engine/timeseries'
  * const series = [0, 0.1, -0.1, 0, 0.1, 5, 5.2, 4.9, 5.1, 5]
  * const fitted = bocpdDetector
  *   .with({ model: { kind: 'mean', sigma: 0.5, priorMean: 0, priorStd: 5 }, hazard: { kind: 'constant', rate: 0.1 } })

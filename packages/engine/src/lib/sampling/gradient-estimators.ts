@@ -8,7 +8,7 @@
  */
 
 import { valueAndGrad } from '../autodiff/index.ts'
-import { MdmlError, meanOf, varianceOf } from '../base/index.ts'
+import { meanOf, OmaiError, varianceOf } from '../base/index.ts'
 import { type Distribution, relaxedOneHotCategorical, straightThrough } from '../dists/index.ts'
 import { foldIn, type Key } from '../random/index.ts'
 import { asTensor, mul, stopGradient, sum, type TensorLike, toFlat, type Value } from '../tensor/index.ts'
@@ -66,7 +66,7 @@ function tensors<P extends string>(params: DistributionParams<P>): Record<P, Val
 
 function checkEstimator<P extends string>(options: GradientEstimatorOptions<P>, who: string): void {
   if (!(Number.isInteger(options.n) && options.n >= 2)) {
-    throw new MdmlError('value', `${who}: n must be an integer of at least 2, got ${options.n}`)
+    throw new OmaiError('value', `${who}: n must be an integer of at least 2, got ${options.n}`)
   }
 }
 
@@ -108,16 +108,16 @@ function flatGradient<P extends string>(g: Record<P, Value>, names: readonly P[]
  *
  * @param options - Distribution builder, function, parameters, key, `n` and baseline.
  * @returns The mean gradient with its per-sample variance and standard error.
- * @throws MdmlError with code `value` for `n < 2` or an unknown baseline.
+ * @throws OmaiError with code `value` for `n < 2` or an unknown baseline.
  * @concept gradient-estimators
  * @reference R. J. Williams, Simple statistical gradient-following algorithms for connectionist reinforcement learning
  *   (Machine Learning, 1992); S. Mohamed et al., Monte Carlo gradient estimation in machine learning (JMLR, 2020).
  * @example
  * ```ts
- * import { scoreFunctionGradient } from 'mdml-engine/sampling'
- * import { normal } from 'mdml-engine/dists'
- * import { key } from 'mdml-engine/random'
- * import { square } from 'mdml-engine/tensor'
+ * import { scoreFunctionGradient } from 'omai-engine/sampling'
+ * import { normal } from 'omai-engine/dists'
+ * import { key } from 'omai-engine/random'
+ * import { square } from 'omai-engine/tensor'
  * const e = scoreFunctionGradient({
  *   dist: (p) => normal(p.loc, p.scale),
  *   fn: (x) => square(x),
@@ -135,7 +135,7 @@ export function scoreFunctionGradient<P extends string>(options: ScoreFunctionOp
   const { n, fn } = options
   const baseline = options.baseline ?? 'none'
   if (typeof baseline === 'string' && baseline !== 'none' && baseline !== 'mean' && baseline !== 'leave-one-out') {
-    throw new MdmlError('value', `scoreFunctionGradient: unknown baseline ${baseline}`)
+    throw new OmaiError('value', `scoreFunctionGradient: unknown baseline ${baseline}`)
   }
   const params = tensors(options.params)
   const names = Object.keys(params) as P[]
@@ -165,15 +165,15 @@ export function scoreFunctionGradient<P extends string>(options: ScoreFunctionOp
  *
  * @param options - Distribution builder (its `rsample` must exist), function, parameters, key and `n`.
  * @returns The mean gradient with its per-sample variance and standard error.
- * @throws MdmlError with code `value` for `n < 2`, or from `rsample` of a distribution without one.
+ * @throws OmaiError with code `value` for `n < 2`, or from `rsample` of a distribution without one.
  * @concept gradient-estimators
  * @reference D. P. Kingma and M. Welling, Auto-encoding variational Bayes (ICLR 2014).
  * @example
  * ```ts
- * import { pathwiseGradient } from 'mdml-engine/sampling'
- * import { normal } from 'mdml-engine/dists'
- * import { key } from 'mdml-engine/random'
- * import { square } from 'mdml-engine/tensor'
+ * import { pathwiseGradient } from 'omai-engine/sampling'
+ * import { normal } from 'omai-engine/dists'
+ * import { key } from 'omai-engine/random'
+ * import { square } from 'omai-engine/tensor'
  * const e = pathwiseGradient({
  *   dist: (p) => normal(p.loc, p.scale),
  *   fn: (x) => square(x),
@@ -207,16 +207,16 @@ export function pathwiseGradient<P extends string>(options: GradientEstimatorOpt
  * @param options - Builder of a `bernoulli`, `oneHotCategorical`, `relaxedBernoulli` or `relaxedOneHotCategorical`, the
  *   function, parameters, key and `n`.
  * @returns The mean gradient with its per-sample variance and standard error.
- * @throws MdmlError with code `value` for `n < 2` or a distribution `straightThrough` does not support.
+ * @throws OmaiError with code `value` for `n < 2` or a distribution `straightThrough` does not support.
  * @concept gradient-estimators
  * @reference Y. Bengio, N. Leonard and A. Courville, Estimating or propagating gradients through stochastic neurons
  *   for conditional computation (arXiv 1308.3432, 2013).
  * @example
  * ```ts
- * import { straightThroughGradient } from 'mdml-engine/sampling'
- * import { bernoulli } from 'mdml-engine/dists'
- * import { key } from 'mdml-engine/random'
- * import { mul } from 'mdml-engine/tensor'
+ * import { straightThroughGradient } from 'omai-engine/sampling'
+ * import { bernoulli } from 'omai-engine/dists'
+ * import { key } from 'omai-engine/random'
+ * import { mul } from 'omai-engine/tensor'
  * // E[3 x] = 3 p for x ~ Bernoulli(p): the gradient with respect to p is exactly 3.
  * const e = straightThroughGradient({ dist: (p) => bernoulli({ probs: p.probs }), fn: (x) => mul(x, 3), params: { probs: 0.3 }, key: key(0), n: 50 })
  * e.gradient['probs']?.[0]?.toFixed(6) // => '3.000000'
@@ -251,14 +251,14 @@ export interface GumbelSoftmaxOptions {
  *
  * @param options - Function, logits, temperature, `hard`, key and `n`.
  * @returns The mean gradient of `E f(x)` with respect to `logits` (under the name `logits`), with variance and error.
- * @throws MdmlError with code `value` for `n < 2` or a non-positive temperature.
+ * @throws OmaiError with code `value` for `n < 2` or a non-positive temperature.
  * @concept gradient-estimators
  * @reference E. Jang, S. Gu and B. Poole, Categorical reparameterization with Gumbel-softmax (ICLR 2017).
  * @example
  * ```ts
- * import { gumbelSoftmaxGradient } from 'mdml-engine/sampling'
- * import { key } from 'mdml-engine/random'
- * import { sum, mul } from 'mdml-engine/tensor'
+ * import { gumbelSoftmaxGradient } from 'omai-engine/sampling'
+ * import { key } from 'omai-engine/random'
+ * import { sum, mul } from 'omai-engine/tensor'
  * // f(x) = x . [1, 2, 3]: the gradient of E[f] over softmax(logits) is positive along the larger payoffs.
  * const e = gumbelSoftmaxGradient({ fn: (x) => sum(mul(x, [1, 2, 3])), logits: [0, 0, 0], temperature: 0.5, key: key(0), n: 500 })
  * (e.gradient['logits']?.[2] ?? 0) > (e.gradient['logits']?.[0] ?? 0) // => true
@@ -266,7 +266,7 @@ export interface GumbelSoftmaxOptions {
  */
 export function gumbelSoftmaxGradient(options: GumbelSoftmaxOptions): GradientEstimate {
   if (!(options.temperature > 0)) {
-    throw new MdmlError('value', `gumbelSoftmaxGradient: temperature must be positive, got ${options.temperature}`)
+    throw new OmaiError('value', `gumbelSoftmaxGradient: temperature must be positive, got ${options.temperature}`)
   }
   const build = (p: Record<'logits', Value>): Distribution => {
     const relaxed = relaxedOneHotCategorical(options.temperature, { logits: p.logits })
@@ -289,11 +289,11 @@ export function gumbelSoftmaxGradient(options: GumbelSoftmaxOptions): GradientEs
  * @param estimate - A gradient estimate.
  * @param exact - The exact gradient by parameter name.
  * @returns `sqrt(sum (estimate - exact)^2)`.
- * @throws MdmlError with code `shape` for a missing parameter or a length mismatch.
+ * @throws OmaiError with code `shape` for a missing parameter or a length mismatch.
  * @concept gradient-estimators
  * @example
  * ```ts
- * import { gradientError } from 'mdml-engine/sampling'
+ * import { gradientError } from 'omai-engine/sampling'
  * const est = { method: 'x', n: 2, gradient: { a: Float64Array.of(1, 2) }, variance: {}, standardError: {} }
  * gradientError(est, { a: [1, 4] }) // => 2
  * ```
@@ -303,7 +303,7 @@ export function gradientError(estimate: GradientEstimate, exact: Readonly<Record
   for (const [name, g] of Object.entries(estimate.gradient)) {
     const e = exact[name]
     if (e === undefined || e.length !== g.length)
-      throw new MdmlError('shape', `gradientError: no exact gradient of the right length for ${name}`)
+      throw new OmaiError('shape', `gradientError: no exact gradient of the right length for ${name}`)
     for (let i = 0; i < g.length; i++) total += ((g[i] ?? 0) - (e[i] ?? 0)) ** 2
   }
   return Math.sqrt(total)

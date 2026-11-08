@@ -86,7 +86,7 @@ function paintedRecord(sc: Scene, s: SlicState): DecisionSurface {
  *
  * @example
  * ```ts
- * import type { SlicSuperpixelsPath } from 'mdml-engine/methods/vision'
+ * import type { SlicSuperpixelsPath } from 'omai-engine/methods/vision'
  * const path: SlicSuperpixelsPath = 'segments/moved'
  * path // => 'segments/moved'
  * ```

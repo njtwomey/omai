@@ -4,7 +4,7 @@
  * function to zeros, poles and gain and back, and the routes between zeros-poles-gain and state space.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { type ComplexArray, charpoly } from '../numerics/polynomial/index.ts'
 import {
   add,
@@ -57,27 +57,27 @@ export interface ZerosPolesGainData {
  * @param num - Numerator `[k]` or `[outputs, k]`.
  * @param den - Denominator `[l]`.
  * @returns The normalised polynomials (a single-row numerator becomes 1-D).
- * @throws MdmlError with code `value` when the denominator is zero.
+ * @throws OmaiError with code `value` when the denominator is zero.
  * @example
  * ```ts
- * import { normalize } from 'mdml-engine/systems'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { normalize } from 'omai-engine/systems'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(normalize([0, 2, 4], [0, 2, 6]).num) // => [1, 2]
  * ```
  */
 export function normalize(num: TensorLike, den: TensorLike): Polynomials {
   let d = float(den)
   if (d.shape.length === 0) d = reshape(d, [1])
-  if (d.shape.length !== 1) throw new MdmlError('shape', 'normalize: the denominator must be 1-D')
+  if (d.shape.length !== 1) throw new OmaiError('shape', 'normalize: the denominator must be 1-D')
   const dn = numbers(d)
   const first = dn.findIndex((v) => v !== 0)
-  if (first < 0) throw new MdmlError('value', 'normalize: the denominator must have a nonzero coefficient')
+  if (first < 0) throw new OmaiError('value', 'normalize: the denominator must have a nonzero coefficient')
   d = sliceAxis(d, 0, first, dn.length)
   const lead = sliceAxis(d, 0, 0, 1)
   let n = float(num)
   if (n.shape.length === 0) n = reshape(n, [1, 1])
   else if (n.shape.length === 1) n = reshape(n, [1, n.shape[0] ?? 0])
-  if (n.shape.length !== 2) throw new MdmlError('shape', 'normalize: the numerator must be 1-D or 2-D')
+  if (n.shape.length !== 2) throw new OmaiError('shape', 'normalize: the numerator must be 1-D or 2-D')
   n = div(n, lead)
   d = div(d, lead)
   const [p = 1, k = 0] = n.shape
@@ -100,12 +100,12 @@ export function normalize(num: TensorLike, den: TensorLike): Polynomials {
  * @param num - Numerator `[k]` or `[outputs, k]`.
  * @param den - Denominator `[l]` with l >= k.
  * @returns A, B, C and D.
- * @throws MdmlError with code `value` for an improper transfer function.
+ * @throws OmaiError with code `value` for an improper transfer function.
  * @concept state-space
  * @example
  * ```ts
- * import { tf2ss } from 'mdml-engine/systems'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { tf2ss } from 'omai-engine/systems'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(tf2ss([1], [1, 3, 2]).a) // => [[-3, -2], [1, 0]]
  * ```
  */
@@ -114,7 +114,7 @@ export function tf2ss(num: TensorLike, den: TensorLike): StateSpaceMatrices {
   const n2 = normal.num.shape.length === 1 ? reshape(normal.num, [1, normal.num.shape[0] ?? 0]) : normal.num
   const [p = 1, m = 0] = n2.shape
   const k = normal.den.shape[0] ?? 0
-  if (m > k) throw new MdmlError('value', 'tf2ss: improper transfer function (numerator longer than denominator)')
+  if (m > k) throw new OmaiError('value', 'tf2ss: improper transfer function (numerator longer than denominator)')
   const padded = m < k ? concat([zeros([p, k - m]), n2], 1) : n2
   const d = sliceAxis(padded, 1, 0, 1)
   if (k === 1) return { a: zeros([1, 1]), b: zeros([1, 1]), c: zeros([p, 1]), d }
@@ -138,7 +138,7 @@ function checkMatrices(a: Value, b: Value, c: Value, d: Value, name: string): vo
     d.shape[0] === c.shape[0] &&
     d.shape[1] === b.shape[1]
   if (!ok) {
-    throw new MdmlError('shape', `${name}: A [n, n], B [n, m], C [p, n] and D [p, m] do not fit`, {
+    throw new OmaiError('shape', `${name}: A [n, n], B [n, m], C [p, n] and D [p, m] do not fit`, {
       a: a.shape,
       b: b.shape,
       c: c.shape,
@@ -156,11 +156,11 @@ function checkMatrices(a: Value, b: Value, c: Value, d: Value, name: string): vo
  * @param c - C `[p, n]`.
  * @param d - D `[p, m]`, flat, or omitted.
  * @returns The four matrices.
- * @throws MdmlError with code `shape` when the shapes do not fit.
+ * @throws OmaiError with code `shape` when the shapes do not fit.
  * @example
  * ```ts
- * import { abcdNormalize } from 'mdml-engine/systems'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { abcdNormalize } from 'omai-engine/systems'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(abcdNormalize([[1]], [[1, 2]], [[1]]).d) // => [[0, 0]]
  * ```
  */
@@ -186,12 +186,12 @@ export function abcdNormalize(a: TensorLike, b: TensorLike, c: TensorLike, d?: T
  * @param d - D `[p, m]` (zeros when omitted).
  * @param input - The input index.
  * @returns The numerator `[p, n + 1]` and denominator `[n + 1]`.
- * @throws MdmlError with code `value` when the input does not exist.
+ * @throws OmaiError with code `value` when the input does not exist.
  * @concept transfer-functions
  * @example
  * ```ts
- * import { ss2tf } from 'mdml-engine/systems'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { ss2tf } from 'omai-engine/systems'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(ss2tf([[-3, -2], [1, 0]], [[1], [0]], [[0, 1]], [[0]]).den) // => [1, 3, 2]
  * ```
  */
@@ -199,7 +199,7 @@ export function ss2tf(a: TensorLike, b: TensorLike, c: TensorLike, d?: TensorLik
   const s = abcdNormalize(a, b, c, d)
   const m = s.b.shape[1] ?? 0
   const p = s.c.shape[0] ?? 0
-  if (input < 0 || input >= m) throw new MdmlError('value', `ss2tf: the system has no input ${input}`)
+  if (input < 0 || input >= m) throw new OmaiError('value', `ss2tf: the system has no input ${input}`)
   const bi = sliceAxis(s.b, 1, input, input + 1)
   const den = flip(charpoly(s.a))
   const nums: Value[] = []
@@ -217,17 +217,17 @@ export function ss2tf(a: TensorLike, b: TensorLike, c: TensorLike, d?: TensorLik
  * @param num - Numerator `[k]`.
  * @param den - Denominator `[l]`.
  * @returns Zeros and poles (sorted by real then imaginary part) and the gain.
- * @throws MdmlError with code `shape` for a numerator with several rows.
+ * @throws OmaiError with code `shape` for a numerator with several rows.
  * @concept transfer-functions
  * @example
  * ```ts
- * import { tf2zpk } from 'mdml-engine/systems'
+ * import { tf2zpk } from 'omai-engine/systems'
  * tf2zpk([2, 2], [1, 3, 2]) // => { zeros: { re: [-1], im: [0] }, poles: { re: [-2, -1], im: [0, 0] }, gain: 2 }
  * ```
  */
 export function tf2zpk(num: TensorLike, den: TensorLike): ZerosPolesGainData {
   const normal = normalize(num, den)
-  if (normal.num.shape.length !== 1) throw new MdmlError('shape', 'tf2zpk: one numerator row is supported')
+  if (normal.num.shape.length !== 1) throw new OmaiError('shape', 'tf2zpk: one numerator row is supported')
   const b = numbers(normal.num)
   const gain = b[0] ?? 0
   const zeros = gain === 0 ? { re: [], im: [] } : rootsOf(b.map((v) => v / gain))
@@ -245,8 +245,8 @@ export function tf2zpk(num: TensorLike, den: TensorLike): ZerosPolesGainData {
  * @concept transfer-functions
  * @example
  * ```ts
- * import { zpk2tf } from 'mdml-engine/systems'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { zpk2tf } from 'omai-engine/systems'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(zpk2tf([-1], [-2, -3], 2).den) // => [1, 5, 6]
  * ```
  */
@@ -270,8 +270,8 @@ export function zpk2tf(
  * @returns A, B, C and D (controller canonical form).
  * @example
  * ```ts
- * import { zpk2ss } from 'mdml-engine/systems'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { zpk2ss } from 'omai-engine/systems'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(zpk2ss([], [-1], 1).a) // => [[-1]]
  * ```
  */
@@ -295,12 +295,12 @@ export function zpk2ss(
  * @returns Zeros, poles and gain.
  * @example
  * ```ts
- * import { ss2zpk } from 'mdml-engine/systems'
+ * import { ss2zpk } from 'omai-engine/systems'
  * ss2zpk([[-1]], [[1]], [[2]], [[0]]).gain // => 2
  * ```
  */
 export function ss2zpk(a: TensorLike, b: TensorLike, c: TensorLike, d?: TensorLike, input = 0): ZerosPolesGainData {
   const { num, den } = ss2tf(a, b, c, d, input)
-  if ((num.shape[0] ?? 0) !== 1) throw new MdmlError('shape', 'ss2zpk: one output is supported')
+  if ((num.shape[0] ?? 0) !== 1) throw new OmaiError('shape', 'ss2zpk: one output is supported')
   return tf2zpk(reshape(num, [num.shape[1] ?? 0]), den)
 }

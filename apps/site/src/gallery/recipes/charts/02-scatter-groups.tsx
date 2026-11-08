@@ -1,6 +1,6 @@
-import { key, normal } from 'mdml-engine/random'
-import { scatterChart } from 'mdml-render/charts'
-import { Chart, ControlPanel, FigureFrame, NumberField, Toggle, useColourMode } from 'mdml-render/react'
+import { key, normal } from 'omai-engine/random'
+import { scatterChart } from 'omai-render/charts'
+import { Chart, ControlPanel, FigureFrame, NumberField, Toggle, useColourMode } from 'omai-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 

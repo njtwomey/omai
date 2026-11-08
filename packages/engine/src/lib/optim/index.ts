@@ -8,7 +8,7 @@
  * programming results (`linprog`, `quadprog`, `conicProgram`, `milp`) keep their finer `status` (`optimal`, `infeasible`,
  * `unbounded`, `iteration limit`, `numerical difficulties`, `node limit`) and `success`, with `runStatus` beside them.
  * Invalid data (a NaN or an infinity in a cost, matrix or right-hand side, crossed box bounds) throws
- * `MdmlError('value')`; infinite bounds are allowed. An empty parameter vector is not invalid: every vector method
+ * `OmaiError('value')`; infinite bounds are allowed. An empty parameter vector is not invalid: every vector method
  * returns `converged` after no steps (the algorithm builders of the derivative-free and global methods still throw).
  *
  * Tolerances: they follow the method mirrored (`gradTol` is scipy's `gtol`, `ftol` and `xtol` keep theirs; the linear

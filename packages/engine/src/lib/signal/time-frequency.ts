@@ -4,7 +4,7 @@
  * the RMS time and frequency spreads of a pulse whose product is bounded by the Gabor uncertainty limit.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { fft, fftfreq, ifft, irfft, rfft, rfftfreq } from '../numerics/fourier/index.ts'
 import {
   absComplex,
@@ -81,14 +81,14 @@ function framingOf(options: StftOptions, n: number, defaultLength = 256): Framin
   } else {
     win = primalOf(reshape(float(w as TensorLike), [-1]))
     nperseg = options.nperseg ?? win.shape[0] ?? 0
-    if (nperseg !== win.shape[0]) throw new MdmlError('value', 'stft: nperseg must equal the window length')
+    if (nperseg !== win.shape[0]) throw new OmaiError('value', 'stft: nperseg must equal the window length')
   }
-  if (nperseg < 1) throw new MdmlError('value', 'stft: nperseg must be positive')
+  if (nperseg < 1) throw new OmaiError('value', 'stft: nperseg must be positive')
   const nfft = options.nfft ?? nperseg
-  if (nfft < nperseg) throw new MdmlError('value', 'stft: nfft must be at least nperseg')
+  if (nfft < nperseg) throw new OmaiError('value', 'stft: nfft must be at least nperseg')
   const noverlap = options.noverlap ?? Math.floor(nperseg / 2)
   // A negative overlap (a hop longer than the segment, as librosa allows) skips samples between frames.
-  if (noverlap >= nperseg) throw new MdmlError('value', 'stft: noverlap must be less than nperseg')
+  if (noverlap >= nperseg) throw new OmaiError('value', 'stft: noverlap must be less than nperseg')
   return { win, nperseg, noverlap, nfft }
 }
 
@@ -103,7 +103,7 @@ function extend(rows: Value, e: number, type: StftBoundary): Value {
     const idx = indexTensor(new Array<number>(e).fill(0))
     return concat([take(first, idx, 1), rows, take(last, idx, 1)], 1)
   }
-  if (e >= n) throw new MdmlError('value', 'stft: the extension is longer than the signal')
+  if (e >= n) throw new OmaiError('value', 'stft: the extension is longer than the signal')
   const left = take(rows, indexTensor(Array.from({ length: e }, (_, i) => e - i)), 1)
   const right = take(rows, indexTensor(Array.from({ length: e }, (_, i) => n - 2 - i)), 1)
   if (type === 'even' || type === 'reflect') return concat([left, rows, right], 1)
@@ -120,7 +120,7 @@ function framesOf(rows: Value, f: Framing, options: StftOptions): { spec: Comple
     const nadd = (((-(len - f.nperseg) % hop) + hop) % hop) % f.nperseg
     if (nadd > 0) x = concat([x, zeros([x.shape[0] ?? 1, nadd])], 1)
   }
-  if ((x.shape[1] ?? 0) < f.nperseg) throw new MdmlError('value', 'stft: the signal is shorter than a segment')
+  if ((x.shape[1] ?? 0) < f.nperseg) throw new OmaiError('value', 'stft: the signal is shorter than a segment')
   const frames = slidingWindowView(x, f.nperseg, { axis: 1, step: hop })
   const [batch = 1, count = 0] = frames.shape
   let seg = reshape(frames, [batch * count, f.nperseg])
@@ -157,7 +157,7 @@ function framesOf(rows: Value, f: Framing, options: StftOptions): { spec: Comple
  * @index function Short-time Fourier transform; spectrogram sits beside it.
  * @example
  * ```ts
- * import { stft } from 'mdml-engine/signal'
+ * import { stft } from 'omai-engine/signal'
  * stft(new Array(32).fill(1), { nperseg: 8 }).values.re.shape // => [5, 9]
  * ```
  */
@@ -216,18 +216,18 @@ export interface IstftOptions {
  * @param z - The STFT `[bins, frames]` (complex).
  * @param options - Sampling rate, window, segment, overlap, FFT length, sides, boundary and scaling.
  * @returns The times and the reconstructed signal.
- * @throws MdmlError with code `value` when the window and overlap violate NOLA.
+ * @throws OmaiError with code `value` when the window and overlap violate NOLA.
  * @concept short-time-fourier-transform
  * @example
  * ```ts
- * import { istft, stft } from 'mdml-engine/signal'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { istft, stft } from 'omai-engine/signal'
+ * import { toFlat } from 'omai-engine/tensor'
  * const x = [1, 2, 0, -1, 3, 1, -2, 0, 1, 2, 0, 1, 3, -1, 0, 2]
  * toFlat(istft(stft(x, { nperseg: 4 }).values).x).slice(0, 4).map((v) => Math.round(v * 1e12) / 1e12) // => [1, 2, 0, -1]
  * ```
  */
 export function istft(z: ComplexValue, options: IstftOptions = {}): { readonly times: Tensor; readonly x: Value } {
-  if (z.re.shape.length !== 2) throw new MdmlError('shape', 'istft: expected a [bins, frames] STFT')
+  if (z.re.shape.length !== 2) throw new OmaiError('shape', 'istft: expected a [bins, frames] STFT')
   const [bins = 0, nseg = 0] = z.re.shape
   const onesided = options.inputOnesided ?? true
   const nperseg = options.nperseg ?? (onesided ? 2 * (bins - 1) : bins)
@@ -273,7 +273,7 @@ export function istft(z: ComplexValue, options: IstftOptions = {}): { readonly t
     x = sliceAxis(x, 0, e, length - e)
     nv = norm.slice(e, length - e)
   }
-  if (nv.some((v) => v <= 1e-10)) throw new MdmlError('value', 'istft: the window and overlap violate NOLA')
+  if (nv.some((v) => v <= 1e-10)) throw new OmaiError('value', 'istft: the window and overlap violate NOLA')
   return {
     times: constant(Array.from({ length: nv.length }, (_, i) => i / fs)),
     x: div(x, constant(nv)),
@@ -309,7 +309,7 @@ export interface SpectrogramOptions {
  * @concept spectrogram
  * @example
  * ```ts
- * import { spectrogram } from 'mdml-engine/signal'
+ * import { spectrogram } from 'omai-engine/signal'
  * spectrogram(new Array(64).fill(0).map((_, i) => Math.sin(i)), { nperseg: 16 }).values.shape // => [9, 4]
  * ```
  */
@@ -382,8 +382,8 @@ export function spectrogram(
  * @concept instantaneous-frequency
  * @example
  * ```ts
- * import { instantaneousPhase } from 'mdml-engine/signal'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { instantaneousPhase } from 'omai-engine/signal'
+ * import { toFlat } from 'omai-engine/tensor'
  * toFlat(instantaneousPhase([1, 0, -1, 0])).map((v) => Math.round(v * 1e12) / 1e12) // => [0, 1.570796326795, 3.14159265359, 4.712388980385]
  * ```
  */
@@ -401,8 +401,8 @@ export function instantaneousPhase(x: TensorLike): Value {
  * @concept instantaneous-frequency
  * @example
  * ```ts
- * import { instantaneousFrequency } from 'mdml-engine/signal'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { instantaneousFrequency } from 'omai-engine/signal'
+ * import { toFlat } from 'omai-engine/tensor'
  * toFlat(instantaneousFrequency([1, 0, -1, 0, 1, 0, -1, 0], 8)).map((v) => Math.round(v * 1e9) / 1e9) // => [2, 2, 2, 2, 2, 2, 2]
  * ```
  */
@@ -421,7 +421,7 @@ export function instantaneousFrequency(x: TensorLike, fs = 1): Value {
  * @concept uncertainty-principle
  * @example
  * ```ts
- * import { timeSpread } from 'mdml-engine/signal'
+ * import { timeSpread } from 'omai-engine/signal'
  * timeSpread([0, 1, 0]) // => 0
  * ```
  */
@@ -433,7 +433,7 @@ export function timeSpread(w: TensorLike, fs = 1): number {
     e += v * v
     m += i * v * v
   }
-  if (e === 0) throw new MdmlError('value', 'timeSpread: zero energy')
+  if (e === 0) throw new OmaiError('value', 'timeSpread: zero energy')
   m /= e
   let v2 = 0
   for (const [i, v] of s.entries()) v2 += (i - m) ** 2 * v * v
@@ -451,7 +451,7 @@ export function timeSpread(w: TensorLike, fs = 1): number {
  * @concept uncertainty-principle
  * @example
  * ```ts
- * import { frequencySpread } from 'mdml-engine/signal'
+ * import { frequencySpread } from 'omai-engine/signal'
  * frequencySpread([1]) > 0.28 // => true
  * ```
  */
@@ -484,7 +484,7 @@ export function frequencySpread(w: TensorLike, fs = 1, nfft?: number): number {
  * @concept uncertainty-principle
  * @example
  * ```ts
- * import { gaussian, timeBandwidthProduct } from 'mdml-engine/signal'
+ * import { gaussian, timeBandwidthProduct } from 'omai-engine/signal'
  * Math.abs(timeBandwidthProduct(gaussian(201, 12)) - 1 / (4 * Math.PI)) < 1e-6 // => true
  * ```
  */

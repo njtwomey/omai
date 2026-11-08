@@ -6,8 +6,8 @@ from typing import Any
 
 import numpy as np
 import sklearn
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray, rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray, rng
 from sklearn.exceptions import ConvergenceWarning
 from sklearn.linear_model import SGDClassifier, SGDRegressor
 

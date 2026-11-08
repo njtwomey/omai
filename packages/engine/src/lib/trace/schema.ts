@@ -52,7 +52,7 @@ export interface TraceSchema {
  * @concept tracing
  * @example
  * ```ts
- * import { channels } from 'mdml-engine/trace'
+ * import { channels } from 'omai-engine/trace'
  * const s = channels({ metrics: { loss: { description: 'training loss', direction: 'lower' } } })
  * Object.keys(s.metrics) // => ['loss']
  * ```
@@ -74,7 +74,7 @@ export function channels(spec: Partial<TraceSchema>): TraceSchema {
  * @returns A JSON description.
  * @example
  * ```ts
- * import { channels, schemaToJson } from 'mdml-engine/trace'
+ * import { channels, schemaToJson } from 'omai-engine/trace'
  * (schemaToJson(channels({})) as { episodes: boolean }).episodes // => false
  * ```
  */
@@ -108,7 +108,7 @@ function shapeMatches(declared: readonly (number | string)[], actual: readonly n
  * @returns One message per problem (empty when the events conform).
  * @example
  * ```ts
- * import { channels, validateAgainstSchema } from 'mdml-engine/trace'
+ * import { channels, validateAgainstSchema } from 'omai-engine/trace'
  * validateAgainstSchema([{ type: 'metric', runId: 'r', step: 0, name: 'x', value: 1 }], channels({})) // => ['undeclared metric x']
  * const s = channels({ tensors: { w: { role: 'param', description: 'weights', shape: ['n', 2] } } })
  * validateAgainstSchema([{ type: 'tensor', runId: 'r', step: 0, name: 'w', role: 'param', shape: [3, 3] }], s) // => ['tensor w has shape [3,3], declared [n,2]']

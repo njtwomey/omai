@@ -1,7 +1,7 @@
 """The UCI yeast data (Nakai), CC BY 4.0: 1484 proteins in ten localisation sites, eight scores."""
 
-from mdml_oracle.uci import source_note, table_rows, zip_member
-from mdml_oracle.vendor import render_classification
+from omai_oracle.uci import source_note, table_rows, zip_member
+from omai_oracle.vendor import render_classification
 
 TARGET = "packages/engine/src/lib/datasets/_data/yeast.data.ts"
 ID, SLUG = 110, "yeast"

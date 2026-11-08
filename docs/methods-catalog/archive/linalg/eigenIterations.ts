@@ -95,7 +95,7 @@ function actionRecord(p: Problem, v: readonly number[] | undefined): CurveSet {
  *
  * @example
  * ```ts
- * import type { EigenPath } from 'mdml-engine/methods/linalg'
+ * import type { EigenPath } from 'omai-engine/methods/linalg'
  * const path: EigenPath = 'iteration/error'
  * path // => 'iteration/error'
  * ```

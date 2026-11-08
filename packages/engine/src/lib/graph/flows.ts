@@ -42,12 +42,12 @@ function solveMaxFlow(
  * @param sink - The sink.
  * @param options - Capacities (default the weights) and `method`.
  * @returns The flow value, the flow on each edge and the number of augmenting paths.
- * @throws MdmlError with code `value` for a negative capacity, an unbounded flow or source equal to sink.
+ * @throws OmaiError with code `value` for a negative capacity, an unbounded flow or source equal to sink.
  * @concept network-flows
  * @index function Maximum flow and minimum cut.
  * @example
  * ```ts
- * import { digraph, maxFlow } from 'mdml-engine/graph'
+ * import { digraph, maxFlow } from 'omai-engine/graph'
  * const g = digraph([[0, 1, 3], [0, 2, 2], [1, 2, 1], [1, 3, 2], [2, 3, 3]])
  * maxFlow(g, 0, 3).value // => 5
  * maxFlow(g, 0, 3, { method: 'edmonds-karp' }).value // => 5
@@ -84,7 +84,7 @@ export interface MinCut {
  * @concept network-flows
  * @example
  * ```ts
- * import { digraph, minCut } from 'mdml-engine/graph'
+ * import { digraph, minCut } from 'omai-engine/graph'
  * const c = minCut(digraph([[0, 1, 3], [0, 2, 2], [1, 2, 1], [1, 3, 2], [2, 3, 3]]), 0, 3)
  * [c.value, c.partition[0]] // => [5, [0]]
  * ```
@@ -121,12 +121,12 @@ export interface MinCostFlow {
  * @param options - Capacities (default the weights; Infinity allowed when the cost is non-negative) and the `cost` per
  *   edge (default 1).
  * @returns The total cost and the flow on each edge.
- * @throws MdmlError with code `value` for an undirected graph, unbalanced demands, an unbounded negative-cost edge
+ * @throws OmaiError with code `value` for an undirected graph, unbalanced demands, an unbounded negative-cost edge
  *   or infeasible demands.
  * @concept network-flows
  * @example
  * ```ts
- * import { digraph, minCostFlow } from 'mdml-engine/graph'
+ * import { digraph, minCostFlow } from 'omai-engine/graph'
  * const g = digraph([[0, 1], [0, 2], [1, 3], [2, 3]])
  * const r = minCostFlow(g, [-4, 0, 0, 4], { capacity: [4, 2, 3, 5], cost: [2, 1, 1, 3] })
  * [r.cost, Array.from(r.flow)] // => [13, [3, 1, 3, 1]]
@@ -152,7 +152,7 @@ export function minCostFlow(
  * @concept network-flows
  * @example
  * ```ts
- * import { digraph, maxFlowMinCost } from 'mdml-engine/graph'
+ * import { digraph, maxFlowMinCost } from 'omai-engine/graph'
  * const g = digraph([[0, 1, 1], [0, 2, 1], [1, 3, 1], [2, 3, 1], [1, 2, 1]])
  * const r = maxFlowMinCost(g, 0, 3, { cost: [1, 5, 1, 1, 1] })
  * [r.value, r.cost] // => [2, 8]
@@ -191,13 +191,13 @@ export interface Matching {
  * @param g - A bipartite graph (edge directions are ignored).
  * @param options - The left nodes (default: colour 0 of {@link bipartiteColouring}).
  * @returns The matching size, the partners and the pairs.
- * @throws MdmlError with code `value` when the graph is not bipartite or an edge joins two left nodes.
+ * @throws OmaiError with code `value` when the graph is not bipartite or an edge joins two left nodes.
  * @concept matching
  * @reference J. Hopcroft and R. Karp, An n^{5/2} algorithm for maximum matchings in bipartite graphs, SIAM J. Computing
  *   2 (1973).
  * @example
  * ```ts
- * import { bipartiteMatching, graph } from 'mdml-engine/graph'
+ * import { bipartiteMatching, graph } from 'omai-engine/graph'
  * bipartiteMatching(graph([[0, 3], [0, 4], [1, 3], [2, 5]])).size // => 3
  * ```
  */

@@ -3,7 +3,7 @@
  * page can show a method's whole exposition without knowing its kinds.
  */
 
-import type { Exposition } from 'mdml-engine/exposition'
+import type { Exposition } from 'omai-engine/exposition'
 import type { ReactElement, ReactNode } from 'react'
 import type { Figure } from '../../figure/figure.ts'
 import { AgentPlayer } from './agents.tsx'

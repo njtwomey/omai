@@ -128,7 +128,7 @@ function distributionRecord(p: ProcessSpec, state: DiffusionPathsState): CurveSe
  *
  * @example
  * ```ts
- * import type { DiffusionPathsPath } from 'mdml-engine/methods/stochastic'
+ * import type { DiffusionPathsPath } from 'omai-engine/methods/stochastic'
  * const path: DiffusionPathsPath = 'paths/mean'
  * path // => 'paths/mean'
  * ```

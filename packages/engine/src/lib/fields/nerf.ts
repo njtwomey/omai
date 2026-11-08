@@ -51,8 +51,8 @@ const DIRECTION = { kind: 'frequency', octaves: 4, includeInput: true } as const
  * @reference Mildenhall et al. (2020), NeRF: representing scenes as neural radiance fields for view synthesis.
  * @example
  * ```ts
- * import { NerfField } from 'mdml-engine/fields'
- * import { key } from 'mdml-engine/random'
+ * import { NerfField } from 'omai-engine/fields'
+ * import { key } from 'omai-engine/random'
  * const f = new NerfField({ width: 16, depth: 2, positionEncoding: { kind: 'frequency', octaves: 3 }, key: key(0) })
  * const out = f.forward([[[0.1, 0.2, 0.3]], [[0, 0, 1]]] as never)
  * [out.density.shape, out.colour.shape] // => [[1], [1, 3]]
@@ -145,8 +145,8 @@ export interface NerfParams {
  * @index structure A NeRF model: one network, or coarse and fine networks.
  * @example
  * ```ts
- * import { nerfModel } from 'mdml-engine/fields'
- * import { key } from 'mdml-engine/random'
+ * import { nerfModel } from 'omai-engine/fields'
+ * import { key } from 'omai-engine/random'
  * nerfModel({ width: 8, depth: 1, fine: true, key: key(0) }).fine !== undefined // => true
  * ```
  */
@@ -166,8 +166,8 @@ export function nerfModel(options: NerfOptions & { readonly fine?: boolean } = {
  * @returns Their parameter trees.
  * @example
  * ```ts
- * import { nerfModel, nerfParams } from 'mdml-engine/fields'
- * import { key } from 'mdml-engine/random'
+ * import { nerfModel, nerfParams } from 'omai-engine/fields'
+ * import { key } from 'omai-engine/random'
  * Object.keys(nerfParams(nerfModel({ width: 8, depth: 1, fine: true, key: key(0) }))) // => ['coarse', 'fine']
  * ```
  */
@@ -239,8 +239,8 @@ function query(net: NerfField, params: Params, rays: RayBatch, t: Value): { dens
  * @concept neural-radiance-fields
  * @example
  * ```ts
- * import { nerfModel, nerfParams, renderRays } from 'mdml-engine/fields'
- * import { key } from 'mdml-engine/random'
+ * import { nerfModel, nerfParams, renderRays } from 'omai-engine/fields'
+ * import { key } from 'omai-engine/random'
  * const model = nerfModel({ width: 8, depth: 1, positionEncoding: { kind: 'frequency', octaves: 2 }, key: key(0) })
  * const rays = { origins: [0, 0, 4, 0, 0, 4], directions: [0, 0, -1, 0, 0, -1] }
  * renderRays(model, nerfParams(model), rays, { near: 2, far: 6, samples: 5 }).coarse.colour.shape // => [2, 3]
@@ -305,8 +305,8 @@ export interface NerfDensityGrid {
  * @concept neural-radiance-fields
  * @example
  * ```ts
- * import { nerfDensityGrid, nerfModel, nerfParams } from 'mdml-engine/fields'
- * import { key } from 'mdml-engine/random'
+ * import { nerfDensityGrid, nerfModel, nerfParams } from 'omai-engine/fields'
+ * import { key } from 'omai-engine/random'
  * const model = nerfModel({ width: 8, depth: 1, positionEncoding: { kind: 'frequency', octaves: 2 }, key: key(0) })
  * const g = nerfDensityGrid(model, nerfParams(model), { resolution: 3 })
  * [g.density.length, g.colour.length] // => [27, 81]

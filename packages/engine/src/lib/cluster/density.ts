@@ -6,7 +6,7 @@
  * modes, every seed moving each step).
  */
 
-import { MdmlError, maxOf, toRows } from '../base/index.ts'
+import { maxOf, OmaiError, toRows } from '../base/index.ts'
 import {
   type DistanceAlias,
   type DistanceName,
@@ -78,8 +78,8 @@ export interface DbscanOptions {
  * @returns The algorithm; at most n steps.
  * @example
  * ```ts
- * import { dbscanAlgorithm } from 'mdml-engine/cluster'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { dbscanAlgorithm } from 'omai-engine/cluster'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const x = [[0], [0.1], [0.2], [5], [5.1], [5.2], [9]]
  * runAlgorithm(dbscanAlgorithm(x, { eps: 0.3, minSamples: 2 }), { maxSteps: 7 }).state.labels // => [0, 0, 0, 1, 1, 1, -1]
  * ```
@@ -161,7 +161,7 @@ export type DbscanParams = {
  * @index estimator DBSCAN density clustering.
  * @example
  * ```ts
- * import { dbscan } from 'mdml-engine/cluster'
+ * import { dbscan } from 'omai-engine/cluster'
  * dbscan.with({ eps: 0.3, minSamples: 2 }).fit({ x: [[0], [0.1], [5], [5.1], [9]] }).params.labels // => [0, 0, 1, 1, -1]
  * ```
  */
@@ -246,8 +246,8 @@ function coreDistancesOf(dist: ArrayLike<number>, n: number, minSamples: number,
  * @returns The algorithm; n steps.
  * @example
  * ```ts
- * import { opticsAlgorithm } from 'mdml-engine/cluster'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { opticsAlgorithm } from 'omai-engine/cluster'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const out = runAlgorithm(opticsAlgorithm([[0], [1], [5]], { minSamples: 2 }), { maxSteps: 3 })
  * out.state.ordering // => [0, 1, 2]
  * ```
@@ -257,7 +257,7 @@ export function opticsAlgorithm(x: TensorLike, options: OpticsOptions = {}): Alg
   const maxEps = options.maxEps ?? Number.POSITIVE_INFINITY
   const { n, data } = distanceMatrix(x, options.metric ?? 'euclidean', options.distanceOptions)
   if (!(Number.isInteger(minSamples) && minSamples >= 1 && minSamples <= n))
-    throw new MdmlError('value', `opticsAlgorithm: minSamples must be in 1..${n}, got ${minSamples}`)
+    throw new OmaiError('value', `opticsAlgorithm: minSamples must be in 1..${n}, got ${minSamples}`)
   const core = coreDistancesOf(data, n, minSamples, maxEps)
   const reach = (s: OpticsState, i: number): number =>
     (s.reachability[i] ?? -1) < 0 ? Number.POSITIVE_INFINITY : (s.reachability[i] as number)
@@ -330,7 +330,7 @@ export interface OpticsOrdering {
  * @returns The ordering, with infinite reachability where a point was never reached.
  * @example
  * ```ts
- * import { opticsOrdering } from 'mdml-engine/cluster'
+ * import { opticsOrdering } from 'omai-engine/cluster'
  * opticsOrdering([[0], [1], [5]], { minSamples: 2 }).reachability // => [Infinity, 1, 4]
  * ```
  */
@@ -354,7 +354,7 @@ export function opticsOrdering(x: TensorLike, options: OpticsOptions = {}): Opti
  * @returns A label per row (-1 for noise).
  * @example
  * ```ts
- * import { opticsClustersAt, opticsOrdering } from 'mdml-engine/cluster'
+ * import { opticsClustersAt, opticsOrdering } from 'omai-engine/cluster'
  * opticsClustersAt(opticsOrdering([[0], [0.5], [9]], { minSamples: 2 }), 1) // => [0, 0, -1]
  * ```
  */
@@ -403,7 +403,7 @@ const finiteOr = (v: number): number => (Number.isFinite(v) ? v : -1)
  *
  * @example
  * ```ts
- * import { optics } from 'mdml-engine/cluster'
+ * import { optics } from 'omai-engine/cluster'
  * optics.with({ minSamples: 2, eps: 1 }).fit({ x: [[0], [0.5], [9]] }).params.labels // => [0, 0, -1]
  * ```
  */
@@ -531,7 +531,7 @@ function linkageNext(p: LinkageProgress, e: MutualReachabilityEdges, n: number):
  * @returns The n - 1 merges.
  * @example
  * ```ts
- * import { mutualReachabilityTree } from 'mdml-engine/cluster'
+ * import { mutualReachabilityTree } from 'omai-engine/cluster'
  * mutualReachabilityTree([0, 1, 1, 0], [0, 2]) // => [[0, 1, 2, 2]]
  * ```
  */
@@ -627,7 +627,7 @@ function condenseNode(
  * @returns The condensed tree rows `[parent, child, lambda, size]` (cluster ids from n, the root being n).
  * @example
  * ```ts
- * import { condenseTree } from 'mdml-engine/cluster'
+ * import { condenseTree } from 'omai-engine/cluster'
  * condenseTree([[0, 1, 1, 2], [2, 3, 2, 3]], 2).length // => 3
  * ```
  */
@@ -768,7 +768,7 @@ function selectFinal(rows: readonly CondensedRow[], n: number, p: SelectProgress
  * @returns Labels (-1 for noise), probabilities, the selected cluster ids and the stability of each cluster.
  * @example
  * ```ts
- * import { condenseTree, selectClusters } from 'mdml-engine/cluster'
+ * import { condenseTree, selectClusters } from 'omai-engine/cluster'
  * const rows = condenseTree([[0, 1, 1, 2], [2, 3, 1, 2], [4, 5, 9, 4]], 2)
  * selectClusters(rows, 4).labels // => [0, 0, 1, 1]
  * ```
@@ -902,12 +902,12 @@ const encodeLambda = (l: number): number | string => (Number.isFinite(l) ? l : '
  * @param x - Points `[n, d]`, or the distances with `metric: 'precomputed'`.
  * @param options - Smallest cluster, core neighbour count, metric, selection rule, single-cluster flag and alpha.
  * @returns The algorithm.
- * @throws MdmlError with code `value` for a smallest cluster below 2 or a non-positive alpha.
+ * @throws OmaiError with code `value` for a smallest cluster below 2 or a non-positive alpha.
  * @concept density-clustering
  * @example
  * ```ts
- * import { hdbscanAlgorithm } from 'mdml-engine/cluster'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { hdbscanAlgorithm } from 'omai-engine/cluster'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const x = [[0], [0.1], [0.2], [5], [5.1], [5.2]]
  * const run = runAlgorithm(hdbscanAlgorithm(x, { minClusterSize: 3 }), { maxSteps: 40 })
  * [run.status, run.state.labels] // => ['converged', [0, 0, 0, 1, 1, 1]]
@@ -917,9 +917,9 @@ export function hdbscanAlgorithm(x: TensorLike, options: HdbscanOptions = {}): A
   const { n, data } = distanceMatrix(x, options.metric ?? 'euclidean', options.distanceOptions)
   const mcs = options.minClusterSize ?? 5
   if (!(Number.isInteger(mcs) && mcs >= 2))
-    throw new MdmlError('value', `hdbscan: minClusterSize must be >= 2, got ${mcs}`)
+    throw new OmaiError('value', `hdbscan: minClusterSize must be >= 2, got ${mcs}`)
   const alpha = options.alpha ?? 1
-  if (!(alpha > 0)) throw new MdmlError('value', `hdbscan: alpha must be positive, got ${alpha}`)
+  if (!(alpha > 0)) throw new OmaiError('value', `hdbscan: alpha must be positive, got ${alpha}`)
   const k = Math.min(options.minSamples ?? mcs, n)
   const rule = hdbscanSelections.make(options.selection)
   const single = options.allowSingleCluster ?? false
@@ -1039,7 +1039,7 @@ export function hdbscanAlgorithm(x: TensorLike, options: HdbscanOptions = {}): A
  * @returns The labels (-1: noise), membership strengths, the tree, the condensed tree and the stabilities.
  * @example
  * ```ts
- * import { hdbscan } from 'mdml-engine/cluster'
+ * import { hdbscan } from 'omai-engine/cluster'
  * const x = [[0], [0.1], [0.2], [0.3], [5], [5.1], [5.2], [5.3]]
  * hdbscan(x, { minClusterSize: 3 }).labels // => [0, 0, 0, 0, 1, 1, 1, 1]
  * ```
@@ -1099,7 +1099,7 @@ export type HdbscanParams = {
  *
  * @example
  * ```ts
- * import { hdbscanEstimator } from 'mdml-engine/cluster'
+ * import { hdbscanEstimator } from 'omai-engine/cluster'
  * const x = [[0], [0.1], [0.2], [5], [5.1], [5.2]]
  * hdbscanEstimator.with({ minClusterSize: 3 }).fit({ x }).params.labels // => [0, 0, 0, 1, 1, 1]
  * ```
@@ -1174,7 +1174,7 @@ export const hdbscanEstimator: IterativeEstimator<
  * @index estimator HDBSCAN with its condensed tree.
  * @example
  * ```ts
- * import { hdbscanClustering } from 'mdml-engine/cluster'
+ * import { hdbscanClustering } from 'omai-engine/cluster'
  * const x = [[0], [0.1], [0.2], [5], [5.1], [5.2]]
  * hdbscanClustering({ minClusterSize: 3 }).fit({ x }).params.labels // => [0, 0, 0, 1, 1, 1]
  * ```
@@ -1196,7 +1196,7 @@ export function hdbscanClustering(
  * @returns The bandwidth.
  * @example
  * ```ts
- * import { estimateBandwidth } from 'mdml-engine/cluster'
+ * import { estimateBandwidth } from 'omai-engine/cluster'
  * estimateBandwidth([[0], [1], [2], [3]], 0.5) // => 1
  * ```
  */
@@ -1228,8 +1228,8 @@ export interface MeanShiftState {
  * @returns The algorithm.
  * @example
  * ```ts
- * import { meanShiftAlgorithm } from 'mdml-engine/cluster'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { meanShiftAlgorithm } from 'omai-engine/cluster'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const out = runAlgorithm(meanShiftAlgorithm([[0], [1], [10]], undefined, 2), { maxSteps: 50 })
  * out.state.seeds.map((s) => s[0]) // => [0.5, 0.5, 10]
  * ```
@@ -1304,7 +1304,7 @@ export function meanShiftAlgorithm(
  * @returns The centres.
  * @example
  * ```ts
- * import { meanShiftCentres } from 'mdml-engine/cluster'
+ * import { meanShiftCentres } from 'omai-engine/cluster'
  * meanShiftCentres({ seeds: [[0], [0.1], [9]], moving: [false, false, false], counts: [2, 2, 1] }, 1) // => [[0.1], [9]]
  * ```
  */
@@ -1342,7 +1342,7 @@ export type MeanShiftParams = { readonly centres: number[][]; readonly labels: n
  *
  * @example
  * ```ts
- * import { meanShift } from 'mdml-engine/cluster'
+ * import { meanShift } from 'omai-engine/cluster'
  * meanShift.with({ bandwidth: 2 }).fit({ x: [[0], [1], [10], [11]] }).params.labels // => [1, 1, 0, 0]
  * ```
  */

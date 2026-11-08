@@ -4,7 +4,7 @@
  * chains of windows that evolve step by step (anchored and all chains).
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { applyExclusionZone, exclusionZone, mass, seriesOf } from '../signal/index.ts'
 import type { TensorLike } from '../tensor/index.ts'
 
@@ -91,14 +91,14 @@ export interface MatchOptions {
  * @concept matrix-profile
  * @example
  * ```ts
- * import { match } from 'mdml-engine/timeseries'
+ * import { match } from 'omai-engine/timeseries'
  * const t = [0, 1, 2, 1, 0, 5, 3, 0, 1, 2, 1, 0, 4]
  * match([0, 1, 2, 1], t, { maxDistance: 0.1 }).map((r) => r.index) // => [0, 7]
  * ```
  */
 export function match(q: TensorLike, t: TensorLike, options: MatchOptions = {}): Match[] {
   const qa = seriesOf(q, 'match')
-  if (!qa.every(Number.isFinite)) throw new MdmlError('value', 'match: the query contains NaN or infinity')
+  if (!qa.every(Number.isFinite)) throw new OmaiError('value', 'match: the query contains NaN or infinity')
   const d = mass(qa, seriesOf(t, 'match'))
   if (options.queryIdx !== undefined) d[options.queryIdx] = 0
   return findMatches(
@@ -144,7 +144,7 @@ export interface Motifs {
  * @concept matrix-profile
  * @example
  * ```ts
- * import { motifs, stump } from 'mdml-engine/timeseries'
+ * import { motifs, stump } from 'omai-engine/timeseries'
  * const t = [0, 1, 2, 1, 0, 5, 3, 0, 1, 2, 1, 0, 4, 9, 2, 6, 3]
  * motifs(t, stump(t, 4).P, { maxDistance: 0.1 }).indices // => [[0, 7]]
  * ```
@@ -198,7 +198,7 @@ export function motifs(t: TensorLike, P: ArrayLike<number>, options: MotifOption
  * @concept matrix-profile
  * @example
  * ```ts
- * import { discords } from 'mdml-engine/timeseries'
+ * import { discords } from 'omai-engine/timeseries'
  * discords([0.1, 0.2, 3, 0.1, 0.3, 0.2, 2, 0.1], 4, 2).indices // => [2, 6]
  * ```
  */
@@ -234,7 +234,7 @@ export function discords(
  * @concept matrix-profile
  * @example
  * ```ts
- * import { atsc } from 'mdml-engine/timeseries'
+ * import { atsc } from 'omai-engine/timeseries'
  * atsc([-1, -1, 0, 1, 2], [2, 3, 4, -1, -1], 0) // => [0, 2, 4]
  * ```
  */
@@ -260,7 +260,7 @@ export function atsc(IL: ArrayLike<number>, IR: ArrayLike<number>, j: number): n
  * @concept matrix-profile
  * @example
  * ```ts
- * import { allc } from 'mdml-engine/timeseries'
+ * import { allc } from 'omai-engine/timeseries'
  * allc([-1, -1, 0, 1, 2], [2, 3, 4, -1, -1]).chains // => [[0, 2, 4], [1, 3]]
  * ```
  */

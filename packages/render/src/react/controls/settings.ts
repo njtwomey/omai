@@ -28,7 +28,7 @@ export type SettingsAction<T> =
  * @returns Whether they hold the same data.
  * @example
  * ```ts
- * import { sameSettings } from 'mdml-render/react'
+ * import { sameSettings } from 'omai-render/react'
  * sameSettings({ a: 1, b: [1, 2] }, { b: [1, 2], a: 1 }) // => true
  * ```
  */
@@ -56,7 +56,7 @@ export function sameSettings(a: unknown, b: unknown): boolean {
  * @returns The next state.
  * @example
  * ```ts
- * import { settingsReducer } from 'mdml-render/react'
+ * import { settingsReducer } from 'omai-render/react'
  * const open = settingsReducer({ open: false, draft: 1 }, { type: 'open', value: 5 })
  * const edited = settingsReducer(open, { type: 'edit', draft: 7 })
  * const stray = settingsReducer(edited, { type: 'backdrop', dirty: true })

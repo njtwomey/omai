@@ -5,7 +5,7 @@
  * animated.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import { asTensor, primalOf, type TensorLike, toFlat } from '../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../trace/index.ts'
 
@@ -21,9 +21,9 @@ export interface AssignmentResult {
 
 function matrixOf(cost: TensorLike, name: string): { a: Float64Array; n: number; m: number } {
   const t = primalOf(asTensor(cost))
-  if (t.shape.length !== 2) throw new MdmlError('shape', `${name}: the cost matrix must be 2-D`)
+  if (t.shape.length !== 2) throw new OmaiError('shape', `${name}: the cost matrix must be 2-D`)
   const a = Float64Array.from(toFlat(t))
-  if (a.some(Number.isNaN)) throw new MdmlError('value', `${name}: the cost matrix contains NaN`)
+  if (a.some(Number.isNaN)) throw new OmaiError('value', `${name}: the cost matrix contains NaN`)
   return { a, n: t.shape[0] ?? 0, m: t.shape[1] ?? 0 }
 }
 
@@ -47,18 +47,18 @@ export interface HungarianState {
  *
  * @param cost - The cost matrix, at most as many rows as columns (+Infinity forbids a pair).
  * @returns The algorithm.
- * @throws MdmlError with code `value` when a row cannot be assigned (all its feasible columns taken).
+ * @throws OmaiError with code `value` when a row cannot be assigned (all its feasible columns taken).
  * @concept assignment-problem
  * @example
  * ```ts
- * import { hungarianAlgorithm } from 'mdml-engine/optim'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { hungarianAlgorithm } from 'omai-engine/optim'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * Array.from(runAlgorithm(hungarianAlgorithm([[4, 1], [2, 3]]), { maxSteps: 10 }).state.p) // => [0, 2, 1]
  * ```
  */
 export function hungarianAlgorithm(cost: TensorLike): Algorithm<HungarianState> {
   const { a, n, m } = matrixOf(cost, 'hungarianAlgorithm')
-  if (n > m) throw new MdmlError('shape', 'hungarianAlgorithm: needs at most as many rows as columns')
+  if (n > m) throw new OmaiError('shape', 'hungarianAlgorithm: needs at most as many rows as columns')
   const c = (i: number, j: number): number => a[(i - 1) * m + (j - 1)] ?? Infinity
   return {
     name: 'hungarian',
@@ -102,7 +102,7 @@ export function hungarianAlgorithm(cost: TensorLike): Algorithm<HungarianState> 
           }
         }
         if (j1 < 0 || !Number.isFinite(delta))
-          throw new MdmlError('value', 'linearSumAssignment: the cost matrix is infeasible')
+          throw new OmaiError('value', 'linearSumAssignment: the cost matrix is infeasible')
         for (let j = 0; j <= m; j++) {
           if (used[j] === 1) {
             const r = p[j] ?? 0
@@ -141,11 +141,11 @@ export function hungarianAlgorithm(cost: TensorLike): Algorithm<HungarianState> 
  * @param cost - The cost matrix (+Infinity forbids a pair).
  * @param options - `maximize` to maximise instead, and run options.
  * @returns Row and column indices, rows increasing, and the total.
- * @throws MdmlError with code `value` when no complete assignment exists.
+ * @throws OmaiError with code `value` when no complete assignment exists.
  * @concept assignment-problem
  * @example
  * ```ts
- * import { linearSumAssignment } from 'mdml-engine/optim'
+ * import { linearSumAssignment } from 'omai-engine/optim'
  * const r = linearSumAssignment([[4, 1, 3], [2, 0, 5], [3, 2, 2]])
  * [r.colInd, r.cost] // => [[1, 0, 2], 5]
  * ```
@@ -218,8 +218,8 @@ export interface AuctionState {
  * @reference D. P. Bertsekas, The auction algorithm: a distributed relaxation method for the assignment problem (1988).
  * @example
  * ```ts
- * import { auctionAlgorithm } from 'mdml-engine/optim'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { auctionAlgorithm } from 'omai-engine/optim'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * Array.from(runAlgorithm(auctionAlgorithm([[4, 1], [2, 3]]), { maxSteps: 1000 }).state.owner) // => [1, 0]
  * ```
  */
@@ -232,7 +232,7 @@ export function auctionAlgorithm(cost: TensorLike, options: AuctionOptions = {})
   for (let i = 0; i < n; i++)
     for (let j = 0; j < m; j++) {
       const v = sign * (a[i * m + j] ?? 0)
-      if (!Number.isFinite(v)) throw new MdmlError('value', 'auction: benefits must be finite')
+      if (!Number.isFinite(v)) throw new OmaiError('value', 'auction: benefits must be finite')
       benefit[i * k + j] = v
       big = Math.max(big, Math.abs(v))
     }
@@ -323,7 +323,7 @@ export function auctionAlgorithm(cost: TensorLike, options: AuctionOptions = {})
  * @concept assignment-problem
  * @example
  * ```ts
- * import { auction } from 'mdml-engine/optim'
+ * import { auction } from 'omai-engine/optim'
  * auction([[4, 1, 3], [2, 0, 5], [3, 2, 2]]).colInd // => [1, 0, 2]
  * ```
  */
@@ -340,7 +340,7 @@ export function auction(
     ...(scaling === undefined ? {} : { scaling }),
   })
   const result = runAlgorithm(alg, { ...run, maxSteps: maxBids ?? 1_000_000 })
-  if (result.status !== 'converged') throw new MdmlError('convergence', 'auction: bid limit reached')
+  if (result.status !== 'converged') throw new OmaiError('convergence', 'auction: bid limit reached')
   const rowInd: number[] = []
   const colInd: number[] = []
   let total = 0
@@ -385,8 +385,8 @@ export interface GaleShapleyState {
  * @concept stable-matching
  * @example
  * ```ts
- * import { galeShapleyAlgorithm } from 'mdml-engine/optim'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { galeShapleyAlgorithm } from 'omai-engine/optim'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const alg = galeShapleyAlgorithm([[0, 1], [0, 1]], [[1, 0], [0, 1]])
  * Array.from(runAlgorithm(alg, { maxSteps: 10 }).state.proposerMatch) // => [1, 0]
  * ```
@@ -470,7 +470,7 @@ export function galeShapleyAlgorithm(
  * @concept stable-matching
  * @example
  * ```ts
- * import { stableMatching } from 'mdml-engine/optim'
+ * import { stableMatching } from 'omai-engine/optim'
  * const men = [[0, 1, 2], [1, 0, 2], [0, 1, 2]]
  * const women = [[1, 0, 2], [0, 1, 2], [0, 1, 2]]
  * stableMatching(men, women).proposerMatch // => [0, 1, 2]
@@ -504,7 +504,7 @@ export function stableMatching(
  * @concept stable-matching
  * @example
  * ```ts
- * import { blockingPairs } from 'mdml-engine/optim'
+ * import { blockingPairs } from 'omai-engine/optim'
  * blockingPairs([1, 0], [[0, 1], [0, 1]], [[0, 1], [0, 1]]) // => [[0, 0]]
  * ```
  */

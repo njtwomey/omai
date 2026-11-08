@@ -4,6 +4,6 @@
 
 Fairness and bias: group, individual and intersectional fairness measures, bias in data, and mitigation before training (reweighing, repair), during training (constrained fitting) and after it (threshold adjustment), with accuracy-fairness trade-off frontiers.
 
-- function `fair-classifiers.ts` (file): Classifiers trained with a fairness term or constraint. `src/lib/fairness/fair-classifiers.ts:1` `mdml-engine/fairness`
+- function `fair-classifiers.ts` (file): Classifiers trained with a fairness term or constraint. `src/lib/fairness/fair-classifiers.ts:1` `omai-engine/fairness`
 
-- function `demographicParityDifference`: Demographic parity gap; equalized odds and others beside it. `src/lib/fairness/group-metrics.ts:234` `mdml-engine/fairness`
+- function `demographicParityDifference`: Demographic parity gap; equalized odds and others beside it. `src/lib/fairness/group-metrics.ts:234` `omai-engine/fairness`

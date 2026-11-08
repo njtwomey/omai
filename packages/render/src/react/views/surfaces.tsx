@@ -4,7 +4,7 @@
  * the optimiser's path.
  */
 
-import type { DecisionSurface, HyperparameterSurface, PosteriorGrid } from 'mdml-engine/exposition'
+import type { DecisionSurface, HyperparameterSurface, PosteriorGrid } from 'omai-engine/exposition'
 import { type ReactElement, useCallback } from 'react'
 import type { Figure } from '../../figure/figure.ts'
 import {

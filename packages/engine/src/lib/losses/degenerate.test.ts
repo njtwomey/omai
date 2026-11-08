@@ -1,12 +1,12 @@
 /**
  * Tests for the degenerate inputs of the losses, as tables: gradients that must stay finite where the loss is defined
  * (all-zero embeddings, probabilities of exactly 0 or 1), and hyperparameters outside their domain, which must be
- * rejected with `MdmlError('value')` rather than give a finite wrong number.
+ * rejected with `OmaiError('value')` rather than give a finite wrong number.
  */
 
 import { describe, expect, it } from 'vitest'
 import { grad } from '../autodiff/index.ts'
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { item, sum, tensor, toFlat, type Value } from '../tensor/index.ts'
 import { l2Normalise } from './_vectors.ts'
 import * as L from './index.ts'
@@ -196,12 +196,12 @@ describe('hyperparameters outside their domain', () => {
 
   it('rejects each with a `value` error naming the loss, and accepts a valid one', () => {
     for (const [name, bad, good] of rows) {
-      expect(bad, name).toThrow(MdmlError)
+      expect(bad, name).toThrow(OmaiError)
       expect(bad, name).toThrow(/^\w+: .* must be /)
       try {
         bad()
       } catch (e) {
-        expect((e as MdmlError).code).toBe('value')
+        expect((e as OmaiError).code).toBe('value')
       }
       expect(good, name).not.toThrow()
     }

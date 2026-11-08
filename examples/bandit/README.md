@@ -2,7 +2,7 @@
 
 A five-armed bandit: each arm pays 1 with a probability the player does not know (0.2, 0.35, 0.5, 0.6 and 0.7). Each
 pull is both a chance to earn and a chance to learn, so the player has to balance trying new arms with pulling the best
-one found so far. Three strategies from `mdml-engine/agents` play 400 pulls each.
+one found so far. Three strategies from `omai-engine/agents` play 400 pulls each.
 
 ![Cumulative regret of three strategies, and the pulls of each arm](figure.svg)
 

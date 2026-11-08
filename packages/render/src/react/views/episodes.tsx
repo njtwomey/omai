@@ -3,7 +3,7 @@
  * policy snapshot (a map for grid worlds).
  */
 
-import type { EpisodeRecord } from 'mdml-engine/exposition'
+import type { EpisodeRecord } from 'omai-engine/exposition'
 import { type ReactElement, useCallback } from 'react'
 import type { Figure } from '../../figure/figure.ts'
 import { type EpisodeViewOptions, episodeView } from '../../views/episodes.ts'

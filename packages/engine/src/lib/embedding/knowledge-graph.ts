@@ -10,7 +10,7 @@
  * @index function Knowledge-graph embeddings: TransE, DistMult, ComplEx, RotatE.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import type { BatchObjective, SmoothProblem, VectorParams } from '../optim/index.ts'
 import { categorical, foldIn, type Key, uniform } from '../random/index.ts'
 import type { SpaceValue } from '../space/index.ts'
@@ -100,7 +100,7 @@ const widths = (model: KgModel, d: number): { entity: number; relation: number }
  * @concept knowledge-graph-embedding
  * @example
  * ```ts
- * import { kgScore } from 'mdml-engine/embedding'
+ * import { kgScore } from 'omai-engine/embedding'
  * kgScore('transe', [1, 0], [0, 1], [1, 1]) // => 0
  * ```
  */
@@ -178,12 +178,12 @@ function scoreTensor(model: KgModel, H: Value, R: Value, T: Value, d: number, no
  * @param options - Scoring function, dimension, loss, margin, negatives, norm and L2.
  * @param key - The key for the corruptions and the start.
  * @returns The problem.
- * @throws MdmlError with code `value` for no triples, an index out of range or a bad option.
+ * @throws OmaiError with code `value` for no triples, an index out of range or a bad option.
  * @concept knowledge-graph-embedding
  * @example
  * ```ts
- * import { kgProblem } from 'mdml-engine/embedding'
- * import { key } from 'mdml-engine/random'
+ * import { kgProblem } from 'omai-engine/embedding'
+ * import { key } from 'omai-engine/random'
  * const p = kgProblem({ heads: [0, 1], relations: [0, 0], tails: [1, 2] }, 3, 1, { model: 'complex', dimension: 2 }, key(0))
  * [p.entityWidth, p.relationWidth, (p.x0 as Float64Array).length] // => [4, 4, 16]
  * ```
@@ -205,15 +205,15 @@ export function kgProblem(
     l2: options.l2 ?? 0,
   } as KgProblem['options']
   const n = train.heads.length
-  if (n === 0) throw new MdmlError('value', 'kgProblem: needs at least one triple')
+  if (n === 0) throw new OmaiError('value', 'kgProblem: needs at least one triple')
   if (!(o.dimension >= 1) || !(o.negatives >= 1))
-    throw new MdmlError('value', 'kgProblem: dimension and negatives must be at least 1')
+    throw new OmaiError('value', 'kgProblem: dimension and negatives must be at least 1')
   for (let i = 0; i < n; i++) {
     const h = train.heads[i] as number
     const r = train.relations[i] as number
     const t = train.tails[i] as number
     if (!(h >= 0 && h < entities && t >= 0 && t < entities && r >= 0 && r < relations))
-      throw new MdmlError('value', `kgProblem: triple ${i} is out of range`)
+      throw new OmaiError('value', `kgProblem: triple ${i} is out of range`)
   }
   const { entity: we, relation: wr } = widths(o.model, o.dimension)
   const k = o.negatives
@@ -295,8 +295,8 @@ export function kgProblem(
  * @concept knowledge-graph-embedding
  * @example
  * ```ts
- * import { kgProblem, kgScoreBatch } from 'mdml-engine/embedding'
- * import { key } from 'mdml-engine/random'
+ * import { kgProblem, kgScoreBatch } from 'omai-engine/embedding'
+ * import { key } from 'omai-engine/random'
  * const p = kgProblem({ heads: [0], relations: [0], tails: [1] }, 2, 1, { model: 'transe', dimension: 2 }, key(0))
  * Array.from(kgScoreBatch(p, new Float64Array(8), [[0, 0, 1]])) // => [-0]
  * ```
@@ -353,8 +353,8 @@ export interface KgEmbedding {
  * @concept knowledge-graph-embedding
  * @example
  * ```ts
- * import { kgEmbedding, kgProblem } from 'mdml-engine/embedding'
- * import { key } from 'mdml-engine/random'
+ * import { kgEmbedding, kgProblem } from 'omai-engine/embedding'
+ * import { key } from 'omai-engine/random'
  * const p = kgProblem({ heads: [0], relations: [0], tails: [1] }, 2, 1, { dimension: 2 }, key(0))
  * kgEmbedding(p, p.x0 as Float64Array).entities.length // => 2
  * ```
@@ -403,8 +403,8 @@ export interface KgHyper extends KgOptions {
  * @concept knowledge-graph-embedding
  * @example
  * ```ts
- * import { trainKg } from 'mdml-engine/embedding'
- * import { key } from 'mdml-engine/random'
+ * import { trainKg } from 'omai-engine/embedding'
+ * import { key } from 'omai-engine/random'
  * const m = trainKg({ heads: [0, 1], relations: [0, 0], tails: [1, 2] }, 3, 1, { dimension: 4, maxSteps: 5 }, key(0))
  * m.entities.length // => 3
  * ```
@@ -455,7 +455,7 @@ export interface KgRanking {
  * @concept knowledge-graph-embedding
  * @example
  * ```ts
- * import { rankKg } from 'mdml-engine/embedding'
+ * import { rankKg } from 'omai-engine/embedding'
  * const emb = { model: 'distmult' as const, norm: 1 as const, entities: [Float64Array.of(1), Float64Array.of(2), Float64Array.of(-1)], relations: [Float64Array.of(1)], loss: 0, steps: 0, score: (h: number, r: number, t: number) => [1, 2, -1][h]! * [1][r]! * [1, 2, -1][t]! }
  * rankKg(emb, [[0, 0, 1]], [[0, 0, 1]], { heads: false }).ranks // => [1]
  * ```

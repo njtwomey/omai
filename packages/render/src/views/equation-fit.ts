@@ -5,8 +5,8 @@
  */
 
 import type { EChartsOption } from 'echarts'
-import { maxOf } from 'mdml-engine/base'
-import { coefficientErrors, type EquationFit, fitResidual, type TermStatus } from 'mdml-engine/exposition'
+import { maxOf } from 'omai-engine/base'
+import { coefficientErrors, type EquationFit, fitResidual, type TermStatus } from 'omai-engine/exposition'
 import { lines } from '../charts/lines.ts'
 import { cartesian } from '../charts/plot.ts'
 import { points } from '../charts/points.ts'
@@ -45,8 +45,8 @@ function coefficientTex(c: number): string {
  * @returns The TeX, or the record's own `expression` when it has no terms.
  * @example
  * ```ts
- * import { equationFit } from 'mdml-engine/exposition'
- * import { fittedTex } from 'mdml-render/views'
+ * import { equationFit } from 'omai-engine/exposition'
+ * import { fittedTex } from 'omai-render/views'
  * const r = equationFit({ terms: [{ tex: 'x', estimate: 2 }, { tex: '1', estimate: -0.5 }], x: [0, 1], fit: [0, 1] })
  * fittedTex(r, 'light', false) // => 'y = 2\\,x - 0.5'
  * ```
@@ -83,8 +83,8 @@ export function fittedTex(record: EquationFit, mode: ColourMode = 'light', colou
  * @returns The TeX, or `undefined` when the truth is not known.
  * @example
  * ```ts
- * import { equationFit } from 'mdml-engine/exposition'
- * import { truthTex } from 'mdml-render/views'
+ * import { equationFit } from 'omai-engine/exposition'
+ * import { truthTex } from 'omai-render/views'
  * const r = equationFit({ terms: [{ tex: 'x', estimate: 2, truth: 3 }, { tex: '1', estimate: 0.1, truth: 0 }], x: [0, 1], fit: [0, 1] })
  * truthTex(r) // => 'y = 3\\,x'
  * ```
@@ -109,8 +109,8 @@ export function truthTex(record: EquationFit): string | undefined {
  * @returns The counts by status.
  * @example
  * ```ts
- * import { equationFit } from 'mdml-engine/exposition'
- * import { termCounts } from 'mdml-render/views'
+ * import { equationFit } from 'omai-engine/exposition'
+ * import { termCounts } from 'omai-render/views'
  * const r = equationFit({ terms: [{ tex: 'x', estimate: 2, truth: 2 }, { tex: '1', estimate: 1, truth: 0 }], x: [0, 1], fit: [0, 1] })
  * termCounts(r) // => { right: 1, off: 0, missing: 0, extra: 1, unknown: 0 }
  * ```
@@ -129,8 +129,8 @@ export function termCounts(record: EquationFit): Record<TermStatus, number> {
  * @returns The ECharts option.
  * @example
  * ```ts
- * import { equationFit } from 'mdml-engine/exposition'
- * import { equationFitView } from 'mdml-render/views'
+ * import { equationFit } from 'omai-engine/exposition'
+ * import { equationFitView } from 'omai-render/views'
  * const r = equationFit({ terms: [], x: [0, 1, 2], fit: [0, 1, 2], truth: [0, 1, 3] })
  * equationFitView(r).series.length // => 2
  * ```
@@ -186,8 +186,8 @@ export function equationFitView(record: EquationFit, options: ViewOptions = {}):
  * @returns The ECharts option.
  * @example
  * ```ts
- * import { equationFit } from 'mdml-engine/exposition'
- * import { residualStripView } from 'mdml-render/views'
+ * import { equationFit } from 'omai-engine/exposition'
+ * import { residualStripView } from 'omai-render/views'
  * const r = equationFit({ terms: [], x: [0, 1, 2], fit: [0, 1, 2], truth: [0, 1, 3] })
  * residualStripView(r).series.length // => 2
  * ```

@@ -9,7 +9,7 @@
  * the columns that were kept.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { key as makeKey } from '../../random/index.ts'
 import { asTensor, fromStorage, type TensorLike, take, toFlat, type Value } from '../../tensor/index.ts'
 import type { Params } from '../module/module.ts'
@@ -67,7 +67,7 @@ function restrict(tree: Params, keepOut: readonly number[], keepIn: readonly num
       const e: Record<string, unknown> = {}
       for (const [k, leaf] of Object.entries(v as Params)) {
         const axes = EDGE_AXES[k]
-        if (axes === undefined) throw new MdmlError('value', `pruneKan: do not know how to prune edge leaf ${k}`)
+        if (axes === undefined) throw new OmaiError('value', `pruneKan: do not know how to prune edge leaf ${k}`)
         let t = leaf as Value
         axes.forEach((a, axis) => {
           t = pick(t, axis, a === 'out' ? keepOut : keepIn)
@@ -93,8 +93,8 @@ function restrict(tree: Params, keepOut: readonly number[], keepIn: readonly num
  * @concept regularisation
  * @example
  * ```ts
- * import { KAN, pruneKan } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
+ * import { KAN, pruneKan } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
  * const net = new KAN([2, 4, 1], { key: key(0) })
  * const x = [[0.1, 0.2], [0.5, -0.3], [-0.4, 0.6]]
  * const small = pruneKan(net, net.state, x, { nodeThreshold: 1e9 })

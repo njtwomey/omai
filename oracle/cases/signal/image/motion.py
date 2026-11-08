@@ -6,9 +6,9 @@ from importlib.metadata import version
 import numpy as np
 import skimage.feature as F
 import skimage.registration as R
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import rng
-from mdml_oracle.signal_helpers import smooth_image
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import rng
+from omai_oracle.signal_helpers import smooth_image
 
 REFERENCE: dict[str, str] = {"scikit-image": version("scikit-image")}
 

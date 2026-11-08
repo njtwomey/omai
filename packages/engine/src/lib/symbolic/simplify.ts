@@ -39,7 +39,7 @@ import { type Derivation, type Expr, type ExprSym, type Step, sym, type WorkBudg
  * @returns Negative, zero or positive.
  * @example
  * ```ts
- * import { compareExprs, parse } from 'mdml-engine/symbolic'
+ * import { compareExprs, parse } from 'omai-engine/symbolic'
  * [parse('sin(x)'), parse('y'), parse('2')].sort(compareExprs).map(String).length // => 3
  * compareExprs(parse('x'), parse('sin(x)')) < 0 // => true
  * ```
@@ -55,7 +55,7 @@ export function compareExprs(a: Expr, b: Expr): number {
  * @returns The count.
  * @example
  * ```ts
- * import { countOps, parse } from 'mdml-engine/symbolic'
+ * import { countOps, parse } from 'omai-engine/symbolic'
  * countOps(parse('x^2 + 2*x + 1')) // => 4
  * ```
  */
@@ -71,7 +71,7 @@ export function countOps(e: Expr): number {
  * @returns The expanded expression.
  * @example
  * ```ts
- * import { expand, parse, toText } from 'mdml-engine/symbolic'
+ * import { expand, parse, toText } from 'omai-engine/symbolic'
  * toText(expand(parse('(x + y)^2'))) // => 'x**2 + 2*x*y + y**2'
  * ```
  */
@@ -86,7 +86,7 @@ export function expand(e: Expr): Expr {
  * @returns The expanded expression and its steps.
  * @example
  * ```ts
- * import { expandSteps, parse } from 'mdml-engine/symbolic'
+ * import { expandSteps, parse } from 'omai-engine/symbolic'
  * expandSteps(parse('(x + 1)^2')).steps[0]?.rule // => 'multinomial'
  * ```
  */
@@ -113,7 +113,7 @@ function powerIn(f: Expr, s: Expr): Expr | undefined {
  * @returns The collected expression.
  * @example
  * ```ts
- * import { collect, parse, toText } from 'mdml-engine/symbolic'
+ * import { collect, parse, toText } from 'omai-engine/symbolic'
  * toText(collect(parse('a*x^2 + b*x^2 + a*x - b*x + c'), parse('x'))) // => 'c + x**2*(a + b) + x*(a - b)'
  * ```
  */
@@ -157,7 +157,7 @@ function factorPolynomial(e: Expr): Expr {
  * @returns The factored form.
  * @example
  * ```ts
- * import { factor, parse, toText } from 'mdml-engine/symbolic'
+ * import { factor, parse, toText } from 'omai-engine/symbolic'
  * toText(factor(parse('x^3 - x^2*y - x*y^2 + y^3'))) // => '(x - y)**2*(x + y)'
  * toText(factor(parse('2*x^2 - 2'))) // => '2*(x - 1)*(x + 1)'
  * toText(factor(parse('x^4 - 1'), { steps: 50 })) // => 'x**4 - 1'
@@ -192,7 +192,7 @@ function factorExpr(e: Expr): Expr {
  * @returns One fraction.
  * @example
  * ```ts
- * import { parse, together, toText } from 'mdml-engine/symbolic'
+ * import { parse, together, toText } from 'omai-engine/symbolic'
  * toText(together(parse('1/x + 1/y'))) // => '(x + y)/(x*y)'
  * ```
  */
@@ -208,7 +208,7 @@ export function together(e: Expr): Expr {
  * @returns p/q in lowest terms.
  * @example
  * ```ts
- * import { cancel, parse, toText } from 'mdml-engine/symbolic'
+ * import { cancel, parse, toText } from 'omai-engine/symbolic'
  * toText(cancel(parse('(x^2 - 1)/(x - 1)'))) // => 'x + 1'
  * ```
  */
@@ -223,11 +223,11 @@ export function cancel(e: Expr): Expr {
  * @param e - A rational function of x.
  * @param x - The variable.
  * @returns The decomposition.
- * @throws MdmlError with code `value` when `e` is not a rational function of x, `convergence` when the work
+ * @throws OmaiError with code `value` when `e` is not a rational function of x, `convergence` when the work
  *   budget runs out.
  * @example
  * ```ts
- * import { apart, parse, sym, toText } from 'mdml-engine/symbolic'
+ * import { apart, parse, sym, toText } from 'omai-engine/symbolic'
  * toText(apart(parse('1/(x^2 - 1)'), sym('x'))) // => '-1/(2*(x + 1)) + 1/(2*(x - 1))'
  * ```
  */
@@ -244,7 +244,7 @@ export function apart(e: Expr, x: ExprSym): Expr {
  * @returns The simplified expression.
  * @example
  * ```ts
- * import { parse, toText, trigSimplify } from 'mdml-engine/symbolic'
+ * import { parse, toText, trigSimplify } from 'omai-engine/symbolic'
  * toText(trigSimplify(parse('sin(x)^2 + cos(x)^2'))) // => '1'
  * toText(trigSimplify(parse('2*sin(x)*cos(x)'))) // => 'sin(2*x)'
  * ```
@@ -358,7 +358,7 @@ function simplifyWithin(e: Expr, budget: WorkBudget | undefined): Derivation {
  * @index function Simplify and rewrite an expression, like SymPy simplify.
  * @example
  * ```ts
- * import { parse, simplify, toText } from 'mdml-engine/symbolic'
+ * import { parse, simplify, toText } from 'omai-engine/symbolic'
  * toText(simplify(parse('(x^2 - 1)/(x - 1) + sin(x)^2 + cos(x)^2'))) // => 'x + 2'
  * toText(simplify(parse('(x^2 - 1)/(x - 1)'), { steps: 10 })) // => '(x**2 - 1)/(x - 1)'
  * ```
@@ -375,7 +375,7 @@ export function simplify(e: Expr, budget?: WorkBudget): Expr {
  * @returns The result and its steps.
  * @example
  * ```ts
- * import { parse, simplifySteps } from 'mdml-engine/symbolic'
+ * import { parse, simplifySteps } from 'omai-engine/symbolic'
  * simplifySteps(parse('(x^2 - 1)/(x - 1)')).steps.map((s) => s.rule) // => ['cancel']
  * ```
  */
@@ -390,7 +390,7 @@ export function simplifySteps(e: Expr, budget?: WorkBudget): Derivation {
  * @returns The result and its steps.
  * @example
  * ```ts
- * import { parse, trigSimplifySteps } from 'mdml-engine/symbolic'
+ * import { parse, trigSimplifySteps } from 'omai-engine/symbolic'
  * trigSimplifySteps(parse('tan(x)*cos(x)')).steps.length > 0 // => true
  * ```
  */
@@ -417,7 +417,7 @@ export type Rewrite = 'expand' | 'factor' | 'collect' | 'together' | 'cancel' | 
  * @returns The result and its steps.
  * @example
  * ```ts
- * import { parse, rewriteSteps } from 'mdml-engine/symbolic'
+ * import { parse, rewriteSteps } from 'omai-engine/symbolic'
  * rewriteSteps('factor', parse('x^2 - 1')).steps.map((s) => s.rule) // => ['factor']
  * ```
  */

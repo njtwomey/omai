@@ -21,7 +21,7 @@ export interface LadderProperties {
  * @concept annealed-importance-sampling
  * @example
  * ```ts
- * import { annealingLadders } from 'mdml-engine/sampling'
+ * import { annealingLadders } from 'omai-engine/sampling'
  * annealingLadders.make({ kind: 'linear', rungs: 4 }) // => [0, 0.25, 0.5, 0.75, 1]
  * ```
  */

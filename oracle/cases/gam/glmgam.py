@@ -9,8 +9,8 @@ import numpy as np
 import pandas as pd
 import statsmodels
 import statsmodels.api as sm
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray, rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray, rng
 from statsmodels.gam.api import BSplines, GLMGam
 
 REFERENCE: dict[str, str] = {"statsmodels": statsmodels.__version__}

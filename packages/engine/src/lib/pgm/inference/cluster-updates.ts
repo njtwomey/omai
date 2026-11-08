@@ -9,7 +9,7 @@
  * per site on the tape.
  */
 
-import { MdmlError, maxOf } from '../../base/index.ts'
+import { maxOf, OmaiError } from '../../base/index.ts'
 import { uniformStream } from '../../random/index.ts'
 import { type Algorithm, channels, stateFromJson, stateToJson } from '../../trace/index.ts'
 
@@ -21,7 +21,7 @@ import { type Algorithm, channels, stateFromJson, stateToJson } from '../../trac
  * @returns beta_c.
  * @example
  * ```ts
- * import { pottsCriticalCoupling } from 'mdml-engine/pgm'
+ * import { pottsCriticalCoupling } from 'omai-engine/pgm'
  * pottsCriticalCoupling(2) // => 0.881373587019543
  * ```
  */
@@ -37,7 +37,7 @@ export function pottsCriticalCoupling(q: number): number {
  * @returns The magnetisation per site of the infinite lattice.
  * @example
  * ```ts
- * import { onsagerMagnetisation } from 'mdml-engine/pgm'
+ * import { onsagerMagnetisation } from 'omai-engine/pgm'
  * onsagerMagnetisation(0.5) // => 0
  * ```
  */
@@ -68,7 +68,7 @@ const up = (i: number, L: number): number => (i < L ? i + L * L - L : i - L)
  * @returns The energy per site, between -2 and 0.
  * @example
  * ```ts
- * import { pottsEnergyPerSite } from 'mdml-engine/pgm'
+ * import { pottsEnergyPerSite } from 'omai-engine/pgm'
  * pottsEnergyPerSite({ L: 2, q: 2, spins: Int32Array.of(0, 0, 0, 0) }) // => -2
  * ```
  */
@@ -89,7 +89,7 @@ export function pottsEnergyPerSite(c: PottsConfiguration): number {
  * @returns The magnetisation in [0, 1].
  * @example
  * ```ts
- * import { pottsMagnetisation } from 'mdml-engine/pgm'
+ * import { pottsMagnetisation } from 'omai-engine/pgm'
  * pottsMagnetisation({ L: 2, q: 2, spins: Int32Array.of(0, 1, 0, 1) }) // => 0
  * ```
  */
@@ -109,7 +109,7 @@ export function pottsMagnetisation(c: PottsConfiguration): number {
  * @returns The number of clusters.
  * @example
  * ```ts
- * import { swendsenWangUpdate } from 'mdml-engine/pgm'
+ * import { swendsenWangUpdate } from 'omai-engine/pgm'
  * // At beta = 0 no bond is kept, so every site is its own cluster.
  * swendsenWangUpdate({ L: 2, q: 2, spins: Int32Array.of(0, 0, 0, 0) }, 0, () => 0.5) // => 4
  * ```
@@ -164,7 +164,7 @@ export function swendsenWangUpdate(c: PottsConfiguration, beta: number, u: () =>
  * @returns The size of the flipped cluster.
  * @example
  * ```ts
- * import { wolffUpdate } from 'mdml-engine/pgm'
+ * import { wolffUpdate } from 'omai-engine/pgm'
  * // At very strong coupling the cluster is the whole ordered lattice.
  * wolffUpdate({ L: 3, q: 2, spins: new Int32Array(9) }, 50, () => 0.5) // => 9
  * ```
@@ -203,7 +203,7 @@ export function wolffUpdate(c: PottsConfiguration, beta: number, u: () => number
  * @returns The number of accepted flips.
  * @example
  * ```ts
- * import { metropolisSweep } from 'mdml-engine/pgm'
+ * import { metropolisSweep } from 'omai-engine/pgm'
  * // At beta = 0 every proposal is accepted.
  * metropolisSweep({ L: 2, q: 2, spins: new Int32Array(4) }, 0, () => 0.5) // => 4
  * ```
@@ -264,7 +264,7 @@ export interface PottsState {
  * @returns The algorithm.
  * @example
  * ```ts
- * import { pottsSamplerAlgorithm } from 'mdml-engine/pgm'
+ * import { pottsSamplerAlgorithm } from 'omai-engine/pgm'
  * pottsSamplerAlgorithm('swendsen-wang', { L: 8, beta: 0.4 }).name // => 'potts-swendsen-wang'
  * ```
  */
@@ -272,7 +272,7 @@ export function pottsSamplerAlgorithm(update: PottsUpdate, options: PottsSampler
   const L = options.L
   const q = options.q ?? 2
   if (!(Number.isInteger(L) && L >= 2) || !(Number.isInteger(q) && q >= 2))
-    throw new MdmlError('value', 'potts: L and q must be integers of at least 2')
+    throw new OmaiError('value', 'potts: L and q must be integers of at least 2')
   const view = (spins: Int32Array): { energy: number; magnetisation: number } => {
     const c = { L, q, spins }
     return { energy: pottsEnergyPerSite(c), magnetisation: pottsMagnetisation(c) }
@@ -320,7 +320,7 @@ export function pottsSamplerAlgorithm(update: PottsUpdate, options: PottsSampler
  * @returns The time in steps (about 1/2 for independent draws).
  * @example
  * ```ts
- * import { integratedAutocorrelationTime } from 'mdml-engine/pgm'
+ * import { integratedAutocorrelationTime } from 'omai-engine/pgm'
  * integratedAutocorrelationTime([1, -1, 1, -1, 1, -1, 1, -1, 1, -1, 1, -1]) < 1 // => true
  * ```
  */

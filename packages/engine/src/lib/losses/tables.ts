@@ -62,8 +62,8 @@ const classification = (
  * @index table The regression losses as one slot: squared, absolute, Huber and more.
  * @example
  * ```ts
- * import { regressionLosses } from 'mdml-engine/losses'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { regressionLosses } from 'omai-engine/losses'
+ * import { toArray } from 'omai-engine/tensor'
  * const squared = regressionLosses.make({ kind: 'squared' })
  * toArray(squared([1, 2, 3], [1, 2, 5])) // => 1.3333333333333333
  * ```
@@ -112,8 +112,8 @@ export const regressionLosses: OptionTable<Loss, LossProperties> = optionTable(
  * @index table The binary classification losses as one slot.
  * @example
  * ```ts
- * import { classificationLosses } from 'mdml-engine/losses'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { classificationLosses } from 'omai-engine/losses'
+ * import { toArray } from 'omai-engine/tensor'
  * const hinge = classificationLosses.make({ kind: 'hinge' })
  * toArray(hinge([0.5, -2], [1, 1])) // => 1.75
  * ```
@@ -283,7 +283,7 @@ const num = (v: unknown): number => v as number
  * @index table The multi-class losses as one slot.
  * @example
  * ```ts
- * import { multiclassLosses } from 'mdml-engine/losses'
+ * import { multiclassLosses } from 'omai-engine/losses'
  * multiclassLosses.names.slice(0, 2) // => ['crossEntropy', 'labelSmoothing']
  * multiclassLosses.optionOf({ kind: 'focal' }).name // => 'focal'
  * ```

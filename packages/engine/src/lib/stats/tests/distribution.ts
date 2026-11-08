@@ -4,7 +4,7 @@
  * against a CDF, and the normality tests of Shapiro-Wilk, Jarque-Bera and Lilliefors.
  */
 
-import { MdmlError, meanOf, type TestResult, varianceOf } from '../../base/index.ts'
+import { meanOf, OmaiError, type TestResult, varianceOf } from '../../base/index.ts'
 import type { Distribution } from '../../dists/index.ts'
 import { kolmogorov, logNdtr, ndtr, smirnov } from '../../numerics/special/index.ts'
 import { exponential as expNoise, foldIn, type Key, key as makeKey, normal as normalNoise } from '../../random/index.ts'
@@ -53,7 +53,7 @@ const LAMBDAS: Readonly<Record<string, number>> = {
  * @returns The statistic.
  * @example
  * ```ts
- * import { powerDivergenceStatistic } from 'mdml-engine/stats/tests'
+ * import { powerDivergenceStatistic } from 'omai-engine/stats/tests'
  * powerDivergenceStatistic([10, 20], [15, 15]) // => 3.333333
  * ```
  */
@@ -63,7 +63,7 @@ export function powerDivergenceStatistic(
   lambda: DivergenceLambda = 1,
 ): number {
   const l = typeof lambda === 'number' ? lambda : LAMBDAS[lambda]
-  if (l === undefined) throw new MdmlError('value', `powerDivergence: unknown lambda ${String(lambda)}`)
+  if (l === undefined) throw new OmaiError('value', `powerDivergence: unknown lambda ${String(lambda)}`)
   let s = 0
   for (let i = 0; i < observed.length; i++) {
     const o = observed[i] ?? 0
@@ -93,7 +93,7 @@ export interface GoodnessOfFitOptions {
  * @returns The statistic and its p-value.
  * @example
  * ```ts
- * import { powerDivergence } from 'mdml-engine/stats/tests'
+ * import { powerDivergence } from 'omai-engine/stats/tests'
  * powerDivergence([16, 18, 16, 14, 12, 12], { lambda: 'log-likelihood' }).statistic // => 2.006573
  * ```
  */
@@ -106,12 +106,12 @@ export function powerDivergence(
   const total = o.reduce((s, v) => s + v, 0)
   const e =
     options.expected === undefined ? new Float64Array(k).fill(total / k) : sample('powerDivergence', options.expected)
-  if (e.length !== k) throw new MdmlError('shape', 'powerDivergence: expected must match observed')
+  if (e.length !== k) throw new OmaiError('shape', 'powerDivergence: expected must match observed')
   if (!(o.every((v) => v >= 0) && e.every((v) => v >= 0)))
-    throw new MdmlError('value', 'powerDivergence: counts must be non-negative')
+    throw new OmaiError('value', 'powerDivergence: counts must be non-negative')
   const te = e.reduce((s, v) => s + v, 0)
   if (Math.abs(te - total) > 1e-8 * Math.max(Math.abs(total), Math.abs(te)))
-    throw new MdmlError('value', 'powerDivergence: observed and expected totals differ')
+    throw new OmaiError('value', 'powerDivergence: observed and expected totals differ')
   const df = k - 1 - (options.ddof ?? 0)
   const statistic = powerDivergenceStatistic(o, e, options.lambda ?? 1)
   return testResult({
@@ -131,7 +131,7 @@ export function powerDivergence(
  * @returns The statistic and its p-value.
  * @example
  * ```ts
- * import { chisquare } from 'mdml-engine/stats/tests'
+ * import { chisquare } from 'omai-engine/stats/tests'
  * chisquare([16, 18, 16, 14, 12, 12]).statistic // => 2
  * ```
  */
@@ -153,8 +153,8 @@ export type KsMethod = 'auto' | 'exact' | 'asymp' | 'approx'
  * @returns D (D+ or D- for one-sided alternatives) and its p-value.
  * @example
  * ```ts
- * import { kstest } from 'mdml-engine/stats/tests'
- * import { normal } from 'mdml-engine/dists'
+ * import { kstest } from 'omai-engine/stats/tests'
+ * import { normal } from 'omai-engine/dists'
  * kstest([-1.2, -0.3, 0.1, 0.6, 1.4], normal()).statistic // => 0.182089
  * ```
  */
@@ -287,7 +287,7 @@ function logisticFit(x: Float64Array): { loc: number; scale: number } {
  * @returns A^2 and its interpolated p-value; `assumptions` holds the critical values at the table's levels.
  * @example
  * ```ts
- * import { andersonDarling } from 'mdml-engine/stats/tests'
+ * import { andersonDarling } from 'omai-engine/stats/tests'
  * andersonDarling([2.1, 1.9, 2.4, 2.0, 1.7, 2.2, 2.3, 1.8]).pValue // => 0.15
  * ```
  */
@@ -366,7 +366,7 @@ export function andersonDarling(x: TensorLike, options: { readonly dist?: Anders
  * @index function Shapiro-Wilk normality test.
  * @example
  * ```ts
- * import { shapiro } from 'mdml-engine/stats/tests'
+ * import { shapiro } from 'omai-engine/stats/tests'
  * shapiro([2.1, 1.9, 2.4, 2.0, 1.7, 2.2, 2.3, 1.8]).statistic // => 0.974858
  * ```
  */
@@ -390,7 +390,7 @@ export function shapiro(x: TensorLike): TestResult {
  * @returns JB and its asymptotic p-value.
  * @example
  * ```ts
- * import { jarqueBera } from 'mdml-engine/stats/tests'
+ * import { jarqueBera } from 'omai-engine/stats/tests'
  * jarqueBera([1, 2, 3, 4, 5]).statistic // => 0.352083
  * ```
  */
@@ -440,7 +440,7 @@ function lillieforsStatistic(x: Float64Array, dist: 'norm' | 'exp'): number {
  * @returns D and its p-value.
  * @example
  * ```ts
- * import { lilliefors } from 'mdml-engine/stats/tests'
+ * import { lilliefors } from 'omai-engine/stats/tests'
  * lilliefors([2.1, 1.9, 2.4, 2.0, 1.7, 2.2, 2.3, 1.8]).statistic // => 0.104854
  * ```
  */
@@ -493,7 +493,7 @@ export function lilliefors(x: TensorLike, options: LillieforsOptions = {}): Test
  * @returns W^2 and its p-value.
  * @example
  * ```ts
- * import { cramervonmises } from 'mdml-engine/stats/tests'
+ * import { cramervonmises } from 'omai-engine/stats/tests'
  * cramervonmises([0.1, 0.4, 0.5, 0.8, 0.95], (u) => u).statistic // => 0.039167
  * ```
  */

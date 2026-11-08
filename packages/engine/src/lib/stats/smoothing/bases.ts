@@ -5,7 +5,7 @@
  * its penalty matrices and a way to evaluate it at new data.
  */
 
-import { factorialOf, MdmlError } from '../../base/index.ts'
+import { factorialOf, OmaiError } from '../../base/index.ts'
 import { bspline } from '../../numerics/interpolate/index.ts'
 import { dgesv, dsyev } from '../../numerics/linalg/index.ts'
 import { gamma as gammaFn } from '../../numerics/special/index.ts'
@@ -54,13 +54,13 @@ export type KnotRule = 'quantile' | 'uniform'
  * @returns The knots, ascending.
  * @example
  * ```ts
- * import { placeKnots } from 'mdml-engine/stats/smoothing'
+ * import { placeKnots } from 'omai-engine/stats/smoothing'
  * placeKnots([0, 1, 2, 3, 4], 3) // => [0, 2, 4]
  * placeKnots([0, 1, 10], 3, { rule: 'uniform' }) // => [0, 5, 10]
  * ```
  */
 export function placeKnots(x: TensorLike, k: number, options: { readonly rule?: KnotRule } = {}): Tensor {
-  if (!(Number.isInteger(k) && k >= 2)) throw new MdmlError('value', 'placeKnots: k must be an integer >= 2')
+  if (!(Number.isInteger(k) && k >= 2)) throw new OmaiError('value', 'placeKnots: k must be an integer >= 2')
   const s = sortedCopy(sample('placeKnots', x))
   const lo = s[0] ?? 0
   const hi = s[s.length - 1] ?? 0
@@ -144,7 +144,7 @@ export interface BsOptions {
  * @returns The basis.
  * @example
  * ```ts
- * import { bs } from 'mdml-engine/stats/smoothing'
+ * import { bs } from 'omai-engine/stats/smoothing'
  * bs([0, 1, 2, 3, 4, 5], { df: 4 }).X.shape // => [6, 4]
  * ```
  */
@@ -156,9 +156,9 @@ export function bs(x: TensorLike, options: BsOptions = {}): SmoothBasis {
   let inner: number[]
   if (options.knots !== undefined) inner = [...options.knots]
   else {
-    if (options.df === undefined) throw new MdmlError('value', 'bs: give df or knots')
+    if (options.df === undefined) throw new OmaiError('value', 'bs: give df or knots')
     const nInner = options.df - order + (intercept ? 0 : 1)
-    if (nInner < 0) throw new MdmlError('value', 'bs: df is too small for the degree')
+    if (nInner < 0) throw new OmaiError('value', 'bs: df is too small for the degree')
     inner = Array.from({ length: nInner }, (_, i) => quantile(a, (i + 1) / (nInner + 1)))
   }
   const [lo, hi] = options.boundaryKnots ?? [
@@ -207,7 +207,7 @@ export function bs(x: TensorLike, options: BsOptions = {}): SmoothBasis {
  * @returns The basis (with the integrated squared second-derivative penalty).
  * @example
  * ```ts
- * import { ns } from 'mdml-engine/stats/smoothing'
+ * import { ns } from 'omai-engine/stats/smoothing'
  * ns([0, 1, 2, 3, 4, 5], { df: 3 }).X.shape // => [6, 3]
  * ```
  */
@@ -217,9 +217,9 @@ export function ns(x: TensorLike, options: Omit<BsOptions, 'degree'> = {}): Smoo
   let inner: number[]
   if (options.knots !== undefined) inner = [...options.knots]
   else {
-    if (options.df === undefined) throw new MdmlError('value', 'ns: give df or knots')
+    if (options.df === undefined) throw new OmaiError('value', 'ns: give df or knots')
     const nInner = options.df - 1 - (intercept ? 1 : 0)
-    if (nInner < 0) throw new MdmlError('value', 'ns: df is too small')
+    if (nInner < 0) throw new OmaiError('value', 'ns: df is too small')
     inner = Array.from({ length: nInner }, (_, i) => quantile(a, (i + 1) / (nInner + 1)))
   }
   const [lo, hi] = options.boundaryKnots ?? [
@@ -294,7 +294,7 @@ export interface PsOptions {
  * @returns The basis.
  * @example
  * ```ts
- * import { ps } from 'mdml-engine/stats/smoothing'
+ * import { ps } from 'omai-engine/stats/smoothing'
  * ps([0, 1, 2, 3, 4, 5, 6, 7, 8, 9], { k: 6 }).nullSpaceDimension // => 2
  * ```
  */
@@ -304,7 +304,7 @@ export function ps(x: TensorLike, options: PsOptions = {}): SmoothBasis {
   const k = options.k ?? 10
   const order = options.order ?? 2
   const nseg = k - degree
-  if (nseg < 1) throw new MdmlError('value', 'ps: k must exceed the degree')
+  if (nseg < 1) throw new OmaiError('value', 'ps: k must exceed the degree')
   const lo = a.reduce((m, v) => Math.min(m, v), Number.POSITIVE_INFINITY)
   const hi = a.reduce((m, v) => Math.max(m, v), Number.NEGATIVE_INFINITY)
   const dx = (hi - lo) / nseg
@@ -443,7 +443,7 @@ export interface CubicRegressionOptions {
  * @returns The basis (null space: linear functions).
  * @example
  * ```ts
- * import { cr } from 'mdml-engine/stats/smoothing'
+ * import { cr } from 'omai-engine/stats/smoothing'
  * cr([0, 1, 2, 3, 4], { k: 3 }).X // => [[1, 0, 0], [0.40625, 0.6875, -0.09375], [0, 1, 0], [-0.09375, 0.6875, 0.40625], [0, 0, 1]]
  * ```
  */
@@ -485,7 +485,7 @@ export function cr(x: TensorLike, options: CubicRegressionOptions = {}): SmoothB
  * @returns The basis (null space: constants).
  * @example
  * ```ts
- * import { cc } from 'mdml-engine/stats/smoothing'
+ * import { cc } from 'omai-engine/stats/smoothing'
  * cc([0, 1, 2, 3, 4, 5, 6], { k: 5 }).X.shape // => [7, 4]
  * ```
  */
@@ -581,7 +581,7 @@ function radialBasis(
   const d = data.cols
   const M = nullPowers.length
   if (!(k > M && k <= n))
-    throw new MdmlError('value', `${kind}: k must exceed the null-space dimension ${M} and not the number of centres`)
+    throw new OmaiError('value', `${kind}: k must exceed the null-space dimension ${M} and not the number of centres`)
   const dist = (a: Rows, i: number, b: Rows, j: number): number => {
     let s = 0
     for (let c = 0; c < d; c++) s += ((a.data[i * d + c] ?? 0) - (b.data[j * d + c] ?? 0)) ** 2
@@ -621,7 +621,7 @@ function radialBasis(
   for (let i = 0; i < q; i++) for (let j = 0; j < q; j++) S[i * k + j] = flip * (ZDZ[i * q + j] ?? 0)
   const evaluate = (query: TensorLike): Tensor => {
     const pts = rowsOf(kind, query)
-    if (pts.cols !== d) throw new MdmlError('shape', `${kind}: points must have dimension ${d}`)
+    if (pts.cols !== d) throw new OmaiError('shape', `${kind}: points must have dimension ${d}`)
     const out = new Float64Array(pts.rows * k)
     for (let r = 0; r < pts.rows; r++) {
       const e = Float64Array.from({ length: n }, (_, i) => kernel(dist(pts, r, centres, i)))
@@ -691,14 +691,14 @@ function defaultOrder(d: number): number {
  * @reference S. N. Wood, Thin plate regression splines, Journal of the Royal Statistical Society B 65 (2003).
  * @example
  * ```ts
- * import { tp } from 'mdml-engine/stats/smoothing'
+ * import { tp } from 'omai-engine/stats/smoothing'
  * tp([0, 1, 2, 3, 4, 5, 6, 7], { k: 5 }).nullSpaceDimension // => 2
  * ```
  */
 export function tp(x: TensorLike, options: RadialOptions = {}): SmoothBasis {
   const d = rowsOf('tp', x).cols
   const m = options.m ?? defaultOrder(d)
-  if (!(2 * m > d)) throw new MdmlError('value', 'tp: the order m must satisfy 2m > d')
+  if (!(2 * m > d)) throw new OmaiError('value', 'tp: the order m must satisfy 2m > d')
   return radialBasis('tp', x, thinPlateKernel(m, d), monomials(m, d), options.k ?? 10, options.centres)
 }
 
@@ -711,7 +711,7 @@ export function tp(x: TensorLike, options: RadialOptions = {}): SmoothBasis {
  * @returns The basis, with a full-rank penalty.
  * @example
  * ```ts
- * import { ts } from 'mdml-engine/stats/smoothing'
+ * import { ts } from 'omai-engine/stats/smoothing'
  * ts([0, 1, 2, 3, 4, 5, 6, 7], { k: 5 }).nullSpaceDimension // => 0
  * ```
  */
@@ -736,7 +736,7 @@ export function ts(x: TensorLike, options: RadialOptions & { readonly epsilon?: 
  * @returns The basis.
  * @example
  * ```ts
- * import { duchon } from 'mdml-engine/stats/smoothing'
+ * import { duchon } from 'omai-engine/stats/smoothing'
  * duchon([[0, 0], [1, 0], [0, 1], [1, 1], [2, 1], [1, 2], [2, 2], [0.5, 1.5]], { k: 6 }).nullSpaceDimension // => 3
  * ```
  */
@@ -744,7 +744,7 @@ export function duchon(x: TensorLike, options: RadialOptions & { readonly s?: nu
   const d = rowsOf('duchon', x).cols
   const m = options.m ?? 2
   const s = options.s ?? (d - 1) / 2
-  if (!(m + s > d / 2 && s < d / 2)) throw new MdmlError('value', 'duchon: needs m + s > d / 2 and s < d / 2')
+  if (!(m + s > d / 2 && s < d / 2)) throw new OmaiError('value', 'duchon: needs m + s > d / 2 and s < d / 2')
   return radialBasis('ds', x, thinPlateKernel(m, d, s === 0 ? 0 : s), monomials(m, d), options.k ?? 10, options.centres)
 }
 
@@ -758,7 +758,7 @@ export function duchon(x: TensorLike, options: RadialOptions & { readonly s?: nu
  * @returns The basis.
  * @example
  * ```ts
- * import { gp } from 'mdml-engine/stats/smoothing'
+ * import { gp } from 'omai-engine/stats/smoothing'
  * gp([0, 1, 2, 3, 4, 5, 6, 7], { k: 5 }).nullSpaceDimension // => 2
  * ```
  */
@@ -780,7 +780,7 @@ export function gp(
         for (let c = 0; c < d; c++) s += ((centres.data[i * d + c] ?? 0) - (centres.data[j * d + c] ?? 0)) ** 2
         rho = Math.max(rho, Math.sqrt(s))
       }
-  if (!(rho > 0)) throw new MdmlError('value', 'gp: the range rho must be positive')
+  if (!(rho > 0)) throw new OmaiError('value', 'gp: the range rho must be positive')
   const kind = options.kernel ?? 'matern32'
   // k(u) with u = r / rho and its first and second derivative in u.
   const a3 = Math.sqrt(3)
@@ -822,7 +822,7 @@ export function gp(
  * @returns The basis (no null space).
  * @example
  * ```ts
- * import { re } from 'mdml-engine/stats/smoothing'
+ * import { re } from 'omai-engine/stats/smoothing'
  * re(['a', 'b', 'a']).X // => [[1, 0], [0, 1], [1, 0]]
  * ```
  */
@@ -862,7 +862,7 @@ export function re(factor: readonly (string | number)[]): SmoothBasis {
  *   levels in sorted order.
  * @example
  * ```ts
- * import { fs } from 'mdml-engine/stats/smoothing'
+ * import { fs } from 'omai-engine/stats/smoothing'
  * fs([0, 1, 2, 0, 1, 2], ['a', 'a', 'a', 'b', 'b', 'b'], { k: 3 }).X.shape // => [6, 6]
  * ```
  */
@@ -872,7 +872,7 @@ export function fs(
   options: { readonly k?: number } = {},
 ): SmoothBasis {
   const a = sample('fs', x, 2)
-  if (factor.length !== a.length) throw new MdmlError('shape', 'fs: the factor must match the covariate')
+  if (factor.length !== a.length) throw new OmaiError('shape', 'fs: the factor must match the covariate')
   const base = cr(a, { k: options.k ?? 5 })
   const k = base.X.shape[1] ?? 0
   const levels = Array.from(new Set(factor)).sort((p, q) => String(p).localeCompare(String(q), 'en', { numeric: true }))
@@ -914,7 +914,7 @@ export function fs(
     evaluate: (q) => {
       // Rows of [x, level index] (levels in sorted order).
       const pts = rowsOf('fs', q)
-      if (pts.cols !== 2) throw new MdmlError('shape', 'fs: evaluate points as rows [x, level index]')
+      if (pts.cols !== 2) throw new OmaiError('shape', 'fs: evaluate points as rows [x, level index]')
       const xs = Float64Array.from({ length: pts.rows }, (_, i) => pts.data[2 * i] ?? 0)
       const f = Array.from({ length: pts.rows }, (_, i) => levels[pts.data[2 * i + 1] ?? -1] ?? '')
       return design(xs, f)
@@ -959,7 +959,7 @@ function kronIdentity(S: ArrayLike<number>, k: number, before: number, after: nu
  * @returns The basis; `evaluate` takes `[M, D]` points with one column per margin.
  * @example
  * ```ts
- * import { cr, te } from 'mdml-engine/stats/smoothing'
+ * import { cr, te } from 'omai-engine/stats/smoothing'
  * const x = [0, 1, 2, 3, 4, 5]
  * te([cr(x, { k: 3 }), cr(x.map((v) => v * v), { k: 4 })]).X.shape // => [6, 12]
  * ```
@@ -976,7 +976,7 @@ export function te(margins: readonly SmoothBasis[]): SmoothBasis {
  * @returns The basis.
  * @example
  * ```ts
- * import { cr, ti } from 'mdml-engine/stats/smoothing'
+ * import { cr, ti } from 'omai-engine/stats/smoothing'
  * const x = [0, 1, 2, 3, 4, 5]
  * ti([cr(x, { k: 3 }), cr(x.map((v) => v * v), { k: 4 })]).X.shape // => [6, 6]
  * ```
@@ -986,10 +986,10 @@ export function ti(margins: readonly SmoothBasis[]): SmoothBasis {
 }
 
 function tensorProduct(kind: string, margins: readonly SmoothBasis[], constrained: boolean): SmoothBasis {
-  if (margins.length < 1) throw new MdmlError('value', `${kind}: needs at least one margin`)
+  if (margins.length < 1) throw new OmaiError('value', `${kind}: needs at least one margin`)
   const n = margins[0]?.X.shape[0] ?? 0
   for (const m of margins)
-    if ((m.X.shape[0] ?? 0) !== n) throw new MdmlError('shape', `${kind}: margins differ in observations`)
+    if ((m.X.shape[0] ?? 0) !== n) throw new OmaiError('shape', `${kind}: margins differ in observations`)
   const parts = margins.map((m) => {
     const k = m.X.shape[1] ?? 0
     if (!constrained) return { m, k, Z: undefined as Float64Array | undefined, kk: k }
@@ -1025,7 +1025,7 @@ function tensorProduct(kind: string, margins: readonly SmoothBasis[], constraine
     knots: asTensor([]) as Tensor,
     evaluate: (q) => {
       const pts = rowsOf(kind, q)
-      if (pts.cols !== margins.length) throw new MdmlError('shape', `${kind}: points need one column per margin`)
+      if (pts.cols !== margins.length) throw new OmaiError('shape', `${kind}: points need one column per margin`)
       const ms = parts.map((p, j) =>
         marginal(
           p,

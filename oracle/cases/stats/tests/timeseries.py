@@ -6,8 +6,8 @@ from typing import Literal
 
 import numpy as np
 import statsmodels
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import rng
 from statsmodels.sandbox.stats.runs import runstest_1samp
 from statsmodels.stats.diagnostic import acorr_ljungbox
 from statsmodels.stats.stattools import durbin_watson

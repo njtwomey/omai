@@ -4,8 +4,8 @@ Jaro-Winkler, Indel, LCSseq, fuzz.ratio, token_sort_ratio, token_set_ratio) and 
 from importlib.metadata import version
 
 import numpy as np
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import rng
 from rapidfuzz import fuzz
 from rapidfuzz.distance import (
     OSA,

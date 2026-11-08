@@ -10,8 +10,8 @@ import {
   type StructureStep,
   type StructureSteps,
   structureStepAt,
-} from 'mdml-engine/exposition'
-import { circle, line, type Paint, type Scene, type SceneNode, scene, text } from 'mdml-engine/scene'
+} from 'omai-engine/exposition'
+import { circle, line, type Paint, type Scene, type SceneNode, scene, text } from 'omai-engine/scene'
 import { circularLayout, forceLayout } from '../layout/force.ts'
 import { boxBoundary } from '../layout/graph.ts'
 import { formatNumber } from '../theme/format.ts'
@@ -40,9 +40,9 @@ const NODE_R = 14
  * @returns The range.
  * @example
  * ```ts
- * import { structureSteps } from 'mdml-engine/exposition'
- * import { structure } from 'mdml-engine/scene'
- * import { structureValueRange } from 'mdml-render/views'
+ * import { structureSteps } from 'omai-engine/exposition'
+ * import { structure } from 'omai-engine/scene'
+ * import { structureValueRange } from 'omai-render/views'
  * const s = structure('g', [{ id: 'a', label: 'a', role: 'latent' }], [])
  * structureValueRange(structureSteps({ structure: s, steps: [{ step: 0, nodes: { a: { value: 2 } } }, { step: 1, nodes: { a: { value: 5 } } }] })) // => [2, 5]
  * ```
@@ -80,9 +80,9 @@ function positionFrame(record: StructureSteps): { x: [number, number]; y: [numbe
  * @returns The scene.
  * @example
  * ```ts
- * import { structureSteps } from 'mdml-engine/exposition'
- * import { structure } from 'mdml-engine/scene'
- * import { structureStepsScene } from 'mdml-render/views'
+ * import { structureSteps } from 'omai-engine/exposition'
+ * import { structure } from 'omai-engine/scene'
+ * import { structureStepsScene } from 'omai-render/views'
  * const s = structure('g', ['a', 'b'].map((id) => ({ id, label: id, role: 'latent' as const })), [{ from: 'a', to: 'b' }])
  * structureStepsScene(structureSteps({ structure: s, steps: [{ step: 0, nodes: { a: { value: 1 } } }] })).kind // => 'scene'
  * ```

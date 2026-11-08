@@ -8,7 +8,7 @@
  * (`gridKernelRidge`).
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { type Kernel, theta as thetaOf, withTheta } from '../kernels/index.ts'
 import { cholesky, choSolve, inv } from '../numerics/linalg/index.ts'
 import { type SmoothProblem, type SolverReached, smoothSolverConfig, smoothSolvers } from '../optim/index.ts'
@@ -41,14 +41,14 @@ export type SelectionCriterion = 'evidence' | 'loo' | 'gcv'
 
 function target(y: TensorLike, who: string): Value {
   const t = promoteFloat(y)[0] as Value
-  if (t.shape.length !== 1) throw new MdmlError('shape', `${who}: y must be [n], got [${t.shape.join(', ')}]`)
+  if (t.shape.length !== 1) throw new OmaiError('shape', `${who}: y must be [n], got [${t.shape.join(', ')}]`)
   return t
 }
 
 function gramOf(k: TensorLike, n: number, who: string): Value {
   const g = promoteFloat(k)[0] as Value
   if (g.shape.length !== 2 || g.shape[0] !== n || g.shape[1] !== n) {
-    throw new MdmlError('shape', `${who}: expected a Gram matrix [${n}, ${n}], got [${g.shape.join(', ')}]`)
+    throw new OmaiError('shape', `${who}: expected a Gram matrix [${n}, ${n}], got [${g.shape.join(', ')}]`)
   }
   return g
 }
@@ -63,13 +63,13 @@ const ridged = (g: Value, n: number, alpha: number | Value): Value => add(g, mul
  * @param y - Targets `[n]`.
  * @param alpha - Noise variance, or ridge (default 1).
  * @returns The log evidence, a scalar.
- * @throws MdmlError `shape` for mismatched inputs.
+ * @throws OmaiError `shape` for mismatched inputs.
  * @concept kernel-selection
  * @reference C. E. Rasmussen and C. K. I. Williams, Gaussian Processes for Machine Learning (2006), equation 2.30.
  * @example
  * ```ts
- * import { logEvidence } from 'mdml-engine/kernel-methods'
- * import { item } from 'mdml-engine/tensor'
+ * import { logEvidence } from 'omai-engine/kernel-methods'
+ * import { item } from 'omai-engine/tensor'
  * Math.round(item(logEvidence([[1]], [1], 1)) * 1e6) / 1e6 // => -1.515512
  * ```
  */
@@ -96,8 +96,8 @@ export function logEvidence(k: TensorLike, y: TensorLike, alpha: number | Value 
  *   and kernel ridge regression (Pattern Recognition 40, 2007).
  * @example
  * ```ts
- * import { looScore } from 'mdml-engine/kernel-methods'
- * import { item } from 'mdml-engine/tensor'
+ * import { looScore } from 'omai-engine/kernel-methods'
+ * import { item } from 'omai-engine/tensor'
  * item(looScore([[2, 1], [1, 2]], [3, 3], 1)) // => 4
  * ```
  */
@@ -123,8 +123,8 @@ export function looScore(k: TensorLike, y: TensorLike, alpha: number | Value = 1
  *   parameter (Technometrics 21, 1979).
  * @example
  * ```ts
- * import { gcvScore } from 'mdml-engine/kernel-methods'
- * import { item } from 'mdml-engine/tensor'
+ * import { gcvScore } from 'omai-engine/kernel-methods'
+ * import { item } from 'omai-engine/tensor'
  * item(gcvScore([[1, 0], [0, 1]], [1, 1], 1)) // => 1
  * ```
  */
@@ -147,8 +147,8 @@ export function gcvScore(k: TensorLike, y: TensorLike, alpha: number | Value = 1
  * @concept kernel-selection
  * @example
  * ```ts
- * import { criterionValue } from 'mdml-engine/kernel-methods'
- * import { item } from 'mdml-engine/tensor'
+ * import { criterionValue } from 'omai-engine/kernel-methods'
+ * import { item } from 'omai-engine/tensor'
  * item(criterionValue('loo', [[2, 1], [1, 2]], [3, 3], 1)) // => 4
  * ```
  */
@@ -188,12 +188,12 @@ export interface KernelTuneOptions {
  * @param y - Targets `[n]`.
  * @param options - The criterion, the starting ridge and whether it is tuned.
  * @returns The problem.
- * @throws MdmlError `value` for a non-positive ridge.
+ * @throws OmaiError `value` for a non-positive ridge.
  * @concept kernel-selection
  * @example
  * ```ts
- * import { kernelCriterionProblem } from 'mdml-engine/kernel-methods'
- * import { rbfKernel } from 'mdml-engine/kernels'
+ * import { kernelCriterionProblem } from 'omai-engine/kernel-methods'
+ * import { rbfKernel } from 'omai-engine/kernels'
  * kernelCriterionProblem(rbfKernel(), [[0], [1], [2]], [0, 1, 0]).x0.length // => 2
  * ```
  */
@@ -204,7 +204,7 @@ export function kernelCriterionProblem(
   options: KernelTuneOptions = {},
 ): SmoothProblem {
   const alpha = options.alpha ?? 1
-  if (!(alpha > 0)) throw new MdmlError('value', `kernelCriterionProblem: alpha must be positive, got ${alpha}`)
+  if (!(alpha > 0)) throw new OmaiError('value', `kernelCriterionProblem: alpha must be positive, got ${alpha}`)
   const tuneAlpha = options.tuneAlpha ?? true
   const criterion = options.criterion ?? 'evidence'
   const start = Array.from(toFlat(primalOf(thetaOf(kernel))))
@@ -247,8 +247,8 @@ export interface KernelTuned {
  * @concept kernel-selection
  * @example
  * ```ts
- * import { tuneKernelRidge } from 'mdml-engine/kernel-methods'
- * import { rbfKernel } from 'mdml-engine/kernels'
+ * import { tuneKernelRidge } from 'omai-engine/kernel-methods'
+ * import { rbfKernel } from 'omai-engine/kernels'
  * const x = [[0], [0.5], [1], [1.5], [2], [2.5], [3]]
  * const y = [0, 0.48, 0.84, 1, 0.91, 0.6, 0.14]
  * tuneKernelRidge(rbfKernel(), x, y, { criterion: 'loo', alpha: 0.1 }).alpha < 0.1 // => true
@@ -310,12 +310,12 @@ export interface KernelGridResult {
  * @param grid - Values per hyperparameter and for the ridge.
  * @param criterion - The criterion (default `evidence`).
  * @returns The best point and the table.
- * @throws MdmlError `shape` when the grid has not one array per hyperparameter.
+ * @throws OmaiError `shape` when the grid has not one array per hyperparameter.
  * @concept kernel-selection
  * @example
  * ```ts
- * import { gridKernelRidge } from 'mdml-engine/kernel-methods'
- * import { rbfKernel } from 'mdml-engine/kernels'
+ * import { gridKernelRidge } from 'omai-engine/kernel-methods'
+ * import { rbfKernel } from 'omai-engine/kernels'
  * const r = gridKernelRidge(rbfKernel(), [[0], [1], [2], [3]], [0, 1, 1, 0], { theta: [[-1, 0, 1]], alpha: [0.01, 1] }, 'loo')
  * r.table.length // => 6
  * ```
@@ -329,7 +329,7 @@ export function gridKernelRidge(
 ): KernelGridResult {
   const p = (primalOf(thetaOf(kernel)).shape[0] ?? 0) as number
   if (grid.theta.length !== p) {
-    throw new MdmlError(
+    throw new OmaiError(
       'shape',
       `gridKernelRidge: the kernel has ${p} hyperparameters but the grid has ${grid.theta.length}`,
     )
@@ -353,6 +353,6 @@ export function gridKernelRidge(
   walk(0, [])
   const finite = table.filter((t) => Number.isFinite(t.value))
   const best = finite.reduce<GridPoint | undefined>((b, t) => (b === undefined || t.value < b.value ? t : b), undefined)
-  if (best === undefined) throw new MdmlError('value', 'gridKernelRidge: no grid point gave a finite criterion')
+  if (best === undefined) throw new OmaiError('value', 'gridKernelRidge: no grid point gave a finite criterion')
   return { best, table }
 }

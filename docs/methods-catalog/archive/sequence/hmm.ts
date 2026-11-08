@@ -118,7 +118,7 @@ function readingOf(params: HmmParams, data: LearnData): ReturnType<typeof stateS
  *
  * @example
  * ```ts
- * import type { HmmPath } from 'mdml-engine/methods/sequence'
+ * import type { HmmPath } from 'omai-engine/methods/sequence'
  * const path: HmmPath = 'model/posterior'
  * path // => 'model/posterior'
  * ```
@@ -134,7 +134,7 @@ export type HmmPath = 'model/posterior'
  *
  * @example
  * ```ts
- * import { hmm } from 'mdml-engine/methods/sequence'
+ * import { hmm } from 'omai-engine/methods/sequence'
  * const x = [[0], [0], [0], [1], [1], [1], [0], [0], [1], [1], [1], [0]]
  * hmm.with({ nStates: 2 }).fit({ x }).params.kind // => 'categorical'
  * ```

@@ -6,7 +6,7 @@
  * angular momentum and the closest approach, and fires an event at a near collision.
  */
 
-import { type Json, MdmlError } from '../../base/index.ts'
+import { type Json, OmaiError } from '../../base/index.ts'
 import { add, expandDims, mul, pow, sub, sum, type TensorLike, type Value } from '../../tensor/index.ts'
 import {
   type Algorithm,
@@ -80,12 +80,12 @@ export interface NBodySystem extends SeparableSystem {
  * @param dim - The spatial dimension, 2 or 3 (default 3).
  * @param options - G and the softening.
  * @returns The system.
- * @throws MdmlError with code `value` for fewer than two bodies, a non-positive mass or a dimension other than 2 or 3.
+ * @throws OmaiError with code `value` for fewer than two bodies, a non-positive mass or a dimension other than 2 or 3.
  * @concept n-body-problem
  * @example
  * ```ts
- * import { nBodyHamiltonian } from 'mdml-engine/dynamics/celestial'
- * import { tensor } from 'mdml-engine/tensor'
+ * import { nBodyHamiltonian } from 'omai-engine/dynamics/celestial'
+ * import { tensor } from 'omai-engine/tensor'
  * const two = nBodyHamiltonian([1, 1], 2)
  * // Two unit masses a unit apart at rest: the energy is the potential, -1.
  * two.energy(tensor([[0, 0], [1, 0]]), tensor([[0, 0], [0, 0]])) // => -1
@@ -93,10 +93,10 @@ export interface NBodySystem extends SeparableSystem {
  */
 export function nBodyHamiltonian(masses: readonly number[], dim: 2 | 3 = 3, options: NBodyOptions = {}): NBodySystem {
   const n = masses.length
-  if (n < 2) throw new MdmlError('value', 'nBodyHamiltonian: give at least two bodies')
+  if (n < 2) throw new OmaiError('value', 'nBodyHamiltonian: give at least two bodies')
   if (masses.some((m) => !(m > 0) || !Number.isFinite(m)))
-    throw new MdmlError('value', 'nBodyHamiltonian: masses must be positive')
-  if (dim !== 2 && dim !== 3) throw new MdmlError('value', 'nBodyHamiltonian: dim is 2 or 3')
+    throw new OmaiError('value', 'nBodyHamiltonian: masses must be positive')
+  if (dim !== 2 && dim !== 3) throw new OmaiError('value', 'nBodyHamiltonian: dim is 2 or 3')
   const G = options.G ?? 1
   const eps2 = (options.softening ?? 0) ** 2
   // G m_i m_j off the diagonal, and a unit diagonal added to r^2 so that the self-term never divides by zero.
@@ -222,7 +222,7 @@ export type NBodyIntegrator =
  * @returns The new positions and momenta.
  * @example
  * ```ts
- * import { nBodyHamiltonian, nBodyStep } from 'mdml-engine/dynamics/celestial'
+ * import { nBodyHamiltonian, nBodyStep } from 'omai-engine/dynamics/celestial'
  * const two = nBodyHamiltonian([1, 1], 2)
  * Array.from(nBodyStep(two, [0, 0, 1, 0], [0, 0, 0, 0], 0.0).q) // => [0, 0, 1, 0]
  * ```
@@ -237,7 +237,7 @@ export function nBodyStep(
   const n = system.masses.length
   const shape = [n, system.dim]
   const method = nBodyIntegrators[integrator]
-  if (method === undefined) throw new MdmlError('value', `nBodyStep: unknown integrator '${integrator}'`)
+  if (method === undefined) throw new OmaiError('value', `nBodyStep: unknown integrator '${integrator}'`)
   if ('drift' in method) {
     const out = symplecticStep(system, fromNumbers(q, shape), fromNumbers(p, shape), h, method)
     return { q: numbersOf(out.q).slice(), p: numbersOf(out.p).slice() }
@@ -317,12 +317,12 @@ const norm = (v: readonly number[]): number => Math.hypot(...v)
  * @param p0 - Initial momenta `[n, dim]`.
  * @param options - Step, step count, integrator and the close-encounter threshold.
  * @returns The algorithm.
- * @throws MdmlError with code `value` for a non-positive step or an unknown integrator.
+ * @throws OmaiError with code `value` for a non-positive step or an unknown integrator.
  * @concept n-body-problem
  * @example
  * ```ts
- * import { nBodyAlgorithm, nBodyHamiltonian } from 'mdml-engine/dynamics/celestial'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { nBodyAlgorithm, nBodyHamiltonian } from 'omai-engine/dynamics/celestial'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const two = nBodyHamiltonian([1, 1], 2)
  * // Two unit masses on a circular orbit about their centre (speed 1/2 each at separation 1).
  * const alg = nBodyAlgorithm(two, [-0.5, 0, 0.5, 0], [0, -0.5, 0, 0.5], { dt: 0.01, steps: 100 })
@@ -336,16 +336,16 @@ export function nBodyAlgorithm(
   options: NBodyRunOptions,
 ): Algorithm<NBodyState, NBodyPath> {
   const { dt, steps } = options
-  if (!(dt > 0)) throw new MdmlError('value', 'nBodyAlgorithm: dt must be positive')
+  if (!(dt > 0)) throw new OmaiError('value', 'nBodyAlgorithm: dt must be positive')
   const integrator = options.integrator ?? 'stormer-verlet'
   if (nBodyIntegrators[integrator] === undefined)
-    throw new MdmlError('value', `nBodyAlgorithm: unknown integrator '${integrator}'`)
+    throw new OmaiError('value', `nBodyAlgorithm: unknown integrator '${integrator}'`)
   const n = system.masses.length
   const take = (x: TensorLike): Float64Array => numbersOf(floatState(x)).slice()
   const q = take(q0)
   const p = take(p0)
   if (q.length !== n * system.dim || p.length !== n * system.dim) {
-    throw new MdmlError('shape', `nBodyAlgorithm: positions and momenta are [${n}, ${system.dim}]`)
+    throw new OmaiError('shape', `nBodyAlgorithm: positions and momenta are [${n}, ${system.dim}]`)
   }
   const drift = (e: number, e0: number): number => Math.abs(e - e0) / Math.max(Math.abs(e0), Number.MIN_VALUE)
   return {

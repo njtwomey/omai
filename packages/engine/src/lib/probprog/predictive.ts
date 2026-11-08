@@ -4,7 +4,7 @@
  * take.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { foldIn, type Key, key as makeKey } from '../random/index.ts'
 import {
   asTensor,
@@ -78,9 +78,9 @@ function atLatents<D = void>(model: Model<D>, values: Readonly<Record<string, Va
  * @concept predictive-checks
  * @example
  * ```ts
- * import { observe, plate, priorPredictive, sample } from 'mdml-engine/probprog'
- * import { normal } from 'mdml-engine/dists'
- * import { key } from 'mdml-engine/random'
+ * import { observe, plate, priorPredictive, sample } from 'omai-engine/probprog'
+ * import { normal } from 'omai-engine/dists'
+ * import { key } from 'omai-engine/random'
  * const model = () => { const m = sample('m', normal(0, 1)); plate('n', 3, () => observe('y', normal(m, 1), [0, 0, 0])) }
  * priorPredictive(model, undefined, { key: key(0), numSamples: 10 })['y']?.shape // => [10, 3]
  * ```
@@ -110,9 +110,9 @@ export function priorPredictive<D = void>(
  * @concept predictive-checks
  * @example
  * ```ts
- * import { conjugateInference, observe, plate, posteriorPredictive, sample } from 'mdml-engine/probprog'
- * import { normal } from 'mdml-engine/dists'
- * import { key } from 'mdml-engine/random'
+ * import { conjugateInference, observe, plate, posteriorPredictive, sample } from 'omai-engine/probprog'
+ * import { normal } from 'omai-engine/dists'
+ * import { key } from 'omai-engine/random'
  * const model = (y: number[]) => { const m = sample('m', normal(0, 1)); plate('n', y.length, () => observe('y', normal(m, 1), y)) }
  * const post = conjugateInference(model, [1, 2, 3])
  * posteriorPredictive(model, post, [1, 2, 3], { key: key(0), numSamples: 20 })['y']?.shape // => [20, 3]
@@ -176,9 +176,9 @@ function rowOf(draws: Readonly<Record<string, Tensor>>, i: number): Record<strin
  * @concept predictive-checks
  * @example
  * ```ts
- * import { logLikelihood, observe, plate, sample } from 'mdml-engine/probprog'
- * import { normal } from 'mdml-engine/dists'
- * import { tensor } from 'mdml-engine/tensor'
+ * import { logLikelihood, observe, plate, sample } from 'omai-engine/probprog'
+ * import { normal } from 'omai-engine/dists'
+ * import { tensor } from 'omai-engine/tensor'
  * const model = () => { const m = sample('m', normal(0, 1)); plate('n', 2, () => observe('y', normal(m, 1), [0, 1])) }
  * logLikelihood(model, { m: tensor([0, 0.5, 1]) }, undefined)['y']?.shape // => [3, 2]
  * ```
@@ -195,7 +195,7 @@ export function logLikelihood<D = void>(
     if (post.draws !== undefined && options.numSamples === undefined && post.logWeights === undefined)
       values = post.draws
     else {
-      if (options.key === undefined) throw new MdmlError('value', 'logLikelihood: drawing from a posterior needs a key')
+      if (options.key === undefined) throw new OmaiError('value', 'logLikelihood: drawing from a posterior needs a key')
       values = post.sample(options.key, options.numSamples ?? 1000)
     }
   } else values = draws
@@ -226,8 +226,8 @@ export function logLikelihood<D = void>(
  * @concept predictive-checks
  * @example
  * ```ts
- * import { pointwiseLogLikelihood } from 'mdml-engine/probprog'
- * import { tensor } from 'mdml-engine/tensor'
+ * import { pointwiseLogLikelihood } from 'omai-engine/probprog'
+ * import { tensor } from 'omai-engine/tensor'
  * pointwiseLogLikelihood({ a: tensor([[1, 2], [3, 4]]), b: tensor([5, 6]) }).shape // => [2, 3]
  * ```
  */
@@ -237,6 +237,6 @@ export function pointwiseLogLikelihood(logLik: Readonly<Record<string, TensorLik
     const S = t.shape[0] ?? 0
     return reshape(t, [S, -1])
   })
-  if (parts.length === 0) throw new MdmlError('value', 'pointwiseLogLikelihood: no observed sites')
+  if (parts.length === 0) throw new OmaiError('value', 'pointwiseLogLikelihood: no observed sites')
   return primalOf(concat(parts, 1))
 }

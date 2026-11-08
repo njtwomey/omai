@@ -5,8 +5,8 @@
  */
 
 import type { EChartsOption } from 'echarts'
-import { maxOf, minOf } from 'mdml-engine/base'
-import type { CoefficientTable, LikelihoodTable, NeighbourRecord, SearchTrials } from 'mdml-engine/exposition'
+import { maxOf, minOf } from 'omai-engine/base'
+import type { CoefficientTable, LikelihoodTable, NeighbourRecord, SearchTrials } from 'omai-engine/exposition'
 import { bars } from '../charts/bars.ts'
 import { type Panel, subplots } from '../charts/compose.ts'
 import { intervalChart } from '../charts/evaluation.ts'
@@ -60,8 +60,8 @@ export function isIntercept(name: string): boolean {
  * @returns The table.
  * @example
  * ```ts
- * import { coefficientTable } from 'mdml-engine/exposition'
- * import { coefficientRows } from 'mdml-render/views'
+ * import { coefficientTable } from 'omai-engine/exposition'
+ * import { coefficientRows } from 'omai-render/views'
  * coefficientRows(coefficientTable({ names: ['x'], estimates: [2], standardErrors: [0.1] })).columns // => ['coefficient', 'estimate', 'std. error', 'interval']
  * ```
  */

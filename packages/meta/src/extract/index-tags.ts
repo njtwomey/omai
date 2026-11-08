@@ -24,7 +24,7 @@ function words(text: string): number {
  * @returns The tag, or the reason it is not one (unknown kind, no description, more than {@link INDEX_WORDS_MAX} words).
  * @example
  * ```ts
- * import { parseIndexTag } from 'mdml-meta/extract'
+ * import { parseIndexTag } from 'omai-meta/extract'
  * parseIndexTag('function Solve a linear system.') // => { tag: { kind: 'function', description: 'Solve a linear system.' } }
  * ```
  */
@@ -50,7 +50,7 @@ export function parseIndexTag(text: string): { readonly tag: IndexTag } | { read
  * @returns The tag (absent when the comment has none or the tag is invalid) and the problems found.
  * @example
  * ```ts
- * import { readIndexTags } from 'mdml-meta/extract'
+ * import { readIndexTags } from 'omai-meta/extract'
  * const r = readIndexTags([{ text: 'verb Do it.', line: 2 }], 'a.ts', 10)
  * r.problems[0]?.line // => 12
  * ```

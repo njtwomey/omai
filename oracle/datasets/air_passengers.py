@@ -1,6 +1,6 @@
 """Monthly international airline passengers 1949 to 1960 (Box and Jenkins), R's datasets::AirPassengers."""
 
-from mdml_oracle.vendor import csv_rows, fetch_pinned, render_table
+from omai_oracle.vendor import csv_rows, fetch_pinned, render_table
 
 TARGET = "packages/engine/src/lib/datasets/_data/air-passengers.data.ts"
 URL = "https://vincentarelbundock.github.io/Rdatasets/csv/datasets/AirPassengers.csv"

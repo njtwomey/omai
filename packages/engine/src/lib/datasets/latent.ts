@@ -23,8 +23,8 @@ export type SourceKind = 'laplace' | 'uniform' | 'sawtooth' | 'sine'
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { mixedSources } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { mixedSources } from 'omai-engine/datasets'
  * generate(mixedSources, { knobs: { n: 20, sources: 3 } }).data.x.shape // => [20, 3]
  * ```
  */
@@ -102,8 +102,8 @@ export const mixedSources: DatasetGenerator<RegressionData> = {
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { twoViews } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { twoViews } from 'omai-engine/datasets'
  * generate(twoViews, { knobs: { n: 10, latent: 1, viewA: 3, viewB: 2 } }).data.y.shape // => [10, 2]
  * ```
  */
@@ -170,8 +170,8 @@ export const twoViews: DatasetGenerator<RegressionData> = {
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { toySuperposition } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { toySuperposition } from 'omai-engine/datasets'
  * (generate(toySuperposition, { knobs: { features: 4, decay: 0.5 } }).truth.extra?.['importance'] as number[]).slice(0, 3) // => [1, 0.5, 0.25]
  * ```
  */
@@ -226,8 +226,8 @@ export const toySuperposition: DatasetGenerator<RegressionData> = {
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { sparseDictionary } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { sparseDictionary } from 'omai-engine/datasets'
  * generate(sparseDictionary, { knobs: { n: 5, features: 3, dim: 4 } }).data.x.shape // => [5, 4]
  * ```
  */

@@ -5,7 +5,7 @@
  * chance.
  */
 
-import { MdmlError, meanOf, varianceOf } from '../../base/index.ts'
+import { meanOf, OmaiError, varianceOf } from '../../base/index.ts'
 import { type Explained, learningCurve as learningCurveRecord } from '../../exposition/index.ts'
 import { foldIn, type Key, permutation } from '../../random/index.ts'
 import { fromStorage, type Tensor, toFlat } from '../../tensor/index.ts'
@@ -39,7 +39,7 @@ export type CvOption = Splitter | number
  * @returns The splitter.
  * @example
  * ```ts
- * import { checkCv } from 'mdml-engine/learn/model-selection'
+ * import { checkCv } from 'omai-engine/learn/model-selection'
  * checkCv(3, { kind: 'classifier' }).name // => 'stratified-k-fold'
  * ```
  */
@@ -59,7 +59,7 @@ export function checkCv(cv: CvOption | undefined, estimator: Pick<Estimator, 'ki
  * @returns The splitter input.
  * @example
  * ```ts
- * import { splitInputOf } from 'mdml-engine/learn/model-selection'
+ * import { splitInputOf } from 'omai-engine/learn/model-selection'
  * splitInputOf({ x: [[1], [2]], y: [0, 1] }).n // => 2
  * ```
  */
@@ -156,7 +156,7 @@ function runFold(
     observe: (s) => ({ metrics: s === undefined ? {} : s.test }),
   }
   const r = subRun({ t: index, key: ctx.key, run: ctx.run }, foldAlgorithm, { maxSteps: 1, index })
-  if (r.state === undefined) throw new MdmlError('convergence', 'crossValidate: a fold did not run')
+  if (r.state === undefined) throw new OmaiError('convergence', 'crossValidate: a fold did not run')
   return r.state
 }
 
@@ -278,10 +278,10 @@ function crossValidateRun(estimator: Estimator, data: LearnData, options: CrossV
  * @concept cross-validation
  * @example
  * ```ts
- * import { crossValidateAlgorithm } from 'mdml-engine/learn/model-selection'
- * import { defineEstimator } from 'mdml-engine/learn'
- * import { runAlgorithm } from 'mdml-engine/trace'
- * import { full } from 'mdml-engine/tensor'
+ * import { crossValidateAlgorithm } from 'omai-engine/learn/model-selection'
+ * import { defineEstimator } from 'omai-engine/learn'
+ * import { runAlgorithm } from 'omai-engine/trace'
+ * import { full } from 'omai-engine/tensor'
  * const zero = defineEstimator({ name: 'zero', kind: 'regressor', fit: () => ({}), methods: () => ({ predict: (x) => full([x.shape[0]], 0) }) }, {})
  * const alg = crossValidateAlgorithm(zero, { x: [[0], [1], [2], [3]], y: [1, 1, 1, 1] }, { cv: 2, scoring: 'neg_mean_squared_error' })
  * runAlgorithm(alg, { maxSteps: 5 }).state.test.neg_mean_squared_error // => [-1, -1]
@@ -308,9 +308,9 @@ export function crossValidateAlgorithm(
  * @index function Cross-validate an estimator with several scorers.
  * @example
  * ```ts
- * import { crossValidate } from 'mdml-engine/learn/model-selection'
- * import { defineEstimator } from 'mdml-engine/learn'
- * import { full, mean, item } from 'mdml-engine/tensor'
+ * import { crossValidate } from 'omai-engine/learn/model-selection'
+ * import { defineEstimator } from 'omai-engine/learn'
+ * import { full, mean, item } from 'omai-engine/tensor'
  * const meanModel = defineEstimator(
  *   { name: 'mean', kind: 'regressor', fit: (d) => ({ m: item(mean(d.y)) }), methods: (p) => ({ predict: (x) => full([x.shape[0]], p.m) }) },
  *   {},
@@ -349,9 +349,9 @@ export function crossValidate(
  * @returns One score per fold.
  * @example
  * ```ts
- * import { crossValScore } from 'mdml-engine/learn/model-selection'
- * import { defineEstimator } from 'mdml-engine/learn'
- * import { full } from 'mdml-engine/tensor'
+ * import { crossValScore } from 'omai-engine/learn/model-selection'
+ * import { defineEstimator } from 'omai-engine/learn'
+ * import { full } from 'omai-engine/tensor'
  * const zero = defineEstimator({ name: 'zero', kind: 'regressor', fit: () => ({}), methods: () => ({ predict: (x) => full([x.shape[0]], 0) }) }, {})
  * crossValScore(zero, { x: [[0], [1]], y: [1, 3] }, { cv: 2, scoring: 'neg_mean_squared_error' }) // => [-1, -9]
  * ```
@@ -396,7 +396,7 @@ function crossValPredictRun(
 ): { readonly algorithm: Algorithm<CvPredictState, CrossValPredictPath>; readonly folds: Fold[]; readonly n: number } {
   const splitter = checkCv(options.cv, estimator)
   if (!splitter.partition)
-    throw new MdmlError('value', `crossValPredict: ${splitter.name} does not partition the samples`)
+    throw new OmaiError('value', `crossValPredict: ${splitter.name} does not partition the samples`)
   const n = rowsOf(data.x)
   const folds = splitIndices(
     splitter,
@@ -448,13 +448,13 @@ function crossValPredictRun(
  * @param data - The data.
  * @param options - cv, method, groups and key.
  * @returns The algorithm, one step per fold.
- * @throws MdmlError with code `value` when the splitter does not partition the samples.
+ * @throws OmaiError with code `value` when the splitter does not partition the samples.
  * @example
  * ```ts
- * import { crossValPredictAlgorithm } from 'mdml-engine/learn/model-selection'
- * import { defineEstimator } from 'mdml-engine/learn'
- * import { runAlgorithm } from 'mdml-engine/trace'
- * import { full, item, mean } from 'mdml-engine/tensor'
+ * import { crossValPredictAlgorithm } from 'omai-engine/learn/model-selection'
+ * import { defineEstimator } from 'omai-engine/learn'
+ * import { runAlgorithm } from 'omai-engine/trace'
+ * import { full, item, mean } from 'omai-engine/tensor'
  * const meanModel = defineEstimator(
  *   { name: 'mean', kind: 'regressor', fit: (d) => ({ m: item(mean(d.y)) }), methods: (p) => ({ predict: (x) => full([x.shape[0]], p.m) }) },
  *   {},
@@ -480,12 +480,12 @@ export function crossValPredictAlgorithm(
  * @param data - The data.
  * @param options - cv, method, groups, key and tracing.
  * @returns `[n]` or `[n, k]` predictions in the original row order.
- * @throws MdmlError with code `value` when the splitter does not partition the samples.
+ * @throws OmaiError with code `value` when the splitter does not partition the samples.
  * @example
  * ```ts
- * import { crossValPredict } from 'mdml-engine/learn/model-selection'
- * import { defineEstimator } from 'mdml-engine/learn'
- * import { full, item, mean, toFlat } from 'mdml-engine/tensor'
+ * import { crossValPredict } from 'omai-engine/learn/model-selection'
+ * import { defineEstimator } from 'omai-engine/learn'
+ * import { full, item, mean, toFlat } from 'omai-engine/tensor'
  * const meanModel = defineEstimator(
  *   { name: 'mean', kind: 'regressor', fit: (d) => ({ m: item(mean(d.y)) }), methods: (p) => ({ predict: (x) => full([x.shape[0]], p.m) }) },
  *   {},
@@ -564,7 +564,7 @@ function learningCurveRun(
     new Set(requested.map((s) => Math.min(Math.max(fractions ? Math.trunc(s * nMax) : s, 1), nMax))),
   ).sort((a, b) => a - b)
   if (!fractions && requested.some((s) => !Number.isInteger(s) || s < 1 || s > nMax)) {
-    throw new MdmlError('value', `learningCurve: train sizes must be fractions in (0, 1] or counts in [1, ${nMax}]`)
+    throw new OmaiError('value', `learningCurve: train sizes must be fractions in (0, 1] or counts in [1, ${nMax}]`)
   }
   const jobs = folds.flatMap((fold, f) => sizes.map((size) => ({ fold, f, size })))
   const algorithm: Algorithm<LearningCurveState, LearningCurvePath> = {
@@ -625,13 +625,13 @@ function learningCurveRun(
  * @param data - The data.
  * @param options - trainSizes, cv, scoring, groups, shuffle and key.
  * @returns The algorithm, one step per fold and size.
- * @throws MdmlError with code `value` for sizes that are neither fractions in (0, 1] nor counts in range.
+ * @throws OmaiError with code `value` for sizes that are neither fractions in (0, 1] nor counts in range.
  * @example
  * ```ts
- * import { learningCurveAlgorithm } from 'mdml-engine/learn/model-selection'
- * import { defineEstimator } from 'mdml-engine/learn'
- * import { runAlgorithm } from 'mdml-engine/trace'
- * import { full } from 'mdml-engine/tensor'
+ * import { learningCurveAlgorithm } from 'omai-engine/learn/model-selection'
+ * import { defineEstimator } from 'omai-engine/learn'
+ * import { runAlgorithm } from 'omai-engine/trace'
+ * import { full } from 'omai-engine/tensor'
  * const zero = defineEstimator({ name: 'zero', kind: 'regressor', fit: () => ({}), methods: () => ({ predict: (x) => full([x.shape[0]], 0) }) }, {})
  * const data = { x: [[0], [1], [2], [3], [4], [5]], y: [0, 0, 0, 0, 0, 0] }
  * runAlgorithm(learningCurveAlgorithm(zero, data, { cv: 3, trainSizes: [0.5, 1] }), { maxSteps: 10 }).state.done // => 6
@@ -656,9 +656,9 @@ export function learningCurveAlgorithm(
  * @returns The absolute training sizes and the scores.
  * @example
  * ```ts
- * import { learningCurve } from 'mdml-engine/learn/model-selection'
- * import { defineEstimator } from 'mdml-engine/learn'
- * import { full } from 'mdml-engine/tensor'
+ * import { learningCurve } from 'omai-engine/learn/model-selection'
+ * import { defineEstimator } from 'omai-engine/learn'
+ * import { full } from 'omai-engine/tensor'
  * const zero = defineEstimator({ name: 'zero', kind: 'regressor', fit: () => ({}), methods: () => ({ predict: (x) => full([x.shape[0]], 0) }) }, {})
  * const x = [[0], [1], [2], [3], [4], [5]]
  * learningCurve(zero, { x, y: [0, 0, 0, 0, 0, 0] }, { cv: 3, trainSizes: [0.5, 1], scoring: 'neg_mean_squared_error' }).values // => [2, 4]
@@ -714,9 +714,9 @@ export interface ValidationCurveOptions extends FitOptions {
  * @returns The values and the scores by value and fold.
  * @example
  * ```ts
- * import { validationCurve } from 'mdml-engine/learn/model-selection'
- * import { defineEstimator } from 'mdml-engine/learn'
- * import { full } from 'mdml-engine/tensor'
+ * import { validationCurve } from 'omai-engine/learn/model-selection'
+ * import { defineEstimator } from 'omai-engine/learn'
+ * import { full } from 'omai-engine/tensor'
  * const constant = defineEstimator({ name: 'c', kind: 'regressor', fit: () => ({}), methods: (_, h) => ({ predict: (x) => full([x.shape[0]], h.c) }) }, { c: 0 })
  * validationCurve(constant, { x: [[0], [1]], y: [1, 1] }, 'c', [0, 1], { cv: 2, scoring: 'neg_mean_absolute_error' }).testScores // => [[-1, -1], [-0, -0]]
  * ```
@@ -795,7 +795,7 @@ function permutationTestRun(
 ): { readonly algorithm: Algorithm<PermutationTestState, PermutationTestPath>; readonly nPerm: number } {
   const nPerm = options.nPermutations ?? 100
   if (!(Number.isInteger(nPerm) && nPerm >= 1))
-    throw new MdmlError('value', 'permutationTestScore: nPermutations must be >= 1')
+    throw new OmaiError('value', 'permutationTestScore: nPermutations must be >= 1')
   const key = keyFor(options, 'permutationTestScore')
   const n = rowsOf(data.x)
   const y = targetVector(data.y ?? [], 'permutationTestScore', n)
@@ -865,13 +865,13 @@ function permutationTestRun(
  * @param data - The data.
  * @param options - cv, scoring, nPermutations, groups and key.
  * @returns The algorithm, one step for the real score and one per permutation.
- * @throws MdmlError with code `value` for fewer than one permutation.
+ * @throws OmaiError with code `value` for fewer than one permutation.
  * @example
  * ```ts
- * import { permutationTestAlgorithm } from 'mdml-engine/learn/model-selection'
- * import { defineEstimator } from 'mdml-engine/learn'
- * import { runAlgorithm } from 'mdml-engine/trace'
- * import { full } from 'mdml-engine/tensor'
+ * import { permutationTestAlgorithm } from 'omai-engine/learn/model-selection'
+ * import { defineEstimator } from 'omai-engine/learn'
+ * import { runAlgorithm } from 'omai-engine/trace'
+ * import { full } from 'omai-engine/tensor'
  * const zero = defineEstimator({ name: 'zero', kind: 'regressor', fit: () => ({}), methods: () => ({ predict: (x) => full([x.shape[0]], 0) }) }, {})
  * const alg = permutationTestAlgorithm(zero, { x: [[0], [1], [2], [3]], y: [1, 2, 3, 4] }, { cv: 2, nPermutations: 5 })
  * runAlgorithm(alg, { maxSteps: 10 }).state.scores.length // => 5
@@ -896,9 +896,9 @@ export function permutationTestAlgorithm(
  * @returns The score, the permutation scores and the p-value.
  * @example
  * ```ts
- * import { permutationTestScore } from 'mdml-engine/learn/model-selection'
- * import { defineEstimator } from 'mdml-engine/learn'
- * import { full } from 'mdml-engine/tensor'
+ * import { permutationTestScore } from 'omai-engine/learn/model-selection'
+ * import { defineEstimator } from 'omai-engine/learn'
+ * import { full } from 'omai-engine/tensor'
  * const zero = defineEstimator({ name: 'zero', kind: 'regressor', fit: () => ({}), methods: () => ({ predict: (x) => full([x.shape[0]], 0) }) }, {})
  * const r = permutationTestScore(zero, { x: [[0], [1], [2], [3]], y: [1, 2, 3, 4] }, { cv: 2, nPermutations: 9, scoring: 'neg_mean_absolute_error' })
  * r.pValue // => 1

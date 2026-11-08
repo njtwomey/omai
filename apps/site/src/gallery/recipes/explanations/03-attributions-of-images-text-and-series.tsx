@@ -1,5 +1,5 @@
-import { featureAttributions } from 'mdml-engine/exposition'
-import { Choice, ControlPanel, ExpositionView, NumberField, SeedInput } from 'mdml-render/react'
+import { featureAttributions } from 'omai-engine/exposition'
+import { Choice, ControlPanel, ExpositionView, NumberField, SeedInput } from 'omai-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 import { normals } from '../../toys/synthetic.ts'

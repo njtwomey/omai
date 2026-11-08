@@ -24,7 +24,7 @@ const BYTES = new DataView(new ArrayBuffer(8))
  * @concept hashing
  * @example
  * ```ts
- * import { fmix32 } from 'mdml-engine/sketches'
+ * import { fmix32 } from 'omai-engine/sketches'
  * fmix32(0) // => 0
  * fmix32(1) // => 1364076727
  * ```
@@ -49,8 +49,8 @@ export function fmix32(h: number): number {
  * @concept hashing
  * @example
  * ```ts
- * import { seedOf } from 'mdml-engine/sketches'
- * import { key } from 'mdml-engine/random'
+ * import { seedOf } from 'omai-engine/sketches'
+ * import { key } from 'omai-engine/random'
  * seedOf(7) // => 7
  * seedOf(key(7)) === seedOf(key(7)) // => true
  * seedOf(key(7)) === seedOf(key(8)) // => false
@@ -71,7 +71,7 @@ export function seedOf(seed: SketchSeed = 0): number {
  * @concept hashing
  * @example
  * ```ts
- * import { hash32 } from 'mdml-engine/sketches'
+ * import { hash32 } from 'omai-engine/sketches'
  * hash32('alpha', 1) === hash32('alpha', 1) // => true
  * hash32('alpha', 1) === hash32('alpha', 2) // => false
  * hash32(0) === hash32(-0) // => true
@@ -104,7 +104,7 @@ export function hash32(item: SketchItem, seed = 0): number {
  * @concept hashing
  * @example
  * ```ts
- * import { hashPair } from 'mdml-engine/sketches'
+ * import { hashPair } from 'omai-engine/sketches'
  * hashPair('x', 3).length // => 2
  * hashPair('x', 3)[0] === hashPair('x', 3)[0] // => true
  * ```
@@ -127,7 +127,7 @@ export function hashPair(item: SketchItem, seed = 0): readonly [number, number] 
  *   (Random Structures and Algorithms 2008).
  * @example
  * ```ts
- * import { doubleHashIndex } from 'mdml-engine/sketches'
+ * import { doubleHashIndex } from 'omai-engine/sketches'
  * doubleHashIndex(10, 3, 0, 100) // => 10
  * doubleHashIndex(10, 3, 1, 100) // => 14
  * ```
@@ -146,7 +146,7 @@ export function doubleHashIndex(h1: number, h2: number, i: number, m: number): n
  * @concept hashing
  * @example
  * ```ts
- * import { itemKey } from 'mdml-engine/sketches'
+ * import { itemKey } from 'omai-engine/sketches'
  * itemKey(1) // => 'n:1'
  * itemKey('1') // => 's:1'
  * ```
@@ -163,7 +163,7 @@ export function itemKey(item: SketchItem): string {
  * @concept hashing
  * @example
  * ```ts
- * import { itemFromKey, itemKey } from 'mdml-engine/sketches'
+ * import { itemFromKey, itemKey } from 'omai-engine/sketches'
  * itemFromKey(itemKey(2.5)) // => 2.5
  * itemFromKey(itemKey('a')) // => 'a'
  * ```

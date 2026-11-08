@@ -7,7 +7,7 @@
  * moving-average representation.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { ndtri } from '../numerics/special/index.ts'
 import {
   analyticObjective,
@@ -72,7 +72,7 @@ export interface VecmProblem {
 
 function terms(det: VecmDeterministic): { co: boolean; ci: boolean; lo: boolean; li: boolean } {
   const has = (s: string): boolean => det.includes(s)
-  if (has('co') && has('ci')) throw new MdmlError('value', "vecm: both 'co' and 'ci' given; choose one")
+  if (has('co') && has('ci')) throw new OmaiError('value', "vecm: both 'co' and 'ci' given; choose one")
   return { co: has('co'), ci: has('ci'), lo: has('lo'), li: has('li') }
 }
 
@@ -86,7 +86,7 @@ function terms(det: VecmDeterministic): { co: boolean; ci: boolean; lo: boolean;
  * @returns The problem data.
  * @example
  * ```ts
- * import { vecmProblem } from 'mdml-engine/timeseries'
+ * import { vecmProblem } from 'omai-engine/timeseries'
  * const y = Array.from({ length: 30 }, (_, i) => [Math.sin(i) + i * 0.1, Math.cos(i * 1.3) + i * 0.1])
  * vecmProblem(y, { kArDiff: 1, rank: 1 }).nobs // => 28
  * ```
@@ -102,8 +102,8 @@ export function vecmProblem(y: ArrayLike<ArrayLike<number>>, options: VecmOption
   const p = kd + 1
   const n = rows.length
   const T = n - p
-  if (T < K * (kd + 2) + 2) throw new MdmlError('value', 'vecm: too few observations')
-  if (!(Number.isInteger(rank) && rank >= 1 && rank <= K)) throw new MdmlError('value', 'vecm: rank must be 1 to nVars')
+  if (T < K * (kd + 2) + 2) throw new OmaiError('value', 'vecm: too few observations')
+  if (!(Number.isInteger(rank) && rank >= 1 && rank <= K)) throw new OmaiError('value', 'vecm: rank must be 1 to nVars')
   const dyAll = cols.map((c) => Float64Array.from({ length: n - 1 }, (_, i) => (c[i + 1] ?? 0) - (c[i] ?? 0)))
   const dy = dyAll.map((c) => c.slice(p - 1))
   const yLag: Float64Array[] = cols.map((c) => c.slice(p - 1, n - 1))
@@ -191,7 +191,7 @@ function engleGrangerStart(p: VecmProblem): number[] {
  * @returns The objective and the start (the regression of the first levels on the rest).
  * @example
  * ```ts
- * import { vecmProblem, vecmSmoothProblem } from 'mdml-engine/timeseries'
+ * import { vecmProblem, vecmSmoothProblem } from 'omai-engine/timeseries'
  * const y = Array.from({ length: 30 }, (_, i) => [Math.sin(i) + i * 0.1, Math.cos(i * 1.3) + i * 0.1])
  * vecmSmoothProblem(vecmProblem(y)).x0.length // => 1
  * ```
@@ -371,7 +371,7 @@ export interface VecmSolveOptions extends VecmOptions {
  * @returns The algorithm.
  * @example
  * ```ts
- * import { vecmAlgorithm, vecmProblem } from 'mdml-engine/timeseries'
+ * import { vecmAlgorithm, vecmProblem } from 'omai-engine/timeseries'
  * const y = Array.from({ length: 30 }, (_, i) => [Math.sin(i) + i * 0.1, Math.cos(i * 1.3) + i * 0.1])
  * vecmAlgorithm(vecmProblem(y)).name // => 'vecm'
  * ```
@@ -417,7 +417,7 @@ export function vecmAlgorithm(problem: VecmProblem, options: VecmSolveOptions = 
  * @returns The fitted model.
  * @example
  * ```ts
- * import { vecmFit } from 'mdml-engine/timeseries'
+ * import { vecmFit } from 'omai-engine/timeseries'
  * const y = Array.from({ length: 40 }, (_, i) => [Math.sin(i) + i * 0.1, Math.cos(i * 1.3) + i * 0.1])
  * vecmFit(y, { rank: 1 }).beta.length // => 2
  * ```
@@ -466,7 +466,7 @@ export function vecmVarRepresentation(
  * @returns Means and bounds, `[step][series]`.
  * @example
  * ```ts
- * import { vecmFit, vecmForecast } from 'mdml-engine/timeseries'
+ * import { vecmFit, vecmForecast } from 'omai-engine/timeseries'
  * const y = Array.from({ length: 40 }, (_, i) => [Math.sin(i) + i * 0.1, Math.cos(i * 1.3) + i * 0.1])
  * vecmForecast(vecmFit(y), 3).mean.length // => 3
  * ```

@@ -4,7 +4,7 @@
  * Also checks that a heuristic is admissible or consistent on every reachable state, against true costs from Dijkstra.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { digraph, dijkstra } from '../graph/index.ts'
 import type { Algorithm } from '../trace/index.ts'
 import { type BestFirstOptions, bestFirstEngine } from './_best-first.ts'
@@ -53,7 +53,7 @@ const hOf =
  * @concept informed-search
  * @example
  * ```ts
- * import { bestFirstSearchAlgorithm } from 'mdml-engine/search'
+ * import { bestFirstSearchAlgorithm } from 'omai-engine/search'
  * const p = { initial: 0, actions: () => [1], result: (s: number, a: number) => s + a, isGoal: (s: number) => s === 3 }
  * bestFirstSearchAlgorithm(p, (n) => n.depth).name // => 'best-first'
  * ```
@@ -76,7 +76,7 @@ export function bestFirstSearchAlgorithm<S, A>(
  * @concept informed-search
  * @example
  * ```ts
- * import { bestFirstSearch } from 'mdml-engine/search'
+ * import { bestFirstSearch } from 'omai-engine/search'
  * const p = { initial: 0, actions: () => [1, 2], result: (s: number, a: number) => s + a, isGoal: (s: number) => s === 4 }
  * bestFirstSearch(p, (n) => n.depth).actions // => [2, 2]
  * ```
@@ -99,7 +99,7 @@ export function bestFirstSearch<S, A>(
  * @concept informed-search
  * @example
  * ```ts
- * import { greedyBestFirstSearch } from 'mdml-engine/search'
+ * import { greedyBestFirstSearch } from 'omai-engine/search'
  * const p = { initial: 0, actions: () => [1, 3], result: (s: number, a: number) => s + a, isGoal: (s: number) => s === 6, heuristic: (s: number) => Math.abs(6 - s) }
  * greedyBestFirstSearch(p).actions // => [3, 3]
  * ```
@@ -127,7 +127,7 @@ export function greedyBestFirstSearch<S, A>(
  * @index algorithm A* recording its frontier and explored set each step.
  * @example
  * ```ts
- * import { aStarSearchAlgorithm } from 'mdml-engine/search'
+ * import { aStarSearchAlgorithm } from 'omai-engine/search'
  * const p = { initial: 0, actions: () => [1], result: (s: number, a: number) => s + a, isGoal: (s: number) => s === 3 }
  * aStarSearchAlgorithm(p).name // => 'a-star'
  * ```
@@ -150,7 +150,7 @@ export function aStarSearchAlgorithm<S, A>(
  * @index function A* search; best-first and IDA* beside it.
  * @example
  * ```ts
- * import { aStarSearch } from 'mdml-engine/search'
+ * import { aStarSearch } from 'omai-engine/search'
  * const p = { initial: 0, actions: () => [1, 3], result: (s: number, a: number) => s + a, stepCost: (_s: number, a: number) => a * a, isGoal: (s: number) => s === 6, heuristic: (s: number) => Math.abs(6 - s) }
  * aStarSearch(p).cost // => 6
  * ```
@@ -171,11 +171,11 @@ export function aStarSearch<S, A>(problem: SearchProblem<S, A>, options: BestFir
  * @param weight - The heuristic weight w (1 is A*; large w approaches greedy search).
  * @param options - Graph or tree search, tie-breaking, the expansion budget, tree recording and tracing.
  * @returns The result.
- * @throws MdmlError with code `value` when the weight is below 1.
+ * @throws OmaiError with code `value` when the weight is below 1.
  * @concept informed-search
  * @example
  * ```ts
- * import { weightedAStarSearch } from 'mdml-engine/search'
+ * import { weightedAStarSearch } from 'omai-engine/search'
  * const p = { initial: 0, actions: () => [1, 3], result: (s: number, a: number) => s + a, isGoal: (s: number) => s === 6, heuristic: (s: number) => Math.abs(6 - s) / 3 }
  * weightedAStarSearch(p, 2).depth // => 2
  * ```
@@ -185,7 +185,7 @@ export function weightedAStarSearch<S, A>(
   weight: number,
   options: BestFirstOptions<S> = {},
 ): SearchResult<S, A> {
-  if (!(weight >= 1)) throw new MdmlError('value', `weightedAStarSearch: the weight ${weight} must be at least 1`)
+  if (!(weight >= 1)) throw new OmaiError('value', `weightedAStarSearch: the weight ${weight} must be at least 1`)
   const h = hOf(problem)
   return runSearch(
     bestFirstEngine('weighted-a-star', problem, (n) => n.pathCost + weight * h(n.state), options, {
@@ -308,7 +308,7 @@ function ida<S, A>(
  * @concept informed-search
  * @example
  * ```ts
- * import { idaStarSearchAlgorithm } from 'mdml-engine/search'
+ * import { idaStarSearchAlgorithm } from 'omai-engine/search'
  * const p = { initial: 0, actions: () => [1], result: (s: number, a: number) => s + a, isGoal: (s: number) => s === 3 }
  * idaStarSearchAlgorithm(p).name // => 'ida-star'
  * ```
@@ -329,7 +329,7 @@ export function idaStarSearchAlgorithm<S, A>(
  * @concept informed-search
  * @example
  * ```ts
- * import { idaStarSearch } from 'mdml-engine/search'
+ * import { idaStarSearch } from 'omai-engine/search'
  * const p = { initial: 0, actions: () => [1, 3], result: (s: number, a: number) => s + a, stepCost: (_s: number, a: number) => a * a, isGoal: (s: number) => s === 6, heuristic: (s: number) => Math.abs(6 - s) }
  * idaStarSearch(p).cost // => 6
  * ```
@@ -440,7 +440,7 @@ function rbfs<S, A>(
  * @concept informed-search
  * @example
  * ```ts
- * import { recursiveBestFirstSearchAlgorithm } from 'mdml-engine/search'
+ * import { recursiveBestFirstSearchAlgorithm } from 'omai-engine/search'
  * const p = { initial: 0, actions: () => [1], result: (s: number, a: number) => s + a, isGoal: (s: number) => s === 3 }
  * recursiveBestFirstSearchAlgorithm(p).name // => 'recursive-best-first'
  * ```
@@ -461,7 +461,7 @@ export function recursiveBestFirstSearchAlgorithm<S, A>(
  * @concept informed-search
  * @example
  * ```ts
- * import { recursiveBestFirstSearch } from 'mdml-engine/search'
+ * import { recursiveBestFirstSearch } from 'omai-engine/search'
  * const p = { initial: 0, actions: () => [1, 3], result: (s: number, a: number) => s + a, stepCost: (_s: number, a: number) => a * a, isGoal: (s: number) => s === 6, heuristic: (s: number) => Math.abs(6 - s) }
  * recursiveBestFirstSearch(p).cost // => 6
  * ```
@@ -494,11 +494,11 @@ interface BeamState<S, A> extends Core<S, A> {
  * @param problem - The problem (its `heuristic` is used).
  * @param options - The width, the ranking, the expansion budget and tree recording.
  * @returns The algorithm.
- * @throws MdmlError with code `value` when the width is not a positive integer.
+ * @throws OmaiError with code `value` when the width is not a positive integer.
  * @concept informed-search
  * @example
  * ```ts
- * import { beamSearchAlgorithm } from 'mdml-engine/search'
+ * import { beamSearchAlgorithm } from 'omai-engine/search'
  * const p = { initial: 0, actions: () => [1], result: (s: number, a: number) => s + a, isGoal: (s: number) => s === 3 }
  * beamSearchAlgorithm(p).name // => 'beam'
  * ```
@@ -516,7 +516,7 @@ function beam<S, A>(
 ): Algorithm<SearchState<S, A> & BeamState<S, A>> {
   const width = options.width ?? 3
   if (!(Number.isInteger(width) && width >= 1)) {
-    throw new MdmlError('value', `beamSearch: the width ${width} must be a positive integer`)
+    throw new OmaiError('value', `beamSearch: the width ${width} must be a positive integer`)
   }
   const h = hOf(problem)
   const key = stateKeyOf(problem)
@@ -581,7 +581,7 @@ function beam<S, A>(
  * @concept informed-search
  * @example
  * ```ts
- * import { beamSearch } from 'mdml-engine/search'
+ * import { beamSearch } from 'omai-engine/search'
  * const p = { initial: 0, actions: () => [1, 2, 3], result: (s: number, a: number) => s + a, isGoal: (s: number) => s === 9, heuristic: (s: number) => Math.abs(9 - s) }
  * beamSearch(p, { width: 1 }).actions // => [3, 3, 3]
  * ```
@@ -660,7 +660,7 @@ function reachable<S, A>(problem: SearchProblem<S, A>, maxStates: number): Space
  * @concept informed-search
  * @example
  * ```ts
- * import { isAdmissible } from 'mdml-engine/search'
+ * import { isAdmissible } from 'omai-engine/search'
  * const p = { initial: 0, actions: (s: number) => (s < 6 ? [1] : []), result: (s: number, a: number) => s + a, isGoal: (s: number) => s === 6 }
  * isAdmissible({ ...p, heuristic: (s: number) => 6 - s }).holds // => true
  * isAdmissible({ ...p, heuristic: (s: number) => 7 - s }).violations.length // => 7
@@ -696,7 +696,7 @@ export function isAdmissible<S, A>(
  * @concept informed-search
  * @example
  * ```ts
- * import { isConsistent } from 'mdml-engine/search'
+ * import { isConsistent } from 'omai-engine/search'
  * const p = { initial: 0, actions: (s: number) => (s < 6 ? [1, 2] : []), result: (s: number, a: number) => Math.min(6, s + a), isGoal: (s: number) => s === 6 }
  * isConsistent({ ...p, heuristic: (s: number) => (6 - s) / 2 }).holds // => true
  * isConsistent({ ...p, heuristic: (s: number) => (s === 2 ? 4 : (6 - s) / 2) }).holds // => false

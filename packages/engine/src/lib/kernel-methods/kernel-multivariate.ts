@@ -5,7 +5,7 @@
  * step of an `Algorithm`, with the linear PLS of `decomposition` as its linear-kernel case).
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import {
   centerKernel,
   type Kernel,
@@ -75,14 +75,14 @@ export interface KernelCca {
  * @param y - Second block `[n, q]`.
  * @param options - The two kernels, the ridge and the number of components.
  * @returns The fitted analysis.
- * @throws MdmlError `shape` for blocks with different numbers of rows; `value` for a non-positive ridge.
+ * @throws OmaiError `shape` for blocks with different numbers of rows; `value` for a non-positive ridge.
  * @concept kernel-multivariate
  * @reference D. R. Hardoon, S. Szedmak and J. Shawe-Taylor, Canonical correlation analysis: an overview with application
  *   to learning methods (Neural Computation 16, 2004).
  * @example
  * ```ts
- * import { kernelCca } from 'mdml-engine/kernel-methods'
- * import { linearKernel } from 'mdml-engine/kernels'
+ * import { kernelCca } from 'omai-engine/kernel-methods'
+ * import { linearKernel } from 'omai-engine/kernels'
  * const x = [[0], [1], [2], [3], [4]]
  * kernelCca(x, x, { kernelX: linearKernel(), kernelY: linearKernel(), regularisation: 1e-6 }).correlations[0]?.toFixed(3) // => '1.000'
  * ```
@@ -91,11 +91,11 @@ export function kernelCca(x: TensorLike, y: TensorLike, options: KernelCcaOption
   const kernelX = options.kernelX ?? rbfKernel()
   const kernelY = options.kernelY ?? rbfKernel()
   const kappa = options.regularisation ?? 0.1
-  if (!(kappa > 0)) throw new MdmlError('value', `kernelCca: the regularisation must be positive, got ${kappa}`)
+  if (!(kappa > 0)) throw new OmaiError('value', `kernelCca: the regularisation must be positive, got ${kappa}`)
   const xs = primalOf(asTensor(x)) as Tensor
   const ys = primalOf(asTensor(y)) as Tensor
   const n = xs.shape[0] ?? 0
-  if (ys.shape[0] !== n) throw new MdmlError('shape', `kernelCca: the blocks have ${n} and ${ys.shape[0]} rows`)
+  if (ys.shape[0] !== n) throw new OmaiError('shape', `kernelCca: the blocks have ${n} and ${ys.shape[0]} rows`)
   const rawX = kernelX.k(xs)
   const rawY = kernelY.k(ys)
   const kx = centerKernel(rawX)
@@ -196,7 +196,7 @@ function plsSetup(
   const m = matrixView(data.x, WHO)
   const yt = primalOf(asTensor(data.y ?? [])) as Tensor
   const q = yt.shape[1] ?? 1
-  if ((yt.shape[0] ?? 0) !== m.n) throw new MdmlError('shape', `${WHO}: x has ${m.n} rows but y has ${yt.shape[0]}`)
+  if ((yt.shape[0] ?? 0) !== m.n) throw new OmaiError('shape', `${WHO}: x has ${m.n} rows but y has ${yt.shape[0]}`)
   const resolved = resolveKernel(h as KernelChoice, data.x)
   const k = kernelMatrix(h, resolved, data.x)
   const n = m.n
@@ -224,23 +224,23 @@ function plsSetup(
  * @param data - Features and targets (`[n]` or `[n, q]`).
  * @param hyper - The kernel options and the number of components.
  * @returns The algorithm, logging the squared norm of the remaining targets and the iterations per component.
- * @throws MdmlError `value` for more components than rows.
+ * @throws OmaiError `value` for more components than rows.
  * @concept kernel-multivariate
  * @reference R. Rosipal and L. J. Trejo, Kernel partial least squares regression in reproducing kernel Hilbert space
  *   (JMLR 2, 2001).
  * @example
  * ```ts
- * import { kernelPlsAlgorithm, kernelPlsDefaults } from 'mdml-engine/kernel-methods'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { kernelPlsAlgorithm, kernelPlsDefaults } from 'omai-engine/kernel-methods'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const alg = kernelPlsAlgorithm({ x: [[0], [1], [2], [3]], y: [0, 1, 2, 3.5] }, { ...kernelPlsDefaults, kernel: 'linear', gamma: 1, nComponents: 1 })
  * runAlgorithm(alg, { maxSteps: 5 }).state.found // => 1
  * ```
  */
 export function kernelPlsAlgorithm(data: LearnData, hyper: KernelPlsHyper): Algorithm<KernelPlsState> {
   if (!Number.isInteger(hyper.nComponents) || hyper.nComponents < 1)
-    throw new MdmlError('value', `${WHO}: nComponents must be a positive integer`)
+    throw new OmaiError('value', `${WHO}: nComponents must be a positive integer`)
   const s = plsSetup(data, hyper)
-  if (hyper.nComponents > s.n) throw new MdmlError('value', `${WHO}: more components than rows`)
+  if (hyper.nComponents > s.n) throw new OmaiError('value', `${WHO}: more components than rows`)
   const { n, q } = s
   return {
     name: 'kernel-pls',
@@ -324,8 +324,8 @@ export const kernelPlsDefaults: KernelPlsHyper = PLS_DEFAULTS
  * @concept kernel-multivariate
  * @example
  * ```ts
- * import { kernelPlsRegression } from 'mdml-engine/kernel-methods'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { kernelPlsRegression } from 'omai-engine/kernel-methods'
+ * import { toFlat } from 'omai-engine/tensor'
  * const x = [[0], [1], [2], [3], [4]]
  * const fit = kernelPlsRegression({ kernel: 'linear', gamma: 1, nComponents: 1 }).fit({ x, y: [1, 3, 5, 7, 9] })
  * toFlat(fit.predict([[5]]))[0]?.toFixed(2) // => '11.00'

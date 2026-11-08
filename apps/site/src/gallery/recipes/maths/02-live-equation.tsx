@@ -1,7 +1,7 @@
-import { cartesian, fn, points } from 'mdml-render/charts'
-import { figure } from 'mdml-render/figure'
-import { live, tex } from 'mdml-render/maths'
-import { Chart, ControlPanel, Equation, FigureFrame, NumberField, useColourMode } from 'mdml-render/react'
+import { cartesian, fn, points } from 'omai-render/charts'
+import { figure } from 'omai-render/figure'
+import { live, tex } from 'omai-render/maths'
+import { Chart, ControlPanel, Equation, FigureFrame, NumberField, useColourMode } from 'omai-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 

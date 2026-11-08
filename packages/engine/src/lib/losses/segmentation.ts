@@ -4,7 +4,7 @@
  * hinge and Lovasz-softmax losses, convex surrogates of the IoU.
  */
 
-import { MdmlError, type Reduction } from '../base/index.ts'
+import { OmaiError, type Reduction } from '../base/index.ts'
 import {
   abs,
   add,
@@ -66,7 +66,7 @@ interface Counts {
 
 function counts(input: TensorLike, target: TensorLike, options: OverlapOptions): Counts {
   const [x] = promoteFloat(input) as [Value]
-  if (x.shape.length < 2) throw new MdmlError('shape', 'overlap losses expect [N, ..., C] inputs')
+  if (x.shape.length < 2) throw new OmaiError('shape', 'overlap losses expect [N, ..., C] inputs')
   const c = x.shape[x.shape.length - 1] ?? 1
   const act = options.activation ?? 'none'
   let p = act === 'sigmoid' ? sigmoid(x) : act === 'softmax' ? softmax(x, -1) : x
@@ -119,8 +119,8 @@ function finish(score: Value, options: OverlapOptions): Value {
  * @concept segmentation
  * @example
  * ```ts
- * import { dice } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { dice } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * item(dice([[[1, 0], [0, 1]]], [[0, 1]], { smooth: 0 })) // => 0
  * ```
  */
@@ -145,8 +145,8 @@ export function dice(
  * @returns The loss, differentiable in the input.
  * @example
  * ```ts
- * import { tversky } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { tversky } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * item(tversky([[[0.5, 0.5]]], [[0]], { smooth: 0, alpha: 1, beta: 0, reduction: 'sum' })) // => 1
  * ```
  */
@@ -176,8 +176,8 @@ function tverskyLoss(k: Counts, options: OverlapOptions & { readonly alpha?: num
  * @returns The loss, differentiable in the input (where TI < 1).
  * @example
  * ```ts
- * import { focalTversky } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { focalTversky } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * item(focalTversky([[[0.75]]], [[[1]]], { smooth: 0, alpha: 0, beta: 1, gamma: 2 })) // => 0.0625
  * ```
  */
@@ -216,8 +216,8 @@ function lovaszGrad(gtSorted: Value): Value {
  * @returns The loss, differentiable in the logits (almost everywhere).
  * @example
  * ```ts
- * import { lovaszHinge } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { lovaszHinge } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * item(lovaszHinge([[2, -2]], [[1, 0]])) // => 0
  * ```
  */
@@ -265,8 +265,8 @@ function lovaszHingeRows(x: Value, y: Value, keep: Value | undefined): Value {
  * @returns The loss, differentiable in the probabilities.
  * @example
  * ```ts
- * import { lovaszSoftmax } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { lovaszSoftmax } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * item(lovaszSoftmax([[[1, 0], [0, 1]]], [[0, 1]])) // => 0
  * ```
  */

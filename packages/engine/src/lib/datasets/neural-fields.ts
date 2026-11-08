@@ -25,7 +25,7 @@ const norm = (v: readonly number[]): number => Math.hypot(...v)
  * @concept signed-distance-field
  * @example
  * ```ts
- * import { sdfSphere } from 'mdml-engine/datasets'
+ * import { sdfSphere } from 'omai-engine/datasets'
  * [sdfSphere([2, 0, 0], 0.5), sdfSphere([0, 0, 0], 0.5)] // => [1.5, -0.5]
  * ```
  */
@@ -43,7 +43,7 @@ export function sdfSphere(p: readonly number[], radius: number, centre: readonly
  * @concept signed-distance-field
  * @example
  * ```ts
- * import { sdfBox } from 'mdml-engine/datasets'
+ * import { sdfBox } from 'omai-engine/datasets'
  * [sdfBox([2, 0], [1, 1]), sdfBox([2, 2], [1, 1]), sdfBox([0, 0], [1, 1])] // => [1, 1.4142135623730951, -1]
  * ```
  */
@@ -63,7 +63,7 @@ export function sdfBox(p: readonly number[], half: readonly number[], centre: re
  * @concept signed-distance-field
  * @example
  * ```ts
- * import { sdfTorus } from 'mdml-engine/datasets'
+ * import { sdfTorus } from 'omai-engine/datasets'
  * [sdfTorus([0.5, 0, 0], 0.5, 0.2), sdfTorus([0, 0, 0], 0.5, 0.2)] // => [-0.2, 0.3]
  * ```
  */
@@ -80,7 +80,7 @@ export function sdfTorus(p: readonly number[], major: number, minor: number): nu
  * @concept signed-distance-field
  * @example
  * ```ts
- * import { sdfUnion } from 'mdml-engine/datasets'
+ * import { sdfUnion } from 'omai-engine/datasets'
  * sdfUnion([0.3, -0.1, 2]) // => -0.1
  * ```
  */
@@ -116,8 +116,8 @@ function pointwise(points: Value, k: number, f: (p: number[]) => readonly number
  * @index dataset Exact signed distance samples of sphere, box, torus or union shapes.
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { signedDistance } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { signedDistance } from 'omai-engine/datasets'
  * const g = generate(signedDistance, { knobs: { shape: 'sphere', dim: 2, n: 64 } })
  * [g.data.x.shape, g.data.y.shape] // => [[64, 2], [64]]
  * ```
@@ -219,8 +219,8 @@ function paint(pattern: string, u: number, v: number, texture: number, frequency
  * @index dataset Procedural colour image as coordinate-to-colour data, with its continuous truth.
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { fieldImage } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { fieldImage } from 'omai-engine/datasets'
  * const g = generate(fieldImage, { knobs: { side: 8 } })
  * [g.data.x.shape, g.data.y.shape] // => [[64, 2], [64, 3]]
  * ```

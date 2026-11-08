@@ -1,6 +1,6 @@
-import { bayesNet, factorValues, variableElimination } from 'mdml-engine/pgm'
-import { ControlPanel, SceneFrame, Select } from 'mdml-render/react'
-import { bayesNetCards } from 'mdml-render/structures'
+import { bayesNet, factorValues, variableElimination } from 'omai-engine/pgm'
+import { ControlPanel, SceneFrame, Select } from 'omai-render/react'
+import { bayesNetCards } from 'omai-render/structures'
 import { type ReactNode, useMemo, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 
@@ -8,7 +8,7 @@ export const recipe: Recipe = {
   title: 'Bayes network with tables',
   question: 'How do I draw a Bayes network with its probability tables and the posteriors they give?',
   explain:
-    '`bayesNetCards` draws each variable as a card holding its conditional probability table, one row per assignment of its parents. Observing a variable shades its card and highlights the rows that apply; the posteriors (exact, from `variableElimination` in mdml-engine’s `pgm`) sit above each table. Observe wet grass, then rain, and watch the sprinkler explain away.',
+    '`bayesNetCards` draws each variable as a card holding its conditional probability table, one row per assignment of its parents. Observing a variable shades its card and highlights the rows that apply; the posteriors (exact, from `variableElimination` in omai-engine’s `pgm`) sit above each table. Observe wet grass, then rain, and watch the sprinkler explain away.',
 }
 
 const bn = bayesNet([

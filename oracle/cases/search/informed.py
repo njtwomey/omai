@@ -1,4 +1,4 @@
-"""Informed search against aima-python (a typed port in mdml_oracle.aima_search: A*, greedy best-first and
+"""Informed search against aima-python (a typed port in omai_oracle.aima_search: A*, greedy best-first and
 recursive best-first search) on the Romania map with aima-python's truncated straight-line distance and on the eight
 puzzle with its misplaced-squares heuristic and with the Manhattan distance, comparing solutions, costs and expansion,
 goal-test and generation counts. A* costs on the Romania map are also checked against NetworkX's `astar_path_length`."""
@@ -8,7 +8,7 @@ from collections.abc import Callable
 
 import networkx as nx
 import numpy as np
-from mdml_oracle.aima_search import (
+from omai_oracle.aima_search import (
     LOCATIONS,
     ROMANIA,
     EightPuzzle,
@@ -22,7 +22,7 @@ from mdml_oracle.aima_search import (
     run,
     undirected,
 )
-from mdml_oracle.fixture import Case, case
+from omai_oracle.fixture import Case, case
 
 REFERENCE: dict[str, str] = {"aima-python": "port of search.py (2024)", "networkx": nx.__version__}
 

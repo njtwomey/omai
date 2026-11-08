@@ -5,7 +5,7 @@
  * against centralised critics that see every agent's observation and action.
  */
 
-import { argmaxOf, type Json, MdmlError, maxOf } from '../base/index.ts'
+import { argmaxOf, type Json, maxOf, OmaiError } from '../base/index.ts'
 import { mse } from '../losses/index.ts'
 import { elu, mlp } from '../nn/index.ts'
 import { adam, incrementalUpdate, linearSchedule, type ParamTree } from '../optim/index.ts'
@@ -86,7 +86,7 @@ function valueDecomposition(
   const nA = actionCount(env.actionSpaces[agents[0] ?? ''] as Space, kind)
   for (const a of agents)
     if (actionCount(env.actionSpaces[a] as Space, kind) !== nA)
-      throw new MdmlError('value', `${kind}: every agent needs the same number of actions`)
+      throw new OmaiError('value', `${kind}: every agent needs the same number of actions`)
   const d = maxOf(agents.map((a) => encodedSize(env.observationSpaces[a])))
   const inputs = d + n
   const k0 = options.key ?? makeKey(0)
@@ -248,8 +248,8 @@ function valueDecomposition(
  * @concept value-decomposition
  * @example
  * ```ts
- * import { vdn } from 'mdml-engine/agents'
- * import { cooperativeNavigation } from 'mdml-engine/environments'
+ * import { vdn } from 'omai-engine/agents'
+ * import { cooperativeNavigation } from 'omai-engine/environments'
  * vdn(cooperativeNavigation.create({ agents: 2 }), { hidden: [16] }).name // => 'vdn'
  * ```
  */
@@ -273,8 +273,8 @@ export function vdn(
  * @concept value-decomposition
  * @example
  * ```ts
- * import { qmix } from 'mdml-engine/agents'
- * import { cooperativeNavigation } from 'mdml-engine/environments'
+ * import { qmix } from 'omai-engine/agents'
+ * import { cooperativeNavigation } from 'omai-engine/environments'
  * qmix(cooperativeNavigation.create({ agents: 2 }), { hidden: [16], embed: 8 }).name // => 'qmix'
  * ```
  */
@@ -345,9 +345,9 @@ export interface MaddpgState {
  * @concept actor-critic
  * @example
  * ```ts
- * import { maddpg } from 'mdml-engine/agents'
- * import { cooperativeNavigation } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { maddpg } from 'omai-engine/agents'
+ * import { cooperativeNavigation } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * const agent = maddpg(cooperativeNavigation.create({ agents: 2, continuous: true }), { hidden: [16] })
  * agent.init(key(0)).actors.length // => 2
  * ```

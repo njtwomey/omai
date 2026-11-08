@@ -5,7 +5,7 @@
  * from a correlated reference and keeps the error as the cleaned signal.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import { ddot } from '../numerics/linalg/blas.ts'
 import { primalOf, type Tensor, type TensorLike } from '../tensor/index.ts'
 import { type Algorithm, type RunOptions, runAlgorithm } from '../trace/index.ts'
@@ -47,7 +47,7 @@ function regressors(x: TensorLike, n: number | undefined): { rows: Float64Array;
   }
   const s = samples(v, 'adaptive filter')
   if (n === undefined || !Number.isInteger(n) || n < 1)
-    throw new MdmlError('value', 'adaptive filter: give the number of taps')
+    throw new OmaiError('value', 'adaptive filter: give the number of taps')
   const rows = new Float64Array(s.length * n)
   for (let k = 0; k < s.length; k++) for (let j = 0; j < n; j++) rows[k * n + j] = k - j >= 0 ? (s[k - j] ?? 0) : 0
   return { rows, count: s.length, width: n }
@@ -66,7 +66,7 @@ function regressors(x: TensorLike, n: number | undefined): { rows: Float64Array;
  * @concept adaptive-filters
  * @example
  * ```ts
- * import { adaptiveFilterAlgorithm } from 'mdml-engine/signal'
+ * import { adaptiveFilterAlgorithm } from 'omai-engine/signal'
  * adaptiveFilterAlgorithm('lms', [1, 2, 3], [1, 2, 3], { taps: 2 }).name // => 'lms'
  * ```
  */
@@ -78,11 +78,11 @@ export function adaptiveFilterAlgorithm(
 ): Algorithm<AdaptiveState> {
   const { rows, count, width } = regressors(x, options.taps)
   const dv = samples(d, 'adaptive filter')
-  if (dv.length !== count) throw new MdmlError('shape', 'adaptive filter: d must have one value per regressor')
+  if (dv.length !== count) throw new OmaiError('shape', 'adaptive filter: d must have one value per regressor')
   const mu = options.mu ?? (method === 'lms' ? 0.01 : method === 'nlms' ? 1 : 0.99)
   const eps = options.eps ?? (method === 'rls' ? 0.1 : 1e-3)
   const w0 = options.w0 === undefined ? new Float64Array(width) : samples(options.w0, 'adaptive filter')
-  if (w0.length !== width) throw new MdmlError('shape', 'adaptive filter: w0 must have one weight per tap')
+  if (w0.length !== width) throw new OmaiError('shape', 'adaptive filter: w0 must have one weight per tap')
   return {
     name: method,
     config: { method, mu, eps, taps: width } as Json,
@@ -156,8 +156,8 @@ export interface AdaptiveResult {
  * @concept adaptive-filters
  * @example
  * ```ts
- * import { adaptiveFilter } from 'mdml-engine/signal'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { adaptiveFilter } from 'omai-engine/signal'
+ * import { toFlat } from 'omai-engine/tensor'
  * const x = Array.from({ length: 400 }, (_, i) => Math.sin(i) + Math.cos(2.3 * i))
  * const d = x.map((v, i) => 0.7 * v - 0.2 * (x[i - 1] ?? 0))
  * toFlat(adaptiveFilter('rls', x, d, { taps: 2 }).w).map((v) => Math.round(v * 100) / 100) // => [0.7, -0.2]
@@ -191,7 +191,7 @@ export function adaptiveFilter(
  * @concept adaptive-filters
  * @example
  * ```ts
- * import { adaptiveNoiseCancel } from 'mdml-engine/signal'
+ * import { adaptiveNoiseCancel } from 'omai-engine/signal'
  * const n = Array.from({ length: 600 }, (_, i) => Math.sin(1.7 * i) + 0.5 * Math.sin(0.4 * i))
  * const s = Array.from({ length: 600 }, (_, i) => 0.3 * Math.sin(0.05 * i))
  * const out = adaptiveNoiseCancel(s.map((v, i) => v + 0.8 * (n[i] ?? 0)), n, { taps: 4 })

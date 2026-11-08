@@ -6,7 +6,7 @@
  * decomposition of discrimination), by simulation with common random numbers.
  */
 
-import { MdmlError, maxOf } from '../base/index.ts'
+import { maxOf, OmaiError } from '../base/index.ts'
 import { doIntervention, type Model, seed, traceOf } from '../probprog/index.ts'
 import { foldIn, type Key, key as makeKey } from '../random/index.ts'
 import { toFlat, type Value } from '../tensor/index.ts'
@@ -65,14 +65,14 @@ export interface CounterfactualFairness {
  * @param model - The structural causal model, a program sampling every variable by name.
  * @param options - The attribute's site and values, the predictor, the number of individuals, threshold and key.
  * @returns Each individual's factual and counterfactual output, the gaps and the share of decisions that flip.
- * @throws MdmlError `value` when the attribute's site is not in the model.
+ * @throws OmaiError `value` when the attribute's site is not in the model.
  * @concept algorithmic-fairness
  * @example
  * ```ts
- * import { counterfactualFairness } from 'mdml-engine/fairness'
- * import { bernoulli, normal } from 'mdml-engine/dists'
- * import { sample } from 'mdml-engine/probprog'
- * import { add, mul } from 'mdml-engine/tensor'
+ * import { counterfactualFairness } from 'omai-engine/fairness'
+ * import { bernoulli, normal } from 'omai-engine/dists'
+ * import { sample } from 'omai-engine/probprog'
+ * import { add, mul } from 'omai-engine/tensor'
  * const scm = () => {
  *   const a = sample('a', bernoulli({ probs: 0.5 }))
  *   const u = sample('u', normal(0, 1))
@@ -95,7 +95,7 @@ export function counterfactualFairness(model: Model, options: CounterfactualFair
     const ki = foldIn(k, i)
     const f = run(model, ki, {})
     const a = f[options.attribute]
-    if (a === undefined) throw new MdmlError('value', `counterfactualFairness: no site ${options.attribute}`)
+    if (a === undefined) throw new OmaiError('value', `counterfactualFairness: no site ${options.attribute}`)
     const cf = run(model, ki, { [options.attribute]: a === a1 ? a0 : a1 })
     attribute.push(a)
     factual.push(options.predictor(f))
@@ -151,10 +151,10 @@ export interface PathSpecificEffects {
  * @concept algorithmic-fairness
  * @example
  * ```ts
- * import { pathSpecificEffects } from 'mdml-engine/fairness'
- * import { bernoulli, normal } from 'mdml-engine/dists'
- * import { sample } from 'mdml-engine/probprog'
- * import { add, mul } from 'mdml-engine/tensor'
+ * import { pathSpecificEffects } from 'omai-engine/fairness'
+ * import { bernoulli, normal } from 'omai-engine/dists'
+ * import { sample } from 'omai-engine/probprog'
+ * import { add, mul } from 'omai-engine/tensor'
  * const scm = () => {
  *   const a = sample('a', bernoulli({ probs: 0.5 }))
  *   const m = sample('m', normal(mul(a, 2), 1))
@@ -179,7 +179,7 @@ export function pathSpecificEffects(model: Model, options: PathSpecificOptions):
     const held: Record<string, number> = { [options.attribute]: a1 }
     for (const m of options.mediators) {
       const v = w0[m]
-      if (v === undefined) throw new MdmlError('value', `pathSpecificEffects: no site ${m}`)
+      if (v === undefined) throw new OmaiError('value', `pathSpecificEffects: no site ${m}`)
       held[m] = v
     }
     const nested = run(model, ki, held)

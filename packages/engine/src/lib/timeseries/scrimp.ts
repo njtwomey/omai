@@ -47,8 +47,8 @@ export interface PrescrumpOptions extends Omit<MatrixProfileOptions, 'normalize'
  * @concept matrix-profile
  * @example
  * ```ts
- * import { prescrump } from 'mdml-engine/timeseries'
- * import { key } from 'mdml-engine/random'
+ * import { prescrump } from 'omai-engine/timeseries'
+ * import { key } from 'omai-engine/random'
  * const t = [0, 1, 3, 2, 9, 1, 14, 15, 1, 2, 2, 10, 7]
  * Array.from(prescrump(t, 4, { s: 1, key: key(0) }).I) // => [9, 8, 9, 1, 9, 2, 3, 4, 1, 0]
  * ```
@@ -148,7 +148,7 @@ export interface ScrumpOptions extends StumpOptions {
  * @concept matrix-profile
  * @example
  * ```ts
- * import { scrumpAlgorithm } from 'mdml-engine/timeseries'
+ * import { scrumpAlgorithm } from 'omai-engine/timeseries'
  * scrumpAlgorithm([0, 1, 3, 2, 9, 1, 14, 15, 1, 2, 2, 10, 7], 4).name // => 'scrump'
  * ```
  */
@@ -201,7 +201,7 @@ export function scrumpAlgorithm(tA: TensorLike, m: number, options: ScrumpOption
  * @concept matrix-profile
  * @example
  * ```ts
- * import { scrump } from 'mdml-engine/timeseries'
+ * import { scrump } from 'omai-engine/timeseries'
  * Array.from(scrump([0, 1, 3, 2, 9, 1, 14, 15, 1, 2, 2, 10, 7], 4, { percentage: 1 }).I) // => [9, 8, 9, 1, 9, 2, 3, 4, 1, 0]
  * ```
  */

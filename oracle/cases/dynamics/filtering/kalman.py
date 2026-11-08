@@ -1,13 +1,13 @@
 """The Kalman filter and RTS smoother against filterpy (KalmanFilter.batch_filter, rts_smoother, log-likelihood).
 
-A constant-velocity model observed in position with a random series; filterpy updates in Joseph form, as mdml-js.
+A constant-velocity model observed in position with a random series; filterpy updates in Joseph form, as omai.
 """
 
 import filterpy
 import numpy as np
 from filterpy.kalman import KalmanFilter
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray, rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray, rng
 
 REFERENCE: dict[str, str] = {"filterpy": filterpy.__version__}
 

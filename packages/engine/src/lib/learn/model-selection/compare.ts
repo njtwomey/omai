@@ -7,7 +7,7 @@
  * Wilcoxon are in `stats/tests`; this file supplies the ones that depend on how the scores were resampled.
  */
 
-import { type Alternative, MdmlError, meanOf, type TestResult, varianceOf } from '../../base/index.ts'
+import { type Alternative, meanOf, OmaiError, type TestResult, varianceOf } from '../../base/index.ts'
 import { studentisedRange } from '../../dists/index.ts'
 import { fdtrc, ndtr, stdtr, stdtrit } from '../../numerics/special/index.ts'
 import { type Key, key as makeKey } from '../../random/index.ts'
@@ -26,7 +26,7 @@ const normCdf = (x: number): number => item(ndtr(x))
 
 function vector(who: string, x: TensorLike, min: number): Float64Array {
   const v = Float64Array.from(toFlat(asTensor(x)))
-  if (v.length < min) throw new MdmlError('value', `${who}: needs at least ${min} values`)
+  if (v.length < min) throw new OmaiError('value', `${who}: needs at least ${min} values`)
   return v
 }
 
@@ -57,7 +57,7 @@ export interface CorrectedResampledOptions extends TestOptions {
  * @concept model-comparison
  * @example
  * ```ts
- * import { resampledTTest } from 'mdml-engine/learn/model-selection'
+ * import { resampledTTest } from 'omai-engine/learn/model-selection'
  * resampledTTest([0.1, 0.2, 0.15, 0.05, 0.1]).df // => 4
  * ```
  */
@@ -87,11 +87,11 @@ export function resampledTTest(differences: TensorLike, options: TestOptions = {
  * @param differences - The score difference (A minus B) on each of the k splits.
  * @param options - Training and test set sizes (required) and the alternative.
  * @returns The corrected t statistic, its p-value and k - 1 degrees of freedom.
- * @throws MdmlError with code `value` for fewer than two differences or non-positive sizes.
+ * @throws OmaiError with code `value` for fewer than two differences or non-positive sizes.
  * @concept model-comparison
  * @example
  * ```ts
- * import { correctedResampledTTest } from 'mdml-engine/learn/model-selection'
+ * import { correctedResampledTTest } from 'omai-engine/learn/model-selection'
  * const r = correctedResampledTTest([0.1, 0.2, 0.15, 0.05, 0.1], { nTrain: 80, nTest: 20 })
  * r.statistic // => 3.1379
  * ```
@@ -99,7 +99,7 @@ export function resampledTTest(differences: TensorLike, options: TestOptions = {
 export function correctedResampledTTest(differences: TensorLike, options: CorrectedResampledOptions): TestResult {
   const d = vector('correctedResampledTTest', differences, 2)
   if (!(options.nTrain > 0 && options.nTest > 0))
-    throw new MdmlError('value', 'correctedResampledTTest: nTrain and nTest must be positive')
+    throw new OmaiError('value', 'correctedResampledTTest: nTrain and nTest must be positive')
   const k = d.length
   const se = Math.sqrt((1 / k + options.nTest / options.nTrain) * varianceOf(d, 1))
   const t = meanOf(d) / se
@@ -118,7 +118,7 @@ export function correctedResampledTTest(differences: TensorLike, options: Correc
 /** Five replications of two-fold cross-validation: row i holds the score differences on the two folds of replication i. */
 function fiveByTwo(who: string, differences: TensorLike): readonly (readonly [number, number])[] {
   const v = vector(who, differences, 10)
-  if (v.length !== 10) throw new MdmlError('shape', `${who}: expects 5 x 2 differences, got ${v.length} values`)
+  if (v.length !== 10) throw new OmaiError('shape', `${who}: expects 5 x 2 differences, got ${v.length} values`)
   return Array.from({ length: 5 }, (_, i): readonly [number, number] => [v[2 * i] ?? 0, v[2 * i + 1] ?? 0])
 }
 
@@ -131,11 +131,11 @@ function fiveByTwo(who: string, differences: TensorLike): readonly (readonly [nu
  * @param differences - Ten score differences (A minus B), replication by replication: [r1f1, r1f2, r2f1, ...].
  * @param options - The alternative (default two-sided).
  * @returns The t statistic with 5 degrees of freedom and its p-value.
- * @throws MdmlError with code `shape` unless there are exactly ten differences.
+ * @throws OmaiError with code `shape` unless there are exactly ten differences.
  * @concept model-comparison
  * @example
  * ```ts
- * import { fiveByTwoCvTTest } from 'mdml-engine/learn/model-selection'
+ * import { fiveByTwoCvTTest } from 'omai-engine/learn/model-selection'
  * fiveByTwoCvTTest([0.1, 0.12, 0.08, 0.1, 0.11, 0.09, 0.12, 0.1, 0.1, 0.1]).df // => 5
  * ```
  */
@@ -165,11 +165,11 @@ export function fiveByTwoCvTTest(differences: TensorLike, options: TestOptions =
  *
  * @param differences - Ten score differences (A minus B), replication by replication.
  * @returns The F statistic with (10, 5) degrees of freedom and its p-value.
- * @throws MdmlError with code `shape` unless there are exactly ten differences.
+ * @throws OmaiError with code `shape` unless there are exactly ten differences.
  * @concept model-comparison
  * @example
  * ```ts
- * import { fiveByTwoCvFTest } from 'mdml-engine/learn/model-selection'
+ * import { fiveByTwoCvFTest } from 'omai-engine/learn/model-selection'
  * fiveByTwoCvFTest([0.1, 0.12, 0.08, 0.1, 0.11, 0.09, 0.12, 0.1, 0.1, 0.1]).df // => [10, 5]
  * ```
  */
@@ -232,7 +232,7 @@ export interface BayesianCorrelatedResult {
  * @concept model-comparison
  * @example
  * ```ts
- * import { bayesianCorrelatedTTest } from 'mdml-engine/learn/model-selection'
+ * import { bayesianCorrelatedTTest } from 'omai-engine/learn/model-selection'
  * const r = bayesianCorrelatedTTest([0.02, 0.03, 0.01, 0.04, 0.02, 0.03, 0.02, 0.01, 0.03, 0.02], { rho: 0.1, rope: 0.01 })
  * r.right > 0.9 // => true
  * ```
@@ -244,7 +244,7 @@ export function bayesianCorrelatedTTest(
   const d = vector('bayesianCorrelatedTTest', differences, 2)
   const n = d.length
   const rho = options.rho ?? 1 / n
-  if (!(rho >= 0 && rho < 1)) throw new MdmlError('value', 'bayesianCorrelatedTTest: rho must be in [0, 1)')
+  if (!(rho >= 0 && rho < 1)) throw new OmaiError('value', 'bayesianCorrelatedTTest: rho must be in [0, 1)')
   const rope = options.rope ?? 0
   const level = options.level ?? 0.95
   const mean = meanOf(d)
@@ -297,9 +297,9 @@ export interface PairedScoresOptions {
  * @concept model-comparison
  * @example
  * ```ts
- * import { pairedCvScores } from 'mdml-engine/learn/model-selection'
- * import { defineEstimator } from 'mdml-engine/learn'
- * import { full, mean, item } from 'mdml-engine/tensor'
+ * import { pairedCvScores } from 'omai-engine/learn/model-selection'
+ * import { defineEstimator } from 'omai-engine/learn'
+ * import { full, mean, item } from 'omai-engine/tensor'
  * const meanModel = defineEstimator(
  *   { name: 'mean', kind: 'regressor', fit: (d) => ({ m: item(mean(d.y)) }), methods: (p) => ({ predict: (x) => full([x.shape[0]], p.m) }) },
  *   {},
@@ -348,7 +348,7 @@ export function pairedCvScores(
  * @concept model-comparison
  * @example
  * ```ts
- * import { nemenyiQ } from 'mdml-engine/learn/model-selection'
+ * import { nemenyiQ } from 'omai-engine/learn/model-selection'
  * nemenyiQ(3) // => 2.3437
  * ```
  */
@@ -367,13 +367,13 @@ export function nemenyiQ(k: number, alpha = 0.05): number {
  * @concept model-comparison
  * @example
  * ```ts
- * import { criticalDifference } from 'mdml-engine/learn/model-selection'
+ * import { criticalDifference } from 'omai-engine/learn/model-selection'
  * criticalDifference(4, 14) // => 1.2536
  * ```
  */
 export function criticalDifference(k: number, nDatasets: number, alpha = 0.05): number {
   if (!(Number.isInteger(k) && k >= 2 && nDatasets >= 1))
-    throw new MdmlError('value', 'criticalDifference: needs k >= 2 algorithms and at least one data set')
+    throw new OmaiError('value', 'criticalDifference: needs k >= 2 algorithms and at least one data set')
   return nemenyiQ(k, alpha) * Math.sqrt((k * (k + 1)) / (6 * nDatasets))
 }
 
@@ -432,7 +432,7 @@ export interface AlgorithmComparison {
  * @concept model-comparison
  * @example
  * ```ts
- * import { compareAlgorithms } from 'mdml-engine/learn/model-selection'
+ * import { compareAlgorithms } from 'omai-engine/learn/model-selection'
  * const scores = [[0.9, 0.8, 0.7], [0.85, 0.8, 0.6], [0.95, 0.7, 0.75], [0.9, 0.85, 0.7], [0.8, 0.75, 0.6]]
  * compareAlgorithms(scores).averageRanks // => [1, 2.2, 2.8]
  * ```
@@ -443,7 +443,7 @@ export function compareAlgorithms(scores: TensorLike, options: CompareAlgorithms
   const n = m.shape[0] ?? 0
   const k = m.shape.length === 2 ? (m.shape[1] ?? 0) : 0
   if (!(Number.isInteger(k) && k >= 2 && n >= 2))
-    throw new MdmlError(
+    throw new OmaiError(
       'shape',
       'compareAlgorithms: expects an N x k matrix with N >= 2 data sets and k >= 2 algorithms',
     )

@@ -5,7 +5,7 @@
  * `selectFromModel`, which keeps the features a fitted model deems important.
  */
 
-import { type Json, MdmlError, quantileOf } from '../base/index.ts'
+import { type Json, OmaiError, quantileOf } from '../base/index.ts'
 import { ksgMutualInformation, mixedMutualInformation, plugInMutualInformation } from '../information/index.ts'
 import { chdtrc, fdtrc } from '../numerics/special/index.ts'
 import { dict, int, real, type Space } from '../space/index.ts'
@@ -34,7 +34,7 @@ export type ScoreFunction = (x: TensorLike, y: TensorLike) => UnivariateScores
  * @concept feature-selection
  * @example
  * ```ts
- * import { fClassif } from 'mdml-engine/learn'
+ * import { fClassif } from 'omai-engine/learn'
  * fClassif([[1], [2], [3], [4], [5], [6]], [0, 0, 0, 1, 1, 1]).scores // => [13.5]
  * ```
  */
@@ -62,7 +62,7 @@ export function fClassif(x: TensorLike, y: TensorLike): UnivariateScores {
  * @returns One correlation per feature.
  * @example
  * ```ts
- * import { rRegression } from 'mdml-engine/learn'
+ * import { rRegression } from 'omai-engine/learn'
  * rRegression([[1, 3], [2, 2], [3, 1]], [1, 2, 3]).map((r) => Math.round(r * 1e12) / 1e12) // => [1, -1]
  * ```
  */
@@ -96,7 +96,7 @@ export function rRegression(x: TensorLike, y: TensorLike, options: { readonly ce
  * @returns F statistics and p-values.
  * @example
  * ```ts
- * import { fRegression } from 'mdml-engine/learn'
+ * import { fRegression } from 'omai-engine/learn'
  * Math.round(fRegression([[1], [2], [3], [4]], [1, 2, 2, 4]).scores[0] * 1000) / 1000 // => 11.571
  * ```
  */
@@ -117,16 +117,16 @@ export function fRegression(x: TensorLike, y: TensorLike): UnivariateScores {
  * @param x - Non-negative features `[n, d]`.
  * @param y - Class labels `[n]`.
  * @returns Chi-squared statistics and p-values (k - 1 degrees of freedom).
- * @throws MdmlError with code `domain` for negative features.
+ * @throws OmaiError with code `domain` for negative features.
  * @example
  * ```ts
- * import { chi2 } from 'mdml-engine/learn'
+ * import { chi2 } from 'omai-engine/learn'
  * chi2([[1, 0], [1, 0], [0, 1], [0, 1]], [0, 0, 1, 1]).scores // => [2, 2]
  * ```
  */
 export function chi2(x: TensorLike, y: TensorLike): UnivariateScores {
   const m = matrixView(x, 'chi2')
-  if (m.data.some((v) => v < 0)) throw new MdmlError('domain', 'chi2: features must be non-negative')
+  if (m.data.some((v) => v < 0)) throw new OmaiError('domain', 'chi2: features must be non-negative')
   const { classes, codes } = encodeLabels(y, 'chi2', m.n)
   const k = classes.length
   const classProb = classes.map((_, c) => codes.filter((v) => v === c).length / m.n)
@@ -181,7 +181,7 @@ function unitScale(v: Float64Array): Float64Array {
  * @returns One estimate per feature.
  * @example
  * ```ts
- * import { mutualInfoClassif } from 'mdml-engine/learn'
+ * import { mutualInfoClassif } from 'omai-engine/learn'
  * const x = [[0.1], [0.2], [0.3], [0.4], [5.1], [5.2], [5.3], [5.4]]
  * mutualInfoClassif(x, [0, 0, 0, 0, 1, 1, 1, 1])[0] > 0.5 // => true
  * ```
@@ -209,7 +209,7 @@ export function mutualInfoClassif(x: TensorLike, y: TensorLike, options: MutualI
  * @returns One estimate per feature.
  * @example
  * ```ts
- * import { mutualInfoRegression } from 'mdml-engine/learn'
+ * import { mutualInfoRegression } from 'omai-engine/learn'
  * const x = Array.from({ length: 40 }, (_, i) => [Math.sin(i), (i * 7) % 5])
  * const y = x.map(([a]) => 2 * a)
  * mutualInfoRegression(x, y)[0] > mutualInfoRegression(x, y)[1] // => true
@@ -247,8 +247,8 @@ export interface SelectorVerbs {
  * @returns The verbs.
  * @example
  * ```ts
- * import { selectorVerbs } from 'mdml-engine/learn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { selectorVerbs } from 'omai-engine/learn'
+ * import { toArray } from 'omai-engine/tensor'
  * const s = selectorVerbs([true, false, true], 'demo')
  * toArray(s.transform([[1, 2, 3]])) // => [[1, 3]]
  * toArray(s.inverseTransform([[1, 3]])) // => [[1, 0, 3]]
@@ -313,7 +313,7 @@ function selector(
  * @returns The estimator.
  * @example
  * ```ts
- * import { varianceThreshold } from 'mdml-engine/learn'
+ * import { varianceThreshold } from 'omai-engine/learn'
  * varianceThreshold().fit({ x: [[1, 0], [1, 2], [1, 4]] }).support // => [false, true]
  * ```
  */
@@ -331,7 +331,7 @@ export function varianceThreshold(threshold = 0): Estimator<Record<string, never
     })
     const support = scores.map((s) => s > threshold)
     if (!support.some(Boolean))
-      throw new MdmlError('value', `varianceThreshold: no feature has variance above ${threshold}`)
+      throw new OmaiError('value', `varianceThreshold: no feature has variance above ${threshold}`)
     return { support, scores, pValues: null }
   })
 }
@@ -341,7 +341,7 @@ function univariate(
   scoreFunc: ScoreFunction,
   who: string,
 ): { scores: number[]; pValues: number[] | null } {
-  if (data.y === undefined) throw new MdmlError('value', `${who}: needs targets y`)
+  if (data.y === undefined) throw new OmaiError('value', `${who}: needs targets y`)
   const r = scoreFunc(data.x, data.y)
   // NaN scores rank lowest (sklearn's _clean_nans).
   return {
@@ -359,7 +359,7 @@ function univariate(
  * @index estimator Keep the k features with the best univariate scores.
  * @example
  * ```ts
- * import { selectKBest, fRegression } from 'mdml-engine/learn'
+ * import { selectKBest, fRegression } from 'omai-engine/learn'
  * const x = [[1, 5, 0], [2, 3, 1], [3, 4, 0], [4, 1, 1]]
  * selectKBest({ scoreFunc: fRegression, k: 1 }).fit({ x, y: [1, 2, 3, 4] }).support // => [true, false, false]
  * ```
@@ -390,7 +390,7 @@ export function selectKBest(
  * @returns The estimator.
  * @example
  * ```ts
- * import { selectPercentile, fRegression } from 'mdml-engine/learn'
+ * import { selectPercentile, fRegression } from 'omai-engine/learn'
  * const x = [[1, 5, 0, 2], [2, 3, 1, 2], [3, 4, 0, 1], [4, 1, 1, 0]]
  * selectPercentile({ scoreFunc: fRegression, percentile: 50 }).fit({ x, y: [1, 2, 3, 4] }).support // => [true, false, false, true]
  * ```
@@ -401,7 +401,7 @@ export function selectPercentile(
   const scoreFunc = options.scoreFunc ?? fClassif
   const percentile = options.percentile ?? 10
   if (!(percentile >= 0 && percentile <= 100))
-    throw new MdmlError('value', 'selectPercentile: percentile must be in [0, 100]')
+    throw new OmaiError('value', 'selectPercentile: percentile must be in [0, 100]')
   return selector(
     'select-percentile',
     () => dict({ percentile: real(1, 100) }),
@@ -432,7 +432,7 @@ export type PValueControl = 'fpr' | 'fdr' | 'fwe'
  * @returns The estimator.
  * @example
  * ```ts
- * import { selectByPValue, fRegression } from 'mdml-engine/learn'
+ * import { selectByPValue, fRegression } from 'omai-engine/learn'
  * const x = Array.from({ length: 20 }, (_, i) => [i, (i * 7) % 5])
  * selectByPValue('fwe', { scoreFunc: fRegression }).fit({ x, y: x.map(([a]) => a + 0.1 * (a % 3)) }).support // => [true, false]
  * ```
@@ -448,7 +448,7 @@ export function selectByPValue(
     () => dict({ alpha: real(1e-4, 0.5, { log: true }) }),
     (data) => {
       const { scores, pValues } = univariate(data, scoreFunc, `select-${control}`)
-      if (pValues === null) throw new MdmlError('value', `select-${control}: the score function gives no p-values`)
+      if (pValues === null) throw new OmaiError('value', `select-${control}: the score function gives no p-values`)
       const d = pValues.length
       let support: boolean[]
       if (control === 'fpr') support = pValues.map((p) => p < alpha)
@@ -482,7 +482,7 @@ export type FromModelParams = SelectorParams & { readonly threshold: number; rea
 function resolveThreshold(threshold: number | string, importances: readonly number[]): number {
   if (typeof threshold === 'number') return threshold
   const m = /^\s*(?:([0-9.eE+-]+)\s*\*\s*)?(mean|median)\s*$/.exec(threshold)
-  if (m === null) throw new MdmlError('value', `selectFromModel: unknown threshold ${threshold}`)
+  if (m === null) throw new OmaiError('value', `selectFromModel: unknown threshold ${threshold}`)
   const scale = m[1] === undefined ? 1 : Number(m[1])
   const base =
     m[2] === 'mean' ? importances.reduce((a, b) => a + b, 0) / importances.length : quantileOf(importances, 0.5)
@@ -496,10 +496,10 @@ function resolveThreshold(threshold: number | string, importances: readonly numb
  *
  * @param options - estimator, threshold and maxFeatures.
  * @returns The estimator.
- * @throws MdmlError with code `value` when the fitted estimator reports no importances.
+ * @throws OmaiError with code `value` when the fitted estimator reports no importances.
  * @example
  * ```ts
- * import { defineEstimator, selectFromModel } from 'mdml-engine/learn'
+ * import { defineEstimator, selectFromModel } from 'omai-engine/learn'
  * const fixed = defineEstimator({ name: 'fixed', kind: 'regressor', fit: () => ({}), methods: () => ({ featureImportances: [0.1, 2, 0.5] }) }, {})
  * selectFromModel({ estimator: fixed }).fit({ x: [[0, 0, 0]], y: [0] }).support // => [false, true, false]
  * ```
@@ -515,7 +515,7 @@ export function selectFromModel(
         const fitted = h.estimator.fit(data, fitOptions)
         const imp = fitted.featureImportances
         if (imp === undefined)
-          throw new MdmlError('value', `selectFromModel: ${fitted.estimator} reports no featureImportances`)
+          throw new OmaiError('value', `selectFromModel: ${fitted.estimator} reports no featureImportances`)
         const threshold = resolveThreshold(h.threshold ?? 'mean', imp)
         let support = imp.map((v) => v >= threshold)
         if (h.maxFeatures !== undefined) {

@@ -5,7 +5,7 @@
  */
 
 import type { EChartsOption, SeriesOption } from 'echarts'
-import type { FixedPointClass, Simplex } from 'mdml-engine/exposition'
+import type { FixedPointClass, Simplex } from 'omai-engine/exposition'
 import { vectorField as arrows, type FieldArrow } from '../charts/fields.ts'
 import { lines } from '../charts/lines.ts'
 import { cartesian, type Layer, layer } from '../charts/plot.ts'
@@ -30,7 +30,7 @@ const VERTICES: readonly (readonly [number, number])[] = [
  * @returns The point in the plane.
  * @example
  * ```ts
- * import { simplexPoint } from 'mdml-render/views'
+ * import { simplexPoint } from 'omai-render/views'
  * simplexPoint('triangle', [0, 0, 1]) // => [0.5, 0.866]
  * simplexPoint('square', [0.25, 0.75]) // => [0.25, 0.75]
  * ```
@@ -56,8 +56,8 @@ function simplexDirection(shape: Simplex['shape'], d: readonly number[]): [numbe
  * @returns The layers.
  * @example
  * ```ts
- * import { simplexRecord } from 'mdml-engine/exposition'
- * import { simplexLayers } from 'mdml-render/views'
+ * import { simplexRecord } from 'omai-engine/exposition'
+ * import { simplexLayers } from 'omai-render/views'
  * const r = simplexRecord({ shape: 'triangle', labels: ['a', 'b', 'c'], paths: [{ name: 'run', points: [[1, 0, 0], [0.5, 0.5, 0]] }] })
  * simplexLayers(r).length // => 4
  * ```
@@ -183,8 +183,8 @@ export function simplexLayers(record: Simplex, options: ViewOptions = {}): Layer
  * @returns The ECharts option.
  * @example
  * ```ts
- * import { simplexRecord } from 'mdml-engine/exposition'
- * import { simplexView } from 'mdml-render/views'
+ * import { simplexRecord } from 'omai-engine/exposition'
+ * import { simplexView } from 'omai-render/views'
  * const r = simplexRecord({ shape: 'square', labels: ['row plays heads', 'column plays heads'], paths: [{ name: 'run', points: [[0.2, 0.9], [0.4, 0.7]] }] })
  * simplexView(r).series.length // => 4
  * ```

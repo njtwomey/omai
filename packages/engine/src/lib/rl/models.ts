@@ -5,7 +5,7 @@
  * can act in imagination (PETS, MBPO, Dyna).
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { foldIn, type Key, normal, uniform } from '../random/index.ts'
 import { scene } from '../scene/index.ts'
 import type { Space } from '../space/index.ts'
@@ -51,8 +51,8 @@ const rows = (xs: readonly (readonly number[])[], width: number): Value => {
  * @concept model-based-rl
  * @example
  * ```ts
- * import { ensemblePredict } from 'mdml-engine/rl'
- * import { add, mul, concat } from 'mdml-engine/tensor'
+ * import { ensemblePredict } from 'omai-engine/rl'
+ * import { add, mul, concat } from 'omai-engine/tensor'
  * const model = { observationSize: 1, actionSize: 1, predict: (w: number, o: never, a: never) => ({ mean: concat([mul(a, w), o], -1) }) }
  * ensemblePredict({ model, members: [1, 3] }, [[0]], [[1]]).mean // => [[2, 0]]
  * ```
@@ -63,7 +63,7 @@ export function ensemblePredict<P>(
   actions: readonly (readonly number[])[],
 ): { readonly mean: number[][]; readonly epistemic: number[][]; readonly aleatoric: number[][] } {
   const { model, members } = ensemble
-  if (members.length === 0) throw new MdmlError('value', 'ensemblePredict: the ensemble has no members')
+  if (members.length === 0) throw new OmaiError('value', 'ensemblePredict: the ensemble has no members')
   const o = rows(observations, model.observationSize)
   const a = rows(actions, model.actionSize)
   const width = model.observationSize + 1
@@ -114,9 +114,9 @@ export function ensemblePredict<P>(
  * @concept model-based-rl
  * @example
  * ```ts
- * import { ensembleSample } from 'mdml-engine/rl'
- * import { concat, mul } from 'mdml-engine/tensor'
- * import { key } from 'mdml-engine/random'
+ * import { ensembleSample } from 'omai-engine/rl'
+ * import { concat, mul } from 'omai-engine/tensor'
+ * import { key } from 'omai-engine/random'
  * const model = { observationSize: 1, actionSize: 1, predict: (w: number, o: never, a: never) => ({ mean: concat([mul(a, w), o], -1) }) }
  * ensembleSample({ model, members: [2] }, [[1]], [[1]], key(0))[0] // => { observation: [3], reward: 1 }
  * ```
@@ -130,7 +130,7 @@ export function ensembleSample<P>(
 ): { readonly observation: number[]; readonly reward: number }[] {
   const { model, members } = ensemble
   const m = members.length
-  if (m === 0) throw new MdmlError('value', 'ensembleSample: the ensemble has no members')
+  if (m === 0) throw new OmaiError('value', 'ensembleSample: the ensemble has no members')
   const n = observations.length
   const width = model.observationSize + 1
   const o = rows(observations, model.observationSize)
@@ -174,7 +174,7 @@ export function ensembleSample<P>(
  * @concept model-based-rl
  * @example
  * ```ts
- * import { modelTargets } from 'mdml-engine/rl'
+ * import { modelTargets } from 'omai-engine/rl'
  * const t = { observation: [1], action: [0], reward: 2, nextObservation: [1.5], terminated: false, truncated: false }
  * modelTargets([t]).targets // => [[0.5, 2]]
  * ```
@@ -225,10 +225,10 @@ export interface ModelEnvOptions {
  * @concept model-based-rl
  * @example
  * ```ts
- * import { modelEnv } from 'mdml-engine/rl'
- * import { box } from 'mdml-engine/space'
- * import { concat, mul } from 'mdml-engine/tensor'
- * import { key } from 'mdml-engine/random'
+ * import { modelEnv } from 'omai-engine/rl'
+ * import { box } from 'omai-engine/space'
+ * import { concat, mul } from 'omai-engine/tensor'
+ * import { key } from 'omai-engine/random'
  * const model = { observationSize: 1, actionSize: 1, predict: (w: number, o: never, a: never) => ({ mean: concat([mul(a, w), o], -1) }) }
  * const env = modelEnv({ model, members: [1] }, { observationSpace: box(-9, 9, [1]), actionSpace: box(-1, 1, [1]), initial: () => [0] })
  * env.step(env.reset(key(0)).state, [0.5], key(1)).observation // => [0.5]

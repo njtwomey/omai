@@ -6,7 +6,7 @@
  * checked.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 
 /** The result of a box count. */
 export interface BoxCount {
@@ -55,11 +55,11 @@ export interface BoxCountOptions {
  * @param points - Flat `[x0, y0, x1, y1, ...]`.
  * @param options - The levels.
  * @returns The estimate with its fit and the counts.
- * @throws MdmlError with code `value` for fewer than 16 points, an odd length, or levels that leave fewer than two scales.
+ * @throws OmaiError with code `value` for fewer than 16 points, an odd length, or levels that leave fewer than two scales.
  * @concept box-counting-dimension
  * @example
  * ```ts
- * import { fractals } from 'mdml-engine/dynamics'
+ * import { fractals } from 'omai-engine/dynamics'
  * // The points of a filled unit square have dimension 2.
  * const pts: number[] = []
  * for (let i = 0; i < 64; i++) for (let j = 0; j < 64; j++) pts.push((i + 0.5) / 64, (j + 0.5) / 64)
@@ -69,11 +69,11 @@ export interface BoxCountOptions {
 export function boxCountingDimension(points: ArrayLike<number>, options: BoxCountOptions = {}): BoxCount {
   const n = Math.floor(points.length / 2)
   if (points.length % 2 !== 0 || n < 16)
-    throw new MdmlError('value', 'boxCountingDimension: need at least 16 points as x, y pairs')
+    throw new OmaiError('value', 'boxCountingDimension: need at least 16 points as x, y pairs')
   const lo = options.minLevel ?? 2
   const hi = options.maxLevel ?? Math.max(lo + 1, Math.floor(Math.log2(n) / 2))
   if (!(Number.isInteger(lo) && Number.isInteger(hi) && lo >= 0 && hi > lo && hi <= 26))
-    throw new MdmlError('value', 'boxCountingDimension: need integer levels 0 <= minLevel < maxLevel <= 26')
+    throw new OmaiError('value', 'boxCountingDimension: need integer levels 0 <= minLevel < maxLevel <= 26')
   let x0 = Infinity
   let y0 = Infinity
   let x1 = -Infinity
@@ -113,11 +113,11 @@ export function boxCountingDimension(points: ArrayLike<number>, options: BoxCoun
  * @param options - `minLevel` and `maxLevel` here are the box sides' powers of two in pixels, from `minLevel` (default 1)
  *   up to `maxLevel` (default `floor(log2(min(width, height))) - 2`).
  * @returns The estimate with its fit and the counts.
- * @throws MdmlError with code `value` for a mask of the wrong size or fewer than two usable scales.
+ * @throws OmaiError with code `value` for a mask of the wrong size or fewer than two usable scales.
  * @concept box-counting-dimension
  * @example
  * ```ts
- * import { fractals } from 'mdml-engine/dynamics'
+ * import { fractals } from 'omai-engine/dynamics'
  * // A lit line across a 64 x 64 image has dimension 1.
  * const mask = new Uint8Array(64 * 64)
  * for (let c = 0; c < 64; c++) mask[32 * 64 + c] = 1
@@ -131,11 +131,11 @@ export function boxCountingDimensionOfMask(
   options: BoxCountOptions = {},
 ): BoxCount {
   if (mask.length !== width * height)
-    throw new MdmlError('value', 'boxCountingDimensionOfMask: mask must be width x height')
+    throw new OmaiError('value', 'boxCountingDimensionOfMask: mask must be width x height')
   const lo = options.minLevel ?? 1
   const hi = options.maxLevel ?? Math.floor(Math.log2(Math.min(width, height))) - 2
   if (!(Number.isInteger(lo) && Number.isInteger(hi) && lo >= 0 && hi > lo))
-    throw new MdmlError('value', 'boxCountingDimensionOfMask: need integer levels 0 <= minLevel < maxLevel')
+    throw new OmaiError('value', 'boxCountingDimensionOfMask: need integer levels 0 <= minLevel < maxLevel')
   const sizes: number[] = []
   const counts: number[] = []
   const side = Math.max(width, height)

@@ -4,8 +4,8 @@ diffusers), the sigmoid schedule of Jabri et al. (as in denoising-diffusion-pyto
 et al., and the EDM preconditioning of Karras et al."""
 
 import numpy as np
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray
 
 REFERENCE: dict[str, str] = {"numpy": np.__version__}
 

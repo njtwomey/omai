@@ -5,16 +5,16 @@
  * Chinese remainder theorem, continued fractions and convergents, and exact Fibonacci and Lucas numbers.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 
 function integer(x: number, name: string): number {
-  if (!Number.isSafeInteger(x)) throw new MdmlError('value', `${name}: expected a safe integer, got ${x}`)
+  if (!Number.isSafeInteger(x)) throw new OmaiError('value', `${name}: expected a safe integer, got ${x}`)
   return x
 }
 
 function positive(x: number, name: string): number {
   if (!(Number.isSafeInteger(x) && x >= 1))
-    throw new MdmlError('value', `${name}: expected a positive integer, got ${x}`)
+    throw new OmaiError('value', `${name}: expected a positive integer, got ${x}`)
   return x
 }
 
@@ -36,7 +36,7 @@ export interface EuclidStep {
  * @concept euclidean-algorithm
  * @example
  * ```ts
- * import { euclid } from 'mdml-engine/foundations'
+ * import { euclid } from 'omai-engine/foundations'
  * const e = euclid(252, 105)
  * e.gcd // => 21
  * e.steps.map((s) => s.remainder) // => [42, 21, 0]
@@ -64,7 +64,7 @@ export function euclid(a: number, b: number): { readonly gcd: number; readonly s
  * @concept euclidean-algorithm
  * @example
  * ```ts
- * import { gcd } from 'mdml-engine/foundations'
+ * import { gcd } from 'omai-engine/foundations'
  * gcd(12, 18, 27) // => 3
  * ```
  */
@@ -82,7 +82,7 @@ export function gcd(...values: readonly number[]): number {
  * @concept euclidean-algorithm
  * @example
  * ```ts
- * import { lcm } from 'mdml-engine/foundations'
+ * import { lcm } from 'omai-engine/foundations'
  * lcm(4, 6, 10) // => 60
  * ```
  */
@@ -113,7 +113,7 @@ export interface ExtendedEuclidStep {
  * @concept extended-euclidean-algorithm
  * @example
  * ```ts
- * import { extendedEuclid } from 'mdml-engine/foundations'
+ * import { extendedEuclid } from 'omai-engine/foundations'
  * const e = extendedEuclid(240, 46)
  * [e.gcd, e.x, e.y] // => [2, -9, 47]
  * ```
@@ -152,7 +152,7 @@ export function extendedEuclid(
  * @concept modular-arithmetic
  * @example
  * ```ts
- * import { modulo } from 'mdml-engine/foundations'
+ * import { modulo } from 'omai-engine/foundations'
  * modulo(-7, 3) // => 2
  * ```
  */
@@ -167,18 +167,18 @@ export function modulo(a: number, m: number): number {
  * @param a - An integer.
  * @param m - A modulus >= 2.
  * @returns The inverse.
- * @throws MdmlError with code `value` when `gcd(a, m) != 1`.
+ * @throws OmaiError with code `value` when `gcd(a, m) != 1`.
  * @concept modular-inverse
  * @example
  * ```ts
- * import { modInverse } from 'mdml-engine/foundations'
+ * import { modInverse } from 'omai-engine/foundations'
  * modInverse(3, 11) // => 4
  * ```
  */
 export function modInverse(a: number, m: number): number {
   positive(m, 'modInverse')
   const { gcd: g, x } = extendedEuclid(modulo(a, m), m)
-  if (g !== 1) throw new MdmlError('value', `modInverse: ${a} has no inverse mod ${m} (gcd ${g})`)
+  if (g !== 1) throw new OmaiError('value', `modInverse: ${a} has no inverse mod ${m} (gcd ${g})`)
   return modulo(x, m)
 }
 
@@ -202,7 +202,7 @@ export interface PowerStep {
  * @concept modular-exponentiation
  * @example
  * ```ts
- * import { modPow } from 'mdml-engine/foundations'
+ * import { modPow } from 'omai-engine/foundations'
  * modPow(4, 13, 497).value // => 445
  * ```
  */
@@ -213,7 +213,7 @@ export function modPow(
 ): { readonly value: number; readonly steps: PowerStep[] } {
   positive(m, 'modPow')
   if (!(Number.isSafeInteger(exponent) && exponent >= 0))
-    throw new MdmlError('value', 'modPow: exponent must be a non-negative integer')
+    throw new OmaiError('value', 'modPow: exponent must be a non-negative integer')
   const M = BigInt(m)
   let result = 1n % M
   let b = BigInt(modulo(base, m))
@@ -257,14 +257,14 @@ export interface Sieve {
  * @concept sieve-of-eratosthenes
  * @example
  * ```ts
- * import { sieve } from 'mdml-engine/foundations'
+ * import { sieve } from 'omai-engine/foundations'
  * sieve(20).primes // => [2, 3, 5, 7, 11, 13, 17, 19]
  * sieve(20).smallestFactor[15] // => 3
  * ```
  */
 export function sieve(n: number): Sieve {
-  if (!(Number.isSafeInteger(n) && n >= 0)) throw new MdmlError('value', 'sieve: expected a non-negative integer')
-  if (n > 1e8) throw new MdmlError('value', 'sieve: bound above 1e8 is too large to tabulate')
+  if (!(Number.isSafeInteger(n) && n >= 0)) throw new OmaiError('value', 'sieve: expected a non-negative integer')
+  if (n > 1e8) throw new OmaiError('value', 'sieve: bound above 1e8 is too large to tabulate')
   const spf = new Int32Array(n + 1)
   const primes: number[] = []
   for (let k = 2; k <= n; k++) {
@@ -297,7 +297,7 @@ export interface MillerRabinRound {
  * @concept miller-rabin
  * @example
  * ```ts
- * import { millerRabin } from 'mdml-engine/foundations'
+ * import { millerRabin } from 'omai-engine/foundations'
  * millerRabin(561).prime // => false
  * millerRabin(2147483647).prime // => true
  * ```
@@ -346,7 +346,7 @@ export function millerRabin(
  * @concept primes
  * @example
  * ```ts
- * import { isPrime } from 'mdml-engine/foundations'
+ * import { isPrime } from 'omai-engine/foundations'
  * [1, 2, 9, 97].map(isPrime) // => [false, true, false, true]
  * ```
  */
@@ -363,7 +363,7 @@ export function isPrime(n: number): boolean {
  * @concept factorisation
  * @example
  * ```ts
- * import { trialDivision } from 'mdml-engine/foundations'
+ * import { trialDivision } from 'omai-engine/foundations'
  * trialDivision(360).factors // => [2, 2, 2, 3, 3, 5]
  * ```
  */
@@ -397,11 +397,11 @@ export interface RhoStep {
  * @param n - A composite number (odd, not a prime power is the easy case).
  * @param options - Starting point (default 2), first constant (default 1) and step cap (default 100000).
  * @returns A nontrivial factor, the c that found it and the steps of the successful attempt.
- * @throws MdmlError with code `value` for a prime or n < 4.
+ * @throws OmaiError with code `value` for a prime or n < 4.
  * @concept pollard-rho
  * @example
  * ```ts
- * import { pollardRho } from 'mdml-engine/foundations'
+ * import { pollardRho } from 'omai-engine/foundations'
  * pollardRho(8051).factor // => 97
  * ```
  */
@@ -410,7 +410,7 @@ export function pollardRho(
   options: { readonly start?: number; readonly c?: number; readonly maxSteps?: number } = {},
 ): { readonly factor: number; readonly c: number; readonly steps: RhoStep[] } {
   positive(n, 'pollardRho')
-  if (n < 4 || isPrime(n)) throw new MdmlError('value', `pollardRho: ${n} has no nontrivial factor`)
+  if (n < 4 || isPrime(n)) throw new OmaiError('value', `pollardRho: ${n} has no nontrivial factor`)
   if (n % 2 === 0) return { factor: 2, c: 0, steps: [] }
   const N = BigInt(n)
   for (let c = options.c ?? 1; c < (options.c ?? 1) + 20; c++) {
@@ -429,7 +429,7 @@ export function pollardRho(
       if (d > 1) return { factor: d, c, steps }
     }
   }
-  throw new MdmlError('convergence', `pollardRho: no factor of ${n} found`)
+  throw new OmaiError('convergence', `pollardRho: no factor of ${n} found`)
 }
 
 /**
@@ -441,7 +441,7 @@ export function pollardRho(
  * @concept factorisation
  * @example
  * ```ts
- * import { factorise } from 'mdml-engine/foundations'
+ * import { factorise } from 'omai-engine/foundations'
  * factorise(1001) // => [[7, 1], [11, 1], [13, 1]]
  * factorise(2 ** 10 * 3 ** 4) // => [[2, 10], [3, 4]]
  * ```
@@ -482,7 +482,7 @@ export function factorise(n: number): [number, number][] {
  * @concept eulers-totient
  * @example
  * ```ts
- * import { eulerPhi } from 'mdml-engine/foundations'
+ * import { eulerPhi } from 'omai-engine/foundations'
  * eulerPhi(36) // => 12
  * ```
  */
@@ -500,7 +500,7 @@ export function eulerPhi(n: number): number {
  * @concept divisors
  * @example
  * ```ts
- * import { divisors } from 'mdml-engine/foundations'
+ * import { divisors } from 'omai-engine/foundations'
  * divisors(28) // => [1, 2, 4, 7, 14, 28]
  * ```
  */
@@ -524,7 +524,7 @@ export function divisors(n: number): number[] {
  * @concept chinese-remainder-theorem
  * @example
  * ```ts
- * import { chineseRemainder } from 'mdml-engine/foundations'
+ * import { chineseRemainder } from 'omai-engine/foundations'
  * chineseRemainder([2, 3, 2], [3, 5, 7]) // => { x: 23, modulus: 105 }
  * chineseRemainder([1, 2], [4, 6]) // => null
  * ```
@@ -533,7 +533,7 @@ export function chineseRemainder(
   residues: readonly number[],
   moduli: readonly number[],
 ): { readonly x: number; readonly modulus: number } | null {
-  if (residues.length !== moduli.length) throw new MdmlError('value', 'chineseRemainder: one residue per modulus')
+  if (residues.length !== moduli.length) throw new OmaiError('value', 'chineseRemainder: one residue per modulus')
   let x = 0n
   let m = 1n
   for (let i = 0; i < moduli.length; i++) {
@@ -550,7 +550,7 @@ export function chineseRemainder(
     x = ((x % m) + m) % m
   }
   if (m > BigInt(Number.MAX_SAFE_INTEGER))
-    throw new MdmlError('value', 'chineseRemainder: the combined modulus exceeds 2^53')
+    throw new OmaiError('value', 'chineseRemainder: the combined modulus exceeds 2^53')
   return { x: Number(x), modulus: Number(m) }
 }
 
@@ -566,7 +566,7 @@ export function chineseRemainder(
  * @concept continued-fractions
  * @example
  * ```ts
- * import { continuedFractionExpansion } from 'mdml-engine/foundations'
+ * import { continuedFractionExpansion } from 'omai-engine/foundations'
  * continuedFractionExpansion(415, 93) // => [4, 2, 6, 7]
  * continuedFractionExpansion(Math.SQRT2, undefined, 5) // => [1, 2, 2, 2, 2]
  * ```
@@ -575,7 +575,7 @@ export function continuedFractionExpansion(x: number, q?: number, terms = 20): n
   if (q !== undefined) {
     integer(x, 'continuedFractionExpansion')
     if (integer(q, 'continuedFractionExpansion') === 0)
-      throw new MdmlError('value', 'continuedFractionExpansion: zero denominator')
+      throw new OmaiError('value', 'continuedFractionExpansion: zero denominator')
     const sign = q < 0 ? -1 : 1
     let p = sign * x
     let d = sign * q
@@ -608,7 +608,7 @@ export function continuedFractionExpansion(x: number, q?: number, terms = 20): n
  * @concept continued-fractions
  * @example
  * ```ts
- * import { convergents } from 'mdml-engine/foundations'
+ * import { convergents } from 'omai-engine/foundations'
  * convergents([3, 7, 15, 1]) // => [[3, 1], [22, 7], [333, 106], [355, 113]]
  * ```
  */
@@ -651,7 +651,7 @@ function fibLucas(n: number): [bigint, bigint] {
  * @concept fibonacci-numbers
  * @example
  * ```ts
- * import { fibonacci } from 'mdml-engine/foundations'
+ * import { fibonacci } from 'omai-engine/foundations'
  * fibonacci(10) // => 55n
  * fibonacci(100) // => 354224848179261915075n
  * ```
@@ -671,7 +671,7 @@ export function fibonacci(n: number): bigint {
  * @concept lucas-numbers
  * @example
  * ```ts
- * import { lucas } from 'mdml-engine/foundations'
+ * import { lucas } from 'omai-engine/foundations'
  * lucas(10) // => 123n
  * ```
  */

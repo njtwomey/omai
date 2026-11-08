@@ -28,7 +28,7 @@ export interface SceneFrameProps
  * @returns The drawn width and height in whole pixels.
  * @example
  * ```ts
- * import { fitScene } from 'mdml-render/react'
+ * import { fitScene } from 'omai-render/react'
  * fitScene(1000, 500, 720, 720) // => { width: 720, height: 360 }
  * fitScene(300, 200, 720, 720) // => { width: 300, height: 200 }
  * ```

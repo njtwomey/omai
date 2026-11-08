@@ -26,7 +26,7 @@ export interface FlowLink {
  * @index function A Sankey diagram of flows: `sankeyChart([{ source, target, value }])`.
  * @example
  * ```ts
- * import { sankeyChart } from 'mdml-render/charts'
+ * import { sankeyChart } from 'omai-render/charts'
  * sankeyChart([{ source: 'a', target: 'b', value: 3 }]).series[0].data.length // => 2
  * ```
  */

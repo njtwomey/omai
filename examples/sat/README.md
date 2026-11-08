@@ -2,7 +2,7 @@
 
 The pigeonhole puzzle: put six pigeons into five holes with at most one pigeon in each hole. It cannot be done, and a
 SAT solver has to prove that. The puzzle is written as a Boolean formula in conjunctive normal form (30 variables,
-81 clauses), and two solvers from `mdml-engine/logic` run on it.
+81 clauses), and two solvers from `omai-engine/logic` run on it.
 
 ![Conflicts so far and decision level for DPLL and CDCL on six pigeons and five holes](figure.svg)
 

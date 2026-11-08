@@ -18,7 +18,7 @@ import { matrix, stamp, vector } from './_util.ts'
  * @returns The points `[n, 3]`.
  * @example
  * ```ts
- * import { swissRollEmbedding } from 'mdml-engine/datasets'
+ * import { swissRollEmbedding } from 'omai-engine/datasets'
  * swissRollEmbedding([Math.PI], [2]).data[1] // => 2
  * ```
  */
@@ -40,7 +40,7 @@ export function swissRollEmbedding(t: TensorLike, height: TensorLike): Tensor {
  * @returns The points `[n, 3]`.
  * @example
  * ```ts
- * import { sCurveEmbedding } from 'mdml-engine/datasets'
+ * import { sCurveEmbedding } from 'omai-engine/datasets'
  * Array.from(sCurveEmbedding([0], [1]).data) // => [0, 1, 0]
  * ```
  */
@@ -101,8 +101,8 @@ const noise = real(0, 5, {
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { swissRoll } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { swissRoll } from 'omai-engine/datasets'
  * generate(swissRoll, { knobs: { n: 10 } }).data.x.shape // => [10, 3]
  * ```
  */
@@ -153,8 +153,8 @@ export const swissRoll: DatasetGenerator<RegressionData> = {
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { sCurve } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { sCurve } from 'omai-engine/datasets'
  * generate(sCurve).truth.extra?.['intrinsicDimension'] // => 2
  * ```
  */
@@ -187,8 +187,8 @@ export const sCurve: DatasetGenerator<RegressionData> = {
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { severedSphere } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { severedSphere } from 'omai-engine/datasets'
  * generate(severedSphere, { knobs: { n: 50 } }).data.x.shape // => [50, 3]
  * ```
  */
@@ -237,8 +237,8 @@ export const severedSphere: DatasetGenerator<RegressionData> = {
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { torus } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { torus } from 'omai-engine/datasets'
  * generate(torus, { knobs: { n: 20 } }).data.featureNames // => ['x', 'y', 'z']
  * ```
  */

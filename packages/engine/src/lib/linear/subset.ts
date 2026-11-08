@@ -6,7 +6,7 @@
  * centred data, so a candidate costs one small Cholesky solve.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import { type IterativeEstimator, iterative, type LearnData, modelSelection } from '../learn/index.ts'
 import { dpotrf, dpotrs } from '../numerics/linalg/index.ts'
 import { choice, dict } from '../space/index.ts'
@@ -184,11 +184,11 @@ export interface SubsetOptions {
  * @param data - Features and targets.
  * @param options - The method, criterion, size limit and intercept.
  * @returns The algorithm.
- * @throws MdmlError `value` for best-subset search over more than 24 features or Cp without residual degrees of freedom.
+ * @throws OmaiError `value` for best-subset search over more than 24 features or Cp without residual degrees of freedom.
  * @example
  * ```ts
- * import { subsetAlgorithm } from 'mdml-engine/linear'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { subsetAlgorithm } from 'omai-engine/linear'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const x = Array.from({ length: 30 }, (_, i) => [Math.sin(i), Math.cos(3 * i), (i % 5) / 5])
  * const y = x.map((r, i) => 2 * (r[0] ?? 0) + 0.05 * Math.sin(7 * i))
  * runAlgorithm(subsetAlgorithm({ x, y }, { method: 'forward', criterion: 'bic' }), { maxSteps: 10 }).state.best // => [0]
@@ -202,9 +202,9 @@ export function subsetAlgorithm(data: LearnData, options: SubsetOptions = {}): A
   const { d } = gram
   const maxSize = Math.min(options.maxSize ?? d, d)
   if (method === 'best' && d > 24)
-    throw new MdmlError('value', `subsetRegression: best-subset search over ${d} features is too large (at most 24)`)
+    throw new OmaiError('value', `subsetRegression: best-subset search over ${d} features is too large (at most 24)`)
   if (criterion === 'cp' && !Number.isFinite(gram.sigma2Full))
-    throw new MdmlError('value', 'subsetRegression: Cp needs more rows than features for the full-model variance')
+    throw new OmaiError('value', 'subsetRegression: Cp needs more rows than features for the full-model variance')
   const evaluate = (subset: readonly number[]): { natural: number; score: number; rss: number } => {
     const { rss } = fitSubset(gram, subset)
     return { ...criterionOf(gram, rss, subset.length, criterion, fitIntercept), rss }
@@ -327,7 +327,7 @@ export type SubsetParams = {
  * bounds, Technometrics 16 (1974).
  * @example
  * ```ts
- * import { subsetRegression } from 'mdml-engine/linear'
+ * import { subsetRegression } from 'omai-engine/linear'
  * const x = Array.from({ length: 40 }, (_, i) => [Math.sin(i), Math.cos(2.3 * i), Math.sin(5.1 * i)])
  * const y = x.map((r, i) => 3 * (r[0] ?? 0) - 2 * (r[2] ?? 0) + 0.05 * Math.cos(9 * i))
  * subsetRegression({ method: 'best', criterion: 'bic' }).fit({ x, y }).params.selected // => [0, 2]

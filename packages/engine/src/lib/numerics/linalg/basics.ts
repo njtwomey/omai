@@ -4,7 +4,7 @@
  * definiteness.
  */
 
-import { MdmlError, maxOf } from '../../base/index.ts'
+import { maxOf, OmaiError } from '../../base/index.ts'
 import {
   abs,
   allclose,
@@ -101,8 +101,8 @@ export interface SlogdetResult {
  * @concept linear-algebra
  * @example
  * ```ts
- * import { slogdet } from 'mdml-engine/numerics/linalg'
- * import { item } from 'mdml-engine/tensor'
+ * import { slogdet } from 'omai-engine/numerics/linalg'
+ * import { item } from 'omai-engine/tensor'
  * item(slogdet([[0, 2], [3, 0]]).sign) // => -1
  * ```
  */
@@ -119,8 +119,8 @@ export function slogdet(a: TensorLike): SlogdetResult {
  * @returns det A, differentiable for non-singular A.
  * @example
  * ```ts
- * import { det } from 'mdml-engine/numerics/linalg'
- * import { item } from 'mdml-engine/tensor'
+ * import { det } from 'omai-engine/numerics/linalg'
+ * import { item } from 'omai-engine/tensor'
  * Math.abs(item(det([[1, 2], [3, 4]])) + 2) < 1e-14 // => true
  * ```
  */
@@ -145,8 +145,8 @@ export type NormOrder = 'fro' | 'nuc' | number
  * @index function Vector and matrix norms, like numpy.linalg.norm.
  * @example
  * ```ts
- * import { norm } from 'mdml-engine/numerics/linalg'
- * import { item } from 'mdml-engine/tensor'
+ * import { norm } from 'omai-engine/numerics/linalg'
+ * import { item } from 'omai-engine/tensor'
  * item(norm([3, 4])) // => 5
  * item(norm([[1, 2], [3, 4]], 1)) // => 6
  * ```
@@ -164,7 +164,7 @@ export function norm(x: TensorLike, ord?: NormOrder): Value {
   if (o === -1) return min(sum(abs(v), -2), -1)
   if (o === Number.POSITIVE_INFINITY) return max(sum(abs(v), -1), -1)
   if (o === Number.NEGATIVE_INFINITY) return min(sum(abs(v), -1), -1)
-  throw new MdmlError('value', `norm: unsupported matrix norm ${String(o)}`)
+  throw new OmaiError('value', `norm: unsupported matrix norm ${String(o)}`)
 }
 
 /**
@@ -188,7 +188,7 @@ function vectorNorm(v: Value, ord: NormOrder): Value {
   if (ord === 0) return sum(greater(abs(v), 0), -1)
   if (ord === 1) return sum(abs(v), -1)
   if (typeof ord === 'number') return powNorm(abs(v), ord)
-  throw new MdmlError('value', `norm: unsupported vector norm ${String(ord)}`)
+  throw new OmaiError('value', `norm: unsupported vector norm ${String(ord)}`)
 }
 
 function powNorm(a: Value, p: number): Value {
@@ -202,11 +202,11 @@ function powNorm(a: Value, p: number): Value {
  * @param a - Matrix `[..., m, n]` (square unless p is 2 or -2).
  * @param p - The norm.
  * @returns The condition number, differentiable.
- * @throws MdmlError with code `value` when the input has a NaN or infinite entry.
+ * @throws OmaiError with code `value` when the input has a NaN or infinite entry.
  * @example
  * ```ts
- * import { cond } from 'mdml-engine/numerics/linalg'
- * import { item } from 'mdml-engine/tensor'
+ * import { cond } from 'omai-engine/numerics/linalg'
+ * import { item } from 'omai-engine/tensor'
  * item(cond([[2, 0], [0, 0.5]])) // => 4
  * ```
  */
@@ -228,10 +228,10 @@ export function cond(a: TensorLike, p: NormOrder = 2): Value {
  * @param a - Matrix `[m, n]`.
  * @param tol - Threshold.
  * @returns The rank.
- * @throws MdmlError with code `value` when the input has a NaN or infinite entry.
+ * @throws OmaiError with code `value` when the input has a NaN or infinite entry.
  * @example
  * ```ts
- * import { matrixRank } from 'mdml-engine/numerics/linalg'
+ * import { matrixRank } from 'omai-engine/numerics/linalg'
  * matrixRank([[1, 2], [2, 4]]) // => 1
  * ```
  */
@@ -252,13 +252,13 @@ export function matrixRank(a: TensorLike, tol?: number): number {
  * @returns A^k, differentiable.
  * @example
  * ```ts
- * import { matrixPower } from 'mdml-engine/numerics/linalg'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { matrixPower } from 'omai-engine/numerics/linalg'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(matrixPower([[1, 1], [0, 1]], 3)) // => [[1, 3], [0, 1]]
  * ```
  */
 export function matrixPower(a: TensorLike, k: number): Value {
-  if (!Number.isInteger(k)) throw new MdmlError('value', 'matrixPower: the power must be an integer')
+  if (!Number.isInteger(k)) throw new OmaiError('value', 'matrixPower: the power must be an integer')
   const [v] = promoteFloat(a) as [Value]
   const n = squareSize(v.shape, 'matrixPower')
   let base = k < 0 ? inv(v) : v
@@ -280,7 +280,7 @@ export function matrixPower(a: TensorLike, k: number): Value {
  * @returns `true` when symmetric.
  * @example
  * ```ts
- * import { isSymmetric } from 'mdml-engine/numerics/linalg'
+ * import { isSymmetric } from 'omai-engine/numerics/linalg'
  * isSymmetric([[1, 2], [2, 1]]) // => true
  * ```
  */
@@ -296,11 +296,11 @@ export function isSymmetric(a: TensorLike, tol = 1e-10): boolean {
  *
  * @param a - Matrix `[..., n, n]`.
  * @returns The symmetric part, same shape.
- * @throws MdmlError with code `shape` when the matrices are not square.
+ * @throws OmaiError with code `shape` when the matrices are not square.
  * @example
  * ```ts
- * import { symmetricPart } from 'mdml-engine/numerics/linalg'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { symmetricPart } from 'omai-engine/numerics/linalg'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(symmetricPart([[1, 2], [4, 3]])) // => [[1, 3], [3, 3]]
  * ```
  */
@@ -318,7 +318,7 @@ export function symmetricPart(a: TensorLike): Value {
  *   non-finite matrix is answered rather than rejected: a predicate has no other honest value).
  * @example
  * ```ts
- * import { isPositiveDefinite } from 'mdml-engine/numerics/linalg'
+ * import { isPositiveDefinite } from 'omai-engine/numerics/linalg'
  * isPositiveDefinite([[2, 1], [1, 2]]) // => true
  * isPositiveDefinite([[1, 2], [2, 1]]) // => false
  * ```

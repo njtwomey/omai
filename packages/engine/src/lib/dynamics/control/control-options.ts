@@ -47,7 +47,7 @@ function windup(
  * @concept pid-control
  * @example
  * ```ts
- * import { control } from 'mdml-engine/dynamics'
+ * import { control } from 'omai-engine/dynamics'
  * control.antiWindups.make({ kind: 'back-calculation', kb: 2 }) // => { antiWindup: 'back-calculation', kb: 2 }
  * ```
  */
@@ -89,7 +89,7 @@ export interface QpMethodProperties {
  * @concept model-predictive-control
  * @example
  * ```ts
- * import { control } from 'mdml-engine/dynamics'
+ * import { control } from 'omai-engine/dynamics'
  * control.qpMethods.make({ kind: 'interior-point' }) // => 'interior-point'
  * ```
  */
@@ -149,7 +149,7 @@ const level = (label: string, def: number) => real(-1000, 1000, { default: def, 
  * @concept pid-control
  * @example
  * ```ts
- * import { control } from 'mdml-engine/dynamics'
+ * import { control } from 'omai-engine/dynamics'
  * control.setpoints.make({ kind: 'square', low: 0, high: 2, period: 10 })(7) // => 0
  * ```
  */
@@ -198,7 +198,7 @@ export const setpoints: OptionTable<Signal, SignalProperties> = optionTable(
  * @concept pid-control
  * @example
  * ```ts
- * import { control } from 'mdml-engine/dynamics'
+ * import { control } from 'omai-engine/dynamics'
  * control.disturbances.make({ kind: 'pulse', size: 0.5, at: 2, width: 1 })(2.5) // => 0.5
  * ```
  */

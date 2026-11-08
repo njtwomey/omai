@@ -6,7 +6,7 @@
  */
 
 import { grad, jvp, valueAndGrad } from '../autodiff/index.ts'
-import { type Json, MdmlError, meanOf } from '../base/index.ts'
+import { type Json, meanOf, OmaiError } from '../base/index.ts'
 import type { Params } from '../nn/index.ts'
 import { dnrm2 } from '../numerics/linalg/index.ts'
 import { cg } from '../numerics/sparse/index.ts'
@@ -70,8 +70,8 @@ export type { PolicyGradientOptions, PolicyGradientState } from './_on-policy-ag
  * @reference Schulman, Wolski, Dhariwal, Radford and Klimov (2017), Proximal policy optimization algorithms.
  * @example
  * ```ts
- * import { ppoClipObjective } from 'mdml-engine/agents'
- * import { item } from 'mdml-engine/tensor'
+ * import { ppoClipObjective } from 'omai-engine/agents'
+ * import { item } from 'omai-engine/tensor'
  * item(ppoClipObjective([0, 0], [0, 0], [1, 3])) // => 2
  * item(ppoClipObjective([Math.log(2)], [0], [1], 0.2)) // => 1.2
  * ```
@@ -100,8 +100,8 @@ export function ppoClipObjective(
  * @reference Schulman et al. (2017), Proximal policy optimization algorithms, section 4.
  * @example
  * ```ts
- * import { ppoKlObjective } from 'mdml-engine/agents'
- * import { item } from 'mdml-engine/tensor'
+ * import { ppoKlObjective } from 'omai-engine/agents'
+ * import { item } from 'omai-engine/tensor'
  * item(ppoKlObjective([0, 0], [0, 0], [1, 3], [0.5, 0.5], 2)) // => 1
  * ```
  */
@@ -126,7 +126,7 @@ export function ppoKlObjective(
  * @concept policy-gradient
  * @example
  * ```ts
- * import { adaptKlCoefficient } from 'mdml-engine/agents'
+ * import { adaptKlCoefficient } from 'omai-engine/agents'
  * [adaptKlCoefficient(1, 0.1, 0.01), adaptKlCoefficient(1, 0.001, 0.01), adaptKlCoefficient(1, 0.01, 0.01)] // => [2, 0.5, 1]
  * ```
  */
@@ -173,7 +173,7 @@ export interface TrpoStepResult {
  * @reference Schulman, Levine, Moritz, Jordan and Abbeel (2015), Trust region policy optimization.
  * @example
  * ```ts
- * import { trpoStep } from 'mdml-engine/agents'
+ * import { trpoStep } from 'omai-engine/agents'
  * trpoStep((v) => v.map((x) => 4 * x), [2, 0], { maxKl: 0.5, damping: 0 }).step // => [0.5, 0]
  * ```
  */
@@ -247,8 +247,8 @@ export interface ReinforceOptions extends PolicyGradientOptions {
  * @reference Williams (1992), Simple statistical gradient-following algorithms for connectionist reinforcement learning.
  * @example
  * ```ts
- * import { reinforce } from 'mdml-engine/agents'
- * import { cartPole } from 'mdml-engine/environments'
+ * import { reinforce } from 'omai-engine/agents'
+ * import { cartPole } from 'omai-engine/environments'
  * reinforce(cartPole.create(), { hidden: [16], baseline: 'average' }).name // => 'reinforce'
  * ```
  */
@@ -388,8 +388,8 @@ export interface A2cOptions extends PolicyGradientOptions {
  * @reference Mnih et al. (2016), Asynchronous methods for deep reinforcement learning.
  * @example
  * ```ts
- * import { a2c } from 'mdml-engine/agents'
- * import { cartPole } from 'mdml-engine/environments'
+ * import { a2c } from 'omai-engine/agents'
+ * import { cartPole } from 'omai-engine/environments'
  * a2c(cartPole.create(), { nSteps: 8 }).config // => { hidden: [64, 64], gamma: 0.99, nSteps: 8, gaeLambda: 1, entCoef: 0, vfCoef: 0.5 }
  * ```
  */
@@ -479,8 +479,8 @@ export interface TrpoOptions extends PolicyGradientOptions, TrpoStepOptions {
  * @reference Schulman, Levine, Moritz, Jordan and Abbeel (2015), Trust region policy optimization.
  * @example
  * ```ts
- * import { trpo } from 'mdml-engine/agents'
- * import { cartPole } from 'mdml-engine/environments'
+ * import { trpo } from 'omai-engine/agents'
+ * import { cartPole } from 'omai-engine/environments'
  * trpo(cartPole.create(), { maxKl: 0.02 }).name // => 'trpo'
  * ```
  */
@@ -628,8 +628,8 @@ export interface PpoOptions extends PolicyGradientOptions {
  * @index agent Proximal policy optimisation; REINFORCE, A2C and TRPO beside it.
  * @example
  * ```ts
- * import { ppo } from 'mdml-engine/agents'
- * import { cartPole } from 'mdml-engine/environments'
+ * import { ppo } from 'omai-engine/agents'
+ * import { cartPole } from 'omai-engine/environments'
  * ppo(cartPole.create(), { objective: 'kl' }).name // => 'ppo'
  * ```
  */
@@ -646,7 +646,7 @@ export function ppo<A extends PolicyAction = PolicyAction>(
   const klTarget = options.klTarget ?? 0.01
   const anneal = options.annealLearningRate ?? false
   const totalSteps = options.totalSteps
-  if (anneal && totalSteps === undefined) throw new MdmlError('value', 'ppo: annealing needs totalSteps')
+  if (anneal && totalSteps === undefined) throw new OmaiError('value', 'ppo: annealing needs totalSteps')
   const opt = withClip(
     options.optimizer ?? adam({ learningRate: options.learningRate ?? 3e-4, eps: 1e-5 }),
     options.maxGradNorm ?? 0.5,

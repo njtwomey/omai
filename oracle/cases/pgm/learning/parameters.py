@@ -7,9 +7,9 @@ from typing import Any
 import numpy as np
 import pandas as pd
 import pgmpy
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import rng
-from mdml_oracle.pgm import STUDENT, NodeSpec, cpd_rows, sample_rows
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import rng
+from omai_oracle.pgm import STUDENT, NodeSpec, cpd_rows, sample_rows
 from pgmpy.base import DAG
 from pgmpy.factors.continuous import LinearGaussianCPD
 from pgmpy.factors.discrete import TabularCPD
@@ -41,7 +41,7 @@ def structure(spec: list[NodeSpec]) -> DAG:
 
 
 def network(spec: list[NodeSpec], cpds: list[TabularCPD]) -> list[dict[str, Any]]:
-    """Fitted CPDs as mdml-js nodes, parents sorted (pgmpy's order)."""
+    """Fitted CPDs as omai nodes, parents sorted (pgmpy's order)."""
     by = {str(c.variable): c for c in cpds}
     return [{"name": n, "states": s, "parents": sorted(ps), "cpt": cpd_rows(by[n], sorted(ps))} for n, s, ps, _ in spec]
 

@@ -8,8 +8,8 @@ import numpy as np
 from blackjax.adaptation.mass_matrix import mass_matrix_adaptation
 from blackjax.adaptation.step_size import dual_averaging_adaptation
 from blackjax.adaptation.window_adaptation import build_schedule
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray, rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray, rng
 
 jax.config.update("jax_enable_x64", True)
 

@@ -4,7 +4,7 @@
  * autocovariance, or by regressions on lags) and the cross-correlation of two series.
  */
 
-import { MdmlError, meanOf } from '../base/index.ts'
+import { meanOf, OmaiError } from '../base/index.ts'
 import { ndtri } from '../numerics/special/index.ts'
 import { item, type TensorLike } from '../tensor/index.ts'
 import { leastSquares } from './_ml.ts'
@@ -20,7 +20,7 @@ export interface AutocovarianceOptions {
 
 function checkLags(nlags: number, n: number, who: string): void {
   if (!(Number.isInteger(nlags) && nlags >= 0 && nlags < n))
-    throw new MdmlError('value', `${who}: nlags must be an integer in [0, n)`)
+    throw new OmaiError('value', `${who}: nlags must be an integer in [0, n)`)
 }
 
 /**
@@ -32,7 +32,7 @@ function checkLags(nlags: number, n: number, who: string): void {
  * @returns gamma(0..nlags).
  * @example
  * ```ts
- * import { autocovariance } from 'mdml-engine/timeseries'
+ * import { autocovariance } from 'omai-engine/timeseries'
  * Array.from(autocovariance([1, 2, 3, 4], 2)) // => [1.25, 0.3125, -0.375]
  * ```
  */
@@ -69,7 +69,7 @@ export interface AcfResult {
  * @returns The autocorrelations and the band.
  * @example
  * ```ts
- * import { acf } from 'mdml-engine/timeseries'
+ * import { acf } from 'omai-engine/timeseries'
  * Array.from(acf([1, 2, 3, 4], 2).acf) // => [1, 0.25, -0.3]
  * ```
  */
@@ -108,7 +108,7 @@ export type PacfMethod = 'yule-walker' | 'yule-walker-mle' | 'ols'
  * @returns phi_kk for k = 0..nlags (phi_00 = 1).
  * @example
  * ```ts
- * import { pacf } from 'mdml-engine/timeseries'
+ * import { pacf } from 'omai-engine/timeseries'
  * Array.from(pacf([1, 3, 2, 5, 4, 6, 5, 8], 2, 'yule-walker-mle')).map((v) => Math.round(v * 1e6) / 1e6) // => [1, 0.244718, 0.374513]
  * ```
  */
@@ -157,7 +157,7 @@ export function pacf(y: TensorLike, nlags?: number, method: PacfMethod = 'yule-w
  * @returns The cross-correlations.
  * @example
  * ```ts
- * import { ccf } from 'mdml-engine/timeseries'
+ * import { ccf } from 'omai-engine/timeseries'
  * // A series against itself is its autocorrelation.
  * Array.from(ccf([1, 2, 3, 4], [1, 2, 3, 4], 2, false)) // => [1, 0.25, -0.3]
  * ```
@@ -165,7 +165,7 @@ export function pacf(y: TensorLike, nlags?: number, method: PacfMethod = 'yule-w
 export function ccf(x: TensorLike, y: TensorLike, nlags?: number, adjusted = true): Float64Array {
   const a = asSeries(x, 'ccf')
   const b = asSeries(y, 'ccf')
-  if (a.length !== b.length) throw new MdmlError('shape', 'ccf: the series must have the same length')
+  if (a.length !== b.length) throw new OmaiError('shape', 'ccf: the series must have the same length')
   const n = a.length
   const lags = nlags ?? n - 1
   checkLags(lags, n, 'ccf')

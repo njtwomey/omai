@@ -4,15 +4,15 @@
 
 Recording what algorithms do and running them as sessions: the `Algorithm` contract (init and step) and `runAlgorithm`; the log contract (`defineContract`) that declares the paths a method can log and hook; methods and sessions (`defineMethod`, `session`) that run, seek, fork and probe a run; trace schemas and policies that say which events to keep, the events themselves, recording (`recorder`) and replay.
 
-- structure `algorithm.ts` (file): The Algorithm protocol (init and step) every iterative method implements. `src/lib/trace/algorithm.ts:1` `mdml-engine/trace`
-- structure `contract.ts` (file): The log contract: paths a method can log and hook. `src/lib/trace/contract.ts:1` `mdml-engine/trace`
-- structure `policy.ts` (file): Trace policies: which channels to keep, and how often. `src/lib/trace/policy.ts:1` `mdml-engine/trace`
-- structure `session.ts` (file): Methods and sessions: drive, seek and fork a run step by step. `src/lib/trace/session.ts:1` `mdml-engine/trace`
+- structure `algorithm.ts` (file): The Algorithm protocol (init and step) every iterative method implements. `src/lib/trace/algorithm.ts:1` `omai-engine/trace`
+- structure `contract.ts` (file): The log contract: paths a method can log and hook. `src/lib/trace/contract.ts:1` `omai-engine/trace`
+- structure `policy.ts` (file): Trace policies: which channels to keep, and how often. `src/lib/trace/policy.ts:1` `omai-engine/trace`
+- structure `session.ts` (file): Methods and sessions: drive, seek and fork a run step by step. `src/lib/trace/session.ts:1` `omai-engine/trace`
 
-- function `defineContract`: Declare a contract so its paths keep literal types. `src/lib/trace/contract.ts:178` `mdml-engine/trace`
-- function `defineMethod`: Declare how to build a run from its configuration and contract. `src/lib/trace/session.ts:82` `mdml-engine/trace`
-- function `modes`: Build the table of modes for one slot, with each mode's knobs. `src/lib/trace/modes.ts:133` `mdml-engine/trace`
-- function `recorder`: A tracer that keeps events in memory to replay or plot. `src/lib/trace/tracer.ts:64` `mdml-engine/trace`
-- function `resume`: Continue a run exactly from a stored checkpoint. `src/lib/trace/checkpoint.ts:57` `mdml-engine/trace`
-- function `runAlgorithm`: Run an Algorithm and record a traced run. `src/lib/trace/algorithm.ts:234` `mdml-engine/trace`
-- function `session`: Open a session on a method to step, seek and fork. `src/lib/trace/session.ts:212` `mdml-engine/trace`
+- function `defineContract`: Declare a contract so its paths keep literal types. `src/lib/trace/contract.ts:178` `omai-engine/trace`
+- function `defineMethod`: Declare how to build a run from its configuration and contract. `src/lib/trace/session.ts:82` `omai-engine/trace`
+- function `modes`: Build the table of modes for one slot, with each mode's knobs. `src/lib/trace/modes.ts:133` `omai-engine/trace`
+- function `recorder`: A tracer that keeps events in memory to replay or plot. `src/lib/trace/tracer.ts:64` `omai-engine/trace`
+- function `resume`: Continue a run exactly from a stored checkpoint. `src/lib/trace/checkpoint.ts:57` `omai-engine/trace`
+- function `runAlgorithm`: Run an Algorithm and record a traced run. `src/lib/trace/algorithm.ts:234` `omai-engine/trace`
+- function `session`: Open a session on a method to step, seek and fork. `src/lib/trace/session.ts:212` `omai-engine/trace`

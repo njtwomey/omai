@@ -6,7 +6,7 @@
  * positions and wealth, and the Gini coefficient of the wealth on the tape.
  */
 
-import { type Json, MdmlError } from '../../base/index.ts'
+import { type Json, OmaiError } from '../../base/index.ts'
 import { foldIn, permutation } from '../../random/index.ts'
 import { gini } from '../../stats/index.ts'
 import { type Algorithm, type Contract, contractSchema, defineContract, scalar, tensor } from '../../trace/index.ts'
@@ -21,7 +21,7 @@ import { codec, draws, positiveInt } from './_core.ts'
  * @concept sugarscape
  * @example
  * ```ts
- * import { automata } from 'mdml-engine/dynamics'
+ * import { automata } from 'omai-engine/dynamics'
  * const c = automata.sugarLandscape(50)
  * [c[35 * 50 + 15], c[0], Math.max(...c)] // => [4, 0, 4]
  * ```
@@ -105,12 +105,12 @@ const L = 6
  *
  * @param options - The landscape, the agents' trait ranges, growth, lifespan and replacement.
  * @returns The algorithm.
- * @throws MdmlError with code `value` for a bad size, more agents than sites or a range that is backwards.
+ * @throws OmaiError with code `value` for a bad size, more agents than sites or a range that is backwards.
  * @concept sugarscape
  * @example
  * ```ts
- * import { automata } from 'mdml-engine/dynamics'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { automata } from 'omai-engine/dynamics'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const s = runAlgorithm(automata.sugarscape({ size: 20, agents: 30 }), { seed: 0, maxSteps: 5 }).state
  * s.count // => 30
  * ```
@@ -126,13 +126,13 @@ export function sugarscape(options: SugarscapeOptions = {}): Algorithm<Sugarscap
   const replace = options.replace ?? true
   positiveInt('sugarscape', 'size', size)
   positiveInt('sugarscape', 'agents', nAgents)
-  if (nAgents > size * size) throw new MdmlError('value', 'sugarscape: more agents than sites')
+  if (nAgents > size * size) throw new OmaiError('value', 'sugarscape: more agents than sites')
   for (const [name, range] of [
     ['vision', vision],
     ['metabolism', metabolism],
     ['endowment', endowment],
   ] as const)
-    if (!(range[0] <= range[1])) throw new MdmlError('value', `sugarscape: the ${name} range is backwards`)
+    if (!(range[0] <= range[1])) throw new OmaiError('value', `sugarscape: the ${name} range is backwards`)
   const capacity = sugarLandscape(size)
   const sites = size * size
   const range = (u: number, [lo, hi]: readonly [number, number]): number => lo + Math.floor(u * (hi - lo + 1))

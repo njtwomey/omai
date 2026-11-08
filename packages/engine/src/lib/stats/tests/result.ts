@@ -12,8 +12,8 @@ import {
   type ConfidenceLevel,
   defaultAlternative,
   type Estimate,
-  MdmlError,
   meanOf,
+  OmaiError,
   resolveConfidenceLevel,
   type TestResult,
   varianceOf,
@@ -37,17 +37,17 @@ export interface TestOptions {
  *
  * @param alternative - The alternative, or undefined.
  * @returns The alternative.
- * @throws MdmlError with code `value` for anything else.
+ * @throws OmaiError with code `value` for anything else.
  * @example
  * ```ts
- * import { resolveAlternative } from 'mdml-engine/stats/tests'
+ * import { resolveAlternative } from 'omai-engine/stats/tests'
  * resolveAlternative() // => 'two-sided'
  * resolveAlternative('less') // => 'less'
  * ```
  */
 export function resolveAlternative(alternative: Alternative = defaultAlternative): Alternative {
   if (alternative !== 'two-sided' && alternative !== 'less' && alternative !== 'greater')
-    throw new MdmlError('value', `unknown alternative ${String(alternative)}`)
+    throw new OmaiError('value', `unknown alternative ${String(alternative)}`)
   return alternative
 }
 
@@ -61,7 +61,7 @@ export function resolveAlternative(alternative: Alternative = defaultAlternative
  * @returns The p-value.
  * @example
  * ```ts
- * import { pValueFromTails } from 'mdml-engine/stats/tests'
+ * import { pValueFromTails } from 'omai-engine/stats/tests'
  * pValueFromTails('two-sided', 0.01, 0.99) // => 0.02
  * pValueFromTails('greater', 0.01, 0.99) // => 0.99
  * ```
@@ -93,7 +93,7 @@ export interface TestResultInput {
  * @returns The result.
  * @example
  * ```ts
- * import { testResult } from 'mdml-engine/stats/tests'
+ * import { testResult } from 'omai-engine/stats/tests'
  * testResult({ test: 'example', statistic: 2, pValue: 0.05 }).alternative // => 'two-sided'
  * testResult({ test: 'example', statistic: Number.NaN, pValue: 0.05 }).status // => 'undefined'
  * ```
@@ -124,7 +124,7 @@ export function testResult(input: TestResultInput): TestResult {
  * @returns The estimate.
  * @example
  * ```ts
- * import { intervalEstimate } from 'mdml-engine/stats/tests'
+ * import { intervalEstimate } from 'omai-engine/stats/tests'
  * intervalEstimate(1, [0, 2], 0.95).interval // => [0, 2]
  * ```
  */
@@ -155,7 +155,7 @@ export function intervalEstimate(
  * @returns The bounds.
  * @example
  * ```ts
- * import { waldInterval } from 'mdml-engine/stats/tests'
+ * import { waldInterval } from 'omai-engine/stats/tests'
  * waldInterval(0, 1, 'greater', 0.95)[1] // => Infinity
  * ```
  */
@@ -185,7 +185,7 @@ export function waldInterval(
  * @returns One line.
  * @example
  * ```ts
- * import { formatTest } from 'mdml-engine/stats/tests'
+ * import { formatTest } from 'omai-engine/stats/tests'
  * formatTest({ test: "Student's t test", statistic: 2.5, pValue: 0.0312, df: 10, alternative: 'two-sided' })
  * // => "Student's t test: statistic 2.5 (df 10), p = 0.0312, two-sided"
  * ```
@@ -218,7 +218,7 @@ export function formatTest(result: TestResult, digits = 4): string {
  * @returns True when p < alpha.
  * @example
  * ```ts
- * import { rejects } from 'mdml-engine/stats/tests'
+ * import { rejects } from 'omai-engine/stats/tests'
  * rejects({ test: 't', statistic: 3, pValue: 0.01, alternative: 'two-sided' }) // => true
  * ```
  */
@@ -238,7 +238,7 @@ export type SpreadCenter = 'median' | 'mean'
  * @returns The F statistic and its p-value.
  * @example
  * ```ts
- * import { levene } from 'mdml-engine/stats/tests'
+ * import { levene } from 'omai-engine/stats/tests'
  * levene([[1, 2, 3, 4], [2, 4, 6, 8]]).pValue < 0.5 // => true
  * ```
  */
@@ -278,7 +278,7 @@ export function levene(groups: readonly TensorLike[], options: { readonly center
  * @returns The chi-square statistic and its p-value (df k - 1).
  * @example
  * ```ts
- * import { bartlett } from 'mdml-engine/stats/tests'
+ * import { bartlett } from 'omai-engine/stats/tests'
  * bartlett([[1, 2, 3, 4], [1, 2, 3, 4]]).statistic // => 0
  * ```
  */
@@ -313,7 +313,7 @@ export function bartlett(groups: readonly TensorLike[]): TestResult {
  * @returns The chi-square statistic and its p-value (df k - 1).
  * @example
  * ```ts
- * import { fligner } from 'mdml-engine/stats/tests'
+ * import { fligner } from 'omai-engine/stats/tests'
  * fligner([[1, 2, 3, 4, 5], [1, 3, 5, 7, 9]]).df // => 1
  * ```
  */
@@ -352,7 +352,7 @@ export function fligner(groups: readonly TensorLike[], options: { readonly cente
  * @returns Whether every sample passes and the smallest Shapiro-Wilk p-value.
  * @example
  * ```ts
- * import { checkNormality } from 'mdml-engine/stats/tests'
+ * import { checkNormality } from 'omai-engine/stats/tests'
  * checkNormality([[2.1, 1.9, 2.4, 2.0, 1.7, 2.2]]).normal // => true
  * ```
  */
@@ -380,7 +380,7 @@ export function checkNormality(
  * samples, whose spreads are all 0: `equal` is then true).
  * @example
  * ```ts
- * import { checkEqualVariances } from 'mdml-engine/stats/tests'
+ * import { checkEqualVariances } from 'omai-engine/stats/tests'
  * checkEqualVariances([[1, 2, 3, 4], [2, 3, 4, 5]]).equal // => true
  * ```
  */
@@ -402,7 +402,7 @@ export function checkEqualVariances(
  * @returns Whether the rule holds and the smallest expected count.
  * @example
  * ```ts
- * import { checkExpectedCounts } from 'mdml-engine/stats/tests'
+ * import { checkExpectedCounts } from 'omai-engine/stats/tests'
  * checkExpectedCounts([6, 7, 4.5]).adequate // => false
  * ```
  */
@@ -423,7 +423,7 @@ export function checkExpectedCounts(
  * @returns Both, checked.
  * @example
  * ```ts
- * import { resolveTestOptions } from 'mdml-engine/stats/tests'
+ * import { resolveTestOptions } from 'omai-engine/stats/tests'
  * resolveTestOptions({}) // => { alternative: 'two-sided', level: 0.95 }
  * ```
  */

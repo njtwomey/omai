@@ -5,9 +5,9 @@ from importlib.metadata import version
 from typing import cast
 
 import cvxpy as cp
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray, rng
-from mdml_oracle.optim_helpers import cvx_minimize
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray, rng
+from omai_oracle.optim_helpers import cvx_minimize
 
 REFERENCE: dict[str, str] = {"cvxpy": version("cvxpy")}
 

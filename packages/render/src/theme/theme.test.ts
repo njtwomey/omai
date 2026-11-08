@@ -1,4 +1,4 @@
-import { palettes } from 'mdml-engine/scene'
+import { palettes } from 'omai-engine/scene'
 import { describe, expect, it } from 'vitest'
 import { axisStyle, baseOption, echartsTheme, themeName } from './echarts.ts'
 import {
@@ -135,7 +135,7 @@ describe('format', () => {
 
 describe('echarts theme', () => {
   it('styles both modes from tokens', () => {
-    expect(themeName('light')).toBe('mdml-light')
+    expect(themeName('light')).toBe('omai-light')
     expect(echartsTheme('dark').backgroundColor).toBe('transparent')
     expect(axisStyle('dark', 14).nameTextStyle.fontSize).toBe(14)
     expect(baseOption('light').color).toEqual(tab10)

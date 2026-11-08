@@ -5,7 +5,7 @@
  * one at a time and the algorithm runs the same rules one item per step with a state that serialises.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import { type Key, uniform, uniformStream } from '../random/index.ts'
 import { type Algorithm, channels, stateFromJson, stateToJson } from '../trace/index.ts'
 
@@ -48,15 +48,15 @@ const open01 = (u: number): number => (u === 0 ? 2 ** -53 : u)
  *
  * @param options - `k`, the `key` and the `method`.
  * @returns The sampler.
- * @throws MdmlError with code `value` for `k < 1`.
+ * @throws OmaiError with code `value` for `k < 1`.
  * @concept reservoir-sampling
  * @reference J. S. Vitter, Random sampling with a reservoir (ACM Transactions on Mathematical Software, 1985); K.-H. Li,
  *   Reservoir-sampling algorithms of time complexity O(n(1 + log(N/n))) (1994); P. S. Efraimidis and P. G. Spirakis,
  *   Weighted random sampling with a reservoir (Information Processing Letters, 2006).
  * @example
  * ```ts
- * import { reservoirSampler } from 'mdml-engine/sketches'
- * import { key } from 'mdml-engine/random'
+ * import { reservoirSampler } from 'omai-engine/sketches'
+ * import { key } from 'omai-engine/random'
  * const r = reservoirSampler<number>({ k: 5, key: key(1) })
  * for (let i = 0; i < 1000; i++) r.add(i)
  * [r.sample().length, r.seen] // => [5, 1000]
@@ -66,7 +66,7 @@ export function reservoirSampler<T>(options: ReservoirOptions): ReservoirSampler
   const { k } = options
   const method = options.method ?? 'R'
   if (!(Number.isInteger(k) && k >= 1))
-    throw new MdmlError('value', `reservoirSampler: k must be a positive integer, got ${k}`)
+    throw new OmaiError('value', `reservoirSampler: k must be a positive integer, got ${k}`)
   const next = uniformStream(options.key)
   const items: T[] = []
   const keys: number[] = [] // the weighted rules' priorities
@@ -114,7 +114,7 @@ export function reservoirSampler<T>(options: ReservoirOptions): ReservoirSampler
         }
       } else {
         if (!(weight > 0 && Number.isFinite(weight))) {
-          throw new MdmlError('value', `reservoirSampler.add: weights must be positive and finite, got ${weight}`)
+          throw new OmaiError('value', `reservoirSampler.add: weights must be positive and finite, got ${weight}`)
         }
         if (items.length < k) {
           items.push(item)
@@ -161,12 +161,12 @@ export interface ReservoirSampleOptions extends ReservoirOptions {
  * @param items - The stream.
  * @param options - `k`, `key`, `method` and optional `weights`.
  * @returns The sample and the number of items seen.
- * @throws MdmlError with code `shape` when `weights` and `items` differ in length.
+ * @throws OmaiError with code `shape` when `weights` and `items` differ in length.
  * @concept reservoir-sampling
  * @example
  * ```ts
- * import { reservoirSample } from 'mdml-engine/sketches'
- * import { key } from 'mdml-engine/random'
+ * import { reservoirSample } from 'omai-engine/sketches'
+ * import { key } from 'omai-engine/random'
  * const out = reservoirSample([10, 20, 30, 40, 50], { k: 3, key: key(42) })
  * [out.sample.length, out.seen] // => [3, 5]
  * ```
@@ -176,7 +176,7 @@ export function reservoirSample<T>(
   options: ReservoirSampleOptions,
 ): { readonly sample: readonly T[]; readonly seen: number } {
   if (options.weights !== undefined && options.weights.length !== items.length) {
-    throw new MdmlError('shape', `reservoirSample: ${options.weights.length} weights for ${items.length} items`)
+    throw new OmaiError('shape', `reservoirSample: ${options.weights.length} weights for ${items.length} items`)
   }
   const sampler = reservoirSampler<T>({
     k: options.k,
@@ -221,12 +221,12 @@ export interface ReservoirAlgorithmOptions {
  *
  * @param options - The stream length, `k` and optional weights.
  * @returns The algorithm.
- * @throws MdmlError with code `value` for `k < 1`; `shape` for weights of the wrong length.
+ * @throws OmaiError with code `value` for `k < 1`; `shape` for weights of the wrong length.
  * @concept reservoir-sampling
  * @example
  * ```ts
- * import { reservoirAlgorithm } from 'mdml-engine/sketches'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { reservoirAlgorithm } from 'omai-engine/sketches'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const res = runAlgorithm(reservoirAlgorithm({ length: 100, k: 5 }), { seed: 7, maxSteps: 200 })
  * [res.state.indices.length, res.state.seen] // => [5, 100]
  * ```
@@ -234,9 +234,9 @@ export interface ReservoirAlgorithmOptions {
 export function reservoirAlgorithm(options: ReservoirAlgorithmOptions): Algorithm<ReservoirState> {
   const { length, k, weights } = options
   if (!(Number.isInteger(k) && k >= 1))
-    throw new MdmlError('value', `reservoirAlgorithm: k must be a positive integer, got ${k}`)
+    throw new OmaiError('value', `reservoirAlgorithm: k must be a positive integer, got ${k}`)
   if (weights !== undefined && weights.length !== length) {
-    throw new MdmlError('shape', `reservoirAlgorithm: ${weights.length} weights for ${length} items`)
+    throw new OmaiError('shape', `reservoirAlgorithm: ${weights.length} weights for ${length} items`)
   }
   return {
     name: 'reservoir-sample',
@@ -269,7 +269,7 @@ export function reservoirAlgorithm(options: ReservoirAlgorithmOptions): Algorith
         }
       } else {
         const weight = weights[i] ?? 1
-        if (!(weight > 0)) throw new MdmlError('value', `reservoirAlgorithm: weights must be positive, got ${weight}`)
+        if (!(weight > 0)) throw new OmaiError('value', `reservoirAlgorithm: weights must be positive, got ${weight}`)
         const priority = u ** (1 / weight)
         if (indices.length < k) {
           indices.push(i)

@@ -7,7 +7,7 @@
  * decreases (with a zero covariance prior). With one component per state it is the Gaussian Baum-Welch exactly.
  */
 
-import { MdmlError, maxOf } from '../../base/index.ts'
+import { maxOf, OmaiError } from '../../base/index.ts'
 import { initialCentres } from '../../cluster/index.ts'
 import { foldIn, type Key, normal } from '../../random/index.ts'
 import { toFlat } from '../../tensor/index.ts'
@@ -94,7 +94,7 @@ function logsumexp(xs: readonly number[]): number {
  * @concept hidden-markov-models
  * @example
  * ```ts
- * import { learning } from 'mdml-engine/pgm'
+ * import { learning } from 'omai-engine/pgm'
  * const p = { start: [1], transition: [[1]], weights: [[0.5, 0.5]], means: [[[-1], [1]]], covariances: [[[[1]], [[1]]]] }
  * Math.round(learning.gmmHmmLogLikelihood(p, [[0]]) * 1e6) / 1e6 // => -1.418939
  * ```
@@ -135,8 +135,8 @@ export type GmmHmmState = {
  * @concept hidden-markov-models
  * @example
  * ```ts
- * import { learning } from 'mdml-engine/pgm'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { learning } from 'omai-engine/pgm'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const p = { start: [0.5, 0.5], transition: [[0.5, 0.5], [0.5, 0.5]], weights: [[1], [1]], means: [[[0]], [[3]]], covariances: [[[[1]]], [[[1]]]] }
  * runAlgorithm(learning.gmmHmmAlgorithm([[0, 0.2, 3, 3.1]], p), { maxSteps: 3 }).steps // => 3
  * ```
@@ -245,12 +245,12 @@ export function gmmHmmAlgorithm(
  * @param options - The number of states and of mixture components.
  * @param key - The key for the seeds and the jitter.
  * @returns The parameters.
- * @throws MdmlError with code `value` for no data or fewer than one state or component.
+ * @throws OmaiError with code `value` for no data or fewer than one state or component.
  * @concept hidden-markov-models
  * @example
  * ```ts
- * import { learning } from 'mdml-engine/pgm'
- * import { key } from 'mdml-engine/random'
+ * import { learning } from 'omai-engine/pgm'
+ * import { key } from 'omai-engine/random'
  * const p = learning.initialGmmHmmParameters([[0, 0.1, 5, 5.1, -4, -4.1]], { states: 2, mixtures: 2 }, key(0))
  * p.weights // => [[0.5, 0.5], [0.5, 0.5]]
  * ```
@@ -262,9 +262,9 @@ export function initialGmmHmmParameters(
 ): GmmHmmParameters {
   const { states: K, mixtures: M } = options
   if (!(Number.isInteger(K) && K >= 1 && Number.isInteger(M) && M >= 1))
-    throw new MdmlError('value', 'initialGmmHmmParameters: states and mixtures must be positive integers')
+    throw new OmaiError('value', 'initialGmmHmmParameters: states and mixtures must be positive integers')
   const rows = sequences.flat().map(vec)
-  if (rows.length === 0) throw new MdmlError('value', 'initialGmmHmmParameters: no observations')
+  if (rows.length === 0) throw new OmaiError('value', 'initialGmmHmmParameters: no observations')
   const D = rows[0]?.length ?? 1
   const centres = initialCentres(rows, Math.min(K, rows.length), 'k-means++', key).sort(
     (a, b) => (a[0] ?? 0) - (b[0] ?? 0),

@@ -6,7 +6,7 @@
  * and `maxFlowMinCost` in `flows.ts` are these run to the end.
  */
 
-import { type Json, kahanSum, MdmlError } from '../base/index.ts'
+import { type Json, kahanSum, OmaiError } from '../base/index.ts'
 import { dict, knobOption, type OptionTable, optionTable } from '../space/index.ts'
 import {
   type Algorithm,
@@ -184,13 +184,13 @@ function blockingPath(r: ResidualNetwork, s: number, t: number, st: Mutable<MaxF
  * @param sink - The sink.
  * @param options - Capacities (default the weights) and `method` (default `'dinic'`).
  * @returns The algorithm.
- * @throws MdmlError with code `value` for a negative capacity or source equal to sink, and when stepping meets an
+ * @throws OmaiError with code `value` for a negative capacity or source equal to sink, and when stepping meets an
  *   unbounded flow.
  * @concept network-flows
  * @example
  * ```ts
- * import { digraph, maxFlowAlgorithm } from 'mdml-engine/graph'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { digraph, maxFlowAlgorithm } from 'omai-engine/graph'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const g = digraph([[0, 1, 3], [0, 2, 2], [1, 2, 1], [1, 3, 2], [2, 3, 3]])
  * const run = runAlgorithm(maxFlowAlgorithm(g, 0, 3, { method: 'edmonds-karp' }), { maxSteps: 20 })
  * [run.state.value, run.state.augmentations] // => [5, 3]
@@ -204,7 +204,7 @@ export function maxFlowAlgorithm(
 ): Algorithm<MaxFlowState, FlowPath> {
   const s = nodeIndex(g, source)
   const t = nodeIndex(g, sink)
-  if (s === t) throw new MdmlError('value', 'maxFlow: source and sink are the same node')
+  if (s === t) throw new OmaiError('value', 'maxFlow: source and sink are the same node')
   const method = options.method ?? 'dinic'
   const net = residualNetwork(g, options.capacity)
   const view = (residual: Float64Array): ResidualNetwork => ({ ...net, residual })
@@ -302,7 +302,7 @@ export interface MaxFlowProperties {
  * @concept network-flows
  * @example
  * ```ts
- * import { digraph, maxFlowMethods } from 'mdml-engine/graph'
+ * import { digraph, maxFlowMethods } from 'omai-engine/graph'
  * maxFlowMethods.make({ kind: 'edmonds-karp' })(digraph([[0, 1, 1]]), 0, 1).name // => 'graph/max-flow-edmonds-karp'
  * ```
  */
@@ -363,13 +363,13 @@ export interface MinCostFlowState {
  * @param demand - The demand of each node (negative for supply); the demands sum to zero.
  * @param options - Capacities (default the weights) and the `cost` per edge (default 1).
  * @returns The algorithm.
- * @throws MdmlError with code `value` for an undirected graph, unbalanced demands, an unbounded negative-cost edge
+ * @throws OmaiError with code `value` for an undirected graph, unbalanced demands, an unbounded negative-cost edge
  *   or, while stepping, infeasible demands.
  * @concept network-flows
  * @example
  * ```ts
- * import { digraph, minCostFlowAlgorithm } from 'mdml-engine/graph'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { digraph, minCostFlowAlgorithm } from 'omai-engine/graph'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const g = digraph([[0, 1], [0, 2], [1, 3], [2, 3]])
  * const alg = minCostFlowAlgorithm(g, [-4, 0, 0, 4], { capacity: [4, 2, 3, 5], cost: [2, 1, 1, 3] })
  * const run = runAlgorithm(alg, { maxSteps: 20 })
@@ -381,10 +381,10 @@ export function minCostFlowAlgorithm(
   demand: ArrayLike<number>,
   options: MinCostFlowAlgorithmOptions = {},
 ): Algorithm<MinCostFlowState, FlowPath> {
-  if (!g.directed) throw new MdmlError('value', 'minCostFlow: the graph must be directed')
-  if (demand.length !== g.n) throw new MdmlError('value', 'minCostFlow: give one demand per node')
+  if (!g.directed) throw new OmaiError('value', 'minCostFlow: the graph must be directed')
+  if (demand.length !== g.n) throw new OmaiError('value', 'minCostFlow: give one demand per node')
   const total = kahanSum(demand)
-  if (Math.abs(total) > 1e-9) throw new MdmlError('value', 'minCostFlow: the demands do not sum to zero')
+  if (Math.abs(total) > 1e-9) throw new OmaiError('value', 'minCostFlow: the demands do not sum to zero')
   const m = g.edges.length
   const cost = Float64Array.from({ length: m }, (_, e) => options.cost?.[e] ?? 1)
   // Arcs 0 .. 2m - 1 as in the residual network, then 2m + 2v (virtual source to v) and 2m + 2v + 1 back, and
@@ -411,11 +411,11 @@ export function minCostFlowAlgorithm(
   }
   for (const [e, edge] of g.edges.entries()) {
     const cap = options.capacity === undefined ? edge.weight : (options.capacity[e] ?? 0)
-    if (!(cap >= 0)) throw new MdmlError('value', `minCostFlow: edge ${e} has a negative or missing capacity`)
+    if (!(cap >= 0)) throw new OmaiError('value', `minCostFlow: edge ${e} has a negative or missing capacity`)
     const c = cost[e] ?? 0
     if (c < 0) {
       // Saturate: the reverse arc then has positive cost, and the endpoints' balances change.
-      if (cap === Number.POSITIVE_INFINITY) throw new MdmlError('value', 'minCostFlow: unbounded negative cost')
+      if (cap === Number.POSITIVE_INFINITY) throw new OmaiError('value', 'minCostFlow: unbounded negative cost')
       addArc(2 * e + 1, edge.target, edge.source, cap, -c)
       saturated[e] = cap
       base += c * cap
@@ -472,7 +472,7 @@ export function minCostFlowAlgorithm(
           }
         }
       }
-      if (dist[T] === Number.POSITIVE_INFINITY) throw new MdmlError('value', 'minCostFlow: the demands are infeasible')
+      if (dist[T] === Number.POSITIVE_INFINITY) throw new OmaiError('value', 'minCostFlow: the demands are infeasible')
       for (let v = 0; v < nodes; v++)
         if (dist[v] !== Number.POSITIVE_INFINITY) potential[v] = (potential[v] ?? 0) + (dist[v] ?? 0)
       let push = required - s.routed

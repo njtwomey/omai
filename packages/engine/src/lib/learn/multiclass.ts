@@ -7,7 +7,7 @@
  * how its scores combine.
  */
 
-import { argmaxOf, type Json, MdmlError } from '../base/index.ts'
+import { argmaxOf, type Json, OmaiError } from '../base/index.ts'
 import { foldIn, type Key, permutation, uniform } from '../random/index.ts'
 import { type DictSpace, dict, real } from '../space/index.ts'
 import { type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
@@ -48,7 +48,7 @@ function stageOf(data: LearnData, p: Problem): LearnData {
 /** Shared pieces of the reductions: the classes and codes of the data, and the fitted bases of some parameters. */
 function setup(data: LearnData, who: string): { readonly classes: readonly number[]; readonly codes: Int32Array } {
   const { classes, codes } = encodeLabels(data.y ?? [], who, rowsOf(data.x))
-  if (classes.length < 2) throw new MdmlError('value', `${who}: needs at least two classes`)
+  if (classes.length < 2) throw new OmaiError('value', `${who}: needs at least two classes`)
   return { classes, codes }
 }
 
@@ -126,8 +126,8 @@ export type OneVsRestPlan = { readonly positives: number[] }
  * @index estimator Turn a binary classifier into a multiclass one.
  * @example
  * ```ts
- * import { oneVsRest, linearDiscriminant } from 'mdml-engine/learn'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { oneVsRest, linearDiscriminant } from 'omai-engine/learn'
+ * import { toFlat } from 'omai-engine/tensor'
  * const x = [[0], [1], [5], [6], [10], [11]]
  * const f = oneVsRest(linearDiscriminant()).fit({ x, y: [0, 0, 1, 1, 2, 2] })
  * toFlat(f.predict([[0.5], [5.5], [10.5]])) // => [0, 1, 2]
@@ -225,8 +225,8 @@ export type OneVsOnePlan = { readonly pairs: [number, number][] }
  * @returns The estimator.
  * @example
  * ```ts
- * import { oneVsOne, linearDiscriminant } from 'mdml-engine/learn'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { oneVsOne, linearDiscriminant } from 'omai-engine/learn'
+ * import { toFlat } from 'omai-engine/tensor'
  * const x = [[0], [1], [5], [6], [10], [11]]
  * const f = oneVsOne(linearDiscriminant()).fit({ x, y: [0, 0, 1, 1, 2, 2] })
  * toFlat(f.predict([[0.5], [5.5], [10.5]])) // => [0, 1, 2]
@@ -338,8 +338,8 @@ function randomCodeBook(k: number, size: number, key: Key): number[][] {
  * JAIR 2 (1995).
  * @example
  * ```ts
- * import { outputCode, linearDiscriminant } from 'mdml-engine/learn'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { outputCode, linearDiscriminant } from 'omai-engine/learn'
+ * import { toFlat } from 'omai-engine/tensor'
  * const x = [[0], [1], [5], [6], [10], [11]]
  * const book = [[0, 0, 1], [0, 1, 0], [1, 0, 0]]
  * const f = outputCode(linearDiscriminant(), { codeBook: book }).fit({ x, y: [0, 0, 1, 1, 2, 2] })
@@ -452,8 +452,8 @@ const foldDepth = (k: Key, depth: number, side: number): Key => foldIn(k, depth 
  * @reference E. Frank and S. Kramer, Ensembles of nested dichotomies for multi-class problems, ICML (2004).
  * @example
  * ```ts
- * import { nestedDichotomies, naiveBayes } from 'mdml-engine/learn'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { nestedDichotomies, naiveBayes } from 'omai-engine/learn'
+ * import { toFlat } from 'omai-engine/tensor'
  * const x = [[0], [1], [5], [6], [10], [11]]
  * const f = nestedDichotomies(naiveBayes()).fit({ x, y: [0, 0, 1, 1, 2, 2] })
  * toFlat(f.predict([[0.5], [5.5], [10.5]])) // => [0, 1, 2]
@@ -504,7 +504,7 @@ export function nestedDichotomies(
         const k = p.classes.length
         const d = fits[0]?.nFeaturesIn ?? 0
         if (fits.some((f) => f.predictProba === undefined)) {
-          throw new MdmlError('value', 'nestedDichotomies: the base estimator must give probabilities (predictProba)')
+          throw new OmaiError('value', 'nestedDichotomies: the base estimator must give probabilities (predictProba)')
         }
         const logProba = (x: TensorLike): { readonly n: number; readonly p: Float64Array } => {
           const m = matrixView(x, 'nestedDichotomies')

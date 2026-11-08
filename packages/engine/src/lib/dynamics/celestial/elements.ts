@@ -6,7 +6,7 @@
  * and standard orbit facts (vis-viva, period, escape speed, the area swept).
  */
 
-import { MdmlError, type Vec3 } from '../../base/index.ts'
+import { OmaiError, type Vec3 } from '../../base/index.ts'
 import { conicKind, meanFromTrue, solveKepler, trueFromMean } from './kepler.ts'
 
 /**
@@ -56,10 +56,10 @@ function signedAngle(u: Vec3, v: Vec3, axis: Vec3): number {
  *
  * @param el - The elements.
  * @returns p.
- * @throws MdmlError with code `value` for a parabola without `p`, or a non-positive size.
+ * @throws OmaiError with code `value` for a parabola without `p`, or a non-positive size.
  * @example
  * ```ts
- * import { semiLatusRectum } from 'mdml-engine/dynamics/celestial'
+ * import { semiLatusRectum } from 'omai-engine/dynamics/celestial'
  * semiLatusRectum({ a: 2, e: 0.5, i: 0, raan: 0, argp: 0, nu: 0 }) // => 1.5
  * ```
  */
@@ -67,7 +67,7 @@ export function semiLatusRectum(el: OrbitalElements): number {
   const kind = conicKind(el.e)
   const p = el.p ?? (kind === 'parabolic' ? Number.NaN : el.a * (1 - el.e * el.e))
   if (!(p > 0) || !Number.isFinite(p)) {
-    throw new MdmlError(
+    throw new OmaiError(
       'value',
       kind === 'parabolic' ? 'a parabola needs its semi-latus rectum p' : 'the orbit has no size: check a and e',
     )
@@ -82,23 +82,23 @@ export function semiLatusRectum(el: OrbitalElements): number {
  * @param mu - Gravitational parameter G M of the central body.
  * @param el - The elements.
  * @returns The position and velocity.
- * @throws MdmlError with code `value` for a non-positive mu, a hyperbolic true anomaly beyond the asymptote, or a
+ * @throws OmaiError with code `value` for a non-positive mu, a hyperbolic true anomaly beyond the asymptote, or a
  * parabola without p.
  * @concept orbital-elements
  * @example
  * ```ts
- * import { stateFromElements } from 'mdml-engine/dynamics/celestial'
+ * import { stateFromElements } from 'omai-engine/dynamics/celestial'
  * // A circular orbit of radius 1 about a unit mass, at the node: the speed is 1, along y.
  * const s = stateFromElements(1, { a: 1, e: 0, i: 0, raan: 0, argp: 0, nu: 0 })
  * [s.r[0], s.v[1]] // => [1, 1]
  * ```
  */
 export function stateFromElements(mu: number, el: OrbitalElements): StateVector {
-  if (!(mu > 0)) throw new MdmlError('value', 'stateFromElements: mu must be positive')
+  if (!(mu > 0)) throw new OmaiError('value', 'stateFromElements: mu must be positive')
   const p = semiLatusRectum(el)
   const { e, nu } = el
   const denominator = 1 + e * Math.cos(nu)
-  if (!(denominator > 0)) throw new MdmlError('value', 'stateFromElements: the true anomaly is beyond the asymptote')
+  if (!(denominator > 0)) throw new OmaiError('value', 'stateFromElements: the true anomaly is beyond the asymptote')
   const radius = p / denominator
   const speed = Math.sqrt(mu / p)
   const cn = Math.cos(el.raan)
@@ -131,21 +131,21 @@ const DEGENERATE = 1e-11
  * @param r - Position.
  * @param v - Velocity.
  * @returns The elements, with `p` always set.
- * @throws MdmlError with code `value` for a rectilinear orbit (zero angular momentum) or non-positive mu.
+ * @throws OmaiError with code `value` for a rectilinear orbit (zero angular momentum) or non-positive mu.
  * @concept orbital-elements
  * @example
  * ```ts
- * import { elementsFromState } from 'mdml-engine/dynamics/celestial'
+ * import { elementsFromState } from 'omai-engine/dynamics/celestial'
  * const el = elementsFromState(1, [1, 0, 0], [0, 1.1, 0])
  * [Math.round(el.a * 1e6) / 1e6, Math.round(el.e * 1e6) / 1e6] // => [1.265823, 0.21]
  * ```
  */
 export function elementsFromState(mu: number, r: Vec3, v: Vec3): OrbitalElements {
-  if (!(mu > 0)) throw new MdmlError('value', 'elementsFromState: mu must be positive')
+  if (!(mu > 0)) throw new OmaiError('value', 'elementsFromState: mu must be positive')
   const rn = norm(r)
   const h = cross(r, v)
   const hn = norm(h)
-  if (!(hn > 0)) throw new MdmlError('value', 'elementsFromState: zero angular momentum (a rectilinear orbit)')
+  if (!(hn > 0)) throw new OmaiError('value', 'elementsFromState: zero angular momentum (a rectilinear orbit)')
   const node: Vec3 = [-h[1], h[0], 0]
   const nn = norm(node)
   const rv = dot(r, v)
@@ -174,7 +174,7 @@ export function elementsFromState(mu: number, r: Vec3, v: Vec3): OrbitalElements
  * @returns The rate at which the mean anomaly advances.
  * @example
  * ```ts
- * import { meanMotion } from 'mdml-engine/dynamics/celestial'
+ * import { meanMotion } from 'omai-engine/dynamics/celestial'
  * meanMotion(1, { a: 1, e: 0, i: 0, raan: 0, argp: 0, nu: 0 }) // => 1
  * ```
  */
@@ -195,7 +195,7 @@ export function meanMotion(mu: number, el: OrbitalElements): number {
  * @concept keplers-equation
  * @example
  * ```ts
- * import { propagateKepler } from 'mdml-engine/dynamics/celestial'
+ * import { propagateKepler } from 'omai-engine/dynamics/celestial'
  * // A full period later the planet is where it started.
  * const el = { a: 1, e: 0.3, i: 0.2, raan: 0.1, argp: 0.5, nu: 1 }
  * Math.abs(propagateKepler(1, el, 2 * Math.PI).nu - 1) < 1e-12 // => true
@@ -217,7 +217,7 @@ export function propagateKepler(mu: number, el: OrbitalElements, dt: number): Or
  * @returns The position and velocity.
  * @example
  * ```ts
- * import { keplerState } from 'mdml-engine/dynamics/celestial'
+ * import { keplerState } from 'omai-engine/dynamics/celestial'
  * const s = keplerState(1, { a: 1, e: 0, i: 0, raan: 0, argp: 0, nu: 0 }, Math.PI / 2)
  * [Math.round(s.r[1] * 1e12) / 1e12, Math.round(s.v[0] * 1e12) / 1e12] // => [1, -1]
  * ```
@@ -232,15 +232,15 @@ export function keplerState(mu: number, el: OrbitalElements, dt: number): StateV
  * @param mu - Gravitational parameter.
  * @param a - Semi-major axis (positive).
  * @returns The period.
- * @throws MdmlError with code `value` for a non-positive a (an open orbit has no period).
+ * @throws OmaiError with code `value` for a non-positive a (an open orbit has no period).
  * @example
  * ```ts
- * import { orbitalPeriod } from 'mdml-engine/dynamics/celestial'
+ * import { orbitalPeriod } from 'omai-engine/dynamics/celestial'
  * orbitalPeriod(1, 1) // => 6.283185307179586
  * ```
  */
 export function orbitalPeriod(mu: number, a: number): number {
-  if (!(a > 0)) throw new MdmlError('value', 'orbitalPeriod: only a bound orbit (a > 0) has a period')
+  if (!(a > 0)) throw new OmaiError('value', 'orbitalPeriod: only a bound orbit (a > 0) has a period')
   return 2 * Math.PI * Math.sqrt((a * a * a) / mu)
 }
 
@@ -254,7 +254,7 @@ export function orbitalPeriod(mu: number, a: number): number {
  * @returns The speed.
  * @example
  * ```ts
- * import { visViva } from 'mdml-engine/dynamics/celestial'
+ * import { visViva } from 'omai-engine/dynamics/celestial'
  * visViva(1, 1, 1) // => 1
  * ```
  */
@@ -270,7 +270,7 @@ export function visViva(mu: number, r: number, a: number): number {
  * @returns The speed.
  * @example
  * ```ts
- * import { escapeSpeed } from 'mdml-engine/dynamics/celestial'
+ * import { escapeSpeed } from 'omai-engine/dynamics/celestial'
  * escapeSpeed(1, 2) // => 1
  * ```
  */
@@ -302,7 +302,7 @@ export interface KeplerInvariants {
  * @concept two-body-problem
  * @example
  * ```ts
- * import { keplerInvariants } from 'mdml-engine/dynamics/celestial'
+ * import { keplerInvariants } from 'omai-engine/dynamics/celestial'
  * keplerInvariants(1, [1, 0, 0], [0, 1, 0]).energy // => -0.5
  * ```
  */

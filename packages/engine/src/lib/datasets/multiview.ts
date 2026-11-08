@@ -72,7 +72,7 @@ const norm = (v: Vec3): Vec3 => {
  * @concept novel-view-synthesis
  * @example
  * ```ts
- * import { multiViewScene } from 'mdml-engine/datasets'
+ * import { multiViewScene } from 'omai-engine/datasets'
  * [multiViewScene(3).spheres.length, multiViewScene(3).boxes.length] // => [2, 1]
  * ```
  */
@@ -109,8 +109,8 @@ function traced(scene: MultiViewScene): RayScene {
  * @concept novel-view-synthesis
  * @example
  * ```ts
- * import { renderMultiView, multiViewScene } from 'mdml-engine/datasets'
- * import { pinholeCamera } from 'mdml-engine/graphics'
+ * import { renderMultiView, multiViewScene } from 'omai-engine/datasets'
+ * import { pinholeCamera } from 'omai-engine/graphics'
  * renderMultiView(multiViewScene(3), pinholeCamera({ eye: [0, 0, 4] }), 8, 6).shape // => [6, 8, 3]
  * ```
  */
@@ -157,7 +157,7 @@ export function renderMultiView(scene: MultiViewScene, camera: PinholeCamera, wi
  * @concept novel-view-synthesis
  * @example
  * ```ts
- * import { orbitCamera } from 'mdml-engine/datasets'
+ * import { orbitCamera } from 'omai-engine/datasets'
  * orbitCamera(4, 0, 90, 40, 0.1, 100).eye.map((v) => Math.round(v * 1e9) / 1e9 + 0) // => [0, 0, 4]
  * ```
  */
@@ -192,8 +192,8 @@ export function orbitCamera(
  * @concept novel-view-synthesis
  * @example
  * ```ts
- * import { hemisphereCameras } from 'mdml-engine/datasets'
- * import { key } from 'mdml-engine/random'
+ * import { hemisphereCameras } from 'omai-engine/datasets'
+ * import { key } from 'omai-engine/random'
  * const cams = hemisphereCameras(key(0), 6)
  * [cams.length, cams.every((c) => Math.abs(Math.hypot(...c.eye) - 4) < 1e-9)] // => [6, true]
  * ```
@@ -231,8 +231,8 @@ export function hemisphereCameras(
  * @index dataset Posed multi-view images of a small scene, with held-out views.
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { multiViewImages } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { multiViewImages } from 'omai-engine/datasets'
  * const g = generate(multiViewImages, { knobs: { views: 4, resolution: 8, heldOut: 2 } })
  * [g.data.images.shape, (g.truth.extra?.['cameras'] as unknown[]).length] // => [[4, 8, 8, 3], 4]
  * ```

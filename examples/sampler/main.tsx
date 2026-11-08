@@ -5,11 +5,11 @@
  * and effective sample size) are computed from the same draws.
  */
 
-import { key } from 'mdml-engine/random'
-import { banana, type Chains, nuts, parameterDraws, summary, thin } from 'mdml-engine/sampling'
-import { toFlat } from 'mdml-engine/tensor'
-import { type Run, recorder, tracePolicy } from 'mdml-engine/trace'
-import { cartesian, contours, lines, points } from 'mdml-render/charts'
+import { key } from 'omai-engine/random'
+import { banana, type Chains, nuts, parameterDraws, summary, thin } from 'omai-engine/sampling'
+import { toFlat } from 'omai-engine/tensor'
+import { type Run, recorder, tracePolicy } from 'omai-engine/trace'
+import { cartesian, contours, lines, points } from 'omai-render/charts'
 import type { ExampleModule, Outcome } from '../_shared/contract.ts'
 import { Row } from '../_shared/figure.tsx'
 

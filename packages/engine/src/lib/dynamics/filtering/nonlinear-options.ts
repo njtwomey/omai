@@ -7,7 +7,7 @@
  * and tuners.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { cholesky } from '../../numerics/linalg/index.ts'
 import { foldIn, type Key, normal } from '../../random/index.ts'
 import {
@@ -102,7 +102,7 @@ const asCommon = (a: unknown): Algorithm<NonlinearFilterState, AnyNonlinearFilte
  * @concept unscented-kalman-filter
  * @example
  * ```ts
- * import { filtering } from 'mdml-engine/dynamics'
+ * import { filtering } from 'omai-engine/dynamics'
  * filtering.nonlinearFilters.names // => ['extended', 'unscented', 'unscented-julier', 'ensemble']
  * ```
  */
@@ -215,7 +215,7 @@ const noise = (label: string, def: number): ReturnType<typeof real> =>
  * @concept extended-kalman-filter
  * @example
  * ```ts
- * import { filtering } from 'mdml-engine/dynamics'
+ * import { filtering } from 'omai-engine/dynamics'
  * filtering.stateSpaceModels.make({ kind: 'pendulum', dt: 0.1 }).stateNames // => ['angle', 'rate']
  * ```
  */
@@ -292,12 +292,12 @@ export const stateSpaceModels: OptionTable<StateSpaceModel, StateSpaceProperties
  * @param steps - Number of time steps.
  * @param key - The randomness.
  * @returns The true states `[steps, n]` and the observations `[steps, p]`.
- * @throws MdmlError with code `value` for fewer than one step.
+ * @throws OmaiError with code `value` for fewer than one step.
  * @concept extended-kalman-filter
  * @example
  * ```ts
- * import { filtering } from 'mdml-engine/dynamics'
- * import { key } from 'mdml-engine/random'
+ * import { filtering } from 'omai-engine/dynamics'
+ * import { key } from 'omai-engine/random'
  * const { states, observations } = filtering.simulateStateSpace(filtering.stateSpaceModels.make({ kind: 'range' }), 5, key(0))
  * [states.shape, observations.shape] // => [[5, 2], [5, 1]]
  * ```
@@ -307,7 +307,7 @@ export function simulateStateSpace(
   steps: number,
   key: Key,
 ): { readonly states: Tensor; readonly observations: Tensor } {
-  if (!(steps >= 1)) throw new MdmlError('value', 'simulateStateSpace: need at least one step')
+  if (!(steps >= 1)) throw new OmaiError('value', 'simulateStateSpace: need at least one step')
   const x0 = reshape(asTensor(model.x0), [-1])
   const n = x0.shape[0] ?? 0
   const LQ = cholesky(asTensor(model.Q))

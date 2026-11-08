@@ -6,8 +6,8 @@ parsing by pysat's CNF reader."""
 from importlib.metadata import version
 from itertools import combinations
 
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import rng
 from pysat.examples.musx import MUSX
 from pysat.formula import CNF, WCNF
 from pysat.solvers import Solver

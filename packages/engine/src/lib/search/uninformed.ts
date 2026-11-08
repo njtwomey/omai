@@ -4,7 +4,7 @@
  * animated, with a function form returning the solution path and effort.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { BinaryHeap } from '../graph/index.ts'
 import type { Algorithm } from '../trace/index.ts'
 import { type BestFirstOptions, bestFirstEngine } from './_best-first.ts'
@@ -141,7 +141,7 @@ function queueSearch<S, A>(
  * @concept uninformed-search
  * @example
  * ```ts
- * import { breadthFirstSearchAlgorithm } from 'mdml-engine/search'
+ * import { breadthFirstSearchAlgorithm } from 'omai-engine/search'
  * const p = { initial: 0, actions: () => [1], result: (s: number, a: number) => s + a, isGoal: (s: number) => s === 3 }
  * breadthFirstSearchAlgorithm(p).name // => 'breadth-first'
  * ```
@@ -163,7 +163,7 @@ export function breadthFirstSearchAlgorithm<S, A>(
  * @concept uninformed-search
  * @example
  * ```ts
- * import { breadthFirstSearch } from 'mdml-engine/search'
+ * import { breadthFirstSearch } from 'omai-engine/search'
  * const p = { initial: 1, actions: () => ['double', 'inc'], result: (s: number, a: string) => (a === 'double' ? 2 * s : s + 1), isGoal: (s: number) => s === 10 }
  * breadthFirstSearch(p).actions // => ['double', 'double', 'inc', 'double']
  * ```
@@ -186,7 +186,7 @@ export function breadthFirstSearch<S, A>(
  * @concept uninformed-search
  * @example
  * ```ts
- * import { depthFirstSearchAlgorithm } from 'mdml-engine/search'
+ * import { depthFirstSearchAlgorithm } from 'omai-engine/search'
  * const p = { initial: 0, actions: () => [1], result: (s: number, a: number) => s + a, isGoal: (s: number) => s === 3 }
  * depthFirstSearchAlgorithm(p).name // => 'depth-first'
  * ```
@@ -208,7 +208,7 @@ export function depthFirstSearchAlgorithm<S, A>(
  * @concept uninformed-search
  * @example
  * ```ts
- * import { depthFirstSearch } from 'mdml-engine/search'
+ * import { depthFirstSearch } from 'omai-engine/search'
  * const p = { initial: 0, actions: (s: number) => (s < 3 ? [1, 2] : []), result: (s: number, a: number) => s + a, isGoal: (s: number) => s === 3 }
  * depthFirstSearch(p).actions // => [2, 1]
  * ```
@@ -337,7 +337,7 @@ function depthSearch<S, A>(
 
 function checkLimit(limit: number, name: string): void {
   if (!(Number.isInteger(limit) && limit >= 0)) {
-    throw new MdmlError('value', `${name}: the depth limit ${limit} must be a non-negative integer`)
+    throw new OmaiError('value', `${name}: the depth limit ${limit} must be a non-negative integer`)
   }
 }
 
@@ -349,11 +349,11 @@ function checkLimit(limit: number, name: string): void {
  * @param limit - The depth limit.
  * @param options - Cycle checking along the path, the expansion budget and tree recording.
  * @returns The algorithm.
- * @throws MdmlError with code `value` when the limit is not a non-negative integer.
+ * @throws OmaiError with code `value` when the limit is not a non-negative integer.
  * @concept uninformed-search
  * @example
  * ```ts
- * import { depthLimitedSearchAlgorithm } from 'mdml-engine/search'
+ * import { depthLimitedSearchAlgorithm } from 'omai-engine/search'
  * const p = { initial: 0, actions: () => [1], result: (s: number, a: number) => s + a, isGoal: (s: number) => s === 3 }
  * depthLimitedSearchAlgorithm(p, 2).name // => 'depth-limited'
  * ```
@@ -374,11 +374,11 @@ export function depthLimitedSearchAlgorithm<S, A>(
  * @param limit - The depth limit.
  * @param options - Cycle checking, the expansion budget, tree recording and tracing.
  * @returns The result; `status` is `cutoff` when no goal lies within the limit but the limit pruned some branch.
- * @throws MdmlError with code `value` when the limit is not a non-negative integer.
+ * @throws OmaiError with code `value` when the limit is not a non-negative integer.
  * @concept uninformed-search
  * @example
  * ```ts
- * import { depthLimitedSearch } from 'mdml-engine/search'
+ * import { depthLimitedSearch } from 'omai-engine/search'
  * const p = { initial: 0, actions: () => [1], result: (s: number, a: number) => s + a, isGoal: (s: number) => s === 3 }
  * depthLimitedSearch(p, 2).status // => 'cutoff'
  * depthLimitedSearch(p, 3).depth // => 3
@@ -404,7 +404,7 @@ export function depthLimitedSearch<S, A>(
  * @concept uninformed-search
  * @example
  * ```ts
- * import { iterativeDeepeningSearchAlgorithm } from 'mdml-engine/search'
+ * import { iterativeDeepeningSearchAlgorithm } from 'omai-engine/search'
  * const p = { initial: 0, actions: () => [1], result: (s: number, a: number) => s + a, isGoal: (s: number) => s === 3 }
  * iterativeDeepeningSearchAlgorithm(p).name // => 'iterative-deepening'
  * ```
@@ -427,7 +427,7 @@ export function iterativeDeepeningSearchAlgorithm<S, A>(
  * @concept uninformed-search
  * @example
  * ```ts
- * import { iterativeDeepeningSearch } from 'mdml-engine/search'
+ * import { iterativeDeepeningSearch } from 'omai-engine/search'
  * const p = { initial: 1, actions: () => ['double', 'inc'], result: (s: number, a: string) => (a === 'double' ? 2 * s : s + 1), isGoal: (s: number) => s === 10 }
  * iterativeDeepeningSearch(p).depth // => 4
  * ```
@@ -451,7 +451,7 @@ export function iterativeDeepeningSearch<S, A>(
  * @concept uninformed-search
  * @example
  * ```ts
- * import { uniformCostSearchAlgorithm } from 'mdml-engine/search'
+ * import { uniformCostSearchAlgorithm } from 'omai-engine/search'
  * const p = { initial: 0, actions: () => [1], result: (s: number, a: number) => s + a, isGoal: (s: number) => s === 3 }
  * uniformCostSearchAlgorithm(p).name // => 'uniform-cost'
  * ```
@@ -473,7 +473,7 @@ export function uniformCostSearchAlgorithm<S, A>(
  * @index function Uniform-cost search; BFS, DFS and iterative deepening beside it.
  * @example
  * ```ts
- * import { uniformCostSearch } from 'mdml-engine/search'
+ * import { uniformCostSearch } from 'omai-engine/search'
  * const p = { initial: 1, actions: () => ['double', 'inc'], result: (s: number, a: string) => (a === 'double' ? 2 * s : s + 1), stepCost: (_s: number, a: string) => (a === 'double' ? 3 : 1), isGoal: (s: number) => s === 10 }
  * uniformCostSearch(p).cost // => 7
  * ```
@@ -630,7 +630,7 @@ function bidirectional<S, A>(
  * @concept uninformed-search
  * @example
  * ```ts
- * import { bidirectionalSearchAlgorithm } from 'mdml-engine/search'
+ * import { bidirectionalSearchAlgorithm } from 'omai-engine/search'
  * const p = { initial: 0, goal: 4, actions: () => [-1, 1], result: (s: number, a: number) => s + a, isGoal: (s: number) => s === 4 }
  * bidirectionalSearchAlgorithm(p).name // => 'bidirectional'
  * ```
@@ -652,7 +652,7 @@ export function bidirectionalSearchAlgorithm<S, A>(
  * @concept uninformed-search
  * @example
  * ```ts
- * import { bidirectionalSearch } from 'mdml-engine/search'
+ * import { bidirectionalSearch } from 'omai-engine/search'
  * const p = { initial: 0, goal: 4, actions: () => [-1, 1], result: (s: number, a: number) => s + a, isGoal: (s: number) => s === 4 }
  * bidirectionalSearch(p).path // => [0, 1, 2, 3, 4]
  * ```

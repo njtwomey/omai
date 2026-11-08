@@ -6,7 +6,7 @@
  * crossover.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { brentq } from '../../numerics/roots/index.ts'
 import { evalfr, type Lti, series, stabilityMargins, type TransferFunction, tf } from '../../systems/index.ts'
 import { item } from '../../tensor/index.ts'
@@ -53,19 +53,19 @@ export interface Compensator {
  *
  * @param options - The phase to add, the centre and the gain normalisation.
  * @returns The compensator with its corners.
- * @throws MdmlError with code `value` for a phase outside (0, 90) or a non-positive centre.
+ * @throws OmaiError with code `value` for a phase outside (0, 90) or a non-positive centre.
  * @concept lead-lag-compensation
  * @example
  * ```ts
- * import { leadCompensator } from 'mdml-engine/dynamics/control'
+ * import { leadCompensator } from 'omai-engine/dynamics/control'
  * const c = leadCompensator({ phase: 45, centre: 10 })
  * [Math.round(c.ratio * 1e6) / 1e6, Math.round(c.zero * 1e4) / 1e4, Math.round(c.pole * 1e4) / 1e4] // => [5.828427, 4.1421, 24.1421]
  * ```
  */
 export function leadCompensator(options: LeadOptions): Compensator {
   const { phase, centre } = options
-  if (!(phase > 0 && phase < 90)) throw new MdmlError('value', 'leadCompensator: the phase is between 0 and 90 degrees')
-  if (!(centre > 0)) throw new MdmlError('value', 'leadCompensator: the centre frequency must be positive')
+  if (!(phase > 0 && phase < 90)) throw new OmaiError('value', 'leadCompensator: the phase is between 0 and 90 degrees')
+  if (!(centre > 0)) throw new OmaiError('value', 'leadCompensator: the centre frequency must be positive')
   const s = Math.sin((phase * Math.PI) / 180)
   const alpha = (1 + s) / (1 - s)
   const zero = centre / Math.sqrt(alpha)
@@ -99,19 +99,19 @@ export interface LagOptions {
  *
  * @param options - The zero, the ratio and the gain normalisation.
  * @returns The compensator with its corners.
- * @throws MdmlError with code `value` for a ratio of at most 1 or a non-positive zero.
+ * @throws OmaiError with code `value` for a ratio of at most 1 or a non-positive zero.
  * @concept lead-lag-compensation
  * @example
  * ```ts
- * import { lagCompensator } from 'mdml-engine/dynamics/control'
+ * import { lagCompensator } from 'omai-engine/dynamics/control'
  * const c = lagCompensator({ zero: 0.5, ratio: 10 })
  * [c.pole, Math.round(c.maxPhase * 1e4) / 1e4] // => [0.05, 54.9032]
  * ```
  */
 export function lagCompensator(options: LagOptions): Compensator {
   const { zero, ratio } = options
-  if (!(zero > 0)) throw new MdmlError('value', 'lagCompensator: the zero must be positive')
-  if (!(ratio > 1)) throw new MdmlError('value', 'lagCompensator: the ratio must exceed 1')
+  if (!(zero > 0)) throw new OmaiError('value', 'lagCompensator: the zero must be positive')
+  if (!(ratio > 1)) throw new OmaiError('value', 'lagCompensator: the ratio must exceed 1')
   const pole = zero / ratio
   const k = options.unitGain === 'dc' ? 1 : ratio
   return {
@@ -132,13 +132,13 @@ export function lagCompensator(options: LagOptions): Compensator {
  * @concept lead-lag-compensation
  * @example
  * ```ts
- * import { lagCompensator, leadCompensator, leadLag } from 'mdml-engine/dynamics/control'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { lagCompensator, leadCompensator, leadLag } from 'omai-engine/dynamics/control'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(leadLag(leadCompensator({ phase: 30, centre: 5 }), lagCompensator({ zero: 0.5, ratio: 4 })).den).length // => 3
  * ```
  */
 export function leadLag(...compensators: readonly Compensator[]): TransferFunction {
-  if (compensators.length === 0) throw new MdmlError('value', 'leadLag: give at least one compensator')
+  if (compensators.length === 0) throw new OmaiError('value', 'leadLag: give at least one compensator')
   return series(...compensators.map((c) => c.system))
 }
 
@@ -172,12 +172,12 @@ export interface LeadDesignOptions {
  * @param plant - The open-loop plant (single input, single output) with a gain crossover.
  * @param options - The margin wanted and the allowance.
  * @returns The lead with its centre, the margins before and after, and the loop.
- * @throws MdmlError with code `value` when the plant has no gain crossover, the margin is already met, or no frequency has the needed gain.
+ * @throws OmaiError with code `value` when the plant has no gain crossover, the margin is already met, or no frequency has the needed gain.
  * @concept lead-lag-compensation
  * @example
  * ```ts
- * import { leadDesign } from 'mdml-engine/dynamics/control'
- * import { tf } from 'mdml-engine/systems'
+ * import { leadDesign } from 'omai-engine/dynamics/control'
+ * import { tf } from 'omai-engine/systems'
  * // 4 / (s (s + 2)) has a phase margin of 51.8 degrees; a lead for 65 (the crossover moves right, so the margin lands near it).
  * const d = leadDesign(tf([4], [1, 2, 0]), { phaseMargin: 65 })
  * [Math.round(d.before.pm), d.after.pm > 62 && d.after.pm < 67] // => [52, true]
@@ -186,10 +186,10 @@ export interface LeadDesignOptions {
 export function leadDesign(plant: Lti, options: LeadDesignOptions): LeadDesign {
   const m = stabilityMargins(plant)
   if (!Number.isFinite(m.pm) || !(m.wgc > 0))
-    throw new MdmlError('value', 'leadDesign: the plant has no gain crossover')
+    throw new OmaiError('value', 'leadDesign: the plant has no gain crossover')
   const requested = options.phaseMargin - m.pm + (options.allowance ?? 5)
-  if (!(requested > 0)) throw new MdmlError('value', 'leadDesign: the plant already has the phase margin wanted')
-  if (requested >= 89) throw new MdmlError('value', 'leadDesign: one lead cannot add that much phase; use two')
+  if (!(requested > 0)) throw new OmaiError('value', 'leadDesign: the plant already has the phase margin wanted')
+  if (requested >= 89) throw new OmaiError('value', 'leadDesign: one lead cannot add that much phase; use two')
   const s = Math.sin((requested * Math.PI) / 180)
   const alpha = (1 + s) / (1 - s)
   // ln|P(j w)| = -ln(alpha) / 2, searched in log frequency around the old crossover.
@@ -220,7 +220,7 @@ function bracketRoot(f: (lw: number) => number, lw0: number): number {
       if (f(a) * f(b) <= 0) return 10 ** brentq(f, a, b, { xtol: 1e-12 }).root
     }
   }
-  throw new MdmlError('value', 'leadDesign: the plant never has the gain the lead needs')
+  throw new OmaiError('value', 'leadDesign: the plant never has the gain the lead needs')
 }
 
 /** A lag design: the compensator and what it did to the loop. */
@@ -252,19 +252,19 @@ export interface LagDesignOptions {
  * @param plant - The open-loop plant with a gain crossover.
  * @param options - The ratio and the placement.
  * @returns The lag with its corners, its phase at the crossover, and the margins before and after.
- * @throws MdmlError with code `value` when the plant has no gain crossover.
+ * @throws OmaiError with code `value` when the plant has no gain crossover.
  * @concept lead-lag-compensation
  * @example
  * ```ts
- * import { lagDesign } from 'mdml-engine/dynamics/control'
- * import { tf } from 'mdml-engine/systems'
+ * import { lagDesign } from 'omai-engine/dynamics/control'
+ * import { tf } from 'omai-engine/systems'
  * const d = lagDesign(tf([2], [1, 3, 2, 0]), { ratio: 10 })
  * [d.phaseAtCrossover > -10, Math.abs(d.after.pm - d.before.pm) < 10] // => [true, true]
  * ```
  */
 export function lagDesign(plant: Lti, options: LagDesignOptions): LagDesign {
   const m = stabilityMargins(plant)
-  if (!Number.isFinite(m.pm) || !(m.wgc > 0)) throw new MdmlError('value', 'lagDesign: the plant has no gain crossover')
+  if (!Number.isFinite(m.pm) || !(m.wgc > 0)) throw new OmaiError('value', 'lagDesign: the plant has no gain crossover')
   const lag = lagCompensator({ zero: m.wgc / 10 ** (options.decades ?? 1), ratio: options.ratio })
   const loop = series(lag.system, plant)
   const after = stabilityMargins(loop)

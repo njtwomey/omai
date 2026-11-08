@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isMdmlError } from '../base/index.ts'
+import { isOmaiError } from '../base/index.ts'
 import { gunzip, indexedDbCache, parseCsv, parseNpy, untar, unzip } from './index.ts'
 
 const enc = new TextEncoder()
@@ -448,7 +448,7 @@ describe('archive readers on files that are cut short or corrupt', () => {
     try {
       await f()
     } catch (e) {
-      return isMdmlError(e) ? e.code : `not an MdmlError: ${String(e)}`
+      return isOmaiError(e) ? e.code : `not an OmaiError: ${String(e)}`
     }
     return undefined
   }

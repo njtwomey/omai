@@ -5,7 +5,7 @@
  * bound on regret.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { brentq } from '../numerics/roots/index.ts'
 import type { Env, EnvOracle } from './env.ts'
 
@@ -26,8 +26,8 @@ export type BanditEnv<S, O> = Env<S, O, number> & { readonly oracle: EnvOracle<S
  * @concept bandits
  * @example
  * ```ts
- * import { isBandit } from 'mdml-engine/rl'
- * import { bernoulliBandit, cartPole } from 'mdml-engine/environments'
+ * import { isBandit } from 'omai-engine/rl'
+ * import { bernoulliBandit, cartPole } from 'omai-engine/environments'
  * [isBandit(bernoulliBandit.create()), isBandit(cartPole.create())] // => [true, false]
  * ```
  */
@@ -46,14 +46,14 @@ export function isBandit<S, O>(env: Env<S, O, number>): env is BanditEnv<S, O> {
  * @concept regret
  * @example
  * ```ts
- * import { cumulativeRegret } from 'mdml-engine/rl'
+ * import { cumulativeRegret } from 'omai-engine/rl'
  * const oracle = { expectedReward: (_: null, a: number) => [0.25, 0.75][a] ?? 0, optimalExpectedReward: () => 0.75 }
  * cumulativeRegret(oracle, [null, null, null], [0, 1, 0]) // => [0.5, 0.5, 1]
  * ```
  */
 export function cumulativeRegret<S, A>(oracle: EnvOracle<S, A>, states: readonly S[], actions: readonly A[]): number[] {
   if (states.length < actions.length) {
-    throw new MdmlError('shape', 'cumulativeRegret: need the state before every action')
+    throw new OmaiError('shape', 'cumulativeRegret: need the state before every action')
   }
   const out: number[] = []
   let total = 0
@@ -80,7 +80,7 @@ const clampUnit = (p: number): number => Math.min(Math.max(p, 1e-15), 1 - 1e-15)
  * @concept kl-divergence
  * @example
  * ```ts
- * import { klBernoulli } from 'mdml-engine/rl'
+ * import { klBernoulli } from 'omai-engine/rl'
  * klBernoulli(0.5, 0.5) // => 0
  * ```
  */
@@ -100,7 +100,7 @@ export function klBernoulli(p: number, q: number): number {
  * @concept kl-divergence
  * @example
  * ```ts
- * import { klGaussian } from 'mdml-engine/rl'
+ * import { klGaussian } from 'omai-engine/rl'
  * klGaussian(0, 2) // => 2
  * ```
  */
@@ -117,7 +117,7 @@ export function klGaussian(p: number, q: number, variance = 1): number {
  * @concept kl-divergence
  * @example
  * ```ts
- * import { klPoisson } from 'mdml-engine/rl'
+ * import { klPoisson } from 'omai-engine/rl'
  * klPoisson(2, 2) // => 0
  * ```
  */
@@ -136,7 +136,7 @@ export function klPoisson(p: number, q: number): number {
  * @concept kl-divergence
  * @example
  * ```ts
- * import { klExponential } from 'mdml-engine/rl'
+ * import { klExponential } from 'omai-engine/rl'
  * klExponential(1, 1) // => 0
  * ```
  */
@@ -156,7 +156,7 @@ export function klExponential(p: number, q: number): number {
  * @concept kl-divergence
  * @example
  * ```ts
- * import { klDivergence } from 'mdml-engine/rl'
+ * import { klDivergence } from 'omai-engine/rl'
  * klDivergence('gaussian', 1, 0, 0.5) // => 1
  * ```
  */
@@ -184,7 +184,7 @@ export function klDivergence(family: BanditFamily, p: number, q: number, varianc
  * @concept bandits
  * @example
  * ```ts
- * import { ucb1Index } from 'mdml-engine/rl'
+ * import { ucb1Index } from 'omai-engine/rl'
  * ucb1Index(0.5, 2, Math.E, 2) // => 1.5
  * ```
  */
@@ -205,7 +205,7 @@ export function ucb1Index(mean: number, pulls: number, t: number, c = 2): number
  * @concept bandits
  * @example
  * ```ts
- * import { klUcbIndex } from 'mdml-engine/rl'
+ * import { klUcbIndex } from 'omai-engine/rl'
  * Math.abs(klUcbIndex(0, 1, 100, { family: 'gaussian' }) - Math.sqrt(2 * Math.log(100))) < 1e-9 // => true
  * ```
  */
@@ -251,7 +251,7 @@ export function klUcbIndex(
  * @concept regret
  * @example
  * ```ts
- * import { laiRobbinsBound } from 'mdml-engine/rl'
+ * import { laiRobbinsBound } from 'omai-engine/rl'
  * laiRobbinsBound([0, 1], Math.E, { family: 'gaussian' }) // => 2
  * ```
  */

@@ -3,7 +3,7 @@
  * margins and the dual objective, played over the solver's SMO steps.
  */
 
-import type { MarginRecord } from 'mdml-engine/exposition'
+import type { MarginRecord } from 'omai-engine/exposition'
 import { type ReactElement, useCallback } from 'react'
 import type { Figure } from '../../figure/figure.ts'
 import { type MarginViewOptions, marginFrames } from '../../views/margins.ts'

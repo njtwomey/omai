@@ -5,8 +5,8 @@ import {
   reachabilityRecord,
   sceneSteps,
   simplexRecord,
-} from 'mdml-engine/exposition'
-import { circle, scene } from 'mdml-engine/scene'
+} from 'omai-engine/exposition'
+import { circle, scene } from 'omai-engine/scene'
 import { describe, expect, it } from 'vitest'
 import { complexPlaneLayers, complexPlaneLimits, complexPlaneView } from './complex-plane.ts'
 import { imageGridFigure } from './images.ts'

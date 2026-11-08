@@ -30,7 +30,7 @@ const CLASSIFICATION: ReadonlySet<string> = new Set(['gini', 'entropy', 'log_los
  * @returns `true` for Gini, entropy, log loss and gain ratio.
  * @example
  * ```ts
- * import { isClassificationCriterion } from 'mdml-engine/trees'
+ * import { isClassificationCriterion } from 'omai-engine/trees'
  * isClassificationCriterion('gini') // => true
  * isClassificationCriterion('poisson') // => false
  * ```
@@ -168,8 +168,8 @@ function statsOf(problem: SplitProblem, rows: ArrayLike<number>): Stats {
  * @returns The impurity.
  * @example
  * ```ts
- * import { impurityOf } from 'mdml-engine/trees'
- * import { matrixView } from 'mdml-engine/learn'
+ * import { impurityOf } from 'omai-engine/trees'
+ * import { matrixView } from 'omai-engine/learn'
  * const p = { x: matrixView([[0], [1]], 'demo'), y: Float64Array.of(0, 1), w: Float64Array.of(1, 1), k: 2, criterion: 'gini' as const, minSamplesLeaf: 1, minWeightLeaf: 0, totalWeight: 2 }
  * impurityOf(p, [0, 1]) // => 0.5
  * ```
@@ -187,8 +187,8 @@ export function impurityOf(problem: SplitProblem, rows: ArrayLike<number>): numb
  * @returns The value.
  * @example
  * ```ts
- * import { nodeValue } from 'mdml-engine/trees'
- * import { matrixView } from 'mdml-engine/learn'
+ * import { nodeValue } from 'omai-engine/trees'
+ * import { matrixView } from 'omai-engine/learn'
  * const p = { x: matrixView([[0], [1], [2]], 'demo'), y: Float64Array.of(1, 2, 6), w: Float64Array.of(1, 1, 1), k: 0, criterion: 'squared_error' as const, minSamplesLeaf: 1, minWeightLeaf: 0, totalWeight: 3 }
  * nodeValue(p, [0, 1, 2]) // => [3]
  * ```
@@ -306,8 +306,8 @@ function evaluate(
  * @returns The best split and the candidates evaluated.
  * @example
  * ```ts
- * import { searchSplits } from 'mdml-engine/trees'
- * import { matrixView } from 'mdml-engine/learn'
+ * import { searchSplits } from 'omai-engine/trees'
+ * import { matrixView } from 'omai-engine/learn'
  * const p = { x: matrixView([[0], [1], [2], [3]], 'demo'), y: Float64Array.of(0, 0, 1, 1), w: Float64Array.of(1, 1, 1, 1), k: 2, criterion: 'gini' as const, minSamplesLeaf: 1, minWeightLeaf: 0, totalWeight: 4 }
  * searchSplits(p, Int32Array.of(0, 1, 2, 3), [0], { splitter: 'best' }).best?.threshold // => 1.5
  * ```
@@ -469,8 +469,8 @@ const asArray = (r: ArrayLike<number>): number[] => Array.from(r)
  * @returns The rows each way.
  * @example
  * ```ts
- * import { partitionRows } from 'mdml-engine/trees'
- * import { matrixView } from 'mdml-engine/learn'
+ * import { partitionRows } from 'omai-engine/trees'
+ * import { matrixView } from 'omai-engine/learn'
  * const p = { x: matrixView([[0], [1], [2]], 'demo'), y: Float64Array.of(0, 0, 1), w: Float64Array.of(1, 1, 1), k: 2, criterion: 'gini' as const, minSamplesLeaf: 1, minWeightLeaf: 0, totalWeight: 3 }
  * Array.from(partitionRows(p, Int32Array.of(0, 1, 2), { feature: 0, threshold: 1.5 }, false).leftRows) // => [0, 1]
  * ```

@@ -14,8 +14,8 @@ import optuna
 import scipy
 import sklearn
 import torch
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import rng
 from optuna._gp.acqf import logei  # pyright: ignore[reportPrivateUsage]
 from optuna._gp.gp import GPRegressor, fit_kernel_params  # pyright: ignore[reportPrivateUsage]
 from optuna._gp.prior import default_log_prior  # pyright: ignore[reportPrivateUsage]

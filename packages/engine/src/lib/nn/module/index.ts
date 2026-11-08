@@ -1,5 +1,5 @@
 /**
- * PyTorch-shaped modules, part of `mdml-engine/nn`: the `Module` base class over a functional core, containers, and
+ * PyTorch-shaped modules, part of `omai-engine/nn`: the `Module` base class over a functional core, containers, and
  * the standard layers (linear, convolution, pooling, normalisation, attention, recurrent, transformer, graph, set,
  * vision, regularisation, position encodings, coordinate encodings and SIREN layers) with PyTorch's names and layouts,
  * so state dicts carry over.

@@ -4,7 +4,7 @@
  * for each hull edge, the contour point deepest inside it and its depth.
  */
 
-import { MdmlError, roundHalfEven } from '../base/index.ts'
+import { OmaiError, roundHalfEven } from '../base/index.ts'
 import type { Point2 } from '../numerics/geometry/index.ts'
 import { f32, type PointsLike, pointsOf } from './_image.ts'
 
@@ -97,7 +97,7 @@ function sklansky(
  * @concept convex-hull
  * @example
  * ```ts
- * import { convexHull } from 'mdml-engine/vision'
+ * import { convexHull } from 'omai-engine/vision'
  * convexHull([[0, 0], [4, 0], [2, 1], [4, 4], [0, 4]]) // => [0, 1, 3, 4]
  * ```
  */
@@ -233,11 +233,11 @@ export interface ConvexityDefect {
  * @param contour - Contour points `[n, 2]` (more than three).
  * @param hull - Hull indices into the contour.
  * @returns The defects.
- * @throws MdmlError with code `value` when the hull indices are not monotone (a self-intersecting contour).
+ * @throws OmaiError with code `value` when the hull indices are not monotone (a self-intersecting contour).
  * @concept convexity
  * @example
  * ```ts
- * import { convexHull, convexityDefects } from 'mdml-engine/vision'
+ * import { convexHull, convexityDefects } from 'omai-engine/vision'
  * const c = [[0, 0], [4, 0], [4, 4], [2, 1], [0, 4]]
  * convexityDefects(c, convexHull(c)) // => [{ start: 2, end: 4, farthest: 3, depth: 3 }]
  * ```
@@ -258,13 +258,13 @@ export function convexityDefects(contour: PointsLike, hull: readonly number[]): 
   for (let i = 0; i < h; i++) {
     const hnext = hull[reversed ? h - i - 1 : i] ?? 0
     if (hcurr < 0 || hcurr >= n || hnext < 0 || hnext >= n)
-      throw new MdmlError('value', 'convexityDefects: hull index out of range')
+      throw new OmaiError('value', 'convexityDefects: hull index out of range')
     const p0 = pts[hcurr] as Point2
     const p1 = pts[hnext] as Point2
     // The first edge closes the loop (last index to first), so it runs against the others' direction.
     if (increasing < 0) increasing = hcurr < hnext ? 0 : 1
     else if (increasing !== (hcurr < hnext ? 1 : 0))
-      throw new MdmlError('value', 'convexityDefects: the hull indices are not monotone')
+      throw new OmaiError('value', 'convexityDefects: the hull indices are not monotone')
     const dx0 = p1[0] - p0[0]
     const dy0 = p1[1] - p0[1]
     const scale = dx0 === 0 && dy0 === 0 ? 0 : 1 / Math.sqrt(dx0 * dx0 + dy0 * dy0)

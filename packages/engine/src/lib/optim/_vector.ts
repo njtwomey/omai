@@ -5,7 +5,7 @@
  * routines read a matrix into. Private to the domain, as `numerics/_vector.ts` is.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { asTensor, fromStorage, primalOf, type Tensor, type TensorLike, toFlat, type Value } from '../tensor/index.ts'
 
 /** A dense matrix as row-major data with its dimensions, read once from a tensor-like. */
@@ -21,13 +21,13 @@ export interface DenseMatrix {
  * @param x - A tensor, a typed array of rank 2 or a nested array of depth two; an empty list is no rows.
  * @param name - The caller's name, for error messages.
  * @returns The rows.
- * @throws MdmlError with code `shape` unless `x` has rank 2, and `not-differentiable` for a traced value.
+ * @throws OmaiError with code `shape` unless `x` has rank 2, and `not-differentiable` for a traced value.
  */
 export function rowsOf(x: TensorLike, name: string): number[][] {
   const t = asTensor(x)
   if (t.shape.length === 1 && t.shape[0] === 0) return []
   if (t.shape.length !== 2)
-    throw new MdmlError('shape', `${name}: expected a matrix, got shape [${t.shape.join(', ')}]`)
+    throw new OmaiError('shape', `${name}: expected a matrix, got shape [${t.shape.join(', ')}]`)
   const [n = 0, m = 0] = t.shape
   const flat = toFlat(t)
   return Array.from({ length: n }, (_, i) => flat.slice(i * m, (i + 1) * m))
@@ -38,7 +38,7 @@ export function rowsOf(x: TensorLike, name: string): number[][] {
  *
  * @param x - A tensor or a traced value with a concrete primal.
  * @returns A copy of the elements, row-major.
- * @throws MdmlError with code `not-differentiable` for a trace that holds no concrete value.
+ * @throws OmaiError with code `not-differentiable` for a trace that holds no concrete value.
  */
 export function flatOf(x: Value): Float64Array {
   return Float64Array.from(primalOf(x).data)
@@ -60,7 +60,7 @@ export function vectorOf(a: ArrayLike<number>): Tensor<'float64', [number]> {
  * @param x - A tensor or a nested array of depth two.
  * @param name - The caller's name, for error messages.
  * @returns A copy of the elements, row-major, and the numbers of rows and columns.
- * @throws MdmlError with code `shape` unless `x` has rank 2, and `not-differentiable` for a traced value.
+ * @throws OmaiError with code `shape` unless `x` has rank 2, and `not-differentiable` for a traced value.
  */
 export function matrixOf(
   x: TensorLike,
@@ -68,7 +68,7 @@ export function matrixOf(
 ): { readonly data: Float64Array; readonly rows: number; readonly cols: number } {
   const t = asTensor(x)
   if (t.shape.length !== 2)
-    throw new MdmlError('shape', `${name}: expected a matrix, got shape [${t.shape.join(', ')}]`)
+    throw new OmaiError('shape', `${name}: expected a matrix, got shape [${t.shape.join(', ')}]`)
   const [rows = 0, cols = 0] = t.shape
   return { data: Float64Array.from(toFlat(t)), rows, cols }
 }

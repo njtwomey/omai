@@ -12,9 +12,9 @@
  * - No file-level import cycle inside a domain (value imports only), except the ones written out in the allowlist of
  *   scripts/layers-rules.ts; the cycles found are printed.
  * - examples/ (the programs behind the README) import the packages only through their entry points
- *   (`mdml-engine/<domain>`, `mdml-render/<domain>`: never a file, `src` or `dist`), plus react and node, and each other's
- *   shared helpers by relative path; they never import mdml-meta.
- * - mdml-engine never imports mdml-render or mdml-meta; mdml-render never imports mdml-meta (it draws core contracts
+ *   (`omai-engine/<domain>`, `omai-render/<domain>`: never a file, `src` or `dist`), plus react and node, and each other's
+ *   shared helpers by relative path; they never import omai-meta.
+ * - omai-engine never imports omai-render or omai-meta; omai-render never imports omai-meta (it draws core contracts
  *   and exposition records, never algorithms); headless render code never imports React or render/react.
  * Test files are exempt: tests may use higher layers to check lower ones.
  */
@@ -97,9 +97,9 @@ for (const file of files) {
       }
       continue
     }
-    if (from.package === 'engine' && /^mdml-(render|meta)/.test(spec))
+    if (from.package === 'engine' && /^omai-(render|meta)/.test(spec))
       errors.push(`${where}: engine is the base package`)
-    if (from.package === 'render' && spec.startsWith('mdml-meta')) errors.push(`${where}: render may not import meta`)
+    if (from.package === 'render' && spec.startsWith('omai-meta')) errors.push(`${where}: render may not import meta`)
     if (from.package === 'render' && from.unit !== 'react' && /^(react|react-dom)(\/|$)/.test(spec)) {
       errors.push(`${where}: headless render code may not import React`)
     }
@@ -108,7 +108,7 @@ for (const file of files) {
 
 // examples/: public entry points only.
 const EXAMPLES = join(ROOT, 'examples')
-const ENTRY = /^mdml-(engine|render)\/[a-z][a-z0-9-]*(\/[a-z][a-z0-9-]*)*$/
+const ENTRY = /^omai-(engine|render)\/[a-z][a-z0-9-]*(\/[a-z][a-z0-9-]*)*$/
 const exampleFiles = existsSync(EXAMPLES)
   ? readdirSync(EXAMPLES, { withFileTypes: true })
       .filter((d) => d.isDirectory() && d.name !== 'node_modules')
@@ -121,11 +121,11 @@ for (const file of exampleFiles) {
     if (spec.startsWith('.')) {
       if (!resolve(dirname(file), spec).startsWith(`${EXAMPLES}/`))
         errors.push(`${where}: an example stays inside examples/`)
-    } else if (/^mdml-/.test(spec)) {
+    } else if (/^omai-/.test(spec)) {
       if (!ENTRY.test(spec) || /\/(src|dist|lib)(\/|$)/.test(spec))
-        errors.push(`${where}: examples import entry points (mdml-engine/<domain>), never files`)
+        errors.push(`${where}: examples import entry points (omai-engine/<domain>), never files`)
     } else if (!/^(node:|react(\/|$)|react-dom(\/|$))/.test(spec)) {
-      errors.push(`${where}: examples import mdml-engine, mdml-render, react and node only`)
+      errors.push(`${where}: examples import omai-engine, omai-render, react and node only`)
     }
   }
 }

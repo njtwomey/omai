@@ -1,4 +1,4 @@
-import { transcript } from 'mdml-engine/exposition'
+import { transcript } from 'omai-engine/exposition'
 import { describe, expect, it } from 'vitest'
 import { heaviestTokens, transcriptScene, transcriptTurns } from './transcript.ts'
 

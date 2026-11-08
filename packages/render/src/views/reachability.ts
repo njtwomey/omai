@@ -5,7 +5,7 @@
  */
 
 import type { EChartsOption } from 'echarts'
-import type { Reachability } from 'mdml-engine/exposition'
+import type { Reachability } from 'omai-engine/exposition'
 import { bars } from '../charts/bars.ts'
 import { referenceLines } from '../charts/functions.ts'
 import { cartesian, type Layer } from '../charts/plot.ts'
@@ -20,8 +20,8 @@ import { ariaOf, short, spanOf, type ViewOptions, viewFigure } from './_view.ts'
  * @returns The cluster of each position (0, 1, ...; -1 for noise).
  * @example
  * ```ts
- * import { reachabilityRecord } from 'mdml-engine/exposition'
- * import { reachabilityClusters } from 'mdml-render/views'
+ * import { reachabilityRecord } from 'omai-engine/exposition'
+ * import { reachabilityClusters } from 'omai-render/views'
  * const r = reachabilityRecord({ reach: [null, 0.1, 0.1, 0.9, 0.1, 0.1, 2], threshold: 0.5 })
  * reachabilityClusters(r) // => [0, 0, 0, 1, 1, 1, -1]
  * ```
@@ -59,8 +59,8 @@ export function reachabilityClusters(record: Reachability): number[] {
  * @returns The ECharts option.
  * @example
  * ```ts
- * import { reachabilityRecord } from 'mdml-engine/exposition'
- * import { reachabilityPlot } from 'mdml-render/views'
+ * import { reachabilityRecord } from 'omai-engine/exposition'
+ * import { reachabilityPlot } from 'omai-render/views'
  * reachabilityPlot(reachabilityRecord({ reach: [null, 0.1, 0.9, 0.1], threshold: 0.5 })).series.length // => 3
  * ```
  */

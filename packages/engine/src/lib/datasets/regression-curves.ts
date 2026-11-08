@@ -129,8 +129,8 @@ const constant =
  * @index dataset Noisy sine regression with known function.
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { sineCurve } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { sineCurve } from 'omai-engine/datasets'
  * generate(sineCurve, { knobs: { noise: 0.5 } }).truth.bayesError // => 0.25
  * ```
  */
@@ -163,8 +163,8 @@ export const sineCurve: DatasetGenerator<RegressionData> = {
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { lineData } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { lineData } from 'omai-engine/datasets'
  * generate(lineData, { knobs: { intercept: 1, slope: 2 } }).truth.extra?.['coefficients'] // => [1, 2]
  * ```
  */
@@ -197,8 +197,8 @@ export const lineData: DatasetGenerator<RegressionData> = {
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { stepCurve } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { stepCurve } from 'omai-engine/datasets'
  * generate(stepCurve, { knobs: { steps: 2 } }).truth.extra?.['jumps'] // => [0.3333333333333333, 0.6666666666666666]
  * ```
  */
@@ -229,9 +229,9 @@ export const stepCurve: DatasetGenerator<RegressionData> = {
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { sincCurve } from 'mdml-engine/datasets'
- * import { tensor, toFlat } from 'mdml-engine/tensor'
+ * import { generate } from 'omai-engine/data'
+ * import { sincCurve } from 'omai-engine/datasets'
+ * import { tensor, toFlat } from 'omai-engine/tensor'
  * toFlat(generate(sincCurve).truth.regressionFunction?.(tensor([[0.5]])) ?? tensor([])) // => [0.6366197723675814]
  * ```
  */
@@ -259,8 +259,8 @@ export const sincCurve: DatasetGenerator<RegressionData> = {
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { dopplerCurve } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { dopplerCurve } from 'omai-engine/datasets'
  * generate(dopplerCurve, { knobs: { n: 64, design: 'grid' } }).data.x.shape // => [64, 1]
  * ```
  */
@@ -296,9 +296,9 @@ export const dopplerCurve: DatasetGenerator<RegressionData> = {
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { heteroscedastic } from 'mdml-engine/datasets'
- * import { tensor, toFlat } from 'mdml-engine/tensor'
+ * import { generate } from 'omai-engine/data'
+ * import { heteroscedastic } from 'omai-engine/datasets'
+ * import { tensor, toFlat } from 'omai-engine/tensor'
  * toFlat(generate(heteroscedastic).truth.quantile?.(tensor([[0]]), 0.5) ?? tensor([])) // => [0]
  * ```
  */
@@ -339,8 +339,8 @@ export const heteroscedastic: DatasetGenerator<RegressionData> = {
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { quantileCurves } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { quantileCurves } from 'omai-engine/datasets'
  * generate(quantileCurves, { knobs: { noise: 'laplace' } }).truth.extra?.['noise'] // => 'laplace'
  * ```
  */
@@ -379,8 +379,8 @@ export const quantileCurves: DatasetGenerator<RegressionData> = {
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { piecewiseLinear } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { piecewiseLinear } from 'omai-engine/datasets'
  * (generate(piecewiseLinear, { knobs: { knots: 3 } }).truth.extra?.['knots'] as number[]).length // => 3
  * ```
  */
@@ -435,8 +435,8 @@ const COMPONENTS: readonly { readonly name: string; readonly f: (t: Value) => Va
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { additiveModel } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { additiveModel } from 'omai-engine/datasets'
  * generate(additiveModel, { knobs: { nFeatures: 4, nInformative: 3 } }).truth.relevantFeatures // => [0, 1, 2]
  * ```
  */
@@ -506,8 +506,8 @@ export const additiveModel: DatasetGenerator<RegressionData> = {
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { additiveInteraction } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { additiveInteraction } from 'omai-engine/datasets'
  * generate(additiveInteraction, { knobs: { n: 20 } }).data.x.shape // => [20, 3]
  * ```
  */
@@ -641,8 +641,8 @@ const KAN_FUNCTIONS: Readonly<
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { kanFunctions } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { kanFunctions } from 'omai-engine/datasets'
  * generate(kanFunctions, { knobs: { function: 'multiplication', n: 8 } }).truth.extra?.['minimalWidths'] // => [2, 2, 1]
  * ```
  */

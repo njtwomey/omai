@@ -4,4 +4,4 @@
 
 Typed exposition records: the plain, serialisable data that methods return beside their results so views can explain them, such as paths through a search, grown trees, pipeline stages, iteration steps, tuning trials and RL episodes. Types and small constructors only.
 
-- structure `record.ts` (file): Union of every exposition record a method returns beside its result. `src/lib/exposition/record.ts:1` `mdml-engine/exposition`
+- structure `record.ts` (file): Union of every exposition record a method returns beside its result. `src/lib/exposition/record.ts:1` `omai-engine/exposition`

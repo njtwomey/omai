@@ -1,5 +1,5 @@
-import type { Vec3 } from 'mdml-engine/base'
-import type { PinholeCamera } from 'mdml-engine/graphics'
+import type { Vec3 } from 'omai-engine/base'
+import type { PinholeCamera } from 'omai-engine/graphics'
 import {
   type Camera,
   fitCamera,
@@ -9,8 +9,8 @@ import {
   type Scene3D,
   scene3d,
   segment3d,
-} from 'mdml-engine/scene'
-import { Scene3DView } from 'mdml-render/react'
+} from 'omai-engine/scene'
+import { Scene3DView } from 'omai-render/react'
 import { type ReactNode, useMemo } from 'react'
 
 /** The scene layer is z up and the library's cameras are y up: a point of the scene's world as the layer takes it. */

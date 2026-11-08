@@ -7,7 +7,7 @@
  * viewport marked, buttons (and keys) for zoom and reset, and a pixel inspector reading the value under the cursor.
  */
 
-import type { DecisionSurface } from 'mdml-engine/exposition'
+import type { DecisionSurface } from 'omai-engine/exposition'
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import type { Figure } from '../../figure/figure.ts'
 import {

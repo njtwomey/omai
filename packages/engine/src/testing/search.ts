@@ -1,5 +1,5 @@
 // Textbook search problems for the search tests, mirroring the oracle's port of aima-python
-// (oracle/mdml_oracle/aima_search.py). Not published.
+// (oracle/omai_oracle/aima_search.py). Not published.
 
 import { randint } from '../lib/random/index.ts'
 import {

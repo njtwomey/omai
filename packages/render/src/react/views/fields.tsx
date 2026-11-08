@@ -3,7 +3,7 @@
  * points, in one figure.
  */
 
-import type { VectorField } from 'mdml-engine/exposition'
+import type { VectorField } from 'omai-engine/exposition'
 import { type ReactElement, useCallback } from 'react'
 import type { Figure } from '../../figure/figure.ts'
 import { type VectorFieldViewOptions, vectorFieldView } from '../../views/fields.ts'

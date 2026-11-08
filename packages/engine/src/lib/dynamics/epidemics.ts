@@ -4,7 +4,7 @@
  * distancing) as a traced agent-based algorithm, the simulations that made the rounds in 2020.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import { foldIn, uniform } from '../random/index.ts'
 import { asTensor, toFlat } from '../tensor/index.ts'
 import { type Algorithm, channels } from '../trace/index.ts'
@@ -27,11 +27,11 @@ export interface SeirRates {
  * @param rates - beta, sigma and gamma per day.
  * @param options - The share initially infectious (default 0.01), the days (default 120) and output points (default 241).
  * @returns The days and the four shares, and the basic reproduction number beta / gamma.
- * @throws MdmlError with code `value` for non-positive rates or days.
+ * @throws OmaiError with code `value` for non-positive rates or days.
  * @concept compartmental-models
  * @example
  * ```ts
- * import { seirCurves } from 'mdml-engine/dynamics'
+ * import { seirCurves } from 'omai-engine/dynamics'
  * const c = seirCurves({ beta: 0.5, sigma: 0.2, gamma: 0.1 })
  * [c.r0, Math.round((c.s.at(-1) ?? 0) * 100) / 100] // => [5, 0.01]
  * ```
@@ -52,7 +52,7 @@ export function seirCurves(
   const points = options.points ?? 241
   const i0 = options.infected ?? 0.01
   if (!(beta > 0 && sigma > 0 && gamma > 0 && days > 0 && i0 > 0 && i0 < 1))
-    throw new MdmlError('value', 'seirCurves: rates and days must be positive, the initial share in (0, 1)')
+    throw new OmaiError('value', 'seirCurves: rates and days must be positive, the initial share in (0, 1)')
   const t = Array.from({ length: points }, (_, k) => (days * k) / (points - 1))
   const sol = solveIvp(
     (_t, y) => {
@@ -117,7 +117,7 @@ export const SEIR_STATES: readonly ['susceptible', 'exposed', 'infectious', 'rec
  * @concept compartmental-models
  * @example
  * ```ts
- * import { seirCounts } from 'mdml-engine/dynamics'
+ * import { seirCounts } from 'omai-engine/dynamics'
  * const z = new Float64Array(3)
  * seirCounts({ x: z, y: z, vx: z, vy: z, still: new Uint8Array(3), state: Uint8Array.of(0, 2, 2) }) // => [1, 0, 2, 0]
  * ```
@@ -137,12 +137,12 @@ export function seirCounts(s: EpidemicState): [number, number, number, number] {
  *
  * @param options - The people, room, distancing, reach, transmission, periods and time step.
  * @returns The algorithm.
- * @throws MdmlError with code `value` for bad counts, shares or periods.
+ * @throws OmaiError with code `value` for bad counts, shares or periods.
  * @concept compartmental-models
  * @example
  * ```ts
- * import { epidemicAlgorithm, seirCounts } from 'mdml-engine/dynamics'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { epidemicAlgorithm, seirCounts } from 'omai-engine/dynamics'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const s = runAlgorithm(epidemicAlgorithm({ people: 50 }), { seed: 0, maxSteps: 10 }).state
  * seirCounts(s).reduce((a, b) => a + b, 0) // => 50
  * ```
@@ -164,7 +164,7 @@ export function epidemicAlgorithm(options: EpidemicOptions = {}): Algorithm<Epid
     !(distancing >= 0 && distancing <= 1 && p >= 0 && p <= 1 && radius > 0 && incubation > 0 && infectious > 0) ||
     !(w > 0 && h > 0 && perDay > 0 && speed >= 0)
   )
-    throw new MdmlError('value', 'epidemic: bad people, shares, reach or periods')
+    throw new OmaiError('value', 'epidemic: bad people, shares, reach or periods')
   const toInfectious = 1 - Math.exp(-1 / (incubation * perDay))
   const toRecovered = 1 - Math.exp(-1 / (infectious * perDay))
   return {

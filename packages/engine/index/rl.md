@@ -4,16 +4,16 @@
 
 Reinforcement learning infrastructure, gymnasium style: environment and agent contracts, wrappers, rollouts, replay buffers, returns and advantage estimates, tabular MDPs with exact solutions, and policy evaluation. Named environments and agents are the `environments` and `agents` domains.
 
-- structure `env.ts` (file): The environment contract: pure reset and step functions with keys. `src/lib/rl/env.ts:1` `mdml-engine/rl`
+- structure `env.ts` (file): The environment contract: pure reset and step functions with keys. `src/lib/rl/env.ts:1` `omai-engine/rl`
 
-- function `evaluatePolicy`: Evaluate a policy over episodes. `src/lib/rl/rollout.ts:128` `mdml-engine/rl`
-- function `gae`: Generalised advantage estimation. `src/lib/rl/returns.ts:215` `mdml-engine/rl`
-- function `make`: Make an environment by name with wrappers, like gymnasium.make. `src/lib/rl/gym.ts:74` `mdml-engine/rl`
-- function `trainAgent`: Train an agent in an environment, with periodic evaluation. `src/lib/rl/training.ts:282` `mdml-engine/rl`
-- function `valueIteration`: Exact value iteration on a tabular MDP. `src/lib/rl/mdp.ts:318` `mdml-engine/rl`
+- function `evaluatePolicy`: Evaluate a policy over episodes. `src/lib/rl/rollout.ts:128` `omai-engine/rl`
+- function `gae`: Generalised advantage estimation. `src/lib/rl/returns.ts:215` `omai-engine/rl`
+- function `make`: Make an environment by name with wrappers, like gymnasium.make. `src/lib/rl/gym.ts:74` `omai-engine/rl`
+- function `trainAgent`: Train an agent in an environment, with periodic evaluation. `src/lib/rl/training.ts:282` `omai-engine/rl`
+- function `valueIteration`: Exact value iteration on a tabular MDP. `src/lib/rl/mdp.ts:318` `omai-engine/rl`
 
-- algorithm `trainingAlgorithm`: The RL training loop: act, step, learn, evaluate. `src/lib/rl/training.ts:214` `mdml-engine/rl`
-- algorithm `valueIterationAlgorithm`: Value iteration, one sweep per step. `src/lib/rl/mdp.ts:254` `mdml-engine/rl`
+- algorithm `trainingAlgorithm`: The RL training loop: act, step, learn, evaluate. `src/lib/rl/training.ts:214` `omai-engine/rl`
+- algorithm `valueIterationAlgorithm`: Value iteration, one sweep per step. `src/lib/rl/mdp.ts:254` `omai-engine/rl`
 
-- structure `replayBuffer`: Replay buffer for off-policy learners. `src/lib/rl/buffers.ts:49` `mdml-engine/rl`
-- structure `tabularMdp`: A tabular MDP from transitions and rewards. `src/lib/rl/mdp.ts:63` `mdml-engine/rl`
+- structure `replayBuffer`: Replay buffer for off-policy learners. `src/lib/rl/buffers.ts:49` `omai-engine/rl`
+- structure `tabularMdp`: A tabular MDP from transitions and rewards. `src/lib/rl/mdp.ts:63` `omai-engine/rl`

@@ -30,8 +30,8 @@ const dawsnP = special('dawsn', misc.dawsn, [([x], out) => add(1, mul(mul(x as V
  * @index function Error function family: erf, erfc, erfinv.
  * @example
  * ```ts
- * import { erf } from 'mdml-engine/numerics/special'
- * import { item } from 'mdml-engine/tensor'
+ * import { erf } from 'omai-engine/numerics/special'
+ * import { item } from 'omai-engine/tensor'
  * item(erf(0)) // => 0
  * ```
  */
@@ -46,8 +46,8 @@ export function erf(x: TensorLike): Value {
  * @returns erfc(x), differentiable.
  * @example
  * ```ts
- * import { erfc } from 'mdml-engine/numerics/special'
- * import { item } from 'mdml-engine/tensor'
+ * import { erfc } from 'omai-engine/numerics/special'
+ * import { item } from 'omai-engine/tensor'
  * item(erfc(0)) // => 1
  * ```
  */
@@ -62,8 +62,8 @@ export function erfc(x: TensorLike): Value {
  * @returns erfcx(x), differentiable.
  * @example
  * ```ts
- * import { erfcx } from 'mdml-engine/numerics/special'
- * import { item } from 'mdml-engine/tensor'
+ * import { erfcx } from 'omai-engine/numerics/special'
+ * import { item } from 'omai-engine/tensor'
  * item(erfcx(0)) // => 1
  * ```
  */
@@ -78,8 +78,8 @@ export function erfcx(x: TensorLike): Value {
  * @returns The x with erf(x) = y, differentiable.
  * @example
  * ```ts
- * import { erfinv } from 'mdml-engine/numerics/special'
- * import { item } from 'mdml-engine/tensor'
+ * import { erfinv } from 'omai-engine/numerics/special'
+ * import { item } from 'omai-engine/tensor'
  * item(erfinv(0)) // => 0
  * ```
  */
@@ -94,8 +94,8 @@ export function erfinv(y: TensorLike): Value {
  * @returns The x with erfc(x) = y, differentiable.
  * @example
  * ```ts
- * import { erfcinv } from 'mdml-engine/numerics/special'
- * import { item } from 'mdml-engine/tensor'
+ * import { erfcinv } from 'omai-engine/numerics/special'
+ * import { item } from 'omai-engine/tensor'
  * item(erfcinv(1)) // => 0
  * ```
  */
@@ -110,8 +110,8 @@ export function erfcinv(y: TensorLike): Value {
  * @returns D(x), differentiable (D' = 1 - 2 x D).
  * @example
  * ```ts
- * import { dawsn } from 'mdml-engine/numerics/special'
- * import { item } from 'mdml-engine/tensor'
+ * import { dawsn } from 'omai-engine/numerics/special'
+ * import { item } from 'omai-engine/tensor'
  * item(dawsn(0)) // => 0
  * ```
  */

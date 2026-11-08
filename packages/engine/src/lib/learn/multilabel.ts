@@ -6,7 +6,7 @@
  * estimator on the iterative base that solves one problem per step.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import { type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
 import { Log } from '../trace/index.ts'
 import { matrix, type StagedState, stagedAlgorithm } from './_staged.ts'
@@ -33,8 +33,8 @@ import { matrixView } from './validation.ts'
  * @returns The estimator.
  * @example
  * ```ts
- * import { binaryRelevance, kNeighboursClassifier } from 'mdml-engine/learn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { binaryRelevance, kNeighboursClassifier } from 'omai-engine/learn'
+ * import { toArray } from 'omai-engine/tensor'
  * const x = [[0], [1], [10], [11]]
  * const f = binaryRelevance(kNeighboursClassifier({ nNeighbors: 1 })).fit({ x, y: [[1, 0], [1, 0], [0, 1], [1, 1]] })
  * toArray(f.predict([[0.4], [10.6]])) // => [[1, 0], [1, 1]]
@@ -59,8 +59,8 @@ export function binaryRelevance(
  * Machine Learning 85 (2011).
  * @example
  * ```ts
- * import { classifierChain, kNeighboursClassifier } from 'mdml-engine/learn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { classifierChain, kNeighboursClassifier } from 'omai-engine/learn'
+ * import { toArray } from 'omai-engine/tensor'
  * const x = [[0], [1], [10], [11]]
  * const f = classifierChain(kNeighboursClassifier({ nNeighbors: 1 }), { order: [1, 0] }).fit({ x, y: [[1, 0], [1, 0], [0, 1], [1, 1]] })
  * toArray(f.predict([[0.4], [10.6]])) // => [[1, 0], [1, 1]]
@@ -102,7 +102,7 @@ export interface LabelPowersetVerbs {
 }
 
 function labelMatrix(data: LearnData): ReturnType<typeof matrixView> {
-  if (data.y === undefined) throw new MdmlError('value', 'labelPowerset: needs a label matrix y [n, labels]')
+  if (data.y === undefined) throw new OmaiError('value', 'labelPowerset: needs a label matrix y [n, labels]')
   return matrixView(data.y, 'labelPowerset')
 }
 
@@ -117,8 +117,8 @@ function labelMatrix(data: LearnData): ReturnType<typeof matrixView> {
  * Warehousing and Mining 3 (2007).
  * @example
  * ```ts
- * import { labelPowerset, kNeighboursClassifier } from 'mdml-engine/learn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { labelPowerset, kNeighboursClassifier } from 'omai-engine/learn'
+ * import { toArray } from 'omai-engine/tensor'
  * const x = [[0], [1], [10], [11]]
  * const f = labelPowerset(kNeighboursClassifier({ nNeighbors: 1 })).fit({ x, y: [[1, 0], [1, 0], [0, 1], [1, 1]] })
  * toArray(f.predict([[0.4], [11.6]])) // => [[1, 0], [1, 1]]
@@ -168,7 +168,7 @@ export function labelPowerset(
         const classes = fitted.classes ?? combos.map((_, i) => i)
         const probabilities = (x: TensorLike): { readonly n: number; readonly p: Float64Array } => {
           const pr = (fitted.predictProba as (x: TensorLike) => Tensor | undefined)?.(x)
-          if (pr === undefined) throw new MdmlError('value', 'labelPowerset: the base estimator has no predictProba')
+          if (pr === undefined) throw new OmaiError('value', 'labelPowerset: the base estimator has no predictProba')
           const flat = toFlat(pr)
           const k = pr.shape[1] ?? classes.length
           const out = new Float64Array((flat.length / k) * combos.length)

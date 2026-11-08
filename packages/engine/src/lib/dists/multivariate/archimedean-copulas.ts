@@ -5,7 +5,7 @@
  */
 
 import { jvp } from '../../autodiff/index.ts'
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { fixedQuad } from '../../numerics/quadrature/index.ts'
 import { foldIn, gammaVariates, type Key, uniform as uniformNoise } from '../../random/index.ts'
 import {
@@ -88,7 +88,7 @@ function exponentials(key: Key, rows: number, d: number): Float64Array {
 const rowsOf = (shape: readonly number[]): number => shape.reduce((p, q) => p * q, 1)
 
 function checkDim(dim: number, family: string): void {
-  if (!(Number.isInteger(dim) && dim >= 2)) throw new MdmlError('value', `${family}: dim must be at least 2`)
+  if (!(Number.isInteger(dim) && dim >= 2)) throw new OmaiError('value', `${family}: dim must be at least 2`)
 }
 
 /**
@@ -100,8 +100,8 @@ function checkDim(dim: number, family: string): void {
  * @returns The copula with closed-form density in any dimension and Marshall-Olkin sampling (gamma frailty).
  * @example
  * ```ts
- * import { claytonCopula } from 'mdml-engine/dists'
- * import { item } from 'mdml-engine/tensor'
+ * import { claytonCopula } from 'omai-engine/dists'
+ * import { item } from 'omai-engine/tensor'
  * item(claytonCopula(2).kendallTau()) // => 0.5
  * ```
  */
@@ -142,8 +142,8 @@ export function claytonCopula(theta: TensorLike, dim = 2): Copula {
  *   Marshall-Olkin sampling with a positive stable frailty (Kanter's representation).
  * @example
  * ```ts
- * import { gumbelCopula } from 'mdml-engine/dists'
- * import { item } from 'mdml-engine/tensor'
+ * import { gumbelCopula } from 'omai-engine/dists'
+ * import { item } from 'omai-engine/tensor'
  * item(gumbelCopula(2).kendallTau()) // => 0.5
  * ```
  */
@@ -204,8 +204,8 @@ function frankTau(theta: Value): Value {
  *   sampling by the conditional distribution, higher dimensions by a logarithmic-series frailty.
  * @example
  * ```ts
- * import { frankCopula } from 'mdml-engine/dists'
- * import { item } from 'mdml-engine/tensor'
+ * import { frankCopula } from 'omai-engine/dists'
+ * import { item } from 'omai-engine/tensor'
  * Math.abs(item(frankCopula(3).cdf([1, 0.4])) - 0.4) < 1e-14 // => true
  * ```
  */
@@ -214,9 +214,9 @@ export function frankCopula(theta: TensorLike, dim = 2): Copula {
   const [t] = promoteFloat(theta) as [Value]
   const values = toFlat(primalOf(t))
   if (values.some((v) => v === 0 || !Number.isFinite(v)))
-    throw new MdmlError('value', 'frankCopula: theta must be finite and nonzero')
+    throw new OmaiError('value', 'frankCopula: theta must be finite and nonzero')
   if (dim > 2 && values.some((v) => v < 0))
-    throw new MdmlError('value', 'frankCopula: theta must be positive in more than two dimensions')
+    throw new OmaiError('value', 'frankCopula: theta must be positive in more than two dimensions')
   // e^(-theta u) - 1, accurately.
   const em1 = (u: Value): Value => expm1(mul(neg(t), u))
   const bivariate = (u: Value): Value => {

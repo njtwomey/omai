@@ -1,5 +1,5 @@
 /**
- * mdml-meta, the documentation tooling of mdml-js: the catalogue schema the docs app renders, the extractor
+ * omai-meta, the documentation tooling of omai: the catalogue schema the docs app renders, the extractor
  * that reads TSDoc from the source, the runner that executes `@example` blocks and checks their `// =>` expectations,
  * the concept index and the lazy module map, so the same examples run in Node and in live pages.
  */

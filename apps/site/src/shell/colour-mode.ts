@@ -3,7 +3,7 @@ import { useSyncExternalStore } from 'react'
 /** The site's colour mode. */
 export type ColourMode = 'dark' | 'light'
 
-const KEY = 'mdml-colour-mode'
+const KEY = 'omai-colour-mode'
 const listeners = new Set<() => void>()
 
 function read(): ColourMode {

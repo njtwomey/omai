@@ -5,7 +5,7 @@
  * comparison measures of `cv2.compareHist`, and back-projection of a histogram onto an image.
  */
 
-import { MdmlError, roundHalfEven } from '../base/index.ts'
+import { OmaiError, roundHalfEven } from '../base/index.ts'
 import { extendIndex } from '../numerics/convolution/index.ts'
 import { quantile } from '../stats/index.ts'
 import { fromStorage, type Tensor, type TensorLike } from '../tensor/index.ts'
@@ -32,7 +32,7 @@ interface Binning {
 function binningOf(c: number, options: HistogramOptions, name: string): Binning {
   const channels = [...(options.channels ?? (c === 1 ? [0] : Array.from({ length: c }, (_, k) => k)))]
   if (channels.some((k) => !Number.isInteger(k) || k < 0 || k >= c))
-    throw new MdmlError('value', `${name}: channel out of range`)
+    throw new OmaiError('value', `${name}: channel out of range`)
   const d = channels.length
   const b = options.bins ?? 256
   const bins = typeof b === 'number' ? new Array<number>(d).fill(b) : [...b]
@@ -42,9 +42,9 @@ function binningOf(c: number, options: HistogramOptions, name: string): Binning 
       ? Array.from({ length: d }, () => [r[0] as number, r[1] as number])
       : (r as readonly (readonly [number, number])[]).map((p) => [p[0], p[1]])
   if (bins.length !== d || ranges.length !== d)
-    throw new MdmlError('shape', `${name}: one bin count and range per channel`)
-  if (bins.some((n) => !Number.isInteger(n) || n < 1)) throw new MdmlError('value', `${name}: bins must be positive`)
-  if (ranges.some(([lo, hi]) => !(hi > lo))) throw new MdmlError('value', `${name}: each range needs lo < hi`)
+    throw new OmaiError('shape', `${name}: one bin count and range per channel`)
+  if (bins.some((n) => !Number.isInteger(n) || n < 1)) throw new OmaiError('value', `${name}: bins must be positive`)
+  if (ranges.some(([lo, hi]) => !(hi > lo))) throw new OmaiError('value', `${name}: each range needs lo < hi`)
   return { channels, bins, ranges }
 }
 
@@ -76,8 +76,8 @@ function cellOf(data: Float64Array, offset: number, b: Binning): number {
  * @concept image-histogram
  * @example
  * ```ts
- * import { calcHist } from 'mdml-engine/vision'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { calcHist } from 'omai-engine/vision'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(calcHist([[0, 0.3], [0.6, 1]], { bins: 2 })) // => [2, 2]
  * ```
  */
@@ -85,7 +85,7 @@ export function calcHist(x: TensorLike, options: HistogramOptions = {}): Tensor 
   const r = rasterOf(x, 'calcHist')
   const b = binningOf(r.c, options, 'calcHist')
   const mask = options.mask === undefined ? undefined : greyOf(options.mask, 'calcHist').data
-  if (mask !== undefined && mask.length !== r.h * r.w) throw new MdmlError('shape', 'calcHist: the mask is [H, W]')
+  if (mask !== undefined && mask.length !== r.h * r.w) throw new OmaiError('shape', 'calcHist: the mask is [H, W]')
   const total = b.bins.reduce((p, n) => p * n, 1)
   const counts = new Float64Array(total)
   for (let i = 0; i < r.h * r.w; i++) {
@@ -108,8 +108,8 @@ export function calcHist(x: TensorLike, options: HistogramOptions = {}): Tensor 
  * @concept histogram-backprojection
  * @example
  * ```ts
- * import { calcBackProject } from 'mdml-engine/vision'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { calcBackProject } from 'omai-engine/vision'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(calcBackProject([[0, 0.3], [0.6, 1]], [0.25, 0.75])) // => [[0.25, 0.25], [0.75, 0.75]]
  * ```
  */
@@ -140,8 +140,8 @@ export function calcBackProject(
  * @concept histogram-equalisation
  * @example
  * ```ts
- * import { equalizeHist } from 'mdml-engine/vision'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { equalizeHist } from 'omai-engine/vision'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(equalizeHist([[0.2, 0.2, 0.4, 0.6]])) // => [[0, 0, 0.5019607843137255, 1]]
  * ```
  */
@@ -187,7 +187,7 @@ export interface ClaheOptions {
  * @concept histogram-equalisation
  * @example
  * ```ts
- * import { clahe } from 'mdml-engine/vision'
+ * import { clahe } from 'omai-engine/vision'
  * const x = Array.from({ length: 16 }, (_, i) => Array.from({ length: 16 }, (_, j) => (i + j) / 60))
  * clahe(x, { tileGridSize: [2, 2] }).shape // => [16, 16]
  * ```
@@ -197,7 +197,7 @@ export function clahe(x: TensorLike, options: ClaheOptions = {}): Tensor {
   const { h, w } = r
   const [tilesX, tilesY] = options.tileGridSize ?? [8, 8]
   if (!(Number.isInteger(tilesX) && Number.isInteger(tilesY) && tilesX >= 1 && tilesY >= 1))
-    throw new MdmlError('value', 'clahe: the tile grid must be positive integers')
+    throw new OmaiError('value', 'clahe: the tile grid must be positive integers')
   const src = Int32Array.from(r.data, level)
   // OpenCV pads to whole tiles (by a full extra tile when a side already divides) unless both sides divide.
   const divides = w % tilesX === 0 && h % tilesY === 0
@@ -281,15 +281,15 @@ export function clahe(x: TensorLike, options: ClaheOptions = {}): Tensor {
  * @concept histogram-matching
  * @example
  * ```ts
- * import { matchHistograms } from 'mdml-engine/vision'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { matchHistograms } from 'omai-engine/vision'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(matchHistograms([[0, 1], [2, 3]], [[10, 20], [30, 40]])) // => [[10, 20], [30, 40]]
  * ```
  */
 export function matchHistograms(x: TensorLike, reference: TensorLike): Tensor {
   const src = rasterOf(x, 'matchHistograms')
   const ref = rasterOf(reference, 'matchHistograms')
-  if (src.c !== ref.c) throw new MdmlError('shape', 'matchHistograms: the images differ in channels')
+  if (src.c !== ref.c) throw new OmaiError('shape', 'matchHistograms: the images differ in channels')
   const out = new Float64Array(src.data.length)
   const n = src.h * src.w
   const m = ref.h * ref.w
@@ -342,8 +342,8 @@ export function matchHistograms(x: TensorLike, reference: TensorLike): Tensor {
  * @concept contrast-stretching
  * @example
  * ```ts
- * import { rescaleIntensity } from 'mdml-engine/vision'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { rescaleIntensity } from 'omai-engine/vision'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(rescaleIntensity([0.2, 0.4, 0.6])) // => [0, 0.5, 1]
  * ```
  */
@@ -377,8 +377,8 @@ export function rescaleIntensity(
  * @concept contrast-stretching
  * @example
  * ```ts
- * import { contrastStretch } from 'mdml-engine/vision'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { contrastStretch } from 'omai-engine/vision'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(contrastStretch([0, 1, 2, 3, 4], { low: 25, high: 75 })) // => [0, 0, 0.5, 1, 1]
  * ```
  */
@@ -405,8 +405,8 @@ export type NormType = 'minmax' | 'l1' | 'l2' | 'inf'
  * @concept normalisation
  * @example
  * ```ts
- * import { normalize } from 'mdml-engine/vision'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { normalize } from 'omai-engine/vision'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(normalize([3, 4])) // => [0.6, 0.8]
  * toArray(normalize([1, 2, 3], { normType: 'minmax' })) // => [0, 0.5, 1]
  * ```
@@ -467,7 +467,7 @@ export type HistogramComparison =
  * @concept histogram-comparison
  * @example
  * ```ts
- * import { compareHist } from 'mdml-engine/vision'
+ * import { compareHist } from 'omai-engine/vision'
  * compareHist([1, 2, 3], [1, 2, 3], 'correlation') // => 1
  * compareHist([1, 0], [0, 1], 'bhattacharyya') // => 1
  * ```
@@ -475,7 +475,7 @@ export type HistogramComparison =
 export function compareHist(h1: TensorLike, h2: TensorLike, method: HistogramComparison): number {
   const a = valuesOf(h1).data
   const b = valuesOf(h2).data
-  if (a.length !== b.length) throw new MdmlError('shape', 'compareHist: histograms differ in size')
+  if (a.length !== b.length) throw new OmaiError('shape', 'compareHist: histograms differ in size')
   const n = a.length
   let result = 0
   let s1 = 0
@@ -512,7 +512,7 @@ export function compareHist(h1: TensorLike, h2: TensorLike, method: HistogramCom
         if (Math.abs(p) > Number.EPSILON) result += p * Math.log(p / (Math.abs(q) <= Number.EPSILON ? 1e-10 : q))
         break
       default:
-        throw new MdmlError('value', `compareHist: unknown method ${String(method)}`)
+        throw new OmaiError('value', `compareHist: unknown method ${String(method)}`)
     }
   }
   if (method === 'chi-square-alt') return 2 * result

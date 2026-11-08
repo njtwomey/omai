@@ -7,8 +7,8 @@
  * decision surfaces sit side by side, and what differs is how each got there.
  */
 
-import { type DecisionSurface, decisionSurface } from 'mdml-engine/exposition'
-import { classificationLosses, penalties } from 'mdml-engine/losses'
+import { type DecisionSurface, decisionSurface } from 'omai-engine/exposition'
+import { classificationLosses, penalties } from 'omai-engine/losses'
 import {
   type GradientPath,
   gradientContract,
@@ -18,10 +18,10 @@ import {
   smoothSolvers,
   solverContract,
   solverDefaults,
-} from 'mdml-engine/optim'
-import { type DictSpace, dict, union } from 'mdml-engine/space'
-import { add, asTensor, matmul, type TensorLike, tensor, toFlat, type Value } from 'mdml-engine/tensor'
-import { type Config, defineMethod, derived, Log, type Method, scalar, tensor as tensorSource } from 'mdml-engine/trace'
+} from 'omai-engine/optim'
+import { type DictSpace, dict, union } from 'omai-engine/space'
+import { add, asTensor, matmul, type TensorLike, tensor, toFlat, type Value } from 'omai-engine/tensor'
+import { type Config, defineMethod, derived, Log, type Method, scalar, tensor as tensorSource } from 'omai-engine/trace'
 
 /** The paths of the linear classifier: the solver's, and the model's own. */
 export type LinearClassifierPath =

@@ -5,9 +5,9 @@ from typing import cast
 
 import control as ct
 import numpy as np
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray, rng
-from mdml_oracle.lti import feedback, parts, ss, stable_system, tf
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray, rng
+from omai_oracle.lti import feedback, parts, ss, stable_system, tf
 
 REFERENCE: dict[str, str] = {"control": ct.__version__}
 

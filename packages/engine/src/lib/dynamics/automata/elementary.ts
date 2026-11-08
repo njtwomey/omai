@@ -6,7 +6,7 @@
  * random bit stream in its centre column), rule 110 (universal) and rule 184 (traffic) are the famous ones.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { foldIn, key as makeKey } from '../../random/index.ts'
 import {
   type Algorithm,
@@ -50,7 +50,7 @@ export type ElementaryPath = 'automaton/row' | 'automaton/density' | 'automaton/
 
 function checkRule(name: string, rule: number): void {
   if (!(Number.isInteger(rule) && rule >= 0 && rule <= 255))
-    throw new MdmlError('value', `${name}: the rule must be an integer in 0..255, got ${rule}`)
+    throw new OmaiError('value', `${name}: the rule must be an integer in 0..255, got ${rule}`)
 }
 
 /**
@@ -59,11 +59,11 @@ function checkRule(name: string, rule: number): void {
  *
  * @param rule - The rule number, 0 to 255.
  * @returns Eight entries, each 0 or 1.
- * @throws MdmlError with code `value` for a rule outside 0..255.
+ * @throws OmaiError with code `value` for a rule outside 0..255.
  * @concept elementary-cellular-automata
  * @example
  * ```ts
- * import { automata } from 'mdml-engine/dynamics'
+ * import { automata } from 'omai-engine/dynamics'
  * Array.from(automata.ruleTable(30)) // => [0, 1, 1, 1, 1, 0, 0, 0]
  * ```
  */
@@ -81,11 +81,11 @@ export function ruleTable(rule: number): Uint8Array {
  * @param rule - The rule number, 0 to 255.
  * @param boundary - The ends of the row (default periodic).
  * @returns The next row.
- * @throws MdmlError with code `value` for a rule outside 0..255.
+ * @throws OmaiError with code `value` for a rule outside 0..255.
  * @concept elementary-cellular-automata
  * @example
  * ```ts
- * import { automata } from 'mdml-engine/dynamics'
+ * import { automata } from 'omai-engine/dynamics'
  * Array.from(automata.elementaryStep(Uint8Array.of(0, 0, 1, 0, 0), 90)) // => [0, 1, 0, 1, 0]
  * ```
  */
@@ -109,11 +109,11 @@ export function elementaryStep(row: Uint8Array, rule: number, boundary: Elementa
  * @param rule - The rule number, 0 to 255.
  * @param generations - How many generations after the first row.
  * @returns A flat `(generations + 1) x (2 generations + 1)` board, row-major, and its width.
- * @throws MdmlError with code `value` for a rule outside 0..255 or a negative generation count.
+ * @throws OmaiError with code `value` for a rule outside 0..255 or a negative generation count.
  * @concept elementary-cellular-automata
  * @example
  * ```ts
- * import { automata } from 'mdml-engine/dynamics'
+ * import { automata } from 'omai-engine/dynamics'
  * const { board, width } = automata.elementaryBoard(90, 3)
  * Array.from(board.slice(3 * width, 4 * width)) // => [1, 0, 1, 0, 1, 0, 1]
  * ```
@@ -121,7 +121,7 @@ export function elementaryStep(row: Uint8Array, rule: number, boundary: Elementa
 export function elementaryBoard(rule: number, generations: number): { board: Uint8Array; width: number } {
   checkRule('elementaryBoard', rule)
   if (!(Number.isInteger(generations) && generations >= 0))
-    throw new MdmlError('value', `elementaryBoard: generations must be a non-negative integer, got ${generations}`)
+    throw new OmaiError('value', `elementaryBoard: generations must be a non-negative integer, got ${generations}`)
   const width = 2 * generations + 1
   const board = new Uint8Array((generations + 1) * width)
   let row: Uint8Array = new Uint8Array(width)
@@ -141,7 +141,7 @@ export function elementaryBoard(rule: number, generations: number): { board: Uin
  * @concept elementary-cellular-automata
  * @example
  * ```ts
- * import { automata } from 'mdml-engine/dynamics'
+ * import { automata } from 'omai-engine/dynamics'
  * [automata.mirrorRule(30), automata.mirrorRule(110), automata.mirrorRule(90)] // => [86, 124, 90]
  * ```
  */
@@ -161,7 +161,7 @@ export function mirrorRule(rule: number): number {
  * @concept elementary-cellular-automata
  * @example
  * ```ts
- * import { automata } from 'mdml-engine/dynamics'
+ * import { automata } from 'omai-engine/dynamics'
  * [automata.complementRule(30), automata.complementRule(110), automata.complementRule(0)] // => [135, 137, 255]
  * ```
  */
@@ -181,7 +181,7 @@ export function complementRule(rule: number): number {
  * @concept elementary-cellular-automata
  * @example
  * ```ts
- * import { automata } from 'mdml-engine/dynamics'
+ * import { automata } from 'omai-engine/dynamics'
  * [0, 1, 2, 3, 4, 7, 8].map(automata.rule90Cells) // => [1, 2, 2, 4, 2, 8, 2]
  * ```
  */
@@ -213,11 +213,11 @@ function isShifted(a: Uint8Array, b: Uint8Array): boolean {
  * @param rule - The rule number.
  * @param seed - The seed of the random ring (default 0), so the answer is reproducible.
  * @returns The class, 1 to 4.
- * @throws MdmlError with code `value` for a rule outside 0..255.
+ * @throws OmaiError with code `value` for a rule outside 0..255.
  * @concept elementary-cellular-automata
  * @example
  * ```ts
- * import { automata } from 'mdml-engine/dynamics'
+ * import { automata } from 'omai-engine/dynamics'
  * [0, 204, 30, 110].map((r) => automata.wolframClass(r)) // => [1, 2, 3, 4]
  * ```
  */
@@ -254,7 +254,7 @@ function ruleIcon(rule: number): { neighbourhood: number[]; becomes: number }[] 
  * @returns The contract.
  * @example
  * ```ts
- * import { automata } from 'mdml-engine/dynamics'
+ * import { automata } from 'omai-engine/dynamics'
  * Object.keys(automata.elementaryContract(30)) // => ['automaton/row', 'automaton/density', 'automaton/entropy', 'rule/icon']
  * ```
  */
@@ -284,7 +284,7 @@ function density(row: Uint8Array): number {
  * @concept elementary-cellular-automata
  * @example
  * ```ts
- * import { automata } from 'mdml-engine/dynamics'
+ * import { automata } from 'omai-engine/dynamics'
  * [automata.bitEntropy(0), automata.bitEntropy(0.5), automata.bitEntropy(1)] // => [0, 1, 0]
  * ```
  */
@@ -300,12 +300,12 @@ export function bitEntropy(p: number): number {
  *
  * @param options - The rule, width, start, density and boundary.
  * @returns The algorithm.
- * @throws MdmlError with code `value` for a rule outside 0..255, a width below 1 or a density outside [0, 1].
+ * @throws OmaiError with code `value` for a rule outside 0..255, a width below 1 or a density outside [0, 1].
  * @concept elementary-cellular-automata
  * @example
  * ```ts
- * import { automata } from 'mdml-engine/dynamics'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { automata } from 'omai-engine/dynamics'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const run = runAlgorithm(automata.elementaryAutomaton({ rule: 90, width: 9 }), { seed: 0, maxSteps: 3 })
  * Array.from(run.state.row) // => [0, 1, 0, 1, 0, 1, 0, 1, 0]
  * ```
@@ -320,7 +320,7 @@ export function elementaryAutomaton(options: ElementaryOptions = {}): Algorithm<
   positiveInt('elementaryAutomaton', 'width', width)
   unit('elementaryAutomaton', 'density', p)
   if (Array.isArray(start) && start.length !== width)
-    throw new MdmlError('shape', 'elementaryAutomaton: an explicit start must have `width` cells')
+    throw new OmaiError('shape', 'elementaryAutomaton: an explicit start must have `width` cells')
   return {
     name: 'dynamics/automata/elementary',
     config: { rule, width, boundary, start: typeof start === 'string' ? start : 'explicit', density: p },

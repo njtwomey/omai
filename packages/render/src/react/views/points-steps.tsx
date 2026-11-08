@@ -4,8 +4,8 @@
  * and with the trail of older points fading when asked.
  */
 
-import type { PointsSteps } from 'mdml-engine/exposition'
-import { fitCamera, camera as makeCamera } from 'mdml-engine/scene'
+import type { PointsSteps } from 'omai-engine/exposition'
+import { fitCamera, camera as makeCamera } from 'omai-engine/scene'
 import { type ReactElement, useCallback, useMemo, useState } from 'react'
 import type { Figure } from '../../figure/figure.ts'
 import { sequentialRamp } from '../../theme/palettes.ts'

@@ -4,7 +4,7 @@
  * maximin security strategy in a general finite game.
  */
 
-import { MdmlError, maxOf, minOf } from '../../base/index.ts'
+import { maxOf, minOf, OmaiError } from '../../base/index.ts'
 import { type LinprogOptions, linprog } from '../../optim/index.ts'
 import { asTensor, type TensorLike, toFlat } from '../../tensor/index.ts'
 import { actionRows } from './_profiles.ts'
@@ -46,7 +46,7 @@ function maximinLp(
     },
     options,
   )
-  if (!r.success) throw new MdmlError('convergence', `maximin: the linear program ended with '${r.status}'`)
+  if (!r.success) throw new OmaiError('convergence', `maximin: the linear program ended with '${r.status}'`)
   const z = toFlat(r.x)
   const x = z.slice(0, k).map((p) => Math.max(0, p))
   let s = 0
@@ -62,11 +62,11 @@ function maximinLp(
  * @param matrix - The row player's payoffs, m x n (the column player gets the negation).
  * @param options - Options for the linear programs.
  * @returns Optimal strategies, the value and the duality gap.
- * @throws MdmlError with code `shape` for an empty or non-matrix input.
+ * @throws OmaiError with code `shape` for an empty or non-matrix input.
  * @concept minimax-theorem
  * @example
  * ```ts
- * import { solveZeroSum } from 'mdml-engine/games'
+ * import { solveZeroSum } from 'omai-engine/games'
  * const r = solveZeroSum([[0, -1, 1], [1, 0, -1], [-1, 1, 0]])
  * [r.row.map((p) => Math.round(p * 1e9) / 1e9), Math.round(r.value * 1e9) / 1e9] // => [[0.333333333, 0.333333333, 0.333333333], 0]
  * ```
@@ -74,7 +74,7 @@ function maximinLp(
 export function solveZeroSum(matrix: TensorLike, options: LinprogOptions = {}): ZeroSumSolution {
   const t = asTensor(matrix)
   if (t.shape.length !== 2 || (t.shape[0] ?? 0) === 0 || (t.shape[1] ?? 0) === 0)
-    throw new MdmlError('shape', 'solveZeroSum: the payoffs must be a non-empty matrix')
+    throw new OmaiError('shape', 'solveZeroSum: the payoffs must be a non-empty matrix')
   const [m, n] = t.shape as [number, number]
   const flat = toFlat(t)
   const a = Array.from({ length: m }, (_, i) => flat.slice(i * n, (i + 1) * n))
@@ -104,17 +104,17 @@ export function solveZeroSum(matrix: TensorLike, options: LinprogOptions = {}): 
  * @param game - A two-player constant-sum game.
  * @param options - Options for the linear programs.
  * @returns The equilibrium (payoffs `[value, constant - value]`).
- * @throws MdmlError with code `value` when the game is not two-player constant-sum.
+ * @throws OmaiError with code `value` when the game is not two-player constant-sum.
  * @concept minimax-theorem
  * @example
  * ```ts
- * import { matchingPennies, zeroSumEquilibrium } from 'mdml-engine/games'
+ * import { matchingPennies, zeroSumEquilibrium } from 'omai-engine/games'
  * zeroSumEquilibrium(matchingPennies()).strategies // => [[0.5, 0.5], [0.5, 0.5]]
  * ```
  */
 export function zeroSumEquilibrium(game: NormalFormGame, options: LinprogOptions = {}): Equilibrium {
   if (game.shape.length !== 2 || !isConstantSum(game, 1e-9))
-    throw new MdmlError('value', `${game.name}: zeroSumEquilibrium needs a two-player constant-sum game`)
+    throw new OmaiError('value', `${game.name}: zeroSumEquilibrium needs a two-player constant-sum game`)
   const [a] = payoffMatrices(game)
   const r = solveZeroSum(a, options)
   const constant = (game.payoffs[0]?.[0] ?? 0) + (game.payoffs[1]?.[0] ?? 0)
@@ -130,11 +130,11 @@ export function zeroSumEquilibrium(game: NormalFormGame, options: LinprogOptions
  * @param player - The player.
  * @param options - Options for the linear program.
  * @returns The strategy and the guaranteed level.
- * @throws MdmlError with code `value` for a missing player.
+ * @throws OmaiError with code `value` for a missing player.
  * @concept minimax-theorem
  * @example
  * ```ts
- * import { battleOfTheSexes, maximin } from 'mdml-engine/games'
+ * import { battleOfTheSexes, maximin } from 'omai-engine/games'
  * const r = maximin(battleOfTheSexes(), 0)
  * [r.strategy.map((p) => Math.round(p * 1e9) / 1e9), Math.round(r.value * 1e9) / 1e9] // => [[0.4, 0.6], 1.2]
  * ```
@@ -145,7 +145,7 @@ export function maximin(
   options: LinprogOptions = {},
 ): { strategy: number[]; value: number } {
   const u = game.payoffs[player]
-  if (u === undefined) throw new MdmlError('value', `${game.name}: no player ${player}`)
+  if (u === undefined) throw new OmaiError('value', `${game.name}: no player ${player}`)
   const r = maximinLp(actionRows(game.shape, u, player), options)
   return { strategy: r.x, value: r.v }
 }

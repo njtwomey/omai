@@ -5,7 +5,7 @@
  * labels are implementation-defined, so it is tested by its invariants rather than against scikit-image.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import { initialCentres, lloydAlgorithm } from '../cluster/index.ts'
 import { type Key, key as makeKey } from '../random/index.ts'
 
@@ -63,8 +63,8 @@ function featuresOf(x: TensorLike, convert: boolean): Raster {
  * @concept superpixels
  * @example
  * ```ts
- * import { slicAlgorithm } from 'mdml-engine/vision'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { slicAlgorithm } from 'omai-engine/vision'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const img = Array.from({ length: 12 }, () => Array.from({ length: 12 }, (_, j) => (j < 6 ? 0.1 : 0.9)))
  * runAlgorithm(slicAlgorithm(img, { nSegments: 4 }), { maxSteps: 5 }).state.centres.length // => 4
  * ```
@@ -224,8 +224,8 @@ function enforceConnectivity(labels: Int32Array, h: number, w: number, minSize: 
  * @concept superpixels
  * @example
  * ```ts
- * import { slic } from 'mdml-engine/vision'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { slic } from 'omai-engine/vision'
+ * import { toFlat } from 'omai-engine/tensor'
  * const img = Array.from({ length: 12 }, () => Array.from({ length: 24 }, (_, j) => (j < 12 ? 0.1 : 0.9)))
  * new Set(toFlat(slic(img, { nSegments: 2 }))).size // => 2
  * ```
@@ -274,13 +274,13 @@ export interface RegionGrowingState {
  * @param seeds - Seed pixels (x, y), one region each.
  * @param options - The largest colour distance to the region mean (default 0.1).
  * @returns The algorithm.
- * @throws MdmlError with code `value` for a seed outside the image.
+ * @throws OmaiError with code `value` for a seed outside the image.
  * @concept region-growing
  * @example
  * ```ts
- * import { regionGrowingAlgorithm, regionLabels } from 'mdml-engine/vision'
- * import { runAlgorithm } from 'mdml-engine/trace'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { regionGrowingAlgorithm, regionLabels } from 'omai-engine/vision'
+ * import { runAlgorithm } from 'omai-engine/trace'
+ * import { toArray } from 'omai-engine/tensor'
  * const alg = regionGrowingAlgorithm([[0.1, 0.12, 0.9], [0.11, 0.1, 0.92]], [[0, 0], [2, 0]])
  * toArray(regionLabels(runAlgorithm(alg, { maxSteps: 50 }).state)) // => [[1, 1, 2], [1, 1, 2]]
  * ```
@@ -338,7 +338,7 @@ export function regionGrowingAlgorithm(
       }
       seeds.forEach(([sx, sy], reg) => {
         if (!(sx >= 0 && sy >= 0 && sx < w && sy < h))
-          throw new MdmlError('value', 'regionGrowing: a seed lies outside')
+          throw new OmaiError('value', 'regionGrowing: a seed lies outside')
         absorb(st, Math.round(sy) * w + Math.round(sx), reg)
       })
       return st
@@ -367,8 +367,8 @@ export function regionGrowingAlgorithm(
  * @concept region-growing
  * @example
  * ```ts
- * import { regionGrowingAlgorithm, regionLabels } from 'mdml-engine/vision'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { regionGrowingAlgorithm, regionLabels } from 'omai-engine/vision'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * regionLabels(runAlgorithm(regionGrowingAlgorithm([[0, 0.9]], [[0, 0]]), { maxSteps: 10 }).state).shape // => [1, 2]
  * ```
  */
@@ -388,8 +388,8 @@ export function regionLabels(state: RegionGrowingState): Tensor {
  * @concept region-growing
  * @example
  * ```ts
- * import { regionGrowing } from 'mdml-engine/vision'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { regionGrowing } from 'omai-engine/vision'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(regionGrowing([[0.1, 0.12, 0.9], [0.11, 0.1, 0.92]], [[0, 0], [2, 0]])) // => [[1, 1, 2], [1, 1, 2]]
  * ```
  */
@@ -414,8 +414,8 @@ export function regionGrowing(
  * @concept mean-shift
  * @example
  * ```ts
- * import { meanShiftSegmentation } from 'mdml-engine/vision'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { meanShiftSegmentation } from 'omai-engine/vision'
+ * import { toFlat } from 'omai-engine/tensor'
  * const img = Array.from({ length: 6 }, () => Array.from({ length: 8 }, (_, j) => (j < 4 ? 0.2 : 0.8)))
  * new Set(toFlat(meanShiftSegmentation(img, { spatialRadius: 2 }).labels)).size // => 2
  * ```
@@ -573,8 +573,8 @@ export const meanShiftSegmentationContract: Contract<MeanShiftSegmentationState,
  * @concept mean-shift
  * @example
  * ```ts
- * import { meanShiftSegmentationAlgorithm } from 'mdml-engine/vision'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { meanShiftSegmentationAlgorithm } from 'omai-engine/vision'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const img = Array.from({ length: 6 }, () => Array.from({ length: 8 }, (_, j) => (j < 4 ? 0.2 : 0.8)))
  * runAlgorithm(meanShiftSegmentationAlgorithm(img, { spatialRadius: 2 }), { maxSteps: 20 }).state.regions // => 2
  * ```
@@ -640,7 +640,7 @@ export function meanShiftSegmentationAlgorithm(
  * @concept colour-quantisation
  * @example
  * ```ts
- * import { kmeansQuantise } from 'mdml-engine/vision'
+ * import { kmeansQuantise } from 'omai-engine/vision'
  * const img = [[[0, 0, 0], [0.1, 0, 0], [1, 1, 1], [0.9, 1, 1]]]
  * kmeansQuantise(img, 2).palette.length // => 2
  * ```
@@ -652,7 +652,7 @@ export function kmeansQuantise(
 ): { readonly image: Tensor; readonly labels: Tensor; readonly palette: number[][] } {
   const r = rasterOf(x, 'kmeansQuantise')
   const n = r.h * r.w
-  if (!(Number.isInteger(k) && k >= 1 && k <= n)) throw new MdmlError('value', 'kmeansQuantise: k must be in 1..pixels')
+  if (!(Number.isInteger(k) && k >= 1 && k <= n)) throw new OmaiError('value', 'kmeansQuantise: k must be in 1..pixels')
   const rows = Array.from({ length: n }, (_, i) => Array.from(r.data.subarray(i * r.c, (i + 1) * r.c)))
   const init = initialCentres(rows, k, 'k-means++', options.key ?? makeKey(0))
   const st = runAlgorithm(lloydAlgorithm(rows, init), { maxSteps: options.maxIter ?? 50 }).state

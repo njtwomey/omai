@@ -4,7 +4,7 @@
  * diagonal, and `balred` (python-control), which drops the weakest states or residualises them to keep the DC gain.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { blockDiag, eigh, eigvals, signm, solve, svd } from '../numerics/linalg/index.ts'
 import {
   add,
@@ -42,12 +42,12 @@ function factor(w: Value): Value {
  *
  * @param sys - A stable system.
  * @returns The values `[n]`.
- * @throws MdmlError with code `value` for an unstable system.
+ * @throws OmaiError with code `value` for an unstable system.
  * @concept balanced-truncation
  * @example
  * ```ts
- * import { hsvd, ss } from 'mdml-engine/systems'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { hsvd, ss } from 'omai-engine/systems'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(hsvd(ss([[-1]], [[2]], [[1]]))).map((v) => Math.round(v * 1e12) / 1e12) // => [1]
  * ```
  */
@@ -75,7 +75,7 @@ function balanceStable(s: StateSpace): BalancedRealization {
   const sv = numbers(hsv)
   const top = sv[0] ?? 0
   if (sv.some((x) => x <= 1e-12 * Math.max(top, 1e-300))) {
-    throw new MdmlError('value', 'balanced realisation: the system is not minimal (a Hankel singular value is zero)')
+    throw new OmaiError('value', 'balanced realisation: the system is not minimal (a Hankel singular value is zero)')
   }
   const inv = reshape(reciprocal(sqrt(hsv)), [1, -1])
   const t = mul(matmul(lc, transpose(vh)), inv)
@@ -94,12 +94,12 @@ function balanceStable(s: StateSpace): BalancedRealization {
  *
  * @param sys - A stable, minimal system.
  * @returns The balanced system, the Hankel singular values and the transformation.
- * @throws MdmlError with code `value` for an unstable or non-minimal system.
+ * @throws OmaiError with code `value` for an unstable or non-minimal system.
  * @concept balanced-truncation
  * @example
  * ```ts
- * import { balancedRealization, ss } from 'mdml-engine/systems'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { balancedRealization, ss } from 'omai-engine/systems'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(balancedRealization(ss([[-1]], [[2]], [[1]])).sys.b) // => [[1.4142135623730951]]
  * ```
  */
@@ -172,11 +172,11 @@ function splitStable(s: StateSpace): { stable: StateSpace; unstable: StateSpace 
  * @param order - The order of the reduced system (at least the number of unstable poles).
  * @param options - The method.
  * @returns The reduced state-space system.
- * @throws MdmlError with code `value` for an order out of range or poles on the stability boundary.
+ * @throws OmaiError with code `value` for an order out of range or poles on the stability boundary.
  * @concept balanced-truncation
  * @example
  * ```ts
- * import { balred, dimensions, ss } from 'mdml-engine/systems'
+ * import { balred, dimensions, ss } from 'omai-engine/systems'
  * dimensions(balred(ss([[-1, 0], [0, -10]], [[1], [1]], [[1, 1]]), 1)).states // => 1
  * ```
  */
@@ -187,7 +187,7 @@ export function balred(sys: Lti, order: number, options: BalredOptions = {}): St
   const nu = unstable.a.shape[0] ?? 0
   const r = order - nu
   if (!Number.isInteger(order) || r < 0 || order > n) {
-    throw new MdmlError('value', `balred: the order must be an integer from ${nu} (unstable poles) to ${n}`)
+    throw new OmaiError('value', `balred: the order must be an integer from ${nu} (unstable poles) to ${n}`)
   }
   const ns = stable.a.shape[0] ?? 0
   let reduced: StateSpace

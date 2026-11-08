@@ -1,5 +1,5 @@
 // Samples as point sets, digamma of counts and neighbour counting, shared by the estimators. Not exported.
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { nextAfter } from '../numerics/approximation/index.ts'
 import type { SpatialTree } from '../numerics/spatial/index.ts'
 import { digamma } from '../numerics/special/index.ts'
@@ -16,14 +16,14 @@ export interface Points {
 export function points(x: TensorLike, name: string): Points {
   const v = float(x)
   if (v.shape.length !== 1 && v.shape.length !== 2)
-    throw new MdmlError('shape', `${name}: samples must be [n] or [n, d]`)
+    throw new OmaiError('shape', `${name}: samples must be [n] or [n, d]`)
   const n = v.shape[0] ?? 0
   return { data: Float64Array.from(toFlat(v)), n, d: v.shape.length === 1 ? 1 : (v.shape[1] ?? 0) }
 }
 
 export function concat(...parts: readonly Points[]): Points {
   const n = parts[0]?.n ?? 0
-  if (parts.some((p) => p.n !== n)) throw new MdmlError('shape', 'estimators: samples differ in number')
+  if (parts.some((p) => p.n !== n)) throw new OmaiError('shape', 'estimators: samples differ in number')
   const d = parts.reduce((s, p) => s + p.d, 0)
   const data = new Float64Array(n * d)
   for (let i = 0; i < n; i++) {
@@ -63,5 +63,5 @@ export function countWithin(tree: SpatialTree, p: Points, radii: ArrayLike<numbe
 
 export function checkK(k: number, n: number, name: string): void {
   if (!Number.isInteger(k) || k < 1 || k >= n)
-    throw new MdmlError('value', `${name}: k must be an integer in [1, n - 1], got ${k} with n = ${n}`)
+    throw new OmaiError('value', `${name}: k must be an integer in [1, n - 1], got ${k} with n = ${n}`)
 }

@@ -7,7 +7,7 @@
  * `root-options.ts` is the table that selects one by name.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import {
   type Algorithm,
   type Contract,
@@ -111,8 +111,8 @@ const sameSign = (a: number, b: number): boolean => a !== 0 && b !== 0 && Math.s
 
 function checkBracket(a: number, b: number, fa: number, fb: number, name: string): void {
   // An infinite end point has no midpoint: bisect, brentq and toms748 used to run 100 steps on NaN and report no root.
-  if (!Number.isFinite(a) || !Number.isFinite(b)) throw new MdmlError('value', `${name}: the bracket must be finite`)
-  if (sameSign(fa, fb)) throw new MdmlError('value', `${name}: f(a) and f(b) must have different signs`)
+  if (!Number.isFinite(a) || !Number.isFinite(b)) throw new OmaiError('value', `${name}: the bracket must be finite`)
+  if (sameSign(fa, fb)) throw new OmaiError('value', `${name}: f(a) and f(b) must have different signs`)
 }
 
 /**
@@ -129,7 +129,7 @@ function evaluator(
     history,
     call: (x) => {
       const fx = f(x)
-      if (name !== undefined && Number.isNaN(fx)) throw new MdmlError('value', `${name}: f(${x}) is NaN`)
+      if (name !== undefined && Number.isNaN(fx)) throw new OmaiError('value', `${name}: f(${x}) is NaN`)
       history.push({ x, fx })
       return fx
     },
@@ -220,8 +220,8 @@ function assemble(
  * @returns The result.
  * @example
  * ```ts
- * import { bisectAlgorithm, rootResultOf } from 'mdml-engine/numerics/roots'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { bisectAlgorithm, rootResultOf } from 'omai-engine/numerics/roots'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const s = runAlgorithm(bisectAlgorithm((x) => x - 1, 0, 4), { maxSteps: 100 }).state
  * rootResultOf(s).root // => 1
  * ```
@@ -247,7 +247,7 @@ export function rootResultOf(s: RootState): RootResult {
  * @returns The root with its history.
  * @example
  * ```ts
- * import { bisectAlgorithm, solveRoot } from 'mdml-engine/numerics/roots'
+ * import { bisectAlgorithm, solveRoot } from 'omai-engine/numerics/roots'
  * solveRoot(bisectAlgorithm((x) => x - 1, 0, 4), 100).converged // => true
  * ```
  */
@@ -265,12 +265,12 @@ export function solveRoot(algorithm: Algorithm<RootState, RootPath>, maxIteratio
  * @param b - The other end (f(a) and f(b) of opposite signs).
  * @param options - Tolerances and iteration cap.
  * @returns The algorithm; its state is a {@link RootState}.
- * @throws MdmlError with code `value` when f(a) and f(b) have the same sign, or f returns NaN.
+ * @throws OmaiError with code `value` when f(a) and f(b) have the same sign, or f returns NaN.
  * @concept root-finding
  * @example
  * ```ts
- * import { bisectAlgorithm } from 'mdml-engine/numerics/roots'
- * import { iterate } from 'mdml-engine/trace'
+ * import { bisectAlgorithm } from 'omai-engine/numerics/roots'
+ * import { iterate } from 'omai-engine/trace'
  * Array.from(iterate(bisectAlgorithm((x) => x - 1, 0, 4), { maxSteps: 3 }), (i) => i.state.x) // => [4, 2, 1]
  * ```
  */
@@ -330,12 +330,12 @@ export function bisectAlgorithm(
  * @param b - The other end.
  * @param options - Tolerances and iteration cap.
  * @returns The algorithm; its state is a {@link RootState}.
- * @throws MdmlError with code `value` when f(a) and f(b) have the same sign, or f returns NaN.
+ * @throws OmaiError with code `value` when f(a) and f(b) have the same sign, or f returns NaN.
  * @concept root-finding
  * @example
  * ```ts
- * import { brentqAlgorithm } from 'mdml-engine/numerics/roots'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { brentqAlgorithm } from 'omai-engine/numerics/roots'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * runAlgorithm(brentqAlgorithm(Math.cos, 0, 2), { maxSteps: 100 }).state.flag // => 'converged'
  * ```
  */
@@ -448,11 +448,11 @@ export function brentqAlgorithm(
  * @param b - The other end.
  * @param options - Tolerances and iteration cap.
  * @returns The algorithm; its state is a {@link RootState}.
- * @throws MdmlError with code `value` when f(a) and f(b) have the same sign, or f returns NaN.
+ * @throws OmaiError with code `value` when f(a) and f(b) have the same sign, or f returns NaN.
  * @example
  * ```ts
- * import { ridderAlgorithm } from 'mdml-engine/numerics/roots'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { ridderAlgorithm } from 'omai-engine/numerics/roots'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * runAlgorithm(ridderAlgorithm((x) => x * x - 2, 0, 2), { maxSteps: 100 }).state.flag // => 'converged'
  * ```
  */
@@ -538,11 +538,11 @@ const present = (v: number): number => (Number.isNaN(v) ? 0 : v)
  * @param b0 - The other end.
  * @param options - Tolerances and iteration cap.
  * @returns The algorithm; its state is a {@link RootState}.
- * @throws MdmlError with code `value` when f(a) and f(b) have the same sign, or f returns NaN.
+ * @throws OmaiError with code `value` when f(a) and f(b) have the same sign, or f returns NaN.
  * @example
  * ```ts
- * import { toms748Algorithm } from 'mdml-engine/numerics/roots'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { toms748Algorithm } from 'omai-engine/numerics/roots'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * runAlgorithm(toms748Algorithm((x) => x ** 3 - x - 1, 1, 2), { maxSteps: 100 }).state.flag // => 'converged'
  * ```
  */
@@ -700,8 +700,8 @@ export function toms748Algorithm(
  * @concept root-finding
  * @example
  * ```ts
- * import { newtonAlgorithm } from 'mdml-engine/numerics/roots'
- * import { iterate } from 'mdml-engine/trace'
+ * import { newtonAlgorithm } from 'omai-engine/numerics/roots'
+ * import { iterate } from 'omai-engine/trace'
  * const alg = newtonAlgorithm((x) => x * x - 4, 3, { fprime: (x) => 2 * x })
  * Array.from(iterate(alg, { maxSteps: 2 }), (i) => Math.round(i.state.x * 1e6) / 1e6) // => [3, 2.166667, 2.006410]
  * ```
@@ -807,8 +807,8 @@ export function newtonAlgorithm(
  * @returns The algorithm; its state is a {@link RootState}.
  * @example
  * ```ts
- * import { secantAlgorithm } from 'mdml-engine/numerics/roots'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { secantAlgorithm } from 'omai-engine/numerics/roots'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * runAlgorithm(secantAlgorithm((x) => x - 3, 0, 1), { maxSteps: 50 }).state.x // => 3
  * ```
  */
@@ -832,7 +832,7 @@ export function secantAlgorithm(
  * @returns The algorithm; its state is a {@link RootState}.
  * @example
  * ```ts
- * import { halleyAlgorithm } from 'mdml-engine/numerics/roots'
+ * import { halleyAlgorithm } from 'omai-engine/numerics/roots'
  * halleyAlgorithm((x) => x ** 3 - 8, 3, (x) => 3 * x * x, (x) => 6 * x).name // => 'halley'
  * ```
  */

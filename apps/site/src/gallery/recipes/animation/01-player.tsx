@@ -1,6 +1,6 @@
-import { cartesian, lines, points } from 'mdml-render/charts'
-import { figure } from 'mdml-render/figure'
-import { Chart, FigureFrame, Player, useColourMode, usePlayback } from 'mdml-render/react'
+import { cartesian, lines, points } from 'omai-render/charts'
+import { figure } from 'omai-render/figure'
+import { Chart, FigureFrame, Player, useColourMode, usePlayback } from 'omai-render/react'
 import { type ReactNode, useMemo } from 'react'
 import type { Recipe } from '../../recipe.ts'
 

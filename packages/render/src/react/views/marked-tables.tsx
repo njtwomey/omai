@@ -2,7 +2,7 @@
  * The React view of a marked table: its cells tinted by status and the decision outlined, drawn as a scene.
  */
 
-import type { MarkedTable } from 'mdml-engine/exposition'
+import type { MarkedTable } from 'omai-engine/exposition'
 import { type ReactElement, useMemo } from 'react'
 import { markedTableScene } from '../../views/marked-tables.ts'
 import { SceneFrame } from '../SceneFrame.tsx'

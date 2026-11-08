@@ -39,7 +39,7 @@ export function idTokenizer(vocabSize: number): Tokenizer {
  * @concept language-models
  * @example
  * ```ts
- * import { mambaModel, sequenceLanguageModel } from 'mdml-engine/nn/blocks'
+ * import { mambaModel, sequenceLanguageModel } from 'omai-engine/nn/blocks'
  * sequenceLanguageModel(mambaModel(7, 8, 1, { stateSize: 4 })).logits([[1, 2, 3]]).shape // => [1, 3, 7]
  * ```
  */
@@ -74,7 +74,7 @@ export function sequenceLanguageModel(
  * @concept decoding
  * @example
  * ```ts
- * import { generationAlgorithm, mambaModel } from 'mdml-engine/nn/blocks'
+ * import { generationAlgorithm, mambaModel } from 'omai-engine/nn/blocks'
  * generationAlgorithm(mambaModel(7, 8, 1, { stateSize: 4 }), undefined, [1, 2]).name // => 'decode'
  * ```
  */

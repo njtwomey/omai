@@ -6,8 +6,8 @@ blocked cell)."""
 import numpy as np
 import scipy
 import shapely
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import rng
 from scipy import ndimage as ndi
 from shapely.geometry import LineString, Point, box
 from shapely.ops import unary_union

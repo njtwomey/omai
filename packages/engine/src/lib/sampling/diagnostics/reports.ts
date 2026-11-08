@@ -4,7 +4,7 @@
  * (E-BFMI), counts of divergent transitions and of NUTS trees that hit the depth limit, and an overall verdict.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { fromStorage, type Tensor, type TensorLike } from '../../tensor/index.ts'
 import { type Chains, parameterDraws } from '../chains.ts'
 import { chainOf, drawsOf } from './_draws.ts'
@@ -59,7 +59,7 @@ function pooledMoments(x: Float64Array): { readonly mean: number; readonly sd: n
  * @concept mcmc-diagnostics
  * @example
  * ```ts
- * import { summary } from 'mdml-engine/sampling'
+ * import { summary } from 'omai-engine/sampling'
  * const [row] = summary([[1, 2, 3, 4, 5], [2, 3, 4, 5, 6]])
  * row?.mean // => 3.5
  * ```
@@ -105,8 +105,8 @@ function isChains(x: Chains | TensorLike): x is Chains {
  * @reference M. Betancourt, Diagnosing suboptimal cotangent disintegrations in Hamiltonian Monte Carlo (2016).
  * @example
  * ```ts
- * import { bfmi } from 'mdml-engine/sampling'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { bfmi } from 'omai-engine/sampling'
+ * import { toArray } from 'omai-engine/tensor'
  * // Energies that alternate move freely: E-BFMI well above 1.
  * (toArray(bfmi([[1, -1, 1, -1, 1, -1]])) as number[])[0] > 1 // => true
  * ```
@@ -137,7 +137,7 @@ export interface DivergenceReport {
 
 function statOf(chains: Chains, name: 'divergent' | 'treeDepth' | 'energy', who: string): Tensor<'float64'> {
   const s = chains.stats[name]
-  if (s === undefined) throw new MdmlError('value', `${who}: the chains have no ${name} statistic`)
+  if (s === undefined) throw new OmaiError('value', `${who}: the chains have no ${name} statistic`)
   return s
 }
 
@@ -148,11 +148,11 @@ function statOf(chains: Chains, name: 'divergent' | 'treeDepth' | 'energy', who:
  *
  * @param chains - Chains with a `divergent` statistic (HMC, NUTS, Riemannian HMC).
  * @returns The counts, the percentage and the `[chain, draw]` locations.
- * @throws MdmlError with code `value` when the chains carry no divergence statistic.
+ * @throws OmaiError with code `value` when the chains carry no divergence statistic.
  * @concept divergent-transitions
  * @example
  * ```ts
- * import { chainsFromDraws, divergenceReport } from 'mdml-engine/sampling'
+ * import { chainsFromDraws, divergenceReport } from 'omai-engine/sampling'
  * const c = chainsFromDraws([[1, 2, 3]], { stats: { divergent: [[0, 1, 0]] } })
  * divergenceReport(c).locations // => [[0, 1]]
  * ```
@@ -195,11 +195,11 @@ export interface TreeDepthReport {
  * @param chains - Chains with a `treeDepth` statistic (NUTS).
  * @param maxTreeDepth - The sampler's limit (default 10, as NUTS).
  * @returns The counts, the percentage and the mean depth per chain.
- * @throws MdmlError with code `value` when the chains carry no tree-depth statistic.
+ * @throws OmaiError with code `value` when the chains carry no tree-depth statistic.
  * @concept nuts
  * @example
  * ```ts
- * import { chainsFromDraws, treeDepthReport } from 'mdml-engine/sampling'
+ * import { chainsFromDraws, treeDepthReport } from 'omai-engine/sampling'
  * const c = chainsFromDraws([[1, 2, 3, 4]], { stats: { treeDepth: [[2, 3, 3, 1]] } })
  * treeDepthReport(c, 3).count // => 2
  * ```
@@ -259,7 +259,7 @@ export interface Diagnosis {
  * @concept mcmc-diagnostics
  * @example
  * ```ts
- * import { chainsFromDraws, diagnose } from 'mdml-engine/sampling'
+ * import { chainsFromDraws, diagnose } from 'omai-engine/sampling'
  * // Two chains in different places fail the R-hat check.
  * const c = chainsFromDraws([[0, 0.1, -0.1, 0.05, 0, -0.05], [5, 5.1, 4.9, 5.05, 5, 4.95]])
  * diagnose(c).highRhat // => ['x[0]']

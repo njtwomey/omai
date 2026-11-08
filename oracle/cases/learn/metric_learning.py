@@ -4,8 +4,8 @@ objective reached by a fit from the identity, PCA and LDA starts (scored with th
 
 import numpy as np
 import sklearn
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray, rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray, rng
 from scipy.special import softmax
 from sklearn.metrics import pairwise_distances
 from sklearn.neighbors import NeighborhoodComponentsAnalysis

@@ -6,7 +6,7 @@
  * full matrices throughout, like `gaussian.ts`, whose M-step it builds on.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { type MatrixView, matrixView } from '../learn/index.ts'
 import { slogdet } from '../numerics/linalg/index.ts'
 import { digamma, lgamma } from '../numerics/special/index.ts'
@@ -69,7 +69,7 @@ const isSticks = (c: VariationalPosterior['concentration']): c is [number[], num
  * @returns The priors.
  * @example
  * ```ts
- * import { variationalPriors } from 'mdml-engine/mixture'
+ * import { variationalPriors } from 'omai-engine/mixture'
  * variationalPriors([[0], [2]], 4).covariance // => [[2]]
  * variationalPriors([[0], [2]], 4).weightConcentration // => 0.25
  * ```
@@ -196,7 +196,7 @@ function expectedLogWeights(post: VariationalPosterior): number[] {
  * @returns The weights, summing to one.
  * @example
  * ```ts
- * import { expectedWeights } from 'mdml-engine/mixture'
+ * import { expectedWeights } from 'omai-engine/mixture'
  * const post = { concentration: [1, 3], meanPrecision: [1, 1], means: [[0], [1]], degreesOfFreedom: [1, 1], covariances: [[[1]], [[1]]] }
  * expectedWeights(post) // => [0.25, 0.75]
  * ```
@@ -236,7 +236,7 @@ function weightedLogProb(x: TensorLike, d: number, post: VariationalPosterior): 
  * @returns Responsibilities `[m][k]` and the log normaliser of each row.
  * @example
  * ```ts
- * import { variationalResponsibilities } from 'mdml-engine/mixture'
+ * import { variationalResponsibilities } from 'omai-engine/mixture'
  * const post = { concentration: [5, 5], meanPrecision: [5, 5], means: [[0], [10]], degreesOfFreedom: [6, 6], covariances: [[[1]], [[1]]] }
  * variationalResponsibilities([[0.1]], post).resp[0].map((r) => Math.round(r)) // => [1, 0]
  * ```
@@ -321,8 +321,8 @@ const variationalSchema = (k: number, d: number, n: number): ReturnType<typeof c
  * @returns The algorithm.
  * @example
  * ```ts
- * import { variationalMixtureAlgorithm, variationalPriors } from 'mdml-engine/mixture'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { variationalMixtureAlgorithm, variationalPriors } from 'omai-engine/mixture'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const x = [[0], [0.2], [-0.1], [10], [10.2], [9.9]]
  * const start = [[1, 0, 0], [1, 0, 0], [0, 1, 0], [0, 1, 0], [0, 0, 1], [0, 0, 1]]
  * const alg = variationalMixtureAlgorithm(x, start, variationalPriors(x, 3, { weightConcentration: 0.01 }))
@@ -337,7 +337,7 @@ export function variationalMixtureAlgorithm(
 ): Algorithm<VariationalState> {
   const m = matrixView(x, 'variationalMixture')
   if (start.length !== m.n)
-    throw new MdmlError('shape', `variationalMixture: ${start.length} responsibilities for ${m.n} rows`)
+    throw new OmaiError('shape', `variationalMixture: ${start.length} responsibilities for ${m.n} rows`)
   const prior = options.weightPrior ?? 'dirichlet_process'
   const type = options.covarianceType ?? 'full'
   const reg = options.regCovar ?? 1e-6

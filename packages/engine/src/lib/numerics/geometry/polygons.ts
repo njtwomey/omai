@@ -4,7 +4,7 @@
  * segment intersection, Sutherland-Hodgman clipping, and Minkowski sums of convex polygons.
  */
 
-import { MdmlError, maxOf, type Vec3 } from '../../base/index.ts'
+import { maxOf, OmaiError, type Vec3 } from '../../base/index.ts'
 import {
   add,
   concreteOrThrow,
@@ -33,18 +33,18 @@ import { orient, type Point2, toPoints } from './triangulation.ts'
  *
  * @param points - Points `[n, 2]`.
  * @returns Hull vertex indices.
- * @throws MdmlError with code `value` when a coordinate is not finite.
+ * @throws OmaiError with code `value` when a coordinate is not finite.
  * @concept convex-hull
  * @example
  * ```ts
- * import { convexHull } from 'mdml-engine/numerics/geometry'
+ * import { convexHull } from 'omai-engine/numerics/geometry'
  * convexHull([[0, 0], [1, 1], [2, 0], [1, 0.5], [1, -1]]) // => [4, 2, 1, 0]
  * ```
  */
 export function convexHull(points: TensorLike | readonly Point2[]): number[] {
   const pts = toPoints(points)
   if (pts.some(([x, y]) => !Number.isFinite(x) || !Number.isFinite(y)))
-    throw new MdmlError('value', 'convexHull: the points must be finite')
+    throw new OmaiError('value', 'convexHull: the points must be finite')
   if (pts.length < 3) return pts.map((_, i) => i)
   const order = pts
     .map((_, i) => i)
@@ -93,7 +93,7 @@ export interface ConvexHull3 {
  * @returns Faces, vertices, volume and surface area.
  * @example
  * ```ts
- * import { convexHull3 } from 'mdml-engine/numerics/geometry'
+ * import { convexHull3 } from 'omai-engine/numerics/geometry'
  * convexHull3([[0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1], [0.1, 0.1, 0.1]]).volume // => 0.16666666666666666
  * ```
  */
@@ -104,7 +104,7 @@ export function convexHull3(points: TensorLike | readonly Vec3[]): ConvexHull3 {
       : (() => {
           const t = concreteOrThrow(promoteFloat(points as TensorLike)[0] as Tensor, 'convexHull3')
           if (t.shape.length !== 2 || t.shape[1] !== 3)
-            throw new MdmlError('shape', 'convexHull3: points must be [n, 3]')
+            throw new OmaiError('shape', 'convexHull3: points must be [n, 3]')
           const f = toFlat(t)
           return Array.from(
             { length: t.shape[0] ?? 0 },
@@ -151,7 +151,7 @@ export function convexHull3(points: TensorLike | readonly Vec3[]): ConvexHull3 {
       i3 = i
     }
   }
-  if (i2 < 0 || i3 < 0 || best <= eps) throw new MdmlError('value', 'convexHull3: the points are coplanar')
+  if (i2 < 0 || i3 < 0 || best <= eps) throw new OmaiError('value', 'convexHull3: the points are coplanar')
   type Face = [a: number, b: number, c: number]
   const outward = (f: Face, inside: number): Face => (volume6(f[0], f[1], f[2], inside) > 0 ? [f[0], f[2], f[1]] : f)
   let faces: Face[] = [
@@ -190,7 +190,7 @@ export function convexHull3(points: TensorLike | readonly Vec3[]): ConvexHull3 {
 
 function vertices(polygon: TensorLike): Value {
   const [v] = promoteFloat(polygon) as [Value]
-  if (v.shape.length !== 2 || v.shape[1] !== 2) throw new MdmlError('shape', 'polygon vertices must be [n, 2]')
+  if (v.shape.length !== 2 || v.shape[1] !== 2) throw new OmaiError('shape', 'polygon vertices must be [n, 2]')
   return v
 }
 
@@ -202,8 +202,8 @@ function vertices(polygon: TensorLike): Value {
  * @returns The signed area.
  * @example
  * ```ts
- * import { polygonArea } from 'mdml-engine/numerics/geometry'
- * import { item } from 'mdml-engine/tensor'
+ * import { polygonArea } from 'omai-engine/numerics/geometry'
+ * import { item } from 'omai-engine/tensor'
  * item(polygonArea([[0, 0], [2, 0], [2, 1], [0, 1]])) // => 2
  * ```
  */
@@ -221,8 +221,8 @@ export function polygonArea(polygon: TensorLike): Value {
  * @returns The centroid `[2]`.
  * @example
  * ```ts
- * import { polygonCentroid } from 'mdml-engine/numerics/geometry'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { polygonCentroid } from 'omai-engine/numerics/geometry'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(polygonCentroid([[0, 0], [4, 0], [4, 2], [0, 2]])) // => [2, 1]
  * ```
  */
@@ -246,8 +246,8 @@ export function polygonCentroid(polygon: TensorLike): Value {
  * @returns The perimeter.
  * @example
  * ```ts
- * import { polygonPerimeter } from 'mdml-engine/numerics/geometry'
- * import { item } from 'mdml-engine/tensor'
+ * import { polygonPerimeter } from 'omai-engine/numerics/geometry'
+ * import { item } from 'omai-engine/tensor'
  * item(polygonPerimeter([[0, 0], [3, 0], [3, 4]])) // => 12
  * ```
  */
@@ -264,7 +264,7 @@ export function polygonPerimeter(polygon: TensorLike): Value {
  * @returns True when every turn has the same sign (collinear vertices are ignored).
  * @example
  * ```ts
- * import { isConvex } from 'mdml-engine/numerics/geometry'
+ * import { isConvex } from 'omai-engine/numerics/geometry'
  * isConvex([[0, 0], [1, 0], [1, 1], [0, 1]]) // => true
  * isConvex([[0, 0], [2, 0], [1, 0.5], [2, 2], [0, 2]]) // => false
  * ```
@@ -290,7 +290,7 @@ export function isConvex(polygon: TensorLike | readonly Point2[]): boolean {
  * @returns Winding numbers, an int32 tensor `[q]`.
  * @example
  * ```ts
- * import { windingNumber } from 'mdml-engine/numerics/geometry'
+ * import { windingNumber } from 'omai-engine/numerics/geometry'
  * windingNumber([[0.5, 0.5], [2, 2]], [[0, 0], [1, 0], [1, 1], [0, 1]]) // => [1, 0]
  * ```
  */
@@ -338,7 +338,7 @@ function onSegment(a: Point2, b: Point2, q: Point2, tol: number): boolean {
  * @returns The classification per point, an int32 tensor `[q]`.
  * @example
  * ```ts
- * import { pointInPolygon } from 'mdml-engine/numerics/geometry'
+ * import { pointInPolygon } from 'omai-engine/numerics/geometry'
  * pointInPolygon([[0.5, 0.5], [1, 0.5], [3, 3]], [[0, 0], [1, 0], [1, 1], [0, 1]]) // => [1, 0, -1]
  * ```
  */
@@ -368,7 +368,7 @@ export function pointInPolygon(
  * @returns The intersection.
  * @example
  * ```ts
- * import { segmentIntersection } from 'mdml-engine/numerics/geometry'
+ * import { segmentIntersection } from 'omai-engine/numerics/geometry'
  * segmentIntersection([0, 0], [2, 2], [0, 2], [2, 0]) // => [1, 1]
  * ```
  */
@@ -392,7 +392,7 @@ export function segmentIntersection(a: Point2, b: Point2, c: Point2, d: Point2):
  * @returns The clipped vertices (empty when disjoint).
  * @example
  * ```ts
- * import { polygonClip } from 'mdml-engine/numerics/geometry'
+ * import { polygonClip } from 'omai-engine/numerics/geometry'
  * polygonClip([[0, 0], [2, 0], [2, 2], [0, 2]], [[1, 1], [3, 1], [3, 3], [1, 3]]) // => [[1, 1], [2, 1], [2, 2], [1, 2]]
  * ```
  */
@@ -402,7 +402,7 @@ export function polygonClip(
 ): [number, number][] {
   let output: Point2[] = toPoints(subject)
   let window = toPoints(clip)
-  if (!isConvex(window)) throw new MdmlError('value', 'polygonClip: the clip polygon must be convex')
+  if (!isConvex(window)) throw new OmaiError('value', 'polygonClip: the clip polygon must be convex')
   let area = 0
   for (let i = 0; i < window.length; i++) {
     const p = window[i] as Point2
@@ -442,7 +442,7 @@ export function polygonClip(
  * @returns The sum's vertices, counter-clockwise from the lowest point.
  * @example
  * ```ts
- * import { minkowskiSum } from 'mdml-engine/numerics/geometry'
+ * import { minkowskiSum } from 'omai-engine/numerics/geometry'
  * minkowskiSum([[0, 0], [1, 0], [0, 1]], [[0, 0], [1, 0], [1, 1], [0, 1]]).length // => 5
  * ```
  */

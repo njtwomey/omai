@@ -2,7 +2,7 @@
  * The React view of explanation-quality records: a panel per metric and the explainers' agreement.
  */
 
-import type { ExplanationQuality } from 'mdml-engine/exposition'
+import type { ExplanationQuality } from 'omai-engine/exposition'
 import { type ReactElement, useCallback, useMemo } from 'react'
 import type { Figure } from '../../figure/figure.ts'
 import { explanationQualityView, qualityLayout } from '../../views/explanation-quality.ts'

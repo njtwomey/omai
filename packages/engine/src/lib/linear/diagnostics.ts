@@ -10,7 +10,7 @@
  * @index function Leverage, influence, VIF and heteroscedasticity diagnostics.
  */
 
-import { MdmlError, type TestResult } from '../base/index.ts'
+import { OmaiError, type TestResult } from '../base/index.ts'
 import { type LearnData, matrixView, sampleWeightsOf } from '../learn/index.ts'
 import { chdtrc, stdtr } from '../numerics/special/index.ts'
 import { durbinWatson, testResult } from '../stats/tests/index.ts'
@@ -105,7 +105,7 @@ function influenceOf(data: LearnData, options: DiagnosticsOptions, who: string):
   const c = core(design, options.fitIntercept ?? true)
   const { n, p, rank, k } = c
   const dfResid = n - rank
-  if (dfResid < 1) throw new MdmlError('value', `${who}: needs more observations than the design's rank`)
+  if (dfResid < 1) throw new OmaiError('value', `${who}: needs more observations than the design's rank`)
   // The projection of y on the column space, and the residuals.
   const uty = new Float64Array(k)
   for (let q = 0; q < k; q++) {
@@ -177,10 +177,10 @@ function influenceOf(data: LearnData, options: DiagnosticsOptions, who: string):
  * @param data - Features, targets and optional sample weights.
  * @param options - Whether the model has an intercept (default true).
  * @returns The measures, each over the observations.
- * @throws MdmlError `value` when there are no more observations than the design's rank.
+ * @throws OmaiError `value` when there are no more observations than the design's rank.
  * @example
  * ```ts
- * import { olsInfluence } from 'mdml-engine/linear'
+ * import { olsInfluence } from 'omai-engine/linear'
  * const infl = olsInfluence({ x: [[1], [2], [3], [4], [5]], y: [1, 2, 3, 4, 10] })
  * infl.leverage.map((h) => Math.round(h * 1000) / 1000) // => [0.6, 0.3, 0.2, 0.3, 0.6]
  * infl.cooksDistance.indexOf(Math.max(...infl.cooksDistance)) // => 4
@@ -198,8 +198,8 @@ export function olsInfluence(data: LearnData, options: DiagnosticsOptions = {}):
  * @returns H `[n, n]`, symmetric and idempotent with trace equal to the rank.
  * @example
  * ```ts
- * import { hatMatrix } from 'mdml-engine/linear'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { hatMatrix } from 'omai-engine/linear'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(hatMatrix([[1], [2], [3]]))[0] // => [0.8333333333333334, 0.3333333333333333, -0.16666666666666666]
  * ```
  */
@@ -231,7 +231,7 @@ function featuresOnly(x: TensorLike, weights: TensorLike | undefined, who: strin
  * @returns h, summing to the rank of the design.
  * @example
  * ```ts
- * import { leverage } from 'mdml-engine/linear'
+ * import { leverage } from 'omai-engine/linear'
  * leverage([[1], [2], [3]]).map((h) => Math.round(h * 1e4) / 1e4) // => [0.8333, 0.3333, 0.8333]
  * ```
  */
@@ -251,7 +251,7 @@ export function leverage(
  * @returns The raw residuals, the internal and the external studentised residuals, and the leverages.
  * @example
  * ```ts
- * import { studentizedResiduals } from 'mdml-engine/linear'
+ * import { studentizedResiduals } from 'omai-engine/linear'
  * const r = studentizedResiduals({ x: [[1], [2], [3], [4], [5]], y: [2, 4, 6, 8, 15] })
  * Math.abs(r.external[4] ?? 0) > Math.abs(r.internal[4] ?? 0) // => true
  * ```
@@ -277,7 +277,7 @@ export function studentizedResiduals(
  * @returns D_i = r_i^2 h_i / (p (1 - h_i)).
  * @example
  * ```ts
- * import { cooksDistance } from 'mdml-engine/linear'
+ * import { cooksDistance } from 'omai-engine/linear'
  * const d = cooksDistance({ x: [[1], [2], [3], [4], [5]], y: [1, 2, 3, 4, 10] })
  * (d[4] ?? 0) > (d[0] ?? 0) // => true
  * ```
@@ -295,7 +295,7 @@ export function cooksDistance(data: LearnData, options: DiagnosticsOptions = {})
  * @returns DFFITS per observation.
  * @example
  * ```ts
- * import { dffits } from 'mdml-engine/linear'
+ * import { dffits } from 'omai-engine/linear'
  * Math.abs(dffits({ x: [[1], [2], [3], [4], [5]], y: [1, 2, 3, 4, 10] })[4] ?? 0) > 1 // => true
  * ```
  */
@@ -311,7 +311,7 @@ export function dffits(data: LearnData, options: DiagnosticsOptions = {}): numbe
  * @returns `[n, p]`.
  * @example
  * ```ts
- * import { dfbetas } from 'mdml-engine/linear'
+ * import { dfbetas } from 'omai-engine/linear'
  * dfbetas({ x: [[1], [2], [3], [4], [5]], y: [1, 2, 3, 4, 10] }).shape // => [5, 2]
  * ```
  */
@@ -328,7 +328,7 @@ export function dfbetas(data: LearnData, options: DiagnosticsOptions = {}): Tens
  * @returns (sigma_(i)^2 / sigma^2)^p / (1 - h_i) per observation.
  * @example
  * ```ts
- * import { covRatio } from 'mdml-engine/linear'
+ * import { covRatio } from 'omai-engine/linear'
  * covRatio({ x: [[1], [2], [3], [4], [5]], y: [2.1, 3.9, 6.0, 8.1, 9.9] }).every((v) => v > 0) // => true
  * ```
  */
@@ -404,7 +404,7 @@ export interface BreuschPaganOptions {
  * @returns The test result.
  * @example
  * ```ts
- * import { breuschPagan } from 'mdml-engine/linear'
+ * import { breuschPagan } from 'omai-engine/linear'
  * const x = [[1], [2], [3], [4], [5], [6], [7], [8]]
  * const y = [1.1, 1.9, 3.2, 3.9, 5.1, 5.9, 7.1, 7.9]
  * breuschPagan({ x, y }).pValue > 0.05 // => true
@@ -439,7 +439,7 @@ export function breuschPagan(data: LearnData, options: BreuschPaganOptions = {})
  * @returns The test result.
  * @example
  * ```ts
- * import { whiteTest } from 'mdml-engine/linear'
+ * import { whiteTest } from 'omai-engine/linear'
  * const x = [[1], [2], [3], [4], [5], [6], [7], [8]]
  * const y = [1.1, 1.9, 3.2, 3.9, 5.1, 5.9, 7.1, 7.9]
  * whiteTest({ x, y }).df // => 2
@@ -483,7 +483,7 @@ export function whiteTest(data: LearnData): TestResult {
  * @returns One factor per column (infinite for a column that is a linear combination of the others).
  * @example
  * ```ts
- * import { varianceInflationFactors } from 'mdml-engine/linear'
+ * import { varianceInflationFactors } from 'omai-engine/linear'
  * const v = varianceInflationFactors([[1, 2.1], [2, 3.9], [3, 6.2], [4, 7.8], [5, 10.1]])
  * (v[0] ?? 0) > 50 // => true
  * ```
@@ -536,7 +536,7 @@ export interface ConditionIndices {
  * @returns The singular values, indices, condition number and `[p, p]` proportions (columns sum to one).
  * @example
  * ```ts
- * import { conditionIndices } from 'mdml-engine/linear'
+ * import { conditionIndices } from 'omai-engine/linear'
  * conditionIndices([[1, 2], [2, 4.001], [3, 6], [4, 8.001]]).conditionNumber > 50 // => true
  * ```
  */
@@ -595,7 +595,7 @@ export interface RegressionDiagnostics {
  * @returns The {@link RegressionDiagnostics}.
  * @example
  * ```ts
- * import { regressionDiagnostics } from 'mdml-engine/linear'
+ * import { regressionDiagnostics } from 'omai-engine/linear'
  * const r = regressionDiagnostics({ x: [[1], [2], [3], [4], [5], [6]], y: [2, 4, 6, 8, 10, 30] })
  * r.influentialPoints.includes(5) // => true
  * ```

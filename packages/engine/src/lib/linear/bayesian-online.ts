@@ -104,8 +104,8 @@ function rowsOf(data: LearnData, intercept: boolean, who: string): { phi: number
  * @concept bayesian-linear-regression
  * @example
  * ```ts
- * import { bayesianOnlineAlgorithm } from 'mdml-engine/linear'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { bayesianOnlineAlgorithm } from 'omai-engine/linear'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const alg = bayesianOnlineAlgorithm({ x: [[0], [1], [2]], y: [1, 3, 5] }, { alpha: 1, beta: 100, intercept: true })
  * runAlgorithm(alg, { maxSteps: 3 }).state.mean.map((w) => Math.round(w * 10) / 10) // => [1, 2]
  * ```
@@ -224,7 +224,7 @@ const gaussianDensity = (
  * @reference C. M. Bishop, Pattern Recognition and Machine Learning (2006), section 3.3.
  * @example
  * ```ts
- * import { bayesianOnlineLinear } from 'mdml-engine/linear'
+ * import { bayesianOnlineLinear } from 'omai-engine/linear'
  * const fitted = bayesianOnlineLinear.with({ beta: 100 }).fit({ x: [[0], [1], [2]], y: [1, 3, 5] })
  * fitted.weights().mean.map((w) => Math.round(w * 10) / 10) // => [1, 2]
  * ```

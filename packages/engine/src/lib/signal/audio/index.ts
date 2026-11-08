@@ -1,5 +1,5 @@
 /**
- * Audio analysis and processing, librosa style, available as `mdml-engine/signal/audio`: perceptual frequency
+ * Audio analysis and processing, librosa style, available as `omai-engine/signal/audio`: perceptual frequency
  * scales and auditory filter banks, spectrogram, MFCC and other frame features, pitch, onset, tempo and beat
  * estimation, speech enhancement and mask-based separation, perceptual coding, and augmentation such as time stretching
  * and pitch shifting.

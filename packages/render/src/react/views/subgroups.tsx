@@ -11,7 +11,7 @@ import {
   type GroupRateName,
   type ParetoFront,
   type SubgroupReport,
-} from 'mdml-engine/exposition'
+} from 'omai-engine/exposition'
 import { type ReactElement, useCallback, useState } from 'react'
 import type { Figure } from '../../figure/figure.ts'
 import { formatNumber } from '../../theme/format.ts'

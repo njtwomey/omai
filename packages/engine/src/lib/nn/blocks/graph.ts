@@ -7,7 +7,7 @@
  * `graph`).
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { bernoulli, foldIn, type Key } from '../../random/index.ts'
 import {
   add,
@@ -69,8 +69,8 @@ export interface RgcnOptions {
  * @reference Schlichtkrull, Kipf, Bloem, van den Berg, Titov and Welling (2018), Modeling relational data with graph convolutional networks.
  * @example
  * ```ts
- * import { rgcnConv } from 'mdml-engine/nn/blocks'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { rgcnConv } from 'omai-engine/nn/blocks'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(rgcnConv([[1], [2]], [[0], [1]], [1], { weight: [[[3]], [[5]]] })) // => [[0], [5]]
  * ```
  */
@@ -83,12 +83,12 @@ export function rgcnConv(
   const h = asTensor(x)
   const n = h.shape[0] ?? 0
   const { source, target } = edgeList(edgeIndex)
-  if (edgeType.length !== source.length) throw new MdmlError('shape', 'rgcnConv: one edge type per edge')
+  if (edgeType.length !== source.length) throw new OmaiError('shape', 'rgcnConv: one edge type per edge')
   const raw = asTensor(options.weight)
   const w = options.comp === undefined ? raw : einsum('rb,bio->rio', options.comp, raw)
   const [r, , out] = w.shape as [number, number, number]
   if (edgeType.some((t) => !Number.isInteger(t) || t < 0 || t >= r))
-    throw new MdmlError('value', `rgcnConv: edge types must be in [0, ${r})`)
+    throw new OmaiError('value', `rgcnConv: edge types must be in [0, ${r})`)
   // Every node through every relation's weight, then one gather: row (type * N + source).
   const transformed = reshape(einsum('ni,rio->rno', h, w), [r * n, out])
   const messages = take(transformed, index(source.map((s, e) => (edgeType[e] as number) * n + s)), 0)
@@ -132,9 +132,9 @@ export interface RgcnConvOptions {
  *
  * @example
  * ```ts
- * import { RGCNConv } from 'mdml-engine/nn/blocks'
- * import { key } from 'mdml-engine/random'
- * import { zeros } from 'mdml-engine/tensor'
+ * import { RGCNConv } from 'omai-engine/nn/blocks'
+ * import { key } from 'omai-engine/random'
+ * import { zeros } from 'omai-engine/tensor'
  * new RGCNConv(3, 2, 4, { key: key(0) }).forward({ x: zeros([5, 3]), edgeIndex: [[0, 1], [1, 2]], edgeType: [0, 3] }).shape // => [5, 2]
  * ```
  */
@@ -239,9 +239,9 @@ const silu = (): Module => new SiLU()
  * @reference Satorras, Hoogeboom and Welling (2021), E(n) equivariant graph neural networks.
  * @example
  * ```ts
- * import { EGNNLayer } from 'mdml-engine/nn/blocks'
- * import { key } from 'mdml-engine/random'
- * import { zeros } from 'mdml-engine/tensor'
+ * import { EGNNLayer } from 'omai-engine/nn/blocks'
+ * import { key } from 'omai-engine/random'
+ * import { zeros } from 'omai-engine/tensor'
  * const layer = new EGNNLayer(4, { key: key(0) })
  * layer.forward({ h: zeros([3, 4]), x: zeros([3, 2]), edgeIndex: [[0, 1, 2], [1, 2, 0]] }).x.shape // => [3, 2]
  * ```
@@ -333,9 +333,9 @@ export interface EgnnNetworkOptions extends Omit<EgnnOptions, 'key'> {
  *
  * @example
  * ```ts
- * import { EGNN } from 'mdml-engine/nn/blocks'
- * import { key } from 'mdml-engine/random'
- * import { zeros } from 'mdml-engine/tensor'
+ * import { EGNN } from 'omai-engine/nn/blocks'
+ * import { key } from 'omai-engine/random'
+ * import { zeros } from 'omai-engine/tensor'
  * new EGNN(2, 8, { layers: 2, key: key(0) }).forward({ h: zeros([3, 2]), x: zeros([3, 3]), edgeIndex: [[0, 1], [1, 0]] }).h.shape // => [3, 8]
  * ```
  */
@@ -420,9 +420,9 @@ const allPairs = (n: number): Tensor<'int32'> => {
  * @reference Dwivedi and Bresson (2021), A generalization of transformer networks to graphs.
  * @example
  * ```ts
- * import { GraphTransformerLayer } from 'mdml-engine/nn/blocks'
- * import { key } from 'mdml-engine/random'
- * import { zeros } from 'mdml-engine/tensor'
+ * import { GraphTransformerLayer } from 'omai-engine/nn/blocks'
+ * import { key } from 'omai-engine/random'
+ * import { zeros } from 'omai-engine/tensor'
  * new GraphTransformerLayer(8, { heads: 2, key: key(0) }).forward({ x: zeros([4, 8]), edgeIndex: [[0, 1], [1, 2]] }).shape // => [4, 8]
  * ```
  */
@@ -435,7 +435,7 @@ export class GraphTransformerLayer extends Composite<GraphTransformerInput, Valu
   constructor(width: number, options: GraphTransformerLayerOptions = {}) {
     const heads = options.heads ?? 4
     if (width % heads !== 0)
-      throw new MdmlError('value', `GraphTransformerLayer: ${width} is not divisible by ${heads} heads`)
+      throw new OmaiError('value', `GraphTransformerLayer: ${width} is not divisible by ${heads} heads`)
     const key = initKey('GraphTransformerLayer', options.key)
     const ff = options.feedForward ?? 2 * width
     super({
@@ -505,10 +505,10 @@ export interface GraphTransformerOptions {
  *
  * @example
  * ```ts
- * import { GraphTransformer } from 'mdml-engine/nn/blocks'
- * import { cycleGraph, laplacianPositionalEncoding } from 'mdml-engine/graph'
- * import { key } from 'mdml-engine/random'
- * import { zeros } from 'mdml-engine/tensor'
+ * import { GraphTransformer } from 'omai-engine/nn/blocks'
+ * import { cycleGraph, laplacianPositionalEncoding } from 'omai-engine/graph'
+ * import { key } from 'omai-engine/random'
+ * import { zeros } from 'omai-engine/tensor'
  * const model = new GraphTransformer(3, 8, { peDim: 2, heads: 2, key: key(0) })
  * model.forward({ x: zeros([6, 3]), edgeIndex: [[0, 1], [1, 2]], pe: laplacianPositionalEncoding(cycleGraph(6), 2) }).shape // => [6, 8]
  * ```

@@ -1,5 +1,5 @@
-import { generate } from 'mdml-engine/data'
-import { blobs } from 'mdml-engine/datasets'
+import { generate } from 'omai-engine/data'
+import { blobs } from 'omai-engine/datasets'
 import { describe, expect, it } from 'vitest'
 import { key } from '../../lib/random/index.ts'
 import { toFlat } from '../../lib/tensor/index.ts'

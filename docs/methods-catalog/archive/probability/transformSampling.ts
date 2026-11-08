@@ -228,7 +228,7 @@ function picture(t: Transform, state: TransformSamplingState, batch: number): Cu
  *
  * @example
  * ```ts
- * import type { TransformSamplingPath } from 'mdml-engine/methods/probability'
+ * import type { TransformSamplingPath } from 'omai-engine/methods/probability'
  * const path: TransformSamplingPath = 'samples/ks'
  * path // => 'samples/ks'
  * ```

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isMdmlError } from '../../base/index.ts'
+import { isOmaiError } from '../../base/index.ts'
 import { forwardPlan, ground, parseDomain, parseProblem, parseSExpr, pddl } from '../index.ts'
 
 const logistics = `
@@ -43,7 +43,7 @@ describe('PDDL', () => {
       try {
         f()
       } catch (e) {
-        return isMdmlError(e) ? e.code : 'other'
+        return isOmaiError(e) ? e.code : 'other'
       }
       return undefined
     }

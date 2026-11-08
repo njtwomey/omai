@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { assertFinite, assertShape, invariant, isMdmlError, type MdmlError } from './index.ts'
+import { assertFinite, assertShape, invariant, isOmaiError, type OmaiError } from './index.ts'
 
 describe('the error helpers', () => {
-  it('invariant, assertFinite and assertShape throw a coded MdmlError with the details, and pass what is right', () => {
+  it('invariant, assertFinite and assertShape throw a coded OmaiError with the details, and pass what is right', () => {
     expect(() => invariant(1 + 1 === 2, 'value', 'arithmetic')).not.toThrow()
-    const failed = (f: () => unknown): MdmlError => {
+    const failed = (f: () => unknown): OmaiError => {
       try {
         f()
       } catch (e) {
-        return e as MdmlError
+        return e as OmaiError
       }
       throw new Error('did not throw')
     }
@@ -17,7 +17,7 @@ describe('the error helpers', () => {
       'domain',
       'x must be positive',
       { x: -1 },
-      'MdmlError',
+      'OmaiError',
       true,
     ])
     // assertFinite returns its argument and names it
@@ -49,13 +49,13 @@ describe('the error helpers', () => {
       ])
       expect(e.details).toEqual({ shape, expected })
     }
-    // isMdmlError narrows by code and ignores other errors
+    // isOmaiError narrows by code and ignores other errors
     expect([
-      isMdmlError(broken),
-      isMdmlError(broken, 'domain'),
-      isMdmlError(broken, 'value'),
-      isMdmlError(new Error('x')),
-      isMdmlError('x'),
+      isOmaiError(broken),
+      isOmaiError(broken, 'domain'),
+      isOmaiError(broken, 'value'),
+      isOmaiError(new Error('x')),
+      isOmaiError('x'),
     ]).toEqual([true, true, false, false, false])
   })
 })

@@ -1,7 +1,7 @@
 """The UCI glass identification data (German 1987), CC BY 4.0: 214 glass samples of six types, nine oxide measures."""
 
-from mdml_oracle.uci import source_note, table_rows, zip_member
-from mdml_oracle.vendor import render_classification
+from omai_oracle.uci import source_note, table_rows, zip_member
+from omai_oracle.vendor import render_classification
 
 TARGET = "packages/engine/src/lib/datasets/_data/glass.data.ts"
 ID, SLUG = 42, "glass+identification"

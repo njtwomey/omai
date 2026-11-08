@@ -1,5 +1,5 @@
 /**
- * React 19 bindings of mdml-render. Figures: `Chart` (an ECharts option), `SceneView`, `Scene3DView` and
+ * React 19 bindings of omai-render. Figures: `Chart` (an ECharts option), `SceneView`, `Scene3DView` and
  * `StructureView`, in a `FigureFrame` (fixed size, expand, export) or a `FigureGrid`; typeset and live maths (`Tex`,
  * `Equation`, `Derivation`); `ContingencyTable` and `ThresholdExplorer`; playback (`usePlayback`, `useLiveRun` and
  * the `Player` over their controller); and the colour-mode theme (`ThemeProvider`, `useColourMode`). Subfolders:

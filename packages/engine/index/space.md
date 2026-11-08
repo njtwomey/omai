@@ -4,8 +4,8 @@
 
 Typed spaces for parameters, knobs, observations and actions: boxes, discrete and categorical choices, products, conditional spaces and tagged unions (a mode with the knobs each option brings), with sampling, containment checks and encodings, shared by tuning, RL, controls and studies.
 
-- structure `types.ts` (file): Typed spaces: real, int, choice, box, dict, union. `src/lib/space/types.ts:1` `mdml-engine/space`
+- structure `types.ts` (file): Typed spaces: real, int, choice, box, dict, union. `src/lib/space/types.ts:1` `omai-engine/space`
 
-- table `tables.ts` (file): optionTable and modeTable: slots filled from named options. `src/lib/space/tables.ts:1` `mdml-engine/space`
+- table `tables.ts` (file): optionTable and modeTable: slots filled from named options. `src/lib/space/tables.ts:1` `omai-engine/space`
 
-- function `sample`: Draw a random value from a space. `src/lib/space/operations.ts:89` `mdml-engine/space`
+- function `sample`: Draw a random value from a space. `src/lib/space/operations.ts:89` `omai-engine/space`

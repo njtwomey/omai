@@ -5,7 +5,7 @@
  * dropout and byte fallback).
  */
 
-import { heap, type Json, MdmlError } from '../../base/index.ts'
+import { heap, type Json, OmaiError } from '../../base/index.ts'
 import { type Key, randomBits, split } from '../../random/index.ts'
 import {
   type Algorithm,
@@ -34,7 +34,7 @@ let charBytes: Map<string, number> | undefined
  * @concept byte-level-bpe
  * @example
  * ```ts
- * import { bytesToUnicode } from 'mdml-engine/text/subword'
+ * import { bytesToUnicode } from 'omai-engine/text/subword'
  * const t = bytesToUnicode()
  * [t[32], t[65], t[10]] // => ['Ġ', 'A', 'Ċ']
  * ```
@@ -70,7 +70,7 @@ export function bytesToUnicode(): string[] {
  * @concept byte-level-bpe
  * @example
  * ```ts
- * import { byteLevelAlphabet } from 'mdml-engine/text/subword'
+ * import { byteLevelAlphabet } from 'omai-engine/text/subword'
  * byteLevelAlphabet().length // => 256
  * ```
  */
@@ -86,7 +86,7 @@ export function byteLevelAlphabet(): string[] {
  * @concept byte-level-bpe
  * @example
  * ```ts
- * import { toByteLevel } from 'mdml-engine/text/subword'
+ * import { toByteLevel } from 'omai-engine/text/subword'
  * toByteLevel(' héllo') // => 'ĠhÃ©llo'
  * ```
  */
@@ -108,7 +108,7 @@ let decoder: TextDecoder | undefined
  * @concept byte-level-bpe
  * @example
  * ```ts
- * import { fromByteLevel } from 'mdml-engine/text/subword'
+ * import { fromByteLevel } from 'omai-engine/text/subword'
  * fromByteLevel('ĠhÃ©llo') // => ' héllo'
  * ```
  */
@@ -213,12 +213,12 @@ const pairKey = (a: number, b: number): number => a * 67108864 + b
  * @param wordCounts - Pre-tokenised words with their counts.
  * @param options - Vocabulary size, frequency floor, specials, alphabet limits, prefix and suffix, byte level.
  * @returns The algorithm.
- * @throws MdmlError with code `value` for invalid sizes.
+ * @throws OmaiError with code `value` for invalid sizes.
  * @concept byte-pair-encoding
  * @example
  * ```ts
- * import { bpeTrainingAlgorithm } from 'mdml-engine/text/subword'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { bpeTrainingAlgorithm } from 'omai-engine/text/subword'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const alg = bpeTrainingAlgorithm(new Map([['low', 5], ['lower', 2], ['newest', 6], ['widest', 3]]), { vocabSize: 16 })
  * runAlgorithm(alg, { maxSteps: 100 }).state.merges // => [['e', 's'], ['es', 't'], ['l', 'o'], ['lo', 'w'], ['e', 'w'], ['n', 'ew']]
  * ```
@@ -229,7 +229,7 @@ export function bpeTrainingAlgorithm(
 ): Algorithm<BpeTrainingState> {
   const vocabSize = options.vocabSize ?? 30000
   if (!Number.isInteger(vocabSize) || vocabSize < 1)
-    throw new MdmlError('value', 'trainBpe: vocabSize must be a positive integer')
+    throw new OmaiError('value', 'trainBpe: vocabSize must be a positive integer')
   const byteLevel = options.byteLevel === true
   const entries = [...wordCounts].map(([w, c]): [string, number] => [byteLevel ? toByteLevel(w) : w, c])
   const prefix = options.continuingSubwordPrefix
@@ -410,7 +410,7 @@ function mergeWord(
  * @index function Train a byte-pair-encoding tokeniser.
  * @example
  * ```ts
- * import { trainBpe, bpeTokenize } from 'mdml-engine/text/subword'
+ * import { trainBpe, bpeTokenize } from 'omai-engine/text/subword'
  * const model = trainBpe(new Map([['low', 5], ['lower', 2], ['newest', 6], ['widest', 3]]), { vocabSize: 16 })
  * bpeTokenize(model, 'newer').map((t) => t.token) // => ['new', 'e', 'r']
  * ```
@@ -461,7 +461,7 @@ function ranksOf(model: BpeModel): ReadonlyMap<number, readonly [number, number]
       const merged = x + (prefix !== undefined && y.startsWith(prefix) ? y.slice(prefix.length) : y)
       const id = model.vocab.get(merged)
       if (a === undefined || b === undefined || id === undefined)
-        throw new MdmlError('value', `bpeModel: merge ${x} ${y} uses tokens outside the vocabulary`)
+        throw new OmaiError('value', `bpeModel: merge ${x} ${y} uses tokens outside the vocabulary`)
       r.set(pairKey(a, b), [rank, id])
     }
     rankCache.set(model, r)
@@ -476,11 +476,11 @@ function ranksOf(model: BpeModel): ReadonlyMap<number, readonly [number, number]
  * @param merges - Merges in rank order.
  * @param options - Unknown token, prefix and suffix, unknown fusing, byte fallback, dropout, ignoreMerges.
  * @returns The model.
- * @throws MdmlError with code `value` for a merge whose tokens are not in the vocabulary.
+ * @throws OmaiError with code `value` for a merge whose tokens are not in the vocabulary.
  * @concept byte-pair-encoding
  * @example
  * ```ts
- * import { bpeModel, bpeTokenize } from 'mdml-engine/text/subword'
+ * import { bpeModel, bpeTokenize } from 'omai-engine/text/subword'
  * const m = bpeModel(new Map([['a', 0], ['b', 1], ['ab', 2]]), [['a', 'b']])
  * bpeTokenize(m, 'abab').map((t) => t.id) // => [2, 2]
  * ```
@@ -532,12 +532,12 @@ export interface BpeTokenizeState {
  * @param word - The word (already pre-tokenised and, for byte-level models, byte-mapped).
  * @param options - Dropout probability (default the model's) and the key for it.
  * @returns The algorithm.
- * @throws MdmlError with code `value` for an unknown character without an unknown token, and for dropout without a key.
+ * @throws OmaiError with code `value` for an unknown character without an unknown token, and for dropout without a key.
  * @concept byte-pair-encoding
  * @example
  * ```ts
- * import { bpeModel, bpeTokenizeAlgorithm, bpeTokens } from 'mdml-engine/text/subword'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { bpeModel, bpeTokenizeAlgorithm, bpeTokens } from 'omai-engine/text/subword'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const m = bpeModel(new Map([['a', 0], ['b', 1], ['c', 2], ['ab', 3], ['abc', 4]]), [['a', 'b'], ['ab', 'c']])
  * const run = runAlgorithm(bpeTokenizeAlgorithm(m, 'abc'), { maxSteps: 10 })
  * [run.steps, bpeTokens(m, run.state).map((t) => t.token)] // => [3, ['abc']]
@@ -556,7 +556,7 @@ export function bpeTokenizeAlgorithm(
   // The coins: block b of 64 draws comes from the key reached by b splits (as the chained draws of HF's dropout).
   const blocks = new Map<number, Float64Array>()
   const draw = (n: number): number => {
-    if (options.key === undefined) throw new MdmlError('value', 'bpeTokenize: dropout needs a key')
+    if (options.key === undefined) throw new OmaiError('value', 'bpeTokenize: dropout needs a key')
     const b = Math.floor(n / 64)
     let block = blocks.get(b)
     if (block === undefined) {
@@ -599,7 +599,7 @@ export function bpeTokenizeAlgorithm(
           }
         }
         if (unk === undefined)
-          throw new MdmlError('value', `bpeTokenize: ${ch} is not in the vocabulary and there is no unknown token`)
+          throw new OmaiError('value', `bpeTokenize: ${ch} is not in the vocabulary and there is no unknown token`)
         const last = symbols[symbols.length - 1]
         if (model.fuseUnk === true && last !== undefined && last.id === unk) last.end = at
         else symbols.push({ id: unk, start, end: at })
@@ -652,7 +652,7 @@ export function bpeTokenizeAlgorithm(
  * @concept byte-pair-encoding
  * @example
  * ```ts
- * import { bpeModel, bpeTokens } from 'mdml-engine/text/subword'
+ * import { bpeModel, bpeTokens } from 'omai-engine/text/subword'
  * const m = bpeModel(new Map([['a', 0], ['b', 1]]), [])
  * bpeTokens(m, { symbols: [{ id: 1, start: 0, end: 1 }], draws: 0, finished: true, lastRank: -1 })[0]?.token // => 'b'
  * ```
@@ -672,11 +672,11 @@ export function bpeTokens(model: BpeModel, state: BpeTokenizeState): SubwordToke
  * @param word - The word (already pre-tokenised and, for byte-level models, byte-mapped).
  * @param options - Dropout probability (default the model's) and the key for it.
  * @returns The tokens with ids and offsets in the word.
- * @throws MdmlError with code `value` for an unknown character without an unknown token.
+ * @throws OmaiError with code `value` for an unknown character without an unknown token.
  * @concept byte-pair-encoding
  * @example
  * ```ts
- * import { bpeModel, bpeTokenize } from 'mdml-engine/text/subword'
+ * import { bpeModel, bpeTokenize } from 'omai-engine/text/subword'
  * const m = bpeModel(new Map([['[UNK]', 0], ['a', 1], ['b', 2], ['ab', 3]]), [['a', 'b']], { unkToken: '[UNK]' })
  * bpeTokenize(m, 'abz').map((t) => [t.token, t.start, t.end]) // => [['ab', 0, 2], ['[UNK]', 2, 3]]
  * ```

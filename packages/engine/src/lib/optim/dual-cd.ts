@@ -8,7 +8,7 @@
  * the weights. It sits beside SMO (`smo.ts`), the kernel solver for the same dual.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import { type Key, key as makeKey, permutation } from '../random/index.ts'
 import { asTensor, type TensorLike, toFlat } from '../tensor/index.ts'
 import { type Algorithm, channels, type RunStatus, runAlgorithm } from '../trace/index.ts'
@@ -74,14 +74,14 @@ interface Problem {
 
 function problemOf(x: TensorLike, y: TensorLike, options: DualCdOptions): Problem {
   const t = asTensor(x)
-  if (t.shape.length !== 2) throw new MdmlError('shape', 'linearSvmDualCd: x must be a matrix')
+  if (t.shape.length !== 2) throw new OmaiError('shape', 'linearSvmDualCd: x must be a matrix')
   const n = t.shape[0] ?? 0
   const features = t.shape[1] ?? 0
   const raw = toFlat(t)
   const labels = toFlat(asTensor(y))
-  if (labels.length !== n) throw new MdmlError('shape', 'linearSvmDualCd: x and y differ in length')
+  if (labels.length !== n) throw new OmaiError('shape', 'linearSvmDualCd: x and y differ in length')
   const classes = [...new Set(labels)].sort((a, b) => a - b)
-  if (classes.length !== 2) throw new MdmlError('value', 'linearSvmDualCd: y needs exactly two distinct values')
+  if (classes.length !== 2) throw new OmaiError('value', 'linearSvmDualCd: y needs exactly two distinct values')
   const intercept = options.fitIntercept ?? true
   const bias = options.bias ?? 1
   const d = features + (intercept ? 1 : 0)
@@ -135,8 +135,8 @@ function objectives(
  * large-scale linear SVM (2008).
  * @example
  * ```ts
- * import { linearSvmDualCdAlgorithm } from 'mdml-engine/optim'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { linearSvmDualCdAlgorithm } from 'omai-engine/optim'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const alg = linearSvmDualCdAlgorithm([[2], [3], [-2], [-3]], [1, 1, -1, -1], 1, { fitIntercept: false })
  * runAlgorithm(alg, { maxSteps: 50 }).state.converged // => true
  * ```
@@ -147,7 +147,7 @@ export function linearSvmDualCdAlgorithm(
   C: number,
   options: DualCdOptions = {},
 ): Algorithm<DualCdState> {
-  if (!(C > 0)) throw new MdmlError('value', 'linearSvmDualCd: C must be positive')
+  if (!(C > 0)) throw new OmaiError('value', 'linearSvmDualCd: C must be positive')
   const p = problemOf(x, y, options)
   const loss = options.loss ?? 'l1'
   const tol = options.tol ?? 1e-4
@@ -319,7 +319,7 @@ export interface DualCdResult {
  * @concept support-vector-machines
  * @example
  * ```ts
- * import { linearSvmDualCd } from 'mdml-engine/optim'
+ * import { linearSvmDualCd } from 'omai-engine/optim'
  * const r = linearSvmDualCd([[2], [3], [-2], [-3]], [1, 1, -1, -1], 1, { fitIntercept: false, tol: 1e-10 })
  * Math.round(r.coef[0] * 1e6) / 1e6 // => 0.5
  * ```

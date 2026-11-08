@@ -1,4 +1,4 @@
-import { defaults, dict, int, union } from 'mdml-engine/space'
+import { defaults, dict, int, union } from 'omai-engine/space'
 import { renderToString } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { categoricalColour } from '../../theme/palettes.ts'

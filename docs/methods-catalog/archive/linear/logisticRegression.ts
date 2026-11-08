@@ -4,7 +4,7 @@
  * tape. Binary; with more classes, the last class is fitted against the rest.
  */
 
-import { MdmlError } from '../../lib/base/index.ts'
+import { OmaiError } from '../../lib/base/index.ts'
 import { type IterativeEstimator, iterative, type LearnData, targetVector } from '../../lib/learn/index.ts'
 import {
   designOf,
@@ -48,7 +48,7 @@ export interface LogisticVerbs {
 
 const classesOf = (data: LearnData): number[] => {
   const labels = [...new Set(targetVector(data.y ?? [], 'logisticRegression'))].sort((a, b) => a - b)
-  if (labels.length < 2) throw new MdmlError('value', 'logisticRegression: needs at least two classes')
+  if (labels.length < 2) throw new OmaiError('value', 'logisticRegression: needs at least two classes')
   return [labels.length === 2 ? (labels[0] as number) : -1, labels[labels.length - 1] as number]
 }
 
@@ -62,7 +62,7 @@ const binary = (data: LearnData, classes: readonly number[]): LearnData => ({
  *
  * @example
  * ```ts
- * import { logisticRegression } from 'mdml-engine/methods/linear'
+ * import { logisticRegression } from 'omai-engine/methods/linear'
  * logisticRegression.fit({ x: [[0], [1], [2], [3]], y: [0, 0, 1, 1] }).classes // => [0, 1]
  * ```
  */

@@ -1,7 +1,7 @@
-import { key, normal } from 'mdml-engine/random'
-import { histogram, points, subplots } from 'mdml-render/charts'
-import { figure, withMarginals } from 'mdml-render/figure'
-import { Chart, ControlPanel, FigureFrame, NumberField, useColourMode } from 'mdml-render/react'
+import { key, normal } from 'omai-engine/random'
+import { histogram, points, subplots } from 'omai-render/charts'
+import { figure, withMarginals } from 'omai-render/figure'
+import { Chart, ControlPanel, FigureFrame, NumberField, useColourMode } from 'omai-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 

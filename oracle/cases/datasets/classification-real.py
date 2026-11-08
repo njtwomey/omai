@@ -4,8 +4,8 @@ from typing import cast
 
 import numpy as np
 import sklearn
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.vendor import csv_rows, fetch_pinned
+from omai_oracle.fixture import Case, case
+from omai_oracle.vendor import csv_rows, fetch_pinned
 from sklearn.datasets import load_breast_cancer, load_digits, load_iris, load_wine
 from sklearn.utils import Bunch
 

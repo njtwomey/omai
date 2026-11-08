@@ -1,12 +1,12 @@
 """Explicit feature maps against scikit-learn's kernel_approximation, given the same random draws: RBFSampler
 (random_weights_, random_offset_), Nystroem (component_indices_, normalization_), SkewedChi2Sampler and
-PolynomialCountSketch (indexHash_, bitHash_), whose transforms mdml-js reproduces from those draws, and the
+PolynomialCountSketch (indexHash_, bitHash_), whose transforms omai reproduces from those draws, and the
 deterministic AdditiveChi2Sampler. The randomised constructors themselves are tested statistically in TypeScript."""
 
 import numpy as np
 import sklearn
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import rng, uniform
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import rng, uniform
 from sklearn.kernel_approximation import (
     AdditiveChi2Sampler,
     Nystroem,

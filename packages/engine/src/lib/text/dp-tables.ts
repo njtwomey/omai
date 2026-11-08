@@ -6,7 +6,7 @@
  * table and serialises.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import {
   type Algorithm,
   type Contract,
@@ -107,12 +107,12 @@ export interface DpState {
  * @param b - The second sequence (the text, for `sellers`).
  * @param options - The table, the weights and, for `sellers`, k.
  * @returns The algorithm.
- * @throws MdmlError with code `value` for a negative or fractional k.
+ * @throws OmaiError with code `value` for a negative or fractional k.
  * @concept edit-distance
  * @example
  * ```ts
- * import { dpAlgorithm } from 'mdml-engine/text'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { dpAlgorithm } from 'omai-engine/text'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const run = runAlgorithm(dpAlgorithm('kitten', 'sitting'), { maxSteps: 20 })
  * [run.steps, run.state.table[6 * 8 + 7]] // => [7, 3]
  * ```
@@ -121,7 +121,7 @@ export function dpAlgorithm<T>(a: Sequence<T>, b: Sequence<T>, options: DpOption
   const kind = options.kind ?? 'levenshtein'
   const k = options.k ?? 0
   if (kind === 'sellers' && !(Number.isInteger(k) && k >= 0))
-    throw new MdmlError('value', 'sellers: k must be a non-negative integer')
+    throw new OmaiError('value', 'sellers: k must be a non-negative integer')
   const full = [elements(a), elements(b)] as const
   const ins = options.weights?.insertion ?? 1
   const del = options.weights?.deletion ?? 1
@@ -270,7 +270,7 @@ export function dpAlgorithm<T>(a: Sequence<T>, b: Sequence<T>, options: DpOption
  * @concept edit-distance
  * @example
  * ```ts
- * import { dpTable } from 'mdml-engine/text'
+ * import { dpTable } from 'omai-engine/text'
  * dpTable('ab', 'b', { kind: 'lcs' }).subsequence // => [1]
  * ```
  */

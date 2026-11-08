@@ -7,8 +7,8 @@ import pandas as pd
 import pingouin as pg
 import scipy
 import scipy.stats as st
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import rng
 
 REFERENCE: dict[str, str] = {"numpy": np.__version__, "scipy": scipy.__version__, "pingouin": pg.__version__}
 

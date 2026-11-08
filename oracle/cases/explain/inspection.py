@@ -6,8 +6,8 @@ from typing import Any
 
 import numpy as np
 import sklearn
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray, rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray, rng
 from sklearn.inspection import partial_dependence, permutation_importance
 from sklearn.linear_model import LinearRegression
 from sklearn.naive_bayes import GaussianNB

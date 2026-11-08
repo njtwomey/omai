@@ -5,7 +5,7 @@
  * Broderick's Frank-Wolfe Hilbert Bayesian coresets (`bayesianCoresetAlgorithm`, `bayesianCoreset`).
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { ddot, dnrm2, svd } from '../numerics/linalg/index.ts'
 import { categorical, foldIn, type Key } from '../random/index.ts'
 import { type TensorLike, toFlat } from '../tensor/index.ts'
@@ -56,8 +56,8 @@ export interface KCenterResult {
  * @concept coresets
  * @example
  * ```ts
- * import { kCenterGreedyAlgorithm } from 'mdml-engine/learn'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { kCenterGreedyAlgorithm } from 'omai-engine/learn'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const alg = kCenterGreedyAlgorithm([[0], [2], [10]], 2, { seedIndex: 0 })
  * runAlgorithm(alg, { maxSteps: 2 }).state.selected // => [0, 2]
  * ```
@@ -180,7 +180,7 @@ export function kCenterGreedyAlgorithm(
  * @concept coresets
  * @example
  * ```ts
- * import { kCenterGreedy } from 'mdml-engine/learn'
+ * import { kCenterGreedy } from 'omai-engine/learn'
  * const r = kCenterGreedy([[0], [1], [5], [10]], 3, { seedIndex: 0 })
  * r.indices // => [0, 3, 2]
  * r.radius // => 1
@@ -238,8 +238,8 @@ export interface KernelHerdingResult {
  * @concept coresets
  * @example
  * ```ts
- * import { herdingAlgorithm } from 'mdml-engine/learn'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { herdingAlgorithm } from 'omai-engine/learn'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const alg = herdingAlgorithm([[-2], [-1.9], [2], [2.1]], 2, { gamma: 1 })
  * runAlgorithm(alg, { maxSteps: 2 }).state.selected.length // => 2
  * ```
@@ -255,7 +255,7 @@ export function herdingAlgorithm(
     ? integerOption(size, 'size', 'kernelHerding', 1)
     : Math.min(integerOption(size, 'size', 'kernelHerding', 1), m.n)
   const gamma = options.gamma ?? 1 / Math.max(1, m.d)
-  if (!(gamma > 0)) throw new MdmlError('value', 'kernelHerding: gamma must be > 0')
+  if (!(gamma > 0)) throw new OmaiError('value', 'kernelHerding: gamma must be > 0')
 
   const K = rbfGram(m, m, gamma)
   const meanK = new Float64Array(m.n)
@@ -344,7 +344,7 @@ export function herdingAlgorithm(
  * @concept coresets
  * @example
  * ```ts
- * import { kernelHerding } from 'mdml-engine/learn'
+ * import { kernelHerding } from 'omai-engine/learn'
  * const r = kernelHerding([[-2], [-1.9], [2], [2.1]], 2, { gamma: 1 })
  * r.mmds[1] < r.mmds[0] // => true
  * ```
@@ -423,7 +423,7 @@ function selectByImportance(
  * @concept coresets
  * @example
  * ```ts
- * import { leverageScoreCoreset } from 'mdml-engine/learn'
+ * import { leverageScoreCoreset } from 'omai-engine/learn'
  * // Row 3 is a high-leverage point along the second axis.
  * const c = leverageScoreCoreset([[1, 0], [1, 0], [1, 0], [0, 10]], 2, { deterministic: true })
  * c.indices[0] // => 3
@@ -437,7 +437,7 @@ export function leverageScoreCoreset(
   const m = matrixView(x, 'leverageScoreCoreset')
   const k = integerOption(size, 'size', 'leverageScoreCoreset', 1)
   const lambda = options.lambda ?? 0
-  if (!(lambda >= 0)) throw new MdmlError('value', 'leverageScoreCoreset: lambda must be >= 0')
+  if (!(lambda >= 0)) throw new OmaiError('value', 'leverageScoreCoreset: lambda must be >= 0')
   const { u, s } = svd(fromView(m))
   const uFlat = toFlat(u)
   const sFlat = toFlat(s)
@@ -481,7 +481,7 @@ export interface SensitivityCoresetOptions {
  * @concept coresets
  * @example
  * ```ts
- * import { sensitivitySampling } from 'mdml-engine/learn'
+ * import { sensitivitySampling } from 'omai-engine/learn'
  * // Isolated outlier at [100] has the highest sensitivity score.
  * const c = sensitivitySampling([[0], [0.1], [-0.1], [0.05], [100]], 2, { k: 1, deterministic: true })
  * c.indices[0] // => 4
@@ -571,8 +571,8 @@ export interface BayesianCoresetResult {
  * @concept coresets
  * @example
  * ```ts
- * import { bayesianCoresetAlgorithm } from 'mdml-engine/learn'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { bayesianCoresetAlgorithm } from 'omai-engine/learn'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const L = [[1, 0], [1, 0], [0, 1], [0, 1]]
  * const alg = bayesianCoresetAlgorithm(L, 2)
  * const one = runAlgorithm(bayesianCoresetAlgorithm(L, 1), { maxSteps: 1 }).state.relativeError
@@ -717,7 +717,7 @@ export function bayesianCoresetAlgorithm(
  * @concept coresets
  * @example
  * ```ts
- * import { bayesianCoreset } from 'mdml-engine/learn'
+ * import { bayesianCoreset } from 'omai-engine/learn'
  * const r = bayesianCoreset([[2, 0], [2, 0], [0, 3], [0, 3]], 2)
  * r.support.length // => 2
  * r.relativeError < bayesianCoreset([[2, 0], [2, 0], [0, 3], [0, 3]], 1).relativeError // => true

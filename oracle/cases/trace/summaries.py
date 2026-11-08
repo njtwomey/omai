@@ -1,8 +1,8 @@
 """Tensor summaries recorded at summary detail, against numpy (moments, norm and np.histogram)."""
 
 import numpy as np
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import rng
 
 REFERENCE: dict[str, str] = {"numpy": np.__version__}
 

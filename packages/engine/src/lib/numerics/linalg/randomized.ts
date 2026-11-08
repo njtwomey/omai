@@ -7,7 +7,7 @@
  * @index function Randomised SVD, range finder and random projections.
  */
 
-import { MdmlError, minOf } from '../../base/index.ts'
+import { minOf, OmaiError } from '../../base/index.ts'
 import { foldIn, type Key, key as makeKey, normal, uniform } from '../../random/index.ts'
 import {
   concreteOrThrow,
@@ -45,7 +45,7 @@ export interface RandomizedOptions {
  * @concept randomised-linear-algebra
  * @example
  * ```ts
- * import { randomizedRangeFinder } from 'mdml-engine/numerics/linalg'
+ * import { randomizedRangeFinder } from 'omai-engine/numerics/linalg'
  * randomizedRangeFinder([[1, 0], [0, 1], [0, 0]], 2).shape // => [3, 2]
  * ```
  */
@@ -72,8 +72,8 @@ export function randomizedRangeFinder(a: TensorLike, size: number, options: Rand
  * @concept randomised-linear-algebra
  * @example
  * ```ts
- * import { randomizedSvd } from 'mdml-engine/numerics/linalg'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { randomizedSvd } from 'omai-engine/numerics/linalg'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(randomizedSvd([[3, 0], [0, 1]], 1).s).map((v) => Math.round(v * 1e8) / 1e8) // => [3]
  * ```
  */
@@ -101,8 +101,8 @@ export function randomizedSvd(
  * @returns The matrix.
  * @example
  * ```ts
- * import { randomProjectionMatrix } from 'mdml-engine/numerics/linalg'
- * import { key } from 'mdml-engine/random'
+ * import { randomProjectionMatrix } from 'omai-engine/numerics/linalg'
+ * import { key } from 'omai-engine/random'
  * randomProjectionMatrix(key(0), 5, 100).shape // => [5, 100]
  * ```
  */
@@ -133,12 +133,12 @@ export function randomProjectionMatrix(
  * @returns The dimension.
  * @example
  * ```ts
- * import { johnsonLindenstraussDim } from 'mdml-engine/numerics/linalg'
+ * import { johnsonLindenstraussDim } from 'omai-engine/numerics/linalg'
  * johnsonLindenstraussDim(1e6, 0.5) // => 663
  * ```
  */
 export function johnsonLindenstraussDim(n: number, eps: number): number {
-  if (!(eps > 0 && eps < 1)) throw new MdmlError('value', 'johnsonLindenstraussDim: eps must be in (0, 1)')
+  if (!(eps > 0 && eps < 1)) throw new OmaiError('value', 'johnsonLindenstraussDim: eps must be in (0, 1)')
   return Math.floor((4 * Math.log(n)) / (eps ** 2 / 2 - eps ** 3 / 3))
 }
 
@@ -177,7 +177,7 @@ export interface StochasticOptions {
  * @concept randomised-linear-algebra
  * @example
  * ```ts
- * import { hutchinsonTrace } from 'mdml-engine/numerics/linalg'
+ * import { hutchinsonTrace } from 'omai-engine/numerics/linalg'
  * hutchinsonTrace([[2, 0], [0, 3]], { samples: 50 }).estimate // => 5
  * ```
  */
@@ -187,7 +187,7 @@ export function hutchinsonTrace(
 ): { readonly estimate: number; readonly standardError: number } {
   const { matvec, n: dim } = asMatvec(operator)
   const n = options.n ?? dim
-  if (n === undefined) throw new MdmlError('value', 'hutchinsonTrace: pass n for a function operator')
+  if (n === undefined) throw new OmaiError('value', 'hutchinsonTrace: pass n for a function operator')
   const samples = options.samples ?? 100
   const values: number[] = []
   for (let s = 0; s < samples; s++) {
@@ -209,7 +209,7 @@ export function hutchinsonTrace(
  * @returns The estimate and its standard error.
  * @example
  * ```ts
- * import { stochasticLogdet } from 'mdml-engine/numerics/linalg'
+ * import { stochasticLogdet } from 'omai-engine/numerics/linalg'
  * Math.abs(stochasticLogdet([[2, 0], [0, 3]], { samples: 20 }).estimate - Math.log(6)) < 1e-10 // => true
  * ```
  */
@@ -219,7 +219,7 @@ export function stochasticLogdet(
 ): { readonly estimate: number; readonly standardError: number } {
   const { matvec, n: dim } = asMatvec(operator)
   const n = options.n ?? dim
-  if (n === undefined) throw new MdmlError('value', 'stochasticLogdet: pass n for a function operator')
+  if (n === undefined) throw new OmaiError('value', 'stochasticLogdet: pass n for a function operator')
   const steps = Math.min(options.lanczosSteps ?? 30, n)
   const samples = options.samples ?? 30
   const values: number[] = []

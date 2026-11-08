@@ -5,9 +5,9 @@ from importlib.metadata import version
 
 import cv2
 import numpy as np
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import rng
-from mdml_oracle.signal_helpers import smooth_image
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import rng
+from omai_oracle.signal_helpers import smooth_image
 
 REFERENCE: dict[str, str] = {"opencv-python-headless": version("opencv-python-headless")}
 

@@ -4,7 +4,7 @@
  * cards, two betting rounds and a public card).
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { CHANCE, TERMINAL } from './_tree.ts'
 import type { ExtensiveGame, TabularPolicy } from './tree.ts'
 
@@ -27,7 +27,7 @@ const KUHN_TERMINAL = ['00', '010', '011', '10', '11']
  * @concept kuhn-poker
  * @example
  * ```ts
- * import { gameTree, kuhnPoker } from 'mdml-engine/games'
+ * import { gameTree, kuhnPoker } from 'omai-engine/games'
  * gameTree(kuhnPoker()).infosets.map((i) => i.key).slice(0, 4) // => ['0', '1p', '0pb', '1b']
  * ```
  */
@@ -71,16 +71,16 @@ export function kuhnPoker(): ExtensiveGame<KuhnState> {
  *
  * @param alpha - Player 0's jack-betting probability (default 0).
  * @returns The equilibrium policy of both players.
- * @throws MdmlError with code `value` for alpha outside `[0, 1/3]`.
+ * @throws OmaiError with code `value` for alpha outside `[0, 1/3]`.
  * @concept kuhn-poker
  * @example
  * ```ts
- * import { expectedReturns, kuhnEquilibrium, kuhnPoker } from 'mdml-engine/games'
+ * import { expectedReturns, kuhnEquilibrium, kuhnPoker } from 'omai-engine/games'
  * Math.round(expectedReturns(kuhnPoker(), kuhnEquilibrium(0.1))[0] * 18 * 1e9) / 1e9 // => -1
  * ```
  */
 export function kuhnEquilibrium(alpha = 0): TabularPolicy {
-  if (!(alpha >= 0 && alpha <= 1 / 3)) throw new MdmlError('value', 'kuhnEquilibrium: alpha must be in [0, 1/3]')
+  if (!(alpha >= 0 && alpha <= 1 / 3)) throw new OmaiError('value', 'kuhnEquilibrium: alpha must be in [0, 1/3]')
   const call = alpha + 1 / 3
   return {
     '0': [1 - alpha, alpha],
@@ -134,7 +134,7 @@ function raises(actions: readonly number[]): number {
  * @concept leduc-poker
  * @example
  * ```ts
- * import { gameTree, leducPoker } from 'mdml-engine/games'
+ * import { gameTree, leducPoker } from 'omai-engine/games'
  * const t = gameTree(leducPoker())
  * [t.nodes.length, t.infosets.length] // => [9457, 936]
  * ```

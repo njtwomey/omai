@@ -8,7 +8,7 @@
  * @index structure The Module base class: torch.nn-shaped layers over a pure functional core.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { type Context, defaultContext } from '../../context/index.ts'
 import { foldIn, type Key } from '../../random/index.ts'
 import {
@@ -69,8 +69,8 @@ const counters = new WeakMap<Context, number>()
  * @returns The key.
  * @example
  * ```ts
- * import { initKey } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
+ * import { initKey } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
  * initKey('Linear', key(3)).words[0] === key(3).words[0] // => true
  * ```
  */
@@ -89,7 +89,7 @@ export function initKey(kind: string, key?: Key): Key {
  * @returns The flag.
  * @example
  * ```ts
- * import { isTraining } from 'mdml-engine/nn'
+ * import { isTraining } from 'omai-engine/nn'
  * isTraining({}) // => true
  * ```
  */
@@ -106,9 +106,9 @@ export function isTraining(ctx: ApplyContext = {}): boolean {
  * @returns `value`, unchanged.
  * @example
  * ```ts
- * import { tap } from 'mdml-engine/nn'
- * import { tapContext } from 'mdml-engine/trace'
- * import { tensor } from 'mdml-engine/tensor'
+ * import { tap } from 'omai-engine/nn'
+ * import { tapContext } from 'omai-engine/trace'
+ * import { tensor } from 'omai-engine/tensor'
  * const taps = tapContext()
  * tap({ taps, path: 'attn' }, 'weights', tensor([1]))
  * [...taps.entries.keys()] // => ['attn.weights']
@@ -131,8 +131,8 @@ export function tap(ctx: ApplyContext, name: string, value: Value): Value {
  * @returns The same tree with concrete leaves.
  * @example
  * ```ts
- * import { concreteTree } from 'mdml-engine/nn'
- * import { tensor } from 'mdml-engine/tensor'
+ * import { concreteTree } from 'omai-engine/nn'
+ * import { tensor } from 'omai-engine/tensor'
  * Object.keys(concreteTree({ a: tensor([1]) })) // => ['a']
  * ```
  */
@@ -157,7 +157,7 @@ export interface ChildScope {
  * @returns The scope.
  * @example
  * ```ts
- * import { childScope } from 'mdml-engine/nn'
+ * import { childScope } from 'omai-engine/nn'
  * childScope({ path: 'net' }, {}).child('0', 0).path // => 'net.0'
  * ```
  */
@@ -201,8 +201,8 @@ const nonEmpty = (tree: unknown): boolean => treeFlatten(tree).leaves.length > 0
  * @returns The tree.
  * @example
  * ```ts
- * import { assemble } from 'mdml-engine/nn'
- * import { tensor } from 'mdml-engine/tensor'
+ * import { assemble } from 'omai-engine/nn'
+ * import { tensor } from 'omai-engine/tensor'
  * Object.keys(assemble([['0', { w: tensor([1]) }], ['1', {}]])) // => ['0']
  * ```
  */
@@ -318,7 +318,7 @@ export abstract class Module<I = Value, O = Value> {
   stateDict(): Record<string, Tensor> {
     const out: Record<string, Tensor> = {}
     for (const [k, v] of [...Object.entries(this.namedParameters()), ...Object.entries(this.namedBuffers())]) {
-      if (!isTensor(v)) throw new MdmlError('value', `stateDict: ${k} is traced`)
+      if (!isTensor(v)) throw new OmaiError('value', `stateDict: ${k} is traced`)
       out[k] = v
     }
     return out
@@ -337,12 +337,12 @@ export abstract class Module<I = Value, O = Value> {
         const old = leaves[i] as Value
         const v = dict[p]
         if (v === undefined) {
-          if (strict || what === 'parameter') throw new MdmlError('value', `loadStateDict: missing ${p}`)
+          if (strict || what === 'parameter') throw new OmaiError('value', `loadStateDict: missing ${p}`)
           return old
         }
         const t = asTensor(v, old.dtype)
         if (t.shape.length !== old.shape.length || t.shape.some((d, j) => d !== old.shape[j])) {
-          throw new MdmlError(
+          throw new OmaiError(
             'shape',
             `loadStateDict: ${p} has shape [${t.shape.join(', ')}], expected [${old.shape.join(', ')}]`,
           )
@@ -434,8 +434,8 @@ export interface Functional<I = Value, O = Value> {
  * @index function Pure init and apply form of a module with explicit parameters.
  * @example
  * ```ts
- * import { functional, Linear } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
+ * import { functional, Linear } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
  * const f = functional(new Linear(2, 1))
  * f.apply(f.init(key(0)), [[1, 2]]).shape // => [1, 1]
  * ```

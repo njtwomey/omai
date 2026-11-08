@@ -7,7 +7,7 @@
  * step with the bound and the inducing points on the tape.
  */
 
-import { MdmlError, maxOf, minOf } from '../base/index.ts'
+import { maxOf, minOf, OmaiError } from '../base/index.ts'
 import { type PosteriorGrid, posteriorGrid } from '../exposition/index.ts'
 import {
   asRows,
@@ -336,8 +336,8 @@ function verbsOf(params: SparseParams, h: SparseGpHyper): SparseGpVerbs {
  * and C. E. Rasmussen, A unifying view of sparse approximate Gaussian process regression (2005).
  * @example
  * ```ts
- * import { sparseBound } from 'mdml-engine/gp'
- * import { rbfKernel } from 'mdml-engine/kernels'
+ * import { sparseBound } from 'omai-engine/gp'
+ * import { rbfKernel } from 'omai-engine/kernels'
  * const x = [[0], [1], [2]]
  * const exact = sparseBound('vfe', rbfKernel(), x, [0, 1, 0], x, 0.1, 1e-9)
  * Math.round(exact * 1e4) / 1e4 // => -3.4936
@@ -369,7 +369,7 @@ export function sparseBound(
  *
  * @example
  * ```ts
- * import type { SparseGpPath } from 'mdml-engine/gp'
+ * import type { SparseGpPath } from 'omai-engine/gp'
  * const path: SparseGpPath = 'gp/inducing'
  * path // => 'gp/inducing'
  * ```
@@ -389,8 +389,8 @@ export type SparseGpPath = 'gp/bound' | 'gp/hyper' | 'gp/inducing' | 'model/post
  * @index estimator Sparse Gaussian process with inducing points.
  * @example
  * ```ts
- * import { sparseGp } from 'mdml-engine/gp'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { sparseGp } from 'omai-engine/gp'
+ * import { toFlat } from 'omai-engine/tensor'
  * const x = Array.from({ length: 30 }, (_, i) => [i / 5])
  * const y = x.map(([v]) => Math.sin(v as number))
  * const fitted = sparseGp.with({ inducing: 6, approximation: 'vfe' }).fit({ x, y })
@@ -432,7 +432,7 @@ export const sparseGp: IterativeEstimator<SparseGpHyper, SparseState, SparsePara
         h.approximation !== 'fitc' &&
         h.approximation !== 'vfe'
       )
-        throw new MdmlError('value', `${WHO}: unknown approximation ${String(h.approximation)}`)
+        throw new OmaiError('value', `${WHO}: unknown approximation ${String(h.approximation)}`)
       const p0 = thetaOf(h.kernel).shape[0] ?? 0
       const box = packedBox(h, p)
       const objective = objectiveOf(h, p, p0, null)

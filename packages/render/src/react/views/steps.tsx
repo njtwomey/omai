@@ -3,7 +3,7 @@
  * optimisation, a hierarchical clustering's dendrogram cut into clusters, and the OPTICS reachability plot.
  */
 
-import type { ClusteringSteps, EmbeddingSteps, MixtureSteps } from 'mdml-engine/exposition'
+import type { ClusteringSteps, EmbeddingSteps, MixtureSteps } from 'omai-engine/exposition'
 import { type ReactElement, useCallback } from 'react'
 import type { Figure } from '../../figure/figure.ts'
 import {

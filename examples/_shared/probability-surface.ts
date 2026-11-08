@@ -4,8 +4,8 @@
  * The axes are the extent of the grid, which the shading covers exactly, so nothing is drawn outside the plot.
  */
 
-import type { DecisionSurface } from 'mdml-engine/exposition'
-import { cartesian, contours, heatmap, points } from 'mdml-render/charts'
+import type { DecisionSurface } from 'omai-engine/exposition'
+import { cartesian, contours, heatmap, points } from 'omai-render/charts'
 import { mix, PAPER, tab } from './colours.ts'
 
 /** The two class colours (tab10 blue and orange), used by the surface and by the points. */

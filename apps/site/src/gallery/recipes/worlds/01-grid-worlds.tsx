@@ -9,9 +9,9 @@ import {
   taxiWorld,
   type World,
   windyGridWorld,
-} from 'mdml-engine/worlds'
-import { worldView } from 'mdml-render/gym'
-import { Choice, ControlPanel, SceneFrame, Select, Toggle } from 'mdml-render/react'
+} from 'omai-engine/worlds'
+import { worldView } from 'omai-render/gym'
+import { Choice, ControlPanel, SceneFrame, Select, Toggle } from 'omai-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 

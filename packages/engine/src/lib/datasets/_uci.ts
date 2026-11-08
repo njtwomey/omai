@@ -4,7 +4,7 @@
  * builders that turn a generated payload into a classification, regression or table dataset.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import {
   type ClassificationData,
   type DatasetKind,
@@ -419,20 +419,20 @@ export const UCI_INFO: Readonly<Record<string, UciInfo>> = {
 /** The page of a UCI dataset on the repository. */
 export function uciUrl(name: string): string {
   const info = UCI_INFO[name]
-  if (info === undefined) throw new MdmlError('value', `uciUrl: no UCI dataset '${name}'`)
+  if (info === undefined) throw new OmaiError('value', `uciUrl: no UCI dataset '${name}'`)
   return `https://archive.ics.uci.edu/dataset/${info.uciId}/${info.slug}`
 }
 
 /** The source line of a UCI dataset's metadata. */
 export function uciSource(name: string): string {
   const info = UCI_INFO[name]
-  if (info === undefined) throw new MdmlError('value', `uciSource: no UCI dataset '${name}'`)
+  if (info === undefined) throw new OmaiError('value', `uciSource: no UCI dataset '${name}'`)
   return `UCI Machine Learning Repository dataset ${info.uciId} (${info.files})`
 }
 
 function uciMeta(name: string, sha256: string): Partial<DatasetMeta> {
   const info = UCI_INFO[name]
-  if (info === undefined) throw new MdmlError('value', `uciMeta: no UCI dataset '${name}'`)
+  if (info === undefined) throw new OmaiError('value', `uciMeta: no UCI dataset '${name}'`)
   return {
     name,
     description: info.description,

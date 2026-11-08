@@ -4,7 +4,7 @@
  * signum, and the exponential moving average of updates.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import {
   add,
   clip,
@@ -57,8 +57,8 @@ export interface SgdOptions {
  * @index function SGD with momentum, Nesterov and weight decay.
  * @example
  * ```ts
- * import { sgd, applyUpdates } from 'mdml-engine/optim'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { sgd, applyUpdates } from 'omai-engine/optim'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * const opt = sgd({ learningRate: 0.1 })
  * const { updates } = opt.update(tensor([1, -2]), opt.init(tensor([0, 0])), tensor([0, 0]))
  * toArray(updates as never) // => [-0.1, 0.2]
@@ -91,7 +91,7 @@ export interface RmspropOptions {
  * @returns The optimiser.
  * @example
  * ```ts
- * import { rmsprop } from 'mdml-engine/optim'
+ * import { rmsprop } from 'omai-engine/optim'
  * rmsprop({ learningRate: 0.01 }).name // => 'chain(addDecayedWeights, scaleByRms, scaleByLearningRate)'
  * ```
  */
@@ -121,7 +121,7 @@ export interface AdagradOptions {
  * @returns The optimiser.
  * @example
  * ```ts
- * import { adagrad } from 'mdml-engine/optim'
+ * import { adagrad } from 'omai-engine/optim'
  * adagrad({ learningRate: 0.1 }).name // => 'chain(addDecayedWeights, scaleByAdagrad, scaleByLearningRate)'
  * ```
  */
@@ -150,8 +150,8 @@ export interface AdadeltaState {
  * @returns The transformation.
  * @example
  * ```ts
- * import { scaleByAdadelta } from 'mdml-engine/optim'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { scaleByAdadelta } from 'omai-engine/optim'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * const t = scaleByAdadelta(0, 0)
  * toArray(t.update(tensor([2]), t.init(tensor([0]))).updates as never) // => [0]
  * ```
@@ -191,7 +191,7 @@ export interface AdadeltaOptions {
  * @returns The optimiser.
  * @example
  * ```ts
- * import { adadelta } from 'mdml-engine/optim'
+ * import { adadelta } from 'omai-engine/optim'
  * adadelta().name // => 'chain(addDecayedWeights, scaleByAdadelta, scaleByLearningRate)'
  * ```
  */
@@ -228,8 +228,8 @@ export interface RpropState {
  * @returns The optimiser (its updates already include the step sizes).
  * @example
  * ```ts
- * import { rprop } from 'mdml-engine/optim'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { rprop } from 'omai-engine/optim'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * const opt = rprop({ learningRate: 0.1 })
  * const s = opt.update(tensor([3, -1]), opt.init(tensor([0, 0])))
  * toArray(s.updates as never) // => [-0.1, 0.1]
@@ -288,8 +288,8 @@ export interface AsgdState {
  * @returns The optimiser (needs `params` in `update`); `state.ax` is the averaged iterate.
  * @example
  * ```ts
- * import { asgd } from 'mdml-engine/optim'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { asgd } from 'omai-engine/optim'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * const opt = asgd({ learningRate: 0.1, lambd: 0 })
  * toArray(opt.update(tensor([2]), opt.init(tensor([0])), tensor([0])).updates as never) // => [-0.2]
  * ```
@@ -304,7 +304,7 @@ export function asgd(options: AsgdOptions = {}): GradientTransformation<AsgdStat
     name: 'asgd',
     init: (params) => ({ count: 0, eta: lr, mu: 1, ax: treeZeros(params) }),
     update: (grads, state, params) => {
-      if (params === undefined) throw new MdmlError('value', 'asgd needs the parameters')
+      if (params === undefined) throw new OmaiError('value', 'asgd needs the parameters')
       const { eta, mu } = state
       const g = wd === 0 ? grads : treeMap((gi, p) => add(gi, mul(p, wd)), grads, params)
       const next = treeMap((p, gi) => sub(mul(p, 1 - lambd * eta), mul(gi, eta)), params, g)
@@ -334,8 +334,8 @@ export interface EmaState {
  * @returns The transformation.
  * @example
  * ```ts
- * import { ema } from 'mdml-engine/optim'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { ema } from 'omai-engine/optim'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * const t = ema(0.5, false)
  * toArray(t.update(tensor([2]), t.init(tensor([0]))).updates as never) // => [1]
  * ```
@@ -359,8 +359,8 @@ export function ema(decay: number, debias = true): GradientTransformation<EmaSta
  * @returns The transformation.
  * @example
  * ```ts
- * import { scaleBySign } from 'mdml-engine/optim'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { scaleBySign } from 'omai-engine/optim'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * toArray(scaleBySign().update(tensor([3, -0.5, 0]), undefined).updates as never) // => [1, -1, 0]
  * ```
  */
@@ -387,8 +387,8 @@ export interface SignSgdOptions {
  * @returns The optimiser.
  * @example
  * ```ts
- * import { signSgd } from 'mdml-engine/optim'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { signSgd } from 'omai-engine/optim'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * const opt = signSgd({ learningRate: 0.1 })
  * toArray(opt.update(tensor([3, -0.5]), opt.init(tensor([0, 0]))).updates as never) // => [-0.1, 0.1]
  * ```

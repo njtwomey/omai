@@ -11,8 +11,8 @@ import json
 from importlib.metadata import version
 from typing import Any
 
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.text import tie_free_vocab_size
+from omai_oracle.fixture import Case, case
+from omai_oracle.text import tie_free_vocab_size
 from tokenizers import Tokenizer, models, pre_tokenizers, trainers
 
 REFERENCE: dict[str, str] = {"tokenizers": version("tokenizers")}

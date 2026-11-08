@@ -1,14 +1,14 @@
-import { generate, type RegressionData } from 'mdml-engine/data'
-import { kanFunctions } from 'mdml-engine/datasets'
-import { kanRegressor } from 'mdml-engine/learn'
-import { kanBases } from 'mdml-engine/nn'
-import { key } from 'mdml-engine/random'
-import { choice, defaults, dict, int, real } from 'mdml-engine/space'
-import { asTensor, fromStorage, toFlat } from 'mdml-engine/tensor'
-import type { Config } from 'mdml-engine/trace'
-import { metricSeries } from 'mdml-engine/trace'
-import { cartesian, lines, points } from 'mdml-render/charts'
-import { figure } from 'mdml-render/figure'
+import { generate, type RegressionData } from 'omai-engine/data'
+import { kanFunctions } from 'omai-engine/datasets'
+import { kanRegressor } from 'omai-engine/learn'
+import { kanBases } from 'omai-engine/nn'
+import { key } from 'omai-engine/random'
+import { choice, defaults, dict, int, real } from 'omai-engine/space'
+import { asTensor, fromStorage, toFlat } from 'omai-engine/tensor'
+import type { Config } from 'omai-engine/trace'
+import { metricSeries } from 'omai-engine/trace'
+import { cartesian, lines, points } from 'omai-render/charts'
+import { figure } from 'omai-render/figure'
 import {
   Chart,
   ControlPanel,
@@ -20,7 +20,7 @@ import {
   useScrubClick,
   useSession,
   useSessionPreferences,
-} from 'mdml-render/react'
+} from 'omai-render/react'
 import { type ReactNode, useEffect, useMemo, useState } from 'react'
 import { ComputeGate } from '../../shared/ComputeGate.tsx'
 import { StaleVeil } from '../../shared/StaleVeil.tsx'

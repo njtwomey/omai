@@ -8,8 +8,8 @@ from typing import Any
 import numpy as np
 import shap
 import sklearn
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray, rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray, rng
 from scipy.cluster.hierarchy import linkage
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import LinearRegression

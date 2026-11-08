@@ -5,7 +5,7 @@
  * addition; each has its error guarantee stated in its documentation and checked in its property tests.
  */
 
-import { type Json, MdmlError, minOf } from '../base/index.ts'
+import { type Json, minOf, OmaiError } from '../base/index.ts'
 import { type Algorithm, channels, stateFromJson, stateToJson } from '../trace/index.ts'
 import { fmix32, hash32, itemFromKey, itemKey, type SketchItem, type SketchSeed, seedOf } from './hashing.ts'
 
@@ -39,18 +39,18 @@ function resolveCountMin(options: CountMinOptions): TableShape & { readonly epsi
   const epsilon = options.epsilon ?? 0.01
   const delta = options.delta ?? 0.01
   if (options.width === undefined && !(epsilon > 0 && epsilon < 1)) {
-    throw new MdmlError('value', `countMinSketch: epsilon must lie in (0, 1), got ${epsilon}`)
+    throw new OmaiError('value', `countMinSketch: epsilon must lie in (0, 1), got ${epsilon}`)
   }
   if (options.depth === undefined && !(delta > 0 && delta < 1)) {
-    throw new MdmlError('value', `countMinSketch: delta must lie in (0, 1), got ${delta}`)
+    throw new OmaiError('value', `countMinSketch: delta must lie in (0, 1), got ${delta}`)
   }
   const width = options.width ?? Math.ceil(Math.E / epsilon)
   const depth = options.depth ?? Math.max(1, Math.ceil(Math.log(1 / delta)))
   if (!(Number.isInteger(width) && width >= 1)) {
-    throw new MdmlError('value', `countMinSketch: width must be a positive integer, got ${width}`)
+    throw new OmaiError('value', `countMinSketch: width must be a positive integer, got ${width}`)
   }
   if (!(Number.isInteger(depth) && depth >= 1)) {
-    throw new MdmlError('value', `countMinSketch: depth must be a positive integer, got ${depth}`)
+    throw new OmaiError('value', `countMinSketch: depth must be a positive integer, got ${depth}`)
   }
   return { width, depth, seed: seedOf(options.seed), epsilon: Math.E / width, delta: Math.exp(-depth) }
 }
@@ -125,7 +125,7 @@ function makeCountMin(
     },
     add: (item, count = 1) => {
       if (!(count >= 0 && Number.isFinite(count))) {
-        throw new MdmlError('value', `countMinSketch.add: count must be non-negative and finite, got ${count}`)
+        throw new OmaiError('value', `countMinSketch.add: count must be non-negative and finite, got ${count}`)
       }
       total += count
       cmAdd(table, shape, item, count, conservative)
@@ -133,10 +133,10 @@ function makeCountMin(
     estimate: (item) => cmEstimate(table, shape, item),
     merge: (other) => {
       if (other.width !== shape.width || other.depth !== shape.depth) {
-        throw new MdmlError('shape', 'countMinSketch.merge: dimensions must match')
+        throw new OmaiError('shape', 'countMinSketch.merge: dimensions must match')
       }
       if (conservative || other.conservative) {
-        throw new MdmlError(
+        throw new OmaiError(
           'value',
           'countMinSketch.merge: conservative sketches do not merge (the sum overestimates more)',
         )
@@ -153,14 +153,14 @@ function makeCountMin(
  *
  * @param options - `width` and `depth`, or `epsilon` and `delta`; `conservative`; `seed`.
  * @returns The sketch.
- * @throws MdmlError with code `value` for invalid dimensions.
+ * @throws OmaiError with code `value` for invalid dimensions.
  * @concept count-min-sketch
  * @reference G. Cormode and S. Muthukrishnan, An improved data stream summary: the count-min sketch and its
  *   applications (Journal of Algorithms, 2005).
  * @index structure Count-Min sketch for stream frequencies.
  * @example
  * ```ts
- * import { countMinSketch } from 'mdml-engine/sketches'
+ * import { countMinSketch } from 'omai-engine/sketches'
  * const cms = countMinSketch({ epsilon: 0.01, delta: 0.01 })
  * cms.add('a', 5)
  * cms.add('b', 2)
@@ -200,12 +200,12 @@ export interface CountMinAlgorithmOptions extends CountMinOptions {
  *
  * @param options - The sketch's shape and the stream.
  * @returns The algorithm.
- * @throws MdmlError with code `value` for invalid dimensions.
+ * @throws OmaiError with code `value` for invalid dimensions.
  * @concept count-min-sketch
  * @example
  * ```ts
- * import { countMinAlgorithm } from 'mdml-engine/sketches'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { countMinAlgorithm } from 'omai-engine/sketches'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const res = runAlgorithm(countMinAlgorithm({ items: ['a', 'b', 'a', 'c', 'a'], width: 64, depth: 4 }), { maxSteps: 9 })
  * [res.state.seen, res.state.truth['s:a'], res.state.maxOverestimate] // => [5, 3, 0]
  * ```
@@ -339,7 +339,7 @@ function makeCountSketch(width: number, depth: number, seed: number, table: Floa
     },
     merge: (other) => {
       if (other.width !== width || other.depth !== depth) {
-        throw new MdmlError('shape', 'countSketch.merge: dimensions must match')
+        throw new OmaiError('shape', 'countSketch.merge: dimensions must match')
       }
       const merged = new Float64Array(table.length)
       for (let i = 0; i < merged.length; i++) merged[i] = (table[i] ?? 0) + (other.table[i] ?? 0)
@@ -353,12 +353,12 @@ function makeCountSketch(width: number, depth: number, seed: number, table: Floa
  *
  * @param options - `width` and `depth`, or `epsilon` and `delta`; `seed`.
  * @returns The sketch.
- * @throws MdmlError with code `value` for invalid dimensions.
+ * @throws OmaiError with code `value` for invalid dimensions.
  * @concept count-sketch
  * @reference M. Charikar, K. Chen and M. Farach-Colton, Finding frequent items in data streams (ICALP 2002).
  * @example
  * ```ts
- * import { countSketch } from 'mdml-engine/sketches'
+ * import { countSketch } from 'omai-engine/sketches'
  * const cs = countSketch({ width: 256, depth: 5 })
  * cs.add('alpha', 10)
  * cs.add('beta', -3)
@@ -372,10 +372,10 @@ export function countSketch(options: CountSketchOptions = {}): CountSketch {
   const rawDepth = options.depth ?? Math.max(1, Math.ceil(Math.log(1 / delta)))
   const depth = rawDepth % 2 === 0 ? rawDepth + 1 : rawDepth
   if (!(Number.isInteger(width) && width >= 1)) {
-    throw new MdmlError('value', `countSketch: width must be a positive integer, got ${width}`)
+    throw new OmaiError('value', `countSketch: width must be a positive integer, got ${width}`)
   }
   if (!(Number.isInteger(rawDepth) && rawDepth >= 1)) {
-    throw new MdmlError('value', `countSketch: depth must be a positive integer, got ${rawDepth}`)
+    throw new OmaiError('value', `countSketch: depth must be a positive integer, got ${rawDepth}`)
   }
   return makeCountSketch(width, depth, seedOf(options.seed), new Float64Array(width * depth))
 }
@@ -440,13 +440,13 @@ function sortedEntries(entries: readonly SpaceSavingEntry[]): SpaceSavingEntry[]
  *
  * @param k - Number of counters (`k >= 1`).
  * @returns The summary.
- * @throws MdmlError with code `value` for a non-positive or non-integer `k`.
+ * @throws OmaiError with code `value` for a non-positive or non-integer `k`.
  * @concept heavy-hitters
  * @reference A. Metwally, D. Agrawal and A. El Abbadi, Efficient computation of frequent and top-k elements in data
  *   streams (ICDT 2005).
  * @example
  * ```ts
- * import { spaceSavingTopK } from 'mdml-engine/sketches'
+ * import { spaceSavingTopK } from 'omai-engine/sketches'
  * const ss = spaceSavingTopK(3)
  * for (const x of ['a', 'a', 'a', 'b', 'b', 'c', 'd']) ss.add(x)
  * ss.entries().map((e) => e.item) // => ['a', 'b', 'd']
@@ -454,7 +454,7 @@ function sortedEntries(entries: readonly SpaceSavingEntry[]): SpaceSavingEntry[]
  */
 export function spaceSavingTopK(k: number): SpaceSavingTopK {
   if (!(Number.isInteger(k) && k >= 1))
-    throw new MdmlError('value', `spaceSavingTopK: k must be a positive integer, got ${k}`)
+    throw new OmaiError('value', `spaceSavingTopK: k must be a positive integer, got ${k}`)
   const entries: SpaceSavingEntry[] = []
   let total = 0
   const smallest = (): number => (entries.length < k ? 0 : minOf(entries.map((e) => e.count)))
@@ -468,7 +468,7 @@ export function spaceSavingTopK(k: number): SpaceSavingTopK {
     },
     add: (item, count = 1) => {
       if (!(count > 0 && Number.isFinite(count))) {
-        throw new MdmlError('value', `spaceSavingTopK.add: count must be positive and finite, got ${count}`)
+        throw new OmaiError('value', `spaceSavingTopK.add: count must be positive and finite, got ${count}`)
       }
       total += count
       spaceSavingAdd(entries, k, item, count)
@@ -513,12 +513,12 @@ export interface SpaceSavingAlgorithmOptions {
  *
  * @param options - The stream and the number of counters.
  * @returns The algorithm.
- * @throws MdmlError with code `value` for a non-positive or non-integer `k`.
+ * @throws OmaiError with code `value` for a non-positive or non-integer `k`.
  * @concept heavy-hitters
  * @example
  * ```ts
- * import { spaceSavingAlgorithm } from 'mdml-engine/sketches'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { spaceSavingAlgorithm } from 'omai-engine/sketches'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const res = runAlgorithm(spaceSavingAlgorithm({ items: ['x', 'x', 'y', 'z', 'x'], k: 2 }), { maxSteps: 9 })
  * res.state.entries.map((e) => e.item) // => ['x', 'z']
  * ```
@@ -526,7 +526,7 @@ export interface SpaceSavingAlgorithmOptions {
 export function spaceSavingAlgorithm(options: SpaceSavingAlgorithmOptions): Algorithm<SpaceSavingState> {
   const { items, k } = options
   if (!(Number.isInteger(k) && k >= 1))
-    throw new MdmlError('value', `spaceSavingAlgorithm: k must be a positive integer, got ${k}`)
+    throw new OmaiError('value', `spaceSavingAlgorithm: k must be a positive integer, got ${k}`)
   const measure = (
     entries: readonly SpaceSavingEntry[],
     seen: number,
@@ -613,7 +613,7 @@ function makeMisraGries(k: number, start: Map<SketchItem, number>, startTotal: n
     estimate: (item) => counts.get(item) ?? 0,
     counters,
     merge: (other) => {
-      if (other.k !== k) throw new MdmlError('shape', 'misraGries.merge: summaries must share k')
+      if (other.k !== k) throw new OmaiError('shape', 'misraGries.merge: summaries must share k')
       const sum = new Map(counts)
       for (const { item, count } of other.counters()) sum.set(item, (sum.get(item) ?? 0) + count)
       const sorted = [...sum].sort((a, b) => b[1] - a[1])
@@ -630,12 +630,12 @@ function makeMisraGries(k: number, start: Map<SketchItem, number>, startTotal: n
  *
  * @param k - Maximum number of counters (`k >= 1`).
  * @returns The summary.
- * @throws MdmlError with code `value` for a non-positive or non-integer `k`.
+ * @throws OmaiError with code `value` for a non-positive or non-integer `k`.
  * @concept heavy-hitters
  * @reference J. Misra and D. Gries, Finding repeated elements (Science of Computer Programming, 1982).
  * @example
  * ```ts
- * import { misraGries } from 'mdml-engine/sketches'
+ * import { misraGries } from 'omai-engine/sketches'
  * const mg = misraGries(2)
  * for (const x of ['a', 'a', 'a', 'b', 'c', 'a']) mg.add(x)
  * [mg.estimate('a'), mg.estimate('b')] // => [3, 0]
@@ -643,6 +643,6 @@ function makeMisraGries(k: number, start: Map<SketchItem, number>, startTotal: n
  */
 export function misraGries(k: number): MisraGries {
   if (!(Number.isInteger(k) && k >= 1))
-    throw new MdmlError('value', `misraGries: k must be a positive integer, got ${k}`)
+    throw new OmaiError('value', `misraGries: k must be a positive integer, got ${k}`)
   return makeMisraGries(k, new Map(), 0)
 }

@@ -1,7 +1,7 @@
-import { key, normal } from 'mdml-engine/random'
-import { toArray } from 'mdml-engine/tensor'
-import { cartesian, hexbin, points } from 'mdml-render/charts'
-import { figure } from 'mdml-render/figure'
+import { key, normal } from 'omai-engine/random'
+import { toArray } from 'omai-engine/tensor'
+import { cartesian, hexbin, points } from 'omai-render/charts'
+import { figure } from 'omai-render/figure'
 import {
   Chart,
   Choice,
@@ -11,7 +11,7 @@ import {
   SeedInput,
   Toggle,
   useColourMode,
-} from 'mdml-render/react'
+} from 'omai-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 

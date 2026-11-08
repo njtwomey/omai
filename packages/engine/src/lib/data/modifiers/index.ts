@@ -2,7 +2,7 @@
  * Modifiers: keyed changes applied to generated or real data with their knobs as a `Space`, covering feature corruption
  * (missingness, outliers, transforms, correlation), label corruption and class balance, distribution shift (covariate, concept, subpopulation, shortcut), planted leaks and duplicates, and image
  * augmentations (crops, flips, cutout, mixup, cutmix). Part of
- * `mdml-engine/data`.
+ * `omai-engine/data`.
  *
  * @inline
  */

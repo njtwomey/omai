@@ -97,8 +97,8 @@ export interface RemezState {
  * @concept minimax-approximation
  * @example
  * ```ts
- * import { remezAlgorithm } from 'mdml-engine/numerics/approximation'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { remezAlgorithm } from 'omai-engine/numerics/approximation'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const run = runAlgorithm(remezAlgorithm((x) => x * x, 1), { maxSteps: 60 })
  * [run.status, Math.abs(run.state.error)] // => ['converged', 0.5]
  * ```
@@ -246,7 +246,7 @@ export function remezAlgorithm(
  * @concept minimax-approximation
  * @example
  * ```ts
- * import { remez } from 'mdml-engine/numerics/approximation'
+ * import { remez } from 'omai-engine/numerics/approximation'
  * // The best linear approximation of x^2 on [-1, 1] is 1/2, with error 1/2.
  * Math.abs(remez((x) => x * x, 1).error) // => 0.5
  * ```
@@ -276,10 +276,10 @@ export function remez(f: (x: number) => number, m: number, options: RemezOptions
  * @param c - Coefficients `[k]`.
  * @param t - Points `[m]` in [-1, 1].
  * @returns Values `[m]`.
- * @throws MdmlError with code `shape` unless `c` and `t` are vectors, and `not-differentiable` for a traced value.
+ * @throws OmaiError with code `shape` unless `c` and `t` are vectors, and `not-differentiable` for a traced value.
  * @example
  * ```ts
- * import { chebyshevSeries } from 'mdml-engine/numerics/approximation'
+ * import { chebyshevSeries } from 'omai-engine/numerics/approximation'
  * chebyshevSeries([0, 0, 1], [0.5]) // => [-0.5]
  * ```
  */

@@ -6,7 +6,7 @@
  * class distribution, and the rule-set record that views draw.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { type RuleSet as RuleSetRecord, ruleSet as ruleSetRecord } from '../exposition/index.ts'
 import { chdtrc } from '../numerics/special/index.ts'
 import { item } from '../tensor/index.ts'
@@ -45,7 +45,7 @@ export type RuleModel = {
  * @returns True when it holds (a missing value never does).
  * @example
  * ```ts
- * import { literalHolds } from 'mdml-engine/rules'
+ * import { literalHolds } from 'omai-engine/rules'
  * [literalHolds({ feature: 0, op: '<=', value: 2 }, 1.5), literalHolds({ feature: 0, op: '>', value: 2 }, 1.5)] // => [true, false]
  * ```
  */
@@ -67,7 +67,7 @@ export function literalHolds(literal: Literal, value: number): boolean {
  * @returns 1 for covered rows, 0 otherwise.
  * @example
  * ```ts
- * import { coverageOf } from 'mdml-engine/rules'
+ * import { coverageOf } from 'omai-engine/rules'
  * Array.from(coverageOf([{ feature: 1, op: '>', value: 0 }], Float64Array.of(0, 1, 0, -1), 2)) // => [1, 0]
  * ```
  */
@@ -96,7 +96,7 @@ export function coverageOf(literals: readonly Literal[], data: ArrayLike<number>
  * @returns `n * k` counts, row-major.
  * @example
  * ```ts
- * import { predictCounts } from 'mdml-engine/rules'
+ * import { predictCounts } from 'omai-engine/rules'
  * const model = { kind: 'list', classes: [0, 1], nFeatures: 1, rules: [{ literals: [{ feature: 0, op: '>', value: 1 }], label: 1, counts: [0, 3] }], defaultCounts: [4, 0] } as const
  * Array.from(predictCounts(model, Float64Array.of(0, 2))) // => [4, 0, 0, 3]
  * ```
@@ -129,7 +129,7 @@ export function predictCounts(model: RuleModel, data: ArrayLike<number>): Float6
  * @returns One rule index per row.
  * @example
  * ```ts
- * import { firingRule } from 'mdml-engine/rules'
+ * import { firingRule } from 'omai-engine/rules'
  * const model = { kind: 'list', classes: [0, 1], nFeatures: 1, rules: [{ literals: [{ feature: 0, op: '>', value: 1 }], label: 1, counts: [0, 3] }], defaultCounts: [4, 0] } as const
  * firingRule(model, Float64Array.of(0, 2)) // => [-1, 0]
  * ```
@@ -148,7 +148,7 @@ export function firingRule(model: RuleModel, data: ArrayLike<number>): number[] 
  * @returns Probabilities summing to one.
  * @example
  * ```ts
- * import { smoothedProbabilities } from 'mdml-engine/rules'
+ * import { smoothedProbabilities } from 'omai-engine/rules'
  * smoothedProbabilities([3, 0]) // => [0.8, 0.2]
  * ```
  */
@@ -176,7 +176,7 @@ export type RuleHeuristic = 'entropy' | 'laplace' | 'accuracy' | 'm-estimate' | 
  * @returns The quality, or -Infinity for a rule covering nothing.
  * @example
  * ```ts
- * import { ruleQuality } from 'mdml-engine/rules'
+ * import { ruleQuality } from 'omai-engine/rules'
  * [ruleQuality('laplace', [8, 0], 0, [10, 10]), ruleQuality('accuracy', [8, 2], 0, [10, 10])] // => [0.9, 0.8]
  * ```
  */
@@ -227,7 +227,7 @@ export function ruleQuality(
  * @returns The statistic.
  * @example
  * ```ts
- * import { likelihoodRatio } from 'mdml-engine/rules'
+ * import { likelihoodRatio } from 'omai-engine/rules'
  * likelihoodRatio([10, 0], [10, 10]) // => 13.862943611198906
  * ```
  */
@@ -255,7 +255,7 @@ export function likelihoodRatio(covered: ArrayLike<number>, prior: ArrayLike<num
  * @returns The probability of a statistic at least as large under chance (1 for one class).
  * @example
  * ```ts
- * import { ruleSignificance } from 'mdml-engine/rules'
+ * import { ruleSignificance } from 'omai-engine/rules'
  * ruleSignificance([10, 0], [10, 10]) < 0.001 // => true
  * ```
  */
@@ -294,7 +294,7 @@ export type RuleStatistics = {
  * @returns The statistics.
  * @example
  * ```ts
- * import { ruleStatistics } from 'mdml-engine/rules'
+ * import { ruleStatistics } from 'omai-engine/rules'
  * const s = ruleStatistics({ literals: [{ feature: 0, op: '>', value: 0 }], label: 1, counts: [] }, Float64Array.of(0, 1, 2, -1), 1, [0, 1, 1, 0], 2)
  * [s.covered, s.correct, s.confidence, s.lift] // => [2, 2, 1, 2]
  * ```
@@ -308,7 +308,7 @@ export function ruleStatistics(
 ): RuleStatistics {
   const cover = coverageOf(rule.literals, data, d)
   const n = labels.length
-  if (cover.length !== n) throw new MdmlError('shape', 'ruleStatistics: labels and rows differ in length')
+  if (cover.length !== n) throw new OmaiError('shape', 'ruleStatistics: labels and rows differ in length')
   let covered = 0
   let correct = 0
   let classRows = 0
@@ -340,7 +340,7 @@ export function ruleStatistics(
  * @returns The text.
  * @example
  * ```ts
- * import { literalText } from 'mdml-engine/rules'
+ * import { literalText } from 'omai-engine/rules'
  * literalText({ feature: 1, op: '<=', value: 2.5 }, ['age', 'height']) // => 'height <= 2.5'
  * ```
  */
@@ -358,7 +358,7 @@ export function literalText(literal: Literal, features: readonly string[] = []):
  * @returns The text.
  * @example
  * ```ts
- * import { ruleLine } from 'mdml-engine/rules'
+ * import { ruleLine } from 'omai-engine/rules'
  * ruleLine({ literals: [{ feature: 0, op: '>', value: 1 }], label: 1, counts: [] }, ['no', 'yes'], ['age']) // => 'IF age > 1 THEN yes'
  * ```
  */
@@ -376,7 +376,7 @@ export function ruleLine(rule: Rule, classes: readonly (string | number)[], feat
  * @returns The text.
  * @example
  * ```ts
- * import { modelText } from 'mdml-engine/rules'
+ * import { modelText } from 'omai-engine/rules'
  * const model = { kind: 'list', classes: [0, 1], nFeatures: 1, rules: [{ literals: [{ feature: 0, op: '>', value: 1 }], label: 1, counts: [0, 3] }], defaultCounts: [4, 0] } as const
  * modelText(model, ['age']) // => 'IF age > 1 THEN 1\nELSE 0'
  * ```
@@ -396,7 +396,7 @@ export function modelText(model: RuleModel, features: readonly string[] = [], cl
  * @returns The index (0 for an empty list).
  * @example
  * ```ts
- * import { argmaxOf } from 'mdml-engine/rules'
+ * import { argmaxOf } from 'omai-engine/rules'
  * argmaxOf([1, 3, 3]) // => 1
  * ```
  */
@@ -418,7 +418,7 @@ export function argmaxOf(values: ArrayLike<number>): number {
  * @returns The record.
  * @example
  * ```ts
- * import { modelRecord } from 'mdml-engine/rules'
+ * import { modelRecord } from 'omai-engine/rules'
  * const model = { kind: 'list', classes: [0, 1], nFeatures: 1, rules: [{ literals: [{ feature: 0, op: '>', value: 1 }], label: 1, counts: [0, 3] }], defaultCounts: [4, 0] } as const
  * modelRecord(model, ['age'], ['no', 'yes'], 'demo').rules[0]?.precision // => 1
  * ```

@@ -1,5 +1,5 @@
 import * as echarts from 'echarts'
-import { confusionMatrix, valueGrids } from 'mdml-engine/exposition'
+import { confusionMatrix, valueGrids } from 'omai-engine/exposition'
 import { describe, expect, it } from 'vitest'
 import { accuracyOf, cellsLayout, confusionFrames, valueGridFrames } from './cells.ts'
 

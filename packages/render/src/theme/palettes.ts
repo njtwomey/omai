@@ -5,8 +5,8 @@
  * categorical colours stay distinguishable.
  */
 
-import { MdmlError } from 'mdml-engine/base'
-import { type Paint, parsePaint, type Rgba } from 'mdml-engine/scene'
+import { OmaiError } from 'omai-engine/base'
+import { type Paint, parsePaint, type Rgba } from 'omai-engine/scene'
 import type { ColourMode } from './tokens.ts'
 
 /** The tab10 categorical palette (matplotlib's default cycle), the colours of the `tab0` to `tab9` tokens. */
@@ -30,7 +30,7 @@ export const tab10: readonly string[] = [
  * @returns The colour.
  * @example
  * ```ts
- * import { categoricalColour } from 'mdml-render/theme'
+ * import { categoricalColour } from 'omai-render/theme'
  * categoricalColour(1) // => '#ff7f0e'
  * categoricalColour(11) // => '#ff7f0e'
  * ```
@@ -65,7 +65,7 @@ const COOLWARM = ['#3b4cc0', '#7b9ff9', '#c0d4f5', '#f2cbb7', '#ee8468', '#b4042
  * @index function Colours of a sequential ramp: `sequentialRamp('viridis', 'dark')`.
  * @example
  * ```ts
- * import { sequentialRamp } from 'mdml-render/theme'
+ * import { sequentialRamp } from 'omai-render/theme'
  * sequentialRamp('viridis')[0] // => '#440154'
  * sequentialRamp('blues', 'dark')[0] // => '#161b22'
  * ```
@@ -91,7 +91,7 @@ export function sequentialRamp(name: SequentialName = 'viridis', mode: ColourMod
  * @returns The stops as hex colours (an odd number, the middle one the midpoint).
  * @example
  * ```ts
- * import { divergingRamp } from 'mdml-render/theme'
+ * import { divergingRamp } from 'omai-render/theme'
  * divergingRamp('rdbu')[4] // => '#f7f7f7'
  * ```
  */
@@ -105,16 +105,16 @@ export function divergingRamp(name: DivergingName = 'rdbu'): readonly string[] {
  *
  * @param colour - The colour.
  * @returns `[r, g, b, a]`.
- * @throws MdmlError with code `value` for text that is not a colour, or `none`.
+ * @throws OmaiError with code `value` for text that is not a colour, or `none`.
  * @example
  * ```ts
- * import { parseColour } from 'mdml-render/theme'
+ * import { parseColour } from 'omai-render/theme'
  * parseColour('#ff8000') // => [255, 128, 0, 1]
  * ```
  */
 export function parseColour(colour: string): Rgba {
   const c = parsePaint(colour as Paint)
-  if (c === undefined) throw new MdmlError('value', `parseColour: '${colour}' has no colour`)
+  if (c === undefined) throw new OmaiError('value', `parseColour: '${colour}' has no colour`)
   return c
 }
 
@@ -131,7 +131,7 @@ function hex2(v: number): string {
  * @returns The hex colour.
  * @example
  * ```ts
- * import { toHex } from 'mdml-render/theme'
+ * import { toHex } from 'omai-render/theme'
  * toHex([255, 128, 0, 1]) // => '#ff8000'
  * toHex([0, 0, 0, 0.5]) // => '#00000080'
  * ```
@@ -150,7 +150,7 @@ export function toHex(rgba: Rgba): string {
  * @returns The mixed colour as hex.
  * @example
  * ```ts
- * import { mixColours } from 'mdml-render/theme'
+ * import { mixColours } from 'omai-render/theme'
  * mixColours('#000000', '#ffffff', 0.5) // => '#808080'
  * ```
  */
@@ -169,10 +169,10 @@ export function mixColours(a: string, b: string, t: number): string {
  * @param stops - At least one colour.
  * @param t - The fraction.
  * @returns The colour as hex.
- * @throws MdmlError with code `value` when there are no stops.
+ * @throws OmaiError with code `value` when there are no stops.
  * @example
  * ```ts
- * import { interpolateColours } from 'mdml-render/theme'
+ * import { interpolateColours } from 'omai-render/theme'
  * interpolateColours(['#000000', '#ffffff'], 0.25) // => '#404040'
  * ```
  */
@@ -186,16 +186,16 @@ export function interpolateColours(stops: readonly string[], t: number): string 
  * @param stops - Parsed colours.
  * @param t - The fraction.
  * @returns The channels.
- * @throws MdmlError with code `value` when there are no stops.
+ * @throws OmaiError with code `value` when there are no stops.
  * @example
  * ```ts
- * import { interpolateRgba } from 'mdml-render/theme'
+ * import { interpolateRgba } from 'omai-render/theme'
  * interpolateRgba([[0, 0, 0, 1], [255, 255, 255, 1]], 1) // => [255, 255, 255, 1]
  * ```
  */
 export function interpolateRgba(stops: readonly Rgba[], t: number): Rgba {
   const n = stops.length
-  if (n === 0) throw new MdmlError('value', 'interpolateRgba: give at least one stop')
+  if (n === 0) throw new OmaiError('value', 'interpolateRgba: give at least one stop')
   const first = stops[0] as Rgba
   if (n === 1) return first
   const u = Math.min(Math.max(Number.isFinite(t) ? t : 0, 0), 1) * (n - 1)
@@ -214,7 +214,7 @@ export function interpolateRgba(stops: readonly Rgba[], t: number): Rgba {
  * @returns The colours, first and last at the ramp's ends.
  * @example
  * ```ts
- * import { sampleRamp } from 'mdml-render/theme'
+ * import { sampleRamp } from 'omai-render/theme'
  * sampleRamp(['#000000', '#ffffff'], 3) // => ['#000000', '#808080', '#ffffff']
  * ```
  */
@@ -232,7 +232,7 @@ export function sampleRamp(stops: readonly string[], n: number): string[] {
  * @returns The scale.
  * @example
  * ```ts
- * import { colourScale } from 'mdml-render/theme'
+ * import { colourScale } from 'omai-render/theme'
  * const s = colourScale(['#000000', '#808080', '#ffffff'], [-1, 0, 4])
  * s(0) // => '#808080'
  * s(4) // => '#ffffff'
@@ -254,7 +254,7 @@ export function colourScale(
  * @returns The fraction, clamped.
  * @example
  * ```ts
- * import { scaleFraction } from 'mdml-render/theme'
+ * import { scaleFraction } from 'omai-render/theme'
  * scaleFraction(5, [0, 10]) // => 0.5
  * scaleFraction(1, [-1, 0, 4]) // => 0.625
  * ```
@@ -290,7 +290,7 @@ function gamma(l: number): number {
  * @returns The luminance.
  * @example
  * ```ts
- * import { relativeLuminance } from 'mdml-render/theme'
+ * import { relativeLuminance } from 'omai-render/theme'
  * relativeLuminance('#ffffff') // => 1
  * ```
  */
@@ -307,7 +307,7 @@ export function relativeLuminance(colour: string): number {
  * @returns The ratio.
  * @example
  * ```ts
- * import { contrastRatio } from 'mdml-render/theme'
+ * import { contrastRatio } from 'omai-render/theme'
  * contrastRatio('#000000', '#ffffff') // => 21
  * ```
  */
@@ -336,7 +336,7 @@ const MACHADO: Readonly<Record<ColourVision, readonly number[]>> = {
  * @returns The simulated colour as hex.
  * @example
  * ```ts
- * import { simulateColourVision } from 'mdml-render/theme'
+ * import { simulateColourVision } from 'omai-render/theme'
  * simulateColourVision('#ffffff', 'deuteranopia') // => '#ffffff'
  * ```
  */
@@ -368,7 +368,7 @@ function lab(colour: string): readonly [number, number, number] {
  * @returns Delta E.
  * @example
  * ```ts
- * import { colourDistance } from 'mdml-render/theme'
+ * import { colourDistance } from 'omai-render/theme'
  * Math.round(colourDistance('#000000', '#ffffff')) // => 100
  * ```
  */
@@ -400,7 +400,7 @@ export interface ColourBlindReport {
  * @index function Check categorical colours stay distinct under colour blindness: `colourBlindCheck(colours)`.
  * @example
  * ```ts
- * import { colourBlindCheck } from 'mdml-render/theme'
+ * import { colourBlindCheck } from 'omai-render/theme'
  * colourBlindCheck(['#1f77b4', '#ff7f0e']).safe // => true
  * colourBlindCheck(['#d62728', '#2ca02c']).deuteranopia < colourBlindCheck(['#d62728', '#2ca02c']).normal // => true
  * ```

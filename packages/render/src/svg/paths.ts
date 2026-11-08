@@ -3,7 +3,7 @@
  * (Catmull-Rom splines as cubic Bézier segments), and arrow-head triangles.
  */
 
-import type { Point2 } from 'mdml-engine/numerics/geometry'
+import type { Point2 } from 'omai-engine/numerics/geometry'
 
 /**
  * SVG path data of a polyline or polygon through points.
@@ -13,7 +13,7 @@ import type { Point2 } from 'mdml-engine/numerics/geometry'
  * @returns The path data.
  * @example
  * ```ts
- * import { straightPathData } from 'mdml-render/svg'
+ * import { straightPathData } from 'omai-render/svg'
  * straightPathData([[0, 0], [1, 2]], true) // => 'M0,0L1,2Z'
  * ```
  */
@@ -31,7 +31,7 @@ export function straightPathData(points: readonly Point2[], closed = false): str
  * @returns The path data.
  * @example
  * ```ts
- * import { smoothPathData } from 'mdml-render/svg'
+ * import { smoothPathData } from 'omai-render/svg'
  * smoothPathData([[0, 0], [1, 1], [2, 0]]).startsWith('M0,0C') // => true
  * ```
  */
@@ -60,7 +60,7 @@ export function smoothPathData(points: readonly Point2[], closed = false): strin
  * @returns The polygon's points.
  * @example
  * ```ts
- * import { arrowHeadPoints } from 'mdml-render/svg'
+ * import { arrowHeadPoints } from 'omai-render/svg'
  * arrowHeadPoints([0, 0], [10, 0], 4) // => '10,0 6,1.8 6,-1.8'
  * ```
  */

@@ -3,7 +3,7 @@
  * above the decoded path and the true states.
  */
 
-import type { StateSequence } from 'mdml-engine/exposition'
+import type { StateSequence } from 'omai-engine/exposition'
 import { type ReactElement, useCallback } from 'react'
 import type { Figure } from '../../figure/figure.ts'
 import { stateSequenceView } from '../../views/sequences.ts'

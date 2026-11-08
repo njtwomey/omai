@@ -7,7 +7,7 @@
  * `greedyColouring`, `maximalIndependentSet` and `maximalCliques` in `colouring.ts` are these run to the end.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { type Key, permutation } from '../random/index.ts'
 import { dict, knobOption, type Option, type OptionTable, optionTable } from '../space/index.ts'
 import { type Algorithm, type Contract, defineContract, scalar, tensor } from '../trace/index.ts'
@@ -158,7 +158,7 @@ function strategy(
  * @concept graph-colouring
  * @example
  * ```ts
- * import { colouringStrategies } from 'mdml-engine/graph'
+ * import { colouringStrategies } from 'omai-engine/graph'
  * colouringStrategies.where((p) => p.dynamic) // => ['dsatur']
  * ```
  */
@@ -177,7 +177,7 @@ export const colouringStrategies: OptionTable<OrderBuilder, StrategyProperties> 
       'in a random order given by a key',
       { dynamic: false, needsKey: true },
       ({ g, key }) => {
-        if (key === undefined) throw new MdmlError('value', "greedyColouring: 'random-sequential' needs a key")
+        if (key === undefined) throw new OmaiError('value', "greedyColouring: 'random-sequential' needs a key")
         return Array.from(permutation(key, g.n).data)
       },
     ),
@@ -244,12 +244,12 @@ export interface ColouringState {
  * @param options - The `strategy` (default `'largest-first'`, see {@link colouringStrategies}) and a `key` for
  *   `'random-sequential'`.
  * @returns The algorithm; it is done when every node has a colour.
- * @throws MdmlError with code `value` when `'random-sequential'` has no key.
+ * @throws OmaiError with code `value` when `'random-sequential'` has no key.
  * @concept graph-colouring
  * @example
  * ```ts
- * import { cycleGraph, greedyColouringAlgorithm } from 'mdml-engine/graph'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { cycleGraph, greedyColouringAlgorithm } from 'omai-engine/graph'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const run = runAlgorithm(greedyColouringAlgorithm(cycleGraph(5)), { maxSteps: 10 })
  * [run.steps, Array.from(run.state.colours)] // => [5, [0, 1, 0, 1, 2]]
  * ```
@@ -374,12 +374,12 @@ export interface IndependentSetProperties {
  * @param g - The graph (directions ignored).
  * @param options - Nodes to include, and a key for a random set.
  * @returns The algorithm; it is done when no node is free.
- * @throws MdmlError with code `value` when the forced nodes are not independent.
+ * @throws OmaiError with code `value` when the forced nodes are not independent.
  * @concept independent-sets
  * @example
  * ```ts
- * import { maximalIndependentSetAlgorithm, starGraph } from 'mdml-engine/graph'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { maximalIndependentSetAlgorithm, starGraph } from 'omai-engine/graph'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const run = runAlgorithm(maximalIndependentSetAlgorithm(starGraph(3)), { maxSteps: 10 })
  * [run.steps, run.state.chosen] // => [3, [1, 2, 3]]
  * ```
@@ -393,7 +393,7 @@ export function maximalIndependentSetAlgorithm(
   const chosen = new Set<number>()
   const blocked = new Set<number>()
   for (const v of forced) {
-    if (blocked.has(v)) throw new MdmlError('value', 'maximalIndependentSet: the given nodes are not independent')
+    if (blocked.has(v)) throw new OmaiError('value', 'maximalIndependentSet: the given nodes are not independent')
     chosen.add(v)
     blocked.add(v)
     for (const u of nb[v] ?? []) blocked.add(u)
@@ -442,7 +442,7 @@ export function maximalIndependentSetAlgorithm(
  * @concept independent-sets
  * @example
  * ```ts
- * import { independentSetRules, starGraph } from 'mdml-engine/graph'
+ * import { independentSetRules, starGraph } from 'omai-engine/graph'
  * independentSetRules.make({ kind: 'min-degree' })(starGraph(3)).name // => 'graph/maximal-independent-set'
  * ```
  */
@@ -460,7 +460,7 @@ export const independentSetRules: OptionTable<IndependentSetBuilder, Independent
       { needsKey: true },
       dict({}),
       () => (g, options) => {
-        if (options?.key === undefined) throw new MdmlError('value', "independentSetRules: 'random' needs a key")
+        if (options?.key === undefined) throw new OmaiError('value', "independentSetRules: 'random' needs a key")
         return maximalIndependentSetAlgorithm(g, options)
       },
     ),
@@ -556,7 +556,7 @@ const mostNeighboursIn = (nb: readonly Set<number>[], candidates: readonly numbe
  * @concept cliques
  * @example
  * ```ts
- * import { pivotRules } from 'mdml-engine/graph'
+ * import { pivotRules } from 'omai-engine/graph'
  * pivotRules.where((p) => p.worstCaseOptimal) // => ['tomita']
  * ```
  */
@@ -596,12 +596,12 @@ export const pivotRules: OptionTable<PivotRule, PivotProperties> = optionTable(
  * @param g - An undirected graph.
  * @param options - The pivot rule (default `'tomita'`).
  * @returns The algorithm.
- * @throws MdmlError with code `value` for a directed graph.
+ * @throws OmaiError with code `value` for a directed graph.
  * @concept cliques
  * @example
  * ```ts
- * import { bronKerboschAlgorithm, graph } from 'mdml-engine/graph'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { bronKerboschAlgorithm, graph } from 'omai-engine/graph'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const run = runAlgorithm(bronKerboschAlgorithm(graph([[0, 1], [1, 2], [2, 0], [2, 3]])), { maxSteps: 50 })
  * run.state.cliques.length // => 2
  * ```
@@ -610,7 +610,7 @@ export function bronKerboschAlgorithm(
   g: Graph,
   options: { readonly pivot?: 'tomita' | 'p-only' | 'none' } = {},
 ): Algorithm<CliqueState, CliquePath> {
-  if (g.directed) throw new MdmlError('value', 'maximalCliques: the graph must be undirected')
+  if (g.directed) throw new OmaiError('value', 'maximalCliques: the graph must be undirected')
   const rule = pivotRules.make({ kind: options.pivot ?? 'tomita' })
   const nb = neighbourSets(g)
   /** The call (R, P, X): a clique when P and X are empty, else a frame (when P is not empty). */

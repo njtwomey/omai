@@ -5,8 +5,8 @@
  */
 
 import type { EChartsCoreOption } from 'echarts/core'
-import { MdmlError } from 'mdml-engine/base'
-import type { Pixels } from 'mdml-engine/scene'
+import { OmaiError } from 'omai-engine/base'
+import type { Pixels } from 'omai-engine/scene'
 import { echartsCore } from '../charts/echarts-core.ts'
 import type { Figure } from '../figure/figure.ts'
 import { themeName } from '../theme/echarts.ts'
@@ -23,8 +23,8 @@ import { escapeXml } from './svg.ts'
  * @index function A chart to SVG text: `chartToSvg(option, { width, height })`.
  * @example
  * ```ts
- * import { lineChart } from 'mdml-render/charts'
- * import { chartToSvg } from 'mdml-render/svg'
+ * import { lineChart } from 'omai-render/charts'
+ * import { chartToSvg } from 'omai-render/svg'
  * chartToSvg(lineChart([{ y: [1, 2] }]), { width: 320, height: 200 }).startsWith('<svg') // => true
  * ```
  */
@@ -69,7 +69,7 @@ export interface FigurePart {
  * @index function Charts and labels in one SVG document: `composeSvg(width, height, parts)`.
  * @example
  * ```ts
- * import { composeSvg } from 'mdml-render/svg'
+ * import { composeSvg } from 'omai-render/svg'
  * composeSvg(100, 50, [{ x: 0, y: 0, width: 50, height: 50, html: '<b>a</b>' }], { background: '#fff' }).includes('foreignObject') // => true
  * ```
  */
@@ -103,7 +103,7 @@ export function composeSvg(
  * @returns The data URL.
  * @example
  * ```ts
- * import { svgDataUrl } from 'mdml-render/svg'
+ * import { svgDataUrl } from 'omai-render/svg'
  * svgDataUrl('<svg/>') // => 'data:image/svg+xml;charset=utf-8,%3Csvg%2F%3E'
  * ```
  */
@@ -119,7 +119,7 @@ export function svgDataUrl(svg: string): string {
  * @param height - Height in CSS pixels.
  * @param options - Pixel ratio (default 2) and background colour.
  * @returns A promise of the canvas.
- * @throws MdmlError with code `not-implemented` outside a browser, and `value` when the SVG does not load.
+ * @throws OmaiError with code `not-implemented` outside a browser, and `value` when the SVG does not load.
  */
 export function svgToCanvas(
   svg: string,
@@ -128,7 +128,7 @@ export function svgToCanvas(
   options: { readonly scale?: number; readonly background?: string } = {},
 ): Promise<HTMLCanvasElement> {
   if (typeof document === 'undefined' || typeof Image === 'undefined')
-    return Promise.reject(new MdmlError('not-implemented', 'svgToCanvas: needs a browser (canvas and Image)'))
+    return Promise.reject(new OmaiError('not-implemented', 'svgToCanvas: needs a browser (canvas and Image)'))
   const scale = options.scale ?? 2
   return new Promise((resolve, reject) => {
     const img = new Image()
@@ -138,7 +138,7 @@ export function svgToCanvas(
       canvas.height = Math.max(1, Math.round(height * scale))
       const ctx = canvas.getContext('2d')
       if (ctx === null) {
-        reject(new MdmlError('not-implemented', 'svgToCanvas: no 2-D canvas'))
+        reject(new OmaiError('not-implemented', 'svgToCanvas: no 2-D canvas'))
         return
       }
       if (options.background !== undefined) {
@@ -148,7 +148,7 @@ export function svgToCanvas(
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
       resolve(canvas)
     }
-    img.onerror = () => reject(new MdmlError('value', 'svgToCanvas: the SVG did not load as an image'))
+    img.onerror = () => reject(new OmaiError('value', 'svgToCanvas: the SVG did not load as an image'))
     img.src = svgDataUrl(svg)
   })
 }
@@ -162,7 +162,7 @@ export function svgToCanvas(
  * @param height - Height in CSS pixels.
  * @param options - Pixel ratio (default 2) and background colour.
  * @returns A promise of the PNG data URL.
- * @throws MdmlError with code `not-implemented` outside a browser.
+ * @throws OmaiError with code `not-implemented` outside a browser.
  * @index function SVG text to a PNG data URL in a browser: `svgToPng(svg, width, height)`.
  */
 export async function svgToPng(
@@ -183,7 +183,7 @@ export async function svgToPng(
  * @param height - Height in CSS pixels.
  * @param options - Pixel ratio (default 1) and background colour.
  * @returns A promise of the pixels.
- * @throws MdmlError with code `not-implemented` outside a browser; a `SecurityError` where the browser taints
+ * @throws OmaiError with code `not-implemented` outside a browser; a `SecurityError` where the browser taints
  * canvases drawn from SVG with foreign objects.
  *
  * @index function SVG text to RGBA pixels in a browser: `svgToPixels(svg, width, height)`.
@@ -210,8 +210,8 @@ export async function svgToPixels(
  * @index function Export size of a figure for a page, blog or slide: `exportSize(fig, 'slide')`.
  * @example
  * ```ts
- * import { exportSize } from 'mdml-render/svg'
- * import { figure } from 'mdml-render/figure'
+ * import { exportSize } from 'omai-render/svg'
+ * import { figure } from 'omai-render/figure'
  * exportSize(figure(), 'slide') // => { width: 1728, height: 1080, scale: 2.7 }
  * ```
  */

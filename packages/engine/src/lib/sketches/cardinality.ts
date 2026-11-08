@@ -5,7 +5,7 @@
  * accurate from empty to saturation. Sketches merge by register-wise maximum, so the union of streams is a merge.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import { type Algorithm, channels, stateFromJson, stateToJson } from '../trace/index.ts'
 import { hashPair, itemKey, type SketchItem, type SketchSeed, seedOf } from './hashing.ts'
 
@@ -45,7 +45,7 @@ const MAX_PRECISION = 18
 function resolvePrecision(precision: number | undefined, who: string): number {
   const p = precision ?? 10
   if (!(Number.isInteger(p) && p >= 4 && p <= MAX_PRECISION)) {
-    throw new MdmlError('value', `${who}: precision must be an integer in [4, ${MAX_PRECISION}], got ${p}`)
+    throw new OmaiError('value', `${who}: precision must be an integer in [4, ${MAX_PRECISION}], got ${p}`)
   }
   return p
 }
@@ -110,7 +110,7 @@ function ertlTau(x: number): number {
  * @reference O. Ertl, New cardinality estimation algorithms for HyperLogLog sketches (arXiv 1702.01284, 2017).
  * @example
  * ```ts
- * import { hyperLogLogEstimate } from 'mdml-engine/sketches'
+ * import { hyperLogLogEstimate } from 'omai-engine/sketches'
  * hyperLogLogEstimate(new Uint8Array(16)) // => 0
  * hyperLogLogEstimate(Uint8Array.from([1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]), 'classic').toFixed(3) // => '2.137'
  * ```
@@ -159,14 +159,14 @@ function makeHll(precision: number, seed: number, registers: Uint8Array): HyperL
  *
  * @param options - Precision `p` and seed.
  * @returns The sketch.
- * @throws MdmlError with code `value` for a precision outside `[4, 18]`.
+ * @throws OmaiError with code `value` for a precision outside `[4, 18]`.
  * @concept hyperloglog
  * @reference P. Flajolet, E. Fusy, O. Gandouet and F. Meunier, HyperLogLog: the analysis of a near-optimal cardinality
  *   estimation algorithm (AofA 2007).
  * @index structure HyperLogLog distinct-count sketch.
  * @example
  * ```ts
- * import { hyperLogLog } from 'mdml-engine/sketches'
+ * import { hyperLogLog } from 'omai-engine/sketches'
  * const hll = hyperLogLog({ precision: 12 })
  * for (let i = 0; i < 5000; i++) hll.add(`user-${i % 2000}`)
  * Math.abs(hll.count() - 2000) < 100 // => true
@@ -184,11 +184,11 @@ export function hyperLogLog(options: HyperLogLogOptions = {}): HyperLogLog {
  * @param a - First sketch.
  * @param b - Second sketch.
  * @returns A new sketch whose count estimates `|A union B|`.
- * @throws MdmlError with code `shape` when the precisions or seeds differ.
+ * @throws OmaiError with code `shape` when the precisions or seeds differ.
  * @concept hyperloglog
  * @example
  * ```ts
- * import { hllMerge, hyperLogLog } from 'mdml-engine/sketches'
+ * import { hllMerge, hyperLogLog } from 'omai-engine/sketches'
  * const a = hyperLogLog()
  * const b = hyperLogLog()
  * for (let i = 0; i < 300; i++) a.add(i)
@@ -198,7 +198,7 @@ export function hyperLogLog(options: HyperLogLogOptions = {}): HyperLogLog {
  */
 export function hllMerge(a: HyperLogLog, b: HyperLogLog): HyperLogLog {
   if (a.precision !== b.precision || a.seed !== b.seed) {
-    throw new MdmlError('shape', 'hllMerge: sketches must share precision and seed')
+    throw new OmaiError('shape', 'hllMerge: sketches must share precision and seed')
   }
   const merged = new Uint8Array(a.numRegisters)
   for (let i = 0; i < merged.length; i++) merged[i] = Math.max(a.registers[i] ?? 0, b.registers[i] ?? 0)
@@ -233,12 +233,12 @@ export interface HyperLogLogAlgorithmOptions extends HyperLogLogOptions {
  *
  * @param options - Precision, seed, estimator and the stream.
  * @returns The algorithm.
- * @throws MdmlError with code `value` for a precision outside `[4, 18]`.
+ * @throws OmaiError with code `value` for a precision outside `[4, 18]`.
  * @concept hyperloglog
  * @example
  * ```ts
- * import { hyperLogLogAlgorithm } from 'mdml-engine/sketches'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { hyperLogLogAlgorithm } from 'omai-engine/sketches'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const res = runAlgorithm(hyperLogLogAlgorithm({ items: [1, 2, 3, 2, 1, 4], precision: 6 }), { maxSteps: 10 })
  * res.state.trueCardinality // => 4
  * ```

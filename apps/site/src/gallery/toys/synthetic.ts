@@ -4,9 +4,9 @@
  * fitted; it exists so a recipe can show a view on data whose truth is known.
  */
 
-import type { PredictFunction } from 'mdml-engine/explain'
-import { key, normal, uniform } from 'mdml-engine/random'
-import { asTensor, type Tensor, type TensorLike, tensor, toArray, toFlat } from 'mdml-engine/tensor'
+import type { PredictFunction } from 'omai-engine/explain'
+import { key, normal, uniform } from 'omai-engine/random'
+import { asTensor, type Tensor, type TensorLike, tensor, toArray, toFlat } from 'omai-engine/tensor'
 
 /** `n` standard normals (times `scale`) from a seed. */
 export function normals(seed: number, n: number, scale = 1): number[] {

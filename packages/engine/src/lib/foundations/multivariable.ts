@@ -6,7 +6,7 @@
  */
 
 import { jvp } from '../autodiff/index.ts'
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { eigvalsh, lstsq } from '../numerics/linalg/index.ts'
 import { cubature, productGaussRule, quad } from '../numerics/quadrature/index.ts'
 import { fsolve } from '../numerics/roots/index.ts'
@@ -73,8 +73,8 @@ const along = (f: (x: Value) => Value, x: Value, j: number): Value => jvp(f, x, 
  * @concept gradient
  * @example
  * ```ts
- * import { gradientAt } from 'mdml-engine/foundations'
- * import { mul, sum, toArray, type Value } from 'mdml-engine/tensor'
+ * import { gradientAt } from 'omai-engine/foundations'
+ * import { mul, sum, toArray, type Value } from 'omai-engine/tensor'
  * toArray(gradientAt((p: Value) => sum(mul(p, p), -1), [1, 2])) // => [[2, 4]]
  * ```
  */
@@ -96,8 +96,8 @@ export function gradientAt(f: ScalarField, x: TensorLike): Value {
  * @concept directional-derivative
  * @example
  * ```ts
- * import { directionalDerivative } from 'mdml-engine/foundations'
- * import { mul, sum, toArray, type Value } from 'mdml-engine/tensor'
+ * import { directionalDerivative } from 'omai-engine/foundations'
+ * import { mul, sum, toArray, type Value } from 'omai-engine/tensor'
  * toArray(directionalDerivative((p: Value) => sum(mul(p, p), -1), [1, 2], [3, 4])) // => [4.4]
  * ```
  */
@@ -117,8 +117,8 @@ export function directionalDerivative(f: ScalarField, x: TensorLike, direction: 
  * @concept jacobian
  * @example
  * ```ts
- * import { jacobianAt } from 'mdml-engine/foundations'
- * import { mul, toArray, type Value } from 'mdml-engine/tensor'
+ * import { jacobianAt } from 'omai-engine/foundations'
+ * import { mul, toArray, type Value } from 'omai-engine/tensor'
  * toArray(jacobianAt((p: Value) => mul(p, p), [1, 3])) // => [[[2, 0], [0, 6]]]
  * ```
  */
@@ -139,8 +139,8 @@ export function jacobianAt(F: PointVectorField, x: TensorLike): Value {
  * @concept hessian
  * @example
  * ```ts
- * import { hessianAt } from 'mdml-engine/foundations'
- * import { mul, prod, toArray, type Value } from 'mdml-engine/tensor'
+ * import { hessianAt } from 'omai-engine/foundations'
+ * import { mul, prod, toArray, type Value } from 'omai-engine/tensor'
  * toArray(hessianAt((p: Value) => prod(p, -1), [2, 3])) // => [[[0, 1], [1, 0]]]
  * ```
  */
@@ -171,8 +171,8 @@ export interface LocalModels {
  * @concept quadratic-approximation
  * @example
  * ```ts
- * import { quadraticApproximation } from 'mdml-engine/foundations'
- * import { exp, sum, toArray, type Value } from 'mdml-engine/tensor'
+ * import { quadraticApproximation } from 'omai-engine/foundations'
+ * import { exp, sum, toArray, type Value } from 'omai-engine/tensor'
  * const q = quadraticApproximation((p: Value) => exp(sum(p, -1)), [0, 0])
  * q.gradient // => [1, 1]
  * toArray(q.quadratic([[0.1, 0.1]])) // => [1.22]
@@ -207,8 +207,8 @@ export function quadraticApproximation(f: ScalarField, a: readonly number[]): Lo
  * @concept tangent-plane
  * @example
  * ```ts
- * import { graphTangentPlane } from 'mdml-engine/foundations'
- * import { mul, sum, type Value } from 'mdml-engine/tensor'
+ * import { graphTangentPlane } from 'omai-engine/foundations'
+ * import { mul, sum, type Value } from 'omai-engine/tensor'
  * graphTangentPlane((p: Value) => sum(mul(p, p), -1), [1, 1]).slopes // => [2, 2]
  * ```
  */
@@ -240,8 +240,8 @@ export type MultivariateCriticalKind = 'minimum' | 'maximum' | 'saddle' | 'degen
  * @concept second-derivative-test
  * @example
  * ```ts
- * import { classifyCriticalPoint } from 'mdml-engine/foundations'
- * import { mul, sum, type Value } from 'mdml-engine/tensor'
+ * import { classifyCriticalPoint } from 'omai-engine/foundations'
+ * import { mul, sum, type Value } from 'omai-engine/tensor'
  * const saddle = (p: Value) => sum(mul(mul(p, p), [1, -1]), -1)
  * classifyCriticalPoint(saddle, [0, 0]).kind // => 'saddle'
  * ```
@@ -286,8 +286,8 @@ export interface LagrangeSolution {
  * @concept lagrange-multipliers
  * @example
  * ```ts
- * import { lagrangeMultipliers } from 'mdml-engine/foundations'
- * import { mul, sub, sum, type Value } from 'mdml-engine/tensor'
+ * import { lagrangeMultipliers } from 'omai-engine/foundations'
+ * import { mul, sub, sum, type Value } from 'omai-engine/tensor'
  * // Maximise x + y on the unit circle.
  * const r = lagrangeMultipliers((p: Value) => sum(p, -1), [(p: Value) => sub(sum(mul(p, p), -1), 1)], [1, 0.5])
  * r.x.map((v) => Math.round(v * 1e10) / 1e10) // => [0.7071067812, 0.7071067812]
@@ -301,7 +301,7 @@ export function lagrangeMultipliers(
 ): LagrangeSolution {
   const d = x0.length
   const k = constraints.length
-  if (k === 0) throw new MdmlError('value', 'lagrangeMultipliers: give at least one constraint')
+  if (k === 0) throw new OmaiError('value', 'lagrangeMultipliers: give at least one constraint')
   const system = (z: Value): Value => {
     const x = stack([sliceAxis(z, 0, 0, d)])
     const lam = sliceAxis(z, 0, d, d + k)
@@ -334,8 +334,8 @@ export function lagrangeMultipliers(
  * @concept divergence
  * @example
  * ```ts
- * import { divergence } from 'mdml-engine/foundations'
- * import { toArray, type Value } from 'mdml-engine/tensor'
+ * import { divergence } from 'omai-engine/foundations'
+ * import { toArray, type Value } from 'omai-engine/tensor'
  * toArray(divergence((p: Value) => p, [[1, 2, 3]])) // => [3]
  * ```
  */
@@ -346,7 +346,7 @@ export function divergence(F: PointVectorField, x: TensorLike): Value {
     const dj = squeeze(sliceAxis(along(F, p, j), -1, j, j + 1), -1)
     total = total === null ? dj : add(total, dj)
   }
-  if (total === null) throw new MdmlError('shape', 'divergence: points have no coordinates')
+  if (total === null) throw new OmaiError('shape', 'divergence: points have no coordinates')
   return total
 }
 
@@ -357,12 +357,12 @@ export function divergence(F: PointVectorField, x: TensorLike): Value {
  * @param F - A field in 2-D or 3-D.
  * @param x - Points `[n, 2]` or `[n, 3]`.
  * @returns Curls `[n, 3]`, or `[n]` in 2-D.
- * @throws MdmlError with code `shape` in other dimensions.
+ * @throws OmaiError with code `shape` in other dimensions.
  * @concept curl
  * @example
  * ```ts
- * import { curl } from 'mdml-engine/foundations'
- * import { mul, sliceAxis, squeeze, stack, toArray, type Value } from 'mdml-engine/tensor'
+ * import { curl } from 'omai-engine/foundations'
+ * import { mul, sliceAxis, squeeze, stack, toArray, type Value } from 'omai-engine/tensor'
  * const rotation = (p: Value) => stack([mul(squeeze(sliceAxis(p, -1, 1, 2), -1), -1), squeeze(sliceAxis(p, -1, 0, 1), -1)], -1)
  * toArray(curl(rotation, [[0.3, 0.4]])) // => [2]
  * ```
@@ -372,7 +372,7 @@ export function curl(F: PointVectorField, x: TensorLike): Value {
   const d = dims(p)
   const partial = (i: number, j: number): Value => squeeze(sliceAxis(along(F, p, j), -1, i, i + 1), -1)
   if (d === 2) return sub(partial(1, 0), partial(0, 1))
-  if (d !== 3) throw new MdmlError('shape', 'curl: fields in 2-D or 3-D')
+  if (d !== 3) throw new OmaiError('shape', 'curl: fields in 2-D or 3-D')
   return stack(
     [sub(partial(2, 1), partial(1, 2)), sub(partial(0, 2), partial(2, 0)), sub(partial(1, 0), partial(0, 1))],
     -1,
@@ -393,8 +393,8 @@ const tangentOf = (r: ParametricCurve, t: Value): Value => jvp(r, t, onesLike(t)
  * @concept line-integrals
  * @example
  * ```ts
- * import { scalarLineIntegral } from 'mdml-engine/foundations'
- * import { cos, onesLike, sin, sliceAxis, squeeze, stack, type Value } from 'mdml-engine/tensor'
+ * import { scalarLineIntegral } from 'omai-engine/foundations'
+ * import { cos, onesLike, sin, sliceAxis, squeeze, stack, type Value } from 'omai-engine/tensor'
  * const circle = (t: Value) => stack([cos(t), sin(t)], -1)
  * scalarLineIntegral((p: Value) => squeeze(onesLike(sliceAxis(p, -1, 0, 1)), -1), circle, 0, Math.PI) // => 3.141592653589793
  * ```
@@ -426,8 +426,8 @@ export function scalarLineIntegral(f: ScalarField, r: ParametricCurve, a: number
  * @concept line-integrals
  * @example
  * ```ts
- * import { vectorLineIntegral } from 'mdml-engine/foundations'
- * import { stack, type Value } from 'mdml-engine/tensor'
+ * import { vectorLineIntegral } from 'omai-engine/foundations'
+ * import { stack, type Value } from 'omai-engine/tensor'
  * // F = (x, y) along the segment from (0, 0) to (1, 1): the potential (x^2 + y^2) / 2 rises by 1.
  * vectorLineIntegral((p: Value) => p, (t: Value) => stack([t, t], -1), 0, 1) // => 1
  * ```
@@ -448,8 +448,8 @@ export function vectorLineIntegral(F: PointVectorField, r: ParametricCurve, a: n
  * @concept flux
  * @example
  * ```ts
- * import { planeFlux } from 'mdml-engine/foundations'
- * import { cos, sin, stack, type Value } from 'mdml-engine/tensor'
+ * import { planeFlux } from 'omai-engine/foundations'
+ * import { cos, sin, stack, type Value } from 'omai-engine/tensor'
  * planeFlux((p: Value) => p, (t: Value) => stack([cos(t), sin(t)], -1), 0, 2 * Math.PI) / Math.PI // => 2
  * ```
  */
@@ -487,8 +487,8 @@ function surfacePartials(s: ParametricSurface, uv: Value): [Value, Value] {
  * @concept surface-integrals
  * @example
  * ```ts
- * import { scalarSurfaceIntegral, sphere } from 'mdml-engine/foundations'
- * import { onesLike, sliceAxis, squeeze, type Value } from 'mdml-engine/tensor'
+ * import { scalarSurfaceIntegral, sphere } from 'omai-engine/foundations'
+ * import { onesLike, sliceAxis, squeeze, type Value } from 'omai-engine/tensor'
  * const one = (p: Value) => squeeze(onesLike(sliceAxis(p, -1, 0, 1)), -1)
  * Math.round(scalarSurfaceIntegral(one, sphere(1), [[0, Math.PI], [0, 2 * Math.PI]]) / Math.PI * 1e12) / 1e12 // => 4
  * ```
@@ -516,8 +516,8 @@ export function scalarSurfaceIntegral(f: ScalarField, s: ParametricSurface, box:
  * @concept flux
  * @example
  * ```ts
- * import { surfaceFlux, sphere } from 'mdml-engine/foundations'
- * import { type Value } from 'mdml-engine/tensor'
+ * import { surfaceFlux, sphere } from 'omai-engine/foundations'
+ * import { type Value } from 'omai-engine/tensor'
  * // F = x through the unit sphere (outward): 3 times the volume.
  * Math.round(surfaceFlux((p: Value) => p, sphere(1), [[0, Math.PI], [0, 2 * Math.PI]]) / Math.PI * 1e12) / 1e12 // => 4
  * ```
@@ -554,8 +554,8 @@ export interface TheoremCheck {
  * @concept greens-theorem
  * @example
  * ```ts
- * import { greensTheorem, polarToCartesian } from 'mdml-engine/foundations'
- * import { cos, mul, sin, sliceAxis, squeeze, stack, type Value } from 'mdml-engine/tensor'
+ * import { greensTheorem, polarToCartesian } from 'omai-engine/foundations'
+ * import { cos, mul, sin, sliceAxis, squeeze, stack, type Value } from 'omai-engine/tensor'
  * const F = (p: Value) => stack([mul(squeeze(sliceAxis(p, -1, 1, 2), -1), -1), squeeze(sliceAxis(p, -1, 0, 1), -1)], -1)
  * const disc = { map: polarToCartesian, box: [[0, 1], [0, 2 * Math.PI]] as const }
  * greensTheorem(F, { curve: (t: Value) => stack([cos(t), sin(t)], -1), range: [0, 2 * Math.PI] }, disc).difference < 1e-12 // => true
@@ -593,8 +593,8 @@ export function greensTheorem(
  * @concept stokes-theorem
  * @example
  * ```ts
- * import { sphere, stokesTheorem } from 'mdml-engine/foundations'
- * import { cos, mul, sin, sliceAxis, squeeze, stack, zerosLike, type Value } from 'mdml-engine/tensor'
+ * import { sphere, stokesTheorem } from 'omai-engine/foundations'
+ * import { cos, mul, sin, sliceAxis, squeeze, stack, zerosLike, type Value } from 'omai-engine/tensor'
  * const c = (p: Value, i: number) => squeeze(sliceAxis(p, -1, i, i + 1), -1)
  * const F = (p: Value) => stack([mul(c(p, 1), -1), c(p, 0), zerosLike(c(p, 2))], -1)
  * const rim = { curve: (t: Value) => stack([cos(t), sin(t), zerosLike(t)], -1), range: [0, 2 * Math.PI] as const }
@@ -626,8 +626,8 @@ export function stokesTheorem(
  * @concept divergence-theorem
  * @example
  * ```ts
- * import { divergenceTheorem, sphere, sphericalToCartesian } from 'mdml-engine/foundations'
- * import { mul, type Value } from 'mdml-engine/tensor'
+ * import { divergenceTheorem, sphere, sphericalToCartesian } from 'omai-engine/foundations'
+ * import { mul, type Value } from 'omai-engine/tensor'
  * const ball = { map: sphericalToCartesian, box: [[0, 1], [0, Math.PI], [0, 2 * Math.PI]] as const }
  * divergenceTheorem((p: Value) => mul(p, p), { surface: sphere(1), box: [[0, Math.PI], [0, 2 * Math.PI]] }, ball).difference < 1e-10 // => true
  * ```

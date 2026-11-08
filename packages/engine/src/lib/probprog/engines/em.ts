@@ -4,7 +4,7 @@
  * `emAlgorithm`, the `em` function returning a posterior, and the engine for the planner.
  */
 
-import { type Json, MdmlError } from '../../base/index.ts'
+import { type Json, OmaiError } from '../../base/index.ts'
 import { bijectors, compose, type Distribution, type Support } from '../../dists/index.ts'
 import { cholesky } from '../../numerics/linalg/index.ts'
 import { lbfgs } from '../../optim/index.ts'
@@ -231,7 +231,7 @@ function setup<D = void>(
 ): { readonly problem: Problem<D>; readonly values: Record<string, Value> } {
   const a = analyse(model, data)
   if (a.discrete.unbounded.length > 0)
-    throw new MdmlError('value', `em: discrete sites with unbounded support (${a.discrete.unbounded.join(', ')})`)
+    throw new OmaiError('value', `em: discrete sites with unbounded support (${a.discrete.unbounded.join(', ')})`)
   const proto = a.prototype
   const discrete = a.discrete.sites
   let gaussian = options.expectation ?? []
@@ -249,9 +249,9 @@ function setup<D = void>(
     }
   }
   if (discrete.length > 0 && gaussian.length > 0)
-    throw new MdmlError('not-implemented', 'em: discrete and Gaussian E-steps together are not supported')
+    throw new OmaiError('not-implemented', 'em: discrete and Gaussian E-steps together are not supported')
   if (discrete.length === 0 && gaussian.length === 0)
-    throw new MdmlError('value', 'em: nothing to integrate in the E-step (no discrete or linear-Gaussian latent sites)')
+    throw new OmaiError('value', 'em: nothing to integrate in the E-step (no discrete or linear-Gaussian latent sites)')
   const estimated: Estimated[] = []
   const values: Record<string, Value> = {}
   for (const s of proto.sites.values()) {
@@ -401,7 +401,7 @@ function sigmaPoints(
 
 function namedChild(t: ProgramTrace, depth: number, child: string): NamedFactor {
   const f = traceFactors(t, depth).factors.find((x) => x.site === child)
-  if (f === undefined) throw new MdmlError('value', `em: no factor for ${child}`)
+  if (f === undefined) throw new OmaiError('value', `em: no factor for ${child}`)
   return f
 }
 
@@ -439,10 +439,10 @@ function roleStatistics<D = void>(
   const fi = factors.findIndex((f) => f.site === role.child)
   const f = factors[fi]
   const t = e.trace
-  if (f === undefined || t === undefined) throw new MdmlError('value', `em: no factor for ${role.child}`)
+  if (f === undefined || t === undefined) throw new OmaiError('value', `em: no factor for ${role.child}`)
   const m = e.marginals?.[fi] ?? broadcastTo(tensor(1), f.value.shape)
   const site = siteOf(t, role.child)
-  if (site === undefined) throw new MdmlError('value', `em: no site ${role.child}`)
+  if (site === undefined) throw new OmaiError('value', `em: no site ${role.child}`)
   const keep = [role.gather]
   const weight = (x: Value | undefined): Value => keepDims(x === undefined ? m : mul(m, x), f.dims, keep)
   const shaped = (v: Value, shape: readonly number[]): Value => reshape(v, shape)
@@ -463,7 +463,7 @@ function roleStatistics<D = void>(
       const f2 = namedChild(t2, p.depth, role.child)
       const s2 = siteOf(t2, role.child)
       const loc = s2 === undefined ? undefined : unexpanded(s2.fn).params['loc']
-      if (loc === undefined) throw new MdmlError('value', 'em: no location for the scale update')
+      if (loc === undefined) throw new OmaiError('value', 'em: no location for the scale update')
       const resid = square(sub(nameLike(f2, site.value), nameLike(f2, loc)))
       return { num: shaped(weight(resid), current.shape), den: shaped(weight(undefined), current.shape) }
     }
@@ -585,15 +585,15 @@ function unflatten<D>(
  * @param data - Its data.
  * @param options - Tolerance, M-step choice, gradient iterations, initial values and E-step sites.
  * @returns The algorithm.
- * @throws MdmlError with code `value` when there is nothing to integrate, or `not-implemented` for discrete and
+ * @throws OmaiError with code `value` when there is nothing to integrate, or `not-implemented` for discrete and
  *   Gaussian E-steps together.
  * @concept expectation-maximisation
  * @example
  * ```ts
- * import { emAlgorithm, observe, param, plate, sample } from 'mdml-engine/probprog'
- * import { categorical, normal } from 'mdml-engine/dists'
- * import { runAlgorithm } from 'mdml-engine/trace'
- * import { take } from 'mdml-engine/tensor'
+ * import { emAlgorithm, observe, param, plate, sample } from 'omai-engine/probprog'
+ * import { categorical, normal } from 'omai-engine/dists'
+ * import { runAlgorithm } from 'omai-engine/trace'
+ * import { take } from 'omai-engine/tensor'
  * const y = [-2.1, -1.9, -2.2, 2.0, 1.8, 2.3]
  * const gmm = () => {
  *   const w = param('w', [0.5, 0.5], { support: { kind: 'simplex' } })
@@ -617,7 +617,7 @@ function emParts<D = void>(
   const accelerate = options.accelerate ?? true
   let problem: Problem<D> | undefined
   const get = (): Problem<D> => {
-    if (problem === undefined) throw new MdmlError('value', 'em: not initialised')
+    if (problem === undefined) throw new OmaiError('value', 'em: not initialised')
     return problem
   }
   const algorithm: Algorithm<EmState> = {
@@ -690,10 +690,10 @@ export interface EmRunOptions extends EmOptions {
  * @concept expectation-maximisation
  * @example
  * ```ts
- * import { em, observe, param, plate, sample } from 'mdml-engine/probprog'
- * import { categorical, normal } from 'mdml-engine/dists'
- * import { key } from 'mdml-engine/random'
- * import { take, toArray } from 'mdml-engine/tensor'
+ * import { em, observe, param, plate, sample } from 'omai-engine/probprog'
+ * import { categorical, normal } from 'omai-engine/dists'
+ * import { key } from 'omai-engine/random'
+ * import { take, toArray } from 'omai-engine/tensor'
  * const y = [-2.1, -1.9, -2.2, 2.0, 1.8, 2.3]
  * const gmm = () => {
  *   const mu = param('mu', [-1, 1])
@@ -789,7 +789,7 @@ export function em<D = void>(model: Model<D>, data: D, options: EmRunOptions & E
  * @concept inference-engines
  * @example
  * ```ts
- * import { emEngine } from 'mdml-engine/probprog'
+ * import { emEngine } from 'omai-engine/probprog'
  * emEngine().form // => 'point'
  * ```
  */

@@ -4,7 +4,7 @@
  * frequency, and the hashing trick. Also BM25 ranking of documents for a query, as rank_bm25 computes it.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { type CsrMatrix, csr } from '../numerics/sparse/index.ts'
 import { toFlat } from '../tensor/index.ts'
 import { compareCodePoints, PY_SPACE } from './_classes.ts'
@@ -42,11 +42,11 @@ const PY_SPLIT = new RegExp(`[${PY_SPACE}]+`, 'u')
  * @param doc - The document.
  * @param options - The analyzer options.
  * @returns The features of the document, in scikit-learn's order.
- * @throws MdmlError with code `value` for an invalid n-gram range.
+ * @throws OmaiError with code `value` for an invalid n-gram range.
  * @concept bag-of-words
  * @example
  * ```ts
- * import { analyze } from 'mdml-engine/text'
+ * import { analyze } from 'omai-engine/text'
  * analyze('The cat sat', { ngramRange: [1, 2], stopWords: 'english' }) // => ['cat', 'sat', 'cat sat']
  * analyze('ab cd', { analyzer: 'char_wb', ngramRange: [2, 3] }) // => [' a', 'ab', 'b ', ' ab', 'ab ', ' c', 'cd', 'd ', ' cd', 'cd ']
  * ```
@@ -55,7 +55,7 @@ export function analyze(doc: string, options: AnalyzerOptions = {}): string[] {
   if (typeof options.analyzer === 'function') return [...options.analyzer(doc)]
   const [minN, maxN] = options.ngramRange ?? [1, 1]
   if (!(Number.isInteger(minN) && Number.isInteger(maxN) && minN >= 1 && maxN >= minN))
-    throw new MdmlError('value', 'analyze: ngramRange must be integers 1 <= min <= max')
+    throw new OmaiError('value', 'analyze: ngramRange must be integers 1 <= min <= max')
   let text = options.lowercase === false ? doc : doc.toLowerCase()
   if (options.stripAccents !== undefined) text = stripAccents(text, options.stripAccents)
   const analyzer = options.analyzer ?? 'word'
@@ -83,7 +83,7 @@ export function analyze(doc: string, options: AnalyzerOptions = {}): string[] {
       for (let i = 0; i + n <= chars.length; i++) out.push(chars.slice(i, i + n).join(''))
     return out
   }
-  if (analyzer !== 'char_wb') throw new MdmlError('value', `analyze: unknown analyzer ${String(analyzer)}`)
+  if (analyzer !== 'char_wb') throw new OmaiError('value', `analyze: unknown analyzer ${String(analyzer)}`)
   const out: string[] = []
   for (const word of text.split(PY_SPLIT).filter((w) => w.length > 0)) {
     const w = Array.from(` ${word} `)
@@ -161,13 +161,13 @@ function countRows(
  * @param docs - The documents.
  * @param options - Analyzer, document-frequency and size limits, binary counts, fixed vocabulary.
  * @returns The fitted vectoriser and the document-term count matrix.
- * @throws MdmlError with code `value` when no feature remains.
+ * @throws OmaiError with code `value` when no feature remains.
  * @concept bag-of-words
  * @example
  * ```ts
- * import { countVectorize } from 'mdml-engine/text'
- * import { toDense } from 'mdml-engine/numerics/sparse'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { countVectorize } from 'omai-engine/text'
+ * import { toDense } from 'omai-engine/numerics/sparse'
+ * import { toArray } from 'omai-engine/tensor'
  * const { vectorizer, matrix } = countVectorize(['the cat', 'the cat sat on the mat'])
  * [vectorizer.featureNames, toArray(toDense(matrix))] // => [['cat', 'mat', 'on', 'sat', 'the'], [[1, 0, 0, 0, 1], [1, 1, 1, 1, 2]]]
  * ```
@@ -218,7 +218,7 @@ export function countVectorize(
     names = names.filter((f) => keep.has(f))
   }
   if (names.length === 0 && docs.length > 0)
-    throw new MdmlError('value', 'countVectorize: after pruning, no terms remain; lower minDf or raise maxDf')
+    throw new OmaiError('value', 'countVectorize: after pruning, no terms remain; lower minDf or raise maxDf')
   const vocabulary = new Map(names.map((f, i) => [f, i]))
   const vectorizer = { options, vocabulary, featureNames: names, stopWords: removed }
   return { vectorizer, matrix: toCsr(countRows(docs, vocabulary, options), names.length) }
@@ -233,9 +233,9 @@ export function countVectorize(
  * @concept bag-of-words
  * @example
  * ```ts
- * import { countVectorize, countTransform } from 'mdml-engine/text'
- * import { toDense } from 'mdml-engine/numerics/sparse'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { countVectorize, countTransform } from 'omai-engine/text'
+ * import { toDense } from 'omai-engine/numerics/sparse'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(toDense(countTransform(countVectorize(['a cat', 'a dog']).vectorizer, ['dog dog bird']))) // => [[0, 2]]
  * ```
  */
@@ -265,7 +265,7 @@ export interface TfidfOptions {
  * @concept tf-idf
  * @example
  * ```ts
- * import { countVectorize, inverseDocumentFrequency } from 'mdml-engine/text'
+ * import { countVectorize, inverseDocumentFrequency } from 'omai-engine/text'
  * inverseDocumentFrequency(countVectorize(['ab cd', 'ab']).matrix, { smoothIdf: false }) // => [1, 1.6931471805599454]
  * ```
  */
@@ -290,9 +290,9 @@ export function inverseDocumentFrequency(counts: CsrMatrix, options: { readonly 
  * @concept tf-idf
  * @example
  * ```ts
- * import { countVectorize, tfidfWeights } from 'mdml-engine/text'
- * import { toDense } from 'mdml-engine/numerics/sparse'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { countVectorize, tfidfWeights } from 'omai-engine/text'
+ * import { toDense } from 'omai-engine/numerics/sparse'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(toDense(tfidfWeights(countVectorize(['ab cd', 'ab']).matrix, { norm: 'none', smoothIdf: false }))) // => [[1, 1.6931471805599454], [1, 0]]
  * ```
  */
@@ -336,7 +336,7 @@ export interface TfidfVectorizer {
  * @index function TF-IDF document vectors; count and hashing vectorisers beside it.
  * @example
  * ```ts
- * import { tfidfVectorize } from 'mdml-engine/text'
+ * import { tfidfVectorize } from 'omai-engine/text'
  * tfidfVectorize(['a cat', 'a dog', 'cat dog']).vectorizer.idf // => [1.2876820724517808, 1.2876820724517808]
  * ```
  */
@@ -358,9 +358,9 @@ export function tfidfVectorize(
  * @concept tf-idf
  * @example
  * ```ts
- * import { tfidfVectorize, tfidfTransform } from 'mdml-engine/text'
- * import { toDense } from 'mdml-engine/numerics/sparse'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { tfidfVectorize, tfidfTransform } from 'omai-engine/text'
+ * import { toDense } from 'omai-engine/numerics/sparse'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(toDense(tfidfTransform(tfidfVectorize(['a cat', 'a dog']).vectorizer, ['cat']))) // => [[1, 0]]
  * ```
  */
@@ -387,20 +387,20 @@ export interface HashingOptions extends AnalyzerOptions {
  * @param docs - The documents.
  * @param options - Analyzer, width, sign alternation, normalisation and binary values.
  * @returns The document-feature matrix.
- * @throws MdmlError with code `value` for a non-positive width.
+ * @throws OmaiError with code `value` for a non-positive width.
  * @concept feature-hashing
  * @example
  * ```ts
- * import { hashingVectorize } from 'mdml-engine/text'
- * import { toDense } from 'mdml-engine/numerics/sparse'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { hashingVectorize } from 'omai-engine/text'
+ * import { toDense } from 'omai-engine/numerics/sparse'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(toDense(hashingVectorize(['foo foo bar'], { nFeatures: 4, norm: 'none' }))) // => [[-2, 1, 0, 0]]
  * ```
  */
 export function hashingVectorize(docs: readonly string[], options: HashingOptions = {}): CsrMatrix {
   const width = options.nFeatures ?? 2 ** 20
   if (!Number.isInteger(width) || width < 1)
-    throw new MdmlError('value', 'hashingVectorize: nFeatures must be a positive integer')
+    throw new OmaiError('value', 'hashingVectorize: nFeatures must be a positive integer')
   const rows = docs.map((d) => {
     const row = new Map<number, number>()
     for (const f of analyze(d, options)) {
@@ -448,17 +448,17 @@ export interface Bm25Index {
  * @param corpus - Token lists.
  * @param options - Variant and parameters.
  * @returns The index.
- * @throws MdmlError with code `value` for an empty corpus.
+ * @throws OmaiError with code `value` for an empty corpus.
  * @concept bm25
  * @index function BM25 ranking index.
  * @example
  * ```ts
- * import { bm25 } from 'mdml-engine/text'
+ * import { bm25 } from 'omai-engine/text'
  * bm25([['a', 'b'], ['b'], ['c']]).idf.get('a') // => 0.5108256237659907
  * ```
  */
 export function bm25(corpus: readonly (readonly string[])[], options: Bm25Options = {}): Bm25Index {
-  if (corpus.length === 0) throw new MdmlError('value', 'bm25: empty corpus')
+  if (corpus.length === 0) throw new OmaiError('value', 'bm25: empty corpus')
   const opts: Required<Bm25Options> = {
     variant: options.variant ?? 'okapi',
     k1: options.k1 ?? 1.5,
@@ -503,7 +503,7 @@ export function bm25(corpus: readonly (readonly string[])[], options: Bm25Option
  * @concept bm25
  * @example
  * ```ts
- * import { bm25, bm25Scores } from 'mdml-engine/text'
+ * import { bm25, bm25Scores } from 'omai-engine/text'
  * bm25Scores(bm25([['a', 'b'], ['b'], ['c']]), ['a']) // => [0.4170005091967271, 0, 0]
  * ```
  */

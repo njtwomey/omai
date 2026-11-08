@@ -177,8 +177,8 @@ const DENSIFY: Required<Omit<DensifyOptions, 'opacityResetEvery'>> = {
  * @concept gaussian-splatting
  * @example
  * ```ts
- * import { splatOptimiser } from 'mdml-engine/fields'
- * import { adam } from 'mdml-engine/optim'
+ * import { splatOptimiser } from 'omai-engine/fields'
+ * import { adam } from 'omai-engine/optim'
  * splatOptimiser((lr) => adam({ learningRate: lr }), { means: 0.01 }).name.startsWith('multiTransform') // => true
  * ```
  */
@@ -224,9 +224,9 @@ function pixelGrid(width: number, height: number): { xs: Float64Array; ys: Float
  * @concept gaussian-splatting
  * @example
  * ```ts
- * import { randomGaussians, renderSplatView } from 'mdml-engine/fields'
- * import { pinholeCamera } from 'mdml-engine/graphics'
- * import { key } from 'mdml-engine/random'
+ * import { randomGaussians, renderSplatView } from 'omai-engine/fields'
+ * import { pinholeCamera } from 'omai-engine/graphics'
+ * import { key } from 'omai-engine/random'
  * renderSplatView(randomGaussians(key(0), 5), pinholeCamera({ eye: [0, 0, 4] }), [4, 3]).rgb.length // => 36
  * ```
  */
@@ -274,8 +274,8 @@ export function renderSplatView(
  * @concept gaussian-splatting
  * @example
  * ```ts
- * import { gaussiansFromPoints, splatEllipses } from 'mdml-engine/fields'
- * import { pinholeCamera } from 'mdml-engine/graphics'
+ * import { gaussiansFromPoints, splatEllipses } from 'omai-engine/fields'
+ * import { pinholeCamera } from 'omai-engine/graphics'
  * const e = splatEllipses(gaussiansFromPoints([[0, 0, 0]], undefined, { scale: 0.5 }), pinholeCamera({ eye: [0, 0, 4], fov: 90 }), [64, 64])
  * [e.ellipses.length, e.ellipses[0]?.x, e.ellipses[0]?.y] // => [1, 32, 32]
  * ```
@@ -318,9 +318,9 @@ export function splatEllipses(set: GaussianSet, camera: PinholeCamera, size: rea
  * @concept log-contract
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { multiViewImages } from 'mdml-engine/datasets'
- * import { nerfData, splatContract } from 'mdml-engine/fields'
+ * import { generate } from 'omai-engine/data'
+ * import { multiViewImages } from 'omai-engine/datasets'
+ * import { nerfData, splatContract } from 'omai-engine/fields'
  * Object.keys(splatContract(nerfData(generate(multiViewImages, { knobs: { views: 2, resolution: 4, heldOut: 0 } })))).length // => 9
  * ```
  */
@@ -468,12 +468,12 @@ function densified(
  * @reference Kerbl, Kopanas, Leimkuehler and Drettakis (2023), 3D Gaussian splatting for real-time radiance field rendering.
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { multiViewImages } from 'mdml-engine/datasets'
- * import { fitSplatsAlgorithm, nerfData, randomGaussians } from 'mdml-engine/fields'
- * import { adam } from 'mdml-engine/optim'
- * import { key } from 'mdml-engine/random'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { generate } from 'omai-engine/data'
+ * import { multiViewImages } from 'omai-engine/datasets'
+ * import { fitSplatsAlgorithm, nerfData, randomGaussians } from 'omai-engine/fields'
+ * import { adam } from 'omai-engine/optim'
+ * import { key } from 'omai-engine/random'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const data = nerfData(generate(multiViewImages, { knobs: { views: 3, resolution: 6, heldOut: 0, objects: 1 } }))
  * const alg = fitSplatsAlgorithm(randomGaussians(key(0), 10), data, { optimiser: (lr) => adam({ learningRate: lr }) })
  * runAlgorithm(alg, { maxSteps: 3 }).state.step // => 3
@@ -632,11 +632,11 @@ export interface SplatFit {
  * @index function Fit 3-D Gaussians to posed images, with adaptive density control.
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { multiViewImages } from 'mdml-engine/datasets'
- * import { fitSplats, nerfData, randomGaussians } from 'mdml-engine/fields'
- * import { adam } from 'mdml-engine/optim'
- * import { key } from 'mdml-engine/random'
+ * import { generate } from 'omai-engine/data'
+ * import { multiViewImages } from 'omai-engine/datasets'
+ * import { fitSplats, nerfData, randomGaussians } from 'omai-engine/fields'
+ * import { adam } from 'omai-engine/optim'
+ * import { key } from 'omai-engine/random'
  * const data = nerfData(generate(multiViewImages, { knobs: { views: 3, resolution: 6, heldOut: 0, objects: 1 } }))
  * fitSplats(randomGaussians(key(0), 10), data, { optimiser: (lr) => adam({ learningRate: lr }), steps: 2 }).losses.length // => 2
  * ```

@@ -10,8 +10,8 @@ import math
 from collections.abc import Callable
 
 import numpy as np
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray, rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray, rng
 
 REFERENCE: dict[str, str] = {"definition": "Shapley (1953), Banzhaf (1965); computed with math and itertools"}
 

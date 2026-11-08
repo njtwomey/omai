@@ -5,7 +5,7 @@
  * the Frobenius loss, one sweep per step, with NNDSVD initialisation.
  */
 
-import { MdmlError, toRows } from '../base/index.ts'
+import { OmaiError, toRows } from '../base/index.ts'
 import { type IterativeEstimator, iterative, matrixView } from '../learn/index.ts'
 import { dnrm2 } from '../numerics/linalg/index.ts'
 import { normal } from '../random/index.ts'
@@ -36,7 +36,7 @@ type Rows = readonly (readonly number[])[]
  * @returns The divergence.
  * @example
  * ```ts
- * import { nmfDivergence } from 'mdml-engine/decomposition'
+ * import { nmfDivergence } from 'omai-engine/decomposition'
  * nmfDivergence([[1, 2]], [[1]], [[1, 1]], 'frobenius') // => 1
  * ```
  */
@@ -140,8 +140,8 @@ export interface NmfOptions {
  * @returns The algorithm.
  * @example
  * ```ts
- * import { nmfAlgorithm } from 'mdml-engine/decomposition'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { nmfAlgorithm } from 'omai-engine/decomposition'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const x = [[1, 2], [2, 4], [3, 6]]
  * const out = runAlgorithm(nmfAlgorithm(x, [[1], [1], [1]], [[1, 1]], { solver: 'hals' }), { maxSteps: 3 })
  * out.state.error < 0.001 // => true
@@ -153,7 +153,7 @@ export function nmfAlgorithm(x: Rows, w0: Rows, h0: Rows, options: NmfOptions = 
   const tol = options.tol ?? 1e-4
   const fixH = options.fixH ?? false
   if (solver === 'hals' && loss !== 'frobenius')
-    throw new MdmlError('value', 'nmf: HALS minimises the Frobenius loss only')
+    throw new OmaiError('value', 'nmf: HALS minimises the Frobenius loss only')
   const n = x.length
   const d = x[0]?.length ?? 0
   const k = h0.length
@@ -218,7 +218,7 @@ export function nmfAlgorithm(x: Rows, w0: Rows, h0: Rows, options: NmfOptions = 
  * @returns Initial W `[n, k]` and H `[k, d]`.
  * @example
  * ```ts
- * import { nndsvda } from 'mdml-engine/decomposition'
+ * import { nndsvda } from 'omai-engine/decomposition'
  * nndsvda([[1, 2], [2, 4]], 1).h[0]?.map((v) => Math.round(v * 1000) / 1000) // => [1, 2]
  * ```
  */
@@ -308,7 +308,7 @@ const toTensor = (rows: number[][]): Tensor =>
  * @index estimator Non-negative matrix factorisation by multiplicative or HALS updates.
  * @example
  * ```ts
- * import { nmf } from 'mdml-engine/decomposition'
+ * import { nmf } from 'omai-engine/decomposition'
  * const x = [[1, 2, 0], [2, 4, 0], [0, 0, 3], [0, 0, 6]]
  * nmf.with({ nComponents: 2, maxIter: 100 }).fit({ x }).params.components.length // => 2
  * ```
@@ -340,14 +340,14 @@ export const nmf: IterativeEstimator<NmfHyper, NmfState, NmfParams, NmfVerbs> = 
     }),
   algorithm: (data, h, key) => {
     const x = asRows(data.x, 'nmf')
-    if (x.some((r) => r.some((v) => v < 0))) throw new MdmlError('value', 'nmf: the data must be non-negative')
+    if (x.some((r) => r.some((v) => v < 0))) throw new OmaiError('value', 'nmf: the data must be non-negative')
     const n = x.length
     const d = x[0]?.length ?? 0
     const k = h.nComponents
     let w0: number[][]
     let h0: number[][]
     if (h.init === 'custom') {
-      if (h.wInit === null || h.hInit === null) throw new MdmlError('value', "nmf: init 'custom' needs wInit and hInit")
+      if (h.wInit === null || h.hInit === null) throw new OmaiError('value', "nmf: init 'custom' needs wInit and hInit")
       w0 = h.wInit
       h0 = h.hInit
     } else if (h.init === 'random') {

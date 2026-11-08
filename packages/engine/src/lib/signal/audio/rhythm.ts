@@ -4,7 +4,7 @@
  * dynamic-programming beat tracker that places beats on strong onsets at a steady period.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { primalOf, type TensorLike } from '../../tensor/index.ts'
 import { getWindow } from '../windows/index.ts'
 import { melSpectrogram, powerToDb } from './features.ts'
@@ -46,7 +46,7 @@ const median = (a: number[]): number => {
  * @concept onset-detection
  * @example
  * ```ts
- * import { audio } from 'mdml-engine/signal'
+ * import { audio } from 'omai-engine/signal'
  * const y = Array.from({ length: 22050 }, (_, i) => (i % 5512 < 200 ? Math.sin(i) : 0))
  * audio.onsetStrength(y).length // => 44
  * ```
@@ -56,7 +56,7 @@ export function onsetStrength(y: TensorLike, options: OnsetOptions = {}): Float6
   const nFft = options.nFft ?? 2048
   const hop = options.hopLength ?? 512
   const lag = options.lag ?? 1
-  if (!Number.isInteger(lag) || lag < 1) throw new MdmlError('value', 'onsetStrength: lag must be a positive integer')
+  if (!Number.isInteger(lag) || lag < 1) throw new OmaiError('value', 'onsetStrength: lag must be a positive integer')
   const S = primalOf(
     powerToDb(melSpectrogram(y, sr, { nFft, hopLength: hop, fmax: sr / 2, nMels: options.nMels ?? 128 })),
   )
@@ -93,7 +93,7 @@ export interface PeakPickOptions {
  * @concept onset-detection
  * @example
  * ```ts
- * import { audio } from 'mdml-engine/signal'
+ * import { audio } from 'omai-engine/signal'
  * audio.peakPick([0, 1, 0, 0, 3, 0, 0, 1, 0], { preMax: 1, postMax: 1, preAvg: 1, postAvg: 1, delta: 0.1, wait: 1 }) // => [1, 4, 7]
  * ```
  */
@@ -103,7 +103,7 @@ export function peakPick(x: ArrayLike<number>, options: PeakPickOptions): number
   const preAvg = Math.ceil(options.preAvg)
   const postAvg = Math.ceil(options.postAvg)
   const wait = Math.ceil(options.wait)
-  if (postMax <= 0 || postAvg <= 0) throw new MdmlError('value', 'peakPick: post windows must be positive')
+  if (postMax <= 0 || postAvg <= 0) throw new OmaiError('value', 'peakPick: post windows must be positive')
   const n = x.length
   const max = (a: number, b: number): number => {
     let m = Number.NEGATIVE_INFINITY
@@ -146,7 +146,7 @@ export function peakPick(x: ArrayLike<number>, options: PeakPickOptions): number
  * @concept onset-detection
  * @example
  * ```ts
- * import { audio } from 'mdml-engine/signal'
+ * import { audio } from 'omai-engine/signal'
  * const y = Array.from({ length: 22050 }, (_, i) => (i % 5512 < 400 ? Math.sin(i / 3) : 0))
  * audio.onsetDetect(y).length > 0 // => true
  * ```
@@ -166,7 +166,7 @@ export function onsetDetect(y: TensorLike, options: OnsetOptions = {}): number[]
  * @concept onset-detection
  * @example
  * ```ts
- * import { audio } from 'mdml-engine/signal'
+ * import { audio } from 'omai-engine/signal'
  * audio.onsetDetectFromEnvelope([0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0], 22050, 512) // => [2, 11]
  * ```
  */
@@ -200,7 +200,7 @@ export function onsetDetectFromEnvelope(envelope: ArrayLike<number>, sr = 22050,
  * @concept tempo-estimation
  * @example
  * ```ts
- * import { audio } from 'mdml-engine/signal'
+ * import { audio } from 'omai-engine/signal'
  * audio.tempogram(Array.from({ length: 50 }, (_, i) => (i % 10 === 0 ? 1 : 0)), 16).length // => 16
  * ```
  */
@@ -252,7 +252,7 @@ export interface TempoOptions {
  * @concept tempo-estimation
  * @example
  * ```ts
- * import { audio } from 'mdml-engine/signal'
+ * import { audio } from 'omai-engine/signal'
  * Math.round(audio.tempo(Array.from({ length: 400 }, (_, i) => (i % 22 === 0 ? 1 : 0)))) // => 117
  * ```
  */
@@ -298,7 +298,7 @@ export function tempo(envelope: ArrayLike<number>, options: TempoOptions = {}): 
  * @concept beat-tracking
  * @example
  * ```ts
- * import { audio } from 'mdml-engine/signal'
+ * import { audio } from 'omai-engine/signal'
  * const y = Array.from({ length: 22050 * 4 }, (_, i) => (i % 11025 < 300 ? Math.sin(i / 2) : 0))
  * audio.beatTrack(y).beats.length > 3 // => true
  * ```
@@ -321,7 +321,7 @@ export function beatTrack(
  * @concept beat-tracking
  * @example
  * ```ts
- * import { audio } from 'mdml-engine/signal'
+ * import { audio } from 'omai-engine/signal'
  * audio.beatTrackFromEnvelope(Array.from({ length: 300 }, (_, i) => (i % 20 === 0 ? 1 : 0.01)), { bpm: 129.2 }).beats.slice(0, 3) // => [20, 40, 60]
  * ```
  */

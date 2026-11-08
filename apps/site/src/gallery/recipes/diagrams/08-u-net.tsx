@@ -1,5 +1,5 @@
-import { ControlPanel, NumberField, Player, SceneFrame, Toggle, usePlayback } from 'mdml-render/react'
-import { uNet, uNetOrder, unetLevels } from 'mdml-render/structures'
+import { ControlPanel, NumberField, Player, SceneFrame, Toggle, usePlayback } from 'omai-render/react'
+import { uNet, uNetOrder, unetLevels } from 'omai-render/structures'
 import { type ReactNode, useMemo, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 

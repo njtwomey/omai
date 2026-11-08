@@ -6,7 +6,7 @@
  * forecast errors. Top-down splits by historical proportions are provided too.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { identity, invert, type MutableRows, multiply, transpose } from './_matrix.ts'
 
 /** A node of a hierarchy: a name and its children (a leaf has none). */
@@ -30,7 +30,7 @@ export interface SummingMatrix {
  * @returns S with the node and leaf names.
  * @example
  * ```ts
- * import { treeSummingMatrix } from 'mdml-engine/timeseries'
+ * import { treeSummingMatrix } from 'omai-engine/timeseries'
  * treeSummingMatrix({ name: 'total', children: [{ name: 'a' }, { name: 'b' }] }).S // => [[1, 1], [1, 0], [0, 1]]
  * ```
  */
@@ -70,7 +70,7 @@ export function treeSummingMatrix(root: HierarchyNode): SummingMatrix {
  * @returns S with names `total`, `<grouping>:<label>` and the bottom names.
  * @example
  * ```ts
- * import { groupedSummingMatrix } from 'mdml-engine/timeseries'
+ * import { groupedSummingMatrix } from 'omai-engine/timeseries'
  * // Four bottom series in two crossed groupings.
  * groupedSummingMatrix([['x', 'x', 'y', 'y'], ['p', 'q', 'p', 'q']]).S.length // => 1 + 2 + 2 + 4
  * ```
@@ -81,7 +81,7 @@ export function groupedSummingMatrix(
 ): SummingMatrix {
   const n = groupings[0]?.length ?? 0
   if (groupings.some((g) => g.length !== n))
-    throw new MdmlError('shape', 'groupedSummingMatrix: every grouping needs one label per bottom series')
+    throw new OmaiError('shape', 'groupedSummingMatrix: every grouping needs one label per bottom series')
   const bottomNames = bottom ?? Array.from({ length: n }, (_, i) => `b${i}`)
   const S: MutableRows = [new Array<number>(n).fill(1)]
   const names = ['total']
@@ -122,7 +122,7 @@ export interface Reconciliation {
  * @returns The shrunk covariance and the shrinkage intensity.
  * @example
  * ```ts
- * import { shrinkCovariance } from 'mdml-engine/timeseries'
+ * import { shrinkCovariance } from 'omai-engine/timeseries'
  * const r = [[1, 2], [-1, -1.5], [0.5, 1], [-0.5, -1.2], [1.2, 2.2], [-1, -2]]
  * shrinkCovariance(r).lambda >= 0 // => true
  * ```
@@ -178,10 +178,10 @@ function generalisedLeastSquares(S: MutableRows, W: MutableRows): MutableRows {
  * @param method - The reconciliation method (default `ols`).
  * @param residuals - In-sample base residuals `[T][series]`, needed by the variance and MinT methods.
  * @returns The coherent forecasts, the bottom-level ones, G and the assumed covariance.
- * @throws MdmlError with code `value` when a method needs residuals and none were given.
+ * @throws OmaiError with code `value` when a method needs residuals and none were given.
  * @example
  * ```ts
- * import { reconcile } from 'mdml-engine/timeseries'
+ * import { reconcile } from 'omai-engine/timeseries'
  * // Total 10 against parts 4 and 5: the least-squares projection spreads the discrepancy of 1.
  * const S = [[1, 1], [1, 0], [0, 1]]
  * reconcile([[10, 4, 5]], S, 'ols').bottom[0]?.map((v) => Math.round(v * 1e9) / 1e9) // => [4.333333333, 5.333333333]
@@ -195,7 +195,7 @@ export function reconcile(
 ): Reconciliation {
   const n = S.length
   const nb = S[0]?.length ?? 0
-  if (base.some((r) => r.length !== n)) throw new MdmlError('shape', `reconcile: base forecasts need ${n} series`)
+  if (base.some((r) => r.length !== n)) throw new OmaiError('shape', `reconcile: base forecasts need ${n} series`)
   const Sm = S.map((r) => [...r])
   let W: MutableRows = identity(n)
   let G: MutableRows
@@ -205,7 +205,7 @@ export function reconcile(
     if (method === 'wls-structural') W = W.map((r, i) => r.map((v) => v * (Sm[i] ?? []).reduce((a, b) => a + b, 0)))
     else if (method !== 'ols') {
       if (residuals === undefined || (residuals[0]?.length ?? 0) !== n)
-        throw new MdmlError('value', `reconcile: ${method} needs in-sample residuals of all ${n} series`)
+        throw new OmaiError('value', `reconcile: ${method} needs in-sample residuals of all ${n} series`)
       const T = residuals.length
       if (method === 'wls-variance')
         W = identity(n).map((r, i) => r.map((v) => v * (residuals.reduce((s, e) => s + (e[i] ?? 0) ** 2, 0) / T)))
@@ -243,7 +243,7 @@ export function reconcile(
  * @returns The proportions, summing to one.
  * @example
  * ```ts
- * import { topDownProportions } from 'mdml-engine/timeseries'
+ * import { topDownProportions } from 'omai-engine/timeseries'
  * topDownProportions([[1, 3], [2, 2]], 'proportion-averages') // => [0.375, 0.625]
  * ```
  */
@@ -273,7 +273,7 @@ export function topDownProportions(
  * @returns True when S times the bottom block reproduces every row.
  * @example
  * ```ts
- * import { isCoherent } from 'mdml-engine/timeseries'
+ * import { isCoherent } from 'omai-engine/timeseries'
  * isCoherent([[9, 4, 5]], [[1, 1], [1, 0], [0, 1]]) // => true
  * ```
  */

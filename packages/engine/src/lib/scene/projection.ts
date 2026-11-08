@@ -4,7 +4,7 @@
  * algorithm (farthest first), including the 3-D layers embedded in 2-D scenes.
  */
 
-import { clamp, MdmlError, type Vec3 } from '../base/index.ts'
+import { clamp, OmaiError, type Vec3 } from '../base/index.ts'
 import { finite, size } from './_check.ts'
 import { arrow, group, line, polygon, scene, tex, text } from './build.ts'
 import type { Item3D, Scene3D } from './three-d.ts'
@@ -33,28 +33,28 @@ export interface Camera {
  *
  * @param options - Any camera fields.
  * @returns The camera.
- * @throws MdmlError with code `value` for a distance or extent that is not finite and positive, a field of view outside
+ * @throws OmaiError with code `value` for a distance or extent that is not finite and positive, a field of view outside
  * (0, 180), an elevation outside [-90, 90], or an azimuth, elevation or target coordinate that is not finite.
  * @example
  * ```ts
- * import { camera } from 'mdml-engine/scene'
+ * import { camera } from 'omai-engine/scene'
  * camera({ projection: 'orthographic', azimuth: 0 }).elevation // => 30
  * ```
  */
 export function camera(options: Partial<Camera> = {}): Camera {
   const distance = options.distance ?? 5
   const fov = options.fov ?? 35
-  if (!(distance > 0 && Number.isFinite(distance))) throw new MdmlError('value', 'camera: distance must be positive')
-  if (!(fov > 0 && fov < 180)) throw new MdmlError('value', 'camera: fov must be in (0, 180) degrees')
+  if (!(distance > 0 && Number.isFinite(distance))) throw new OmaiError('value', 'camera: distance must be positive')
+  if (!(fov > 0 && fov < 180)) throw new OmaiError('value', 'camera: fov must be in (0, 180) degrees')
   const extent = options.extent ?? distance * Math.tan((fov * Math.PI) / 360)
-  if (!(extent > 0 && Number.isFinite(extent))) throw new MdmlError('value', 'camera: extent must be positive')
+  if (!(extent > 0 && Number.isFinite(extent))) throw new OmaiError('value', 'camera: extent must be positive')
   const azimuth = options.azimuth ?? -60
   const elevation = options.elevation ?? 30
   const target = options.target ?? ([0, 0, 0] as const)
-  if (!Number.isFinite(azimuth)) throw new MdmlError('value', `camera: azimuth must be finite, got ${azimuth}`)
+  if (!Number.isFinite(azimuth)) throw new OmaiError('value', `camera: azimuth must be finite, got ${azimuth}`)
   if (!(elevation >= -90 && elevation <= 90))
-    throw new MdmlError('value', `camera: elevation must be in [-90, 90] degrees, got ${elevation}`)
-  if (!target.every(Number.isFinite)) throw new MdmlError('value', `camera: target must be finite, got [${target}]`)
+    throw new OmaiError('value', `camera: elevation must be in [-90, 90] degrees, got ${elevation}`)
+  if (!target.every(Number.isFinite)) throw new OmaiError('value', `camera: target must be finite, got [${target}]`)
   return {
     projection: options.projection ?? 'perspective',
     azimuth,
@@ -75,7 +75,7 @@ export function camera(options: Partial<Camera> = {}): Camera {
  * @returns The moved camera.
  * @example
  * ```ts
- * import { camera, orbit } from 'mdml-engine/scene'
+ * import { camera, orbit } from 'omai-engine/scene'
  * orbit(camera({ elevation: 80 }), 15, 30).elevation // => 90
  * ```
  */
@@ -111,7 +111,7 @@ function itemPoints(item: Item3D): readonly Vec3[] {
  *   the target moves, the camera keeps its distance and extent).
  * @example
  * ```ts
- * import { camera, fitCamera, scene3d, point3d } from 'mdml-engine/scene'
+ * import { camera, fitCamera, scene3d, point3d } from 'omai-engine/scene'
  * fitCamera(camera(), scene3d([point3d([0, 0, 0]), point3d([2, 2, 2])])).target // => [1, 1, 1]
  * ```
  */
@@ -157,7 +157,7 @@ export interface Projected {
  * @returns Image coordinates (y down) and depth, or `undefined`.
  * @example
  * ```ts
- * import { camera, projectPoint } from 'mdml-engine/scene'
+ * import { camera, projectPoint } from 'omai-engine/scene'
  * projectPoint(camera(), [0, 0, 0], { width: 100, height: 100 }) // => { x: 50, y: 50, depth: 5 }
  * ```
  */
@@ -345,7 +345,7 @@ function projectItem(item: Item3D, order: number, view: View, cull: boolean, out
  * @concept scene-graph
  * @example
  * ```ts
- * import { camera, project, scene3d, segment3d } from 'mdml-engine/scene'
+ * import { camera, project, scene3d, segment3d } from 'omai-engine/scene'
  * const view = camera({ azimuth: -90, elevation: 0 })
  * project(scene3d([segment3d([0, 0, 0], [1, 0, 0])]), view, { width: 100, height: 100 }).children[0].kind // => 'line'
  * ```
@@ -394,10 +394,10 @@ export function project(
  * @param box - Where the layer sits in the enclosing scene.
  * @param options - Id and title.
  * @returns The node.
- * @throws MdmlError `value` when the box corner is not finite or its width or height is not a finite number >= 0.
+ * @throws OmaiError `value` when the box corner is not finite or its width or height is not a finite number >= 0.
  * @example
  * ```ts
- * import { camera, layer3d, scene3d } from 'mdml-engine/scene'
+ * import { camera, layer3d, scene3d } from 'omai-engine/scene'
  * layer3d(scene3d([]), camera(), { x: 0, y: 0, width: 200, height: 200 }).kind // => 'layer3d'
  * ```
  */
@@ -433,7 +433,7 @@ function flattenLayers(nodes: readonly SceneNode[]): SceneNode[] {
  * @returns The scene without 3-D layers.
  * @example
  * ```ts
- * import { camera, layer3d, point3d, projectLayers, scene, scene3d } from 'mdml-engine/scene'
+ * import { camera, layer3d, point3d, projectLayers, scene, scene3d } from 'omai-engine/scene'
  * const layer = layer3d(scene3d([point3d([0, 0, 0])]), camera(), { x: 10, y: 10, width: 80, height: 80 })
  * projectLayers(scene(100, 100, [layer])).children[0].kind // => 'group'
  * ```

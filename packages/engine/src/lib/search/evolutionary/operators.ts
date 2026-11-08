@@ -5,14 +5,14 @@
  * and polynomial mutations, all driven by explicit keys.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import type { Key } from '../../random/index.ts'
 import { draws } from '../_draw.ts'
 
 // ------------------------------------------------------------------------------------------------ selection
 
 function checkCount(n: number, name: string): void {
-  if (!(Number.isInteger(n) && n >= 0)) throw new MdmlError('value', `${name}: n = ${n} must be a non-negative integer`)
+  if (!(Number.isInteger(n) && n >= 0)) throw new OmaiError('value', `${name}: n = ${n} must be a non-negative integer`)
 }
 
 /**
@@ -24,19 +24,19 @@ function checkCount(n: number, name: string): void {
  * @param n - The number of picks.
  * @param size - The tournament size (default 3).
  * @returns The indices picked.
- * @throws MdmlError with code `value` when the population is empty or a count is invalid.
+ * @throws OmaiError with code `value` when the population is empty or a count is invalid.
  * @concept evolutionary-algorithms
  * @example
  * ```ts
- * import { key } from 'mdml-engine/random'
- * import { tournamentSelection } from 'mdml-engine/search'
+ * import { key } from 'omai-engine/random'
+ * import { tournamentSelection } from 'omai-engine/search'
  * tournamentSelection(key(0), [1, 5, 2], 4, 3).length // => 4
  * tournamentSelection(key(0), [1, 5, 2], 2, 50) // => [1, 1]
  * ```
  */
 export function tournamentSelection(key: Key, fitness: readonly number[], n: number, size = 3): number[] {
   checkCount(n, 'tournamentSelection')
-  if (fitness.length === 0 || !(size >= 1)) throw new MdmlError('value', 'tournamentSelection: empty population')
+  if (fitness.length === 0 || !(size >= 1)) throw new OmaiError('value', 'tournamentSelection: empty population')
   const d = draws(key)
   return Array.from({ length: n }, () => {
     let best = d.int(fitness.length)
@@ -75,19 +75,19 @@ function wheel(key: Key, weights: readonly number[], n: number, universal: boole
  * @param fitness - Non-negative fitnesses.
  * @param n - The number of picks.
  * @returns The indices picked (uniform when every fitness is 0).
- * @throws MdmlError with code `value` when a fitness is negative or the population is empty.
+ * @throws OmaiError with code `value` when a fitness is negative or the population is empty.
  * @concept evolutionary-algorithms
  * @example
  * ```ts
- * import { key } from 'mdml-engine/random'
- * import { rouletteSelection } from 'mdml-engine/search'
+ * import { key } from 'omai-engine/random'
+ * import { rouletteSelection } from 'omai-engine/search'
  * rouletteSelection(key(1), [0, 1, 0], 3) // => [1, 1, 1]
  * ```
  */
 export function rouletteSelection(key: Key, fitness: readonly number[], n: number): number[] {
   checkCount(n, 'rouletteSelection')
   if (fitness.length === 0 || fitness.some((f) => !(f >= 0))) {
-    throw new MdmlError('value', 'rouletteSelection: needs a non-empty population of non-negative fitnesses')
+    throw new OmaiError('value', 'rouletteSelection: needs a non-empty population of non-negative fitnesses')
   }
   return wheel(key, fitness, n, false)
 }
@@ -100,19 +100,19 @@ export function rouletteSelection(key: Key, fitness: readonly number[], n: numbe
  * @param fitness - Non-negative fitnesses.
  * @param n - The number of picks.
  * @returns The indices picked, in wheel order.
- * @throws MdmlError with code `value` when a fitness is negative or the population is empty.
+ * @throws OmaiError with code `value` when a fitness is negative or the population is empty.
  * @concept evolutionary-algorithms
  * @example
  * ```ts
- * import { key } from 'mdml-engine/random'
- * import { stochasticUniversalSampling } from 'mdml-engine/search'
+ * import { key } from 'omai-engine/random'
+ * import { stochasticUniversalSampling } from 'omai-engine/search'
  * stochasticUniversalSampling(key(2), [1, 1, 2], 4) // => [0, 1, 2, 2]
  * ```
  */
 export function stochasticUniversalSampling(key: Key, fitness: readonly number[], n: number): number[] {
   checkCount(n, 'stochasticUniversalSampling')
   if (fitness.length === 0 || fitness.some((f) => !(f >= 0))) {
-    throw new MdmlError('value', 'stochasticUniversalSampling: needs non-negative fitnesses')
+    throw new OmaiError('value', 'stochasticUniversalSampling: needs non-negative fitnesses')
   }
   return wheel(key, fitness, n, true)
 }
@@ -126,19 +126,19 @@ export function stochasticUniversalSampling(key: Key, fitness: readonly number[]
  * @param n - The number of picks.
  * @param pressure - The selection pressure s (default 1.5).
  * @returns The indices picked.
- * @throws MdmlError with code `value` when the pressure is outside [1, 2] or the population is empty.
+ * @throws OmaiError with code `value` when the pressure is outside [1, 2] or the population is empty.
  * @concept evolutionary-algorithms
  * @example
  * ```ts
- * import { key } from 'mdml-engine/random'
- * import { rankSelection } from 'mdml-engine/search'
+ * import { key } from 'omai-engine/random'
+ * import { rankSelection } from 'omai-engine/search'
  * rankSelection(key(0), [-5, 3], 3, 2) // => [1, 1, 1]
  * ```
  */
 export function rankSelection(key: Key, fitness: readonly number[], n: number, pressure = 1.5): number[] {
   checkCount(n, 'rankSelection')
   if (fitness.length === 0 || !(pressure >= 1 && pressure <= 2)) {
-    throw new MdmlError('value', 'rankSelection: needs a population and a pressure in [1, 2]')
+    throw new OmaiError('value', 'rankSelection: needs a population and a pressure in [1, 2]')
   }
   const N = fitness.length
   const order = fitness.map((f, i) => ({ f, i })).sort((a, b) => a.f - b.f || b.i - a.i)
@@ -155,17 +155,17 @@ export function rankSelection(key: Key, fitness: readonly number[], n: number, p
  * @param fitness - The fitnesses.
  * @param n - The number to keep.
  * @returns Their indices, fittest first.
- * @throws MdmlError with code `value` when n exceeds the population.
+ * @throws OmaiError with code `value` when n exceeds the population.
  * @concept evolutionary-algorithms
  * @example
  * ```ts
- * import { truncationSelection } from 'mdml-engine/search'
+ * import { truncationSelection } from 'omai-engine/search'
  * truncationSelection([3, 9, 1, 9], 2) // => [1, 3]
  * ```
  */
 export function truncationSelection(fitness: readonly number[], n: number): number[] {
   checkCount(n, 'truncationSelection')
-  if (n > fitness.length) throw new MdmlError('value', 'truncationSelection: n exceeds the population')
+  if (n > fitness.length) throw new OmaiError('value', 'truncationSelection: n exceeds the population')
   return fitness
     .map((f, i) => ({ f, i }))
     .sort((a, b) => b.f - a.f || a.i - b.i)
@@ -176,7 +176,7 @@ export function truncationSelection(fitness: readonly number[], n: number): numb
 // ------------------------------------------------------------------------------------------------ crossover
 
 function sameLength(a: readonly unknown[], b: readonly unknown[], name: string): void {
-  if (a.length !== b.length) throw new MdmlError('shape', `${name}: parents have lengths ${a.length} and ${b.length}`)
+  if (a.length !== b.length) throw new OmaiError('shape', `${name}: parents have lengths ${a.length} and ${b.length}`)
 }
 
 /**
@@ -186,12 +186,12 @@ function sameLength(a: readonly unknown[], b: readonly unknown[], name: string):
  * @param a - A parent.
  * @param b - Another parent of the same length.
  * @returns Two children.
- * @throws MdmlError with code `shape` when the lengths differ.
+ * @throws OmaiError with code `shape` when the lengths differ.
  * @concept evolutionary-algorithms
  * @example
  * ```ts
- * import { key } from 'mdml-engine/random'
- * import { onePointCrossover } from 'mdml-engine/search'
+ * import { key } from 'omai-engine/random'
+ * import { onePointCrossover } from 'omai-engine/search'
  * const [c, d] = onePointCrossover(key(0), [0, 0, 0, 0], [1, 1, 1, 1])
  * c.reduce((s, x) => s + x, 0) + d.reduce((s, x) => s + x, 0) // => 4
  * ```
@@ -212,12 +212,12 @@ export function onePointCrossover<T>(key: Key, a: readonly T[], b: readonly T[])
  * @param a - A parent.
  * @param b - Another parent of the same length.
  * @returns Two children.
- * @throws MdmlError with code `shape` when the lengths differ.
+ * @throws OmaiError with code `shape` when the lengths differ.
  * @concept evolutionary-algorithms
  * @example
  * ```ts
- * import { key } from 'mdml-engine/random'
- * import { twoPointCrossover } from 'mdml-engine/search'
+ * import { key } from 'omai-engine/random'
+ * import { twoPointCrossover } from 'omai-engine/search'
  * twoPointCrossover(key(3), [0, 0, 0, 0, 0], [1, 1, 1, 1, 1])[0].length // => 5
  * ```
  */
@@ -242,12 +242,12 @@ export function twoPointCrossover<T>(key: Key, a: readonly T[], b: readonly T[])
  * @param b - Another parent of the same length.
  * @param p - The probability of swapping a position (default 0.5).
  * @returns Two children.
- * @throws MdmlError with code `shape` when the lengths differ.
+ * @throws OmaiError with code `shape` when the lengths differ.
  * @concept evolutionary-algorithms
  * @example
  * ```ts
- * import { key } from 'mdml-engine/random'
- * import { uniformCrossover } from 'mdml-engine/search'
+ * import { key } from 'omai-engine/random'
+ * import { uniformCrossover } from 'omai-engine/search'
  * uniformCrossover(key(0), [0, 0, 0], [1, 1, 1], 1) // => [[1, 1, 1], [0, 0, 0]]
  * ```
  */
@@ -273,7 +273,7 @@ function checkPermutation(p: readonly number[], name: string): void {
   const seen = new Uint8Array(p.length)
   for (const x of p) {
     if (!(Number.isInteger(x) && x >= 0 && x < p.length) || seen[x] === 1) {
-      throw new MdmlError('value', `${name}: parents must be permutations of 0 .. n - 1`)
+      throw new OmaiError('value', `${name}: parents must be permutations of 0 .. n - 1`)
     }
     seen[x] = 1
   }
@@ -314,12 +314,12 @@ function ox(a: readonly number[], b: readonly number[], i: number, j: number): n
  * @param a - A permutation of 0 .. n - 1.
  * @param b - Another.
  * @returns Two child permutations.
- * @throws MdmlError with code `value` when a parent is not a permutation.
+ * @throws OmaiError with code `value` when a parent is not a permutation.
  * @concept evolutionary-algorithms
  * @example
  * ```ts
- * import { key } from 'mdml-engine/random'
- * import { orderCrossover } from 'mdml-engine/search'
+ * import { key } from 'omai-engine/random'
+ * import { orderCrossover } from 'omai-engine/search'
  * orderCrossover(key(0), [0, 1, 2, 3, 4], [4, 3, 2, 1, 0]).every((c) => [...c].sort().join() === '0,1,2,3,4') // => true
  * ```
  */
@@ -365,12 +365,12 @@ function pmx(a: readonly number[], b: readonly number[], i: number, j: number): 
  * @param a - A permutation of 0 .. n - 1.
  * @param b - Another.
  * @returns Two child permutations.
- * @throws MdmlError with code `value` when a parent is not a permutation.
+ * @throws OmaiError with code `value` when a parent is not a permutation.
  * @concept evolutionary-algorithms
  * @example
  * ```ts
- * import { key } from 'mdml-engine/random'
- * import { pmxCrossover } from 'mdml-engine/search'
+ * import { key } from 'omai-engine/random'
+ * import { pmxCrossover } from 'omai-engine/search'
  * pmxCrossover(key(1), [0, 1, 2, 3, 4], [4, 3, 2, 1, 0]).every((c) => [...c].sort().join() === '0,1,2,3,4') // => true
  * ```
  */
@@ -390,11 +390,11 @@ export function pmxCrossover(key: Key, a: readonly number[], b: readonly number[
  * @param a - A permutation of 0 .. n - 1.
  * @param b - Another.
  * @returns Two child permutations.
- * @throws MdmlError with code `value` when a parent is not a permutation.
+ * @throws OmaiError with code `value` when a parent is not a permutation.
  * @concept evolutionary-algorithms
  * @example
  * ```ts
- * import { cycleCrossover } from 'mdml-engine/search'
+ * import { cycleCrossover } from 'omai-engine/search'
  * cycleCrossover([0, 1, 2, 3, 4, 5, 6, 7], [7, 4, 1, 0, 2, 5, 3, 6]) // => [[0, 4, 1, 3, 2, 5, 6, 7], [7, 1, 2, 0, 4, 5, 3, 6]]
  * ```
  */
@@ -427,12 +427,12 @@ export function cycleCrossover(a: readonly number[], b: readonly number[]): [num
  * @param b - Another of the same length.
  * @param alpha - The widening (default 0.5).
  * @returns Two children.
- * @throws MdmlError with code `shape` when the lengths differ.
+ * @throws OmaiError with code `shape` when the lengths differ.
  * @concept evolutionary-algorithms
  * @example
  * ```ts
- * import { key } from 'mdml-engine/random'
- * import { blendCrossover } from 'mdml-engine/search'
+ * import { key } from 'omai-engine/random'
+ * import { blendCrossover } from 'omai-engine/search'
  * blendCrossover(key(0), [0, 0], [1, 1], 0)[0].every((x) => x >= 0 && x <= 1) // => true
  * ```
  */
@@ -464,12 +464,12 @@ export function blendCrossover(
  * @param b - Another of the same length.
  * @param options - The distribution index eta (default 15) and bounds.
  * @returns Two children whose coordinate means equal the parents'.
- * @throws MdmlError with code `shape` when the lengths differ.
+ * @throws OmaiError with code `shape` when the lengths differ.
  * @concept evolutionary-algorithms
  * @example
  * ```ts
- * import { key } from 'mdml-engine/random'
- * import { simulatedBinaryCrossover } from 'mdml-engine/search'
+ * import { key } from 'omai-engine/random'
+ * import { simulatedBinaryCrossover } from 'omai-engine/search'
  * const [c, d] = simulatedBinaryCrossover(key(0), [1, 2], [3, 2])
  * Math.abs((c[0] ?? 0) + (d[0] ?? 0) - 4) < 1e-12 // => true
  * ```
@@ -508,12 +508,12 @@ export function simulatedBinaryCrossover(
  * @param a - A parent.
  * @param b - Another of the same length.
  * @returns Two children.
- * @throws MdmlError with code `shape` when the lengths differ.
+ * @throws OmaiError with code `shape` when the lengths differ.
  * @concept evolutionary-algorithms
  * @example
  * ```ts
- * import { key } from 'mdml-engine/random'
- * import { arithmeticCrossover } from 'mdml-engine/search'
+ * import { key } from 'omai-engine/random'
+ * import { arithmeticCrossover } from 'omai-engine/search'
  * const [c, d] = arithmeticCrossover(key(0), [0, 10], [10, 0])
  * (c[0] ?? 0) + (d[0] ?? 0) // => 10
  * ```
@@ -536,8 +536,8 @@ export function arithmeticCrossover(key: Key, a: readonly number[], b: readonly 
  * @concept evolutionary-algorithms
  * @example
  * ```ts
- * import { key } from 'mdml-engine/random'
- * import { bitFlipMutation } from 'mdml-engine/search'
+ * import { key } from 'omai-engine/random'
+ * import { bitFlipMutation } from 'omai-engine/search'
  * bitFlipMutation(key(0), [0, 1, 0], 1) // => [1, 0, 1]
  * ```
  */
@@ -559,8 +559,8 @@ export function bitFlipMutation(
  * @concept evolutionary-algorithms
  * @example
  * ```ts
- * import { key } from 'mdml-engine/random'
- * import { swapMutation } from 'mdml-engine/search'
+ * import { key } from 'omai-engine/random'
+ * import { swapMutation } from 'omai-engine/search'
  * [...swapMutation(key(0), [0, 1, 2, 3])].sort().join() // => '0,1,2,3'
  * ```
  */
@@ -584,8 +584,8 @@ export function swapMutation<T>(key: Key, perm: readonly T[]): T[] {
  * @concept evolutionary-algorithms
  * @example
  * ```ts
- * import { key } from 'mdml-engine/random'
- * import { inversionMutation } from 'mdml-engine/search'
+ * import { key } from 'omai-engine/random'
+ * import { inversionMutation } from 'omai-engine/search'
  * inversionMutation(key(4), [0, 1, 2, 3, 4]).length // => 5
  * ```
  */
@@ -604,8 +604,8 @@ export function inversionMutation<T>(key: Key, perm: readonly T[]): T[] {
  * @concept evolutionary-algorithms
  * @example
  * ```ts
- * import { key } from 'mdml-engine/random'
- * import { scrambleMutation } from 'mdml-engine/search'
+ * import { key } from 'omai-engine/random'
+ * import { scrambleMutation } from 'omai-engine/search'
  * [...scrambleMutation(key(2), [0, 1, 2, 3, 4])].sort().join() // => '0,1,2,3,4'
  * ```
  */
@@ -632,8 +632,8 @@ export function scrambleMutation<T>(key: Key, perm: readonly T[]): T[] {
  * @concept evolutionary-algorithms
  * @example
  * ```ts
- * import { key } from 'mdml-engine/random'
- * import { gaussianMutation } from 'mdml-engine/search'
+ * import { key } from 'omai-engine/random'
+ * import { gaussianMutation } from 'omai-engine/search'
  * gaussianMutation(key(0), [0, 0], { sigma: 1, lower: [0, 0], upper: [0, 0] }) // => [0, 0]
  * ```
  */
@@ -668,12 +668,12 @@ export function gaussianMutation(
  * @param upper - Upper bounds.
  * @param options - The distribution index eta (default 20) and rate (default 1 / length).
  * @returns The mutated vector.
- * @throws MdmlError with code `shape` when the bounds do not match the vector.
+ * @throws OmaiError with code `shape` when the bounds do not match the vector.
  * @concept evolutionary-algorithms
  * @example
  * ```ts
- * import { key } from 'mdml-engine/random'
- * import { polynomialMutation } from 'mdml-engine/search'
+ * import { key } from 'omai-engine/random'
+ * import { polynomialMutation } from 'omai-engine/search'
  * polynomialMutation(key(0), [0.5], [0], [1], { rate: 1 }).every((v) => v >= 0 && v <= 1) // => true
  * ```
  */
@@ -685,7 +685,7 @@ export function polynomialMutation(
   options: { readonly eta?: number; readonly rate?: number } = {},
 ): number[] {
   if (lower.length !== x.length || upper.length !== x.length) {
-    throw new MdmlError('shape', 'polynomialMutation: bounds must match the vector')
+    throw new OmaiError('shape', 'polynomialMutation: bounds must match the vector')
   }
   const eta = options.eta ?? 20
   const rate = options.rate ?? 1 / Math.max(1, x.length)

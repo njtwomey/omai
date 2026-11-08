@@ -4,7 +4,7 @@
  * threshold through every figure of the evaluation (score distributions, cost, ROC, PR, the contingency table).
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { sameLength, seal } from './_check.ts'
 
 /**
@@ -58,12 +58,12 @@ const COLUMNS = ['tp', 'fp', 'tn', 'fn', 'tpr', 'fpr', 'precision', 'selectionRa
  *
  * @param record - The record without its `kind`.
  * @returns The record.
- * @throws MdmlError `shape` when a column does not have one entry per threshold, the cost matrix is not 2 by 2, or
+ * @throws OmaiError `shape` when a column does not have one entry per threshold, the cost matrix is not 2 by 2, or
  *   the scored rows' columns differ in length; `value` when the thresholds are not ascending or the cheapest index is
  *   not a threshold.
  * @example
  * ```ts
- * import { thresholdSweep } from 'mdml-engine/exposition'
+ * import { thresholdSweep } from 'omai-engine/exposition'
  * const r = thresholdSweep({
  *   classes: ['no', 'yes'], thresholds: [0.2, 0.8, Infinity], positives: 1, negatives: 1,
  *   tp: [1, 1, 0], fp: [1, 0, 0], tn: [0, 1, 1], fn: [0, 0, 1],
@@ -78,7 +78,7 @@ export function thresholdSweep(record: Omit<ThresholdSweep, 'kind'>): ThresholdS
   for (const field of COLUMNS) sameLength('thresholdSweep', field, record[field].length, k)
   for (let i = 1; i < k; i++)
     if (!((record.thresholds[i] ?? 0) > (record.thresholds[i - 1] ?? 0)))
-      throw new MdmlError('value', 'thresholdSweep: the thresholds must be strictly ascending')
+      throw new OmaiError('value', 'thresholdSweep: the thresholds must be strictly ascending')
   if (record.costs !== undefined) {
     sameLength('thresholdSweep', 'costs', record.costs.length, 2)
     for (const [i, row] of record.costs.entries()) sameLength('thresholdSweep', `costs[${i}]`, row.length, 2)
@@ -88,7 +88,7 @@ export function thresholdSweep(record: Omit<ThresholdSweep, 'kind'>): ThresholdS
     record.cheapest !== undefined &&
     !(Number.isInteger(record.cheapest) && record.cheapest >= 0 && record.cheapest < k)
   )
-    throw new MdmlError('value', `thresholdSweep: the cheapest index ${record.cheapest} is not one of ${k}`)
+    throw new OmaiError('value', `thresholdSweep: the cheapest index ${record.cheapest} is not one of ${k}`)
   if (record.scored !== undefined)
     sameLength('thresholdSweep', 'scored.labels', record.scored.labels.length, record.scored.scores.length)
   return seal({ kind: 'thresholdSweep', ...record })
@@ -103,7 +103,7 @@ export function thresholdSweep(record: Omit<ThresholdSweep, 'kind'>): ThresholdS
  * @returns The index into the sweep's columns.
  * @example
  * ```ts
- * import { sweepIndex } from 'mdml-engine/exposition'
+ * import { sweepIndex } from 'omai-engine/exposition'
  * const r = { thresholds: [0.2, 0.5, 0.9, Infinity] }
  * sweepIndex(r, 0.3) // => 1
  * sweepIndex(r, 0.5) // => 1
@@ -147,7 +147,7 @@ export interface SweepPoint {
  * @returns The point.
  * @example
  * ```ts
- * import { sweepAt, thresholdSweep } from 'mdml-engine/exposition'
+ * import { sweepAt, thresholdSweep } from 'omai-engine/exposition'
  * const r = thresholdSweep({
  *   classes: ['no', 'yes'], thresholds: [0.2, 0.8, Infinity], positives: 1, negatives: 1,
  *   tp: [1, 1, 0], fp: [1, 0, 0], tn: [0, 1, 1], fn: [0, 0, 1],

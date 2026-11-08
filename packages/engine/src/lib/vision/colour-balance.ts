@@ -4,7 +4,7 @@
  * image into its channel planes and merging them back (cv2.split and cv2.merge).
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { quantile } from '../stats/index.ts'
 import { fromStorage, type Tensor, type TensorLike } from '../tensor/index.ts'
 import { imageTensor, rasterOf, rasterTensor, srgbDecode, srgbEncode, valuesOf } from './_image.ts'
@@ -27,8 +27,8 @@ const elementwise = (x: TensorLike, f: (v: number) => number): Tensor => {
  * @concept gamma-correction
  * @example
  * ```ts
- * import { srgbToLinear } from 'mdml-engine/vision'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { srgbToLinear } from 'omai-engine/vision'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(srgbToLinear([0, 0.5, 1])).map((v) => Math.round(v * 1e4) / 1e4) // => [0, 0.214, 1]
  * ```
  */
@@ -45,8 +45,8 @@ export function srgbToLinear(x: TensorLike): Tensor {
  * @concept gamma-correction
  * @example
  * ```ts
- * import { linearToSrgb } from 'mdml-engine/vision'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { linearToSrgb } from 'omai-engine/vision'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(linearToSrgb([0, 0.214, 1])).map((v) => Math.round(v * 1e3) / 1e3) // => [0, 0.5, 1]
  * ```
  */
@@ -62,19 +62,19 @@ export function linearToSrgb(x: TensorLike): Tensor {
  * @param gamma - The exponent (default 1).
  * @param gain - The multiplier (default 1).
  * @returns The corrected image.
- * @throws MdmlError with code `value` for a negative gamma or values outside [0, 1].
+ * @throws OmaiError with code `value` for a negative gamma or values outside [0, 1].
  * @concept gamma-correction
  * @example
  * ```ts
- * import { adjustGamma } from 'mdml-engine/vision'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { adjustGamma } from 'omai-engine/vision'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(adjustGamma([0.25, 1], 0.5)) // => [0.5, 1]
  * ```
  */
 export function adjustGamma(x: TensorLike, gamma = 1, gain = 1): Tensor {
-  if (!(gamma >= 0)) throw new MdmlError('value', 'adjustGamma: gamma must be non-negative')
+  if (!(gamma >= 0)) throw new OmaiError('value', 'adjustGamma: gamma must be non-negative')
   const { data } = valuesOf(x)
-  if (data.some((v) => v < 0 || v > 1)) throw new MdmlError('value', 'adjustGamma: values must lie in [0, 1]')
+  if (data.some((v) => v < 0 || v > 1)) throw new OmaiError('value', 'adjustGamma: values must lie in [0, 1]')
   return elementwise(x, (v) => gain * v ** gamma)
 }
 
@@ -100,14 +100,14 @@ export interface WhiteBalanceOptions {
  * @concept white-balance
  * @example
  * ```ts
- * import { whiteBalance } from 'mdml-engine/vision'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { whiteBalance } from 'omai-engine/vision'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(whiteBalance([[[0.4, 0.2, 0.3], [0.2, 0.1, 0.15]]], { method: 'grey-world' }))[0][0] // => [0.3, 0.3, 0.3]
  * ```
  */
 export function whiteBalance(x: TensorLike, options: WhiteBalanceOptions = {}): Tensor {
   const r = rasterOf(x, 'whiteBalance')
-  if (r.rank !== 3) throw new MdmlError('shape', 'whiteBalance: expected an image [H, W, C]')
+  if (r.rank !== 3) throw new OmaiError('shape', 'whiteBalance: expected an image [H, W, C]')
   const n = r.h * r.w
   const channel = (k: number): Float64Array => Float64Array.from({ length: n }, (_, i) => r.data[i * r.c + k] ?? 0)
   const gains = new Float64Array(r.c)
@@ -134,8 +134,8 @@ export function whiteBalance(x: TensorLike, options: WhiteBalanceOptions = {}): 
  * @concept colour-channels
  * @example
  * ```ts
- * import { splitChannels } from 'mdml-engine/vision'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { splitChannels } from 'omai-engine/vision'
+ * import { toArray } from 'omai-engine/tensor'
  * splitChannels([[[1, 2, 3]]]).map((p) => toArray(p)) // => [[[1]], [[2]], [[3]]]
  * ```
  */
@@ -155,20 +155,20 @@ export function splitChannels(x: TensorLike): Tensor[] {
  *
  * @param planes - Planes `[H, W]` of one shape.
  * @returns The image `[H, W, C]`.
- * @throws MdmlError with code `shape` when the planes differ in shape.
+ * @throws OmaiError with code `shape` when the planes differ in shape.
  * @concept colour-channels
  * @example
  * ```ts
- * import { mergeChannels } from 'mdml-engine/vision'
+ * import { mergeChannels } from 'omai-engine/vision'
  * mergeChannels([[[1]], [[2]], [[3]]]).shape // => [1, 1, 3]
  * ```
  */
 export function mergeChannels(planes: readonly TensorLike[]): Tensor {
-  if (planes.length === 0) throw new MdmlError('value', 'mergeChannels: no planes')
+  if (planes.length === 0) throw new OmaiError('value', 'mergeChannels: no planes')
   const rs = planes.map((p) => rasterOf(p, 'mergeChannels'))
   const { h, w } = rs[0] as { h: number; w: number }
   if (rs.some((r) => r.h !== h || r.w !== w || r.c !== 1))
-    throw new MdmlError('shape', 'mergeChannels: planes must be [H, W] of one shape')
+    throw new OmaiError('shape', 'mergeChannels: planes must be [H, W] of one shape')
   const c = rs.length
   const out = new Float64Array(h * w * c)
   for (const [k, r] of rs.entries()) for (let i = 0; i < h * w; i++) out[i * c + k] = r.data[i] ?? 0

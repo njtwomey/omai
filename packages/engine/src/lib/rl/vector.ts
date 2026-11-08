@@ -4,7 +4,7 @@
  * batched tuples.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import { foldIn, type Key, key as makeKey } from '../random/index.ts'
 import type { Space } from '../space/index.ts'
 import { type Env, resetAfter } from './env.ts'
@@ -64,9 +64,9 @@ export interface VectorEnv<S, O, A> {
  * @concept environments
  * @example
  * ```ts
- * import { vectorEnv } from 'mdml-engine/rl'
- * import { cartPole } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { vectorEnv } from 'omai-engine/rl'
+ * import { cartPole } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * const venv = vectorEnv(cartPole.create(), 3)
  * venv.step(venv.reset(key(0)).state, [0, 1, 0], key(1)).rewards // => [1, 1, 1]
  * ```
@@ -77,7 +77,7 @@ export function vectorEnv<S, O, A>(
   options: { readonly autoReset?: AutoResetMode } = {},
 ): VectorEnv<S, O, A> {
   if (!(Number.isInteger(numEnvs) && numEnvs >= 1)) {
-    throw new MdmlError('value', 'vectorEnv: numEnvs must be a positive integer')
+    throw new OmaiError('value', 'vectorEnv: numEnvs must be a positive integer')
   }
   const mode = options.autoReset ?? 'same-step'
   return {
@@ -96,7 +96,7 @@ export function vectorEnv<S, O, A>(
     },
     step: (state, actions, k) => {
       if (actions.length !== numEnvs) {
-        throw new MdmlError('shape', `vectorEnv.step: expected ${numEnvs} actions, got ${actions.length}`)
+        throw new OmaiError('shape', `vectorEnv.step: expected ${numEnvs} actions, got ${actions.length}`)
       }
       const envs: S[] = []
       const needsReset: boolean[] = []
@@ -161,8 +161,8 @@ export function vectorEnv<S, O, A>(
  * @concept environments
  * @example
  * ```ts
- * import { GymVectorEnv } from 'mdml-engine/rl'
- * import { cartPole } from 'mdml-engine/environments'
+ * import { GymVectorEnv } from 'omai-engine/rl'
+ * import { cartPole } from 'omai-engine/environments'
  * const venv = new GymVectorEnv(cartPole.create(), 2)
  * venv.reset({ seed: 0 })[0].length // => 2
  * ```
@@ -206,7 +206,7 @@ export class GymVectorEnv<S, O, A> {
     readonly boolean[],
     readonly Readonly<Record<string, Json>>[],
   ] {
-    if (this.state === undefined) throw new MdmlError('value', 'GymVectorEnv.step: call reset() first')
+    if (this.state === undefined) throw new OmaiError('value', 'GymVectorEnv.step: call reset() first')
     this.t += 1
     const r = this.vector.step(this.state, actions, foldIn(this.key, this.t))
     this.state = r.state

@@ -5,7 +5,7 @@
  * best-matching unit.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { type IterativeEstimator, iterative, matrixView } from '../learn/index.ts'
 import { geometry } from '../numerics/index.ts'
 import { permutation, subsample } from '../random/index.ts'
@@ -49,9 +49,9 @@ function bestUnits(x: TensorLike, weights: readonly (readonly number[])[]): { un
  * @returns The algorithm.
  * @example
  * ```ts
- * import { somAlgorithm } from 'mdml-engine/manifold'
- * import { key } from 'mdml-engine/random'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { somAlgorithm } from 'omai-engine/manifold'
+ * import { key } from 'omai-engine/random'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const x = [[0], [1], [2], [3]]
  * const alg = somAlgorithm(x, [[0], [1], [2]], [1, 3], { epochs: 10 })
  * runAlgorithm(alg, { maxSteps: 10, key: key(0) }).state.weights.length // => 3
@@ -66,7 +66,7 @@ export function somAlgorithm(
   const m = matrixView(x, 'som')
   const [rows, cols] = grid
   if (rows * cols !== init.length)
-    throw new MdmlError('shape', `som: ${init.length} nodes for a ${rows} x ${cols} grid`)
+    throw new OmaiError('shape', `som: ${init.length} nodes for a ${rows} x ${cols} grid`)
   const lr0 = options.learningRate ?? 0.5
   const s0 = options.sigma ?? Math.max(rows, cols) / 2
   const coords = Array.from({ length: rows * cols }, (_, u) => [Math.floor(u / cols), u % cols] as const)
@@ -145,7 +145,7 @@ export function somAlgorithm(
  * @returns The distances `[rows, cols]`.
  * @example
  * ```ts
- * import { uMatrix } from 'mdml-engine/manifold'
+ * import { uMatrix } from 'omai-engine/manifold'
  * uMatrix([[0], [1], [3]], [1, 3]) // => [[1, 1.5, 2]]
  * ```
  */
@@ -199,7 +199,7 @@ export interface SomVerbs {
  * @index estimator Self-organising map.
  * @example
  * ```ts
- * import { selfOrganisingMap } from 'mdml-engine/manifold'
+ * import { selfOrganisingMap } from 'omai-engine/manifold'
  * const x = Array.from({ length: 20 }, (_, i) => [i / 20, (i % 5) / 5])
  * selfOrganisingMap.with({ rows: 3, cols: 3, epochs: 5 }).fit({ x }).params.weights.length // => 9
  * ```

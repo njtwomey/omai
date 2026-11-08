@@ -4,8 +4,8 @@
 
 The look of every figure: light and dark design tokens (`tokens`, `cssText`), categorical, sequential and diverging palettes with colour-blindness checks (`sequentialRamp`, `colourBlindCheck`), the registered ECharts themes (`echartsTheme`, `baseOption`), and number formatting for axes, tooltips and readouts (`formatNumber`).
 
-- function `colourBlindCheck`: Check categorical colours stay distinct under colour blindness: `colourBlindCheck(colours)`. `src/theme/palettes.ts:408` `mdml-render/theme`
-- function `cssText`: The tokens as `--wb-*` CSS custom properties: `cssText('dark', '.dark')`. `src/theme/tokens.ts:144` `mdml-render/theme`
-- function `formatNumber`: Format a number for axes and readouts: `formatNumber(Math.PI, { digits: 2 })`. `src/theme/format.ts:37` `mdml-render/theme`
-- function `sequentialRamp`: Colours of a sequential ramp: `sequentialRamp('viridis', 'dark')`. `src/theme/palettes.ts:73` `mdml-render/theme`
-- function `tokens`: Light and dark design tokens: `tokens('dark').bg`. `src/theme/tokens.ts:75` `mdml-render/theme`
+- function `colourBlindCheck`: Check categorical colours stay distinct under colour blindness: `colourBlindCheck(colours)`. `src/theme/palettes.ts:408` `omai-render/theme`
+- function `cssText`: The tokens as `--wb-*` CSS custom properties: `cssText('dark', '.dark')`. `src/theme/tokens.ts:144` `omai-render/theme`
+- function `formatNumber`: Format a number for axes and readouts: `formatNumber(Math.PI, { digits: 2 })`. `src/theme/format.ts:37` `omai-render/theme`
+- function `sequentialRamp`: Colours of a sequential ramp: `sequentialRamp('viridis', 'dark')`. `src/theme/palettes.ts:73` `omai-render/theme`
+- function `tokens`: Light and dark design tokens: `tokens('dark').bg`. `src/theme/tokens.ts:75` `omai-render/theme`

@@ -4,8 +4,8 @@ the shortest lemma all come from nltk's code."""
 
 from importlib.metadata import version
 
-from mdml_oracle.fixture import Case, case
 from nltk.corpus.reader.wordnet import WordNetCorpusReader
+from omai_oracle.fixture import Case, case
 
 REFERENCE: dict[str, str] = {"nltk": version("nltk")}
 

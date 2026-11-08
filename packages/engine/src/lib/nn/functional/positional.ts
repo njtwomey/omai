@@ -4,7 +4,7 @@
  * queries and keys so scores depend on relative position) and ALiBi's linear distance biases.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import {
   add,
   concat,
@@ -31,8 +31,8 @@ import {
  * @concept positional-encoding
  * @example
  * ```ts
- * import { sinusoidalPositions } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { sinusoidalPositions } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(sinusoidalPositions(2, 2)) // => [[0, 1], [0.8414709848078965, 0.5403023058681398]]
  * ```
  */
@@ -41,7 +41,7 @@ export function sinusoidalPositions(
   dim: number,
   options: { readonly base?: number; readonly offset?: number } = {},
 ): Tensor {
-  if (dim % 2 !== 0) throw new MdmlError('value', 'sinusoidalPositions: the width must be even')
+  if (dim % 2 !== 0) throw new OmaiError('value', 'sinusoidalPositions: the width must be even')
   const base = options.base ?? 10000
   const offset = options.offset ?? 0
   const out = new Float64Array(length * dim)
@@ -65,15 +65,15 @@ export function sinusoidalPositions(
  * @returns `[length, dim]`, differentiable in the table.
  * @example
  * ```ts
- * import { learnedPositions } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { learnedPositions } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(learnedPositions([[0, 0], [1, 1], [2, 2]], 2, 1)) // => [[1, 1], [2, 2]]
  * ```
  */
 export function learnedPositions(table: TensorLike, length: number, offset = 0): Value {
   const [t] = promoteFloat(table) as [Value]
   if (offset + length > (t.shape[0] ?? 0))
-    throw new MdmlError('value', `learnedPositions: positions up to ${offset + length} exceed the table`)
+    throw new OmaiError('value', `learnedPositions: positions up to ${offset + length} exceed the table`)
   return sliceAxis(t, 0, offset, offset + length)
 }
 
@@ -108,12 +108,12 @@ export interface RotaryOptions {
  * @reference Su, Lu, Pan, Murtadha, Wen and Liu (2021), RoFormer: enhanced transformer with rotary position embedding.
  * @example
  * ```ts
- * import { rotaryAngles } from 'mdml-engine/nn'
+ * import { rotaryAngles } from 'omai-engine/nn'
  * rotaryAngles(4, 8).cos.shape // => [4, 4]
  * ```
  */
 export function rotaryAngles(length: number, dim: number, options: RotaryOptions = {}): RotaryAngles {
-  if (dim % 2 !== 0) throw new MdmlError('value', 'rotaryAngles: the width must be even')
+  if (dim % 2 !== 0) throw new OmaiError('value', 'rotaryAngles: the width must be even')
   const base = options.base ?? 10000
   const scale = options.scale ?? 1
   const positions = options.positions ?? Array.from({ length }, (_, p) => p + (options.offset ?? 0))
@@ -145,8 +145,8 @@ export function rotaryAngles(length: number, dim: number, options: RotaryOptions
  * @concept positional-encoding
  * @example
  * ```ts
- * import { applyRotary, rotaryAngles } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { applyRotary, rotaryAngles } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(applyRotary([[1, 0]], rotaryAngles(1, 2))) // => [[1, 0]]
  * ```
  */
@@ -155,7 +155,7 @@ export function applyRotary(x: TensorLike, angles: RotaryAngles, interleaved = f
   const d = v.shape[v.shape.length - 1] ?? 0
   const half = angles.cos.shape[1] ?? 0
   const rot = 2 * half
-  if (rot > d) throw new MdmlError('shape', 'applyRotary: the angles are wider than the input')
+  if (rot > d) throw new OmaiError('shape', 'applyRotary: the angles are wider than the input')
   const head = rot === d ? v : sliceAxis(v, -1, 0, rot)
   const tail = rot === d ? undefined : sliceAxis(v, -1, rot, d)
   let out: Value
@@ -184,7 +184,7 @@ export function applyRotary(x: TensorLike, angles: RotaryAngles, interleaved = f
  *   extrapolation.
  * @example
  * ```ts
- * import { alibiSlopes } from 'mdml-engine/nn'
+ * import { alibiSlopes } from 'omai-engine/nn'
  * alibiSlopes(4) // => [0.25, 0.0625, 0.015625, 0.00390625]
  * ```
  */
@@ -210,8 +210,8 @@ export function alibiSlopes(numHeads: number): number[] {
  * @returns The bias.
  * @example
  * ```ts
- * import { alibiBias } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { alibiBias } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(alibiBias(1, 2)) // => [[[0, 0], [-0.00390625, 0]]]
  * ```
  */

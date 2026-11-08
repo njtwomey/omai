@@ -3,10 +3,10 @@
 import numpy as np
 import scipy
 import torch
-from mdml_oracle.distributions import method_case
-from mdml_oracle.fixture import Case
-from mdml_oracle.helpers import rng
-from mdml_oracle.torch_helpers import to_numpy, to_torch
+from omai_oracle.distributions import method_case
+from omai_oracle.fixture import Case
+from omai_oracle.helpers import rng
+from omai_oracle.torch_helpers import to_numpy, to_torch
 from scipy import stats
 
 REFERENCE: dict[str, str] = {"numpy": np.__version__, "scipy": scipy.__version__, "torch": torch.__version__}

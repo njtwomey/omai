@@ -3,8 +3,8 @@
  * with CSS keyframes, so the file plays on its own in a browser, a slide or a README, with no script.
  */
 
-import { MdmlError } from 'mdml-engine/base'
-import { isTimeline, type Scene, type Timeline } from 'mdml-engine/scene'
+import { OmaiError } from 'omai-engine/base'
+import { isTimeline, type Scene, type Timeline } from 'omai-engine/scene'
 import { escapeXml, sceneToSvg } from '../svg/svg.ts'
 import { type ColourMode, tokens } from '../theme/tokens.ts'
 import { timelineScenes } from './frames.ts'
@@ -30,12 +30,12 @@ export interface AnimatedSvgOptions {
  * @param input - The timeline or scenes.
  * @param options - Colour mode, frames per second, width, background and looping.
  * @returns The SVG text.
- * @throws MdmlError with code `value` when there are no frames.
+ * @throws OmaiError with code `value` when there are no frames.
  * @index function A self-playing animated SVG from a timeline: `animatedSvg(timeline, { fps: 10 })`.
  * @example
  * ```ts
- * import { circle, scene } from 'mdml-engine/scene'
- * import { animatedSvg } from 'mdml-render/animation'
+ * import { circle, scene } from 'omai-engine/scene'
+ * import { animatedSvg } from 'omai-render/animation'
  * const svg = animatedSvg([scene(10, 10, [circle(3, 5, 2)]), scene(10, 10, [circle(7, 5, 2)])], { fps: 2 })
  * svg.includes('@keyframes') // => true
  * svg.match(/class="wb-f wb-f\d+"/g).length // => 2
@@ -44,7 +44,7 @@ export interface AnimatedSvgOptions {
 export function animatedSvg(input: Timeline | readonly Scene[], options: AnimatedSvgOptions = {}): string {
   const scenes = isTimeline(input) ? timelineScenes(input) : [...input]
   const first = scenes[0]
-  if (first === undefined) throw new MdmlError('value', 'animatedSvg: there are no frames')
+  if (first === undefined) throw new OmaiError('value', 'animatedSvg: there are no frames')
   const mode = options.mode ?? 'light'
   const fps = options.fps ?? (isTimeline(input) ? input.fps : 10)
   const n = scenes.length

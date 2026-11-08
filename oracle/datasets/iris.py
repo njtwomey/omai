@@ -3,7 +3,7 @@
 from typing import cast
 
 import sklearn
-from mdml_oracle.vendor import render_classification
+from omai_oracle.vendor import render_classification
 from sklearn.datasets import load_iris
 from sklearn.utils import Bunch
 

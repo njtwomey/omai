@@ -4,8 +4,8 @@ thresholds, log-likelihood, slope standard errors and the category probabilities
 import numpy as np
 import scipy.stats as st
 import statsmodels
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import rng
 from statsmodels.miscmodels.ordinal_model import OrderedModel
 
 REFERENCE: dict[str, str] = {"statsmodels": statsmodels.__version__}

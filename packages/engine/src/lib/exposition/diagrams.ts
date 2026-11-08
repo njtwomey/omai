@@ -3,7 +3,7 @@
  * or a graphical model, as a scene graph, with optional steps that highlight active nodes and edges and add badges.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import type { Structure, StructureOverlay } from '../scene/index.ts'
 import { seal } from './_check.ts'
 
@@ -31,11 +31,11 @@ export interface DiagramRecord {
  *
  * @param record - The record without its `kind`.
  * @returns The record.
- * @throws MdmlError `value` when an overlay names a node the structure does not have.
+ * @throws OmaiError `value` when an overlay names a node the structure does not have.
  * @example
  * ```ts
- * import { diagramRecord } from 'mdml-engine/exposition'
- * import { structure } from 'mdml-engine/scene'
+ * import { diagramRecord } from 'omai-engine/exposition'
+ * import { structure } from 'omai-engine/scene'
  * const s = structure('net', [{ id: 'x', label: 'x', role: 'input' }, { id: 'y', label: 'y', role: 'output' }], [{ from: 'x', to: 'y' }])
  * diagramRecord({ structure: s, steps: [{ overlay: { active: ['x'] }, caption: 'forward' }] }).steps?.length // => 1
  * ```
@@ -46,7 +46,7 @@ export function diagramRecord(record: Omit<DiagramRecord, 'kind'>): DiagramRecor
     const named = [...(step.overlay.active ?? []), ...Object.keys(step.overlay.badges ?? {})]
     const unknown = named.find((id) => !ids.has(id))
     if (unknown !== undefined)
-      throw new MdmlError('value', `diagram: steps[${t}] names the node ${unknown}, which the structure lacks`)
+      throw new OmaiError('value', `diagram: steps[${t}] names the node ${unknown}, which the structure lacks`)
   }
   return seal({ kind: 'diagram', ...record })
 }

@@ -1,6 +1,6 @@
 """The Palmer penguins data (Gorman, Williams and Fraser 2014; Horst, Hill and Gorman 2020), CC0."""
 
-from mdml_oracle.vendor import csv_rows, fetch_pinned, render_table
+from omai_oracle.vendor import csv_rows, fetch_pinned, render_table
 
 TARGET = "packages/engine/src/lib/datasets/_data/penguins.data.ts"
 URL = "https://raw.githubusercontent.com/allisonhorst/palmerpenguins/main/inst/extdata/penguins.csv"

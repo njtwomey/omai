@@ -1,6 +1,6 @@
 // Shared plumbing of the offline agents (private to methods/rl/agents): minibatches of a fixed dataset as tensors,
 // small MLPs as pure functions of their parameters, and action encodings for discrete and box action spaces.
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { mlp } from '../nn/index.ts'
 import type { ParamTree } from '../optim/index.ts'
 import type { Key } from '../random/index.ts'
@@ -50,7 +50,7 @@ export function offlineSpaces(env: { readonly observationSpace: Space; readonly 
       low: [],
       high: [],
     }
-  if (space.kind !== 'box') throw new MdmlError('value', 'offline agents need discrete or box actions')
+  if (space.kind !== 'box') throw new OmaiError('value', 'offline agents need discrete or box actions')
   const b = actionBox(space, 'offline')
   return {
     obsSize: f.size,

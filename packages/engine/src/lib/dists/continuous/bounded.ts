@@ -60,8 +60,8 @@ import { batchShapeOf, broadcastBatch, type Distribution, defineDistribution, va
  * @index distribution Continuous uniform distribution on an interval.
  * @example
  * ```ts
- * import { uniform } from 'mdml-engine/dists'
- * import { item } from 'mdml-engine/tensor'
+ * import { uniform } from 'omai-engine/dists'
+ * import { item } from 'omai-engine/tensor'
  * item(uniform(0, 4).cdf(1)) // => 0.25
  * ```
  */
@@ -101,8 +101,8 @@ export function uniform(low: TensorLike = 0, high: TensorLike = 1): Distribution
  * @index distribution Beta distribution.
  * @example
  * ```ts
- * import { beta } from 'mdml-engine/dists'
- * import { item } from 'mdml-engine/tensor'
+ * import { beta } from 'omai-engine/dists'
+ * import { item } from 'omai-engine/tensor'
  * Math.abs(item(beta(2, 2).cdf(0.5)) - 0.5) < 1e-14 // => true
  * ```
  */
@@ -156,8 +156,8 @@ export function beta(a: TensorLike, b: TensorLike): Distribution {
  * @returns The distribution; `rsample` is the quantile of uniform noise, differentiable in both shapes.
  * @example
  * ```ts
- * import { kumaraswamy } from 'mdml-engine/dists'
- * import { item } from 'mdml-engine/tensor'
+ * import { kumaraswamy } from 'omai-engine/dists'
+ * import { item } from 'omai-engine/tensor'
  * Math.abs(item(kumaraswamy(1, 1).cdf(0.25)) - 0.25) < 1e-15 // => true
  * ```
  */
@@ -216,8 +216,8 @@ export function kumaraswamy(a: TensorLike, b: TensorLike): Distribution {
  *   parameters.
  * @example
  * ```ts
- * import { triangular } from 'mdml-engine/dists'
- * import { item } from 'mdml-engine/tensor'
+ * import { triangular } from 'omai-engine/dists'
+ * import { item } from 'omai-engine/tensor'
  * item(triangular(0, 1, 2).cdf(1)) // => 0.5
  * item(triangular(0, 1, 2).mean()) // => 1
  * ```
@@ -279,8 +279,8 @@ export function triangular(low: TensorLike, mode: TensorLike, high: TensorLike):
  *   moments and entropy by quadrature over Y (they have no closed form), and the mode by search.
  * @example
  * ```ts
- * import { logitNormal } from 'mdml-engine/dists'
- * import { item } from 'mdml-engine/tensor'
+ * import { logitNormal } from 'omai-engine/dists'
+ * import { item } from 'omai-engine/tensor'
  * item(logitNormal(0, 1).cdf(0.5)) // => 0.5
  * Math.abs(item(logitNormal(0, 1).mean()) - 0.5) < 1e-14 // => true
  * ```

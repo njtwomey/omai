@@ -72,8 +72,8 @@ const shuffleKnob = bool({
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { rings } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { rings } from 'omai-engine/datasets'
  * generate(rings, { knobs: { n: 90, rings: 3 } }).data.classes // => ['0', '1', '2']
  * ```
  */
@@ -150,8 +150,8 @@ export const rings: DatasetGenerator<ClassificationData> = {
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { anisotropicBlobs } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { anisotropicBlobs } from 'omai-engine/datasets'
  * generate(anisotropicBlobs, { knobs: { n: 30 } }).data.x.shape // => [30, 2]
  * ```
  */
@@ -237,8 +237,8 @@ export const anisotropicBlobs: DatasetGenerator<ClassificationData> = {
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { unequalVarianceBlobs } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { unequalVarianceBlobs } from 'omai-engine/datasets'
  * generate(unequalVarianceBlobs).truth.extra?.['stds'] // => [1, 2.5, 0.5]
  * ```
  */
@@ -323,7 +323,7 @@ export const unequalVarianceBlobs: DatasetGenerator<ClassificationData> = {
  * @returns The dataset and its two clusters.
  * @example
  * ```ts
- * import { oldFaithful } from 'mdml-engine/datasets'
+ * import { oldFaithful } from 'omai-engine/datasets'
  * oldFaithful().data.x.shape // => [272, 2]
  * ```
  */

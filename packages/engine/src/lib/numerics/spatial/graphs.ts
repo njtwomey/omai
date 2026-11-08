@@ -5,7 +5,7 @@
  * they visited, for figures.
  */
 
-import { heap, type Json, MdmlError } from '../../base/index.ts'
+import { heap, type Json, OmaiError } from '../../base/index.ts'
 import { foldIn, type Key, uniform } from '../../random/index.ts'
 import { concreteOrThrow, fromStorage, promoteFloat, type Tensor, type TensorLike, toFlat } from '../../tensor/index.ts'
 import {
@@ -206,9 +206,9 @@ const emptyHnsw = (): HnswState => ({ points: [], levels: [], links: [], entry: 
  * @concept approximate-nearest-neighbours
  * @example
  * ```ts
- * import { hnswAlgorithm } from 'mdml-engine/numerics/spatial'
- * import { key } from 'mdml-engine/random'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { hnswAlgorithm } from 'omai-engine/numerics/spatial'
+ * import { key } from 'omai-engine/random'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const run = runAlgorithm(hnswAlgorithm([[0, 0], [1, 0], [0, 1], [5, 5]], { m: 2, key: key(0) }), { maxSteps: 10 })
  * [run.status, run.state.inserted] // => ['converged', 4]
  * ```
@@ -250,8 +250,8 @@ export function hnswAlgorithm(data: TensorLike, options: HnswOptions): Algorithm
  * @concept approximate-nearest-neighbours
  * @example
  * ```ts
- * import { hnswIndex } from 'mdml-engine/numerics/spatial'
- * import { key } from 'mdml-engine/random'
+ * import { hnswIndex } from 'omai-engine/numerics/spatial'
+ * import { key } from 'omai-engine/random'
  * const index = hnswIndex([[0, 0], [1, 0], [0, 1], [5, 5]], { m: 2, key: key(0) })
  * index.search([4.8, 5.1], 1).indices // => [3]
  * ```
@@ -265,7 +265,7 @@ export function hnswIndex(data: TensorLike, options: HnswOptions): HnswIndex {
 
   const add = (input: TensorLike): void => {
     const t = concreteOrThrow(promoteFloat(input)[0] as Tensor, 'hnswIndex add')
-    if (t.shape[1] !== d) throw new MdmlError('shape', 'hnswIndex: dimension mismatch')
+    if (t.shape[1] !== d) throw new OmaiError('shape', 'hnswIndex: dimension mismatch')
     const f = toFlat(t)
     for (let i = 0; i < (t.shape[0] ?? 0); i++) insert(f.slice(i * d, i * d + d))
   }
@@ -331,8 +331,8 @@ export interface NnDescentState {
  * @returns The algorithm.
  * @example
  * ```ts
- * import { nnDescentAlgorithm } from 'mdml-engine/numerics/spatial'
- * import { key } from 'mdml-engine/random'
+ * import { nnDescentAlgorithm } from 'omai-engine/numerics/spatial'
+ * import { key } from 'omai-engine/random'
  * nnDescentAlgorithm([[0], [1], [2], [3]], 2, { key: key(0) }).name // => 'nnDescent'
  * ```
  */
@@ -350,7 +350,7 @@ export function nnDescentAlgorithm(
   const t = concreteOrThrow(promoteFloat(data)[0] as Tensor, 'nnDescent')
   const flat = toFlat(t)
   const [n = 0, d = 0] = t.shape
-  if (k >= n) throw new MdmlError('value', 'nnDescent: k must be smaller than the number of points')
+  if (k >= n) throw new OmaiError('value', 'nnDescent: k must be smaller than the number of points')
   const dist = metricFunction(options.metric ?? 'euclidean', d)
   const rho = options.rho ?? 0.5
   const delta = options.delta ?? 0.001
@@ -482,8 +482,8 @@ export function nnDescentAlgorithm(
  * @returns Neighbour indices and distances `[n, k]`, sorted, and the per-iteration updates.
  * @example
  * ```ts
- * import { nnDescent } from 'mdml-engine/numerics/spatial'
- * import { key } from 'mdml-engine/random'
+ * import { nnDescent } from 'omai-engine/numerics/spatial'
+ * import { key } from 'omai-engine/random'
  * nnDescent([[0], [1], [2], [10], [11], [12]], 2, { key: key(0) }).indices.shape // => [6, 2]
  * ```
  */

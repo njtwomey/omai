@@ -9,7 +9,7 @@
 
 // TODO: LSD's Gaussian sub-sampling (scale 0.8), its region refinement and rectangle improvement steps.
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { lgamma } from '../numerics/special/index.ts'
 import { item, type TensorLike } from '../tensor/index.ts'
 import { f32, fastAtan2, greyOf, level } from './_image.ts'
@@ -81,7 +81,7 @@ function logNfa(n: number, k: number, p: number, logNT: number): number {
  * @concept line-detection
  * @example
  * ```ts
- * import { lineSegmentDetector } from 'mdml-engine/vision'
+ * import { lineSegmentDetector } from 'omai-engine/vision'
  * const img = Array.from({ length: 16 }, () => Array.from({ length: 16 }, (_, j) => (j < 8 ? 0 : 1)))
  * lineSegmentDetector(img).lines // => [[7.5, 0.5, 7.5, 14.5]]
  * ```
@@ -92,9 +92,9 @@ export function lineSegmentDetector(
 ): { readonly lines: number[][]; readonly widths: number[]; readonly logNfa: number[] } {
   const g = greyOf(x, 'lineSegmentDetector')
   const { h, w } = g
-  if (h < 2 || w < 2) throw new MdmlError('shape', 'lineSegmentDetector: the image is at least 2 x 2')
+  if (h < 2 || w < 2) throw new OmaiError('shape', 'lineSegmentDetector: the image is at least 2 x 2')
   const tol = options.angleTolerance ?? 22.5
-  if (!(tol > 0 && tol < 180)) throw new MdmlError('value', 'lineSegmentDetector: the tolerance is in (0, 180)')
+  if (!(tol > 0 && tol < 180)) throw new OmaiError('value', 'lineSegmentDetector: the tolerance is in (0, 180)')
   const prec = DEG * tol
   const p = tol / 180
   const rho = (options.quant ?? 2) / Math.sin(prec)

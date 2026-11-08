@@ -48,7 +48,7 @@ export interface StumpiState {
  * @concept matrix-profile
  * @example
  * ```ts
- * import { stumpiInit } from 'mdml-engine/timeseries'
+ * import { stumpiInit } from 'omai-engine/timeseries'
  * stumpiInit([0, 1, 3, 2, 9, 1, 14, 15, 1, 2, 2, 10, 7], 4).profile.P.length // => 10
  * ```
  */
@@ -101,7 +101,7 @@ function lastWindowStats(
  * @concept matrix-profile
  * @example
  * ```ts
- * import { stumpiInit, stumpiUpdate } from 'mdml-engine/timeseries'
+ * import { stumpiInit, stumpiUpdate } from 'omai-engine/timeseries'
  * const s = stumpiUpdate(stumpiInit([0, 1, 3, 2, 9, 1, 14, 15, 1, 2, 2, 10, 7], 4, { egress: false }), 3)
  * s.profile.P.length // => 11
  * ```
@@ -221,7 +221,7 @@ export function stumpiUpdate(state: StumpiState, value: number): StumpiState {
  * @concept matrix-profile
  * @example
  * ```ts
- * import { stumpiAlgorithm } from 'mdml-engine/timeseries'
+ * import { stumpiAlgorithm } from 'omai-engine/timeseries'
  * stumpiAlgorithm([0, 1, 3, 2, 9, 1, 14, 15, 1, 2, 2, 10, 7], 4, [1, 2]).name // => 'stumpi'
  * ```
  */

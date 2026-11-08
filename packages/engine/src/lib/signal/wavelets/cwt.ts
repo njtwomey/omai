@@ -4,7 +4,7 @@
  * converts scales to frequencies.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { convolve } from '../../numerics/convolution/index.ts'
 import { fft } from '../../numerics/fourier/index.ts'
 import {
@@ -35,7 +35,7 @@ import { continuousWavelet } from './families.ts'
  * @concept continuous-wavelet-transform
  * @example
  * ```ts
- * import { centralFrequency } from 'mdml-engine/signal'
+ * import { centralFrequency } from 'omai-engine/signal'
  * Math.round(centralFrequency('morl') * 1e4) / 1e4 // => 0.8125
  * ```
  */
@@ -71,12 +71,12 @@ export interface CwtResult {
  * @param name - Continuous wavelet ('morl', 'mexh', 'gausP', 'cmorB-C', 'shanB-C').
  * @param samplingPeriod - Sampling period (default 1).
  * @returns The coefficients (imaginary part zero for real wavelets) and frequencies.
- * @throws MdmlError with code `value` for a scale too small for the signal.
+ * @throws OmaiError with code `value` for a scale too small for the signal.
  * @concept continuous-wavelet-transform
  * @index function Continuous wavelet transform.
  * @example
  * ```ts
- * import { cwt } from 'mdml-engine/signal'
+ * import { cwt } from 'omai-engine/signal'
  * cwt(new Array(32).fill(0).map((_, i) => Math.sin(i / 2)), [1, 2, 4], 'mexh').coefficients.re.shape // => [3, 32]
  * ```
  */
@@ -104,7 +104,7 @@ export function cwt(x: TensorLike, scales: readonly number[], name: string, samp
   const rows: Value[] = []
   const irows: Value[] = []
   for (const a of scales) {
-    if (!(a > 0)) throw new MdmlError('value', 'cwt: scales must be positive')
+    if (!(a > 0)) throw new OmaiError('value', 'cwt: scales must be positive')
     const count = Math.ceil(a * width + 1)
     const j: number[] = []
     for (let i = 0; i < count; i++) {
@@ -118,7 +118,7 @@ export function cwt(x: TensorLike, scales: readonly number[], name: string, samp
       const len = conv.shape[0] ?? 0
       const coef = mul(sub(sliceAxis(conv, 0, 1, len), sliceAxis(conv, 0, 0, len - 1)), -Math.sqrt(a))
       const d = (len - 1 - n) / 2
-      if (d < 0) throw new MdmlError('value', 'cwt: the selected scale is too small')
+      if (d < 0) throw new OmaiError('value', 'cwt: the selected scale is too small')
       return sliceAxis(coef, 0, Math.floor(d), len - 1 - Math.ceil(d))
     }
     rows.push(transform(kRe))

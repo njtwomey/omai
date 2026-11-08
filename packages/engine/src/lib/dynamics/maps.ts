@@ -7,7 +7,7 @@
  */
 
 import { jacfwd } from '../autodiff/index.ts'
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { qr } from '../numerics/linalg/index.ts'
 import {
   abs,
@@ -44,8 +44,8 @@ const at = (x: Value, i: number): Value => sum(sliceAxis(reshape(x, [-1]), 0, i,
  * @concept logistic-map
  * @example
  * ```ts
- * import { logisticMap } from 'mdml-engine/dynamics'
- * import { tensor, toFlat } from 'mdml-engine/tensor'
+ * import { logisticMap } from 'omai-engine/dynamics'
+ * import { tensor, toFlat } from 'omai-engine/tensor'
  * toFlat(logisticMap(4)(tensor([0.5]))) // => [1]
  * ```
  */
@@ -60,8 +60,8 @@ export function logisticMap(r: number): IteratedMap {
  * @returns The map.
  * @example
  * ```ts
- * import { tentMap } from 'mdml-engine/dynamics'
- * import { tensor, toFlat } from 'mdml-engine/tensor'
+ * import { tentMap } from 'omai-engine/dynamics'
+ * import { tensor, toFlat } from 'omai-engine/tensor'
  * toFlat(tentMap(2)(tensor([0.25]))) // => [0.5]
  * ```
  */
@@ -81,8 +81,8 @@ export function tentMap(mu: number): IteratedMap {
  * @concept henon-map
  * @example
  * ```ts
- * import { henonMap } from 'mdml-engine/dynamics'
- * import { tensor, toFlat } from 'mdml-engine/tensor'
+ * import { henonMap } from 'omai-engine/dynamics'
+ * import { tensor, toFlat } from 'omai-engine/tensor'
  * toFlat(henonMap()(tensor([0, 0]))) // => [1, 0]
  * ```
  */
@@ -105,8 +105,8 @@ export function henonMap(a = 1.4, b = 0.3): IteratedMap {
  * @concept strange-attractors
  * @example
  * ```ts
- * import { deJongMap } from 'mdml-engine/dynamics'
- * import { tensor, toFlat } from 'mdml-engine/tensor'
+ * import { deJongMap } from 'omai-engine/dynamics'
+ * import { tensor, toFlat } from 'omai-engine/tensor'
  * toFlat(deJongMap()(tensor([0, 0]))) // => [-1, -1]
  * ```
  */
@@ -129,8 +129,8 @@ export function deJongMap(a = 1.4, b = -2.3, c = 2.4, d = -2.1): IteratedMap {
  * @concept strange-attractors
  * @example
  * ```ts
- * import { cliffordMap } from 'mdml-engine/dynamics'
- * import { tensor, toFlat } from 'mdml-engine/tensor'
+ * import { cliffordMap } from 'omai-engine/dynamics'
+ * import { tensor, toFlat } from 'omai-engine/tensor'
  * toFlat(cliffordMap()(tensor([0, 0]))) // => [1, 0.7]
  * ```
  */
@@ -152,8 +152,8 @@ export function cliffordMap(a = -1.4, b = 1.6, c = 1, d = 0.7): IteratedMap {
  * @concept strange-attractors
  * @example
  * ```ts
- * import { ikedaMap } from 'mdml-engine/dynamics'
- * import { tensor, toFlat } from 'mdml-engine/tensor'
+ * import { ikedaMap } from 'omai-engine/dynamics'
+ * import { tensor, toFlat } from 'omai-engine/tensor'
  * toFlat(ikedaMap()(tensor([0, 0]))) // => [1, 0]
  * ```
  */
@@ -176,8 +176,8 @@ export function ikedaMap(u = 0.9): IteratedMap {
  * @concept standard-map
  * @example
  * ```ts
- * import { standardMap } from 'mdml-engine/dynamics'
- * import { tensor, toFlat } from 'mdml-engine/tensor'
+ * import { standardMap } from 'omai-engine/dynamics'
+ * import { tensor, toFlat } from 'omai-engine/tensor'
  * toFlat(standardMap(1)(tensor([0, 1]))) // => [1, 1]
  * ```
  */
@@ -197,8 +197,8 @@ export function standardMap(k: number): IteratedMap {
  * @returns The map.
  * @example
  * ```ts
- * import { circleMap } from 'mdml-engine/dynamics'
- * import { tensor, toFlat } from 'mdml-engine/tensor'
+ * import { circleMap } from 'omai-engine/dynamics'
+ * import { tensor, toFlat } from 'omai-engine/tensor'
  * toFlat(circleMap(0.5, 0)(tensor([0.25]))) // => [0.75]
  * ```
  */
@@ -222,7 +222,7 @@ export interface OrbitState {
  * @returns The algorithm and the number of steps to run.
  * @example
  * ```ts
- * import { logisticMap, orbitAlgorithm } from 'mdml-engine/dynamics'
+ * import { logisticMap, orbitAlgorithm } from 'omai-engine/dynamics'
  * orbitAlgorithm(logisticMap(3), [0.2], { n: 10, transient: 5 }).steps // => 15
  * ```
  */
@@ -262,8 +262,8 @@ export function orbitAlgorithm(
  * @concept orbit
  * @example
  * ```ts
- * import { logisticMap, orbit } from 'mdml-engine/dynamics'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { logisticMap, orbit } from 'omai-engine/dynamics'
+ * import { toFlat } from 'omai-engine/tensor'
  * // r = 2: the orbit settles on the fixed point 1/2.
  * Math.abs((toFlat(orbit(logisticMap(2), [0.1], { n: 3, transient: 100 })).at(-1) ?? 0) - 0.5) < 1e-12 // => true
  * ```
@@ -296,7 +296,7 @@ export function orbit(
  * @concept cobweb-plot
  * @example
  * ```ts
- * import { cobweb, logisticMap } from 'mdml-engine/dynamics'
+ * import { cobweb, logisticMap } from 'omai-engine/dynamics'
  * cobweb(logisticMap(4), 0.5, 1) // => [[0.5, 0.5], [0.5, 1], [1, 1]]
  * ```
  */
@@ -325,7 +325,7 @@ export function cobweb(map: IteratedMap, x0: number, n: number): [number, number
  * @concept bifurcation-diagram
  * @example
  * ```ts
- * import { bifurcationDiagram, logisticMap } from 'mdml-engine/dynamics'
+ * import { bifurcationDiagram, logisticMap } from 'omai-engine/dynamics'
  * // r = 3.2 has a period-2 orbit: two distinct values.
  * const d = bifurcationDiagram(logisticMap, [3.2], [0.3], { keep: 8 })
  * new Set(d.x.map((v) => v.toFixed(6))).size // => 2
@@ -364,7 +364,7 @@ export function bifurcationDiagram(
  * @concept lyapunov-exponent
  * @example
  * ```ts
- * import { lyapunovExponents, logisticMap } from 'mdml-engine/dynamics'
+ * import { lyapunovExponents, logisticMap } from 'omai-engine/dynamics'
  * Math.abs((lyapunovExponents(logisticMap(4), [0.3], { n: 4000 })[0] ?? 0) - Math.LN2) < 0.05 // => true
  * ```
  */
@@ -401,7 +401,7 @@ export function lyapunovExponents(
     )
     x = map(x)
     if (!numbersOf(x).every(Number.isFinite)) {
-      throw new MdmlError('value', 'lyapunovExponents: the orbit diverged')
+      throw new OmaiError('value', 'lyapunovExponents: the orbit diverged')
     }
   }
   return Array.from(sums, (s) => s / n)

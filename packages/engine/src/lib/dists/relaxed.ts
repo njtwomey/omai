@@ -5,7 +5,7 @@
  * the relaxed ones.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { lgamma, logit, logSigmoid } from '../numerics/special/index.ts'
 import {
   add,
@@ -62,8 +62,8 @@ function logitsFrom(params: RelaxedParams, family: string, categorical: boolean)
  *   and entropy by quadrature over the quantile function, the mode by search (at an end for temperatures below 1).
  * @example
  * ```ts
- * import { relaxedBernoulli } from 'mdml-engine/dists'
- * import { item } from 'mdml-engine/tensor'
+ * import { relaxedBernoulli } from 'omai-engine/dists'
+ * import { item } from 'omai-engine/tensor'
  * item(relaxedBernoulli(0.5, { logits: 0 }).cdf(0.5)) // => 0.5
  * ```
  */
@@ -123,8 +123,8 @@ export function relaxedBernoulli(temperature: TensorLike, params: RelaxedParams)
  *   no closed form and throw (estimate them from samples).
  * @example
  * ```ts
- * import { relaxedOneHotCategorical } from 'mdml-engine/dists'
- * import { item } from 'mdml-engine/tensor'
+ * import { relaxedOneHotCategorical } from 'omai-engine/dists'
+ * import { item } from 'omai-engine/tensor'
  * // Two categories: the density at (1/2, 1/2) with equal logits is t (temperature 1 gives 1).
  * Math.abs(item(relaxedOneHotCategorical(1, { logits: [0, 0] }).logProb([0.5, 0.5]))) < 1e-15 // => true
  * ```
@@ -133,7 +133,7 @@ export function relaxedOneHotCategorical(temperature: TensorLike, params: Relaxe
   const [t] = promoteFloat(temperature) as [Value]
   validateParams('relaxedOneHotCategorical', { temperature: [t, 'positive'] })
   const raw = logitsFrom(params, 'relaxedOneHotCategorical', true)
-  if (raw.shape.length === 0) throw new MdmlError('shape', 'relaxedOneHotCategorical: parameters need a category axis')
+  if (raw.shape.length === 0) throw new OmaiError('shape', 'relaxedOneHotCategorical: parameters need a category axis')
   const l = logSoftmax(raw, -1)
   const k = l.shape[l.shape.length - 1] ?? 0
   const batchShape = broadcastShapes(l.shape.slice(0, -1), t.shape)
@@ -172,12 +172,12 @@ export function relaxedOneHotCategorical(temperature: TensorLike, params: Relaxe
  *
  * @param dist - A `relaxedBernoulli`, `relaxedOneHotCategorical`, `bernoulli` or `oneHotCategorical` distribution.
  * @returns The distribution with the straight-through `rsample`.
- * @throws MdmlError with code `value` for other distributions.
+ * @throws OmaiError with code `value` for other distributions.
  * @example
  * ```ts
- * import { relaxedBernoulli, straightThrough } from 'mdml-engine/dists'
- * import { key } from 'mdml-engine/random'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { relaxedBernoulli, straightThrough } from 'omai-engine/dists'
+ * import { key } from 'omai-engine/random'
+ * import { toFlat } from 'omai-engine/tensor'
  * toFlat(straightThrough(relaxedBernoulli(0.5, { probs: 0.3 })).rsample(key(0), [4])).every((v) => v === 0 || v === 1) // => true
  * ```
  */
@@ -210,7 +210,7 @@ export function straightThrough(dist: Distribution): Distribution {
       }
       break
     default:
-      throw new MdmlError('value', `straightThrough: no straight-through estimator for ${dist.name}`)
+      throw new OmaiError('value', `straightThrough: no straight-through estimator for ${dist.name}`)
   }
   return { ...dist, name: `straightThrough(${dist.name})`, hasRsample: true, rsample }
 }

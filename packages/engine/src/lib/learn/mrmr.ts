@@ -6,7 +6,7 @@
  * order of selection and the scores that decided it are on the tape.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import { ksgMutualInformation, mixedMutualInformation, plugInMutualInformation } from '../information/index.ts'
 import { ranksOf } from '../stats/index.ts'
 import type { TensorLike } from '../tensor/index.ts'
@@ -61,8 +61,8 @@ function binCodes(v: ArrayLike<number>, bins: number): number[] {
  * @concept feature-selection
  * @example
  * ```ts
- * import { mrmrAlgorithm } from 'mdml-engine/learn'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { mrmrAlgorithm } from 'omai-engine/learn'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const x = [[0, 0], [1, 1], [0, 0], [1, 1], [0, 1], [1, 0]]
  * runAlgorithm(mrmrAlgorithm(x, [0, 1, 0, 1, 0, 1], 1), { maxSteps: 1 }).state.selected // => [0]
  * ```
@@ -76,7 +76,7 @@ export function mrmrAlgorithm(
   const m = matrixView(x, 'mrmr')
   const yv = targetVector(y, 'mrmr', m.n)
   const { n, d } = m
-  if (!(Number.isInteger(k) && k >= 1 && k <= d)) throw new MdmlError('value', `mrmr: k must be between 1 and ${d}`)
+  if (!(Number.isInteger(k) && k >= 1 && k <= d)) throw new OmaiError('value', `mrmr: k must be between 1 and ${d}`)
   const criterion = options.criterion ?? 'mid'
   const estimator = options.estimator ?? 'binned'
   const bins = options.bins ?? 10
@@ -153,7 +153,7 @@ export function mrmrAlgorithm(
  * @concept feature-selection
  * @example
  * ```ts
- * import { mrmr } from 'mdml-engine/learn'
+ * import { mrmr } from 'omai-engine/learn'
  * mrmr([[0, 0], [1, 1], [0, 0], [1, 1], [0, 1], [1, 0]], [0, 1, 0, 1, 0, 1], 2).selected // => [0, 1]
  * ```
  */

@@ -1,4 +1,4 @@
-import { dict, int } from 'mdml-engine/space'
+import { dict, int } from 'omai-engine/space'
 import { renderToString } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { FigureFrame } from '../FigureFrame.tsx'

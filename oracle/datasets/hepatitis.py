@@ -4,8 +4,8 @@ The file marks 167 values missing with `?`; they stay missing (`null`). The yes/
 codes (1 no, 2 yes; sex 1 male, 2 female); the class (1 die, 2 live) becomes text.
 """
 
-from mdml_oracle.uci import source_note, table_rows, zip_member
-from mdml_oracle.vendor import render_ordered_table
+from omai_oracle.uci import source_note, table_rows, zip_member
+from omai_oracle.vendor import render_ordered_table
 
 TARGET = "packages/engine/src/lib/datasets/_data/hepatitis.data.ts"
 ID, SLUG = 46, "hepatitis"

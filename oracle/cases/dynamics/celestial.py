@@ -8,8 +8,8 @@ import numpy as np
 import scipy
 import scipy.integrate as si
 import scipy.optimize as so
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray
 
 REFERENCE: dict[str, str] = {"numpy": np.__version__, "scipy": scipy.__version__}
 

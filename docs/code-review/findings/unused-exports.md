@@ -100,11 +100,11 @@ sklearn, jiwer, torchmetrics ports) or the documented entry of a family; kept.
   function.
 
 
-# Render: the same triage for `mdml-render` (RD-19, F19)
+# Render: the same triage for `omai-render` (RD-19, F19)
 
 The engine's triage above reads the core only. This is the same sort for the 1,127 exports of `packages/render` (the
-`--full` surface, the `mdml-render/...` rows), by the same signals and the same classes, with the script adapted to the
-render package (`scripts/review/unused.mjs` filters on `mdml-engine`; the copy used here filters on `mdml-render` and
+`--full` surface, the `omai-render/...` rows), by the same signals and the same classes, with the script adapted to the
+render package (`scripts/review/unused.mjs` filters on `omai-engine`; the copy used here filters on `omai-render` and
 takes the declarations from `packages/render/src`; `_shared.mjs` already has `--package=render`). Unused means: the name
 occurs in no other source file of the packages and apps (barrels and generated data excluded, tests not counted).
 Taken on 2026-11-07 on the tree after the render accessibility, record-boundary and RD-21 to RD-27 changes.

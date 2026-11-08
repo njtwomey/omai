@@ -4,14 +4,14 @@
 
 Text processing: normalisation, tokenisation, stemming, vocabularies, subword models and tokenizer pipelines, shingles, vectorisers (counts, TF-IDF, hashing), feature templates, representations, similarity, approximate search, fingerprinting, parsing, hyphenation and corpus statistics.
 
-- function `similarity.ts` (file): String similarity: Levenshtein, Jaro-Winkler, Jaccard. `src/lib/text/similarity.ts:1` `mdml-engine/text`
-- function `tokenizer.ts` (file): Tokenizer pipelines with encode and decode. `src/lib/text/tokenizer.ts:1` `mdml-engine/text`
+- function `similarity.ts` (file): String similarity: Levenshtein, Jaro-Winkler, Jaccard. `src/lib/text/similarity.ts:1` `omai-engine/text`
+- function `tokenizer.ts` (file): Tokenizer pipelines with encode and decode. `src/lib/text/tokenizer.ts:1` `omai-engine/text`
 
-- function `bm25`: BM25 ranking index. `src/lib/text/features.ts:460` `mdml-engine/text`
-- function `tfidfVectorize`: TF-IDF document vectors; count and hashing vectorisers beside it. `src/lib/text/features.ts:343` `mdml-engine/text`
+- function `bm25`: BM25 ranking index. `src/lib/text/features.ts:460` `omai-engine/text`
+- function `tfidfVectorize`: TF-IDF document vectors; count and hashing vectorisers beside it. `src/lib/text/features.ts:343` `omai-engine/text`
 
 ## text/subword
 
-Subword tokenisation models, which split words into pieces from a learnt vocabulary so that any word can be encoded: byte-pair encoding, the Unigram language model and WordPiece, each with training and encoding matching HF tokenizers. Imported as the `subword` namespace of `mdml-engine/text`.
+Subword tokenisation models, which split words into pieces from a learnt vocabulary so that any word can be encoded: byte-pair encoding, the Unigram language model and WordPiece, each with training and encoding matching HF tokenizers. Imported as the `subword` namespace of `omai-engine/text`.
 
-- function `trainBpe`: Train a byte-pair-encoding tokeniser. `src/lib/text/subword/bpe.ts:418` `mdml-engine/text/subword`
+- function `trainBpe`: Train a byte-pair-encoding tokeniser. `src/lib/text/subword/bpe.ts:418` `omai-engine/text/subword`

@@ -4,7 +4,7 @@
  * multivariate normality.
  */
 
-import { MdmlError, type TestResult } from '../../base/index.ts'
+import { OmaiError, type TestResult } from '../../base/index.ts'
 import { dpotrf, dsyev, dtrsv } from '../../numerics/linalg/index.ts'
 import type { TensorLike } from '../../tensor/index.ts'
 import { covarianceOfColumns, logdetSpd, pinvSym } from '../_linear.ts'
@@ -42,7 +42,7 @@ export interface HotellingOptions {
  * @returns T^2 as the statistic (F in `assumptions.F`) and the p-value.
  * @example
  * ```ts
- * import { hotellingT2 } from 'mdml-engine/stats/tests'
+ * import { hotellingT2 } from 'omai-engine/stats/tests'
  * const x = [[1, 2], [2, 3], [3, 3], [4, 5], [5, 6], [2, 1]]
  * hotellingT2(x).df // => [2, 4]
  * ```
@@ -55,10 +55,10 @@ export function hotellingT2(x: TensorLike, y?: TensorLike, options: HotellingOpt
   if (y === undefined || options.paired === true) {
     if (y !== undefined) {
       const b = rowsOf('hotellingT2', y)
-      if (b.rows !== a.rows || b.cols !== k) throw new MdmlError('shape', 'hotellingT2: paired samples differ in shape')
+      if (b.rows !== a.rows || b.cols !== k) throw new OmaiError('shape', 'hotellingT2: paired samples differ in shape')
       a = { rows: a.rows, cols: k, data: Float64Array.from(a.data, (v, i) => v - (b.data[i] ?? 0)) }
     }
-    if (a.rows < 5) throw new MdmlError('value', 'hotellingT2: needs at least five observations')
+    if (a.rows < 5) throw new OmaiError('value', 'hotellingT2: needs at least five observations')
     n = a.rows
     const mu = options.mu ?? new Array<number>(k).fill(0)
     const m = colMeans(a)
@@ -66,7 +66,7 @@ export function hotellingT2(x: TensorLike, y?: TensorLike, options: HotellingOpt
     t2 = n * quadForm(diff, pinvSym(covarianceOfColumns(a.data, a.rows, k), k), k)
   } else {
     const b = rowsOf('hotellingT2', y)
-    if (b.cols !== k) throw new MdmlError('shape', 'hotellingT2: samples differ in dimension')
+    if (b.cols !== k) throw new OmaiError('shape', 'hotellingT2: samples differ in dimension')
     const nx = a.rows
     const ny = b.rows
     n = nx + ny - 1
@@ -122,17 +122,17 @@ export interface ManovaResult {
  * @returns The four statistics and Wilks' test.
  * @example
  * ```ts
- * import { manova } from 'mdml-engine/stats/tests'
+ * import { manova } from 'omai-engine/stats/tests'
  * const a = [[1, 2], [2, 2], [2, 3], [3, 4]]
  * const b = [[4, 5], [5, 5], [5, 7], [6, 6]]
  * manova([a, b]).wilks.df // => [2, 5]
  * ```
  */
 export function manova(groups: readonly TensorLike[]): ManovaResult {
-  if (groups.length < 2) throw new MdmlError('value', 'manova: needs at least two groups')
+  if (groups.length < 2) throw new OmaiError('value', 'manova: needs at least two groups')
   const gs = groups.map((g) => rowsOf('manova', g))
   const p = gs[0]?.cols ?? 0
-  for (const g of gs) if (g.cols !== p) throw new MdmlError('shape', 'manova: groups differ in dimension')
+  for (const g of gs) if (g.cols !== p) throw new OmaiError('shape', 'manova: groups differ in dimension')
   const N = gs.reduce((s, g) => s + g.rows, 0)
   const grand = new Float64Array(p)
   for (const g of gs)
@@ -153,7 +153,7 @@ export function manova(groups: readonly TensorLike[]): ManovaResult {
   }
   // Eigenvalues of E^-1 H through the symmetric L^-1 H L^-T, with E = L L^T.
   const { factor: U, info } = dpotrf(E, p)
-  if (info !== 0) throw new MdmlError('singular', 'manova: the within-group SSCP matrix is singular')
+  if (info !== 0) throw new OmaiError('singular', 'manova: the within-group SSCP matrix is singular')
   const W = new Float64Array(p * p)
   for (let j = 0; j < p; j++) {
     const col = dtrsv(
@@ -239,14 +239,14 @@ export function manova(groups: readonly TensorLike[]): ManovaResult {
  * @returns The chi-square statistic, its p-value and degrees of freedom.
  * @example
  * ```ts
- * import { boxM } from 'mdml-engine/stats/tests'
+ * import { boxM } from 'omai-engine/stats/tests'
  * const a = [[1, 2], [2, 1], [3, 4], [4, 2], [2, 3]]
  * const b = [[1, 1], [2, 5], [6, 2], [3, 3], [5, 6]]
  * boxM([a, b]).df // => 3
  * ```
  */
 export function boxM(groups: readonly TensorLike[]): TestResult {
-  if (groups.length < 2) throw new MdmlError('value', 'boxM: needs at least two groups')
+  if (groups.length < 2) throw new OmaiError('value', 'boxM: needs at least two groups')
   const gs = groups.map((g) => rowsOf('boxM', g))
   const p = gs[0]?.cols ?? 0
   const k = gs.length
@@ -286,7 +286,7 @@ export interface MardiaResult {
  * @returns The skewness and kurtosis tests.
  * @example
  * ```ts
- * import { mardia } from 'mdml-engine/stats/tests'
+ * import { mardia } from 'omai-engine/stats/tests'
  * const x = [[1, 2], [2, 1], [3, 4], [4, 2], [2, 3], [5, 5], [3, 1], [1, 4]]
  * mardia(x).skewness.df // => 4
  * ```
@@ -295,7 +295,7 @@ export function mardia(x: TensorLike): MardiaResult {
   const m = rowsOf('mardia', x)
   const n = m.rows
   const p = m.cols
-  if (n <= p) throw new MdmlError('value', 'mardia: needs more observations than dimensions')
+  if (n <= p) throw new OmaiError('value', 'mardia: needs more observations than dimensions')
   const mu = colMeans(m)
   const centred = Float64Array.from(m.data, (v, i) => v - (mu[i % p] ?? 0))
   const Sinv = pinvSym(covarianceOfColumns(m.data, n, p, 0), p)

@@ -3,7 +3,7 @@
  *
  * @example
  * ```ts
- * import type { CoveringPath } from 'mdml-engine/rules'
+ * import type { CoveringPath } from 'omai-engine/rules'
  * const path: CoveringPath = 'rule/literal'
  * path // => 'rule/literal'
  * ```
@@ -235,8 +235,8 @@ function coveringDefaults(mode: CoveringOptions['mode'], hyper: Partial<Covering
  * @index estimator CN2 ordered rule-list classifier.
  * @example
  * ```ts
- * import { cn2Classifier } from 'mdml-engine/rules'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { cn2Classifier } from 'omai-engine/rules'
+ * import { toFlat } from 'omai-engine/tensor'
  * const data = { x: [[0], [1], [2], [3], [4], [5]], y: [0, 0, 0, 1, 1, 1] }
  * const fitted = cn2Classifier({ alpha: 1, minCovered: 1 }).fit(data)
  * toFlat(fitted.predict([[0.5], [4.5]])) // => [0, 1]
@@ -257,8 +257,8 @@ export function cn2Classifier(
  * @returns The estimator.
  * @example
  * ```ts
- * import { prismClassifier } from 'mdml-engine/rules'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { prismClassifier } from 'omai-engine/rules'
+ * import { toFlat } from 'omai-engine/tensor'
  * const data = { x: [[0], [1], [2], [3], [4], [5]], y: [0, 0, 0, 1, 1, 1] }
  * toFlat(prismClassifier().fit(data).predict([[0.5], [4.5]])) // => [0, 1]
  * ```
@@ -284,7 +284,7 @@ export interface RipperHyper extends Required<Omit<RipperOptions, 'nominal'>> {
  *
  * @example
  * ```ts
- * import type { RipperPath } from 'mdml-engine/rules'
+ * import type { RipperPath } from 'omai-engine/rules'
  * const path: RipperPath = 'pass/revision'
  * path // => 'pass/revision'
  * ```
@@ -302,7 +302,7 @@ export type RipperPath = 'rule/descriptionLength' | 'pass/revision' | 'ruleset/s
  * @index estimator RIPPER rule-list classifier.
  * @example
  * ```ts
- * import { ripperClassifier } from 'mdml-engine/rules'
+ * import { ripperClassifier } from 'omai-engine/rules'
  * const data = { x: [[0], [1], [2], [3], [4], [5], [6], [7]], y: [0, 0, 0, 0, 1, 1, 1, 1] }
  * ripperClassifier().fit(data, { seed: 1 }).classes // => [0, 1]
  * ```
@@ -369,7 +369,7 @@ export interface CorelsHyper extends Required<Omit<CorelsOptions, 'nominal'>> {
  *
  * @example
  * ```ts
- * import type { CorelsPath } from 'mdml-engine/rules'
+ * import type { CorelsPath } from 'omai-engine/rules'
  * const path: CorelsPath = 'search/bound'
  * path // => 'search/bound'
  * ```
@@ -385,8 +385,8 @@ export type CorelsPath = 'search/bound' | 'search/incumbent' | 'search/nodes' | 
  * @returns The estimator.
  * @example
  * ```ts
- * import { corelsClassifier } from 'mdml-engine/rules'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { corelsClassifier } from 'omai-engine/rules'
+ * import { toFlat } from 'omai-engine/tensor'
  * const data = { x: [[0], [0], [0], [1], [1], [1]], y: [0, 0, 0, 1, 1, 1] }
  * toFlat(corelsClassifier({ minSupport: 0.3, maxCardinality: 1 }).fit(data).predict([[0], [1]])) // => [0, 1]
  * ```
@@ -451,7 +451,7 @@ export interface BayesianRuleListHyper extends Required<Omit<BayesianRuleListOpt
  *
  * @example
  * ```ts
- * import type { BayesianRuleListPath } from 'mdml-engine/rules'
+ * import type { BayesianRuleListPath } from 'omai-engine/rules'
  * const path: BayesianRuleListPath = 'chain/list'
  * path // => 'chain/list'
  * ```
@@ -466,7 +466,7 @@ export type BayesianRuleListPath = 'chain/logPosterior' | 'chain/accepted' | 'ch
  * @returns The estimator.
  * @example
  * ```ts
- * import { bayesianRuleListClassifier } from 'mdml-engine/rules'
+ * import { bayesianRuleListClassifier } from 'omai-engine/rules'
  * const data = { x: [[0], [0], [0], [1], [1], [1]], y: [0, 0, 0, 1, 1, 1] }
  * bayesianRuleListClassifier({ minSupport: 0.3, maxCardinality: 1, steps: 100 }).fit(data, { seed: 1 }).classes // => [0, 1]
  * ```
@@ -532,7 +532,7 @@ export interface OneRHyper extends Required<Omit<OneROptions, 'nominal'>> {
  *
  * @example
  * ```ts
- * import type { OneRPath } from 'mdml-engine/rules'
+ * import type { OneRPath } from 'omai-engine/rules'
  * const path: OneRPath = 'ruleset/errors'
  * path // => 'ruleset/errors'
  * ```
@@ -547,8 +547,8 @@ export type OneRPath = 'ruleset/errors' | 'ruleset/bestErrors' | 'model/rules'
  * @returns The estimator.
  * @example
  * ```ts
- * import { oneRClassifier } from 'mdml-engine/rules'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { oneRClassifier } from 'omai-engine/rules'
+ * import { toFlat } from 'omai-engine/tensor'
  * const data = { x: [[0, 5], [0, 6], [1, 5], [1, 6]], y: [0, 0, 1, 1] }
  * toFlat(oneRClassifier({ nominal: [0, 1] }).fit(data).predict([[0, 6], [1, 5]])) // => [0, 1]
  * ```
@@ -597,7 +597,7 @@ export interface DecisionTableHyper extends Required<Omit<DecisionTableOptions, 
  *
  * @example
  * ```ts
- * import type { DecisionTablePath } from 'mdml-engine/rules'
+ * import type { DecisionTablePath } from 'omai-engine/rules'
  * const path: DecisionTablePath = 'features/chosen'
  * path // => 'features/chosen'
  * ```
@@ -612,8 +612,8 @@ export type DecisionTablePath = 'ruleset/accuracy' | 'features/chosen' | 'model/
  * @returns The estimator.
  * @example
  * ```ts
- * import { decisionTableClassifier } from 'mdml-engine/rules'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { decisionTableClassifier } from 'omai-engine/rules'
+ * import { toFlat } from 'omai-engine/tensor'
  * const data = { x: [[0, 1], [0, 0], [1, 1], [1, 0], [0, 1], [1, 0]], y: [0, 0, 1, 1, 0, 1] }
  * toFlat(decisionTableClassifier({ nominal: [0, 1] }).fit(data).predict([[0, 0], [1, 1]])) // => [0, 1]
  * ```

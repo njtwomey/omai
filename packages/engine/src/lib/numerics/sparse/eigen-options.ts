@@ -42,7 +42,7 @@ function target(description: string, which: Which): Option<EigshOptions, Spectru
  * @concept lanczos
  * @example
  * ```ts
- * import { spectrumTargets } from 'mdml-engine/numerics/sparse'
+ * import { spectrumTargets } from 'omai-engine/numerics/sparse'
  * spectrumTargets.make({ kind: 'smallest' }).which // => 'SA'
  * ```
  */

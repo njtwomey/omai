@@ -4,12 +4,12 @@
  * figure has the two populations over time, the same solution as a path in the (prey, predators) plane, and the step size
  * the solver chose at each step, read back from the tape.
  */
-import { lotkaVolterraField } from 'mdml-engine/dynamics'
-import { solveIvp } from 'mdml-engine/dynamics/ode'
-import { tensor, toFlat } from 'mdml-engine/tensor'
-import { metricSeries, type Run, recorder, tracePolicy } from 'mdml-engine/trace'
-import { cartesian, lines, points } from 'mdml-render/charts'
-import { figure } from 'mdml-render/figure'
+import { lotkaVolterraField } from 'omai-engine/dynamics'
+import { solveIvp } from 'omai-engine/dynamics/ode'
+import { tensor, toFlat } from 'omai-engine/tensor'
+import { metricSeries, type Run, recorder, tracePolicy } from 'omai-engine/trace'
+import { cartesian, lines, points } from 'omai-render/charts'
+import { figure } from 'omai-render/figure'
 import type { ExampleModule, Outcome } from '../_shared/contract.ts'
 import { Figure, Panel } from '../_shared/figure.tsx'
 

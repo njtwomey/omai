@@ -1,7 +1,7 @@
-import { circle, line, rect, type Scene, scene, sceneTimeline, text } from 'mdml-engine/scene'
-import { animatedSvg, encodeGif, timelineFrames } from 'mdml-render/animation'
-import { ControlPanel, NumberField, Toggle, useColourMode } from 'mdml-render/react'
-import { svgDataUrl } from 'mdml-render/svg'
+import { circle, line, rect, type Scene, scene, sceneTimeline, text } from 'omai-engine/scene'
+import { animatedSvg, encodeGif, timelineFrames } from 'omai-render/animation'
+import { ControlPanel, NumberField, Toggle, useColourMode } from 'omai-render/react'
+import { svgDataUrl } from 'omai-render/svg'
 import { type ReactNode, useMemo, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 

@@ -1,7 +1,7 @@
 """The UCI ionosphere data (Sigillito et al. 1989), CC BY 4.0: 351 radar returns, 34 numbers each, good or bad."""
 
-from mdml_oracle.uci import source_note, table_rows, zip_member
-from mdml_oracle.vendor import render_classification
+from omai_oracle.uci import source_note, table_rows, zip_member
+from omai_oracle.vendor import render_classification
 
 TARGET = "packages/engine/src/lib/datasets/_data/ionosphere.data.ts"
 ID, SLUG = 52, "ionosphere"

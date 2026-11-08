@@ -4,8 +4,8 @@ from importlib.metadata import version
 from typing import Literal
 
 import numpy as np
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray
 from skimage.measure import find_contours
 
 REFERENCE: dict[str, str] = {"skimage": version("scikit-image")}

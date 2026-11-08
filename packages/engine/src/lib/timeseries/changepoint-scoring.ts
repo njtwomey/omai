@@ -6,7 +6,7 @@
  * them; a series of length n has changepoints in 1..n-1.
  */
 
-import { MdmlError, maxOf, minOf } from '../base/index.ts'
+import { maxOf, minOf, OmaiError } from '../base/index.ts'
 
 /** One true changepoint and the detection matched to it. */
 export interface ChangepointMatch {
@@ -15,7 +15,7 @@ export interface ChangepointMatch {
 }
 
 function sortedChangepoints(who: string, xs: readonly number[]): number[] {
-  if (xs.some((v) => !Number.isFinite(v))) throw new MdmlError('value', `${who}: changepoints must be finite`)
+  if (xs.some((v) => !Number.isFinite(v))) throw new OmaiError('value', `${who}: changepoints must be finite`)
   return [...xs].sort((a, b) => a - b)
 }
 
@@ -28,10 +28,10 @@ function sortedChangepoints(who: string, xs: readonly number[]): number[] {
  * @param detected - The detected changepoints.
  * @param margin - The largest distance (inclusive) at which a detection counts as the true changepoint.
  * @returns The matched pairs, in order.
- * @throws MdmlError with code `value` for a negative margin or a changepoint that is not finite.
+ * @throws OmaiError with code `value` for a negative margin or a changepoint that is not finite.
  * @example
  * ```ts
- * import { matchChangepoints } from 'mdml-engine/timeseries'
+ * import { matchChangepoints } from 'omai-engine/timeseries'
  * matchChangepoints([50, 100], [48, 52, 101], 5) // => [{ truth: 50, detected: 48 }, { truth: 100, detected: 101 }]
  * ```
  */
@@ -40,7 +40,7 @@ export function matchChangepoints(
   detected: readonly number[],
   margin: number,
 ): ChangepointMatch[] {
-  if (!(margin >= 0)) throw new MdmlError('value', 'matchChangepoints: the margin must be non-negative')
+  if (!(margin >= 0)) throw new OmaiError('value', 'matchChangepoints: the margin must be non-negative')
   const t = sortedChangepoints('matchChangepoints', truth)
   const d = sortedChangepoints('matchChangepoints', detected)
   const out: ChangepointMatch[] = []
@@ -83,10 +83,10 @@ export interface ChangepointScores {
  * @param detected - The detected changepoints.
  * @param margin - The largest distance (inclusive) at which a detection counts as the true changepoint.
  * @returns The counts, precision, recall and F1.
- * @throws MdmlError with code `value` for a negative margin or a changepoint that is not finite.
+ * @throws OmaiError with code `value` for a negative margin or a changepoint that is not finite.
  * @example
  * ```ts
- * import { changepointPrecisionRecall } from 'mdml-engine/timeseries'
+ * import { changepointPrecisionRecall } from 'omai-engine/timeseries'
  * const s = changepointPrecisionRecall([50, 100, 150], [48, 52, 101], 5)
  * [s.truePositives, s.falsePositives, s.falseNegatives] // => [2, 1, 1]
  * ```
@@ -119,10 +119,10 @@ export function changepointPrecisionRecall(
  * @param detected - The detected changepoints.
  * @param n - The series length, to add the ends 0 and n to both sets (optional).
  * @returns The distance in steps (0 when both sets are empty).
- * @throws MdmlError with code `value` for a changepoint that is not finite.
+ * @throws OmaiError with code `value` for a changepoint that is not finite.
  * @example
  * ```ts
- * import { changepointHausdorff } from 'mdml-engine/timeseries'
+ * import { changepointHausdorff } from 'omai-engine/timeseries'
  * [changepointHausdorff([50, 100], [48, 101]), changepointHausdorff([50, 100], [], 120)] // => [2, 50]
  * ```
  */
@@ -146,19 +146,19 @@ export function changepointHausdorff(truth: readonly number[], detected: readonl
  * @param detected - The detected changepoints.
  * @param n - The series length.
  * @returns The covering, in (0, 1].
- * @throws MdmlError with code `value` for a series length below 1 or a changepoint outside 1..n-1.
+ * @throws OmaiError with code `value` for a series length below 1 or a changepoint outside 1..n-1.
  * @example
  * ```ts
- * import { changepointCovering } from 'mdml-engine/timeseries'
+ * import { changepointCovering } from 'omai-engine/timeseries'
  * [changepointCovering([50], [50], 100), changepointCovering([50], [], 100)] // => [1, 0.5]
  * ```
  */
 export function changepointCovering(truth: readonly number[], detected: readonly number[], n: number): number {
   if (!(Number.isInteger(n) && n >= 1))
-    throw new MdmlError('value', 'changepointCovering: n must be a positive integer')
+    throw new OmaiError('value', 'changepointCovering: n must be a positive integer')
   const segments = (who: string, cps: readonly number[]): [number, number][] => {
     const inside = sortedChangepoints(who, cps)
-    if (inside.some((c) => c < 1 || c > n - 1)) throw new MdmlError('value', `${who}: changepoints must lie in 1..n-1`)
+    if (inside.some((c) => c < 1 || c > n - 1)) throw new OmaiError('value', `${who}: changepoints must lie in 1..n-1`)
     const bounds = [0, ...new Set(inside), n]
     return bounds.slice(0, -1).map((s, k) => [s, bounds[k + 1] ?? n])
   }

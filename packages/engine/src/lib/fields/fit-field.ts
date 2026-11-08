@@ -106,9 +106,9 @@ const asColumns = (y: Value): Value => (y.shape.length === 1 ? reshape(y, [-1, 1
  * @concept log-contract
  * @example
  * ```ts
- * import { fieldContract, neuralField } from 'mdml-engine/fields'
- * import { sgd } from 'mdml-engine/optim'
- * import { key } from 'mdml-engine/random'
+ * import { fieldContract, neuralField } from 'omai-engine/fields'
+ * import { sgd } from 'omai-engine/optim'
+ * import { key } from 'omai-engine/random'
  * const f = neuralField({ inputDim: 1, outputDim: 1, width: 4, depth: 1, key: key(0) })
  * Object.keys(fieldContract(f, { x: [[0], [1]] as never, y: [0, 1] as never }, { optimizer: sgd({ learningRate: 0.1 }) })).length // => 7
  * ```
@@ -157,10 +157,10 @@ export function fieldContract(
  * @concept neural-fields
  * @example
  * ```ts
- * import { fitFieldAlgorithm, neuralField } from 'mdml-engine/fields'
- * import { adam } from 'mdml-engine/optim'
- * import { runAlgorithm } from 'mdml-engine/trace'
- * import { key } from 'mdml-engine/random'
+ * import { fitFieldAlgorithm, neuralField } from 'omai-engine/fields'
+ * import { adam } from 'omai-engine/optim'
+ * import { runAlgorithm } from 'omai-engine/trace'
+ * import { key } from 'omai-engine/random'
  * // Fit y = x on four points with a small ReLU network.
  * const f = neuralField({ inputDim: 1, outputDim: 1, width: 8, depth: 1, key: key(0) })
  * const data = { x: [[-1], [-0.3], [0.3], [1]] as never, y: [-1, -0.3, 0.3, 1] as never }
@@ -276,9 +276,9 @@ export interface FieldFit {
  * @index function Fit a coordinate network to samples of a signal.
  * @example
  * ```ts
- * import { fitField, neuralField } from 'mdml-engine/fields'
- * import { adam } from 'mdml-engine/optim'
- * import { key } from 'mdml-engine/random'
+ * import { fitField, neuralField } from 'omai-engine/fields'
+ * import { adam } from 'omai-engine/optim'
+ * import { key } from 'omai-engine/random'
  * const f = neuralField({ inputDim: 1, outputDim: 1, width: 8, depth: 1, key: key(0) })
  * const data = { x: [[-1], [0], [1]] as never, y: [1, 0, 1] as never }
  * const r = fitField(f, data, { optimizer: adam({ learningRate: 0.05 }), steps: 100 })

@@ -73,10 +73,10 @@ export interface DecisionSurface {
  *
  * @param surface - The record without its `kind`.
  * @returns The record.
- * @throws MdmlError `shape` when a grid does not match x and y, or a step's rows do not match the record's rows.
+ * @throws OmaiError `shape` when a grid does not match x and y, or a step's rows do not match the record's rows.
  * @example
  * ```ts
- * import { decisionSurface } from 'mdml-engine/exposition'
+ * import { decisionSurface } from 'omai-engine/exposition'
  * decisionSurface({ features: ['x0', 'x1'], x: [0, 1], y: [0], labels: [[0, 1]] }).labels // => [[0, 1]]
  * ```
  */
@@ -121,7 +121,7 @@ export function decisionSurface(surface: Omit<DecisionSurface, 'kind'>): Decisio
  * @returns The surface at that step.
  * @example
  * ```ts
- * import { decisionSurface, surfaceAt } from 'mdml-engine/exposition'
+ * import { decisionSurface, surfaceAt } from 'omai-engine/exposition'
  * const s = decisionSurface({ features: ['a', 'b'], x: [0, 1], y: [0], labels: [[1, 1]], steps: [{ iteration: 0, labels: [[0, 0]] }, { iteration: 5, labels: [[1, 1]] }] })
  * surfaceAt(s, 0).labels // => [[0, 0]]
  * ```

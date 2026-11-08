@@ -4,7 +4,7 @@
  * weights (Hedge) in self-play, as traced algorithms.
  */
 
-import { MdmlError, maxOf } from '../base/index.ts'
+import { maxOf, OmaiError } from '../base/index.ts'
 import { type Algorithm, channels, runAlgorithm, type TensorChannel, type TraceSchema } from '../trace/index.ts'
 import {
   actionValues,
@@ -115,7 +115,7 @@ function startStrategies(game: NormalFormGame, initial: readonly (readonly numbe
     initial !== undefined &&
     (initial.length !== game.shape.length || initial.some((x, p) => x.length !== game.shape[p]))
   )
-    throw new MdmlError('shape', `${game.name}: one initial strategy per player, one probability per action`)
+    throw new OmaiError('shape', `${game.name}: one initial strategy per player, one probability per action`)
   return game.shape.map((k, p) =>
     initial?.[p] === undefined ? new Array<number>(k).fill(1 / k) : [...(initial[p] ?? [])],
   )
@@ -163,8 +163,8 @@ export interface RegretMatchingOptions extends GameRunOptions {
  * @concept regret-matching
  * @example
  * ```ts
- * import { regretMatchingAlgorithm, rockPaperScissors } from 'mdml-engine/games'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { regretMatchingAlgorithm, rockPaperScissors } from 'omai-engine/games'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * runAlgorithm(regretMatchingAlgorithm(rockPaperScissors()), { maxSteps: 5 }).state.t // => 5
  * ```
  */
@@ -217,7 +217,7 @@ export function regretMatchingAlgorithm(
  * @concept regret-matching
  * @example
  * ```ts
- * import { matchingPennies, regretMatching } from 'mdml-engine/games'
+ * import { matchingPennies, regretMatching } from 'omai-engine/games'
  * regretMatching(matchingPennies(), { iterations: 2000 }).nashConv < 0.01 // => true
  * ```
  */
@@ -248,8 +248,8 @@ export interface MultiplicativeWeightsOptions extends GameRunOptions {
  * @concept multiplicative-weights
  * @example
  * ```ts
- * import { multiplicativeWeightsAlgorithm, rockPaperScissors } from 'mdml-engine/games'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { multiplicativeWeightsAlgorithm, rockPaperScissors } from 'omai-engine/games'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * runAlgorithm(multiplicativeWeightsAlgorithm(rockPaperScissors()), { maxSteps: 3 }).state.t // => 3
  * ```
  */
@@ -295,7 +295,7 @@ export function multiplicativeWeightsAlgorithm(
  * @concept multiplicative-weights
  * @example
  * ```ts
- * import { multiplicativeWeights, rockPaperScissors } from 'mdml-engine/games'
+ * import { multiplicativeWeights, rockPaperScissors } from 'omai-engine/games'
  * multiplicativeWeights(rockPaperScissors(), { iterations: 2000 }).nashConv < 0.05 // => true
  * ```
  */

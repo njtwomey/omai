@@ -4,8 +4,8 @@ threshold and k-best selection of self-training (naive Bayes, logistic regressio
 
 import numpy as np
 import sklearn
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray, rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray, rng
 from sklearn.linear_model import LogisticRegression
 from sklearn.naive_bayes import GaussianNB
 from sklearn.semi_supervised import LabelPropagation, LabelSpreading, SelfTrainingClassifier

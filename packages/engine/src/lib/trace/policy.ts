@@ -79,7 +79,7 @@ const base: TracePolicy = {
  * @concept tracing
  * @example
  * ```ts
- * import { policies } from 'mdml-engine/trace'
+ * import { policies } from 'omai-engine/trace'
  * policies.standard.roles // => ['param', 'grad']
  * ```
  */
@@ -122,7 +122,7 @@ export const policies: {
  * @returns The policy.
  * @example
  * ```ts
- * import { tracePolicy } from 'mdml-engine/trace'
+ * import { tracePolicy } from 'omai-engine/trace'
  * tracePolicy({ roles: ['grad'], tensors: true }).roles // => ['grad']
  * ```
  */
@@ -142,7 +142,7 @@ export function tracePolicy(
  * @returns `true` when the step should be recorded.
  * @example
  * ```ts
- * import { onSchedule } from 'mdml-engine/trace'
+ * import { onSchedule } from 'omai-engine/trace'
  * [0, 1, 2, 3, 4, 5, 8].filter((s) => onSchedule({ logSpaced: true }, s)) // => [0, 1, 2, 4, 8]
  * ```
  */
@@ -162,7 +162,7 @@ export function onSchedule(schedule: RecordSchedule, step: number): boolean {
  * @returns `true` when selected.
  * @example
  * ```ts
- * import { selected } from 'mdml-engine/trace'
+ * import { selected } from 'omai-engine/trace'
  * selected(['loss'], 'loss') // => true
  * ```
  */
@@ -185,7 +185,7 @@ export type ChannelRef =
  * @returns `true` when the channel is selected.
  * @example
  * ```ts
- * import { channelSelected, policies } from 'mdml-engine/trace'
+ * import { channelSelected, policies } from 'omai-engine/trace'
  * channelSelected(policies.standard, { kind: 'tensor', name: 'w', role: 'grad' }) // => true
  * channelSelected(policies.minimal, { kind: 'frame' }) // => false
  * ```
@@ -215,7 +215,7 @@ export function channelSelected(policy: TracePolicy, channel: ChannelRef): boole
  * @returns `true` when the value changed.
  * @example
  * ```ts
- * import { changed } from 'mdml-engine/trace'
+ * import { changed } from 'omai-engine/trace'
  * changed(1, 1.05, 0.1) // => false
  * changed([1, 2], [1, 3]) // => true
  * ```
@@ -251,7 +251,7 @@ export function changed(
  * @concept tracing
  * @example
  * ```ts
- * import { shouldRecord, tracePolicy } from 'mdml-engine/trace'
+ * import { shouldRecord, tracePolicy } from 'omai-engine/trace'
  * const every5 = tracePolicy({ schedule: { every: 5 } })
  * [0, 3, 5, 7, 10].filter((t) => shouldRecord(every5, { kind: 'metric', name: 'loss' }, t)) // => [0, 5, 10]
  * shouldRecord(every5, { kind: 'metric', name: 'loss' }, 7, { last: true }) // => true
@@ -291,7 +291,7 @@ export function shouldRecord(
  * @returns The child's policy, or `undefined` for an untraced child.
  * @example
  * ```ts
- * import { childPolicy, policies, tracePolicy } from 'mdml-engine/trace'
+ * import { childPolicy, policies, tracePolicy } from 'omai-engine/trace'
  * childPolicy(tracePolicy({ inner: policies.minimal }, 'debug')) === policies.minimal // => true
  * childPolicy(tracePolicy({ inner: 'off' })) // => undefined
  * ```

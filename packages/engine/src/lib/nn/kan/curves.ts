@@ -41,8 +41,8 @@ export interface KanCurves {
  * @concept splines
  * @example
  * ```ts
- * import { KAN, kanCurves } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
+ * import { KAN, kanCurves } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
  * const net = new KAN([2, 3, 1], { key: key(0) })
  * const c = kanCurves(net, net.state, [[0.1, 0.2], [0.5, -0.3]], 11)
  * c.edges.length // => 9
@@ -96,8 +96,8 @@ export interface KanGrid {
  * @concept splines
  * @example
  * ```ts
- * import { KAN, kanGrids } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
+ * import { KAN, kanGrids } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
  * const net = new KAN([1, 1], { grid: 4, key: key(0) })
  * kanGrids(net, net.state)[0]?.knots // => [[-0.5, 0, 0.5]]
  * ```

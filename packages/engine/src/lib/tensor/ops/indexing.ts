@@ -7,7 +7,7 @@
  * @index function Slicing, take, gather, scatter and sort, all differentiable.
  */
 
-import { MdmlError, maxOf } from '../../base/index.ts'
+import { maxOf, OmaiError } from '../../base/index.ts'
 import { batchAtFront, batchedAxis, moveBatchAxis } from '../batching.ts'
 import { cpu } from '../cpu.ts'
 import { allocate, type DType } from '../dtype.ts'
@@ -258,7 +258,7 @@ function normaliseSlice(
   stop: number | undefined,
   step: number,
 ): [number, number] {
-  if (step === 0) throw new MdmlError('value', 'slice: step must be non-zero')
+  if (step === 0) throw new OmaiError('value', 'slice: step must be non-zero')
   const clampIndex = (i: number, lo: number, hi: number): number => Math.min(Math.max(i < 0 ? i + n : i, lo), hi)
   if (step > 0)
     return [start === undefined ? 0 : clampIndex(start, 0, n), stop === undefined ? n : clampIndex(stop, 0, n)]
@@ -277,7 +277,7 @@ function wrapIndices(idx: Value, n: number, op?: string): Value {
   const wrapped = Int32Array.from(idx.data as Int32Array, (i) => {
     const j = i < 0 ? i + n : i
     if (op !== undefined && (j < 0 || j >= n))
-      throw new MdmlError('value', `${op}: index ${i} out of range for length ${n}`)
+      throw new OmaiError('value', `${op}: index ${i} out of range for length ${n}`)
     return j
   })
   return cpu.wrap('int32', idx.shape, wrapped)
@@ -300,7 +300,7 @@ function indexTensor(indices: TensorLike): Value {
  * @returns The slice (always a copy).
  * @example
  * ```ts
- * import { slice, tensor, toArray } from 'mdml-engine/tensor'
+ * import { slice, tensor, toArray } from 'omai-engine/tensor'
  * toArray(slice(tensor([0, 1, 2, 3, 4]), [1], [4])) // => [1, 2, 3]
  * toArray(slice(tensor([0, 1, 2, 3, 4]), [undefined], [undefined], [-2])) // => [4, 2, 0]
  * ```
@@ -332,10 +332,10 @@ export function slice(
  * @param indices - Indices into the axis.
  * @param axis - The axis (default 0).
  * @returns The gathered value.
- * @throws MdmlError with code `value` for an out-of-range index.
+ * @throws OmaiError with code `value` for an out-of-range index.
  * @example
  * ```ts
- * import { take, tensor, toArray } from 'mdml-engine/tensor'
+ * import { take, tensor, toArray } from 'omai-engine/tensor'
  * toArray(take(tensor([[1, 2], [3, 4], [5, 6]]), [2, 0])) // => [[5, 6], [1, 2]]
  * ```
  */
@@ -363,7 +363,7 @@ export function take(x: TensorLike, indices: TensorLike, axis = 0): Value {
  * @returns A value with the shape of `indices`.
  * @example
  * ```ts
- * import { takeAlongAxis, tensor, toArray } from 'mdml-engine/tensor'
+ * import { takeAlongAxis, tensor, toArray } from 'omai-engine/tensor'
  * toArray(takeAlongAxis(tensor([[10, 20], [30, 40]]), [[1], [0]], 1)) // => [[20], [30]]
  * ```
  */
@@ -372,7 +372,7 @@ export function takeAlongAxis(x: TensorLike, indices: TensorLike, axis: number):
   const a = normaliseAxis(axis, v.shape.length)
   const idx = asDtype(val(indices), 'int32')
   if (idx.shape.length !== v.shape.length || idx.shape.some((n, i) => i !== a && n !== v.shape[i])) {
-    throw new MdmlError(
+    throw new OmaiError(
       'shape',
       `takeAlongAxis: indices ${formatShape(idx.shape)} do not match ${formatShape(v.shape)}`,
     )
@@ -389,10 +389,10 @@ export function takeAlongAxis(x: TensorLike, indices: TensorLike, axis: number):
  * @param updates - Values to add.
  * @param axis - The axis.
  * @returns The accumulated value.
- * @throws MdmlError with code `value` for an index outside `[-n, n)` along the axis.
+ * @throws OmaiError with code `value` for an index outside `[-n, n)` along the axis.
  * @example
  * ```ts
- * import { scatterAdd, toArray } from 'mdml-engine/tensor'
+ * import { scatterAdd, toArray } from 'omai-engine/tensor'
  * toArray(scatterAdd([3], [0, 2, 0], [1, 2, 3], 0)) // => [4, 0, 2]
  * ```
  */
@@ -411,10 +411,10 @@ export function scatterAdd(shape: Shape, indices: TensorLike, updates: TensorLik
  * @param segmentIds - The segment of each row (int32, length of axis 0).
  * @param numSegments - The number of segments.
  * @returns A value with `numSegments` rows.
- * @throws MdmlError with code `value` for an id outside `[-numSegments, numSegments)`.
+ * @throws OmaiError with code `value` for an id outside `[-numSegments, numSegments)`.
  * @example
  * ```ts
- * import { segmentSum, toArray } from 'mdml-engine/tensor'
+ * import { segmentSum, toArray } from 'omai-engine/tensor'
  * toArray(segmentSum([1, 2, 3], [0, 1, 0], 2)) // => [4, 2]
  * ```
  */
@@ -432,7 +432,7 @@ export function segmentSum(data: TensorLike, segmentIds: TensorLike, numSegments
  * @returns int32 indices.
  * @example
  * ```ts
- * import { argsort, tensor, toArray } from 'mdml-engine/tensor'
+ * import { argsort, tensor, toArray } from 'omai-engine/tensor'
  * toArray(argsort(tensor([3, 1, 2]))) // => [1, 2, 0]
  * ```
  */
@@ -450,7 +450,7 @@ export function argsort(x: TensorLike, axis = -1, descending = false): Value {
  * @returns The sorted values.
  * @example
  * ```ts
- * import { sort, tensor, toArray } from 'mdml-engine/tensor'
+ * import { sort, tensor, toArray } from 'omai-engine/tensor'
  * toArray(sort(tensor([3, 1, 2]))) // => [1, 2, 3]
  * ```
  */
@@ -469,7 +469,7 @@ export function sort(x: TensorLike, axis = -1, descending = false): Value {
  * @returns `{ values, indices }`.
  * @example
  * ```ts
- * import { topk, tensor, toArray } from 'mdml-engine/tensor'
+ * import { topk, tensor, toArray } from 'omai-engine/tensor'
  * toArray(topk(tensor([3, 1, 4, 1, 5]), 2).values) // => [5, 4]
  * ```
  */
@@ -498,7 +498,7 @@ export function topk(
  * @returns A float64 value with a trailing axis of length `n`.
  * @example
  * ```ts
- * import { oneHot, toArray } from 'mdml-engine/tensor'
+ * import { oneHot, toArray } from 'omai-engine/tensor'
  * toArray(oneHot([0, 2], 3)) // => [[1, 0, 0], [0, 0, 1]]
  * ```
  */
@@ -519,7 +519,7 @@ export function oneHot(labels: TensorLike, n: number): Value {
  * @returns One index tensor per axis.
  * @example
  * ```ts
- * import { nonzero, tensor, toArray } from 'mdml-engine/tensor'
+ * import { nonzero, tensor, toArray } from 'omai-engine/tensor'
  * nonzero(tensor([0, 3, 0, 5])).map(toArray) // => [[1, 3]]
  * ```
  */
@@ -543,7 +543,7 @@ export function nonzero(x: TensorLike): Tensor<'int32'>[] {
  * @returns The selected elements.
  * @example
  * ```ts
- * import { maskedSelect, tensor, greater, toArray } from 'mdml-engine/tensor'
+ * import { maskedSelect, tensor, greater, toArray } from 'omai-engine/tensor'
  * const x = tensor([1, -2, 3])
  * toArray(maskedSelect(x, greater(x, 0))) // => [1, 3]
  * ```
@@ -567,7 +567,7 @@ export function maskedSelect(x: TensorLike, mask: TensorLike): Value {
  * @returns int32 positions with the shape of `values`.
  * @example
  * ```ts
- * import { searchsorted, toArray } from 'mdml-engine/tensor'
+ * import { searchsorted, toArray } from 'omai-engine/tensor'
  * toArray(searchsorted([1, 2, 3], [2, 2.5])) // => [1, 2]
  * ```
  */
@@ -596,7 +596,7 @@ export function searchsorted(sorted: TensorLike, values: TensorLike, side: 'left
  * @returns `{ values, counts }` as 1-D tensors.
  * @example
  * ```ts
- * import { unique, toArray } from 'mdml-engine/tensor'
+ * import { unique, toArray } from 'omai-engine/tensor'
  * toArray(unique([3, 1, 3, 2]).values) // => [1, 2, 3]
  * ```
  */
@@ -631,7 +631,7 @@ export function unique(x: TensorLike): { readonly values: Tensor; readonly count
  * @returns Counts (int32) or weighted sums (float64).
  * @example
  * ```ts
- * import { bincount, toArray } from 'mdml-engine/tensor'
+ * import { bincount, toArray } from 'omai-engine/tensor'
  * toArray(bincount([0, 1, 1, 3])) // => [1, 2, 0, 1]
  * ```
  */
@@ -639,7 +639,7 @@ export function bincount(x: TensorLike, minLength = 0, weights?: TensorLike): Va
   const t = concreteOrThrow(indexTensor(x), 'bincount')
   let size = minLength
   for (const v of t.data) {
-    if (v < 0) throw new MdmlError('value', 'bincount: values must be non-negative')
+    if (v < 0) throw new OmaiError('value', 'bincount: values must be non-negative')
     size = Math.max(size, v + 1)
   }
   if (weights === undefined) {
@@ -657,10 +657,10 @@ function leadingIndices(
   where: string,
 ): { readonly flat: Int32Array; readonly batch: Shape; readonly lead: number; readonly rest: Shape } {
   const idx = concreteOrThrow(asDtype(val(indices), 'int32'), where) as Tensor<'int32'>
-  if (idx.shape.length === 0) throw new MdmlError('shape', `${where}: indices need a last axis of coordinates`)
+  if (idx.shape.length === 0) throw new OmaiError('shape', `${where}: indices need a last axis of coordinates`)
   const k = idx.shape[idx.shape.length - 1] ?? 0
   if (k > shape.length)
-    throw new MdmlError('shape', `${where}: ${k} coordinates index an array of rank ${shape.length}`)
+    throw new OmaiError('shape', `${where}: ${k} coordinates index an array of rank ${shape.length}`)
   const batch = idx.shape.slice(0, -1)
   const m = sizeOf(batch)
   const flat = new Int32Array(m)
@@ -672,7 +672,7 @@ function leadingIndices(
       const n = shape[a] ?? 0
       const raw = idx.data[r * k + a] ?? 0
       const i = raw < 0 ? raw + n : raw
-      if (i < 0 || i >= n) throw new MdmlError('value', `${where}: index ${raw} out of range for axis ${a} of ${n}`)
+      if (i < 0 || i >= n) throw new OmaiError('value', `${where}: index ${raw} out of range for axis ${a} of ${n}`)
       linear = linear * n + i
     }
     flat[r] = linear
@@ -688,10 +688,10 @@ function leadingIndices(
  * @param x - Input.
  * @param indices - int32 coordinates `[..., k]` with k at most the rank of x.
  * @returns A value of shape `indices.shape[:-1] + x.shape[k:]`.
- * @throws MdmlError with code `value` for an out-of-range coordinate.
+ * @throws OmaiError with code `value` for an out-of-range coordinate.
  * @example
  * ```ts
- * import { gather, tensor, toArray } from 'mdml-engine/tensor'
+ * import { gather, tensor, toArray } from 'omai-engine/tensor'
  * const x = tensor([[1, 2], [3, 4]])
  * toArray(gather(x, [[1, 0], [0, 1]])) // => [3, 2]
  * toArray(gather(x, [[1]])) // => [[3, 4]]
@@ -720,10 +720,10 @@ export type ScatterMode = 'set' | 'add' | 'mul' | 'max' | 'min'
  * @param updates - The values to write.
  * @param mode - How to combine (default `'set'`).
  * @returns The updated copy.
- * @throws MdmlError with code `shape` when updates do not broadcast to the indexed shape.
+ * @throws OmaiError with code `shape` when updates do not broadcast to the indexed shape.
  * @example
  * ```ts
- * import { scatter, tensor, toArray } from 'mdml-engine/tensor'
+ * import { scatter, tensor, toArray } from 'omai-engine/tensor'
  * toArray(scatter(tensor([0, 0, 0]), [[0], [2], [0]], [1, 2, 3], 'add')) // => [4, 0, 2]
  * toArray(scatter(tensor([0, 0, 0]), [[0], [2], [0]], [1, 2, 3])) // => [3, 0, 2]
  * toArray(scatter(tensor([[5, 5], [5, 5]]), [[1]], [[1, 9]], 'max')) // => [[5, 5], [5, 9]]
@@ -739,7 +739,7 @@ export function scatter(x: TensorLike, indices: TensorLike, updates: TensorLike,
   try {
     u = reshape(broadcastTo(u0, [...batch, ...rest]), [m, ...rest])
   } catch {
-    throw new MdmlError(
+    throw new OmaiError(
       'shape',
       `scatter: updates ${formatShape(u0.shape)} do not broadcast to ${formatShape([...batch, ...rest])}`,
     )

@@ -4,7 +4,7 @@
  * the root locus of a feedback loop, the paths of the closed-loop poles as the gain varies (python-control root_locus).
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { complexOps as C, type ComplexNumber } from '../numerics/differentiate/index.ts'
 import { chebyshevNodes } from '../numerics/interpolate/index.ts'
 import { det, eigvals, norm } from '../numerics/linalg/index.ts'
@@ -38,7 +38,7 @@ const sorted = (z: ComplexArray): ComplexArray => {
  * @concept poles-and-zeros
  * @example
  * ```ts
- * import { poles, tf } from 'mdml-engine/systems'
+ * import { poles, tf } from 'omai-engine/systems'
  * poles(tf([1], [1, 3, 2])).re // => [-2, -1]
  * ```
  */
@@ -63,24 +63,24 @@ export function poles(sys: Lti): ComplexArray {
  *
  * @param sys - The system.
  * @returns The zeros.
- * @throws MdmlError with code `not-implemented` for a non-square multivariable system.
+ * @throws OmaiError with code `not-implemented` for a non-square multivariable system.
  * @concept poles-and-zeros
  * @example
  * ```ts
- * import { tf, zeros } from 'mdml-engine/systems'
+ * import { tf, zeros } from 'omai-engine/systems'
  * zeros(tf([1, 3], [1, 3, 2])).re // => [-3]
  * ```
  */
 export function zeros(sys: Lti): ComplexArray {
   if (sys.kind !== 'ss') {
-    if (sys.kind === 'tf' && sys.num.shape.length === 2) throw new MdmlError('shape', 'zeros: one output is needed')
+    if (sys.kind === 'tf' && sys.num.shape.length === 2) throw new OmaiError('shape', 'zeros: one output is needed')
     return sorted(toZpk(sys).zeros)
   }
   const m = sys.b.shape[1] ?? 0
   const p = sys.c.shape[0] ?? 0
   if (m === 1 && p === 1) return sorted(toZpk(sys).zeros)
   if (m !== p) {
-    throw new MdmlError('not-implemented', 'zeros: invariant zeros of non-square systems are not implemented')
+    throw new OmaiError('not-implemented', 'zeros: invariant zeros of non-square systems are not implemented')
   }
   const n = sys.a.shape[0] ?? 0
   if (n === 0) return { re: [], im: [] }
@@ -108,7 +108,7 @@ export function zeros(sys: Lti): ComplexArray {
  * @concept stability
  * @example
  * ```ts
- * import { isStable, tf } from 'mdml-engine/systems'
+ * import { isStable, tf } from 'omai-engine/systems'
  * isStable(tf([1], [1, -0.5], { dt: 1 })) // => true
  * ```
  */
@@ -142,7 +142,7 @@ export interface RouthResult {
  * @concept routh-hurwitz
  * @example
  * ```ts
- * import { routh } from 'mdml-engine/systems'
+ * import { routh } from 'omai-engine/systems'
  * routh([1, 2, 3, 10]).signChanges // => 2
  * ```
  */
@@ -212,7 +212,7 @@ export interface JuryResult {
  * @concept jury-test
  * @example
  * ```ts
- * import { jury } from 'mdml-engine/systems'
+ * import { jury } from 'omai-engine/systems'
  * jury([1, -1.2, 0.5]).stable // => true
  * ```
  */
@@ -277,13 +277,13 @@ function rootsAt(num: readonly number[], den: readonly number[], k: number): Com
  * @concept root-locus
  * @example
  * ```ts
- * import { rootLocus, tf } from 'mdml-engine/systems'
+ * import { rootLocus, tf } from 'omai-engine/systems'
  * rootLocus(tf([1], [1, 3, 2]), [0]).roots[0].re // => [-2, -1]
  * ```
  */
 export function rootLocus(sys: Lti, gains?: readonly number[]): RootLocus {
   const g = toTf(sys)
-  if (g.num.shape.length !== 1) throw new MdmlError('shape', 'rootLocus: one input and one output are needed')
+  if (g.num.shape.length !== 1) throw new OmaiError('shape', 'rootLocus: one input and one output are needed')
   const num = trimLeading(numbers(g.num))
   const den = trimLeading(numbers(g.den))
   const zs = toList(rootsOf(num))

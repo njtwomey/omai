@@ -53,8 +53,8 @@ function standardised(mean: TensorLike, std: TensorLike, best: number, xi: numbe
  * @reference Jones, Schonlau and Welch (1998), Efficient global optimization of expensive black-box functions.
  * @example
  * ```ts
- * import { expectedImprovement } from 'mdml-engine/tune'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { expectedImprovement } from 'omai-engine/tune'
+ * import { toFlat } from 'omai-engine/tensor'
  * toFlat(expectedImprovement([0], [1], 0)) // => [0.398942]
  * ```
  */
@@ -77,8 +77,8 @@ export function expectedImprovement(mean: TensorLike, std: TensorLike, best: num
  * @reference Ament et al. (2023), Unexpected improvements to expected improvement for Bayesian optimization.
  * @example
  * ```ts
- * import { logExpectedImprovement } from 'mdml-engine/tune'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { logExpectedImprovement } from 'omai-engine/tune'
+ * import { toFlat } from 'omai-engine/tensor'
  * (toFlat(logExpectedImprovement([40], [1], 0))[0] ?? Number.NaN) > -Infinity // => true
  * ```
  */
@@ -109,8 +109,8 @@ export function logExpectedImprovement(mean: TensorLike, std: TensorLike, best: 
  * @concept bayesian-optimisation
  * @example
  * ```ts
- * import { probabilityOfImprovement } from 'mdml-engine/tune'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { probabilityOfImprovement } from 'omai-engine/tune'
+ * import { toFlat } from 'omai-engine/tensor'
  * toFlat(probabilityOfImprovement([0], [1], 0)) // => [0.5]
  * ```
  */
@@ -129,8 +129,8 @@ export function probabilityOfImprovement(mean: TensorLike, std: TensorLike, best
  * @concept bayesian-optimisation
  * @example
  * ```ts
- * import { logProbabilityOfImprovement } from 'mdml-engine/tune'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { logProbabilityOfImprovement } from 'omai-engine/tune'
+ * import { toFlat } from 'omai-engine/tensor'
  * toFlat(logProbabilityOfImprovement([0], [1], 0)) // => [-0.693147]
  * ```
  */
@@ -150,8 +150,8 @@ export function logProbabilityOfImprovement(mean: TensorLike, std: TensorLike, b
  * @reference Srinivas et al. (2010), Gaussian process optimization in the bandit setting.
  * @example
  * ```ts
- * import { lowerConfidenceBound } from 'mdml-engine/tune'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { lowerConfidenceBound } from 'omai-engine/tune'
+ * import { toFlat } from 'omai-engine/tensor'
  * toFlat(lowerConfidenceBound([1], [0.5], 2)) // => [0]
  * ```
  */
@@ -169,8 +169,8 @@ export function lowerConfidenceBound(mean: TensorLike, std: TensorLike, beta = 2
  * @concept bayesian-optimisation
  * @example
  * ```ts
- * import { upperConfidenceBound } from 'mdml-engine/tune'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { upperConfidenceBound } from 'omai-engine/tune'
+ * import { toFlat } from 'omai-engine/tensor'
  * toFlat(upperConfidenceBound([1], [0.5], 2)) // => [2]
  * ```
  */
@@ -190,8 +190,8 @@ export type Acquisition = (mean: Value, std: Value, best: number) => Value
  *
  * @example
  * ```ts
- * import { acquisitions } from 'mdml-engine/tune'
- * import { asTensor, toFlat } from 'mdml-engine/tensor'
+ * import { acquisitions } from 'omai-engine/tune'
+ * import { asTensor, toFlat } from 'omai-engine/tensor'
  * toFlat(acquisitions.LCB(asTensor([2]), asTensor([0.5]), 0)) // => [-1]
  * Object.keys(acquisitions) // => ['logEI', 'EI', 'PI', 'LCB']
  * ```
@@ -229,8 +229,8 @@ export interface AcquisitionSearchOptions {
  * @concept bayesian-optimisation
  * @example
  * ```ts
- * import { acquisitions, fitGpSurrogate, maximizeAcquisition } from 'mdml-engine/tune'
- * import { key } from 'mdml-engine/random'
+ * import { acquisitions, fitGpSurrogate, maximizeAcquisition } from 'omai-engine/tune'
+ * import { key } from 'omai-engine/random'
  * const xs = [[0.1], [0.4], [0.9]]
  * const gp = fitGpSurrogate(xs, [1, 0, 1])
  * const { point } = maximizeAcquisition(gp, acquisitions.EI, 0, key(0))
@@ -311,8 +311,8 @@ export interface GpSamplerOptions {
  * @reference Snoek, Larochelle and Adams (2012), Practical Bayesian optimization of machine learning algorithms.
  * @example
  * ```ts
- * import { gpSampler, functionObjective, tune } from 'mdml-engine/tune'
- * import { real } from 'mdml-engine/space'
+ * import { gpSampler, functionObjective, tune } from 'omai-engine/tune'
+ * import { real } from 'omai-engine/space'
  * const f = functionObjective((x) => ((x as number) - 0.7) ** 2)
  * (tune(f, real(0, 1), { sampler: gpSampler({ nStartupTrials: 4 }), nTrials: 10, seed: 0 }).best?.values[0] ?? 1) < 1e-3 // => true
  * ```

@@ -4,7 +4,7 @@
  * 2002), which asks whether clusterings of overlapping subsamples agree, and the elbow curve of k-means inertia.
  */
 
-import { MdmlError, maxOf, minOf, toRows } from '../base/index.ts'
+import { maxOf, minOf, OmaiError, toRows } from '../base/index.ts'
 import { matrixView } from '../learn/index.ts'
 import { adjustedRandScore } from '../metrics/index.ts'
 import { foldIn, type Key, subsample, uniform } from '../random/index.ts'
@@ -39,8 +39,8 @@ function bestKMeans(
  * @returns The numbers of clusters and the inertia of each fit.
  * @example
  * ```ts
- * import { kmeansElbow } from 'mdml-engine/cluster'
- * import { key } from 'mdml-engine/random'
+ * import { kmeansElbow } from 'omai-engine/cluster'
+ * import { key } from 'omai-engine/random'
  * const x = [[0], [1], [10], [11], [20], [21]]
  * kmeansElbow(x, [1, 3], key(0)).inertia.map((v) => Math.round(v)) // => [402, 2]
  * ```
@@ -82,10 +82,10 @@ export interface GapStatistic {
  * @index function Gap statistic for choosing the number of clusters.
  * @example
  * ```ts
- * import { gapStatistic } from 'mdml-engine/cluster'
- * import { generate } from 'mdml-engine/data'
- * import { blobs } from 'mdml-engine/datasets'
- * import { key } from 'mdml-engine/random'
+ * import { gapStatistic } from 'omai-engine/cluster'
+ * import { generate } from 'omai-engine/data'
+ * import { blobs } from 'omai-engine/datasets'
+ * import { key } from 'omai-engine/random'
  * const { data } = generate(blobs, { key: key(3), knobs: { n: 90, centers: 3, clusterStd: 0.5 } })
  * gapStatistic(data.x, [1, 2, 3, 4, 5], key(0), { references: 8 }).best // => 3
  * ```
@@ -100,7 +100,7 @@ export function gapStatistic(
   const b = options.references ?? 10
   const nInit = options.nInit ?? 3
   if (ks.length === 0 || ks.some((k) => !(Number.isInteger(k) && k >= 1 && k <= m.n)))
-    throw new MdmlError('value', `gapStatistic: every k must be an integer in 1..${m.n}`)
+    throw new OmaiError('value', `gapStatistic: every k must be an integer in 1..${m.n}`)
   const lows = Array.from({ length: m.d }, (_, q) =>
     minOf(Array.from({ length: m.n }, (_, i) => m.data[i * m.d + q] ?? 0)),
   )
@@ -154,8 +154,8 @@ export interface StabilityIndex {
  * @returns The stability per k and the best k.
  * @example
  * ```ts
- * import { stabilityIndex } from 'mdml-engine/cluster'
- * import { key } from 'mdml-engine/random'
+ * import { stabilityIndex } from 'omai-engine/cluster'
+ * import { key } from 'omai-engine/random'
  * const x = Array.from({ length: 30 }, (_, i) => [(i % 3) * 20 + (i % 5) * 0.1, Math.floor(i / 3) * 0.05])
  * stabilityIndex(x, [3, 5], key(0), { pairs: 4 }).best // => 3
  * ```

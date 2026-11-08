@@ -4,7 +4,7 @@
  * counts and positive skewed targets.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { logaddexp, xlogy } from '../numerics/special/index.ts'
 import {
   abs,
@@ -39,8 +39,8 @@ const pair = (input: TensorLike, target: TensorLike): [Value, Value] => promoteF
  * @index function Mean squared error, torch.nn.functional style.
  * @example
  * ```ts
- * import { mse } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { mse } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * item(mse([1, 2], [1, 4])) // => 2
  * ```
  */
@@ -58,8 +58,8 @@ export function mse(input: TensorLike, target: TensorLike, options: LossOptions 
  * @returns The loss, differentiable away from zero residuals.
  * @example
  * ```ts
- * import { mae } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { mae } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * item(mae([1, 2], [1, 4])) // => 1
  * ```
  */
@@ -77,8 +77,8 @@ export function mae(input: TensorLike, target: TensorLike, options: LossOptions 
  * @returns The loss, differentiable.
  * @example
  * ```ts
- * import { huber } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { huber } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * item(huber([0], [3], { delta: 1 })) // => 2.5
  * ```
  */
@@ -106,8 +106,8 @@ export function huber(
  * @returns The loss, differentiable.
  * @example
  * ```ts
- * import { logCosh } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { logCosh } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * item(logCosh([0], [0])) // => 0
  * ```
  */
@@ -126,8 +126,8 @@ export function logCosh(input: TensorLike, target: TensorLike, options: LossOpti
  * @returns The loss, differentiable away from zero residuals.
  * @example
  * ```ts
- * import { pinball } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { pinball } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * item(pinball([0], [2], { tau: 0.9 })) // => 1.8
  * ```
  */
@@ -154,8 +154,8 @@ export function pinball(
  * @returns The loss, differentiable.
  * @example
  * ```ts
- * import { poissonNll } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { poissonNll } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * item(poissonNll([0], [1])) // => 1
  * ```
  */
@@ -185,8 +185,8 @@ export function poissonNll(
  * @returns The loss, differentiable in means and variances.
  * @example
  * ```ts
- * import { gaussianNll } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { gaussianNll } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * item(gaussianNll([0], [0], [1])) // => 0
  * ```
  */
@@ -213,8 +213,8 @@ export function gaussianNll(
  * @returns The loss, differentiable.
  * @example
  * ```ts
- * import { smoothL1 } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { smoothL1 } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * item(smoothL1([0], [3], { beta: 2 })) // => 2
  * ```
  */
@@ -242,8 +242,8 @@ export function smoothL1(
  * @returns The loss, differentiable.
  * @example
  * ```ts
- * import { expectile } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { expectile } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * item(expectile([0], [2], { tau: 0.75 })) // => 3
  * ```
  */
@@ -269,11 +269,11 @@ export function expectile(
  * @param target - Targets (non-negative for p < 2, positive for p >= 2).
  * @param options - power (default 1.5), logInput (default false), reduction and weights.
  * @returns The loss, differentiable in the input.
- * @throws MdmlError with code `value` for a power in (0, 1).
+ * @throws OmaiError with code `value` for a power in (0, 1).
  * @example
  * ```ts
- * import { tweedieDeviance } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { tweedieDeviance } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * item(tweedieDeviance([2], [2], { power: 1.5 })) // => 0
  * ```
  */
@@ -284,7 +284,7 @@ export function tweedieDeviance(
 ): Value {
   const [x, y] = pair(input, target)
   const p = options.power ?? 1.5
-  if (p > 0 && p < 1) throw new MdmlError('value', `tweedieDeviance: power ${p} is not in (-inf, 0] or [1, inf)`)
+  if (p > 0 && p < 1) throw new OmaiError('value', `tweedieDeviance: power ${p} is not in (-inf, 0] or [1, inf)`)
   const mu = options.logInput === true ? exp(x) : x
   let terms: Value
   if (p === 0) terms = square(sub(y, mu))

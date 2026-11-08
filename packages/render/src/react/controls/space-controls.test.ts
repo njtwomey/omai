@@ -1,4 +1,4 @@
-import { bool, box, choice, dict, int, real, tuple, union } from 'mdml-engine/space'
+import { bool, box, choice, dict, int, real, tuple, union } from 'omai-engine/space'
 import { describe, expect, it } from 'vitest'
 import { greyOptions, settleValue, spaceControls, valueAt, withValueAt } from './space-controls.ts'
 

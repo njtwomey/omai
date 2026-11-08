@@ -9,8 +9,8 @@ from typing import Any, Literal
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import rng
 from statsmodels.tsa.exponential_smoothing.ets import ETSModel
 
 REFERENCE: dict[str, str] = {"statsmodels": version("statsmodels"), "numpy": np.__version__}

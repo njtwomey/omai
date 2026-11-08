@@ -1,6 +1,6 @@
 // Shared plumbing of the tabular agents (private to methods/rl/agents): observations to state indices, step sizes,
 // exploration schedules, random tie-breaking and copy-on-write tables.
-import { MdmlError, maxOf } from '../base/index.ts'
+import { maxOf, OmaiError } from '../base/index.ts'
 import type { LearningRateSchedule } from '../optim/index.ts'
 import { foldIn, type Key, uniform } from '../random/index.ts'
 import type { Space } from '../space/index.ts'
@@ -54,15 +54,15 @@ export function tabularCoding<O>(
 ): TabularCoding<O> {
   const action = env.actionSpace
   const nActions = options.nActions ?? (action.kind === 'discrete' ? action.n : undefined)
-  if (nActions === undefined) throw new MdmlError('value', `${name}: needs a discrete action space or nActions`)
+  if (nActions === undefined) throw new OmaiError('value', `${name}: needs a discrete action space or nActions`)
   const space = env.observationSpace
   const r = radices(space)
   const start = space.kind === 'discrete' ? (space.start ?? 0) : 0
   let nStates = options.nStates
   if (nStates === undefined && r !== undefined) nStates = r.reduce((a, b) => a * b, 1)
-  if (nStates === undefined) throw new MdmlError('value', `${name}: give nStates for this observation space`)
+  if (nStates === undefined) throw new OmaiError('value', `${name}: give nStates for this observation space`)
   if (options.encode !== undefined) return { nStates, nActions, encode: options.encode }
-  if (r === undefined) throw new MdmlError('value', `${name}: give encode for this observation space`)
+  if (r === undefined) throw new OmaiError('value', `${name}: give encode for this observation space`)
   const encode = (o: O): number => {
     if (typeof o === 'number') return o - start
     const xs = o as unknown as readonly number[]

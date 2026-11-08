@@ -5,7 +5,7 @@
  * option table {@link spanningTreeMethods}. `minimumSpanningTree` in `trees.ts` is these run to the end.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import { dict, knobOption, type OptionTable, optionTable } from '../space/index.ts'
 import {
   type Algorithm,
@@ -144,7 +144,7 @@ function emptyState(g: Graph): SpanningTreeState {
 }
 
 function checkUndirected(g: Graph): void {
-  if (g.directed) throw new MdmlError('value', 'spanningTreeAlgorithm: the graph must be undirected')
+  if (g.directed) throw new OmaiError('value', 'spanningTreeAlgorithm: the graph must be undirected')
 }
 
 /** Shared parts of the three algorithms: the name, the contract of the run and the serialisation. */
@@ -178,12 +178,12 @@ function consider(g: Graph, s: SpanningTreeState, k: number): SpanningTreeState 
  * @param g - An undirected graph.
  * @param options - `maximum` for a maximum spanning tree.
  * @returns The algorithm.
- * @throws MdmlError with code `value` for a directed graph.
+ * @throws OmaiError with code `value` for a directed graph.
  * @concept spanning-trees
  * @example
  * ```ts
- * import { graph, kruskalAlgorithm } from 'mdml-engine/graph'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { graph, kruskalAlgorithm } from 'omai-engine/graph'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const g = graph([[0, 1, 4], [0, 2, 1], [1, 2, 2], [1, 3, 5], [2, 3, 8]])
  * const run = runAlgorithm(kruskalAlgorithm(g), { maxSteps: 10 })
  * [run.steps, run.state.chosen, run.state.weight] // => [4, [1, 2, 3], 8]
@@ -217,12 +217,12 @@ export function kruskalAlgorithm(
  * @param g - An undirected graph.
  * @param options - `maximum` for a maximum spanning tree.
  * @returns The algorithm.
- * @throws MdmlError with code `value` for a directed graph.
+ * @throws OmaiError with code `value` for a directed graph.
  * @concept spanning-trees
  * @example
  * ```ts
- * import { graph, primAlgorithm } from 'mdml-engine/graph'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { graph, primAlgorithm } from 'omai-engine/graph'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const g = graph([[0, 1, 4], [0, 2, 1], [1, 2, 2], [1, 3, 5], [2, 3, 8]])
  * const run = runAlgorithm(primAlgorithm(g), { maxSteps: 10 })
  * [run.steps, run.state.chosen, run.state.weight] // => [4, [1, 2, 3], 8]
@@ -288,12 +288,12 @@ export function primAlgorithm(
  * @param g - An undirected graph.
  * @param options - `maximum` for a maximum spanning tree.
  * @returns The algorithm.
- * @throws MdmlError with code `value` for a directed graph.
+ * @throws OmaiError with code `value` for a directed graph.
  * @concept spanning-trees
  * @example
  * ```ts
- * import { boruvkaAlgorithm, graph } from 'mdml-engine/graph'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { boruvkaAlgorithm, graph } from 'omai-engine/graph'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const g = graph([[0, 1, 4], [0, 2, 1], [1, 2, 2], [1, 3, 5], [2, 3, 8]])
  * const run = runAlgorithm(boruvkaAlgorithm(g), { maxSteps: 10 })
  * run.state.weight // => 8
@@ -358,7 +358,7 @@ export interface SpanningTreeProperties {
  * @concept spanning-trees
  * @example
  * ```ts
- * import { graph, spanningTreeMethods } from 'mdml-engine/graph'
+ * import { graph, spanningTreeMethods } from 'omai-engine/graph'
  * spanningTreeMethods.make({ kind: 'prim' })(graph([[0, 1]])).name // => 'graph/prim'
  * ```
  */

@@ -6,7 +6,7 @@
  * expectations of demonstrations.
  */
 
-import { type Json, MdmlError, meanOf } from '../base/index.ts'
+import { type Json, meanOf, OmaiError } from '../base/index.ts'
 import { binaryCrossEntropyWithLogits } from '../losses/index.ts'
 import type { ActivationName, Params } from '../nn/index.ts'
 import { adam, type ParamTree } from '../optim/index.ts'
@@ -94,8 +94,8 @@ export interface DaggerState<A> {
  *   online learning.
  * @example
  * ```ts
- * import { daggerAlgorithm } from 'mdml-engine/agents'
- * import { cartPole } from 'mdml-engine/environments'
+ * import { daggerAlgorithm } from 'omai-engine/agents'
+ * import { cartPole } from 'omai-engine/environments'
  * daggerAlgorithm(cartPole.create(), (o) => ((o[2] ?? 0) > 0 ? 1 : 0)).name // => 'dagger'
  * ```
  */
@@ -215,9 +215,9 @@ export interface DaggerResult<A> {
  * @concept imitation-learning
  * @example
  * ```ts
- * import { dagger } from 'mdml-engine/agents'
- * import { cartPole } from 'mdml-engine/environments'
- * import { timeLimit } from 'mdml-engine/rl'
+ * import { dagger } from 'omai-engine/agents'
+ * import { cartPole } from 'omai-engine/environments'
+ * import { timeLimit } from 'omai-engine/rl'
  * dagger(timeLimit(cartPole.create(), 20), (o) => ((o[2] ?? 0) > 0 ? 1 : 0), { iterations: 1 }).dataset.length // => 40
  * ```
  */
@@ -292,8 +292,8 @@ export interface GailState {
  * @reference Ho and Ermon (2016), Generative adversarial imitation learning.
  * @example
  * ```ts
- * import { gail } from 'mdml-engine/agents'
- * import { cartPole } from 'mdml-engine/environments'
+ * import { gail } from 'omai-engine/agents'
+ * import { cartPole } from 'omai-engine/environments'
  * gail(cartPole.create(), [{ observation: [0, 0, 0, 0], action: 1 }]).name // => 'gail'
  * ```
  */
@@ -302,7 +302,7 @@ export function gail<A extends PolicyAction = PolicyAction>(
   demonstrations: readonly Demonstration<A>[],
   options: GailOptions = {},
 ): Agent<GailState, readonly number[], A> {
-  if (demonstrations.length === 0) throw new MdmlError('value', 'gail: needs demonstrations')
+  if (demonstrations.length === 0) throw new OmaiError('value', 'gail: needs demonstrations')
   const inner = ppo<A>(env, options)
   const nSteps = options.nSteps ?? 256
   const d = observationSize(env.observationSpace)
@@ -457,8 +457,8 @@ function rewardTable(mdp: TabularMdp, reward: readonly number[] | readonly (read
  * @concept inverse-reinforcement-learning
  * @example
  * ```ts
- * import { softValueIteration } from 'mdml-engine/agents'
- * import { tabularMdp } from 'mdml-engine/rl'
+ * import { softValueIteration } from 'omai-engine/agents'
+ * import { tabularMdp } from 'omai-engine/rl'
  * const mdp = tabularMdp({ transitions: [[[0, 1], [0, 1]], [[0, 1], [0, 1]]], rewards: [[0, 0], [0, 0]], terminalStates: [1] })
  * softValueIteration(mdp, [0, 0]).policy[0] // => [0.5, 0.5]
  * ```
@@ -522,8 +522,8 @@ export function softValueIteration(
  * @concept inverse-reinforcement-learning
  * @example
  * ```ts
- * import { stateVisitationFrequencies } from 'mdml-engine/agents'
- * import { tabularMdp } from 'mdml-engine/rl'
+ * import { stateVisitationFrequencies } from 'omai-engine/agents'
+ * import { tabularMdp } from 'omai-engine/rl'
  * const mdp = tabularMdp({ transitions: [[[0, 1]], [[0, 1]]], rewards: [[0], [0]], terminalStates: [1], initial: [1, 0] })
  * stateVisitationFrequencies(mdp, [[1], [1]], { horizon: 3 }) // => [1, 0]
  * ```
@@ -566,7 +566,7 @@ export function stateVisitationFrequencies(
  * @concept inverse-reinforcement-learning
  * @example
  * ```ts
- * import { featureExpectations } from 'mdml-engine/agents'
+ * import { featureExpectations } from 'omai-engine/agents'
  * featureExpectations([[0, 1], [0]], [[1, 0], [0, 1]]) // => [1, 0.5]
  * ```
  */
@@ -631,8 +631,8 @@ export interface MaxEntIrlState {
  * @reference Ziebart, Maas, Bagnell and Dey (2008), Maximum entropy inverse reinforcement learning.
  * @example
  * ```ts
- * import { maxEntIrlAlgorithm } from 'mdml-engine/agents'
- * import { tabularMdp } from 'mdml-engine/rl'
+ * import { maxEntIrlAlgorithm } from 'omai-engine/agents'
+ * import { tabularMdp } from 'omai-engine/rl'
  * const mdp = tabularMdp({ transitions: [[[0, 1], [0, 1]], [[0, 1], [0, 1]]], rewards: [[0, 0], [0, 0]], terminalStates: [1] })
  * maxEntIrlAlgorithm(mdp, [[0]]).name // => 'maxEntIrl'
  * ```
@@ -716,8 +716,8 @@ export interface MaxEntIrlResult extends MaxEntIrlState {
  * @concept inverse-reinforcement-learning
  * @example
  * ```ts
- * import { maxEntIrl } from 'mdml-engine/agents'
- * import { tabularMdp } from 'mdml-engine/rl'
+ * import { maxEntIrl } from 'omai-engine/agents'
+ * import { tabularMdp } from 'omai-engine/rl'
  * const mdp = tabularMdp({ transitions: [[[0, 1], [0, 1]], [[0, 1], [0, 1]]], rewards: [[0, 0], [0, 0]], terminalStates: [1], initial: [1, 0] })
  * maxEntIrl(mdp, [[0]]).converged // => true
  * ```

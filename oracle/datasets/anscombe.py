@@ -1,6 +1,6 @@
 """Anscombe's quartet (Anscombe 1973), R's datasets::anscombe via Rdatasets."""
 
-from mdml_oracle.vendor import csv_rows, fetch_pinned, render_table
+from omai_oracle.vendor import csv_rows, fetch_pinned, render_table
 
 TARGET = "packages/engine/src/lib/datasets/_data/anscombe.data.ts"
 URL = "https://vincentarelbundock.github.io/Rdatasets/csv/datasets/anscombe.csv"

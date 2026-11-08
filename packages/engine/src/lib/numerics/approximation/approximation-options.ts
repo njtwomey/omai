@@ -16,7 +16,7 @@ import type { ChebfunOptions } from './chebyshev.ts'
  * @concept minimax-approximation
  * @example
  * ```ts
- * import { minimaxTypes } from 'mdml-engine/numerics/approximation'
+ * import { minimaxTypes } from 'omai-engine/numerics/approximation'
  * minimaxTypes.make({ kind: 'rational', n: 2 }).n // => 2
  * ```
  */
@@ -46,7 +46,7 @@ export const minimaxTypes: OptionTable<RemezOptions, Record<string, never>> = op
  * @concept chebyshev-approximation
  * @example
  * ```ts
- * import { chebyshevResolutions } from 'mdml-engine/numerics/approximation'
+ * import { chebyshevResolutions } from 'omai-engine/numerics/approximation'
  * chebyshevResolutions.make({ kind: 'loose' }).tol // => 1e-8
  * ```
  */

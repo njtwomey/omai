@@ -8,7 +8,7 @@
  * three cheaper families keep the input range in a buffer, as the spline does, so a range can be refitted to data.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { foldIn, type Key, normal } from '../../random/index.ts'
 import { choice, dict, type OptionTable, optionTable, type SpaceValue } from '../../space/index.ts'
 import {
@@ -114,7 +114,7 @@ const expansionSize = (kind: Expansion, grid: number, degree: number): number =>
  * @concept splines
  * @example
  * ```ts
- * import { ExpansionLayer } from 'mdml-engine/nn'
+ * import { ExpansionLayer } from 'omai-engine/nn'
  * const layer = new ExpansionLayer({ inFeatures: 2, outFeatures: 3, expansion: 'chebyshev', degree: 4 })
  * layer.basisSize // => 5
  * layer.forward([[0.1, -0.2]]).shape // => [1, 3]
@@ -150,15 +150,15 @@ export class ExpansionLayer extends Module implements EdgeFunctions {
     this.grid = options.grid ?? 5
     this.degree = options.degree ?? 3
     if (!(Number.isInteger(this.grid) && this.grid >= 1))
-      throw new MdmlError('value', 'ExpansionLayer: grid must be >= 1')
+      throw new OmaiError('value', 'ExpansionLayer: grid must be >= 1')
     if (!(Number.isInteger(this.degree) && this.degree >= 0))
-      throw new MdmlError('value', 'ExpansionLayer: degree must be an integer >= 0')
+      throw new OmaiError('value', 'ExpansionLayer: degree must be an integer >= 0')
     this.basisSize = expansionSize(this.expansion, this.grid, this.degree)
     this.initScale = options.initScale ?? 0.1
     const d = this.inFeatures
     const sample = options.sample === undefined ? undefined : asTensor(options.sample)
     if (sample !== undefined && (sample.shape.length !== 2 || sample.shape[1] !== d))
-      throw new MdmlError('shape', `ExpansionLayer: sample must be [n, ${d}]`)
+      throw new OmaiError('shape', `ExpansionLayer: sample must be [n, ${d}]`)
     const values = sample === undefined ? undefined : toFlat(sample)
     const rows = sample === undefined ? 0 : (sample.shape[0] ?? 0)
     this.lo = []
@@ -210,7 +210,7 @@ export class ExpansionLayer extends Module implements EdgeFunctions {
   private inputs(x: Value): Value {
     if (x.shape.length === 1 && this.inFeatures === 1) return reshape(x, [x.shape[0] ?? 0, 1])
     if (x.shape.length !== 2 || x.shape[1] !== this.inFeatures)
-      throw new MdmlError('shape', `ExpansionLayer: expected [n, ${this.inFeatures}], got [${x.shape.join(', ')}]`)
+      throw new OmaiError('shape', `ExpansionLayer: expected [n, ${this.inFeatures}], got [${x.shape.join(', ')}]`)
     return x
   }
 
@@ -289,7 +289,7 @@ const noKnots = (who: string, knots: SpaceValue): void => {
       ? (knots as { kind?: unknown }).kind
       : undefined
   if (kind !== undefined && kind !== 'uniform')
-    throw new MdmlError('value', `${who}: only the spline family places knots (got ${String(kind)})`)
+    throw new OmaiError('value', `${who}: only the spline family places knots (got ${String(kind)})`)
 }
 
 const expansionFamily = (kind: Expansion): EdgeBasis => ({
@@ -319,7 +319,7 @@ const expansionFamily = (kind: Expansion): EdgeBasis => ({
  *
  * @example
  * ```ts
- * import { kanBases } from 'mdml-engine/nn'
+ * import { kanBases } from 'omai-engine/nn'
  * kanBases.make({ kind: 'bspline' }).size(5, 3) // => 8
  * kanBases.make({ kind: 'fourier' }).size(4, 3) // => 9
  * kanBases.properties({ kind: 'rbf' }).knotted // => false

@@ -1,5 +1,5 @@
-import type { Dataset, DatasetMeta } from 'mdml-engine/data'
-import { asTensor, toFlat } from 'mdml-engine/tensor'
+import type { Dataset, DatasetMeta } from 'omai-engine/data'
+import { asTensor, toFlat } from 'omai-engine/tensor'
 
 /** One column as the page shows it: numbers (NaN is missing), or labels (null is missing). */
 export type FrameColumn =

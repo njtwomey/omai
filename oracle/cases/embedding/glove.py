@@ -4,8 +4,8 @@ least-squares loss (with its factor one half, as in the reference C code) at ran
 nonzero entries. The parameters are the flat vector [W, W~, b, b~]."""
 
 import numpy as np
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray, rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray, rng
 
 REFERENCE: dict[str, str] = {"numpy": np.__version__}
 

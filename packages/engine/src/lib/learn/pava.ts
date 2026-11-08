@@ -5,7 +5,7 @@
  * `calibration.ts` is this run to the end; the direction of the fit is a slot (`isotonicDirections`).
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import type { SpaceValue } from '../space/index.ts'
 import {
   type Algorithm,
@@ -79,8 +79,8 @@ function topViolates(s: PavaState): boolean {
  * @returns One mean per block.
  * @example
  * ```ts
- * import { pavaAlgorithm, pavaMeans } from 'mdml-engine/learn'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { pavaAlgorithm, pavaMeans } from 'omai-engine/learn'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * pavaMeans(runAlgorithm(pavaAlgorithm([1, 3, 2]), { maxSteps: 10 }).state) // => [1, 2.5]
  * ```
  */
@@ -98,8 +98,8 @@ export function pavaMeans(state: PavaState, sign: 1 | -1 = 1): number[] {
  * @returns The fitted value of each observation.
  * @example
  * ```ts
- * import { pavaAlgorithm, pavaFitted } from 'mdml-engine/learn'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { pavaAlgorithm, pavaFitted } from 'omai-engine/learn'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * pavaFitted(runAlgorithm(pavaAlgorithm([1, 3, 2, 4]), { maxSteps: 20 }).state, 4) // => [1, 2.5, 2.5, 4]
  * ```
  */
@@ -123,12 +123,12 @@ export function pavaFitted(state: PavaState, n: number, sign: 1 | -1 = 1): numbe
  * @param y - The values, in order.
  * @param settings - weights and the direction of the fit.
  * @returns The algorithm.
- * @throws MdmlError with code `shape` for weights of the wrong length and `value` for a negative or non-finite weight.
+ * @throws OmaiError with code `shape` for weights of the wrong length and `value` for a negative or non-finite weight.
  * @concept isotonic-regression
  * @example
  * ```ts
- * import { pavaAlgorithm, pavaFitted } from 'mdml-engine/learn'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { pavaAlgorithm, pavaFitted } from 'omai-engine/learn'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const run = runAlgorithm(pavaAlgorithm([1, 3, 2, 4]), { maxSteps: 20 })
  * [run.steps, run.state.merges, pavaFitted(run.state, 4)] // => [5, 1, [1, 2.5, 2.5, 4]]
  * ```
@@ -138,9 +138,9 @@ export function pavaAlgorithm(y: ArrayLike<number>, settings: PavaSettings = {})
   const sign = isotonicDirections.make(settings.direction)
   const v = Float64Array.from(y, (t) => sign * t)
   const w = settings.weights === undefined ? new Float64Array(n).fill(1) : Float64Array.from(settings.weights)
-  if (w.length !== n) throw new MdmlError('shape', `pavaAlgorithm: ${w.length} weights for ${n} values`)
+  if (w.length !== n) throw new OmaiError('shape', `pavaAlgorithm: ${w.length} weights for ${n} values`)
   for (const t of w)
-    if (!(Number.isFinite(t) && t >= 0)) throw new MdmlError('value', 'pavaAlgorithm: weights must be finite and >= 0')
+    if (!(Number.isFinite(t) && t >= 0)) throw new OmaiError('value', 'pavaAlgorithm: weights must be finite and >= 0')
   return {
     name: 'learn/pava',
     config: { n, direction: isotonicDirections.optionOf(settings.direction).name },

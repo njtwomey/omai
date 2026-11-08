@@ -7,8 +7,8 @@ from importlib.metadata import version
 from typing import Literal
 
 import regex
-from mdml_oracle.fixture import Case, case
 from nltk.tokenize import regexp_tokenize, wordpunct_tokenize
+from omai_oracle.fixture import Case, case
 from tokenizers import pre_tokenizers
 
 REFERENCE: dict[str, str] = {

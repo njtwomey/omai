@@ -58,7 +58,7 @@ export interface ScoreNetwork {
  * @concept diffusion-models
  * @example
  * ```ts
- * import { scoreNetwork } from 'mdml-engine/stochastic'
+ * import { scoreNetwork } from 'omai-engine/stochastic'
  * scoreNetwork({ dim: 2, hidden: [8] }).module.parameterCount() // => 146
  * ```
  */
@@ -103,8 +103,8 @@ export function scoreNetwork(options: {
  * @returns The model: the network's output for a batch at a time.
  * @example
  * ```ts
- * import { networkModel, scoreNetwork } from 'mdml-engine/stochastic'
- * import { tensor } from 'mdml-engine/tensor'
+ * import { networkModel, scoreNetwork } from 'omai-engine/stochastic'
+ * import { tensor } from 'omai-engine/tensor'
  * const net = scoreNetwork({ dim: 2, hidden: [4] })
  * networkModel(net, net.module.params)(tensor([[0, 0]]), 0.5).shape // => [1, 2]
  * ```
@@ -159,8 +159,8 @@ export interface DiffusionTrainerOptions {
  * @concept diffusion-models
  * @example
  * ```ts
- * import { diffusionTrainer, linearSchedule, scoreNetwork } from 'mdml-engine/stochastic'
- * import { adam } from 'mdml-engine/optim'
+ * import { diffusionTrainer, linearSchedule, scoreNetwork } from 'omai-engine/stochastic'
+ * import { adam } from 'omai-engine/optim'
  * const network = scoreNetwork({ dim: 1, hidden: [4] })
  * diffusionTrainer({ schedule: linearSchedule(), data: [[0], [1]], network, optimizer: adam({ learningRate: 0.01 }), steps: 3 }).name // => 'diffusion-train'
  * ```

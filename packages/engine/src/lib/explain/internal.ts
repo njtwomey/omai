@@ -6,7 +6,7 @@
  * and a tail (the layer to the outputs).
  */
 import { vjp } from '../autodiff/index.ts'
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { digraph, maxFlow } from '../graph/index.ts'
 import {
   add,
@@ -31,7 +31,7 @@ import {
 
 function concrete(x: TensorLike | Value, who: string): Tensor {
   const t = asTensor(x as TensorLike)
-  if (!isTensor(t)) throw new MdmlError('value', `${who}: expected concrete values`)
+  if (!isTensor(t)) throw new OmaiError('value', `${who}: expected concrete values`)
   return t.dtype === 'float64' ? t : fromStorage(Float64Array.from(toFlat(t)), t.shape, 'float64')
 }
 
@@ -40,7 +40,7 @@ function baselineLike(xt: Tensor, baseline: TensorLike | undefined, who: string)
   const b = toFlat(asTensor(baseline))
   if (b.length === xt.data.length) return fromStorage(Float64Array.from(b), xt.shape, 'float64')
   const d = xt.data.length / (xt.shape[0] ?? 1)
-  if (b.length !== d) throw new MdmlError('shape', `${who}: the baseline must be one input or one per input`)
+  if (b.length !== d) throw new OmaiError('shape', `${who}: the baseline must be one input or one per input`)
   return fromStorage(
     Float64Array.from({ length: xt.data.length }, (_, i) => b[i % d] ?? 0),
     xt.shape,
@@ -70,8 +70,8 @@ export interface LayerPathOptions {
  * @returns Attributions shaped like the layer.
  * @example
  * ```ts
- * import * as explain from 'mdml-engine/explain'
- * import { matmul, toArray } from 'mdml-engine/tensor'
+ * import * as explain from 'omai-engine/explain'
+ * import { matmul, toArray } from 'omai-engine/tensor'
  * const head = (x) => matmul(x, [[1, 0], [0, 2]])
  * const tail = (h) => matmul(h, [[3], [1]])
  * toArray(explain.layerGradientXActivation(head, tail, [[1, 1]])) // => [[3, 2]]
@@ -99,8 +99,8 @@ export function layerGradientXActivation(
  * @returns Influences shaped like the layer.
  * @example
  * ```ts
- * import * as explain from 'mdml-engine/explain'
- * import { matmul, toArray } from 'mdml-engine/tensor'
+ * import * as explain from 'omai-engine/explain'
+ * import { matmul, toArray } from 'omai-engine/tensor'
  * // A linear tail's gradient is its weights wherever the path goes.
  * toArray(explain.internalInfluence((x) => x, (h) => matmul(h, [[3], [1]]), [[1, 1]], { nSteps: 4, method: 'riemann_left' })) // => [[3, 1]]
  * ```
@@ -140,8 +140,8 @@ export function internalInfluence(
  * @returns Conductances shaped like the layer.
  * @example
  * ```ts
- * import * as explain from 'mdml-engine/explain'
- * import { matmul, toArray } from 'mdml-engine/tensor'
+ * import * as explain from 'omai-engine/explain'
+ * import { matmul, toArray } from 'omai-engine/tensor'
  * // Linear head and tail: each unit's change times its weight.
  * const r = explain.layerConductance((x) => matmul(x, [[1, 0], [0, 2]]), (h) => matmul(h, [[3], [1]]), [[1, 1]], { nSteps: 5, method: 'riemann_trapezoid' })
  * toArray(r).map((row) => row.map((v) => Math.round(v * 1e9) / 1e9)) // => [[3, 2]]
@@ -184,8 +184,8 @@ export function layerConductance(
  * @returns Attributions `[n, d]`.
  * @example
  * ```ts
- * import * as explain from 'mdml-engine/explain'
- * import { matmul, toArray } from 'mdml-engine/tensor'
+ * import * as explain from 'omai-engine/explain'
+ * import { matmul, toArray } from 'omai-engine/tensor'
  * const head = (x) => matmul(x, [[1, 0], [1, 2]])
  * const tail = (h) => matmul(h, [[3], [1]])
  * // Through unit 0 (x1 + x2, weight 3): each input carries 3 times its own value.
@@ -212,7 +212,7 @@ export function neuronConductance(
     const h = concrete(out, 'neuronConductance')
     const units = h.data.length / n
     if (!(Number.isInteger(neuron) && neuron >= 0 && neuron < units))
-      throw new MdmlError('value', `neuronConductance: neuron ${neuron} outside [0, ${units})`)
+      throw new OmaiError('value', `neuronConductance: neuron ${neuron} outside [0, ${units})`)
     const mid = toFlat(targetGradient(tail, h, options.target ?? 0))
     const select = new Float64Array(h.data.length)
     for (let i = 0; i < n; i++) select[i * units + neuron] = 1
@@ -236,8 +236,8 @@ export function neuronConductance(
  * @returns Attributions `[n, d]`.
  * @example
  * ```ts
- * import * as explain from 'mdml-engine/explain'
- * import { matmul, toArray } from 'mdml-engine/tensor'
+ * import * as explain from 'omai-engine/explain'
+ * import { matmul, toArray } from 'omai-engine/tensor'
  * const r = explain.neuronIntegratedGradients((x) => matmul(x, [[1, 0], [1, 2]]), [[1, 2]], 1, { nSteps: 3 })
  * toArray(r).map((row) => row.map((v) => Math.round(v * 1e9) / 1e9)) // => [[0, 4]]
  * ```
@@ -266,10 +266,10 @@ function withResidual(a: readonly (readonly number[])[], residual: boolean): num
 
 function checkAttentions(attentions: readonly (readonly (readonly number[])[])[], who: string): number {
   const t = attentions[0]?.length ?? 0
-  if (attentions.length === 0 || t === 0) throw new MdmlError('value', `${who}: no attention matrices`)
+  if (attentions.length === 0 || t === 0) throw new OmaiError('value', `${who}: no attention matrices`)
   for (const a of attentions) {
     if (a.length !== t || a.some((r) => r.length !== t))
-      throw new MdmlError('shape', `${who}: every layer's attention must be ${t} x ${t}`)
+      throw new OmaiError('shape', `${who}: every layer's attention must be ${t} x ${t}`)
   }
   return t
 }
@@ -284,7 +284,7 @@ function checkAttentions(attentions: readonly (readonly (readonly number[])[])[]
  * @returns The `[T, T]` rollout.
  * @example
  * ```ts
- * import * as explain from 'mdml-engine/explain'
+ * import * as explain from 'omai-engine/explain'
  * // One layer where token 1 attends only to token 0: half of it stays itself through the residual.
  * explain.attentionRollout([[[1, 0], [1, 0]]]) // => [[1, 0], [0.5, 0.5]]
  * ```
@@ -312,7 +312,7 @@ export function attentionRollout(
  * @returns The `[T, T]` flows, row i the output token.
  * @example
  * ```ts
- * import * as explain from 'mdml-engine/explain'
+ * import * as explain from 'omai-engine/explain'
  * explain.attentionFlow([[[1, 0], [1, 0]]], { residual: false }) // => [[1, 0], [1, 0]]
  * ```
  */

@@ -7,7 +7,7 @@
  * batch posterior of the rows seen so far, in any order.
  */
 
-import { LOG_2PI, MdmlError } from '../base/index.ts'
+import { LOG_2PI, OmaiError } from '../base/index.ts'
 import { type MatrixView, matrixView } from '../learn/index.ts'
 import { type MinMaxScalerParams, minMaxScaler, polynomialFeatures } from '../learn/preprocessing/index.ts'
 import { cholesky, choleskyLogdet, choSolve, ddot, dgemv, eigvalsh } from '../numerics/linalg/index.ts'
@@ -62,7 +62,7 @@ const nest = (flat: ArrayLike<number>, p: number): number[][] =>
 
 function checkPrior(prior: BayesianPrior, who: string): void {
   if (!(prior.alpha > 0 && Number.isFinite(prior.alpha) && prior.beta > 0 && Number.isFinite(prior.beta)))
-    throw new MdmlError('value', `${who}: alpha and beta must be positive and finite`)
+    throw new OmaiError('value', `${who}: alpha and beta must be positive and finite`)
 }
 
 /** The mean, covariance and log determinant of a Gaussian from its precision `[p][p]` and information vector. */
@@ -91,13 +91,13 @@ function solveGaussian(
  * @returns The posterior before any data.
  * @example
  * ```ts
- * import { priorPosterior } from 'mdml-engine/linear'
+ * import { priorPosterior } from 'omai-engine/linear'
  * priorPosterior(2, { alpha: 4, beta: 1 }).covariance // => [[0.25, 0], [0, 0.25]]
  * ```
  */
 export function priorPosterior(p: number, prior: BayesianPrior): BayesianPosterior {
   checkPrior(prior, 'priorPosterior')
-  if (!(Number.isInteger(p) && p >= 1)) throw new MdmlError('value', 'priorPosterior: p must be a positive integer')
+  if (!(Number.isInteger(p) && p >= 1)) throw new OmaiError('value', 'priorPosterior: p must be a positive integer')
   const eyeScaled = (v: number): number[][] =>
     Array.from({ length: p }, (_, i) => Array.from({ length: p }, (_, j) => (i === j ? v : 0)))
   return {
@@ -121,7 +121,7 @@ export function priorPosterior(p: number, prior: BayesianPrior): BayesianPosteri
  * @returns The posterior with the observation absorbed.
  * @example
  * ```ts
- * import { bayesianUpdate, priorPosterior } from 'mdml-engine/linear'
+ * import { bayesianUpdate, priorPosterior } from 'omai-engine/linear'
  * const next = bayesianUpdate(priorPosterior(1, { alpha: 1, beta: 1 }), [1], 2, 1)
  * next.mean[0].toFixed(4) // => '1.0000'
  * ```
@@ -133,7 +133,7 @@ export function bayesianUpdate(
   beta: number,
 ): BayesianPosterior {
   const p = posterior.mean.length
-  if (phi.length !== p) throw new MdmlError('shape', `bayesianUpdate: expected ${p} basis functions, got ${phi.length}`)
+  if (phi.length !== p) throw new OmaiError('shape', `bayesianUpdate: expected ${p} basis functions, got ${phi.length}`)
   const variance = 1 / beta + ddot(phi, dgemv(flatten(posterior.covariance), p, p, phi))
   const residual = y - ddot(phi, posterior.mean)
   const logPredictive = -0.5 * (LOG_2PI + Math.log(variance) + (residual * residual) / variance)
@@ -169,7 +169,7 @@ function residualSumOfSquares(design: BayesianDesign, mean: ArrayLike<number>): 
  * @returns The posterior after all rows.
  * @example
  * ```ts
- * import { bayesianLinearFit, designOf } from 'mdml-engine/linear'
+ * import { bayesianLinearFit, designOf } from 'omai-engine/linear'
  * const design = designOf({ x: [[1], [1]], y: [2, 2] }, 'example')
  * bayesianLinearFit(design, { alpha: 1, beta: 1 }).mean[0].toFixed(4) // => '1.3333'
  * ```
@@ -234,7 +234,7 @@ function predictiveRows(
  * @returns The predictive mean and variance of each row.
  * @example
  * ```ts
- * import { posteriorPredictive, priorPosterior } from 'mdml-engine/linear'
+ * import { posteriorPredictive, priorPosterior } from 'omai-engine/linear'
  * posteriorPredictive(priorPosterior(1, { alpha: 1, beta: 4 }), [[2]], 4).variance // => [4.25]
  * ```
  */
@@ -263,8 +263,8 @@ const isMatrixView = (x: TensorLike | MatrixView): x is MatrixView =>
  * @returns The algorithm.
  * @example
  * ```ts
- * import { bayesianLinearAlgorithm, designOf } from 'mdml-engine/linear'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { bayesianLinearAlgorithm, designOf } from 'omai-engine/linear'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const design = designOf({ x: [[1], [1], [1]], y: [2, 2, 2] }, 'example')
  * const alg = bayesianLinearAlgorithm(design, { alpha: 1, beta: 1 }, [0, 1, 2])
  * runAlgorithm(alg, { maxSteps: 10 }).state.n // => 3
@@ -280,7 +280,7 @@ export function bayesianLinearAlgorithm(
   const p = x.d
   for (const i of order)
     if (!(Number.isInteger(i) && i >= 0 && i < x.n))
-      throw new MdmlError('value', `bayesianLinearAlgorithm: row ${i} is outside 0..${x.n - 1}`)
+      throw new OmaiError('value', `bayesianLinearAlgorithm: row ${i} is outside 0..${x.n - 1}`)
   return {
     name: 'bayesian-linear-regression',
     config: { alpha: prior.alpha, beta: prior.beta, rows: order.length },
@@ -363,12 +363,12 @@ export interface EvidenceSettings {
  * @param start - The starting `alpha` and `beta`.
  * @param settings - tol and the update (the step budget is the caller's).
  * @returns The algorithm.
- * @throws MdmlError with code `value` for a non-positive precision.
+ * @throws OmaiError with code `value` for a non-positive precision.
  * @concept bayesian-linear-regression
  * @example
  * ```ts
- * import { designOf, maximiseEvidenceAlgorithm } from 'mdml-engine/linear'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { designOf, maximiseEvidenceAlgorithm } from 'omai-engine/linear'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const design = designOf({ x: [[1], [1], [1], [1]], y: [1.9, 2.1, 2, 2.05] }, 'example')
  * runAlgorithm(maximiseEvidenceAlgorithm(design, { alpha: 1, beta: 1 }), { maxSteps: 200 }).status // => 'converged'
  * ```
@@ -458,7 +458,7 @@ export interface EvidenceFit extends BayesianPrior {
  * @returns The maximising precisions, `gamma`, and the posterior there.
  * @example
  * ```ts
- * import { designOf, maximiseEvidence } from 'mdml-engine/linear'
+ * import { designOf, maximiseEvidence } from 'omai-engine/linear'
  * const design = designOf({ x: [[1], [1], [1], [1]], y: [1.9, 2.1, 2, 2.05] }, 'example')
  * maximiseEvidence(design, { alpha: 1, beta: 1 }).converged // => true
  * ```
@@ -491,7 +491,7 @@ export interface PolynomialBasis {
  * @returns The basis.
  * @example
  * ```ts
- * import { polynomialBasis } from 'mdml-engine/linear'
+ * import { polynomialBasis } from 'omai-engine/linear'
  * Array.from(polynomialBasis(2, [[0], [2]]).expand([[1]]).data) // => [1, 0, 0]
  * ```
  */
@@ -508,13 +508,13 @@ export function polynomialBasis(degree: number, x: TensorLike): PolynomialBasis 
  * @returns The basis.
  * @example
  * ```ts
- * import { polynomialBasis, polynomialBasisOf } from 'mdml-engine/linear'
+ * import { polynomialBasis, polynomialBasisOf } from 'omai-engine/linear'
  * const b = polynomialBasis(3, [[0], [4]])
  * Array.from(polynomialBasisOf(3, b.scaler).expand([[4]]).data) // => [1, 1, 1, 1]
  * ```
  */
 export function polynomialBasisOf(degree: number, scaler: MinMaxScalerParams): PolynomialBasis {
-  if (!(Number.isInteger(degree) && degree >= 0)) throw new MdmlError('value', 'polynomialBasis: degree must be >= 0')
+  if (!(Number.isInteger(degree) && degree >= 0)) throw new OmaiError('value', 'polynomialBasis: degree must be >= 0')
   const d = scaler.scale.length
   const scale = minMaxScaler({ featureRange: [-1, 1] }).revive(scaler)
   const powers = polynomialFeatures({ degree, includeBias: true }).fit({ x: [new Array<number>(d).fill(0)] })

@@ -4,8 +4,8 @@
 
 Linear and factor decompositions as transformers: PCA (exact, randomised or by power iteration one component per step, with whitening and the inverse transform; incremental and sparse variants), FastICA, non-negative matrix factorisation (multiplicative and HALS updates), cross-decomposition (CCA, PLS), principal-component and reduced-rank regression, factor analysis and random projections. Each iterative routine is a traced `Algorithm` and each model an estimator on the iterative base.
 
-- estimator `factorAnalysis`: Factor analysis by EM. `src/lib/decomposition/probabilistic.ts:329` `mdml-engine/decomposition`
-- estimator `fastIca`: FastICA independent component analysis. `src/lib/decomposition/ica.ts:264` `mdml-engine/decomposition`
-- estimator `nmf`: Non-negative matrix factorisation by multiplicative or HALS updates. `src/lib/decomposition/nmf.ts:316` `mdml-engine/decomposition`
-- estimator `pca`: PCA, exact or by power iteration, with whitening and inverse transform. `src/lib/decomposition/pca.ts:366` `mdml-engine/decomposition`
-- estimator `plsRegression`: Partial least squares regression; CCA beside it. `src/lib/decomposition/cross-decomposition.ts:374` `mdml-engine/decomposition`
+- estimator `factorAnalysis`: Factor analysis by EM. `src/lib/decomposition/probabilistic.ts:329` `omai-engine/decomposition`
+- estimator `fastIca`: FastICA independent component analysis. `src/lib/decomposition/ica.ts:264` `omai-engine/decomposition`
+- estimator `nmf`: Non-negative matrix factorisation by multiplicative or HALS updates. `src/lib/decomposition/nmf.ts:316` `omai-engine/decomposition`
+- estimator `pca`: PCA, exact or by power iteration, with whitening and inverse transform. `src/lib/decomposition/pca.ts:366` `omai-engine/decomposition`
+- estimator `plsRegression`: Partial least squares regression; CCA beside it. `src/lib/decomposition/cross-decomposition.ts:374` `omai-engine/decomposition`

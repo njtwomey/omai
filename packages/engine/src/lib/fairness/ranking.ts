@@ -5,7 +5,7 @@
  * Kenthapadi, 2019).
  */
 
-import { MdmlError, maxOf, minOf } from '../base/index.ts'
+import { maxOf, minOf, OmaiError } from '../base/index.ts'
 
 /** How attention falls off with position (1-based): logarithmic (DCG's 1 / log2(1 + rank)) or geometric. */
 export type PositionBias = { readonly kind: 'log' } | { readonly kind: 'geometric'; readonly p: number }
@@ -42,7 +42,7 @@ export interface Exposure {
  * @concept algorithmic-fairness
  * @example
  * ```ts
- * import { rankingExposure } from 'mdml-engine/fairness'
+ * import { rankingExposure } from 'omai-engine/fairness'
  * const r = rankingExposure(['a', 'a', 'b', 'b'])
  * r.exposureRatio.toFixed(3) // => '0.571'
  * ```
@@ -66,7 +66,7 @@ export function rankingExposure(
   const ratio = (v: readonly number[]): number => (maxOf(v) === 0 ? 1 : minOf(v) / maxOf(v))
   if (options.relevance === undefined) return { groups: names, exposure, exposureRatio: ratio(exposure) }
   if (options.relevance.length !== groups.length)
-    throw new MdmlError('shape', 'rankingExposure: one relevance per item')
+    throw new OmaiError('shape', 'rankingExposure: one relevance per item')
   const relevance = rel.map((r, j) => r / Math.max(1, count[j] ?? 0))
   return {
     groups: names,
@@ -89,12 +89,12 @@ export function rankingExposure(
  * @concept algorithmic-fairness
  * @example
  * ```ts
- * import { fairMinimumTable } from 'mdml-engine/fairness'
+ * import { fairMinimumTable } from 'omai-engine/fairness'
  * fairMinimumTable(10, 0.5) // => [0, 0, 0, 1, 1, 1, 2, 2, 3, 3]
  * ```
  */
 export function fairMinimumTable(k: number, p: number, alpha = 0.1): number[] {
-  if (!(p > 0 && p < 1)) throw new MdmlError('value', 'fairMinimumTable: p is in (0, 1)')
+  if (!(p > 0 && p < 1)) throw new OmaiError('value', 'fairMinimumTable: p is in (0, 1)')
   return Array.from({ length: k }, (_, i) => {
     const n = i + 1
     // The smallest m with P(X <= m) >= alpha (scipy's binom.ppf), the CDF summed by the pmf's recurrence.
@@ -134,7 +134,7 @@ export interface FairRanking {
  * @concept algorithmic-fairness
  * @example
  * ```ts
- * import { fairTopK } from 'mdml-engine/fairness'
+ * import { fairTopK } from 'omai-engine/fairness'
  * const scores = [10, 9, 8, 7, 6, 5, 4, 3, 2, 1]
  * const prot = [false, false, false, false, false, true, true, true, true, true]
  * fairTopK(scores, prot, 6).ranking // => [0, 1, 2, 5, 3, 4]
@@ -146,7 +146,7 @@ export function fairTopK(
   k: number,
   options: { readonly p?: number; readonly alpha?: number } = {},
 ): FairRanking {
-  if (scores.length !== isProtected.length) throw new MdmlError('shape', 'fairTopK: one protected flag per score')
+  if (scores.length !== isProtected.length) throw new OmaiError('shape', 'fairTopK: one protected flag per score')
   const minimums = fairMinimumTable(k, options.p ?? 0.5, options.alpha ?? 0.1)
   const order = scores.map((_, i) => i).sort((a, b) => (scores[b] ?? 0) - (scores[a] ?? 0) || a - b)
   const prot = order.filter((i) => isProtected[i] === true)
@@ -192,7 +192,7 @@ export function fairTopK(
  * @concept algorithmic-fairness
  * @example
  * ```ts
- * import { detGreedyRerank } from 'mdml-engine/fairness'
+ * import { detGreedyRerank } from 'omai-engine/fairness'
  * detGreedyRerank([9, 8, 7, 6, 5, 4], ['a', 'a', 'a', 'a', 'b', 'b'], { a: 0.5, b: 0.5 }) // => [0, 4, 1, 5, 2, 3]
  * ```
  */
@@ -202,7 +202,7 @@ export function detGreedyRerank(
   shares: Readonly<Record<string, number>>,
   k: number = scores.length,
 ): number[] {
-  if (scores.length !== groups.length) throw new MdmlError('shape', 'detGreedyRerank: one group per score')
+  if (scores.length !== groups.length) throw new OmaiError('shape', 'detGreedyRerank: one group per score')
   const names = [...new Set(groups.map(String))]
   const queues = new Map(
     names.map((g) => [

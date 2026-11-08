@@ -5,7 +5,7 @@
  */
 
 import type { EChartsOption } from 'echarts'
-import type { CurveSeries, CurveSet } from 'mdml-engine/exposition'
+import type { CurveSeries, CurveSet } from 'omai-engine/exposition'
 import { referenceLines } from '../charts/functions.ts'
 import { band, lines } from '../charts/lines.ts'
 import { type AxisSpec, cartesian, type Layer } from '../charts/plot.ts'
@@ -69,8 +69,8 @@ function axisLimits(values: readonly number[], log: boolean): [number, number] {
  * @returns The ECharts option.
  * @example
  * ```ts
- * import { curveSet } from 'mdml-engine/exposition'
- * import { curveSetView } from 'mdml-render/views'
+ * import { curveSet } from 'omai-engine/exposition'
+ * import { curveSetView } from 'omai-render/views'
  * const r = curveSet({ x: [1, 2, 3], xLabel: 'epoch', yLabel: 'loss', series: [{ name: 'sgd', y: [1, 0.6, 0.4] }, { name: 'adam', y: [0.8, 0.3, 0.2] }] })
  * curveSetView(r).xAxis[0].name // => 'epoch'
  * ```

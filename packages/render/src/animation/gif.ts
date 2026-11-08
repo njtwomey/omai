@@ -4,8 +4,8 @@
  * looping.
  */
 
-import { MdmlError } from 'mdml-engine/base'
-import type { Pixels } from 'mdml-engine/scene'
+import { OmaiError } from 'omai-engine/base'
+import type { Pixels } from 'omai-engine/scene'
 
 /** A palette: up to 256 colours as `[r, g, b]`. */
 export type Palette = readonly (readonly [number, number, number])[]
@@ -20,7 +20,7 @@ export type Palette = readonly (readonly [number, number, number])[]
  * @returns The palette, at least one colour.
  * @example
  * ```ts
- * import { quantise } from 'mdml-render/animation'
+ * import { quantise } from 'omai-render/animation'
  * const px = { width: 2, height: 1, rgba: new Uint8ClampedArray([255, 0, 0, 255, 0, 0, 255, 255]) }
  * quantise([px]).length // => 2
  * ```
@@ -201,11 +201,11 @@ export interface GifOptions {
  * @param frames - The frames (the first sets the size).
  * @param options - Frames per second, loop count and palette.
  * @returns The GIF file's bytes.
- * @throws MdmlError with code `value` for no frames, and `shape` for a frame larger than the first.
+ * @throws OmaiError with code `value` for no frames, and `shape` for a frame larger than the first.
  * @index function Pixel frames to GIF bytes, with no dependency: `encodeGif(frames, { fps: 10 })`.
  * @example
  * ```ts
- * import { encodeGif } from 'mdml-render/animation'
+ * import { encodeGif } from 'omai-render/animation'
  * const red = { width: 1, height: 1, rgba: new Uint8ClampedArray([255, 0, 0, 255]) }
  * const gif = encodeGif([red, red], { fps: 5 })
  * new TextDecoder().decode(gif.slice(0, 6)) // => 'GIF89a'
@@ -214,10 +214,10 @@ export interface GifOptions {
  */
 export function encodeGif(frames: readonly Pixels[], options: GifOptions = {}): Uint8Array {
   const first = frames[0]
-  if (first === undefined) throw new MdmlError('value', 'encodeGif: need at least one frame')
+  if (first === undefined) throw new OmaiError('value', 'encodeGif: need at least one frame')
   for (const f of frames)
     if (f.width > first.width || f.height > first.height)
-      throw new MdmlError('shape', 'encodeGif: every frame must fit inside the first')
+      throw new OmaiError('shape', 'encodeGif: every frame must fit inside the first')
   const palette = options.palette ?? quantise(frames)
   const bitsPer = Math.max(1, Math.ceil(Math.log2(Math.max(2, palette.length))))
   const tableSize = 1 << bitsPer

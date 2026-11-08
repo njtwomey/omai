@@ -5,7 +5,7 @@
  * the forecast-error variance decomposition, the stability of the companion matrix, and Granger-causality tests.
  */
 
-import { MdmlError, type TestResult } from '../base/index.ts'
+import { OmaiError, type TestResult } from '../base/index.ts'
 import { chdtrc, fdtrc, ndtri } from '../numerics/special/index.ts'
 import { item } from '../tensor/index.ts'
 import {
@@ -67,7 +67,7 @@ const termsOf = (trend: VarTrend): number => (trend === 'n' ? 0 : trend === 'c' 
 function rowsOfSeries(y: ArrayLike<ArrayLike<number>>, who: string): MutableRows {
   const rows = Array.from(y, (r) => Array.from(r))
   const k = rows[0]?.length ?? 0
-  if (k < 1 || rows.some((r) => r.length !== k)) throw new MdmlError('shape', `${who}: expected rows of equal length`)
+  if (k < 1 || rows.some((r) => r.length !== k)) throw new OmaiError('shape', `${who}: expected rows of equal length`)
   return rows
 }
 
@@ -83,10 +83,10 @@ function varLogLikelihood(sigmaMle: MutableRows, nobs: number): number {
  * @param y - The series, one row per time and one column per variable.
  * @param options - The lag order, trend and offset.
  * @returns The fitted model with its covariance, likelihood, criteria and standard errors.
- * @throws MdmlError with code `value` when the sample is too short for the model.
+ * @throws OmaiError with code `value` when the sample is too short for the model.
  * @example
  * ```ts
- * import { varFit } from 'mdml-engine/timeseries'
+ * import { varFit } from 'omai-engine/timeseries'
  * // y2 follows y1 one step later: the lag-1 coefficient of y1 in y2's equation is 1.
  * const y1 = [0, 1, 0, -1, 2, 0, 1, -2, 1, 0, 2, -1]
  * const y = y1.map((v, t) => [v, t > 0 ? (y1[t - 1] ?? 0) : 0])
@@ -102,7 +102,7 @@ export function varFit(y: ArrayLike<ArrayLike<number>>, options: VarOptions = {}
   const nobs = rows.length - p
   const regressors = terms + k * p
   if (!(Number.isInteger(p) && p >= 1) || nobs <= regressors)
-    throw new MdmlError('value', 'varFit: the sample is too short for the model')
+    throw new OmaiError('value', 'varFit: the sample is too short for the model')
   // Regressors: the constant, the trend (statsmodels counts it from lags + 1), then lag 1 of all variables, lag 2, ...
   const z: MutableRows = Array.from({ length: nobs }, (_, t) => [
     ...(terms >= 1 ? [1] : []),
@@ -179,7 +179,7 @@ export interface VarOrderSelection {
  * @returns The criteria and the selected orders.
  * @example
  * ```ts
- * import { varSelectOrder } from 'mdml-engine/timeseries'
+ * import { varSelectOrder } from 'omai-engine/timeseries'
  * const y = Array.from({ length: 60 }, (_, t) => [Math.sin(t / 3), Math.cos(t / 5)])
  * varSelectOrder(y, 3).criteria.length // => 3
  * ```
@@ -225,7 +225,7 @@ function maMatrices(fit: Pick<VarFit, 'coefficients' | 'nVars'>, steps: number):
  * @returns `[steps + 1][response variable][shocked variable]`.
  * @example
  * ```ts
- * import { varImpulseResponse } from 'mdml-engine/timeseries'
+ * import { varImpulseResponse } from 'omai-engine/timeseries'
  * // A scalar AR(1) with phi = 0.5: the response decays geometrically.
  * const fit = { coefficients: [[[0.5]]], nVars: 1, sigma: [[1]] }
  * varImpulseResponse(fit, 3).map((m) => m[0]?.[0]) // => [1, 0.5, 0.25, 0.125]
@@ -260,7 +260,7 @@ export function varImpulseResponse(
  * @returns `[variable][horizon][shock]`, each row summing to one.
  * @example
  * ```ts
- * import { varForecastErrorVarianceDecomposition } from 'mdml-engine/timeseries'
+ * import { varForecastErrorVarianceDecomposition } from 'omai-engine/timeseries'
  * const fit = { coefficients: [[[0.5, 0], [0, 0.5]]], nVars: 2, sigma: [[1, 0], [0, 4]] }
  * varForecastErrorVarianceDecomposition(fit, 2)[1]?.[0] // => [0, 1]
  * ```
@@ -306,7 +306,7 @@ export interface VarForecast {
  * @returns Means, bounds and covariances.
  * @example
  * ```ts
- * import { varForecast } from 'mdml-engine/timeseries'
+ * import { varForecast } from 'omai-engine/timeseries'
  * const fit = { lags: 1, nVars: 1, trend: 'n', deterministic: [], coefficients: [[[0.5]]], sigma: [[1]] } as never
  * varForecast(fit, [[4]], 2).mean // => [[2], [1]]
  * ```
@@ -320,7 +320,7 @@ export function varForecast(
   const rows = rowsOfSeries(y, 'varForecast')
   const p = fit.lags
   const k = fit.nVars
-  if (rows.length < p) throw new MdmlError('value', 'varForecast: need at least `lags` observations')
+  if (rows.length < p) throw new OmaiError('value', 'varForecast: need at least `lags` observations')
   const history: MutableRows = rows.slice(rows.length - p)
   const total = rows.length
   const mean: MutableRows = []
@@ -365,7 +365,7 @@ export function varForecast(
  * @returns The moduli of the eigenvalues of the companion matrix (largest first) and the verdict.
  * @example
  * ```ts
- * import { varStability } from 'mdml-engine/timeseries'
+ * import { varStability } from 'omai-engine/timeseries'
  * varStability({ coefficients: [[[0.5]]], nVars: 1 }).stable // => true
  * ```
  */
@@ -397,7 +397,7 @@ export function varStability(fit: Pick<VarFit, 'coefficients' | 'nVars'>): {
  * @returns The test result.
  * @example
  * ```ts
- * import { varFit, grangerCausality } from 'mdml-engine/timeseries'
+ * import { varFit, grangerCausality } from 'omai-engine/timeseries'
  * const y1 = [0, 1, 0, -1, 2, 0, 1, -2, 1, 0, 2, -1, 0, 1, -1, 2]
  * const y = y1.map((v, t) => [v + 0.1 * Math.sin(t * 7), (t > 0 ? (y1[t - 1] ?? 0) : 0) + 0.3 * Math.cos(t * 5)])
  * grangerCausality(varFit(y, { lags: 1 }), [1], [0]).pValue < 0.05 // => true
@@ -428,7 +428,7 @@ export function grangerCausality(
         indices.push(col)
         stacked.push(fit.coefficients[j]?.[ed]?.[ing] ?? 0)
       }
-  if (indices.some((c) => c >= cols)) throw new MdmlError('value', 'grangerCausality: index out of range')
+  if (indices.some((c) => c >= cols)) throw new OmaiError('value', 'grangerCausality: index out of range')
   const middle = invert(indices.map((a) => indices.map((b) => cov(a, b))))
   let wald = 0
   stacked.forEach((u, i) => {

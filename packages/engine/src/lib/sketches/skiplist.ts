@@ -5,7 +5,7 @@
  * comparisons a search would take.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import { type Key, uniformStream } from '../random/index.ts'
 import { type Algorithm, channels, stateFromJson, stateToJson } from '../trace/index.ts'
 
@@ -96,13 +96,13 @@ function defaultCompare<K>(a: K, b: K): number {
  *
  * @param options - The `key` for the heights, `p`, `maxLevel` and an optional `compare`.
  * @returns The list.
- * @throws MdmlError with code `value` for `p` outside `(0, 1)` or a non-positive `maxLevel`.
+ * @throws OmaiError with code `value` for `p` outside `(0, 1)` or a non-positive `maxLevel`.
  * @concept skip-list
  * @reference W. Pugh, Skip lists: a probabilistic alternative to balanced trees (Communications of the ACM, 1990).
  * @example
  * ```ts
- * import { skipList } from 'mdml-engine/sketches'
- * import { key } from 'mdml-engine/random'
+ * import { skipList } from 'omai-engine/sketches'
+ * import { key } from 'omai-engine/random'
  * const sl = skipList<number>({ key: key(42) })
  * for (const x of [10, 5, 20]) sl.insert(x)
  * [sl.has(10), sl.has(7), sl.entries().map((e) => e.key)] // => [true, false, [5, 10, 20]]
@@ -112,9 +112,9 @@ export function skipList<K = number, V = K>(options: SkipListOptions<K>): SkipLi
   const p = options.p ?? 0.5
   const maxLevel = options.maxLevel ?? 16
   const compare = options.compare ?? defaultCompare
-  if (!(p > 0 && p < 1)) throw new MdmlError('value', `skipList: p must lie in (0, 1), got ${p}`)
+  if (!(p > 0 && p < 1)) throw new OmaiError('value', `skipList: p must lie in (0, 1), got ${p}`)
   if (!(Number.isInteger(maxLevel) && maxLevel >= 1)) {
-    throw new MdmlError('value', `skipList: maxLevel must be a positive integer, got ${maxLevel}`)
+    throw new OmaiError('value', `skipList: maxLevel must be a positive integer, got ${maxLevel}`)
   }
   const draw = uniformStream(options.key)
   const head: (Node<K, V> | null)[] = Array.from({ length: maxLevel }, () => null)
@@ -226,8 +226,8 @@ export function skipList<K = number, V = K>(options: SkipListOptions<K>): SkipLi
  * @concept skip-list
  * @example
  * ```ts
- * import { skipList, skipListSearchPath } from 'mdml-engine/sketches'
- * import { key } from 'mdml-engine/random'
+ * import { skipList, skipListSearchPath } from 'omai-engine/sketches'
+ * import { key } from 'omai-engine/random'
  * const sl = skipList<number>({ key: key(99) })
  * for (const x of [10, 20, 30, 40]) sl.insert(x)
  * const trace = skipListSearchPath(sl, 30)
@@ -284,12 +284,12 @@ function searchComparisons(keys: readonly number[], heights: readonly number[], 
  *
  * @param options - The keys, `p` and `maxLevel`.
  * @returns The algorithm.
- * @throws MdmlError with code `value` for `p` outside `(0, 1)` or a non-positive `maxLevel`.
+ * @throws OmaiError with code `value` for `p` outside `(0, 1)` or a non-positive `maxLevel`.
  * @concept skip-list
  * @example
  * ```ts
- * import { skipListAlgorithm } from 'mdml-engine/sketches'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { skipListAlgorithm } from 'omai-engine/sketches'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const res = runAlgorithm(skipListAlgorithm({ keys: [30, 10, 20, 40] }), { seed: 11, maxSteps: 10 })
  * res.state.keys // => [10, 20, 30, 40]
  * ```
@@ -297,9 +297,9 @@ function searchComparisons(keys: readonly number[], heights: readonly number[], 
 export function skipListAlgorithm(options: SkipListAlgorithmOptions): Algorithm<SkipListState> {
   const p = options.p ?? 0.5
   const maxLevel = options.maxLevel ?? 16
-  if (!(p > 0 && p < 1)) throw new MdmlError('value', `skipListAlgorithm: p must lie in (0, 1), got ${p}`)
+  if (!(p > 0 && p < 1)) throw new OmaiError('value', `skipListAlgorithm: p must lie in (0, 1), got ${p}`)
   if (!(Number.isInteger(maxLevel) && maxLevel >= 1)) {
-    throw new MdmlError('value', `skipListAlgorithm: maxLevel must be a positive integer, got ${maxLevel}`)
+    throw new OmaiError('value', `skipListAlgorithm: maxLevel must be a positive integer, got ${maxLevel}`)
   }
   const keys = options.keys
   return {

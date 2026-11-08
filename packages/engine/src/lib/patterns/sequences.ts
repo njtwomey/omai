@@ -6,7 +6,7 @@
  * subsets of distinct, ordered events of it.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm, type TraceSchema } from '../trace/index.ts'
 
 /** A sequence of events, each event a set of item ids (sorted ascending). */
@@ -40,7 +40,7 @@ export interface SequenceOptions {
 export type SequenceRunOptions = SequenceOptions & Partial<Pick<RunOptions, 'tracer' | 'policy' | 'parent' | 'runId'>>
 
 function neededCount(n: number, minSupport: number): number {
-  if (!(minSupport > 0 && minSupport <= 1)) throw new MdmlError('value', `minSupport = ${minSupport} must be in (0, 1]`)
+  if (!(minSupport > 0 && minSupport <= 1)) throw new OmaiError('value', `minSupport = ${minSupport} must be in (0, 1]`)
   return Math.max(1, Math.ceil(minSupport * n - 1e-9))
 }
 
@@ -65,7 +65,7 @@ const isSubset = (a: readonly number[], b: readonly number[]): boolean => {
  * @returns The text.
  * @example
  * ```ts
- * import { patternText } from 'mdml-engine/patterns'
+ * import { patternText } from 'omai-engine/patterns'
  * patternText([[0, 1], [2]]) // => '(0 1)(2)'
  * ```
  */
@@ -83,7 +83,7 @@ export function patternText(pattern: Sequence): string {
  * @returns True when the pattern occurs.
  * @example
  * ```ts
- * import { containsPattern } from 'mdml-engine/patterns'
+ * import { containsPattern } from 'omai-engine/patterns'
  * const s = [[1], [2, 3], [4], [1, 5]]
  * [containsPattern(s, [[1], [4]]), containsPattern(s, [[1], [4]], { maxGap: 1 }), containsPattern(s, [[2], [5]], { maxGap: 2 })] // => [true, false, true]
  * ```
@@ -119,7 +119,7 @@ export function containsPattern(sequence: Sequence, pattern: Sequence, constrain
  * @returns The count.
  * @example
  * ```ts
- * import { sequenceSupport } from 'mdml-engine/patterns'
+ * import { sequenceSupport } from 'omai-engine/patterns'
  * sequenceSupport([[[1], [2]], [[2], [1]], [[1, 2]]], [[1], [2]]) // => 1
  * ```
  */
@@ -151,7 +151,7 @@ function byPattern(a: SequentialPattern, b: SequentialPattern): number {
  * @returns A sorted copy.
  * @example
  * ```ts
- * import { canonicalPatterns } from 'mdml-engine/patterns'
+ * import { canonicalPatterns } from 'omai-engine/patterns'
  * canonicalPatterns([{ pattern: [[1], [2]], count: 1 }, { pattern: [[3]], count: 2 }]).map((p) => p.count) // => [2, 1]
  * ```
  */
@@ -169,7 +169,7 @@ export function canonicalPatterns(patterns: readonly SequentialPattern[]): Seque
  * @returns The frequent patterns in canonical order.
  * @example
  * ```ts
- * import { exhaustivePatterns } from 'mdml-engine/patterns'
+ * import { exhaustivePatterns } from 'omai-engine/patterns'
  * exhaustivePatterns([[[1], [2]], [[1], [2]], [[2]]], { minSupport: 0.6 }).map((p) => p.count) // => [2, 3, 2]
  * ```
  */
@@ -250,10 +250,10 @@ const PS_SCHEMA: TraceSchema = channels({
  * @param sequences - The sequences.
  * @param options - The support threshold and the largest pattern.
  * @returns The algorithm.
- * @throws MdmlError with code `value` for a support outside (0, 1].
+ * @throws OmaiError with code `value` for a support outside (0, 1].
  * @example
  * ```ts
- * import { prefixSpanAlgorithm } from 'mdml-engine/patterns'
+ * import { prefixSpanAlgorithm } from 'omai-engine/patterns'
  * prefixSpanAlgorithm([[[1], [2]]], { minSupport: 1 }).name // => 'prefixspan'
  * ```
  */
@@ -347,10 +347,10 @@ export function prefixSpanAlgorithm(
  * @param sequences - The sequences.
  * @param options - The support threshold, the largest pattern and tracing.
  * @returns The frequent patterns in canonical order.
- * @throws MdmlError with code `value` for a support outside (0, 1].
+ * @throws OmaiError with code `value` for a support outside (0, 1].
  * @example
  * ```ts
- * import { patternText, prefixSpan } from 'mdml-engine/patterns'
+ * import { patternText, prefixSpan } from 'omai-engine/patterns'
  * const data = [[[1], [2, 3]], [[1, 2], [3]], [[1], [3]]]
  * prefixSpan(data, { minSupport: 1 }).map((p) => patternText(p.pattern)) // => ['(1)', '(3)', '(1)(3)']
  * ```
@@ -448,10 +448,10 @@ function gspJoin(level: readonly SequentialPattern[]): number[][][] {
  * @param options - The support threshold and the largest pattern.
  * @param constraints - Minimum and maximum gap and maximum span, in events.
  * @returns The algorithm.
- * @throws MdmlError with code `value` for a support outside (0, 1].
+ * @throws OmaiError with code `value` for a support outside (0, 1].
  * @example
  * ```ts
- * import { gspAlgorithm } from 'mdml-engine/patterns'
+ * import { gspAlgorithm } from 'omai-engine/patterns'
  * gspAlgorithm([[[1], [2]]], { minSupport: 1 }).name // => 'gsp'
  * ```
  */
@@ -525,10 +525,10 @@ export function gspAlgorithm(
  * @param options - The support threshold, the largest pattern and tracing.
  * @param constraints - Minimum and maximum gap and maximum span, in events.
  * @returns The frequent patterns in canonical order.
- * @throws MdmlError with code `value` for a support outside (0, 1].
+ * @throws OmaiError with code `value` for a support outside (0, 1].
  * @example
  * ```ts
- * import { gsp, patternText } from 'mdml-engine/patterns'
+ * import { gsp, patternText } from 'omai-engine/patterns'
  * const data = [[[1], [2], [3]], [[1], [2], [3]], [[1], [3]]]
  * gsp(data, { minSupport: 0.6 }, { maxGap: 1 }).map((p) => patternText(p.pattern)) // => ['(1)', '(2)', '(3)', '(1)(2)', '(2)(3)', '(1)(2)(3)']
  * ```

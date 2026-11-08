@@ -6,7 +6,7 @@
  * population, births and deaths per generation, and the period once the board has settled into a cycle.
  */
 
-import { MdmlError, maxOf } from '../../base/index.ts'
+import { maxOf, OmaiError } from '../../base/index.ts'
 import {
   type Algorithm,
   type Contract,
@@ -29,11 +29,11 @@ export interface LifeRule {
  *
  * @param text - The rule.
  * @returns Its birth and survival counts.
- * @throws MdmlError with code `value` for text that is not a rule or counts above 8.
+ * @throws OmaiError with code `value` for text that is not a rule or counts above 8.
  * @concept cellular-automata
  * @example
  * ```ts
- * import { automata } from 'mdml-engine/dynamics'
+ * import { automata } from 'omai-engine/dynamics'
  * automata.parseLifeRule('B36/S23') // => { birth: [3, 6], survive: [2, 3] }
  * automata.parseLifeRule('23/3') // => { birth: [3], survive: [2, 3] }
  * ```
@@ -44,7 +44,7 @@ export function parseLifeRule(text: string): LifeRule {
   const digits = (d: string | undefined): number[] => Array.from(d ?? '', Number)
   if (bs !== null) return { birth: digits(bs[1]), survive: digits(bs[2]) }
   if (sb !== null) return { birth: digits(sb[2]), survive: digits(sb[1]) }
-  throw new MdmlError('value', `parseLifeRule: cannot read '${text}' (expected B3/S23)`)
+  throw new OmaiError('value', `parseLifeRule: cannot read '${text}' (expected B3/S23)`)
 }
 
 /**
@@ -55,7 +55,7 @@ export function parseLifeRule(text: string): LifeRule {
  * @concept cellular-automata
  * @example
  * ```ts
- * import { automata } from 'mdml-engine/dynamics'
+ * import { automata } from 'omai-engine/dynamics'
  * automata.formatLifeRule({ birth: [3], survive: [2, 3] }) // => 'B3/S23'
  * ```
  */
@@ -79,11 +79,11 @@ export interface LifePattern {
  *
  * @param rle - The encoding, without the header line.
  * @returns The live cells `[row, column]`.
- * @throws MdmlError with code `value` for a character the format does not have.
+ * @throws OmaiError with code `value` for a character the format does not have.
  * @concept cellular-automata
  * @example
  * ```ts
- * import { automata } from 'mdml-engine/dynamics'
+ * import { automata } from 'omai-engine/dynamics'
  * automata.parseRle('bob$2bo$3o!') // => [[0, 1], [1, 2], [2, 0], [2, 1], [2, 2]]
  * ```
  */
@@ -103,7 +103,7 @@ export function parseRle(rle: string): [number, number][] {
         r += k
         c = 0
       } else if (ch === '!') break
-      else throw new MdmlError('value', `parseRle: unexpected '${ch}'`)
+      else throw new OmaiError('value', `parseRle: unexpected '${ch}'`)
     }
   }
   return cells
@@ -148,7 +148,7 @@ export const LIFE_PATTERNS: Readonly<Record<string, LifePattern>> = {
  * @concept cellular-automata
  * @example
  * ```ts
- * import { automata } from 'mdml-engine/dynamics'
+ * import { automata } from 'omai-engine/dynamics'
  * [automata.detectPeriod([5, 7, 9, 7]), automata.detectPeriod([5, 7, 9, 3]), automata.detectPeriod([4, 4])] // => [2, 0, 1]
  * ```
  */
@@ -222,7 +222,7 @@ export const lifeContract: Contract<LifeState, LifePath> = defineContract({
  * @concept cellular-automata
  * @example
  * ```ts
- * import { automata } from 'mdml-engine/dynamics'
+ * import { automata } from 'omai-engine/dynamics'
  * const rule = automata.parseLifeRule('B3/S23')
  * const blinker = Uint8Array.of(0, 0, 0, 1, 1, 1, 0, 0, 0)
  * Array.from(automata.lifeStep(blinker, 3, 3, rule, false).cells) // => [0, 1, 0, 0, 1, 0, 0, 1, 0]
@@ -274,18 +274,18 @@ export function lifeStep(
  * @param width - Columns.
  * @param height - Rows.
  * @returns The board.
- * @throws MdmlError with code `shape` if the pattern does not fit.
+ * @throws OmaiError with code `shape` if the pattern does not fit.
  * @concept cellular-automata
  * @example
  * ```ts
- * import { automata } from 'mdml-engine/dynamics'
+ * import { automata } from 'omai-engine/dynamics'
  * automata.placePattern(automata.LIFE_PATTERNS.block!, 4, 4).join('') // => '0000011001100000'
  * ```
  */
 export function placePattern(pattern: LifePattern, width: number, height: number): Uint8Array {
   const rows = maxOf(pattern.cells.map(([r]) => r)) + 1
   const cols = maxOf(pattern.cells.map(([, c]) => c)) + 1
-  if (rows > height || cols > width) throw new MdmlError('shape', `placePattern: ${pattern.name} does not fit`)
+  if (rows > height || cols > width) throw new OmaiError('shape', `placePattern: ${pattern.name} does not fit`)
   const top = Math.floor((height - rows) / 2)
   const left = Math.floor((width - cols) / 2)
   const out = new Uint8Array(width * height)
@@ -306,12 +306,12 @@ function population(cells: Uint8Array): number {
  *
  * @param options - The rule, size, wrap, start, soup density and the window for finding cycles.
  * @returns The algorithm.
- * @throws MdmlError with code `value` for a bad size, density or unknown pattern name, `shape` if a pattern or cells do not fit.
+ * @throws OmaiError with code `value` for a bad size, density or unknown pattern name, `shape` if a pattern or cells do not fit.
  * @concept cellular-automata
  * @example
  * ```ts
- * import { automata } from 'mdml-engine/dynamics'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { automata } from 'omai-engine/dynamics'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const run = runAlgorithm(automata.lifeAutomaton({ start: 'blinker', width: 8, height: 8 }), { seed: 0, maxSteps: 6 })
  * [run.state.generation, run.state.period] // => [6, 2]
  * ```
@@ -331,12 +331,12 @@ export function lifeAutomaton(options: LifeOptions = {}): Algorithm<LifeState, L
   let placed: Uint8Array | undefined
   if (start instanceof Uint8Array) {
     if (start.length !== width * height)
-      throw new MdmlError('shape', 'lifeAutomaton: start cells must be width x height')
+      throw new OmaiError('shape', 'lifeAutomaton: start cells must be width x height')
     placed = start
   } else if (typeof start === 'object') placed = placePattern(start, width, height)
   else if (start !== 'soup') {
     const named = LIFE_PATTERNS[start]
-    if (named === undefined) throw new MdmlError('value', `lifeAutomaton: no pattern named '${start}'`)
+    if (named === undefined) throw new OmaiError('value', `lifeAutomaton: no pattern named '${start}'`)
     placed = placePattern(named, width, height)
   }
   return {

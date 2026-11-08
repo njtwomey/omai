@@ -4,7 +4,7 @@
  * `splitSentences` front door that also accepts a fixed abbreviation list.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { type Algorithm, runAlgorithm, stateFromJson, stateToJson } from '../trace/index.ts'
 import { PY_SPACE, UNI_SPACE, UNI_WORD } from './_classes.ts'
 import type { Span } from './tokenise.ts'
@@ -252,8 +252,8 @@ export interface PunktTrainingState {
  * @concept sentence-segmentation
  * @example
  * ```ts
- * import { punktParametersOf, trainPunktAlgorithm } from 'mdml-engine/text'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { punktParametersOf, trainPunktAlgorithm } from 'omai-engine/text'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const text = 'Mr. Smith arrived. He saw Mr. Jones. Mr. Brown left. Then Mr. Smith left too. '.repeat(3)
  * const run = runAlgorithm(trainPunktAlgorithm(text), { maxSteps: 100 })
  * punktParametersOf(run.state).abbrevTypes.has('mr') // => true
@@ -402,18 +402,18 @@ export function trainPunktAlgorithm(
  *
  * @param state - A finished state of {@link trainPunktAlgorithm}.
  * @returns The learned parameters.
- * @throws MdmlError with code `value` when training is not finished.
+ * @throws OmaiError with code `value` when training is not finished.
  * @concept sentence-segmentation
  * @example
  * ```ts
- * import { punktParametersOf, trainPunktAlgorithm } from 'mdml-engine/text'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { punktParametersOf, trainPunktAlgorithm } from 'omai-engine/text'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const run = runAlgorithm(trainPunktAlgorithm('Dr. Who came. He left. '.repeat(4)), { maxSteps: 100 })
  * punktParametersOf(run.state).sentStarters instanceof Set // => true
  * ```
  */
 export function punktParametersOf(state: PunktTrainingState): PunktParameters {
-  if (state.result === null) throw new MdmlError('value', 'punktParametersOf: training has not finished')
+  if (state.result === null) throw new OmaiError('value', 'punktParametersOf: training has not finished')
   return {
     abbrevTypes: new Set(state.result.abbrevTypes),
     collocations: new Set(state.result.collocations),
@@ -434,7 +434,7 @@ export function punktParametersOf(state: PunktTrainingState): PunktParameters {
  * @concept sentence-segmentation
  * @example
  * ```ts
- * import { trainPunkt } from 'mdml-engine/text'
+ * import { trainPunkt } from 'omai-engine/text'
  * const text = 'Mr. Smith arrived. He saw Mr. Jones. Mr. Brown left. Then Mr. Smith left too. '.repeat(3)
  * trainPunkt(text).abbrevTypes.has('mr') // => true
  * ```
@@ -469,7 +469,7 @@ const ASCII_SPACE = new Set([' ', '\t', '\n', '\r', '\x0b', '\x0c'])
  * @concept sentence-segmentation
  * @example
  * ```ts
- * import { sentenceSpans } from 'mdml-engine/text'
+ * import { sentenceSpans } from 'omai-engine/text'
  * const s = 'Hello there. "How are you?" she asked.'
  * sentenceSpans(s).map(([a, b]) => s.slice(a, b)) // => ['Hello there.', '"How are you?"', 'she asked.']
  * ```
@@ -554,7 +554,7 @@ export function sentenceSpans(
  * @concept sentence-segmentation
  * @example
  * ```ts
- * import { splitSentences } from 'mdml-engine/text'
+ * import { splitSentences } from 'omai-engine/text'
  * splitSentences('Dr. Who arrived at 10 a.m. sharp. Then he left!', { abbreviations: ['dr', 'a.m'] }) // => ['Dr. Who arrived at 10 a.m. sharp.', 'Then he left!']
  * ```
  */

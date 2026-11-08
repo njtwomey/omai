@@ -1,14 +1,14 @@
 /**
  * An executable example, as aifn-engine's docs cells: the code in an editable box with a Run button, and under it the
  * outcome of every `// =>` line (the expected value beside the value the code gave, mismatches marked), what the code
- * printed, and any error with its example line. It runs once on first view, through mdml-meta's runner with the
- * module map for its imports (`useLiveExample` from mdml-meta/react), on the page's thread (asynchronous waits are
+ * printed, and any error with its example line. It runs once on first view, through omai-meta's runner with the
+ * module map for its imports (`useLiveExample` from omai-meta/react), on the page's thread (asynchronous waits are
  * bounded; a synchronous loop is not).
  */
 
-import { moduleLoaders } from 'mdml-meta/modules'
-import { useLiveExample } from 'mdml-meta/react'
-import type { Example, ExampleResult, ExpectationResult } from 'mdml-meta/schema'
+import { moduleLoaders } from 'omai-meta/modules'
+import { useLiveExample } from 'omai-meta/react'
+import type { Example, ExampleResult, ExpectationResult } from 'omai-meta/schema'
 import { type ReactNode, useMemo } from 'react'
 import { highlight } from '../shell/highlight.ts'
 

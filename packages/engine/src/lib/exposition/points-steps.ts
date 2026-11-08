@@ -4,7 +4,7 @@
  * the points it adds (when the record accumulates) or the whole set at that step (when it does not).
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { seal } from './_check.ts'
 
 /** The points of one recorded step. */
@@ -58,35 +58,35 @@ export interface PointsAt {
  *
  * @param record - The record without its `kind`.
  * @returns The record.
- * @throws MdmlError `shape` when a point does not have `dims` coordinates, groups or values do not match the points or `range`
+ * @throws OmaiError `shape` when a point does not have `dims` coordinates, groups or values do not match the points or `range`
  *   does not have one entry per coordinate; `value` when the steps are not in order.
  * @example
  * ```ts
- * import { pointsSteps } from 'mdml-engine/exposition'
+ * import { pointsSteps } from 'omai-engine/exposition'
  * const r = pointsSteps({ dims: 2, steps: [{ step: 0, points: [[0, 0]] }, { step: 1, points: [[1, 1], [2, 0]] }] })
  * r.steps.length // => 2
  * ```
  */
 export function pointsSteps(record: Omit<PointsSteps, 'kind'>): PointsSteps {
   if (record.range !== undefined && record.range.length !== record.dims)
-    throw new MdmlError('shape', `pointsSteps: range has ${record.range.length} entries, expected ${record.dims}`)
+    throw new OmaiError('shape', `pointsSteps: range has ${record.range.length} entries, expected ${record.dims}`)
   let previous = Number.NEGATIVE_INFINITY
   for (const [t, s] of record.steps.entries()) {
-    if (s.step < previous) throw new MdmlError('value', `pointsSteps: steps[${t}] is out of order`)
+    if (s.step < previous) throw new OmaiError('value', `pointsSteps: steps[${t}] is out of order`)
     previous = s.step
     for (const [i, p] of s.points.entries())
       if (p.length !== record.dims)
-        throw new MdmlError(
+        throw new OmaiError(
           'shape',
           `pointsSteps: steps[${t}].points[${i}] has ${p.length} entries, expected ${record.dims}`,
         )
     if (s.values !== undefined && s.values.length !== s.points.length)
-      throw new MdmlError(
+      throw new OmaiError(
         'shape',
         `pointsSteps: steps[${t}].values has ${s.values.length} entries, expected ${s.points.length}`,
       )
     if (s.groups !== undefined && s.groups.length !== s.points.length)
-      throw new MdmlError(
+      throw new OmaiError(
         'shape',
         `pointsSteps: steps[${t}].groups has ${s.groups.length} entries, expected ${s.points.length}`,
       )
@@ -103,7 +103,7 @@ export function pointsSteps(record: Omit<PointsSteps, 'kind'>): PointsSteps {
  * @returns The points, their groups (when every step up to it has them) and the latest step's caption.
  * @example
  * ```ts
- * import { pointsAt, pointsSteps } from 'mdml-engine/exposition'
+ * import { pointsAt, pointsSteps } from 'omai-engine/exposition'
  * const r = pointsSteps({ dims: 2, steps: [{ step: 0, points: [[0, 0]] }, { step: 5, points: [[1, 1], [2, 0]] }] })
  * pointsAt(r, 3).points.length // => 1
  * pointsAt(r, 5).points.length // => 3

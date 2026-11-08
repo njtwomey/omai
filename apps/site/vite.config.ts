@@ -4,11 +4,11 @@ import { defineConfig } from 'vite'
 import { docsCatalogue } from './plugins/docs-catalogue.ts'
 import { recipeMeta } from './plugins/recipe-meta.ts'
 
-/** The mdml-js site: one app with two sections (gallery, docs) on a shared shell. */
+/** The omai site: one app with two sections (gallery, docs) on a shared shell. */
 export default defineConfig({
   root: import.meta.dirname,
   // The path the site is served under: `/` locally, a sub-path when deployed (set by the deploy workflow).
-  base: process.env['MDML_SITE_BASE'] ?? '/',
+  base: process.env['OMAI_SITE_BASE'] ?? '/',
   plugins: [recipeMeta(), react(), tailwindcss(), docsCatalogue()],
   // Workspace packages resolve to their source, as in the tests.
   resolve: { conditions: ['source'] },

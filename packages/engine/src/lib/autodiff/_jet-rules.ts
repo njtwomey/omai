@@ -2,7 +2,7 @@
 // normalised Taylor coefficients of x(t) = sum_k x_k t^k (x_k = x^(k)(0) / k!), `null` for a zero coefficient. Each rule
 // is the standard recurrence for its function (Griewank and Walther, "Evaluating Derivatives", chapter 13), written
 // with operations so that the coefficients are themselves differentiable.
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import {
   add,
   bind1,
@@ -290,7 +290,7 @@ export function linearSeries<P>(
 ): MaybeZero[][] {
   const rule = primitive.jvp
   if (rule === undefined) {
-    throw new MdmlError('not-differentiable', `primitive ${primitive.name} has no jvp rule`, {
+    throw new OmaiError('not-differentiable', `primitive ${primitive.name} has no jvp rule`, {
       primitive: primitive.name,
     })
   }

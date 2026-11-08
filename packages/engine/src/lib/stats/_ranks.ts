@@ -1,6 +1,6 @@
 // Private plain-number kernels of ranking, for the loops of the rank-based tests (a tensor per call would cost more than
 // the ranking): average, minimum, maximum, dense and ordinal ranks of a list, and the sizes of its tie groups.
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 
 /** How ties are ranked (the values of `RankMethod`). */
 export type TieMethod = 'average' | 'min' | 'max' | 'dense' | 'ordinal'
@@ -14,7 +14,7 @@ function order(x: ArrayLike<number>): number[] {
 export function rankKernel(x: ArrayLike<number>, method: TieMethod = 'average', name = 'ranksOf'): Float64Array {
   const n = x.length
   for (let k = 0; k < n; k++)
-    if (Number.isNaN(x[k])) throw new MdmlError('value', `${name}: NaN values cannot be ranked`)
+    if (Number.isNaN(x[k])) throw new OmaiError('value', `${name}: NaN values cannot be ranked`)
   const idx = order(x)
   const ranks = new Float64Array(n)
   let dense = 0

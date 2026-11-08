@@ -6,7 +6,7 @@
  * count of unhappy agents on the tape.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { foldIn, permutation } from '../../random/index.ts'
 import {
   type Algorithm,
@@ -79,7 +79,7 @@ export const schellingContract: Contract<SchellingState, SchellingPath> = define
  * @concept schelling-segregation
  * @example
  * ```ts
- * import { automata } from 'mdml-engine/dynamics'
+ * import { automata } from 'omai-engine/dynamics'
  * automata.segregationIndex(Uint8Array.of(1, 1, 0, 2, 2), 5, 1) // => 1
  * automata.segregationIndex(Uint8Array.of(1, 2, 1, 2), 4, 1) // => 0
  * ```
@@ -137,12 +137,12 @@ function neighbourhood(
  *
  * @param options - Size, vacancy, group share, tolerance, radius, wrap and destination rule.
  * @returns The algorithm.
- * @throws MdmlError with code `value` for a bad size or a share outside [0, 1].
+ * @throws OmaiError with code `value` for a bad size or a share outside [0, 1].
  * @concept schelling-segregation
  * @example
  * ```ts
- * import { automata } from 'mdml-engine/dynamics'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { automata } from 'omai-engine/dynamics'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const s = runAlgorithm(automata.schelling({ width: 10, height: 10, tolerance: 0 }), { seed: 0, maxSteps: 3 }).state
  * [s.unhappy, s.moved] // => [0, 0]
  * ```
@@ -163,7 +163,7 @@ export function schelling(options: SchellingOptions = {}): Algorithm<SchellingSt
   unit('schelling', 'groupShare', groupShare)
   unit('schelling', 'tolerance', tolerance)
   if (destination !== 'random' && destination !== 'satisfying')
-    throw new MdmlError('value', `schelling: unknown destination '${destination}'`)
+    throw new OmaiError('value', `schelling: unknown destination '${destination}'`)
   const n = width * height
   const content = (cells: Uint8Array, site: number, kind: number): boolean => {
     const { same, occupied } = neighbourhood(cells, width, height, site, kind, radius, wrap)

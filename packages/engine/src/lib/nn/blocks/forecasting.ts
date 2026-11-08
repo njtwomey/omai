@@ -6,7 +6,7 @@
  * each block's contribution interpretable.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { foldIn, type Key } from '../../random/index.ts'
 import {
   add,
@@ -35,8 +35,8 @@ export type NBeatsBasis = 'generic' | 'trend' | 'seasonality'
  * @returns `[degree + 1, length]`.
  * @example
  * ```ts
- * import { trendBasis } from 'mdml-engine/nn/blocks'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { trendBasis } from 'omai-engine/nn/blocks'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(trendBasis(2, 4)) // => [[1, 1, 1, 1], [0, 0.25, 0.5, 0.75], [0, 0.0625, 0.25, 0.5625]]
  * ```
  */
@@ -53,7 +53,7 @@ export function trendBasis(degree: number, length: number): Tensor {
  * @returns `[2 harmonics, length]`.
  * @example
  * ```ts
- * import { seasonalityBasis } from 'mdml-engine/nn/blocks'
+ * import { seasonalityBasis } from 'omai-engine/nn/blocks'
  * seasonalityBasis(3, 12).shape // => [6, 12]
  * ```
  */
@@ -93,8 +93,8 @@ export interface NBeatsBlockOutput {
  * @reference Oreshkin, Carpov, Chapados and Bengio (2020), N-BEATS: neural basis expansion analysis for interpretable time series forecasting.
  * @example
  * ```ts
- * import { NBeatsBlock } from 'mdml-engine/nn/blocks'
- * import { zeros } from 'mdml-engine/tensor'
+ * import { NBeatsBlock } from 'omai-engine/nn/blocks'
+ * import { zeros } from 'omai-engine/tensor'
  * new NBeatsBlock(12, 4, { basis: 'trend' }).forward(zeros([2, 12])).forecast.shape // => [2, 4]
  * ```
  */
@@ -204,8 +204,8 @@ export interface NBeatsOptions {
  *
  * @example
  * ```ts
- * import { NBeats } from 'mdml-engine/nn/blocks'
- * import { zeros } from 'mdml-engine/tensor'
+ * import { NBeats } from 'omai-engine/nn/blocks'
+ * import { zeros } from 'omai-engine/tensor'
  * const model = new NBeats(12, 4, { stacks: [{ basis: 'trend', blocks: 2 }, { basis: 'seasonality', blocks: 2 }] })
  * model.forward(zeros([3, 12])).contributions.shape // => [4, 3, 4]
  * ```
@@ -218,7 +218,7 @@ export class NBeats extends Composite<TensorLike, NBeatsOutput> {
 
   constructor(lookback: number, horizon: number, options: NBeatsOptions) {
     const key = initKey('NBeats', options.key)
-    if (options.stacks.length === 0) throw new MdmlError('value', 'NBeats: need at least one stack')
+    if (options.stacks.length === 0) throw new OmaiError('value', 'NBeats: need at least one stack')
     const parts: Record<string, Module<never, unknown>> = {}
     let count = 0
     for (const stackSpec of options.stacks) {

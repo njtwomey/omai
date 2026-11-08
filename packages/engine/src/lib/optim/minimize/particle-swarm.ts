@@ -4,7 +4,7 @@
  * a traced algorithm.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { metricFunction } from '../../numerics/geometry/index.ts'
 import { Generator } from '../../random/index.ts'
 import type { Algorithm } from '../../trace/index.ts'
@@ -76,8 +76,8 @@ export interface ParticleSwarmState extends VectorState {
  * @concept particle-swarm
  * @example
  * ```ts
- * import { particleSwarmAlgorithm } from 'mdml-engine/optim'
- * import { square, sum, type Value } from 'mdml-engine/tensor'
+ * import { particleSwarmAlgorithm } from 'omai-engine/optim'
+ * import { square, sum, type Value } from 'omai-engine/tensor'
  * particleSwarmAlgorithm((x) => sum(square(x as Value)), [0, 0], { bounds: [[-1, 1], [-1, 1]] }).name // => 'particleSwarm'
  * ```
  */
@@ -88,11 +88,11 @@ export function particleSwarmAlgorithm(
 ): Algorithm<ParticleSwarmState> {
   const obj: FlatObjective = flatObjective(f, x0)
   const n = obj.n
-  if (n === 0) throw new MdmlError('value', 'particleSwarm: no parameters')
+  if (n === 0) throw new OmaiError('value', 'particleSwarm: no parameters')
   const euclid = metricFunction('euclidean', n)
   const box = finiteBounds(options.bounds, n, 'particleSwarm')
   const size = options.swarmSize ?? 40
-  if (size < 2) throw new MdmlError('value', 'particleSwarm: swarmSize must be at least 2')
+  if (size < 2) throw new OmaiError('value', 'particleSwarm: swarmSize must be at least 2')
   const inertia = options.inertia ?? 0.7298
   const c1 = options.cognitive ?? 1.49618
   const c2 = options.social ?? 1.49618
@@ -266,8 +266,8 @@ export function particleSwarmAlgorithm(
  * @concept particle-swarm
  * @example
  * ```ts
- * import { particleSwarm } from 'mdml-engine/optim'
- * import { square, sub, sum, toFlat, type Value } from 'mdml-engine/tensor'
+ * import { particleSwarm } from 'omai-engine/optim'
+ * import { square, sub, sum, toFlat, type Value } from 'omai-engine/tensor'
  * const r = particleSwarm((x) => sum(square(sub(x as Value, [1, -2]))), [0, 0], { bounds: [[-5, 5], [-5, 5]], seed: 0 })
  * toFlat(r.x as Value).map((v) => Math.round(v * 1e4) / 1e4) // => [1, -2]
  * ```

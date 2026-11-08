@@ -13,15 +13,15 @@ import * as trace from '../trace/index.ts'
 import * as stochastic from './index.ts'
 
 const MODULES: Readonly<Record<string, Readonly<Record<string, unknown>>>> = {
-  'mdml-engine/autodiff': autodiff,
-  'mdml-engine/base': base,
-  'mdml-engine/dists': dists,
-  'mdml-engine/graph': graph,
-  'mdml-engine/optim': optim,
-  'mdml-engine/random': random,
-  'mdml-engine/stochastic': stochastic,
-  'mdml-engine/tensor': tensor,
-  'mdml-engine/trace': trace,
+  'omai-engine/autodiff': autodiff,
+  'omai-engine/base': base,
+  'omai-engine/dists': dists,
+  'omai-engine/graph': graph,
+  'omai-engine/optim': optim,
+  'omai-engine/random': random,
+  'omai-engine/stochastic': stochastic,
+  'omai-engine/tensor': tensor,
+  'omai-engine/trace': trace,
 }
 
 interface Example {
@@ -97,7 +97,7 @@ describe('documentation examples', () => {
             try {
               f()
             } catch (e) {
-              expect(base.isMdmlError(e, code as base.ErrorCode), text).toBe(true)
+              expect(base.isOmaiError(e, code as base.ErrorCode), text).toBe(true)
             }
           },
         )

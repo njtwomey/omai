@@ -4,7 +4,7 @@
  * listed in words beneath.
  */
 
-import type { Transcript } from 'mdml-engine/exposition'
+import type { Transcript } from 'omai-engine/exposition'
 import { type ReactElement, useState } from 'react'
 import { heaviestTokens, transcriptTurns } from '../../views/transcript.ts'
 import { FigureFrame } from '../FigureFrame.tsx'

@@ -4,9 +4,9 @@
  * status per cell) that the scene is drawn from, for tests and for other renderers.
  */
 
-import { maxOf } from 'mdml-engine/base'
-import type { CellStatus, MarkedTable } from 'mdml-engine/exposition'
-import { line, type Paint, rect, type Scene, type SceneNode, scene, text } from 'mdml-engine/scene'
+import { maxOf } from 'omai-engine/base'
+import type { CellStatus, MarkedTable } from 'omai-engine/exposition'
+import { line, type Paint, rect, type Scene, type SceneNode, scene, text } from 'omai-engine/scene'
 import { formatNumber } from '../theme/format.ts'
 
 /** One resolved cell of a marked table. */
@@ -37,8 +37,8 @@ export interface TableModel {
  * @returns The model.
  * @example
  * ```ts
- * import { markedTable } from 'mdml-engine/exposition'
- * import { markedTableModel } from 'mdml-render/views'
+ * import { markedTable } from 'omai-engine/exposition'
+ * import { markedTableModel } from 'omai-render/views'
  * const r = markedTable({ columns: ['p'], cells: [[0.0312], [null]], marks: [{ row: 0, status: 'bad' }] })
  * markedTableModel(r).cells.map((row) => row[0]?.text) // => ['0.0312', '—']
  * ```
@@ -88,8 +88,8 @@ const PAD = 8
  * @returns The scene (its width follows the longest entries of each column).
  * @example
  * ```ts
- * import { markedTable } from 'mdml-engine/exposition'
- * import { markedTableScene } from 'mdml-render/views'
+ * import { markedTable } from 'omai-engine/exposition'
+ * import { markedTableScene } from 'omai-render/views'
  * markedTableScene(markedTable({ columns: ['a'], cells: [[1]] })).kind // => 'scene'
  * ```
  */

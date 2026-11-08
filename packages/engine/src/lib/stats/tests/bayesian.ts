@@ -4,7 +4,7 @@
  * losses, and the highest-density interval and region of practical equivalence (ROPE) for summarising posterior draws.
  */
 
-import { MdmlError, type TestResult } from '../../base/index.ts'
+import { OmaiError, type TestResult } from '../../base/index.ts'
 import { betaBinomial, beta as betaDist, binomial } from '../../dists/index.ts'
 import { betainc } from '../../numerics/special/index.ts'
 import { beta as betaDraws, foldIn, type Key, key as makeKey } from '../../random/index.ts'
@@ -16,7 +16,7 @@ import { testResult } from './result.ts'
 // Generalised hypergeometric series pFq(a; b; z) for |z| < 1, summed in logs until the terms are negligible.
 // TODO: replace with numerics/special's hypergeometric functions once they exist.
 function hypergeometricSeries(a: readonly number[], b: readonly number[], z: number): number {
-  if (!(Math.abs(z) < 1)) throw new MdmlError('value', 'hypergeometric series: |z| must be below 1')
+  if (!(Math.abs(z) < 1)) throw new OmaiError('value', 'hypergeometric series: |z| must be below 1')
   let term = 1
   let sum = 1
   for (let k = 0; k < 100000; k++) {
@@ -52,7 +52,7 @@ export interface BayesFactorTOptions {
  * rejecting the null hypothesis, Psychonomic Bulletin and Review 16 (2009).
  * @example
  * ```ts
- * import { bayesFactorTTest } from 'mdml-engine/stats/tests'
+ * import { bayesFactorTTest } from 'omai-engine/stats/tests'
  * bayesFactorTTest(3.5, 20).statistic > 10 // => true
  * ```
  */
@@ -95,7 +95,7 @@ function bayesResult(test: string, bf10: number, method: string): TestResult {
  * @returns BF10 as the statistic.
  * @example
  * ```ts
- * import { bayesFactorBinomial } from 'mdml-engine/stats/tests'
+ * import { bayesFactorBinomial } from 'omai-engine/stats/tests'
  * bayesFactorBinomial(115, 200).statistic // => 0.835328
  * ```
  */
@@ -105,9 +105,9 @@ export function bayesFactorBinomial(
   options: { readonly p?: number; readonly a?: number; readonly b?: number } = {},
 ): TestResult {
   const p = options.p ?? 0.5
-  if (!(p > 0 && p < 1)) throw new MdmlError('value', 'bayesFactorBinomial: p must lie in (0, 1)')
+  if (!(p > 0 && p < 1)) throw new OmaiError('value', 'bayesFactorBinomial: p must lie in (0, 1)')
   if (!(Number.isInteger(k) && Number.isInteger(n) && k >= 0 && k <= n))
-    throw new MdmlError('value', 'bayesFactorBinomial: k and n must be integers with k <= n')
+    throw new OmaiError('value', 'bayesFactorBinomial: k and n must be integers with k <= n')
   const a = options.a ?? 1
   const b = options.b ?? 1
   const bf10 = Math.exp(item(betaBinomial(n, a, b).logProb(k)) - item(binomial(n, p).logProb(k)))
@@ -125,7 +125,7 @@ export function bayesFactorBinomial(
  * @returns BF10 as the statistic.
  * @example
  * ```ts
- * import { bayesFactorPearson } from 'mdml-engine/stats/tests'
+ * import { bayesFactorPearson } from 'omai-engine/stats/tests'
  * bayesFactorPearson(0.6, 20).statistic > 10 // => true
  * ```
  */
@@ -138,7 +138,7 @@ export function bayesFactorPearson(
     readonly kappa?: number
   } = {},
 ): TestResult {
-  if (!(r >= -1 && r <= 1)) throw new MdmlError('value', 'bayesFactorPearson: r must lie in [-1, 1]')
+  if (!(r >= -1 && r <= 1)) throw new OmaiError('value', 'bayesFactorPearson: r must lie in [-1, 1]')
   const alternative = options.alternative ?? 'two-sided'
   const method = alternative === 'two-sided' ? (options.method ?? 'ly') : 'ly'
   let bf10: number
@@ -205,7 +205,7 @@ export interface BayesianAbOptions {
  * @returns The probability that B is better, with the losses in `assumptions` and the difference in `estimate`.
  * @example
  * ```ts
- * import { bayesianAbTest } from 'mdml-engine/stats/tests'
+ * import { bayesianAbTest } from 'omai-engine/stats/tests'
  * bayesianAbTest(20, 100, 35, 100).statistic > 0.99 // => true
  * ```
  */
@@ -263,7 +263,7 @@ export function bayesianAbTest(
  * @returns The interval.
  * @example
  * ```ts
- * import { highestDensityInterval } from 'mdml-engine/stats/tests'
+ * import { highestDensityInterval } from 'omai-engine/stats/tests'
  * highestDensityInterval([1, 2, 3, 4, 5, 6, 7, 8, 9, 100], 0.8) // => [1, 8]
  * ```
  */
@@ -293,7 +293,7 @@ export function highestDensityInterval(draws: TensorLike, level = 0.95): [number
  * @returns The share inside, with the decision in `assumptions` and the HDI in `estimate`.
  * @example
  * ```ts
- * import { rope } from 'mdml-engine/stats/tests'
+ * import { rope } from 'omai-engine/stats/tests'
  * rope([0.01, -0.02, 0.03, 0.0, -0.01, 0.02], { low: -0.1, high: 0.1 }).assumptions?.decision // => 'accept'
  * ```
  */
@@ -301,7 +301,7 @@ export function rope(
   draws: TensorLike,
   options: { readonly low: number; readonly high: number; readonly level?: number },
 ): TestResult {
-  if (!(options.low < options.high)) throw new MdmlError('value', 'rope: low must be below high')
+  if (!(options.low < options.high)) throw new OmaiError('value', 'rope: low must be below high')
   const level = options.level ?? 0.95
   const s = sortedCopy(sample('rope', draws))
   const [lo, hi] = highestDensityInterval(s, level)

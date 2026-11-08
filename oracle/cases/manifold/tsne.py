@@ -7,8 +7,8 @@ from importlib.metadata import version
 from typing import Any
 
 import numpy as np
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray, rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray, rng
 from scipy.sparse import csr_matrix
 from scipy.spatial.distance import squareform
 from sklearn.metrics import pairwise_distances

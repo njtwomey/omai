@@ -5,7 +5,7 @@
  * prioritised replay, n-step returns and noisy exploration as options, and a reader of its action values.
  */
 
-import { argmaxOf, type Json, MdmlError } from '../base/index.ts'
+import { argmaxOf, type Json, OmaiError } from '../base/index.ts'
 import { huber } from '../losses/index.ts'
 import { linear } from '../nn/index.ts'
 import { type GradientTransformation, incrementalUpdate, linearSchedule, type ParamTree } from '../optim/index.ts'
@@ -111,8 +111,8 @@ export type QLayerParams = Readonly<Record<string, Tensor | Value>>
  * @concept deep-q-learning
  * @example
  * ```ts
- * import { qLayerInit } from 'mdml-engine/agents'
- * import { key } from 'mdml-engine/random'
+ * import { qLayerInit } from 'omai-engine/agents'
+ * import { key } from 'omai-engine/random'
  * Object.keys(qLayerInit(key(0), 3, 2, true, 0.5)) // => ['weightMu', 'biasMu', 'weightSigma', 'biasSigma']
  * ```
  */
@@ -150,9 +150,9 @@ export function qLayerInit(
  * @concept deep-q-learning
  * @example
  * ```ts
- * import { qLayer, qLayerInit } from 'mdml-engine/agents'
- * import { key } from 'mdml-engine/random'
- * import { tensor } from 'mdml-engine/tensor'
+ * import { qLayer, qLayerInit } from 'omai-engine/agents'
+ * import { key } from 'omai-engine/random'
+ * import { tensor } from 'omai-engine/tensor'
  * qLayer(qLayerInit(key(0), 3, 2, false, 0.5), tensor([[1, 2, 3]])).shape // => [1, 2]
  * ```
  */
@@ -181,9 +181,9 @@ export function qLayer(p: QLayerParams, x: Value, noise?: Key): Value {
  * @concept deep-q-learning
  * @example
  * ```ts
- * import { qNetwork } from 'mdml-engine/agents'
- * import { key } from 'mdml-engine/random'
- * import { tensor } from 'mdml-engine/tensor'
+ * import { qNetwork } from 'omai-engine/agents'
+ * import { key } from 'omai-engine/random'
+ * import { tensor } from 'omai-engine/tensor'
  * const net = qNetwork(4, 2, { hidden: [8], dueling: true }, key(0))
  * net.apply(net.params, tensor([[0, 0, 0, 0]])).shape // => [1, 2]
  * ```
@@ -292,8 +292,8 @@ const stack = (rows: readonly (readonly number[])[], d: number): Tensor => rowsT
  * @index agent Deep Q-network agent.
  * @example
  * ```ts
- * import { dqn } from 'mdml-engine/agents'
- * import { cartPole } from 'mdml-engine/environments'
+ * import { dqn } from 'omai-engine/agents'
+ * import { cartPole } from 'omai-engine/environments'
  * dqn(cartPole.create(), { double: true, dueling: true }).name // => 'dqn'
  * ```
  */
@@ -469,9 +469,9 @@ export function dqn(env: Spaces, options: DqnOptions = {}): Agent<DqnState, read
  * @concept deep-q-learning
  * @example
  * ```ts
- * import { dqn, qValues } from 'mdml-engine/agents'
- * import { cartPole } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { dqn, qValues } from 'omai-engine/agents'
+ * import { cartPole } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * const env = cartPole.create()
  * qValues(env, dqn(env, { hidden: [8] }).init(key(0)), [0, 0, 0, 0], { hidden: [8] }).length // => 2
  * ```
@@ -485,6 +485,6 @@ export function qValues(
   const d = observationSize(env.observationSpace)
   const nA = actionCount(env.actionSpace, 'qValues')
   const net = qNetwork(d, nA, options, makeKey(0))
-  if (net.atoms !== 1) throw new MdmlError('value', 'qValues: distributional networks need their own readout')
+  if (net.atoms !== 1) throw new OmaiError('value', 'qValues: distributional networks need their own readout')
   return toFlat(net.apply(state.params, rowsTensor([observation], d)))
 }

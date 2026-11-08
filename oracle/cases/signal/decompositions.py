@@ -4,8 +4,8 @@ averaging (the components are invariant to the singular vectors' signs)."""
 from importlib.metadata import version
 
 import numpy as np
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray, rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray, rng
 from vmdpy import VMD
 
 REFERENCE: dict[str, str] = {"vmdpy": version("vmdpy"), "numpy": np.__version__}

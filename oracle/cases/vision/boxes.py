@@ -9,8 +9,8 @@ import numpy as np
 import torch
 import torchvision
 import torchvision.ops as ops
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray, rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray, rng
 from torchvision.models.detection._utils import BoxCoder, Matcher
 from torchvision.models.detection.anchor_utils import AnchorGenerator
 

@@ -4,8 +4,8 @@
  * with the same seed), with play, pause, step, seek and loop, and the animation-frame ticker they share (`useTicker`).
  */
 
-import type { Frame, Timeline } from 'mdml-engine/scene'
-import { type Algorithm, iterate } from 'mdml-engine/trace'
+import type { Frame, Timeline } from 'omai-engine/scene'
+import { type Algorithm, iterate } from 'omai-engine/trace'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { prefersReducedMotion } from './_motion.ts'
 import { advanceFrame, framesDue } from './playhead.ts'

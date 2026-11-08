@@ -6,7 +6,7 @@
  * segmentation, as in ruptures.
  */
 
-import { logSumExpOf, MdmlError } from '../../base/index.ts'
+import { logSumExpOf, OmaiError } from '../../base/index.ts'
 import {
   type Algorithm,
   type Contract,
@@ -29,16 +29,16 @@ import { type ConjugateModel, type RunStats, segmentOps } from './segment-models
  *
  * @param lambda - The expected segment length (> 1).
  * @returns The hazard function of the run length.
- * @throws MdmlError with code `value` for lambda <= 1.
+ * @throws OmaiError with code `value` for lambda <= 1.
  * @concept hazard-function
  * @example
  * ```ts
- * import { filtering } from 'mdml-engine/dynamics'
+ * import { filtering } from 'omai-engine/dynamics'
  * filtering.constantHazard(100)(7) // => 0.01
  * ```
  */
 export function constantHazard(lambda: number): (runLength: number) => number {
-  if (!(lambda > 1)) throw new MdmlError('value', 'constantHazard: the mean segment length must exceed 1')
+  if (!(lambda > 1)) throw new OmaiError('value', 'constantHazard: the mean segment length must exceed 1')
   return () => 1 / lambda
 }
 
@@ -53,7 +53,7 @@ export function constantHazard(lambda: number): (runLength: number) => number {
  * @concept hazard-function
  * @example
  * ```ts
- * import { filtering } from 'mdml-engine/dynamics'
+ * import { filtering } from 'omai-engine/dynamics'
  * // Geometric lengths: the hazard is constant.
  * Math.round(filtering.survivalHazard((r) => 0.9 ** r)(3) * 1e12) / 1e12 // => 0.1
  * ```
@@ -176,12 +176,12 @@ const EMPTY_HISTORY: BocpdHistory = {
  * @param hazard - A constant hazard in (0, 1) or a function of the run length.
  * @param options - Pruning threshold and whether the state keeps the run-length rows.
  * @returns The algorithm; it is done after the last observation.
- * @throws MdmlError with code `value` for a constant hazard outside (0, 1) or a model with an invalid prior.
+ * @throws OmaiError with code `value` for a constant hazard outside (0, 1) or a model with an invalid prior.
  * @concept bayesian-changepoint-detection
  * @example
  * ```ts
- * import { filtering } from 'mdml-engine/dynamics'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { filtering } from 'omai-engine/dynamics'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const model = { kind: 'normal-known-variance', sigma: 0.5, priorMean: 0, priorStd: 5 } as const
  * const alg = filtering.bocpdAlgorithm([0, 0.1, 5, 5.2], model, 0.1)
  * runAlgorithm(alg, { maxSteps: 4 }).state.history.mapRunLength // => [1, 2, 1, 2]
@@ -194,7 +194,7 @@ export function bocpdAlgorithm(
   options: BocpdOptions = {},
 ): Algorithm<BocpdState, BocpdPath> {
   if (typeof hazard === 'number' && !(hazard > 0 && hazard < 1))
-    throw new MdmlError('value', 'bocpd: the hazard must be in (0, 1)')
+    throw new OmaiError('value', 'bocpd: the hazard must be in (0, 1)')
   const h = typeof hazard === 'number' ? () => hazard : hazard
   const cut = options.threshold ?? -40
   const rows = options.rows ?? true
@@ -282,11 +282,11 @@ export function bocpdAlgorithm(
  * @param hazard - A constant hazard in (0, 1) or a function of the run length.
  * @param options - Pruning threshold, whether to keep the run-length rows, and tracing.
  * @returns Run-length posteriors, MAP run lengths, change probabilities, predictives and the evidence.
- * @throws MdmlError with code `value` for a constant hazard outside (0, 1).
+ * @throws OmaiError with code `value` for a constant hazard outside (0, 1).
  * @concept bayesian-changepoint-detection
  * @example
  * ```ts
- * import { filtering } from 'mdml-engine/dynamics'
+ * import { filtering } from 'omai-engine/dynamics'
  * const r = filtering.bocpd([0, 0.1, 5, 5.2], { kind: 'normal-known-variance', sigma: 0.5, priorMean: 0, priorStd: 5 }, 0.1)
  * r.mapRunLength // => [1, 2, 1, 2]
  * ```
@@ -328,7 +328,7 @@ export interface MapChangepoint {
  * @concept bayesian-changepoint-detection
  * @example
  * ```ts
- * import { filtering } from 'mdml-engine/dynamics'
+ * import { filtering } from 'omai-engine/dynamics'
  * const model = { kind: 'normal-known-variance', sigma: 0.5, priorMean: 0, priorStd: 5 } as const
  * const r = filtering.bocpd([0, 0.1, -0.1, 0, 5, 5.2, 4.9, 5.1], model, 0.1)
  * filtering.mapChangepoints(r, 0.5).map((c) => c.index) // => [4]
@@ -403,12 +403,12 @@ export const peltContract: Contract<PeltState, PeltPath> = defineContract({
  * @param penalty - The penalty per segment.
  * @param options - Cost (default l2), minimum segment length and grid step.
  * @returns The algorithm; it is done after the last candidate end.
- * @throws MdmlError with code `value` when the series is shorter than one minimum segment.
+ * @throws OmaiError with code `value` when the series is shorter than one minimum segment.
  * @concept changepoint-detection
  * @example
  * ```ts
- * import { filtering } from 'mdml-engine/dynamics'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { filtering } from 'omai-engine/dynamics'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const y = [0, 0, 0, 0, 5, 5, 5, 5]
  * const alg = filtering.peltAlgorithm(y, 1)
  * filtering.peltSegments(runAlgorithm(alg, { maxSteps: 100 }).state, y.length) // => [4, 8]
@@ -423,7 +423,7 @@ export function peltAlgorithm(
   const c = costOf(y, options.cost ?? 'l2')
   const minSize = Math.max(options.minSize ?? 2, c.minSize)
   const jump = options.jump ?? 1
-  if (n < minSize) throw new MdmlError('value', 'pelt: the series is shorter than the minimum segment')
+  if (n < minSize) throw new OmaiError('value', 'pelt: the series is shorter than the minimum segment')
   const ends: number[] = []
   for (let k = 0; k < n; k += jump) if (k >= minSize) ends.push(k)
   ends.push(n)
@@ -486,7 +486,7 @@ export function peltAlgorithm(
  * @concept changepoint-detection
  * @example
  * ```ts
- * import { filtering } from 'mdml-engine/dynamics'
+ * import { filtering } from 'omai-engine/dynamics'
  * filtering.peltSegments({ k: 0, F: [0, null, 1], last: [null, null, 0], prunableAt: [], admissible: [], end: 2 }, 2) // => [2]
  * ```
  */
@@ -510,11 +510,11 @@ export function peltSegments(state: Pick<PeltState, 'last'>, n: number): number[
  * @param penalty - The penalty per segment (BIC: 2 log n for a mean change at unit variance).
  * @param options - Cost (default l2), minimum segment length and grid step.
  * @returns The segment end indices (sorted, the last is n), as ruptures reports them.
- * @throws MdmlError with code `value` when the series is shorter than one minimum segment.
+ * @throws OmaiError with code `value` when the series is shorter than one minimum segment.
  * @concept changepoint-detection
  * @example
  * ```ts
- * import { filtering } from 'mdml-engine/dynamics'
+ * import { filtering } from 'omai-engine/dynamics'
  * filtering.pelt([0, 0, 0, 0, 5, 5, 5, 5], 1) // => [4, 8]
  * ```
  */
@@ -568,12 +568,12 @@ export const binsegContract: Contract<BinsegState, BinsegPath> = defineContract(
  * @param stop - `{ changepoints }` or `{ penalty }`.
  * @param options - Cost (default l2), minimum segment length and grid step.
  * @returns The algorithm; its state's `bkps` are the segment ends.
- * @throws MdmlError with code `value` without a stopping rule.
+ * @throws OmaiError with code `value` without a stopping rule.
  * @concept changepoint-detection
  * @example
  * ```ts
- * import { filtering } from 'mdml-engine/dynamics'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { filtering } from 'omai-engine/dynamics'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const alg = filtering.binarySegmentationAlgorithm([0, 0, 0, 5, 5, 5, 1, 1, 1], { changepoints: 2 })
  * runAlgorithm(alg, { maxSteps: 10 }).state.bkps // => [3, 6, 9]
  * ```
@@ -584,7 +584,7 @@ export function binarySegmentationAlgorithm(
   options: OfflineOptions = {},
 ): Algorithm<BinsegState, BinsegPath> {
   if (stop.changepoints === undefined && stop.penalty === undefined) {
-    throw new MdmlError('value', 'binarySegmentation: give a number of changepoints or a penalty')
+    throw new OmaiError('value', 'binarySegmentation: give a number of changepoints or a penalty')
   }
   const n = y.length
   const c = costOf(y, options.cost ?? 'l2')
@@ -652,11 +652,11 @@ export function binarySegmentationAlgorithm(
  * @param stop - `{ changepoints }` or `{ penalty }`.
  * @param options - Cost (default l2), minimum segment length and grid step.
  * @returns The segment end indices (sorted, the last is n).
- * @throws MdmlError with code `value` without a stopping rule.
+ * @throws OmaiError with code `value` without a stopping rule.
  * @concept changepoint-detection
  * @example
  * ```ts
- * import { filtering } from 'mdml-engine/dynamics'
+ * import { filtering } from 'omai-engine/dynamics'
  * filtering.binarySegmentation([0, 0, 0, 5, 5, 5, 1, 1, 1], { changepoints: 2 }) // => [3, 6, 9]
  * ```
  */

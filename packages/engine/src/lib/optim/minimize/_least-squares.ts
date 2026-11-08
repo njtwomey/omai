@@ -1,6 +1,6 @@
 // Shared machinery of the nonlinear least-squares methods (not exported from the barrel): robust losses, the common
 // state and the result shape.
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { dgemv, dgesvd } from '../../numerics/linalg/index.ts'
 import { fromStorage } from '../../tensor/index.ts'
 import { type Algorithm, runAlgorithm } from '../../trace/index.ts'
@@ -128,5 +128,5 @@ export function runLeastSquares<S extends LeastSquaresState>(
 /** Check that residuals have at least as many entries as parameters (MINPACK's requirement). */
 export function requireOverdetermined(res: FlatResiduals, name: string): void {
   if (res.m < res.n)
-    throw new MdmlError('shape', `${name} needs at least as many residuals (${res.m}) as parameters (${res.n})`)
+    throw new OmaiError('shape', `${name} needs at least as many residuals (${res.m}) as parameters (${res.n})`)
 }

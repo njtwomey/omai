@@ -4,7 +4,7 @@
  * the distance from the point over the plane around it.
  */
 
-import { dict, int, real } from 'mdml-engine/space'
+import { dict, int, real } from 'omai-engine/space'
 import {
   type Config,
   defineMethod,
@@ -16,7 +16,7 @@ import {
   stateFromJson,
   stateToJson,
   tensor,
-} from 'mdml-engine/trace'
+} from 'omai-engine/trace'
 
 /** Where the walk stands. */
 export interface Walk {

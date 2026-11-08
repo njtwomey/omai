@@ -5,9 +5,9 @@ BICGauss, AICGauss) on continuous data."""
 import numpy as np
 import pandas as pd
 import pgmpy
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import rng
-from mdml_oracle.pgm import STUDENT, sample_rows
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import rng
+from omai_oracle.pgm import STUDENT, sample_rows
 from pgmpy.base import DAG
 from pgmpy.structure_score import AIC, BIC, K2, AICGauss, BDeu, BDs, BICGauss, LogLikelihood, LogLikelihoodGauss
 

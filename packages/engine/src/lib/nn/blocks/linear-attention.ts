@@ -5,7 +5,7 @@
  * key dimension) and DeltaNet (the delta rule: the state is corrected towards the new value rather than only added to).
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { foldIn, type Key } from '../../random/index.ts'
 import {
   add,
@@ -57,7 +57,7 @@ export interface MatrixMixerOptions {
 
 function headsOf(dim: number, heads: number | undefined, kind: string): number {
   const h = heads ?? (dim % 2 === 0 ? 2 : 1)
-  if (dim % h !== 0) throw new MdmlError('value', `${kind}: ${h} heads do not divide the width ${dim}`)
+  if (dim % h !== 0) throw new OmaiError('value', `${kind}: ${h} heads do not divide the width ${dim}`)
   return h
 }
 
@@ -79,8 +79,8 @@ function project(p: { run<I, O>(name: string, x: I): O }, name: string, x: Value
  * @reference Katharopoulos, Vyas, Pappas and Fleuret (2020), Transformers are RNNs.
  * @example
  * ```ts
- * import { LinearAttentionMixer } from 'mdml-engine/nn/blocks'
- * import { zeros } from 'mdml-engine/tensor'
+ * import { LinearAttentionMixer } from 'omai-engine/nn/blocks'
+ * import { zeros } from 'omai-engine/tensor'
  * new LinearAttentionMixer(8).forward(zeros([1, 5, 8])).output.shape // => [1, 5, 8]
  * ```
  */
@@ -147,8 +147,8 @@ export class LinearAttentionMixer extends SequenceMixer {
  * @reference Sun et al. (2023), Retentive network: a successor to transformer for large language models.
  * @example
  * ```ts
- * import { RetNetMixer } from 'mdml-engine/nn/blocks'
- * import { zeros } from 'mdml-engine/tensor'
+ * import { RetNetMixer } from 'omai-engine/nn/blocks'
+ * import { zeros } from 'omai-engine/tensor'
  * new RetNetMixer(8, { heads: 2, form: 'chunked' }).forward(zeros([1, 5, 8])).output.shape // => [1, 5, 8]
  * ```
  */
@@ -225,8 +225,8 @@ export class RetNetMixer extends SequenceMixer {
  *   training.
  * @example
  * ```ts
- * import { GatedLinearAttentionMixer } from 'mdml-engine/nn/blocks'
- * import { zeros } from 'mdml-engine/tensor'
+ * import { GatedLinearAttentionMixer } from 'omai-engine/nn/blocks'
+ * import { zeros } from 'omai-engine/tensor'
  * new GatedLinearAttentionMixer(8).forward(zeros([1, 5, 8])).output.shape // => [1, 5, 8]
  * ```
  */
@@ -292,8 +292,8 @@ export class GatedLinearAttentionMixer extends SequenceMixer {
  * @reference Yang et al. (2024), Parallelizing linear transformers with the delta rule over sequence length.
  * @example
  * ```ts
- * import { DeltaNetMixer } from 'mdml-engine/nn/blocks'
- * import { zeros } from 'mdml-engine/tensor'
+ * import { DeltaNetMixer } from 'omai-engine/nn/blocks'
+ * import { zeros } from 'omai-engine/tensor'
  * new DeltaNetMixer(8).forward(zeros([1, 5, 8])).output.shape // => [1, 5, 8]
  * ```
  */

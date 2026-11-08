@@ -51,8 +51,8 @@ export type BernoulliParams = { readonly probs: TensorLike } | { readonly logits
  * @index distribution Bernoulli distribution from a probability or logit.
  * @example
  * ```ts
- * import { bernoulli } from 'mdml-engine/dists'
- * import { item } from 'mdml-engine/tensor'
+ * import { bernoulli } from 'omai-engine/dists'
+ * import { item } from 'omai-engine/tensor'
  * item(bernoulli({ probs: 0.25 }).mean()) // => 0.25
  * ```
  */
@@ -108,8 +108,8 @@ export function bernoulli(params: BernoulliParams): Distribution {
  * @returns The distribution (no reparameterisation).
  * @example
  * ```ts
- * import { binomial } from 'mdml-engine/dists'
- * import { item } from 'mdml-engine/tensor'
+ * import { binomial } from 'omai-engine/dists'
+ * import { item } from 'omai-engine/tensor'
  * item(binomial(10, 0.3).mean()) // => 3
  * ```
  */
@@ -169,8 +169,8 @@ export function binomial(n: TensorLike, probs: TensorLike): Distribution {
  * @returns The distribution (no reparameterisation); the CDF, mode and entropy sum the pmf over 0 .. n.
  * @example
  * ```ts
- * import { betaBinomial } from 'mdml-engine/dists'
- * import { item } from 'mdml-engine/tensor'
+ * import { betaBinomial } from 'omai-engine/dists'
+ * import { item } from 'omai-engine/tensor'
  * item(betaBinomial(10, 2, 3).mean()) // => 4
  * ```
  */

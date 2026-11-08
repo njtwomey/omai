@@ -7,8 +7,8 @@ import numpy as np
 import scipy
 import statsmodels
 import statsmodels.api as sm
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray, rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray, rng
 from scipy.linalg import eigh
 from scipy.stats import chi2
 from statsmodels.sandbox.regression.gmm import IV2SLS

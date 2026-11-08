@@ -7,7 +7,7 @@
  * ontologies. Subsumption is unsatisfiability of the difference, and a small ontology is classified into its hierarchy.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm, type TraceSchema } from '../trace/index.ts'
 
 /** An ALC concept. */
@@ -29,7 +29,7 @@ export type Concept =
  * @returns The text, parenthesised where needed to parse back.
  * @example
  * ```ts
- * import { conceptText, parseConcept } from 'mdml-engine/logic'
+ * import { conceptText, parseConcept } from 'omai-engine/logic'
  * conceptText(parseConcept('Human and some hasChild (Human or not Cat)')) // => '(Human and some hasChild (Human or not Cat))'
  * ```
  */
@@ -63,10 +63,10 @@ const wrap = (c: Concept): string => {
  *
  * @param text - The concept, e.g. `Human and some hasChild Human`.
  * @returns The concept.
- * @throws MdmlError with code `value` for malformed text.
+ * @throws OmaiError with code `value` for malformed text.
  * @example
  * ```ts
- * import { conceptText, parseConcept } from 'mdml-engine/logic'
+ * import { conceptText, parseConcept } from 'omai-engine/logic'
  * conceptText(parseConcept('some R A or all R B')) // => '(some R A or all R B)'
  * ```
  */
@@ -76,7 +76,7 @@ export function parseConcept(text: string): Concept {
   const peek = (): string | undefined => tokens[pos]
   const take = (): string => {
     const t = tokens[pos++]
-    if (t === undefined) throw new MdmlError('value', `unexpected end of concept '${text}'`)
+    if (t === undefined) throw new OmaiError('value', `unexpected end of concept '${text}'`)
     return t
   }
   const parseOr = (): Concept => {
@@ -104,15 +104,15 @@ export function parseConcept(text: string): Concept {
     }
     if (t === '(') {
       const c = parseOr()
-      if (take() !== ')') throw new MdmlError('value', `expected ')' in '${text}'`)
+      if (take() !== ')') throw new OmaiError('value', `expected ')' in '${text}'`)
       return c
     }
     if (t === 'top' || t === 'bottom') return { k: t }
-    if (t === ')' || t === 'and' || t === 'or') throw new MdmlError('value', `unexpected '${t}' in '${text}'`)
+    if (t === ')' || t === 'and' || t === 'or') throw new OmaiError('value', `unexpected '${t}' in '${text}'`)
     return { k: 'name', n: t }
   }
   const c = parseOr()
-  if (pos < tokens.length) throw new MdmlError('value', `unexpected '${tokens[pos]}' in '${text}'`)
+  if (pos < tokens.length) throw new OmaiError('value', `unexpected '${tokens[pos]}' in '${text}'`)
   return c
 }
 
@@ -123,7 +123,7 @@ export function parseConcept(text: string): Concept {
  * @returns An equivalent concept in which `not` applies only to names.
  * @example
  * ```ts
- * import { conceptText, nnf, parseConcept } from 'mdml-engine/logic'
+ * import { conceptText, nnf, parseConcept } from 'omai-engine/logic'
  * conceptText(nnf(parseConcept('not (some R A and all R B)'))) // => '(all R (not A) or some R (not B))'
  * ```
  */
@@ -211,10 +211,10 @@ const TABLEAU_SCHEMA: TraceSchema = channels({
  * @param concept - The concept (text or parsed).
  * @param tbox - General concept inclusions as text pairs.
  * @returns The algorithm.
- * @throws MdmlError with code `value` for malformed concepts.
+ * @throws OmaiError with code `value` for malformed concepts.
  * @example
  * ```ts
- * import { alcTableauAlgorithm } from 'mdml-engine/logic'
+ * import { alcTableauAlgorithm } from 'omai-engine/logic'
  * alcTableauAlgorithm('some R A and all R not A').name // => 'alc-tableau'
  * ```
  */
@@ -386,10 +386,10 @@ export function alcTableauAlgorithm(concept: string | Concept, tbox: TBox = []):
  * @param tbox - General concept inclusions.
  * @param run - Tracing options.
  * @returns True when some model has an element in the concept.
- * @throws MdmlError with code `value` for malformed concepts.
+ * @throws OmaiError with code `value` for malformed concepts.
  * @example
  * ```ts
- * import { conceptSatisfiable } from 'mdml-engine/logic'
+ * import { conceptSatisfiable } from 'omai-engine/logic'
  * [conceptSatisfiable('some R A and all R not A'), conceptSatisfiable('some R A and all R B')] // => [false, true]
  * ```
  */
@@ -399,7 +399,7 @@ export function conceptSatisfiable(
   run: Partial<Pick<RunOptions, 'tracer' | 'policy' | 'parent' | 'runId'>> = {},
 ): boolean {
   const { state } = runAlgorithm(alcTableauAlgorithm(concept, tbox), { ...run, maxSteps: 200_000 })
-  if (state.status === 'running') throw new MdmlError('value', 'the tableau did not terminate within its step budget')
+  if (state.status === 'running') throw new OmaiError('value', 'the tableau did not terminate within its step budget')
   return state.status === 'satisfiable'
 }
 
@@ -411,10 +411,10 @@ export function conceptSatisfiable(
  * @param sub - The more specific concept.
  * @param tbox - General concept inclusions.
  * @returns True when `sub` is subsumed by `sup`.
- * @throws MdmlError with code `value` for malformed concepts.
+ * @throws OmaiError with code `value` for malformed concepts.
  * @example
  * ```ts
- * import { conceptSubsumes } from 'mdml-engine/logic'
+ * import { conceptSubsumes } from 'omai-engine/logic'
  * [conceptSubsumes('some R A', 'some R (A and B)'), conceptSubsumes('some R (A and B)', 'some R A')] // => [true, false]
  * ```
  */
@@ -429,10 +429,10 @@ export function conceptSubsumes(sup: string, sub: string, tbox: TBox = []): bool
  * @param names - The concept names to classifyConcepts.
  * @param tbox - General concept inclusions defining them.
  * @returns For each name, its direct parents.
- * @throws MdmlError with code `value` for malformed concepts.
+ * @throws OmaiError with code `value` for malformed concepts.
  * @example
  * ```ts
- * import { classifyConcepts } from 'mdml-engine/logic'
+ * import { classifyConcepts } from 'omai-engine/logic'
  * const tbox = [['Man', 'Human'], ['Woman', 'Human'], ['Mother', 'Woman'], ['Mother', 'some hasChild Human']]
  * classifyConcepts(['Human', 'Man', 'Woman', 'Mother'], tbox) // => { Human: [], Man: ['Human'], Woman: ['Human'], Mother: ['Woman'] }
  * ```

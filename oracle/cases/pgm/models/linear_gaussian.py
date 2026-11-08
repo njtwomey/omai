@@ -8,8 +8,8 @@ import numpy as np
 import pandas as pd
 import pgmpy
 import scipy
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import rng
 from pgmpy.factors.continuous import LinearGaussianCPD
 from pgmpy.models import LinearGaussianBayesianNetwork
 from scipy.stats import multivariate_normal

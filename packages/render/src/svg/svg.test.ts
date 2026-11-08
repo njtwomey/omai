@@ -13,7 +13,7 @@ import {
   scene3d,
   tex,
   text,
-} from 'mdml-engine/scene'
+} from 'omai-engine/scene'
 import { describe, expect, it } from 'vitest'
 import { lineChart } from '../charts/lines.ts'
 import { figure } from '../figure/figure.ts'

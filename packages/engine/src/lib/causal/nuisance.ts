@@ -6,7 +6,7 @@
  * differences before and after weighting.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import type { Estimator, Fitted } from '../learn/estimator.ts'
 import { type Fold, splitIndices, stratifiedKFold } from '../learn/model-selection/splitters.ts'
 import { linearModel } from '../linear/model.ts'
@@ -38,7 +38,7 @@ export interface NuisanceOptions {
  * @returns The estimator (it takes any solver of the GLM slot through `linearModel`).
  * @example
  * ```ts
- * import { defaultPropensity } from 'mdml-engine/causal'
+ * import { defaultPropensity } from 'omai-engine/causal'
  * defaultPropensity().name // => 'linear-model'
  * ```
  */
@@ -52,7 +52,7 @@ export function defaultPropensity(): Learner {
  * @returns The estimator.
  * @example
  * ```ts
- * import { defaultOutcome } from 'mdml-engine/causal'
+ * import { defaultOutcome } from 'omai-engine/causal'
  * defaultOutcome().kind // => 'regressor'
  * ```
  */
@@ -68,8 +68,8 @@ export function defaultOutcome(): Learner {
  * @returns One value per row.
  * @example
  * ```ts
- * import { probabilityOf } from 'mdml-engine/causal'
- * import { decisionTreeClassifier } from 'mdml-engine/trees'
+ * import { probabilityOf } from 'omai-engine/causal'
+ * import { decisionTreeClassifier } from 'omai-engine/trees'
  * const fitted = decisionTreeClassifier().fit({ x: [[0], [1], [2], [3]], y: [0, 0, 1, 1] })
  * Array.from(probabilityOf(fitted, [[0.5], [2.5]])) // => [0, 1]
  * ```
@@ -86,7 +86,7 @@ export function probabilityOf(fitted: Fitted, x: TensorLike): Float64Array {
     return Float64Array.from({ length: n }, (_, i) => flat[i * k + col] ?? 0)
   }
   if (fitted.predict === undefined)
-    throw new MdmlError('value', `${fitted.estimator}: cannot predict, so it cannot be a nuisance model`)
+    throw new OmaiError('value', `${fitted.estimator}: cannot predict, so it cannot be a nuisance model`)
   return Float64Array.from(toFlat(fitted.predict(x)))
 }
 
@@ -99,7 +99,7 @@ export function probabilityOf(fitted: Fitted, x: TensorLike): Float64Array {
  * @returns One value per row.
  * @example
  * ```ts
- * import { defaultOutcome, expectationOf } from 'mdml-engine/causal'
+ * import { defaultOutcome, expectationOf } from 'omai-engine/causal'
  * const fitted = defaultOutcome().fit({ x: [[0], [1], [2], [3]], y: [1, 3, 5, 7] })
  * Array.from(expectationOf(fitted, [[5]], false)) // => [11]
  * ```
@@ -107,7 +107,7 @@ export function probabilityOf(fitted: Fitted, x: TensorLike): Float64Array {
 export function expectationOf(fitted: Fitted, x: TensorLike, binary: boolean): Float64Array {
   if (binary) return probabilityOf(fitted, x)
   if (fitted.predict === undefined)
-    throw new MdmlError('value', `${fitted.estimator}: cannot predict, so it cannot be a nuisance model`)
+    throw new OmaiError('value', `${fitted.estimator}: cannot predict, so it cannot be a nuisance model`)
   return Float64Array.from(toFlat(fitted.predict(x)))
 }
 
@@ -126,7 +126,7 @@ const clipTo = (v: Float64Array, c: number): Float64Array => v.map((p) => Math.m
  * @returns The propensity at each test row.
  * @example
  * ```ts
- * import { fitPropensity } from 'mdml-engine/causal'
+ * import { fitPropensity } from 'omai-engine/causal'
  * const p = { n: 8, d: 1, x: Float64Array.from([-2, -1, -0.5, 0, 0.3, 0.5, 1, 2]), t: Float64Array.from([0, 0, 1, 0, 1, 0, 1, 1]), y: Float64Array.from([0, 1, 2, 1, 3, 2, 4, 5]) }
  * fitPropensity(p, [0, 1, 2, 3, 4, 5, 6, 7], [0, 7]).length // => 2
  * ```
@@ -151,7 +151,7 @@ export function fitPropensity(
  * @returns A function from a covariate matrix to propensity scores.
  * @example
  * ```ts
- * import { propensityModel } from 'mdml-engine/causal'
+ * import { propensityModel } from 'omai-engine/causal'
  * const p = { n: 8, d: 1, x: Float64Array.from([-2, -1, -0.5, 0, 0.3, 0.5, 1, 2]), t: Float64Array.from([0, 0, 1, 0, 1, 0, 1, 1]), y: Float64Array.from([0, 1, 2, 1, 3, 2, 4, 5]) }
  * propensityModel(p, [0, 1, 2, 3, 4, 5, 6, 7])([[0], [1]]).length // => 2
  * ```
@@ -195,7 +195,7 @@ export interface Nuisances {
  * @returns The propensity and outcome predictions at the test rows.
  * @example
  * ```ts
- * import { fitNuisances } from 'mdml-engine/causal'
+ * import { fitNuisances } from 'omai-engine/causal'
  * const p = { n: 8, d: 1, x: Float64Array.from([-2, -1, -0.5, 0, 0.3, 0.5, 1, 2]), t: Float64Array.from([0, 0, 1, 0, 1, 0, 1, 1]), y: Float64Array.from([0, 1, 2, 1, 3, 2, 4, 5]) }
  * fitNuisances(p, [0, 1, 2, 3, 4, 5, 6, 7], [0, 7]).mu1.length // => 2
  * ```
@@ -215,7 +215,7 @@ export function fitNuisances(
   const arm = (a: number): Float64Array => {
     const rows = Array.from(train).filter((r) => p.t[r] === a)
     if (rows.length < 2)
-      throw new MdmlError('value', `the ${a === 1 ? 'treated' : 'control'} arm has fewer than two training units`)
+      throw new OmaiError('value', `the ${a === 1 ? 'treated' : 'control'} arm has fewer than two training units`)
     const fitted = outc.fit(
       { x: matrixOf(pickRows(p.x, p.d, rows), p.d), y: pick(p.y, rows) },
       { key: foldIn(key, 1 + a), explain: false },
@@ -240,7 +240,7 @@ export function fitNuisances(
  * @returns The indices.
  * @example
  * ```ts
- * import { allRows } from 'mdml-engine/causal'
+ * import { allRows } from 'omai-engine/causal'
  * Array.from(allRows(3)) // => [0, 1, 2]
  * ```
  */
@@ -257,7 +257,7 @@ export function allRows(n: number): Int32Array {
  * @returns The folds, each with training and test indices.
  * @example
  * ```ts
- * import { crossFitFolds } from 'mdml-engine/causal'
+ * import { crossFitFolds } from 'omai-engine/causal'
  * crossFitFolds([0, 1, 0, 1, 0, 1, 0, 1], 2).map((f) => f.test.length) // => [4, 4]
  * ```
  */
@@ -273,7 +273,7 @@ export function crossFitFolds(treatment: ArrayLike<number>, folds = 5, key: Key 
  * @returns One propensity per unit.
  * @example
  * ```ts
- * import { propensityScores } from 'mdml-engine/causal'
+ * import { propensityScores } from 'omai-engine/causal'
  * const x = [[-2], [-1], [-0.5], [0], [0.3], [0.5], [1], [2]]
  * const e = propensityScores({ x, treatment: [0, 0, 1, 0, 1, 0, 1, 1], outcome: [0, 0, 0, 0, 0, 0, 0, 0] })
  * e.length // => 8
@@ -308,7 +308,7 @@ export interface Overlap {
  * @returns The overlap summary.
  * @example
  * ```ts
- * import { overlap } from 'mdml-engine/causal'
+ * import { overlap } from 'omai-engine/causal'
  * overlap([0.2, 0.5, 0.4, 0.7], [0, 0, 1, 1]).common // => [0.4, 0.5]
  * ```
  */
@@ -353,7 +353,7 @@ export function overlap(scores: ArrayLike<number>, treatment: ArrayLike<number>,
  * @returns The effective sample size.
  * @example
  * ```ts
- * import { effectiveSampleSize } from 'mdml-engine/causal'
+ * import { effectiveSampleSize } from 'omai-engine/causal'
  * [effectiveSampleSize([1, 1, 1, 1]), effectiveSampleSize([4, 0, 0, 0])] // => [4, 1]
  * ```
  */
@@ -387,7 +387,7 @@ export interface BalanceRow {
  * @returns One row per covariate.
  * @example
  * ```ts
- * import { balanceTable } from 'mdml-engine/causal'
+ * import { balanceTable } from 'omai-engine/causal'
  * balanceTable([[0], [1], [2], [3]], [0, 0, 1, 1])[0].before // => 2.8284271247461903
  * ```
  */

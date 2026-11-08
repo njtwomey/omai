@@ -4,7 +4,7 @@
  * comparisons, computed by numerical quadrature.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { doubleExponentialRule } from '../../numerics/quadrature/index.ts'
 import { lgamma, ndtr, normalLogPdf } from '../../numerics/special/index.ts'
 import { foldIn, gammaVariates, normal as normalNoise } from '../../random/index.ts'
@@ -63,8 +63,8 @@ function lift(t: Tensor, axis: number, rank: number): Value {
  *   from E[Q^n] = E[R^n] E[S^-n], numerical mode and entropy, and non-reparameterised `sample`.
  * @example
  * ```ts
- * import { studentisedRange } from 'mdml-engine/dists'
- * import { item } from 'mdml-engine/tensor'
+ * import { studentisedRange } from 'omai-engine/dists'
+ * import { item } from 'omai-engine/tensor'
  * item(studentisedRange(3, 10).cdf(0)) // => 0
  * ```
  */
@@ -74,7 +74,7 @@ export function studentisedRange(k: TensorLike, df: TensorLike): Distribution {
   validateParams('studentisedRange', { k: [groups, 'positiveInteger'], df: [nu, 'real'] })
   validateOrdered('studentisedRange', '0', asTensor(0), 'df', nu)
   if (toFlat(primalOf(groups)).some((v) => v < 2))
-    throw new MdmlError('value', 'studentisedRange: k must be at least 2')
+    throw new OmaiError('value', 'studentisedRange: k must be at least 2')
   const batchShape = batchShapeOf(groups, nu)
   const b = (v: Value): Value => broadcastBatch(v, batchShape)
   const infinite = isinf(nu)

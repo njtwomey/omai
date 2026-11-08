@@ -4,7 +4,7 @@
  * state-space models), with unrolling to a linear-Gaussian network, sampling and the exact smoothing posterior.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { foldIn, type Key, normal, uniform } from '../../random/index.ts'
 import { checkSquare, choleskyLower, dotVec, logdetPositive, matVec, type Rows, solveVector, sub } from '../_dense.ts'
 import { gaussianFromMoments, gaussianLogValue } from '../gaussian-factor.ts'
@@ -45,13 +45,13 @@ const isDistribution = (row: readonly number[]): boolean =>
  *
  * @param spec - States, initial distribution, transition matrix and emission model.
  * @returns The model.
- * @throws MdmlError with code `shape` for mismatched sizes, `value` for rows that are not distributions or
+ * @throws OmaiError with code `shape` for mismatched sizes, `value` for rows that are not distributions or
  * covariances that are not positive definite.
  * @concept hidden-markov-models
  * @index structure Hidden Markov model with categorical or Gaussian emissions.
  * @example
  * ```ts
- * import { hiddenMarkovModel } from 'mdml-engine/pgm'
+ * import { hiddenMarkovModel } from 'omai-engine/pgm'
  * const hmm = hiddenMarkovModel({
  *   states: ['fair', 'loaded'],
  *   initial: [0.5, 0.5],
@@ -64,21 +64,21 @@ const isDistribution = (row: readonly number[]): boolean =>
 export function hiddenMarkovModel(spec: Omit<HiddenMarkovModel, 'kind'>): HiddenMarkovModel {
   const K = spec.states.length
   if (spec.initial.length !== K || !isDistribution(spec.initial))
-    throw new MdmlError('value', 'hiddenMarkovModel: the initial distribution needs one probability per state')
+    throw new OmaiError('value', 'hiddenMarkovModel: the initial distribution needs one probability per state')
   checkSquare(spec.transition, K, 'hiddenMarkovModel')
   if (!spec.transition.every(isDistribution))
-    throw new MdmlError('value', 'hiddenMarkovModel: transition rows must be distributions')
+    throw new OmaiError('value', 'hiddenMarkovModel: transition rows must be distributions')
   const e = spec.emission
   if (e.kind === 'categorical') {
     if (
       e.probabilities.length !== K ||
       e.probabilities.some((r) => r.length !== e.symbols.length || !isDistribution(r))
     )
-      throw new MdmlError('value', 'hiddenMarkovModel: one emission distribution over the symbols per state')
+      throw new OmaiError('value', 'hiddenMarkovModel: one emission distribution over the symbols per state')
   } else {
     const D = e.means[0]?.length ?? 0
     if (e.means.length !== K || e.covariances.length !== K || e.means.some((m) => m.length !== D))
-      throw new MdmlError('shape', 'hiddenMarkovModel: one mean and one covariance per state')
+      throw new OmaiError('shape', 'hiddenMarkovModel: one mean and one covariance per state')
     for (const c of e.covariances) {
       checkSquare(c, D, 'hiddenMarkovModel')
       logdetPositive(c, 'hiddenMarkovModel')
@@ -95,11 +95,11 @@ export function hiddenMarkovModel(spec: Omit<HiddenMarkovModel, 'kind'>): Hidden
  * @param hmm - The model.
  * @param observations - Symbols (names or indices) for categorical emissions, vectors for Gaussian ones.
  * @returns The chain.
- * @throws MdmlError with code `value` for unknown symbols or vectors of the wrong length.
+ * @throws OmaiError with code `value` for unknown symbols or vectors of the wrong length.
  * @concept hidden-markov-models
  * @example
  * ```ts
- * import { hiddenMarkovModel, hmmChain, forwardBackward } from 'mdml-engine/pgm'
+ * import { hiddenMarkovModel, hmmChain, forwardBackward } from 'omai-engine/pgm'
  * const hmm = hiddenMarkovModel({
  *   states: ['a', 'b'], initial: [0.6, 0.4], transition: [[0.7, 0.3], [0.4, 0.6]],
  *   emission: { kind: 'categorical', symbols: ['x', 'y', 'z'], probabilities: [[0.1, 0.4, 0.5], [0.6, 0.3, 0.1]] },
@@ -118,7 +118,7 @@ export function hmmChain(
   if (e.kind === 'categorical') {
     logEmission = observations.map((o) => {
       const s = typeof o === 'number' ? o : typeof o === 'string' ? e.symbols.indexOf(o) : -1
-      if (!(s >= 0 && s < e.symbols.length)) throw new MdmlError('value', `hmmChain: unknown symbol ${String(o)}`)
+      if (!(s >= 0 && s < e.symbols.length)) throw new OmaiError('value', `hmmChain: unknown symbol ${String(o)}`)
       return e.probabilities.map((r) => Math.log(r[s] ?? 0))
     })
   } else {
@@ -126,7 +126,7 @@ export function hmmChain(
     const densities = e.means.map((m, k) => gaussianFromMoments(names, m, e.covariances[k] ?? []))
     logEmission = observations.map((o) => {
       if (typeof o === 'string' || typeof o === 'number' || o.length !== names.length)
-        throw new MdmlError('value', `hmmChain: Gaussian emissions need vectors of length ${names.length}`)
+        throw new OmaiError('value', `hmmChain: Gaussian emissions need vectors of length ${names.length}`)
       const x = Object.fromEntries(names.map((n, d) => [n, o[d] ?? 0]))
       return densities.map((f) => gaussianLogValue(f, x))
     })
@@ -154,8 +154,8 @@ function drawIndex(p: readonly number[], u: number): number {
  * @concept sampling
  * @example
  * ```ts
- * import { hiddenMarkovModel, hmmSample } from 'mdml-engine/pgm'
- * import { key } from 'mdml-engine/random'
+ * import { hiddenMarkovModel, hmmSample } from 'omai-engine/pgm'
+ * import { key } from 'omai-engine/random'
  * const hmm = hiddenMarkovModel({
  *   states: ['a', 'b'], initial: [1, 0], transition: [[0, 1], [1, 0]],
  *   emission: { kind: 'categorical', symbols: ['x', 'y'], probabilities: [[1, 0], [0, 1]] },
@@ -196,11 +196,11 @@ export function hmmSample(
  *
  * @param hmm - The model (categorical emissions).
  * @returns The two-slice network.
- * @throws MdmlError with code `value` for Gaussian emissions.
+ * @throws OmaiError with code `value` for Gaussian emissions.
  * @concept dynamic-bayes-networks
  * @example
  * ```ts
- * import { hiddenMarkovModel, hmmToDbn, unroll } from 'mdml-engine/pgm'
+ * import { hiddenMarkovModel, hmmToDbn, unroll } from 'omai-engine/pgm'
  * const hmm = hiddenMarkovModel({
  *   states: ['a', 'b'], initial: [0.5, 0.5], transition: [[0.9, 0.1], [0.1, 0.9]],
  *   emission: { kind: 'categorical', symbols: ['x', 'y'], probabilities: [[0.8, 0.2], [0.3, 0.7]] },
@@ -210,7 +210,7 @@ export function hmmSample(
  */
 export function hmmToDbn(hmm: HiddenMarkovModel): DynamicBayesNet {
   const e = hmm.emission
-  if (e.kind !== 'categorical') throw new MdmlError('value', 'hmmToDbn: only categorical emissions are discrete')
+  if (e.kind !== 'categorical') throw new OmaiError('value', 'hmmToDbn: only categorical emissions are discrete')
   const emission = { name: 'x', states: e.symbols, parents: ['z'], cpt: e.probabilities.flat() }
   return dynamicBayesNet(
     [{ name: 'z', states: hmm.states, parents: [], cpt: [...hmm.initial] }, emission],
@@ -242,11 +242,11 @@ export interface LinearDynamicalSystem {
  *
  * @param spec - A, C, Q, R, the initial mean and covariance.
  * @returns The system.
- * @throws MdmlError with code `shape` for mismatched sizes, `value` for covariances that are not positive definite.
+ * @throws OmaiError with code `shape` for mismatched sizes, `value` for covariances that are not positive definite.
  * @concept linear-dynamical-systems
  * @example
  * ```ts
- * import { linearDynamicalSystem } from 'mdml-engine/pgm'
+ * import { linearDynamicalSystem } from 'omai-engine/pgm'
  * const lds = linearDynamicalSystem({ transition: [[1]], observation: [[1]], transitionCovariance: [[0.1]], observationCovariance: [[1]], initialMean: [0], initialCovariance: [[1]] })
  * lds.kind // => 'lds'
  * ```
@@ -259,7 +259,7 @@ export function linearDynamicalSystem(spec: Omit<LinearDynamicalSystem, 'kind'>)
   checkSquare(spec.initialCovariance, n, 'linearDynamicalSystem')
   checkSquare(spec.observationCovariance, m, 'linearDynamicalSystem')
   if (spec.observation.some((r) => r.length !== n))
-    throw new MdmlError('shape', `linearDynamicalSystem: C must be ${m} x ${n}`)
+    throw new OmaiError('shape', `linearDynamicalSystem: C must be ${m} x ${n}`)
   for (const c of [spec.transitionCovariance, spec.observationCovariance, spec.initialCovariance])
     logdetPositive(c, 'linearDynamicalSystem')
   return { kind: 'lds', ...spec }
@@ -313,7 +313,7 @@ function vectorNodes(
  * @concept linear-dynamical-systems
  * @example
  * ```ts
- * import { linearDynamicalSystem, ldsToLinearGaussian } from 'mdml-engine/pgm'
+ * import { linearDynamicalSystem, ldsToLinearGaussian } from 'omai-engine/pgm'
  * const lds = linearDynamicalSystem({ transition: [[1]], observation: [[1]], transitionCovariance: [[0.1]], observationCovariance: [[1]], initialMean: [0], initialCovariance: [[1]] })
  * ldsToLinearGaussian(lds, 2).nodes.map((n) => n.name) // => ['x0_0', 'y0_0', 'x0_1', 'y0_1']
  * ```
@@ -345,8 +345,8 @@ export function ldsToLinearGaussian(lds: LinearDynamicalSystem, T: number): Line
  * @concept sampling
  * @example
  * ```ts
- * import { linearDynamicalSystem, ldsSample } from 'mdml-engine/pgm'
- * import { key } from 'mdml-engine/random'
+ * import { linearDynamicalSystem, ldsSample } from 'omai-engine/pgm'
+ * import { key } from 'omai-engine/random'
  * const lds = linearDynamicalSystem({ transition: [[1]], observation: [[1]], transitionCovariance: [[0.1]], observationCovariance: [[1]], initialMean: [0], initialCovariance: [[1]] })
  * ldsSample(lds, key(0), 5).observations.length // => 5
  * ```
@@ -389,7 +389,7 @@ export function ldsSample(
  * @concept linear-dynamical-systems
  * @example
  * ```ts
- * import { linearDynamicalSystem, ldsPosterior } from 'mdml-engine/pgm'
+ * import { linearDynamicalSystem, ldsPosterior } from 'omai-engine/pgm'
  * const lds = linearDynamicalSystem({ transition: [[1]], observation: [[1]], transitionCovariance: [[1e-12]], observationCovariance: [[1]], initialMean: [0], initialCovariance: [[1]] })
  * ldsPosterior(lds, [[2]]).means.map((m) => Math.round((m[0] ?? 0) * 1e9) / 1e9) // => [1]
  * ```

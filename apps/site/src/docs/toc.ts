@@ -2,13 +2,13 @@
  * The docs table of contents: the engine's source tree as it is on disk. `lib` and `methods`, then each folder's
  * subfolders and files (alphabetical), then each file's exports in source order. Names are the folder and file names,
  * each node marked with what it is (a folder, a file, or the kind of the export); the package's front page
- * (`mdml-engine`) sits above the tree.
+ * (`omai-engine`) sits above the tree.
  */
 import type { TocNode } from '../shell/toc.ts'
 import { type Docs, docsPath, symbolPath } from './data.ts'
 
 /** The docs' front page, above the tree. */
-export const DOCS_HOME: { readonly title: string; readonly path: string } = { title: 'mdml-engine', path: '/docs' }
+export const DOCS_HOME: { readonly title: string; readonly path: string } = { title: 'omai-engine', path: '/docs' }
 
 function folderNode(docs: Docs, path: string): TocNode {
   const folder = docs.folder(path)

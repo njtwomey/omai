@@ -11,8 +11,8 @@ import numpy as np
 import scipy
 import scipy.spatial.distance as sd
 import sklearn
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray, rng, spd
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray, rng, spd
 from sklearn.metrics.pairwise import (
     cosine_similarity,
     haversine_distances,

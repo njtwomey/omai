@@ -1,5 +1,5 @@
 import * as echarts from 'echarts'
-import { normal } from 'mdml-engine/dists'
+import { normal } from 'omai-engine/dists'
 import { describe, expect, it } from 'vitest'
 import { withMarginals } from '../figure/grid.ts'
 import { barChart, histogram, paretoChart } from './bars.ts'

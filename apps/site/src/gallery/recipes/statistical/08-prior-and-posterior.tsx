@@ -1,7 +1,7 @@
-import { beta } from 'mdml-engine/dists'
-import { cartesian, priorPosterior } from 'mdml-render/charts'
-import { figure } from 'mdml-render/figure'
-import { Chart, ControlPanel, FigureFrame, NumberField, useColourMode } from 'mdml-render/react'
+import { beta } from 'omai-engine/dists'
+import { cartesian, priorPosterior } from 'omai-render/charts'
+import { figure } from 'omai-render/figure'
+import { Chart, ControlPanel, FigureFrame, NumberField, useColourMode } from 'omai-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 

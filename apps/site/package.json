@@ -1,9 +1,9 @@
 {
-  "name": "mdml-site",
+  "name": "omai-site",
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "description": "The mdml-js site: the render gallery, the hub and the engine docs in one app.",
+  "description": "The omai site: the render gallery, the hub and the engine docs in one app.",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -12,9 +12,9 @@
   "dependencies": {
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
-    "mdml-engine": "workspace:*",
-    "mdml-meta": "workspace:*",
-    "mdml-render": "workspace:*"
+    "omai-engine": "workspace:*",
+    "omai-meta": "workspace:*",
+    "omai-render": "workspace:*"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.3",

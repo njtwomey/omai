@@ -1,5 +1,5 @@
 // Matrices of channels and distortions, and checks of distributions, shared by channels.ts and rate-distortion.ts.
-import { MdmlError, pairwiseSum } from '../base/index.ts'
+import { OmaiError, pairwiseSum } from '../base/index.ts'
 import { type TensorLike, toFlat } from '../tensor/index.ts'
 import { float } from './_shared.ts'
 
@@ -12,7 +12,7 @@ export interface Channel {
 
 export function matrixOf(m: TensorLike, name: string): Channel {
   const v = float(m)
-  if (v.shape.length !== 2) throw new MdmlError('shape', `${name}: expected a matrix [rows, columns]`)
+  if (v.shape.length !== 2) throw new OmaiError('shape', `${name}: expected a matrix [rows, columns]`)
   const [nx = 0, ny = 0] = v.shape
   return { w: Float64Array.from(toFlat(v)), nx, ny }
 }
@@ -22,7 +22,7 @@ export function channelOf(transition: TensorLike, name: string): Channel {
   for (let x = 0; x < c.nx; x++) {
     const row = c.w.subarray(x * c.ny, (x + 1) * c.ny)
     if (row.some((p) => !(p >= 0)) || Math.abs(pairwiseSum(row) - 1) > 1e-9)
-      throw new MdmlError('value', `${name}: row ${x} of the transition matrix is not a distribution`)
+      throw new OmaiError('value', `${name}: row ${x} of the transition matrix is not a distribution`)
   }
   return c
 }
@@ -30,7 +30,7 @@ export function channelOf(transition: TensorLike, name: string): Channel {
 export function distribution(p: TensorLike, n: number, name: string): Float64Array {
   const xs = Float64Array.from(toFlat(float(p)))
   if (xs.length !== n || xs.some((v) => !(v >= 0)) || Math.abs(pairwiseSum(xs) - 1) > 1e-9)
-    throw new MdmlError('value', `${name}: expected a distribution over ${n} values`)
+    throw new OmaiError('value', `${name}: expected a distribution over ${n} values`)
   return xs
 }
 
@@ -38,5 +38,5 @@ export function distribution(p: TensorLike, n: number, name: string): Float64Arr
 export const h2 = (p: number): number => (p <= 0 || p >= 1 ? 0 : -p * Math.log(p) - (1 - p) * Math.log(1 - p))
 
 export function checkProbability(p: number, name: string): void {
-  if (!(p >= 0 && p <= 1)) throw new MdmlError('value', `${name}: the probability must lie in [0, 1]`)
+  if (!(p >= 0 && p <= 1)) throw new OmaiError('value', `${name}: the probability must lie in [0, 1]`)
 }

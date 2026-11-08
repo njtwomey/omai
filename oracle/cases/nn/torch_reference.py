@@ -3,9 +3,9 @@
 import numpy as np
 import torch
 import torch.nn.functional as F
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import rng
-from mdml_oracle.torch_helpers import to_numpy, to_torch
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import rng
+from omai_oracle.torch_helpers import to_numpy, to_torch
 from torch import nn
 
 REFERENCE: dict[str, str] = {"torch": torch.__version__}

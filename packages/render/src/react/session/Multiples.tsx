@@ -4,7 +4,7 @@
  * the host (`renderCell`), so every panel kind works in a cell.
  */
 
-import type { Run } from 'mdml-engine/trace'
+import type { Run } from 'omai-engine/trace'
 import { type ReactNode, useMemo } from 'react'
 import type { Cell, MultiplesSpec } from './facets.ts'
 import { facetCells, multiplesColumns, sharedLimits } from './facets.ts'

@@ -1,4 +1,4 @@
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import type { BinaryKernel, UnaryKernel } from '../backend.ts'
 import { batchElementwise } from '../batching.ts'
 import { arg, type BatchDim, definePrimitive, type MaybeZero, type Primitive } from '../primitive.ts'
@@ -65,7 +65,7 @@ export function binaryPrimitive(
     abstractEval: (xs: readonly Aval[]) => {
       const a = arg(xs, 0)
       const b = arg(xs, 1)
-      if (a.dtype !== b.dtype) throw new MdmlError('dtype', `${kernel}: operands must share a dtype`)
+      if (a.dtype !== b.dtype) throw new OmaiError('dtype', `${kernel}: operands must share a dtype`)
       return [{ shape: broadcastShapes(a.shape, b.shape), dtype: a.dtype }]
     },
     impl: (xs: readonly Tensor[]) => [arg(xs, 0).backend.binary(kernel, arg(xs, 0), arg(xs, 1))],

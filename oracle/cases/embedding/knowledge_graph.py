@@ -4,8 +4,8 @@ DistMult (a trilinear sum), ComplEx (the real part of the Hermitian product, in 
 of a true entity among scored candidates with ties sharing the average rank (scipy.stats.rankdata)."""
 
 import numpy as np
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray, rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray, rng
 from scipy import __version__ as scipy_version
 from scipy.stats import rankdata
 

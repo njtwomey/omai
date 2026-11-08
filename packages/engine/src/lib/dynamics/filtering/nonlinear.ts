@@ -5,7 +5,7 @@
  */
 
 import { jacfwd } from '../../autodiff/index.ts'
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { cholesky, eigh, solve, symmetricPart } from '../../numerics/linalg/index.ts'
 import { foldIn, type Key, key as makeKey, normal } from '../../random/index.ts'
 import {
@@ -215,7 +215,7 @@ function observeFilter(s: NonlinearFilterState): Observation {
 function observationsOf(name: string, observations: TensorLike): { readonly Z: Value; readonly T: number } {
   const Z = asTensor(observations)
   const T = Z.shape[0] ?? 0
-  if (T === 0) throw new MdmlError('value', `${name}: no observations`)
+  if (T === 0) throw new OmaiError('value', `${name}: no observations`)
   return { Z, T }
 }
 
@@ -235,12 +235,12 @@ function resultOf(s: NonlinearFilterState): NonlinearFilterResult {
  * @param model - Transition, observation, noise and prior.
  * @param observations - `[T, p]`.
  * @returns The algorithm; it is done after the last observation.
- * @throws MdmlError with code `value` for no observations.
+ * @throws OmaiError with code `value` for no observations.
  * @concept extended-kalman-filter
  * @example
  * ```ts
- * import { filtering } from 'mdml-engine/dynamics'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { filtering } from 'omai-engine/dynamics'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const model = { f: (x) => x, h: (x) => x, Q: [[0]], R: [[1]], x0: [0], P0: [[1]] }
  * runAlgorithm(filtering.extendedKalmanAlgorithm(model, [[2], [2]]), { maxSteps: 2 }).state.t // => 2
  * ```
@@ -296,8 +296,8 @@ export function extendedKalmanAlgorithm(
  * @concept extended-kalman-filter
  * @example
  * ```ts
- * import { filtering } from 'mdml-engine/dynamics'
- * import { mul, toArray } from 'mdml-engine/tensor'
+ * import { filtering } from 'omai-engine/dynamics'
+ * import { mul, toArray } from 'omai-engine/tensor'
  * // With linear f and h the EKF is the Kalman filter.
  * toArray(filtering.extendedKalmanFilter({ f: (x) => x, h: (x) => x, Q: [[0]], R: [[1]], x0: [0], P0: [[1]] }, [[2]]).means) // => [[1]]
  * ```
@@ -335,7 +335,7 @@ export interface SigmaPoints {
  * @concept unscented-transform
  * @example
  * ```ts
- * import { filtering } from 'mdml-engine/dynamics'
+ * import { filtering } from 'omai-engine/dynamics'
  * filtering.merweSigmaPoints(2, 1, 2, 1).wm.length // => 5
  * ```
  */
@@ -371,7 +371,7 @@ export function merweSigmaPoints(n: number, alpha: number, beta: number, kappa: 
  * @concept unscented-transform
  * @example
  * ```ts
- * import { filtering } from 'mdml-engine/dynamics'
+ * import { filtering } from 'omai-engine/dynamics'
  * filtering.julierSigmaPoints(1, 2).wm // => [0.6666666666666666, 0.16666666666666666, 0.16666666666666666]
  * ```
  */
@@ -404,8 +404,8 @@ export function julierSigmaPoints(n: number, kappa: number = 3 - n): SigmaPoints
  * @concept unscented-transform
  * @example
  * ```ts
- * import { filtering } from 'mdml-engine/dynamics'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { filtering } from 'omai-engine/dynamics'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(filtering.unscentedTransform([[0], [1], [-1]], [0, 0.5, 0.5], [0, 0.5, 0.5]).P) // => [[1]]
  * ```
  */
@@ -445,12 +445,12 @@ export interface UnscentedOptions {
  * @param observations - `[T, p]`.
  * @param options - Sigma points and redrawing.
  * @returns The algorithm; it is done after the last observation.
- * @throws MdmlError with code `value` for no observations.
+ * @throws OmaiError with code `value` for no observations.
  * @concept unscented-kalman-filter
  * @example
  * ```ts
- * import { filtering } from 'mdml-engine/dynamics'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { filtering } from 'omai-engine/dynamics'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const model = { f: (x) => x, h: (x) => x, Q: [[0]], R: [[1]], x0: [0], P0: [[1]] }
  * runAlgorithm(filtering.unscentedKalmanAlgorithm(model, [[2]]), { maxSteps: 1 }).state.sigmaPoints.shape // => [3, 1]
  * ```
@@ -527,8 +527,8 @@ export function unscentedKalmanAlgorithm(
  * @concept unscented-kalman-filter
  * @example
  * ```ts
- * import { filtering } from 'mdml-engine/dynamics'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { filtering } from 'omai-engine/dynamics'
+ * import { toArray } from 'omai-engine/tensor'
  * const r = filtering.unscentedKalmanFilter({ f: (x) => x, h: (x) => x, Q: [[0]], R: [[1]], x0: [0], P0: [[1]] }, [[2]])
  * toArray(r.means).map((v) => Math.round(v[0] * 1e10) / 1e10) // => [1]
  * ```
@@ -575,13 +575,13 @@ export interface EnsembleOptions {
  * @param observations - `[T, p]`.
  * @param options - Ensemble size, key and inflation.
  * @returns The algorithm; it is done after the last observation.
- * @throws MdmlError with code `value` for no observations or an ensemble of fewer than two members.
+ * @throws OmaiError with code `value` for no observations or an ensemble of fewer than two members.
  * @concept ensemble-kalman-filter
  * @example
  * ```ts
- * import { filtering } from 'mdml-engine/dynamics'
- * import { key } from 'mdml-engine/random'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { filtering } from 'omai-engine/dynamics'
+ * import { key } from 'omai-engine/random'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const model = { f: (x) => x, h: (x) => x, Q: [[0]], R: [[1]], x0: [0], P0: [[1]] }
  * runAlgorithm(filtering.ensembleKalmanAlgorithm(model, [[2]], { size: 8, key: key(0) }), { maxSteps: 1 }).state.ensemble.shape // => [8, 1]
  * ```
@@ -593,7 +593,7 @@ export function ensembleKalmanAlgorithm(
 ): Algorithm<EnsembleFilterState, EnsembleFilterPath> {
   const { Z, T } = observationsOf('ensemble-kalman-filter', observations)
   const N = options.size ?? 100
-  if (N < 2) throw new MdmlError('value', 'ensemble-kalman-filter: need at least two members')
+  if (N < 2) throw new OmaiError('value', 'ensemble-kalman-filter: need at least two members')
   const root = options.key ?? makeKey(0)
   const inflation = options.inflation ?? 1
   const Q = asTensor(model.Q)
@@ -666,8 +666,8 @@ export function ensembleKalmanAlgorithm(
  * @concept ensemble-kalman-filter
  * @example
  * ```ts
- * import { filtering } from 'mdml-engine/dynamics'
- * import { key } from 'mdml-engine/random'
+ * import { filtering } from 'omai-engine/dynamics'
+ * import { key } from 'omai-engine/random'
  * const r = filtering.ensembleKalmanFilter({ f: (x) => x, h: (x) => x, Q: [[0]], R: [[1]], x0: [0], P0: [[1]] }, [[2]], { size: 2000, key: key(0) })
  * Math.abs((r.means.data[0] ?? 0) - 1) < 0.1 // => true
  * ```

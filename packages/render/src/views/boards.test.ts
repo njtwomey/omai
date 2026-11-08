@@ -1,4 +1,4 @@
-import { boardSteps, populationSteps } from 'mdml-engine/exposition'
+import { boardSteps, populationSteps } from 'omai-engine/exposition'
 import { describe, expect, it } from 'vitest'
 import { boardColours, boardFrames, populationFrames } from './boards.ts'
 import { stillOf, viewFor } from './registry.ts'

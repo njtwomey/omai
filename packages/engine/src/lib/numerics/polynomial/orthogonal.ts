@@ -4,7 +4,7 @@
  * the Gauss quadrature rule of each family, and conversion to and from the power basis.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import {
   add,
   concat,
@@ -47,7 +47,7 @@ function recurrence(family: Family, p: JacobiParameters): (n: number) => readonl
     case 'jacobi': {
       const a = p.alpha ?? 0
       const b = p.beta ?? 0
-      if (!(a > -1 && b > -1)) throw new MdmlError('value', 'jacobi: alpha and beta must exceed -1')
+      if (!(a > -1 && b > -1)) throw new OmaiError('value', 'jacobi: alpha and beta must exceed -1')
       return (n) => {
         if (n === 0) return [(a + b + 2) / 2, (a - b) / 2, 0]
         const s = 2 * n + a + b
@@ -70,8 +70,8 @@ function recurrence(family: Family, p: JacobiParameters): (n: number) => readonl
  * @concept orthogonal-polynomials
  * @example
  * ```ts
- * import { orthoval } from 'mdml-engine/numerics/polynomial'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { orthoval } from 'omai-engine/numerics/polynomial'
+ * import { toArray } from 'omai-engine/tensor'
  * // T_2(x) = 2x^2 - 1.
  * toArray(orthoval('chebyshev', [0, 0.5, 1], [0, 0, 1])) // => [-1, -0.5, 1]
  * ```
@@ -104,8 +104,8 @@ export function orthoval(family: Family, x: TensorLike, c: TensorLike, params: J
  * @returns `[m, deg + 1]`.
  * @example
  * ```ts
- * import { orthovander } from 'mdml-engine/numerics/polynomial'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { orthovander } from 'omai-engine/numerics/polynomial'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(orthovander('hermite_e', [2], 2)) // => [[1, 2, 3]]
  * ```
  */
@@ -135,8 +135,8 @@ export function orthovander(family: Family, x: TensorLike, deg: number, params: 
  * @returns Series coefficients `[deg + 1]`.
  * @example
  * ```ts
- * import { orthofit } from 'mdml-engine/numerics/polynomial'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { orthofit } from 'omai-engine/numerics/polynomial'
+ * import { toArray } from 'omai-engine/tensor'
  * // x^2 = (P_0 + 2 P_2) / 3 in Legendre polynomials.
  * toArray(orthofit('legendre', [-1, -0.5, 0, 0.5, 1], [1, 0.25, 0, 0.25, 1], 2)).map((v) => Math.round(v * 1e12) / 1e12) // => [0.333333333333, 0, 0.666666666667]
  * ```
@@ -161,7 +161,7 @@ export function orthofit(
  * @returns Nodes and weights.
  * @example
  * ```ts
- * import { orthogauss } from 'mdml-engine/numerics/polynomial'
+ * import { orthogauss } from 'omai-engine/numerics/polynomial'
  * // Chebyshev weights are all pi / n.
  * Math.abs(orthogauss('chebyshev', 4).weights.data[0] - Math.PI / 4) < 1e-14 // => true
  * ```
@@ -198,10 +198,10 @@ export function orthogauss(family: Family, n: number, params: JacobiParameters =
  * @param c - Series coefficients `[k]`, lowest first.
  * @param params - Jacobi parameters.
  * @returns Power coefficients `[k]`, lowest first.
- * @throws MdmlError with code `shape` unless `c` is a vector, and `not-differentiable` for a traced value.
+ * @throws OmaiError with code `shape` unless `c` is a vector, and `not-differentiable` for a traced value.
  * @example
  * ```ts
- * import { orthoToPower } from 'mdml-engine/numerics/polynomial'
+ * import { orthoToPower } from 'omai-engine/numerics/polynomial'
  * orthoToPower('chebyshev', [0, 0, 0, 1]) // => [0, -3, 0, 4]
  * ```
  */
@@ -230,10 +230,10 @@ export function orthoToPower(
  * @param c - Power coefficients `[k]`, lowest first.
  * @param params - Jacobi parameters.
  * @returns Series coefficients `[k]`, lowest first.
- * @throws MdmlError with code `shape` unless `c` is a vector, and `not-differentiable` for a traced value.
+ * @throws OmaiError with code `shape` unless `c` is a vector, and `not-differentiable` for a traced value.
  * @example
  * ```ts
- * import { powerToOrtho } from 'mdml-engine/numerics/polynomial'
+ * import { powerToOrtho } from 'omai-engine/numerics/polynomial'
  * powerToOrtho('chebyshev', [0, -3, 0, 4]) // => [0, 0, 0, 1]
  * ```
  */
@@ -289,8 +289,8 @@ function basisInPower(family: Family, deg: number, params: JacobiParameters): nu
  * @returns Power coefficients `[n + 1]` of the monic polynomial with the Gauss nodes as roots.
  * @example
  * ```ts
- * import { monicFromNodes } from 'mdml-engine/numerics/polynomial'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { monicFromNodes } from 'omai-engine/numerics/polynomial'
+ * import { toFlat } from 'omai-engine/tensor'
  * toFlat(monicFromNodes('chebyshev', 2)).map((v) => Math.round(v * 1e12) / 1e12) // => [-0.5, 0, 1]
  * ```
  */

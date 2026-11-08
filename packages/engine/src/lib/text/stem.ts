@@ -3,7 +3,7 @@
  * implements it (three variants), with a trace of every rule that fired, and the Snowball English (Porter2) stemmer.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 
 // ---------------------------------------------------------------------------------------------------------------
 // Porter (1980), as nltk's PorterStemmer implements it in its three modes.
@@ -269,7 +269,7 @@ export interface PorterOptions {
 
 function checkMode(mode: PorterMode): void {
   if (mode !== 'nltk' && mode !== 'martin' && mode !== 'original')
-    throw new MdmlError('value', `porterStem: unknown mode ${String(mode)}`)
+    throw new OmaiError('value', `porterStem: unknown mode ${String(mode)}`)
 }
 
 /**
@@ -280,11 +280,11 @@ function checkMode(mode: PorterMode): void {
  * @param word - The word.
  * @param options - Mode and lowercasing.
  * @returns The stem.
- * @throws MdmlError with code `value` for an unknown mode.
+ * @throws OmaiError with code `value` for an unknown mode.
  * @concept stemming
  * @example
  * ```ts
- * import { porterStem } from 'mdml-engine/text'
+ * import { porterStem } from 'omai-engine/text'
  * ['caresses', 'ponies', 'relational', 'generalizations', 'dying'].map((w) => porterStem(w)) // => ['caress', 'poni', 'relat', 'gener', 'die']
  * porterStem('ponies', { mode: 'original' }) // => 'poni'
  * ```
@@ -304,7 +304,7 @@ export function porterStem(word: string, options: PorterOptions = {}): string {
  * @concept stemming
  * @example
  * ```ts
- * import { porterStemTrace } from 'mdml-engine/text'
+ * import { porterStemTrace } from 'omai-engine/text'
  * porterStemTrace('generalizations').steps.map((s) => `${s.step}: ${s.rule}`) // => ['1a: s -> ()', '2: ization -> ize', '3: alize -> al', '4: al -> ()']
  * ```
  */
@@ -451,7 +451,7 @@ const replaceSuffix = (s: string, suffix: string, by: string): string => cut(s, 
  * @concept stemming
  * @example
  * ```ts
- * import { snowballStem } from 'mdml-engine/text'
+ * import { snowballStem } from 'omai-engine/text'
  * ['generously', 'running', "dog's", 'communication', 'skies'].map((w) => snowballStem(w)) // => ['generous', 'run', 'dog', 'communic', 'sky']
  * ```
  */

@@ -62,7 +62,7 @@ export interface BayesianRegressionVerbs {
  *
  * @example
  * ```ts
- * import type { BayesianRegressionPath } from 'mdml-engine/methods/linear'
+ * import type { BayesianRegressionPath } from 'omai-engine/methods/linear'
  * const path: BayesianRegressionPath = 'model/predictive'
  * path // => 'model/predictive'
  * ```
@@ -76,7 +76,7 @@ export type BayesianRegressionPath = 'model/predictive'
  *
  * @example
  * ```ts
- * import { bayesianRegression } from 'mdml-engine/methods/linear'
+ * import { bayesianRegression } from 'omai-engine/methods/linear'
  * const fitted = bayesianRegression.with({ degree: 1 }).fit({ x: [[0], [1], [2], [3]], y: [1, 3, 5, 7] })
  * fitted.params.nObserved // => 4
  * ```

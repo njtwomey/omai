@@ -1,6 +1,6 @@
 // Small helpers shared by the stepped processes of the graph domain (spreading, opinion, percolation, growth): a state
 // codec for checkpoints, the nodes a process starts from, and argument checks. Not re-exported.
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import { type Key, subsample } from '../random/index.ts'
 import { stateFromJson, stateToJson } from '../trace/index.ts'
 import { type Graph, type NodeId, nodeIndex } from './graph.ts'
@@ -25,7 +25,7 @@ export function resolveSeeds(
   const eligible: number[] = []
   for (let v = 0; v < g.n; v++) if (!excluded.has(v)) eligible.push(v)
   if (!(Number.isInteger(seeds) && seeds >= 0 && seeds <= eligible.length))
-    throw new MdmlError('value', `${name}: cannot draw ${seeds} seeds from ${eligible.length} eligible nodes`)
+    throw new OmaiError('value', `${name}: cannot draw ${seeds} seeds from ${eligible.length} eligible nodes`)
   const pick = Array.from(subsample(key, eligible.length, seeds).data)
   return pick.map((i) => eligible[i] ?? 0).sort((a, b) => a - b)
 }
@@ -38,7 +38,7 @@ export function checkNumber(
   lo: number,
   hi: number = Number.POSITIVE_INFINITY,
 ): void {
-  if (!(x >= lo && x <= hi)) throw new MdmlError('value', `${name}: ${what} must be in [${lo}, ${hi}], got ${x}`)
+  if (!(x >= lo && x <= hi)) throw new OmaiError('value', `${name}: ${what} must be in [${lo}, ${hi}], got ${x}`)
 }
 
 /** The weight of adjacency entry `k` of the out-edges: its weight, or 1 for every edge when `weighted` is false. */

@@ -5,9 +5,9 @@
  */
 
 import type { EChartsOption, SeriesOption } from 'echarts'
-import { maxOf } from 'mdml-engine/base'
-import type { ImageSteps } from 'mdml-engine/exposition'
-import type { Pixels } from 'mdml-engine/scene'
+import { maxOf } from 'omai-engine/base'
+import type { ImageSteps } from 'omai-engine/exposition'
+import type { Pixels } from 'omai-engine/scene'
 import { type Panel, subplots } from '../charts/compose.ts'
 import { lines } from '../charts/lines.ts'
 import { imageSeries } from '../charts/matrices.ts'
@@ -245,8 +245,8 @@ export function imageFrames(record: ImageSteps, options: ImageViewOptions = {}):
  * @returns The index into `record.steps`.
  * @example
  * ```ts
- * import { imageSteps } from 'mdml-engine/exposition'
- * import { imageStepIndex } from 'mdml-render/views'
+ * import { imageSteps } from 'omai-engine/exposition'
+ * import { imageStepIndex } from 'omai-render/views'
  * const r = imageSteps({ method: 'm', height: 1, width: 1, groups: ['g'], steps: [{ iteration: 0, images: [[[0]]] }, { iteration: 10, images: [[[1]]] }] })
  * imageStepIndex(r, 12) // => 1
  * ```
@@ -271,8 +271,8 @@ const GRID_PADDING = 8
  * @returns The figure.
  * @example
  * ```ts
- * import { imageSteps } from 'mdml-engine/exposition'
- * import { imageGridFigure } from 'mdml-render/views'
+ * import { imageSteps } from 'omai-engine/exposition'
+ * import { imageGridFigure } from 'omai-render/views'
  * const r = imageSteps({ method: 'm', height: 2, width: 2, groups: ['g'], steps: [{ iteration: 0, images: [[[0, 0, 0, 0], [1, 1, 1, 1]]] }] })
  * imageGridFigure(r, 440).width // => 440
  * ```
@@ -297,8 +297,8 @@ export function imageGridFigure(record: ImageSteps, width = 440, columns?: numbe
  * @returns The ECharts option.
  * @example
  * ```ts
- * import { imageSteps } from 'mdml-engine/exposition'
- * import { imageGridView } from 'mdml-render/views'
+ * import { imageSteps } from 'omai-engine/exposition'
+ * import { imageGridView } from 'omai-render/views'
  * const r = imageSteps({ method: 'm', height: 1, width: 2, groups: ['g'], steps: [{ iteration: 0, images: [[[0, 1]]], labels: [['a']] }] })
  * imageGridView(r).series.length // => 3
  * ```

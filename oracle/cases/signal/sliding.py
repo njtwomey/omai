@@ -5,8 +5,8 @@ from importlib.metadata import version
 
 import numpy as np
 import stumpy
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray, rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray, rng
 from stumpy import core
 
 REFERENCE: dict[str, str] = {"stumpy": version("stumpy"), "numpy": np.__version__}

@@ -1,4 +1,4 @@
-# mdml-js
+# Observable Methods in Machine Learning
 
 A machine learning library written in TypeScript. It has tensors with automatic differentiation, numerical methods,
 probability and Bayesian inference, classical learning methods, neural networks, reinforcement learning, logic
@@ -20,8 +20,8 @@ regression, ridge and lasso are all options of one linear model. A choice such a
 `vmap`, `jvp` and `hessian` work the same way.
 
 ```ts
-import { grad } from 'mdml-engine/autodiff'
-import { mul, tensor, toArray, type Value } from 'mdml-engine/tensor'
+import { grad } from 'omai-engine/autodiff'
+import { mul, tensor, toArray, type Value } from 'omai-engine/tensor'
 
 toArray(grad((x: Value) => mul(x, x))(tensor(3))) // => 6
 ```
@@ -57,9 +57,9 @@ Three optimisers run on the Rosenbrock function. Each run records its parameters
 from those records.
 
 ```ts
-import { adam, minimizer, sgd } from 'mdml-engine/optim'
-import { add, mul, square, sub, take, tensor, type Value } from 'mdml-engine/tensor'
-import { policies, recorder, runAlgorithm } from 'mdml-engine/trace'
+import { adam, minimizer, sgd } from 'omai-engine/optim'
+import { add, mul, square, sub, take, tensor, type Value } from 'omai-engine/tensor'
+import { policies, recorder, runAlgorithm } from 'omai-engine/trace'
 
 const rosenbrock = (p: Value) => add(square(sub(1, take(p, 0))), mul(10, square(sub(take(p, 1), square(take(p, 0))))))
 const tape = recorder()
@@ -83,10 +83,10 @@ A session runs a method one step at a time. It can be stopped, run on, and asked
 step. The dataset records the best possible accuracy.
 
 ```ts
-import { generate } from 'mdml-engine/data'
-import { moons } from 'mdml-engine/datasets'
-import { key } from 'mdml-engine/random'
-import { svc } from 'mdml-engine/svm'
+import { generate } from 'omai-engine/data'
+import { moons } from 'omai-engine/datasets'
+import { key } from 'omai-engine/random'
+import { svc } from 'omai-engine/svm'
 
 const { data, truth } = generate(moons, { knobs: { n: 120, noise: 0.25 }, key: key(0) })
 const run = svc.with({ kernel: 'rbf', C: 1 }).session(data, { key: key(1) })
@@ -106,10 +106,10 @@ an RBF with a length scale, so there are two, and the library's `negativeLogMarg
 logs, `theta = [log amplitude, log length scale]`. `grad` differentiates it with respect to both.
 
 ```ts
-import { grad } from 'mdml-engine/autodiff'
-import { negativeLogMarginalLikelihood } from 'mdml-engine/gp'
-import { constantKernel, productKernel, rbfKernel } from 'mdml-engine/kernels'
-import { tensor } from 'mdml-engine/tensor'
+import { grad } from 'omai-engine/autodiff'
+import { negativeLogMarginalLikelihood } from 'omai-engine/gp'
+import { constantKernel, productKernel, rbfKernel } from 'omai-engine/kernels'
+import { tensor } from 'omai-engine/tensor'
 
 const x = tensor([[0], [0.7], [1.5], [2.2]])
 const y = tensor([0.1, 0.9, 0.8, -0.2])
@@ -126,8 +126,8 @@ kernel; see [examples/gp](examples/gp).
 `grad` can be applied to its own result, and `hessian` is built from it.
 
 ```ts
-import { grad, hessian } from 'mdml-engine/autodiff'
-import { mul, take, tensor, type Value } from 'mdml-engine/tensor'
+import { grad, hessian } from 'omai-engine/autodiff'
+import { mul, take, tensor, type Value } from 'omai-engine/tensor'
 
 const cube = (x: Value) => mul(mul(x, x), x)
 grad(grad(cube))(tensor(2)) // => 12, since the second derivative of x^3 is 6x
@@ -140,10 +140,10 @@ A bijector is an invertible map with its log-Jacobian. `transformed` pushes a di
 change of variables, so `logProb` stays exact.
 
 ```ts
-import { bijectors, normal } from 'mdml-engine/dists'
-import { transformed } from 'mdml-engine/dists/compose'
-import { key } from 'mdml-engine/random'
-import { mul, square, sub, tensor } from 'mdml-engine/tensor'
+import { bijectors, normal } from 'omai-engine/dists'
+import { transformed } from 'omai-engine/dists/compose'
+import { key } from 'omai-engine/random'
+import { mul, square, sub, tensor } from 'omai-engine/tensor'
 
 const lognormal = transformed(normal(0, 1), bijectors.exp())
 lognormal.logProb(2) // => -1.852312, the closed form of the log-normal density at 2
@@ -165,9 +165,9 @@ A decision tree classifies a flower by asking a few questions about its measurem
 as a session, one node per step, and the library draws both the tree and the regions of the plane it cuts.
 
 ```ts
-import { iris } from 'mdml-engine/datasets'
-import { key } from 'mdml-engine/random'
-import { decisionTreeClassifier } from 'mdml-engine/trees'
+import { iris } from 'omai-engine/datasets'
+import { key } from 'omai-engine/random'
+import { decisionTreeClassifier } from 'omai-engine/trees'
 
 // data: the 150 iris flowers with only petal length and petal width
 const fit = decisionTreeClassifier({ maxDepth: 3, record: 5 }).session(data, { key: key(1) })
@@ -185,10 +185,10 @@ A support vector classifier draws a boundary with a margin on each side, and onl
 vectors) decide where it goes. The penalty `C` sets how much the margin may be crossed.
 
 ```ts
-import { generate } from 'mdml-engine/data'
-import { moons } from 'mdml-engine/datasets'
-import { key } from 'mdml-engine/random'
-import { svc } from 'mdml-engine/svm'
+import { generate } from 'omai-engine/data'
+import { moons } from 'omai-engine/datasets'
+import { key } from 'omai-engine/random'
+import { svc } from 'omai-engine/svm'
 
 const { data, truth } = generate(moons, { knobs: { n: 100, noise: 0.25 }, key: key(0) })
 const loose = svc.with({ kernel: 'rbf', C: 0.2 }).session(data, { key: key(1) })
@@ -201,9 +201,9 @@ tight.advance() // 119 steps: 17 support vectors, accuracy 0.945, where 1 - trut
 
 ## Packages
 
-- `mdml-engine`: the library of tensors, autodiff, numerics, distributions, optimisation, kernels, learning, neural networks, RL, graphs, datasets and the trace. Imports as `mdml-engine/<domain>`.
-- `mdml-render`: figures from results and traces: charts, layouts, drawings, SVG and animation export, and React components.
-- `mdml-meta`: the documentation tooling: it reads the descriptions in the code, runs the examples and keeps the list of concepts.
+- `omai-engine`: the library of tensors, autodiff, numerics, distributions, optimisation, kernels, learning, neural networks, RL, graphs, datasets and the trace. Imports as `omai-engine/<domain>`.
+- `omai-render`: figures from results and traces: charts, layouts, drawings, SVG and animation export, and React components.
+- `omai-meta`: the documentation tooling: it reads the descriptions in the code, runs the examples and keeps the list of concepts.
 
 The packages share a version number (see `CHANGELOG.md`).
 

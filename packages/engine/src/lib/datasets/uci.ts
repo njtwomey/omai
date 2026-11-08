@@ -5,7 +5,7 @@
  * datasets and the dataset selectors find them by kind, text and real flag.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import type { Dataset } from '../data/index.ts'
 import { UCI_INFO, UCI_LICENCE, uciSource } from './_uci.ts'
 import {
@@ -97,7 +97,7 @@ const LOADERS: readonly (readonly [name: string, load: () => Dataset])[] = [
  * @concept datasets
  * @example
  * ```ts
- * import { uciEntries } from 'mdml-engine/datasets'
+ * import { uciEntries } from 'omai-engine/datasets'
  * uciEntries().length // => 34
  * uciEntries().filter((e) => e.kind === 'table').length // => 15
  * ```
@@ -105,7 +105,7 @@ const LOADERS: readonly (readonly [name: string, load: () => Dataset])[] = [
 export function uciEntries(): DatasetEntry[] {
   return LOADERS.map(([name, load]) => {
     const info = UCI_INFO[name]
-    if (info === undefined) throw new MdmlError('value', `uciEntries: no provenance for '${name}'`)
+    if (info === undefined) throw new OmaiError('value', `uciEntries: no provenance for '${name}'`)
     return vendoredEntry(name, load, {
       title: info.title,
       description: info.description,

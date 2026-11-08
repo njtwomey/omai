@@ -5,7 +5,7 @@
  * `truth.latents`, and moves bounding boxes and masks with the pixels where it can.
  */
 
-import { MdmlError, maxOf } from '../../base/index.ts'
+import { maxOf, OmaiError } from '../../base/index.ts'
 import { beta, foldIn, type Key, permutation, uniform } from '../../random/index.ts'
 import { dict, int, real } from '../../space/index.ts'
 import { fromStorage, type Tensor } from '../../tensor/index.ts'
@@ -14,7 +14,7 @@ import type { Modifier } from '../recipes.ts'
 import type { ImageData } from '../schema/image.ts'
 
 function requireImages(input: Generated, name: string): Generated<ImageData> {
-  if (input.data.kind !== 'image') throw new MdmlError('value', `${name} needs image data, got ${input.data.kind}`)
+  if (input.data.kind !== 'image') throw new OmaiError('value', `${name} needs image data, got ${input.data.kind}`)
   return input as Generated<ImageData>
 }
 
@@ -116,8 +116,8 @@ export interface RandomCropOptions {
  *   original image's coordinates (negative where it reaches into the padding).
  * @example
  * ```ts
- * import { asGenerated, images, withRandomCrop } from 'mdml-engine/data'
- * import { key } from 'mdml-engine/random'
+ * import { asGenerated, images, withRandomCrop } from 'omai-engine/data'
+ * import { key } from 'omai-engine/random'
  * const d = asGenerated(images([[[0, 1, 0], [1, 0, 1], [0, 1, 0]]]))
  * withRandomCrop(d, { size: 2, key: key(0) }).data.images.shape // => [1, 2, 2, 1]
  * ```
@@ -128,7 +128,7 @@ export function withRandomCrop(input: Generated, options: RandomCropOptions): Ge
   const pad = options.padding ?? 0
   const [oh, ow] = typeof options.size === 'number' ? [options.size, options.size] : (options.size ?? [h, w])
   if (pad < 0 || oh < 1 || ow < 1 || oh > h + 2 * pad || ow > w + 2 * pad)
-    throw new MdmlError('value', `withRandomCrop: a ${oh} by ${ow} crop does not fit ${h} by ${w} with padding ${pad}`)
+    throw new OmaiError('value', `withRandomCrop: a ${oh} by ${ow} crop does not fit ${h} by ${w} with padding ${pad}`)
   const u = uniform(options.key, [n, 2]).data
   const pixels = new Float64Array(n * oh * ow * c)
   const masks = data.masks === undefined ? undefined : new Int32Array(n * oh * ow)
@@ -177,8 +177,8 @@ export interface RandomFlipOptions {
  * @returns The flipped images; `truth.latents.flippedHorizontal` and `flippedVertical` are `[n]` boolean masks.
  * @example
  * ```ts
- * import { asGenerated, images, withRandomFlip } from 'mdml-engine/data'
- * import { key } from 'mdml-engine/random'
+ * import { asGenerated, images, withRandomFlip } from 'omai-engine/data'
+ * import { key } from 'omai-engine/random'
  * const d = asGenerated(images([[[1, 0], [1, 0]]]))
  * Array.from(withRandomFlip(d, { horizontal: 1, key: key(0) }).data.images.data) // => [0, 1, 0, 1]
  * ```
@@ -244,8 +244,8 @@ export interface CutoutOptions {
  * @returns The images with holes; `truth.latents.cutoutBoxes` is `[n, 4]` as `[x0, y0, x1, y1]` clipped to the image.
  * @example
  * ```ts
- * import { asGenerated, images, withCutout } from 'mdml-engine/data'
- * import { key } from 'mdml-engine/random'
+ * import { asGenerated, images, withCutout } from 'omai-engine/data'
+ * import { key } from 'omai-engine/random'
  * const d = asGenerated(images([[[1, 1], [1, 1]]]))
  * Math.min(...withCutout(d, { size: 2, key: key(0) }).data.images.data) // => 0
  * ```
@@ -253,7 +253,7 @@ export interface CutoutOptions {
 export function withCutout(input: Generated, options: CutoutOptions): Generated<ImageData> {
   const { data } = requireImages(input, 'withCutout')
   const { n, h, w, c } = dims(data)
-  if (options.size < 1) throw new MdmlError('value', 'withCutout: the hole needs a positive size')
+  if (options.size < 1) throw new OmaiError('value', 'withCutout: the hole needs a positive size')
   const fill = options.fill ?? 0
   const u = uniform(options.key, [n, 2]).data
   const pixels = Float64Array.from(data.images.data)
@@ -289,7 +289,7 @@ function mixingDraws(
 ): { lambda: Float64Array; partner: Int32Array; labels: Int32Array | undefined; k: number } {
   const { n } = dims(data)
   const alpha = options.alpha ?? 1
-  if (!(alpha > 0)) throw new MdmlError('value', `${name}: alpha must be positive`)
+  if (!(alpha > 0)) throw new OmaiError('value', `${name}: alpha must be positive`)
   const lambda = Float64Array.from(beta(foldIn(options.key, 0), [n], alpha, alpha).data)
   const partner = Int32Array.from(permutation(foldIn(options.key, 1), n).data)
   const labels = data.labels === undefined ? undefined : Int32Array.from(data.labels.data)
@@ -329,8 +329,8 @@ function softLabels(
  *   `[n]`, `originalLabels` `[n]` and `softLabels` `[n, classes]`.
  * @example
  * ```ts
- * import { asGenerated, images, withMixup } from 'mdml-engine/data'
- * import { key } from 'mdml-engine/random'
+ * import { asGenerated, images, withMixup } from 'omai-engine/data'
+ * import { key } from 'omai-engine/random'
  * const d = asGenerated(images([[[0]], [[1]]], { labels: [0, 1] }))
  * withMixup(d, { key: key(0) }).data.images.shape // => [2, 1, 1, 1]
  * ```
@@ -377,8 +377,8 @@ export function withMixup(input: Generated, options: MixOptions): Generated<Imag
  *   share kept after clipping), `partner`, `originalLabels`, `softLabels` and `cutBoxes` `[n, 4]` as `[x0, y0, x1, y1]`.
  * @example
  * ```ts
- * import { asGenerated, images, withCutmix } from 'mdml-engine/data'
- * import { key } from 'mdml-engine/random'
+ * import { asGenerated, images, withCutmix } from 'omai-engine/data'
+ * import { key } from 'omai-engine/random'
  * const d = asGenerated(images([[[0, 0], [0, 0]], [[1, 1], [1, 1]]], { labels: [0, 1] }))
  * withCutmix(d, { key: key(0) }).data.images.shape // => [2, 2, 2, 1]
  * ```
@@ -435,7 +435,7 @@ export function withCutmix(input: Generated, options: MixOptions): Generated<Ima
  *
  * @example
  * ```ts
- * import { randomCropModifier } from 'mdml-engine/data'
+ * import { randomCropModifier } from 'omai-engine/data'
  * randomCropModifier.name // => 'randomCrop'
  * ```
  */
@@ -451,7 +451,7 @@ export const randomCropModifier: Modifier = {
  *
  * @example
  * ```ts
- * import { randomFlipModifier } from 'mdml-engine/data'
+ * import { randomFlipModifier } from 'omai-engine/data'
  * randomFlipModifier.name // => 'randomFlip'
  * ```
  */
@@ -471,7 +471,7 @@ export const randomFlipModifier: Modifier = {
  *
  * @example
  * ```ts
- * import { cutoutModifier } from 'mdml-engine/data'
+ * import { cutoutModifier } from 'omai-engine/data'
  * cutoutModifier.name // => 'cutout'
  * ```
  */
@@ -487,7 +487,7 @@ export const cutoutModifier: Modifier = {
  *
  * @example
  * ```ts
- * import { mixupModifier } from 'mdml-engine/data'
+ * import { mixupModifier } from 'omai-engine/data'
  * mixupModifier.name // => 'mixup'
  * ```
  */
@@ -503,7 +503,7 @@ export const mixupModifier: Modifier = {
  *
  * @example
  * ```ts
- * import { cutmixModifier } from 'mdml-engine/data'
+ * import { cutmixModifier } from 'omai-engine/data'
  * cutmixModifier.name // => 'cutmix'
  * ```
  */

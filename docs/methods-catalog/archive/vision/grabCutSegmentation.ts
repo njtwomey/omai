@@ -91,7 +91,7 @@ function pictureOf(task: Task, s: GrabCutState): DecisionSurface {
  *
  * @example
  * ```ts
- * import type { GrabCutPath } from 'mdml-engine/methods/vision'
+ * import type { GrabCutPath } from 'omai-engine/methods/vision'
  * const path: GrabCutPath = 'cut/energy'
  * path // => 'cut/energy'
  * ```

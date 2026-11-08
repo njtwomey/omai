@@ -203,9 +203,9 @@ function lineSearch(
  * @concept root-finding
  * @example
  * ```ts
- * import { fsolveAlgorithm } from 'mdml-engine/numerics/roots'
- * import { runAlgorithm } from 'mdml-engine/trace'
- * import { sub, tensor } from 'mdml-engine/tensor'
+ * import { fsolveAlgorithm } from 'omai-engine/numerics/roots'
+ * import { runAlgorithm } from 'omai-engine/trace'
+ * import { sub, tensor } from 'omai-engine/tensor'
  * runAlgorithm(fsolveAlgorithm((v) => sub(v, tensor([3, 4])), [0, 0]), { maxSteps: 20 }).state.x // => [3, 4]
  * ```
  */
@@ -279,8 +279,8 @@ export function fsolveAlgorithm(
  * @concept root-finding
  * @example
  * ```ts
- * import { fsolve } from 'mdml-engine/numerics/roots'
- * import { sub, mul, tensor, toArray, sliceAxis, concat, square } from 'mdml-engine/tensor'
+ * import { fsolve } from 'omai-engine/numerics/roots'
+ * import { sub, mul, tensor, toArray, sliceAxis, concat, square } from 'omai-engine/tensor'
  * // x^2 = 4 and x y = 2 near (1, 1): (2, 1).
  * const F = (v) => concat([sub(square(sliceAxis(v, 0, 0, 1)), 4), sub(mul(sliceAxis(v, 0, 0, 1), sliceAxis(v, 0, 1, 2)), 2)])
  * toArray(fsolve(F, [1, 1]).x).map((v) => Math.round(v * 1e10) / 1e10) // => [2, 1]
@@ -302,9 +302,9 @@ export function fsolve(f: VectorFunction, x0: TensorLike, options: SystemOptions
  * @returns The algorithm; its state is a {@link SystemState}.
  * @example
  * ```ts
- * import { broydenAlgorithm } from 'mdml-engine/numerics/roots'
- * import { runAlgorithm } from 'mdml-engine/trace'
- * import { mul, sub, tensor } from 'mdml-engine/tensor'
+ * import { broydenAlgorithm } from 'omai-engine/numerics/roots'
+ * import { runAlgorithm } from 'omai-engine/trace'
+ * import { mul, sub, tensor } from 'omai-engine/tensor'
  * runAlgorithm(broydenAlgorithm((v) => sub(mul(v, 2), tensor([2, 4])), [0, 0]), { maxSteps: 20 }).state.x // => [1, 2]
  * ```
  */
@@ -389,8 +389,8 @@ export function broydenAlgorithm(
  *   `diverged` (no throw).
  * @example
  * ```ts
- * import { broyden } from 'mdml-engine/numerics/roots'
- * import { sub, mul, tensor, toArray } from 'mdml-engine/tensor'
+ * import { broyden } from 'omai-engine/numerics/roots'
+ * import { sub, mul, tensor, toArray } from 'omai-engine/tensor'
  * toArray(broyden((v) => sub(mul(v, 2), tensor([2, 4])), [0, 0]).x) // => [1, 2]
  * ```
  */
@@ -451,9 +451,9 @@ export const fixedPointContract: Contract<FixedPointState, FixedPointPath> = def
  * @concept fixed-points
  * @example
  * ```ts
- * import { fixedPointAlgorithm } from 'mdml-engine/numerics/roots'
- * import { runAlgorithm } from 'mdml-engine/trace'
- * import { cos } from 'mdml-engine/tensor'
+ * import { fixedPointAlgorithm } from 'omai-engine/numerics/roots'
+ * import { runAlgorithm } from 'omai-engine/trace'
+ * import { cos } from 'omai-engine/tensor'
  * Math.abs((runAlgorithm(fixedPointAlgorithm((x) => cos(x), [1]), { maxSteps: 100 }).state.x[0] ?? 0) - 0.7390851332151607) < 1e-6 // => true
  * ```
  */
@@ -570,8 +570,8 @@ export function fixedPointAlgorithm(
  * @concept fixed-points
  * @example
  * ```ts
- * import { fixedPoint } from 'mdml-engine/numerics/roots'
- * import { cos, toArray } from 'mdml-engine/tensor'
+ * import { fixedPoint } from 'omai-engine/numerics/roots'
+ * import { cos, toArray } from 'omai-engine/tensor'
  * Math.abs(toArray(fixedPoint((x) => cos(x), [1]).x)[0] - 0.7390851332151607) < 1e-10 // => true
  * ```
  */
@@ -591,8 +591,8 @@ export function fixedPoint(g: VectorFunction, x0: TensorLike, options: FixedPoin
  * @index function Solve F(x) = 0 with newton, broyden or other methods.
  * @example
  * ```ts
- * import { root } from 'mdml-engine/numerics/roots'
- * import { sub, tensor, toArray } from 'mdml-engine/tensor'
+ * import { root } from 'omai-engine/numerics/roots'
+ * import { sub, tensor, toArray } from 'omai-engine/tensor'
  * toArray(root((v) => sub(v, tensor([3, 4])), [0, 0]).x) // => [3, 4]
  * ```
  */
@@ -625,9 +625,9 @@ export function root(
  * @concept implicit-differentiation
  * @example
  * ```ts
- * import { rootOf } from 'mdml-engine/numerics/roots'
- * import { jacobian } from 'mdml-engine/autodiff'
- * import { mul, sub, tensor, toArray } from 'mdml-engine/tensor'
+ * import { rootOf } from 'omai-engine/numerics/roots'
+ * import { jacobian } from 'omai-engine/autodiff'
+ * import { mul, sub, tensor, toArray } from 'omai-engine/tensor'
  * // 2x = theta, so dx/dtheta = I / 2.
  * toArray(jacobian((t) => rootOf((x, th) => sub(mul(x, 2), th), t, [0, 0]))(tensor([1, 2]))) // => [[0.5, 0], [0, 0.5]]
  * ```

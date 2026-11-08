@@ -6,13 +6,13 @@
  *   drawn from, and the tapes of the runs that made it (a session, or the `Run` a recorder kept), which the runner
  *   writes as `tape*.json` so the run can be replayed later.
  * - `animation` (optional, in what `run` returns): a timeline of scenes the runner writes as `learning.gif`.
- * - `View`: a React component (rendered to static markup, no browser) that draws the result with `mdml-render`.
+ * - `View`: a React component (rendered to static markup, no browser) that draws the result with `omai-render`.
  *
  * Adding an example means adding a folder with a `main.tsx`: nothing else lists it.
  */
 
-import type { Timeline } from 'mdml-engine/scene'
-import type { Run, Session } from 'mdml-engine/trace'
+import type { Timeline } from 'omai-engine/scene'
+import type { Run, Session } from 'omai-engine/trace'
 import type { ReactElement } from 'react'
 
 /** What the index and the README say about an example. */

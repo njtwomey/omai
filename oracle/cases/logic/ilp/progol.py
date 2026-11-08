@@ -6,7 +6,7 @@ bottom clause of the first example is computed by a reference port of Muggleton'
 from itertools import product
 
 from cases.logic._prolog import Machine
-from mdml_oracle.fixture import Case, case
+from omai_oracle.fixture import Case, case
 
 REFERENCE: dict[str, str] = {
     "muggleton-1995": "Inverse entailment and Progol; textbook theories checked with oracle/cases/logic/_prolog.py",

@@ -1,7 +1,7 @@
-import { cartesian, lines } from 'mdml-render/charts'
-import { figure } from 'mdml-render/figure'
-import { Chart, Choice, ControlPanel, FigureFrame, useColourMode } from 'mdml-render/react'
-import { categoricalColour, colourBlindCheck, simulateColourVision } from 'mdml-render/theme'
+import { cartesian, lines } from 'omai-render/charts'
+import { figure } from 'omai-render/figure'
+import { Chart, Choice, ControlPanel, FigureFrame, useColourMode } from 'omai-render/react'
+import { categoricalColour, colourBlindCheck, simulateColourVision } from 'omai-render/theme'
 import { type ReactNode, useMemo, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 

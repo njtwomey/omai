@@ -5,8 +5,8 @@ attributes keep the numeric codes of the published file; the target `num` (0 for
 is text.
 """
 
-from mdml_oracle.uci import source_note, table_rows, zip_member
-from mdml_oracle.vendor import render_ordered_table
+from omai_oracle.uci import source_note, table_rows, zip_member
+from omai_oracle.vendor import render_ordered_table
 
 TARGET = "packages/engine/src/lib/datasets/_data/heart-disease.data.ts"
 ID, SLUG = 45, "heart+disease"

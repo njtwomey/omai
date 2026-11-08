@@ -6,8 +6,8 @@ from collections.abc import Callable
 
 import numpy as np
 import sdeint
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray, rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray, rng
 
 REFERENCE: dict[str, str] = {"sdeint": "0.3.0", "numpy": np.__version__}
 

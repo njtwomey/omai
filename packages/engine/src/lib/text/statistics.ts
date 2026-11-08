@@ -4,7 +4,7 @@
  * compression, and topic coherence as gensim's CoherenceModel computes it.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { lstsq } from '../numerics/linalg/index.ts'
 import { brentq } from '../numerics/roots/index.ts'
 import { toFlat } from '../tensor/index.ts'
@@ -37,11 +37,11 @@ function lineFit(x: readonly number[], y: readonly number[]): [number, number] {
  * @param input - Tokens, or counts by type.
  * @param options - The method (default `loglog`).
  * @returns The exponent s and, for `loglog`, the constant C.
- * @throws MdmlError with code `value` for fewer than two types.
+ * @throws OmaiError with code `value` for fewer than two types.
  * @concept zipf-law
  * @example
  * ```ts
- * import { zipfFit } from 'mdml-engine/text'
+ * import { zipfFit } from 'omai-engine/text'
  * zipfFit(new Map([['a', 60], ['b', 30], ['c', 20], ['d', 15]])).exponent // => 1
  * ```
  */
@@ -50,7 +50,7 @@ export function zipfFit(
   options: { readonly method?: 'loglog' | 'mle' } = {},
 ): { readonly exponent: number; readonly constant: number } {
   const f = frequencies(input).sort((a, b) => b - a)
-  if (f.length < 2) throw new MdmlError('value', 'zipfFit: need at least two types')
+  if (f.length < 2) throw new OmaiError('value', 'zipfFit: need at least two types')
   const ranks = f.map((_, i) => i + 1)
   if (options.method !== 'mle') {
     const [a, b] = lineFit(
@@ -91,16 +91,16 @@ export function zipfFit(
  *
  * @param tokens - The tokens.
  * @returns K and beta.
- * @throws MdmlError with code `value` for fewer than two tokens.
+ * @throws OmaiError with code `value` for fewer than two tokens.
  * @concept heaps-law
  * @example
  * ```ts
- * import { heapsFit } from 'mdml-engine/text'
+ * import { heapsFit } from 'omai-engine/text'
  * heapsFit(['a', 'b', 'c', 'd']).beta // => 1
  * ```
  */
 export function heapsFit(tokens: readonly string[]): { readonly k: number; readonly beta: number } {
-  if (tokens.length < 2) throw new MdmlError('value', 'heapsFit: need at least two tokens')
+  if (tokens.length < 2) throw new OmaiError('value', 'heapsFit: need at least two tokens')
   const seen = new Set<string>()
   const xs: number[] = []
   const ys: number[] = []
@@ -124,7 +124,7 @@ export function heapsFit(tokens: readonly string[]): { readonly k: number; reado
  * @concept lexical-diversity
  * @example
  * ```ts
- * import { lexicalDiversity } from 'mdml-engine/text'
+ * import { lexicalDiversity } from 'omai-engine/text'
  * lexicalDiversity(['a', 'b', 'a', 'c'], { window: 2 }) // => { types: 3, tokens: 4, ttr: 0.75, rootTtr: 1.5, logTtr: 0.7924812503605781, mattr: 1, hapaxRatio: 0.6666666666666666 }
  * ```
  */
@@ -185,7 +185,7 @@ export function lexicalDiversity(
  * @concept tokenizer-evaluation
  * @example
  * ```ts
- * import { tokenizerStatistics } from 'mdml-engine/text'
+ * import { tokenizerStatistics } from 'omai-engine/text'
  * tokenizerStatistics(['unhappy', 'cat'], (w) => (w === 'unhappy' ? ['un', 'happy'] : [w])) // => { fertility: 1.5, continuedWords: 0.5, bytesPerToken: 3.3333333333333335, charactersPerToken: 3.3333333333333335 }
  * ```
  */
@@ -267,7 +267,7 @@ function slidingPresence(text: readonly string[], w: number, relevant: ReadonlyS
  * @concept topic-coherence
  * @example
  * ```ts
- * import { topicCoherence } from 'mdml-engine/text'
+ * import { topicCoherence } from 'omai-engine/text'
  * const texts = [['cat', 'dog'], ['cat', 'dog'], ['car', 'road']]
  * topicCoherence([['cat', 'dog']], texts).perTopic.map((v) => Math.round(v * 1e6) / 1e6) // => [0]
  * ```

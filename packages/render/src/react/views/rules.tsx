@@ -2,7 +2,7 @@
  * React views of rule and concept records: a rule list and TCAV scores per concept.
  */
 
-import type { ConceptScores, RuleSet } from 'mdml-engine/exposition'
+import type { ConceptScores, RuleSet } from 'omai-engine/exposition'
 import { type ReactElement, useCallback, useMemo } from 'react'
 import type { Figure } from '../../figure/figure.ts'
 import { conceptView, ruleListView } from '../../views/rules.ts'

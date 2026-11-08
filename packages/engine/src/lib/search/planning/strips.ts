@@ -6,7 +6,7 @@
  * @index function STRIPS planning problems and planners.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import type { BestFirstOptions } from '../_best-first.ts'
 import { aStarSearch, greedyBestFirstSearch, weightedAStarSearch } from '../informed.ts'
 import type { SearchProblem, SearchResult } from '../problem.ts'
@@ -47,11 +47,11 @@ const sorted = (facts: Iterable<string>): string[] => [...new Set(facts)].sort()
  * @param goal - The goal facts.
  * @param actions - The actions.
  * @returns The problem.
- * @throws MdmlError with code `value` when action names repeat or a cost is negative.
+ * @throws OmaiError with code `value` when action names repeat or a cost is negative.
  * @concept classical-planning
  * @example
  * ```ts
- * import { strips } from 'mdml-engine/search'
+ * import { strips } from 'omai-engine/search'
  * const p = strips(['at-home'], ['at-shop'], [{ name: 'go', pre: ['at-home'], add: ['at-shop'], del: ['at-home'] }])
  * p.actions.length // => 1
  * ```
@@ -63,10 +63,10 @@ export function strips(
 ): StripsProblem {
   const names = new Set<string>()
   const normal = actions.map((a) => {
-    if (names.has(a.name)) throw new MdmlError('value', `strips: action ${a.name} is repeated`)
+    if (names.has(a.name)) throw new OmaiError('value', `strips: action ${a.name} is repeated`)
     names.add(a.name)
     if (a.cost !== undefined && !(a.cost >= 0))
-      throw new MdmlError('value', `strips: action ${a.name} has a negative cost`)
+      throw new OmaiError('value', `strips: action ${a.name} has a negative cost`)
     return { ...a, pre: sorted(a.pre), add: sorted(a.add), del: sorted(a.del) }
   })
   return { initial: sorted(initial), goal: sorted(goal), actions: normal }
@@ -81,7 +81,7 @@ export function strips(
  * @concept classical-planning
  * @example
  * ```ts
- * import { applicable } from 'mdml-engine/search'
+ * import { applicable } from 'omai-engine/search'
  * applicable(['a', 'b'], { name: 'x', pre: ['a'], add: [], del: [] }) // => true
  * ```
  */
@@ -99,7 +99,7 @@ export function applicable(state: PlanState | ReadonlySet<string>, action: Strip
  * @concept classical-planning
  * @example
  * ```ts
- * import { applyAction } from 'mdml-engine/search'
+ * import { applyAction } from 'omai-engine/search'
  * applyAction(['at-home', 'hungry'], { name: 'go', pre: ['at-home'], add: ['at-shop'], del: ['at-home'] }) // => ['at-shop', 'hungry']
  * ```
  */
@@ -118,7 +118,7 @@ export function applyAction(state: PlanState, action: StripsAction): string[] {
  * @concept classical-planning
  * @example
  * ```ts
- * import { regress } from 'mdml-engine/search'
+ * import { regress } from 'omai-engine/search'
  * regress(['at-shop', 'hungry'], { name: 'go', pre: ['at-home'], add: ['at-shop'], del: ['at-home'] }) // => ['at-home', 'hungry']
  * ```
  */
@@ -144,11 +144,11 @@ export interface PlanCheck {
  * @param problem - The problem.
  * @param plan - Action names in order.
  * @returns Validity, the state reached, the cost, and where the plan failed.
- * @throws MdmlError with code `value` when a name is not an action of the problem.
+ * @throws OmaiError with code `value` when a name is not an action of the problem.
  * @concept classical-planning
  * @example
  * ```ts
- * import { strips, validatePlan } from 'mdml-engine/search'
+ * import { strips, validatePlan } from 'omai-engine/search'
  * const p = strips(['at-home'], ['at-shop'], [{ name: 'go', pre: ['at-home'], add: ['at-shop'], del: ['at-home'] }])
  * [validatePlan(p, ['go']).valid, validatePlan(p, ['go', 'go']).failedAt] // => [true, 1]
  * ```
@@ -159,7 +159,7 @@ export function validatePlan(problem: StripsProblem, plan: readonly string[]): P
   let cost = 0
   for (const [i, name] of plan.entries()) {
     const a = byName.get(name)
-    if (a === undefined) throw new MdmlError('value', `validatePlan: unknown action ${name}`)
+    if (a === undefined) throw new OmaiError('value', `validatePlan: unknown action ${name}`)
     if (!applicable(state, a)) return { valid: false, state, cost, failedAt: i }
     state = applyAction(state, a)
     cost += a.cost ?? 1
@@ -180,7 +180,7 @@ export type PlanningHeuristic = 'h-add' | 'h-max' | 'h-ff' | 'goal-count' | 'bli
  * @concept classical-planning
  * @example
  * ```ts
- * import { breadthFirstSearch, forwardProblem, strips } from 'mdml-engine/search'
+ * import { breadthFirstSearch, forwardProblem, strips } from 'omai-engine/search'
  * const p = strips(['at-home'], ['at-shop'], [{ name: 'go', pre: ['at-home'], add: ['at-shop'], del: ['at-home'] }])
  * breadthFirstSearch(forwardProblem(p)).actions.map((a) => a.name) // => ['go']
  * ```
@@ -225,7 +225,7 @@ export function forwardProblem(
  * @concept classical-planning
  * @example
  * ```ts
- * import { breadthFirstSearch, regressionProblem, strips } from 'mdml-engine/search'
+ * import { breadthFirstSearch, regressionProblem, strips } from 'omai-engine/search'
  * const p = strips(['at-home'], ['at-shop'], [{ name: 'go', pre: ['at-home'], add: ['at-shop'], del: ['at-home'] }])
  * breadthFirstSearch(regressionProblem(p)).actions.map((a) => a.name) // => ['go']
  * ```
@@ -312,7 +312,7 @@ function plan(p: SearchProblem<PlanState, StripsAction>, options: PlanOptions, b
  * @concept classical-planning
  * @example
  * ```ts
- * import { forwardPlan, strips } from 'mdml-engine/search'
+ * import { forwardPlan, strips } from 'omai-engine/search'
  * // Have your cake and eat it too (AIMA figure 10.7).
  * const cake = strips(['have-cake'], ['have-cake', 'eaten-cake'], [
  *   { name: 'eat', pre: ['have-cake'], add: ['eaten-cake'], del: ['have-cake'] },
@@ -335,7 +335,7 @@ export function forwardPlan(problem: StripsProblem, options: PlanOptions = {}): 
  * @concept classical-planning
  * @example
  * ```ts
- * import { regressionPlan, strips } from 'mdml-engine/search'
+ * import { regressionPlan, strips } from 'omai-engine/search'
  * const cake = strips(['have-cake'], ['have-cake', 'eaten-cake'], [
  *   { name: 'eat', pre: ['have-cake'], add: ['eaten-cake'], del: ['have-cake'] },
  *   { name: 'bake', pre: [], add: ['have-cake'], del: [] },

@@ -5,7 +5,7 @@
  * Gauss-Hermite.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import {
   add,
   fromStorage,
@@ -31,7 +31,7 @@ export interface QuadratureRule {
  * orthogonal polynomials' recurrence, and the weights mu0 times the squared first components of its eigenvectors.
  */
 function golubWelsch(n: number, a: (k: number) => number, b: (k: number) => number, mu0: number): QuadratureRule {
-  if (!(Number.isInteger(n) && n >= 1)) throw new MdmlError('value', 'quadrature rules need n >= 1')
+  if (!(Number.isInteger(n) && n >= 1)) throw new OmaiError('value', 'quadrature rules need n >= 1')
   const j = new Float64Array(n * n)
   for (let k = 0; k < n; k++) {
     j[k * n + k] = a(k)
@@ -64,7 +64,7 @@ function legendre(n: number, x: number): [number, number] {
  * @concept gaussian-quadrature
  * @example
  * ```ts
- * import { gaussLegendre } from 'mdml-engine/numerics/quadrature'
+ * import { gaussLegendre } from 'omai-engine/numerics/quadrature'
  * Array.from(gaussLegendre(2).nodes.data).map((x) => Math.round(x * 1e12) / 1e12) // => [-0.57735026919, 0.57735026919]
  * ```
  */
@@ -97,7 +97,7 @@ export function gaussLegendre(n: number): QuadratureRule {
  * @returns The rule.
  * @example
  * ```ts
- * import { gaussHermite } from 'mdml-engine/numerics/quadrature'
+ * import { gaussHermite } from 'omai-engine/numerics/quadrature'
  * Math.abs(Array.from(gaussHermite(5).weights.data).reduce((a, b) => a + b) - Math.sqrt(Math.PI)) < 1e-13 // => true
  * ```
  */
@@ -117,7 +117,7 @@ export function gaussHermite(n: number): QuadratureRule {
  * @returns The rule.
  * @example
  * ```ts
- * import { gaussLaguerre } from 'mdml-engine/numerics/quadrature'
+ * import { gaussLaguerre } from 'omai-engine/numerics/quadrature'
  * Math.abs(Array.from(gaussLaguerre(4).weights.data).reduce((a, b) => a + b) - 1) < 1e-13 // => true
  * ```
  */
@@ -139,12 +139,12 @@ export function gaussLaguerre(n: number): QuadratureRule {
  * @returns The rule.
  * @example
  * ```ts
- * import { gaussJacobi } from 'mdml-engine/numerics/quadrature'
+ * import { gaussJacobi } from 'omai-engine/numerics/quadrature'
  * gaussJacobi(3, 0.5, 0.5).nodes.shape // => [3]
  * ```
  */
 export function gaussJacobi(n: number, alpha: number, beta: number): QuadratureRule {
-  if (!(alpha > -1 && beta > -1)) throw new MdmlError('value', 'gaussJacobi: alpha and beta must exceed -1')
+  if (!(alpha > -1 && beta > -1)) throw new OmaiError('value', 'gaussJacobi: alpha and beta must exceed -1')
   const ab = alpha + beta
   const a = (k: number): number => {
     const d = (2 * k + ab) * (2 * k + ab + 2)
@@ -181,14 +181,14 @@ export type DoubleExponentialRange = 'finite' | 'halfLine' | 'real'
  * @returns The rule.
  * @example
  * ```ts
- * import { doubleExponentialRule } from 'mdml-engine/numerics/quadrature'
- * import { exp, item, mul, neg, square, sum } from 'mdml-engine/tensor'
+ * import { doubleExponentialRule } from 'omai-engine/numerics/quadrature'
+ * import { exp, item, mul, neg, square, sum } from 'omai-engine/tensor'
  * const { nodes, weights } = doubleExponentialRule('real')
  * Math.abs(item(sum(mul(weights, exp(neg(square(nodes)))))) - Math.sqrt(Math.PI)) < 1e-14 // => true
  * ```
  */
 export function doubleExponentialRule(range: DoubleExponentialRange, h: number = 1 / 32): QuadratureRule {
-  if (!(h > 0)) throw new MdmlError('value', 'doubleExponentialRule: the step must be positive')
+  if (!(h > 0)) throw new OmaiError('value', 'doubleExponentialRule: the step must be positive')
   const xs: number[] = []
   const ws: number[] = []
   const steps = Math.round(4 / h)
@@ -233,8 +233,8 @@ export function doubleExponentialRule(range: DoubleExponentialRange, h: number =
  * @concept gaussian-quadrature
  * @example
  * ```ts
- * import { fixedQuad } from 'mdml-engine/numerics/quadrature'
- * import { item, square } from 'mdml-engine/tensor'
+ * import { fixedQuad } from 'omai-engine/numerics/quadrature'
+ * import { item, square } from 'omai-engine/tensor'
  * Math.abs(item(fixedQuad((x) => square(x), 0, 3)) - 9) < 1e-13 // => true
  * ```
  */
@@ -258,8 +258,8 @@ export function fixedQuad(f: (x: Value) => Value, a: TensorLike, b: TensorLike, 
  * @returns The expectation.
  * @example
  * ```ts
- * import { normalExpectation } from 'mdml-engine/numerics/quadrature'
- * import { item, square } from 'mdml-engine/tensor'
+ * import { normalExpectation } from 'omai-engine/numerics/quadrature'
+ * import { item, square } from 'omai-engine/tensor'
  * Math.abs(item(normalExpectation((x) => square(x), 1, 2)) - 5) < 1e-12 // => true
  * ```
  */

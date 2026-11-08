@@ -7,7 +7,7 @@
  * @index function sample, observe and param: the vocabulary programs are written in.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { type Distribution, defineDistribution, type Support } from '../dists/index.ts'
 import type { Key } from '../random/index.ts'
 import { asTensor, broadcastShapes, type Tensor, type TensorLike, take, type Value, zeros } from '../tensor/index.ts'
@@ -125,7 +125,7 @@ export interface Messenger {
  * @returns The message.
  * @example
  * ```ts
- * import { message } from 'mdml-engine/probprog'
+ * import { message } from 'omai-engine/probprog'
  * message('sample', 'x').scale // => 1
  * ```
  */
@@ -171,8 +171,8 @@ export function message(type: SiteType, name: string, fields: Partial<Message> =
  * @returns The processed message.
  * @example
  * ```ts
- * import { message, send } from 'mdml-engine/probprog'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { message, send } from 'omai-engine/probprog'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * toArray(send(message('deterministic', 'd', { value: tensor(2) })).value ?? tensor(0)) // => 2
  * ```
  */
@@ -188,10 +188,10 @@ export function send(msg: Message): Message {
  * @returns What `fn` returns.
  * @example
  * ```ts
- * import { sample, withMessenger } from 'mdml-engine/probprog'
- * import { normal } from 'mdml-engine/dists'
- * import { key } from 'mdml-engine/random'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { sample, withMessenger } from 'omai-engine/probprog'
+ * import { normal } from 'omai-engine/dists'
+ * import { key } from 'omai-engine/random'
+ * import { toArray } from 'omai-engine/tensor'
  * const x = withMessenger({ process: (m) => { m.key = key(0) } }, () => sample('x', normal(0, 1)))
  * Number.isFinite(toArray(x) as number) // => true
  * ```
@@ -210,7 +210,7 @@ export interface SampleOptions {
 }
 
 function siteValue(msg: Message): Value {
-  if (msg.value === undefined) throw new MdmlError('value', `${msg.type} ${msg.name}: no value was produced`)
+  if (msg.value === undefined) throw new OmaiError('value', `${msg.type} ${msg.name}: no value was produced`)
   return msg.value
 }
 
@@ -223,13 +223,13 @@ function siteValue(msg: Message): Value {
  * @param fn - The distribution.
  * @param options - An observed value, a sample shape and inference hints.
  * @returns The site's value.
- * @throws MdmlError with code `value` when a draw is needed but no handler supplied a key.
+ * @throws OmaiError with code `value` when a draw is needed but no handler supplied a key.
  * @concept probabilistic-programs
  * @example
  * ```ts
- * import { sample, seed, trace } from 'mdml-engine/probprog'
- * import { normal } from 'mdml-engine/dists'
- * import { key } from 'mdml-engine/random'
+ * import { sample, seed, trace } from 'omai-engine/probprog'
+ * import { normal } from 'omai-engine/dists'
+ * import { key } from 'omai-engine/random'
  * const model = () => sample('x', normal(0, 1), { sampleShape: [3] })
  * trace(seed(model, key(0))).getTrace().sites.get('x')?.value.shape // => [3]
  * ```
@@ -255,9 +255,9 @@ export function sample(name: string, fn: Distribution, options: SampleOptions = 
  * @concept probabilistic-programs
  * @example
  * ```ts
- * import { observe } from 'mdml-engine/probprog'
- * import { normal } from 'mdml-engine/dists'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { observe } from 'omai-engine/probprog'
+ * import { normal } from 'omai-engine/dists'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(observe('y', normal(0, 1), 1.5)) // => 1.5
  * ```
  */
@@ -279,8 +279,8 @@ export function observe(
  * @concept probabilistic-programs
  * @example
  * ```ts
- * import { deterministic, trace } from 'mdml-engine/probprog'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { deterministic, trace } from 'omai-engine/probprog'
+ * import { toArray } from 'omai-engine/tensor'
  * const model = () => deterministic('d', [1, 2])
  * toArray(trace(model).getTrace().sites.get('d')?.value ?? [0]) // => [1, 2]
  * ```
@@ -308,8 +308,8 @@ export interface ParamOptions {
  * @concept probabilistic-programs
  * @example
  * ```ts
- * import { param } from 'mdml-engine/probprog'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { param } from 'omai-engine/probprog'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(param('scale', 2, { support: { kind: 'positive' } })) // => 2
  * ```
  */
@@ -348,8 +348,8 @@ function unitDistribution(logFactor: Value): Distribution {
  * @concept probabilistic-programs
  * @example
  * ```ts
- * import { factor, logJoint } from 'mdml-engine/probprog'
- * import { item } from 'mdml-engine/tensor'
+ * import { factor, logJoint } from 'omai-engine/probprog'
+ * import { item } from 'omai-engine/tensor'
  * item(logJoint(() => factor('penalty', [-1, -2]), undefined).logJoint) // => -3
  * ```
  */
@@ -401,7 +401,7 @@ function plateHandler(frame: PlateFrame, indices: Tensor<'int32'>): Messenger {
       try {
         trailing = broadcastShapes(expected.slice(overlap), own)
       } catch {
-        throw new MdmlError(
+        throw new OmaiError(
           'shape',
           `plate ${frame.name}: site ${msg.name} has batch shape [${own.join(', ')}], which does not fit plates of shape [${expected.join(', ')}]`,
           { site: msg.name, plate: frame.name },
@@ -432,14 +432,14 @@ function plateHandler(frame: PlateFrame, indices: Tensor<'int32'>): Messenger {
  * @param fn - The body, given the (sub)sample indices.
  * @param options - Subsample size or indices, and the batch dimension.
  * @returns What the body returns.
- * @throws MdmlError with code `value` for an invalid size or subsample, or `shape` when a site's batch shape
+ * @throws OmaiError with code `value` for an invalid size or subsample, or `shape` when a site's batch shape
  *   cannot fit the plates.
  * @concept probabilistic-programs
  * @example
  * ```ts
- * import { plate, sample, seed, trace } from 'mdml-engine/probprog'
- * import { normal } from 'mdml-engine/dists'
- * import { key } from 'mdml-engine/random'
+ * import { plate, sample, seed, trace } from 'omai-engine/probprog'
+ * import { normal } from 'omai-engine/dists'
+ * import { key } from 'omai-engine/random'
  * const model = () => plate('data', 4, () => sample('x', normal(0, 1)))
  * trace(seed(model, key(0))).getTrace().sites.get('x')?.value.shape // => [4]
  * ```
@@ -451,11 +451,11 @@ export function plate<R>(
   options: PlateOptions = {},
 ): R {
   if (!Number.isInteger(size) || size < 0)
-    throw new MdmlError('value', `plate ${name}: size must be a non-negative integer`)
+    throw new OmaiError('value', `plate ${name}: size must be a non-negative integer`)
   const given = options.subsample === undefined ? undefined : asTensor(options.subsample)
   const subsampleSize = given?.shape[0] ?? options.subsampleSize ?? size
   if (!Number.isInteger(subsampleSize) || subsampleSize < 0 || subsampleSize > size)
-    throw new MdmlError('value', `plate ${name}: subsample size must be an integer in [0, ${size}]`)
+    throw new OmaiError('value', `plate ${name}: subsample size must be an integer in [0, ${size}]`)
   const msg = applyStack(
     message('plate', name, {
       size,
@@ -467,7 +467,7 @@ export function plate<R>(
   let dim = options.dim ?? -1
   if (options.dim === undefined) while (occupied.has(dim)) dim -= 1
   else if (occupied.has(dim) || dim >= 0)
-    throw new MdmlError('value', `plate ${name}: dim ${dim} is negative and free of enclosing plates`)
+    throw new OmaiError('value', `plate ${name}: dim ${dim} is negative and free of enclosing plates`)
   const indices = siteValue(msg) as Tensor<'int32'>
   const frame: PlateFrame = { name, size, subsampleSize: indices.shape[0] ?? subsampleSize, dim }
   return withHandler(plateHandler(frame, indices), () => fn(indices))
@@ -490,14 +490,14 @@ export interface MarkovOptions {
  * @param init - The initial carry.
  * @param options - The history (default 1).
  * @returns The final carry.
- * @throws MdmlError with code `value` for a negative length or history.
+ * @throws OmaiError with code `value` for a negative length or history.
  * @concept probabilistic-programs
  * @example
  * ```ts
- * import { markov, sample, seed, trace } from 'mdml-engine/probprog'
- * import { normal } from 'mdml-engine/dists'
- * import { key } from 'mdml-engine/random'
- * import type { Value } from 'mdml-engine/tensor'
+ * import { markov, sample, seed, trace } from 'omai-engine/probprog'
+ * import { normal } from 'omai-engine/dists'
+ * import { key } from 'omai-engine/random'
+ * import type { Value } from 'omai-engine/tensor'
  * const walk = () => markov('t', 3, (t, x: Value | number) => sample(`x${t}`, normal(x, 1)), 0)
  * [...trace(seed(walk, key(0))).getTrace().sites.keys()] // => ['t', 'x0', 'x1', 'x2']
  * ```
@@ -511,9 +511,9 @@ export function markov<C>(
 ): C {
   const history = options.history ?? 1
   if (!Number.isInteger(length) || length < 0)
-    throw new MdmlError('value', `markov ${name}: length must be a non-negative integer`)
+    throw new OmaiError('value', `markov ${name}: length must be a non-negative integer`)
   if (!Number.isInteger(history) || history < 0)
-    throw new MdmlError('value', `markov ${name}: history must be a non-negative integer`)
+    throw new OmaiError('value', `markov ${name}: history must be a non-negative integer`)
   const msg = applyStack(
     message('markov', name, {
       length,

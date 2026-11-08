@@ -2,7 +2,7 @@
 
 import numpy as np
 import sklearn
-from mdml_oracle.fixture import Case, case
+from omai_oracle.fixture import Case, case
 from sklearn.datasets import make_s_curve, make_swiss_roll
 
 REFERENCE: dict[str, str] = {"scikit-learn": sklearn.__version__}

@@ -67,8 +67,8 @@ const betaincinvP = special('betaincinv', inc.betaincinv, [
  * @index function Regularised lower incomplete gamma function.
  * @example
  * ```ts
- * import { gammainc } from 'mdml-engine/numerics/special'
- * import { item } from 'mdml-engine/tensor'
+ * import { gammainc } from 'omai-engine/numerics/special'
+ * import { item } from 'omai-engine/tensor'
  * Math.abs(item(gammainc(1, 2)) - (1 - Math.exp(-2))) < 1e-15 // => true
  * ```
  */
@@ -84,8 +84,8 @@ export function gammainc(a: TensorLike, x: TensorLike): Value {
  * @returns Q(a, x), differentiable in both arguments.
  * @example
  * ```ts
- * import { gammaincc } from 'mdml-engine/numerics/special'
- * import { item } from 'mdml-engine/tensor'
+ * import { gammaincc } from 'omai-engine/numerics/special'
+ * import { item } from 'omai-engine/tensor'
  * Math.abs(item(gammaincc(1, 2)) - Math.exp(-2)) < 1e-15 // => true
  * ```
  */
@@ -101,8 +101,8 @@ export function gammaincc(a: TensorLike, x: TensorLike): Value {
  * @returns log P(a, x), differentiable.
  * @example
  * ```ts
- * import { logGammainc } from 'mdml-engine/numerics/special'
- * import { item } from 'mdml-engine/tensor'
+ * import { logGammainc } from 'omai-engine/numerics/special'
+ * import { item } from 'omai-engine/tensor'
  * item(logGammainc(500, 1)) < -2000 // => true
  * ```
  */
@@ -118,8 +118,8 @@ export function logGammainc(a: TensorLike, x: TensorLike): Value {
  * @returns log Q(a, x), differentiable.
  * @example
  * ```ts
- * import { logGammaincc } from 'mdml-engine/numerics/special'
- * import { item } from 'mdml-engine/tensor'
+ * import { logGammaincc } from 'omai-engine/numerics/special'
+ * import { item } from 'omai-engine/tensor'
  * item(logGammaincc(1, 1000)) // => -1000
  * ```
  */
@@ -135,8 +135,8 @@ export function logGammaincc(a: TensorLike, x: TensorLike): Value {
  * @returns x, differentiable in a and p (implicit function theorem).
  * @example
  * ```ts
- * import { gammaincinv } from 'mdml-engine/numerics/special'
- * import { item } from 'mdml-engine/tensor'
+ * import { gammaincinv } from 'omai-engine/numerics/special'
+ * import { item } from 'omai-engine/tensor'
  * Math.abs(item(gammaincinv(1, 0.5)) - Math.LN2) < 1e-15 // => true
  * ```
  */
@@ -152,8 +152,8 @@ export function gammaincinv(a: TensorLike, p: TensorLike): Value {
  * @returns x, differentiable in a and q.
  * @example
  * ```ts
- * import { gammainccinv } from 'mdml-engine/numerics/special'
- * import { item } from 'mdml-engine/tensor'
+ * import { gammainccinv } from 'omai-engine/numerics/special'
+ * import { item } from 'omai-engine/tensor'
  * Math.abs(item(gammainccinv(1, 1e-100)) - 100 * Math.LN10) < 1e-12 // => true
  * ```
  */
@@ -172,8 +172,8 @@ export function gammainccinv(a: TensorLike, q: TensorLike): Value {
  * @index function Regularised incomplete beta function, the CDF of a beta distribution.
  * @example
  * ```ts
- * import { betainc } from 'mdml-engine/numerics/special'
- * import { item } from 'mdml-engine/tensor'
+ * import { betainc } from 'omai-engine/numerics/special'
+ * import { item } from 'omai-engine/tensor'
  * Math.abs(item(betainc(2, 2, 0.5)) - 0.5) < 1e-15 // => true
  * ```
  */
@@ -190,8 +190,8 @@ export function betainc(a: TensorLike, b: TensorLike, x: TensorLike): Value {
  * @returns x, differentiable in a, b and p.
  * @example
  * ```ts
- * import { betaincinv } from 'mdml-engine/numerics/special'
- * import { item } from 'mdml-engine/tensor'
+ * import { betaincinv } from 'omai-engine/numerics/special'
+ * import { item } from 'omai-engine/tensor'
  * Math.abs(item(betaincinv(2, 2, 0.5)) - 0.5) < 1e-15 // => true
  * ```
  */

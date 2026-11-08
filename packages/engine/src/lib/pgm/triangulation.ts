@@ -5,7 +5,7 @@
  * intersection property.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { maximalCliques as cliques } from '../graph/index.ts'
 import {
   type Algorithm,
@@ -36,7 +36,7 @@ export type EliminationHeuristic = 'minDegree' | 'minFill' | 'minWeight' | 'weig
  * @concept elimination-orderings
  * @example
  * ```ts
- * import { undirectedGraph, eliminationCost } from 'mdml-engine/pgm'
+ * import { undirectedGraph, eliminationCost } from 'omai-engine/pgm'
  * eliminationCost(undirectedGraph([['a', 'b'], ['a', 'c']]), 'a', 'minFill') // => 1
  * ```
  */
@@ -96,7 +96,7 @@ const costOf = (heuristic: EliminationHeuristic): EliminationCostFn => {
 export interface EliminationOrderOptions {
   /**
    * The greedy criterion: a name (`minFill` by default, `minDegree`, `minWeight`, `weightedMinFill`) or a cost
-   * function, as the `eliminationHeuristics` table of `mdml-engine/pgm` makes. Ignored when an order is given.
+   * function, as the `eliminationHeuristics` table of `omai-engine/pgm` makes. Ignored when an order is given.
    */
   readonly heuristic?: EliminationHeuristic | EliminationCostFn
   /** Numbers of states for the weighted criteria (default 2 each). */
@@ -158,12 +158,12 @@ export const eliminationOrderContract: Contract<EliminationState, EliminationPat
  * @param variables - The variables to order (others stay in the graph).
  * @param options - The criterion (name or cost function), the cardinalities for the weighted criteria, or a fixed order.
  * @returns The algorithm; it is done when every variable is eliminated.
- * @throws MdmlError with code `value` for an order that is not a permutation of the variables.
+ * @throws OmaiError with code `value` for an order that is not a permutation of the variables.
  * @concept elimination-orderings
  * @example
  * ```ts
- * import { eliminationOrderAlgorithm, undirectedGraph } from 'mdml-engine/pgm'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { eliminationOrderAlgorithm, undirectedGraph } from 'omai-engine/pgm'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const square = undirectedGraph([['a', 'b'], ['b', 'c'], ['c', 'd'], ['d', 'a']])
  * const alg = eliminationOrderAlgorithm(square, ['a', 'b', 'c', 'd'], { order: ['a', 'b', 'c', 'd'] })
  * const end = runAlgorithm(alg, { maxSteps: 4 }).state
@@ -184,7 +184,7 @@ export function eliminationOrderAlgorithm(
     given !== undefined &&
     (given.length !== todo.length || new Set(given).size !== todo.length || given.some((v) => !todo.includes(v)))
   )
-    throw new MdmlError('value', 'eliminationOrder: the order must list the variables, each once')
+    throw new OmaiError('value', 'eliminationOrder: the order must list the variables, each once')
   return {
     name: 'elimination-order',
     config: {
@@ -246,7 +246,7 @@ function adjacencyOf(g: ReadonlyMap<string, ReadonlySet<string>>): Record<string
  * @concept elimination-orderings
  * @example
  * ```ts
- * import { eliminationOrder, undirectedGraph } from 'mdml-engine/pgm'
+ * import { eliminationOrder, undirectedGraph } from 'omai-engine/pgm'
  * eliminationOrder(undirectedGraph([['a', 'b'], ['b', 'c']]), ['a', 'b', 'c'], 'minDegree') // => ['a', 'b', 'c']
  * ```
  */
@@ -279,11 +279,11 @@ export interface Triangulation {
  * @param graph - The graph.
  * @param order - An order of all vertices (default: greedy min-fill).
  * @returns The chordal graph, the fill-in edges, the maximal cliques and the order.
- * @throws MdmlError with code `value` when the order misses or repeats a vertex.
+ * @throws OmaiError with code `value` when the order misses or repeats a vertex.
  * @concept triangulation
  * @example
  * ```ts
- * import { triangulate, undirectedGraph } from 'mdml-engine/pgm'
+ * import { triangulate, undirectedGraph } from 'omai-engine/pgm'
  * const square = undirectedGraph([['a', 'b'], ['b', 'c'], ['c', 'd'], ['d', 'a']])
  * triangulate(square, ['a', 'b', 'c', 'd']).fillIns // => [['b', 'd']]
  * ```
@@ -292,7 +292,7 @@ export function triangulate(graph: UndirectedGraph, order?: readonly string[]): 
   const vertices = [...graph.keys()]
   const ord = order ?? eliminationOrder(graph, vertices, 'minFill')
   if (ord.length !== vertices.length || new Set(ord).size !== ord.length || ord.some((v) => !graph.has(v))) {
-    throw new MdmlError('value', 'triangulate: the order must list every vertex once')
+    throw new OmaiError('value', 'triangulate: the order must list every vertex once')
   }
   const run = runAlgorithm(eliminationOrderAlgorithm(graph, vertices, { order: ord }), { maxSteps: vertices.length })
   const chordal = copyGraph(graph)
@@ -337,8 +337,8 @@ export const cardinalitySearchContract: Contract<CardinalitySearchState, Cardina
  * @concept triangulation
  * @example
  * ```ts
- * import { maximumCardinalitySearchAlgorithm, undirectedGraph } from 'mdml-engine/pgm'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { maximumCardinalitySearchAlgorithm, undirectedGraph } from 'omai-engine/pgm'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const g = undirectedGraph([['a', 'b'], ['b', 'c']])
  * runAlgorithm(maximumCardinalitySearchAlgorithm(g), { maxSteps: 3 }).state.order // => ['a', 'b', 'c']
  * ```
@@ -382,7 +382,7 @@ export function maximumCardinalitySearchAlgorithm(
  * @returns The visit order.
  * @example
  * ```ts
- * import { maximumCardinalitySearch, undirectedGraph } from 'mdml-engine/pgm'
+ * import { maximumCardinalitySearch, undirectedGraph } from 'omai-engine/pgm'
  * maximumCardinalitySearch(undirectedGraph([['a', 'b'], ['b', 'c']])) // => ['a', 'b', 'c']
  * ```
  */
@@ -399,7 +399,7 @@ export function maximumCardinalitySearch(graph: UndirectedGraph): string[] {
  * @concept triangulation
  * @example
  * ```ts
- * import { isChordal, undirectedGraph } from 'mdml-engine/pgm'
+ * import { isChordal, undirectedGraph } from 'omai-engine/pgm'
  * isChordal(undirectedGraph([['a', 'b'], ['b', 'c'], ['c', 'd'], ['d', 'a']])) // => false
  * ```
  */
@@ -414,7 +414,7 @@ export function isChordal(graph: UndirectedGraph): boolean {
  * @returns Each clique sorted, the list sorted.
  * @example
  * ```ts
- * import { maximalCliques, undirectedGraph } from 'mdml-engine/pgm'
+ * import { maximalCliques, undirectedGraph } from 'omai-engine/pgm'
  * maximalCliques(undirectedGraph([['a', 'b'], ['b', 'c'], ['a', 'c'], ['c', 'd']])) // => [['a', 'b', 'c'], ['c', 'd']]
  * ```
  */
@@ -435,7 +435,7 @@ export function maximalCliques(graph: UndirectedGraph): string[][] {
  * @concept treewidth
  * @example
  * ```ts
- * import { inducedWidth, undirectedGraph } from 'mdml-engine/pgm'
+ * import { inducedWidth, undirectedGraph } from 'omai-engine/pgm'
  * inducedWidth(undirectedGraph([['a', 'b'], ['b', 'c']]), ['b', 'a', 'c']) // => 2
  * ```
  */
@@ -451,11 +451,11 @@ export function inducedWidth(graph: UndirectedGraph, order: readonly string[]): 
  * @param graph - The graph.
  * @param method - `exact` (default for up to 20 vertices) or `heuristic`.
  * @returns The treewidth (or its upper bound).
- * @throws MdmlError with code `value` for an exact request on more than 24 vertices.
+ * @throws OmaiError with code `value` for an exact request on more than 24 vertices.
  * @concept treewidth
  * @example
  * ```ts
- * import { treewidth, undirectedGraph } from 'mdml-engine/pgm'
+ * import { treewidth, undirectedGraph } from 'omai-engine/pgm'
  * treewidth(undirectedGraph([['a', 'b'], ['b', 'c'], ['c', 'd'], ['d', 'a']])) // => 2
  * ```
  */
@@ -469,7 +469,7 @@ export function treewidth(graph: UndirectedGraph, method?: 'exact' | 'heuristic'
       inducedWidth(graph, eliminationOrder(graph, vertices, 'minFill')),
     )
   }
-  if (n > 24) throw new MdmlError('value', `treewidth: exact treewidth of ${n} vertices is too expensive`)
+  if (n > 24) throw new OmaiError('value', `treewidth: exact treewidth of ${n} vertices is too expensive`)
   if (n === 0) return -1
   const index = new Map(vertices.map((v, i) => [v, i]))
   const adj = vertices.map((v) => {
@@ -531,7 +531,7 @@ export interface JunctionTree {
  * @index function Junction tree from a model's moral graph.
  * @example
  * ```ts
- * import { junctionTree, undirectedGraph } from 'mdml-engine/pgm'
+ * import { junctionTree, undirectedGraph } from 'omai-engine/pgm'
  * const jt = junctionTree(undirectedGraph([['a', 'b'], ['b', 'c']]))
  * jt.cliques // => [['a', 'b'], ['b', 'c']]
  * jt.edges // => [{ from: 0, to: 1, separator: ['b'] }]
@@ -576,7 +576,7 @@ export function junctionTree(graph: UndirectedGraph, order?: readonly string[]):
  * @concept junction-trees
  * @example
  * ```ts
- * import { hasRunningIntersection } from 'mdml-engine/pgm'
+ * import { hasRunningIntersection } from 'omai-engine/pgm'
  * hasRunningIntersection({ cliques: [['a', 'b'], ['c'], ['b', 'c']], edges: [{ from: 0, to: 1, separator: [] }, { from: 1, to: 2, separator: ['c'] }] }) // => false
  * ```
  */

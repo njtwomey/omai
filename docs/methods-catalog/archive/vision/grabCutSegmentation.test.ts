@@ -1,4 +1,4 @@
-import type { BoardSteps, DecisionSurface } from 'mdml-engine/exposition'
+import type { BoardSteps, DecisionSurface } from 'omai-engine/exposition'
 import { describe, expect, it } from 'vitest'
 import { metricSeries, session, tensorSeries } from '../../lib/trace/index.ts'
 import { grabCutSegmentation } from './grabCutSegmentation.ts'

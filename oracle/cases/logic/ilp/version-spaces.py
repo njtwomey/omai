@@ -3,8 +3,8 @@ specific and general consistent conjunctions found by enumerating the whole hypo
 and Find-S, on Mitchell's EnjoySport (table 2.1) and seeded random tasks."""
 
 from cases.logic.ilp._ilp import brute_version_space, find_s
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import rng
 
 REFERENCE: dict[str, str] = {"mitchell-1997": "Machine Learning, chapter 2; brute-force reference"}
 

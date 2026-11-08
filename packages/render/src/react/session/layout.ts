@@ -7,7 +7,7 @@
  * @index structure Every panel kind a layout can declare: `{ kind: 'curves', paths: ['loss'] }`
  */
 
-import type { Json } from 'mdml-engine/base'
+import type { Json } from 'omai-engine/base'
 import type { MatrixMark } from '../../views/matrix-marks.ts'
 import type { Viewport } from '../../views/zoom.ts'
 

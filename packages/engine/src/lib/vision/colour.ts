@@ -4,7 +4,7 @@
  * white (Lab through the sRGB transfer curve), and YCrCb; `cvtColor` dispatches on OpenCV's conversion names.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import type { Tensor, TensorLike } from '../tensor/index.ts'
 import { greyOf, imageTensor, type Raster, rgbOf, srgbDecode, srgbEncode } from './_image.ts'
 
@@ -45,8 +45,8 @@ function map3(r: Raster, f: (a: number, b: number, c: number, out: Float64Array)
  * @concept colour-space
  * @example
  * ```ts
- * import { rgbToGrey } from 'mdml-engine/vision'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { rgbToGrey } from 'omai-engine/vision'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(rgbToGrey([[[1, 0, 0], [1, 1, 1]]])) // => [[0.299, 1]]
  * ```
  */
@@ -68,7 +68,7 @@ export function rgbToGrey(x: TensorLike, options: { readonly standard?: LumaStan
  * @concept colour-space
  * @example
  * ```ts
- * import { greyToRgb } from 'mdml-engine/vision'
+ * import { greyToRgb } from 'omai-engine/vision'
  * greyToRgb([[0.5, 1]]).shape // => [1, 2, 3]
  * ```
  */
@@ -88,8 +88,8 @@ export function greyToRgb(x: TensorLike): Tensor {
  * @concept colour-space
  * @example
  * ```ts
- * import { rgbToHsv } from 'mdml-engine/vision'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { rgbToHsv } from 'omai-engine/vision'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(rgbToHsv([[[0, 0.5, 1]]])) // => [[[210, 1, 1]]]
  * ```
  */
@@ -119,8 +119,8 @@ export function rgbToHsv(x: TensorLike): Tensor {
  * @concept colour-space
  * @example
  * ```ts
- * import { hsvToRgb } from 'mdml-engine/vision'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { hsvToRgb } from 'omai-engine/vision'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(hsvToRgb([[[210, 1, 1]]])) // => [[[0, 0.5, 1]]]
  * ```
  */
@@ -166,8 +166,8 @@ const linear3 = (m: readonly number[], a: number, b: number, c: number, out: Flo
  * @concept colour-space
  * @example
  * ```ts
- * import { rgbToXyz } from 'mdml-engine/vision'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { rgbToXyz } from 'omai-engine/vision'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(rgbToXyz([[[1, 1, 1]]])) // => [[[0.950456, 1, 1.088754]]]
  * ```
  */
@@ -183,8 +183,8 @@ export function rgbToXyz(x: TensorLike): Tensor {
  * @concept colour-space
  * @example
  * ```ts
- * import { xyzToRgb } from 'mdml-engine/vision'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { xyzToRgb } from 'omai-engine/vision'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(xyzToRgb([[[0.950456, 1, 1.088754]]])).flat(2).map((v) => Math.round(v * 1e4) / 1e4) // => [1, 1, 1]
  * ```
  */
@@ -217,8 +217,8 @@ export interface LabOptions {
  * @concept colour-space
  * @example
  * ```ts
- * import { rgbToLab } from 'mdml-engine/vision'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { rgbToLab } from 'omai-engine/vision'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(rgbToLab([[[1, 1, 1]]])).flat(2).map((v) => Math.round(v * 1e4) / 1e4) // => [100, 0, 0]
  * ```
  */
@@ -248,8 +248,8 @@ export function rgbToLab(x: TensorLike, options: LabOptions = {}): Tensor {
  * @concept colour-space
  * @example
  * ```ts
- * import { labToRgb } from 'mdml-engine/vision'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { labToRgb } from 'omai-engine/vision'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(labToRgb([[[100, 0, 0]]])).flat(2).map((v) => Math.round(v * 1e4) / 1e4) // => [1, 1, 1]
  * ```
  */
@@ -281,8 +281,8 @@ export function labToRgb(x: TensorLike, options: LabOptions = {}): Tensor {
  * @concept colour-space
  * @example
  * ```ts
- * import { rgbToYcrcb } from 'mdml-engine/vision'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { rgbToYcrcb } from 'omai-engine/vision'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(rgbToYcrcb([[[1, 1, 1]]])) // => [[[1, 0.5, 0.5]]]
  * ```
  */
@@ -304,8 +304,8 @@ export function rgbToYcrcb(x: TensorLike): Tensor {
  * @concept colour-space
  * @example
  * ```ts
- * import { ycrcbToRgb } from 'mdml-engine/vision'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { ycrcbToRgb } from 'omai-engine/vision'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(ycrcbToRgb([[[1, 0.5, 0.5]]])) // => [[[1, 1, 1]]]
  * ```
  */
@@ -349,17 +349,17 @@ const CONVERSIONS: Readonly<Record<ColourConversion, (x: TensorLike) => Tensor>>
  * @param x - Image.
  * @param code - The conversion.
  * @returns The converted image.
- * @throws MdmlError with code `value` for an unknown conversion.
+ * @throws OmaiError with code `value` for an unknown conversion.
  * @concept colour-space
  * @index function Convert between colour spaces, like cv2.cvtColor.
  * @example
  * ```ts
- * import { cvtColor } from 'mdml-engine/vision'
+ * import { cvtColor } from 'omai-engine/vision'
  * cvtColor([[[0.2, 0.4, 0.6]]], 'RGB2GRAY').shape // => [1, 1]
  * ```
  */
 export function cvtColor(x: TensorLike, code: ColourConversion): Tensor {
   const f = CONVERSIONS[code]
-  if (f === undefined) throw new MdmlError('value', `cvtColor: unknown conversion ${String(code)}`)
+  if (f === undefined) throw new OmaiError('value', `cvtColor: unknown conversion ${String(code)}`)
   return f(x)
 }

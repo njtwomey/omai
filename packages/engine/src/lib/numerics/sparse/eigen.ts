@@ -4,7 +4,7 @@
  * and `svds` for the largest singular triplets, as scipy.sparse.linalg.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { type Key, normal } from '../../random/index.ts'
 import {
   asTensor,
@@ -33,7 +33,7 @@ import { asOperator, type CsrMatrix, type LinearOperator } from './csr.ts'
 
 function numeric(op: LinearOperator, transpose = false): (x: Float64Array) => Float64Array {
   const f = transpose ? op.rmatvec : op.matvec
-  if (f === undefined) throw new MdmlError('value', 'the operator has no transpose product')
+  if (f === undefined) throw new OmaiError('value', 'the operator has no transpose product')
   return (x) => Float64Array.from(toFlat(primalOf(f(fromStorage(x, [x.length], 'float64')))))
 }
 
@@ -50,7 +50,7 @@ function deflationRows(deflate: TensorLike | readonly Float64Array[] | undefined
   if (Array.isArray(deflate) && deflate.every((row) => row instanceof Float64Array))
     return deflate as readonly Float64Array[]
   const t = concreteOrThrow(asTensor(deflate as TensorLike) as Tensor, 'the deflation vectors')
-  if (t.shape.length !== 2) throw new MdmlError('shape', 'the deflation vectors must be the rows of a matrix')
+  if (t.shape.length !== 2) throw new OmaiError('shape', 'the deflation vectors must be the rows of a matrix')
   const [k = 0, n = 0] = t.shape
   return Array.from({ length: k }, (_, i) => Float64Array.from(Array.from(t.data).slice(i * n, (i + 1) * n)))
 }
@@ -98,13 +98,13 @@ interface LanczosRows {
  * @param m - Number of steps.
  * @param options - Start vector `[n]` or key, and vectors to stay orthogonal to (deflation) as `[k, n]` rows.
  * @returns T's diagonals (`[m]` tensors) and the basis (an `[m, n]` matrix).
- * @throws MdmlError with code `value` when the matrix has a NaN or infinite entry (an operator is not scanned).
- * @throws MdmlError with code `shape` unless the start vector is a vector and the deflation vectors a matrix, and
+ * @throws OmaiError with code `value` when the matrix has a NaN or infinite entry (an operator is not scanned).
+ * @throws OmaiError with code `shape` unless the start vector is a vector and the deflation vectors a matrix, and
  *   `not-differentiable` for a traced value.
  * @concept lanczos
  * @example
  * ```ts
- * import { lanczos } from 'mdml-engine/numerics/sparse'
+ * import { lanczos } from 'omai-engine/numerics/sparse'
  * lanczos([[2, 1], [1, 2]], 2).alpha.shape[0] // => 2
  * ```
  */
@@ -216,12 +216,12 @@ export interface ArnoldiState {
  * @param m - Number of steps.
  * @param options - Start vector `[n]` (a tensor-like; migration, D-009: was `ArrayLike<number>`) or key.
  * @returns The algorithm.
- * @throws MdmlError with code `value` when the matrix has a NaN or infinite entry; `shape` unless the start vector is a
+ * @throws OmaiError with code `value` when the matrix has a NaN or infinite entry; `shape` unless the start vector is a
  *   vector, and `not-differentiable` for a traced value.
  * @example
  * ```ts
- * import { arnoldiAlgorithm } from 'mdml-engine/numerics/sparse'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { arnoldiAlgorithm } from 'omai-engine/numerics/sparse'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const run = runAlgorithm(arnoldiAlgorithm([[1, 2], [0, 3]], 2), { maxSteps: 10 })
  * [run.steps, run.state.basis.length] // => [2, 2]
  * ```
@@ -285,11 +285,11 @@ export function arnoldiAlgorithm(
  * @param m - Number of steps.
  * @param options - Start vector `[n]` (a tensor-like; migration, D-009: was `ArrayLike<number>`) or key.
  * @returns The Hessenberg matrix `[m + 1, m]` and the basis (a `[k, n]` matrix, was a list of `Float64Array`s).
- * @throws MdmlError with code `value` when the matrix has a NaN or infinite entry (an operator is not scanned).
- * @throws MdmlError with code `shape` unless the start vector is a vector, and `not-differentiable` for a traced value.
+ * @throws OmaiError with code `value` when the matrix has a NaN or infinite entry (an operator is not scanned).
+ * @throws OmaiError with code `shape` unless the start vector is a vector, and `not-differentiable` for a traced value.
  * @example
  * ```ts
- * import { arnoldi } from 'mdml-engine/numerics/sparse'
+ * import { arnoldi } from 'omai-engine/numerics/sparse'
  * arnoldi([[1, 2], [0, 3]], 2).hessenberg.shape // => [3, 2]
  * ```
  */
@@ -390,12 +390,12 @@ export interface EigshState {
  * @param options - Which end (default LM), tolerance (default 1e-10), Krylov size m (default max(2k + 1, 20)), restart
  *   cap and start vector.
  * @returns The algorithm.
- * @throws MdmlError with code `value` unless 1 <= k < n, or when the matrix has a NaN or infinite entry.
+ * @throws OmaiError with code `value` unless 1 <= k < n, or when the matrix has a NaN or infinite entry.
  * @concept lanczos
  * @example
  * ```ts
- * import { diagCsr, eigshAlgorithm } from 'mdml-engine/numerics/sparse'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { diagCsr, eigshAlgorithm } from 'omai-engine/numerics/sparse'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const run = runAlgorithm(eigshAlgorithm(diagCsr([1, 5, 3, 9, 2]), 2), { maxSteps: 20 })
  * [run.status, run.state.locked.length] // => ['converged', 2]
  * ```
@@ -409,7 +409,7 @@ export function eigshAlgorithm(
   const op = asOperator(a)
   const apply = numeric(op)
   const n = op.shape[0]
-  if (!(k >= 1 && k < n)) throw new MdmlError('value', `eigsh: k must be in [1, ${n - 1}]`)
+  if (!(k >= 1 && k < n)) throw new OmaiError('value', `eigsh: k must be in [1, ${n - 1}]`)
   const which = options.which ?? 'LM'
   const tol = options.tol ?? 1e-10
   const m = Math.min(n, options.ncv ?? Math.max(2 * k + 1, 20))
@@ -517,22 +517,22 @@ export function eigshAlgorithm(
  * @param options - Which end (default LM), tolerance (default 1e-10), Krylov size m (default max(2k + 1, 20)), restart
  *   cap and start vector.
  * @returns Eigenvalues (ascending), eigenvectors and residuals.
- * @throws MdmlError with code `value` when the matrix has a NaN or infinite entry (an operator is not scanned).
- * @throws MdmlError with code `convergence` past the restart limit. The pairs are a bare result of k columns, so a run
+ * @throws OmaiError with code `value` when the matrix has a NaN or infinite entry (an operator is not scanned).
+ * @throws OmaiError with code `convergence` past the restart limit. The pairs are a bare result of k columns, so a run
  *   that cannot finish has nothing to return; where failure is an expected outcome use {@link eigshAlgorithm}, whose run
  *   ends with status `failed` and the pairs locked so far in its state.
  * @concept lanczos
  * @index function Extreme eigenpairs of a symmetric operator by Lanczos.
  * @example
  * ```ts
- * import { diagCsr, eigsh } from 'mdml-engine/numerics/sparse'
+ * import { diagCsr, eigsh } from 'omai-engine/numerics/sparse'
  * Array.from(eigsh(diagCsr([1, 5, 3, 9, 2]), 2).values.data).map((v) => Math.round(v * 1e10) / 1e10) // => [5, 9]
  * ```
  */
 export function eigsh(a: CsrMatrix | TensorLike | LinearOperator, k: number, options: EigshOptions = {}): EigshResult {
   const n = asOperator(a).shape[0]
   const run = runAlgorithm(eigshAlgorithm(a, k, options), { maxSteps: Number.MAX_SAFE_INTEGER })
-  if (run.state.failed) throw new MdmlError('convergence', 'eigsh: no convergence within the restart limit')
+  if (run.state.failed) throw new OmaiError('convergence', 'eigsh: no convergence within the restart limit')
   const { locked, lockedValues, lockedResiduals, restarts } = run.state
   const order = lockedValues.map((_, i) => i).sort((p, q) => (lockedValues[p] ?? 0) - (lockedValues[q] ?? 0))
   const out = new Float64Array(n * k)
@@ -582,10 +582,10 @@ function gramOf(op: LinearOperator): {
  * @param k - Number of triplets.
  * @param options - Tolerance.
  * @returns The algorithm.
- * @throws MdmlError with code `value` when the matrix has a NaN or infinite entry.
+ * @throws OmaiError with code `value` when the matrix has a NaN or infinite entry.
  * @example
  * ```ts
- * import { svdsAlgorithm } from 'mdml-engine/numerics/sparse'
+ * import { svdsAlgorithm } from 'omai-engine/numerics/sparse'
  * svdsAlgorithm([[3, 0, 0], [0, 4, 0], [0, 0, 1]], 1).name // => 'numerics/svds'
  * ```
  */
@@ -607,10 +607,10 @@ export function svdsAlgorithm(
  * @param k - Number of triplets.
  * @param options - Tolerance.
  * @returns Singular values (ascending, as scipy), left and right vectors.
- * @throws MdmlError with code `value` when the matrix has a NaN or infinite entry (an operator is not scanned).
+ * @throws OmaiError with code `value` when the matrix has a NaN or infinite entry (an operator is not scanned).
  * @example
  * ```ts
- * import { svds } from 'mdml-engine/numerics/sparse'
+ * import { svds } from 'omai-engine/numerics/sparse'
  * Array.from(svds([[3, 0, 0], [0, 4, 0], [0, 0, 1]], 1).s.data).map((v) => Math.round(v * 1e10) / 1e10) // => [4]
  * ```
  */

@@ -8,7 +8,7 @@
  * information functions give the precision of those estimates at each ability. Missing responses are `null`.
  */
 
-import { MdmlError, maxOf } from '../base/index.ts'
+import { maxOf, OmaiError } from '../base/index.ts'
 import { gaussHermite } from '../numerics/quadrature/index.ts'
 import {
   analyticObjective,
@@ -61,7 +61,7 @@ const sigmoid = (z: number): number => 1 / (1 + Math.exp(-z))
  * @returns c + (1 - c) / (1 + exp(-a (theta - b))).
  * @example
  * ```ts
- * import { irtProbability } from 'mdml-engine/pgm'
+ * import { irtProbability } from 'omai-engine/pgm'
  * irtProbability({ a: 1, b: 0, c: 0 }, 0) // => 0.5
  * ```
  */
@@ -78,7 +78,7 @@ export function irtProbability(item: IrtItem, theta: number): number {
  * @returns The Fisher information about theta from one response.
  * @example
  * ```ts
- * import { irtItemInformation } from 'mdml-engine/pgm'
+ * import { irtItemInformation } from 'omai-engine/pgm'
  * irtItemInformation({ a: 1, b: 0, c: 0 }, 0) // => 0.25
  * ```
  */
@@ -97,7 +97,7 @@ export function irtItemInformation(item: IrtItem, theta: number): number {
  * @returns The information.
  * @example
  * ```ts
- * import { irtTestInformation } from 'mdml-engine/pgm'
+ * import { irtTestInformation } from 'omai-engine/pgm'
  * irtTestInformation([{ a: 1, b: 0, c: 0 }, { a: 1, b: 0, c: 0 }], 0) // => 0.5
  * ```
  */
@@ -227,7 +227,7 @@ function evaluate(problem: IrtProblem, grid: Grid, x: ArrayLike<number>): { valu
  * @returns The objective and the start.
  * @example
  * ```ts
- * import { irtSmoothProblem } from 'mdml-engine/pgm'
+ * import { irtSmoothProblem } from 'omai-engine/pgm'
  * irtSmoothProblem({ model: '1pl', responses: [[1, 0], [1, 1], [0, 0], [1, 0]] }).x0.length // => 2
  * ```
  */
@@ -235,7 +235,7 @@ export function irtSmoothProblem(problem: IrtProblem): SmoothProblem {
   const grid = gridOf(problem.nodes ?? 21)
   const J = problem.responses[0]?.length ?? 0
   if (J < 2 || problem.responses.length < 3)
-    throw new MdmlError('value', 'irt: need at least two items and three respondents')
+    throw new OmaiError('value', 'irt: need at least two items and three respondents')
   const start = Array.from({ length: J }, (_, j): IrtItem => {
     const seen = problem.responses.map((row) => row[j]).filter((v) => v !== null && v !== undefined) as number[]
     const p = Math.min(Math.max(seen.reduce((a, b) => a + b, 0) / Math.max(seen.length, 1), 0.02), 0.98)
@@ -379,7 +379,7 @@ export interface IrtOptions {
  * @returns The algorithm.
  * @example
  * ```ts
- * import { irtAlgorithm } from 'mdml-engine/pgm'
+ * import { irtAlgorithm } from 'omai-engine/pgm'
  * irtAlgorithm({ model: '2pl', responses: [[1, 0], [1, 1], [0, 0], [1, 0]] }).name // => 'irt'
  * ```
  */
@@ -439,8 +439,8 @@ export interface IrtFit {
  * @returns The items and the likelihood.
  * @example
  * ```ts
- * import { fitIrt, irtSimulate } from 'mdml-engine/pgm'
- * import { key } from 'mdml-engine/random'
+ * import { fitIrt, irtSimulate } from 'omai-engine/pgm'
+ * import { key } from 'omai-engine/random'
  * const items = [{ a: 1, b: -1, c: 0 }, { a: 1, b: 0, c: 0 }, { a: 1, b: 1, c: 0 }]
  * const { responses } = irtSimulate(key(0), 200, items)
  * fitIrt({ responses, model: '1pl' }).items.length // => 3
@@ -483,7 +483,7 @@ export interface IrtAbility {
  * @returns The estimate and its standard error.
  * @example
  * ```ts
- * import { irtAbility } from 'mdml-engine/pgm'
+ * import { irtAbility } from 'omai-engine/pgm'
  * const items = [{ a: 1, b: -1, c: 0 }, { a: 1, b: 0, c: 0 }, { a: 1, b: 1, c: 0 }]
  * irtAbility([1, 0, 0], items, 'eap').theta < irtAbility([1, 1, 0], items, 'eap').theta // => true
  * ```
@@ -545,8 +545,8 @@ export function irtAbility(
  * @returns The responses and the abilities that produced them.
  * @example
  * ```ts
- * import { irtSimulate } from 'mdml-engine/pgm'
- * import { key } from 'mdml-engine/random'
+ * import { irtSimulate } from 'omai-engine/pgm'
+ * import { key } from 'omai-engine/random'
  * irtSimulate(key(0), 4, [{ a: 1, b: 0, c: 0 }]).responses.length // => 4
  * ```
  */

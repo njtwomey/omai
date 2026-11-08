@@ -7,8 +7,8 @@ from importlib.metadata import version
 import numpy as np
 import pandas as pd
 import pysubgroup as ps
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import rng
 
 REFERENCE: dict[str, str] = {"pysubgroup": version("pysubgroup")}
 

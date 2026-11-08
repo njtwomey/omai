@@ -4,7 +4,7 @@
  * edge counts, depth, how often each primitive appears).
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { type Structure, type StructureEdge, type StructureNode, structure } from '../scene/index.ts'
 import {
   formatShape,
@@ -49,7 +49,7 @@ function scalarOf(x: Value): number | undefined {
 /**
  * Record the computation graph of a function at an input: every primitive applied to values derived from the input,
  * with shapes, operations, (for scalars) values and, for a scalar output, the gradient of the output with respect to
- * every node, as a {@link Structure} that mdml-render draws.
+ * every node, as a {@link Structure} that omai-render draws.
  *
  * @param f - The function.
  * @param input - Its input (a value or a pytree).
@@ -58,8 +58,8 @@ function scalarOf(x: Value): number | undefined {
  * @concept computation-graph
  * @example
  * ```ts
- * import { computationGraph } from 'mdml-engine/autodiff'
- * import { add, mul, tensor, type Value } from 'mdml-engine/tensor'
+ * import { computationGraph } from 'omai-engine/autodiff'
+ * import { add, mul, tensor, type Value } from 'omai-engine/tensor'
  * const g = computationGraph((x: Value) => add(mul(x, x), 1), tensor(2))
  * g.nodes.map((n) => n.label) // => ['x', 'mul', '1', 'add']
  * g.nodes[0].badges // => { value: 2, grad: 4 }
@@ -132,7 +132,7 @@ export function computationGraph<P>(f: (input: P) => unknown, input: P, options:
       grads = backward([out], [ones(out.shape, { dtype: out.dtype })], tracked)
     } catch (e) {
       // A graph through a primitive without derivative rules is still drawn, just without gradients.
-      if (e instanceof MdmlError && e.code === 'not-differentiable') {
+      if (e instanceof OmaiError && e.code === 'not-differentiable') {
         return structure('computation-graph', nodes, edges, { direction: 'right' })
       }
       throw e
@@ -169,8 +169,8 @@ export interface GraphStats {
  * @concept computation-graph
  * @example
  * ```ts
- * import { computationGraph, graphStats } from 'mdml-engine/autodiff'
- * import { add, mul, sin, tensor, type Value } from 'mdml-engine/tensor'
+ * import { computationGraph, graphStats } from 'omai-engine/autodiff'
+ * import { add, mul, sin, tensor, type Value } from 'omai-engine/tensor'
  * const g = computationGraph((x: Value) => add(mul(x, x), sin(x)), tensor(2))
  * graphStats(g).operations // => 3
  * graphStats(g).depth // => 2

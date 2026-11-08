@@ -3,8 +3,8 @@
 import numpy as np
 import scipy
 import scipy.optimize as so
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import rng
 
 REFERENCE: dict[str, str] = {"scipy": scipy.__version__}
 

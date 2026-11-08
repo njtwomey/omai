@@ -8,7 +8,7 @@
  * influence values of the estimator, or from the bootstrap where no influence is available.
  */
 
-import { type Estimate, estimate, MdmlError, maxOf, minOf } from '../base/index.ts'
+import { type Estimate, estimate, maxOf, minOf, OmaiError } from '../base/index.ts'
 import { analyticObjective, type SmoothProblem } from '../optim/index.ts'
 import { bootstrapIndices, foldIn, type Key, key as makeKey } from '../random/index.ts'
 import type { SpaceValue } from '../space/index.ts'
@@ -54,7 +54,7 @@ const causalOf = (p: Prepared): CausalData => ({
  * @returns One weight per unit.
  * @example
  * ```ts
- * import { ipwWeights } from 'mdml-engine/causal'
+ * import { ipwWeights } from 'omai-engine/causal'
  * Array.from(ipwWeights([1, 0], [0.5, 0.25])) // => [2, 1.3333333333333333]
  * ```
  */
@@ -161,7 +161,7 @@ function ipwCore(
  * @returns The effect with the weights, the propensity scores and the effective sample size.
  * @example
  * ```ts
- * import { ipw } from 'mdml-engine/causal'
+ * import { ipw } from 'omai-engine/causal'
  * const x = [[0], [0], [0], [0], [1], [1], [1], [1]]
  * const r = ipw({ x, treatment: [1, 0, 0, 0, 1, 1, 1, 0], outcome: [3, 1, 1, 1, 5, 5, 5, 3] }, { scores: [0.25, 0.25, 0.25, 0.25, 0.75, 0.75, 0.75, 0.75] })
  * r.estimate.value // => 2
@@ -206,8 +206,8 @@ function propensityOf(p: Prepared, options: NuisanceOptions & { readonly scores?
  * @returns The point estimate on the full data with the bootstrap standard error and interval.
  * @example
  * ```ts
- * import { bootstrapEffect } from 'mdml-engine/causal'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { bootstrapEffect } from 'omai-engine/causal'
+ * import { toFlat } from 'omai-engine/tensor'
  * const d = { x: [[0], [1], [2], [3]], treatment: [0, 1, 0, 1], outcome: [1, 3, 2, 4] }
  * const diff = (c: typeof d): number => {
  *   const t = toFlat(c.treatment), y = toFlat(c.outcome)
@@ -234,7 +234,7 @@ export function bootstrapEffect(
       if (Number.isFinite(v)) values.push(v)
     } catch (error) {
       // a resample without one of the arms has no estimate; it is left out
-      if (!(error instanceof MdmlError)) throw error
+      if (!(error instanceof OmaiError)) throw error
     }
   }
   const value = statistic(causalOf(p))
@@ -267,7 +267,7 @@ export interface RegressionAdjustmentOptions extends EffectOptions {
  * @returns The effect.
  * @example
  * ```ts
- * import { regressionAdjustment } from 'mdml-engine/causal'
+ * import { regressionAdjustment } from 'omai-engine/causal'
  * const x = [[0], [1], [2], [3], [4], [5]]
  * const r = regressionAdjustment({ x, treatment: [0, 1, 0, 1, 0, 1], outcome: [0, 3, 2, 5, 4, 7] }, { mode: 'linear' })
  * r.estimate.value // => 2
@@ -374,7 +374,7 @@ export interface StratificationOptions extends EffectOptions {
  * @returns The effect and the strata.
  * @example
  * ```ts
- * import { stratification } from 'mdml-engine/causal'
+ * import { stratification } from 'omai-engine/causal'
  * const x = [[0], [0], [0], [0], [1], [1], [1], [1]]
  * const r = stratification(
  *   { x, treatment: [0, 1, 0, 1, 0, 1, 0, 1], outcome: [0, 2, 0, 2, 5, 7, 5, 7] },
@@ -415,7 +415,7 @@ export function stratification(
       v: (y1.length > 1 ? variance(y1, 1) / y1.length : 0) + (y0.length > 1 ? variance(y0, 1) / y0.length : 0),
     })
   }
-  if (used.length === 0) throw new MdmlError('value', 'stratification: no stratum has both arms')
+  if (used.length === 0) throw new OmaiError('value', 'stratification: no stratum has both arms')
   const value = used.reduce((a, u) => a + (u.w / totalW) * u.effect, 0)
   const se = Math.sqrt(used.reduce((a, u) => a + (u.w / totalW) ** 2 * u.v, 0))
   const eff = effectFromSe(estimand, value, se, p.n, {
@@ -442,7 +442,7 @@ export interface AipwOptions extends EffectOptions {
  * @returns The propensity and outcome predictions per unit.
  * @example
  * ```ts
- * import { nuisancesFor } from 'mdml-engine/causal'
+ * import { nuisancesFor } from 'omai-engine/causal'
  * const p = { n: 8, d: 1, x: Float64Array.from([-2, -1, -0.5, 0, 0.3, 0.5, 1, 2]), t: Float64Array.from([0, 0, 1, 0, 1, 0, 1, 1]), y: Float64Array.from([0, 1, 2, 1, 3, 2, 4, 5]) }
  * nuisancesFor(p, {}).e.length // => 8
  * ```
@@ -478,7 +478,7 @@ export function nuisancesFor(
  * @returns The value and the per-unit influence values.
  * @example
  * ```ts
- * import { aipwFrom } from 'mdml-engine/causal'
+ * import { aipwFrom } from 'omai-engine/causal'
  * const nu = { e: Float64Array.of(0.5, 0.5), mu0: Float64Array.of(1, 1), mu1: Float64Array.of(3, 3) }
  * aipwFrom({ n: 2, t: Float64Array.of(1, 0), y: Float64Array.of(3, 1) }, nu, 'ate').value // => 2
  * ```
@@ -537,7 +537,7 @@ export function aipwFrom(
  * @index function Augmented inverse-probability-weighted treatment effect.
  * @example
  * ```ts
- * import { aipw } from 'mdml-engine/causal'
+ * import { aipw } from 'omai-engine/causal'
  * const x = [[0], [1], [2], [3], [4], [5], [6], [7]]
  * const r = aipw({ x, treatment: [0, 1, 0, 1, 1, 0, 1, 0], outcome: [0, 3, 2, 5, 6, 5, 8, 7] })
  * r.estimand // => 'ate'
@@ -580,7 +580,7 @@ export interface Fluctuation {
  * @returns The objective and the start `epsilon = 0`.
  * @example
  * ```ts
- * import { tmleFluctuationProblem } from 'mdml-engine/causal'
+ * import { tmleFluctuationProblem } from 'omai-engine/causal'
  * tmleFluctuationProblem({ h: [1, -1], offset: [0, 0], y: [1, 0] }).x0 // => [0]
  * ```
  */
@@ -645,7 +645,7 @@ export interface TmleResult extends EffectEstimate {
  * @returns The effect with the fluctuation parameter and the untargeted estimate.
  * @example
  * ```ts
- * import { tmle } from 'mdml-engine/causal'
+ * import { tmle } from 'omai-engine/causal'
  * const x = [[0], [1], [2], [3], [4], [5], [6], [7]]
  * tmle({ x, treatment: [0, 1, 0, 1, 1, 0, 1, 0], outcome: [0, 3, 2, 5, 6, 5, 8, 7] }, { fluctuation: 'linear' }).estimand // => 'ate'
  * ```
@@ -767,8 +767,8 @@ function dmlSummary(
  * @returns The algorithm; it observes `fold`, `estimate` and `standardError`.
  * @example
  * ```ts
- * import { doubleMachineLearningAlgorithm } from 'mdml-engine/causal'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { doubleMachineLearningAlgorithm } from 'omai-engine/causal'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const x = Array.from({ length: 40 }, (_, i) => [Math.sin(i), Math.cos(i)])
  * const treatment = x.map((_, i) => (i % 3 === 0 ? 1 : 0))
  * const outcome = x.map((r, i) => (r[0] ?? 0) + 2 * (treatment[i] ?? 0) + 0.01 * i)
@@ -846,7 +846,7 @@ export function doubleMachineLearningAlgorithm(data: CausalData, options: DmlOpt
  * @index function Double machine learning treatment effect with cross-fitting.
  * @example
  * ```ts
- * import { doubleMachineLearning } from 'mdml-engine/causal'
+ * import { doubleMachineLearning } from 'omai-engine/causal'
  * const x = Array.from({ length: 60 }, (_, i) => [Math.sin(i), Math.cos(3 * i)])
  * const treatment = x.map((r, i) => ((r[0] ?? 0) + Math.sin(7 * i) > 0 ? 1 : 0))
  * const outcome = x.map((r, i) => (r[0] ?? 0) + 2 * (treatment[i] ?? 0) + 0.1 * Math.cos(5 * i))

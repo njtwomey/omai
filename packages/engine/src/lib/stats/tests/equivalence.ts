@@ -4,7 +4,7 @@
  * difference of two proportions, as statsmodels.
  */
 
-import { MdmlError, meanOf, type TestResult, varianceOf } from '../../base/index.ts'
+import { meanOf, OmaiError, type TestResult, varianceOf } from '../../base/index.ts'
 import type { TensorLike } from '../../tensor/index.ts'
 import { normCdf, normPpf, normSf, paired, sample, tCdf, tPpf, tSf } from '../_util.ts'
 import { binomTest, proportionConfint } from './proportions.ts'
@@ -17,7 +17,7 @@ export interface EquivalenceBounds {
 }
 
 function checkBounds(name: string, b: EquivalenceBounds): void {
-  if (!(b.low < b.upp)) throw new MdmlError('value', `${name}: low must be below upp`)
+  if (!(b.low < b.upp)) throw new OmaiError('value', `${name}: low must be below upp`)
 }
 
 function tostResult(
@@ -65,7 +65,7 @@ export interface TostOptions extends EquivalenceBounds {
  * @returns The binding t statistic, the TOST p-value and the difference with its interval.
  * @example
  * ```ts
- * import { tost } from 'mdml-engine/stats/tests'
+ * import { tost } from 'omai-engine/stats/tests'
  * tost([0.1, -0.2, 0.05, 0.15, -0.1, 0.0, 0.2, -0.05], undefined, { low: -0.5, upp: 0.5 }).pValue < 0.01 // => true
  * ```
  */
@@ -127,7 +127,7 @@ export function tost(x: TensorLike, y: TensorLike | undefined, options: TostOpti
  * @returns The TOST p-value with both one-sided results.
  * @example
  * ```ts
- * import { tostProportion } from 'mdml-engine/stats/tests'
+ * import { tostProportion } from 'omai-engine/stats/tests'
  * tostProportion(50, 100, { low: 0.35, upp: 0.65 }).pValue < 0.01 // => true
  * ```
  */
@@ -151,7 +151,7 @@ export function tostProportion(k: number, n: number, bounds: EquivalenceBounds):
  * @returns The binding z statistic and the TOST p-value.
  * @example
  * ```ts
- * import { tostProportions } from 'mdml-engine/stats/tests'
+ * import { tostProportions } from 'omai-engine/stats/tests'
  * tostProportions(60, 120, 58, 120, { low: -0.15, upp: 0.15 }).pValue < 0.05 // => true
  * ```
  */

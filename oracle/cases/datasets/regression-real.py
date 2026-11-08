@@ -4,8 +4,8 @@ from typing import cast
 
 import numpy as np
 import scipy
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.vendor import csv_rows, fetch_pinned
+from omai_oracle.fixture import Case, case
+from omai_oracle.vendor import csv_rows, fetch_pinned
 from scipy.stats import norm
 from sklearn.datasets import load_linnerud
 from sklearn.utils import Bunch

@@ -1,5 +1,5 @@
 /**
- * Window functions for spectral analysis, scipy.signal.windows style, part of `mdml-engine/signal`: the cosine-sum
+ * Window functions for spectral analysis, scipy.signal.windows style, part of `omai-engine/signal`: the cosine-sum
  * family, Kaiser, Gaussian, Tukey and other tapers, Slepian (DPSS) sequences, lookup by name with `getWindow`, and the
  * figures of merit that compare windows.
  *

@@ -17,7 +17,7 @@ def parts(z: npt.ArrayLike) -> FloatArray:
 
 
 def sorted_parts(z: npt.ArrayLike) -> FloatArray:
-    """Complex values as `[2, n]` parts sorted by real then imaginary part (the order mdml-js returns roots in)."""
+    """Complex values as `[2, n]` parts sorted by real then imaginary part (the order omai returns roots in)."""
     c = np.atleast_1d(np.asarray(z, dtype=np.complex128))
     order = np.lexsort((c.imag, c.real))
     return parts(c[order])

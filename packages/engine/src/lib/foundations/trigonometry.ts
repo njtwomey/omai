@@ -5,7 +5,7 @@
  * triangles from any three known parts (SSS, SAS, ASA, AAS, SSA).
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import {
   abs,
   add,
@@ -41,8 +41,8 @@ const TAU = 2 * Math.PI
  * @concept angle-measure
  * @example
  * ```ts
- * import { radians } from 'mdml-engine/foundations'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { radians } from 'omai-engine/foundations'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(radians([180, 90])) // => [3.141592653589793, 1.5707963267948966]
  * ```
  */
@@ -59,8 +59,8 @@ export function radians(degrees: TensorLike): Value {
  * @concept angle-measure
  * @example
  * ```ts
- * import { degrees } from 'mdml-engine/foundations'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { degrees } from 'omai-engine/foundations'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(degrees([Math.PI, Math.PI / 2])) // => [180, 90]
  * ```
  */
@@ -79,8 +79,8 @@ export function degrees(radians: TensorLike): Value {
  * @concept angle-measure
  * @example
  * ```ts
- * import { wrapAngle } from 'mdml-engine/foundations'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { wrapAngle } from 'omai-engine/foundations'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(wrapAngle([3 * Math.PI / 2], 'signed')) // => [-1.5707963267948966]
  * toArray(wrapAngle([-Math.PI / 2], 'positive')) // => [4.71238898038469]
  * ```
@@ -98,8 +98,8 @@ export function wrapAngle(theta: TensorLike, range: 'signed' | 'positive' = 'sig
  * @concept unit-circle
  * @example
  * ```ts
- * import { unitCirclePoint } from 'mdml-engine/foundations'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { unitCirclePoint } from 'omai-engine/foundations'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(unitCirclePoint(0)) // => [1, 0]
  * ```
  */
@@ -117,7 +117,7 @@ export function unitCirclePoint(theta: TensorLike): Value {
  * @concept unit-circle
  * @example
  * ```ts
- * import { quadrant } from 'mdml-engine/foundations'
+ * import { quadrant } from 'omai-engine/foundations'
  * quadrant(2) // => 2
  * quadrant(-0.5) // => 4
  * quadrant(Math.PI) // => 0
@@ -139,7 +139,7 @@ export function quadrant(theta: number): 0 | 1 | 2 | 3 | 4 {
  * @concept unit-circle
  * @example
  * ```ts
- * import { referenceAngle } from 'mdml-engine/foundations'
+ * import { referenceAngle } from 'omai-engine/foundations'
  * referenceAngle(5 * Math.PI / 6) // => 0.5235987755982989
  * ```
  */
@@ -158,8 +158,8 @@ export function referenceAngle(theta: number): number {
  * @concept unit-circle
  * @example
  * ```ts
- * import { directionAngle } from 'mdml-engine/foundations'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { directionAngle } from 'omai-engine/foundations'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(directionAngle([-1], [0])) // => [4.71238898038469]
  * ```
  */
@@ -181,11 +181,11 @@ const forward = (fn: TrigFunction, t: number): number =>
  * @param value - The value of the function.
  * @param inQuadrant - The quadrant (1 to 4) the angle lies in.
  * @returns The angle in `[0, 2 pi)`.
- * @throws MdmlError with code `domain` when no angle in that quadrant has the value (wrong sign or out of range).
+ * @throws OmaiError with code `domain` when no angle in that quadrant has the value (wrong sign or out of range).
  * @concept inverse-trigonometric-functions
  * @example
  * ```ts
- * import { inverseInQuadrant } from 'mdml-engine/foundations'
+ * import { inverseInQuadrant } from 'omai-engine/foundations'
  * inverseInQuadrant('sin', 0.5, 2) // => 2.6179938779914944
  * inverseInQuadrant('tan', 1, 3) // => 3.9269908169872414
  * ```
@@ -199,10 +199,10 @@ export function inverseInQuadrant(fn: TrigFunction, value: number, inQuadrant: 1
           ? Math.asin(Math.abs(value))
           : Math.acos(Math.abs(value))
         : Number.NaN
-  if (Number.isNaN(ref)) throw new MdmlError('domain', `inverseInQuadrant: |${fn}| cannot be ${value}`)
+  if (Number.isNaN(ref)) throw new OmaiError('domain', `inverseInQuadrant: |${fn}| cannot be ${value}`)
   const angle = [ref, Math.PI - ref, Math.PI + ref, TAU - ref][inQuadrant - 1] ?? Number.NaN
   if (Math.abs(forward(fn, angle) - value) > 1e-12 * Math.max(1, Math.abs(value))) {
-    throw new MdmlError('domain', `inverseInQuadrant: ${fn} has the wrong sign for ${value} in quadrant ${inQuadrant}`)
+    throw new OmaiError('domain', `inverseInQuadrant: ${fn} has the wrong sign for ${value} in quadrant ${inQuadrant}`)
   }
   return angle
 }
@@ -219,7 +219,7 @@ export function inverseInQuadrant(fn: TrigFunction, value: number, inQuadrant: 1
  * @concept inverse-trigonometric-functions
  * @example
  * ```ts
- * import { trigSolutions } from 'mdml-engine/foundations'
+ * import { trigSolutions } from 'omai-engine/foundations'
  * trigSolutions('cos', 0.5).map((t) => t / Math.PI) // => [0.33333333333333337, 1.6666666666666665]
  * trigSolutions('sin', 2) // => []
  * ```
@@ -261,7 +261,7 @@ const sq = (x: Value): Value => mul(x, x)
  * @concept trigonometric-identities
  * @example
  * ```ts
- * import { trigIdentities } from 'mdml-engine/foundations'
+ * import { trigIdentities } from 'omai-engine/foundations'
  * trigIdentities.map((i) => i.name).includes('double angle (sine)') // => true
  * ```
  */
@@ -388,8 +388,8 @@ export interface IdentityCheck {
  * @concept trigonometric-identities
  * @example
  * ```ts
- * import { checkIdentity } from 'mdml-engine/foundations'
- * import { cos, mul, sin } from 'mdml-engine/tensor'
+ * import { checkIdentity } from 'omai-engine/foundations'
+ * import { cos, mul, sin } from 'omai-engine/tensor'
  * checkIdentity({ lhs: (t) => sin(mul(t, 2)), rhs: (t) => mul(2, sin(t)) }).holds // => false
  * checkIdentity({ lhs: (t) => sin(mul(t, 2)), rhs: (t) => mul(2, mul(sin(t), cos(t))) }).holds // => true
  * ```
@@ -435,8 +435,8 @@ export function checkIdentity(
  * @concept law-of-cosines
  * @example
  * ```ts
- * import { lawOfCosines } from 'mdml-engine/foundations'
- * import { item } from 'mdml-engine/tensor'
+ * import { lawOfCosines } from 'omai-engine/foundations'
+ * import { item } from 'omai-engine/tensor'
  * item(lawOfCosines(3, 4, Math.PI / 2)) // => 5
  * ```
  */
@@ -458,8 +458,8 @@ export function lawOfCosines(a: TensorLike, b: TensorLike, angleC: TensorLike): 
  * @concept law-of-cosines
  * @example
  * ```ts
- * import { lawOfCosinesAngle } from 'mdml-engine/foundations'
- * import { item } from 'mdml-engine/tensor'
+ * import { lawOfCosinesAngle } from 'omai-engine/foundations'
+ * import { item } from 'omai-engine/tensor'
  * item(lawOfCosinesAngle(1, 1, 1)) // => 1.0471975511965979
  * ```
  */
@@ -478,8 +478,8 @@ export function lawOfCosinesAngle(a: TensorLike, b: TensorLike, c: TensorLike): 
  * @concept law-of-sines
  * @example
  * ```ts
- * import { lawOfSines } from 'mdml-engine/foundations'
- * import { item } from 'mdml-engine/tensor'
+ * import { lawOfSines } from 'omai-engine/foundations'
+ * import { item } from 'omai-engine/tensor'
  * item(lawOfSines(1, Math.PI / 6, Math.PI / 2)) // => 2.0000000000000004
  * ```
  */
@@ -499,8 +499,8 @@ export function lawOfSines(a: TensorLike, angleA: TensorLike, angleB: TensorLike
  * @concept herons-formula
  * @example
  * ```ts
- * import { heronArea } from 'mdml-engine/foundations'
- * import { item } from 'mdml-engine/tensor'
+ * import { heronArea } from 'omai-engine/foundations'
+ * import { item } from 'omai-engine/tensor'
  * item(heronArea(3, 4, 5)) // => 6
  * ```
  */
@@ -550,11 +550,11 @@ const ANGLES = ['A', 'B', 'C'] as const
  *
  * @param parts - Exactly three known parts, at least one a side.
  * @returns The case.
- * @throws MdmlError with code `value` unless exactly three parts are given with at least one side.
+ * @throws OmaiError with code `value` unless exactly three parts are given with at least one side.
  * @concept triangle-solving
  * @example
  * ```ts
- * import { triangleCase } from 'mdml-engine/foundations'
+ * import { triangleCase } from 'omai-engine/foundations'
  * triangleCase({ a: 3, b: 4, C: 1 }) // => 'SAS'
  * triangleCase({ a: 3, b: 4, A: 0.5 }) // => 'SSA'
  * triangleCase({ A: 1, B: 1, c: 2 }) // => 'ASA'
@@ -564,7 +564,7 @@ export function triangleCase(parts: TriangleParts): TriangleCase {
   const sides = SIDES.filter((s) => parts[s] !== undefined)
   const angles = ANGLES.filter((s) => parts[s] !== undefined)
   if (sides.length + angles.length !== 3 || sides.length === 0) {
-    throw new MdmlError('value', 'triangleCase: give exactly three parts, at least one of them a side')
+    throw new OmaiError('value', 'triangleCase: give exactly three parts, at least one of them a side')
   }
   if (sides.length === 3) return 'SSS'
   const opposite = (s: (typeof SIDES)[number]): (typeof ANGLES)[number] => s.toUpperCase() as (typeof ANGLES)[number]
@@ -620,11 +620,11 @@ function unrotate(t: Triangle, k: number): Triangle {
  *
  * @param parts - Three known parts (sides positive, angles in radians).
  * @returns The triangles consistent with the parts (empty when none exists).
- * @throws MdmlError with code `value` when the parts do not name a case (see {@link triangleCase}).
+ * @throws OmaiError with code `value` when the parts do not name a case (see {@link triangleCase}).
  * @concept triangle-solving
  * @example
  * ```ts
- * import { solveTriangle } from 'mdml-engine/foundations'
+ * import { solveTriangle } from 'omai-engine/foundations'
  * solveTriangle({ a: 3, b: 4, c: 5 })[0].C // => 1.5707963267948966
  * solveTriangle({ a: 6, b: 8, A: Math.PI / 6 }).length // => 2
  * solveTriangle({ a: 1, b: 8, A: Math.PI / 6 }).length // => 0

@@ -5,7 +5,7 @@
  * matrix statistics such as alignment and HSIC.
  *
  * NaN and empty input: NaN in the points propagates to the entries it touches; hyperparameters must be finite and
- * non-negative, and a length scale, period, alpha or decay strictly positive, or `MdmlError('domain')` is thrown;
+ * non-negative, and a length scale, period, alpha or decay strictly positive, or `OmaiError('domain')` is thrown;
  * sizes of feature maps are positive integers (`value`). `gram` of no points is `[0, 0]` and of one point `[1, 1]`. A
  * statistic of Gram matrices that is undefined (`hsic` of one point, alignment with a zero matrix) is NaN.
  */

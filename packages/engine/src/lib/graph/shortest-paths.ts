@@ -5,7 +5,7 @@
  * `dijkstra`, `bellmanFord`, `aStar` and `floydWarshall` in `paths.ts` are these run to the end.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import {
   type Algorithm,
   type Contract,
@@ -207,7 +207,7 @@ function pathSearch(spec: PathSearchSpec): Algorithm<PathSearchState, ShortestPa
           )
             continue
           const w = spec.weight(k)
-          if (w < 0) throw new MdmlError('domain', spec.negativeMessage)
+          if (w < 0) throw new OmaiError('domain', spec.negativeMessage)
           const alt = (s.distance[u] ?? 0) + w
           if (alt < (s.distance[v] ?? INF)) {
             s.distance[v] = alt
@@ -264,12 +264,12 @@ function pathSearch(spec: PathSearchSpec): Algorithm<PathSearchState, ShortestPa
  * @param source - The source.
  * @param options - `weighted` (default true), and a `target` to stop at once it is settled.
  * @returns The algorithm; it is done when the frontier is empty or the target is settled.
- * @throws MdmlError with code `domain` when a negative weight is reached while stepping.
+ * @throws OmaiError with code `domain` when a negative weight is reached while stepping.
  * @concept shortest-paths
  * @example
  * ```ts
- * import { dijkstraAlgorithm, graph } from 'mdml-engine/graph'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { dijkstraAlgorithm, graph } from 'omai-engine/graph'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const g = graph([[0, 1, 4], [0, 2, 1], [2, 1, 2], [1, 3, 5]])
  * const run = runAlgorithm(dijkstraAlgorithm(g, 0), { maxSteps: 10 })
  * [run.steps, run.state.expanded, Array.from(run.state.distance)] // => [4, [0, 2, 1, 3], [0, 3, 1, 8]]
@@ -304,12 +304,12 @@ export function dijkstraAlgorithm(
  * @param target - The target.
  * @param options - The heuristic (default 0), its weight (default 1) and `weighted` (default true).
  * @returns The algorithm.
- * @throws MdmlError with code `value` for a weight below 1, and `domain` for a negative edge weight while stepping.
+ * @throws OmaiError with code `value` for a weight below 1, and `domain` for a negative edge weight while stepping.
  * @concept shortest-paths
  * @example
  * ```ts
- * import { aStarAlgorithm, gridGraph } from 'mdml-engine/graph'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { aStarAlgorithm, gridGraph } from 'omai-engine/graph'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const g = gridGraph(5, 5)
  * const manhattan = (v: number) => Math.abs(Math.floor(v / 5) - 1) + Math.abs((v % 5) - 1)
  * const informed = runAlgorithm(aStarAlgorithm(g, 0, 6, { heuristic: manhattan }), { maxSteps: 30 })
@@ -324,7 +324,7 @@ export function aStarAlgorithm(
   options: ShortestPathOptions & AStarAlgorithmOptions = {},
 ): Algorithm<PathSearchState, ShortestPathPath> {
   const weight = options.weight ?? 1
-  if (!(weight >= 1)) throw new MdmlError('value', `aStarAlgorithm: the heuristic weight ${weight} must be at least 1`)
+  if (!(weight >= 1)) throw new OmaiError('value', `aStarAlgorithm: the heuristic weight ${weight} must be at least 1`)
   return pathSearch({
     name: 'graph/a-star',
     g,
@@ -349,8 +349,8 @@ export function aStarAlgorithm(
  * @concept shortest-paths
  * @example
  * ```ts
- * import { bellmanFordAlgorithm, digraph } from 'mdml-engine/graph'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { bellmanFordAlgorithm, digraph } from 'omai-engine/graph'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const run = runAlgorithm(bellmanFordAlgorithm(digraph([[0, 1, 4], [0, 2, 5], [2, 1, -3]]), 0), { maxSteps: 10 })
  * [run.state.rounds, run.status, Array.from(run.state.distance)] // => [2, 'converged', [0, 2, 5]]
  * ```
@@ -435,12 +435,12 @@ export function bellmanFordAlgorithm(
  * @param g - The graph.
  * @param options - `weighted` (default true).
  * @returns The algorithm; it is done after the last pivot.
- * @throws MdmlError with code `value` for a negative self-loop (a negative cycle of one edge).
+ * @throws OmaiError with code `value` for a negative self-loop (a negative cycle of one edge).
  * @concept shortest-paths
  * @example
  * ```ts
- * import { floydWarshallAlgorithm, pathGraph } from 'mdml-engine/graph'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { floydWarshallAlgorithm, pathGraph } from 'omai-engine/graph'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const run = runAlgorithm(floydWarshallAlgorithm(pathGraph(3)), { maxSteps: 3 })
  * [run.state.pivot, Array.from(run.state.distance)] // => [3, [0, 1, 2, 1, 0, 1, 2, 1, 0]]
  * ```
@@ -464,7 +464,7 @@ export function floydWarshallAlgorithm(
           const v = a.indices[k] ?? 0
           const w = weight(k)
           if (u === v) {
-            if (w < 0) throw new MdmlError('value', 'floydWarshall: the graph has a negative cycle')
+            if (w < 0) throw new OmaiError('value', 'floydWarshall: the graph has a negative cycle')
             continue
           }
           if (w < (d[u * n + v] ?? INF)) {

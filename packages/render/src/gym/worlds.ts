@@ -5,7 +5,7 @@
  * a path.
  */
 
-import { imageToPixels, type RaycastFrame, type RaycastRenderOptions, renderRaycast } from 'mdml-engine/graphics'
+import { imageToPixels, type RaycastFrame, type RaycastRenderOptions, renderRaycast } from 'omai-engine/graphics'
 import {
   arrow,
   circle,
@@ -18,8 +18,8 @@ import {
   type SceneNode,
   scene,
   text,
-} from 'mdml-engine/scene'
-import { cellCentre, cellCorners, type Pose, toScene, type World, type WorldSceneOptions } from 'mdml-engine/worlds'
+} from 'omai-engine/scene'
+import { cellCentre, cellCorners, type Pose, toScene, type World, type WorldSceneOptions } from 'omai-engine/worlds'
 
 /** The unit vector (x right, y down) of each direction name, for policy arrows. */
 const VECTORS: Readonly<Record<string, readonly [number, number]>> = {
@@ -73,8 +73,8 @@ function centre(w: World, cell: number, k: number): [number, number] {
  * @index function Draw a grid world with a policy or path: `worldView(world, { policy })`.
  * @example
  * ```ts
- * import { fromAscii } from 'mdml-engine/worlds'
- * import { worldView } from 'mdml-render/gym'
+ * import { fromAscii } from 'omai-engine/worlds'
+ * import { worldView } from 'omai-render/gym'
  * worldView(fromAscii(['S.', '.G']), { policy: [1, 2, 1, 0] }).children.some((n) => n.id === 'policy') // => true
  * ```
  */
@@ -166,8 +166,8 @@ export interface RaycastViews {
  * @index function First-person ray-cast view beside the map: `raycastViews(world, pose, { width, height })`.
  * @example
  * ```ts
- * import { fromAscii } from 'mdml-engine/worlds'
- * import { raycastViews } from 'mdml-render/gym'
+ * import { fromAscii } from 'omai-engine/worlds'
+ * import { raycastViews } from 'omai-render/gym'
  * const v = raycastViews(fromAscii(['#####', '#...#', '#####']), { x: 1.5, y: 1.5, heading: 0 }, { width: 16, height: 12 })
  * v.firstPerson.children[0].kind // => 'image'
  * ```

@@ -5,7 +5,7 @@
  * `classificationReport`.
  */
 
-import { MdmlError, type MetricResult, type MetricSpec, maxOf, minOf, toRows } from '../base/index.ts'
+import { type MetricResult, type MetricSpec, maxOf, minOf, OmaiError, toRows } from '../base/index.ts'
 import { type TensorLike, toFlat } from '../tensor/index.ts'
 import { fixed, right } from './_format.ts'
 import { classCounts, encodeLabels, indicator, isMultilabel, type Label, labelValues, sortLabels } from './_labels.ts'
@@ -47,7 +47,7 @@ const spec = (
  * @concept classification-metrics
  * @example
  * ```ts
- * import { matthewsCorrcoef } from 'mdml-engine/metrics'
+ * import { matthewsCorrcoef } from 'omai-engine/metrics'
  * matthewsCorrcoef([1, 1, 0, 0], [1, 0, 0, 0]).estimate.value // => 0.5773502691896258
  * ```
  */
@@ -86,7 +86,7 @@ export interface KappaOptions extends MetricOptions {
  * @returns The metric result, at most 1.
  * @example
  * ```ts
- * import { cohenKappaScore } from 'mdml-engine/metrics'
+ * import { cohenKappaScore } from 'omai-engine/metrics'
  * cohenKappaScore([0, 1, 1, 0], [0, 1, 0, 0]).estimate.value // => 0.5
  * ```
  */
@@ -128,7 +128,7 @@ export const cohenKappaScore: Metric<KappaOptions, MetricInput> = Object.assign(
  * @returns The metric result.
  * @example
  * ```ts
- * import { quadraticWeightedKappa } from 'mdml-engine/metrics'
+ * import { quadraticWeightedKappa } from 'omai-engine/metrics'
  * quadraticWeightedKappa([0, 1, 2, 3], [0, 1, 2, 3]).estimate.value // => 1
  * ```
  */
@@ -148,7 +148,7 @@ function binaryCounts(
   options: MetricOptions & { readonly posLabel?: Label },
 ): { tp: number; fp: number; fn: number; tn: number } {
   const e = encodeLabels(name, yTrue, yPred, options)
-  if (e.classes.length > 2) throw new MdmlError('value', `${name}: needs binary labels`)
+  if (e.classes.length > 2) throw new OmaiError('value', `${name}: needs binary labels`)
   const i = e.classes.indexOf(options.posLabel ?? 1)
   const c = classCounts(e)
   if (i < 0) {
@@ -173,7 +173,7 @@ export interface LikelihoodRatioOptions extends MetricOptions {
  * @returns The metric result.
  * @example
  * ```ts
- * import { positiveLikelihoodRatio } from 'mdml-engine/metrics'
+ * import { positiveLikelihoodRatio } from 'omai-engine/metrics'
  * positiveLikelihoodRatio([1, 1, 0, 0], [1, 0, 1, 0]).estimate.value // => 1
  * ```
  */
@@ -197,7 +197,7 @@ export const positiveLikelihoodRatio: Metric<LikelihoodRatioOptions, MetricInput
  * @returns The metric result.
  * @example
  * ```ts
- * import { negativeLikelihoodRatio } from 'mdml-engine/metrics'
+ * import { negativeLikelihoodRatio } from 'omai-engine/metrics'
  * negativeLikelihoodRatio([1, 1, 0, 0], [1, 0, 1, 0]).estimate.value // => 1
  * ```
  */
@@ -221,7 +221,7 @@ export const negativeLikelihoodRatio: Metric<LikelihoodRatioOptions, MetricInput
  * @returns The metric result.
  * @example
  * ```ts
- * import { diagnosticOddsRatio } from 'mdml-engine/metrics'
+ * import { diagnosticOddsRatio } from 'omai-engine/metrics'
  * diagnosticOddsRatio([1, 1, 1, 0, 0, 0], [1, 1, 0, 1, 0, 0]).estimate.value // => 4
  * ```
  */
@@ -245,7 +245,7 @@ export const diagnosticOddsRatio: Metric<LikelihoodRatioOptions, MetricInput> = 
  * @returns The metric result.
  * @example
  * ```ts
- * import { hammingLoss } from 'mdml-engine/metrics'
+ * import { hammingLoss } from 'omai-engine/metrics'
  * hammingLoss([[0, 1], [1, 1]], [[0, 0], [1, 1]]).estimate.value // => 0.25
  * ```
  */
@@ -278,7 +278,7 @@ export const hammingLoss: Metric<MetricOptions, MetricInput> = Object.assign(
  * @returns The metric result.
  * @example
  * ```ts
- * import { zeroOneLoss } from 'mdml-engine/metrics'
+ * import { zeroOneLoss } from 'omai-engine/metrics'
  * zeroOneLoss([1, 2, 3, 4], [2, 2, 3, 4]).estimate.value // => 0.25
  * ```
  */
@@ -316,7 +316,7 @@ export interface TopKOptions extends MetricOptions {
  * @returns The metric result.
  * @example
  * ```ts
- * import { topKAccuracyScore } from 'mdml-engine/metrics'
+ * import { topKAccuracyScore } from 'omai-engine/metrics'
  * topKAccuracyScore([0, 1, 2, 2], [[0.5, 0.2, 0.2], [0.3, 0.4, 0.2], [0.2, 0.4, 0.3], [0.7, 0.2, 0.1]]).estimate.value // => 0.75
  * ```
  */
@@ -364,7 +364,7 @@ function rankingRows(
 ): { n: number; l: number; t: Float64Array; s: Float64Array } {
   const t = indicator(name, yTrue)
   const s = indicator(name, yScore)
-  if (t.n !== s.n || t.l !== s.l) throw new MdmlError('shape', `${name}: yTrue and yScore shapes differ`)
+  if (t.n !== s.n || t.l !== s.l) throw new OmaiError('shape', `${name}: yTrue and yScore shapes differ`)
   return { n: t.n, l: t.l, t: t.data, s: s.data }
 }
 
@@ -379,7 +379,7 @@ function rankingRows(
  * @returns The metric result.
  * @example
  * ```ts
- * import { labelRankingAveragePrecisionScore } from 'mdml-engine/metrics'
+ * import { labelRankingAveragePrecisionScore } from 'omai-engine/metrics'
  * labelRankingAveragePrecisionScore([[1, 0, 0], [0, 0, 1]], [[0.75, 0.5, 1], [1, 0.2, 0.1]]).estimate.value // => 0.41666666666666663
  * ```
  */
@@ -423,7 +423,7 @@ export const labelRankingAveragePrecisionScore: Metric<MetricOptions> = Object.a
  * @returns The metric result.
  * @example
  * ```ts
- * import { coverageError } from 'mdml-engine/metrics'
+ * import { coverageError } from 'omai-engine/metrics'
  * coverageError([[1, 0, 0], [0, 1, 1]], [[1, 0, 0], [0, 1, 1]]).estimate.value // => 1.5
  * ```
  */
@@ -455,7 +455,7 @@ export const coverageError: Metric<MetricOptions> = Object.assign(
  * @returns The metric result.
  * @example
  * ```ts
- * import { labelRankingLoss } from 'mdml-engine/metrics'
+ * import { labelRankingLoss } from 'omai-engine/metrics'
  * labelRankingLoss([[1, 0, 0], [0, 0, 1]], [[0.75, 0.5, 1], [1, 0.2, 0.1]]).estimate.value // => 0.75
  * ```
  */
@@ -511,7 +511,7 @@ export interface ClassificationReport {
  * @returns The report.
  * @example
  * ```ts
- * import { classificationReport } from 'mdml-engine/metrics'
+ * import { classificationReport } from 'omai-engine/metrics'
  * classificationReport([0, 1, 2, 2, 2], [0, 0, 2, 2, 1]).accuracy // => 0.6
  * ```
  */

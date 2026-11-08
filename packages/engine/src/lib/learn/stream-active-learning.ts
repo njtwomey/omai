@@ -152,9 +152,9 @@ function streamRun(
  * @concept active-learning
  * @example
  * ```ts
- * import { streamActiveLearningAlgorithm, defineEstimator } from 'mdml-engine/learn'
- * import { runAlgorithm } from 'mdml-engine/trace'
- * import { tensor } from 'mdml-engine/tensor'
+ * import { streamActiveLearningAlgorithm, defineEstimator } from 'omai-engine/learn'
+ * import { runAlgorithm } from 'omai-engine/trace'
+ * import { tensor } from 'omai-engine/tensor'
  * const logistic = defineEstimator(
  *   { name: 'l', kind: 'classifier', fit: () => ({}), methods: () => ({ classes: [0, 1], predictProba: (x) => tensor(Array.from({ length: x.shape[0] }, (_, i) => { const p = 1 / (1 + Math.exp(-x.data[i])); return [1 - p, p] })) }) },
  *   {},
@@ -180,8 +180,8 @@ export function streamActiveLearningAlgorithm(
  * @returns The final model and the stream indices queried.
  * @example
  * ```ts
- * import { streamActiveLearning, defineEstimator } from 'mdml-engine/learn'
- * import { tensor } from 'mdml-engine/tensor'
+ * import { streamActiveLearning, defineEstimator } from 'omai-engine/learn'
+ * import { tensor } from 'omai-engine/tensor'
  * const logistic = defineEstimator(
  *   { name: 'l', kind: 'classifier', fit: () => ({}), methods: () => ({ classes: [0, 1], predictProba: (x) => tensor(Array.from({ length: x.shape[0] }, (_, i) => { const p = 1 / (1 + Math.exp(-x.data[i])); return [1 - p, p] })) }) },
  *   {},

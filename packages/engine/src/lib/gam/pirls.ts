@@ -7,7 +7,7 @@
  * criterion and the smoothing parameters at every iteration.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { type DispersionFamily, gaussian, type Link } from '../dists/families/index.ts'
 import { matrixView, sampleWeightsOf, targetVector } from '../learn/index.ts'
 import { fitGlm, glmSolvers, solverConfigOf } from '../optim/index.ts'
@@ -106,11 +106,11 @@ const KNOWN_SCALE = new Set(['binomial', 'poisson', 'negativeBinomial'])
  * @param hyper - The hyperparameters.
  * @param weights - Prior weights (default 1).
  * @returns The problem.
- * @throws MdmlError `shape` or `value` for inconsistent data or fewer observations than coefficients.
+ * @throws OmaiError `shape` or `value` for inconsistent data or fewer observations than coefficients.
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { GAM_DEFAULTS, gamProblem } from 'mdml-engine/gam'
+ * import { GAM_DEFAULTS, gamProblem } from 'omai-engine/gam'
  * const x = Array.from({ length: 12 }, (_, i) => [i])
  * gamProblem(x, x.map((r) => r[0] ?? 0), GAM_DEFAULTS).design.p // => 10
  * ```
@@ -120,7 +120,7 @@ export function gamProblem(x: TensorLike, y: TensorLike, hyper: GamHyper, weight
   const response = targetVector(y, 'gam', m.n)
   const design = buildDesign(x, hyper.terms)
   if (design.p > m.n) {
-    throw new MdmlError('value', `gam: ${design.p} coefficients for ${m.n} observations; use fewer or smaller terms`)
+    throw new OmaiError('value', `gam: ${design.p} coefficients for ${m.n} observations; use fewer or smaller terms`)
   }
   const link = hyper.link ?? hyper.family.defaultLink
   return {
@@ -148,7 +148,7 @@ const flat = (v: Parameters<typeof primalOf>[0]): Float64Array => Float64Array.f
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { GAM_DEFAULTS, gamProblem, workingResponse } from 'mdml-engine/gam'
+ * import { GAM_DEFAULTS, gamProblem, workingResponse } from 'omai-engine/gam'
  * const p = gamProblem([[0], [1], [2], [3]], [1, 2, 3, 4], { ...GAM_DEFAULTS, terms: [] })
  * Array.from(workingResponse(p, [1, 1, 1, 1]).z) // => [1, 2, 3, 4]
  * ```
@@ -183,7 +183,7 @@ export function workingResponse(
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { GAM_DEFAULTS, gamProblem, startingPredictor } from 'mdml-engine/gam'
+ * import { GAM_DEFAULTS, gamProblem, startingPredictor } from 'omai-engine/gam'
  * const p = gamProblem([[0], [1], [2], [3]], [0, 2, 2, 4], { ...GAM_DEFAULTS, terms: [] })
  * Array.from(startingPredictor(p)) // => [1, 2, 2, 3]
  * ```
@@ -227,8 +227,8 @@ export type GamState = {
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { GAM_DEFAULTS, gamAlgorithm, gamProblem, gamSolution } from 'mdml-engine/gam'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { GAM_DEFAULTS, gamAlgorithm, gamProblem, gamSolution } from 'omai-engine/gam'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const x = Array.from({ length: 30 }, (_, i) => [i / 29])
  * const problem = gamProblem(x, x.map((r) => Math.sin(5 * (r[0] ?? 0))), GAM_DEFAULTS)
  * const state = runAlgorithm(gamAlgorithm(problem, GAM_DEFAULTS), { maxSteps: 20 }).state
@@ -258,7 +258,7 @@ export function gamSolution(
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { GAM_DEFAULTS, fitGam, gamProblem, influenceDiagonal } from 'mdml-engine/gam'
+ * import { GAM_DEFAULTS, fitGam, gamProblem, influenceDiagonal } from 'omai-engine/gam'
  * const x = Array.from({ length: 30 }, (_, i) => [i / 29])
  * const problem = gamProblem(x, x.map((r) => Math.cos(4 * (r[0] ?? 0))), GAM_DEFAULTS)
  * const h = influenceDiagonal(problem, fitGam(problem, GAM_DEFAULTS).state)
@@ -291,7 +291,7 @@ export function influenceDiagonal(problem: GamProblem, state: GamState): Float64
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { GAM_DEFAULTS, gamProblem, pearsonScale } from 'mdml-engine/gam'
+ * import { GAM_DEFAULTS, gamProblem, pearsonScale } from 'omai-engine/gam'
  * const p = gamProblem([[0], [1], [2], [3]], [1, 2, 3, 5], { ...GAM_DEFAULTS, terms: [] })
  * pearsonScale(p, Float64Array.of(1, 2, 3, 4), 2) // => 0.5
  * ```
@@ -322,8 +322,8 @@ export function pearsonScale(problem: GamProblem, mu: Float64Array, edf: number)
  * @reference S. N. Wood, Generalized Additive Models: An Introduction with R (2nd ed., 2017), chapters 3 and 6.
  * @example
  * ```ts
- * import { GAM_DEFAULTS, gamAlgorithm, gamProblem } from 'mdml-engine/gam'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { GAM_DEFAULTS, gamAlgorithm, gamProblem } from 'omai-engine/gam'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const x = Array.from({ length: 40 }, (_, i) => [i / 39])
  * const y = x.map((r) => Math.sin(6 * (r[0] ?? 0)))
  * const problem = gamProblem(x, y, GAM_DEFAULTS)
@@ -336,16 +336,16 @@ export function gamAlgorithm(problem: GamProblem, hyper: GamHyper, key: Key = ma
   const n = design.n
   const nPen = structure.blocks.length
   if (hyper.sp !== undefined && hyper.sp.length !== nPen) {
-    throw new MdmlError('shape', `gam: sp has ${hyper.sp.length} entries for ${nPen} penalties`)
+    throw new OmaiError('shape', `gam: sp has ${hyper.sp.length} entries for ${nPen} penalties`)
   }
   if (hyper.method === 'fixed' && nPen > 0 && hyper.sp === undefined) {
-    throw new MdmlError('value', 'gam: method "fixed" needs sp')
+    throw new OmaiError('value', 'gam: method "fixed" needs sp')
   }
   if (hyper.method === 'ubre' && problem.knownScale === undefined) {
-    throw new MdmlError('value', 'gam: UBRE needs a known scale (a binomial or Poisson family, or the scale option)')
+    throw new OmaiError('value', 'gam: UBRE needs a known scale (a binomial or Poisson family, or the scale option)')
   }
   if (design.constraints !== undefined && glmSolvers.modeOf(hyper.solver).name !== 'irls') {
-    throw new MdmlError(
+    throw new OmaiError(
       'value',
       'gam: shape-constrained terms are fitted by the reweighted quadratic program (solver irls)',
     )
@@ -504,7 +504,7 @@ export function gamAlgorithm(problem: GamProblem, hyper: GamHyper, key: Key = ma
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { GAM_DEFAULTS, fitGam, gamProblem } from 'mdml-engine/gam'
+ * import { GAM_DEFAULTS, fitGam, gamProblem } from 'omai-engine/gam'
  * const x = Array.from({ length: 30 }, (_, i) => [i / 29])
  * const problem = gamProblem(x, x.map((r) => 2 * (r[0] ?? 0) + 1), GAM_DEFAULTS)
  * fitGam(problem, GAM_DEFAULTS).converged // => true

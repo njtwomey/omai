@@ -16,10 +16,10 @@ import {
 import { extractCatalogue } from './catalogue.ts'
 
 // A tiny repository with the engine's layout: two domains, one with a namespaced and one with a flat subfolder.
-const root = mkdtempSync(join(tmpdir(), 'mdml-agent-index-'))
+const root = mkdtempSync(join(tmpdir(), 'omai-agent-index-'))
 const files: Record<string, string> = {
   'packages/engine/package.json': JSON.stringify({
-    name: 'mdml-engine',
+    name: 'omai-engine',
     exports: { './*': { source: './src/lib/*/index.ts' } },
   }),
   'packages/engine/llms.header.md': '# mini-engine\n\nUsage note, written by hand.\n',
@@ -135,7 +135,7 @@ describe('collectAgentIndex', () => {
   const names = entries.map((e) => `${e.level}:${e.folder}:${e.name}`)
 
   it('finds file-level and symbol-level entries, each keyed by import path and name', () => {
-    expect(packageName).toBe('mdml-engine')
+    expect(packageName).toBe('omai-engine')
     expect(names).toContain('file:alpha:solve.ts')
     expect(names).toContain('symbol:alpha:solve')
     const solve = entries.find((e) => e.name === 'solve')
@@ -143,7 +143,7 @@ describe('collectAgentIndex', () => {
       kind: 'function',
       name: 'solve',
       level: 'symbol',
-      importPath: 'mdml-engine/alpha',
+      importPath: 'omai-engine/alpha',
       path: 'src/lib/alpha/solve.ts',
       line: 18,
       description: 'Solve a thing.',
@@ -169,11 +169,11 @@ describe('collectAgentIndex', () => {
 
   it('puts a flat subfolder under its parent entry point and a namespace under its own', () => {
     expect(entries.find((e) => e.name === 'scale')).toMatchObject({
-      importPath: 'mdml-engine/alpha',
+      importPath: 'omai-engine/alpha',
       folder: 'alpha/ops',
     })
     expect(entries.find((e) => e.name === 'dive')).toMatchObject({
-      importPath: 'mdml-engine/alpha/deep',
+      importPath: 'omai-engine/alpha/deep',
       folder: 'alpha/deep',
       domain: 'alpha',
     })
@@ -212,7 +212,7 @@ describe('collectAgentIndex', () => {
 
 describe('collectAgentIndex problems', () => {
   it('reports a bad kind, an empty description and a duplicate tag with file:line', () => {
-    const bad = mkdtempSync(join(tmpdir(), 'mdml-agent-index-bad-'))
+    const bad = mkdtempSync(join(tmpdir(), 'omai-agent-index-bad-'))
     const src: Record<string, string> = {
       'packages/engine/package.json': files['packages/engine/package.json'] as string,
       'packages/engine/src/lib/gamma/index.ts': "/**\n * Gamma.\n */\nexport * from './bad.ts'\n",
@@ -274,7 +274,7 @@ const entry = (over: Partial<IndexEntry>): IndexEntry => ({
   kind: 'function',
   name: 'f',
   level: 'symbol',
-  importPath: 'mdml-engine/alpha',
+  importPath: 'omai-engine/alpha',
   path: 'src/lib/alpha/f.ts',
   line: 3,
   description: 'Does f.',
@@ -292,16 +292,16 @@ describe('renderAgentIndex', () => {
     entry({
       name: 'dive',
       folder: 'alpha/deep',
-      importPath: 'mdml-engine/alpha/deep',
+      importPath: 'omai-engine/alpha/deep',
       path: 'src/lib/alpha/deep/d.ts',
     }),
     entry({
       name: 'deepest',
       folder: 'alpha/deep/deeper',
-      importPath: 'mdml-engine/alpha/deep',
+      importPath: 'omai-engine/alpha/deep',
       path: 'src/lib/alpha/deep/deeper/e.ts',
     }),
-    entry({ name: 'normal', kind: 'distribution', domain: 'beta', folder: 'beta', importPath: 'mdml-engine/beta' }),
+    entry({ name: 'normal', kind: 'distribution', domain: 'beta', folder: 'beta', importPath: 'omai-engine/beta' }),
   ]
   const summaries = {
     alpha: 'Alpha domain. It has a second sentence that is short.',
@@ -310,11 +310,11 @@ describe('renderAgentIndex', () => {
     gamma: 'Gamma has no entries.',
   }
   const out = renderAgentIndex({
-    packageName: 'mdml-engine',
+    packageName: 'omai-engine',
     source: 'packages/engine/src/lib',
     entries,
     summaries,
-    header: '# mdml-engine\n\nNote.\n',
+    header: '# omai-engine\n\nNote.\n',
   })
 
   it('writes llms.txt, one file per domain with entries, and the JSON', () => {
@@ -323,7 +323,7 @@ describe('renderAgentIndex', () => {
 
   it('opens llms.txt with the hand-written note and lists every domain on one line', () => {
     const llms = out.get('llms.txt') as string
-    expect(llms.startsWith('# mdml-engine\n\nNote.\n\n## Domains\n')).toBe(true)
+    expect(llms.startsWith('# omai-engine\n\nNote.\n\n## Domains\n')).toBe(true)
     expect(llms).toContain(
       '- [alpha](index/alpha.md): Alpha domain. It has a second sentence that is short. (6 entries)',
     )
@@ -337,20 +337,20 @@ describe('renderAgentIndex', () => {
     expect(heads).toEqual(['# alpha', '## alpha/deep', '### alpha/deep/deeper'])
     const lines = alpha.split('\n').filter((l) => l.startsWith('- '))
     expect(lines).toEqual([
-      '- structure `hub.ts` (file): The hub. `src/lib/alpha/f.ts:1` `mdml-engine/alpha`',
-      '- function `another`: Does f. `src/lib/alpha/f.ts:8` `mdml-engine/alpha`',
-      '- function `solve`: Does f. `src/lib/alpha/f.ts:5` `mdml-engine/alpha`',
-      '- estimator `zeta`: Does f. `src/lib/alpha/f.ts:10` `mdml-engine/alpha`',
-      '- function `dive`: Does f. `src/lib/alpha/deep/d.ts:3` `mdml-engine/alpha/deep`',
-      '- function `deepest`: Does f. `src/lib/alpha/deep/deeper/e.ts:3` `mdml-engine/alpha/deep`',
+      '- structure `hub.ts` (file): The hub. `src/lib/alpha/f.ts:1` `omai-engine/alpha`',
+      '- function `another`: Does f. `src/lib/alpha/f.ts:8` `omai-engine/alpha`',
+      '- function `solve`: Does f. `src/lib/alpha/f.ts:5` `omai-engine/alpha`',
+      '- estimator `zeta`: Does f. `src/lib/alpha/f.ts:10` `omai-engine/alpha`',
+      '- function `dive`: Does f. `src/lib/alpha/deep/d.ts:3` `omai-engine/alpha/deep`',
+      '- function `deepest`: Does f. `src/lib/alpha/deep/deeper/e.ts:3` `omai-engine/alpha/deep`',
     ])
     expect(alpha).toContain('# alpha\n\nAlpha domain. It has a second sentence that is short.\n')
   })
 
   it('separates the groups with a blank line', () => {
     const alpha = out.get('index/alpha.md') as string
-    expect(alpha).toContain('The hub. `src/lib/alpha/f.ts:1` `mdml-engine/alpha`\n\n- function `another`')
-    expect(alpha).toContain('`mdml-engine/alpha`\n\n- estimator `zeta`')
+    expect(alpha).toContain('The hub. `src/lib/alpha/f.ts:1` `omai-engine/alpha`\n\n- function `another`')
+    expect(alpha).toContain('`omai-engine/alpha`\n\n- estimator `zeta`')
   })
 
   it('writes every entry to the JSON with its key fields', () => {
@@ -366,11 +366,11 @@ describe('renderAgentIndex', () => {
 
   it('is deterministic: the same output for any input order and on every run', () => {
     const again = renderAgentIndex({
-      packageName: 'mdml-engine',
+      packageName: 'omai-engine',
       source: 'packages/engine/src/lib',
       entries: [...entries].reverse(),
       summaries,
-      header: '# mdml-engine\n\nNote.\n',
+      header: '# omai-engine\n\nNote.\n',
     })
     expect([...again]).toEqual([...out])
     expect(JSON.stringify([...out])).not.toMatch(/20\d\d-\d\d-\d\d/)
@@ -378,7 +378,7 @@ describe('renderAgentIndex', () => {
 
   it('keeps two entries with the same name apart by their import path', () => {
     const both = renderAgentIndex({
-      packageName: 'mdml-engine',
+      packageName: 'omai-engine',
       source: 'packages/engine/src/lib',
       entries: [
         entry({
@@ -386,17 +386,17 @@ describe('renderAgentIndex', () => {
           kind: 'distribution',
           domain: 'dists',
           folder: 'dists',
-          importPath: 'mdml-engine/dists',
+          importPath: 'omai-engine/dists',
         }),
-        entry({ name: 'normal', domain: 'random', folder: 'random', importPath: 'mdml-engine/random' }),
+        entry({ name: 'normal', domain: 'random', folder: 'random', importPath: 'omai-engine/random' }),
       ],
       summaries: {},
       header: '',
     })
     expect(both.get('index/dists.md')).toContain('distribution `normal`')
-    expect(both.get('index/dists.md')).toContain('`mdml-engine/dists`')
+    expect(both.get('index/dists.md')).toContain('`omai-engine/dists`')
     expect(both.get('index/random.md')).toContain('function `normal`')
-    expect(both.get('index/random.md')).toContain('`mdml-engine/random`')
+    expect(both.get('index/random.md')).toContain('`omai-engine/random`')
   })
 })
 
@@ -465,11 +465,11 @@ describe('the catalogue keeps the tag out of the prose', () => {
 // A tiny repository with two indexed packages (the engine under src/lib, render directly under src, with a tsx
 // component and a nested react folder) and one that is not indexed (meta).
 describe('several packages', () => {
-  const repo = mkdtempSync(join(tmpdir(), 'mdml-agent-index-multi-'))
+  const repo = mkdtempSync(join(tmpdir(), 'omai-agent-index-multi-'))
   const tree: Record<string, string> = {
     ...files,
     'packages/render/package.json': JSON.stringify({
-      name: 'mdml-render',
+      name: 'omai-render',
       description: 'Figures.',
       exports: { './*': { source: './src/*/index.ts' } },
     }),
@@ -523,7 +523,7 @@ export function useSession(): number {
     'packages/render/src/theme/index.ts': "/**\n * Theme: tokens.\n */\nexport * from './tokens.ts'\n",
     'packages/render/src/theme/tokens.ts':
       '/**\n * Tokens, untagged.\n */\n\n/** Tokens. */\nexport const tokens = {}\n',
-    'packages/meta/package.json': JSON.stringify({ name: 'mdml-meta', description: 'Docs tooling.' }),
+    'packages/meta/package.json': JSON.stringify({ name: 'omai-meta', description: 'Docs tooling.' }),
   }
   for (const [path, text] of Object.entries(tree)) {
     mkdirSync(dirname(join(repo, path)), { recursive: true })
@@ -533,14 +533,14 @@ export function useSession(): number {
   const render = AGENT_INDEX_PACKAGES.find((p) => p.package === 'render')
   if (render === undefined) throw new Error('render is not an indexed package')
 
-  it('indexes render with its source directly under src, and the nested react folders under mdml-render/react', () => {
+  it('indexes render with its source directly under src, and the nested react folders under omai-render/react', () => {
     const { entries, packageName, summaries } = collectAgentIndex(repo, render)
-    expect(packageName).toBe('mdml-render')
+    expect(packageName).toBe('omai-render')
     expect(entries.map((e) => `${e.domain}|${e.folder}|${e.level}|${e.name}|${e.importPath}`)).toEqual([
-      'figure|figure|file|figure.ts|mdml-render/figure',
-      'figure|figure|symbol|figure|mdml-render/figure',
-      'react|react|symbol|Chart|mdml-render/react',
-      'react|react/session|symbol|useSession|mdml-render/react',
+      'figure|figure|file|figure.ts|omai-render/figure',
+      'figure|figure|symbol|figure|omai-render/figure',
+      'react|react|symbol|Chart|omai-render/react',
+      'react|react/session|symbol|useSession|omai-render/react',
     ])
     expect(entries[2]?.path).toBe('src/react/Chart.tsx')
     expect(summaries['react/session']).toBe('Sessions.')
@@ -563,11 +563,11 @@ export function useSession(): number {
     expect(react).toContain('from the @index tags in packages/render/src/react. Do not edit.')
     expect(react.split('\n').filter((l) => l.startsWith('#'))).toEqual(['# react', '## react/session'])
     expect(react).toContain('- function `useSession`: React hook: run a method live. `src/react/session/useSession.ts:')
-    expect(JSON.parse(out.get('index/index.json') as string)).toHaveProperty('package', 'mdml-render')
+    expect(JSON.parse(out.get('index/index.json') as string)).toHaveProperty('package', 'omai-render')
   })
 
   it('handles a package with no entries: the header and every domain from the folder summaries', () => {
-    const empty = mkdtempSync(join(tmpdir(), 'mdml-agent-index-empty-'))
+    const empty = mkdtempSync(join(tmpdir(), 'omai-agent-index-empty-'))
     try {
       for (const [path, text] of Object.entries(tree).filter(([p]) => p.startsWith('packages/render/'))) {
         mkdirSync(dirname(join(empty, path)), { recursive: true })
@@ -590,13 +590,13 @@ export function useSession(): number {
     const built = buildRepositoryIndex(repo)
     expect(built.packages.map((p) => p.package.package)).toEqual(['engine', 'render'])
     const lines = built.root.split('\n')
-    expect(lines).toContain('- [mdml-render](packages/render/llms.txt): Figures.')
-    const at = lines.indexOf('- [mdml-render](packages/render/llms.txt): Figures.')
+    expect(lines).toContain('- [omai-render](packages/render/llms.txt): Figures.')
+    const at = lines.indexOf('- [omai-render](packages/render/llms.txt): Figures.')
     expect(lines[at + 1]).toBe(
-      '  Imports as `mdml-render/<domain>`; 4 entries in 3 domains; the index files are in `packages/render/index/`.',
+      '  Imports as `omai-render/<domain>`; 4 entries in 3 domains; the index files are in `packages/render/index/`.',
     )
-    expect(lines.some((l) => l.startsWith('- [mdml-engine](packages/engine/llms.txt)'))).toBe(true)
-    expect(lines).toContain('- mdml-meta: Docs tooling. Not indexed.')
+    expect(lines.some((l) => l.startsWith('- [omai-engine](packages/engine/llms.txt)'))).toBe(true)
+    expect(lines).toContain('- omai-meta: Docs tooling. Not indexed.')
   })
 
   it('is deterministic and a pure function of the source', () => {
@@ -652,14 +652,14 @@ describe('renderRootIndex', () => {
       [
         {
           package: 'x',
-          collected: { packageName: 'mdml-x', description: 'X.', entries: [], summaries: { a: 'A.' }, problems: [] },
+          collected: { packageName: 'omai-x', description: 'X.', entries: [], summaries: { a: 'A.' }, problems: [] },
         },
       ],
-      [{ name: 'mdml-y', description: 'Y.' }],
+      [{ name: 'omai-y', description: 'Y.' }],
     )
     expect(text).toContain(
-      '- [mdml-x](packages/x/llms.txt): X.\n  Imports as `mdml-x/<domain>`; no entries yet in 1 domain;',
+      '- [omai-x](packages/x/llms.txt): X.\n  Imports as `omai-x/<domain>`; no entries yet in 1 domain;',
     )
-    expect(text).toContain('- mdml-y: Y. Not indexed.')
+    expect(text).toContain('- omai-y: Y. Not indexed.')
   })
 })

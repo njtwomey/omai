@@ -35,8 +35,8 @@ function inRun(e: TraceEvent, runId: string | undefined): boolean {
  * @returns Parallel arrays of steps and values.
  * @example
  * ```ts
- * import { metricSeries } from 'mdml-engine/trace'
- * const run = { schema: 'mdml.run/1' as const, events: [
+ * import { metricSeries } from 'omai-engine/trace'
+ * const run = { schema: 'omai.run/1' as const, events: [
  *   { type: 'metric' as const, runId: 'r', step: 0, name: 'loss', value: 2 },
  *   { type: 'metric' as const, runId: 'r', step: 1, name: 'loss', value: 1 },
  * ] }
@@ -64,8 +64,8 @@ export function metricSeries(run: Run, name: string, runId?: string): Series {
  * @returns The tensor events in order.
  * @example
  * ```ts
- * import { tensorSeries } from 'mdml-engine/trace'
- * tensorSeries({ schema: 'mdml.run/1', events: [] }, 'w') // => []
+ * import { tensorSeries } from 'omai-engine/trace'
+ * tensorSeries({ schema: 'omai.run/1', events: [] }, 'w') // => []
  * ```
  */
 export function tensorSeries(run: Run, name: string, runId?: string): TensorEvent[] {
@@ -80,8 +80,8 @@ export function tensorSeries(run: Run, name: string, runId?: string): TensorEven
  * @returns The message events in order.
  * @example
  * ```ts
- * import { messages } from 'mdml-engine/trace'
- * messages({ schema: 'mdml.run/1', events: [] }) // => []
+ * import { messages } from 'omai-engine/trace'
+ * messages({ schema: 'omai.run/1', events: [] }) // => []
  * ```
  */
 export function messages(run: Run, kind?: string): MessageEvent[] {
@@ -96,8 +96,8 @@ export function messages(run: Run, kind?: string): MessageEvent[] {
  * @returns The episode events in order.
  * @example
  * ```ts
- * import { episodes } from 'mdml-engine/trace'
- * episodes({ schema: 'mdml.run/1', events: [] }) // => []
+ * import { episodes } from 'omai-engine/trace'
+ * episodes({ schema: 'omai.run/1', events: [] }) // => []
  * ```
  */
 export function episodes(run: Run, runId?: string): EpisodeEvent[] {
@@ -112,8 +112,8 @@ export function episodes(run: Run, runId?: string): EpisodeEvent[] {
  * @returns The frames in order.
  * @example
  * ```ts
- * import { frames } from 'mdml-engine/trace'
- * frames({ schema: 'mdml.run/1', events: [] }) // => []
+ * import { frames } from 'omai-engine/trace'
+ * frames({ schema: 'omai.run/1', events: [] }) // => []
  * ```
  */
 export function frames(run: Run, runId?: string): { readonly step: number; readonly frame: Json }[] {
@@ -136,8 +136,8 @@ export interface RunNode {
  * @returns The root runs with their children.
  * @example
  * ```ts
- * import { runTree } from 'mdml-engine/trace'
- * runTree({ schema: 'mdml.run/1', events: [] }) // => []
+ * import { runTree } from 'omai-engine/trace'
+ * runTree({ schema: 'omai.run/1', events: [] }) // => []
  * ```
  */
 export function runTree(run: Run): RunNode[] {
@@ -158,8 +158,8 @@ export function runTree(run: Run): RunNode[] {
  * @returns One summary per run, keyed by run id.
  * @example
  * ```ts
- * import { summary } from 'mdml-engine/trace'
- * summary({ schema: 'mdml.run/1', events: [{ type: 'end', runId: 'r', status: 'converged', steps: 3, summary: { loss: 0 } }] }).r.steps // => 3
+ * import { summary } from 'omai-engine/trace'
+ * summary({ schema: 'omai.run/1', events: [{ type: 'end', runId: 'r', status: 'converged', steps: 3, summary: { loss: 0 } }] }).r.steps // => 3
  * ```
  */
 export function summary(run: Run): Record<string, EndEvent> {
@@ -176,8 +176,8 @@ export function summary(run: Run): Record<string, EndEvent> {
  * @returns The differing fields.
  * @example
  * ```ts
- * import { diffRuns } from 'mdml-engine/trace'
- * const r = (lr: number) => ({ schema: 'mdml.run/1' as const, events: [{ type: 'run' as const, runId: 'x', name: 'sgd', seed: 0, version: '1', config: { lr } }] })
+ * import { diffRuns } from 'omai-engine/trace'
+ * const r = (lr: number) => ({ schema: 'omai.run/1' as const, events: [{ type: 'run' as const, runId: 'x', name: 'sgd', seed: 0, version: '1', config: { lr } }] })
  * diffRuns(r(0.1), r(0.2)).config // => { lr: [0.1, 0.2] }
  * ```
  */

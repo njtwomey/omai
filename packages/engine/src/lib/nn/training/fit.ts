@@ -97,10 +97,10 @@ function recordLayers(run: RunHandle, step: number, params: Params, grads: Param
  * @concept training
  * @example
  * ```ts
- * import { fitAlgorithm, mlp } from 'mdml-engine/nn'
- * import { sgd } from 'mdml-engine/optim'
- * import { mse } from 'mdml-engine/losses'
- * import { xy } from 'mdml-engine/data'
+ * import { fitAlgorithm, mlp } from 'omai-engine/nn'
+ * import { sgd } from 'omai-engine/optim'
+ * import { mse } from 'omai-engine/losses'
+ * import { xy } from 'omai-engine/data'
  * fitAlgorithm(mlp([1, 1]), xy([[1]], [2]), { loss: (p, t) => mse(p, t), optimizer: sgd({ learningRate: 0.1 }), epochs: 1 }).name // => 'fit'
  * ```
  */
@@ -309,11 +309,11 @@ export interface FitResult {
  * @index function Train a module on a dataset and load the trained parameters back.
  * @example
  * ```ts
- * import { fit, Linear } from 'mdml-engine/nn'
- * import { sgd } from 'mdml-engine/optim'
- * import { mse } from 'mdml-engine/losses'
- * import { xy } from 'mdml-engine/data'
- * import { key } from 'mdml-engine/random'
+ * import { fit, Linear } from 'omai-engine/nn'
+ * import { sgd } from 'omai-engine/optim'
+ * import { mse } from 'omai-engine/losses'
+ * import { xy } from 'omai-engine/data'
+ * import { key } from 'omai-engine/random'
  * const r = fit(new Linear(1, 1, { key: key(0) }), xy([[0], [1], [2]], [[1], [3], [5]]), { loss: (p, t) => mse(p, t), optimizer: sgd({ learningRate: 0.1 }), epochs: 500 })
  * (r.losses.at(-1) ?? 1) < 1e-8 // => true
  * ```

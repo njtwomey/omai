@@ -6,7 +6,7 @@
  * through where the samples fell, as in the NeRF paper.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { type Key, uniform } from '../random/index.ts'
 import { fromStorage, type Tensor, toFlat, type Value } from '../tensor/index.ts'
 
@@ -30,13 +30,13 @@ const planeAt = (p: Planes, r: number): number => (typeof p === 'number' ? p : (
  * @param far - The far distance.
  * @param perturb - Draw within the bins (default true) or take their midpoints.
  * @returns The distances `[rays, samples]`.
- * @throws MdmlError with code `value` for fewer than one sample or planes that are not increasing.
+ * @throws OmaiError with code `value` for fewer than one sample or planes that are not increasing.
  * @concept volume-rendering
  * @example
  * ```ts
- * import { stratifiedSamples } from 'mdml-engine/fields'
- * import { key } from 'mdml-engine/random'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { stratifiedSamples } from 'omai-engine/fields'
+ * import { key } from 'omai-engine/random'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(stratifiedSamples(key(0), 1, 4, 2, 6, false)) // => [[2.5, 3.5, 4.5, 5.5]]
  * ```
  */
@@ -49,13 +49,13 @@ export function stratifiedSamples(
   perturb = true,
 ): Tensor {
   if (!(Number.isInteger(samples) && samples >= 1))
-    throw new MdmlError('value', 'stratifiedSamples: need at least one sample')
+    throw new OmaiError('value', 'stratifiedSamples: need at least one sample')
   const u = perturb ? uniform(key, [rays, samples]).data : undefined
   const out = new Float64Array(rays * samples)
   for (let r = 0; r < rays; r++) {
     const lo = planeAt(near, r)
     const hi = planeAt(far, r)
-    if (!(hi > lo)) throw new MdmlError('value', 'stratifiedSamples: far must exceed near')
+    if (!(hi > lo)) throw new OmaiError('value', 'stratifiedSamples: far must exceed near')
     for (let i = 0; i < samples; i++)
       out[r * samples + i] = lo + ((hi - lo) * (i + (u === undefined ? 0.5 : (u[r * samples + i] as number)))) / samples
   }
@@ -74,12 +74,12 @@ export function stratifiedSamples(
  * @param samples - The samples per row.
  * @param key - A key for random quantiles; omit for deterministic ones.
  * @returns The samples `[rows, samples]`, increasing along each row.
- * @throws MdmlError with code `shape` when the weights are not one fewer than the edges, `value` for a negative weight.
+ * @throws OmaiError with code `shape` when the weights are not one fewer than the edges, `value` for a negative weight.
  * @concept volume-rendering
  * @example
  * ```ts
- * import { samplePdf } from 'mdml-engine/fields'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { samplePdf } from 'omai-engine/fields'
+ * import { toArray } from 'omai-engine/tensor'
  * // Half the mass in [0, 1) and half in [1, 4): the median is at the shared edge, the quartiles at 0.5 and 2.5.
  * toArray(samplePdf([[0, 1, 4]], [[1, 1]], 3)) // => [[0.3333333333333333, 1, 3]]
  * ```
@@ -93,7 +93,7 @@ export function samplePdf(
   const b = asRows(bins)
   const w = asRows(weights)
   if (b.rows !== w.rows || b.cols !== w.cols + 1)
-    throw new MdmlError('shape', `samplePdf: ${b.cols} edges need ${b.cols - 1} weights, got [${w.rows}, ${w.cols}]`)
+    throw new OmaiError('shape', `samplePdf: ${b.cols} edges need ${b.cols - 1} weights, got [${w.rows}, ${w.cols}]`)
   const m = w.cols
   const u = key === undefined ? undefined : uniform(key, [b.rows, samples]).data
   const out = new Float64Array(b.rows * samples)
@@ -102,7 +102,7 @@ export function samplePdf(
     let total = 0
     for (let i = 0; i < m; i++) {
       const wi = w.data[r * m + i] as number
-      if (wi < 0) throw new MdmlError('value', 'samplePdf: weights must be non-negative')
+      if (wi < 0) throw new OmaiError('value', 'samplePdf: weights must be non-negative')
       total += wi
     }
     cdf[0] = 0
@@ -138,7 +138,7 @@ function asRows(x: Value | ArrayLike<ArrayLike<number>>): { data: ArrayLike<numb
   }
   const v = x as Value
   if (v.shape.length !== 2)
-    throw new MdmlError('shape', `samplePdf: expected a matrix, got shape [${v.shape.join(', ')}]`)
+    throw new OmaiError('shape', `samplePdf: expected a matrix, got shape [${v.shape.join(', ')}]`)
   return { data: flat(v), rows: v.shape[0] as number, cols: v.shape[1] as number }
 }
 
@@ -153,13 +153,13 @@ function asRows(x: Value | ArrayLike<ArrayLike<number>>): { data: ArrayLike<numb
  * @param fine - How many fine samples per ray.
  * @param key - A key for random quantiles; omit for evenly spaced ones.
  * @returns The merged distances `[rays, n + fine]`, increasing along each ray.
- * @throws MdmlError with code `shape` when the weights do not match the distances, or there are fewer than three coarse samples.
+ * @throws OmaiError with code `shape` when the weights do not match the distances, or there are fewer than three coarse samples.
  * @concept volume-rendering
  * @reference Mildenhall et al. (2020), NeRF, section 5.2 (hierarchical volume sampling).
  * @example
  * ```ts
- * import { hierarchicalSamples } from 'mdml-engine/fields'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { hierarchicalSamples } from 'omai-engine/fields'
+ * import { toArray } from 'omai-engine/tensor'
  * // All the weight on the third of five coarse samples: every fine sample lands near it.
  * const t = [[1, 2, 3, 4, 5]]
  * (toArray(hierarchicalSamples(t, [[0, 0, 1, 0, 0]], 2))[0] as number[]).map((v) => Math.round(v * 100) / 100) // => [1, 2, 2.75, 3, 3.25, 4, 5]
@@ -174,7 +174,7 @@ export function hierarchicalSamples(
   const t = asRows(coarse)
   const w = asRows(weights)
   if (t.rows !== w.rows || t.cols !== w.cols || t.cols < 3)
-    throw new MdmlError(
+    throw new OmaiError(
       'shape',
       'hierarchicalSamples: need distances and weights of the same shape, at least three samples',
     )

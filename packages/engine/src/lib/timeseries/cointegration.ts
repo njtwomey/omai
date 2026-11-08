@@ -6,7 +6,7 @@
  * tables of MacKinnon, Haug and Michelis), plus the choice of the rank from either sequence of tests.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { key as makeKey } from '../random/index.ts'
 import { type AdfOptions, adfuller, mackinnoncrit, mackinnonp, type TrendTerms } from '../stats/tests/index.ts'
 import {
@@ -38,7 +38,7 @@ function columnsFrom(y: SeriesColumns, who: string): Float64Array[] {
   const first = (y as ArrayLike<unknown>)[0]
   if (typeof first === 'number') return [Float64Array.from(y as ArrayLike<number>)]
   const rows = y as ArrayLike<ArrayLike<number>>
-  if (rows.length === 0) throw new MdmlError('value', `${who}: no observations`)
+  if (rows.length === 0) throw new OmaiError('value', `${who}: no observations`)
   return columnsOf(Array.from(rows, (r) => Array.from(r)))
 }
 
@@ -77,7 +77,7 @@ export interface EngleGrangerResult {
  * @returns The statistic, p-value, critical values, the cointegrating vector and the spread.
  * @example
  * ```ts
- * import { engleGranger } from 'mdml-engine/timeseries'
+ * import { engleGranger } from 'omai-engine/timeseries'
  * // x is a random walk and y = 2x + a stationary alternating spread: cointegrated.
  * const x = [0, 0.5, 0.2, 0.9, 1.5, 1.1, 1.8, 2.6, 2.1, 2.9, 3.8, 3.3, 4.1, 4.9, 4.4, 5.3, 6.1, 5.6, 6.2, 7.0]
  * const y = x.map((v, i) => 2 * v + (i % 2 === 0 ? 0.3 : -0.3))
@@ -92,7 +92,7 @@ export function engleGranger(
   const trend = options.trend ?? 'c'
   const others = columnsFrom(y1, 'engleGranger')
   const n = y0.length
-  if (others.some((c) => c.length !== n)) throw new MdmlError('shape', 'engleGranger: series differ in length')
+  if (others.some((c) => c.length !== n)) throw new OmaiError('shape', 'engleGranger: series differ in length')
   const regressors: Float64Array[] = [...others]
   const terms = trend === 'n' ? 0 : trend.length
   if (terms >= 1) regressors.push(new Float64Array(n).fill(1))
@@ -217,7 +217,7 @@ export function reducedRankEigen(
  * @returns The eigenvalues, eigenvectors, statistics and critical values.
  * @example
  * ```ts
- * import { johansen } from 'mdml-engine/timeseries'
+ * import { johansen } from 'omai-engine/timeseries'
  * const y = [[0, 0.1], [1, 0.9], [1.5, 1.6], [3, 2.8], [3.4, 3.5], [5, 4.7], [5.1, 5.2], [6.8, 6.4], [7.2, 7.1], [9, 8.5], [9.5, 9.6], [10.9, 10.4]]
  * johansen(y, 0, 1).eigenvalues.length // => 2
  * ```
@@ -230,7 +230,7 @@ export function johansen(
   const cols = columnsFrom(y, 'johansen')
   const K = cols.length
   const nTot = cols[0]?.length ?? 0
-  if (nTot < K * (kArDiff + 2) + 5) throw new MdmlError('value', 'johansen: too few observations')
+  if (nTot < K * (kArDiff + 2) + 5) throw new OmaiError('value', 'johansen: too few observations')
   const f = detOrder > -1 ? 0 : detOrder
   const level = detrend(cols, detOrder)
   const dx = level.map((c) => Float64Array.from({ length: nTot - 1 }, (_, i) => (c[i + 1] ?? 0) - (c[i] ?? 0)))
@@ -309,8 +309,8 @@ export const rankContract: Contract<RankState, RankPath> = defineContract({
  * @returns The algorithm; it is done at the accepted rank, or after the last rank.
  * @example
  * ```ts
- * import { cointegrationRankAlgorithm } from 'mdml-engine/timeseries'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { cointegrationRankAlgorithm } from 'omai-engine/timeseries'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const y = [[0, 0.1], [1, 0.9], [1.5, 1.6], [3, 2.8], [3.4, 3.5], [5, 4.7], [5.1, 5.2], [6.8, 6.4], [7.2, 7.1], [9, 8.5], [9.5, 9.6], [10.9, 10.4]]
  * runAlgorithm(cointegrationRankAlgorithm(y), { maxSteps: 3 }).state.statistics.length // => 2
  * ```
@@ -356,7 +356,7 @@ export function cointegrationRankAlgorithm(
  * @returns The rank and the statistics tested.
  * @example
  * ```ts
- * import { selectCointegrationRank } from 'mdml-engine/timeseries'
+ * import { selectCointegrationRank } from 'omai-engine/timeseries'
  * const y = [[0, 0.1], [1, 0.9], [1.5, 1.6], [3, 2.8], [3.4, 3.5], [5, 4.7], [5.1, 5.2], [6.8, 6.4], [7.2, 7.1], [9, 8.5], [9.5, 9.6], [10.9, 10.4]]
  * selectCointegrationRank(y).rank >= 0 // => true
  * ```

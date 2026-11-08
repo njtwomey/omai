@@ -4,7 +4,7 @@
  * initial centres (k-means++, random rows or given) and the nearest-centre assignment they share.
  */
 
-import { MdmlError, toRows } from '../base/index.ts'
+import { OmaiError, toRows } from '../base/index.ts'
 import { matrixView } from '../learn/index.ts'
 import { geometry } from '../numerics/index.ts'
 import { kmeansCodebook } from '../numerics/spatial/index.ts'
@@ -52,7 +52,7 @@ function squaredShift(a: Rows, b: Rows): number {
  * @returns The distances, flat.
  * @example
  * ```ts
- * import { squaredDistancesToCentres } from 'mdml-engine/cluster'
+ * import { squaredDistancesToCentres } from 'omai-engine/cluster'
  * squaredDistancesToCentres([[0, 0], [3, 4]], [[0, 0]]) // => [0, 25]
  * ```
  */
@@ -68,7 +68,7 @@ export function squaredDistancesToCentres(x: TensorLike, centres: Rows): number[
  * @returns Labels and inertia.
  * @example
  * ```ts
- * import { nearestCentres } from 'mdml-engine/cluster'
+ * import { nearestCentres } from 'omai-engine/cluster'
  * nearestCentres([[0, 0], [10, 0], [9, 1]], [[0, 0], [10, 0]]).labels // => [0, 1, 1]
  * ```
  */
@@ -112,18 +112,18 @@ function meanVariance(data: Float64Array, n: number, d: number): number {
  * @returns The centres `[k, d]`.
  * @example
  * ```ts
- * import { initialCentres } from 'mdml-engine/cluster'
- * import { key } from 'mdml-engine/random'
+ * import { initialCentres } from 'omai-engine/cluster'
+ * import { key } from 'omai-engine/random'
  * initialCentres([[0, 0], [1, 1], [5, 5]], 2, [[0, 0], [5, 5]], key(0)) // => [[0, 0], [5, 5]]
  * ```
  */
 export function initialCentres(x: TensorLike, k: number, init: KMeansInit, key: Key): number[][] {
   const m = matrixView(x, 'initialCentres')
   if (!(Number.isInteger(k) && k >= 1 && k <= m.n))
-    throw new MdmlError('value', `initialCentres: nClusters must be in 1..${m.n}, got ${k}`)
+    throw new OmaiError('value', `initialCentres: nClusters must be in 1..${m.n}, got ${k}`)
   if (typeof init !== 'string') {
     if (init.length !== k || init.some((r) => r.length !== m.d))
-      throw new MdmlError('shape', `initialCentres: init must be [${k}, ${m.d}]`)
+      throw new OmaiError('shape', `initialCentres: init must be [${k}, ${m.d}]`)
     return init.map((r) => [...r])
   }
   if (init === 'random') {
@@ -146,8 +146,8 @@ export function initialCentres(x: TensorLike, k: number, init: KMeansInit, key: 
  * @index algorithm Lloyd's k-means, one step at a time; plain k-means has no estimator.
  * @example
  * ```ts
- * import { lloydAlgorithm } from 'mdml-engine/cluster'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { lloydAlgorithm } from 'omai-engine/cluster'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const x = [[0, 0], [0, 1], [10, 0], [10, 1]]
  * runAlgorithm(lloydAlgorithm(x, [[0, 0], [10, 1]]), { maxSteps: 20 }).state.labels // => [0, 0, 1, 1]
  * ```
@@ -221,7 +221,7 @@ export interface MiniBatchState {
  * @index algorithm Mini-batch k-means, one batch at a time; no estimator wraps it.
  * @example
  * ```ts
- * import { miniBatchKMeansAlgorithm } from 'mdml-engine/cluster'
+ * import { miniBatchKMeansAlgorithm } from 'omai-engine/cluster'
  * miniBatchKMeansAlgorithm([[0, 0], [10, 1]], [[0, 0], [10, 1]], 2).name // => 'mini-batch-kmeans'
  * ```
  */

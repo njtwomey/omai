@@ -143,8 +143,8 @@ function creditPosterior(m: CreditModel, withGroup: boolean): (x: Value) => Valu
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { biasedCredit } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { biasedCredit } from 'omai-engine/datasets'
  * generate(biasedCredit, { knobs: { n: 10 } }).data.featureNames // => ['income', 'repayment', 'postcode', 'group']
  * ```
  */
@@ -233,7 +233,7 @@ export const biasedCredit: DatasetGenerator<ClassificationData> = {
  * @concept datasets
  * @example
  * ```ts
- * import { germanCredit } from 'mdml-engine/datasets'
+ * import { germanCredit } from 'omai-engine/datasets'
  * germanCredit().x.shape // => [1000, 12]
  * ```
  */
@@ -266,7 +266,7 @@ export function germanCredit(): ClassificationData {
  * @concept datasets
  * @example
  * ```ts
- * import { titanicSurvival } from 'mdml-engine/datasets'
+ * import { titanicSurvival } from 'omai-engine/datasets'
  * titanicSurvival().featureNames // => ['first', 'second', 'third', 'child', 'female']
  * ```
  */

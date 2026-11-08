@@ -4,7 +4,7 @@
  * weights load unchanged.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { convOutputSize } from '../../numerics/convolution/index.ts'
 import { foldIn, type Key } from '../../random/index.ts'
 import { sizeOf, type Value } from '../../tensor/index.ts'
@@ -44,7 +44,7 @@ const tuple = (xs: readonly number[]): string => (xs.length === 1 ? `(${xs[0]},)
  *
  * @example
  * ```ts
- * import { ConvNd } from 'mdml-engine/nn'
+ * import { ConvNd } from 'omai-engine/nn'
  * new ConvNd(2, 3, 4, 3).kind // => 'Conv2d'
  * ```
  */
@@ -71,7 +71,7 @@ export class ConvNd extends Module {
     this.kind = `Conv${d}d`
     this.groups = options.groups ?? 1
     if (inChannels % this.groups !== 0 || outChannels % this.groups !== 0)
-      throw new MdmlError('value', `${this.kind}: channels must be divisible by groups`)
+      throw new OmaiError('value', `${this.kind}: channels must be divisible by groups`)
     this.inChannels = inChannels
     this.outChannels = outChannels
     this.kernelSize = spread(kernelSize, d, 1)
@@ -112,7 +112,7 @@ export class ConvNd extends Module {
     const spatial = inputShape.slice(-d)
     const lead = inputShape.slice(0, -d - 1)
     if (inputShape[inputShape.length - d - 1] !== this.inChannels)
-      throw new MdmlError('shape', `${this.kind}: expected ${this.inChannels} channels, got [${inputShape.join(', ')}]`)
+      throw new OmaiError('shape', `${this.kind}: expected ${this.inChannels} channels, got [${inputShape.join(', ')}]`)
     const out = spatial.map((n, i) =>
       this.padding === 'same'
         ? n
@@ -146,7 +146,7 @@ export class ConvNd extends Module {
  * @concept convolution
  * @example
  * ```ts
- * import { Conv1d } from 'mdml-engine/nn'
+ * import { Conv1d } from 'omai-engine/nn'
  * new Conv1d(3, 8, 5, { padding: 2 }).outputShape([4, 3, 32]) // => [4, 8, 32]
  * ```
  */
@@ -163,7 +163,7 @@ export class Conv1d extends ConvNd {
  * @index module 2-D convolution layer with PyTorch's weight layout.
  * @example
  * ```ts
- * import { Conv2d } from 'mdml-engine/nn'
+ * import { Conv2d } from 'omai-engine/nn'
  * new Conv2d(3, 16, 3, { stride: 2, padding: 1 }).outputShape([1, 3, 32, 32]) // => [1, 16, 16, 16]
  * ```
  */
@@ -178,7 +178,7 @@ export class Conv2d extends ConvNd {
  *
  * @example
  * ```ts
- * import { Conv3d } from 'mdml-engine/nn'
+ * import { Conv3d } from 'omai-engine/nn'
  * new Conv3d(1, 4, 3).outputShape([1, 1, 8, 8, 8]) // => [1, 4, 6, 6, 6]
  * ```
  */
@@ -205,7 +205,7 @@ export interface ConvTransposeModuleOptions {
  *
  * @example
  * ```ts
- * import { ConvTransposeNd } from 'mdml-engine/nn'
+ * import { ConvTransposeNd } from 'omai-engine/nn'
  * new ConvTransposeNd(1, 2, 2, 3).kind // => 'ConvTranspose1d'
  * ```
  */
@@ -232,7 +232,7 @@ export class ConvTransposeNd extends Module {
     this.kind = `ConvTranspose${d}d`
     this.groups = options.groups ?? 1
     if (inChannels % this.groups !== 0 || outChannels % this.groups !== 0)
-      throw new MdmlError('value', `${this.kind}: channels must be divisible by groups`)
+      throw new OmaiError('value', `${this.kind}: channels must be divisible by groups`)
     this.inChannels = inChannels
     this.outChannels = outChannels
     this.kernelSize = spread(kernelSize, d, 1)
@@ -302,7 +302,7 @@ export class ConvTransposeNd extends Module {
  *
  * @example
  * ```ts
- * import { ConvTranspose1d } from 'mdml-engine/nn'
+ * import { ConvTranspose1d } from 'omai-engine/nn'
  * new ConvTranspose1d(4, 2, 4, { stride: 2, padding: 1 }).outputShape([1, 4, 8]) // => [1, 2, 16]
  * ```
  */
@@ -323,7 +323,7 @@ export class ConvTranspose1d extends ConvTransposeNd {
  * @concept transposed-convolution
  * @example
  * ```ts
- * import { ConvTranspose2d } from 'mdml-engine/nn'
+ * import { ConvTranspose2d } from 'omai-engine/nn'
  * new ConvTranspose2d(8, 4, 4, { stride: 2, padding: 1 }).outputShape([1, 8, 7, 7]) // => [1, 4, 14, 14]
  * ```
  */
@@ -343,7 +343,7 @@ export class ConvTranspose2d extends ConvTransposeNd {
  *
  * @example
  * ```ts
- * import { ConvTranspose3d } from 'mdml-engine/nn'
+ * import { ConvTranspose3d } from 'omai-engine/nn'
  * new ConvTranspose3d(2, 1, 2, { stride: 2 }).outputShape([1, 2, 3, 3, 3]) // => [1, 1, 6, 6, 6]
  * ```
  */
@@ -363,7 +363,7 @@ export class ConvTranspose3d extends ConvTransposeNd {
  *
  * @example
  * ```ts
- * import { Unfold } from 'mdml-engine/nn'
+ * import { Unfold } from 'omai-engine/nn'
  * new Unfold([2, 2]).outputShape([1, 3, 4, 4]) // => [1, 12, 9]
  * ```
  */
@@ -404,7 +404,7 @@ export class Unfold extends Module {
  *
  * @example
  * ```ts
- * import { Fold } from 'mdml-engine/nn'
+ * import { Fold } from 'omai-engine/nn'
  * new Fold([3, 3], [2, 2]).outputShape([1, 12, 4]) // => [1, 3, 3, 3]
  * ```
  */

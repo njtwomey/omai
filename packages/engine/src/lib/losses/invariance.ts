@@ -8,7 +8,7 @@
  */
 
 import { grad } from '../autodiff/index.ts'
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import {
   add,
   div,
@@ -56,8 +56,8 @@ export interface EnvironmentBatch {
  * @concept invariant-risk-minimisation
  * @example
  * ```ts
- * import { irmPenalty, mse } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { irmPenalty, mse } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * // mean (w s - y)^2 has derivative 2 mean (s - y) s at w = 1: here 2 * ((3 - 1) * 3 + (1 - 1) * 1) / 2 = 6.
  * item(irmPenalty([3, 1], [1, 1], { risk: mse })) // => 36
  * ```
@@ -72,7 +72,7 @@ export function irmPenalty(
   const gradient = (a: Value, b: Value): Value => grad((w: Value) => risk(mul(a, w), b))(tensor(1))
   if (options.unbiased !== true) return square(gradient(s, y))
   const n = s.shape[0] ?? 0
-  if (n < 2) throw new MdmlError('shape', 'irmPenalty: the unbiased estimate needs two samples')
+  if (n < 2) throw new OmaiError('shape', 'irmPenalty: the unbiased estimate needs two samples')
   const half = Math.floor(n / 2)
   const part = (v: Value, lo: number, hi: number): Value => sliceAxis(v, 0, lo, hi)
   return mul(gradient(part(s, 0, half), part(y, 0, half)), gradient(part(s, half, 2 * half), part(y, half, 2 * half)))
@@ -97,8 +97,8 @@ export interface InvariantObjective {
  * @returns The mean risk, the mean penalty and their weighted sum.
  * @example
  * ```ts
- * import { irmObjective, mse } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { irmObjective, mse } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * const env = { scores: [1, 2], target: [1, 2] }
  * item(irmObjective([env, env], { risk: mse, penaltyWeight: 10 }).total) // => 0
  * ```
@@ -138,13 +138,13 @@ export function irmObjective(
  * @returns The scalar variance (population, as the paper).
  * @example
  * ```ts
- * import { vrexPenalty } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { vrexPenalty } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * item(vrexPenalty([1, 3])) // => 1
  * ```
  */
 export function vrexPenalty(risks: readonly TensorLike[]): Value {
-  if (risks.length < 2) throw new MdmlError('value', 'vrexPenalty: need at least two environments')
+  if (risks.length < 2) throw new OmaiError('value', 'vrexPenalty: need at least two environments')
   return variance(
     stack(
       risks.map((r) => promoteFloat(r)[0] as Value),
@@ -161,8 +161,8 @@ export function vrexPenalty(risks: readonly TensorLike[]): Value {
  * @returns The mean risk, the variance and their weighted sum.
  * @example
  * ```ts
- * import { mse, vrexObjective } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { mse, vrexObjective } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * const a = { scores: [0], target: [1] }
  * const b = { scores: [0], target: [3] }
  * item(vrexObjective([a, b], { risk: mse, penaltyWeight: 2 }).total) // => 5 + 2 * 16
@@ -197,8 +197,8 @@ function covariance(x: Value): Value {
  * @returns The scalar loss, differentiable in both feature sets.
  * @example
  * ```ts
- * import { coral } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { coral } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * item(coral([[1], [-1]], [[0.5], [-0.5]])) // => 0.5625
  * ```
  */
@@ -220,13 +220,13 @@ export function coral(source: TensorLike, target: TensorLike, options: { readonl
  * @returns The scalar penalty.
  * @example
  * ```ts
- * import { mmdPenalty } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { mmdPenalty } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * item(mmdPenalty([[[0], [1]], [[0], [1]]], { bandwidths: [1] })) // => 0
  * ```
  */
 export function mmdPenalty(features: readonly TensorLike[], options: Parameters<typeof mmd>[2] = {}): Value {
-  if (features.length < 2) throw new MdmlError('value', 'mmdPenalty: need at least two environments')
+  if (features.length < 2) throw new OmaiError('value', 'mmdPenalty: need at least two environments')
   const pairs: Value[] = []
   for (let i = 0; i < features.length; i++)
     for (let j = i + 1; j < features.length; j++)
@@ -243,8 +243,8 @@ export function mmdPenalty(features: readonly TensorLike[], options: Parameters<
  * @returns The gradient `[P]`.
  * @example
  * ```ts
- * import { environmentGradient } from 'mdml-engine/losses'
- * import { square, sum, toArray, type Value } from 'mdml-engine/tensor'
+ * import { environmentGradient } from 'omai-engine/losses'
+ * import { square, sum, toArray, type Value } from 'omai-engine/tensor'
  * toArray(environmentGradient((w: Value) => sum(square(w)), [1, 2])) // => [2, 4]
  * ```
  */
@@ -262,8 +262,8 @@ export function environmentGradient(risk: (params: Value) => Value, params: Tens
  * @returns The scalar loss, differentiable in the gradients (so in the parameters).
  * @example
  * ```ts
- * import { gradientAlignment } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { gradientAlignment } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * item(gradientAlignment([[1, 0], [0, 1]])) // => 1
  * ```
  */
@@ -271,7 +271,7 @@ export function gradientAlignment(
   gradients: readonly TensorLike[],
   options: { readonly kind?: 'cosine' | 'inner'; readonly eps?: number } = {},
 ): Value {
-  if (gradients.length < 2) throw new MdmlError('value', 'gradientAlignment: need at least two environments')
+  if (gradients.length < 2) throw new OmaiError('value', 'gradientAlignment: need at least two environments')
   const eps = options.eps ?? 1e-12
   const g = gradients.map((v) => promoteFloat(v)[0] as Value)
   const pairs: Value[] = []
@@ -298,8 +298,8 @@ export function gradientAlignment(
  * @returns The per-sample gradients `[N, P]`.
  * @example
  * ```ts
- * import { perSampleGradients } from 'mdml-engine/losses'
- * import { mul, sub, sum, toArray, type Value } from 'mdml-engine/tensor'
+ * import { perSampleGradients } from 'omai-engine/losses'
+ * import { mul, sub, sum, toArray, type Value } from 'omai-engine/tensor'
  * // risk = (w x - y)^2: the gradient is 2 (w x - y) x.
  * const risk = (w: Value, x: Value, y: Value): Value => sum(mul(sub(mul(x, w), y), sub(mul(x, w), y)))
  * toArray(perSampleGradients(risk, [1], [[2], [3]], [[1], [1]])) // => [[4], [12]]
@@ -328,14 +328,14 @@ export function perSampleGradients(
  * @returns The scalar penalty, differentiable in the gradients.
  * @example
  * ```ts
- * import { fishrPenalty } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { fishrPenalty } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * // Gradient variances 1 and 4 against their mean 2.5: 1.5^2 each.
  * item(fishrPenalty([[[1], [-1]], [[2], [-2]]])) // => 2.25
  * ```
  */
 export function fishrPenalty(gradients: readonly TensorLike[]): Value {
-  if (gradients.length < 2) throw new MdmlError('value', 'fishrPenalty: need at least two environments')
+  if (gradients.length < 2) throw new OmaiError('value', 'fishrPenalty: need at least two environments')
   const variances = gradients.map((g) => variance(promoteFloat(g)[0] as Value, 0))
   const average = mean(stack(variances, 0), 0)
   return mean(

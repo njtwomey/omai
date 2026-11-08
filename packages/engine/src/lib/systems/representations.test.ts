@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { checkPrimitive } from '../autodiff/index.ts'
-import { isMdmlError } from '../base/index.ts'
+import { isOmaiError } from '../base/index.ts'
 import { type Tensor, tensor, toArray, toFlat, type Value } from '../tensor/index.ts'
 import * as S from './index.ts'
 
@@ -56,7 +56,7 @@ describe('constructors and conversions', () => {
     try {
       S.normalize([1], [0, 0])
     } catch (e) {
-      expect(isMdmlError(e, 'value')).toBe(true)
+      expect(isOmaiError(e, 'value')).toBe(true)
     }
   })
 

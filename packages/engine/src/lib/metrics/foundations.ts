@@ -5,7 +5,7 @@
  * cost-minimising threshold.
  */
 
-import { type Estimate, MdmlError, type MetricResult, type TestResult } from '../base/index.ts'
+import { type Estimate, type MetricResult, OmaiError, type TestResult } from '../base/index.ts'
 import { betainc, chdtrc, ndtr, ndtri } from '../numerics/special/index.ts'
 import { bootstrapIndices, type Key, key as makeKey, split } from '../random/index.ts'
 import { wilsonBounds } from '../stats/tests/index.ts'
@@ -127,12 +127,12 @@ function bootstrapInterval<O extends MetricOptions, I extends MetricInput>(
  * @param metric - The metric.
  * @param options - method (default 'bootstrap'), level, key, nResamples and bootstrap kind.
  * @returns The same metric, whose estimate carries an interval and standard error.
- * @throws MdmlError with code `value` for an interval the metric cannot have (Wilson without counts, DeLong
+ * @throws OmaiError with code `value` for an interval the metric cannot have (Wilson without counts, DeLong
  *   for a metric other than rocAucScore).
  * @concept confidence-intervals
  * @example
  * ```ts
- * import { accuracyScore, withInterval } from 'mdml-engine/metrics'
+ * import { accuracyScore, withInterval } from 'omai-engine/metrics'
  * const acc = withInterval(accuracyScore, { method: 'wilson' })
  * acc([0, 1, 1, 0], [0, 1, 0, 0]).estimate.interval?.map((v) => Number(v.toFixed(4))) // => [0.3006, 0.9544]
  * ```
@@ -148,7 +148,7 @@ export function withInterval<O extends MetricOptions, I extends MetricInput>(
     const value = r.estimate.value
     if (method === 'bootstrap') return { ...r, estimate: bootstrapInterval(metric, yTrue, yPred, o, value, options) }
     if (method === 'delong') {
-      if (metric.spec.name !== 'rocAucScore') throw new MdmlError('value', 'DeLong intervals are for rocAucScore')
+      if (metric.spec.name !== 'rocAucScore') throw new OmaiError('value', 'DeLong intervals are for rocAucScore')
       const se = Math.sqrt(delongVariance(yTrue, yPred as TensorLike).variance)
       const z = phiInv(0.5 + level / 2)
       return {
@@ -159,7 +159,7 @@ export function withInterval<O extends MetricOptions, I extends MetricInput>(
     const trials = r.breakdown?.['trials']
     const successes = r.breakdown?.['successes']
     if (trials === undefined || successes === undefined)
-      throw new MdmlError('value', `${metric.spec.name}: binomial intervals need a proportion metric`)
+      throw new OmaiError('value', `${metric.spec.name}: binomial intervals need a proportion metric`)
     const p = successes / trials
     const se = Math.sqrt((p * (1 - p)) / trials)
     const z = phiInv(0.5 + level / 2)
@@ -198,7 +198,7 @@ const covariance = (a: readonly number[], b: readonly number[]): number => {
  * @returns The AUC and its variance.
  * @example
  * ```ts
- * import { delongVariance } from 'mdml-engine/metrics'
+ * import { delongVariance } from 'omai-engine/metrics'
  * delongVariance([0, 0, 1, 1], [0.1, 0.4, 0.35, 0.8]).auc // => 0.75
  * ```
  */
@@ -229,7 +229,7 @@ const test = (name: string, statistic: number, pValue: number, extra: Partial<Te
  * @concept model-comparison
  * @example
  * ```ts
- * import { delongTest } from 'mdml-engine/metrics'
+ * import { delongTest } from 'omai-engine/metrics'
  * delongTest([0, 0, 1, 1, 0, 1], [0.1, 0.4, 0.35, 0.8, 0.2, 0.9], [0.1, 0.4, 0.35, 0.8, 0.2, 0.9]).statistic // => 0
  * ```
  */
@@ -264,7 +264,7 @@ export function delongTest(yTrue: MetricInput, scoresA: TensorLike, scoresB: Ten
  * @returns The test result (statistic min(b, c) for the exact test, chi-square otherwise).
  * @example
  * ```ts
- * import { mcnemarTest } from 'mdml-engine/metrics'
+ * import { mcnemarTest } from 'omai-engine/metrics'
  * mcnemarTest([1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1]).pValue // => 1
  * ```
  */
@@ -313,7 +313,7 @@ export function mcnemarTest(
  * @returns The test result (statistic: the observed difference).
  * @example
  * ```ts
- * import { accuracyScore, pairedBootstrap } from 'mdml-engine/metrics'
+ * import { accuracyScore, pairedBootstrap } from 'omai-engine/metrics'
  * pairedBootstrap(accuracyScore, [0, 1, 1, 0], [0, 1, 1, 0], [0, 1, 0, 0], { nResamples: 50 }).statistic // => 0.25
  * ```
  */
@@ -367,7 +367,7 @@ export function pairedBootstrap<O extends MetricOptions, I extends MetricInput>(
  * @index function Compute many metrics of the same predictions in one pass.
  * @example
  * ```ts
- * import { accuracyScore, evaluate, f1Score } from 'mdml-engine/metrics'
+ * import { accuracyScore, evaluate, f1Score } from 'omai-engine/metrics'
  * const r = evaluate([0, 1, 1, 0], [0, 1, 0, 0], [accuracyScore, f1Score])
  * [r.accuracyScore?.estimate.value, r.f1Score?.estimate.value] // => [0.75, 0.6666666666666666]
  * ```
@@ -430,7 +430,7 @@ export interface DecisionOptions extends MetricOptions {
  * @concept decision-theory
  * @example
  * ```ts
- * import { expectedCost } from 'mdml-engine/metrics'
+ * import { expectedCost } from 'omai-engine/metrics'
  * expectedCost([0, 1, 1], [0, 0, 1], [[0, 1], [10, 0]]).estimate.value // => 3.3333333333333335
  * ```
  */
@@ -450,7 +450,7 @@ export const expectedCost: MetricFunction<[MetricInput, MetricInput, TensorLike,
  * @returns The metric result.
  * @example
  * ```ts
- * import { expectedUtility } from 'mdml-engine/metrics'
+ * import { expectedUtility } from 'omai-engine/metrics'
  * expectedUtility([0, 1], [0, 1], [[1, 0], [0, 2]]).estimate.value // => 1.5
  * ```
  */
@@ -469,7 +469,7 @@ export const expectedUtility: MetricFunction<[MetricInput, MetricInput, TensorLi
  * @returns The chosen action index per sample.
  * @example
  * ```ts
- * import { bayesDecision } from 'mdml-engine/metrics'
+ * import { bayesDecision } from 'omai-engine/metrics'
  * bayesDecision([[0.8, 0.2], [0.95, 0.05]], [[0, 1], [10, 0]]) // => [1, 0]
  * ```
  */
@@ -503,7 +503,7 @@ export function bayesDecision(probs: TensorLike, costs: TensorLike): number[] {
  * @returns The threshold.
  * @example
  * ```ts
- * import { costThreshold } from 'mdml-engine/metrics'
+ * import { costThreshold } from 'omai-engine/metrics'
  * costThreshold(1, 9) // => 0.1
  * ```
  */

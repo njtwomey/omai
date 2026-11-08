@@ -5,8 +5,8 @@ are the ordinary fit of the whitened data."""
 import numpy as np
 import statsmodels
 import statsmodels.api as sm
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import rng
 from statsmodels.stats.diagnostic import het_breuschpagan, het_white
 from statsmodels.stats.outliers_influence import OLSInfluence, variance_inflation_factor
 

@@ -6,7 +6,7 @@
  * analysis with period clustering and Newey-West HAC standard errors (`switchbackAnalysis`).
  */
 
-import { type Estimate, MdmlError, meanOf, type TestResult, varianceOf } from '../base/index.ts'
+import { type Estimate, meanOf, OmaiError, type TestResult, varianceOf } from '../base/index.ts'
 import { foldIn, type Key, permutation } from '../random/index.ts'
 import type { Tensor, TensorLike } from '../tensor/index.ts'
 import { ols } from './_linear.ts'
@@ -97,7 +97,7 @@ function parseBinaryTreatment(
 ): { readonly mask: Uint8Array; readonly n1: number; readonly n0: number } {
   const t = sample(`${name}.treatment`, treatment, n)
   if (t.length !== n) {
-    throw new MdmlError('shape', `${name}: treatment length ${t.length} must equal sample length ${n}`)
+    throw new OmaiError('shape', `${name}: treatment length ${t.length} must equal sample length ${n}`)
   }
   const mask = new Uint8Array(n)
   let n1 = 0
@@ -111,11 +111,11 @@ function parseBinaryTreatment(
       mask[i] = 0
       n0++
     } else {
-      throw new MdmlError('value', `${name}: treatment must contain only 0 and 1, got ${v} at index ${i}`)
+      throw new OmaiError('value', `${name}: treatment must contain only 0 and 1, got ${v} at index ${i}`)
     }
   }
   if (n1 < 2 || n0 < 2) {
-    throw new MdmlError('value', `${name}: need at least 2 treated and 2 control observations, got n1=${n1}, n0=${n0}`)
+    throw new OmaiError('value', `${name}: need at least 2 treated and 2 control observations, got n1=${n1}, n0=${n0}`)
   }
   return { mask, n1, n0 }
 }
@@ -131,10 +131,10 @@ function parseBinaryTreatment(
  * @param xPre - 1-D vector of pre-randomization covariate values $X_1, \dots, X_n$.
  * @param options - Optional binary `treatment` vector, fixed `theta`, `alternative`, and confidence `level`.
  * @returns CUPED coefficient `theta`, `correlation`, `varianceReduction`, `adjustedOutcomes`, and (when `treatment` is given) `ate`, `unadjustedAte`, and `test`.
- * @throws MdmlError with code `shape` or `value` if inputs have mismatched lengths or fewer than 2 observations.
+ * @throws OmaiError with code `shape` or `value` if inputs have mismatched lengths or fewer than 2 observations.
  * @example
  * ```ts
- * import { cuped } from 'mdml-engine/stats'
+ * import { cuped } from 'omai-engine/stats'
  * const x = [1, 2, 3, 4, 5, 6, 7, 8]
  * const t = [0, 1, 0, 1, 0, 1, 0, 1]
  * const y = x.map((xi, i) => 2 * xi + (t[i] === 1 ? 1.5 : 0))
@@ -271,10 +271,10 @@ export interface PostStratifyResult extends TestResult {
  * @param strata - 1-D vector of discrete integer or numeric stratum labels of length $n$.
  * @param options - Optional population `weights` across sorted unique strata, `alternative`, and `level`.
  * @returns `PostStratifyResult` (`TestResult` plus per-stratum breakdown and variance reduction).
- * @throws MdmlError with code `shape` or `value` if any stratum lacks treated or control observations.
+ * @throws OmaiError with code `shape` or `value` if any stratum lacks treated or control observations.
  * @example
  * ```ts
- * import { postStratify } from 'mdml-engine/stats'
+ * import { postStratify } from 'omai-engine/stats'
  * const y = [10, 10.2, 12, 12.2, 50, 50.2, 52, 52.2]
  * const t = [0, 0, 1, 1, 0, 0, 1, 1]
  * const s = [0, 0, 0, 0, 1, 1, 1, 1]
@@ -294,7 +294,7 @@ export function postStratify(
   const { mask } = parseBinaryTreatment('postStratify', treatment, n)
   const st = sample('postStratify.strata', strata, n)
   if (st.length !== n) {
-    throw new MdmlError('shape', `postStratify: strata length ${st.length} must equal y length ${n}`)
+    throw new OmaiError('shape', `postStratify: strata length ${st.length} must equal y length ${n}`)
   }
 
   const labelSet = new Set<number>()
@@ -306,13 +306,13 @@ export function postStratify(
   if (options.weights !== undefined) {
     const wIn = sample('postStratify.weights', options.weights, S)
     if (wIn.length !== S) {
-      throw new MdmlError('shape', `postStratify: weights length ${wIn.length} must equal number of strata ${S}`)
+      throw new OmaiError('shape', `postStratify: weights length ${wIn.length} must equal number of strata ${S}`)
     }
     let wSum = 0
     for (let s = 0; s < S; s++) {
       const ws = wIn[s] ?? 0
       if (!(ws > 0) || !Number.isFinite(ws)) {
-        throw new MdmlError('value', `postStratify: weights[${s}] must be > 0, got ${ws}`)
+        throw new OmaiError('value', `postStratify: weights[${s}] must be > 0, got ${ws}`)
       }
       weightsArr[s] = ws
       wSum += ws
@@ -335,7 +335,7 @@ export function postStratify(
       }
     }
     if (y1.length < 1 || y0.length < 1) {
-      throw new MdmlError(
+      throw new OmaiError(
         'value',
         `postStratify: stratum ${label} must contain at least 1 treated and 1 control unit (got n1=${y1.length}, n0=${y0.length})`,
       )
@@ -397,7 +397,7 @@ export function postStratify(
  * @returns Post-stratified ATE test and breakdown.
  * @example
  * ```ts
- * import { postStratification } from 'mdml-engine/stats'
+ * import { postStratification } from 'omai-engine/stats'
  * const res = postStratification([1, 1.1, 3, 3.1, 10, 10.1, 12, 12.1], [0, 0, 1, 1, 0, 0, 1, 1], [0, 0, 0, 0, 1, 1, 1, 1])
  * Number(res.ate.value.toFixed(4)) // => 2
  * ```
@@ -456,10 +456,10 @@ export interface RegressionAdjustmentResult extends TestResult {
  * @param covariates - 1-D vector (length $n$) or 2-D matrix (shape `[n, p]`) of pre-treatment covariates.
  * @param options - `interaction` (default `true`), `alternative`, and confidence `level`.
  * @returns `RegressionAdjustmentResult` (`TestResult` plus `ate`, slopes, `robustSe`, `olsSe`, and `rSquared`).
- * @throws MdmlError with code `shape` or `value` for mismatched dimensions or singular design.
+ * @throws OmaiError with code `shape` or `value` for mismatched dimensions or singular design.
  * @example
  * ```ts
- * import { regressionAdjustment } from 'mdml-engine/stats'
+ * import { regressionAdjustment } from 'omai-engine/stats'
  * const x = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
  * const t = [0, 1, 0, 1, 0, 1, 0, 1, 0, 1]
  * const y = x.map((xi, i) => 1 + 3 * xi + (t[i] === 1 ? 2.5 : 0))
@@ -478,13 +478,13 @@ export function regressionAdjustment(
   const { mask } = parseBinaryTreatment('regressionAdjustment', treatment, n)
   const covMat = rowsOf('regressionAdjustment.covariates', covariates)
   if (covMat.rows !== n) {
-    throw new MdmlError('shape', `regressionAdjustment: covariates has ${covMat.rows} rows, expected ${n} to match y`)
+    throw new OmaiError('shape', `regressionAdjustment: covariates has ${covMat.rows} rows, expected ${n} to match y`)
   }
   const p = covMat.cols
   const interaction = options.interaction ?? true
   const kCols = interaction ? 2 + 2 * p : 2 + p
   if (n <= kCols) {
-    throw new MdmlError(
+    throw new OmaiError(
       'shape',
       `regressionAdjustment: need n > ${kCols} observations for p=${p} covariates (interaction=${interaction}), got n=${n}`,
     )
@@ -629,7 +629,7 @@ function singleGroupRatioMoments(
   const meanY = meanOf(num)
   const meanX = meanOf(den)
   if (Math.abs(meanX) < 1e-15) {
-    throw new MdmlError('value', 'deltaMethodRatio: denominator mean must be non-zero')
+    throw new OmaiError('value', 'deltaMethodRatio: denominator mean must be non-zero')
   }
   const ratio = meanY / meanX
   let syy = 0
@@ -666,10 +666,10 @@ function singleGroupRatioMoments(
  * @param denominator - 1-D vector of user-level denominator totals $X_1, \dots, X_n$ with $\bar{X} \ne 0$.
  * @param options - Optional binary `treatment` vector, `nullValue`, `alternative`, and `level`.
  * @returns Ratio estimate, delta-method variance and SE, user-level linearized scores, and hypothesis test.
- * @throws MdmlError with code `shape` or `value` if $\bar{X} = 0$ or inputs have fewer than 2 users.
+ * @throws OmaiError with code `shape` or `value` if $\bar{X} = 0$ or inputs have fewer than 2 users.
  * @example
  * ```ts
- * import { deltaMethodRatio } from 'mdml-engine/stats'
+ * import { deltaMethodRatio } from 'omai-engine/stats'
  * const clicks = [2, 4, 6, 8]
  * const views = [10, 20, 30, 40]
  * const res = deltaMethodRatio(clicks, views)
@@ -808,10 +808,10 @@ export interface ClusterRandomisedResult extends TestResult {
  * @param clusterIds - 1-D vector of numeric cluster identifiers of length $n$.
  * @param options - `alternative` and confidence `level`.
  * @returns `ClusterRandomisedResult` (`TestResult` plus `ate`, `icc`, `designEffect`, `effectiveSampleSize`, `clusterRobustSe`, and `naiveSe`).
- * @throws MdmlError with code `shape` or `value` if fewer than 2 clusters per arm or treatment varies within a cluster.
+ * @throws OmaiError with code `shape` or `value` if fewer than 2 clusters per arm or treatment varies within a cluster.
  * @example
  * ```ts
- * import { clusterRandomisedTest } from 'mdml-engine/stats'
+ * import { clusterRandomisedTest } from 'omai-engine/stats'
  * const y = [1, 1.1, 2, 2.1, 5, 5.1, 6, 6.1]
  * const t = [0, 0, 0, 0, 1, 1, 1, 1]
  * const c = [1, 1, 2, 2, 3, 3, 4, 4]
@@ -831,7 +831,7 @@ export function clusterRandomisedTest(
   const { mask } = parseBinaryTreatment('clusterRandomisedTest', treatment, n)
   const cIds = sample('clusterRandomisedTest.clusterIds', clusterIds, n)
   if (cIds.length !== n) {
-    throw new MdmlError('shape', `clusterRandomisedTest: clusterIds length ${cIds.length} must equal y length ${n}`)
+    throw new OmaiError('shape', `clusterRandomisedTest: clusterIds length ${cIds.length} must equal y length ${n}`)
   }
 
   const clusters = new Map<number, { readonly treat: number; readonly values: number[] }>()
@@ -843,7 +843,7 @@ export function clusterRandomisedTest(
       clusters.set(cid, { treat: tr, values: [ys[i] ?? 0] })
     } else {
       if (existing.treat !== tr) {
-        throw new MdmlError(
+        throw new OmaiError(
           'value',
           `clusterRandomisedTest: cluster ${cid} has mixed treatment assignments (must be cluster-level assigned)`,
         )
@@ -859,7 +859,7 @@ export function clusterRandomisedTest(
   const K1 = treatedClusters.length
   const K0 = controlClusters.length
   if (K1 < 2 || K0 < 2) {
-    throw new MdmlError(
+    throw new OmaiError(
       'shape',
       `clusterRandomisedTest: need at least 2 treated and 2 control clusters, got K1=${K1}, K0=${K0}`,
     )
@@ -966,7 +966,7 @@ export function clusterRandomisedTest(
  * @returns Cluster-randomised test result and design effect diagnostics.
  * @example
  * ```ts
- * import { clusterRandomisation } from 'mdml-engine/stats'
+ * import { clusterRandomisation } from 'omai-engine/stats'
  * const res = clusterRandomisation([1, 1, 2, 2, 5, 5, 6, 6], [0, 0, 0, 0, 1, 1, 1, 1], [1, 1, 2, 2, 3, 3, 4, 4])
  * Number(res.ate.value.toFixed(4)) // => 4
  * ```
@@ -1028,10 +1028,10 @@ export interface SwitchbackResult extends TestResult {
  * @param periodIds - 1-D vector of sequential time-period identifiers of length $n$.
  * @param options - `maxLag` (default $\lfloor T^{1/4} \rfloor$), optional `key` and `nPermutations` for randomization inference, `alternative`, and `level`.
  * @returns `SwitchbackResult` (`TestResult` plus period series, `hacSe`, `periodSe`, `lag1Autocorrelation`, and optional `permutationPValue`).
- * @throws MdmlError with code `shape` or `value` if fewer than 2 treated or 2 control periods exist.
+ * @throws OmaiError with code `shape` or `value` if fewer than 2 treated or 2 control periods exist.
  * @example
  * ```ts
- * import { switchbackAnalysis } from 'mdml-engine/stats'
+ * import { switchbackAnalysis } from 'omai-engine/stats'
  * const y = [10, 12, 10.2, 12.2, 9.8, 11.8, 10.1, 12.1]
  * const t = [0, 1, 0, 1, 0, 1, 0, 1]
  * const p = [1, 2, 3, 4, 5, 6, 7, 8]
@@ -1051,7 +1051,7 @@ export function switchbackAnalysis(
   const { mask } = parseBinaryTreatment('switchbackAnalysis', treatment, n)
   const pIds = sample('switchbackAnalysis.periodIds', periodIds, n)
   if (pIds.length !== n) {
-    throw new MdmlError('shape', `switchbackAnalysis: periodIds length ${pIds.length} must equal y length ${n}`)
+    throw new OmaiError('shape', `switchbackAnalysis: periodIds length ${pIds.length} must equal y length ${n}`)
   }
 
   const periodMap = new Map<number, { readonly treat: number; sum: number; count: number }>()
@@ -1063,7 +1063,7 @@ export function switchbackAnalysis(
       periodMap.set(pid, { treat: tr, sum: ys[i] ?? 0, count: 1 })
     } else {
       if (existing.treat !== tr) {
-        throw new MdmlError(
+        throw new OmaiError(
           'value',
           `switchbackAnalysis: period ${pid} has mixed treatment assignments (must be constant within each period)`,
         )
@@ -1092,7 +1092,7 @@ export function switchbackAnalysis(
   }
 
   if (y1.length < 2 || y0.length < 2) {
-    throw new MdmlError(
+    throw new OmaiError(
       'shape',
       `switchbackAnalysis: need at least 2 treated and 2 control periods, got T1=${y1.length}, T0=${y0.length}`,
     )
@@ -1131,7 +1131,7 @@ export function switchbackAnalysis(
 
   const maxLag = options.maxLag !== undefined ? options.maxLag : Math.floor(T ** 0.25)
   if (!Number.isInteger(maxLag) || maxLag < 0) {
-    throw new MdmlError('value', `switchbackAnalysis: maxLag must be a non-negative integer, got ${maxLag}`)
+    throw new OmaiError('value', `switchbackAnalysis: maxLag must be a non-negative integer, got ${maxLag}`)
   }
 
   // Newey-West variance of the OLS slope: the Bartlett-weighted long-run variance of the scores, with a T / (T - 2)
@@ -1206,7 +1206,7 @@ export function switchbackAnalysis(
  * @returns Switchback experiment analysis result.
  * @example
  * ```ts
- * import { switchbackDesign } from 'mdml-engine/stats'
+ * import { switchbackDesign } from 'omai-engine/stats'
  * const res = switchbackDesign([1, 3, 1, 3, 1, 3], [0, 1, 0, 1, 0, 1], [1, 2, 3, 4, 5, 6])
  * Number(res.ate.value.toFixed(4)) // => 2
  * ```

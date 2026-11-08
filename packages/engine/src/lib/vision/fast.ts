@@ -5,7 +5,7 @@
  * non-maximum suppression keeps corners whose score beats their eight neighbours'.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import type { TensorLike } from '../tensor/index.ts'
 import { greyOf, level } from './_image.ts'
 
@@ -84,7 +84,7 @@ export interface FastOptions {
  * @index function FAST-9 corner detector.
  * @example
  * ```ts
- * import { fast } from 'mdml-engine/vision'
+ * import { fast } from 'omai-engine/vision'
  * const img = Array.from({ length: 12 }, (_, i) => Array.from({ length: 12 }, (_, j) => (i > 5 && j > 5 ? 1 : 0)))
  * fast(img, { nonmaxSuppression: false }).map((k) => [k.x, k.y]) // => [[6, 6], [7, 6], [8, 6], [6, 7], [7, 7], [6, 8]]
  * ```
@@ -94,7 +94,7 @@ export function fast(x: TensorLike, options: FastOptions = {}): Keypoint[] {
   const { h, w } = r
   const t = Math.min(255, Math.max(0, Math.round(255 * (options.threshold ?? 10 / 255) * 1e9) / 1e9))
   const threshold = Math.round(t)
-  if (!Number.isFinite(threshold)) throw new MdmlError('value', 'fast: the threshold must be finite')
+  if (!Number.isFinite(threshold)) throw new OmaiError('value', 'fast: the threshold must be finite')
   const nms = options.nonmaxSuppression ?? true
   const img = Int32Array.from(r.data, level)
   const score = new Int32Array(h * w)

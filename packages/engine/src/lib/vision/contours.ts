@@ -7,7 +7,7 @@
 
 // TODO: the Teh-Chin chain approximations (CHAIN_APPROX_TC89_L1 and KCOS) and RETR_FLOODFILL.
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import type { TensorLike } from '../tensor/index.ts'
 import { type Algorithm, runAlgorithm, stateFromJson, stateToJson } from '../trace/index.ts'
 import { f32, greyOf, type PointsLike, pointsOf } from './_image.ts'
@@ -246,7 +246,7 @@ class Scanner {
       const lval = this.at(last[0], last[1]) & 0x7f
       parent = this.boundingContour(last, y, lval)
       const pe = this.nodes[parent] as Node | undefined
-      if (pe === undefined) throw new MdmlError('value', 'findContours: inconsistent contour labels')
+      if (pe === undefined) throw new OmaiError('value', 'findContours: inconsistent contour labels')
       if (pe.hole === hole) parent = pe.parent !== -1 ? pe.parent : 0
     }
     last[0] = x - (hole ? 1 : 0)
@@ -319,7 +319,7 @@ class Scanner {
  * @concept contours
  * @example
  * ```ts
- * import { findContours } from 'mdml-engine/vision'
+ * import { findContours } from 'omai-engine/vision'
  * findContours([[0, 0, 0, 0], [0, 1, 1, 0], [0, 1, 1, 0], [0, 0, 0, 0]]).contours // => [[[1, 1], [1, 2], [2, 2], [2, 1]]]
  * ```
  */
@@ -330,7 +330,7 @@ export function findContours(
   const r = greyOf(x, 'findContours')
   const mode = options.mode ?? 'tree'
   if (!['external', 'list', 'ccomp', 'tree'].includes(mode))
-    throw new MdmlError('value', `findContours: unknown mode ${String(mode)}`)
+    throw new OmaiError('value', `findContours: unknown mode ${String(mode)}`)
   const scanner = new Scanner(r.data, r.h, r.w, mode, (options.method ?? 'simple') === 'none')
   while (scanner.next()) {
     // Each step finds and traces one contour.
@@ -386,8 +386,8 @@ export interface PolyDpState {
  * @concept polygon-simplification
  * @example
  * ```ts
- * import { approxPolyDPAlgorithm } from 'mdml-engine/vision'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { approxPolyDPAlgorithm } from 'omai-engine/vision'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * runAlgorithm(approxPolyDPAlgorithm([[0, 0], [1, 0.1], [2, 0], [2, 2], [0, 2]], 0.5, true), { maxSteps: 30 }).state.result // => [[0, 0], [2, 0], [2, 2], [0, 2]]
  * ```
  */
@@ -574,7 +574,7 @@ const closedAtStart = (src: Contour | readonly (readonly [number, number])[], cl
  * @concept polygon-simplification
  * @example
  * ```ts
- * import { approxPolyDP } from 'mdml-engine/vision'
+ * import { approxPolyDP } from 'omai-engine/vision'
  * approxPolyDP([[0, 0], [1, 0.1], [2, 0], [2, 2], [0, 2]], 0.5, true) // => [[0, 0], [2, 0], [2, 2], [0, 2]]
  * ```
  */
@@ -595,7 +595,7 @@ export function approxPolyDP(curve: PointsLike, epsilon: number, closed: boolean
  * @concept contours
  * @example
  * ```ts
- * import { arcLength } from 'mdml-engine/vision'
+ * import { arcLength } from 'omai-engine/vision'
  * arcLength([[0, 0], [3, 0], [3, 4]], true) // => 12
  * ```
  */
@@ -624,7 +624,7 @@ export function arcLength(curve: PointsLike, closed: boolean): number {
  * @concept contours
  * @example
  * ```ts
- * import { contourArea } from 'mdml-engine/vision'
+ * import { contourArea } from 'omai-engine/vision'
  * contourArea([[0, 0], [4, 0], [4, 3], [0, 3]]) // => 12
  * contourArea([[0, 0], [4, 0], [4, 3], [0, 3]], true) // => 12
  * ```
@@ -651,7 +651,7 @@ export function contourArea(contour: PointsLike, oriented = false): number {
  * @concept bounding-box
  * @example
  * ```ts
- * import { boundingRect } from 'mdml-engine/vision'
+ * import { boundingRect } from 'omai-engine/vision'
  * boundingRect([[1, 2], [4, 3], [2, 6]]) // => [1, 2, 4, 5]
  * ```
  */
@@ -681,7 +681,7 @@ export function boundingRect(points: PointsLike): [number, number, number, numbe
  * @concept convexity
  * @example
  * ```ts
- * import { isContourConvex } from 'mdml-engine/vision'
+ * import { isContourConvex } from 'omai-engine/vision'
  * isContourConvex([[0, 0], [2, 0], [2, 2], [0, 2]]) // => true
  * isContourConvex([[0, 0], [2, 0], [1, 1], [2, 2], [0, 2]]) // => false
  * ```
@@ -722,7 +722,7 @@ export function isContourConvex(contour: PointsLike): boolean {
  * @concept point-in-polygon
  * @example
  * ```ts
- * import { pointPolygonTest } from 'mdml-engine/vision'
+ * import { pointPolygonTest } from 'omai-engine/vision'
  * const square = [[0, 0], [4, 0], [4, 4], [0, 4]]
  * pointPolygonTest(square, [1, 2]) // => 1
  * pointPolygonTest(square, [1, 2], true) // => 1

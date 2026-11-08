@@ -31,7 +31,7 @@ const allowed = (file) => /\/_[^/]*$/.test(file) || /\/blas\.ts$/.test(file) || 
 
 const rows = []
 for (const s of symbols) {
-  if (s.kind !== 'function' || s.package !== 'mdml-engine') continue
+  if (s.kind !== 'function' || s.package !== 'omai-engine') continue
   const file = relative(ROOT, s.source.file)
   const full = `${ROOT}/${file}`
   if (!full.startsWith(LIB) || !CORE.has(domainOf(full))) continue

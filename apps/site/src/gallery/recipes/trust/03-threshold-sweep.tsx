@@ -1,5 +1,5 @@
-import { analyseThresholds } from 'mdml-engine/metrics'
-import { ControlPanel, ExpositionView, NumberField, SeedInput } from 'mdml-render/react'
+import { analyseThresholds } from 'omai-engine/metrics'
+import { ControlPanel, ExpositionView, NumberField, SeedInput } from 'omai-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 import { normals, uniforms } from '../../toys/synthetic.ts'

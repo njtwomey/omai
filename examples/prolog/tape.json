@@ -1,12 +1,12 @@
 {
-  "schema": "mdml.run/1",
+  "schema": "omai.run/1",
   "events": [
     {
       "type": "run",
       "runId": "sld-resolution:none",
       "name": "sld-resolution",
       "seed": null,
-      "version": "0.1.2",
+      "version": "0.1.3",
       "config": {
         "maxDepth": 100000,
         "occursCheck": false,

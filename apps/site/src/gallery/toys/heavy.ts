@@ -5,8 +5,8 @@
  * the current iterate, on a grid, which the page asks the worker for at any step.
  */
 
-import { foldIn, type Key, normal } from 'mdml-engine/random'
-import { dict, int, real } from 'mdml-engine/space'
+import { foldIn, type Key, normal } from 'omai-engine/random'
+import { dict, int, real } from 'omai-engine/space'
 import {
   type Config,
   defineMethod,
@@ -17,7 +17,7 @@ import {
   stateFromJson,
   stateToJson,
   tensor,
-} from 'mdml-engine/trace'
+} from 'omai-engine/trace'
 
 /** The iterate of the descent. */
 export interface Descent {

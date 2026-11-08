@@ -6,7 +6,7 @@
  * `board` projection reads those boards back as a `boardSteps` record for the board view.
  */
 
-import { MdmlError } from '../../lib/base/index.ts'
+import { OmaiError } from '../../lib/base/index.ts'
 import { boardSteps } from '../../lib/exposition/index.ts'
 import { gridProblem, SEARCH_MAPS, type SearchMapName, searchMap } from '../../lib/problems/index.ts'
 import {
@@ -107,7 +107,7 @@ function terrainCells(w: World): number[] {
 
 function shapeOf(name: SearchMapName): readonly [number, number] {
   const t = searchMap(name).topology
-  if (t.kind !== 'square') throw new MdmlError('value', `gridSearch: the map ${name} is not a square grid`)
+  if (t.kind !== 'square') throw new OmaiError('value', `gridSearch: the map ${name} is not a square grid`)
   return [t.rows, t.cols]
 }
 
@@ -123,8 +123,8 @@ function shapeOf(name: SearchMapName): readonly [number, number] {
  *
  * @example
  * ```ts
- * import { gridSearch } from 'mdml-engine/methods/search'
- * import { session } from 'mdml-engine/trace'
+ * import { gridSearch } from 'omai-engine/methods/search'
+ * import { session } from 'omai-engine/trace'
  * const s = session(gridSearch, { mode: 'eager', steps: 500 })
  * s.status // => 'converged'
  * ```

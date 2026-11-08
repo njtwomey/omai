@@ -7,7 +7,7 @@
  * @index function Concept-drift detectors: DDM, EDDM, ADWIN, KSWIN.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { foldIn, permutation } from '../random/index.ts'
 import { ks2samp } from '../stats/tests/two-sample.ts'
 import { type TensorLike, toFlat } from '../tensor/index.ts'
@@ -92,8 +92,8 @@ export interface DdmState {
  * @concept drift-detection
  * @example
  * ```ts
- * import { ddmAlgorithm } from 'mdml-engine/learn'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { ddmAlgorithm } from 'omai-engine/learn'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const stream = [...Array.from({ length: 40 }, (_, i) => (i % 20 === 0 ? 1 : 0)), ...Array.from({ length: 30 }, () => 1)]
  * runAlgorithm(ddmAlgorithm(stream), { maxSteps: stream.length }).state.drifts.length > 0 // => true
  * ```
@@ -104,7 +104,7 @@ export function ddmAlgorithm(errors: TensorLike, options: DdmOptions = {}): Algo
   const warningLevel = options.warningLevel ?? 2.0
   const driftLevel = options.driftLevel ?? 3.0
   if (!(warningLevel > 0 && driftLevel >= warningLevel)) {
-    throw new MdmlError('value', 'ddm: need 0 < warningLevel <= driftLevel')
+    throw new OmaiError('value', 'ddm: need 0 < warningLevel <= driftLevel')
   }
   const resetOnDrift = options.resetOnDrift ?? true
 
@@ -205,7 +205,7 @@ export function ddmAlgorithm(errors: TensorLike, options: DdmOptions = {}): Algo
  * @concept drift-detection
  * @example
  * ```ts
- * import { ddm } from 'mdml-engine/learn'
+ * import { ddm } from 'omai-engine/learn'
  * const s = [...Array.from({ length: 40 }, (_, i) => (i % 20 === 0 ? 1 : 0)), ...Array.from({ length: 30 }, () => 1)]
  * ddm(s).drifts.length > 0 // => true
  * ```
@@ -266,8 +266,8 @@ export interface EddmState {
  * @concept drift-detection
  * @example
  * ```ts
- * import { eddmAlgorithm } from 'mdml-engine/learn'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { eddmAlgorithm } from 'omai-engine/learn'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const slow = Array.from({ length: 120 }, (_, i) => (i % 10 === 0 ? 1 : 0))
  * const fast = Array.from({ length: 40 }, () => 1)
  * const stream = [...slow, ...fast]
@@ -279,7 +279,7 @@ export function eddmAlgorithm(errors: TensorLike, options: EddmOptions = {}): Al
   const minErrors = integerOption(options.minErrors ?? 30, 'minErrors', 'eddm', 2)
   const warningLevel = fractionOption(options.warningLevel ?? 0.95, 'warningLevel', 'eddm')
   const driftLevel = fractionOption(options.driftLevel ?? 0.9, 'driftLevel', 'eddm')
-  if (driftLevel > warningLevel) throw new MdmlError('value', 'eddm: driftLevel must be <= warningLevel')
+  if (driftLevel > warningLevel) throw new OmaiError('value', 'eddm: driftLevel must be <= warningLevel')
   const resetOnDrift = options.resetOnDrift ?? true
 
   return {
@@ -385,7 +385,7 @@ export function eddmAlgorithm(errors: TensorLike, options: EddmOptions = {}): Al
  * @concept drift-detection
  * @example
  * ```ts
- * import { eddm } from 'mdml-engine/learn'
+ * import { eddm } from 'omai-engine/learn'
  * const slow = Array.from({ length: 120 }, (_, i) => (i % 10 === 0 ? 1 : 0))
  * const fast = Array.from({ length: 40 }, () => 1)
  * eddm([...slow, ...fast], { minErrors: 10 }).drifts.length > 0 // => true
@@ -503,8 +503,8 @@ function summarizeBuckets(buckets: readonly AdwinBucket[]): {
  * @concept drift-detection
  * @example
  * ```ts
- * import { adwinAlgorithm } from 'mdml-engine/learn'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { adwinAlgorithm } from 'omai-engine/learn'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const stream = [...Array.from({ length: 40 }, () => 0), ...Array.from({ length: 40 }, () => 1)]
  * const st = runAlgorithm(adwinAlgorithm(stream, { delta: 0.01 }), { maxSteps: stream.length }).state
  * st.drifts.length > 0 && st.totalCount < stream.length // => true
@@ -627,7 +627,7 @@ export function adwinAlgorithm(stream: TensorLike, options: AdwinOptions = {}): 
  * @concept drift-detection
  * @example
  * ```ts
- * import { adwin } from 'mdml-engine/learn'
+ * import { adwin } from 'omai-engine/learn'
  * const r = adwin([...Array.from({ length: 40 }, () => 0), ...Array.from({ length: 40 }, () => 1)], { delta: 0.01 })
  * r.drifts.length > 0 // => true
  * ```
@@ -686,8 +686,8 @@ export interface KswinState {
  * @concept drift-detection
  * @example
  * ```ts
- * import { kswinAlgorithm } from 'mdml-engine/learn'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { kswinAlgorithm } from 'omai-engine/learn'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const s = [...Array.from({ length: 40 }, (_, i) => (i % 5) * 0.1), ...Array.from({ length: 30 }, (_, i) => 10 + (i % 5) * 0.1)]
  * const alg = kswinAlgorithm(s, { windowSize: 40, statSize: 15, alpha: 0.01 })
  * runAlgorithm(alg, { maxSteps: s.length }).state.drifts.length > 0 // => true
@@ -698,7 +698,7 @@ export function kswinAlgorithm(stream: TensorLike, options: KswinOptions = {}): 
   const alpha = fractionOption(options.alpha ?? 0.005, 'alpha', 'kswin')
   const windowSize = integerOption(options.windowSize ?? 100, 'windowSize', 'kswin', 4)
   const statSize = integerOption(options.statSize ?? Math.min(30, Math.floor(windowSize / 2)), 'statSize', 'kswin', 2)
-  if (statSize >= windowSize) throw new MdmlError('value', 'kswin: statSize must be < windowSize')
+  if (statSize >= windowSize) throw new OmaiError('value', 'kswin: statSize must be < windowSize')
   const subsample = options.subsample ?? true
   const baseKey = keyFor(options, 'kswin')
 
@@ -796,7 +796,7 @@ export function kswinAlgorithm(stream: TensorLike, options: KswinOptions = {}): 
  * @concept drift-detection
  * @example
  * ```ts
- * import { kswin } from 'mdml-engine/learn'
+ * import { kswin } from 'omai-engine/learn'
  * const s = [...Array.from({ length: 40 }, (_, i) => (i % 5) * 0.1), ...Array.from({ length: 30 }, (_, i) => 10 + (i % 5) * 0.1)]
  * kswin(s, { windowSize: 40, statSize: 15, alpha: 0.01 }).drifts.length > 0 // => true
  * ```
@@ -852,7 +852,7 @@ export interface PsiResult {
  * @concept drift-detection
  * @example
  * ```ts
- * import { populationStabilityIndex } from 'mdml-engine/learn'
+ * import { populationStabilityIndex } from 'omai-engine/learn'
  * const ref = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
  * populationStabilityIndex(ref, ref, { nBins: 5 }).psi // => 0
  * populationStabilityIndex(ref, ref.map((v) => v + 10), { nBins: 5 }).status // => 'drift'
@@ -866,11 +866,11 @@ export function populationStabilityIndex(
   const ref = targetVector(reference, 'populationStabilityIndex')
   const cur = targetVector(current, 'populationStabilityIndex')
   if (ref.length === 0 || cur.length === 0) {
-    throw new MdmlError('value', 'populationStabilityIndex: reference and current must be non-empty')
+    throw new OmaiError('value', 'populationStabilityIndex: reference and current must be non-empty')
   }
   const k = integerOption(options.nBins ?? 10, 'nBins', 'populationStabilityIndex', 2)
   const eps = options.eps ?? 1e-4
-  if (!(eps > 0 && eps < 1)) throw new MdmlError('value', 'populationStabilityIndex: eps must lie in (0, 1)')
+  if (!(eps > 0 && eps < 1)) throw new OmaiError('value', 'populationStabilityIndex: eps must lie in (0, 1)')
 
   const sortedRef = Float64Array.from(ref).sort()
   const minVal = Math.min(

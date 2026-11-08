@@ -9,7 +9,7 @@
  * interpretations by EM, one iteration per step.
  */
 
-import { type Json, MdmlError, maxOf } from '../base/index.ts'
+import { type Json, maxOf, OmaiError } from '../base/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm, type TraceSchema } from '../trace/index.ts'
 import { parseTerm } from './parse.ts'
 import { type Term, termToString } from './terms.ts'
@@ -56,16 +56,16 @@ function ruleParts(text: string): { head: Term; body: Term[] } {
  *
  * @param program - The program.
  * @returns The ground program.
- * @throws MdmlError with code `value` for a probability outside [0, 1], a non-ground fact, or a head variable not in the body.
+ * @throws OmaiError with code `value` for a probability outside [0, 1], a non-ground fact, or a head variable not in the body.
  * @example
  * ```ts
- * import { groundProbabilistic } from 'mdml-engine/logic'
+ * import { groundProbabilistic } from 'omai-engine/logic'
  * groundProbabilistic({ facts: [[0.5, 'edge(a,b)']], certain: [], rules: ['path(X,Y) :- edge(X,Y)'] }).atoms // => ['edge(a,b)', 'path(a,b)']
  * ```
  */
 export function groundProbabilistic(program: ProbabilisticProgram): GroundProgram {
   for (const [p] of program.facts)
-    if (!(p >= 0 && p <= 1)) throw new MdmlError('value', `probability ${p} is not in [0, 1]`)
+    if (!(p >= 0 && p <= 1)) throw new OmaiError('value', `probability ${p} is not in [0, 1]`)
   const known = new Map<string, Term>()
   for (const [, a] of program.facts) known.set(termToString(parseTerm(a)), parseTerm(a))
   for (const a of program.certain) known.set(termToString(parseTerm(a)), parseTerm(a))
@@ -73,7 +73,7 @@ export function groundProbabilistic(program: ProbabilisticProgram): GroundProgra
   for (const r of rules) {
     const bodyVars = new Set(r.body.flatMap((b) => termToString(b).match(/[A-Z_][A-Za-z0-9_]*/g) ?? []))
     for (const v of termToString(r.head).match(/[A-Z_][A-Za-z0-9_]*/g) ?? [])
-      if (!bodyVars.has(v)) throw new MdmlError('value', `rule head variable ${v} is not in the body`)
+      if (!bodyVars.has(v)) throw new OmaiError('value', `rule head variable ${v} is not in the body`)
   }
   const clauses = new Map<string, readonly [string, readonly string[]]>()
   for (let changed = true; changed; ) {
@@ -135,7 +135,7 @@ function minimal(proofs: readonly ProofSet[]): ProofSet[] {
  * @returns The proofs by atom.
  * @example
  * ```ts
- * import { groundProbabilistic, proofSets } from 'mdml-engine/logic'
+ * import { groundProbabilistic, proofSets } from 'omai-engine/logic'
  * const g = groundProbabilistic({ facts: [[0.5, 'a'], [0.5, 'b']], certain: [], rules: ['c :- a', 'c :- b'] })
  * proofSets(g, [])['c'] // => [[0], [1]]
  * ```
@@ -177,7 +177,7 @@ export function proofSets(g: GroundProgram, certainAtoms: readonly string[]): Re
  * @returns The probability of the disjunction.
  * @example
  * ```ts
- * import { disjunctionProbability } from 'mdml-engine/logic'
+ * import { disjunctionProbability } from 'omai-engine/logic'
  * disjunctionProbability([[0], [1]], [0.5, 0.5]) // => 0.75
  * ```
  */
@@ -219,10 +219,10 @@ export interface QueryResult {
  * @param program - The program.
  * @param query - The ground atom.
  * @returns The probability and the proofs (none, with probability 0, if the atom cannot be derived).
- * @throws MdmlError with code `value` for an invalid program.
+ * @throws OmaiError with code `value` for an invalid program.
  * @example
  * ```ts
- * import { successProbability } from 'mdml-engine/logic'
+ * import { successProbability } from 'omai-engine/logic'
  * const program = {
  *   facts: [[0.8, 'edge(a,b)'], [0.6, 'edge(b,c)'], [0.3, 'edge(a,c)']],
  *   certain: [],
@@ -255,10 +255,10 @@ export function successProbability(program: ProbabilisticProgram, query: string)
  * @param query - The ground query atom.
  * @param evidence - Observed atoms with their truth values.
  * @returns The conditional probability.
- * @throws MdmlError with code `value` when the evidence has probability zero.
+ * @throws OmaiError with code `value` when the evidence has probability zero.
  * @example
  * ```ts
- * import { conditionalProbability } from 'mdml-engine/logic'
+ * import { conditionalProbability } from 'omai-engine/logic'
  * const alarm = { facts: [[0.1, 'burglary'], [0.2, 'earthquake']], certain: [], rules: ['alarm :- burglary', 'alarm :- earthquake'] }
  * conditionalProbability(alarm, 'burglary', [['alarm', true]]) // => 0.1 / 0.28
  * ```
@@ -288,7 +288,7 @@ export function conditionalProbability(
   const positive = evidence.filter(([, t]) => t).map(([a]) => a)
   const negative = evidence.filter(([, t]) => !t).map(([a]) => a)
   const pe = joint(positive, negative)
-  if (!(pe > 0)) throw new MdmlError('value', 'the evidence has probability zero')
+  if (!(pe > 0)) throw new OmaiError('value', 'the evidence has probability zero')
   return joint([...positive, query], negative) / pe
 }
 
@@ -320,10 +320,10 @@ const EM_SCHEMA: TraceSchema = channels({
  * @param program - The program with initial probabilities.
  * @param observations - Observed interpretations (atoms with truth values).
  * @returns The algorithm.
- * @throws MdmlError with code `value` for an invalid program.
+ * @throws OmaiError with code `value` for an invalid program.
  * @example
  * ```ts
- * import { probLogEmAlgorithm } from 'mdml-engine/logic'
+ * import { probLogEmAlgorithm } from 'omai-engine/logic'
  * probLogEmAlgorithm({ facts: [[0.5, 'heads']], certain: [], rules: [] }, [[['heads', true]]]).name // => 'problog-em'
  * ```
  */
@@ -398,10 +398,10 @@ export function probLogEmAlgorithm(
  * @param observations - Observed interpretations.
  * @param options - The most iterations (default 200) and tracing.
  * @returns The learned probabilities (in fact order) and the log likelihood.
- * @throws MdmlError with code `value` for an invalid program.
+ * @throws OmaiError with code `value` for an invalid program.
  * @example
  * ```ts
- * import { learnProbabilities } from 'mdml-engine/logic'
+ * import { learnProbabilities } from 'omai-engine/logic'
  * const obs = [true, true, true, false].map((t) => [['heads', t]])
  * learnProbabilities({ facts: [[0.5, 'heads']], certain: [], rules: [] }, obs).probabilities // => [0.75]
  * ```

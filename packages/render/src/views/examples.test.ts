@@ -1,4 +1,4 @@
-import { counterfactualSet, prototypeSet } from 'mdml-engine/exposition'
+import { counterfactualSet, prototypeSet } from 'omai-engine/exposition'
 import { describe, expect, it } from 'vitest'
 import { counterfactualRows, counterfactualTableView, prototypeView } from './examples.ts'
 import { stillOf, viewFor } from './registry.ts'

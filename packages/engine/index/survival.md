@@ -4,6 +4,6 @@
 
 Survival analysis of right-censored data: Kaplan-Meier and Nelson-Aalen estimates, the weighted log-rank tests, Cox proportional hazards regression with Breslow and Efron ties, accelerated failure time models (Weibull, log-normal, log-logistic), and the concordance index. Models that maximise a likelihood expose it as a smooth problem and take their solver from the shared slot.
 
-- function `coxPh`: Cox proportional hazards fit with Breslow or Efron ties. `src/lib/survival/cox.ts:427` `mdml-engine/survival`
-- function `kaplanMeier`: Kaplan-Meier survival curve for right-censored data. `src/lib/survival/kaplan-meier.ts:88` `mdml-engine/survival`
-- function `logRankTest`: Log-rank test between survival curves. `src/lib/survival/log-rank.ts:101` `mdml-engine/survival`
+- function `coxPh`: Cox proportional hazards fit with Breslow or Efron ties. `src/lib/survival/cox.ts:427` `omai-engine/survival`
+- function `kaplanMeier`: Kaplan-Meier survival curve for right-censored data. `src/lib/survival/kaplan-meier.ts:88` `omai-engine/survival`
+- function `logRankTest`: Log-rank test between survival curves. `src/lib/survival/log-rank.ts:101` `omai-engine/survival`

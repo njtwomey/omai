@@ -7,7 +7,7 @@
  * @index structure Transfer function, zero-pole-gain and state-space forms as one Lti type.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import type { ComplexNumber } from '../numerics/differentiate/index.ts'
 import type { ComplexArray } from '../numerics/polynomial/index.ts'
 import { matmul, reshape, sliceAxis, type TensorLike, tensor, transpose, type Value } from '../tensor/index.ts'
@@ -63,7 +63,7 @@ export interface LtiOptions {
 
 function sampleTime(options: LtiOptions): number {
   const dt = options.dt ?? 0
-  if (!(dt >= 0) || !Number.isFinite(dt)) throw new MdmlError('value', `the sample time must be >= 0, got ${dt}`)
+  if (!(dt >= 0) || !Number.isFinite(dt)) throw new OmaiError('value', `the sample time must be >= 0, got ${dt}`)
   return dt
 }
 
@@ -76,11 +76,11 @@ function sampleTime(options: LtiOptions): number {
  * @param d - D `[p, m]` (zeros when omitted).
  * @param options - The sample time.
  * @returns The system.
- * @throws MdmlError with code `shape` when the matrices do not fit.
+ * @throws OmaiError with code `shape` when the matrices do not fit.
  * @concept state-space
  * @example
  * ```ts
- * import { ss } from 'mdml-engine/systems'
+ * import { ss } from 'omai-engine/systems'
  * ss([[-1]], [[1]], [[1]]).d.shape // => [1, 1]
  * ```
  */
@@ -99,8 +99,8 @@ export function ss(a: TensorLike, b: TensorLike, c: TensorLike, d?: TensorLike, 
  * @concept transfer-functions
  * @example
  * ```ts
- * import { tf } from 'mdml-engine/systems'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { tf } from 'omai-engine/systems'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(tf([2], [2, 4]).den) // => [1, 2]
  * ```
  */
@@ -119,7 +119,7 @@ export function tf(num: TensorLike, den: TensorLike, options: LtiOptions = {}): 
  * @concept transfer-functions
  * @example
  * ```ts
- * import { zpk } from 'mdml-engine/systems'
+ * import { zpk } from 'omai-engine/systems'
  * zpk([], [-1, -2], 3).poles.re // => [-1, -2]
  * ```
  */
@@ -144,17 +144,17 @@ export function zpk(
  * @param sections - Rows [b0, b1, b2, a0, a1, a2], `[n, 6]`.
  * @param options - The sample time.
  * @returns The system.
- * @throws MdmlError with code `shape` unless the sections are `[n, 6]`.
+ * @throws OmaiError with code `shape` unless the sections are `[n, 6]`.
  * @concept second-order-sections
  * @example
  * ```ts
- * import { sos } from 'mdml-engine/systems'
+ * import { sos } from 'omai-engine/systems'
  * sos([[1, 0, 0, 1, -0.5, 0]], { dt: 1 }).sections.shape // => [1, 6]
  * ```
  */
 export function sos(sections: TensorLike, options: LtiOptions = {}): SecondOrderSections {
   const s = float(sections)
-  if (s.shape.length !== 2 || s.shape[1] !== 6) throw new MdmlError('shape', 'sos: expected [n, 6] sections')
+  if (s.shape.length !== 2 || s.shape[1] !== 6) throw new OmaiError('shape', 'sos: expected [n, 6] sections')
   return { kind: 'sos', sections: s, dt: sampleTime(options) }
 }
 
@@ -165,7 +165,7 @@ export function sos(sections: TensorLike, options: LtiOptions = {}): SecondOrder
  * @returns `true` for discrete time.
  * @example
  * ```ts
- * import { isDiscrete, tf } from 'mdml-engine/systems'
+ * import { isDiscrete, tf } from 'omai-engine/systems'
  * isDiscrete(tf([1], [1, -0.5], { dt: 0.1 })) // => true
  * ```
  */
@@ -188,7 +188,7 @@ export interface Dimensions {
  * @returns The dimensions.
  * @example
  * ```ts
- * import { dimensions, tf } from 'mdml-engine/systems'
+ * import { dimensions, tf } from 'omai-engine/systems'
  * dimensions(tf([1], [1, 3, 2])) // => { inputs: 1, outputs: 1, states: 2 }
  * ```
  */
@@ -217,8 +217,8 @@ export function dimensions(sys: Lti): Dimensions {
  * @concept state-space
  * @example
  * ```ts
- * import { tf, toSs } from 'mdml-engine/systems'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { tf, toSs } from 'omai-engine/systems'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(toSs(tf([1], [1, 3, 2])).a) // => [[-3, -2], [1, 0]]
  * ```
  */
@@ -253,8 +253,8 @@ export interface ChannelOptions {
  * @concept transfer-functions
  * @example
  * ```ts
- * import { ss, toTf } from 'mdml-engine/systems'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { ss, toTf } from 'omai-engine/systems'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(toTf(ss([[-2]], [[1]], [[3]])).num) // => [0, 3]
  * ```
  */
@@ -281,7 +281,7 @@ export function toTf(sys: Lti, options: ChannelOptions = {}): TransferFunction {
  * @returns The zero-pole-gain system, same sample time.
  * @example
  * ```ts
- * import { tf, toZpk } from 'mdml-engine/systems'
+ * import { tf, toZpk } from 'omai-engine/systems'
  * toZpk(tf([3], [1, 1])).gain // => 3
  * ```
  */
@@ -316,7 +316,7 @@ export function toZpk(sys: Lti, options: ChannelOptions = {}): ZerosPolesGain {
  * @concept second-order-sections
  * @example
  * ```ts
- * import { toSos, zpk } from 'mdml-engine/systems'
+ * import { toSos, zpk } from 'omai-engine/systems'
  * toSos(zpk([], [0.5, 0.25], 1, { dt: 1 })).sections.shape // => [1, 6]
  * ```
  */
@@ -380,8 +380,8 @@ function minrealSs(sys: StateSpace, tol: number | undefined): StateSpace {
  * @concept minimal-realisation
  * @example
  * ```ts
- * import { minreal, tf } from 'mdml-engine/systems'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { minreal, tf } from 'omai-engine/systems'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(minreal(tf([1, 1], [1, 3, 2])).den) // => [1, 2]
  * ```
  */
@@ -400,7 +400,7 @@ function minrealOf(sys: Lti, options: MinrealOptions): Lti {
     case 'sos':
       return toSos(minrealOf(toZpk(sys), options))
     case 'tf': {
-      if (sys.num.shape.length === 2) throw new MdmlError('shape', 'minreal: one numerator row is supported')
+      if (sys.num.shape.length === 2) throw new OmaiError('shape', 'minreal: one numerator row is supported')
       const b = trimLeading(numbers(sys.num))
       const a = numbers(sys.den)
       const gain = (b[0] ?? 0) / (a[0] ?? 1)
@@ -422,21 +422,21 @@ function minrealOf(sys: Lti, options: MinrealOptions): Lti {
  * @param order - The denominator degree n.
  * @param numOrder - The numerator degree, 0 to n (default n; a negative value counts back from n).
  * @returns The transfer function, with a monic denominator.
- * @throws MdmlError with code `value` for a negative delay or order, or a numerator degree outside 0..n.
+ * @throws OmaiError with code `value` for a negative delay or order, or a numerator degree outside 0..n.
  * @concept transfer-functions
  * @example
  * ```ts
- * import { pade } from 'mdml-engine/systems'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { pade } from 'omai-engine/systems'
+ * import { toArray } from 'omai-engine/tensor'
  * [toArray(pade(1, 3).num), toArray(pade(1, 3).den)] // => [[-1, 12, -60, 120], [1, 12, 60, 120]]
  * ```
  */
 export function pade(delay: number, order: number, numOrder?: number): TransferFunction {
   const n = order
   const m = numOrder === undefined ? n : numOrder < 0 ? numOrder + n : numOrder
-  if (!(delay >= 0)) throw new MdmlError('value', 'pade: the delay must be non-negative')
-  if (!(Number.isInteger(n) && n >= 0)) throw new MdmlError('value', 'pade: the order must be a non-negative integer')
-  if (!(Number.isInteger(m) && m >= 0 && m <= n)) throw new MdmlError('value', 'pade: the numerator degree is 0..order')
+  if (!(delay >= 0)) throw new OmaiError('value', 'pade: the delay must be non-negative')
+  if (!(Number.isInteger(n) && n >= 0)) throw new OmaiError('value', 'pade: the order must be a non-negative integer')
+  if (!(Number.isInteger(m) && m >= 0 && m <= n)) throw new OmaiError('value', 'pade: the numerator degree is 0..order')
   if (delay === 0) return tf([1], [1])
   const num = new Array<number>(m + 1).fill(0)
   num[m] = 1

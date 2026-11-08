@@ -3,7 +3,7 @@
  * each search shines or fails, and generated mazes, both as grid worlds.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import type { Key } from '../random/index.ts'
 import { braid, fromAscii, generateMaze, type MazeAlgorithmName, type World, wallsToBlocks } from '../worlds/index.ts'
 
@@ -66,7 +66,7 @@ export type SearchMapName = keyof typeof SEARCH_MAPS
  */
 export function searchMap(name: SearchMapName): World {
   const rows = SEARCH_MAPS[name]
-  if (rows === undefined) throw new MdmlError('value', `searchMap: unknown map '${name}'`)
+  if (rows === undefined) throw new OmaiError('value', `searchMap: unknown map '${name}'`)
   return fromAscii(rows, { name })
 }
 

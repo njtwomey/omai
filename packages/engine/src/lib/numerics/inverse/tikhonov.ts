@@ -5,7 +5,7 @@
  * figures.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import {
   add,
   concat,
@@ -45,7 +45,7 @@ export interface SpectralData {
  * @returns u, s, vh and beta.
  * @example
  * ```ts
- * import { spectralData } from 'mdml-engine/numerics/inverse'
+ * import { spectralData } from 'omai-engine/numerics/inverse'
  * spectralData([[2, 0], [0, 1]], [2, 3]).s.shape // => [2]
  * ```
  */
@@ -66,8 +66,8 @@ export function spectralData(a: TensorLike, b: TensorLike): SpectralData {
  * @concept regularisation
  * @example
  * ```ts
- * import { filterFactors } from 'mdml-engine/numerics/inverse'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { filterFactors } from 'omai-engine/numerics/inverse'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(filterFactors([2, 1], 1)) // => [0.8, 0.5]
  * ```
  */
@@ -94,8 +94,8 @@ export function filterFactors(s: TensorLike, parameter: number, method: 'tikhono
  * @index function Tikhonov-regularised solution of an ill-posed linear problem.
  * @example
  * ```ts
- * import { spectralData, tikhonov } from 'mdml-engine/numerics/inverse'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { spectralData, tikhonov } from 'omai-engine/numerics/inverse'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(tikhonov(spectralData([[1, 0], [0, 1]], [2, 4]), 1)) // => [1, 2]
  * ```
  */
@@ -118,8 +118,8 @@ function coefficientsOf(f: Value, data: SpectralData): Value {
  * @returns The solution `[n]`.
  * @example
  * ```ts
- * import { spectralData, tsvd } from 'mdml-engine/numerics/inverse'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { spectralData, tsvd } from 'omai-engine/numerics/inverse'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(tsvd(spectralData([[2, 0], [0, 1e-8]], [2, 1]), 1)) // => [1, 0]
  * ```
  */
@@ -140,8 +140,8 @@ export function tsvd(data: SpectralData, k: number): Value {
  * @returns The solution.
  * @example
  * ```ts
- * import { tikhonovGeneral } from 'mdml-engine/numerics/inverse'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { tikhonovGeneral } from 'omai-engine/numerics/inverse'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(tikhonovGeneral([[1, 0], [0, 1]], [2, 4], 1)).map((v) => Math.round(v * 1e12) / 1e12) // => [1, 2]
  * ```
  */
@@ -167,16 +167,16 @@ export function tikhonovGeneral(
  *
  * @param n - Number of unknowns (at least 3).
  * @returns The matrix `[n - 2, n]`.
- * @throws MdmlError with code `value` for n below 3.
+ * @throws OmaiError with code `value` for n below 3.
  * @example
  * ```ts
- * import { secondDifference } from 'mdml-engine/numerics/inverse'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { secondDifference } from 'omai-engine/numerics/inverse'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(secondDifference(4)) // => [[1, -2, 1, 0], [0, 1, -2, 1]]
  * ```
  */
 export function secondDifference(n: number): Tensor {
-  if (n < 3) throw new MdmlError('value', 'secondDifference: n must be at least 3')
+  if (n < 3) throw new OmaiError('value', 'secondDifference: n must be at least 3')
   const rows = Array.from({ length: n - 2 }, (_, i) =>
     Array.from({ length: n }, (_, j) => (j === i || j === i + 2 ? 1 : j === i + 1 ? -2 : 0)),
   )
@@ -207,10 +207,10 @@ export interface PathPoint {
  * @param b - The data vector (for residual norms including the part outside the range of A).
  * @param lambdas - The parameters `[k]`.
  * @returns One point per parameter.
- * @throws MdmlError with code `shape` unless the parameters are a vector, and `not-differentiable` for a traced value.
+ * @throws OmaiError with code `shape` unless the parameters are a vector, and `not-differentiable` for a traced value.
  * @example
  * ```ts
- * import { spectralData, tikhonovPath } from 'mdml-engine/numerics/inverse'
+ * import { spectralData, tikhonovPath } from 'omai-engine/numerics/inverse'
  * tikhonovPath(spectralData([[1, 0], [0, 0.1]], [1, 1]), [1, 1], [0.01, 1]).length // => 2
  * ```
  */

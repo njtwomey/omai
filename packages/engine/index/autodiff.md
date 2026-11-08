@@ -4,13 +4,13 @@
 
 Differentiation as function transforms, JAX style: reverse mode (`grad`, `vjp`, `valueAndGrad`), forward mode (`jvp`), Taylor mode for higher derivatives, Jacobians and Hessians, vectorisation (`vmap`), and the conformance checks (`checkPrimitive`, finite-difference gradient checks) every primitive passes. Differentiation is opt-in per call: outside a transform, tensors carry no graph.
 
-- function `transforms.ts` (file): JAX-style grad, vjp, jvp, Jacobians and Hessians. `src/lib/autodiff/transforms.ts:1` `mdml-engine/autodiff`
+- function `transforms.ts` (file): JAX-style grad, vjp, jvp, Jacobians and Hessians. `src/lib/autodiff/transforms.ts:1` `omai-engine/autodiff`
 
-- function `checkPrimitive`: Conformance test every primitive's jvp and vjp must pass. `src/lib/autodiff/check.ts:276` `mdml-engine/autodiff`
-- function `checkpoint`: Gradient checkpointing: recompute the forward pass instead of storing it. `src/lib/autodiff/custom.ts:258` `mdml-engine/autodiff`
-- function `customVjp`: Define a function with a hand-written reverse rule. `src/lib/autodiff/custom.ts:62` `mdml-engine/autodiff`
-- function `grad`: Gradient of a scalar function of a pytree, like jax.grad. `src/lib/autodiff/transforms.ts:144` `mdml-engine/autodiff`
-- function `hessian`: Hessian of a scalar function, forward over reverse. `src/lib/autodiff/transforms.ts:309` `mdml-engine/autodiff`
-- function `taylorCoefficients`: Higher derivatives along a direction by Taylor-mode differentiation. `src/lib/autodiff/taylor.ts:234` `mdml-engine/autodiff`
-- function `valueAndGrad`: A function's value and gradient in one pass. `src/lib/autodiff/transforms.ts:106` `mdml-engine/autodiff`
-- function `vmap`: Vectorise a function over a batch axis, like jax.vmap. `src/lib/autodiff/vmap.ts:171` `mdml-engine/autodiff`
+- function `checkPrimitive`: Conformance test every primitive's jvp and vjp must pass. `src/lib/autodiff/check.ts:276` `omai-engine/autodiff`
+- function `checkpoint`: Gradient checkpointing: recompute the forward pass instead of storing it. `src/lib/autodiff/custom.ts:258` `omai-engine/autodiff`
+- function `customVjp`: Define a function with a hand-written reverse rule. `src/lib/autodiff/custom.ts:62` `omai-engine/autodiff`
+- function `grad`: Gradient of a scalar function of a pytree, like jax.grad. `src/lib/autodiff/transforms.ts:144` `omai-engine/autodiff`
+- function `hessian`: Hessian of a scalar function, forward over reverse. `src/lib/autodiff/transforms.ts:309` `omai-engine/autodiff`
+- function `taylorCoefficients`: Higher derivatives along a direction by Taylor-mode differentiation. `src/lib/autodiff/taylor.ts:234` `omai-engine/autodiff`
+- function `valueAndGrad`: A function's value and gradient in one pass. `src/lib/autodiff/transforms.ts:106` `omai-engine/autodiff`
+- function `vmap`: Vectorise a function over a batch axis, like jax.vmap. `src/lib/autodiff/vmap.ts:171` `omai-engine/autodiff`

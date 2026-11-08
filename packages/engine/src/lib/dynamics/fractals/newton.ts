@@ -5,7 +5,7 @@
  * point, and the whole picture as a traced algorithm with one Newton step over every pixel per step.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import {
   type Algorithm,
   type Contract,
@@ -27,12 +27,12 @@ import { type ComplexViewport, pixelGrid } from './escape-time.ts'
  * @concept newton-fractals
  * @example
  * ```ts
- * import { fractals } from 'mdml-engine/dynamics'
+ * import { fractals } from 'omai-engine/dynamics'
  * fractals.rootsOfUnity(4).map(([re, im]) => [Math.round(re) + 0, Math.round(im) + 0]) // => [[1, 0], [0, 1], [-1, 0], [0, -1]]
  * ```
  */
 export function rootsOfUnity(n: number): [number, number][] {
-  if (!(Number.isInteger(n) && n >= 1)) throw new MdmlError('value', `rootsOfUnity: need a positive integer, got ${n}`)
+  if (!(Number.isInteger(n) && n >= 1)) throw new OmaiError('value', `rootsOfUnity: need a positive integer, got ${n}`)
   return Array.from({ length: n }, (_, k) => [Math.cos((2 * Math.PI * k) / n), Math.sin((2 * Math.PI * k) / n)])
 }
 
@@ -46,7 +46,7 @@ export function rootsOfUnity(n: number): [number, number][] {
  * @concept newton-fractals
  * @example
  * ```ts
- * import { fractals } from 'mdml-engine/dynamics'
+ * import { fractals } from 'omai-engine/dynamics'
  * // For z^2 - 1, from 2: 2 - (4 - 1) / 4 = 1.25.
  * fractals.newtonStep([2, 0], [[1, 0], [-1, 0]]) // => [1.25, 0]
  * ```
@@ -118,12 +118,12 @@ export const newtonContract: Contract<NewtonState, NewtonPath> = defineContract(
  *
  * @param options - The roots, the window and the tolerance.
  * @returns The algorithm.
- * @throws MdmlError with code `value` for fewer than two roots (Newton would be trivial) or more than 127.
+ * @throws OmaiError with code `value` for fewer than two roots (Newton would be trivial) or more than 127.
  * @concept newton-fractals
  * @example
  * ```ts
- * import { fractals } from 'mdml-engine/dynamics'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { fractals } from 'omai-engine/dynamics'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * // From 2 on the real axis, Newton on z^3 - 1 walks to the root 1 (index 0).
  * const alg = fractals.newtonFractal({ viewport: { centre: [2, 0], width: 0.1, pixels: [1, 1] } })
  * Array.from(runAlgorithm(alg, { seed: 0, maxSteps: 30 }).state.root) // => [0]
@@ -133,7 +133,7 @@ export function newtonFractal(options: NewtonOptions = {}): Algorithm<NewtonStat
   const roots = options.roots ?? rootsOfUnity(3)
   const tol = options.tolerance ?? 1e-6
   if (roots.length < 2 || roots.length > 127)
-    throw new MdmlError('value', 'newtonFractal: need between 2 and 127 roots')
+    throw new OmaiError('value', 'newtonFractal: need between 2 and 127 roots')
   const grid = pixelGrid({ centre: [0, 0], width: 4, ...options.viewport })
   const n = grid.re.length
   return {

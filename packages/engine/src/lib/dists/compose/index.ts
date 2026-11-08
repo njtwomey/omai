@@ -1,5 +1,5 @@
 /**
- * Distributions composed from other distributions, available as `mdml-engine/dists/compose`: independent,
+ * Distributions composed from other distributions, available as `omai-engine/dists/compose`: independent,
  * transformed, truncated, censored, empirical and point-mass distributions, finite mixtures, and conditional
  * distributions p(y | x) such as linear-Gaussian, GLM and network-output heads.
  */

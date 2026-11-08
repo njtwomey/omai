@@ -9,7 +9,7 @@ fits the same classifier twice to the same data, once with a small penalty `C` a
 ## The data and the method
 
 The data is 100 points from the two-moons generator (noise 0.25). The generator carries its truth, so the best possible
-accuracy is known: 0.940. The model is `svc` from `mdml-engine/svm` with a Gaussian (rbf) kernel. It is fitted as a
+accuracy is known: 0.940. The model is `svc` from `omai-engine/svm` with a Gaussian (rbf) kernel. It is fitted as a
 session: the solver (SMO) updates the dual one pair of coefficients at a time, and the whole run is on the tape.
 
 ## What the program does

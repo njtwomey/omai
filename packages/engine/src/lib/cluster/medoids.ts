@@ -5,7 +5,7 @@
  * all rows best. Works on any distance of the metric slot, or a precomputed dissimilarity matrix.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import {
   type DistanceAlias,
   type DistanceName,
@@ -95,7 +95,7 @@ function bestSwap(d: ArrayLike<number>, n: number, medoids: readonly number[], c
  * @returns The medoid rows.
  * @example
  * ```ts
- * import { pamBuild } from 'mdml-engine/cluster'
+ * import { pamBuild } from 'omai-engine/cluster'
  * pamBuild([0, 1, 5, 1, 0, 4, 5, 4, 0], 3, 1) // => [1]
  * ```
  */
@@ -115,7 +115,7 @@ export function pamBuild(d: ArrayLike<number>, n: number, k: number): number[] {
  * @returns The medoid rows, the labels (indices into the medoids) and the cost.
  * @example
  * ```ts
- * import { pamSolve } from 'mdml-engine/cluster'
+ * import { pamSolve } from 'omai-engine/cluster'
  * pamSolve([0, 1, 9, 9, 1, 0, 9, 9, 9, 9, 0, 1, 9, 9, 1, 0], 4, 2).medoids // => [0, 2]
  * ```
  */
@@ -168,8 +168,8 @@ const observeMedoids = (s: MedoidState, n: number) => ({
  * @returns The algorithm.
  * @example
  * ```ts
- * import { pamAlgorithm } from 'mdml-engine/cluster'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { pamAlgorithm } from 'omai-engine/cluster'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const x = [[0], [1], [10], [11]]
  * runAlgorithm(pamAlgorithm(x, { nClusters: 2 }), { maxSteps: 20 }).state.medoids // => [1, 2]
  * ```
@@ -178,7 +178,7 @@ export function pamAlgorithm(x: TensorLike, options: MedoidOptions): Algorithm<M
   const { n, data } = distanceMatrix(x, options.metric ?? 'euclidean', options.distanceOptions)
   const k = options.nClusters
   if (!(Number.isInteger(k) && k >= 1 && k <= n))
-    throw new MdmlError('value', `pamAlgorithm: nClusters must be in 1..${n}`)
+    throw new OmaiError('value', `pamAlgorithm: nClusters must be in 1..${n}`)
   const state = (medoids: readonly number[], improved: boolean, phase: 'build' | 'swap'): MedoidState => ({
     medoids,
     ...assign(data, n, medoids),
@@ -215,9 +215,9 @@ export function pamAlgorithm(x: TensorLike, options: MedoidOptions): Algorithm<M
  * @returns The algorithm; a step per sample.
  * @example
  * ```ts
- * import { claraAlgorithm } from 'mdml-engine/cluster'
- * import { key } from 'mdml-engine/random'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { claraAlgorithm } from 'omai-engine/cluster'
+ * import { key } from 'omai-engine/random'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const x = [[0], [1], [10], [11], [0.5], [10.5]]
  * runAlgorithm(claraAlgorithm(x, { nClusters: 2, sampleSize: 4 }), { maxSteps: 3, key: key(0) }).state.medoids.length // => 2
  * ```
@@ -229,7 +229,7 @@ export function claraAlgorithm(
   const { n, data } = distanceMatrix(x, options.metric ?? 'euclidean', options.distanceOptions)
   const k = options.nClusters
   if (!(Number.isInteger(k) && k >= 1 && k <= n))
-    throw new MdmlError('value', `claraAlgorithm: nClusters must be in 1..${n}`)
+    throw new OmaiError('value', `claraAlgorithm: nClusters must be in 1..${n}`)
   const size = Math.max(k, Math.min(n, options.sampleSize ?? 40 + 2 * k))
   return {
     name: 'clara',
@@ -294,7 +294,7 @@ export interface MedoidVerbs {
  * @index estimator k-medoids (PAM, CLARA).
  * @example
  * ```ts
- * import { kMedoids } from 'mdml-engine/cluster'
+ * import { kMedoids } from 'omai-engine/cluster'
  * kMedoids.with({ nClusters: 2 }).fit({ x: [[0], [1], [10], [11]] }).params.medoidIndices // => [1, 2]
  * ```
  */

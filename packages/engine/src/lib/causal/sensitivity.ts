@@ -8,7 +8,7 @@
  * estimator on a placebo treatment, with a random common cause added, and on random subsets.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { foldIn, type Key, key as makeKey, normal, permutation } from '../random/index.ts'
 import { fromStorage, toFlat } from '../tensor/index.ts'
 import { betaInc, mean, normCdf, prepare, tPpf, variance, wls } from './_dense.ts'
@@ -59,7 +59,7 @@ const eOf = (rr: number): number => {
  * @returns The E-value for the estimate and for the interval.
  * @example
  * ```ts
- * import { eValue } from 'mdml-engine/causal'
+ * import { eValue } from 'omai-engine/causal'
  * Math.round(eValue(3.9, { lower: 1.8, upper: 8.7 }).point * 1000) / 1000 // => 7.263
  * ```
  */
@@ -116,7 +116,7 @@ export interface RosenbaumResult {
  * @returns The table of bounds and the critical Gamma.
  * @example
  * ```ts
- * import { rosenbaumBounds } from 'mdml-engine/causal'
+ * import { rosenbaumBounds } from 'omai-engine/causal'
  * const treated = [5, 6, 7, 8, 9, 10, 11, 12]
  * const control = [4, 4.5, 6.1, 7, 7.6, 9, 9.8, 10.5]
  * rosenbaumBounds(treated, control).rows[0].pUpper < 0.05 // => true
@@ -127,11 +127,11 @@ export function rosenbaumBounds(
   control: ArrayLike<number>,
   options: { readonly gammas?: readonly number[]; readonly alpha?: number } = {},
 ): RosenbaumResult {
-  if (treated.length !== control.length) throw new MdmlError('shape', 'rosenbaumBounds: one control per treated unit')
+  if (treated.length !== control.length) throw new OmaiError('shape', 'rosenbaumBounds: one control per treated unit')
   const alpha = options.alpha ?? 0.05
   const diffs = Array.from(treated, (v, i) => v - (control[i] ?? 0)).filter((d) => d !== 0)
   const n = diffs.length
-  if (n < 2) throw new MdmlError('value', 'rosenbaumBounds: fewer than two pairs differ')
+  if (n < 2) throw new OmaiError('value', 'rosenbaumBounds: fewer than two pairs differ')
   // Mid-ranks of the absolute differences.
   const order = diffs.map((_, i) => i).sort((a, b) => Math.abs(diffs[a] ?? 0) - Math.abs(diffs[b] ?? 0))
   const ranks = new Float64Array(n)
@@ -179,7 +179,7 @@ export function rosenbaumBounds(
  * @returns The table of exact bounds and the critical Gamma.
  * @example
  * ```ts
- * import { rosenbaumBoundsBinary } from 'mdml-engine/causal'
+ * import { rosenbaumBoundsBinary } from 'omai-engine/causal'
  * const treated = [1, 1, 1, 1, 1, 1, 1, 0, 1, 1]
  * const control = [0, 0, 0, 0, 0, 0, 1, 1, 0, 0]
  * rosenbaumBoundsBinary(treated, control).rows[0].pUpper.toFixed(4) // => '0.0195'
@@ -191,7 +191,7 @@ export function rosenbaumBoundsBinary(
   options: { readonly gammas?: readonly number[]; readonly alpha?: number } = {},
 ): RosenbaumResult {
   if (treated.length !== control.length)
-    throw new MdmlError('shape', 'rosenbaumBoundsBinary: one control per treated unit')
+    throw new OmaiError('shape', 'rosenbaumBoundsBinary: one control per treated unit')
   const alpha = options.alpha ?? 0.05
   let b = 0
   let c = 0
@@ -200,7 +200,7 @@ export function rosenbaumBoundsBinary(
     else if (treated[i] === 0 && control[i] === 1) c++
   }
   const m = b + c
-  if (m === 0) throw new MdmlError('value', 'rosenbaumBoundsBinary: no discordant pairs')
+  if (m === 0) throw new OmaiError('value', 'rosenbaumBoundsBinary: no discordant pairs')
   // P(Bin(m, p) >= b) = I_p(b, m - b + 1).
   const tail = (p: number): number => (b === 0 ? 1 : betaInc(b, m - b + 1, p))
   const gammas = options.gammas ?? Array.from({ length: 9 }, (_, i) => 1 + 0.25 * i)
@@ -230,7 +230,7 @@ export function rosenbaumBoundsBinary(
  * @returns Parallel arrays of treated and control outcomes.
  * @example
  * ```ts
- * import { matchedPairs, matching } from 'mdml-engine/causal'
+ * import { matchedPairs, matching } from 'omai-engine/causal'
  * const data = { x: [[0], [1], [2], [3], [0.1], [1.1], [2.1], [3.1]], treatment: [1, 1, 1, 1, 0, 0, 0, 0], outcome: [3, 4, 5, 6, 1, 2, 3, 4] }
  * matchedPairs(data, matching(data, { on: 'covariates' })).treated // => [3, 4, 5, 6]
  * ```
@@ -271,7 +271,7 @@ export interface RegressionEffect {
  * @returns The partial R-squared.
  * @example
  * ```ts
- * import { partialR2 } from 'mdml-engine/causal'
+ * import { partialR2 } from 'omai-engine/causal'
  * partialR2({ estimate: 2, standardError: 1, df: 8 }).toFixed(3) // => '0.333'
  * ```
  */
@@ -287,7 +287,7 @@ export function partialR2(reg: RegressionEffect): number {
  * @returns Cohen's f.
  * @example
  * ```ts
- * import { partialCohenF } from 'mdml-engine/causal'
+ * import { partialCohenF } from 'omai-engine/causal'
  * partialCohenF({ estimate: 2, standardError: 1, df: 8 }).toFixed(3) // => '0.707'
  * ```
  */
@@ -305,7 +305,7 @@ export function partialCohenF(reg: RegressionEffect): number {
  * @returns The robustness value, in `[0, 1]`.
  * @example
  * ```ts
- * import { robustnessValue } from 'mdml-engine/causal'
+ * import { robustnessValue } from 'omai-engine/causal'
  * robustnessValue({ estimate: 0.09731582, standardError: 0.02325654, df: 783 }).toFixed(4) // => '0.1388'
  * ```
  */
@@ -342,13 +342,13 @@ export interface OvbResult {
  * @returns The bias, adjusted estimate and adjusted standard error.
  * @example
  * ```ts
- * import { omittedVariableBias } from 'mdml-engine/causal'
+ * import { omittedVariableBias } from 'omai-engine/causal'
  * omittedVariableBias({ estimate: 0.1, standardError: 0.02, df: 800 }, 0.05, 0.05).adjustedEstimate.toFixed(4) // => '0.0710'
  * ```
  */
 export function omittedVariableBias(reg: RegressionEffect, r2dz: number, r2yz: number): OvbResult {
   if (!(r2dz >= 0 && r2dz < 1) || !(r2yz >= 0 && r2yz <= 1))
-    throw new MdmlError('value', 'omittedVariableBias: partial R-squared outside [0, 1)')
+    throw new OmaiError('value', 'omittedVariableBias: partial R-squared outside [0, 1)')
   const bias = reg.standardError * Math.sqrt(reg.df) * Math.sqrt((r2yz * r2dz) / (1 - r2dz))
   const adjusted = Math.sign(reg.estimate) * (Math.abs(reg.estimate) - bias)
   const se = reg.standardError * Math.sqrt((1 - r2yz) / (1 - r2dz)) * Math.sqrt(reg.df / (reg.df - 1))
@@ -374,7 +374,7 @@ export interface OvbContour {
  * @returns The grid of adjusted estimates and t statistics.
  * @example
  * ```ts
- * import { ovbContour } from 'mdml-engine/causal'
+ * import { ovbContour } from 'omai-engine/causal'
  * ovbContour({ estimate: 0.1, standardError: 0.02, df: 800 }, [0, 0.1], [0, 0.1]).estimate[0] // => [0.1, 0.1]
  * ```
  */
@@ -418,7 +418,7 @@ function olsT(
  * @returns The effect and the covariates' partial R-squared.
  * @example
  * ```ts
- * import { sensitivityModel } from 'mdml-engine/causal'
+ * import { sensitivityModel } from 'omai-engine/causal'
  * const x = [[0], [1], [2], [3], [4], [5], [6], [7]]
  * sensitivityModel({ x, treatment: [0, 1, 0, 1, 1, 0, 1, 0], outcome: [0, 3.1, 2, 5.2, 6, 5, 8.3, 7.1] }).effect.df // => 5
  * ```
@@ -463,7 +463,7 @@ export function sensitivityModel(data: CausalData): SensitivityModel {
  * @returns The confounder's `r2dz` and `r2yz`.
  * @example
  * ```ts
- * import { benchmarkStrength } from 'mdml-engine/causal'
+ * import { benchmarkStrength } from 'omai-engine/causal'
  * benchmarkStrength(0.1, 0.05, 1, 1).r2dz // => 0.1111111111111111
  * ```
  */
@@ -476,7 +476,7 @@ export function benchmarkStrength(
   const r2dz = (kd * r2dxj) / (1 - r2dxj)
   const r2zxj = (kd * r2dxj * r2dxj) / ((1 - kd * r2dxj) * (1 - r2dxj))
   if (kd * r2dxj >= 1 || r2zxj >= 1)
-    throw new MdmlError(
+    throw new OmaiError(
       'value',
       'benchmarkStrength: the confounder strength is impossible (R-squared of Z with the covariate reaches 1)',
     )
@@ -517,8 +517,8 @@ export interface Refutation {
  * @returns The estimates over the trials, their mean and spread, and whether the test passed.
  * @example
  * ```ts
- * import { refute } from 'mdml-engine/causal'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { refute } from 'omai-engine/causal'
+ * import { toFlat } from 'omai-engine/tensor'
  * const d = { x: [[0], [1], [2], [3], [4], [5], [6], [7]], treatment: [0, 1, 0, 1, 1, 0, 1, 0], outcome: [0, 3, 2, 5, 6, 5, 8, 7] }
  * const slope = (c: typeof d): number => toFlat(c.outcome as never).length
  * refute(d, slope, { test: 'data-subset', trials: 3 }).test // => 'data-subset'
@@ -589,7 +589,7 @@ export function refute(
         )
       }
     } catch (error) {
-      if (!(error instanceof MdmlError)) throw error
+      if (!(error instanceof OmaiError)) throw error
     }
   }
   const m = mean(estimates)

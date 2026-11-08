@@ -2,8 +2,8 @@
 
 import numpy as np
 import statsmodels
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import rng
 from statsmodels.distributions.copula.api import ClaytonCopula, FrankCopula, GumbelCopula
 
 REFERENCE: dict[str, str] = {"statsmodels": statsmodels.__version__}

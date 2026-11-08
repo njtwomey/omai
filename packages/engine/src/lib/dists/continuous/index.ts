@@ -1,5 +1,5 @@
 /**
- * Univariate continuous distributions, scipy.stats and torch.distributions style, part of `mdml-engine/dists`: the
+ * Univariate continuous distributions, scipy.stats and torch.distributions style, part of `omai-engine/dists`: the
  * normal family, the gamma family, bounded, heavy-tailed and extreme-value distributions, and the sampling
  * distributions of test statistics, each with densities, CDFs, quantiles, moments and sampling.
  *

@@ -5,7 +5,7 @@
  * background. The mixture fits are seeded by k-means from an explicit key.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import { digraph, minCut } from '../graph/index.ts'
 import { gaussianEmAlgorithm, initialMixture, type MixtureParameters, mixturePosterior } from '../mixture/index.ts'
 import { foldIn, type Key, key as makeKey } from '../random/index.ts'
@@ -45,7 +45,7 @@ export interface GrabCutState {
  * @concept graph-cuts
  * @example
  * ```ts
- * import { grabCutAlgorithm } from 'mdml-engine/vision'
+ * import { grabCutAlgorithm } from 'omai-engine/vision'
  * grabCutAlgorithm([[0, 1], [1, 0]], [0, 0, 2, 2]).name // => 'grabcut'
  * ```
  */
@@ -123,7 +123,7 @@ export function grabCutAlgorithm(
       const mask = new Uint8Array(n)
       for (let p = 0; p < n; p++) if (inside(p)) mask[p] = 1
       if (mask.every((v) => v === 1) || mask.every((v) => v === 0))
-        throw new MdmlError('value', 'grabCut: the rectangle must leave some background')
+        throw new OmaiError('value', 'grabCut: the rectangle must leave some background')
       return { mask, energy: Number.POSITIVE_INFINITY, iteration: 0, changed: n }
     },
     step: (s) => {
@@ -172,8 +172,8 @@ export function grabCutAlgorithm(
  * @concept graph-cuts
  * @example
  * ```ts
- * import { grabCut } from 'mdml-engine/vision'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { grabCut } from 'omai-engine/vision'
+ * import { toFlat } from 'omai-engine/tensor'
  * const img = Array.from({ length: 12 }, (_, i) => Array.from({ length: 12 }, (_, j) => (i > 3 && i < 8 && j > 3 && j < 8 ? [0.9, 0.2, 0.2] : [0.1, 0.3, 0.8])))
  * toFlat(grabCut(img, [2, 2, 8, 8])).reduce((a, b) => a + b, 0) // => 16
  * ```

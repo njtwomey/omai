@@ -6,7 +6,7 @@
  * lays them out as one table, with a union space over the names so a control can pick a distance and its knobs.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import {
   type DistanceMetric,
   distanceBetween,
@@ -136,7 +136,7 @@ function entry(
 
 function requiring(e: DistanceEntry, has: (options: DistanceOptions) => boolean, message: string): DistanceEntry {
   const check = (options: DistanceOptions): void => {
-    if (!has(options)) throw new MdmlError('value', `${e.name}: ${message}`)
+    if (!has(options)) throw new OmaiError('value', `${e.name}: ${message}`)
   }
   return {
     ...e,
@@ -156,8 +156,8 @@ function requiring(e: DistanceEntry, has: (options: DistanceOptions) => boolean,
  *
  * @example
  * ```ts
- * import { euclideanDistance } from 'mdml-engine/distances'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { euclideanDistance } from 'omai-engine/distances'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * toArray(euclideanDistance.compute(tensor([0, 0]), tensor([3, 4]), {})) // => 5
  * ```
  */
@@ -175,8 +175,8 @@ export const euclideanDistance: DistanceEntry = entry(
  *
  * @example
  * ```ts
- * import { squaredEuclideanDistance } from 'mdml-engine/distances'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { squaredEuclideanDistance } from 'omai-engine/distances'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * toArray(squaredEuclideanDistance.compute(tensor([0, 0]), tensor([3, 4]), {})) // => 25
  * ```
  */
@@ -193,8 +193,8 @@ export const squaredEuclideanDistance: DistanceEntry = entry(
  *
  * @example
  * ```ts
- * import { manhattanDistance } from 'mdml-engine/distances'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { manhattanDistance } from 'omai-engine/distances'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * toArray(manhattanDistance.compute(tensor([0, 0]), tensor([3, 4]), {})) // => 7
  * ```
  */
@@ -211,8 +211,8 @@ export const manhattanDistance: DistanceEntry = entry(
  *
  * @example
  * ```ts
- * import { chebyshevDistance } from 'mdml-engine/distances'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { chebyshevDistance } from 'omai-engine/distances'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * toArray(chebyshevDistance.compute(tensor([0, 0]), tensor([3, 4]), {})) // => 4
  * ```
  */
@@ -230,8 +230,8 @@ export const chebyshevDistance: DistanceEntry = entry(
  *
  * @example
  * ```ts
- * import { minkowskiDistance } from 'mdml-engine/distances'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { minkowskiDistance } from 'omai-engine/distances'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * toArray(minkowskiDistance.compute(tensor([0, 0]), tensor([3, 4]), { p: 1 })) // => 7
  * ```
  */
@@ -249,8 +249,8 @@ export const minkowskiDistance: DistanceEntry = entry(
  *
  * @example
  * ```ts
- * import { seuclideanDistance } from 'mdml-engine/distances'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { seuclideanDistance } from 'omai-engine/distances'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * toArray(seuclideanDistance.compute(tensor([0, 0]), tensor([3, 4]), { variance: [9, 16] })) // => 1.414214
  * ```
  */
@@ -273,8 +273,8 @@ export const seuclideanDistance: DistanceEntry = requiring(
  *
  * @example
  * ```ts
- * import { cosineDistance } from 'mdml-engine/distances'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { cosineDistance } from 'omai-engine/distances'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * toArray(cosineDistance.compute(tensor([1, 0]), tensor([0, 1]), {})) // => 1
  * ```
  */
@@ -292,8 +292,8 @@ export const cosineDistance: DistanceEntry = entry(
  *
  * @example
  * ```ts
- * import { correlationDistance } from 'mdml-engine/distances'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { correlationDistance } from 'omai-engine/distances'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * toArray(correlationDistance.compute(tensor([1, 2, 3]), tensor([2, 4, 6]), {})) // => 0
  * ```
  */
@@ -312,8 +312,8 @@ export const correlationDistance: DistanceEntry = entry(
  *
  * @example
  * ```ts
- * import { mahalanobisDistance } from 'mdml-engine/distances'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { mahalanobisDistance } from 'omai-engine/distances'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * toArray(mahalanobisDistance.compute(tensor([0, 0]), tensor([2, 0]), { covariance: [[4, 0], [0, 1]] })) // => 1
  * ```
  */
@@ -334,8 +334,8 @@ export const mahalanobisDistance: DistanceEntry = requiring(
  *
  * @example
  * ```ts
- * import { hammingDistance } from 'mdml-engine/distances'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { hammingDistance } from 'omai-engine/distances'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * toArray(hammingDistance.compute(tensor([1, 0, 1, 1]), tensor([1, 1, 1, 0]), {})) // => 0.5
  * ```
  */
@@ -353,8 +353,8 @@ export const hammingDistance: DistanceEntry = entry(
  *
  * @example
  * ```ts
- * import { jaccardDistance } from 'mdml-engine/distances'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { jaccardDistance } from 'omai-engine/distances'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * toArray(jaccardDistance.compute(tensor([1, 1, 0, 0]), tensor([1, 0, 1, 0]), {})) // => 0.666667
  * ```
  */
@@ -372,8 +372,8 @@ export const jaccardDistance: DistanceEntry = entry(
  *
  * @example
  * ```ts
- * import { canberraDistance } from 'mdml-engine/distances'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { canberraDistance } from 'omai-engine/distances'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * toArray(canberraDistance.compute(tensor([1, 2]), tensor([3, 2]), {})) // => 0.5
  * ```
  */
@@ -391,8 +391,8 @@ export const canberraDistance: DistanceEntry = entry(
  *
  * @example
  * ```ts
- * import { braycurtisDistance } from 'mdml-engine/distances'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { braycurtisDistance } from 'omai-engine/distances'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * toArray(braycurtisDistance.compute(tensor([1, 3]), tensor([3, 1]), {})) // => 0.5
  * ```
  */
@@ -411,8 +411,8 @@ export const braycurtisDistance: DistanceEntry = entry(
  *
  * @example
  * ```ts
- * import { haversineDistance } from 'mdml-engine/distances'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { haversineDistance } from 'omai-engine/distances'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * toArray(haversineDistance.compute(tensor([0, 0]), tensor([0, 180]), {})) // => 3.141593
  * ```
  */
@@ -428,7 +428,7 @@ export const haversineDistance: DistanceEntry = {
     return radius === 1 ? angle : mul(angle, radius)
   },
   scalar: (dim, options) => {
-    if (dim !== 2) throw new MdmlError('shape', 'haversine: points are [latitude, longitude]')
+    if (dim !== 2) throw new OmaiError('shape', 'haversine: points are [latitude, longitude]')
     const angle = metricFunction('haversine', dim)
     const scale = (options.degrees ?? true) ? RADIANS_PER_DEGREE : 1
     const radius = options.radius ?? 1
@@ -451,7 +451,7 @@ export const haversineDistance: DistanceEntry = {
  * @index table Every registered distance by name.
  * @example
  * ```ts
- * import { distances } from 'mdml-engine/distances'
+ * import { distances } from 'omai-engine/distances'
  * distances.minkowski.parameters.spaces['p']?.kind // => 'real'
  * Object.keys(distances).length // => 14
  * ```
@@ -478,8 +478,8 @@ export const distances: Readonly<Record<DistanceName, DistanceEntry>> = {
  *
  * @example
  * ```ts
- * import { distanceNames } from 'mdml-engine/distances'
- * import { choice } from 'mdml-engine/space'
+ * import { distanceNames } from 'omai-engine/distances'
+ * import { choice } from 'omai-engine/space'
  * choice(distanceNames, { default: 'euclidean' }).options[0] // => 'euclidean'
  * ```
  */
@@ -491,8 +491,8 @@ export const distanceNames: readonly DistanceName[] = Object.keys(distances) as 
  *
  * @example
  * ```ts
- * import { distanceSpace } from 'mdml-engine/distances'
- * import { defaults } from 'mdml-engine/space'
+ * import { distanceSpace } from 'omai-engine/distances'
+ * import { defaults } from 'omai-engine/space'
  * defaults(distanceSpace) // => { name: 'euclidean' }
  * ```
  */
@@ -507,10 +507,10 @@ export const distanceSpace: UnionSpace = union(
  * @param name - A registered name (`'euclidean'`, `'manhattan'`, ...) or an alias (`'l2'`, `'l1'`, `'cityblock'`,
  *   `'sqeuclidean'`, `'linf'`).
  * @returns The entry.
- * @throws MdmlError `value` for a name that is not registered.
+ * @throws OmaiError `value` for a name that is not registered.
  * @example
  * ```ts
- * import { distanceEntry } from 'mdml-engine/distances'
+ * import { distanceEntry } from 'omai-engine/distances'
  * distanceEntry('l1').name // => 'manhattan'
  * distanceEntry('nope') // => throws value
  * ```
@@ -518,7 +518,7 @@ export const distanceSpace: UnionSpace = union(
 export function distanceEntry(name: string): DistanceEntry {
   const canonical = Object.hasOwn(distanceAliases, name) ? distanceAliases[name as DistanceAlias] : name
   if (!Object.hasOwn(distances, canonical))
-    throw new MdmlError('value', `unknown distance '${name}'; the registered names are ${distanceNames.join(', ')}`, {
+    throw new OmaiError('value', `unknown distance '${name}'; the registered names are ${distanceNames.join(', ')}`, {
       name,
     })
   return distances[canonical as DistanceName]

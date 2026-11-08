@@ -52,8 +52,8 @@ export interface ConstraintSet {
  * @concept constrained-optimisation
  * @example
  * ```ts
- * import { constraintSet } from 'mdml-engine/optim'
- * import { sub, sum, type Value } from 'mdml-engine/tensor'
+ * import { constraintSet } from 'omai-engine/optim'
+ * import { sub, sum, type Value } from 'omai-engine/tensor'
  * const cs = constraintSet([{ type: 'eq', fun: (x: Value) => sub(sum(x), 1) }, { type: 'ineq', fun: (x: Value) => x }], [0.5, 0.5])
  * [cs.me, cs.mi, Array.from(cs.values([0.2, 0.3]).eq)] // => [1, 2, [-0.5]]
  * ```
@@ -137,8 +137,8 @@ export interface ProjectedGradientState extends VectorState {
  * sets, SIAM J. Optim. 10 (2000).
  * @example
  * ```ts
- * import { projectedGradientAlgorithm } from 'mdml-engine/optim'
- * import { square, sum, type Value } from 'mdml-engine/tensor'
+ * import { projectedGradientAlgorithm } from 'omai-engine/optim'
+ * import { square, sum, type Value } from 'omai-engine/tensor'
  * projectedGradientAlgorithm((x: Value) => sum(square(x)), [1, 2], { bounds: { lower: 0.5 } }).name // => 'projectedGradient'
  * ```
  */
@@ -269,8 +269,8 @@ function projectedGradientOn(obj: FlatObjective, options: ProjectedGradientOptio
  * @concept constrained-optimisation
  * @example
  * ```ts
- * import { projectedGradient } from 'mdml-engine/optim'
- * import { square, sub, sum, tensor, toFlat, type Value } from 'mdml-engine/tensor'
+ * import { projectedGradient } from 'omai-engine/optim'
+ * import { square, sub, sum, tensor, toFlat, type Value } from 'omai-engine/tensor'
  * const r = projectedGradient((x: Value) => sum(square(sub(x, tensor([2, -1])))), [0, 0], { bounds: { lower: 0, upper: 1 } })
  * toFlat(r.x as Value) // => [1, 0]
  * ```

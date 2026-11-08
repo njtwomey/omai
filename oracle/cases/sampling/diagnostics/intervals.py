@@ -5,8 +5,8 @@ from typing import Any
 
 import numpy as np
 from arviz_stats.base.array import array_stats
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import rng
 
 REFERENCE: dict[str, str] = {"arviz-stats": importlib.metadata.version("arviz-stats")}
 

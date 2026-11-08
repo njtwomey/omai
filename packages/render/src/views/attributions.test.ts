@@ -1,5 +1,5 @@
 import * as echarts from 'echarts'
-import { featureAttributions, importances } from 'mdml-engine/exposition'
+import { featureAttributions, importances } from 'omai-engine/exposition'
 import { describe, expect, it } from 'vitest'
 import {
   attributionBarView,

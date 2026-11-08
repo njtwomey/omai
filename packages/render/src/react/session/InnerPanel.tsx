@@ -6,8 +6,8 @@
  * outer cursor's. `innerCursor` is the pure rule that picks the inner step.
  */
 
-import type { Json } from 'mdml-engine/base'
-import { type Config, type Method, type Session, type SessionOptions, session } from 'mdml-engine/trace'
+import type { Json } from 'omai-engine/base'
+import { type Config, type Method, type Session, type SessionOptions, session } from 'omai-engine/trace'
 import { type ReactNode, useEffect, useMemo, useState } from 'react'
 import { useByContent } from '../_content.ts'
 import { staticLive } from './parts.tsx'
@@ -45,7 +45,7 @@ export type InnerFollow = 'own' | 'outer'
  * @returns The inner step, between zero and `innerHead`.
  * @example
  * ```ts
- * import { innerCursor } from 'mdml-render/react'
+ * import { innerCursor } from 'omai-render/react'
  * innerCursor('outer', 7, 20, null) // => 7
  * innerCursor('outer', 70, 20, null) // => 20
  * innerCursor('own', 7, 20, 3) // => 3

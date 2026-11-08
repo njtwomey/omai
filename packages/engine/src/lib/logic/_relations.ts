@@ -1,6 +1,6 @@
 // Relations and joins shared by bottom-up Datalog evaluation and answer-set grounding: a fact store, matching of atoms
 // against facts, rule bodies evaluated left to right with negations and comparisons as soon as they are ground.
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import type { DatalogLiteral, DatalogRule, Derivation, Fact } from './datalog.ts'
 import { compareTerms, indicator, type Term, termToString, termVariables } from './terms.ts'
 
@@ -78,7 +78,7 @@ export function compare(op: string, x: Term, y: Term): boolean {
     return op === '@<' ? c < 0 : op === '@>' ? c > 0 : op === '@=<' ? c <= 0 : c >= 0
   }
   if (x.kind !== 'num' || y.kind !== 'num') {
-    throw new MdmlError('value', `datalog: ${op} compares numbers, got ${termToString(x)} and ${termToString(y)}`)
+    throw new OmaiError('value', `datalog: ${op} compares numbers, got ${termToString(x)} and ${termToString(y)}`)
   }
   return op === '<'
     ? x.value < y.value

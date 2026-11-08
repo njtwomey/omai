@@ -5,8 +5,8 @@
  * them anew, from step 0.
  */
 
-import type { Json } from 'mdml-engine/base'
-import type { Config, Derived, Method, SessionOptions } from 'mdml-engine/trace'
+import type { Json } from 'omai-engine/base'
+import type { Config, Derived, Method, SessionOptions } from 'omai-engine/trace'
 import { type Made, makeSessions, type Variant } from './make.ts'
 import type { Producer } from './producer.ts'
 import { advanceInStep } from './step.ts'

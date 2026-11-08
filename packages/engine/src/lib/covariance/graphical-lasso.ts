@@ -5,7 +5,7 @@
  * estimator on the iterative base.
  */
 
-import { MdmlError, maxOf } from '../base/index.ts'
+import { maxOf, OmaiError } from '../base/index.ts'
 import { regularisationPath } from '../exposition/index.ts'
 import {
   ExplainedEstimatorClass,
@@ -42,7 +42,7 @@ export interface GraphicalLassoState {
  * @returns The objective value.
  * @example
  * ```ts
- * import { graphicalLassoObjective } from 'mdml-engine/covariance'
+ * import { graphicalLassoObjective } from 'omai-engine/covariance'
  * graphicalLassoObjective([[1, 0], [0, 1]], [[1, 0], [0, 1]], 0.1) // => 2
  * ```
  */
@@ -101,8 +101,8 @@ export interface GraphicalLassoAlgorithmOptions {
  * @returns The algorithm.
  * @example
  * ```ts
- * import { graphicalLassoAlgorithm } from 'mdml-engine/covariance'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { graphicalLassoAlgorithm } from 'omai-engine/covariance'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const out = runAlgorithm(graphicalLassoAlgorithm([[1, 0.5], [0.5, 1]], 0.6), { maxSteps: 20 })
  * out.state.precision[0]?.[1] // => 0
  * ```
@@ -201,7 +201,7 @@ export function graphicalLassoAlgorithm(
  * @returns The covariance, precision, final duality gap, objective and iteration count.
  * @example
  * ```ts
- * import { graphicalLasso } from 'mdml-engine/covariance'
+ * import { graphicalLasso } from 'omai-engine/covariance'
  * graphicalLasso([[1, 0.5], [0.5, 1]], 0.6).precision[0]?.[1] // => 0
  * ```
  */
@@ -211,7 +211,7 @@ export function graphicalLasso(
   options: { readonly tol?: number; readonly enetTol?: number; readonly maxIter?: number } = {},
 ): GraphicalLassoState & { readonly nIter: number } {
   const rows = toArray(asTensor(s)) as number[][]
-  if (!(alpha >= 0)) throw new MdmlError('value', 'graphicalLasso: alpha must be non-negative')
+  if (!(alpha >= 0)) throw new OmaiError('value', 'graphicalLasso: alpha must be non-negative')
   const out = runAlgorithm(graphicalLassoAlgorithm(rows, alpha, options), { maxSteps: options.maxIter ?? 100 })
   return { ...out.state, nIter: out.steps }
 }
@@ -250,7 +250,7 @@ export type FittedGraphicalLasso = IterativeFitted<GraphicalLassoParams, Covaria
  * @index estimator Sparse precision matrix by graphical lasso.
  * @example
  * ```ts
- * import { graphicalLassoEstimator } from 'mdml-engine/covariance'
+ * import { graphicalLassoEstimator } from 'omai-engine/covariance'
  * const x = [[1, 1, 0], [-1, -1, 0], [1, 1, 1], [-1, -1, -1]]
  * graphicalLassoEstimator({ alpha: 0.5 }).fit({ x }).params.precision[0]?.[2] // => 0
  * ```
@@ -277,7 +277,7 @@ export function graphicalLassoEstimator(
       matrixView(data.x, 'graphicalLasso', { minSamples: 2 })
       const s = toArray(empiricalCovariance(data.x)) as number[][]
       const alpha = h.alpha ?? 0.01
-      if (!(alpha >= 0)) throw new MdmlError('value', 'graphicalLasso: alpha must be non-negative')
+      if (!(alpha >= 0)) throw new OmaiError('value', 'graphicalLasso: alpha must be non-negative')
       return graphicalLassoAlgorithm(s, alpha, {
         ...(h.tol === undefined ? {} : { tol: h.tol }),
         ...(h.enetTol === undefined ? {} : { enetTol: h.enetTol }),
@@ -355,7 +355,7 @@ export function graphicalLassoEstimator(
  *
  * @example
  * ```ts
- * import { GraphicalLasso } from 'mdml-engine/covariance'
+ * import { GraphicalLasso } from 'omai-engine/covariance'
  * const x = [[1, 1, 0], [-1, -1, 0], [1, 1, 1], [-1, -1, -1]]
  * new GraphicalLasso({ alpha: 0.5 }).fit(x).model.params.precision[0]?.[2] // => 0
  * ```

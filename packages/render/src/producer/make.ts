@@ -4,7 +4,7 @@
  * session is the same wherever it is computed.
  */
 
-import { type Config, type Method, type Session, type SessionOptions, session } from 'mdml-engine/trace'
+import { type Config, type Method, type Session, type SessionOptions, session } from 'omai-engine/trace'
 
 /** One variant of a comparison: a label and the knob values that set it apart. */
 export interface Variant<C extends Config> {

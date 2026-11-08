@@ -9,8 +9,8 @@ import scipy
 import sklearn
 import statsmodels
 import statsmodels.api as sm
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray, rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray, rng
 from scipy.optimize import minimize
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.neighbors import NearestNeighbors

@@ -13,7 +13,7 @@
  * in a worker is told where the cursor stands, and its failures are shown.
  */
 
-import type { Config } from 'mdml-engine/trace'
+import type { Config } from 'omai-engine/trace'
 import { type MutableRefObject, type ReactElement, useEffect, useMemo, useRef, useState } from 'react'
 import { Player } from '../Player.tsx'
 import type { StartPolicy } from '../start.ts'

@@ -1,4 +1,4 @@
-import type { Pixels } from 'mdml-engine/scene'
+import type { Pixels } from 'omai-engine/scene'
 import { describe, expect, it } from 'vitest'
 import { parseColour } from '../theme/palettes.ts'
 import { tokens } from '../theme/tokens.ts'

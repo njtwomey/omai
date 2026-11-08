@@ -4,7 +4,7 @@
  * system can be built from its parts.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { convolve } from '../numerics/convolution/index.ts'
 import { blockDiag, solve } from '../numerics/linalg/index.ts'
 import {
@@ -101,7 +101,7 @@ function ssSeries(s1: StateSpace, s2: StateSpace): StateSpace {
   const n1 = s1.a.shape[0] ?? 0
   const n2 = s2.a.shape[0] ?? 0
   if ((s1.c.shape[0] ?? 0) !== (s2.b.shape[1] ?? 0)) {
-    throw new MdmlError('shape', 'series: the outputs of the first system must feed the inputs of the second')
+    throw new OmaiError('shape', 'series: the outputs of the first system must feed the inputs of the second')
   }
   const a = concat([concat([s1.a, zeros([n1, n2])], 1), concat([matmul(s2.b, s1.c), s2.a], 1)], 0)
   const b = concat([s1.b, matmul(s2.b, s1.d)], 0)
@@ -111,7 +111,7 @@ function ssSeries(s1: StateSpace, s2: StateSpace): StateSpace {
 
 function ssParallel(s1: StateSpace, s2: StateSpace): StateSpace {
   if (s1.d.shape[0] !== s2.d.shape[0] || s1.d.shape[1] !== s2.d.shape[1]) {
-    throw new MdmlError('shape', 'parallel: the systems must have the same inputs and outputs')
+    throw new OmaiError('shape', 'parallel: the systems must have the same inputs and outputs')
   }
   return {
     kind: 'ss',
@@ -128,7 +128,7 @@ function ssFeedback(s1: StateSpace, s2: StateSpace, sign: number): StateSpace {
   const p = s1.c.shape[0] ?? 0
   const m = s1.b.shape[1] ?? 0
   if ((s2.b.shape[1] ?? 0) !== p || (s2.c.shape[0] ?? 0) !== m) {
-    throw new MdmlError('shape', 'feedback: the loop dimensions do not match')
+    throw new OmaiError('shape', 'feedback: the loop dimensions do not match')
   }
   // y1 = M (C1 x1 + sign D1 C2 x2 + D1 r) with M = (I - sign D1 D2)^{-1}.
   const loop = sub(eye(p), mul(matmul(s1.d, s2.d), sign))
@@ -152,12 +152,12 @@ function ssFeedback(s1: StateSpace, s2: StateSpace, sign: number): StateSpace {
  *
  * @param systems - Two or more systems or static gains, first to last.
  * @returns The series connection.
- * @throws MdmlError with code `value` for different sample times, `shape` when the channels do not chain.
+ * @throws OmaiError with code `value` for different sample times, `shape` when the channels do not chain.
  * @concept block-diagrams
  * @example
  * ```ts
- * import { series, tf } from 'mdml-engine/systems'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { series, tf } from 'omai-engine/systems'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(series(tf([1], [1, 1]), tf([2], [1, 2])).den) // => [1, 3, 2]
  * ```
  */
@@ -165,7 +165,7 @@ export function series(...systems: readonly (TransferFunction | number)[]): Tran
 export function series(...systems: readonly (ZerosPolesGain | number)[]): ZerosPolesGain
 export function series(...systems: readonly SystemLike[]): Lti
 export function series(...systems: readonly SystemLike[]): Lti {
-  if (systems.length < 2) throw new MdmlError('value', 'series: give at least two systems')
+  if (systems.length < 2) throw new OmaiError('value', 'series: give at least two systems')
   const dt = dtOf(systems, 'series')
   const form = formOf(systems)
   if (form !== 'ss' && systems.every(siso)) {
@@ -186,12 +186,12 @@ export function series(...systems: readonly SystemLike[]): Lti {
  *
  * @param systems - Two or more systems or static gains with equal channels.
  * @returns The parallel connection.
- * @throws MdmlError with code `value` for different sample times, `shape` for different channels.
+ * @throws OmaiError with code `value` for different sample times, `shape` for different channels.
  * @concept block-diagrams
  * @example
  * ```ts
- * import { parallel, tf } from 'mdml-engine/systems'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { parallel, tf } from 'omai-engine/systems'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(parallel(tf([1], [1, 1]), 1).num) // => [1, 2]
  * ```
  */
@@ -199,7 +199,7 @@ export function parallel(...systems: readonly (TransferFunction | number)[]): Tr
 export function parallel(...systems: readonly (ZerosPolesGain | number)[]): ZerosPolesGain
 export function parallel(...systems: readonly SystemLike[]): Lti
 export function parallel(...systems: readonly SystemLike[]): Lti {
-  if (systems.length < 2) throw new MdmlError('value', 'parallel: give at least two systems')
+  if (systems.length < 2) throw new OmaiError('value', 'parallel: give at least two systems')
   const dt = dtOf(systems, 'parallel')
   const form = formOf(systems)
   if (form !== 'ss' && systems.every(siso)) {
@@ -228,12 +228,12 @@ export function parallel(...systems: readonly SystemLike[]): Lti {
  * @param sys2 - The feedback system or gain (default 1, unity feedback).
  * @param sign - -1 for negative feedback (default), 1 for positive.
  * @returns The closed loop from r to y.
- * @throws MdmlError with code `singular` for an ill-posed algebraic loop (I - sign D1 D2 singular).
+ * @throws OmaiError with code `singular` for an ill-posed algebraic loop (I - sign D1 D2 singular).
  * @concept feedback
  * @example
  * ```ts
- * import { feedback, tf } from 'mdml-engine/systems'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { feedback, tf } from 'omai-engine/systems'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(feedback(tf([1], [1, 0])).den) // => [1, 1]
  * ```
  */
@@ -254,8 +254,8 @@ export function feedback(sys1: SystemLike, sys2: SystemLike = 1, sign = -1): Lti
   try {
     return finish(form, ssFeedback(asSs(sys1, dt), asSs(sys2, dt), sign))
   } catch (e) {
-    if (e instanceof MdmlError && e.code === 'value') {
-      throw new MdmlError('singular', 'feedback: the algebraic loop I - sign D1 D2 is singular')
+    if (e instanceof OmaiError && e.code === 'value') {
+      throw new OmaiError('singular', 'feedback: the algebraic loop I - sign D1 D2 is singular')
     }
     throw e
   }
@@ -270,12 +270,12 @@ export function feedback(sys1: SystemLike, sys2: SystemLike = 1, sign = -1): Lti
  * @concept block-diagrams
  * @example
  * ```ts
- * import { append, tf } from 'mdml-engine/systems'
+ * import { append, tf } from 'omai-engine/systems'
  * append(tf([1], [1, 1]), tf([2], [1, 3])).d.shape // => [2, 2]
  * ```
  */
 export function append(...systems: readonly SystemLike[]): StateSpace {
-  if (systems.length === 0) throw new MdmlError('value', 'append: give at least one system')
+  if (systems.length === 0) throw new OmaiError('value', 'append: give at least one system')
   const dt = dtOf(systems, 'append')
   const ss = systems.map((x) => asSs(x, dt))
   return {
@@ -298,12 +298,12 @@ export function append(...systems: readonly SystemLike[]): StateSpace {
  * @param inputs - External inputs to keep (1-based).
  * @param outputs - External outputs to keep (1-based, negative to negate).
  * @returns The interconnected state-space system.
- * @throws MdmlError with code `value` for an index out of range.
+ * @throws OmaiError with code `value` for an index out of range.
  * @concept block-diagrams
  * @example
  * ```ts
- * import { append, connect, tf, toTf } from 'mdml-engine/systems'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { append, connect, tf, toTf } from 'omai-engine/systems'
+ * import { toArray } from 'omai-engine/tensor'
  * // Unity negative feedback around 1/s: input 1 also receives -output 1.
  * toArray(toTf(connect(append(tf([1], [1, 0])), [[1, -1]], [1], [1])).den) // => [1, 1]
  * ```
@@ -319,7 +319,7 @@ export function connect(
   const p = s.c.shape[0] ?? 0
   const k = Array.from({ length: m }, () => new Array<number>(p).fill(0))
   const check = (index: number, n: number, what: string): number => {
-    if (!Number.isInteger(index) || index < 1 || index > n) throw new MdmlError('value', `connect: no ${what} ${index}`)
+    if (!Number.isInteger(index) || index < 1 || index > n) throw new OmaiError('value', `connect: no ${what} ${index}`)
     return index - 1
   }
   for (const row of q) {

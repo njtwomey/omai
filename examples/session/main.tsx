@@ -3,12 +3,12 @@
  * paused after three steps, run to the end, and asked for its decision surface at step 3 and at the end; the figure is
  * those two records. The dataset carries its truth, so the best possible accuracy is known.
  */
-import { generate } from 'mdml-engine/data'
-import { moons } from 'mdml-engine/datasets'
-import type { Exposition } from 'mdml-engine/exposition'
-import { key } from 'mdml-engine/random'
-import { svc } from 'mdml-engine/svm'
-import { stillOf } from 'mdml-render/views'
+import { generate } from 'omai-engine/data'
+import { moons } from 'omai-engine/datasets'
+import type { Exposition } from 'omai-engine/exposition'
+import { key } from 'omai-engine/random'
+import { svc } from 'omai-engine/svm'
+import { stillOf } from 'omai-render/views'
 import { INK } from '../_shared/colours.ts'
 import type { ExampleModule, Outcome } from '../_shared/contract.ts'
 import { Figure, Panel } from '../_shared/figure.tsx'

@@ -6,7 +6,7 @@
  * One step is Zellner's two-step estimator; iterating to convergence reaches the Gaussian maximum likelihood.
  */
 
-import { type Json, MdmlError, maxOf } from '../base/index.ts'
+import { type Json, maxOf, OmaiError } from '../base/index.ts'
 import type { CoefficientTable, Exposition } from '../exposition/index.ts'
 import { type IterativeEstimator, iterative, type LearnData, matrixView, requireTargets } from '../learn/index.ts'
 import { dict, int } from '../space/index.ts'
@@ -46,16 +46,16 @@ function systemOf(data: LearnData, h: Pick<SurHyper, 'equations' | 'fitIntercept
   const m = matrixView(data.x, 'sur')
   const yt = asTensor(requireTargets(data, 'sur'))
   const k = yt.shape.length === 1 ? 1 : (yt.shape[1] ?? 1)
-  if ((yt.shape[0] ?? 0) !== m.n) throw new MdmlError('shape', `sur: ${yt.shape[0]} targets for ${m.n} rows`)
-  if (data.weights !== undefined) throw new MdmlError('value', 'sur: sample weights are not supported')
+  if ((yt.shape[0] ?? 0) !== m.n) throw new OmaiError('shape', `sur: ${yt.shape[0]} targets for ${m.n} rows`)
+  if (data.weights !== undefined) throw new OmaiError('value', 'sur: sample weights are not supported')
   const columns =
     h.equations === 'all'
       ? Array.from({ length: k }, () => Array.from({ length: m.d }, (_, j) => j))
       : h.equations.map((c) => [...c])
-  if (columns.length !== k) throw new MdmlError('shape', `sur: ${columns.length} equations for ${k} outputs`)
+  if (columns.length !== k) throw new OmaiError('shape', `sur: ${columns.length} equations for ${k} outputs`)
   for (const cols of columns)
     for (const j of cols)
-      if (!Number.isInteger(j) || j < 0 || j >= m.d) throw new MdmlError('value', `sur: feature ${j} is not a column`)
+      if (!Number.isInteger(j) || j < 0 || j >= m.d) throw new OmaiError('value', `sur: feature ${j} is not a column`)
   const flatY = toFlat(yt)
   const widths = columns.map((cols) => cols.length + (h.fitIntercept ? 1 : 0))
   const designs = columns.map((cols, e) => {
@@ -70,7 +70,7 @@ function systemOf(data: LearnData, h: Pick<SurHyper, 'equations' | 'fitIntercept
     return a
   })
   const y = Array.from({ length: k }, (_, e) => Float64Array.from({ length: m.n }, (_, i) => flatY[i * k + e] ?? 0))
-  if (m.n <= maxOf(widths)) throw new MdmlError('value', 'sur: needs more rows than coefficients per equation')
+  if (m.n <= maxOf(widths)) throw new OmaiError('value', 'sur: needs more rows than coefficients per equation')
   return { n: m.n, k, columns, designs, widths, y, fitIntercept: h.fitIntercept }
 }
 
@@ -172,8 +172,8 @@ export type SurState = {
  * @returns The algorithm.
  * @example
  * ```ts
- * import { surAlgorithm } from 'mdml-engine/linear'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { surAlgorithm } from 'omai-engine/linear'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const x = Array.from({ length: 20 }, (_, i) => [Math.sin(i), Math.cos(2 * i)])
  * const y = x.map((r, i) => [(r[0] ?? 0) + Math.sin(7 * i), (r[1] ?? 0) + Math.sin(7 * i) + 0.1 * Math.cos(5 * i)])
  * runAlgorithm(surAlgorithm({ x, y }, { equations: [[0], [1]] }), { maxSteps: 2 }).state.sigma.length // => 2
@@ -267,7 +267,7 @@ const DEFAULTS: SurHyper = { equations: 'all', fitIntercept: true, maxIter: 1, t
  * bias, JASA 57 (1962).
  * @example
  * ```ts
- * import { sur } from 'mdml-engine/linear'
+ * import { sur } from 'omai-engine/linear'
  * const x = Array.from({ length: 30 }, (_, i) => [Math.sin(i), Math.cos(2 * i)])
  * const y = x.map((r, i) => [(r[0] ?? 0) + Math.sin(7 * i), (r[1] ?? 0) + Math.sin(7 * i)])
  * const f = sur({ equations: [[0], [1]] }).fit({ x, y })

@@ -4,7 +4,7 @@
  * traced algorithm that runs an inner local method as a child run.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { daxpy, ddot, dnrm2 } from '../../numerics/linalg/index.ts'
 import {
   add,
@@ -129,8 +129,8 @@ const observeOuter = (s: OuterState) =>
  * @concept constrained-optimisation
  * @example
  * ```ts
- * import { penaltyMethodAlgorithm } from 'mdml-engine/optim'
- * import { square, sub, sum, type Value } from 'mdml-engine/tensor'
+ * import { penaltyMethodAlgorithm } from 'omai-engine/optim'
+ * import { square, sub, sum, type Value } from 'omai-engine/tensor'
  * penaltyMethodAlgorithm((x: Value) => sum(square(x)), [1, 1], { constraints: [{ type: 'eq', fun: (x: Value) => sub(sum(x), 1) }] }).name // => 'penaltyMethod'
  * ```
  */
@@ -217,8 +217,8 @@ export function penaltyMethodAlgorithm(
  * @concept constrained-optimisation
  * @example
  * ```ts
- * import { penaltyMethod } from 'mdml-engine/optim'
- * import { square, sub, sum, toFlat, type Value } from 'mdml-engine/tensor'
+ * import { penaltyMethod } from 'omai-engine/optim'
+ * import { square, sub, sum, toFlat, type Value } from 'omai-engine/tensor'
  * const r = penaltyMethod((x: Value) => sum(square(x)), [1, 1], { constraints: [{ type: 'eq', fun: (x: Value) => sub(sum(x), 1) }] })
  * toFlat(r.x as Value).map((v) => Math.round(v * 1e4) / 1e4) // => [0.5, 0.5]
  * ```
@@ -251,12 +251,12 @@ export interface BarrierOptions extends VectorMethodOptions {
  * @param x0 - A strictly feasible start.
  * @param options - Inequality constraints, t, growth, tolerance and the inner method.
  * @returns The algorithm.
- * @throws MdmlError with code `value` for equality constraints or an infeasible start.
+ * @throws OmaiError with code `value` for equality constraints or an infeasible start.
  * @concept constrained-optimisation
  * @example
  * ```ts
- * import { barrierMethodAlgorithm } from 'mdml-engine/optim'
- * import { square, sub, sum, type Value } from 'mdml-engine/tensor'
+ * import { barrierMethodAlgorithm } from 'omai-engine/optim'
+ * import { square, sub, sum, type Value } from 'omai-engine/tensor'
  * barrierMethodAlgorithm((x: Value) => sum(square(x)), [2], { constraints: [{ type: 'ineq', fun: (x: Value) => sub(x, 1) }] }).name // => 'barrierMethod'
  * ```
  */
@@ -268,7 +268,7 @@ export function barrierMethodAlgorithm(
   const obj = flatObjective(f, x0)
   const constraints = options.constraints ?? []
   if (constraints.some((c) => c.type !== 'ineq'))
-    throw new MdmlError('value', 'barrierMethod takes inequality constraints only')
+    throw new OmaiError('value', 'barrierMethod takes inequality constraints only')
   const cs = constraintSet(constraints, x0)
   const growth = options.growth ?? 10
   const tol = options.tol ?? 1e-8
@@ -287,7 +287,7 @@ export function barrierMethodAlgorithm(
     init: () => {
       const x = Float64Array.from(obj.x0)
       const c = cs.values(x).ineq
-      if (c.some((v) => !(v > 0))) throw new MdmlError('value', 'barrierMethod: the start must be strictly feasible')
+      if (c.some((v) => !(v > 0))) throw new OmaiError('value', 'barrierMethod: the start must be strictly feasible')
       const { value, grad } = obj.valueAndGrad(x)
       const t = options.t ?? 1
       return {
@@ -340,8 +340,8 @@ export function barrierMethodAlgorithm(
  * @concept constrained-optimisation
  * @example
  * ```ts
- * import { barrierMethod } from 'mdml-engine/optim'
- * import { square, sub, sum, toFlat, type Value } from 'mdml-engine/tensor'
+ * import { barrierMethod } from 'omai-engine/optim'
+ * import { square, sub, sum, toFlat, type Value } from 'omai-engine/tensor'
  * const r = barrierMethod((x: Value) => sum(square(x)), [2], { constraints: [{ type: 'ineq', fun: (x: Value) => sub(x, 1) }] })
  * toFlat(r.x as Value).map((v) => Math.round(v * 1e6) / 1e6) // => [1]
  * ```
@@ -365,8 +365,8 @@ export function barrierMethod(f: Objective, x0: Parameters, options: BarrierOpti
  * @reference J. Nocedal and S. J. Wright, Numerical Optimization (2006), chapter 17.
  * @example
  * ```ts
- * import { augmentedLagrangianAlgorithm } from 'mdml-engine/optim'
- * import { square, sub, sum, type Value } from 'mdml-engine/tensor'
+ * import { augmentedLagrangianAlgorithm } from 'omai-engine/optim'
+ * import { square, sub, sum, type Value } from 'omai-engine/tensor'
  * augmentedLagrangianAlgorithm((x: Value) => sum(square(x)), [1, 1], { constraints: [{ type: 'eq', fun: (x: Value) => sub(sum(x), 1) }] }).name // => 'augmentedLagrangian'
  * ```
  */
@@ -468,8 +468,8 @@ export function augmentedLagrangianAlgorithm(
  * @concept constrained-optimisation
  * @example
  * ```ts
- * import { augmentedLagrangian } from 'mdml-engine/optim'
- * import { square, sub, sum, toFlat, type Value } from 'mdml-engine/tensor'
+ * import { augmentedLagrangian } from 'omai-engine/optim'
+ * import { square, sub, sum, toFlat, type Value } from 'omai-engine/tensor'
  * const r = augmentedLagrangian((x: Value) => sum(square(x)), [1, 1], { constraints: [{ type: 'eq', fun: (x: Value) => sub(sum(x), 1) }] })
  * [toFlat(r.x as Value).map((v) => Math.round(v * 1e6) / 1e6), Math.round(toFlat(r.multipliers)[0] * 1e4) / 1e4] // => [[0.5, 0.5], -1]
  * ```

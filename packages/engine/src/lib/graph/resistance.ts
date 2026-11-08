@@ -7,7 +7,7 @@
  * The resistance is the measure of how well two nodes are connected that a bottleneck (over-squashing) shows up in.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { det, inv, solve } from '../numerics/linalg/index.ts'
 import { fromStorage, type Tensor, toFlat } from '../tensor/index.ts'
 import { connectedComponents } from './components.ts'
@@ -20,7 +20,7 @@ export interface ResistanceOptions {
 }
 
 function checkUndirected(g: Graph, name: string): void {
-  if (g.directed) throw new MdmlError('value', `${name}: undirected graphs only`)
+  if (g.directed) throw new OmaiError('value', `${name}: undirected graphs only`)
 }
 
 function conductance(g: Graph, e: number, weighted: boolean): number {
@@ -54,12 +54,12 @@ function componentLaplacian(g: Graph, nodes: readonly number[], weighted: boolea
  * @param g - An undirected graph.
  * @param options - `weighted` (default true): edge weights are conductances.
  * @returns The symmetric `n x n` matrix, zero on the diagonal.
- * @throws MdmlError with code `value` for a directed graph or a non-positive weight when weighted.
+ * @throws OmaiError with code `value` for a directed graph or a non-positive weight when weighted.
  * @concept effective-resistance
  * @example
  * ```ts
- * import { effectiveResistance, pathGraph } from 'mdml-engine/graph'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { effectiveResistance, pathGraph } from 'omai-engine/graph'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(effectiveResistance(pathGraph(3))) // => [[0, 1, 2], [1, 0, 1], [2, 1, 0]]
  * ```
  */
@@ -67,7 +67,7 @@ export function effectiveResistance(g: Graph, options: ResistanceOptions = {}): 
   checkUndirected(g, 'effectiveResistance')
   const weighted = options.weighted ?? true
   if (weighted && g.edges.some((e) => !(e.weight > 0)))
-    throw new MdmlError('value', 'effectiveResistance: weights (conductances) must be positive')
+    throw new OmaiError('value', 'effectiveResistance: weights (conductances) must be positive')
   const n = g.n
   const out = new Float64Array(n * n).fill(Number.POSITIVE_INFINITY)
   for (const nodes of connectedComponents(g).components) {
@@ -95,11 +95,11 @@ export function effectiveResistance(g: Graph, options: ResistanceOptions = {}): 
  * @param v - The sink node.
  * @param options - `weighted` (default true).
  * @returns The resistance (infinite when the nodes are in different components).
- * @throws MdmlError with code `value` for a directed graph.
+ * @throws OmaiError with code `value` for a directed graph.
  * @concept effective-resistance
  * @example
  * ```ts
- * import { cycleGraph, effectiveResistanceBetween } from 'mdml-engine/graph'
+ * import { cycleGraph, effectiveResistanceBetween } from 'omai-engine/graph'
  * effectiveResistanceBetween(cycleGraph(6), 0, 3) // => 1.5
  * ```
  */
@@ -137,11 +137,11 @@ export function effectiveResistanceBetween(g: Graph, u: NodeId, v: NodeId, optio
  * @param v - The other.
  * @param options - `weighted` (default true): the walk follows edges in proportion to their weight.
  * @returns The commute time (infinite across components).
- * @throws MdmlError with code `value` for a directed graph.
+ * @throws OmaiError with code `value` for a directed graph.
  * @concept effective-resistance
  * @example
  * ```ts
- * import { commuteTime, pathGraph } from 'mdml-engine/graph'
+ * import { commuteTime, pathGraph } from 'omai-engine/graph'
  * commuteTime(pathGraph(3), 0, 2) // => 8
  * ```
  */
@@ -158,11 +158,11 @@ export function commuteTime(g: Graph, u: NodeId, v: NodeId, options: ResistanceO
  * @param g - A connected undirected graph.
  * @param options - `weighted` (default true).
  * @returns The index (infinite when the graph is disconnected).
- * @throws MdmlError with code `value` for a directed graph.
+ * @throws OmaiError with code `value` for a directed graph.
  * @concept effective-resistance
  * @example
  * ```ts
- * import { kirchhoffIndex, pathGraph } from 'mdml-engine/graph'
+ * import { kirchhoffIndex, pathGraph } from 'omai-engine/graph'
  * kirchhoffIndex(pathGraph(4)) // => 10
  * ```
  */
@@ -182,11 +182,11 @@ export function kirchhoffIndex(g: Graph, options: ResistanceOptions = {}): numbe
  * @param g - An undirected graph.
  * @param options - `weighted` (default true).
  * @returns One resistance per edge.
- * @throws MdmlError with code `value` for a directed graph.
+ * @throws OmaiError with code `value` for a directed graph.
  * @concept effective-resistance
  * @example
  * ```ts
- * import { cycleGraph, edgeEffectiveResistances } from 'mdml-engine/graph'
+ * import { cycleGraph, edgeEffectiveResistances } from 'omai-engine/graph'
  * edgeEffectiveResistances(cycleGraph(4)) // => [0.75, 0.75, 0.75, 0.75]
  * ```
  */
@@ -203,11 +203,11 @@ export function edgeEffectiveResistances(g: Graph, options: ResistanceOptions = 
  * @param g - An undirected graph.
  * @param options - `weighted` (default false: count the trees).
  * @returns The (weighted) number of spanning trees.
- * @throws MdmlError with code `value` for a directed graph.
+ * @throws OmaiError with code `value` for a directed graph.
  * @concept effective-resistance
  * @example
  * ```ts
- * import { completeGraph, spanningTreeCount } from 'mdml-engine/graph'
+ * import { completeGraph, spanningTreeCount } from 'omai-engine/graph'
  * Math.round(spanningTreeCount(completeGraph(5))) // => 125
  * ```
  */

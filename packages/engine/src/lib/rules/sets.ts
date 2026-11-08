@@ -7,7 +7,7 @@
  * one subset.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import type { LearnData } from '../learn/estimator.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm, type TraceSchema } from '../trace/index.ts'
 import type { FittedTree } from '../trees/index.ts'
@@ -105,7 +105,7 @@ const ONER_SCHEMA: TraceSchema = channels({
  * @returns The algorithm.
  * @example
  * ```ts
- * import { oneRAlgorithm } from 'mdml-engine/rules'
+ * import { oneRAlgorithm } from 'omai-engine/rules'
  * oneRAlgorithm({ x: [[0], [1]], y: [0, 1] }).name // => 'one-r'
  * ```
  */
@@ -152,8 +152,8 @@ export function oneRAlgorithm(data: LearnData, options: OneROptions = {}): Algor
  * @returns The model.
  * @example
  * ```ts
- * import { oneRAlgorithm, oneRModel } from 'mdml-engine/rules'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { oneRAlgorithm, oneRModel } from 'omai-engine/rules'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const data = { x: [[0, 5], [0, 6], [1, 5], [1, 6]], y: [0, 0, 1, 1] }
  * const { state } = runAlgorithm(oneRAlgorithm(data, { nominal: [0, 1] }), { maxSteps: 5 })
  * oneRModel(data, state, { nominal: [0, 1] }).rules.length // => 2
@@ -178,7 +178,7 @@ export function oneRModel(data: LearnData, s: OneRState, options: OneROptions = 
  * @returns The model and the index of the chosen feature.
  * @example
  * ```ts
- * import { fitOneR } from 'mdml-engine/rules'
+ * import { fitOneR } from 'omai-engine/rules'
  * const data = { x: [[0, 5], [0, 6], [1, 5], [1, 6]], y: [0, 0, 1, 1] }
  * fitOneR(data, { nominal: [0, 1] }).feature // => 0
  * ```
@@ -291,7 +291,7 @@ const TABLE_SCHEMA: TraceSchema = channels({
  * @returns The algorithm.
  * @example
  * ```ts
- * import { decisionTableAlgorithm } from 'mdml-engine/rules'
+ * import { decisionTableAlgorithm } from 'omai-engine/rules'
  * decisionTableAlgorithm({ x: [[0], [1]], y: [0, 1] }).name // => 'decision-table'
  * ```
  */
@@ -351,7 +351,7 @@ export function decisionTableAlgorithm(
  * @returns The model.
  * @example
  * ```ts
- * import { decisionTableModel } from 'mdml-engine/rules'
+ * import { decisionTableModel } from 'omai-engine/rules'
  * const data = { x: [[0], [0], [1], [1]], y: [0, 0, 1, 1] }
  * decisionTableModel(data, { subset: [0], accuracy: 1, tried: [], done: true }, { nominal: [0] }).rules.length // => 2
  * ```
@@ -399,7 +399,7 @@ export function decisionTableModel(
  * @returns The model and the features chosen.
  * @example
  * ```ts
- * import { fitDecisionTable } from 'mdml-engine/rules'
+ * import { fitDecisionTable } from 'omai-engine/rules'
  * const data = { x: [[0, 1], [0, 0], [1, 1], [1, 0], [0, 1], [1, 0]], y: [0, 0, 1, 1, 0, 1] }
  * fitDecisionTable(data, { nominal: [0, 1] }).features // => [0]
  * ```
@@ -428,17 +428,17 @@ export function fitDecisionTable(
  *
  * @param tree - A classification tree with numeric splits.
  * @returns The rule model.
- * @throws MdmlError with code `value` for a regression tree or a categorical split.
+ * @throws OmaiError with code `value` for a regression tree or a categorical split.
  * @example
  * ```ts
- * import { treeRuleSet } from 'mdml-engine/rules'
- * import { decisionTreeClassifier } from 'mdml-engine/trees'
+ * import { treeRuleSet } from 'omai-engine/rules'
+ * import { decisionTreeClassifier } from 'omai-engine/trees'
  * const fitted = decisionTreeClassifier().fit({ x: [[0], [1], [2], [3]], y: [0, 0, 1, 1] })
  * treeRuleSet(fitted.params).rules.map((r) => r.label) // => [0, 1]
  * ```
  */
 export function treeRuleSet(tree: FittedTree): RuleModel {
-  if (tree.task !== 'classification') throw new MdmlError('value', 'treeRuleSet: a classification tree is required')
+  if (tree.task !== 'classification') throw new OmaiError('value', 'treeRuleSet: a classification tree is required')
   const rules: Rule[] = []
   const walk = (node: number, path: readonly Literal[]): void => {
     const left = tree.left[node] ?? -1
@@ -455,7 +455,7 @@ export function treeRuleSet(tree: FittedTree): RuleModel {
       return
     }
     if ((tree.categories[node] ?? []).length > 0)
-      throw new MdmlError('value', 'treeRuleSet: categorical splits are not supported')
+      throw new OmaiError('value', 'treeRuleSet: categorical splits are not supported')
     const f = tree.feature[node] as number
     const t = tree.threshold[node] as number
     walk(left, [...path, { feature: f, op: '<=', value: t }])

@@ -5,7 +5,7 @@
  * finds pinned remote assets, and what documentation and dataset selectors are built from.
  */
 
-import { MdmlError, registry } from '../base/index.ts'
+import { OmaiError, registry } from '../base/index.ts'
 import type { DatasetGenerator, DatasetRef } from '../data/index.ts'
 import { spokenDigits } from './audio.ts'
 import { captionedShapes } from './captions.ts'
@@ -142,8 +142,8 @@ import {
  *
  * @example
  * ```ts
- * import { makeFromRecipe } from 'mdml-engine/data'
- * import { datasetGenerators } from 'mdml-engine/datasets'
+ * import { makeFromRecipe } from 'omai-engine/data'
+ * import { datasetGenerators } from 'omai-engine/datasets'
  * makeFromRecipe({ generator: 'moons', knobs: { n: 10 } }, { generators: datasetGenerators }).data.kind // => 'classification'
  * ```
  */
@@ -279,7 +279,7 @@ export const datasetGenerators: Readonly<Record<string, DatasetGenerator>> = {
  *
  * @example
  * ```ts
- * import { remoteDatasets } from 'mdml-engine/datasets'
+ * import { remoteDatasets } from 'omai-engine/datasets'
  * Object.keys(remoteDatasets).length // => 5
  * ```
  */
@@ -297,14 +297,14 @@ export const remoteDatasets: Readonly<Record<string, DatasetRef>> = {
 const g = (modality: DatasetModality, items: readonly (readonly [name: string, title: string])[]): DatasetEntry[] =>
   items.map(([name, title]) => {
     const generator = datasetGenerators[name]
-    if (generator === undefined) throw new MdmlError('value', `datasetRegistry: no generator '${name}'`)
+    if (generator === undefined) throw new OmaiError('value', `datasetRegistry: no generator '${name}'`)
     return generatorEntry(generator, { title, modality })
   })
 
 /** A remote asset of the catalogue by name. */
 const r = (name: string, tags: RemoteEntryTags): DatasetEntry => {
   const ref = remoteDatasets[name]
-  if (ref === undefined) throw new MdmlError('value', `datasetRegistry: no remote dataset '${name}'`)
+  if (ref === undefined) throw new OmaiError('value', `datasetRegistry: no remote dataset '${name}'`)
   return remoteEntry(ref, tags)
 }
 
@@ -322,8 +322,8 @@ const NETWORKX = 'Public domain data (NetworkX, BSD-3-Clause)'
  * @index table Tagged registry of every generator, vendored and remote dataset.
  * @example
  * ```ts
- * import { lookup } from 'mdml-engine/base'
- * import { datasetRegistry } from 'mdml-engine/datasets'
+ * import { lookup } from 'omai-engine/base'
+ * import { datasetRegistry } from 'omai-engine/datasets'
  * datasetRegistry.entries.length > 100 // => true
  * lookup(datasetRegistry, 'iris').size // => 150
  * ```
@@ -691,7 +691,7 @@ export const datasetRegistry: DatasetRegistry = registry<DatasetEntry>([
     modality: 'graph',
     size: 36,
     licence: 'Public domain (chemical facts)',
-    source: 'mdml-js (SMILES of common molecules)',
+    source: 'omai (SMILES of common molecules)',
   }),
   vendoredEntry('nurseryRhymes', nurseryRhymes, {
     title: 'Nursery rhymes',

@@ -5,7 +5,7 @@
  */
 
 import type { EChartsOption } from 'echarts'
-import type { FixedPointClass, VectorField } from 'mdml-engine/exposition'
+import type { FixedPointClass, VectorField } from 'omai-engine/exposition'
 import { vectorField as arrows, fieldArrows, streamlines } from '../charts/fields.ts'
 import { lines } from '../charts/lines.ts'
 import { cartesian, type Layer } from '../charts/plot.ts'
@@ -54,8 +54,8 @@ function cell(xs: readonly number[], v: number): [number, number] {
  * @returns The function `(x, y) => [u, v]`.
  * @example
  * ```ts
- * import { vectorFieldRecord } from 'mdml-engine/exposition'
- * import { vectorFieldAt } from 'mdml-render/views'
+ * import { vectorFieldRecord } from 'omai-engine/exposition'
+ * import { vectorFieldAt } from 'omai-render/views'
  * const r = vectorFieldRecord({ x: [0, 1], y: [0, 1], u: [[0, 2], [0, 2]], v: [[1, 1], [1, 1]] })
  * vectorFieldAt(r)(0.5, 0.5) // => [1, 1]
  * ```
@@ -120,8 +120,8 @@ function trace(
  * @returns The layers, to combine in a plot with others.
  * @example
  * ```ts
- * import { vectorFieldRecord } from 'mdml-engine/exposition'
- * import { vectorFieldLayers } from 'mdml-render/views'
+ * import { vectorFieldRecord } from 'omai-engine/exposition'
+ * import { vectorFieldLayers } from 'omai-render/views'
  * const r = vectorFieldRecord({ x: [0, 1], y: [0, 1], u: [[1, 1], [1, 1]], v: [[0, 0], [0, 0]], fixedPoints: [{ at: [0.5, 0.5], stability: 'stable' }] })
  * vectorFieldLayers(r).length // => 2
  * ```
@@ -200,8 +200,8 @@ export function vectorFieldLayers(record: VectorField, options: VectorFieldViewO
  * @returns The ECharts option.
  * @example
  * ```ts
- * import { sampleVectorField } from 'mdml-engine/exposition'
- * import { vectorFieldView } from 'mdml-render/views'
+ * import { sampleVectorField } from 'omai-engine/exposition'
+ * import { vectorFieldView } from 'omai-render/views'
  * const r = sampleVectorField((x, y) => [y, -x], [-1, 0, 1], [-1, 0, 1])
  * vectorFieldView(r).series.length // => 1
  * ```

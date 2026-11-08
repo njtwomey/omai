@@ -4,26 +4,26 @@
 
 Monte Carlo, BlackJAX and ArviZ style: log-density targets, Metropolis, Hamiltonian (HMC, NUTS), Langevin, Gibbs and slice kernels, importance sampling, sequential Monte Carlo, rejection and exact samplers, chains, and convergence diagnostics (R-hat, effective sample size). The hamiltonian and diagnostics folders are part of this entry point.
 
-- structure `target.ts` (file): Log-density targets that every sampler runs on. `src/lib/sampling/target.ts:1` `mdml-engine/sampling`
+- structure `target.ts` (file): Log-density targets that every sampler runs on. `src/lib/sampling/target.ts:1` `omai-engine/sampling`
 
-- function `randomWalkMetropolis`: Random-walk Metropolis kernel; Langevin kernels sit in langevin.ts. `src/lib/sampling/metropolis.ts:144` `mdml-engine/sampling`
-- function `sampleChains`: Run several chains of any MCMC kernel. `src/lib/sampling/chains.ts:423` `mdml-engine/sampling`
-- function `smcSampler`: Sequential Monte Carlo sampler with adaptive tempering. `src/lib/sampling/smc.ts:541` `mdml-engine/sampling`
+- function `randomWalkMetropolis`: Random-walk Metropolis kernel; Langevin kernels sit in langevin.ts. `src/lib/sampling/metropolis.ts:144` `omai-engine/sampling`
+- function `sampleChains`: Run several chains of any MCMC kernel. `src/lib/sampling/chains.ts:423` `omai-engine/sampling`
+- function `smcSampler`: Sequential Monte Carlo sampler with adaptive tempering. `src/lib/sampling/smc.ts:541` `omai-engine/sampling`
 
-- algorithm `samplerAlgorithm`: Run any MCMC kernel as a steppable Algorithm. `src/lib/sampling/chains.ts:181` `mdml-engine/sampling`
-- algorithm `smcAlgorithm`: Sequential Monte Carlo, one tempering step at a time. `src/lib/sampling/smc.ts:422` `mdml-engine/sampling`
+- algorithm `samplerAlgorithm`: Run any MCMC kernel as a steppable Algorithm. `src/lib/sampling/chains.ts:181` `omai-engine/sampling`
+- algorithm `smcAlgorithm`: Sequential Monte Carlo, one tempering step at a time. `src/lib/sampling/smc.ts:422` `omai-engine/sampling`
 
-- table `rejectionSamplers`: The exact samplers as one slot. `src/lib/sampling/rejection-options.ts:88` `mdml-engine/sampling`
+- table `rejectionSamplers`: The exact samplers as one slot. `src/lib/sampling/rejection-options.ts:88` `omai-engine/sampling`
 
 ## sampling/diagnostics
 
-MCMC diagnostics, as ArviZ, part of `mdml-engine/sampling`: autocorrelation, R-hat, effective sample sizes and Monte Carlo standard errors, highest density and equal-tailed intervals, and the posterior summary and health checks (divergences, tree depth, E-BFMI) that say whether chains can be trusted.
+MCMC diagnostics, as ArviZ, part of `omai-engine/sampling`: autocorrelation, R-hat, effective sample sizes and Monte Carlo standard errors, highest density and equal-tailed intervals, and the posterior summary and health checks (divergences, tree depth, E-BFMI) that say whether chains can be trusted.
 
-- function `rhat`: Split R-hat convergence diagnostic; ess gives effective sample size. `src/lib/sampling/diagnostics/convergence.ts:80` `mdml-engine/sampling`
+- function `rhat`: Split R-hat convergence diagnostic; ess gives effective sample size. `src/lib/sampling/diagnostics/convergence.ts:80` `omai-engine/sampling`
 
 ## sampling/hamiltonian
 
-Hamiltonian Monte Carlo, BlackJAX and Stan style, part of `mdml-engine/sampling`: symplectic integrators and Euclidean metrics, the HMC, NUTS and Riemannian HMC kernels, and Stan's windowed adaptation of step size and mass matrix, with ready-made multi-chain runners.
+Hamiltonian Monte Carlo, BlackJAX and Stan style, part of `omai-engine/sampling`: symplectic integrators and Euclidean metrics, the HMC, NUTS and Riemannian HMC kernels, and Stan's windowed adaptation of step size and mass matrix, with ready-made multi-chain runners.
 
-- function `hmc`: Hamiltonian Monte Carlo chains. `src/lib/sampling/hamiltonian/hmc.ts:178` `mdml-engine/sampling`
-- function `nuts`: No-U-Turn sampler chains. `src/lib/sampling/hamiltonian/nuts.ts:265` `mdml-engine/sampling`
+- function `hmc`: Hamiltonian Monte Carlo chains. `src/lib/sampling/hamiltonian/hmc.ts:178` `omai-engine/sampling`
+- function `nuts`: No-U-Turn sampler chains. `src/lib/sampling/hamiltonian/nuts.ts:265` `omai-engine/sampling`

@@ -4,7 +4,7 @@
  * Laplacian of Gaussian, the edge-preserving bilateral filter, and Gabor kernels and filter banks for texture.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { type BorderMode, extendIndex, padModeOf } from '../../numerics/convolution/index.ts'
 import { add, fromStorage, mul, primalOf, sqrt, type Tensor, type TensorLike, type Value } from '../../tensor/index.ts'
 import { axisOf, float } from '../_shared.ts'
@@ -16,7 +16,7 @@ import { type BorderOptions, convolveNd, correlate1d } from './correlate.ts'
 
 const perAxis = (v: number | readonly number[], rank: number, name: string): number[] => {
   if (typeof v === 'number') return new Array<number>(rank).fill(v)
-  if (v.length !== rank) throw new MdmlError('shape', `${name}: expected one value per axis (${rank})`)
+  if (v.length !== rank) throw new OmaiError('shape', `${name}: expected one value per axis (${rank})`)
   return [...v]
 }
 
@@ -31,13 +31,13 @@ const perAxis = (v: number | readonly number[], rank: number, name: string): num
  * @concept gaussian-filter
  * @example
  * ```ts
- * import { image } from 'mdml-engine/signal'
+ * import { image } from 'omai-engine/signal'
  * Array.from(image.gaussianKernel1d(1, 0, 1)).map((v) => Math.round(v * 1e4) / 1e4) // => [0.2741, 0.4519, 0.2741]
  * ```
  */
 export function gaussianKernel1d(sigma: number, order = 0, radius: number = Math.floor(4 * sigma + 0.5)): Float64Array {
-  if (!(sigma > 0)) throw new MdmlError('value', 'gaussianKernel1d: sigma must be positive')
-  if (!Number.isInteger(order) || order < 0) throw new MdmlError('value', 'gaussianKernel1d: order must be >= 0')
+  if (!(sigma > 0)) throw new OmaiError('value', 'gaussianKernel1d: sigma must be positive')
+  if (!Number.isInteger(order) || order < 0) throw new OmaiError('value', 'gaussianKernel1d: order must be >= 0')
   const s2 = sigma * sigma
   const phi = Float64Array.from({ length: 2 * radius + 1 }, (_, i) => Math.exp((-0.5 / s2) * (i - radius) ** 2))
   let total = 0
@@ -82,8 +82,8 @@ export interface GaussianOptions extends BorderOptions {
  * @concept gaussian-filter
  * @example
  * ```ts
- * import { image } from 'mdml-engine/signal'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { image } from 'omai-engine/signal'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(image.gaussianFilter1d([0, 0, 1, 0, 0], 1, -1, { radius: 1 })).map((v) => Math.round(v * 1e4) / 1e4) // => [0, 0.2741, 0.4519, 0.2741, 0]
  * ```
  */
@@ -105,8 +105,8 @@ export function gaussianFilter1d(x: TensorLike, sigma: number, axis = -1, option
  * @concept gaussian-filter
  * @example
  * ```ts
- * import { image } from 'mdml-engine/signal'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { image } from 'omai-engine/signal'
+ * import { toArray } from 'omai-engine/tensor'
  * const y = toArray(image.gaussianFilter([[0, 0, 0], [0, 1, 0], [0, 0, 0]], 1, { radius: 1 })) as number[][]
  * Math.round((y[1]?.[1] ?? 0) * 1e4) / 1e4 // => 0.2042
  * ```
@@ -135,8 +135,8 @@ export function gaussianFilter(x: TensorLike, sigma: number | readonly number[],
  * @concept uniform-filter
  * @example
  * ```ts
- * import { image } from 'mdml-engine/signal'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { image } from 'omai-engine/signal'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(image.uniformFilter1d([3, 0, 0, 3], 3)) // => [2, 1, 1, 2]
  * ```
  */
@@ -146,7 +146,7 @@ export function uniformFilter1d(
   axis = -1,
   options: BorderOptions & { readonly origin?: number } = {},
 ): Value {
-  if (!Number.isInteger(size) || size < 1) throw new MdmlError('value', 'uniformFilter1d: size must be >= 1')
+  if (!Number.isInteger(size) || size < 1) throw new OmaiError('value', 'uniformFilter1d: size must be >= 1')
   return correlate1d(x, new Float64Array(size).fill(1 / size), axis, options)
 }
 
@@ -160,8 +160,8 @@ export function uniformFilter1d(
  * @concept uniform-filter
  * @example
  * ```ts
- * import { image } from 'mdml-engine/signal'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { image } from 'omai-engine/signal'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(image.uniformFilter([[4, 0], [0, 0]], 2)) // => [[4, 2], [2, 1]]
  * ```
  */
@@ -254,8 +254,8 @@ function rankFilterOf(
  * @concept rank-filter
  * @example
  * ```ts
- * import { image } from 'mdml-engine/signal'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { image } from 'omai-engine/signal'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(image.rankFilter([1, 5, 2, 8, 3], 1, 3)) // => [1, 2, 5, 3, 3]
  * ```
  */
@@ -267,7 +267,7 @@ export function rankFilter(
 ): Tensor {
   return rankFilterOf(x, size, options, 'rankFilter', (w) => {
     const r = rank < 0 ? w.length + rank : rank
-    if (r < 0 || r >= w.length) throw new MdmlError('value', 'rankFilter: rank out of range')
+    if (r < 0 || r >= w.length) throw new OmaiError('value', 'rankFilter: rank out of range')
     return w.sort()[r] ?? 0
   })
 }
@@ -282,8 +282,8 @@ export function rankFilter(
  * @concept rank-filter
  * @example
  * ```ts
- * import { image } from 'mdml-engine/signal'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { image } from 'omai-engine/signal'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(image.medianFilter([1, 9, 2, 3, 4], 3)) // => [1, 2, 3, 3, 4]
  * ```
  */
@@ -301,8 +301,8 @@ export function medianFilter(x: TensorLike, size: number | readonly number[], op
  * @concept rank-filter
  * @example
  * ```ts
- * import { image } from 'mdml-engine/signal'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { image } from 'omai-engine/signal'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(image.minimumFilter([3, 1, 4, 1, 5], 3)) // => [1, 1, 1, 1, 1]
  * ```
  */
@@ -324,8 +324,8 @@ export function minimumFilter(x: TensorLike, size: number | readonly number[], o
  * @concept rank-filter
  * @example
  * ```ts
- * import { image } from 'mdml-engine/signal'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { image } from 'omai-engine/signal'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(image.maximumFilter([3, 1, 4, 1, 5], 3)) // => [3, 4, 4, 5, 5]
  * ```
  */
@@ -349,8 +349,8 @@ export function maximumFilter(x: TensorLike, size: number | readonly number[], o
  * @concept rank-filter
  * @example
  * ```ts
- * import { image } from 'mdml-engine/signal'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { image } from 'omai-engine/signal'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(image.percentileFilter([1, 5, 2, 8, 3], 50, 3)) // => [1, 2, 5, 3, 3]
  * ```
  */
@@ -361,7 +361,7 @@ export function percentileFilter(
   options: RankOptions = {},
 ): Tensor {
   const p = percentile < 0 ? 100 + percentile : percentile
-  if (p < 0 || p > 100) throw new MdmlError('value', 'percentileFilter: percentile out of range')
+  if (p < 0 || p > 100) throw new OmaiError('value', 'percentileFilter: percentile out of range')
   return rankFilterOf(x, size, options, 'percentileFilter', (w) => {
     let r = Math.trunc((w.length * p) / 100)
     if (r === w.length) r = w.length - 1
@@ -405,8 +405,8 @@ function edgeFilter(x: TensorLike, smooth: readonly number[], options: EdgeOptio
  * @concept edge-detection
  * @example
  * ```ts
- * import { image } from 'mdml-engine/signal'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { image } from 'omai-engine/signal'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(image.sobel([[0, 0, 1, 1], [0, 0, 1, 1]], { axis: 1 })) // => [[0, 1, 1, 0], [0, 1, 1, 0]]
  * ```
  */
@@ -423,8 +423,8 @@ export function sobel(x: TensorLike, options: EdgeOptions = {}): Value {
  * @concept edge-detection
  * @example
  * ```ts
- * import { image } from 'mdml-engine/signal'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { image } from 'omai-engine/signal'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(image.scharr([[0, 0, 1, 1], [0, 0, 1, 1]], { axis: 1 })) // => [[0, 1, 1, 0], [0, 1, 1, 0]]
  * ```
  */
@@ -441,8 +441,8 @@ export function scharr(x: TensorLike, options: EdgeOptions = {}): Value {
  * @concept edge-detection
  * @example
  * ```ts
- * import { image } from 'mdml-engine/signal'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { image } from 'omai-engine/signal'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(image.prewitt([[0, 0, 1, 1], [0, 0, 1, 1]], { axis: 1 })) // => [[0, 1, 1, 0], [0, 1, 1, 0]]
  * ```
  */
@@ -459,8 +459,8 @@ export function prewitt(x: TensorLike, options: EdgeOptions = {}): Value {
  * @concept laplacian
  * @example
  * ```ts
- * import { image } from 'mdml-engine/signal'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { image } from 'omai-engine/signal'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(image.laplace([[0, 0, 0], [0, 1, 0], [0, 0, 0]], { mode: 'constant' })) // => [[0, 1, 0], [1, -4, 1], [0, 1, 0]]
  * ```
  */
@@ -485,8 +485,8 @@ export function laplace(x: TensorLike, options: BorderOptions = {}): Value {
  * @concept laplacian
  * @example
  * ```ts
- * import { image } from 'mdml-engine/signal'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { image } from 'omai-engine/signal'
+ * import { toArray } from 'omai-engine/tensor'
  * const y = toArray(image.gaussianLaplace([[0, 0, 0], [0, 1, 0], [0, 0, 0]], 1, { mode: 'constant' })) as number[][]
  * (y[1]?.[1] ?? 0) < 0 // => true
  * ```
@@ -517,8 +517,8 @@ export function gaussianLaplace(
  * @concept edge-detection
  * @example
  * ```ts
- * import { image } from 'mdml-engine/signal'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { image } from 'omai-engine/signal'
+ * import { toArray } from 'omai-engine/tensor'
  * const y = toArray(image.gaussianGradientMagnitude([0, 0, 1, 1], 1)) as number[]
  * (y[1] ?? 0) > (y[0] ?? 0) // => true
  * ```
@@ -565,8 +565,8 @@ export interface BilateralOptions {
  * @concept bilateral-filter
  * @example
  * ```ts
- * import { image } from 'mdml-engine/signal'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { image } from 'omai-engine/signal'
+ * import { toArray } from 'omai-engine/tensor'
  * const y = toArray(image.bilateralFilter([[0, 0, 1, 1], [0, 0, 1, 1]], { sigmaColor: 0.1, mode: 'nearest' })) as number[][]
  * Math.round((y[0]?.[1] ?? 0) * 1e3) / 1e3 // => 0
  * ```
@@ -575,7 +575,7 @@ export function bilateralFilter(x: TensorLike, options: BilateralOptions = {}): 
   const v = primalOf(float(x))
   const shape = v.shape
   if (shape.length !== 2 && shape.length !== 3)
-    throw new MdmlError('shape', 'bilateralFilter: images are [H, W] or [H, W, C]')
+    throw new OmaiError('shape', 'bilateralFilter: images are [H, W] or [H, W, C]')
   const h = shape[0] ?? 0
   const w = shape[1] ?? 0
   const c = shape[2] ?? 1
@@ -641,7 +641,7 @@ export interface GaborOptions {
  * @concept gabor-filter
  * @example
  * ```ts
- * import { image } from 'mdml-engine/signal'
+ * import { image } from 'omai-engine/signal'
  * image.gaborKernel(0.25).real.shape // => [15, 15]
  * ```
  */
@@ -688,7 +688,7 @@ export function gaborKernel(
  * @concept gabor-filter
  * @example
  * ```ts
- * import { image } from 'mdml-engine/signal'
+ * import { image } from 'omai-engine/signal'
  * const x = Array.from({ length: 8 }, () => Array.from({ length: 8 }, (_, j) => Math.cos((Math.PI * j) / 2)))
  * image.gabor(x, 0.25).real.shape // => [8, 8]
  * ```
@@ -699,7 +699,7 @@ export function gabor(
   options: GaborOptions & BorderOptions = {},
 ): { readonly real: Value; readonly imag: Value } {
   const v = float(x)
-  if (v.shape.length !== 2) throw new MdmlError('shape', 'gabor: images are [H, W]')
+  if (v.shape.length !== 2) throw new OmaiError('shape', 'gabor: images are [H, W]')
   const k = gaborKernel(frequency, options)
   const border = { mode: options.mode ?? 'reflect', cval: options.cval ?? 0 }
   return { real: convolveNd(v, k.real, border), imag: convolveNd(v, k.imag, border) }
@@ -717,7 +717,7 @@ export function gabor(
  * @concept gabor-filter
  * @example
  * ```ts
- * import { image } from 'mdml-engine/signal'
+ * import { image } from 'omai-engine/signal'
  * const x = Array.from({ length: 6 }, (_, i) => Array.from({ length: 6 }, (_, j) => (i + j) % 2))
  * image.gaborBank(x, [0.2, 0.4], [0, Math.PI / 2]).shape // => [2, 2, 6, 6]
  * ```

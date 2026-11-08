@@ -1,7 +1,7 @@
 // The Parks-McClellan exchange algorithm, ported from the remez.c of Jake Janovetz that scipy.signal.remez wraps:
 // a dense grid, the alternation theorem by barycentric Lagrange interpolation (Oppenheim and Schafer 7.131-7.133),
 // extremal search with removal of surplus extrema, and the taps by frequency sampling.
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 
 const PI2 = 2 * Math.PI
 
@@ -118,14 +118,14 @@ function search(r: number, ext: Int32Array, e: Float64Array): void {
       (at(i) <= at(i - 1) && at(i) < at(i + 1) && at(i) < 0)
     ) {
       if (found.length >= 2 * r)
-        throw new MdmlError('convergence', 'remez: too many extremals; widen the transition bands')
+        throw new OmaiError('convergence', 'remez: too many extremals; widen the transition bands')
       found.push(i)
     }
   }
   const j = n - 1
   if ((at(j) > 0 && at(j) > at(j - 1)) || (at(j) < 0 && at(j) < at(j - 1))) found.push(j)
   let extra = found.length - (r + 1)
-  if (extra < 0) throw new MdmlError('convergence', 'remez: too few extremals; the grid is too coarse')
+  if (extra < 0) throw new OmaiError('convergence', 'remez: too few extremals; the grid is too coarse')
   while (extra > 0) {
     const ef = (q: number): number => at(found[q] ?? 0)
     let up = ef(0) > 0
@@ -195,7 +195,7 @@ export function remezKernel(
   if (numtaps % 2 === 1 && !negative) r++
   const g = denseGrid(r, numtaps, bands, desired, weight, negative, density)
   const size = g.f.length
-  if (size < r + 1) throw new MdmlError('value', 'remez: the bands are too narrow for this many taps')
+  if (size < r + 1) throw new OmaiError('value', 'remez: the bands are too narrow for this many taps')
   const ext = Int32Array.from({ length: r + 1 }, (_, i) => Math.trunc((i * (size - 1)) / r))
   if (type === 'differentiator') {
     for (let i = 0; i < size; i++) {
@@ -222,7 +222,7 @@ export function remezKernel(
     if (isDone(r, ext, e)) break
   }
   if (iter === maxiter)
-    throw new MdmlError(
+    throw new OmaiError(
       'convergence',
       `remez: failure to converge at iteration ${maxiter}; reduce the transition widths`,
     )

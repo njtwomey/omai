@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { gaussianNB, leastSquares, nearestCentroid, ridge, rows } from '../../testing/learn.ts'
-import { isMdmlError } from '../base/index.ts'
+import { isOmaiError } from '../base/index.ts'
 import { toFlat } from '../tensor/index.ts'
 import {
   can,
@@ -76,7 +76,7 @@ describe('the estimator protocol', () => {
     try {
       requireVerb(nb, 'transform', 'pipeline')
     } catch (e) {
-      expect(isMdmlError(e, 'value')).toBe(true)
+      expect(isOmaiError(e, 'value')).toBe(true)
       expect(String(e)).toContain('gaussian-nb')
     }
     expect(isEstimator(nb)).toBe(false)

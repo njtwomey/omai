@@ -69,7 +69,7 @@ export interface ColourBar {
  * @returns The layer.
  * @example
  * ```ts
- * import { layer } from 'mdml-render/charts'
+ * import { layer } from 'omai-render/charts'
  * layer([{ type: 'line', data: [[0, 1], [1, 2]] }], { x: [0, 1], y: [1, 2] }).series.length // => 1
  * ```
  */
@@ -170,7 +170,7 @@ function linearTicks(
  * @returns The range.
  * @example
  * ```ts
- * import { logRange } from 'mdml-render/charts'
+ * import { logRange } from 'omai-render/charts'
  * logRange({ kind: 'auto', pad: 0.05 }, [0.25, 1.6]) // => [0.2, 2]
  * logRange({ kind: 'auto', nice: true }, [0.25, 1.6]) // => [0.1, 10]
  * ```
@@ -220,7 +220,7 @@ function niceUp(v: number): number {
  * @returns The parts.
  * @example
  * ```ts
- * import { layer, panelParts } from 'mdml-render/charts'
+ * import { layer, panelParts } from 'omai-render/charts'
  * const p = panelParts([layer([{ type: 'line', data: [[0, 0], [2, 4]] }], { x: [0, 2], y: [0, 4], tight: true })], {}, { x: 50, y: 20, width: 300, height: 200 }, 0, 0, 0)
  * p.ranges.x // => [0, 2]
  * ```
@@ -420,8 +420,8 @@ function endLabel(max: number, label: string | undefined): string {
  * @returns The option's top-level fields.
  * @example
  * ```ts
- * import { chartFrame } from 'mdml-render/charts'
- * import { figure } from 'mdml-render/figure'
+ * import { chartFrame } from 'omai-render/charts'
+ * import { figure } from 'omai-render/figure'
  * chartFrame(figure(), { title: 'Loss' }).title // => { text: 'Loss', left: 8, top: 4, textStyle: { fontSize: 13, fontWeight: 600, color: '#1f2328' } }
  * ```
  */
@@ -476,7 +476,7 @@ export function chartFrame(
  * @index function Draw layers on one pair of axes: `cartesian([lines(curves), points(sets)])`.
  * @example
  * ```ts
- * import { cartesian, lines } from 'mdml-render/charts'
+ * import { cartesian, lines } from 'omai-render/charts'
  * const option = cartesian([lines([{ x: [0, 1, 2], y: [0, 1, 4] }])], { x: { label: 'x', limits: [0, 2] } })
  * option.xAxis[0].min // => 0
  * ```

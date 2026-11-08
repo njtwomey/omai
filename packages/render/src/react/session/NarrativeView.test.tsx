@@ -1,5 +1,5 @@
-import { dict, int } from 'mdml-engine/space'
-import { type Config, defineMethod, Log, type Method, scalar, stateFromJson, stateToJson } from 'mdml-engine/trace'
+import { dict, int } from 'omai-engine/space'
+import { type Config, defineMethod, Log, type Method, scalar, stateFromJson, stateToJson } from 'omai-engine/trace'
 import { type ReactElement, useState } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { type FakeFrames, fakeFrames, invoke, type Mounted, mountElement, resetGlobals } from '../_harness.tsx'

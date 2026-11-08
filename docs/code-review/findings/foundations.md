@@ -82,7 +82,7 @@ changes public surface: no
 kind: consistency
 evidence: tensor/_cpu/reduce.ts:25 (accumulator filled with the identity, `max` gives -Infinity, `min` +Infinity, then stored back into the output dtype at :33); tensor/ops/compare.ts:342 (`all` is `greater(min(cast(x != 0, int32)), 0)`); tensor/_cpu/reduce.ts:43-52 (`argReduce` on an empty axis returns 0); probes: `all(zeros([0]))` is false (numpy: True), `max(zeros([0]))` is -Infinity for floats and 0 for ints (numpy raises), `mean(zeros([0]))` is NaN.
 what: empty reductions are silently defined by the accumulator's identity pushed through the storage cast; `all([])` is wrong, `any([])` right by accident, `argmax` of nothing is index 0.
-fix: reduction ops raise `MdmlError('shape')` for max/min/argmax/argmin over a zero-length axis (numpy's rule) and `all`/`any` use their own identities (true/false); `sum`/`prod` keep 0/1.
+fix: reduction ops raise `OmaiError('shape')` for max/min/argmax/argmin over a zero-length axis (numpy's rule) and `all`/`any` use their own identities (true/false); `sum`/`prod` keep 0/1.
 size: S (<1h)
 risk: low-medium (code that relied on -Infinity for empty maxima, e.g. a masked max over an empty group, would start to throw; grep the engine for `max(` over possibly-empty axes before merging)
 preserves behaviour: no (empty max/min/argmax raise; `all([])` becomes true)
@@ -148,7 +148,7 @@ changes public surface: no
 kind: consistency
 evidence: random/key.ts:87-89 (`philox4x32([data >>> 0, ...])`, no check) and :153-156 (`keyFromPath` passes numbers straight through; the TSDoc says "non-negative integers"); context/context.ts:54 (`ctx.key(...names)` is `keyFromPath`); probe: `keyFromPath(0, 'a', -1)` equals `keyFromPath(0, 'a', 4294967295)` and `ctx.key('a', 1.5)` equals `ctx.key('a', 1)`.
 what: the reproducibility guarantee ("independent parts never share randomness") fails for negative, fractional or >= 2^32 indices, and for NaN (`NaN >>> 0` is 0, so `foldIn(k, NaN)` equals `foldIn(k, 0)`). Callers that compute an index (episode, fold, replicate) can alias without any error.
-fix: in `foldIn` throw `MdmlError('value')` unless `data` is an integer in `[0, 2^32)`; if some existing caller relies on negative or fractional indices, route it through a named hash instead.
+fix: in `foldIn` throw `OmaiError('value')` unless `data` is an integer in `[0, 2^32)`; if some existing caller relies on negative or fractional indices, route it through a named hash instead.
 size: S (<1h)
 risk: medium (an engine-wide grep for `foldIn(` with computed arguments is needed first, and a legitimate caller passing a float would start to throw; changing the derived keys is not needed)
 preserves behaviour: yes for valid use (invalid use throws)
@@ -333,7 +333,7 @@ changes public surface: no (b adds one export to `base`)
 ### F27: same names for different things inside the foundations, and a stateful generator that the docs forbid in library code
 
 kind: consistency
-evidence: autodiff/custom.ts:98 (`stopGradient` is a pure wrapper of tensor's `stopGradient`, exported from both `mdml-engine/autodiff` and `mdml-engine/tensor`); trace/contract.ts exports `tensor`, `scalar`, `message`, `frame`, `event`, `derived` (contract constructors) while `tensor` is also tensor/tensor.ts's constructor; space/operations.ts exports `clip` and `flatten`, tensor/ops export `clip` and `flatten`; random/permutation.ts end (`keys` is `split`); random/generator.ts:15 says "Library code takes Key arguments; use this class in scripts and notebooks" but library code uses it: environments/minatar.ts:60, environments/procedural.ts:252 and :574, optim/minimize/particle-swarm.ts:126 and :157.
+evidence: autodiff/custom.ts:98 (`stopGradient` is a pure wrapper of tensor's `stopGradient`, exported from both `omai-engine/autodiff` and `omai-engine/tensor`); trace/contract.ts exports `tensor`, `scalar`, `message`, `frame`, `event`, `derived` (contract constructors) while `tensor` is also tensor/tensor.ts's constructor; space/operations.ts exports `clip` and `flatten`, tensor/ops export `clip` and `flatten`; random/permutation.ts end (`keys` is `split`); random/generator.ts:15 says "Library code takes Key arguments; use this class in scripts and notebooks" but library code uses it: environments/minatar.ts:60, environments/procedural.ts:252 and :574, optim/minimize/particle-swarm.ts:126 and :157.
 what: Phase 0's collision list, read for this scope: one real duplicate (`stopGradient`), one alias (`keys`), several same-word-different-meaning exports, and a documented rule the code does not follow.
 fix: re-export `stopGradient` from tensor (`export { stopGradient } from '../tensor/index.ts'`), delete `keys`, prefix the contract constructors on import (or rename to `scalarPath`...) only if collisions bite in a barrel, and either update the `Generator` doc or pass keys in the four library uses.
 size: S (<1h)
@@ -422,7 +422,7 @@ changes public surface: no
 
 kind: rule
 evidence: no non-test caller in the whole repo: `assertShape`, `assertFinite`, `invariant` (base/errors.ts:77-126), `formatTensor` (tensor/format.ts:45), `supportsDType` (tensor/backend.ts:94), `finfo`/`iinfo` (tensor/dtype.ts:120, :137), `avalOf`, `fullLike`, `tapsFor` (trace/taps.ts), `mergeRuns`, `exportRun`, `resolveTolerance` (base/options.ts:42); missing `@example`: space/tables.ts:64 `optionTable`, trace/logging.ts:181 `logContext`, trace/session.ts:99 `contractOf`; scripts/banned.ts:11-15 checks only `Math.random`, `Date.now`/`performance.now` and `console.*`, so `new Date()`, `crypto.getRandomValues`, `process.hrtime`, `setTimeout` are not banned (the scope is clean today: grep found none, and no `// allow:` opt-outs exist in scope); base/version.ts:6 says "generated from the package manifest" while the constant is typed by hand (it equals `0.1.2`, the manifest version, today).
-what: the engine is a library, so unused exports can be deliberate surface, but the unvalidated half of the error vocabulary (`assertShape` etc.) is the part meant to give consistent messages and no engine code uses it (each file throws its own `MdmlError`).
+what: the engine is a library, so unused exports can be deliberate surface, but the unvalidated half of the error vocabulary (`assertShape` etc.) is the part meant to give consistent messages and no engine code uses it (each file throws its own `OmaiError`).
 fix: add the three missing `@example`s; extend `banned.ts` with `new Date(`, `crypto.`, `hrtime`, `setTimeout|setInterval|requestAnimationFrame`; add a test that `VERSION` equals `package.json`'s; decide per unused export (keep with a test, or drop): the F34 smoke test keeps the cheap ones alive.
 size: S (<1h)
 risk: low

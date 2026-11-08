@@ -5,7 +5,7 @@
  * amplification by a model (Zhao et al. 2017; Wang and Russakovsky 2021).
  */
 
-import { MdmlError, minOf } from '../base/index.ts'
+import { minOf, OmaiError } from '../base/index.ts'
 import { labelValues, sortLabels } from '../metrics/_labels.ts'
 import { normalizedMutualInfoScore } from '../metrics/clustering.ts'
 import { rocAucScore } from '../metrics/curves.ts'
@@ -31,10 +31,10 @@ export interface Representation {
  * @param groups - Sensitive feature `[N]`.
  * @param options - The population's share of each group, by name.
  * @returns The groups (sorted), their counts and shares, and the ratios to the population.
- * @throws MdmlError `value` when a group has no population share.
+ * @throws OmaiError `value` when a group has no population share.
  * @example
  * ```ts
- * import { representation } from 'mdml-engine/fairness'
+ * import { representation } from 'omai-engine/fairness'
  * const r = representation(['a', 'a', 'a', 'b'], { populationShares: { a: 0.5, b: 0.5 } })
  * r.shares // => [0.75, 0.25]
  * r.ratios // => [1.5, 0.5]
@@ -52,7 +52,7 @@ export function representation(
   if (pop === undefined) return { groups: names, counts, shares }
   const populationShares = names.map((name) => {
     const v = pop[name]
-    if (v === undefined) throw new MdmlError('value', `representation: no population share for group ${name}`)
+    if (v === undefined) throw new OmaiError('value', `representation: no population share for group ${name}`)
     return v
   })
   return {
@@ -94,7 +94,7 @@ export interface BaseRates {
  * @returns The base rates and the gaps.
  * @example
  * ```ts
- * import { baseRates } from 'mdml-engine/fairness'
+ * import { baseRates } from 'omai-engine/fairness'
  * const r = baseRates([1, 1, 0, 0, 1, 0], ['a', 'a', 'a', 'a', 'b', 'b'], { reference: 'a' })
  * r.rates // => [0.5, 0.5]
  * r.statisticalParityDifference // => 0
@@ -104,7 +104,7 @@ export function baseRates(yTrue: MetricInput, groups: MetricInput, options: Base
   const pos = options.posLabel ?? 1
   const t = labelValues(yTrue).map((v) => (v === pos ? 1 : 0))
   const g = labelValues(groups).map(String)
-  if (t.length !== g.length) throw new MdmlError('shape', 'baseRates: inputs differ in length')
+  if (t.length !== g.length) throw new OmaiError('shape', 'baseRates: inputs differ in length')
   const names = sortLabels(labelValues(groups)).map(String)
   const counts = names.map(() => 0)
   const positives = names.map(() => 0)
@@ -117,7 +117,7 @@ export function baseRates(yTrue: MetricInput, groups: MetricInput, options: Base
   let reference = 0
   if (options.reference !== undefined) {
     reference = names.indexOf(String(options.reference))
-    if (reference < 0) throw new MdmlError('value', `baseRates: no group ${String(options.reference)}`)
+    if (reference < 0) throw new OmaiError('value', `baseRates: no group ${String(options.reference)}`)
   } else for (const [k, c] of counts.entries()) if (c > (counts[reference] ?? 0)) reference = k
   const ref = rates[reference] ?? 0
   let spd = 0
@@ -153,7 +153,7 @@ export interface LabelBias {
  * @returns Each group's flip rates (0 where the group has no clean labels of that class).
  * @example
  * ```ts
- * import { labelBias } from 'mdml-engine/fairness'
+ * import { labelBias } from 'omai-engine/fairness'
  * labelBias([1, 0, 1, 1], [1, 1, 1, 1], ['a', 'a', 'b', 'b']).positiveToNegative // => [0.5, 0]
  * ```
  */
@@ -161,7 +161,7 @@ export function labelBias(recorded: MetricInput, clean: MetricInput, groups: Met
   const r = labelValues(recorded).map((v) => (v === 1 ? 1 : 0))
   const c = labelValues(clean).map((v) => (v === 1 ? 1 : 0))
   const g = labelValues(groups).map(String)
-  if (r.length !== c.length || r.length !== g.length) throw new MdmlError('shape', 'labelBias: inputs differ in length')
+  if (r.length !== c.length || r.length !== g.length) throw new OmaiError('shape', 'labelBias: inputs differ in length')
   const names = sortLabels(labelValues(groups)).map(String)
   const rate = (name: string, cls: 0 | 1): number => {
     let n = 0
@@ -228,7 +228,7 @@ function binned(column: readonly number[], bins: number): number[] {
  * @returns Each feature's scores and the combined AUC.
  * @example
  * ```ts
- * import { proxyScores } from 'mdml-engine/fairness'
+ * import { proxyScores } from 'omai-engine/fairness'
  * const x = [[0, 5], [1, 3], [2, 4], [10, 3], [11, 5], [12, 4]]
  * const r = proxyScores(x, ['a', 'a', 'a', 'b', 'b', 'b'], { featureNames: ['postcode', 'noise'], folds: 0 })
  * r.auc // => [1, 0.5]
@@ -240,9 +240,9 @@ export function proxyScores(
   options: ProxyOptions = {},
 ): ProxyScores {
   const g = labelValues(groups).map(String)
-  if (x.length !== g.length) throw new MdmlError('shape', 'proxyScores: inputs differ in length')
+  if (x.length !== g.length) throw new OmaiError('shape', 'proxyScores: inputs differ in length')
   const names = sortLabels(labelValues(groups)).map(String)
-  if (names.length < 2) throw new MdmlError('value', 'proxyScores: needs at least two groups')
+  if (names.length < 2) throw new OmaiError('value', 'proxyScores: needs at least two groups')
   const counts = names.map((n) => g.filter((v) => v === n).length)
   let target = names[counts.indexOf(minOf(counts))] ?? ''
   if (options.target !== undefined) target = String(options.target)
@@ -306,7 +306,7 @@ export interface BiasAmplification {
  * @returns The amplification, with each group's base and selection rates.
  * @example
  * ```ts
- * import { biasAmplification } from 'mdml-engine/fairness'
+ * import { biasAmplification } from 'omai-engine/fairness'
  * // The labels favour a (0.75 against 0.25); the model favours it more (1 against 0).
  * const y = [1, 1, 1, 0, 1, 0, 0, 0]
  * const p = [1, 1, 1, 1, 0, 0, 0, 0]
@@ -318,7 +318,7 @@ export function biasAmplification(yTrue: MetricInput, yPred: MetricInput, groups
   const p = labelValues(yPred).map((v) => (v === 1 ? 1 : 0))
   const g = labelValues(groups).map(String)
   if (t.length !== p.length || t.length !== g.length)
-    throw new MdmlError('shape', 'biasAmplification: inputs differ in length')
+    throw new OmaiError('shape', 'biasAmplification: inputs differ in length')
   const names = sortLabels(labelValues(groups)).map(String)
   const n = t.length
   const pT = t.reduce((s: number, v) => s + v, 0) / n

@@ -3,7 +3,7 @@
 from typing import cast
 
 import sklearn
-from mdml_oracle.vendor import number_list, sha256_of
+from omai_oracle.vendor import number_list, sha256_of
 from sklearn.datasets import load_diabetes
 from sklearn.utils import Bunch
 

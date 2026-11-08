@@ -10,7 +10,7 @@
  */
 
 import { customVjp } from '../../autodiff/index.ts'
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import {
   type DistributionalFamily,
   type ExtendedFamily,
@@ -104,11 +104,11 @@ const isDistributional = (f: unknown): f is DistributionalFamily =>
  * @param spec - The family.
  * @param y - The training response, for starting values and an extended family's auxiliary parameters.
  * @returns The head family.
- * @throws MdmlError `value` for an extended family without a response to start from.
+ * @throws OmaiError `value` for an extended family without a response to start from.
  * @concept distributional-regression
  * @example
  * ```ts
- * import { headFamily } from 'mdml-engine/nn'
+ * import { headFamily } from 'omai-engine/nn'
  * headFamily('normal').predictors // => ['mu', 'sigma']
  * ```
  */
@@ -116,7 +116,7 @@ export function headFamily(spec: HeadFamilySpec, y?: ArrayLike<number>): HeadFam
   if (isHeadFamily(spec)) return spec
   if (typeof spec === 'string') {
     const f = named[spec]
-    if (f === undefined) throw new MdmlError('value', `headFamily: unknown family ${spec}`)
+    if (f === undefined) throw new OmaiError('value', `headFamily: unknown family ${spec}`)
     const start = gamlssExtended(spec).start
     return distributional(f(), (yy) => start(yy, new Float64Array(yy.length).fill(1)))
   }
@@ -189,18 +189,18 @@ function extended(family: ExtendedFamily, y: ArrayLike<number> | undefined): Hea
  *
  * @param classes - The number of classes (at least 2).
  * @returns The head family, predictors `class0 .. class(K-1)`, identity links; targets are class indices.
- * @throws MdmlError `value` for fewer than two classes.
+ * @throws OmaiError `value` for fewer than two classes.
  * @concept distributional-regression
  * @example
  * ```ts
- * import { classLogitFamily } from 'mdml-engine/nn'
- * import { item, tensor } from 'mdml-engine/tensor'
+ * import { classLogitFamily } from 'omai-engine/nn'
+ * import { item, tensor } from 'omai-engine/tensor'
  * Math.abs(item(classLogitFamily(2).nll([0, 1], [tensor([0, 0]), tensor([0, 0])])) - Math.LN2) < 1e-12 // => true
  * ```
  */
 export function classLogitFamily(classes: number): HeadFamily {
   if (!(Number.isInteger(classes) && classes >= 2))
-    throw new MdmlError('value', 'classLogitFamily: needs at least two classes')
+    throw new OmaiError('value', 'classLogitFamily: needs at least two classes')
   return {
     name: `categorical(${classes})`,
     predictors: Array.from({ length: classes }, (_, k) => `class${k}`),
@@ -240,7 +240,7 @@ export interface DistributionalAdditiveOptions {
  * @concept distributional-regression
  * @example
  * ```ts
- * import { DistributionalAdditive, headFamily } from 'mdml-engine/nn'
+ * import { DistributionalAdditive, headFamily } from 'omai-engine/nn'
  * const net = new DistributionalAdditive({ inFeatures: 1, family: headFamily('normal') })
  * net.forward([[0.2], [0.9]]).shape // => [2, 2]
  * net.predictors // => ['mu', 'sigma']

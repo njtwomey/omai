@@ -4,7 +4,7 @@
  * `patchEmbedding`, which cuts images into patches and embeds each one as a token.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { padArray } from '../../numerics/convolution/index.ts'
 import {
   fromStorage,
@@ -92,8 +92,8 @@ function axisMatrix(
  * @concept upsampling
  * @example
  * ```ts
- * import { interpolate } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { interpolate } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(interpolate([[[1, 2]]], { scaleFactor: 2, mode: 'linear', alignCorners: true })) // => [[[1, 1.3333333333333333, 1.6666666666666665, 2]]]
  * ```
  */
@@ -101,7 +101,7 @@ export function interpolate(input: TensorLike, options: InterpolateOptions): Val
   const [x] = promoteFloat(input) as [Value]
   const spatial = x.shape.slice(2)
   const d = spatial.length
-  if (d < 1) throw new MdmlError('shape', 'interpolate: input must be [B, C, ...spatial]')
+  if (d < 1) throw new OmaiError('shape', 'interpolate: input must be [B, C, ...spatial]')
   const mode = options.mode ?? 'nearest'
   const factors =
     options.scaleFactor === undefined
@@ -117,7 +117,7 @@ export function interpolate(input: TensorLike, options: InterpolateOptions): Val
       : factors !== undefined
         ? spatial.map((n, i) => Math.floor(n * (factors[i] ?? 1)))
         : undefined
-  if (sizes === undefined) throw new MdmlError('value', 'interpolate: give a size or a scale factor')
+  if (sizes === undefined) throw new OmaiError('value', 'interpolate: give a size or a scale factor')
   if (mode === 'area') return adaptiveAvgPool(x, sizes)
   const alignCorners = options.alignCorners ?? false
   let y = x
@@ -141,8 +141,8 @@ export function interpolate(input: TensorLike, options: InterpolateOptions): Val
  * @returns `[B, C, H r, W r]`.
  * @example
  * ```ts
- * import { pixelShuffle } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { pixelShuffle } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(pixelShuffle([[[[1]], [[2]], [[3]], [[4]]]], 2)) // => [[[[1, 2], [3, 4]]]]
  * ```
  */
@@ -150,7 +150,7 @@ export function pixelShuffle(input: TensorLike, upscale: number): Value {
   const [x] = promoteFloat(input) as [Value]
   const [b = 1, c = 1, h = 1, w = 1] = x.shape
   const r = upscale
-  if (c % (r * r) !== 0) throw new MdmlError('shape', `pixelShuffle: ${c} channels do not divide by ${r * r}`)
+  if (c % (r * r) !== 0) throw new OmaiError('shape', `pixelShuffle: ${c} channels do not divide by ${r * r}`)
   const oc = c / (r * r)
   const y = transpose(reshape(x, [b, oc, r, r, h, w]), [0, 1, 4, 2, 5, 3])
   return reshape(y, [b, oc, h * r, w * r])
@@ -164,7 +164,7 @@ export function pixelShuffle(input: TensorLike, upscale: number): Value {
  * @returns `[B, C r^2, H, W]`.
  * @example
  * ```ts
- * import { pixelUnshuffle } from 'mdml-engine/nn'
+ * import { pixelUnshuffle } from 'omai-engine/nn'
  * pixelUnshuffle([[[[1, 2], [3, 4]]]], 2).shape // => [1, 4, 1, 1]
  * ```
  */
@@ -172,7 +172,7 @@ export function pixelUnshuffle(input: TensorLike, downscale: number): Value {
   const [x] = promoteFloat(input) as [Value]
   const [b = 1, c = 1, hr = 1, wr = 1] = x.shape
   const r = downscale
-  if (hr % r !== 0 || wr % r !== 0) throw new MdmlError('shape', 'pixelUnshuffle: sizes must divide by the factor')
+  if (hr % r !== 0 || wr % r !== 0) throw new OmaiError('shape', 'pixelUnshuffle: sizes must divide by the factor')
   const y = transpose(reshape(x, [b, c, hr / r, r, wr / r, r]), [0, 1, 3, 5, 2, 4])
   return reshape(y, [b, c * r * r, hr / r, wr / r])
 }
@@ -191,15 +191,15 @@ export type PadModeTorch = 'constant' | 'reflect' | 'replicate' | 'circular'
  * @returns The padded input.
  * @example
  * ```ts
- * import { pad } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { pad } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(pad([[1, 2, 3]], [1, 2], 'replicate')) // => [[1, 1, 2, 3, 3, 3]]
  * ```
  */
 export function pad(input: TensorLike, widths: readonly number[], mode: PadModeTorch = 'constant', value = 0): Value {
   const [x] = promoteFloat(input) as [Value]
   if (widths.length % 2 !== 0 || widths.length / 2 > x.shape.length)
-    throw new MdmlError('value', 'pad: widths come in pairs, at most one pair per axis')
+    throw new OmaiError('value', 'pad: widths come in pairs, at most one pair per axis')
   const pairs: [number, number][] = x.shape.map((): [number, number] => [0, 0])
   for (let k = 0; k < widths.length / 2; k++) {
     pairs[x.shape.length - 1 - k] = [widths[2 * k] ?? 0, widths[2 * k + 1] ?? 0]
@@ -220,8 +220,8 @@ export function pad(input: TensorLike, widths: readonly number[], mode: PadModeT
  * @reference Dosovitskiy et al. (2021), An image is worth 16x16 words.
  * @example
  * ```ts
- * import { patchEmbedding } from 'mdml-engine/nn'
- * import { zeros } from 'mdml-engine/tensor'
+ * import { patchEmbedding } from 'omai-engine/nn'
+ * import { zeros } from 'omai-engine/tensor'
  * patchEmbedding(zeros([2, 3, 8, 8]), zeros([16, 3, 4, 4])).shape // => [2, 4, 16]
  * ```
  */

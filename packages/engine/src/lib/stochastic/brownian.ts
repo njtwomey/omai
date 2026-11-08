@@ -5,7 +5,7 @@
  * and of first-passage times.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { type Distribution, inverseGamma, inverseGaussian } from '../dists/index.ts'
 import { cholesky } from '../numerics/linalg/index.ts'
 import { logNdtr, ndtr } from '../numerics/special/index.ts'
@@ -61,8 +61,8 @@ export interface IncrementOptions {
  * @concept brownian-motion
  * @example
  * ```ts
- * import { key } from 'mdml-engine/random'
- * import { brownianIncrements, timeGrid } from 'mdml-engine/stochastic'
+ * import { key } from 'omai-engine/random'
+ * import { brownianIncrements, timeGrid } from 'omai-engine/stochastic'
  * brownianIncrements(key(0), timeGrid(1, 10), { paths: 3, shape: [2] }).shape // => [3, 10, 2]
  * ```
  */
@@ -112,9 +112,9 @@ function slice1(x: Value, i: number): Value {
  * @index function Brownian motion sample paths on a time grid.
  * @example
  * ```ts
- * import { key } from 'mdml-engine/random'
- * import { brownianMotion, timeGrid } from 'mdml-engine/stochastic'
- * import { mean, item, sliceAxis } from 'mdml-engine/tensor'
+ * import { key } from 'omai-engine/random'
+ * import { brownianMotion, timeGrid } from 'omai-engine/stochastic'
+ * import { mean, item, sliceAxis } from 'omai-engine/tensor'
  * const w = brownianMotion(key(0), timeGrid(1, 50), { paths: 2000, drift: 0.5 })
  * w.values.shape // => [2000, 51]
  * Math.abs(item(mean(sliceAxis(w.values, 1, 50, 51))) - 0.5) < 0.1 // => true
@@ -132,7 +132,7 @@ export function brownianMotion(key: Key, times: TimesLike, options: BrownianOpti
   const x0 = add(zeros([paths, ...state]), options.x0 ?? 0)
   const given = options.increments === undefined ? undefined : asTensor(options.increments)
   if (given !== undefined && (given.shape[0] !== paths || given.shape[1] !== t.length - 1)) {
-    throw new MdmlError('shape', `brownianMotion: increments must be [${paths}, ${t.length - 1}, ...state]`)
+    throw new OmaiError('shape', `brownianMotion: increments must be [${paths}, ${t.length - 1}, ...state]`)
   }
   return simulatePaths(
     key,
@@ -176,15 +176,15 @@ export interface BridgeOptions extends TraceOptions {
  * @concept brownian-bridge
  * @example
  * ```ts
- * import { key } from 'mdml-engine/random'
- * import { brownianBridge, timeGrid, valuesAt } from 'mdml-engine/stochastic'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { key } from 'omai-engine/random'
+ * import { brownianBridge, timeGrid, valuesAt } from 'omai-engine/stochastic'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(valuesAt(brownianBridge(key(0), timeGrid(1, 8), { paths: 2, x1: 3 }), -1)) // => [3, 3]
  * ```
  */
 export function brownianBridge(key: Key, times: TimesLike, options: BridgeOptions = {}): Paths {
   const t = asTimes(times, 'brownianBridge')
-  if (t.length < 2) throw new MdmlError('value', 'brownianBridge: need at least two times')
+  if (t.length < 2) throw new OmaiError('value', 'brownianBridge: need at least two times')
   const paths = positiveInteger(options.paths ?? 1, 'paths', 'brownianBridge')
   const state = options.dim === undefined ? [] : [positiveInteger(options.dim, 'dim', 'brownianBridge')]
   const [x1, sigma] = promoteFloat(options.x1 ?? 0, options.sigma ?? 1) as [Value, Value]
@@ -227,8 +227,8 @@ export interface BridgeMomentOptions {
  * @concept brownian-bridge
  * @example
  * ```ts
- * import { bridgeMoments } from 'mdml-engine/stochastic'
- * import { item } from 'mdml-engine/tensor'
+ * import { bridgeMoments } from 'omai-engine/stochastic'
+ * import { item } from 'omai-engine/tensor'
  * item(bridgeMoments(0.5).variance) // => 0.25
  * item(bridgeMoments(0.25, { x1: 4 }).mean) // => 1
  * ```
@@ -239,7 +239,7 @@ export function bridgeMoments(
 ): { readonly mean: Value; readonly variance: Value } {
   const t0 = options.t0 ?? 0
   const t1 = options.t1 ?? 1
-  if (!(t1 > t0)) throw new MdmlError('value', 'bridgeMoments: need t1 > t0')
+  if (!(t1 > t0)) throw new OmaiError('value', 'bridgeMoments: need t1 > t0')
   const [tt, x0, x1, sigma] = promoteFloat(t, options.x0 ?? 0, options.x1 ?? 0, options.sigma ?? 1) as [
     Value,
     Value,
@@ -265,8 +265,8 @@ export function bridgeMoments(
  * @concept brownian-bridge
  * @example
  * ```ts
- * import { key } from 'mdml-engine/random'
- * import { bridgeRefine, brownianMotion, timeGrid } from 'mdml-engine/stochastic'
+ * import { key } from 'omai-engine/random'
+ * import { bridgeRefine, brownianMotion, timeGrid } from 'omai-engine/stochastic'
  * Array.from(bridgeRefine(key(1), brownianMotion(key(0), timeGrid(1, 2))).times) // => [0, 0.25, 0.5, 0.75, 1]
  * ```
  */
@@ -314,8 +314,8 @@ function cumulate(terms: Value, cumulative: boolean): Value {
  * @concept quadratic-variation
  * @example
  * ```ts
- * import { quadraticVariation } from 'mdml-engine/stochastic'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { quadraticVariation } from 'omai-engine/stochastic'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(quadraticVariation([0, 1, -1, 0])) // => [6]
  * ```
  */
@@ -334,8 +334,8 @@ export function quadraticVariation(x: Paths | TensorLike, options: VariationOpti
  * @concept quadratic-variation
  * @example
  * ```ts
- * import { covariation } from 'mdml-engine/stochastic'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { covariation } from 'omai-engine/stochastic'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(covariation([0, 1, 2], [0, -1, 1])) // => [1]
  * ```
  */
@@ -351,8 +351,8 @@ export function covariation(x: Paths | TensorLike, y: Paths | TensorLike, option
  * @concept reflection-principle
  * @example
  * ```ts
- * import { runningMaximum } from 'mdml-engine/stochastic'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { runningMaximum } from 'omai-engine/stochastic'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(runningMaximum([0, 2, 1, 3])) // => [[0, 2, 2, 3]]
  * ```
  */
@@ -375,8 +375,8 @@ export function runningMaximum(x: Paths | TensorLike): Value {
  * @concept reflection-principle
  * @example
  * ```ts
- * import { reflectPath } from 'mdml-engine/stochastic'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { reflectPath } from 'omai-engine/stochastic'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(reflectPath([0, 1, 2, 1.5], 1)) // => [[0, 1, 0, 0.5]]
  * ```
  */
@@ -410,8 +410,8 @@ export interface DriftOptions {
  * @concept reflection-principle
  * @example
  * ```ts
- * import { maximumCdf } from 'mdml-engine/stochastic'
- * import { item } from 'mdml-engine/tensor'
+ * import { maximumCdf } from 'omai-engine/stochastic'
+ * import { item } from 'omai-engine/tensor'
  * Math.round(item(maximumCdf(0, 1)) * 1e12) / 1e12 // => 0
  * Math.abs(item(maximumCdf(1, 1)) - 0.682689492137) < 1e-11 // => true
  * ```
@@ -442,8 +442,8 @@ function towardLevel(level: Value, mu: Value): { a: Value; mu: Value } {
  * @concept first-passage-time
  * @example
  * ```ts
- * import { firstPassageCdf } from 'mdml-engine/stochastic'
- * import { item } from 'mdml-engine/tensor'
+ * import { firstPassageCdf } from 'omai-engine/stochastic'
+ * import { item } from 'omai-engine/tensor'
  * Math.abs(item(firstPassageCdf(1, -1)) - 0.317310507863) < 1e-11 // => true
  * ```
  */
@@ -470,8 +470,8 @@ export function firstPassageCdf(t: TensorLike, level: TensorLike, options: Drift
  * @concept first-passage-time
  * @example
  * ```ts
- * import { firstPassageDensity } from 'mdml-engine/stochastic'
- * import { item } from 'mdml-engine/tensor'
+ * import { firstPassageDensity } from 'omai-engine/stochastic'
+ * import { item } from 'omai-engine/tensor'
  * Math.abs(item(firstPassageDensity(1, 1)) - Math.exp(-0.5) / Math.sqrt(2 * Math.PI)) < 1e-15 // => true
  * ```
  */
@@ -497,13 +497,13 @@ export function firstPassageDensity(t: TensorLike, level: TensorLike, options: D
  * @param level - The level (non-zero number).
  * @param options - Drift and volatility (numbers).
  * @returns The distribution of tau.
- * @throws MdmlError with code `value` for a drift away from the level (the passage time is infinite with positive
+ * @throws OmaiError with code `value` for a drift away from the level (the passage time is infinite with positive
  *   probability) or a zero level.
  * @concept first-passage-time
  * @example
  * ```ts
- * import { firstPassageDistribution } from 'mdml-engine/stochastic'
- * import { item } from 'mdml-engine/tensor'
+ * import { firstPassageDistribution } from 'omai-engine/stochastic'
+ * import { item } from 'omai-engine/tensor'
  * item(firstPassageDistribution(2, { drift: 0.5 }).mean()) // => 4
  * firstPassageDistribution(1).name // => 'inverseGamma'
  * ```
@@ -514,11 +514,11 @@ export function firstPassageDistribution(
 ): Distribution {
   const mu = options.drift ?? 0
   const sigma = options.sigma ?? 1
-  if (level === 0 || !Number.isFinite(level)) throw new MdmlError('value', 'firstPassageDistribution: level != 0')
+  if (level === 0 || !Number.isFinite(level)) throw new OmaiError('value', 'firstPassageDistribution: level != 0')
   const a = Math.abs(level)
   const towards = Math.sign(level) * mu
   if (towards < 0) {
-    throw new MdmlError('value', 'firstPassageDistribution: the drift points away from the level (defective law)')
+    throw new OmaiError('value', 'firstPassageDistribution: the drift points away from the level (defective law)')
   }
   if (towards === 0) return inverseGamma(0.5, (a * a) / (2 * sigma * sigma))
   return inverseGaussian(a / towards, (a * a) / (sigma * sigma))
@@ -534,14 +534,14 @@ export function firstPassageDistribution(
  * @concept first-passage-time
  * @example
  * ```ts
- * import { firstPassageTimes } from 'mdml-engine/stochastic'
+ * import { firstPassageTimes } from 'omai-engine/stochastic'
  * Array.from(firstPassageTimes({ times: Float64Array.from([0, 1, 2]), values: [[0, 0.5, 1.5], [0, -1, -2]] }, 1)) // => [1.5, Infinity]
  * ```
  */
 export function firstPassageTimes(paths: Paths, level: number): Float64Array {
   const v = valuesOf(paths)
   const [p = 1, n = 0] = v.shape
-  if (v.shape.length !== 2) throw new MdmlError('shape', 'firstPassageTimes: needs scalar paths [paths, n]')
+  if (v.shape.length !== 2) throw new OmaiError('shape', 'firstPassageTimes: needs scalar paths [paths, n]')
   const data = primalNumbers(v)
   const out = new Float64Array(p).fill(Number.POSITIVE_INFINITY)
   for (let j = 0; j < p; j++) {

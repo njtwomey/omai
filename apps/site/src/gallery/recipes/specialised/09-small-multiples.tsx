@@ -1,5 +1,5 @@
-import { sampleVectorField } from 'mdml-engine/exposition'
-import { type DictSpace, defaults, dict, int } from 'mdml-engine/space'
+import { sampleVectorField } from 'omai-engine/exposition'
+import { type DictSpace, defaults, dict, int } from 'omai-engine/space'
 import {
   type Config,
   defineMethod,
@@ -9,7 +9,7 @@ import {
   scalar,
   stateFromJson,
   stateToJson,
-} from 'mdml-engine/trace'
+} from 'omai-engine/trace'
 import {
   ControlPanel,
   type Panel,
@@ -19,7 +19,7 @@ import {
   useSessionPreferences,
   useSessions,
   type Variant,
-} from 'mdml-render/react'
+} from 'omai-render/react'
 import { type ReactNode, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 

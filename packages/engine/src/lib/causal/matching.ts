@@ -5,7 +5,7 @@
  * unmatched, and with the Abadie-Imbens standard error that accounts for how often each unit is reused as a match.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { neighbourIndex } from '../learn/neighbours.ts'
 import { dpotrf } from '../numerics/linalg/index.ts'
 import { fromStorage } from '../tensor/index.ts'
@@ -78,7 +78,7 @@ function coordinates(
   }
   const { factor, info } = dpotrf(cov, p.d)
   if (info !== 0)
-    throw new MdmlError('value', 'matching: the covariate covariance is singular, so there is no Mahalanobis distance')
+    throw new OmaiError('value', 'matching: the covariate covariance is singular, so there is no Mahalanobis distance')
   for (let i = 0; i < p.n; i++)
     for (let j = 0; j < p.d; j++) {
       let s = (p.x[i * p.d + j] ?? 0) - (mu[j] ?? 0)
@@ -165,7 +165,7 @@ function localVariance(z: Float64Array, q: number, y: ArrayLike<number>, arm: re
  * @index function Matching estimator of a treatment effect.
  * @example
  * ```ts
- * import { matching } from 'mdml-engine/causal'
+ * import { matching } from 'omai-engine/causal'
  * const x = [[0], [1], [2], [3], [0.1], [1.1], [2.1], [3.1]]
  * const r = matching({ x, treatment: [1, 1, 1, 1, 0, 0, 0, 0], outcome: [3, 4, 5, 6, 1, 2, 3, 4] }, { on: 'covariates' })
  * r.estimate.value // => 2
@@ -194,7 +194,7 @@ export function matching(data: CausalData, options: MatchingOptions = {}): Match
   const pairsT = findMatches(z, q, queriesTreated, control, m, replacement, caliper)
   const pairsC = findMatches(z, q, queriesControl, treated, m, replacement, caliper)
   const pairs = [...pairsT, ...pairsC]
-  if (pairs.length === 0) throw new MdmlError('value', 'matching: no unit found a match (loosen the caliper)')
+  if (pairs.length === 0) throw new OmaiError('value', 'matching: no unit found a match (loosen the caliper)')
   const matched = new Set(pairs.map((u) => u.unit))
   const target = estimand === 'att' ? treated : estimand === 'atc' ? control : [...treated, ...control]
   const unmatched = target.filter((u) => !matched.has(u))

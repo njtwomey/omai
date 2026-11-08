@@ -7,7 +7,7 @@
  * a point cloud (scales from the distance to the nearest points) or at random in a box, from a key.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { kNearest } from '../numerics/spatial/index.ts'
 import { foldIn, type Key, normal, uniform } from '../random/index.ts'
 import {
@@ -71,8 +71,8 @@ const rows = (v: Value): number => v.shape[0] ?? 0
  * @concept gaussian-splatting
  * @example
  * ```ts
- * import { gaussianCount, randomGaussians } from 'mdml-engine/fields'
- * import { key } from 'mdml-engine/random'
+ * import { gaussianCount, randomGaussians } from 'omai-engine/fields'
+ * import { key } from 'omai-engine/random'
  * gaussianCount(randomGaussians(key(0), 7)) // => 7
  * ```
  */
@@ -87,8 +87,8 @@ export function gaussianCount(set: GaussianSet): number {
  * @returns The coefficients `[n, 3]`.
  * @example
  * ```ts
- * import { colourToCoefficient } from 'mdml-engine/fields'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { colourToCoefficient } from 'omai-engine/fields'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(colourToCoefficient([[0.5, 0.5, 0.5]])) // => [[0, 0, 0]]
  * ```
  */
@@ -133,8 +133,8 @@ function assemble(means: Value, logScales: Value, colours: Value, options: Gauss
  * @concept gaussian-splatting
  * @example
  * ```ts
- * import { randomGaussians } from 'mdml-engine/fields'
- * import { key } from 'mdml-engine/random'
+ * import { randomGaussians } from 'omai-engine/fields'
+ * import { key } from 'omai-engine/random'
  * const g = randomGaussians(key(0), 5, { boxHalfWidth: 0.5 })
  * [g.means.shape, g.colours.shape, g.rotations.shape] // => [[5, 3], [5, 3], [5, 4]]
  * ```
@@ -159,12 +159,12 @@ export function randomGaussians(
  * @param colours - Their colours `[n, 3]` in [0, 1] (default grey).
  * @param options - Neighbours for the scale (default 3), a fixed scale, the opacity and the harmonic degree.
  * @returns The set.
- * @throws MdmlError with code `shape` for points that are not `[n, 3]` or colours of another count.
+ * @throws OmaiError with code `shape` for points that are not `[n, 3]` or colours of another count.
  * @concept gaussian-splatting
  * @example
  * ```ts
- * import { gaussiansFromPoints } from 'mdml-engine/fields'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { gaussiansFromPoints } from 'omai-engine/fields'
+ * import { toArray } from 'omai-engine/tensor'
  * // Three collinear points 1 apart: the middle one's two nearest neighbours are at distance 1.
  * const g = gaussiansFromPoints([[0, 0, 0], [1, 0, 0], [2, 0, 0]], undefined, { neighbours: 2 })
  * toArray(g.logScales)[1] // => [0, 0, 0]
@@ -177,13 +177,13 @@ export function gaussiansFromPoints(
 ): GaussianSet {
   const p = asTensor(points) as Tensor
   if (p.shape.length !== 2 || p.shape[1] !== 3)
-    throw new MdmlError('shape', `gaussiansFromPoints: points must be [n, 3], got [${p.shape.join(', ')}]`)
+    throw new OmaiError('shape', `gaussiansFromPoints: points must be [n, 3], got [${p.shape.join(', ')}]`)
   const n = rows(p)
   const rgb =
     colours === undefined
       ? fromStorage(new Float64Array(n * 3).fill(0.5), [n, 3], 'float64')
       : (asTensor(colours) as Tensor)
-  if (rgb.shape[0] !== n) throw new MdmlError('shape', 'gaussiansFromPoints: one colour per point')
+  if (rgb.shape[0] !== n) throw new OmaiError('shape', 'gaussiansFromPoints: one colour per point')
   let scales: Float64Array
   if (options.scale !== undefined || n < 2) scales = new Float64Array(n).fill(options.scale ?? 0.1)
   else {
@@ -208,8 +208,8 @@ export function gaussiansFromPoints(
  * @concept rotations
  * @example
  * ```ts
- * import { quaternionToMatrix } from 'mdml-engine/fields'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { quaternionToMatrix } from 'omai-engine/fields'
+ * import { toArray } from 'omai-engine/tensor'
  * // A quarter turn about z: the x axis goes to the y axis.
  * const h = Math.SQRT1_2
  * toArray(quaternionToMatrix([[h, 0, 0, h]]))[0].map((row) => row.map((v) => Math.round(v * 1e9) / 1e9 + 0)) // => [[0, -1, 0], [1, 0, 0], [0, 0, 1]]
@@ -245,8 +245,8 @@ export function quaternionToMatrix(q: TensorLike): Value {
  * @concept gaussian-splatting
  * @example
  * ```ts
- * import { covarianceFactor, randomGaussians } from 'mdml-engine/fields'
- * import { key } from 'mdml-engine/random'
+ * import { covarianceFactor, randomGaussians } from 'omai-engine/fields'
+ * import { key } from 'omai-engine/random'
  * covarianceFactor(randomGaussians(key(0), 4)).shape // => [4, 3, 3]
  * ```
  */
@@ -262,8 +262,8 @@ export function covarianceFactor(set: GaussianSet): Value {
  * @concept gaussian-splatting
  * @example
  * ```ts
- * import { gaussiansFromPoints, covariance3d } from 'mdml-engine/fields'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { gaussiansFromPoints, covariance3d } from 'omai-engine/fields'
+ * import { toArray } from 'omai-engine/tensor'
  * // An isotropic Gaussian of standard deviation 0.5 has covariance 0.25 I.
  * toArray(covariance3d(gaussiansFromPoints([[0, 0, 0]], undefined, { scale: 0.5 })))[0][0] // => [0.25, 0, 0]
  * ```
@@ -283,8 +283,8 @@ export function covariance3d(set: GaussianSet): Value {
  * @concept spherical-harmonics
  * @example
  * ```ts
- * import { gaussianColour, gaussiansFromPoints } from 'mdml-engine/fields'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { gaussianColour, gaussiansFromPoints } from 'omai-engine/fields'
+ * import { toArray } from 'omai-engine/tensor'
  * const g = gaussiansFromPoints([[0, 0, 0]], [[0.2, 0.4, 0.6]])
  * toArray(gaussianColour(g))[0].map((v) => Math.round(v * 1e9) / 1e9) // => [0.2, 0.4, 0.6]
  * ```
@@ -311,8 +311,8 @@ export function gaussianColour(set: GaussianSet, direction?: TensorLike): Value 
  * @returns The sigmoid of the logits.
  * @example
  * ```ts
- * import { gaussianOpacity, randomGaussians } from 'mdml-engine/fields'
- * import { key } from 'mdml-engine/random'
+ * import { gaussianOpacity, randomGaussians } from 'omai-engine/fields'
+ * import { key } from 'omai-engine/random'
  * gaussianOpacity(randomGaussians(key(0), 1, { opacity: 0.25 })).data[0] // => 0.25
  * ```
  */
@@ -328,8 +328,8 @@ export function gaussianOpacity(set: GaussianSet): Value {
  * @returns The selection.
  * @example
  * ```ts
- * import { selectGaussians, gaussianCount, randomGaussians } from 'mdml-engine/fields'
- * import { key } from 'mdml-engine/random'
+ * import { selectGaussians, gaussianCount, randomGaussians } from 'omai-engine/fields'
+ * import { key } from 'omai-engine/random'
  * gaussianCount(selectGaussians(randomGaussians(key(0), 5), [0, 0, 3])) // => 3
  * ```
  */
@@ -346,8 +346,8 @@ export function selectGaussians(set: GaussianSet, indices: readonly number[]): G
  * @returns The union.
  * @example
  * ```ts
- * import { concatGaussians, gaussianCount, randomGaussians } from 'mdml-engine/fields'
- * import { key } from 'mdml-engine/random'
+ * import { concatGaussians, gaussianCount, randomGaussians } from 'omai-engine/fields'
+ * import { key } from 'omai-engine/random'
  * gaussianCount(concatGaussians(randomGaussians(key(0), 2), randomGaussians(key(1), 3))) // => 5
  * ```
  */
@@ -385,7 +385,7 @@ const takeRows = (v: Value, idx: Value): Value => take(v, idx, 0)
  * @returns The largest scales.
  * @example
  * ```ts
- * import { gaussiansFromPoints, largestScale } from 'mdml-engine/fields'
+ * import { gaussiansFromPoints, largestScale } from 'omai-engine/fields'
  * largestScale(gaussiansFromPoints([[0, 0, 0]], undefined, { scale: 0.3 })).data[0] // => 0.3
  * ```
  */
@@ -402,8 +402,8 @@ export function largestScale(set: GaussianSet): Value {
  * @returns A point per Gaussian.
  * @example
  * ```ts
- * import { randomGaussians, sampleGaussians } from 'mdml-engine/fields'
- * import { key } from 'mdml-engine/random'
+ * import { randomGaussians, sampleGaussians } from 'omai-engine/fields'
+ * import { key } from 'omai-engine/random'
  * sampleGaussians(key(0), randomGaussians(key(1), 4)).shape // => [4, 3]
  * ```
  */

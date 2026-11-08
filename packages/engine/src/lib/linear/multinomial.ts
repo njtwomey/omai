@@ -7,7 +7,7 @@
  * class probabilities, the logits and a Wald table of the free coefficients.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import { categorical } from '../dists/index.ts'
 import type { CoefficientTable, Exposition } from '../exposition/index.ts'
 import {
@@ -44,7 +44,7 @@ export function multinomialProblemOf(
 ): { readonly problem: MultinomialProblem; readonly classes: readonly number[] } {
   const x = matrixView(data.x, who)
   const { classes, codes } = encodeLabels(data.y ?? [], who, x.n)
-  if (classes.length < 2) throw new MdmlError('value', `${who}: needs at least two classes`)
+  if (classes.length < 2) throw new OmaiError('value', `${who}: needs at least two classes`)
   return { problem: { x, codes, w: sampleWeightsOf(data.weights, x.n, who), nClasses: classes.length }, classes }
 }
 
@@ -84,7 +84,7 @@ const freeClasses = (nClasses: number, alpha: number): number[] =>
  * @returns The probabilities.
  * @example
  * ```ts
- * import { softmaxRows } from 'mdml-engine/linear'
+ * import { softmaxRows } from 'omai-engine/linear'
  * Array.from(softmaxRows([0, 0], 2)) // => [0.5, 0.5]
  * ```
  */
@@ -115,8 +115,8 @@ export function softmaxRows(logits: ArrayLike<number>, nClasses: number): Float6
  * @returns The objective over the free coefficients (class by class: slopes then intercept) and the start (zeros).
  * @example
  * ```ts
- * import { multinomialSmoothProblem } from 'mdml-engine/linear'
- * import { matrixView } from 'mdml-engine/learn'
+ * import { multinomialSmoothProblem } from 'omai-engine/linear'
+ * import { matrixView } from 'omai-engine/learn'
  * const x = matrixView([[0], [1], [2], [3], [0.5], [2.5]], 'demo')
  * multinomialSmoothProblem({ x, codes: [0, 0, 1, 2, 1, 2], w: [1, 1, 1, 1, 1, 1], nClasses: 3 }).x0.length // => 4
  * ```
@@ -200,9 +200,9 @@ export function multinomialSmoothProblem(problem: MultinomialProblem, options: M
  * @returns The algorithm.
  * @example
  * ```ts
- * import { multinomialAlgorithm } from 'mdml-engine/linear'
- * import { matrixView } from 'mdml-engine/learn'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { multinomialAlgorithm } from 'omai-engine/linear'
+ * import { matrixView } from 'omai-engine/learn'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const x = matrixView([[0], [1], [2], [3], [0.5], [2.5], [1.5], [3.5]], 'demo')
  * const problem = { x, codes: [0, 0, 1, 2, 1, 2, 0, 2], w: [1, 1, 1, 1, 1, 1, 1, 1], nClasses: 3 }
  * runAlgorithm(multinomialAlgorithm(problem), { maxSteps: 50 }).status // => 'converged'
@@ -394,8 +394,8 @@ function tableOf(p: MultinomialParams, h: MultinomialHyper): CoefficientTable {
  * @index estimator Multinomial logistic (softmax) regression.
  * @example
  * ```ts
- * import { multinomial } from 'mdml-engine/linear'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { multinomial } from 'omai-engine/linear'
+ * import { toFlat } from 'omai-engine/tensor'
  * const x = [[0], [1], [2], [3], [0.5], [2.5], [1.5], [3.5], [0.2], [2.2], [1.2], [3.2]]
  * const y = [0, 0, 1, 2, 0, 2, 1, 2, 0, 2, 0, 1]
  * const f = multinomial().fit({ x, y })

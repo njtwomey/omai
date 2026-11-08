@@ -5,7 +5,7 @@
  * recurrent unit (LRU) with its initialisation.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { expm, solve } from '../../numerics/linalg/index.ts'
 import { foldIn, type Key, uniform } from '../../random/index.ts'
 import {
@@ -67,8 +67,8 @@ export type Discretisation = 'zoh' | 'bilinear'
  * @concept state-space-models
  * @example
  * ```ts
- * import { discretise } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { discretise } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(discretise([[0]], [1], 0.5).b) // => [0.5]
  * ```
  */
@@ -80,7 +80,7 @@ export function discretise(a: TensorLike, b: TensorLike, dt: number, method: Dis
   const n = av.shape[0] ?? 0
   const m = bv.shape[1] ?? 0
   if (av.shape.length !== 2 || av.shape[1] !== n || bv.shape[0] !== n)
-    throw new MdmlError('shape', 'discretise: A must be [N, N] and B [N, M]')
+    throw new OmaiError('shape', 'discretise: A must be [N, N] and B [N, M]')
   let ab: Value
   let bb: Value
   if (method === 'zoh') {
@@ -111,8 +111,8 @@ export function discretise(a: TensorLike, b: TensorLike, dt: number, method: Dis
  * @concept state-space-models
  * @example
  * ```ts
- * import { discretiseDiagonal } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { discretiseDiagonal } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(discretiseDiagonal([0], [2], 0.5).b) // => [1]
  * ```
  */
@@ -156,8 +156,8 @@ export function discretiseDiagonal(
  * @reference Gu, Goel and Re (2022), Efficiently modeling long sequences with structured state spaces.
  * @example
  * ```ts
- * import { ssmKernel } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { ssmKernel } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(ssmKernel({ a: [0.5], b: [1] }, [1], 3)) // => [1, 0.5, 0.25]
  * ```
  */
@@ -198,8 +198,8 @@ export function ssmKernel(
  * @returns `[..., L]`.
  * @example
  * ```ts
- * import { causalConvolution } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { causalConvolution } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(causalConvolution([1, 0, 0], [1, 0.5, 0.25])) // => [1, 0.5, 0.25]
  * ```
  */
@@ -239,8 +239,8 @@ export function causalConvolution(u: TensorLike, kernel: TensorLike, d: TensorLi
  * @concept state-space-models
  * @example
  * ```ts
- * import { channelCausalConvolution } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { channelCausalConvolution } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(channelCausalConvolution([[[1], [0], [0]]], [[1, 0.5, 0.25]])) // => [[[1], [0.5], [0.25]]]
  * ```
  */
@@ -277,8 +277,8 @@ export function channelCausalConvolution(u: TensorLike, kernel: TensorLike): Val
  * @returns `[L]`.
  * @example
  * ```ts
- * import { ssmRecurrence } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { ssmRecurrence } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(ssmRecurrence({ a: [0.5], b: [1] }, [1], [1, 0, 0])) // => [1, 0.5, 0.25]
  * ```
  */
@@ -314,8 +314,8 @@ export function ssmRecurrence(
  * @returns Every state `[T, ...]`.
  * @example
  * ```ts
- * import { linearRecurrence } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { linearRecurrence } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(linearRecurrence([[0.5], [0.5], [0.5]], [[1], [1], [1]])) // => [[1], [1.5], [1.75]]
  * ```
  */
@@ -370,8 +370,8 @@ function scanRounds<T extends { readonly shape: readonly number[] }>(
  * @concept state-space-models
  * @example
  * ```ts
- * import { parallelScan } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { parallelScan } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(parallelScan([0.5, 0.5, 0.5], [1, 1, 1])) // => [1, 1.5, 1.75]
  * ```
  */
@@ -405,8 +405,8 @@ export function parallelScan(a: TensorLike, b: TensorLike, axis = 0, h0?: Tensor
  * @concept state-space-models
  * @example
  * ```ts
- * import { parallelScanComplex } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { parallelScanComplex } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(parallelScanComplex({ re: [0, 0], im: [1, 1] }, { re: [1, 0], im: [0, 0] }).re) // => [1, 0]
  * ```
  */
@@ -495,8 +495,8 @@ export interface SelectiveScanInput {
  * @reference Gu and Dao (2023), Mamba: linear-time sequence modeling with selective state spaces.
  * @example
  * ```ts
- * import { selectiveScan } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { selectiveScan } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(selectiveScan({ x: [[[1], [0]]], dt: [[[1], [1]]], a: [[-1]], b: [[[1], [1]]], c: [[[1], [1]]] }).y) // => [[[1], [0.36787944117144233]]]
  * ```
  */
@@ -561,8 +561,8 @@ export type SsdForm = 'recurrent' | 'quadratic' | 'chunked'
  *   state space duality.
  * @example
  * ```ts
- * import { ssd } from 'mdml-engine/nn'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { ssd } from 'omai-engine/nn'
+ * import { toFlat } from 'omai-engine/tensor'
  * const input = { x: [[[[1]], [[0]]]], dt: [[[1], [1]]], a: [-1], b: [[[1], [1]]], c: [[[1], [1]]] }
  * toFlat(ssd(input, 'quadratic').y) // => [1, 0.36787944117144233]
  * ```
@@ -645,8 +645,8 @@ export function ssd(
  *   sequence length.
  * @example
  * ```ts
- * import { deltaRule } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { deltaRule } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(deltaRule([[1, 0]], [[1, 0]], [[3]], [1]).output) // => [[3]]
  * ```
  */
@@ -710,8 +710,8 @@ export interface LRUParams {
  * @returns The parameters.
  * @example
  * ```ts
- * import { lruInit } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
+ * import { lruInit } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
  * lruInit(key(0), 4, 2).bRe.shape // => [4, 2]
  * ```
  */
@@ -754,8 +754,8 @@ export function lruInit(
  * @returns Real and imaginary parts `[N]`.
  * @example
  * ```ts
- * import { lruEigenvalues } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { lruEigenvalues } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(lruEigenvalues({ nuLog: [0], thetaLog: [-100] }).re) // => [0.36787944117144233]
  * ```
  */
@@ -784,9 +784,9 @@ export interface LRUState {
  * @reference Orvieto et al. (2023), Resurrecting recurrent neural networks for long sequences.
  * @example
  * ```ts
- * import { lru, lruInit } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
- * import { zeros } from 'mdml-engine/tensor'
+ * import { lru, lruInit } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
+ * import { zeros } from 'omai-engine/tensor'
  * lru(lruInit(key(0), 4, 2), zeros([5, 2])).shape // => [5, 2]
  * ```
  */
@@ -807,9 +807,9 @@ export function lru(params: LRUParams, u: TensorLike): Value {
  * @returns The outputs `[B, L, H]` and the state after the last step.
  * @example
  * ```ts
- * import { lruInit, lruScan } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
- * import { zeros } from 'mdml-engine/tensor'
+ * import { lruInit, lruScan } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
+ * import { zeros } from 'omai-engine/tensor'
  * lruScan(lruInit(key(0), 4, 2), zeros([1, 5, 2])).state.re.shape // => [1, 4]
  * ```
  */

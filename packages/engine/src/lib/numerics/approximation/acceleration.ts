@@ -4,7 +4,7 @@
  * for alternating series, each turning slowly converging partial results into a much better limit estimate.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { type Tensor, type TensorLike, toVector } from '../../tensor/index.ts'
 import { vectorOf } from '../_vector.ts'
 
@@ -16,12 +16,12 @@ import { vectorOf } from '../_vector.ts'
  * @param estimates - Estimates `[k]` at successively smaller steps.
  * @param options - Step ratio r (default 2) and leading error order p (default 2, as for the trapezoid rule).
  * @returns The extrapolated value and the tableau.
- * @throws MdmlError with code `value` for no estimates, `shape` unless `estimates` is a vector, and
+ * @throws OmaiError with code `value` for no estimates, `shape` unless `estimates` is a vector, and
  *   `not-differentiable` for a traced value.
  * @concept extrapolation
  * @example
  * ```ts
- * import { richardson } from 'mdml-engine/numerics/approximation'
+ * import { richardson } from 'omai-engine/numerics/approximation'
  * // Central differences of sin at 1 with h = 0.4, 0.2, 0.1 extrapolate to cos(1).
  * const d = (h) => (Math.sin(1 + h) - Math.sin(1 - h)) / (2 * h)
  * Math.abs(richardson([d(0.4), d(0.2), d(0.1)]).value - Math.cos(1)) < 1e-7 // => true
@@ -32,7 +32,7 @@ export function richardson(
   options: { readonly ratio?: number; readonly order?: number } = {},
 ): { value: number; table: number[][] } {
   const values = toVector(estimates, 'richardson')
-  if (values.length === 0) throw new MdmlError('value', 'richardson: no estimates')
+  if (values.length === 0) throw new OmaiError('value', 'richardson: no estimates')
   const r = options.ratio ?? 2
   const p = options.order ?? 2
   const table: number[][] = []
@@ -53,10 +53,10 @@ export function richardson(
  *
  * @param s - A convergent sequence `[k]`.
  * @returns The accelerated sequence `[k - 2]` (two shorter).
- * @throws MdmlError with code `shape` unless `s` is a vector, and `not-differentiable` for a traced value.
+ * @throws OmaiError with code `shape` unless `s` is a vector, and `not-differentiable` for a traced value.
  * @example
  * ```ts
- * import { aitken } from 'mdml-engine/numerics/approximation'
+ * import { aitken } from 'omai-engine/numerics/approximation'
  * // Partial sums of a geometric series become exact.
  * aitken([1, 1.5, 1.75]) // => [2]
  * ```
@@ -82,10 +82,10 @@ export function aitken(s: TensorLike): Tensor<'float64', [number]> {
  *
  * @param s - A sequence `[k]` (partial sums).
  * @returns The estimate and the even columns (column 0 is s).
- * @throws MdmlError with code `shape` unless `s` is a vector, and `not-differentiable` for a traced value.
+ * @throws OmaiError with code `shape` unless `s` is a vector, and `not-differentiable` for a traced value.
  * @example
  * ```ts
- * import { wynnEpsilon } from 'mdml-engine/numerics/approximation'
+ * import { wynnEpsilon } from 'omai-engine/numerics/approximation'
  * // Partial sums of 1 - 1/2 + 1/3 - ... converge slowly to ln 2.
  * const s = []
  * for (let n = 1, acc = 0; n <= 12; n++) s.push((acc += (n % 2 ? 1 : -1) / n))
@@ -128,10 +128,10 @@ function wynnKernel(s: readonly number[]): { value: number; columns: number[][] 
  * @param s - A sequence `[n]`.
  * @param k - Order (default 1).
  * @returns The transformed sequence.
- * @throws MdmlError with code `shape` unless `s` is a vector, and `not-differentiable` for a traced value.
+ * @throws OmaiError with code `shape` unless `s` is a vector, and `not-differentiable` for a traced value.
  * @example
  * ```ts
- * import { shanks } from 'mdml-engine/numerics/approximation'
+ * import { shanks } from 'omai-engine/numerics/approximation'
  * shanks([1, 1.5, 1.75, 1.875]) // => [2, 2]
  * ```
  */
@@ -145,10 +145,10 @@ export function shanks(s: TensorLike, k = 1): Tensor<'float64', [number]> {
  *
  * @param a - The magnitudes `[k]` a_0, a_1, ... of the alternating terms.
  * @returns The accelerated sum.
- * @throws MdmlError with code `shape` unless `a` is a vector, and `not-differentiable` for a traced value.
+ * @throws OmaiError with code `shape` unless `a` is a vector, and `not-differentiable` for a traced value.
  * @example
  * ```ts
- * import { eulerTransform } from 'mdml-engine/numerics/approximation'
+ * import { eulerTransform } from 'omai-engine/numerics/approximation'
  * // pi / 4 = 1 - 1/3 + 1/5 - ...
  * Math.abs(eulerTransform(Array.from({ length: 30 }, (_, n) => 1 / (2 * n + 1))) - Math.PI / 4) < 1e-9 // => true
  * ```

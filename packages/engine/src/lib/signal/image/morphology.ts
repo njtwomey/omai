@@ -4,7 +4,7 @@
  * Euclidean distance transform, and thinning and skeletonisation to one-pixel-wide shapes.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { type BorderMode, extendIndex, padModeOf } from '../../numerics/convolution/index.ts'
 import { fromStorage, primalOf, type Tensor, type TensorLike } from '../../tensor/index.ts'
 import { float } from '../_shared.ts'
@@ -44,7 +44,7 @@ interface Structure {
 
 function structureOf(s: TensorLike | undefined, rank: number, name: string): Structure {
   const g = s === undefined ? gridOf(generateBinaryStructure(rank, 1)) : gridOf(s)
-  if (g.shape.length !== rank) throw new MdmlError('shape', `${name}: the structure must have the input's rank`)
+  if (g.shape.length !== rank) throw new OmaiError('shape', `${name}: the structure must have the input's rank`)
   const offsets: number[][] = []
   const c = new Array<number>(rank).fill(0)
   for (let i = 0; i < g.data.length; i++)
@@ -80,8 +80,8 @@ const flippedOrigins = (origin: readonly number[], shape: readonly number[]): nu
  * @concept mathematical-morphology
  * @example
  * ```ts
- * import { image } from 'mdml-engine/signal'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { image } from 'omai-engine/signal'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(image.generateBinaryStructure(2, 1)) // => [[0, 1, 0], [1, 1, 1], [0, 1, 0]]
  * ```
  */
@@ -182,8 +182,8 @@ function binaryOp(x: TensorLike, options: BinaryOptions, dilate: boolean, name: 
  * @concept mathematical-morphology
  * @example
  * ```ts
- * import { image } from 'mdml-engine/signal'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { image } from 'omai-engine/signal'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(image.binaryErosion([[0, 1, 1, 1, 0], [0, 1, 1, 1, 0], [0, 1, 1, 1, 0]])) // => [[0, 0, 0, 0, 0], [0, 0, 1, 0, 0], [0, 0, 0, 0, 0]]
  * ```
  */
@@ -200,8 +200,8 @@ export function binaryErosion(x: TensorLike, options: BinaryOptions = {}): Tenso
  * @concept mathematical-morphology
  * @example
  * ```ts
- * import { image } from 'mdml-engine/signal'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { image } from 'omai-engine/signal'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(image.binaryDilation([[0, 0, 0], [0, 1, 0], [0, 0, 0]])) // => [[0, 1, 0], [1, 1, 1], [0, 1, 0]]
  * ```
  */
@@ -218,8 +218,8 @@ export function binaryDilation(x: TensorLike, options: BinaryOptions = {}): Tens
  * @concept mathematical-morphology
  * @example
  * ```ts
- * import { image } from 'mdml-engine/signal'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { image } from 'omai-engine/signal'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(image.binaryOpening([[1, 0, 0, 0], [0, 0, 1, 1], [0, 0, 1, 1]], { structure: [[1, 1], [1, 1]] })) // => [[0, 0, 0, 0], [0, 0, 1, 1], [0, 0, 1, 1]]
  * ```
  */
@@ -236,8 +236,8 @@ export function binaryOpening(x: TensorLike, options: BinaryOptions = {}): Tenso
  * @concept mathematical-morphology
  * @example
  * ```ts
- * import { image } from 'mdml-engine/signal'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { image } from 'omai-engine/signal'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(image.binaryClosing([[0, 0, 0, 0, 0], [0, 1, 0, 1, 0], [0, 0, 0, 0, 0]], { structure: [[1, 1, 1]] })) // => [[0, 0, 0, 0, 0], [0, 1, 1, 1, 0], [0, 0, 0, 0, 0]]
  * ```
  */
@@ -318,8 +318,8 @@ function greyOp(x: TensorLike, options: GreyOptions, dilate: boolean, name: stri
  * @concept mathematical-morphology
  * @example
  * ```ts
- * import { image } from 'mdml-engine/signal'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { image } from 'omai-engine/signal'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(image.greyErosion([3, 1, 4, 1, 5], { size: 3 })) // => [1, 1, 1, 1, 1]
  * ```
  */
@@ -336,8 +336,8 @@ export function greyErosion(x: TensorLike, options: GreyOptions = {}): Tensor {
  * @concept mathematical-morphology
  * @example
  * ```ts
- * import { image } from 'mdml-engine/signal'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { image } from 'omai-engine/signal'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(image.greyDilation([3, 1, 4, 1, 5], { size: 3 })) // => [3, 4, 4, 5, 5]
  * ```
  */
@@ -354,8 +354,8 @@ export function greyDilation(x: TensorLike, options: GreyOptions = {}): Tensor {
  * @concept mathematical-morphology
  * @example
  * ```ts
- * import { image } from 'mdml-engine/signal'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { image } from 'omai-engine/signal'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(image.greyOpening([1, 1, 9, 1, 1], { size: 3 })) // => [1, 1, 1, 1, 1]
  * ```
  */
@@ -372,8 +372,8 @@ export function greyOpening(x: TensorLike, options: GreyOptions = {}): Tensor {
  * @concept mathematical-morphology
  * @example
  * ```ts
- * import { image } from 'mdml-engine/signal'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { image } from 'omai-engine/signal'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(image.greyClosing([5, 5, 0, 5, 5], { size: 3 })) // => [5, 5, 5, 5, 5]
  * ```
  */
@@ -397,8 +397,8 @@ const subtract = (a: Tensor, b: Tensor): Tensor =>
  * @concept mathematical-morphology
  * @example
  * ```ts
- * import { image } from 'mdml-engine/signal'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { image } from 'omai-engine/signal'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(image.morphologicalGradient([0, 0, 1, 1], { size: 3 })) // => [0, 1, 1, 0]
  * ```
  */
@@ -416,8 +416,8 @@ export function morphologicalGradient(x: TensorLike, options: GreyOptions = {}):
  * @concept mathematical-morphology
  * @example
  * ```ts
- * import { image } from 'mdml-engine/signal'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { image } from 'omai-engine/signal'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(image.whiteTophat([1, 1, 9, 1, 1], { size: 3 })) // => [0, 0, 8, 0, 0]
  * ```
  */
@@ -435,8 +435,8 @@ export function whiteTophat(x: TensorLike, options: GreyOptions = {}): Tensor {
  * @concept mathematical-morphology
  * @example
  * ```ts
- * import { image } from 'mdml-engine/signal'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { image } from 'omai-engine/signal'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(image.blackTophat([5, 5, 0, 5, 5], { size: 3 })) // => [0, 0, 5, 0, 0]
  * ```
  */
@@ -454,8 +454,8 @@ export function blackTophat(x: TensorLike, options: GreyOptions = {}): Tensor {
  * @concept connected-components
  * @example
  * ```ts
- * import { image } from 'mdml-engine/signal'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { image } from 'omai-engine/signal'
+ * import { toArray } from 'omai-engine/tensor'
  * const r = image.label([[1, 1, 0, 1], [0, 0, 0, 1], [1, 0, 0, 0]])
  * [toArray(r.labels), r.count] // => [[[1, 1, 0, 2], [0, 0, 0, 2], [3, 0, 0, 0]], 3]
  * ```
@@ -564,8 +564,8 @@ function edt1d(f: Float64Array, spacing: number): Float64Array {
  * @concept distance-transform
  * @example
  * ```ts
- * import { image } from 'mdml-engine/signal'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { image } from 'omai-engine/signal'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(image.distanceTransformEdt([[0, 1, 1, 1, 1]])) // => [[0, 1, 2, 3, 4]]
  * ```
  */
@@ -623,14 +623,14 @@ const G3P = lut((b) => !((b[5] === true || b[6] === true || !b[3]) && b[4] === t
  * @concept skeletonization
  * @example
  * ```ts
- * import { image } from 'mdml-engine/signal'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { image } from 'omai-engine/signal'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(image.thin([[0, 0, 0, 0, 0], [0, 1, 1, 1, 0], [0, 1, 1, 1, 0], [0, 1, 1, 1, 0], [0, 0, 0, 0, 0]])) // => [[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 1, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]]
  * ```
  */
 export function thin(x: TensorLike, maxIter: number = Number.POSITIVE_INFINITY): Tensor {
   const g = gridOf(x)
-  if (g.shape.length !== 2) throw new MdmlError('shape', 'thin: images are [H, W]')
+  if (g.shape.length !== 2) throw new OmaiError('shape', 'thin: images are [H, W]')
   const [h = 0, w = 0] = g.shape
   const skel = Uint8Array.from(g.data, (v) => (v !== 0 ? 1 : 0))
   // Neighbour weights (row-major 3 x 3): [[8, 4, 2], [16, 0, 1], [32, 64, 128]].
@@ -668,15 +668,15 @@ export function thin(x: TensorLike, maxIter: number = Number.POSITIVE_INFINITY):
  * @concept skeletonization
  * @example
  * ```ts
- * import { image } from 'mdml-engine/signal'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { image } from 'omai-engine/signal'
+ * import { toArray } from 'omai-engine/tensor'
  * const r = toArray(image.skeletonize([[0, 0, 0, 0, 0, 0, 0], [0, 1, 1, 1, 1, 1, 0], [0, 1, 1, 1, 1, 1, 0], [0, 1, 1, 1, 1, 1, 0], [0, 0, 0, 0, 0, 0, 0]])) as number[][]
  * r.flat().reduce((a, b) => a + b, 0) <= 5 // => true
  * ```
  */
 export function skeletonize(x: TensorLike): Tensor {
   const g = gridOf(x)
-  if (g.shape.length !== 2) throw new MdmlError('shape', 'skeletonize: images are [H, W]')
+  if (g.shape.length !== 2) throw new OmaiError('shape', 'skeletonize: images are [H, W]')
   const [h = 0, w = 0] = g.shape
   const s = Uint8Array.from(g.data, (v) => (v !== 0 ? 1 : 0))
   const at = (y: number, xx: number): number => (y < 0 || y >= h || xx < 0 || xx >= w ? 0 : (s[y * w + xx] ?? 0))

@@ -4,7 +4,7 @@
  * parameter counts, and `ravel` to pack a tree of tensors into one vector and back.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { cpu } from './cpu.ts'
 import { zerosLike } from './create.ts'
 import { sizeOf } from './shape.ts'
@@ -62,7 +62,7 @@ function isRecord(node: unknown): node is Readonly<Record<string, unknown>> {
  * @returns The leaves in order and the structure.
  * @example
  * ```ts
- * import { treeFlatten, zeros } from 'mdml-engine/tensor'
+ * import { treeFlatten, zeros } from 'omai-engine/tensor'
  * treeFlatten({ b: zeros([1]), a: [zeros([2])] }).leaves.map((l) => l.shape) // => [[2], [1]]
  * ```
  */
@@ -78,7 +78,7 @@ export function treeFlatten(tree: unknown): { readonly leaves: Value[]; readonly
       const keys = Object.keys(node).sort()
       return { kind: 'record', keys, children: keys.map((k) => visit(node[k], `${path}.${k}`)) }
     }
-    throw new MdmlError(
+    throw new OmaiError(
       'value',
       `pytree leaves must be tensors or traced values, got ${typeof node} at ${path === '' ? 'the root' : path}: ` +
         'wrap numbers and arrays of numbers with tensor(...) first',
@@ -94,10 +94,10 @@ export function treeFlatten(tree: unknown): { readonly leaves: Value[]; readonly
  * @param def - The structure.
  * @param leaves - The leaves, in flattening order.
  * @returns The tree.
- * @throws MdmlError with code `value` when the number of leaves does not match.
+ * @throws OmaiError with code `value` when the number of leaves does not match.
  * @example
  * ```ts
- * import { treeFlatten, treeUnflatten, zeros } from 'mdml-engine/tensor'
+ * import { treeFlatten, treeUnflatten, zeros } from 'omai-engine/tensor'
  * const { leaves, def } = treeFlatten({ w: zeros([2]) })
  * Object.keys(treeUnflatten(def, leaves) as object) // => ['w']
  * ```
@@ -106,7 +106,7 @@ export function treeUnflatten(def: TreeDef, leaves: readonly unknown[]): unknown
   let i = 0
   const build = (d: TreeDef): unknown => {
     if (d.kind === 'leaf') {
-      if (i >= leaves.length) throw new MdmlError('value', 'treeUnflatten: too few leaves')
+      if (i >= leaves.length) throw new OmaiError('value', 'treeUnflatten: too few leaves')
       return leaves[i++]
     }
     if (d.kind === 'array') return d.children.map(build)
@@ -117,7 +117,7 @@ export function treeUnflatten(def: TreeDef, leaves: readonly unknown[]): unknown
     return out
   }
   const tree = build(def)
-  if (i !== leaves.length) throw new MdmlError('value', `treeUnflatten: ${leaves.length - i} leaves left over`)
+  if (i !== leaves.length) throw new OmaiError('value', `treeUnflatten: ${leaves.length - i} leaves left over`)
   return tree
 }
 
@@ -128,7 +128,7 @@ export function treeUnflatten(def: TreeDef, leaves: readonly unknown[]): unknown
  * @returns The leaves.
  * @example
  * ```ts
- * import { treeLeaves, zeros } from 'mdml-engine/tensor'
+ * import { treeLeaves, zeros } from 'omai-engine/tensor'
  * treeLeaves({ b: zeros([1]), a: [zeros([2]), zeros([3])] }).map((t) => t.shape) // => [[2], [3], [1]]
  * ```
  */
@@ -142,11 +142,11 @@ export function treeLeaves(tree: unknown): Value[] {
  * @param fn - Called with the leaves at each position.
  * @param trees - The trees; the first defines the structure.
  * @returns A tree of the results with the same structure.
- * @throws MdmlError with code `value` when structures differ.
+ * @throws OmaiError with code `value` when structures differ.
  * @index function Map a function over the leaves of nested arrays and records.
  * @example
  * ```ts
- * import { treeMap, add, tensor, toArray } from 'mdml-engine/tensor'
+ * import { treeMap, add, tensor, toArray } from 'omai-engine/tensor'
  * const t = treeMap((a, b) => add(a, b), { w: tensor([1]) }, { w: tensor([2]) })
  * toArray(t.w) // => [3]
  * ```
@@ -155,7 +155,7 @@ export function treeMap<T>(fn: (...leaves: Value[]) => Value, ...trees: readonly
   const flats = trees.map((t) => treeFlatten(t))
   const first = flats[0] as { leaves: Value[]; def: TreeDef }
   for (const f of flats.slice(1)) {
-    if (!sameDef(first.def, f.def)) throw new MdmlError('value', 'treeMap: trees have different structures')
+    if (!sameDef(first.def, f.def)) throw new OmaiError('value', 'treeMap: trees have different structures')
   }
   const out = first.leaves.map((_, i) => fn(...flats.map((f) => f.leaves[i] as Value)))
   return treeUnflatten(first.def, out) as T
@@ -168,7 +168,7 @@ export function treeMap<T>(fn: (...leaves: Value[]) => Value, ...trees: readonly
  * @returns A record from path to leaf.
  * @example
  * ```ts
- * import { treePaths, zeros } from 'mdml-engine/tensor'
+ * import { treePaths, zeros } from 'omai-engine/tensor'
  * Object.keys(treePaths({ layers: [{ w: zeros([1]) }], b: zeros([1]) })) // => ['b', 'layers[0].w']
  * ```
  */
@@ -195,7 +195,7 @@ export function treePaths(tree: unknown): Record<string, Value> {
  * @returns The zero tree.
  * @example
  * ```ts
- * import { treeZeros, tensor, toArray } from 'mdml-engine/tensor'
+ * import { treeZeros, tensor, toArray } from 'omai-engine/tensor'
  * toArray(treeZeros({ w: tensor([1, 2]) }).w) // => [0, 0]
  * ```
  */
@@ -210,7 +210,7 @@ export function treeZeros<T>(tree: T): T {
  * @returns The count.
  * @example
  * ```ts
- * import { treeCount, zeros } from 'mdml-engine/tensor'
+ * import { treeCount, zeros } from 'omai-engine/tensor'
  * treeCount({ w: zeros([3, 2]), b: zeros([2]) }) // => 8
  * ```
  */
@@ -223,10 +223,10 @@ export function treeCount(tree: unknown): number {
  *
  * @param tree - A tree of concrete tensors.
  * @returns The flat vector and `unravel`, which rebuilds a tree of the same structure from such a vector.
- * @throws MdmlError with code `not-differentiable` when a leaf is traced.
+ * @throws OmaiError with code `not-differentiable` when a leaf is traced.
  * @example
  * ```ts
- * import { ravel, tensor } from 'mdml-engine/tensor'
+ * import { ravel, tensor } from 'omai-engine/tensor'
  * const { flat, unravel } = ravel({ a: tensor([1, 2]), b: tensor(3) })
  * Array.from(flat) // => [1, 2, 3]
  * ```
@@ -234,7 +234,7 @@ export function treeCount(tree: unknown): number {
 export function ravel<T>(tree: T): { readonly flat: Float64Array; readonly unravel: (flat: ArrayLike<number>) => T } {
   const { leaves, def } = treeFlatten(tree)
   const concrete = leaves.map((l) => {
-    if (isTraced(l)) throw new MdmlError('not-differentiable', 'ravel needs concrete leaves')
+    if (isTraced(l)) throw new OmaiError('not-differentiable', 'ravel needs concrete leaves')
     return l as Tensor
   })
   const sizes = concrete.map((l) => l.data.length)

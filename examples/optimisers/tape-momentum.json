@@ -1,12 +1,12 @@
 {
-  "schema": "mdml.run/1",
+  "schema": "omai.run/1",
   "events": [
     {
       "type": "run",
       "runId": "minimizer:0",
       "name": "minimizer",
       "seed": 0,
-      "version": "0.1.2",
+      "version": "0.1.3",
       "config": {
         "transformation": "chain(addDecayedWeights, traceMomentum, scaleByLearningRate)",
         "gradTol": 0

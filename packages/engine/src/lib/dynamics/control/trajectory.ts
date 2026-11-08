@@ -5,7 +5,7 @@
  * general optimiser.
  */
 
-import { clamp, type Json, MdmlError } from '../../base/index.ts'
+import { clamp, type Json, OmaiError } from '../../base/index.ts'
 import { cholesky, daxpy, dgemv, solve, symmetricPart } from '../../numerics/linalg/index.ts'
 import { lbfgsb, slsqp } from '../../optim/index.ts'
 import {
@@ -261,8 +261,8 @@ const DEFAULT_ALPHAS = Array.from({ length: 10 }, (_, i) => 2 ** -i)
  * @concept optimal-control
  * @example
  * ```ts
- * import { control } from 'mdml-engine/dynamics'
- * import { add, mul, sum, sliceAxis, concat } from 'mdml-engine/tensor'
+ * import { control } from 'omai-engine/dynamics'
+ * import { add, mul, sum, sliceAxis, concat } from 'omai-engine/tensor'
  * const model = { stateSize: 1, actionSize: 1, dynamics: (x, u) => add(x, u), cost: (x, u) => add(sum(mul(x, x), -1), sum(mul(u, u), -1)) }
  * control.ilqrAlgorithm(model, [1], { horizon: 5 }).name // => 'ilqr'
  * ```
@@ -403,8 +403,8 @@ export interface IlqrResult {
  * @concept optimal-control
  * @example
  * ```ts
- * import { control } from 'mdml-engine/dynamics'
- * import { add, mul, sum } from 'mdml-engine/tensor'
+ * import { control } from 'omai-engine/dynamics'
+ * import { add, mul, sum } from 'omai-engine/tensor'
  * const model = { stateSize: 1, actionSize: 1, dynamics: (x, u) => add(x, u), cost: (x, u) => add(sum(mul(x, x), -1), sum(mul(u, u), -1)) }
  * const r = control.ilqr(model, [1], { horizon: 10 })
  * r.cost < (r.history[0] ?? 0) // => true
@@ -467,8 +467,8 @@ export function ilqr(
  * @concept differential-dynamic-programming
  * @example
  * ```ts
- * import { control } from 'mdml-engine/dynamics'
- * import { add, mul, sum, sin } from 'mdml-engine/tensor'
+ * import { control } from 'omai-engine/dynamics'
+ * import { add, mul, sum, sin } from 'omai-engine/tensor'
  * const model = { stateSize: 1, actionSize: 1, dynamics: (x, u) => add(add(x, mul(sin(x), 0.1)), u), cost: (x, u) => add(sum(mul(x, x), -1), sum(mul(u, u), -1)) }
  * control.ddp(model, [1], { horizon: 10 }).converged // => true
  * ```
@@ -537,8 +537,8 @@ function totalCost(model: DiscreteModel, xs: readonly Value[], us: readonly Valu
  * @concept trajectory-optimisation
  * @example
  * ```ts
- * import { control } from 'mdml-engine/dynamics'
- * import { add, mul, sum } from 'mdml-engine/tensor'
+ * import { control } from 'omai-engine/dynamics'
+ * import { add, mul, sum } from 'omai-engine/tensor'
  * const model = { stateSize: 1, actionSize: 1, dynamics: (x, u) => add(x, u), cost: (x, u) => add(sum(mul(x, x), -1), sum(mul(u, u), -1)) }
  * control.singleShooting(model, [1], { horizon: 5 }).converged // => true
  * ```
@@ -595,8 +595,8 @@ export function singleShooting(
  * @concept trajectory-optimisation
  * @example
  * ```ts
- * import { control } from 'mdml-engine/dynamics'
- * import { add, mul, sum } from 'mdml-engine/tensor'
+ * import { control } from 'omai-engine/dynamics'
+ * import { add, mul, sum } from 'omai-engine/tensor'
  * const model = { stateSize: 1, actionSize: 1, dynamics: (x, u) => add(x, u), cost: (x, u) => add(sum(mul(x, x), -1), sum(mul(u, u), -1)) }
  * control.multipleShooting(model, [1], { horizon: 5 }).defect < 1e-8 // => true
  * ```
@@ -692,8 +692,8 @@ export interface ContinuousProblem {
  * @concept direct-collocation
  * @example
  * ```ts
- * import { control } from 'mdml-engine/dynamics'
- * import { mul, sum, stack, sliceAxis } from 'mdml-engine/tensor'
+ * import { control } from 'omai-engine/dynamics'
+ * import { mul, sum, stack, sliceAxis } from 'omai-engine/tensor'
  * // Move a double integrator from rest at 0 to rest at 1 in time 1 with minimal control effort.
  * const problem = { stateSize: 2, actionSize: 1, dynamics: (x, u) => stack([sum(sliceAxis(x, 0, 1, 2)), sum(u)]), cost: (_x, u) => sum(mul(u, u)) }
  * const r = control.directCollocation(problem, [0, 0], { duration: 1, nodes: 20, final: [1, 0] })
@@ -714,7 +714,7 @@ export function directCollocation(
   },
 ): TrajectoryResult {
   const N = options.nodes
-  if (!Number.isInteger(N) || N < 2) throw new MdmlError('value', 'directCollocation: at least two intervals')
+  if (!Number.isInteger(N) || N < 2) throw new OmaiError('value', 'directCollocation: at least two intervals')
   const n = problem.stateSize
   const m = problem.actionSize
   const h = options.duration / N

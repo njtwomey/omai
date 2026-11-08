@@ -6,7 +6,7 @@
  * the truth and draws the residual beneath. `coefficientErrors` classifies the terms.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { seal } from './_check.ts'
 
 /** One term of the model: `estimate * tex`. */
@@ -63,29 +63,29 @@ export interface EquationFit {
  *
  * @param record - The record without its `kind`.
  * @returns The record.
- * @throws MdmlError `shape` when `fit`, `truth` or the observations do not match the grid, or when the record has
+ * @throws OmaiError `shape` when `fit`, `truth` or the observations do not match the grid, or when the record has
  *   neither terms nor an expression; `value` when a coefficient is not finite.
  * @example
  * ```ts
- * import { equationFit } from 'mdml-engine/exposition'
+ * import { equationFit } from 'omai-engine/exposition'
  * const r = equationFit({ terms: [{ tex: 'x', estimate: 2, truth: 2 }], x: [0, 1], fit: [0, 2], truth: [0, 2] })
  * r.terms?.length // => 1
  * ```
  */
 export function equationFit(record: Omit<EquationFit, 'kind'>): EquationFit {
   const n = record.x.length
-  if (n < 2) throw new MdmlError('shape', 'equationFit: x needs at least two points')
+  if (n < 2) throw new OmaiError('shape', 'equationFit: x needs at least two points')
   if (record.fit.length !== n)
-    throw new MdmlError('shape', `equationFit: fit has ${record.fit.length} entries, expected ${n}`)
+    throw new OmaiError('shape', `equationFit: fit has ${record.fit.length} entries, expected ${n}`)
   if (record.truth !== undefined && record.truth.length !== n)
-    throw new MdmlError('shape', `equationFit: truth has ${record.truth.length} entries, expected ${n}`)
+    throw new OmaiError('shape', `equationFit: truth has ${record.truth.length} entries, expected ${n}`)
   if (record.observed !== undefined && record.observed.x.length !== record.observed.y.length)
-    throw new MdmlError('shape', 'equationFit: observed x and y differ in length')
+    throw new OmaiError('shape', 'equationFit: observed x and y differ in length')
   if (record.terms === undefined && record.expression === undefined)
-    throw new MdmlError('shape', 'equationFit: give the terms or the expression')
+    throw new OmaiError('shape', 'equationFit: give the terms or the expression')
   for (const [k, t] of (record.terms ?? []).entries())
     if (!(Number.isFinite(t.estimate) && (t.truth === undefined || Number.isFinite(t.truth))))
-      throw new MdmlError('value', `equationFit: terms[${k}] is not finite`)
+      throw new OmaiError('value', `equationFit: terms[${k}] is not finite`)
   return seal({ kind: 'equationFit', ...record })
 }
 
@@ -96,7 +96,7 @@ export function equationFit(record: Omit<EquationFit, 'kind'>): EquationFit {
  * @returns One entry per term (none for a record with only an expression).
  * @example
  * ```ts
- * import { coefficientErrors, equationFit } from 'mdml-engine/exposition'
+ * import { coefficientErrors, equationFit } from 'omai-engine/exposition'
  * const r = equationFit({
  *   terms: [
  *     { tex: '1', estimate: 0.31, truth: 0.3 },
@@ -142,7 +142,7 @@ export function coefficientErrors(record: EquationFit): {
  * @returns The `x` of each residual and its value.
  * @example
  * ```ts
- * import { equationFit, fitResidual } from 'mdml-engine/exposition'
+ * import { equationFit, fitResidual } from 'omai-engine/exposition'
  * fitResidual(equationFit({ terms: [], x: [0, 1], fit: [1, 3], truth: [1, 2] })).values // => [0, 1]
  * ```
  */

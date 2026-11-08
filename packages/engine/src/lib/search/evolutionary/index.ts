@@ -2,7 +2,7 @@
  * Evolutionary computation: genetic algorithms, evolution strategies and genetic programming with their selection,
  * crossover and mutation operators, quality-diversity search (MAP-Elites, novelty search) and neuroevolution (NEAT,
  * with innovation numbers, speciation and structural mutation). Part of
- * `mdml-engine/search`.
+ * `omai-engine/search`.
  *
  * @inline
  */

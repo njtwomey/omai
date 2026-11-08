@@ -9,8 +9,8 @@ from typing import cast
 
 import torch
 import torchdiffeq
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray
 
 REFERENCE: dict[str, str] = {"torch": torch.__version__, "torchdiffeq": torchdiffeq.__version__}
 

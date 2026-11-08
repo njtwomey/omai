@@ -9,7 +9,7 @@
  * rather than the catch22 C code, so the values are not the pycatch22 numbers.
  */
 
-import { MdmlError, maxOf, meanOf, varianceOf } from '../base/index.ts'
+import { maxOf, meanOf, OmaiError, varianceOf } from '../base/index.ts'
 import { approximateEntropy, sampleEntropy } from '../information/index.ts'
 import { periodogram } from '../signal/index.ts'
 import { detrendedFluctuation, hurstRs } from '../stochastic/index.ts'
@@ -51,15 +51,15 @@ const quantileOf = (sorted: readonly number[], q: number): number => {
  * @returns The entropy: 0 for a monotone series, near 1 for white noise.
  * @example
  * ```ts
- * import { permutationEntropy } from 'mdml-engine/timeseries'
+ * import { permutationEntropy } from 'omai-engine/timeseries'
  * permutationEntropy([1, 2, 3, 4, 5, 6, 7], 3) // => 0
  * ```
  */
 export function permutationEntropy(x: ArrayLike<number>, order = 3, delay = 1, normalise = true): number {
   if (!(Number.isInteger(order) && order >= 2))
-    throw new MdmlError('value', 'permutationEntropy: order must be at least 2')
+    throw new OmaiError('value', 'permutationEntropy: order must be at least 2')
   const n = x.length - (order - 1) * delay
-  if (n <= 0) throw new MdmlError('value', 'permutationEntropy: the series is too short')
+  if (n <= 0) throw new OmaiError('value', 'permutationEntropy: the series is too short')
   const counts = new Map<string, number>()
   for (let i = 0; i < n; i++) {
     const idx = Array.from({ length: order }, (_, k) => k)
@@ -96,7 +96,7 @@ function longestStrike(flags: readonly boolean[], want: boolean): number {
  * @returns The names, values and a lookup by name.
  * @example
  * ```ts
- * import { timeSeriesFeatures } from 'mdml-engine/timeseries'
+ * import { timeSeriesFeatures } from 'omai-engine/timeseries'
  * const x = Array.from({ length: 64 }, (_, t) => Math.sin(t / 3) + 0.1 * Math.cos(7 * t))
  * (timeSeriesFeatures(x).byName['mean_crossings'] ?? 0) > 0 // => true
  * ```
@@ -104,7 +104,7 @@ function longestStrike(flags: readonly boolean[], want: boolean): number {
 export function timeSeriesFeatures(y: ArrayLike<number>, options: FeatureOptions = {}): FeatureVector {
   const x = Array.from(asSeries(Float64Array.from(y), 'timeSeriesFeatures'))
   const n = x.length
-  if (n < 16) throw new MdmlError('value', 'timeSeriesFeatures: need at least 16 observations')
+  if (n < 16) throw new OmaiError('value', 'timeSeriesFeatures: need at least 16 observations')
   const mean = meanOf(x)
   const variance = varianceOf(x, 0)
   const sd = Math.sqrt(variance)
@@ -219,7 +219,7 @@ export function timeSeriesFeatures(y: ArrayLike<number>, options: FeatureOptions
  * @returns The names and the rows.
  * @example
  * ```ts
- * import { featureMatrix } from 'mdml-engine/timeseries'
+ * import { featureMatrix } from 'omai-engine/timeseries'
  * const a = Array.from({ length: 32 }, (_, t) => Math.sin(t))
  * const b = Array.from({ length: 32 }, (_, t) => t)
  * featureMatrix([a, b]).rows.length // => 2

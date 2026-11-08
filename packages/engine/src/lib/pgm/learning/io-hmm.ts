@@ -9,7 +9,7 @@
  * coefficient has a small ridge penalty, so the EM objective is the penalised log likelihood and it never decreases.
  */
 
-import { MdmlError, maxOf } from '../../base/index.ts'
+import { maxOf, OmaiError } from '../../base/index.ts'
 import { analyticObjective, newtonAt, type SmoothProblem, smoothSolvers } from '../../optim/index.ts'
 import { foldIn, type Key, normal, uniform } from '../../random/index.ts'
 import type { SpaceValue } from '../../space/index.ts'
@@ -62,7 +62,7 @@ const dotf = (w: readonly number[], f: readonly number[]): number => w.reduce((a
  * @concept hidden-markov-models
  * @example
  * ```ts
- * import { learning } from 'mdml-engine/pgm'
+ * import { learning } from 'omai-engine/pgm'
  * const p = { kind: 'categorical', start: [1, 0], transition: [[[0, 1], [0, 0]], [[0, 0], [0, 0]]], emission: [[[0], [0]], [[0], [0]]] } as const
  * learning.ioTransition(p, [0]) // => [[0.5, 0.5], [0.5, 0.5]]
  * ```
@@ -101,18 +101,18 @@ function logEmission(params: IoHmmParameters, input: readonly number[], x: HmmOb
  * @param params - The parameters.
  * @param sequence - Inputs and observations.
  * @returns The chain.
- * @throws MdmlError with code `shape` when the inputs and observations differ in length.
+ * @throws OmaiError with code `shape` when the inputs and observations differ in length.
  * @concept hidden-markov-models
  * @example
  * ```ts
- * import { learning } from 'mdml-engine/pgm'
+ * import { learning } from 'omai-engine/pgm'
  * const p = { kind: 'categorical', start: [0.5, 0.5], transition: [[[0], [0]], [[0], [0]]], emission: [[[0], [0]], [[0], [0]]] } as const
  * learning.ioHmmChain(p, { inputs: [[], []], observations: [0, 1] }).logEmission.length // => 2
  * ```
  */
 export function ioHmmChain(params: IoHmmParameters, sequence: IoHmmSequence): ChainModel {
   const T = sequence.observations.length
-  if (sequence.inputs.length !== T) throw new MdmlError('shape', 'ioHmm: one input per observation')
+  if (sequence.inputs.length !== T) throw new OmaiError('shape', 'ioHmm: one input per observation')
   return {
     logInitial: params.start.map(Math.log),
     logTransition: Array.from({ length: Math.max(0, T - 1) }, (_, t) =>
@@ -131,7 +131,7 @@ export function ioHmmChain(params: IoHmmParameters, sequence: IoHmmSequence): Ch
  * @concept hidden-markov-models
  * @example
  * ```ts
- * import { learning } from 'mdml-engine/pgm'
+ * import { learning } from 'omai-engine/pgm'
  * const p = { kind: 'categorical', start: [0.5, 0.5], transition: [[[0], [0]], [[0], [0]]], emission: [[[0], [0]], [[0], [0]]] } as const
  * Math.round(learning.ioHmmLogLikelihood(p, [{ inputs: [[], []], observations: [0, 1] }]) * 1e6) / 1e6 // => -1.386294
  * ```
@@ -155,7 +155,7 @@ export function ioHmmLogLikelihood(params: IoHmmParameters, sequences: readonly 
  * @concept hidden-markov-models
  * @example
  * ```ts
- * import { learning } from 'mdml-engine/pgm'
+ * import { learning } from 'omai-engine/pgm'
  * // the intercept-only problem is minimised by log class proportions: (3, 1) of four
  * const problem = learning.softmaxRegressionProblem([[1]], [[3, 1]], 0)
  * problem.x0 // => [0, 0]
@@ -281,8 +281,8 @@ const penalty = (p: IoHmmParameters, ridge: number): number => {
  * @concept hidden-markov-models
  * @example
  * ```ts
- * import { learning } from 'mdml-engine/pgm'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { learning } from 'omai-engine/pgm'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const p = { kind: 'categorical', start: [0.5, 0.5], transition: [[[0, 0.1], [0, -0.1]], [[0, -0.1], [0, 0.1]]], emission: [[[1, 0], [0, 0]], [[0, 0], [1, 0]]] } as const
  * const seq = { inputs: [[1], [1], [-1], [-1]], observations: [0, 0, 1, 1] }
  * runAlgorithm(learning.ioHmmAlgorithm([seq], p), { maxSteps: 3 }).steps // => 3
@@ -430,8 +430,8 @@ export function ioHmmAlgorithm(
  * @returns The states and the observations.
  * @example
  * ```ts
- * import { learning } from 'mdml-engine/pgm'
- * import { key } from 'mdml-engine/random'
+ * import { learning } from 'omai-engine/pgm'
+ * import { key } from 'omai-engine/random'
  * const p = { kind: 'categorical', start: [1, 0], transition: [[[0], [-30]], [[-30], [0]]], emission: [[[30], [-30]], [[-30], [30]]] } as const
  * learning.ioHmmSample(p, [[], [], []], key(0)).observations // => [0, 0, 0]
  * ```

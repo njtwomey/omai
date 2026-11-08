@@ -6,7 +6,7 @@ from importlib.metadata import version
 
 import numpy as np
 import pyspiel
-from mdml_oracle.fixture import Case, case
+from omai_oracle.fixture import Case, case
 from open_spiel.python import policy as policy_lib
 from open_spiel.python.algorithms import exploitability, sequence_form_lp
 

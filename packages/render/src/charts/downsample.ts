@@ -4,8 +4,8 @@
  * `decimate` as the default choice.
  */
 
-import { MdmlError } from 'mdml-engine/base'
-import type { Point2 } from 'mdml-engine/numerics/geometry'
+import { OmaiError } from 'omai-engine/base'
+import type { Point2 } from 'omai-engine/numerics/geometry'
 
 /**
  * Largest-triangle-three-buckets downsampling (Steinarsson, 2013, "Downsampling time series for visual
@@ -15,17 +15,17 @@ import type { Point2 } from 'mdml-engine/numerics/geometry'
  * @param points - The points, in increasing x.
  * @param threshold - How many points to keep (at least 3; at or above the input length returns it unchanged).
  * @returns The kept points.
- * @throws MdmlError with code `value` for a threshold below 3.
+ * @throws OmaiError with code `value` for a threshold below 3.
  * @example
  * ```ts
- * import { lttb } from 'mdml-render/charts'
+ * import { lttb } from 'omai-render/charts'
  * lttb([[0, 0], [1, 5], [2, 0], [3, 1], [4, 0]], 3) // => [[0, 0], [1, 5], [4, 0]]
  * ```
  */
 export function lttb(points: readonly Point2[], threshold: number): Point2[] {
   const n = points.length
   if (threshold >= n) return [...points]
-  if (!(threshold >= 3)) throw new MdmlError('value', 'lttb: keep at least 3 points')
+  if (!(threshold >= 3)) throw new OmaiError('value', 'lttb: keep at least 3 points')
   const out: Point2[] = [points[0] as Point2]
   const every = (n - 2) / (threshold - 2)
   let a = 0
@@ -70,7 +70,7 @@ export function lttb(points: readonly Point2[], threshold: number): Point2[] {
  * @returns The kept points.
  * @example
  * ```ts
- * import { minMaxDecimate } from 'mdml-render/charts'
+ * import { minMaxDecimate } from 'omai-render/charts'
  * minMaxDecimate([[0, 1], [1, 3], [2, 2], [3, 0], [4, 1], [5, 2]], 1) // => [[0, 1], [1, 3], [3, 0], [5, 2]]
  * ```
  */
@@ -106,7 +106,7 @@ export function minMaxDecimate(points: readonly Point2[], buckets: number): Poin
  * @returns The kept x and y values.
  * @example
  * ```ts
- * import { decimate } from 'mdml-render/charts'
+ * import { decimate } from 'omai-render/charts'
  * decimate(Array.from({ length: 10000 }, (_, i) => Math.sin(i / 100)), 500).x.length // => 500
  * ```
  */

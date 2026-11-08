@@ -5,7 +5,7 @@
  * stable-baselines3.
  */
 
-import { argmaxOf, MdmlError } from '../base/index.ts'
+import { argmaxOf, OmaiError } from '../base/index.ts'
 import { categorical, normal } from '../dists/index.ts'
 import { foldIn, type Key, normal as normalNoise, uniform } from '../random/index.ts'
 import {
@@ -36,7 +36,7 @@ const u1 = (k: Key): number => uniform(k, []).data[0] ?? 0
  * @concept exploration
  * @example
  * ```ts
- * import { epsilonGreedyProbabilities } from 'mdml-engine/rl'
+ * import { epsilonGreedyProbabilities } from 'omai-engine/rl'
  * epsilonGreedyProbabilities([1, 3, 2], 0.75) // => [0.25, 0.5, 0.25]
  * ```
  */
@@ -56,13 +56,13 @@ export function epsilonGreedyProbabilities(q: ArrayLike<number>, epsilon: number
  * @concept exploration
  * @example
  * ```ts
- * import { epsilonGreedy } from 'mdml-engine/rl'
- * import { key } from 'mdml-engine/random'
+ * import { epsilonGreedy } from 'omai-engine/rl'
+ * import { key } from 'omai-engine/random'
  * epsilonGreedy([0, 5, 1], 0, key(0)) // => 1
  * ```
  */
 export function epsilonGreedy(q: ArrayLike<number>, epsilon: number, key: Key): number {
-  if (q.length === 0) throw new MdmlError('value', 'epsilonGreedy: no actions')
+  if (q.length === 0) throw new OmaiError('value', 'epsilonGreedy: no actions')
   if (u1(foldIn(key, 0)) < epsilon) return Math.min(q.length - 1, Math.floor(u1(foldIn(key, 1)) * q.length))
   return argmaxOf(q)
 }
@@ -76,12 +76,12 @@ export function epsilonGreedy(q: ArrayLike<number>, epsilon: number, key: Key): 
  * @concept exploration
  * @example
  * ```ts
- * import { boltzmannProbabilities } from 'mdml-engine/rl'
+ * import { boltzmannProbabilities } from 'omai-engine/rl'
  * boltzmannProbabilities([0, Math.log(3)], 1).map((p) => Number(p.toFixed(12))) // => [0.25, 0.75]
  * ```
  */
 export function boltzmannProbabilities(q: ArrayLike<number>, temperature: number): number[] {
-  if (!(temperature > 0)) throw new MdmlError('value', 'boltzmann: the temperature must be positive')
+  if (!(temperature > 0)) throw new OmaiError('value', 'boltzmann: the temperature must be positive')
   let m = -Infinity
   for (let i = 0; i < q.length; i++) m = Math.max(m, (q[i] ?? 0) / temperature)
   const w = Array.from({ length: q.length }, (_, i) => Math.exp((q[i] ?? 0) / temperature - m))
@@ -100,8 +100,8 @@ export function boltzmannProbabilities(q: ArrayLike<number>, temperature: number
  * @concept exploration
  * @example
  * ```ts
- * import { boltzmann } from 'mdml-engine/rl'
- * import { key } from 'mdml-engine/random'
+ * import { boltzmann } from 'omai-engine/rl'
+ * import { key } from 'omai-engine/random'
  * boltzmann([0, 100], 1, key(0)) // => 1
  * ```
  */
@@ -143,8 +143,8 @@ export interface PolicyHead {
  * @concept policy-gradient
  * @example
  * ```ts
- * import { categoricalPolicy } from 'mdml-engine/rl'
- * import { item } from 'mdml-engine/tensor'
+ * import { categoricalPolicy } from 'omai-engine/rl'
+ * import { item } from 'omai-engine/tensor'
  * item(categoricalPolicy([0, 0]).logProb(1)) === Math.log(0.5) // => true
  * ```
  */
@@ -153,7 +153,7 @@ export function categoricalPolicy(logits: TensorLike): PolicyHead {
   return {
     sample: (k) => d.sample(k),
     rsample: () => {
-      throw new MdmlError('not-implemented', 'categoricalPolicy: discrete actions have no reparameterisation')
+      throw new OmaiError('not-implemented', 'categoricalPolicy: discrete actions have no reparameterisation')
     },
     logProb: (a) => d.logProb(a),
     sampleWithLogProb: (k) => {
@@ -189,8 +189,8 @@ const logTanhJacobian = (u: Value): Value => mul(2, sub(sub(Math.LN2, u), softpl
  * @concept policy-gradient
  * @example
  * ```ts
- * import { gaussianPolicy } from 'mdml-engine/rl'
- * import { item } from 'mdml-engine/tensor'
+ * import { gaussianPolicy } from 'omai-engine/rl'
+ * import { item } from 'omai-engine/tensor'
  * Math.abs(item(gaussianPolicy([0], [0]).logProb([0])) + 0.5 * Math.log(2 * Math.PI)) < 1e-15 // => true
  * ```
  */
@@ -252,16 +252,16 @@ export function gaussianPolicy(mean: TensorLike, logStd: TensorLike, options: Ga
  * @concept policy-gradient
  * @example
  * ```ts
- * import { deterministicPolicy } from 'mdml-engine/rl'
- * import { key } from 'mdml-engine/random'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { deterministicPolicy } from 'omai-engine/rl'
+ * import { key } from 'omai-engine/random'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(deterministicPolicy([0.5]).sample(key(0))) // => [0.5]
  * ```
  */
 export function deterministicPolicy(action: TensorLike): PolicyHead {
   const a = asTensor(action) as Value
   const none = (): never => {
-    throw new MdmlError('not-implemented', 'deterministicPolicy: a deterministic policy has no density')
+    throw new OmaiError('not-implemented', 'deterministicPolicy: a deterministic policy has no density')
   }
   return {
     sample: () => a,
@@ -290,8 +290,8 @@ export interface NoiseProcess {
  * @concept exploration
  * @example
  * ```ts
- * import { gaussianNoise } from 'mdml-engine/rl'
- * import { key } from 'mdml-engine/random'
+ * import { gaussianNoise } from 'omai-engine/rl'
+ * import { key } from 'omai-engine/random'
  * gaussianNoise(2, { sigma: 0 }).step([0, 0], key(0)) // => [0, 0]
  * ```
  */
@@ -318,8 +318,8 @@ export function gaussianNoise(
  * @concept exploration
  * @example
  * ```ts
- * import { ornsteinUhlenbeckNoise } from 'mdml-engine/rl'
- * import { key } from 'mdml-engine/random'
+ * import { ornsteinUhlenbeckNoise } from 'omai-engine/rl'
+ * import { key } from 'omai-engine/random'
  * ornsteinUhlenbeckNoise(1, { sigma: 0, theta: 1, dt: 0.5 }).step([2], key(0)) // => [1]
  * ```
  */
@@ -359,7 +359,7 @@ export function ornsteinUhlenbeckNoise(
  * @concept policy-gradient
  * @example
  * ```ts
- * import { categoricalPolicy, logProbOf } from 'mdml-engine/rl'
+ * import { categoricalPolicy, logProbOf } from 'omai-engine/rl'
  * logProbOf(categoricalPolicy([0, 0, 0, 0]), 2) === Math.log(0.25) // => true
  * ```
  */

@@ -4,11 +4,11 @@
 
 A small computer algebra system, SymPy style: immutable expressions (`Expr`, built with `sym` and `num` or read by `parse`) with `simplify`, `diff`, `integrate`, `solve`, series expansion and `toLatex`, used to state and check closed forms.
 
-- structure `expr.ts` (file): Immutable symbolic expression tree in canonical form. `src/lib/symbolic/expr.ts:1` `mdml-engine/symbolic`
+- structure `expr.ts` (file): Immutable symbolic expression tree in canonical form. `src/lib/symbolic/expr.ts:1` `omai-engine/symbolic`
 
-- function `diff`: Symbolic derivative. `src/lib/symbolic/differentiate.ts:232` `mdml-engine/symbolic`
-- function `integrate`: Symbolic antiderivative by a bounded heuristic integrator. `src/lib/symbolic/integrate.ts:292` `mdml-engine/symbolic`
-- function `parse`: Parse text into an expression. `src/lib/symbolic/parse.ts:405` `mdml-engine/symbolic`
-- function `simplify`: Simplify and rewrite an expression, like SymPy simplify. `src/lib/symbolic/simplify.ts:366` `mdml-engine/symbolic`
-- function `solve`: Solve equations symbolically. `src/lib/symbolic/solve.ts:298` `mdml-engine/symbolic`
-- function `toLatex`: Render an expression as LaTeX. `src/lib/symbolic/latex.ts:623` `mdml-engine/symbolic`
+- function `diff`: Symbolic derivative. `src/lib/symbolic/differentiate.ts:232` `omai-engine/symbolic`
+- function `integrate`: Symbolic antiderivative by a bounded heuristic integrator. `src/lib/symbolic/integrate.ts:292` `omai-engine/symbolic`
+- function `parse`: Parse text into an expression. `src/lib/symbolic/parse.ts:405` `omai-engine/symbolic`
+- function `simplify`: Simplify and rewrite an expression, like SymPy simplify. `src/lib/symbolic/simplify.ts:366` `omai-engine/symbolic`
+- function `solve`: Solve equations symbolically. `src/lib/symbolic/solve.ts:298` `omai-engine/symbolic`
+- function `toLatex`: Render an expression as LaTeX. `src/lib/symbolic/latex.ts:623` `omai-engine/symbolic`

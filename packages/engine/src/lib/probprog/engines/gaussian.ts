@@ -6,7 +6,7 @@
  */
 
 import { jacobian } from '../../autodiff/index.ts'
-import { LOG_2PI, MdmlError } from '../../base/index.ts'
+import { LOG_2PI, OmaiError } from '../../base/index.ts'
 import { type Distribution, multivariateNormal, normal } from '../../dists/index.ts'
 import { kalmanUpdate, rtsStep } from '../../dynamics/filtering/index.ts'
 import { cholesky, slogdet, solve } from '../../numerics/linalg/index.ts'
@@ -72,7 +72,7 @@ export interface LinearGaussianForm {
 function locOf(site: SampleSite): Value {
   const base = unexpanded(site.fn)
   const loc = base.params['loc']
-  if (loc === undefined) throw new MdmlError('value', `gaussian: site ${site.name} has no location`)
+  if (loc === undefined) throw new OmaiError('value', `gaussian: site ${site.name} has no location`)
   return broadcastTo(loc, site.value.shape)
 }
 
@@ -81,11 +81,11 @@ function noiseOf(site: SampleSite): Tensor {
   const n = product(site.value.shape)
   if (base.name === 'normal') {
     const scale = base.params['scale']
-    if (scale === undefined) throw new MdmlError('value', `gaussian: site ${site.name} has no scale`)
+    if (scale === undefined) throw new OmaiError('value', `gaussian: site ${site.name} has no scale`)
     return primalOf(diag(reshape(square(broadcastTo(primalOf(scale), site.value.shape)), [n])))
   }
   const l = base.params['scaleTril']
-  if (l === undefined) throw new MdmlError('value', `gaussian: site ${site.name} has no scale`)
+  if (l === undefined) throw new OmaiError('value', `gaussian: site ${site.name} has no scale`)
   const d = site.value.shape[site.value.shape.length - 1] ?? 1
   const batch = site.value.shape.slice(0, -1)
   const cov = primalOf(matmul(l, swapaxes(l, -1, -2)))
@@ -124,10 +124,10 @@ function blockDiagonal(blocks: readonly Tensor[]): Tensor {
  * @concept linear-gaussian-models
  * @example
  * ```ts
- * import { linearGaussianForm, observe, sample, seed, traceOf } from 'mdml-engine/probprog'
- * import { normal } from 'mdml-engine/dists'
- * import { key } from 'mdml-engine/random'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { linearGaussianForm, observe, sample, seed, traceOf } from 'omai-engine/probprog'
+ * import { normal } from 'omai-engine/dists'
+ * import { key } from 'omai-engine/random'
+ * import { toArray } from 'omai-engine/tensor'
  * const model = () => { const x = sample('x', normal(1, 2)); observe('y', normal(x, 1), 0.5) }
  * const f = linearGaussianForm(model, undefined, traceOf(seed(model, key(0)), undefined))
  * toArray(f.A) // => [[0, 0], [1, 0]]
@@ -168,7 +168,7 @@ export function linearGaussianForm<D = void>(model: Model<D>, data: D, prototype
     return concat(
       blocks.map((b) => {
         const s = t.sites.get(b.name)
-        if (s?.type !== 'sample') throw new MdmlError('value', `gaussian: site ${b.name} disappeared`)
+        if (s?.type !== 'sample') throw new OmaiError('value', `gaussian: site ${b.name} disappeared`)
         return reshape(locOf(s), [b.size])
       }),
     )
@@ -212,10 +212,10 @@ export interface GaussianConditioning {
  * @concept gaussian-conditioning
  * @example
  * ```ts
- * import { gaussianCondition, linearGaussianForm, observe, sample, seed, traceOf } from 'mdml-engine/probprog'
- * import { normal } from 'mdml-engine/dists'
- * import { key } from 'mdml-engine/random'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { gaussianCondition, linearGaussianForm, observe, sample, seed, traceOf } from 'omai-engine/probprog'
+ * import { normal } from 'omai-engine/dists'
+ * import { key } from 'omai-engine/random'
+ * import { toArray } from 'omai-engine/tensor'
  * const model = () => { const x = sample('x', normal(0, 1)); observe('y', normal(x, 1), 2) }
  * const post = gaussianCondition(linearGaussianForm(model, undefined, traceOf(seed(model, key(0)), undefined)))
  * toArray(post.mean) // => [1]
@@ -276,14 +276,14 @@ export interface KalmanResult {
  *
  * @param form - The linear system of a chain program (every latent site in one markov loop).
  * @returns The filtered and smoothed moments and log p(y).
- * @throws MdmlError with code `value` when the system is not a first-order chain.
+ * @throws OmaiError with code `value` when the system is not a first-order chain.
  * @concept kalman-filter
  * @example
  * ```ts
- * import { kalmanSmoother, linearGaussianForm, markov, observe, sample, seed, traceOf } from 'mdml-engine/probprog'
- * import { normal } from 'mdml-engine/dists'
- * import { key } from 'mdml-engine/random'
- * import { item, type Value } from 'mdml-engine/tensor'
+ * import { kalmanSmoother, linearGaussianForm, markov, observe, sample, seed, traceOf } from 'omai-engine/probprog'
+ * import { normal } from 'omai-engine/dists'
+ * import { key } from 'omai-engine/random'
+ * import { item, type Value } from 'omai-engine/tensor'
  * const ys = [1, 2]
  * const walk = () => markov('t', 2, (t, x: Value | number) => { const z = sample(`x${t}`, normal(x, 1)); observe(`y${t}`, normal(z, 1), ys[t] ?? 0); return z }, 0)
  * const k = kalmanSmoother(linearGaussianForm(walk, undefined, traceOf(seed(walk, key(0)), undefined)))
@@ -294,7 +294,7 @@ export function kalmanSmoother(form: LinearGaussianForm): KalmanResult {
   const latentSteps = new Map<number, GaussianBlock[]>()
   const obsSteps = new Map<number, GaussianBlock[]>()
   for (const b of form.blocks) {
-    if (b.step === undefined) throw new MdmlError('value', `kalman: site ${b.name} is outside the markov loop`)
+    if (b.step === undefined) throw new OmaiError('value', `kalman: site ${b.name} is outside the markov loop`)
     const m = b.observed ? obsSteps : latentSteps
     m.set(b.step, [...(m.get(b.step) ?? []), b])
   }
@@ -312,7 +312,7 @@ export function kalmanSmoother(form: LinearGaussianForm): KalmanResult {
   const allowed = (rows: readonly number[], cols: readonly number[]): void => {
     if (rows.length === 0 || cols.length === 0) return
     if (toFlat(sub2(form.A, rows, cols)).some((v) => v !== 0))
-      throw new MdmlError('value', 'kalman: the program is not a first-order chain of latent states')
+      throw new OmaiError('value', 'kalman: the program is not a first-order chain of latent states')
   }
   const n = form.b.shape[0] ?? 0
   const everything = Array.from({ length: n }, (_, i) => i)
@@ -455,13 +455,13 @@ function isChain(a: ProgramAnalysis): boolean {
  * @param data - Its data.
  * @param options - The method, tracer and policy.
  * @returns The posterior (exact; marginals are normal or multivariate normal per site).
- * @throws MdmlError with code `value` when the program is not linear-Gaussian.
+ * @throws OmaiError with code `value` when the program is not linear-Gaussian.
  * @concept gaussian-conditioning
  * @example
  * ```ts
- * import { gaussianInference, observe, plate, sample } from 'mdml-engine/probprog'
- * import { normal } from 'mdml-engine/dists'
- * import { item } from 'mdml-engine/tensor'
+ * import { gaussianInference, observe, plate, sample } from 'omai-engine/probprog'
+ * import { normal } from 'omai-engine/dists'
+ * import { item } from 'omai-engine/tensor'
  * const model = (y: number[]) => { const mu = sample('mu', normal(0, 1)); plate('n', y.length, () => observe('y', normal(mu, 1), y)) }
  * item(gaussianInference(model, [1, 2, 3]).mean('mu')) // => 1.5
  * ```
@@ -473,7 +473,7 @@ export function gaussianInference<D = void>(
 ): Posterior {
   const a = options.analysis ?? analyse(model, data)
   if (!a.linearGaussian.linear)
-    throw new MdmlError('value', `gaussianInference: the program is not linear-Gaussian (${a.linearGaussian.reason})`)
+    throw new OmaiError('value', `gaussianInference: the program is not linear-Gaussian (${a.linearGaussian.reason})`)
   const form = linearGaussianForm(model, data, a.prototype)
   const latent = form.blocks.filter((b) => !b.observed)
   const method =
@@ -529,7 +529,7 @@ export function gaussianInference<D = void>(
     for (let i = 0; i < n; i++) {
       for (let j = 0; j < n; j++)
         if (i !== j && (Sf[i * n + j] ?? 0) !== 0)
-          throw new MdmlError('value', 'gaussian bp: correlated noise within a site; use the joint method')
+          throw new OmaiError('value', 'gaussian bp: correlated noise within a site; use the joint method')
       const parents: string[] = []
       const weights: number[] = []
       for (let j = 0; j < n; j++) {
@@ -586,7 +586,7 @@ export function gaussianInference<D = void>(
       const x = concat(
         latent.map((b) => {
           const v = values[b.name]
-          if (v === undefined) throw new MdmlError('value', `gaussian posterior: no value for ${b.name}`)
+          if (v === undefined) throw new OmaiError('value', `gaussian posterior: no value for ${b.name}`)
           return reshape(asTensor(v), [b.size])
         }),
       )
@@ -606,8 +606,8 @@ export function gaussianInference<D = void>(
  * @concept inference-engines
  * @example
  * ```ts
- * import { analyse, gaussianEngine, observe, sample } from 'mdml-engine/probprog'
- * import { normal } from 'mdml-engine/dists'
+ * import { analyse, gaussianEngine, observe, sample } from 'omai-engine/probprog'
+ * import { normal } from 'omai-engine/dists'
  * const a = analyse(() => { const m = sample('m', normal(0, 1)); observe('y', normal(m, 1), 0) }, undefined)
  * gaussianEngine().applies(a).applies // => true
  * ```

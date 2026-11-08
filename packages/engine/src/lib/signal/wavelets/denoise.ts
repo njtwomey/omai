@@ -4,7 +4,7 @@
  * details by VisuShrink or BayesShrink and reconstructs it, as skimage.restoration.denoise_wavelet.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import {
   abs,
   div,
@@ -45,8 +45,8 @@ export type ThresholdMode = 'soft' | 'hard' | 'garrote' | 'greater' | 'less'
  * @concept wavelet-denoising
  * @example
  * ```ts
- * import { threshold } from 'mdml-engine/signal'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { threshold } from 'omai-engine/signal'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(threshold([-3, -1, 0.5, 2], 1)) // => [-2, 0, 0, 1]
  * toArray(threshold([-3, -1, 0.5, 2], 1, 'hard')) // => [-3, -1, 0, 2]
  * ```
@@ -81,7 +81,7 @@ export function threshold(x: TensorLike, value: number, mode: ThresholdMode = 's
  * @concept wavelet-denoising
  * @example
  * ```ts
- * import { estimateNoiseSigma } from 'mdml-engine/signal'
+ * import { estimateNoiseSigma } from 'omai-engine/signal'
  * Math.round(estimateNoiseSigma([1, -1, 1, -1]) * 1e6) / 1e6 // => 1.482602
  * ```
  */
@@ -128,7 +128,7 @@ function bayes(d: Value, variance: number): number {
  * @concept wavelet-denoising
  * @example
  * ```ts
- * import { waveletDenoise } from 'mdml-engine/signal'
+ * import { waveletDenoise } from 'omai-engine/signal'
  * waveletDenoise(new Array(64).fill(0).map((_, i) => Math.sin(i / 5) + 0.1 * Math.cos(37 * i))).shape // => [64]
  * ```
  */
@@ -150,12 +150,12 @@ export function waveletDenoise(x: TensorLike, options: WaveletDenoiseOptions = {
     )
     return sliceTo(waverec(out, w), [n])
   }
-  if (v.shape.length !== 2) throw new MdmlError('shape', 'waveletDenoise: expected a signal or a grey image')
+  if (v.shape.length !== 2) throw new OmaiError('shape', 'waveletDenoise: expected a signal or a grey image')
   const [h = 0, wd = 0] = v.shape
   const levels = options.levels ?? Math.max(Math.min(dwtMaxLevel(h, w), dwtMaxLevel(wd, w)) - 3, 1)
   const c = wavedec2(v, w, { level: levels })
   const finest = c.details[c.details.length - 1]
-  if (finest === undefined) throw new MdmlError('value', 'waveletDenoise: no detail coefficients')
+  if (finest === undefined) throw new OmaiError('value', 'waveletDenoise: no detail coefficients')
   const sigma = options.sigma ?? estimateNoiseSigma(finest.cD)
   const universal = sigma * Math.sqrt(2 * Math.log(size))
   const t = (d: Value): Value => threshold(d, method === 'VisuShrink' ? universal : bayes(d, sigma * sigma), mode)

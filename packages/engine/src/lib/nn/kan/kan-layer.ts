@@ -9,7 +9,7 @@
  * everywhere. A mask buffer switches edges off (pruning).
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { foldIn, type Key, uniform } from '../../random/index.ts'
 import { dict, type OptionTable, optionTable, type SpaceValue } from '../../space/index.ts'
 import {
@@ -68,7 +68,7 @@ const baseFunction = (
  *
  * @example
  * ```ts
- * import { kanBaseFunctions } from 'mdml-engine/nn'
+ * import { kanBaseFunctions } from 'omai-engine/nn'
  * kanBaseFunctions.make({ kind: 'silu' }).value(0) // => 0
  * kanBaseFunctions.make({ kind: 'none' }).apply // => undefined
  * ```
@@ -147,8 +147,8 @@ export interface KanLayerOptions {
  * @concept splines
  * @example
  * ```ts
- * import { KanLayer } from 'mdml-engine/nn'
- * import { asTensor } from 'mdml-engine/tensor'
+ * import { KanLayer } from 'omai-engine/nn'
+ * import { asTensor } from 'omai-engine/tensor'
  * const layer = new KanLayer({ inFeatures: 2, outFeatures: 3, grid: 5, degree: 3 })
  * layer.forward([[0.2, -0.4]]).shape // => [1, 3]
  * layer.activations(layer.params, asTensor([[0.2, -0.4]])).shape // => [1, 2, 3]
@@ -174,7 +174,7 @@ export class KanLayer extends Module {
     this.grid = options.grid ?? 5
     this.degree = options.degree ?? 3
     if (!(Number.isInteger(this.grid) && this.grid >= 2))
-      throw new MdmlError('value', 'KanLayer: grid must be an integer >= 2')
+      throw new OmaiError('value', 'KanLayer: grid must be an integer >= 2')
     this.baseFunction = kanBaseFunctions.make(options.base)
     this.hasBias = options.bias ?? false
     this.scaleBaseMu = options.scaleBaseMu ?? 0
@@ -231,7 +231,7 @@ export class KanLayer extends Module {
   private inputs(x: Value): Value {
     if (x.shape.length === 1 && this.inFeatures === 1) return reshape(x, [x.shape[0] ?? 0, 1])
     if (x.shape.length !== 2 || x.shape[1] !== this.inFeatures)
-      throw new MdmlError('shape', `KanLayer: expected [n, ${this.inFeatures}], got [${x.shape.join(', ')}]`)
+      throw new OmaiError('shape', `KanLayer: expected [n, ${this.inFeatures}], got [${x.shape.join(', ')}]`)
     return x
   }
 

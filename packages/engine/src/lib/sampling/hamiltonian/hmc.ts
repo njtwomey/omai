@@ -4,7 +4,7 @@
  * `hmc`, which samples several chains after Stan-style warm-up as NumPyro's `MCMC(HMC(...))`.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { foldIn } from '../../random/index.ts'
 import type { TensorLike } from '../../tensor/index.ts'
 import { acceptWith, checkStepSize } from '../_mcmc.ts'
@@ -31,19 +31,19 @@ export interface HMCState extends MCMCState {
  * @param target - The target (with a gradient).
  * @param position - The position.
  * @returns The state.
- * @throws MdmlError with code `shape` for a position of the wrong length, and `value` for a target without a
+ * @throws OmaiError with code `shape` for a position of the wrong length, and `value` for a target without a
  *   gradient.
  * @example
  * ```ts
- * import { hmcState, numericTarget } from 'mdml-engine/sampling'
+ * import { hmcState, numericTarget } from 'omai-engine/sampling'
  * const t = numericTarget((x) => -0.5 * (x[0] ?? 0) ** 2, 1, { grad: (x) => [-(x[0] ?? 0)] })
  * Array.from(hmcState(t, [2]).grad) // => [-2]
  * ```
  */
 export function hmcState(target: LogDensity, position: ArrayLike<number>): HMCState {
-  if (!target.hasGradient) throw new MdmlError('value', 'hmcState: the target has no gradient')
+  if (!target.hasGradient) throw new OmaiError('value', 'hmcState: the target has no gradient')
   if (position.length !== target.dim) {
-    throw new MdmlError('shape', `hmcState: the position has ${position.length} values, need ${target.dim}`)
+    throw new OmaiError('shape', `hmcState: the position has ${position.length} values, need ${target.dim}`)
   }
   const x = Float64Array.from(position)
   const r = target.valueAndGrad(x)
@@ -77,14 +77,14 @@ export interface HMCOptions extends HamiltonianOptions {
  * @param target - The target (with a gradient).
  * @param options - Step size, number of integrator steps, inverse mass matrix, integrator and divergence threshold.
  * @returns The kernel.
- * @throws MdmlError with code `value` for a target without a gradient, a non-positive step size or an invalid
+ * @throws OmaiError with code `value` for a target without a gradient, a non-positive step size or an invalid
  *   number of steps.
  * @concept hamiltonian-monte-carlo
  * @reference R. M. Neal, MCMC using Hamiltonian dynamics (Handbook of Markov Chain Monte Carlo, 2011).
  * @example
  * ```ts
- * import { hmcKernel, numericTarget } from 'mdml-engine/sampling'
- * import { key } from 'mdml-engine/random'
+ * import { hmcKernel, numericTarget } from 'omai-engine/sampling'
+ * import { key } from 'omai-engine/random'
  * const t = numericTarget((x) => -0.5 * (x[0] ?? 0) ** 2, 1, { grad: (x) => [-(x[0] ?? 0)] })
  * const k = hmcKernel(t, { stepSize: 0.1, numIntegrationSteps: 10 })
  * k.step(key(0), k.init([0.5])).info.numSteps // => 10
@@ -94,7 +94,7 @@ export function hmcKernel(target: LogDensity, options: HMCOptions): MCMCKernel<H
   const { stepSize, numIntegrationSteps: steps } = options
   checkStepSize(stepSize, 'hmcKernel')
   if (!(Number.isInteger(steps) && steps >= 1 && steps <= 100000)) {
-    throw new MdmlError('value', 'hmcKernel: numIntegrationSteps must be an integer in [1, 100000]')
+    throw new OmaiError('value', 'hmcKernel: numIntegrationSteps must be an integer in [1, 100000]')
   }
   const metric = euclideanMetric(options.inverseMassMatrix ?? 1, target.dim)
   const step = integrator(target, metric, options.integrator ?? 'velocityVerlet')
@@ -146,7 +146,7 @@ export type HMCAdaptationOptions = Omit<HMCOptions, 'stepSize' | 'inverseMassMat
  * @concept window-adaptation
  * @example
  * ```ts
- * import { hmcAdaptation, numericTarget } from 'mdml-engine/sampling'
+ * import { hmcAdaptation, numericTarget } from 'omai-engine/sampling'
  * const t = numericTarget((x) => -0.5 * (x[0] ?? 0) ** 2, 1, { grad: (x) => [-(x[0] ?? 0)] })
  * hmcAdaptation(t, { numIntegrationSteps: 10 }).name // => 'windowAdaptation'
  * ```
@@ -169,8 +169,8 @@ export type HMCRunOptions = HMCAdaptationOptions & Omit<SampleChainsOptions, 'na
  * @index function Hamiltonian Monte Carlo chains.
  * @example
  * ```ts
- * import { hmc, numericTarget } from 'mdml-engine/sampling'
- * import { key } from 'mdml-engine/random'
+ * import { hmc, numericTarget } from 'omai-engine/sampling'
+ * import { key } from 'omai-engine/random'
  * const t = numericTarget((x) => -0.5 * (x[0] ?? 0) ** 2, 1, { grad: (x) => [-(x[0] ?? 0)] })
  * hmc(t, { key: key(0), numIntegrationSteps: 5, numChains: 1, numWarmup: 50, numDraws: 20 }).draws.shape // => [1, 20, 1]
  * ```

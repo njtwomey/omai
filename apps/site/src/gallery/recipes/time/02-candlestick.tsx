@@ -1,8 +1,8 @@
-import { key, normal } from 'mdml-engine/random'
-import { toArray } from 'mdml-engine/tensor'
-import { type Candle, candlestickChart } from 'mdml-render/charts'
-import { figure } from 'mdml-render/figure'
-import { Chart, ControlPanel, FigureFrame, NumberField, SeedInput, useColourMode } from 'mdml-render/react'
+import { key, normal } from 'omai-engine/random'
+import { toArray } from 'omai-engine/tensor'
+import { type Candle, candlestickChart } from 'omai-render/charts'
+import { figure } from 'omai-render/figure'
+import { Chart, ControlPanel, FigureFrame, NumberField, SeedInput, useColourMode } from 'omai-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 

@@ -4,6 +4,6 @@
 
 Gaussian processes: regression over any kernel with the exact log marginal likelihood and its gradient, fitted by L-BFGS-B with restarts as a stepped algorithm, predictive means, variances and posterior samples; classification by the Laplace and expectation-propagation approximations; sparse approximations with inducing points; and the relevance vector machine.
 
-- estimator `gpClassifier`: Gaussian process classification by Laplace or EP. `src/lib/gp/classification.ts:356` `mdml-engine/gp`
-- estimator `gpRegression`: Gaussian process regression with exact marginal likelihood. `src/lib/gp/regression.ts:289` `mdml-engine/gp`
-- estimator `sparseGp`: Sparse Gaussian process with inducing points. `src/lib/gp/sparse.ts:400` `mdml-engine/gp`
+- estimator `gpClassifier`: Gaussian process classification by Laplace or EP. `src/lib/gp/classification.ts:356` `omai-engine/gp`
+- estimator `gpRegression`: Gaussian process regression with exact marginal likelihood. `src/lib/gp/regression.ts:289` `omai-engine/gp`
+- estimator `sparseGp`: Sparse Gaussian process with inducing points. `src/lib/gp/sparse.ts:400` `omai-engine/gp`

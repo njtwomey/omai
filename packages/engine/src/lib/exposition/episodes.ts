@@ -41,10 +41,10 @@ export interface EpisodeRecord {
  *
  * @param record - The record without its `kind`.
  * @returns The record.
- * @throws MdmlError `shape` when returns and lengths differ, or a recorded episode's columns do.
+ * @throws OmaiError `shape` when returns and lengths differ, or a recorded episode's columns do.
  * @example
  * ```ts
- * import { episodeRecord } from 'mdml-engine/exposition'
+ * import { episodeRecord } from 'omai-engine/exposition'
  * episodeRecord({ environment: 'CartPole', agent: 'dqn', returns: [12, 40], lengths: [12, 40] }).returns // => [12, 40]
  * ```
  */

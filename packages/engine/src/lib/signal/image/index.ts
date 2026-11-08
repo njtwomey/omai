@@ -1,5 +1,5 @@
 /**
- * Image processing, scipy.ndimage and scikit-image style, available as `mdml-engine/signal/image`: N-dimensional
+ * Image processing, scipy.ndimage and scikit-image style, available as `omai-engine/signal/image`: N-dimensional
  * correlation and filters, geometric transforms and pyramids, mathematical morphology, feature and edge detectors,
  * motion estimation and optical flow, and thresholding, watershed and graph-based segmentation.
  */

@@ -7,7 +7,7 @@
  * the classifier on the iterative base with class probabilities, the latent score and a Wald table.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import { categorical } from '../dists/index.ts'
 import type { CoefficientTable, Exposition } from '../exposition/index.ts'
 import {
@@ -104,8 +104,8 @@ export interface OrdinalLikelihood {
  * @returns The log-likelihood and its gradient.
  * @example
  * ```ts
- * import { ordinalLogLikelihood } from 'mdml-engine/linear'
- * import { matrixView } from 'mdml-engine/learn'
+ * import { ordinalLogLikelihood } from 'omai-engine/linear'
+ * import { matrixView } from 'omai-engine/learn'
  * const problem = { x: matrixView([[0], [1]], 'demo'), codes: [0, 1], w: [1, 1], nClasses: 2 }
  * ordinalLogLikelihood(problem, [0], [0]).logLikelihood // => -1.3862943611198906
  * ```
@@ -175,7 +175,7 @@ export function ordinalLogLikelihood(
  * @returns Row-major probabilities, `n * K` entries.
  * @example
  * ```ts
- * import { ordinalProbabilities } from 'mdml-engine/linear'
+ * import { ordinalProbabilities } from 'omai-engine/linear'
  * Array.from(ordinalProbabilities([0], [-1, 1])).map((p) => Math.round(p * 1e4) / 1e4) // => [0.2689, 0.4621, 0.2689]
  * ```
  */
@@ -274,7 +274,7 @@ export function ordinalProblemOf(
 ): { problem: OrdinalProblem; classes: readonly number[] } {
   const x = matrixView(data.x, who)
   const { classes, codes } = encodeLabels(data.y ?? [], who, x.n)
-  if (classes.length < 2) throw new MdmlError('value', `${who}: needs at least two categories`)
+  if (classes.length < 2) throw new OmaiError('value', `${who}: needs at least two categories`)
   return { problem: { x, codes, w: sampleWeightsOf(data.weights, x.n, who), nClasses: classes.length }, classes }
 }
 
@@ -288,8 +288,8 @@ export function ordinalProblemOf(
  * @returns The objective and the start.
  * @example
  * ```ts
- * import { ordinalSmoothProblem } from 'mdml-engine/linear'
- * import { matrixView } from 'mdml-engine/learn'
+ * import { ordinalSmoothProblem } from 'omai-engine/linear'
+ * import { matrixView } from 'omai-engine/learn'
  * const x = matrixView([[0], [1], [2], [3], [4], [5]], 'demo')
  * ordinalSmoothProblem({ x, codes: [0, 0, 1, 0, 1, 1], w: [1, 1, 1, 1, 1, 1], nClasses: 2 }).x0.length // => 2
  * ```
@@ -342,9 +342,9 @@ export function ordinalSmoothProblem(problem: OrdinalProblem, options: OrdinalOp
  * @returns The algorithm.
  * @example
  * ```ts
- * import { ordinalAlgorithm } from 'mdml-engine/linear'
- * import { matrixView } from 'mdml-engine/learn'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { ordinalAlgorithm } from 'omai-engine/linear'
+ * import { matrixView } from 'omai-engine/learn'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const x = matrixView([[0], [1], [2], [3], [4], [5]], 'demo')
  * const problem = { x, codes: [0, 0, 1, 0, 1, 1], w: [1, 1, 1, 1, 1, 1], nClasses: 2 }
  * runAlgorithm(ordinalAlgorithm(problem), { maxSteps: 30 }).status // => 'converged'
@@ -508,8 +508,8 @@ function tableOf(data: LearnData, p: OrdinalParams): CoefficientTable {
  * @index estimator Ordinal regression with cumulative-link families.
  * @example
  * ```ts
- * import { ordinal } from 'mdml-engine/linear'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { ordinal } from 'omai-engine/linear'
+ * import { toFlat } from 'omai-engine/tensor'
  * const x = [[0.1], [0.5], [1.2], [1.9], [2.3], [3.1], [3.4], [4.2], [0.9], [2.8], [1.5], [3.9]]
  * const y = [0, 0, 0, 1, 1, 2, 1, 2, 0, 2, 1, 2]
  * const f = ordinal().fit({ x, y })

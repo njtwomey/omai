@@ -15,7 +15,7 @@ import type { Complex } from './vectors.ts'
  * @returns `a + b`.
  * @example
  * ```ts
- * import { cadd } from 'mdml-engine/base'
+ * import { cadd } from 'omai-engine/base'
  * cadd([1, 2], [3, -5]) // => [4, -3]
  * ```
  */
@@ -29,7 +29,7 @@ export const cadd = (a: Complex, b: Complex): Complex => [a[0] + b[0], a[1] + b[
  * @returns `a - b`.
  * @example
  * ```ts
- * import { csub } from 'mdml-engine/base'
+ * import { csub } from 'omai-engine/base'
  * csub([1, 2], [3, -5]) // => [-2, 7]
  * ```
  */
@@ -43,7 +43,7 @@ export const csub = (a: Complex, b: Complex): Complex => [a[0] - b[0], a[1] - b[
  * @returns `a * b`.
  * @example
  * ```ts
- * import { cmul } from 'mdml-engine/base'
+ * import { cmul } from 'omai-engine/base'
  * cmul([1, 2], [3, 4]) // => [-5, 10]
  * ```
  */
@@ -57,7 +57,7 @@ export const cmul = (a: Complex, b: Complex): Complex => [a[0] * b[0] - a[1] * b
  * @returns `a / b`.
  * @example
  * ```ts
- * import { cdiv } from 'mdml-engine/base'
+ * import { cdiv } from 'omai-engine/base'
  * cdiv([-5, 10], [3, 4]) // => [1, 2]
  * ```
  */
@@ -73,7 +73,7 @@ export const cdiv = (a: Complex, b: Complex): Complex => {
  * @returns `|a|`.
  * @example
  * ```ts
- * import { cabs } from 'mdml-engine/base'
+ * import { cabs } from 'omai-engine/base'
  * cabs([3, 4]) // => 5
  * ```
  */
@@ -86,7 +86,7 @@ export const cabs = (a: Complex): number => Math.hypot(a[0], a[1])
  * @returns `exp(a)`.
  * @example
  * ```ts
- * import { cexp } from 'mdml-engine/base'
+ * import { cexp } from 'omai-engine/base'
  * cexp([0, 0]) // => [1, 0]
  * ```
  */
@@ -102,7 +102,7 @@ export const cexp = (a: Complex): Complex => {
  * @returns `log |a| + i arg a`, the argument in `(-pi, pi]`.
  * @example
  * ```ts
- * import { clog } from 'mdml-engine/base'
+ * import { clog } from 'omai-engine/base'
  * clog([1, 0]) // => [0, 0]
  * ```
  */

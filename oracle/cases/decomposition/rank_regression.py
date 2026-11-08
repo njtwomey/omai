@@ -5,8 +5,8 @@ definition (least squares, then the SVD of the fitted values; the canonical weig
 import numpy as np
 import numpy.typing as npt
 import sklearn
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import rng
 from sklearn.decomposition import PCA
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import StandardScaler

@@ -323,11 +323,11 @@ function run<S extends { readonly solution: StandardSolution; readonly finished:
  * @param problem - The program.
  * @param options - Pivot rule, tolerance, iteration cap and run options.
  * @returns The result.
- * @throws MdmlError with code `value` when c, bUb, bEq or a matrix is NaN or infinite (bounds may be infinite, not NaN).
+ * @throws OmaiError with code `value` when c, bUb, bEq or a matrix is NaN or infinite (bounds may be infinite, not NaN).
  * @concept linear-programming
  * @example
  * ```ts
- * import { linprogSimplex } from 'mdml-engine/optim'
+ * import { linprogSimplex } from 'omai-engine/optim'
  * const r = linprogSimplex({ c: [-1, -2], aUb: [[1, 1], [1, 3]], bUb: [4, 6] })
  * [r.status, r.fun] // => ['optimal', -5]
  * ```
@@ -346,11 +346,11 @@ export function linprogSimplex(problem: LinearProgram, options: LinprogOptions =
  * @param problem - The program.
  * @param options - Tolerance, iteration cap and run options.
  * @returns The result (no basis or ranging).
- * @throws MdmlError with code `value` when c, bUb, bEq or a matrix is NaN or infinite (bounds may be infinite, not NaN).
+ * @throws OmaiError with code `value` when c, bUb, bEq or a matrix is NaN or infinite (bounds may be infinite, not NaN).
  * @concept linear-programming
  * @example
  * ```ts
- * import { linprogInteriorPoint } from 'mdml-engine/optim'
+ * import { linprogInteriorPoint } from 'omai-engine/optim'
  * const r = linprogInteriorPoint({ c: [-1, -2], aUb: [[1, 1], [1, 3]], bUb: [4, 6] })
  * Math.round(r.fun * 1e6) / 1e6 // => -5
  * ```
@@ -377,13 +377,13 @@ export function linprogInteriorPoint(problem: LinearProgram, options: LinprogOpt
  * @param options - The method and its options.
  * @returns x, the optimal value, slacks, residuals, status, marginals (duals), and for the simplex the basis,
  * sensitivity ranges and visited vertices.
- * @throws MdmlError with code `value` when c, bUb, bEq or a matrix is NaN or infinite (bounds may be infinite, not NaN).
+ * @throws OmaiError with code `value` when c, bUb, bEq or a matrix is NaN or infinite (bounds may be infinite, not NaN).
  * @concept linear-programming
  * @index function Linear programming by simplex or interior point, scipy form.
  * @example
  * ```ts
- * import { linprog } from 'mdml-engine/optim'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { linprog } from 'omai-engine/optim'
+ * import { toArray } from 'omai-engine/tensor'
  * const r = linprog({ c: [-1, -2], aUb: [[1, 1], [1, 3]], bUb: [4, 6] })
  * toArray(r.x) // => [3, 1]
  * toArray(r.marginals.ineqlin) // => [-0.5, -0.5]

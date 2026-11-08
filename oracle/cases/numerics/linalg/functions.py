@@ -4,8 +4,8 @@ import numpy as np
 import scipy
 import scipy.linalg as sl
 import sklearn
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import rng, spd
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import rng, spd
 from sklearn.random_projection import johnson_lindenstrauss_min_dim
 
 REFERENCE: dict[str, str] = {"scipy": scipy.__version__, "scikit-learn": sklearn.__version__}

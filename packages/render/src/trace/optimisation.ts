@@ -4,8 +4,8 @@
  */
 
 import type { SeriesOption } from 'echarts'
-import { MdmlError } from 'mdml-engine/base'
-import { type Run, tensorSeries } from 'mdml-engine/trace'
+import { OmaiError } from 'omai-engine/base'
+import { type Run, tensorSeries } from 'omai-engine/trace'
 import { colourFor } from '../charts/_data.ts'
 import { contours } from '../charts/fields.ts'
 import { heatmap, type RampSpec } from '../charts/matrices.ts'
@@ -22,12 +22,12 @@ import type { ColourMode } from '../theme/tokens.ts'
  * @param name - The tensor channel holding the parameters.
  * @param dims - Which two flat elements to use (default 0 and 1).
  * @returns The points in step order.
- * @throws MdmlError with code `value` when the channel recorded no values.
+ * @throws OmaiError with code `value` when the channel recorded no values.
  * @example
  * ```ts
- * import { parameterPath } from 'mdml-render/trace'
+ * import { parameterPath } from 'omai-render/trace'
  * const ev = (step: number, values: number[]) => ({ type: 'tensor' as const, runId: 'r', step, name: 'x', role: 'param' as const, shape: [2], values })
- * parameterPath({ schema: 'mdml.run/1', events: [ev(0, [1, 2]), ev(1, [0, 1])] }, 'x') // => [[1, 2], [0, 1]]
+ * parameterPath({ schema: 'omai.run/1', events: [ev(0, [1, 2]), ev(1, [0, 1])] }, 'x') // => [[1, 2], [0, 1]]
  * ```
  */
 export function parameterPath(run: Run, name: string, dims: readonly [number, number] = [0, 1]): [number, number][] {
@@ -40,7 +40,7 @@ export function parameterPath(run: Run, name: string, dims: readonly [number, nu
     const b = at(dims[1])
     if (a !== undefined && b !== undefined) out.push([a, b])
   }
-  if (out.length === 0) throw new MdmlError('value', `parameterPath: no recorded values for '${name}'`)
+  if (out.length === 0) throw new OmaiError('value', `parameterPath: no recorded values for '${name}'`)
   return out
 }
 
@@ -72,7 +72,7 @@ export interface OptimisationPathOptions {
  * @index function Optimiser paths over the objective's contours: `optimisationPaths(f, paths, { x, y })`.
  * @example
  * ```ts
- * import { optimisationPaths } from 'mdml-render/trace'
+ * import { optimisationPaths } from 'omai-render/trace'
  * const ls = optimisationPaths((x, y) => x * x + y * y, [{ name: 'gd', points: [[1, 1], [0.5, 0.5], [0, 0]] }], { x: [-1, 1], y: [-1, 1], n: 20 })
  * ls.length // => 3
  * ```

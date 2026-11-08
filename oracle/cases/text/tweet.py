@@ -2,9 +2,9 @@
 
 from importlib.metadata import version
 
-from mdml_oracle.fixture import Case, case
 from nltk.tokenize import TweetTokenizer
 from nltk.tokenize.casual import _replace_html_entities, reduce_lengthening, remove_handles  # pyright: ignore[reportPrivateUsage]
+from omai_oracle.fixture import Case, case
 
 REFERENCE: dict[str, str] = {"nltk": version("nltk")}
 

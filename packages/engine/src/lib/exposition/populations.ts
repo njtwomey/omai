@@ -54,11 +54,11 @@ export interface PopulationSteps {
  *
  * @param record - The record without its `kind`.
  * @returns The record.
- * @throws MdmlError `shape` when the surface does not match its axes, a generation's points do not match its
+ * @throws OmaiError `shape` when the surface does not match its axes, a generation's points do not match its
  *   fitness, or a curve does not match the data's grid.
  * @example
  * ```ts
- * import { populationSteps } from 'mdml-engine/exposition'
+ * import { populationSteps } from 'omai-engine/exposition'
  * const r = populationSteps({
  *   method: 'ga',
  *   generations: [{ fitness: [1, 3], best: { fitness: 3, label: '11' } }, { fitness: [3, 4], best: { fitness: 4 } }],

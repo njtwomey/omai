@@ -10,7 +10,7 @@
  * the squared-slack SVDD).
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { marginRecord } from '../exposition/index.ts'
 import {
   type Kernel,
@@ -133,7 +133,7 @@ function prepare(
     const C = h.C ?? 1
     const squared = h.loss === 'squaredSlack'
     if (squared ? !(C > 0) : !(C * m.n >= 1 - 1e-12))
-      throw new MdmlError('domain', `svdd: C must be at least ${squared ? '0' : `1/n = ${1 / m.n}`}, got ${C}`)
+      throw new OmaiError('domain', `svdd: C must be at least ${squared ? '0' : `1/n = ${1 / m.n}`}, got ${C}`)
     const solver = h.solver ?? solverConfigOf(svddSolvers, { kind: 'smo' })
     checkSmoothSolver('svdd', { kind: svddSolvers.modeOf(solver).name }, squared, 'slack', 'squaredSlack')
     let dual: Dual | undefined
@@ -144,7 +144,7 @@ function prepare(
     return { kernel, n: m.n, dualOf }
   }
   const nu = h.nu ?? 0.5
-  if (!(nu > 0 && nu <= 1)) throw new MdmlError('domain', `oneClassSvm: nu must be in (0, 1], got ${nu}`)
+  if (!(nu > 0 && nu <= 1)) throw new OmaiError('domain', `oneClassSvm: nu must be in (0, 1], got ${nu}`)
   const dual = oneClassDual(K, nu, options)
   return { kernel, n: m.n, dualOf: () => dual }
 }
@@ -319,8 +319,8 @@ const base: NoveltyHyper = {
  * @index estimator One-class SVM for novelty detection.
  * @example
  * ```ts
- * import { oneClassSvm } from 'mdml-engine/svm'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { oneClassSvm } from 'omai-engine/svm'
+ * import { toFlat } from 'omai-engine/tensor'
  * const x = [[0], [0.1], [-0.1], [0.2], [-0.2], [0.05]]
  * toFlat(oneClassSvm.with({ nu: 0.2, gamma: 1 }).fit({ x }).predict([[0], [10]])) // => [1, -1]
  * ```
@@ -340,8 +340,8 @@ export const oneClassSvm: IterativeEstimator<OneClassHyper, NoveltyState, Novelt
  * @reference D. Tax and R. Duin, Support vector data description (2004).
  * @example
  * ```ts
- * import { svdd } from 'mdml-engine/svm'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { svdd } from 'omai-engine/svm'
+ * import { toFlat } from 'omai-engine/tensor'
  * const x = [[0], [0.1], [-0.1], [0.2], [-0.2], [0.05]]
  * toFlat(svdd.with({ C: 0.5, gamma: 1 }).fit({ x }).predict([[0], [10]])) // => [1, -1]
  * ```

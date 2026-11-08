@@ -4,14 +4,14 @@
 
 Linear and generalised linear models as library pieces: the design matrix, the solvers (least squares, IRLS, coordinate descent, ridge by SVD), regularisation paths over an alpha grid, the linear model with its parameters and prediction, and inference (covariances, Wald tables, intervals); conjugate Bayesian regression (posterior, predictive, evidence, one observation per step); regression diagnostics (influence, collinearity, heteroscedasticity tests); the group lasso and multi-task lasso; ordinal regression; linear mixed models; robust regression (Theil-Sen, Huber, quantile); expectile regression; censored (Tobit) regression; generalised least squares, AR-error and heteroscedastic regression; total least squares and Deming regression; subset selection by information criteria; seemingly unrelated regressions; zero-inflated and hurdle count models; and the multinomial logit.
 
-- function `diagnostics.ts` (file): Leverage, influence, VIF and heteroscedasticity diagnostics. `src/lib/linear/diagnostics.ts:1` `mdml-engine/linear`
-- function `inference.ts` (file): Wald tables, covariances and confidence intervals for linear models. `src/lib/linear/inference.ts:1` `mdml-engine/linear`
-- function `paths.ts` (file): Regularisation paths over an alpha grid by warm-started coordinate descent. `src/lib/linear/paths.ts:1` `mdml-engine/linear`
-- function `solvers.ts` (file): Solvers of the penalised GLM core: Cholesky, QR, SVD, coordinate descent. `src/lib/linear/solvers.ts:1` `mdml-engine/linear`
+- function `diagnostics.ts` (file): Leverage, influence, VIF and heteroscedasticity diagnostics. `src/lib/linear/diagnostics.ts:1` `omai-engine/linear`
+- function `inference.ts` (file): Wald tables, covariances and confidence intervals for linear models. `src/lib/linear/inference.ts:1` `omai-engine/linear`
+- function `paths.ts` (file): Regularisation paths over an alpha grid by warm-started coordinate descent. `src/lib/linear/paths.ts:1` `omai-engine/linear`
+- function `solvers.ts` (file): Solvers of the penalised GLM core: Cholesky, QR, SVD, coordinate descent. `src/lib/linear/solvers.ts:1` `omai-engine/linear`
 
-- estimator `huber`: Huber regression, robust to outliers. `src/lib/linear/robust.ts:501` `mdml-engine/linear`
-- estimator `lars`: Least angle regression: the lasso path one knot per step. `src/lib/linear/lars.ts:387` `mdml-engine/linear`
-- estimator `linearModel`: One penalised GLM estimator; logistic, ridge and lasso are configurations of it. `src/lib/linear/model.ts:276` `mdml-engine/linear`
-- estimator `mixedModel`: Linear mixed-effects model for grouped data. `src/lib/linear/mixed.ts:625` `mdml-engine/linear`
-- estimator `multinomial`: Multinomial logistic (softmax) regression. `src/lib/linear/multinomial.ts:405` `mdml-engine/linear`
-- estimator `ordinal`: Ordinal regression with cumulative-link families. `src/lib/linear/ordinal.ts:520` `mdml-engine/linear`
+- estimator `huber`: Huber regression, robust to outliers. `src/lib/linear/robust.ts:501` `omai-engine/linear`
+- estimator `lars`: Least angle regression: the lasso path one knot per step. `src/lib/linear/lars.ts:387` `omai-engine/linear`
+- estimator `linearModel`: One penalised GLM estimator; logistic, ridge and lasso are configurations of it. `src/lib/linear/model.ts:276` `omai-engine/linear`
+- estimator `mixedModel`: Linear mixed-effects model for grouped data. `src/lib/linear/mixed.ts:625` `omai-engine/linear`
+- estimator `multinomial`: Multinomial logistic (softmax) regression. `src/lib/linear/multinomial.ts:405` `omai-engine/linear`
+- estimator `ordinal`: Ordinal regression with cumulative-link families. `src/lib/linear/ordinal.ts:520` `omai-engine/linear`

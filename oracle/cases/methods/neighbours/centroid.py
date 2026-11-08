@@ -2,8 +2,8 @@
 
 import numpy as np
 import sklearn
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import rng
 from sklearn.neighbors import NearestCentroid
 
 REFERENCE: dict[str, str] = {"scikit-learn": sklearn.__version__}

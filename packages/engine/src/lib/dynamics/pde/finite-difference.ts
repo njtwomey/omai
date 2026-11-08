@@ -5,7 +5,7 @@
  * traced algorithms.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { dnrm2 } from '../../numerics/linalg/index.ts'
 import { type CsrMatrix, cg, fromCoo, gmres } from '../../numerics/sparse/index.ts'
 import { asTensor, fromStorage, type Tensor, type TensorLike, toFlat } from '../../tensor/index.ts'
@@ -108,8 +108,8 @@ function finite(u: Float64Array): boolean {
 
 /** The number of steps of size dt that reach tEnd (the last one shortened to land on it). */
 function stepCount(name: string, dt: number, tEnd: number): number {
-  if (!(dt > 0)) throw new MdmlError('value', `${name}: dt must be positive`)
-  if (!(tEnd >= 0)) throw new MdmlError('value', `${name}: tEnd must be non-negative`)
+  if (!(dt > 0)) throw new OmaiError('value', `${name}: dt must be positive`)
+  if (!(tEnd >= 0)) throw new OmaiError('value', `${name}: tEnd must be non-negative`)
   return Math.ceil(tEnd / dt - 1e-9)
 }
 
@@ -181,7 +181,7 @@ function solveSteps(
 function initial(u0: TensorLike | ((x: number) => number), grid: Grid1d): Float64Array {
   if (typeof u0 === 'function') return Float64Array.from(grid.x, (x) => u0(x))
   const v = Float64Array.from(toFlat(asTensor(u0)))
-  if (v.length !== grid.n) throw new MdmlError('shape', `the initial condition needs ${grid.n} values`)
+  if (v.length !== grid.n) throw new OmaiError('shape', `the initial condition needs ${grid.n} values`)
   return v
 }
 
@@ -212,12 +212,12 @@ export interface HeatOptions extends PdeTraceOptions {
  * @param u0 - Initial nodal values.
  * @param options - Step, final time, scheme, source and thinning.
  * @returns The algorithm; it is done after the last step.
- * @throws MdmlError with code `value` for a non-positive step, or `shape` for an initial condition of the wrong size.
+ * @throws OmaiError with code `value` for a non-positive step, or `shape` for an initial condition of the wrong size.
  * @concept heat-equation
  * @example
  * ```ts
- * import { dirichlet, grid1d, heatAlgorithm, laplacian1d } from 'mdml-engine/dynamics/pde'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { dirichlet, grid1d, heatAlgorithm, laplacian1d } from 'omai-engine/dynamics/pde'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const g = grid1d(0, 1, 11)
  * const alg = heatAlgorithm(laplacian1d(g, dirichlet(), dirichlet()), Array.from(g.x, (x) => Math.sin(Math.PI * x)), { dt: 0.01, tEnd: 0.05 })
  * runAlgorithm(alg, { maxSteps: 5 }).state.t // => 0.05
@@ -232,7 +232,7 @@ export function heatAlgorithm(
   const theta = heatSchemes.make({ kind: scheme, ...(options.theta === undefined ? {} : { theta: options.theta }) })
   const n = op.size
   const start = applyDirichlet(Float64Array.from(toFlat(asTensor(u0))), op, 0)
-  if (start.length !== n) throw new MdmlError('shape', `heatAlgorithm: the initial condition needs ${n} values`)
+  if (start.length !== n) throw new OmaiError('shape', `heatAlgorithm: the initial condition needs ${n} values`)
   const fixedRows = new Set(op.fixed.map((f) => f.index))
   const factorCache = new Map<number, ReturnType<typeof shiftedLu>>()
   const rhsOf = (t: number): Float64Array => {
@@ -285,7 +285,7 @@ export function heatAlgorithm(
  * @index function Heat equation on a 1-D or 2-D grid with boundary conditions.
  * @example
  * ```ts
- * import { dirichlet, grid1d, heat, laplacian1d } from 'mdml-engine/dynamics/pde'
+ * import { dirichlet, grid1d, heat, laplacian1d } from 'omai-engine/dynamics/pde'
  * const g = grid1d(0, 1, 21)
  * const u0 = Array.from(g.x, (x) => Math.sin(Math.PI * x))
  * const s = heat(laplacian1d(g, dirichlet(), dirichlet()), u0, { dt: 0.001, tEnd: 0.1 })
@@ -315,8 +315,8 @@ export type Heat1dOptions = HeatOptions & {
  * @concept heat-equation
  * @example
  * ```ts
- * import { dirichlet, grid1d, heat1dAlgorithm } from 'mdml-engine/dynamics/pde'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { dirichlet, grid1d, heat1dAlgorithm } from 'omai-engine/dynamics/pde'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const alg = heat1dAlgorithm((x) => x * (1 - x), grid1d(0, 1, 11), { dt: 0.01, tEnd: 0.05, left: dirichlet(), right: dirichlet() })
  * runAlgorithm(alg, { maxSteps: 5 }).state.us.length // => 6
  * ```
@@ -344,7 +344,7 @@ export function heat1dAlgorithm(
  * @concept heat-equation
  * @example
  * ```ts
- * import { dirichlet, grid1d, heat1d } from 'mdml-engine/dynamics/pde'
+ * import { dirichlet, grid1d, heat1d } from 'omai-engine/dynamics/pde'
  * heat1d((x) => x * (1 - x), grid1d(0, 1, 11), { dt: 0.01, tEnd: 0.05, left: dirichlet(), right: dirichlet() }).t.length // => 6
  * ```
  */
@@ -375,8 +375,8 @@ export interface WaveOptions extends PdeTraceOptions {
  * @concept wave-equation
  * @example
  * ```ts
- * import { dirichlet, grid1d, wave1dAlgorithm } from 'mdml-engine/dynamics/pde'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { dirichlet, grid1d, wave1dAlgorithm } from 'omai-engine/dynamics/pde'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const alg = wave1dAlgorithm((x) => Math.sin(Math.PI * x), () => 0, grid1d(0, 1, 21), { dt: 0.05, tEnd: 0.5, left: dirichlet(), right: dirichlet() })
  * runAlgorithm(alg, { maxSteps: 10 }).state.prev?.length // => 21
  * ```
@@ -421,7 +421,7 @@ export function wave1dAlgorithm(
  * @concept wave-equation
  * @example
  * ```ts
- * import { dirichlet, grid1d, wave1d } from 'mdml-engine/dynamics/pde'
+ * import { dirichlet, grid1d, wave1d } from 'omai-engine/dynamics/pde'
  * const g = grid1d(0, 1, 41)
  * const s = wave1d((x) => Math.sin(Math.PI * x), () => 0, g, { dt: 0.025, tEnd: 1, left: dirichlet(), right: dirichlet() })
  * Math.abs((s.u.data[s.u.data.length - 21] ?? 0) + 1) < 1e-2 // => true
@@ -463,8 +463,8 @@ export interface AdvectionOptions extends PdeTraceOptions {
  * @concept advection-equation
  * @example
  * ```ts
- * import { advection1dAlgorithm, grid1d } from 'mdml-engine/dynamics/pde'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { advection1dAlgorithm, grid1d } from 'omai-engine/dynamics/pde'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const alg = advection1dAlgorithm((x) => Math.sin(2 * Math.PI * x), grid1d(0, 1, 101), { velocity: 1, dt: 0.01, tEnd: 0.5 })
  * runAlgorithm(alg, { maxSteps: 50 }).state.step // => 50
  * ```
@@ -518,7 +518,7 @@ export function advection1dAlgorithm(
  * @concept advection-equation
  * @example
  * ```ts
- * import { advection1d, grid1d } from 'mdml-engine/dynamics/pde'
+ * import { advection1d, grid1d } from 'omai-engine/dynamics/pde'
  * const g = grid1d(0, 1, 101)
  * const s = advection1d((x) => Math.sin(2 * Math.PI * x), g, { velocity: 1, dt: 0.01, tEnd: 1 })
  * Math.abs((s.u.data[s.u.data.length - 76] ?? 0) - 1) < 1e-12 // => true
@@ -642,12 +642,12 @@ function poissonProblem(
  * @param bcs - The conditions: [left, right] in 1-D, the four sides in 2-D.
  * @param options - Method, relaxation, tolerance and, for multigrid, the sweeps.
  * @returns The algorithm.
- * @throws MdmlError with code `value` for conjugate gradients (a Krylov solver, see `cgAlgorithm`) or when multigrid does not fit the grid.
+ * @throws OmaiError with code `value` for conjugate gradients (a Krylov solver, see `cgAlgorithm`) or when multigrid does not fit the grid.
  * @concept poisson-equation
  * @example
  * ```ts
- * import { dirichlet, grid1d, poissonAlgorithm } from 'mdml-engine/dynamics/pde'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { dirichlet, grid1d, poissonAlgorithm } from 'omai-engine/dynamics/pde'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const alg = poissonAlgorithm(() => 2, grid1d(0, 1, 9), [dirichlet(), dirichlet()], { method: 'gauss-seidel', tol: 1e-8 })
  * runAlgorithm(alg, { maxSteps: 1000 }).state.residual < 1e-8 // => true
  * ```
@@ -660,7 +660,7 @@ export function poissonAlgorithm(
 ): Algorithm<PoissonState, PoissonPath> {
   const problem = poissonProblem(f, grid, bcs, options)
   if (problem.method === 'cg')
-    throw new MdmlError(
+    throw new OmaiError(
       'value',
       'poissonAlgorithm: conjugate gradients is a Krylov solver (see cgAlgorithm in numerics/sparse)',
     )
@@ -727,11 +727,11 @@ function advancePoisson(
  * @param bcs - The conditions: [left, right] in 1-D, the four sides in 2-D.
  * @param options - Method, relaxation, tolerance and iteration cap.
  * @returns The solution, iterations and residual history.
- * @throws MdmlError with code `value` when multigrid does not fit the grid.
+ * @throws OmaiError with code `value` when multigrid does not fit the grid.
  * @concept poisson-equation
  * @example
  * ```ts
- * import { dirichlet, grid1d, poisson } from 'mdml-engine/dynamics/pde'
+ * import { dirichlet, grid1d, poisson } from 'omai-engine/dynamics/pde'
  * // u'' = 2, u(0) = u(1) = 0: u = x^2 - x.
  * const r = poisson(() => 2, grid1d(0, 1, 9), [dirichlet(), dirichlet()], { method: 'cg' })
  * Math.abs((r.u.data[4] ?? 0) + 0.25) < 1e-10 // => true
@@ -860,7 +860,7 @@ function multigridPoisson(
     (twoD && (!isPowerOfTwoPlusOne(ny) || nx !== ny || hx !== hy)) ||
     fixed.size !== boundaryCount
   ) {
-    throw new MdmlError(
+    throw new OmaiError(
       'value',
       'poisson: multigrid needs Dirichlet conditions and 2^k + 1 nodes per side (square cells)',
     )

@@ -4,7 +4,7 @@
  * avoid the Runge phenomenon, Lebesgue constants, and Runge's function itself.
  */
 
-import { MdmlError, maxOf, minOf } from '../../base/index.ts'
+import { maxOf, minOf, OmaiError } from '../../base/index.ts'
 import {
   add,
   concreteOrThrow,
@@ -47,8 +47,8 @@ export interface Barycentric {
  * @concept polynomial-interpolation
  * @example
  * ```ts
- * import { barycentric } from 'mdml-engine/numerics/interpolate'
- * import { item } from 'mdml-engine/tensor'
+ * import { barycentric } from 'omai-engine/numerics/interpolate'
+ * import { item } from 'omai-engine/tensor'
  * item(barycentric([0, 1, 2], [1, 3, 7]).evaluate(1.5)) // => 4.75
  * ```
  */
@@ -56,7 +56,7 @@ export function barycentric(x: TensorLike, y: TensorLike, weights?: TensorLike):
   const xs = toFlat(concreteOrThrow(promoteFloat(x)[0] as Tensor, 'barycentric'))
   const [yv] = promoteFloat(y) as [Value]
   const n = xs.length
-  if (yv.shape[0] !== n) throw new MdmlError('shape', 'barycentric: x and y must have the same length')
+  if (yv.shape[0] !== n) throw new OmaiError('shape', 'barycentric: x and y must have the same length')
   let w = weights === undefined ? weightsKernel(xs) : [...toVector(weights, 'barycentric')]
   const scale = maxOf(w.map(Math.abs))
   w = w.map((v) => v / scale)
@@ -100,12 +100,12 @@ export function barycentric(x: TensorLike, y: TensorLike, weights?: TensorLike):
  *
  * @param x - Distinct nodes `[n]`.
  * @returns The weights `[n]`, up to one common positive factor.
- * @throws MdmlError with code `value` for repeated nodes, `shape` unless `x` is a vector, and `not-differentiable` for
+ * @throws OmaiError with code `value` for repeated nodes, `shape` unless `x` is a vector, and `not-differentiable` for
  *   a traced value.
  * @example
  * ```ts
- * import { barycentricWeights } from 'mdml-engine/numerics/interpolate'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { barycentricWeights } from 'omai-engine/numerics/interpolate'
+ * import { toFlat } from 'omai-engine/tensor'
  * const w = toFlat(barycentricWeights([0, 1, 2]))
  * w.map((v) => v / (w[0] ?? 1)) // => [1, -2, 1]
  * ```
@@ -122,7 +122,7 @@ function weightsKernel(x: readonly number[]): number[] {
   return x.map((xj, j) => {
     let p = 1
     for (let k = 0; k < n; k++) if (k !== j) p *= (xj - (x[k] ?? 0)) / c
-    if (p === 0) throw new MdmlError('value', 'barycentricWeights: nodes must be distinct')
+    if (p === 0) throw new OmaiError('value', 'barycentricWeights: nodes must be distinct')
     return 1 / p
   })
 }
@@ -135,10 +135,10 @@ function weightsKernel(x: readonly number[]): number[] {
  * @param x - Distinct nodes `[n]`.
  * @param y - Values `[n]`.
  * @returns Coefficients `[n]`, highest power first.
- * @throws MdmlError with code `shape` unless `x` and `y` are vectors, and `not-differentiable` for a traced value.
+ * @throws OmaiError with code `shape` unless `x` and `y` are vectors, and `not-differentiable` for a traced value.
  * @example
  * ```ts
- * import { lagrange } from 'mdml-engine/numerics/interpolate'
+ * import { lagrange } from 'omai-engine/numerics/interpolate'
  * lagrange([0, 1, 2], [1, 3, 7]) // => [1, 1, 1]
  * ```
  */
@@ -178,8 +178,8 @@ export function lagrange(nodes: TensorLike, values: TensorLike): Tensor<'float64
  * @returns The nodes `[n]`.
  * @example
  * ```ts
- * import { chebyshevNodes } from 'mdml-engine/numerics/interpolate'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { chebyshevNodes } from 'omai-engine/numerics/interpolate'
+ * import { toFlat } from 'omai-engine/tensor'
  * toFlat(chebyshevNodes(3)).map((v) => Math.round(v * 1e12) / 1e12) // => [-1, 0, 1]
  * ```
  */
@@ -207,7 +207,7 @@ function chebyshevNodesKernel(n: number, interval: readonly [number, number], ki
  * @returns The nodes `[n]`, increasing (the midpoint for n = 1).
  * @example
  * ```ts
- * import { equispacedNodes } from 'mdml-engine/numerics/interpolate'
+ * import { equispacedNodes } from 'omai-engine/numerics/interpolate'
  * equispacedNodes(5) // => [-1, -0.5, 0, 0.5, 1]
  * ```
  */
@@ -226,8 +226,8 @@ export function equispacedNodes(n: number, interval: readonly [number, number] =
  * @returns The interpolant.
  * @example
  * ```ts
- * import { chebyshevInterpolant } from 'mdml-engine/numerics/interpolate'
- * import { exp, item } from 'mdml-engine/tensor'
+ * import { chebyshevInterpolant } from 'omai-engine/numerics/interpolate'
+ * import { exp, item } from 'omai-engine/tensor'
  * Math.abs(item(chebyshevInterpolant((x) => exp(x), 16).evaluate(0.3)) - Math.exp(0.3)) < 1e-14 // => true
  * ```
  */
@@ -249,10 +249,10 @@ export function chebyshevInterpolant(
  * @param nodes - The nodes `[n]`.
  * @param samples - Grid size for the maximum (default 2000).
  * @returns The estimate.
- * @throws MdmlError with code `shape` unless `nodes` is a vector, and `not-differentiable` for a traced value.
+ * @throws OmaiError with code `shape` unless `nodes` is a vector, and `not-differentiable` for a traced value.
  * @example
  * ```ts
- * import { chebyshevNodes, lebesgueConstant } from 'mdml-engine/numerics/interpolate'
+ * import { chebyshevNodes, lebesgueConstant } from 'omai-engine/numerics/interpolate'
  * lebesgueConstant(chebyshevNodes(10)) < 2.5 // => true
  * ```
  */
@@ -288,8 +288,8 @@ export function lebesgueConstant(points: TensorLike, samples = 2000): number {
  * @returns Values.
  * @example
  * ```ts
- * import { runge } from 'mdml-engine/numerics/interpolate'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { runge } from 'omai-engine/numerics/interpolate'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(runge([0, 0.2])) // => [1, 0.5]
  * ```
  */

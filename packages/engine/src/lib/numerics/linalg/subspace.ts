@@ -4,7 +4,7 @@
  * k matrix (the Rayleigh-Ritz values). One block product per step; the state serialises.
  */
 
-import { type Json, MdmlError, maxOf } from '../../base/index.ts'
+import { type Json, maxOf, OmaiError } from '../../base/index.ts'
 import { type Key, normal } from '../../random/index.ts'
 import { concreteOrThrow, fromStorage, promoteFloat, type Tensor, type TensorLike } from '../../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, type RunStatus, runAlgorithm } from '../../trace/index.ts'
@@ -43,7 +43,7 @@ function operatorOf(a: SymmetricOperator): Op {
   if (typeof a === 'object' && a !== null && 'matvec' in a && 'n' in a) return a as Op
   const m = concreteOrThrow(promoteFloat(a as TensorLike)[0] as Tensor, 'subspaceIteration')
   if (m.shape.length !== 2 || m.shape[0] !== m.shape[1])
-    throw new MdmlError('shape', 'subspaceIteration needs a square matrix')
+    throw new OmaiError('shape', 'subspaceIteration needs a square matrix')
   const n = m.shape[0] ?? 0
   const data = m.data
   return {
@@ -116,7 +116,7 @@ const SCHEMA = channels({
  * @returns The algorithm.
  * @example
  * ```ts
- * import { subspaceIterationAlgorithm } from 'mdml-engine/numerics/linalg'
+ * import { subspaceIterationAlgorithm } from 'omai-engine/numerics/linalg'
  * subspaceIterationAlgorithm([[3, 0], [0, 1]], 1).name // => 'subspace-iteration'
  * ```
  */
@@ -128,13 +128,13 @@ export function subspaceIterationAlgorithm(
   const op = operatorOf(a)
   const n = op.n
   if (!Number.isInteger(k) || k < 1 || k > n)
-    throw new MdmlError('value', 'subspaceIteration needs a block size in 1..n')
+    throw new OmaiError('value', 'subspaceIteration needs a block size in 1..n')
   const tol = options.tol ?? 1e-10
   const start = (key: Key): Float64Array => {
     if (options.x0 !== undefined) {
       const x = concreteOrThrow(promoteFloat(options.x0)[0] as Tensor, 'subspaceIteration')
       if (x.shape.length !== 2 || x.shape[0] !== n || x.shape[1] !== k)
-        throw new MdmlError('shape', `subspaceIteration: x0 must be [${n}, ${k}]`)
+        throw new OmaiError('shape', `subspaceIteration: x0 must be [${n}, ${k}]`)
       return Float64Array.from(x.data)
     }
     return Float64Array.from(normal(key, [n, k]).data)
@@ -199,7 +199,7 @@ export interface SubspaceResult {
  * @returns The Ritz values, the basis and the convergence history.
  * @example
  * ```ts
- * import { subspaceIteration } from 'mdml-engine/numerics/linalg'
+ * import { subspaceIteration } from 'omai-engine/numerics/linalg'
  * subspaceIteration([[4, 1, 0], [1, 3, 0], [0, 0, 0.5]], 2).values.map((v) => Math.round(v * 1e6) / 1e6) // => [4.618034, 2.381966]
  * ```
  */

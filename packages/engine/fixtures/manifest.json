@@ -1,5 +1,5 @@
 {
-  "schema": "mdml.fixtures/1",
+  "schema": "omai.fixtures/1",
   "fixtures": [
     {
       "fixture": "anomaly/lof.json",

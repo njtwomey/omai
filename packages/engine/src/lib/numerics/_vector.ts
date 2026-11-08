@@ -6,7 +6,7 @@
  * error naming the function. Private to the domain.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { fromStorage, type Tensor } from '../tensor/index.ts'
 
 /**
@@ -22,7 +22,7 @@ export function assertFinite(name: string, data: ArrayLike<number>, what = 'inpu
   for (let i = 0; i < data.length; i++) {
     const v = data[i] as number
     if (v - v !== 0) {
-      throw new MdmlError(
+      throw new OmaiError(
         'value',
         `${name}: ${what} has a non-finite entry (${Number.isNaN(v) ? 'NaN' : v > 0 ? 'Infinity' : '-Infinity'} at index ${i}); the routine needs finite numbers`,
       )

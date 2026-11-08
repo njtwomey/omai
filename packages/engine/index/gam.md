@@ -4,6 +4,6 @@
 
 Generalised additive models: the terms of an additive predictor on the penalised bases of `stats/smoothing` (smooths `s`, tensor products `te` and `ti`, parametric `linear` and `factor` terms) and the design they make, penalised iteratively reweighted least squares as a stepped algorithm with smoothing parameters chosen by REML, GCV or UBRE and effective degrees of freedom per term, backfitting, and the estimators `gam` and `gamClassifier`.
 
-- function `s`: A smooth term of a GAM; te and ti sit beside it. `src/lib/gam/terms.ts:121` `mdml-engine/gam`
+- function `s`: A smooth term of a GAM; te and ti sit beside it. `src/lib/gam/terms.ts:121` `omai-engine/gam`
 
-- estimator `gam`: Generalised additive model with penalised smooth terms. `src/lib/gam/estimators.ts:341` `mdml-engine/gam`
+- estimator `gam`: Generalised additive model with penalised smooth terms. `src/lib/gam/estimators.ts:341` `omai-engine/gam`

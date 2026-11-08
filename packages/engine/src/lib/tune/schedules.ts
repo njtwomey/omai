@@ -4,7 +4,7 @@
  * `nextAssignment` to say what to run next, and the iteration plan of scikit-learn's halving searches.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import type { SpaceValue } from '../space/index.ts'
 import { lossOf, type Study, type StudyDirection, type Trial } from './study.ts'
 
@@ -59,12 +59,12 @@ export type Assignment =
 
 function checkEta(eta: number, name: string): void {
   if (!(Number.isInteger(eta) && eta >= 2))
-    throw new MdmlError('value', `${name}: reductionFactor must be an integer of at least 2`)
+    throw new OmaiError('value', `${name}: reductionFactor must be an integer of at least 2`)
 }
 
 function checkResources(min: number, max: number, name: string): void {
   if (!(min > 0 && max >= min))
-    throw new MdmlError('value', `${name}: need 0 < minResource <= maxResource, got ${min} and ${max}`)
+    throw new OmaiError('value', `${name}: need 0 < minResource <= maxResource, got ${min} and ${max}`)
 }
 
 /** floor(log_eta(x)), corrected for rounding when x is an exact power of eta. */
@@ -82,11 +82,11 @@ function floorLog(x: number, eta: number): number {
  * @param options - Configurations in the first rung, minimum and maximum resource and the reduction factor eta
  *   (default 3).
  * @returns The schedule (one bracket).
- * @throws MdmlError with code `value` for invalid resources or eta.
+ * @throws OmaiError with code `value` for invalid resources or eta.
  * @concept successive-halving
  * @example
  * ```ts
- * import { successiveHalvingSchedule } from 'mdml-engine/tune'
+ * import { successiveHalvingSchedule } from 'omai-engine/tune'
  * successiveHalvingSchedule({ nConfigs: 9, minResource: 1, maxResource: 9 }).brackets[0]?.rungs
  * // => [{ rung: 0, nConfigs: 9, resource: 1 }, { rung: 1, nConfigs: 3, resource: 3 }, { rung: 2, nConfigs: 1, resource: 9 }]
  * ```
@@ -104,7 +104,7 @@ export function successiveHalvingSchedule(options: {
   checkEta(eta, 'successiveHalvingSchedule')
   checkResources(min, max, 'successiveHalvingSchedule')
   if (!(Number.isInteger(options.nConfigs) && options.nConfigs >= 1))
-    throw new MdmlError('value', 'successiveHalvingSchedule: nConfigs must be a positive integer')
+    throw new OmaiError('value', 'successiveHalvingSchedule: nConfigs must be a positive integer')
   const s = floorLog(max / min, eta)
   const rungs: Rung[] = []
   for (let i = 0; i <= s; i++) {
@@ -129,12 +129,12 @@ export function successiveHalvingSchedule(options: {
  *
  * @param options - Maximum resource R, minimum resource (default 1), eta (default 3), and whether to repeat.
  * @returns The schedule.
- * @throws MdmlError with code `value` for invalid resources or eta.
+ * @throws OmaiError with code `value` for invalid resources or eta.
  * @concept successive-halving
  * @reference Li, Jamieson, DeSalvo, Rostamizadeh and Talwalkar (2018), Hyperband, JMLR 18.
  * @example
  * ```ts
- * import { hyperbandSchedule } from 'mdml-engine/tune'
+ * import { hyperbandSchedule } from 'omai-engine/tune'
  * hyperbandSchedule({ maxResource: 81 }).brackets.map((b) => [b.rungs[0]?.nConfigs, b.rungs[0]?.resource])
  * // => [[81, 1], [34, 3], [15, 9], [8, 27], [5, 81]]
  * ```
@@ -179,12 +179,12 @@ export function hyperbandSchedule(options: {
  *
  * @param options - Minimum and maximum resource, eta (default 3) and the minimum early-stopping rate s (default 0).
  * @returns The schedule.
- * @throws MdmlError with code `value` for invalid resources or eta.
+ * @throws OmaiError with code `value` for invalid resources or eta.
  * @concept successive-halving
  * @reference Li et al. (2020), A system for massively parallel hyperparameter tuning, MLSys.
  * @example
  * ```ts
- * import { ashaSchedule } from 'mdml-engine/tune'
+ * import { ashaSchedule } from 'omai-engine/tune'
  * ashaSchedule({ minResource: 1, maxResource: 10 }).rungs // => [1, 3, 9, 10]
  * ```
  */
@@ -285,14 +285,14 @@ function nextAsha(schedule: AshaSchedule, study: Study): Assignment {
  * @concept successive-halving
  * @example
  * ```ts
- * import { createStudy, nextAssignment, successiveHalvingSchedule } from 'mdml-engine/tune'
- * import { real } from 'mdml-engine/space'
+ * import { createStudy, nextAssignment, successiveHalvingSchedule } from 'omai-engine/tune'
+ * import { real } from 'omai-engine/space'
  * nextAssignment(successiveHalvingSchedule({ nConfigs: 4, maxResource: 4, reductionFactor: 2 }), createStudy(real(0, 1)))
  * // => { kind: 'sample', bracket: 0, rung: 0, budget: 1 }
  * ```
  */
 export function nextAssignment(schedule: FidelitySchedule, study: Study): Assignment | undefined {
-  if (study.directions.length !== 1) throw new MdmlError('value', 'schedules rank trials by a single objective')
+  if (study.directions.length !== 1) throw new OmaiError('value', 'schedules rank trials by a single objective')
   return schedule.kind === 'asha' ? nextAsha(schedule, study) : nextSynchronous(schedule, study)
 }
 
@@ -319,11 +319,11 @@ export interface HalvingPlan {
  * @param options - Candidates, minimum and maximum resources, factor (default 3), exhaustion and aggressive
  *   elimination.
  * @returns The plan (the `n_iterations_`, `n_resources_`, `n_candidates_` and related attributes of scikit-learn).
- * @throws MdmlError with code `value` when the minimum exceeds the maximum.
+ * @throws OmaiError with code `value` when the minimum exceeds the maximum.
  * @concept successive-halving
  * @example
  * ```ts
- * import { halvingPlan } from 'mdml-engine/tune'
+ * import { halvingPlan } from 'omai-engine/tune'
  * const plan = halvingPlan({ nCandidates: 27, minResources: 20, maxResources: 1000, exhaust: true })
  * [plan.nCandidates, plan.nResources] // => [[27, 9, 3, 1], [37, 111, 333, 999]]
  * ```
@@ -339,8 +339,8 @@ export function halvingPlan(options: {
   const factor = options.factor ?? 3
   const max = options.maxResources
   if (!(options.minResources >= 1 && options.minResources <= max))
-    throw new MdmlError('value', `halvingPlan: min resources ${options.minResources} exceed max ${max}`)
-  if (!(factor > 1)) throw new MdmlError('value', 'halvingPlan: factor must exceed 1')
+    throw new OmaiError('value', `halvingPlan: min resources ${options.minResources} exceed max ${max}`)
+  if (!(factor > 1)) throw new OmaiError('value', 'halvingPlan: factor must exceed 1')
   // scikit-learn's floor(log(x, factor)) in floating point, reproduced as it computes it.
   const logf = (x: number): number => Math.floor(Math.log(x) / Math.log(factor))
   const nRequired = 1 + logf(options.nCandidates)

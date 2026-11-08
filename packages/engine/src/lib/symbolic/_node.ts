@@ -1,6 +1,6 @@
 // Raw expression nodes: construction without canonicalisation, the structural key, and small accessors. The
 // canonicalising constructors live in _canon.ts; everything public goes through them.
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { charge } from './_budget.ts'
 import type { Rational } from './_rational.ts'
 import type {
@@ -49,7 +49,7 @@ export function rawFloat(value: number): ExprFloat {
 
 /** A symbol node. @internal */
 export function rawSym(name: string, assumptions: Assumptions = {}): ExprSym {
-  if (!NAME.test(name)) throw new MdmlError('value', `sym: '${name}' is not a valid symbol name`)
+  if (!NAME.test(name)) throw new OmaiError('value', `sym: '${name}' is not a valid symbol name`)
   const flags = Object.entries(assumptions)
     .filter(([, v]) => v === true)
     .map(([k]) => k)

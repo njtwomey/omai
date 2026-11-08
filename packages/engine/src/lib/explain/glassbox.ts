@@ -54,7 +54,7 @@ export interface Scorecard {
  * @returns The scorecard.
  * @example
  * ```ts
- * import * as explain from 'mdml-engine/explain'
+ * import * as explain from 'omai-engine/explain'
  * const card = explain.scorecard([Math.LN2], 0, [[0], [0], [1], [1]], { bins: 2, pdo: 20, baseScore: 600, baseOdds: 1 })
  * card.features[0].points.map((p) => Math.round(p)) // => [0, 20]
  * ```

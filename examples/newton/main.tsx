@@ -1,16 +1,16 @@
 /**
  * Example "Second order: grad of grad, Hessians and Newton": `grad(grad(f))`, `hessian` and `hvp` from
- * `mdml-engine/autodiff`, then Newton's method against gradient descent on the Rosenbrock function. Both runs are
+ * `omai-engine/autodiff`, then Newton's method against gradient descent on the Rosenbrock function. Both runs are
  * traced, and the figure draws their paths from the tapes, with the local quadratic model (the Hessian's ellipse) at
  * two points (scaled for display: every ellipse has the same long axis, and only its shape is the Hessian's).
  */
-import { grad, hessian, hvp } from 'mdml-engine/autodiff'
-import { minimize, newton, sgd } from 'mdml-engine/optim'
-import { add, mul, square, sub, take, tensor, toArray, toFlat, type Value } from 'mdml-engine/tensor'
-import { policies, type Run, recorder } from 'mdml-engine/trace'
-import { cartesian, lines } from 'mdml-render/charts'
-import { figure } from 'mdml-render/figure'
-import { parameterPath } from 'mdml-render/trace'
+import { grad, hessian, hvp } from 'omai-engine/autodiff'
+import { minimize, newton, sgd } from 'omai-engine/optim'
+import { add, mul, square, sub, take, tensor, toArray, toFlat, type Value } from 'omai-engine/tensor'
+import { policies, type Run, recorder } from 'omai-engine/trace'
+import { cartesian, lines } from 'omai-render/charts'
+import { figure } from 'omai-render/figure'
+import { parameterPath } from 'omai-render/trace'
 import type { ExampleModule, Outcome } from '../_shared/contract.ts'
 import { Figure, Panel } from '../_shared/figure.tsx'
 import { axesOf, fieldLayers, gridOfValues, gridRows, windowOf } from '../_shared/maps.ts'

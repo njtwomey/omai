@@ -1,4 +1,4 @@
-import { circle, group, path, rect, scene, sceneTimeline, structure, text, timeline } from 'mdml-engine/scene'
+import { circle, group, path, rect, scene, sceneTimeline, structure, text, timeline } from 'omai-engine/scene'
 import { describe, expect, it } from 'vitest'
 import {
   easings,
@@ -70,7 +70,7 @@ describe('timeline', () => {
     expect(structureTimeline(s, [{}], { captions: ['c'] }).frames[0]?.caption).toBe('c')
     expect(frameAt(timeline([]), 3)).toBe(0)
     const run = {
-      schema: 'mdml.run/1' as const,
+      schema: 'omai.run/1' as const,
       events: [
         { type: 'frame' as const, runId: 'r', step: 0, frame: { cells: [1] } },
         { type: 'frame' as const, runId: 'r', step: 1, frame: { other: true } },

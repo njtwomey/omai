@@ -5,7 +5,7 @@
  * means and log likelihoods.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { type IterativeEstimator, iterative, type LearnData, matrixView } from '../learn/index.ts'
 import { linalg } from '../numerics/index.ts'
 import { choice, dict, int } from '../space/index.ts'
@@ -38,7 +38,7 @@ export interface LatentVerbs {
  * @returns The covariance `[d, d]`.
  * @example
  * ```ts
- * import { latentCovariance } from 'mdml-engine/decomposition'
+ * import { latentCovariance } from 'omai-engine/decomposition'
  * latentCovariance({ mean: [0, 0], components: [[1, 1]], noiseVariance: [0.5, 0.5] }) // => [[1.5, 1], [1, 1.5]]
  * ```
  */
@@ -61,7 +61,7 @@ export function latentCovariance(p: LatentGaussianParams): number[][] {
  * @returns The verbs.
  * @example
  * ```ts
- * import { latentVerbs } from 'mdml-engine/decomposition'
+ * import { latentVerbs } from 'omai-engine/decomposition'
  * latentVerbs({ mean: [0], components: [[1]], noiseVariance: [1] }).nFeaturesIn // => 1
  * ```
  */
@@ -135,7 +135,7 @@ export interface ProbabilisticPcaHyper {
  *
  * @example
  * ```ts
- * import { probabilisticPca } from 'mdml-engine/decomposition'
+ * import { probabilisticPca } from 'omai-engine/decomposition'
  * const x = [[-2, 0.1, 0], [-1, -0.1, 0.1], [1, 0.1, -0.1], [2, -0.1, 0]]
  * probabilisticPca.with({ nComponents: 1 }).fit({ x }).params.components.length // => 1
  * ```
@@ -177,7 +177,7 @@ export const probabilisticPca: IterativeEstimator<ProbabilisticPcaHyper, PcaStat
  * @returns The rotated loadings `[d, k]`.
  * @example
  * ```ts
- * import { rotateLoadings } from 'mdml-engine/decomposition'
+ * import { rotateLoadings } from 'omai-engine/decomposition'
  * rotateLoadings([[1, 0], [0, 1]], 'varimax').length // => 2
  * ```
  */
@@ -241,8 +241,8 @@ export interface FactorAnalysisState {
  * @returns The algorithm.
  * @example
  * ```ts
- * import { factorAnalysisAlgorithm } from 'mdml-engine/decomposition'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { factorAnalysisAlgorithm } from 'omai-engine/decomposition'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const x = [[-2, -1.8, 0.3], [-1, -1.1, -0.2], [1, 0.9, 0.1], [2, 2.2, -0.3], [0, 0.1, 0.2]]
  * runAlgorithm(factorAnalysisAlgorithm(x, 1), { maxSteps: 50 }).state.components.length // => 1
  * ```
@@ -251,7 +251,7 @@ export function factorAnalysisAlgorithm(x: TensorLike, k: number, tol = 1e-2): A
   const m = matrixView(x, 'factorAnalysis', { minSamples: 2 })
   const { n, d } = m
   if (!(Number.isInteger(k) && k >= 1 && k <= d))
-    throw new MdmlError('value', `factorAnalysis: nComponents must be in 1..${d}`)
+    throw new OmaiError('value', `factorAnalysis: nComponents must be in 1..${d}`)
   const xc = centred(m, columnMeans(m))
   const variance = Array.from({ length: d }, (_, j) => {
     let s = 0
@@ -321,7 +321,7 @@ export interface FactorAnalysisHyper {
  * @index estimator Factor analysis by EM.
  * @example
  * ```ts
- * import { factorAnalysis } from 'mdml-engine/decomposition'
+ * import { factorAnalysis } from 'omai-engine/decomposition'
  * const x = [[-2, -1.8, 0.3], [-1, -1.1, -0.2], [1, 0.9, 0.1], [2, 2.2, -0.3], [0, 0.1, 0.2]]
  * factorAnalysis.with({ nComponents: 1 }).fit({ x }).params.components.length // => 1
  * ```

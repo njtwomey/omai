@@ -7,8 +7,8 @@ from typing import Any, Literal, cast
 
 import numpy as np
 import statsmodels.tsa.stattools as ts
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import rng
 
 REFERENCE: dict[str, str] = {"statsmodels": version("statsmodels"), "numpy": np.__version__}
 

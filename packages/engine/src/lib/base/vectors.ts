@@ -16,6 +16,6 @@ export type Vec4 = readonly [x: number, y: number, z: number, w: number]
 
 /**
  * A complex number, a point of the complex plane, as `[real, imaginary]`: a `Vec2` with the names of its parts. The record
- * form `{ re, im }` is `ComplexNumber` of `mdml-engine/numerics/differentiate` (what `complexStep` functions are written in).
+ * form `{ re, im }` is `ComplexNumber` of `omai-engine/numerics/differentiate` (what `complexStep` functions are written in).
  */
 export type Complex = readonly [re: number, im: number]

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isMdmlError } from '../base/index.ts'
+import { isOmaiError } from '../base/index.ts'
 import { add, equals, mul, num, parse, parseLatex, sin, sym, toLatex, toText } from './index.ts'
 
 const t = (s: string): string => toText(parse(s))
@@ -39,7 +39,7 @@ describe('parse', () => {
         parse(s)
         expect.unreachable()
       } catch (e) {
-        expect(isMdmlError(e) && e.code === 'value').toBe(true)
+        expect(isOmaiError(e) && e.code === 'value').toBe(true)
       }
     }
   })

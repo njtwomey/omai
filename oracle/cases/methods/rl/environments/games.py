@@ -6,7 +6,7 @@ from functools import cache
 from itertools import permutations
 
 import numpy as np
-from mdml_oracle.fixture import Case, case
+from omai_oracle.fixture import Case, case
 
 REFERENCE: dict[str, str] = {"numpy": np.__version__, "method": "exhaustive game-tree search"}
 

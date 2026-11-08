@@ -1,4 +1,4 @@
-import { type Structure, structure } from 'mdml-engine/scene'
+import { type Structure, structure } from 'omai-engine/scene'
 import { type ReactElement, useState } from 'react'
 import { renderToString } from 'react-dom/server'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -85,7 +85,7 @@ describe('react bindings', () => {
     expect(refOf()).toBe(before)
     await mounted.unmount()
   })
-  it('loads ECharts with the mdml themes', () => {
+  it('loads ECharts with the omai themes', () => {
     expect(typeof loadEcharts().init).toBe('function')
   })
 })

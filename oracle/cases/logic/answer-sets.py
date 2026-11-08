@@ -5,7 +5,7 @@ single answer set is its perfect model)."""
 from importlib.metadata import version
 
 import clingo
-from mdml_oracle.fixture import Case, case
+from omai_oracle.fixture import Case, case
 
 REFERENCE: dict[str, str] = {"clingo": version("clingo")}
 

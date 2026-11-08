@@ -16,7 +16,7 @@ import type { Params } from '../module/module.ts'
  *
  * @example
  * ```ts
- * import type { CallbackPath } from 'mdml-engine/nn'
+ * import type { CallbackPath } from 'omai-engine/nn'
  * const path: CallbackPath = 'grad_norm/layers/0/weight'
  * path // => 'grad_norm/layers/0/weight'
  * ```
@@ -106,7 +106,7 @@ export interface LoggerOptions {
  * @concept training-callbacks
  * @example
  * ```ts
- * import { gradNormLogger } from 'mdml-engine/nn'
+ * import { gradNormLogger } from 'omai-engine/nn'
  * gradNormLogger().name // => 'gradNormLogger'
  * ```
  */
@@ -134,7 +134,7 @@ export function gradNormLogger(options: LoggerOptions = {}): Callback<'grad_norm
  * @returns The callback.
  * @example
  * ```ts
- * import { paramNormLogger } from 'mdml-engine/nn'
+ * import { paramNormLogger } from 'omai-engine/nn'
  * paramNormLogger({ every: 10 }).name // => 'paramNormLogger'
  * ```
  */
@@ -163,7 +163,7 @@ export function paramNormLogger(options: LoggerOptions = {}): Callback<'param_no
  * @returns The callback.
  * @example
  * ```ts
- * import { valueLogger } from 'mdml-engine/nn'
+ * import { valueLogger } from 'omai-engine/nn'
  * valueLogger().name // => 'valueLogger'
  * ```
  */
@@ -186,7 +186,7 @@ export function valueLogger(options: { readonly every?: number } = {}): Callback
  * @returns The callback.
  * @example
  * ```ts
- * import { learningRateMonitor } from 'mdml-engine/nn'
+ * import { learningRateMonitor } from 'omai-engine/nn'
  * learningRateMonitor((t) => 0.1 / (1 + t)).name // => 'learningRateMonitor'
  * ```
  */
@@ -218,7 +218,7 @@ export interface EarlyStoppingOptions {
  * @concept training-callbacks
  * @example
  * ```ts
- * import { earlyStopping } from 'mdml-engine/nn'
+ * import { earlyStopping } from 'omai-engine/nn'
  * earlyStopping({ patience: 5 }).name // => 'earlyStopping'
  * ```
  */
@@ -258,7 +258,7 @@ export function earlyStopping(options: EarlyStoppingOptions = {}): Callback<neve
  * @returns The callback, with `best()` returning the best value and its parameters.
  * @example
  * ```ts
- * import { bestCheckpoint } from 'mdml-engine/nn'
+ * import { bestCheckpoint } from 'omai-engine/nn'
  * bestCheckpoint().best().params // => undefined
  * ```
  */
@@ -317,7 +317,7 @@ export interface PlateauOptions {
  * @concept training-callbacks
  * @example
  * ```ts
- * import { reduceLROnPlateau } from 'mdml-engine/nn'
+ * import { reduceLROnPlateau } from 'omai-engine/nn'
  * reduceLROnPlateau({ patience: 2 }).scale() // => 1
  * ```
  */
@@ -380,7 +380,7 @@ export function reduceLROnPlateau(
  * @concept training-callbacks
  * @example
  * ```ts
- * import { activationLogger } from 'mdml-engine/nn'
+ * import { activationLogger } from 'omai-engine/nn'
  * activationLogger().tapsActivations // => true
  * ```
  */

@@ -7,7 +7,7 @@
  * the optimiser is a slot: the delta-bar-delta rule of the reference, or any optimiser of the `optim` table.
  */
 
-import { MdmlError, maxOf } from '../base/index.ts'
+import { maxOf, OmaiError } from '../base/index.ts'
 import { type IterativeEstimator, iterative, matrixView } from '../learn/index.ts'
 import { dnrm2 } from '../numerics/linalg/index.ts'
 import { analyticObjective, type OptimiserShape, optimisers, type SmoothProblem } from '../optim/index.ts'
@@ -57,7 +57,7 @@ export interface TrimapTripletOptions {
  * @returns The tempered logarithm.
  * @example
  * ```ts
- * import { temperedLog } from 'mdml-engine/manifold'
+ * import { temperedLog } from 'omai-engine/manifold'
  * [temperedLog(Math.E, 1), temperedLog(9, 0.5)] // => [1, 4]
  * ```
  */
@@ -77,11 +77,11 @@ export function temperedLog(x: number, t: number): number {
  * @param key - The key for the outliers and the random triplets.
  * @param options - Counts of inliers, outliers and random triplets, and the weight scale and temperature.
  * @returns The triplets and their weights.
- * @throws MdmlError with code `value` for fewer than 8 rows or invalid counts.
+ * @throws OmaiError with code `value` for fewer than 8 rows or invalid counts.
  * @example
  * ```ts
- * import { trimapTriplets } from 'mdml-engine/manifold'
- * import { key } from 'mdml-engine/random'
+ * import { trimapTriplets } from 'omai-engine/manifold'
+ * import { key } from 'omai-engine/random'
  * const x = Array.from({ length: 20 }, (_, i) => [i, (i * 7) % 5])
  * trimapTriplets(x, key(0), { nInliers: 3, nOutliers: 2, nRandom: 1 }).triplets.length // => 140
  * ```
@@ -94,9 +94,9 @@ export function trimapTriplets(x: TensorLike, key: Key, options: TrimapTripletOp
   const adj = options.weightAdj ?? 500
   const temp = options.weightTemp ?? 0.5
   if (!(Number.isInteger(nIn) && nIn >= 1 && nIn <= n - 2))
-    throw new MdmlError('value', `trimap: nInliers must be in 1..${n - 2}`)
+    throw new OmaiError('value', `trimap: nInliers must be in 1..${n - 2}`)
   if (!(Number.isInteger(nOut) && nOut >= 0 && Number.isInteger(nRand) && nRand >= 0))
-    throw new MdmlError('value', 'trimap: nOutliers and nRandom must be non-negative integers')
+    throw new OmaiError('value', 'trimap: nOutliers and nRandom must be non-negative integers')
   const extra = Math.min(nIn + 50, n - 1)
   const nb = scaledNeighbours(x, extra)
   const s = (i: number, j: number): number => (nb.all[i * n + j] ?? 0) ** 2 / ((nb.sigma[i] ?? 1) * (nb.sigma[j] ?? 1))
@@ -150,7 +150,7 @@ export function trimapTriplets(x: TensorLike, key: Key, options: TrimapTripletOp
  * @returns The loss, its gradient and the number of violated triplets.
  * @example
  * ```ts
- * import { trimapLoss } from 'mdml-engine/manifold'
+ * import { trimapLoss } from 'omai-engine/manifold'
  * // y_i = 0, y_j = 1, y_k = 3: d_ij = 2, d_ik = 10, loss 2 / 12
  * trimapLoss([0, 1, 3], 1, [[0, 1, 2]], [1]).loss // => 0.16666666666666666
  * ```
@@ -196,7 +196,7 @@ export function trimapLoss(
  * @returns The problem.
  * @example
  * ```ts
- * import { trimapProblem } from 'mdml-engine/manifold'
+ * import { trimapProblem } from 'omai-engine/manifold'
  * trimapProblem([[0, 1, 2]], [1], [[0], [1], [3]]).x0 // => [0, 1, 3]
  * ```
  */
@@ -259,9 +259,9 @@ export interface TrimapOptions {
  * @returns The algorithm; it completes after `nIters` steps.
  * @example
  * ```ts
- * import { trimapAlgorithm, trimapTriplets } from 'mdml-engine/manifold'
- * import { key } from 'mdml-engine/random'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { trimapAlgorithm, trimapTriplets } from 'omai-engine/manifold'
+ * import { key } from 'omai-engine/random'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const x = Array.from({ length: 16 }, (_, i) => [i % 4, Math.floor(i / 4)])
  * const t = trimapTriplets(x, key(0), { nInliers: 3, nOutliers: 2, nRandom: 1 })
  * const init = x.map((r) => [(r[0] ?? 0) * 0.01, (r[1] ?? 0) * 0.01])
@@ -376,7 +376,7 @@ export interface TrimapHyper {
  *
  * @example
  * ```ts
- * import { trimap } from 'mdml-engine/manifold'
+ * import { trimap } from 'omai-engine/manifold'
  * const x = Array.from({ length: 24 }, (_, i) => [i < 12 ? 0 : 6, (i % 12) * 0.3, (i % 5) * 0.1])
  * trimap.with({ nInliers: 3, nOutliers: 2, nIters: 20 }).fit({ x }).params.embedding.length // => 24
  * ```

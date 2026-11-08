@@ -4,16 +4,16 @@
 
 Kernel functions with differentiable hyperparameters under the `Kernel` contract (`rbfKernel`, `maternKernel`, `periodicKernel`, `linearKernel` and more; `defineKernel` makes a new one), kernel algebra (sums, products, scaling), Gram matrices (`gram`), structured kernels, explicit feature maps (random Fourier features, Nystrom) and kernel- matrix statistics such as alignment and HSIC.
 
-- function `matrices.ts` (file): Kernel-matrix statistics: centring, alignment, HSIC. `src/lib/kernels/matrices.ts:1` `mdml-engine/kernels`
+- function `matrices.ts` (file): Kernel-matrix statistics: centring, alignment, HSIC. `src/lib/kernels/matrices.ts:1` `omai-engine/kernels`
 
-- structure `kernel.ts` (file): The Kernel contract and algebra: hyperparameters as data, sums, products, scaling. `src/lib/kernels/kernel.ts:1` `mdml-engine/kernels`
+- structure `kernel.ts` (file): The Kernel contract and algebra: hyperparameters as data, sums, products, scaling. `src/lib/kernels/kernel.ts:1` `omai-engine/kernels`
 
-- function `gram`: Gram matrix of a kernel over a set of points. `src/lib/kernels/kernel.ts:631` `mdml-engine/kernels`
-- function `kernelMatrix`: Gram matrix of a kernel chosen by name. `src/lib/kernels/named.ts:84` `mdml-engine/kernels`
+- function `gram`: Gram matrix of a kernel over a set of points. `src/lib/kernels/kernel.ts:631` `omai-engine/kernels`
+- function `kernelMatrix`: Gram matrix of a kernel chosen by name. `src/lib/kernels/named.ts:84` `omai-engine/kernels`
 
-- kernel `linearKernel`: Linear kernel. `src/lib/kernels/dot-product.ts:85` `mdml-engine/kernels`
-- kernel `maternKernel`: Matern kernel with smoothness parameter. `src/lib/kernels/stationary.ts:126` `mdml-engine/kernels`
-- kernel `periodicKernel`: Periodic kernel. `src/lib/kernels/stationary.ts:294` `mdml-engine/kernels`
-- kernel `polynomialKernel`: Polynomial kernel. `src/lib/kernels/dot-product.ts:127` `mdml-engine/kernels`
-- kernel `rationalQuadraticKernel`: Rational quadratic kernel, a mixture of RBF length scales. `src/lib/kernels/stationary.ts:183` `mdml-engine/kernels`
-- kernel `rbfKernel`: Radial basis function (squared exponential) kernel. `src/lib/kernels/stationary.ts:91` `mdml-engine/kernels`
+- kernel `linearKernel`: Linear kernel. `src/lib/kernels/dot-product.ts:85` `omai-engine/kernels`
+- kernel `maternKernel`: Matern kernel with smoothness parameter. `src/lib/kernels/stationary.ts:126` `omai-engine/kernels`
+- kernel `periodicKernel`: Periodic kernel. `src/lib/kernels/stationary.ts:294` `omai-engine/kernels`
+- kernel `polynomialKernel`: Polynomial kernel. `src/lib/kernels/dot-product.ts:127` `omai-engine/kernels`
+- kernel `rationalQuadraticKernel`: Rational quadratic kernel, a mixture of RBF length scales. `src/lib/kernels/stationary.ts:183` `omai-engine/kernels`
+- kernel `rbfKernel`: Radial basis function (squared exponential) kernel. `src/lib/kernels/stationary.ts:91` `omai-engine/kernels`

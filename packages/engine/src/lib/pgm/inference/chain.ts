@@ -4,7 +4,7 @@
  * decoding of the most probable path, posterior decoding and forward filtering backward sampling for exact path draws.
  */
 
-import { argmaxOf, logSumExpOf, MdmlError, maxOf } from '../../base/index.ts'
+import { argmaxOf, logSumExpOf, maxOf, OmaiError } from '../../base/index.ts'
 import { foldIn, type Key, uniform } from '../../random/index.ts'
 import { nullTracer, type RunHandle, startRun, type TracePolicy, type Tracer } from '../../trace/index.ts'
 import type { Rows } from '../_dense.ts'
@@ -55,17 +55,17 @@ interface Checked {
 function check(chain: ChainModel, name: string): Checked {
   const K = chain.logInitial.length
   const T = chain.logEmission.length
-  if (K === 0) throw new MdmlError('value', `${name}: no states`)
+  if (K === 0) throw new OmaiError('value', `${name}: no states`)
   for (const row of chain.logEmission)
-    if (row.length !== K) throw new MdmlError('shape', `${name}: every emission row needs ${K} entries`)
+    if (row.length !== K) throw new OmaiError('shape', `${name}: every emission row needs ${K} entries`)
   const tr = chain.logTransition
   const perStep = Array.isArray(tr[0]?.[0])
   const mats = (perStep ? tr : [tr]) as readonly Rows[]
   for (const m of mats) {
     if (m.length !== K || m.some((r) => r.length !== K))
-      throw new MdmlError('shape', `${name}: transitions must be ${K} x ${K}`)
+      throw new OmaiError('shape', `${name}: transitions must be ${K} x ${K}`)
   }
-  if (perStep && mats.length < T - 1) throw new MdmlError('shape', `${name}: ${T - 1} transition matrices needed`)
+  if (perStep && mats.length < T - 1) throw new OmaiError('shape', `${name}: ${T - 1} transition matrices needed`)
   return { T, K, transitionAt: (t) => (perStep ? (mats[t] ?? []) : (mats[0] ?? [])) }
 }
 
@@ -81,14 +81,14 @@ function trace(options: ChainOptions, name: string, config: Record<string, numbe
 /** exp of a log vector shifted by its maximum; returns the values and the shift. */
 function shifted(logs: readonly number[]): { values: number[]; shift: number } {
   const m = maxOf(logs)
-  if (m === Number.NEGATIVE_INFINITY) throw new MdmlError('value', 'chain: a step has zero potential for every state')
+  if (m === Number.NEGATIVE_INFINITY) throw new OmaiError('value', 'chain: a step has zero potential for every state')
   return { values: logs.map((l) => Math.exp(l - m)), shift: m }
 }
 
 function normaliseRow(v: number[]): number {
   let s = 0
   for (const x of v) s += x
-  if (!(s > 0)) throw new MdmlError('value', 'chain: the observations have zero probability')
+  if (!(s > 0)) throw new OmaiError('value', 'chain: the observations have zero probability')
   for (let i = 0; i < v.length; i++) v[i] = (v[i] ?? 0) / s
   return s
 }
@@ -101,12 +101,12 @@ function normaliseRow(v: number[]): number {
  * @param chain - The chain potentials.
  * @param options - Method and tracer.
  * @returns Log-likelihood, posteriors, pairwise posteriors and the forward and backward messages.
- * @throws MdmlError with code `value` when the observations are impossible.
+ * @throws OmaiError with code `value` when the observations are impossible.
  * @concept forward-backward
  * @index function Forward-backward smoothing on chains; viterbi finds the best path.
  * @example
  * ```ts
- * import { forwardBackward } from 'mdml-engine/pgm'
+ * import { forwardBackward } from 'omai-engine/pgm'
  * const chain = {
  *   logInitial: [Math.log(0.5), Math.log(0.5)],
  *   logTransition: [[Math.log(0.9), Math.log(0.1)], [Math.log(0.1), Math.log(0.9)]],
@@ -220,7 +220,7 @@ function logRecursions(
     )
   }
   const logL = logSumExpOf(logAlpha[T - 1] ?? [])
-  if (logL === Number.NEGATIVE_INFINITY) throw new MdmlError('value', 'chain: the observations have zero probability')
+  if (logL === Number.NEGATIVE_INFINITY) throw new OmaiError('value', 'chain: the observations have zero probability')
   const forward = logAlpha.map((a) => {
     const z = logSumExpOf(a)
     return a.map((v) => Math.exp(v - z))
@@ -252,7 +252,7 @@ function logRecursions(
  * @concept forward-backward
  * @example
  * ```ts
- * import { forwardFilter } from 'mdml-engine/pgm'
+ * import { forwardFilter } from 'omai-engine/pgm'
  * const chain = { logInitial: [0, 0].map(() => Math.log(0.5)), logTransition: [[0, -Infinity], [-Infinity, 0]], logEmission: [[Math.log(0.9), Math.log(0.1)]] }
  * forwardFilter(chain).filtered[0]?.map((p) => Math.round(p * 10) / 10) // => [0.9, 0.1]
  * ```
@@ -283,7 +283,7 @@ export function forwardFilter(
     predicted.push(logPrior.map(Math.exp))
     const post = logPrior.map((l, k) => l + (chain.logEmission[t]?.[k] ?? 0))
     const z = logSumExpOf(post)
-    if (z === Number.NEGATIVE_INFINITY) throw new MdmlError('value', 'chain: the observations have zero probability')
+    if (z === Number.NEGATIVE_INFINITY) throw new OmaiError('value', 'chain: the observations have zero probability')
     logL += z
     filtered.push(post.map((l) => Math.exp(l - z)))
     run.message(t, 'forward', { t, values: filtered[t] ?? [] }, { to: `z${t}` })
@@ -302,7 +302,7 @@ export function forwardFilter(
  * @concept viterbi
  * @example
  * ```ts
- * import { viterbi } from 'mdml-engine/pgm'
+ * import { viterbi } from 'omai-engine/pgm'
  * const chain = {
  *   logInitial: [Math.log(0.6), Math.log(0.4)],
  *   logTransition: [[Math.log(0.7), Math.log(0.3)], [Math.log(0.4), Math.log(0.6)]],
@@ -340,7 +340,7 @@ export function viterbi(
   const last = argmaxOf(score)
   const logProbability = score[last] ?? Number.NEGATIVE_INFINITY
   if (logProbability === Number.NEGATIVE_INFINITY)
-    throw new MdmlError('value', 'viterbi: every path has zero probability')
+    throw new OmaiError('value', 'viterbi: every path has zero probability')
   const path = new Array<number>(T)
   path[T - 1] = last
   for (let t = T - 2; t >= 0; t--) path[t] = back[t]?.[path[t + 1] ?? 0] ?? 0
@@ -357,7 +357,7 @@ export function viterbi(
  * @concept forward-backward
  * @example
  * ```ts
- * import { posteriorDecode } from 'mdml-engine/pgm'
+ * import { posteriorDecode } from 'omai-engine/pgm'
  * const chain = { logInitial: [0, 0], logTransition: [[0, 0], [0, 0]], logEmission: [[0, 1], [2, 0]] }
  * posteriorDecode(chain) // => [1, 0]
  * ```
@@ -378,8 +378,8 @@ export function posteriorDecode(chain: ChainModel): number[] {
  * @concept forward-backward
  * @example
  * ```ts
- * import { backwardSample } from 'mdml-engine/pgm'
- * import { key } from 'mdml-engine/random'
+ * import { backwardSample } from 'omai-engine/pgm'
+ * import { key } from 'omai-engine/random'
  * const chain = { logInitial: [0, -Infinity], logTransition: [[-Infinity, 0], [0, -Infinity]], logEmission: [[0, 0], [0, 0], [0, 0]] }
  * backwardSample(chain, key(0), 2) // => [[0, 1, 0], [0, 1, 0]]
  * ```

@@ -48,7 +48,7 @@ export interface StateSpaceData extends LearnData {
  * @returns Data the filters fit.
  * @example
  * ```ts
- * import { stateSpaceData } from 'mdml-engine/timeseries'
+ * import { stateSpaceData } from 'omai-engine/timeseries'
  * stateSpaceData([0.1, 0.2, 0.3]).x.shape // => [3, 1]
  * ```
  */
@@ -84,7 +84,7 @@ function rmse(means: readonly (readonly number[])[], states: TensorLike | undefi
 
 /**
  * The hyperparameters of {@link nonlinearFilter}. A slot's value is whole (the option and every knob of it); fill one
- * from a name and some knobs with `completeOption(table, { kind, ...knobs })` from `mdml-engine/space`.
+ * from a name and some knobs with `completeOption(table, { kind, ...knobs })` from `omai-engine/space`.
  */
 export interface NonlinearFilterHyper {
   /** The state-space model, a value of `stateSpaceModels.space` (ignored when the data carries a model). */
@@ -142,10 +142,10 @@ const filterContract = (): Contract<NonlinearFilterState, AnyNonlinearFilterPath
  * @concept unscented-kalman-filter
  * @example
  * ```ts
- * import { filtering } from 'mdml-engine/dynamics'
- * import { key } from 'mdml-engine/random'
- * import { completeOption } from 'mdml-engine/space'
- * import { nonlinearFilter, stateSpaceData } from 'mdml-engine/timeseries'
+ * import { filtering } from 'omai-engine/dynamics'
+ * import { key } from 'omai-engine/random'
+ * import { completeOption } from 'omai-engine/space'
+ * import { nonlinearFilter, stateSpaceData } from 'omai-engine/timeseries'
  * const model = filtering.stateSpaceModels.make({ kind: 'range' })
  * const { observations } = filtering.simulateStateSpace(model, 6, key(0))
  * const unscented = completeOption(filtering.nonlinearFilters, { kind: 'unscented' })
@@ -247,9 +247,9 @@ const particleExtras: Contract<PfState, PfPath> = pfContract
  * @concept particle-filter
  * @example
  * ```ts
- * import { filtering } from 'mdml-engine/dynamics'
- * import { key } from 'mdml-engine/random'
- * import { particleFilter, stateSpaceData } from 'mdml-engine/timeseries'
+ * import { filtering } from 'omai-engine/dynamics'
+ * import { key } from 'omai-engine/random'
+ * import { particleFilter, stateSpaceData } from 'omai-engine/timeseries'
  * const model = filtering.stateSpaceModels.make({ kind: 'random-walk' })
  * const { observations } = filtering.simulateStateSpace(model, 5, key(0))
  * particleFilter.with({ particles: 50 }).fit(stateSpaceData(observations), { key: key(1) }).params.steps // => 5

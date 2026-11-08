@@ -5,7 +5,7 @@
  * be.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { type BitMatrix, bitMatrix, matVec, nullSpace, rref, solveRow, vecMat } from './_gf2.ts'
 
 /** A binary linear [n, k] block code: generator rows span the codewords, parity checks vanish on them. */
@@ -23,17 +23,17 @@ export interface LinearCode {
  *
  * @param generator - A `k x n` 0/1 matrix of full row rank.
  * @returns The code.
- * @throws MdmlError with code `value` when the rows are linearly dependent.
+ * @throws OmaiError with code `value` when the rows are linearly dependent.
  * @concept linear-codes
  * @example
  * ```ts
- * import { linearCode } from 'mdml-engine/information'
+ * import { linearCode } from 'omai-engine/information'
  * linearCode([[1, 0, 1], [0, 1, 1]]).parityCheck // => [[1, 1, 1]]
  * ```
  */
 export function linearCode(generator: BitMatrix): LinearCode {
   const g = bitMatrix(generator, 'linearCode')
-  if (rref(g).rows.length !== g.length) throw new MdmlError('value', 'linearCode: the generator rows are dependent')
+  if (rref(g).rows.length !== g.length) throw new OmaiError('value', 'linearCode: the generator rows are dependent')
   const n = g[0]?.length ?? 0
   const h = nullSpace(g)
   return { n, k: g.length, generator: g, parityCheck: h.length === 0 ? [new Array<number>(n).fill(0)] : h }
@@ -48,12 +48,12 @@ export function linearCode(generator: BitMatrix): LinearCode {
  * @concept linear-codes
  * @example
  * ```ts
- * import { hammingCode, linearEncode } from 'mdml-engine/information'
+ * import { hammingCode, linearEncode } from 'omai-engine/information'
  * linearEncode(hammingCode(3), [1, 0, 1, 1]) // => [0, 1, 1, 0, 0, 1, 1]
  * ```
  */
 export function linearEncode(code: LinearCode, message: readonly number[]): number[] {
-  if (message.length !== code.k) throw new MdmlError('shape', `linearEncode: expected ${code.k} message bits`)
+  if (message.length !== code.k) throw new OmaiError('shape', `linearEncode: expected ${code.k} message bits`)
   return vecMat(message, code.generator)
 }
 
@@ -66,13 +66,13 @@ export function linearEncode(code: LinearCode, message: readonly number[]): numb
  * @concept linear-codes
  * @example
  * ```ts
- * import { hammingCode, syndrome } from 'mdml-engine/information'
+ * import { hammingCode, syndrome } from 'omai-engine/information'
  * // In Hamming's arrangement the syndrome spells the error position in binary (here 5, least significant bit first).
  * syndrome(hammingCode(3), [0, 1, 1, 0, 1, 1, 1]) // => [1, 0, 1]
  * ```
  */
 export function syndrome(code: LinearCode, received: readonly number[]): number[] {
-  if (received.length !== code.n) throw new MdmlError('shape', `syndrome: expected ${code.n} bits`)
+  if (received.length !== code.n) throw new OmaiError('shape', `syndrome: expected ${code.n} bits`)
   return matVec(code.parityCheck, received)
 }
 
@@ -87,7 +87,7 @@ export interface DecodeResult {
 /** Coset leaders: the least-weight error pattern of each syndrome, found by enumerating errors by weight. */
 function leaders(code: LinearCode): Map<string, number[]> {
   const r = code.parityCheck.length
-  if (r > 20) throw new MdmlError('value', 'syndromeDecoder: too many syndromes for a table (n - k > 20)')
+  if (r > 20) throw new OmaiError('value', 'syndromeDecoder: too many syndromes for a table (n - k > 20)')
   const table = new Map<string, number[]>()
   const total = 2 ** rref(code.parityCheck).rows.length
   table.set(new Array<number>(r).fill(0).join(''), [])
@@ -115,7 +115,7 @@ function leaders(code: LinearCode): Map<string, number[]> {
  * @concept linear-codes
  * @example
  * ```ts
- * import { hammingCode, syndromeDecoder } from 'mdml-engine/information'
+ * import { hammingCode, syndromeDecoder } from 'omai-engine/information'
  * const decode = syndromeDecoder(hammingCode(3))
  * decode([0, 1, 1, 0, 1, 1, 1]).corrected // => [4]
  * ```
@@ -139,7 +139,7 @@ export function syndromeDecoder(code: LinearCode): (received: readonly number[])
  * @concept linear-codes
  * @example
  * ```ts
- * import { hammingCode, syndromeDecode } from 'mdml-engine/information'
+ * import { hammingCode, syndromeDecode } from 'omai-engine/information'
  * syndromeDecode(hammingCode(3), [0, 1, 1, 0, 1, 1, 1]).message // => [1, 0, 1, 1]
  * ```
  */
@@ -156,13 +156,13 @@ export function syndromeDecode(code: LinearCode, received: readonly number[]): D
  * @concept linear-codes
  * @example
  * ```ts
- * import { hammingCode, minimumDistance } from 'mdml-engine/information'
+ * import { hammingCode, minimumDistance } from 'omai-engine/information'
  * minimumDistance(hammingCode(3)) // => 3
  * minimumDistance(hammingCode(3, { extended: true })) // => 4
  * ```
  */
 export function minimumDistance(code: LinearCode): number {
-  if (code.k > 24) throw new MdmlError('value', 'minimumDistance: k is too large to enumerate')
+  if (code.k > 24) throw new OmaiError('value', 'minimumDistance: k is too large to enumerate')
   let best = code.n
   const word = new Array<number>(code.n).fill(0)
   // Gray-code enumeration: each step adds one generator row.
@@ -184,12 +184,12 @@ export function minimumDistance(code: LinearCode): number {
  * @concept linear-codes
  * @example
  * ```ts
- * import { linearEncode, parityCode } from 'mdml-engine/information'
+ * import { linearEncode, parityCode } from 'omai-engine/information'
  * linearEncode(parityCode(3), [1, 1, 0]) // => [1, 1, 0, 0]
  * ```
  */
 export function parityCode(k: number): LinearCode {
-  if (!Number.isInteger(k) || k < 1) throw new MdmlError('value', 'parityCode: k must be a positive integer')
+  if (!Number.isInteger(k) || k < 1) throw new OmaiError('value', 'parityCode: k must be a positive integer')
   return linearCode(Array.from({ length: k }, (_, i) => [...Array.from({ length: k }, (_, j) => (i === j ? 1 : 0)), 1]))
 }
 
@@ -202,7 +202,7 @@ export function parityCode(k: number): LinearCode {
  * @concept linear-codes
  * @example
  * ```ts
- * import { parityEncode } from 'mdml-engine/information'
+ * import { parityEncode } from 'omai-engine/information'
  * parityEncode([1, 0, 1]) // => [1, 0, 1, 0]
  * parityEncode([1, 0, 1], { odd: true }) // => [1, 0, 1, 1]
  * ```
@@ -221,7 +221,7 @@ export function parityEncode(bits: readonly number[], options: { readonly odd?: 
  * @concept linear-codes
  * @example
  * ```ts
- * import { parityValid } from 'mdml-engine/information'
+ * import { parityValid } from 'omai-engine/information'
  * parityValid([1, 0, 1, 0]) // => true
  * parityValid([1, 1, 1, 0]) // => false
  * ```
@@ -239,12 +239,12 @@ export function parityValid(word: readonly number[], options: { readonly odd?: b
  * @concept linear-codes
  * @example
  * ```ts
- * import { repetitionCode, syndromeDecode } from 'mdml-engine/information'
+ * import { repetitionCode, syndromeDecode } from 'omai-engine/information'
  * syndromeDecode(repetitionCode(5), [1, 0, 1, 1, 0]).message // => [1]
  * ```
  */
 export function repetitionCode(n: number): LinearCode {
-  if (!Number.isInteger(n) || n < 2) throw new MdmlError('value', 'repetitionCode: n must be an integer >= 2')
+  if (!Number.isInteger(n) || n < 2) throw new OmaiError('value', 'repetitionCode: n must be an integer >= 2')
   return linearCode([new Array<number>(n).fill(1)])
 }
 
@@ -259,14 +259,14 @@ export function repetitionCode(n: number): LinearCode {
  * @concept hamming-codes
  * @example
  * ```ts
- * import { hammingCode } from 'mdml-engine/information'
+ * import { hammingCode } from 'omai-engine/information'
  * hammingCode(3).k // => 4
  * hammingCode(4).n // => 15
  * ```
  */
 export function hammingCode(r: number, options: { readonly extended?: boolean } = {}): LinearCode {
   if (!Number.isInteger(r) || r < 2 || r > 10)
-    throw new MdmlError('value', 'hammingCode: r must be an integer in [2, 10]')
+    throw new OmaiError('value', 'hammingCode: r must be an integer in [2, 10]')
   const n = 2 ** r - 1
   const parityCheck = Array.from({ length: r }, (_, b) => Array.from({ length: n }, (_, j) => ((j + 1) >> b) & 1))
   const data = Array.from({ length: n }, (_, j) => j + 1).filter((p) => (p & (p - 1)) !== 0)
@@ -298,7 +298,7 @@ function ballVolume(n: number, t: number, q: number): number {
 
 function checkCode(n: number, d: number, q: number, name: string): void {
   if (!Number.isInteger(n) || !Number.isInteger(d) || d < 1 || d > n || !Number.isInteger(q) || q < 2)
-    throw new MdmlError('value', `${name}: need integers 1 <= d <= n and q >= 2`)
+    throw new OmaiError('value', `${name}: need integers 1 <= d <= n and q >= 2`)
 }
 
 /**
@@ -312,7 +312,7 @@ function checkCode(n: number, d: number, q: number, name: string): void {
  * @concept coding-bounds
  * @example
  * ```ts
- * import { hammingBound } from 'mdml-engine/information'
+ * import { hammingBound } from 'omai-engine/information'
  * hammingBound(7, 3) // => 16
  * hammingBound(23, 7) // => 4096
  * ```
@@ -332,7 +332,7 @@ export function hammingBound(n: number, d: number, q = 2): number {
  * @concept coding-bounds
  * @example
  * ```ts
- * import { singletonBound } from 'mdml-engine/information'
+ * import { singletonBound } from 'omai-engine/information'
  * // A Reed-Solomon code of length 7 and distance 3 over GF(8) has 8^5 codewords: it meets the bound.
  * singletonBound(7, 3, 8) // => 32768
  * ```
@@ -353,7 +353,7 @@ export function singletonBound(n: number, d: number, q = 2): number {
  * @concept coding-bounds
  * @example
  * ```ts
- * import { gilbertVarshamovBound } from 'mdml-engine/information'
+ * import { gilbertVarshamovBound } from 'omai-engine/information'
  * gilbertVarshamovBound(7, 3) // => 5
  * ```
  */
@@ -372,7 +372,7 @@ export function gilbertVarshamovBound(n: number, d: number, q = 2): number {
  * @concept coding-bounds
  * @example
  * ```ts
- * import { plotkinBound } from 'mdml-engine/information'
+ * import { plotkinBound } from 'omai-engine/information'
  * plotkinBound(8, 5) // => 4
  * plotkinBound(10, 3) // => Infinity
  * ```

@@ -7,7 +7,7 @@
  */
 
 import { grad, hessian } from '../autodiff/index.ts'
-import { MdmlError, meanOf, varianceOf } from '../base/index.ts'
+import { meanOf, OmaiError, varianceOf } from '../base/index.ts'
 import {
   bernoulli,
   beta,
@@ -94,12 +94,12 @@ export interface NewtonMleOptions extends Partial<Omit<RunOptions, 'maxSteps' | 
  * @param eta0 - The starting point: a vector (a tensor, a typed array or a flat array).
  * @param options - tol.
  * @returns The algorithm.
- * @throws MdmlError with code `shape` unless `eta0` is a vector.
+ * @throws OmaiError with code `shape` unless `eta0` is a vector.
  * @example
  * ```ts
- * import { newtonMleAlgorithm } from 'mdml-engine/stats'
- * import { runAlgorithm } from 'mdml-engine/trace'
- * import { mul, neg, square, sub, sum, type Value } from 'mdml-engine/tensor'
+ * import { newtonMleAlgorithm } from 'omai-engine/stats'
+ * import { runAlgorithm } from 'omai-engine/trace'
+ * import { mul, neg, square, sub, sum, type Value } from 'omai-engine/tensor'
  * const ll = (eta: Value): Value => neg(sum(square(sub(eta, 3))))
  * Array.from(runAlgorithm(newtonMleAlgorithm(ll, [0]), { maxSteps: 20 }).state.eta) // => [3]
  * ```
@@ -130,7 +130,7 @@ export function newtonMleAlgorithm(
     }),
     init: () => {
       const ll = value(initial)
-      if (!Number.isFinite(ll)) throw new MdmlError('value', 'newtonMle: the log-likelihood is not finite at the start')
+      if (!Number.isFinite(ll)) throw new OmaiError('value', 'newtonMle: the log-likelihood is not finite at the start')
       return {
         eta: initial,
         logLikelihood: ll,
@@ -202,8 +202,8 @@ export interface MleProblem {
  * @returns The smooth problem: minimise the negative log-likelihood from the start.
  * @example
  * ```ts
- * import { mleSmoothProblem } from 'mdml-engine/stats'
- * import { neg, square, sum, type Value } from 'mdml-engine/tensor'
+ * import { mleSmoothProblem } from 'omai-engine/stats'
+ * import { neg, square, sum, type Value } from 'omai-engine/tensor'
  * mleSmoothProblem({ logLikelihood: (t: Value): Value => neg(sum(square(t))), eta0: [1, 2] }).x0.length // => 2
  * ```
  */
@@ -229,7 +229,7 @@ const levenbergNewton: ModeSpec<MleProblem, NewtonMleState, VectorParams> = {
  * @index table Solvers of the maximum-likelihood slot.
  * @example
  * ```ts
- * import { mleSolvers } from 'mdml-engine/stats'
+ * import { mleSolvers } from 'omai-engine/stats'
  * mleSolvers.names[0] // => 'levenbergNewton'
  * mleSolvers.modeOf({ kind: 'bfgs' }).name // => 'bfgs'
  * ```
@@ -261,11 +261,11 @@ export interface NewtonMleResult {
  * @param options - maxIterations, tol, tracer, policy, and `solver` (a value of `mleSolvers.space`: the default
  *   Levenberg Newton or any generic solver of `smoothSolvers`).
  * @returns The maximiser (`eta`, a tensor; migration, D-009: was a `Float64Array`) and its log-likelihood.
- * @throws MdmlError with code `shape` unless `eta0` is a vector.
+ * @throws OmaiError with code `shape` unless `eta0` is a vector.
  * @example
  * ```ts
- * import { newtonMle } from 'mdml-engine/stats'
- * import { neg, square, sub, sum, type Value } from 'mdml-engine/tensor'
+ * import { newtonMle } from 'omai-engine/stats'
+ * import { neg, square, sub, sum, type Value } from 'omai-engine/tensor'
  * newtonMle((eta: Value): Value => neg(sum(square(sub(eta, 2)))), [0]).logLikelihood // => 0
  * ```
  */
@@ -309,11 +309,11 @@ export function newtonMle(
  * @param logLikelihood - The log-likelihood of a parameter vector.
  * @param theta - The point (usually the MLE): a vector (a tensor, a typed array or a flat array).
  * @returns The p x p observed information.
- * @throws MdmlError with code `shape` unless `theta` is a vector.
+ * @throws OmaiError with code `shape` unless `theta` is a vector.
  * @example
  * ```ts
- * import { observedInformation } from 'mdml-engine/stats'
- * import { mul, neg, square, sum, type Value } from 'mdml-engine/tensor'
+ * import { observedInformation } from 'omai-engine/stats'
+ * import { mul, neg, square, sum, type Value } from 'omai-engine/tensor'
  * observedInformation((t: Value): Value => neg(sum(mul(square(t), 2))), [1]) // => [[4]]
  * ```
  */
@@ -567,17 +567,17 @@ function sortedQuartiles(x: Float64Array): [number, number] {
  * @returns The parameters, standard errors, covariance, log-likelihood, AIC, BIC and the fitted distribution.
  * @example
  * ```ts
- * import { fitDistribution } from 'mdml-engine/stats'
+ * import { fitDistribution } from 'omai-engine/stats'
  * fitDistribution([1, 2, 3, 4], 'normal').params // => { loc: 2.5, scale: 1.118034 }
  * fitDistribution([1, 2, 3, 4], 'normal').standardErrors.loc // => 0.559017
  * ```
  */
 export function fitDistribution(x: TensorLike, family: FitFamily, options: NewtonMleOptions = {}): DistributionFit {
   const spec = FAMILIES[family]
-  if (spec === undefined) throw new MdmlError('value', `fitDistribution: unknown family ${String(family)}`)
+  if (spec === undefined) throw new OmaiError('value', `fitDistribution: unknown family ${String(family)}`)
   const a = sample('fitDistribution', x, 2)
   if (spec.check !== undefined && !spec.check(a))
-    throw new MdmlError('value', `fitDistribution: the data are outside the support of ${family}`)
+    throw new OmaiError('value', `fitDistribution: the data are outside the support of ${family}`)
   const data = asTensor(a)
   const p = spec.names.length
   const logit = family === 'negativeBinomial'

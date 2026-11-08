@@ -3,7 +3,7 @@
  * the rest) their values, and `parsePaint`, which resolves a token or CSS colour string to RGBA.
  */
 
-import { clamp, MdmlError } from '../base/index.ts'
+import { clamp, OmaiError } from '../base/index.ts'
 import type { Paint, ThemeToken } from './types.ts'
 
 /**
@@ -26,13 +26,13 @@ const TAB10 = {
 } as const
 
 /**
- * The colours the rasteriser gives theme tokens in light and dark mode (tab10 for `tab0` to `tab9`). mdml-render's
+ * The colours the rasteriser gives theme tokens in light and dark mode (tab10 for `tab0` to `tab9`). omai-render's
  * themes resolve the same tokens for SVG and charts.
  *
  * @returns The two palettes.
  * @example
  * ```ts
- * import { palettes } from 'mdml-engine/scene'
+ * import { palettes } from 'omai-engine/scene'
  * palettes.light.tab0 // => '#1f77b4'
  * ```
  */
@@ -62,7 +62,7 @@ export const palettes: {
 
 function hex(digits: string): number {
   const v = Number.parseInt(digits, 16)
-  if (!Number.isFinite(v)) throw new MdmlError('value', `parsePaint: bad hex digits '${digits}'`)
+  if (!Number.isFinite(v)) throw new OmaiError('value', `parsePaint: bad hex digits '${digits}'`)
   return v
 }
 
@@ -73,10 +73,10 @@ function hex(digits: string): number {
  * @param paint - The paint.
  * @param palette - Token colours (default the light palette).
  * @returns The colour, or `undefined` for `none`.
- * @throws MdmlError with code `value` for text that is not a colour.
+ * @throws OmaiError with code `value` for text that is not a colour.
  * @example
  * ```ts
- * import { parsePaint } from 'mdml-engine/scene'
+ * import { parsePaint } from 'omai-engine/scene'
  * parsePaint('#f80') // => [255, 136, 0, 1]
  * parsePaint('rgba(10, 20, 30, 0.5)') // => [10, 20, 30, 0.5]
  * parsePaint('tab3') // => [214, 39, 40, 1]
@@ -109,5 +109,5 @@ export function parsePaint(
       return [clamp(r, 0, 255), clamp(g, 0, 255), clamp(b, 0, 255), clamp(a, 0, 1)]
     }
   }
-  throw new MdmlError('value', `parsePaint: '${paint}' is not a colour`)
+  throw new OmaiError('value', `parsePaint: '${paint}' is not a colour`)
 }

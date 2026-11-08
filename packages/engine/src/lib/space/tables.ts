@@ -8,7 +8,7 @@
  * @index table optionTable and modeTable: slots filled from named options.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { defaults } from './operations.ts'
 import type { DictSpace, SpaceValue, UnionSpace } from './types.ts'
 import { union } from './types.ts'
@@ -42,7 +42,7 @@ export interface Option<T, Props> {
  * @returns The record.
  * @example
  * ```ts
- * import { asModeConfig } from 'mdml-engine/space'
+ * import { asModeConfig } from 'omai-engine/space'
  * asModeConfig({ kind: 'sgd', lr: 0.1 }) // => { kind: 'sgd', lr: 0.1 }
  * asModeConfig(3) // => {}
  * ```
@@ -81,10 +81,10 @@ export interface OptionTable<T, Props> {
  * @param table - The options by name.
  * @param options - The tag, the default option and metadata.
  * @returns The table.
- * @throws MdmlError with code `value` for an empty table or a default that is not an option (as `union` does).
+ * @throws OmaiError with code `value` for an empty table or a default that is not an option (as `union` does).
  * @example
  * ```ts
- * import { dict, optionTable, real } from 'mdml-engine/space'
+ * import { dict, optionTable, real } from 'omai-engine/space'
  * const kernels = optionTable(
  *   {
  *     small: { space: dict({}), properties: { smooth: true }, make: () => 'small' },
@@ -103,7 +103,7 @@ export function optionTable<T, Props>(
 ): OptionTable<T, Props> {
   const tag = options.tag ?? 'kind'
   const names = Object.keys(table)
-  if (names.length === 0) throw new MdmlError('value', 'optionTable: need at least one option')
+  if (names.length === 0) throw new OmaiError('value', 'optionTable: need at least one option')
   const space = union(Object.fromEntries(names.map((n) => [n, table[n]?.space as DictSpace])), {
     tag,
     ...(options.default === undefined ? {} : { default: options.default }),
@@ -136,7 +136,7 @@ export function optionTable<T, Props>(
  * @returns The whole configuration.
  * @example
  * ```ts
- * import { dict, int, optionTable, completeOption } from 'mdml-engine/space'
+ * import { dict, int, optionTable, completeOption } from 'omai-engine/space'
  * const k = dict({ k: int(0, 9, { default: 3 }) })
  * const table = optionTable({ a: { space: k, properties: null, make: () => 0 } })
  * completeOption(table, { kind: 'a' }) // => { k: 3, kind: 'a' }
@@ -156,7 +156,7 @@ export function completeOption<T, P>(table: OptionTable<T, P>, config: SpaceValu
  * @returns The record of every knob of the space.
  * @example
  * ```ts
- * import { dict, fillKnobs, int } from 'mdml-engine/space'
+ * import { dict, fillKnobs, int } from 'omai-engine/space'
  * fillKnobs(dict({ k: int(0, 9, { default: 3 }), m: int(0, 9, { default: 4 }) }), { m: 7 }) // => { k: 3, m: 7 }
  * ```
  */
@@ -172,7 +172,7 @@ export function fillKnobs(space: DictSpace, config: ModeConfig): ModeConfig {
  * @returns A function from a knob's name to its value.
  * @example
  * ```ts
- * import { dict, int, readKnobs } from 'mdml-engine/space'
+ * import { dict, int, readKnobs } from 'omai-engine/space'
  * const k = readKnobs(dict({ k: int(0, 9, { default: 3 }), m: int(0, 9, { default: 4 }) }), { m: 7 })
  * [k('k'), k('m')] // => [3, 7]
  * ```
@@ -193,7 +193,7 @@ export function readKnobs<V extends SpaceValue = number>(space: DictSpace, confi
  * @returns The option.
  * @example
  * ```ts
- * import { dict, int, knobOption } from 'mdml-engine/space'
+ * import { dict, int, knobOption } from 'omai-engine/space'
  * const option = knobOption('two', null, dict({ k: int(0, 9, { default: 3 }) }), (k) => 2 * k('k'))
  * [option.make({}), option.make({ k: 5 })] // => [6, 10]
  * ```
@@ -216,7 +216,7 @@ export function knobOption<T, Props, V extends SpaceValue = number>(
  * @returns The option.
  * @example
  * ```ts
- * import { dict, int, plainOption } from 'mdml-engine/space'
+ * import { dict, int, plainOption } from 'omai-engine/space'
  * plainOption('one', dict({ k: int(0, 9, { default: 3 }) }), (k) => k('k') + 1).make({}) // => 4
  * ```
  */

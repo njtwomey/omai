@@ -119,8 +119,8 @@ export interface EnvDefinition<S = unknown, O = unknown, A = unknown> {
  * @concept environments
  * @example
  * ```ts
- * import { make, unwrapped } from 'mdml-engine/rl'
- * import { cartPole } from 'mdml-engine/environments'
+ * import { make, unwrapped } from 'omai-engine/rl'
+ * import { cartPole } from 'omai-engine/environments'
  * unwrapped(make(cartPole)).spec.maxEpisodeSteps // => 500
  * ```
  */
@@ -141,9 +141,9 @@ export function unwrapped(env: Env<unknown, unknown, unknown>): Env<unknown, unk
  * @concept environments
  * @example
  * ```ts
- * import { resetAfter } from 'mdml-engine/rl'
- * import { cartPole } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { resetAfter } from 'omai-engine/rl'
+ * import { cartPole } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * resetAfter(cartPole.create(), undefined, key(0)).observation.length // => 4
  * ```
  */
@@ -159,8 +159,8 @@ export function resetAfter<S, O, A>(env: Env<S, O, A>, previous: S | undefined, 
  * @returns Whether it is an {@link EnvDefinition}.
  * @example
  * ```ts
- * import { isEnvDefinition } from 'mdml-engine/rl'
- * import { cartPole } from 'mdml-engine/environments'
+ * import { isEnvDefinition } from 'omai-engine/rl'
+ * import { cartPole } from 'omai-engine/environments'
  * isEnvDefinition(cartPole) // => true
  * ```
  */

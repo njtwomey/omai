@@ -1,6 +1,6 @@
 // A small SMILES reader (organic subset, aromatic atoms, branches, ring closures, bond symbols; no bracket atoms)
 // producing heavy-atom graphs with implicit hydrogen counts, and the molecules of `smallMolecules`.
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 
 /** A parsed molecule: heavy atoms, bonds with orders (1.5 for aromatic), and implicit hydrogens per atom. */
 export interface ParsedMolecule {
@@ -84,10 +84,10 @@ export function parseSmiles(smiles: string): ParsedMolecule {
       prev = idx
       i += symbol.length
     } else {
-      throw new MdmlError('value', `parseSmiles: unsupported character ${ch} in ${smiles}`)
+      throw new OmaiError('value', `parseSmiles: unsupported character ${ch} in ${smiles}`)
     }
   }
-  if (rings.size > 0) throw new MdmlError('value', `parseSmiles: unclosed ring in ${smiles}`)
+  if (rings.size > 0) throw new OmaiError('value', `parseSmiles: unclosed ring in ${smiles}`)
   const used = atoms.map(() => 0)
   for (const [a, b, o] of bonds) {
     used[a] = (used[a] ?? 0) + o

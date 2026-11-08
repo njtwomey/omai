@@ -6,7 +6,7 @@
  * inverse-propensity-weighted value of the policy that treats the top fraction.
  */
 
-import { MdmlError, type MetricResult } from '../base/index.ts'
+import { type MetricResult, OmaiError } from '../base/index.ts'
 import { fromStorage, type Tensor, type TensorLike } from '../tensor/index.ts'
 import { flat, metricResult } from './metric.ts'
 
@@ -52,8 +52,8 @@ function rank(score: TensorLike, treatment: TensorLike, outcome: TensorLike, who
   const t = flat(treatment)
   const y = flat(outcome)
   if (t.length !== s.length || y.length !== s.length)
-    throw new MdmlError('shape', `${who}: scores, treatment and outcome must have the same length`)
-  for (const v of t) if (v !== 0 && v !== 1) throw new MdmlError('value', `${who}: the treatment must be 0 or 1`)
+    throw new OmaiError('shape', `${who}: scores, treatment and outcome must have the same length`)
+  for (const v of t) if (v !== 0 && v !== 1) throw new OmaiError('value', `${who}: the treatment must be 0 or 1`)
   const order = Int32Array.from(s.keys()).sort((a, b) => (s[b] ?? 0) - (s[a] ?? 0) || a - b)
   return { order, t, y }
 }
@@ -72,7 +72,7 @@ function rank(score: TensorLike, treatment: TensorLike, outcome: TensorLike, who
  * @returns The curve and its random baseline, as `[n + 1]` tensors (was typed arrays).
  * @example
  * ```ts
- * import { upliftCurve } from 'mdml-engine/metrics'
+ * import { upliftCurve } from 'omai-engine/metrics'
  * const c = upliftCurve([4, 3, 2, 1], [1, 0, 1, 0], [1, 0, 0, 0], 'qini')
  * c.value // => [0, 0, 1, 1, 1]
  * ```
@@ -153,7 +153,7 @@ export interface AreaOptions {
  * @returns The coefficient.
  * @example
  * ```ts
- * import { qiniCoefficient } from 'mdml-engine/metrics'
+ * import { qiniCoefficient } from 'omai-engine/metrics'
  * qiniCoefficient([4, 3, 2, 1], [1, 0, 1, 0], [1, 0, 0, 0]).estimate.value // => 0.125
  * ```
  */
@@ -181,7 +181,7 @@ export function qiniCoefficient(
  * @returns The area.
  * @example
  * ```ts
- * import { auuc } from 'mdml-engine/metrics'
+ * import { auuc } from 'omai-engine/metrics'
  * auuc([4, 3, 2, 1], [1, 0, 1, 0], [1, 0, 0, 0]).estimate.value > 0 // => true
  * ```
  */
@@ -207,7 +207,7 @@ export function auuc(
  * @returns The difference of mean outcomes (NaN if an arm is empty).
  * @example
  * ```ts
- * import { upliftAtK } from 'mdml-engine/metrics'
+ * import { upliftAtK } from 'omai-engine/metrics'
  * upliftAtK([4, 3, 2, 1], [1, 0, 1, 0], [1, 0, 0, 0], 0.5).estimate.value // => 1
  * ```
  */
@@ -253,7 +253,7 @@ export interface UpliftBin {
  * @returns One row per bin.
  * @example
  * ```ts
- * import { upliftDeciles } from 'mdml-engine/metrics'
+ * import { upliftDeciles } from 'omai-engine/metrics'
  * upliftDeciles([4, 3, 2, 1], [1, 0, 1, 0], [1, 0, 0, 0], 2).map((b) => b.uplift) // => [1, 0]
  * ```
  */
@@ -296,7 +296,7 @@ export interface PolicyOptions {
  * @returns The value, with `treatAll` and `treatNone` in the breakdown.
  * @example
  * ```ts
- * import { policyValue } from 'mdml-engine/metrics'
+ * import { policyValue } from 'omai-engine/metrics'
  * policyValue([4, 3, 2, 1], [1, 0, 1, 0], [1, 0, 0, 0], { budget: 0.5, propensity: 0.5 }).estimate.value // => 0.5
  * ```
  */

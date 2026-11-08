@@ -6,7 +6,7 @@
  * @index function matmul, dot, tensordot, einsum and Kronecker products with batching.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { alignBatched } from '../batching.ts'
 import { arg, bind1, definePrimitive, type Primitive } from '../primitive.ts'
 import { broadcastShapes, formatShape, normaliseAxis } from '../shape.ts'
@@ -60,23 +60,23 @@ export const matmulPrimitive: Primitive<null> = definePrimitive<null>({
  * @param a - Left operand `[..., m, k]` or `[k]`.
  * @param b - Right operand `[..., k, n]` or `[k]`.
  * @returns The product.
- * @throws MdmlError with code `shape` when the inner dimensions differ.
+ * @throws OmaiError with code `shape` when the inner dimensions differ.
  * @example
  * ```ts
- * import { matmul, tensor, toArray } from 'mdml-engine/tensor'
+ * import { matmul, tensor, toArray } from 'omai-engine/tensor'
  * toArray(matmul(tensor([[1, 2], [3, 4]]), tensor([[1], [1]]))) // => [[3], [7]]
  * toArray(matmul(tensor([1, 2]), tensor([3, 4]))) // => 11
  * ```
  */
 export function matmul(a: TensorLike, b: TensorLike): Value {
   const [x, y] = coerce2(a, b)
-  if (x.shape.length === 0 || y.shape.length === 0) throw new MdmlError('shape', 'matmul: operands must not be scalars')
+  if (x.shape.length === 0 || y.shape.length === 0) throw new OmaiError('shape', 'matmul: operands must not be scalars')
   const xa = x.shape.length === 1 ? expandDims(x, 0) : x
   const yb = y.shape.length === 1 ? expandDims(y, -1) : y
   const k1 = xa.shape[xa.shape.length - 1]
   const k2 = yb.shape[yb.shape.length - 2]
   if (k1 !== k2) {
-    throw new MdmlError('shape', `matmul: shapes ${formatShape(x.shape)} and ${formatShape(y.shape)} do not align`)
+    throw new OmaiError('shape', `matmul: shapes ${formatShape(x.shape)} and ${formatShape(y.shape)} do not align`)
   }
   let out = bind1(matmulPrimitive, [xa, yb], null)
   if (y.shape.length === 1) out = squeeze(out, -1)
@@ -92,13 +92,13 @@ export function matmul(a: TensorLike, b: TensorLike): Value {
  * @returns The product.
  * @example
  * ```ts
- * import { dot, tensor, toArray } from 'mdml-engine/tensor'
+ * import { dot, tensor, toArray } from 'omai-engine/tensor'
  * toArray(dot(tensor([1, 2, 3]), tensor([4, 5, 6]))) // => 32
  * ```
  */
 export function dot(a: TensorLike, b: TensorLike): Value {
   const [x, y] = coerce2(a, b)
-  if (x.shape.length > 2 || y.shape.length > 2) throw new MdmlError('shape', 'dot: use matmul or tensordot above 2-D')
+  if (x.shape.length > 2 || y.shape.length > 2) throw new OmaiError('shape', 'dot: use matmul or tensordot above 2-D')
   if (x.shape.length === 0 || y.shape.length === 0) return mul(x, y)
   return matmul(x, y)
 }
@@ -111,7 +111,7 @@ export function dot(a: TensorLike, b: TensorLike): Value {
  * @returns The scalar sum of elementwise products.
  * @example
  * ```ts
- * import { vdot, tensor, toArray } from 'mdml-engine/tensor'
+ * import { vdot, tensor, toArray } from 'omai-engine/tensor'
  * toArray(vdot(tensor([[1, 2], [3, 4]]), tensor([[1, 1], [1, 1]]))) // => 10
  * ```
  */
@@ -127,7 +127,7 @@ export function vdot(a: TensorLike, b: TensorLike): Value {
  * @returns The matrix `a_i b_j`.
  * @example
  * ```ts
- * import { outer, tensor, toArray } from 'mdml-engine/tensor'
+ * import { outer, tensor, toArray } from 'omai-engine/tensor'
  * toArray(outer(tensor([1, 2]), tensor([3, 4]))) // => [[3, 4], [6, 8]]
  * ```
  */
@@ -143,7 +143,7 @@ export function outer(a: TensorLike, b: TensorLike): Value {
  * @returns The contraction.
  * @example
  * ```ts
- * import { inner, tensor, toArray } from 'mdml-engine/tensor'
+ * import { inner, tensor, toArray } from 'omai-engine/tensor'
  * toArray(inner(tensor([[1, 2], [3, 4]]), tensor([1, 1]))) // => [3, 7]
  * ```
  */
@@ -160,7 +160,7 @@ export function inner(a: TensorLike, b: TensorLike): Value {
  * @returns The contraction: `a`'s free axes followed by `b`'s.
  * @example
  * ```ts
- * import { tensordot, ones } from 'mdml-engine/tensor'
+ * import { tensordot, ones } from 'omai-engine/tensor'
  * tensordot(ones([2, 3, 4]), ones([3, 4, 5]), 2).shape // => [2, 5]
  * ```
  */
@@ -177,7 +177,7 @@ export function tensordot(
   const ca = ax.map((i) => normaliseAxis(i, x.shape.length))
   const cb = bx.map((i) => normaliseAxis(i, y.shape.length))
   if (ca.length !== cb.length || ca.some((i, k) => x.shape[i] !== y.shape[cb[k] ?? -1])) {
-    throw new MdmlError('shape', 'tensordot: contracted axes do not match')
+    throw new OmaiError('shape', 'tensordot: contracted axes do not match')
   }
   const freeA = x.shape.map((_, i) => i).filter((i) => !ca.includes(i))
   const freeB = y.shape.map((_, i) => i).filter((i) => !cb.includes(i))
@@ -236,10 +236,10 @@ function contractPair(a: Term, b: Term, keep: ReadonlySet<string>, sizes: Readon
  * @param spec - The subscripts, with an explicit `->` output.
  * @param operands - The operands.
  * @returns The result.
- * @throws MdmlError with code `value` for malformed subscripts.
+ * @throws OmaiError with code `value` for malformed subscripts.
  * @example
  * ```ts
- * import { einsum, tensor, toArray } from 'mdml-engine/tensor'
+ * import { einsum, tensor, toArray } from 'omai-engine/tensor'
  * toArray(einsum('ij,jk->ik', tensor([[1, 2]]), tensor([[3], [4]]))) // => [[11]]
  * toArray(einsum('ii->', tensor([[1, 2], [3, 4]]))) // => 5
  * ```
@@ -247,15 +247,15 @@ function contractPair(a: Term, b: Term, keep: ReadonlySet<string>, sizes: Readon
 export function einsum(spec: string, ...operands: TensorLike[]): Value {
   const [lhs, rhs] = spec.replace(/\s/g, '').split('->')
   if (lhs === undefined || rhs === undefined)
-    throw new MdmlError('value', `einsum: need an explicit output in '${spec}'`)
+    throw new OmaiError('value', `einsum: need an explicit output in '${spec}'`)
   const inputs = lhs.split(',')
-  if (inputs.length !== operands.length) throw new MdmlError('value', 'einsum: operand count does not match subscripts')
+  if (inputs.length !== operands.length) throw new OmaiError('value', 'einsum: operand count does not match subscripts')
   const letters = [...new Set([...inputs.join(''), ...rhs])]
   const sizes = new Map<string, number>()
   const terms = inputs.map((subs, k): Term => {
     let v = val(operands[k] as TensorLike)
     if (subs.length !== v.shape.length)
-      throw new MdmlError('value', `einsum: '${subs}' does not match rank ${v.shape.length}`)
+      throw new OmaiError('value', `einsum: '${subs}' does not match rank ${v.shape.length}`)
     // Repeated letters in one operand take the diagonal.
     let s = subs
     for (let i = 0; i < s.length; i++) {
@@ -270,7 +270,7 @@ export function einsum(spec: string, ...operands: TensorLike[]): Value {
       const n = v.shape[i] ?? 1
       const known = sizes.get(c)
       if (known !== undefined && known !== n && known !== 1 && n !== 1) {
-        throw new MdmlError('shape', `einsum: index '${c}' has lengths ${known} and ${n}`)
+        throw new OmaiError('shape', `einsum: index '${c}' has lengths ${known} and ${n}`)
       }
       sizes.set(c, Math.max(known ?? 1, n))
     })
@@ -323,13 +323,13 @@ export function einsum(spec: string, ...operands: TensorLike[]): Value {
  * @returns The `[m p, n q]` block matrix.
  * @example
  * ```ts
- * import { kron, eye, tensor, toArray } from 'mdml-engine/tensor'
+ * import { kron, eye, tensor, toArray } from 'omai-engine/tensor'
  * toArray(kron(eye(2), tensor([[1, 2]]))) // => [[1, 2, 0, 0], [0, 0, 1, 2]]
  * ```
  */
 export function kron(a: TensorLike, b: TensorLike): Value {
   const [x, y] = coerce2(a, b)
-  if (x.shape.length !== 2 || y.shape.length !== 2) throw new MdmlError('shape', 'kron: expects matrices')
+  if (x.shape.length !== 2 || y.shape.length !== 2) throw new OmaiError('shape', 'kron: expects matrices')
   const [m, n] = x.shape as [number, number]
   const [p, q] = y.shape as [number, number]
   const prod = mul(reshape(x, [m, 1, n, 1]), reshape(y, [1, p, 1, q]))
@@ -346,7 +346,7 @@ export function kron(a: TensorLike, b: TensorLike): Value {
  * @returns The diagonal.
  * @example
  * ```ts
- * import { diagonal, tensor, toArray } from 'mdml-engine/tensor'
+ * import { diagonal, tensor, toArray } from 'omai-engine/tensor'
  * toArray(diagonal(tensor([[1, 2], [3, 4]]))) // => [1, 4]
  * ```
  */
@@ -372,7 +372,7 @@ export function diagonal(x: TensorLike, offset = 0, axis1 = 0, axis2 = 1): Value
  * @returns The trace.
  * @example
  * ```ts
- * import { trace, tensor, toArray } from 'mdml-engine/tensor'
+ * import { trace, tensor, toArray } from 'omai-engine/tensor'
  * toArray(trace(tensor([[1, 2], [3, 4]]))) // => 5
  * ```
  */

@@ -5,7 +5,7 @@
  * empirical distribution of objective values.
  */
 
-import { type Json, linspaceNumbers, MdmlError } from '../base/index.ts'
+import { type Json, linspaceNumbers, OmaiError } from '../base/index.ts'
 import { type TableData, table } from '../data/index.ts'
 import { hypervolume } from '../optim/index.ts'
 import type { SpaceValue } from '../space/index.ts'
@@ -25,7 +25,7 @@ import { fitGpSurrogate } from './surrogate.ts'
 function objectiveIndex(study: Study, objective: number | undefined): number {
   const j = objective ?? 0
   if (!(Number.isInteger(j) && j >= 0 && j < study.directions.length))
-    throw new MdmlError('value', `analysis: no objective ${j} in a study with ${study.directions.length}`)
+    throw new OmaiError('value', `analysis: no objective ${j} in a study with ${study.directions.length}`)
   return j
 }
 
@@ -39,8 +39,8 @@ function objectiveIndex(study: Study, objective: number | undefined): number {
  * @concept hyperparameter-optimisation
  * @example
  * ```ts
- * import { createStudy, trialsTable } from 'mdml-engine/tune'
- * import { dict, real } from 'mdml-engine/space'
+ * import { createStudy, trialsTable } from 'omai-engine/tune'
+ * import { dict, real } from 'omai-engine/space'
  * const study = createStudy(dict({ x: real(0, 1) }), {
  *   trials: [{ number: 0, params: { x: 0.5 }, state: 'complete', values: [0.25], intermediate: [], source: 'random' }],
  * })
@@ -80,8 +80,8 @@ export interface History {
  * @returns The history.
  * @example
  * ```ts
- * import { createStudy, optimisationHistory } from 'mdml-engine/tune'
- * import { real } from 'mdml-engine/space'
+ * import { createStudy, optimisationHistory } from 'omai-engine/tune'
+ * import { real } from 'omai-engine/space'
  * const trial = (number: number, value: number) =>
  *   ({ number, params: value, state: 'complete', values: [value], intermediate: [], source: 'x' }) as const
  * optimisationHistory(createStudy(real(0, 9), { trials: [trial(0, 3), trial(1, 5), trial(2, 1)] })).best // => [3, 3, 1]
@@ -109,8 +109,8 @@ export function optimisationHistory(study: Study, objective?: number): History {
  * @returns One series per trial that reported.
  * @example
  * ```ts
- * import { createStudy, intermediateValues } from 'mdml-engine/tune'
- * import { real } from 'mdml-engine/space'
+ * import { createStudy, intermediateValues } from 'omai-engine/tune'
+ * import { real } from 'omai-engine/space'
  * const t = { number: 0, params: 0, state: 'pruned', values: [], intermediate: [{ step: 0, value: 2 }], source: 'x' } as const
  * intermediateValues(createStudy(real(0, 1), { trials: [t] })) // => [{ number: 0, state: 'pruned', steps: [0], values: [2] }]
  * ```
@@ -161,8 +161,8 @@ function axes(study: Study, trials: readonly Trial[]): ParameterAxis[] {
  * @returns Trial numbers, parameter axes and objective values.
  * @example
  * ```ts
- * import { createStudy, parallelCoordinates } from 'mdml-engine/tune'
- * import { dict, real, choice } from 'mdml-engine/space'
+ * import { createStudy, parallelCoordinates } from 'omai-engine/tune'
+ * import { dict, real, choice } from 'omai-engine/space'
  * const t = { number: 0, params: { a: 0.5, b: 'y' }, state: 'complete', values: [1], intermediate: [], source: 'x' } as const
  * parallelCoordinates(createStudy(dict({ a: real(0, 1), b: choice(['x', 'y']) }), { trials: [t] })).axes.map((a) => a.values)
  * // => [[0.5], [1]]
@@ -194,8 +194,8 @@ export function parallelCoordinates(
  * @returns One slice per parameter.
  * @example
  * ```ts
- * import { createStudy, sliceData } from 'mdml-engine/tune'
- * import { dict, real } from 'mdml-engine/space'
+ * import { createStudy, sliceData } from 'omai-engine/tune'
+ * import { dict, real } from 'omai-engine/space'
  * const t = { number: 0, params: { a: 0.5 }, state: 'complete', values: [2], intermediate: [], source: 'x' } as const
  * sliceData(createStudy(dict({ a: real(0, 1) }), { trials: [t] })) // => [{ path: 'a', numbers: [0], x: [0.5], y: [2] }]
  * ```
@@ -240,11 +240,11 @@ export interface ContourData {
  * @param yPath - The second parameter's path.
  * @param options - Grid size per axis (default 20) and objective index.
  * @returns The contour data.
- * @throws MdmlError with code `value` for unknown paths or too few complete trials.
+ * @throws OmaiError with code `value` for unknown paths or too few complete trials.
  * @example
  * ```ts
- * import { createStudy, contourData } from 'mdml-engine/tune'
- * import { dict, real } from 'mdml-engine/space'
+ * import { createStudy, contourData } from 'omai-engine/tune'
+ * import { dict, real } from 'omai-engine/space'
  * const trials = [[0, 0], [1, 0], [0, 1], [1, 1], [0.5, 0.5]].map(([a = 0, b = 0], number) =>
  *   ({ number, params: { a, b }, state: 'complete', values: [a + b], intermediate: [], source: 'x' }) as const)
  * const c = contourData(createStudy(dict({ a: real(0, 1), b: real(0, 1) }), { trials }), 'a', 'b', { gridSize: 3 })
@@ -262,7 +262,7 @@ export function contourData(
   const leaves = leavesOf(study.space)
   const ix = leaves.findIndex((l) => l.path === xPath)
   const iy = leaves.findIndex((l) => l.path === yPath)
-  if (ix < 0 || iy < 0) throw new MdmlError('value', `contourData: unknown parameter ${ix < 0 ? xPath : yPath}`)
+  if (ix < 0 || iy < 0) throw new OmaiError('value', `contourData: unknown parameter ${ix < 0 ? xPath : yPath}`)
   const lx = leaves[ix] as Leaf
   const ly = leaves[iy] as Leaf
   const pts = completeTrials(study).flatMap((t) => {
@@ -271,7 +271,7 @@ export function contourData(
     const y = n[iy] ?? Number.NaN
     return Number.isNaN(x) || Number.isNaN(y) ? [] : [{ number: t.number, x, y, value: t.values[j] ?? Number.NaN }]
   })
-  if (pts.length < 2) throw new MdmlError('value', 'contourData: need at least two complete trials with both')
+  if (pts.length < 2) throw new OmaiError('value', 'contourData: need at least two complete trials with both')
   const size = options.gridSize ?? 20
   const ticks = (l: Leaf): number[] =>
     l.kind === 'categorical'
@@ -308,8 +308,8 @@ export function contourData(
  * @concept multi-objective-optimisation
  * @example
  * ```ts
- * import { createStudy, paretoFrontData } from 'mdml-engine/tune'
- * import { real } from 'mdml-engine/space'
+ * import { createStudy, paretoFrontData } from 'omai-engine/tune'
+ * import { real } from 'omai-engine/space'
  * const trial = (number: number, values: number[]) =>
  *   ({ number, params: 0, state: 'complete', values, intermediate: [], source: 'x' }) as const
  * const study = createStudy(real(0, 1), { directions: ['minimize', 'minimize'], trials: [trial(0, [1, 2]), trial(1, [2, 3])] })
@@ -338,8 +338,8 @@ export function paretoFrontData(study: Study): {
  * @concept hypervolume
  * @example
  * ```ts
- * import { createStudy, hypervolumeHistory } from 'mdml-engine/tune'
- * import { real } from 'mdml-engine/space'
+ * import { createStudy, hypervolumeHistory } from 'omai-engine/tune'
+ * import { real } from 'omai-engine/space'
  * const trial = (number: number, values: number[]) =>
  *   ({ number, params: 0, state: 'complete', values, intermediate: [], source: 'x' }) as const
  * const study = createStudy(real(0, 1), { directions: ['minimize', 'minimize'], trials: [trial(0, [1, 2]), trial(1, [2, 1])] })
@@ -348,7 +348,7 @@ export function paretoFrontData(study: Study): {
  */
 export function hypervolumeHistory(study: Study, reference: readonly number[]): number[] {
   if (reference.length !== study.directions.length)
-    throw new MdmlError('shape', 'hypervolumeHistory: one reference coordinate per objective')
+    throw new OmaiError('shape', 'hypervolumeHistory: one reference coordinate per objective')
   const ref = study.directions.map((d, j) => lossOf(d, reference[j] ?? 0))
   const losses = lossMatrix(study, study.trials)
   const kept: number[][] = []
@@ -367,8 +367,8 @@ export function hypervolumeHistory(study: Study, reference: readonly number[]): 
  * @returns Sorted values and cumulative fractions.
  * @example
  * ```ts
- * import { createStudy, empiricalDistribution } from 'mdml-engine/tune'
- * import { real } from 'mdml-engine/space'
+ * import { createStudy, empiricalDistribution } from 'omai-engine/tune'
+ * import { real } from 'omai-engine/space'
  * const trial = (number: number, value: number) =>
  *   ({ number, params: 0, state: 'complete', values: [value], intermediate: [], source: 'x' }) as const
  * empiricalDistribution(createStudy(real(0, 1), { trials: [trial(0, 3), trial(1, 1)] })) // => { values: [1, 3], fraction: [0.5, 1] }
@@ -393,8 +393,8 @@ export function empiricalDistribution(
  * @returns One configuration per objective (`undefined` when nothing is complete).
  * @example
  * ```ts
- * import { createStudy, bestParamsByObjective } from 'mdml-engine/tune'
- * import { real } from 'mdml-engine/space'
+ * import { createStudy, bestParamsByObjective } from 'omai-engine/tune'
+ * import { real } from 'omai-engine/space'
  * const trial = (number: number, values: number[]) =>
  *   ({ number, params: number, state: 'complete', values, intermediate: [], source: 'x' }) as const
  * const study = createStudy(real(0, 9), { directions: ['minimize', 'maximize'], trials: [trial(0, [1, 1]), trial(1, [2, 5])] })

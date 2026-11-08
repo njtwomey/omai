@@ -6,7 +6,7 @@
  * identity element, and the sandpile as a traced algorithm that logs each avalanche's size and duration.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { type Algorithm, type Contract, contractSchema, defineContract, scalar, tensor } from '../../trace/index.ts'
 import { codec, draws, positiveInt } from './_core.ts'
 
@@ -31,18 +31,18 @@ export interface Stabilised {
  * @param width - Columns.
  * @param height - Rows.
  * @returns The stable pile, the toppling counts, the rounds and the grains lost.
- * @throws MdmlError with code `shape` for a pile of the wrong size.
+ * @throws OmaiError with code `shape` for a pile of the wrong size.
  * @concept sandpile
  * @example
  * ```ts
- * import { automata } from 'mdml-engine/dynamics'
+ * import { automata } from 'omai-engine/dynamics'
  * const pile = Int32Array.of(0, 0, 0, 0, 4, 0, 0, 0, 0)
  * const r = automata.stabilise(pile, 3, 3)
  * [Array.from(r.heights), r.rounds, r.lost] // => [[0, 1, 0, 1, 0, 1, 0, 1, 0], 1, 0]
  * ```
  */
 export function stabilise(heights: ArrayLike<number>, width: number, height: number): Stabilised {
-  if (heights.length !== width * height) throw new MdmlError('shape', 'stabilise: the pile must be width x height')
+  if (heights.length !== width * height) throw new OmaiError('shape', 'stabilise: the pile must be width x height')
   const threshold = 4
   const h = Int32Array.from(heights)
   const topplings = new Int32Array(h.length)
@@ -101,7 +101,7 @@ export function stabilise(heights: ArrayLike<number>, width: number, height: num
  * @concept sandpile
  * @example
  * ```ts
- * import { automata } from 'mdml-engine/dynamics'
+ * import { automata } from 'omai-engine/dynamics'
  * Array.from(automata.sandpileAdd(Int32Array.of(3, 3), Int32Array.of(1, 0), 2, 1)) // => [1, 0]
  * ```
  */
@@ -121,7 +121,7 @@ export function sandpileAdd(a: ArrayLike<number>, b: ArrayLike<number>, width: n
  * @concept sandpile
  * @example
  * ```ts
- * import { automata } from 'mdml-engine/dynamics'
+ * import { automata } from 'omai-engine/dynamics'
  * Array.from(automata.sandpileIdentity(3, 3)) // => [2, 1, 2, 1, 0, 1, 2, 1, 2]
  * ```
  */
@@ -192,12 +192,12 @@ export const sandpileContract: Contract<SandpileState, SandpilePath> = defineCon
  *
  * @param options - The size, where grains fall and the starting pile.
  * @returns The algorithm.
- * @throws MdmlError with code `value` for a bad size or drop site outside the grid.
+ * @throws OmaiError with code `value` for a bad size or drop site outside the grid.
  * @concept sandpile
  * @example
  * ```ts
- * import { automata } from 'mdml-engine/dynamics'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { automata } from 'omai-engine/dynamics'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * // Four grains on one site of a 3 by 3 pile make the first avalanche.
  * const s = runAlgorithm(automata.sandpileAlgorithm({ width: 3, height: 3 }), { seed: 0, maxSteps: 4 }).state
  * [s.size, Array.from(s.heights)] // => [1, [0, 1, 0, 1, 0, 1, 0, 1, 0]]
@@ -213,7 +213,7 @@ export function sandpileAlgorithm(options: SandpileOptions = {}): Algorithm<Sand
   if (Array.isArray(drop)) {
     const [x, y] = drop as readonly [number, number]
     if (!(Number.isInteger(x) && Number.isInteger(y) && x >= 0 && x < width && y >= 0 && y < height))
-      throw new MdmlError('value', 'sandpileAlgorithm: the drop site must be on the grid')
+      throw new OmaiError('value', 'sandpileAlgorithm: the drop site must be on the grid')
   }
   return {
     name: 'dynamics/automata/sandpile',

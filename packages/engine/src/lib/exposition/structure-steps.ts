@@ -5,7 +5,7 @@
  * found, a search tree growing, an embedding laid out.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import type { Structure } from '../scene/index.ts'
 import { seal } from './_check.ts'
 
@@ -63,11 +63,11 @@ export interface StructureSteps {
  *
  * @param record - The record without its `kind`.
  * @returns The record.
- * @throws MdmlError `value` when a step names a node or an edge the structure lacks, or the steps are not in order.
+ * @throws OmaiError `value` when a step names a node or an edge the structure lacks, or the steps are not in order.
  * @example
  * ```ts
- * import { structureSteps } from 'mdml-engine/exposition'
- * import { structure } from 'mdml-engine/scene'
+ * import { structureSteps } from 'omai-engine/exposition'
+ * import { structure } from 'omai-engine/scene'
  * const s = structure('graph', [{ id: 'a', label: 'a', role: 'latent' }, { id: 'b', label: 'b', role: 'latent' }], [{ from: 'a', to: 'b' }])
  * structureSteps({ structure: s, steps: [{ step: 0, nodes: { a: { value: 1 } } }] }).steps.length // => 1
  * ```
@@ -77,14 +77,14 @@ export function structureSteps(record: Omit<StructureSteps, 'kind'>): StructureS
   const edges = new Set(record.structure.edges.map((e) => `${e.from}\u0000${e.to}`))
   let previous = Number.NEGATIVE_INFINITY
   for (const [t, step] of record.steps.entries()) {
-    if (step.step < previous) throw new MdmlError('value', `structureSteps: steps[${t}] is out of order`)
+    if (step.step < previous) throw new OmaiError('value', `structureSteps: steps[${t}] is out of order`)
     previous = step.step
     const unknown = Object.keys(step.nodes ?? {}).find((id) => !ids.has(id))
     if (unknown !== undefined)
-      throw new MdmlError('value', `structureSteps: steps[${t}] names the node ${unknown}, which the structure lacks`)
+      throw new OmaiError('value', `structureSteps: steps[${t}] names the node ${unknown}, which the structure lacks`)
     const missing = (step.edges ?? []).find((e) => !edges.has(`${e.from}\u0000${e.to}`))
     if (missing !== undefined)
-      throw new MdmlError(
+      throw new OmaiError(
         'value',
         `structureSteps: steps[${t}] names the edge ${missing.from} to ${missing.to}, which the structure lacks`,
       )
@@ -100,8 +100,8 @@ export function structureSteps(record: Omit<StructureSteps, 'kind'>): StructureS
  * @returns The step's looks, or `undefined` when the record has no steps.
  * @example
  * ```ts
- * import { structureSteps, structureStepAt } from 'mdml-engine/exposition'
- * import { structure } from 'mdml-engine/scene'
+ * import { structureSteps, structureStepAt } from 'omai-engine/exposition'
+ * import { structure } from 'omai-engine/scene'
  * const s = structure('graph', [{ id: 'a', label: 'a', role: 'latent' }], [])
  * const r = structureSteps({ structure: s, steps: [{ step: 0 }, { step: 10, caption: 'later' }] })
  * structureStepAt(r, 12)?.caption // => 'later'

@@ -5,7 +5,7 @@
  * was obtained.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import { condensation, digraph, topologicalSort } from '../graph/index.ts'
 import { type Structure, type StructureEdge, type StructureNode, structure } from '../scene/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm, type TraceSchema } from '../trace/index.ts'
@@ -60,7 +60,7 @@ const COMPARISONS = new Set(['=', '\\=', '==', '\\==', '<', '>', '=<', '>=', '@<
  * @returns A fresh operator table.
  * @example
  * ```ts
- * import { logicProgramOperators } from 'mdml-engine/logic'
+ * import { logicProgramOperators } from 'omai-engine/logic'
  * logicProgramOperators().prefix.get('not') // => { priority: 900, type: 'fy' }
  * ```
  */
@@ -82,12 +82,12 @@ function literalOf(g: Term): DatalogLiteral {
 
 function checkAtom(t: Term, where: string): void {
   if (t.kind !== 'atom' && t.kind !== 'compound') {
-    throw new MdmlError('value', `${where}: ${termToString(t)} is not an atom`)
+    throw new OmaiError('value', `${where}: ${termToString(t)} is not an atom`)
   }
   if (t.kind === 'compound') {
     for (const a of t.args) {
       if (a.kind === 'compound') {
-        throw new MdmlError('value', `${where}: function symbols are not allowed in Datalog (${termToString(t)})`)
+        throw new OmaiError('value', `${where}: function symbols are not allowed in Datalog (${termToString(t)})`)
       }
     }
   }
@@ -99,10 +99,10 @@ function checkAtom(t: Term, where: string): void {
  * @param clauses - The clauses.
  * @param where - The caller's name, for error messages.
  * @returns The rules.
- * @throws MdmlError with code `value` for a head or literal that is not an atom, or a function symbol.
+ * @throws OmaiError with code `value` for a head or literal that is not an atom, or a function symbol.
  * @example
  * ```ts
- * import { parseClause, rulesFromClauses } from 'mdml-engine/logic'
+ * import { parseClause, rulesFromClauses } from 'omai-engine/logic'
  * rulesFromClauses([parseClause('p(X) :- q(X), X > 1, \\+ r(X).')], 'example')[0].body.map((l) => l.kind) // => ['pos', 'cmp', 'neg']
  * ```
  */
@@ -113,7 +113,7 @@ export function rulesFromClauses(clauses: readonly Clause[], where: string): Dat
     for (const l of body) {
       if (l.kind !== 'cmp') checkAtom(l.atom, where)
       else if (l.left.kind === 'compound' || l.right.kind === 'compound') {
-        throw new MdmlError('value', `${where}: function symbols are not allowed in Datalog`)
+        throw new OmaiError('value', `${where}: function symbols are not allowed in Datalog`)
       }
     }
     return { head: c.head, body }
@@ -127,10 +127,10 @@ export function rulesFromClauses(clauses: readonly Clause[], where: string): Dat
  * @param rule - The rule.
  * @param where - The caller's name, for error messages.
  * @returns Nothing.
- * @throws MdmlError with code `value` naming the first unsafe variable.
+ * @throws OmaiError with code `value` naming the first unsafe variable.
  * @example
  * ```ts
- * import { checkSafety, parseClause, rulesFromClauses } from 'mdml-engine/logic'
+ * import { checkSafety, parseClause, rulesFromClauses } from 'omai-engine/logic'
  * const [unsafe] = rulesFromClauses([parseClause('p(X, Y) :- q(X).')], 'example')
  * (() => { try { checkSafety(unsafe, 'example') } catch (e) { return e.message } })() // => 'example: unsafe rule p(X,Y) :- q(X). (variable Y)'
  * ```
@@ -145,7 +145,7 @@ export function checkSafety(rule: DatalogRule, where: string): void {
   ]
   for (const v of need) {
     if (!bound.has(v.name) && !v.name.startsWith('_')) {
-      throw new MdmlError('value', `${where}: unsafe rule ${ruleToString(rule)} (variable ${v.name})`)
+      throw new OmaiError('value', `${where}: unsafe rule ${ruleToString(rule)} (variable ${v.name})`)
     }
   }
 }
@@ -157,7 +157,7 @@ export function checkSafety(rule: DatalogRule, where: string): void {
  * @returns `head :- body.` or `head.`.
  * @example
  * ```ts
- * import { datalog, ruleToString } from 'mdml-engine/logic'
+ * import { datalog, ruleToString } from 'omai-engine/logic'
  * ruleToString(datalog('p(X) :- q(X), not r(X). q(1).').rules[0]) // => 'p(X) :- q(X), not r(X).'
  * ```
  */
@@ -181,11 +181,11 @@ export function ruleToString(rule: DatalogRule): string {
  *
  * @param rules - The rules.
  * @returns The predicates of each stratum, lowest first (each sorted).
- * @throws MdmlError with code `value` when negation occurs in a recursive cycle.
+ * @throws OmaiError with code `value` when negation occurs in a recursive cycle.
  * @concept datalog
  * @example
  * ```ts
- * import { datalog, stratify } from 'mdml-engine/logic'
+ * import { datalog, stratify } from 'omai-engine/logic'
  * stratify(datalog('r(X) :- e(X, _). u(X) :- r(X), not s(X). s(X) :- e(_, X).').rules) // => [['e/2', 'r/1', 's/1'], ['u/1']]
  * ```
  */
@@ -211,7 +211,7 @@ export function stratify(rules: readonly DatalogRule[]): string[][] {
   const cond = condensation(g)
   for (const [a, b, neg] of edges) {
     if (neg && cond.mapping[index.get(a) ?? 0] === cond.mapping[index.get(b) ?? 0]) {
-      throw new MdmlError('value', `stratify: ${b} depends negatively on ${a} in a recursive cycle`)
+      throw new OmaiError('value', `stratify: ${b} depends negatively on ${a} in a recursive cycle`)
     }
   }
   const order = topologicalSort(cond.graph)
@@ -238,12 +238,12 @@ export function stratify(rules: readonly DatalogRule[]): string[][] {
  *
  * @param source - Program text or clauses.
  * @returns The checked program with its strata.
- * @throws MdmlError with code `value` for function symbols, unsafe rules, unstratifiable negation or a syntax
+ * @throws OmaiError with code `value` for function symbols, unsafe rules, unstratifiable negation or a syntax
  *   error.
  * @concept datalog
  * @example
  * ```ts
- * import { datalog } from 'mdml-engine/logic'
+ * import { datalog } from 'omai-engine/logic'
  * const p = datalog('edge(a, b). edge(b, c). path(X, Y) :- edge(X, Y). path(X, Z) :- edge(X, Y), path(Y, Z).')
  * [p.edb, p.idb] // => [['edge/2'], ['path/2']]
  * ```
@@ -388,7 +388,7 @@ function datalogMachine(p: DatalogProgram, options: DatalogOptions): Algorithm<D
       for (const r of p.rules) {
         if (r.body.length > 0) continue
         if (termVariables(r.head).length > 0) {
-          throw new MdmlError('value', `datalog: fact ${termToString(r.head)} is not ground`)
+          throw new OmaiError('value', `datalog: fact ${termToString(r.head)} is not ground`)
         }
         store.add(r.head, null)
       }
@@ -439,7 +439,7 @@ function datalogMachine(p: DatalogProgram, options: DatalogOptions): Algorithm<D
  * @concept datalog
  * @example
  * ```ts
- * import { datalog, datalogAlgorithm } from 'mdml-engine/logic'
+ * import { datalog, datalogAlgorithm } from 'omai-engine/logic'
  * datalogAlgorithm(datalog('p(a).'), { method: 'naive' }).name // => 'naive-evaluation'
  * ```
  */
@@ -467,11 +467,11 @@ export interface DatalogResult {
  * @param program - A checked program or program text.
  * @param options - The method (semi-naive by default), a fact budget and tracing.
  * @returns The model, the rounds and the derivations.
- * @throws MdmlError with code `value` for an invalid program.
+ * @throws OmaiError with code `value` for an invalid program.
  * @concept datalog
  * @example
  * ```ts
- * import { evaluateDatalog } from 'mdml-engine/logic'
+ * import { evaluateDatalog } from 'omai-engine/logic'
  * const r = evaluateDatalog('edge(1, 2). edge(2, 3). edge(3, 4). path(X, Y) :- edge(X, Y). path(X, Z) :- path(X, Y), edge(Y, Z).')
  * [r.model.get('path/2').length, r.rounds] // => [6, 4]
  * ```
@@ -499,7 +499,7 @@ export function evaluateDatalog(program: DatalogProgram | string, options: Datal
  * @concept datalog
  * @example
  * ```ts
- * import { leastModel } from 'mdml-engine/logic'
+ * import { leastModel } from 'omai-engine/logic'
  * leastModel('p(a). q(X) :- p(X). r(X) :- q(X), not p(X).') // => ['p(a)', 'q(a)']
  * ```
  */
@@ -515,10 +515,10 @@ export function leastModel(program: DatalogProgram | string): string[] {
  * @param model - The model (from {@link evaluateDatalog}).
  * @param query - The query text, e.g. `path(a, X), X \= b`.
  * @returns The bindings, each a map from variable name to value text.
- * @throws MdmlError with code `value` for an unsafe query.
+ * @throws OmaiError with code `value` for an unsafe query.
  * @example
  * ```ts
- * import { evaluateDatalog, queryModel } from 'mdml-engine/logic'
+ * import { evaluateDatalog, queryModel } from 'omai-engine/logic'
  * const r = evaluateDatalog('parent(tom, bob). parent(bob, ann). anc(X, Y) :- parent(X, Y). anc(X, Z) :- parent(X, Y), anc(Y, Z).')
  * queryModel(r.model, 'anc(tom, X)') // => [{ X: 'bob' }, { X: 'ann' }]
  * ```
@@ -572,11 +572,11 @@ function flattenConj(t: Term): Term[] {
  * @param result - An evaluation result.
  * @param fact - The fact, as text or a term.
  * @returns The structure.
- * @throws MdmlError with code `value` when the fact is not in the model.
+ * @throws OmaiError with code `value` when the fact is not in the model.
  * @concept datalog
  * @example
  * ```ts
- * import { derivationTree, evaluateDatalog } from 'mdml-engine/logic'
+ * import { derivationTree, evaluateDatalog } from 'omai-engine/logic'
  * const r = evaluateDatalog('e(1, 2). e(2, 3). p(X, Y) :- e(X, Y). p(X, Z) :- e(X, Y), p(Y, Z).')
  * derivationTree(r, 'p(1, 3)').nodes.map((n) => n.label) // => ['p(1,3)', 'e(1,2)', 'p(2,3)', 'e(2,3)']
  * ```
@@ -585,7 +585,7 @@ export function derivationTree(result: DatalogResult, fact: string | Fact): Stru
   const root = typeof fact === 'string' ? parseQuery(fact).goal : fact
   const key = factKey(root)
   const present = (result.model.get(indicator(root)) ?? []).some((f) => factKey(f) === key)
-  if (!present) throw new MdmlError('value', `derivationTree: ${key} is not in the model`)
+  if (!present) throw new OmaiError('value', `derivationTree: ${key} is not in the model`)
   const nodes: StructureNode[] = []
   const edges: StructureEdge[] = []
   const visit = (f: Fact, parent: string | null, depth: number): void => {

@@ -11,7 +11,7 @@
  * loop is what runs.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import {
   type Aval,
   add,
@@ -150,7 +150,7 @@ const squaredDistancePrimitive: Primitive<DistanceParams> = definePrimitive<Dist
 export function squaredDistances(a: Value, b?: Value): Value {
   const other = b ?? a
   if (a.shape.length !== 2 || other.shape.length !== 2 || a.shape[1] !== other.shape[1])
-    throw new MdmlError('shape', 'squaredDistances: inputs must be [m, d] and [n, d]')
+    throw new OmaiError('shape', 'squaredDistances: inputs must be [m, d] and [n, d]')
   return bind1(squaredDistancePrimitive, [a, other], { same: b === undefined || b === a })
 }
 

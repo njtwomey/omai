@@ -4,7 +4,7 @@
  * falling away as the image converges.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { type ImageStep, type ImageSteps, imageSteps } from '../exposition/index.ts'
 import type { Key } from '../random/index.ts'
 import { runAlgorithm } from '../trace/index.ts'
@@ -64,7 +64,7 @@ export function progressiveRender(
 ): ProgressiveRender {
   const { key, exposure, onProgress, ...trace } = options
   const samples = trace.samples ?? 16
-  if (!(Number.isInteger(samples) && samples >= 1)) throw new MdmlError('value', 'progressiveRender: samples >= 1')
+  if (!(Number.isInteger(samples) && samples >= 1)) throw new OmaiError('value', 'progressiveRender: samples >= 1')
   const algorithm = pathTracerAlgorithm(scene, camera, width, height, trace)
   const marks: number[] = []
   for (let s = 1; s < samples; s *= 2) marks.push(s)

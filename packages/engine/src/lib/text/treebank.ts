@@ -4,7 +4,7 @@
  * that undoes the spacing.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { boundary, PY_END, PY_SPACE, PY_WORD, UNI_SPACE, UNI_WORD } from './_classes.ts'
 import type { Span } from './tokenise.ts'
 
@@ -91,7 +91,7 @@ export interface TreebankOptions {
  * @concept tokenisation
  * @example
  * ```ts
- * import { treebankTokenize } from 'mdml-engine/text'
+ * import { treebankTokenize } from 'omai-engine/text'
  * treebankTokenize("They'll save $3.88, can't they?") // => ['They', "'ll", 'save', '$', '3.88', ',', 'ca', "n't", 'they', '?']
  * ```
  */
@@ -145,7 +145,7 @@ const NLTK_PUNCTUATION: readonly Rule[] = [
  * @concept tokenisation
  * @example
  * ```ts
- * import { nltkWordTokenize } from 'mdml-engine/text'
+ * import { nltkWordTokenize } from 'omai-engine/text'
  * nltkWordTokenize('“Wait…” — he said.. ok') // => ['“', 'Wait…', '”', '—', 'he', 'said', '..', 'ok']
  * ```
  */
@@ -167,11 +167,11 @@ export function nltkWordTokenize(text: string, options: TreebankOptions = {}): s
  *
  * @param text - The text.
  * @returns The token spans.
- * @throws MdmlError with code `value` if a token cannot be found (bracket conversion was used).
+ * @throws OmaiError with code `value` if a token cannot be found (bracket conversion was used).
  * @concept tokenisation
  * @example
  * ```ts
- * import { treebankSpans } from 'mdml-engine/text'
+ * import { treebankSpans } from 'omai-engine/text'
  * treebankSpans('He said "no".') // => [[0, 2], [3, 7], [8, 9], [9, 11], [11, 12], [12, 13]]
  * ```
  */
@@ -187,7 +187,7 @@ export function treebankSpans(text: string): Span[] {
   let at = 0
   for (const t of tokens) {
     const i = text.indexOf(t, at)
-    if (i < 0) throw new MdmlError('value', `treebankSpans: token ${t} not found in the text`)
+    if (i < 0) throw new OmaiError('value', `treebankSpans: token ${t} not found in the text`)
     out.push([i, i + t.length])
     at = i + t.length
   }
@@ -247,7 +247,7 @@ const UNCONVERT: readonly Rule[] = [
  * @concept detokenisation
  * @example
  * ```ts
- * import { treebankDetokenize } from 'mdml-engine/text'
+ * import { treebankDetokenize } from 'omai-engine/text'
  * treebankDetokenize(['hello', ',', 'i', 'ca', "n't", 'feel', 'my', 'feet', '!', 'Help', '!', '!']) // => "hello, i can't feel my feet! Help!!"
  * ```
  */

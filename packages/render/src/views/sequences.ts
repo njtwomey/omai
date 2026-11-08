@@ -4,8 +4,8 @@
  */
 
 import type { EChartsOption } from 'echarts'
-import { maxOf, minOf } from 'mdml-engine/base'
-import type { StateSequence } from 'mdml-engine/exposition'
+import { maxOf, minOf } from 'omai-engine/base'
+import type { StateSequence } from 'omai-engine/exposition'
 import { type Panel, subplots } from '../charts/compose.ts'
 import { band, lines } from '../charts/lines.ts'
 import type { Layer } from '../charts/plot.ts'
@@ -26,8 +26,8 @@ const stateColour = (k: number): string => `tab${k % 10}`
  * @returns The ECharts option.
  * @example
  * ```ts
- * import { stateSequence } from 'mdml-engine/exposition'
- * import { stateSequenceView } from 'mdml-render/views'
+ * import { stateSequence } from 'omai-engine/exposition'
+ * import { stateSequenceView } from 'omai-render/views'
  * const r = stateSequence({ states: ['a', 'b'], posteriors: [[0.9, 0.1], [0.3, 0.7]], decoded: [0, 1], truth: [0, 0] })
  * stateSequenceView(r).grid.length // => 2
  * ```

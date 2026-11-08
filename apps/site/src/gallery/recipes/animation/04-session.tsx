@@ -1,4 +1,4 @@
-import { type DictSpace, defaults, dict, int, real } from 'mdml-engine/space'
+import { type DictSpace, defaults, dict, int, real } from 'omai-engine/space'
 import {
   type Config,
   defineMethod,
@@ -9,7 +9,7 @@ import {
   stateFromJson,
   stateToJson,
   tensor,
-} from 'mdml-engine/trace'
+} from 'omai-engine/trace'
 import {
   ControlPanel,
   type Panel,
@@ -18,7 +18,7 @@ import {
   SpaceControls,
   useSession,
   useSessionPreferences,
-} from 'mdml-render/react'
+} from 'omai-render/react'
 import { type ReactNode, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 

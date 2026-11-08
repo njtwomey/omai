@@ -1,8 +1,8 @@
-import { choice, dict, real } from 'mdml-engine/space'
-import { functionObjective, randomSampler, tpeSampler, tune } from 'mdml-engine/tune'
-import { sliceChart } from 'mdml-render/charts'
-import { figure } from 'mdml-render/figure'
-import { Chart, Choice, ControlPanel, FigureFrame, NumberField, useColourMode } from 'mdml-render/react'
+import { choice, dict, real } from 'omai-engine/space'
+import { functionObjective, randomSampler, tpeSampler, tune } from 'omai-engine/tune'
+import { sliceChart } from 'omai-render/charts'
+import { figure } from 'omai-render/figure'
+import { Chart, Choice, ControlPanel, FigureFrame, NumberField, useColourMode } from 'omai-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 

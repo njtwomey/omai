@@ -9,7 +9,7 @@
  * into a `FittedTree` and an exposition record.
  */
 
-import { MdmlError, maxOf } from '../base/index.ts'
+import { maxOf, OmaiError } from '../base/index.ts'
 import { type SplitCandidate, type TreeNode, type TreeRecord, treeRecord } from '../exposition/index.ts'
 import type { FitOptions, LearnData } from '../learn/estimator.ts'
 import { encodeLabels, type MatrixView, matrixView, sampleWeightsOf, targetVector } from '../learn/validation.ts'
@@ -99,7 +99,7 @@ export interface GrowState {
  *
  * @example
  * ```ts
- * import type { GrowPath } from 'mdml-engine/trees'
+ * import type { GrowPath } from 'omai-engine/trees'
  * const path: GrowPath = 'tree/split'
  * path // => 'tree/split'
  * ```
@@ -150,9 +150,9 @@ function withoutFound(node: GrownNode): GrownNode {
  * @concept decision-trees
  * @example
  * ```ts
- * import { growTreeAlgorithm, treeOfState } from 'mdml-engine/trees'
- * import { matrixView } from 'mdml-engine/learn'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { growTreeAlgorithm, treeOfState } from 'omai-engine/trees'
+ * import { matrixView } from 'omai-engine/learn'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const problem = { x: matrixView([[0], [1], [2], [3]], 'demo'), y: Float64Array.of(0, 0, 1, 1), w: Float64Array.of(1, 1, 1, 1), k: 2, criterion: 'gini' as const, minSamplesLeaf: 1, minWeightLeaf: 0, totalWeight: 4 }
  * const options = { criterion: 'gini' as const, splitter: 'best' as const, minSamplesSplit: 2, minSamplesLeaf: 1, minWeightFractionLeaf: 0, maxFeatures: 'all' as const, minImpurityDecrease: 0 }
  * const info = { task: 'classification' as const, classes: [0, 1], nFeatures: 1 }
@@ -374,7 +374,7 @@ function growthOrder(nodes: readonly GrownNode[]): number[] {
  * @returns The tree.
  * @example
  * ```ts
- * import { treeOfState } from 'mdml-engine/trees'
+ * import { treeOfState } from 'omai-engine/trees'
  * const root = { id: 0, parent: -1, depth: 0, isLeft: false, rows: Int32Array.of(0, 1), weight: 2, value: [1, 1], impurity: 0.5, candidates: [], left: -1, right: -1, order: -1 }
  * treeOfState({ nodes: [root], open: [0], decided: 0 }, { task: 'classification', classes: [0, 1], nFeatures: 1 }).left // => [-1]
  * ```
@@ -410,7 +410,7 @@ export function treeOfState(state: GrowState, info: TreeInfo): FittedTree {
  * @returns The record.
  * @example
  * ```ts
- * import { treeRecordOf } from 'mdml-engine/trees'
+ * import { treeRecordOf } from 'omai-engine/trees'
  * const root = { id: 0, parent: -1, depth: 0, isLeft: false, rows: Int32Array.of(0, 1), weight: 2, value: [1, 1], impurity: 0.5, candidates: [], left: -1, right: -1, order: -1 }
  * treeRecordOf({ nodes: [root], open: [0], decided: 0 }, { criterion: 'gini', features: ['x'] }).nodes.length // => 1
  * ```
@@ -474,14 +474,14 @@ export interface TreeData {
  * @returns The prepared data.
  * @example
  * ```ts
- * import { treeData } from 'mdml-engine/trees'
+ * import { treeData } from 'omai-engine/trees'
  * treeData({ x: [[1], [2]], y: [5, 7] }, true, 'demo').classes // => [5, 7]
  * ```
  */
 export function treeData(data: LearnData, classifier: boolean, who: string): TreeData {
   const x = matrixView(data.x, who, { allowNaN: true })
   const w = sampleWeightsOf(data.weights, x.n, who)
-  if (data.y === undefined) throw new MdmlError('value', `${who}: needs targets y`)
+  if (data.y === undefined) throw new OmaiError('value', `${who}: needs targets y`)
   if (!classifier) return { x, y: targetVector(data.y, who, x.n), w, classes: [] }
   const { classes, codes } = encodeLabels(data.y, who, x.n)
   return { x, y: Float64Array.from(codes), w, classes }
@@ -494,10 +494,10 @@ export function treeData(data: LearnData, classifier: boolean, who: string): Tre
  * @param options - Growth options (criterion and leaf limits).
  * @param categorical - Indices of the categorical features.
  * @returns The problem.
- * @throws MdmlError with code `value` when the criterion does not suit the task.
+ * @throws OmaiError with code `value` when the criterion does not suit the task.
  * @example
  * ```ts
- * import { splitProblem, treeData } from 'mdml-engine/trees'
+ * import { splitProblem, treeData } from 'omai-engine/trees'
  * const o = { criterion: 'gini' as const, splitter: 'best' as const, minSamplesSplit: 2, minSamplesLeaf: 1, minWeightFractionLeaf: 0, maxFeatures: 'all' as const, minImpurityDecrease: 0 }
  * splitProblem(treeData({ x: [[1], [2]], y: [0, 1] }, true, 'demo'), o).totalWeight // => 2
  * ```
@@ -506,7 +506,7 @@ export function splitProblem(data: TreeData, options: GrowOptions, categorical: 
   const total = data.w.reduce((a, b) => a + b, 0)
   const classification = data.classes.length > 0
   if (classification !== isClassificationCriterion(options.criterion))
-    throw new MdmlError('value', `growTree: criterion ${options.criterion} does not suit this task`)
+    throw new OmaiError('value', `growTree: criterion ${options.criterion} does not suit this task`)
   return {
     x: data.x,
     y: data.y,
@@ -538,7 +538,7 @@ export interface GrownTree {
  * @returns The tree, the nodes of its record and the final state.
  * @example
  * ```ts
- * import { growTree, treeData } from 'mdml-engine/trees'
+ * import { growTree, treeData } from 'omai-engine/trees'
  * const o = { criterion: 'squared_error' as const, splitter: 'best' as const, minSamplesSplit: 2, minSamplesLeaf: 1, minWeightFractionLeaf: 0, maxFeatures: 'all' as const, minImpurityDecrease: 0 }
  * growTree(treeData({ x: [[0], [1], [2], [3]], y: [0, 0, 5, 5] }, false, 'demo'), o).tree.threshold // => [1.5, -2, -2]
  * ```
@@ -576,7 +576,7 @@ export function growTree(
  * @returns The candidates by decreasing impurity decrease.
  * @example
  * ```ts
- * import { bestCandidates } from 'mdml-engine/trees'
+ * import { bestCandidates } from 'omai-engine/trees'
  * const c = (decrease: number) => ({ feature: 0, threshold: decrease, impurityLeft: 0, impurityRight: 0, decrease })
  * bestCandidates({ id: 0, parent: null, depth: 0, rows: [], value: [], impurity: 0, candidates: [c(1), c(3), c(2)], order: 0 }, 2).map((x) => x.decrease) // => [3, 2]
  * ```

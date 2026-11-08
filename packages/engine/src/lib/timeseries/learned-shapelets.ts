@@ -9,7 +9,7 @@
  * other solver reaches a minimum of the same function. The shapelets start at k-means centres of the windows.
  */
 
-import { MdmlError, maxOf } from '../base/index.ts'
+import { maxOf, OmaiError } from '../base/index.ts'
 import { initialCentres, lloydAlgorithm } from '../cluster/index.ts'
 import { analyticObjective, type SmoothProblem, slotAlgorithm, smoothSolverConfig } from '../optim/index.ts'
 import { foldIn, type Key, key as makeKey } from '../random/index.ts'
@@ -53,15 +53,15 @@ function shapeOf(data: LearnedShapeletData, config: LearnedShapeletConfig): Shap
   const L = config.length ?? 7
   const alpha = config.alpha ?? -30
   if (n === 0 || data.series.some((s) => s.length !== T))
-    throw new MdmlError('shape', 'learnedShapelets: series of one length')
-  if (data.labels.length !== n) throw new MdmlError('shape', 'learnedShapelets: one label per series')
+    throw new OmaiError('shape', 'learnedShapelets: series of one length')
+  if (data.labels.length !== n) throw new OmaiError('shape', 'learnedShapelets: one label per series')
   if (!(Number.isInteger(L) && L >= 2 && L <= T))
-    throw new MdmlError('value', `learnedShapelets: length must be in 2..${T}`)
+    throw new OmaiError('value', `learnedShapelets: length must be in 2..${T}`)
   if (!(Number.isInteger(K) && K >= 1))
-    throw new MdmlError('value', 'learnedShapelets: nShapelets must be a positive integer')
-  if (!(alpha < 0)) throw new MdmlError('value', 'learnedShapelets: alpha must be negative')
+    throw new OmaiError('value', 'learnedShapelets: nShapelets must be a positive integer')
+  if (!(alpha < 0)) throw new OmaiError('value', 'learnedShapelets: alpha must be negative')
   if (data.labels.some((l) => !(Number.isInteger(l) && l >= 0 && l < data.nClasses)))
-    throw new MdmlError('value', 'learnedShapelets: labels must be class indices below nClasses')
+    throw new OmaiError('value', 'learnedShapelets: labels must be class indices below nClasses')
   return { n, T, K, L, C: data.nClasses, alpha, ridge: config.ridge ?? 1e-3 }
 }
 
@@ -104,14 +104,14 @@ function softMin(d: Float64Array, J: number, alpha: number, weights: Float64Arra
  * @returns The soft-minimum distance.
  * @example
  * ```ts
- * import { softMinDistance } from 'mdml-engine/timeseries'
+ * import { softMinDistance } from 'omai-engine/timeseries'
  * softMinDistance([0, 1, 2, 1, 0, 0], [1, 2, 1], -1000) // => 0
  * ```
  */
 export function softMinDistance(series: ArrayLike<number>, shapelet: ArrayLike<number>, alpha = -30): number {
   const L = shapelet.length
   const J = series.length - L + 1
-  if (J < 1) throw new MdmlError('shape', 'softMinDistance: the shapelet is longer than the series')
+  if (J < 1) throw new OmaiError('shape', 'softMinDistance: the shapelet is longer than the series')
   const d = new Float64Array(J)
   windowDistances(series, shapelet, L, d)
   return softMin(d, J, alpha, new Float64Array(J))
@@ -206,8 +206,8 @@ function evaluate(
  * @returns The shapelets `[nShapelets][length]`.
  * @example
  * ```ts
- * import { initialShapelets } from 'mdml-engine/timeseries'
- * import { key } from 'mdml-engine/random'
+ * import { initialShapelets } from 'omai-engine/timeseries'
+ * import { key } from 'omai-engine/random'
  * const series = [[0, 0, 1, 2, 1, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0]]
  * initialShapelets({ series, labels: [1, 0], nClasses: 2 }, { nShapelets: 2, length: 3 }, key(0)).length // => 2
  * ```
@@ -235,7 +235,7 @@ export function initialShapelets(data: LearnedShapeletData, config: LearnedShape
  * @returns The problem.
  * @example
  * ```ts
- * import { learnedShapeletProblem } from 'mdml-engine/timeseries'
+ * import { learnedShapeletProblem } from 'omai-engine/timeseries'
  * const series = [[0, 0, 1, 2, 1, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0]]
  * learnedShapeletProblem({ series, labels: [1, 0], nClasses: 2 }, { nShapelets: 2, length: 3 }).x0.length // => 12
  * ```
@@ -305,8 +305,8 @@ export const learnedShapeletSolver: SpaceValue = smoothSolverConfig({
  * @returns The algorithm.
  * @example
  * ```ts
- * import { learnedShapeletsAlgorithm } from 'mdml-engine/timeseries'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { learnedShapeletsAlgorithm } from 'omai-engine/timeseries'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const series = [[0, 0, 1, 2, 1, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], [0, 1, 2, 1, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0]]
  * const alg = learnedShapeletsAlgorithm({ series, labels: [1, 0, 1, 0], nClasses: 2 }, { nShapelets: 1, length: 3 })
  * runAlgorithm(alg, { maxSteps: 3 }).steps // => 3
@@ -387,7 +387,7 @@ export interface LearnedShapelets {
  * @returns The shapelets, the classifier, and the training accuracy and objective.
  * @example
  * ```ts
- * import { fitLearnedShapelets } from 'mdml-engine/timeseries'
+ * import { fitLearnedShapelets } from 'omai-engine/timeseries'
  * const series = [[0, 0, 1, 2, 1, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], [0, 1, 2, 1, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0]]
  * fitLearnedShapelets({ series, labels: [1, 0, 1, 0], nClasses: 2 }, { nShapelets: 1, length: 3 }, 20).shapelets[0]?.length // => 3
  * ```
@@ -421,7 +421,7 @@ export function fitLearnedShapelets(
  * @returns The probabilities `[n][classes]` and the predicted classes.
  * @example
  * ```ts
- * import { predictLearnedShapelets } from 'mdml-engine/timeseries'
+ * import { predictLearnedShapelets } from 'omai-engine/timeseries'
  * const model = { shapelets: [[1, 2, 1]], weights: [[2, -5], [-2, 5]], alpha: -30, nClasses: 2, accuracy: 1, objective: 0 }
  * // a series containing the shapelet is near it (class 0 here); a flat one is far (class 1)
  * predictLearnedShapelets(model, [[0, 1, 2, 1, 0], [0, 0, 0, 0, 0]]).classes // => [0, 1]

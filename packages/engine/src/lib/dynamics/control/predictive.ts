@@ -4,7 +4,7 @@
  * loop around a plant, and nonlinear MPC that plans with warm-started iLQR.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { qpInteriorPoint, quadprog } from '../../optim/index.ts'
 import { asTensor, matmul, primalOf, type TensorLike, toFlat, type Value } from '../../tensor/index.ts'
 import {
@@ -80,11 +80,11 @@ const bound = (b: number | readonly number[] | undefined, i: number, d: number):
  *
  * @param options - Model, weights, horizon, bounds and QP method.
  * @returns The controller.
- * @throws MdmlError with code `value` for a horizon below 1.
+ * @throws OmaiError with code `value` for a horizon below 1.
  * @concept model-predictive-control
  * @example
  * ```ts
- * import { control } from 'mdml-engine/dynamics'
+ * import { control } from 'omai-engine/dynamics'
  * const mpc = control.linearMpc({ A: [[1, 1], [0, 1]], B: [[0.5], [1]], Q: [[1, 0], [0, 1]], R: [[0.1]], horizon: 10, uMin: -1, uMax: 1 })
  * Math.round((mpc.solve([5, 0]).u[0] ?? 0) * 1e9) / 1e9 // => -1
  * ```
@@ -98,7 +98,7 @@ export function linearMpc(options: LinearMpcOptions): LinearMpc {
   const m = asTensor(options.B).shape[1] ?? 0
   const Qf = options.Qf === undefined ? Q : Float64Array.from(toFlat(primalOf(asTensor(options.Qf))))
   const N = options.horizon
-  if (!Number.isInteger(N) || N < 1) throw new MdmlError('value', 'linearMpc: the horizon must be at least 1')
+  if (!Number.isInteger(N) || N < 1) throw new OmaiError('value', 'linearMpc: the horizon must be at least 1')
   // Powers A^k and the prediction matrices Phi (Nn x n) and Gamma (Nn x Nm).
   const powers: Float64Array[] = [Float64Array.from({ length: n * n }, (_, i) => (Math.floor(i / n) === i % n ? 1 : 0))]
   for (let k = 1; k <= N; k++) powers.push(matmulN(A, powers[k - 1] as Float64Array, n, n, n))
@@ -253,12 +253,12 @@ export const mpcContract: Contract<RecedingState, MpcPath> = defineContract({
  * @param x0 - The initial state.
  * @param options - The number of steps.
  * @returns The algorithm; it is done after `steps` periods.
- * @throws MdmlError with code `value` for a negative step count.
+ * @throws OmaiError with code `value` for a negative step count.
  * @concept model-predictive-control
  * @example
  * ```ts
- * import { control } from 'mdml-engine/dynamics'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { control } from 'omai-engine/dynamics'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const mpc = control.linearMpc({ A: [[1, 1], [0, 1]], B: [[0.5], [1]], Q: [[1, 0], [0, 1]], R: [[0.1]], horizon: 5, uMin: -1, uMax: 1 })
  * const alg = control.recedingHorizonAlgorithm(mpc, undefined, [5, 0], { steps: 3 })
  * runAlgorithm(alg, { maxSteps: 3 }).state.inputs.length // => 3
@@ -270,7 +270,7 @@ export function recedingHorizonAlgorithm(
   x0: readonly number[],
   options: { readonly steps: number },
 ): Algorithm<RecedingState, MpcPath> {
-  if (!(options.steps >= 0)) throw new MdmlError('value', 'recedingHorizon: steps >= 0')
+  if (!(options.steps >= 0)) throw new OmaiError('value', 'recedingHorizon: steps >= 0')
   return {
     name: 'receding-horizon',
     config: { steps: options.steps },
@@ -324,11 +324,11 @@ export function recedingHorizonAlgorithm(
  * @param x0 - The initial state.
  * @param options - Steps and tracing.
  * @returns The closed-loop states, inputs and plan costs.
- * @throws MdmlError with code `value` for a negative step count.
+ * @throws OmaiError with code `value` for a negative step count.
  * @concept model-predictive-control
  * @example
  * ```ts
- * import { control } from 'mdml-engine/dynamics'
+ * import { control } from 'omai-engine/dynamics'
  * const mpc = control.linearMpc({ A: [[1, 1], [0, 1]], B: [[0.5], [1]], Q: [[1, 0], [0, 1]], R: [[0.1]], horizon: 10, uMin: -1, uMax: 1 })
  * const run = control.recedingHorizon(mpc, (x, u) => [x[0] + x[1] + 0.5 * u[0], x[1] + u[0]], [5, 0], { steps: 30 })
  * Math.abs(run.states.at(-1)[0]) < 0.05 // => true
@@ -355,8 +355,8 @@ export function recedingHorizon(
  * @concept model-predictive-control
  * @example
  * ```ts
- * import { control } from 'mdml-engine/dynamics'
- * import { add, mul, sum, sin } from 'mdml-engine/tensor'
+ * import { control } from 'omai-engine/dynamics'
+ * import { add, mul, sum, sin } from 'omai-engine/tensor'
  * const model = { stateSize: 1, actionSize: 1, dynamics: (x, u) => add(add(x, mul(sin(x), 0.2)), u), cost: (x, u) => add(sum(mul(x, x), -1), sum(mul(u, u), -1)) }
  * control.nonlinearMpc(model, { horizon: 8 }).solve([1]).controls.length // => 8
  * ```

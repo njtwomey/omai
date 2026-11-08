@@ -6,7 +6,7 @@
  * reduced-rank fit, the inverse output covariance gives the canonical-correlation form.
  */
 
-import { MdmlError, toRows } from '../base/index.ts'
+import { OmaiError, toRows } from '../base/index.ts'
 import {
   defineEstimator,
   type Estimator,
@@ -72,11 +72,11 @@ export interface PcrVerbs {
  *
  * @param hyper - `nComponents` (default 1), `fitIntercept`, `scale`.
  * @returns The estimator.
- * @throws MdmlError `value` for more components than `min(n, d)` or for sample weights (not supported).
+ * @throws OmaiError `value` for more components than `min(n, d)` or for sample weights (not supported).
  * @example
  * ```ts
- * import { pcr } from 'mdml-engine/decomposition'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { pcr } from 'omai-engine/decomposition'
+ * import { toFlat } from 'omai-engine/tensor'
  * const x = [[0, 0.1], [1, 1.2], [2, 1.9], [3, 3.1], [4, 3.9]]
  * const y = [1, 3, 5, 7, 9]
  * const f = pcr({ nComponents: 1 }).fit({ x, y })
@@ -90,12 +90,12 @@ export function pcr(hyper: Partial<PcrHyper> = {}): Estimator<PcrHyper, Fitted<P
       kind: 'regressor',
       hyperSpace: (h) => dict({ nComponents: int(1, 50, { default: h.nComponents }) }),
       fit: (data, h) => {
-        if (data.weights !== undefined) throw new MdmlError('value', 'pcr: sample weights are not supported')
+        if (data.weights !== undefined) throw new OmaiError('value', 'pcr: sample weights are not supported')
         const m = matrixView(data.x, 'pcr')
         const y = targetVector(data.y ?? [], 'pcr', m.n)
         const k = h.nComponents
         if (!Number.isInteger(k) || k < 1 || k > Math.min(m.n, m.d))
-          throw new MdmlError('value', `pcr: nComponents must be an integer in [1, ${Math.min(m.n, m.d)}], got ${k}`)
+          throw new OmaiError('value', `pcr: nComponents must be an integer in [1, ${Math.min(m.n, m.d)}], got ${k}`)
         const mean = h.fitIntercept ? columnMeans(m) : new Array<number>(m.d).fill(0)
         const xc = centred(m, mean)
         const std = new Array<number>(m.d).fill(1)
@@ -257,7 +257,7 @@ function covarianceRoots(yc: Float64Array, n: number, k: number): { root: number
  * model, J. Multivariate Anal. 5 (1975).
  * @example
  * ```ts
- * import { reducedRankRegression } from 'mdml-engine/decomposition'
+ * import { reducedRankRegression } from 'omai-engine/decomposition'
  * const x = [[0, 1], [1, 0], [2, 1], [3, 2], [4, 1], [5, 3]]
  * const y = x.map((r) => [(r[0] ?? 0) + (r[1] ?? 0), 2 * ((r[0] ?? 0) + (r[1] ?? 0))])
  * const f = reducedRankRegression({ rank: 1 }).fit({ x, y })
@@ -274,19 +274,19 @@ export function reducedRankRegression(
       hyperSpace: (h) => dict({ rank: int(1, 20, { default: h.rank }), alpha: real(0, 10, { default: h.alpha }) }),
       fit: (data, h) => {
         if (data.weights !== undefined)
-          throw new MdmlError('value', 'reducedRankRegression: sample weights are not supported')
+          throw new OmaiError('value', 'reducedRankRegression: sample weights are not supported')
         const m = matrixView(data.x, 'reducedRankRegression')
         const yt = asTensor(requireTargets(data, 'reducedRankRegression'))
         const k = yt.shape.length === 1 ? 1 : (yt.shape[1] ?? 1)
         if ((yt.shape[0] ?? 0) !== m.n)
-          throw new MdmlError('shape', `reducedRankRegression: ${yt.shape[0]} targets for ${m.n} rows`)
+          throw new OmaiError('shape', `reducedRankRegression: ${yt.shape[0]} targets for ${m.n} rows`)
         if (!Number.isInteger(h.rank) || h.rank < 1 || h.rank > Math.min(m.d, k))
-          throw new MdmlError(
+          throw new OmaiError(
             'value',
             `reducedRankRegression: the rank must be an integer in [1, ${Math.min(m.d, k)}], got ${h.rank}`,
           )
         if (!(h.alpha >= 0))
-          throw new MdmlError('value', `reducedRankRegression: alpha must be non-negative, got ${h.alpha}`)
+          throw new OmaiError('value', `reducedRankRegression: alpha must be non-negative, got ${h.alpha}`)
         const yFlat = toFlat(yt)
         const xMean = h.fitIntercept ? columnMeans(m) : new Array<number>(m.d).fill(0)
         const yMean = Array.from({ length: k }, (_, c) => {

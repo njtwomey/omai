@@ -95,7 +95,7 @@ function apply(p: Primitive<null>, x: TensorLike): Value {
  * @returns `e^x`.
  * @example
  * ```ts
- * import { exp, tensor, toArray } from 'mdml-engine/tensor'
+ * import { exp, tensor, toArray } from 'omai-engine/tensor'
  * toArray(exp(tensor([0, 1]))) // => [1, 2.718282]
  * ```
  */
@@ -110,7 +110,7 @@ export function exp(x: TensorLike): Value {
  * @returns `expm1(x)`.
  * @example
  * ```ts
- * import { expm1, tensor, toArray } from 'mdml-engine/tensor'
+ * import { expm1, tensor, toArray } from 'omai-engine/tensor'
  * toArray(expm1(tensor([1e-10]))) // => [1e-10]
  * ```
  */
@@ -125,7 +125,7 @@ export function expm1(x: TensorLike): Value {
  * @returns `ln x`.
  * @example
  * ```ts
- * import { log, tensor, toArray } from 'mdml-engine/tensor'
+ * import { log, tensor, toArray } from 'omai-engine/tensor'
  * toArray(log(tensor([1, Math.E]))) // => [0, 1]
  * ```
  */
@@ -140,7 +140,7 @@ export function log(x: TensorLike): Value {
  * @returns `log1p(x)`.
  * @example
  * ```ts
- * import { log1p, tensor, toArray } from 'mdml-engine/tensor'
+ * import { log1p, tensor, toArray } from 'omai-engine/tensor'
  * toArray(log1p(tensor([0]))) // => [0]
  * ```
  */
@@ -155,7 +155,7 @@ export function log1p(x: TensorLike): Value {
  * @returns `log2 x`.
  * @example
  * ```ts
- * import { log2, tensor, toArray } from 'mdml-engine/tensor'
+ * import { log2, tensor, toArray } from 'omai-engine/tensor'
  * toArray(log2(tensor([8]))) // => [3]
  * ```
  */
@@ -170,7 +170,7 @@ export function log2(x: TensorLike): Value {
  * @returns `log10 x`.
  * @example
  * ```ts
- * import { log10, tensor, toArray } from 'mdml-engine/tensor'
+ * import { log10, tensor, toArray } from 'omai-engine/tensor'
  * toArray(log10(tensor([1000]))) // => [3]
  * ```
  */
@@ -185,7 +185,7 @@ export function log10(x: TensorLike): Value {
  * @returns `sqrt(x)`.
  * @example
  * ```ts
- * import { sqrt, tensor, toArray } from 'mdml-engine/tensor'
+ * import { sqrt, tensor, toArray } from 'omai-engine/tensor'
  * toArray(sqrt(tensor([4, 9]))) // => [2, 3]
  * ```
  */
@@ -200,7 +200,7 @@ export function sqrt(x: TensorLike): Value {
  * @returns `sin x`.
  * @example
  * ```ts
- * import { sin, tensor, toArray } from 'mdml-engine/tensor'
+ * import { sin, tensor, toArray } from 'omai-engine/tensor'
  * toArray(sin(tensor([0, Math.PI / 2]))) // => [0, 1]
  * ```
  */
@@ -215,7 +215,7 @@ export function sin(x: TensorLike): Value {
  * @returns `cos x`.
  * @example
  * ```ts
- * import { cos, tensor, toArray } from 'mdml-engine/tensor'
+ * import { cos, tensor, toArray } from 'omai-engine/tensor'
  * toArray(cos(tensor([0]))) // => [1]
  * ```
  */
@@ -230,7 +230,7 @@ export function cos(x: TensorLike): Value {
  * @returns `tan x`.
  * @example
  * ```ts
- * import { tan, tensor, toArray } from 'mdml-engine/tensor'
+ * import { tan, tensor, toArray } from 'omai-engine/tensor'
  * toArray(tan(tensor([Math.PI / 4]))) // => [1]
  * ```
  */
@@ -245,7 +245,7 @@ export function tan(x: TensorLike): Value {
  * @returns `arcsin x`.
  * @example
  * ```ts
- * import { arcsin, tensor, toArray } from 'mdml-engine/tensor'
+ * import { arcsin, tensor, toArray } from 'omai-engine/tensor'
  * toArray(arcsin(tensor([1]))) // => [1.570796]
  * ```
  */
@@ -260,7 +260,7 @@ export function arcsin(x: TensorLike): Value {
  * @returns `arccos x`.
  * @example
  * ```ts
- * import { arccos, tensor, toArray } from 'mdml-engine/tensor'
+ * import { arccos, tensor, toArray } from 'omai-engine/tensor'
  * toArray(arccos(tensor([1]))) // => [0]
  * ```
  */
@@ -275,7 +275,7 @@ export function arccos(x: TensorLike): Value {
  * @returns `arctan x`.
  * @example
  * ```ts
- * import { arctan, tensor, toArray } from 'mdml-engine/tensor'
+ * import { arctan, tensor, toArray } from 'omai-engine/tensor'
  * toArray(arctan(tensor([1]))) // => [0.785398]
  * ```
  */
@@ -290,7 +290,7 @@ export function arctan(x: TensorLike): Value {
  * @returns `sinh x`.
  * @example
  * ```ts
- * import { sinh, tensor, toArray } from 'mdml-engine/tensor'
+ * import { sinh, tensor, toArray } from 'omai-engine/tensor'
  * toArray(sinh(tensor([0]))) // => [0]
  * ```
  */
@@ -305,7 +305,7 @@ export function sinh(x: TensorLike): Value {
  * @returns `cosh x`.
  * @example
  * ```ts
- * import { cosh, tensor, toArray } from 'mdml-engine/tensor'
+ * import { cosh, tensor, toArray } from 'omai-engine/tensor'
  * toArray(cosh(tensor([0]))) // => [1]
  * ```
  */
@@ -320,7 +320,7 @@ export function cosh(x: TensorLike): Value {
  * @returns `tanh x`.
  * @example
  * ```ts
- * import { tanh, tensor, toArray } from 'mdml-engine/tensor'
+ * import { tanh, tensor, toArray } from 'omai-engine/tensor'
  * toArray(tanh(tensor([0]))) // => [0]
  * ```
  */
@@ -335,7 +335,7 @@ export function tanh(x: TensorLike): Value {
  * @returns `arcsinh x`.
  * @example
  * ```ts
- * import { arcsinh, tensor, toArray } from 'mdml-engine/tensor'
+ * import { arcsinh, tensor, toArray } from 'omai-engine/tensor'
  * toArray(arcsinh(tensor([0]))) // => [0]
  * ```
  */
@@ -350,7 +350,7 @@ export function arcsinh(x: TensorLike): Value {
  * @returns `arccosh x`.
  * @example
  * ```ts
- * import { arccosh, tensor, toArray } from 'mdml-engine/tensor'
+ * import { arccosh, tensor, toArray } from 'omai-engine/tensor'
  * toArray(arccosh(tensor([1]))) // => [0]
  * ```
  */
@@ -365,7 +365,7 @@ export function arccosh(x: TensorLike): Value {
  * @returns `arctanh x`.
  * @example
  * ```ts
- * import { arctanh, tensor, toArray } from 'mdml-engine/tensor'
+ * import { arctanh, tensor, toArray } from 'omai-engine/tensor'
  * toArray(arctanh(tensor([0]))) // => [0]
  * ```
  */
@@ -380,7 +380,7 @@ export function arctanh(x: TensorLike): Value {
  * @returns `1 / (1 + e^-x)`.
  * @example
  * ```ts
- * import { sigmoid, tensor, toArray } from 'mdml-engine/tensor'
+ * import { sigmoid, tensor, toArray } from 'omai-engine/tensor'
  * toArray(sigmoid(tensor([0, 1000, -1000]))) // => [0.5, 1, 0]
  * ```
  */
@@ -396,7 +396,7 @@ export function sigmoid(x: TensorLike): Value {
  * @returns `softplus(x)`.
  * @example
  * ```ts
- * import { softplus, tensor, toArray } from 'mdml-engine/tensor'
+ * import { softplus, tensor, toArray } from 'omai-engine/tensor'
  * toArray(softplus(tensor([0, 1000]))) // => [0.693147, 1000]
  * ```
  */
@@ -415,7 +415,7 @@ export function softplus(x: TensorLike): Value {
  * @returns `max(x, 0)`.
  * @example
  * ```ts
- * import { relu, tensor, toArray } from 'mdml-engine/tensor'
+ * import { relu, tensor, toArray } from 'omai-engine/tensor'
  * toArray(relu(tensor([-1, 2]))) // => [0, 2]
  * ```
  */
@@ -431,7 +431,7 @@ export function relu(x: TensorLike): Value {
  * @returns The step function of `x` in the input's float dtype.
  * @example
  * ```ts
- * import { step, tensor, toArray } from 'mdml-engine/tensor'
+ * import { step, tensor, toArray } from 'omai-engine/tensor'
  * toArray(step(tensor([-1, 0, 2]))) // => [0, 0, 1]
  * ```
  */
@@ -447,7 +447,7 @@ export function step(x: TensorLike): Value {
  * @returns The largest integer not above `x`.
  * @example
  * ```ts
- * import { floor, tensor, toArray } from 'mdml-engine/tensor'
+ * import { floor, tensor, toArray } from 'omai-engine/tensor'
  * toArray(floor(tensor([1.5, -1.5]))) // => [1, -2]
  * ```
  */
@@ -462,7 +462,7 @@ export function floor(x: TensorLike): Value {
  * @returns The smallest integer not below `x`.
  * @example
  * ```ts
- * import { ceil, tensor, toArray } from 'mdml-engine/tensor'
+ * import { ceil, tensor, toArray } from 'omai-engine/tensor'
  * toArray(ceil(tensor([1.5, -1.5]))) // => [2, -1]
  * ```
  */
@@ -477,7 +477,7 @@ export function ceil(x: TensorLike): Value {
  * @returns The rounded values.
  * @example
  * ```ts
- * import { round, tensor, toArray } from 'mdml-engine/tensor'
+ * import { round, tensor, toArray } from 'omai-engine/tensor'
  * toArray(round(tensor([0.5, 1.5, 2.5, -0.5]))) // => [0, 2, 2, -0]
  * ```
  */
@@ -492,7 +492,7 @@ export function round(x: TensorLike): Value {
  * @returns The integer part of `x`.
  * @example
  * ```ts
- * import { trunc, tensor, toArray } from 'mdml-engine/tensor'
+ * import { trunc, tensor, toArray } from 'omai-engine/tensor'
  * toArray(trunc(tensor([1.7, -1.7]))) // => [1, -1]
  * ```
  */
@@ -508,7 +508,7 @@ export function trunc(x: TensorLike): Value {
  * @returns `atan2(y, x)` in `(-pi, pi]`.
  * @example
  * ```ts
- * import { arctan2, tensor, toArray } from 'mdml-engine/tensor'
+ * import { arctan2, tensor, toArray } from 'omai-engine/tensor'
  * toArray(arctan2(tensor([1]), tensor([-1]))) // => [2.356194]
  * ```
  */

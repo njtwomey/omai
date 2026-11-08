@@ -5,7 +5,7 @@
  * same predictions in one pass, following the encyclopedia's evaluation chapters.
  *
  * Degenerate input follows one table. A metric that summarises or decides rejects what has no meaning with
- * `MdmlError('value')`: no samples, a NaN label (a missing label is not a class), a NaN score in a ranking or threshold
+ * `OmaiError('value')`: no samples, a NaN label (a missing label is not a class), a NaN score in a ranking or threshold
  * metric, a negative or non-finite sample weight.
  * `sampleWeight` counts repeated samples (integer weights equal repeating the rows) or the metric rejects it with
  * `value`; none ignores it. A metric undefined for the data (one class, no positives, zero total weight) returns NaN, or

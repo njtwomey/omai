@@ -6,7 +6,7 @@
  * features, is the limit of vanishing feature error.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { defineEstimator, type Estimator, type Fitted } from '../learn/index.ts'
 import { linalg } from '../numerics/index.ts'
 import { dict, real } from '../space/index.ts'
@@ -43,12 +43,12 @@ export type TotalLeastSquaresParams = {
  *
  * @param hyper - `errorX`, `errorY`, `fitIntercept`.
  * @returns The estimator.
- * @throws MdmlError `value` when the best hyperplane is vertical (no finite coefficients) or an error is not positive.
+ * @throws OmaiError `value` when the best hyperplane is vertical (no finite coefficients) or an error is not positive.
  * @reference W. E. Deming, Statistical Adjustment of Data (1943); G. H. Golub and C. F. Van Loan, An analysis of the
  * total least squares problem, SIAM J. Numer. Anal. 17 (1980).
  * @example
  * ```ts
- * import { totalLeastSquares } from 'mdml-engine/linear'
+ * import { totalLeastSquares } from 'omai-engine/linear'
  * const x = [[0], [1], [2], [3], [4]]
  * const f = totalLeastSquares().fit({ x, y: [0, 2, 4, 6, 8] })
  * Math.round((f.params.coef[0] ?? 0) * 1000) / 1000 // => 2
@@ -67,10 +67,10 @@ export function totalLeastSquares(
         const { n, d } = design.x
         const sx = typeof h.errorX === 'number' ? new Array<number>(d).fill(h.errorX) : [...h.errorX]
         if (sx.length !== d)
-          throw new MdmlError('shape', `totalLeastSquares: ${sx.length} feature errors for ${d} features`)
+          throw new OmaiError('shape', `totalLeastSquares: ${sx.length} feature errors for ${d} features`)
         if (!sx.every((v) => v > 0) || !(h.errorY > 0))
-          throw new MdmlError('value', 'totalLeastSquares: the error standard deviations must be positive')
-        if (n <= d) throw new MdmlError('value', 'totalLeastSquares: needs more rows than features')
+          throw new OmaiError('value', 'totalLeastSquares: the error standard deviations must be positive')
+        if (n <= d) throw new OmaiError('value', 'totalLeastSquares: needs more rows than features')
         const c = centre(design, h.fitIntercept)
         const m = d + 1
         const z = new Float64Array(n * m)
@@ -86,7 +86,7 @@ export function totalLeastSquares(
         const v = Array.from({ length: m }, (_, j) => vt[last * m + j] ?? 0)
         const vy = v[d] ?? 0
         if (Math.abs(vy) < 1e-12)
-          throw new MdmlError('value', 'totalLeastSquares: the best hyperplane is vertical in the target')
+          throw new OmaiError('value', 'totalLeastSquares: the best hyperplane is vertical in the target')
         // Scaled model y/sy = sum b_j x_j/sx_j with b = -v[:d]/v[d]; undo the scaling.
         const coef = Array.from({ length: d }, (_, j) => ((-(v[j] ?? 0) / vy) * h.errorY) / (sx[j] ?? 1))
         const intercept = h.fitIntercept ? c.yMean - coef.reduce((a, b, j) => a + b * (c.xMean[j] ?? 0), 0) : 0
@@ -121,7 +121,7 @@ export interface DemingHyper {
  * @reference W. E. Deming, Statistical Adjustment of Data (1943).
  * @example
  * ```ts
- * import { deming } from 'mdml-engine/linear'
+ * import { deming } from 'omai-engine/linear'
  * const x = [[1.1], [1.9], [3.2], [3.8], [5.1]]
  * const slope = deming({ delta: 1 }).fit({ x, y: [1, 2, 3, 4, 5] }).params.coef[0] ?? 0
  * slope > 0.9 // => true
@@ -131,6 +131,6 @@ export function deming(
   hyper: Partial<DemingHyper> = {},
 ): Estimator<TotalLeastSquaresHyper, Fitted<TotalLeastSquaresParams> & AffineVerbs> {
   const delta = hyper.delta ?? 1
-  if (!(delta > 0)) throw new MdmlError('value', `deming: delta must be positive, got ${delta}`)
+  if (!(delta > 0)) throw new OmaiError('value', `deming: delta must be positive, got ${delta}`)
   return totalLeastSquares({ errorX: 1, errorY: Math.sqrt(delta), fitIntercept: hyper.fitIntercept ?? true })
 }

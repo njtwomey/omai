@@ -54,7 +54,7 @@ function rule(
  * @concept line-search
  * @example
  * ```ts
- * import { lineSearchRules } from 'mdml-engine/optim'
+ * import { lineSearchRules } from 'omai-engine/optim'
  * const phi = { at: (a: number) => ({ value: (a - 0.25) ** 2, slope: 2 * (a - 0.25) }) }
  * lineSearchRules.make({ kind: 'hager-zhang' })(phi, { value: 0.0625, slope: -0.5 }).name // => 'optim/hager-zhang'
  * ```

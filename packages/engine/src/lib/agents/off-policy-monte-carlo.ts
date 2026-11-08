@@ -7,7 +7,7 @@
  * sampling, learning from the tail of each episode where the behaviour agreed with the greedy target.
  */
 
-import { argmaxOf, type Json, MdmlError } from '../base/index.ts'
+import { argmaxOf, type Json, OmaiError } from '../base/index.ts'
 import type { Key } from '../random/index.ts'
 import type { Agent } from '../rl/index.ts'
 import { type TabularCodingOptions, type TabularEnvLike, tabularCoding, unit } from './_tabular.ts'
@@ -78,13 +78,13 @@ export interface OffPolicyPredictionState {
  * @param env - The environment.
  * @param options - The target and behaviour policies, weighting, discount and observation coding.
  * @returns The agent; its estimates are `state.V`.
- * @throws MdmlError with code `value` for a behaviour that gives an action probability 0 that the target takes.
+ * @throws OmaiError with code `value` for a behaviour that gives an action probability 0 that the target takes.
  * @concept off-policy-learning
  * @example
  * ```ts
- * import { offPolicyMonteCarloPrediction } from 'mdml-engine/agents'
- * import { infiniteVariance } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { offPolicyMonteCarloPrediction } from 'omai-engine/agents'
+ * import { infiniteVariance } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * const agent = offPolicyMonteCarloPrediction(infiniteVariance.create(), { target: () => [1, 0] })
  * const t = { observation: 0, action: 0, reward: 1, nextObservation: 0, terminated: true, truncated: false }
  * agent.learn(agent.init(key(0)), t, key(1)).V[0] // => 1
@@ -124,7 +124,7 @@ export function offPolicyMonteCarloPrediction<O>(
     learn: (s, t) => {
       const b = behaviour(t.observation)[t.action] ?? 0
       if (!(b > 0))
-        throw new MdmlError('value', 'offPolicyMonteCarloPrediction: the behaviour gave the action probability 0')
+        throw new OmaiError('value', 'offPolicyMonteCarloPrediction: the behaviour gave the action probability 0')
       const p = options.target(t.observation)[t.action] ?? 0
       const episode = [...s.episode, { s: coding.encode(t.observation), a: t.action, r: t.reward, b, p }]
       if (!(t.terminated || t.truncated)) return { ...s, episode, steps: s.steps + 1 }
@@ -207,9 +207,9 @@ export interface OffPolicyControlState {
  * @concept off-policy-learning
  * @example
  * ```ts
- * import { offPolicyMonteCarloControl } from 'mdml-engine/agents'
- * import { randomWalk } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { offPolicyMonteCarloControl } from 'omai-engine/agents'
+ * import { randomWalk } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * const agent = offPolicyMonteCarloControl(randomWalk.create({ n: 3 }))
  * const t = { observation: 2, action: 1, reward: 1, nextObservation: 2, terminated: true, truncated: false }
  * agent.learn(agent.init(key(0)), t, key(1)).Q[5] // => 1
@@ -250,7 +250,7 @@ export function offPolicyMonteCarloControl<O>(
     learn: (s, t) => {
       const b = behaviour(t.observation)[t.action] ?? 0
       if (!(b > 0))
-        throw new MdmlError('value', 'offPolicyMonteCarloControl: the behaviour gave the action probability 0')
+        throw new OmaiError('value', 'offPolicyMonteCarloControl: the behaviour gave the action probability 0')
       const state = coding.encode(t.observation)
       const episode = [...s.episode, { s: state, a: t.action, r: t.reward, b, p: 0 }]
       if (!(t.terminated || t.truncated)) return { ...s, episode, steps: s.steps + 1 }

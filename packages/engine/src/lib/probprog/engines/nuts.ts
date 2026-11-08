@@ -4,7 +4,7 @@
  * those discrete sites back with `inferDiscrete`. Also the engine for the planner.
  */
 
-import { type Json, MdmlError } from '../../base/index.ts'
+import { type Json, OmaiError } from '../../base/index.ts'
 import { categorical as drawCategorical, foldIn, type Key } from '../../random/index.ts'
 import { type Chains, diagnose, hmc, nuts } from '../../sampling/index.ts'
 import { fromStorage, primalOf, type Tensor, type TensorLike, toFlat, type Value } from '../../tensor/index.ts'
@@ -98,10 +98,10 @@ export interface InferDiscreteState {
  * @concept nuts
  * @example
  * ```ts
- * import { inferDiscreteAlgorithm, observe, sample } from 'mdml-engine/probprog'
- * import { bernoulli, normal } from 'mdml-engine/dists'
- * import { key } from 'mdml-engine/random'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { inferDiscreteAlgorithm, observe, sample } from 'omai-engine/probprog'
+ * import { bernoulli, normal } from 'omai-engine/dists'
+ * import { key } from 'omai-engine/random'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const model = () => { const c = sample('c', bernoulli({ probs: 0.5 })); observe('y', normal(c, 1), 1) }
  * Object.keys(runAlgorithm(inferDiscreteAlgorithm(model, undefined, {}, key(0)), { maxSteps: 10 }).state.fixed) // => ['c']
  * ```
@@ -128,7 +128,7 @@ export function inferDiscreteAlgorithm<D = void>(
       const { factors, sumVars, scales } = traceFactors(t, depth)
       const { marginals } = enumeratedMarginals(factors, sumVars, scales)
       const mg = marginals.get(next.name)
-      if (mg === undefined) throw new MdmlError('value', `inferDiscrete: no marginal for ${next.name}`)
+      if (mg === undefined) throw new OmaiError('value', `inferDiscrete: no marginal for ${next.name}`)
       const probs = primalOf(mg.probs)
       const k = probs.shape[probs.shape.length - 1] ?? 1
       const batch = probs.shape.slice(0, -1)
@@ -168,10 +168,10 @@ export function inferDiscreteAlgorithm<D = void>(
  * @concept exact-inference
  * @example
  * ```ts
- * import { inferDiscrete, observe, sample } from 'mdml-engine/probprog'
- * import { bernoulli, normal } from 'mdml-engine/dists'
- * import { key } from 'mdml-engine/random'
- * import { item } from 'mdml-engine/tensor'
+ * import { inferDiscrete, observe, sample } from 'omai-engine/probprog'
+ * import { bernoulli, normal } from 'omai-engine/dists'
+ * import { key } from 'omai-engine/random'
+ * import { item } from 'omai-engine/tensor'
  * const model = () => { const c = sample('c', bernoulli({ probs: 0.5 })); observe('y', normal(c, 0.01), 1) }
  * item(inferDiscrete(model, undefined, {}, key(0))['c'] ?? 0) // => 1
  * ```
@@ -183,7 +183,7 @@ export function inferDiscrete<D = void>(
   key: Key,
 ): Record<string, TensorLike> {
   const run = runAlgorithm(inferDiscreteAlgorithm(model, data, values, key), { maxSteps: 10001 })
-  if (run.status === 'failed') throw new MdmlError('value', 'inferDiscrete: too many enumerated sites')
+  if (run.status === 'failed') throw new OmaiError('value', 'inferDiscrete: too many enumerated sites')
   return run.state.fixed
 }
 
@@ -268,10 +268,10 @@ const perChainMean = (t: Tensor | undefined, numChains: number): number[] => {
  * @concept nuts
  * @example
  * ```ts
- * import { mcmcAlgorithm, observe, sample } from 'mdml-engine/probprog'
- * import { normal } from 'mdml-engine/dists'
- * import { key } from 'mdml-engine/random'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { mcmcAlgorithm, observe, sample } from 'omai-engine/probprog'
+ * import { normal } from 'omai-engine/dists'
+ * import { key } from 'omai-engine/random'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const model = () => { const mu = sample('mu', normal(0, 1)); observe('y', normal(mu, 1), 1) }
  * const run = runAlgorithm(mcmcAlgorithm(model, undefined, { key: key(0), numChains: 2, numWarmup: 50, numDraws: 20 }), { maxSteps: 10 })
  * [run.status, run.steps, run.state.chains?.numDraws] // => ['converged', 3, 20]
@@ -404,10 +404,10 @@ export function mcmcAlgorithm<D = void>(
  * @concept nuts
  * @example
  * ```ts
- * import { mcmcAlgorithm, mcmcPosterior, observe, sample } from 'mdml-engine/probprog'
- * import { normal } from 'mdml-engine/dists'
- * import { key } from 'mdml-engine/random'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { mcmcAlgorithm, mcmcPosterior, observe, sample } from 'omai-engine/probprog'
+ * import { normal } from 'omai-engine/dists'
+ * import { key } from 'omai-engine/random'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const model = () => { const mu = sample('mu', normal(0, 1)); observe('y', normal(mu, 1), 1) }
  * const options = { key: key(0), numChains: 1, numWarmup: 40, numDraws: 10 }
  * mcmcPosterior(model, undefined, options, runAlgorithm(mcmcAlgorithm(model, undefined, options), { maxSteps: 10 }).state).status // => 'completed'
@@ -469,9 +469,9 @@ export function mcmcPosterior<D = void>(
  * @index function Run MCMC on a program and return a posterior.
  * @example
  * ```ts
- * import { mcmc, observe, sample } from 'mdml-engine/probprog'
- * import { normal } from 'mdml-engine/dists'
- * import { key } from 'mdml-engine/random'
+ * import { mcmc, observe, sample } from 'omai-engine/probprog'
+ * import { normal } from 'omai-engine/dists'
+ * import { key } from 'omai-engine/random'
  * const model = () => { const mu = sample('mu', normal(0, 1)); observe('y', normal(mu, 1), 1) }
  * const post = mcmc(model, undefined, { key: key(0), numChains: 1, numWarmup: 100, numDraws: 100 })
  * post.draws?.['mu']?.shape // => [100]
@@ -491,7 +491,7 @@ export function mcmc<D = void>(model: Model<D>, data: D, options: McmcOptions & 
  * @concept inference-engines
  * @example
  * ```ts
- * import { nutsEngine } from 'mdml-engine/probprog'
+ * import { nutsEngine } from 'omai-engine/probprog'
  * nutsEngine({ numDraws: 200 }).name // => 'nuts'
  * ```
  */

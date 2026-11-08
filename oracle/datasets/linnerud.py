@@ -4,7 +4,7 @@ from typing import cast
 
 import numpy as np
 import sklearn
-from mdml_oracle.vendor import number_list, sha256_of, string_list
+from omai_oracle.vendor import number_list, sha256_of, string_list
 from sklearn.datasets import load_linnerud
 from sklearn.utils import Bunch
 

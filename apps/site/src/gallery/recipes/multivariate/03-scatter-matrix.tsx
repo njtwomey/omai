@@ -1,7 +1,7 @@
-import { iris } from 'mdml-engine/datasets'
-import { toArray } from 'mdml-engine/tensor'
-import { type ScatterMatrixCell, scatterMatrix, scatterMatrixCells, type Table } from 'mdml-render/charts'
-import { brushSelection, type Figure, figure } from 'mdml-render/figure'
+import { iris } from 'omai-engine/datasets'
+import { toArray } from 'omai-engine/tensor'
+import { type ScatterMatrixCell, scatterMatrix, scatterMatrixCells, type Table } from 'omai-render/charts'
+import { brushSelection, type Figure, figure } from 'omai-render/figure'
 import {
   Brush,
   Chart,
@@ -12,7 +12,7 @@ import {
   InteractionOverlay,
   linearProjection,
   useColourMode,
-} from 'mdml-render/react'
+} from 'omai-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 

@@ -6,7 +6,7 @@
  * integral transform and its histogram, and Kuleshov's quantile recalibration with its curve.
  */
 
-import { type Json, MdmlError, sigmoidOf } from '../base/index.ts'
+import { type Json, OmaiError, sigmoidOf } from '../base/index.ts'
 import type { Distribution } from '../dists/index.ts'
 import { interp } from '../numerics/interpolate/index.ts'
 import { solve } from '../numerics/linalg/index.ts'
@@ -57,7 +57,7 @@ function vector(x: TensorLike, who: string): Float64Array {
 
 function binaryTargets(y: TensorLike, n: number, who: string): Float64Array {
   const t = targetVector(y, who, n)
-  for (const v of t) if (v !== 0 && v !== 1) throw new MdmlError('value', `${who}: labels must be 0 or 1`)
+  for (const v of t) if (v !== 0 && v !== 1) throw new OmaiError('value', `${who}: labels must be 0 or 1`)
   return t
 }
 
@@ -73,7 +73,7 @@ function binaryTargets(y: TensorLike, n: number, who: string): Float64Array {
  * @concept isotonic-regression
  * @example
  * ```ts
- * import { poolAdjacentViolators } from 'mdml-engine/learn'
+ * import { poolAdjacentViolators } from 'omai-engine/learn'
  * poolAdjacentViolators([1, 3, 2, 4]) // => [1, 2.5, 2.5, 4]
  * ```
  */
@@ -147,8 +147,8 @@ function isotonicPredict(p: IsotonicParams): (scores: TensorLike) => Tensor {
  * @returns The calibrator.
  * @example
  * ```ts
- * import { isotonicCalibration } from 'mdml-engine/learn'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { isotonicCalibration } from 'omai-engine/learn'
+ * import { toFlat } from 'omai-engine/tensor'
  * const c = isotonicCalibration([0.1, 0.4, 0.35, 0.8], [0, 1, 0, 1])
  * toFlat(c.predict([0.1, 0.375, 0.9])) // => [0, 0.5, 1]
  * ```
@@ -201,7 +201,7 @@ function logisticNewton(
     )
       return beta
     if (beta.some((v) => !Number.isFinite(v)))
-      throw new MdmlError('convergence', `${who}: the fit diverged (separable scores?)`)
+      throw new OmaiError('convergence', `${who}: the fit diverged (separable scores?)`)
   }
   return beta
 }
@@ -218,7 +218,7 @@ function logisticNewton(
  * @concept probability-calibration
  * @example
  * ```ts
- * import { plattScaling } from 'mdml-engine/learn'
+ * import { plattScaling } from 'omai-engine/learn'
  * const c = plattScaling([-2, -1, 1, 2], [0, 0, 1, 1])
  * c.params.a < 0 // => true
  * ```
@@ -264,7 +264,7 @@ export type BetaParams = { readonly a: number; readonly b: number; readonly c: n
  * @returns The calibrator.
  * @example
  * ```ts
- * import { betaCalibration } from 'mdml-engine/learn'
+ * import { betaCalibration } from 'omai-engine/learn'
  * const c = betaCalibration([0.1, 0.3, 0.6, 0.9, 0.2, 0.8], [0, 0, 1, 1, 1, 0])
  * c.params.a >= 0 && c.params.b >= 0 // => true
  * ```
@@ -316,8 +316,8 @@ export type HistogramParams = { readonly edges: number[]; readonly values: numbe
  * @returns The calibrator.
  * @example
  * ```ts
- * import { histogramBinning } from 'mdml-engine/learn'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { histogramBinning } from 'omai-engine/learn'
+ * import { toFlat } from 'omai-engine/tensor'
  * const c = histogramBinning([0.1, 0.2, 0.7, 0.9], [0, 1, 1, 1], { nBins: 2 })
  * toFlat(c.predict([0.3, 0.8])) // => [0.5, 1]
  * ```
@@ -331,7 +331,7 @@ export function histogramBinning(
   const y = binaryTargets(labels, s.length, 'histogramBinning')
   const w = sampleWeightsOf(options.weights, s.length, 'histogramBinning')
   const k = options.nBins ?? 10
-  if (!(Number.isInteger(k) && k >= 1)) throw new MdmlError('value', 'histogramBinning: nBins must be >= 1')
+  if (!(Number.isInteger(k) && k >= 1)) throw new OmaiError('value', 'histogramBinning: nBins must be >= 1')
   const sorted = Float64Array.from(s).sort()
   const edges =
     options.strategy === 'quantile'
@@ -361,7 +361,7 @@ export function histogramBinning(
  * @returns The logits, row-major.
  * @example
  * ```ts
- * import { logitsOf } from 'mdml-engine/learn'
+ * import { logitsOf } from 'omai-engine/learn'
  * Array.from(logitsOf([2]).data) // => [-2, 2]
  * ```
  */
@@ -402,7 +402,7 @@ function labelCodes(labels: TensorLike, n: number, k: number, who: string): Int3
   const t = targetVector(labels, who, n)
   return Int32Array.from(t, (v) => {
     if (!(Number.isInteger(v) && v >= 0 && v < k))
-      throw new MdmlError('value', `${who}: labels must be class indices in [0, ${k})`)
+      throw new OmaiError('value', `${who}: labels must be class indices in [0, ${k})`)
     return v
   })
 }
@@ -418,7 +418,7 @@ function labelCodes(labels: TensorLike, n: number, k: number, who: string): Int3
  * @returns The calibrator (multiclass: it predicts `[n, k]`), with the inverse temperature `beta` in its parameters.
  * @example
  * ```ts
- * import { temperatureScaling } from 'mdml-engine/learn'
+ * import { temperatureScaling } from 'omai-engine/learn'
  * const c = temperatureScaling([[4, 0], [3, 0], [0, 4], [3, 0]], [0, 0, 1, 1])
  * c.params.beta < 1 // => true
  * ```
@@ -461,7 +461,7 @@ export type VectorParams = { readonly scale: number[]; readonly bias: number[] }
  * @returns The calibrator.
  * @example
  * ```ts
- * import { vectorScaling } from 'mdml-engine/learn'
+ * import { vectorScaling } from 'omai-engine/learn'
  * const c = vectorScaling([[2, 0, 0], [0, 2, 0], [0, 0, 2], [2, 0, 0], [0, 0, 2], [0, 2, 0]], [0, 1, 2, 1, 2, 1])
  * c.params.scale.length // => 3
  * ```
@@ -546,7 +546,7 @@ function predictorFor(method: CalibrationMethod, params: Json): (scores: TensorL
   }
   const { scale, bias } = p as VectorParams
   return multiclass((v, j) => {
-    if (j >= scale.length) throw new MdmlError('shape', `vectorScaling: fitted for ${scale.length} classes`)
+    if (j >= scale.length) throw new OmaiError('shape', `vectorScaling: fitted for ${scale.length} classes`)
     return (scale[j] ?? 1) * v + (bias[j] ?? 0)
   })
 }
@@ -559,8 +559,8 @@ function predictorFor(method: CalibrationMethod, params: Json): (scores: TensorL
  * @returns The calibrator.
  * @example
  * ```ts
- * import { reviveCalibrator } from 'mdml-engine/learn'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { reviveCalibrator } from 'omai-engine/learn'
+ * import { toFlat } from 'omai-engine/tensor'
  * toFlat(reviveCalibrator('sigmoid', { a: -1, b: 0 }).predict([0])) // => [0.5]
  * ```
  */
@@ -587,7 +587,7 @@ function responseOf(
 ): { readonly values: Float64Array; readonly n: number; readonly k: number; readonly kind: 'decision' | 'proba' } {
   const f = fitted.decisionFunction ?? fitted.predictProba
   if (f === undefined)
-    throw new MdmlError('value', `calibration: ${fitted.estimator} has neither decisionFunction nor predictProba`)
+    throw new OmaiError('value', `calibration: ${fitted.estimator} has neither decisionFunction nor predictProba`)
   const out = f(x)
   const n = out.shape[0] ?? 0
   const k = out.shape.length === 2 ? (out.shape[1] ?? 1) : 1
@@ -716,8 +716,8 @@ export interface FittedCalibrated extends Fitted<CalibratedParams> {
  * @index estimator Calibrate a classifier's probabilities by cross-validation.
  * @example
  * ```ts
- * import { calibratedClassifierCV, defineEstimator } from 'mdml-engine/learn'
- * import { tensor } from 'mdml-engine/tensor'
+ * import { calibratedClassifierCV, defineEstimator } from 'omai-engine/learn'
+ * import { tensor } from 'omai-engine/tensor'
  * const scoreByFirst = defineEstimator(
  *   { name: 'first', kind: 'classifier', fit: () => ({}), methods: () => ({ classes: [0, 1], decisionFunction: (x) => tensor(x.shape === undefined ? x.map((r) => r[0]) : Array.from({ length: x.shape[0] }, (_, i) => x.data[i * x.shape[1]])) }) },
  *   {},
@@ -853,8 +853,8 @@ export function calibratedClassifierCV(
  * @returns Calibrated class probabilities as a function of features.
  * @example
  * ```ts
- * import { calibrateFitted } from 'mdml-engine/learn'
- * import { tensor } from 'mdml-engine/tensor'
+ * import { calibrateFitted } from 'omai-engine/learn'
+ * import { tensor } from 'omai-engine/tensor'
  * const fitted = { estimator: 'raw', kind: 'classifier', params: {}, classes: [0, 1], decisionFunction: (x) => tensor(x.map((r) => r[0])) }
  * const proba = calibrateFitted(fitted, { x: [[-1], [-0.5], [0.5], [1]], y: [0, 1, 0, 1] }, 'isotonic')
  * proba([[2]]).shape // => [1, 2]
@@ -896,8 +896,8 @@ export function calibrateFitted(
  * @concept calibration
  * @example
  * ```ts
- * import { pitValues } from 'mdml-engine/learn'
- * import { normal } from 'mdml-engine/dists'
+ * import { pitValues } from 'omai-engine/learn'
+ * import { normal } from 'omai-engine/dists'
  * pitValues(normal([0, 0], [1, 1]), [0, 1.96]).map((u) => Math.round(u * 100) / 100) // => [0.5, 0.98]
  * ```
  */
@@ -927,17 +927,17 @@ export interface PitHistogram {
  * @concept calibration
  * @example
  * ```ts
- * import { pitHistogram } from 'mdml-engine/learn'
+ * import { pitHistogram } from 'omai-engine/learn'
  * pitHistogram([0.05, 0.15, 0.55, 0.95], 2).counts // => [2, 2]
  * ```
  */
 export function pitHistogram(pit: ArrayLike<number>, bins = 10): PitHistogram {
-  if (!Number.isInteger(bins) || bins < 1) throw new MdmlError('value', 'pitHistogram: bins must be a positive integer')
+  if (!Number.isInteger(bins) || bins < 1) throw new OmaiError('value', 'pitHistogram: bins must be a positive integer')
   const n = pit.length
-  if (n === 0) throw new MdmlError('value', 'pitHistogram: no PIT values')
+  if (n === 0) throw new OmaiError('value', 'pitHistogram: no PIT values')
   const counts = new Array<number>(bins).fill(0)
   for (const u of Array.from(pit)) {
-    if (!(u >= 0 && u <= 1)) throw new MdmlError('value', 'pitHistogram: PIT values must lie in [0, 1]')
+    if (!(u >= 0 && u <= 1)) throw new OmaiError('value', 'pitHistogram: PIT values must lie in [0, 1]')
     const b = Math.min(bins - 1, Math.floor(u * bins))
     counts[b] = (counts[b] ?? 0) + 1
   }
@@ -971,7 +971,7 @@ export interface QuantileCalibrator {
  * @concept calibration
  * @example
  * ```ts
- * import { quantileCalibration } from 'mdml-engine/learn'
+ * import { quantileCalibration } from 'omai-engine/learn'
  * // Four of the eight observations fell below the predicted 45th percentile or at it: R(0.45) = 0.5.
  * const c = quantileCalibration([0.05, 0.1, 0.9, 0.95, 0.4, 0.6, 0.45, 0.55])
  * c.recalibrate([0.45]) // => [0.5]
@@ -979,10 +979,10 @@ export interface QuantileCalibrator {
  */
 export function quantileCalibration(pit: ArrayLike<number>): QuantileCalibrator {
   const n = pit.length
-  if (n === 0) throw new MdmlError('value', 'quantileCalibration: no PIT values')
+  if (n === 0) throw new OmaiError('value', 'quantileCalibration: no PIT values')
   const sorted = Array.from(pit).sort((a, b) => a - b)
   if ((sorted[0] ?? 0) < 0 || (sorted[n - 1] ?? 0) > 1)
-    throw new MdmlError('value', 'quantileCalibration: PIT values must lie in [0, 1]')
+    throw new OmaiError('value', 'quantileCalibration: PIT values must lie in [0, 1]')
   // Distinct knots with the largest rank at each (the empirical distribution function), anchored at (0, 0) and (1, 1).
   const p: number[] = [0]
   const r: number[] = [0]
@@ -1017,7 +1017,7 @@ export function quantileCalibration(pit: ArrayLike<number>): QuantileCalibrator 
  * @concept calibration
  * @example
  * ```ts
- * import { quantileCalibrationCurve } from 'mdml-engine/learn'
+ * import { quantileCalibrationCurve } from 'omai-engine/learn'
  * quantileCalibrationCurve([0.1, 0.2, 0.6, 0.9], [0.5]).observed // => [0.5]
  * ```
  */
@@ -1026,7 +1026,7 @@ export function quantileCalibrationCurve(
   levels: ArrayLike<number> = Array.from({ length: 19 }, (_, i) => (i + 1) / 20),
 ): { readonly nominal: number[]; readonly observed: number[] } {
   const u = Array.from(pit)
-  if (u.length === 0) throw new MdmlError('value', 'quantileCalibrationCurve: no PIT values')
+  if (u.length === 0) throw new OmaiError('value', 'quantileCalibrationCurve: no PIT values')
   const nominal = Array.from(levels)
   return { nominal, observed: nominal.map((p) => u.filter((v) => v <= p).length / u.length) }
 }
@@ -1043,8 +1043,8 @@ export function quantileCalibrationCurve(
  * @concept calibration
  * @example
  * ```ts
- * import { recalibratedQuantiles, quantileCalibration } from 'mdml-engine/learn'
- * import { normal } from 'mdml-engine/dists'
+ * import { recalibratedQuantiles, quantileCalibration } from 'omai-engine/learn'
+ * import { normal } from 'omai-engine/dists'
  * const identity = quantileCalibration([0.2, 0.4, 0.6, 0.8, 1])
  * recalibratedQuantiles(normal([0], [1]), identity, [0.5]) // => [[0]]
  * ```

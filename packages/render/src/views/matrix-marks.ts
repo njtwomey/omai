@@ -57,7 +57,7 @@ export interface CellShape {
  * @returns The layer (no series when there are no shapes).
  * @example
  * ```ts
- * import { cellShapes } from 'mdml-render/views'
+ * import { cellShapes } from 'omai-render/views'
  * cellShapes([{ shape: 'box', x0: -0.5, y0: 1.5, x1: 0.5, y1: 0.5, colour: 'accent' }], 2, 2, 'light').series.length // => 1
  * ```
  */
@@ -126,7 +126,7 @@ export function cellShapes(shapes: readonly CellShape[], rows: number, cols: num
  * @returns The layers.
  * @example
  * ```ts
- * import { matrixMarkLayers } from 'mdml-render/views'
+ * import { matrixMarkLayers } from 'omai-render/views'
  * matrixMarkLayers([{ cell: [0, 1] }, { rowEdge: 1 }], 3, 3, 'light').length // => 1
  * ```
  */
@@ -182,7 +182,7 @@ export function matrixMarkLayers(marks: readonly MatrixMark[], rows: number, col
  * @returns The ECharts option.
  * @example
  * ```ts
- * import { matrixMarksView } from 'mdml-render/views'
+ * import { matrixMarksView } from 'omai-render/views'
  * const option = matrixMarksView([[1, 2], [3, 4]], { rowLabels: ['u1', 'u2'], marks: [{ cell: [1, 0] }] })
  * option.series.length // => 2
  * ```

@@ -4,7 +4,7 @@
  * test for, lift into and look underneath traces, such as `primalOf` and `concreteOrThrow`.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import type { DType } from './dtype.ts'
 import type { Primitive } from './primitive.ts'
 import type { Shape } from './shape.ts'
@@ -19,7 +19,7 @@ export interface Aval {
 /**
  * A transformation in progress (reverse mode, forward mode, batching). Traces form a stack by `level`: the trace with
  * the highest level among an operation's inputs processes it, and lifts lower-level inputs into itself as constants.
- * Implementations live in `mdml-engine/autodiff`; the tensor layer only dispatches to them.
+ * Implementations live in `omai-engine/autodiff`; the tensor layer only dispatches to them.
  *
  * @concept function-transformations
  */
@@ -53,7 +53,7 @@ export type Value<D extends DType = DType, S extends Shape = Shape> = Tensor<D, 
  * @returns `true` for traced values.
  * @example
  * ```ts
- * import { isTraced, tensor } from 'mdml-engine/tensor'
+ * import { isTraced, tensor } from 'omai-engine/tensor'
  * isTraced(tensor([1, 2])) // => false
  * ```
  */
@@ -68,16 +68,16 @@ export function isTraced(x: unknown): x is Traced {
  * @param x - A value.
  * @param where - What needed the concrete value, for the message.
  * @returns The tensor.
- * @throws MdmlError with code `not-differentiable` when `x` is traced.
+ * @throws OmaiError with code `not-differentiable` when `x` is traced.
  * @example
  * ```ts
- * import { concreteOrThrow, tensor } from 'mdml-engine/tensor'
+ * import { concreteOrThrow, tensor } from 'omai-engine/tensor'
  * concreteOrThrow(tensor([1]), 'example').shape // => [1]
  * ```
  */
 export function concreteOrThrow<D extends DType>(x: Value<D>, where: string): Tensor<D> {
   if (isTraced(x)) {
-    throw new MdmlError('not-differentiable', `${where} needs a concrete value, but received a traced value`, {
+    throw new OmaiError('not-differentiable', `${where} needs a concrete value, but received a traced value`, {
       shape: x.shape,
     })
   }
@@ -91,10 +91,10 @@ export function concreteOrThrow<D extends DType>(x: Value<D>, where: string): Te
  *
  * @param x - A value.
  * @returns The concrete tensor it stands for.
- * @throws MdmlError with code `not-differentiable` for a trace that holds no concrete primal.
+ * @throws OmaiError with code `not-differentiable` for a trace that holds no concrete primal.
  * @example
  * ```ts
- * import { primalOf, tensor } from 'mdml-engine/tensor'
+ * import { primalOf, tensor } from 'omai-engine/tensor'
  * primalOf(tensor([1, 2])).shape // => [2]
  * ```
  */
@@ -102,7 +102,7 @@ export function primalOf<D extends DType>(x: Value<D>): Tensor<D> {
   let v: Value<D> = x
   while (isTraced(v)) {
     const p = (v as { primal?: Value<D> }).primal
-    if (p === undefined) throw new MdmlError('not-differentiable', 'primalOf: this trace holds no concrete value')
+    if (p === undefined) throw new OmaiError('not-differentiable', 'primalOf: this trace holds no concrete value')
     v = p
   }
   return v
@@ -118,7 +118,7 @@ export function primalOf<D extends DType>(x: Value<D>): Tensor<D> {
  * @concept function-transformations
  * @example
  * ```ts
- * import { lift, tensor, type Trace } from 'mdml-engine/tensor'
+ * import { lift, tensor, type Trace } from 'omai-engine/tensor'
  * const constants: Trace = {
  *   level: 1,
  *   lift: (x) => ({ kind: 'traced', dtype: x.dtype, shape: x.shape, trace: constants }),

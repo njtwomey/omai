@@ -4,7 +4,7 @@
  * on it.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import {
   add,
   bind,
@@ -53,7 +53,7 @@ export interface ReverseTrace extends Trace {
  * @returns The trace.
  * @example
  * ```ts
- * import { reverseTrace } from 'mdml-engine/autodiff'
+ * import { reverseTrace } from 'omai-engine/autodiff'
  * reverseTrace(1).kind // => 'reverse'
  * ```
  */
@@ -108,12 +108,12 @@ function topological(outputs: readonly ReverseValue[]): TapeNode[] {
  * @param cotangents - One cotangent per output (`null` for zero).
  * @param leaves - The leaves to return cotangents for.
  * @returns One cotangent per leaf (zeros when the outputs do not depend on it).
- * @throws MdmlError with code `not-differentiable` when a cotangent reaches a primitive without derivative rules.
+ * @throws OmaiError with code `not-differentiable` when a cotangent reaches a primitive without derivative rules.
  * @concept reverse-mode-autodiff
  * @example
  * ```ts
- * import { reverseTrace, backward } from 'mdml-engine/autodiff'
- * import { mul, tensor, toArray } from 'mdml-engine/tensor'
+ * import { reverseTrace, backward } from 'omai-engine/autodiff'
+ * import { mul, tensor, toArray } from 'omai-engine/tensor'
  * const t = reverseTrace(1)
  * const x = t.leafOf(tensor(3))
  * const y = mul(x, x)
@@ -141,7 +141,7 @@ export function backward(
     if (gs.every((g) => g === null)) continue
     const rule = node.primitive.vjp
     if (rule === undefined) {
-      throw new MdmlError('not-differentiable', `primitive ${node.primitive.name} has no derivative rule`, {
+      throw new OmaiError('not-differentiable', `primitive ${node.primitive.name} has no derivative rule`, {
         primitive: node.primitive.name,
       })
     }
@@ -170,8 +170,8 @@ export function backward(
  * @returns `true` when `x` is a value of `trace`.
  * @example
  * ```ts
- * import { reverseTrace, isReverseValueOf } from 'mdml-engine/autodiff'
- * import { tensor } from 'mdml-engine/tensor'
+ * import { reverseTrace, isReverseValueOf } from 'omai-engine/autodiff'
+ * import { tensor } from 'omai-engine/tensor'
  * const t = reverseTrace(1)
  * isReverseValueOf(t.leafOf(tensor(1)), t) // => true
  * ```

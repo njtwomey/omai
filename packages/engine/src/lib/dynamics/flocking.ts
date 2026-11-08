@@ -4,7 +4,7 @@
  * time step, and the polarisation that measures how aligned the flock is.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import { foldIn, normal, uniform } from '../random/index.ts'
 import { type Algorithm, channels } from '../trace/index.ts'
 
@@ -47,7 +47,7 @@ export interface BoidsState {
  * @concept flocking
  * @example
  * ```ts
- * import { polarisation } from 'mdml-engine/dynamics'
+ * import { polarisation } from 'omai-engine/dynamics'
  * const one = Float64Array.of(0, 0)
  * polarisation({ x: one, y: one, vx: Float64Array.of(1, 2), vy: Float64Array.of(0, 0) }) // => 1
  * ```
@@ -73,12 +73,12 @@ export function polarisation(s: BoidsState): number {
  *
  * @param options - Flock size, world, sight, the three weights, speed limits and noise.
  * @returns The algorithm.
- * @throws MdmlError with code `value` for a non-positive count, world, radius or speed range.
+ * @throws OmaiError with code `value` for a non-positive count, world, radius or speed range.
  * @concept flocking
  * @example
  * ```ts
- * import { boidsAlgorithm } from 'mdml-engine/dynamics'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { boidsAlgorithm } from 'omai-engine/dynamics'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * runAlgorithm(boidsAlgorithm({ count: 20 }), { seed: 0, maxSteps: 5 }).state.x.length // => 20
  * ```
  */
@@ -95,7 +95,7 @@ export function boidsAlgorithm(options: BoidsOptions = {}): Algorithm<BoidsState
   const hi = options.maxSpeed ?? 2
   const noise = options.noise ?? 0.05
   if (!(Number.isInteger(n) && n >= 1 && w > 0 && h > 0 && radius > 0 && hi > 0 && lo >= 0 && lo <= hi))
-    throw new MdmlError('value', 'boids: need a positive count, world, radius and a speed range 0 <= min <= max')
+    throw new OmaiError('value', 'boids: need a positive count, world, radius and a speed range 0 <= min <= max')
   // The shortest offset from a to b round the torus.
   const wrap = (d: number, size: number): number => d - size * Math.round(d / size)
   return {

@@ -2,11 +2,11 @@
  * The engine documentation for the docs pages, from the precompiled files of `make docs-catalogue` (docs-data.ts),
  * so no request waits for an extraction.
  *
- * - `virtual:mdml-docs/index`: the URL of the current index (`<base>docs-data/index.<hash>.json`); the pages fetch
+ * - `virtual:omai-docs/index`: the URL of the current index (`<base>docs-data/index.<hash>.json`); the pages fetch
  *   the index, then the search index and each file's data as they need them.
  * - Dev: the server serves `<base>docs-data/*` from `apps/site/.generated/docs/`. When the files are stale at start, or
  *   after an edit to the engine's source, it regenerates them in a background process (debounced, at low priority)
- *   while still serving the previous version, then tells open pages (`mdml-docs:update`) to fetch the new index.
+ *   while still serving the previous version, then tells open pages (`omai-docs:update`) to fetch the new index.
  *   Only when there are no files at all does the first request wait for them.
  * - Build: the files are copied into the bundle as assets under `docs-data/` (regenerated first if stale).
  */
@@ -19,7 +19,7 @@ import type { WireManifest } from '../src/docs/wire.ts'
 import { DOCS_DATA } from '../src/docs/wire.ts'
 import { isStale, OUT, ROOT, readManifest, SOURCES } from './docs-data.ts'
 
-const INDEX = 'virtual:mdml-docs/index'
+const INDEX = 'virtual:omai-docs/index'
 const BUILD = join(import.meta.dirname, 'build-docs.ts')
 const DEBOUNCE_MS = 400
 
@@ -73,7 +73,7 @@ export function docsCatalogue(): Plugin {
         log(`docs catalogue: regenerated in ${((performance.now() - t0) / 1000).toFixed(1)} s`)
         const mod = server?.moduleGraph.getModuleById(`\0${INDEX}`)
         if (mod !== undefined && mod !== null) server?.moduleGraph.invalidateModule(mod)
-        server?.ws.send({ type: 'custom', event: 'mdml-docs:update', data: { index: indexUrl() } })
+        server?.ws.send({ type: 'custom', event: 'omai-docs:update', data: { index: indexUrl() } })
       }
       if (again) {
         again = false
@@ -85,7 +85,7 @@ export function docsCatalogue(): Plugin {
   const indexUrl = (): string => (manifest === null ? '' : `${base}${DOCS_DATA}${manifest.index}`)
 
   return {
-    name: 'mdml-docs-catalogue',
+    name: 'omai-docs-catalogue',
     configResolved(config) {
       base = config.base
       build = config.command === 'build'

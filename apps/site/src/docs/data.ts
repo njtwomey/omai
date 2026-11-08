@@ -5,7 +5,7 @@
  * it; every export's summary only when someone searches. On the dev server, an edit to the engine sends a new index.
  */
 
-import type { PackageDoc, SymbolKind } from 'mdml-meta/schema'
+import type { PackageDoc, SymbolKind } from 'omai-meta/schema'
 import { useEffect, useState } from 'react'
 import type { WireFileData, WireIndex, WireSearch, WireTypes } from './wire.ts'
 
@@ -68,7 +68,7 @@ export interface Folder {
   readonly path: string
   readonly name: string
   readonly summary: string
-  /** The entry point it is, when it is one (`mdml-engine/numerics/linalg`). */
+  /** The entry point it is, when it is one (`omai-engine/numerics/linalg`). */
   readonly module?: string
   readonly folders: readonly string[]
   readonly files: readonly IndexFile[]
@@ -141,7 +141,7 @@ export function withLookups(index: DocsIndex): Docs {
       const meta = info.get(path)
       return {
         path,
-        name: path === '' ? 'mdml-engine' : baseName(path),
+        name: path === '' ? 'omai-engine' : baseName(path),
         summary: meta?.summary ?? '',
         ...(meta?.module === undefined ? {} : { module: meta.module }),
         folders: [...subs].sort(byPath),
@@ -177,7 +177,7 @@ function loadIndex(url: string): Promise<void> {
 
 // On the dev server, the plugin sends the new index's URL after regenerating the files for an edit to the engine.
 if (import.meta.hot)
-  import.meta.hot.on('mdml-docs:update', (data: { readonly index: string }) => {
+  import.meta.hot.on('omai-docs:update', (data: { readonly index: string }) => {
     void loadIndex(data.index)
   })
 
@@ -189,7 +189,7 @@ export function useDocs(): Docs | null {
     if (docs !== null) setValue(docs)
     else if (!started) {
       started = true
-      void import('virtual:mdml-docs/index').then((m) =>
+      void import('virtual:omai-docs/index').then((m) =>
         loadIndex(m.default).catch(() => {
           started = false
         }),

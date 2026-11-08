@@ -4,9 +4,9 @@
  * prevalence and accuracy; hovering a rate outlines its numerator and denominator.
  */
 
-import { maxOf } from 'mdml-engine/base'
-import { type ConfusionTable, confusionMargins, tableCost } from 'mdml-engine/metrics'
-import { asTensor, type TensorLike, toFlat } from 'mdml-engine/tensor'
+import { maxOf } from 'omai-engine/base'
+import { type ConfusionTable, confusionMargins, tableCost } from 'omai-engine/metrics'
+import { asTensor, type TensorLike, toFlat } from 'omai-engine/tensor'
 import { type ReactNode, useMemo, useState } from 'react'
 import { formatNumber, formatPercent } from '../theme/format.ts'
 import { mixColours } from '../theme/palettes.ts'
@@ -14,7 +14,7 @@ import { useTokens } from './theme.tsx'
 
 /** Props of {@link ContingencyTable}. */
 export interface ContingencyTableProps {
-  /** A confusion matrix of counts (`confusionMatrix` or `thresholdConfusion` from `mdml-engine/metrics`): rows actual, columns predicted. */
+  /** A confusion matrix of counts (`confusionMatrix` or `thresholdConfusion` from `omai-engine/metrics`): rows actual, columns predicted. */
   readonly table: ConfusionTable
   /** A name per class, in the table's order (default the labels). */
   readonly classNames?: readonly string[]
@@ -32,7 +32,7 @@ export interface ContingencyTableProps {
   /**
    * Misclassification costs, `costs[actual][predicted]` in the table's class order (correct decisions usually 0, and
    * negative to count as benefits): each cell then shows its count times its cost, and the corner the total cost and
-   * the cost per case (`tableCost` from `mdml-engine/metrics`).
+   * the cost per case (`tableCost` from `omai-engine/metrics`).
    */
   readonly costs?: TensorLike
   /** The names of the two axes (default "actual" and "predicted"). */
@@ -78,8 +78,8 @@ const join = (...parts: (string | false | undefined)[]): string => parts.filter(
  * @index function React component: confusion matrix with margins and rates: `<ContingencyTable table={cm} positive={1} />`
  * @example
  * ```tsx
- * import { ContingencyTable } from 'mdml-render/react'
- * import { thresholdConfusion } from 'mdml-engine/metrics'
+ * import { ContingencyTable } from 'omai-render/react'
+ * import { thresholdConfusion } from 'omai-engine/metrics'
  * <ContingencyTable table={thresholdConfusion(y, scores, 0.5)} classNames={['benign', 'malignant']} positive={1} />
  * ```
  */

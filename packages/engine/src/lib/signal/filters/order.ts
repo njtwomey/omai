@@ -4,7 +4,7 @@
  * `cheb2ord`, `ellipord`) and `iirdesign`, which picks the band type and order and designs the filter, as scipy.signal.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { ellipk } from '../../numerics/special/index.ts'
 import { item } from '../../tensor/index.ts'
 import { ellipKm1, fminbound } from './_numeric.ts'
@@ -43,11 +43,11 @@ interface Prepared {
 
 function prepare(spec: FilterSpec): Prepared {
   const { gpass, gstop } = spec
-  if (gpass <= 0) throw new MdmlError('value', 'gpass should be larger than 0')
-  if (gstop <= 0) throw new MdmlError('value', 'gstop should be larger than 0')
-  if (gpass > gstop) throw new MdmlError('value', 'gpass should be smaller than gstop')
+  if (gpass <= 0) throw new OmaiError('value', 'gpass should be larger than 0')
+  if (gstop <= 0) throw new OmaiError('value', 'gstop should be larger than 0')
+  if (gpass > gstop) throw new OmaiError('value', 'gpass should be smaller than gstop')
   const analog = spec.analog ?? false
-  if (analog && spec.fs !== undefined) throw new MdmlError('value', 'fs cannot be given for an analog filter')
+  if (analog && spec.fs !== undefined) throw new OmaiError('value', 'fs cannot be given for an analog filter')
   let wp = typeof spec.wp === 'number' ? [spec.wp] : [...spec.wp]
   let ws = typeof spec.ws === 'number' ? [spec.ws] : [...spec.ws]
   if (spec.fs !== undefined) {
@@ -117,11 +117,11 @@ function post(wn: readonly number[], spec: FilterSpec): number | readonly [numbe
  *
  * @param spec - Band edges, losses, analog flag and sampling rate.
  * @returns The order and the -3 dB frequency (or band edges).
- * @throws MdmlError with code `value` for inconsistent losses.
+ * @throws OmaiError with code `value` for inconsistent losses.
  * @concept filter-specification
  * @example
  * ```ts
- * import { buttord } from 'mdml-engine/signal'
+ * import { buttord } from 'omai-engine/signal'
  * buttord({ wp: 0.2, ws: 0.3, gpass: 3, gstop: 40 }).n // => 11
  * ```
  */
@@ -155,7 +155,7 @@ export function buttord(spec: FilterSpec): FilterOrder {
  * @concept filter-specification
  * @example
  * ```ts
- * import { cheb1ord } from 'mdml-engine/signal'
+ * import { cheb1ord } from 'omai-engine/signal'
  * cheb1ord({ wp: 0.2, ws: 0.3, gpass: 3, gstop: 40 }).n // => 6
  * ```
  */
@@ -174,7 +174,7 @@ export function cheb1ord(spec: FilterSpec): FilterOrder {
  * @concept filter-specification
  * @example
  * ```ts
- * import { cheb2ord } from 'mdml-engine/signal'
+ * import { cheb2ord } from 'omai-engine/signal'
  * cheb2ord({ wp: 0.2, ws: 0.3, gpass: 3, gstop: 40 }).n // => 6
  * ```
  */
@@ -208,7 +208,7 @@ export function cheb2ord(spec: FilterSpec): FilterOrder {
  * @concept filter-specification
  * @example
  * ```ts
- * import { ellipord } from 'mdml-engine/signal'
+ * import { ellipord } from 'omai-engine/signal'
  * ellipord({ wp: 0.2, ws: 0.3, gpass: 3, gstop: 40 }).n // => 4
  * ```
  */
@@ -230,11 +230,11 @@ export function ellipord(spec: FilterSpec): FilterOrder {
  * @param spec - Band edges, losses, analog flag and sampling rate.
  * @param options - Family (default 'ellip'; 'bessel' has no order selection) and output form.
  * @returns The design.
- * @throws MdmlError with code `value` for an invalid specification.
+ * @throws OmaiError with code `value` for an invalid specification.
  * @concept filter-specification
  * @example
  * ```ts
- * import { iirdesign } from 'mdml-engine/signal'
+ * import { iirdesign } from 'omai-engine/signal'
  * iirdesign({ wp: 0.2, ws: 0.3, gpass: 1, gstop: 40 }, { ftype: 'butter', output: 'sos' }).kind // => 'sos'
  * ```
  */
@@ -244,17 +244,17 @@ export function iirdesign<O extends FilterOutput = 'ba'>(
 ): DesignOf<O> {
   const wp = typeof spec.wp === 'number' ? [spec.wp] : [...spec.wp]
   const ws = typeof spec.ws === 'number' ? [spec.ws] : [...spec.ws]
-  if (wp.length !== ws.length) throw new MdmlError('value', 'iirdesign: wp and ws must have the same length')
+  if (wp.length !== ws.length) throw new OmaiError('value', 'iirdesign: wp and ws must have the same length')
   if (wp.some((v) => v <= 0) || ws.some((v) => v <= 0))
-    throw new MdmlError('value', 'iirdesign: edges must be positive')
+    throw new OmaiError('value', 'iirdesign: edges must be positive')
   const nyq = spec.fs === undefined ? 1 : spec.fs / 2
   if (!(spec.analog ?? false) && [...wp, ...ws].some((v) => v >= nyq))
-    throw new MdmlError('value', 'iirdesign: edges must be below the Nyquist frequency')
+    throw new OmaiError('value', 'iirdesign: edges must be below the Nyquist frequency')
   if (wp.length === 2) {
     const [a = 0, b = 0] = wp
     const [c = 0, d = 0] = ws
     if (!((c < a && b < d) || (a < c && d < b)))
-      throw new MdmlError('value', 'iirdesign: the passband must lie strictly inside the stopband or vice versa')
+      throw new OmaiError('value', 'iirdesign: the passband must lie strictly inside the stopband or vice versa')
   }
   let type = 2 * (wp.length - 1) + 1
   if ((wp[0] ?? 0) >= (ws[0] ?? 0)) type += 1

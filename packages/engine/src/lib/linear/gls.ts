@@ -9,7 +9,7 @@
  * likelihood of the mean and variance coefficients over the solver slot (Harvey's multiplicative heteroscedasticity).
  */
 
-import { type Json, MdmlError, maxOf } from '../base/index.ts'
+import { type Json, maxOf, OmaiError } from '../base/index.ts'
 import type { CoefficientTable, Exposition } from '../exposition/index.ts'
 import {
   defineExplainedEstimator,
@@ -114,7 +114,7 @@ function tableOf(par: GlsParams, fitIntercept: boolean): CoefficientTable {
  * @returns The `[n][n]` matrix.
  * @example
  * ```ts
- * import { ar1Covariance } from 'mdml-engine/linear'
+ * import { ar1Covariance } from 'omai-engine/linear'
  * ar1Covariance(3, 0.5) // => [[1, 0.5, 0.25], [0.5, 1, 0.5], [0.25, 0.5, 1]]
  * ```
  */
@@ -142,24 +142,24 @@ function precisionOf(
   who: string,
 ): { inverse: Float64Array | null; diag: Float64Array | null; logDet: number } {
   if (typeof sigma === 'number') {
-    if (!(sigma > 0)) throw new MdmlError('value', `${who}: the variance must be positive, got ${sigma}`)
+    if (!(sigma > 0)) throw new OmaiError('value', `${who}: the variance must be positive, got ${sigma}`)
     return { inverse: null, diag: new Float64Array(n).fill(sigma), logDet: n * Math.log(sigma) }
   }
-  if (sigma.length !== n) throw new MdmlError('shape', `${who}: sigma has ${sigma.length} rows for ${n} observations`)
+  if (sigma.length !== n) throw new OmaiError('shape', `${who}: sigma has ${sigma.length} rows for ${n} observations`)
   const first = sigma[0]
   if (typeof first === 'number') {
     const diag = Float64Array.from(sigma as readonly number[])
-    if (diag.some((v) => !(v > 0))) throw new MdmlError('value', `${who}: the variances must be positive`)
+    if (diag.some((v) => !(v > 0))) throw new OmaiError('value', `${who}: the variances must be positive`)
     return { inverse: null, diag, logDet: diag.reduce((a, v) => a + Math.log(v), 0) }
   }
   const matrix = new Float64Array(n * n)
   for (let i = 0; i < n; i++) {
     const row = (sigma as readonly (readonly number[])[])[i]
-    if (row === undefined || row.length !== n) throw new MdmlError('shape', `${who}: sigma must be ${n} x ${n}`)
+    if (row === undefined || row.length !== n) throw new OmaiError('shape', `${who}: sigma must be ${n} x ${n}`)
     for (let j = 0; j < n; j++) matrix[i * n + j] = row[j] ?? 0
   }
   const chol = dpotrf(matrix, n)
-  if (chol.info !== 0) throw new MdmlError('value', `${who}: sigma is not positive definite`)
+  if (chol.info !== 0) throw new OmaiError('value', `${who}: sigma is not positive definite`)
   let logDet = 0
   for (let i = 0; i < n; i++) logDet += 2 * Math.log(chol.factor[i * n + i] ?? 1)
   return { inverse: inverseOf(matrix, n), diag: null, logDet }
@@ -171,10 +171,10 @@ function precisionOf(
  * @param data - Features and targets (the sample weights are ignored: the covariance is the weighting).
  * @param hyper - The covariance `sigma` and the intercept.
  * @returns The coefficients, scale, covariance of the estimates and Gaussian log-likelihood.
- * @throws MdmlError `shape` for a covariance of the wrong size, `value` for one that is not positive definite.
+ * @throws OmaiError `shape` for a covariance of the wrong size, `value` for one that is not positive definite.
  * @example
  * ```ts
- * import { glsFit } from 'mdml-engine/linear'
+ * import { glsFit } from 'omai-engine/linear'
  * const x = [[0], [1], [2], [3]]
  * const f = glsFit({ x, y: [1, 3, 5, 7] }, { sigma: [1, 1, 1, 1] })
  * f.coef // => [2]
@@ -185,7 +185,7 @@ export function glsFit(data: LearnData, hyper: Partial<GlsHyper> = {}): GlsParam
   const design = designOf(data, 'gls')
   const { n } = design.x
   const { a, p } = withIntercept(design, fitIntercept)
-  if (n <= p) throw new MdmlError('value', 'gls: needs more observations than coefficients')
+  if (n <= p) throw new OmaiError('value', 'gls: needs more observations than coefficients')
   const prec = precisionOf(hyper.sigma ?? 1, n, 'gls')
   const aw = new Float64Array(n * p)
   const yw = new Float64Array(n)
@@ -198,7 +198,7 @@ export function glsFit(data: LearnData, hyper: Partial<GlsHyper> = {}): GlsParam
   } else if (prec.inverse !== null) {
     // Whiten with the Cholesky factor of the precision: W'W = S^-1.
     const chol = dpotrf(prec.inverse, n)
-    if (chol.info !== 0) throw new MdmlError('value', 'gls: sigma is not positive definite')
+    if (chol.info !== 0) throw new OmaiError('value', 'gls: sigma is not positive definite')
     const u = chol.factor
     // W = U (upper): rows of W times the data.
     for (let i = 0; i < n; i++) {
@@ -225,7 +225,7 @@ export function glsFit(data: LearnData, hyper: Partial<GlsHyper> = {}): GlsParam
  * @reference A. C. Aitken, On least squares and linear combination of observations, Proc. Roy. Soc. Edinburgh 55 (1935).
  * @example
  * ```ts
- * import { ar1Covariance, gls } from 'mdml-engine/linear'
+ * import { ar1Covariance, gls } from 'omai-engine/linear'
  * const x = [[0], [1], [2], [3], [4], [5]]
  * const y = [0.1, 1.2, 1.8, 3.3, 3.9, 5.2]
  * const f = gls({ sigma: ar1Covariance(6, 0.5) }).fit({ x, y })
@@ -338,8 +338,8 @@ function glsarFitAt(
  * @returns The algorithm.
  * @example
  * ```ts
- * import { glsarAlgorithm } from 'mdml-engine/linear'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { glsarAlgorithm } from 'omai-engine/linear'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const x = Array.from({ length: 12 }, (_, i) => [i])
  * const y = x.map((r, i) => 1 + 2 * (r[0] ?? 0) + Math.sin(i))
  * runAlgorithm(glsarAlgorithm({ x, y }), { maxSteps: 5 }).state.rho.length // => 1
@@ -351,14 +351,14 @@ export function glsarAlgorithm(data: LearnData, options: GlsarOptions = {}): Alg
   const fitIntercept = options.fitIntercept ?? true
   const maxIter = options.maxIter ?? 3
   if (!Number.isInteger(order) || order < 1)
-    throw new MdmlError('value', `glsar: the order must be a positive integer, got ${order}`)
+    throw new OmaiError('value', `glsar: the order must be a positive integer, got ${order}`)
   const design = designOf(data, 'glsar')
   const { n } = design.x
   const { a, p } = withIntercept(design, fitIntercept)
-  if (n - order <= p) throw new MdmlError('value', 'glsar: needs more observations than coefficients and the order')
+  if (n - order <= p) throw new OmaiError('value', 'glsar: needs more observations than coefficients and the order')
   const start = options.rho === undefined ? new Array<number>(order).fill(0) : [...options.rho]
   if (start.length !== order)
-    throw new MdmlError('shape', `glsar: ${start.length} starting coefficients for order ${order}`)
+    throw new OmaiError('shape', `glsar: ${start.length} starting coefficients for order ${order}`)
   return {
     name: 'glsar',
     config: { order, rtol, maxIter, fitIntercept } as Json,
@@ -425,7 +425,7 @@ const GLSAR_DEFAULTS: GlsarHyper = { order: 1, rho: null, maxIter: 3, rtol: 1e-4
  * auto-correlated error terms, JASA 44 (1949).
  * @example
  * ```ts
- * import { glsar } from 'mdml-engine/linear'
+ * import { glsar } from 'omai-engine/linear'
  * const x = Array.from({ length: 30 }, (_, i) => [i / 10])
  * const e: number[] = []
  * const y = x.map((r, i) => {
@@ -515,7 +515,7 @@ function heteroProblemOf(
   const cols = h.varianceFeatures === 'all' ? Array.from({ length: d }, (_, j) => j) : [...h.varianceFeatures]
   for (const j of cols)
     if (!Number.isInteger(j) || j < 0 || j >= d)
-      throw new MdmlError('value', `heteroscedasticRegressor: variance feature ${j} is not a column`)
+      throw new OmaiError('value', `heteroscedasticRegressor: variance feature ${j} is not a column`)
   const q = cols.length + 1
   const z = new Float64Array(n * q)
   for (let i = 0; i < n; i++) {
@@ -524,7 +524,7 @@ function heteroProblemOf(
     })
     z[i * q + q - 1] = 1
   }
-  if (n <= p + q) throw new MdmlError('value', 'heteroscedasticRegressor: needs more observations than coefficients')
+  if (n <= p + q) throw new OmaiError('value', 'heteroscedasticRegressor: needs more observations than coefficients')
   return { n, p, q, a, z, y: design.y, fitIntercept: h.fitIntercept }
 }
 
@@ -760,7 +760,7 @@ const isMl = (s: HeteroscedasticState): s is HeteroMlState => 'solver' in s
  * regression models with multiplicative heteroscedasticity, Econometrica 44 (1976).
  * @example
  * ```ts
- * import { heteroscedasticRegressor } from 'mdml-engine/linear'
+ * import { heteroscedasticRegressor } from 'omai-engine/linear'
  * const x = Array.from({ length: 40 }, (_, i) => [i / 8])
  * const y = x.map((r, i) => 1 + 2 * (r[0] ?? 0) + (0.2 + 0.4 * (r[0] ?? 0)) * Math.sin(i * 12.9898))
  * const f = heteroscedasticRegressor({ method: 'fgls' }).fit({ x, y })

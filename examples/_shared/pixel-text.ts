@@ -3,7 +3,7 @@
  * are built from a 5 by 7 pixel font: each lit pixel run becomes a rectangle. Capitals, digits and a few marks are
  * enough for axis labels, tick labels and a legend.
  */
-import { type Paint, type RectNode, rect } from 'mdml-engine/scene'
+import { type Paint, type RectNode, rect } from 'omai-engine/scene'
 
 const ROWS = 7
 const COLS = 5

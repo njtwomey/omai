@@ -4,7 +4,7 @@
  * groups kept together, and coordinates that keep the spacing. The default layout of structure diagrams.
  */
 
-import { maxOf, minOf } from 'mdml-engine/base'
+import { maxOf, minOf } from 'omai-engine/base'
 import {
   boxBoundary,
   type EdgeRoute,
@@ -106,7 +106,7 @@ function crossings(layers: readonly string[][], down: ReadonlyMap<string, readon
  * @index function Lay out a directed graph in layers: `layered({ nodes, edges })`.
  * @example
  * ```ts
- * import { layered } from 'mdml-render/layout'
+ * import { layered } from 'omai-render/layout'
  * const g = { nodes: ['a', 'b', 'c'].map((id) => ({ id, width: 40, height: 20 })), edges: [{ from: 'a', to: 'b' }, { from: 'a', to: 'c' }] }
  * const l = layered(g)
  * l.nodes['a'].y < l.nodes['b'].y // => true

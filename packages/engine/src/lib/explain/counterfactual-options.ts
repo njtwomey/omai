@@ -33,7 +33,7 @@ function schedule(
  *
  * @example
  * ```ts
- * import { lambdaSchedules } from 'mdml-engine/explain'
+ * import { lambdaSchedules } from 'omai-engine/explain'
  * lambdaSchedules.make({ kind: 'doubling', factor: 3 })(0.1, 0) // => 0.30000000000000004
  * ```
  */

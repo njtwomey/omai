@@ -7,7 +7,7 @@
  * @index structure Typed spaces: real, int, choice, box, dict, union.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 
 /**
  * Descriptive metadata every space can carry (for documentation, controls and reports), and the condition that makes
@@ -145,8 +145,8 @@ export type SpaceValue =
   | { readonly [k: string]: SpaceValue }
 
 function checkInterval(low: number, high: number, log: boolean | undefined, name: string): void {
-  if (!(high >= low)) throw new MdmlError('value', `${name}: need high >= low, got [${low}, ${high}]`)
-  if (log === true && !(low > 0)) throw new MdmlError('value', `${name}: a log scale needs low > 0`)
+  if (!(high >= low)) throw new OmaiError('value', `${name}: need high >= low, got [${low}, ${high}]`)
+  if (log === true && !(low > 0)) throw new OmaiError('value', `${name}: a log scale needs low > 0`)
 }
 
 /**
@@ -159,7 +159,7 @@ function checkInterval(low: number, high: number, log: boolean | undefined, name
  * @concept spaces
  * @example
  * ```ts
- * import { real } from 'mdml-engine/space'
+ * import { real } from 'omai-engine/space'
  * real(1e-4, 1, { log: true, label: 'learning rate' }).log // => true
  * ```
  */
@@ -175,16 +175,16 @@ export function real(low: number, high: number, options: Omit<RealSpace, 'kind' 
  * @param high - Upper bound.
  * @param options - Log scale, default and metadata.
  * @returns The space.
- * @throws MdmlError with code `value` when the interval holds no integer (after rounding `low` up and `high` down).
+ * @throws OmaiError with code `value` when the interval holds no integer (after rounding `low` up and `high` down).
  * @example
  * ```ts
- * import { int } from 'mdml-engine/space'
+ * import { int } from 'omai-engine/space'
  * int(1, 10).high // => 10
  * ```
  */
 export function int(low: number, high: number, options: Omit<IntSpace, 'kind' | 'low' | 'high'> = {}): IntSpace {
   checkInterval(low, high, options.log, 'int')
-  if (Math.ceil(low) > Math.floor(high)) throw new MdmlError('value', `int: [${low}, ${high}] contains no integer`)
+  if (Math.ceil(low) > Math.floor(high)) throw new OmaiError('value', `int: [${low}, ${high}] contains no integer`)
   return { kind: 'int', low: Math.ceil(low), high: Math.floor(high), ...options }
 }
 
@@ -196,7 +196,7 @@ export function int(low: number, high: number, options: Omit<IntSpace, 'kind' | 
  * @returns The space.
  * @example
  * ```ts
- * import { choice } from 'mdml-engine/space'
+ * import { choice } from 'omai-engine/space'
  * choice(['relu', 'tanh']).options.length // => 2
  * ```
  */
@@ -204,7 +204,7 @@ export function choice<T extends string | number | boolean>(
   options: readonly T[],
   meta: Omit<ChoiceSpace<T>, 'kind' | 'options'> = {},
 ): ChoiceSpace<T> {
-  if (options.length === 0) throw new MdmlError('value', 'choice: need at least one option')
+  if (options.length === 0) throw new OmaiError('value', 'choice: need at least one option')
   return { kind: 'choice', options, ...meta }
 }
 
@@ -215,7 +215,7 @@ export function choice<T extends string | number | boolean>(
  * @returns The space.
  * @example
  * ```ts
- * import { bool } from 'mdml-engine/space'
+ * import { bool } from 'omai-engine/space'
  * bool({ default: true }).default // => true
  * ```
  */
@@ -231,11 +231,11 @@ export function bool(meta: Omit<BoolSpace, 'kind'> = {}): BoolSpace {
  * @param shape - The shape.
  * @param meta - Default and metadata.
  * @returns The space.
- * @throws MdmlError with code `value` for a shape that is not non-negative integers, a bound array whose length is not
+ * @throws OmaiError with code `value` for a shape that is not non-negative integers, a bound array whose length is not
  *   the box's size, or a bound pair with `high < low`.
  * @example
  * ```ts
- * import { box } from 'mdml-engine/space'
+ * import { box } from 'omai-engine/space'
  * box(-1, 1, [2]).shape // => [2]
  * ```
  */
@@ -246,7 +246,7 @@ export function box(
   meta: Omit<BoxSpace, 'kind' | 'low' | 'high' | 'shape'> = {},
 ): BoxSpace {
   if (shape.some((n) => !Number.isInteger(n) || n < 0)) {
-    throw new MdmlError('value', `box: shape entries must be non-negative integers, got [${shape.join(', ')}]`)
+    throw new OmaiError('value', `box: shape entries must be non-negative integers, got [${shape.join(', ')}]`)
   }
   const size = shape.reduce((a, n) => a * n, 1)
   for (const [name, bound] of [
@@ -254,13 +254,13 @@ export function box(
     ['high', high],
   ] as const) {
     if (typeof bound !== 'number' && bound.length !== size) {
-      throw new MdmlError('value', `box: ${name} has ${bound.length} entries for a box of ${size} elements`)
+      throw new OmaiError('value', `box: ${name} has ${bound.length} entries for a box of ${size} elements`)
     }
   }
   for (let i = 0; i < size; i++) {
     const lo = typeof low === 'number' ? low : (low[i] as number)
     const hi = typeof high === 'number' ? high : (high[i] as number)
-    if (!(hi >= lo)) throw new MdmlError('value', `box: need high >= low, got [${lo}, ${hi}] at element ${i}`)
+    if (!(hi >= lo)) throw new OmaiError('value', `box: need high >= low, got [${lo}, ${hi}] at element ${i}`)
   }
   return { kind: 'box', low, high, shape, ...meta }
 }
@@ -273,12 +273,12 @@ export function box(
  * @returns The space.
  * @example
  * ```ts
- * import { discrete } from 'mdml-engine/space'
+ * import { discrete } from 'omai-engine/space'
  * discrete(4).n // => 4
  * ```
  */
 export function discrete(n: number, options: Omit<DiscreteSpace, 'kind' | 'n'> = {}): DiscreteSpace {
-  if (!Number.isInteger(n) || n < 1) throw new MdmlError('value', 'discrete: n must be a positive integer')
+  if (!Number.isInteger(n) || n < 1) throw new OmaiError('value', 'discrete: n must be a positive integer')
   return { kind: 'discrete', n, ...options }
 }
 
@@ -288,10 +288,10 @@ export function discrete(n: number, options: Omit<DiscreteSpace, 'kind' | 'n'> =
  * @param nvec - Number of values per coordinate.
  * @param meta - Default and metadata.
  * @returns The space.
- * @throws MdmlError with code `value` unless every count is a positive integer.
+ * @throws OmaiError with code `value` unless every count is a positive integer.
  * @example
  * ```ts
- * import { multiDiscrete } from 'mdml-engine/space'
+ * import { multiDiscrete } from 'omai-engine/space'
  * multiDiscrete([3, 2]).nvec // => [3, 2]
  * ```
  */
@@ -300,7 +300,7 @@ export function multiDiscrete(
   meta: Omit<MultiDiscreteSpace, 'kind' | 'nvec'> = {},
 ): MultiDiscreteSpace {
   if (nvec.some((n) => !Number.isInteger(n) || n < 1)) {
-    throw new MdmlError('value', `multiDiscrete: every count must be a positive integer, got [${nvec.join(', ')}]`)
+    throw new OmaiError('value', `multiDiscrete: every count must be a positive integer, got [${nvec.join(', ')}]`)
   }
   return { kind: 'multiDiscrete', nvec, ...meta }
 }
@@ -311,15 +311,15 @@ export function multiDiscrete(
  * @param n - Length.
  * @param meta - Default and metadata.
  * @returns The space.
- * @throws MdmlError with code `value` unless `n` is a positive integer.
+ * @throws OmaiError with code `value` unless `n` is a positive integer.
  * @example
  * ```ts
- * import { multiBinary } from 'mdml-engine/space'
+ * import { multiBinary } from 'omai-engine/space'
  * multiBinary(3).n // => 3
  * ```
  */
 export function multiBinary(n: number, meta: Omit<MultiBinarySpace, 'kind' | 'n'> = {}): MultiBinarySpace {
-  if (!Number.isInteger(n) || n < 1) throw new MdmlError('value', `multiBinary: n must be a positive integer, got ${n}`)
+  if (!Number.isInteger(n) || n < 1) throw new OmaiError('value', `multiBinary: n must be a positive integer, got ${n}`)
   return { kind: 'multiBinary', n, ...meta }
 }
 
@@ -331,7 +331,7 @@ export function multiBinary(n: number, meta: Omit<MultiBinarySpace, 'kind' | 'n'
  * @returns The space.
  * @example
  * ```ts
- * import { tuple, discrete } from 'mdml-engine/space'
+ * import { tuple, discrete } from 'omai-engine/space'
  * tuple([discrete(2), discrete(3)]).spaces.length // => 2
  * ```
  */
@@ -347,7 +347,7 @@ export function tuple(spaces: readonly Space[], meta: SpaceMeta = {}): TupleSpac
  * @returns The space.
  * @example
  * ```ts
- * import { dict, real, choice } from 'mdml-engine/space'
+ * import { dict, real, choice } from 'omai-engine/space'
  * Object.keys(dict({ lr: real(1e-4, 1, { log: true }), act: choice(['relu', 'tanh']) }).spaces) // => ['lr', 'act']
  * ```
  */
@@ -362,12 +362,12 @@ export function dict(spaces: Readonly<Record<string, Space>>, meta: SpaceMeta = 
  * @param options - The options by name, each a dict space (empty for an option with no knobs).
  * @param meta - The tag key, the default option and metadata.
  * @returns The space.
- * @throws MdmlError with code `value` for no options, a default that is not an option, or an option with a knob named
+ * @throws OmaiError with code `value` for no options, a default that is not an option, or an option with a knob named
  *   like the tag.
  * @concept spaces
  * @example
  * ```ts
- * import { defaults, dict, int, real, union } from 'mdml-engine/space'
+ * import { defaults, dict, int, real, union } from 'omai-engine/space'
  * const solver = union({ irls: dict({ tol: real(1e-10, 1e-2, { log: true }) }), sgd: dict({ batch: int(1, 256) }) })
  * defaults(solver) // => { kind: 'irls', tol: 1e-6 }
  * ```
@@ -377,12 +377,12 @@ export function union(
   meta: Omit<UnionSpace, 'kind' | 'options'> = {},
 ): UnionSpace {
   const names = Object.keys(options)
-  if (names.length === 0) throw new MdmlError('value', 'union: need at least one option')
+  if (names.length === 0) throw new OmaiError('value', 'union: need at least one option')
   const tag = meta.tag ?? 'kind'
   if (meta.default !== undefined && !Object.hasOwn(options, meta.default))
-    throw new MdmlError('value', `union: default '${meta.default}' is not an option`)
+    throw new OmaiError('value', `union: default '${meta.default}' is not an option`)
   for (const [name, option] of Object.entries(options))
     if (Object.hasOwn(option.spaces, tag))
-      throw new MdmlError('value', `union: option '${name}' has a knob named like the tag '${tag}'`)
+      throw new OmaiError('value', `union: option '${name}' has a knob named like the tag '${tag}'`)
   return { kind: 'union', options, ...meta }
 }

@@ -10,7 +10,7 @@
  * and goals with an unbound variable are proved against facts only.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import {
   type GradientPath,
   gradientContract,
@@ -73,16 +73,16 @@ const isVariable = (t: string): boolean => /^[A-Z_]/.test(t)
  *
  * @param text - The atom.
  * @returns The atom.
- * @throws MdmlError with code `value` on a syntax error.
+ * @throws OmaiError with code `value` on a syntax error.
  * @example
  * ```ts
- * import { parseNtpAtom } from 'mdml-engine/logic'
+ * import { parseNtpAtom } from 'omai-engine/logic'
  * parseNtpAtom('parent(ann, bob)') // => { predicate: 'parent', args: ['ann', 'bob'] }
  * ```
  */
 export function parseNtpAtom(text: string): NtpAtom {
   const m = /^\s*(#?\w+)\s*\(([^()]*)\)\s*$/.exec(text)
-  if (m === null) throw new MdmlError('value', `parseNtpAtom: cannot read '${text}'`)
+  if (m === null) throw new OmaiError('value', `parseNtpAtom: cannot read '${text}'`)
   return { predicate: m[1] as string, args: (m[2] as string).split(',').map((a) => a.trim()) }
 }
 
@@ -91,17 +91,17 @@ export function parseNtpAtom(text: string): NtpAtom {
  *
  * @param text - The rule.
  * @returns The rule.
- * @throws MdmlError with code `value` on a syntax error.
+ * @throws OmaiError with code `value` on a syntax error.
  * @example
  * ```ts
- * import { parseNtpRule } from 'mdml-engine/logic'
+ * import { parseNtpRule } from 'omai-engine/logic'
  * parseNtpRule('g(X,Y) :- p(X,Z), p(Z,Y)').body.length // => 2
  * ```
  */
 export function parseNtpRule(text: string): NtpRule {
   const [head, body] = text.split(':-')
   if (head === undefined || body === undefined || body.trim() === '')
-    throw new MdmlError('value', `parseNtpRule: cannot read '${text}'`)
+    throw new OmaiError('value', `parseNtpRule: cannot read '${text}'`)
   return {
     head: parseNtpAtom(head),
     body: body.split(/\)\s*,/).map((a, i, all) => parseNtpAtom(i < all.length - 1 ? `${a})` : a)),
@@ -171,12 +171,12 @@ const EPS = 1e-7
  * @param config - The facts, rules, embedding width, depth and kernel width.
  * @param k - The key the initial embeddings are drawn from.
  * @returns The prover.
- * @throws MdmlError with code `value` for a fact that is not ground, a rule whose body has no atoms, a non-positive
+ * @throws OmaiError with code `value` for a fact that is not ground, a rule whose body has no atoms, a non-positive
  *   width or depth, or an atom of the wrong shape.
  * @example
  * ```ts
- * import { neuralTheoremProver } from 'mdml-engine/logic'
- * import { key } from 'mdml-engine/random'
+ * import { neuralTheoremProver } from 'omai-engine/logic'
+ * import { key } from 'omai-engine/random'
  * const ntp = neuralTheoremProver({ facts: ['p(a,b)'], rules: ['q(X,Y) :- p(X,Y)'] }, key(0))
  * ntp.symbols // => ['p', 'a', 'b', 'q']
  * ```
@@ -186,7 +186,7 @@ export function neuralTheoremProver(config: NtpConfig, k: Key): NeuralTheoremPro
   const depth = config.depth ?? 1
   const mu = config.kernelWidth ?? 1
   if (!(Number.isInteger(dim) && dim >= 1 && Number.isInteger(depth) && depth >= 0 && mu > 0))
-    throw new MdmlError(
+    throw new OmaiError(
       'value',
       'neuralTheoremProver: need a positive width, a non-negative depth and a positive kernel width',
     )
@@ -194,15 +194,15 @@ export function neuralTheoremProver(config: NtpConfig, k: Key): NeuralTheoremPro
   const rules = config.rules.map((r) => (typeof r === 'string' ? parseNtpRule(r) : r))
   for (const f of facts) {
     if (f.args.length !== 2 || f.args.some(isVariable) || f.predicate.startsWith('#'))
-      throw new MdmlError(
+      throw new OmaiError(
         'value',
         `neuralTheoremProver: facts must be binary and ground, got ${f.predicate}(${f.args.join(',')})`,
       )
   }
   for (const r of rules) {
-    if (r.body.length === 0) throw new MdmlError('value', 'neuralTheoremProver: a rule needs a body')
+    if (r.body.length === 0) throw new OmaiError('value', 'neuralTheoremProver: a rule needs a body')
     for (const a of [r.head, ...r.body])
-      if (a.args.length !== 2) throw new MdmlError('value', 'neuralTheoremProver: atoms must be binary')
+      if (a.args.length !== 2) throw new OmaiError('value', 'neuralTheoremProver: atoms must be binary')
   }
   const symbols: string[] = []
   const index = new Map<string, number>()
@@ -229,7 +229,7 @@ export function neuralTheoremProver(config: NtpConfig, k: Key): NeuralTheoremPro
   const nFacts = facts.length
   const rowOf = (s: string): number => {
     const i = index.get(s)
-    if (i === undefined) throw new MdmlError('value', `neuralTheoremProver: unknown symbol '${s}'`)
+    if (i === undefined) throw new OmaiError('value', `neuralTheoremProver: unknown symbol '${s}'`)
     return i
   }
   const selector = (pick: (f: NtpAtom) => string): Value => {
@@ -250,7 +250,7 @@ export function neuralTheoremProver(config: NtpConfig, k: Key): NeuralTheoremPro
     const t = Array.isArray(theta)
       ? fromStorage(Float64Array.from(theta as number[]), [size], 'float64')
       : (theta as Value)
-    if ((t.shape[0] ?? 0) !== size) throw new MdmlError('shape', `neuralTheoremProver: expected ${size} parameters`)
+    if ((t.shape[0] ?? 0) !== size) throw new OmaiError('shape', `neuralTheoremProver: expected ${size} parameters`)
     return reshape(t, [n, dim])
   }
 
@@ -350,7 +350,7 @@ export function neuralTheoremProver(config: NtpConfig, k: Key): NeuralTheoremPro
   ): Value => {
     for (const goal of goals) {
       if (goal.args.length !== 2 || goal.args.some(isVariable))
-        throw new MdmlError('value', 'neuralTheoremProver: a goal must be a ground binary atom')
+        throw new OmaiError('value', 'neuralTheoremProver: a goal must be a ground binary atom')
     }
     const E = matrix(theta)
     const G = goals.length
@@ -456,8 +456,8 @@ export interface NtpTrainingOptions {
  * @returns The examples.
  * @example
  * ```ts
- * import { neuralTheoremProver, ntpTrainingSet } from 'mdml-engine/logic'
- * import { key } from 'mdml-engine/random'
+ * import { neuralTheoremProver, ntpTrainingSet } from 'omai-engine/logic'
+ * import { key } from 'omai-engine/random'
  * const ntp = neuralTheoremProver({ facts: ['p(a,b)', 'p(b,c)'], rules: [] }, key(0))
  * ntpTrainingSet(ntp, key(1), { negatives: 1 }).filter((e) => e.label === 0).length // => 2
  * ```
@@ -516,8 +516,8 @@ export const ntpContract: Contract<unknown, NtpPath> = defineContract({
  * @returns The algorithm.
  * @example
  * ```ts
- * import { neuralTheoremProver, ntpAlgorithm, ntpTrainingSet } from 'mdml-engine/logic'
- * import { key } from 'mdml-engine/random'
+ * import { neuralTheoremProver, ntpAlgorithm, ntpTrainingSet } from 'omai-engine/logic'
+ * import { key } from 'omai-engine/random'
  * const ntp = neuralTheoremProver({ facts: ['p(a,b)', 'p(b,c)'], rules: [] }, key(0))
  * ntpAlgorithm(ntp, ntpTrainingSet(ntp, key(1))).name // => 'lbfgs'
  * ```
@@ -571,8 +571,8 @@ export interface NtpFit {
  * @returns The embeddings, the loss and whether the solver converged (of the best start).
  * @example
  * ```ts
- * import { neuralTheoremProver, ntpTrainingSet, trainNtp } from 'mdml-engine/logic'
- * import { key } from 'mdml-engine/random'
+ * import { neuralTheoremProver, ntpTrainingSet, trainNtp } from 'omai-engine/logic'
+ * import { key } from 'omai-engine/random'
  * const ntp = neuralTheoremProver({ facts: ['p(a,b)', 'p(b,c)', 'p(c,a)'], rules: [] }, key(0))
  * Number.isFinite(trainNtp(ntp, ntpTrainingSet(ntp, key(1)), { maxSteps: 20 }).loss) // => true
  * ```
@@ -614,8 +614,8 @@ export function trainNtp(
  * @returns One score per goal.
  * @example
  * ```ts
- * import { ntpScores, neuralTheoremProver } from 'mdml-engine/logic'
- * import { key } from 'mdml-engine/random'
+ * import { ntpScores, neuralTheoremProver } from 'omai-engine/logic'
+ * import { key } from 'omai-engine/random'
  * const ntp = neuralTheoremProver({ facts: ['p(a,b)'], rules: [] }, key(0))
  * ntpScores(ntp, ntp.x0, [{ predicate: 'p', args: ['a', 'b'] }]) // => [1]
  * ```

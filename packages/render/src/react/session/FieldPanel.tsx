@@ -4,7 +4,7 @@
  * current point.
  */
 
-import type { VectorField } from 'mdml-engine/exposition'
+import type { VectorField } from 'omai-engine/exposition'
 import { type ReactNode, useMemo } from 'react'
 import { cartesian, type Layer } from '../../charts/plot.ts'
 import { vectorFieldLayers } from '../../views/fields.ts'

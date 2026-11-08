@@ -4,7 +4,7 @@
  * linkage, textbook worked examples, nursery rhymes, and Karpathy's Tiny Shakespeare as a pinned remote asset.
  */
 
-import { argmaxOf, MdmlError, softmaxOf } from '../base/index.ts'
+import { argmaxOf, OmaiError, softmaxOf } from '../base/index.ts'
 import {
   type CorpusData,
   corpus,
@@ -97,8 +97,8 @@ function ldaLogLikelihood(
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { topicCorpus } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { topicCorpus } from 'omai-engine/datasets'
  * generate(topicCorpus, { knobs: { topics: 'bars', nDocs: 20 } }).data.vocabulary?.length // => 25
  * ```
  */
@@ -181,8 +181,8 @@ export const topicCorpus: DatasetGenerator<CorpusData> = {
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { naiveBayesCorpus } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { naiveBayesCorpus } from 'omai-engine/datasets'
  * generate(naiveBayesCorpus, { knobs: { nClasses: 3 } }).data.classes // => ['class0', 'class1', 'class2']
  * ```
  */
@@ -256,8 +256,8 @@ export const naiveBayesCorpus: DatasetGenerator<CorpusData> = {
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { driftingTopics } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { driftingTopics } from 'omai-engine/datasets'
  * (generate(driftingTopics, { knobs: { slices: 4 } }).truth.latents?.['topics'] as number[][][]).length // => 4
  * ```
  */
@@ -349,7 +349,7 @@ export type WorkedExample = 'deerwester' | 'caesar'
  * @returns The corpus.
  * @example
  * ```ts
- * import { workedExampleCorpus } from 'mdml-engine/datasets'
+ * import { workedExampleCorpus } from 'omai-engine/datasets'
  * workedExampleCorpus('deerwester').documents?.length // => 9
  * ```
  */
@@ -380,7 +380,7 @@ export function workedExampleCorpus(name: WorkedExample): CorpusData {
       },
     )
   }
-  throw new MdmlError('value', `workedExampleCorpus: unknown corpus ${String(name)}`)
+  throw new OmaiError('value', `workedExampleCorpus: unknown corpus ${String(name)}`)
 }
 
 /**
@@ -390,7 +390,7 @@ export function workedExampleCorpus(name: WorkedExample): CorpusData {
  * @returns The corpus.
  * @example
  * ```ts
- * import { nurseryRhymes } from 'mdml-engine/datasets'
+ * import { nurseryRhymes } from 'omai-engine/datasets'
  * nurseryRhymes().classes?.[0] // => 'Mary Had a Little Lamb'
  * ```
  */
@@ -413,7 +413,7 @@ export function nurseryRhymes(): CorpusData {
  * @returns The corpus.
  * @example
  * ```ts
- * import { parseTinyShakespeare } from 'mdml-engine/datasets'
+ * import { parseTinyShakespeare } from 'omai-engine/datasets'
  * parseTinyShakespeare(new TextEncoder().encode('First:\nHi.\n\nSecond:\nHo.\n')).documents?.length // => 2
  * ```
  */
@@ -439,7 +439,7 @@ export function parseTinyShakespeare(bytes: Uint8Array): CorpusData {
  *
  * @example
  * ```ts
- * import { tinyShakespeare } from 'mdml-engine/datasets'
+ * import { tinyShakespeare } from 'omai-engine/datasets'
  * tinyShakespeare.size // => 1115394
  * ```
  */
@@ -476,8 +476,8 @@ function shingleJaccard(a: readonly number[], b: readonly number[], k: number): 
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { nearDuplicateCorpus } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { nearDuplicateCorpus } from 'omai-engine/datasets'
  * generate(nearDuplicateCorpus, { knobs: { nOriginals: 10, duplicated: 0.5, copies: 2 } }).data.documents?.length // => 20
  * ```
  */
@@ -586,8 +586,8 @@ export const nearDuplicateCorpus: DatasetGenerator<CorpusData> = {
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { taggedCorpus } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { taggedCorpus } from 'omai-engine/datasets'
  * generate(taggedCorpus, { knobs: { sentences: 5, tags: 3 } }).data.tagNames // => ['T0', 'T1', 'T2']
  * ```
  */
@@ -676,8 +676,8 @@ export const taggedCorpus: DatasetGenerator<SequenceLabellingData> = {
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { typoPairs } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { typoPairs } from 'omai-engine/datasets'
  * generate(typoPairs, { knobs: { n: 6, errorRate: 0 } }).data.source.length // => 6
  * ```
  */

@@ -6,7 +6,7 @@
  * keeps pulling the arm that used to be best.
  */
 
-import { argmaxOf, MdmlError } from '../base/index.ts'
+import { argmaxOf, OmaiError } from '../base/index.ts'
 import type { Agent } from '../rl/index.ts'
 import type { BanditSpaces } from './bandits.ts'
 
@@ -33,7 +33,7 @@ export interface SlidingWindowUcbOptions {
 }
 
 const armCount = (env: BanditSpaces, name: string): number => {
-  if (env.actionSpace.kind !== 'discrete') throw new MdmlError('value', `${name}: needs discrete arms`)
+  if (env.actionSpace.kind !== 'discrete') throw new OmaiError('value', `${name}: needs discrete arms`)
   return env.actionSpace.n
 }
 
@@ -47,13 +47,13 @@ const armCount = (env: BanditSpaces, name: string): number => {
  * @param env - The bandit.
  * @param options - The window, exploration constant and reward range.
  * @returns The agent; its greedy action is the arm with the best mean in the window.
- * @throws MdmlError with code `value` for a window below one.
+ * @throws OmaiError with code `value` for a window below one.
  * @concept upper-confidence-bounds
  * @example
  * ```ts
- * import { slidingWindowUcb } from 'mdml-engine/agents'
- * import { changePointBandit } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { slidingWindowUcb } from 'omai-engine/agents'
+ * import { changePointBandit } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * const agent = slidingWindowUcb(changePointBandit.create(), { window: 100 })
  * agent.act(agent.init(key(0)), 0, key(1)) // => 0
  * ```
@@ -67,7 +67,7 @@ export function slidingWindowUcb(
   const xi = options.xi ?? 0.6
   const range = options.range ?? 1
   if (!(Number.isInteger(tau) && tau >= 1))
-    throw new MdmlError('value', `slidingWindowUcb: window ${tau} must be an integer >= 1`)
+    throw new OmaiError('value', `slidingWindowUcb: window ${tau} must be an integer >= 1`)
   const indices = (s: SlidingWindowState): number[] =>
     Array.from({ length: k }, (_, a) => {
       const n = s.counts[a] ?? 0
@@ -138,13 +138,13 @@ export interface DiscountedUcbOptions {
  * @param env - The bandit.
  * @param options - The discount, exploration constant and reward range.
  * @returns The agent.
- * @throws MdmlError with code `value` for a discount outside (0, 1).
+ * @throws OmaiError with code `value` for a discount outside (0, 1).
  * @concept upper-confidence-bounds
  * @example
  * ```ts
- * import { discountedUcb } from 'mdml-engine/agents'
- * import { changePointBandit } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { discountedUcb } from 'omai-engine/agents'
+ * import { changePointBandit } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * const agent = discountedUcb(changePointBandit.create(), { discount: 0.9 })
  * const t = { observation: 0, action: 0, reward: 1, nextObservation: 0, terminated: false, truncated: false }
  * agent.learn(agent.learn(agent.init(key(0)), t, key(1)), t, key(2)).counts[0] // => 1.9
@@ -158,7 +158,7 @@ export function discountedUcb(
   const gamma = options.discount ?? 0.99
   const xi = options.xi ?? 0.6
   const range = options.range ?? 1
-  if (!(gamma > 0 && gamma < 1)) throw new MdmlError('value', `discountedUcb: discount ${gamma} must be in (0, 1)`)
+  if (!(gamma > 0 && gamma < 1)) throw new OmaiError('value', `discountedUcb: discount ${gamma} must be in (0, 1)`)
   return {
     name: 'discountedUcb',
     config: { arms: k, discount: gamma, xi, range },

@@ -4,9 +4,9 @@ from typing import cast
 
 import numpy as np
 import ot
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray, rng
-from mdml_oracle.optim_helpers import clouds, histogram
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray, rng
+from omai_oracle.optim_helpers import clouds, histogram
 
 REFERENCE: dict[str, str] = {"pot": ot.__version__}
 

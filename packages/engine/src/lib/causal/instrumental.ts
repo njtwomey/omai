@@ -7,7 +7,7 @@
  * Wald estimate for a single instrument.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { matrixView } from '../learn/validation.ts'
 import { dgemm, dpotrf, dsyev } from '../numerics/linalg/index.ts'
 import type { TensorLike } from '../tensor/index.ts'
@@ -87,11 +87,11 @@ function asMatrix(x: TensorLike | undefined, n: number, who: string): Observatio
   const t = asTensor(x)
   if (t.shape.length === 1) {
     const flat = Float64Array.from(toFlat(t))
-    if (flat.length !== n) throw new MdmlError('shape', `${who}: ${flat.length} values for ${n} observations`)
+    if (flat.length !== n) throw new OmaiError('shape', `${who}: ${flat.length} values for ${n} observations`)
     return { data: flat, n, k: 1 }
   }
   const v = matrixView(x, who)
-  if (v.n !== n) throw new MdmlError('shape', `${who}: ${v.n} rows for ${n} observations`)
+  if (v.n !== n) throw new OmaiError('shape', `${who}: ${v.n} rows for ${n} observations`)
   return { data: v.data, n, k: v.d }
 }
 
@@ -128,7 +128,7 @@ const sumSquares = (a: ObservationMatrix, j: number): number => {
 /** The smallest eigenvalue of `A^-1 B` for symmetric positive-definite `A` and symmetric `B` (order `p`). */
 function smallestGeneralisedEigenvalue(a: Float64Array, b: Float64Array, p: number): number {
   const { factor, info } = dpotrf(a, p)
-  if (info !== 0) throw new MdmlError('value', 'liml: the instruments leave no variation in the regressors')
+  if (info !== 0) throw new OmaiError('value', 'liml: the instruments leave no variation in the regressors')
   // C = U^-T B U^-1 for A = U^T U, symmetric with the same eigenvalues as A^-1 B.
   const left = new Float64Array(p * p)
   for (let col = 0; col < p; col++)
@@ -160,7 +160,7 @@ function smallestGeneralisedEigenvalue(a: Float64Array, b: Float64Array, p: numb
  * @returns Coefficients, errors, first stages and tests.
  * @example
  * ```ts
- * import { instrumentalVariables } from 'mdml-engine/causal'
+ * import { instrumentalVariables } from 'omai-engine/causal'
  * const z = [0, 1, 2, 3, 4, 5, 6, 7]
  * const d = [0.1, 1.2, 1.9, 3.2, 3.9, 5.2, 5.9, 7.1]
  * const y = d.map((v) => 2 * v + 1)
@@ -186,7 +186,7 @@ export function instrumentalVariables(data: IvData, options: IvOptions = {}): Iv
   const yMat = scale({ data: Float64Array.from(toFlat(yt)), n, k: 1 })
   const k = endog.k
   if (z.k < k)
-    throw new MdmlError(
+    throw new OmaiError(
       'value',
       `instrumentalVariables: ${k} endogenous regressors need at least ${k} instruments, got ${z.k}`,
     )
@@ -303,7 +303,7 @@ export function instrumentalVariables(data: IvData, options: IvOptions = {}): Iv
  * @returns Coefficients, errors, first stages and tests.
  * @example
  * ```ts
- * import { twoStageLeastSquares } from 'mdml-engine/causal'
+ * import { twoStageLeastSquares } from 'omai-engine/causal'
  * const r = twoStageLeastSquares({ outcome: [1, 3, 5, 7, 9, 11], endogenous: [0, 1, 2, 3, 4, 5], instruments: [0.1, 0.9, 2.1, 2.9, 4.1, 4.9] })
  * r.firstStage[0].fStatistic > 100 // => true
  * ```
@@ -325,7 +325,7 @@ export function twoStageLeastSquares(
  * @returns Coefficients, errors, first stages and tests; `kappa` is the root.
  * @example
  * ```ts
- * import { liml } from 'mdml-engine/causal'
+ * import { liml } from 'omai-engine/causal'
  * const r = liml({ outcome: [1, 3.4, 4.7, 7.3, 8.6, 11.2], endogenous: [0, 1, 2, 3, 4, 5], instruments: [0.1, 0.9, 2.2, 2.9, 4.1, 5.2] })
  * Math.round(r.kappa * 1e8) / 1e8 // => 1
  * ```
@@ -345,7 +345,7 @@ export function liml(data: IvData, options: Omit<IvOptions, 'estimator' | 'kappa
  * @returns The F statistic.
  * @example
  * ```ts
- * import { firstStageF } from 'mdml-engine/causal'
+ * import { firstStageF } from 'omai-engine/causal'
  * firstStageF({ outcome: [1, 2, 3, 4, 5, 6], endogenous: [1, 2, 2, 4, 5, 7], instruments: [1, 2, 3, 4, 5, 6] }) > 50 // => true
  * ```
  */
@@ -364,7 +364,7 @@ export function firstStageF(data: IvData): number {
  * @returns The local average treatment effect with its influence values.
  * @example
  * ```ts
- * import { waldEstimate } from 'mdml-engine/causal'
+ * import { waldEstimate } from 'omai-engine/causal'
  * waldEstimate([1, 1, 3, 3], [0, 0, 1, 1], [0, 0, 1, 1]).estimate.value // => 2
  * ```
  */

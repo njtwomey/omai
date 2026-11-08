@@ -35,7 +35,7 @@ function measure(
  * @concept active-learning
  * @example
  * ```ts
- * import { streamUncertainties } from 'mdml-engine/learn'
+ * import { streamUncertainties } from 'omai-engine/learn'
  * streamUncertainties.make({ kind: 'entropy' })([[0.5, 0.5], [1, 0]]) // => [1, 0]
  * ```
  */

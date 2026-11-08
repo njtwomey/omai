@@ -5,10 +5,10 @@
  */
 
 import type { EChartsOption, SeriesOption } from 'echarts'
-import { MdmlError } from 'mdml-engine/base'
-import { contourLevels } from 'mdml-engine/numerics/geometry'
-import { type ImageSource, type Pixels, toPixels } from 'mdml-engine/scene'
-import { type TensorLike, toFlat } from 'mdml-engine/tensor'
+import { OmaiError } from 'omai-engine/base'
+import { contourLevels } from 'omai-engine/numerics/geometry'
+import { type ImageSource, type Pixels, toPixels } from 'omai-engine/scene'
+import { type TensorLike, toFlat } from 'omai-engine/tensor'
 import type { Range } from '../figure/aspect.ts'
 import { extentOf } from '../figure/limits.ts'
 import { pngDataUrl } from '../svg/png.ts'
@@ -75,7 +75,7 @@ export interface HeatmapOptions {
  * @returns The stops.
  * @example
  * ```ts
- * import { rampStops } from 'mdml-render/charts'
+ * import { rampStops } from 'omai-render/charts'
  * rampStops(undefined, 'light', true)[0] // => '#2166ac'
  * rampStops(['#000', '#fff'], 'dark') // => ['#000', '#fff']
  * ```
@@ -101,7 +101,7 @@ interface ImageApi {
  * @returns The series.
  * @example
  * ```ts
- * import { imageSeries } from 'mdml-render/charts'
+ * import { imageSeries } from 'omai-render/charts'
  * imageSeries({ width: 1, height: 1, rgba: new Uint8ClampedArray(4) }, [0, 1], [0, 1]).type // => 'custom'
  * ```
  */
@@ -120,7 +120,7 @@ export function imageSeries(
     // chart that updates often shows blank frames; `reencodeImages` swaps the pixels in for a canvas, which paints at once.
     // The PNG is encoded when the item is first drawn, so a chart drawn from canvases never pays for it.
     renderItem: imageRenderer(() => pngDataUrl(pixels), x, y, opacity),
-    mdmlImage: { pixels, x, y, opacity },
+    omaiImage: { pixels, x, y, opacity },
     clip: true,
     silent: true,
     z: options.z ?? 1,
@@ -147,14 +147,14 @@ interface ImageSeriesSource {
  * @returns The series, with the images re-encoded.
  * @example
  * ```ts
- * import { heatmap, reencodeImages } from 'mdml-render/charts'
+ * import { heatmap, reencodeImages } from 'omai-render/charts'
  * const layer = heatmap([[0, 1], [1, 0]], { x: [0, 1], y: [0, 1] })
  * reencodeImages(layer.series, () => 'canvas').length // => layer.series.length
  * ```
  */
 export function reencodeImages(series: readonly SeriesOption[], encode: ImageEncoder): SeriesOption[] {
   return series.map((s) => {
-    const source = (s as { mdmlImage?: ImageSeriesSource }).mdmlImage
+    const source = (s as { omaiImage?: ImageSeriesSource }).omaiImage
     if (source === undefined) return s
     return {
       ...s,
@@ -253,7 +253,7 @@ function paintGrid(
  * @returns The layer: the image and a colour bar.
  * @example
  * ```ts
- * import { heatmap } from 'mdml-render/charts'
+ * import { heatmap } from 'omai-render/charts'
  * const l = heatmap([[0, 1], [1, 2]], { x: [0, 1], y: [0, 1] })
  * l.extent // => { x: [0, 1], y: [0, 1], tight: true }
  * l.colourBar.min // => 0
@@ -262,7 +262,7 @@ function paintGrid(
 export function heatmap(z: TensorLike, options: HeatmapOptions = {}): Layer {
   const mode = options.mode ?? 'light'
   const g = grid2d(z, 'heatmap')
-  if (g.rows < 1 || g.cols < 1) throw new MdmlError('shape', 'heatmap: the grid is empty')
+  if (g.rows < 1 || g.cols < 1) throw new OmaiError('shape', 'heatmap: the grid is empty')
   const smooth = options.smooth ?? 'bicubic'
   const xs = axisCoords(options.x, g.cols)
   const ys = axisCoords(options.y, g.rows)
@@ -352,7 +352,7 @@ export function heatmap(z: TensorLike, options: HeatmapOptions = {}): Layer {
 }
 
 /**
- * An image from pixels, or from a 2-D (grey) or RGB(A) tensor as mdml-engine's `toPixels` reads it (imshow-style),
+ * An image from pixels, or from a 2-D (grey) or RGB(A) tensor as omai-engine's `toPixels` reads it (imshow-style),
  * covering a data rectangle (default one unit per pixel, row 0 at the top).
  *
  * @param source - Pixels or image data.
@@ -360,7 +360,7 @@ export function heatmap(z: TensorLike, options: HeatmapOptions = {}): Layer {
  * @returns The layer.
  * @example
  * ```ts
- * import { image } from 'mdml-render/charts'
+ * import { image } from 'omai-render/charts'
  * image([[0, 1], [1, 0]]).extent // => { x: [0, 2], y: [0, 2], tight: true }
  * ```
  */
@@ -408,7 +408,7 @@ interface CellApi {
  * @returns The layer, with categories on both axes.
  * @example
  * ```ts
- * import { matrix } from 'mdml-render/charts'
+ * import { matrix } from 'omai-render/charts'
  * const l = matrix([[1, 2], [3, 4]], { rowLabels: ['a', 'b'] })
  * l.yCategories // => ['b', 'a']
  * l.series[0].data.length // => 4
@@ -420,7 +420,7 @@ export function matrix(z: TensorLike, options: MatrixOptions = {}): Layer {
   const rows = options.rowLabels ?? Array.from({ length: g.rows }, (_, i) => String(i))
   const cols = options.colLabels ?? Array.from({ length: g.cols }, (_, j) => String(j))
   if (rows.length !== g.rows || cols.length !== g.cols)
-    throw new MdmlError('shape', 'matrix: give one label per row and per column')
+    throw new OmaiError('shape', 'matrix: give one label per row and per column')
   const [lo, hi] = options.range ?? extentOf(g.values) ?? [0, 1]
   const centre = options.centre
   const stops = rampStops(options.ramp, mode, centre !== undefined)
@@ -522,7 +522,7 @@ export function matrix(z: TensorLike, options: MatrixOptions = {}): Layer {
  * @index function A labelled confusion matrix: `confusionMatrixChart(counts, ['cat', 'dog'])`.
  * @example
  * ```ts
- * import { confusionMatrixChart } from 'mdml-render/charts'
+ * import { confusionMatrixChart } from 'omai-render/charts'
  * confusionMatrixChart([[5, 1], [2, 7]], ['cat', 'dog']).xAxis[0].name // => 'predicted'
  * ```
  */
@@ -565,7 +565,7 @@ export function confusionMatrixChart(
  * @returns The ECharts option.
  * @example
  * ```ts
- * import { correlationChart } from 'mdml-render/charts'
+ * import { correlationChart } from 'omai-render/charts'
  * correlationChart([[1, 0.5], [0.5, 1]], ['a', 'b']).visualMap[0].min // => -1
  * ```
  */
@@ -590,7 +590,7 @@ export function correlationChart(
  * @index function A heatmap of a 2-D array: `heatmapChart(z)`.
  * @example
  * ```ts
- * import { heatmapChart } from 'mdml-render/charts'
+ * import { heatmapChart } from 'omai-render/charts'
  * heatmapChart([[0, 1], [2, 3]], { smooth: 'cells' }).xAxis[0].min // => -0.5
  * ```
  */

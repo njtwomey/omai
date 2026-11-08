@@ -3,7 +3,7 @@
  * layout helpers that translate, rotate, scale and fit nodes into a box or tile several scenes into a grid.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { group } from './build.ts'
 import type { GroupNode, Scene, SceneNode, Transform } from './types.ts'
 
@@ -58,7 +58,7 @@ function nodePoints(node: SceneNode): (readonly [number, number])[] {
  * @returns The box, or a zero box for no nodes.
  * @example
  * ```ts
- * import { bounds, rect, circle } from 'mdml-engine/scene'
+ * import { bounds, rect, circle } from 'omai-engine/scene'
  * bounds([rect(0, 0, 2, 1), circle(5, 5, 1)]) // => { x: 0, y: 0, width: 6, height: 6 }
  * ```
  */
@@ -86,7 +86,7 @@ export function bounds(nodes: readonly SceneNode[]): BoundingBox {
  * @returns The combined transform, with all three fields set.
  * @example
  * ```ts
- * import { composeTransforms } from 'mdml-engine/scene'
+ * import { composeTransforms } from 'omai-engine/scene'
  * composeTransforms({ translate: [1, 0] }, { scale: 2 }) // => { translate: [1, 0], rotate: 0, scale: 2 }
  * composeTransforms({ scale: 2 }, { translate: [1, 0] }).translate // => [2, 0]
  * ```
@@ -108,7 +108,7 @@ export function composeTransforms(outer: Transform, inner: Transform): Required<
  * @returns The transformed point.
  * @example
  * ```ts
- * import { applyTransform } from 'mdml-engine/scene'
+ * import { applyTransform } from 'omai-engine/scene'
  * applyTransform({ translate: [10, 0], scale: 2 }, [1, 1]) // => [12, 2]
  * ```
  */
@@ -129,16 +129,16 @@ export function applyTransform(t: Transform, point: readonly [number, number]): 
  *
  * @param t - The transform.
  * @returns The inverse transform, with all three fields set.
- * @throws MdmlError with code `singular` when the scale is 0.
+ * @throws OmaiError with code `singular` when the scale is 0.
  * @example
  * ```ts
- * import { invertTransform } from 'mdml-engine/scene'
+ * import { invertTransform } from 'omai-engine/scene'
  * invertTransform({ translate: [4, 2], scale: 2 }) // => { translate: [-2, -1], rotate: 0, scale: 0.5 }
  * ```
  */
 export function invertTransform(t: Transform): Required<Transform> {
   const s = t.scale ?? 1
-  if (s === 0) throw new MdmlError('singular', 'invertTransform: a zero scale has no inverse')
+  if (s === 0) throw new OmaiError('singular', 'invertTransform: a zero scale has no inverse')
   const inverse = { rotate: 0 - (t.rotate ?? 0), scale: 1 / s }
   const [tx, ty] = applyTransform(inverse, t.translate ?? [0, 0])
   return { translate: [0 - tx, 0 - ty], ...inverse }
@@ -164,7 +164,7 @@ function transformed(target: SceneNode | readonly SceneNode[], t: Transform): Gr
  * @returns The moved group.
  * @example
  * ```ts
- * import { translate, bounds, rect } from 'mdml-engine/scene'
+ * import { translate, bounds, rect } from 'omai-engine/scene'
  * bounds([translate(rect(0, 0, 2, 1), 5, 5)]) // => { x: 5, y: 5, width: 2, height: 1 }
  * ```
  */
@@ -181,7 +181,7 @@ export function translate(target: SceneNode | readonly SceneNode[], dx: number, 
  * @returns The rotated group.
  * @example
  * ```ts
- * import { rotate, bounds, line } from 'mdml-engine/scene'
+ * import { rotate, bounds, line } from 'omai-engine/scene'
  * const b = bounds([rotate(line(0, 0, 2, 0), 90)])
  * [Math.round(b.width), Math.round(b.height)] // => [0, 2]
  * ```
@@ -203,10 +203,10 @@ export function rotate(
  * @param target - A node or nodes.
  * @param size - The target width, height or both.
  * @returns The scaled group.
- * @throws MdmlError with code `value` when neither size is given.
+ * @throws OmaiError with code `value` when neither size is given.
  * @example
  * ```ts
- * import { scaleTo, bounds, rect } from 'mdml-engine/scene'
+ * import { scaleTo, bounds, rect } from 'omai-engine/scene'
  * bounds([scaleTo(rect(1, 1, 4, 2), { width: 2 })]) // => { x: 1, y: 1, width: 2, height: 1 }
  * ```
  */
@@ -215,7 +215,7 @@ export function scaleTo(
   size: { readonly width?: number; readonly height?: number },
 ): GroupNode {
   if (size.width === undefined && size.height === undefined) {
-    throw new MdmlError('value', 'scaleTo: give a width, a height or both')
+    throw new OmaiError('value', 'scaleTo: give a width, a height or both')
   }
   const b = bounds(asNodes(target))
   const ratio = (want: number | undefined, have: number): number =>
@@ -234,7 +234,7 @@ export function scaleTo(
  * @returns A group with the fitted nodes.
  * @example
  * ```ts
- * import { fit, rect } from 'mdml-engine/scene'
+ * import { fit, rect } from 'omai-engine/scene'
  * fit([rect(0, 0, 1, 1)], { x: 0, y: 0, width: 10, height: 10 }).scale // => 10
  * ```
  */
@@ -258,19 +258,19 @@ export function fit(nodes: readonly SceneNode[], box: BoundingBox, padding = 0):
  * @param columns - Cells per row.
  * @param cell - Cell width and height.
  * @returns One scene containing the grid.
- * @throws MdmlError `value` when `columns` is not an integer >= 1 or the cell is not finite and positive.
+ * @throws OmaiError `value` when `columns` is not an integer >= 1 or the cell is not finite and positive.
  * @example
  * ```ts
- * import { grid, scene } from 'mdml-engine/scene'
+ * import { grid, scene } from 'omai-engine/scene'
  * grid([scene(10, 10, []), scene(10, 10, [])], 2, [20, 20]).width // => 40
  * ```
  */
 export function grid(scenes: readonly Scene[], columns: number, cell: readonly [number, number]): Scene {
   const [cw, ch] = cell
   if (!(Number.isInteger(columns) && columns >= 1))
-    throw new MdmlError('value', `grid: columns is ${columns}, expected an integer >= 1`)
+    throw new OmaiError('value', `grid: columns is ${columns}, expected an integer >= 1`)
   if (!(cw > 0 && ch > 0 && Number.isFinite(cw) && Number.isFinite(ch)))
-    throw new MdmlError('value', `grid: the cell is ${cw} by ${ch}, expected finite positive sizes`)
+    throw new OmaiError('value', `grid: the cell is ${cw} by ${ch}, expected finite positive sizes`)
   const rows = Math.ceil(scenes.length / columns)
   const children = scenes.map((s, i) => {
     const scale = Math.min(cw / s.width, ch / s.height)

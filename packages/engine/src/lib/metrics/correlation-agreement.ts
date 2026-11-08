@@ -4,7 +4,7 @@
  * intraclass correlations, weighted Cohen's kappa, Fleiss' kappa for many raters and Krippendorff's alpha.
  */
 
-import { MdmlError, type MetricResult, type MetricSpec, toRows } from '../base/index.ts'
+import { type MetricResult, type MetricSpec, OmaiError, toRows } from '../base/index.ts'
 import { ndtri } from '../numerics/special/index.ts'
 import { cov, kendallTau as kendallTest, spearman } from '../stats/index.ts'
 import { item, type TensorLike, toFlat } from '../tensor/index.ts'
@@ -34,7 +34,7 @@ const spec = (
 const pair = (name: string, x: TensorLike, y: TensorLike): [Float64Array, Float64Array] => {
   const a = flat(x)
   const b = flat(y)
-  if (a.length !== b.length) throw new MdmlError('shape', `${name}: inputs differ in length`)
+  if (a.length !== b.length) throw new OmaiError('shape', `${name}: inputs differ in length`)
   return [a, b]
 }
 
@@ -55,7 +55,7 @@ function contingencyRows(x: MetricInput, y: MetricInput, options: MetricOptions)
  * @concept correlation
  * @example
  * ```ts
- * import { pearsonCorrelation } from 'mdml-engine/metrics'
+ * import { pearsonCorrelation } from 'omai-engine/metrics'
  * pearsonCorrelation([1, 2, 3], [2, 4, 6]).estimate.value // => 1
  * ```
  */
@@ -82,7 +82,7 @@ export const pearsonCorrelation: Metric = Object.assign(
  * @returns The metric result.
  * @example
  * ```ts
- * import { spearmanCorrelation } from 'mdml-engine/metrics'
+ * import { spearmanCorrelation } from 'omai-engine/metrics'
  * spearmanCorrelation([1, 2, 3, 4], [1, 4, 9, 16]).estimate.value // => 1
  * ```
  */
@@ -105,7 +105,7 @@ export const spearmanCorrelation: Metric = Object.assign(
  * @returns The metric result.
  * @example
  * ```ts
- * import { kendallTau } from 'mdml-engine/metrics'
+ * import { kendallTau } from 'omai-engine/metrics'
  * kendallTau([1, 2, 3, 4], [1, 3, 2, 4]).estimate.value // => 0.6666666666666666
  * ```
  */
@@ -131,7 +131,7 @@ export const kendallTau: Metric<MetricOptions & { readonly variant?: 'b' | 'c' }
  * @returns The metric result.
  * @example
  * ```ts
- * import { concordanceCorrelation } from 'mdml-engine/metrics'
+ * import { concordanceCorrelation } from 'omai-engine/metrics'
  * concordanceCorrelation([1, 2, 3], [1, 2, 3]).estimate.value // => 1
  * ```
  */
@@ -181,7 +181,7 @@ export interface BlandAltman {
  * @returns The bias, the standard deviation and the limits.
  * @example
  * ```ts
- * import { blandAltman } from 'mdml-engine/metrics'
+ * import { blandAltman } from 'omai-engine/metrics'
  * blandAltman([2, 4, 6], [1, 3, 5]).bias // => 1
  * ```
  */
@@ -205,7 +205,7 @@ export function blandAltman(x: TensorLike, y: TensorLike, options: { readonly le
  * @returns The metric result.
  * @example
  * ```ts
- * import { cramersV } from 'mdml-engine/metrics'
+ * import { cramersV } from 'omai-engine/metrics'
  * cramersV([0, 0, 1, 1], ['a', 'a', 'b', 'b']).estimate.value // => 1
  * ```
  */
@@ -242,7 +242,7 @@ const entropyOf = (counts: readonly number[]): number => {
  * @returns The metric result, in [0, 1].
  * @example
  * ```ts
- * import { theilsU } from 'mdml-engine/metrics'
+ * import { theilsU } from 'omai-engine/metrics'
  * theilsU([0, 0, 1, 1], [0, 1, 2, 3]).estimate.value // => 1
  * ```
  */
@@ -277,7 +277,7 @@ export type IccType = 'ICC1' | 'ICC2' | 'ICC3' | 'ICC1k' | 'ICC2k' | 'ICC3k'
  * @returns The metric result, with the mean squares in the breakdown.
  * @example
  * ```ts
- * import { intraclassCorrelation } from 'mdml-engine/metrics'
+ * import { intraclassCorrelation } from 'omai-engine/metrics'
  * intraclassCorrelation([[1, 1], [2, 2], [3, 3]]).estimate.value // => 1
  * ```
  */
@@ -287,7 +287,7 @@ export const intraclassCorrelation: MetricFunction<[TensorLike, { readonly type?
     const r = shapedArray(ratings)
     const n = r.shape[0] ?? 0
     const k = r.shape[1] ?? 0
-    if (n < 2 || k < 2) throw new MdmlError('value', 'intraclassCorrelation: needs at least two targets and two raters')
+    if (n < 2 || k < 2) throw new OmaiError('value', 'intraclassCorrelation: needs at least two targets and two raters')
     let grand = 0
     for (const v of r.data) grand += v
     grand /= n * k
@@ -332,7 +332,7 @@ export const intraclassCorrelation: MetricFunction<[TensorLike, { readonly type?
  * @returns The metric result.
  * @example
  * ```ts
- * import { weightedCohenKappa } from 'mdml-engine/metrics'
+ * import { weightedCohenKappa } from 'omai-engine/metrics'
  * weightedCohenKappa([0, 1, 2], [0, 1, 2]).estimate.value // => 1
  * ```
  */
@@ -354,7 +354,7 @@ export const weightedCohenKappa: Metric<KappaOptions, MetricInput> = Object.assi
  * @returns The metric result.
  * @example
  * ```ts
- * import { fleissKappa } from 'mdml-engine/metrics'
+ * import { fleissKappa } from 'omai-engine/metrics'
  * fleissKappa([[3, 0], [0, 3], [3, 0]]).estimate.value // => 1
  * ```
  */
@@ -396,7 +396,7 @@ export type MeasurementLevel = 'nominal' | 'ordinal' | 'interval' | 'ratio'
  * @returns The metric result.
  * @example
  * ```ts
- * import { krippendorffAlpha } from 'mdml-engine/metrics'
+ * import { krippendorffAlpha } from 'omai-engine/metrics'
  * krippendorffAlpha([[1, 2, 3], [1, 2, 3]], { level: 'nominal' }).estimate.value // => 1
  * ```
  */

@@ -3,7 +3,7 @@
  * (`['kaiser', 8]`, `['tukey', 0.25]`) or by a Kaiser beta, so analyses can take a window as a simple specification.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import type { Tensor } from '../../tensor/index.ts'
 import {
   blackman,
@@ -111,18 +111,18 @@ const ALIASES: Readonly<Record<string, string>> = {
  * @param n - Length.
  * @param fftbins - Periodic (default true) or symmetric.
  * @returns The window `[n]`.
- * @throws MdmlError with code `value` for an unknown name or missing parameters.
+ * @throws OmaiError with code `value` for an unknown name or missing parameters.
  * @concept window-functions
  * @example
  * ```ts
- * import { getWindow } from 'mdml-engine/signal'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { getWindow } from 'omai-engine/signal'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(getWindow('hann', 4)) // => [0, 0.5, 1, 0.5]
  * toArray(getWindow(['tukey', 0], 3)) // => [1, 1, 1]
  * ```
  */
 export function getWindow(window: WindowSpec, n: number, fftbins = true): Tensor {
-  if (!Number.isInteger(n) || n < 1) throw new MdmlError('value', `getWindow: Nx must be a positive integer, got ${n}`)
+  if (!Number.isInteger(n) || n < 1) throw new OmaiError('value', `getWindow: Nx must be a positive integer, got ${n}`)
   if (typeof window === 'number') return kaiser(n, window, { sym: !fftbins })
   let name = typeof window === 'string' ? window : window[0]
   const args = typeof window === 'string' ? [] : (window.slice(1) as number[])
@@ -135,15 +135,15 @@ export function getWindow(window: WindowSpec, n: number, fftbins = true): Tensor
     name = name.slice(0, -9)
   }
   const key = ALIASES[name]
-  if (key === undefined) throw new MdmlError('value', `getWindow: unknown window '${name}'`)
+  if (key === undefined) throw new OmaiError('value', `getWindow: unknown window '${name}'`)
   const o = { sym }
   const need = (k: number): number => {
     const v = args[k]
-    if (v === undefined) throw new MdmlError('value', `getWindow: '${name}' needs parameter ${k + 1}`)
+    if (v === undefined) throw new OmaiError('value', `getWindow: '${name}' needs parameter ${k + 1}`)
     return v
   }
   const none = (): void => {
-    if (args.length > 0) throw new MdmlError('value', `getWindow: '${name}' takes no parameters`)
+    if (args.length > 0) throw new OmaiError('value', `getWindow: '${name}' takes no parameters`)
   }
   switch (key) {
     case 'barthann':
@@ -192,7 +192,7 @@ export function getWindow(window: WindowSpec, n: number, fftbins = true): Tensor
     case 'kaiser':
       return kaiser(n, need(0), o)
     case 'kbd':
-      if (!sym) throw new MdmlError('value', 'getWindow: Kaiser-Bessel-derived windows are only symmetric')
+      if (!sym) throw new OmaiError('value', 'getWindow: Kaiser-Bessel-derived windows are only symmetric')
       return kaiserBesselDerived(n, need(0))
     case 'lanczos':
       none()

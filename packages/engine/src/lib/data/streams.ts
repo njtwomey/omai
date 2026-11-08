@@ -8,7 +8,7 @@
  * without the steps before it, and `streamAlgorithm` runs the same stream as an `Algorithm` that serialises.
  */
 
-import { argmaxOf, type Json, MdmlError } from '../base/index.ts'
+import { argmaxOf, type Json, OmaiError } from '../base/index.ts'
 import { foldIn, type Key, normal, split, uniform } from '../random/index.ts'
 import { choice, type DictSpace, dict, int, real } from '../space/index.ts'
 import { fromStorage, type Tensor } from '../tensor/index.ts'
@@ -181,7 +181,7 @@ const SEPARATION = 2
 
 function positiveInt(name: string, v: number): number {
   if (!Number.isInteger(v) || v < 1)
-    throw new MdmlError('value', `stream: ${name} must be a positive integer, got ${v}`)
+    throw new OmaiError('value', `stream: ${name} must be a positive integer, got ${v}`)
   return v
 }
 
@@ -193,14 +193,14 @@ function positiveInt(name: string, v: number): number {
  * @param k - The stream's key: the concepts' parameters and every point come from it.
  * @param options - Task, what shifts and how, length, batch, and the drift's points, width, period and severity.
  * @returns The stream.
- * @throws MdmlError with code `value` for non-positive sizes, drift points outside the stream or out of order,
+ * @throws OmaiError with code `value` for non-positive sizes, drift points outside the stream or out of order,
  *   transitions that overlap, or a recurring stream with no period to recur on.
  * @concept datasets
  * @index dataset A data stream with planted drift, reproducible step by step.
  * @example
  * ```ts
- * import { stream } from 'mdml-engine/data'
- * import { key } from 'mdml-engine/random'
+ * import { stream } from 'omai-engine/data'
+ * import { key } from 'omai-engine/random'
  * const s = stream(key(0), { drift: 'abrupt', points: [100, 200], length: 300 })
  * s.truth.changepoints // => [100, 200]
  * [s.truth.conceptAt(99), s.truth.conceptAt(100), s.truth.conceptAt(200)] // => [0, 1, 2]
@@ -216,12 +216,12 @@ export function stream(k: Key, options: StreamOptions = {}): DataStream {
   const dim = positiveInt('dim', options.dim ?? 2)
   const classes = task === 'classification' ? positiveInt('classes', options.classes ?? 2) : 1
   if (task === 'classification' && classes < 2)
-    throw new MdmlError('value', 'stream: a classification stream needs two classes')
+    throw new OmaiError('value', 'stream: a classification stream needs two classes')
   const severity = options.severity ?? 1
   const noise = options.noise ?? 0
   if (!(severity >= 0 && severity <= 1))
-    throw new MdmlError('value', `stream: severity must be in [0, 1], got ${severity}`)
-  if (!(noise >= 0 && noise <= 1)) throw new MdmlError('value', `stream: noise must be in [0, 1], got ${noise}`)
+    throw new OmaiError('value', `stream: severity must be in [0, 1], got ${severity}`)
+  if (!(noise >= 0 && noise <= 1)) throw new OmaiError('value', `stream: noise must be in [0, 1], got ${noise}`)
   const windowed = drift === 'gradual' || drift === 'incremental'
   const width = windowed ? positiveInt('width', options.width ?? Math.max(1, Math.round(length / 10))) : 0
   const period = options.period ?? Math.max(2, Math.round(length / 4))
@@ -236,9 +236,9 @@ export function stream(k: Key, options: StreamOptions = {}): DataStream {
     }
   }
   for (const [i, p] of points.entries()) {
-    if (!(p > 0 && p < length)) throw new MdmlError('value', `stream: drift point ${p} is outside (0, ${length})`)
+    if (!(p > 0 && p < length)) throw new OmaiError('value', `stream: drift point ${p} is outside (0, ${length})`)
     if (i > 0 && !(p - (points[i - 1] as number) >= Math.max(width, 1)))
-      throw new MdmlError(
+      throw new OmaiError(
         'value',
         `stream: drift points ${points[i - 1]} and ${p} are closer than a transition (${width})`,
       )
@@ -362,7 +362,7 @@ export function stream(k: Key, options: StreamOptions = {}): DataStream {
     conceptAt,
     parameters: (c) => {
       const p = parameters[c]
-      if (p === undefined) throw new MdmlError('value', `stream: no concept ${c} among ${concepts}`)
+      if (p === undefined) throw new OmaiError('value', `stream: no concept ${c} among ${concepts}`)
       return {
         weights: Array.from(p.weights),
         coefficients: Array.from(p.coefficients),
@@ -375,7 +375,7 @@ export function stream(k: Key, options: StreamOptions = {}): DataStream {
 
   const next = (t: number): StreamBatch => {
     if (!Number.isInteger(t) || t < 0 || t >= length)
-      throw new MdmlError('value', `stream: step ${t} is outside [0, ${length})`)
+      throw new OmaiError('value', `stream: step ${t} is outside [0, ${length})`)
     const { from, to, mix } = transitionAt(t)
     const [ku, kx, ky, kn] = split(foldIn(kData, t), 4) as [Key, Key, Key, Key]
     const pick = uniform(ku, [batch]).data
@@ -494,8 +494,8 @@ export const streamContract: Contract<StreamState, StreamPath> = defineContract(
  * @concept datasets
  * @example
  * ```ts
- * import { streamAlgorithm } from 'mdml-engine/data'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { streamAlgorithm } from 'omai-engine/data'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const alg = streamAlgorithm({ length: 20, drift: 'abrupt', points: [10], batch: 4 })
  * const { state, steps } = runAlgorithm(alg, { seed: 1, maxSteps: 100 })
  * [steps, state.batch?.x.shape] // => [20, [4, 2]]

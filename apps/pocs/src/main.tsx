@@ -12,7 +12,7 @@ function App() {
   const path = usePath()
   const slug = path.startsWith('/poc/') ? path.slice('/poc/'.length).replace(/\/$/, '') : undefined
   return (
-    <Shell path={path === '/' || slug !== undefined ? '/' : path} sections={SECTIONS} brand="mdml pocs">
+    <Shell path={path === '/' || slug !== undefined ? '/' : path} sections={SECTIONS} brand="omai pocs">
       {slug === undefined ? <Index /> : <PocView key={slug} slug={slug} />}
     </Shell>
   )

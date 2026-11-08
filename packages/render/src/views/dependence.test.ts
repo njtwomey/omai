@@ -1,4 +1,4 @@
-import { dependence } from 'mdml-engine/exposition'
+import { dependence } from 'omai-engine/exposition'
 import { describe, expect, it } from 'vitest'
 import { dependenceSurfaceView, dependenceView, iceRows } from './dependence.ts'
 import { stillOf, viewFor } from './registry.ts'

@@ -8,7 +8,7 @@
  * the hinge loss in `svm`.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { resolveKey } from '../context/index.ts'
 import type { ResolvedKernel } from '../kernels/index.ts'
 import { kernelSpace } from '../kernels/index.ts'
@@ -47,7 +47,7 @@ const solveDense = (a: Float64Array, n: number, b: Float64Array, k: number): Flo
 /** Two-class targets as zeros and ones (the second sorted label is one). */
 function binaryTargets(y: TensorLike, n: number, who: string): Float64Array {
   const enc = encodeLabels(y, who, n)
-  if (enc.classes.length !== 2) throw new MdmlError('value', `${who}: expected two classes, got ${enc.classes.length}`)
+  if (enc.classes.length !== 2) throw new OmaiError('value', `${who}: expected two classes, got ${enc.classes.length}`)
   return Float64Array.from(enc.codes)
 }
 
@@ -141,20 +141,20 @@ function logisticIrls(k: Float64Array, t: Float64Array, n: number, lambda: numbe
  * @param y - Two-class labels `[n]`.
  * @param lambda - Penalty `lambda > 0` on the squared RKHS norm (default 1).
  * @returns The problem, starting at zero.
- * @throws MdmlError `value` unless there are two classes and `lambda > 0`; `shape` for a mismatched Gram matrix.
+ * @throws OmaiError `value` unless there are two classes and `lambda > 0`; `shape` for a mismatched Gram matrix.
  * @concept kernel-classifiers
  * @reference J. Zhu and T. Hastie, Kernel logistic regression and the import vector machine (J. Comp. Graph. Stat. 14, 2005).
  * @example
  * ```ts
- * import { kernelLogisticProblem } from 'mdml-engine/kernel-methods'
+ * import { kernelLogisticProblem } from 'omai-engine/kernel-methods'
  * kernelLogisticProblem([[1, 0], [0, 1]], [0, 1], 0.5).x0 // => [0, 0, 0]
  * ```
  */
 export function kernelLogisticProblem(k: TensorLike, y: TensorLike, lambda = 1): SmoothProblem {
   const g = primalOf(asTensor(k))
   const n = g.shape[0] ?? 0
-  if (g.shape.length !== 2 || g.shape[1] !== n) throw new MdmlError('shape', 'kernelLogisticProblem: k must be square')
-  if (!(lambda > 0)) throw new MdmlError('value', `kernelLogisticProblem: lambda must be positive, got ${lambda}`)
+  if (g.shape.length !== 2 || g.shape[1] !== n) throw new OmaiError('shape', 'kernelLogisticProblem: k must be square')
+  if (!(lambda > 0)) throw new OmaiError('value', `kernelLogisticProblem: lambda must be positive, got ${lambda}`)
   const t = binaryTargets(y, n, 'kernelLogisticProblem')
   return problemOf(logisticSmooth(Float64Array.from(toFlat(g)), t, n, lambda), new Array<number>(n + 1).fill(0))
 }
@@ -237,8 +237,8 @@ const logisticSchema = {
  * @index estimator Kernel logistic regression.
  * @example
  * ```ts
- * import { kernelLogisticRegression } from 'mdml-engine/kernel-methods'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { kernelLogisticRegression } from 'omai-engine/kernel-methods'
+ * import { toFlat } from 'omai-engine/tensor'
  * const x = [[0.1, 0], [0, 0.2], [-0.1, 0], [2, 0], [0, 2.1], [-2, 0]]
  * const fit = kernelLogisticRegression({ gamma: 0.5, lambda: 0.1 }).fit({ x, y: [0, 0, 0, 1, 1, 1] })
  * toFlat(fit.predict([[0.05, 0.05], [1.9, 0.3]])) // => [0, 1]
@@ -265,7 +265,7 @@ export function kernelLogisticRegression(
         }),
       algorithm: (data, h, key) => {
         const s = classificationSetup(data, h, who)
-        if (!(h.lambda > 0)) throw new MdmlError('value', `${who}: lambda must be positive, got ${h.lambda}`)
+        if (!(h.lambda > 0)) throw new OmaiError('value', `${who}: lambda must be positive, got ${h.lambda}`)
         const t = binaryTargets(data.y ?? [], s.n, who)
         const smooth = logisticSmooth(s.gram, t, s.n, h.lambda)
         return slotted<KernelLogisticState>({
@@ -401,7 +401,7 @@ function importFit(
  * @reference J. Zhu and T. Hastie, Kernel logistic regression and the import vector machine (J. Comp. Graph. Stat. 14, 2005).
  * @example
  * ```ts
- * import { importVectorMachine } from 'mdml-engine/kernel-methods'
+ * import { importVectorMachine } from 'omai-engine/kernel-methods'
  * const x = [[0.1, 0], [0, 0.2], [-0.1, 0], [2, 0], [0, 2.1], [-2, 0], [2, 2], [0.2, 0.1]]
  * const fit = importVectorMachine({ gamma: 0.5, nImport: 3 }).fit({ x, y: [0, 0, 0, 1, 1, 1, 1, 0] })
  * fit.params.centres.length // => 3
@@ -428,9 +428,9 @@ export function importVectorMachine(
         }),
       algorithm: (data, h, key): Algorithm<ImportVectorState> => {
         const s = classificationSetup(data, h, who)
-        if (!(h.lambda > 0)) throw new MdmlError('value', `${who}: lambda must be positive, got ${h.lambda}`)
+        if (!(h.lambda > 0)) throw new OmaiError('value', `${who}: lambda must be positive, got ${h.lambda}`)
         if (!Number.isInteger(h.nImport) || h.nImport < 1)
-          throw new MdmlError('value', `${who}: nImport must be a positive integer`)
+          throw new OmaiError('value', `${who}: nImport must be a positive integer`)
         const t = binaryTargets(data.y ?? [], s.n, who)
         const rng = resolveKey({ key }, 'importVectorMachine')
         const order = Array.from(permutation(rng, s.n).data)
@@ -668,8 +668,8 @@ function leastSquaresEstimator<
     const s = classificationSetup(data, h, who)
     const c = weightOf(h)
     if (!(c > 0) || !Number.isFinite(c))
-      throw new MdmlError('value', `${who}: the regularisation must be positive, got ${label}`)
-    if (s.classes.length < 2) throw new MdmlError('value', `${who}: need at least two classes`)
+      throw new OmaiError('value', `${who}: the regularisation must be positive, got ${label}`)
+    if (s.classes.length < 2) throw new OmaiError('value', `${who}: need at least two classes`)
     const { t, cols } = signTargets(s.codes, s.classes.length)
     return { s, t, cols, c }
   }
@@ -734,8 +734,8 @@ function leastSquaresEstimator<
  *   Letters 9, 1999).
  * @example
  * ```ts
- * import { lssvm } from 'mdml-engine/kernel-methods'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { lssvm } from 'omai-engine/kernel-methods'
+ * import { toFlat } from 'omai-engine/tensor'
  * const x = [[0.1, 0], [0, 0.2], [-0.1, 0], [2, 0], [0, 2.1], [-2, 0]]
  * const fit = lssvm({ gamma: 0.5, regularisation: 10 }).fit({ x, y: [0, 0, 0, 1, 1, 1] })
  * toFlat(fit.predict([[0.05, 0.05], [1.9, 0.3]])) // => [0, 1]
@@ -776,8 +776,8 @@ export interface KernelRidgeClassifierHyper extends KernelOptions {
  * @concept kernel-classifiers
  * @example
  * ```ts
- * import { kernelRidgeClassifier } from 'mdml-engine/kernel-methods'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { kernelRidgeClassifier } from 'omai-engine/kernel-methods'
+ * import { toFlat } from 'omai-engine/tensor'
  * const x = [[0, 0], [0.2, 0.1], [3, 3], [3.1, 2.8], [-3, 3], [-2.9, 3.2]]
  * const fit = kernelRidgeClassifier({ gamma: 0.3, alpha: 0.1 }).fit({ x, y: [0, 0, 1, 1, 2, 2] })
  * toFlat(fit.predict([[0.1, 0.1], [3, 3.1], [-3, 3]])) // => [0, 1, 2]

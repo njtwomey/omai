@@ -6,7 +6,7 @@
  * for superadditivity and convexity.
  */
 
-import { MdmlError, meanOf, popcount, varianceOf } from '../base/index.ts'
+import { meanOf, OmaiError, popcount, varianceOf } from '../base/index.ts'
 import { foldIn, type Key, key as makeKey, permutation } from '../random/index.ts'
 import { dict, type OptionTable, optionTable } from '../space/index.ts'
 import { toFlat } from '../tensor/index.ts'
@@ -44,7 +44,7 @@ const MAX_PLAYERS = 24
  * @returns The members.
  * @example
  * ```ts
- * import { membersOf } from 'mdml-engine/games'
+ * import { membersOf } from 'omai-engine/games'
  * membersOf(0b101, 3) // => [0, 2]
  * ```
  */
@@ -62,11 +62,11 @@ export function membersOf(mask: number, n: number): number[] {
  * @param value - `v(members)`, or the `2^n` worths by bitmask.
  * @param options - Player names (default `'0', '1', ...`).
  * @returns The game (the empty coalition is worth 0).
- * @throws MdmlError with code `value` for too many players or a table of the wrong length.
+ * @throws OmaiError with code `value` for too many players or a table of the wrong length.
  * @concept coalitional-game
  * @example
  * ```ts
- * import { coalitionalGame } from 'mdml-engine/games'
+ * import { coalitionalGame } from 'omai-engine/games'
  * const g = coalitionalGame(2, (s) => (s.length === 2 ? 10 : 0))
  * Array.from(g.values) // => [0, 0, 0, 10]
  * ```
@@ -77,16 +77,16 @@ export function coalitionalGame(
   options: { readonly players?: readonly string[] } = {},
 ): CoalitionalGame {
   if (!Number.isInteger(n) || n < 1 || n > MAX_PLAYERS)
-    throw new MdmlError('value', `coalitionalGame: between 1 and ${MAX_PLAYERS} players`)
+    throw new OmaiError('value', `coalitionalGame: between 1 and ${MAX_PLAYERS} players`)
   const size = 2 ** n
   const values = new Float64Array(size)
   if (typeof value === 'function') for (let m = 1; m < size; m++) values[m] = value(membersOf(m, n))
   else {
-    if (value.length !== size) throw new MdmlError('value', `coalitionalGame: ${size} worths expected`)
+    if (value.length !== size) throw new OmaiError('value', `coalitionalGame: ${size} worths expected`)
     for (let m = 1; m < size; m++) values[m] = value[m] ?? 0
   }
   const players = options.players ?? Array.from({ length: n }, (_, i) => String(i))
-  if (players.length !== n) throw new MdmlError('value', 'coalitionalGame: one name per player')
+  if (players.length !== n) throw new OmaiError('value', 'coalitionalGame: one name per player')
   return { n, values, players }
 }
 
@@ -98,7 +98,7 @@ export function coalitionalGame(
  * @returns `v(members)`.
  * @example
  * ```ts
- * import { coalitionValue, gloveGame } from 'mdml-engine/games'
+ * import { coalitionValue, gloveGame } from 'omai-engine/games'
  * coalitionValue(gloveGame(1, 2), [0, 2]) // => 1
  * ```
  */
@@ -118,7 +118,7 @@ export function coalitionValue(game: CoalitionalGame, members: readonly number[]
  * @concept voting-power
  * @example
  * ```ts
- * import { shapleyValue, weightedVotingGame } from 'mdml-engine/games'
+ * import { shapleyValue, weightedVotingGame } from 'omai-engine/games'
  * shapleyValue(weightedVotingGame(51, [50, 49, 1])) // => [0.6666666666666666, 0.16666666666666666, 0.16666666666666666]
  * ```
  */
@@ -147,7 +147,7 @@ export function weightedVotingGame(
  * @returns The game.
  * @example
  * ```ts
- * import { gloveGame, shapleyValue } from 'mdml-engine/games'
+ * import { gloveGame, shapleyValue } from 'omai-engine/games'
  * shapleyValue(gloveGame(1, 2)).map((v) => Math.round(v * 1e9) / 1e9) // => [0.666666667, 0.166666667, 0.166666667]
  * ```
  */
@@ -170,7 +170,7 @@ export function gloveGame(left: number, right: number): CoalitionalGame {
  * @concept nucleolus
  * @example
  * ```ts
- * import { bankruptcyGame, coalitionValue } from 'mdml-engine/games'
+ * import { bankruptcyGame, coalitionValue } from 'omai-engine/games'
  * coalitionValue(bankruptcyGame(200, [100, 200, 300]), [2]) // => 0
  * ```
  */
@@ -193,7 +193,7 @@ export function bankruptcyGame(estate: number, claims: readonly number[]): Coali
  * @returns The game.
  * @example
  * ```ts
- * import { shapleyValue, unanimityGame } from 'mdml-engine/games'
+ * import { shapleyValue, unanimityGame } from 'omai-engine/games'
  * shapleyValue(unanimityGame(3, [0, 2])) // => [0.5, 0, 0.5]
  * ```
  */
@@ -230,7 +230,7 @@ function shapleyWeights(n: number): Float64Array {
  * @concept shapley-value
  * @example
  * ```ts
- * import { coalitionalGame, shapleyValue } from 'mdml-engine/games'
+ * import { coalitionalGame, shapleyValue } from 'omai-engine/games'
  * shapleyValue(coalitionalGame(3, (s) => (s.length >= 2 ? 1 : 0))).map((v) => Math.round(v * 1e12) / 1e12) // => [0.333333333333, 0.333333333333, 0.333333333333]
  * ```
  */
@@ -259,7 +259,7 @@ export function shapleyValue(game: CoalitionalGame): number[] {
  * @concept shapley-value
  * @example
  * ```ts
- * import { coalitionalGame, shapleyInteractionIndex } from 'mdml-engine/games'
+ * import { coalitionalGame, shapleyInteractionIndex } from 'omai-engine/games'
  * // Two players worth something only together: complements.
  * shapleyInteractionIndex(coalitionalGame(2, (s) => (s.length === 2 ? 1 : 0))) // => [[0.5, 1], [1, 0.5]]
  * ```
@@ -312,7 +312,7 @@ export interface OrderSamplerProperties {
  * @concept shapley-value
  * @example
  * ```ts
- * import { orderSamplers } from 'mdml-engine/games'
+ * import { orderSamplers } from 'omai-engine/games'
  * orderSamplers.where((p) => p.antithetic) // => ['antithetic']
  * ```
  */
@@ -410,12 +410,12 @@ function shapleyEstimate(draws: readonly (readonly number[])[]): { values: numbe
  * @param value - The worth of a coalition given its members (ascending), or a tabulated game.
  * @param options - The number of orders, the key and `antithetic` pairing.
  * @returns The algorithm; it is done after `samples` steps.
- * @throws MdmlError with code `value` for fewer than one sample.
+ * @throws OmaiError with code `value` for fewer than one sample.
  * @concept shapley-value
  * @example
  * ```ts
- * import { gloveGame, sampledShapleyAlgorithm } from 'mdml-engine/games'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { gloveGame, sampledShapleyAlgorithm } from 'omai-engine/games'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const run = runAlgorithm(sampledShapleyAlgorithm(3, gloveGame(1, 2), { samples: 50 }), { maxSteps: 50 })
  * [run.state.t, run.state.draws.length] // => [50, 3]
  * ```
@@ -426,7 +426,7 @@ export function sampledShapleyAlgorithm(
   options: SampledShapleyOptions = {},
 ): Algorithm<SampledShapleyState, ShapleyPath> {
   const samples = options.samples ?? 1000
-  if (!(samples >= 1)) throw new MdmlError('value', 'sampledShapley: at least one sample is needed')
+  if (!(samples >= 1)) throw new OmaiError('value', 'sampledShapley: at least one sample is needed')
   const worth =
     typeof value === 'function'
       ? (members: readonly number[]): number => value([...members].sort((a, b) => a - b))
@@ -475,11 +475,11 @@ export function sampledShapleyAlgorithm(
  * @param value - The worth of a coalition given its members (ascending), or a tabulated game.
  * @param options - The number of orders and the key.
  * @returns Estimates and standard errors.
- * @throws MdmlError with code `value` for fewer than one sample.
+ * @throws OmaiError with code `value` for fewer than one sample.
  * @concept shapley-value
  * @example
  * ```ts
- * import { gloveGame, sampledShapley } from 'mdml-engine/games'
+ * import { gloveGame, sampledShapley } from 'omai-engine/games'
  * const r = sampledShapley(3, gloveGame(1, 2), { samples: 2000 })
  * Math.abs(r.values[0] - 2 / 3) < 4 * r.standardErrors[0] // => true
  * ```
@@ -505,7 +505,7 @@ export function sampledShapley(
  * @concept voting-power
  * @example
  * ```ts
- * import { banzhafIndex, weightedVotingGame } from 'mdml-engine/games'
+ * import { banzhafIndex, weightedVotingGame } from 'omai-engine/games'
  * banzhafIndex(weightedVotingGame(51, [50, 49, 1]), { normalised: true }) // => [0.6, 0.2, 0.2]
  * ```
  */
@@ -531,7 +531,7 @@ export function banzhafIndex(game: CoalitionalGame, options: { readonly normalis
  * @returns Whether every disjoint pair satisfies the inequality.
  * @example
  * ```ts
- * import { gloveGame, isSuperadditive } from 'mdml-engine/games'
+ * import { gloveGame, isSuperadditive } from 'omai-engine/games'
  * isSuperadditive(gloveGame(2, 2)) // => true
  * ```
  */
@@ -557,7 +557,7 @@ export function isSuperadditive(game: CoalitionalGame, tol = 1e-12): boolean {
  * @concept core
  * @example
  * ```ts
- * import { coalitionalGame, isConvex } from 'mdml-engine/games'
+ * import { coalitionalGame, isConvex } from 'omai-engine/games'
  * [isConvex(coalitionalGame(3, (s) => s.length ** 2)), isConvex(coalitionalGame(3, (s) => (s.length >= 2 ? 1 : 0)))] // => [true, false]
  * ```
  */

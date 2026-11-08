@@ -3,12 +3,12 @@
 from typing import Literal
 
 import numpy as np
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import rng
 
 REFERENCE: dict[str, str] = {"numpy": np.__version__}
 
-# numpy.linalg.norm orders, with the labels the TypeScript test maps back to mdml-js orders.
+# numpy.linalg.norm orders, with the labels the TypeScript test maps back to omai orders.
 MATRIX_ORDERS: list[tuple[str, Literal["fro", "nuc"] | float]] = [
     ("fro", "fro"),
     ("nuc", "nuc"),

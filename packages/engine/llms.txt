@@ -1,11 +1,11 @@
-# mdml-engine
+# omai-engine
 
 > A TypeScript library of numerics, probability, learning, neural networks, RL and datasets. Every iterative routine is
 > an `Algorithm` that records a trace. This index lists the main things in `src/lib`; it is short on purpose and grows
 > as things are indexed. The source is the reference.
 
-Rendering of its records, traces and sessions (figures, views, players, React bindings) lives in mdml-render: see the
-`llms.txt` of mdml-render (`packages/render/llms.txt` in the repository, `node_modules/mdml-render/llms.txt` once
+Rendering of its records, traces and sessions (figures, views, players, React bindings) lives in omai-render: see the
+`llms.txt` of omai-render (`packages/render/llms.txt` in the repository, `node_modules/omai-render/llms.txt` once
 installed).
 
 ## How to use this index
@@ -22,14 +22,14 @@ carries its truth), `distribution`, `kernel`, `agent`. A "(file)" entry is a hub
 
 ## Conventions you need
 
-- Import from an entry point, not a file: `import { solve } from 'mdml-engine/numerics/linalg'`. Every folder under
-  `src/lib` is an import path (`mdml-engine/<domain>`, and `mdml-engine/<domain>/<subfolder>` for a namespace). Inside the
+- Import from an entry point, not a file: `import { solve } from 'omai-engine/numerics/linalg'`. Every folder under
+  `src/lib` is an import path (`omai-engine/<domain>`, and `omai-engine/<domain>/<subfolder>` for a namespace). Inside the
   library, relative imports carry the `.ts` extension. Resolving packages to TypeScript source needs the `source`
   condition (`node --conditions=source`).
-- Randomness is explicit: an immutable `Key` from `mdml-engine/random` (`key(seed)`, `split(k, n)`, `foldIn(k, i)`).
+- Randomness is explicit: an immutable `Key` from `omai-engine/random` (`key(seed)`, `split(k, n)`, `foldIn(k, i)`).
   There is no `Math.random`, no clock and no hidden state; the same key gives the same draw.
 - Tensors are plain arrays outside a transform. Differentiation is opt-in per call, JAX style: `grad(f)(x)`,
-  `vmap`, `jvp`, `hessian` from `mdml-engine/autodiff`.
+  `vmap`, `jvp`, `hessian` from `omai-engine/autodiff`.
 - Estimators are configured, not subclassed. `linearModel({ family: 'binomial', alpha: 0.01 }).fit({ x, y })` returns a
   fitted value with its verbs (`predict`, `score`), `params` and `exposition` records. Logistic, ridge and lasso
   regression are configurations of `linearModel`, not separate exports. Hyperparameters can be changed with
@@ -41,7 +41,7 @@ carries its truth), `distribution`, `kernel`, `agent`. A "(file)" entry is a hub
 
 ## Algorithms, runs and the log contract
 
-- An `Algorithm` (`mdml-engine/trace`) is `{ name, config, init(key), step(state, ctx), done?, observe? }`.
+- An `Algorithm` (`omai-engine/trace`) is `{ name, config, init(key), step(state, ctx), done?, observe? }`.
   `runAlgorithm(algorithm, { seed, maxSteps, tracer })` runs it and records a trace; `iterate` and `runFor` step it
   lazily or in time slices. Step `t` gets the key `foldIn(stepsKey, t)`, so a run is the same however it was paused.
 - A step reports through `ctx.log(path, value)` (metrics, tensors) and `ctx.emit(event)`. Paths such as
@@ -51,8 +51,8 @@ carries its truth), `distribution`, `kernel`, `agent`. A "(file)" entry is a hub
 - `session(method, { mode: 'eager' | 'live', steps, seed, logs })` runs a method and keeps the tape: `advance`,
   `stateAt(t)`, `fork(t)`, `probe`, and `metricSeries(session.run(), 'path')` to read a series. Estimators on the
   iterative, trainer, agent and sweep bases carry `.method` and `.session` for free; `fit` is a session run to completion.
-- Explanations come back as typed exposition records (`mdml-engine/exposition`) beside the result, never as logging.
-- Errors are `MdmlError` with a machine-readable code. Test files sit next to code (`foo.test.ts`); fixtures are generated
+- Explanations come back as typed exposition records (`omai-engine/exposition`) beside the result, never as logging.
+- Errors are `OmaiError` with a machine-readable code. Test files sit next to code (`foo.test.ts`); fixtures are generated
   from a Python oracle and tests never run Python.
 
 ## Where to look
@@ -66,7 +66,7 @@ carries its truth), `distribution`, `kernel`, `agent`. A "(file)" entry is a hub
 - [agents](index/agents.md): The reinforcement-learning agents, constructables over the contracts of `rl`: tabular and deep value-based learners, policy gradients and actor-critics, distributional, model-based and planning agents, offline, imitation, hierarchical ... (7 entries)
 - [anomaly](index/anomaly.md): Anomaly and outlier detection: the isolation forest and extended isolation forest grown one tree per step on the iterative base, neighbour-based detectors (the local outlier factor, connectivity-based outlier factor and k-nearest-neighbour distance) ... (2 entries)
 - [autodiff](index/autodiff.md): Differentiation as function transforms, JAX style: reverse mode (`grad`, `vjp`, `valueAndGrad`), forward mode (`jvp`), Taylor mode for higher derivatives, Jacobians and Hessians, vectorisation (`vmap`) ... (9 entries)
-- [base](index/base.md): The foundation every other domain builds on: the library's error type `MdmlError` and its codes, the `Registry` shape that the dataset and environment registries share, JSON helpers, shared result records (`Estimate`, `TestResult`, `MetricResult`) ... (4 entries)
+- [base](index/base.md): The foundation every other domain builds on: the library's error type `OmaiError` and its codes, the `Registry` shape that the dataset and environment registries share, JSON helpers, shared result records (`Estimate`, `TestResult`, `MetricResult`) ... (4 entries)
 - [causal](index/causal.md): Causal inference from data: estimators of average treatment effects (regression adjustment, propensity scores and inverse probability weighting, matching, stratification, entropy balancing, AIPW, TMLE and double machine learning) ... (5 entries)
 - [cluster](index/cluster.md): Clustering as traced `Algorithm`s with estimators on the iterative base: k-means (Lloyd, mini-batch, Elkan's bounds, bisecting, kernel), density clustering (DBSCAN, OPTICS, HDBSCAN with its condensed tree, mean shift) ... (9 entries)
 - [context](index/context.md): Reproducibility and defaults in one place: a `Context` holds a seed and derives named keys from it, together with the default tracer and trace policy, so higher-level functions can take `{ ctx }` instead of threading keys and options by hand. (1 entry)
@@ -128,7 +128,7 @@ carries its truth), `distribution`, `kernel`, `agent`. A "(file)" entry is a hub
 - [trace](index/trace.md): Recording what algorithms do and running them as sessions: the `Algorithm` contract (init and step) and `runAlgorithm`; the log contract (`defineContract`) that declares the paths a method can log and hook ... (11 entries)
 - [trees](index/trees.md): Decision trees: the fitted tree as arrays (prediction, decision paths, node regions, importances, drawing and text), the split criteria and split search, the grower as a stepped algorithm that records every candidate split ... (2 entries)
 - [tune](index/tune.md): Parameter selection for anything, Optuna style: studies of trials over spaces, objectives, samplers (grid, random, quasi-random, CMA-ES, Nelder-Mead, evolutionary, TPE, Gaussian-process Bayesian optimisation), pruners, multi-fidelity schedules ... (5 entries)
-- [vision](index/vision.md): Classical computer vision, OpenCV-shaped, available as `mdml-engine/vision`: colour spaces and balance, histograms and equalisation, thresholds, contours and shape descriptors, drawing, keypoints and descriptors with matching ... (10 entries)
+- [vision](index/vision.md): Classical computer vision, OpenCV-shaped, available as `omai-engine/vision`: colour spaces and balance, histograms and equalisation, thresholds, contours and shape descriptors, drawing, keypoints and descriptors with matching ... (10 entries)
 - [worlds](index/worlds.md): Discrete worlds shared by search, reinforcement learning and graphics: grid, hexagonal and graph maps with walls, terrain and items, ASCII maps, rules and transition models, keyed maze and level generators, textbook worlds ... (2 entries)
 
 ## For tools

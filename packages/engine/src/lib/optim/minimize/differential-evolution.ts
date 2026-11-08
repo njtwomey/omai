@@ -4,7 +4,7 @@
  * strategies, crossover, constraints and optional local polishing, as a traced algorithm.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { metricFunction } from '../../numerics/geometry/index.ts'
 import { Generator, halton, latinHypercube } from '../../random/index.ts'
 import { fromStorage, toFlat, type Value } from '../../tensor/index.ts'
@@ -137,8 +137,8 @@ function stats(energies: Float64Array): { mean: number; std: number } {
  * @concept differential-evolution
  * @example
  * ```ts
- * import { differentialEvolutionAlgorithm } from 'mdml-engine/optim'
- * import { square, sum, type Value } from 'mdml-engine/tensor'
+ * import { differentialEvolutionAlgorithm } from 'omai-engine/optim'
+ * import { square, sum, type Value } from 'omai-engine/tensor'
  * differentialEvolutionAlgorithm((x) => sum(square(x as Value)), [0, 0], { bounds: [[-1, 1], [-1, 1]] }).name // => 'differentialEvolution'
  * ```
  */
@@ -149,7 +149,7 @@ export function differentialEvolutionAlgorithm(
 ): Algorithm<DifferentialEvolutionState> {
   const obj = flatObjective(f, x0)
   const n = obj.n
-  if (n === 0) throw new MdmlError('value', 'differentialEvolution: no parameters')
+  if (n === 0) throw new OmaiError('value', 'differentialEvolution: no parameters')
   const euclid = metricFunction('euclidean', n)
   const box = finiteBounds(options.bounds, n, 'differentialEvolution')
   const mid = Float64Array.from(box.lower, (l, i) => 0.5 * (l + (box.upper[i] ?? 0)))
@@ -184,7 +184,7 @@ export function differentialEvolutionAlgorithm(
               })
           : defaultLocal
   if (members < (strategy.includes('2') ? 6 : 4))
-    throw new MdmlError('value', 'differentialEvolution: the population is too small for the strategy')
+    throw new OmaiError('value', 'differentialEvolution: the population is too small for the strategy')
 
   const violation = (x: Float64Array): Float64Array => {
     if (constraints.length === 0) return EMPTY
@@ -324,7 +324,7 @@ export function differentialEvolutionAlgorithm(
       const init = options.init ?? 'latinhypercube'
       if (typeof init !== 'string') {
         if (init.length < 5 || init.some((p) => p.length !== n))
-          throw new MdmlError('shape', `differentialEvolution: init needs at least 5 points of length ${n}`)
+          throw new OmaiError('shape', `differentialEvolution: init needs at least 5 points of length ${n}`)
         unit = init.map((p) => clipInto(unscale(p), { lower: new Float64Array(n), upper: new Float64Array(n).fill(1) }))
       } else {
         const t =
@@ -442,8 +442,8 @@ export function differentialEvolutionAlgorithm(
  * @index function Population-based global minimiser.
  * @example
  * ```ts
- * import { differentialEvolution } from 'mdml-engine/optim'
- * import { square, sub, sum, toFlat, type Value } from 'mdml-engine/tensor'
+ * import { differentialEvolution } from 'omai-engine/optim'
+ * import { square, sub, sum, toFlat, type Value } from 'omai-engine/tensor'
  * const r = differentialEvolution((x) => sum(square(sub(x as Value, [1, -2]))), [0, 0], {
  *   bounds: [[-5, 5], [-5, 5]],
  *   seed: 0,

@@ -5,7 +5,7 @@
  * Jacobian.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { foldIn, type Key, normal } from '../../random/index.ts'
 import {
   add,
@@ -55,8 +55,8 @@ const keyAt =
  * @concept diffusion-models
  * @example
  * ```ts
- * import { blocks } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { blocks } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(blocks.timestepEmbedding([0], 4)) // => [[1, 1, 0, 0]]
  * ```
  */
@@ -83,8 +83,8 @@ export function timestepEmbedding(t: TensorLike, dim: number, maxPeriod = 10000)
  * @returns `[B, dim]`.
  * @example
  * ```ts
- * import { blocks } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
+ * import { blocks } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
  * blocks.noiseLevelEmbedding([0.5, 2], blocks.fourierFrequencies(key(0), 8)).shape // => [2, 8]
  * ```
  */
@@ -104,8 +104,8 @@ export function noiseLevelEmbedding(sigma: TensorLike, frequencies: TensorLike):
  * @returns `[dim / 2]`.
  * @example
  * ```ts
- * import { blocks } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
+ * import { blocks } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
  * blocks.fourierFrequencies(key(0), 8).shape // => [4]
  * ```
  */
@@ -119,7 +119,7 @@ export function fourierFrequencies(key: Key, dim: number, scale = 16): Tensor {
  *
  * @example
  * ```ts
- * import { blocks } from 'mdml-engine/nn'
+ * import { blocks } from 'omai-engine/nn'
  * new blocks.TimeEmbedding(8, 32).forward([1, 500]).shape // => [2, 32]
  * ```
  */
@@ -160,8 +160,8 @@ export interface DiffusionInput {
  * @reference Ho, Jain and Abbeel (2020), Denoising diffusion probabilistic models.
  * @example
  * ```ts
- * import { blocks } from 'mdml-engine/nn'
- * import { zeros } from 'mdml-engine/tensor'
+ * import { blocks } from 'omai-engine/nn'
+ * import { zeros } from 'omai-engine/tensor'
  * new blocks.DiffusionResBlock(4, 8, 16, { groups: 2 }).forward({ x: zeros([1, 4, 4, 4]), t: zeros([1, 16]) }).shape // => [1, 8, 4, 4]
  * ```
  */
@@ -218,8 +218,8 @@ export class DiffusionResBlock extends Composite<DiffusionInput, Value> {
  *
  * @example
  * ```ts
- * import { blocks } from 'mdml-engine/nn'
- * import { zeros } from 'mdml-engine/tensor'
+ * import { blocks } from 'omai-engine/nn'
+ * import { zeros } from 'omai-engine/tensor'
  * new blocks.SpatialSelfAttention(8, { heads: 2, groups: 4 }).forward(zeros([1, 8, 3, 3])).shape // => [1, 8, 3, 3]
  * ```
  */
@@ -242,7 +242,7 @@ export class SpatialSelfAttention extends Composite {
     })
     this.channels = channels
     this.heads = options.heads ?? 1
-    if (channels % this.heads !== 0) throw new MdmlError('value', 'SpatialSelfAttention: heads must divide channels')
+    if (channels % this.heads !== 0) throw new OmaiError('value', 'SpatialSelfAttention: heads must divide channels')
   }
 
   apply(params: Params, x: Value, ctx: ApplyContext = {}): Value {
@@ -292,8 +292,8 @@ export interface DownStageOutput {
  * @concept diffusion-models
  * @example
  * ```ts
- * import { blocks } from 'mdml-engine/nn'
- * import { zeros } from 'mdml-engine/tensor'
+ * import { blocks } from 'omai-engine/nn'
+ * import { zeros } from 'omai-engine/tensor'
  * const s = new blocks.DiffusionDownStage(4, 8, 16, { groups: 2, attention: true })
  * s.forward({ x: zeros([1, 4, 8, 8]), t: zeros([1, 16]) }).output.shape // => [1, 8, 4, 4]
  * ```
@@ -391,8 +391,8 @@ export interface UpStageInput extends DiffusionInput {
  * @concept diffusion-models
  * @example
  * ```ts
- * import { blocks } from 'mdml-engine/nn'
- * import { zeros } from 'mdml-engine/tensor'
+ * import { blocks } from 'omai-engine/nn'
+ * import { zeros } from 'omai-engine/tensor'
  * const s = new blocks.DiffusionUpStage(8, [4, 4], 4, 16, { groups: 2 })
  * s.forward({ x: zeros([1, 8, 4, 4]), t: zeros([1, 16]), skips: [zeros([1, 4, 4, 4]), zeros([1, 4, 4, 4])] }).shape // => [1, 4, 8, 8]
  * ```
@@ -454,7 +454,7 @@ export class DiffusionUpStage extends Composite<UpStageInput, Value> {
     const p = this.parts(params, ctx)
     const resnets = this.part<ModuleList<Module<DiffusionInput, Value>>>('resnets').modules
     const attns = this.has('attentions') ? this.part<ModuleList<Module>>('attentions').modules : []
-    if (input.skips.length !== resnets.length) throw new MdmlError('value', 'DiffusionUpStage: one skip per layer')
+    if (input.skips.length !== resnets.length) throw new OmaiError('value', 'DiffusionUpStage: one skip per layer')
     const rp = (params['resnets'] ?? {}) as Params
     const ap = (params['attentions'] ?? {}) as Params
     const t = asTensor(input.t)
@@ -499,8 +499,8 @@ const checkerMask = (dim: number, parity: number): Tensor =>
  * @reference Dinh, Sohl-Dickstein and Bengio (2017), Density estimation using Real NVP.
  * @example
  * ```ts
- * import { blocks, Linear } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
+ * import { blocks, Linear } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
  * new blocks.AffineCoupling(new Linear(4, 8, { key: key(0) }), 4).forward([[1, 2, 3, 4]]).logDet.shape // => [1]
  * ```
  */
@@ -553,8 +553,8 @@ export class AffineCoupling extends Composite<Value, CouplingOutput> {
  * @reference Dinh, Krueger and Bengio (2015), NICE: non-linear independent components estimation.
  * @example
  * ```ts
- * import { blocks, Linear } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
+ * import { blocks, Linear } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
  * new blocks.AdditiveCoupling(new Linear(2, 2, { key: key(0) }), 2).forward([[1, 2]]).output.shape // => [1, 2]
  * ```
  */

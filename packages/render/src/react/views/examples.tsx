@@ -2,7 +2,7 @@
  * React views of example-based and contrastive records: the counterfactual table and the prototypes and criticisms.
  */
 
-import type { CounterfactualSet, PrototypeSet } from 'mdml-engine/exposition'
+import type { CounterfactualSet, PrototypeSet } from 'omai-engine/exposition'
 import { type ReactElement, useCallback, useMemo } from 'react'
 import { type Figure, figure as makeFigure } from '../../figure/figure.ts'
 import { counterfactualTableHeight, counterfactualTableView, prototypeView } from '../../views/examples.ts'

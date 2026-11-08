@@ -1,4 +1,4 @@
-# mdml pocs
+# omai pocs
 
 Proofs of concept: single live pages of what the library can do, kept out of the site. `make pocs` serves them at
 http://localhost:5310 (the site is `make dev`, port 5300). The shell, colours and controls are the site's own (the app

@@ -7,8 +7,8 @@ from importlib.metadata import version
 import numpy as np
 import patsy
 import scipy
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import rng
 from scipy.interpolate import BSpline
 
 REFERENCE: dict[str, str] = {"patsy": version("patsy"), "scipy": scipy.__version__}

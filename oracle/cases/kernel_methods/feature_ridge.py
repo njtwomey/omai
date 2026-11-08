@@ -1,11 +1,11 @@
 """Ridge regression in explicit kernel feature spaces against scikit-learn: Nystroem and RBFSampler pipelines with Ridge
-(given the same landmarks and random draws), and the exact leave-one-out squared errors of RidgeCV, which mdml-js's
+(given the same landmarks and random draws), and the exact leave-one-out squared errors of RidgeCV, which omai's
 kernel-selection criterion reproduces on the Gram matrix of the same features."""
 
 import numpy as np
 import sklearn
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import rng, uniform
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import rng, uniform
 from sklearn.kernel_approximation import Nystroem, RBFSampler
 from sklearn.linear_model import Ridge, RidgeCV
 

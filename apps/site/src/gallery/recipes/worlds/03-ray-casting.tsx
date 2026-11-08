@@ -1,6 +1,6 @@
-import { bakeTexture, bricks } from 'mdml-engine/graphics'
-import { fromAscii, type Pose } from 'mdml-engine/worlds'
-import { raycastViews } from 'mdml-render/gym'
+import { bakeTexture, bricks } from 'omai-engine/graphics'
+import { fromAscii, type Pose } from 'omai-engine/worlds'
+import { raycastViews } from 'omai-render/gym'
 import {
   ControlPanel,
   DraggablePoints,
@@ -12,7 +12,7 @@ import {
   SceneView,
   Toggle,
   useHeldKeys,
-} from 'mdml-render/react'
+} from 'omai-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 

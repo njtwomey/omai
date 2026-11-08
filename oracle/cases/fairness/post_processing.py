@@ -7,8 +7,8 @@ import aif360
 import fairlearn
 import numpy as np
 from fairlearn.postprocessing import ThresholdOptimizer
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray, rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray, rng
 from sklearn.base import BaseEstimator, ClassifierMixin
 
 REFERENCE: dict[str, str] = {"fairlearn": fairlearn.__version__, "aif360": aif360.__version__}
@@ -77,7 +77,7 @@ def cases() -> list[Case]:
 def aif360_cases() -> list[Case]:
     """Calibrated equalised odds and reject-option classification against AIF360's post-processors."""
     from aif360.algorithms.postprocessing import CalibratedEqOddsPostprocessing, RejectOptionClassification
-    from mdml_oracle.fairness import binary_dataset, with_labels
+    from omai_oracle.fairness import binary_dataset, with_labels
 
     g = rng(87)
     n = 200

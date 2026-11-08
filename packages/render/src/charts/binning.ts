@@ -4,7 +4,7 @@
  */
 
 import type { SeriesOption } from 'echarts'
-import { maxOf } from 'mdml-engine/base'
+import { maxOf } from 'omai-engine/base'
 import { extentOf } from '../figure/limits.ts'
 import { colourScale, sequentialRamp } from '../theme/palettes.ts'
 import type { ColourMode } from '../theme/tokens.ts'
@@ -20,7 +20,7 @@ import { type Layer, layer } from './plot.ts'
  * @returns The layer, with the bins' counts in its series' data.
  * @example
  * ```ts
- * import { hexbin } from 'mdml-render/charts'
+ * import { hexbin } from 'omai-render/charts'
  * hexbin([0, 0.01, 5], [0, 0.01, 5], { radius: 1 }).series[0].data.length // => 2
  * ```
  */

@@ -34,10 +34,10 @@ export interface EnsembleStages {
  *
  * @param stages - The record without its `kind`.
  * @returns The record.
- * @throws MdmlError `shape` when the per-stage columns differ in length.
+ * @throws OmaiError `shape` when the per-stage columns differ in length.
  * @example
  * ```ts
- * import { ensembleStages } from 'mdml-engine/exposition'
+ * import { ensembleStages } from 'omai-engine/exposition'
  * ensembleStages({ method: 'adaboost', weights: [0.8, 0.5], trainScores: [0.7, 0.85] }).method // => 'adaboost'
  * ```
  */

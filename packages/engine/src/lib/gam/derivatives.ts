@@ -6,7 +6,7 @@
  * combination of the coefficients, so its band comes from the posterior covariance exactly as the band of the effect does.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { matrixView } from '../learn/index.ts'
 import type { TensorLike } from '../tensor/index.ts'
 import { type Band, type BandOptions, bandFromDesign, type GamFitContext } from './inference.ts'
@@ -34,7 +34,7 @@ export interface TermPredictions {
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { GAM_DEFAULTS, fitContext, fitGam, gamProblem, linear, predictTermsSe, s } from 'mdml-engine/gam'
+ * import { GAM_DEFAULTS, fitContext, fitGam, gamProblem, linear, predictTermsSe, s } from 'omai-engine/gam'
  * const x = Array.from({ length: 40 }, (_, i) => [i / 39, (i * 7) % 5])
  * const hyper = { ...GAM_DEFAULTS, terms: [s(0, { k: 5 }), linear(1)] }
  * const problem = gamProblem(x, x.map((r, i) => (r[0] ?? 0) + 0.1 * (r[1] ?? 0) + 0.05 * Math.sin(i)), hyper)
@@ -87,7 +87,7 @@ function covariateRange(ctx: GamFitContext, feature: number): { lo: number; hi: 
   const data = ctx.problem.covariates
   const d = ctx.problem.design.nFeatures
   if (data === undefined)
-    throw new MdmlError('value', 'gam: the problem carries no covariates (build it with gamProblem)')
+    throw new OmaiError('value', 'gam: the problem carries no covariates (build it with gamProblem)')
   let lo = Number.POSITIVE_INFINITY
   let hi = Number.NEGATIVE_INFINITY
   for (let i = 0; i < data.length / d; i++) {
@@ -102,9 +102,9 @@ function covariateRange(ctx: GamFitContext, feature: number): { lo: number; hi: 
 function termBlockAt(ctx: GamFitContext, term: number, at: ArrayLike<number>): Float64Array {
   const { design } = ctx.problem
   const t = design.terms[term]
-  if (t === undefined) throw new MdmlError('value', `gam: no term ${term}`)
+  if (t === undefined) throw new OmaiError('value', `gam: no term ${term}`)
   if (t.term.kind !== 'smooth' || t.term.features.length !== 1) {
-    throw new MdmlError('value', `gam: ${t.label}: derivatives and differences are for smooths of one covariate`)
+    throw new OmaiError('value', `gam: ${t.label}: derivatives and differences are for smooths of one covariate`)
   }
   const d = design.nFeatures
   const data = new Float64Array(at.length * d)
@@ -141,11 +141,11 @@ export interface DerivativeOptions extends BandOptions {
  * @param at - The values of the covariate.
  * @param options - Order, method, step and the band options.
  * @returns The band of the derivative (the effect's slope, or curvature for order 2).
- * @throws MdmlError `value` for a term that is not a smooth of one covariate.
+ * @throws OmaiError `value` for a term that is not a smooth of one covariate.
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { GAM_DEFAULTS, fitContext, fitGam, gamProblem, s, smoothDerivative } from 'mdml-engine/gam'
+ * import { GAM_DEFAULTS, fitContext, fitGam, gamProblem, s, smoothDerivative } from 'omai-engine/gam'
  * const x = Array.from({ length: 80 }, (_, i) => [i / 79])
  * const hyper = { ...GAM_DEFAULTS, terms: [s(0, { k: 8 })] }
  * const problem = gamProblem(x, x.map((r) => 3 * (r[0] ?? 0) ** 2), hyper)
@@ -160,10 +160,10 @@ export function smoothDerivative(
   options: DerivativeOptions = {},
 ): Band {
   const t = ctx.problem.design.terms[term]
-  if (t === undefined) throw new MdmlError('value', `smoothDerivative: no term ${term}`)
+  if (t === undefined) throw new OmaiError('value', `smoothDerivative: no term ${term}`)
   const spec = t.term
   if (spec.kind !== 'smooth' || spec.features.length !== 1) {
-    throw new MdmlError('value', `gam: ${t.label}: derivatives and differences are for smooths of one covariate`)
+    throw new OmaiError('value', `gam: ${t.label}: derivatives and differences are for smooths of one covariate`)
   }
   const feature = spec.features[0] ?? 0
   const { lo, hi } = covariateRange(ctx, feature)
@@ -184,7 +184,7 @@ export function smoothDerivative(
         })()
       : undefined
   if (options.method === 'exact' && exact === undefined) {
-    throw new MdmlError('value', `smoothDerivative: the basis of ${t.label} has no closed-form derivative`)
+    throw new OmaiError('value', `smoothDerivative: the basis of ${t.label} has no closed-form derivative`)
   }
   const stencil = (h: number): Float64Array => {
     // Points x - h, x, x + h per query (shifted inward at the ends), as one block of 3m rows.
@@ -253,7 +253,7 @@ export function smoothDerivative(
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { GAM_DEFAULTS, fitContext, fitGam, gamProblem, s, smoothDifference } from 'mdml-engine/gam'
+ * import { GAM_DEFAULTS, fitContext, fitGam, gamProblem, s, smoothDifference } from 'omai-engine/gam'
  * const x = Array.from({ length: 80 }, (_, i) => [i / 79, i % 2, 1 - (i % 2)])
  * const hyper = { ...GAM_DEFAULTS, terms: [s(0, { k: 5, by: 1, basis: 'cr', label: 'a' }), s(0, { k: 5, by: 2, basis: 'cr', label: 'b' })] }
  * const problem = gamProblem(x, x.map((r) => (r[1] ?? 0) * (r[0] ?? 0) + 0.01 * (r[0] ?? 0)), hyper)
@@ -271,7 +271,7 @@ export function smoothDifference(
   const { design } = ctx.problem
   const ta = design.terms[a]
   const tb = design.terms[b]
-  if (ta === undefined || tb === undefined) throw new MdmlError('value', 'smoothDifference: no such term')
+  if (ta === undefined || tb === undefined) throw new OmaiError('value', 'smoothDifference: no such term')
   const m = at.length
   const p = design.p
   const X = new Float64Array(m * p)

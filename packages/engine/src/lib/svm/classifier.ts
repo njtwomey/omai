@@ -8,7 +8,7 @@
  * minimises it.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { marginRecord } from '../exposition/index.ts'
 import {
   type Kernel,
@@ -96,7 +96,7 @@ export interface SvcHyper {
  *
  * @example
  * ```ts
- * import type { SvmPath } from 'mdml-engine/svm'
+ * import type { SvmPath } from 'omai-engine/svm'
  * const path: SvmPath = 'smo/alphaChanged'
  * path // => 'smo/alphaChanged'
  * ```
@@ -178,7 +178,7 @@ const WHO = 'svc'
 function layoutOf(data: LearnData, h: SvcHyper): Layout {
   const m = matrixView(data.x, WHO)
   const { classes, codes } = encodeLabels(data.y ?? [], WHO, m.n)
-  if (classes.length < 2) throw new MdmlError('value', `${WHO}: needs at least two classes`)
+  if (classes.length < 2) throw new OmaiError('value', `${WHO}: needs at least two classes`)
   const members = classes.map((_, c) => Array.from(codes).flatMap((v, i) => (v === c ? [i] : [])))
   const pairs: Layout['pairs'] = []
   for (let a = 0; a < classes.length; a++) {
@@ -412,9 +412,9 @@ function prepare(
 } {
   const layout = layoutOf(data, h)
   if (h.form === 'nu' && data.weights !== undefined)
-    throw new MdmlError('value', `${WHO}: sample weights are not supported by the nu form`)
+    throw new OmaiError('value', `${WHO}: sample weights are not supported by the nu form`)
   if (h.loss === 'squaredHinge' && h.form === 'nu')
-    throw new MdmlError('value', `${WHO}: the squared hinge is a C form (the nu form has no squared-hinge dual)`)
+    throw new OmaiError('value', `${WHO}: the squared hinge is a C form (the nu form has no squared-hinge dual)`)
   checkSolver(WHO, { kind: svcSolvers.modeOf(h.solver).name }, h.loss)
   const K = kernelMatrix(h, layout.kernel, data.x)
   const C = penalties(data, h, layout)
@@ -453,8 +453,8 @@ function prepare(
  * @index estimator Support vector classifier by SMO over any kernel.
  * @example
  * ```ts
- * import { svc } from 'mdml-engine/svm'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { svc } from 'omai-engine/svm'
+ * import { toFlat } from 'omai-engine/tensor'
  * const fitted = svc.with({ kernel: 'linear', C: 10 }).fit({ x: [[0], [1], [2], [3]], y: [0, 0, 1, 1] })
  * toFlat(fitted.predict([[0.2], [2.8]])) // => [0, 1]
  * fitted.params.nSupport // => [1, 1]
@@ -647,7 +647,7 @@ export const svc: IterativeEstimator<SvcHyper, SvcState, SvcParams, SvcVerbs, Sv
  *
  * @example
  * ```ts
- * import { nuSvc } from 'mdml-engine/svm'
+ * import { nuSvc } from 'omai-engine/svm'
  * nuSvc.fit({ x: [[0], [1], [2], [3]], y: [0, 0, 1, 1] }).classes // => [0, 1]
  * ```
  */

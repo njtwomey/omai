@@ -3,9 +3,9 @@
  * them: a view rendered to static SVG markup, and a tape as the library's tape file.
  */
 
-import type { Timeline } from 'mdml-engine/scene'
-import { encodeGif, timelineFrames } from 'mdml-render/animation'
-import { tapeOf } from 'mdml-render/producer'
+import type { Timeline } from 'omai-engine/scene'
+import { encodeGif, timelineFrames } from 'omai-render/animation'
+import { tapeOf } from 'omai-render/producer'
 import * as React from 'react'
 import { createElement, type ReactElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
@@ -41,7 +41,7 @@ export function renderView<R>(View: (props: { readonly result: R }) => ReactElem
   return renumberZrender(renderToStaticMarkup(createElement(View, { result })))
 }
 
-/** A tape as JSON: a session as a `mdml.tape/1` file (its method, config and events), a recorder's run as it is. */
+/** A tape as JSON: a session as a `omai.tape/1` file (its method, config and events), a recorder's run as it is. */
 export async function tapeJson(name: string, tape: Tape, title: string): Promise<unknown> {
   if (!('advance' in tape)) return tape
   return tapeOf(tape.method.name, [{ label: name, session: tape }], { requests: [], title })

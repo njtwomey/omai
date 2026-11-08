@@ -46,7 +46,7 @@ export interface ParserProperties {
  * @concept parsing
  * @example
  * ```ts
- * import { grammar, parsingStrategies } from 'mdml-engine/text'
+ * import { grammar, parsingStrategies } from 'omai-engine/text'
  * parsingStrategies.make({ kind: 'earley' })(grammar("S -> 'a'"), ['a']).name // => 'text/earley'
  * ```
  */
@@ -102,7 +102,7 @@ function punkt(
  * @concept sentence-segmentation
  * @example
  * ```ts
- * import { punktProfiles } from 'mdml-engine/text'
+ * import { punktProfiles } from 'omai-engine/text'
  * punktProfiles.make({ kind: 'strict' }).abbrev // => 1
  * ```
  */
@@ -126,7 +126,7 @@ export const punktProfiles: OptionTable<PunktTrainingOptions, Record<string, nev
  * @concept byte-pair-encoding
  * @example
  * ```ts
- * import { bpeDropouts } from 'mdml-engine/text'
+ * import { bpeDropouts } from 'omai-engine/text'
  * bpeDropouts.make({ kind: 'light' }).dropout // => 0.1
  * ```
  */

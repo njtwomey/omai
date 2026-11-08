@@ -23,7 +23,7 @@ export interface EliminationScheduleProperties {
  * @concept feature-selection
  * @example
  * ```ts
- * import { eliminationSchedules } from 'mdml-engine/learn'
+ * import { eliminationSchedules } from 'omai-engine/learn'
  * eliminationSchedules.make({ kind: 'fraction', fraction: 0.5 })(10, 2) // => 5
  * eliminationSchedules.make({ kind: 'fixed', step: 3 })(10, 9) // => 1
  * ```

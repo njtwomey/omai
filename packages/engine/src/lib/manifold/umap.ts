@@ -5,7 +5,7 @@
  * one epoch per step.
  */
 
-import { MdmlError, maxOf, minOf } from '../base/index.ts'
+import { maxOf, minOf, OmaiError } from '../base/index.ts'
 import { spectralEmbedding as graphSpectralEmbedding } from '../graph/index.ts'
 import { type IterativeEstimator, iterative, matrixView } from '../learn/index.ts'
 import { curveFit } from '../optim/index.ts'
@@ -36,7 +36,7 @@ import { neighbourEdges } from './isomap.ts'
  * @returns a and b.
  * @example
  * ```ts
- * import { findAbParams } from 'mdml-engine/manifold'
+ * import { findAbParams } from 'omai-engine/manifold'
  * Math.round(findAbParams(1, 0.1).a * 1000) // => 1577
  * ```
  */
@@ -62,7 +62,7 @@ export function findAbParams(spread = 1, minDist = 0.1): { readonly a: number; r
  * @returns The membership matrix `[n, n]` and each row's sigma and rho.
  * @example
  * ```ts
- * import { fuzzySimplicialSet } from 'mdml-engine/manifold'
+ * import { fuzzySimplicialSet } from 'omai-engine/manifold'
  * fuzzySimplicialSet([[0], [1], [2], [10]], 2).weights[0]?.[1] // => 1
  * ```
  */
@@ -71,7 +71,7 @@ export function fuzzySimplicialSet(
   k: number,
 ): { readonly weights: number[][]; readonly sigmas: number[]; readonly rhos: number[] } {
   const n = matrixView(x, 'fuzzySimplicialSet').n
-  if (!(Number.isInteger(k) && k >= 2 && k <= n)) throw new MdmlError('value', `umap: nNeighbors must be in 2..${n}`)
+  if (!(Number.isInteger(k) && k >= 2 && k <= n)) throw new OmaiError('value', `umap: nNeighbors must be in 2..${n}`)
   const { edges } = neighbourEdges(x, k - 1)
   const dist: number[][] = Array.from({ length: n }, () => [])
   const nbr: number[][] = Array.from({ length: n }, () => [])
@@ -134,7 +134,7 @@ export interface UmapState {
  * @returns The cross-entropy over all pairs.
  * @example
  * ```ts
- * import { fuzzyCrossEntropy } from 'mdml-engine/manifold'
+ * import { fuzzyCrossEntropy } from 'omai-engine/manifold'
  * fuzzyCrossEntropy([[0, 1], [1, 0]], [[0], [0.01]], 1.9, 0.8) < 0.01 // => true
  * ```
  */
@@ -181,9 +181,9 @@ export interface UmapOptions {
  * @returns The algorithm.
  * @example
  * ```ts
- * import { umapAlgorithm } from 'mdml-engine/manifold'
- * import { key } from 'mdml-engine/random'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { umapAlgorithm } from 'omai-engine/manifold'
+ * import { key } from 'omai-engine/random'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const w = [[0, 1, 0], [1, 0, 0.5], [0, 0.5, 0]]
  * const out = runAlgorithm(umapAlgorithm(w, [[0, 0], [5, 5], [9, 0]], { nEpochs: 20, a: 1.9, b: 0.8 }), { maxSteps: 20, key: key(0) })
  * out.state.y.length // => 3
@@ -337,7 +337,7 @@ export function umapSetup(
  * @index estimator UMAP embedding.
  * @example
  * ```ts
- * import { umap } from 'mdml-engine/manifold'
+ * import { umap } from 'omai-engine/manifold'
  * const x = Array.from({ length: 12 }, (_, i) => [i < 6 ? 0 : 5, (i % 6) * 0.1, i * 0.01])
  * umap.with({ nNeighbors: 4, nEpochs: 20 }).fit({ x }).params.embedding.length // => 12
  * ```

@@ -3,7 +3,7 @@
  * drag-to-orbit camera: dragging turns the azimuth and elevation and the scene is projected again.
  */
 
-import { type Camera, fitCamera, layer3d, camera as makeCamera, orbit, type Scene3D, scene } from 'mdml-engine/scene'
+import { type Camera, fitCamera, layer3d, camera as makeCamera, orbit, type Scene3D, scene } from 'omai-engine/scene'
 import { type ReactElement, useMemo, useRef, useState } from 'react'
 import { cx } from './controls/classes.ts'
 import { SceneView } from './SceneView.tsx'
@@ -24,7 +24,7 @@ export interface Scene3DViewProps {
 }
 
 /**
- * A 3-D scene (`scene3d` from mdml-engine: points, segments, polylines, faces, labels, surfaces) with a
+ * A 3-D scene (`scene3d` from omai-engine: points, segments, polylines, faces, labels, surfaces) with a
  * drag-to-orbit camera: dragging turns the azimuth and elevation and the scene is projected again; double-click returns
  * to the starting view. The arrow keys orbit too while the view has focus.
  *

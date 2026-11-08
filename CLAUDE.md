@@ -19,7 +19,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Every agent tests only its own changes.** Its own test files, tsc, barrels, layers, biome and its own examples,
   never the full suite, never `make check`, and never a repo-wide vitest. The main session alone decides when the gate
   runs, and does not run it unless asked.
-- Agents throttle everything that runs tests: `nice -n 15 env MDML_TEST_WORKERS=1 make verify` (never `make check`,
+- Agents throttle everything that runs tests: `nice -n 15 env OMAI_TEST_WORKERS=1 make verify` (never `make check`,
   never a second test run while one is going, never a full-repo `vitest run`). The main session alone runs the gate at
   normal priority. Several agents verifying at once at full width stalls the machine for the person using it.
 
@@ -48,7 +48,7 @@ All routine work goes through `make` (it wraps mise, pnpm and uv).
 - `make layers`, `make lint`, `make format`, `make typecheck`.
 - `make fixtures`: regenerate golden fixtures from the Python oracle (`oracle/cases/...`); tests never run Python. Scope
   it to what you changed: `mise exec -- uv run --group oracle-core --group oracle-torch --group oracle-prob --group
-  oracle-rl python -m mdml_oracle generate --only stats/tests/,kernels/` (comma-separated prefixes).
+  oracle-rl python -m omai_oracle generate --only stats/tests/,kernels/` (comma-separated prefixes).
   `make manifest` rebuilds `fixtures/manifest.json` from the fixture files (for merge conflicts) in under a second.
   Fixtures follow the standard in `docs/structure.md` section 9: prebuilt numpy/scipy/etc. functions as references, tiered
   tolerances (1e-12 exact, 1e-10 special functions and direct linear algebra, 1e-6 to 1e-8 iterative), no gradient
@@ -56,10 +56,10 @@ All routine work goes through `make` (it wraps mise, pnpm and uv).
 
 ## Architecture in brief
 
-- Three packages: `packages/engine` (`mdml-engine`: the core in `lib/`; estimators and algorithms run as
+- Three packages: `packages/engine` (`omai-engine`: the core in `lib/`; estimators and algorithms run as
   sessions of the log contract and return typed exposition records from `lib/exposition`), `packages/render`
-  (`mdml-render`, headless figures, views of exposition records, React bindings including the session layer: the hook,
-  the player, the panels), `packages/meta` (`mdml-meta`, docs metadata and the example runner). One private app,
+  (`omai-render`, headless figures, views of exposition records, React bindings including the session layer: the hook,
+  the player, the panels), `packages/meta` (`omai-meta`, docs metadata and the example runner). One private app,
   `apps/site` (`make dev`, http://localhost:5300), with two sections on a shared shell: the gallery (render,
   hand-written recipes) and the docs (generated from the TSDoc). A second private app, `apps/pocs` (`make pocs`, http://localhost:5310), holds proofs of
   concept: single live pages on the site's own shell, searchable, added only on request (see its README). There is no hub: pages that explain a method are the
@@ -82,7 +82,7 @@ All routine work goes through `make` (it wraps mise, pnpm and uv).
   one family (IRLS, SMO, EM) is an extra mode beside the generic ones.
 - Engine code is `packages/engine/src/lib/<domain>/`. There are no tiers or metadata files: domains import one
   another without cycles (`make layers` reports any cycle as its path). Every folder is an import path
-  (`mdml-engine/numerics/linalg`); subfolders are namespaces, or re-exported flat when their summary has `@inline`.
+  (`omai-engine/numerics/linalg`); subfolders are namespaces, or re-exported flat when their summary has `@inline`.
 - The code documents itself: each folder's `index.ts` opens with a hand-written doc comment, a short paragraph on what
   the folder is and holds (`make barrels` keeps it above the generated exports), and each source file opens with a
   short paragraph on what it is and what to expect in it (no to-do lists or export lists). `make barrels` fails
@@ -97,8 +97,8 @@ All routine work goes through `make` (it wraps mise, pnpm and uv).
 ## The agent index
 
 Agents that consume the libraries start from the repository `llms.txt` (a map of the packages), then the package's own
-`packages/engine/llms.txt` (mdml-engine, domains = the folders of `src/lib`) or `packages/render/llms.txt`
-(mdml-render, domains = the folders of `src`, `react` nested by its subfolders), then the domain file in that package's
+`packages/engine/llms.txt` (omai-engine, domains = the folders of `src/lib`) or `packages/render/llms.txt`
+(omai-render, domains = the folders of `src`, `react` nested by its subfolders), then the domain file in that package's
 `index/`, then the source: the index lists the main things, not all of them. The durable place for an entry is the
 TSDoc of the thing itself: `@index <kind> <description>`, at most about 12 words, no signature. Kinds (closed, the same
 for both packages): `function` (also metrics, losses, tests, transforms; a React component or hook is a `function`

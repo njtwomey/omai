@@ -8,7 +8,7 @@
  * `exp(-H0(t) exp(eta))`.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { matrixView, targetVector } from '../learn/index.ts'
 import type { Key } from '../random/index.ts'
 import { type CoxTies, coxData, coxProblem } from '../survival/index.ts'
@@ -51,11 +51,11 @@ export interface CoxGamOptions {
  * @param terms - The terms (default one smooth per covariate).
  * @param options - The tie handling and the strata.
  * @returns The model.
- * @throws MdmlError `shape` for inconsistent lengths; `value` without any event.
+ * @throws OmaiError `shape` for inconsistent lengths; `value` without any event.
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { coxGamModel, s } from 'mdml-engine/gam'
+ * import { coxGamModel, s } from 'omai-engine/gam'
  * const x = Array.from({ length: 12 }, (_, i) => [i / 11])
  * const model = coxGamModel(x, x.map((_, i) => 1 + i), x.map((_, i) => (i % 4 === 3 ? 0 : 1)), [s(0, { k: 4 })])
  * model.likelihood.p // => 3
@@ -71,7 +71,7 @@ export function coxGamModel(
   const m = matrixView(x, 'gam')
   const design = buildDesign(x, terms ?? Array.from({ length: m.d }, (_, j) => s(j)))
   const w = design.p - 1
-  if (w < 1) throw new MdmlError('value', 'coxGam: needs at least one term')
+  if (w < 1) throw new OmaiError('value', 'coxGam: needs at least one term')
   const t = targetVector(time, 'gam', m.n)
   const ev = targetVector(event, 'gam', m.n)
   const strata = options.strata === undefined ? new Float64Array(m.n) : targetVector(options.strata, 'gam', m.n)
@@ -113,7 +113,7 @@ export interface CoxBaseline {
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { coxBaseline, coxGamModel, fitCoxGam, linear } from 'mdml-engine/gam'
+ * import { coxBaseline, coxGamModel, fitCoxGam, linear } from 'omai-engine/gam'
  * const x = [[0.1], [0.9], [0.4], [1.3], [0.7], [0.2], [1.1], [0.5]]
  * const model = coxGamModel(x, [1, 2, 3, 4, 5, 6, 7, 8], [1, 1, 0, 1, 1, 1, 0, 1], [linear(0)])
  * coxBaseline(model, fitCoxGam(model, { method: 'fixed', sp: undefined, aux: undefined, maxIter: 3, solver: undefined }))[0]?.time.length // => 6
@@ -152,7 +152,7 @@ export function coxBaseline(model: CoxGamModel, fit: ExtendedFitResult): CoxBase
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { coxGamModel, fitCoxGam, s } from 'mdml-engine/gam'
+ * import { coxGamModel, fitCoxGam, s } from 'omai-engine/gam'
  * const x = Array.from({ length: 40 }, (_, i) => [i / 39])
  * const time = x.map((r, i) => 1 + 3 * (1 - (r[0] ?? 0)) * (1 + 0.5 * Math.sin(i * 12.9898)))
  * const model = coxGamModel(x, time, x.map((_, i) => (i % 5 === 4 ? 0 : 1)), [s(0, { k: 5 })])
@@ -175,7 +175,7 @@ export function fitCoxGam(model: CoxGamModel, hyper: ExtendedHyper = EXTENDED_DE
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { coxGamModel, coxSurvival, fitCoxGam, linear } from 'mdml-engine/gam'
+ * import { coxGamModel, coxSurvival, fitCoxGam, linear } from 'omai-engine/gam'
  * const x = [[0.1], [0.9], [0.4], [1.3], [0.7], [0.2], [1.1], [0.5]]
  * const model = coxGamModel(x, [1, 2, 3, 4, 5, 6, 7, 8], [1, 1, 0, 1, 1, 1, 0, 1], [linear(0)])
  * const fit = fitCoxGam(model, { method: 'fixed', sp: undefined, aux: undefined, maxIter: 3, solver: undefined })
@@ -191,7 +191,7 @@ export function coxSurvival(
 ): number[][] {
   const baseline = coxBaseline(model, fit)
   const base = stratum === undefined ? baseline[0] : baseline.find((b) => b.stratum === stratum)
-  if (base === undefined) throw new MdmlError('value', `coxSurvival: no stratum ${String(stratum)}`)
+  if (base === undefined) throw new OmaiError('value', `coxSurvival: no stratum ${String(stratum)}`)
   const eta = predictExtended(model, fit, x).eta[0] as Float64Array
   const H = (t: number): number => {
     let v = 0

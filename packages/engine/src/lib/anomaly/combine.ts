@@ -6,7 +6,7 @@
  * for ensembles of detectors (Kriegel et al. 2011; Aggarwal and Sathe 2015).
  */
 
-import { MdmlError, maxOf, minOf } from '../base/index.ts'
+import { maxOf, minOf, OmaiError } from '../base/index.ts'
 import { type AnomalyScores, anomalyScores, type Exposition } from '../exposition/index.ts'
 import { decisionSurfaceOf, type Fitted, type LearnData, matrixView } from '../learn/index.ts'
 import { special } from '../numerics/index.ts'
@@ -36,8 +36,8 @@ export interface OutlierVerbs {
  * @returns The outlier verbs.
  * @example
  * ```ts
- * import { outlierVerbs } from 'mdml-engine/anomaly'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { outlierVerbs } from 'omai-engine/anomaly'
+ * import { toFlat } from 'omai-engine/tensor'
  * const v = outlierVerbs(() => [0.2, 0.8], 0.5, 1)
  * toFlat(v.predict([[0], [1]])) // => [1, -1]
  * ```
@@ -67,12 +67,12 @@ export function outlierVerbs(scores: (x: TensorLike) => number[], threshold: num
  * @returns The `(1 - contamination)` quantile of `scores`.
  * @example
  * ```ts
- * import { contaminationThreshold } from 'mdml-engine/anomaly'
+ * import { contaminationThreshold } from 'omai-engine/anomaly'
  * contaminationThreshold([1, 2, 3, 4, 5], 0.25) // => 4
  * ```
  */
 export function contaminationThreshold(scores: readonly number[], contamination: number = 0.1): number {
-  if (!(contamination > 0 && contamination <= 0.5)) throw new MdmlError('value', 'contamination must be in (0, 0.5]')
+  if (!(contamination > 0 && contamination <= 0.5)) throw new OmaiError('value', 'contamination must be in (0, 0.5]')
   return quantile(scores as number[], 1 - contamination)
 }
 
@@ -84,12 +84,12 @@ export function contaminationThreshold(scores: readonly number[], contamination:
  * @returns The `q` quantile of `scores`.
  * @example
  * ```ts
- * import { quantileThreshold } from 'mdml-engine/anomaly'
+ * import { quantileThreshold } from 'omai-engine/anomaly'
  * quantileThreshold([0, 2, 4, 6, 8], 0.75) // => 6
  * ```
  */
 export function quantileThreshold(scores: readonly number[], q: number = 0.9): number {
-  if (!(q >= 0 && q <= 1)) throw new MdmlError('value', 'quantileThreshold: q must lie in [0, 1]')
+  if (!(q >= 0 && q <= 1)) throw new OmaiError('value', 'quantileThreshold: q must lie in [0, 1]')
   return quantile(scores as number[], q)
 }
 
@@ -111,17 +111,17 @@ export interface PotThresholdOptions {
  * @returns The extreme-value threshold.
  * @example
  * ```ts
- * import { potThreshold } from 'mdml-engine/anomaly'
+ * import { potThreshold } from 'omai-engine/anomaly'
  * const s = Array.from({ length: 50 }, (_, i) => (i + 1) / 10)
  * potThreshold(s, { risk: 0.02, initQuantile: 0.8 }) > 4 // => true
  * ```
  */
 export function potThreshold(scores: readonly number[], options: PotThresholdOptions = {}): number {
-  if (scores.length === 0) throw new MdmlError('value', 'potThreshold: scores must not be empty')
+  if (scores.length === 0) throw new OmaiError('value', 'potThreshold: scores must not be empty')
   const risk = options.risk ?? 0.01
   const q0 = options.initQuantile ?? 0.8
-  if (!(risk > 0 && risk < 1)) throw new MdmlError('value', 'potThreshold: risk must lie in (0, 1)')
-  if (!(q0 > 0 && q0 < 1)) throw new MdmlError('value', 'potThreshold: initQuantile must lie in (0, 1)')
+  if (!(risk > 0 && risk < 1)) throw new OmaiError('value', 'potThreshold: risk must lie in (0, 1)')
+  if (!(q0 > 0 && q0 < 1)) throw new OmaiError('value', 'potThreshold: initQuantile must lie in (0, 1)')
   const u = quantile(scores as number[], q0)
   const pot = peaksOverThreshold(scores as number[], u)
   const exc = toFlat(pot.exceedances)
@@ -147,7 +147,7 @@ export function potThreshold(scores: readonly number[], options: PotThresholdOpt
  * @returns The threshold.
  * @example
  * ```ts
- * import { iqrThreshold } from 'mdml-engine/anomaly'
+ * import { iqrThreshold } from 'omai-engine/anomaly'
  * iqrThreshold([1, 2, 3, 4, 5], 1.5) // => 7
  * ```
  */
@@ -165,7 +165,7 @@ export function iqrThreshold(scores: readonly number[], k: number = 1.5): number
  * @returns The threshold.
  * @example
  * ```ts
- * import { madThreshold } from 'mdml-engine/anomaly'
+ * import { madThreshold } from 'omai-engine/anomaly'
  * madThreshold([1, 2, 3, 4, 5], 0) // => 3
  * ```
  */
@@ -186,7 +186,7 @@ export function madThreshold(scores: readonly number[], k: number = 3.5): number
  * @returns A boolean mask (`true` where `score > threshold`).
  * @example
  * ```ts
- * import { flagOutliers } from 'mdml-engine/anomaly'
+ * import { flagOutliers } from 'omai-engine/anomaly'
  * flagOutliers([0.1, 0.4, 0.9], 0.5) // => [false, false, true]
  * ```
  */
@@ -207,7 +207,7 @@ export function flagOutliers(scores: readonly number[], threshold: number): bool
  * @returns The exposition records.
  * @example
  * ```ts
- * import { outlierExposition, outlierVerbs } from 'mdml-engine/anomaly'
+ * import { outlierExposition, outlierVerbs } from 'omai-engine/anomaly'
  * const verbs = outlierVerbs(() => [0.1, 0.9], 0.5, 1)
  * const fitted = { estimator: 'demo', kind: 'outlier' as const, params: {}, ...verbs }
  * outlierExposition(fitted, [[0], [1]], 'demo', 0.5, { name: 'score', values: [0.1, 0.9] })[0]?.kind // => 'anomalyScores'
@@ -250,7 +250,7 @@ export type ScoreNormalisation = 'minmax' | 'zscore' | 'rank' | 'unify' | 'gauss
  * @returns Standardised scores.
  * @example
  * ```ts
- * import { zscoreNormalise } from 'mdml-engine/anomaly'
+ * import { zscoreNormalise } from 'omai-engine/anomaly'
  * zscoreNormalise([1, 2, 3]) // => [-1.224744871391589, 0, 1.224744871391589]
  * ```
  */
@@ -269,7 +269,7 @@ export function zscoreNormalise(scores: readonly number[]): number[] {
  * @returns Scores in `[0, 1]`.
  * @example
  * ```ts
- * import { minmaxNormalise } from 'mdml-engine/anomaly'
+ * import { minmaxNormalise } from 'omai-engine/anomaly'
  * minmaxNormalise([1, 5, 9]) // => [0, 0.5, 1]
  * ```
  */
@@ -288,7 +288,7 @@ export function minmaxNormalise(scores: readonly number[]): number[] {
  * @returns Rank-scaled scores in `[0, 1]`.
  * @example
  * ```ts
- * import { rankNormalise } from 'mdml-engine/anomaly'
+ * import { rankNormalise } from 'omai-engine/anomaly'
  * rankNormalise([3, 1, 1]) // => [1, 0.25, 0.25]
  * ```
  */
@@ -305,7 +305,7 @@ export function rankNormalise(scores: readonly number[]): number[] {
  * @returns Unified outlier probabilities in `[0, 1]`.
  * @example
  * ```ts
- * import { unifyScores } from 'mdml-engine/anomaly'
+ * import { unifyScores } from 'omai-engine/anomaly'
  * unifyScores([0, 0, 10])[0] // => 0
  * ```
  */
@@ -330,7 +330,7 @@ export function unifyScores(scores: readonly number[]): number[] {
  * @returns The normalised scores.
  * @example
  * ```ts
- * import { normaliseScores } from 'mdml-engine/anomaly'
+ * import { normaliseScores } from 'omai-engine/anomaly'
  * normaliseScores([1, 2, 3, 10], 'minmax') // => [0, 0.1111111111111111, 0.2222222222222222, 1]
  * ```
  */
@@ -348,9 +348,9 @@ export function normaliseScores(scores: readonly number[], method: ScoreNormalis
 export type ScoreCombination = 'mean' | 'average' | 'max' | 'maximization' | 'median' | 'aom' | 'moa'
 
 function checkScoreMatrix(who: string, scores: readonly (readonly number[])[]): number {
-  if (scores.length === 0) throw new MdmlError('value', `${who}: no detectors`)
+  if (scores.length === 0) throw new OmaiError('value', `${who}: no detectors`)
   const n = scores[0]?.length ?? 0
-  if (scores.some((s) => s.length !== n)) throw new MdmlError('shape', `${who}: detectors disagree on rows`)
+  if (scores.some((s) => s.length !== n)) throw new OmaiError('shape', `${who}: detectors disagree on rows`)
   return n
 }
 
@@ -369,7 +369,7 @@ function partitionBuckets(k: number, nBuckets?: number, key?: Key): number[][] {
  * @returns The averaged score per row.
  * @example
  * ```ts
- * import { averageScores } from 'mdml-engine/anomaly'
+ * import { averageScores } from 'omai-engine/anomaly'
  * averageScores([[1, 2], [3, 6]]) // => [2, 4]
  * ```
  */
@@ -386,7 +386,7 @@ export function averageScores(scores: readonly (readonly number[])[]): number[] 
  * @returns The maximum score per row.
  * @example
  * ```ts
- * import { maximizationScores } from 'mdml-engine/anomaly'
+ * import { maximizationScores } from 'omai-engine/anomaly'
  * maximizationScores([[1, 5], [3, 2]]) // => [3, 5]
  * ```
  */
@@ -404,7 +404,7 @@ export function maximizationScores(scores: readonly (readonly number[])[]): numb
  * @returns The AOM combined score per row.
  * @example
  * ```ts
- * import { aomScores } from 'mdml-engine/anomaly'
+ * import { aomScores } from 'omai-engine/anomaly'
  * aomScores([[1, 2], [3, 4], [2, 6], [4, 2]], { nBuckets: 2 }) // => [3, 5]
  * ```
  */
@@ -434,7 +434,7 @@ export function aomScores(
  * @returns The MOA combined score per row.
  * @example
  * ```ts
- * import { moaScores } from 'mdml-engine/anomaly'
+ * import { moaScores } from 'omai-engine/anomaly'
  * moaScores([[1, 2], [3, 8], [2, 4], [4, 2]], { nBuckets: 2 }) // => [3.5, 5]
  * ```
  */
@@ -479,7 +479,7 @@ export interface CombineScoresOptions {
  * @returns The combined `anomalyScores` record.
  * @example
  * ```ts
- * import { combineScores } from 'mdml-engine/anomaly'
+ * import { combineScores } from 'omai-engine/anomaly'
  * combineScores([[1, 2, 3, 10], [0.1, 0.3, 0.2, 5]], { combination: 'max', contamination: 0.25 }).evidence?.values[3] // => 1
  * ```
  */

@@ -6,7 +6,7 @@
  * input, which an exhaustive enumeration checks. Closed and maximal itemsets are filtered from a complete result.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm, type TraceSchema } from '../trace/index.ts'
 
 /** A basket: the integer ids of the items in it (order and repeats do not matter). */
@@ -37,15 +37,15 @@ export type ItemsetRunOptions = ItemsetOptions & Partial<Pick<RunOptions, 'trace
  * @param n - The number of transactions.
  * @param minSupport - The support fraction in (0, 1].
  * @returns The count.
- * @throws MdmlError with code `value` when the fraction is outside (0, 1].
+ * @throws OmaiError with code `value` when the fraction is outside (0, 1].
  * @example
  * ```ts
- * import { minCount } from 'mdml-engine/patterns'
+ * import { minCount } from 'omai-engine/patterns'
  * [minCount(10, 0.3), minCount(7, 0.5)] // => [3, 4]
  * ```
  */
 export function minCount(n: number, minSupport: number): number {
-  if (!(minSupport > 0 && minSupport <= 1)) throw new MdmlError('value', `minSupport = ${minSupport} must be in (0, 1]`)
+  if (!(minSupport > 0 && minSupport <= 1)) throw new OmaiError('value', `minSupport = ${minSupport} must be in (0, 1]`)
   return Math.max(1, Math.ceil(minSupport * n - 1e-9))
 }
 
@@ -54,16 +54,16 @@ export function minCount(n: number, minSupport: number): number {
  *
  * @param transactions - Baskets of item ids.
  * @returns The normalised baskets.
- * @throws MdmlError with code `value` for an item that is not a non-negative integer.
+ * @throws OmaiError with code `value` for an item that is not a non-negative integer.
  * @example
  * ```ts
- * import { normaliseTransactions } from 'mdml-engine/patterns'
+ * import { normaliseTransactions } from 'omai-engine/patterns'
  * normaliseTransactions([[3, 1, 3], []]) // => [[1, 3], []]
  * ```
  */
 export function normaliseTransactions(transactions: readonly Transaction[]): number[][] {
   return transactions.map((t) => {
-    for (const i of t) if (!(Number.isInteger(i) && i >= 0)) throw new MdmlError('value', `item ${i} is not an id`)
+    for (const i of t) if (!(Number.isInteger(i) && i >= 0)) throw new OmaiError('value', `item ${i} is not an id`)
     return [...new Set(t)].sort((a, b) => a - b)
   })
 }
@@ -76,7 +76,7 @@ export function normaliseTransactions(transactions: readonly Transaction[]): num
  * @returns The count.
  * @example
  * ```ts
- * import { supportCount } from 'mdml-engine/patterns'
+ * import { supportCount } from 'omai-engine/patterns'
  * supportCount([[1, 2, 3], [1, 2], [2, 3]], [1, 2]) // => 2
  * ```
  */
@@ -103,7 +103,7 @@ const byItems = (a: FrequentItemset, b: FrequentItemset): number => {
  * @returns A sorted copy.
  * @example
  * ```ts
- * import { canonicalItemsets } from 'mdml-engine/patterns'
+ * import { canonicalItemsets } from 'omai-engine/patterns'
  * canonicalItemsets([{ items: [2, 1], count: 1 }, { items: [0], count: 4 }]).map((s) => s.items.join()) // => ['0', '1,2']
  * ```
  */
@@ -120,10 +120,10 @@ const keyOf = (items: readonly number[]): string => items.join(',')
  * @param transactions - The baskets.
  * @param options - The support threshold and the largest itemset.
  * @returns The frequent itemsets in canonical order.
- * @throws MdmlError with code `value` for more than 22 distinct items.
+ * @throws OmaiError with code `value` for more than 22 distinct items.
  * @example
  * ```ts
- * import { exhaustiveItemsets } from 'mdml-engine/patterns'
+ * import { exhaustiveItemsets } from 'omai-engine/patterns'
  * exhaustiveItemsets([[0, 1], [0, 1], [0]], { minSupport: 0.6 }).map((s) => `${s.items}:${s.count}`) // => ['0:3', '1:2', '0,1:2']
  * ```
  */
@@ -131,7 +131,7 @@ export function exhaustiveItemsets(transactions: readonly Transaction[], options
   const tx = normaliseTransactions(transactions)
   const need = minCount(tx.length, options.minSupport)
   const universe = [...new Set(tx.flat())].sort((a, b) => a - b)
-  if (universe.length > 22) throw new MdmlError('value', 'exhaustiveItemsets: more than 22 distinct items')
+  if (universe.length > 22) throw new OmaiError('value', 'exhaustiveItemsets: more than 22 distinct items')
   const max = options.maxLength ?? universe.length
   const out: FrequentItemset[] = []
   for (let mask = 1; mask < 1 << universe.length; mask++) {
@@ -225,10 +225,10 @@ function countCandidates(tx: readonly (readonly number[])[], candidates: readonl
  * @param transactions - The baskets.
  * @param options - The support threshold and the largest itemset.
  * @returns The algorithm; its state holds the level, the candidates and pruned counts, and every itemset found.
- * @throws MdmlError with code `value` for a support outside (0, 1].
+ * @throws OmaiError with code `value` for a support outside (0, 1].
  * @example
  * ```ts
- * import { aprioriAlgorithm } from 'mdml-engine/patterns'
+ * import { aprioriAlgorithm } from 'omai-engine/patterns'
  * aprioriAlgorithm([[0, 1], [0, 1]], { minSupport: 0.5 }).name // => 'apriori'
  * ```
  */
@@ -296,11 +296,11 @@ export function aprioriAlgorithm(
  * @param transactions - The baskets.
  * @param options - The support threshold, the largest itemset and tracing.
  * @returns The frequent itemsets in canonical order.
- * @throws MdmlError with code `value` for a support outside (0, 1].
+ * @throws OmaiError with code `value` for a support outside (0, 1].
  * @index function Frequent itemsets by Apriori; FP-growth and Eclat beside it.
  * @example
  * ```ts
- * import { apriori } from 'mdml-engine/patterns'
+ * import { apriori } from 'omai-engine/patterns'
  * apriori([[0, 1, 2], [0, 1], [0, 2], [1, 2]], { minSupport: 0.5 }).map((s) => `${s.items}:${s.count}`) // => ['0:3', '1:3', '2:3', '0,1:2', '0,2:2', '1,2:2']
  * ```
  */
@@ -447,10 +447,10 @@ const FP_SCHEMA: TraceSchema = channels({
  * @param transactions - The baskets.
  * @param options - The support threshold and the largest itemset.
  * @returns The algorithm; the state holds the tree, the mining tasks and the itemsets found.
- * @throws MdmlError with code `value` for a support outside (0, 1].
+ * @throws OmaiError with code `value` for a support outside (0, 1].
  * @example
  * ```ts
- * import { fpGrowthAlgorithm } from 'mdml-engine/patterns'
+ * import { fpGrowthAlgorithm } from 'omai-engine/patterns'
  * fpGrowthAlgorithm([[0, 1], [0, 1]], { minSupport: 0.5 }).name // => 'fp-growth'
  * ```
  */
@@ -551,10 +551,10 @@ export function fpGrowthAlgorithm(
  * @param transactions - The baskets.
  * @param options - The support threshold, the largest itemset and tracing.
  * @returns The frequent itemsets in canonical order.
- * @throws MdmlError with code `value` for a support outside (0, 1].
+ * @throws OmaiError with code `value` for a support outside (0, 1].
  * @example
  * ```ts
- * import { fpGrowth } from 'mdml-engine/patterns'
+ * import { fpGrowth } from 'omai-engine/patterns'
  * fpGrowth([[0, 1, 2], [0, 1], [0, 2], [1, 2]], { minSupport: 0.5 }).length // => 6
  * ```
  */
@@ -623,10 +623,10 @@ const ECLAT_SCHEMA: TraceSchema = channels({
  * @param transactions - The baskets.
  * @param options - The support threshold and the largest itemset.
  * @returns The algorithm; the state holds the stack of classes and the itemsets found.
- * @throws MdmlError with code `value` for a support outside (0, 1].
+ * @throws OmaiError with code `value` for a support outside (0, 1].
  * @example
  * ```ts
- * import { eclatAlgorithm } from 'mdml-engine/patterns'
+ * import { eclatAlgorithm } from 'omai-engine/patterns'
  * eclatAlgorithm([[0, 1], [0, 1]], { minSupport: 0.5 }).name // => 'eclat'
  * ```
  */
@@ -703,10 +703,10 @@ export function eclatAlgorithm(transactions: readonly Transaction[], options: It
  * @param transactions - The baskets.
  * @param options - The support threshold, the largest itemset and tracing.
  * @returns The frequent itemsets in canonical order.
- * @throws MdmlError with code `value` for a support outside (0, 1].
+ * @throws OmaiError with code `value` for a support outside (0, 1].
  * @example
  * ```ts
- * import { eclat } from 'mdml-engine/patterns'
+ * import { eclat } from 'omai-engine/patterns'
  * eclat([[0, 1, 2], [0, 1], [0, 2], [1, 2]], { minSupport: 0.5 }).length // => 6
  * ```
  */
@@ -727,7 +727,7 @@ export function eclat(transactions: readonly Transaction[], options: ItemsetRunO
  * @returns The closed itemsets in canonical order.
  * @example
  * ```ts
- * import { closedItemsets } from 'mdml-engine/patterns'
+ * import { closedItemsets } from 'omai-engine/patterns'
  * const all = [{ items: [0], count: 3 }, { items: [1], count: 2 }, { items: [0, 1], count: 2 }]
  * closedItemsets(all).map((s) => s.items.join()) // => ['0', '0,1']
  * ```
@@ -751,7 +751,7 @@ export function closedItemsets(itemsets: readonly FrequentItemset[]): FrequentIt
  * @returns The maximal itemsets in canonical order.
  * @example
  * ```ts
- * import { maximalItemsets } from 'mdml-engine/patterns'
+ * import { maximalItemsets } from 'omai-engine/patterns'
  * const all = [{ items: [0], count: 3 }, { items: [1], count: 2 }, { items: [0, 1], count: 2 }]
  * maximalItemsets(all).map((s) => s.items.join()) // => ['0,1']
  * ```

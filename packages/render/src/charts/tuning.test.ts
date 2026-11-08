@@ -1,5 +1,5 @@
-import { choice, dict, real } from 'mdml-engine/space'
-import { functionObjective, medianPruner, randomSampler, tune } from 'mdml-engine/tune'
+import { choice, dict, real } from 'omai-engine/space'
+import { functionObjective, medianPruner, randomSampler, tune } from 'omai-engine/tune'
 import { describe, expect, it } from 'vitest'
 import { contourChart, historyChart, historyLayers, importanceChart, intermediateChart, sliceChart } from './tuning.ts'
 

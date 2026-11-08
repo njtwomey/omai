@@ -6,7 +6,7 @@
  * Sugeno rule bases, and the defuzzifiers centroid, bisector and the means, smallest and largest of the maxima).
  */
 
-import { type Json, MdmlError, maxOf, minOf } from '../base/index.ts'
+import { type Json, maxOf, minOf, OmaiError } from '../base/index.ts'
 import { type Algorithm, channels, type TraceSchema } from '../trace/index.ts'
 
 // ------------------------------------------------------------------------------------------------ certainty factors
@@ -19,19 +19,19 @@ import { type Algorithm, channels, type TraceSchema } from '../trace/index.ts'
  * @param a - A certainty factor.
  * @param b - Another.
  * @returns The combined factor.
- * @throws MdmlError with code `value` for a factor outside [-1, 1], or for the undefined combination of 1 and -1.
+ * @throws OmaiError with code `value` for a factor outside [-1, 1], or for the undefined combination of 1 and -1.
  * @example
  * ```ts
- * import { combineCertainty } from 'mdml-engine/logic'
+ * import { combineCertainty } from 'omai-engine/logic'
  * [combineCertainty(0.6, 0.4), combineCertainty(-0.6, -0.4), combineCertainty(0.8, -0.4)] // => [0.76, -0.76, 0.4 / 0.6]
  * ```
  */
 export function combineCertainty(a: number, b: number): number {
-  if (!(Math.abs(a) <= 1 && Math.abs(b) <= 1)) throw new MdmlError('value', 'certainty factors lie in [-1, 1]')
+  if (!(Math.abs(a) <= 1 && Math.abs(b) <= 1)) throw new OmaiError('value', 'certainty factors lie in [-1, 1]')
   if (a > 0 && b > 0) return a + b * (1 - a)
   if (a < 0 && b < 0) return a + b * (1 + a)
   const d = 1 - Math.min(Math.abs(a), Math.abs(b))
-  if (d === 0) throw new MdmlError('value', 'certainty factors 1 and -1 cannot be combined')
+  if (d === 0) throw new OmaiError('value', 'certainty factors 1 and -1 cannot be combined')
   return (a + b) / d
 }
 
@@ -52,10 +52,10 @@ export interface CertaintyRule {
  * @param rules - The rules.
  * @param evidence - The certainty factor of observed facts.
  * @returns The certainty factor of every fact, evidence included.
- * @throws MdmlError with code `value` for a factor outside [-1, 1].
+ * @throws OmaiError with code `value` for a factor outside [-1, 1].
  * @example
  * ```ts
- * import { certaintyInference } from 'mdml-engine/logic'
+ * import { certaintyInference } from 'omai-engine/logic'
  * const rules = [
  *   { conditions: ['fever', 'cough'], conclusion: 'flu', factor: 0.8 },
  *   { conditions: ['aches'], conclusion: 'flu', factor: 0.5 },
@@ -68,7 +68,7 @@ export function certaintyInference(
   evidence: Readonly<Record<string, number>>,
 ): Record<string, number> {
   for (const v of Object.values(evidence))
-    if (!(Math.abs(v) <= 1)) throw new MdmlError('value', 'certainty factors lie in [-1, 1]')
+    if (!(Math.abs(v) <= 1)) throw new OmaiError('value', 'certainty factors lie in [-1, 1]')
   let cf: Record<string, number> = { ...evidence }
   for (let pass = 0; pass < 100; pass++) {
     const contributions = new Map<string, number[]>()
@@ -109,10 +109,10 @@ const intersect = (a: string, b: string): string => {
  * @param frame - The hypotheses.
  * @param masses - Mass by subset, as lists of hypotheses.
  * @returns The mass function.
- * @throws MdmlError with code `value` for a subset outside the frame, a negative mass or masses that do not sum to one.
+ * @throws OmaiError with code `value` for a subset outside the frame, a negative mass or masses that do not sum to one.
  * @example
  * ```ts
- * import { massFunction } from 'mdml-engine/logic'
+ * import { massFunction } from 'omai-engine/logic'
  * massFunction(['a', 'b'], [[['a'], 0.6], [['a', 'b'], 0.4]])['a'] // => 0.6
  * ```
  */
@@ -123,13 +123,13 @@ export function massFunction(
   const out: Record<string, number> = {}
   let total = 0
   for (const [items, m] of masses) {
-    if (m < 0) throw new MdmlError('value', 'masses are non-negative')
+    if (m < 0) throw new OmaiError('value', 'masses are non-negative')
     if (items.length === 0 || items.some((i) => !frame.includes(i)))
-      throw new MdmlError('value', 'a focal set must be a non-empty subset of the frame')
+      throw new OmaiError('value', 'a focal set must be a non-empty subset of the frame')
     out[subsetKey(items)] = (out[subsetKey(items)] ?? 0) + m
     total += m
   }
-  if (Math.abs(total - 1) > 1e-9) throw new MdmlError('value', `masses sum to ${total}, not 1`)
+  if (Math.abs(total - 1) > 1e-9) throw new OmaiError('value', `masses sum to ${total}, not 1`)
   return out
 }
 
@@ -141,7 +141,7 @@ export function massFunction(
  * @returns Bel(A).
  * @example
  * ```ts
- * import { belief, massFunction } from 'mdml-engine/logic'
+ * import { belief, massFunction } from 'omai-engine/logic'
  * belief(massFunction(['a', 'b'], [[['a'], 0.6], [['a', 'b'], 0.4]]), ['a']) // => 0.6
  * ```
  */
@@ -160,7 +160,7 @@ export function belief(m: MassFunction, a: readonly string[]): number {
  * @returns Pl(A).
  * @example
  * ```ts
- * import { massFunction, plausibility } from 'mdml-engine/logic'
+ * import { massFunction, plausibility } from 'omai-engine/logic'
  * plausibility(massFunction(['a', 'b'], [[['a'], 0.6], [['a', 'b'], 0.4]]), ['b']) // => 0.4
  * ```
  */
@@ -185,10 +185,10 @@ export interface Combination {
  * @param a - A mass function.
  * @param b - An independent one.
  * @returns The combined masses and the conflict.
- * @throws MdmlError with code `value` when the evidence is totally conflicting.
+ * @throws OmaiError with code `value` when the evidence is totally conflicting.
  * @example
  * ```ts
- * import { combineDempster, massFunction } from 'mdml-engine/logic'
+ * import { combineDempster, massFunction } from 'omai-engine/logic'
  * const f = ['a', 'b', 'c']
  * const r = combineDempster(massFunction(f, [[['a'], 0.99], [['b'], 0.01]]), massFunction(f, [[['c'], 0.99], [['b'], 0.01]]))
  * [Math.round(r.mass['b'] * 1e9) / 1e9, r.conflict] // => [1, 0.9999]
@@ -204,7 +204,7 @@ export function combineDempster(a: MassFunction, b: MassFunction): Combination {
       else out[k] = (out[k] ?? 0) + va * vb
     }
   }
-  if (conflict >= 1 - 1e-12) throw new MdmlError('value', 'the evidence is totally conflicting')
+  if (conflict >= 1 - 1e-12) throw new OmaiError('value', 'the evidence is totally conflicting')
   for (const k of Object.keys(out)) out[k] = (out[k] as number) / (1 - conflict)
   return { mass: out, conflict }
 }
@@ -219,7 +219,7 @@ export function combineDempster(a: MassFunction, b: MassFunction): Combination {
  * @returns The combined masses and the conflict.
  * @example
  * ```ts
- * import { combineYager, massFunction } from 'mdml-engine/logic'
+ * import { combineYager, massFunction } from 'omai-engine/logic'
  * const f = ['a', 'b', 'c']
  * combineYager(f, massFunction(f, [[['a'], 0.99], [['b'], 0.01]]), massFunction(f, [[['c'], 0.99], [['b'], 0.01]])).mass['a|b|c'] // => 0.9999
  * ```
@@ -247,7 +247,7 @@ export function combineYager(frame: readonly string[], a: MassFunction, b: MassF
  * @returns Probability by hypothesis.
  * @example
  * ```ts
- * import { massFunction, pignistic } from 'mdml-engine/logic'
+ * import { massFunction, pignistic } from 'omai-engine/logic'
  * pignistic(massFunction(['a', 'b'], [[['a'], 0.6], [['a', 'b'], 0.4]])) // => { a: 0.8, b: 0.2 }
  * ```
  */
@@ -291,7 +291,7 @@ const EVIDENCE_SCHEMA: TraceSchema = channels({
  * @returns The algorithm.
  * @example
  * ```ts
- * import { evidenceAlgorithm, massFunction } from 'mdml-engine/logic'
+ * import { evidenceAlgorithm, massFunction } from 'omai-engine/logic'
  * evidenceAlgorithm(['a', 'b'], [massFunction(['a', 'b'], [[['a'], 1]])]).name // => 'dempster-shafer'
  * ```
  */
@@ -350,7 +350,7 @@ export type Membership = (x: number) => number
  * @returns The function.
  * @example
  * ```ts
- * import { triangular } from 'mdml-engine/logic'
+ * import { triangular } from 'omai-engine/logic'
  * [triangular(0, 5, 10)(2.5), triangular(0, 5, 10)(5), triangular(0, 0, 5)(0)] // => [0.5, 1, 1]
  * ```
  */
@@ -372,7 +372,7 @@ export function triangular(a: number, b: number, c: number): Membership {
  * @returns The function.
  * @example
  * ```ts
- * import { trapezoid } from 'mdml-engine/logic'
+ * import { trapezoid } from 'omai-engine/logic'
  * [trapezoid(0, 2, 4, 6)(1), trapezoid(0, 2, 4, 6)(3), trapezoid(0, 2, 4, 6)(5)] // => [0.5, 1, 0.5]
  * ```
  */
@@ -392,7 +392,7 @@ export function trapezoid(a: number, b: number, c: number, d: number): Membershi
  * @returns The function.
  * @example
  * ```ts
- * import { gaussianMembership } from 'mdml-engine/logic'
+ * import { gaussianMembership } from 'omai-engine/logic'
  * gaussianMembership(0, 1)(1) // => Math.exp(-0.5)
  * ```
  */
@@ -412,7 +412,7 @@ export type TNorm = 'min' | 'product' | 'lukasiewicz'
  * @returns `min(a, b)`, `a b` or `max(0, a + b - 1)`.
  * @example
  * ```ts
- * import { tNorm } from 'mdml-engine/logic'
+ * import { tNorm } from 'omai-engine/logic'
  * [tNorm('min', 0.6, 0.7), tNorm('product', 0.6, 0.7), tNorm('lukasiewicz', 0.6, 0.7)].map((v) => Math.round(v * 1e9) / 1e9) // => [0.6, 0.42, 0.3]
  * ```
  */
@@ -429,7 +429,7 @@ export function tNorm(kind: TNorm, a: number, b: number): number {
  * @returns The fuzzy or.
  * @example
  * ```ts
- * import { tConorm } from 'mdml-engine/logic'
+ * import { tConorm } from 'omai-engine/logic'
  * [tConorm('min', 0.6, 0.7), tConorm('product', 0.6, 0.7), tConorm('lukasiewicz', 0.6, 0.7)].map((v) => Math.round(v * 1e9) / 1e9) // => [0.7, 0.88, 1]
  * ```
  */
@@ -452,7 +452,7 @@ export interface FuzzyVariable {
  * @returns The grid.
  * @example
  * ```ts
- * import { linspaceUniverse } from 'mdml-engine/logic'
+ * import { linspaceUniverse } from 'omai-engine/logic'
  * linspaceUniverse(0, 1, 5) // => [0, 0.25, 0.5, 0.75, 1]
  * ```
  */
@@ -480,7 +480,7 @@ export type Defuzzifier = 'centroid' | 'bisector' | 'mom' | 'som' | 'lom'
  * @returns The crisp value (the grid's midpoint for an all-zero curve).
  * @example
  * ```ts
- * import { defuzzify } from 'mdml-engine/logic'
+ * import { defuzzify } from 'omai-engine/logic'
  * defuzzify([0, 1, 2, 3, 4], [0, 0.5, 1, 0.5, 0], 'centroid') // => 2
  * ```
  */
@@ -542,10 +542,10 @@ export interface FuzzyOptions {
  * @param values - The crisp input values by variable name.
  * @param options - The t-norm and the defuzzifier.
  * @returns The crisp output and each rule's firing strength.
- * @throws MdmlError with code `value` for a rule that names an unknown variable or set.
+ * @throws OmaiError with code `value` for a rule that names an unknown variable or set.
  * @example
  * ```ts
- * import { linspaceUniverse, mamdani, triangular } from 'mdml-engine/logic'
+ * import { linspaceUniverse, mamdani, triangular } from 'omai-engine/logic'
  * const x = { universe: linspaceUniverse(0, 10, 11), sets: { high: triangular(5, 10, 10) } }
  * const y = { universe: linspaceUniverse(0, 10, 101), sets: { big: triangular(0, 5, 10) } }
  * Math.round(mamdani({ x }, y, [{ conditions: [['x', 'high']], connective: 'and', consequent: 'big' }], { x: 7.5 }).output * 1e9) / 1e9 // => 5
@@ -562,7 +562,7 @@ export function mamdani(
   const strengths = rules.map((r) => {
     const degrees = r.conditions.map(([v, s]) => {
       const set = inputs[v]?.sets[s]
-      if (set === undefined) throw new MdmlError('value', `unknown fuzzy set ${v}.${s}`)
+      if (set === undefined) throw new OmaiError('value', `unknown fuzzy set ${v}.${s}`)
       return set(values[v] ?? 0)
     })
     return degrees.reduce(
@@ -573,7 +573,7 @@ export function mamdani(
   const curve = output.universe.map((x) =>
     rules.reduce((acc, r, i) => {
       const set = output.sets[r.consequent]
-      if (set === undefined) throw new MdmlError('value', `unknown output set ${r.consequent}`)
+      if (set === undefined) throw new OmaiError('value', `unknown output set ${r.consequent}`)
       return Math.max(acc, tNorm(norm === 'product' ? 'product' : 'min', strengths[i] as number, set(x)))
     }, 0),
   )
@@ -597,10 +597,10 @@ export interface SugenoRule {
  * @param values - The crisp input values.
  * @param norm - The t-norm for `and` (default `min`).
  * @returns The output and each rule's firing strength.
- * @throws MdmlError with code `value` for an unknown set or a rule with no output.
+ * @throws OmaiError with code `value` for an unknown set or a rule with no output.
  * @example
  * ```ts
- * import { linspaceUniverse, sugeno, triangular } from 'mdml-engine/logic'
+ * import { linspaceUniverse, sugeno, triangular } from 'omai-engine/logic'
  * const x = { universe: linspaceUniverse(0, 10, 11), sets: { low: triangular(0, 0, 10), high: triangular(0, 10, 10) } }
  * const rules = [
  *   { conditions: [['x', 'low']], connective: 'and', constant: 0 },
@@ -618,7 +618,7 @@ export function sugeno(
   const strengths = rules.map((r) => {
     const degrees = r.conditions.map(([v, s]) => {
       const set = inputs[v]?.sets[s]
-      if (set === undefined) throw new MdmlError('value', `unknown fuzzy set ${v}.${s}`)
+      if (set === undefined) throw new OmaiError('value', `unknown fuzzy set ${v}.${s}`)
       return set(values[v] ?? 0)
     })
     return degrees.reduce(
@@ -634,7 +634,7 @@ export function sugeno(
       (r.linear === undefined
         ? undefined
         : r.linear.bias + Object.entries(r.linear.coefficients).reduce((s, [k, c]) => s + c * (values[k] ?? 0), 0))
-    if (z === undefined) throw new MdmlError('value', 'a Sugeno rule needs a constant or a linear output')
+    if (z === undefined) throw new OmaiError('value', 'a Sugeno rule needs a constant or a linear output')
     num += (strengths[i] as number) * z
     den += strengths[i] as number
   })
@@ -648,10 +648,10 @@ export function sugeno(
  * @param distribution - Possibility of each state, with a maximum of 1.
  * @param event - The states of the event.
  * @returns The possibility and the necessity.
- * @throws MdmlError with code `value` for a distribution that is not normalised.
+ * @throws OmaiError with code `value` for a distribution that is not normalised.
  * @example
  * ```ts
- * import { possibilityMeasures } from 'mdml-engine/logic'
+ * import { possibilityMeasures } from 'omai-engine/logic'
  * possibilityMeasures({ a: 1, b: 0.7, c: 0.2 }, ['a', 'b']) // => { possibility: 1, necessity: 0.8 }
  * ```
  */
@@ -659,7 +659,7 @@ export function possibilityMeasures(
   distribution: Readonly<Record<string, number>>,
   event: readonly string[],
 ): { readonly possibility: number; readonly necessity: number } {
-  if (maxOf(Object.values(distribution)) !== 1) throw new MdmlError('value', 'a possibility distribution has maximum 1')
+  if (maxOf(Object.values(distribution)) !== 1) throw new OmaiError('value', 'a possibility distribution has maximum 1')
   const inside = new Set(event)
   const pi = Math.max(
     0,

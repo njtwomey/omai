@@ -5,7 +5,7 @@
  * simplices, norm balls, affine sets, half-spaces and the PSD cone.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { eigh, solve, svd } from '../numerics/linalg/index.ts'
 import {
   abs,
@@ -54,8 +54,8 @@ export type Prox = (x: Value, t: number) => Value
  * @concept proximal-operators
  * @example
  * ```ts
- * import { proxL1 } from 'mdml-engine/optim'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { proxL1 } from 'omai-engine/optim'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(proxL1([3, -0.5, -2], 1)) // => [2, 0, -1]
  * ```
  */
@@ -72,8 +72,8 @@ export function proxL1(x: TensorLike, t: TensorLike): Value {
  * @returns The shrunk value (zero when |x|_2 <= t).
  * @example
  * ```ts
- * import { proxL2 } from 'mdml-engine/optim'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { proxL2 } from 'omai-engine/optim'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(proxL2([3, 4], 2.5)) // => [1.5, 2]
  * ```
  */
@@ -91,8 +91,8 @@ export function proxL2(x: TensorLike, t: number): Value {
  * @returns The scaled value.
  * @example
  * ```ts
- * import { proxSquaredL2 } from 'mdml-engine/optim'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { proxSquaredL2 } from 'omai-engine/optim'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(proxSquaredL2([2, -4], 1)) // => [1, -2]
  * ```
  */
@@ -110,8 +110,8 @@ export function proxSquaredL2(x: TensorLike, t: number): Value {
  * @returns The proximal point.
  * @example
  * ```ts
- * import { proxElasticNet } from 'mdml-engine/optim'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { proxElasticNet } from 'omai-engine/optim'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(proxElasticNet([3, -1], 1, { l1: 1, l2: 1 })) // => [1, 0]
  * ```
  */
@@ -129,8 +129,8 @@ export function proxElasticNet(x: TensorLike, t: number, weights: { readonly l1:
  * @returns The proximal point.
  * @example
  * ```ts
- * import { proxGroupLasso } from 'mdml-engine/optim'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { proxGroupLasso } from 'omai-engine/optim'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(proxGroupLasso([3, 4, 0.1, 0.1], 2.5, [0, 0, 1, 1])) // => [1.5, 2, 0, 0]
  * ```
  */
@@ -141,7 +141,7 @@ export function proxGroupLasso(
   weights?: readonly number[],
 ): Value {
   const v = reshape(asTensor(x), [-1])
-  if (groups.length !== v.shape[0]) throw new MdmlError('shape', 'proxGroupLasso: one group index per entry')
+  if (groups.length !== v.shape[0]) throw new OmaiError('shape', 'proxGroupLasso: one group index per entry')
   const g = groups.reduce((m, i) => Math.max(m, i + 1), 0)
   const w = Float64Array.from({ length: g }, (_, i) => t * (weights?.[i] ?? 1))
   const ids = fromStorage(Int32Array.from(groups), [groups.length], 'int32')
@@ -159,8 +159,8 @@ export function proxGroupLasso(
  * @returns The proximal point (differentiable where singular values are distinct).
  * @example
  * ```ts
- * import { proxNuclear } from 'mdml-engine/optim'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { proxNuclear } from 'omai-engine/optim'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(proxNuclear([[3, 0], [0, 1]], 2)) // => [[1, 0], [0, 0]]
  * ```
  */
@@ -178,8 +178,8 @@ export function proxNuclear(x: TensorLike, t: number): Value {
  * @returns The proximal point.
  * @example
  * ```ts
- * import { proxHuber } from 'mdml-engine/optim'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { proxHuber } from 'omai-engine/optim'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(proxHuber([1, 10], 1, 1)) // => [0.5, 9]
  * ```
  */
@@ -196,8 +196,8 @@ export function proxHuber(x: TensorLike, t: number, delta = 1): Value {
  * @returns The proximal point.
  * @example
  * ```ts
- * import { proxLinf } from 'mdml-engine/optim'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { proxLinf } from 'omai-engine/optim'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(proxLinf([3, 1], 1)) // => [2, 1]
  * ```
  */
@@ -214,8 +214,8 @@ export function proxLinf(x: TensorLike, t: number): Value {
  * @returns The proximal operator of g*.
  * @example
  * ```ts
- * import { proxConjugate, proxL1 } from 'mdml-engine/optim'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { proxConjugate, proxL1 } from 'omai-engine/optim'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * // The conjugate of |x|_1 is the indicator of the unit infinity ball: its prox clips to [-1, 1].
  * toArray(proxConjugate((x, t) => proxL1(x, t))(tensor([3, -0.5]), 2)) // => [1, -0.5]
  * ```
@@ -234,8 +234,8 @@ export function proxConjugate(prox: Prox): Prox {
  * @concept projections
  * @example
  * ```ts
- * import { projectBox } from 'mdml-engine/optim'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { projectBox } from 'omai-engine/optim'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(projectBox([-2, 0.5, 3], 0, 1)) // => [0, 0.5, 1]
  * ```
  */
@@ -250,8 +250,8 @@ export function projectBox(x: TensorLike, lo: TensorLike, hi: TensorLike): Value
  * @returns The projection.
  * @example
  * ```ts
- * import { projectNonnegative } from 'mdml-engine/optim'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { projectNonnegative } from 'omai-engine/optim'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(projectNonnegative([-1, 2])) // => [0, 2]
  * ```
  */
@@ -286,13 +286,13 @@ function simplexThreshold(a: Float64Array, z: number): { readonly mask: Float64A
  * @concept projections
  * @example
  * ```ts
- * import { projectSimplex } from 'mdml-engine/optim'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { projectSimplex } from 'omai-engine/optim'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(projectSimplex([0.5, 1, -1])) // => [0.25, 0.75, 0]
  * ```
  */
 export function projectSimplex(x: TensorLike, z = 1): Value {
-  if (!(z > 0)) throw new MdmlError('value', `projectSimplex: the total must be positive, got ${z}`)
+  if (!(z > 0)) throw new OmaiError('value', `projectSimplex: the total must be positive, got ${z}`)
   const v = asTensor(x)
   const { mask, k } = simplexThreshold(flatOf(v), z)
   const m = fromStorage(mask, v.shape, 'float64')
@@ -310,8 +310,8 @@ export function projectSimplex(x: TensorLike, z = 1): Value {
  * @concept projections
  * @example
  * ```ts
- * import { projectL1Ball } from 'mdml-engine/optim'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { projectL1Ball } from 'omai-engine/optim'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(projectL1Ball([2, -1], 1)) // => [1, 0]
  * ```
  */
@@ -334,8 +334,8 @@ export function projectL1Ball(x: TensorLike, r = 1): Value {
  * @concept projections
  * @example
  * ```ts
- * import { projectL2Ball } from 'mdml-engine/optim'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { projectL2Ball } from 'omai-engine/optim'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(projectL2Ball([6, 8], 5)) // => [3, 4]
  * ```
  */
@@ -354,8 +354,8 @@ export function projectL2Ball(x: TensorLike, r = 1, center: TensorLike = 0): Val
  * @concept projections
  * @example
  * ```ts
- * import { projectAffine } from 'mdml-engine/optim'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { projectAffine } from 'omai-engine/optim'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(projectAffine([1, 1], [[1, 1]], [0])) // => [0, 0]
  * ```
  */
@@ -377,8 +377,8 @@ export function projectAffine(x: TensorLike, a: TensorLike, b: TensorLike): Valu
  * @concept projections
  * @example
  * ```ts
- * import { projectHalfspace } from 'mdml-engine/optim'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { projectHalfspace } from 'omai-engine/optim'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(projectHalfspace([2, 2], [1, 1], 2)) // => [1, 1]
  * ```
  */
@@ -399,8 +399,8 @@ export function projectHalfspace(x: TensorLike, a: TensorLike, b: number): Value
  * @concept projections
  * @example
  * ```ts
- * import { projectNuclearBall } from 'mdml-engine/optim'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { projectNuclearBall } from 'omai-engine/optim'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(projectNuclearBall([[3, 0], [0, 1]], 2)) // => [[2, 0], [0, 0]]
  * ```
  */
@@ -417,8 +417,8 @@ export function projectNuclearBall(x: TensorLike, r = 1): Value {
  * @concept projections
  * @example
  * ```ts
- * import { projectPsd } from 'mdml-engine/optim'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { projectPsd } from 'omai-engine/optim'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(projectPsd([[1, 0], [0, -1]])) // => [[1, 0], [0, 0]]
  * ```
  */

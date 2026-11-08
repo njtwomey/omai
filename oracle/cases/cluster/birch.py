@@ -4,9 +4,9 @@ by a small branching factor) and the labels after the global Ward step."""
 from importlib.metadata import version
 
 import numpy as np
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray, rng
 from numpy import typing as npt
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray, rng
 from sklearn.cluster import Birch
 
 REFERENCE: dict[str, str] = {"scikit-learn": version("scikit-learn"), "numpy": np.__version__}

@@ -5,7 +5,7 @@
  * and the grid search over multipliers that traces the accuracy-fairness trade-off.
  */
 
-import { MdmlError, maxOf, minOf } from '../base/index.ts'
+import { maxOf, minOf, OmaiError } from '../base/index.ts'
 import { type Estimator, type Fitted, requireVerb } from '../learn/index.ts'
 import { ddot } from '../numerics/linalg/index.ts'
 import { linprog } from '../optim/index.ts'
@@ -325,7 +325,7 @@ function exponentiatedGradientRun(
   const { x, labels, groups } = data
   const constraint = options.constraint ?? 'demographicParity'
   const epsilon = options.epsilon ?? 0.01
-  if (!(epsilon > 0)) throw new MdmlError('value', 'exponentiatedGradientReduction: epsilon must be positive')
+  if (!(epsilon > 0)) throw new OmaiError('value', 'exponentiatedGradientReduction: epsilon must be positive')
   const maxIter = options.iterations ?? 50
   const B = 1 / epsilon
   const bound = options.differenceBound ?? 0.01
@@ -530,7 +530,7 @@ function exponentiatedGradientRun(
   }
   const finish = (s: ExponentiatedGradientState): ExponentiatedGradientReduction => {
     if (fits.length < s.hs.length || fits.slice(0, s.hs.length).some((f) => f === undefined))
-      throw new MdmlError('value', 'exponentiatedGradientReduction: the classifiers of a resumed run were not kept')
+      throw new OmaiError('value', 'exponentiatedGradientReduction: the classifiers of a resumed run were not kept')
     const minGap = minOf(s.gaps)
     let bestIteration = 0
     for (const [t, g] of s.gaps.entries()) if (g <= minGap + PRECISION) bestIteration = t
@@ -571,14 +571,14 @@ function exponentiatedGradientRun(
  * @param data - Features, binary labels and group indices.
  * @param options - Constraint, epsilon, difference bound, iterations, step size, nu and key.
  * @returns The algorithm, at most `iterations` steps.
- * @throws MdmlError `value` for an epsilon that is not positive.
+ * @throws OmaiError `value` for an epsilon that is not positive.
  * @concept algorithmic-fairness
  * @example
  * ```ts
- * import { exponentiatedGradientAlgorithm } from 'mdml-engine/fairness'
- * import { defineEstimator, matrixView } from 'mdml-engine/learn'
- * import { runAlgorithm } from 'mdml-engine/trace'
- * import { asTensor } from 'mdml-engine/tensor'
+ * import { exponentiatedGradientAlgorithm } from 'omai-engine/fairness'
+ * import { defineEstimator, matrixView } from 'omai-engine/learn'
+ * import { runAlgorithm } from 'omai-engine/trace'
+ * import { asTensor } from 'omai-engine/tensor'
  * const stump = defineEstimator({
  *   name: 'stump', kind: 'classifier',
  *   fit: (data) => { const m = matrixView(data.x, 'stump'); let s = 0; for (let i = 0; i < m.n; i++) s += m.data[i * m.d] ?? 0; return { t: s / m.n } },
@@ -612,13 +612,13 @@ export function exponentiatedGradientAlgorithm(
  * @param data - Features, binary labels and group indices.
  * @param options - Constraint, epsilon, iterations, step size, nu and key.
  * @returns The members, their weights, the decisions, the steps and the unconstrained baseline.
- * @throws MdmlError `value` for an epsilon that is not positive.
+ * @throws OmaiError `value` for an epsilon that is not positive.
  * @concept algorithmic-fairness
  * @example
  * ```ts
- * import { exponentiatedGradientReduction } from 'mdml-engine/fairness'
- * import { defineEstimator, matrixView } from 'mdml-engine/learn'
- * import { asTensor } from 'mdml-engine/tensor'
+ * import { exponentiatedGradientReduction } from 'omai-engine/fairness'
+ * import { defineEstimator, matrixView } from 'omai-engine/learn'
+ * import { asTensor } from 'omai-engine/tensor'
  * // A stump on the first feature: the simplest classifier an estimator can be.
  * const stump = defineEstimator({
  *   name: 'stump', kind: 'classifier',
@@ -782,7 +782,7 @@ function gridReductionRun(
   }
   const finish = (s: GridReductionState): GridPoint[] => {
     if (fits.length < s.points.length)
-      throw new MdmlError('value', 'gridReduction: the classifiers of a resumed run were not kept')
+      throw new OmaiError('value', 'gridReduction: the classifiers of a resumed run were not kept')
     const losses = s.points.map(lossOf)
     const best = losses.indexOf(minOf(losses))
     return s.points.map((p, i) => ({ ...p, fitted: fits[i] as Fitted, best: i === best }))
@@ -802,10 +802,10 @@ function gridReductionRun(
  * @concept algorithmic-fairness
  * @example
  * ```ts
- * import { gridReductionAlgorithm } from 'mdml-engine/fairness'
- * import { defineEstimator, matrixView } from 'mdml-engine/learn'
- * import { runAlgorithm } from 'mdml-engine/trace'
- * import { asTensor } from 'mdml-engine/tensor'
+ * import { gridReductionAlgorithm } from 'omai-engine/fairness'
+ * import { defineEstimator, matrixView } from 'omai-engine/learn'
+ * import { runAlgorithm } from 'omai-engine/trace'
+ * import { asTensor } from 'omai-engine/tensor'
  * const stump = defineEstimator({
  *   name: 'stump', kind: 'classifier',
  *   fit: (data) => { const m = matrixView(data.x, 'stump'); let s = 0; for (let i = 0; i < m.n; i++) s += m.data[i * m.d] ?? 0; return { t: s / m.n } },
@@ -839,9 +839,9 @@ export function gridReductionAlgorithm(
  * @concept algorithmic-fairness
  * @example
  * ```ts
- * import { gridReduction } from 'mdml-engine/fairness'
- * import { defineEstimator, matrixView } from 'mdml-engine/learn'
- * import { asTensor } from 'mdml-engine/tensor'
+ * import { gridReduction } from 'omai-engine/fairness'
+ * import { defineEstimator, matrixView } from 'omai-engine/learn'
+ * import { asTensor } from 'omai-engine/tensor'
  * // A stump on the first feature: the simplest classifier an estimator can be.
  * const stump = defineEstimator({
  *   name: 'stump', kind: 'classifier',

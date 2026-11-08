@@ -93,8 +93,8 @@ function observation(cells: readonly [number, number, number][], nc: number): nu
  * @returns The `[10][10][channels]` grid.
  * @example
  * ```ts
- * import { breakoutMinAtar, minatarGrid } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { breakoutMinAtar, minatarGrid } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * const obs = breakoutMinAtar.create().reset(key(0)).observation
  * minatarGrid(obs, 4)[9]?.[4] // => [true, false, false, false]
  * ```
@@ -117,7 +117,7 @@ export function minatarGrid(observation: readonly number[], channels: number): b
  * @returns The scene.
  * @example
  * ```ts
- * import { renderMinAtar } from 'mdml-engine/environments'
+ * import { renderMinAtar } from 'omai-engine/environments'
  * renderMinAtar([[0, 0, 1]], ['a', 'b'], 'Demo').children.length // => 102
  * ```
  */
@@ -318,8 +318,8 @@ const BREAKOUT: Rules<BreakoutState> = {
  *   learning experiments.
  * @example
  * ```ts
- * import { breakoutMinAtar } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { breakoutMinAtar } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * const env = breakoutMinAtar.create()
  * env.reset(key(0)).observation.length // => 400
  * env.channelNames // => ['paddle', 'ball', 'trail', 'brick']
@@ -421,7 +421,7 @@ const FREEWAY: Rules<FreewayState> = {
  * @concept environments
  * @example
  * ```ts
- * import { freewayMinAtar } from 'mdml-engine/environments'
+ * import { freewayMinAtar } from 'omai-engine/environments'
  * freewayMinAtar.create().actionSpace // => { kind: 'discrete', n: 3, label: 'n, u, d' }
  * ```
  */
@@ -544,8 +544,8 @@ const ASTERIX: Rules<AsterixState> = {
  * @concept environments
  * @example
  * ```ts
- * import { asterixMinAtar } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { asterixMinAtar } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * asterixMinAtar.create().reset(key(0)).info // => { difficulty: 0 }
  * ```
  */
@@ -696,7 +696,7 @@ const SPACE_INVADERS: Rules<SpaceInvadersState> = {
  * @concept environments
  * @example
  * ```ts
- * import { spaceInvadersMinAtar } from 'mdml-engine/environments'
+ * import { spaceInvadersMinAtar } from 'omai-engine/environments'
  * spaceInvadersMinAtar.channelNames.length // => 6
  * ```
  */
@@ -981,8 +981,8 @@ const SEAQUEST: Rules<SeaquestState> = {
  * @concept environments
  * @example
  * ```ts
- * import { seaquestMinAtar } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { seaquestMinAtar } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * const env = seaquestMinAtar.create({ stickyActionProb: 0 })
  * const s = env.reset(key(0)).state
  * env.step(s, 4, key(1)).state.game.oxygen // => 199

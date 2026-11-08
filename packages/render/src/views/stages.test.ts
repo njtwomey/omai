@@ -1,4 +1,4 @@
-import { decisionSurface, inputRows, type PipelineStage, pipelineStages, type StageData } from 'mdml-engine/exposition'
+import { decisionSurface, inputRows, type PipelineStage, pipelineStages, type StageData } from 'omai-engine/exposition'
 import { describe, expect, it } from 'vitest'
 import {
   pipelinePanelOf,

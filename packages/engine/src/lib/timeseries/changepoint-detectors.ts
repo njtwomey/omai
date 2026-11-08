@@ -67,7 +67,7 @@ const penalty = real(0.01, 10_000, { log: true, default: 10, label: 'penalty per
  * @index table Changepoint detectors as one slot.
  * @example
  * ```ts
- * import { changepointDetectors } from 'mdml-engine/timeseries'
+ * import { changepointDetectors } from 'omai-engine/timeseries'
  * const detect = changepointDetectors.make({ kind: 'pelt', cost: 'l2', penalty: 5, minSize: 2 })
  * detect([0, 0, 0, 0, 5, 5, 5, 5]) // => [4]
  * ```

@@ -5,7 +5,7 @@
  * `bipartiteMatching` in `flows.ts` is this run to the end.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import {
   type Algorithm,
   type Contract,
@@ -64,12 +64,12 @@ const INF = Number.POSITIVE_INFINITY
  * @param g - A bipartite graph (edge directions are ignored).
  * @param options - The left nodes (default: colour 0 of {@link bipartiteColouring}).
  * @returns The algorithm; it is done when no augmenting path is left.
- * @throws MdmlError with code `value` when the graph is not bipartite or an edge joins two nodes of one side.
+ * @throws OmaiError with code `value` when the graph is not bipartite or an edge joins two nodes of one side.
  * @concept matching
  * @example
  * ```ts
- * import { graph, hopcroftKarpAlgorithm } from 'mdml-engine/graph'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { graph, hopcroftKarpAlgorithm } from 'omai-engine/graph'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const run = runAlgorithm(hopcroftKarpAlgorithm(graph([[0, 3], [0, 4], [1, 3], [2, 5]])), { maxSteps: 10 })
  * [run.state.size, run.state.phase] // => [3, 2]
  * ```
@@ -81,13 +81,13 @@ export function hopcroftKarpAlgorithm(
   const isLeft = new Uint8Array(g.n)
   if (options.left === undefined) {
     const colour = bipartiteColouring(g)
-    if (colour === null) throw new MdmlError('value', 'bipartiteMatching: the graph is not bipartite')
+    if (colour === null) throw new OmaiError('value', 'bipartiteMatching: the graph is not bipartite')
     for (let v = 0; v < g.n; v++) isLeft[v] = colour[v] === 0 ? 1 : 0
   } else for (const v of options.left) isLeft[nodeIndex(g, v)] = 1
   const adj: number[][] = Array.from({ length: g.n }, () => [])
   for (const e of g.edges) {
     if (isLeft[e.source] === isLeft[e.target]) {
-      throw new MdmlError('value', `bipartiteMatching: edge (${e.source}, ${e.target}) lies within one side`)
+      throw new OmaiError('value', `bipartiteMatching: edge (${e.source}, ${e.target}) lies within one side`)
     }
     const [l, r] = isLeft[e.source] === 1 ? [e.source, e.target] : [e.target, e.source]
     adj[l]?.push(r)

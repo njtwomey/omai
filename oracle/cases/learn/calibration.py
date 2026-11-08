@@ -7,8 +7,8 @@ from typing import Any
 import numpy as np
 import scipy
 import sklearn
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray, rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray, rng
 from scipy.optimize import minimize
 from scipy.special import log_softmax, softmax
 from sklearn.calibration import CalibratedClassifierCV, _sigmoid_calibration, _TemperatureScaling  # pyright: ignore[reportPrivateUsage]

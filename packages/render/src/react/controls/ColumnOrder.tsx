@@ -27,7 +27,7 @@ export interface ColumnOrderProps {
  * @returns A new list.
  * @example
  * ```ts
- * import { moveItem } from 'mdml-render/react'
+ * import { moveItem } from 'omai-render/react'
  * moveItem(['a', 'b', 'c'], 0, 2) // => ['b', 'c', 'a']
  * ```
  */

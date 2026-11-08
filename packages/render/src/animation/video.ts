@@ -4,8 +4,8 @@
  * records a canvas with a `MediaRecorder`; `canEncodeVideo` says whether either is available.
  */
 
-import { MdmlError } from 'mdml-engine/base'
-import type { Pixels } from 'mdml-engine/scene'
+import { OmaiError } from 'omai-engine/base'
+import type { Pixels } from 'omai-engine/scene'
 
 /** One encoded video frame: its bytes, its time in milliseconds and whether it is a key frame. */
 export interface VideoChunk {
@@ -70,17 +70,17 @@ const str = (s: string): Uint8Array => new TextEncoder().encode(s)
  * @param chunks - The encoded frames in order; the first should be a key frame.
  * @param options - Frame size, codec and duration.
  * @returns The file's bytes.
- * @throws MdmlError with code `value` for no chunks or a non-positive size.
+ * @throws OmaiError with code `value` for no chunks or a non-positive size.
  * @example
  * ```ts
- * import { muxWebm } from 'mdml-render/animation'
+ * import { muxWebm } from 'omai-render/animation'
  * const webm = muxWebm([{ data: new Uint8Array([1, 2, 3]), time: 0, key: true }], { width: 2, height: 2 })
  * [...webm.slice(0, 4)] // => [26, 69, 223, 163]
  * ```
  */
 export function muxWebm(chunks: readonly VideoChunk[], options: WebmOptions): Uint8Array {
-  if (chunks.length === 0) throw new MdmlError('value', 'muxWebm: need at least one frame')
-  if (!(options.width > 0 && options.height > 0)) throw new MdmlError('value', 'muxWebm: the size must be positive')
+  if (chunks.length === 0) throw new OmaiError('value', 'muxWebm: need at least one frame')
+  if (!(options.width > 0 && options.height > 0)) throw new OmaiError('value', 'muxWebm: the size must be positive')
   const last = chunks[chunks.length - 1] as VideoChunk
   const step = chunks.length > 1 ? last.time / (chunks.length - 1) : 100
   const duration = options.duration ?? last.time + step
@@ -97,8 +97,8 @@ export function muxWebm(chunks: readonly VideoChunk[], options: WebmOptions): Ui
   const info = element(
     0x1549a966,
     element(0x2ad7b1, uint(1_000_000)),
-    element(0x4d80, str('mdml-render')),
-    element(0x5741, str('mdml-render')),
+    element(0x4d80, str('omai-render')),
+    element(0x5741, str('omai-render')),
     element(0x4489, float(duration)),
   )
   const tracks = element(
@@ -172,7 +172,7 @@ async function withWebCodecs(frames: readonly Pixels[], options: EncodeVideoOpti
     framerate: fps,
   }
   const support = await VideoEncoder.isConfigSupported(config)
-  if (support.supported !== true) throw new MdmlError('not-implemented', 'encodeWebm: VP8 is not supported here')
+  if (support.supported !== true) throw new OmaiError('not-implemented', 'encodeWebm: VP8 is not supported here')
   const chunks: VideoChunk[] = []
   let failure: unknown
   const encoder = new VideoEncoder({
@@ -213,7 +213,7 @@ async function withRecorder(frames: readonly Pixels[], options: EncodeVideoOptio
   canvas.width = first.width
   canvas.height = first.height
   const ctx = canvas.getContext('2d')
-  if (ctx === null) throw new MdmlError('not-implemented', 'encodeWebm: no 2-D canvas')
+  if (ctx === null) throw new OmaiError('not-implemented', 'encodeWebm: no 2-D canvas')
   const fps = options.fps ?? 10
   const stream = canvas.captureStream(fps)
   const recorder = new MediaRecorder(stream, {
@@ -247,13 +247,13 @@ async function withRecorder(frames: readonly Pixels[], options: EncodeVideoOptio
  * @param frames - The frames (the first sets the size; VP8 crops odd sizes by a pixel).
  * @param options - Frames per second, bitrate and key-frame interval.
  * @returns A promise of the file's bytes.
- * @throws MdmlError with code `value` for no frames, and `not-implemented` where neither encoder exists (see
+ * @throws OmaiError with code `value` for no frames, and `not-implemented` where neither encoder exists (see
  * {@link canEncodeVideo}).
  *
  * @index function Pixel frames to WebM bytes in a browser: `await encodeWebm(frames, { fps: 30 })`.
  */
 export async function encodeWebm(frames: readonly Pixels[], options: EncodeVideoOptions = {}): Promise<Uint8Array> {
-  if (frames.length === 0) throw new MdmlError('value', 'encodeWebm: need at least one frame')
+  if (frames.length === 0) throw new OmaiError('value', 'encodeWebm: need at least one frame')
   if (typeof VideoEncoder !== 'undefined') {
     try {
       return await withWebCodecs(frames, options)
@@ -262,5 +262,5 @@ export async function encodeWebm(frames: readonly Pixels[], options: EncodeVideo
     }
   }
   if (typeof MediaRecorder !== 'undefined' && typeof document !== 'undefined') return withRecorder(frames, options)
-  throw new MdmlError('not-implemented', 'encodeWebm: this platform has neither WebCodecs nor MediaRecorder')
+  throw new OmaiError('not-implemented', 'encodeWebm: this platform has neither WebCodecs nor MediaRecorder')
 }

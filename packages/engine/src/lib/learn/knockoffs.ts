@@ -7,7 +7,7 @@
  * the marginal correlation difference) and applies the knockoff and knockoff+ thresholds, which control the FDR at q.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import { cholesky, dgemm, eigh, solve } from '../numerics/linalg/index.ts'
 import { lassoCoordinateDescent } from '../optim/sparse.ts'
 import { type Key, key as makeKey, normal } from '../random/index.ts'
@@ -40,14 +40,14 @@ function minEigenvalue(a: Float64Array, p: number): number {
  * @concept knockoffs
  * @example
  * ```ts
- * import { equicorrelatedScale } from 'mdml-engine/learn'
+ * import { equicorrelatedScale } from 'omai-engine/learn'
  * equicorrelatedScale([[1, 0.5], [0.5, 1]], 1) // => [1, 1]
  * ```
  */
 export function equicorrelatedScale(sigma: TensorLike, shrink = 0.999): number[] {
   const m = matrixView(sigma, 'equicorrelatedScale')
   const p = m.n
-  if (m.d !== p) throw new MdmlError('shape', 'equicorrelatedScale: sigma must be square')
+  if (m.d !== p) throw new OmaiError('shape', 'equicorrelatedScale: sigma must be square')
   const sd = Array.from({ length: p }, (_, j) => Math.sqrt(m.data[j * p + j] ?? 0))
   const r = Float64Array.from(m.data, (v, k) => v / ((sd[Math.floor(k / p)] ?? 1) * (sd[k % p] ?? 1)))
   const s = Math.min(2 * minEigenvalue(r, p), 1) * shrink
@@ -75,7 +75,7 @@ export interface KnockoffScaleState {
  * @concept knockoffs
  * @example
  * ```ts
- * import { knockoffScaleAlgorithm } from 'mdml-engine/learn'
+ * import { knockoffScaleAlgorithm } from 'omai-engine/learn'
  * knockoffScaleAlgorithm([[1, 0.9], [0.9, 1]]).name // => 'knockoff-scale'
  * ```
  */
@@ -138,7 +138,7 @@ export function knockoffScaleAlgorithm(
  * @concept knockoffs
  * @example
  * ```ts
- * import { knockoffScales } from 'mdml-engine/learn'
+ * import { knockoffScales } from 'omai-engine/learn'
  * knockoffScales([[1, 0], [0, 1]], 'coordinate').map((v) => Math.round(v * 1000) / 1000) // => [0.999, 0.999]
  * ```
  */
@@ -181,11 +181,11 @@ export interface GaussianKnockoffs {
  * @param x - The design `[n, p]`.
  * @param options - Covariance, mean, scale and key.
  * @returns The knockoffs, the scale and the covariance used.
- * @throws MdmlError with code `value` when the scale makes the knockoff covariance indefinite.
+ * @throws OmaiError with code `value` when the scale makes the knockoff covariance indefinite.
  * @concept knockoffs
  * @example
  * ```ts
- * import { gaussianKnockoffs } from 'mdml-engine/learn'
+ * import { gaussianKnockoffs } from 'omai-engine/learn'
  * gaussianKnockoffs([[0, 1], [1, 0], [2, 3], [3, 2], [4, 6]], { sigma: [[2, 1], [1, 2]] }).xTilde.shape // => [5, 2]
  * ```
  */
@@ -204,7 +204,7 @@ export function gaussianKnockoffs(x: TensorLike, options: GaussianKnockoffOption
     options.sigma === undefined ? flat(empiricalCovariance(x)) : matrixView(options.sigma, 'gaussianKnockoffs').data
   const sigma = square(sigmaData, p)
   const s = knockoffScales(sigma, options.scale ?? 'equicorrelated')
-  if (s.length !== p) throw new MdmlError('shape', 'gaussianKnockoffs: the scale needs one entry per feature')
+  if (s.length !== p) throw new OmaiError('shape', 'gaussianKnockoffs: the scale needs one entry per feature')
   // A = Sigma^-1 D; V = 2D - D A (symmetric positive semidefinite).
   const dMat = new Float64Array(p * p)
   s.forEach((v, j) => {
@@ -232,7 +232,7 @@ export function gaussianKnockoffs(x: TensorLike, options: GaussianKnockoffOption
     }
   }
   if (chol === undefined)
-    throw new MdmlError('value', 'gaussianKnockoffs: the scale makes the knockoff covariance indefinite')
+    throw new OmaiError('value', 'gaussianKnockoffs: the scale makes the knockoff covariance indefinite')
   // Conditional mean: mu + (x - mu)(I - A).
   const centred = Float64Array.from(m.data, (val, k) => val - (mean[k % p] ?? 0))
   const shift = dgemm(centred, a, n, p, p)
@@ -352,7 +352,7 @@ function cvAlpha(design: Float64Array, y: Float64Array, n: number, k: number, nA
  * @concept knockoffs
  * @example
  * ```ts
- * import { knockoffStatistics } from 'mdml-engine/learn'
+ * import { knockoffStatistics } from 'omai-engine/learn'
  * knockoffStatistics([[1, 0], [2, 1], [3, 0], [4, 1]], [[0, 1], [1, 0], [0, 3], [1, 2]], [1, 2, 3, 4], { statistic: 'correlation' }).length // => 2
  * ```
  */
@@ -366,7 +366,7 @@ export function knockoffStatistics(
   const mt = matrixView(xTilde, 'knockoffStatistics', { nFeatures: m.d })
   const yv = targetVector(y, 'knockoffStatistics', m.n)
   const { n, d: p } = m
-  if (mt.n !== n) throw new MdmlError('shape', 'knockoffStatistics: x and its knockoffs differ in rows')
+  if (mt.n !== n) throw new OmaiError('shape', 'knockoffStatistics: x and its knockoffs differ in rows')
   const { design, yc } = augmentedDesign(m.data, mt.data, yv, n, p)
   const kind = options.statistic ?? 'lcd'
   const k = 2 * p
@@ -413,12 +413,12 @@ export function knockoffStatistics(
  * @concept knockoffs
  * @example
  * ```ts
- * import { knockoffThreshold } from 'mdml-engine/learn'
+ * import { knockoffThreshold } from 'omai-engine/learn'
  * knockoffThreshold([5, 4, 3, 2, 1, -0.5, 0.2, 6, 7, 8, 9, 10], 0.2) // => 0.2
  * ```
  */
 export function knockoffThreshold(w: ArrayLike<number>, q: number, plus = true): number {
-  if (!(q > 0 && q < 1)) throw new MdmlError('value', 'knockoffThreshold: q must be in (0, 1)')
+  if (!(q > 0 && q < 1)) throw new OmaiError('value', 'knockoffThreshold: q must be in (0, 1)')
   const offset = plus ? 1 : 0
   const candidates = [...new Set(Array.from(w, Math.abs).filter((v) => v > 0))].sort((a, b) => a - b)
   for (const t of candidates) {
@@ -462,9 +462,9 @@ export interface KnockoffResult {
  * @concept knockoffs
  * @example
  * ```ts
- * import { knockoffFilter } from 'mdml-engine/learn'
- * import { key, normal } from 'mdml-engine/random'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { knockoffFilter } from 'omai-engine/learn'
+ * import { key, normal } from 'omai-engine/random'
+ * import { toFlat } from 'omai-engine/tensor'
  * const z = toFlat(normal(key(1), [200 * 4]))
  * const x = Array.from({ length: 200 }, (_, i) => [z[4 * i] ?? 0, z[4 * i + 1] ?? 0, z[4 * i + 2] ?? 0, z[4 * i + 3] ?? 0])
  * const y = x.map((r, i) => 3 * ((r[0] ?? 0) + (r[1] ?? 0) + (r[2] ?? 0)) + 0.1 * Math.sin(i))

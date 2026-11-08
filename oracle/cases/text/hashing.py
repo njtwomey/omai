@@ -4,7 +4,7 @@ ft_hash_bytes; the plain FNV-1a is checked against its definition."""
 from importlib.metadata import version
 
 from gensim.models.fasttext import ft_hash_bytes
-from mdml_oracle.fixture import Case, case
+from omai_oracle.fixture import Case, case
 from sklearn.utils import murmurhash3_32
 
 REFERENCE: dict[str, str] = {"scikit-learn": version("scikit-learn"), "gensim": version("gensim")}

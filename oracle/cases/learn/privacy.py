@@ -10,7 +10,7 @@ from typing import Any
 
 import numpy as np
 import opacus
-from mdml_oracle.fixture import Case, case
+from omai_oracle.fixture import Case, case
 from opacus.accountants.analysis.rdp import compute_rdp, get_privacy_spent
 
 _spec = importlib.util.find_spec("diffprivlib")

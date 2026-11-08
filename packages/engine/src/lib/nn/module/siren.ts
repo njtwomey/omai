@@ -5,7 +5,7 @@
  * with their gradients. `SineLayer` is one layer (or the final linear layer of the network) and `siren` the stack.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { foldIn, type Key, uniform } from '../../random/index.ts'
 import { mul, sin, type Value } from '../../tensor/index.ts'
 import { linear } from '../functional/linear.ts'
@@ -35,8 +35,8 @@ export interface SineLayerOptions {
  *   activation functions.
  * @example
  * ```ts
- * import { SineLayer } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
+ * import { SineLayer } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
  * const layer = new SineLayer(2, 8, { first: true, key: key(0) })
  * [layer.parameterCount(), layer.forward([[0.1, 0.2]]).shape] // => [24, [1, 8]]
  * ```
@@ -79,7 +79,7 @@ export class SineLayer extends Module {
 
   outputShape(inputShape: readonly number[]): number[] {
     if (inputShape[inputShape.length - 1] !== this.inFeatures)
-      throw new MdmlError(
+      throw new OmaiError(
         'shape',
         `SineLayer: expected ${this.inFeatures} input features, got [${inputShape.join(', ')}]`,
       )
@@ -101,8 +101,8 @@ export class SineLayer extends Module {
  * @index module SIREN: a sine-activated network for coordinate inputs, from layer widths.
  * @example
  * ```ts
- * import { siren } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
+ * import { siren } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
  * siren([2, 16, 16, 3], { key: key(0) }).forward([[0.5, -0.5]]).shape // => [1, 3]
  * ```
  */
@@ -110,7 +110,7 @@ export function siren(
   widths: readonly number[],
   options: { readonly omega0?: number; readonly key?: Key } = {},
 ): Sequential {
-  if (widths.length < 2) throw new MdmlError('value', 'siren: need at least an input and an output width')
+  if (widths.length < 2) throw new OmaiError('value', 'siren: need at least an input and an output width')
   const layers: Module[] = []
   for (let i = 0; i + 1 < widths.length; i++) {
     layers.push(

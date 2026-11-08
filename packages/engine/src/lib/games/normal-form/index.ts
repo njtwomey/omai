@@ -1,7 +1,7 @@
 /**
  * Normal-form games, where players choose actions simultaneously: game construction and the classic examples, Nash
  * equilibria by enumeration, Lemke-Howson and linear programming for zero-sum games, correlated equilibria, and
- * dominance and iterated elimination. Part of `mdml-engine/games`.
+ * dominance and iterated elimination. Part of `omai-engine/games`.
  *
  * @inline
  */

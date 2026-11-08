@@ -1,5 +1,5 @@
-import { generate, type RegressionData } from 'mdml-engine/data'
-import { fieldImage } from 'mdml-engine/datasets'
+import { generate, type RegressionData } from 'omai-engine/data'
+import { fieldImage } from 'omai-engine/datasets'
 import {
   type FieldGrid,
   type FieldPath,
@@ -9,15 +9,15 @@ import {
   fieldEncodings,
   fitFieldAlgorithm,
   neuralField,
-} from 'mdml-engine/fields'
-import { adam } from 'mdml-engine/optim'
-import { foldIn, key } from 'mdml-engine/random'
-import { choice, defaults, dict, int, real } from 'mdml-engine/space'
-import { asTensor, toFlat } from 'mdml-engine/tensor'
-import { type Config, defineMethod, Log, metricSeries } from 'mdml-engine/trace'
-import { cartesian, lines } from 'mdml-render/charts'
-import { figure } from 'mdml-render/figure'
-import { Chart, ControlPanel, SpaceControls, useColourMode } from 'mdml-render/react'
+} from 'omai-engine/fields'
+import { adam } from 'omai-engine/optim'
+import { foldIn, key } from 'omai-engine/random'
+import { choice, defaults, dict, int, real } from 'omai-engine/space'
+import { asTensor, toFlat } from 'omai-engine/tensor'
+import { type Config, defineMethod, Log, metricSeries } from 'omai-engine/trace'
+import { cartesian, lines } from 'omai-render/charts'
+import { figure } from 'omai-render/figure'
+import { Chart, ControlPanel, SpaceControls, useColourMode } from 'omai-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
 import { BakedSession } from '../../shared/BakedSession.tsx'
 import { PixelCanvas } from '../../shared/PixelCanvas.tsx'

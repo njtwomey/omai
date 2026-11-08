@@ -5,7 +5,7 @@
  * with the subsampled Gaussian mechanism.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { erf, logNdtr } from '../numerics/special/index.ts'
 import { bernoulli, categorical, type Key, laplace, normal } from '../random/index.ts'
 import { add, asTensor, mul, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
@@ -14,12 +14,12 @@ import type { FitOptions } from './estimator.ts'
 
 function positive(v: number, name: string, who: string): number {
   if (!(v > 0 && Number.isFinite(v)))
-    throw new MdmlError('value', `${who}: ${name} must be positive and finite, got ${v}`)
+    throw new OmaiError('value', `${who}: ${name} must be positive and finite, got ${v}`)
   return v
 }
 
 function probability(v: number, name: string, who: string): number {
-  if (!(v > 0 && v < 1)) throw new MdmlError('value', `${who}: ${name} must lie in (0, 1), got ${v}`)
+  if (!(v > 0 && v < 1)) throw new OmaiError('value', `${who}: ${name} must lie in (0, 1), got ${v}`)
   return v
 }
 
@@ -41,8 +41,8 @@ export interface NoiseOptions {
  * @concept differential-privacy
  * @example
  * ```ts
- * import { laplaceMechanism } from 'mdml-engine/learn'
- * import { key } from 'mdml-engine/random'
+ * import { laplaceMechanism } from 'omai-engine/learn'
+ * import { key } from 'omai-engine/random'
  * laplaceMechanism(key(0), [10, 20], { sensitivity: 1, epsilon: 1 }).shape // => [2]
  * ```
  */
@@ -60,17 +60,17 @@ export function laplaceMechanism(key: Key, value: TensorLike, options: NoiseOpti
  *
  * @param options - sensitivity (L2), epsilon in (0, 1) and delta in (0, 1).
  * @returns sigma.
- * @throws MdmlError with code `domain` for epsilon >= 1 (use {@link analyticGaussianScale}).
+ * @throws OmaiError with code `domain` for epsilon >= 1 (use {@link analyticGaussianScale}).
  * @example
  * ```ts
- * import { gaussianScale } from 'mdml-engine/learn'
+ * import { gaussianScale } from 'omai-engine/learn'
  * Math.round(gaussianScale({ sensitivity: 1, epsilon: 0.5, delta: 1e-5 }) * 1e6) / 1e6 // => 9.689611
  * ```
  */
 export function gaussianScale(options: NoiseOptions & { readonly delta: number }): number {
   const eps = positive(options.epsilon, 'epsilon', 'gaussianScale')
   if (eps >= 1)
-    throw new MdmlError('domain', 'gaussianScale: the classic bound needs epsilon < 1; use analyticGaussianScale')
+    throw new OmaiError('domain', 'gaussianScale: the classic bound needs epsilon < 1; use analyticGaussianScale')
   return (
     (Math.sqrt(2 * Math.log(1.25 / probability(options.delta, 'delta', 'gaussianScale'))) *
       positive(options.sensitivity, 'sensitivity', 'gaussianScale')) /
@@ -89,7 +89,7 @@ const phi = (v: number): number => (1 + (toFlat(erf(v / Math.SQRT2))[0] ?? 0)) /
  * @returns sigma.
  * @example
  * ```ts
- * import { analyticGaussianScale } from 'mdml-engine/learn'
+ * import { analyticGaussianScale } from 'omai-engine/learn'
  * Math.round(analyticGaussianScale({ sensitivity: 1, epsilon: 1, delta: 1e-5 }) * 1e6) / 1e6 // => 3.730632
  * ```
  */
@@ -130,8 +130,8 @@ export function analyticGaussianScale(options: NoiseOptions & { readonly delta: 
  * @returns The noisy answer.
  * @example
  * ```ts
- * import { gaussianMechanism } from 'mdml-engine/learn'
- * import { key } from 'mdml-engine/random'
+ * import { gaussianMechanism } from 'omai-engine/learn'
+ * import { key } from 'omai-engine/random'
  * gaussianMechanism(key(0), [1, 2, 3], { sensitivity: 1, epsilon: 1, delta: 1e-5 }).shape // => [3]
  * ```
  */
@@ -155,7 +155,7 @@ export function gaussianMechanism(
  * @returns The probabilities.
  * @example
  * ```ts
- * import { exponentialProbabilities } from 'mdml-engine/learn'
+ * import { exponentialProbabilities } from 'omai-engine/learn'
  * exponentialProbabilities([0, Math.LN2 * 2], { epsilon: 1, sensitivity: 1 }).map((p) => Math.round(p * 1e12) / 1e12) // => [0.333333333333, 0.666666666667]
  * ```
  */
@@ -168,7 +168,7 @@ export function exponentialProbabilities(
     readonly measure?: readonly number[]
   },
 ): number[] {
-  if (utilities.length === 0) throw new MdmlError('value', 'exponentialProbabilities: no candidates')
+  if (utilities.length === 0) throw new OmaiError('value', 'exponentialProbabilities: no candidates')
   const scale =
     positive(options.epsilon, 'epsilon', 'exponentialProbabilities') /
     positive(options.sensitivity, 'sensitivity', 'exponentialProbabilities') /
@@ -188,8 +188,8 @@ export function exponentialProbabilities(
  * @returns The selected index.
  * @example
  * ```ts
- * import { exponentialMechanism } from 'mdml-engine/learn'
- * import { key } from 'mdml-engine/random'
+ * import { exponentialMechanism } from 'omai-engine/learn'
+ * import { key } from 'omai-engine/random'
  * // With a huge epsilon the best candidate is (almost) always chosen.
  * exponentialMechanism(key(1), [1, 5, 2], { epsilon: 100, sensitivity: 1 }) // => 1
  * ```
@@ -218,8 +218,8 @@ export function exponentialMechanism(
  * @returns The reported bits.
  * @example
  * ```ts
- * import { randomisedResponse } from 'mdml-engine/learn'
- * import { key } from 'mdml-engine/random'
+ * import { randomisedResponse } from 'omai-engine/learn'
+ * import { key } from 'omai-engine/random'
  * randomisedResponse(key(0), [1, 0, 1], 50) // => [1, 0, 1]
  * ```
  */
@@ -227,7 +227,7 @@ export function randomisedResponse(key: Key, bits: readonly number[], epsilon: n
   const keep = Math.exp(positive(epsilon, 'epsilon', 'randomisedResponse')) / (1 + Math.exp(epsilon))
   const flips = toFlat(bernoulli(key, 1 - keep, [bits.length]))
   return bits.map((b, i) => {
-    if (b !== 0 && b !== 1) throw new MdmlError('value', 'randomisedResponse: bits must be 0 or 1')
+    if (b !== 0 && b !== 1) throw new OmaiError('value', 'randomisedResponse: bits must be 0 or 1')
     return flips[i] === 1 ? 1 - b : b
   })
 }
@@ -241,7 +241,7 @@ export function randomisedResponse(key: Key, bits: readonly number[], epsilon: n
  * @returns The estimated proportion (it can fall outside [0, 1] by chance).
  * @example
  * ```ts
- * import { randomisedResponseEstimate } from 'mdml-engine/learn'
+ * import { randomisedResponseEstimate } from 'omai-engine/learn'
  * // With p = 0.75 a proportion of 0.5 is reported as 0.5 whatever the truth... and 0.75 reports mean all ones.
  * randomisedResponseEstimate([1, 1, 1, 0], Math.log(3)) // => 1
  * ```
@@ -265,7 +265,7 @@ export interface PrivacyBudget {
  * @returns The total.
  * @example
  * ```ts
- * import { basicComposition } from 'mdml-engine/learn'
+ * import { basicComposition } from 'omai-engine/learn'
  * basicComposition([{ epsilon: 0.5, delta: 0 }, { epsilon: 1, delta: 1e-6 }]) // => { epsilon: 1.5, delta: 0.000001 }
  * ```
  */
@@ -286,7 +286,7 @@ export function basicComposition(budgets: readonly PrivacyBudget[]): PrivacyBudg
  * @returns The total.
  * @example
  * ```ts
- * import { advancedComposition } from 'mdml-engine/learn'
+ * import { advancedComposition } from 'omai-engine/learn'
  * const t = advancedComposition({ epsilon: 0.1, delta: 0 }, 100, 1e-5)
  * t.epsilon < 10 // => true
  * ```
@@ -311,12 +311,12 @@ export function advancedComposition(budget: PrivacyBudget, k: number, slack: num
  * @returns The total.
  * @example
  * ```ts
- * import { heterogeneousComposition } from 'mdml-engine/learn'
+ * import { heterogeneousComposition } from 'omai-engine/learn'
  * heterogeneousComposition([{ epsilon: 1, delta: 0 }, { epsilon: 1, delta: 0 }], 0).epsilon // => 2
  * ```
  */
 export function heterogeneousComposition(budgets: readonly PrivacyBudget[], slack: number): PrivacyBudget {
-  if (!(slack >= 0 && slack < 1)) throw new MdmlError('value', 'heterogeneousComposition: slack must lie in [0, 1)')
+  if (!(slack >= 0 && slack < 1)) throw new OmaiError('value', 'heterogeneousComposition: slack must lie in [0, 1)')
   let sum = 0
   let expSum = 0
   let sqSum = 0
@@ -342,7 +342,7 @@ function logAdd(a: number, b: number): number {
 }
 
 function logSub(a: number, b: number): number {
-  if (a < b) throw new MdmlError('value', 'rdp: log subtraction would be negative')
+  if (a < b) throw new OmaiError('value', 'rdp: log subtraction would be negative')
   if (b === Number.NEGATIVE_INFINITY) return a
   if (a === b) return Number.NEGATIVE_INFINITY
   const d = Math.expm1(a - b)
@@ -410,7 +410,7 @@ export const DEFAULT_RDP_ORDERS: readonly number[] = [
  * @returns The RDP epsilon at each order.
  * @example
  * ```ts
- * import { subsampledGaussianRdp } from 'mdml-engine/learn'
+ * import { subsampledGaussianRdp } from 'omai-engine/learn'
  * // Without subsampling the Gaussian mechanism has RDP alpha / (2 sigma^2).
  * subsampledGaussianRdp(1, 2, 1, [2, 4]) // => [0.25, 0.5]
  * ```
@@ -421,7 +421,7 @@ export function subsampledGaussianRdp(
   steps: number,
   orders: readonly number[] = DEFAULT_RDP_ORDERS,
 ): number[] {
-  if (!(q >= 0 && q <= 1)) throw new MdmlError('value', 'subsampledGaussianRdp: q must lie in [0, 1]')
+  if (!(q >= 0 && q <= 1)) throw new OmaiError('value', 'subsampledGaussianRdp: q must lie in [0, 1]')
   return orders.map((alpha) => {
     if (q === 0) return 0
     if (noiseMultiplier === 0) return Number.POSITIVE_INFINITY
@@ -441,7 +441,7 @@ export function subsampledGaussianRdp(
  * @returns epsilon and the best order.
  * @example
  * ```ts
- * import { rdpToDp } from 'mdml-engine/learn'
+ * import { rdpToDp } from 'omai-engine/learn'
  * rdpToDp([2, 4], [0.25, 0.5], 1e-5).order // => 4
  * ```
  */
@@ -450,7 +450,7 @@ export function rdpToDp(
   rdp: readonly number[],
   delta: number,
 ): { readonly epsilon: number; readonly order: number } {
-  if (orders.length !== rdp.length) throw new MdmlError('shape', 'rdpToDp: one RDP value per order')
+  if (orders.length !== rdp.length) throw new OmaiError('shape', 'rdpToDp: one RDP value per order')
   probability(delta, 'delta', 'rdpToDp')
   let best = -1
   let bestEps = Number.POSITIVE_INFINITY
@@ -492,7 +492,7 @@ export interface RdpAccount {
  * @returns epsilon, the best order and the RDP curve.
  * @example
  * ```ts
- * import { rdpAccountant } from 'mdml-engine/learn'
+ * import { rdpAccountant } from 'omai-engine/learn'
  * const a = rdpAccountant([{ sampleRate: 0.01, noiseMultiplier: 1.1, steps: 1000 }], { delta: 1e-5 })
  * a.epsilon > 0 && a.epsilon < 5 // => true
  * ```

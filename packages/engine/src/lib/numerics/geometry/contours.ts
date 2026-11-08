@@ -4,7 +4,7 @@
  * at a number of standard deviations or a coverage probability.
  */
 
-import { MdmlError, maxOf, minOf } from '../../base/index.ts'
+import { maxOf, minOf, OmaiError } from '../../base/index.ts'
 import {
   add,
   concreteOrThrow,
@@ -52,13 +52,13 @@ export interface ContourOptions {
  * @concept marching-squares
  * @example
  * ```ts
- * import { contourLines } from 'mdml-engine/numerics/geometry'
+ * import { contourLines } from 'omai-engine/numerics/geometry'
  * contourLines([[0, 0, 0], [0, 1, 0], [0, 0, 0]], 0.5)[0].length // => 5
  * ```
  */
 export function contourLines(z: TensorLike, level: number, options: ContourOptions = {}): [number, number][][] {
   const t = concreteOrThrow(promoteFloat(z)[0] as Tensor, 'contourLines')
-  if (t.shape.length !== 2) throw new MdmlError('shape', 'contourLines: z must be 2-D')
+  if (t.shape.length !== 2) throw new OmaiError('shape', 'contourLines: z must be 2-D')
   const [rows = 0, cols = 0] = t.shape
   const v = toFlat(t)
   const at = (r: number, c: number): number => v[r * cols + c] ?? Number.NaN
@@ -202,7 +202,7 @@ function assemble(segments: readonly [Point2, Point2][]): Point2[][] {
  * @returns Increasing levels `[k]`.
  * @example
  * ```ts
- * import { contourLevels } from 'mdml-engine/numerics/geometry'
+ * import { contourLevels } from 'omai-engine/numerics/geometry'
  * contourLevels([0, 1], 4) // => [0.25, 0.5, 0.75]
  * ```
  */
@@ -234,10 +234,10 @@ function levelsOf(z: TensorLike, n: number): number[] {
  * @param levels - The levels `[k]` (default {@link contourLevels}).
  * @param options - As {@link contourLines}.
  * @returns One entry per level with its paths.
- * @throws MdmlError with code `shape` unless `levels` is a vector, and `not-differentiable` for a traced value.
+ * @throws OmaiError with code `shape` unless `levels` is a vector, and `not-differentiable` for a traced value.
  * @example
  * ```ts
- * import { isolines } from 'mdml-engine/numerics/geometry'
+ * import { isolines } from 'omai-engine/numerics/geometry'
  * isolines([[0, 1], [2, 3]], [1.5]).length // => 1
  * ```
  */
@@ -273,8 +273,8 @@ export interface CovarianceEllipse {
  * @returns Points, semi-axes and orientation.
  * @example
  * ```ts
- * import { covarianceEllipse } from 'mdml-engine/numerics/geometry'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { covarianceEllipse } from 'omai-engine/numerics/geometry'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(covarianceEllipse([0, 0], [[4, 0], [0, 1]]).semiAxes) // => [2, 1]
  * ```
  */

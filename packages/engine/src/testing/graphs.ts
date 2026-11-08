@@ -1,4 +1,4 @@
-// Graphs from oracle fixtures (oracle/mdml_oracle/graphs.py `spec`) and fast-check arbitraries for graph
+// Graphs from oracle fixtures (oracle/omai_oracle/graphs.py `spec`) and fast-check arbitraries for graph
 // property tests. Not published.
 import fc from 'fast-check'
 import { type Graph, graph } from '../lib/graph/index.ts'

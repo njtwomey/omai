@@ -1,7 +1,7 @@
 // Exact truths of Gaussian-mixture class models: component log densities, joint log densities and class posteriors.
 // Small models (and traced inputs) use tensor operations, so the truth is differentiable in x; large isotropic
 // models on concrete rows use a chunked loop that never materialises an [n, components] array.
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { bayesErrorEstimate, type GeneratingProgram, type Truth } from '../data/index.ts'
 import { categorical, compose, normal } from '../dists/index.ts'
 import { generatingProgram, plate, type RowsData, sample } from '../probprog/index.ts'
@@ -84,7 +84,7 @@ function classLogJointTensor(model: MixtureModel): (x: Value) => Value {
 /** The same joint for concrete rows by a loop (isotropic models only). */
 function classLogJointLoop(model: MixtureModel): (x: Tensor) => Tensor {
   const iso = model.isotropic
-  if (iso === undefined) throw new MdmlError('value', 'classLogJointLoop needs an isotropic model')
+  if (iso === undefined) throw new OmaiError('value', 'classLogJointLoop needs an isotropic model')
   const means = iso.means
   const c = means.length
   const d = means[0]?.length ?? 0

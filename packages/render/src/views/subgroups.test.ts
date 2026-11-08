@@ -1,4 +1,4 @@
-import { dataBias, paretoFront, subgroupGrid, subgroupReport, tableRates } from 'mdml-engine/exposition'
+import { dataBias, paretoFront, subgroupGrid, subgroupReport, tableRates } from 'omai-engine/exposition'
 import { describe, expect, it } from 'vitest'
 import { dataBiasPanels, dataBiasView } from './data-bias.ts'
 import { paretoFrontView } from './frontiers.ts'

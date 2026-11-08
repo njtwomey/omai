@@ -6,7 +6,7 @@ from typing import cast
 
 import numpy as np
 import sympy
-from mdml_oracle.fixture import Case, case
+from omai_oracle.fixture import Case, case
 from sympy.core.intfunc import igcdex
 from sympy.ntheory.continued_fraction import continued_fraction, continued_fraction_convergents
 from sympy.ntheory.modular import crt, solve_congruence

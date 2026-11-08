@@ -1,4 +1,4 @@
-# The render audit: what the methods ask of `mdml-render`, and the order to build it
+# The render audit: what the methods ask of `omai-render`, and the order to build it
 
 A working document, 2026-10-28, composed from the Rendering sections of the 52 chapter READMEs. Its companion on the
 engine side is `LIB.md`. The render layer's job for a method page is fixed by the session layer: a layout of panels

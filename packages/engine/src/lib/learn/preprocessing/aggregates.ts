@@ -6,7 +6,7 @@
  * from a target (target encoding) are in `encoders.ts`.
  */
 
-import { MdmlError, maxOf, minOf } from '../../base/index.ts'
+import { maxOf, minOf, OmaiError } from '../../base/index.ts'
 import { fromStorage, type Tensor, type TensorLike } from '../../tensor/index.ts'
 import { matrixView } from '../validation.ts'
 
@@ -52,8 +52,8 @@ export interface GroupAggregateOptions {
  * @concept feature-engineering
  * @example
  * ```ts
- * import { groupAggregates } from 'mdml-engine/learn/preprocessing'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { groupAggregates } from 'omai-engine/learn/preprocessing'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(groupAggregates([0, 0, 1], [[1], [3], [5]], ['mean', 'count'])) // => [[2, 2], [2, 2], [5, 1]]
  * ```
  */
@@ -66,7 +66,7 @@ export function groupAggregates(
   const t =
     Array.isArray(values) && !Array.isArray((values as unknown[])[0]) ? (values as number[]).map((v) => [v]) : values
   const m = matrixView(t as TensorLike, 'groupAggregates', { allowNaN: true })
-  if (groups.length !== m.n) throw new MdmlError('shape', 'groupAggregates: one group per row')
+  if (groups.length !== m.n) throw new OmaiError('shape', 'groupAggregates: one group per row')
   const members = new Map<number, number[]>()
   for (let i = 0; i < m.n; i++) {
     const g = groups[i] ?? 0
@@ -107,8 +107,8 @@ export interface RollingOptions {
  * @concept feature-engineering
  * @example
  * ```ts
- * import { rollingFeatures } from 'mdml-engine/learn/preprocessing'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { rollingFeatures } from 'omai-engine/learn/preprocessing'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(rollingFeatures([1, 2, 4, 8], 2, ['mean'])) // => [[NaN], [1.5], [3], [6]]
  * ```
  */
@@ -119,7 +119,7 @@ export function rollingFeatures(
   options: RollingOptions = {},
 ): Tensor {
   if (!(Number.isInteger(window) && window >= 1))
-    throw new MdmlError('value', 'rollingFeatures: window must be a positive integer')
+    throw new OmaiError('value', 'rollingFeatures: window must be a positive integer')
   const t =
     Array.isArray(series) && !Array.isArray((series as unknown[])[0]) ? (series as number[]).map((v) => [v]) : series
   const m = matrixView(t as TensorLike, 'rollingFeatures', { allowNaN: true })
@@ -153,8 +153,8 @@ export function rollingFeatures(
  * @concept feature-engineering
  * @example
  * ```ts
- * import { lagFeatures } from 'mdml-engine/learn/preprocessing'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { lagFeatures } from 'omai-engine/learn/preprocessing'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(lagFeatures([1, 2, 3], [1, 2])) // => [[NaN, NaN], [1, NaN], [2, 1]]
  * ```
  */

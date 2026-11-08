@@ -7,7 +7,7 @@
  * greedily on precision until it is pure. The covering loop is a traced algorithm: one rule per step.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import type { LearnData } from '../learn/estimator.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm, type TraceSchema } from '../trace/index.ts'
 import {
@@ -206,8 +206,8 @@ function modelOf(rd: RuleData, s: CoveringState, mode: CoveringMode): RuleModel 
  * @returns The model.
  * @example
  * ```ts
- * import { coveringAlgorithm, coveringModel } from 'mdml-engine/rules'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { coveringAlgorithm, coveringModel } from 'omai-engine/rules'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const data = { x: [[0], [0], [1], [1]], y: [0, 0, 1, 1] }
  * const { state } = runAlgorithm(coveringAlgorithm(data, { alpha: 1, minCovered: 1 }), { maxSteps: 10 })
  * coveringModel(data, state, {}).rules.length // => 1
@@ -227,10 +227,10 @@ export function coveringModel(data: LearnData, s: CoveringState, options: Coveri
  * @param data - Features and class labels.
  * @param options - The learner, heuristic, beam width, rule length, significance level and limits.
  * @returns The algorithm.
- * @throws MdmlError with code `value` for a beam width, length or alpha out of range.
+ * @throws OmaiError with code `value` for a beam width, length or alpha out of range.
  * @example
  * ```ts
- * import { coveringAlgorithm } from 'mdml-engine/rules'
+ * import { coveringAlgorithm } from 'omai-engine/rules'
  * coveringAlgorithm({ x: [[0], [1]], y: [0, 1] }, { mode: 'prism' }).name // => 'prism'
  * ```
  */
@@ -247,10 +247,10 @@ export function coveringAlgorithm(data: LearnData, options: CoveringOptions = {}
   } as const
   const maxRules = options.maxRules ?? 100
   if (!(Number.isInteger(o.beamWidth) && o.beamWidth >= 1))
-    throw new MdmlError('value', 'covering: beamWidth must be a positive integer')
+    throw new OmaiError('value', 'covering: beamWidth must be a positive integer')
   if (!(Number.isInteger(o.maxLength) && o.maxLength >= 1))
-    throw new MdmlError('value', 'covering: maxLength must be a positive integer')
-  if (!(o.alpha > 0 && o.alpha <= 1)) throw new MdmlError('value', 'covering: alpha must be in (0, 1]')
+    throw new OmaiError('value', 'covering: maxLength must be a positive integer')
+  if (!(o.alpha > 0 && o.alpha <= 1)) throw new OmaiError('value', 'covering: alpha must be in (0, 1]')
   const pool = literalPool(rd, options.maxThresholds ?? 24)
   const everything = Int32Array.from({ length: rd.n }, (_, i) => i)
   return {
@@ -354,10 +354,10 @@ export function coveringAlgorithm(data: LearnData, options: CoveringOptions = {}
  * @param data - Features and class labels.
  * @param options - The learner and its limits, and tracing.
  * @returns The rule model.
- * @throws MdmlError with code `value` for options out of range.
+ * @throws OmaiError with code `value` for options out of range.
  * @example
  * ```ts
- * import { fitCovering, modelText } from 'mdml-engine/rules'
+ * import { fitCovering, modelText } from 'omai-engine/rules'
  * const data = { x: [[0], [1], [2], [3], [4], [5]], y: [0, 0, 0, 1, 1, 1] }
  * modelText(fitCovering(data, { alpha: 1, minCovered: 1 })) // => 'IF x0 <= 2.5 THEN 0\nELSE 1'
  * ```

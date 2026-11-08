@@ -1,4 +1,4 @@
-// Checks shared by the kernels tests: scikit-learn Gaussian-process cases (oracle/mdml_oracle/kernels.py
+// Checks shared by the kernels tests: scikit-learn Gaussian-process cases (oracle/omai_oracle/kernels.py
 // `gp_case`) and positive semi-definiteness of Gram matrices. Not published.
 import type fc from 'fast-check'
 import { expect } from 'vitest'
@@ -10,7 +10,7 @@ import { decode, expectMatches, type GoldenCase } from './golden.ts'
 
 /**
  * Compare a kernel with a scikit-learn case: Gram matrix, cross-covariance, diagonal, theta and dK/dtheta. `order[i]`
- * is the index in mdml-js's theta of scikit-learn's i-th hyperparameter (default the identity).
+ * is the index in omai's theta of scikit-learn's i-th hyperparameter (default the identity).
  */
 export function expectGpCase(c: GoldenCase, kernel: Kernel, order?: readonly number[]): void {
   const [x, y] = c.inputs.map(decode) as [Value, Value]

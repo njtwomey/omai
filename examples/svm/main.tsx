@@ -5,12 +5,12 @@
  * blue where it is negative), with f = 0 as the decision boundary (solid) and f = -1 and f = 1 as the margins (dashed).
  * The rows ringed are the support vectors, taken from the session's `model/support-vectors` record.
  */
-import { generate } from 'mdml-engine/data'
-import { moons } from 'mdml-engine/datasets'
-import type { MarginRecord } from 'mdml-engine/exposition'
-import { key } from 'mdml-engine/random'
-import { svc } from 'mdml-engine/svm'
-import { toArray, toFlat } from 'mdml-engine/tensor'
+import { generate } from 'omai-engine/data'
+import { moons } from 'omai-engine/datasets'
+import type { MarginRecord } from 'omai-engine/exposition'
+import { key } from 'omai-engine/random'
+import { svc } from 'omai-engine/svm'
+import { toArray, toFlat } from 'omai-engine/tensor'
 import type { ExampleModule, Outcome, Tape } from '../_shared/contract.ts'
 import { Row } from '../_shared/figure.tsx'
 import { axesOf, classMap, gridOfValues, gridRows, windowOf } from '../_shared/maps.ts'

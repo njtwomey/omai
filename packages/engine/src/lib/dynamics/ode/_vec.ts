@@ -1,7 +1,7 @@
 // Shared state arithmetic for the ODE solvers. States are values of any shape; combinations of concrete tensors run
 // on typed arrays (the fast, untraced path) and anything traced goes through tensor operations, so the same solver
 // code is differentiable by differentiating through its steps.
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { nextAfter } from '../../numerics/approximation/index.ts'
 import { dnrm2 } from '../../numerics/linalg/index.ts'
 import {
@@ -25,7 +25,7 @@ export function combine(base: Value | null, terms: readonly Term[]): Value {
   const live = terms.filter(([c]) => c !== 0)
   const all = base === null ? live.map(([, v]) => v) : [base, ...live.map(([, v]) => v)]
   const first = base ?? terms[0]?.[1]
-  if (first === undefined) throw new MdmlError('value', 'combine: nothing to combine')
+  if (first === undefined) throw new OmaiError('value', 'combine: nothing to combine')
   if (all.length === 0) return mul(first, 0)
   if (all.every((v) => isTensor(v))) {
     const out =

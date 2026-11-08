@@ -4,7 +4,7 @@
  */
 
 import type { EChartsOption } from 'echarts'
-import type { ParetoFront } from 'mdml-engine/exposition'
+import type { ParetoFront } from 'omai-engine/exposition'
 import { lines } from '../charts/lines.ts'
 import { cartesian, type Layer } from '../charts/plot.ts'
 import { points } from '../charts/points.ts'
@@ -19,8 +19,8 @@ import { type ViewOptions, viewFigure } from './_view.ts'
  * @returns The ECharts option.
  * @example
  * ```ts
- * import { paretoFront } from 'mdml-engine/exposition'
- * import { paretoFrontView } from 'mdml-render/views'
+ * import { paretoFront } from 'omai-engine/exposition'
+ * import { paretoFrontView } from 'omai-render/views'
  * const r = paretoFront({ violationName: 'gap', families: [{ name: 'grid', violation: [0.1, 0.2], accuracy: [0.7, 0.8], front: [0, 1] }] })
  * paretoFrontView(r).series.length > 0 // => true
  * ```

@@ -5,8 +5,8 @@ from typing import Literal
 import numpy as np
 import scipy
 import scipy.interpolate as si
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray, rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray, rng
 
 REFERENCE: dict[str, str] = {"scipy": scipy.__version__}
 

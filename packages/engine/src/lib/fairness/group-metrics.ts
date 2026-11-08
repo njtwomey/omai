@@ -4,7 +4,7 @@
  * calibration within groups.
  */
 
-import { MdmlError, type MetricResult, type MetricSpec, maxOf, minOf } from '../base/index.ts'
+import { type MetricResult, type MetricSpec, maxOf, minOf, OmaiError } from '../base/index.ts'
 import { type Label, labelValues, sortLabels } from '../metrics/_labels.ts'
 import {
   defineMetric,
@@ -100,7 +100,7 @@ function prepare(
   const t = labelValues(yTrue).map((v) => (v === pos ? 1 : 0))
   const p = labelValues(yPred).map((v) => (v === pos ? 1 : 0))
   const g = labelValues(groups)
-  if (t.length !== p.length || t.length !== g.length) throw new MdmlError('shape', `${name}: inputs differ in length`)
+  if (t.length !== p.length || t.length !== g.length) throw new OmaiError('shape', `${name}: inputs differ in length`)
   const byGroup = new Map<Label, number[]>()
   for (const label of sortLabels(g)) byGroup.set(label, [])
   for (const [i, label] of g.entries()) byGroup.get(label)?.push(i)
@@ -119,7 +119,7 @@ function prepare(
  * @concept algorithmic-fairness
  * @example
  * ```ts
- * import { groupRates } from 'mdml-engine/fairness'
+ * import { groupRates } from 'omai-engine/fairness'
  * groupRates([1, 0, 1, 0], [1, 1, 0, 0], ['a', 'a', 'b', 'b']).groups.a?.selectionRate // => 1
  * ```
  */
@@ -187,7 +187,7 @@ function baseline(
   if (options.method !== 'to_reference') return pick(r.overall)
   const ref = options.reference === undefined ? undefined : r.groups[String(options.reference)]
   if (ref === undefined)
-    throw new MdmlError('value', `${name}: to_reference needs a reference group present in the data`)
+    throw new OmaiError('value', `${name}: to_reference needs a reference group present in the data`)
   return pick(ref)
 }
 
@@ -227,7 +227,7 @@ function rateDisparity(
  * @index function Demographic parity gap; equalized odds and others beside it.
  * @example
  * ```ts
- * import { demographicParityDifference } from 'mdml-engine/fairness'
+ * import { demographicParityDifference } from 'omai-engine/fairness'
  * demographicParityDifference([1, 0, 1, 0], [1, 1, 0, 0], ['a', 'a', 'b', 'b']).estimate.value // => 1
  * ```
  */
@@ -245,7 +245,7 @@ export const demographicParityDifference: MetricFunction<[MetricInput, MetricInp
  * @returns The metric result.
  * @example
  * ```ts
- * import { demographicParityRatio } from 'mdml-engine/fairness'
+ * import { demographicParityRatio } from 'omai-engine/fairness'
  * demographicParityRatio([0, 0, 0, 0], [1, 1, 1, 0], ['a', 'a', 'b', 'b']).estimate.value // => 0.5
  * ```
  */
@@ -263,7 +263,7 @@ export const demographicParityRatio: MetricFunction<[MetricInput, MetricInput, M
  * @returns The metric result.
  * @example
  * ```ts
- * import { equalOpportunityDifference } from 'mdml-engine/fairness'
+ * import { equalOpportunityDifference } from 'omai-engine/fairness'
  * equalOpportunityDifference([1, 1, 1, 1], [1, 1, 1, 0], ['a', 'a', 'b', 'b']).estimate.value // => 0.5
  * ```
  */
@@ -280,7 +280,7 @@ export const equalOpportunityDifference: MetricFunction<[MetricInput, MetricInpu
  * @returns The metric result.
  * @example
  * ```ts
- * import { equalOpportunityRatio } from 'mdml-engine/fairness'
+ * import { equalOpportunityRatio } from 'omai-engine/fairness'
  * equalOpportunityRatio([1, 1, 1, 1], [1, 1, 1, 0], ['a', 'a', 'b', 'b']).estimate.value // => 0.5
  * ```
  */
@@ -298,7 +298,7 @@ export const equalOpportunityRatio: MetricFunction<[MetricInput, MetricInput, Me
  * @returns The metric result.
  * @example
  * ```ts
- * import { predictiveParityDifference } from 'mdml-engine/fairness'
+ * import { predictiveParityDifference } from 'omai-engine/fairness'
  * predictiveParityDifference([1, 0, 1, 1], [1, 1, 1, 1], ['a', 'a', 'b', 'b']).estimate.value // => 0.5
  * ```
  */
@@ -350,7 +350,7 @@ const equalizedOdds = (
  * @returns The metric result, with the two gaps in the breakdown.
  * @example
  * ```ts
- * import { equalizedOddsDifference } from 'mdml-engine/fairness'
+ * import { equalizedOddsDifference } from 'omai-engine/fairness'
  * equalizedOddsDifference([1, 0, 1, 0], [1, 1, 1, 0], ['a', 'a', 'b', 'b']).estimate.value // => 1
  * ```
  */
@@ -368,7 +368,7 @@ export const equalizedOddsDifference: MetricFunction<[MetricInput, MetricInput, 
  * @returns The metric result.
  * @example
  * ```ts
- * import { equalizedOddsRatio } from 'mdml-engine/fairness'
+ * import { equalizedOddsRatio } from 'omai-engine/fairness'
  * equalizedOddsRatio([1, 0, 1, 0], [1, 0, 1, 0], ['a', 'a', 'b', 'b']).estimate.value // => 0
  * ```
  */
@@ -385,7 +385,7 @@ export const equalizedOddsRatio: MetricFunction<[MetricInput, MetricInput, Metri
  * @returns The metric result: the smallest ratio over unprivileged groups, each group's ratio in the breakdown.
  * @example
  * ```ts
- * import { disparateImpact } from 'mdml-engine/fairness'
+ * import { disparateImpact } from 'omai-engine/fairness'
  * disparateImpact([1, 1, 1, 0], ['a', 'a', 'b', 'b'], { privileged: 'a' }).estimate.value // => 0.5
  * ```
  */
@@ -405,7 +405,7 @@ export const disparateImpact: MetricFunction<
       return metricResult('disparateImpact', disparity(values, 0, 'between_groups', 'ratio'), labelValues(yPred).length)
     }
     const reference = r.groups[String(options.privileged)]
-    if (reference === undefined) throw new MdmlError('value', `disparateImpact: no group ${String(options.privileged)}`)
+    if (reference === undefined) throw new OmaiError('value', `disparateImpact: no group ${String(options.privileged)}`)
     const ratios = entries
       .filter(([g]) => g !== String(options.privileged))
       .map(
@@ -428,7 +428,7 @@ export const disparateImpact: MetricFunction<
  * @returns The largest between-group ECE gap, with each group's ECE in the breakdown.
  * @example
  * ```ts
- * import { calibrationByGroup } from 'mdml-engine/fairness'
+ * import { calibrationByGroup } from 'omai-engine/fairness'
  * calibrationByGroup([1, 0, 1, 0], [1, 0, 0.25, 0.25], ['a', 'a', 'b', 'b'], { nBins: 2 }).estimate.value // => 0.25
  * ```
  */
@@ -469,7 +469,7 @@ export const calibrationByGroup: MetricFunction<
  * @returns The metric result, with each group's accuracy in the breakdown.
  * @example
  * ```ts
- * import { accuracyDifference } from 'mdml-engine/fairness'
+ * import { accuracyDifference } from 'omai-engine/fairness'
  * accuracyDifference([1, 0, 1, 0], [1, 0, 0, 0], ['a', 'a', 'b', 'b']).estimate.value // => 0.5
  * ```
  */
@@ -486,7 +486,7 @@ export const accuracyDifference: MetricFunction<[MetricInput, MetricInput, Metri
  * @returns The metric result.
  * @example
  * ```ts
- * import { accuracyRatio } from 'mdml-engine/fairness'
+ * import { accuracyRatio } from 'omai-engine/fairness'
  * accuracyRatio([1, 0, 1, 0], [1, 0, 0, 0], ['a', 'a', 'b', 'b']).estimate.value // => 0.5
  * ```
  */
@@ -507,7 +507,7 @@ export const accuracyRatio: MetricFunction<[MetricInput, MetricInput, MetricInpu
  * @returns The metric result.
  * @example
  * ```ts
- * import { predictiveEqualityDifference } from 'mdml-engine/fairness'
+ * import { predictiveEqualityDifference } from 'omai-engine/fairness'
  * predictiveEqualityDifference([0, 0, 0, 0], [1, 0, 0, 0], ['a', 'a', 'b', 'b']).estimate.value // => 0.5
  * ```
  */
@@ -525,7 +525,7 @@ export const predictiveEqualityDifference: MetricFunction<[MetricInput, MetricIn
  * @returns The metric result, with each group's FN / FP in the breakdown.
  * @example
  * ```ts
- * import { treatmentEqualityDifference } from 'mdml-engine/fairness'
+ * import { treatmentEqualityDifference } from 'omai-engine/fairness'
  * // a: 2 FN, 1 FP; b: 1 FN, 1 FP.
  * treatmentEqualityDifference([1, 1, 0, 1, 0], [0, 0, 1, 0, 1], ['a', 'a', 'a', 'b', 'b']).estimate.value // => 1
  * ```
@@ -551,7 +551,7 @@ export interface ConditionalParityOptions extends FairnessOptions {
  * @returns The metric result, with each stratum's selection-rate gap in the breakdown.
  * @example
  * ```ts
- * import { conditionalDemographicParityDifference } from 'mdml-engine/fairness'
+ * import { conditionalDemographicParityDifference } from 'omai-engine/fairness'
  * // Within each stratum both groups are selected alike, though overall they are not.
  * const yPred = [1, 1, 0, 1, 0, 0]
  * const groups = ['a', 'a', 'b', 'b', 'b', 'b']
@@ -572,7 +572,7 @@ export const conditionalDemographicParityDifference: MetricFunction<
     const s = labelValues(strata)
     const p = labelValues(yPred)
     if (s.length !== p.length)
-      throw new MdmlError('shape', 'conditionalDemographicParityDifference: inputs differ in length')
+      throw new OmaiError('shape', 'conditionalDemographicParityDifference: inputs differ in length')
     const w = sampleWeights('conditionalDemographicParityDifference', p.length, options.sampleWeight)
     const g = labelValues(groups)
     const per: Record<string, number> = {}
@@ -615,7 +615,7 @@ function balance(name: string, cls: 0 | 1): MetricFunction<[MetricInput, TensorL
       const s = labelValues(yScore as MetricInput) as number[]
       const g = labelValues(groups)
       if (t.length !== s.length || t.length !== g.length)
-        throw new MdmlError('shape', `${name}: inputs differ in length`)
+        throw new OmaiError('shape', `${name}: inputs differ in length`)
       const w = sampleWeights(name, t.length, options.sampleWeight)
       const per: Record<string, number> = {}
       for (const label of sortLabels(g)) {
@@ -644,7 +644,7 @@ function balance(name: string, cls: 0 | 1): MetricFunction<[MetricInput, TensorL
  * @returns The metric result, with each group's mean positive score in the breakdown.
  * @example
  * ```ts
- * import { balanceForPositiveClass } from 'mdml-engine/fairness'
+ * import { balanceForPositiveClass } from 'omai-engine/fairness'
  * balanceForPositiveClass([1, 1, 1, 0], [0.75, 0.25, 0.25, 0.5], ['a', 'a', 'b', 'b']).estimate.value // => 0.25
  * ```
  */
@@ -662,7 +662,7 @@ export const balanceForPositiveClass: MetricFunction<[MetricInput, TensorLike, M
  * @returns The metric result, with each group's mean negative score in the breakdown.
  * @example
  * ```ts
- * import { balanceForNegativeClass } from 'mdml-engine/fairness'
+ * import { balanceForNegativeClass } from 'omai-engine/fairness'
  * balanceForNegativeClass([0, 0, 0, 1], [0.1, 0.3, 0.5, 0.9], ['a', 'a', 'b', 'b']).estimate.value // => 0.3
  * ```
  */
@@ -711,7 +711,7 @@ export interface MetricFrame {
  * @returns The frame.
  * @example
  * ```ts
- * import { metricFrame } from 'mdml-engine/fairness'
+ * import { metricFrame } from 'omai-engine/fairness'
  * const accuracy = (t: unknown[], p: unknown[]) => t.filter((v, i) => v === p[i]).length / t.length
  * const f = metricFrame([1, 0, 1, 0], [1, 0, 0, 0], ['a', 'a', 'b', 'b'], accuracy)
  * f.byGroup // => { a: 1, b: 0.5 }
@@ -730,7 +730,7 @@ export function metricFrame(
   const p = labelValues(yPred)
   const g = labelValues(groups)
   if (t.length !== p.length || t.length !== g.length)
-    throw new MdmlError('shape', 'metricFrame: inputs differ in length')
+    throw new OmaiError('shape', 'metricFrame: inputs differ in length')
   const w = Array.from(sampleWeights('metricFrame', t.length, options.sampleWeight))
   const byGroup: Record<string, number> = {}
   const sizes: Record<string, number> = {}
@@ -752,7 +752,7 @@ export function metricFrame(
   let reference = options.reference === undefined ? undefined : String(options.reference)
   if (reference === undefined) reference = Object.entries(sizes).reduce((a, b) => (b[1] > a[1] ? b : a))[0]
   const ref = byGroup[reference]
-  if (ref === undefined) throw new MdmlError('value', `metricFrame: no group ${reference}`)
+  if (ref === undefined) throw new OmaiError('value', `metricFrame: no group ${reference}`)
   return {
     byGroup,
     overall: metric(t, p, w),
@@ -789,7 +789,7 @@ export interface MulticalibrationOptions {
  * @returns The largest violation, with each subgroup's largest violation in the breakdown.
  * @example
  * ```ts
- * import { multicalibration } from 'mdml-engine/fairness'
+ * import { multicalibration } from 'omai-engine/fairness'
  * // Calibrated overall (0.5 against half positives) but not within either group.
  * const r = multicalibration([1, 1, 0, 0], [0.5, 0.5, 0.5, 0.5], [['a', 'a', 'b', 'b']], { nBins: 2 })
  * r.estimate.value // => 0.5
@@ -809,7 +809,7 @@ export const multicalibration: MetricFunction<
     const p = labelValues(yProb as MetricInput) as number[]
     const columns = attributes.map(labelValues)
     if (columns.some((c) => c.length !== t.length) || p.length !== t.length)
-      throw new MdmlError('shape', 'multicalibration: inputs differ in length')
+      throw new OmaiError('shape', 'multicalibration: inputs differ in length')
     const nBins = options.nBins ?? 10
     const minRows = (options.minMass ?? 0) * t.length
     const keyed = new Map<string, number[]>()

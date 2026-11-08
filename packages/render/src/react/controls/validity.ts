@@ -5,9 +5,9 @@
  * the reason as its title, not hidden.
  */
 
-import type { Json } from 'mdml-engine/base'
-import { defaults, type OptionTable, type Space, type SpaceValue } from 'mdml-engine/space'
-import type { ModeTable, SlotValues } from 'mdml-engine/trace'
+import type { Json } from 'omai-engine/base'
+import { defaults, type OptionTable, type Space, type SpaceValue } from 'omai-engine/space'
+import type { ModeTable, SlotValues } from 'omai-engine/trace'
 import type { Admissibility, ControlPath } from './space-controls.ts'
 
 /** One slot of a configuration whose options come from a table, with what rules its options out (types erased). */

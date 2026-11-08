@@ -4,7 +4,7 @@
  * max-product elimination, and MAP queries over a subset of variables.
  */
 
-import { type Json, MdmlError } from '../../base/index.ts'
+import { type Json, OmaiError } from '../../base/index.ts'
 import {
   type Algorithm,
   type Contract,
@@ -124,7 +124,7 @@ function prepare(
   const evidence = evidenceIndices(model, options.evidence ?? {})
   for (const q of keep) {
     modelVariable(model, q)
-    if (q in evidence) throw new MdmlError('value', `${name}: ${q} is both queried and observed`)
+    if (q in evidence) throw new OmaiError('value', `${name}: ${q} is both queried and observed`)
   }
   const names = modelVariables(model).map((v) => v.name)
   const hidden = names.filter((v) => !keep.includes(v) && !(v in evidence))
@@ -143,7 +143,7 @@ function prepare(
         ]
       : [...options.order]
   const missing = hidden.filter((v) => !order.includes(v))
-  if (missing.length > 0) throw new MdmlError('value', `${name}: the order misses ${missing.join(', ')}`)
+  if (missing.length > 0) throw new OmaiError('value', `${name}: the order misses ${missing.join(', ')}`)
   return { factors: all.map((f) => reduceFactor(f, evidence)), order }
 }
 
@@ -158,12 +158,12 @@ function prepare(
  * @param query - The query variables (kept, not eliminated).
  * @param options - Evidence, elimination order or heuristic (a slot: see `eliminationHeuristics`), and the semiring.
  * @returns The algorithm; it is done when every hidden variable is eliminated.
- * @throws MdmlError with code `value` for unknown or observed query variables, or an incomplete order.
+ * @throws OmaiError with code `value` for unknown or observed query variables, or an incomplete order.
  * @concept variable-elimination
  * @example
  * ```ts
- * import { bayesNet, variableEliminationAlgorithm } from 'mdml-engine/pgm'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { bayesNet, variableEliminationAlgorithm } from 'omai-engine/pgm'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const bn = bayesNet([
  *   { name: 'rain', states: ['no', 'yes'], parents: [], cpt: [0.8, 0.2] },
  *   { name: 'wet', states: ['no', 'yes'], parents: ['rain'], cpt: [0.9, 0.1, 0.2, 0.8] },
@@ -302,12 +302,12 @@ function runElimination(
  * @param query - The query variables.
  * @param options - Evidence, elimination order or heuristic, and tracer.
  * @returns The posterior over the query, log P(evidence), the order and the largest factor size.
- * @throws MdmlError with code `value` for unknown or observed query variables, or an incomplete order.
+ * @throws OmaiError with code `value` for unknown or observed query variables, or an incomplete order.
  * @concept variable-elimination
  * @index function Exact inference by variable elimination.
  * @example
  * ```ts
- * import { bayesNet, variableElimination, factorValues } from 'mdml-engine/pgm'
+ * import { bayesNet, variableElimination, factorValues } from 'omai-engine/pgm'
  * const bn = bayesNet([
  *   { name: 'rain', states: ['no', 'yes'], parents: [], cpt: [0.8, 0.2] },
  *   { name: 'wet', states: ['no', 'yes'], parents: ['rain'], cpt: [0.9, 0.1, 0.2, 0.8] },
@@ -340,7 +340,7 @@ export function variableElimination(
  * @concept partition-function
  * @example
  * ```ts
- * import { isingModel, logPartition } from 'mdml-engine/pgm'
+ * import { isingModel, logPartition } from 'omai-engine/pgm'
  * logPartition(isingModel({ rows: 1, cols: 2, coupling: 0 })) === Math.log(4) // => true
  * ```
  */
@@ -371,7 +371,7 @@ export interface MaxProductResult {
  * @concept map-inference
  * @example
  * ```ts
- * import { bayesNet, maxProductElimination } from 'mdml-engine/pgm'
+ * import { bayesNet, maxProductElimination } from 'omai-engine/pgm'
  * const bn = bayesNet([
  *   { name: 'rain', states: ['no', 'yes'], parents: [], cpt: [0.8, 0.2] },
  *   { name: 'wet', states: ['no', 'yes'], parents: ['rain'], cpt: [0.9, 0.1, 0.2, 0.8] },
@@ -413,7 +413,7 @@ export function maxProductElimination(model: DiscreteModel, options: Elimination
  * @returns The state names of the most probable assignment (in query order), and its posterior probability.
  * @example
  * ```ts
- * import { bayesNet, mapQuery } from 'mdml-engine/pgm'
+ * import { bayesNet, mapQuery } from 'omai-engine/pgm'
  * const bn = bayesNet([{ name: 'rain', states: ['no', 'yes'], parents: [], cpt: [0.8, 0.2] }])
  * mapQuery(bn, ['rain']).assignment // => { rain: 'no' }
  * ```

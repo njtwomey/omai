@@ -3,7 +3,7 @@
  * animation, playback control and GIF or video export.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import type { Structure } from './structure.ts'
 import type { Scene } from './types.ts'
 
@@ -43,10 +43,10 @@ export interface Timeline {
  * @param frames - The frames.
  * @param options - Frames per second for playback (default 10) and a title.
  * @returns The timeline.
- * @throws MdmlError `value` when `fps` is not above 0 or a frame's step is not finite.
+ * @throws OmaiError `value` when `fps` is not above 0 or a frame's step is not finite.
  * @example
  * ```ts
- * import { timeline, scene } from 'mdml-engine/scene'
+ * import { timeline, scene } from 'omai-engine/scene'
  * timeline([{ kind: 'scene', step: 1, scene: scene(1, 1, []) }]).frames.length // => 1
  * ```
  */
@@ -55,10 +55,10 @@ export function timeline(
   options: { readonly fps?: number; readonly title?: string } = {},
 ): Timeline {
   const { fps = 10, ...rest } = options
-  if (!(Number.isFinite(fps) && fps > 0)) throw new MdmlError('value', `timeline: fps is ${fps}, expected a number > 0`)
+  if (!(Number.isFinite(fps) && fps > 0)) throw new OmaiError('value', `timeline: fps is ${fps}, expected a number > 0`)
   for (const [i, f] of frames.entries())
     if (!Number.isFinite(f.step))
-      throw new MdmlError('value', `timeline: frame ${i} has step ${f.step}, expected a finite number`)
+      throw new OmaiError('value', `timeline: frame ${i} has step ${f.step}, expected a finite number`)
   return { kind: 'timeline', frames: [...frames].sort((a, b) => a.step - b.step), fps, ...rest }
 }
 
@@ -70,7 +70,7 @@ export function timeline(
  * @returns The timeline.
  * @example
  * ```ts
- * import { sceneTimeline, scene } from 'mdml-engine/scene'
+ * import { sceneTimeline, scene } from 'omai-engine/scene'
  * sceneTimeline([scene(1, 1, []), scene(1, 1, [])]).frames[1].step // => 1
  * ```
  */
@@ -91,7 +91,7 @@ export function sceneTimeline(
  * @returns `true` for timelines.
  * @example
  * ```ts
- * import { isTimeline, timeline } from 'mdml-engine/scene'
+ * import { isTimeline, timeline } from 'omai-engine/scene'
  * isTimeline(timeline([])) // => true
  * ```
  */

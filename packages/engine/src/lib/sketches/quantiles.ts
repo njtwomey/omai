@@ -5,7 +5,7 @@
  * `cdf` and `rank`; the randomised one draws its coins from a `Key`.
  */
 
-import { type Json, MdmlError, maxOf } from '../base/index.ts'
+import { type Json, maxOf, OmaiError } from '../base/index.ts'
 import { type Key, uniformStream } from '../random/index.ts'
 import { type P2State, p2Estimate, p2Push, p2Quantile } from '../stats/index.ts'
 import {
@@ -37,11 +37,11 @@ export interface QuantileSketch {
 }
 
 function checkFinite(value: number, who: string): void {
-  if (!Number.isFinite(value)) throw new MdmlError('value', `${who}: value must be finite, got ${value}`)
+  if (!Number.isFinite(value)) throw new OmaiError('value', `${who}: value must be finite, got ${value}`)
 }
 
 function checkQuantile(q: number, who: string): void {
-  if (!(q >= 0 && q <= 1)) throw new MdmlError('value', `${who}: q must lie in [0, 1], got ${q}`)
+  if (!(q >= 0 && q <= 1)) throw new OmaiError('value', `${who}: q must lie in [0, 1], got ${q}`)
 }
 
 /** A tuple of the Greenwald-Khanna summary: a value, the rank gap `g` to its predecessor, and the rank slack `delta`. */
@@ -75,12 +75,12 @@ export interface GkSummary extends QuantileSketch {
  *
  * @param epsilon - The rank error as a fraction of `n`, in `(0, 1)`.
  * @returns The summary.
- * @throws MdmlError with code `value` for `epsilon` outside `(0, 1)`.
+ * @throws OmaiError with code `value` for `epsilon` outside `(0, 1)`.
  * @concept quantile-sketch
  * @reference M. Greenwald and S. Khanna, Space-efficient online computation of quantile summaries (SIGMOD 2001).
  * @example
  * ```ts
- * import { gkSummary } from 'mdml-engine/sketches'
+ * import { gkSummary } from 'omai-engine/sketches'
  * const gk = gkSummary(0.01)
  * for (let i = 1; i <= 1000; i++) gk.add(i)
  * Math.abs(gk.quantile(0.5) - 500) <= 0.01 * 1000 // => true
@@ -88,7 +88,7 @@ export interface GkSummary extends QuantileSketch {
  */
 export function gkSummary(epsilon: number): GkSummary {
   if (!(epsilon > 0 && epsilon < 1))
-    throw new MdmlError('value', `gkSummary: epsilon must lie in (0, 1), got ${epsilon}`)
+    throw new OmaiError('value', `gkSummary: epsilon must lie in (0, 1), got ${epsilon}`)
   return gkOver(epsilon, { tuples: [], count: 0, min: Number.NaN, max: Number.NaN })
 }
 
@@ -299,7 +299,7 @@ function makeTDigest(
     add: (value, weight = 1) => {
       checkFinite(value, 'tDigest.add')
       if (!(weight > 0 && Number.isFinite(weight))) {
-        throw new MdmlError('value', `tDigest.add: weight must be positive and finite, got ${weight}`)
+        throw new OmaiError('value', `tDigest.add: weight must be positive and finite, got ${weight}`)
       }
       buffer.push({ mean: value, weight })
       total += weight
@@ -357,12 +357,12 @@ function makeTDigest(
  *
  * @param options - The `compression` (default 100, at least 10).
  * @returns The digest.
- * @throws MdmlError with code `value` for a compression below 10.
+ * @throws OmaiError with code `value` for a compression below 10.
  * @concept quantile-sketch
  * @reference T. Dunning and O. Ertl, Computing extremely accurate quantiles using t-digests (arXiv 1902.04023, 2019).
  * @example
  * ```ts
- * import { tDigest } from 'mdml-engine/sketches'
+ * import { tDigest } from 'omai-engine/sketches'
  * const td = tDigest({ compression: 100 })
  * for (let i = 1; i <= 10000; i++) td.add(i)
  * Math.abs(td.quantile(0.5) - 5000) < 100 // => true
@@ -370,7 +370,7 @@ function makeTDigest(
  */
 export function tDigest(options: TDigestOptions = {}): TDigest {
   const compression = options.compression ?? 100
-  if (!(compression >= 10)) throw new MdmlError('value', `tDigest: compression must be at least 10, got ${compression}`)
+  if (!(compression >= 10)) throw new OmaiError('value', `tDigest: compression must be at least 10, got ${compression}`)
   return makeTDigest(compression, [], 0, Number.NaN, Number.NaN)
 }
 
@@ -535,13 +535,13 @@ function makeKll(k: number, key: Key, state: KllState): KllSketch {
  *
  * @param options - `k` and the `key` for the coins.
  * @returns The sketch.
- * @throws MdmlError with code `value` for `k < 8`.
+ * @throws OmaiError with code `value` for `k < 8`.
  * @concept quantile-sketch
  * @reference Z. Karnin, K. Lang and E. Liberty, Optimal quantile approximation in streams (FOCS 2016).
  * @example
  * ```ts
- * import { kllSketch } from 'mdml-engine/sketches'
- * import { key } from 'mdml-engine/random'
+ * import { kllSketch } from 'omai-engine/sketches'
+ * import { key } from 'omai-engine/random'
  * const kll = kllSketch({ k: 200, key: key(1) })
  * for (let i = 1; i <= 20000; i++) kll.add(i)
  * Math.abs(kll.quantile(0.5) - 10000) < 0.03 * 20000 // => true
@@ -550,7 +550,7 @@ function makeKll(k: number, key: Key, state: KllState): KllSketch {
 export function kllSketch(options: KllSketchOptions): KllSketch {
   const k = options.k ?? 200
   if (!(Number.isInteger(k) && k >= 8))
-    throw new MdmlError('value', `kllSketch: k must be an integer of at least 8, got ${k}`)
+    throw new OmaiError('value', `kllSketch: k must be an integer of at least 8, got ${k}`)
   return makeKll(k, options.key, { levels: [[]], count: 0, min: Number.NaN, max: Number.NaN, coins: 0, compactions: 0 })
 }
 
@@ -592,12 +592,12 @@ const DEFAULT_QUANTILES: readonly number[] = [0.25, 0.5, 0.75]
  *
  * @param options - epsilon, the stream and the quantiles to report.
  * @returns The algorithm.
- * @throws MdmlError with code `value` for `epsilon` outside `(0, 1)`.
+ * @throws OmaiError with code `value` for `epsilon` outside `(0, 1)`.
  * @concept quantile-sketch
  * @example
  * ```ts
- * import { gkSummaryAlgorithm } from 'mdml-engine/sketches'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { gkSummaryAlgorithm } from 'omai-engine/sketches'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const items = Array.from({ length: 200 }, (_, i) => (i * 37) % 200)
  * const run = runAlgorithm(gkSummaryAlgorithm({ epsilon: 0.05, items }), { maxSteps: 300 })
  * [run.status, run.state.count, run.state.tuples.length < 200] // => ['completed', 200, true]
@@ -608,7 +608,7 @@ export function gkSummaryAlgorithm(
 ): Algorithm<GkState, QuantileSketchPath> {
   const { epsilon, items } = options
   if (!(epsilon > 0 && epsilon < 1))
-    throw new MdmlError('value', `gkSummary: epsilon must lie in (0, 1), got ${epsilon}`)
+    throw new OmaiError('value', `gkSummary: epsilon must lie in (0, 1), got ${epsilon}`)
   const quantiles = options.quantiles ?? DEFAULT_QUANTILES
   return {
     name: 'sketches/greenwald-khanna',
@@ -654,13 +654,13 @@ export function gkSummaryAlgorithm(
  *
  * @param options - k, the key for the coins, the stream and the quantiles to report.
  * @returns The algorithm.
- * @throws MdmlError with code `value` for `k < 8`.
+ * @throws OmaiError with code `value` for `k < 8`.
  * @concept quantile-sketch
  * @example
  * ```ts
- * import { kllSketchAlgorithm } from 'mdml-engine/sketches'
- * import { key } from 'mdml-engine/random'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { kllSketchAlgorithm } from 'omai-engine/sketches'
+ * import { key } from 'omai-engine/random'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const items = Array.from({ length: 500 }, (_, i) => (i * 37) % 500)
  * const run = runAlgorithm(kllSketchAlgorithm({ k: 16, key: key(0), items }), { maxSteps: 600 })
  * [run.state.count, run.state.compactions > 0] // => [500, true]
@@ -671,7 +671,7 @@ export function kllSketchAlgorithm(
 ): Algorithm<KllState, QuantileSketchPath> {
   const k = options.k ?? 200
   if (!(Number.isInteger(k) && k >= 8))
-    throw new MdmlError('value', `kllSketch: k must be an integer of at least 8, got ${k}`)
+    throw new OmaiError('value', `kllSketch: k must be an integer of at least 8, got ${k}`)
   const { items } = options
   const quantiles = options.quantiles ?? DEFAULT_QUANTILES
   return {
@@ -729,12 +729,12 @@ export function kllSketchAlgorithm(
  *
  * @param options - The level `p` in (0, 1) and the stream.
  * @returns The algorithm.
- * @throws MdmlError with code `value` for `p` outside `(0, 1)`.
+ * @throws OmaiError with code `value` for `p` outside `(0, 1)`.
  * @concept quantile-sketch
  * @example
  * ```ts
- * import { p2Algorithm } from 'mdml-engine/sketches'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { p2Algorithm } from 'omai-engine/sketches'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const run = runAlgorithm(p2Algorithm({ p: 0.5, items: [5, 1, 4, 2, 3] }), { maxSteps: 10 })
  * run.state.heights // => [1, 2, 3, 4, 5]
  * ```

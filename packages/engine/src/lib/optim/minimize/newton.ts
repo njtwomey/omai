@@ -4,7 +4,7 @@
  * port of scipy's that solves for the step by conjugate gradients on Hessian-vector products from autodiff.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { dasum, daxpy, ddot, dgemv, dnrm2, dpotrf, dpotrs, dscal, dsyev } from '../../numerics/linalg/index.ts'
 import type { Algorithm } from '../../trace/index.ts'
 import { defaultGradTol } from '../_knobs.ts'
@@ -53,7 +53,7 @@ export interface ModifiedCholesky {
  * @concept newton-method
  * @example
  * ```ts
- * import { modifiedCholesky } from 'mdml-engine/optim'
+ * import { modifiedCholesky } from 'omai-engine/optim'
  * modifiedCholesky([1, 2, 2, 1], 2).tau > 1 // => true
  * modifiedCholesky([2, 0, 0, 3], 2).tau // => 0
  * ```
@@ -69,7 +69,7 @@ export function modifiedCholesky(h: ArrayLike<number>, n: number, beta = 1e-3): 
     if (info === 0) return { factor, tau, attempts }
     tau = Math.max(2 * tau, beta)
   }
-  throw new MdmlError('singular', 'modifiedCholesky: no shift made the matrix positive definite')
+  throw new OmaiError('singular', 'modifiedCholesky: no shift made the matrix positive definite')
 }
 
 /** Options of {@link newton}. */
@@ -131,8 +131,8 @@ function newtonDirection(
  * @concept newton-method
  * @example
  * ```ts
- * import { newtonAlgorithm } from 'mdml-engine/optim'
- * import { square, sum, type Value } from 'mdml-engine/tensor'
+ * import { newtonAlgorithm } from 'omai-engine/optim'
+ * import { square, sum, type Value } from 'omai-engine/tensor'
  * newtonAlgorithm((x: Value) => sum(square(x)), [1, 2]).name // => 'newton'
  * ```
  */
@@ -244,8 +244,8 @@ function newtonOn(obj: FlatObjective, options: NewtonOptions): Algorithm<NewtonS
  * @index function Newton's method with modified Cholesky and line search.
  * @example
  * ```ts
- * import { newton } from 'mdml-engine/optim'
- * import { add, mul, square, sub, sum, toFlat, type Value } from 'mdml-engine/tensor'
+ * import { newton } from 'omai-engine/optim'
+ * import { add, mul, square, sub, sum, toFlat, type Value } from 'omai-engine/tensor'
  * const r = newton((x: Value) => add(sum(square(sub(x, 1))), mul(sum(square(x)), 0.5)), [3, -3])
  * [r.steps, toFlat(r.x as Value).map((v) => Math.round(v * 1e12) / 1e12)] // => [1, [0.666666666667, 0.666666666667]]
  * ```
@@ -287,8 +287,8 @@ export interface NewtonCgState extends VectorState {
  * @concept newton-method
  * @example
  * ```ts
- * import { newtonCgAlgorithm } from 'mdml-engine/optim'
- * import { square, sum, type Value } from 'mdml-engine/tensor'
+ * import { newtonCgAlgorithm } from 'omai-engine/optim'
+ * import { square, sum, type Value } from 'omai-engine/tensor'
  * newtonCgAlgorithm((x: Value) => sum(square(x)), [1, 2]).name // => 'newtonCg'
  * ```
  */
@@ -430,8 +430,8 @@ function newtonCgOn(obj: FlatObjective, options: NewtonCgOptions): Algorithm<New
  * @concept newton-method
  * @example
  * ```ts
- * import { newtonCg } from 'mdml-engine/optim'
- * import { square, sub, sum, type Value } from 'mdml-engine/tensor'
+ * import { newtonCg } from 'omai-engine/optim'
+ * import { square, sub, sum, type Value } from 'omai-engine/tensor'
  * newtonCg((x: Value) => sum(square(sub(x, 3))), [0, 1]).converged // => true
  * ```
  */

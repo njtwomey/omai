@@ -1,4 +1,4 @@
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import type { Tensor } from '../../tensor/index.ts'
 import { constant } from '../_shared.ts'
 
@@ -8,7 +8,7 @@ import { constant } from '../_shared.ts'
 
 /** A window of length m from its symmetric formula at length len (m, or m + 1 for a periodic window). */
 export function build(m: number, sym: boolean, f: (len: number) => Float64Array): Tensor {
-  if (!Number.isInteger(m) || m < 0) throw new MdmlError('value', `windows: M must be a non-negative integer, got ${m}`)
+  if (!Number.isInteger(m) || m < 0) throw new OmaiError('value', `windows: M must be a non-negative integer, got ${m}`)
   if (m <= 1) return constant(new Float64Array(m).fill(1))
   const len = sym ? m : m + 1
   const w = f(len)

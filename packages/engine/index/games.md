@@ -6,15 +6,15 @@ Game theory: normal-form games and their equilibria (Nash, correlated, evolution
 
 ## games/extensive-form
 
-Extensive-form games: sequential games with chance and hidden information, represented as trees with information sets in OpenSpiel's style. Here are the tree and policy contracts, backward induction, best responses and exploitability, counterfactual regret minimisation (full and Monte Carlo), the sequence form, and Kuhn and Leduc poker. Part of `mdml-engine/games`.
+Extensive-form games: sequential games with chance and hidden information, represented as trees with information sets in OpenSpiel's style. Here are the tree and policy contracts, backward induction, best responses and exploitability, counterfactual regret minimisation (full and Monte Carlo), the sequence form, and Kuhn and Leduc poker. Part of `omai-engine/games`.
 
-- function `cfr`: Counterfactual regret minimisation for imperfect-information games. `src/lib/games/extensive-form/cfr.ts:199` `mdml-engine/games`
+- function `cfr`: Counterfactual regret minimisation for imperfect-information games. `src/lib/games/extensive-form/cfr.ts:199` `omai-engine/games`
 
 ## games/normal-form
 
-Normal-form games, where players choose actions simultaneously: game construction and the classic examples, Nash equilibria by enumeration, Lemke-Howson and linear programming for zero-sum games, correlated equilibria, and dominance and iterated elimination. Part of `mdml-engine/games`.
+Normal-form games, where players choose actions simultaneously: game construction and the classic examples, Nash equilibria by enumeration, Lemke-Howson and linear programming for zero-sum games, correlated equilibria, and dominance and iterated elimination. Part of `omai-engine/games`.
 
-- function `lemkeHowson`: Nash equilibrium of a bimatrix game by Lemke-Howson. `src/lib/games/normal-form/lemke-howson.ts:247` `mdml-engine/games`
-- function `supportEnumeration`: All Nash equilibria of a small game by support enumeration. `src/lib/games/normal-form/enumeration.ts:76` `mdml-engine/games`
+- function `lemkeHowson`: Nash equilibrium of a bimatrix game by Lemke-Howson. `src/lib/games/normal-form/lemke-howson.ts:247` `omai-engine/games`
+- function `supportEnumeration`: All Nash equilibria of a small game by support enumeration. `src/lib/games/normal-form/enumeration.ts:76` `omai-engine/games`
 
-- structure `normalFormGame`: A normal-form game from payoff tensors. `src/lib/games/normal-form/game.ts:64` `mdml-engine/games`
+- structure `normalFormGame`: A normal-form game from payoff tensors. `src/lib/games/normal-form/game.ts:64` `omai-engine/games`

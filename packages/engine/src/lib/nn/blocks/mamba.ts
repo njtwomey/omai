@@ -7,7 +7,7 @@
  * parallel pass.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { foldIn, type Key, uniform } from '../../random/index.ts'
 import {
   add,
@@ -48,8 +48,8 @@ import { SequenceModel, type SequenceModelOptions } from './sequence-model.ts'
  * @concept state-space-models
  * @example
  * ```ts
- * import { causalDepthwiseConv } from 'mdml-engine/nn/blocks'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { causalDepthwiseConv } from 'omai-engine/nn/blocks'
+ * import { toFlat } from 'omai-engine/tensor'
  * toFlat(causalDepthwiseConv([[[1, 2, 3]]], [[[1, 1]]]).y) // => [1, 3, 5]
  * ```
  */
@@ -63,7 +63,7 @@ export function causalDepthwiseConv(
   const wv = asTensor(weight)
   const [bs = 1, c = 1, l = 0] = xv.shape
   const k = wv.shape[2] ?? 1
-  if (k < 2) throw new MdmlError('value', 'causalDepthwiseConv: the kernel must have at least two taps')
+  if (k < 2) throw new OmaiError('value', 'causalDepthwiseConv: the kernel must have at least two taps')
   const padded = concat([window ?? zeros([bs, c, k - 1]), xv], 2)
   const y = conv1d(padded, wv, { groups: c, ...(bias === undefined ? {} : { bias }) })
   return { y, window: sliceAxis(padded, 2, l, l + k - 1) }
@@ -144,8 +144,8 @@ function dtProj(config: MambaConfig, key: Key): Params {
  * @reference Gu and Dao (2023), Mamba: linear-time sequence modeling with selective state spaces.
  * @example
  * ```ts
- * import { MambaBlock } from 'mdml-engine/nn/blocks'
- * import { zeros } from 'mdml-engine/tensor'
+ * import { MambaBlock } from 'omai-engine/nn/blocks'
+ * import { zeros } from 'omai-engine/tensor'
  * new MambaBlock(8, { stateSize: 4 }).forward(zeros([1, 5, 8])).output.shape // => [1, 5, 8]
  * ```
  */
@@ -169,7 +169,7 @@ export class MambaBlock extends SequenceMixer {
       dtMax: options.dtMax ?? 0.1,
       dtFloor: options.dtFloor ?? 1e-4,
     }
-    if (config.conv < 2) throw new MdmlError('value', 'MambaBlock: convKernel must be at least 2')
+    if (config.conv < 2) throw new OmaiError('value', 'MambaBlock: convKernel must be at least 2')
     const bias = options.bias ?? false
     const dtLayer = new Linear(config.rank, inner, { key: foldIn(k, 2) })
     dtLayer.setParams(dtProj(config, foldIn(k, 2)))
@@ -306,8 +306,8 @@ const mamba2Own = (c: Mamba2Config, key: Key): Params => ({
  *   state space duality.
  * @example
  * ```ts
- * import { Mamba2Block } from 'mdml-engine/nn/blocks'
- * import { zeros } from 'mdml-engine/tensor'
+ * import { Mamba2Block } from 'omai-engine/nn/blocks'
+ * import { zeros } from 'omai-engine/tensor'
  * new Mamba2Block(8, { stateSize: 4, headDim: 8 }).forward(zeros([1, 5, 8])).output.shape // => [1, 5, 8]
  * ```
  */
@@ -327,7 +327,7 @@ export class Mamba2Block extends SequenceMixer {
     const k = initKey('Mamba2Block', options.key)
     const inner = (options.expand ?? 2) * dim
     const headDim = options.headDim ?? Math.min(inner, 16)
-    if (inner % headDim !== 0) throw new MdmlError('value', `Mamba2Block: head width ${headDim} must divide ${inner}`)
+    if (inner % headDim !== 0) throw new OmaiError('value', `Mamba2Block: head width ${headDim} must divide ${inner}`)
     const config: Mamba2Config = {
       inner,
       heads: inner / headDim,
@@ -339,7 +339,7 @@ export class Mamba2Block extends SequenceMixer {
       dtFloor: options.dtFloor ?? 1e-4,
       aRange: options.aRange ?? [1, 16],
     }
-    if (config.conv < 2) throw new MdmlError('value', 'Mamba2Block: convKernel must be at least 2')
+    if (config.conv < 2) throw new OmaiError('value', 'Mamba2Block: convKernel must be at least 2')
     const bias = options.bias ?? false
     super(
       {
@@ -439,7 +439,7 @@ export class Mamba2Block extends SequenceMixer {
  * @concept sequence-models
  * @example
  * ```ts
- * import { mambaModel } from 'mdml-engine/nn/blocks'
+ * import { mambaModel } from 'omai-engine/nn/blocks'
  * mambaModel(11, 8, 2, { stateSize: 4 }).forward([[1, 2, 3]]).shape // => [1, 3, 11]
  * ```
  */

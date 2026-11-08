@@ -1,5 +1,5 @@
 import * as echarts from 'echarts'
-import { clusteringSteps, regularisationPath } from 'mdml-engine/exposition'
+import { clusteringSteps, regularisationPath } from 'omai-engine/exposition'
 import { describe, expect, it } from 'vitest'
 import { regularisationPathView } from './paths.ts'
 import { clusteringFrames } from './steps.ts'

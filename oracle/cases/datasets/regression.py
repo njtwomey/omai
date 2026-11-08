@@ -3,7 +3,7 @@
 from typing import cast
 
 import sklearn
-from mdml_oracle.fixture import Case, case
+from omai_oracle.fixture import Case, case
 from sklearn.datasets import load_diabetes, make_friedman1, make_friedman2, make_friedman3
 from sklearn.utils import Bunch
 

@@ -4,7 +4,7 @@
  * surrogate's variance each parameter explains) and PED-ANOVA, which compares the best trials with the rest.
  */
 
-import { MdmlError, meanOf, varianceOf } from '../base/index.ts'
+import { meanOf, OmaiError, varianceOf } from '../base/index.ts'
 import { foldIn, type Key, key as makeKey, permutation, scrambledSobol } from '../random/index.ts'
 import { pearson, spearman } from '../stats/index.ts'
 import { type Leaf, leafCoordinate, leavesOf, nativeOf } from './_leaves.ts'
@@ -34,7 +34,7 @@ interface Data {
 
 function dataOf(study: Study, objective: number): Data {
   const d = study.directions[objective]
-  if (d === undefined) throw new MdmlError('value', `importance: no objective ${objective}`)
+  if (d === undefined) throw new OmaiError('value', `importance: no objective ${objective}`)
   const trials = completeTrials(study).filter((t) => t.values.every(Number.isFinite))
   return {
     leaves: leavesOf(study.space),
@@ -55,8 +55,8 @@ function dataOf(study: Study, objective: number): Data {
  * @concept hyperparameter-importance
  * @example
  * ```ts
- * import { createStudy, correlationImportance } from 'mdml-engine/tune'
- * import { dict, real } from 'mdml-engine/space'
+ * import { createStudy, correlationImportance } from 'omai-engine/tune'
+ * import { dict, real } from 'omai-engine/space'
  * const trials = [0, 1, 2, 3, 4, 5].map((i) => ({ number: i, params: { a: i / 5, b: ((i * 7) % 6) / 5 }, state: 'complete', values: [i], intermediate: [], source: 'x' }) as const)
  * Object.keys(correlationImportance(createStudy(dict({ a: real(0, 1), b: real(0, 1) }), { trials })))[0] // => 'a'
  * ```
@@ -93,7 +93,7 @@ function surrogateOf(data: Data): { gp: GpSurrogate; columns: number[][] } {
 }
 
 function needTrials(data: Data, n: number, name: string): void {
-  if (data.trials.length < n) throw new MdmlError('value', `${name}: need at least ${n} complete trials`)
+  if (data.trials.length < n) throw new OmaiError('value', `${name}: need at least ${n} complete trials`)
 }
 
 /**
@@ -104,12 +104,12 @@ function needTrials(data: Data, n: number, name: string): void {
  * @param study - The study.
  * @param options - Repeats (default 5), key and objective index.
  * @returns Importances by parameter, summing to 1.
- * @throws MdmlError with code `value` with fewer than 3 complete trials.
+ * @throws OmaiError with code `value` with fewer than 3 complete trials.
  * @concept hyperparameter-importance
  * @example
  * ```ts
- * import { createStudy, permutationImportance } from 'mdml-engine/tune'
- * import { dict, real } from 'mdml-engine/space'
+ * import { createStudy, permutationImportance } from 'omai-engine/tune'
+ * import { dict, real } from 'omai-engine/space'
  * const trials = Array.from({ length: 12 }, (_, i) => {
  *   const a = (i % 4) / 3
  *   const b = Math.floor(i / 4) / 2
@@ -155,13 +155,13 @@ export function permutationImportance(
  * @param study - The study.
  * @param options - Monte Carlo points (default 128), grid size (default 16), key and objective index.
  * @returns Importances by parameter, summing to 1.
- * @throws MdmlError with code `value` with fewer than 3 complete trials.
+ * @throws OmaiError with code `value` with fewer than 3 complete trials.
  * @concept hyperparameter-importance
  * @reference Hutter, Hoos and Leyton-Brown (2014), An efficient approach for assessing hyperparameter importance.
  * @example
  * ```ts
- * import { createStudy, fanovaImportance } from 'mdml-engine/tune'
- * import { dict, real } from 'mdml-engine/space'
+ * import { createStudy, fanovaImportance } from 'omai-engine/tune'
+ * import { dict, real } from 'omai-engine/space'
  * const trials = Array.from({ length: 16 }, (_, i) => {
  *   const a = (i % 4) / 3
  *   const b = Math.floor(i / 4) / 3
@@ -307,8 +307,8 @@ function topTrials(study: Study, data: Data, quantile: number): Set<Trial> {
  *   arbitrary subspaces.
  * @example
  * ```ts
- * import { createStudy, pedAnovaImportance } from 'mdml-engine/tune'
- * import { dict, real } from 'mdml-engine/space'
+ * import { createStudy, pedAnovaImportance } from 'omai-engine/tune'
+ * import { dict, real } from 'omai-engine/space'
  * const trials = Array.from({ length: 40 }, (_, i) => {
  *   const a = (i * 0.618) % 1
  *   const b = (i * 0.414) % 1
@@ -329,7 +329,7 @@ export function pedAnovaImportance(
   const target = options.targetQuantile ?? 0.1
   const region = options.regionQuantile ?? 1
   if (!(target > 0 && target < region && region <= 1))
-    throw new MdmlError('value', 'pedAnovaImportance: need 0 < targetQuantile < regionQuantile <= 1')
+    throw new OmaiError('value', 'pedAnovaImportance: need 0 < targetQuantile < regionQuantile <= 1')
   const objective = options.objective ?? 0
   const data = dataOf(study, objective)
   if (data.trials.length <= 1) return sorted(data.leaves.map((l) => [l.path, 0]))

@@ -6,15 +6,15 @@
  * domain.
  */
 
-import { type ErrorCode, MdmlError } from '../base/index.ts'
+import { type ErrorCode, OmaiError } from '../base/index.ts'
 
 /**
- * Rethrow an error unless it is an `MdmlError` with one of the codes a method recovers from.
+ * Rethrow an error unless it is an `OmaiError` with one of the codes a method recovers from.
  *
  * @param error - What a `catch` clause caught.
  * @param codes - The codes the method recovers from.
- * @throws The error itself, when it is not an `MdmlError` or its code is not among `codes`.
+ * @throws The error itself, when it is not an `OmaiError` or its code is not among `codes`.
  */
 export function rethrowUnless(error: unknown, ...codes: readonly ErrorCode[]): void {
-  if (!(error instanceof MdmlError && codes.includes(error.code))) throw error
+  if (!(error instanceof OmaiError && codes.includes(error.code))) throw error
 }

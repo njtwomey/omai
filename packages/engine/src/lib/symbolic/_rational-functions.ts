@@ -1,6 +1,6 @@
 // Rational-function rewrites: numerator/denominator splitting, `together`, `cancel` and partial fractions (`apart`,
 // by undetermined coefficients over the rationals extended by any other symbols).
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import {
   isNumeric,
   isRat,
@@ -177,7 +177,7 @@ function solveSquare(rows: Expr[][], rhs: Expr[]): Expr[] {
     pivotCols.push(c)
     r++
   }
-  if (pivotCols.length < width) throw new MdmlError('singular', 'apart: singular coefficient system')
+  if (pivotCols.length < width) throw new OmaiError('singular', 'apart: singular coefficient system')
   const out: Expr[] = new Array<Expr>(width).fill(ZERO)
   pivotCols.forEach((c, i) => {
     out[c] = (m[i] as Expr[])[width] as Expr
@@ -197,12 +197,12 @@ export function apart(e: Expr, x: ExprSym): Expr {
   if (!hasSymbol(d, x)) return t
   const others = findGensAll([n, d]).filter((g) => g.key !== x.key)
   if (others.some((g) => hasSymbol(g, x))) {
-    throw new MdmlError('value', 'apart: the expression must be a rational function of x')
+    throw new OmaiError('value', 'apart: the expression must be a rational function of x')
   }
   const gens = [x as Expr, ...others]
   const pn = exprToP(n, gens)
   const pdFull = exprToP(d, gens)
-  if (pn === undefined || pdFull === undefined) throw new MdmlError('value', 'apart: not a rational function')
+  if (pn === undefined || pdFull === undefined) throw new OmaiError('value', 'apart: not a rational function')
   // Factor the denominator; factors free of x join the constant in front.
   const [constant, factors] = factorMultivariate(pdFull)
   let front: Expr = numFromRational(constant)

@@ -4,4 +4,4 @@
 
 Reproducibility and defaults in one place: a `Context` holds a seed and derives named keys from it, together with the default tracer and trace policy, so higher-level functions can take `{ ctx }` instead of threading keys and options by hand.
 
-- structure `context.ts` (file): Context: a seed with named key derivation, tracer and trace policy. `src/lib/context/context.ts:1` `mdml-engine/context`
+- structure `context.ts` (file): Context: a seed with named key derivation, tracer and trace policy. `src/lib/context/context.ts:1` `omai-engine/context`

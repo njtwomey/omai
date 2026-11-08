@@ -3,7 +3,7 @@
  * score with the flagged ones ringed, in one figure frame.
  */
 
-import type { AnomalyScores } from 'mdml-engine/exposition'
+import type { AnomalyScores } from 'omai-engine/exposition'
 import { type ReactElement, useCallback } from 'react'
 import type { Figure } from '../../figure/figure.ts'
 import { type AnomalyViewOptions, anomalyView } from '../../views/anomaly.ts'

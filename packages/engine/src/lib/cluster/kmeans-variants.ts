@@ -4,7 +4,7 @@
  * (Lloyd's algorithm in a kernel's feature space). Each is a traced algorithm with an estimator.
  */
 
-import { MdmlError, maxOf, toRows } from '../base/index.ts'
+import { maxOf, OmaiError, toRows } from '../base/index.ts'
 import { type PairwiseKernelMetric, pairwiseKernels } from '../kernels/index.ts'
 import { type IterativeEstimator, iterative, matrixView } from '../learn/index.ts'
 import { eigh } from '../numerics/linalg/index.ts'
@@ -51,8 +51,8 @@ export interface ElkanState {
  * @returns The algorithm.
  * @example
  * ```ts
- * import { elkanAlgorithm } from 'mdml-engine/cluster'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { elkanAlgorithm } from 'omai-engine/cluster'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const x = [[0, 0], [0, 1], [10, 0], [10, 1]]
  * runAlgorithm(elkanAlgorithm(x, [[0, 0], [10, 1]]), { maxSteps: 20 }).state.labels // => [0, 0, 1, 1]
  * ```
@@ -249,9 +249,9 @@ function clusterStats(
  * @returns The algorithm; k - 1 steps.
  * @example
  * ```ts
- * import { bisectingKMeansAlgorithm } from 'mdml-engine/cluster'
- * import { key } from 'mdml-engine/random'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { bisectingKMeansAlgorithm } from 'omai-engine/cluster'
+ * import { key } from 'omai-engine/random'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const x = [[0], [1], [10], [11], [20], [21]]
  * runAlgorithm(bisectingKMeansAlgorithm(x, 3), { maxSteps: 2, key: key(0) }).state.centres.length // => 3
  * ```
@@ -263,7 +263,7 @@ export function bisectingKMeansAlgorithm(
 ): Algorithm<BisectingState> {
   const m = matrixView(x, 'bisectingKMeansAlgorithm')
   if (!(Number.isInteger(k) && k >= 1 && k <= m.n))
-    throw new MdmlError('value', `bisectingKMeansAlgorithm: nClusters must be in 1..${m.n}`)
+    throw new OmaiError('value', `bisectingKMeansAlgorithm: nClusters must be in 1..${m.n}`)
   const strategy = options.strategy ?? 'biggest_inertia'
   return {
     name: 'bisecting-kmeans',
@@ -358,7 +358,7 @@ const centroidVerbs = (p: CentroidParams): CentroidVerbs => ({
  * @index estimator Bisecting k-means; Elkan and kernel k-means beside it.
  * @example
  * ```ts
- * import { bisectingKMeans } from 'mdml-engine/cluster'
+ * import { bisectingKMeans } from 'omai-engine/cluster'
  * bisectingKMeans.with({ nClusters: 2 }).fit({ x: [[0], [1], [10], [11]] }).params.centres.length // => 2
  * ```
  */
@@ -396,7 +396,7 @@ export interface ElkanHyper {
  *
  * @example
  * ```ts
- * import { elkanKMeans } from 'mdml-engine/cluster'
+ * import { elkanKMeans } from 'omai-engine/cluster'
  * elkanKMeans.with({ nClusters: 2 }).fit({ x: [[0], [1], [10], [11]] }).params.centres.length // => 2
  * ```
  */
@@ -444,7 +444,7 @@ export interface KernelKMeansState {
  * @returns Distances `[m, k]` flat (very large for empty clusters).
  * @example
  * ```ts
- * import { featureSpaceDistances } from 'mdml-engine/cluster'
+ * import { featureSpaceDistances } from 'omai-engine/cluster'
  * featureSpaceDistances([1, 1], [1, 0, 0, 1], [1, 0, 0, 1], [0, 1], 2) // => [0, 2, 2, 0]
  * ```
  */
@@ -484,8 +484,8 @@ export function featureSpaceDistances(
  * @returns The algorithm.
  * @example
  * ```ts
- * import { kernelKMeansAlgorithm } from 'mdml-engine/cluster'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { kernelKMeansAlgorithm } from 'omai-engine/cluster'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const gram = [1, 0.9, 0, 0, 0.9, 1, 0, 0, 0, 0, 1, 0.9, 0, 0, 0.9, 1]
  * runAlgorithm(kernelKMeansAlgorithm(gram, 4, [0, 0, 0, 1], 2), { maxSteps: 10 }).state.labels // => [0, 0, 1, 1]
  * ```
@@ -539,8 +539,8 @@ export function kernelKMeansAlgorithm(
  * @returns Initial labels.
  * @example
  * ```ts
- * import { spectralRelaxation } from 'mdml-engine/cluster'
- * import { key } from 'mdml-engine/random'
+ * import { spectralRelaxation } from 'omai-engine/cluster'
+ * import { key } from 'omai-engine/random'
  * spectralRelaxation([1, 0.9, 0, 0, 0.9, 1, 0, 0, 0, 0, 1, 0.9, 0, 0, 0.9, 1], 4, 2, key(0)).length // => 4
  * ```
  */
@@ -589,7 +589,7 @@ const gramOf = (a: TensorLike, b: TensorLike | undefined, kernel: PairwiseKernel
  *
  * @example
  * ```ts
- * import { kernelKMeans } from 'mdml-engine/cluster'
+ * import { kernelKMeans } from 'omai-engine/cluster'
  * kernelKMeans.with({ nClusters: 2, gamma: 1 }).fit({ x: [[0], [0.1], [5], [5.1]] }).params.labels.length // => 4
  * ```
  */

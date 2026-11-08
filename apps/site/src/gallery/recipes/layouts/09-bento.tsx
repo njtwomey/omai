@@ -1,6 +1,6 @@
-import { heatmap, histogram, lines, type Panel, points } from 'mdml-render/charts'
-import { bento, figure } from 'mdml-render/figure'
-import { ControlPanel, FigureFrame, FigureGrid, Select, useColourMode } from 'mdml-render/react'
+import { heatmap, histogram, lines, type Panel, points } from 'omai-render/charts'
+import { bento, figure } from 'omai-render/figure'
+import { ControlPanel, FigureFrame, FigureGrid, Select, useColourMode } from 'omai-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 

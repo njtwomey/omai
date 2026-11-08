@@ -7,9 +7,9 @@ import numpy as np
 import scipy
 import scipy.signal as S
 from astropy.timeseries.periodograms.lombscargle import _statistics as A
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import rng
-from mdml_oracle.signal_helpers import pair
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import rng
+from omai_oracle.signal_helpers import pair
 
 REFERENCE: dict[str, str] = {"scipy": scipy.__version__, "astropy": version("astropy")}
 

@@ -6,11 +6,11 @@
  */
 
 import type { EChartsOption, SeriesOption } from 'echarts'
-import { maxOf, minOf } from 'mdml-engine/base'
-import type { BoardSteps, PopulationSteps } from 'mdml-engine/exposition'
-import { covarianceEllipse } from 'mdml-engine/numerics/geometry'
-import type { Pixels } from 'mdml-engine/scene'
-import { toArray } from 'mdml-engine/tensor'
+import { maxOf, minOf } from 'omai-engine/base'
+import type { BoardSteps, PopulationSteps } from 'omai-engine/exposition'
+import { covarianceEllipse } from 'omai-engine/numerics/geometry'
+import type { Pixels } from 'omai-engine/scene'
+import { toArray } from 'omai-engine/tensor'
 import { bars } from '../charts/bars.ts'
 import { type Panel, subplots } from '../charts/compose.ts'
 import { contours } from '../charts/fields.ts'
@@ -112,7 +112,7 @@ function knownColour(name: string, mode: ColourMode): string | undefined {
  * @returns A CSS colour per category.
  * @example
  * ```ts
- * import { boardColours } from 'mdml-render/views'
+ * import { boardColours } from 'omai-render/views'
  * boardColours(['frontier', 'type A'])[1] // => '#1f77b4'
  * ```
  */

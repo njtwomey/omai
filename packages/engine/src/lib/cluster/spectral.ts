@@ -4,7 +4,7 @@
  * (`graph/spectral.ts`), and k-means on the embedding, which separates clusters that are connected but not convex.
  */
 
-import { MdmlError, toRows } from '../base/index.ts'
+import { OmaiError, toRows } from '../base/index.ts'
 import { spectralEmbedding } from '../graph/index.ts'
 import { pairwiseKernels } from '../kernels/index.ts'
 import { type IterativeEstimator, iterative, matrixView } from '../learn/index.ts'
@@ -29,7 +29,7 @@ export type Affinity = 'nearest_neighbors' | 'rbf' | 'precomputed'
  * @returns The symmetric affinity `[n, n]`, flat.
  * @example
  * ```ts
- * import { affinityMatrix } from 'mdml-engine/cluster'
+ * import { affinityMatrix } from 'omai-engine/cluster'
  * affinityMatrix([[0], [1], [5]], 'nearest_neighbors', { nNeighbors: 2 }) // => [1, 1, 0, 1, 1, 0.5, 0, 0.5, 1]
  * ```
  */
@@ -43,7 +43,7 @@ export function affinityMatrix(
   if (affinity === 'rbf') return toFlat(pairwiseKernels(x, undefined, 'rbf', { gamma: options.gamma ?? 1 / m.d }))
   const k = options.nNeighbors ?? Math.max(Math.floor(m.n / 10), 1)
   if (!(Number.isInteger(k) && k >= 1 && k <= m.n))
-    throw new MdmlError('value', `affinityMatrix: nNeighbors must be in 1..${m.n}`)
+    throw new OmaiError('value', `affinityMatrix: nNeighbors must be in 1..${m.n}`)
   const a = new Array<number>(m.n * m.n).fill(0)
   for (let i = 0; i < m.n; i++) a[i * m.n + i] = 1
   if (k > 1) {
@@ -70,7 +70,7 @@ export interface SpectralOptions {
  * @returns The embedding `[n, k]`, flat, and `n`.
  * @example
  * ```ts
- * import { spectralClusteringEmbedding } from 'mdml-engine/cluster'
+ * import { spectralClusteringEmbedding } from 'omai-engine/cluster'
  * spectralClusteringEmbedding([[0], [0.1], [5], [5.1]], { nClusters: 2, affinity: 'rbf', gamma: 1 }).n // => 4
  * ```
  */
@@ -100,9 +100,9 @@ export function spectralClusteringEmbedding(
  * @returns The algorithm.
  * @example
  * ```ts
- * import { spectralClusteringAlgorithm } from 'mdml-engine/cluster'
- * import { key } from 'mdml-engine/random'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { spectralClusteringAlgorithm } from 'omai-engine/cluster'
+ * import { key } from 'omai-engine/random'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const x = [[0], [0.1], [0.2], [5], [5.1], [5.2]]
  * const alg = spectralClusteringAlgorithm(x, { nClusters: 2, affinity: 'rbf', gamma: 1 }, key(0))
  * runAlgorithm(alg, { maxSteps: 20 }).state.labels // => [0, 0, 0, 1, 1, 1]
@@ -146,7 +146,7 @@ export interface SpectralVerbs {
  * @index estimator Spectral clustering on an affinity graph.
  * @example
  * ```ts
- * import { spectralClustering } from 'mdml-engine/cluster'
+ * import { spectralClustering } from 'omai-engine/cluster'
  * spectralClustering.with({ nClusters: 2, gamma: 1 }).fit({ x: [[0], [0.1], [0.2], [5], [5.1], [5.2]] }).params.labels.length // => 6
  * ```
  */

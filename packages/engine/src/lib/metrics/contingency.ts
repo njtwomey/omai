@@ -5,7 +5,7 @@
  * every distinct threshold in one sorted pass into a thresholdSweep exposition record.
  */
 
-import { MdmlError, toRows } from '../base/index.ts'
+import { OmaiError, toRows } from '../base/index.ts'
 import { type ThresholdSweep, thresholdSweep } from '../exposition/index.ts'
 import { asTensor, fromStorage, fromVector, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
 import { type Label, labelValues, sortLabels } from './_labels.ts'
@@ -25,7 +25,7 @@ function tableRows(name: string, table: ConfusionTable): number[][] {
   const k = table.labels.length
   const t = asTensor(table.matrix)
   if (t.shape.length !== 2 || t.shape[0] !== k || t.shape[1] !== k)
-    throw new MdmlError('shape', `${name}: the matrix must be ${k} by ${k}, one row and column per label`)
+    throw new OmaiError('shape', `${name}: the matrix must be ${k} by ${k}, one row and column per label`)
   return toRows(toFlat(t), k, k)
 }
 
@@ -62,11 +62,11 @@ export interface ConfusionMargins {
  * @param table - A confusion matrix of counts (`confusionMatrix`, `thresholdConfusion`), actual classes as rows; the
  *   matrix takes a tensor-like (migration, D-009: it was a nested array, which still works).
  * @returns The margins, in the table's class order.
- * @throws MdmlError `shape` when the matrix is not square or does not match its labels.
+ * @throws OmaiError `shape` when the matrix is not square or does not match its labels.
  * @concept classification-metrics
  * @example
  * ```ts
- * import { confusionMargins } from 'mdml-engine/metrics'
+ * import { confusionMargins } from 'omai-engine/metrics'
  * const m = confusionMargins({ labels: [0, 1], matrix: [[3, 1], [2, 4]] })
  * m.accuracy // => 0.7
  * m.columnRate // => [0.6, 0.8]
@@ -115,11 +115,11 @@ export interface ThresholdConfusionOptions extends MetricOptions {
  * @param options - posLabel and sample weights.
  * @returns The confusion matrix with labels `[negative, positive]`; the `[2, 2]` matrix is a tensor (migration,
  *   D-009: was `number[][]`).
- * @throws MdmlError `value` with more than two classes; `shape` when the lengths differ.
+ * @throws OmaiError `value` with more than two classes; `shape` when the lengths differ.
  * @concept classification-metrics
  * @example
  * ```ts
- * import { thresholdConfusion } from 'mdml-engine/metrics'
+ * import { thresholdConfusion } from 'omai-engine/metrics'
  * thresholdConfusion([0, 0, 1, 1], [0.1, 0.6, 0.4, 0.9], 0.3).matrix // => [[1, 1], [0, 2]]
  * thresholdConfusion(['ham', 'spam'], [0.2, 0.7], 0.5, { posLabel: 'spam' }).labels // => ['ham', 'spam']
  * ```
@@ -132,9 +132,9 @@ export function thresholdConfusion(
 ): LabelledConfusionMatrix {
   const t = labelValues(yTrue)
   const s = flat(yScore)
-  if (s.length !== t.length) throw new MdmlError('shape', 'thresholdConfusion: yTrue and yScore have different lengths')
+  if (s.length !== t.length) throw new OmaiError('shape', 'thresholdConfusion: yTrue and yScore have different lengths')
   const classes = sortLabels(t)
-  if (classes.length > 2) throw new MdmlError('value', 'thresholdConfusion: needs two classes')
+  if (classes.length > 2) throw new OmaiError('value', 'thresholdConfusion: needs two classes')
   const pos = options.posLabel ?? (classes.includes(1) ? 1 : (classes[classes.length - 1] ?? 1))
   const neg = classes.find((c) => c !== pos) ?? (typeof pos === 'number' ? (pos === 0 ? 1 : 0) : `not ${pos}`)
   const w = sampleWeights('thresholdConfusion', t.length, options.sampleWeight)
@@ -167,11 +167,11 @@ export interface TableCost {
  * @param table - A confusion matrix of counts (the matrix takes a tensor-like).
  * @param costs - The cost matrix `[k, k]`, one row per actual class and one column per predicted class.
  * @returns Each cell's cost (a `[k, k]` tensor, was `number[][]`), the total and the cost per case.
- * @throws MdmlError `shape` when the cost matrix does not match the table.
+ * @throws OmaiError `shape` when the cost matrix does not match the table.
  * @concept classification-metrics
  * @example
  * ```ts
- * import { tableCost } from 'mdml-engine/metrics'
+ * import { tableCost } from 'omai-engine/metrics'
  * // A missed illness (FN) costs 50 times a false alarm (FP).
  * const c = tableCost({ labels: ['healthy', 'ill'], matrix: [[880, 70], [8, 42]] }, [[0, 1], [50, 0]])
  * c.total // => 470
@@ -216,12 +216,12 @@ export interface ThresholdCosts {
  * @param costs - `[[cost of TN, cost of FP], [cost of FN, cost of TP]]`, a `[2, 2]` matrix.
  * @param options - posLabel and sample weights.
  * @returns The thresholds, their totals (`[m]` tensors, were `number[]`) and the cheapest.
- * @throws MdmlError `shape` for a cost matrix that is not 2 by 2 or lengths that differ; `value` with more than two
+ * @throws OmaiError `shape` for a cost matrix that is not 2 by 2 or lengths that differ; `value` with more than two
  * classes.
  * @concept classification-metrics
  * @example
  * ```ts
- * import { thresholdCosts } from 'mdml-engine/metrics'
+ * import { thresholdCosts } from 'omai-engine/metrics'
  * // A false negative costs 5, a false positive 1.
  * thresholdCosts([0, 0, 1, 1], [0.1, 0.6, 0.4, 0.9], [[0, 1], [5, 0]]).best // => { threshold: 0.4, total: 1 }
  * ```
@@ -247,7 +247,7 @@ export function thresholdCosts(
 function costRows(name: string, costs: TensorLike, k: number, what: string): number[][] {
   const m = shapedArray(costs)
   if (m.shape.length !== 2 || m.shape[0] !== k || m.shape[1] !== k)
-    throw new MdmlError('shape', `${name}: the cost matrix must be ${what}`)
+    throw new OmaiError('shape', `${name}: the cost matrix must be ${what}`)
   return toRows(m.data, k, k)
 }
 
@@ -276,10 +276,10 @@ function sweepScores(
 ): ScoreSweep {
   const t = labelValues(yTrue)
   const s = flat(yScore)
-  if (s.length !== t.length) throw new MdmlError('shape', `${name}: yTrue and yScore have different lengths`)
-  for (const v of s) if (Number.isNaN(v)) throw new MdmlError('value', `${name}: a score is NaN`)
+  if (s.length !== t.length) throw new OmaiError('shape', `${name}: yTrue and yScore have different lengths`)
+  for (const v of s) if (Number.isNaN(v)) throw new OmaiError('value', `${name}: a score is NaN`)
   const classes = sortLabels(t)
-  if (classes.length > 2) throw new MdmlError('value', `${name}: needs two classes`)
+  if (classes.length > 2) throw new OmaiError('value', `${name}: needs two classes`)
   const positive = options.posLabel ?? (classes.includes(1) ? 1 : (classes[classes.length - 1] ?? 1))
   const negative =
     classes.find((c) => c !== positive) ?? (typeof positive === 'number' ? (positive === 0 ? 1 : 0) : `not ${positive}`)
@@ -350,12 +350,12 @@ export interface AnalyseThresholdsOptions extends ThresholdConfusionOptions {
  * @param yScore - Scores, higher meaning more positive.
  * @param options - Costs, posLabel, class names, sample weights and whether to keep the rows.
  * @returns The sweep.
- * @throws MdmlError `shape` for lengths that differ or a cost matrix that is not 2 by 2; `value` with more than two
+ * @throws OmaiError `shape` for lengths that differ or a cost matrix that is not 2 by 2; `value` with more than two
  *   classes or a NaN score.
  * @concept classification-metrics
  * @example
  * ```ts
- * import { analyseThresholds } from 'mdml-engine/metrics'
+ * import { analyseThresholds } from 'omai-engine/metrics'
  * const r = analyseThresholds([0, 0, 1, 1], [0.1, 0.6, 0.4, 0.9], { costs: [[0, 1], [5, 0]] })
  * r.thresholds // => [0.1, 0.4, 0.6, 0.9, Infinity]
  * r.tp // => [2, 2, 1, 1, 0]

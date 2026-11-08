@@ -34,8 +34,8 @@ export interface LotkaVolterraParameters {
  * @returns The vector field.
  * @example
  * ```ts
- * import { lotkaVolterraField } from 'mdml-engine/dynamics'
- * import { tensor, toFlat } from 'mdml-engine/tensor'
+ * import { lotkaVolterraField } from 'omai-engine/dynamics'
+ * import { tensor, toFlat } from 'omai-engine/tensor'
  * toFlat(lotkaVolterraField()(0, tensor([20, 10]))) // => [0, 0]
  * ```
  */
@@ -67,8 +67,8 @@ export interface LorenzParameters {
  * @returns The vector field.
  * @example
  * ```ts
- * import { lorenzField } from 'mdml-engine/dynamics'
- * import { tensor, toFlat } from 'mdml-engine/tensor'
+ * import { lorenzField } from 'omai-engine/dynamics'
+ * import { tensor, toFlat } from 'omai-engine/tensor'
  * toFlat(lorenzField()(0, tensor([1, 1, 1]))) // => [0, 26, -1.6666666666666665]
  * ```
  */
@@ -90,8 +90,8 @@ export function lorenzField(parameters: LorenzParameters = {}): OdeVectorField {
  * @returns The vector field.
  * @example
  * ```ts
- * import { vanDerPolField } from 'mdml-engine/dynamics'
- * import { tensor, toFlat } from 'mdml-engine/tensor'
+ * import { vanDerPolField } from 'omai-engine/dynamics'
+ * import { tensor, toFlat } from 'omai-engine/tensor'
  * toFlat(vanDerPolField(2)(0, tensor([2, 1]))) // => [1, -8]
  * ```
  */
@@ -119,8 +119,8 @@ export interface DampedPendulumParameters {
  * @returns The vector field.
  * @example
  * ```ts
- * import { dampedPendulumField } from 'mdml-engine/dynamics'
- * import { tensor, toFlat } from 'mdml-engine/tensor'
+ * import { dampedPendulumField } from 'omai-engine/dynamics'
+ * import { tensor, toFlat } from 'omai-engine/tensor'
  * toFlat(dampedPendulumField({ gravityOverLength: 1, damping: 0.5 })(0, tensor([0, 2]))) // => [2, -1]
  * ```
  */
@@ -152,8 +152,8 @@ export interface RosslerParameters {
  * @concept rossler-attractor
  * @example
  * ```ts
- * import { rosslerField } from 'mdml-engine/dynamics'
- * import { tensor, toFlat } from 'mdml-engine/tensor'
+ * import { rosslerField } from 'omai-engine/dynamics'
+ * import { tensor, toFlat } from 'omai-engine/tensor'
  * toFlat(rosslerField()(0, tensor([1, 1, 1]))) // => [-2, 1.2, -4.5]
  * ```
  */
@@ -176,7 +176,7 @@ export function rosslerField(parameters: RosslerParameters = {}): OdeVectorField
  * @concept rossler-attractor
  * @example
  * ```ts
- * import { rosslerFixedPoints } from 'mdml-engine/dynamics'
+ * import { rosslerFixedPoints } from 'omai-engine/dynamics'
  * rosslerFixedPoints({ a: 0.2, b: 0.2, c: 5.7 })[0]?.map((v) => Math.round(v * 1e4) / 1e4) // => [0.007, -0.0351, 0.0351]
  * ```
  */
@@ -204,8 +204,8 @@ export interface ThomasParameters {
  * @concept thomas-attractor
  * @example
  * ```ts
- * import { thomasField } from 'mdml-engine/dynamics'
- * import { tensor, toFlat } from 'mdml-engine/tensor'
+ * import { thomasField } from 'omai-engine/dynamics'
+ * import { tensor, toFlat } from 'omai-engine/tensor'
  * toFlat(thomasField({ b: 0.2 })(0, tensor([0, 0, 0]))) // => [0, 0, 0]
  * ```
  */
@@ -236,8 +236,8 @@ export interface SirParameters {
  * @concept compartmental-models
  * @example
  * ```ts
- * import { sirField } from 'mdml-engine/dynamics'
- * import { tensor, toFlat } from 'mdml-engine/tensor'
+ * import { sirField } from 'omai-engine/dynamics'
+ * import { tensor, toFlat } from 'omai-engine/tensor'
  * toFlat(sirField()(0, tensor([0.5, 0.25, 0.25]))) // => [-0.05, 0.025, 0.025]
  * ```
  */
@@ -283,7 +283,7 @@ export interface NamedSystem {
  * @index table Lorenz, Van der Pol, Lotka-Volterra and other systems with start and span.
  * @example
  * ```ts
- * import { namedSystems } from 'mdml-engine/dynamics'
+ * import { namedSystems } from 'omai-engine/dynamics'
  * Object.keys(namedSystems) // => ['lotka-volterra', 'lorenz', 'van-der-pol', 'damped-pendulum', 'sir', 'rossler', 'thomas', 'double-pendulum']
  * ```
  */

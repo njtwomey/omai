@@ -1,7 +1,7 @@
 // Shared helpers of the mathematical-programming files (linear, quadratic, conic, integer, SMO): converting inputs to
 // row-major number arrays and dense solves on them through the public linear-algebra routines. Not exported from the
 // barrel.
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { choleskyJitter, choSolve, dgemv, luFactor, luSolve } from '../numerics/linalg/index.ts'
 import { asTensor, fromStorage, primalOf, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
 import { flatOf } from './_vector.ts'
@@ -26,7 +26,7 @@ export function vectorFrom(x: TensorLike | undefined): Float64Array {
 export function finiteVectorFrom(x: TensorLike | undefined, name: string): Float64Array {
   const v = vectorFrom(x)
   const bad = v.findIndex((entry) => !Number.isFinite(entry))
-  if (bad >= 0) throw new MdmlError('value', `${name} must be finite, got ${v[bad]} at ${bad}`)
+  if (bad >= 0) throw new OmaiError('value', `${name} must be finite, got ${v[bad]} at ${bad}`)
   return v
 }
 
@@ -34,7 +34,7 @@ export function finiteVectorFrom(x: TensorLike | undefined, name: string): Float
 export function boundVectorFrom(x: TensorLike | undefined, name: string): Float64Array {
   const v = vectorFrom(x)
   const bad = v.findIndex((entry) => Number.isNaN(entry))
-  if (bad >= 0) throw new MdmlError('value', `${name} must not contain NaN (found one at ${bad})`)
+  if (bad >= 0) throw new OmaiError('value', `${name} must not contain NaN (found one at ${bad})`)
   return v
 }
 
@@ -47,17 +47,17 @@ export function matrixFrom(x: TensorLike | undefined, cols: number, name: string
   const t = primalOf(asTensor(x))
   const data = Float64Array.from(toFlat(t))
   const bad = data.findIndex((entry) => !Number.isFinite(entry))
-  if (bad >= 0) throw new MdmlError('value', `${name} must be finite, got ${data[bad]} at flat index ${bad}`)
+  if (bad >= 0) throw new OmaiError('value', `${name} must be finite, got ${data[bad]} at flat index ${bad}`)
   if (data.length === 0) return { data, rows: 0, cols }
   const c = t.shape.length === 1 ? (t.shape[0] ?? 0) : (t.shape[t.shape.length - 1] ?? 0)
   if (c !== cols || t.shape.length > 2)
-    throw new MdmlError('shape', `${name} must have ${cols} columns, got shape [${t.shape.join(', ')}]`)
+    throw new OmaiError('shape', `${name} must have ${cols} columns, got shape [${t.shape.join(', ')}]`)
   return { data, rows: data.length / cols, cols }
 }
 
 /** Check that a vector has the expected length. */
 export function expectLength(x: Float64Array, n: number, name: string): void {
-  if (x.length !== n) throw new MdmlError('shape', `${name} must have length ${n}, got ${x.length}`)
+  if (x.length !== n) throw new OmaiError('shape', `${name} must have length ${n}, got ${x.length}`)
 }
 
 /** Solve A X = B for a square n x n A and B with k columns (row-major), by LU with partial pivoting. */
@@ -74,7 +74,7 @@ function singularAsNaN(length: number, solve: () => Float64Array): Float64Array 
   try {
     return solve()
   } catch (error) {
-    if (error instanceof MdmlError && error.code === 'value') return new Float64Array(length).fill(Number.NaN)
+    if (error instanceof OmaiError && error.code === 'value') return new Float64Array(length).fill(Number.NaN)
     throw error
   }
 }

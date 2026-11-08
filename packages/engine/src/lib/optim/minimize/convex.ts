@@ -5,7 +5,7 @@
  * traced algorithm.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { daxpy, ddot, dgemv, dnrm2 } from '../../numerics/linalg/index.ts'
 import {
   add,
@@ -59,7 +59,7 @@ function stepOf(rule: StepRule, a: number, k: number, value: number, gnorm: numb
     case 'diminishing':
       return a / Math.sqrt(k + 1)
     case 'polyak':
-      if (fStar === undefined) throw new MdmlError('value', "the 'polyak' step rule needs fStar")
+      if (fStar === undefined) throw new OmaiError('value', "the 'polyak' step rule needs fStar")
       return (value - fStar) / Math.max(gnorm * gnorm, 1e-300)
   }
 }
@@ -96,8 +96,8 @@ export interface SubgradientState extends VectorState {
  * @concept subgradient-method
  * @example
  * ```ts
- * import { subgradientAlgorithm } from 'mdml-engine/optim'
- * import { abs, sum, type Value } from 'mdml-engine/tensor'
+ * import { subgradientAlgorithm } from 'omai-engine/optim'
+ * import { abs, sum, type Value } from 'omai-engine/tensor'
  * subgradientAlgorithm((x) => sum(abs(x as Value)), [1, -2]).name // => 'subgradient'
  * ```
  */
@@ -177,8 +177,8 @@ function bestResult(
  * @concept subgradient-method
  * @example
  * ```ts
- * import { subgradientMethod } from 'mdml-engine/optim'
- * import { abs, sub, sum, toArray, type Value } from 'mdml-engine/tensor'
+ * import { subgradientMethod } from 'omai-engine/optim'
+ * import { abs, sub, sum, toArray, type Value } from 'omai-engine/tensor'
  * const r = subgradientMethod((x) => sum(abs(sub(x as Value, [1, -2]))), [0, 0], { stepRule: 'polyak', fStar: 0, tol: 1e-12 })
  * toArray(r.x as Value).map((v) => Math.round(v * 1e6) / 1e6) // => [1, -2]
  * ```
@@ -220,7 +220,7 @@ export interface Mirror {
  * @returns The mirror map.
  * @example
  * ```ts
- * import { entropicMirror } from 'mdml-engine/optim'
+ * import { entropicMirror } from 'omai-engine/optim'
  * Array.from(entropicMirror().toPrimal(new Float64Array([0, 0]))) // => [0.5, 0.5]
  * ```
  */
@@ -247,7 +247,7 @@ export function entropicMirror(radius = 1): Mirror {
  * @returns The mirror map.
  * @example
  * ```ts
- * import { euclideanMirror } from 'mdml-engine/optim'
+ * import { euclideanMirror } from 'omai-engine/optim'
  * Array.from(euclideanMirror().toPrimal(new Float64Array([1, 2]))) // => [1, 2]
  * ```
  */
@@ -291,8 +291,8 @@ export interface MirrorDescentState extends SubgradientState {
  * @concept mirror-descent
  * @example
  * ```ts
- * import { mirrorDescentAlgorithm } from 'mdml-engine/optim'
- * import { sum, square, type Value } from 'mdml-engine/tensor'
+ * import { mirrorDescentAlgorithm } from 'omai-engine/optim'
+ * import { sum, square, type Value } from 'omai-engine/tensor'
  * mirrorDescentAlgorithm((x) => sum(square(x as Value)), [0.5, 0.5]).name // => 'mirrorDescent'
  * ```
  */
@@ -367,8 +367,8 @@ export function mirrorDescentAlgorithm(
  * @concept mirror-descent
  * @example
  * ```ts
- * import { mirrorDescent } from 'mdml-engine/optim'
- * import { mul, square, sub, sum, toArray, type Value } from 'mdml-engine/tensor'
+ * import { mirrorDescent } from 'omai-engine/optim'
+ * import { mul, square, sub, sum, toArray, type Value } from 'omai-engine/tensor'
  * // The closest point of the simplex to (0.5, 0.1, 0.4) is itself.
  * const r = mirrorDescent((x) => mul(sum(square(sub(x as Value, [0.5, 0.1, 0.4]))), 0.5), [1 / 3, 1 / 3, 1 / 3], { stepRule: 'constant', stepSize: 1, tol: 1e-14, maxIterations: 5000 })
  * toArray(r.x as Value).map((v) => Math.round(v * 1e6) / 1e6) // => [0.5, 0.1, 0.4]
@@ -437,7 +437,7 @@ const defaultSolve = (lagrangian: Objective, start: Float64Array): Float64Array 
 
 function matrixOf(a: TensorLike): { data: Float64Array; rows: number; cols: number } {
   const t = primalOf(asTensor(a)) as Tensor
-  if (t.shape.length !== 2) throw new MdmlError('shape', 'dual ascent: A must be a matrix')
+  if (t.shape.length !== 2) throw new OmaiError('shape', 'dual ascent: A must be a matrix')
   return { data: Float64Array.from(t.data), rows: t.shape[0] ?? 0, cols: t.shape[1] ?? 0 }
 }
 
@@ -455,8 +455,8 @@ function matrixOf(a: TensorLike): { data: Float64Array; rows: number; cols: numb
  * @concept duality
  * @example
  * ```ts
- * import { dualAscentAlgorithm } from 'mdml-engine/optim'
- * import { square, sum, type Value } from 'mdml-engine/tensor'
+ * import { dualAscentAlgorithm } from 'omai-engine/optim'
+ * import { square, sum, type Value } from 'omai-engine/tensor'
  * dualAscentAlgorithm((x) => sum(square(x as Value)), [[1, 1]], [1], [0, 0]).name // => 'dualAscent'
  * ```
  */
@@ -470,7 +470,7 @@ export function dualAscentAlgorithm(
   const A = matrixOf(a)
   const bv = flatOf(asTensor(b))
   const obj = flatObjective(f, x0)
-  if (A.cols !== obj.n || A.rows !== bv.length) throw new MdmlError('shape', 'dual ascent: A, b and x0 disagree')
+  if (A.cols !== obj.n || A.rows !== bv.length) throw new OmaiError('shape', 'dual ascent: A, b and x0 disagree')
   const rho = options.augmented ?? 0
   const alpha = options.stepSize ?? (rho > 0 ? rho : 1)
   const tol = options.tol ?? 1e-9
@@ -566,8 +566,8 @@ export function dualAscentAlgorithm(
  * @concept duality
  * @example
  * ```ts
- * import { dualAscent } from 'mdml-engine/optim'
- * import { mul, square, sum, toArray, type Value } from 'mdml-engine/tensor'
+ * import { dualAscent } from 'omai-engine/optim'
+ * import { mul, square, sum, toArray, type Value } from 'omai-engine/tensor'
  * // min |x|^2 / 2 subject to x1 + x2 = 1, with the closed-form inner minimiser x = -A^T y.
  * const r = dualAscent((x) => mul(sum(square(x as Value)), 0.5), [[1, 1]], [1], [0, 0], {
  *   stepSize: 0.5,
@@ -633,8 +633,8 @@ export interface DecompositionBlock {
  * @concept duality
  * @example
  * ```ts
- * import { dualDecomposition } from 'mdml-engine/optim'
- * import { mul, square, sum, toArray, type Value } from 'mdml-engine/tensor'
+ * import { dualDecomposition } from 'omai-engine/optim'
+ * import { mul, square, sum, toArray, type Value } from 'omai-engine/tensor'
  * // min (x1^2 + x2^2) / 2 subject to x1 + x2 = 2; each block's minimiser of x^2 / 2 + c x is -c.
  * const half = (x: unknown) => mul(sum(square(x as Value)), 0.5)
  * const block = { f: half, a: [[1]], x0: [0], argmin: (c: Float64Array) => [-(c[0] ?? 0)] }
@@ -647,7 +647,7 @@ export function dualDecomposition(
   b: TensorLike,
   options: Omit<DualAscentOptions, 'augmented'> = {},
 ): DualResult {
-  if (blocks.length === 0) throw new MdmlError('value', 'dualDecomposition: give at least one block')
+  if (blocks.length === 0) throw new OmaiError('value', 'dualDecomposition: give at least one block')
   const mats = blocks.map((bl) => matrixOf(bl.a))
   const starts = blocks.map((bl) => flatOf(asTensor(bl.x0)))
   const sizes = starts.map((s) => s.length)
@@ -656,7 +656,7 @@ export function dualDecomposition(
   const m = mats[0]?.rows ?? 0
   const A = new Float64Array(m * n)
   for (const [k, mat] of mats.entries()) {
-    if (mat.rows !== m || mat.cols !== sizes[k]) throw new MdmlError('shape', 'dualDecomposition: block shapes')
+    if (mat.rows !== m || mat.cols !== sizes[k]) throw new OmaiError('shape', 'dualDecomposition: block shapes')
     for (let i = 0; i < m; i++)
       for (let j = 0; j < mat.cols; j++) A[i * n + (offsets[k] ?? 0) + j] = mat.data[i * mat.cols + j] ?? 0
   }

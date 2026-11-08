@@ -4,7 +4,7 @@
  * and dropped coefficients, so a view can play the chain of arrows round one cycle.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { sameLength, seal } from './_check.ts'
 
 /** A curve: its points' x and y. */
@@ -49,10 +49,10 @@ export interface Epicycles {
  *
  * @param record - The record without its `kind`.
  * @returns The record.
- * @throws MdmlError `shape` when paired arrays differ in length; `value` for fewer than 2 frames per cycle.
+ * @throws OmaiError `shape` when paired arrays differ in length; `value` for fewer than 2 frames per cycle.
  * @example
  * ```ts
- * import { epicycles } from 'mdml-engine/exposition'
+ * import { epicycles } from 'omai-engine/exposition'
  * const r = epicycles({
  *   method: 'fourier series',
  *   source: 'circle',
@@ -75,6 +75,6 @@ export function epicycles(record: Omit<Epicycles, 'kind'>): Epicycles {
   sameLength('epicycles', 'spectrum.magnitude', record.spectrum.magnitude.length, record.spectrum.k.length)
   sameLength('epicycles', 'spectrum.kept', record.spectrum.kept.length, record.spectrum.k.length)
   if (!(Number.isInteger(record.steps) && record.steps >= 2))
-    throw new MdmlError('value', 'epicycles: at least 2 frames per cycle')
+    throw new OmaiError('value', 'epicycles: at least 2 frames per cycle')
   return seal({ kind: 'epicycles', ...record })
 }

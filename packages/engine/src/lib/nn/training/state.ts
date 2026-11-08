@@ -50,8 +50,8 @@ export interface TrainState {
  * @concept training
  * @example
  * ```ts
- * import { trainState, Linear } from 'mdml-engine/nn'
- * import { sgd } from 'mdml-engine/optim'
+ * import { trainState, Linear } from 'omai-engine/nn'
+ * import { sgd } from 'omai-engine/optim'
  * trainState(new Linear(2, 1), sgd({ learningRate: 0.1 })).step // => 0
  * ```
  */
@@ -89,9 +89,9 @@ export interface ApplyGradientOptions {
  * @returns The state with new parameters, optimiser state and update count, and the updates applied.
  * @example
  * ```ts
- * import { applyGradients, trainState, Linear } from 'mdml-engine/nn'
- * import { sgd } from 'mdml-engine/optim'
- * import { treeMap, onesLike } from 'mdml-engine/tensor'
+ * import { applyGradients, trainState, Linear } from 'omai-engine/nn'
+ * import { sgd } from 'omai-engine/optim'
+ * import { treeMap, onesLike } from 'omai-engine/tensor'
  * const opt = sgd({ learningRate: 0.1 })
  * const s = trainState(new Linear(2, 1), opt)
  * applyGradients(s, treeMap((p) => onesLike(p), s.params), opt).state.updates // => 1
@@ -141,8 +141,8 @@ export interface LossAndGrads {
  * @returns The loss, gradients and buffers.
  * @example
  * ```ts
- * import { lossAndGrads, Linear } from 'mdml-engine/nn'
- * import { sum } from 'mdml-engine/tensor'
+ * import { lossAndGrads, Linear } from 'omai-engine/nn'
+ * import { sum } from 'omai-engine/tensor'
  * const m = new Linear(2, 1)
  * Object.keys(lossAndGrads(m, m.params, m.buffers, [[1, 2]], (y) => sum(y)).grads) // => ['bias', 'weight']
  * ```
@@ -193,9 +193,9 @@ export function lossAndGrads<I>(
  * @concept training
  * @example
  * ```ts
- * import { trainStep, trainState, Linear } from 'mdml-engine/nn'
- * import { sgd } from 'mdml-engine/optim'
- * import { sum, square } from 'mdml-engine/tensor'
+ * import { trainStep, trainState, Linear } from 'omai-engine/nn'
+ * import { sgd } from 'omai-engine/optim'
+ * import { sum, square } from 'omai-engine/tensor'
  * const m = new Linear(1, 1)
  * const opt = sgd({ learningRate: 0.1 })
  * trainStep(m, trainState(m, opt), [[1]], (y) => sum(square(y)), opt).step // => 1
@@ -221,8 +221,8 @@ export function trainStep<I>(
  * @returns The summed gradients and count.
  * @example
  * ```ts
- * import { accumulate } from 'mdml-engine/nn'
- * import { tensor } from 'mdml-engine/tensor'
+ * import { accumulate } from 'omai-engine/nn'
+ * import { tensor } from 'omai-engine/tensor'
  * accumulate(accumulate(undefined, { w: tensor(1) }), { w: tensor(2) }).count // => 2
  * ```
  */
@@ -241,7 +241,7 @@ export function accumulate(
  * @returns True when at least one parameter is frozen.
  * @example
  * ```ts
- * import { hasFrozen, Linear } from 'mdml-engine/nn'
+ * import { hasFrozen, Linear } from 'omai-engine/nn'
  * hasFrozen(new Linear(2, 1).requiresGrad(false).trainableMask()) // => true
  * ```
  */

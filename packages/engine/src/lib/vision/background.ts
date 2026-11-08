@@ -4,7 +4,7 @@
  * algorithms whose steps are frames, with the foreground masks they produce.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import { fromStorage, type Tensor, type TensorLike } from '../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../trace/index.ts'
 import { greyOf, rasterOf, rasterTensor } from './_image.ts'
@@ -19,15 +19,15 @@ import { greyOf, rasterOf, rasterTensor } from './_image.ts'
  * @concept background-subtraction
  * @example
  * ```ts
- * import { accumulateWeighted } from 'mdml-engine/vision'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { accumulateWeighted } from 'omai-engine/vision'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(accumulateWeighted([[1, 0]], [[0, 0]], 0.25)) // => [[0.25, 0]]
  * ```
  */
 export function accumulateWeighted(x: TensorLike, average: TensorLike, alpha: number): Tensor {
   const a = rasterOf(x, 'accumulateWeighted')
   const b = rasterOf(average, 'accumulateWeighted')
-  if (a.data.length !== b.data.length) throw new MdmlError('shape', 'accumulateWeighted: images differ in shape')
+  if (a.data.length !== b.data.length) throw new OmaiError('shape', 'accumulateWeighted: images differ in shape')
   return rasterTensor({ ...b, data: Float64Array.from(b.data, (v, i) => (1 - alpha) * v + alpha * (a.data[i] ?? 0)) })
 }
 
@@ -59,8 +59,8 @@ const fraction = (m: Float64Array): number => m.reduce((a, b) => a + b, 0) / Mat
  * @concept background-subtraction
  * @example
  * ```ts
- * import { runningAverageAlgorithm } from 'mdml-engine/vision'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { runningAverageAlgorithm } from 'omai-engine/vision'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const still = [[0.2, 0.2], [0.2, 0.2]]
  * const moved = [[0.2, 0.9], [0.2, 0.2]]
  * Array.from(runAlgorithm(runningAverageAlgorithm([still, still, moved]), { maxSteps: 3 }).state.foreground) // => [0, 1, 0, 0]
@@ -118,8 +118,8 @@ export interface MixtureBackgroundOptions {
  * @concept background-subtraction
  * @example
  * ```ts
- * import { mixtureBackgroundAlgorithm } from 'mdml-engine/vision'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { mixtureBackgroundAlgorithm } from 'omai-engine/vision'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const still = [[0.2, 0.2], [0.2, 0.2]]
  * const frames = [...new Array(10).fill(still), [[0.2, 0.9], [0.2, 0.2]]]
  * Array.from(runAlgorithm(mixtureBackgroundAlgorithm(frames), { maxSteps: 11 }).state.foreground) // => [0, 1, 0, 0]
@@ -210,7 +210,7 @@ export function mixtureBackgroundAlgorithm(
  * @concept background-subtraction
  * @example
  * ```ts
- * import { subtractBackground } from 'mdml-engine/vision'
+ * import { subtractBackground } from 'omai-engine/vision'
  * const still = [[0.2, 0.2], [0.2, 0.2]]
  * subtractBackground([still, still, [[0.9, 0.2], [0.2, 0.2]]], { method: 'running-average' }).length // => 3
  * ```

@@ -6,7 +6,7 @@
  * detector that finds the highway from the ant's track.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import {
   type Algorithm,
   type Contract,
@@ -71,7 +71,7 @@ export const antContract: Contract<AntState, AntPath> = defineContract({
  * @concept langtons-ant
  * @example
  * ```ts
- * import { automata } from 'mdml-engine/dynamics'
+ * import { automata } from 'omai-engine/dynamics'
  * automata.highwayDetected([0, 0, 2, 2, 4, 4, 6, 6]) // => [2, 2]
  * automata.highwayDetected([0, 0, 2, 2, 3, 3, 6, 6]) // => undefined
  * ```
@@ -100,12 +100,12 @@ export function highwayDetected(track: readonly number[], repeats = 3): [number,
  *
  * @param options - The rule, size, number of ants, moves per step and highway period.
  * @returns The algorithm.
- * @throws MdmlError with code `value` for a rule that is not made of `L`, `R`, `N`, `U`, or a bad size.
+ * @throws OmaiError with code `value` for a rule that is not made of `L`, `R`, `N`, `U`, or a bad size.
  * @concept langtons-ant
  * @example
  * ```ts
- * import { automata } from 'mdml-engine/dynamics'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { automata } from 'omai-engine/dynamics'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * // After 5 moves the ant has left three black cells and faces left, one cell left of where it began.
  * const s = runAlgorithm(automata.langtonsAnt({ width: 9, height: 9 }), { seed: 0, maxSteps: 5 }).state
  * [s.cells.reduce((a, b) => a + b, 0), Array.from(s.ants)] // => [3, [3, 4, 3]]
@@ -119,8 +119,8 @@ export function langtonsAnt(options: AntOptions = {}): Algorithm<AntState, AntPa
   const perStep = options.movesPerStep ?? 1
   const period = options.highwayPeriod ?? 104
   if (!/^[LRNU]{2,}$/.test(rule))
-    throw new MdmlError('value', `langtonsAnt: rule '${rule}' must be two or more of L, R, N, U`)
-  if (rule.length > 255) throw new MdmlError('value', 'langtonsAnt: too many colours')
+    throw new OmaiError('value', `langtonsAnt: rule '${rule}' must be two or more of L, R, N, U`)
+  if (rule.length > 255) throw new OmaiError('value', 'langtonsAnt: too many colours')
   positiveInt('langtonsAnt', 'width', width)
   positiveInt('langtonsAnt', 'height', height)
   positiveInt('langtonsAnt', 'ants', count)

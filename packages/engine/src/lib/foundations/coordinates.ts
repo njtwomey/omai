@@ -6,7 +6,7 @@
  */
 
 import { jacobian } from '../autodiff/index.ts'
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { det, solve } from '../numerics/linalg/index.ts'
 import {
   add,
@@ -37,7 +37,7 @@ const part = (v: Value, i: number): Value => squeeze(sliceAxis(v, -1, i, i + 1),
 
 function lastAxis(x: TensorLike, n: number, name: string): Value {
   const [v] = promoteFloat(x) as [Value]
-  if (v.shape[v.shape.length - 1] !== n) throw new MdmlError('shape', `${name}: expected points [..., ${n}]`)
+  if (v.shape[v.shape.length - 1] !== n) throw new OmaiError('shape', `${name}: expected points [..., ${n}]`)
   return v
 }
 
@@ -50,8 +50,8 @@ function lastAxis(x: TensorLike, n: number, name: string): Value {
  * @concept polar-coordinates
  * @example
  * ```ts
- * import { cartesianToPolar } from 'mdml-engine/foundations'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { cartesianToPolar } from 'omai-engine/foundations'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(cartesianToPolar([0, 2])) // => [2, 1.5707963267948966]
  * ```
  */
@@ -70,8 +70,8 @@ export function cartesianToPolar(points: TensorLike): Value {
  * @concept polar-coordinates
  * @example
  * ```ts
- * import { polarToCartesian } from 'mdml-engine/foundations'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { polarToCartesian } from 'omai-engine/foundations'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(polarToCartesian([2, 0])) // => [2, 0]
  * ```
  */
@@ -90,8 +90,8 @@ export function polarToCartesian(polar: TensorLike): Value {
  * @concept cylindrical-coordinates
  * @example
  * ```ts
- * import { cartesianToCylindrical } from 'mdml-engine/foundations'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { cartesianToCylindrical } from 'omai-engine/foundations'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(cartesianToCylindrical([3, 4, 5])) // => [5, 0.9272952180016122, 5]
  * ```
  */
@@ -110,8 +110,8 @@ export function cartesianToCylindrical(points: TensorLike): Value {
  * @concept cylindrical-coordinates
  * @example
  * ```ts
- * import { cylindricalToCartesian } from 'mdml-engine/foundations'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { cylindricalToCartesian } from 'omai-engine/foundations'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(cylindricalToCartesian([1, 0, 7])) // => [1, 0, 7]
  * ```
  */
@@ -132,8 +132,8 @@ export function cylindricalToCartesian(cylindrical: TensorLike): Value {
  * @concept spherical-coordinates
  * @example
  * ```ts
- * import { cartesianToSpherical } from 'mdml-engine/foundations'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { cartesianToSpherical } from 'omai-engine/foundations'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(cartesianToSpherical([0, 0, 2])) // => [2, 0, 0]
  * ```
  */
@@ -154,8 +154,8 @@ export function cartesianToSpherical(points: TensorLike): Value {
  * @concept spherical-coordinates
  * @example
  * ```ts
- * import { sphericalToCartesian } from 'mdml-engine/foundations'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { sphericalToCartesian } from 'omai-engine/foundations'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(sphericalToCartesian([2, 0, 1])) // => [0, 0, 2]
  * ```
  */
@@ -178,8 +178,8 @@ export function sphericalToCartesian(spherical: TensorLike): Value {
  * @concept spherical-coordinates
  * @example
  * ```ts
- * import { geographicToCartesian } from 'mdml-engine/foundations'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { geographicToCartesian } from 'omai-engine/foundations'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(geographicToCartesian([0, 0])) // => [1, 0, 0]
  * ```
  */
@@ -200,8 +200,8 @@ export function geographicToCartesian(latLon: TensorLike, radius = 1): Value {
  * @concept homogeneous-coordinates
  * @example
  * ```ts
- * import { toHomogeneous } from 'mdml-engine/foundations'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { toHomogeneous } from 'omai-engine/foundations'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(toHomogeneous([[1, 2]])) // => [[1, 2, 1]]
  * ```
  */
@@ -219,8 +219,8 @@ export function toHomogeneous(points: TensorLike): Value {
  * @concept homogeneous-coordinates
  * @example
  * ```ts
- * import { fromHomogeneous } from 'mdml-engine/foundations'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { fromHomogeneous } from 'omai-engine/foundations'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(fromHomogeneous([4, 6, 2])) // => [2, 3]
  * ```
  */
@@ -239,15 +239,15 @@ export function fromHomogeneous(points: TensorLike): Value {
  * @concept homogeneous-coordinates
  * @example
  * ```ts
- * import { homogeneousMatrix } from 'mdml-engine/foundations'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { homogeneousMatrix } from 'omai-engine/foundations'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(homogeneousMatrix([[2, 0], [0, 2]], [1, -1])) // => [[2, 0, 1], [0, 2, -1], [0, 0, 1]]
  * ```
  */
 export function homogeneousMatrix(linear: TensorLike, translation?: TensorLike): Value {
   const [a] = promoteFloat(linear) as [Value]
   const d = a.shape[0] ?? 0
-  if (a.shape.length !== 2 || a.shape[1] !== d) throw new MdmlError('shape', 'homogeneousMatrix: linear part [d, d]')
+  if (a.shape.length !== 2 || a.shape[1] !== d) throw new OmaiError('shape', 'homogeneousMatrix: linear part [d, d]')
   const [t] = promoteFloat(translation ?? Array.from({ length: d }, () => 0)) as [Value]
   const top = concat([a, stack([t], -1)], -1)
   const bottom = stack([concat([mul(sliceAxis(t, 0, 0, d), 0), [1]], 0)], 0)
@@ -264,8 +264,8 @@ export function homogeneousMatrix(linear: TensorLike, translation?: TensorLike):
  * @concept homogeneous-coordinates
  * @example
  * ```ts
- * import { applyHomogeneous, homogeneousMatrix } from 'mdml-engine/foundations'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { applyHomogeneous, homogeneousMatrix } from 'omai-engine/foundations'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(applyHomogeneous(homogeneousMatrix([[0, -1], [1, 0]], [1, 0]), [1, 0])) // => [1, 1]
  * ```
  */
@@ -281,12 +281,12 @@ export function applyHomogeneous(matrix: TensorLike, points: TensorLike): Value 
  * @param points - Points `[..., d]`.
  * @param simplex - The `d + 1` vertices `[d + 1, d]`.
  * @returns Weights `[..., d + 1]`.
- * @throws MdmlError with code `shape` unless the simplex has one more vertex than dimensions.
+ * @throws OmaiError with code `shape` unless the simplex has one more vertex than dimensions.
  * @concept barycentric-coordinates
  * @example
  * ```ts
- * import { barycentric } from 'mdml-engine/foundations'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { barycentric } from 'omai-engine/foundations'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(barycentric([0.25, 0.25], [[0, 0], [1, 0], [0, 1]])) // => [0.5, 0.25, 0.25]
  * ```
  */
@@ -294,7 +294,7 @@ export function barycentric(points: TensorLike, simplex: TensorLike): Value {
   const [p, s] = promoteFloat(points, simplex) as [Value, Value]
   const d = s.shape[1] ?? 0
   if (s.shape.length !== 2 || s.shape[0] !== d + 1) {
-    throw new MdmlError('shape', 'barycentric: a simplex in d dimensions has d + 1 vertices [d + 1, d]')
+    throw new OmaiError('shape', 'barycentric: a simplex in d dimensions has d + 1 vertices [d + 1, d]')
   }
   const v0 = squeeze(sliceAxis(s, 0, 0, 1), 0)
   // Columns v_i - v_0; solve for the last d weights, the first is what remains.
@@ -314,8 +314,8 @@ export function barycentric(points: TensorLike, simplex: TensorLike): Value {
  * @concept barycentric-coordinates
  * @example
  * ```ts
- * import { fromBarycentric } from 'mdml-engine/foundations'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { fromBarycentric } from 'omai-engine/foundations'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(fromBarycentric([0.5, 0.25, 0.25], [[0, 0], [1, 0], [0, 1]])) // => [0.25, 0.25]
  * ```
  */
@@ -334,8 +334,8 @@ export function fromBarycentric(weights: TensorLike, vertices: TensorLike): Valu
  * @concept change-of-basis
  * @example
  * ```ts
- * import { coordinatesInBasis } from 'mdml-engine/foundations'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { coordinatesInBasis } from 'omai-engine/foundations'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(coordinatesInBasis([3, 1], [[1, 1], [1, -1]])) // => [2, 1]
  * ```
  */
@@ -354,8 +354,8 @@ export function coordinatesInBasis(vectors: TensorLike, basis: TensorLike): Valu
  * @concept change-of-basis
  * @example
  * ```ts
- * import { changeOfBasis } from 'mdml-engine/foundations'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { changeOfBasis } from 'omai-engine/foundations'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(changeOfBasis([[2, 0], [0, 2]], [[1, 0], [0, 1]])) // => [[2, 0], [0, 2]]
  * ```
  */
@@ -374,8 +374,8 @@ export function changeOfBasis(from: TensorLike, to: TensorLike): Value {
  * @concept change-of-basis
  * @example
  * ```ts
- * import { matrixInBasis } from 'mdml-engine/foundations'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { matrixInBasis } from 'omai-engine/foundations'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(matrixInBasis([[2, 1], [1, 2]], [[1, 1], [1, -1]])) // => [[3, 0], [0, 1]]
  * ```
  */
@@ -404,7 +404,7 @@ const TO_CARTESIAN: Readonly<Record<CoordinateSystem, (x: Value) => Value>> = {
  * @concept jacobian-determinant
  * @example
  * ```ts
- * import { coordinateJacobianDeterminant } from 'mdml-engine/foundations'
+ * import { coordinateJacobianDeterminant } from 'omai-engine/foundations'
  * coordinateJacobianDeterminant('polar', [2, 0.3]) // => 2
  * coordinateJacobianDeterminant('spherical', [2, Math.PI / 2, 0]) // => 4
  * ```
@@ -417,7 +417,7 @@ export function coordinateJacobianDeterminant(
   const j = jacobian(f)(point)
   const n = j.shape[0] ?? 0
   if (j.shape.length !== 2 || j.shape[1] !== n) {
-    throw new MdmlError('shape', 'coordinateJacobianDeterminant: the map must send R^n to R^n')
+    throw new OmaiError('shape', 'coordinateJacobianDeterminant: the map must send R^n to R^n')
   }
   return item(det(j))
 }
@@ -431,7 +431,7 @@ export function coordinateJacobianDeterminant(
  * @concept jacobian-determinant
  * @example
  * ```ts
- * import { coordinateJacobian } from 'mdml-engine/foundations'
+ * import { coordinateJacobian } from 'omai-engine/foundations'
  * coordinateJacobian('polar', [2, 0]) // => [[1, 0], [0, 2]]
  * ```
  */

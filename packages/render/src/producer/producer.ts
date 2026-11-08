@@ -6,8 +6,8 @@
  * the producer of a hook's sessions, so the consumer does not change with where the computing happens.
  */
 
-import type { Json } from 'mdml-engine/base'
-import type { Config, Derived, Method, Session, SessionOptions, SliceBudget } from 'mdml-engine/trace'
+import type { Json } from 'omai-engine/base'
+import type { Config, Derived, Method, Session, SessionOptions, SliceBudget } from 'omai-engine/trace'
 import type { Variant } from './make.ts'
 
 /**

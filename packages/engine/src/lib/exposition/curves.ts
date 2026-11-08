@@ -4,7 +4,7 @@
  * Each series has its values, an optional band, and its axis and group.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { sameLength, seal } from './_check.ts'
 
 /** One series of a {@link CurveSet}: values along x, an optional band, and which axis and group it belongs to. */
@@ -54,11 +54,11 @@ export interface CurveSet {
  *
  * @param record - The record without its `kind`.
  * @returns The record.
- * @throws MdmlError `shape` when a series' values or band do not match its x values; `value` when a series has
+ * @throws OmaiError `shape` when a series' values or band do not match its x values; `value` when a series has
  *   no x values of its own and the record has none.
  * @example
  * ```ts
- * import { curveSet } from 'mdml-engine/exposition'
+ * import { curveSet } from 'omai-engine/exposition'
  * const r = curveSet({ x: [1, 2, 3], xLabel: 'epoch', series: [{ name: 'sgd', y: [1, 0.6, 0.4] }, { name: 'adam', y: [0.8, 0.3, 0.2] }] })
  * r.series.length // => 2
  * ```
@@ -66,7 +66,7 @@ export interface CurveSet {
 export function curveSet(record: Omit<CurveSet, 'kind'>): CurveSet {
   for (const s of record.series) {
     const x = s.x ?? record.x
-    if (x === undefined) throw new MdmlError('value', `curves: the series ${s.name} has no x values`)
+    if (x === undefined) throw new OmaiError('value', `curves: the series ${s.name} has no x values`)
     sameLength('curves', `${s.name}.y`, s.y.length, x.length)
     for (const field of ['spread', 'lower', 'upper'] as const) {
       const column = s[field]

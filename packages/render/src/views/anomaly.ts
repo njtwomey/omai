@@ -5,7 +5,7 @@
  */
 
 import type { EChartsOption } from 'echarts'
-import type { AnomalyScores } from 'mdml-engine/exposition'
+import type { AnomalyScores } from 'omai-engine/exposition'
 import { histogram } from '../charts/bars.ts'
 import { type Panel, subplots } from '../charts/compose.ts'
 import { referenceLines } from '../charts/functions.ts'
@@ -34,8 +34,8 @@ export interface AnomalyViewOptions extends ViewOptions {
  * @returns The ECharts option.
  * @example
  * ```ts
- * import { anomalyScores } from 'mdml-engine/exposition'
- * import { anomalyView } from 'mdml-render/views'
+ * import { anomalyScores } from 'omai-engine/exposition'
+ * import { anomalyView } from 'omai-render/views'
  * anomalyView(anomalyScores({ method: 'iforest', scores: [0.4, 0.5, 0.9], threshold: 0.6 })).grid.length // => 1
  * ```
  */

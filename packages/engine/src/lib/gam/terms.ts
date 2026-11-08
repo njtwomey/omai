@@ -6,7 +6,7 @@
  * identifiable, and a term can be evaluated at new data from what it learned on the training data.
  */
 
-import { MdmlError, maxOf, minOf } from '../base/index.ts'
+import { maxOf, minOf, OmaiError } from '../base/index.ts'
 import { type MatrixView, matrixView } from '../learn/index.ts'
 import { dgemm, dsyev } from '../numerics/linalg/index.ts'
 import {
@@ -113,14 +113,14 @@ const names = (features: readonly number[]): string => features.map((f) => `x${f
  * @index function A smooth term of a GAM; te and ti sit beside it.
  * @example
  * ```ts
- * import { s } from 'mdml-engine/gam'
+ * import { s } from 'omai-engine/gam'
  * s(0, { basis: 'ps', k: 8 }).label // => 's(x0)'
  * s([0, 1]).basis // => 'tp'
  * ```
  */
 export function s(feature: number | readonly number[], options: SmoothOptions = {}): GamTerm {
   const features = typeof feature === 'number' ? [feature] : [...feature]
-  if (features.length === 0) throw new MdmlError('value', 's: needs at least one covariate')
+  if (features.length === 0) throw new OmaiError('value', 's: needs at least one covariate')
   return {
     kind: 'smooth',
     features,
@@ -138,13 +138,13 @@ export function s(feature: number | readonly number[], options: SmoothOptions = 
 }
 
 function tensorTerm(kind: 'te' | 'ti', features: readonly number[], options: TensorOptions): GamTerm {
-  if (features.length < 2) throw new MdmlError('value', `${kind}: needs at least two covariates`)
+  if (features.length < 2) throw new OmaiError('value', `${kind}: needs at least two covariates`)
   const per = <T>(v: T | readonly T[] | undefined, fallback: T): T[] =>
     Array.isArray(v) ? [...(v as readonly T[])] : features.map(() => (v === undefined ? fallback : (v as T)))
   const bases = per<SmoothKind>(options.basis, 'cr')
   const ks = per<number>(options.k, 5)
   if (bases.length !== features.length || ks.length !== features.length) {
-    throw new MdmlError('shape', `${kind}: basis and k need one entry per covariate`)
+    throw new OmaiError('shape', `${kind}: basis and k need one entry per covariate`)
   }
   return { kind, features: [...features], bases, ks, label: options.label ?? `${kind}(${names(features)})` }
 }
@@ -159,7 +159,7 @@ function tensorTerm(kind: 'te' | 'ti', features: readonly number[], options: Ten
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { te } from 'mdml-engine/gam'
+ * import { te } from 'omai-engine/gam'
  * te([0, 1], { k: [5, 4] }).label // => 'te(x0,x1)'
  * ```
  */
@@ -177,7 +177,7 @@ export function te(features: readonly number[], options: TensorOptions = {}): Ga
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { ti } from 'mdml-engine/gam'
+ * import { ti } from 'omai-engine/gam'
  * ti([0, 1]).kind // => 'ti'
  * ```
  */
@@ -194,7 +194,7 @@ export function ti(features: readonly number[], options: TensorOptions = {}): Ga
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { linear } from 'mdml-engine/gam'
+ * import { linear } from 'omai-engine/gam'
  * linear(2).label // => 'x2'
  * ```
  */
@@ -213,7 +213,7 @@ export function linear(feature: number, label?: string): GamTerm {
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { factor } from 'mdml-engine/gam'
+ * import { factor } from 'omai-engine/gam'
  * factor(1, { randomEffect: true }).label // => 'factor(x1)'
  * ```
  */
@@ -274,7 +274,7 @@ export interface GamDesign {
 function columnsOf(m: MatrixView, features: readonly number[]): Tensor {
   for (const f of features) {
     if (!Number.isInteger(f) || f < 0 || f >= m.d) {
-      throw new MdmlError('shape', `gam: term refers to column ${f} but x has ${m.d}`)
+      throw new OmaiError('shape', `gam: term refers to column ${f} but x has ${m.d}`)
     }
   }
   const out = new Float64Array(m.n * features.length)
@@ -398,7 +398,7 @@ function compile(term: GamTerm, m: MatrixView, offset: number): CompiledTerm {
       let constraints: ConstraintBlock | undefined
       if (constrained) {
         if (d !== 1 || term.by !== undefined) {
-          throw new MdmlError(
+          throw new OmaiError(
             'value',
             `gam: ${term.label}: shape constraints and bounds need one covariate and no \`by\``,
           )
@@ -478,7 +478,7 @@ function compile(term: GamTerm, m: MatrixView, offset: number): CompiledTerm {
         const out = new Float64Array(q.n * levels.length)
         for (let i = 0; i < q.n; i++) {
           const at = levels.indexOf(values[i] ?? Number.NaN)
-          if (at < 0) throw new MdmlError('value', `gam: ${term.label} has a level (${values[i]}) not seen in training`)
+          if (at < 0) throw new OmaiError('value', `gam: ${term.label} has a level (${values[i]}) not seen in training`)
           out[i * levels.length + at] = 1
         }
         return out
@@ -522,11 +522,11 @@ function compile(term: GamTerm, m: MatrixView, offset: number): CompiledTerm {
  * @param x - The covariates `[n, d]`.
  * @param terms - The terms (default one `s` per column).
  * @returns The design.
- * @throws MdmlError `shape` for a term that refers to a missing column.
+ * @throws OmaiError `shape` for a term that refers to a missing column.
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { buildDesign, linear, s } from 'mdml-engine/gam'
+ * import { buildDesign, linear, s } from 'omai-engine/gam'
  * const x = [[0, 1], [1, 3], [2, 2], [3, 5], [4, 4], [5, 6]]
  * const design = buildDesign(x, [s(0, { k: 4 }), linear(1)])
  * [design.p, design.nPenalties] // => [5, 1]
@@ -589,11 +589,11 @@ function fillDesign(design: GamDesign, m: MatrixView, out: Float64Array): void {
  * @param design - A design built on training data.
  * @param x - New covariates `[m, d]`.
  * @returns The matrix `[m, p]` and its row count.
- * @throws MdmlError `shape` for a wrong column count; `value` for a factor level not seen in training.
+ * @throws OmaiError `shape` for a wrong column count; `value` for a factor level not seen in training.
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { buildDesign, evaluateDesign, linear } from 'mdml-engine/gam'
+ * import { buildDesign, evaluateDesign, linear } from 'omai-engine/gam'
  * const design = buildDesign([[1], [2], [3]], [linear(0)])
  * Array.from(evaluateDesign(design, [[10]]).X) // => [1, 10]
  * ```

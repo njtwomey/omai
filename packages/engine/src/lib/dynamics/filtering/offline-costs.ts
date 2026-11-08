@@ -42,7 +42,7 @@ function cost(
  * @returns The cost function and its shortest scorable segment.
  * @example
  * ```ts
- * import { filtering } from 'mdml-engine/dynamics'
+ * import { filtering } from 'omai-engine/dynamics'
  * filtering.costOf([0, 0, 4, 4], 'l2').error(0, 4) // => 16
  * ```
  */
@@ -97,7 +97,7 @@ export function costOf(y: readonly number[], name: SegmentCost): CostFunction {
  * @concept changepoint-detection
  * @example
  * ```ts
- * import { filtering } from 'mdml-engine/dynamics'
+ * import { filtering } from 'omai-engine/dynamics'
  * filtering.segmentCosts.make({ kind: 'l1' })([0, 1, 9]).error(0, 3) // => 9
  * ```
  */

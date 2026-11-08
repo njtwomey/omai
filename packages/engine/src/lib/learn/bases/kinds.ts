@@ -6,7 +6,7 @@
  * the scores for outlier detectors. Adding a probe to every classifier is one line here.
  */
 
-import { type Json, MdmlError, toRows } from '../../base/index.ts'
+import { type Json, OmaiError, toRows } from '../../base/index.ts'
 import { type Tensor, toFlat } from '../../tensor/index.ts'
 import { type DerivedSource, derived } from '../../trace/index.ts'
 import type { EstimatorKind, Fitted, LearnData } from '../estimator.ts'
@@ -37,7 +37,7 @@ const rows = (t: Tensor): number[][] => {
 
 function verb<K extends 'predict' | 'transform' | 'decisionFunction'>(fitted: Fitted, name: K): NonNullable<Fitted[K]> {
   const f = fitted[name]
-  if (f === undefined) throw new MdmlError('value', `${fitted.estimator}: no ${name} to derive from`)
+  if (f === undefined) throw new OmaiError('value', `${fitted.estimator}: no ${name} to derive from`)
   return f
 }
 
@@ -51,7 +51,7 @@ function verb<K extends 'predict' | 'transform' | 'decisionFunction'>(fitted: Fi
  * @concept log-contract
  * @example
  * ```ts
- * import { kindProbes } from 'mdml-engine/learn'
+ * import { kindProbes } from 'omai-engine/learn'
  * const fitted = () => ({ estimator: 'x', kind: 'classifier', params: {} })
  * Object.keys(kindProbes('classifier', { data: { x: [[0, 0]] }, fitted })) // => ['model/decision-surface', 'model/predictions']
  * ```

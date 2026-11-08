@@ -1,4 +1,4 @@
-import type { Example, MemberDoc, ParamDoc, SymbolDoc } from 'mdml-meta/schema'
+import type { Example, MemberDoc, ParamDoc, SymbolDoc } from 'omai-meta/schema'
 import type { ReactNode } from 'react'
 import { CodeBlock } from '../shell/CodeBlock.tsx'
 import { highlight } from '../shell/highlight.ts'

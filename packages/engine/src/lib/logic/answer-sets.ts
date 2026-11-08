@@ -5,7 +5,7 @@
  * traced algorithm.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm, type TraceSchema } from '../trace/index.ts'
 import { evaluationOrder, factKey, joinRule, Store } from './_relations.ts'
 import {
@@ -44,11 +44,11 @@ const FALSE = '$false'
  *
  * @param source - Program text, or clauses (constraints then have the head `$false`).
  * @returns The program.
- * @throws MdmlError with code `value` for unsafe rules, function symbols or a syntax error.
+ * @throws OmaiError with code `value` for unsafe rules, function symbols or a syntax error.
  * @concept answer-set-programming
  * @example
  * ```ts
- * import { normalProgram } from 'mdml-engine/logic'
+ * import { normalProgram } from 'omai-engine/logic'
  * const p = normalProgram('a :- not b. b :- not a. :- a, c. c.')
  * [p.rules.length, p.constraints.length] // => [3, 1]
  * ```
@@ -74,7 +74,7 @@ export function normalProgram(source: string | readonly Clause[]): NormalProgram
  * @concept answer-set-programming
  * @example
  * ```ts
- * import { groundProgram, normalProgram } from 'mdml-engine/logic'
+ * import { groundProgram, normalProgram } from 'omai-engine/logic'
  * groundProgram(normalProgram('n(1). n(2). p(X) :- n(X), not q(X). q(2).')).map((r) => r.negative) // => [[], [], [], ['q(2)'], []]
  * ```
  */
@@ -132,7 +132,7 @@ function instantiateHead(t: Term, b: ReadonlyMap<string, Term>): Fact {
  * @concept answer-set-programming
  * @example
  * ```ts
- * import { groundProgram, normalProgram, reduct } from 'mdml-engine/logic'
+ * import { groundProgram, normalProgram, reduct } from 'omai-engine/logic'
  * const g = groundProgram(normalProgram('a :- not b. b :- not a.'))
  * reduct(g, new Set(['a'])) // => [{ head: 'a', positive: [], negative: [] }]
  * ```
@@ -175,7 +175,7 @@ function violates(ground: readonly GroundRule[], model: ReadonlySet<string>): bo
  * @concept answer-set-programming
  * @example
  * ```ts
- * import { isStableModel, normalProgram } from 'mdml-engine/logic'
+ * import { isStableModel, normalProgram } from 'omai-engine/logic'
  * const p = normalProgram('a :- not b. b :- not a.')
  * [isStableModel(p, ['a']), isStableModel(p, ['a', 'b']), isStableModel(p, [])] // => [true, false, false]
  * ```
@@ -242,7 +242,7 @@ function stableMachine(p: NormalProgram, options: StableModelOptions): Algorithm
       const ground = groundProgram(p)
       const atoms = [...new Set(ground.flatMap((r) => r.negative))].sort()
       if (atoms.length > limit) {
-        throw new MdmlError('value', `stableModels: ${atoms.length} negated atoms exceed maxGuessAtoms ${limit}`)
+        throw new OmaiError('value', `stableModels: ${atoms.length} negated atoms exceed maxGuessAtoms ${limit}`)
       }
       return { status: 'running', atoms, candidate: 0, candidates: 2 ** atoms.length, models: [], last: null, ground }
     },
@@ -275,11 +275,11 @@ function stableMachine(p: NormalProgram, options: StableModelOptions): Algorithm
  * @param p - The program.
  * @param options - Answer sets wanted and the guess limit.
  * @returns The algorithm.
- * @throws MdmlError with code `value` (on init) when there are more negated atoms than `maxGuessAtoms`.
+ * @throws OmaiError with code `value` (on init) when there are more negated atoms than `maxGuessAtoms`.
  * @concept answer-set-programming
  * @example
  * ```ts
- * import { normalProgram, stableModelsAlgorithm } from 'mdml-engine/logic'
+ * import { normalProgram, stableModelsAlgorithm } from 'omai-engine/logic'
  * stableModelsAlgorithm(normalProgram('a.')).name // => 'stable-models'
  * ```
  */
@@ -301,11 +301,11 @@ export interface StableModelsResult {
  * @param program - A program or its text.
  * @param options - Answer sets wanted, the guess limit and tracing.
  * @returns The answer sets, the number of guesses checked and the ground program.
- * @throws MdmlError with code `value` for an invalid program or too many negated atoms.
+ * @throws OmaiError with code `value` for an invalid program or too many negated atoms.
  * @concept answer-set-programming
  * @example
  * ```ts
- * import { stableModels } from 'mdml-engine/logic'
+ * import { stableModels } from 'omai-engine/logic'
  * stableModels('a :- not b. b :- not a.').models // => [['a'], ['b']]
  * stableModels('p :- not p.').models // => []
  * // Three-colouring a triangle: 6 answer sets.
@@ -329,7 +329,7 @@ export function stableModels(program: NormalProgram | string, options: StableMod
  * @returns Its text.
  * @example
  * ```ts
- * import { groundRuleToString } from 'mdml-engine/logic'
+ * import { groundRuleToString } from 'omai-engine/logic'
  * groundRuleToString({ head: 'a', positive: ['b'], negative: ['c'] }) // => 'a :- b, not c.'
  * ```
  */

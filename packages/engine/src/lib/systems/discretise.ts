@@ -4,7 +4,7 @@
  * transforms, impulse invariance and pole-zero matching, plus a differentiable discretisation of state-space matrices.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { complexOps as C, type ComplexNumber } from '../numerics/differentiate/index.ts'
 import { expm, solve } from '../numerics/linalg/index.ts'
 import { add, concat, eye, matmul, mul, sliceAxis, sub, type TensorLike, transpose, zeros } from '../tensor/index.ts'
@@ -47,7 +47,7 @@ export interface Cont2DiscreteOptions {
 }
 
 function gbt(s: StateSpace, dt: number, alpha: number): StateSpace {
-  if (!(alpha >= 0 && alpha <= 1)) throw new MdmlError('value', 'cont2discrete: alpha must be in [0, 1]')
+  if (!(alpha >= 0 && alpha <= 1)) throw new OmaiError('value', 'cont2discrete: alpha must be in [0, 1]')
   const n = s.a.shape[0] ?? 0
   const identity = eye(n)
   const ima = sub(identity, mul(s.a, alpha * dt))
@@ -88,7 +88,7 @@ function holdOrImpulse(s: StateSpace, dt: number, method: 'zoh' | 'foh' | 'impul
     }
   }
   if (numbers(s.d).some((v) => Math.abs(v) > 1e-8)) {
-    throw new MdmlError('value', 'cont2discrete: the impulse method needs a strictly proper system (D = 0)')
+    throw new OmaiError('value', 'cont2discrete: the impulse method needs a strictly proper system (D = 0)')
   }
   const ad = expm(mul(s.a, dt))
   const bd = mul(matmul(ad, s.b), dt)
@@ -106,7 +106,7 @@ function matched(sys: Lti, dt: number): ZerosPolesGain {
   const k = numbers(dcgain(toTf(sys))).at(0) ?? Number.NaN
   const gain = k / pre.re
   if (!Number.isFinite(gain)) {
-    throw new MdmlError('value', 'cont2discrete: the matched method needs a finite, nonzero dc gain')
+    throw new OmaiError('value', 'cont2discrete: the matched method needs a finite, nonzero dc gain')
   }
   return { kind: 'zpk', zeros: fromList(zz), poles: fromList(zp), gain, dt }
 }
@@ -137,13 +137,13 @@ function asKindOf(original: Lti, d: Lti): Lti {
  * @param dt - The sample time.
  * @param options - Method, gbt weight and prewarp frequency.
  * @returns The discrete-time system.
- * @throws MdmlError with code `value` for a discrete input, a bad sample time or alpha, a non-strictly-proper
+ * @throws OmaiError with code `value` for a discrete input, a bad sample time or alpha, a non-strictly-proper
  * system with 'impulse', or an infinite dc gain with 'matched'.
  * @concept discretisation
  * @example
  * ```ts
- * import { cont2discrete, ss } from 'mdml-engine/systems'
- * import { item } from 'mdml-engine/tensor'
+ * import { cont2discrete, ss } from 'omai-engine/systems'
+ * import { item } from 'omai-engine/tensor'
  * Math.abs(item(cont2discrete(ss([[-1]], [[1]], [[1]]), 0.5).a) - Math.exp(-0.5)) < 1e-15 // => true
  * ```
  */
@@ -152,15 +152,15 @@ export function cont2discrete<T extends Lti>(sys: T, dt: number, options: Cont2D
 }
 
 function discretised(sys: Lti, dt: number, options: Cont2DiscreteOptions): Lti {
-  if (isDiscrete(sys)) throw new MdmlError('value', 'cont2discrete: the system is already discrete')
-  if (!(dt > 0) || !Number.isFinite(dt)) throw new MdmlError('value', 'cont2discrete: dt must be positive')
+  if (isDiscrete(sys)) throw new OmaiError('value', 'cont2discrete: the system is already discrete')
+  if (!(dt > 0) || !Number.isFinite(dt)) throw new OmaiError('value', 'cont2discrete: dt must be positive')
   const method = options.method ?? 'zoh'
   if (method === 'matched') return asKindOf(sys, matched(sys, dt))
   const s = toSs(sys)
   let d: StateSpace
   switch (method) {
     case 'gbt':
-      if (options.alpha === undefined) throw new MdmlError('value', "cont2discrete: 'gbt' needs alpha")
+      if (options.alpha === undefined) throw new OmaiError('value', "cont2discrete: 'gbt' needs alpha")
       d = gbt(s, dt, options.alpha)
       break
     case 'bilinear':
@@ -184,7 +184,7 @@ function discretised(sys: Lti, dt: number, options: Cont2DiscreteOptions): Lti {
       d = holdOrImpulse(s, dt, method)
       break
     default:
-      throw new MdmlError('value', `cont2discrete: unknown method '${method as string}'`)
+      throw new OmaiError('value', `cont2discrete: unknown method '${method as string}'`)
   }
   return asKindOf(sys, d)
 }
@@ -202,8 +202,8 @@ function discretised(sys: Lti, dt: number, options: Cont2DiscreteOptions): Lti {
  * @returns Ad, Bd, Cd and Dd.
  * @example
  * ```ts
- * import { c2dMatrices } from 'mdml-engine/systems'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { c2dMatrices } from 'omai-engine/systems'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(c2dMatrices([[0, 1], [0, 0]], [[0], [1]], [[1, 0]], [[0]], 0.5).b) // => [[0.125], [0.5]]
  * ```
  */

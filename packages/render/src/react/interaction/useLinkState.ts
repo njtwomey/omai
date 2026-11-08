@@ -7,7 +7,7 @@ import { useSyncExternalStore } from 'react'
 import type { LinkState, LinkStore } from '../../figure/linking.ts'
 
 /**
- * The state of a `LinkStore` (from `mdml-render/figure`), re-rendering when any linked figure changes it: hover,
+ * The state of a `LinkStore` (from `omai-render/figure`), re-rendering when any linked figure changes it: hover,
  * pointer, selection, brush and zoom shared by several figures.
  *
  * @param store - The store the linked figures share.

@@ -4,8 +4,8 @@ attributes, six diseases.
 The eight missing ages (marked `?`) stay missing (`null`). The class (1 to 6) becomes the disease's name.
 """
 
-from mdml_oracle.uci import source_note, table_rows, zip_member
-from mdml_oracle.vendor import render_ordered_table
+from omai_oracle.uci import source_note, table_rows, zip_member
+from omai_oracle.vendor import render_ordered_table
 
 TARGET = "packages/engine/src/lib/datasets/_data/dermatology.data.ts"
 ID, SLUG = 33, "dermatology"

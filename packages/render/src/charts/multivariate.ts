@@ -5,7 +5,7 @@
  */
 
 import type { EChartsOption, SeriesOption } from 'echarts'
-import { MdmlError, maxOf } from 'mdml-engine/base'
+import { maxOf, OmaiError } from 'omai-engine/base'
 import type { Range } from '../figure/aspect.ts'
 import { type Figure, figure as makeFigure, type Rect } from '../figure/figure.ts'
 import { gridSpec } from '../figure/grid.ts'
@@ -34,11 +34,11 @@ export type AxisBrush = Readonly<Record<string, Range>>
 
 function check(data: Table, name: string): void {
   const n = data.columns.length
-  if (n === 0) throw new MdmlError('shape', `${name}: the table has no columns`)
+  if (n === 0) throw new OmaiError('shape', `${name}: the table has no columns`)
   for (const r of data.rows)
-    if (r.length !== n) throw new MdmlError('shape', `${name}: every row needs one value per column (${n})`)
+    if (r.length !== n) throw new OmaiError('shape', `${name}: every row needs one value per column (${n})`)
   if (data.groups !== undefined && data.groups.length !== data.rows.length)
-    throw new MdmlError('shape', `${name}: give one group per row`)
+    throw new OmaiError('shape', `${name}: give one group per row`)
 }
 
 function groupOrder(data: Table): (string | number)[] {
@@ -58,7 +58,7 @@ const groupName = (data: Table, g: string | number): string => data.groupNames?.
  * @returns The indices of the rows kept, in order.
  * @example
  * ```ts
- * import { brushRows } from 'mdml-render/charts'
+ * import { brushRows } from 'omai-render/charts'
  * const t = { columns: ['a', 'b'], rows: [[0, 5], [1, 6], [2, 7]] }
  * brushRows(t, { a: [0.5, 3] }) // => [1, 2]
  * brushRows(t, { a: [0.5, 3], b: [0, 6] }) // => [1]
@@ -86,7 +86,7 @@ export function brushRows(data: Table, brush: AxisBrush): number[] {
  * @returns The brush after.
  * @example
  * ```ts
- * import { brushFromAxisEvent } from 'mdml-render/charts'
+ * import { brushFromAxisEvent } from 'omai-render/charts'
  * brushFromAxisEvent({}, { parallelAxisId: 'a', intervals: [[3, 1]] }) // => { a: [1, 3] }
  * brushFromAxisEvent({ a: [1, 3] }, { parallelAxisId: 'a', intervals: [] }) // => {}
  * ```
@@ -132,7 +132,7 @@ export interface ParallelOptions {
  * @returns The table with its columns (and every row's values) permuted.
  * @example
  * ```ts
- * import { reorderColumns } from 'mdml-render/charts'
+ * import { reorderColumns } from 'omai-render/charts'
  * reorderColumns({ columns: ['a', 'b', 'c'], rows: [[1, 2, 3]] }, ['c', 'a']).rows // => [[3, 1, 2]]
  * ```
  */
@@ -164,7 +164,7 @@ export interface ParallelLayout {
  * @returns The plotting box, each axis's x and each axis's range.
  * @example
  * ```ts
- * import { parallelLayout } from 'mdml-render/charts'
+ * import { parallelLayout } from 'omai-render/charts'
  * const l = parallelLayout({ columns: ['a', 'b', 'c'], rows: [[0, 1, 2], [1, 3, 5]] })
  * l.axisX.length // => 3
  * l.ranges[1] // => [1, 3]
@@ -207,11 +207,11 @@ export function parallelLayout(
  * @param data - The table.
  * @param options - Figure, title, brush, ranges, colouring, line style and legend.
  * @returns The ECharts option.
- * @throws MdmlError with code `shape` when rows do not match the columns.
+ * @throws OmaiError with code `shape` when rows do not match the columns.
  * @index function Parallel coordinates of a table: `parallelCoordinates({ columns, rows })`.
  * @example
  * ```ts
- * import { parallelCoordinates } from 'mdml-render/charts'
+ * import { parallelCoordinates } from 'omai-render/charts'
  * const t = { columns: ['a', 'b'], rows: [[0, 5], [1, 6], [2, 7]], groups: [0, 0, 1] }
  * const o = parallelCoordinates(t, { brush: { a: [0.5, 3] } })
  * o.parallelAxis.map((a) => a.id) // => ['a', 'b']
@@ -366,10 +366,10 @@ export interface RadarOptions {
  * @param series - The series.
  * @param options - Indicators (and their ranges), figure, fill, shape, a highlighted series and the legend.
  * @returns The ECharts option.
- * @throws MdmlError with code `shape` when a series does not have one value per indicator.
+ * @throws OmaiError with code `shape` when a series does not have one value per indicator.
  * @example
  * ```ts
- * import { radarChart } from 'mdml-render/charts'
+ * import { radarChart } from 'omai-render/charts'
  * const o = radarChart([{ name: 'a', values: [1, 4, 2] }], { indicators: ['x', 'y', 'z'] })
  * o.radar.indicator.map((i) => i.max) // => [1, 4, 2]
  * ```
@@ -380,7 +380,7 @@ export function radarChart(series: readonly RadarSeries[], options: RadarOptions
   const t = tokens(mode)
   const k = options.indicators.length
   for (const s of series)
-    if (s.values.length !== k) throw new MdmlError('shape', `radarChart: '${s.name}' needs ${k} values`)
+    if (s.values.length !== k) throw new OmaiError('shape', `radarChart: '${s.name}' needs ${k} values`)
   const indicator = options.indicators.map((ind, j) => {
     const spec = typeof ind === 'string' ? { name: ind } : ind
     const top = Math.max(0, maxOf(series.map((s) => s.values[j] ?? 0)))
@@ -490,7 +490,7 @@ function columnRanges(data: Table): Range[] {
  * @returns One cell per pair of columns, row by row.
  * @example
  * ```ts
- * import { scatterMatrixCells } from 'mdml-render/charts'
+ * import { scatterMatrixCells } from 'omai-render/charts'
  * const cells = scatterMatrixCells({ columns: ['a', 'b'], rows: [[0, 1], [2, 3]] })
  * cells.map((c) => [c.x, c.y, c.diagonal]) // => [['a', 'a', true], ['b', 'a', false], ['a', 'b', false], ['b', 'b', true]]
  * ```
@@ -525,10 +525,10 @@ export function scatterMatrixCells(data: Table, options: ScatterMatrixOptions = 
  * @param data - The table.
  * @param options - Figure, title, selection, diagonal, gap, marker size and bins.
  * @returns The ECharts option, one grid per panel.
- * @throws MdmlError with code `shape` when rows do not match the columns.
+ * @throws OmaiError with code `shape` when rows do not match the columns.
  * @example
  * ```ts
- * import { scatterMatrix } from 'mdml-render/charts'
+ * import { scatterMatrix } from 'omai-render/charts'
  * const o = scatterMatrix({ columns: ['a', 'b', 'c'], rows: [[0, 1, 2], [2, 3, 1], [1, 1, 1]] })
  * o.grid.length // => 9
  * ```

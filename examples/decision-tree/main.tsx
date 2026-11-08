@@ -4,12 +4,12 @@
  * session's `model/structure` record drawn by the render package's tree view, and the right one its
  * `model/decision-surface` record, where every leaf of the tree is a rectangle of the plane.
  */
-import { iris } from 'mdml-engine/datasets'
-import type { Exposition } from 'mdml-engine/exposition'
-import { key } from 'mdml-engine/random'
-import { tensor, toArray, toFlat } from 'mdml-engine/tensor'
-import { decisionTreeClassifier } from 'mdml-engine/trees'
-import { stillOf } from 'mdml-render/views'
+import { iris } from 'omai-engine/datasets'
+import type { Exposition } from 'omai-engine/exposition'
+import { key } from 'omai-engine/random'
+import { tensor, toArray, toFlat } from 'omai-engine/tensor'
+import { decisionTreeClassifier } from 'omai-engine/trees'
+import { stillOf } from 'omai-render/views'
 import type { ExampleModule, Outcome } from '../_shared/contract.ts'
 import { Figure, Panel } from '../_shared/figure.tsx'
 

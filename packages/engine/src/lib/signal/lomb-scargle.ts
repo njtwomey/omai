@@ -4,7 +4,7 @@
  * false-alarm probabilities and levels that say how significant a peak is under Gaussian noise.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { lgamma } from '../numerics/special/index.ts'
 import {
   add,
@@ -113,16 +113,16 @@ function inputs(
   const t = samples(x, 'lombScargle')
   const f = samples(freqs, 'lombScargle')
   const yv = reshape(float(y), [-1])
-  if ((yv.shape[0] ?? 0) !== t.length) throw new MdmlError('shape', 'lombScargle: x and y must have the same length')
+  if ((yv.shape[0] ?? 0) !== t.length) throw new OmaiError('shape', 'lombScargle: x and y must have the same length')
   const raw =
     options.weights === undefined ? new Float64Array(t.length).fill(1) : samples(options.weights, 'lombScargle')
-  if (raw.length !== t.length) throw new MdmlError('shape', 'lombScargle: one weight per sample')
+  if (raw.length !== t.length) throw new OmaiError('shape', 'lombScargle: one weight per sample')
   let total = 0
   for (const v of raw) {
-    if (v < 0) throw new MdmlError('value', 'lombScargle: weights must be non-negative')
+    if (v < 0) throw new OmaiError('value', 'lombScargle: weights must be non-negative')
     total += v
   }
-  if (!(total > 0)) throw new MdmlError('value', 'lombScargle: the weights must sum to a positive value')
+  if (!(total > 0)) throw new OmaiError('value', 'lombScargle: the weights must sum to a positive value')
   return { t, yv, f, w: Float64Array.from(raw, (v) => v / total) }
 }
 
@@ -149,12 +149,12 @@ function projections(d: Design, yv: Value, floatingMean: boolean): { yc: Value; 
  * @param freqs - Angular frequencies (rad per unit time).
  * @param options - Normalisation, weights and floating mean.
  * @returns The periodogram at each frequency.
- * @throws MdmlError with code `value` for invalid weights, `shape` for mismatched lengths.
+ * @throws OmaiError with code `value` for invalid weights, `shape` for mismatched lengths.
  * @concept lomb-scargle
  * @example
  * ```ts
- * import { lombScargle } from 'mdml-engine/signal'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { lombScargle } from 'omai-engine/signal'
+ * import { toFlat } from 'omai-engine/tensor'
  * const t = [0, 0.7, 1.3, 2.2, 3.1, 3.8, 4.6, 5.9]
  * const y = t.map((v) => Math.sin(2 * v))
  * const p = toFlat(lombScargle(t, y, [1, 2, 3], { normalize: 'normalize' }))
@@ -185,8 +185,8 @@ export function lombScargle(x: TensorLike, y: TensorLike, freqs: TensorLike, opt
  * @concept lomb-scargle
  * @example
  * ```ts
- * import { lombScargleAmplitude } from 'mdml-engine/signal'
- * import { absComplex, toFlat } from 'mdml-engine/tensor'
+ * import { lombScargleAmplitude } from 'omai-engine/signal'
+ * import { absComplex, toFlat } from 'omai-engine/tensor'
  * const t = [0, 0.7, 1.3, 2.2, 3.1, 3.8, 4.6, 5.9, 6.4, 7.7]
  * Math.round((toFlat(absComplex(lombScargleAmplitude(t, t.map((v) => 3 * Math.cos(2 * v)), [2])))[0] ?? 0) * 1e9) / 1e9 // => 3
  * ```
@@ -261,14 +261,14 @@ function fapOf(z: number, t: Float64Array, fmax: number, method: FalseAlarmMetho
  * @concept lomb-scargle
  * @example
  * ```ts
- * import { falseAlarmProbability } from 'mdml-engine/signal'
+ * import { falseAlarmProbability } from 'omai-engine/signal'
  * const t = Array.from({ length: 50 }, (_, i) => i + 0.3 * Math.sin(i))
  * falseAlarmProbability([0.5], { t, fmax: 0.5 })[0] < 0.01 // => true
  * ```
  */
 export function falseAlarmProbability(z: readonly number[], options: FalseAlarmOptions): number[] {
   const t = samples(options.t, 'falseAlarmProbability')
-  if (t.length < 4) throw new MdmlError('value', 'falseAlarmProbability: at least four samples are needed')
+  if (t.length < 4) throw new OmaiError('value', 'falseAlarmProbability: at least four samples are needed')
   return z.map((v) => fapOf(v, t, options.fmax, options.method ?? 'baluev'))
 }
 
@@ -282,7 +282,7 @@ export function falseAlarmProbability(z: readonly number[], options: FalseAlarmO
  * @concept lomb-scargle
  * @example
  * ```ts
- * import { falseAlarmLevel, falseAlarmProbability } from 'mdml-engine/signal'
+ * import { falseAlarmLevel, falseAlarmProbability } from 'omai-engine/signal'
  * const t = Array.from({ length: 40 }, (_, i) => i)
  * const z = falseAlarmLevel([0.01], { t, fmax: 0.5 })
  * Math.round((falseAlarmProbability(z, { t, fmax: 0.5 })[0] ?? 0) * 1e8) / 1e8 // => 0.01
@@ -292,7 +292,7 @@ export function falseAlarmLevel(p: readonly number[], options: FalseAlarmOptions
   const t = samples(options.t, 'falseAlarmLevel')
   const method = options.method ?? 'baluev'
   return p.map((target) => {
-    if (!(target > 0 && target < 1)) throw new MdmlError('value', 'falseAlarmLevel: probabilities must lie in (0, 1)')
+    if (!(target > 0 && target < 1)) throw new OmaiError('value', 'falseAlarmLevel: probabilities must lie in (0, 1)')
     let lo = 0
     let hi = 1
     for (let it = 0; it < 200; it++) {

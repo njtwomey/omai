@@ -5,7 +5,7 @@
  * local search, and a CSP as an incremental search problem, all traceable.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import { Generator } from '../random/index.ts'
 import { type Algorithm, channels, runAlgorithm, type TraceSchema } from '../trace/index.ts'
 import { check, compile, conflictsOf, type Model } from './_csp-model.ts'
@@ -41,12 +41,12 @@ export type Assignment<D> = Readonly<Record<string, D>>
  * @param domains - The values of each variable, in order (the order of static value selection).
  * @param constraints - The constraints.
  * @returns The CSP.
- * @throws MdmlError with code `value` when a variable is repeated or lacks a domain, or a constraint names an
+ * @throws OmaiError with code `value` when a variable is repeated or lacks a domain, or a constraint names an
  * unknown variable.
  * @concept constraint-satisfaction
  * @example
  * ```ts
- * import { binaryConstraint, csp } from 'mdml-engine/search'
+ * import { binaryConstraint, csp } from 'omai-engine/search'
  * const p = csp(['a', 'b'], { a: [1, 2], b: [1, 2] }, [binaryConstraint('a', 'b', (x, y) => x < y)])
  * p.constraints.length // => 1
  * ```
@@ -71,7 +71,7 @@ export function csp<D>(
  * @returns The constraint.
  * @example
  * ```ts
- * import { binaryConstraint } from 'mdml-engine/search'
+ * import { binaryConstraint } from 'omai-engine/search'
  * binaryConstraint('x', 'y', (x: number, y: number) => x !== y).test([1, 2]) // => true
  * ```
  */
@@ -93,7 +93,7 @@ export function binaryConstraint<D>(
  * @returns The constraint.
  * @example
  * ```ts
- * import { constraint } from 'mdml-engine/search'
+ * import { constraint } from 'omai-engine/search'
  * constraint(['x', 'y', 'z'], (v: readonly number[]) => (v[0] ?? 0) + (v[1] ?? 0) === v[2]).test([1, 2, 3]) // => true
  * ```
  */
@@ -112,7 +112,7 @@ export function constraint<D>(
  * @returns The binary constraints, one per pair.
  * @example
  * ```ts
- * import { allDifferent } from 'mdml-engine/search'
+ * import { allDifferent } from 'omai-engine/search'
  * allDifferent(['a', 'b', 'c']).length // => 3
  * ```
  */
@@ -134,7 +134,7 @@ export function allDifferent<D>(variables: readonly string[]): CspConstraint<D>[
  * @returns The violated constraints.
  * @example
  * ```ts
- * import { allDifferent, csp, violations } from 'mdml-engine/search'
+ * import { allDifferent, csp, violations } from 'omai-engine/search'
  * const p = csp(['a', 'b', 'c'], { a: [1, 2], b: [1, 2], c: [1, 2] }, allDifferent(['a', 'b', 'c']))
  * violations(p, { a: 1, b: 1 }).length // => 1
  * ```
@@ -153,7 +153,7 @@ export function violations<D>(problem: Csp<D>, assignment: Assignment<D>): CspCo
  * @returns True for a solution.
  * @example
  * ```ts
- * import { allDifferent, csp, isSolution } from 'mdml-engine/search'
+ * import { allDifferent, csp, isSolution } from 'omai-engine/search'
  * const p = csp(['a', 'b'], { a: [1, 2], b: [1, 2] }, allDifferent(['a', 'b']))
  * [isSolution(p, { a: 1, b: 2 }), isSolution(p, { a: 1 }), isSolution(p, { a: 2, b: 2 })] // => [true, false, false]
  * ```
@@ -355,7 +355,7 @@ export interface ArcConsistency<D> {
  * @concept constraint-satisfaction
  * @example
  * ```ts
- * import { ac3, binaryConstraint, csp } from 'mdml-engine/search'
+ * import { ac3, binaryConstraint, csp } from 'omai-engine/search'
  * const p = csp(['x', 'y'], { x: [1, 2, 3], y: [1, 2, 3] }, [binaryConstraint('x', 'y', (a: number, b: number) => a + 1 === b)])
  * ac3(p).domains // => { x: [1, 2], y: [2, 3] }
  * ```
@@ -464,7 +464,7 @@ function ac3Engine<D>(problem: Csp<D>, domains?: Readonly<Record<string, readonl
  * @concept constraint-satisfaction
  * @example
  * ```ts
- * import { ac3Algorithm, csp } from 'mdml-engine/search'
+ * import { ac3Algorithm, csp } from 'omai-engine/search'
  * ac3Algorithm(csp(['a'], { a: [1] }, [])).name // => 'ac3'
  * ```
  */
@@ -759,7 +759,7 @@ function backtracking<D>(problem: Csp<D>, options: BacktrackingOptions): Algorit
  * @concept constraint-satisfaction
  * @example
  * ```ts
- * import { allDifferent, backtrackingAlgorithm, csp } from 'mdml-engine/search'
+ * import { allDifferent, backtrackingAlgorithm, csp } from 'omai-engine/search'
  * backtrackingAlgorithm(csp(['a'], { a: [1] }, [])).name // => 'backtracking'
  * ```
  */
@@ -780,7 +780,7 @@ export function backtrackingAlgorithm<D>(
  * @index function Backtracking search for constraint satisfaction problems.
  * @example
  * ```ts
- * import { allDifferent, backtrackingSearch, binaryConstraint, csp } from 'mdml-engine/search'
+ * import { allDifferent, backtrackingSearch, binaryConstraint, csp } from 'omai-engine/search'
  * // Colour Australia with three colours (AIMA figure 6.1).
  * const borders = [['WA', 'NT'], ['WA', 'SA'], ['NT', 'SA'], ['NT', 'Q'], ['SA', 'Q'], ['SA', 'NSW'], ['SA', 'V'], ['Q', 'NSW'], ['NSW', 'V']]
  * const regions = ['WA', 'NT', 'SA', 'Q', 'NSW', 'V', 'T']
@@ -861,7 +861,7 @@ function minConflictsEngine<D>(problem: Csp<D>, options: { readonly initial?: As
     }),
     init: (key) => {
       const m = compile(problem, 'minConflicts')
-      if (m.values.some((d) => d.length === 0)) throw new MdmlError('value', 'minConflicts: a domain is empty')
+      if (m.values.some((d) => d.length === 0)) throw new OmaiError('value', 'minConflicts: a domain is empty')
       const rng = new Generator(key)
       const values = new Int32Array(m.n).fill(-1)
       // aima-python's start: each variable in turn takes a value with fewest conflicts with those already set.
@@ -911,11 +911,11 @@ function minConflictsEngine<D>(problem: Csp<D>, options: { readonly initial?: As
  * @param problem - The CSP.
  * @param options - A starting assignment (missing variables are set greedily).
  * @returns The algorithm.
- * @throws MdmlError with code `value` when a domain is empty.
+ * @throws OmaiError with code `value` when a domain is empty.
  * @concept constraint-satisfaction
  * @example
  * ```ts
- * import { csp, minConflictsAlgorithm } from 'mdml-engine/search'
+ * import { csp, minConflictsAlgorithm } from 'omai-engine/search'
  * minConflictsAlgorithm(csp(['a'], { a: [1] }, [])).name // => 'min-conflicts'
  * ```
  */
@@ -935,7 +935,7 @@ export function minConflictsAlgorithm<D>(
  * @concept constraint-satisfaction
  * @example
  * ```ts
- * import { binaryConstraint, csp, isSolution, minConflicts } from 'mdml-engine/search'
+ * import { binaryConstraint, csp, isSolution, minConflicts } from 'omai-engine/search'
  * // Eight queens: one variable per column, valued by row.
  * const cols = Array.from({ length: 8 }, (_, i) => `q${i}`)
  * const rows = Object.fromEntries(cols.map((c) => [c, [0, 1, 2, 3, 4, 5, 6, 7]]))
@@ -974,7 +974,7 @@ export function minConflicts<D>(
  * @concept constraint-satisfaction
  * @example
  * ```ts
- * import { allDifferent, cspProblem, csp, depthFirstSearch } from 'mdml-engine/search'
+ * import { allDifferent, cspProblem, csp, depthFirstSearch } from 'omai-engine/search'
  * const p = csp(['a', 'b'], { a: [1, 2], b: [1, 2] }, allDifferent(['a', 'b']))
  * depthFirstSearch(cspProblem(p)).actions // => [['a', 2], ['b', 1]]
  * ```

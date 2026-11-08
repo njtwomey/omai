@@ -6,7 +6,7 @@
  * network in one and two dimensions).
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { fft, ifft, irfft, rfft } from '../../numerics/fourier/index.ts'
 import { foldIn, type Key, uniform } from '../../random/index.ts'
 import {
@@ -57,9 +57,9 @@ export interface DeepONetOptions {
  * @reference Lu, Jin, Pang, Zhang and Karniadakis (2021), Learning nonlinear operators via DeepONet.
  * @example
  * ```ts
- * import { DeepONet } from 'mdml-engine/nn/blocks'
- * import { key } from 'mdml-engine/random'
- * import { zeros } from 'mdml-engine/tensor'
+ * import { DeepONet } from 'omai-engine/nn/blocks'
+ * import { key } from 'omai-engine/random'
+ * import { zeros } from 'omai-engine/tensor'
  * new DeepONet(10, 1, 16, { key: key(0) }).forward({ u: zeros([4, 10]), y: zeros([7, 1]) }).shape // => [4, 7]
  * ```
  */
@@ -148,8 +148,8 @@ export interface SpectralConvOptions {
  * @reference Li, Kovachki, Azizzadenesheli, Liu, Bhattacharya, Stuart and Anandkumar (2021), Fourier neural operator for parametric partial differential equations.
  * @example
  * ```ts
- * import { SpectralConv1d } from 'mdml-engine/nn/blocks'
- * import { zeros } from 'mdml-engine/tensor'
+ * import { SpectralConv1d } from 'omai-engine/nn/blocks'
+ * import { zeros } from 'omai-engine/tensor'
  * new SpectralConv1d(2, 3, 4).forward(zeros([1, 2, 16])).shape // => [1, 3, 16]
  * ```
  */
@@ -180,7 +180,7 @@ export class SpectralConv1d extends Module {
     const n = x.shape[x.shape.length - 1] ?? 0
     const half = Math.floor(n / 2) + 1
     if (this.modes > half)
-      throw new MdmlError('value', `SpectralConv1d: ${this.modes} modes exceed the ${half} available`)
+      throw new OmaiError('value', `SpectralConv1d: ${this.modes} modes exceed the ${half} available`)
     const spectrum = rfft(x)
     const kept = {
       re: sliceAxis(spectrum.re, -1, 0, this.modes),
@@ -207,8 +207,8 @@ export class SpectralConv1d extends Module {
  *
  * @example
  * ```ts
- * import { SpectralConv2d } from 'mdml-engine/nn/blocks'
- * import { zeros } from 'mdml-engine/tensor'
+ * import { SpectralConv2d } from 'omai-engine/nn/blocks'
+ * import { zeros } from 'omai-engine/tensor'
  * new SpectralConv2d(1, 2, 3, 3).forward(zeros([1, 1, 8, 8])).shape // => [1, 2, 8, 8]
  * ```
  */
@@ -245,7 +245,7 @@ export class SpectralConv2d extends Module {
     const [h, w] = [x.shape[x.shape.length - 2] ?? 0, x.shape[x.shape.length - 1] ?? 0]
     const wHalf = Math.floor(w / 2) + 1
     if (this.modes2 > wHalf || 2 * this.modes1 > h)
-      throw new MdmlError(
+      throw new OmaiError(
         'value',
         `SpectralConv2d: ${this.modes1} x ${this.modes2} modes do not fit a ${h} x ${w} field`,
       )
@@ -296,8 +296,8 @@ export interface FourierLayerOptions {
  *
  * @example
  * ```ts
- * import { FourierLayer } from 'mdml-engine/nn/blocks'
- * import { zeros } from 'mdml-engine/tensor'
+ * import { FourierLayer } from 'omai-engine/nn/blocks'
+ * import { zeros } from 'omai-engine/tensor'
  * new FourierLayer(8, [4]).forward(zeros([2, 8, 32])).shape // => [2, 8, 32]
  * ```
  */
@@ -315,7 +315,7 @@ export class FourierLayer extends Composite {
   constructor(width: number, modes: readonly number[], options: FourierLayerOptions = {}) {
     const key = initKey('FourierLayer', options.key)
     const dims = modes.length
-    if (dims !== 1 && dims !== 2) throw new MdmlError('value', 'FourierLayer: give one or two mode counts')
+    if (dims !== 1 && dims !== 2) throw new OmaiError('value', 'FourierLayer: give one or two mode counts')
     super({
       spectral:
         dims === 1
@@ -363,9 +363,9 @@ export interface FnoOptions {
  *
  * @example
  * ```ts
- * import { FNO } from 'mdml-engine/nn/blocks'
- * import { key } from 'mdml-engine/random'
- * import { zeros } from 'mdml-engine/tensor'
+ * import { FNO } from 'omai-engine/nn/blocks'
+ * import { key } from 'omai-engine/random'
+ * import { zeros } from 'omai-engine/tensor'
  * new FNO(1, 1, 1, { width: 8, modes: [4], layers: 2, key: key(0) }).forward(zeros([2, 1, 32])).shape // => [2, 1, 32]
  * ```
  */

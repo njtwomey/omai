@@ -4,7 +4,7 @@
  * the detection error tradeoff (DET) curve.
  */
 
-import { MdmlError, type MetricResult } from '../base/index.ts'
+import { type MetricResult, OmaiError } from '../base/index.ts'
 import { fromVector, type Tensor, type TensorLike, toVector } from '../tensor/index.ts'
 import { rocRows, thresholdRows } from './_curves.ts'
 import { isMultilabel, type Label, labelValues, sortLabels } from './_labels.ts'
@@ -47,7 +47,7 @@ export interface ThresholdCounts {
  *   `number[]`).
  * @example
  * ```ts
- * import { confusionMatrixAtThresholds } from 'mdml-engine/metrics'
+ * import { confusionMatrixAtThresholds } from 'omai-engine/metrics'
  * confusionMatrixAtThresholds([0, 0, 1, 1], [0.1, 0.4, 0.35, 0.8]).tps // => [1, 1, 2, 2]
  * ```
  */
@@ -87,7 +87,7 @@ export interface RocCurve {
  * @concept roc-curve
  * @example
  * ```ts
- * import { rocCurve } from 'mdml-engine/metrics'
+ * import { rocCurve } from 'omai-engine/metrics'
  * rocCurve([0, 0, 1, 1], [0.1, 0.4, 0.35, 0.8]).tpr // => [0, 0.5, 0.5, 1, 1]
  * ```
  */
@@ -107,10 +107,10 @@ export function rocCurve(
  * @param x - Abscissae, monotonic: a vector (a tensor, a typed array or a flat array).
  * @param y - Ordinates: a vector.
  * @returns The area.
- * @throws MdmlError with code `value` when x is not monotonic, and `shape` unless both are vectors.
+ * @throws OmaiError with code `value` when x is not monotonic, and `shape` unless both are vectors.
  * @example
  * ```ts
- * import { auc } from 'mdml-engine/metrics'
+ * import { auc } from 'omai-engine/metrics'
  * auc([0, 0.5, 1], [0, 1, 1]) // => 0.75
  * ```
  */
@@ -125,7 +125,7 @@ export function auc(x: TensorLike, y: TensorLike): number {
     if ((xs[i] ?? 0) > (xs[i - 1] ?? 0)) decreasing = false
   }
   if (!increasing) {
-    if (!decreasing) throw new MdmlError('value', 'auc: x is neither increasing nor decreasing')
+    if (!decreasing) throw new OmaiError('value', 'auc: x is neither increasing nor decreasing')
     direction = -1
   }
   let area = 0
@@ -141,7 +141,7 @@ function binaryRocAuc(y: Float64Array, s: Float64Array, w: Float64Array | undefi
   if (pos === 0 || pos === y.length) return Number.NaN
   const r = rocRows(Array.from(y), s, w === undefined ? {} : { sampleWeight: w })
   if (maxFpr === undefined || maxFpr === 1) return auc(r.fpr, r.tpr)
-  if (!(maxFpr > 0 && maxFpr <= 1)) throw new MdmlError('value', `maxFpr must be in (0, 1], got ${maxFpr}`)
+  if (!(maxFpr > 0 && maxFpr <= 1)) throw new OmaiError('value', `maxFpr must be in (0, 1], got ${maxFpr}`)
   let stop = 0
   while (stop < r.fpr.length && (r.fpr[stop] ?? 0) <= maxFpr) stop++
   const x0 = r.fpr[stop - 1] ?? 0
@@ -178,7 +178,7 @@ export interface RocAucOptions extends MetricOptions {
  * @index function Area under the ROC curve; rocCurve gives the curve.
  * @example
  * ```ts
- * import { rocAucScore } from 'mdml-engine/metrics'
+ * import { rocAucScore } from 'omai-engine/metrics'
  * rocAucScore([0, 0, 1, 1], [0.1, 0.4, 0.35, 0.8]).estimate.value // => 0.75
  * ```
  */
@@ -202,7 +202,7 @@ export const rocAucScore: Metric<RocAucOptions, MetricInput> = Object.assign(
       return metricResult(name, binaryRocAuc(pos, s.data, w, options.maxFpr), n)
     }
     const classes = options.labels ?? sortLabels(labels)
-    if (classes.length !== (s.shape[1] ?? 0)) throw new MdmlError('shape', `${name}: one score column per class`)
+    if (classes.length !== (s.shape[1] ?? 0)) throw new OmaiError('shape', `${name}: one score column per class`)
     if (classes.length === 2 && options.multiClass === undefined) {
       return metricResult(
         name,
@@ -219,7 +219,7 @@ export const rocAucScore: Metric<RocAucOptions, MetricInput> = Object.assign(
       )
     }
     if (options.maxFpr !== undefined && options.maxFpr !== 1)
-      throw new MdmlError('value', `${name}: partial AUC is only defined for binary targets`)
+      throw new OmaiError('value', `${name}: partial AUC is only defined for binary targets`)
     const multiClass = options.multiClass ?? 'ovr'
     const average = options.average ?? 'macro'
     if (multiClass === 'ovr') {
@@ -267,10 +267,10 @@ export interface DetCurve {
  * @param yScore - Scores `[N]`.
  * @param options - posLabel, dropIntermediate (default false) and sample weights.
  * @returns The curve (FPR decreasing), `[T]` tensors (was `number[]`).
- * @throws MdmlError with code `value` when only one class is present.
+ * @throws OmaiError with code `value` when only one class is present.
  * @example
  * ```ts
- * import { detCurve } from 'mdml-engine/metrics'
+ * import { detCurve } from 'omai-engine/metrics'
  * detCurve([0, 0, 1, 1], [0.1, 0.4, 0.35, 0.8]).fnr // => [0, 0.5, 0.5]
  * ```
  */
@@ -293,7 +293,7 @@ export function detCurve(
   }
   const pCount = tps[tps.length - 1] ?? 0
   const nCount = fps[fps.length - 1] ?? 0
-  if (pCount === 0 || nCount === 0) throw new MdmlError('value', 'detCurve: only one class is present')
+  if (pCount === 0 || nCount === 0) throw new OmaiError('value', 'detCurve: only one class is present')
   // From the last threshold with zero false positives to the first with zero false negatives.
   let first = 0
   while (first + 1 < fps.length && fps[first + 1] === fps[0]) first++

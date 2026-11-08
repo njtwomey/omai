@@ -74,9 +74,9 @@ export interface RasteriseSplatOptions {
  * @concept gaussian-splatting
  * @example
  * ```ts
- * import { gaussiansFromPoints, projectGaussians, rasterise } from 'mdml-engine/fields'
- * import { pinholeCamera } from 'mdml-engine/graphics'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { gaussiansFromPoints, projectGaussians, rasterise } from 'omai-engine/fields'
+ * import { pinholeCamera } from 'omai-engine/graphics'
+ * import { toArray } from 'omai-engine/tensor'
  * // The pixel at the centre of a Gaussian of opacity 0.5 (logit 0) is half covered: alpha = 0.5.
  * const g = { ...gaussiansFromPoints([[0, 0, 0]], undefined, { scale: 0.5, opacity: 0.5 }) }
  * const p = projectGaussians(g, pinholeCamera({ eye: [0, 0, 4], fov: 90 }), 64, 64)
@@ -200,9 +200,9 @@ export interface SplatImage {
  * @concept gaussian-splatting
  * @example
  * ```ts
- * import { randomGaussians, renderSplats } from 'mdml-engine/fields'
- * import { pinholeCamera } from 'mdml-engine/graphics'
- * import { key } from 'mdml-engine/random'
+ * import { randomGaussians, renderSplats } from 'omai-engine/fields'
+ * import { pinholeCamera } from 'omai-engine/graphics'
+ * import { key } from 'omai-engine/random'
  * renderSplats(randomGaussians(key(0), 20), pinholeCamera({ eye: [0, 0, 4] }), 8, 6).colour.shape // => [6, 8, 3]
  * ```
  */

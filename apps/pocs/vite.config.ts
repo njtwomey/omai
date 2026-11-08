@@ -5,7 +5,7 @@ import { defineConfig } from 'vite'
 /** The proofs of concept app: its own pages on the site's shell (imported from apps/site/src/shell). */
 export default defineConfig({
   root: import.meta.dirname,
-  base: process.env['MDML_SITE_BASE'] ?? '/',
+  base: process.env['OMAI_SITE_BASE'] ?? '/',
   plugins: [react(), tailwindcss()],
   // Workspace packages resolve to their source, as in the tests.
   resolve: { conditions: ['source'] },

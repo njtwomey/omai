@@ -4,7 +4,7 @@
  * legend) shows the viewed step.
  */
 
-import { metricSeries, type Run } from 'mdml-engine/trace'
+import { metricSeries, type Run } from 'omai-engine/trace'
 import { useCallback, useRef } from 'react'
 import { lines } from '../../charts/lines.ts'
 import type { Layer } from '../../charts/plot.ts'

@@ -31,7 +31,7 @@ function rule(
  * @concept density-clustering
  * @example
  * ```ts
- * import { hdbscanSelections } from 'mdml-engine/cluster'
+ * import { hdbscanSelections } from 'omai-engine/cluster'
  * hdbscanSelections.make({ kind: 'leaf' }) // => 'leaf'
  * ```
  */

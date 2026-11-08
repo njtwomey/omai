@@ -6,7 +6,7 @@
  * environment's oracle.
  */
 
-import { argmaxOf, type Json, MdmlError, maxOf } from '../base/index.ts'
+import { argmaxOf, type Json, maxOf, OmaiError } from '../base/index.ts'
 import { cholesky, choSolve, ddot, dnrm2, solveTriangular } from '../numerics/linalg/index.ts'
 import { categorical, foldIn, gammaVariates, type Key, key as makeKey, normal } from '../random/index.ts'
 import {
@@ -54,7 +54,7 @@ export interface BanditState {
 }
 
 const arms = (env: BanditSpaces, name: string): number => {
-  if (env.actionSpace.kind !== 'discrete') throw new MdmlError('value', `${name}: needs discrete arms`)
+  if (env.actionSpace.kind !== 'discrete') throw new OmaiError('value', `${name}: needs discrete arms`)
   return env.actionSpace.n
 }
 
@@ -149,9 +149,9 @@ export interface EpsilonGreedyBanditState extends BanditState {
  * @concept bandits
  * @example
  * ```ts
- * import { epsilonGreedyBandit } from 'mdml-engine/agents'
- * import { bernoulliBandit } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { epsilonGreedyBandit } from 'omai-engine/agents'
+ * import { bernoulliBandit } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * const agent = epsilonGreedyBandit(bernoulliBandit.create(), { alpha: 0.5, initialValue: 2 })
  * const t = { observation: 0, action: 1, reward: 1, nextObservation: 0, terminated: false, truncated: false }
  * agent.learn(agent.init(key(0)), t, key(1)).estimates[1] // => 1.5
@@ -209,9 +209,9 @@ export interface Ucb1Options {
  * @index agent UCB1 bandit agent; Thompson and EXP3 beside it.
  * @example
  * ```ts
- * import { ucb1 } from 'mdml-engine/agents'
- * import { bernoulliBandit } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { ucb1 } from 'omai-engine/agents'
+ * import { bernoulliBandit } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * const agent = ucb1(bernoulliBandit.create())
  * agent.act(agent.init(key(0)), 0, key(1)) // => 0
  * ```
@@ -251,8 +251,8 @@ export interface KlUcbOptions {
  * @concept upper-confidence-bounds
  * @example
  * ```ts
- * import { klUcb } from 'mdml-engine/agents'
- * import { gaussianBandit } from 'mdml-engine/environments'
+ * import { klUcb } from 'omai-engine/agents'
+ * import { gaussianBandit } from 'omai-engine/environments'
  * klUcb(gaussianBandit.create(), { family: 'gaussian' }).name // => 'klUcb'
  * ```
  */
@@ -296,9 +296,9 @@ export interface ThompsonBernoulliState extends BanditState {
  * @concept thompson-sampling
  * @example
  * ```ts
- * import { thompsonBernoulli } from 'mdml-engine/agents'
- * import { bernoulliBandit } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { thompsonBernoulli } from 'omai-engine/agents'
+ * import { bernoulliBandit } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * const agent = thompsonBernoulli(bernoulliBandit.create())
  * const t = { observation: 0, action: 2, reward: 1, nextObservation: 0, terminated: false, truncated: false }
  * Array.from(agent.learn(agent.init(key(0)), t, key(1)).alpha) // => [1, 1, 2, 1, 1]
@@ -367,9 +367,9 @@ export interface GaussianPosterior {
  * @concept thompson-sampling
  * @example
  * ```ts
- * import { gaussianPosterior, thompsonGaussian } from 'mdml-engine/agents'
- * import { gaussianBandit } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { gaussianPosterior, thompsonGaussian } from 'omai-engine/agents'
+ * import { gaussianBandit } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * const agent = thompsonGaussian(gaussianBandit.create({ means: [0, 1] }), { variance: 1 })
  * const t = { observation: 0, action: 1, reward: 2, nextObservation: 0, terminated: false, truncated: false }
  * gaussianPosterior(agent.learn(agent.init(key(0)), t, key(1)), { variance: 1 }) // => { mean: [0, 1], precision: [1, 2] }
@@ -412,8 +412,8 @@ export function gaussianPosterior(state: BanditState, options: ThompsonGaussianO
  * @concept thompson-sampling
  * @example
  * ```ts
- * import { thompsonGaussian } from 'mdml-engine/agents'
- * import { gaussianBandit } from 'mdml-engine/environments'
+ * import { thompsonGaussian } from 'omai-engine/agents'
+ * import { gaussianBandit } from 'omai-engine/environments'
  * thompsonGaussian(gaussianBandit.create(), { variance: 1 }).name // => 'thompsonGaussian'
  * ```
  */
@@ -480,9 +480,9 @@ export interface Exp3State extends BanditState {
  * @concept adversarial-bandits
  * @example
  * ```ts
- * import { exp3 } from 'mdml-engine/agents'
- * import { adversarialBandit } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { exp3 } from 'omai-engine/agents'
+ * import { adversarialBandit } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * const agent = exp3(adversarialBandit.create({ arms: 2 }), { gamma: 0.5 })
  * Array.from(agent.init(key(0)).probabilities) // => [0.5, 0.5]
  * ```
@@ -490,7 +490,7 @@ export interface Exp3State extends BanditState {
 export function exp3(env: BanditSpaces, options: Exp3Options = {}): Agent<Exp3State, unknown, number> {
   const k = arms(env, 'exp3')
   const gamma = options.gamma ?? 0.1
-  if (!(gamma > 0 && gamma <= 1)) throw new MdmlError('value', 'exp3: gamma must be in (0, 1]')
+  if (!(gamma > 0 && gamma <= 1)) throw new OmaiError('value', 'exp3: gamma must be in (0, 1]')
   const [lo, hi] = options.rewardRange ?? [0, 1]
   const probabilitiesOf = (lw: Float64Array): Float64Array => {
     const m = maxOf(lw)
@@ -549,9 +549,9 @@ export interface GradientBanditState extends BanditState {
  * @concept policy-gradient
  * @example
  * ```ts
- * import { gradientBandit } from 'mdml-engine/agents'
- * import { bernoulliBandit } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { gradientBandit } from 'omai-engine/agents'
+ * import { bernoulliBandit } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * const agent = gradientBandit(bernoulliBandit.create({ probs: [0.5, 0.5] }), { alpha: 1, baseline: false })
  * const t = { observation: 0, action: 0, reward: 1, nextObservation: 0, terminated: false, truncated: false }
  * Array.from(agent.learn(agent.init(key(0)), t, key(1)).preferences) // => [0.5, -0.5]
@@ -627,7 +627,7 @@ function dimensionOf(env: BanditSpaces, options: LinearBanditOptions, name: stri
   if (options.dimension !== undefined) return options.dimension
   const space = env.observationSpace
   if (space?.kind === 'tuple' && space.spaces[0] !== undefined) return flatDim(space.spaces[0])
-  throw new MdmlError('value', `${name}: give the feature dimension`)
+  throw new OmaiError('value', `${name}: give the feature dimension`)
 }
 
 function linearInit(base: BanditState, models: number, d: number, lambda: number): LinearBanditState {
@@ -709,9 +709,9 @@ export interface LinUcbOptions extends LinearBanditOptions {
  * @concept contextual-bandits
  * @example
  * ```ts
- * import { linUcb } from 'mdml-engine/agents'
- * import { contextualLinearBandit } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { linUcb } from 'omai-engine/agents'
+ * import { contextualLinearBandit } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * const agent = linUcb(contextualLinearBandit.create({ arms: 2, dimension: 2 }), { lambda: 3 })
  * const t = { observation: [[1, 0], [0, 1]], action: 0, reward: 2, nextObservation: [[1, 0], [0, 1]], terminated: false, truncated: false }
  * Array.from(agent.learn(agent.init(key(0)), t, key(1)).theta[0] ?? []) // => [0.5, 0]
@@ -745,8 +745,8 @@ export interface LinearThompsonOptions extends LinearBanditOptions {
  * @concept thompson-sampling
  * @example
  * ```ts
- * import { linearThompson } from 'mdml-engine/agents'
- * import { contextualLinearBandit } from 'mdml-engine/environments'
+ * import { linearThompson } from 'omai-engine/agents'
+ * import { contextualLinearBandit } from 'omai-engine/environments'
  * linearThompson(contextualLinearBandit.create(), { v: 0.5 }).name // => 'linearThompson'
  * ```
  */
@@ -832,13 +832,13 @@ export interface BanditAlgorithmOptions {
  * @param agent - The agent (see {@link banditStrategies} for a table of them).
  * @param options - The number of pulls and a root key.
  * @returns The algorithm.
- * @throws MdmlError with code `value` when the environment has no oracle.
+ * @throws OmaiError with code `value` when the environment has no oracle.
  * @concept regret
  * @example
  * ```ts
- * import { banditAlgorithm, ucb1 } from 'mdml-engine/agents'
- * import { bernoulliBandit } from 'mdml-engine/environments'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { banditAlgorithm, ucb1 } from 'omai-engine/agents'
+ * import { bernoulliBandit } from 'omai-engine/environments'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const env = bernoulliBandit.create({ probs: [0.25, 0.75] })
  * runAlgorithm(banditAlgorithm(env, ucb1(env)), { maxSteps: 2 }).state.regret // => [0.5, 0.5]
  * ```
@@ -848,7 +848,7 @@ export function banditAlgorithm<G, S, O>(
   agent: Agent<G, O, number>,
   options: BanditAlgorithmOptions = {},
 ): Algorithm<BanditAlgorithmState<G, S, O>, BanditPath> {
-  if (!isBandit(env)) throw new MdmlError('value', `runBandit: ${env.spec.id} has no oracle or discrete arms`)
+  if (!isBandit(env)) throw new OmaiError('value', `runBandit: ${env.spec.id} has no oracle or discrete arms`)
   const oracle = env.oracle
   const root = options.key
   return {
@@ -931,7 +931,7 @@ export interface BanditStrategyProperties {
  * @index table Bandit strategies as one slot.
  * @example
  * ```ts
- * import { banditStrategies } from 'mdml-engine/agents'
+ * import { banditStrategies } from 'omai-engine/agents'
  * banditStrategies.where((p) => p.logarithmicRegret) // => ['ucb1', 'kl-ucb', 'thompson-bernoulli']
  * ```
  */
@@ -1000,12 +1000,12 @@ export interface BanditRun<G> {
  * @param agent - The agent.
  * @param options - Pulls (default the horizon, else 1000) and the key or seed.
  * @returns The final agent state, the actions, rewards and cumulative regret.
- * @throws MdmlError with code `value` when the environment has no oracle.
+ * @throws OmaiError with code `value` when the environment has no oracle.
  * @concept regret
  * @example
  * ```ts
- * import { runBandit, ucb1 } from 'mdml-engine/agents'
- * import { bernoulliBandit } from 'mdml-engine/environments'
+ * import { runBandit, ucb1 } from 'omai-engine/agents'
+ * import { bernoulliBandit } from 'omai-engine/environments'
  * const env = bernoulliBandit.create({ probs: [0.25, 0.75] })
  * runBandit(env, ucb1(env), { pulls: 2 }).regret // => [0.5, 0.5]
  * ```

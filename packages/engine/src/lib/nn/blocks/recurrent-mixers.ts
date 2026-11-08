@@ -70,8 +70,8 @@ const timeMixOwn = (dim: number): Params => ({
  * @reference Peng et al. (2023), RWKV: reinventing RNNs for the transformer era.
  * @example
  * ```ts
- * import { RWKVTimeMix } from 'mdml-engine/nn/blocks'
- * import { zeros } from 'mdml-engine/tensor'
+ * import { RWKVTimeMix } from 'omai-engine/nn/blocks'
+ * import { zeros } from 'omai-engine/tensor'
  * new RWKVTimeMix(6).forward(zeros([1, 4, 6])).output.shape // => [1, 4, 6]
  * ```
  */
@@ -132,8 +132,8 @@ export class RWKVTimeMix extends SequenceMixer {
  * @reference Peng et al. (2023), RWKV.
  * @example
  * ```ts
- * import { RWKVChannelMix } from 'mdml-engine/nn/blocks'
- * import { zeros } from 'mdml-engine/tensor'
+ * import { RWKVChannelMix } from 'omai-engine/nn/blocks'
+ * import { zeros } from 'omai-engine/tensor'
  * new RWKVChannelMix(6).forward(zeros([1, 4, 6])).output.shape // => [1, 4, 6]
  * ```
  */
@@ -183,8 +183,8 @@ export class RWKVChannelMix extends SequenceMixer {
  * @reference Peng et al. (2023), RWKV.
  * @example
  * ```ts
- * import { RWKVMixer } from 'mdml-engine/nn/blocks'
- * import { zeros } from 'mdml-engine/tensor'
+ * import { RWKVMixer } from 'omai-engine/nn/blocks'
+ * import { zeros } from 'omai-engine/tensor'
  * new RWKVMixer(6).forward(zeros([1, 4, 6])).output.shape // => [1, 4, 6]
  * ```
  */
@@ -260,8 +260,8 @@ function recur(a: Value, b: Value, h0: Value, form: 'scan' | 'recurrent'): Value
  * @reference Feng et al. (2024), Were RNNs all we needed?
  * @example
  * ```ts
- * import { MinGRU } from 'mdml-engine/nn/blocks'
- * import { zeros } from 'mdml-engine/tensor'
+ * import { MinGRU } from 'omai-engine/nn/blocks'
+ * import { zeros } from 'omai-engine/tensor'
  * new MinGRU(6).forward(zeros([1, 4, 6])).output.shape // => [1, 4, 6]
  * ```
  */
@@ -310,8 +310,8 @@ export class MinGRU extends SequenceMixer {
  * @reference Feng et al. (2024), Were RNNs all we needed?
  * @example
  * ```ts
- * import { MinLSTM } from 'mdml-engine/nn/blocks'
- * import { zeros } from 'mdml-engine/tensor'
+ * import { MinLSTM } from 'omai-engine/nn/blocks'
+ * import { zeros } from 'omai-engine/tensor'
  * new MinLSTM(6).forward(zeros([1, 4, 6])).output.shape // => [1, 4, 6]
  * ```
  */
@@ -409,8 +409,8 @@ function hyenaOwn(dim: number, shortKernel: number, key: Key): Params {
  * @reference Poli et al. (2023), Hyena hierarchy: towards larger convolutional language models.
  * @example
  * ```ts
- * import { Hyena } from 'mdml-engine/nn/blocks'
- * import { zeros } from 'mdml-engine/tensor'
+ * import { Hyena } from 'omai-engine/nn/blocks'
+ * import { zeros } from 'omai-engine/tensor'
  * new Hyena(6).forward(zeros([1, 5, 6])).output.shape // => [1, 5, 6]
  * ```
  */

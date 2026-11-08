@@ -54,7 +54,7 @@ function renderWalk(n: number, s: number): Scene {
  * @returns The environment, with its model; observations are the state index.
  * @example
  * ```ts
- * import { makeRandomWalk } from 'mdml-engine/environments'
+ * import { makeRandomWalk } from 'omai-engine/environments'
  * makeRandomWalk({ n: 5 }).model?.transitions(0, 0) // => [{ probability: 1, state: 0, reward: 0, terminated: true }]
  * ```
  */
@@ -97,7 +97,7 @@ export function makeRandomWalk(options: RandomWalkOptions = {}): Env<number, num
  * @returns One value per state.
  * @example
  * ```ts
- * import { randomWalkValues } from 'mdml-engine/environments'
+ * import { randomWalkValues } from 'omai-engine/environments'
  * randomWalkValues({ n: 5 }).map((v) => Math.round(v * 6)) // => [1, 2, 3, 4, 5]
  * ```
  */
@@ -115,7 +115,7 @@ export function randomWalkValues(options: RandomWalkOptions = {}): number[] {
  * @concept environments
  * @example
  * ```ts
- * import { randomWalk } from 'mdml-engine/environments'
+ * import { randomWalk } from 'omai-engine/environments'
  * randomWalk.create({ n: 5 }).observationSpace // => { kind: 'discrete', n: 5, label: 'position on the chain' }
  * ```
  */
@@ -192,7 +192,7 @@ function renderBaird(s: number): Scene {
  * @returns The environment, with its model.
  * @example
  * ```ts
- * import { makeBairdCounterexample } from 'mdml-engine/environments'
+ * import { makeBairdCounterexample } from 'omai-engine/environments'
  * makeBairdCounterexample().model?.transitions(0, 1) // => [{ probability: 1, state: 6, reward: 0, terminated: false }]
  * ```
  */
@@ -221,7 +221,7 @@ export function makeBairdCounterexample(): Env<number, number, number> {
  * @concept environments
  * @example
  * ```ts
- * import { bairdCounterexample } from 'mdml-engine/environments'
+ * import { bairdCounterexample } from 'omai-engine/environments'
  * bairdCounterexample.create().actionSpace.kind // => 'discrete'
  * ```
  */
@@ -246,7 +246,7 @@ export const INFINITE_VARIANCE_VALUE = 1
  * @returns The environment, with its model.
  * @example
  * ```ts
- * import { makeInfiniteVariance } from 'mdml-engine/environments'
+ * import { makeInfiniteVariance } from 'omai-engine/environments'
  * makeInfiniteVariance().model?.transitions(0, 1) // => [{ probability: 1, state: 0, reward: 0, terminated: true }]
  * ```
  */
@@ -277,7 +277,7 @@ export function makeInfiniteVariance(): Env<number, number, number> {
  * @concept environments
  * @example
  * ```ts
- * import { infiniteVariance } from 'mdml-engine/environments'
+ * import { infiniteVariance } from 'omai-engine/environments'
  * infiniteVariance.create().observationSpace.kind // => 'discrete'
  * ```
  */

@@ -7,7 +7,7 @@
  * on the iterative base whose verbs score new points in novelty mode; the training scores are in the parameters.
  */
 
-import { MdmlError, maxOf, toRows } from '../base/index.ts'
+import { maxOf, OmaiError, toRows } from '../base/index.ts'
 import { pairwiseDistances } from '../distances/index.ts'
 import {
   ExplainedEstimatorClass,
@@ -47,8 +47,8 @@ const rowsOf = (m: MatrixView): number[][] => toRows(m.data, m.n, m.d)
 /** The neighbours a detector asks for: at least one, and at most the other `n - 1` rows. */
 function effectiveK(nNeighbors: number, n: number, who: string): number {
   if (!(Number.isInteger(nNeighbors) && nNeighbors >= 1))
-    throw new MdmlError('value', `${who}: nNeighbors must be a positive integer`)
-  if (n < 2) throw new MdmlError('shape', `${who}: needs at least 2 rows`)
+    throw new OmaiError('value', `${who}: nNeighbors must be a positive integer`)
+  if (n < 2) throw new OmaiError('shape', `${who}: needs at least 2 rows`)
   return Math.max(1, Math.min(nNeighbors, n - 1))
 }
 
@@ -112,8 +112,8 @@ export interface LofState {
  * @returns The algorithm.
  * @example
  * ```ts
- * import { lofAlgorithm } from 'mdml-engine/anomaly'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { lofAlgorithm } from 'omai-engine/anomaly'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const x = [[0, 0], [0, 1], [1, 0], [1, 1], [10, 10]]
  * const lof = runAlgorithm(lofAlgorithm(x, { nNeighbors: 2 }), { maxSteps: 3 }).state.lof
  * lof[4] > 2 // => true
@@ -181,7 +181,7 @@ export function lofAlgorithm(x: TensorLike, options: LofAlgorithmOptions = {}): 
  * @returns The final {@link LofState}.
  * @example
  * ```ts
- * import { localOutlierFactors } from 'mdml-engine/anomaly'
+ * import { localOutlierFactors } from 'omai-engine/anomaly'
  * const r = localOutlierFactors([[0], [1], [2], [3], [20]], { nNeighbors: 2 })
  * [r.lof[4] > 3, r.lof[2] < 1.5] // => [true, true]
  * ```
@@ -257,8 +257,8 @@ function lofVerbs(p: LofParams, h: LofHyper): LofVerbs {
  * @index estimator Local outlier factor.
  * @example
  * ```ts
- * import { localOutlierFactor } from 'mdml-engine/anomaly'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { localOutlierFactor } from 'omai-engine/anomaly'
+ * import { toFlat } from 'omai-engine/tensor'
  * const x = [[0, 0], [0, 1], [1, 0], [1, 1], [0.5, 0.5], [10, 10]]
  * const f = localOutlierFactor({ nNeighbors: 3, contamination: 0.2 }).fit({ x })
  * toFlat(f.predict([[0.5, 0.4], [10, 10.5]])) // => [1, -1]
@@ -327,8 +327,8 @@ export function localOutlierFactor(
  *
  * @example
  * ```ts
- * import { LocalOutlierFactor } from 'mdml-engine/anomaly'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { LocalOutlierFactor } from 'omai-engine/anomaly'
+ * import { toFlat } from 'omai-engine/tensor'
  * const x = [[0, 0], [0, 1], [1, 0], [1, 1], [0.5, 0.5], [10, 10]]
  * toFlat(new LocalOutlierFactor({ nNeighbors: 3, contamination: 0.2 }).fit(x).predict([[0.5, 0.4], [10, 10.5]])) // => [1, -1]
  * ```
@@ -375,7 +375,7 @@ export interface CofState {
  * @returns The average chaining distance, 0 for no neighbours.
  * @example
  * ```ts
- * import { averageChainingDistance } from 'mdml-engine/anomaly'
+ * import { averageChainingDistance } from 'omai-engine/anomaly'
  * // A point 1 from a neighbour that is 2 from the next: costs 1 and 2, weights 2/3 and 1/3.
  * averageChainingDistance([[0, 1, 3], [1, 0, 2], [3, 2, 0]]) // => 1.3333333333333333
  * ```
@@ -436,8 +436,8 @@ const connectivity = (acPoint: number, acNeighbours: readonly number[]): number 
  * @returns The algorithm.
  * @example
  * ```ts
- * import { cofAlgorithm } from 'mdml-engine/anomaly'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { cofAlgorithm } from 'omai-engine/anomaly'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const x = [[0, 0], [1, 0], [2, 0], [3, 0], [4, 0], [2, 3]]
  * const cof = runAlgorithm(cofAlgorithm(x, { nNeighbors: 2 }), { maxSteps: 3 }).state.cof
  * cof[5] > 2 // => true
@@ -512,7 +512,7 @@ export function cofAlgorithm(x: TensorLike, options: CofAlgorithmOptions = {}): 
  * @returns The final {@link CofState}.
  * @example
  * ```ts
- * import { connectivityOutlierFactors } from 'mdml-engine/anomaly'
+ * import { connectivityOutlierFactors } from 'omai-engine/anomaly'
  * connectivityOutlierFactors([[0], [1], [2], [3], [4]], { nNeighbors: 2 }).cof.length // => 5
  * ```
  */
@@ -577,8 +577,8 @@ function cofVerbs(p: CofParams, h: CofHyper): NeighbourDetectorVerbs {
  * @returns The iterative outlier estimator.
  * @example
  * ```ts
- * import { connectivityOutlierFactor } from 'mdml-engine/anomaly'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { connectivityOutlierFactor } from 'omai-engine/anomaly'
+ * import { toFlat } from 'omai-engine/tensor'
  * const x = [[0, 0], [1, 0], [2, 0], [3, 0], [4, 0], [5, 0], [2, 4]]
  * const f = connectivityOutlierFactor({ nNeighbors: 3, contamination: 0.15 }).fit({ x })
  * toFlat(f.predict([[2.5, 0], [2.5, 4]])) // => [1, -1]
@@ -641,8 +641,8 @@ export function connectivityOutlierFactor(
  *
  * @example
  * ```ts
- * import { ConnectivityOutlierFactor } from 'mdml-engine/anomaly'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { ConnectivityOutlierFactor } from 'omai-engine/anomaly'
+ * import { toFlat } from 'omai-engine/tensor'
  * const x = [[0, 0], [1, 0], [2, 0], [3, 0], [4, 0], [5, 0], [2, 4]]
  * toFlat(new ConnectivityOutlierFactor({ nNeighbors: 3, contamination: 0.15 }).fit(x).predict([[2.5, 0], [2.5, 4]])) // => [1, -1]
  * ```
@@ -704,8 +704,8 @@ export interface KnnAlgorithmOptions extends Partial<NeighbourSearch> {
  * @returns The algorithm.
  * @example
  * ```ts
- * import { knnAlgorithm } from 'mdml-engine/anomaly'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { knnAlgorithm } from 'omai-engine/anomaly'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * runAlgorithm(knnAlgorithm([[0], [1], [3], [10]], { nNeighbors: 1 }), { maxSteps: 2 }).state.scores // => [1, 1, 2, 7]
  * ```
  */
@@ -789,8 +789,8 @@ function knnVerbs(p: KnnDetectorParams, h: KnnDetectorHyper): NeighbourDetectorV
  * @returns The iterative outlier estimator.
  * @example
  * ```ts
- * import { knnDetector } from 'mdml-engine/anomaly'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { knnDetector } from 'omai-engine/anomaly'
+ * import { toFlat } from 'omai-engine/tensor'
  * const x = [[0, 0], [0, 1], [1, 0], [1, 1], [0.5, 0.5], [10, 10]]
  * toFlat(knnDetector({ nNeighbors: 2, contamination: 0.2 }).fit({ x }).predict([[0.5, 0.4], [10, 10.5]])) // => [1, -1]
  * ```
@@ -853,8 +853,8 @@ export function knnDetector(
  *
  * @example
  * ```ts
- * import { KnnDetector } from 'mdml-engine/anomaly'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { KnnDetector } from 'omai-engine/anomaly'
+ * import { toFlat } from 'omai-engine/tensor'
  * const x = [[0, 0], [0, 1], [1, 0], [1, 1], [0.5, 0.5], [10, 10]]
  * toFlat(new KnnDetector({ nNeighbors: 2, contamination: 0.2 }).fit(x).predict([[0.5, 0.4], [10, 10.5]])) // => [1, -1]
  * ```

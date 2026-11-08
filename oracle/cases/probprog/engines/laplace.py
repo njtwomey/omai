@@ -11,10 +11,10 @@ from typing import Any, cast
 import jax
 import jax.numpy as jnp
 import numpy as np
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.pgm import stable
 from numpyro import handlers
 from numpyro.infer.util import potential_energy, unconstrain_fn
+from omai_oracle.fixture import Case, case
+from omai_oracle.pgm import stable
 from scipy.optimize import minimize
 
 _spec = importlib.util.spec_from_file_location("probprog_models", Path(__file__).parent.parent / "_models.py")

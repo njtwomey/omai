@@ -5,7 +5,7 @@
  * implicit matrices alike.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import {
   add,
   allocate,
@@ -60,7 +60,7 @@ function rowsOf(indptr: Int32Array): Int32Array {
  * @index structure Compressed sparse row matrix from a dense matrix or its arrays.
  * @example
  * ```ts
- * import { csr } from 'mdml-engine/numerics/sparse'
+ * import { csr } from 'omai-engine/numerics/sparse'
  * Array.from(csr([[1, 0], [0, 2]]).indices) // => [0, 1]
  * ```
  */
@@ -83,12 +83,12 @@ export function csr(
       (indptr[indptr.length - 1] ?? 0) !== indices.length ||
       values.shape[0] !== indices.length
     ) {
-      throw new MdmlError('shape', 'csr: inconsistent indptr, indices and values')
+      throw new OmaiError('shape', 'csr: inconsistent indptr, indices and values')
     }
     return { shape: source.shape, indptr, indices, values, rows: rowsOf(indptr) }
   }
   const dense = concreteOrThrow(promoteFloat(source as TensorLike)[0] as Tensor, 'csr')
-  if (dense.shape.length !== 2) throw new MdmlError('shape', 'csr: a dense source must be a matrix')
+  if (dense.shape.length !== 2) throw new OmaiError('shape', 'csr: a dense source must be a matrix')
   const [m = 0, n = 0] = dense.shape
   const indptr = new Int32Array(m + 1)
   const indices: number[] = []
@@ -122,8 +122,8 @@ export function csr(
  * @returns The matrix.
  * @example
  * ```ts
- * import { fromCoo, toDense } from 'mdml-engine/numerics/sparse'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { fromCoo, toDense } from 'omai-engine/numerics/sparse'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(toDense(fromCoo([0, 1, 0], [1, 0, 1], [1, 2, 3], [2, 2]))) // => [[0, 4], [2, 0]]
  * ```
  */
@@ -143,7 +143,7 @@ export function fromCoo(
     const r = rows[k] ?? 0
     const c = cols[k] ?? 0
     if (r < 0 || r >= shape[0] || c < 0 || c >= shape[1])
-      throw new MdmlError('value', 'fromCoo: an index is out of range')
+      throw new OmaiError('value', 'fromCoo: an index is out of range')
     const prev = keys[keys.length - 1]
     if (prev === undefined || prev[0] !== r || prev[1] !== c) keys.push([r, c])
     segment[i] = keys.length - 1
@@ -163,8 +163,8 @@ export function fromCoo(
  * @returns `[m, n]`.
  * @example
  * ```ts
- * import { csr, toDense } from 'mdml-engine/numerics/sparse'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { csr, toDense } from 'omai-engine/numerics/sparse'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(toDense(csr([[0, 3], [4, 0]]))) // => [[0, 3], [4, 0]]
  * ```
  */
@@ -226,15 +226,15 @@ const spmvPrimitive: Primitive<SpmvParams> = definePrimitive<SpmvParams>({
  * @returns `[m]`.
  * @example
  * ```ts
- * import { csr, spmv } from 'mdml-engine/numerics/sparse'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { csr, spmv } from 'omai-engine/numerics/sparse'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(spmv(csr([[1, 0, 2], [0, 3, 0]]), [1, 1, 1])) // => [3, 3]
  * ```
  */
 export function spmv(a: CsrMatrix, x: TensorLike): Value {
   const [vals, xv] = promoteFloat(a.values, x) as [Value, Value]
   if (xv.shape.length !== 1 || xv.shape[0] !== a.shape[1])
-    throw new MdmlError('shape', 'spmv: x must have one entry per column')
+    throw new OmaiError('shape', 'spmv: x must have one entry per column')
   return bind1(spmvPrimitive, [vals, xv], { indptr: a.indptr, indices: a.indices, rows: a.rows, cols: a.shape[1] })
 }
 
@@ -246,14 +246,14 @@ export function spmv(a: CsrMatrix, x: TensorLike): Value {
  * @returns `[m, k]`.
  * @example
  * ```ts
- * import { csr, spmm } from 'mdml-engine/numerics/sparse'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { csr, spmm } from 'omai-engine/numerics/sparse'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(spmm(csr([[1, 0], [0, 2]]), [[1, 2], [3, 4]])) // => [[1, 2], [6, 8]]
  * ```
  */
 export function spmm(a: CsrMatrix, b: TensorLike): Value {
   const [bv] = promoteFloat(b) as [Value]
-  if (bv.shape.length !== 2 || bv.shape[0] !== a.shape[1]) throw new MdmlError('shape', 'spmm: b must be [n, k]')
+  if (bv.shape.length !== 2 || bv.shape[0] !== a.shape[1]) throw new OmaiError('shape', 'spmm: b must be [n, k]')
   const gathered = take(bv, fromStorage(a.indices, [a.indices.length], 'int32'), 0)
   return segmentSum(
     mul(reshape(a.values, [-1, 1]), gathered),
@@ -269,8 +269,8 @@ export function spmm(a: CsrMatrix, b: TensorLike): Value {
  * @returns A^T.
  * @example
  * ```ts
- * import { csr, toDense, transposeCsr } from 'mdml-engine/numerics/sparse'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { csr, toDense, transposeCsr } from 'omai-engine/numerics/sparse'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(toDense(transposeCsr(csr([[1, 2], [0, 3]])))) // => [[1, 0], [2, 3]]
  * ```
  */
@@ -288,8 +288,8 @@ export function transposeCsr(a: CsrMatrix): CsrMatrix {
  * @returns The matrix.
  * @example
  * ```ts
- * import { diagCsr, toDense } from 'mdml-engine/numerics/sparse'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { diagCsr, toDense } from 'omai-engine/numerics/sparse'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(toDense(diagCsr([1, 2]))) // => [[1, 0], [0, 2]]
  * ```
  */
@@ -311,13 +311,13 @@ export function diagCsr(diagonal: TensorLike, offset = 0, size?: number): CsrMat
  * @returns The sum.
  * @example
  * ```ts
- * import { csrAdd, diagCsr, toDense } from 'mdml-engine/numerics/sparse'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { csrAdd, diagCsr, toDense } from 'omai-engine/numerics/sparse'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(toDense(csrAdd(diagCsr([1, 1]), diagCsr([1], 1, 2), 2))) // => [[1, 2], [0, 1]]
  * ```
  */
 export function csrAdd(a: CsrMatrix, b: CsrMatrix, beta = 1): CsrMatrix {
-  if (a.shape[0] !== b.shape[0] || a.shape[1] !== b.shape[1]) throw new MdmlError('shape', 'csrAdd: shapes differ')
+  if (a.shape[0] !== b.shape[0] || a.shape[1] !== b.shape[1]) throw new OmaiError('shape', 'csrAdd: shapes differ')
   const rows = [...a.rows, ...b.rows]
   const cols = [...a.indices, ...b.indices]
   return fromCoo(rows, cols, concat([a.values, mul(b.values, beta)], 0), a.shape)
@@ -330,8 +330,8 @@ export function csrAdd(a: CsrMatrix, b: CsrMatrix, beta = 1): CsrMatrix {
  * @returns The diagonal `[min(m, n)]`.
  * @example
  * ```ts
- * import { csr, csrDiagonal } from 'mdml-engine/numerics/sparse'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { csr, csrDiagonal } from 'omai-engine/numerics/sparse'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(csrDiagonal(csr([[1, 2], [0, 3]]))) // => [1, 3]
  * ```
  */
@@ -364,7 +364,7 @@ export interface LinearOperator {
  * @returns The operator.
  * @example
  * ```ts
- * import { asOperator, csr } from 'mdml-engine/numerics/sparse'
+ * import { asOperator, csr } from 'omai-engine/numerics/sparse'
  * asOperator(csr([[2, 0], [0, 3]])).shape // => [2, 2]
  * ```
  */
@@ -380,7 +380,7 @@ export function asOperator(a: CsrMatrix | TensorLike | LinearOperator): LinearOp
     return { shape: m.shape, matvec: (x) => spmv(m, x), rmatvec: (x) => spmv(transposed(), x) }
   }
   const [d] = promoteFloat(a as TensorLike) as [Value]
-  if (d.shape.length !== 2) throw new MdmlError('shape', 'asOperator: a dense operator must be a matrix')
+  if (d.shape.length !== 2) throw new OmaiError('shape', 'asOperator: a dense operator must be a matrix')
   const shape: [number, number] = [d.shape[0] ?? 0, d.shape[1] ?? 0]
   return {
     shape,
@@ -396,7 +396,7 @@ export function asOperator(a: CsrMatrix | TensorLike | LinearOperator): LinearOp
  * @returns The count.
  * @example
  * ```ts
- * import { csr, nnz } from 'mdml-engine/numerics/sparse'
+ * import { csr, nnz } from 'omai-engine/numerics/sparse'
  * nnz(csr([[1, 0, 2], [0, 3, 0]])) // => 3
  * ```
  */
@@ -411,7 +411,7 @@ export function nnz(a: CsrMatrix): number {
  * @returns The values, in storage order.
  * @example
  * ```ts
- * import { csr, primalValues } from 'mdml-engine/numerics/sparse'
+ * import { csr, primalValues } from 'omai-engine/numerics/sparse'
  * primalValues(csr([[1, 0, 2], [0, 3, 0]])) // => [1, 2, 3]
  * ```
  */

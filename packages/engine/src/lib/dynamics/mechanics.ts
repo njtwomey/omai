@@ -7,7 +7,7 @@
  */
 
 import { grad, hessian } from '../autodiff/index.ts'
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { solve } from '../numerics/linalg/index.ts'
 import { add, concat, cos, div, item, mul, sin, sliceAxis, sub, sum, tensor, type Value } from '../tensor/index.ts'
 import type { OdeVectorField } from './ode/problem.ts'
@@ -31,8 +31,8 @@ const block = (m: Value, r0: number, r1: number, c0: number, c1: number): Value 
  * @concept lagrangian-mechanics
  * @example
  * ```ts
- * import { lagrangianField } from 'mdml-engine/dynamics'
- * import { mul, sub, sum, tensor, toFlat } from 'mdml-engine/tensor'
+ * import { lagrangianField } from 'omai-engine/dynamics'
+ * import { mul, sub, sum, tensor, toFlat } from 'omai-engine/tensor'
  * // L = qdot^2 / 2 - q^2 / 2: the oscillator qddot = -q.
  * const f = lagrangianField((q, qd) => mul(sum(sub(mul(qd, qd), mul(q, q))), 0.5), 1)
  * toFlat(f(0, tensor([2, 3]))) // => [3, -2]
@@ -63,8 +63,8 @@ export function lagrangianField(L: Lagrangian, dof: number): OdeVectorField {
  * @concept lagrangian-mechanics
  * @example
  * ```ts
- * import { lagrangianEnergy } from 'mdml-engine/dynamics'
- * import { mul, sub, sum } from 'mdml-engine/tensor'
+ * import { lagrangianEnergy } from 'omai-engine/dynamics'
+ * import { mul, sub, sum } from 'omai-engine/tensor'
  * const E = lagrangianEnergy((q, qd) => mul(sum(sub(mul(qd, qd), mul(q, q))), 0.5), 1)
  * E([2, 3]) // => 6.5
  * ```
@@ -89,8 +89,8 @@ export function lagrangianEnergy(L: Lagrangian, dof: number): (state: ArrayLike<
  * @concept legendre-transform
  * @example
  * ```ts
- * import { hamiltonianOfLagrangian } from 'mdml-engine/dynamics'
- * import { item, mul, sub, sum, tensor } from 'mdml-engine/tensor'
+ * import { hamiltonianOfLagrangian } from 'omai-engine/dynamics'
+ * import { item, mul, sub, sum, tensor } from 'omai-engine/tensor'
  * const H = hamiltonianOfLagrangian((q, qd) => mul(sum(sub(mul(qd, qd), mul(q, q))), 0.5))
  * item(H(tensor([2]), tensor([3]))) // => 6.5
  * ```
@@ -118,8 +118,8 @@ export function hamiltonianOfLagrangian(L: Lagrangian): (q: Value, p: Value) => 
  * @concept hamiltonian-mechanics
  * @example
  * ```ts
- * import { hamiltonianField } from 'mdml-engine/dynamics'
- * import { add, mul, sum, tensor, toFlat } from 'mdml-engine/tensor'
+ * import { hamiltonianField } from 'omai-engine/dynamics'
+ * import { add, mul, sum, tensor, toFlat } from 'omai-engine/tensor'
  * const f = hamiltonianField((q, p) => mul(sum(add(mul(q, q), mul(p, p))), 0.5), 1)
  * toFlat(f(0, tensor([2, 3]))) // => [3, -2]
  * ```
@@ -150,7 +150,7 @@ export interface DoublePendulumParameters {
 function resolved(p: DoublePendulumParameters): Required<DoublePendulumParameters> {
   const { m1 = 1, m2 = 1, l1 = 1, l2 = 1, g = 9.81 } = p
   if (!(m1 > 0 && m2 > 0 && l1 > 0 && l2 > 0))
-    throw new MdmlError('value', 'doublePendulum: masses and lengths must be positive')
+    throw new OmaiError('value', 'doublePendulum: masses and lengths must be positive')
   return { m1, m2, l1, l2, g }
 }
 
@@ -164,8 +164,8 @@ function resolved(p: DoublePendulumParameters): Required<DoublePendulumParameter
  * @concept lagrangian-mechanics
  * @example
  * ```ts
- * import { doublePendulumLagrangian } from 'mdml-engine/dynamics'
- * import { item, tensor } from 'mdml-engine/tensor'
+ * import { doublePendulumLagrangian } from 'omai-engine/dynamics'
+ * import { item, tensor } from 'omai-engine/tensor'
  * // Hanging at rest the Lagrangian is minus the (lowest) potential energy: g (m1 l1 + ... ) at the bottom.
  * item(doublePendulumLagrangian()(tensor([0, 0]), tensor([0, 0]))) // => 29.43
  * ```
@@ -196,8 +196,8 @@ export function doublePendulumLagrangian(parameters: DoublePendulumParameters = 
  * @concept double-pendulum
  * @example
  * ```ts
- * import { doublePendulumField } from 'mdml-engine/dynamics'
- * import { tensor, toFlat } from 'mdml-engine/tensor'
+ * import { doublePendulumField } from 'omai-engine/dynamics'
+ * import { tensor, toFlat } from 'omai-engine/tensor'
  * // Hanging at rest is an equilibrium.
  * toFlat(doublePendulumField()(0, tensor([0, 0, 0, 0]))).map((v) => v + 0) // => [0, 0, 0, 0]
  * ```
@@ -246,7 +246,7 @@ export function doublePendulumField(parameters: DoublePendulumParameters = {}): 
  * @concept double-pendulum
  * @example
  * ```ts
- * import { doublePendulumEnergy } from 'mdml-engine/dynamics'
+ * import { doublePendulumEnergy } from 'omai-engine/dynamics'
  * // At rest hanging down the energy is the lowest potential energy, -(2 m1 + m2) g l... for unit masses and lengths -3 g.
  * doublePendulumEnergy([0, 0, 0, 0]) // => -29.43
  * ```
@@ -269,8 +269,8 @@ export function doublePendulumEnergy(state: ArrayLike<number>, parameters: Doubl
  * @concept double-pendulum
  * @example
  * ```ts
- * import { doublePendulumHamiltonian } from 'mdml-engine/dynamics'
- * import { item, tensor } from 'mdml-engine/tensor'
+ * import { doublePendulumHamiltonian } from 'omai-engine/dynamics'
+ * import { item, tensor } from 'omai-engine/tensor'
  * // The Hamiltonian is the energy: at rest hanging down, -3 g for unit masses and lengths.
  * item(doublePendulumHamiltonian().H(tensor([0, 0]), tensor([0, 0]))) // => -29.43
  * ```
@@ -305,7 +305,7 @@ export interface FlipOptions {
  * @concept double-pendulum
  * @example
  * ```ts
- * import { doublePendulumFlipTime } from 'mdml-engine/dynamics'
+ * import { doublePendulumFlipTime } from 'omai-engine/dynamics'
  * // Released at rest from small angles the pendulum never flips.
  * doublePendulumFlipTime(0.1, 0.1, {}, { tMax: 5 }) // => Infinity
  * ```

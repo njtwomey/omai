@@ -5,7 +5,7 @@
  * aggregated variance (as nolds).
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { fft } from '../numerics/fourier/index.ts'
 import { choleskyJitter } from '../numerics/linalg/index.ts'
 import { polyfit } from '../numerics/polynomial/index.ts'
@@ -38,7 +38,7 @@ import type { CovarianceFunction } from './gaussian-processes.ts'
 import type { Paths } from './paths.ts'
 
 function checkHurst(h: number, where: string): void {
-  if (!(h > 0 && h < 1)) throw new MdmlError('value', `${where}: the Hurst exponent must be in (0, 1)`)
+  if (!(h > 0 && h < 1)) throw new OmaiError('value', `${where}: the Hurst exponent must be in (0, 1)`)
 }
 
 /**
@@ -51,8 +51,8 @@ function checkHurst(h: number, where: string): void {
  * @concept fractional-brownian-motion
  * @example
  * ```ts
- * import { fbmCovariance } from 'mdml-engine/stochastic'
- * import { item } from 'mdml-engine/tensor'
+ * import { fbmCovariance } from 'omai-engine/stochastic'
+ * import { item } from 'omai-engine/tensor'
  * item(fbmCovariance(0.5)([[1]], [[2]])) // => 1
  * ```
  */
@@ -78,8 +78,8 @@ export function fbmCovariance(hurst: TensorLike, sigma: TensorLike = 1): Covaria
  * @concept long-range-dependence
  * @example
  * ```ts
- * import { fgnAutocovariance } from 'mdml-engine/stochastic'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { fgnAutocovariance } from 'omai-engine/stochastic'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(fgnAutocovariance([0, 1, 2], 0.5)) // => [1, 0, 0]
  * ```
  */
@@ -114,8 +114,8 @@ export interface FgnOptions {
  *   Simulation of stationary Gaussian processes in [0, 1]^d, J. Comput. Graph. Stat. 3 (1994).
  * @example
  * ```ts
- * import { key } from 'mdml-engine/random'
- * import { fractionalGaussianNoise } from 'mdml-engine/stochastic'
+ * import { key } from 'omai-engine/random'
+ * import { fractionalGaussianNoise } from 'omai-engine/stochastic'
  * fractionalGaussianNoise(key(0), 100, 0.7, { paths: 3 }).shape // => [3, 100]
  * ```
  */
@@ -172,8 +172,8 @@ export function fractionalGaussianNoise(key: Key, n: number, hurst: TensorLike, 
  * @concept fractional-brownian-motion
  * @example
  * ```ts
- * import { key } from 'mdml-engine/random'
- * import { fractionalBrownianMotion } from 'mdml-engine/stochastic'
+ * import { key } from 'omai-engine/random'
+ * import { fractionalBrownianMotion } from 'omai-engine/stochastic'
  * fractionalBrownianMotion(key(0), 1, 64, 0.3, { paths: 2 }).values.shape // => [2, 65]
  * ```
  */
@@ -184,7 +184,7 @@ export function fractionalBrownianMotion(
   hurst: TensorLike,
   options: FgnOptions & { readonly sigma?: TensorLike } = {},
 ): Paths {
-  if (!(horizon > 0)) throw new MdmlError('value', 'fractionalBrownianMotion: the horizon must be positive')
+  if (!(horizon > 0)) throw new OmaiError('value', 'fractionalBrownianMotion: the horizon must be positive')
   positiveInteger(steps, 'steps', 'fractionalBrownianMotion')
   const [h, sigma] = promoteFloat(hurst, options.sigma ?? 1) as [Value, Value]
   const noise = fractionalGaussianNoise(key, steps, h, options)
@@ -202,15 +202,15 @@ function slopeOf(x: readonly number[], y: readonly number[]): number {
 
 function series(x: TensorLike, where: string): number[] {
   const v = primalNumbers(x)
-  if (v.length < 8) throw new MdmlError('value', `${where}: needs at least 8 observations`)
+  if (v.length < 8) throw new OmaiError('value', `${where}: needs at least 8 observations`)
   return v
 }
 
 function windowsOf(windows: readonly number[] | undefined, n: number, where: string): number[] {
   const w = windows ?? defaultWindows(n)
-  if (w.length < 2) throw new MdmlError('value', `${where}: needs at least two window sizes`)
+  if (w.length < 2) throw new OmaiError('value', `${where}: needs at least two window sizes`)
   for (const s of w) {
-    if (!(Number.isInteger(s) && s >= 2 && s < n)) throw new MdmlError('value', `${where}: bad window size ${s}`)
+    if (!(Number.isInteger(s) && s >= 2 && s < n)) throw new OmaiError('value', `${where}: bad window size ${s}`)
   }
   return [...w]
 }
@@ -278,8 +278,8 @@ function rescaledRange(x: readonly number[], n: number, unbiased: boolean): numb
  * @reference H. E. Hurst, Long-term storage capacity of reservoirs (1951); A. A. Anis and E. H. Lloyd (1976).
  * @example
  * ```ts
- * import { key } from 'mdml-engine/random'
- * import { fractionalGaussianNoise, hurstRs } from 'mdml-engine/stochastic'
+ * import { key } from 'omai-engine/random'
+ * import { fractionalGaussianNoise, hurstRs } from 'omai-engine/stochastic'
  * Math.abs(hurstRs(fractionalGaussianNoise(key(0), 4096, 0.5)) - 0.5) < 0.1 // => true
  * ```
  */
@@ -316,8 +316,8 @@ export function hurstRs(
  * @reference C.-K. Peng et al., Mosaic organization of DNA nucleotides, Phys. Rev. E 49 (1994).
  * @example
  * ```ts
- * import { key } from 'mdml-engine/random'
- * import { detrendedFluctuation, fractionalGaussianNoise } from 'mdml-engine/stochastic'
+ * import { key } from 'omai-engine/random'
+ * import { detrendedFluctuation, fractionalGaussianNoise } from 'omai-engine/stochastic'
  * Math.abs(detrendedFluctuation(fractionalGaussianNoise(key(1), 4096, 0.8)) - 0.8) < 0.1 // => true
  * ```
  */
@@ -329,7 +329,7 @@ export function detrendedFluctuation(
   const n = data.length
   const windows = windowsOf(options.windows, n, 'detrendedFluctuation')
   const order = options.order ?? 1
-  if (!(Number.isInteger(order) && order >= 0)) throw new MdmlError('value', 'detrendedFluctuation: bad order')
+  if (!(Number.isInteger(order) && order >= 0)) throw new OmaiError('value', 'detrendedFluctuation: bad order')
   const mean = data.reduce((a, b) => a + b, 0) / n
   const walk: number[] = []
   let acc = 0
@@ -384,8 +384,8 @@ export function detrendedFluctuation(
  * @concept hurst-exponent
  * @example
  * ```ts
- * import { key } from 'mdml-engine/random'
- * import { aggregatedVarianceHurst, fractionalGaussianNoise } from 'mdml-engine/stochastic'
+ * import { key } from 'omai-engine/random'
+ * import { aggregatedVarianceHurst, fractionalGaussianNoise } from 'omai-engine/stochastic'
  * Math.abs(aggregatedVarianceHurst(fractionalGaussianNoise(key(2), 4096, 0.7)) - 0.7) < 0.1 // => true
  * ```
  */
@@ -435,7 +435,7 @@ export interface LongRangeDependence {
  * @concept long-range-dependence
  * @example
  * ```ts
- * import { longRangeDependence } from 'mdml-engine/stochastic'
+ * import { longRangeDependence } from 'omai-engine/stochastic'
  * longRangeDependence(0.75).longMemory // => true
  * longRangeDependence(0.5).partialSums // => [1, 1, 1, 1]
  * ```

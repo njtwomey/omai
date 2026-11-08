@@ -4,7 +4,7 @@
  * and minimum description length for choosing how many dimensions a motif really has.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import { ndtri } from '../numerics/special/index.ts'
 import {
   applyExclusionZone,
@@ -27,7 +27,7 @@ import type { MatrixProfileTrace } from './matrix-profile.ts'
 /** Rows of a `[d, n]` series. */
 function seriesRows(t: TensorLike, name: string): Float64Array[] {
   const v = asTensor(t)
-  if (v.shape.length !== 2) throw new MdmlError('shape', `${name}: expected a [d, n] series`)
+  if (v.shape.length !== 2) throw new OmaiError('shape', `${name}: expected a [d, n] series`)
   const d = v.shape[0] ?? 0
   const n = v.shape[1] ?? 0
   const data = primalOf(v).data
@@ -56,7 +56,7 @@ function uniqueInclude(include: readonly number[] | undefined, d: number, name: 
   if (include === undefined) return []
   const out: number[] = []
   for (const i of include) {
-    if (!Number.isInteger(i) || i < 0 || i >= d) throw new MdmlError('value', `${name}: include out of range`)
+    if (!Number.isInteger(i) || i < 0 || i >= d) throw new OmaiError('value', `${name}: include out of range`)
     if (!out.includes(i)) out.push(i)
   }
   return out
@@ -116,7 +116,7 @@ function distanceRow(stats: SubsequenceStats, qt: Float64Array, i: number, m: nu
  * @concept matrix-profile
  * @example
  * ```ts
- * import { multiDistanceProfile } from 'mdml-engine/timeseries'
+ * import { multiDistanceProfile } from 'omai-engine/timeseries'
  * const t = [[0, 1, 3, 2, 9, 1, 14, 15, 1, 2, 2, 10, 7], [1, 2, 0, 4, 2, 9, 3, 1, 7, 0, 5, 2, 8]]
  * multiDistanceProfile(t, 4, 2).length // => 2
  * ```
@@ -159,7 +159,7 @@ export interface MstumpState {
  * @concept matrix-profile
  * @example
  * ```ts
- * import { mstumpAlgorithm } from 'mdml-engine/timeseries'
+ * import { mstumpAlgorithm } from 'omai-engine/timeseries'
  * mstumpAlgorithm([[0, 1, 3, 2, 9, 1, 14, 15, 1, 2, 2, 10, 7], [1, 2, 0, 4, 2, 9, 3, 1, 7, 0, 5, 2, 8]], 4).name // => 'mstump'
  * ```
  */
@@ -238,7 +238,7 @@ export function mstumpAlgorithm(
  * @concept matrix-profile
  * @example
  * ```ts
- * import { mstump } from 'mdml-engine/timeseries'
+ * import { mstump } from 'omai-engine/timeseries'
  * const t = [[0, 1, 3, 2, 9, 1, 14, 15, 1, 2, 2, 10, 7], [1, 2, 0, 4, 2, 9, 3, 1, 7, 0, 5, 2, 8]]
  * mstump(t, 4).P.length // => 20
  * ```
@@ -315,7 +315,7 @@ export interface SubspaceOptions extends MultiOptions {
  * @concept matrix-profile
  * @example
  * ```ts
- * import { subspace } from 'mdml-engine/timeseries'
+ * import { subspace } from 'omai-engine/timeseries'
  * // The second dimension repeats with period 6, so the windows at 0 and 6 match there.
  * const t = [[0, 1, 3, 2, 9, 1, 14, 15, 1, 2, 2, 10, 7], [0, 1, 3, 2, 9, 1, 0, 1, 3, 2, 9, 1, 0]]
  * subspace(t, 4, 0, 6, 0) // => [1]
@@ -355,7 +355,7 @@ export function subspace(
  * @concept matrix-profile
  * @example
  * ```ts
- * import { mdl } from 'mdml-engine/timeseries'
+ * import { mdl } from 'omai-engine/timeseries'
  * const t = [[0, 1, 3, 2, 9, 1, 14, 15, 1, 2, 2, 10, 7], [0, 1, 3, 2, 9, 1, 0, 1, 3, 2, 9, 1, 0]]
  * mdl(t, 4, [0, 0], [6, 6]).subspaces // => [[1], [1, 0]]
  * ```

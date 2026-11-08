@@ -44,10 +44,10 @@ export interface PosteriorGrid {
  *
  * @param grid - The record without its `kind`.
  * @returns The record.
- * @throws MdmlError `shape` when means, variances or samples do not match the grid.
+ * @throws OmaiError `shape` when means, variances or samples do not match the grid.
  * @example
  * ```ts
- * import { posteriorGrid } from 'mdml-engine/exposition'
+ * import { posteriorGrid } from 'omai-engine/exposition'
  * posteriorGrid({ inputs: [[0], [1]], mean: [0, 1], variance: [1, 0.5] }).mean // => [0, 1]
  * ```
  */
@@ -89,10 +89,10 @@ export interface HyperparameterSurface {
  *
  * @param surface - The record without its `kind`.
  * @returns The record.
- * @throws MdmlError `shape` when the values do not match the grid.
+ * @throws OmaiError `shape` when the values do not match the grid.
  * @example
  * ```ts
- * import { hyperparameterSurface } from 'mdml-engine/exposition'
+ * import { hyperparameterSurface } from 'omai-engine/exposition'
  * hyperparameterSurface({ parameters: ['length', 'noise'], x: [1, 2], y: [0.1], values: [[-3, -2]] }).values // => [[-3, -2]]
  * ```
  */

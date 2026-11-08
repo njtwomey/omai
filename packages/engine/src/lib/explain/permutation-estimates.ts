@@ -43,7 +43,7 @@ export interface ShapleyState {
  * @returns The state with no orders yet.
  * @example
  * ```ts
- * import { shapleyStart } from 'mdml-engine/explain'
+ * import { shapleyStart } from 'omai-engine/explain'
  * shapleyStart(3).count // => 0
  * ```
  */
@@ -59,7 +59,7 @@ export function shapleyStart(players: number): ShapleyState {
  * @returns The new state; the old one is unchanged.
  * @example
  * ```ts
- * import { shapleyAccumulate, shapleyEstimates, shapleyStart } from 'mdml-engine/explain'
+ * import { shapleyAccumulate, shapleyEstimates, shapleyStart } from 'omai-engine/explain'
  * shapleyEstimates(shapleyAccumulate(shapleyAccumulate(shapleyStart(1), [1]), [3])).values // => [2]
  * ```
  */
@@ -78,7 +78,7 @@ export function shapleyAccumulate(state: ShapleyState, marginal: ArrayLike<numbe
  * @returns The values and their standard errors (NaN before two orders).
  * @example
  * ```ts
- * import { shapleyAccumulate, shapleyEstimates, shapleyStart } from 'mdml-engine/explain'
+ * import { shapleyAccumulate, shapleyEstimates, shapleyStart } from 'omai-engine/explain'
  * const s = [1, 3].reduce((acc, c) => shapleyAccumulate(acc, [c]), shapleyStart(1))
  * shapleyEstimates(s) // => { values: [2], standardErrors: [1] }
  * ```

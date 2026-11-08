@@ -4,7 +4,7 @@
  * series of a curve, a morph or a shape descriptor needs.
  */
 
-import { MdmlError, maxOf } from '../base/index.ts'
+import { maxOf, OmaiError } from '../base/index.ts'
 import type { Point2 } from '../numerics/geometry/index.ts'
 
 /** One stroke of a drawing: its points, and whether it closes on itself. */
@@ -47,7 +47,7 @@ function* tokens(d: string): Generator<[string, number[]]> {
         continue
       }
       const m = NUMBER.exec(body.slice(i))
-      if (m === null) throw new MdmlError('value', `flattenSvgPath: bad number at '${body.slice(i, i + 12)}'`)
+      if (m === null) throw new OmaiError('value', `flattenSvgPath: bad number at '${body.slice(i, i + 12)}'`)
       args.push(Number(m[0]))
       i += m[0].length
     }
@@ -116,10 +116,10 @@ function arc(p0: Point2, rx0: number, ry0: number, phi: number, large: boolean, 
  *
  * @param d - The path data (the `d` attribute).
  * @returns One stroke per subpath, closed where it ends with `Z`.
- * @throws MdmlError with code `value` for a malformed number.
+ * @throws OmaiError with code `value` for a malformed number.
  * @example
  * ```ts
- * import { flattenSvgPath } from 'mdml-engine/graphics'
+ * import { flattenSvgPath } from 'omai-engine/graphics'
  * flattenSvgPath('M0 0H10V10Z').map((s) => [s.points.length, s.closed]) // => [[3, true]]
  * ```
  */
@@ -195,10 +195,10 @@ function ellipse(cx: number, cy: number, rx: number, ry: number): Point2[] {
  *
  * @param elements - The elements, each a tag and its attributes.
  * @returns The strokes, in element order.
- * @throws MdmlError with code `value` for an unsupported element.
+ * @throws OmaiError with code `value` for an unsupported element.
  * @example
  * ```ts
- * import { flattenSvg } from 'mdml-engine/graphics'
+ * import { flattenSvg } from 'omai-engine/graphics'
  * flattenSvg([['circle', { cx: '0', cy: '0', r: '1' }], ['line', { x1: '0', y1: '0', x2: '1', y2: '0' }]]).map((s) => s.closed) // => [true, false]
  * ```
  */
@@ -243,7 +243,7 @@ export function flattenSvg(elements: readonly SvgElement[]): Stroke[] {
         return [{ points, closed: tag === 'polygon' }]
       }
       default:
-        throw new MdmlError('value', `flattenSvg: unsupported element '${tag}'`)
+        throw new OmaiError('value', `flattenSvg: unsupported element '${tag}'`)
     }
   })
 }
@@ -264,7 +264,7 @@ const loop = ({ points, closed }: Stroke): Point2[] =>
  * @returns The closed path (its last point joins back to its first), or an empty path for no strokes.
  * @example
  * ```ts
- * import { stitchStrokes } from 'mdml-engine/graphics'
+ * import { stitchStrokes } from 'omai-engine/graphics'
  * stitchStrokes([{ points: [[0, 0], [1, 0]], closed: false }]) // => [[0, 0], [1, 0]]
  * ```
  */
@@ -296,15 +296,15 @@ export function stitchStrokes(strokes: readonly Stroke[]): Point2[] {
  * @param points - The path.
  * @param n - How many points.
  * @returns `n` points, the first at the path's start.
- * @throws MdmlError with code `value` for `n < 1`.
+ * @throws OmaiError with code `value` for `n < 1`.
  * @example
  * ```ts
- * import { resampleClosed } from 'mdml-engine/graphics'
+ * import { resampleClosed } from 'omai-engine/graphics'
  * resampleClosed([[0, 0], [2, 0], [2, 2], [0, 2]], 4) // => [[0, 0], [2, 0], [2, 2], [0, 2]]
  * ```
  */
 export function resampleClosed(points: readonly Point2[], n: number): Point2[] {
-  if (!(Number.isInteger(n) && n >= 1)) throw new MdmlError('value', 'resampleClosed: n must be a positive integer')
+  if (!(Number.isInteger(n) && n >= 1)) throw new OmaiError('value', 'resampleClosed: n must be a positive integer')
   const p = points.filter((q, i) => i === 0 || dist(points[i - 1] ?? q, q) > 1e-12)
   const first = p[0] ?? [0, 0]
   if (p.length < 2) return Array.from({ length: n }, (): Point2 => [first[0], first[1]])
@@ -336,7 +336,7 @@ export function resampleClosed(points: readonly Point2[], n: number): Point2[] {
  * @returns The normalised points.
  * @example
  * ```ts
- * import { normaliseOutline } from 'mdml-engine/graphics'
+ * import { normaliseOutline } from 'omai-engine/graphics'
  * normaliseOutline([[0, 0], [4, 0]]) // => [[-1, 0], [1, 0]]
  * ```
  */
@@ -359,7 +359,7 @@ export function normaliseOutline(points: readonly Point2[], flipY = false): Poin
  * @returns The outline.
  * @example
  * ```ts
- * import { svgOutline } from 'mdml-engine/graphics'
+ * import { svgOutline } from 'omai-engine/graphics'
  * svgOutline([['rect', { x: '0', y: '0', width: '2', height: '2' }]], 4).length // => 4
  * ```
  */

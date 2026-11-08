@@ -75,8 +75,8 @@ export interface TreeVerbs extends Verbs, FittedFacts {
  * @returns Predictions, probabilities, apply, decision path, structure, text and importances.
  * @example
  * ```ts
- * import { stumpTree, treeVerbs } from 'mdml-engine/trees'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { stumpTree, treeVerbs } from 'omai-engine/trees'
+ * import { toFlat } from 'omai-engine/tensor'
  * toFlat(treeVerbs(stumpTree({ feature: 0, threshold: 0.5, left: 0, right: 1 })).predict([[0], [1]])) // => [0, 1]
  * ```
  */
@@ -261,8 +261,8 @@ function growDefaults(hyper: Partial<DecisionTreeHyper>, criterion: Criterion): 
  * @index estimator CART classification tree with split criteria and pruning.
  * @example
  * ```ts
- * import { decisionTreeClassifier } from 'mdml-engine/trees'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { decisionTreeClassifier } from 'omai-engine/trees'
+ * import { toFlat } from 'omai-engine/tensor'
  * const data = { x: [[0], [1], [2], [3]], y: [0, 0, 1, 1] }
  * const fitted = decisionTreeClassifier().fit(data)
  * fitted.params.threshold // => [1.5, -2, -2]
@@ -285,8 +285,8 @@ export function decisionTreeClassifier(
  * @concept decision-trees
  * @example
  * ```ts
- * import { decisionTreeRegressor } from 'mdml-engine/trees'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { decisionTreeRegressor } from 'omai-engine/trees'
+ * import { toFlat } from 'omai-engine/tensor'
  * const fitted = decisionTreeRegressor({ maxDepth: 1 }).fit({ x: [[0], [1], [2], [3]], y: [0, 0, 5, 5] })
  * toFlat(fitted.predict([[0.5], [2.5]])) // => [0, 5]
  * ```
@@ -306,8 +306,8 @@ export function decisionTreeRegressor(
  * @concept decision-trees
  * @example
  * ```ts
- * import { extraTreeClassifier } from 'mdml-engine/trees'
- * import { key } from 'mdml-engine/random'
+ * import { extraTreeClassifier } from 'omai-engine/trees'
+ * import { key } from 'omai-engine/random'
  * extraTreeClassifier().fit({ x: [[0], [1], [2], [3]], y: [0, 0, 1, 1] }, { key: key(0) }).params.task // => 'classification'
  * ```
  */
@@ -328,8 +328,8 @@ export function extraTreeClassifier(hyper: Partial<DecisionTreeHyper> = {}): Tre
  * @concept decision-trees
  * @example
  * ```ts
- * import { extraTreeRegressor } from 'mdml-engine/trees'
- * import { key } from 'mdml-engine/random'
+ * import { extraTreeRegressor } from 'omai-engine/trees'
+ * import { key } from 'omai-engine/random'
  * extraTreeRegressor().fit({ x: [[0], [1], [2], [3]], y: [0, 0, 5, 5] }, { key: key(0) }).params.task // => 'regression'
  * ```
  */

@@ -6,8 +6,8 @@ import itertools
 import networkx as nx
 import numpy as np
 import scipy
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.graphs import (
+from omai_oracle.fixture import Case, case
+from omai_oracle.graphs import (
     Edge,
     NxGraph,
     build,
@@ -19,7 +19,7 @@ from mdml_oracle.graphs import (
     undirected_family,
     weighted_family,
 )
-from mdml_oracle.helpers import rng
+from omai_oracle.helpers import rng
 from scipy.sparse.csgraph import NegativeCycleError, bellman_ford, dijkstra, floyd_warshall, johnson
 
 REFERENCE: dict[str, str] = {"networkx": nx.__version__, "scipy": scipy.__version__}

@@ -8,7 +8,7 @@
  * per output, a `symbolic` expression that can be printed, differentiated or compiled.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { nelderMead } from '../../optim/index.ts'
 import {
   abs as absExpr,
@@ -51,7 +51,7 @@ const entry = (
  *
  * @example
  * ```ts
- * import { symbolicFunctions } from 'mdml-engine/nn'
+ * import { symbolicFunctions } from 'omai-engine/nn'
  * symbolicFunctions['x^2']?.f(3) // => 9
  * Object.keys(symbolicFunctions).includes('sin') // => true
  * ```
@@ -262,7 +262,7 @@ function fitOne(
  * @concept symbolic-regression
  * @example
  * ```ts
- * import { rankSymbolic } from 'mdml-engine/nn'
+ * import { rankSymbolic } from 'omai-engine/nn'
  * const xs = Array.from({ length: 40 }, (_, i) => -1 + i / 19.5)
  * rankSymbolic(xs, xs.map((x) => 2 * x * x - 1))[0]?.name // => 'x^2'
  * ```
@@ -273,13 +273,13 @@ export function rankSymbolic(
   options: SymbolicOptions = {},
 ): SymbolicFit[] {
   if (xs.length !== ys.length || xs.length < 3)
-    throw new MdmlError('shape', 'rankSymbolic: need matching xs and ys, at least 3')
+    throw new OmaiError('shape', 'rankSymbolic: need matching xs and ys, at least 3')
   const price = options.complexityPenalty ?? 1e-3
   const names = options.library ?? Object.keys(symbolicFunctions)
   const fits: SymbolicFit[] = []
   for (const name of names) {
     const f = symbolicFunctions[name]
-    if (f === undefined) throw new MdmlError('value', `rankSymbolic: unknown function ${name}`)
+    if (f === undefined) throw new OmaiError('value', `rankSymbolic: unknown function ${name}`)
     const fit = fitOne(xs, ys, f)
     if (fit !== undefined) fits.push({ ...fit, score: fit.r2 - price * f.complexity })
   }
@@ -301,8 +301,8 @@ export function rankSymbolic(
  * @concept symbolic-regression
  * @example
  * ```ts
- * import { KAN, suggestSymbolic } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
+ * import { KAN, suggestSymbolic } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
  * const net = new KAN([1, 1], { key: key(0) })
  * const x = Array.from({ length: 20 }, (_, i) => [-1 + i / 9.5])
  * suggestSymbolic(net, net.state, x, 0, 0, 0).length > 0 // => true
@@ -320,7 +320,7 @@ export function suggestSymbolic(
   const t = kan.trace(state.params, x, state.buffers)
   const input = t.inputs[layer]
   const acts = t.activations[layer]
-  if (input === undefined || acts === undefined) throw new MdmlError('value', `suggestSymbolic: no layer ${layer}`)
+  if (input === undefined || acts === undefined) throw new OmaiError('value', `suggestSymbolic: no layer ${layer}`)
   const [n, din, dout] = [acts.shape[0] ?? 0, acts.shape[1] ?? 0, acts.shape[2] ?? 0]
   const h = toFlat(input)
   const a = toFlat(acts)
@@ -360,8 +360,8 @@ export interface FixSymbolicOptions extends SymbolicOptions {
  * @concept symbolic-regression
  * @example
  * ```ts
- * import { KAN, fixSymbolic } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
+ * import { KAN, fixSymbolic } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
  * const net = new KAN([1, 1], { key: key(0) })
  * const x = Array.from({ length: 20 }, (_, i) => [-1 + i / 9.5])
  * fixSymbolic(net, net.state, x, { r2Threshold: 2 }).layers[0]?.edges[0]?.[0] // => undefined
@@ -400,11 +400,11 @@ const edgeValue = (e: SymbolicEdge, v: number): number => {
  * @param net - The symbolic network (every edge fixed).
  * @param x - Inputs `[n, n_in]`.
  * @returns The outputs, one row per input row.
- * @throws MdmlError `value` when an edge is not fixed.
+ * @throws OmaiError `value` when an edge is not fixed.
  * @concept symbolic-regression
  * @example
  * ```ts
- * import { evaluateSymbolic } from 'mdml-engine/nn'
+ * import { evaluateSymbolic } from 'omai-engine/nn'
  * const net = { widths: [1, 1], layers: [{ edges: [[{ name: 'x^2', a: 2, b: 1, c: 0, d: 0, r2: 1 }]], bias: [0] }] }
  * evaluateSymbolic(net, [[3]]) // => [[18]]
  * ```
@@ -419,7 +419,7 @@ export function evaluateSymbolic(net: SymbolicKan, x: TensorLike): number[][] {
       h = layer.edges.map((row, o) =>
         row.reduce<number>((s, e, i) => {
           if (e === undefined)
-            throw new MdmlError('value', `evaluateSymbolic: edge ${i} -> ${o} of layer ${l} is not fixed`)
+            throw new OmaiError('value', `evaluateSymbolic: edge ${i} -> ${o} of layer ${l} is not fixed`)
           return s + edgeValue(e, h[i] as number)
         }, layer.bias[o] as number),
       )
@@ -447,11 +447,11 @@ const roundTo = (v: number, digits: number): number => (v === 0 ? 0 : Number(v.t
  * @param names - The names of the inputs.
  * @param digits - Significant digits of the constants (default 4).
  * @returns The expressions and their text.
- * @throws MdmlError `value` when an edge is not fixed.
+ * @throws OmaiError `value` when an edge is not fixed.
  * @concept symbolic-regression
  * @example
  * ```ts
- * import { symbolicFormula } from 'mdml-engine/nn'
+ * import { symbolicFormula } from 'omai-engine/nn'
  * const net = { widths: [1, 1], layers: [{ edges: [[{ name: 'x^2', a: 2, b: 1, c: 0, d: 0, r2: 1 }]], bias: [0] }] }
  * symbolicFormula(net, ['t']).text // => ['2*t**2']
  * ```
@@ -465,7 +465,7 @@ export function symbolicFormula(net: SymbolicKan, names?: readonly string[], dig
       if ((layer.bias[o] as number) !== 0) terms.push(r(layer.bias[o] as number))
       row.forEach((e, i) => {
         if (e === undefined)
-          throw new MdmlError('value', `symbolicFormula: edge ${i} -> ${o} of layer ${l} is not fixed`)
+          throw new OmaiError('value', `symbolicFormula: edge ${i} -> ${o} of layer ${l} is not fixed`)
         if (e === null || e.name === '0') return
         const f = symbolicFunctions[e.name] as SymbolicFunction
         const inner = addExpr(mulExpr(r(e.b), h[i] as Expr), r(e.c))

@@ -5,8 +5,8 @@
  * no import-time registration.
  */
 
-import { MdmlError } from 'mdml-engine/base'
-import type { Method } from 'mdml-engine/trace'
+import { OmaiError } from 'omai-engine/base'
+import type { Method } from 'omai-engine/trace'
 
 /** A method of any state, configuration and path type, as a registry holds it. */
 // biome-ignore lint/suspicious/noExplicitAny: a registry is generic over methods
@@ -16,7 +16,7 @@ export type AnyMethod = Method<any, any, any>
 export interface MethodRegistry {
   /** The method called `name`, or `undefined`. */
   get(name: string): AnyMethod | undefined
-  /** The method called `name`. @throws MdmlError with code `value` listing the names that exist. */
+  /** The method called `name`. @throws OmaiError with code `value` listing the names that exist. */
   need(name: string): AnyMethod
   /** The names, in the order given. */
   names(): readonly string[]
@@ -27,13 +27,13 @@ export interface MethodRegistry {
  *
  * @param methods - The methods on offer.
  * @returns The registry.
- * @throws MdmlError with code `value` when two methods share a name.
+ * @throws OmaiError with code `value` when two methods share a name.
  * @index function Methods by name for a worker and tape files: `methodRegistry([methodA, methodB])`.
  */
 export function methodRegistry(methods: readonly AnyMethod[]): MethodRegistry {
   const byName = new Map<string, AnyMethod>()
   for (const m of methods) {
-    if (byName.has(m.name)) throw new MdmlError('value', `methodRegistry: two methods are called '${m.name}'`)
+    if (byName.has(m.name)) throw new OmaiError('value', `methodRegistry: two methods are called '${m.name}'`)
     byName.set(m.name, m)
   }
   const get = (name: string): AnyMethod | undefined => byName.get(name)
@@ -42,7 +42,7 @@ export function methodRegistry(methods: readonly AnyMethod[]): MethodRegistry {
     need: (name) => {
       const m = get(name)
       if (m === undefined)
-        throw new MdmlError('value', `no method called '${name}' (known: ${[...byName.keys()].join(', ') || 'none'})`)
+        throw new OmaiError('value', `no method called '${name}' (known: ${[...byName.keys()].join(', ') || 'none'})`)
       return m
     },
     names: () => [...byName.keys()],

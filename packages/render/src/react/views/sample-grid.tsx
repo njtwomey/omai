@@ -2,7 +2,7 @@
  * The React view of samples over training: the grid of the viewed step, with a switch for a filmstrip of earlier steps.
  */
 
-import type { SampleGrid } from 'mdml-engine/exposition'
+import type { SampleGrid } from 'omai-engine/exposition'
 import { type ReactElement, useMemo, useState } from 'react'
 import { sampleGridScene } from '../../views/sample-grid.ts'
 import { SceneFrame } from '../SceneFrame.tsx'

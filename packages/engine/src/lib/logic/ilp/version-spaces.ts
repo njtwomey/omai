@@ -4,7 +4,7 @@
  * boundaries, enumeration of the version space, and classification of new instances by its vote.
  */
 
-import { type Json, MdmlError } from '../../base/index.ts'
+import { type Json, OmaiError } from '../../base/index.ts'
 import {
   type Algorithm,
   type Contract,
@@ -39,7 +39,7 @@ export interface LabelledExample {
  * @returns True when every constraint is met.
  * @example
  * ```ts
- * import { coversInstance } from 'mdml-engine/logic/ilp'
+ * import { coversInstance } from 'omai-engine/logic/ilp'
  * [coversInstance(['sunny', '?'], ['sunny', 'warm']), coversInstance(['sunny', null], ['sunny', 'warm'])] // => [true, false]
  * ```
  */
@@ -55,7 +55,7 @@ export function coversInstance(h: Hypothesis, x: readonly string[]): boolean {
  * @returns True when `h1` is at least as general.
  * @example
  * ```ts
- * import { moreGeneral } from 'mdml-engine/logic/ilp'
+ * import { moreGeneral } from 'omai-engine/logic/ilp'
  * [moreGeneral(['?', 'warm'], ['sunny', 'warm']), moreGeneral(['sunny', 'warm'], ['?', 'warm'])] // => [true, false]
  * ```
  */
@@ -66,7 +66,7 @@ export function moreGeneral(h1: Hypothesis, h2: Hypothesis): boolean {
 
 function checkExamples(examples: readonly LabelledExample[], n: number, where: string): void {
   for (const e of examples) {
-    if (e.values.length !== n) throw new MdmlError('value', `${where}: every example needs ${n} attribute values`)
+    if (e.values.length !== n) throw new OmaiError('value', `${where}: every example needs ${n} attribute values`)
   }
 }
 
@@ -100,12 +100,12 @@ export interface FindSState {
  *
  * @param examples - The training examples.
  * @returns The algorithm.
- * @throws MdmlError with code `value` for examples of different lengths.
+ * @throws OmaiError with code `value` for examples of different lengths.
  * @concept version-spaces
  * @example
  * ```ts
- * import { findSAlgorithm } from 'mdml-engine/logic/ilp'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { findSAlgorithm } from 'omai-engine/logic/ilp'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const examples = [
  *   { values: ['sunny', 'warm'], positive: true },
  *   { values: ['sunny', 'cold'], positive: true },
@@ -146,11 +146,11 @@ export function findSAlgorithm(examples: readonly LabelledExample[]): Algorithm<
  *
  * @param examples - The training examples.
  * @returns The hypothesis (all `null` when there are no positives).
- * @throws MdmlError with code `value` for examples of different lengths.
+ * @throws OmaiError with code `value` for examples of different lengths.
  * @concept version-spaces
  * @example
  * ```ts
- * import { findS } from 'mdml-engine/logic/ilp'
+ * import { findS } from 'omai-engine/logic/ilp'
  * const examples = [
  *   { values: ['sunny', 'warm', 'normal'], positive: true },
  *   { values: ['sunny', 'warm', 'high'], positive: true },
@@ -193,11 +193,11 @@ function dedupe(hs: readonly Hypothesis[]): Hypothesis[] {
  * @param examples - The training examples.
  * @param domains - The values of each attribute.
  * @returns The algorithm.
- * @throws MdmlError with code `value` when examples and domains disagree in length.
+ * @throws OmaiError with code `value` when examples and domains disagree in length.
  * @concept version-spaces
  * @example
  * ```ts
- * import { candidateEliminationAlgorithm } from 'mdml-engine/logic/ilp'
+ * import { candidateEliminationAlgorithm } from 'omai-engine/logic/ilp'
  * candidateEliminationAlgorithm([], [['a', 'b']]).name // => 'candidate-elimination'
  * ```
  */
@@ -281,11 +281,11 @@ export interface VersionSpace {
  * @param examples - The training examples.
  * @param domains - The values of each attribute.
  * @returns The specific and general boundaries.
- * @throws MdmlError with code `value` when examples and domains disagree in length.
+ * @throws OmaiError with code `value` when examples and domains disagree in length.
  * @concept version-spaces
  * @example
  * ```ts
- * import { candidateElimination } from 'mdml-engine/logic/ilp'
+ * import { candidateElimination } from 'omai-engine/logic/ilp'
  * // Mitchell's EnjoySport (table 2.1).
  * const domains = [['sunny', 'cloudy', 'rainy'], ['warm', 'cold'], ['normal', 'high'], ['strong', 'weak'], ['warm', 'cool'], ['same', 'change']]
  * const vs = candidateElimination([
@@ -314,7 +314,7 @@ export function candidateElimination(
  * @returns The hypotheses.
  * @example
  * ```ts
- * import { versionSpaceMembers } from 'mdml-engine/logic/ilp'
+ * import { versionSpaceMembers } from 'omai-engine/logic/ilp'
  * versionSpaceMembers({ specific: [['a', 'x']], general: [['?', '?']], domains: [['a', 'b'], ['x', 'y']], collapsed: false }).length // => 4
  * ```
  */
@@ -352,7 +352,7 @@ export interface VersionSpaceVote {
  * @returns The label and the vote counts.
  * @example
  * ```ts
- * import { classifyByVersionSpace } from 'mdml-engine/logic/ilp'
+ * import { classifyByVersionSpace } from 'omai-engine/logic/ilp'
  * const vs = { specific: [['a', 'x']], general: [['a', '?'], ['?', 'x']], domains: [['a', 'b'], ['x', 'y']], collapsed: false }
  * [classifyByVersionSpace(vs, ['a', 'x']).label, classifyByVersionSpace(vs, ['b', 'y']).label, classifyByVersionSpace(vs, ['a', 'y'])] // => ['positive', 'negative', { label: 'unknown', positive: 1, negative: 2 }]
  * ```

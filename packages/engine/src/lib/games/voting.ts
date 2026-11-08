@@ -5,7 +5,7 @@
  * Condorcet paradox profiles as examples.
  */
 
-import { MdmlError, maxOf, minOf } from '../base/index.ts'
+import { maxOf, minOf, OmaiError } from '../base/index.ts'
 
 /**
  * A preference profile: the candidates and a list of ballots, each a strict ranking of candidate indices (best
@@ -26,11 +26,11 @@ export interface Profile {
  * @param ballots - Rankings, best first (names or indices; truncated rankings allowed).
  * @param counts - How many voters cast each ballot (default 1 each).
  * @returns The profile.
- * @throws MdmlError with code `value` for unknown or repeated candidates, or `shape` for mismatched counts.
+ * @throws OmaiError with code `value` for unknown or repeated candidates, or `shape` for mismatched counts.
  * @concept social-choice
  * @example
  * ```ts
- * import { profile } from 'mdml-engine/games'
+ * import { profile } from 'omai-engine/games'
  * profile(['a', 'b'], [['b', 'a'], [0, 1]]).ballots // => [[1, 0], [0, 1]]
  * ```
  */
@@ -42,16 +42,16 @@ export function profile(
   const index = (c: number | string): number => {
     const i = typeof c === 'number' ? c : candidates.indexOf(c)
     if (!Number.isInteger(i) || i < 0 || i >= candidates.length)
-      throw new MdmlError('value', `profile: unknown candidate '${c}'`)
+      throw new OmaiError('value', `profile: unknown candidate '${c}'`)
     return i
   }
   const parsed = ballots.map((b) => {
     const r = b.map(index)
-    if (new Set(r).size !== r.length) throw new MdmlError('value', 'profile: a ballot ranks a candidate twice')
+    if (new Set(r).size !== r.length) throw new OmaiError('value', 'profile: a ballot ranks a candidate twice')
     return r
   })
   const n = counts ?? parsed.map(() => 1)
-  if (n.length !== parsed.length) throw new MdmlError('shape', 'profile: one count per ballot')
+  if (n.length !== parsed.length) throw new OmaiError('shape', 'profile: one count per ballot')
   return { candidates: [...candidates], ballots: parsed, counts: [...n] }
 }
 
@@ -74,7 +74,7 @@ function winnersOf(scores: readonly number[]): number[] {
  * @concept social-choice
  * @example
  * ```ts
- * import { plurality, tennesseeProfile } from 'mdml-engine/games'
+ * import { plurality, tennesseeProfile } from 'omai-engine/games'
  * plurality(tennesseeProfile()).winners // => [0]
  * ```
  */
@@ -96,7 +96,7 @@ export function plurality(p: Profile): ScoreResult {
  * @concept social-choice
  * @example
  * ```ts
- * import { borda, tennesseeProfile } from 'mdml-engine/games'
+ * import { borda, tennesseeProfile } from 'omai-engine/games'
  * borda(tennesseeProfile()).winners // => [1]
  * ```
  */
@@ -116,7 +116,7 @@ export function borda(p: Profile): ScoreResult {
  * @concept condorcet
  * @example
  * ```ts
- * import { pairwiseMatrix, profile } from 'mdml-engine/games'
+ * import { pairwiseMatrix, profile } from 'omai-engine/games'
  * pairwiseMatrix(profile(['a', 'b'], [['a', 'b'], ['b', 'a'], ['a']])) // => [[0, 2], [1, 0]]
  * ```
  */
@@ -142,7 +142,7 @@ export function pairwiseMatrix(p: Profile): number[][] {
  * @concept condorcet
  * @example
  * ```ts
- * import { condorcetParadoxProfile, condorcetWinner, tennesseeProfile } from 'mdml-engine/games'
+ * import { condorcetParadoxProfile, condorcetWinner, tennesseeProfile } from 'omai-engine/games'
  * [condorcetWinner(tennesseeProfile()), condorcetWinner(condorcetParadoxProfile())] // => [1, null]
  * ```
  */
@@ -161,7 +161,7 @@ export function condorcetWinner(p: Profile): number | null {
  * @concept condorcet
  * @example
  * ```ts
- * import { condorcetLoser, tennesseeProfile } from 'mdml-engine/games'
+ * import { condorcetLoser, tennesseeProfile } from 'omai-engine/games'
  * condorcetLoser(tennesseeProfile()) // => 0
  * ```
  */
@@ -180,7 +180,7 @@ export function condorcetLoser(p: Profile): number | null {
  * @concept condorcet
  * @example
  * ```ts
- * import { copeland, tennesseeProfile } from 'mdml-engine/games'
+ * import { copeland, tennesseeProfile } from 'omai-engine/games'
  * copeland(tennesseeProfile()).scores // => [0, 3, 2, 1]
  * ```
  */
@@ -207,7 +207,7 @@ export function copeland(p: Profile): ScoreResult {
  * @concept condorcet
  * @example
  * ```ts
- * import { condorcetParadoxProfile, smithSet } from 'mdml-engine/games'
+ * import { condorcetParadoxProfile, smithSet } from 'omai-engine/games'
  * smithSet(condorcetParadoxProfile()) // => [0, 1, 2]
  * ```
  */
@@ -243,13 +243,13 @@ export interface RunoffRound {
  * @concept social-choice
  * @example
  * ```ts
- * import { instantRunoff, tennesseeProfile } from 'mdml-engine/games'
+ * import { instantRunoff, tennesseeProfile } from 'omai-engine/games'
  * instantRunoff(tennesseeProfile()).winner // => 3
  * ```
  */
 export function instantRunoff(p: Profile): { winner: number; rounds: RunoffRound[] } {
   const m = p.candidates.length
-  if (m === 0) throw new MdmlError('value', 'instantRunoff: no candidates')
+  if (m === 0) throw new OmaiError('value', 'instantRunoff: no candidates')
   const alive = new Array<boolean>(m).fill(true)
   const rounds: RunoffRound[] = []
   for (let r = 0; r < m; r++) {
@@ -283,7 +283,7 @@ export function instantRunoff(p: Profile): { winner: number; rounds: RunoffRound
  * @returns The smaller profile.
  * @example
  * ```ts
- * import { tennesseeProfile, withoutCandidate } from 'mdml-engine/games'
+ * import { tennesseeProfile, withoutCandidate } from 'omai-engine/games'
  * withoutCandidate(tennesseeProfile(), 0).candidates // => ['Nashville', 'Chattanooga', 'Knoxville']
  * ```
  */
@@ -336,7 +336,7 @@ export interface ParadoxReport {
  * @concept social-choice
  * @example
  * ```ts
- * import { socialChoiceParadoxes, tennesseeProfile } from 'mdml-engine/games'
+ * import { socialChoiceParadoxes, tennesseeProfile } from 'omai-engine/games'
  * socialChoiceParadoxes(tennesseeProfile()).condorcetWinnerLoses // => ['plurality', 'instantRunoff']
  * ```
  */
@@ -375,7 +375,7 @@ export function socialChoiceParadoxes(p: Profile): ParadoxReport {
  * @concept social-choice
  * @example
  * ```ts
- * import { tennesseeProfile } from 'mdml-engine/games'
+ * import { tennesseeProfile } from 'omai-engine/games'
  * tennesseeProfile().counts // => [42, 26, 15, 17]
  * ```
  */
@@ -400,7 +400,7 @@ export function tennesseeProfile(): Profile {
  * @concept condorcet
  * @example
  * ```ts
- * import { condorcetParadoxProfile, socialChoiceParadoxes } from 'mdml-engine/games'
+ * import { condorcetParadoxProfile, socialChoiceParadoxes } from 'omai-engine/games'
  * socialChoiceParadoxes(condorcetParadoxProfile()).majorityCycle // => true
  * ```
  */

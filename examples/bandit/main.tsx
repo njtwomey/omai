@@ -4,12 +4,12 @@
  * holds the arm pulled and the regret so far at every pull, and the figure is drawn from them: the regret curves, and
  * how often each strategy pulled each arm.
  */
-import { banditAlgorithm, epsilonGreedyBandit, runBandit, thompsonBernoulli, ucb1 } from 'mdml-engine/agents'
-import { bernoulliBandit } from 'mdml-engine/environments'
-import { key } from 'mdml-engine/random'
-import { metricSeries, type Run, recorder, runAlgorithm, tracePolicy } from 'mdml-engine/trace'
-import { barChart } from 'mdml-render/charts'
-import { runsChart } from 'mdml-render/trace'
+import { banditAlgorithm, epsilonGreedyBandit, runBandit, thompsonBernoulli, ucb1 } from 'omai-engine/agents'
+import { bernoulliBandit } from 'omai-engine/environments'
+import { key } from 'omai-engine/random'
+import { metricSeries, type Run, recorder, runAlgorithm, tracePolicy } from 'omai-engine/trace'
+import { barChart } from 'omai-render/charts'
+import { runsChart } from 'omai-render/trace'
 import type { ExampleModule, Outcome } from '../_shared/contract.ts'
 import { Row } from '../_shared/figure.tsx'
 

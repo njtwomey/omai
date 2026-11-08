@@ -1,6 +1,6 @@
 import * as echarts from 'echarts'
-import { structure } from 'mdml-engine/scene'
-import type { Run, TraceEvent } from 'mdml-engine/trace'
+import { structure } from 'omai-engine/scene'
+import type { Run, TraceEvent } from 'omai-engine/trace'
 import { describe, expect, it } from 'vitest'
 import { cartesian } from '../charts/plot.ts'
 import { cumulativeRegret, episodeChart, episodeCurves, rolling } from './episodes.ts'
@@ -42,7 +42,7 @@ const events: TraceEvent[] = [
   { type: 'end', runId: 'c', status: 'completed', steps: 3, summary: { residual: 0.01 } },
   { type: 'end', runId: 'r', status: 'converged', steps: 20, summary: { loss: 0.05 } },
 ]
-const run: Run = { schema: 'mdml.run/1', events }
+const run: Run = { schema: 'omai.run/1', events }
 
 // biome-ignore lint/suspicious/noExplicitAny: tests inspect untyped ECharts option trees
 type Opt = any

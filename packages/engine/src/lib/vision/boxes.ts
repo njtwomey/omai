@@ -8,7 +8,7 @@
  * @index function Detection boxes: format conversions, IoU and non-maximum suppression.
  */
 
-import { MdmlError, maxOf, roundHalfEven } from '../base/index.ts'
+import { maxOf, OmaiError, roundHalfEven } from '../base/index.ts'
 import { boxIou } from '../metrics/index.ts'
 import type { TensorLike } from '../tensor/index.ts'
 import { type Algorithm, runAlgorithm, stateFromJson, stateToJson } from '../trace/index.ts'
@@ -30,11 +30,11 @@ export type BoxesLike = TensorLike | readonly (readonly number[])[]
  * @param boxes - The boxes.
  * @param name - The caller's name for error messages.
  * @returns The rows.
- * @throws MdmlError with code `shape` when the boxes are not `[n, 4]`.
+ * @throws OmaiError with code `shape` when the boxes are not `[n, 4]`.
  * @concept bounding-box
  * @example
  * ```ts
- * import { boxesOf } from 'mdml-engine/vision'
+ * import { boxesOf } from 'omai-engine/vision'
  * boxesOf([1, 2, 3, 4]) // => [[1, 2, 3, 4]]
  * ```
  */
@@ -43,7 +43,7 @@ export function boxesOf(boxes: BoxesLike, name = 'boxes'): BoxCoords[] {
   const { data, shape } = valuesOf(boxes as TensorLike)
   const n = shape.length === 1 ? (data.length === 0 ? 0 : 1) : (shape[0] ?? 0)
   if (data.length !== 4 * n || (shape.length === 2 && shape[1] !== 4))
-    throw new MdmlError('shape', `${name}: boxes are [n, 4]`)
+    throw new OmaiError('shape', `${name}: boxes are [n, 4]`)
   return Array.from({ length: n }, (_, i) => [
     data[4 * i] ?? 0,
     data[4 * i + 1] ?? 0,
@@ -76,13 +76,13 @@ const fromXyxy = (b: BoxCoords, to: BoxFormat): BoxCoords => {
  * @concept bounding-box
  * @example
  * ```ts
- * import { boxConvert } from 'mdml-engine/vision'
+ * import { boxConvert } from 'omai-engine/vision'
  * boxConvert([[10, 20, 30, 60]], 'xyxy', 'cxcywh') // => [[20, 40, 20, 40]]
  * ```
  */
 export function boxConvert(boxes: BoxesLike, from: BoxFormat, to: BoxFormat): BoxCoords[] {
   for (const f of [from, to])
-    if (f !== 'xyxy' && f !== 'xywh' && f !== 'cxcywh') throw new MdmlError('value', `boxConvert: unknown format ${f}`)
+    if (f !== 'xyxy' && f !== 'xywh' && f !== 'cxcywh') throw new OmaiError('value', `boxConvert: unknown format ${f}`)
   return boxesOf(boxes, 'boxConvert').map((b) => fromXyxy(toXyxy(b, from), to))
 }
 
@@ -94,7 +94,7 @@ export function boxConvert(boxes: BoxesLike, from: BoxFormat, to: BoxFormat): Bo
  * @concept bounding-box
  * @example
  * ```ts
- * import { boxArea } from 'mdml-engine/vision'
+ * import { boxArea } from 'omai-engine/vision'
  * boxArea([[0, 0, 2, 3], [1, 1, 2, 2]]) // => [6, 1]
  * ```
  */
@@ -111,7 +111,7 @@ export function boxArea(boxes: BoxesLike): number[] {
  * @concept bounding-box
  * @example
  * ```ts
- * import { clipBoxes } from 'mdml-engine/vision'
+ * import { clipBoxes } from 'omai-engine/vision'
  * clipBoxes([[-5, 2, 30, 12]], [10, 20]) // => [[0, 2, 20, 10]]
  * ```
  */
@@ -132,7 +132,7 @@ export function clipBoxes(boxes: BoxesLike, size: readonly [number, number]): Bo
  * @concept bounding-box
  * @example
  * ```ts
- * import { scaleBoxes } from 'mdml-engine/vision'
+ * import { scaleBoxes } from 'omai-engine/vision'
  * scaleBoxes([[1, 2, 3, 4]], 2, 0.5) // => [[2, 1, 6, 2]]
  * ```
  */
@@ -149,7 +149,7 @@ export function scaleBoxes(boxes: BoxesLike, sx: number, sy: number = sx): BoxCo
  * @concept bounding-box
  * @example
  * ```ts
- * import { removeSmallBoxes } from 'mdml-engine/vision'
+ * import { removeSmallBoxes } from 'omai-engine/vision'
  * removeSmallBoxes([[0, 0, 1, 5], [0, 0, 4, 4]], 2) // => [1]
  * ```
  */
@@ -174,14 +174,14 @@ const byScore = (scores: readonly number[]): number[] =>
  * @concept non-maximum-suppression
  * @example
  * ```ts
- * import { nms } from 'mdml-engine/vision'
+ * import { nms } from 'omai-engine/vision'
  * nms([[0, 0, 10, 10], [1, 1, 11, 11], [20, 20, 30, 30]], [0.9, 0.8, 0.7], 0.5) // => [0, 2]
  * ```
  */
 export function nms(boxes: BoxesLike, scores: TensorLike, iouThreshold: number): number[] {
   const b = boxesOf(boxes, 'nms')
   const s = Array.from(valuesOf(scores).data)
-  if (s.length !== b.length) throw new MdmlError('shape', 'nms: one score per box')
+  if (s.length !== b.length) throw new OmaiError('shape', 'nms: one score per box')
   if (b.length === 0) return []
   const iou = boxIou(b, b).data
   const removed = new Uint8Array(b.length)
@@ -206,7 +206,7 @@ export function nms(boxes: BoxesLike, scores: TensorLike, iouThreshold: number):
  * @concept non-maximum-suppression
  * @example
  * ```ts
- * import { batchedNms } from 'mdml-engine/vision'
+ * import { batchedNms } from 'omai-engine/vision'
  * batchedNms([[0, 0, 10, 10], [1, 1, 11, 11]], [0.9, 0.8], [0, 1], 0.5) // => [0, 1]
  * ```
  */
@@ -219,7 +219,7 @@ export function batchedNms(
   const b = boxesOf(boxes, 'batchedNms')
   const s = Array.from(valuesOf(scores).data)
   if (classes.length !== b.length || s.length !== b.length)
-    throw new MdmlError('shape', 'batchedNms: one score and class per box')
+    throw new OmaiError('shape', 'batchedNms: one score and class per box')
   const kept = new Set<number>()
   for (const c of new Set(classes)) {
     const idx = classes.flatMap((k, i) => (k === c ? [i] : []))
@@ -272,12 +272,12 @@ export interface SoftNmsState {
  * @param scores - Scores `[n]`.
  * @param options - Method, sigma, thresholds and topK.
  * @returns The algorithm.
- * @throws MdmlError with code `shape` for a number of scores other than the boxes.
+ * @throws OmaiError with code `shape` for a number of scores other than the boxes.
  * @concept non-maximum-suppression
  * @example
  * ```ts
- * import { softNmsAlgorithm } from 'mdml-engine/vision'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { softNmsAlgorithm } from 'omai-engine/vision'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const run = runAlgorithm(softNmsAlgorithm([[0, 0, 10, 10], [0, 0, 10, 5]], [0.9, 0.8], { method: 'linear' }), { maxSteps: 5 })
  * run.state.indices // => [0, 1]
  * ```
@@ -289,7 +289,7 @@ export function softNmsAlgorithm(
 ): Algorithm<SoftNmsState, GreedyPath> {
   const b = boxesOf(boxes, 'softNms')
   const s0 = Array.from(valuesOf(scores).data, f32)
-  if (s0.length !== b.length) throw new MdmlError('shape', 'softNms: one score per box')
+  if (s0.length !== b.length) throw new OmaiError('shape', 'softNms: one score per box')
   const method = options.method ?? 'gaussian'
   const sigma = f32(options.sigma ?? 0.5)
   const thr = f32(options.iouThreshold ?? 0.3)
@@ -365,7 +365,7 @@ const order0 = (st: SoftNmsState): number => st.order.length
  * @concept non-maximum-suppression
  * @example
  * ```ts
- * import { softNms } from 'mdml-engine/vision'
+ * import { softNms } from 'omai-engine/vision'
  * softNms([[0, 0, 10, 10], [0, 0, 10, 5]], [0.9, 0.8], { method: 'linear' }) // => { indices: [0, 1], scores: [0.8999999761581421, 0.4000000059604645] }
  * ```
  */
@@ -390,7 +390,7 @@ export function softNms(
  * @concept anchor-boxes
  * @example
  * ```ts
- * import { generateAnchors } from 'mdml-engine/vision'
+ * import { generateAnchors } from 'omai-engine/vision'
  * generateAnchors([32], [0.5, 1, 2]) // => [[-23, -11, 23, 11], [-16, -16, 16, 16], [-11, -23, 11, 23]]
  * ```
  */
@@ -419,7 +419,7 @@ export function generateAnchors(sizes: readonly number[], aspectRatios: readonly
  * @concept anchor-boxes
  * @example
  * ```ts
- * import { gridAnchors } from 'mdml-engine/vision'
+ * import { gridAnchors } from 'omai-engine/vision'
  * gridAnchors([[-1, -1, 1, 1]], [1, 2], [8, 8]) // => [[-1, -1, 1, 1], [7, -1, 9, 1]]
  * ```
  */
@@ -460,14 +460,14 @@ export interface BoxCoderOptions {
  * @concept box-encoding
  * @example
  * ```ts
- * import { encodeBoxes } from 'mdml-engine/vision'
+ * import { encodeBoxes } from 'omai-engine/vision'
  * encodeBoxes([[1, 0, 11, 20]], [[0, 0, 10, 10]]) // => [[0.1, 0.5, 0, 0.6931471805599453]]
  * ```
  */
 export function encodeBoxes(targets: BoxesLike, references: BoxesLike, options: BoxCoderOptions = {}): BoxCoords[] {
   const t = boxesOf(targets, 'encodeBoxes')
   const r = boxesOf(references, 'encodeBoxes')
-  if (t.length !== r.length) throw new MdmlError('shape', 'encodeBoxes: one reference per target')
+  if (t.length !== r.length) throw new OmaiError('shape', 'encodeBoxes: one reference per target')
   const [wx, wy, ww, wh] = options.weights ?? [1, 1, 1, 1]
   return t.map((g, i) => {
     const e = r[i] as BoxCoords
@@ -494,14 +494,14 @@ export function encodeBoxes(targets: BoxesLike, references: BoxesLike, options: 
  * @concept box-encoding
  * @example
  * ```ts
- * import { decodeBoxes } from 'mdml-engine/vision'
+ * import { decodeBoxes } from 'omai-engine/vision'
  * decodeBoxes([[0.1, 0.5, 0, 0.6931471805599453]], [[0, 0, 10, 10]]).map((b) => b.map((v) => Math.round(v * 1e9) / 1e9)) // => [[1, 0, 11, 20]]
  * ```
  */
 export function decodeBoxes(codes: BoxesLike, references: BoxesLike, options: BoxCoderOptions = {}): BoxCoords[] {
   const d = boxesOf(codes, 'decodeBoxes')
   const r = boxesOf(references, 'decodeBoxes')
-  if (d.length !== r.length) throw new MdmlError('shape', 'decodeBoxes: one reference per code')
+  if (d.length !== r.length) throw new OmaiError('shape', 'decodeBoxes: one reference per code')
   const [wx, wy, ww, wh] = options.weights ?? [1, 1, 1, 1]
   const clip = options.clip ?? Math.log(1000 / 16)
   return d.map((c, i) => {
@@ -535,7 +535,7 @@ export const BETWEEN_THRESHOLDS = -2
  * @concept anchor-matching
  * @example
  * ```ts
- * import { matchAnchors } from 'mdml-engine/vision'
+ * import { matchAnchors } from 'omai-engine/vision'
  * matchAnchors([[0, 0, 10, 10]], [[0, 0, 10, 10], [5, 5, 15, 15], [40, 40, 50, 50]]) // => [0, -1, -1]
  * ```
  */
@@ -546,7 +546,7 @@ export function matchAnchors(
 ): number[] {
   const t = boxesOf(targets, 'matchAnchors')
   const a = boxesOf(anchors, 'matchAnchors')
-  if (t.length === 0 || a.length === 0) throw new MdmlError('value', 'matchAnchors: no targets or no anchors')
+  if (t.length === 0 || a.length === 0) throw new OmaiError('value', 'matchAnchors: no targets or no anchors')
   const high = options.highThreshold ?? 0.7
   const low = options.lowThreshold ?? 0.3
   const q = boxIou(t, a).data

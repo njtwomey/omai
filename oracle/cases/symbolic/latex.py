@@ -2,8 +2,8 @@
 undefined functions, Greek and subscripted symbols, relations, piecewise, integrals, derivatives, big-O, matrices."""
 
 import sympy as sp
-from mdml_oracle.fixture import Case
-from mdml_oracle.symbolic import expr_case, parse, parse_any
+from omai_oracle.fixture import Case
+from omai_oracle.symbolic import expr_case, parse, parse_any
 
 REFERENCE: dict[str, str] = {"sympy": sp.__version__}
 

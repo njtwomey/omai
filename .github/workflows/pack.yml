@@ -1,4 +1,4 @@
-# Tarballs: builds mdml-engine, mdml-render and mdml-meta and packs each as the npm tarball a release would publish.
+# Tarballs: builds omai-engine, omai-render and omai-meta and packs each as the npm tarball a release would publish.
 # A separate build from ci.yml, run after ci succeeds on main (and on demand, and for release tags), so a red ci never
 # yields tarballs. The tarballs are uploaded as a workflow artifact and their sizes are written to the job summary.
 # A `v<version>` tag (made by `make release`) also publishes one GitHub release for the version, with the changelog entry

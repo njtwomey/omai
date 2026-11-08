@@ -1,5 +1,5 @@
 {
-  "schema": "mdml.tape/1",
+  "schema": "omai.tape/1",
   "method": "decision-tree-classifier",
   "seed": 0,
   "title": "A decision tree and the regions it cuts",
@@ -16,14 +16,14 @@
       "head": 9,
       "status": "converged",
       "run": {
-        "schema": "mdml.run/1",
+        "schema": "omai.run/1",
         "events": [
           {
             "type": "run",
             "runId": "decision-tree-classifier:0",
             "name": "decision-tree-classifier",
             "seed": 0,
-            "version": "0.1.2",
+            "version": "0.1.3",
             "config": {
               "criterion": "gini",
               "growth": "depth",

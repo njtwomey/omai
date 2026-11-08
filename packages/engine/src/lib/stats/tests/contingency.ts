@@ -4,7 +4,7 @@
  * with their intervals.
  */
 
-import { type Estimate, logSumExpOf, MdmlError, type TestResult } from '../../base/index.ts'
+import { type Estimate, logSumExpOf, OmaiError, type TestResult } from '../../base/index.ts'
 import { hypergeometric } from '../../dists/index.ts'
 import { lgamma } from '../../numerics/special/index.ts'
 import { arange, type Tensor, type TensorLike, toFlat } from '../../tensor/index.ts'
@@ -24,7 +24,7 @@ import {
 
 function table(name: string, x: TensorLike): { r: number; c: number; data: Float64Array } {
   const t = rowsOf(name, x)
-  for (const v of t.data) if (!(v >= 0)) throw new MdmlError('value', `${name}: counts must be non-negative`)
+  for (const v of t.data) if (!(v >= 0)) throw new OmaiError('value', `${name}: counts must be non-negative`)
   return { r: t.rows, c: t.cols, data: t.data }
 }
 
@@ -52,7 +52,7 @@ function expected(r: number, c: number, data: Float64Array): Float64Array {
  * @returns The expected table.
  * @example
  * ```ts
- * import { expectedFrequencies } from 'mdml-engine/stats/tests'
+ * import { expectedFrequencies } from 'omai-engine/stats/tests'
  * expectedFrequencies([[10, 10], [20, 20]]) // => [[10, 10], [20, 20]]
  * ```
  */
@@ -80,7 +80,7 @@ export interface ContingencyOptions {
  * @index function Chi-square test of independence on a contingency table.
  * @example
  * ```ts
- * import { chi2Contingency } from 'mdml-engine/stats/tests'
+ * import { chi2Contingency } from 'omai-engine/stats/tests'
  * chi2Contingency([[10, 20], [20, 10]], { correction: false }).statistic // => 6.666667
  * ```
  */
@@ -120,7 +120,7 @@ export function chi2Contingency(x: TensorLike, options: ContingencyOptions = {})
  * @returns The G statistic and its p-value.
  * @example
  * ```ts
- * import { gTest } from 'mdml-engine/stats/tests'
+ * import { gTest } from 'omai-engine/stats/tests'
  * gTest([[10, 20], [20, 10]]).statistic // => 6.795961
  * ```
  */
@@ -171,7 +171,7 @@ export interface FisherOptions extends ResamplingRunOptions {
  * @returns The odds ratio (2 x 2) or the table probability, and the p-value.
  * @example
  * ```ts
- * import { fisherExact } from 'mdml-engine/stats/tests'
+ * import { fisherExact } from 'omai-engine/stats/tests'
  * fisherExact([[8, 2], [1, 5]]).pValue // => 0.034965
  * ```
  */
@@ -263,7 +263,7 @@ export function fisherExact(x: TensorLike, options: FisherOptions = {}): TestRes
  * @returns The statistic and p-value.
  * @example
  * ```ts
- * import { mcnemar } from 'mdml-engine/stats/tests'
+ * import { mcnemar } from 'omai-engine/stats/tests'
  * mcnemar([[10, 5], [15, 20]], { exact: false }).statistic // => 4.05
  * ```
  */
@@ -272,7 +272,7 @@ export function mcnemar(
   options: { readonly exact?: boolean; readonly correction?: boolean } = {},
 ): TestResult {
   const { r, c, data } = table('mcnemar', x)
-  if (r !== 2 || c !== 2) throw new MdmlError('shape', 'mcnemar: needs a 2 x 2 table')
+  if (r !== 2 || c !== 2) throw new OmaiError('shape', 'mcnemar: needs a 2 x 2 table')
   const n1 = data[1] ?? 0
   const n2 = data[2] ?? 0
   if (options.exact !== false) {
@@ -293,7 +293,7 @@ export function mcnemar(
  * @returns Q and its p-value (df k - 1).
  * @example
  * ```ts
- * import { cochranQ } from 'mdml-engine/stats/tests'
+ * import { cochranQ } from 'omai-engine/stats/tests'
  * cochranQ([[1, 1, 0], [1, 0, 0], [1, 1, 1], [1, 0, 0], [0, 1, 0]]).statistic // => 3.5
  * ```
  */
@@ -331,7 +331,7 @@ export function cochranQ(x: TensorLike): TestResult {
  * @returns The odds ratio with its interval.
  * @example
  * ```ts
- * import { oddsRatio } from 'mdml-engine/stats/tests'
+ * import { oddsRatio } from 'omai-engine/stats/tests'
  * oddsRatio([[10, 5], [5, 10]], { kind: 'sample' }).value // => 4
  * ```
  */
@@ -341,7 +341,7 @@ export function oddsRatio(
 ): Estimate {
   const { alternative, level } = resolveTestOptions(options)
   const { r, c, data } = table('oddsRatio', x)
-  if (r !== 2 || c !== 2) throw new MdmlError('shape', 'oddsRatio: needs a 2 x 2 table')
+  if (r !== 2 || c !== 2) throw new OmaiError('shape', 'oddsRatio: needs a 2 x 2 table')
   const [a = 0, b = 0, cc = 0, d = 0] = data
   if (options.kind === 'sample') {
     const or = (a * d) / (b * cc)
@@ -402,7 +402,7 @@ export function oddsRatio(
  * @returns The relative risk with its interval.
  * @example
  * ```ts
- * import { relativeRisk } from 'mdml-engine/stats/tests'
+ * import { relativeRisk } from 'omai-engine/stats/tests'
  * relativeRisk(20, 100, 10, 100).value // => 2
  * ```
  */

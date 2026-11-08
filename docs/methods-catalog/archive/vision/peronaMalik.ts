@@ -44,7 +44,7 @@ function conductionOf(image: ArrayLike<number>, size: number, kappa: number, qua
  *
  * @example
  * ```ts
- * import type { PeronaMalikPath } from 'mdml-engine/methods/vision'
+ * import type { PeronaMalikPath } from 'omai-engine/methods/vision'
  * const path: PeronaMalikPath = 'quality/psnr'
  * path // => 'quality/psnr'
  * ```

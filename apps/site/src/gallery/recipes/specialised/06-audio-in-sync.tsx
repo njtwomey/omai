@@ -1,7 +1,7 @@
-import { audioClip } from 'mdml-engine/exposition'
-import { rfft } from 'mdml-engine/numerics/fourier'
-import { choice, type DictSpace, defaults, dict } from 'mdml-engine/space'
-import { toArray } from 'mdml-engine/tensor'
+import { audioClip } from 'omai-engine/exposition'
+import { rfft } from 'omai-engine/numerics/fourier'
+import { choice, type DictSpace, defaults, dict } from 'omai-engine/space'
+import { toArray } from 'omai-engine/tensor'
 import {
   type Config,
   defineMethod,
@@ -11,7 +11,7 @@ import {
   scalar,
   stateFromJson,
   stateToJson,
-} from 'mdml-engine/trace'
+} from 'omai-engine/trace'
 import {
   ControlPanel,
   type Panel,
@@ -20,7 +20,7 @@ import {
   SpaceControls,
   useSession,
   useSessionPreferences,
-} from 'mdml-render/react'
+} from 'omai-render/react'
 import { type ReactNode, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 

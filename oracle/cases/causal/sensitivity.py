@@ -4,8 +4,8 @@ Gamma / (1 + Gamma); the binary bounds are scipy's exact binomial tails at that 
 
 import numpy as np
 import scipy
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import rng
 from scipy.stats import binom, norm, rankdata, wilcoxon
 
 REFERENCE: dict[str, str] = {"scipy": scipy.__version__}

@@ -1,6 +1,6 @@
 // Relational parameter checks that a one-parameter constraint cannot say (low < high, mode inside the range, a symmetric
 // covariance), and the one place that reads a possibly traced parameter as plain numbers.
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import {
   abs,
   asTensor,
@@ -37,11 +37,11 @@ function anyTrue(mask: Value): boolean {
  * @param low - The lower parameter.
  * @param highName - The upper parameter's name.
  * @param high - The upper parameter.
- * @throws MdmlError with code `value`.
+ * @throws OmaiError with code `value`.
  */
 export function validateOrdered(family: string, lowName: string, low: Value, highName: string, high: Value): void {
   if (anyTrue(lessEqual(primalOf(high), primalOf(low))))
-    throw new MdmlError('value', `${family}: ${lowName} must be below ${highName}`, { parameter: lowName })
+    throw new OmaiError('value', `${family}: ${lowName} must be below ${highName}`, { parameter: lowName })
 }
 
 /**
@@ -51,7 +51,7 @@ export function validateOrdered(family: string, lowName: string, low: Value, hig
  * @param name - The checked parameter's name.
  * @param value - The checked parameter.
  * @param bounds - The lower and upper bounds as `[name, value]` pairs.
- * @throws MdmlError with code `value`.
+ * @throws OmaiError with code `value`.
  */
 export function validateBetween(
   family: string,
@@ -62,7 +62,7 @@ export function validateBetween(
 ): void {
   const outside = logicalOr(less(primalOf(value), primalOf(low)), greater(primalOf(value), primalOf(high)))
   if (anyTrue(outside))
-    throw new MdmlError('value', `${family}: ${name} must lie between ${lowName} and ${highName}`, { parameter: name })
+    throw new OmaiError('value', `${family}: ${name} must lie between ${lowName} and ${highName}`, { parameter: name })
 }
 
 /**
@@ -71,7 +71,7 @@ export function validateBetween(
  * @param family - The distribution's name, for the message.
  * @param name - The matrix's name.
  * @param m - The matrix `[..., d, d]`.
- * @throws MdmlError with code `value`.
+ * @throws OmaiError with code `value`.
  */
 export function validateSymmetric(family: string, name: string, m: Value): void {
   const t = asTensor(primalOf(m))
@@ -80,5 +80,5 @@ export function validateSymmetric(family: string, name: string, m: Value): void 
   const skew = concreteFlat(abs(sub(t, swapaxes(t, -1, -2)))) ?? []
   const scale = flat.reduce((s, x) => Math.max(s, Math.abs(x)), 1)
   if (skew.some((x) => x > 1e-8 * scale))
-    throw new MdmlError('value', `${family}: ${name} must be symmetric`, { parameter: name })
+    throw new OmaiError('value', `${family}: ${name} must be symmetric`, { parameter: name })
 }

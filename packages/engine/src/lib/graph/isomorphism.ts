@@ -4,7 +4,7 @@
  * subgraph isomorphisms and monomorphisms, as in NetworkX's GraphMatcher.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import { dict, knobOption, type OptionTable, optionTable } from '../space/index.ts'
 import {
   type Algorithm,
@@ -66,7 +66,7 @@ export interface WlOptions {
  *   Weisfeiler-Lehman graph kernels, JMLR 12 (2011).
  * @example
  * ```ts
- * import { pathGraph, weisfeilerLehmanAlgorithm } from 'mdml-engine/graph'
+ * import { pathGraph, weisfeilerLehmanAlgorithm } from 'omai-engine/graph'
  * weisfeilerLehmanAlgorithm(pathGraph(4)).name // => 'weisfeiler-lehman'
  * ```
  */
@@ -122,7 +122,7 @@ function refiner(
  * @concept weisfeiler-lehman
  * @example
  * ```ts
- * import { pathGraph, weisfeilerLehman } from 'mdml-engine/graph'
+ * import { pathGraph, weisfeilerLehman } from 'omai-engine/graph'
  * const r = weisfeilerLehman(pathGraph(5))
  * [r.count, r.colours[0] === r.colours[4], r.colours[1] === r.colours[3]] // => [3, true, true]
  * ```
@@ -152,7 +152,7 @@ export function weisfeilerLehman(
  * @concept weisfeiler-lehman
  * @example
  * ```ts
- * import { cycleGraph, graph, pathGraph, wlHash } from 'mdml-engine/graph'
+ * import { cycleGraph, graph, pathGraph, wlHash } from 'omai-engine/graph'
  * wlHash(cycleGraph(4)) === wlHash(graph([[2, 3], [3, 0], [0, 1], [1, 2]])) // => true
  * wlHash(cycleGraph(4)) === wlHash(pathGraph(4)) // => false
  * ```
@@ -251,12 +251,12 @@ export interface Vf2State {
  * @param mode - `'isomorphism'` (default), `'subgraph'` (induced) or `'monomorphism'`; see {@link matchModes}.
  * @param options - A node compatibility test and a limit.
  * @returns The algorithm.
- * @throws MdmlError with code `value` when one graph is directed and the other is not.
+ * @throws OmaiError with code `value` when one graph is directed and the other is not.
  * @concept graph-isomorphism
  * @example
  * ```ts
- * import { cycleGraph, vf2Algorithm } from 'mdml-engine/graph'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { cycleGraph, vf2Algorithm } from 'omai-engine/graph'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const run = runAlgorithm(vf2Algorithm(cycleGraph(4), cycleGraph(4)), { maxSteps: 1000 })
  * [run.status, run.state.mappings.length] // => ['converged', 8]
  * ```
@@ -268,7 +268,7 @@ export function vf2Algorithm(
   options: MatchOptions = {},
 ): Algorithm<Vf2State, Vf2Path> {
   if (host.directed !== pattern.directed) {
-    throw new MdmlError('value', 'vf2: both graphs must be directed or both undirected')
+    throw new OmaiError('value', 'vf2: both graphs must be directed or both undirected')
   }
   const np = pattern.n
   const nh = host.n
@@ -474,7 +474,7 @@ export interface MatchModeProperties {
  * @concept graph-isomorphism
  * @example
  * ```ts
- * import { matchModes } from 'mdml-engine/graph'
+ * import { matchModes } from 'omai-engine/graph'
  * matchModes.where((p) => p.induced) // => ['isomorphism', 'subgraph']
  * ```
  */
@@ -520,13 +520,13 @@ export const matchModes: OptionTable<MatchBuilder, MatchModeProperties> = option
  * @param mode - The kind of matching (default `'isomorphism'`).
  * @param options - A node compatibility test and a limit.
  * @returns A generator of mappings: `mapping[p]` is the host node of pattern node p.
- * @throws MdmlError with code `value` when one graph is directed and the other is not.
+ * @throws OmaiError with code `value` when one graph is directed and the other is not.
  * @concept graph-isomorphism
  * @reference L. P. Cordella, P. Foggia, C. Sansone and M. Vento, A (sub)graph isomorphism algorithm for matching large
  *   graphs, IEEE TPAMI 26 (2004).
  * @example
  * ```ts
- * import { cycleGraph, vf2 } from 'mdml-engine/graph'
+ * import { cycleGraph, vf2 } from 'omai-engine/graph'
  * Array.from(vf2(cycleGraph(4), cycleGraph(4))).length // => 8
  * ```
  */
@@ -552,7 +552,7 @@ export function* vf2(
  * @concept graph-isomorphism
  * @example
  * ```ts
- * import { isIsomorphic, petersenGraph, graph } from 'mdml-engine/graph'
+ * import { isIsomorphic, petersenGraph, graph } from 'omai-engine/graph'
  * isIsomorphic(petersenGraph(), petersenGraph()) // => true
  * isIsomorphic(graph([[0, 1], [1, 2]]), graph([[0, 1], [0, 2]])) // => true
  * ```
@@ -572,7 +572,7 @@ export function isIsomorphic(g1: Graph, g2: Graph, options: Omit<MatchOptions, '
  * @concept graph-isomorphism
  * @example
  * ```ts
- * import { completeGraph, pathGraph, subgraphIsomorphisms } from 'mdml-engine/graph'
+ * import { completeGraph, pathGraph, subgraphIsomorphisms } from 'omai-engine/graph'
  * subgraphIsomorphisms(completeGraph(4), pathGraph(3)).length // => 0
  * subgraphIsomorphisms(completeGraph(4), pathGraph(3), { induced: false }).length // => 24
  * ```
@@ -597,7 +597,7 @@ export function subgraphIsomorphisms(
  * @concept graph-isomorphism
  * @example
  * ```ts
- * import { cycleGraph, isSubgraphIsomorphic, petersenGraph } from 'mdml-engine/graph'
+ * import { cycleGraph, isSubgraphIsomorphic, petersenGraph } from 'omai-engine/graph'
  * [isSubgraphIsomorphic(petersenGraph(), cycleGraph(5)), isSubgraphIsomorphic(petersenGraph(), cycleGraph(4))] // => [true, false]
  * ```
  */

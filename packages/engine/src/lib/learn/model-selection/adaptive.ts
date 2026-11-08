@@ -7,7 +7,7 @@
  * analyst who combines whatever looks good on the answers) shows each mechanism against naive reuse.
  */
 
-import { MdmlError, minOf } from '../../base/index.ts'
+import { minOf, OmaiError } from '../../base/index.ts'
 import { foldIn, type Key, laplace, key as makeKey, randint } from '../../random/index.ts'
 import { toFlat } from '../../tensor/index.ts'
 import { type Algorithm, channels, runAlgorithm } from '../../trace/index.ts'
@@ -27,7 +27,7 @@ interface Sample {
 
 function sampleOf(who: string, data: LearnData): Sample {
   const m = matrixView(data.x, who)
-  if (data.y === undefined) throw new MdmlError('value', `${who}: the data needs labels y`)
+  if (data.y === undefined) throw new OmaiError('value', `${who}: the data needs labels y`)
   return { n: m.n, d: m.d, x: m.data, y: targetVector(data.y, who, m.n) }
 }
 
@@ -83,12 +83,12 @@ export type Analyst = (answers: readonly number[]) => HoldoutQuery | undefined
  * @param analyst - A list of queries (non-adaptive), or a function of the answers so far returning the next query.
  * @param options - Threshold, noise scale and budget.
  * @returns The algorithm over {@link ThresholdoutState}.
- * @throws MdmlError with code `value` for samples without labels or of different widths.
+ * @throws OmaiError with code `value` for samples without labels or of different widths.
  * @concept adaptive-data-analysis
  * @example
  * ```ts
- * import { thresholdoutAlgorithm } from 'mdml-engine/learn/model-selection'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { thresholdoutAlgorithm } from 'omai-engine/learn/model-selection'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const train = { x: [[1], [2], [3], [4]], y: [0, 0, 0, 0] }
  * const holdout = { x: [[1], [2], [3], [4]], y: [0, 0, 0, 0] }
  * const alg = thresholdoutAlgorithm(train, holdout, [(x) => x[0] as number])
@@ -103,12 +103,12 @@ export function thresholdoutAlgorithm(
 ): Algorithm<ThresholdoutState> {
   const tr = sampleOf('thresholdout', train)
   const ho = sampleOf('thresholdout', holdout)
-  if (tr.d !== ho.d) throw new MdmlError('shape', 'thresholdout: training and holdout widths differ')
+  if (tr.d !== ho.d) throw new OmaiError('shape', 'thresholdout: training and holdout widths differ')
   const T = options.threshold ?? 0.04
   const sigma = options.sigma ?? T / 10
   const B = options.budget ?? 100
   if (!(T >= 0 && sigma > 0 && B >= 1))
-    throw new MdmlError('value', 'thresholdout: needs threshold >= 0, sigma > 0, budget >= 1')
+    throw new OmaiError('value', 'thresholdout: needs threshold >= 0, sigma > 0, budget >= 1')
   const lap = (k: Key, scale: number): number => toFlat(laplace(k, [1], 0, scale))[0] ?? 0
   const next = (answers: readonly number[]): HoldoutQuery | undefined =>
     typeof analyst === 'function' ? analyst(answers) : analyst[answers.length]
@@ -195,7 +195,7 @@ export interface AskOptions extends ThresholdoutOptions {
  * @concept adaptive-data-analysis
  * @example
  * ```ts
- * import { thresholdout } from 'mdml-engine/learn/model-selection'
+ * import { thresholdout } from 'omai-engine/learn/model-selection'
  * const d = { x: [[1], [2], [3], [4]], y: [0, 0, 0, 0] }
  * thresholdout(d, d, [(x) => x[0] as number, (x) => (x[0] as number) ** 2]).answers // => [2.5, 7.5]
  * ```
@@ -243,8 +243,8 @@ export interface LadderState {
  * @concept adaptive-data-analysis
  * @example
  * ```ts
- * import { ladderAlgorithm } from 'mdml-engine/learn/model-selection'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { ladderAlgorithm } from 'omai-engine/learn/model-selection'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const alg = ladderAlgorithm([0.5, 0.495, 0.42, 0.43], { step: 0.05 })
  * runAlgorithm(alg, { maxSteps: 4 }).state.reported // => [0.5, 0.5, 0.4, 0.4]
  * ```
@@ -252,7 +252,7 @@ export interface LadderState {
 export function ladderAlgorithm(losses: readonly number[], options: LadderOptions = {}): Algorithm<LadderState> {
   const eta = options.step ?? 0.01
   const start = options.initial ?? 1
-  if (!(eta > 0)) throw new MdmlError('value', 'ladder: step must be positive')
+  if (!(eta > 0)) throw new OmaiError('value', 'ladder: step must be positive')
   return {
     name: 'ladder',
     config: { step: eta, initial: start, submissions: losses.length },
@@ -265,7 +265,7 @@ export function ladderAlgorithm(losses: readonly number[], options: LadderOption
     init: () => ({ t: 0, reported: [], losses: [] }),
     step: (s) => {
       const loss = losses[s.t]
-      if (loss === undefined) throw new MdmlError('value', 'ladder: no submission for this step')
+      if (loss === undefined) throw new OmaiError('value', 'ladder: no submission for this step')
       const best = s.reported[s.reported.length - 1] ?? start
       const next = loss < best - eta ? Math.round(loss / eta) * eta : best
       return { t: s.t + 1, reported: [...s.reported, next], losses: [...s.losses, loss] }
@@ -346,7 +346,7 @@ function accuracyOf(s: Sample, w: Float64Array): number {
  * @concept adaptive-data-analysis
  * @example
  * ```ts
- * import { adaptiveOverfittingDemo } from 'mdml-engine/learn/model-selection'
+ * import { adaptiveOverfittingDemo } from 'omai-engine/learn/model-selection'
  * const naive = adaptiveOverfittingDemo('naive', { n: 200, features: 150 })
  * naive.reported > naive.freshAccuracy + 0.05 // => true
  * ```
@@ -427,7 +427,7 @@ export interface LeaderboardResult {
  * @concept adaptive-data-analysis
  * @example
  * ```ts
- * import { leaderboardAttack } from 'mdml-engine/learn/model-selection'
+ * import { leaderboardAttack } from 'omai-engine/learn/model-selection'
  * const r = leaderboardAttack('naive', { n: 200, features: 150 })
  * r.reportedError < 0.5 - 0.05 // => true
  * ```

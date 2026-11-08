@@ -1,7 +1,7 @@
-import { cartesian } from 'mdml-render/charts'
-import { figure } from 'mdml-render/figure'
-import { Chart, ControlPanel, FigureFrame, NumberField, useColourMode } from 'mdml-render/react'
-import { optimisationPaths } from 'mdml-render/trace'
+import { cartesian } from 'omai-render/charts'
+import { figure } from 'omai-render/figure'
+import { Chart, ControlPanel, FigureFrame, NumberField, useColourMode } from 'omai-render/react'
+import { optimisationPaths } from 'omai-render/trace'
 import { type ReactNode, useMemo, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 

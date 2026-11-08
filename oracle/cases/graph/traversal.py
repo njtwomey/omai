@@ -4,8 +4,8 @@ edges, lexicographic topological sort, acyclicity, cycles, bipartiteness, k-hop 
 import networkx as nx
 import numpy as np
 import scipy
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.graphs import build, digraph, directed_family, ints, sparse, spec, undirected_family
+from omai_oracle.fixture import Case, case
+from omai_oracle.graphs import build, digraph, directed_family, ints, sparse, spec, undirected_family
 from scipy.sparse.csgraph import breadth_first_order, depth_first_order
 
 REFERENCE: dict[str, str] = {"networkx": nx.__version__, "scipy": scipy.__version__}

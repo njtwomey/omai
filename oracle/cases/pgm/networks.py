@@ -3,8 +3,8 @@ Markov blankets, on the Asia and student networks."""
 
 import numpy as np
 import pgmpy
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.pgm import (
+from omai_oracle.fixture import Case, case
+from omai_oracle.pgm import (
     ASIA,
     STUDENT,
     NodeSpec,

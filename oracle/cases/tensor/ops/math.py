@@ -2,8 +2,8 @@
 
 import numpy as np
 import scipy.special as sp
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import UNARY_SHAPES, FloatArray, Unary, rng, softplus, uniform
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import UNARY_SHAPES, FloatArray, Unary, rng, softplus, uniform
 
 REFERENCE: dict[str, str] = {"numpy": np.__version__}
 

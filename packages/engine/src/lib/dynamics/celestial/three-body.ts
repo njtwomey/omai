@@ -6,7 +6,7 @@
  * curves that bound the region a given Jacobi constant allows, and a stepped integration that logs the constant.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { contourLines } from '../../numerics/geometry/index.ts'
 import { brentq } from '../../numerics/roots/index.ts'
 import { add, mul, pow, sliceAxis, stack, sub, sum, type Value } from '../../tensor/index.ts'
@@ -22,7 +22,7 @@ export const ROUTH_CRITICAL_MASS_RATIO: number = (1 - Math.sqrt(23 / 27)) / 2
 const at = (y: Value, i: number): Value => sum(sliceAxis(y, 0, i, i + 1))
 
 function checkMu(mu: number): void {
-  if (!(mu > 0 && mu <= 0.5)) throw new MdmlError('value', `the mass ratio mu must be in (0, 1/2], got ${mu}`)
+  if (!(mu > 0 && mu <= 0.5)) throw new OmaiError('value', `the mass ratio mu must be in (0, 1/2], got ${mu}`)
 }
 
 /**
@@ -34,12 +34,12 @@ function checkMu(mu: number): void {
  * @param mu - The mass ratio of the smaller primary, in (0, 1/2].
  * @param dim - 2 (planar, default) or 3.
  * @returns The field.
- * @throws MdmlError with code `value` for mu outside (0, 1/2].
+ * @throws OmaiError with code `value` for mu outside (0, 1/2].
  * @concept restricted-three-body-problem
  * @example
  * ```ts
- * import { restrictedThreeBodyField } from 'mdml-engine/dynamics/celestial'
- * import { tensor, toFlat } from 'mdml-engine/tensor'
+ * import { restrictedThreeBodyField } from 'omai-engine/dynamics/celestial'
+ * import { tensor, toFlat } from 'omai-engine/tensor'
  * // Far away at rest the acceleration is the centrifugal x plus the pull of the total mass, about 1000 - 1e-6.
  * Math.round(toFlat(restrictedThreeBodyField(0.01)(0, tensor([1000, 0, 0, 0])))[2] ?? 0) // => 1000
  * ```
@@ -78,7 +78,7 @@ export function restrictedThreeBodyField(mu: number, dim: 2 | 3 = 2): OdeVectorF
  * @concept restricted-three-body-problem
  * @example
  * ```ts
- * import { pseudoPotential } from 'mdml-engine/dynamics/celestial'
+ * import { pseudoPotential } from 'omai-engine/dynamics/celestial'
  * // At L4 of the equal-mass pair, (0, sqrt(3) / 2), both primaries are a unit away: Omega = 3 / 8 + 1.
  * Math.round(pseudoPotential(0.5, 0, Math.sqrt(3) / 2) * 1e12) / 1e12 // => 1.375
  * ```
@@ -102,7 +102,7 @@ export function pseudoPotential(mu: number, x: number, y: number, z = 0): number
  * @concept restricted-three-body-problem
  * @example
  * ```ts
- * import { effectivePotential } from 'mdml-engine/dynamics/celestial'
+ * import { effectivePotential } from 'omai-engine/dynamics/celestial'
  * effectivePotential(0.01, 0, 1) < 0 // => true
  * ```
  */
@@ -117,18 +117,18 @@ export function effectivePotential(mu: number, x: number, y: number, z = 0): num
  * @param mu - The mass ratio.
  * @param state - `[x, y, vx, vy]` or `[x, y, z, vx, vy, vz]`.
  * @returns C.
- * @throws MdmlError with code `shape` for a state of another length.
+ * @throws OmaiError with code `shape` for a state of another length.
  * @concept restricted-three-body-problem
  * @example
  * ```ts
- * import { jacobiConstant } from 'mdml-engine/dynamics/celestial'
+ * import { jacobiConstant } from 'omai-engine/dynamics/celestial'
  * // At rest at L4 of the equal-mass pair Omega = 3/8 + 1, so C = 2 Omega = 2.75 (in general 3 - mu (1 - mu)).
  * Math.round(jacobiConstant(0.5, [0, Math.sqrt(3) / 2, 0, 0]) * 1e12) / 1e12 // => 2.75
  * ```
  */
 export function jacobiConstant(mu: number, state: ArrayLike<number>): number {
   if (state.length !== 4 && state.length !== 6)
-    throw new MdmlError('shape', 'jacobiConstant: the state has 4 or 6 entries')
+    throw new OmaiError('shape', 'jacobiConstant: the state has 4 or 6 entries')
   const d = state.length / 2
   const x = state[0] ?? 0
   const y = state[1] ?? 0
@@ -154,11 +154,11 @@ export interface LagrangePoints {
  *
  * @param mu - The mass ratio, in (0, 1/2].
  * @returns The five points.
- * @throws MdmlError with code `value` for mu outside (0, 1/2].
+ * @throws OmaiError with code `value` for mu outside (0, 1/2].
  * @concept lagrange-points
  * @example
  * ```ts
- * import { lagrangePoints } from 'mdml-engine/dynamics/celestial'
+ * import { lagrangePoints } from 'omai-engine/dynamics/celestial'
  * // Sun-Earth-like ratio: L1 sits about 1% of the separation inside the Earth.
  * Math.round(lagrangePoints(3.0035e-6).L1[0] * 1e4) / 1e4 // => 0.99
  * ```
@@ -198,7 +198,7 @@ export interface LagrangeClassification {
  * @concept lagrange-points
  * @example
  * ```ts
- * import { classifyLagrangePoints } from 'mdml-engine/dynamics/celestial'
+ * import { classifyLagrangePoints } from 'omai-engine/dynamics/celestial'
  * classifyLagrangePoints(0.01).map((p) => p.type) // => ['saddle', 'saddle', 'saddle', 'center', 'center']
  * ```
  */
@@ -239,7 +239,7 @@ export interface ZeroVelocityOptions {
  * @concept restricted-three-body-problem
  * @example
  * ```ts
- * import { zeroVelocityCurves } from 'mdml-engine/dynamics/celestial'
+ * import { zeroVelocityCurves } from 'omai-engine/dynamics/celestial'
  * // A large constant keeps the body near one primary or far out: several separate curves.
  * zeroVelocityCurves(0.1, 4, { n: 200 }).length > 1 // => true
  * ```
@@ -290,8 +290,8 @@ export interface ThreeBodyRunOptions {
  * @concept restricted-three-body-problem
  * @example
  * ```ts
- * import { lagrangePoints, restrictedThreeBodyAlgorithm } from 'mdml-engine/dynamics/celestial'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { lagrangePoints, restrictedThreeBodyAlgorithm } from 'omai-engine/dynamics/celestial'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * // At rest at L4 the body stays there.
  * const [x, y] = lagrangePoints(0.01).L4
  * const alg = restrictedThreeBodyAlgorithm(0.01, [x, y, 0, 0], { dt: 0.01, steps: 100 })

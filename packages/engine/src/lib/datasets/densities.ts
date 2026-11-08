@@ -77,7 +77,7 @@ export interface RingOptions {
  * @returns The density.
  * @example
  * ```ts
- * import { ringDensity } from 'mdml-engine/datasets'
+ * import { ringDensity } from 'omai-engine/datasets'
  * ringDensity({ radii: [1, 3] }).nComponents // => 2
  * ```
  */
@@ -154,7 +154,7 @@ export interface MixtureDensityOptions {
  * @returns The density, with `means` for reference.
  * @example
  * ```ts
- * import { gaussianMixtureDensity } from 'mdml-engine/datasets'
+ * import { gaussianMixtureDensity } from 'omai-engine/datasets'
  * gaussianMixtureDensity({ layout: 'grid', count: 3 }).nComponents // => 9
  * ```
  */
@@ -229,7 +229,7 @@ export interface PinwheelOptions {
  * @returns The density.
  * @example
  * ```ts
- * import { pinwheelDensity } from 'mdml-engine/datasets'
+ * import { pinwheelDensity } from 'omai-engine/datasets'
  * pinwheelDensity({ arms: 3 }).nComponents // => 3
  * ```
  */
@@ -298,7 +298,7 @@ export interface BananaOptions {
  * @returns The density.
  * @example
  * ```ts
- * import { bananaDensity } from 'mdml-engine/datasets'
+ * import { bananaDensity } from 'omai-engine/datasets'
  * bananaDensity().dim // => 2
  * ```
  */
@@ -339,7 +339,7 @@ export function bananaDensity(options: BananaOptions = {}): Density {
  * @returns The density.
  * @example
  * ```ts
- * import { funnelDensity } from 'mdml-engine/datasets'
+ * import { funnelDensity } from 'omai-engine/datasets'
  * funnelDensity().name // => 'funnel'
  * ```
  */
@@ -377,8 +377,8 @@ export function funnelDensity(scale = 3): Density {
  * @returns The density.
  * @example
  * ```ts
- * import { checkerboardDensity } from 'mdml-engine/datasets'
- * import { tensor, toFlat } from 'mdml-engine/tensor'
+ * import { checkerboardDensity } from 'omai-engine/datasets'
+ * import { tensor, toFlat } from 'omai-engine/tensor'
  * toFlat(checkerboardDensity().logProb(tensor([[0.5, 0.5], [-0.5, 0.5]]))) // => [-3.4657359027997265, -Infinity]
  * ```
  */
@@ -436,8 +436,8 @@ const DENSITIES: Readonly<Record<string, () => Density>> = {
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { densitySamples } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { densitySamples } from 'omai-engine/datasets'
  * generate(densitySamples, { knobs: { density: 'pinwheel', n: 50 } }).data.classes.length // => 5
  * ```
  */

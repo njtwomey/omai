@@ -1,5 +1,5 @@
-import { diagramRecord } from 'mdml-engine/exposition'
-import { structure } from 'mdml-engine/scene'
+import { diagramRecord } from 'omai-engine/exposition'
+import { structure } from 'omai-engine/scene'
 import { describe, expect, it } from 'vitest'
 import { diagramScene } from './diagrams.ts'
 import { stillOf, viewFor } from './registry.ts'

@@ -6,7 +6,7 @@
  * working response `z` with weights `w`, which is what one iteration of penalised IRLS presents.
  */
 
-import { MdmlError, maxOf } from '../base/index.ts'
+import { maxOf, OmaiError } from '../base/index.ts'
 import { dgemm, dgemv, dpotrf, dpotrs, dsyev } from '../numerics/linalg/index.ts'
 import { nelderMead, qpActiveSet, qpArrays, qpInteriorPoint } from '../optim/index.ts'
 import { constraintNullSpace } from '../stats/smoothing/index.ts'
@@ -52,7 +52,7 @@ export interface PenaltyStructure {
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { buildDesign, penaltyStructure, s } from 'mdml-engine/gam'
+ * import { buildDesign, penaltyStructure, s } from 'omai-engine/gam'
  * const design = buildDesign([[0], [1], [2], [3], [4], [5], [6]], [s(0, { k: 5 })])
  * penaltyStructure(design).terms[0]?.rank // => 3
  * ```
@@ -86,7 +86,7 @@ export function penaltyStructure(design: GamDesign): PenaltyStructure {
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { assemblePenalty, buildDesign, penaltyStructure, s } from 'mdml-engine/gam'
+ * import { assemblePenalty, buildDesign, penaltyStructure, s } from 'omai-engine/gam'
  * const design = buildDesign([[0], [1], [2], [3], [4], [5]], [s(0, { k: 4 })])
  * assemblePenalty(penaltyStructure(design), [0]).length // => 16
  * ```
@@ -131,7 +131,7 @@ export interface Gram {
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { gram } from 'mdml-engine/gam'
+ * import { gram } from 'omai-engine/gam'
  * Array.from(gram(Float64Array.of(1, 1, 1, 2), 2, 2, Float64Array.of(1, 1), Float64Array.of(1, 3)).xtwz) // => [4, 7]
  * ```
  */
@@ -188,11 +188,11 @@ export interface PenalisedSolution {
  * @param g - The gram of the working response.
  * @param S - The penalty `[p, p]`.
  * @returns The solution with its effective degrees of freedom.
- * @throws MdmlError `value` if `X'WX + S` is not positive definite (a rank-deficient design with too little penalty).
+ * @throws OmaiError `value` if `X'WX + S` is not positive definite (a rank-deficient design with too little penalty).
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { gram, solvePenalised } from 'mdml-engine/gam'
+ * import { gram, solvePenalised } from 'omai-engine/gam'
  * const g = gram(Float64Array.of(1, 0, 1, 1, 1, 2), 3, 2, Float64Array.of(1, 1, 1), Float64Array.of(1, 3, 5))
  * Array.from(solvePenalised(g, new Float64Array(4)).beta).map((v) => Math.round(v * 1e6) / 1e6) // => [1, 2]
  * ```
@@ -222,7 +222,7 @@ function factorise(A: Float64Array, p: number): { factor: Float64Array } {
     factor = dpotrf(B, p)
   }
   if (factor.info !== 0) {
-    throw new MdmlError('value', 'gam: the penalised normal equations are singular (the design is rank deficient)')
+    throw new OmaiError('value', 'gam: the penalised normal equations are singular (the design is rank deficient)')
   }
   return { factor: factor.factor }
 }
@@ -343,7 +343,7 @@ function solveConstrained(g: Gram, S: Float64Array, A: Float64Array, c: Constrai
     viaInterior = true
   }
   if (result.status !== 'optimal') {
-    throw new MdmlError('value', `gam: the shape-constrained fit is ${result.status} (are the constraints compatible?)`)
+    throw new OmaiError('value', `gam: the shape-constrained fit is ${result.status} (are the constraints compatible?)`)
   }
   const beta = Float64Array.from(result.x)
   // The binding constraints: the working set of the active-set method, or the rows with no slack and a positive
@@ -391,7 +391,7 @@ function solveConstrained(g: Gram, S: Float64Array, A: Float64Array, c: Constrai
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { buildDesign, linear, termEdf } from 'mdml-engine/gam'
+ * import { buildDesign, linear, termEdf } from 'omai-engine/gam'
  * termEdf(buildDesign([[1], [2], [3]], [linear(0)]), Float64Array.of(1, 1)) // => [1]
  * ```
  */
@@ -426,7 +426,7 @@ export interface CriterionContext {
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { buildDesign, penaltyLogDet, penaltyStructure, s } from 'mdml-engine/gam'
+ * import { buildDesign, penaltyLogDet, penaltyStructure, s } from 'omai-engine/gam'
  * const design = buildDesign([[0], [1], [2], [3], [4], [5], [6]], [s(0, { k: 5 })])
  * penaltyLogDet(penaltyStructure(design), [0]).nullDim // => 2
  * ```
@@ -464,13 +464,13 @@ export function penaltyLogDet(
  * @param sol - The solution at `logLambda`.
  * @param ctx - The method, sample size, inflation, scale and penalties.
  * @returns The criterion (lower is better).
- * @throws MdmlError `value` for UBRE without a known scale.
+ * @throws OmaiError `value` for UBRE without a known scale.
  * @concept generalized-additive-models
  * @reference S. N. Wood, Fast stable restricted maximum likelihood and marginal likelihood estimation of semiparametric
  *   generalized linear models (JRSS B 73, 2011).
  * @example
  * ```ts
- * import { gcvScore } from 'mdml-engine/gam'
+ * import { gcvScore } from 'omai-engine/gam'
  * gcvScore({ rss: 10, edfTotal: 5 }, 25, 1) // => 0.625
  * ```
  */
@@ -490,7 +490,7 @@ export function gcvScore(sol: Pick<PenalisedSolution, 'rss' | 'edfTotal'>, n: nu
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { ubreScore } from 'mdml-engine/gam'
+ * import { ubreScore } from 'omai-engine/gam'
  * ubreScore({ rss: 10, edfTotal: 5 }, 20, 1) // => 0
  * ```
  */
@@ -512,7 +512,7 @@ export function ubreScore(
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { buildDesign, penaltyStructure, remlScore, s, solvePenalised, gram, assemblePenalty } from 'mdml-engine/gam'
+ * import { buildDesign, penaltyStructure, remlScore, s, solvePenalised, gram, assemblePenalty } from 'omai-engine/gam'
  * const x = Array.from({ length: 20 }, (_, i) => [i / 19])
  * const y = x.map((r) => Math.sin(6 * (r[0] ?? 0)))
  * const design = buildDesign(x, [s(0, { k: 6 })])
@@ -540,7 +540,7 @@ function criterionOf(sol: PenalisedSolution, ctx: CriterionContext): number {
       return gcvScore(sol, ctx.n, ctx.gamma)
     case 'ubre':
       if (ctx.scale === undefined)
-        throw new MdmlError('value', 'gam: UBRE needs a known scale (a binomial or Poisson family, or scale)')
+        throw new OmaiError('value', 'gam: UBRE needs a known scale (a binomial or Poisson family, or scale)')
       return ubreScore(sol, ctx.n, ctx.scale, ctx.gamma)
     case 'reml':
       return remlScore(sol, ctx)
@@ -572,7 +572,7 @@ const LOG_LAMBDA_BOUNDS = { lower: -25, upper: 30 } as const
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { buildDesign, gram, penaltyStructure, s, selectLogLambda } from 'mdml-engine/gam'
+ * import { buildDesign, gram, penaltyStructure, s, selectLogLambda } from 'omai-engine/gam'
  * const x = Array.from({ length: 30 }, (_, i) => [i / 29])
  * const y = Float64Array.from(x, (r) => Math.sin(6 * (r[0] ?? 0)) + 0.01 * ((r[0] ?? 0) * 7 % 1 - 0.5))
  * const design = buildDesign(x, [s(0, { k: 8 })])
@@ -623,7 +623,7 @@ export function selectLogLambda(
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { gram, hessianSolve, solvePenalised } from 'mdml-engine/gam'
+ * import { gram, hessianSolve, solvePenalised } from 'omai-engine/gam'
  * const g = gram(Float64Array.of(1, 1, 1), 3, 1, Float64Array.of(1, 1, 1), Float64Array.of(1, 2, 3))
  * Array.from(hessianSolve(solvePenalised(g, new Float64Array(1)), [3])) // => [1]
  * ```
@@ -643,7 +643,7 @@ export function hessianSolve(sol: PenalisedSolution, b: ArrayLike<number>): Floa
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { gram, posteriorCovariance, solvePenalised } from 'mdml-engine/gam'
+ * import { gram, posteriorCovariance, solvePenalised } from 'omai-engine/gam'
  * const g = gram(Float64Array.of(1, 1, 1), 3, 1, Float64Array.of(1, 1, 1), Float64Array.of(1, 2, 3))
  * Array.from(posteriorCovariance(solvePenalised(g, new Float64Array(1)), 1, 1)) // => [0.333333]
  * ```

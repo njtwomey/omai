@@ -5,7 +5,7 @@
  * filled from the points, and the rest is the entry's `compute` on the broadcast layout it expects.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { resolveMetricOptions } from '../numerics/geometry/index.ts'
 import { concat, promoteFloat, reshape, shapesEqual, type TensorLike, toFlat, type Value } from '../tensor/index.ts'
 import { type DistanceAlias, type DistanceName, type DistanceOptions, distanceEntry } from './distances.ts'
@@ -15,7 +15,7 @@ import { type SimilarityAlias, type SimilarityName, type SimilarityOptions, simi
 function asRows(x: Value, name: string): Value {
   if (x.shape.length === 1) return reshape(x, [1, -1])
   if (x.shape.length === 2) return x
-  throw new MdmlError('shape', `${name}: points must be [n, d] or [d], got [${x.shape.join(', ')}]`)
+  throw new OmaiError('shape', `${name}: points must be [n, d] or [d], got [${x.shape.join(', ')}]`)
 }
 
 /** Both operands as floats, with the same coordinate axis and leading shapes that are equal or a single point. */
@@ -23,11 +23,11 @@ function elementwise(a: TensorLike, b: TensorLike, name: string): [Value, Value]
   const [x, y] = promoteFloat(a, b) as [Value, Value]
   const describe = (): string => `[${x.shape.join(', ')}] and [${y.shape.join(', ')}]`
   if (x.shape.length === 0 || y.shape.length === 0 || x.shape.length > 2 || y.shape.length > 2)
-    throw new MdmlError('shape', `${name}: points are [d] or rows [n, d], got ${describe()}`)
+    throw new OmaiError('shape', `${name}: points are [d] or rows [n, d], got ${describe()}`)
   if (x.shape[x.shape.length - 1] !== y.shape[y.shape.length - 1])
-    throw new MdmlError('shape', `${name}: the points have different dimensions, ${describe()}`)
+    throw new OmaiError('shape', `${name}: the points have different dimensions, ${describe()}`)
   if (x.shape.length === 2 && y.shape.length === 2 && !shapesEqual(x.shape, y.shape))
-    throw new MdmlError('shape', `${name}: rows must match one to one, got ${describe()}`)
+    throw new OmaiError('shape', `${name}: rows must match one to one, got ${describe()}`)
   return [x, y]
 }
 
@@ -37,7 +37,7 @@ function pairwise(a: TensorLike, b: TensorLike | undefined, name: string): [Valu
   if (b === undefined) return [x, x]
   const y = asRows(promoteFloat(b)[0] as Value, name)
   if (x.shape[1] !== y.shape[1])
-    throw new MdmlError(
+    throw new OmaiError(
       'shape',
       `${name}: the points have different dimensions, [${x.shape.join(', ')}] and [${y.shape.join(', ')}]`,
     )
@@ -79,13 +79,13 @@ function stacked(x: Value, y: Value): Value {
  * @param name - A registered distance or alias (`distanceNames`).
  * @param options - The distance's parameters (`distances[name].parameters` lists the knobs).
  * @returns The distances, `[]` for two points or `[n]`.
- * @throws MdmlError `value` for an unknown name, `shape` for points of different dimensions or rows that do not pair up.
+ * @throws OmaiError `value` for an unknown name, `shape` for points of different dimensions or rows that do not pair up.
  * @concept distances
  * @index function Named distance between points, from a registry of scipy's metrics.
  * @example
  * ```ts
- * import { distance } from 'mdml-engine/distances'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { distance } from 'omai-engine/distances'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(distance([0, 0], [3, 4], 'euclidean')) // => 5
  * toArray(distance([[0, 0], [1, 1]], [[3, 4], [1, 2]], 'manhattan')) // => [7, 1]
  * toArray(distance([0, 0], [[1, 1], [2, 2]], 'minkowski', { p: 3 })) // => [1.259921, 2.519842]
@@ -116,12 +116,12 @@ export function distance(
  * @param name - A registered distance or alias (`distanceNames`).
  * @param options - The distance's parameters.
  * @returns Distances `[m, n]`, differentiable in the points where the distance is.
- * @throws MdmlError `value` for an unknown name, `shape` for points of different dimensions.
+ * @throws OmaiError `value` for an unknown name, `shape` for points of different dimensions.
  * @concept distances
  * @example
  * ```ts
- * import { pairwiseDistances } from 'mdml-engine/distances'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { pairwiseDistances } from 'omai-engine/distances'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(pairwiseDistances([[0, 0], [3, 4]], undefined, 'euclidean')) // => [[0, 5], [5, 0]]
  * toArray(pairwiseDistances([[0, 0]], [[1, 0], [0, 2]], 'chebyshev')) // => [[1, 2]]
  * ```
@@ -151,11 +151,11 @@ export type MetricSlot = DistanceName | DistanceAlias | 'precomputed'
  * @param metric - A registered distance or alias (default `'euclidean'`), or `'precomputed'`.
  * @param options - The distance's parameters.
  * @returns The `n * n` distances, and `n`.
- * @throws MdmlError `shape` for a precomputed input that is not square.
+ * @throws OmaiError `shape` for a precomputed input that is not square.
  * @concept distances
  * @example
  * ```ts
- * import { distanceMatrix } from 'mdml-engine/distances'
+ * import { distanceMatrix } from 'omai-engine/distances'
  * distanceMatrix([[0, 0], [3, 4]]).data // => [0, 5, 5, 0]
  * distanceMatrix([[0, 2], [2, 0]], 'precomputed').n // => 2
  * ```
@@ -168,7 +168,7 @@ export function distanceMatrix(
   const d = metric === 'precomputed' ? promoteFloat(x)[0] : pairwiseDistances(x, undefined, metric, options)
   const shape = (d as Value).shape
   if (shape.length !== 2 || shape[0] !== shape[1])
-    throw new MdmlError('shape', `distanceMatrix: expected a square matrix, got [${shape.join(', ')}]`)
+    throw new OmaiError('shape', `distanceMatrix: expected a square matrix, got [${shape.join(', ')}]`)
   return { n: shape[0] ?? 0, data: Float64Array.from(toFlat(d as Value)) }
 }
 
@@ -187,13 +187,13 @@ function innerDistance(name: SimilarityName, options: SimilarityOptions): Distan
  * @param name - A registered similarity or alias (`similarityNames`).
  * @param options - The similarity's parameters (`similarities[name].parameters` lists the knobs).
  * @returns The similarities, `[]` for two points or `[n]`.
- * @throws MdmlError `value` for an unknown name, `shape` for points of different dimensions or rows that do not pair up.
+ * @throws OmaiError `value` for an unknown name, `shape` for points of different dimensions or rows that do not pair up.
  * @concept distances
  * @index function Named similarity between points.
  * @example
  * ```ts
- * import { similarity } from 'mdml-engine/distances'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { similarity } from 'omai-engine/distances'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(similarity([1, 0], [1, 1], 'cosine')) // => 0.707107
  * toArray(similarity([[0, 0], [0, 0]], [[1, 0], [3, 4]], 'inverseDistance', { distance: 'euclidean' })) // => [0.5, 0.166667]
  * ```
@@ -222,12 +222,12 @@ export function similarity(
  * @param name - A registered similarity or alias (`similarityNames`).
  * @param options - The similarity's parameters.
  * @returns Similarities `[m, n]`, differentiable in the points.
- * @throws MdmlError `value` for an unknown name, `shape` for points of different dimensions.
+ * @throws OmaiError `value` for an unknown name, `shape` for points of different dimensions.
  * @concept distances
  * @example
  * ```ts
- * import { pairwiseSimilarities } from 'mdml-engine/distances'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { pairwiseSimilarities } from 'omai-engine/distances'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(pairwiseSimilarities([[1, 0], [0, 1]], undefined, 'dot')) // => [[1, 0], [0, 1]]
  * toArray(pairwiseSimilarities([[0, 0]], [[0, 0], [1, 0]], 'gaussian', { gamma: 1 })) // => [[1, 0.367879]]
  * ```

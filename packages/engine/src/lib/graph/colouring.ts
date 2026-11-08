@@ -26,12 +26,12 @@ import type { Graph, NodeId } from './graph.ts'
  * @param g - The graph.
  * @param options - The strategy, and a key for `'random-sequential'`.
  * @returns A colour 0, 1, ... per node.
- * @throws MdmlError with code `value` when `'random-sequential'` has no key.
+ * @throws OmaiError with code `value` when `'random-sequential'` has no key.
  * @concept graph-colouring
  * @reference D. Brelaz, New methods to color the vertices of a graph, Comm. ACM 22 (1979).
  * @example
  * ```ts
- * import { cycleGraph, greedyColouring } from 'mdml-engine/graph'
+ * import { cycleGraph, greedyColouring } from 'omai-engine/graph'
  * greedyColouring(cycleGraph(5)) // => [0, 1, 0, 1, 2]
  * greedyColouring(cycleGraph(5), { strategy: 'dsatur' }) // => [0, 1, 0, 1, 2]
  * ```
@@ -53,7 +53,7 @@ export function greedyColouring(
  * @concept graph-colouring
  * @example
  * ```ts
- * import { isProperColouring, pathGraph } from 'mdml-engine/graph'
+ * import { isProperColouring, pathGraph } from 'omai-engine/graph'
  * [isProperColouring(pathGraph(3), [0, 1, 0]), isProperColouring(pathGraph(3), [0, 0, 1])] // => [true, false]
  * ```
  */
@@ -69,11 +69,11 @@ export function isProperColouring(g: Graph, colours: ArrayLike<number>): boolean
  * @param g - The graph (directions ignored).
  * @param options - Nodes to include, and a key for a random set.
  * @returns The set, ascending.
- * @throws MdmlError with code `value` when the forced nodes are not independent.
+ * @throws OmaiError with code `value` when the forced nodes are not independent.
  * @concept independent-sets
  * @example
  * ```ts
- * import { maximalIndependentSet, starGraph } from 'mdml-engine/graph'
+ * import { maximalIndependentSet, starGraph } from 'omai-engine/graph'
  * maximalIndependentSet(starGraph(3)) // => [1, 2, 3]
  * maximalIndependentSet(starGraph(3), { nodes: [0] }) // => [0]
  * ```
@@ -92,14 +92,14 @@ export function maximalIndependentSet(
  *
  * @param g - An undirected graph.
  * @returns The maximal cliques.
- * @throws MdmlError with code `value` for a directed graph.
+ * @throws OmaiError with code `value` for a directed graph.
  * @concept cliques
  * @reference C. Bron and J. Kerbosch, Algorithm 457: finding all cliques of an undirected graph, Comm. ACM 16 (1973);
  *   E. Tomita, A. Tanaka and H. Takahashi, The worst-case time complexity for generating all maximal cliques, Theoretical
  *   Computer Science 363 (2006).
  * @example
  * ```ts
- * import { graph, maximalCliques } from 'mdml-engine/graph'
+ * import { graph, maximalCliques } from 'omai-engine/graph'
  * maximalCliques(graph([[0, 1], [1, 2], [2, 0], [2, 3]])) // => [[0, 1, 2], [2, 3]]
  * ```
  */
@@ -121,7 +121,7 @@ export function maximalCliques(g: Graph): number[][] {
  * @concept cliques
  * @example
  * ```ts
- * import { graph, maximumClique } from 'mdml-engine/graph'
+ * import { graph, maximumClique } from 'omai-engine/graph'
  * maximumClique(graph([[0, 1], [1, 2], [2, 0], [2, 3], [3, 4]])) // => [0, 1, 2]
  * ```
  */
@@ -139,7 +139,7 @@ export function maximumClique(g: Graph): number[] {
  * @concept cliques
  * @example
  * ```ts
- * import { cliqueNumber, petersenGraph } from 'mdml-engine/graph'
+ * import { cliqueNumber, petersenGraph } from 'omai-engine/graph'
  * cliqueNumber(petersenGraph()) // => 2
  * ```
  */

@@ -4,7 +4,7 @@
  * as one SVG document (the PNG, GIF and WebM are rasterisations of it).
  */
 
-import type { Json } from 'mdml-engine/base'
+import type { Json } from 'omai-engine/base'
 import type { ProbeRequest } from '../../producer/tape.ts'
 import { escapeXml } from '../../svg/svg.ts'
 import { type ColourMode, tokens } from '../../theme/tokens.ts'

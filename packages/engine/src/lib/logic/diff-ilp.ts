@@ -10,7 +10,7 @@
  * probable clause. A crisp forward chainer checks the extracted program against the examples.
  */
 
-import { MdmlError, maxOf } from '../base/index.ts'
+import { maxOf, OmaiError } from '../base/index.ts'
 import {
   type GradientPath,
   gradientContract,
@@ -126,7 +126,7 @@ const EXISTENTIAL_VARIABLES = ['Z', 'U', 'V']
  * @returns `head :- body1, body2`.
  * @example
  * ```ts
- * import { dilpClauseText } from 'mdml-engine/logic'
+ * import { dilpClauseText } from 'omai-engine/logic'
  * dilpClauseText({ head: { predicate: 'p', args: ['X'] }, body: [{ predicate: 'q', args: ['X'] }] }) // => 'p(X) :- q(X)'
  * ```
  */
@@ -177,27 +177,27 @@ export interface DiffIlp {
 function checkTask(task: DilpTask): void {
   const names = new Set<string>()
   for (const p of [...task.extensional, ...task.intensional]) {
-    if (names.has(p.name)) throw new MdmlError('value', `diffIlp: predicate '${p.name}' is declared twice`)
+    if (names.has(p.name)) throw new OmaiError('value', `diffIlp: predicate '${p.name}' is declared twice`)
     names.add(p.name)
     if (!(Number.isInteger(p.arity) && p.arity >= 1 && p.arity <= 3))
-      throw new MdmlError('value', `diffIlp: predicate '${p.name}' needs an arity from 1 to 3`)
+      throw new OmaiError('value', `diffIlp: predicate '${p.name}' needs an arity from 1 to 3`)
   }
   for (const i of task.intensional) {
     if (i.templates.length < 1 || i.templates.length > 2)
-      throw new MdmlError('value', `diffIlp: '${i.name}' needs one or two templates`)
+      throw new OmaiError('value', `diffIlp: '${i.name}' needs one or two templates`)
     for (const t of i.templates)
       if (t.maxBody !== undefined && t.maxBody !== 1 && t.maxBody !== 2)
-        throw new MdmlError('value', `diffIlp: a template of '${i.name}' needs maxBody 1 or 2`)
+        throw new OmaiError('value', `diffIlp: a template of '${i.name}' needs maxBody 1 or 2`)
   }
   const known = new Set(task.constants)
   for (const e of task.extensional)
     for (const f of e.facts)
       if (f.length !== e.arity || f.some((c) => !known.has(c)))
-        throw new MdmlError('value', `diffIlp: bad fact ${e.name}(${f.join(',')})`)
+        throw new OmaiError('value', `diffIlp: bad fact ${e.name}(${f.join(',')})`)
   for (const ex of task.examples) {
     const p = task.intensional.find((i) => i.name === ex.predicate)
     if (p === undefined || ex.args.length !== p.arity || ex.args.some((c) => !known.has(c)))
-      throw new MdmlError('value', `diffIlp: bad example ${ex.predicate}(${ex.args.join(',')})`)
+      throw new OmaiError('value', `diffIlp: bad example ${ex.predicate}(${ex.args.join(',')})`)
   }
 }
 
@@ -208,11 +208,11 @@ function checkTask(task: DilpTask): void {
  * @param task - The constants, extensional facts, intensional predicates with templates, and labelled examples.
  * @param k - The key the initial weights are drawn from.
  * @returns The problem.
- * @throws MdmlError with code `value` for a malformed task.
+ * @throws OmaiError with code `value` for a malformed task.
  * @example
  * ```ts
- * import { diffIlp } from 'mdml-engine/logic'
- * import { key } from 'mdml-engine/random'
+ * import { diffIlp } from 'omai-engine/logic'
+ * import { key } from 'omai-engine/random'
  * const task = {
  *   constants: ['a', 'b'],
  *   extensional: [{ name: 'edge', arity: 2, facts: [['a', 'b']] }],
@@ -275,7 +275,7 @@ export function diffIlp(task: DilpTask, k: Key): DiffIlp {
         })
         .map((body): DilpClause => ({ head, body }))
       if (clauses.length === 0)
-        throw new MdmlError('value', `diffIlp: template ${slot} of '${ip.name}' has no candidate clause`)
+        throw new OmaiError('value', `diffIlp: template ${slot} of '${ip.name}' has no candidate clause`)
       // Groundings.
       const H = C ** ip.arity
       const Gr = C ** v
@@ -336,7 +336,7 @@ export function diffIlp(task: DilpTask, k: Key): DiffIlp {
 
   const valuation = (theta: readonly number[] | Value): Value => {
     const w = weightsOf(theta)
-    if ((w.shape[0] ?? 0) !== size) throw new MdmlError('shape', `diffIlp: expected ${size} weights`)
+    if ((w.shape[0] ?? 0) !== size) throw new OmaiError('shape', `diffIlp: expected ${size} weights`)
     const probabilities = slots.map((s, i) =>
       softmax(sliceAxis(w, 0, weightOffsets[i] as number, (weightOffsets[i] as number) + s.clauses.length), 0),
     )
@@ -502,8 +502,8 @@ export const dilpContract: Contract<unknown, DilpPath> = defineContract({
  * @returns The algorithm.
  * @example
  * ```ts
- * import { diffIlp, diffIlpAlgorithm } from 'mdml-engine/logic'
- * import { key } from 'mdml-engine/random'
+ * import { diffIlp, diffIlpAlgorithm } from 'omai-engine/logic'
+ * import { key } from 'omai-engine/random'
  * const task = {
  *   constants: ['a', 'b'],
  *   extensional: [{ name: 'edge', arity: 2, facts: [['a', 'b']] }],
@@ -553,8 +553,8 @@ export interface DilpFit {
  * @returns The weights, the loss, the extracted program and whether the solver converged.
  * @example
  * ```ts
- * import { dilpClauseText, diffIlp, learnProgram } from 'mdml-engine/logic'
- * import { key } from 'mdml-engine/random'
+ * import { dilpClauseText, diffIlp, learnProgram } from 'omai-engine/logic'
+ * import { key } from 'omai-engine/random'
  * const task = {
  *   constants: ['a', 'b', 'c'],
  *   extensional: [{ name: 'succ', arity: 2, facts: [['a', 'b'], ['b', 'c']] }],

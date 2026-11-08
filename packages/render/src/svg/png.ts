@@ -4,8 +4,8 @@
  * `data:image/png` URLs for embedding.
  */
 
-import { MdmlError } from 'mdml-engine/base'
-import type { Pixels } from 'mdml-engine/scene'
+import { OmaiError } from 'omai-engine/base'
+import type { Pixels } from 'omai-engine/scene'
 import { deflateRaw } from './_deflate.ts'
 
 const CRC_TABLE: readonly number[] = Array.from({ length: 256 }, (_, n) => {
@@ -84,8 +84,8 @@ function filtered(pixels: Pixels): Uint8Array {
 function checkPixels(pixels: Pixels, name: string): void {
   const { width, height, rgba } = pixels
   if (!(Number.isInteger(width) && Number.isInteger(height) && width > 0 && height > 0))
-    throw new MdmlError('shape', `${name}: width and height must be positive integers`)
-  if (rgba.length !== width * height * 4) throw new MdmlError('shape', `${name}: rgba must hold width*height*4`)
+    throw new OmaiError('shape', `${name}: width and height must be positive integers`)
+  if (rgba.length !== width * height * 4) throw new OmaiError('shape', `${name}: rgba must hold width*height*4`)
 }
 
 /** A PNG file around zlib-compressed image data. */
@@ -122,11 +122,11 @@ function pngFile(width: number, height: number, zlib: Uint8Array): Uint8Array {
  *
  * @param pixels - The image.
  * @returns The PNG file's bytes.
- * @throws MdmlError with code `shape` when the pixel buffer does not match the size.
+ * @throws OmaiError with code `shape` when the pixel buffer does not match the size.
  * @index function RGBA pixels to PNG file bytes, with no dependency: `encodePng(pixels)`.
  * @example
  * ```ts
- * import { encodePng } from 'mdml-render/svg'
+ * import { encodePng } from 'omai-render/svg'
  * const png = encodePng({ width: 1, height: 1, rgba: new Uint8ClampedArray([255, 0, 0, 255]) })
  * [...png.slice(1, 4)].map((c) => String.fromCharCode(c)).join('') // => 'PNG'
  * ```
@@ -150,10 +150,10 @@ export function encodePng(pixels: Pixels): Uint8Array {
  *
  * @param pixels - The image.
  * @returns A promise of the PNG file's bytes.
- * @throws MdmlError with code `shape` when the pixel buffer does not match the size.
+ * @throws OmaiError with code `shape` when the pixel buffer does not match the size.
  * @example
  * ```ts
- * import { encodePngAsync } from 'mdml-render/svg'
+ * import { encodePngAsync } from 'omai-render/svg'
  * const png = await encodePngAsync({ width: 2, height: 2, rgba: new Uint8ClampedArray(16).fill(255) })
  * png[1] // => 80
  * ```
@@ -176,7 +176,7 @@ const B64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
  * @returns The base64 text.
  * @example
  * ```ts
- * import { base64 } from 'mdml-render/svg'
+ * import { base64 } from 'omai-render/svg'
  * base64(new TextEncoder().encode('hi!')) // => 'aGkh'
  * base64(new Uint8Array([0])) // => 'AA=='
  * ```
@@ -210,7 +210,7 @@ export function base64(bytes: Uint8Array): string {
  * @returns The data URL.
  * @example
  * ```ts
- * import { pngDataUrl } from 'mdml-render/svg'
+ * import { pngDataUrl } from 'omai-render/svg'
  * pngDataUrl({ width: 1, height: 1, rgba: new Uint8ClampedArray(4) }).startsWith('data:image/png;base64,') // => true
  * ```
  */

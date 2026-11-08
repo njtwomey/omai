@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { grad } from '../../autodiff/index.ts'
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { key } from '../../random/index.ts'
 import { asTensor, fromStorage, square, sum, toFlat, type Value } from '../../tensor/index.ts'
 import type { Params } from '../module/module.ts'
@@ -65,7 +65,7 @@ describe('AdditiveModel', () => {
   it('enforces heredity: an interaction needs its main effects', () => {
     const inter = interactionTerm([0, 1])
     expect(() => new AdditiveModel({ inFeatures: 3, terms: [splineTerm(0), inter], heredity: 'strong' })).toThrow(
-      MdmlError,
+      OmaiError,
     )
     expect(() => new AdditiveModel({ inFeatures: 3, terms: [splineTerm(0), inter], heredity: 'weak' })).not.toThrow()
     expect(
@@ -123,7 +123,7 @@ describe('AdditiveModel', () => {
     const grid = Array.from({ length: 11 }, (_, i) => i / 10)
     expect(model.termCurve(model.params, 0, grid).shape).toEqual([11])
     expect(model.termSurface(model.params, 3, [0, 0.5, 1], [0, 1]).shape).toEqual([3, 2])
-    expect(() => model.termCurve(model.params, 3, grid)).toThrow(MdmlError)
+    expect(() => model.termCurve(model.params, 3, grid)).toThrow(OmaiError)
     const dense = rows(120, 1)
     const edfFor = (lambda: number): number =>
       new AdditiveModel({

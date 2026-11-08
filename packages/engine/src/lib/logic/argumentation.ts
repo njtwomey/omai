@@ -7,7 +7,7 @@
  * 20 arguments.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import { type Algorithm, channels, type TraceSchema } from '../trace/index.ts'
 
 /** An argumentation framework: arguments and attacks `[attacker, attacked]`. */
@@ -22,10 +22,10 @@ export interface ArgumentationFramework {
  * @param args - The arguments.
  * @param attacks - Pairs `[a, b]` meaning a attacks b.
  * @returns The framework.
- * @throws MdmlError with code `value` for an unknown argument or a repeated argument name.
+ * @throws OmaiError with code `value` for an unknown argument or a repeated argument name.
  * @example
  * ```ts
- * import { framework } from 'mdml-engine/logic'
+ * import { framework } from 'omai-engine/logic'
  * framework(['a', 'b'], [['a', 'b']]).attacks.length // => 1
  * ```
  */
@@ -33,10 +33,10 @@ export function framework(
   args: readonly string[],
   attacks: readonly (readonly [string, string])[],
 ): ArgumentationFramework {
-  if (new Set(args).size !== args.length) throw new MdmlError('value', 'argument names must be distinct')
+  if (new Set(args).size !== args.length) throw new OmaiError('value', 'argument names must be distinct')
   for (const [a, b] of attacks)
     if (!args.includes(a) || !args.includes(b))
-      throw new MdmlError('value', `attack ${a} -> ${b} names an unknown argument`)
+      throw new OmaiError('value', `attack ${a} -> ${b} names an unknown argument`)
   return { arguments: [...args], attacks: attacks.map(([a, b]) => [a, b] as const) }
 }
 
@@ -51,7 +51,7 @@ const attackersOf = (f: ArgumentationFramework, a: string): string[] =>
  * @returns True when the set is conflict-free.
  * @example
  * ```ts
- * import { conflictFree, framework } from 'mdml-engine/logic'
+ * import { conflictFree, framework } from 'omai-engine/logic'
  * const f = framework(['a', 'b', 'c'], [['a', 'b']])
  * [conflictFree(f, ['a', 'c']), conflictFree(f, ['a', 'b'])] // => [true, false]
  * ```
@@ -69,7 +69,7 @@ export function conflictFree(f: ArgumentationFramework, set: readonly string[]):
  * @returns True when every attack on `a` is counter-attacked from the set.
  * @example
  * ```ts
- * import { defends, framework } from 'mdml-engine/logic'
+ * import { defends, framework } from 'omai-engine/logic'
  * defends(framework(['a', 'b', 'c'], [['a', 'b'], ['b', 'c']]), ['a'], 'c') // => true
  * ```
  */
@@ -85,7 +85,7 @@ export function defends(f: ArgumentationFramework, set: readonly string[], a: st
  * @returns The arguments defended by the set.
  * @example
  * ```ts
- * import { characteristic, framework } from 'mdml-engine/logic'
+ * import { characteristic, framework } from 'omai-engine/logic'
  * characteristic(framework(['a', 'b'], [['a', 'b']]), []) // => ['a']
  * ```
  */
@@ -101,7 +101,7 @@ export function characteristic(f: ArgumentationFramework, set: readonly string[]
  * @returns True when admissible.
  * @example
  * ```ts
- * import { admissible, framework } from 'mdml-engine/logic'
+ * import { admissible, framework } from 'omai-engine/logic'
  * const f = framework(['a', 'b'], [['a', 'b'], ['b', 'a']])
  * [admissible(f, ['a']), admissible(f, ['a', 'b'])] // => [true, false]
  * ```
@@ -111,7 +111,7 @@ export function admissible(f: ArgumentationFramework, set: readonly string[]): b
 }
 
 function subsets(f: ArgumentationFramework): string[][] {
-  if (f.arguments.length > 20) throw new MdmlError('value', 'extension enumeration supports at most 20 arguments')
+  if (f.arguments.length > 20) throw new OmaiError('value', 'extension enumeration supports at most 20 arguments')
   const n = f.arguments.length
   const out: string[][] = []
   for (let mask = 0; mask < 1 << n; mask++) out.push(f.arguments.filter((_, i) => (mask >> i) & 1))
@@ -128,7 +128,7 @@ const sameSet = (a: readonly string[], b: readonly string[]): boolean => a.lengt
  * @returns The grounded extension, in the framework's argument order.
  * @example
  * ```ts
- * import { framework, groundedExtension } from 'mdml-engine/logic'
+ * import { framework, groundedExtension } from 'omai-engine/logic'
  * groundedExtension(framework(['a', 'b', 'c'], [['a', 'b'], ['b', 'c']])) // => ['a', 'c']
  * ```
  */
@@ -146,10 +146,10 @@ export function groundedExtension(f: ArgumentationFramework): string[] {
  *
  * @param f - The framework.
  * @returns The complete extensions.
- * @throws MdmlError with code `value` for more than 20 arguments.
+ * @throws OmaiError with code `value` for more than 20 arguments.
  * @example
  * ```ts
- * import { completeExtensions, framework } from 'mdml-engine/logic'
+ * import { completeExtensions, framework } from 'omai-engine/logic'
  * completeExtensions(framework(['a', 'b'], [['a', 'b'], ['b', 'a']])).map((e) => e.join()) // => ['', 'a', 'b']
  * ```
  */
@@ -162,10 +162,10 @@ export function completeExtensions(f: ArgumentationFramework): string[][] {
  *
  * @param f - The framework.
  * @returns The preferred extensions.
- * @throws MdmlError with code `value` for more than 20 arguments.
+ * @throws OmaiError with code `value` for more than 20 arguments.
  * @example
  * ```ts
- * import { framework, preferredExtensions } from 'mdml-engine/logic'
+ * import { framework, preferredExtensions } from 'omai-engine/logic'
  * preferredExtensions(framework(['a', 'b'], [['a', 'b'], ['b', 'a']])).map((e) => e.join()) // => ['a', 'b']
  * ```
  */
@@ -180,10 +180,10 @@ export function preferredExtensions(f: ArgumentationFramework): string[][] {
  *
  * @param f - The framework.
  * @returns The stable extensions.
- * @throws MdmlError with code `value` for more than 20 arguments.
+ * @throws OmaiError with code `value` for more than 20 arguments.
  * @example
  * ```ts
- * import { framework, stableExtensions } from 'mdml-engine/logic'
+ * import { framework, stableExtensions } from 'omai-engine/logic'
  * stableExtensions(framework(['a', 'b', 'c'], [['a', 'b'], ['b', 'c'], ['c', 'a']])) // => []
  * ```
  */
@@ -203,10 +203,10 @@ export type Semantics = 'grounded' | 'complete' | 'preferred' | 'stable'
  * @param f - The framework.
  * @param semantics - Which semantics.
  * @returns The extensions (one for grounded).
- * @throws MdmlError with code `value` for more than 20 arguments (except grounded).
+ * @throws OmaiError with code `value` for more than 20 arguments (except grounded).
  * @example
  * ```ts
- * import { extensions, framework } from 'mdml-engine/logic'
+ * import { extensions, framework } from 'omai-engine/logic'
  * extensions(framework(['a', 'b'], [['a', 'b']]), 'grounded') // => [['a']]
  * ```
  */
@@ -230,7 +230,7 @@ export function extensions(f: ArgumentationFramework, semantics: Semantics): str
  * @returns True when accepted (a sceptical test over no extension is vacuously true).
  * @example
  * ```ts
- * import { accepted, framework } from 'mdml-engine/logic'
+ * import { accepted, framework } from 'omai-engine/logic'
  * const f = framework(['a', 'b'], [['a', 'b'], ['b', 'a']])
  * [accepted(f, 'a', 'preferred', 'credulous'), accepted(f, 'a', 'preferred', 'sceptical')] // => [true, false]
  * ```
@@ -275,7 +275,7 @@ const LABELLING_SCHEMA: TraceSchema = channels({
  * @returns The algorithm.
  * @example
  * ```ts
- * import { framework, groundedAlgorithm } from 'mdml-engine/logic'
+ * import { framework, groundedAlgorithm } from 'omai-engine/logic'
  * groundedAlgorithm(framework(['a'], [])).name // => 'grounded-labelling'
  * ```
  */

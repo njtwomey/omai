@@ -4,7 +4,7 @@
  * built on.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import {
   add,
   fromStorage,
@@ -36,7 +36,7 @@ const product = (xs: readonly number[]): number => xs.reduce((a, b) => a * b, 1)
  * @returns The output length.
  * @example
  * ```ts
- * import { convOutputSize } from 'mdml-engine/numerics/convolution'
+ * import { convOutputSize } from 'omai-engine/numerics/convolution'
  * convOutputSize(32, 3, 2, 1) // => 16
  * ```
  */
@@ -53,7 +53,7 @@ function patchIndices(
 ): { idx: Int32Array; out: number[] } {
   const d = spatial.length
   const out = spatial.map((n, i) => convOutputSize(n, kernel[i] ?? 1, stride[i] ?? 1, 0, dilation[i] ?? 1))
-  if (out.some((o) => o < 1)) throw new MdmlError('shape', 'convolution: the kernel is larger than the (padded) input')
+  if (out.some((o) => o < 1)) throw new OmaiError('shape', 'convolution: the kernel is larger than the (padded) input')
   const strides = spatial.map((_, i) => product(spatial.slice(i + 1)))
   const nk = product(kernel)
   const nl = product(out)
@@ -97,14 +97,14 @@ export interface PatchOptions {
  * @concept im2col
  * @example
  * ```ts
- * import { im2col } from 'mdml-engine/numerics/convolution'
+ * import { im2col } from 'omai-engine/numerics/convolution'
  * im2col([[[1, 2, 3, 4]]], [2]).shape // => [1, 2, 3]
  * ```
  */
 export function im2col(x: TensorLike, kernel: readonly number[], options: PatchOptions = {}): Value {
   const [v0] = promoteFloat(x) as [Value]
   const d = kernel.length
-  if (v0.shape.length !== d + 2) throw new MdmlError('shape', `im2col: input must be [B, C, ...${d} spatial axes]`)
+  if (v0.shape.length !== d + 2) throw new OmaiError('shape', `im2col: input must be [B, C, ...${d} spatial axes]`)
   const padding = expand(options.padding, d, 0)
   const v = padding.some((p) => p > 0)
     ? padArray(v0, [[0, 0], [0, 0], ...padding.map((p): [number, number] => [p, p])])
@@ -126,8 +126,8 @@ export function im2col(x: TensorLike, kernel: readonly number[], options: PatchO
  * @returns `[B, C, *outputSize - 2 padding]`.
  * @example
  * ```ts
- * import { col2im, im2col } from 'mdml-engine/numerics/convolution'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { col2im, im2col } from 'omai-engine/numerics/convolution'
+ * import { toArray } from 'omai-engine/tensor'
  * // Each interior sample appears in two windows.
  * toArray(col2im(im2col([[[1, 1, 1, 1]]], [2]), [4], [2])) // => [[[1, 2, 2, 1]]]
  * ```
@@ -145,7 +145,7 @@ export function col2im(
   const [b = 0, ck = 0] = v.shape
   const nk = product(kernel)
   const c = ck / nk
-  if (!Number.isInteger(c)) throw new MdmlError('shape', 'col2im: channels must be a multiple of the kernel size')
+  if (!Number.isInteger(c)) throw new OmaiError('shape', 'col2im: channels must be a multiple of the kernel size')
   const { idx } = patchIndices(spatial, kernel, expand(options.stride, d, 1), expand(options.dilation, d, 1))
   const updates = reshape(v, [b, c, idx.length])
   const full = new Int32Array(b * c * idx.length)
@@ -186,8 +186,8 @@ export interface ConvOptions {
  * @index function Deep-learning convolution over any number of spatial axes.
  * @example
  * ```ts
- * import { convNd } from 'mdml-engine/numerics/convolution'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { convNd } from 'omai-engine/numerics/convolution'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(convNd([[[1, 2, 3, 4]]], [[[1, -1]]])) // => [[[-1, -1, -1]]]
  * ```
  */
@@ -195,17 +195,17 @@ export function convNd(input: TensorLike, weight: TensorLike, options: ConvOptio
   const [x, w] = promoteFloat(input, weight) as [Value, Value]
   const d = x.shape.length - 2
   if (d < 1 || w.shape.length !== d + 2)
-    throw new MdmlError('shape', 'convNd: input [B, C, *S] and weight [C_out, C_in / groups, *K] of matching rank')
+    throw new OmaiError('shape', 'convNd: input [B, C, *S] and weight [C_out, C_in / groups, *K] of matching rank')
   const groups = options.groups ?? 1
   const [b = 0, cin = 0] = x.shape
   const [cout = 0, cinPerGroup = 0, ...kernel] = w.shape
   if (cin !== cinPerGroup * groups || cout % groups !== 0)
-    throw new MdmlError('shape', 'convNd: channels do not match the groups')
+    throw new OmaiError('shape', 'convNd: channels do not match the groups')
   const stride = expand(options.stride, d, 1)
   const dilation = expand(options.dilation, d, 1)
   let widths: [number, number][]
   if (options.padding === 'same') {
-    if (stride.some((s) => s !== 1)) throw new MdmlError('value', "convNd: padding 'same' needs stride 1")
+    if (stride.some((s) => s !== 1)) throw new OmaiError('value', "convNd: padding 'same' needs stride 1")
     widths = kernel.map((k, i) => {
       const total = (dilation[i] ?? 1) * (k - 1)
       return [Math.floor(total / 2), total - Math.floor(total / 2)]
@@ -251,8 +251,8 @@ export interface ConvTransposeOptions {
  * @returns `[B, C_out, *O]`.
  * @example
  * ```ts
- * import { convTranspose } from 'mdml-engine/numerics/convolution'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { convTranspose } from 'omai-engine/numerics/convolution'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(convTranspose([[[1, 2]]], [[[1, 1, 1]]], { stride: 2 })) // => [[[1, 1, 3, 2, 2]]]
  * ```
  */
@@ -263,7 +263,7 @@ export function convTranspose(input: TensorLike, weight: TensorLike, options: Co
   const [b = 0, cin = 0, ...inSpatial] = x.shape
   const [wcin = 0, coutPerGroup = 0, ...kernel] = w.shape
   if (wcin !== cin || cin % groups !== 0)
-    throw new MdmlError('shape', 'convTranspose: weight must be [C_in, C_out / groups, *K]')
+    throw new OmaiError('shape', 'convTranspose: weight must be [C_in, C_out / groups, *K]')
   const stride = expand(options.stride, d, 1)
   const dilation = expand(options.dilation, d, 1)
   const padding = expand(options.padding, d, 0)

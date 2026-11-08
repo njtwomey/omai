@@ -2,10 +2,10 @@
 
 # base
 
-The foundation every other domain builds on: the library's error type `MdmlError` and its codes, the `Registry` shape that the dataset and environment registries share, JSON helpers, shared result records (`Estimate`, `TestResult`, `MetricResult`), small scalar helpers (clamping, extrema, bit counts), the canonical small vectors (`Vec2`, `Vec3`, `Vec4`), complex numbers as pairs (`Complex`, `cmul`, `cdiv`...) and the version. It imports nothing else from the engine.
+The foundation every other domain builds on: the library's error type `OmaiError` and its codes, the `Registry` shape that the dataset and environment registries share, JSON helpers, shared result records (`Estimate`, `TestResult`, `MetricResult`), small scalar helpers (clamping, extrema, bit counts), the canonical small vectors (`Vec2`, `Vec3`, `Vec4`), complex numbers as pairs (`Complex`, `cmul`, `cdiv`...) and the version. It imports nothing else from the engine.
 
-- structure `json.ts` (file): Lossless JSON for anything that crosses a boundary. `src/lib/base/json.ts:1` `mdml-engine/base`
-- structure `registry.ts` (file): Registries of named entries, the shape dataset and environment registries share. `src/lib/base/registry.ts:1` `mdml-engine/base`
-- structure `results.ts` (file): Estimate, TestResult and MetricResult records shared across domains. `src/lib/base/results.ts:1` `mdml-engine/base`
+- structure `json.ts` (file): Lossless JSON for anything that crosses a boundary. `src/lib/base/json.ts:1` `omai-engine/base`
+- structure `registry.ts` (file): Registries of named entries, the shape dataset and environment registries share. `src/lib/base/registry.ts:1` `omai-engine/base`
+- structure `results.ts` (file): Estimate, TestResult and MetricResult records shared across domains. `src/lib/base/results.ts:1` `omai-engine/base`
 
-- structure `MdmlError`: The library's single error type with machine-readable codes. `src/lib/base/errors.ts:39` `mdml-engine/base`
+- structure `OmaiError`: The library's single error type with machine-readable codes. `src/lib/base/errors.ts:39` `omai-engine/base`

@@ -30,7 +30,7 @@ export interface GaussianEllipsoid {
  * @concept gaussian-splatting
  * @example
  * ```ts
- * import { gaussianEllipsoids, gaussiansFromPoints } from 'mdml-engine/fields'
+ * import { gaussianEllipsoids, gaussiansFromPoints } from 'omai-engine/fields'
  * const e = gaussianEllipsoids(gaussiansFromPoints([[1, 2, 3]], [[0.2, 0.4, 0.6]], { scale: 0.5 }))[0]
  * [e?.centre, e?.axes[0].map((v) => Math.abs(v))] // => [[1, 2, 3], [0.5, 0, 0]]
  * ```
@@ -93,8 +93,8 @@ const PLY_PROPERTIES = [
  * @concept gaussian-splatting
  * @example
  * ```ts
- * import { gaussiansToPly, randomGaussians } from 'mdml-engine/fields'
- * import { key } from 'mdml-engine/random'
+ * import { gaussiansToPly, randomGaussians } from 'omai-engine/fields'
+ * import { key } from 'omai-engine/random'
  * const bytes = gaussiansToPly(randomGaussians(key(0), 3))
  * new TextDecoder().decode(bytes.slice(0, 3)) // => 'ply'
  * ```

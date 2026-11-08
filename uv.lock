@@ -2045,7 +2045,7 @@ wheels = [
 ]
 
 [[package]]
-name = "mdml-oracle"
+name = "omai-oracle"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [

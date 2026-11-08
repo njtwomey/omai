@@ -1,4 +1,4 @@
-import { audioClip } from 'mdml-engine/exposition'
+import { audioClip } from 'omai-engine/exposition'
 import { describe, expect, it } from 'vitest'
 import { audioLayout, audioSceneAt, spectrogramOf, spectrogramPixels, waveformEnvelope } from './audio.ts'
 

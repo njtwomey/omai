@@ -5,7 +5,7 @@
  * steady across an animation's frames.
  */
 
-import { maxOf, minOf } from 'mdml-engine/base'
+import { maxOf, minOf } from 'omai-engine/base'
 import {
   circle,
   group as groupNode,
@@ -20,7 +20,7 @@ import {
   scene,
   tex,
   text,
-} from 'mdml-engine/scene'
+} from 'omai-engine/scene'
 import { circularLayout, forceLayout } from '../layout/force.ts'
 import { boxBoundary, type EdgeRoute, type GraphLayout, type LayoutBox, type LayoutGraph } from '../layout/graph.ts'
 import { bipartiteLayout } from '../layout/grids.ts'
@@ -249,8 +249,8 @@ function depthOf(s: Structure, id: string): number {
  * @index function Draw a Structure as a scene: `diagram(structure, { layout: 'layered' })`.
  * @example
  * ```ts
- * import { structure } from 'mdml-engine/scene'
- * import { diagram } from 'mdml-render/structures'
+ * import { structure } from 'omai-engine/scene'
+ * import { diagram } from 'omai-render/structures'
  * const s = structure('bayes-net', [{ id: 'z', label: 'z', role: 'latent' }, { id: 'x', label: 'x', role: 'observed' }], [{ from: 'z', to: 'x' }])
  * diagram(s).kind // => 'scene'
  * ```

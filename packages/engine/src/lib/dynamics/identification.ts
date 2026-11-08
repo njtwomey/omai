@@ -6,7 +6,7 @@
  * sample at a time (with a forgetting factor to follow a changing system).
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import { ddot, dgemv, eig, lstsq, pinv, solve, svd } from '../numerics/linalg/index.ts'
 import { leastSquares } from '../optim/index.ts'
 import { type Key, key, normal } from '../random/index.ts'
@@ -65,11 +65,11 @@ export interface PolynomialModel {
  * @param u - Input series.
  * @param orders - na, nb and the delay nk (default 1).
  * @returns The polynomial coefficients and residuals.
- * @throws MdmlError with code `value` for mismatched lengths or too few samples.
+ * @throws OmaiError with code `value` for mismatched lengths or too few samples.
  * @concept system-identification
  * @example
  * ```ts
- * import { arx } from 'mdml-engine/dynamics'
+ * import { arx } from 'omai-engine/dynamics'
  * // y_t = 0.5 y_{t-1} + 2 u_{t-1}: a_1 = -0.5, b_1 = 2.
  * const u = [1, 0, 0, 1, 1, 0, 1, 0]
  * const y = [0]
@@ -84,12 +84,12 @@ export function arx(
 ): PolynomialModel {
   const ys = series(y)
   const us = series(u)
-  if (ys.length !== us.length) throw new MdmlError('value', 'arx: y and u need the same length')
+  if (ys.length !== us.length) throw new OmaiError('value', 'arx: y and u need the same length')
   const { na, nb } = orders
   const nk = orders.nk ?? 1
   const start = Math.max(na, nk + nb - 1)
   const rows = ys.length - start
-  if (rows <= na + nb) throw new MdmlError('value', 'arx: too few samples for these orders')
+  if (rows <= na + nb) throw new OmaiError('value', 'arx: too few samples for these orders')
   const X = new Float64Array(rows * (na + nb))
   const Y = new Float64Array(rows)
   for (let r = 0; r < rows; r++) {
@@ -125,8 +125,8 @@ export function arx(
  * @concept prediction-error-method
  * @example
  * ```ts
- * import { predictionError } from 'mdml-engine/dynamics'
- * import { sub, mul } from 'mdml-engine/tensor'
+ * import { predictionError } from 'omai-engine/dynamics'
+ * import { sub, mul } from 'omai-engine/tensor'
  * const r = predictionError((th) => sub(mul(th, [1, 2, 3]), [2, 4, 6]), [0])
  * Math.round((r.theta[0] ?? 0) * 1e8) / 1e8 // => 2
  * ```
@@ -151,7 +151,7 @@ export function predictionError(
  * @concept prediction-error-method
  * @example
  * ```ts
- * import { armax } from 'mdml-engine/dynamics'
+ * import { armax } from 'omai-engine/dynamics'
  * const u = Array.from({ length: 40 }, (_, t) => Math.sin(0.7 * t) + (t % 3 === 0 ? 1 : 0))
  * const y = [0]
  * for (let t = 1; t < 40; t++) y.push(0.6 * (y[t - 1] ?? 0) + (u[t - 1] ?? 0))
@@ -239,11 +239,11 @@ function blockHankel(data: Float64Array, dim: number, rows: number, cols: number
  * @param u - Inputs `[T, m]` (or `[T]`).
  * @param options - Model order and the number of block rows (default max(order + 1, 2 order)).
  * @returns A, B, C, D and the singular values.
- * @throws MdmlError with code `value` for too few samples.
+ * @throws OmaiError with code `value` for too few samples.
  * @concept subspace-identification
  * @example
  * ```ts
- * import { n4sid } from 'mdml-engine/dynamics'
+ * import { n4sid } from 'omai-engine/dynamics'
  * const u = Array.from({ length: 120 }, (_, t) => Math.sin(0.3 * t) + Math.cos(1.1 * t))
  * let x = 0
  * const y = u.map((v) => { const out = x; x = 0.8 * x + v; return out })
@@ -263,7 +263,7 @@ export function n4sid(
   const n = options.order
   const i = options.blockRows ?? Math.max(n + 1, 2 * n)
   const j = T - 2 * i + 1
-  if (j < 2 * i * (m + p)) throw new MdmlError('value', 'n4sid: too few samples for these block rows')
+  if (j < 2 * i * (m + p)) throw new OmaiError('value', 'n4sid: too few samples for these block rows')
   const yd = series(Y)
   const ud = series(U)
   const Up = fromNumbers(blockHankel(ud, m, i, j, 0), [i * m, j])
@@ -335,7 +335,7 @@ export interface DmdResult {
  * @concept dynamic-mode-decomposition
  * @example
  * ```ts
- * import { dmd } from 'mdml-engine/dynamics'
+ * import { dmd } from 'omai-engine/dynamics'
  * // Snapshots of x_{k+1} = diag(0.9, 0.5) x_k: the eigenvalues are 0.9 and 0.5.
  * const cols = [[1, 1]]
  * for (let k = 0; k < 5; k++) cols.push([0.9 * cols[k][0], 0.5 * cols[k][1]])
@@ -392,7 +392,7 @@ export type Dictionary = (x: Value) => Value
  * @concept dictionary-learning
  * @example
  * ```ts
- * import { polynomialLibrary } from 'mdml-engine/dynamics'
+ * import { polynomialLibrary } from 'omai-engine/dynamics'
  * polynomialLibrary(2, 2).names // => ['1', 'x0', 'x1', 'x0^2', 'x0 x1', 'x1^2']
  * ```
  */
@@ -441,7 +441,7 @@ export function polynomialLibrary(
  * @concept koopman-operator
  * @example
  * ```ts
- * import { edmd, polynomialLibrary } from 'mdml-engine/dynamics'
+ * import { edmd, polynomialLibrary } from 'omai-engine/dynamics'
  * // x' = 0.5 x on monomials 1, x, x^2: Koopman eigenvalues 1, 0.5 and 0.25.
  * const xs = [[0.3], [1.1], [-0.7], [2]]
  * const r = edmd(xs, xs.map(([v]) => [0.5 * v]), polynomialLibrary(1, 2).features)
@@ -490,7 +490,7 @@ export interface SindyOptions {
  * @concept sparse-regression
  * @example
  * ```ts
- * import { stlsq } from 'mdml-engine/dynamics'
+ * import { stlsq } from 'omai-engine/dynamics'
  * // The second feature is irrelevant: thresholding removes it and the refit gives 2 exactly.
  * Array.from(stlsq([[1, 1], [1, -1], [1, 1], [1, -1]], [[2], [2], [2], [2]]).data) // => [2, 0]
  * ```
@@ -568,7 +568,7 @@ export function stlsq(theta: TensorLike, targets: TensorLike, options: SindyOpti
  * @concept sindy
  * @example
  * ```ts
- * import { sindy } from 'mdml-engine/dynamics'
+ * import { sindy } from 'omai-engine/dynamics'
  * // The harmonic oscillator x0' = 2 x1, x1' = -2 x0 sampled over one period, with a linear library.
  * const xs = Array.from({ length: 64 }, (_, i) => [Math.cos((i * Math.PI) / 32), -Math.sin((i * Math.PI) / 32)])
  * const xdot = xs.map(([a, b]) => [2 * b, -2 * a])
@@ -586,7 +586,7 @@ export function sindy(
   if (options.derivatives !== undefined) D = primalOf(asTensor(options.derivatives))
   else {
     const dt = options.dt
-    if (dt === undefined) throw new MdmlError('value', 'sindy: give dt or the derivatives')
+    if (dt === undefined) throw new OmaiError('value', 'sindy: give dt or the derivatives')
     const out = new Float64Array(m * n)
     for (let r = 0; r < m; r++) {
       for (let c = 0; c < n; c++) {
@@ -630,11 +630,11 @@ export interface Regression {
  * @param u - Input series.
  * @param orders - na, nb and the delay nk (default 1).
  * @returns The regressors and targets, from the first index where every lag exists.
- * @throws MdmlError with code `value` for mismatched lengths.
+ * @throws OmaiError with code `value` for mismatched lengths.
  * @concept system-identification
  * @example
  * ```ts
- * import { arxRegression } from 'mdml-engine/dynamics'
+ * import { arxRegression } from 'omai-engine/dynamics'
  * arxRegression([1, 2, 3, 4], [5, 6, 7, 8], { na: 1, nb: 1 }).phi // => [[-1, 5], [-2, 6], [-3, 7]]
  * ```
  */
@@ -645,7 +645,7 @@ export function arxRegression(
 ): Regression {
   const ys = series(y)
   const us = series(u)
-  if (ys.length !== us.length) throw new MdmlError('value', 'arxRegression: y and u need the same length')
+  if (ys.length !== us.length) throw new OmaiError('value', 'arxRegression: y and u need the same length')
   const { na, nb } = orders
   const nk = orders.nk ?? 1
   const start = Math.max(na, nk + nb - 1)
@@ -690,7 +690,7 @@ export interface RlsState {
  * @concept recursive-least-squares
  * @example
  * ```ts
- * import { rlsUpdate } from 'mdml-engine/dynamics'
+ * import { rlsUpdate } from 'omai-engine/dynamics'
  * const s0 = { theta: Float64Array.of(0), covariance: Float64Array.of(100), t: 0, error: 0, gain: Float64Array.of(0) }
  * // One sample of y = 2 phi at phi = 1 moves a weak prior almost all the way to 2.
  * Math.round(rlsUpdate(s0, [1], 2, 1).theta[0] * 1000) / 1000 // => 1.98
@@ -767,12 +767,12 @@ export interface RlsOptions {
  * @param regression - The regressors and targets, one row per sample.
  * @param options - Forgetting, the prior and the start.
  * @returns The algorithm, which ends (completed) after the last sample.
- * @throws MdmlError with code `value` for a forgetting factor outside (0, 1] or rows of different sizes.
+ * @throws OmaiError with code `value` for a forgetting factor outside (0, 1] or rows of different sizes.
  * @concept recursive-least-squares
  * @example
  * ```ts
- * import { rlsAlgorithm } from 'mdml-engine/dynamics'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { rlsAlgorithm } from 'omai-engine/dynamics'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * // y = 3 phi exactly: the estimate is 3 after a few samples.
  * const phi = [[1], [2], [3], [4]]
  * const alg = rlsAlgorithm({ phi, y: [3, 6, 9, 12] })
@@ -781,10 +781,10 @@ export interface RlsOptions {
  */
 export function rlsAlgorithm(regression: Regression, options: RlsOptions = {}): Algorithm<RlsState, RlsPath> {
   const lambda = options.forgetting ?? 1
-  if (!(lambda > 0 && lambda <= 1)) throw new MdmlError('value', 'rlsAlgorithm: the forgetting factor is in (0, 1]')
+  if (!(lambda > 0 && lambda <= 1)) throw new OmaiError('value', 'rlsAlgorithm: the forgetting factor is in (0, 1]')
   const d = regression.phi[0]?.length ?? 0
   if (d === 0 || regression.phi.some((r) => r.length !== d) || regression.y.length !== regression.phi.length) {
-    throw new MdmlError('value', 'rlsAlgorithm: give rows of equal size, one target per row')
+    throw new OmaiError('value', 'rlsAlgorithm: give rows of equal size, one target per row')
   }
   const delta = options.initialVariance ?? 1000
   const n = regression.phi.length
@@ -839,7 +839,7 @@ export interface ArxPlant {
  * @concept system-identification
  * @example
  * ```ts
- * import { simulateArx } from 'mdml-engine/dynamics'
+ * import { simulateArx } from 'omai-engine/dynamics'
  * // y_t = 0.5 y_{t-1} + 2 u_{t-1}.
  * simulateArx({ a: [-0.5], b: [2] }, [1, 0, 0, 1]).y // => [0, 2, 1, 0.5]
  * ```

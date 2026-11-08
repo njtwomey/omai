@@ -140,7 +140,7 @@ export type Explained<T> = T & { readonly exposition: readonly Exposition[] }
  * @returns The records of that kind.
  * @example
  * ```ts
- * import { recordsOf, regularisationPath } from 'mdml-engine/exposition'
+ * import { recordsOf, regularisationPath } from 'omai-engine/exposition'
  * const path = regularisationPath({ penalties: [1, 0.1], features: ['a'], coefficients: [[0], [0.5]] })
  * recordsOf([path], 'regularisationPath').length // => 1
  * ```
@@ -159,7 +159,7 @@ export function recordsOf<K extends ExpositionKind>(
  * @returns `true` for exposition records.
  * @example
  * ```ts
- * import { isExposition } from 'mdml-engine/exposition'
+ * import { isExposition } from 'omai-engine/exposition'
  * isExposition({ kind: 'learningCurve', sizes: [], train: [], validation: [] }) // => true
  * isExposition({ kind: 'nope' }) // => false
  * ```

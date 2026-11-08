@@ -5,7 +5,7 @@
  * or Barnes-Hut (a sparse P over the nearest neighbours, the repulsion summarised by a space-partitioning tree).
  */
 
-import { MdmlError, maxOf } from '../base/index.ts'
+import { maxOf, OmaiError } from '../base/index.ts'
 import { type DistanceAlias, type DistanceName, distanceMatrix } from '../distances/index.ts'
 import { type IterativeEstimator, iterative, matrixView } from '../learn/index.ts'
 import { normal } from '../random/index.ts'
@@ -26,7 +26,7 @@ const MACHINE_EPSILON = Number.EPSILON
  * @returns The conditional probabilities and each row's beta (precision 1 / (2 sigma^2)).
  * @example
  * ```ts
- * import { conditionalProbabilities } from 'mdml-engine/manifold'
+ * import { conditionalProbabilities } from 'omai-engine/manifold'
  * const { p } = conditionalProbabilities([[0, 1, 4], [1, 0, 1], [4, 1, 0]], 1.5)
  * p[0]?.reduce((a, b) => a + b, 0) // => 1
  * ```
@@ -86,7 +86,7 @@ function squaredDistances(x: TensorLike, metric: DistanceName | DistanceAlias): 
  * @returns The joint probabilities `[n, n]` (zero diagonal) and the calibrated bandwidths sigma_i.
  * @example
  * ```ts
- * import { jointProbabilities } from 'mdml-engine/manifold'
+ * import { jointProbabilities } from 'omai-engine/manifold'
  * const { p } = jointProbabilities([[0], [1], [2], [10]], 1.5)
  * p.flat().reduce((a, b) => a + b, 0) // => 1
  * ```
@@ -127,7 +127,7 @@ export interface SparseRows {
  * @returns The sparse joint probabilities and each row's calibrated bandwidth.
  * @example
  * ```ts
- * import { sparseJointProbabilities } from 'mdml-engine/manifold'
+ * import { sparseJointProbabilities } from 'omai-engine/manifold'
  * const { p } = sparseJointProbabilities([[0], [1], [2], [3], [10], [11], [12]], 1.5)
  * p.values.reduce((a, b) => a + b, 0) // => 1
  * ```
@@ -238,7 +238,7 @@ function klAndGradient(
  * @returns The KL divergence and its gradient `[n, k]`.
  * @example
  * ```ts
- * import { tsneGradient } from 'mdml-engine/manifold'
+ * import { tsneGradient } from 'omai-engine/manifold'
  * tsneGradient([[0, 0.5], [0.5, 0]], [[0, 0], [1, 0]]).kl // => 0
  * ```
  */
@@ -362,7 +362,7 @@ function buildTree(y: Float64Array, n: number, k: number): SpacePartitionTree {
  * @returns The KL divergence (of the unexaggerated P).
  * @example
  * ```ts
- * import { barnesHutKl } from 'mdml-engine/manifold'
+ * import { barnesHutKl } from 'omai-engine/manifold'
  * const p = { n: 2, indptr: [0, 1, 2], indices: [1, 0], values: [0.5, 0.5] }
  * barnesHutKl(p, Float64Array.of(0, 0, 1, 0), 2, 0) // => 0
  * ```
@@ -472,8 +472,8 @@ export interface TsneOptions {
  * @returns The algorithm.
  * @example
  * ```ts
- * import { jointProbabilities, tsneAlgorithm } from 'mdml-engine/manifold'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { jointProbabilities, tsneAlgorithm } from 'omai-engine/manifold'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const x = [[0], [0.1], [0.2], [5], [5.1], [5.2]]
  * const { p } = jointProbabilities(x, 2)
  * const init = [[0, 0.1], [0.1, 0], [-0.1, 0], [0.05, 0.1], [0, -0.1], [0.1, 0.1]]
@@ -604,7 +604,7 @@ export function tsneSetup(
   readonly learningRate: number
 } {
   const m = matrixView(x, 'tsne', { minSamples: 4 })
-  if (!(h.perplexity < m.n)) throw new MdmlError('value', `tsne: perplexity must be below n = ${m.n}`)
+  if (!(h.perplexity < m.n)) throw new OmaiError('value', `tsne: perplexity must be below n = ${m.n}`)
   let start: number[][]
   if (h.init === 'random')
     start = (toArray(normal(key, [m.n, h.nComponents])) as number[][]).map((r) => r.map((v) => v * 1e-4))
@@ -629,7 +629,7 @@ export function tsneSetup(
  * @index estimator t-SNE embedding, one gradient step at a time.
  * @example
  * ```ts
- * import { tsne } from 'mdml-engine/manifold'
+ * import { tsne } from 'omai-engine/manifold'
  * const x = [[0, 0], [0.1, 0], [0, 0.1], [5, 5], [5.1, 5], [5, 5.1], [0.1, 0.1], [5.1, 5.1]]
  * tsne.with({ perplexity: 2, maxIter: 50, exaggerationIter: 10 }).fit({ x }).params.embedding.length // => 8
  * ```

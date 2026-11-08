@@ -4,7 +4,7 @@
  */
 
 import type { SeriesOption } from 'echarts'
-import { maxOf, minOf } from 'mdml-engine/base'
+import { maxOf, minOf } from 'omai-engine/base'
 import { type ColourMode, tokens } from '../theme/tokens.ts'
 import { colourFor } from './_data.ts'
 import { type Layer, layer } from './plot.ts'
@@ -29,7 +29,7 @@ export interface Annotations {
  * @returns The layer.
  * @example
  * ```ts
- * import { annotations } from 'mdml-render/charts'
+ * import { annotations } from 'omai-render/charts'
  * annotations({ arrows: [{ from: [0, 0], to: [1, 1], label: 'here' }], spans: [{ x: [2, 3] }] }).series.length // => 3
  * ```
  */

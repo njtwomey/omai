@@ -9,7 +9,7 @@
  */
 import { valueAndGrad } from '../autodiff/index.ts'
 import type { Json } from '../base/index.ts'
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { matrixView } from '../learn/validation.ts'
 import { adam, applyUpdates, type LearningRate } from '../optim/index.ts'
 import { type Key, normal, permutation } from '../random/index.ts'
@@ -144,8 +144,8 @@ function code(p: SaeParams, x: Value, mode: 'l1' | 'topk', k: number): Value {
  * @returns The codes `[n, features]`.
  * @example
  * ```ts
- * import { saeEncode } from 'mdml-engine/explain'
- * import { tensor } from 'mdml-engine/tensor'
+ * import { saeEncode } from 'omai-engine/explain'
+ * import { tensor } from 'omai-engine/tensor'
  * const p = { encoder: tensor([[1, 0], [0, 1]]), encoderBias: tensor([0, 0]), decoder: tensor([[1, 0], [0, 1]]), decoderBias: tensor([0, 0]) }
  * saeEncode(p, [[2, -1]]).shape // => [1, 2]
  * ```
@@ -166,8 +166,8 @@ export function saeEncode(
  * @returns The reconstructed activations `[n, d]`.
  * @example
  * ```ts
- * import { saeDecode } from 'mdml-engine/explain'
- * import { tensor, toFlat } from 'mdml-engine/tensor'
+ * import { saeDecode } from 'omai-engine/explain'
+ * import { tensor, toFlat } from 'omai-engine/tensor'
  * const p = { encoder: tensor([[1, 0], [0, 1]]), encoderBias: tensor([0, 0]), decoder: tensor([[1, 0], [0, 1]]), decoderBias: tensor([1, 1]) }
  * toFlat(saeDecode(p, [[2, 0]])) // => [3, 1]
  * ```
@@ -216,8 +216,8 @@ function measure(
  * @concept sparse-autoencoders
  * @example
  * ```ts
- * import { saeAlgorithm } from 'mdml-engine/explain'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { saeAlgorithm } from 'omai-engine/explain'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const x = Array.from({ length: 40 }, (_, i) => (i % 2 === 0 ? [1, 0, 0] : [0, 1, 0]))
  * const r = runAlgorithm(saeAlgorithm(x, { features: 2, steps: 150, sparsity: 'topk', k: 1 }), { maxSteps: 150 })
  * r.state.reconstruction < 0.05 // => true
@@ -227,7 +227,7 @@ export function saeAlgorithm(activations: TensorLike, options: SaeOptions): Algo
   const m = matrixView(activations, 'saeAlgorithm')
   const { n, d } = m
   const h = options.features
-  if (!Number.isInteger(h) || h < 1) throw new MdmlError('value', 'saeAlgorithm: features must be a positive integer')
+  if (!Number.isInteger(h) || h < 1) throw new OmaiError('value', 'saeAlgorithm: features must be a positive integer')
   const mode = options.sparsity ?? 'l1'
   const lambda = options.l1Coefficient ?? 0.05
   const k = options.k ?? 2
@@ -366,7 +366,7 @@ export interface DictionaryRecovery {
  * @returns The similarity of each planted direction, their mean and which learned direction matched.
  * @example
  * ```ts
- * import { dictionaryRecovery } from 'mdml-engine/explain'
+ * import { dictionaryRecovery } from 'omai-engine/explain'
  * dictionaryRecovery([[1, 0], [0, 1]], [[0, -2], [3, 0.01]]).match // => [1, 0]
  * ```
  */
@@ -376,7 +376,7 @@ export function dictionaryRecovery(truth: readonly (readonly number[])[], learne
   const similarity: number[] = []
   const match: number[] = []
   for (const t of truth) {
-    if (t.length !== l.d) throw new MdmlError('shape', 'dictionaryRecovery: directions must share one dimension')
+    if (t.length !== l.d) throw new OmaiError('shape', 'dictionaryRecovery: directions must share one dimension')
     let best = -1
     let arg = 0
     for (let j = 0; j < l.n; j++) {

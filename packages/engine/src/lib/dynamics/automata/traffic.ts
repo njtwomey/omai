@@ -5,7 +5,7 @@
  * model sags below; the sweep over density is the fundamental diagram with its capacity drop.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { foldIn, key as makeKey, permutation } from '../../random/index.ts'
 import { type Algorithm, type Contract, contractSchema, defineContract, scalar, tensor } from '../../trace/index.ts'
 import { codec, draws, positiveInt, unit } from './_core.ts'
@@ -57,7 +57,7 @@ export const trafficContract: Contract<TrafficState, TrafficPath> = defineContra
  * @concept nagel-schreckenberg
  * @example
  * ```ts
- * import { automata } from 'mdml-engine/dynamics'
+ * import { automata } from 'omai-engine/dynamics'
  * [automata.deterministicFlow(0.1, 5), automata.deterministicFlow(0.5, 5)] // => [0.5, 0.5]
  * ```
  */
@@ -76,7 +76,7 @@ export function deterministicFlow(density: number, maxSpeed: number): number {
  * @concept nagel-schreckenberg
  * @example
  * ```ts
- * import { automata } from 'mdml-engine/dynamics'
+ * import { automata } from 'omai-engine/dynamics'
  * // A lone car on a ring of 8 accelerates 0, 1, 2, 3...
  * Array.from(automata.trafficStep(Int8Array.of(0, -1, -1, -1, -1, -1, -1, -1), 5, 0, new Float64Array(8))) // => [-1, 1, -1, -1, -1, -1, -1, -1]
  * ```
@@ -105,12 +105,12 @@ export function trafficStep(cells: Int8Array, maxSpeed: number, dawdle: number, 
  *
  * @param options - Length, density or car count, top speed and dawdling probability.
  * @returns The algorithm.
- * @throws MdmlError with code `value` for a bad length, speed, probability or more cars than cells.
+ * @throws OmaiError with code `value` for a bad length, speed, probability or more cars than cells.
  * @concept nagel-schreckenberg
  * @example
  * ```ts
- * import { automata } from 'mdml-engine/dynamics'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { automata } from 'omai-engine/dynamics'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * // Without dawdling, 10 cars on 100 cells reach top speed (5) and flow 10 x 5 / 100.
  * const s = runAlgorithm(automata.nagelSchreckenberg({ length: 100, cars: 10, dawdle: 0 }), { seed: 0, maxSteps: 300 }).state
  * s.flow // => 0.5
@@ -125,7 +125,7 @@ export function nagelSchreckenberg(options: TrafficOptions = {}): Algorithm<Traf
   unit('nagelSchreckenberg', 'dawdle', dawdle)
   const cars = options.cars ?? Math.round((options.density ?? 0.2) * length)
   if (!(Number.isInteger(cars) && cars >= 0 && cars <= length))
-    throw new MdmlError('value', `nagelSchreckenberg: need 0 <= cars <= length, got ${cars}`)
+    throw new OmaiError('value', `nagelSchreckenberg: need 0 <= cars <= length, got ${cars}`)
   const measure = (cells: Int8Array): { flow: number; meanSpeed: number; jammed: number } => {
     let total = 0
     let n = 0
@@ -178,7 +178,7 @@ export interface FundamentalDiagram {
  * @concept nagel-schreckenberg
  * @example
  * ```ts
- * import { automata } from 'mdml-engine/dynamics'
+ * import { automata } from 'omai-engine/dynamics'
  * const d = automata.trafficDiagram({ length: 100, densities: [0.1, 0.5], dawdle: 0, settle: 200, measure: 20 })
  * Array.from(d.flow).map((v) => Math.round(v * 1e9) / 1e9) // => [0.5, 0.5]
  * ```

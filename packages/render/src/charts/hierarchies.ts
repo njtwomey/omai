@@ -39,7 +39,7 @@ function coloured(nodes: readonly TreeNode[]): unknown[] {
  * @returns The ECharts option.
  * @example
  * ```ts
- * import { treemapChart } from 'mdml-render/charts'
+ * import { treemapChart } from 'omai-render/charts'
  * treemapChart([{ name: 'a', value: 2 }, { name: 'b', children: [{ name: 'c', value: 1 }] }]).series[0].type // => 'treemap'
  * ```
  */
@@ -85,7 +85,7 @@ export function treemapChart(nodes: readonly TreeNode[], options: HierarchyOptio
  * @returns The ECharts option.
  * @example
  * ```ts
- * import { sunburstChart } from 'mdml-render/charts'
+ * import { sunburstChart } from 'omai-render/charts'
  * sunburstChart([{ name: 'a', value: 2 }]).series[0].type // => 'sunburst'
  * ```
  */

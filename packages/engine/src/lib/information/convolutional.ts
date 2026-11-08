@@ -5,7 +5,7 @@
  * or soft decisions.
  */
 
-import { argminOf, type Json, MdmlError, maxOf, minOf } from '../base/index.ts'
+import { argminOf, type Json, maxOf, minOf, OmaiError } from '../base/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../trace/index.ts'
 
 /**
@@ -43,16 +43,16 @@ const parity = (x: number): number => {
  * @concept convolutional-codes
  * @example
  * ```ts
- * import { convolutionalCode } from 'mdml-engine/information'
+ * import { convolutionalCode } from 'omai-engine/information'
  * convolutionalCode([0o7, 0o5]).states // => 4
  * ```
  */
 export function convolutionalCode(generators: readonly number[], constraintLength?: number): ConvolutionalCode {
   if (generators.length === 0 || generators.some((g) => !Number.isInteger(g) || g < 1))
-    throw new MdmlError('value', 'convolutionalCode: generators must be positive integers')
+    throw new OmaiError('value', 'convolutionalCode: generators must be positive integers')
   const k = constraintLength ?? maxOf(generators.map((g) => g.toString(2).length))
   if (!Number.isInteger(k) || k < 2 || k > 16 || generators.some((g) => g >= 2 ** k))
-    throw new MdmlError('value', 'convolutionalCode: the constraint length must be in [2, 16] and fit the generators')
+    throw new OmaiError('value', 'convolutionalCode: the constraint length must be in [2, 16] and fit the generators')
   const states = 2 ** (k - 1)
   const next = new Int32Array(2 * states)
   const outputs: number[][] = []
@@ -76,7 +76,7 @@ export function convolutionalCode(generators: readonly number[], constraintLengt
  * @concept convolutional-codes
  * @example
  * ```ts
- * import { convolutionalCode, convolutionalEncode } from 'mdml-engine/information'
+ * import { convolutionalCode, convolutionalEncode } from 'omai-engine/information'
  * convolutionalEncode(convolutionalCode([0o7, 0o5]), [1, 0, 1, 1]) // => [1, 1, 1, 0, 0, 0, 0, 1, 0, 1, 1, 1]
  * ```
  */
@@ -89,7 +89,7 @@ export function convolutionalEncode(
   const out: number[] = []
   let s = 0
   for (const b of input) {
-    if (b !== 0 && b !== 1) throw new MdmlError('value', 'convolutionalEncode: bits must be 0 or 1')
+    if (b !== 0 && b !== 1) throw new OmaiError('value', 'convolutionalEncode: bits must be 0 or 1')
     out.push(...(code.outputs[2 * s + b] ?? []))
     s = code.next[2 * s + b] ?? 0
   }
@@ -132,8 +132,8 @@ export interface ViterbiOptions {
  * @concept viterbi
  * @example
  * ```ts
- * import { convolutionalCode, viterbiAlgorithm } from 'mdml-engine/information'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { convolutionalCode, viterbiAlgorithm } from 'omai-engine/information'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const code = convolutionalCode([0o7, 0o5])
  * runAlgorithm(viterbiAlgorithm(code, [1, 1, 1, 0, 0, 0]), { maxSteps: 10 }).steps // => 3
  * ```
@@ -144,7 +144,7 @@ export function viterbiAlgorithm(
   options: Pick<ViterbiOptions, 'decision'> = {},
 ): Algorithm<ViterbiState> {
   const n = code.generators.length
-  if (received.length % n !== 0) throw new MdmlError('shape', `viterbi: received length must be a multiple of ${n}`)
+  if (received.length % n !== 0) throw new OmaiError('shape', `viterbi: received length must be a multiple of ${n}`)
   const stages = received.length / n
   const soft = options.decision === 'soft'
   const branch = (t: number, out: readonly number[]): number => {
@@ -216,7 +216,7 @@ export interface ViterbiResult {
  * @concept viterbi
  * @example
  * ```ts
- * import { convolutionalCode, viterbiDecode } from 'mdml-engine/information'
+ * import { convolutionalCode, viterbiDecode } from 'omai-engine/information'
  * const code = convolutionalCode([0o7, 0o5])
  * // The codeword of [1, 0, 1, 1] with two bits flipped.
  * viterbiDecode(code, [1, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1]).bits // => [1, 0, 1, 1]
@@ -233,7 +233,7 @@ export function viterbiDecode(
   const { state } = runAlgorithm(algorithm, { ...run, maxSteps: stages })
   let s = terminated ? 0 : argminOf(state.metrics)
   const metric = state.metrics[s] ?? Number.POSITIVE_INFINITY
-  if (!Number.isFinite(metric)) throw new MdmlError('value', 'viterbiDecode: no path ends in the zero state')
+  if (!Number.isFinite(metric)) throw new OmaiError('value', 'viterbiDecode: no path ends in the zero state')
   const bits: number[] = []
   for (let h = state.history; h !== undefined; h = h.previous) {
     bits.push((s >> (code.constraintLength - 2)) & 1)

@@ -3,7 +3,7 @@
  * constructors for each, surfaces `z = f(x, y)` as grids of faces, and labelled coordinate axes.
  */
 
-import { MdmlError, type Vec3 } from '../base/index.ts'
+import { OmaiError, type Vec3 } from '../base/index.ts'
 import { vertices } from './_check.ts'
 import type { NodeBase, Paint, Style } from './types.ts'
 
@@ -71,7 +71,7 @@ export interface Scene3D {
  * @concept scene-graph
  * @example
  * ```ts
- * import { scene3d, point3d } from 'mdml-engine/scene'
+ * import { scene3d, point3d } from 'omai-engine/scene'
  * scene3d([point3d([0, 0, 0])]).items.length // => 1
  * ```
  */
@@ -85,10 +85,10 @@ export function scene3d(items: readonly Item3D[], options: { readonly title?: st
  * @param at - The position.
  * @param style - Radius, fill, stroke, id and title.
  * @returns The item.
- * @throws MdmlError `value` when a coordinate is not finite.
+ * @throws OmaiError `value` when a coordinate is not finite.
  * @example
  * ```ts
- * import { point3d } from 'mdml-engine/scene'
+ * import { point3d } from 'omai-engine/scene'
  * point3d([1, 2, 3], { fill: 'tab1' }).at // => [1, 2, 3]
  * ```
  */
@@ -104,10 +104,10 @@ export function point3d(at: Vec3, style: Style & NodeBase & { readonly r?: numbe
  * @param to - End.
  * @param style - Stroke, id and title.
  * @returns The item.
- * @throws MdmlError `value` when a coordinate is not finite.
+ * @throws OmaiError `value` when a coordinate is not finite.
  * @example
  * ```ts
- * import { segment3d } from 'mdml-engine/scene'
+ * import { segment3d } from 'omai-engine/scene'
  * segment3d([0, 0, 0], [1, 0, 0]).to // => [1, 0, 0]
  * ```
  */
@@ -123,10 +123,10 @@ export function segment3d(from: Vec3, to: Vec3, style: Style & NodeBase = {}): S
  * @param to - The head.
  * @param style - Stroke, id and title.
  * @returns The item.
- * @throws MdmlError `value` when a coordinate is not finite.
+ * @throws OmaiError `value` when a coordinate is not finite.
  * @example
  * ```ts
- * import { arrow3d } from 'mdml-engine/scene'
+ * import { arrow3d } from 'omai-engine/scene'
  * arrow3d([0, 0, 0], [0, 0, 1]).arrow // => true
  * ```
  */
@@ -141,10 +141,10 @@ export function arrow3d(from: Vec3, to: Vec3, style: Style & NodeBase = {}): Seg
  * @param points - The vertices in order.
  * @param style - Stroke, closure, id and title.
  * @returns The item.
- * @throws MdmlError `value` when a coordinate is not finite.
+ * @throws OmaiError `value` when a coordinate is not finite.
  * @example
  * ```ts
- * import { polyline3d } from 'mdml-engine/scene'
+ * import { polyline3d } from 'omai-engine/scene'
  * polyline3d([[0, 0, 0], [1, 0, 0], [1, 1, 0]], { closed: true }).closed // => true
  * ```
  */
@@ -164,10 +164,10 @@ export function polyline3d(
  * @param c - Third vertex.
  * @param style - Fill, stroke, id and title.
  * @returns The face.
- * @throws MdmlError `value` when a coordinate is not finite.
+ * @throws OmaiError `value` when a coordinate is not finite.
  * @example
  * ```ts
- * import { triangle3d } from 'mdml-engine/scene'
+ * import { triangle3d } from 'omai-engine/scene'
  * triangle3d([0, 0, 0], [1, 0, 0], [0, 1, 0]).points.length // => 3
  * ```
  */
@@ -182,15 +182,15 @@ export function triangle3d(a: Vec3, b: Vec3, c: Vec3, style: Style & NodeBase = 
  * @param points - Three or more coplanar vertices in order.
  * @param style - Fill, stroke, id and title.
  * @returns The face.
- * @throws MdmlError with code `value` for fewer than three vertices or a coordinate that is not finite.
+ * @throws OmaiError with code `value` for fewer than three vertices or a coordinate that is not finite.
  * @example
  * ```ts
- * import { face3d } from 'mdml-engine/scene'
+ * import { face3d } from 'omai-engine/scene'
  * face3d([[0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0]]).kind // => 'face'
  * ```
  */
 export function face3d(points: readonly Vec3[], style: Style & NodeBase = {}): Face3D {
-  if (points.length < 3) throw new MdmlError('value', 'face3d: a face needs at least three vertices')
+  if (points.length < 3) throw new OmaiError('value', 'face3d: a face needs at least three vertices')
   vertices('face3d', points, 3)
   return { kind: 'face', points, ...style }
 }
@@ -202,10 +202,10 @@ export function face3d(points: readonly Vec3[], style: Style & NodeBase = {}): F
  * @param content - The text, or TeX source when `tex` is set.
  * @param style - TeX flag, size, fill, anchor, id and title.
  * @returns The item.
- * @throws MdmlError `value` when a coordinate is not finite.
+ * @throws OmaiError `value` when a coordinate is not finite.
  * @example
  * ```ts
- * import { label3d } from 'mdml-engine/scene'
+ * import { label3d } from 'omai-engine/scene'
  * label3d([1, 0, 0], 'x').text // => 'x'
  * ```
  */
@@ -223,10 +223,10 @@ export function label3d(at: Vec3, content: string, style: Omit<Label3D, 'kind' |
  * @param z - Heights as rows over `y` and columns over `x`, or the function.
  * @param style - Stroke and fill; `fill` may be a function of a cell's mean height and its row and column.
  * @returns The faces, `(y.length - 1) * (x.length - 1)` of them.
- * @throws MdmlError with code `shape` when the grid has fewer than two points per axis or `z` has the wrong shape.
+ * @throws OmaiError with code `shape` when the grid has fewer than two points per axis or `z` has the wrong shape.
  * @example
  * ```ts
- * import { surface3d } from 'mdml-engine/scene'
+ * import { surface3d } from 'omai-engine/scene'
  * surface3d([0, 1, 2], [0, 1], (x, y) => x * y).length // => 2
  * ```
  */
@@ -236,13 +236,13 @@ export function surface3d(
   z: readonly (readonly number[])[] | ((x: number, y: number) => number),
   style: Omit<Style, 'fill'> & { readonly fill?: Paint | ((z: number, i: number, j: number) => Paint) } = {},
 ): Face3D[] {
-  if (x.length < 2 || y.length < 2) throw new MdmlError('shape', 'surface3d: need at least two points per axis')
+  if (x.length < 2 || y.length < 2) throw new OmaiError('shape', 'surface3d: need at least two points per axis')
   const height = (i: number, j: number): number => {
     const xj = x[j] ?? 0
     const yi = y[i] ?? 0
     if (typeof z === 'function') return z(xj, yi)
     const v = z[i]?.[j]
-    if (v === undefined) throw new MdmlError('shape', `surface3d: z needs ${y.length} rows of ${x.length} values`)
+    if (v === undefined) throw new OmaiError('shape', `surface3d: z needs ${y.length} rows of ${x.length} values`)
     return v
   }
   const { fill = 'tab0', ...rest } = style
@@ -274,7 +274,7 @@ export function surface3d(
  * @returns Three arrows and three labels.
  * @example
  * ```ts
- * import { axes3d } from 'mdml-engine/scene'
+ * import { axes3d } from 'omai-engine/scene'
  * axes3d(2).filter((item) => item.kind === 'label').map((item) => (item as { text: string }).text) // => ['x', 'y', 'z']
  * ```
  */

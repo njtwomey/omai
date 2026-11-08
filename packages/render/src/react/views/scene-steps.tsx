@@ -2,7 +2,7 @@
  * The React view of a scene per step: the scene recorded at or before the viewed step, as one framed figure.
  */
 
-import type { SceneSteps } from 'mdml-engine/exposition'
+import type { SceneSteps } from 'omai-engine/exposition'
 import { type ReactElement, useMemo } from 'react'
 import { sceneStepsScene } from '../../views/scene-steps.ts'
 import { SceneFrame } from '../SceneFrame.tsx'

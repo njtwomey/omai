@@ -5,7 +5,7 @@
  * optimisation) or on equal-mass cells (Latin hypercubes), and hand the result back as a value.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { choice, decode, encode, flatten, int, real, type Space, type SpaceValue } from '../space/index.ts'
 import { sizeOf } from '../tensor/index.ts'
 
@@ -73,7 +73,7 @@ function scalarLeaf(path: string, s: Space): Leaf {
     case 'bool':
       return { path, kind: 'categorical', low: 0, high: 1, log: false, n: 2, space: s, value: (x) => x === 1 }
     default:
-      throw new MdmlError('value', `tune: ${s.kind} is not a scalar space`)
+      throw new OmaiError('value', `tune: ${s.kind} is not a scalar space`)
   }
 }
 

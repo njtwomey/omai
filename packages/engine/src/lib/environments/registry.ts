@@ -7,7 +7,7 @@
  * new registry with an app's own definitions added.
  */
 
-import { find, MdmlError, matchesText, type Registry, register, registry } from '../base/index.ts'
+import { find, matchesText, OmaiError, type Registry, register, registry } from '../base/index.ts'
 import type { AecEnv, Env, EnvDefinition, EnvSpec, ParallelEnv } from '../rl/index.ts'
 import type { DictSpace, Space } from '../space/index.ts'
 import {
@@ -157,8 +157,8 @@ export type EnvironmentRegistry = Registry<EnvironmentEntry>
  * @concept environments
  * @example
  * ```ts
- * import { actionKindOf } from 'mdml-engine/environments'
- * import { box, discrete, multiDiscrete } from 'mdml-engine/space'
+ * import { actionKindOf } from 'omai-engine/environments'
+ * import { box, discrete, multiDiscrete } from 'omai-engine/space'
  * actionKindOf(discrete(3)) // => 'discrete'
  * actionKindOf(box(-1, 1, [2])) // => 'continuous'
  * actionKindOf(multiDiscrete([2, 3])) // => 'multi'
@@ -195,8 +195,8 @@ function isPixels(space: Space & { readonly kind: 'box' }): boolean {
  * @concept environments
  * @example
  * ```ts
- * import { observationKindOf } from 'mdml-engine/environments'
- * import { box, discrete, tuple } from 'mdml-engine/space'
+ * import { observationKindOf } from 'omai-engine/environments'
+ * import { box, discrete, tuple } from 'omai-engine/space'
  * observationKindOf(box(-1, 1, [4])) // => 'vector'
  * observationKindOf(box(0, 1, [10, 10, 4])) // => 'grid'
  * observationKindOf(box(0, 255, [24, 32, 3])) // => 'image'
@@ -242,11 +242,11 @@ export interface EnvironmentRegistration {
  *
  * @param registration - The definition, its title, family and whether it is episodic.
  * @returns The entry.
- * @throws MdmlError with code `value` for a multi-agent definition without agents.
+ * @throws OmaiError with code `value` for a multi-agent definition without agents.
  * @concept environments
  * @example
  * ```ts
- * import { cartPole, environmentEntry } from 'mdml-engine/environments'
+ * import { cartPole, environmentEntry } from 'omai-engine/environments'
  * const entry = environmentEntry({ definition: cartPole, title: 'Cart-pole', family: 'classicControl', episodic: true })
  * [entry.name, entry.actions, entry.observations] // => ['CartPole-v1', 'discrete', 'vector']
  * ```
@@ -280,7 +280,7 @@ export function environmentEntry(registration: EnvironmentRegistration): Environ
   const observationSpace = first === undefined ? undefined : env.observationSpaces[first]
   const actionSpace = first === undefined ? undefined : env.actionSpaces[first]
   if (first === undefined || observationSpace === undefined || actionSpace === undefined)
-    throw new MdmlError('value', `environmentEntry: '${name}' has no agents`)
+    throw new OmaiError('value', `environmentEntry: '${name}' has no agents`)
   const shared = { ...base, ...tagged(env.spec, observationSpace, actionSpace), agents: env.possibleAgents }
   return definition.multiAgent === 'aec'
     ? { ...shared, multiAgent: 'aec', make: (o) => definition.create(o) }
@@ -310,8 +310,8 @@ const model = (id: string, make: () => ControlModel): SingleAgentDefinition => (
  * @index table Tagged registry of every environment, with action and observation kinds.
  * @example
  * ```ts
- * import { lookup } from 'mdml-engine/base'
- * import { environmentRegistry } from 'mdml-engine/environments'
+ * import { lookup } from 'omai-engine/base'
+ * import { environmentRegistry } from 'omai-engine/environments'
  * environmentRegistry.entries.length // => 59
  * lookup(environmentRegistry, 'frozenLake').observations // => 'discrete'
  * ```
@@ -434,8 +434,8 @@ const oneOf = <T>(filter: T | readonly T[] | undefined, value: T): boolean =>
  * @concept environments
  * @example
  * ```ts
- * import { lookup } from 'mdml-engine/base'
- * import { environmentRegistry, matchesEnvironmentQuery } from 'mdml-engine/environments'
+ * import { lookup } from 'omai-engine/base'
+ * import { environmentRegistry, matchesEnvironmentQuery } from 'omai-engine/environments'
  * const pendulum = lookup(environmentRegistry, 'pendulum')
  * matchesEnvironmentQuery(pendulum, { actions: 'continuous', episodic: false }) // => true
  * matchesEnvironmentQuery(pendulum, { family: ['gridWorld', 'toyText'] }) // => false
@@ -461,7 +461,7 @@ export function matchesEnvironmentQuery(entry: EnvironmentEntry, query: Environm
  * @concept environments
  * @example
  * ```ts
- * import { environmentRegistry, whereEnvironments } from 'mdml-engine/environments'
+ * import { environmentRegistry, whereEnvironments } from 'omai-engine/environments'
  * whereEnvironments(environmentRegistry, { actions: 'continuous', episodic: true }).map((e) => e.name) // => ['mountainCarContinuous', 'cartDoublePendulum']
  * whereEnvironments(environmentRegistry, { observations: 'grid' }).length // => 5
  * ```
@@ -478,11 +478,11 @@ export function whereEnvironments(reg: EnvironmentRegistry, query: EnvironmentQu
  * @param reg - The registry to extend (usually {@link environmentRegistry}).
  * @param registrations - The definitions with their titles and hand-written tags.
  * @returns The extended registry.
- * @throws MdmlError with code `value` for a name added twice.
+ * @throws OmaiError with code `value` for a name added twice.
  * @concept environments
  * @example
  * ```ts
- * import { environmentRegistry, pendulum, registerEnvironments, whereEnvironments } from 'mdml-engine/environments'
+ * import { environmentRegistry, pendulum, registerEnvironments, whereEnvironments } from 'omai-engine/environments'
  * const mine = registerEnvironments(environmentRegistry, [
  *   { definition: pendulum, name: 'myPendulum', title: 'My pendulum', family: 'classicControl', episodic: false },
  * ])
@@ -506,7 +506,7 @@ export function registerEnvironments(
  * @concept environments
  * @example
  * ```ts
- * import { environmentRegistry, findEnvironment } from 'mdml-engine/environments'
+ * import { environmentRegistry, findEnvironment } from 'omai-engine/environments'
  * findEnvironment(environmentRegistry, 'taxi')?.spec.id // => 'Taxi-v4'
  * ```
  */

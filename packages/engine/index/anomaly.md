@@ -4,5 +4,5 @@
 
 Anomaly and outlier detection: the isolation forest and extended isolation forest grown one tree per step on the iterative base, neighbour-based detectors (the local outlier factor, connectivity-based outlier factor and k-nearest-neighbour distance), statistical detectors (classical and robust z-scores, Mahalanobis and the elliptic envelope, PCA reconstruction error and histogram-based outlier scores), and score normalisation, ensemble combination and threshold rules.
 
-- estimator `isolationForest`: Isolation forest outlier detector. `src/lib/anomaly/isolation.ts:424` `mdml-engine/anomaly`
-- estimator `localOutlierFactor`: Local outlier factor. `src/lib/anomaly/neighbours.ts:267` `mdml-engine/anomaly`
+- estimator `isolationForest`: Isolation forest outlier detector. `src/lib/anomaly/isolation.ts:424` `omai-engine/anomaly`
+- estimator `localOutlierFactor`: Local outlier factor. `src/lib/anomaly/neighbours.ts:267` `omai-engine/anomaly`

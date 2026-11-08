@@ -6,7 +6,7 @@
  */
 
 import { jvp } from '../autodiff/index.ts'
-import { type Estimate, estimate, MdmlError, maxOf } from '../base/index.ts'
+import { type Estimate, estimate, maxOf, OmaiError } from '../base/index.ts'
 import { foldIn, type Key, normal } from '../random/index.ts'
 import {
   abs,
@@ -87,13 +87,13 @@ function checkScheme(sde: Sde, method: SdeMethod): void {
   const calculus = sde.calculus ?? 'ito'
   const noise = sde.noise ?? 'diagonal'
   if (method === 'heun' && calculus !== 'stratonovich') {
-    throw new MdmlError('value', 'sde: the stochastic Heun scheme solves Stratonovich equations')
+    throw new OmaiError('value', 'sde: the stochastic Heun scheme solves Stratonovich equations')
   }
   if ((method === 'euler' || method === 'srk') && calculus !== 'ito') {
-    throw new MdmlError('value', `sde: ${method} solves Ito equations (use heun or milstein for Stratonovich)`)
+    throw new OmaiError('value', `sde: ${method} solves Ito equations (use heun or milstein for Stratonovich)`)
   }
   if ((method === 'milstein' || method === 'srk') && noise === 'general') {
-    throw new MdmlError('not-implemented', `sde: ${method} needs diagonal or scalar noise (Levy areas are not drawn)`)
+    throw new OmaiError('not-implemented', `sde: ${method} needs diagonal or scalar noise (Levy areas are not drawn)`)
   }
 }
 
@@ -111,12 +111,12 @@ function checkScheme(sde: Sde, method: SdeMethod): void {
  * @param dt - The step.
  * @param dw - The Brownian increment (`y`'s shape for diagonal noise, `[paths]` scalar, `[paths, m]` general).
  * @returns The state at t + dt.
- * @throws MdmlError when the scheme does not apply to the equation's calculus or noise.
+ * @throws OmaiError when the scheme does not apply to the equation's calculus or noise.
  * @concept stochastic-differential-equations
  * @example
  * ```ts
- * import { sdeStep } from 'mdml-engine/stochastic'
- * import { tensor, toArray, mul } from 'mdml-engine/tensor'
+ * import { sdeStep } from 'omai-engine/stochastic'
+ * import { tensor, toArray, mul } from 'omai-engine/tensor'
  * const sde = { drift: (_t, y) => mul(y, 0.5), diffusion: (_t, y) => mul(y, 0.2) }
  * toArray(sdeStep(sde, 'euler', 0, tensor([1]), 0.1, tensor([0.5]))).map((v) => Math.round(v * 1e12) / 1e12) // => [1.15]
  * ```
@@ -178,14 +178,14 @@ function defaultMethod(sde: Sde): SdeMethod {
  * @param times - The grid.
  * @param options - Scheme, substeps, increments and tracing.
  * @returns The paths `[paths, times.length, ...state]`.
- * @throws MdmlError with code `shape` when the increments do not match.
+ * @throws OmaiError with code `shape` when the increments do not match.
  * @concept stochastic-differential-equations
  * @index function Solve a stochastic differential equation with Euler-Maruyama or Milstein.
  * @example
  * ```ts
- * import { key } from 'mdml-engine/random'
- * import { sdeint, timeGrid } from 'mdml-engine/stochastic'
- * import { mul, zeros } from 'mdml-engine/tensor'
+ * import { key } from 'omai-engine/random'
+ * import { sdeint, timeGrid } from 'omai-engine/stochastic'
+ * import { mul, zeros } from 'omai-engine/tensor'
  * const ou = { drift: (_t, y) => mul(y, -1), diffusion: (_t, y) => mul(zeros(y.shape), 0) }
  * const p = sdeint(key(0), ou, [1, 2], timeGrid(1, 1000), { method: 'milstein' })
  * p.values.shape // => [2, 1001]
@@ -198,12 +198,12 @@ export function sdeint(key: Key, sde: Sde, y0: TensorLike, times: TimesLike, opt
   checkScheme(sde, method)
   const substeps = positiveInteger(options.substeps ?? 1, 'substeps', 'sdeint')
   const x0 = asFloat(asTensor(y0))
-  if (x0.shape.length === 0) throw new MdmlError('shape', 'sdeint: y0 must be [paths, ...state]')
+  if (x0.shape.length === 0) throw new OmaiError('shape', 'sdeint: y0 must be [paths, ...state]')
   const shape = noiseShape(sde, x0.shape)
   const given = options.increments === undefined ? undefined : asTensor(options.increments)
   const total = (t.length - 1) * substeps
   if (given !== undefined && (given.shape[0] !== shape[0] || given.shape[1] !== total)) {
-    throw new MdmlError('shape', `sdeint: increments must be [${shape[0]}, ${total}, ...noise]`)
+    throw new OmaiError('shape', `sdeint: increments must be [${shape[0]}, ${total}, ...noise]`)
   }
   return simulatePaths(
     key,
@@ -240,9 +240,9 @@ export function sdeint(key: Key, sde: Sde, y0: TensorLike, times: TimesLike, opt
  * @concept stochastic-differential-equations
  * @example
  * ```ts
- * import { key } from 'mdml-engine/random'
- * import { sdeSolver } from 'mdml-engine/stochastic'
- * import { mul, tensor } from 'mdml-engine/tensor'
+ * import { key } from 'omai-engine/random'
+ * import { sdeSolver } from 'omai-engine/stochastic'
+ * import { mul, tensor } from 'omai-engine/tensor'
  * const solve = sdeSolver('milstein', { substeps: 4 })
  * solve((_t, y) => mul(y, -1), (_t, y) => mul(y, 0.1), tensor([[1, 2]]), [0, 0.5, 1], key(0)).length // => 3
  * ```
@@ -304,7 +304,7 @@ function slope(x: readonly number[], y: readonly number[]): number {
 }
 
 function checkSteps(steps: readonly number[], where: string): void {
-  if (steps.length < 2) throw new MdmlError('value', `${where}: needs at least two step counts`)
+  if (steps.length < 2) throw new OmaiError('value', `${where}: needs at least two step counts`)
   for (const s of steps) positiveInteger(s, 'steps', where)
 }
 
@@ -323,9 +323,9 @@ function checkSteps(steps: readonly number[], where: string): void {
  * @concept strong-convergence
  * @example
  * ```ts
- * import { key } from 'mdml-engine/random'
- * import { strongConvergence } from 'mdml-engine/stochastic'
- * import { exp, mul, sum } from 'mdml-engine/tensor'
+ * import { key } from 'omai-engine/random'
+ * import { strongConvergence } from 'omai-engine/stochastic'
+ * import { exp, mul, sum } from 'omai-engine/tensor'
  * const gbm = { drift: (_t, y) => mul(y, 0.5), diffusion: (_t, y) => mul(y, 0.8) }
  * // X_T = exp((mu - sigma^2 / 2) T + sigma W_T), and W_T is the sum of the increments
  * const exact = (dw) => mul(exp(mul(sum(dw, 1), 0.8)), Math.exp(0.5 - 0.32))
@@ -351,7 +351,7 @@ export function strongConvergence(
   const target = exact(dw, fine)
   const errors: Estimate[] = []
   for (const n of steps) {
-    if (finest % n !== 0) throw new MdmlError('value', `strongConvergence: ${n} does not divide ${finest}`)
+    if (finest % n !== 0) throw new OmaiError('value', `strongConvergence: ${n} does not divide ${finest}`)
     const coarse = coarsenIncrements(dw, finest / n)
     const p = sdeint(key, sde, start, timeGrid(t1, n), {
       ...(options.method === undefined ? {} : { method: options.method }),
@@ -392,9 +392,9 @@ function fitOrder(dts: readonly number[], errors: readonly Estimate[]): number {
  * @concept weak-convergence
  * @example
  * ```ts
- * import { key } from 'mdml-engine/random'
- * import { weakConvergence } from 'mdml-engine/stochastic'
- * import { mul } from 'mdml-engine/tensor'
+ * import { key } from 'omai-engine/random'
+ * import { weakConvergence } from 'omai-engine/stochastic'
+ * import { mul } from 'omai-engine/tensor'
  * const gbm = { drift: (_t, y) => mul(y, 1.5), diffusion: (_t, y) => mul(y, 0.1) }
  * const w = weakConvergence(key(0), gbm, [1], 1, (y) => y, Math.exp(1.5), { steps: [2, 4, 8], paths: 2000 })
  * w.order > 0.7 // => true
@@ -437,7 +437,7 @@ function diffusionDivergence(sde: Sde, t: number, y: Value): Value {
 
 function checkReversible(sde: Sde, where: string): void {
   if ((sde.calculus ?? 'ito') !== 'ito' || (sde.noise ?? 'diagonal') !== 'diagonal') {
-    throw new MdmlError('value', `${where}: needs an Ito equation with diagonal noise`)
+    throw new OmaiError('value', `${where}: needs an Ito equation with diagonal noise`)
   }
 }
 
@@ -450,14 +450,14 @@ function checkReversible(sde: Sde, where: string): void {
  * @param score - The score of the forward marginals.
  * @param t1 - The horizon T of the forward process.
  * @returns The reverse-time equation in the time s = T - t.
- * @throws MdmlError with code `value` for Stratonovich equations or non-diagonal noise.
+ * @throws OmaiError with code `value` for Stratonovich equations or non-diagonal noise.
  * @concept score-based-diffusion
  * @reference B. D. O. Anderson, Reverse-time diffusion equation models, Stochastic Processes and their Applications 12
  *   (1982); Y. Song et al., Score-based generative modeling through stochastic differential equations (ICLR 2021).
  * @example
  * ```ts
- * import { reverseSde } from 'mdml-engine/stochastic'
- * import { tensor, toArray, mul, neg, add, zeros } from 'mdml-engine/tensor'
+ * import { reverseSde } from 'omai-engine/stochastic'
+ * import { tensor, toArray, mul, neg, add, zeros } from 'omai-engine/tensor'
  * const ou = { drift: (_t, y) => neg(y), diffusion: (_t, y) => add(zeros(y.shape), Math.SQRT2) }
  * const back = reverseSde(ou, (_t, y) => neg(y), 1)
  * toArray(back.drift(0, tensor([2]))).map((v) => Math.round(v * 1e12) / 1e12) // => [-2]
@@ -484,12 +484,12 @@ export function reverseSde(sde: Sde, score: ScoreFunction, t1: number): Sde {
  * @param sde - The equation (Ito, diagonal noise).
  * @param score - The score of its marginals.
  * @returns The ODE vector field (t, y) => dy/dt.
- * @throws MdmlError with code `value` for Stratonovich equations or non-diagonal noise.
+ * @throws OmaiError with code `value` for Stratonovich equations or non-diagonal noise.
  * @concept score-based-diffusion
  * @example
  * ```ts
- * import { probabilityFlow } from 'mdml-engine/stochastic'
- * import { tensor, toArray, neg, add, zeros } from 'mdml-engine/tensor'
+ * import { probabilityFlow } from 'omai-engine/stochastic'
+ * import { tensor, toArray, neg, add, zeros } from 'omai-engine/tensor'
  * const ou = { drift: (_t, y) => neg(y), diffusion: (_t, y) => add(zeros(y.shape), Math.SQRT2) }
  * Math.abs(toArray(probabilityFlow(ou, (_t, y) => neg(y))(0, tensor([2])))[0]) < 1e-12 // => true
  * ```
@@ -508,19 +508,19 @@ export function probabilityFlow(sde: Sde, score: ScoreFunction): SdeFunction {
  *
  * @param sde - The equation.
  * @returns The equation in the other calculus, with the same paths.
- * @throws MdmlError with code `not-implemented` for general noise.
+ * @throws OmaiError with code `not-implemented` for general noise.
  * @concept stratonovich-integral
  * @example
  * ```ts
- * import { convertCalculus } from 'mdml-engine/stochastic'
- * import { tensor, toArray, mul } from 'mdml-engine/tensor'
+ * import { convertCalculus } from 'omai-engine/stochastic'
+ * import { tensor, toArray, mul } from 'omai-engine/tensor'
  * const gbm = { drift: (_t, y) => mul(y, 0.5), diffusion: (_t, y) => mul(y, 1) }
  * toArray(convertCalculus(gbm).drift(0, tensor([2]))) // => [0]
  * ```
  */
 export function convertCalculus(sde: Sde): Sde {
   if ((sde.noise ?? 'diagonal') === 'general') {
-    throw new MdmlError('not-implemented', 'convertCalculus: needs diagonal or scalar noise')
+    throw new OmaiError('not-implemented', 'convertCalculus: needs diagonal or scalar noise')
   }
   const toStratonovich = (sde.calculus ?? 'ito') === 'ito'
   return {

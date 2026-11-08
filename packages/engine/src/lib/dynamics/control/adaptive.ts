@@ -7,7 +7,7 @@
  * changes: gains designed at operating points and interpolated.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { add, mul, sliceAxis, stack, sub, sum, type Value } from '../../tensor/index.ts'
 import type { Algorithm } from '../../trace/index.ts'
 import { type Contract, defineContract, scalar } from '../../trace/index.ts'
@@ -51,7 +51,7 @@ export interface MatchingParameters {
  * @concept model-reference-adaptive-control
  * @example
  * ```ts
- * import { matchingParameters } from 'mdml-engine/dynamics/control'
+ * import { matchingParameters } from 'omai-engine/dynamics/control'
  * matchingParameters({ a: 1, k: 2 }, { am: 3, km: 6 }) // => { theta1: 3, theta2: 1 }
  * ```
  */
@@ -118,12 +118,12 @@ const at = (y: Value, i: number): Value => sum(sliceAxis(y, 0, i, i + 1))
  *
  * @param options - Plant, model, law, gain, reference signal and resolution.
  * @returns The algorithm.
- * @throws MdmlError with code `value` for a non-positive gain, plant gain or model pole.
+ * @throws OmaiError with code `value` for a non-positive gain, plant gain or model pole.
  * @concept model-reference-adaptive-control
  * @example
  * ```ts
- * import { mracAlgorithm } from 'mdml-engine/dynamics/control'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { mracAlgorithm } from 'omai-engine/dynamics/control'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const alg = mracAlgorithm({
  *   plant: { a: 1, k: 2 }, model: { am: 3, km: 3 }, gamma: 2, dt: 0.01, steps: 3000,
  *   reference: (t) => Math.sin(t) + Math.sin(3.7 * t),
@@ -134,7 +134,7 @@ const at = (y: Value, i: number): Value => sum(sliceAxis(y, 0, i, i + 1))
 export function mracAlgorithm(options: MracOptions): Algorithm<FlowState, MracPath> {
   const { plant, model, gamma } = options
   if (!(gamma > 0) || !(plant.k > 0) || !(model.am > 0)) {
-    throw new MdmlError(
+    throw new OmaiError(
       'value',
       'mracAlgorithm: the adaptation gain, the plant gain and the model pole must be positive',
     )
@@ -188,24 +188,24 @@ export interface SchedulePoint {
  *
  * @param points - The operating points, at least one, with gains of equal size.
  * @returns A function from the scheduling variable to the gains.
- * @throws MdmlError with code `value` for no points, unequal gain sizes or repeated scheduling values.
+ * @throws OmaiError with code `value` for no points, unequal gain sizes or repeated scheduling values.
  * @concept gain-scheduling
  * @example
  * ```ts
- * import { gainSchedule } from 'mdml-engine/dynamics/control'
+ * import { gainSchedule } from 'omai-engine/dynamics/control'
  * const k = gainSchedule([{ at: 0, gain: [1, 10] }, { at: 2, gain: [3, 20] }])
  * [k(1), k(-5), k(9)] // => [[2, 15], [1, 10], [3, 20]]
  * ```
  */
 export function gainSchedule(points: readonly SchedulePoint[]): (variable: number) => number[] {
-  if (points.length === 0) throw new MdmlError('value', 'gainSchedule: give at least one operating point')
+  if (points.length === 0) throw new OmaiError('value', 'gainSchedule: give at least one operating point')
   const sorted = [...points].sort((p, q) => p.at - q.at)
   const size = sorted[0]?.gain.length ?? 0
   if (sorted.some((p) => p.gain.length !== size))
-    throw new MdmlError('value', 'gainSchedule: every point needs the same number of gains')
+    throw new OmaiError('value', 'gainSchedule: every point needs the same number of gains')
   for (let i = 1; i < sorted.length; i++) {
     if ((sorted[i] as SchedulePoint).at === (sorted[i - 1] as SchedulePoint).at) {
-      throw new MdmlError('value', 'gainSchedule: the scheduling values must differ')
+      throw new OmaiError('value', 'gainSchedule: the scheduling values must differ')
     }
   }
   return (v) => {

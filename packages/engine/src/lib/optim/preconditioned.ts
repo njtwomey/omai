@@ -4,7 +4,7 @@
  * al.), and building blocks such as matrix inverse p-th roots, fixed preconditioners and diagonal preconditioning.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { eigh, solve } from '../numerics/linalg/index.ts'
 import {
   add,
@@ -53,8 +53,8 @@ const rate = (lr: LearningRate, step: number): number => (typeof lr === 'number'
  * @returns The matrix power.
  * @example
  * ```ts
- * import { matrixInversePthRoot } from 'mdml-engine/optim'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { matrixInversePthRoot } from 'omai-engine/optim'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(matrixInversePthRoot([[16, 0], [0, 1]], 4)) // => [[0.5, 0], [0, 1]]
  * ```
  */
@@ -71,8 +71,8 @@ export function matrixInversePthRoot(a: TensorLike, p: number, ridge = 0): Value
  * @returns The d x d matrix.
  * @example
  * ```ts
- * import { empiricalFisher } from 'mdml-engine/optim'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { empiricalFisher } from 'omai-engine/optim'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(empiricalFisher([[1, 0], [1, 2]])) // => [[1, 1], [1, 2]]
  * ```
  */
@@ -90,8 +90,8 @@ export function empiricalFisher(perExampleGrads: TensorLike): Value {
  * @returns The direction.
  * @example
  * ```ts
- * import { naturalGradientDirection } from 'mdml-engine/optim'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { naturalGradientDirection } from 'omai-engine/optim'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(naturalGradientDirection([[2, 0], [0, 4]], [2, 2], 0)) // => [1, 0.5]
  * ```
  */
@@ -138,8 +138,8 @@ export interface NaturalGradientOptions {
  * @concept natural-gradient
  * @example
  * ```ts
- * import { naturalGradient } from 'mdml-engine/optim'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { naturalGradient } from 'omai-engine/optim'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * const opt = naturalGradient({ learningRate: 1, damping: 0 })
  * const s = opt.observe(opt.init(tensor([0, 0])), { fisher: [[2, 0], [0, 4]] })
  * toArray(opt.update(tensor([2, 2]), s).updates as never) // => [-1, -0.5]
@@ -161,7 +161,7 @@ export function naturalGradient(
             ? empiricalFisher(stats.perExampleGrads)
             : undefined
       if (f === undefined)
-        throw new MdmlError('value', 'naturalGradient.observe needs a fisher or per-example gradients')
+        throw new OmaiError('value', 'naturalGradient.observe needs a fisher or per-example gradients')
       const fisher = state.fisher === undefined || decay === 0 ? f : add(mul(state.fisher, decay), mul(f, 1 - decay))
       return { ...state, fisher }
     },
@@ -193,8 +193,8 @@ export interface KfacFactors {
  * @returns The factors.
  * @example
  * ```ts
- * import { kfacFactors } from 'mdml-engine/optim'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { kfacFactors } from 'omai-engine/optim'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(kfacFactors([[1, 0], [0, 1]], [[2], [0]]).g) // => [[2]]
  * ```
  */
@@ -216,8 +216,8 @@ export function kfacFactors(activations: TensorLike, outputGrads: TensorLike, bi
  * @returns The preconditioned gradient.
  * @example
  * ```ts
- * import { kfacPrecondition } from 'mdml-engine/optim'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { kfacPrecondition } from 'omai-engine/optim'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * toArray(kfacPrecondition([[4, 8]], { a: tensor([[2, 0], [0, 4]]), g: tensor([[2]]) }, 0)) // => [[1, 1]]
  * ```
  */
@@ -272,8 +272,8 @@ export interface KfacOptions {
  * @concept natural-gradient
  * @example
  * ```ts
- * import { kfac } from 'mdml-engine/optim'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { kfac } from 'omai-engine/optim'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * const opt = kfac({ learningRate: 1, damping: 0, decay: 0 })
  * const p = { w: tensor([[0, 0]]) }
  * const s = opt.observe(opt.init(p), [{ weight: 'w', activations: [[1, 0], [0, 2]], outputGrads: [[1], [1]] }])
@@ -311,10 +311,10 @@ export function kfac(options: KfacOptions): PreconditionedTransformation<KfacSta
         if (wi === undefined) continue
         const w = leaves[wi] as Value
         const bi = f.bias === undefined ? undefined : index.get(f.bias)
-        if (f.bias !== undefined && bi === undefined) throw new MdmlError('value', `kfac: no bias at '${f.bias}'`)
+        if (f.bias !== undefined && bi === undefined) throw new OmaiError('value', `kfac: no bias at '${f.bias}'`)
         const inputs = (w.shape[1] ?? 0) + (bi === undefined ? 0 : 1)
         if (f.a.shape[0] !== inputs || f.g.shape[0] !== w.shape[0])
-          throw new MdmlError('shape', `kfac: factors for '${weight}' do not match its gradient`)
+          throw new OmaiError('shape', `kfac: factors for '${weight}' do not match its gradient`)
         if (bi === undefined) {
           out[wi] = kfacPrecondition(w, f, damping)
         } else {
@@ -366,8 +366,8 @@ export interface ShampooOptions {
  * @concept preconditioning
  * @example
  * ```ts
- * import { shampoo } from 'mdml-engine/optim'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { shampoo } from 'omai-engine/optim'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * const opt = shampoo({ learningRate: 1 })
  * toArray(opt.update(tensor([3, 4]), opt.init(tensor([0, 0]))).updates as never).map((v) => Math.round(v * 1e4) / 1e4) // => [-0.6, -0.8]
  * ```
@@ -432,13 +432,13 @@ export function shampoo(options: ShampooOptions): GradientTransformation<Shampoo
  * `ArrayLike<number>`).
  *
  * @param preconditioner - The matrix, diagonal or function.
- * @throws MdmlError with code `shape` when the function returns something that is not a vector.
+ * @throws OmaiError with code `shape` when the function returns something that is not a vector.
  * @returns The transformation.
  * @concept preconditioning
  * @example
  * ```ts
- * import { preconditionBy } from 'mdml-engine/optim'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { preconditionBy } from 'omai-engine/optim'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * toArray(preconditionBy([0.5, 2]).update(tensor([2, 2]), undefined).updates as never) // => [1, 4]
  * ```
  */
@@ -474,8 +474,8 @@ export function preconditionBy(
  * @returns The preconditioned gradients.
  * @example
  * ```ts
- * import { diagonalPrecondition } from 'mdml-engine/optim'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { diagonalPrecondition } from 'omai-engine/optim'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * toArray(diagonalPrecondition(tensor([2, 2]), tensor([4, 16]), 0) as never) // => [1, 0.5]
  * ```
  */

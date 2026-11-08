@@ -1,4 +1,4 @@
-import type { Algorithm } from 'mdml-engine/trace'
+import type { Algorithm } from 'omai-engine/trace'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { figure } from '../figure/figure.ts'
 import { mountElement, mountHook, resetGlobals } from './_harness.tsx'

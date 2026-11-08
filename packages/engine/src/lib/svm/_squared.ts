@@ -5,7 +5,7 @@
 // table of the two (SMO the default, the generic solvers admissible for the squared hinge only). Not exported from the
 // barrel.
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import {
   analyticObjective,
   familySolvers,
@@ -272,7 +272,7 @@ export const svcSolvers: ModeTable<SvcPairProblem, VectorParams> = familySolvers
 /** Whether a solver of {@link svcSolvers} admits a loss. */
 export function checkSolver(who: string, solver: { readonly kind?: unknown }, loss: SvcLoss): void {
   if (loss === 'hinge' && solver.kind !== 'smo' && solver.kind !== undefined)
-    throw new MdmlError(
+    throw new OmaiError(
       'value',
       `${who}: the hinge loss is not smooth, only the 'smo' solver reaches it (use loss 'squaredHinge' for ${String(solver.kind)})`,
     )

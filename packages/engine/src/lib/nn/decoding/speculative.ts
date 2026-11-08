@@ -5,7 +5,7 @@
  * function, reporting acceptance statistics.
  */
 
-import { argmaxOf, type Json, MdmlError } from '../../base/index.ts'
+import { argmaxOf, type Json, OmaiError } from '../../base/index.ts'
 import { categorical, foldIn, type Key, key as makeKey, uniform } from '../../random/index.ts'
 import type { Tensor } from '../../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../../trace/index.ts'
@@ -64,7 +64,7 @@ const draw = (k: Key, p: readonly number[]): number => categorical(k, p, [1]).da
  * @reference Leviathan, Kalman and Matias (2023), Fast inference from transformers via speculative decoding.
  * @example
  * ```ts
- * import { speculativeAlgorithm, bigramLanguageModel } from 'mdml-engine/nn'
+ * import { speculativeAlgorithm, bigramLanguageModel } from 'omai-engine/nn'
  * const lm = bigramLanguageModel([[0, 1], [1, 0]])
  * speculativeAlgorithm(lm, lm, [0]).name // => 'speculativeDecode'
  * ```
@@ -75,7 +75,7 @@ export function speculativeAlgorithm(
   prompt: readonly number[] | string,
   options: SpeculativeOptions = {},
 ): Algorithm<SpeculativeState> {
-  if (target.vocabSize !== draft.vocabSize) throw new MdmlError('value', 'speculativeDecode: vocabularies differ')
+  if (target.vocabSize !== draft.vocabSize) throw new OmaiError('value', 'speculativeDecode: vocabularies differ')
   const start = promptIds(target, prompt)
   const gamma = options.gamma ?? 4
   const maxNew = options.maxNewTokens ?? 16
@@ -179,7 +179,7 @@ export interface SpeculativeResult {
  * @concept decoding
  * @example
  * ```ts
- * import { speculativeDecode, bigramLanguageModel } from 'mdml-engine/nn'
+ * import { speculativeDecode, bigramLanguageModel } from 'omai-engine/nn'
  * const lm = bigramLanguageModel([[0, 9], [9, 0]])
  * speculativeDecode(lm, lm, [0], { maxNewTokens: 4, temperature: 0 }).generated // => [1, 0, 1, 0]
  * ```

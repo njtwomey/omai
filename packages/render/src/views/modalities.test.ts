@@ -1,4 +1,4 @@
-import { featureAttributions } from 'mdml-engine/exposition'
+import { featureAttributions } from 'omai-engine/exposition'
 import { describe, expect, it } from 'vitest'
 import { figure } from '../figure/figure.ts'
 import {

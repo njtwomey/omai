@@ -6,7 +6,7 @@
  * one node per step.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { type PruningPath, pruningPath } from '../exposition/index.ts'
 import type { LearnData } from '../learn/estimator.ts'
 import { codesFor, matrixView, sampleWeightsOf, targetVector } from '../learn/validation.ts'
@@ -48,7 +48,7 @@ function parentsOf(tree: FittedTree): Int32Array {
  *
  * @example
  * ```ts
- * import type { PrunePath } from 'mdml-engine/trees'
+ * import type { PrunePath } from 'omai-engine/trees'
  * const path: PrunePath = 'prune/alpha'
  * path // => 'prune/alpha'
  * ```
@@ -68,8 +68,8 @@ export type PrunePath = 'prune/alpha' | 'prune/leaves' | 'prune/trainError' | 'p
  * @concept decision-trees
  * @example
  * ```ts
- * import { weakestLinkAlgorithm } from 'mdml-engine/trees'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { weakestLinkAlgorithm } from 'omai-engine/trees'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const tree = { task: 'regression' as const, classes: [], nFeatures: 1, feature: [0, -2, -2], threshold: [0.5, -2, -2], left: [1, -1, -1], right: [2, -1, -1], value: [[1], [0], [2]], impurity: [1, 0, 0], nSamples: [2, 1, 1], weightedNSamples: [2, 1, 1], missingLeft: [false, false, false], categories: [[], [], []] }
  * runAlgorithm(weakestLinkAlgorithm(tree), { maxSteps: 10 }).state.alphas // => [0, 1]
  * ```
@@ -188,7 +188,7 @@ export function weakestLinkAlgorithm(
  * @returns The collapsed tree.
  * @example
  * ```ts
- * import { collapseTree, stumpTree } from 'mdml-engine/trees'
+ * import { collapseTree, stumpTree } from 'omai-engine/trees'
  * collapseTree(stumpTree({ feature: 0, threshold: 0.5, left: 0, right: 1 }), [1, 0, 0]).left // => [-1]
  * ```
  */
@@ -228,7 +228,7 @@ export function collapseTree(tree: FittedTree, isLeafNow: ArrayLike<number | boo
  * @returns The path as an exposition record.
  * @example
  * ```ts
- * import { costComplexityPath, stumpTree } from 'mdml-engine/trees'
+ * import { costComplexityPath, stumpTree } from 'omai-engine/trees'
  * costComplexityPath({ ...stumpTree({ feature: 0, threshold: 0.5, left: 0, right: 2 }), impurity: [1, 0, 0] }).alphas // => [0, 1]
  * ```
  */
@@ -246,7 +246,7 @@ export function costComplexityPath(tree: FittedTree): PruningPath {
  * @returns The pruned tree.
  * @example
  * ```ts
- * import { pruneTree, stumpTree } from 'mdml-engine/trees'
+ * import { pruneTree, stumpTree } from 'omai-engine/trees'
  * const t = { ...stumpTree({ feature: 0, threshold: 0.5, left: 0, right: 2 }), impurity: [1, 0, 0] }
  * pruneTree(t, 0.5).left.length // => 3
  * pruneTree(t, 1).left.length // => 1
@@ -280,15 +280,15 @@ export interface ReducedErrorState {
  * @concept decision-trees
  * @example
  * ```ts
- * import { reducedErrorAlgorithm, stumpTree } from 'mdml-engine/trees'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { reducedErrorAlgorithm, stumpTree } from 'omai-engine/trees'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const t = stumpTree({ feature: 0, threshold: 0.5, left: 0, right: 1 })
  * // On held-out rows where the split does not help, the stump is pruned to its root.
  * runAlgorithm(reducedErrorAlgorithm(t, { x: [[0], [1]], y: [0.5, 0.5] }), { maxSteps: 5 }).state.pruned // => [1, 0, 0]
  * ```
  */
 export function reducedErrorAlgorithm(tree: FittedTree, held: LearnData): Algorithm<ReducedErrorState, PrunePath> {
-  if (held.y === undefined) throw new MdmlError('value', 'reducedErrorAlgorithm: held-out targets are needed')
+  if (held.y === undefined) throw new OmaiError('value', 'reducedErrorAlgorithm: held-out targets are needed')
   const m = matrixView(held.x, 'reducedErrorAlgorithm', { nFeatures: tree.nFeatures, allowNaN: true })
   const w = sampleWeightsOf(held.weights, m.n, 'reducedErrorAlgorithm')
   const y =
@@ -372,7 +372,7 @@ export function reducedErrorAlgorithm(tree: FittedTree, held: LearnData): Algori
  * @returns The pruned tree.
  * @example
  * ```ts
- * import { reducedErrorPrune, stumpTree } from 'mdml-engine/trees'
+ * import { reducedErrorPrune, stumpTree } from 'omai-engine/trees'
  * const t = stumpTree({ feature: 0, threshold: 0.5, left: 0, right: 1 })
  * reducedErrorPrune(t, { x: [[0], [1]], y: [0.5, 0.5] }).left // => [-1]
  * reducedErrorPrune(t, { x: [[0], [1]], y: [0, 1] }).left // => [1, -1, -1]

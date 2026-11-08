@@ -5,11 +5,11 @@
  * session panel shares.
  */
 
-import type { Json } from 'mdml-engine/base'
-import { maxOf } from 'mdml-engine/base'
-import { covarianceEllipse } from 'mdml-engine/numerics/geometry'
-import { type Tensor, toFlat } from 'mdml-engine/tensor'
-import type { Run, Session } from 'mdml-engine/trace'
+import type { Json } from 'omai-engine/base'
+import { maxOf } from 'omai-engine/base'
+import { covarianceEllipse } from 'omai-engine/numerics/geometry'
+import { type Tensor, toFlat } from 'omai-engine/tensor'
+import type { Run, Session } from 'omai-engine/trace'
 import { type ReactNode, useMemo } from 'react'
 import { band, lines } from '../../charts/lines.ts'
 import { cartesian, type Layer } from '../../charts/plot.ts'

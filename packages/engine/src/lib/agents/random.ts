@@ -26,9 +26,9 @@ export interface RandomAgentEnv<O, A> {
  * @concept agents
  * @example
  * ```ts
- * import { randomAgent } from 'mdml-engine/agents'
- * import { cartPole } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { randomAgent } from 'omai-engine/agents'
+ * import { cartPole } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * const agent = randomAgent(cartPole.create())
  * [0, 1].includes(agent.act(null, [0, 0, 0, 0], key(3))) // => true
  * ```
@@ -53,8 +53,8 @@ export function randomAgent<O, A>(env: RandomAgentEnv<O, A>): Agent<null, O, A> 
  * @concept agents
  * @example
  * ```ts
- * import { constantAgent } from 'mdml-engine/agents'
- * import { key } from 'mdml-engine/random'
+ * import { constantAgent } from 'omai-engine/agents'
+ * import { key } from 'omai-engine/random'
  * const agent = constantAgent(1)
  * agent.act(null, 0, key(0)) // => 1
  * ```

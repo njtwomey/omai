@@ -6,7 +6,7 @@
  * sharpens as the iteration cap grows.
  */
 
-import { type Json, MdmlError } from '../../base/index.ts'
+import { type Json, OmaiError } from '../../base/index.ts'
 import {
   type Algorithm,
   type Contract,
@@ -38,11 +38,11 @@ export interface ComplexViewport {
  *
  * @param viewport - The window.
  * @returns Real and imaginary parts, row-major, and the pixel size.
- * @throws MdmlError with code `value` for a non-positive width or pixel count.
+ * @throws OmaiError with code `value` for a non-positive width or pixel count.
  * @concept escape-time-fractals
  * @example
  * ```ts
- * import { fractals } from 'mdml-engine/dynamics'
+ * import { fractals } from 'omai-engine/dynamics'
  * const g = fractals.pixelGrid({ centre: [0, 0], width: 4, pixels: [2, 2] })
  * [Array.from(g.re), Array.from(g.im), g.size] // => [[-1, 1, -1, 1], [1, 1, -1, -1], 2]
  * ```
@@ -59,7 +59,7 @@ export function pixelGrid(viewport: ComplexViewport = {}): {
   const [columns, rows] = viewport.pixels ?? [200, 200]
   positiveInt('pixelGrid', 'columns', columns)
   positiveInt('pixelGrid', 'rows', rows)
-  if (!(width > 0)) throw new MdmlError('value', `pixelGrid: width must be positive, got ${width}`)
+  if (!(width > 0)) throw new OmaiError('value', `pixelGrid: width must be positive, got ${width}`)
   const size = width / columns
   const re = new Float64Array(columns * rows)
   const im = new Float64Array(columns * rows)
@@ -91,8 +91,8 @@ function checkRule(
   const d = rule.power ?? (set === 'multibrot' ? 3 : 2)
   const R = rule.bailout ?? 2
   if (!(Number.isInteger(d) && d >= 2))
-    throw new MdmlError('value', `${name}: power must be an integer of at least 2, got ${d}`)
-  if (!(R > 0)) throw new MdmlError('value', `${name}: bailout must be positive, got ${R}`)
+    throw new OmaiError('value', `${name}: power must be an integer of at least 2, got ${d}`)
+  if (!(R > 0)) throw new OmaiError('value', `${name}: bailout must be positive, got ${R}`)
   return { set, d, R, c: rule.c ?? [-0.8, 0.156] }
 }
 
@@ -121,11 +121,11 @@ function advance(set: EscapeSet, zr: number, zi: number, cr: number, ci: number,
  * @param maxIterations - The cap.
  * @param rule - The set and its parameters.
  * @returns `n` (at least 1), or 0 if the point has not escaped within the cap.
- * @throws MdmlError with code `value` for a power below 2 or a non-positive bailout.
+ * @throws OmaiError with code `value` for a power below 2 or a non-positive bailout.
  * @concept escape-time-fractals
  * @example
  * ```ts
- * import { fractals } from 'mdml-engine/dynamics'
+ * import { fractals } from 'omai-engine/dynamics'
  * [fractals.escapeCount([0, 0], 100), fractals.escapeCount([1, 0], 100), fractals.escapeCount([-1, 0], 100)] // => [0, 3, 0]
  * ```
  */
@@ -154,7 +154,7 @@ export function escapeCount(point: readonly [number, number], maxIterations: num
  * @concept escape-time-fractals
  * @example
  * ```ts
- * import { fractals } from 'mdml-engine/dynamics'
+ * import { fractals } from 'omai-engine/dynamics'
  * fractals.escapeOrbit([-1, 0], 4) // => [0, 0, -1, 0, 0, 0, -1, 0]
  * ```
  */
@@ -183,7 +183,7 @@ export function escapeOrbit(point: readonly [number, number], count: number, rul
  * @concept escape-time-fractals
  * @example
  * ```ts
- * import { fractals } from 'mdml-engine/dynamics'
+ * import { fractals } from 'omai-engine/dynamics'
  * [[0, 0], [-1, 0], [-1.7548776, 0], [-1.3107026, 0]].map((c) => fractals.orbitPeriod(c as [number, number])) // => [1, 2, 3, 4]
  * ```
  */
@@ -238,7 +238,7 @@ export type EscapeTimePath = 'image/escape' | 'image/smooth' | 'image/iteration'
  * @returns The contract.
  * @example
  * ```ts
- * import { fractals } from 'mdml-engine/dynamics'
+ * import { fractals } from 'omai-engine/dynamics'
  * Object.keys(fractals.escapeTimeContract({})) // => ['image/escape', 'image/smooth', 'image/iteration', 'image/escapedShare', 'point/orbit']
  * ```
  */
@@ -274,12 +274,12 @@ export function escapeTimeContract(rule: EscapeRule): Contract<EscapeTimeState, 
  *
  * @param options - The set, its parameters and the viewport.
  * @returns The algorithm.
- * @throws MdmlError with code `value` for a power below 2, a non-positive bailout, width or pixel count.
+ * @throws OmaiError with code `value` for a power below 2, a non-positive bailout, width or pixel count.
  * @concept escape-time-fractals
  * @example
  * ```ts
- * import { fractals } from 'mdml-engine/dynamics'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { fractals } from 'omai-engine/dynamics'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * // The point 1 (the centre of a 1 x 1 pixel window) escapes on the third iteration: 0, 1, 2, 5.
  * const alg = fractals.escapeTimeAlgorithm({ viewport: { centre: [1, 0], width: 0.1, pixels: [1, 1] } })
  * Array.from(runAlgorithm(alg, { seed: 0, maxSteps: 5 }).state.count) // => [3]

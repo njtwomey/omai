@@ -7,7 +7,7 @@
  * penalised fit.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { dgemm, dgeqrf, dgesvd } from '../numerics/linalg/index.ts'
 import { foldIn, type Key, permutation } from '../random/index.ts'
 import { fromStorage, toFlat } from '../tensor/index.ts'
@@ -29,7 +29,7 @@ const vec = (a: ArrayLike<number>) => fromStorage(Float64Array.from(a), [a.lengt
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { GAM_DEFAULTS, fitContext, fitGam, gamProblem, gamResiduals, s } from 'mdml-engine/gam'
+ * import { GAM_DEFAULTS, fitContext, fitGam, gamProblem, gamResiduals, s } from 'omai-engine/gam'
  * const x = Array.from({ length: 30 }, (_, i) => [i / 29])
  * const hyper = { ...GAM_DEFAULTS, terms: [s(0, { k: 5 })] }
  * const problem = gamProblem(x, x.map((r, i) => (r[0] ?? 0) + 0.1 * Math.sin(i * 12.9898)), hyper)
@@ -75,8 +75,8 @@ export interface QqData {
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { GAM_DEFAULTS, fitContext, fitGam, gamProblem, qqData, s } from 'mdml-engine/gam'
- * import { key } from 'mdml-engine/random'
+ * import { GAM_DEFAULTS, fitContext, fitGam, gamProblem, qqData, s } from 'omai-engine/gam'
+ * import { key } from 'omai-engine/random'
  * const x = Array.from({ length: 30 }, (_, i) => [i / 29])
  * const hyper = { ...GAM_DEFAULTS, terms: [s(0, { k: 5 })] }
  * const problem = gamProblem(x, x.map((r, i) => (r[0] ?? 0) + 0.1 * Math.sin(i * 12.9898)), hyper)
@@ -120,7 +120,7 @@ export function qqData(
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { GAM_DEFAULTS, fitContext, fitGam, gamProblem, residualsVsFitted, s } from 'mdml-engine/gam'
+ * import { GAM_DEFAULTS, fitContext, fitGam, gamProblem, residualsVsFitted, s } from 'omai-engine/gam'
  * const x = Array.from({ length: 30 }, (_, i) => [i / 29])
  * const hyper = { ...GAM_DEFAULTS, terms: [s(0, { k: 5 })] }
  * const problem = gamProblem(x, x.map((r, i) => (r[0] ?? 0) + 0.1 * Math.sin(i * 12.9898)), hyper)
@@ -159,8 +159,8 @@ export interface KIndex {
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { GAM_DEFAULTS, fitContext, fitGam, gamProblem, kIndex, s } from 'mdml-engine/gam'
- * import { key } from 'mdml-engine/random'
+ * import { GAM_DEFAULTS, fitContext, fitGam, gamProblem, kIndex, s } from 'omai-engine/gam'
+ * import { key } from 'omai-engine/random'
  * const x = Array.from({ length: 60 }, (_, i) => [i / 59])
  * const hyper = { ...GAM_DEFAULTS, terms: [s(0, { k: 8 })] }
  * const problem = gamProblem(x, x.map((r, i) => Math.sin(5 * (r[0] ?? 0)) + 0.2 * Math.sin(i * 12.9898)), hyper)
@@ -224,7 +224,7 @@ export function kIndex(
 function covariateOf(ctx: GamFitContext, row: number, feature: number): number {
   const data = ctx.problem.covariates
   if (data === undefined)
-    throw new MdmlError('value', 'kIndex: the problem carries no covariates (build it with gamProblem)')
+    throw new OmaiError('value', 'kIndex: the problem carries no covariates (build it with gamProblem)')
   return data[row * ctx.problem.design.nFeatures + feature] ?? 0
 }
 
@@ -251,7 +251,7 @@ export interface Concurvity {
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { GAM_DEFAULTS, concurvity, fitContext, fitGam, gamProblem, s } from 'mdml-engine/gam'
+ * import { GAM_DEFAULTS, concurvity, fitContext, fitGam, gamProblem, s } from 'omai-engine/gam'
  * const x = Array.from({ length: 60 }, (_, i) => [i / 59, i / 59 + 0.001 * Math.sin(i)])
  * const hyper = { ...GAM_DEFAULTS, terms: [s(0, { k: 5 }), s(1, { k: 5 })] }
  * const problem = gamProblem(x, x.map((r) => (r[0] ?? 0) ** 2), hyper)
@@ -326,7 +326,7 @@ export function concurvity(ctx: GamFitContext): Concurvity[] {
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { GAM_DEFAULTS, cooksDistance, fitContext, fitGam, gamProblem, s } from 'mdml-engine/gam'
+ * import { GAM_DEFAULTS, cooksDistance, fitContext, fitGam, gamProblem, s } from 'omai-engine/gam'
  * const x = Array.from({ length: 30 }, (_, i) => [i / 29])
  * const y = x.map((r, i) => (r[0] ?? 0) + 0.05 * Math.sin(i * 12.9898))
  * y[15] = 3

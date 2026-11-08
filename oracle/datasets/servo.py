@@ -3,8 +3,8 @@
 Motor and screw are categorical (letters A to E); the two gains and the rise time are numbers.
 """
 
-from mdml_oracle.uci import source_note, table_rows, zip_member
-from mdml_oracle.vendor import render_ordered_table
+from omai_oracle.uci import source_note, table_rows, zip_member
+from omai_oracle.vendor import render_ordered_table
 
 TARGET = "packages/engine/src/lib/datasets/_data/servo.data.ts"
 ID, SLUG = 87, "servo"

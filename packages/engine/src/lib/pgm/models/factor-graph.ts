@@ -4,7 +4,7 @@
  * variables and factors, evidence by state name or index, unnormalised log probabilities and a forest test.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { type DiscreteVariable, type Factor, logFactorAt } from '../factor.ts'
 import { type BayesNet, bayesFactors } from './bayes-net.ts'
 import type { MarkovNetwork } from './markov-network.ts'
@@ -30,24 +30,24 @@ export type DiscreteModel = BayesNet | MarkovNetwork | FactorGraph
  * @param variables - The variables.
  * @param factors - The factors.
  * @returns The factor graph.
- * @throws MdmlError with code `value` for undeclared variables or mismatched cardinalities.
+ * @throws OmaiError with code `value` for undeclared variables or mismatched cardinalities.
  * @concept factor-graphs
  * @example
  * ```ts
- * import { factor, factorGraph } from 'mdml-engine/pgm'
+ * import { factor, factorGraph } from 'omai-engine/pgm'
  * const fg = factorGraph([{ name: 'a', states: ['0', '1'] }], [factor(['a'], [2], [1, 3])])
  * fg.factors.length // => 1
  * ```
  */
 export function factorGraph(variables: readonly DiscreteVariable[], factors: readonly Factor[]): FactorGraph {
   const card = new Map(variables.map((v) => [v.name, v.states.length]))
-  if (card.size !== variables.length) throw new MdmlError('value', 'factorGraph: variable names must be distinct')
+  if (card.size !== variables.length) throw new OmaiError('value', 'factorGraph: variable names must be distinct')
   for (const f of factors) {
     for (const [i, v] of f.variables.entries()) {
       const c = card.get(v)
-      if (c === undefined) throw new MdmlError('value', `factorGraph: factor mentions undeclared variable ${v}`)
+      if (c === undefined) throw new OmaiError('value', `factorGraph: factor mentions undeclared variable ${v}`)
       if (c !== f.cardinality[i])
-        throw new MdmlError('value', `factorGraph: ${v} has ${c} states but a factor gives ${f.cardinality[i]}`)
+        throw new OmaiError('value', `factorGraph: ${v} has ${c} states but a factor gives ${f.cardinality[i]}`)
     }
   }
   return { kind: 'factorGraph', variables: variables.map((v) => ({ name: v.name, states: [...v.states] })), factors }
@@ -60,7 +60,7 @@ export function factorGraph(variables: readonly DiscreteVariable[], factors: rea
  * @returns The variables with their states.
  * @example
  * ```ts
- * import { bayesNet, modelVariables } from 'mdml-engine/pgm'
+ * import { bayesNet, modelVariables } from 'omai-engine/pgm'
  * modelVariables(bayesNet([{ name: 'a', states: ['x', 'y'], parents: [], cpt: [0.5, 0.5] }])) // => [{ name: 'a', states: ['x', 'y'] }]
  * ```
  */
@@ -76,7 +76,7 @@ export function modelVariables(model: DiscreteModel): DiscreteVariable[] {
  * @returns Its factors.
  * @example
  * ```ts
- * import { bayesNet, modelFactors } from 'mdml-engine/pgm'
+ * import { bayesNet, modelFactors } from 'omai-engine/pgm'
  * modelFactors(bayesNet([{ name: 'a', states: ['x', 'y'], parents: [], cpt: [0.5, 0.5] }])).length // => 1
  * ```
  */
@@ -94,7 +94,7 @@ export function modelFactors(model: DiscreteModel): Factor[] {
  * @concept factor-graphs
  * @example
  * ```ts
- * import { bayesNet, toFactorGraph } from 'mdml-engine/pgm'
+ * import { bayesNet, toFactorGraph } from 'omai-engine/pgm'
  * const bn = bayesNet([{ name: 'a', states: ['0', '1'], parents: [], cpt: [0.5, 0.5] }, { name: 'b', states: ['0', '1'], parents: ['a'], cpt: [1, 0, 0, 1] }])
  * toFactorGraph(bn).factors.map((f) => f.variables) // => [['a'], ['a', 'b']]
  * ```
@@ -110,16 +110,16 @@ export function toFactorGraph(model: DiscreteModel): FactorGraph {
  * @param model - The model.
  * @param name - The variable.
  * @returns The variable.
- * @throws MdmlError with code `value` for an unknown name.
+ * @throws OmaiError with code `value` for an unknown name.
  * @example
  * ```ts
- * import { factorGraph, modelVariable } from 'mdml-engine/pgm'
+ * import { factorGraph, modelVariable } from 'omai-engine/pgm'
  * modelVariable(factorGraph([{ name: 'a', states: ['x', 'y'] }], []), 'a').states // => ['x', 'y']
  * ```
  */
 export function modelVariable(model: DiscreteModel, name: string): DiscreteVariable {
   const v = modelVariables(model).find((x) => x.name === name)
-  if (v === undefined) throw new MdmlError('value', `unknown variable ${name}`)
+  if (v === undefined) throw new OmaiError('value', `unknown variable ${name}`)
   return v
 }
 
@@ -129,10 +129,10 @@ export function modelVariable(model: DiscreteModel, name: string): DiscreteVaria
  * @param model - The model.
  * @param evidence - Observed states by variable.
  * @returns State indices by variable.
- * @throws MdmlError with code `value` for unknown variables or states.
+ * @throws OmaiError with code `value` for unknown variables or states.
  * @example
  * ```ts
- * import { factorGraph, evidenceIndices } from 'mdml-engine/pgm'
+ * import { factorGraph, evidenceIndices } from 'omai-engine/pgm'
  * evidenceIndices(factorGraph([{ name: 'a', states: ['x', 'y'] }], []), { a: 'y' }) // => { a: 1 }
  * ```
  */
@@ -144,10 +144,10 @@ export function evidenceIndices(
   return Object.fromEntries(
     Object.entries(evidence).map(([k, v]) => {
       const variable = variables.get(k)
-      if (variable === undefined) throw new MdmlError('value', `evidence: unknown variable ${k}`)
+      if (variable === undefined) throw new OmaiError('value', `evidence: unknown variable ${k}`)
       const i = typeof v === 'number' ? v : variable.states.indexOf(v)
       if (!Number.isInteger(i) || i < 0 || i >= variable.states.length)
-        throw new MdmlError('value', `evidence: ${k} has no state ${String(v)}`)
+        throw new OmaiError('value', `evidence: ${k} has no state ${String(v)}`)
       return [k, i]
     }),
   )
@@ -161,7 +161,7 @@ export function evidenceIndices(
  * @returns State names by variable.
  * @example
  * ```ts
- * import { factorGraph, stateNames } from 'mdml-engine/pgm'
+ * import { factorGraph, stateNames } from 'omai-engine/pgm'
  * stateNames(factorGraph([{ name: 'a', states: ['x', 'y'] }], []), { a: 1 }) // => { a: 'y' }
  * ```
  */
@@ -180,7 +180,7 @@ export function stateNames(model: DiscreteModel, assignment: Readonly<Record<str
  * @returns The sum of log factor values.
  * @example
  * ```ts
- * import { factor, factorGraph, unnormalisedLogProbability } from 'mdml-engine/pgm'
+ * import { factor, factorGraph, unnormalisedLogProbability } from 'omai-engine/pgm'
  * const fg = factorGraph([{ name: 'a', states: ['0', '1'] }], [factor(['a'], [2], [1, Math.E])])
  * unnormalisedLogProbability(fg, { a: 1 }) // => 1
  * ```
@@ -198,7 +198,7 @@ export function unnormalisedLogProbability(model: DiscreteModel, assignment: Rea
  * @returns Factor indices by variable.
  * @example
  * ```ts
- * import { factor, factorGraph, variableFactors } from 'mdml-engine/pgm'
+ * import { factor, factorGraph, variableFactors } from 'omai-engine/pgm'
  * const fg = factorGraph([{ name: 'a', states: ['0', '1'] }], [factor(['a'], [2], [1, 1]), factor(['a'], [2], [1, 2])])
  * variableFactors(fg).get('a') // => [0, 1]
  * ```
@@ -218,7 +218,7 @@ export function variableFactors(fg: FactorGraph): Map<string, number[]> {
  * @concept factor-graphs
  * @example
  * ```ts
- * import { factor, factorGraph, isFactorTree } from 'mdml-engine/pgm'
+ * import { factor, factorGraph, isFactorTree } from 'omai-engine/pgm'
  * const v = ['a', 'b'].map((name) => ({ name, states: ['0', '1'] }))
  * isFactorTree(factorGraph(v, [factor(['a', 'b'], [2, 2], [1, 1, 1, 1])])) // => true
  * isFactorTree(factorGraph(v, [factor(['a', 'b'], [2, 2], [1, 1, 1, 1]), factor(['a', 'b'], [2, 2], [1, 1, 1, 1])])) // => false

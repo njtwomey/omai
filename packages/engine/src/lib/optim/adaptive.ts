@@ -5,7 +5,7 @@
  * with `chain`.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { bernoulli, foldIn, type Key } from '../random/index.ts'
 import {
   abs,
@@ -62,7 +62,7 @@ export interface AdamOptions {
  * @index function Adam as a gradient transformation, like torch.optim.Adam.
  * @example
  * ```ts
- * import { adam } from 'mdml-engine/optim'
+ * import { adam } from 'omai-engine/optim'
  * adam({ learningRate: 1e-3 }).name // => 'chain(addDecayedWeights, scaleByAdam, scaleByLearningRate)'
  * ```
  */
@@ -82,7 +82,7 @@ export function adam(options: AdamOptions): GradientTransformation<unknown[]> {
  * @returns The optimiser.
  * @example
  * ```ts
- * import { adamw } from 'mdml-engine/optim'
+ * import { adamw } from 'omai-engine/optim'
  * adamw({ learningRate: 1e-3 }).name // => 'chain(scaleByAdam, addDecayedWeights, scaleByLearningRate)'
  * ```
  */
@@ -102,7 +102,7 @@ export function adamw(options: AdamOptions): GradientTransformation<unknown[]> {
  * @returns The optimiser.
  * @example
  * ```ts
- * import { amsgrad } from 'mdml-engine/optim'
+ * import { amsgrad } from 'omai-engine/optim'
  * amsgrad({ learningRate: 1e-3 }).name // => 'chain(addDecayedWeights, scaleByAdam, scaleByLearningRate)'
  * ```
  */
@@ -127,8 +127,8 @@ export interface AdamaxState {
  * @returns The transformation.
  * @example
  * ```ts
- * import { scaleByAdamax } from 'mdml-engine/optim'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { scaleByAdamax } from 'omai-engine/optim'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * const t = scaleByAdamax(0.5, 0.9, 0)
  * toArray(t.update(tensor([-2]), t.init(tensor([0]))).updates as never) // => [-1]
  * ```
@@ -154,7 +154,7 @@ export function scaleByAdamax(b1 = 0.9, b2 = 0.999, eps = 1e-8): GradientTransfo
  * @returns The optimiser.
  * @example
  * ```ts
- * import { adamax } from 'mdml-engine/optim'
+ * import { adamax } from 'omai-engine/optim'
  * adamax({ learningRate: 2e-3 }).name // => 'chain(addDecayedWeights, scaleByAdamax, scaleByLearningRate)'
  * ```
  */
@@ -185,7 +185,7 @@ export interface NadamState {
  * @returns The transformation.
  * @example
  * ```ts
- * import { scaleByNadam } from 'mdml-engine/optim'
+ * import { scaleByNadam } from 'omai-engine/optim'
  * scaleByNadam().name // => 'scaleByNadam'
  * ```
  */
@@ -249,7 +249,7 @@ const withDecay = (
  * @returns The optimiser.
  * @example
  * ```ts
- * import { nadam } from 'mdml-engine/optim'
+ * import { nadam } from 'omai-engine/optim'
  * nadam({ learningRate: 2e-3 }).name // => 'chain(addDecayedWeights, scaleByNadam, scaleByLearningRate)'
  * ```
  */
@@ -280,8 +280,8 @@ export interface RadamState {
  * @returns The transformation.
  * @example
  * ```ts
- * import { scaleByRadam } from 'mdml-engine/optim'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { scaleByRadam } from 'omai-engine/optim'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * const t = scaleByRadam()
  * toArray(t.update(tensor([2]), t.init(tensor([0]))).updates as never) // => [2]
  * ```
@@ -320,7 +320,7 @@ export function scaleByRadam(b1 = 0.9, b2 = 0.999, eps = 1e-8): GradientTransfor
  * @returns The optimiser.
  * @example
  * ```ts
- * import { radam } from 'mdml-engine/optim'
+ * import { radam } from 'omai-engine/optim'
  * radam({ learningRate: 1e-3 }).name // => 'chain(addDecayedWeights, scaleByRadam, scaleByLearningRate)'
  * ```
  */
@@ -336,8 +336,8 @@ export function radam(options: NadamOptions): GradientTransformation<unknown[]> 
  * @returns The transformation.
  * @example
  * ```ts
- * import { scaleByLion } from 'mdml-engine/optim'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { scaleByLion } from 'omai-engine/optim'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * const t = scaleByLion()
  * toArray(t.update(tensor([0.3, -2]), t.init(tensor([0, 0]))).updates as never) // => [1, -1]
  * ```
@@ -370,7 +370,7 @@ export interface LionOptions {
  * @returns The optimiser.
  * @example
  * ```ts
- * import { lion } from 'mdml-engine/optim'
+ * import { lion } from 'omai-engine/optim'
  * lion({ learningRate: 1e-4 }).name // => 'chain(scaleByLion, addDecayedWeights, scaleByLearningRate)'
  * ```
  */
@@ -390,7 +390,7 @@ export function lion(options: LionOptions): GradientTransformation<unknown[]> {
  * @returns The optimiser (needs `params` in `update`).
  * @example
  * ```ts
- * import { lamb } from 'mdml-engine/optim'
+ * import { lamb } from 'omai-engine/optim'
  * lamb({ learningRate: 1e-3 }).name // => 'chain(scaleByAdam, addDecayedWeights, scaleByTrustRatio, scaleByLearningRate)'
  * ```
  */
@@ -435,8 +435,8 @@ const rms = (x: Value): number => Math.sqrt(item(mean(square(x))))
  * @returns The optimiser (its updates are final; it needs `params` in `update`).
  * @example
  * ```ts
- * import { adafactor } from 'mdml-engine/optim'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { adafactor } from 'omai-engine/optim'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * const opt = adafactor({ eps: [undefined, 1] })
  * toArray(opt.update(tensor([3, -4]), opt.init(tensor([0, 0])), tensor([0, 0])).updates as never) // => [-0.01, 0.01]
  * ```
@@ -460,7 +460,7 @@ export function adafactor(options: AdafactorOptions = {}): GradientTransformatio
       ),
     }),
     update: (grads, state, params) => {
-      if (params === undefined) throw new MdmlError('value', 'adafactor needs the parameters')
+      if (params === undefined) throw new OmaiError('value', 'adafactor needs the parameters')
       const t = state.count + 1
       const w = t ** decay
       const lrT = rate(lr, t - 1)
@@ -526,8 +526,8 @@ export interface SophiaState {
  * @returns The transformation.
  * @example
  * ```ts
- * import { scaleBySophia } from 'mdml-engine/optim'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { scaleBySophia } from 'omai-engine/optim'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * const t = scaleBySophia({ b1: 0, b2: 0, rho: 1 })
  * toArray(t.update(tensor([0.5, 4]), t.init(tensor([0, 0]))).updates as never) // => [1, 0.25]
  * ```
@@ -569,7 +569,7 @@ export interface SophiaLiteOptions extends SophiaOptions {
  * @returns The optimiser.
  * @example
  * ```ts
- * import { sophiaLite } from 'mdml-engine/optim'
+ * import { sophiaLite } from 'omai-engine/optim'
  * sophiaLite({ learningRate: 1e-3 }).name // => 'chain(scaleBySophia, addDecayedWeights, scaleByLearningRate)'
  * ```
  */
@@ -587,16 +587,16 @@ export function sophiaLite(options: SophiaLiteOptions): GradientTransformation<u
  * @returns An estimator for {@link scaleBySophia}.
  * @example
  * ```ts
- * import { hutchinsonDiagonal } from 'mdml-engine/optim'
- * import { key } from 'mdml-engine/random'
- * import { mul, sum, tensor, toArray, type Value } from 'mdml-engine/tensor'
+ * import { hutchinsonDiagonal } from 'omai-engine/optim'
+ * import { key } from 'omai-engine/random'
+ * import { mul, sum, tensor, toArray, type Value } from 'omai-engine/tensor'
  * const est = hutchinsonDiagonal((x) => sum(mul(tensor([1, 3]), mul(x as Value, x as Value))), key(0))
  * toArray(est(tensor([0, 0]), tensor([1, 1]), 0) as never) // => [2, 6]
  * ```
  */
 export function hutchinsonDiagonal(f: Objective, key: Key): HessianDiagonalEstimator {
   return (_grads, params, step) => {
-    if (params === undefined) throw new MdmlError('value', 'hutchinsonDiagonal needs the parameters')
+    if (params === undefined) throw new OmaiError('value', 'hutchinsonDiagonal needs the parameters')
     const obj = flatObjective(f, params)
     const probe = bernoulli(foldIn(key, step), 0.5, [obj.n])
     const v = Float64Array.from(probe.data, (b) => (b ? 1 : -1))

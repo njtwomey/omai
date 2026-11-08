@@ -27,10 +27,10 @@ export interface RegularisationPath {
  *
  * @param path - The path without its `kind`.
  * @returns The record.
- * @throws MdmlError `shape` when the coefficients do not match the penalties and features.
+ * @throws OmaiError `shape` when the coefficients do not match the penalties and features.
  * @example
  * ```ts
- * import { regularisationPath } from 'mdml-engine/exposition'
+ * import { regularisationPath } from 'omai-engine/exposition'
  * regularisationPath({ penalties: [1, 0.1], features: ['a', 'b'], coefficients: [[0, 0], [0.4, 0]] }).kind // => 'regularisationPath'
  * ```
  */
@@ -68,10 +68,10 @@ export interface CoefficientTable {
  *
  * @param table - The table without its `kind`.
  * @returns The record.
- * @throws MdmlError `shape` when a column does not match the names.
+ * @throws OmaiError `shape` when a column does not match the names.
  * @example
  * ```ts
- * import { coefficientTable } from 'mdml-engine/exposition'
+ * import { coefficientTable } from 'omai-engine/exposition'
  * coefficientTable({ names: ['x'], estimates: [2], standardErrors: [0.1] }).estimates // => [2]
  * ```
  */
@@ -118,10 +118,10 @@ export interface CrossValidationCurve {
  *
  * @param curve - The curve without its `kind`.
  * @returns The record.
- * @throws MdmlError `shape` when the scores do not match the values.
+ * @throws OmaiError `shape` when the scores do not match the values.
  * @example
  * ```ts
- * import { crossValidationCurve } from 'mdml-engine/exposition'
+ * import { crossValidationCurve } from 'omai-engine/exposition'
  * crossValidationCurve({ parameter: 'alpha', values: [1, 2], meanScores: [0.8, 0.7], standardErrors: [0.1, 0.1], higherIsBetter: true }).parameter // => 'alpha'
  * ```
  */

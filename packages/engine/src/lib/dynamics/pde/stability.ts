@@ -5,7 +5,7 @@
  * dispersion and dissipation.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { complexOps as C, type ComplexNumber } from '../../numerics/differentiate/index.ts'
 
 /**
@@ -37,7 +37,7 @@ function symbol(stencil: Readonly<Record<number, number>>, theta: number): Compl
  * @concept von-neumann-stability
  * @example
  * ```ts
- * import { amplificationFactor, ftcs } from 'mdml-engine/dynamics/pde'
+ * import { amplificationFactor, ftcs } from 'omai-engine/dynamics/pde'
  * // FTCS for the heat equation: G = 1 - 4 r sin^2(theta / 2).
  * amplificationFactor(ftcs(0.25), Math.PI).re // => 0
  * ```
@@ -66,7 +66,7 @@ export interface VonNeumannReport {
  * @concept von-neumann-stability
  * @example
  * ```ts
- * import { ftcs, vonNeumann } from 'mdml-engine/dynamics/pde'
+ * import { ftcs, vonNeumann } from 'omai-engine/dynamics/pde'
  * [vonNeumann(ftcs(0.5)).stable, vonNeumann(ftcs(0.6)).stable] // => [true, false]
  * ```
  */
@@ -92,7 +92,7 @@ export function vonNeumann(scheme: TwoLevelScheme, samples = 721): VonNeumannRep
  * @returns The scheme.
  * @example
  * ```ts
- * import { ftcs } from 'mdml-engine/dynamics/pde'
+ * import { ftcs } from 'omai-engine/dynamics/pde'
  * ftcs(0.2).explicit[0] // => 0.6
  * ```
  */
@@ -107,7 +107,7 @@ export function ftcs(r: number): TwoLevelScheme {
  * @returns The scheme.
  * @example
  * ```ts
- * import { btcs, vonNeumann } from 'mdml-engine/dynamics/pde'
+ * import { btcs, vonNeumann } from 'omai-engine/dynamics/pde'
  * vonNeumann(btcs(10)).stable // => true
  * ```
  */
@@ -122,7 +122,7 @@ export function btcs(r: number): TwoLevelScheme {
  * @returns The scheme.
  * @example
  * ```ts
- * import { crankNicolsonScheme, vonNeumann } from 'mdml-engine/dynamics/pde'
+ * import { crankNicolsonScheme, vonNeumann } from 'omai-engine/dynamics/pde'
  * vonNeumann(crankNicolsonScheme(5)).stable // => true
  * ```
  */
@@ -141,7 +141,7 @@ export function crankNicolsonScheme(r: number): TwoLevelScheme {
  * @returns The scheme.
  * @example
  * ```ts
- * import { upwindScheme, vonNeumann } from 'mdml-engine/dynamics/pde'
+ * import { upwindScheme, vonNeumann } from 'omai-engine/dynamics/pde'
  * vonNeumann(upwindScheme(1.2)).stable // => false
  * ```
  */
@@ -158,7 +158,7 @@ export function upwindScheme(c: number): TwoLevelScheme {
  * @returns The scheme.
  * @example
  * ```ts
- * import { laxFriedrichsScheme, vonNeumann } from 'mdml-engine/dynamics/pde'
+ * import { laxFriedrichsScheme, vonNeumann } from 'omai-engine/dynamics/pde'
  * vonNeumann(laxFriedrichsScheme(0.9)).stable // => true
  * ```
  */
@@ -173,7 +173,7 @@ export function laxFriedrichsScheme(c: number): TwoLevelScheme {
  * @returns The scheme.
  * @example
  * ```ts
- * import { laxWendroffScheme, vonNeumann } from 'mdml-engine/dynamics/pde'
+ * import { laxWendroffScheme, vonNeumann } from 'omai-engine/dynamics/pde'
  * Math.round(vonNeumann(laxWendroffScheme(1)).maxGrowth * 1e12) / 1e12 // => 1
  * ```
  */
@@ -191,12 +191,12 @@ export function laxWendroffScheme(c: number): TwoLevelScheme {
  * @concept cfl-condition
  * @example
  * ```ts
- * import { courantNumber } from 'mdml-engine/dynamics/pde'
+ * import { courantNumber } from 'omai-engine/dynamics/pde'
  * courantNumber(1, 0.5, 0.25) // => 2
  * ```
  */
 export function courantNumber(velocity: number, dt: number, dx: number): number {
-  if (!(dx > 0)) throw new MdmlError('value', 'courantNumber: dx must be positive')
+  if (!(dx > 0)) throw new OmaiError('value', 'courantNumber: dx must be positive')
   return (Math.abs(velocity) * dt) / dx
 }
 
@@ -209,7 +209,7 @@ export function courantNumber(velocity: number, dt: number, dx: number): number 
  * @concept cfl-condition
  * @example
  * ```ts
- * import { stableTimeStep } from 'mdml-engine/dynamics/pde'
+ * import { stableTimeStep } from 'omai-engine/dynamics/pde'
  * stableTimeStep({ dx: 0.1, diffusivity: 1 }) // => 0.005000000000000001
  * ```
  */
@@ -248,7 +248,7 @@ export interface DispersionReport {
  * @concept numerical-dispersion
  * @example
  * ```ts
- * import { dispersion, upwindScheme } from 'mdml-engine/dynamics/pde'
+ * import { dispersion, upwindScheme } from 'omai-engine/dynamics/pde'
  * // At c = 1 upwind is exact.
  * const d = dispersion(upwindScheme(1), 1, 0.7)
  * [Math.round(d.amplitude * 1e12) / 1e12, Math.round(d.relativePhaseSpeed * 1e12) / 1e12] // => [1, 1]

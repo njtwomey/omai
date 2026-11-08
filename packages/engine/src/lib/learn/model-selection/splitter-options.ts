@@ -54,7 +54,7 @@ const folds = (d: number): ReturnType<typeof int> => int(2, 20, { default: d, la
  * @concept cross-validation
  * @example
  * ```ts
- * import { splitterSchemes } from 'mdml-engine/learn/model-selection'
+ * import { splitterSchemes } from 'omai-engine/learn/model-selection'
  * splitterSchemes.make({ kind: 'repeated', folds: 3, repeats: 2 }).nSplits({ n: 12 }) // => 6
  * ```
  */

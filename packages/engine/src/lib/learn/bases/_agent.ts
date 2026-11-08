@@ -4,7 +4,7 @@
  */
 
 import { greedyTable, qTable, type TabularState, valueTable } from '../../agents/index.ts'
-import { type Json, MdmlError } from '../../base/index.ts'
+import { type Json, OmaiError } from '../../base/index.ts'
 import { type Exposition, episodeRecord, type ValueGrid } from '../../exposition/index.ts'
 import type { Episode } from '../../rl/index.ts'
 
@@ -38,13 +38,13 @@ const isTabular = (state: unknown): state is TabularState =>
  * @param state - An agent state.
  * @param layout - The grid the states lay out on (default one row).
  * @returns The maps.
- * @throws MdmlError with code `shape` when the layout does not hold the agent's states.
+ * @throws OmaiError with code `shape` when the layout does not hold the agent's states.
  */
 export function gridMaps(state: unknown, layout?: GridLayout): GridMaps | undefined {
   if (!isTabular(state)) return undefined
   const [rows, cols] = layout?.shape ?? [1, state.nStates]
   if (rows * cols !== state.nStates)
-    throw new MdmlError('shape', `agent maps: a ${rows} by ${cols} grid does not hold ${state.nStates} states`)
+    throw new OmaiError('shape', `agent maps: a ${rows} by ${cols} grid does not hold ${state.nStates} states`)
   const onGrid = (v: readonly number[]): number[][] =>
     Array.from({ length: rows }, (_, r) => v.slice(r * cols, (r + 1) * cols))
   const values = valueTable(state)

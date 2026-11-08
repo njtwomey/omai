@@ -1,5 +1,5 @@
-import { bayesNet, plateModel, toStructure } from 'mdml-engine/pgm'
-import { type SceneNode, structure } from 'mdml-engine/scene'
+import { bayesNet, plateModel, toStructure } from 'omai-engine/pgm'
+import { type SceneNode, structure } from 'omai-engine/scene'
 import { describe, expect, it } from 'vitest'
 import { diagram } from './diagram.ts'
 import { bayesNetCards, nestPlates, uNet, uNetOrder, unetLevels } from './models.ts'

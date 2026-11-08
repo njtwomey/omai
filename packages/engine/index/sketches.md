@@ -4,6 +4,6 @@
 
 Probabilistic data structures for streams: Bloom, counting Bloom and cuckoo filters, the Count-Min and Count sketches, Misra-Gries and Space-Saving heavy hitters, HyperLogLog distinct counting, MinHash with banded LSH, reservoir sampling, the Greenwald-Khanna, t-digest and KLL quantile sketches, and the skip list. Each has the guarantee it is known for stated and tested, every hash is seeded by a number or a `Key`, and the ones worth watching are algorithms.
 
-- structure `bloomFilter`: Bloom filter for approximate set membership. `src/lib/sketches/membership.ts:219` `mdml-engine/sketches`
-- structure `countMinSketch`: Count-Min sketch for stream frequencies. `src/lib/sketches/frequency.ts:170` `mdml-engine/sketches`
-- structure `hyperLogLog`: HyperLogLog distinct-count sketch. `src/lib/sketches/cardinality.ts:175` `mdml-engine/sketches`
+- structure `bloomFilter`: Bloom filter for approximate set membership. `src/lib/sketches/membership.ts:219` `omai-engine/sketches`
+- structure `countMinSketch`: Count-Min sketch for stream frequencies. `src/lib/sketches/frequency.ts:170` `omai-engine/sketches`
+- structure `hyperLogLog`: HyperLogLog distinct-count sketch. `src/lib/sketches/cardinality.ts:175` `omai-engine/sketches`

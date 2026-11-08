@@ -6,7 +6,7 @@
  * manipulation of the running variable.
  */
 
-import { MdmlError, maxOf, minOf } from '../base/index.ts'
+import { maxOf, minOf, OmaiError } from '../base/index.ts'
 import { matrixView, targetVector } from '../learn/validation.ts'
 import type { TensorLike } from '../tensor/index.ts'
 import { covariance, normCdf, variance, wls } from './_dense.ts'
@@ -114,7 +114,7 @@ function sideFit(
   }
   const p = order + 1
   if (rows.length <= p)
-    throw new MdmlError(
+    throw new OmaiError(
       'value',
       `regressionDiscontinuity: the bandwidth ${h} leaves ${rows.length} observations ${above ? 'above' : 'below'} the cutoff`,
     )
@@ -145,7 +145,7 @@ function sideFit(
  * @returns The bandwidth.
  * @example
  * ```ts
- * import { imbensKalyanaraman } from 'mdml-engine/causal'
+ * import { imbensKalyanaraman } from 'omai-engine/causal'
  * const x = Array.from({ length: 400 }, (_, i) => (i - 200) / 50)
  * const y = x.map((v) => 1 + 0.5 * v + (v >= 0 ? 2 : 0) + 0.3 * Math.sin(37 * v))
  * imbensKalyanaraman(x, y) > 0 // => true
@@ -210,7 +210,7 @@ export function imbensKalyanaraman(running: TensorLike, outcome: TensorLike, cut
  * @returns The effect with its interval, the bandwidth and the two local fits.
  * @example
  * ```ts
- * import { regressionDiscontinuity } from 'mdml-engine/causal'
+ * import { regressionDiscontinuity } from 'omai-engine/causal'
  * const running = Array.from({ length: 200 }, (_, i) => (i - 100) / 25)
  * const outcome = running.map((v) => 1 + 0.5 * v + (v >= 0 ? 2 : 0))
  * regressionDiscontinuity({ running, outcome }, { bandwidth: 2 }).effect.estimate.value // => 2
@@ -223,7 +223,7 @@ export function regressionDiscontinuity(data: RdData, options: RdOptions = {}): 
   const order = options.order ?? 1
   const fuzzy = options.design === 'fuzzy'
   if (fuzzy && s.d === undefined)
-    throw new MdmlError('value', 'regressionDiscontinuity: a fuzzy design needs the treatment received')
+    throw new OmaiError('value', 'regressionDiscontinuity: a fuzzy design needs the treatment received')
   const h =
     options.bandwidth === undefined || options.bandwidth === 'ik'
       ? imbensKalyanaraman(data.running, data.outcome, cutoff)
@@ -305,7 +305,7 @@ export interface BandwidthPoint {
  * @returns One point per bandwidth.
  * @example
  * ```ts
- * import { rdBandwidthSweep } from 'mdml-engine/causal'
+ * import { rdBandwidthSweep } from 'omai-engine/causal'
  * const running = Array.from({ length: 200 }, (_, i) => (i - 100) / 25)
  * const outcome = running.map((v) => 1 + 0.5 * v + (v >= 0 ? 2 : 0))
  * rdBandwidthSweep({ running, outcome }, [1, 2]).map((p) => p.n) // => [49, 99]
@@ -351,7 +351,7 @@ export interface DensityTest {
  * @returns The log difference, its error, the z statistic and the p-value.
  * @example
  * ```ts
- * import { densityTest } from 'mdml-engine/causal'
+ * import { densityTest } from 'omai-engine/causal'
  * const x = Array.from({ length: 1000 }, (_, i) => (i - 500) / 100)
  * densityTest(x, { bandwidth: 1 }).pValue > 0.05 // => true
  * ```
@@ -376,7 +376,7 @@ export function densityTest(
       const mid = c + (j + 0.5) * b
       if (j >= 0 === above && Math.abs(mid - c) < h) pts.push(j)
     }
-    if (pts.length < 3) throw new MdmlError('value', 'densityTest: too few bins inside the bandwidth')
+    if (pts.length < 3) throw new OmaiError('value', 'densityTest: too few bins inside the bandwidth')
     const a = new Float64Array(pts.length * 2)
     const y = new Float64Array(pts.length)
     const w = new Float64Array(pts.length)

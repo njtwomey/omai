@@ -24,7 +24,7 @@ function direction(description: string, sign: 1 | -1): Option<1 | -1, IsotonicDi
  * @concept isotonic-regression
  * @example
  * ```ts
- * import { isotonicDirections } from 'mdml-engine/learn'
+ * import { isotonicDirections } from 'omai-engine/learn'
  * isotonicDirections.make({ kind: 'decreasing' }) // => -1
  * ```
  */

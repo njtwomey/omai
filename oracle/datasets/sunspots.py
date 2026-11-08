@@ -2,7 +2,7 @@
 
 import numpy as np
 import statsmodels
-from mdml_oracle.vendor import number_list, sha256_of
+from omai_oracle.vendor import number_list, sha256_of
 from statsmodels.datasets import sunspots
 
 TARGET = "packages/engine/src/lib/datasets/_data/sunspots.data.ts"

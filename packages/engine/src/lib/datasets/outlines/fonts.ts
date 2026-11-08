@@ -7,7 +7,7 @@
  * outlines are vendored in `_fonts.data.ts`.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { type ClassificationData, xyClasses } from '../../data/index.ts'
 import { normaliseOutline, resampleClosed, stitchStrokes } from '../../graphics/index.ts'
 import type { Point2 } from '../../numerics/geometry/index.ts'
@@ -70,7 +70,7 @@ function table(): Int16Array {
  * @returns The fonts: family, style, design class, weight, width, posture and licence.
  * @example
  * ```ts
- * import { fontInstances } from 'mdml-engine/datasets/outlines'
+ * import { fontInstances } from 'omai-engine/datasets/outlines'
  * const f = fontInstances()
  * [f.length, `${f[0]?.family} ${f[0]?.style}`] // => [66, 'Roboto Light']
  * ```
@@ -86,7 +86,7 @@ export function fontInstances(): FontInfo[] {
  * @returns The layouts, one per character.
  * @example
  * ```ts
- * import { fontGlyphs } from 'mdml-engine/datasets/outlines'
+ * import { fontGlyphs } from 'omai-engine/datasets/outlines'
  * fontGlyphs().map((g) => g.char).join('') // => 'ABCDEFGHIJLMNOPRSTUVXYZ'
  * ```
  */
@@ -100,10 +100,10 @@ export function fontGlyphs(): GlyphLayout[] {
  *
  * @param options - The characters (default all 23 capitals).
  * @returns The dataset.
- * @throws MdmlError with code `value` for a character without outlines.
+ * @throws OmaiError with code `value` for a character without outlines.
  * @example
  * ```ts
- * import { fonts } from 'mdml-engine/datasets/outlines'
+ * import { fonts } from 'omai-engine/datasets/outlines'
  * const d = fonts({ chars: 'O' })
  * [d.x.shape, d.classes.length] // => [[66, 132], 6]
  * ```
@@ -117,7 +117,7 @@ export function fonts(options: { readonly chars?: string } = {}): Classification
   for (const c of chars) {
     const g = byChar.get(c)
     if (g === undefined)
-      throw new MdmlError('value', `fonts: no outlines for '${c}'; available: ${[...byChar.keys()].join('')}`)
+      throw new OmaiError('value', `fonts: no outlines for '${c}'; available: ${[...byChar.keys()].join('')}`)
     const samples = g.contours.reduce((a, b) => a + b, 0)
     for (let k = 0; k < 2 * samples; k++) columns.push(g.offset + k)
     for (const [contour, m] of g.contours.entries())
@@ -146,18 +146,18 @@ export function fonts(options: { readonly chars?: string } = {}): Classification
  * @param font - The font's index (see {@link fontInstances}).
  * @param char - The character.
  * @returns The contours' points.
- * @throws MdmlError with code `value` for an unknown font or character.
+ * @throws OmaiError with code `value` for an unknown font or character.
  * @example
  * ```ts
- * import { glyphContours } from 'mdml-engine/datasets/outlines'
+ * import { glyphContours } from 'omai-engine/datasets/outlines'
  * glyphContours(0, 'O').map((c) => c.length) // => [42, 24]
  * ```
  */
 export function glyphContours(font: number, char: string): Point2[][] {
   if (!(Number.isInteger(font) && font >= 0 && font < FONTS.length))
-    throw new MdmlError('value', `glyphContours: no font ${font}`)
+    throw new OmaiError('value', `glyphContours: no font ${font}`)
   const g = GLYPHS.find((x) => x.char === char)
-  if (g === undefined) throw new MdmlError('value', `glyphContours: no outlines for '${char}'`)
+  if (g === undefined) throw new OmaiError('value', `glyphContours: no outlines for '${char}'`)
   const values = table()
   let at = font * WIDTH + g.offset
   return g.contours.map((m) => {
@@ -178,7 +178,7 @@ export function glyphContours(font: number, char: string): Point2[][] {
  * @returns The outline.
  * @example
  * ```ts
- * import { glyphOutline } from 'mdml-engine/datasets/outlines'
+ * import { glyphOutline } from 'omai-engine/datasets/outlines'
  * glyphOutline(5, 'A', 256).length // => 256
  * ```
  */

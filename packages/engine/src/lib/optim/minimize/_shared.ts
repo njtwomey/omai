@@ -1,6 +1,6 @@
 // Shared machinery of the vector methods (not exported from the barrel): the common state, trace schema, observation
 // and the runner that turns a final state into a MinimizeResult.
-import { type Json, MdmlError } from '../../base/index.ts'
+import { type Json, OmaiError } from '../../base/index.ts'
 import { dnrm2 } from '../../numerics/linalg/index.ts'
 import {
   type Algorithm,
@@ -83,14 +83,14 @@ export function observeVector(s: VectorState, extra: Observation = {}): Observat
  * @param options - The method's options.
  * @param fallback - The method's default absolute tolerance.
  * @returns The threshold the infinity norm of the gradient is compared with.
- * @throws MdmlError with code `value` unless `gradTolRel` is positive and finite.
+ * @throws OmaiError with code `value` unless `gradTolRel` is positive and finite.
  */
 export function gradientThreshold(obj: FlatObjective, options: VectorMethodOptions, fallback: number): number {
   const absolute = options.gradTol ?? fallback
   const relative = options.gradTolRel
   if (relative === undefined) return absolute
   if (!(relative > 0) || !Number.isFinite(relative))
-    throw new MdmlError('value', `gradTolRel must be positive and finite, got ${relative}`)
+    throw new OmaiError('value', `gradTolRel must be positive and finite, got ${relative}`)
   const reference = infNorm(obj.valueAndGrad(obj.x0).grad)
   return Number.isFinite(reference) ? Math.min(absolute, relative * reference) : absolute
 }

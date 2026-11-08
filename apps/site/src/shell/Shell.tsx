@@ -1,15 +1,15 @@
-import { cssText } from 'mdml-render/theme'
+import { cssText } from 'omai-render/theme'
 import { type ReactNode, useEffect, useState } from 'react'
 import { ColourToggle } from './ColourToggle.tsx'
 import { Link } from './Link.tsx'
 
 /** The site's sections, in navigation order. */
 export const SECTIONS = [
-  { path: '/gallery', title: 'Gallery', summary: 'What mdml-render can draw, lay out, control and animate.' },
-  { path: '/docs', title: 'Docs', summary: 'The mdml-engine reference, generated from the source.' },
+  { path: '/gallery', title: 'Gallery', summary: 'What omai-render can draw, lay out, control and animate.' },
+  { path: '/docs', title: 'Docs', summary: 'The omai-engine reference, generated from the source.' },
 ] as const
 
-// mdml-render's theme tokens as CSS variables, light on :root and dark under the `dark` class.
+// omai-render's theme tokens as CSS variables, light on :root and dark under the `dark` class.
 const THEME_CSS = `${cssText('light', ':root')}\n${cssText('dark', '.dark')}`
 
 /**
@@ -23,10 +23,10 @@ export function Shell(props: {
   readonly sidebar?: ReactNode
   /** The sections of the top bar (default: the site's own); the proofs of concept app passes its own. */
   readonly sections?: readonly { readonly path: string; readonly title: string }[]
-  /** The name beside the logo (default `mdml`). */
+  /** The name beside the logo (default `omai`). */
   readonly brand?: string
 }): ReactNode {
-  const { path, children, sidebar, sections = SECTIONS, brand = 'mdml' } = props
+  const { path, children, sidebar, sections = SECTIONS, brand = 'omai' } = props
   // On narrow screens the sidebar is a drawer, closed again by navigating.
   const [drawer, setDrawer] = useState(false)
   // biome-ignore lint/correctness/useExhaustiveDependencies: close on every change of page

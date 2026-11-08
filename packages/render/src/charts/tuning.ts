@@ -5,7 +5,7 @@
  */
 
 import type { EChartsOption } from 'echarts'
-import { maxOf } from 'mdml-engine/base'
+import { maxOf } from 'omai-engine/base'
 import {
   contourData,
   intermediateValues,
@@ -14,7 +14,7 @@ import {
   type Study,
   sliceData,
   parallelCoordinates as studyAxes,
-} from 'mdml-engine/tune'
+} from 'omai-engine/tune'
 import { type Figure, figure as makeFigure } from '../figure/figure.ts'
 import { gridSpec } from '../figure/grid.ts'
 import { extentOf } from '../figure/limits.ts'
@@ -53,9 +53,9 @@ const objectiveLabel = (study: Study, options: StudyChartOptions): string =>
  * @returns The layers: the trials, then the running best.
  * @example
  * ```ts
- * import { createStudy } from 'mdml-engine/tune'
- * import { real } from 'mdml-engine/space'
- * import { historyLayers } from 'mdml-render/charts'
+ * import { createStudy } from 'omai-engine/tune'
+ * import { real } from 'omai-engine/space'
+ * import { historyLayers } from 'omai-render/charts'
  * const trial = (number: number, value: number) => ({ number, params: value, state: 'complete', values: [value], intermediate: [], source: 'x' }) as const
  * historyLayers(createStudy(real(0, 9), { trials: [trial(0, 3), trial(1, 5), trial(2, 1)] })).length // => 2
  * ```
@@ -86,9 +86,9 @@ export function historyLayers(study: Study, options: Pick<StudyChartOptions, 'ob
  * @index function Objective per trial of a hyperparameter study: `historyChart(study)`.
  * @example
  * ```ts
- * import { createStudy } from 'mdml-engine/tune'
- * import { real } from 'mdml-engine/space'
- * import { historyChart } from 'mdml-render/charts'
+ * import { createStudy } from 'omai-engine/tune'
+ * import { real } from 'omai-engine/space'
+ * import { historyChart } from 'omai-render/charts'
  * const trial = (number: number, value: number) => ({ number, params: value, state: 'complete', values: [value], intermediate: [], source: 'x' }) as const
  * historyChart(createStudy(real(0, 9), { trials: [trial(0, 3), trial(1, 1)] })).series.length // => 2
  * ```
@@ -108,14 +108,14 @@ export function historyChart(study: Study, options: StudyChartOptions = {}): ECh
 /**
  * Parameter importances as horizontal bars, the most important at the top, each labelled with its share (Optuna's
  * `plot_param_importances`; the importances come from `correlationImportance` or `permutationImportance` in
- * mdml-engine's `tune`).
+ * omai-engine's `tune`).
  *
  * @param importances - Importance by parameter.
  * @param options - Figure, title, colour mode and how many parameters to show (default all).
  * @returns The ECharts option.
  * @example
  * ```ts
- * import { importanceChart } from 'mdml-render/charts'
+ * import { importanceChart } from 'omai-render/charts'
  * importanceChart({ lr: 0.7, depth: 0.2, dropout: 0.1 }).yAxis[0].data // => ['dropout', 'depth', 'lr']
  * ```
  */
@@ -182,9 +182,9 @@ function parameterAxis(study: Study, path: string): AxisSpec {
  * @returns The ECharts option, one panel per parameter.
  * @example
  * ```ts
- * import { createStudy } from 'mdml-engine/tune'
- * import { dict, real } from 'mdml-engine/space'
- * import { sliceChart } from 'mdml-render/charts'
+ * import { createStudy } from 'omai-engine/tune'
+ * import { dict, real } from 'omai-engine/space'
+ * import { sliceChart } from 'omai-render/charts'
  * const t = (number: number, a: number, b: number) => ({ number, params: { a, b }, state: 'complete', values: [a + b], intermediate: [], source: 'x' }) as const
  * sliceChart(createStudy(dict({ a: real(0, 1), b: real(0, 1) }), { trials: [t(0, 0.1, 0.5), t(1, 0.7, 0.2)] })).grid.length // => 2
  * ```
@@ -231,7 +231,7 @@ export function sliceChart(
 
 /**
  * A contour plot of a study over two parameters (Optuna's `plot_contour`): the objective predicted by a
- * Gaussian-process surrogate (`contourData` in mdml-engine's `tune`) as a smooth field with contour lines, and the
+ * Gaussian-process surrogate (`contourData` in omai-engine's `tune`) as a smooth field with contour lines, and the
  * trials on top.
  * Log-scaled parameters are drawn on log-10 axes (ticks show the parameter's own values).
  *
@@ -240,12 +240,12 @@ export function sliceChart(
  * @param yPath - The parameter up.
  * @param options - Figure, title, objective, label, the surrogate's grid size (default 24) and contour levels (default 8).
  * @returns The ECharts option.
- * @throws MdmlError with code `value` for unknown parameters or fewer than two trials with both.
+ * @throws OmaiError with code `value` for unknown parameters or fewer than two trials with both.
  * @example
  * ```ts
- * import { createStudy } from 'mdml-engine/tune'
- * import { dict, real } from 'mdml-engine/space'
- * import { contourChart } from 'mdml-render/charts'
+ * import { createStudy } from 'omai-engine/tune'
+ * import { dict, real } from 'omai-engine/space'
+ * import { contourChart } from 'omai-render/charts'
  * const trials = [[0, 0], [1, 0], [0, 1], [1, 1], [0.5, 0.5]].map(([a = 0, b = 0], number) => ({ number, params: { a, b }, state: 'complete', values: [a + b], intermediate: [], source: 'x' }) as const)
  * contourChart(createStudy(dict({ a: real(0, 1), b: real(0, 1) }), { trials }), 'a', 'b', { gridSize: 5 }).series.at(-1).type // => 'scatter'
  * ```
@@ -318,9 +318,9 @@ export function contourChart(
  * @returns The ECharts option.
  * @example
  * ```ts
- * import { createStudy } from 'mdml-engine/tune'
- * import { real } from 'mdml-engine/space'
- * import { intermediateChart } from 'mdml-render/charts'
+ * import { createStudy } from 'omai-engine/tune'
+ * import { real } from 'omai-engine/space'
+ * import { intermediateChart } from 'omai-render/charts'
  * const t = { number: 0, params: 0, state: 'pruned', values: [], intermediate: [{ step: 0, value: 2 }, { step: 1, value: 1.5 }], source: 'x' } as const
  * intermediateChart(createStudy(real(0, 1), { trials: [t] })).series[0].name // => 'pruned'
  * ```

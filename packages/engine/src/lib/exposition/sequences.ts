@@ -3,7 +3,7 @@
  * state's posterior at each time, the decoded path and, when known, the true states.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { rowsOf, sameLength, seal } from './_check.ts'
 
 /** A hidden-state model's reading of a sequence: each state's posterior at each time, the decoded path, the truth. */
@@ -26,10 +26,10 @@ export interface StateSequence {
  *
  * @param record - The record without its `kind`.
  * @returns The record.
- * @throws MdmlError `shape` when a posterior row, the paths or the observations do not match.
+ * @throws OmaiError `shape` when a posterior row, the paths or the observations do not match.
  * @example
  * ```ts
- * import { stateSequence } from 'mdml-engine/exposition'
+ * import { stateSequence } from 'omai-engine/exposition'
  * stateSequence({ states: ['fair', 'loaded'], posteriors: [[0.9, 0.1], [0.2, 0.8]], decoded: [0, 1] }).decoded // => [0, 1]
  * ```
  */
@@ -41,7 +41,7 @@ export function stateSequence(record: Omit<StateSequence, 'kind'>): StateSequenc
     if (path === undefined) continue
     sameLength('stateSequence', field, path.length, t)
     if (path.some((s) => !Number.isInteger(s) || s < 0 || s >= record.states.length))
-      throw new MdmlError('value', `stateSequence: ${field} must hold state indices`)
+      throw new OmaiError('value', `stateSequence: ${field} must hold state indices`)
   }
   if (record.observations !== undefined)
     sameLength('stateSequence', 'observations', record.observations.values.length, t)

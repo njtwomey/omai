@@ -90,8 +90,8 @@ function point(form: StandardForm, s: { tableau: Float64Array; rows: number; col
  * @concept simplex-method
  * @example
  * ```ts
- * import { simplexAlgorithm, standardForm } from 'mdml-engine/optim'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { simplexAlgorithm, standardForm } from 'omai-engine/optim'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const form = standardForm({ c: [-1, -2], aUb: [[1, 1], [1, 3]], bUb: [4, 6] })
  * runAlgorithm(simplexAlgorithm(form), { maxSteps: 50 }).state.path.map((p) => p.x) // => [[0, 0], [0, 2], [3, 1]]
  * ```

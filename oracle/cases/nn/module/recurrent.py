@@ -4,9 +4,9 @@ and the RNNCell, LSTMCell and GRUCell. Outputs and final states."""
 
 import numpy as np
 import torch
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray, rng
-from mdml_oracle.torch_helpers import to_numpy, to_torch
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray, rng
+from omai_oracle.torch_helpers import to_numpy, to_torch
 from torch import nn
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 

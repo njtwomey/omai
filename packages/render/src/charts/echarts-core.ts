@@ -1,6 +1,6 @@
 /**
- * The tree-shaken ECharts core: every chart type and component the `mdml-render/charts` builders use, the SVG and
- * canvas renderers, and the mdml light and dark themes registered, shared by the React bindings and server-side SVG
+ * The tree-shaken ECharts core: every chart type and component the `omai-render/charts` builders use, the SVG and
+ * canvas renderers, and the omai light and dark themes registered, shared by the React bindings and server-side SVG
  * export.
  */
 
@@ -47,14 +47,14 @@ import { CanvasRenderer, SVGRenderer } from 'echarts/renderers'
 import { echartsTheme, themeName } from '../theme/echarts.ts'
 
 /**
- * The tree-shaken ECharts core with every chart type and component the `mdml-render/charts` builders use, the SVG
- * and canvas renderers, and the mdml light and dark themes registered. Idempotent; works in Node (server-side
+ * The tree-shaken ECharts core with every chart type and component the `omai-render/charts` builders use, the SVG
+ * and canvas renderers, and the omai light and dark themes registered. Idempotent; works in Node (server-side
  * rendering for export) and the browser.
  *
  * @returns The ECharts core namespace.
  * @example
  * ```ts
- * import { echartsCore } from 'mdml-render/charts'
+ * import { echartsCore } from 'omai-render/charts'
  * typeof echartsCore().init // => 'function'
  * ```
  */

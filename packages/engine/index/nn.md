@@ -4,61 +4,61 @@
 
 Neural networks: functional layers (`nn.functional`), PyTorch-shaped modules (`new nn.Linear(4, 8)`), blocks (attention, transformers, convolutional and recurrent cells), training loops, architecture description as structures, receptive-field analysis, SWAG posteriors over weights, and decoding for sequence models. The functional, module, training and decoding folders are part of this entry point.
 
-- function `init.ts` (file): Weight initialisers: Xavier, Kaiming, LeCun, orthogonal. `src/lib/nn/init.ts:1` `mdml-engine/nn`
+- function `init.ts` (file): Weight initialisers: Xavier, Kaiming, LeCun, orthogonal. `src/lib/nn/init.ts:1` `omai-engine/nn`
 
-- function `describe`: A module as a drawable Structure: layers, shapes, parameters. `src/lib/nn/describe.ts:263` `mdml-engine/nn`
-- function `summary`: A torchinfo-style text summary of a module. `src/lib/nn/describe.ts:384` `mdml-engine/nn`
+- function `describe`: A module as a drawable Structure: layers, shapes, parameters. `src/lib/nn/describe.ts:263` `omai-engine/nn`
+- function `summary`: A torchinfo-style text summary of a module. `src/lib/nn/describe.ts:384` `omai-engine/nn`
 
 ## nn/blocks
 
 Ready-made blocks assembled from the layers, the `nn.blocks` namespace: transformer blocks and language models, vision blocks (ResNet, ConvNeXt, MobileNet, U-Net, feature pyramids), sequence blocks (temporal convolutions, WaveNet, stacked recurrent layers), diffusion and normalising-flow blocks, mixtures of experts, continuous-depth neural ODE blocks, and the energy-based blocks (Hopfield networks and dense associative memories, restricted Boltzmann machines), graph blocks (relational, E(n)-equivariant, transformer), operator-learning blocks (DeepONet, Fourier neural operator), N-BEATS forecasting blocks and recommender blocks (factorisation machines, neural collaborative filtering, two-tower, DLRM), the FFJORD continuous normalising flow and Hamiltonian and Lagrangian networks.
 
-- table `sequenceMixers`: Every sequence mixer (Mamba, RetNet, RWKV, attention) as one slot. `src/lib/nn/blocks/mixers.ts:117` `mdml-engine/nn/blocks`
+- table `sequenceMixers`: Every sequence mixer (Mamba, RetNet, RWKV, attention) as one slot. `src/lib/nn/blocks/mixers.ts:117` `omai-engine/nn/blocks`
 
 ## nn/decoding
 
-Decoding for language models, part of `mdml-engine/nn`: autoregressive generation with sampling and penalties, beam search, speculative decoding with a draft model, the logit processors they share and constraints that restrict which tokens may come next.
+Decoding for language models, part of `omai-engine/nn`: autoregressive generation with sampling and penalties, beam search, speculative decoding with a draft model, the logit processors they share and constraints that restrict which tokens may come next.
 
-- function `generate`: Autoregressive text generation with temperature, top-k and top-p. `src/lib/nn/decoding/generate.ts:165` `mdml-engine/nn`
+- function `generate`: Autoregressive text generation with temperature, top-k and top-p. `src/lib/nn/decoding/generate.ts:165` `omai-engine/nn`
 
 ## nn/functional
 
-The functional layer library, torch.nn.functional style and part of `mdml-engine/nn`: stateless functions of tensors and explicit weights for activations, linear maps and embeddings, convolution, pooling, normalisation, attention and position encodings, coordinate encodings for neural fields (positional, Fourier features, hash grid), recurrent cells, state-space models, graph and set layers, regularisers and spatial sampling. The modules are built on these.
+The functional layer library, torch.nn.functional style and part of `omai-engine/nn`: stateless functions of tensors and explicit weights for activations, linear maps and embeddings, convolution, pooling, normalisation, attention and position encodings, coordinate encodings for neural fields (positional, Fourier features, hash grid), recurrent cells, state-space models, graph and set layers, regularisers and spatial sampling. The modules are built on these.
 
-- function `activations.ts` (file): Activation functions as plain tensor functions, torch.nn.functional style. `src/lib/nn/functional/activations.ts:1` `mdml-engine/nn`
-- function `attention.ts` (file): Scaled dot-product attention with masks, causal and sliding-window forms. `src/lib/nn/functional/attention.ts:1` `mdml-engine/nn`
+- function `activations.ts` (file): Activation functions as plain tensor functions, torch.nn.functional style. `src/lib/nn/functional/activations.ts:1` `omai-engine/nn`
+- function `attention.ts` (file): Scaled dot-product attention with masks, causal and sliding-window forms. `src/lib/nn/functional/attention.ts:1` `omai-engine/nn`
 
 ## nn/kan
 
-Kolmogorov-Arnold networks, part of `mdml-engine/nn`: layers whose edges carry learnable univariate functions (splines, or radial, Chebyshev and Fourier bases) and whose nodes sum, networks of them, and the machinery of the paper around them: refitting the grid, sparsity regularisation, pruning, and symbolic regression on the edges.
+Kolmogorov-Arnold networks, part of `omai-engine/nn`: layers whose edges carry learnable univariate functions (splines, or radial, Chebyshev and Fourier bases) and whose nodes sum, networks of them, and the machinery of the paper around them: refitting the grid, sparsity regularisation, pruning, and symbolic regression on the edges.
 
-- module `KAN`: Kolmogorov-Arnold network of learnable spline edges. `src/lib/nn/kan/kan.ts:124` `mdml-engine/nn`
+- module `KAN`: Kolmogorov-Arnold network of learnable spline edges. `src/lib/nn/kan/kan.ts:124` `omai-engine/nn`
 
 ## nn/module
 
-PyTorch-shaped modules, part of `mdml-engine/nn`: the `Module` base class over a functional core, containers, and the standard layers (linear, convolution, pooling, normalisation, attention, recurrent, transformer, graph, set, vision, regularisation, position encodings, coordinate encodings and SIREN layers) with PyTorch's names and layouts, so state dicts carry over.
+PyTorch-shaped modules, part of `omai-engine/nn`: the `Module` base class over a functional core, containers, and the standard layers (linear, convolution, pooling, normalisation, attention, recurrent, transformer, graph, set, vision, regularisation, position encodings, coordinate encodings and SIREN layers) with PyTorch's names and layouts, so state dicts carry over.
 
-- structure `module.ts` (file): The Module base class: torch.nn-shaped layers over a pure functional core. `src/lib/nn/module/module.ts:1` `mdml-engine/nn`
+- structure `module.ts` (file): The Module base class: torch.nn-shaped layers over a pure functional core. `src/lib/nn/module/module.ts:1` `omai-engine/nn`
 
-- function `functional`: Pure init and apply form of a module with explicit parameters. `src/lib/nn/module/module.ts:443` `mdml-engine/nn`
-- function `mlp`: A multilayer perceptron from layer widths and an activation. `src/lib/nn/module/containers.ts:366` `mdml-engine/nn`
+- function `functional`: Pure init and apply form of a module with explicit parameters. `src/lib/nn/module/module.ts:443` `omai-engine/nn`
+- function `mlp`: A multilayer perceptron from layer widths and an activation. `src/lib/nn/module/containers.ts:366` `omai-engine/nn`
 
-- module `BatchNorm1d`: Batch normalisation with running statistics. `src/lib/nn/module/normalisation.ts:144` `mdml-engine/nn`
-- module `Conv2d`: 2-D convolution layer with PyTorch's weight layout. `src/lib/nn/module/conv.ts:170` `mdml-engine/nn`
-- module `Dropout`: Dropout, active only in training mode. `src/lib/nn/module/regularisation.ts:62` `mdml-engine/nn`
-- module `Embedding`: Lookup table of embeddings from integer indices. `src/lib/nn/module/layers.ts:163` `mdml-engine/nn`
-- module `HashGridEncoding`: Instant-NGP multiresolution hash grid encoding of coordinates. `src/lib/nn/module/coordinate-encodings.ts:160` `mdml-engine/nn`
-- module `LSTM`: Stacked, optionally bidirectional LSTM. `src/lib/nn/module/recurrent.ts:260` `mdml-engine/nn`
-- module `LayerNorm`: Layer normalisation. `src/lib/nn/module/normalisation.ts:260` `mdml-engine/nn`
-- module `Linear`: Fully connected layer with PyTorch's initialisation. `src/lib/nn/module/layers.ts:41` `mdml-engine/nn`
-- module `LoRA`: Low-rank adapter wrapped around chosen weights, with merge and unmerge. `src/lib/nn/module/adapters.ts:130` `mdml-engine/nn`
-- module `MultiheadAttention`: Multi-head attention with torch.nn's parameter layout. `src/lib/nn/module/attention.ts:92` `mdml-engine/nn`
-- module `Sequential`: Modules applied in order. `src/lib/nn/module/containers.ts:36` `mdml-engine/nn`
-- module `TransformerEncoderLayer`: Transformer encoder layer: self-attention and feed-forward with residuals. `src/lib/nn/module/transformer.ts:152` `mdml-engine/nn`
-- module `siren`: SIREN: a sine-activated network for coordinate inputs, from layer widths. `src/lib/nn/module/siren.ts:109` `mdml-engine/nn`
+- module `BatchNorm1d`: Batch normalisation with running statistics. `src/lib/nn/module/normalisation.ts:144` `omai-engine/nn`
+- module `Conv2d`: 2-D convolution layer with PyTorch's weight layout. `src/lib/nn/module/conv.ts:170` `omai-engine/nn`
+- module `Dropout`: Dropout, active only in training mode. `src/lib/nn/module/regularisation.ts:62` `omai-engine/nn`
+- module `Embedding`: Lookup table of embeddings from integer indices. `src/lib/nn/module/layers.ts:163` `omai-engine/nn`
+- module `HashGridEncoding`: Instant-NGP multiresolution hash grid encoding of coordinates. `src/lib/nn/module/coordinate-encodings.ts:160` `omai-engine/nn`
+- module `LSTM`: Stacked, optionally bidirectional LSTM. `src/lib/nn/module/recurrent.ts:260` `omai-engine/nn`
+- module `LayerNorm`: Layer normalisation. `src/lib/nn/module/normalisation.ts:260` `omai-engine/nn`
+- module `Linear`: Fully connected layer with PyTorch's initialisation. `src/lib/nn/module/layers.ts:41` `omai-engine/nn`
+- module `LoRA`: Low-rank adapter wrapped around chosen weights, with merge and unmerge. `src/lib/nn/module/adapters.ts:130` `omai-engine/nn`
+- module `MultiheadAttention`: Multi-head attention with torch.nn's parameter layout. `src/lib/nn/module/attention.ts:92` `omai-engine/nn`
+- module `Sequential`: Modules applied in order. `src/lib/nn/module/containers.ts:36` `omai-engine/nn`
+- module `TransformerEncoderLayer`: Transformer encoder layer: self-attention and feed-forward with residuals. `src/lib/nn/module/transformer.ts:152` `omai-engine/nn`
+- module `siren`: SIREN: a sine-activated network for coordinate inputs, from layer widths. `src/lib/nn/module/siren.ts:109` `omai-engine/nn`
 
 ## nn/training
 
-Training loops for modules, part of `mdml-engine/nn`: the functional train step and its state, the traced `fit` loop over a dataset, Lightning-style callbacks for logging, early stopping and checkpoints, and saving and loading module state (including PyTorch state dicts).
+Training loops for modules, part of `omai-engine/nn`: the functional train step and its state, the traced `fit` loop over a dataset, Lightning-style callbacks for logging, early stopping and checkpoints, and saving and loading module state (including PyTorch state dicts).
 
-- function `fit`: Train a module on a dataset and load the trained parameters back. `src/lib/nn/training/fit.ts:321` `mdml-engine/nn`
+- function `fit`: Train a module on a dataset and load the trained parameters back. `src/lib/nn/training/fit.ts:321` `omai-engine/nn`

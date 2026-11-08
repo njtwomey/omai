@@ -6,8 +6,8 @@ import {
   sampleLandscape,
   sampleStabilityRegion,
   transcript,
-} from 'mdml-engine/exposition'
-import { dict, int } from 'mdml-engine/space'
+} from 'omai-engine/exposition'
+import { dict, int } from 'omai-engine/space'
 import {
   type Config,
   defineMethod,
@@ -17,7 +17,7 @@ import {
   stateFromJson,
   stateToJson,
   tensor,
-} from 'mdml-engine/trace'
+} from 'omai-engine/trace'
 import { renderToString } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { staticLive } from './parts.tsx'

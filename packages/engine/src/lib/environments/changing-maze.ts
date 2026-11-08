@@ -5,7 +5,7 @@
  * restart keeps it), the change is flagged in the step's info, and the truth is the shortest path before and after.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import type { Key } from '../random/index.ts'
 import type { Env, EnvDefinition } from '../rl/index.ts'
 import { scene } from '../scene/index.ts'
@@ -71,7 +71,7 @@ export interface ChangingMazeTruth {
  * @returns The layouts, shortest paths, distance fields and the optimal actions of each phase.
  * @example
  * ```ts
- * import { changingMazeTruth } from 'mdml-engine/environments'
+ * import { changingMazeTruth } from 'omai-engine/environments'
  * changingMazeTruth('blocking').shortest // => [10, 16]
  * changingMazeTruth('shortcut').shortest // => [16, 10]
  * ```
@@ -114,11 +114,11 @@ export function changingMazeTruth(kind: ChangingMazeKind = 'blocking', changeAt?
  *
  * @param options - Which maze and when it changes.
  * @returns The environment.
- * @throws MdmlError with code `value` for a negative change step.
+ * @throws OmaiError with code `value` for a negative change step.
  * @example
  * ```ts
- * import { makeChangingMaze } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { makeChangingMaze } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * const env = makeChangingMaze({ kind: 'blocking' })
  * env.reset(key(0)).observation // => 48
  * ```
@@ -126,7 +126,7 @@ export function changingMazeTruth(kind: ChangingMazeKind = 'blocking', changeAt?
 export function makeChangingMaze(options: ChangingMazeOptions = {}): Env<ChangingMazeState, number, number> {
   const kind = options.kind ?? 'blocking'
   const truth = changingMazeTruth(kind, options.changeAt)
-  if (!(truth.changeAt >= 0)) throw new MdmlError('value', `changing maze: change step ${truth.changeAt} is negative`)
+  if (!(truth.changeAt >= 0)) throw new OmaiError('value', `changing maze: change step ${truth.changeAt} is negative`)
   const phaseOf = (t: number): 0 | 1 => (t >= truth.changeAt ? 1 : 0)
   const start = (t: number): { state: ChangingMazeState; observation: number; info: Record<string, number> } => ({
     state: { cell: truth.start, t },
@@ -174,7 +174,7 @@ export function makeChangingMaze(options: ChangingMazeOptions = {}): Env<Changin
  * @concept environments
  * @example
  * ```ts
- * import { blockingMaze } from 'mdml-engine/environments'
+ * import { blockingMaze } from 'omai-engine/environments'
  * blockingMaze.create().observationSpace.kind // => 'discrete'
  * ```
  */
@@ -196,7 +196,7 @@ export const blockingMaze: EnvDefinition<ChangingMazeState, number, number> = {
  * @concept environments
  * @example
  * ```ts
- * import { shortcutMaze } from 'mdml-engine/environments'
+ * import { shortcutMaze } from 'omai-engine/environments'
  * shortcutMaze.create().actionSpace.kind // => 'discrete'
  * ```
  */

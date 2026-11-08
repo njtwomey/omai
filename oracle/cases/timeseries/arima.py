@@ -7,8 +7,8 @@ from importlib.metadata import version
 
 import numpy as np
 import numpy.typing as npt
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import rng
 from statsmodels.tsa.arima.model import ARIMA
 
 REFERENCE: dict[str, str] = {"statsmodels": version("statsmodels"), "numpy": np.__version__}

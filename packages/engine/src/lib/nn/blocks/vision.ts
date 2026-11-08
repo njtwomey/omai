@@ -4,7 +4,7 @@
  * U-Net and a feature pyramid network, plus `toTokens` for turning feature maps into token sequences.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { foldIn, type Key } from '../../random/index.ts'
 import {
   add,
@@ -52,7 +52,7 @@ const projection = (cin: number, cout: number, stride: number, k: Key): Sequenti
  * @reference He, Zhang, Ren and Sun (2016), Deep residual learning for image recognition.
  * @example
  * ```ts
- * import { blocks } from 'mdml-engine/nn'
+ * import { blocks } from 'omai-engine/nn'
  * new blocks.BasicBlock(4, 8, { stride: 2 }).outputShape([1, 4, 8, 8]) // => [1, 8, 4, 4]
  * ```
  */
@@ -98,7 +98,7 @@ export class BasicBlock extends Composite {
  * @concept residual-connections
  * @example
  * ```ts
- * import { blocks } from 'mdml-engine/nn'
+ * import { blocks } from 'omai-engine/nn'
  * new blocks.Bottleneck(16, 4).outputShape([1, 16, 8, 8]) // => [1, 16, 8, 8]
  * ```
  */
@@ -155,8 +155,8 @@ export class Bottleneck extends Composite {
  * @reference Hu, Shen and Sun (2018), Squeeze-and-excitation networks.
  * @example
  * ```ts
- * import { blocks } from 'mdml-engine/nn'
- * import { zeros } from 'mdml-engine/tensor'
+ * import { blocks } from 'omai-engine/nn'
+ * import { zeros } from 'omai-engine/tensor'
  * new blocks.SqueezeExcitation(8, 2).forward(zeros([1, 8, 3, 3])).shape // => [1, 8, 3, 3]
  * ```
  */
@@ -197,8 +197,8 @@ export class SqueezeExcitation extends Composite {
  * @reference Liu, Mao, Wu, Feichtenhofer, Darrell and Xie (2022), A ConvNet for the 2020s.
  * @example
  * ```ts
- * import { blocks } from 'mdml-engine/nn'
- * import { zeros } from 'mdml-engine/tensor'
+ * import { blocks } from 'omai-engine/nn'
+ * import { zeros } from 'omai-engine/tensor'
  * new blocks.ConvNeXtBlock(8).eval().forward(zeros([1, 8, 7, 7])).shape // => [1, 8, 7, 7]
  * ```
  */
@@ -255,7 +255,7 @@ export class ConvNeXtBlock extends Composite {
  * @reference Tan and Le (2019), EfficientNet: rethinking model scaling for convolutional neural networks.
  * @example
  * ```ts
- * import { blocks } from 'mdml-engine/nn'
+ * import { blocks } from 'omai-engine/nn'
  * new blocks.MBConv(8, 16, { stride: 2 }).outputShape([1, 8, 8, 8]) // => [1, 16, 4, 4]
  * ```
  */
@@ -324,7 +324,7 @@ export class MBConv extends Composite {
  *
  * @example
  * ```ts
- * import { blocks } from 'mdml-engine/nn'
+ * import { blocks } from 'omai-engine/nn'
  * new blocks.DoubleConv(3, 8).outputShape([1, 3, 6, 6]) // => [1, 8, 6, 6]
  * ```
  */
@@ -363,7 +363,7 @@ export class DoubleConv extends Composite {
  * @reference Ronneberger, Fischer and Brox (2015), U-Net: convolutional networks for biomedical image segmentation.
  * @example
  * ```ts
- * import { blocks } from 'mdml-engine/nn'
+ * import { blocks } from 'omai-engine/nn'
  * new blocks.UNetDown(8, 16).outputShape([1, 8, 8, 8]) // => [1, 16, 4, 4]
  * ```
  */
@@ -394,8 +394,8 @@ export class UNetDown extends Composite {
  *
  * @example
  * ```ts
- * import { blocks } from 'mdml-engine/nn'
- * import { zeros } from 'mdml-engine/tensor'
+ * import { blocks } from 'omai-engine/nn'
+ * import { zeros } from 'omai-engine/tensor'
  * new blocks.UNetUp(16, 8).forward([zeros([1, 16, 4, 4]), zeros([1, 8, 8, 8])]).shape // => [1, 8, 8, 8]
  * ```
  */
@@ -433,7 +433,7 @@ export class UNetUp extends Composite<readonly [Value, Value]> {
       ? interpolate(x, { scaleFactor: 2, mode: 'bilinear', alignCorners: true })
       : p.run<Value, Value>('up', x)
     if (up.shape[2] !== skip.shape[2] || up.shape[3] !== skip.shape[3])
-      throw new MdmlError('shape', 'UNetUp: the upsampled input and the skip connection differ in size')
+      throw new OmaiError('shape', 'UNetUp: the upsampled input and the skip connection differ in size')
     const y = p.run<Value, Value>('conv', concat([skip, up], 1))
     p.done()
     return y
@@ -452,8 +452,8 @@ export class UNetUp extends Composite<readonly [Value, Value]> {
  * @reference Lin, Dollar, Girshick, He, Hariharan and Belongie (2017), Feature pyramid networks for object detection.
  * @example
  * ```ts
- * import { blocks } from 'mdml-engine/nn'
- * import { zeros } from 'mdml-engine/tensor'
+ * import { blocks } from 'omai-engine/nn'
+ * import { zeros } from 'omai-engine/tensor'
  * new blocks.FeaturePyramid([4, 8], 6).forward([zeros([1, 4, 8, 8]), zeros([1, 8, 4, 4])]).map((f) => f.shape) // => [[1, 6, 8, 8], [1, 6, 4, 4]]
  * ```
  */
@@ -508,8 +508,8 @@ export class FeaturePyramid extends Composite<readonly Value[], Value[]> {
  * @returns `[B, H W, C]`.
  * @example
  * ```ts
- * import { blocks } from 'mdml-engine/nn'
- * import { zeros } from 'mdml-engine/tensor'
+ * import { blocks } from 'omai-engine/nn'
+ * import { zeros } from 'omai-engine/tensor'
  * blocks.toTokens(zeros([2, 3, 4, 5])).shape // => [2, 20, 3]
  * ```
  */

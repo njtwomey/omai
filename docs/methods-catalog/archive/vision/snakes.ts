@@ -78,7 +78,7 @@ function overlap(sc: ShapeScene, points: readonly (readonly [number, number])[])
  *
  * @example
  * ```ts
- * import type { SnakesPath } from 'mdml-engine/methods/vision'
+ * import type { SnakesPath } from 'omai-engine/methods/vision'
  * const path: SnakesPath = 'contour/area'
  * path // => 'contour/area'
  * ```

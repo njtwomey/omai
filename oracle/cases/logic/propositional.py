@@ -8,8 +8,8 @@ from importlib.metadata import version
 from typing import cast
 
 import numpy as np
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import rng
 from sympy import Symbol
 from sympy.logic.boolalg import (
     And,

@@ -4,7 +4,7 @@
  * behaviours far from those seen before, both as traced algorithms.
  */
 
-import { MdmlError, meanOf } from '../../base/index.ts'
+import { meanOf, OmaiError } from '../../base/index.ts'
 import { kNearest } from '../../numerics/spatial/index.ts'
 import { foldIn, type Key } from '../../random/index.ts'
 import { toFlat } from '../../tensor/index.ts'
@@ -80,10 +80,10 @@ function cellOf(
 
 function mapConfig(options: MapElitesOptions): { cells: number } {
   if (options.bins.length === 0 || options.bins.length !== options.bounds.length) {
-    throw new MdmlError('value', 'mapElites: give bins and bounds for each descriptor dimension')
+    throw new OmaiError('value', 'mapElites: give bins and bounds for each descriptor dimension')
   }
   if (options.bins.some((b) => !(Number.isInteger(b) && b >= 1)) || options.bounds.some(([lo, hi]) => !(hi > lo))) {
-    throw new MdmlError('value', 'mapElites: bins must be positive integers and bounds non-empty')
+    throw new OmaiError('value', 'mapElites: bins must be positive integers and bounds non-empty')
   }
   return { cells: options.bins.reduce((a, b) => a * b, 1) }
 }
@@ -96,11 +96,11 @@ function mapConfig(options: MapElitesOptions): { cells: number } {
  * @param problem - The genomes, variation, fitness and descriptor.
  * @param options - Bins and bounds per descriptor dimension, the initial sample and the batch size.
  * @returns The algorithm.
- * @throws MdmlError with code `value` when the grid is malformed.
+ * @throws OmaiError with code `value` when the grid is malformed.
  * @concept quality-diversity
  * @example
  * ```ts
- * import { mapElitesAlgorithm } from 'mdml-engine/search'
+ * import { mapElitesAlgorithm } from 'omai-engine/search'
  * const p = { random: () => 0, mutate: (_k: unknown, x: number) => x, fitness: () => 0, descriptor: (x: number) => [x] }
  * mapElitesAlgorithm(p, { bins: [4], bounds: [[0, 1]] }).name // => 'map-elites'
  * ```
@@ -170,12 +170,12 @@ export function mapElitesAlgorithm<G>(
  * @param options - Bins and bounds, the initial sample, batch size, iterations (default 100), a seed or key, and
  * tracing.
  * @returns The archive with its coverage, QD score and best elite.
- * @throws MdmlError with code `value` when the grid is malformed.
+ * @throws OmaiError with code `value` when the grid is malformed.
  * @concept quality-diversity
  * @example
  * ```ts
- * import { gaussianMutation, mapElites } from 'mdml-engine/search'
- * import { uniform } from 'mdml-engine/random'
+ * import { gaussianMutation, mapElites } from 'omai-engine/search'
+ * import { uniform } from 'omai-engine/random'
  * // Points in the unit square, described by their coordinates: every cell can be filled.
  * const p = {
  *   random: (k: Parameters<typeof uniform>[0]) => Array.from(uniform(k, [2]).data),
@@ -264,11 +264,11 @@ function noveltyOf(
  * @param problem - Random genomes, mutation, the behaviour and an optional fitness to track.
  * @param options - Population size, k, the archive threshold, tournament size and a goal test.
  * @returns The algorithm.
- * @throws MdmlError with code `value` when the population is smaller than 2.
+ * @throws OmaiError with code `value` when the population is smaller than 2.
  * @concept quality-diversity
  * @example
  * ```ts
- * import { noveltySearchAlgorithm } from 'mdml-engine/search'
+ * import { noveltySearchAlgorithm } from 'omai-engine/search'
  * const p = { random: () => 0, mutate: (_k: unknown, x: number) => x + 1, behaviour: (x: number) => [x] }
  * noveltySearchAlgorithm(p).name // => 'novelty-search'
  * ```
@@ -283,7 +283,7 @@ export function noveltySearchAlgorithm<G>(
   const tournament = options.tournamentSize ?? 3
   const isGoal = options.isGoal
   if (!(Number.isInteger(size) && size >= 2))
-    throw new MdmlError('value', 'noveltySearch: population must be at least 2')
+    throw new OmaiError('value', 'noveltySearch: population must be at least 2')
   const score = (g: G): number => problem.fitness?.(g) ?? 0
   const evaluate = (population: readonly G[], archive: readonly (readonly number[])[], s: NoveltyState<G> | null) => {
     const behaviours = population.map((g) => problem.behaviour(g))
@@ -350,12 +350,12 @@ export function noveltySearchAlgorithm<G>(
  * @param options - Population size, k, threshold, tournament size, generations (default 100), a goal test, a seed or
  * key, and tracing.
  * @returns The final state: population, archive, the genome that met the goal (if any) and the fittest seen.
- * @throws MdmlError with code `value` when the population is smaller than 2.
+ * @throws OmaiError with code `value` when the population is smaller than 2.
  * @concept quality-diversity
  * @example
  * ```ts
- * import { noveltySearch } from 'mdml-engine/search'
- * import { normal } from 'mdml-engine/random'
+ * import { noveltySearch } from 'omai-engine/search'
+ * import { normal } from 'omai-engine/random'
  * // A walker on a line rewarded by nothing: novelty alone drives it far from the start.
  * const p = { random: () => 0, mutate: (k: Parameters<typeof normal>[0], x: number) => x + (normal(k, []).data[0] ?? 0), behaviour: (x: number) => [x] }
  * noveltySearch(p, { generations: 60, isGoal: (x) => Math.abs(x) > 10, seed: 0 }).found !== null // => true

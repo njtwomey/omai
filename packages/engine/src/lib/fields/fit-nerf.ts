@@ -53,9 +53,9 @@ export interface NerfData {
  * @concept neural-radiance-fields
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { multiViewImages } from 'mdml-engine/datasets'
- * import { nerfData } from 'mdml-engine/fields'
+ * import { generate } from 'omai-engine/data'
+ * import { multiViewImages } from 'omai-engine/datasets'
+ * import { nerfData } from 'omai-engine/fields'
  * const d = nerfData(generate(multiViewImages, { knobs: { views: 3, resolution: 4, heldOut: 1 } }))
  * [d.images.shape, d.heldOut?.cameras.length] // => [[3, 4, 4, 3], 1]
  * ```
@@ -162,9 +162,9 @@ const flatRays = (
  * @concept neural-radiance-fields
  * @example
  * ```ts
- * import { nerfModel, nerfParams, renderView } from 'mdml-engine/fields'
- * import { pinholeCamera } from 'mdml-engine/graphics'
- * import { key } from 'mdml-engine/random'
+ * import { nerfModel, nerfParams, renderView } from 'omai-engine/fields'
+ * import { pinholeCamera } from 'omai-engine/graphics'
+ * import { key } from 'omai-engine/random'
  * const model = nerfModel({ width: 8, depth: 1, positionEncoding: { kind: 'frequency', octaves: 2 }, key: key(0) })
  * renderView(model, nerfParams(model), pinholeCamera({ eye: [0, 0, 4] }), [4, 3], { near: 2, far: 6, samples: 6 }).rgb.length // => 36
  * ```
@@ -224,11 +224,11 @@ export function renderView(
  * @concept log-contract
  * @example
  * ```ts
- * import { fitNerfAlgorithm, nerfContract, nerfModel } from 'mdml-engine/fields'
- * import { multiViewImages } from 'mdml-engine/datasets'
- * import { generate } from 'mdml-engine/data'
- * import { nerfData } from 'mdml-engine/fields'
- * import { adam } from 'mdml-engine/optim'
+ * import { fitNerfAlgorithm, nerfContract, nerfModel } from 'omai-engine/fields'
+ * import { multiViewImages } from 'omai-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { nerfData } from 'omai-engine/fields'
+ * import { adam } from 'omai-engine/optim'
  * const data = nerfData(generate(multiViewImages, { knobs: { views: 2, resolution: 4, heldOut: 0 } }))
  * Object.keys(nerfContract(nerfModel({ width: 4, depth: 1 }), data, { optimizer: adam({ learningRate: 0.01 }) })).length // => 7
  * ```
@@ -332,11 +332,11 @@ export function nerfContract(model: NerfModel, data: NerfData, options: FitNerfO
  * @concept neural-radiance-fields
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { multiViewImages } from 'mdml-engine/datasets'
- * import { fitNerfAlgorithm, nerfData, nerfModel } from 'mdml-engine/fields'
- * import { adam } from 'mdml-engine/optim'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { generate } from 'omai-engine/data'
+ * import { multiViewImages } from 'omai-engine/datasets'
+ * import { fitNerfAlgorithm, nerfData, nerfModel } from 'omai-engine/fields'
+ * import { adam } from 'omai-engine/optim'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const data = nerfData(generate(multiViewImages, { knobs: { views: 3, resolution: 4, heldOut: 0, objects: 1 } }))
  * const model = nerfModel({ width: 8, depth: 1, positionEncoding: { kind: 'frequency', octaves: 3 } })
  * const alg = fitNerfAlgorithm(model, data, { optimizer: adam({ learningRate: 0.01 }), batchRays: 16, samples: 6 })
@@ -449,10 +449,10 @@ export interface NerfFit {
  * @index function Fit a NeRF to posed images for a number of steps.
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { multiViewImages } from 'mdml-engine/datasets'
- * import { fitNerf, nerfData, nerfModel } from 'mdml-engine/fields'
- * import { adam } from 'mdml-engine/optim'
+ * import { generate } from 'omai-engine/data'
+ * import { multiViewImages } from 'omai-engine/datasets'
+ * import { fitNerf, nerfData, nerfModel } from 'omai-engine/fields'
+ * import { adam } from 'omai-engine/optim'
  * const data = nerfData(generate(multiViewImages, { knobs: { views: 3, resolution: 4, heldOut: 0, objects: 1 } }))
  * const model = nerfModel({ width: 8, depth: 1, positionEncoding: { kind: 'frequency', octaves: 3 } })
  * fitNerf(model, data, { optimizer: adam({ learningRate: 0.01 }), batchRays: 16, samples: 6, steps: 2 }).losses.length // => 2

@@ -2,7 +2,7 @@
 
 import numpy as np
 import statsmodels
-from mdml_oracle.fixture import Case, case
+from omai_oracle.fixture import Case, case
 from statsmodels.stats.meta_analysis import combine_effects
 
 REFERENCE: dict[str, str] = {"statsmodels": statsmodels.__version__}

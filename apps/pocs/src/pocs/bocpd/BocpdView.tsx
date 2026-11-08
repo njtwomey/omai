@@ -1,7 +1,7 @@
-import { metricSeries, tensorSeries } from 'mdml-engine/trace'
-import { cartesian, heatmap, lines } from 'mdml-render/charts'
-import { figure } from 'mdml-render/figure'
-import { Chart, type LiveSession, useColourMode, useProbe, useRun, useScrubClick } from 'mdml-render/react'
+import { metricSeries, tensorSeries } from 'omai-engine/trace'
+import { cartesian, heatmap, lines } from 'omai-render/charts'
+import { figure } from 'omai-render/figure'
+import { Chart, type LiveSession, useColourMode, useProbe, useRun, useScrubClick } from 'omai-render/react'
 import { type ReactNode, useMemo } from 'react'
 
 const LEFT = figure({ width: 900, height: 300 })

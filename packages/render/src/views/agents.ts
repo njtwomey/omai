@@ -6,7 +6,7 @@
  */
 
 import type { EChartsOption, SeriesOption } from 'echarts'
-import type { AgentSteps } from 'mdml-engine/exposition'
+import type { AgentSteps } from 'omai-engine/exposition'
 import { type Panel, subplots } from '../charts/compose.ts'
 import { lines } from '../charts/lines.ts'
 import { layer } from '../charts/plot.ts'

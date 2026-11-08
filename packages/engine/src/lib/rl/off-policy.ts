@@ -5,7 +5,7 @@
  * regressor, as traced algorithms.
  */
 
-import { type Estimate, estimate, type Json, MdmlError, meanOf, varianceOf } from '../base/index.ts'
+import { type Estimate, estimate, type Json, meanOf, OmaiError, varianceOf } from '../base/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../trace/index.ts'
 import type { Transition } from './agent.ts'
 import type { TabularPolicy } from './mdp.ts'
@@ -33,12 +33,12 @@ export type RewardModel<C> = (context: C, action: number) => number
 
 function checkLogged<C>(data: LoggedBandit<C>, name: string): number {
   const n = data.actions.length
-  if (n === 0) throw new MdmlError('value', `${name}: no logged rounds`)
+  if (n === 0) throw new OmaiError('value', `${name}: no logged rounds`)
   if (data.contexts.length !== n || data.rewards.length !== n || data.propensities.length !== n) {
-    throw new MdmlError('shape', `${name}: contexts, actions, rewards and propensities differ in length`)
+    throw new OmaiError('shape', `${name}: contexts, actions, rewards and propensities differ in length`)
   }
   for (const p of data.propensities) {
-    if (!(p > 0 && p <= 1)) throw new MdmlError('value', `${name}: propensities must be in (0, 1], got ${p}`)
+    if (!(p > 0 && p <= 1)) throw new OmaiError('value', `${name}: propensities must be in (0, 1], got ${p}`)
   }
   return n
 }
@@ -55,11 +55,11 @@ function meanEstimate(terms: readonly number[]): Estimate {
  * @param data - The logged rounds.
  * @param target - The target policy.
  * @returns One weight per round.
- * @throws MdmlError with code `value` for empty data or propensities outside (0, 1].
+ * @throws OmaiError with code `value` for empty data or propensities outside (0, 1].
  * @concept importance-sampling
  * @example
  * ```ts
- * import { importanceWeights } from 'mdml-engine/rl'
+ * import { importanceWeights } from 'omai-engine/rl'
  * const data = { contexts: [0, 0], actions: [0, 1], rewards: [1, 0], propensities: [0.5, 0.5] }
  * importanceWeights(data, () => [1, 0]) // => [2, 0]
  * ```
@@ -79,7 +79,7 @@ export function importanceWeights<C>(data: LoggedBandit<C>, target: TargetPolicy
  * @concept off-policy-evaluation
  * @example
  * ```ts
- * import { ips } from 'mdml-engine/rl'
+ * import { ips } from 'omai-engine/rl'
  * const data = { contexts: [0, 0], actions: [0, 1], rewards: [1, 0], propensities: [0.5, 0.5] }
  * ips(data, () => [1, 0]).value // => 1
  * ```
@@ -97,11 +97,11 @@ export function ips<C>(data: LoggedBandit<C>, target: TargetPolicy<C>): Estimate
  * @param data - The logged rounds.
  * @param target - The target policy.
  * @returns The estimate with its standard error.
- * @throws MdmlError with code `value` when every weight is zero.
+ * @throws OmaiError with code `value` when every weight is zero.
  * @concept off-policy-evaluation
  * @example
  * ```ts
- * import { snips } from 'mdml-engine/rl'
+ * import { snips } from 'omai-engine/rl'
  * const data = { contexts: [0, 0, 0], actions: [0, 1, 0], rewards: [1, 0, 0], propensities: [0.5, 0.5, 0.5] }
  * snips(data, () => [1, 0]).value // => 0.5
  * ```
@@ -114,7 +114,7 @@ export function snips<C>(data: LoggedBandit<C>, target: TargetPolicy<C>): Estima
     sw += x
     swr += x * (data.rewards[i] ?? 0)
   }
-  if (!(sw > 0)) throw new MdmlError('value', 'snips: the target policy gives every logged action probability 0')
+  if (!(sw > 0)) throw new OmaiError('value', 'snips: the target policy gives every logged action probability 0')
   const value = swr / sw
   let ss = 0
   for (const [i, x] of w.entries()) ss += x * x * ((data.rewards[i] ?? 0) - value) ** 2
@@ -132,7 +132,7 @@ export function snips<C>(data: LoggedBandit<C>, target: TargetPolicy<C>): Estima
  * @concept off-policy-evaluation
  * @example
  * ```ts
- * import { clippedIps } from 'mdml-engine/rl'
+ * import { clippedIps } from 'omai-engine/rl'
  * const data = { contexts: [0, 0], actions: [0, 1], rewards: [1, 0], propensities: [0.25, 0.75] }
  * clippedIps(data, () => [1, 0], { maxWeight: 2 }).value // => 1
  * ```
@@ -165,7 +165,7 @@ function modelValue<C>(x: C, target: TargetPolicy<C>, model: RewardModel<C>): nu
  * @concept off-policy-evaluation
  * @example
  * ```ts
- * import { directMethod } from 'mdml-engine/rl'
+ * import { directMethod } from 'omai-engine/rl'
  * const data = { contexts: [0, 1], actions: [0, 0], rewards: [0, 0], propensities: [1, 1] }
  * directMethod(data, () => [0.5, 0.5], (x, a) => x + a).value // => 1
  * ```
@@ -189,7 +189,7 @@ export function directMethod<C>(data: LoggedBandit<C>, target: TargetPolicy<C>, 
  * @concept off-policy-evaluation
  * @example
  * ```ts
- * import { doublyRobust } from 'mdml-engine/rl'
+ * import { doublyRobust } from 'omai-engine/rl'
  * const data = { contexts: [0, 0], actions: [0, 1], rewards: [1, 0], propensities: [0.5, 0.5] }
  * doublyRobust(data, () => [1, 0], () => 0.5).value // => 1
  * ```
@@ -246,7 +246,7 @@ function empiricalModel(transitions: readonly Transition<number, number>[], nS: 
   for (const t of transitions) {
     const i = t.observation * nA + t.action
     if (!(i >= 0 && i < nS * nA && Number.isInteger(i))) {
-      throw new MdmlError('value', `tabularFqe: pair (${t.observation}, ${t.action}) is outside the table`)
+      throw new OmaiError('value', `tabularFqe: pair (${t.observation}, ${t.action}) is outside the table`)
     }
     counts[i] = (counts[i] ?? 0) + 1
     sums[i] = (sums[i] ?? 0) + t.reward
@@ -283,7 +283,7 @@ function policyRows(policy: TabularPolicy, nS: number, nA: number): Float64Array
  * @concept off-policy-evaluation
  * @example
  * ```ts
- * import { tabularFqeAlgorithm } from 'mdml-engine/rl'
+ * import { tabularFqeAlgorithm } from 'omai-engine/rl'
  * const t = { observation: 0, action: 0, reward: 1, nextObservation: 0, terminated: true, truncated: false }
  * tabularFqeAlgorithm([t], [0], { nStates: 1, nActions: 1 }).name // => 'tabularFqe'
  * ```
@@ -366,7 +366,7 @@ export interface TabularFqeResult {
  * @concept off-policy-evaluation
  * @example
  * ```ts
- * import { tabularFqe } from 'mdml-engine/rl'
+ * import { tabularFqe } from 'omai-engine/rl'
  * const t = { observation: 0, action: 0, reward: 1, nextObservation: 0, terminated: false, truncated: false }
  * tabularFqe([t], [0], { nStates: 1, nActions: 1, gamma: 0.5 }).V.map((v) => Number(v.toFixed(6))) // => [2]
  * ```
@@ -440,7 +440,7 @@ export interface FqeState {
  * @concept off-policy-evaluation
  * @example
  * ```ts
- * import { fittedQEvaluationAlgorithm } from 'mdml-engine/rl'
+ * import { fittedQEvaluationAlgorithm } from 'omai-engine/rl'
  * const fit = () => () => [0]
  * fittedQEvaluationAlgorithm([], () => [1], { nActions: 1, features: () => [1], fit }).name // => 'fittedQEvaluation'
  * ```
@@ -529,7 +529,7 @@ export interface FqeResult<O> {
  * @concept off-policy-evaluation
  * @example
  * ```ts
- * import { fittedQEvaluation } from 'mdml-engine/rl'
+ * import { fittedQEvaluation } from 'omai-engine/rl'
  * const t = { observation: 0, action: 0, reward: 1, nextObservation: 0, terminated: false, truncated: false }
  * // A constant regressor: the mean target.
  * const fit = (_: unknown, y: readonly number[]) => (xs: readonly unknown[]) => xs.map(() => y.reduce((a, b) => a + b, 0) / y.length)

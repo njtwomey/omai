@@ -4,7 +4,7 @@
  * `makeInterpSpline` of any degree, and `makeLsqSpline` for given knots.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import {
   add,
   concat,
@@ -34,7 +34,7 @@ import { type Extrapolate, type PPoly, ppoly } from './piecewise.ts'
 function knots(x: TensorLike, name: string): number[] {
   const xs = toFlat(concreteOrThrow(promoteFloat(x)[0] as Tensor, name))
   for (let i = 1; i < xs.length; i++) {
-    if (!((xs[i] ?? 0) > (xs[i - 1] ?? 0))) throw new MdmlError('value', `${name}: x must be strictly increasing`)
+    if (!((xs[i] ?? 0) > (xs[i - 1] ?? 0))) throw new OmaiError('value', `${name}: x must be strictly increasing`)
   }
   return xs
 }
@@ -56,8 +56,8 @@ function column(v: readonly number[], rank: number): Tensor {
  * @returns The piecewise cubic.
  * @example
  * ```ts
- * import { cubicHermiteSpline } from 'mdml-engine/numerics/interpolate'
- * import { item } from 'mdml-engine/tensor'
+ * import { cubicHermiteSpline } from 'omai-engine/numerics/interpolate'
+ * import { item } from 'omai-engine/tensor'
  * item(cubicHermiteSpline([0, 1], [0, 1], [0, 0]).evaluate(0.5)) // => 0.5
  * ```
  */
@@ -71,7 +71,7 @@ export function cubicHermiteSpline(
   const [yv, sv] = promoteFloat(y, dydx) as [Value, Value]
   const n = xs.length
   if (yv.shape[0] !== n || sv.shape[0] !== n)
-    throw new MdmlError('shape', 'cubicHermiteSpline: x, y and dydx must have the same length')
+    throw new OmaiError('shape', 'cubicHermiteSpline: x, y and dydx must have the same length')
   const h = column(
     xs.slice(1).map((v, i) => v - (xs[i] ?? 0)),
     yv.shape.length,
@@ -118,8 +118,8 @@ export type SplineBoundary =
  * @index function Cubic spline with not-a-knot, natural, clamped or periodic ends.
  * @example
  * ```ts
- * import { cubicSpline } from 'mdml-engine/numerics/interpolate'
- * import { item } from 'mdml-engine/tensor'
+ * import { cubicSpline } from 'omai-engine/numerics/interpolate'
+ * import { item } from 'omai-engine/tensor'
  * // Not-a-knot reproduces cubics exactly.
  * item(cubicSpline([0, 1, 2, 3, 4], [0, 1, 8, 27, 64]).evaluate(2.5)) // => 15.625
  * ```
@@ -133,15 +133,15 @@ export function cubicSpline(
   const xs = knots(x, 'cubicSpline')
   const [yv] = promoteFloat(y) as [Value]
   const n = xs.length
-  if (n < 2) throw new MdmlError('value', 'cubicSpline: at least two points are needed')
-  if (yv.shape[0] !== n) throw new MdmlError('shape', 'cubicSpline: x and y must have the same length')
+  if (n < 2) throw new OmaiError('value', 'cubicSpline: at least two points are needed')
+  if (yv.shape[0] !== n) throw new OmaiError('shape', 'cubicSpline: x and y must have the same length')
   const dx = xs.slice(1).map((v, i) => v - (xs[i] ?? 0))
   if (boundary === 'periodic') {
     const yp = toFlat(primalOf(yv))
     const width = yp.length / n
     for (let j = 0; j < width; j++) {
       if (Math.abs((yp[j] ?? 0) - (yp[(n - 1) * width + j] ?? 0)) > 1e-12 * Math.max(1, Math.abs(yp[j] ?? 0))) {
-        throw new MdmlError('value', 'cubicSpline: periodic boundary needs y[0] = y[n - 1]')
+        throw new OmaiError('value', 'cubicSpline: periodic boundary needs y[0] = y[n - 1]')
       }
     }
   }
@@ -296,8 +296,8 @@ export interface BSpline {
  * @concept splines
  * @example
  * ```ts
- * import { bspline } from 'mdml-engine/numerics/interpolate'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { bspline } from 'omai-engine/numerics/interpolate'
+ * import { toArray } from 'omai-engine/tensor'
  * // Clamped quadratic knots: the base interval is [0, 2] and the end coefficients are the end values.
  * const s = bspline([0, 0, 0, 1, 2, 2, 2], [1, 2, -1, 3], 2)
  * toArray(s.evaluate([0, 1, 2])) // => [1, 0.5, 3]
@@ -306,22 +306,22 @@ export interface BSpline {
 export function bspline(t: TensorLike, c: TensorLike, k: number, extrapolate = true): BSpline {
   const ts = toFlat(concreteOrThrow(promoteFloat(t)[0] as Tensor, 'bspline knots'))
   const [cv] = promoteFloat(c) as [Value]
-  if (!Number.isInteger(k) || k < 0) throw new MdmlError('value', 'bspline: the degree must be a whole number')
+  if (!Number.isInteger(k) || k < 0) throw new OmaiError('value', 'bspline: the degree must be a whole number')
   const n = ts.length - k - 1
   if (n < k + 1)
-    throw new MdmlError(
+    throw new OmaiError(
       'value',
       `bspline: degree ${k} needs at least ${2 * k + 2} knots, got ${ts.length} (for one basis function on its own knots, use bsplineBasisElement)`,
     )
   if (cv.shape[0] !== n)
-    throw new MdmlError('shape', `bspline: ${ts.length} knots and degree ${k} need ${n} coefficients`)
+    throw new OmaiError('shape', `bspline: ${ts.length} knots and degree ${k} need ${n} coefficients`)
   for (let i = 1; i < ts.length; i++) {
-    if ((ts[i] ?? 0) < (ts[i - 1] ?? 0)) throw new MdmlError('value', 'bspline: knots must be non-decreasing')
+    if ((ts[i] ?? 0) < (ts[i - 1] ?? 0)) throw new OmaiError('value', 'bspline: knots must be non-decreasing')
   }
   const lo = ts[k] ?? 0
   const hi = ts[n] ?? 0
-  if (!ts.every(Number.isFinite)) throw new MdmlError('value', 'bspline: knots must be finite')
-  if (!(lo < hi)) throw new MdmlError('value', 'bspline: the base interval [t_k, t_n] must have positive length')
+  if (!ts.every(Number.isFinite)) throw new OmaiError('value', 'bspline: knots must be finite')
+  if (!(lo < hi)) throw new OmaiError('value', 'bspline: the base interval [t_k, t_n] must have positive length')
 
   const designMatrix = (query: TensorLike): Value => {
     const [q] = promoteFloat(query) as [Value]
@@ -377,7 +377,7 @@ export function bspline(t: TensorLike, c: TensorLike, k: number, extrapolate = t
 
   const derivative = (nu = 1): BSpline => {
     if (nu === 0) return self
-    if (k === 0) throw new MdmlError('value', 'bspline derivative: degree 0 has no derivative')
+    if (k === 0) throw new OmaiError('value', 'bspline derivative: degree 0 has no derivative')
     // c'_i = k (c_{i+1} - c_i) / (t_{i+k+1} - t_{i+1}) on knots t[1:-1], degree k - 1.
     const spans = Array.from({ length: n - 1 }, (_, i) => {
       const d = (ts[i + k + 1] ?? 0) - (ts[i + 1] ?? 0)
@@ -429,15 +429,15 @@ export function bspline(t: TensorLike, c: TensorLike, k: number, extrapolate = t
  * @returns The spline.
  * @example
  * ```ts
- * import { bsplineBasisElement } from 'mdml-engine/numerics/interpolate'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { bsplineBasisElement } from 'omai-engine/numerics/interpolate'
+ * import { toArray } from 'omai-engine/tensor'
  * // The quadratic basis function on knots 0..3 peaks at 0.75.
  * toArray(bsplineBasisElement([0, 1, 2, 3]).evaluate([0.5, 1.5, 2.5])) // => [0.125, 0.75, 0.125]
  * ```
  */
 export function bsplineBasisElement(t: TensorLike, extrapolate = true): BSpline {
   const ts = toFlat(concreteOrThrow(promoteFloat(t)[0] as Tensor, 'bsplineBasisElement knots'))
-  if (ts.length < 2) throw new MdmlError('value', 'bsplineBasisElement: at least two knots are needed')
+  if (ts.length < 2) throw new OmaiError('value', 'bsplineBasisElement: at least two knots are needed')
   const k = ts.length - 2
   const first = ts[0] ?? 0
   const last = ts[ts.length - 1] ?? 0
@@ -456,11 +456,11 @@ export function bsplineBasisElement(t: TensorLike, extrapolate = true): BSpline 
  * @param x - Data points `[n]`, increasing.
  * @param k - Degree.
  * @returns The knot vector `[n + k + 1]`.
- * @throws MdmlError with code `value` for a degree that is not a whole number, `shape` unless `x` is a vector, and
+ * @throws OmaiError with code `value` for a degree that is not a whole number, `shape` unless `x` is a vector, and
  *   `not-differentiable` for a traced value.
  * @example
  * ```ts
- * import { notAKnot } from 'mdml-engine/numerics/interpolate'
+ * import { notAKnot } from 'omai-engine/numerics/interpolate'
  * notAKnot([0, 1, 2, 3, 4, 5], 3) // => [0, 0, 0, 0, 2, 3, 5, 5, 5, 5]
  * ```
  */
@@ -471,7 +471,7 @@ export function notAKnot(points: TensorLike, k: number): Tensor<'float64', [numb
 function notAKnotKernel(x: readonly number[], k: number): number[] {
   const first = x[0] ?? 0
   const last = x[x.length - 1] ?? 0
-  if (!Number.isInteger(k) || k < 0) throw new MdmlError('value', 'notAKnot: the degree must be a whole number')
+  if (!Number.isInteger(k) || k < 0) throw new OmaiError('value', 'notAKnot: the degree must be a whole number')
   if (k === 0) return [...x, last]
   if (k % 2 === 0) {
     // Even degrees (scipy since 1.13): the Greville sites, without the first and last k / 2 of them.
@@ -496,15 +496,15 @@ function notAKnotKernel(x: readonly number[], k: number): number[] {
  * @returns The spline.
  * @example
  * ```ts
- * import { makeInterpSpline } from 'mdml-engine/numerics/interpolate'
- * import { item } from 'mdml-engine/tensor'
+ * import { makeInterpSpline } from 'omai-engine/numerics/interpolate'
+ * import { item } from 'omai-engine/tensor'
  * Math.abs(item(makeInterpSpline([0, 1, 2, 3, 4], [0, 1, 8, 27, 64]).evaluate(2.5)) - 15.625) < 1e-12 // => true
  * ```
  */
 export function makeInterpSpline(x: TensorLike, y: TensorLike, k = 3, knotVector?: TensorLike): BSpline {
   const xs = knots(x, 'makeInterpSpline')
   const [yv] = promoteFloat(y) as [Value]
-  if (xs.length < k + 1) throw new MdmlError('value', `makeInterpSpline: degree ${k} needs at least ${k + 1} points`)
+  if (xs.length < k + 1) throw new OmaiError('value', `makeInterpSpline: degree ${k} needs at least ${k + 1} points`)
   const t = knotVector === undefined ? notAKnotKernel(xs, k) : toVector(knotVector, 'makeInterpSpline')
   const n = t.length - k - 1
   const probe = bspline(t, fromStorage(new Float64Array(n), [n], 'float64'), k)
@@ -525,8 +525,8 @@ export function makeInterpSpline(x: TensorLike, y: TensorLike, k = 3, knotVector
  * @returns The spline.
  * @example
  * ```ts
- * import { makeLsqSpline } from 'mdml-engine/numerics/interpolate'
- * import { item } from 'mdml-engine/tensor'
+ * import { makeLsqSpline } from 'omai-engine/numerics/interpolate'
+ * import { item } from 'omai-engine/tensor'
  * const xs = [0, 0.5, 1, 1.5, 2, 2.5, 3]
  * Math.abs(item(makeLsqSpline(xs, xs.map((v) => v * v), [0, 0, 0, 0, 1.5, 3, 3, 3, 3]).evaluate(1.2)) - 1.44) < 1e-12 // => true
  * ```

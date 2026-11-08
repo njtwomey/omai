@@ -1,5 +1,5 @@
 // Shared plumbing for the systems domain: number views of values, complex lists and highest-first polynomials.
-import { MdmlError, toRows } from '../base/index.ts'
+import { OmaiError, toRows } from '../base/index.ts'
 import { complexOps as C, type ComplexNumber } from '../numerics/differentiate/index.ts'
 import {
   type ComplexArray,
@@ -107,7 +107,7 @@ export function polyDerHf(c: readonly number[]): number[] {
 export function commonDt(name: string, ...dts: readonly number[]): number {
   const first = dts[0] ?? 0
   for (const dt of dts) {
-    if (dt !== first) throw new MdmlError('value', `${name}: systems have different sample times (${dts.join(', ')})`)
+    if (dt !== first) throw new OmaiError('value', `${name}: systems have different sample times (${dts.join(', ')})`)
   }
   return first
 }

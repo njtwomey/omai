@@ -7,7 +7,7 @@
  * transition sharpening with size.
  */
 
-import { MdmlError, maxOf } from '../base/index.ts'
+import { maxOf, OmaiError } from '../base/index.ts'
 import { foldIn, type Key, permutation } from '../random/index.ts'
 import {
   type Algorithm,
@@ -110,12 +110,12 @@ export const percolationContract: Contract<PercolationState, PercolationPath> = 
  * @param g - The graph, for example {@link gridGraph}.
  * @param options - Site or bond mode, the two sides, and whether to stop at spanning.
  * @returns The algorithm; it completes when everything is on.
- * @throws MdmlError with code `value` for an unknown mode, `shape` for a fixed order of the wrong length.
+ * @throws OmaiError with code `value` for an unknown mode, `shape` for a fixed order of the wrong length.
  * @concept percolation
  * @example
  * ```ts
- * import { gridGraph, percolationAlgorithm } from 'mdml-engine/graph'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { gridGraph, percolationAlgorithm } from 'omai-engine/graph'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const run = runAlgorithm(percolationAlgorithm(gridGraph(4, 4), { mode: 'bond' }), { seed: 0, maxSteps: 100 })
  * [run.state.largest, run.state.clusters, run.status] // => [16, 1, 'completed']
  * ```
@@ -126,13 +126,13 @@ export function percolationAlgorithm(
 ): Algorithm<PercolationState, PercolationPath> {
   const mode = options.mode ?? 'site'
   if (mode !== 'site' && mode !== 'bond')
-    throw new MdmlError('value', `percolationAlgorithm: unknown mode '${String(mode)}'`)
+    throw new OmaiError('value', `percolationAlgorithm: unknown mode '${String(mode)}'`)
   const top = new Set((options.top ?? []).map((v) => nodeIndex(g, v)))
   const bottom = new Set((options.bottom ?? []).map((v) => nodeIndex(g, v)))
   const sides = top.size > 0 && bottom.size > 0
   const total = mode === 'site' ? g.n : g.edges.length
   if (options.order !== undefined && options.order.length !== total)
-    throw new MdmlError(
+    throw new OmaiError(
       'shape',
       `percolationAlgorithm: the order must list all ${total} ${mode === 'site' ? 'nodes' : 'edges'}`,
     )
@@ -199,7 +199,7 @@ export function percolationAlgorithm(
         touched = v
       } else {
         const edge = g.edges[s.order[s.added] ?? 0]
-        if (edge === undefined) throw new MdmlError('value', 'percolationAlgorithm: ran past the last bond')
+        if (edge === undefined) throw new OmaiError('value', 'percolationAlgorithm: ran past the last bond')
         if (merge(uf, flags, edge.source, edge.target)) clusters -= 1
         touched = edge.source
       }
@@ -262,7 +262,7 @@ export interface Lattice {
  * @concept percolation
  * @example
  * ```ts
- * import { latticeSides } from 'mdml-engine/graph'
+ * import { latticeSides } from 'omai-engine/graph'
  * const l = latticeSides(3, 2)
  * [l.graph.n, l.top, l.bottom] // => [6, [0, 1, 2], [3, 4, 5]]
  * ```
@@ -287,7 +287,7 @@ export function latticeSides(width: number, height: number): Lattice {
  * @concept percolation
  * @example
  * ```ts
- * import { sitePercolationAlgorithm } from 'mdml-engine/graph'
+ * import { sitePercolationAlgorithm } from 'omai-engine/graph'
  * sitePercolationAlgorithm(10).name // => 'graph/percolation-site'
  * ```
  */
@@ -311,7 +311,7 @@ export function sitePercolationAlgorithm(
  * @concept percolation
  * @example
  * ```ts
- * import { bondPercolationAlgorithm } from 'mdml-engine/graph'
+ * import { bondPercolationAlgorithm } from 'omai-engine/graph'
  * bondPercolationAlgorithm(10).name // => 'graph/percolation-bond'
  * ```
  */
@@ -333,8 +333,8 @@ export function bondPercolationAlgorithm(
  * @concept percolation
  * @example
  * ```ts
- * import { bondPercolationAlgorithm, spanningCluster } from 'mdml-engine/graph'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { bondPercolationAlgorithm, spanningCluster } from 'omai-engine/graph'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * spanningCluster(runAlgorithm(bondPercolationAlgorithm(3, 3), { seed: 0, maxSteps: 100 }).state).length // => 9
  * ```
  */
@@ -354,7 +354,7 @@ export function spanningCluster(state: PercolationState): number[] {
  * @concept percolation
  * @example
  * ```ts
- * import { PERCOLATION_THRESHOLDS } from 'mdml-engine/graph'
+ * import { PERCOLATION_THRESHOLDS } from 'omai-engine/graph'
  * [PERCOLATION_THRESHOLDS['square-bond'], PERCOLATION_THRESHOLDS['triangular-site']] // => [0.5, 0.5]
  * ```
  */
@@ -376,17 +376,17 @@ export const PERCOLATION_THRESHOLDS: Readonly<Record<PercolationLattice, number>
  *
  * @param c - The mean degree.
  * @returns The giant component's share of the nodes.
- * @throws MdmlError with code `value` for a negative mean degree.
+ * @throws OmaiError with code `value` for a negative mean degree.
  * @concept percolation
  * @example
  * ```ts
- * import { erdosRenyiGiantFraction } from 'mdml-engine/graph'
+ * import { erdosRenyiGiantFraction } from 'omai-engine/graph'
  * erdosRenyiGiantFraction(0.5) // => 0
  * Math.round(erdosRenyiGiantFraction(2) * 1e6) / 1e6 // => 0.796812
  * ```
  */
 export function erdosRenyiGiantFraction(c: number): number {
-  if (!(c >= 0)) throw new MdmlError('value', 'erdosRenyiGiantFraction: the mean degree must be non-negative')
+  if (!(c >= 0)) throw new OmaiError('value', 'erdosRenyiGiantFraction: the mean degree must be non-negative')
   if (c <= 1) return 0
   let s = 1
   for (let i = 0; i < 200000; i++) {
@@ -405,7 +405,7 @@ export function erdosRenyiGiantFraction(c: number): number {
  * @concept percolation
  * @example
  * ```ts
- * import { giantComponentFraction, graph } from 'mdml-engine/graph'
+ * import { giantComponentFraction, graph } from 'omai-engine/graph'
  * giantComponentFraction(graph([[0, 1], [1, 2]], { nodes: 5 })) // => 0.6
  * ```
  */
@@ -437,8 +437,8 @@ export interface PercolationSweep {
  * @concept percolation
  * @example
  * ```ts
- * import { gridGraph, percolationSweep } from 'mdml-engine/graph'
- * import { key } from 'mdml-engine/random'
+ * import { gridGraph, percolationSweep } from 'omai-engine/graph'
+ * import { key } from 'omai-engine/random'
  * const s = percolationSweep(gridGraph(5, 5), key(0), { mode: 'bond' })
  * [s.p.length, s.largest[s.largest.length - 1]] // => [41, 1]
  * ```
@@ -475,12 +475,12 @@ export function percolationSweep(g: Graph, key: Key, options: PercolationOptions
  * @param trials - How many lattices.
  * @param key - The random key.
  * @returns One spanning probability per trial.
- * @throws MdmlError with code `value` for fewer than one trial.
+ * @throws OmaiError with code `value` for fewer than one trial.
  * @concept percolation
  * @example
  * ```ts
- * import { spanningThresholds } from 'mdml-engine/graph'
- * import { key } from 'mdml-engine/random'
+ * import { spanningThresholds } from 'omai-engine/graph'
+ * import { key } from 'omai-engine/random'
  * spanningThresholds(6, 6, 'bond', 3, key(0)).length // => 3
  * ```
  */
@@ -492,7 +492,7 @@ export function spanningThresholds(
   key: Key,
 ): number[] {
   if (!(Number.isInteger(trials) && trials >= 1))
-    throw new MdmlError('value', 'spanningThresholds: trials must be a positive integer')
+    throw new OmaiError('value', 'spanningThresholds: trials must be a positive integer')
   const l = latticeSides(width, height)
   const alg = percolationAlgorithm(l.graph, { mode, top: l.top, bottom: l.bottom, stopAtSpanning: true })
   const total = mode === 'site' ? l.graph.n : l.graph.edges.length

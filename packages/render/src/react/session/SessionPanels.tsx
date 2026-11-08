@@ -6,9 +6,9 @@
  * panel is drawn once per variant, side by side, titled with the variant's label.
  */
 
-import { isExposition } from 'mdml-engine/exposition'
-import type { Tensor } from 'mdml-engine/tensor'
-import type { Run } from 'mdml-engine/trace'
+import { isExposition } from 'omai-engine/exposition'
+import type { Tensor } from 'omai-engine/tensor'
+import type { Run } from 'omai-engine/trace'
 import { type ReactNode, useMemo } from 'react'
 import { contours } from '../../charts/fields.ts'
 import { lines } from '../../charts/lines.ts'

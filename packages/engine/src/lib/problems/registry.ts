@@ -68,7 +68,7 @@ const row = (
  * @index table Tagged registry of search puzzles, tours and SAT families.
  * @example
  * ```ts
- * import { problemRegistry, whereProblems } from 'mdml-engine/problems'
+ * import { problemRegistry, whereProblems } from 'omai-engine/problems'
  * whereProblems(problemRegistry, { kind: 'satisfiability' }).map((e) => e.name) // => ['plantedKSat', 'randomKSat', 'pigeonhole']
  * ```
  */
@@ -236,7 +236,7 @@ const oneOf = <T>(filter: T | readonly T[] | undefined, value: T): boolean =>
  * @returns The matching entries.
  * @example
  * ```ts
- * import { problemRegistry, whereProblems } from 'mdml-engine/problems'
+ * import { problemRegistry, whereProblems } from 'omai-engine/problems'
  * whereProblems(problemRegistry, { kind: 'tour' }).length // => 4
  * ```
  */
@@ -257,7 +257,7 @@ export function whereProblems(reg: ProblemRegistry, query: ProblemQuery = {}): P
  * @returns The entry, or `undefined`.
  * @example
  * ```ts
- * import { findProblem, problemRegistry } from 'mdml-engine/problems'
+ * import { findProblem, problemRegistry } from 'omai-engine/problems'
  * findProblem(problemRegistry, 'towersOfHanoi')?.make({ size: 3 }).truth // => { optimalMoves: 7 }
  * ```
  */

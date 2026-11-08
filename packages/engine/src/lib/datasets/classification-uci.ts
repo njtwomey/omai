@@ -87,7 +87,7 @@ import { uciClassification } from './_uci.ts'
  * @concept datasets
  * @example
  * ```ts
- * import { banknoteAuthentication } from 'mdml-engine/datasets'
+ * import { banknoteAuthentication } from 'omai-engine/datasets'
  * banknoteAuthentication().x.shape // => [1372, 4]
  * ```
  */
@@ -111,7 +111,7 @@ export function banknoteAuthentication(): ClassificationData {
  * @concept datasets
  * @example
  * ```ts
- * import { ionosphere } from 'mdml-engine/datasets'
+ * import { ionosphere } from 'omai-engine/datasets'
  * ionosphere().x.shape // => [351, 34]
  * ```
  */
@@ -134,7 +134,7 @@ export function ionosphere(): ClassificationData {
  * @concept datasets
  * @example
  * ```ts
- * import { sonar } from 'mdml-engine/datasets'
+ * import { sonar } from 'omai-engine/datasets'
  * sonar().x.shape // => [208, 60]
  * ```
  */
@@ -158,7 +158,7 @@ export function sonar(): ClassificationData {
  * @concept datasets
  * @example
  * ```ts
- * import { glassIdentification } from 'mdml-engine/datasets'
+ * import { glassIdentification } from 'omai-engine/datasets'
  * glassIdentification().classes.length // => 6
  * ```
  */
@@ -181,7 +181,7 @@ export function glassIdentification(): ClassificationData {
  * @concept datasets
  * @example
  * ```ts
- * import { seeds } from 'mdml-engine/datasets'
+ * import { seeds } from 'omai-engine/datasets'
  * seeds().classes // => ['Kama', 'Rosa', 'Canadian']
  * ```
  */
@@ -205,7 +205,7 @@ export function seeds(): ClassificationData {
  * @concept datasets
  * @example
  * ```ts
- * import { ecoli } from 'mdml-engine/datasets'
+ * import { ecoli } from 'omai-engine/datasets'
  * ecoli().x.shape // => [336, 7]
  * ```
  */
@@ -229,7 +229,7 @@ export function ecoli(): ClassificationData {
  * @concept datasets
  * @example
  * ```ts
- * import { yeast } from 'mdml-engine/datasets'
+ * import { yeast } from 'omai-engine/datasets'
  * yeast().x.shape // => [1484, 8]
  * ```
  */
@@ -253,7 +253,7 @@ export function yeast(): ClassificationData {
  * @concept datasets
  * @example
  * ```ts
- * import { haberman } from 'mdml-engine/datasets'
+ * import { haberman } from 'omai-engine/datasets'
  * haberman().classes // => ['survived', 'died']
  * ```
  */
@@ -277,7 +277,7 @@ export function haberman(): ClassificationData {
  * @concept datasets
  * @example
  * ```ts
- * import { balanceScale } from 'mdml-engine/datasets'
+ * import { balanceScale } from 'omai-engine/datasets'
  * balanceScale().x.shape // => [625, 4]
  * ```
  */
@@ -301,7 +301,7 @@ export function balanceScale(): ClassificationData {
  * @concept datasets
  * @example
  * ```ts
- * import { vehicleSilhouettes } from 'mdml-engine/datasets'
+ * import { vehicleSilhouettes } from 'omai-engine/datasets'
  * vehicleSilhouettes().classes // => ['bus', 'opel', 'saab', 'van']
  * ```
  */
@@ -326,7 +326,7 @@ export function vehicleSilhouettes(): ClassificationData {
  * @concept datasets
  * @example
  * ```ts
- * import { wholesaleCustomers } from 'mdml-engine/datasets'
+ * import { wholesaleCustomers } from 'omai-engine/datasets'
  * wholesaleCustomers().classes // => ['horeca', 'retail']
  * ```
  */
@@ -351,7 +351,7 @@ export function wholesaleCustomers(): ClassificationData {
  * @concept datasets
  * @example
  * ```ts
- * import { lenses } from 'mdml-engine/datasets'
+ * import { lenses } from 'omai-engine/datasets'
  * lenses().x.shape // => [24, 4]
  * ```
  */
@@ -377,7 +377,7 @@ export function lenses(): ClassificationData {
  * @concept datasets
  * @example
  * ```ts
- * import { spambase } from 'mdml-engine/datasets'
+ * import { spambase } from 'omai-engine/datasets'
  * spambase().x.shape // => [1000, 57]
  * ```
  */

@@ -7,8 +7,8 @@ from typing import Any
 
 import numpy as np
 import numpy.typing as npt
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import rng
 from statsmodels.tsa.ar_model import AutoReg
 from statsmodels.tsa.arima.estimators.hannan_rissanen import hannan_rissanen
 from statsmodels.tsa.arima.estimators.innovations import innovations

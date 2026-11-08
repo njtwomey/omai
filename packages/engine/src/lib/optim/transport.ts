@@ -5,7 +5,7 @@
  */
 
 import { customVjp } from '../autodiff/index.ts'
-import { type Json, logSumExpOf, MdmlError } from '../base/index.ts'
+import { type Json, logSumExpOf, OmaiError } from '../base/index.ts'
 import { dnrm2 } from '../numerics/linalg/index.ts'
 import {
   add,
@@ -36,16 +36,16 @@ function problem(a: TensorLike, b: TensorLike, cost: TensorLike, name: string, b
   const bv = flatOf(asTensor(b))
   const c = primalOf(promoteFloat(cost)[0] as Value) as Tensor
   if (c.shape.length !== 2 || c.shape[0] !== av.length || c.shape[1] !== bv.length)
-    throw new MdmlError('shape', `${name}: the cost must be [len(a), len(b)]`)
+    throw new OmaiError('shape', `${name}: the cost must be [len(a), len(b)]`)
   if (av.some((v) => v < 0) || bv.some((v) => v < 0))
-    throw new MdmlError('value', `${name}: the marginals must be nonnegative`)
+    throw new OmaiError('value', `${name}: the marginals must be nonnegative`)
   if (balanced) {
     let sa = 0
     let sb = 0
     for (const v of av) sa += v
     for (const v of bv) sb += v
     if (Math.abs(sa - sb) > 1e-9 * Math.max(1, sa))
-      throw new MdmlError('value', `${name}: the marginals must have equal mass (${sa} and ${sb})`)
+      throw new OmaiError('value', `${name}: the marginals must have equal mass (${sa} and ${sb})`)
   }
   return { a: av, b: bv, m: Float64Array.from(c.data), n: av.length, k: bv.length }
 }
@@ -157,7 +157,7 @@ function cycle(p: Problem, basis: readonly (readonly [number, number])[], i: num
   let node = i
   while (node !== start) {
     const e = parentEdge[node] ?? -1
-    if (e < 0) throw new MdmlError('value', 'emd: the basis is not a spanning tree')
+    if (e < 0) throw new OmaiError('value', 'emd: the basis is not a spanning tree')
     path.push(e)
     const [r, c] = basis[e] as readonly [number, number]
     node = node === r ? p.n + c : r
@@ -183,7 +183,7 @@ function emdCost(p: Problem, flow: Float64Array): number {
  * @concept optimal-transport
  * @example
  * ```ts
- * import { emdAlgorithm } from 'mdml-engine/optim'
+ * import { emdAlgorithm } from 'omai-engine/optim'
  * emdAlgorithm([0.5, 0.5], [0.5, 0.5], [[0, 1], [1, 0]]).name // => 'emd'
  * ```
  */
@@ -279,12 +279,12 @@ export function emdAlgorithm(a: TensorLike, b: TensorLike, cost: TensorLike): Al
  * @param cost - The cost matrix `[n, k]`.
  * @param options - Pivot cap (default 100 n k) and run options.
  * @returns The plan, cost and potentials.
- * @throws MdmlError with code `value` when the masses differ or a marginal is negative.
+ * @throws OmaiError with code `value` when the masses differ or a marginal is negative.
  * @concept optimal-transport
  * @example
  * ```ts
- * import { emd } from 'mdml-engine/optim'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { emd } from 'omai-engine/optim'
+ * import { toArray } from 'omai-engine/tensor'
  * const r = emd([0.5, 0.5], [0.5, 0.5], [[0, 1], [1, 0]])
  * toArray(r.plan) // => [[0.5, 0], [0, 0.5]]
  * r.cost // => 0
@@ -300,7 +300,7 @@ export function emd(
   const p = problem(a, b, cost, 'emd')
   const result = runAlgorithm(emdAlgorithm(a, b, cost), { ...run, maxSteps: maxIterations ?? 100 * p.n * p.k })
   const s = result.state
-  if (!s.optimal) throw new MdmlError('convergence', 'emd: the pivot limit was reached')
+  if (!s.optimal) throw new OmaiError('convergence', 'emd: the pivot limit was reached')
   return {
     plan: fromStorage(Float64Array.from(s.flow), [p.n, p.k], 'float64'),
     cost: s.cost,
@@ -396,7 +396,7 @@ function softUpdate(
  * @concept optimal-transport
  * @example
  * ```ts
- * import { sinkhornAlgorithm } from 'mdml-engine/optim'
+ * import { sinkhornAlgorithm } from 'omai-engine/optim'
  * sinkhornAlgorithm([0.5, 0.5], [0.5, 0.5], [[0, 1], [1, 0]], 0.1).name // => 'sinkhorn'
  * ```
  */
@@ -407,7 +407,7 @@ export function sinkhornAlgorithm(
   reg: number,
   options: SinkhornOptions = {},
 ): Algorithm<SinkhornState> {
-  if (!(reg > 0)) throw new MdmlError('value', `sinkhorn: reg must be positive, got ${reg}`)
+  if (!(reg > 0)) throw new OmaiError('value', `sinkhorn: reg must be positive, got ${reg}`)
   const p = problem(a, b, cost, 'sinkhorn')
   const method = options.method ?? 'log'
   const tol = options.tol ?? 1e-9
@@ -482,8 +482,8 @@ function entropicObjective(plan: Float64Array, m: Float64Array, reg: number, log
  * @index function Entropic optimal transport by Sinkhorn iterations.
  * @example
  * ```ts
- * import { sinkhorn } from 'mdml-engine/optim'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { sinkhorn } from 'omai-engine/optim'
+ * import { toArray } from 'omai-engine/tensor'
  * const r = sinkhorn([0.5, 0.5], [0.5, 0.5], [[0, 1], [1, 0]], 0.01)
  * toArray(r.plan).flat().map((v) => Math.round(v * 1e6) / 1e6) // => [0.5, 0, 0, 0.5]
  * ```
@@ -527,9 +527,9 @@ export function sinkhorn(
  * @concept optimal-transport
  * @example
  * ```ts
- * import { entropicTransportLoss } from 'mdml-engine/optim'
- * import { grad } from 'mdml-engine/autodiff'
- * import { tensor, toArray, type Value } from 'mdml-engine/tensor'
+ * import { entropicTransportLoss } from 'omai-engine/optim'
+ * import { grad } from 'omai-engine/autodiff'
+ * import { tensor, toArray, type Value } from 'omai-engine/tensor'
  * const g = grad((m: Value) => entropicTransportLoss([0.5, 0.5], [0.5, 0.5], m, 0.01))(tensor([[0, 1], [1, 0]]))
  * toArray(g).flat().map((v) => Math.round(v * 1e6) / 1e6) // => [0.5, 0, 0, 0.5]
  * ```
@@ -589,7 +589,7 @@ export interface UnbalancedOptions extends SinkhornOptions {
  * @concept optimal-transport
  * @example
  * ```ts
- * import { sinkhornUnbalancedAlgorithm } from 'mdml-engine/optim'
+ * import { sinkhornUnbalancedAlgorithm } from 'omai-engine/optim'
  * sinkhornUnbalancedAlgorithm([1, 1], [0.5, 0.5], [[0, 1], [1, 0]], 0.1, 1).name // => 'sinkhornUnbalanced'
  * ```
  */
@@ -660,8 +660,8 @@ export function sinkhornUnbalancedAlgorithm(
  * @concept optimal-transport
  * @example
  * ```ts
- * import { sinkhornUnbalanced } from 'mdml-engine/optim'
- * import { sum, toArray } from 'mdml-engine/tensor'
+ * import { sinkhornUnbalanced } from 'omai-engine/optim'
+ * import { sum, toArray } from 'omai-engine/tensor'
  * // Unequal masses: the plan's mass lies between them.
  * const m = toArray(sum(sinkhornUnbalanced([1, 1], [0.5, 0.5], [[0, 1], [1, 0]], 0.1, 1).plan)) as number
  * m > 1 && m < 2 // => true

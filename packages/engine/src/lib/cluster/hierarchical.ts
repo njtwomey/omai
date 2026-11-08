@@ -53,7 +53,7 @@ export interface AgglomerationState {
  * @returns The new distance.
  * @example
  * ```ts
- * import { lanceWilliams } from 'mdml-engine/cluster'
+ * import { lanceWilliams } from 'omai-engine/cluster'
  * lanceWilliams('single', 2, 5, 1, 1, 1, 1) // => 2
  * lanceWilliams('average', 2, 5, 1, 3, 1, 1) // => 2.75
  * ```
@@ -104,8 +104,8 @@ export interface AgglomerationOptions {
  * @returns The algorithm; n - 1 steps build the whole hierarchy.
  * @example
  * ```ts
- * import { agglomerativeAlgorithm } from 'mdml-engine/cluster'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { agglomerativeAlgorithm } from 'omai-engine/cluster'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const alg = agglomerativeAlgorithm([[0], [1], [5], [6]], { linkage: 'single' })
  * runAlgorithm(alg, { maxSteps: 3 }).state.merges // => [[0, 1, 1, 2], [2, 3, 1, 2], [4, 5, 4, 4]]
  * ```
@@ -198,7 +198,7 @@ export function agglomerativeAlgorithm(
  * @returns The n - 1 merges.
  * @example
  * ```ts
- * import { linkageMatrix } from 'mdml-engine/cluster'
+ * import { linkageMatrix } from 'omai-engine/cluster'
  * linkageMatrix([[0], [1], [5]], 'complete') // => [[0, 1, 1, 2], [2, 3, 5, 3]]
  * ```
  */
@@ -217,7 +217,7 @@ export function linkageMatrix(x: TensorLike, linkage: Linkage = 'ward', metric: 
  * @returns The n - 1 merges.
  * @example
  * ```ts
- * import { singleLinkageTree } from 'mdml-engine/cluster'
+ * import { singleLinkageTree } from 'omai-engine/cluster'
  * singleLinkageTree(3, [[0, 1, 2], [1, 2, 1]]) // => [[1, 2, 1, 2], [0, 3, 2, 3]]
  * ```
  */
@@ -255,7 +255,7 @@ export function singleLinkageTree(n: number, edges: readonly (readonly [number, 
  * @returns A label per observation.
  * @example
  * ```ts
- * import { cutTree } from 'mdml-engine/cluster'
+ * import { cutTree } from 'omai-engine/cluster'
  * const merges: [number, number, number, number][] = [[0, 1, 1, 2], [2, 3, 1, 2], [4, 5, 4, 4]]
  * cutTree(merges, 4, { nClusters: 2 }) // => [0, 0, 1, 1]
  * cutTree(merges, 4, { height: 0.5 }) // => [0, 1, 2, 3]
@@ -294,7 +294,7 @@ export function cutTree(
  * @returns The condensed cophenetic distances, in pdist order.
  * @example
  * ```ts
- * import { copheneticDistances } from 'mdml-engine/cluster'
+ * import { copheneticDistances } from 'omai-engine/cluster'
  * copheneticDistances([[0, 1, 1, 2], [2, 3, 5, 3]], 3) // => [1, 5, 5]
  * ```
  */
@@ -323,7 +323,7 @@ export function copheneticDistances(merges: readonly Merge[], n: number): number
  * @returns Pearson's correlation between cophenetic and original distances.
  * @example
  * ```ts
- * import { copheneticCorrelation, linkageMatrix } from 'mdml-engine/cluster'
+ * import { copheneticCorrelation, linkageMatrix } from 'omai-engine/cluster'
  * const x = [[0], [1], [4], [9]]
  * copheneticCorrelation(x, linkageMatrix(x, 'average')) // => 0.894832
  * ```
@@ -354,7 +354,7 @@ export interface Dendrogram {
  * @returns The leaf order and link positions.
  * @example
  * ```ts
- * import { dendrogram } from 'mdml-engine/cluster'
+ * import { dendrogram } from 'omai-engine/cluster'
  * dendrogram([[0, 1, 1, 2], [2, 3, 5, 3]], 3).leaves // => [2, 0, 1]
  * ```
  */
@@ -411,7 +411,7 @@ export interface AgglomerativeVerbs {
  * @index estimator Agglomerative clustering with the linkage matrix.
  * @example
  * ```ts
- * import { agglomerativeClustering } from 'mdml-engine/cluster'
+ * import { agglomerativeClustering } from 'omai-engine/cluster'
  * agglomerativeClustering.with({ nClusters: 2 }).fit({ x: [[0], [1], [9], [10]] }).params.labels // => [0, 0, 1, 1]
  * ```
  */
@@ -612,8 +612,8 @@ export function birchLeaves(state: BirchState): CfSubcluster[] {
  * @returns The algorithm; n steps insert every row.
  * @example
  * ```ts
- * import { birchAlgorithm, birchLeaves } from 'mdml-engine/cluster'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { birchAlgorithm, birchLeaves } from 'omai-engine/cluster'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const alg = birchAlgorithm([[0], [0.1], [5], [5.1]], { threshold: 0.5 })
  * birchLeaves(runAlgorithm(alg, { maxSteps: 4 }).state).length // => 2
  * ```
@@ -683,7 +683,7 @@ export type BirchParams = {
  *
  * @example
  * ```ts
- * import { birch } from 'mdml-engine/cluster'
+ * import { birch } from 'omai-engine/cluster'
  * birch.with({ nClusters: 2, threshold: 1 }).fit({ x: [[0], [0.2], [9], [9.2]] }).params.labels // => [0, 0, 1, 1]
  * ```
  */

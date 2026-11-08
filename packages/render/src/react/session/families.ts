@@ -6,8 +6,8 @@
  */
 
 import type { EChartsOption, SeriesOption } from 'echarts'
-import { maxOf, minOf } from 'mdml-engine/base'
-import { metricSeries, type Run } from 'mdml-engine/trace'
+import { maxOf, minOf } from 'omai-engine/base'
+import { metricSeries, type Run } from 'omai-engine/trace'
 import { band, type Curve, lines } from '../../charts/lines.ts'
 import { cartesian, type Layer, layer } from '../../charts/plot.ts'
 import type { Figure } from '../../figure/index.ts'
@@ -184,7 +184,7 @@ export function curveFamily(
         }),
       )
     else if (truth.path !== undefined) {
-      const s = metricSeries(runs[0]?.run ?? { schema: 'mdml.run/1', events: [] }, truth.path)
+      const s = metricSeries(runs[0]?.run ?? { schema: 'omai.run/1', events: [] }, truth.path)
       const { x, y } = usable(s.steps, s.values, log)
       over.push(lines([{ x, y, name: label, colour: 'fg', width: 1.5, dash: 'dashed' }], { mode }))
     }

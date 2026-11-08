@@ -13,21 +13,21 @@ import * as trace from '../trace/index.ts'
 import * as dynamics from './index.ts'
 
 const MODULES: Readonly<Record<string, unknown>> = {
-  'mdml-engine/autodiff': autodiff,
-  'mdml-engine/base': base,
-  'mdml-engine/random': random,
-  'mdml-engine/systems': systems,
-  'mdml-engine/tensor': tensor,
-  'mdml-engine/trace': trace,
-  'mdml-engine/dynamics': dynamics,
-  'mdml-engine/dynamics/celestial': dynamics.celestial,
-  'mdml-engine/dynamics/ode': dynamics.ode,
-  'mdml-engine/dynamics/automata': dynamics.automata,
-  'mdml-engine/dynamics/fractals': dynamics.fractals,
-  'mdml-engine/dynamics/pde': (dynamics as Record<string, unknown>)['pde'],
-  'mdml-engine/dynamics/control': (dynamics as Record<string, unknown>)['control'],
-  'mdml-engine/dynamics/filtering': (dynamics as Record<string, unknown>)['filtering'],
-  ...Object.fromEntries(Object.entries(numerics).map(([k, v]) => [`mdml-engine/numerics/${k}`, v])),
+  'omai-engine/autodiff': autodiff,
+  'omai-engine/base': base,
+  'omai-engine/random': random,
+  'omai-engine/systems': systems,
+  'omai-engine/tensor': tensor,
+  'omai-engine/trace': trace,
+  'omai-engine/dynamics': dynamics,
+  'omai-engine/dynamics/celestial': dynamics.celestial,
+  'omai-engine/dynamics/ode': dynamics.ode,
+  'omai-engine/dynamics/automata': dynamics.automata,
+  'omai-engine/dynamics/fractals': dynamics.fractals,
+  'omai-engine/dynamics/pde': (dynamics as Record<string, unknown>)['pde'],
+  'omai-engine/dynamics/control': (dynamics as Record<string, unknown>)['control'],
+  'omai-engine/dynamics/filtering': (dynamics as Record<string, unknown>)['filtering'],
+  ...Object.fromEntries(Object.entries(numerics).map(([k, v]) => [`omai-engine/numerics/${k}`, v])),
 }
 
 interface Example {

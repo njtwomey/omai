@@ -1,6 +1,6 @@
 // The residual network of the flow algorithms and the pieces they share: building it from a graph, the net flow per
 // edge, augmenting along a path and the source side of a cut. Not re-exported.
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import type { Graph } from './graph.ts'
 
 /** Tolerance below which a residual capacity counts as empty. */
@@ -29,7 +29,7 @@ export function residualNetwork(g: Graph, capacity: ArrayLike<number> | undefine
   const lists: number[][] = Array.from({ length: g.n }, () => [])
   for (const [e, edge] of g.edges.entries()) {
     const c = capacity === undefined ? edge.weight : (capacity[e] ?? 0)
-    if (!(c >= 0)) throw new MdmlError('value', `flow: edge ${e} has a negative or missing capacity`)
+    if (!(c >= 0)) throw new OmaiError('value', `flow: edge ${e} has a negative or missing capacity`)
     cap[e] = c
     to[2 * e] = edge.target
     to[2 * e + 1] = edge.source
@@ -51,7 +51,7 @@ export function edgeFlows(r: ResidualNetwork): Float64Array {
 export function augment(r: ResidualNetwork, path: readonly number[]): number {
   let bottleneck = Number.POSITIVE_INFINITY
   for (const a of path) bottleneck = Math.min(bottleneck, r.residual[a] ?? 0)
-  if (bottleneck === Number.POSITIVE_INFINITY) throw new MdmlError('value', 'maxFlow: the flow is unbounded')
+  if (bottleneck === Number.POSITIVE_INFINITY) throw new OmaiError('value', 'maxFlow: the flow is unbounded')
   for (const a of path) {
     r.residual[a] = (r.residual[a] ?? 0) - bottleneck
     r.residual[a ^ 1] = (r.residual[a ^ 1] ?? 0) + bottleneck

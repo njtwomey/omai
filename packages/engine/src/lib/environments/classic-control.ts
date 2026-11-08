@@ -46,7 +46,7 @@ const X_LIMIT = 2.4
  * @concept environments
  * @example
  * ```ts
- * import { cartPoleDynamics } from 'mdml-engine/environments'
+ * import { cartPoleDynamics } from 'omai-engine/environments'
  * cartPoleDynamics([0, 0, 0, 0], 1)[1] > 0 // => true
  * ```
  */
@@ -68,7 +68,7 @@ export function cartPoleDynamics(state: CartPoleState, action: number): CartPole
  * @returns Whether the episode ends.
  * @example
  * ```ts
- * import { cartPoleTerminated } from 'mdml-engine/environments'
+ * import { cartPoleTerminated } from 'omai-engine/environments'
  * cartPoleTerminated([3, 0, 0, 0]) // => true
  * ```
  */
@@ -84,7 +84,7 @@ export function cartPoleTerminated(state: CartPoleState): boolean {
  * @returns The scene.
  * @example
  * ```ts
- * import { renderCartPole } from 'mdml-engine/environments'
+ * import { renderCartPole } from 'omai-engine/environments'
  * renderCartPole([0, 0, 0, 0]).width // => 600
  * ```
  */
@@ -132,8 +132,8 @@ const CARTPOLE_DESCRIPTION = 'Balance a pole on a cart by pushing the cart left 
  * @index structure CartPole-v1 environment definition.
  * @example
  * ```ts
- * import { cartPole } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { cartPole } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * const env = cartPole.create()
  * env.step(env.reset(key(0)).state, 1, key(1)).reward // => 1
  * ```
@@ -194,7 +194,7 @@ const MC_GRAVITY = 0.0025
  * @returns The next state.
  * @example
  * ```ts
- * import { mountainCarDynamics } from 'mdml-engine/environments'
+ * import { mountainCarDynamics } from 'omai-engine/environments'
  * mountainCarDynamics([-1.2, -0.01], 0)[1] // => 0
  * ```
  */
@@ -276,8 +276,8 @@ const MC_DESCRIPTION = 'Drive an underpowered car up a hill by building momentum
  * @concept environments
  * @example
  * ```ts
- * import { mountainCar } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { mountainCar } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * const env = mountainCar.create()
  * env.step(env.reset(key(0)).state, 2, key(1)).reward // => -1
  * ```
@@ -325,7 +325,7 @@ const MCC_GOAL = 0.45
  * @returns The next state.
  * @example
  * ```ts
- * import { continuousMountainCarDynamics } from 'mdml-engine/environments'
+ * import { continuousMountainCarDynamics } from 'omai-engine/environments'
  * continuousMountainCarDynamics([-0.5, 0], 1)[1] > 0 // => true
  * ```
  */
@@ -360,8 +360,8 @@ const MCC_DESCRIPTION = 'Drive an underpowered car up a hill with a continuous f
  * @concept environments
  * @example
  * ```ts
- * import { mountainCarContinuous } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { mountainCarContinuous } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * const env = mountainCarContinuous.create()
  * env.step(env.reset(key(0)).state, [1], key(1)).reward // => -0.1
  * ```
@@ -415,7 +415,7 @@ const PENDULUM_DT = 0.05
  * @returns The wrapped angle.
  * @example
  * ```ts
- * import { angleNormalize } from 'mdml-engine/environments'
+ * import { angleNormalize } from 'omai-engine/environments'
  * angleNormalize(3 * Math.PI) // => -3.141592653589793
  * ```
  */
@@ -435,7 +435,7 @@ export function angleNormalize(x: number): number {
  * @returns The next state and the cost of the step (the reward is its negative).
  * @example
  * ```ts
- * import { pendulumDynamics } from 'mdml-engine/environments'
+ * import { pendulumDynamics } from 'omai-engine/environments'
  * pendulumDynamics([0, 0], 0).cost // => 0
  * ```
  */
@@ -499,8 +499,8 @@ const PENDULUM_DESCRIPTION = 'Swing a pendulum up and keep it upright with a lim
  * @concept environments
  * @example
  * ```ts
- * import { pendulum } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { pendulum } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * pendulum.create().reset(key(0)).observation.length // => 3
  * ```
  */
@@ -594,7 +594,7 @@ const wrapAngle = (x: number, m: number, M: number): number => {
  * @returns The next state.
  * @example
  * ```ts
- * import { acrobotDynamics } from 'mdml-engine/environments'
+ * import { acrobotDynamics } from 'omai-engine/environments'
  * acrobotDynamics([0, 0, 0, 0], 1).map((x) => Math.abs(x) < 1e-15) // => [true, true, true, true]
  * ```
  */
@@ -622,7 +622,7 @@ export function acrobotDynamics(state: AcrobotState, action: number): AcrobotSta
  * @returns Whether the episode ends.
  * @example
  * ```ts
- * import { acrobotTerminated } from 'mdml-engine/environments'
+ * import { acrobotTerminated } from 'omai-engine/environments'
  * acrobotTerminated([Math.PI, 0, 0, 0]) // => true
  * ```
  */
@@ -666,8 +666,8 @@ const ACROBOT_DESCRIPTION = 'Swing the tip of a two-link pendulum above a bar by
  * @concept environments
  * @example
  * ```ts
- * import { acrobot } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { acrobot } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * acrobot.create().reset(key(0)).observation.length // => 6
  * ```
  */

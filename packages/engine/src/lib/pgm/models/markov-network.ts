@@ -5,7 +5,7 @@
  * assignment.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import {
   type DiscreteVariable,
   type Factor,
@@ -42,12 +42,12 @@ export interface MarkovNetwork {
  * @param potentials - The clique potentials.
  * @param edges - The undirected edges (default: implied by the potentials).
  * @returns The network.
- * @throws MdmlError with code `value` for undeclared variables, mismatched cardinalities or a potential whose scope
+ * @throws OmaiError with code `value` for undeclared variables, mismatched cardinalities or a potential whose scope
  * is not a clique.
  * @concept markov-networks
  * @example
  * ```ts
- * import { factor, markovNetwork } from 'mdml-engine/pgm'
+ * import { factor, markovNetwork } from 'omai-engine/pgm'
  * const v = ['a', 'b'].map((name) => ({ name, states: ['0', '1'] }))
  * markovNetwork(v, [factor(['a', 'b'], [2, 2], [10, 1, 1, 10])]).edges // => [['a', 'b']]
  * ```
@@ -58,12 +58,12 @@ export function markovNetwork(
   edges?: readonly (readonly [string, string])[],
 ): MarkovNetwork {
   const card = new Map(variables.map((v) => [v.name, v.states.length]))
-  if (card.size !== variables.length) throw new MdmlError('value', 'markovNetwork: variable names must be distinct')
+  if (card.size !== variables.length) throw new OmaiError('value', 'markovNetwork: variable names must be distinct')
   for (const f of potentials) {
     for (const [i, v] of f.variables.entries()) {
-      if (!card.has(v)) throw new MdmlError('value', `markovNetwork: potential mentions undeclared variable ${v}`)
+      if (!card.has(v)) throw new OmaiError('value', `markovNetwork: potential mentions undeclared variable ${v}`)
       if (card.get(v) !== f.cardinality[i])
-        throw new MdmlError(
+        throw new OmaiError(
           'value',
           `markovNetwork: ${v} has ${card.get(v)} states but a potential gives ${f.cardinality[i]}`,
         )
@@ -73,7 +73,7 @@ export function markovNetwork(
   const graph = edges === undefined ? interactionGraph(potentials, names) : undirectedGraph(edges, names)
   for (const [a, b] of graphEdges(graph)) {
     if (!card.has(a) || !card.has(b))
-      throw new MdmlError('value', `markovNetwork: edge ${a}-${b} has an undeclared end`)
+      throw new OmaiError('value', `markovNetwork: edge ${a}-${b} has an undeclared end`)
   }
   for (const f of potentials) {
     for (let i = 0; i < f.variables.length; i++) {
@@ -81,7 +81,7 @@ export function markovNetwork(
         const a = f.variables[i] as string
         const b = f.variables[j] as string
         if (!graph.get(a)?.has(b))
-          throw new MdmlError('value', `markovNetwork: potential over [${f.variables.join(', ')}] is not a clique`)
+          throw new OmaiError('value', `markovNetwork: potential over [${f.variables.join(', ')}] is not a clique`)
       }
     }
   }
@@ -95,7 +95,7 @@ export function markovNetwork(
  * @returns The neighbours of each variable.
  * @example
  * ```ts
- * import { factor, markovNetwork, markovGraph } from 'mdml-engine/pgm'
+ * import { factor, markovNetwork, markovGraph } from 'omai-engine/pgm'
  * const v = ['a', 'b'].map((name) => ({ name, states: ['0', '1'] }))
  * [...(markovGraph(markovNetwork(v, [factor(['a', 'b'], [2, 2], [1, 1, 1, 1])])).get('a') ?? [])] // => ['b']
  * ```
@@ -113,18 +113,18 @@ export function markovGraph(mn: MarkovNetwork): Map<string, Set<string>> {
  * @param mn - The network.
  * @param name - The variable.
  * @returns The neighbours, sorted.
- * @throws MdmlError with code `value` for an unknown variable.
+ * @throws OmaiError with code `value` for an unknown variable.
  * @concept markov-properties
  * @example
  * ```ts
- * import { isingModel, markovNeighbours } from 'mdml-engine/pgm'
+ * import { isingModel, markovNeighbours } from 'omai-engine/pgm'
  * markovNeighbours(isingModel({ rows: 2, cols: 2 }), 's_0_0') // => ['s_0_1', 's_1_0']
  * ```
  */
 export function markovNeighbours(mn: MarkovNetwork, name: string): string[] {
   const g = markovGraph(mn)
   const ns = g.get(name)
-  if (ns === undefined) throw new MdmlError('value', `unknown variable ${name}`)
+  if (ns === undefined) throw new OmaiError('value', `unknown variable ${name}`)
   return [...ns].sort()
 }
 
@@ -140,7 +140,7 @@ export function markovNeighbours(mn: MarkovNetwork, name: string): string[] {
  * @concept markov-properties
  * @example
  * ```ts
- * import { isingModel, markovSeparated } from 'mdml-engine/pgm'
+ * import { isingModel, markovSeparated } from 'omai-engine/pgm'
  * markovSeparated(isingModel({ rows: 1, cols: 3 }), ['s_0_0'], ['s_0_2'], ['s_0_1']) // => true
  * ```
  */
@@ -160,7 +160,7 @@ export function markovSeparated(
  * @returns The cliques (sorted).
  * @example
  * ```ts
- * import { isingModel, markovCliques } from 'mdml-engine/pgm'
+ * import { isingModel, markovCliques } from 'omai-engine/pgm'
  * markovCliques(isingModel({ rows: 1, cols: 3 })) // => [['s_0_0', 's_0_1'], ['s_0_1', 's_0_2']]
  * ```
  */
@@ -177,7 +177,7 @@ export function markovCliques(mn: MarkovNetwork): string[][] {
  * @concept moralisation
  * @example
  * ```ts
- * import { bayesNet, moralise } from 'mdml-engine/pgm'
+ * import { bayesNet, moralise } from 'omai-engine/pgm'
  * const p = [0.5, 0.5]
  * const bn = bayesNet([{ name: 'a', states: ['0', '1'], parents: [], cpt: p }, { name: 'b', states: ['0', '1'], parents: [], cpt: p }, { name: 'c', states: ['0', '1'], parents: ['a', 'b'], cpt: [1, 0, 0, 1, 0, 1, 1, 0] }])
  * moralise(bn).edges // => [['a', 'b'], ['a', 'c'], ['b', 'c']]
@@ -198,7 +198,7 @@ export function moralise(bn: BayesNet): MarkovNetwork {
  * @returns The Markov network.
  * @example
  * ```ts
- * import { factor, factorGraph, toMarkovNetwork } from 'mdml-engine/pgm'
+ * import { factor, factorGraph, toMarkovNetwork } from 'omai-engine/pgm'
  * const fg = factorGraph([{ name: 'a', states: ['0', '1'] }, { name: 'b', states: ['0', '1'] }], [factor(['a', 'b'], [2, 2], [1, 2, 3, 4])])
  * toMarkovNetwork(fg).edges // => [['a', 'b']]
  * ```
@@ -265,7 +265,7 @@ function couplingOf(options: LatticeOptions, a: string, b: string): number {
  * @concept ising-model
  * @example
  * ```ts
- * import { isingModel, factorValues } from 'mdml-engine/pgm'
+ * import { isingModel, factorValues } from 'omai-engine/pgm'
  * const m = isingModel({ rows: 1, cols: 2, coupling: Math.log(2) })
  * m.potentials.map((f) => factorValues(f).map((v) => Math.round(v * 100) / 100)) // => [[2, 0.5, 0.5, 2]]
  * ```
@@ -305,7 +305,7 @@ export function isingModel(
  * @concept ising-model
  * @example
  * ```ts
- * import { pottsModel } from 'mdml-engine/pgm'
+ * import { pottsModel } from 'omai-engine/pgm'
  * pottsModel({ rows: 2, cols: 2, q: 4 }).variables[0]?.states.length // => 4
  * ```
  */
@@ -336,7 +336,7 @@ export function pottsModel(options: LatticeOptions & { readonly q?: number } = {
  * @concept gibbs-distributions
  * @example
  * ```ts
- * import { isingModel, gibbsDistribution, factorValues } from 'mdml-engine/pgm'
+ * import { isingModel, gibbsDistribution, factorValues } from 'omai-engine/pgm'
  * factorValues(gibbsDistribution(isingModel({ rows: 1, cols: 2, coupling: 0 }))) // => [0.25, 0.25, 0.25, 0.25]
  * ```
  */
@@ -366,7 +366,7 @@ export function gibbsDistribution(model: DiscreteModel): Factor {
  * @concept gibbs-distributions
  * @example
  * ```ts
- * import { isingModel, energy } from 'mdml-engine/pgm'
+ * import { isingModel, energy } from 'omai-engine/pgm'
  * energy(isingModel({ rows: 1, cols: 2, coupling: 1 }), { s_0_0: 1, s_0_1: 1 }) // => -1
  * ```
  */

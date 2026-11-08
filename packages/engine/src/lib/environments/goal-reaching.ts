@@ -45,7 +45,7 @@ const MOVES: readonly (readonly [number, number])[] = [
  * @returns `[x, y]`.
  * @example
  * ```ts
- * import { achievedGoal } from 'mdml-engine/environments'
+ * import { achievedGoal } from 'omai-engine/environments'
  * achievedGoal([0.1, 0.2, 0.9, 0.8]) // => [0.1, 0.2]
  * ```
  */
@@ -60,7 +60,7 @@ export function achievedGoal(observation: readonly number[]): [number, number] {
  * @returns `[gx, gy]`.
  * @example
  * ```ts
- * import { desiredGoal } from 'mdml-engine/environments'
+ * import { desiredGoal } from 'omai-engine/environments'
  * desiredGoal([0.1, 0.2, 0.9, 0.8]) // => [0.9, 0.8]
  * ```
  */
@@ -77,7 +77,7 @@ export function desiredGoal(observation: readonly number[]): [number, number] {
  * @returns Whether the goal is reached.
  * @example
  * ```ts
- * import { goalReached } from 'mdml-engine/environments'
+ * import { goalReached } from 'omai-engine/environments'
  * goalReached([0.5, 0.5], [0.52, 0.5]) // => true
  * ```
  */
@@ -95,7 +95,7 @@ export function goalReached(achieved: readonly number[], desired: readonly numbe
  * @returns 0 or -1.
  * @example
  * ```ts
- * import { goalReward } from 'mdml-engine/environments'
+ * import { goalReward } from 'omai-engine/environments'
  * goalReward([0, 0], [1, 1]) // => -1
  * ```
  */
@@ -113,7 +113,7 @@ export function goalReward(achieved: readonly number[], desired: readonly number
  * @returns The number of moves.
  * @example
  * ```ts
- * import { reachGoalOptimalSteps } from 'mdml-engine/environments'
+ * import { reachGoalOptimalSteps } from 'omai-engine/environments'
  * reachGoalOptimalSteps([0.5, 0.5], [0.8, 0.5]) // => 3
  * ```
  */
@@ -148,8 +148,8 @@ export function reachGoalOptimalSteps(
  * @returns The environment.
  * @example
  * ```ts
- * import { makeReachGoal } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { makeReachGoal } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * makeReachGoal().reset(key(0)).observation.length // => 4
  * ```
  */
@@ -223,7 +223,7 @@ export function makeReachGoal(options: ReachGoalOptions = {}): Env<ReachGoalStat
  * @concept environments
  * @example
  * ```ts
- * import { reachGoal } from 'mdml-engine/environments'
+ * import { reachGoal } from 'omai-engine/environments'
  * reachGoal.create().spec.maxEpisodeSteps // => 30
  * ```
  */

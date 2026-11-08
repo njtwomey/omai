@@ -5,7 +5,7 @@
  * a control bar. `SpaceSettings` is the common case: the settings are an engine `Space` drawn by `SpaceControls`.
  */
 
-import { type Space, type SpaceValue, defaults as spaceDefaults } from 'mdml-engine/space'
+import { type Space, type SpaceValue, defaults as spaceDefaults } from 'omai-engine/space'
 import { type ReactNode, useCallback, useEffect, useId, useReducer, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useFocusTrap } from './_focus.ts'

@@ -5,7 +5,7 @@
  * table as gymnasium's toy-text ones are.
  */
 
-import { argmaxOf, type Json, MdmlError, maxOf, toRows } from '../base/index.ts'
+import { argmaxOf, type Json, maxOf, OmaiError, toRows } from '../base/index.ts'
 import { solve } from '../numerics/linalg/index.ts'
 import { uniform } from '../random/index.ts'
 import type { Scene } from '../scene/index.ts'
@@ -50,12 +50,12 @@ export type TabularPolicy = readonly number[] | readonly (readonly number[])[]
  * @param spec - `transitions[s][a][s']` probabilities, `rewards[s][a]` expected rewards (or `rewards[s][a][s']`),
  *   optional absorbing `terminalStates`, an initial distribution (default uniform) and the discount (default 1).
  * @returns The MDP.
- * @throws MdmlError with code `value` when a row of probabilities does not sum to one.
+ * @throws OmaiError with code `value` when a row of probabilities does not sum to one.
  * @concept markov-decision-processes
  * @index structure A tabular MDP from transitions and rewards.
  * @example
  * ```ts
- * import { tabularMdp } from 'mdml-engine/rl'
+ * import { tabularMdp } from 'omai-engine/rl'
  * const mdp = tabularMdp({ transitions: [[[1, 0], [0, 1]], [[0, 1], [0, 1]]], rewards: [[0, 1], [0, 0]], terminalStates: [1], gamma: 0.9 })
  * mdp.nStates // => 2
  * ```
@@ -79,7 +79,7 @@ export function tabularMdp(spec: {
       let total = 0
       for (let s2 = 0; s2 < nS; s2++) total += row[s2] ?? 0
       if (Math.abs(total - 1) > 1e-9) {
-        throw new MdmlError('value', `tabularMdp: transitions[${s}][${a}] sums to ${total}, not 1`)
+        throw new OmaiError('value', `tabularMdp: transitions[${s}][${a}] sums to ${total}, not 1`)
       }
       const r = spec.rewards[s]?.[a] ?? 0
       let er = 0
@@ -105,8 +105,8 @@ export function tabularMdp(spec: {
  * @concept markov-decision-processes
  * @example
  * ```ts
- * import { mdpFromModel } from 'mdml-engine/rl'
- * import { frozenLake } from 'mdml-engine/environments'
+ * import { mdpFromModel } from 'omai-engine/rl'
+ * import { frozenLake } from 'omai-engine/environments'
  * const model = frozenLake.create().model
  * model === undefined ? 0 : mdpFromModel(model, 0.99).nStates // => 16
  * ```
@@ -144,17 +144,17 @@ export function mdpFromModel<S, A>(model: EnvModel<S, A>, gamma = 1): TabularMdp
  * @param env - The environment.
  * @param gamma - The discount (default 1).
  * @returns The MDP.
- * @throws MdmlError with code `value` when the environment has no model.
+ * @throws OmaiError with code `value` when the environment has no model.
  * @concept markov-decision-processes
  * @example
  * ```ts
- * import { mdpFromEnv } from 'mdml-engine/rl'
- * import { cliffWalking } from 'mdml-engine/environments'
+ * import { mdpFromEnv } from 'omai-engine/rl'
+ * import { cliffWalking } from 'omai-engine/environments'
  * mdpFromEnv(cliffWalking.create()).nActions // => 4
  * ```
  */
 export function mdpFromEnv<S, O, A>(env: Env<S, O, A>, gamma = 1): TabularMdp {
-  if (env.model === undefined) throw new MdmlError('value', `mdpFromEnv: ${env.spec.id} has no model`)
+  if (env.model === undefined) throw new OmaiError('value', `mdpFromEnv: ${env.spec.id} has no model`)
   return mdpFromModel(env.model, gamma)
 }
 
@@ -193,7 +193,7 @@ function backup(mdp: TabularMdp, V: ArrayLike<number>, gamma: number): Float64Ar
  * @concept markov-decision-processes
  * @example
  * ```ts
- * import { qFromV, tabularMdp } from 'mdml-engine/rl'
+ * import { qFromV, tabularMdp } from 'omai-engine/rl'
  * const mdp = tabularMdp({ transitions: [[[1, 0], [0, 1]], [[0, 1], [0, 1]]], rewards: [[0, 1], [0, 0]], terminalStates: [1] })
  * qFromV(mdp, [0, 0]) // => [[0, 1], [0, 0]]
  * ```
@@ -210,7 +210,7 @@ export function qFromV(mdp: TabularMdp, V: readonly number[], gamma: number = md
  * @concept markov-decision-processes
  * @example
  * ```ts
- * import { greedyPolicy } from 'mdml-engine/rl'
+ * import { greedyPolicy } from 'omai-engine/rl'
  * greedyPolicy([[0, 2, 1], [3, 3, 0]]) // => [1, 0]
  * ```
  */
@@ -246,7 +246,7 @@ export interface ValueIterationState {
  * @index algorithm Value iteration, one sweep per step.
  * @example
  * ```ts
- * import { tabularMdp, valueIterationAlgorithm } from 'mdml-engine/rl'
+ * import { tabularMdp, valueIterationAlgorithm } from 'omai-engine/rl'
  * const mdp = tabularMdp({ transitions: [[[1, 0], [0, 1]], [[0, 1], [0, 1]]], rewards: [[0, 1], [0, 0]], terminalStates: [1] })
  * valueIterationAlgorithm(mdp).name // => 'valueIteration'
  * ```
@@ -310,7 +310,7 @@ export interface MdpSolution {
  * @index function Exact value iteration on a tabular MDP.
  * @example
  * ```ts
- * import { tabularMdp, valueIteration } from 'mdml-engine/rl'
+ * import { tabularMdp, valueIteration } from 'omai-engine/rl'
  * const mdp = tabularMdp({ transitions: [[[1, 0], [0, 1]], [[0, 1], [0, 1]]], rewards: [[0, 1], [0, 0]], terminalStates: [1] })
  * valueIteration(mdp).V // => [1, 0]
  * ```
@@ -385,7 +385,7 @@ export interface SweepProperties {
  * @concept policy-evaluation
  * @example
  * ```ts
- * import { sweepOrders } from 'mdml-engine/rl'
+ * import { sweepOrders } from 'omai-engine/rl'
  * sweepOrders.where((p) => p.usesPreviousSweep) // => ['synchronous']
  * ```
  */
@@ -423,8 +423,8 @@ export const sweepOrders: OptionTable<SweepOrder, SweepProperties> = optionTable
  * @concept policy-evaluation
  * @example
  * ```ts
- * import { policyEvaluationAlgorithm, tabularMdp } from 'mdml-engine/rl'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { policyEvaluationAlgorithm, tabularMdp } from 'omai-engine/rl'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const mdp = tabularMdp({ transitions: [[[1, 0], [0, 1]], [[0, 1], [0, 1]]], rewards: [[0, 1], [0, 0]], terminalStates: [1], gamma: 0.5 })
  * Array.from(runAlgorithm(policyEvaluationAlgorithm(mdp, [1, 0]), { maxSteps: 50 }).state.V) // => [1, 0]
  * ```
@@ -480,11 +480,11 @@ export function policyEvaluationAlgorithm(
  * @param policy - One action per state, or action probabilities per state.
  * @param options - `method` (`'exact'` or `'iterative'`), tolerance, iteration cap, discount and the `sweep` order.
  * @returns The state values.
- * @throws MdmlError with code `value` when the exact system is singular (an improper policy with `gamma = 1`).
+ * @throws OmaiError with code `value` when the exact system is singular (an improper policy with `gamma = 1`).
  * @concept policy-evaluation
  * @example
  * ```ts
- * import { policyEvaluation, tabularMdp } from 'mdml-engine/rl'
+ * import { policyEvaluation, tabularMdp } from 'omai-engine/rl'
  * const mdp = tabularMdp({ transitions: [[[1, 0], [0, 1]], [[0, 1], [0, 1]]], rewards: [[0, 1], [0, 0]], terminalStates: [1], gamma: 0.5 })
  * policyEvaluation(mdp, [0, 0]) // => [0, 0]
  * ```
@@ -504,7 +504,7 @@ export function policyEvaluation(
     try {
       return toFlat(solve(fromStorage(A, [nS, nS], 'float64'), fromStorage(Rpi, [nS], 'float64')))
     } catch {
-      throw new MdmlError('value', 'policyEvaluation: I - gamma P_pi is singular (the policy never terminates)')
+      throw new OmaiError('value', 'policyEvaluation: I - gamma P_pi is singular (the policy never terminates)')
     }
   }
   const run = runAlgorithm(policyEvaluationAlgorithm(mdp, policy, options), { maxSteps: options.maxIter ?? 100_000 })
@@ -529,7 +529,7 @@ export interface PolicyIterationState {
  * @concept policy-iteration
  * @example
  * ```ts
- * import { policyIterationAlgorithm, tabularMdp } from 'mdml-engine/rl'
+ * import { policyIterationAlgorithm, tabularMdp } from 'omai-engine/rl'
  * const mdp = tabularMdp({ transitions: [[[1, 0], [0, 1]], [[0, 1], [0, 1]]], rewards: [[0, 1], [0, 0]], terminalStates: [1], gamma: 0.9 })
  * policyIterationAlgorithm(mdp).name // => 'policyIteration'
  * ```
@@ -583,7 +583,7 @@ export function policyIterationAlgorithm(
  * @concept policy-iteration
  * @example
  * ```ts
- * import { policyIteration, tabularMdp } from 'mdml-engine/rl'
+ * import { policyIteration, tabularMdp } from 'omai-engine/rl'
  * const mdp = tabularMdp({ transitions: [[[1, 0], [0, 1]], [[0, 1], [0, 1]]], rewards: [[0, 1], [0, 0]], terminalStates: [1], gamma: 0.9 })
  * policyIteration(mdp).policy // => [1, 0]
  * ```
@@ -622,7 +622,7 @@ export function policyIteration(
  * @concept markov-decision-processes
  * @example
  * ```ts
- * import { occupancyMeasure, tabularMdp } from 'mdml-engine/rl'
+ * import { occupancyMeasure, tabularMdp } from 'omai-engine/rl'
  * const mdp = tabularMdp({ transitions: [[[1, 0], [0, 1]], [[0, 1], [0, 1]]], rewards: [[0, 1], [0, 0]], terminalStates: [1], initial: [1, 0], gamma: 0.5 })
  * occupancyMeasure(mdp, [0, 0]).state // => [2, 0]
  * ```
@@ -699,9 +699,9 @@ function categoricalIndex(probs: readonly number[], u: number): number {
  * @concept environments
  * @example
  * ```ts
- * import { tabularEnv } from 'mdml-engine/rl'
- * import { scene } from 'mdml-engine/scene'
- * import { key } from 'mdml-engine/random'
+ * import { tabularEnv } from 'omai-engine/rl'
+ * import { scene } from 'omai-engine/scene'
+ * import { key } from 'omai-engine/random'
  * const coin = tabularEnv({
  *   id: 'Coin-v0', description: 'one flip', nStates: 2, nActions: 1, initial: [1, 0], render: () => scene(1, 1, []),
  *   transitions: () => [{ probability: 1, state: 1, reward: 1, terminated: true }],

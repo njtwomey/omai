@@ -1,7 +1,7 @@
-import type { DecisionSurface } from 'mdml-engine/exposition'
-import { smoothSolvers } from 'mdml-engine/optim'
-import { defaults } from 'mdml-engine/space'
-import { type Config, metricSeries, session } from 'mdml-engine/trace'
+import type { DecisionSurface } from 'omai-engine/exposition'
+import { smoothSolvers } from 'omai-engine/optim'
+import { defaults } from 'omai-engine/space'
+import { type Config, metricSeries, session } from 'omai-engine/trace'
 import { describe, expect, it } from 'vitest'
 import { linearClassifier } from './linearClassifier.ts'
 

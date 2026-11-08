@@ -33,7 +33,7 @@ export function recipeLiteral(source: string, file: string): string {
 /** Serves `<recipe file>?recipe` as just the file's `recipe` export. */
 export function recipeMeta(): Plugin {
   return {
-    name: 'mdml-recipe-meta',
+    name: 'omai-recipe-meta',
     enforce: 'pre',
     load(id) {
       const cut = id.indexOf('?')

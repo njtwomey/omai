@@ -1,5 +1,5 @@
 /**
- * The functional layer library, torch.nn.functional style and part of `mdml-engine/nn`: stateless functions of
+ * The functional layer library, torch.nn.functional style and part of `omai-engine/nn`: stateless functions of
  * tensors and explicit weights for activations, linear maps and embeddings, convolution, pooling, normalisation,
  * attention and position encodings, coordinate encodings for neural fields (positional, Fourier features, hash grid),
  * recurrent cells, state-space models, graph and set layers, regularisers and spatial

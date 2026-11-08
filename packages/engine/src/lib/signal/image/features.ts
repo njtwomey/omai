@@ -4,7 +4,7 @@
  * oriented gradients (HOG), and the straight-line and circular Hough transforms that vote for shapes.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { fromStorage, primalOf, type Tensor, type TensorLike } from '../../tensor/index.ts'
 import { type Plane, planeOf } from './_plane.ts'
 import type { BorderOptions } from './correlate.ts'
@@ -52,7 +52,7 @@ function ndSobel(p: Plane, axis: 0 | 1, mode: 'constant' | 'reflect' | 'nearest'
  * @concept structure-tensor
  * @example
  * ```ts
- * import { image } from 'mdml-engine/signal'
+ * import { image } from 'omai-engine/signal'
  * image.structureTensor([[0, 0, 1, 1], [0, 0, 1, 1], [0, 0, 1, 1]]).length // => 3
  * ```
  */
@@ -60,7 +60,7 @@ export function structureTensor(x: TensorLike, sigma = 1, options: BorderOptions
   const p = planeOf(x, 'structureTensor')
   const mode = options.mode ?? 'constant'
   if (mode !== 'constant' && mode !== 'reflect' && mode !== 'nearest')
-    throw new MdmlError('value', 'structureTensor: mode must be constant, reflect or nearest')
+    throw new OmaiError('value', 'structureTensor: mode must be constant, reflect or nearest')
   const cval = options.cval ?? 0
   const dr = ndSobel(p, 0, mode, cval)
   const dc = ndSobel(p, 1, mode, cval)
@@ -85,7 +85,7 @@ export function structureTensor(x: TensorLike, sigma = 1, options: BorderOptions
  * @concept corner-detection
  * @example
  * ```ts
- * import { image } from 'mdml-engine/signal'
+ * import { image } from 'omai-engine/signal'
  * image.cornerHarris(Array.from({ length: 6 }, (_, i) => Array.from({ length: 6 }, (_, j) => (i < 3 && j < 3 ? 1 : 0)))).shape // => [6, 6]
  * ```
  */
@@ -117,7 +117,7 @@ export function cornerHarris(
  * @concept corner-detection
  * @example
  * ```ts
- * import { image } from 'mdml-engine/signal'
+ * import { image } from 'omai-engine/signal'
  * image.cornerShiTomasi([[0, 0, 0], [0, 1, 0], [0, 0, 0]]).shape // => [3, 3]
  * ```
  */
@@ -157,14 +157,14 @@ export interface PeakOptions {
  * @concept peak-detection
  * @example
  * ```ts
- * import { image } from 'mdml-engine/signal'
+ * import { image } from 'omai-engine/signal'
  * image.peakLocalMax([[0, 0, 0, 0, 0], [0, 3, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 5, 0], [0, 0, 0, 0, 0]]) // => [[3, 3], [1, 1]]
  * ```
  */
 export function peakLocalMax(x: TensorLike, options: PeakOptions = {}): [number, number][] {
   const p = planeOf(x, 'peakLocalMax')
   const minDistance = options.minDistance ?? 1
-  if (minDistance < 1) throw new MdmlError('value', 'peakLocalMax: minDistance must be at least 1')
+  if (minDistance < 1) throw new OmaiError('value', 'peakLocalMax: minDistance must be at least 1')
   let lo = Number.POSITIVE_INFINITY
   let hi = Number.NEGATIVE_INFINITY
   for (const v of p.data) {
@@ -258,8 +258,8 @@ export interface CannyStages {
  * @concept edge-detection
  * @example
  * ```ts
- * import { image } from 'mdml-engine/signal'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { image } from 'omai-engine/signal'
+ * import { toFlat } from 'omai-engine/tensor'
  * const x = Array.from({ length: 12 }, () => Array.from({ length: 12 }, (_, j) => (j < 6 ? 0 : 1)))
  * const s = image.cannyStages(x)
  * toFlat(s.thresholded).some((v) => v === 2) // => true
@@ -283,7 +283,7 @@ export function cannyStages(x: TensorLike, options: CannyOptions = {}): CannySta
   const mag = Float64Array.from(isob, (v, i) => Math.sqrt(v * v + (jsob[i] ?? 0) ** 2))
   let low = options.lowThreshold ?? 0.1
   let high = options.highThreshold ?? 0.2
-  if (high < low) throw new MdmlError('value', 'canny: the low threshold exceeds the high threshold')
+  if (high < low) throw new OmaiError('value', 'canny: the low threshold exceeds the high threshold')
   if (options.useQuantiles === true) {
     const sorted = Float64Array.from(mag).sort()
     low = quantile(sorted, low)
@@ -391,8 +391,8 @@ export function cannyStages(x: TensorLike, options: CannyOptions = {}): CannySta
  * @index function Canny edge detector.
  * @example
  * ```ts
- * import { image } from 'mdml-engine/signal'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { image } from 'omai-engine/signal'
+ * import { toFlat } from 'omai-engine/tensor'
  * const x = Array.from({ length: 12 }, () => Array.from({ length: 12 }, (_, j) => (j < 6 ? 0 : 1)))
  * toFlat(image.canny(x)).reduce((a, b) => a + b, 0) > 0 // => true
  * ```
@@ -414,8 +414,8 @@ export function canny(x: TensorLike, options: CannyOptions = {}): Tensor {
  * @concept local-binary-patterns
  * @example
  * ```ts
- * import { image } from 'mdml-engine/signal'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { image } from 'omai-engine/signal'
+ * import { toArray } from 'omai-engine/tensor'
  * (toArray(image.localBinaryPattern([[5, 5, 5], [5, 1, 5], [5, 5, 5]], 8, 1)) as number[][])[1]?.[1] // => 255
  * ```
  */
@@ -494,7 +494,7 @@ export interface HogOptions {
  * @concept histogram-of-oriented-gradients
  * @example
  * ```ts
- * import { image } from 'mdml-engine/signal'
+ * import { image } from 'omai-engine/signal'
  * const x = Array.from({ length: 16 }, (_, i) => Array.from({ length: 16 }, (_, j) => Math.sin(i / 2) + j / 8))
  * image.hog(x, { pixelsPerCell: [4, 4], cellsPerBlock: [2, 2] }).shape // => [324]
  * ```
@@ -530,7 +530,7 @@ export function hog(x: TensorLike, options: HogOptions = {}): Tensor {
     }
   const nbr = ncr - br + 1
   const nbc = ncc - bc + 1
-  if (nbr <= 0 || nbc <= 0) throw new MdmlError('value', 'hog: the image is smaller than a block')
+  if (nbr <= 0 || nbc <= 0) throw new OmaiError('value', 'hog: the image is smaller than a block')
   const method = options.blockNorm ?? 'L2-Hys'
   const eps = 1e-5
   const blockLen = br * bc * nb
@@ -573,7 +573,7 @@ export function hog(x: TensorLike, options: HogOptions = {}): Tensor {
  * @concept hough-transform
  * @example
  * ```ts
- * import { image } from 'mdml-engine/signal'
+ * import { image } from 'omai-engine/signal'
  * const x = Array.from({ length: 5 }, (_, i) => Array.from({ length: 5 }, (_, j) => (j === 2 ? 1 : 0)))
  * image.houghLine(x).accumulator.shape // => [17, 180]
  * ```
@@ -637,7 +637,7 @@ function circlePerimeter(radius: number): [number[], number[]] {
  * @concept hough-transform
  * @example
  * ```ts
- * import { image } from 'mdml-engine/signal'
+ * import { image } from 'omai-engine/signal'
  * image.houghCircle([[0, 1, 0], [1, 0, 1], [0, 1, 0]], [1]).shape // => [1, 3, 3]
  * ```
  */

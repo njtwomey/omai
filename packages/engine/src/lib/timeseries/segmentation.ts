@@ -4,7 +4,7 @@
  * from its minima; FLOSS does the same on a stream, one value at a time, as a traced algorithm.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import { exclusionZone, mass, rollingIsFinite, seriesOf, subsequenceStats, zNormalize } from '../signal/index.ts'
 import type { TensorLike } from '../tensor/index.ts'
 import { type Algorithm, stateFromJson, stateToJson } from '../trace/index.ts'
@@ -28,7 +28,7 @@ import type { MatrixProfile } from './matrix-profile.ts'
  * @concept regime-segmentation
  * @example
  * ```ts
- * import { arcCounts } from 'mdml-engine/timeseries'
+ * import { arcCounts } from 'omai-engine/timeseries'
  * Array.from(arcCounts([2, 3, 0, 1])) // => [2, 4, 2, 0]
  * ```
  */
@@ -59,7 +59,7 @@ export function arcCounts(I: ArrayLike<number>): Int32Array {
  * @concept regime-segmentation
  * @example
  * ```ts
- * import { idealArcCurve } from 'mdml-engine/timeseries'
+ * import { idealArcCurve } from 'omai-engine/timeseries'
  * Array.from(idealArcCurve(4)) // => [1.5, 2, 1.5, 0]
  * ```
  */
@@ -96,7 +96,7 @@ export interface ArcCurveOptions {
  * @concept regime-segmentation
  * @example
  * ```ts
- * import { correctedArcCurve } from 'mdml-engine/timeseries'
+ * import { correctedArcCurve } from 'omai-engine/timeseries'
  * correctedArcCurve([1, 0, 3, 2, 5, 4, 7, 6], 1, { exclusionFactor: 1 })[3] // => 0
  * ```
  */
@@ -105,7 +105,7 @@ export function correctedArcCurve(I: ArrayLike<number>, L: number, options: ArcC
   const ac = arcCounts(I)
   const iac =
     options.iac === undefined ? idealArcCurve(k, options.bidirectional ?? true) : Float64Array.from(options.iac)
-  if (iac.length !== k) throw new MdmlError('shape', 'correctedArcCurve: the idealised curve has the wrong length')
+  if (iac.length !== k) throw new OmaiError('shape', 'correctedArcCurve: the idealised curve has the wrong length')
   const cac = Float64Array.from(ac, (a, i) => Math.min(1, a / ((iac[i] ?? 0) === 0 ? 1e-10 : (iac[i] ?? 0))))
   const factor = options.exclusionFactor ?? 5
   if (factor > 0) {
@@ -128,7 +128,7 @@ export function correctedArcCurve(I: ArrayLike<number>, L: number, options: ArcC
  * @concept regime-segmentation
  * @example
  * ```ts
- * import { regimeLocations } from 'mdml-engine/timeseries'
+ * import { regimeLocations } from 'omai-engine/timeseries'
  * regimeLocations([1, 0.9, 0.2, 0.8, 1, 0.5, 1], 3, 1, 1) // => [2, 5]
  * ```
  */
@@ -156,7 +156,7 @@ export function regimeLocations(cac: ArrayLike<number>, regimes: number, L: numb
  * @concept regime-segmentation
  * @example
  * ```ts
- * import { fluss } from 'mdml-engine/timeseries'
+ * import { fluss } from 'omai-engine/timeseries'
  * fluss([1, 0, 3, 2, 5, 4, 7, 6], 1, 2, { exclusionFactor: 1 }).regimes // => [1]
  * ```
  */
@@ -198,7 +198,7 @@ export interface FlossState {
  * @concept regime-segmentation
  * @example
  * ```ts
- * import { flossInit, stump } from 'mdml-engine/timeseries'
+ * import { flossInit, stump } from 'omai-engine/timeseries'
  * const t = Array.from({ length: 40 }, (_, i) => Math.sin(i / 2) + (i > 20 ? Math.sin(i * 1.3) : 0))
  * flossInit(stump(t, 5), t, 5).P.length // => 36
  * ```
@@ -260,7 +260,7 @@ export function flossInit(
  * @concept regime-segmentation
  * @example
  * ```ts
- * import { flossInit, flossUpdate, stump } from 'mdml-engine/timeseries'
+ * import { flossInit, flossUpdate, stump } from 'omai-engine/timeseries'
  * const t = Array.from({ length: 40 }, (_, i) => Math.sin(i / 2))
  * flossUpdate(flossInit(stump(t, 5), t, 5, { exclusionFactor: 1 }), 0.5).cac.length // => 36
  * ```
@@ -311,7 +311,7 @@ export function flossUpdate(state: FlossState, value: number): FlossState {
  * @concept regime-segmentation
  * @example
  * ```ts
- * import { flossAlgorithm, stump } from 'mdml-engine/timeseries'
+ * import { flossAlgorithm, stump } from 'omai-engine/timeseries'
  * const t = Array.from({ length: 40 }, (_, i) => Math.sin(i / 2))
  * flossAlgorithm(stump(t, 5), t, 5, [1, 2]).name // => 'floss'
  * ```

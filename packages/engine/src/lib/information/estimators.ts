@@ -5,7 +5,7 @@
  * bounds computed from a critic's scores.
  */
 
-import { logSumExpOf, MdmlError, meanOf } from '../base/index.ts'
+import { logSumExpOf, meanOf, OmaiError } from '../base/index.ts'
 import { cdist } from '../numerics/geometry/index.ts'
 import { cholesky, choleskyLogdet, inv } from '../numerics/linalg/index.ts'
 import {
@@ -57,7 +57,7 @@ function plugIn(codes: { codes: Int32Array; m: number }, correction: PlugInOptio
  * @index function Entropy and mutual information estimated from samples.
  * @example
  * ```ts
- * import { plugInEntropy } from 'mdml-engine/information'
+ * import { plugInEntropy } from 'omai-engine/information'
  * plugInEntropy(['a', 'b', 'a', 'b'], { base: 2 }) // => 1
  * plugInEntropy(['a', 'b', 'a', 'b'], { base: 2, correction: 'millerMadow' }) // => 1.1803368801111204
  * ```
@@ -77,14 +77,14 @@ export function plugInEntropy(samples: Labels, options: PlugInOptions = {}): num
  * @concept mutual-information
  * @example
  * ```ts
- * import { plugInMutualInformation } from 'mdml-engine/information'
+ * import { plugInMutualInformation } from 'omai-engine/information'
  * plugInMutualInformation([0, 0, 1, 1], ['a', 'a', 'b', 'b'], { base: 2 }) // => 1
  * ```
  */
 export function plugInMutualInformation(x: Labels, y: Labels, options: PlugInOptions = {}): number {
   const a = labelCodes(x, 'plugInMutualInformation')
   const b = labelCodes(y, 'plugInMutualInformation')
-  if (a.codes.length !== b.codes.length) throw new MdmlError('shape', 'plugInMutualInformation: lengths differ')
+  if (a.codes.length !== b.codes.length) throw new OmaiError('shape', 'plugInMutualInformation: lengths differ')
   const c = options.correction
   return (plugIn(a, c) + plugIn(b, c) - plugIn(jointCodes(a, b), c)) / logOfBase(options.base)
 }
@@ -110,8 +110,8 @@ export interface KernelEstimatorOptions {
  * @concept entropy-estimation
  * @example
  * ```ts
- * import { kdeEntropy } from 'mdml-engine/information'
- * import { key, normal } from 'mdml-engine/random'
+ * import { kdeEntropy } from 'omai-engine/information'
+ * import { key, normal } from 'omai-engine/random'
  * // Standard normal samples: the entropy is log(2 pi e) / 2 = 1.4189 nats.
  * Math.abs(kdeEntropy(normal(key(0), [400])) - 1.4189) < 0.1 // => true
  * ```
@@ -119,7 +119,7 @@ export interface KernelEstimatorOptions {
 export function kdeEntropy(x: TensorLike, options: KernelEstimatorOptions = {}): number {
   const p = points(x, 'kdeEntropy')
   const loo = options.leaveOneOut === true
-  if (p.n < 2 + (loo ? 1 : 0)) throw new MdmlError('value', 'kdeEntropy: needs more samples')
+  if (p.n < 2 + (loo ? 1 : 0)) throw new OmaiError('value', 'kdeEntropy: needs more samples')
   const bw = options.bandwidth ?? 'scott'
   const factor =
     typeof bw === 'number' ? bw : bw === 'scott' ? p.n ** (-1 / (p.d + 4)) : ((p.n * (p.d + 2)) / 4) ** (-1 / (p.d + 4))
@@ -147,7 +147,7 @@ export function kdeEntropy(x: TensorLike, options: KernelEstimatorOptions = {}):
  * @concept mutual-information
  * @example
  * ```ts
- * import { kdeMutualInformation } from 'mdml-engine/information'
+ * import { kdeMutualInformation } from 'omai-engine/information'
  * const x = Array.from({ length: 50 }, (_, i) => Math.sin(i))
  * kdeMutualInformation(x, x.map((v, i) => v + 0.05 * Math.cos(3 * i))) > 1 // => true
  * ```
@@ -189,7 +189,7 @@ export interface TransferEntropyOptions {
  * @concept transfer-entropy
  * @example
  * ```ts
- * import { transferEntropy } from 'mdml-engine/information'
+ * import { transferEntropy } from 'omai-engine/information'
  * // The target copies the source one step later: one bit flows from source to target, none back.
  * const y = [0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 0, 0, 1, 1, 0, 1]
  * const x = [0, ...y.slice(0, -1)]
@@ -200,12 +200,12 @@ export interface TransferEntropyOptions {
 export function transferEntropy(source: TensorLike, target: TensorLike, options: TransferEntropyOptions = {}): number {
   const ys = toFlat(float(source))
   const xs = toFlat(float(target))
-  if (ys.length !== xs.length) throw new MdmlError('shape', 'transferEntropy: series differ in length')
+  if (ys.length !== xs.length) throw new OmaiError('shape', 'transferEntropy: series differ in length')
   const k = options.history ?? 1
   const l = options.sourceHistory ?? 1
   const start = Math.max(k, l) - 1
   const rows = xs.length - 1 - start
-  if (rows < 2) throw new MdmlError('value', 'transferEntropy: series too short for the histories')
+  if (rows < 2) throw new OmaiError('value', 'transferEntropy: series too short for the histories')
   const future: number[] = []
   const past: number[][] = []
   const sourcePast: number[][] = []
@@ -239,7 +239,7 @@ function scoreMatrix(scores: TensorLike, name: string): { s: Value; n: number } 
   const s = float(scores)
   const n = s.shape[0] ?? 0
   if (s.shape.length !== 2 || s.shape[1] !== n || n < 2)
-    throw new MdmlError('shape', `${name}: scores must be a square [n, n] matrix with n >= 2`)
+    throw new OmaiError('shape', `${name}: scores must be a square [n, n] matrix with n >= 2`)
   return { s, n }
 }
 
@@ -253,8 +253,8 @@ function scoreMatrix(scores: TensorLike, name: string): { s: Value; n: number } 
  * @concept variational-mutual-information
  * @example
  * ```ts
- * import { infoNce } from 'mdml-engine/information'
- * import { item } from 'mdml-engine/tensor'
+ * import { infoNce } from 'omai-engine/information'
+ * import { item } from 'omai-engine/tensor'
  * // A critic that cannot tell pairs apart gives 0; a perfect one approaches log n.
  * Math.abs(item(infoNce([[1, 1], [1, 1]]))) < 1e-12 // => true
  * item(infoNce([[50, 0], [0, 50]])) // => 0.6931471805599453
@@ -275,8 +275,8 @@ export function infoNce(scores: TensorLike): Value {
  * @concept variational-mutual-information
  * @example
  * ```ts
- * import { nwjBound } from 'mdml-engine/information'
- * import { item } from 'mdml-engine/tensor'
+ * import { nwjBound } from 'omai-engine/information'
+ * import { item } from 'omai-engine/tensor'
  * item(nwjBound([[1, 1], [1, 1]])) // => 0
  * ```
  */
@@ -297,8 +297,8 @@ export function nwjBound(scores: TensorLike): Value {
  * @concept variational-mutual-information
  * @example
  * ```ts
- * import { mineBound } from 'mdml-engine/information'
- * import { item } from 'mdml-engine/tensor'
+ * import { mineBound } from 'omai-engine/information'
+ * import { item } from 'omai-engine/tensor'
  * item(mineBound([[3, 1], [1, 3]])) // => 2
  * ```
  */

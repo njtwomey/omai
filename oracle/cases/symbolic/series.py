@@ -7,9 +7,9 @@ from typing import Any, cast
 
 import numpy as np
 import sympy as sp
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray
-from mdml_oracle.symbolic import SYMBOLS, expr_case, parse
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray
+from omai_oracle.symbolic import SYMBOLS, expr_case, parse
 
 REFERENCE: dict[str, str] = {"sympy": sp.__version__, "numpy": np.__version__}
 

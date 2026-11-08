@@ -3,7 +3,7 @@
  * joint effect as a heatmap.
  */
 
-import type { Dependence } from 'mdml-engine/exposition'
+import type { Dependence } from 'omai-engine/exposition'
 import { type ReactElement, useCallback, useMemo } from 'react'
 import type { Figure } from '../../figure/figure.ts'
 import { dependenceSurfaceView, dependenceView } from '../../views/dependence.ts'

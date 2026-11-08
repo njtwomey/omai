@@ -6,7 +6,7 @@
  * Logit and tuned lenses, activation and path patching, attribution patching and direct logit attribution are all
  * functions of this one object. Hooks are ordinary tensor code, so a run can be differentiated with `grad`.
  */
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import {
   applyRotary,
   attention,
@@ -92,7 +92,7 @@ export interface ResidualModel {
  * @returns `layer<layer>.head<head>`.
  * @example
  * ```ts
- * import { headSite } from 'mdml-engine/explain'
+ * import { headSite } from 'omai-engine/explain'
  * headSite(1, 0) // => 'layer1.head0'
  * ```
  */
@@ -103,7 +103,7 @@ export function headSite(layer: number, head: number): string {
 function tokensTensor(tokens: TokenRows): Value {
   const t = tokens[0]?.length ?? 0
   if (tokens.length === 0 || t === 0 || tokens.some((r) => r.length !== t))
-    throw new MdmlError('shape', 'residualModel: give equal-length, non-empty token rows')
+    throw new OmaiError('shape', 'residualModel: give equal-length, non-empty token rows')
   return fromStorage(Int32Array.from(tokens.flat()), [tokens.length, t], 'int32')
 }
 
@@ -115,13 +115,13 @@ function tokensTensor(tokens: TokenRows): Value {
  * @param lm - A decoder-only language model with pre-norm blocks and no cross-attention.
  * @param params - Parameters to run with (default the model's own); pass traced parameters to differentiate through the run.
  * @returns The opened model.
- * @throws MdmlError with code `value` for a post-norm or cross-attending block.
+ * @throws OmaiError with code `value` for a post-norm or cross-attending block.
  * @concept mechanistic-interpretability
  * @example
  * ```ts
- * import { residualModel } from 'mdml-engine/explain'
- * import { blocks } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
+ * import { residualModel } from 'omai-engine/explain'
+ * import { blocks } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
  * const lm = new blocks.TransformerLM(7, 8, 2, 2, { key: key(0) })
  * const m = residualModel(lm)
  * [m.numLayers, m.sites.length, m.run([[1, 2, 3]]).logits.shape] // => [2, 13, [1, 3, 7]]
@@ -132,7 +132,7 @@ export function residualModel(lm: blocks.TransformerLM, params: Params = lm.para
   const layers = stack.blockList
   for (const b of layers) {
     if (!b.preNorm || b.crossAttention)
-      throw new MdmlError('value', 'residualModel: only pre-norm blocks without cross-attention are opened')
+      throw new OmaiError('value', 'residualModel: only pre-norm blocks without cross-attention are opened')
   }
   const embedWeight = (params['embed'] as Params)['weight'] as Value
   const stackParams = params['stack'] as Params
@@ -276,7 +276,7 @@ function headAttention(block: blocks.TransformerBlock): HeadAttention {
  * @returns The rows.
  * @example
  * ```ts
- * import { tokenRows } from 'mdml-engine/explain'
+ * import { tokenRows } from 'omai-engine/explain'
  * tokenRows([[1, 2], [3, 4]]) // => [[1, 2], [3, 4]]
  * ```
  */

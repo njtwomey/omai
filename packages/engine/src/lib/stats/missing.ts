@@ -4,7 +4,7 @@
  * using Gaussian EM estimation of the pooled mean and covariance across arbitrary missingness patterns.
  */
 
-import { MdmlError, type TestResult } from '../base/index.ts'
+import { OmaiError, type TestResult } from '../base/index.ts'
 import type { Tensor, TensorLike } from '../tensor/index.ts'
 import { invSpdOrPinv } from './_linear.ts'
 import { chi2Sf, mat, rowsOf, vec } from './_util.ts'
@@ -64,12 +64,12 @@ function readMatrixAllowingNaN(
 ): { readonly rows: number; readonly cols: number; readonly data: Float64Array } {
   const { rows, cols, data } = rowsOf(name, x)
   if (rows < 1 || cols < 1) {
-    throw new MdmlError('shape', `${name}: expected a non-empty 2-D matrix, got [${rows}, ${cols}]`)
+    throw new OmaiError('shape', `${name}: expected a non-empty 2-D matrix, got [${rows}, ${cols}]`)
   }
   for (let i = 0; i < data.length; i++) {
     const v = data[i] ?? Number.NaN
     if (v === Number.POSITIVE_INFINITY || v === Number.NEGATIVE_INFINITY) {
-      throw new MdmlError('value', `${name}: infinite value at flat index ${i} (use NaN for missing values)`)
+      throw new OmaiError('value', `${name}: infinite value at flat index ${i} (use NaN for missing values)`)
     }
   }
   return { rows, cols, data }
@@ -80,10 +80,10 @@ function readMatrixAllowingNaN(
  *
  * @param x - 2-D matrix of shape `[n, p]` where `NaN` indicates a missing entry.
  * @returns Column, row, and pattern-level missingness diagnostics.
- * @throws MdmlError with code `shape` if `x` is not a non-empty 2-D matrix, or `value` if `x` contains `±Infinity`.
+ * @throws OmaiError with code `shape` if `x` is not a non-empty 2-D matrix, or `value` if `x` contains `±Infinity`.
  * @example
  * ```ts
- * import { missingnessProfile } from 'mdml-engine/stats'
+ * import { missingnessProfile } from 'omai-engine/stats'
  * const prof = missingnessProfile([
  *   [1, 2],
  *   [3, Number.NaN],
@@ -254,10 +254,10 @@ export interface LittleMcarOptions {
  * @param x - 2-D matrix of shape `[n, p]` ($n \ge 2, p \ge 1$) with `NaN` for missing values.
  * @param options - `maxIter` (default `200`) and `tol` (default `1e-8`).
  * @returns `LittleMcarResult` (`TestResult` plus per-pattern $d_j^2$, `pooledMean`, `pooledCovariance`, and `emIterations`).
- * @throws MdmlError with code `shape` or `value` if a column is completely missing or has zero variance.
+ * @throws OmaiError with code `shape` or `value` if a column is completely missing or has zero variance.
  * @example
  * ```ts
- * import { littleMcarTest } from 'mdml-engine/stats'
+ * import { littleMcarTest } from 'omai-engine/stats'
  * const data = [
  *   [1.0, 2.1],
  *   [2.0, 3.9],
@@ -274,7 +274,7 @@ export interface LittleMcarOptions {
 export function littleMcarTest(x: TensorLike, options: LittleMcarOptions = {}): LittleMcarResult {
   const { rows, cols, data } = readMatrixAllowingNaN('littleMcarTest', x)
   if (rows < 2) {
-    throw new MdmlError('value', `littleMcarTest: need at least 2 rows, got ${rows}`)
+    throw new OmaiError('value', `littleMcarTest: need at least 2 rows, got ${rows}`)
   }
   const maxIter = options.maxIter ?? 200
   const tol = options.tol ?? 1e-8
@@ -283,7 +283,7 @@ export function littleMcarTest(x: TensorLike, options: LittleMcarOptions = {}): 
   // Keep only patterns that observe at least one variable.
   const activePatterns = prof.patterns.filter((p) => p.observedColumns.length > 0)
   if (activePatterns.length === 0) {
-    throw new MdmlError('value', 'littleMcarTest: all entries in the dataset are NaN')
+    throw new OmaiError('value', 'littleMcarTest: all entries in the dataset are NaN')
   }
 
   // Initialize mu and Sigma from column-wise available cases.
@@ -301,7 +301,7 @@ export function littleMcarTest(x: TensorLike, options: LittleMcarOptions = {}): 
   for (let j = 0; j < cols; j++) {
     const c = colCounts[j] ?? 0
     if (c < 1) {
-      throw new MdmlError('value', `littleMcarTest: column ${j} has no observed values`)
+      throw new OmaiError('value', `littleMcarTest: column ${j} has no observed values`)
     }
     mu[j] = (mu[j] ?? 0) / c
   }

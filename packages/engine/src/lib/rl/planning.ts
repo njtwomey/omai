@@ -5,7 +5,7 @@
  * path integral control (MPPI).
  */
 
-import { argmaxOf, type Json, MdmlError } from '../base/index.ts'
+import { argmaxOf, type Json, OmaiError } from '../base/index.ts'
 import { foldIn, type Key, key as makeKey, normal, uniform } from '../random/index.ts'
 import type { Space } from '../space/index.ts'
 import {
@@ -27,7 +27,7 @@ const u1 = (k: Key): number => uniform(k, []).data[0] ?? 0
 /** The actions of a discrete action space, `start .. start + n - 1`. */
 function discreteActions(space: Space, name: string): number[] {
   if (space.kind !== 'discrete')
-    throw new MdmlError('value', `${name}: needs a discrete action space or explicit actions`)
+    throw new OmaiError('value', `${name}: needs a discrete action space or explicit actions`)
   return Array.from({ length: space.n }, (_, i) => (space.start ?? 0) + i)
 }
 
@@ -93,8 +93,8 @@ export interface MctsResult<A> {
  * @concept monte-carlo-tree-search
  * @example
  * ```ts
- * import { mctsAlgorithm } from 'mdml-engine/rl'
- * import { cartPole } from 'mdml-engine/environments'
+ * import { mctsAlgorithm } from 'omai-engine/rl'
+ * import { cartPole } from 'omai-engine/environments'
  * mctsAlgorithm(cartPole.create(), [0, 0, 0, 0]).name // => 'mcts'
  * ```
  */
@@ -220,8 +220,8 @@ function summarise<S, A>(root: Node<S>, actions: readonly A[], simulations: numb
  * @concept monte-carlo-tree-search
  * @example
  * ```ts
- * import { mcts } from 'mdml-engine/rl'
- * import { cartPole } from 'mdml-engine/environments'
+ * import { mcts } from 'omai-engine/rl'
+ * import { cartPole } from 'omai-engine/environments'
  * mcts(cartPole.create(), [0, 0, 0.12, 0], { simulations: 300, depth: 25, c: 5 }).action // => 1
  * ```
  */
@@ -287,9 +287,9 @@ export interface GameMctsOptions<S> {
  * @concept monte-carlo-tree-search
  * @example
  * ```ts
- * import { gameMcts } from 'mdml-engine/rl'
- * import { nim } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { gameMcts } from 'omai-engine/rl'
+ * import { nim } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * const env = nim.create({ heaps: [2] })
  * gameMcts(env, env.reset(key(0)), { simulations: 100 }).action // => 1
  * ```
@@ -372,7 +372,7 @@ export function gameMcts<S, O>(
     return g
   }
   const root = make(state)
-  if (root.player === undefined) throw new MdmlError('value', 'gameMcts: the game is over')
+  if (root.player === undefined) throw new OmaiError('value', 'gameMcts: the game is over')
   const sims = options.simulations ?? 200
   for (let i = 0; i < sims; i++) simulate(root, foldIn(k0, i))
   const best = argmaxOf(root.n)
@@ -446,8 +446,8 @@ export interface RolloutPlannerState {
  * @concept planning
  * @example
  * ```ts
- * import { rolloutPlannerAlgorithm } from 'mdml-engine/rl'
- * import { cartPole } from 'mdml-engine/environments'
+ * import { rolloutPlannerAlgorithm } from 'omai-engine/rl'
+ * import { cartPole } from 'omai-engine/environments'
  * rolloutPlannerAlgorithm(cartPole.create(), [0, 0, 0.1, 0], { rollouts: 8 }).name // => 'rolloutPlanner'
  * ```
  */
@@ -521,8 +521,8 @@ export function rolloutPlannerAlgorithm<S, O, A>(
  * @concept planning
  * @example
  * ```ts
- * import { rolloutPlanner } from 'mdml-engine/rl'
- * import { cartPole } from 'mdml-engine/environments'
+ * import { rolloutPlanner } from 'omai-engine/rl'
+ * import { cartPole } from 'omai-engine/environments'
  * rolloutPlanner(cartPole.create(), [0, 0, 0.1, 0], { rollouts: 8, horizon: 30 }).action // => 1
  * ```
  */
@@ -541,7 +541,7 @@ export function rolloutPlanner<S, O, A>(
 // ------------------------------------------------------------------------------------------------ action sequences
 
 function boxBounds(space: Space): { readonly low: number[]; readonly high: number[]; readonly dim: number } {
-  if (space.kind !== 'box') throw new MdmlError('value', 'planner: needs a box action space')
+  if (space.kind !== 'box') throw new OmaiError('value', 'planner: needs a box action space')
   const dim = space.shape.reduce((a, b) => a * b, 1)
   const at = (b: number | readonly number[], i: number): number => (typeof b === 'number' ? b : (b[i] ?? 0))
   return {
@@ -609,8 +609,8 @@ export interface CemPlannerState {
  * @concept model-predictive-control
  * @example
  * ```ts
- * import { cemPlannerAlgorithm } from 'mdml-engine/rl'
- * import { pendulum } from 'mdml-engine/environments'
+ * import { cemPlannerAlgorithm } from 'omai-engine/rl'
+ * import { pendulum } from 'omai-engine/environments'
  * cemPlannerAlgorithm(pendulum.create(), [0, 0]).name // => 'cem'
  * ```
  */
@@ -709,8 +709,8 @@ export interface PlanResult {
  * @concept model-predictive-control
  * @example
  * ```ts
- * import { cem } from 'mdml-engine/rl'
- * import { mountainCarContinuous } from 'mdml-engine/environments'
+ * import { cem } from 'omai-engine/rl'
+ * import { mountainCarContinuous } from 'omai-engine/environments'
  * cem(mountainCarContinuous.create(), [-0.5, 0], { horizon: 5, population: 16 }).plan.length // => 5
  * ```
  */
@@ -752,8 +752,8 @@ export function cem<S, O>(
  * @concept model-predictive-control
  * @example
  * ```ts
- * import { mppi } from 'mdml-engine/rl'
- * import { pendulum } from 'mdml-engine/environments'
+ * import { mppi } from 'omai-engine/rl'
+ * import { pendulum } from 'omai-engine/environments'
  * mppi(pendulum.create(), [Math.PI, 0], { horizon: 4, population: 8 }).action.length // => 1
  * ```
  */

@@ -4,7 +4,7 @@
  * and a glass sphere, as in smallpt, or two white blocks, as in the original photographs.
  */
 
-import { MdmlError, type Vec3 } from '../base/index.ts'
+import { OmaiError, type Vec3 } from '../base/index.ts'
 import { type PinholeCamera, pinholeCamera } from './camera.ts'
 import { box, sphere } from './intersect.ts'
 import { areaLight } from './lights.ts'
@@ -33,11 +33,11 @@ const LAMP = 0.25
  *
  * @param options - The contents, the lamp's radiance and the light samples.
  * @returns The scene and its camera.
- * @throws MdmlError with code `value` for a non-positive lamp radiance.
+ * @throws OmaiError with code `value` for a non-positive lamp radiance.
  * @concept path-tracing
  * @example
  * ```ts
- * import { cornellBox } from 'mdml-engine/graphics'
+ * import { cornellBox } from 'omai-engine/graphics'
  * const { scene, camera } = cornellBox()
  * [scene.objects.length, scene.lights.length, camera.eye] // => [8, 1, [0, 1, 3.4]]
  * ```
@@ -48,7 +48,7 @@ export function cornellBox(options: CornellBoxOptions = {}): {
 } {
   const lamp = options.lamp ?? 12
   if (!(lamp > 0 && Number.isFinite(lamp)))
-    throw new MdmlError('value', 'cornellBox: the lamp radiance must be positive')
+    throw new OmaiError('value', 'cornellBox: the lamp radiance must be positive')
   const white = material({ albedo: [0.75, 0.75, 0.75] })
   const red = material({ albedo: [0.75, 0.2, 0.2] })
   const green = material({ albedo: [0.2, 0.75, 0.2] })

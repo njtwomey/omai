@@ -40,11 +40,11 @@ export interface AnalyticObjective {
  * @param gradient - The gradient.
  * @param point - The point, a vector.
  * @returns The Hessian, an `[m, m]` tensor.
- * @throws MdmlError with code `shape` unless `point` has rank 1, and `not-differentiable` for a traced one.
+ * @throws OmaiError with code `shape` unless `point` has rank 1, and `not-differentiable` for a traced one.
  * @example
  * ```ts
- * import { finiteDifferenceHessian } from 'mdml-engine/optim'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { finiteDifferenceHessian } from 'omai-engine/optim'
+ * import { toFlat } from 'omai-engine/tensor'
  * const h = finiteDifferenceHessian((x) => Float64Array.from([2 * x[0], 6 * x[1]]), [1, 1])
  * toFlat(h).map((v) => Math.round(v)) // => [2, 0, 0, 6]
  * ```
@@ -88,7 +88,7 @@ function hessianByDifferences(gradient: (x: Float64Array) => ArrayLike<number>, 
  * @returns The objective, a scalar function of a vector.
  * @example
  * ```ts
- * import { analyticObjective, flatObjective } from 'mdml-engine/optim'
+ * import { analyticObjective, flatObjective } from 'omai-engine/optim'
  * const f = analyticObjective({
  *   value: (x) => x[0] ** 2 + 3 * x[1] ** 2,
  *   gradient: (x) => [2 * x[0], 6 * x[1]],

@@ -1,4 +1,4 @@
-import { imageSteps } from 'mdml-engine/exposition'
+import { imageSteps } from 'omai-engine/exposition'
 import { describe, expect, it } from 'vitest'
 import { imageFrames } from './images.ts'
 import { stillOf, viewFor } from './registry.ts'

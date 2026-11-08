@@ -4,13 +4,13 @@
 
 Time-series models and mining, statsmodels and stumpy style: differencing and sample correlation functions, ARMA and ARIMA with their theory, estimators and forecasts, ETS exponential smoothing, classical, STL and MSTL decomposition, state-space forms for filtering, and the matrix-profile family (STUMP, STOMP, STAMP, SCRIMP++, STUMPI, motifs, discords, chains, FLUSS and FLOSS, MPdist, snippets, pan and multidimensional profiles) over the kernels of `signal`. Online detectors (CUSUM, Page-Hinkley), GARCH volatility, vector autoregression and hierarchical forecast reconciliation complete it. Iterative routines are traced algorithms whose state serialises; fitted models are plain data.
 
-- function `arma-fit.ts` (file): AR, MA and ARMA estimators: Yule-Walker, Burg, innovations. `src/lib/timeseries/arma-fit.ts:1` `mdml-engine/timeseries`
-- function `matrix-profile.ts` (file): Exact matrix profile and anytime relatives (STUMP, STOMP, STAMP). `src/lib/timeseries/matrix-profile.ts:1` `mdml-engine/timeseries`
+- function `arma-fit.ts` (file): AR, MA and ARMA estimators: Yule-Walker, Burg, innovations. `src/lib/timeseries/arma-fit.ts:1` `omai-engine/timeseries`
+- function `matrix-profile.ts` (file): Exact matrix profile and anytime relatives (STUMP, STOMP, STAMP). `src/lib/timeseries/matrix-profile.ts:1` `omai-engine/timeseries`
 
-- function `arimaFit`: Fit ARIMA or seasonal ARIMA by exact Gaussian likelihood. `src/lib/timeseries/arima.ts:261` `mdml-engine/timeseries`
-- function `etsFit`: Fit exponential smoothing (ETS) models. `src/lib/timeseries/smoothing.ts:519` `mdml-engine/timeseries`
-- function `stl`: STL seasonal-trend decomposition; mstl handles several seasons. `src/lib/timeseries/stl.ts:382` `mdml-engine/timeseries`
+- function `arimaFit`: Fit ARIMA or seasonal ARIMA by exact Gaussian likelihood. `src/lib/timeseries/arima.ts:261` `omai-engine/timeseries`
+- function `etsFit`: Fit exponential smoothing (ETS) models. `src/lib/timeseries/smoothing.ts:519` `omai-engine/timeseries`
+- function `stl`: STL seasonal-trend decomposition; mstl handles several seasons. `src/lib/timeseries/stl.ts:382` `omai-engine/timeseries`
 
-- estimator `bocpdDetector`: Bayesian online changepoint detection. `src/lib/timeseries/bocpd-detector.ts:151` `mdml-engine/timeseries`
+- estimator `bocpdDetector`: Bayesian online changepoint detection. `src/lib/timeseries/bocpd-detector.ts:151` `omai-engine/timeseries`
 
-- table `changepointDetectors`: Changepoint detectors as one slot. `src/lib/timeseries/changepoint-detectors.ts:75` `mdml-engine/timeseries`
+- table `changepointDetectors`: Changepoint detectors as one slot. `src/lib/timeseries/changepoint-detectors.ts:75` `omai-engine/timeseries`

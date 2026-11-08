@@ -4,7 +4,7 @@
  * a covering loop searches the clauses that generalise it for the best-scoring one, as in Progol and Aleph.
  */
 
-import { type Json, MdmlError } from '../../base/index.ts'
+import { type Json, OmaiError } from '../../base/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm, type TraceSchema } from '../../trace/index.ts'
 import { parseTerm } from '../parse.ts'
 import { consult, type Database, solve } from '../resolution.ts'
@@ -47,11 +47,11 @@ export interface ModeDeclaration {
  *
  * @param text - The declaration.
  * @returns The mode.
- * @throws MdmlError with code `value` for a malformed declaration.
+ * @throws OmaiError with code `value` for a malformed declaration.
  * @concept inductive-logic-programming
  * @example
  * ```ts
- * import { parseMode } from 'mdml-engine/logic/ilp'
+ * import { parseMode } from 'omai-engine/logic/ilp'
  * parseMode('modeb(*, has_car(+train, -car))') // => { kind: 'modeb', recall: Infinity, predicate: 'has_car', args: [{ io: '+', type: 'train' }, { io: '-', type: 'car' }] }
  * ```
  */
@@ -60,7 +60,7 @@ export function parseMode(text: string): ModeDeclaration {
   ;(ops.prefix as Map<string, OperatorDef>).set('#', { priority: 200, type: 'fy' })
   const t = parseTerm(text.replace(/\*/g, "'*'"), { operators: ops })
   const fail = (): never => {
-    throw new MdmlError('value', `parseMode: ${text} is not modeh(Recall, p(+t, -t, #t))`)
+    throw new OmaiError('value', `parseMode: ${text} is not modeh(Recall, p(+t, -t, #t))`)
   }
   if (t.kind !== 'compound' || (t.functor !== 'modeh' && t.functor !== 'modeb') || t.args.length !== 2) return fail()
   const [r, a] = t.args as [Term, Term]
@@ -106,12 +106,12 @@ export interface BottomClause {
  * @param modebs - The body modes, in order.
  * @param options - Variable depth and the query budget.
  * @returns The bottom clause with its literals' input and output variables.
- * @throws MdmlError with code `value` when the example does not fit the head mode.
+ * @throws OmaiError with code `value` when the example does not fit the head mode.
  * @concept inductive-logic-programming
  * @example
  * ```ts
- * import { bottomClause, parseMode } from 'mdml-engine/logic/ilp'
- * import { clauseToString, consult, parseTerm } from 'mdml-engine/logic'
+ * import { bottomClause, parseMode } from 'omai-engine/logic/ilp'
+ * import { clauseToString, consult, parseTerm } from 'omai-engine/logic'
  * const db = consult('parent(ann, mary). parent(ann, tom). female(mary). female(ann).')
  * const b = bottomClause(parseTerm('daughter(mary, ann)'), db, parseMode('modeh(1, daughter(+person, +person))'), [parseMode('modeb(*, parent(+person, -person))'), parseMode('modeb(1, female(+person))')])
  * clauseToString(b.clause) // => 'daughter(A,B) :- parent(B,A), parent(B,C), female(A), female(B).'
@@ -128,7 +128,7 @@ export function bottomClause(
   const budget = options.queryBudget ?? 10_000
   if (example.kind !== 'compound' || example.functor !== modeh.predicate || example.args.length !== modeh.args.length) {
     if (!(example.kind === 'atom' && example.name === modeh.predicate && modeh.args.length === 0)) {
-      throw new MdmlError('value', `bottomClause: ${termToString(example)} does not fit the head mode`)
+      throw new OmaiError('value', `bottomClause: ${termToString(example)} does not fit the head mode`)
     }
   }
   const names = new Map<string, string>()
@@ -458,11 +458,11 @@ function progolMachine(task: ProgolTask, options: ProgolOptions): Algorithm<Prog
  * @param task - Background, examples and modes.
  * @param options - Depth, clause length, noise and budgets.
  * @returns The algorithm.
- * @throws MdmlError with code `value` for malformed modes or examples.
+ * @throws OmaiError with code `value` for malformed modes or examples.
  * @concept inductive-logic-programming
  * @example
  * ```ts
- * import { progolAlgorithm } from 'mdml-engine/logic/ilp'
+ * import { progolAlgorithm } from 'omai-engine/logic/ilp'
  * progolAlgorithm({ background: 'q(a).', positive: ['p(a)'], negative: [], modeh: 'modeh(1, p(+t))', modeb: ['modeb(1, q(+t))'] }).name // => 'progol'
  * ```
  */
@@ -482,13 +482,13 @@ export interface ProgolResult {
  * @param task - Background, examples and modes.
  * @param options - Depth, clause length, noise, budgets and tracing.
  * @returns The theory and the number of candidates evaluated.
- * @throws MdmlError with code `value` for malformed modes or examples.
+ * @throws OmaiError with code `value` for malformed modes or examples.
  * @concept inductive-logic-programming
  * @reference S. Muggleton, Inverse entailment and Progol, New Generation Computing 13 (1995).
  * @example
  * ```ts
- * import { progol } from 'mdml-engine/logic/ilp'
- * import { clauseToString } from 'mdml-engine/logic'
+ * import { progol } from 'omai-engine/logic/ilp'
+ * import { clauseToString } from 'omai-engine/logic'
  * const background = 'parent(ann, mary). parent(ann, tom). parent(tom, eve). parent(tom, ian). female(ann). female(mary). female(eve).'
  * const r = progol({ background, positive: ['daughter(mary, ann)', 'daughter(eve, tom)'], negative: ['daughter(tom, ann)', 'daughter(eve, ann)', 'daughter(ian, tom)'], modeh: 'modeh(1, daughter(+person, +person))', modeb: ['modeb(*, parent(+person, -person))', 'modeb(*, parent(-person, +person))', 'modeb(1, female(+person))'] })
  * r.theory.map((c) => clauseToString(c)) // => ['daughter(A,B) :- parent(B,A), female(A).']
@@ -507,8 +507,8 @@ export function progol(task: ProgolTask, options: ProgolOptions = {}): ProgolRes
  * @returns The renamed clause.
  * @example
  * ```ts
- * import { canonicalClause } from 'mdml-engine/logic/ilp'
- * import { clauseToString, parseClause } from 'mdml-engine/logic'
+ * import { canonicalClause } from 'omai-engine/logic/ilp'
+ * import { clauseToString, parseClause } from 'omai-engine/logic'
  * clauseToString(canonicalClause(parseClause('p(X, Y) :- q(Y, Z).'))) // => 'p(A,B) :- q(B,C).'
  * ```
  */

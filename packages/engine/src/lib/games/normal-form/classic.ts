@@ -4,7 +4,7 @@
  * uniform payoffs.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { type Key, uniform } from '../../random/index.ts'
 import { toFlat } from '../../tensor/index.ts'
 import { bimatrixGame, type NormalFormGame, normalFormGame } from './game.ts'
@@ -17,7 +17,7 @@ import { bimatrixGame, type NormalFormGame, normalFormGame } from './game.ts'
  * @concept prisoners-dilemma
  * @example
  * ```ts
- * import { prisonersDilemma, pureNashEquilibria } from 'mdml-engine/games'
+ * import { prisonersDilemma, pureNashEquilibria } from 'omai-engine/games'
  * pureNashEquilibria(prisonersDilemma())[0].payoffs // => [1, 1]
  * ```
  */
@@ -48,7 +48,7 @@ export function prisonersDilemma(): NormalFormGame {
  * @returns The game.
  * @example
  * ```ts
- * import { matchingPennies, pureNashEquilibria } from 'mdml-engine/games'
+ * import { matchingPennies, pureNashEquilibria } from 'omai-engine/games'
  * pureNashEquilibria(matchingPennies()).length // => 0
  * ```
  */
@@ -76,7 +76,7 @@ export function matchingPennies(): NormalFormGame {
  * @returns The game.
  * @example
  * ```ts
- * import { rockPaperScissors } from 'mdml-engine/games'
+ * import { rockPaperScissors } from 'omai-engine/games'
  * rockPaperScissors().payoffs[0][1] // => -1
  * ```
  */
@@ -100,7 +100,7 @@ export function rockPaperScissors(): NormalFormGame {
  * @returns The game.
  * @example
  * ```ts
- * import { battleOfTheSexes } from 'mdml-engine/games'
+ * import { battleOfTheSexes } from 'omai-engine/games'
  * battleOfTheSexes().actionNames[0] // => ['opera', 'football']
  * ```
  */
@@ -131,7 +131,7 @@ export function battleOfTheSexes(): NormalFormGame {
  * @returns The game.
  * @example
  * ```ts
- * import { pureNashEquilibria, stagHunt } from 'mdml-engine/games'
+ * import { pureNashEquilibria, stagHunt } from 'omai-engine/games'
  * pureNashEquilibria(stagHunt()).map((e) => e.payoffs) // => [[4, 4], [2, 2]]
  * ```
  */
@@ -164,7 +164,7 @@ export function stagHunt(): NormalFormGame {
  * @concept correlated-equilibrium
  * @example
  * ```ts
- * import { chicken, pureNashEquilibria } from 'mdml-engine/games'
+ * import { chicken, pureNashEquilibria } from 'omai-engine/games'
  * pureNashEquilibria(chicken()).map((e) => e.payoffs) // => [[2, 7], [7, 2]]
  * ```
  */
@@ -198,7 +198,7 @@ export function chicken(): NormalFormGame {
  * @returns The symmetric game.
  * @example
  * ```ts
- * import { hawkDove } from 'mdml-engine/games'
+ * import { hawkDove } from 'omai-engine/games'
  * hawkDove(2, 4).payoffs[0] // => Float64Array.from([-1, 2, 0, 1])
  * ```
  */
@@ -231,7 +231,7 @@ export function hawkDove(v = 2, c = 4): NormalFormGame {
  * @concept fictitious-play
  * @example
  * ```ts
- * import { shapleyGame } from 'mdml-engine/games'
+ * import { shapleyGame } from 'omai-engine/games'
  * shapleyGame().payoffs[1] // => Float64Array.from([0, 1, 0, 0, 0, 1, 1, 0, 0])
  * ```
  */
@@ -259,7 +259,7 @@ export function shapleyGame(): NormalFormGame {
  * @returns The game.
  * @example
  * ```ts
- * import { coordinationGame, pureNashEquilibria } from 'mdml-engine/games'
+ * import { coordinationGame, pureNashEquilibria } from 'omai-engine/games'
  * pureNashEquilibria(coordinationGame(3, 2)).length // => 2
  * ```
  */
@@ -299,11 +299,11 @@ function nest(flat: number[], shape: readonly number[]): number[] | number[][] {
  * @param shape - The number of actions of each player.
  * @param options - The payoff range (default `[0, 1)`).
  * @returns The game.
- * @throws MdmlError with code `value` for an empty shape.
+ * @throws OmaiError with code `value` for an empty shape.
  * @example
  * ```ts
- * import { randomGame } from 'mdml-engine/games'
- * import { key } from 'mdml-engine/random'
+ * import { randomGame } from 'omai-engine/games'
+ * import { key } from 'omai-engine/random'
  * randomGame(key(0), [2, 3]).payoffs.length // => 2
  * ```
  */
@@ -312,7 +312,7 @@ export function randomGame(
   shape: readonly number[],
   options: { readonly low?: number; readonly high?: number } = {},
 ): NormalFormGame {
-  if (shape.length === 0) throw new MdmlError('value', 'randomGame: at least one player is needed')
+  if (shape.length === 0) throw new OmaiError('value', 'randomGame: at least one player is needed')
   const draws = toFlat(uniform(key, [shape.length, ...shape], { low: options.low ?? 0, high: options.high ?? 1 }))
   const size = draws.length / shape.length
   return normalFormGame(

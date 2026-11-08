@@ -1,4 +1,4 @@
-import type { Vec3 } from 'mdml-engine/base'
+import type { Vec3 } from 'omai-engine/base'
 import {
   checkerboard,
   imageToPixels,
@@ -10,9 +10,9 @@ import {
   rayScene,
   renderWhitted,
   sphere,
-} from 'mdml-engine/graphics'
-import { bool, choice, dict, real } from 'mdml-engine/space'
-import { ControlPanel, SpaceControls } from 'mdml-render/react'
+} from 'omai-engine/graphics'
+import { bool, choice, dict, real } from 'omai-engine/space'
+import { ControlPanel, SpaceControls } from 'omai-render/react'
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import { useGameLoop } from '../../shared/useGameLoop.ts'
 

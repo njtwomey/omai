@@ -3,8 +3,8 @@ posterior covariance, predictive standard deviations), ARDRegression and Isotoni
 
 import numpy as np
 import sklearn
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import rng
 from sklearn.isotonic import IsotonicRegression
 from sklearn.linear_model import ARDRegression, BayesianRidge
 

@@ -4,7 +4,7 @@
  * particle swarm optimisation over bit strings, both as traced algorithms.
  */
 
-import { argmaxOf, MdmlError, meanOf } from '../base/index.ts'
+import { argmaxOf, meanOf, OmaiError } from '../base/index.ts'
 import { foldIn } from '../random/index.ts'
 import { asTensor, type TensorLike, toFlat } from '../tensor/index.ts'
 import { type Algorithm, channels, runAlgorithm } from '../trace/index.ts'
@@ -56,7 +56,7 @@ function distanceMatrix(distances: TensorLike): { n: number; d: number[] } {
   const t = asTensor(distances)
   const [n = 0, m = -1] = t.shape
   if (t.shape.length !== 2 || n !== m || n < 2) {
-    throw new MdmlError(
+    throw new OmaiError(
       'shape',
       `antColonyOptimization: distances must be a square matrix of side >= 2, got [${t.shape}]`,
     )
@@ -65,7 +65,7 @@ function distanceMatrix(distances: TensorLike): { n: number; d: number[] } {
   for (let i = 0; i < n; i++) {
     for (let j = 0; j < n; j++) {
       if (i !== j && !((d[i * n + j] ?? 0) > 0)) {
-        throw new MdmlError('value', 'antColonyOptimization: distances between cities must be positive')
+        throw new OmaiError('value', 'antColonyOptimization: distances between cities must be positive')
       }
     }
   }
@@ -87,11 +87,11 @@ function tourLength(d: readonly number[], n: number, tour: readonly number[]): n
  * @param distances - The n x n matrix of positive distances.
  * @param options - Ants, alpha, beta, rho, Q, the update rule and the elitist weight.
  * @returns The algorithm.
- * @throws MdmlError with code `shape` for a non-square matrix, or `value` for non-positive distances.
+ * @throws OmaiError with code `shape` for a non-square matrix, or `value` for non-positive distances.
  * @concept ant-colony-optimisation
  * @example
  * ```ts
- * import { antColonyAlgorithm } from 'mdml-engine/search'
+ * import { antColonyAlgorithm } from 'omai-engine/search'
  * antColonyAlgorithm([[0, 1], [1, 0]]).name // => 'ant-colony'
  * ```
  */
@@ -104,7 +104,7 @@ export function antColonyAlgorithm(distances: TensorLike, options: AntColonyOpti
   const rho = options.rho ?? (variant === 'max-min' ? 0.02 : 0.5)
   const q = options.q ?? 1
   const elite = options.elite ?? n
-  if (!(rho > 0 && rho <= 1)) throw new MdmlError('value', `antColonyOptimization: rho ${rho} must be in (0, 1]`)
+  if (!(rho > 0 && rho <= 1)) throw new OmaiError('value', `antColonyOptimization: rho ${rho} must be in (0, 1]`)
   const eta = d.map((x, k) => (k % (n + 1) === 0 ? 0 : (1 / x) ** beta))
   // A nearest-neighbour tour sets the pheromone scale (tau_0 = 1 / (rho * L_nn) for MAX-MIN, ants / L_nn otherwise).
   const nn = (() => {
@@ -219,11 +219,11 @@ export function antColonyAlgorithm(distances: TensorLike, options: AntColonyOpti
  * @param distances - The n x n matrix of positive distances.
  * @param options - Ants, alpha, beta, rho, Q, the update rule, iterations (default 100), a seed or key, and tracing.
  * @returns The best tour (a permutation of the cities), its length and the best length per iteration.
- * @throws MdmlError with code `shape` for a non-square matrix, or `value` for non-positive distances.
+ * @throws OmaiError with code `shape` for a non-square matrix, or `value` for non-positive distances.
  * @concept ant-colony-optimisation
  * @example
  * ```ts
- * import { antColonyOptimization } from 'mdml-engine/search'
+ * import { antColonyOptimization } from 'omai-engine/search'
  * // Four cities on a unit square: the best tour goes round the edge.
  * const d = [[0, 1, Math.SQRT2, 1], [1, 0, 1, Math.SQRT2], [Math.SQRT2, 1, 0, 1], [1, Math.SQRT2, 1, 0]]
  * antColonyOptimization(d, { iterations: 20, seed: 0 }).length // => 4
@@ -288,17 +288,17 @@ export interface ParticleSwarmResult {
 /**
  * Binary particle swarm optimisation (Kennedy and Eberhart 1997) as a traced algorithm: each particle keeps a real
  * velocity per bit, pulled towards its own best and the swarm's best; a bit is set with probability sigmoid(velocity).
- * Fitness is maximised. (Continuous particle swarms are `particleSwarm` in `mdml-engine/optim`.)
+ * Fitness is maximised. (Continuous particle swarms are `particleSwarm` in `omai-engine/optim`.)
  *
  * @param fitness - The fitness of a bit string.
  * @param n - The number of bits.
  * @param options - Particles, inertia, coefficients, the velocity clamp and a target.
  * @returns The algorithm.
- * @throws MdmlError with code `value` when n or the number of particles is not a positive integer.
+ * @throws OmaiError with code `value` when n or the number of particles is not a positive integer.
  * @concept particle-swarm-optimisation
  * @example
  * ```ts
- * import { discreteParticleSwarmAlgorithm } from 'mdml-engine/search'
+ * import { discreteParticleSwarmAlgorithm } from 'omai-engine/search'
  * discreteParticleSwarmAlgorithm((b) => b.reduce((s, x) => s + x, 0), 8).name // => 'discrete-particle-swarm'
  * ```
  */
@@ -313,7 +313,7 @@ export function discreteParticleSwarmAlgorithm(
   const c2 = options.social ?? 2
   const vMax = options.vMax ?? 4
   if (!(Number.isInteger(n) && n >= 1 && Number.isInteger(particles) && particles >= 1)) {
-    throw new MdmlError('value', 'discreteParticleSwarm: n and particles must be positive integers')
+    throw new OmaiError('value', 'discreteParticleSwarm: n and particles must be positive integers')
   }
   const sigmoid = (v: number): number => 1 / (1 + Math.exp(-v))
   return {
@@ -390,11 +390,11 @@ export function discreteParticleSwarmAlgorithm(
  * @param options - Particles, inertia, coefficients, the velocity clamp, iterations (default 100), a target, a seed
  * or key, and tracing.
  * @returns The best bit string, its fitness and the best fitness per iteration.
- * @throws MdmlError with code `value` when n or the number of particles is not a positive integer.
+ * @throws OmaiError with code `value` when n or the number of particles is not a positive integer.
  * @concept particle-swarm-optimisation
  * @example
  * ```ts
- * import { discreteParticleSwarm } from 'mdml-engine/search'
+ * import { discreteParticleSwarm } from 'omai-engine/search'
  * // A 0/1 knapsack: values 6, 5, 4, 3 and weights 4, 3, 2, 1 with capacity 6; the best load is items 1, 2, 3 (12).
  * const v = [6, 5, 4, 3]
  * const wt = [4, 3, 2, 1]

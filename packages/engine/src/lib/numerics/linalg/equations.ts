@@ -4,7 +4,7 @@
  * control and Kalman filtering rest on.
  */
 
-import { type Json, MdmlError } from '../../base/index.ts'
+import { type Json, OmaiError } from '../../base/index.ts'
 import {
   abs,
   add,
@@ -57,8 +57,8 @@ const norm1 = (a: Value): number => item(primalOf(max(sum(abs(a), 0))))
  * @concept matrix-equations
  * @example
  * ```ts
- * import { solveSylvester } from 'mdml-engine/numerics/linalg'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { solveSylvester } from 'omai-engine/numerics/linalg'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(solveSylvester([[1]], [[2]], [[6]])) // => [[2]]
  * ```
  */
@@ -78,8 +78,8 @@ export function solveSylvester(a: TensorLike, b: TensorLike, q: TensorLike): Val
  * @returns X.
  * @example
  * ```ts
- * import { solveContinuousLyapunov } from 'mdml-engine/numerics/linalg'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { solveContinuousLyapunov } from 'omai-engine/numerics/linalg'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(solveContinuousLyapunov([[-1]], [[-2]])) // => [[1]]
  * ```
  */
@@ -97,8 +97,8 @@ export function solveContinuousLyapunov(a: TensorLike, q: TensorLike): Value {
  * @returns X.
  * @example
  * ```ts
- * import { solveDiscreteLyapunov } from 'mdml-engine/numerics/linalg'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { solveDiscreteLyapunov } from 'omai-engine/numerics/linalg'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(solveDiscreteLyapunov([[0.5]], [[0.75]])) // => [[1]]
  * ```
  */
@@ -117,12 +117,12 @@ export function solveDiscreteLyapunov(a: TensorLike, q: TensorLike): Value {
  *
  * @param a - Square matrix `[n, n]`.
  * @returns sign(A).
- * @throws MdmlError with code `convergence` when the iteration does not settle (eigenvalues on or near the axis).
+ * @throws OmaiError with code `convergence` when the iteration does not settle (eigenvalues on or near the axis).
  * @concept matrix-functions
  * @example
  * ```ts
- * import { signm } from 'mdml-engine/numerics/linalg'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { signm } from 'omai-engine/numerics/linalg'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(signm([[-2, 0], [0, 3]])) // => [[-1, 0], [0, 1]]
  * ```
  */
@@ -139,7 +139,7 @@ export function signm(a: TensorLike): Value {
       z = next
       if (change <= 1e-14) return z
     }
-    throw new MdmlError('convergence', 'signm: the Newton iteration did not converge')
+    throw new OmaiError('convergence', 'signm: the Newton iteration did not converge')
   })
 }
 
@@ -153,12 +153,12 @@ export function signm(a: TensorLike): Value {
  * @param q - `[n, n]` (symmetric).
  * @param r - `[m, m]` (symmetric positive definite).
  * @returns X (symmetric).
- * @throws MdmlError with code `convergence` when the sign iteration does not settle or there is no stabilising solution.
+ * @throws OmaiError with code `convergence` when the sign iteration does not settle or there is no stabilising solution.
  * @concept matrix-equations
  * @example
  * ```ts
- * import { solveCare } from 'mdml-engine/numerics/linalg'
- * import { item } from 'mdml-engine/tensor'
+ * import { solveCare } from 'omai-engine/numerics/linalg'
+ * import { item } from 'omai-engine/tensor'
  * Math.abs(item(solveCare([[0]], [[1]], [[1]], [[1]])) - 1) < 1e-12 // => true
  * ```
  */
@@ -170,8 +170,8 @@ export function solveCare(a: TensorLike, b: TensorLike, q: TensorLike, r: Tensor
   try {
     z = signm(concat([concat([av, neg(g)], 1), concat([neg(qv), neg(mT(av))], 1)], 0))
   } catch (e) {
-    if (e instanceof MdmlError && e.code === 'convergence') {
-      throw new MdmlError('convergence', 'solveCare: the sign iteration did not converge')
+    if (e instanceof OmaiError && e.code === 'convergence') {
+      throw new OmaiError('convergence', 'solveCare: the sign iteration did not converge')
     }
     throw e
   }
@@ -184,13 +184,13 @@ export function solveCare(a: TensorLike, b: TensorLike, q: TensorLike, r: Tensor
   // rank (its singular values are those of the sign matrix's stable projector), and any least-squares answer is spurious.
   const sv = toFlat(primalOf(svdvals(lhs)))
   if (!((sv[n - 1] ?? 0) > (sv[0] ?? 0) * 2 * n * Number.EPSILON))
-    throw new MdmlError(
+    throw new OmaiError(
       'convergence',
       'solveCare: no stabilising solution (the stable invariant subspace is deficient)',
     )
   const x = lstsq(lhs, rhs)
   if (!(norm1(sub(matmul(lhs, x), rhs)) <= 1e-6 * Math.max(1, norm1(rhs))))
-    throw new MdmlError(
+    throw new OmaiError(
       'convergence',
       'solveCare: no stabilising solution (the stable invariant subspace is deficient)',
     )
@@ -243,8 +243,8 @@ export interface DareOptions {
  * @returns The algorithm.
  * @example
  * ```ts
- * import { solveDareAlgorithm } from 'mdml-engine/numerics/linalg'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { solveDareAlgorithm } from 'omai-engine/numerics/linalg'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * runAlgorithm(solveDareAlgorithm([[1]], [[1]], [[1]], [[1]]), { maxSteps: 100 }).status // => 'converged'
  * ```
  */
@@ -314,18 +314,18 @@ export function solveDareAlgorithm(
  * @param q - `[n, n]`.
  * @param r - `[m, m]`.
  * @returns X (symmetric).
- * @throws MdmlError with code `convergence` when the doubling does not converge (the return is a bare matrix; use
+ * @throws OmaiError with code `convergence` when the doubling does not converge (the return is a bare matrix; use
  *   {@link solveDareAlgorithm} for a run that ends with a status).
  * @example
  * ```ts
- * import { solveDare } from 'mdml-engine/numerics/linalg'
- * import { item } from 'mdml-engine/tensor'
+ * import { solveDare } from 'omai-engine/numerics/linalg'
+ * import { item } from 'omai-engine/tensor'
  * Math.abs(item(solveDare([[1]], [[1]], [[1]], [[1]])) - (1 + Math.sqrt(5)) / 2) < 1e-12 // => true
  * ```
  */
 export function solveDare(a: TensorLike, b: TensorLike, q: TensorLike, r: TensorLike): Value {
   const run = runAlgorithm(solveDareAlgorithm(a, b, q, r), { maxSteps: 100 })
   if (run.status !== 'converged')
-    throw new MdmlError('convergence', 'solveDare: the doubling iteration did not converge')
+    throw new OmaiError('convergence', 'solveDare: the doubling iteration did not converge')
   return sym(run.state.hk)
 }

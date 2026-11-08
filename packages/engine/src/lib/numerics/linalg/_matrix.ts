@@ -1,6 +1,6 @@
 // Helpers shared by the linear-algebra primitives: batching of the kernels over leading axes, and the small matrix
 // operations (transpose of the last two axes, diagonal embedding, symmetrisation) the derivative rules are written in.
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import {
   add,
   allocate,
@@ -21,7 +21,7 @@ import { assertFinite } from '../_vector.ts'
 
 /** The batch shape and matrix size of a value with at least two axes. */
 export function matrixShape(shape: readonly number[], name: string): { batch: number[]; m: number; n: number } {
-  if (shape.length < 2) throw new MdmlError('shape', `${name}: expected a matrix (at least two axes)`)
+  if (shape.length < 2) throw new OmaiError('shape', `${name}: expected a matrix (at least two axes)`)
   return { batch: shape.slice(0, -2), m: shape[shape.length - 2] ?? 0, n: shape[shape.length - 1] ?? 0 }
 }
 
@@ -33,8 +33,8 @@ export function namingSingular<T>(name: string, reason: string, run: () => T): T
   try {
     return run()
   } catch (error) {
-    if (error instanceof MdmlError && error.code === 'value' && error.message.includes('singular'))
-      throw new MdmlError('value', `${name}: ${reason}`)
+    if (error instanceof OmaiError && error.code === 'value' && error.message.includes('singular'))
+      throw new OmaiError('value', `${name}: ${reason}`)
     throw error
   }
 }
@@ -42,7 +42,7 @@ export function namingSingular<T>(name: string, reason: string, run: () => T): T
 /** Require a square matrix (or batch of them) and return its size. */
 export function squareSize(shape: readonly number[], name: string): number {
   const { m, n } = matrixShape(shape, name)
-  if (m !== n) throw new MdmlError('shape', `${name}: expected a square matrix, got ${m} x ${n}`)
+  if (m !== n) throw new OmaiError('shape', `${name}: expected a square matrix, got ${m} x ${n}`)
   return n
 }
 
@@ -55,8 +55,8 @@ export function namingNonFinite<T>(name: string, run: () => T): T {
   try {
     return run()
   } catch (error) {
-    if (error instanceof MdmlError && error.code === 'value' && error.message.includes('non-finite entry'))
-      throw new MdmlError('value', error.message.replace(/^[^:]*:/, `${name}:`))
+    if (error instanceof OmaiError && error.code === 'value' && error.message.includes('non-finite entry'))
+      throw new OmaiError('value', error.message.replace(/^[^:]*:/, `${name}:`))
     throw error
   }
 }

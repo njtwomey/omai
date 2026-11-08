@@ -33,7 +33,7 @@ const shared = (k: (name: string) => number | boolean): McmcOptions => ({
  * @index table The MCMC kernels as one slot.
  * @example
  * ```ts
- * import { mcmcKernels } from 'mdml-engine/probprog'
+ * import { mcmcKernels } from 'omai-engine/probprog'
  * mcmcKernels.make({ kind: 'hmc', numSteps: 5 }).numSteps // => 5
  * ```
  */
@@ -60,7 +60,7 @@ export const mcmcKernels: OptionTable<McmcOptions, Record<string, never>> = opti
  * @concept log-density
  * @example
  * ```ts
- * import { initStrategies } from 'mdml-engine/probprog'
+ * import { initStrategies } from 'omai-engine/probprog'
  * typeof initStrategies.make({ kind: 'uniform', radius: 1 }) // => 'function'
  * ```
  */

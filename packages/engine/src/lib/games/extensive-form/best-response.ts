@@ -4,7 +4,7 @@
  * measure how far a policy profile is from a Nash equilibrium.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { CHANCE, nodeValues, policyTable, TERMINAL, tablePolicy } from './_tree.ts'
 import { type ExtensiveGame, type GameTree, type TabularPolicy, treeOf } from './tree.ts'
 
@@ -41,11 +41,11 @@ function othersReach(tree: GameTree, table: readonly Float64Array[], player: num
  * @param policy - The policy of every player (the responder's own entries are ignored).
  * @param player - The responder.
  * @returns The best-response value, the on-policy value and the pure best response.
- * @throws MdmlError with code `value` for a missing player.
+ * @throws OmaiError with code `value` for a missing player.
  * @concept best-response
  * @example
  * ```ts
- * import { bestResponse, gameTree, kuhnPoker, uniformPolicy } from 'mdml-engine/games'
+ * import { bestResponse, gameTree, kuhnPoker, uniformPolicy } from 'omai-engine/games'
  * const t = gameTree(kuhnPoker())
  * Math.round(bestResponse(t, uniformPolicy(t), 0).value * 1e9) / 1e9 // => 0.5
  * ```
@@ -57,7 +57,7 @@ export function bestResponse<S>(
 ): BestResponseResult {
   const tree = treeOf(game)
   if (!Number.isInteger(player) || player < 0 || player >= tree.numPlayers)
-    throw new MdmlError('value', `${tree.name}: no player ${player}`)
+    throw new OmaiError('value', `${tree.name}: no player ${player}`)
   const table = policyTable(tree, policy)
   const reach = othersReach(tree, table, player)
   const choice = new Int32Array(tree.infosets.length).fill(-1)
@@ -124,7 +124,7 @@ export function bestResponse<S>(
  * @concept nash-equilibrium
  * @example
  * ```ts
- * import { extensiveNashConv, gameTree, kuhnPoker, uniformPolicy } from 'mdml-engine/games'
+ * import { extensiveNashConv, gameTree, kuhnPoker, uniformPolicy } from 'omai-engine/games'
  * const t = gameTree(kuhnPoker())
  * Math.round(extensiveNashConv(t, uniformPolicy(t)) * 1e9) / 1e9 // => 0.916666667
  * ```
@@ -149,7 +149,7 @@ export function extensiveNashConv<S>(game: ExtensiveGame<S> | GameTree, policy: 
  * @concept exploitability
  * @example
  * ```ts
- * import { exploitability, gameTree, kuhnEquilibrium, kuhnPoker } from 'mdml-engine/games'
+ * import { exploitability, gameTree, kuhnEquilibrium, kuhnPoker } from 'omai-engine/games'
  * Math.abs(exploitability(gameTree(kuhnPoker()), kuhnEquilibrium(0.2))) < 1e-12 // => true
  * ```
  */

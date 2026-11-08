@@ -1,7 +1,7 @@
 """The UCI sonar data (Gorman and Sejnowski 1988), CC BY 4.0: 208 sonar returns in 60 energy bands, rock or mine."""
 
-from mdml_oracle.uci import source_note, table_rows, zip_member
-from mdml_oracle.vendor import render_classification
+from omai_oracle.uci import source_note, table_rows, zip_member
+from omai_oracle.vendor import render_classification
 
 TARGET = "packages/engine/src/lib/datasets/_data/sonar.data.ts"
 ID, SLUG = 151, "connectionist+bench+sonar+mines+vs+rocks"

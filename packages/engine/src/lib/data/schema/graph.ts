@@ -4,7 +4,7 @@
  * relation and tail. The constructors check node indices and field lengths.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { fromStorage, type Tensor, type TensorLike } from '../../tensor/index.ts'
 import { cardinality, checkRows, concrete, concreteFloat, defaultNames, metaFor } from './_coerce.ts'
 import type { DatasetMeta } from './common.ts'
@@ -79,20 +79,20 @@ export interface GraphRecordOptions {
  * @param edges - The edges.
  * @param options - Node count, directedness, weights, features, labels and names.
  * @returns The graph.
- * @throws MdmlError with code `value` for a node index outside `[0, nNodes)`.
+ * @throws OmaiError with code `value` for a node index outside `[0, nNodes)`.
  * @example
  * ```ts
- * import { graphRecord } from 'mdml-engine/data'
+ * import { graphRecord } from 'omai-engine/data'
  * graphRecord([[0, 1], [1, 2]]).nNodes // => 3
  * ```
  */
 export function graphRecord(edges: TensorLike, options: GraphRecordOptions = {}): GraphRecord {
   let e = concrete(edges, 'int32', 'graphRecord')
   if (e.shape.length === 1 && e.shape[0] === 0) e = fromStorage(new Int32Array(0), [0, 2], 'int32')
-  if (e.shape.length !== 2 || e.shape[1] !== 2) throw new MdmlError('shape', `graphRecord: edges must be [m, 2]`)
+  if (e.shape.length !== 2 || e.shape[1] !== 2) throw new OmaiError('shape', `graphRecord: edges must be [m, 2]`)
   const nNodes = options.nNodes ?? cardinality(e.data)
   for (const v of e.data) {
-    if (v < 0 || v >= nNodes) throw new MdmlError('value', `graphRecord: node ${v} outside [0, ${nNodes})`)
+    if (v < 0 || v >= nNodes) throw new OmaiError('value', `graphRecord: node ${v} outside [0, ${nNodes})`)
   }
   const m = e.shape[0] ?? 0
   const fields: Record<string, unknown> = { nNodes, edges: e, directed: options.directed ?? false }
@@ -127,7 +127,7 @@ export function graphRecord(edges: TensorLike, options: GraphRecordOptions = {})
  * @returns The dataset.
  * @example
  * ```ts
- * import { graphData, graphRecord } from 'mdml-engine/data'
+ * import { graphData, graphRecord } from 'omai-engine/data'
  * graphData([graphRecord([[0, 1]]), graphRecord([[0, 1], [1, 2]])], { graphLabels: [0, 1] }).graphs.length // => 2
  * ```
  */
@@ -153,7 +153,7 @@ export function graphData(
     for (const [k, v] of Object.entries(options.masks)) {
       if (v === undefined) continue
       const t = concrete(v as TensorLike, 'bool', 'graphData')
-      if ((t.shape[0] ?? 0) !== nodes) throw new MdmlError('shape', `graphData: mask ${k} must have ${nodes} entries`)
+      if ((t.shape[0] ?? 0) !== nodes) throw new OmaiError('shape', `graphData: mask ${k} must have ${nodes} entries`)
       m[k] = t
     }
     masks = m as GraphMasks
@@ -178,7 +178,7 @@ export function graphData(
  * @returns The dataset.
  * @example
  * ```ts
- * import { triples } from 'mdml-engine/data'
+ * import { triples } from 'omai-engine/data'
  * triples([0, 1], [0, 0], [1, 2], { relationNames: ['parentOf'] }).entityNames // => ['e0', 'e1', 'e2']
  * ```
  */

@@ -9,7 +9,7 @@
  * the solver slot of `smoothSolvers`. The same connectives evaluate propositional formulas over a network's outputs.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import {
   type GradientPath,
   gradientContract,
@@ -161,15 +161,15 @@ const goedel = makeFamily(
  *
  * @param lambda - The parameter (default 0).
  * @returns The family.
- * @throws MdmlError with code `value` for a negative parameter.
+ * @throws OmaiError with code `value` for a negative parameter.
  * @example
  * ```ts
- * import { hamacherFamily } from 'mdml-engine/logic'
+ * import { hamacherFamily } from 'omai-engine/logic'
  * Number(hamacherFamily(0).and(0.5, 0.5).data[0]) // => 1 / 3
  * ```
  */
 export function hamacherFamily(lambda = 0): NormFamily {
-  if (!(lambda >= 0)) throw new MdmlError('value', 'hamacherFamily: lambda must be non-negative')
+  if (!(lambda >= 0)) throw new OmaiError('value', 'hamacherFamily: lambda must be non-negative')
   const and = (a: TensorLike, b: TensorLike): Value => {
     const ab = mul(a, b)
     const den = add(lambda, mul(1 - lambda, sub(add(a, b), ab)))
@@ -191,10 +191,10 @@ export function hamacherFamily(lambda = 0): NormFamily {
  *
  * @param name - `product`, `lukasiewicz`, `goedel` or `hamacher` (lambda 0).
  * @returns The family.
- * @throws MdmlError with code `value` for an unknown name.
+ * @throws OmaiError with code `value` for an unknown name.
  * @example
  * ```ts
- * import { normFamily } from 'mdml-engine/logic'
+ * import { normFamily } from 'omai-engine/logic'
  * Number(normFamily('lukasiewicz').and(0.6, 0.7).data[0].toFixed(6)) // => 0.3
  * ```
  */
@@ -209,7 +209,7 @@ export function normFamily(name: NormName): NormFamily {
     case 'hamacher':
       return hamacherFamily(0)
     default:
-      throw new MdmlError('value', `normFamily: unknown family '${String(name)}'`)
+      throw new OmaiError('value', `normFamily: unknown family '${String(name)}'`)
   }
 }
 
@@ -225,15 +225,15 @@ export type Aggregator = (x: TensorLike, axis: number) => Value
  *
  * @param p - The exponent (at least 1).
  * @returns The aggregator.
- * @throws MdmlError with code `value` for `p < 1`.
+ * @throws OmaiError with code `value` for `p < 1`.
  * @example
  * ```ts
- * import { pMean } from 'mdml-engine/logic'
+ * import { pMean } from 'omai-engine/logic'
  * Number(pMean(2)([0, 1], 0).data[0].toFixed(6)) // => 0.707107
  * ```
  */
 export function pMean(p: number): Aggregator {
-  if (!(p >= 1)) throw new MdmlError('value', 'pMean: p must be at least 1')
+  if (!(p >= 1)) throw new OmaiError('value', 'pMean: p must be at least 1')
   return (x, axis) => pow(meanReduce(pow(clip(x, EPS, 1), p), axis), 1 / p)
 }
 
@@ -243,15 +243,15 @@ export function pMean(p: number): Aggregator {
  *
  * @param p - The exponent (at least 1).
  * @returns The aggregator.
- * @throws MdmlError with code `value` for `p < 1`.
+ * @throws OmaiError with code `value` for `p < 1`.
  * @example
  * ```ts
- * import { pMeanError } from 'mdml-engine/logic'
+ * import { pMeanError } from 'omai-engine/logic'
  * Number(pMeanError(2)([0, 1], 0).data[0].toFixed(6)) // => 0.292893
  * ```
  */
 export function pMeanError(p: number): Aggregator {
-  if (!(p >= 1)) throw new MdmlError('value', 'pMeanError: p must be at least 1')
+  if (!(p >= 1)) throw new OmaiError('value', 'pMeanError: p must be at least 1')
   return (x, axis) => one(pow(meanReduce(pow(clip(one(x), EPS, 1), p), axis), 1 / p))
 }
 
@@ -298,7 +298,7 @@ export interface FuzzySemanticsOptions {
  * @returns The semantics.
  * @example
  * ```ts
- * import { fuzzySemantics } from 'mdml-engine/logic'
+ * import { fuzzySemantics } from 'omai-engine/logic'
  * fuzzySemantics({ norm: 'goedel' }).norm.name // => 'goedel'
  * ```
  */
@@ -324,10 +324,10 @@ export function fuzzySemantics(options: FuzzySemanticsOptions = {}): FuzzySemant
  * @param values - The truth value of each variable.
  * @param semantics - The semantics (default product).
  * @returns The truth value, with the broadcast shape of the inputs.
- * @throws MdmlError with code `value` for a variable the valuation lacks.
+ * @throws OmaiError with code `value` for a variable the valuation lacks.
  * @example
  * ```ts
- * import { formulaSatisfaction } from 'mdml-engine/logic'
+ * import { formulaSatisfaction } from 'omai-engine/logic'
  * Number(formulaSatisfaction('a -> b', { a: 0.8, b: 0.5 }).data[0].toFixed(6)) // => 0.6
  * ```
  */
@@ -344,7 +344,7 @@ export function formulaSatisfaction(
     switch (g.kind) {
       case 'var': {
         const v = values[g.name]
-        if (v === undefined) throw new MdmlError('value', `formulaSatisfaction: no value for variable '${g.name}'`)
+        if (v === undefined) throw new OmaiError('value', `formulaSatisfaction: no value for variable '${g.name}'`)
         return asTensor(v, 'float64')
       }
       case 'const':
@@ -394,7 +394,7 @@ export interface PredicateModel {
  * @returns The predicate.
  * @example
  * ```ts
- * import { tablePredicate } from 'mdml-engine/logic'
+ * import { tablePredicate } from 'omai-engine/logic'
  * tablePredicate([3, 3]).size // => 9
  * ```
  */
@@ -406,7 +406,7 @@ export function tablePredicate(sizes: readonly number[], init = 0): PredicateMod
     size,
     init: new Array<number>(size).fill(init),
     truth: (theta, args) => {
-      if (args.length !== sizes.length) throw new MdmlError('value', 'tablePredicate: wrong number of arguments')
+      if (args.length !== sizes.length) throw new OmaiError('value', 'tablePredicate: wrong number of arguments')
       const table = reshape(theta, sizes.length === 0 ? [] : [...sizes])
       if (sizes.length === 0) return sigmoid(table)
       const spec = `${args.map((_, i) => `${rows[i]}${cols[i]}`).join(',')},${cols.slice(0, args.length)}->${rows.slice(0, args.length)}`
@@ -423,17 +423,17 @@ export function tablePredicate(sizes: readonly number[], init = 0): PredicateMod
  * @param hidden - The hidden width.
  * @param k - The key the initial weights are drawn from.
  * @returns The predicate.
- * @throws MdmlError with code `value` for non-positive widths.
+ * @throws OmaiError with code `value` for non-positive widths.
  * @example
  * ```ts
- * import { networkPredicate } from 'mdml-engine/logic'
- * import { key } from 'mdml-engine/random'
+ * import { networkPredicate } from 'omai-engine/logic'
+ * import { key } from 'omai-engine/random'
  * networkPredicate([2, 2], 3, key(0)).size // => 4 * 3 + 3 + 3 + 1
  * ```
  */
 export function networkPredicate(inputDims: readonly number[], hidden: number, k: Key): PredicateModel {
   const d = inputDims.reduce((a, b) => a + b, 0)
-  if (!(d > 0 && hidden > 0)) throw new MdmlError('value', 'networkPredicate: widths must be positive')
+  if (!(d > 0 && hidden > 0)) throw new OmaiError('value', 'networkPredicate: widths must be positive')
   const w1 = Array.from(normal(k, [d * hidden], { scale: 1 / Math.sqrt(d) }).data)
   const w2 = Array.from(normal(makeKey(0x5eed), [hidden], { scale: 1 / Math.sqrt(hidden) }).data)
   const size = d * hidden + hidden + hidden + 1
@@ -441,7 +441,7 @@ export function networkPredicate(inputDims: readonly number[], hidden: number, k
     size,
     init: [...w1, ...new Array<number>(hidden).fill(0), ...w2, 0],
     truth: (theta, args) => {
-      if (args.length !== inputDims.length) throw new MdmlError('value', 'networkPredicate: wrong number of arguments')
+      if (args.length !== inputDims.length) throw new OmaiError('value', 'networkPredicate: wrong number of arguments')
       const counts = args.map((a) => a.shape[0] ?? 1)
       const wide = args.map((a, i) => {
         // [n_i, d_i] to [1, .., n_i, .., 1, d_i], broadcast over the other arguments.
@@ -499,24 +499,24 @@ function evaluate(f: FolFormula, env: Environment, sem: FuzzySemantics): Evaluat
       const name = t.kind === 'compound' ? t.functor : t.kind === 'atom' ? t.name : ''
       const terms = t.kind === 'compound' ? t.args : []
       const predicate = env.predicates.get(name)
-      if (predicate === undefined) throw new MdmlError('value', `fuzzy theory: unknown predicate '${name}'`)
+      if (predicate === undefined) throw new OmaiError('value', `fuzzy theory: unknown predicate '${name}'`)
       const vars: string[] = []
       const constantAxes: number[] = []
       const args = terms.map((a, i) => {
         if (a.kind === 'var') {
-          if (vars.includes(a.name)) throw new MdmlError('value', `fuzzy theory: variable ${a.name} repeats in ${name}`)
+          if (vars.includes(a.name)) throw new OmaiError('value', `fuzzy theory: variable ${a.name} repeats in ${name}`)
           const v = env.variables.get(a.name)
-          if (v === undefined) throw new MdmlError('value', `fuzzy theory: unknown variable '${a.name}'`)
+          if (v === undefined) throw new OmaiError('value', `fuzzy theory: unknown variable '${a.name}'`)
           vars.push(a.name)
           return v
         }
         if (a.kind === 'atom') {
           const c = env.constants.get(a.name)
-          if (c === undefined) throw new MdmlError('value', `fuzzy theory: unknown constant '${a.name}'`)
+          if (c === undefined) throw new OmaiError('value', `fuzzy theory: unknown constant '${a.name}'`)
           constantAxes.push(i)
           return c.shape.length === 1 ? reshape(c, [1, c.shape[0] as number]) : c
         }
-        throw new MdmlError('value', 'fuzzy theory: only variables and constants are terms')
+        throw new OmaiError('value', 'fuzzy theory: only variables and constants are terms')
       })
       let value = predicate(args)
       if (constantAxes.length > 0) value = squeeze(value, constantAxes)
@@ -626,10 +626,10 @@ export interface FuzzyTheory {
  *
  * @param config - The domains, constants, predicates, axioms and semantics.
  * @returns The theory.
- * @throws MdmlError with code `value` for an axiom that does not parse or names something undeclared (found on use).
+ * @throws OmaiError with code `value` for an axiom that does not parse or names something undeclared (found on use).
  * @example
  * ```ts
- * import { fuzzyTheory, tablePredicate } from 'mdml-engine/logic'
+ * import { fuzzyTheory, tablePredicate } from 'omai-engine/logic'
  * const t = fuzzyTheory({
  *   variables: { x: [[1, 0], [0, 1]] },
  *   predicates: { p: tablePredicate([2]) },
@@ -655,7 +655,7 @@ export function fuzzyTheory(config: FuzzyTheoryConfig): FuzzyTheory {
   const aggregate = config.aggregate ?? { pMeanError: 2 }
   const environment = (theta: TensorLike): Environment => {
     const t = asTensor(theta, 'float64')
-    if ((t.shape[0] ?? 0) !== size) throw new MdmlError('shape', `fuzzyTheory: expected ${size} parameters`)
+    if ((t.shape[0] ?? 0) !== size) throw new OmaiError('shape', `fuzzyTheory: expected ${size} parameters`)
     const predicates = new Map<string, (args: readonly Value[]) => Value>()
     for (const n of predicateNames) {
       const p = config.predicates[n] as PredicateModel
@@ -672,7 +672,7 @@ export function fuzzyTheory(config: FuzzyTheoryConfig): FuzzyTheory {
       const axis = e.vars.indexOf(v)
       if (axis >= 0) e = { value: semantics.forall(e.value, axis), vars: e.vars.filter((x) => x !== v) }
     }
-    if (e.vars.length > 0) throw new MdmlError('value', 'fuzzy theory: a formula must be closed')
+    if (e.vars.length > 0) throw new OmaiError('value', 'fuzzy theory: a formula must be closed')
     return e.value
   }
   const satisfaction = (theta: TensorLike): { axioms: Value; total: Value } => {
@@ -723,7 +723,7 @@ export const fuzzyTheoryContract: Contract<unknown, FuzzyTheoryPath> = defineCon
  * @returns The algorithm.
  * @example
  * ```ts
- * import { fuzzyTheory, fuzzyTheoryAlgorithm, tablePredicate } from 'mdml-engine/logic'
+ * import { fuzzyTheory, fuzzyTheoryAlgorithm, tablePredicate } from 'omai-engine/logic'
  * const t = fuzzyTheory({ variables: { x: [[1, 0], [0, 1]] }, predicates: { p: tablePredicate([2]) }, axioms: [{ formula: 'all x. p(x)' }] })
  * fuzzyTheoryAlgorithm(t).name // => 'lbfgs'
  * ```
@@ -765,7 +765,7 @@ export interface FuzzyFit {
  * @returns The parameters, the satisfaction and the truth of each axiom.
  * @example
  * ```ts
- * import { fuzzyTheory, tablePredicate, trainFuzzyTheory } from 'mdml-engine/logic'
+ * import { fuzzyTheory, tablePredicate, trainFuzzyTheory } from 'omai-engine/logic'
  * const t = fuzzyTheory({ variables: { x: [[1, 0], [0, 1]] }, predicates: { p: tablePredicate([2]) }, axioms: [{ formula: 'all x. p(x)' }] })
  * trainFuzzyTheory(t).satisfaction > 0.99 // => true
  * ```

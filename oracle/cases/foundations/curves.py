@@ -7,8 +7,8 @@ from typing import cast
 import numpy as np
 import scipy
 import sympy
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray, rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray, rng
 from scipy.integrate import quad
 from scipy.interpolate import BPoly
 from sympy.geometry import Ellipse, Line, Parabola, Point, Point2D

@@ -1,6 +1,6 @@
-import { cartesian, lines } from 'mdml-render/charts'
-import { figure, type Medium } from 'mdml-render/figure'
-import { Chart, Choice, ControlPanel, FigureFrame, useColourMode } from 'mdml-render/react'
+import { cartesian, lines } from 'omai-render/charts'
+import { figure, type Medium } from 'omai-render/figure'
+import { Chart, Choice, ControlPanel, FigureFrame, useColourMode } from 'omai-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 

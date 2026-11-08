@@ -4,7 +4,7 @@
  * duplicate id), the check the builders make one node at a time.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { parsePaint } from './paint.ts'
 import type { Camera } from './projection.ts'
 import type { Item3D } from './three-d.ts'
@@ -19,7 +19,7 @@ class Walk {
   readonly ids = new Set<string>()
 
   fail(at: string, message: string): never {
-    throw new MdmlError('value', `validateScene: ${at}: ${message}`)
+    throw new OmaiError('value', `validateScene: ${at}: ${message}`)
   }
 
   finite(at: string, name: string, v: unknown): void {
@@ -172,11 +172,11 @@ class Walk {
  *
  * @param s - The scene.
  * @returns The same scene.
- * @throws MdmlError with code `value` naming the path of the first node that is not valid (`validateScene:
+ * @throws OmaiError with code `value` naming the path of the first node that is not valid (`validateScene:
  *   children[1].children[0]: r is -1, expected a size >= 0`).
  * @example
  * ```ts
- * import { circle, scene, validateScene } from 'mdml-engine/scene'
+ * import { circle, scene, validateScene } from 'omai-engine/scene'
  * validateScene(scene(10, 10, [circle(5, 5, 2)])).width // => 10
  * ```
  */

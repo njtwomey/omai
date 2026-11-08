@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { gaussLegendre } from '../numerics/quadrature/index.ts'
 import { key } from '../random/index.ts'
 import { item, toFlat, type Value } from '../tensor/index.ts'
@@ -198,7 +198,7 @@ describe('parameter validation', () => {
   ]
   it('rejects the invalid parameters of the register with value', () => {
     for (const [name, make] of invalid) expect(make, name).toThrow(expect.objectContaining({ code: 'value' }))
-    expect(new MdmlError('value', 'x').code).toBe('value')
+    expect(new OmaiError('value', 'x').code).toBe('value')
   })
 
   it('accepts the boundary cases', () => {

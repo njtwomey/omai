@@ -174,7 +174,7 @@ function str(e: Expr): string {
  * @returns The text.
  * @example
  * ```ts
- * import { parse, toText } from 'mdml-engine/symbolic'
+ * import { parse, toText } from 'omai-engine/symbolic'
  * toText(parse('(x + 1)^2 + sin(x)/2')) // => '(x + 1)**2 + sin(x)/2'
  * ```
  */
@@ -616,7 +616,7 @@ function isMatrix(x: Expr | ExprMatrix): x is ExprMatrix {
  * @index function Render an expression as LaTeX.
  * @example
  * ```ts
- * import { parse, toLatex } from 'mdml-engine/symbolic'
+ * import { parse, toLatex } from 'omai-engine/symbolic'
  * toLatex(parse('x^2/2 + sin(x)')) // => '\\frac{x^{2}}{2} + \\sin{\\left(x \\right)}'
  * ```
  */
@@ -643,7 +643,7 @@ function ruleText(rule: string): string {
  * @returns The LaTeX source.
  * @example
  * ```ts
- * import { diffSteps, parse, stepsToLatex } from 'mdml-engine/symbolic'
+ * import { diffSteps, parse, stepsToLatex } from 'omai-engine/symbolic'
  * stepsToLatex(diffSteps(parse('x^2'), 'x')).startsWith('\\begin{aligned}') // => true
  * ```
  */

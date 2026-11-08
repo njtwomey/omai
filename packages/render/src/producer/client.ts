@@ -7,9 +7,9 @@
  * producer instead and says why.
  */
 
-import { type Json, MdmlError } from 'mdml-engine/base'
-import { defaults } from 'mdml-engine/space'
-import type { Config, Derived, Method, SessionOptions, SliceBudget } from 'mdml-engine/trace'
+import { type Json, OmaiError } from 'omai-engine/base'
+import { defaults } from 'omai-engine/space'
+import type { Config, Derived, Method, SessionOptions, SliceBudget } from 'omai-engine/trace'
 import { inlineProducer } from './inline.ts'
 import type { Variant } from './make.ts'
 import type { Producer, ProducerFactory } from './producer.ts'
@@ -179,7 +179,7 @@ class WorkerSessions<S, C extends Config> implements Producer<S, C> {
     if (this.error !== undefined) return
     this.error = message
     for (const s of this.sessions) s.fail()
-    for (const [, w] of this.waiting) w.reject(new MdmlError('value', message))
+    for (const [, w] of this.waiting) w.reject(new OmaiError('value', message))
     this.waiting.clear()
     this.notify()
   }
@@ -207,7 +207,7 @@ class WorkerSessions<S, C extends Config> implements Producer<S, C> {
         if (ev.superseded) {
           // A newer probe of the same path was waiting; this step was not computed, and may be asked again.
           this.cache.delete(w.key)
-          w.reject(new MdmlError('value', 'superseded by a newer probe'))
+          w.reject(new OmaiError('value', 'superseded by a newer probe'))
           break
         }
         const outcome: Outcome = ev.ok
@@ -217,7 +217,7 @@ class WorkerSessions<S, C extends Config> implements Producer<S, C> {
         if (outcome.ok) this.latest.set(w.pathKey, outcome.value)
         this.probed += 1
         if (outcome.ok) w.resolve(outcome.value)
-        else w.reject(new MdmlError('value', outcome.error))
+        else w.reject(new OmaiError('value', outcome.error))
         break
       }
       case 'error':
@@ -251,10 +251,10 @@ class WorkerSessions<S, C extends Config> implements Producer<S, C> {
     const hit = this.cache.get(key)
     if (hit !== undefined && hit !== 'pending') {
       if (hit.ok) return hit.value
-      throw new MdmlError('value', hit.error)
+      throw new OmaiError('value', hit.error)
     }
     if (hit === undefined) {
-      if (this.error !== undefined) throw new MdmlError('value', this.error)
+      if (this.error !== undefined) throw new OmaiError('value', this.error)
       this.cache.set(key, 'pending')
       if (this.spawn() !== undefined)
         this.ask(variant, t, path, args, true).then(
@@ -272,8 +272,8 @@ class WorkerSessions<S, C extends Config> implements Producer<S, C> {
     const key = keyOf(variant, t, path, args)
     const hit = this.cache.get(key)
     if (hit !== undefined && hit !== 'pending')
-      return hit.ok ? Promise.resolve(hit.value) : Promise.reject(new MdmlError('value', hit.error))
-    if (this.spawn() === undefined) return Promise.reject(new MdmlError('value', this.error ?? 'no worker'))
+      return hit.ok ? Promise.resolve(hit.value) : Promise.reject(new OmaiError('value', hit.error))
+    if (this.spawn() === undefined) return Promise.reject(new OmaiError('value', this.error ?? 'no worker'))
     return this.ask(variant, t, path, args, false)
   }
 
@@ -321,7 +321,7 @@ class WorkerSessions<S, C extends Config> implements Producer<S, C> {
       w.onerror = null
       w.terminate()
     }
-    for (const [, p] of this.waiting) p.reject(new MdmlError('value', 'the producer was disposed'))
+    for (const [, p] of this.waiting) p.reject(new OmaiError('value', 'the producer was disposed'))
     this.waiting.clear()
     this.cache.clear()
     this.latest.clear()

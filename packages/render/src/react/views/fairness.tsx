@@ -4,9 +4,9 @@
  * table, the rates over a threshold sweep, and a threshold explorer per group.
  */
 
-import { maxOf, minOf } from 'mdml-engine/base'
-import type { GroupRateName, GroupReport } from 'mdml-engine/exposition'
-import { analyseThresholds } from 'mdml-engine/metrics'
+import { maxOf, minOf } from 'omai-engine/base'
+import type { GroupRateName, GroupReport } from 'omai-engine/exposition'
+import { analyseThresholds } from 'omai-engine/metrics'
 import { type ReactElement, type ReactNode, useCallback, useMemo, useState } from 'react'
 import type { Figure } from '../../figure/figure.ts'
 import { formatNumber } from '../../theme/format.ts'

@@ -29,7 +29,7 @@ function constraint(
  * @concept algorithmic-fairness
  * @example
  * ```ts
- * import { reductionConstraints } from 'mdml-engine/fairness'
+ * import { reductionConstraints } from 'omai-engine/fairness'
  * reductionConstraints.make({ kind: 'equalisedOdds' }) // => 'equalisedOdds'
  * ```
  */

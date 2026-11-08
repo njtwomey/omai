@@ -6,7 +6,7 @@
  * @index structure Studies and trials: the record of a parameter search.
  */
 
-import { type Decoded, type Encodable, fromJson, type Json, MdmlError, toJson } from '../base/index.ts'
+import { type Decoded, type Encodable, fromJson, type Json, OmaiError, toJson } from '../base/index.ts'
 import { hypervolume, nonDominatedSort } from '../optim/index.ts'
 import type { Space, SpaceValue } from '../space/index.ts'
 
@@ -69,8 +69,8 @@ export interface Study {
  * @concept hyperparameter-optimisation
  * @example
  * ```ts
- * import { createStudy } from 'mdml-engine/tune'
- * import { dict, real } from 'mdml-engine/space'
+ * import { createStudy } from 'omai-engine/tune'
+ * import { dict, real } from 'omai-engine/space'
  * createStudy(dict({ x: real(0, 1) })).directions // => ['minimize']
  * ```
  */
@@ -79,7 +79,7 @@ export function createStudy(
   options: Partial<Pick<Study, 'name' | 'directions' | 'trials' | 'metricNames'>> = {},
 ): Study {
   const directions = options.directions ?? ['minimize']
-  if (directions.length === 0) throw new MdmlError('value', 'createStudy: need at least one direction')
+  if (directions.length === 0) throw new OmaiError('value', 'createStudy: need at least one direction')
   return {
     name: options.name ?? 'study',
     directions,
@@ -97,7 +97,7 @@ export function createStudy(
  * @returns The value to minimise.
  * @example
  * ```ts
- * import { lossOf } from 'mdml-engine/tune'
+ * import { lossOf } from 'omai-engine/tune'
  * lossOf('maximize', 0.9) // => -0.9
  * ```
  */
@@ -112,8 +112,8 @@ export function lossOf(direction: StudyDirection, value: number): number {
  * @returns The trials whose state is `'complete'`.
  * @example
  * ```ts
- * import { completeTrials, createStudy } from 'mdml-engine/tune'
- * import { real } from 'mdml-engine/space'
+ * import { completeTrials, createStudy } from 'omai-engine/tune'
+ * import { real } from 'omai-engine/space'
  * completeTrials(createStudy(real(0, 1))).length // => 0
  * ```
  */
@@ -126,12 +126,12 @@ export function completeTrials(study: Study): Trial[] {
  *
  * @param study - The study.
  * @returns The best trial, or `undefined` when none is complete.
- * @throws MdmlError with code `value` for a multi-objective study (use {@link bestTrials}).
+ * @throws OmaiError with code `value` for a multi-objective study (use {@link bestTrials}).
  * @concept hyperparameter-optimisation
  * @example
  * ```ts
- * import { bestTrial, createStudy } from 'mdml-engine/tune'
- * import { real } from 'mdml-engine/space'
+ * import { bestTrial, createStudy } from 'omai-engine/tune'
+ * import { real } from 'omai-engine/space'
  * const trial = (number: number, value: number) =>
  *   ({ number, params: value, state: 'complete', values: [value], intermediate: [], source: 'x' }) as const
  * bestTrial(createStudy(real(0, 9), { trials: [trial(0, 3), trial(1, 1), trial(2, 2)] }))?.number // => 1
@@ -139,7 +139,7 @@ export function completeTrials(study: Study): Trial[] {
  */
 export function bestTrial(study: Study): Trial | undefined {
   if (study.directions.length !== 1)
-    throw new MdmlError('value', 'bestTrial: a multi-objective study has a Pareto front; use bestTrials')
+    throw new OmaiError('value', 'bestTrial: a multi-objective study has a Pareto front; use bestTrials')
   const direction = study.directions[0] as StudyDirection
   let best: Trial | undefined
   for (const t of completeTrials(study)) {
@@ -157,8 +157,8 @@ export function bestTrial(study: Study): Trial | undefined {
  * @returns One row of losses per trial (NaN for missing values).
  * @example
  * ```ts
- * import { createStudy, lossMatrix } from 'mdml-engine/tune'
- * import { real } from 'mdml-engine/space'
+ * import { createStudy, lossMatrix } from 'omai-engine/tune'
+ * import { real } from 'omai-engine/space'
  * const t = { number: 0, params: 0, state: 'complete', values: [1, 2], intermediate: [], source: 'x' } as const
  * lossMatrix(createStudy(real(0, 1), { directions: ['minimize', 'maximize'] }), [t]) // => [[1, -2]]
  * ```
@@ -176,8 +176,8 @@ export function lossMatrix(study: Study, trials: readonly Trial[]): number[][] {
  * @concept multi-objective-optimisation
  * @example
  * ```ts
- * import { bestTrials, createStudy } from 'mdml-engine/tune'
- * import { real } from 'mdml-engine/space'
+ * import { bestTrials, createStudy } from 'omai-engine/tune'
+ * import { real } from 'omai-engine/space'
  * const trial = (number: number, values: number[]) =>
  *   ({ number, params: 0, state: 'complete', values, intermediate: [], source: 'x' }) as const
  * const study = createStudy(real(0, 1), {
@@ -208,8 +208,8 @@ export function bestTrials(study: Study): Trial[] {
  * @concept multi-objective-optimisation
  * @example
  * ```ts
- * import { createStudy, studyHypervolume } from 'mdml-engine/tune'
- * import { real } from 'mdml-engine/space'
+ * import { createStudy, studyHypervolume } from 'omai-engine/tune'
+ * import { real } from 'omai-engine/space'
  * const trial = (number: number, values: number[]) =>
  *   ({ number, params: 0, state: 'complete', values, intermediate: [], source: 'x' }) as const
  * const study = createStudy(real(0, 1), { directions: ['minimize', 'minimize'], trials: [trial(0, [1, 2]), trial(1, [2, 1])] })
@@ -220,7 +220,7 @@ export function studyHypervolume(study: Study, reference: readonly number[]): nu
   const complete = completeTrials(study)
   if (complete.length === 0) return 0
   if (reference.length !== study.directions.length)
-    throw new MdmlError('shape', 'studyHypervolume: one reference coordinate per objective')
+    throw new OmaiError('shape', 'studyHypervolume: one reference coordinate per objective')
   const ref = study.directions.map((d, j) => lossOf(d, reference[j] ?? 0))
   return hypervolume(lossMatrix(study, complete), ref)
 }
@@ -234,8 +234,8 @@ export function studyHypervolume(study: Study, reference: readonly number[]): nu
  * @returns One row per trial.
  * @example
  * ```ts
- * import { createStudy, exportTrials } from 'mdml-engine/tune'
- * import { dict, real } from 'mdml-engine/space'
+ * import { createStudy, exportTrials } from 'omai-engine/tune'
+ * import { dict, real } from 'omai-engine/space'
  * const study = createStudy(dict({ x: real(0, 1) }), {
  *   trials: [{ number: 0, params: { x: 0.5 }, state: 'complete', values: [0.25], intermediate: [], source: 'random' }],
  * })
@@ -273,8 +273,8 @@ export function exportTrials(study: Study): Readonly<Record<string, Json>>[] {
  * @returns JSON.
  * @example
  * ```ts
- * import { createStudy, studyFromJson, studyToJson } from 'mdml-engine/tune'
- * import { real } from 'mdml-engine/space'
+ * import { createStudy, studyFromJson, studyToJson } from 'omai-engine/tune'
+ * import { real } from 'omai-engine/space'
  * studyFromJson(studyToJson(createStudy(real(0, 1), { name: 'saved' }))).name // => 'saved'
  * ```
  */
@@ -287,11 +287,11 @@ export function studyToJson(study: Study): Json {
  *
  * @param json - The JSON.
  * @returns The study.
- * @throws MdmlError with code `value` when the JSON is not a study.
+ * @throws OmaiError with code `value` when the JSON is not a study.
  * @example
  * ```ts
- * import { createStudy, studyFromJson, studyToJson } from 'mdml-engine/tune'
- * import { real } from 'mdml-engine/space'
+ * import { createStudy, studyFromJson, studyToJson } from 'omai-engine/tune'
+ * import { real } from 'omai-engine/space'
  * studyFromJson(studyToJson(createStudy(real(0, 1)))).trials // => []
  * ```
  */
@@ -305,6 +305,6 @@ export function studyFromJson(json: Json): Study {
     'space' in s &&
     'trials' in s &&
     Array.isArray((s as { trials: unknown }).trials)
-  if (!ok) throw new MdmlError('value', 'studyFromJson: not a study')
+  if (!ok) throw new OmaiError('value', 'studyFromJson: not a study')
   return s as unknown as Study
 }

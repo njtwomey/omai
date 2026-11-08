@@ -534,8 +534,8 @@ const targetLike = (t: Value, shapeOf: Value): Value => reshape(t, shapeOf.shape
  * @concept additive-models
  * @example
  * ```ts
- * import { additiveRegressor } from 'mdml-engine/gam'
- * import { key } from 'mdml-engine/random'
+ * import { additiveRegressor } from 'omai-engine/gam'
+ * import { key } from 'omai-engine/random'
  * const x = Array.from({ length: 40 }, (_, i) => [i / 39])
  * const y = x.map(([t]) => Math.sin(3 * (t ?? 0)))
  * const fit = additiveRegressor.with({ epochs: 150, interiorKnots: 4 }).fit({ x, y }, { key: key(1) })
@@ -571,7 +571,7 @@ export const additiveRegressor: AdditiveNetEstimator<AdditiveNetHyper> = additiv
  * @concept additive-models
  * @example
  * ```ts
- * import { additiveClassifier } from 'mdml-engine/gam'
+ * import { additiveClassifier } from 'omai-engine/gam'
  * additiveClassifier.name // => 'additive-classifier'
  * ```
  */
@@ -605,7 +605,7 @@ export const additiveClassifier: AdditiveNetEstimator<AdditiveNetHyper> = additi
  * @concept distributional-regression
  * @example
  * ```ts
- * import { additiveDistribution } from 'mdml-engine/gam'
+ * import { additiveDistribution } from 'omai-engine/gam'
  * additiveDistribution.hyper.family // => 'normal'
  * ```
  */

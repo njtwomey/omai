@@ -4,7 +4,7 @@
  * inducing points) and `PoolingByMultiheadAttention`, which pools a set into k vectors.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { foldIn, type Key } from '../../random/index.ts'
 import { asTensor, full, isValue, type TensorLike, type Value, zeros } from '../../tensor/index.ts'
 import { isab, type MabParams, mab, pma } from '../functional/sets.ts'
@@ -69,7 +69,7 @@ abstract class SetBlock extends Module<SetInput, Value> {
 
   protected constructor(dim: number, numHeads: number, options: SetBlockOptions) {
     super()
-    if (dim % numHeads !== 0) throw new MdmlError('value', `set block: ${dim} does not divide into ${numHeads} heads`)
+    if (dim % numHeads !== 0) throw new OmaiError('value', `set block: ${dim} does not divide into ${numHeads} heads`)
     this.dim = dim
     this.numHeads = numHeads
     this.layerNorm = options.layerNorm ?? true
@@ -100,9 +100,9 @@ abstract class SetBlock extends Module<SetInput, Value> {
  * @concept set-functions
  * @example
  * ```ts
- * import { SetAttentionBlock } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
- * import { zeros } from 'mdml-engine/tensor'
+ * import { SetAttentionBlock } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
+ * import { zeros } from 'omai-engine/tensor'
  * new SetAttentionBlock(4, 2, { key: key(0) }).forward(zeros([2, 5, 4])).shape // => [2, 5, 4]
  * ```
  */
@@ -133,9 +133,9 @@ export class SetAttentionBlock extends SetBlock {
  * @concept set-functions
  * @example
  * ```ts
- * import { InducedSetAttentionBlock } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
- * import { zeros } from 'mdml-engine/tensor'
+ * import { InducedSetAttentionBlock } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
+ * import { zeros } from 'omai-engine/tensor'
  * new InducedSetAttentionBlock(4, 2, 3, { key: key(0) }).forward(zeros([2, 6, 4])).shape // => [2, 6, 4]
  * ```
  */
@@ -183,9 +183,9 @@ export class InducedSetAttentionBlock extends SetBlock {
  * @concept set-functions
  * @example
  * ```ts
- * import { PoolingByMultiheadAttention } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
- * import { zeros } from 'mdml-engine/tensor'
+ * import { PoolingByMultiheadAttention } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
+ * import { zeros } from 'omai-engine/tensor'
  * new PoolingByMultiheadAttention(4, 2, 1, { key: key(0) }).forward(zeros([2, 6, 4])).shape // => [2, 1, 4]
  * ```
  */

@@ -12,7 +12,7 @@
  * @index structure The Algorithm protocol (init and step) every iterative method implements.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import { foldIn, type Key, key as makeKey } from '../random/index.ts'
 import type { Value } from '../tensor/index.ts'
 import { keyTags } from './_keys.ts'
@@ -45,8 +45,8 @@ export interface StepContext<K extends string = string> extends Pick<LogContext<
  * @returns The context.
  * @example
  * ```ts
- * import { nullTracer, startRun, stepContext } from 'mdml-engine/trace'
- * import { key } from 'mdml-engine/random'
+ * import { nullTracer, startRun, stepContext } from 'omai-engine/trace'
+ * import { key } from 'omai-engine/random'
  * stepContext(3, key(0), startRun(nullTracer, { name: 'x', seed: 0, config: {} })).t // => 3
  * ```
  */
@@ -217,7 +217,7 @@ function stepper<S>(algorithm: Algorithm<S>, root: Key, run: RunHandle, limit: n
  * @index function Run an Algorithm and record a traced run.
  * @example
  * ```ts
- * import { runAlgorithm, recorder } from 'mdml-engine/trace'
+ * import { runAlgorithm, recorder } from 'omai-engine/trace'
  * const halve = {
  *   name: 'halve',
  *   config: {},
@@ -278,7 +278,7 @@ export function runAlgorithm<S>(algorithm: Algorithm<S>, options: RunOptions): R
  *   (the algorithm's own verdict, `completed` when the budget ran out first).
  * @example
  * ```ts
- * import { iterate } from 'mdml-engine/trace'
+ * import { iterate } from 'omai-engine/trace'
  * const count = { name: 'count', config: {}, init: () => 0, step: (s: number) => s + 1 }
  * Array.from(iterate(count, { maxSteps: 3 }), (x) => x.state) // => [0, 1, 2, 3]
  * ```
@@ -332,7 +332,7 @@ export interface SliceBudget {
  * @returns The slice at step 0.
  * @example
  * ```ts
- * import { initialSlice, runFor, type Algorithm } from 'mdml-engine/trace'
+ * import { initialSlice, runFor, type Algorithm } from 'omai-engine/trace'
  * const count: Algorithm<number> = { name: 'count', config: {}, init: () => 0, step: (s) => s + 1 }
  * const first = initialSlice(count, {})
  * [first.t, runFor(count, { steps: 2 }, { maxSteps: 10, from: first }).state] // => [0, 2]
@@ -362,11 +362,11 @@ export function initialSlice<S>(
  * @param options - Seed or key and the total step budget as for `runAlgorithm`, the slice to continue from, and a run
  * handle to record into.
  * @returns The slice reached; `status` is set once the algorithm is done or the total budget is used up.
- * @throws MdmlError with code `value` when the budget is not positive.
+ * @throws OmaiError with code `value` when the budget is not positive.
  * @concept algorithm-protocol
  * @example
  * ```ts
- * import { runFor, type Algorithm } from 'mdml-engine/trace'
+ * import { runFor, type Algorithm } from 'omai-engine/trace'
  * const count: Algorithm<number> = { name: 'count', config: {}, init: () => 0, step: (s) => s + 1 }
  * const first = runFor(count, { steps: 4 }, { maxSteps: 10 })
  * first.state // => 4
@@ -381,7 +381,7 @@ export function runFor<S>(
 ): Slice<S> {
   const limit = budget.steps ?? Number.POSITIVE_INFINITY
   if (!(limit > 0) || (budget.ms !== undefined && !(budget.ms > 0))) {
-    throw new MdmlError('value', 'runFor: the step and time budgets must be positive')
+    throw new OmaiError('value', 'runFor: the step and time budgets must be positive')
   }
   const run = options.run ?? quietRun(algorithm, options)
   if (options.from?.status !== undefined) return options.from

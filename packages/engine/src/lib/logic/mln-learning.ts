@@ -10,7 +10,7 @@
  * evidence, and the average of the weights over the steps is returned.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import {
   analyticObjective,
   type GradientPath,
@@ -41,13 +41,13 @@ const softplus = (z: number): number => (z > 0 ? z + Math.log1p(Math.exp(-z)) : 
 
 function checkLearnable(ground: GroundMln, who: string): void {
   if (ground.weights.some((w) => !Number.isFinite(w)))
-    throw new MdmlError('value', `${who}: hard formulas have no weight to learn`)
+    throw new OmaiError('value', `${who}: hard formulas have no weight to learn`)
 }
 
 function startWeights(ground: GroundMln, initial: readonly number[] | undefined, who: string): number[] {
   if (initial === undefined) return new Array<number>(ground.weights.length).fill(0)
   if (initial.length !== ground.weights.length)
-    throw new MdmlError('value', `${who}: expected ${ground.weights.length} initial weights, got ${initial.length}`)
+    throw new OmaiError('value', `${who}: expected ${ground.weights.length} initial weights, got ${initial.length}`)
   return [...initial]
 }
 
@@ -119,10 +119,10 @@ export interface MlnObjectiveOptions {
  * @param worlds - Complete worlds (atoms not listed are false).
  * @param options - The ridge penalty and the starting weights.
  * @returns The problem; its vector is the weight of each first-order formula.
- * @throws MdmlError with code `value` for hard formulas, no worlds or an unknown atom.
+ * @throws OmaiError with code `value` for hard formulas, no worlds or an unknown atom.
  * @example
  * ```ts
- * import { groundMln, mlnPseudoLikelihoodProblem } from 'mdml-engine/logic'
+ * import { groundMln, mlnPseudoLikelihoodProblem } from 'omai-engine/logic'
  * const g = groundMln({ domain: ['a'], formulas: [{ weight: 0, formula: 'p(X)' }] })
  * mlnPseudoLikelihoodProblem(g, [{ 'p(a)': true }]).x0 // => [0]
  * ```
@@ -133,7 +133,7 @@ export function mlnPseudoLikelihoodProblem(
   options: MlnObjectiveOptions = {},
 ): SmoothProblem {
   checkLearnable(ground, 'mlnPseudoLikelihoodProblem')
-  if (worlds.length === 0) throw new MdmlError('value', 'mlnPseudoLikelihoodProblem: no worlds')
+  if (worlds.length === 0) throw new OmaiError('value', 'mlnPseudoLikelihoodProblem: no worlds')
   const l2 = options.l2 ?? 0
   const rows = pseudoRows(ground, worlds)
   const { features: f, d, label, count, total } = rows
@@ -278,10 +278,10 @@ function softmaxObjective(
  * @param worlds - Complete worlds.
  * @param options - The ridge penalty and the starting weights.
  * @returns The problem.
- * @throws MdmlError with code `value` for hard formulas, no worlds or too many atoms.
+ * @throws OmaiError with code `value` for hard formulas, no worlds or too many atoms.
  * @example
  * ```ts
- * import { groundMln, mlnLikelihoodProblem } from 'mdml-engine/logic'
+ * import { groundMln, mlnLikelihoodProblem } from 'omai-engine/logic'
  * const g = groundMln({ domain: ['a'], formulas: [{ weight: 0, formula: 'p(X)' }] })
  * mlnLikelihoodProblem(g, [{ 'p(a)': true }]).x0 // => [0]
  * ```
@@ -292,9 +292,9 @@ export function mlnLikelihoodProblem(
   options: MlnObjectiveOptions = {},
 ): SmoothProblem {
   checkLearnable(ground, 'mlnLikelihoodProblem')
-  if (worlds.length === 0) throw new MdmlError('value', 'mlnLikelihoodProblem: no worlds')
+  if (worlds.length === 0) throw new OmaiError('value', 'mlnLikelihoodProblem: no worlds')
   if (ground.atoms.length > LEARNING_ENUMERATION_LIMIT)
-    throw new MdmlError('value', `mlnLikelihoodProblem: ${ground.atoms.length} atoms is too many to enumerate`)
+    throw new OmaiError('value', `mlnLikelihoodProblem: ${ground.atoms.length} atoms is too many to enumerate`)
   const f = ground.weights.length
   const all = countMatrix(ground, new Uint8Array(ground.atoms.length), [...Array(ground.atoms.length).keys()])
   // Every example shares the table of all worlds; its data row is the world's index.
@@ -383,7 +383,7 @@ function conditionalModel(
   const queryAtoms = ground.atoms
     .map((_a, i) => i)
     .filter((i) => names.has((ground.atoms[i] as string).split('(')[0] as string))
-  if (queryAtoms.length === 0) throw new MdmlError('value', `${who}: no atom belongs to a query predicate`)
+  if (queryAtoms.length === 0) throw new OmaiError('value', `${who}: no atom belongs to a query predicate`)
   return {
     queryAtoms,
     examples: worlds.map((record) => {
@@ -409,10 +409,10 @@ function conditionalModel(
  * @param query - The names of the query predicates.
  * @param options - The ridge penalty and the starting weights.
  * @returns The problem.
- * @throws MdmlError with code `value` for hard formulas, no worlds, no query atoms or more than 14.
+ * @throws OmaiError with code `value` for hard formulas, no worlds, no query atoms or more than 14.
  * @example
  * ```ts
- * import { groundMln, mlnConditionalLikelihoodProblem } from 'mdml-engine/logic'
+ * import { groundMln, mlnConditionalLikelihoodProblem } from 'omai-engine/logic'
  * const g = groundMln({ domain: ['a'], formulas: [{ weight: 0, formula: 'e(X) -> q(X)' }] })
  * mlnConditionalLikelihoodProblem(g, [{ 'e(a)': true, 'q(a)': true }], ['q']).x0 // => [0]
  * ```
@@ -424,10 +424,10 @@ export function mlnConditionalLikelihoodProblem(
   options: MlnObjectiveOptions = {},
 ): SmoothProblem {
   checkLearnable(ground, 'mlnConditionalLikelihoodProblem')
-  if (worlds.length === 0) throw new MdmlError('value', 'mlnConditionalLikelihoodProblem: no worlds')
+  if (worlds.length === 0) throw new OmaiError('value', 'mlnConditionalLikelihoodProblem: no worlds')
   const model = conditionalModel(ground, worlds, query, 'mlnConditionalLikelihoodProblem')
   if (model.queryAtoms.length > 14)
-    throw new MdmlError('value', 'mlnConditionalLikelihoodProblem: too many query atoms to enumerate')
+    throw new OmaiError('value', 'mlnConditionalLikelihoodProblem: too many query atoms to enumerate')
   const tables = model.examples.map((e) => countMatrix(ground, e.base, model.queryAtoms))
   return {
     objective: softmaxObjective(
@@ -474,10 +474,10 @@ export const mlnDefaultSolver: SpaceValue = smoothSolverConfig({ kind: 'lbfgs', 
  * @param worlds - Complete training worlds.
  * @param options - The ridge penalty, the starting weights, the solver and its key.
  * @returns The algorithm.
- * @throws MdmlError with code `value` as {@link mlnPseudoLikelihoodProblem}.
+ * @throws OmaiError with code `value` as {@link mlnPseudoLikelihoodProblem}.
  * @example
  * ```ts
- * import { groundMln, mlnPseudoLikelihoodAlgorithm } from 'mdml-engine/logic'
+ * import { groundMln, mlnPseudoLikelihoodAlgorithm } from 'omai-engine/logic'
  * const g = groundMln({ domain: ['a', 'b'], formulas: [{ weight: 0, formula: 'p(X)' }] })
  * mlnPseudoLikelihoodAlgorithm(g, [{ 'p(a)': true, 'p(b)': true }]).name // => 'lbfgs'
  * ```
@@ -518,7 +518,7 @@ export interface MlnFit {
  * @returns The weights, the objective and whether the solver converged.
  * @example
  * ```ts
- * import { fitMlnProblem, groundMln, mlnConditionalLikelihoodProblem } from 'mdml-engine/logic'
+ * import { fitMlnProblem, groundMln, mlnConditionalLikelihoodProblem } from 'omai-engine/logic'
  * const g = groundMln({ domain: ['a', 'b'], formulas: [{ weight: 0, formula: 'e(X) -> q(X)' }] })
  * const worlds = [{ 'e(a)': true, 'q(a)': true, 'e(b)': true }, { 'e(a)': true, 'e(b)': true, 'q(b)': true }]
  * const problem = mlnConditionalLikelihoodProblem(g, worlds, ['q'], { l2: 0.1 })
@@ -543,10 +543,10 @@ export function fitMlnProblem(problem: SmoothProblem, options: MlnLearnOptions =
  * @param worlds - Complete training worlds.
  * @param options - The ridge penalty, starting weights, solver, step budget and key.
  * @returns The weights, the objective and whether it converged.
- * @throws MdmlError with code `value` as {@link mlnPseudoLikelihoodProblem}.
+ * @throws OmaiError with code `value` as {@link mlnPseudoLikelihoodProblem}.
  * @example
  * ```ts
- * import { groundMln, learnMlnWeights } from 'mdml-engine/logic'
+ * import { groundMln, learnMlnWeights } from 'omai-engine/logic'
  * const g = groundMln({ domain: ['a', 'b', 'c', 'd'], formulas: [{ weight: 0, formula: 'p(X)' }] })
  * const world = { 'p(a)': true, 'p(b)': true, 'p(c)': true }   // three of four true: the weight is log(3)
  * Math.abs((learnMlnWeights(g, [world]).weights[0] ?? 0) - Math.log(3)) < 1e-6 // => true
@@ -564,10 +564,10 @@ export function learnMlnWeights(ground: GroundMln, worlds: readonly World[], opt
  * @param worlds - Complete training worlds.
  * @param options - As {@link learnMlnWeights}.
  * @returns The weights, the objective and whether it converged.
- * @throws MdmlError with code `value` as {@link mlnLikelihoodProblem}.
+ * @throws OmaiError with code `value` as {@link mlnLikelihoodProblem}.
  * @example
  * ```ts
- * import { groundMln, learnMlnWeightsExact } from 'mdml-engine/logic'
+ * import { groundMln, learnMlnWeightsExact } from 'omai-engine/logic'
  * const g = groundMln({ domain: ['a', 'b', 'c', 'd'], formulas: [{ weight: 0, formula: 'p(X)' }] })
  * Math.abs((learnMlnWeightsExact(g, [{ 'p(a)': true, 'p(b)': true, 'p(c)': true }]).weights[0] ?? 0) - Math.log(3)) < 1e-6 // => true
  * ```
@@ -635,11 +635,11 @@ export interface MlnPerceptronOptions {
  * @param worlds - Complete training worlds.
  * @param options - The query predicates, learning rate, expectation and starting weights.
  * @returns The algorithm; the voted weights are `sum / iteration` of its state ({@link votedWeights}).
- * @throws MdmlError with code `value` for hard formulas, no worlds or a query that matches no atom.
+ * @throws OmaiError with code `value` for hard formulas, no worlds or a query that matches no atom.
  * @example
  * ```ts
- * import { groundMln, mlnPerceptronAlgorithm, votedWeights } from 'mdml-engine/logic'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { groundMln, mlnPerceptronAlgorithm, votedWeights } from 'omai-engine/logic'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const g = groundMln({ domain: ['a', 'b'], formulas: [{ weight: 0, formula: 'e(X) -> q(X)' }] })
  * const worlds = [{ 'e(a)': true, 'q(a)': true }, { 'e(b)': true, 'q(b)': true }]
  * const s = runAlgorithm(mlnPerceptronAlgorithm(g, worlds, { query: ['q'], expectation: 'exact' }), { seed: 0, maxSteps: 50 }).state
@@ -652,12 +652,12 @@ export function mlnPerceptronAlgorithm(
   options: MlnPerceptronOptions,
 ): Algorithm<MlnPerceptronState, MlnPerceptronPath> {
   checkLearnable(ground, 'mlnPerceptronAlgorithm')
-  if (worlds.length === 0) throw new MdmlError('value', 'mlnPerceptronAlgorithm: no worlds')
+  if (worlds.length === 0) throw new OmaiError('value', 'mlnPerceptronAlgorithm: no worlds')
   const model = conditionalModel(ground, worlds, options.query, 'mlnPerceptronAlgorithm')
   const rate = options.learningRate ?? 0.1
   const expectation = options.expectation ?? 'map'
   if (expectation === 'exact' && model.queryAtoms.length > 14)
-    throw new MdmlError('value', 'mlnPerceptronAlgorithm: too many query atoms for the exact expectation')
+    throw new OmaiError('value', 'mlnPerceptronAlgorithm: too many query atoms for the exact expectation')
   const f = ground.weights.length
   const dataCounts = model.examples.map((e) => mlnCounts(ground, e.world))
   const start = startWeights(ground, options.initial, 'mlnPerceptronAlgorithm')
@@ -741,7 +741,7 @@ export function mlnPerceptronAlgorithm(
  * @returns One weight per first-order formula.
  * @example
  * ```ts
- * import { votedWeights } from 'mdml-engine/logic'
+ * import { votedWeights } from 'omai-engine/logic'
  * votedWeights({ weights: [3], sum: [4], iteration: 2, error: 0, update: 0 }) // => [2]
  * ```
  */
@@ -756,10 +756,10 @@ export function votedWeights(s: MlnPerceptronState): number[] {
  * @param worlds - Complete training worlds.
  * @param options - As {@link mlnPerceptronAlgorithm}, plus the number of passes (default 50).
  * @returns The voted weights, the last weights and the training error of the last pass.
- * @throws MdmlError with code `value` as {@link mlnPerceptronAlgorithm}.
+ * @throws OmaiError with code `value` as {@link mlnPerceptronAlgorithm}.
  * @example
  * ```ts
- * import { groundMln, learnMlnDiscriminative } from 'mdml-engine/logic'
+ * import { groundMln, learnMlnDiscriminative } from 'omai-engine/logic'
  * const g = groundMln({ domain: ['a', 'b'], formulas: [{ weight: 0, formula: 'e(X) -> q(X)' }] })
  * const worlds = [{ 'e(a)': true, 'q(a)': true }, { 'e(b)': true, 'q(b)': true }]
  * learnMlnDiscriminative(g, worlds, { query: ['q'], expectation: 'exact', passes: 30 }).voted[0] > 0 // => true

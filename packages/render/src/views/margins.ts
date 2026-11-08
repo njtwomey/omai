@@ -5,8 +5,8 @@
  */
 
 import type { EChartsOption } from 'echarts'
-import { maxOf } from 'mdml-engine/base'
-import { type DecisionSurface, type MarginRecord, surfaceAt } from 'mdml-engine/exposition'
+import { maxOf } from 'omai-engine/base'
+import { type DecisionSurface, type MarginRecord, surfaceAt } from 'omai-engine/exposition'
 import { histogram } from '../charts/bars.ts'
 import { type Panel, subplots } from '../charts/compose.ts'
 import { referenceLines } from '../charts/functions.ts'

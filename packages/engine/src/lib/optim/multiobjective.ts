@@ -4,7 +4,7 @@
  * turn several objectives into one (weighted sum, Chebyshev, augmented Chebyshev, epsilon-constraint).
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import {
   add,
   asTensor,
@@ -35,7 +35,7 @@ function rowsOf(points: TensorLike): number[][] {
   const t = asTensor(points)
   if (t.shape.length === 1 && t.shape[0] === 0) return []
   if (t.shape.length !== 2)
-    throw new MdmlError('shape', `expected a matrix of points [n, m], got [${t.shape.join(', ')}]`)
+    throw new OmaiError('shape', `expected a matrix of points [n, m], got [${t.shape.join(', ')}]`)
   const [n = 0, m = 0] = t.shape
   const flat = toFlat(primalOf(t))
   return Array.from({ length: n }, (_, i) => flat.slice(i * m, (i + 1) * m))
@@ -50,7 +50,7 @@ function rowsOf(points: TensorLike): number[][] {
  * @concept pareto-optimality
  * @example
  * ```ts
- * import { dominates } from 'mdml-engine/optim'
+ * import { dominates } from 'omai-engine/optim'
  * dominates([1, 2], [2, 2]) // => true
  * dominates([1, 3], [2, 2]) // => false
  * ```
@@ -68,7 +68,7 @@ export function dominates(a: ArrayLike<number>, b: ArrayLike<number>): boolean {
  * @concept pareto-optimality
  * @example
  * ```ts
- * import { nonDominatedSort } from 'mdml-engine/optim'
+ * import { nonDominatedSort } from 'omai-engine/optim'
  * nonDominatedSort([[1, 4], [2, 2], [3, 3], [4, 1], [4, 4]]) // => [[0, 1, 3], [2], [4]]
  * ```
  */
@@ -84,7 +84,7 @@ export function nonDominatedSort(points: TensorLike): number[][] {
  * @concept pareto-optimality
  * @example
  * ```ts
- * import { paretoFront } from 'mdml-engine/optim'
+ * import { paretoFront } from 'omai-engine/optim'
  * paretoFront([[1, 4], [2, 2], [3, 3], [4, 1]]) // => [0, 1, 3]
  * ```
  */
@@ -103,8 +103,8 @@ export function paretoFront(points: TensorLike): number[] {
  * @concept pareto-optimality
  * @example
  * ```ts
- * import { crowdingDistance } from 'mdml-engine/optim'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { crowdingDistance } from 'omai-engine/optim'
+ * import { toFlat } from 'omai-engine/tensor'
  * toFlat(crowdingDistance([[0, 4], [1, 2], [3, 1], [4, 0]])) // => [Infinity, 1.5, 1.25, Infinity]
  * ```
  */
@@ -122,12 +122,12 @@ export function crowdingDistance(points: TensorLike): Tensor<'float64', [number]
  * @param reference - The reference point, a vector (worse than every point of interest); points not dominating it are
  *   ignored.
  * @returns The hypervolume.
- * @throws MdmlError with code `shape` unless `points` is `[n, m]` and `reference` a vector of `m` numbers, and
+ * @throws OmaiError with code `shape` unless `points` is `[n, m]` and `reference` a vector of `m` numbers, and
  *   `not-differentiable` for a traced `reference`.
  * @concept hypervolume
  * @example
  * ```ts
- * import { hypervolume } from 'mdml-engine/optim'
+ * import { hypervolume } from 'omai-engine/optim'
  * hypervolume([[1, 3], [2, 2], [3, 1]], [4, 4]) // => 6
  * ```
  */
@@ -138,7 +138,7 @@ export function hypervolume(points: TensorLike, reference: TensorLike): number {
 /** The hypervolume of rows against a reference read once, shared by {@link hypervolume} and the contributions. */
 function hypervolumeOf(rows: readonly number[][], reference: readonly number[]): number {
   if (rows.length > 0 && (rows[0]?.length ?? 0) !== reference.length)
-    throw new MdmlError('shape', `hypervolume: reference has ${reference.length} objectives, points ${rows[0]?.length}`)
+    throw new OmaiError('shape', `hypervolume: reference has ${reference.length} objectives, points ${rows[0]?.length}`)
   const inside = rows.filter((r) => r.every((v, k) => v < (reference[k] ?? 0)))
   const front = inside.filter(
     (r, i) => !inside.some((q, j) => j !== i && (dominates(q, r) || (j < i && q.every((v, k) => v === r[k])))),
@@ -154,13 +154,13 @@ function hypervolumeOf(rows: readonly number[][], reference: readonly number[]):
  * @param points - Objective vectors [n, m].
  * @param reference - The reference point, a vector.
  * @returns One contribution per point, a `[n]` tensor.
- * @throws MdmlError with code `shape` unless `points` is `[n, m]` and `reference` a vector of `m` numbers, and
+ * @throws OmaiError with code `shape` unless `points` is `[n, m]` and `reference` a vector of `m` numbers, and
  *   `not-differentiable` for a traced `reference`.
  * @concept hypervolume
  * @example
  * ```ts
- * import { hypervolumeContributions } from 'mdml-engine/optim'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { hypervolumeContributions } from 'omai-engine/optim'
+ * import { toFlat } from 'omai-engine/tensor'
  * toFlat(hypervolumeContributions([[1, 3], [2, 2], [3, 1]], [4, 4])) // => [1, 1, 1]
  * ```
  */
@@ -192,8 +192,8 @@ const weightsOf = (w: TensorLike): Value => asTensor(w)
  * @concept scalarisation
  * @example
  * ```ts
- * import { weightedSum } from 'mdml-engine/optim'
- * import { item, square, stack, sub, sum, type Value } from 'mdml-engine/tensor'
+ * import { weightedSum } from 'omai-engine/optim'
+ * import { item, square, stack, sub, sum, type Value } from 'omai-engine/tensor'
  * const f = (x: unknown) => stack([sum(square(x as Value)), sum(square(sub(x as Value, 2)))])
  * item(weightedSum(f, [0.5, 0.5])([1])) // => 1
  * ```
@@ -214,8 +214,8 @@ export function weightedSum(f: VectorObjective, weights: TensorLike): Objective 
  * @concept scalarisation
  * @example
  * ```ts
- * import { chebyshev } from 'mdml-engine/optim'
- * import { item, stack, sum, type Value } from 'mdml-engine/tensor'
+ * import { chebyshev } from 'omai-engine/optim'
+ * import { item, stack, sum, type Value } from 'omai-engine/tensor'
  * const f = (x: unknown) => stack([sum(x as Value), sum(x as Value)])
  * item(chebyshev(f, [1, 2])([3])) // => 6
  * ```
@@ -238,8 +238,8 @@ export function chebyshev(f: VectorObjective, weights: TensorLike, ideal: Tensor
  * @concept scalarisation
  * @example
  * ```ts
- * import { augmentedChebyshev } from 'mdml-engine/optim'
- * import { item, stack, sum, type Value } from 'mdml-engine/tensor'
+ * import { augmentedChebyshev } from 'omai-engine/optim'
+ * import { item, stack, sum, type Value } from 'omai-engine/tensor'
  * const f = (x: unknown) => stack([sum(x as Value), sum(x as Value)])
  * item(augmentedChebyshev(f, [1, 2], 0, 0.5)([2])) // => 7
  * ```
@@ -267,12 +267,12 @@ export function augmentedChebyshev(
  * @param index - The objective to minimise.
  * @param epsilons - Upper bounds for the objectives, one per objective (the entry at `index` is ignored): a vector.
  * @returns The scalar objective and its inequality constraints.
- * @throws MdmlError with code `shape` unless `epsilons` has rank 1, and `not-differentiable` for a traced one.
+ * @throws OmaiError with code `shape` unless `epsilons` has rank 1, and `not-differentiable` for a traced one.
  * @concept scalarisation
  * @example
  * ```ts
- * import { cobyla, epsilonConstraint } from 'mdml-engine/optim'
- * import { square, stack, sub, sum, toFlat, type Value } from 'mdml-engine/tensor'
+ * import { cobyla, epsilonConstraint } from 'omai-engine/optim'
+ * import { square, stack, sub, sum, toFlat, type Value } from 'omai-engine/tensor'
  * // f1 = x^2, f2 = (x - 2)^2; minimise f1 with f2 <= 1: x = 1
  * const f = (x: unknown) => stack([sum(square(x as Value)), sum(square(sub(x as Value, 2)))])
  * const { objective, constraints } = epsilonConstraint(f, 0, [0, 1])

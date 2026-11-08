@@ -16,7 +16,7 @@ import { asTensor, fromStorage, toFlat, type Value } from '../tensor/index.ts'
  * @concept image-quality
  * @example
  * ```ts
- * import { psnrFromMse } from 'mdml-engine/fields'
+ * import { psnrFromMse } from 'omai-engine/fields'
  * [psnrFromMse(0.01), psnrFromMse(0.0001)] // => [20, 40]
  * ```
  */
@@ -60,8 +60,8 @@ export interface DecodeOptions {
  * @returns The coordinates.
  * @example
  * ```ts
- * import { gridCoordinates } from 'mdml-engine/fields'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { gridCoordinates } from 'omai-engine/fields'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(gridCoordinates({ dim: 2, resolution: 2 })) // => [[-0.5, -0.5], [0.5, -0.5], [-0.5, 0.5], [0.5, 0.5]]
  * ```
  */
@@ -94,8 +94,8 @@ export function gridCoordinates(options: DecodeOptions): Value {
  * @concept neural-fields
  * @example
  * ```ts
- * import { decodeField, neuralField } from 'mdml-engine/fields'
- * import { key } from 'mdml-engine/random'
+ * import { decodeField, neuralField } from 'omai-engine/fields'
+ * import { key } from 'omai-engine/random'
  * const f = neuralField({ inputDim: 2, outputDim: 3, width: 8, depth: 1, key: key(0) })
  * decodeField(f, f.params, { dim: 2, resolution: 4 }).values.length // => 48
  * ```

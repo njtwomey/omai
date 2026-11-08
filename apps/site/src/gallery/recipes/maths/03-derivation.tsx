@@ -1,4 +1,4 @@
-import { ControlPanel, Derivation, NumberField } from 'mdml-render/react'
+import { ControlPanel, Derivation, NumberField } from 'omai-render/react'
 import { type ReactNode, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 

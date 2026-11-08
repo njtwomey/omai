@@ -77,7 +77,7 @@ const posteriorOf = (p: BgmmParams): VariationalPosterior => ({
  *
  * @example
  * ```ts
- * import type { BgmmPath } from 'mdml-engine/methods/mixture'
+ * import type { BgmmPath } from 'omai-engine/methods/mixture'
  * const path: BgmmPath = 'model/centres'
  * path // => 'model/centres'
  * ```
@@ -89,7 +89,7 @@ export type BgmmPath = 'model/centres'
  *
  * @example
  * ```ts
- * import { bgmm } from 'mdml-engine/methods/mixture'
+ * import { bgmm } from 'omai-engine/methods/mixture'
  * const x = [[0, 0], [0, 1], [0.5, 0.5], [9, 9], [9, 8], [8.5, 8.5]]
  * bgmm.with({ nComponents: 3 }).fit({ x }).params.weights.length // => 3
  * ```

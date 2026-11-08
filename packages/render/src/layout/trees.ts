@@ -4,7 +4,7 @@
  * hierarchical clustering is drawn.
  */
 
-import { maxOf, minOf } from 'mdml-engine/base'
+import { maxOf, minOf } from 'omai-engine/base'
 import { type GraphLayout, type LayoutBox, type LayoutGraph, normaliseLayout, straightRoutes } from './graph.ts'
 
 /** Options of the tree layouts. */
@@ -83,7 +83,7 @@ function finish(graph: LayoutGraph, boxes: Record<string, LayoutBox>, margin: nu
  * @index function Lay out a tree with parents over their children: `tidyTree(graph)`.
  * @example
  * ```ts
- * import { tidyTree } from 'mdml-render/layout'
+ * import { tidyTree } from 'omai-render/layout'
  * const g = { nodes: ['r', 'a', 'b'].map((id) => ({ id, width: 20, height: 20 })), edges: [{ from: 'r', to: 'a' }, { from: 'r', to: 'b' }] }
  * const l = tidyTree(g)
  * l.nodes['r'].x === (l.nodes['a'].x + l.nodes['b'].x) / 2 // => true
@@ -125,7 +125,7 @@ export function tidyTree(graph: LayoutGraph, options: TreeOptions = {}): GraphLa
  * @returns The layout.
  * @example
  * ```ts
- * import { radialTree } from 'mdml-render/layout'
+ * import { radialTree } from 'omai-render/layout'
  * const g = { nodes: ['r', 'a', 'b', 'c'].map((id) => ({ id, width: 10, height: 10 })), edges: ['a', 'b', 'c'].map((to) => ({ from: 'r', to })) }
  * const l = radialTree(g)
  * Math.round(Math.hypot(l.nodes['a'].x - l.nodes['r'].x, l.nodes['a'].y - l.nodes['r'].y)) // => 70
@@ -167,7 +167,7 @@ export function radialTree(graph: LayoutGraph, options: Omit<TreeOptions, 'direc
  * @index function Lay out merges at their heights: `dendrogram(graph, heights)`.
  * @example
  * ```ts
- * import { dendrogram } from 'mdml-render/layout'
+ * import { dendrogram } from 'omai-render/layout'
  * const g = { nodes: ['m', 'a', 'b'].map((id) => ({ id, width: 0, height: 0 })), edges: [{ from: 'm', to: 'a' }, { from: 'm', to: 'b' }] }
  * const l = dendrogram(g, { m: 2 })
  * l.nodes['m'].y < l.nodes['a'].y // => true

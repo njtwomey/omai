@@ -3,7 +3,7 @@
  * random sets beside the scores of random directions, with the t test's p-value and the probes' accuracies.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { seal } from './_check.ts'
 
 /** One concept's TCAV test. */
@@ -40,17 +40,17 @@ export interface ConceptScores {
  *
  * @param record - The record without its `kind`.
  * @returns The record.
- * @throws MdmlError `shape` when a concept has no scores.
+ * @throws OmaiError `shape` when a concept has no scores.
  * @example
  * ```ts
- * import { conceptScores } from 'mdml-engine/exposition'
+ * import { conceptScores } from 'omai-engine/exposition'
  * const r = conceptScores({ method: 'TCAV', target: 'zebra', layer: 'mixed4c', concepts: [{ name: 'striped', scores: [0.9, 0.8], randomScores: [0.5, 0.4], mean: 0.85, pValue: 0.01 }] })
  * r.concepts[0].name // => 'striped'
  * ```
  */
 export function conceptScores(record: Omit<ConceptScores, 'kind'>): ConceptScores {
   for (const c of record.concepts) {
-    if (c.scores.length === 0) throw new MdmlError('shape', `concepts: ${c.name} has no scores`)
+    if (c.scores.length === 0) throw new OmaiError('shape', `concepts: ${c.name} has no scores`)
   }
   return seal({ kind: 'concepts', ...record })
 }

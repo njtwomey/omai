@@ -5,7 +5,7 @@
  * embeddings reuse.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { floydWarshall, graph as makeGraph } from '../graph/index.ts'
 import { defineEstimator, type Estimator, type Fitted, matrixView } from '../learn/index.ts'
 import { kNearest } from '../numerics/spatial/index.ts'
@@ -25,7 +25,7 @@ export type NeighbourEdges = [number, number, number][]
  * @returns The directed edges i -> j with their distances, and the neighbour indices per row.
  * @example
  * ```ts
- * import { neighbourEdges } from 'mdml-engine/manifold'
+ * import { neighbourEdges } from 'omai-engine/manifold'
  * neighbourEdges([[0], [1], [5]], 1).indices // => [[1], [0], [1]]
  * ```
  */
@@ -34,7 +34,7 @@ export function neighbourEdges(
   k: number,
 ): { readonly edges: NeighbourEdges; readonly indices: number[][] } {
   const n = matrixView(x, 'neighbourEdges').n
-  if (!(Number.isInteger(k) && k >= 1 && k < n)) throw new MdmlError('value', `neighbours: k must be in 1..${n - 1}`)
+  if (!(Number.isInteger(k) && k >= 1 && k < n)) throw new OmaiError('value', `neighbours: k must be in 1..${n - 1}`)
   const nb = kNearest(x, undefined, k, { excludeSelf: true })
   const idx = Array.from(nb.indices.data)
   const dist = toFlat(nb.distances)
@@ -50,10 +50,10 @@ export function neighbourEdges(
  * @param x - Points `[n, d]`.
  * @param k - Neighbours per row.
  * @returns The distances `[n, n]` and the graph's edges.
- * @throws MdmlError `value` when the graph is disconnected.
+ * @throws OmaiError `value` when the graph is disconnected.
  * @example
  * ```ts
- * import { geodesicDistances } from 'mdml-engine/manifold'
+ * import { geodesicDistances } from 'omai-engine/manifold'
  * geodesicDistances([[0], [1], [2], [3]], 1).distances[0] // => [0, 1, 2, 3]
  * ```
  */
@@ -66,7 +66,7 @@ export function geodesicDistances(
   const g = makeGraph(edges, { nodes: n, duplicates: 'min' })
   const distances = toArray(floydWarshall(g).distance) as number[][]
   if (distances.some((r) => r.some((v) => !Number.isFinite(v))))
-    throw new MdmlError('value', 'isomap: the neighbour graph is disconnected; raise nNeighbors')
+    throw new OmaiError('value', 'isomap: the neighbour graph is disconnected; raise nNeighbors')
   return { distances, edges }
 }
 
@@ -84,7 +84,7 @@ export interface IsomapHyper {
  * @index estimator Isomap embedding from geodesic distances.
  * @example
  * ```ts
- * import { isomap } from 'mdml-engine/manifold'
+ * import { isomap } from 'omai-engine/manifold'
  * isomap({ nNeighbors: 2 }).fit({ x: [[0, 0], [1, 0], [2, 0], [3, 0]] }).params.embedding.length // => 4
  * ```
  */

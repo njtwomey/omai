@@ -2,7 +2,7 @@
 
 Haario's banana is a Gaussian bent into a curve: `x1 ~ N(0, 3^2)` and `x2 | x1 ~ N(0.1 x1^2 - 0.9, 1)`. Its density is
 known exactly, which makes it a good test of whether a sampler explores a curved shape. The example runs the No-U-Turn
-sampler (NUTS) from `mdml-engine/sampling` on it.
+sampler (NUTS) from `omai-engine/sampling` on it.
 
 ![Draws of four chains over the true density contours, and the trace of x[0]](figure.svg)
 

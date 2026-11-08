@@ -8,7 +8,7 @@
  * `optim` as their update rule, so the direction `delta z` can be fed to momentum or Adam instead of a plain step.
  */
 
-import { argmaxOf, type Json, MdmlError, maxOf } from '../base/index.ts'
+import { argmaxOf, type Json, maxOf, OmaiError } from '../base/index.ts'
 import { dnrm2 } from '../numerics/linalg/index.ts'
 import { applyUpdates, type GradientTransformation } from '../optim/index.ts'
 import { foldIn, type Key } from '../random/index.ts'
@@ -54,7 +54,7 @@ function dotSparse(w: ArrayLike<number>, f: SparseFeatures): number {
  * @returns `w . f`.
  * @example
  * ```ts
- * import { featureValue } from 'mdml-engine/agents'
+ * import { featureValue } from 'omai-engine/agents'
  * featureValue([1, 2, 3], { indices: [0, 2] }) // => 4
  * ```
  */
@@ -69,7 +69,7 @@ export function featureValue(w: ArrayLike<number>, f: SparseFeatures): number {
  * @returns The feature map over observations that are state indices.
  * @example
  * ```ts
- * import { oneHotFeatures } from 'mdml-engine/agents'
+ * import { oneHotFeatures } from 'omai-engine/agents'
  * oneHotFeatures(4).features(2).indices // => [2]
  * ```
  */
@@ -85,7 +85,7 @@ export function oneHotFeatures(n: number): FeatureMap<number> {
  * @returns The feature map over state indices.
  * @example
  * ```ts
- * import { matrixFeatures } from 'mdml-engine/agents'
+ * import { matrixFeatures } from 'omai-engine/agents'
  * matrixFeatures([[2, 0, 1], [0, 1, 1]]).features(0) // => { indices: [0, 2], values: [2, 1] }
  * ```
  */
@@ -163,17 +163,17 @@ const hashCoordinates = (tiling: number, q: readonly number[], memory: number): 
  *
  * @param options - The bounds of the input, the tilings, tiles, offsets and optional hash memory.
  * @returns The coder.
- * @throws MdmlError with code `value` for bounds that do not match or are empty.
+ * @throws OmaiError with code `value` for bounds that do not match or are empty.
  * @example
  * ```ts
- * import { tileCoder } from 'mdml-engine/agents'
+ * import { tileCoder } from 'omai-engine/agents'
  * const coder = tileCoder({ low: [0], high: [1], tilings: 4, tiles: 4 })
  * [coder.size, coder.indices([0.1])] // => [20, [0, 5, 10, 16]]
  * ```
  */
 export function tileCoder(options: TileCoderOptions): TileCoder {
   const d = options.low.length
-  if (d === 0 || options.high.length !== d) throw new MdmlError('shape', 'tileCoder: low and high must match')
+  if (d === 0 || options.high.length !== d) throw new OmaiError('shape', 'tileCoder: low and high must match')
   const tilings = options.tilings ?? 8
   const tiles = Array.from({ length: d }, (_, i) =>
     typeof options.tiles === 'number' ? options.tiles : (options.tiles?.[i] ?? 8),
@@ -183,7 +183,7 @@ export function tileCoder(options: TileCoderOptions): TileCoder {
   const perTiling = cells.reduce((a, b) => a * b, 1)
   const memory = options.memory
   for (let i = 0; i < d; i++) {
-    if (!((options.high[i] ?? 0) > (options.low[i] ?? 0))) throw new MdmlError('value', 'tileCoder: need low < high')
+    if (!((options.high[i] ?? 0) > (options.low[i] ?? 0))) throw new OmaiError('value', 'tileCoder: need low < high')
   }
   const displacement = (t: number, i: number): number =>
     offsets === 'none' ? 0 : offsets === 'symmetric' ? t / tilings : ((t * (2 * i + 1)) % tilings) / tilings
@@ -217,7 +217,7 @@ export function tileCoder(options: TileCoderOptions): TileCoder {
  * @returns The feature map.
  * @example
  * ```ts
- * import { tileCoder, tileFeatures } from 'mdml-engine/agents'
+ * import { tileCoder, tileFeatures } from 'omai-engine/agents'
  * tileFeatures(tileCoder({ low: [0], high: [1], tilings: 2, tiles: 2 })).features([0.3]).indices // => [0, 4]
  * ```
  */
@@ -239,7 +239,7 @@ export function tileFeatures<O = readonly number[]>(
  * @returns The feature map, of `nActions * coder.size` features.
  * @example
  * ```ts
- * import { actionTileFeatures, tileCoder } from 'mdml-engine/agents'
+ * import { actionTileFeatures, tileCoder } from 'omai-engine/agents'
  * actionTileFeatures(tileCoder({ low: [0], high: [1], tilings: 2, tiles: 2 }), 3).features([0.3], 1).indices // => [6, 10]
  * ```
  */
@@ -303,7 +303,7 @@ export interface LinearPredictionOptions<O> {
 
 const actionCount = (env: { readonly actionSpace: Space }, given: number | undefined, name: string): number => {
   const n = given ?? (env.actionSpace.kind === 'discrete' ? env.actionSpace.n : undefined)
-  if (n === undefined) throw new MdmlError('value', `${name}: needs a discrete action space or nActions`)
+  if (n === undefined) throw new OmaiError('value', `${name}: needs a discrete action space or nActions`)
   return n
 }
 
@@ -374,9 +374,9 @@ function applyDirection(
  * @concept temporal-difference-learning
  * @example
  * ```ts
- * import { oneHotFeatures, semiGradientTd } from 'mdml-engine/agents'
- * import { randomWalk } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { oneHotFeatures, semiGradientTd } from 'omai-engine/agents'
+ * import { randomWalk } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * const env = randomWalk.create({ n: 5 })
  * const agent = semiGradientTd(env, { features: oneHotFeatures(5), alpha: 0.5, gamma: 1 })
  * const t = { observation: 2, action: 1, reward: 1, nextObservation: 3, terminated: false, truncated: false }
@@ -390,7 +390,7 @@ export function semiGradientTd<O>(
   const lambda = options.lambda ?? 0
   const kind = options.trace ?? 'accumulating'
   if (kind === 'dutch' && (options.target !== undefined || options.optimiser !== undefined || options.offline === true))
-    throw new MdmlError('value', 'semiGradientTd: dutch traces are on-policy, online and take no optimiser')
+    throw new OmaiError('value', 'semiGradientTd: dutch traces are on-policy, online and take no optimiser')
   return linearPrediction(
     'semiGradientTd',
     env,
@@ -458,9 +458,9 @@ export interface GradientTdOptions<O> extends LinearPredictionOptions<O> {
  * @concept temporal-difference-learning
  * @example
  * ```ts
- * import { gradientTd, oneHotFeatures } from 'mdml-engine/agents'
- * import { randomWalk } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { gradientTd, oneHotFeatures } from 'omai-engine/agents'
+ * import { randomWalk } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * const agent = gradientTd(randomWalk.create({ n: 5 }), { features: oneHotFeatures(5), alpha: 0.5, gamma: 1 })
  * agent.init(key(0)).h?.length // => 5
  * ```
@@ -517,9 +517,9 @@ export interface EmphaticTdOptions<O> extends LinearPredictionOptions<O> {
  * @concept temporal-difference-learning
  * @example
  * ```ts
- * import { emphaticTd, oneHotFeatures } from 'mdml-engine/agents'
- * import { randomWalk } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { emphaticTd, oneHotFeatures } from 'omai-engine/agents'
+ * import { randomWalk } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * const agent = emphaticTd(randomWalk.create({ n: 5 }), { features: oneHotFeatures(5), alpha: 0.5, gamma: 1 })
  * const t = { observation: 2, action: 1, reward: 1, nextObservation: 3, terminated: false, truncated: false }
  * agent.learn(agent.init(key(0)), t, key(1)).w[2] // => 0.5
@@ -686,9 +686,9 @@ export interface LinearSarsaState {
  * @concept sarsa
  * @example
  * ```ts
- * import { actionTileFeatures, semiGradientSarsa, tileCoder } from 'mdml-engine/agents'
- * import { mountainCar } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { actionTileFeatures, semiGradientSarsa, tileCoder } from 'omai-engine/agents'
+ * import { mountainCar } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * const env = mountainCar.create()
  * const coder = tileCoder({ low: [-1.2, -0.07], high: [0.6, 0.07], tilings: 8, tiles: 8 })
  * const agent = semiGradientSarsa(env, { features: actionTileFeatures(coder, 3), alpha: 0.5 / 8 })
@@ -814,7 +814,7 @@ export function semiGradientSarsa<O>(
  * @returns One cost-to-go per grid point, row by row.
  * @example
  * ```ts
- * import { costToGo } from 'mdml-engine/agents'
+ * import { costToGo } from 'omai-engine/agents'
  * const features = { size: 2, features: (o: readonly number[], a: number) => ({ indices: [a] }) }
  * costToGo({ w: Float64Array.of(1, 3) } as never, features, 2, [[0], [0]]) // => [-3]
  * ```

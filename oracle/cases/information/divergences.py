@@ -7,8 +7,8 @@ import scipy.spatial.distance as ssd
 import scipy.special as sp
 import scipy.stats as st
 import sklearn
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray, rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray, rng
 from sklearn.decomposition._nmf import _beta_divergence  # pyright: ignore[reportPrivateUsage]
 
 REFERENCE: dict[str, str] = {"scipy": scipy.__version__, "scikit-learn": sklearn.__version__}

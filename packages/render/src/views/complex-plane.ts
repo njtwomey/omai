@@ -5,8 +5,8 @@
  */
 
 import type { EChartsOption } from 'echarts'
-import { maxOf } from 'mdml-engine/base'
-import { type Complex, type ComplexPlane, isStablePole } from 'mdml-engine/exposition'
+import { maxOf } from 'omai-engine/base'
+import { type Complex, type ComplexPlane, isStablePole } from 'omai-engine/exposition'
 import { lines } from '../charts/lines.ts'
 import { cartesian, type Layer } from '../charts/plot.ts'
 import { points } from '../charts/points.ts'
@@ -23,8 +23,8 @@ const CROSS = 'path://M-3,-2L-2,-3L0,-1L2,-3L3,-2L1,0L3,2L2,3L0,1L-2,3L-3,2L-1,0
  * @returns The limits of the real and imaginary axes.
  * @example
  * ```ts
- * import { complexPlane } from 'mdml-engine/exposition'
- * import { complexPlaneLimits } from 'mdml-render/views'
+ * import { complexPlane } from 'omai-engine/exposition'
+ * import { complexPlaneLimits } from 'omai-render/views'
  * complexPlaneLimits(complexPlane({ domain: 'z', poles: [[0.5, 0]] })).real // => [-1.5, 1.5]
  * ```
  */
@@ -48,8 +48,8 @@ export function complexPlaneLimits(record: ComplexPlane): { real: [number, numbe
  * @returns The layers.
  * @example
  * ```ts
- * import { complexPlane } from 'mdml-engine/exposition'
- * import { complexPlaneLayers } from 'mdml-render/views'
+ * import { complexPlane } from 'omai-engine/exposition'
+ * import { complexPlaneLayers } from 'omai-render/views'
  * complexPlaneLayers(complexPlane({ domain: 's', poles: [[-1, 1], [0.5, 0]], zeros: [[-2, 0]] })).length // => 3
  * ```
  */
@@ -145,8 +145,8 @@ export function complexPlaneLayers(record: ComplexPlane, options: ViewOptions = 
  * @returns The ECharts option.
  * @example
  * ```ts
- * import { complexPlane } from 'mdml-engine/exposition'
- * import { complexPlaneView } from 'mdml-render/views'
+ * import { complexPlane } from 'omai-engine/exposition'
+ * import { complexPlaneView } from 'omai-render/views'
  * complexPlaneView(complexPlane({ domain: 's', poles: [[-1, 1], [-1, -1]] })).series.length // => 2
  * ```
  */

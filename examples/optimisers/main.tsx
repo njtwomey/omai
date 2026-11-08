@@ -4,12 +4,12 @@
  * Newton). Each run is recorded; the left panel draws the paths over the function (a heat map of log10(1 + f) filling
  * the axes, with its contours), and the right panel the loss against the step on a log axis, both read from the tapes.
  */
-import { adam, bfgs, lbfgs, minimizer, newton, sgd } from 'mdml-engine/optim'
-import { add, mul, square, sub, take, tensor, type Value } from 'mdml-engine/tensor'
-import { metricSeries, type Run, recorder, runAlgorithm, tracePolicy } from 'mdml-engine/trace'
-import { cartesian, lines, points } from 'mdml-render/charts'
-import { figure } from 'mdml-render/figure'
-import { parameterPath } from 'mdml-render/trace'
+import { adam, bfgs, lbfgs, minimizer, newton, sgd } from 'omai-engine/optim'
+import { add, mul, square, sub, take, tensor, type Value } from 'omai-engine/tensor'
+import { metricSeries, type Run, recorder, runAlgorithm, tracePolicy } from 'omai-engine/trace'
+import { cartesian, lines, points } from 'omai-render/charts'
+import { figure } from 'omai-render/figure'
+import { parameterPath } from 'omai-render/trace'
 import type { ExampleModule, Outcome } from '../_shared/contract.ts'
 import { Figure, Panel } from '../_shared/figure.tsx'
 import { axesOf, fieldLayers, gridOfValues, gridRows, windowOf } from '../_shared/maps.ts'

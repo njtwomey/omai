@@ -8,9 +8,9 @@
  */
 
 import type { EChartsOption } from 'echarts'
-import { MdmlError } from 'mdml-engine/base'
-import type { Exposition, ExpositionKind } from 'mdml-engine/exposition'
-import type { Scene } from 'mdml-engine/scene'
+import { OmaiError } from 'omai-engine/base'
+import type { Exposition, ExpositionKind } from 'omai-engine/exposition'
+import type { Scene } from 'omai-engine/scene'
 import type { ViewOptions } from './_view.ts'
 import { agentFrames } from './agents.ts'
 import { anomalyView } from './anomaly.ts'
@@ -62,7 +62,7 @@ import { conformalFrames, conformalView, reliabilityView } from './trust.ts'
 export type RecordOf<K extends ExpositionKind> = Extract<Exposition, { kind: K }>
 
 /**
- * The standard view of a record kind: its React component's name in `mdml-render/react`, a title, whether it plays
+ * The standard view of a record kind: its React component's name in `omai-render/react`, a title, whether it plays
  * (frames for a player), what it needs beside the record to draw rows in input space, and a headless still (the
  * figure, or the last frame of one that plays) for slides, blogs and server-side export.
  *
@@ -633,18 +633,18 @@ const REGISTRY: Registry = {
  *
  * @param kind - The record kind.
  * @returns The view.
- * @throws MdmlError `value` naming the known kinds when the kind has no standard view (a record from a newer engine,
+ * @throws OmaiError `value` naming the known kinds when the kind has no standard view (a record from a newer engine,
  *   a value that is not a record).
  * @index function The standard view of a record kind: `viewFor('regularisationPath')`.
  * @example
  * ```ts
- * import { viewFor } from 'mdml-render/views'
+ * import { viewFor } from 'omai-render/views'
  * viewFor('regularisationPath').component // => 'PathView'
  * ```
  */
 export function viewFor<K extends ExpositionKind>(kind: K): StandardView<K> {
   if (!Object.hasOwn(REGISTRY, kind))
-    throw new MdmlError(
+    throw new OmaiError(
       'value',
       `no standard view for record kind '${String(kind)}' (known: ${Object.keys(REGISTRY).join(', ')})`,
     )

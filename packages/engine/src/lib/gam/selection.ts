@@ -6,7 +6,7 @@
  * penalty (`s(x, { select: true })`, in `terms.ts`), which adds a penalty on the null space of the smoothness penalty.
  */
 
-import { MdmlError, maxOf } from '../base/index.ts'
+import { maxOf, OmaiError } from '../base/index.ts'
 import { dgemm, dsyev } from '../numerics/linalg/index.ts'
 import { betainc, gammaincc } from '../numerics/special/index.ts'
 import { key as makeKey } from '../random/index.ts'
@@ -48,7 +48,7 @@ export interface GamInformation {
  *   (JASA 111, 2016).
  * @example
  * ```ts
- * import { GAM_DEFAULTS, fitGamOuter, gamProblem, s, smoothingCorrection } from 'mdml-engine/gam'
+ * import { GAM_DEFAULTS, fitGamOuter, gamProblem, s, smoothingCorrection } from 'omai-engine/gam'
  * const x = Array.from({ length: 50 }, (_, i) => [i / 49])
  * const hyper = { ...GAM_DEFAULTS, terms: [s(0, { k: 7 })], iteration: 'outer' as const }
  * const problem = gamProblem(x, x.map((r, i) => Math.sin(5 * (r[0] ?? 0)) + 0.2 * Math.sin(i * 12.9898)), hyper)
@@ -120,7 +120,7 @@ export function smoothingCorrection(
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { GAM_DEFAULTS, fitGam, gamInformation, gamProblem, s } from 'mdml-engine/gam'
+ * import { GAM_DEFAULTS, fitGam, gamInformation, gamProblem, s } from 'omai-engine/gam'
  * const x = Array.from({ length: 40 }, (_, i) => [i / 39])
  * const hyper = { ...GAM_DEFAULTS, terms: [s(0, { k: 6 })] }
  * const problem = gamProblem(x, x.map((r, i) => Math.sin(5 * (r[0] ?? 0)) + 0.2 * Math.sin(i * 12.9898)), hyper)
@@ -172,11 +172,11 @@ export interface GamComparison {
  * @param small - The smaller model's fitted context ({@link fitContext}).
  * @param large - The larger model's.
  * @returns The comparison.
- * @throws MdmlError `value` if the models are not nested in the order given (the larger has no more effective degrees of freedom).
+ * @throws OmaiError `value` if the models are not nested in the order given (the larger has no more effective degrees of freedom).
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { GAM_DEFAULTS, compareGams, fitContext, fitGam, gamProblem, s } from 'mdml-engine/gam'
+ * import { GAM_DEFAULTS, compareGams, fitContext, fitGam, gamProblem, s } from 'omai-engine/gam'
  * const x = Array.from({ length: 80 }, (_, i) => [i / 79, ((i * 7) % 80) / 79])
  * const y = x.map((r, i) => Math.sin(5 * (r[0] ?? 0)) + 0.3 * (r[1] ?? 0) + 0.2 * Math.sin(i * 12.9898))
  * const fit = (terms: ReturnType<typeof s>[]) => {
@@ -190,7 +190,7 @@ export interface GamComparison {
 export function compareGams(small: GamFitContext, large: GamFitContext): GamComparison {
   const df = large.edfTotal - small.edfTotal
   if (!(df > 0))
-    throw new MdmlError('value', 'compareGams: the larger model must have more effective degrees of freedom')
+    throw new OmaiError('value', 'compareGams: the larger model must have more effective degrees of freedom')
   const drop = small.deviance - large.deviance
   if (large.scaleEstimated) {
     const statistic = drop / df / large.scale

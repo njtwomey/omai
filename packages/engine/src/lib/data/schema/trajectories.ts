@@ -55,7 +55,7 @@ export interface TrajectoryArrays {
  * @returns The dataset.
  * @example
  * ```ts
- * import { trajectories } from 'mdml-engine/data'
+ * import { trajectories } from 'omai-engine/data'
  * trajectories({ observations: [[0], [1]], actions: [1, 0], rewards: [0, 1], nActions: 2 }).actions.dtype // => 'int32'
  * ```
  */

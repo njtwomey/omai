@@ -4,7 +4,7 @@
  * searches of `lib/search` run on the maps and mazes of `lib/worlds`.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import type { BidirectionalProblem } from '../search/index.ts'
 import { type CellMetric, cellCoords, exits, heuristicTo, terrainOf, type World } from '../worlds/index.ts'
 
@@ -24,11 +24,11 @@ export interface GridProblemOptions {
  * @param w - The world (its first start and its goals).
  * @param options - Connectivity and the heuristic's metric.
  * @returns The problem.
- * @throws MdmlError `value` when the world has no start or no goal.
+ * @throws OmaiError `value` when the world has no start or no goal.
  * @concept search-problems
  * @example
  * ```ts
- * import { gridProblem, searchMap } from 'mdml-engine/problems'
+ * import { gridProblem, searchMap } from 'omai-engine/problems'
  * const p = gridProblem(searchMap('open'))
  * p.isGoal(p.initial) // => false
  * ```
@@ -36,7 +36,7 @@ export interface GridProblemOptions {
 export function gridProblem(w: World, options: GridProblemOptions = {}): BidirectionalProblem<number, number> {
   const start = w.starts[0]
   const goal = w.goals[0]
-  if (start === undefined || goal === undefined) throw new MdmlError('value', 'gridProblem: needs a start and a goal')
+  if (start === undefined || goal === undefined) throw new OmaiError('value', 'gridProblem: needs a start and a goal')
   const connectivity = options.connectivity ?? 4
   const move = { connectivity }
   const metric = options.metric ?? (connectivity === 8 ? 'octile' : 'manhattan')

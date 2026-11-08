@@ -4,7 +4,7 @@
  * plus the cost-complexity pruning path. `treeRecord` checks that the nodes form a tree.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { seal } from './_check.ts'
 
 /** A split a tree considered at a node. */
@@ -66,22 +66,22 @@ export interface TreeRecord {
  *
  * @param tree - The record without its `kind`.
  * @returns The record.
- * @throws MdmlError `value` when the nodes do not form a tree.
+ * @throws OmaiError `value` when the nodes do not form a tree.
  * @example
  * ```ts
- * import { treeRecord } from 'mdml-engine/exposition'
+ * import { treeRecord } from 'omai-engine/exposition'
  * treeRecord({ criterion: 'gini', features: ['x'], nodes: [{ id: 0, parent: null, depth: 0, rows: [0, 1], value: [1, 1], impurity: 0.5, candidates: [], order: 0 }] }).nodes.length // => 1
  * ```
  */
 export function treeRecord(tree: Omit<TreeRecord, 'kind'>): TreeRecord {
   const ids = new Set(tree.nodes.map((n) => n.id))
   if (tree.nodes.filter((n) => n.parent === null).length !== 1)
-    throw new MdmlError('value', 'treeRecord: a tree has exactly one root')
+    throw new OmaiError('value', 'treeRecord: a tree has exactly one root')
   for (const n of tree.nodes) {
     if (n.parent !== null && !ids.has(n.parent))
-      throw new MdmlError('value', `treeRecord: node ${n.id} has an unknown parent ${n.parent}`)
+      throw new OmaiError('value', `treeRecord: node ${n.id} has an unknown parent ${n.parent}`)
     if (n.split !== undefined && !(ids.has(n.split.left) && ids.has(n.split.right)))
-      throw new MdmlError('value', `treeRecord: node ${n.id} splits into unknown children`)
+      throw new OmaiError('value', `treeRecord: node ${n.id} splits into unknown children`)
   }
   return seal({ kind: 'tree', ...tree })
 }
@@ -99,15 +99,15 @@ export interface PruningPath {
  *
  * @param path - The path without its `kind`.
  * @returns The record.
- * @throws MdmlError `shape` when the columns differ in length.
+ * @throws OmaiError `shape` when the columns differ in length.
  * @example
  * ```ts
- * import { pruningPath } from 'mdml-engine/exposition'
+ * import { pruningPath } from 'omai-engine/exposition'
  * pruningPath({ alphas: [0, 0.1], impurities: [0, 0.2], leaves: [4, 1] }).leaves // => [4, 1]
  * ```
  */
 export function pruningPath(path: Omit<PruningPath, 'kind'>): PruningPath {
   if (path.impurities.length !== path.alphas.length || path.leaves.length !== path.alphas.length)
-    throw new MdmlError('shape', 'pruningPath: alphas, impurities and leaves must have one entry per step')
+    throw new OmaiError('shape', 'pruningPath: alphas, impurities and leaves must have one entry per step')
   return seal({ kind: 'pruningPath', ...path })
 }

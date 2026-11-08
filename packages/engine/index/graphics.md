@@ -4,12 +4,12 @@
 
 Rendering mathematics as data: pinhole and orthographic cameras, grid ray casting over worlds, ray-primitive intersections, bounding-volume hierarchies, recursive ray tracing and a keyed path tracer, shading models and lights, tone mapping, textures and sampling, and triangle rasterisation with depth buffers, culling and clipping.
 
-- function `intersect.ts` (file): Ray-shape intersections: spheres, planes, triangles, boxes. `src/lib/graphics/intersect.ts:1` `mdml-engine/graphics`
+- function `intersect.ts` (file): Ray-shape intersections: spheres, planes, triangles, boxes. `src/lib/graphics/intersect.ts:1` `omai-engine/graphics`
 
-- function `pathTrace`: Monte Carlo path tracing. `src/lib/graphics/pathtracing.ts:311` `mdml-engine/graphics`
-- function `pinholeCamera`: Pinhole camera with view and projection matrices. `src/lib/graphics/camera.ts:79` `mdml-engine/graphics`
-- function `rasteriseMesh`: Triangle rasterisation with depth buffer. `src/lib/graphics/rasterise.ts:346` `mdml-engine/graphics`
-- function `renderWhitted`: Whitted ray tracing with reflection, refraction and shadows. `src/lib/graphics/raytracing.ts:609` `mdml-engine/graphics`
+- function `pathTrace`: Monte Carlo path tracing. `src/lib/graphics/pathtracing.ts:311` `omai-engine/graphics`
+- function `pinholeCamera`: Pinhole camera with view and projection matrices. `src/lib/graphics/camera.ts:79` `omai-engine/graphics`
+- function `rasteriseMesh`: Triangle rasterisation with depth buffer. `src/lib/graphics/rasterise.ts:346` `omai-engine/graphics`
+- function `renderWhitted`: Whitted ray tracing with reflection, refraction and shadows. `src/lib/graphics/raytracing.ts:609` `omai-engine/graphics`
 
-- algorithm `pathTracerAlgorithm`: Path tracing accumulating one sample per pixel per step. `src/lib/graphics/pathtracing.ts:213` `mdml-engine/graphics`
-- algorithm `whittedAlgorithm`: Whitted ray tracing, a batch of rays per step. `src/lib/graphics/raytracing.ts:541` `mdml-engine/graphics`
+- algorithm `pathTracerAlgorithm`: Path tracing accumulating one sample per pixel per step. `src/lib/graphics/pathtracing.ts:213` `omai-engine/graphics`
+- algorithm `whittedAlgorithm`: Whitted ray tracing, a batch of rays per step. `src/lib/graphics/raytracing.ts:541` `omai-engine/graphics`

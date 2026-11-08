@@ -4,7 +4,7 @@
  * ANOVA and the chi-square goodness-of-fit test, plus power by simulation for any test.
  */
 
-import { type Alternative, type Estimate, MdmlError } from '../base/index.ts'
+import { type Alternative, type Estimate, OmaiError } from '../base/index.ts'
 import { chi2, fDistribution, noncentralChi2, noncentralF, noncentralT } from '../dists/index.ts'
 import { brentq } from '../numerics/roots/index.ts'
 import { foldIn, type Key, key as makeKey } from '../random/index.ts'
@@ -29,7 +29,7 @@ export interface TTestPowerOptions {
 }
 
 function checkAlpha(alpha: number): void {
-  if (!(alpha > 0 && alpha < 1)) throw new MdmlError('value', 'power: alpha must lie in (0, 1)')
+  if (!(alpha > 0 && alpha < 1)) throw new OmaiError('value', 'power: alpha must lie in (0, 1)')
 }
 
 /**
@@ -40,7 +40,7 @@ function checkAlpha(alpha: number): void {
  * @returns The power.
  * @example
  * ```ts
- * import { powerTTest } from 'mdml-engine/stats'
+ * import { powerTTest } from 'omai-engine/stats'
  * powerTTest({ effectSize: 0.5, nobs: 64, kind: 'two-sample' }) // => 0.801460
  * ```
  */
@@ -69,10 +69,10 @@ export function powerTTest(options: TTestPowerOptions): number {
 
 /** Solve power(n) = target for n > lo by Brent's method (statsmodels' solve_power for nobs). */
 function solveN(power: (n: number) => number, target: number, lo: number): number {
-  if (!(target > 0 && target < 1)) throw new MdmlError('value', 'sampleSize: power must lie in (0, 1)')
+  if (!(target > 0 && target < 1)) throw new OmaiError('value', 'sampleSize: power must lie in (0, 1)')
   let hi = Math.max(lo * 2, 10)
   while (power(hi) < target && hi < 1e9) hi *= 2
-  if (power(hi) < target) throw new MdmlError('convergence', 'sampleSize: the power cannot be reached')
+  if (power(hi) < target) throw new OmaiError('convergence', 'sampleSize: the power cannot be reached')
   return brentq((n) => power(n) - target, lo, hi, { xtol: 1e-10, rtol: 1e-12 }).root
 }
 
@@ -83,7 +83,7 @@ function solveN(power: (n: number) => number, target: number, lo: number): numbe
  * @returns The required nobs (of the first sample for two samples).
  * @example
  * ```ts
- * import { sampleSizeTTest } from 'mdml-engine/stats'
+ * import { sampleSizeTTest } from 'omai-engine/stats'
  * Math.ceil(sampleSizeTTest({ effectSize: 0.5, power: 0.8, kind: 'two-sample' })) // => 64
  * ```
  */
@@ -111,7 +111,7 @@ export interface ProportionPowerOptions {
  * @returns The power.
  * @example
  * ```ts
- * import { cohensH, powerProportions } from 'mdml-engine/stats'
+ * import { cohensH, powerProportions } from 'omai-engine/stats'
  * powerProportions({ effectSize: cohensH(0.6, 0.4).value, nobs: 100 }) // => 0.812641
  * ```
  */
@@ -134,7 +134,7 @@ export function powerProportions(options: ProportionPowerOptions): number {
  * @returns The required size of the first sample.
  * @example
  * ```ts
- * import { cohensH, sampleSizeProportions } from 'mdml-engine/stats'
+ * import { cohensH, sampleSizeProportions } from 'omai-engine/stats'
  * Math.ceil(sampleSizeProportions({ effectSize: cohensH(0.6, 0.4).value, power: 0.8 })) // => 97
  * ```
  */
@@ -162,7 +162,7 @@ export interface AnovaPowerOptions {
  * @returns The power.
  * @example
  * ```ts
- * import { powerAnova } from 'mdml-engine/stats'
+ * import { powerAnova } from 'omai-engine/stats'
  * powerAnova({ effectSize: 0.25, nobs: 159, kGroups: 3 }) // => 0.804887
  * ```
  */
@@ -171,7 +171,7 @@ export function powerAnova(options: AnovaPowerOptions): number {
   checkAlpha(alpha)
   const d1 = options.kGroups - 1
   const d2 = options.nobs - options.kGroups
-  if (!(d1 >= 1 && d2 > 0)) throw new MdmlError('value', 'powerAnova: needs kGroups >= 2 and nobs > kGroups')
+  if (!(d1 >= 1 && d2 > 0)) throw new OmaiError('value', 'powerAnova: needs kGroups >= 2 and nobs > kGroups')
   const crit = item(fDistribution(d1, d2).isf(alpha))
   return item(noncentralF(d1, d2, options.effectSize ** 2 * options.nobs).sf(crit))
 }
@@ -183,7 +183,7 @@ export function powerAnova(options: AnovaPowerOptions): number {
  * @returns The total nobs.
  * @example
  * ```ts
- * import { sampleSizeAnova } from 'mdml-engine/stats'
+ * import { sampleSizeAnova } from 'omai-engine/stats'
  * Math.ceil(sampleSizeAnova({ effectSize: 0.25, power: 0.8, kGroups: 3 })) // => 158
  * ```
  */
@@ -211,7 +211,7 @@ export interface ChisquarePowerOptions {
  * @returns The power.
  * @example
  * ```ts
- * import { powerChisquare } from 'mdml-engine/stats'
+ * import { powerChisquare } from 'omai-engine/stats'
  * powerChisquare({ effectSize: 0.3, nobs: 100, nBins: 4 }) // => 0.711254
  * ```
  */
@@ -219,7 +219,7 @@ export function powerChisquare(options: ChisquarePowerOptions): number {
   const alpha = options.alpha ?? 0.05
   checkAlpha(alpha)
   const df = options.nBins - 1 - (options.ddof ?? 0)
-  if (!(df >= 1)) throw new MdmlError('value', 'powerChisquare: needs at least one degree of freedom')
+  if (!(df >= 1)) throw new OmaiError('value', 'powerChisquare: needs at least one degree of freedom')
   const crit = item(chi2(df).isf(alpha))
   return item(noncentralChi2(df, options.effectSize ** 2 * options.nobs).sf(crit))
 }
@@ -231,7 +231,7 @@ export function powerChisquare(options: ChisquarePowerOptions): number {
  * @returns The required nobs.
  * @example
  * ```ts
- * import { sampleSizeChisquare } from 'mdml-engine/stats'
+ * import { sampleSizeChisquare } from 'omai-engine/stats'
  * Math.ceil(sampleSizeChisquare({ effectSize: 0.3, power: 0.8, nBins: 4 })) // => 122
  * ```
  */
@@ -248,9 +248,9 @@ export function sampleSizeChisquare(options: Omit<ChisquarePowerOptions, 'nobs'>
  * @returns The estimated power with its interval.
  * @example
  * ```ts
- * import { simulatePower } from 'mdml-engine/stats'
- * import { ttest1samp } from 'mdml-engine/stats/tests'
- * import { normal as gaussian } from 'mdml-engine/random'
+ * import { simulatePower } from 'omai-engine/stats'
+ * import { ttest1samp } from 'omai-engine/stats/tests'
+ * import { normal as gaussian } from 'omai-engine/random'
  * const p = simulatePower((k) => ttest1samp(Array.from(gaussian(k, [30]).data, (v) => v + 1)).pValue, { nSimulations: 200 })
  * p.value > 0.95 // => true
  * ```

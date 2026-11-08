@@ -6,7 +6,7 @@
  * (x, y) pixels; RANSAC draws its samples from an explicit key.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import type { Point2 } from '../numerics/geometry/index.ts'
 import { applyHomography, fundamentalMatrix, homography } from '../numerics/geometry/index.ts'
 import { dgesv, lstsq } from '../numerics/linalg/index.ts'
@@ -53,8 +53,8 @@ export interface RobustFit {
 function pairsOf(src: PointsLike, dst: PointsLike, name: string, min: number): { a: Point2[]; b: Point2[] } {
   const a = pointsOf(src, name)
   const b = pointsOf(dst, name)
-  if (a.length !== b.length) throw new MdmlError('shape', `${name}: the point sets differ in size`)
-  if (a.length < min) throw new MdmlError('value', `${name}: at least ${min} correspondences are needed`)
+  if (a.length !== b.length) throw new OmaiError('shape', `${name}: the point sets differ in size`)
+  if (a.length < min) throw new OmaiError('value', `${name}: at least ${min} correspondences are needed`)
   return { a, b }
 }
 
@@ -65,17 +65,17 @@ function pairsOf(src: PointsLike, dst: PointsLike, name: string, min: number): {
  * @param src - Four source points.
  * @param dst - Four destination points.
  * @returns The 3 x 3 homography.
- * @throws MdmlError when three of the points are collinear (a singular system).
+ * @throws OmaiError when three of the points are collinear (a singular system).
  * @concept homography
  * @example
  * ```ts
- * import { getPerspectiveTransform } from 'mdml-engine/vision'
+ * import { getPerspectiveTransform } from 'omai-engine/vision'
  * getPerspectiveTransform([[0, 0], [1, 0], [1, 1], [0, 1]], [[0, 0], [2, 0], [2, 2], [0, 2]]) // => [[2, 0, 0], [0, 2, 0], [0, 0, 1]]
  * ```
  */
 export function getPerspectiveTransform(src: PointsLike, dst: PointsLike): MutableRows {
   const { a, b } = pairsOf(src, dst, 'getPerspectiveTransform', 4)
-  if (a.length !== 4) throw new MdmlError('value', 'getPerspectiveTransform: exactly four correspondences')
+  if (a.length !== 4) throw new OmaiError('value', 'getPerspectiveTransform: exactly four correspondences')
   const A = new Float64Array(64)
   const rhs = new Float64Array(8)
   for (let i = 0; i < 4; i++) {
@@ -103,13 +103,13 @@ export function getPerspectiveTransform(src: PointsLike, dst: PointsLike): Mutab
  * @concept affine-transform
  * @example
  * ```ts
- * import { getAffineTransform } from 'mdml-engine/vision'
+ * import { getAffineTransform } from 'omai-engine/vision'
  * getAffineTransform([[0, 0], [1, 0], [0, 1]], [[1, 1], [3, 1], [1, 4]]) // => [[2, 0, 1], [0, 3, 1]]
  * ```
  */
 export function getAffineTransform(src: PointsLike, dst: PointsLike): MutableRows {
   const { a, b } = pairsOf(src, dst, 'getAffineTransform', 3)
-  if (a.length !== 3) throw new MdmlError('value', 'getAffineTransform: exactly three correspondences')
+  if (a.length !== 3) throw new OmaiError('value', 'getAffineTransform: exactly three correspondences')
   const A = new Float64Array(36)
   const rhs = new Float64Array(6)
   for (let i = 0; i < 3; i++) {
@@ -136,7 +136,7 @@ export function getAffineTransform(src: PointsLike, dst: PointsLike): MutableRow
  * @concept homography
  * @example
  * ```ts
- * import { perspectiveTransform } from 'mdml-engine/vision'
+ * import { perspectiveTransform } from 'omai-engine/vision'
  * perspectiveTransform([[2, 1]], [[1, 0, 0], [0, 1, 0], [0, 1, 1]]) // => [[1, 0.5]]
  * ```
  */
@@ -221,13 +221,13 @@ function robust(
   let refit: MutableRows | undefined
   for (let it = 0; it < 10; it++) {
     refit = model.fit(inliers)
-    if (refit === undefined) throw new MdmlError('value', `${name}: the inliers are degenerate`)
+    if (refit === undefined) throw new OmaiError('value', `${name}: the inliers are degenerate`)
     const fitted = refit
     const next = idx.filter((i) => error(fitted, a[i] as Point2, b[i] as Point2) <= threshold)
     if (next.length < minSamples || (next.length === inliers.length && next.every((v, k) => v === inliers[k]))) break
     inliers = next
   }
-  if (refit === undefined) throw new MdmlError('value', `${name}: the inliers are degenerate`)
+  if (refit === undefined) throw new OmaiError('value', `${name}: the inliers are degenerate`)
   const mask = new Array<number>(n).fill(0)
   for (const i of inliers) mask[i] = 1
   return { model: refit, mask }
@@ -248,7 +248,7 @@ function robust(
  * @index function Robust homography from point correspondences.
  * @example
  * ```ts
- * import { findHomography } from 'mdml-engine/vision'
+ * import { findHomography } from 'omai-engine/vision'
  * const src = [[0, 0], [4, 0], [4, 4], [0, 4], [2, 1]]
  * const { model } = findHomography(src, src.map(([x, y]) => [2 * x + 1, 2 * y - 3]), { method: 'all' })
  * model.map((r) => r.map((v) => Math.round(v * 1e9) / 1e9)) // => [[2, 0, 1], [0, 2, -3], [0, 0, 1]]
@@ -286,7 +286,7 @@ function fitAffine(a: readonly Point2[], b: readonly Point2[]): MutableRows {
  * @concept affine-transform
  * @example
  * ```ts
- * import { estimateAffine2D } from 'mdml-engine/vision'
+ * import { estimateAffine2D } from 'omai-engine/vision'
  * const src = [[0, 0], [1, 0], [0, 1], [3, 2]]
  * estimateAffine2D(src, src.map(([x, y]) => [x - y + 2, x + y]), { method: 'all' }).model.map((r) => r.map((v) => Math.round(v * 1e9) / 1e9)) // => [[1, -1, 2], [1, 1, 0]]
  * ```
@@ -334,7 +334,7 @@ function epipolarError(f: MutableRows, p: Point2, q: Point2): number {
  * @concept epipolar-geometry
  * @example
  * ```ts
- * import { findFundamentalMat } from 'mdml-engine/vision'
+ * import { findFundamentalMat } from 'omai-engine/vision'
  * const p1 = [[0, 0], [1, 0], [0, 1], [1, 1], [2, 1], [1, 2], [3, 1], [2, 3], [4, 2]]
  * findFundamentalMat(p1, p1.map(([x, y]) => [x + 1, y]), { method: 'all' }).model.length // => 3
  * ```
@@ -359,7 +359,7 @@ export function findFundamentalMat(
  * @concept epipolar-geometry
  * @example
  * ```ts
- * import { computeCorrespondEpilines } from 'mdml-engine/vision'
+ * import { computeCorrespondEpilines } from 'omai-engine/vision'
  * computeCorrespondEpilines([[1, 2]], 1, [[0, 0, 0], [0, 0, -1], [0, 1, 0]]) // => [[0, -1, 2]]
  * ```
  */
@@ -390,7 +390,7 @@ export function computeCorrespondEpilines(
  * @concept epipolar-geometry
  * @example
  * ```ts
- * import { sampsonDistance } from 'mdml-engine/vision'
+ * import { sampsonDistance } from 'omai-engine/vision'
  * sampsonDistance([1, 2], [3, 2], [[0, 0, 0], [0, 0, -1], [0, 1, 0]]) // => 0
  * ```
  */

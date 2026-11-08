@@ -4,7 +4,7 @@
  * for subword regularisation, and training that prunes a large seed vocabulary by EM, as a traced algorithm.
  */
 
-import { type Json, MdmlError } from '../../base/index.ts'
+import { type Json, OmaiError } from '../../base/index.ts'
 import { type Key, randomBits } from '../../random/index.ts'
 import { type Algorithm, runAlgorithm, type TracePolicy, type Tracer } from '../../trace/index.ts'
 import { utf8Bytes } from '../hashing.ts'
@@ -80,11 +80,11 @@ const UNK_PENALTY = 10
  * @param pieces - The pieces with their scores, in id order.
  * @param options - The unknown piece's id, byte fallback and unknown fusing.
  * @returns The model.
- * @throws MdmlError with code `value` for an unknown id outside the pieces or an empty vocabulary with one.
+ * @throws OmaiError with code `value` for an unknown id outside the pieces or an empty vocabulary with one.
  * @concept unigram-lm
  * @example
  * ```ts
- * import { unigramModel, unigramTokenize } from 'mdml-engine/text/subword'
+ * import { unigramModel, unigramTokenize } from 'omai-engine/text/subword'
  * const m = unigramModel([['<unk>', 0], ['a', -1], ['b', -1], ['ab', -1.5]], { unkId: 0 })
  * unigramTokenize(m, 'abba').map((t) => t.token) // => ['ab', 'b', 'a']
  * ```
@@ -94,7 +94,7 @@ export function unigramModel(
   options: Omit<UnigramModel, 'pieces'> = {},
 ): UnigramModel {
   if (options.unkId !== undefined && !(options.unkId >= 0 && options.unkId < pieces.length))
-    throw new MdmlError('value', 'unigramModel: unkId is outside the vocabulary')
+    throw new OmaiError('value', 'unigramModel: unkId is outside the vocabulary')
   const model: UnigramModel = { pieces: pieces.map(([p, s]) => [p, s] as const), ...options }
   tablesOf(model)
   return model
@@ -157,7 +157,7 @@ function pathTokens(model: UnigramModel, l: Lattice, path: readonly LatticeNode[
       }
     }
     if (model.unkId === undefined)
-      throw new MdmlError('value', `unigramTokenize: no piece covers ${p.text} and there is no unknown piece`)
+      throw new OmaiError('value', `unigramTokenize: no piece covers ${p.text} and there is no unknown piece`)
     out.push({ token: p.text, id: model.unkId, start: p.start, end: p.end })
   }
   return out
@@ -170,11 +170,11 @@ function pathTokens(model: UnigramModel, l: Lattice, path: readonly LatticeNode[
  * @param model - The model.
  * @param word - The word.
  * @returns The tokens.
- * @throws MdmlError with code `value` when a character has no piece and there is no unknown piece.
+ * @throws OmaiError with code `value` when a character has no piece and there is no unknown piece.
  * @concept unigram-lm
  * @example
  * ```ts
- * import { unigramModel, unigramTokenize } from 'mdml-engine/text/subword'
+ * import { unigramModel, unigramTokenize } from 'omai-engine/text/subword'
  * const m = unigramModel([['<unk>', 0], ['h', -2], ['e', -2], ['he', -3]], { unkId: 0 })
  * unigramTokenize(m, 'hexx').map((t) => [t.token, t.id]) // => [['he', 3], ['xx', 0]]
  * ```
@@ -183,7 +183,7 @@ export function unigramTokenize(model: UnigramModel, word: string): SubwordToken
   if (word.length === 0) return []
   const l = modelLattice(model, word)
   const path = viterbiPath(l)
-  if (path.length === 0) throw new MdmlError('value', `unigramTokenize: no segmentation of ${word}`)
+  if (path.length === 0) throw new OmaiError('value', `unigramTokenize: no segmentation of ${word}`)
   return pathTokens(model, l, path)
 }
 
@@ -197,7 +197,7 @@ export function unigramTokenize(model: UnigramModel, word: string): SubwordToken
  * @concept unigram-lm
  * @example
  * ```ts
- * import { unigramModel, unigramNbest } from 'mdml-engine/text/subword'
+ * import { unigramModel, unigramNbest } from 'omai-engine/text/subword'
  * const m = unigramModel([['a', -1], ['b', -1], ['ab', -1.5]])
  * unigramNbest(m, 'ab', 2).map((s) => [s.tokens.map((t) => t.token), s.score]) // => [[['ab'], -1.5], [['a', 'b'], -2]]
  * ```
@@ -227,8 +227,8 @@ export function unigramNbest(
  * @concept subword-regularisation
  * @example
  * ```ts
- * import { unigramModel, unigramSample } from 'mdml-engine/text/subword'
- * import { key } from 'mdml-engine/random'
+ * import { unigramModel, unigramSample } from 'omai-engine/text/subword'
+ * import { key } from 'omai-engine/random'
  * const m = unigramModel([['a', -1], ['b', -1], ['ab', -1.5]])
  * unigramSample(m, 'ab', key(0), 0).map((t) => t.token).join('') // => 'ab'
  * ```
@@ -585,12 +585,12 @@ function finalize(
  * @param wordCounts - Pre-tokenised words (for example with SentencePiece's `▁`) and their counts.
  * @param options - Vocabulary size, specials, unknown token, piece length, EM and pruning parameters.
  * @returns The algorithm; each step is one EM iteration, one pruning or the final step.
- * @throws MdmlError with code `value` when the vocabulary cannot hold the required characters.
+ * @throws OmaiError with code `value` when the vocabulary cannot hold the required characters.
  * @concept unigram-lm
  * @example
  * ```ts
- * import { unigramTrainingAlgorithm } from 'mdml-engine/text/subword'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { unigramTrainingAlgorithm } from 'omai-engine/text/subword'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const r = runAlgorithm(unigramTrainingAlgorithm(new Map([['▁hello', 4], ['▁help', 3], ['▁yellow', 2]]), { vocabSize: 12 }), { maxSteps: 50 })
  * [r.status, r.state.model?.pieces.length] // => ['converged', 11]
  * ```
@@ -619,7 +619,7 @@ export function unigramTrainingAlgorithm(
       required.push(ch)
     }
   if (required.length > vocabSize)
-    throw new MdmlError('value', 'trainUnigram: the vocabulary is too small for the required characters')
+    throw new OmaiError('value', 'trainUnigram: the vocabulary is too small for the required characters')
   return {
     name: 'unigramTraining',
     config: { vocabSize, subIterations, shrinking } as Json,
@@ -671,7 +671,7 @@ export function unigramTrainingAlgorithm(
  * @concept unigram-lm
  * @example
  * ```ts
- * import { trainUnigram, unigramTokenize } from 'mdml-engine/text/subword'
+ * import { trainUnigram, unigramTokenize } from 'omai-engine/text/subword'
  * const m = trainUnigram(new Map([['▁hello', 4], ['▁help', 3], ['▁yellow', 2]]), { vocabSize: 14 })
  * unigramTokenize(m, '▁hello').map((t) => t.token).join('') // => '▁hello'
  * ```
@@ -689,6 +689,6 @@ export function trainUnigram(
     ...(options.policy === undefined ? {} : { policy: options.policy }),
   })
   const model = result.state.model
-  if (model === undefined) throw new MdmlError('convergence', 'trainUnigram: training did not finish')
+  if (model === undefined) throw new OmaiError('convergence', 'trainUnigram: training did not finish')
   return model
 }

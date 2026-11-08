@@ -6,7 +6,7 @@
  * that replays every episode's transitions with their relabelled goals.
  */
 
-import { type Json, MdmlError, maxOf } from '../base/index.ts'
+import { type Json, maxOf, OmaiError } from '../base/index.ts'
 import { foldIn, type Key } from '../random/index.ts'
 import type { Agent } from '../rl/index.ts'
 import type { Space } from '../space/index.ts'
@@ -69,12 +69,12 @@ export interface RelabelOptions extends GoalSpec {
  * @param options - The strategy, `k`, and how goals sit in observations.
  * @param key - The key that draws the goals (unused by `final`).
  * @returns The relabelled transitions, step by step.
- * @throws MdmlError with code `value` for an empty episode.
+ * @throws OmaiError with code `value` for an empty episode.
  * @concept hindsight-experience-replay
  * @example
  * ```ts
- * import { relabelEpisode } from 'mdml-engine/agents'
- * import { key } from 'mdml-engine/random'
+ * import { relabelEpisode } from 'omai-engine/agents'
+ * import { key } from 'omai-engine/random'
  * const steps = [
  *   { observation: [0, 0, 1, 1], action: 0, reward: -1, nextObservation: [0.1, 0, 1, 1], terminated: false },
  *   { observation: [0.1, 0, 1, 1], action: 0, reward: -1, nextObservation: [0.2, 0, 1, 1], terminated: false },
@@ -83,7 +83,7 @@ export interface RelabelOptions extends GoalSpec {
  * ```
  */
 export function relabelEpisode(steps: readonly GoalStep[], options: RelabelOptions, key: Key): GoalStep[] {
-  if (steps.length === 0) throw new MdmlError('value', 'relabelEpisode: the episode is empty')
+  if (steps.length === 0) throw new OmaiError('value', 'relabelEpisode: the episode is empty')
   const g = resolved(options)
   const k = options.strategy === 'final' ? 1 : (options.k ?? 4)
   const reached = steps.map((s) => g.achieved(s.nextObservation))
@@ -156,9 +156,9 @@ export interface GoalConditionedState {
  * @concept hindsight-experience-replay
  * @example
  * ```ts
- * import { actionTileFeatures, goalConditionedQ, tileCoder } from 'mdml-engine/agents'
- * import { reachGoal } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { actionTileFeatures, goalConditionedQ, tileCoder } from 'omai-engine/agents'
+ * import { reachGoal } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * const coder = tileCoder({ low: [-1, -1], high: [1, 1], tilings: 4, tiles: 10 })
  * const relative = (o: readonly number[]): number[] => [(o[2] ?? 0) - (o[0] ?? 0), (o[3] ?? 0) - (o[1] ?? 0)]
  * const agent = goalConditionedQ(reachGoal.create(), { features: actionTileFeatures(coder, 4, relative) })
@@ -170,7 +170,7 @@ export function goalConditionedQ(
   options: GoalConditionedQOptions,
 ): Agent<GoalConditionedState, readonly number[], number> {
   const n = options.nActions ?? (env.actionSpace.kind === 'discrete' ? env.actionSpace.n : undefined)
-  if (n === undefined) throw new MdmlError('value', 'goalConditionedQ: needs a discrete action space or nActions')
+  if (n === undefined) throw new OmaiError('value', 'goalConditionedQ: needs a discrete action space or nActions')
   const alpha = options.alpha ?? 0.05
   const gamma = options.gamma ?? 0.95
   const epsilon = options.epsilon ?? 0.2

@@ -4,7 +4,7 @@
  * `tagLabel` turns a camel-case tag into words for display.
  */
 
-import { matchesText } from 'mdml-engine/base'
+import { matchesText } from 'omai-engine/base'
 import { type ReactNode, useId, useState } from 'react'
 import { cx, inputBoxClass, labelClass } from './classes.ts'
 

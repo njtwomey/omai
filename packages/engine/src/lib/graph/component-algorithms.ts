@@ -6,7 +6,7 @@
  * table {@link componentMethods}. The functions of `components.ts` are these run to the end.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { dict, knobOption, type OptionTable, optionTable } from '../space/index.ts'
 import { type Algorithm, type Contract, defineContract, scalar, tensor } from '../trace/index.ts'
 import { codec } from './_run.ts'
@@ -133,8 +133,8 @@ function nextUnseen(s: ComponentSearchState, from: number, n: number): number {
  * @reference R. Tarjan, Depth-first search and linear graph algorithms, SIAM J. Computing 1 (1972).
  * @example
  * ```ts
- * import { digraph, tarjanAlgorithm } from 'mdml-engine/graph'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { digraph, tarjanAlgorithm } from 'omai-engine/graph'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const g = digraph([[0, 1], [1, 0], [1, 2], [2, 3], [3, 2]])
  * const run = runAlgorithm(tarjanAlgorithm(g), { maxSteps: 40 })
  * [run.state.count, Array.from(run.state.component)] // => [2, [1, 1, 0, 0]]
@@ -208,8 +208,8 @@ export function tarjanAlgorithm(g: Graph): Algorithm<ComponentSearchState, DfsPa
  * @concept connected-components
  * @example
  * ```ts
- * import { digraph, kosarajuAlgorithm } from 'mdml-engine/graph'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { digraph, kosarajuAlgorithm } from 'omai-engine/graph'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const g = digraph([[0, 1], [1, 0], [1, 2], [2, 3], [3, 2]])
  * const run = runAlgorithm(kosarajuAlgorithm(g), { maxSteps: 60 })
  * [run.state.count, Array.from(run.state.component)] // => [2, [0, 0, 1, 1]]
@@ -304,7 +304,7 @@ export interface ComponentProperties {
  * @concept connected-components
  * @example
  * ```ts
- * import { componentMethods, digraph } from 'mdml-engine/graph'
+ * import { componentMethods, digraph } from 'omai-engine/graph'
  * componentMethods.make({ kind: 'kosaraju' })(digraph([[0, 1]])).name // => 'graph/kosaraju'
  * ```
  */
@@ -365,18 +365,18 @@ export interface BiconnectivityState {
  *
  * @param g - An undirected graph.
  * @returns The algorithm.
- * @throws MdmlError with code `value` for a directed graph.
+ * @throws OmaiError with code `value` for a directed graph.
  * @concept biconnectivity
  * @example
  * ```ts
- * import { barbellGraph, biconnectivityAlgorithm } from 'mdml-engine/graph'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { barbellGraph, biconnectivityAlgorithm } from 'omai-engine/graph'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const run = runAlgorithm(biconnectivityAlgorithm(barbellGraph(3, 1)), { maxSteps: 100 })
  * [run.state.blocks.length, run.state.bridges.length] // => [4, 2]
  * ```
  */
 export function biconnectivityAlgorithm(g: Graph): Algorithm<BiconnectivityState, DfsPath> {
-  if (g.directed) throw new MdmlError('value', 'biconnectivityAlgorithm: the graph must be undirected')
+  if (g.directed) throw new OmaiError('value', 'biconnectivityAlgorithm: the graph must be undirected')
   const a = g.out
   const firstUnseen = (s: BiconnectivityState): number => {
     let r = s.cursor

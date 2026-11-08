@@ -5,7 +5,7 @@
  * the sliced Wasserstein distance, which averages one-dimensional optimal transport over random projections.
  */
 
-import { MdmlError, type Reduction } from '../base/index.ts'
+import { OmaiError, type Reduction } from '../base/index.ts'
 import { xlogy } from '../numerics/special/index.ts'
 import { type Key, normal } from '../random/index.ts'
 import {
@@ -54,8 +54,8 @@ import { crossEntropy } from './classification.ts'
  * @concept kl-divergence
  * @example
  * ```ts
- * import { klDiv } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { klDiv } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * item(klDiv([[Math.log(0.5), Math.log(0.5)]], [[1, 0]], { reduction: 'batchmean' })) === Math.LN2 // => true
  * ```
  */
@@ -85,8 +85,8 @@ const probs = (x: Value, logits: boolean): Value => (logits ? softmax(x, -1) : x
  * @returns The divergence, differentiable.
  * @example
  * ```ts
- * import { klDivergence } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { klDivergence } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * item(klDivergence([1, 0], [0.5, 0.5])) === Math.LN2 // => true
  * ```
  */
@@ -112,8 +112,8 @@ export function klDivergence(
  * @returns The divergence, differentiable.
  * @example
  * ```ts
- * import { jensenShannon } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { jensenShannon } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * item(jensenShannon([1, 0], [0, 1], { base: 2 })) // => 1
  * ```
  */
@@ -154,8 +154,8 @@ export interface DistillationOptions {
  * @returns The scalar loss, differentiable in the student logits.
  * @example
  * ```ts
- * import { distillation } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { distillation } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * item(distillation([[1, 2]], [[1, 2]], { temperature: 3 })) // => 0
  * ```
  */
@@ -199,8 +199,8 @@ export interface MmdOptions {
  * @returns The scalar MMD^2, differentiable in both samples.
  * @example
  * ```ts
- * import { mmd } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { mmd } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * item(mmd([[0], [1]], [[0], [1]], { bandwidths: [1] })) // => 0
  * ```
  */
@@ -261,7 +261,7 @@ function medianDistance(dxx: Value, dyy: Value, dxy: Value): number {
   collect(dyy, true)
   collect(dxy, false)
   if (values.length === 0)
-    throw new MdmlError('value', 'mmd: the median heuristic needs concrete samples; pass bandwidths')
+    throw new OmaiError('value', 'mmd: the median heuristic needs concrete samples; pass bandwidths')
   values.sort((p, q) => p - q)
   const mid = values.length >> 1
   const med = values.length % 2 === 1 ? (values[mid] ?? 1) : ((values[mid - 1] ?? 1) + (values[mid] ?? 1)) / 2
@@ -321,8 +321,8 @@ function sinkhornCost(cost: Value, logA: Value, logB: Value, eps: number, maxIte
  * @returns The scalar loss.
  * @example
  * ```ts
- * import { sinkhorn } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { sinkhorn } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * Math.abs(item(sinkhorn([[0], [1]], [[0], [1]], { epsilon: 0.01 }))) < 1e-12 // => true
  * ```
  */
@@ -362,9 +362,9 @@ export function sinkhorn(x: TensorLike, y: TensorLike, options: SinkhornOptions 
  * @returns The scalar distance, differentiable in both samples.
  * @example
  * ```ts
- * import { slicedWasserstein } from 'mdml-engine/losses'
- * import { key } from 'mdml-engine/random'
- * import { item } from 'mdml-engine/tensor'
+ * import { slicedWasserstein } from 'omai-engine/losses'
+ * import { key } from 'omai-engine/random'
+ * import { item } from 'omai-engine/tensor'
  * item(slicedWasserstein([[0, 0], [1, 1]], [[1, 1], [0, 0]], key(0))) // => 0
  * ```
  */
@@ -376,7 +376,7 @@ export function slicedWasserstein(
 ): Value {
   const [a, b] = promoteFloat(x, y) as [Value, Value]
   if (a.shape[0] !== b.shape[0] || a.shape[1] !== b.shape[1])
-    throw new MdmlError('shape', 'slicedWasserstein: the samples must have the same shape')
+    throw new OmaiError('shape', 'slicedWasserstein: the samples must have the same shape')
   const p = options.p ?? 2
   const directions = normal(key, [options.projections ?? 50, a.shape[1] ?? 1])
   const unit = div(directions, sqrt(sum(square(directions), -1, true)))

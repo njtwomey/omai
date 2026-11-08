@@ -3,7 +3,7 @@
  * uses the same slots: `fg` for ink, `muted`, `grid`, `bg` for the page and `tab0` to `tab9` for categories. Chart layers
  * name a slot (`colour: 'tab0'`); the few places that need a concrete colour (SVG text, a colour ramp) read it from here.
  */
-import { tokens } from 'mdml-render/theme'
+import { tokens } from 'omai-render/theme'
 
 const light = tokens('light')
 

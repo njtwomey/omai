@@ -41,9 +41,9 @@ export interface MinimizerOptions {
  * @index algorithm Turn a gradient transformation into a steppable minimising Algorithm.
  * @example
  * ```ts
- * import { minimizer, sgd } from 'mdml-engine/optim'
- * import { runAlgorithm } from 'mdml-engine/trace'
- * import { square, sum, tensor } from 'mdml-engine/tensor'
+ * import { minimizer, sgd } from 'omai-engine/optim'
+ * import { runAlgorithm } from 'omai-engine/trace'
+ * import { square, sum, tensor } from 'omai-engine/tensor'
  * const alg = minimizer((x) => sum(square(x as never)), tensor([3]), sgd({ learningRate: 0.25 }))
  * runAlgorithm(alg, { maxSteps: 100 }).state.value < 1e-20 // => true
  * ```
@@ -118,8 +118,8 @@ function isTransformation(m: unknown): m is GradientTransformation {
  * @index function Minimise an objective scipy-style with a method chosen by value.
  * @example
  * ```ts
- * import { minimize, sgd } from 'mdml-engine/optim'
- * import { square, sub, sum, tensor, toArray } from 'mdml-engine/tensor'
+ * import { minimize, sgd } from 'omai-engine/optim'
+ * import { square, sub, sum, tensor, toArray } from 'omai-engine/tensor'
  * const r = minimize((x) => sum(square(sub(x as never, 2))), tensor([0, 5]), { method: sgd({ learningRate: 0.4 }), maxSteps: 200, gradTol: 1e-10 })
  * r.converged // => true
  * ```

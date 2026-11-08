@@ -8,7 +8,7 @@
  * method, so a trainer adds it to the loss.
  */
 
-import { MdmlError, maxOf, minOf } from '../../base/index.ts'
+import { maxOf, minOf, OmaiError } from '../../base/index.ts'
 import { foldIn, type Key, normal } from '../../random/index.ts'
 import type { SpaceValue } from '../../space/index.ts'
 import {
@@ -79,12 +79,12 @@ export interface SplineLayerOptions {
  * @param coefficients - The coefficients `[..., K]`.
  * @param order - The difference order (default 2; at most `K - 1`).
  * @returns The scalar penalty.
- * @throws MdmlError `value` when the order is not in `[0, K)`.
+ * @throws OmaiError `value` when the order is not in `[0, K)`.
  * @concept splines
  * @example
  * ```ts
- * import { differenceRoughness } from 'mdml-engine/nn'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { differenceRoughness } from 'omai-engine/nn'
+ * import { toFlat } from 'omai-engine/tensor'
  * toFlat(differenceRoughness([[1, 2, 4, 8]], 2))[0] // => 5
  * ```
  */
@@ -93,7 +93,7 @@ export function differenceRoughness(coefficients: TensorLike, order = 2): Value 
   const axis = c.shape.length - 1
   const k = c.shape[axis] ?? 0
   if (!(Number.isInteger(order) && order >= 0 && order < k))
-    throw new MdmlError('value', 'differenceRoughness: order must be in [0, K)')
+    throw new OmaiError('value', 'differenceRoughness: order must be in [0, K)')
   for (let o = 0; o < order; o++) {
     const n = c.shape[axis] ?? 0
     c = sub(sliceAxis(c, axis, 1, n), sliceAxis(c, axis, 0, n - 1))
@@ -109,7 +109,7 @@ export function differenceRoughness(coefficients: TensorLike, order = 2): Value 
  * @concept splines
  * @example
  * ```ts
- * import { SplineLayer } from 'mdml-engine/nn'
+ * import { SplineLayer } from 'omai-engine/nn'
  * const layer = new SplineLayer({ inFeatures: 2, outFeatures: 1, interiorKnots: 4 })
  * layer.forward([[0.2, 0.7], [0.5, 0.1]]).shape // => [2, 1]
  * layer.basisSize // => 8
@@ -140,9 +140,9 @@ export class SplineLayer extends Module {
     this.degree = options.degree ?? 3
     this.interiorKnots = options.interiorKnots ?? 8
     if (!(Number.isInteger(this.interiorKnots) && this.interiorKnots >= 1))
-      throw new MdmlError('value', 'SplineLayer: interiorKnots must be an integer >= 1')
+      throw new OmaiError('value', 'SplineLayer: interiorKnots must be an integer >= 1')
     if (!(Number.isInteger(this.degree) && this.degree >= 0))
-      throw new MdmlError('value', 'SplineLayer: degree must be an integer >= 0 (0 is piecewise constant, 1 linear)')
+      throw new OmaiError('value', 'SplineLayer: degree must be an integer >= 0 (0 is piecewise constant, 1 linear)')
     this.basisSize = this.interiorKnots + this.degree + 1
     this.placement = splineKnots.make(options.knots)
     this.shapeTransform = splineShapes.make(options.shape)
@@ -153,7 +153,7 @@ export class SplineLayer extends Module {
     const d = this.inFeatures
     const sample = options.sample === undefined ? undefined : asTensor(options.sample)
     if (sample !== undefined && (sample.shape.length !== 2 || sample.shape[1] !== d))
-      throw new MdmlError('shape', `SplineLayer: sample must be [n, ${d}]`)
+      throw new OmaiError('shape', `SplineLayer: sample must be [n, ${d}]`)
     const values = sample === undefined ? undefined : toFlat(sample)
     const rows = sample === undefined ? 0 : (sample.shape[0] ?? 0)
     const column = (i: number): number[] | undefined =>
@@ -219,7 +219,7 @@ export class SplineLayer extends Module {
   private inputs(x: Value): Value {
     if (x.shape.length === 1 && this.inFeatures === 1) return reshape(x, [x.shape[0] ?? 0, 1])
     if (x.shape.length !== 2 || x.shape[1] !== this.inFeatures)
-      throw new MdmlError('shape', `SplineLayer: expected [n, ${this.inFeatures}], got [${x.shape.join(', ')}]`)
+      throw new OmaiError('shape', `SplineLayer: expected [n, ${this.inFeatures}], got [${x.shape.join(', ')}]`)
     return x
   }
 
@@ -331,7 +331,7 @@ export class SplineLayer extends Module {
    * @returns The basis `[grid.length][K]` and the coefficients `[K]`.
    * @example
    * ```ts
-   * import { SplineLayer } from 'mdml-engine/nn'
+   * import { SplineLayer } from 'omai-engine/nn'
    * const layer = new SplineLayer({ inFeatures: 1, outFeatures: 1, interiorKnots: 3 })
    * const { basis, coefficients } = layer.weightedBasis(layer.params, [0.5])
    * [basis.length, basis[0]?.length === coefficients.length] // => [1, true]

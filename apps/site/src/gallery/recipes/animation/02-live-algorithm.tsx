@@ -1,8 +1,8 @@
-import type { Point2 } from 'mdml-engine/numerics/geometry'
-import type { Algorithm } from 'mdml-engine/trace'
-import { cartesian, lines, points } from 'mdml-render/charts'
-import { figure } from 'mdml-render/figure'
-import { Chart, ControlPanel, FigureFrame, NumberField, Player, useColourMode, useLiveRun } from 'mdml-render/react'
+import type { Point2 } from 'omai-engine/numerics/geometry'
+import type { Algorithm } from 'omai-engine/trace'
+import { cartesian, lines, points } from 'omai-render/charts'
+import { figure } from 'omai-render/figure'
+import { Chart, ControlPanel, FigureFrame, NumberField, Player, useColourMode, useLiveRun } from 'omai-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 

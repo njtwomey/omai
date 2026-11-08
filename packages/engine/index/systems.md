@@ -4,7 +4,7 @@
 
 Linear time-invariant systems, scipy.signal and python-control style: transfer-function (`tf`), zero-pole-gain (`zpk`) and state-space (`ss`) representations of one `Lti` type, interconnection (`series`, `feedback`), time and frequency responses (`step`, `impulse`, `bode`), stability, discretisation, analysis and transforms.
 
-- structure `representations.ts` (file): Transfer function, zero-pole-gain and state-space forms as one Lti type. `src/lib/systems/representations.ts:1` `mdml-engine/systems`
+- structure `representations.ts` (file): Transfer function, zero-pole-gain and state-space forms as one Lti type. `src/lib/systems/representations.ts:1` `omai-engine/systems`
 
-- function `bode`: Bode frequency response. `src/lib/systems/frequency.ts:291` `mdml-engine/systems`
-- function `step`: Step response of a linear system. `src/lib/systems/responses.ts:332` `mdml-engine/systems`
+- function `bode`: Bode frequency response. `src/lib/systems/frequency.ts:291` `omai-engine/systems`
+- function `step`: Step response of a linear system. `src/lib/systems/responses.ts:332` `omai-engine/systems`

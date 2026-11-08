@@ -1,5 +1,5 @@
 // Shared machinery of the line searches (not exported from the barrel).
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import type { LineFunction, LinePoint, LineSearchResult, LineStart, LineTrial } from './line-search.ts'
 
 /** Records the evaluations of a line function. */
@@ -74,5 +74,5 @@ export function firstStep(start: LineStart): number {
 
 export function checkConstants(c1: number, c2: number): void {
   if (!(0 < c1 && c1 < c2 && c2 < 1))
-    throw new MdmlError('value', `line search needs 0 < c1 < c2 < 1, got ${c1}, ${c2}`)
+    throw new OmaiError('value', `line search needs 0 < c1 < c2 < 1, got ${c1}, ${c2}`)
 }

@@ -6,7 +6,7 @@
  * on parameters mapped into the stationary region; variance forecasts and simulation complete it.
  */
 
-import { MdmlError, maxOf, meanOf, varianceOf } from '../base/index.ts'
+import { maxOf, meanOf, OmaiError, varianceOf } from '../base/index.ts'
 import type { BfgsState } from '../optim/index.ts'
 import { type Key, normal, studentT } from '../random/index.ts'
 import type { SpaceValue } from '../space/index.ts'
@@ -60,8 +60,8 @@ function resolve(spec: GarchSpec): Resolved {
   const o = spec.o ?? 0
   const q = spec.q ?? 1
   for (const v of [p, o, q])
-    if (!(Number.isInteger(v) && v >= 0)) throw new MdmlError('value', 'garch: lags must be non-negative integers')
-  if (p + o === 0) throw new MdmlError('value', 'garch: need at least one lag of the residual (p + o > 0)')
+    if (!(Number.isInteger(v) && v >= 0)) throw new OmaiError('value', 'garch: lags must be non-negative integers')
+  if (p + o === 0) throw new OmaiError('value', 'garch: need at least one lag of the residual (p + o > 0)')
   return { p, o, q, constantMean: spec.mean !== 'zero', student: spec.distribution === 't' }
 }
 
@@ -90,7 +90,7 @@ function nextVariance(
  * @returns sigma2_t for every residual.
  * @example
  * ```ts
- * import { garchVariance } from 'mdml-engine/timeseries'
+ * import { garchVariance } from 'omai-engine/timeseries'
  * // ARCH(1): sigma2_t = 1 + 0.5 e_(t-1)^2, the first from the backcast of the sample.
  * Array.from(garchVariance([2, 0], { p: 1, q: 0 }, { mu: 0, omega: 1, alpha: [0.5], gamma: [], beta: [] })).slice(1) // => [3]
  * ```
@@ -133,7 +133,7 @@ function logDensity(student: boolean, nu: number, lgammaTerm: number, e: number,
  * @returns The Gaussian or Student-t log-likelihood.
  * @example
  * ```ts
- * import { garchLogLikelihood } from 'mdml-engine/timeseries'
+ * import { garchLogLikelihood } from 'omai-engine/timeseries'
  * // ARCH(1) with alpha = 0 is i.i.d. N(mu, omega): one observation at its mean.
  * garchLogLikelihood([0], { q: 0, mean: 'zero' }, { mu: 0, omega: 1, alpha: [0], gamma: [], beta: [] }).toFixed(6) // => '-0.918939'
  * ```
@@ -176,8 +176,8 @@ export interface GarchFilterState {
  * @returns The algorithm; it is done after the last observation.
  * @example
  * ```ts
- * import { garchFilterAlgorithm } from 'mdml-engine/timeseries'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { garchFilterAlgorithm } from 'omai-engine/timeseries'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const params = { mu: 0, omega: 0.1, alpha: [0.1], gamma: [], beta: [0.8] }
  * runAlgorithm(garchFilterAlgorithm([0.5, -1, 0.2, 2], { mean: 'zero' }, params), { maxSteps: 10 }).steps // => 4
  * ```
@@ -351,7 +351,7 @@ function prepareGarchFit(y: ArrayLike<number>, spec: GarchSpec) {
   const r = resolve(spec)
   const x = asSeries(Float64Array.from(y), 'garchFit')
   const n = x.length
-  if (n < 10 * (r.p + r.o + r.q + 2)) throw new MdmlError('value', 'garchFit: the series is too short for the model')
+  if (n < 10 * (r.p + r.o + r.q + 2)) throw new OmaiError('value', 'garchFit: the series is too short for the model')
   const centre = meanOf(x)
   const scale = Math.sqrt(varianceOf(x, 0)) || 1
   const z = Float64Array.from(x, (v) => v / scale)
@@ -433,8 +433,8 @@ function prepareGarchFit(y: ArrayLike<number>, spec: GarchSpec) {
  * @returns The algorithm and the map from its state to the fit.
  * @example
  * ```ts
- * import { garchFitAlgorithm, garchSimulate } from 'mdml-engine/timeseries'
- * import { key } from 'mdml-engine/random'
+ * import { garchFitAlgorithm, garchSimulate } from 'omai-engine/timeseries'
+ * import { key } from 'omai-engine/random'
  * const y = garchSimulate(key(2), 200, {}, { mu: 0, omega: 0.2, alpha: [0.1], gamma: [], beta: [0.8] })
  * garchFitAlgorithm(y, {}).algorithm.name // => 'garch-fit'
  * ```
@@ -462,8 +462,8 @@ export function garchFitAlgorithm(y: ArrayLike<number>, spec: GarchSpec, options
  * @returns The algorithm and the fit run from it.
  * @example
  * ```ts
- * import { garchFitSlot, garchSimulate } from 'mdml-engine/timeseries'
- * import { key } from 'mdml-engine/random'
+ * import { garchFitSlot, garchSimulate } from 'omai-engine/timeseries'
+ * import { key } from 'omai-engine/random'
  * const y = garchSimulate(key(2), 300, {}, { mu: 0, omega: 0.2, alpha: [0.1], gamma: [], beta: [0.8] })
  * garchFitSlot(y, { mean: 'zero' }, { solver: { kind: 'lbfgs', gradTol: 1e-8 } }).fit.persistence < 1 // => true
  * ```
@@ -499,8 +499,8 @@ export function garchFitSlot(
  * @returns The fitted model.
  * @example
  * ```ts
- * import { garchSimulate, garchFit } from 'mdml-engine/timeseries'
- * import { key } from 'mdml-engine/random'
+ * import { garchSimulate, garchFit } from 'omai-engine/timeseries'
+ * import { key } from 'omai-engine/random'
  * const y = garchSimulate(key(1), 600, {}, { mu: 0, omega: 0.2, alpha: [0.1], gamma: [], beta: [0.8] })
  * garchFit(y, { mean: 'zero' }).persistence < 1 // => true
  * ```
@@ -522,7 +522,7 @@ export function garchFit(y: ArrayLike<number>, spec: GarchSpec = {}, options: Ga
  * @returns The variances and volatilities; they tend to the unconditional variance when the model is stationary.
  * @example
  * ```ts
- * import { garchForecast } from 'mdml-engine/timeseries'
+ * import { garchForecast } from 'omai-engine/timeseries'
  * const fit = { spec: { mean: 'zero' }, params: { mu: 0, omega: 0.1, alpha: [0.1], gamma: [], beta: [0.8] } } as never
  * garchForecast(fit, [0.5, -1, 0.2, 2], 3).variance.length // => 3
  * ```
@@ -565,8 +565,8 @@ export function garchForecast(
  * @returns The series.
  * @example
  * ```ts
- * import { garchSimulate } from 'mdml-engine/timeseries'
- * import { key } from 'mdml-engine/random'
+ * import { garchSimulate } from 'omai-engine/timeseries'
+ * import { key } from 'omai-engine/random'
  * garchSimulate(key(0), 5, { mean: 'zero' }, { mu: 0, omega: 0.1, alpha: [0.1], gamma: [], beta: [0.8] }).length // => 5
  * ```
  */

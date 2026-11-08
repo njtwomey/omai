@@ -5,7 +5,7 @@
  * kernel_approximation), and the errors of the approximate Gram matrix.
  */
 
-import { assertFinite, MdmlError } from '../base/index.ts'
+import { assertFinite, OmaiError } from '../base/index.ts'
 import { type ContextOptions, resolveKey } from '../context/index.ts'
 import { fft, ifft } from '../numerics/fourier/index.ts'
 import { qr, svd, svdvals } from '../numerics/linalg/index.ts'
@@ -60,14 +60,14 @@ export interface FeatureMap {
 /** A size or count that must be a positive whole number (a zero or NaN here hangs, wraps or raises a typed-array error later). */
 function positiveInteger(name: string, what: string, v: number): number {
   if (!Number.isInteger(v) || v < 1)
-    throw new MdmlError('value', `${name}: ${what} must be a positive integer, got ${v}`)
+    throw new OmaiError('value', `${name}: ${what} must be a positive integer, got ${v}`)
   return v
 }
 
 /** A setting that must be finite and above `min` (strictly when `open`). */
 function finiteAbove(name: string, what: string, v: number, min: number, open: boolean): number {
   if (!Number.isFinite(v) || (open ? v <= min : v < min))
-    throw new MdmlError('value', `${name}: ${what} must be a finite number ${open ? '>' : '>='} ${min}, got ${v}`)
+    throw new OmaiError('value', `${name}: ${what} must be a finite number ${open ? '>' : '>='} ${min}, got ${v}`)
   return v
 }
 
@@ -128,7 +128,7 @@ function spectralFrequencies(k: Key, kernel: Kernel, d: number, n: number): { we
     }
     case 'exponential':
       if (kernel.config['power'] !== 1)
-        throw new MdmlError('not-implemented', 'randomFourierFeatures: only the exponent 1 (Matérn 1/2) is sampled')
+        throw new OmaiError('not-implemented', 'randomFourierFeatures: only the exponent 1 (Matérn 1/2) is sampled')
       return { weights: studentT(1), scale: 1 }
     case 'rational-quadratic': {
       const alpha = item(primalOf(kernel.params['alpha'] as Value))
@@ -140,14 +140,14 @@ function spectralFrequencies(k: Key, kernel: Kernel, d: number, n: number): { we
       return { weights: frequencies(cauchy(foldIn(k, 2), [d, n])), scale: 1 }
     }
     default:
-      throw new MdmlError('not-implemented', `randomFourierFeatures: no spectral sampler for ${kernel.name}`)
+      throw new OmaiError('not-implemented', `randomFourierFeatures: no spectral sampler for ${kernel.name}`)
   }
 }
 
 function fourierMap(name: string, weights: Tensor<'float64'>, offset: Tensor<'float64'>, scale: number) {
   const n = offset.shape[0] ?? 0
   if (weights.shape.length !== 2 || weights.shape[1] !== n || offset.shape.length !== 1)
-    throw new MdmlError('shape', `${name}: weights [d, D] and offset [D]`)
+    throw new OmaiError('shape', `${name}: weights [d, D] and offset [D]`)
   const factor = Math.sqrt((2 * scale) / n)
   return {
     name,
@@ -170,14 +170,14 @@ function fourierMap(name: string, weights: Tensor<'float64'>, offset: Tensor<'fl
  *
  * @param options - Input dimension, number of features, kernel and key; or the draws.
  * @returns The feature map with its frequencies and phases.
- * @throws MdmlError `not-implemented` for a kernel without a spectral sampler; `value` for an input dimension or a
+ * @throws OmaiError `not-implemented` for a kernel without a spectral sampler; `value` for an input dimension or a
  *   number of features that is not a positive integer.
  * @concept random-features
  * @reference A. Rahimi and B. Recht, Random features for large-scale kernel machines (NeurIPS 2007).
  * @example
  * ```ts
- * import { randomFourierFeatures } from 'mdml-engine/kernels'
- * import { key } from 'mdml-engine/random'
+ * import { randomFourierFeatures } from 'omai-engine/kernels'
+ * import { key } from 'omai-engine/random'
  * randomFourierFeatures({ inputDim: 3, nComponents: 50, key: key(0) }).transform([[1, 2, 3]]).shape // => [1, 50]
  * ```
  */
@@ -212,14 +212,14 @@ export interface OrthogonalRandomOptions extends ContextOptions {
  *
  * @param options - Input dimension, number of features, length scale and key.
  * @returns The feature map with its frequencies and phases.
- * @throws MdmlError `value` for an input dimension or number of features that is not a positive integer, or a length
+ * @throws OmaiError `value` for an input dimension or number of features that is not a positive integer, or a length
  *   scale that is not positive and finite.
  * @concept random-features
  * @reference F. X. Yu et al., Orthogonal random features (NeurIPS 2016).
  * @example
  * ```ts
- * import { orthogonalRandomFeatures } from 'mdml-engine/kernels'
- * import { key } from 'mdml-engine/random'
+ * import { orthogonalRandomFeatures } from 'omai-engine/kernels'
+ * import { key } from 'omai-engine/random'
  * orthogonalRandomFeatures({ inputDim: 2, nComponents: 5, key: key(1) }).weights.shape // => [2, 5]
  * ```
  */
@@ -270,12 +270,12 @@ export interface NystroemOptions extends ContextOptions {
  * @param x - The data `[n, d]` to draw landmarks from.
  * @param options - Number of landmarks or their indices, and the key.
  * @returns The fitted map.
- * @throws MdmlError `value` for a number of landmarks that is not a positive integer, or landmark indices outside the rows.
+ * @throws OmaiError `value` for a number of landmarks that is not a positive integer, or landmark indices outside the rows.
  * @concept random-features
  * @reference C. K. I. Williams and M. Seeger, Using the Nyström method to speed up kernel machines (NeurIPS 2001).
  * @example
  * ```ts
- * import { linearKernel, nystroem } from 'mdml-engine/kernels'
+ * import { linearKernel, nystroem } from 'omai-engine/kernels'
  * nystroem(linearKernel(), [[1, 0], [0, 1], [1, 1]], { indices: [0, 1] }).transform([[2, 3]]).shape // => [1, 2]
  * ```
  */
@@ -285,7 +285,7 @@ export function nystroem(kernel: Kernel, x: TensorLike, options: NystroemOptions
   if (options.indices !== undefined) {
     for (const i of options.indices) {
       if (!Number.isInteger(i) || i < 0 || i >= n)
-        throw new MdmlError('value', `nystroem: landmark ${i} is not a row in [0, ${n})`)
+        throw new OmaiError('value', `nystroem: landmark ${i} is not a row in [0, ${n})`)
     }
   } else positiveInteger('nystroem', 'nComponents', options.nComponents ?? 100)
   const indices =
@@ -324,13 +324,13 @@ export interface AdditiveChi2Options {
  *
  * @param options - Steps and interval.
  * @returns The feature map.
- * @throws MdmlError `value` for more than 3 steps without an interval, or an interval that is not positive and finite;
+ * @throws OmaiError `value` for more than 3 steps without an interval, or an interval that is not positive and finite;
  *   `value` from `transform` for a negative feature (a NaN feature gives NaN features).
  * @concept random-features
  * @reference A. Vedaldi and A. Zisserman, Efficient additive kernels via explicit feature maps (TPAMI 2012).
  * @example
  * ```ts
- * import { additiveChi2Sampler } from 'mdml-engine/kernels'
+ * import { additiveChi2Sampler } from 'omai-engine/kernels'
  * additiveChi2Sampler({ sampleSteps: 2 }).transform([[1, 2, 0]]).shape // => [1, 9]
  * ```
  */
@@ -339,16 +339,16 @@ export function additiveChi2Sampler(options: AdditiveChi2Options = {}): FeatureM
   const defaults: Readonly<Record<number, number>> = { 1: 0.8, 2: 0.5, 3: 0.4 }
   const interval = options.sampleInterval ?? defaults[steps]
   if (!(Number.isInteger(steps) && steps >= 1))
-    throw new MdmlError('value', `additiveChi2Sampler: sampleSteps must be a positive integer, got ${steps}`)
+    throw new OmaiError('value', `additiveChi2Sampler: sampleSteps must be a positive integer, got ${steps}`)
   if (interval === undefined)
-    throw new MdmlError('value', 'additiveChi2Sampler: give sampleInterval for more than 3 sample steps')
+    throw new OmaiError('value', 'additiveChi2Sampler: give sampleInterval for more than 3 sample steps')
   finiteAbove('additiveChi2Sampler', 'sampleInterval', interval, 0, true)
   return {
     name: 'additive-chi2',
     transform(x: TensorLike): Value {
       const { rows, single } = asRows(x, 'additiveChi2Sampler')
       if (isTensor(rows) && Array.from(rows.data).some((v) => v < 0))
-        throw new MdmlError('value', 'additiveChi2Sampler: features must be non-negative')
+        throw new OmaiError('value', 'additiveChi2Sampler: features must be non-negative')
       const nonzero = greater(rows, 0)
       const missing = isnan(rows)
       // A zero feature stays zero, a NaN feature gives NaN features (NaN > 0 is false and must not read as zero).
@@ -392,15 +392,15 @@ export type SkewedChi2SamplerOptions =
  *
  * @param options - Input dimension, number of features, skewedness and key; or the draws.
  * @returns The feature map with its draws.
- * @throws MdmlError `value` for an input dimension or number of features that is not a positive integer, or a skewedness
+ * @throws OmaiError `value` for an input dimension or number of features that is not a positive integer, or a skewedness
  *   that is not finite; `value` from `transform` for a feature at or below -skewedness.
  * @concept random-features
  * @reference F. Li, C. Ionescu and C. Sminchisescu, Random Fourier approximations for skewed multiplicative histogram
  *   kernels (DAGM 2010).
  * @example
  * ```ts
- * import { skewedChi2Sampler } from 'mdml-engine/kernels'
- * import { key } from 'mdml-engine/random'
+ * import { skewedChi2Sampler } from 'omai-engine/kernels'
+ * import { key } from 'omai-engine/random'
  * skewedChi2Sampler({ inputDim: 2, nComponents: 8, key: key(0) }).transform([0.5, 1]).shape // => [8]
  * ```
  */
@@ -428,7 +428,7 @@ export function skewedChi2Sampler(options: SkewedChi2SamplerOptions): SkewedChi2
     transform(x: TensorLike): Value {
       const { rows, single } = asRows(x, 'skewedChi2Sampler')
       if (isTensor(rows) && Array.from(rows.data).some((v) => v <= -c))
-        throw new MdmlError('value', `skewedChi2Sampler: features must exceed -${c}`)
+        throw new OmaiError('value', `skewedChi2Sampler: features must exceed -${c}`)
       const projection = add(matmul(log(add(rows, c)), weights), offset)
       return finish(mul(cos(projection), Math.sqrt(2 / n)), single)
     },
@@ -471,14 +471,14 @@ function countSketchMatrix(index: readonly number[], signs: readonly number[], n
  *
  * @param options - Factor dimensions, sketch size and key; or the hashes.
  * @returns The sketch with its hashes.
- * @throws MdmlError `shape` when hashes and inputs disagree; `value` for a sketch size or factor dimension that is not a
+ * @throws OmaiError `shape` when hashes and inputs disagree; `value` for a sketch size or factor dimension that is not a
  *   positive integer, or an index hash outside the sketch.
  * @concept random-features
  * @reference N. Pham and R. Pagh, Fast and scalable polynomial kernels via explicit feature maps (KDD 2013).
  * @example
  * ```ts
- * import { tensorSketch } from 'mdml-engine/kernels'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { tensorSketch } from 'omai-engine/kernels'
+ * import { toArray } from 'omai-engine/tensor'
  * const t = tensorSketch({ indexHash: [[0, 1], [1, 0]], bitHash: [[1, 1], [1, -1]], nComponents: 2 })
  * toArray(t.sketch([[1, 2]], [[3, 4]])).map((r) => r.map(Math.round)) // => [[2, -5]]
  * ```
@@ -499,10 +499,10 @@ export function tensorSketch(options: TensorSketchOptions): TensorSketch {
     )
   }
   if (indexHash.length !== bitHash.length || indexHash.some((r, p) => r.length !== bitHash[p]?.length))
-    throw new MdmlError('shape', 'tensorSketch: indexHash and bitHash must have the same shape')
+    throw new OmaiError('shape', 'tensorSketch: indexHash and bitHash must have the same shape')
   for (const r of indexHash) {
     if (r.some((h) => !Number.isInteger(h) || h < 0 || h >= n))
-      throw new MdmlError('value', `tensorSketch: every index hash must be an integer in [0, ${n})`)
+      throw new OmaiError('value', `tensorSketch: every index hash must be an integer in [0, ${n})`)
   }
   const matrices = indexHash.map((r, p) => countSketchMatrix(r, bitHash[p] ?? [], n))
   return {
@@ -511,7 +511,7 @@ export function tensorSketch(options: TensorSketchOptions): TensorSketch {
     nComponents: n,
     sketch(...xs: readonly TensorLike[]): Value {
       if (xs.length !== matrices.length)
-        throw new MdmlError('shape', `tensorSketch: expected ${matrices.length} inputs, got ${xs.length}`)
+        throw new OmaiError('shape', `tensorSketch: expected ${matrices.length} inputs, got ${xs.length}`)
       const parts = xs.map((x) => asRows(x, 'tensorSketch'))
       const spectra = parts.map((part, p) => fft(matmul(part.rows, matrices[p] as Value), undefined, -1))
       const product = spectra.slice(1).reduce((acc, z) => cMul(acc, z), spectra[0] as (typeof spectra)[number])
@@ -550,14 +550,14 @@ export type PolynomialCountSketchOptions = {
  *
  * @param options - Degree, gamma, c_0, sketch size and the input dimension and key, or the hashes `[p, d (+ 1)]`.
  * @returns The feature map with its hashes.
- * @throws MdmlError `value` for a degree, sketch size or input dimension that is not a positive integer, a gamma that is
+ * @throws OmaiError `value` for a degree, sketch size or input dimension that is not a positive integer, a gamma that is
  *   not positive and finite, or a coef0 that is negative or not finite.
  * @concept random-features
  * @reference N. Pham and R. Pagh, Fast and scalable polynomial kernels via explicit feature maps (KDD 2013).
  * @example
  * ```ts
- * import { polynomialCountSketch } from 'mdml-engine/kernels'
- * import { key } from 'mdml-engine/random'
+ * import { polynomialCountSketch } from 'omai-engine/kernels'
+ * import { key } from 'omai-engine/random'
  * polynomialCountSketch({ inputDim: 3, degree: 2, nComponents: 16, key: key(0) }).transform([[1, 2, 3]]).shape // => [1, 16]
  * ```
  */
@@ -599,7 +599,7 @@ export function polynomialCountSketch(options: PolynomialCountSketchOptions): Po
  * @concept random-features
  * @example
  * ```ts
- * import { additiveChi2Sampler, approximateGram } from 'mdml-engine/kernels'
+ * import { additiveChi2Sampler, approximateGram } from 'omai-engine/kernels'
  * approximateGram(additiveChi2Sampler(), [[1, 2], [2, 1]]).shape // => [2, 2]
  * ```
  */
@@ -628,18 +628,18 @@ export interface ApproximationError {
  * @param exact - The exact kernel matrix.
  * @param approximate - Its approximation (for example from {@link approximateGram}).
  * @returns The errors.
- * @throws MdmlError `shape` when the shapes differ.
+ * @throws OmaiError `shape` when the shapes differ.
  * @concept random-features
  * @example
  * ```ts
- * import { approximationError } from 'mdml-engine/kernels'
+ * import { approximationError } from 'omai-engine/kernels'
  * Math.round(approximationError([[2, 0], [0, 2]], [[1, 0], [0, 2]]).relative * 1e9) / 1e9 // => 0.353553391
  * ```
  */
 export function approximationError(exact: TensorLike, approximate: TensorLike): ApproximationError {
   const [a, b] = promoteFloat(exact, approximate) as [Value, Value]
   if (a.shape.join(',') !== b.shape.join(','))
-    throw new MdmlError('shape', 'approximationError: the matrices must have the same shape')
+    throw new OmaiError('shape', 'approximationError: the matrices must have the same shape')
   const diff = sub(a, b)
   const frobenius = Math.sqrt(item(sum(square(diff))))
   const scale = Math.sqrt(item(sum(square(a))))

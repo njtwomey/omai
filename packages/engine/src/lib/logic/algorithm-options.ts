@@ -23,7 +23,7 @@ const cover = (description: string, method: CoverMethod): Option<QuineMcCluskeyO
  * @concept normal-forms
  * @example
  * ```ts
- * import { coverMethods } from 'mdml-engine/logic'
+ * import { coverMethods } from 'omai-engine/logic'
  * coverMethods.make({ kind: 'greedy' }) // => { cover: 'greedy' }
  * ```
  */
@@ -62,7 +62,7 @@ function sampling(
  * @concept markov-logic
  * @example
  * ```ts
- * import { sampleSatSchemes } from 'mdml-engine/logic'
+ * import { sampleSatSchemes } from 'omai-engine/logic'
  * sampleSatSchemes.make({ kind: 'walksat' }).annealing // => 0.1
  * ```
  */
@@ -88,7 +88,7 @@ export type VersionSpaceLearner = (
  * @concept version-spaces
  * @example
  * ```ts
- * import { versionSpaceLearners } from 'mdml-engine/logic'
+ * import { versionSpaceLearners } from 'omai-engine/logic'
  * versionSpaceLearners.make({ kind: 'find-s' })([], [['a']]).name // => 'find-s'
  * ```
  */
@@ -119,7 +119,7 @@ export const versionSpaceLearners: OptionTable<VersionSpaceLearner, Record<strin
  * @concept unification
  * @example
  * ```ts
- * import { unificationVariants } from 'mdml-engine/logic'
+ * import { unificationVariants } from 'omai-engine/logic'
  * unificationVariants.make({ kind: 'sound' }) // => { occursCheck: true }
  * ```
  */

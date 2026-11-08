@@ -6,7 +6,7 @@
  * distributions, sentence log-probabilities, perplexity and samples. Words rarer than a cutoff become `<unk>`.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import { categorical, foldIn, type Key } from '../random/index.ts'
 import type { Algorithm } from '../trace/index.ts'
 
@@ -65,11 +65,11 @@ export interface NgramCounts {
  * @param sentences - Token lists.
  * @param options - The order and the padding tokens.
  * @returns The counts by order.
- * @throws MdmlError with code `value` for an order below 1.
+ * @throws OmaiError with code `value` for an order below 1.
  * @concept language-models
  * @example
  * ```ts
- * import { countNgrams } from 'mdml-engine/text'
+ * import { countNgrams } from 'omai-engine/text'
  * const c = countNgrams([['a', 'b'], ['a', 'c']], { order: 2 })
  * [c.counts[0]?.get('a'), c.counts[1]?.get(['<s>', 'a'].join('\u0000'))] // => [2, 2]
  * ```
@@ -83,7 +83,7 @@ export function countNgrams(sentences: readonly (readonly string[])[], options: 
 function emptyCounts(options: NgramOptions): { -readonly [K in keyof NgramCounts]: NgramCounts[K] } {
   const order = options.order ?? 3
   if (!Number.isInteger(order) || order < 1)
-    throw new MdmlError('value', 'countNgrams: order must be a positive integer')
+    throw new OmaiError('value', 'countNgrams: order must be a positive integer')
   return {
     order,
     bos: options.bos ?? '<s>',
@@ -122,7 +122,7 @@ function countsOfCounts(values: Iterable<number>): Map<number, number> {
  * @concept language-models
  * @example
  * ```ts
- * import { goodTuring } from 'mdml-engine/text'
+ * import { goodTuring } from 'omai-engine/text'
  * const g = goodTuring([1, 1, 1, 2, 2, 3])
  * [g.adjusted.get(1), g.adjusted.get(2), g.unseenMass] // => [1.3333333333333333, 1.5, 0.3]
  * ```
@@ -196,11 +196,11 @@ export interface NgramModel {
  * @param c - The counts ({@link countNgrams}).
  * @param options - The smoother and its knobs, the cutoff and the unknown token (the order is the counts').
  * @returns The model.
- * @throws MdmlError with code `value` for an unknown smoother or a bad discount.
+ * @throws OmaiError with code `value` for an unknown smoother or a bad discount.
  * @concept language-models
  * @example
  * ```ts
- * import { countNgrams, ngramFromCounts } from 'mdml-engine/text'
+ * import { countNgrams, ngramFromCounts } from 'omai-engine/text'
  * const m = ngramFromCounts(countNgrams([['a', 'b'], ['a', 'c']], { order: 1 }), { smoothing: 'mle' })
  * m.prob('a') // => 0.3333333333333333
  * ```
@@ -214,7 +214,7 @@ export function ngramFromCounts(c: NgramCounts, options: NgramOptions = {}): Ngr
   const eos = c.eos
   const k = options.k ?? 1
   if (options.discount !== undefined && !(options.discount >= 0 && options.discount < 1))
-    throw new MdmlError('value', 'ngramModel: the discount must be in [0, 1)')
+    throw new OmaiError('value', 'ngramModel: the discount must be in [0, 1)')
   // Rare words become <unk>: re-key every gram.
   const unigram = c.counts[0] as Map<string, number>
   const known = new Set<string>()
@@ -450,7 +450,7 @@ export function ngramFromCounts(c: NgramCounts, options: NgramOptions = {}): Ngr
  * @concept language-models
  * @example
  * ```ts
- * import { ngramModel } from 'mdml-engine/text'
+ * import { ngramModel } from 'omai-engine/text'
  * const m = ngramModel([['a', 'b'], ['a', 'c'], ['a', 'b']], { order: 2, smoothing: 'add-k', k: 1 })
  * m.prob('b', ['a']) // => 0.375
  * ```
@@ -477,8 +477,8 @@ export interface NgramTrainingState {
  * @concept language-models
  * @example
  * ```ts
- * import { ngramTrainingAlgorithm } from 'mdml-engine/text'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { ngramTrainingAlgorithm } from 'omai-engine/text'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const alg = ngramTrainingAlgorithm([['a', 'b'], ['a', 'c']], { order: 2 })
  * runAlgorithm(alg, { maxSteps: 5 }).state.counts.sentences // => 2
  * ```

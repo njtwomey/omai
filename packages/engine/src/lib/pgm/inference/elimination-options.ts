@@ -41,7 +41,7 @@ const semiring = (
  * @concept variable-elimination
  * @example
  * ```ts
- * import { eliminationSemirings } from 'mdml-engine/pgm'
+ * import { eliminationSemirings } from 'omai-engine/pgm'
  * eliminationSemirings.make({ kind: 'max' }).traceback // => true
  * ```
  */

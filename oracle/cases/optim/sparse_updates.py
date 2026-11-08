@@ -7,8 +7,8 @@ them as sparse tensors, element-wise or row-wise (sparse_dim=1, as embedding gra
 from typing import Any
 
 import torch
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.optim_trajectories import (
+from omai_oracle.fixture import Case, case
+from omai_oracle.optim_trajectories import (
     A_MATRIX,
     C_MATRIX,
     P0,

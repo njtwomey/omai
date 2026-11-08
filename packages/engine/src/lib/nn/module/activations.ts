@@ -4,7 +4,7 @@
  * other containers.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { full, logSoftmax, mul, sigmoid, softmax, tanh, type Value } from '../../tensor/index.ts'
 import {
   type ActivationName,
@@ -211,7 +211,7 @@ export class Threshold extends Elementwise {
  *
  * @example
  * ```ts
- * import { Softmax } from 'mdml-engine/nn'
+ * import { Softmax } from 'omai-engine/nn'
  * new Softmax(-1).kind // => 'Softmax'
  * ```
  */
@@ -240,7 +240,7 @@ export class Softmin extends Elementwise {
  *
  * @example
  * ```ts
- * import { GLU } from 'mdml-engine/nn'
+ * import { GLU } from 'omai-engine/nn'
  * new GLU().outputShape([2, 6]) // => [2, 3]
  * ```
  */
@@ -272,7 +272,7 @@ export class GLU extends Module {
  *
  * @example
  * ```ts
- * import { PReLU } from 'mdml-engine/nn'
+ * import { PReLU } from 'omai-engine/nn'
  * new PReLU(3).parameterCount() // => 3
  * ```
  */
@@ -283,7 +283,7 @@ export class PReLU extends Module {
 
   constructor(numParameters = 1, init = 0.25) {
     super()
-    if (numParameters < 1) throw new MdmlError('value', 'PReLU: need at least one parameter')
+    if (numParameters < 1) throw new OmaiError('value', 'PReLU: need at least one parameter')
     this.numParameters = numParameters
     this.init = init
     this.params = this.initParams()
@@ -313,7 +313,7 @@ export class PReLU extends Module {
  * @returns The module.
  * @example
  * ```ts
- * import { activationModule } from 'mdml-engine/nn'
+ * import { activationModule } from 'omai-engine/nn'
  * activationModule('tanh').kind // => 'tanh'
  * ```
  */

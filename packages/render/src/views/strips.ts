@@ -5,7 +5,7 @@
  */
 
 import type { EChartsOption, SeriesOption } from 'echarts'
-import type { Strip } from 'mdml-engine/exposition'
+import type { Strip } from 'omai-engine/exposition'
 import { lines } from '../charts/lines.ts'
 import { matrix } from '../charts/matrices.ts'
 import { cartesian, type Layer, layer } from '../charts/plot.ts'
@@ -27,8 +27,8 @@ export interface StripViewOptions extends ViewOptions {
  * @returns The aspect.
  * @example
  * ```ts
- * import { stripRecord } from 'mdml-engine/exposition'
- * import { stripAspect } from 'mdml-render/views'
+ * import { stripRecord } from 'omai-engine/exposition'
+ * import { stripAspect } from 'omai-render/views'
  * stripAspect(stripRecord({ tokens: ['a', 'b'], tracks: [{ name: 'p', values: [0, 1] }] })) // => 1.6
  * ```
  */
@@ -45,8 +45,8 @@ export function stripAspect(record: Strip): number {
  * @returns The ECharts option.
  * @example
  * ```ts
- * import { stripRecord } from 'mdml-engine/exposition'
- * import { stripView } from 'mdml-render/views'
+ * import { stripRecord } from 'omai-engine/exposition'
+ * import { stripView } from 'omai-render/views'
  * const r = stripRecord({
  *   tokens: ['the', 'cat'],
  *   tracks: [{ name: 'noun', values: [0.1, 0.9] }, { name: 'det', values: [0.8, 0.1] }],

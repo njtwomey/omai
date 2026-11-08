@@ -6,7 +6,7 @@
  * key, so binary descriptors agree only with themselves, not with OpenCV's fixed pattern.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { type Key, key as makeKey, normal } from '../random/index.ts'
 import { image } from '../signal/index.ts'
 import { fromStorage, primalOf, type TensorLike, toFlat } from '../tensor/index.ts'
@@ -44,7 +44,7 @@ function smoothed(x: TensorLike, sigma: number, name: string): Plane {
  * @concept sift
  * @example
  * ```ts
- * import { siftDescriptors } from 'mdml-engine/vision'
+ * import { siftDescriptors } from 'omai-engine/vision'
  * const img = Array.from({ length: 32 }, (_, i) => Array.from({ length: 32 }, (_, j) => Math.sin(i / 3) + Math.cos(j / 5)))
  * siftDescriptors(img, [{ x: 16, y: 16, size: 4, angle: 30, response: 1, octave: 0 }])[0].length // => 128
  * ```
@@ -119,7 +119,7 @@ export function siftDescriptors(x: TensorLike, keypoints: readonly Keypoint[]): 
  * @concept binary-descriptors
  * @example
  * ```ts
- * import { briefPattern } from 'mdml-engine/vision'
+ * import { briefPattern } from 'omai-engine/vision'
  * briefPattern(256).length // => 256
  * ```
  */
@@ -128,7 +128,7 @@ export function briefPattern(
   options: { readonly patchSize?: number; readonly key?: Key } = {},
 ): [number, number, number, number][] {
   if (!(Number.isInteger(bits) && bits > 0 && bits % 8 === 0))
-    throw new MdmlError('value', 'briefPattern: bits % 8 = 0')
+    throw new OmaiError('value', 'briefPattern: bits % 8 = 0')
   const size = options.patchSize ?? 31
   const half = Math.floor(size / 2)
   const g = toFlat(normal(options.key ?? makeKey(0), [bits * 4]))
@@ -165,7 +165,7 @@ function binaryDescriptor(p: Plane, kp: Keypoint, pattern: readonly (readonly nu
  * @concept binary-descriptors
  * @example
  * ```ts
- * import { briefDescriptors } from 'mdml-engine/vision'
+ * import { briefDescriptors } from 'omai-engine/vision'
  * const img = Array.from({ length: 40 }, (_, i) => Array.from({ length: 40 }, (_, j) => (i * j) % 7 / 7))
  * briefDescriptors(img, [{ x: 20, y: 20, size: 31, angle: -1, response: 0, octave: 0 }])[0].length // => 32
  * ```
@@ -222,7 +222,7 @@ export interface OrbOptions {
  * @index function ORB keypoint descriptors; matchDescriptors in matching.ts.
  * @example
  * ```ts
- * import { orb } from 'mdml-engine/vision'
+ * import { orb } from 'omai-engine/vision'
  * const img = Array.from({ length: 48 }, (_, i) => Array.from({ length: 48 }, (_, j) => Math.sin(i * i * 0.05 + j * 0.9) * Math.cos(j * j * 0.03 - i * 0.4) * 0.5 + 0.5))
  * orb(img, { nLevels: 1 }).keypoints.length > 0 // => true
  * ```

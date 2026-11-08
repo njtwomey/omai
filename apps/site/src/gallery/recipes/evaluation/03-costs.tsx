@@ -1,5 +1,5 @@
-import { key, normal } from 'mdml-engine/random'
-import { ControlPanel, NumberField, ThresholdExplorer } from 'mdml-render/react'
+import { key, normal } from 'omai-engine/random'
+import { ControlPanel, NumberField, ThresholdExplorer } from 'omai-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 

@@ -1,5 +1,5 @@
 // Machinery shared by the steppers: evaluation counting, scipy's initial-step heuristic and stepper bookkeeping.
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import type { Value } from '../../tensor/index.ts'
 import { combine, numbersOf, rms, type Tol, tolAt } from './_vec.ts'
 import type { OdeVectorField, SolveCounts, StepAttempt, StepperState, StepperStatus } from './problem.ts'
@@ -34,7 +34,7 @@ export function checked(f: OdeVectorField, shape: readonly number[]): OdeVectorF
   return (t, y) => {
     const out = f(t, y)
     if (out.shape.length !== shape.length || out.shape.some((n, i) => n !== shape[i])) {
-      throw new MdmlError('shape', `the vector field returned shape [${out.shape}] for a state of shape [${shape}]`)
+      throw new OmaiError('shape', `the vector field returned shape [${out.shape}] for a state of shape [${shape}]`)
     }
     return out
   }
@@ -138,20 +138,20 @@ export function validTolerances(rtol: Tol, atol: Tol): { rtol: Tol; atol: Tol } 
   const floor = 100 * Number.EPSILON
   const r = typeof rtol === 'number' ? Math.max(rtol, floor) : rtol.map((v) => Math.max(v, floor))
   const bad = typeof atol === 'number' ? atol < 0 : atol.some((v) => v < 0)
-  if (bad) throw new MdmlError('value', 'the absolute tolerance must be non-negative')
+  if (bad) throw new OmaiError('value', 'the absolute tolerance must be non-negative')
   return { rtol: r, atol }
 }
 
 /** Check a positive maximum step. */
 export function validMaxStep(maxStep: number | undefined): number {
   const m = maxStep ?? Number.POSITIVE_INFINITY
-  if (!(m > 0)) throw new MdmlError('value', 'maxStep must be positive')
+  if (!(m > 0)) throw new OmaiError('value', 'maxStep must be positive')
   return m
 }
 
 /** Check a first step against the interval. */
 export function validFirstStep(first: number, t0: number, tBound: number): number {
-  if (!(first > 0)) throw new MdmlError('value', 'firstStep must be positive')
-  if (first > Math.abs(tBound - t0)) throw new MdmlError('value', 'firstStep exceeds the interval')
+  if (!(first > 0)) throw new OmaiError('value', 'firstStep must be positive')
+  if (first > Math.abs(tBound - t0)) throw new OmaiError('value', 'firstStep exceeds the interval')
   return first
 }

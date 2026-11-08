@@ -6,9 +6,9 @@ from typing import Any, cast
 
 import numpy as np
 import sklearn
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import rng
 from npeet import entropy_estimators as ee  # pyright: ignore[reportMissingTypeStubs]
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import rng
 from sklearn.feature_selection._mutual_info import (  # pyright: ignore[reportPrivateUsage]
     _compute_mi_cc,  # pyright: ignore[reportPrivateUsage]
     _compute_mi_cd,  # pyright: ignore[reportPrivateUsage]

@@ -4,7 +4,7 @@
  * `optim`'s Levenberg-Marquardt. Private to vision.
  */
 
-import { MdmlError, toRows } from '../base/index.ts'
+import { OmaiError, toRows } from '../base/index.ts'
 import { dgemm, dgesv, dgesvd } from '../numerics/linalg/index.ts'
 import { levenbergMarquardt } from '../optim/index.ts'
 import { primalOf, type Tensor, type TensorLike, toFlat, type Value } from '../tensor/index.ts'
@@ -77,7 +77,7 @@ export function points3Of(
 ): [number, number, number][] {
   if (Array.isArray(points) && points.length === 0) return []
   const { data, shape } = valuesOf(points as TensorLike)
-  if (shape.length !== 2 || shape[1] !== 3) throw new MdmlError('shape', `${name}: points are [n, 3]`)
+  if (shape.length !== 2 || shape[1] !== 3) throw new OmaiError('shape', `${name}: points are [n, 3]`)
   return Array.from({ length: shape[0] ?? 0 }, (_, i) => [data[3 * i] ?? 0, data[3 * i + 1] ?? 0, data[3 * i + 2] ?? 0])
 }
 

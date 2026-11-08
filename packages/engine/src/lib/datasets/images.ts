@@ -4,7 +4,7 @@
  * IDX format with Fashion-MNIST's test split as a pinned remote asset.
  */
 
-import { MdmlError, maxOf, minOf } from '../base/index.ts'
+import { maxOf, minOf, OmaiError } from '../base/index.ts'
 import { type DatasetGenerator, type DatasetRef, gunzip, type ImageData, images } from '../data/index.ts'
 import { foldIn, normal, randint, uniform } from '../random/index.ts'
 import { bool, choice, dict, int, real } from '../space/index.ts'
@@ -56,8 +56,8 @@ const SHAPE_CLASSES = ['circle', 'square', 'triangle'] as const
  * @index dataset Images of circles, squares and triangles with labels.
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { shapes } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { shapes } from 'omai-engine/datasets'
  * generate(shapes, { knobs: { n: 4, size: 16 } }).data.images.shape // => [4, 16, 16, 1]
  * ```
  */
@@ -159,8 +159,8 @@ const FONT: readonly (readonly string[])[] = [
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { digitGlyphs } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { digitGlyphs } from 'omai-engine/datasets'
  * generate(digitGlyphs, { knobs: { n: 10 } }).data.classes?.length // => 10
  * ```
  */
@@ -231,8 +231,8 @@ export const digitGlyphs: DatasetGenerator<ImageData> = {
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { barsAndStripes } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { barsAndStripes } from 'omai-engine/datasets'
  * generate(barsAndStripes, { knobs: { side: 3, all: true } }).data.images.shape // => [14, 3, 3, 1]
  * ```
  */
@@ -296,8 +296,8 @@ export const barsAndStripes: DatasetGenerator<ImageData> = {
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { geometricScenes } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { geometricScenes } from 'omai-engine/datasets'
  * generate(geometricScenes, { knobs: { n: 2, size: 32 } }).data.masks?.shape // => [2, 32, 32]
  * ```
  */
@@ -415,7 +415,7 @@ const FASHION_CLASSES = [
 function readIdx(bytes: Uint8Array): { shape: number[]; data: Uint8Array } {
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
   const magic = view.getUint32(0, false)
-  if (magic >> 8 !== 0x08) throw new MdmlError('value', 'readIdx: not an unsigned-byte IDX file')
+  if (magic >> 8 !== 0x08) throw new OmaiError('value', 'readIdx: not an unsigned-byte IDX file')
   const dims = magic & 0xff
   const shape = Array.from({ length: dims }, (_, d) => view.getUint32(4 + 4 * d, false))
   return { shape, data: bytes.subarray(4 + 4 * dims) }
@@ -426,21 +426,21 @@ function readIdx(bytes: Uint8Array): { shape: number[]; data: Uint8Array } {
  *
  * @param files - The gzipped images file and labels file.
  * @returns The images.
- * @throws MdmlError with code `value` for malformed files or mismatched counts.
+ * @throws OmaiError with code `value` for malformed files or mismatched counts.
  * @example
  * ```ts
- * import { parseIdxImages } from 'mdml-engine/datasets'
+ * import { parseIdxImages } from 'omai-engine/datasets'
  * typeof parseIdxImages // => 'function'
  * ```
  */
 export async function parseIdxImages(files: readonly Uint8Array[]): Promise<ImageData> {
   const [imgFile, labelFile] = files
   if (imgFile === undefined || labelFile === undefined)
-    throw new MdmlError('value', 'parseIdxImages: needs images and labels')
+    throw new OmaiError('value', 'parseIdxImages: needs images and labels')
   const img = readIdx(await gunzip(imgFile))
   const lab = readIdx(await gunzip(labelFile))
   const [n = 0, h = 0, w = 0] = img.shape
-  if (lab.shape[0] !== n) throw new MdmlError('value', `parseIdxImages: ${n} images and ${lab.shape[0]} labels`)
+  if (lab.shape[0] !== n) throw new OmaiError('value', `parseIdxImages: ${n} images and ${lab.shape[0]} labels`)
   return images(
     fromStorage(
       Float64Array.from(img.data.subarray(0, n * h * w), (v) => v / 255),
@@ -468,7 +468,7 @@ export async function parseIdxImages(files: readonly Uint8Array[]): Promise<Imag
  *
  * @example
  * ```ts
- * import { fashionMnistTest } from 'mdml-engine/datasets'
+ * import { fashionMnistTest } from 'omai-engine/datasets'
  * fashionMnistTest.kind // => 'remote-files'
  * ```
  */

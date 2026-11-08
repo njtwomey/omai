@@ -42,8 +42,8 @@ export interface TransitionSpectrum {
  * @returns The key for the mixer's own parameters.
  * @example
  * ```ts
- * import { ownKey } from 'mdml-engine/nn/blocks'
- * import { key } from 'mdml-engine/random'
+ * import { ownKey } from 'omai-engine/nn/blocks'
+ * import { key } from 'omai-engine/random'
  * ownKey(key(0)).words.length // => 2
  * ```
  */

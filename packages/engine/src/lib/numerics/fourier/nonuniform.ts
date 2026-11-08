@@ -4,7 +4,7 @@
  * evaluating a spectrum on a chosen band (scipy.signal `czt` and `zoom_fft`).
  */
 
-import { type Complex, MdmlError } from '../../base/index.ts'
+import { type Complex, OmaiError } from '../../base/index.ts'
 import {
   add,
   type ComplexLike,
@@ -37,7 +37,7 @@ import { fft, ifft } from './fft.ts'
  * @returns The modes, in increasing order.
  * @example
  * ```ts
- * import { modes } from 'mdml-engine/numerics/fourier'
+ * import { modes } from 'omai-engine/numerics/fourier'
  * modes(4) // => [-2, -1, 0, 1]
  * ```
  */
@@ -61,8 +61,8 @@ function complexMatmul(a: ComplexValue, b: ComplexValue): ComplexValue {
  * @concept nonuniform-fourier
  * @example
  * ```ts
- * import { nudft1 } from 'mdml-engine/numerics/fourier'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { nudft1 } from 'omai-engine/numerics/fourier'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(nudft1([0], [2], 3).re) // => [2, 2, 2]
  * ```
  */
@@ -89,8 +89,8 @@ export function nudft1(x: TensorLike, c: ComplexLike, m: number, sign: 1 | -1 = 
  * @returns Values at the points `[J]`.
  * @example
  * ```ts
- * import { nudft2 } from 'mdml-engine/numerics/fourier'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { nudft2 } from 'omai-engine/numerics/fourier'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(nudft2([0, 1], [0, 1, 0]).re) // => [1, 1]
  * ```
  */
@@ -126,11 +126,11 @@ function gridding(m: number, spread: number): { grid: number; tau: number } {
 function halfWidth(options: { readonly spread?: number; readonly tolerance?: number }, name: string): number {
   if (options.spread !== undefined) {
     if (!Number.isInteger(options.spread) || options.spread < 1)
-      throw new MdmlError('value', `${name}: spread must be a positive integer`)
+      throw new OmaiError('value', `${name}: spread must be a positive integer`)
     return options.spread
   }
   const tol = options.tolerance ?? 1e-12
-  if (!(tol > 0 && tol < 1)) throw new MdmlError('value', `${name}: tolerance must be in (0, 1)`)
+  if (!(tol > 0 && tol < 1)) throw new OmaiError('value', `${name}: tolerance must be in (0, 1)`)
   return Math.max(2, Math.ceil((-3 * Math.log(tol)) / (2 * Math.PI)))
 }
 
@@ -166,9 +166,9 @@ function spreadingMatrix(xs: readonly number[], grid: number, tau: number, sprea
  * @returns Mode coefficients `[M]`, as {@link nudft1}.
  * @example
  * ```ts
- * import { maxOf } from 'mdml-engine/base'
- * import { nufft1, nudft1 } from 'mdml-engine/numerics/fourier'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { maxOf } from 'omai-engine/base'
+ * import { nufft1, nudft1 } from 'omai-engine/numerics/fourier'
+ * import { toArray } from 'omai-engine/tensor'
  * const x = [0.3, 1.7, -2.2, 3]
  * const fast = toArray(nufft1(x, [1, -1, 2, 0.5], 8).re)
  * const slow = toArray(nudft1(x, [1, -1, 2, 0.5], 8).re)
@@ -217,9 +217,9 @@ export function nufft1(
  * @returns Values `[J]`, as {@link nudft2}.
  * @example
  * ```ts
- * import { maxOf } from 'mdml-engine/base'
- * import { nufft2, nudft2 } from 'mdml-engine/numerics/fourier'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { maxOf } from 'omai-engine/base'
+ * import { nufft2, nudft2 } from 'omai-engine/numerics/fourier'
+ * import { toArray } from 'omai-engine/tensor'
  * const x = [0.3, 1.7, -2.2]
  * const fast = toArray(nufft2(x, [1, 2, 3, 4]).im)
  * const slow = toArray(nudft2(x, [1, 2, 3, 4]).im)
@@ -276,8 +276,8 @@ const cpow = (z: Complex, p: number): Complex => {
  * @concept chirp-z
  * @example
  * ```ts
- * import { czt } from 'mdml-engine/numerics/fourier'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { czt } from 'omai-engine/numerics/fourier'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(czt([1, 2, 3, 4]).re).map((v) => Math.round(v * 1e10) / 1e10) // => [10, -2, -2, -2]
  * ```
  */
@@ -285,7 +285,7 @@ export function czt(x: ComplexLike, m?: number, w?: Complex, a: Complex = [1, 0]
   const z = complex(x)
   const n = z.re.shape[0] ?? 0
   const outputs = m ?? n
-  if (n < 1 || outputs < 1) throw new MdmlError('value', 'czt: empty input or output')
+  if (n < 1 || outputs < 1) throw new OmaiError('value', 'czt: empty input or output')
   const ratio = w ?? [Math.cos((-2 * Math.PI) / outputs), Math.sin((-2 * Math.PI) / outputs)]
   // w^(t^2 / 2) with the angle taken from the principal argument, as scipy.
   const chirp = (t: number): Complex => cpow(ratio, (t * t) / 2)
@@ -350,7 +350,7 @@ export function czt(x: ComplexLike, m?: number, w?: Complex, a: Complex = [1, 0]
  * @returns `[m]` values.
  * @example
  * ```ts
- * import { zoomFft } from 'mdml-engine/numerics/fourier'
+ * import { zoomFft } from 'omai-engine/numerics/fourier'
  * zoomFft([1, 0, 0, 0], [0, 1], 4).re.shape // => [4]
  * ```
  */

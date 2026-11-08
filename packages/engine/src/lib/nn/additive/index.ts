@@ -1,5 +1,5 @@
 /**
- * Additive networks, part of `mdml-engine/nn`: the differentiable B-spline basis (Cox-de Boor over tensor operations,
+ * Additive networks, part of `omai-engine/nn`: the differentiable B-spline basis (Cox-de Boor over tensor operations,
  * with gradients to the points and to the knots), the slots of a learnable spline (where the knots sit and whether they
  * train, what shape the coefficients are held to), and `SplineLayer`, the layer of learnable univariate splines that
  * additive models and Kolmogorov-Arnold networks are built from. The additive model itself (terms, interactions,

@@ -5,10 +5,10 @@
  */
 
 import type { EChartsOption, SeriesOption } from 'echarts'
-import { MdmlError, maxOf, minOf } from 'mdml-engine/base'
-import { type Distribution, normal } from 'mdml-engine/dists'
-import { ecdf, gaussianKde, quantile } from 'mdml-engine/stats'
-import { type TensorLike, toFlat } from 'mdml-engine/tensor'
+import { maxOf, minOf, OmaiError } from 'omai-engine/base'
+import { type Distribution, normal } from 'omai-engine/dists'
+import { ecdf, gaussianKde, quantile } from 'omai-engine/stats'
+import { type TensorLike, toFlat } from 'omai-engine/tensor'
 import type { Range } from '../figure/aspect.ts'
 import { extentOf, padRange } from '../figure/limits.ts'
 import type { ColourMode } from '../theme/tokens.ts'
@@ -42,8 +42,8 @@ function scalar(v: unknown): number {
  * @returns The range.
  * @example
  * ```ts
- * import { distributionRange } from 'mdml-render/charts'
- * import { normal } from 'mdml-engine/dists'
+ * import { distributionRange } from 'omai-render/charts'
+ * import { normal } from 'omai-engine/dists'
  * distributionRange(normal(0, 1)).map((v) => Math.round(v * 100) / 100) // => [-3.09, 3.09]
  * ```
  */
@@ -72,8 +72,8 @@ export function distributionRange(dist: Distribution, mass = 0.998): Range {
  * @returns The layer.
  * @example
  * ```ts
- * import { density } from 'mdml-render/charts'
- * import { normal } from 'mdml-engine/dists'
+ * import { density } from 'omai-render/charts'
+ * import { normal } from 'omai-engine/dists'
  * const l = density(normal(0, 1), { range: [-1, 1], n: 3 })
  * l.series[0].data // => [[-1, 0.24197072451914337], [0, 0.3989422804014327], [1, 0.24197072451914337]]
  * ```
@@ -107,7 +107,7 @@ function curveLayer(x: readonly number[], y: readonly number[], options: Distrib
 }
 
 /**
- * A Gaussian kernel density estimate of samples as a curve (mdml-engine's `stats.gaussianKde`, Scott's rule by
+ * A Gaussian kernel density estimate of samples as a curve (omai-engine's `stats.gaussianKde`, Scott's rule by
  * default).
  *
  * @param samples - The sample.
@@ -117,7 +117,7 @@ function curveLayer(x: readonly number[], y: readonly number[], options: Distrib
  * @index function A kernel density estimate layer of samples: `kde(samples)`.
  * @example
  * ```ts
- * import { kde } from 'mdml-render/charts'
+ * import { kde } from 'omai-render/charts'
  * kde([0, 1, 2], { n: 50 }).series[0].data.length // => 50
  * ```
  */
@@ -140,7 +140,7 @@ export function kde(
 }
 
 /**
- * The empirical CDF of samples as a step curve (mdml-engine's `stats.ecdf`), from 0 before the least value to 1
+ * The empirical CDF of samples as a step curve (omai-engine's `stats.ecdf`), from 0 before the least value to 1
  * after the greatest.
  *
  * @param samples - The sample.
@@ -148,7 +148,7 @@ export function kde(
  * @returns The layer.
  * @example
  * ```ts
- * import { ecdfCurve } from 'mdml-render/charts'
+ * import { ecdfCurve } from 'omai-render/charts'
  * ecdfCurve([1, 3, 3, 4]).series[0].data // => [[1, 0], [1, 0.25], [3, 0.75], [4, 1]]
  * ```
  */
@@ -181,8 +181,8 @@ export function ecdfCurve(samples: TensorLike | readonly number[], options: Dist
  * @returns The layer.
  * @example
  * ```ts
- * import { pmf } from 'mdml-render/charts'
- * import { bernoulli } from 'mdml-engine/dists'
+ * import { pmf } from 'omai-render/charts'
+ * import { bernoulli } from 'omai-engine/dists'
  * pmf(bernoulli({ probs: 0.25 }), { range: [0, 1] }).series[1].data // => [[0, 0.75], [1, 0.25]]
  * ```
  */
@@ -261,10 +261,10 @@ export interface BoxStats {
  * @param values - The sample.
  * @param whisker - The whisker reach in IQRs (default 1.5).
  * @returns The statistics.
- * @throws MdmlError with code `value` for an empty sample.
+ * @throws OmaiError with code `value` for an empty sample.
  * @example
  * ```ts
- * import { boxStats } from 'mdml-render/charts'
+ * import { boxStats } from 'omai-render/charts'
  * boxStats([1, 2, 3, 4, 100]) // => { low: 1, q1: 2, median: 3, q3: 4, high: 4, outliers: [100] }
  * ```
  */
@@ -272,7 +272,7 @@ export function boxStats(values: TensorLike | readonly number[], whisker = 1.5):
   const v = numbers(values)
     .filter(Number.isFinite)
     .sort((a, b) => a - b)
-  if (v.length === 0) throw new MdmlError('value', 'boxStats: the sample is empty')
+  if (v.length === 0) throw new OmaiError('value', 'boxStats: the sample is empty')
   const [q1 = 0, median = 0, q3 = 0] = toFlat(quantile(v, [0.25, 0.5, 0.75]))
   const reach = whisker * (q3 - q1)
   const inside = v.filter((x) => x >= q1 - reach && x <= q3 + reach)
@@ -295,7 +295,7 @@ export function boxStats(values: TensorLike | readonly number[], whisker = 1.5):
  * @index function Box plots of groups: `boxPlot([{ name: 'a', values }])`.
  * @example
  * ```ts
- * import { boxPlot } from 'mdml-render/charts'
+ * import { boxPlot } from 'omai-render/charts'
  * boxPlot([{ name: 'a', values: [1, 2, 3, 4, 100] }]).series[1].data // => [[0, 100]]
  * ```
  */
@@ -344,7 +344,7 @@ interface ViolinApi {
  * @returns The layer, categories on the x axis.
  * @example
  * ```ts
- * import { violinPlot } from 'mdml-render/charts'
+ * import { violinPlot } from 'omai-render/charts'
  * violinPlot([{ name: 'a', values: [0, 1, 1, 2] }]).xCategories // => ['a']
  * ```
  */
@@ -422,7 +422,7 @@ export function violinPlot(
  * @returns The layer.
  * @example
  * ```ts
- * import { qqPlot } from 'mdml-render/charts'
+ * import { qqPlot } from 'omai-render/charts'
  * qqPlot([3, 1, 2]).series[0].data.map((p) => p.value[1]) // => [1, 2, 3]
  * ```
  */
@@ -470,8 +470,8 @@ export function qqPlot(
  * @returns The layer.
  * @example
  * ```ts
- * import { priorPosterior } from 'mdml-render/charts'
- * import { normal } from 'mdml-engine/dists'
+ * import { priorPosterior } from 'omai-render/charts'
+ * import { normal } from 'omai-engine/dists'
  * priorPosterior(normal(0, 2), normal(1, 0.5)).series.map((s) => s.name) // => ['prior', 'posterior']
  * ```
  */
@@ -522,8 +522,8 @@ export function priorPosterior(
  * @index function Densities of distributions on one chart: `densityChart([{ name, dist }])`.
  * @example
  * ```ts
- * import { densityChart } from 'mdml-render/charts'
- * import { normal } from 'mdml-engine/dists'
+ * import { densityChart } from 'omai-render/charts'
+ * import { normal } from 'omai-engine/dists'
  * densityChart([{ name: 'N(0,1)', dist: normal(0, 1) }]).series.length // => 1
  * ```
  */
@@ -558,7 +558,7 @@ export function densityChart(
  * @returns The layer: the band below the curve.
  * @example
  * ```ts
- * import { meanBand } from 'mdml-render/charts'
+ * import { meanBand } from 'omai-render/charts'
  * meanBand([0, 1], [0, 1], [-1, 0], [1, 2]).series.length // => 2
  * ```
  */
@@ -598,7 +598,7 @@ export function meanBand(
  * @returns The layer: a filled band and an outline per group.
  * @example
  * ```ts
- * import { ridgeline } from 'mdml-render/charts'
+ * import { ridgeline } from 'omai-render/charts'
  * ridgeline([{ name: 'a', values: [0, 1, 2] }, { name: 'b', values: [1, 2, 3] }], { n: 5 }).series.length // => 4
  * ```
  */

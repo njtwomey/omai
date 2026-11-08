@@ -5,7 +5,7 @@
  * resumes and logs the paths of {@link yenContract}; `kShortestPaths` is this run to the end.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { type Algorithm, type Contract, defineContract, runAlgorithm, scalar, tensor } from '../trace/index.ts'
 import { codec, weightFunction } from './_run.ts'
 import { type Graph, type NodeId, nodeIndex } from './graph.ts'
@@ -71,8 +71,8 @@ function byCost(x: WeightedPath, y: WeightedPath): number {
  * @reference J. Y. Yen, Finding the k shortest loopless paths in a network, Management Science 17 (1971).
  * @example
  * ```ts
- * import { cycleGraph, yenAlgorithm } from 'mdml-engine/graph'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { cycleGraph, yenAlgorithm } from 'omai-engine/graph'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const run = runAlgorithm(yenAlgorithm(cycleGraph(5), 0, 2, 2), { maxSteps: 20 })
  * run.state.found.map((p) => p.path) // => [[0, 1, 2], [0, 4, 3, 2]]
  * ```
@@ -192,12 +192,12 @@ export function yenAlgorithm(
  * @param k - How many paths.
  * @param options - `weighted` (default true).
  * @returns Up to k paths with their costs, in non-decreasing cost.
- * @throws MdmlError with code `value` for a non-integer k.
+ * @throws OmaiError with code `value` for a non-integer k.
  * @concept shortest-paths
  * @reference J. Y. Yen, Finding the k shortest loopless paths in a network, Management Science 17 (1971).
  * @example
  * ```ts
- * import { cycleGraph, kShortestPaths } from 'mdml-engine/graph'
+ * import { cycleGraph, kShortestPaths } from 'omai-engine/graph'
  * kShortestPaths(cycleGraph(5), 0, 2, 2).map((p) => p.path) // => [[0, 1, 2], [0, 4, 3, 2]]
  * ```
  */
@@ -208,7 +208,7 @@ export function kShortestPaths(
   k: number,
   options: PathOptions = {},
 ): WeightedPath[] {
-  if (!Number.isFinite(k)) throw new MdmlError('value', 'kShortestPaths: k must be finite')
+  if (!Number.isFinite(k)) throw new OmaiError('value', 'kShortestPaths: k must be finite')
   const { found } = runAlgorithm(yenAlgorithm(g, source, target, k, options), {
     maxSteps: Number.MAX_SAFE_INTEGER,
   }).state

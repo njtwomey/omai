@@ -4,7 +4,7 @@
  * Poisson-Stirling, Jaccard and others) from their marginals, and scoring and ranking every n-gram.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { hypergeometric } from '../dists/index.ts'
 import { item } from '../tensor/index.ts'
 import { compareCodePoints } from './_classes.ts'
@@ -117,7 +117,7 @@ function general(
       return (table[0] ?? 0) / s
     }
     default:
-      throw new MdmlError('value', `association: ${measure} is only defined for bigrams`)
+      throw new OmaiError('value', `association: ${measure} is only defined for bigrams`)
   }
 }
 
@@ -133,7 +133,7 @@ function general(
  * @concept collocations
  * @example
  * ```ts
- * import { bigramAssociation } from 'mdml-engine/text'
+ * import { bigramAssociation } from 'omai-engine/text'
  * bigramAssociation('pmi', { nii: 4, nix: 8, nxi: 4, nxx: 64 }) // => 3
  * ```
  */
@@ -172,11 +172,11 @@ export function bigramAssociation(
  * @param m - The marginals.
  * @param options - The power of MI-like (default 3).
  * @returns The score.
- * @throws MdmlError with code `value` for a bigram-only measure.
+ * @throws OmaiError with code `value` for a bigram-only measure.
  * @concept collocations
  * @example
  * ```ts
- * import { trigramAssociation } from 'mdml-engine/text'
+ * import { trigramAssociation } from 'omai-engine/text'
  * trigramAssociation('rawFreq', { niii: 2, pairs: [3, 2, 2], words: [4, 3, 2], nxxx: 20 }) // => 0.1
  * ```
  */
@@ -211,11 +211,11 @@ const SEP = '\u0000'
  * @param words - The words.
  * @param options - Order (default 2) and window size (default the order).
  * @returns The counts.
- * @throws MdmlError with code `value` for a window smaller than the order.
+ * @throws OmaiError with code `value` for a window smaller than the order.
  * @concept collocations
  * @example
  * ```ts
- * import { collocationCounts } from 'mdml-engine/text'
+ * import { collocationCounts } from 'omai-engine/text'
  * collocationCounts(['a', 'b', 'a', 'b']).ngrams.get('a\u0000b') // => 2
  * ```
  */
@@ -226,7 +226,7 @@ export function collocationCounts(
   const order = options.order ?? 2
   const ws = options.windowSize ?? order
   if (!Number.isInteger(ws) || ws < order)
-    throw new MdmlError('value', `collocationCounts: the window must be at least ${order}`)
+    throw new OmaiError('value', `collocationCounts: the window must be at least ${order}`)
   const wfd = new Map<string, number>()
   const ngramFd = new Map<string, number>()
   const pairs = new Map<string, number>()
@@ -282,7 +282,7 @@ export interface CollocationOptions {
  * @concept collocations
  * @example
  * ```ts
- * import { collocationCounts, scoreCollocations } from 'mdml-engine/text'
+ * import { collocationCounts, scoreCollocations } from 'omai-engine/text'
  * const words = 'new york is big and new york is old but york is far'.split(' ')
  * scoreCollocations(collocationCounts(words), 'likelihoodRatio', { minFreq: 2 })[0]?.ngram // => ['york', 'is']
  * ```

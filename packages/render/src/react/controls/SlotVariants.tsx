@@ -5,7 +5,7 @@
  * edited. An option a rule puts out of reach is listed greyed with the reason, and is left out of the comparison.
  */
 
-import { asModeConfig, defaults, type Space, type SpaceValue, type UnionSpace } from 'mdml-engine/space'
+import { asModeConfig, defaults, type Space, type SpaceValue, type UnionSpace } from 'omai-engine/space'
 import { type ReactNode, useId, useState } from 'react'
 import { categoricalColour } from '../../theme/palettes.ts'
 import { OptionSettings } from './_OptionSettings.tsx'

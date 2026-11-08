@@ -46,8 +46,8 @@ function sketch(
  * @concept quantile-sketch
  * @example
  * ```ts
- * import { quantileSketches } from 'mdml-engine/sketches'
- * import { key } from 'mdml-engine/random'
+ * import { quantileSketches } from 'omai-engine/sketches'
+ * import { key } from 'omai-engine/random'
  * quantileSketches.make({ kind: 'kll', k: 16 })({ items: [1, 2, 3], key: key(0) }).name // => 'sketches/kll'
  * ```
  */

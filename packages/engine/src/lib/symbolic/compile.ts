@@ -4,7 +4,7 @@
  * compute an expression's value as a real number or as a complex pair on principal branches.
  */
 
-import { type Complex, MdmlError } from '../base/index.ts'
+import { type Complex, OmaiError } from '../base/index.ts'
 import {
   abs,
   add,
@@ -110,7 +110,7 @@ function compileNode(e: Expr, env: ReadonlyMap<string, Value>, fns: TensorFuncti
       break
     case 'sym': {
       const v = env.get(e.key)
-      if (v === undefined) throw new MdmlError('value', `compile: ${e.name} is not among the symbols`)
+      if (v === undefined) throw new OmaiError('value', `compile: ${e.name} is not among the symbols`)
       out = v
       break
     }
@@ -121,7 +121,7 @@ function compileNode(e: Expr, env: ReadonlyMap<string, Value>, fns: TensorFuncti
       else if (e.name === '-oo') out = constant(Number.NEGATIVE_INFINITY)
       else if (e.name === 'nan') out = constant(Number.NaN)
       else if (e.name === 'true' || e.name === 'false') out = asTensor(e.name === 'true')
-      else throw new MdmlError('not-implemented', `compile: ${e.name} needs complex arithmetic`)
+      else throw new OmaiError('not-implemented', `compile: ${e.name} needs complex arithmetic`)
       break
     case 'add':
       out = e.args.map(go).reduce((a, b) => add(a, b))
@@ -162,7 +162,7 @@ function compileNode(e: Expr, env: ReadonlyMap<string, Value>, fns: TensorFuncti
       else {
         const f = UNARY[e.name]
         if (f === undefined || args.length !== 1) {
-          throw new MdmlError('not-implemented', `compile: no tensor implementation of ${e.name}; pass functions`)
+          throw new OmaiError('not-implemented', `compile: no tensor implementation of ${e.name}; pass functions`)
         }
         out = f(args[0] as Value)
       }
@@ -192,7 +192,7 @@ function compileNode(e: Expr, env: ReadonlyMap<string, Value>, fns: TensorFuncti
       break
     }
     default:
-      throw new MdmlError('not-implemented', `compile: cannot compile ${e.kind}`)
+      throw new OmaiError('not-implemented', `compile: cannot compile ${e.kind}`)
   }
   memo.set(e.key, out)
   return out
@@ -208,12 +208,12 @@ function compileNode(e: Expr, env: ReadonlyMap<string, Value>, fns: TensorFuncti
  * @param symbols - The parameters, in argument order (symbols or names).
  * @param options - Tensor implementations for functions such as `erf` and `gamma` (from numerics) or undefined ones.
  * @returns The compiled function.
- * @throws MdmlError with code `value` for a free symbol missing from `symbols`, `not-implemented` for complex
+ * @throws OmaiError with code `value` for a free symbol missing from `symbols`, `not-implemented` for complex
  *   constants or functions without an implementation.
  * @example
  * ```ts
- * import { compile, parse } from 'mdml-engine/symbolic'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { compile, parse } from 'omai-engine/symbolic'
+ * import { toArray } from 'omai-engine/tensor'
  * const f = compile(parse('x^2 + sin(y)'), ['x', 'y'])
  * toArray(f([1, 2, 3], 0)) // => [1, 4, 9]
  * ```
@@ -225,11 +225,11 @@ export function compile(
 ): (...args: TensorLike[]) => Value {
   const names = symbols.map((s) => (typeof s === 'string' ? s : s.name))
   const missing = freeNames(e).filter((n) => !names.includes(n))
-  if (missing.length > 0) throw new MdmlError('value', `compile: free symbols ${missing.join(', ')} are not parameters`)
+  if (missing.length > 0) throw new OmaiError('value', `compile: free symbols ${missing.join(', ')} are not parameters`)
   const fns = options.functions ?? {}
   return (...args: TensorLike[]): Value => {
     if (args.length !== names.length) {
-      throw new MdmlError('value', `compile: expected ${names.length} arguments, got ${args.length}`)
+      throw new OmaiError('value', `compile: expected ${names.length} arguments, got ${args.length}`)
     }
     const env = new Map<string, Value>()
     const values = args.map((a) => asFloat(asTensor(a)))
@@ -252,11 +252,11 @@ export function compile(
  * @param values - Values of the free symbols, by name.
  * @param functions - Numeric implementations of functions such as `erf` or undefined ones.
  * @returns The value.
- * @throws MdmlError with code `value` for an unbound symbol, `not-implemented` for a function without a numeric
+ * @throws OmaiError with code `value` for an unbound symbol, `not-implemented` for a function without a numeric
  *   implementation.
  * @example
  * ```ts
- * import { evaluate, parse } from 'mdml-engine/symbolic'
+ * import { evaluate, parse } from 'omai-engine/symbolic'
  * evaluate(parse('x^2 + 1'), { x: 3 }) // => 10
  * ```
  */
@@ -275,10 +275,10 @@ export function evaluate(
  * @param values - Values of the free symbols: reals or [re, im] pairs.
  * @param functions - Numeric implementations of functions such as `erf` (used at real arguments).
  * @returns The value as [re, im].
- * @throws MdmlError with code `value` when the expression cannot be evaluated.
+ * @throws OmaiError with code `value` when the expression cannot be evaluated.
  * @example
  * ```ts
- * import { evaluateComplex, parse } from 'mdml-engine/symbolic'
+ * import { evaluateComplex, parse } from 'omai-engine/symbolic'
  * evaluateComplex(parse('sqrt(-4)')) // => [0, 2]
  * ```
  */
@@ -290,6 +290,6 @@ export function evaluateComplex(
   const env = new Map<string, Complex>()
   for (const [k, v] of Object.entries(values)) env.set(k, typeof v === 'number' ? [v, 0] : [v[0], v[1]])
   const z = evalComplex(e, env, functions)
-  if (z === undefined) throw new MdmlError('value', 'evaluateComplex: cannot evaluate the expression')
+  if (z === undefined) throw new OmaiError('value', 'evaluateComplex: cannot evaluate the expression')
   return [z[0], z[1]]
 }

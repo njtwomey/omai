@@ -7,7 +7,7 @@
  * prediction with its aleatoric and epistemic uncertainty.
  */
 
-import { MdmlError, type Reduction } from '../base/index.ts'
+import { OmaiError, type Reduction } from '../base/index.ts'
 import type { Distribution } from '../dists/index.ts'
 import { digamma, lgamma, log1mexp } from '../numerics/special/index.ts'
 import {
@@ -51,9 +51,9 @@ import { checkScalar, type LossOptions, reduce } from './_reduce.ts'
  * @concept maximum-likelihood
  * @example
  * ```ts
- * import { negativeLogLikelihood } from 'mdml-engine/losses'
- * import { normal } from 'mdml-engine/dists'
- * import { item } from 'mdml-engine/tensor'
+ * import { negativeLogLikelihood } from 'omai-engine/losses'
+ * import { normal } from 'omai-engine/dists'
+ * import { item } from 'omai-engine/tensor'
  * Math.abs(item(negativeLogLikelihood(normal(0, 1), [0])) - 0.5 * Math.log(2 * Math.PI)) < 1e-15 // => true
  * ```
  */
@@ -75,9 +75,9 @@ export type ConditionalLike = (inputs: Value) => Distribution
  * @returns The loss, differentiable in whatever the model closes over.
  * @example
  * ```ts
- * import { conditionalNll } from 'mdml-engine/losses'
- * import { normal } from 'mdml-engine/dists'
- * import { item, type Value } from 'mdml-engine/tensor'
+ * import { conditionalNll } from 'omai-engine/losses'
+ * import { normal } from 'omai-engine/dists'
+ * import { item, type Value } from 'omai-engine/tensor'
  * const model = (x: Value) => normal(x, 1)
  * Math.abs(item(conditionalNll(model, [1, 2], [1, 2])) - 0.5 * Math.log(2 * Math.PI)) < 1e-15 // => true
  * ```
@@ -103,8 +103,8 @@ export function conditionalNll(
  * @returns The loss, differentiable in logits, means and scales.
  * @example
  * ```ts
- * import { mixtureDensityNll } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { mixtureDensityNll } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * Math.abs(item(mixtureDensityNll([[0, 0]], [[0, 0]], [[1, 1]], [0])) - 0.5 * Math.log(2 * Math.PI)) < 1e-15 // => true
  * ```
  */
@@ -147,8 +147,8 @@ export interface HeteroscedasticOptions extends LossOptions {
  * @returns The loss, differentiable in means and log-variances.
  * @example
  * ```ts
- * import { heteroscedasticGaussianNll } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { heteroscedasticGaussianNll } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * item(heteroscedasticGaussianNll([0], [0], [2])) // => 2
  * ```
  */
@@ -178,12 +178,12 @@ export function heteroscedasticGaussianNll(
  * @param upper - Upper bounds (+Infinity for right-censored; equal to lower for exact).
  * @param options - Reduction and weights.
  * @returns The loss, differentiable in the distribution's parameters.
- * @throws MdmlError with code `value` for an interval that is unbounded on both sides, or with lower > upper.
+ * @throws OmaiError with code `value` for an interval that is unbounded on both sides, or with lower > upper.
  * @example
  * ```ts
- * import { censoredNll } from 'mdml-engine/losses'
- * import { normal } from 'mdml-engine/dists'
- * import { item } from 'mdml-engine/tensor'
+ * import { censoredNll } from 'omai-engine/losses'
+ * import { normal } from 'omai-engine/dists'
+ * import { item } from 'omai-engine/tensor'
  * item(censoredNll(normal(0, 1), [0], [Infinity])) === Math.LN2 // => true
  * ```
  */
@@ -197,12 +197,12 @@ export function censoredNll(
   const hi = asTensor(upper, 'float64')
   const l = toFlat(lo)
   const u = toFlat(hi)
-  if (l.length !== u.length) throw new MdmlError('shape', 'censoredNll: lower and upper must have the same shape')
+  if (l.length !== u.length) throw new OmaiError('shape', 'censoredNll: lower and upper must have the same shape')
   const kinds = l.map((a, i): Kind => {
     const b = u[i] ?? Number.NaN
-    if (!(a <= b)) throw new MdmlError('value', `censoredNll: lower ${a} exceeds upper ${b}`)
+    if (!(a <= b)) throw new OmaiError('value', `censoredNll: lower ${a} exceeds upper ${b}`)
     if (a === -Infinity && b === Infinity)
-      throw new MdmlError('value', 'censoredNll: (-inf, inf) carries no information')
+      throw new OmaiError('value', 'censoredNll: (-inf, inf) carries no information')
     if (a === b) return 'exact'
     if (b === Infinity) return 'right'
     if (a === -Infinity) return 'left'
@@ -263,8 +263,8 @@ export type EvidentialLoss = 'mse' | 'log' | 'digamma'
  * @concept evidential-deep-learning
  * @example
  * ```ts
- * import { evidentialNll } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { evidentialNll } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * // No evidence: alpha = [1, 1], S = 2, p = [0.5, 0.5]: squared error 0.25 + 0.25 plus the variance 2 * (1 * 1) / (4 * 3).
  * Math.abs(item(evidentialNll([[0, 0]], [0])) - (0.5 + 1 / 6)) < 1e-14 // => true
  * ```
@@ -294,7 +294,7 @@ export function evidentialNll(
       terms = sum(mul(y, sub(digamma(strength), digamma(alpha))), -1)
       break
     default:
-      throw new MdmlError('value', `unknown evidential loss ${String(options.kind)}`)
+      throw new OmaiError('value', `unknown evidential loss ${String(options.kind)}`)
   }
   const klWeight = options.klWeight ?? 0
   if (klWeight > 0) {
@@ -335,8 +335,8 @@ export interface DirichletUncertainty {
  * @returns The Dirichlet parameters, probabilities, strength, vacuity, aleatoric and epistemic uncertainty.
  * @example
  * ```ts
- * import { dirichletUncertainty } from 'mdml-engine/losses'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { dirichletUncertainty } from 'omai-engine/losses'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(dirichletUncertainty([[0, 0, 0], [7, 0, 0]]).vacuity) // => [1, 0.3]
  * ```
  */
@@ -373,8 +373,8 @@ export function dirichletUncertainty(evidence: TensorLike): DirichletUncertainty
  * @returns The loss, differentiable in the four parameters.
  * @example
  * ```ts
- * import { normalInverseGammaNll } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { normalInverseGammaNll } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * Math.abs(item(normalInverseGammaNll([0], [1], [1], [0.5], [0])) - 1.5 * Math.LN2) < 1e-12 // => true
  * ```
  */
@@ -410,8 +410,8 @@ export function normalInverseGammaNll(
  * @returns The aleatoric and epistemic variances.
  * @example
  * ```ts
- * import { normalInverseGammaUncertainty } from 'mdml-engine/losses'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { normalInverseGammaUncertainty } from 'omai-engine/losses'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(normalInverseGammaUncertainty([2], [3], [1]).epistemic) // => [0.25]
  * ```
  */

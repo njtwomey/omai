@@ -4,7 +4,7 @@
  * edge expansion and the Cheeger constant; and the spectral quantities algebraic connectivity and spectral gap.
  */
 
-import { MdmlError, maxOf, meanOf, minOf } from '../base/index.ts'
+import { maxOf, meanOf, minOf, OmaiError } from '../base/index.ts'
 import { ddot, eigvalsh } from '../numerics/linalg/index.ts'
 import { concreteOrThrow, type Tensor, toFlat } from '../tensor/index.ts'
 import { neighbourSets } from './_neighbours.ts'
@@ -21,7 +21,7 @@ import { bfs } from './traversal.ts'
  * @concept graph-measures
  * @example
  * ```ts
- * import { completeGraph, density, pathGraph } from 'mdml-engine/graph'
+ * import { completeGraph, density, pathGraph } from 'omai-engine/graph'
  * [density(completeGraph(5)), density(pathGraph(4))] // => [1, 0.5]
  * ```
  */
@@ -38,11 +38,11 @@ export function density(g: Graph): number {
  * @param g - A connected (strongly connected, if directed) graph.
  * @param options - `weighted` (default false).
  * @returns The eccentricity of each node.
- * @throws MdmlError with code `value` when some node cannot reach another.
+ * @throws OmaiError with code `value` when some node cannot reach another.
  * @concept graph-measures
  * @example
  * ```ts
- * import { eccentricity, pathGraph } from 'mdml-engine/graph'
+ * import { eccentricity, pathGraph } from 'omai-engine/graph'
  * Array.from(eccentricity(pathGraph(5))) // => [4, 3, 2, 3, 4]
  * ```
  */
@@ -54,7 +54,7 @@ export function eccentricity(g: Graph, options: { readonly weighted?: boolean } 
         : Float64Array.from(bfs(g, v).distance, (x) => (x < 0 ? Number.POSITIVE_INFINITY : x))
     const e = Math.max(0, maxOf(d))
     if (e === Number.POSITIVE_INFINITY) {
-      throw new MdmlError('value', 'eccentricity: the graph is not (strongly) connected')
+      throw new OmaiError('value', 'eccentricity: the graph is not (strongly) connected')
     }
     return e
   })
@@ -69,7 +69,7 @@ export function eccentricity(g: Graph, options: { readonly weighted?: boolean } 
  * @concept graph-measures
  * @example
  * ```ts
- * import { diameter, petersenGraph } from 'mdml-engine/graph'
+ * import { diameter, petersenGraph } from 'omai-engine/graph'
  * diameter(petersenGraph()) // => 2
  * ```
  */
@@ -86,7 +86,7 @@ export function diameter(g: Graph, options: { readonly weighted?: boolean } = {}
  * @concept graph-measures
  * @example
  * ```ts
- * import { pathGraph, radius } from 'mdml-engine/graph'
+ * import { pathGraph, radius } from 'omai-engine/graph'
  * radius(pathGraph(5)) // => 2
  * ```
  */
@@ -103,7 +103,7 @@ export function radius(g: Graph, options: { readonly weighted?: boolean } = {}):
  * @concept graph-measures
  * @example
  * ```ts
- * import { center, pathGraph } from 'mdml-engine/graph'
+ * import { center, pathGraph } from 'omai-engine/graph'
  * center(pathGraph(4)) // => [1, 2]
  * ```
  */
@@ -122,7 +122,7 @@ export function center(g: Graph, options: { readonly weighted?: boolean } = {}):
  * @concept graph-measures
  * @example
  * ```ts
- * import { pathGraph, periphery } from 'mdml-engine/graph'
+ * import { pathGraph, periphery } from 'omai-engine/graph'
  * periphery(pathGraph(4)) // => [0, 3]
  * ```
  */
@@ -137,16 +137,16 @@ export function periphery(g: Graph, options: { readonly weighted?: boolean } = {
  *
  * @param g - An undirected graph.
  * @returns The triangle count of each node.
- * @throws MdmlError with code `value` for a directed graph.
+ * @throws OmaiError with code `value` for a directed graph.
  * @concept clustering
  * @example
  * ```ts
- * import { completeGraph, triangles } from 'mdml-engine/graph'
+ * import { completeGraph, triangles } from 'omai-engine/graph'
  * Array.from(triangles(completeGraph(4))) // => [3, 3, 3, 3]
  * ```
  */
 export function triangles(g: Graph): Int32Array {
-  if (g.directed) throw new MdmlError('value', 'triangles: the graph must be undirected')
+  if (g.directed) throw new OmaiError('value', 'triangles: the graph must be undirected')
   const nb = neighbourSets(g)
   return Int32Array.from({ length: g.n }, (_, u) => {
     const list = [...(nb[u] ?? [])]
@@ -170,7 +170,7 @@ export function triangles(g: Graph): Int32Array {
  * @reference G. Fagiolo, Clustering in complex directed networks, Phys. Rev. E 76 (2007).
  * @example
  * ```ts
- * import { clustering, graph } from 'mdml-engine/graph'
+ * import { clustering, graph } from 'omai-engine/graph'
  * Array.from(clustering(graph([[0, 1], [1, 2], [2, 0], [2, 3]]))) // => [1, 1, 0.3333333333333333, 0]
  * ```
  */
@@ -254,7 +254,7 @@ function hasArc(g: Graph, u: number, v: number): boolean {
  * @concept clustering
  * @example
  * ```ts
- * import { averageClustering, completeGraph } from 'mdml-engine/graph'
+ * import { averageClustering, completeGraph } from 'omai-engine/graph'
  * averageClustering(completeGraph(5)) // => 1
  * ```
  */
@@ -276,7 +276,7 @@ export function averageClustering(
  * @concept graph-measures
  * @example
  * ```ts
- * import { averageShortestPathLength, pathGraph } from 'mdml-engine/graph'
+ * import { averageShortestPathLength, pathGraph } from 'omai-engine/graph'
  * averageShortestPathLength(pathGraph(4)) // => 1.6666666666666667
  * ```
  */
@@ -316,7 +316,7 @@ export function averageShortestPathLength(g: Graph): number {
  * @concept clustering
  * @example
  * ```ts
- * import { graph, transitivity } from 'mdml-engine/graph'
+ * import { graph, transitivity } from 'omai-engine/graph'
  * transitivity(graph([[0, 1], [1, 2], [2, 0], [2, 3]])) // => 0.6
  * ```
  */
@@ -370,7 +370,7 @@ function edgeEnds(g: Graph, x: ArrayLike<number>, y: ArrayLike<number>): [number
  * @reference M. E. J. Newman, Mixing patterns in networks, Phys. Rev. E 67 (2003).
  * @example
  * ```ts
- * import { degreeAssortativity, starGraph } from 'mdml-engine/graph'
+ * import { degreeAssortativity, starGraph } from 'omai-engine/graph'
  * degreeAssortativity(starGraph(4)) // => -1
  * ```
  */
@@ -395,7 +395,7 @@ export function degreeAssortativity(
  * @concept assortativity
  * @example
  * ```ts
- * import { numericAssortativity, pathGraph } from 'mdml-engine/graph'
+ * import { numericAssortativity, pathGraph } from 'omai-engine/graph'
  * numericAssortativity(pathGraph(4), [1, 1, 2, 2]).toFixed(4) // => '0.3333'
  * ```
  */
@@ -414,7 +414,7 @@ export function numericAssortativity(g: Graph, values: ArrayLike<number>): numbe
  * @concept assortativity
  * @example
  * ```ts
- * import { attributeAssortativity, barbellGraph } from 'mdml-engine/graph'
+ * import { attributeAssortativity, barbellGraph } from 'omai-engine/graph'
  * attributeAssortativity(barbellGraph(3, 0), [0, 0, 0, 1, 1, 1]).toFixed(4) // => '0.7143'
  * ```
  */
@@ -467,7 +467,7 @@ export function attributeAssortativity(g: Graph, categories: ArrayLike<number | 
  *   2020); D. Lim et al., New benchmarks for learning on non-homophilous graphs (2021).
  * @example
  * ```ts
- * import { barbellGraph, homophily } from 'mdml-engine/graph'
+ * import { barbellGraph, homophily } from 'omai-engine/graph'
  * homophily(barbellGraph(3, 0), [0, 0, 0, 1, 1, 1]) // => 0.8571428571428571
  * ```
  */
@@ -550,7 +550,7 @@ function cutAndVolumes(g: Graph, inside: Uint8Array, weighted: boolean): { cut: 
  * @concept expansion
  * @example
  * ```ts
- * import { barbellGraph, conductance } from 'mdml-engine/graph'
+ * import { barbellGraph, conductance } from 'omai-engine/graph'
  * conductance(barbellGraph(3, 0), [0, 1, 2]) // => 0.14285714285714285
  * ```
  */
@@ -572,7 +572,7 @@ export function conductance(g: Graph, nodes: readonly NodeId[], options: { reado
  * @concept expansion
  * @example
  * ```ts
- * import { cycleGraph, edgeExpansion } from 'mdml-engine/graph'
+ * import { cycleGraph, edgeExpansion } from 'omai-engine/graph'
  * edgeExpansion(cycleGraph(6), [0, 1, 2]) // => 0.6666666666666666
  * ```
  */
@@ -605,11 +605,11 @@ export interface Cheeger {
  * @param g - An undirected graph with 2 to 24 nodes.
  * @param options - `kind` (default `'conductance'`) and `weighted` (default false).
  * @returns The constant and a minimising set.
- * @throws MdmlError with code `value` for a directed graph or a size outside 2 .. 24.
+ * @throws OmaiError with code `value` for a directed graph or a size outside 2 .. 24.
  * @concept expansion
  * @example
  * ```ts
- * import { barbellGraph, cheegerConstant } from 'mdml-engine/graph'
+ * import { barbellGraph, cheegerConstant } from 'omai-engine/graph'
  * cheegerConstant(barbellGraph(3, 0)).set // => [0, 1, 2]
  * ```
  */
@@ -617,8 +617,8 @@ export function cheegerConstant(
   g: Graph,
   options: { readonly kind?: 'conductance' | 'expansion'; readonly weighted?: boolean } = {},
 ): Cheeger {
-  if (g.directed) throw new MdmlError('value', 'cheegerConstant: the graph must be undirected')
-  if (g.n < 2 || g.n > 24) throw new MdmlError('value', 'cheegerConstant: exhaustive search needs 2 to 24 nodes')
+  if (g.directed) throw new OmaiError('value', 'cheegerConstant: the graph must be undirected')
+  if (g.n < 2 || g.n > 24) throw new OmaiError('value', 'cheegerConstant: exhaustive search needs 2 to 24 nodes')
   const weighted = options.weighted ?? false
   const expansion = options.kind === 'expansion'
   const a = g.out
@@ -676,7 +676,7 @@ function sortedEigenvalues(g: Graph, normalised: boolean, weighted: boolean): Fl
  * @concept spectral-graph-theory
  * @example
  * ```ts
- * import { algebraicConnectivity, completeGraph } from 'mdml-engine/graph'
+ * import { algebraicConnectivity, completeGraph } from 'omai-engine/graph'
  * Math.round(algebraicConnectivity(completeGraph(5)) * 1e9) / 1e9 // => 5
  * ```
  */
@@ -684,7 +684,7 @@ export function algebraicConnectivity(
   g: Graph,
   options: { readonly normalised?: boolean; readonly weighted?: boolean } = {},
 ): number {
-  if (g.n < 2) throw new MdmlError('value', 'algebraicConnectivity: the graph needs at least two nodes')
+  if (g.n < 2) throw new OmaiError('value', 'algebraicConnectivity: the graph needs at least two nodes')
   return sortedEigenvalues(g, options.normalised ?? false, options.weighted ?? true)[1] ?? 0
 }
 
@@ -699,7 +699,7 @@ export function algebraicConnectivity(
  * @concept spectral-graph-theory
  * @example
  * ```ts
- * import { completeGraph, cycleGraph, spectralGap } from 'mdml-engine/graph'
+ * import { completeGraph, cycleGraph, spectralGap } from 'omai-engine/graph'
  * Math.round(spectralGap(completeGraph(4)) * 1e9) / 1e9 // => 1.333333333
  * Math.round(spectralGap(cycleGraph(4), { absolute: true }) * 1e9) / 1e9 // => 0
  * ```
@@ -708,7 +708,7 @@ export function spectralGap(
   g: Graph,
   options: { readonly absolute?: boolean; readonly weighted?: boolean } = {},
 ): number {
-  if (g.n < 2) throw new MdmlError('value', 'spectralGap: the graph needs at least two nodes')
+  if (g.n < 2) throw new OmaiError('value', 'spectralGap: the graph needs at least two nodes')
   const mu = sortedEigenvalues(g, true, options.weighted ?? true)
   const second = mu[1] ?? 0
   if (options.absolute !== true) return second

@@ -33,7 +33,7 @@ export interface TexOptions {
  * @index function Typeset TeX with KaTeX and shared macros: `texToHtml('x^2')`.
  * @example
  * ```ts
- * import { texToHtml } from 'mdml-render/maths'
+ * import { texToHtml } from 'omai-render/maths'
  * texToHtml('\\xvec^\\top \\yvec').includes('<math') // => true
  * texToHtml('\\frac{1}').includes('wb-tex-error') // => true
  * ```
@@ -75,7 +75,7 @@ export function texErrorMarker(message: string): string {
  * @returns A function from TeX and display mode to markup.
  * @example
  * ```ts
- * import { texRenderer } from 'mdml-render/maths'
+ * import { texRenderer } from 'omai-render/maths'
  * const render = texRenderer()
  * render('x^2') === render('x^2') // => true
  * ```
@@ -101,7 +101,7 @@ export function texRenderer(options: Omit<TexOptions, 'display'> = {}): (tex: st
  * @returns `undefined` when it parses, else the error message.
  * @example
  * ```ts
- * import { texError } from 'mdml-render/maths'
+ * import { texError } from 'omai-render/maths'
  * texError('\\frac{1}{2}') // => undefined
  * texError('\\frac{1}').startsWith('KaTeX parse error') // => true
  * ```

@@ -5,7 +5,7 @@
  * gradient, a plain density). `rejectionSampler` builds the steppable algorithm a configuration names.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import type { Key } from '../random/index.ts'
 import {
   type DictSpace,
@@ -66,7 +66,7 @@ function sampler(
 }
 
 const needs = (what: string, has: boolean, name: string): void => {
-  if (!has) throw new MdmlError('value', `${name}: the problem needs ${what}`)
+  if (!has) throw new OmaiError('value', `${name}: the problem needs ${what}`)
 }
 
 const budget = int(1, 100_000_000, { log: true, default: 100_000, label: 'most proposals' })
@@ -81,7 +81,7 @@ const budget = int(1, 100_000_000, { log: true, default: 100_000, label: 'most p
  * @index table The exact samplers as one slot.
  * @example
  * ```ts
- * import { rejectionSamplers } from 'mdml-engine/sampling'
+ * import { rejectionSamplers } from 'omai-engine/sampling'
  * rejectionSamplers.names // => ['rejection', 'adaptive', 'ratio-of-uniforms']
  * ```
  */
@@ -160,12 +160,12 @@ export const rejectionSamplers: OptionTable<RejectionSampler, RejectionSamplerPr
  * @param config - The option and its knobs, such as `{ kind: 'adaptive', maxPoints: 20 }`.
  * @param problem - The key, the number of draws, and the target in the form the method needs.
  * @returns The algorithm; one step is one proposal.
- * @throws MdmlError with code `value` when the problem lacks what the method needs.
+ * @throws OmaiError with code `value` when the problem lacks what the method needs.
  * @concept rejection-sampling
  * @example
  * ```ts
- * import { numericTarget, rejectionSampler } from 'mdml-engine/sampling'
- * import { key } from 'mdml-engine/random'
+ * import { numericTarget, rejectionSampler } from 'omai-engine/sampling'
+ * import { key } from 'omai-engine/random'
  * const t = numericTarget((x) => -0.5 * (x[0] ?? 0) ** 2, 1, { grad: (x) => [-(x[0] ?? 0)] })
  * rejectionSampler({ kind: 'adaptive' }, { key: key(0), n: 5, target: t }).name // => 'adaptive-rejection'
  * ```

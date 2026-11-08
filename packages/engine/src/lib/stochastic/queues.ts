@@ -4,7 +4,7 @@
  * a traced algorithm, with Little's law L = lambda W checked on the result.
  */
 
-import { heap, MdmlError } from '../base/index.ts'
+import { heap, OmaiError } from '../base/index.ts'
 import { type Distribution, exponential } from '../dists/index.ts'
 import { foldIn, type Key } from '../random/index.ts'
 import { item } from '../tensor/index.ts'
@@ -31,8 +31,8 @@ export interface QueueMetrics {
 }
 
 function stable(lambda: number, capacity: number, where: string): void {
-  if (!(lambda > 0 && capacity > 0)) throw new MdmlError('value', `${where}: rates must be positive`)
-  if (!(lambda < capacity)) throw new MdmlError('value', `${where}: unstable (lambda >= service capacity)`)
+  if (!(lambda > 0 && capacity > 0)) throw new OmaiError('value', `${where}: rates must be positive`)
+  if (!(lambda < capacity)) throw new OmaiError('value', `${where}: unstable (lambda >= service capacity)`)
 }
 
 /**
@@ -43,11 +43,11 @@ function stable(lambda: number, capacity: number, where: string): void {
  * @param lambda - The arrival rate.
  * @param mu - The service rate (greater than lambda).
  * @returns The steady-state measures, the state probabilities and the sojourn-time CDF.
- * @throws MdmlError with code `value` when the queue is unstable.
+ * @throws OmaiError with code `value` when the queue is unstable.
  * @concept queueing-theory
  * @example
  * ```ts
- * import { mm1 } from 'mdml-engine/stochastic'
+ * import { mm1 } from 'omai-engine/stochastic'
  * const q = mm1(2, 4)
  * [q.utilisation, q.L, q.W, q.Lq] // => [0.5, 1, 0.5, 0.5]
  * ```
@@ -81,13 +81,13 @@ export function mm1(
  * @concept queueing-theory
  * @example
  * ```ts
- * import { erlangB } from 'mdml-engine/stochastic'
+ * import { erlangB } from 'omai-engine/stochastic'
  * erlangB(1, 1) // => 0.5
  * ```
  */
 export function erlangB(servers: number, load: number): number {
   positiveInteger(servers, 'servers', 'erlangB')
-  if (!(load >= 0)) throw new MdmlError('value', 'erlangB: the load must be >= 0')
+  if (!(load >= 0)) throw new OmaiError('value', 'erlangB: the load must be >= 0')
   let b = 1
   for (let k = 1; k <= servers; k++) b = (load * b) / (k + load * b)
   return b
@@ -100,17 +100,17 @@ export function erlangB(servers: number, load: number): number {
  * @param servers - The number of servers c.
  * @param load - The offered load a = lambda / mu (less than c).
  * @returns C(c, a).
- * @throws MdmlError with code `value` when a >= c (unstable).
+ * @throws OmaiError with code `value` when a >= c (unstable).
  * @concept queueing-theory
  * @example
  * ```ts
- * import { erlangC } from 'mdml-engine/stochastic'
+ * import { erlangC } from 'omai-engine/stochastic'
  * Math.round(erlangC(1, 0.5) * 1e12) / 1e12 // => 0.5
  * ```
  */
 export function erlangC(servers: number, load: number): number {
   const b = erlangB(servers, load)
-  if (!(load < servers)) throw new MdmlError('value', 'erlangC: unstable (load >= servers)')
+  if (!(load < servers)) throw new OmaiError('value', 'erlangC: unstable (load >= servers)')
   return (servers * b) / (servers - load * (1 - b))
 }
 
@@ -123,11 +123,11 @@ export function erlangC(servers: number, load: number): number {
  * @param mu - The service rate per server.
  * @param servers - The number of servers.
  * @returns The steady-state measures, state probabilities and the waiting-time CDF.
- * @throws MdmlError with code `value` when the queue is unstable.
+ * @throws OmaiError with code `value` when the queue is unstable.
  * @concept queueing-theory
  * @example
  * ```ts
- * import { mm1, mmc } from 'mdml-engine/stochastic'
+ * import { mm1, mmc } from 'omai-engine/stochastic'
  * Math.abs(mmc(2, 4, 1).L - mm1(2, 4).L) < 1e-12 // => true
  * ```
  */
@@ -187,11 +187,11 @@ export interface ServiceMoments {
  * @param lambda - The arrival rate.
  * @param service - The service-time law, or its mean and variance.
  * @returns The steady-state measures.
- * @throws MdmlError with code `value` when rho >= 1.
+ * @throws OmaiError with code `value` when rho >= 1.
  * @concept queueing-theory
  * @example
  * ```ts
- * import { mg1 } from 'mdml-engine/stochastic'
+ * import { mg1 } from 'omai-engine/stochastic'
  * mg1(0.5, { mean: 1, variance: 0 }).Lq // => 0.25
  * ```
  */
@@ -200,7 +200,7 @@ export function mg1(lambda: number, service: Distribution | ServiceMoments): Que
     'logProb' in service
       ? { mean: item(service.mean()), variance: item(service.variance()) }
       : (service as ServiceMoments)
-  if (!(moments.mean > 0 && moments.variance >= 0)) throw new MdmlError('value', 'mg1: bad service moments')
+  if (!(moments.mean > 0 && moments.variance >= 0)) throw new OmaiError('value', 'mg1: bad service moments')
   stable(lambda, 1 / moments.mean, 'mg1')
   const rho = lambda * moments.mean
   const second = moments.variance + moments.mean ** 2
@@ -238,7 +238,7 @@ export interface QueueState {
 
 function lawOf(x: Distribution | number, where: string): Distribution {
   if (typeof x !== 'number') return x
-  if (!(x > 0)) throw new MdmlError('value', `${where}: rates must be positive`)
+  if (!(x > 0)) throw new OmaiError('value', `${where}: rates must be positive`)
   return exponential(x)
 }
 
@@ -252,7 +252,7 @@ function lawOf(x: Distribution | number, where: string): Distribution {
  * @concept queueing-theory
  * @example
  * ```ts
- * import { queueAlgorithm } from 'mdml-engine/stochastic'
+ * import { queueAlgorithm } from 'omai-engine/stochastic'
  * queueAlgorithm({ interarrival: 1, service: 2, servers: 2 }).name // => 'queue'
  * ```
  */
@@ -273,7 +273,7 @@ export function queueAlgorithm(spec: QueueSpec): Algorithm<QueueState> {
     step: (s, ctx) => {
       const gap = primalNumbers(arrivalLaw.sample(foldIn(ctx.key, 0), [1]))[0] ?? 0
       const work = primalNumbers(serviceLaw.sample(foldIn(ctx.key, 1), [1]))[0] ?? 0
-      if (!(gap >= 0 && work >= 0)) throw new MdmlError('value', 'queue: sampled times must be >= 0')
+      if (!(gap >= 0 && work >= 0)) throw new OmaiError('value', 'queue: sampled times must be >= 0')
       const arrival = s.clock + gap
       const servers = heap((a: number, b: number) => a - b, s.free)
       const earliest = servers.pop() ?? 0
@@ -344,8 +344,8 @@ function timeAverage(ups: Float64Array, downs: Float64Array, horizon: number): n
  * @concept queueing-theory
  * @example
  * ```ts
- * import { key } from 'mdml-engine/random'
- * import { simulateQueue } from 'mdml-engine/stochastic'
+ * import { key } from 'omai-engine/random'
+ * import { simulateQueue } from 'omai-engine/stochastic'
  * simulateQueue(key(0), { interarrival: 1, service: 2 }, 100).waits.length // => 100
  * ```
  */
@@ -391,8 +391,8 @@ export function simulateQueue(
  * @concept littles-law
  * @example
  * ```ts
- * import { key } from 'mdml-engine/random'
- * import { littlesLaw, simulateQueue } from 'mdml-engine/stochastic'
+ * import { key } from 'omai-engine/random'
+ * import { littlesLaw, simulateQueue } from 'omai-engine/stochastic'
  * const l = littlesLaw(simulateQueue(key(0), { interarrival: 1, service: 1.5 }, 200))
  * Math.abs(l.L - l.lambdaW) < 1e-9 // => true
  * ```

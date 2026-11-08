@@ -4,15 +4,15 @@
 
 Explicit randomness: immutable counter-based keys (`key`, `split`, `foldIn`) and samplers that take a key first (`normal(key, shape)`, `uniform`, `permutation`, `categorical`), so every random result is reproducible from its key.
 
-- function `sequences.ts` (file): Sobol, Halton and Latin hypercube quasi-random point sets. `src/lib/random/sequences.ts:1` `mdml-engine/random`
+- function `sequences.ts` (file): Sobol, Halton and Latin hypercube quasi-random point sets. `src/lib/random/sequences.ts:1` `omai-engine/random`
 
-- structure `key.ts` (file): Immutable counter-based keys: key, split and foldIn. `src/lib/random/key.ts:1` `mdml-engine/random`
+- structure `key.ts` (file): Immutable counter-based keys: key, split and foldIn. `src/lib/random/key.ts:1` `omai-engine/random`
 
-- function `categorical`: Samples from a categorical distribution given probabilities or logits. `src/lib/random/discrete.ts:115` `mdml-engine/random`
-- function `choice`: Choose indices with or without replacement, optionally weighted. `src/lib/random/permutation.ts:81` `mdml-engine/random`
-- function `foldIn`: Derive a key from a parent key and an integer (a step). `src/lib/random/key.ts:89` `mdml-engine/random`
-- function `key`: Create a random key from an integer seed. `src/lib/random/key.ts:44` `mdml-engine/random`
-- function `normal`: Normal samples from a key and a shape, like jax.random.normal. `src/lib/random/continuous.ts:135` `mdml-engine/random`
-- function `permutation`: A uniformly random permutation of 0..n-1. `src/lib/random/permutation.ts:27` `mdml-engine/random`
-- function `split`: Derive n independent keys from one key. `src/lib/random/key.ts:65` `mdml-engine/random`
-- function `uniform`: Uniform samples from a key and a shape. `src/lib/random/continuous.ts:50` `mdml-engine/random`
+- function `categorical`: Samples from a categorical distribution given probabilities or logits. `src/lib/random/discrete.ts:115` `omai-engine/random`
+- function `choice`: Choose indices with or without replacement, optionally weighted. `src/lib/random/permutation.ts:81` `omai-engine/random`
+- function `foldIn`: Derive a key from a parent key and an integer (a step). `src/lib/random/key.ts:89` `omai-engine/random`
+- function `key`: Create a random key from an integer seed. `src/lib/random/key.ts:44` `omai-engine/random`
+- function `normal`: Normal samples from a key and a shape, like jax.random.normal. `src/lib/random/continuous.ts:135` `omai-engine/random`
+- function `permutation`: A uniformly random permutation of 0..n-1. `src/lib/random/permutation.ts:27` `omai-engine/random`
+- function `split`: Derive n independent keys from one key. `src/lib/random/key.ts:65` `omai-engine/random`
+- function `uniform`: Uniform samples from a key and a shape. `src/lib/random/continuous.ts:50` `omai-engine/random`

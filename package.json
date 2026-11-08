@@ -1,8 +1,8 @@
 {
-  "name": "mdml-js",
+  "name": "omai",
   "private": true,
   "type": "module",
-  "description": "mdml-js: a traced, self-documenting ML library (engine, render, meta) with docs and gallery apps.",
+  "description": "omai: a traced, self-documenting ML library (engine, render, meta) with docs and gallery apps.",
   "license": "MIT",
   "engines": {
     "node": ">=24"

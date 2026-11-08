@@ -5,7 +5,7 @@
  * and Allen-Cahn equations as ready solvers.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { fft, ifft } from '../../numerics/fourier/index.ts'
 import { solve } from '../../numerics/linalg/index.ts'
 import { asTensor, fromStorage, mul, primalOf, type Tensor, type TensorLike, type Value } from '../../tensor/index.ts'
@@ -32,7 +32,7 @@ import type { PdeTraceOptions } from './finite-difference.ts'
  * @concept spectral-method
  * @example
  * ```ts
- * import { fourierWavenumbers } from 'mdml-engine/dynamics/pde'
+ * import { fourierWavenumbers } from 'omai-engine/dynamics/pde'
  * Array.from(fourierWavenumbers(4, 2 * Math.PI)) // => [0, 1, -2, -1]
  * ```
  */
@@ -51,8 +51,8 @@ export function fourierWavenumbers(n: number, length: number): Float64Array {
  * @concept spectral-method
  * @example
  * ```ts
- * import { fourierDerivative } from 'mdml-engine/dynamics/pde'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { fourierDerivative } from 'omai-engine/dynamics/pde'
+ * import { toFlat } from 'omai-engine/tensor'
  * const x = Array.from({ length: 16 }, (_, j) => (2 * Math.PI * j) / 16)
  * const d = toFlat(fourierDerivative(x.map(Math.sin), 2 * Math.PI))
  * Math.abs((d[3] ?? 0) - Math.cos(x[3] ?? 0)) < 1e-12 // => true
@@ -89,7 +89,7 @@ export function fourierDerivative(u: TensorLike, length: number, order = 1): Val
  * @concept dealiasing
  * @example
  * ```ts
- * import { dealiasMask } from 'mdml-engine/dynamics/pde'
+ * import { dealiasMask } from 'omai-engine/dynamics/pde'
  * Array.from(dealiasMask(6)) // => [1, 1, 1, 0, 1, 1]
  * ```
  */
@@ -105,12 +105,12 @@ export function dealiasMask(n: number): Float64Array {
  * @concept spectral-method
  * @example
  * ```ts
- * import { chebyshevPoints } from 'mdml-engine/dynamics/pde'
+ * import { chebyshevPoints } from 'omai-engine/dynamics/pde'
  * Array.from(chebyshevPoints(2)).map((x) => Math.round(x * 1e12) / 1e12) // => [1, 0, -1]
  * ```
  */
 export function chebyshevPoints(n: number): Float64Array {
-  if (!Number.isInteger(n) || n < 1) throw new MdmlError('value', 'chebyshevPoints: n >= 1')
+  if (!Number.isInteger(n) || n < 1) throw new OmaiError('value', 'chebyshevPoints: n >= 1')
   return Float64Array.from({ length: n + 1 }, (_, j) => Math.cos((Math.PI * j) / n))
 }
 
@@ -123,8 +123,8 @@ export function chebyshevPoints(n: number): Float64Array {
  * @concept spectral-method
  * @example
  * ```ts
- * import { chebyshevMatrix } from 'mdml-engine/dynamics/pde'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { chebyshevMatrix } from 'omai-engine/dynamics/pde'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(chebyshevMatrix(1)) // => [[0.5, -0.5], [0.5, -0.5]]
  * ```
  */
@@ -157,7 +157,7 @@ export function chebyshevMatrix(n: number): Tensor {
  * @concept spectral-method
  * @example
  * ```ts
- * import { chebyshevBvp } from 'mdml-engine/dynamics/pde'
+ * import { chebyshevBvp } from 'omai-engine/dynamics/pde'
  * // u'' = exp(4x), u(+-1) = 0 (Trefethen's p13).
  * const r = chebyshevBvp((x) => Math.exp(4 * x), { n: 16 })
  * const exact = (Math.exp(0) - Math.sinh(4) * 0 - Math.cosh(4)) / 16
@@ -364,8 +364,8 @@ export const spectralContract: Contract<SpectralState, SpectralPath> = defineCon
  * @concept exponential-integrator
  * @example
  * ```ts
- * import { fourierWavenumbers, spectralEtdrk4Algorithm } from 'mdml-engine/dynamics/pde'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { fourierWavenumbers, spectralEtdrk4Algorithm } from 'omai-engine/dynamics/pde'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const n = 8
  * const k = fourierWavenumbers(n, 2 * Math.PI)
  * const heat = { linear: { re: Array.from(k, (q) => -q * q), im: new Array(n).fill(0) }, nonlinear: (v) => ({ re: v.re.map(() => 0), im: v.im.map(() => 0) }) }
@@ -380,7 +380,7 @@ export function spectralEtdrk4Algorithm(
 ): Algorithm<SpectralState, SpectralPath> {
   const n = u0.length
   const h = options.dt
-  if (!(h > 0)) throw new MdmlError('value', 'spectralEtdrk4: dt must be positive')
+  if (!(h > 0)) throw new OmaiError('value', 'spectralEtdrk4: dt must be positive')
   const lr = Float64Array.from(problem.linear.re)
   const li = Float64Array.from(problem.linear.im)
   const co = etdCoefficients(lr, li, h)
@@ -474,7 +474,7 @@ export function spectralEtdrk4Algorithm(
  * @concept exponential-integrator
  * @example
  * ```ts
- * import { fourierWavenumbers, spectralEtdrk4 } from 'mdml-engine/dynamics/pde'
+ * import { fourierWavenumbers, spectralEtdrk4 } from 'omai-engine/dynamics/pde'
  * const n = 8
  * const k = fourierWavenumbers(n, 2 * Math.PI)
  * const x = Float64Array.from({ length: n }, (_, j) => (2 * Math.PI * j) / n)
@@ -520,7 +520,7 @@ export interface SpectralPdeOptions extends PdeTraceOptions {
 
 function setup(options: SpectralPdeOptions): { x: Float64Array; k: Float64Array; mask: Float64Array } {
   if (!Number.isInteger(options.n) || options.n < 4 || options.n % 2 !== 0) {
-    throw new MdmlError('value', 'spectral solvers need an even n >= 4')
+    throw new OmaiError('value', 'spectral solvers need an even n >= 4')
   }
   const x = Float64Array.from({ length: options.n }, (_, j) => (options.length * j) / options.n)
   return {
@@ -544,7 +544,7 @@ function samples(u0: ArrayLike<number> | ((x: number) => number), x: Float64Arra
  * @concept kuramoto-sivashinsky
  * @example
  * ```ts
- * import { kuramotoSivashinsky } from 'mdml-engine/dynamics/pde'
+ * import { kuramotoSivashinsky } from 'omai-engine/dynamics/pde'
  * const s = kuramotoSivashinsky((x) => Math.cos(x / 16) * (1 + Math.sin(x / 16)), { n: 64, length: 32 * Math.PI, dt: 0.25, tEnd: 5 })
  * s.status // => 'success'
  * ```
@@ -582,7 +582,7 @@ export function kuramotoSivashinsky(
  * @concept korteweg-de-vries
  * @example
  * ```ts
- * import { kdv } from 'mdml-engine/dynamics/pde'
+ * import { kdv } from 'omai-engine/dynamics/pde'
  * const sol = (x: number, t: number) => 2 / Math.cosh(x - 10 - 4 * t) ** 2
  * const s = kdv((x) => sol(x, 0), { n: 256, length: 40, dt: 0.0005, tEnd: 0.25 })
  * const j = 72
@@ -618,7 +618,7 @@ export function kdv(u0: ArrayLike<number> | ((x: number) => number), options: Sp
  * @concept allen-cahn
  * @example
  * ```ts
- * import { allenCahn } from 'mdml-engine/dynamics/pde'
+ * import { allenCahn } from 'omai-engine/dynamics/pde'
  * const s = allenCahn((x) => 0.5 * Math.sin(x), { n: 64, length: 2 * Math.PI, dt: 0.05, tEnd: 10, epsilon: 0.01 })
  * Math.abs(Math.abs(s.u.data[s.u.data.length - 48] ?? 0) - 1) < 1e-2 // => true
  * ```

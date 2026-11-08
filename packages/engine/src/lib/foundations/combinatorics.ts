@@ -5,11 +5,11 @@
  * triangle (optionally modulo m).
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 
 function count(n: number, name: string): number {
   if (!(Number.isSafeInteger(n) && n >= 0))
-    throw new MdmlError('value', `${name}: expected a non-negative integer, got ${n}`)
+    throw new OmaiError('value', `${name}: expected a non-negative integer, got ${n}`)
   return n
 }
 
@@ -21,7 +21,7 @@ function count(n: number, name: string): number {
  * @concept factorial
  * @example
  * ```ts
- * import { factorialExact } from 'mdml-engine/foundations'
+ * import { factorialExact } from 'omai-engine/foundations'
  * factorialExact(20) // => 2432902008176640000n
  * ```
  */
@@ -41,7 +41,7 @@ export function factorialExact(n: number): bigint {
  * @concept binomial-coefficients
  * @example
  * ```ts
- * import { binomialExact } from 'mdml-engine/foundations'
+ * import { binomialExact } from 'omai-engine/foundations'
  * binomialExact(10, 3) // => 120n
  * binomialExact(100, 50) // => 100891344545564193334812497256n
  * ```
@@ -65,7 +65,7 @@ export function binomialExact(n: number, k: number): bigint {
  * @concept multinomial-coefficients
  * @example
  * ```ts
- * import { multinomialExact } from 'mdml-engine/foundations'
+ * import { multinomialExact } from 'omai-engine/foundations'
  * // MISSISSIPPI: 11! / (1! 4! 4! 2!)
  * multinomialExact([1, 4, 4, 2]) // => 34650n
  * ```
@@ -89,7 +89,7 @@ export function multinomialExact(ks: readonly number[]): bigint {
  * @concept permutations
  * @example
  * ```ts
- * import { permutations } from 'mdml-engine/foundations'
+ * import { permutations } from 'omai-engine/foundations'
  * permutations(['a', 'b', 'c'], 2) // => [['a', 'b'], ['a', 'c'], ['b', 'a'], ['b', 'c'], ['c', 'a'], ['c', 'b']]
  * ```
  */
@@ -125,7 +125,7 @@ export function permutations<T>(items: readonly T[], r: number = items.length): 
  * @concept combinations
  * @example
  * ```ts
- * import { combinations } from 'mdml-engine/foundations'
+ * import { combinations } from 'omai-engine/foundations'
  * combinations([1, 2, 3, 4], 2) // => [[1, 2], [1, 3], [1, 4], [2, 3], [2, 4], [3, 4]]
  * ```
  */
@@ -154,11 +154,11 @@ export function combinations<T>(items: readonly T[], r: number): T[][] {
  *
  * @param perm - A permutation of 0..n-1.
  * @returns The rank (a BigInt, since n! grows fast) and the Lehmer code.
- * @throws MdmlError with code `value` when the input is not a permutation.
+ * @throws OmaiError with code `value` when the input is not a permutation.
  * @concept permutation-ranking
  * @example
  * ```ts
- * import { permutationRank } from 'mdml-engine/foundations'
+ * import { permutationRank } from 'omai-engine/foundations'
  * permutationRank([1, 0, 2]).rank // => 2n
  * permutationRank([2, 1, 0]).lehmer // => [2, 1, 0]
  * ```
@@ -167,7 +167,7 @@ export function permutationRank(perm: readonly number[]): { readonly rank: bigin
   const n = perm.length
   const seen = new Set(perm)
   if (seen.size !== n || perm.some((p) => !Number.isInteger(p) || p < 0 || p >= n)) {
-    throw new MdmlError('value', 'permutationRank: expected a permutation of 0..n-1')
+    throw new OmaiError('value', 'permutationRank: expected a permutation of 0..n-1')
   }
   const lehmer = perm.map((p, i) => perm.slice(i + 1).filter((q) => q < p).length)
   let rank = 0n
@@ -182,18 +182,18 @@ export function permutationRank(perm: readonly number[]): { readonly rank: bigin
  * @param n - The size.
  * @param rank - The rank in `[0, n!)`.
  * @returns The permutation.
- * @throws MdmlError with code `value` for a rank out of range.
+ * @throws OmaiError with code `value` for a rank out of range.
  * @concept permutation-ranking
  * @example
  * ```ts
- * import { permutationUnrank } from 'mdml-engine/foundations'
+ * import { permutationUnrank } from 'omai-engine/foundations'
  * permutationUnrank(4, 23) // => [3, 2, 1, 0]
  * ```
  */
 export function permutationUnrank(n: number, rank: number | bigint): number[] {
   count(n, 'permutationUnrank')
   let r = BigInt(rank)
-  if (r < 0n || r >= factorialExact(n)) throw new MdmlError('value', 'permutationUnrank: rank out of range')
+  if (r < 0n || r >= factorialExact(n)) throw new OmaiError('value', 'permutationUnrank: rank out of range')
   const digits: number[] = []
   for (let base = 1; base <= n; base++) {
     digits.push(Number(r % BigInt(base)))
@@ -213,7 +213,7 @@ export function permutationUnrank(n: number, rank: number | bigint): number[] {
  * @concept combination-ranking
  * @example
  * ```ts
- * import { combinationRank } from 'mdml-engine/foundations'
+ * import { combinationRank } from 'omai-engine/foundations'
  * combinationRank([0, 1], 4) // => 0n
  * combinationRank([2, 3], 4) // => 5n
  * ```
@@ -222,7 +222,7 @@ export function combinationRank(subset: readonly number[], n: number): bigint {
   count(n, 'combinationRank')
   const k = subset.length
   if (subset.some((v, i) => !Number.isInteger(v) || v < 0 || v >= n || (i > 0 && v <= (subset[i - 1] ?? -1)))) {
-    throw new MdmlError('value', 'combinationRank: expected increasing elements of 0..n-1')
+    throw new OmaiError('value', 'combinationRank: expected increasing elements of 0..n-1')
   }
   // Count the subsets that come before: for each position, those with a smaller element there.
   let rank = 0n
@@ -242,11 +242,11 @@ export function combinationRank(subset: readonly number[], n: number): bigint {
  * @param k - The subset size.
  * @param rank - The rank in `[0, C(n, k))`.
  * @returns The subset in increasing order.
- * @throws MdmlError with code `value` for a rank out of range.
+ * @throws OmaiError with code `value` for a rank out of range.
  * @concept combination-ranking
  * @example
  * ```ts
- * import { combinationUnrank } from 'mdml-engine/foundations'
+ * import { combinationUnrank } from 'omai-engine/foundations'
  * combinationUnrank(5, 3, 9) // => [2, 3, 4]
  * ```
  */
@@ -254,7 +254,7 @@ export function combinationUnrank(n: number, k: number, rank: number | bigint): 
   count(n, 'combinationUnrank')
   count(k, 'combinationUnrank')
   let r = BigInt(rank)
-  if (r < 0n || r >= binomialExact(n, k)) throw new MdmlError('value', 'combinationUnrank: rank out of range')
+  if (r < 0n || r >= binomialExact(n, k)) throw new OmaiError('value', 'combinationUnrank: rank out of range')
   const out: number[] = []
   let u = 0
   for (let i = 0; i < k; i++) {
@@ -278,7 +278,7 @@ export function combinationUnrank(n: number, k: number, rank: number | bigint): 
  * @concept derangements
  * @example
  * ```ts
- * import { derangements } from 'mdml-engine/foundations'
+ * import { derangements } from 'omai-engine/foundations'
  * [0, 1, 2, 3, 4, 5].map(derangements) // => [1n, 0n, 1n, 2n, 9n, 44n]
  * ```
  */
@@ -300,7 +300,7 @@ export function derangements(n: number): bigint {
  * @concept stirling-numbers
  * @example
  * ```ts
- * import { stirling2 } from 'mdml-engine/foundations'
+ * import { stirling2 } from 'omai-engine/foundations'
  * stirling2(5, 2) // => 15n
  * ```
  */
@@ -328,7 +328,7 @@ export function stirling2(n: number, k: number): bigint {
  * @concept stirling-numbers
  * @example
  * ```ts
- * import { stirling1 } from 'mdml-engine/foundations'
+ * import { stirling1 } from 'omai-engine/foundations'
  * stirling1(5, 2) // => 50n
  * stirling1(5, 2, true) // => -50n
  * ```
@@ -354,7 +354,7 @@ export function stirling1(n: number, k: number, signed = false): bigint {
  * @concept bell-numbers
  * @example
  * ```ts
- * import { bell } from 'mdml-engine/foundations'
+ * import { bell } from 'omai-engine/foundations'
  * [0, 1, 2, 3, 4, 5].map(bell) // => [1n, 1n, 2n, 5n, 15n, 52n]
  * ```
  */
@@ -378,7 +378,7 @@ export function bell(n: number): bigint {
  * @concept catalan-numbers
  * @example
  * ```ts
- * import { catalan } from 'mdml-engine/foundations'
+ * import { catalan } from 'omai-engine/foundations'
  * [0, 1, 2, 3, 4, 5].map(catalan) // => [1n, 1n, 2n, 5n, 14n, 42n]
  * ```
  */
@@ -396,7 +396,7 @@ export function catalan(n: number): bigint {
  * @concept integer-partitions
  * @example
  * ```ts
- * import { partitionCount } from 'mdml-engine/foundations'
+ * import { partitionCount } from 'omai-engine/foundations'
  * partitionCount(100) // => 190569292n
  * ```
  */
@@ -429,7 +429,7 @@ export function partitionCount(n: number): bigint {
  * @concept integer-partitions
  * @example
  * ```ts
- * import { integerPartitions } from 'mdml-engine/foundations'
+ * import { integerPartitions } from 'omai-engine/foundations'
  * integerPartitions(4) // => [[4], [3, 1], [2, 2], [2, 1, 1], [1, 1, 1, 1]]
  * integerPartitions(6, { parts: 2 }) // => [[5, 1], [4, 2], [3, 3]]
  * ```
@@ -478,7 +478,7 @@ export interface InclusionExclusion {
  * @concept inclusion-exclusion
  * @example
  * ```ts
- * import { inclusionExclusion } from 'mdml-engine/foundations'
+ * import { inclusionExclusion } from 'omai-engine/foundations'
  * // Integers 1..100 divisible by 2, 3 or 5.
  * const d = [2, 3, 5]
  * inclusionExclusion({ count: 3, intersection: (ix) => Math.floor(100 / ix.reduce((p, i) => p * (d[i] ?? 1), 1)) }).union // => 74
@@ -491,7 +491,7 @@ export function inclusionExclusion(
     | { readonly count: number; readonly intersection: (indices: readonly number[]) => number },
 ): InclusionExclusion {
   const m = Array.isArray(sets) ? sets.length : (sets as { count: number }).count
-  if (m > 20) throw new MdmlError('value', 'inclusionExclusion: 2^m subfamilies; at most 20 sets')
+  if (m > 20) throw new OmaiError('value', 'inclusionExclusion: 2^m subfamilies; at most 20 sets')
   const size = Array.isArray(sets)
     ? (ix: readonly number[]): number => {
         const families = sets as readonly (readonly unknown[])[]
@@ -524,11 +524,11 @@ export function inclusionExclusion(
  * @param rows - How many rows.
  * @param modulo - An optional modulus.
  * @returns The rows.
- * @throws MdmlError with code `value` beyond row 57 without a modulus.
+ * @throws OmaiError with code `value` beyond row 57 without a modulus.
  * @concept pascals-triangle
  * @example
  * ```ts
- * import { pascalTriangle } from 'mdml-engine/foundations'
+ * import { pascalTriangle } from 'omai-engine/foundations'
  * pascalTriangle(5) // => [[1], [1, 1], [1, 2, 1], [1, 3, 3, 1], [1, 4, 6, 4, 1]]
  * pascalTriangle(5, 2)[4] // => [1, 0, 0, 0, 1]
  * ```
@@ -536,9 +536,9 @@ export function inclusionExclusion(
 export function pascalTriangle(rows: number, modulo?: number): number[][] {
   count(rows, 'pascalTriangle')
   if (modulo === undefined && rows > 57)
-    throw new MdmlError('value', 'pascalTriangle: entries beyond row 57 are not exact; give a modulus')
+    throw new OmaiError('value', 'pascalTriangle: entries beyond row 57 are not exact; give a modulus')
   if (modulo !== undefined && !(Number.isSafeInteger(modulo) && modulo >= 1))
-    throw new MdmlError('value', 'pascalTriangle: the modulus must be a positive integer')
+    throw new OmaiError('value', 'pascalTriangle: the modulus must be a positive integer')
   const one = modulo === undefined ? 1 : 1 % modulo
   const out: number[][] = []
   let row = [one]

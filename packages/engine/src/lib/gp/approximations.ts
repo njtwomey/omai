@@ -6,7 +6,7 @@
  * kernel's hyperparameters (Algorithm 5.1 for the Laplace approximation and its EP counterpart).
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { gramGradient, type Kernel, withTheta } from '../kernels/index.ts'
 import { cholesky, choSolve, dgemv, solveTriangular } from '../numerics/linalg/index.ts'
 import { expit, log1pexp, logNdtr, normalLogPdf } from '../numerics/special/index.ts'
@@ -49,7 +49,7 @@ function millsRatio(z: Float64Array): Float64Array {
  * @concept gaussian-process-classification
  * @example
  * ```ts
- * import { latentTerms } from 'mdml-engine/gp'
+ * import { latentTerms } from 'omai-engine/gp'
  * const { w, grad } = latentTerms('logit', Float64Array.of(0), Float64Array.of(1))
  * [w[0], grad[0]] // => [0.25, 0.5]
  * ```
@@ -80,15 +80,15 @@ export function latentTerms(likelihood: ClassLikelihood, f: Float64Array, t: Flo
 
 const labelsOf = (y: TensorLike, n: number, who: string): Float64Array => {
   const v = Float64Array.from(toFlat(primalOf(asTensor(y))))
-  if (v.length !== n) throw new MdmlError('shape', `${who}: ${v.length} labels for ${n} points`)
-  if (v.some((l) => l !== 0 && l !== 1)) throw new MdmlError('value', `${who}: labels must be 0 or 1`)
+  if (v.length !== n) throw new OmaiError('shape', `${who}: ${v.length} labels for ${n} points`)
+  if (v.some((l) => l !== 0 && l !== 1)) throw new OmaiError('value', `${who}: labels must be 0 or 1`)
   return v.map((l) => 2 * l - 1)
 }
 
 const gramOf = (K: TensorLike): { readonly data: Float64Array; readonly n: number } => {
   const t = primalOf(asTensor(K))
   const n = t.shape[0] ?? 0
-  if (t.shape.length !== 2 || t.shape[1] !== n) throw new MdmlError('shape', 'the Gram matrix must be square')
+  if (t.shape.length !== 2 || t.shape[1] !== n) throw new OmaiError('shape', 'the Gram matrix must be square')
   return { data: Float64Array.from(toFlat(t)), n }
 }
 
@@ -136,13 +136,13 @@ export interface LaplaceOptions {
  * @param labels - Binary labels `[n]`, 0 or 1.
  * @param options - The likelihood and the tolerance.
  * @returns The algorithm.
- * @throws MdmlError `value` when a label is not 0 or 1.
+ * @throws OmaiError `value` when a label is not 0 or 1.
  * @concept gaussian-process-classification
  * @reference C. E. Rasmussen and C. K. I. Williams, Gaussian Processes for Machine Learning (2006), section 3.4.
  * @example
  * ```ts
- * import { laplaceAlgorithm } from 'mdml-engine/gp'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { laplaceAlgorithm } from 'omai-engine/gp'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const alg = laplaceAlgorithm([[1, 0.5], [0.5, 1]], [0, 1])
  * const r = runAlgorithm(alg, { maxSteps: 50 })
  * [r.status, r.state.f[0] < 0 && r.state.f[1] > 0] // => ['converged', true]
@@ -247,8 +247,8 @@ function runToConvergence<S extends { readonly converged: boolean }>(alg: Algori
  * @concept gaussian-process-classification
  * @example
  * ```ts
- * import { laplaceMarginal } from 'mdml-engine/gp'
- * import { rbfKernel } from 'mdml-engine/kernels'
+ * import { laplaceMarginal } from 'omai-engine/gp'
+ * import { rbfKernel } from 'omai-engine/kernels'
  * const { value, gradient } = laplaceMarginal(rbfKernel(), [[-1], [-0.5], [0.5], [1]], [0, 0, 1, 1])
  * [value < 0, gradient.length] // => [true, 1]
  * ```
@@ -373,13 +373,13 @@ function epMoments(
  * @param labels - Binary labels `[n]`, 0 or 1.
  * @param options - Tolerance and damping.
  * @returns The algorithm.
- * @throws MdmlError `value` when a label is not 0 or 1.
+ * @throws OmaiError `value` when a label is not 0 or 1.
  * @concept gaussian-process-classification
  * @reference T. Minka, Expectation propagation for approximate Bayesian inference (2001); Rasmussen and Williams (2006), section 3.6.
  * @example
  * ```ts
- * import { epAlgorithm } from 'mdml-engine/gp'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { epAlgorithm } from 'omai-engine/gp'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * // One observation: the marginal likelihood of a probit label under a zero-mean prior is exactly 1/2.
  * const r = runAlgorithm(epAlgorithm([[2]], [1]), { maxSteps: 20 })
  * Math.exp(r.state.logMarginalLikelihood).toFixed(6) // => '0.500000'
@@ -391,7 +391,7 @@ export function epAlgorithm(gram: TensorLike, labels: TensorLike, options: EpOpt
   const tol = options.tol ?? 1e-8
   const damping = options.damping ?? 0
   if (!(damping >= 0 && damping < 1))
-    throw new MdmlError('domain', `epAlgorithm: damping must be in [0, 1), got ${damping}`)
+    throw new OmaiError('domain', `epAlgorithm: damping must be in [0, 1), got ${damping}`)
   return {
     name: 'ep',
     config: { tol, damping },
@@ -534,8 +534,8 @@ export interface EpPosterior extends ApproximateMarginal {
  * @concept gaussian-process-classification
  * @example
  * ```ts
- * import { epMarginal } from 'mdml-engine/gp'
- * import { rbfKernel } from 'mdml-engine/kernels'
+ * import { epMarginal } from 'omai-engine/gp'
+ * import { rbfKernel } from 'omai-engine/kernels'
  * const { value, gradient } = epMarginal(rbfKernel(), [[-1], [-0.5], [0.5], [1]], [0, 0, 1, 1])
  * [value < 0, gradient.length] // => [true, 1]
  * ```

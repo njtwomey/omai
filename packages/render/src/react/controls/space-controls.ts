@@ -4,7 +4,7 @@
  * value by path while keeping conditional dimensions in line with their conditions.
  */
 
-import { activeDims, asModeConfig, defaults, type Space, type SpaceValue } from 'mdml-engine/space'
+import { activeDims, asModeConfig, defaults, type Space, type SpaceValue } from 'omai-engine/space'
 import type { NumberSpec } from './number.ts'
 import type { OptionInput, OptionValue } from './options.ts'
 

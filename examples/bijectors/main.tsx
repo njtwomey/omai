@@ -6,12 +6,12 @@
  * what changes under the map is the density itself, and the banana is a heat map of its density with contours of the
  * same density.
  */
-import { bijectors, normal } from 'mdml-engine/dists'
-import { transformed } from 'mdml-engine/dists/compose'
-import { key } from 'mdml-engine/random'
-import { item, mul, square, sub, tensor, toArray, toFlat } from 'mdml-engine/tensor'
-import { cartesian, histogram, lines, points } from 'mdml-render/charts'
-import { figure } from 'mdml-render/figure'
+import { bijectors, normal } from 'omai-engine/dists'
+import { transformed } from 'omai-engine/dists/compose'
+import { key } from 'omai-engine/random'
+import { item, mul, square, sub, tensor, toArray, toFlat } from 'omai-engine/tensor'
+import { cartesian, histogram, lines, points } from 'omai-render/charts'
+import { figure } from 'omai-render/figure'
 import { mix, PAPER, tab } from '../_shared/colours.ts'
 import type { ExampleModule, Outcome } from '../_shared/contract.ts'
 import { Figure, Panel } from '../_shared/figure.tsx'

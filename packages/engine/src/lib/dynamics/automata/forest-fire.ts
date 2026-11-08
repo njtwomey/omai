@@ -5,7 +5,7 @@
  * The model as a traced algorithm, with the one exact result there is (the density of a forest that never burns).
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { type Algorithm, type Contract, contractSchema, defineContract, scalar, tensor } from '../../trace/index.ts'
 import { codec, draws, mod, positiveInt, unit } from './_core.ts'
 
@@ -57,7 +57,7 @@ export const forestFireContract: Contract<ForestFireState, ForestFirePath> = def
  * @concept forest-fire
  * @example
  * ```ts
- * import { automata } from 'mdml-engine/dynamics'
+ * import { automata } from 'omai-engine/dynamics'
  * automata.treeDensityWithoutFire(0.5, 3) // => 0.875
  * ```
  */
@@ -73,12 +73,12 @@ export function treeDensityWithoutFire(growth: number, t: number): number {
  *
  * @param options - Size, growth, lightning, wrap and starting density.
  * @returns The algorithm.
- * @throws MdmlError with code `value` for a bad size or a chance outside [0, 1].
+ * @throws OmaiError with code `value` for a bad size or a chance outside [0, 1].
  * @concept forest-fire
  * @example
  * ```ts
- * import { automata } from 'mdml-engine/dynamics'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { automata } from 'omai-engine/dynamics'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * // With certain growth and no lightning the forest fills at once.
  * const s = runAlgorithm(automata.forestFire({ width: 4, height: 4, growth: 1, lightning: 0 }), { seed: 0, maxSteps: 1 }).state
  * s.cells.reduce((a, b) => a + b, 0) // => 16
@@ -98,7 +98,7 @@ export function forestFire(options: ForestFireOptions = {}): Algorithm<ForestFir
   unit('forestFire', 'lightning', f)
   unit('forestFire', 'density', density)
   if (given !== undefined && given.length !== width * height)
-    throw new MdmlError('shape', 'forestFire: the starting cells must be width x height')
+    throw new OmaiError('shape', 'forestFire: the starting cells must be width x height')
   const n = width * height
   const neighbours = (i: number): number[] => {
     const r = Math.floor(i / width)

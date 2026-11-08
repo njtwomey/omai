@@ -3,7 +3,7 @@
 // eliminates the variables (greedy variable elimination inside each plate context) and multiplies over plates. Every
 // operation is a tensor operation, so the result differentiates with respect to continuous sites and parameters.
 import { valueAndGrad } from '../autodiff/index.ts'
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import {
   add,
   broadcastTo,
@@ -48,7 +48,7 @@ export interface NamedFactor {
  */
 export function nameLike(f: NamedFactor, v: Value): Value {
   const layout = f.layout
-  if (layout === undefined) throw new MdmlError('value', 'nameLike: the factor has no layout')
+  if (layout === undefined) throw new OmaiError('value', 'nameLike: the factor has no layout')
   const b = broadcastTo(v, layout.shape)
   const picked = layout.loose.length === 0 ? b : sliceLoose(b, layout.loose)
   return reshape(
@@ -155,7 +155,7 @@ const keyOf = (plates: readonly string[]): string => [...plates].sort().join('\u
  * @param sumVars - The enumerated variables to sum out.
  * @param scales - The scale of each plate (size / subsample size), for product over subsampled plates.
  * @returns The contracted log total (a scalar value).
- * @throws MdmlError with code `not-implemented` when a variable is shared across plates in a way plated
+ * @throws OmaiError with code `not-implemented` when a variable is shared across plates in a way plated
  *   contraction cannot handle.
  */
 export function contractFactors(
@@ -184,7 +184,7 @@ export function contractFactors(
   let guard = 0
   while (groups.size > 0) {
     guard += 1
-    if (guard > 10000) throw new MdmlError('value', 'contract: did not terminate')
+    if (guard > 10000) throw new OmaiError('value', 'contract: did not terminate')
     let leafKey = ''
     let leaf: { plates: string[]; factors: NamedFactor[] } | undefined
     for (const [k, g] of groups) {
@@ -228,7 +228,7 @@ export function contractFactors(
       const outer = new Set<string>()
       for (const v of left) for (const p of varPlates.get(v) ?? []) outer.add(p)
       if (keyOf([...outer]) === leafKey)
-        throw new MdmlError(
+        throw new OmaiError(
           'not-implemented',
           `contract: enumerated variables ${left.join(', ')} cannot be summed out inside plates ${leafPlates.join(', ')}`,
         )
@@ -268,14 +268,14 @@ export function enumerationHandler(firstAvailableDim: number): Messenger {
         low = support.low
         high = support.high
       } else
-        throw new MdmlError('value', `enumerate: site ${msg.name} has the ${support.kind} support, which is not finite`)
+        throw new OmaiError('value', `enumerate: site ${msg.name} has the ${support.kind} support, which is not finite`)
       if (msg.fn.eventShape.length > 0 || msg.sampleShape.length > 0)
-        throw new MdmlError('value', `enumerate: site ${msg.name} must have a scalar event and no sample shape`)
+        throw new OmaiError('value', `enumerate: site ${msg.name} must have a scalar event and no sample shape`)
       const batch = msg.fn.batchShape
       for (let a = 0; a < batch.length; a++) {
         const d = a - batch.length
         if (d > firstAvailableDim && (batch[a] ?? 1) > 1 && !msg.plates.some((f) => f.dim === d))
-          throw new MdmlError(
+          throw new OmaiError(
             'value',
             `enumerate: site ${msg.name} has a batch dimension ${d} outside every plate; put repeated discrete variables in a plate`,
             { site: msg.name },
@@ -379,7 +379,7 @@ export function traceFactors(
       const name = d >= -plateDepth ? site.plates.find((f) => f.dim === d)?.name : owner.get(d)
       if (name === undefined) {
         if (d < -plateDepth)
-          throw new MdmlError(
+          throw new OmaiError(
             'shape',
             `enumerate: site ${site.name} has a batch dimension ${d} of size ${size} left of the plates that belongs to no enumerated site`,
             { site: site.name },

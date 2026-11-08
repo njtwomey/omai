@@ -1,5 +1,5 @@
-import { macros, texError } from 'mdml-render/maths'
-import { Choice, ControlPanel, Tex } from 'mdml-render/react'
+import { macros, texError } from 'omai-render/maths'
+import { Choice, ControlPanel, Tex } from 'omai-render/react'
 import { type ReactNode, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 

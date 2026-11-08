@@ -46,8 +46,8 @@ const lfactorialP = special('lfactorial', (n) => k.lgamma(n + 1), [([n]) => diga
  * @index function Gamma function, differentiable; its log, digamma and beta live beside it.
  * @example
  * ```ts
- * import { gamma } from 'mdml-engine/numerics/special'
- * import { item } from 'mdml-engine/tensor'
+ * import { gamma } from 'omai-engine/numerics/special'
+ * import { item } from 'omai-engine/tensor'
  * item(gamma(5)) // => 24
  * ```
  */
@@ -62,8 +62,8 @@ export function gamma(x: TensorLike): Value {
  * @returns log |Gamma(x)|, differentiable (derivative psi).
  * @example
  * ```ts
- * import { lgamma } from 'mdml-engine/numerics/special'
- * import { item } from 'mdml-engine/tensor'
+ * import { lgamma } from 'omai-engine/numerics/special'
+ * import { item } from 'omai-engine/tensor'
  * item(lgamma(1)) // => 0
  * ```
  */
@@ -78,8 +78,8 @@ export function lgamma(x: TensorLike): Value {
  * @returns 1 / Gamma(x), differentiable away from the non-positive integers.
  * @example
  * ```ts
- * import { rgamma } from 'mdml-engine/numerics/special'
- * import { item } from 'mdml-engine/tensor'
+ * import { rgamma } from 'omai-engine/numerics/special'
+ * import { item } from 'omai-engine/tensor'
  * item(rgamma(-2)) // => 0
  * ```
  */
@@ -95,8 +95,8 @@ export function rgamma(x: TensorLike): Value {
  * @returns psi(x), differentiable (derivative trigamma).
  * @example
  * ```ts
- * import { digamma } from 'mdml-engine/numerics/special'
- * import { item } from 'mdml-engine/tensor'
+ * import { digamma } from 'omai-engine/numerics/special'
+ * import { item } from 'omai-engine/tensor'
  * Math.abs(item(digamma(1)) + 0.5772156649015329) < 1e-15 // => true
  * ```
  */
@@ -112,8 +112,8 @@ export function digamma(x: TensorLike): Value {
  * @returns psi^(n)(x), differentiable in x (derivative psi^(n+1)).
  * @example
  * ```ts
- * import { polygamma } from 'mdml-engine/numerics/special'
- * import { item } from 'mdml-engine/tensor'
+ * import { polygamma } from 'omai-engine/numerics/special'
+ * import { item } from 'omai-engine/tensor'
  * Math.abs(item(polygamma(1, 1)) - Math.PI ** 2 / 6) < 1e-15 // => true
  * ```
  */
@@ -134,8 +134,8 @@ export function polygamma(n: number, x: TensorLike): Value {
  * @returns psi'(x), differentiable.
  * @example
  * ```ts
- * import { trigamma } from 'mdml-engine/numerics/special'
- * import { item } from 'mdml-engine/tensor'
+ * import { trigamma } from 'omai-engine/numerics/special'
+ * import { item } from 'omai-engine/tensor'
  * Math.abs(item(trigamma(1)) - Math.PI ** 2 / 6) < 1e-15 // => true
  * ```
  */
@@ -151,8 +151,8 @@ export function trigamma(x: TensorLike): Value {
  * @returns B(a, b), differentiable.
  * @example
  * ```ts
- * import { beta } from 'mdml-engine/numerics/special'
- * import { item } from 'mdml-engine/tensor'
+ * import { beta } from 'omai-engine/numerics/special'
+ * import { item } from 'omai-engine/tensor'
  * item(beta(1, 1)) // => 1
  * ```
  */
@@ -168,8 +168,8 @@ export function beta(a: TensorLike, b: TensorLike): Value {
  * @returns log B(a, b), differentiable.
  * @example
  * ```ts
- * import { lbeta } from 'mdml-engine/numerics/special'
- * import { item } from 'mdml-engine/tensor'
+ * import { lbeta } from 'omai-engine/numerics/special'
+ * import { item } from 'omai-engine/tensor'
  * item(lbeta(1, 1)) // => 0
  * ```
  */
@@ -184,8 +184,8 @@ export function lbeta(a: TensorLike, b: TensorLike): Value {
  * @returns n!, differentiable through Gamma(n + 1).
  * @example
  * ```ts
- * import { factorial } from 'mdml-engine/numerics/special'
- * import { item } from 'mdml-engine/tensor'
+ * import { factorial } from 'omai-engine/numerics/special'
+ * import { item } from 'omai-engine/tensor'
  * item(factorial(5)) // => 120
  * ```
  */
@@ -200,8 +200,8 @@ export function factorial(n: TensorLike): Value {
  * @returns log n!, differentiable.
  * @example
  * ```ts
- * import { lfactorial } from 'mdml-engine/numerics/special'
- * import { item } from 'mdml-engine/tensor'
+ * import { lfactorial } from 'omai-engine/numerics/special'
+ * import { item } from 'omai-engine/tensor'
  * item(lfactorial(0)) // => 0
  * ```
  */
@@ -217,8 +217,8 @@ export function lfactorial(n: TensorLike): Value {
  * @returns C(n, k), differentiable through the gamma extension.
  * @example
  * ```ts
- * import { binom } from 'mdml-engine/numerics/special'
- * import { item } from 'mdml-engine/tensor'
+ * import { binom } from 'omai-engine/numerics/special'
+ * import { item } from 'omai-engine/tensor'
  * item(binom(5, 2)) // => 10
  * ```
  */
@@ -234,8 +234,8 @@ export function binom(n: TensorLike, k: TensorLike): Value {
  * @returns log C(n, k), differentiable.
  * @example
  * ```ts
- * import { lbinom } from 'mdml-engine/numerics/special'
- * import { item } from 'mdml-engine/tensor'
+ * import { lbinom } from 'omai-engine/numerics/special'
+ * import { item } from 'omai-engine/tensor'
  * item(lbinom(4, 0)) // => 0
  * ```
  */

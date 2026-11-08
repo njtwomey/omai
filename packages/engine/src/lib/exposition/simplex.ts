@@ -4,7 +4,7 @@
  * and the fixed points with their stability. Replicator dynamics and learning in games are read this way.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { seal } from './_check.ts'
 import type { FixedPointClass } from './fields.ts'
 
@@ -50,11 +50,11 @@ export interface Simplex {
  *
  * @param record - The record without its `kind`.
  * @returns The record.
- * @throws MdmlError `shape` when the labels, a state or a direction has the wrong length; `value` when a state is not
+ * @throws OmaiError `shape` when the labels, a state or a direction has the wrong length; `value` when a state is not
  *   a probability vector.
  * @example
  * ```ts
- * import { simplexRecord } from 'mdml-engine/exposition'
+ * import { simplexRecord } from 'omai-engine/exposition'
  * const r = simplexRecord({
  *   shape: 'triangle',
  *   labels: ['rock', 'paper', 'scissors'],
@@ -66,26 +66,26 @@ export interface Simplex {
 export function simplexRecord(record: Omit<Simplex, 'kind'>): Simplex {
   const d = record.shape === 'triangle' ? 3 : 2
   if (record.labels.length !== d)
-    throw new MdmlError('shape', `simplex: labels has ${record.labels.length} entries, expected ${d}`)
+    throw new OmaiError('shape', `simplex: labels has ${record.labels.length} entries, expected ${d}`)
   const state = (name: string, p: readonly number[]): void => {
-    if (p.length !== d) throw new MdmlError('shape', `simplex: ${name} has ${p.length} entries, expected ${d}`)
+    if (p.length !== d) throw new OmaiError('shape', `simplex: ${name} has ${p.length} entries, expected ${d}`)
     if (!p.every((v) => v >= -1e-9 && v <= 1 + 1e-9))
-      throw new MdmlError('value', `simplex: ${name} is not a probability`)
+      throw new OmaiError('value', `simplex: ${name} is not a probability`)
     if (d === 3 && Math.abs((p[0] ?? 0) + (p[1] ?? 0) + (p[2] ?? 0) - 1) > 1e-6)
-      throw new MdmlError('value', `simplex: ${name} does not sum to one`)
+      throw new OmaiError('value', `simplex: ${name} does not sum to one`)
   }
   for (const [k, path] of (record.paths ?? []).entries())
     for (const [i, p] of path.points.entries()) state(`paths[${k}].points[${i}]`, p)
   for (const [k, f] of (record.fixedPoints ?? []).entries()) state(`fixedPoints[${k}]`, f.at)
   if (record.field !== undefined) {
     if (record.field.at.length !== record.field.by.length)
-      throw new MdmlError(
+      throw new OmaiError(
         'shape',
         `simplex: field has ${record.field.by.length} directions for ${record.field.at.length} states`,
       )
     for (const [i, p] of record.field.at.entries()) state(`field.at[${i}]`, p)
     for (const [i, b] of record.field.by.entries())
-      if (b.length !== d) throw new MdmlError('shape', `simplex: field.by[${i}] has ${b.length} entries, expected ${d}`)
+      if (b.length !== d) throw new OmaiError('shape', `simplex: field.by[${i}] has ${b.length} entries, expected ${d}`)
   }
   return seal({ kind: 'simplex', ...record })
 }

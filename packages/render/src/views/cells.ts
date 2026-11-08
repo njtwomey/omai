@@ -5,7 +5,7 @@
  */
 
 import type { EChartsOption } from 'echarts'
-import type { ConfusionMatrix, ValueGrids } from 'mdml-engine/exposition'
+import type { ConfusionMatrix, ValueGrids } from 'omai-engine/exposition'
 import { type Panel, subplots } from '../charts/compose.ts'
 import { heatmap, matrix } from '../charts/matrices.ts'
 import { cartesian } from '../charts/plot.ts'
@@ -57,8 +57,8 @@ function rangesOf(record: ValueGrids): [number, number][] {
  * @returns The frames.
  * @example
  * ```ts
- * import { valueGrids } from 'mdml-engine/exposition'
- * import { valueGridFrames } from 'mdml-render/views'
+ * import { valueGrids } from 'omai-engine/exposition'
+ * import { valueGridFrames } from 'omai-render/views'
  * const r = valueGrids({ grids: [{ name: 'a', values: [[0, 1], [1, 0]] }, { name: 'b', values: [[1, 1], [0, 0]] }] })
  * valueGridFrames(r).count // => 1
  * ```
@@ -166,8 +166,8 @@ export function accuracyOf(counts: Grid): number {
  * @returns The frames.
  * @example
  * ```ts
- * import { confusionMatrix } from 'mdml-engine/exposition'
- * import { confusionFrames } from 'mdml-render/views'
+ * import { confusionMatrix } from 'omai-engine/exposition'
+ * import { confusionFrames } from 'omai-render/views'
  * confusionFrames(confusionMatrix({ classes: ['a', 'b'], counts: [[3, 1], [0, 4]] })).label(0) // => 'accuracy 87.5%'
  * ```
  */

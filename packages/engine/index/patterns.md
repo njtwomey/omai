@@ -4,6 +4,6 @@
 
 Pattern mining: frequent itemsets (Apriori, FP-growth, Eclat, closed and maximal), association rules with their measures, sequential patterns (PrefixSpan, GSP) and subgroup discovery (quality functions, beam and exhaustive search, CN2-SD and Apriori-SD), the iterative miners as traced algorithms.
 
-- function `subgroups.ts` (file): Subgroup discovery with quality functions and beam search. `src/lib/patterns/subgroups.ts:1` `mdml-engine/patterns`
+- function `subgroups.ts` (file): Subgroup discovery with quality functions and beam search. `src/lib/patterns/subgroups.ts:1` `omai-engine/patterns`
 
-- function `apriori`: Frequent itemsets by Apriori; FP-growth and Eclat beside it. `src/lib/patterns/itemsets.ts:307` `mdml-engine/patterns`
+- function `apriori`: Frequent itemsets by Apriori; FP-growth and Eclat beside it. `src/lib/patterns/itemsets.ts:307` `omai-engine/patterns`

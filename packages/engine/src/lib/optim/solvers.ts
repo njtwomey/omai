@@ -231,7 +231,7 @@ const gradient: ModeSpec<SmoothProblem, GradientState, VectorParams> = {
  * @returns The complete configuration.
  * @example
  * ```ts
- * import { smoothSolvers, solverConfigOf } from 'mdml-engine/optim'
+ * import { smoothSolvers, solverConfigOf } from 'omai-engine/optim'
  * solverConfigOf(smoothSolvers, { kind: 'lbfgs', gradTol: 1e-9 }) // => { memory: 10, ftol: 2.220446049250313e-9, gradTol: 1e-9, kind: 'lbfgs' }
  * ```
  */
@@ -258,7 +258,7 @@ export function solverConfigOf<Problem>(table: ModeTable<Problem, VectorParams>,
  * @returns The complete configuration, the other knobs at their defaults.
  * @example
  * ```ts
- * import { smoothSolverConfig } from 'mdml-engine/optim'
+ * import { smoothSolverConfig } from 'omai-engine/optim'
  * smoothSolverConfig({ kind: 'bfgs' }) // => { damped: false, gradTol: 0.00001, kind: 'bfgs' }
  * ```
  */
@@ -271,7 +271,7 @@ export const smoothSolverConfig = (config: SpaceValue): SpaceValue => solverConf
  * @index table Smooth-objective solvers as one slot: gradient descent to L-BFGS.
  * @example
  * ```ts
- * import { smoothSolvers } from 'mdml-engine/optim'
+ * import { smoothSolvers } from 'omai-engine/optim'
  * smoothSolvers.names // => ['gradientDescent', 'conjugateGradient', 'newton', 'bfgs', 'lbfgs', 'coordinateDescent', 'gradient']
  * smoothSolvers.modeOf({ kind: 'lbfgs' }).name // => 'lbfgs'
  * ```
@@ -334,9 +334,9 @@ export const gradientContract: Contract<unknown, GradientPath> = defineContract(
  * @returns The algorithm.
  * @example
  * ```ts
- * import { loggedSolverOf, smoothSolvers } from 'mdml-engine/optim'
- * import { key } from 'mdml-engine/random'
- * import { square, sum, type Value } from 'mdml-engine/tensor'
+ * import { loggedSolverOf, smoothSolvers } from 'omai-engine/optim'
+ * import { key } from 'omai-engine/random'
+ * import { square, sum, type Value } from 'omai-engine/tensor'
  * const problem = { objective: (x: Value) => sum(square(x)), x0: [3, 4] }
  * const algorithm = loggedSolverOf(smoothSolvers, problem, { kind: 'gradientDescent', step: 'fixed', learningRate: 0.25 }, key(0))
  * const seen: Record<string, number> = {}
@@ -384,9 +384,9 @@ export function loggedSolverOf<Problem, K extends string = never>(
  * @returns The algorithm, typed by the solver's paths and the method's own (`K`, see {@link loggedSolverOf}).
  * @example
  * ```ts
- * import { loggedSolver } from 'mdml-engine/optim'
- * import { key } from 'mdml-engine/random'
- * import { square, sum, type Value } from 'mdml-engine/tensor'
+ * import { loggedSolver } from 'omai-engine/optim'
+ * import { key } from 'omai-engine/random'
+ * import { square, sum, type Value } from 'omai-engine/tensor'
  * const problem = { objective: (x: Value) => sum(square(x)), x0: [3, 4] }
  * const algorithm = loggedSolver(problem, { kind: 'gradientDescent', step: 'fixed', learningRate: 0.25 }, key(0))
  * const seen: Record<string, number> = {}

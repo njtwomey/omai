@@ -1,4 +1,4 @@
-import { MdmlError, type Reduction } from '../base/index.ts'
+import { OmaiError, type Reduction } from '../base/index.ts'
 import {
   asTensor,
   broadcastShapes,
@@ -32,7 +32,7 @@ export function reduce(terms: Value, options: LossOptions = {}): Value {
       if (options.weight === undefined) return mean(weighted)
       return div(sum(weighted), sum(broadcastTo(options.weight, broadcastShapes(options.weight.shape, terms.shape))))
     default:
-      throw new MdmlError('value', `unknown reduction ${String(options.reduction)}`)
+      throw new OmaiError('value', `unknown reduction ${String(options.reduction)}`)
   }
 }
 
@@ -52,12 +52,12 @@ export function checkScalar(
     (domain === 'positive' ? value > 0 : domain === 'nonNegative' ? value >= 0 : value <= 1 && value >= 0)
   if (ok) return
   const want = { positive: 'positive', nonNegative: 'non-negative', unit: 'in [0, 1]' }[domain]
-  throw new MdmlError('value', `${loss}: ${name} must be ${want}, got ${value}`)
+  throw new OmaiError('value', `${loss}: ${name} must be ${want}, got ${value}`)
 }
 
 /** Reject negative or non-finite entries of a weight vector (read from its primal when it is traced). */
 export function checkWeights(loss: string, name: string, weights: TensorLike | undefined): void {
   if (weights === undefined) return
   if (toFlat(primalOf(asTensor(weights))).some((w) => !(w >= 0) || !Number.isFinite(w)))
-    throw new MdmlError('value', `${loss}: ${name} must be non-negative and finite`)
+    throw new OmaiError('value', `${loss}: ${name} must be non-negative and finite`)
 }

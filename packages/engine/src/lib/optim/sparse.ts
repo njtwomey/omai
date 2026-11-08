@@ -5,7 +5,7 @@
  * as traced algorithms.
  */
 
-import { argmaxOf, type Json, MdmlError } from '../base/index.ts'
+import { argmaxOf, type Json, OmaiError } from '../base/index.ts'
 import { cholesky, choSolve, daxpy, ddot, dgemv, dnrm2, lstsq } from '../numerics/linalg/index.ts'
 import { asTensor, fromStorage, primalOf, type Tensor, type TensorLike, toFlat, toVector } from '../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, type RunStatus, runAlgorithm } from '../trace/index.ts'
@@ -15,7 +15,7 @@ import { admmAlgorithm } from './admm.ts'
 
 function matrix(a: TensorLike, name: string): DenseMatrix {
   const t = primalOf(asTensor(a)) as Tensor
-  if (t.shape.length !== 2) throw new MdmlError('shape', `${name}: the dictionary must be a matrix`)
+  if (t.shape.length !== 2) throw new OmaiError('shape', `${name}: the dictionary must be a matrix`)
   return { data: Float64Array.from(t.data), rows: t.shape[0] ?? 0, cols: t.shape[1] ?? 0 }
 }
 
@@ -128,7 +128,7 @@ export interface PursuitOptions extends Partial<Omit<RunOptions, 'maxSteps' | 's
  * @concept sparse-approximation
  * @example
  * ```ts
- * import { matchingPursuitAlgorithm } from 'mdml-engine/optim'
+ * import { matchingPursuitAlgorithm } from 'omai-engine/optim'
  * matchingPursuitAlgorithm([[1, 0], [0, 1]], [1, 2]).name // => 'matchingPursuit'
  * ```
  */
@@ -178,8 +178,8 @@ export function matchingPursuitAlgorithm(
  * @concept sparse-approximation
  * @example
  * ```ts
- * import { matchingPursuit } from 'mdml-engine/optim'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { matchingPursuit } from 'omai-engine/optim'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(matchingPursuit([[1, 0], [0, 1]], [1, 2], { tol: 1e-20 }).coef) // => [1, 2]
  * ```
  */
@@ -201,7 +201,7 @@ export function matchingPursuit(dictionary: TensorLike, y: TensorLike, options: 
  * @concept sparse-approximation
  * @example
  * ```ts
- * import { orthogonalMatchingPursuitAlgorithm } from 'mdml-engine/optim'
+ * import { orthogonalMatchingPursuitAlgorithm } from 'omai-engine/optim'
  * orthogonalMatchingPursuitAlgorithm([[1, 0], [0, 1]], [1, 2]).name // => 'orthogonalMatchingPursuit'
  * ```
  */
@@ -303,8 +303,8 @@ export function orthogonalMatchingPursuitAlgorithm(
  * @concept sparse-approximation
  * @example
  * ```ts
- * import { orthogonalMatchingPursuit } from 'mdml-engine/optim'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { orthogonalMatchingPursuit } from 'omai-engine/optim'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(orthogonalMatchingPursuit([[1, 0, 1], [0, 1, 1]], [2, 0], { nNonzeroCoefs: 1 }).coef) // => [2, 0, 0]
  * ```
  */
@@ -337,7 +337,7 @@ export interface SparseRecoveryOptions extends Partial<Omit<RunOptions, 'maxStep
  * @concept compressed-sensing
  * @example
  * ```ts
- * import { cosampAlgorithm } from 'mdml-engine/optim'
+ * import { cosampAlgorithm } from 'omai-engine/optim'
  * cosampAlgorithm([[1, 0], [0, 1]], [1, 0], 1).name // => 'cosamp'
  * ```
  */
@@ -391,8 +391,8 @@ export function cosampAlgorithm(
  * @concept compressed-sensing
  * @example
  * ```ts
- * import { cosamp } from 'mdml-engine/optim'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { cosamp } from 'omai-engine/optim'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(cosamp([[1, 0, 1], [0, 1, 1]], [0, 3], 1).coef).map((v) => Math.round(v * 1e8) / 1e8) // => [0, 3, 0]
  * ```
  */
@@ -427,7 +427,7 @@ export interface IhtOptions extends SparseRecoveryOptions {
  * @concept compressed-sensing
  * @example
  * ```ts
- * import { iterativeHardThresholdingAlgorithm } from 'mdml-engine/optim'
+ * import { iterativeHardThresholdingAlgorithm } from 'omai-engine/optim'
  * iterativeHardThresholdingAlgorithm([[1, 0], [0, 1]], [1, 0], 1).name // => 'iht'
  * ```
  */
@@ -508,8 +508,8 @@ export function iterativeHardThresholdingAlgorithm(
  * @concept compressed-sensing
  * @example
  * ```ts
- * import { iterativeHardThresholding } from 'mdml-engine/optim'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { iterativeHardThresholding } from 'omai-engine/optim'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(iterativeHardThresholding([[1, 0, 1], [0, 1, 1]], [0, 3], 1).coef).map((v) => Math.round(v * 1e8) / 1e8) // => [0, 3, 0]
  * ```
  */
@@ -544,8 +544,8 @@ export interface L1Result {
  * @concept compressed-sensing
  * @example
  * ```ts
- * import { basisPursuit } from 'mdml-engine/optim'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { basisPursuit } from 'omai-engine/optim'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(basisPursuit([[1, 1, 2]], [2]).coef).map((v) => Math.round(v * 1e6) / 1e6) // => [0, 0, 1]
  * ```
  */
@@ -631,7 +631,7 @@ export interface LassoCoordinateDescentState {
  * @concept lasso
  * @example
  * ```ts
- * import { lassoCoordinateDescentAlgorithm } from 'mdml-engine/optim'
+ * import { lassoCoordinateDescentAlgorithm } from 'omai-engine/optim'
  * lassoCoordinateDescentAlgorithm([[1, 0], [0, 1]], [1, 0], 0.1).name // => 'lassoCd'
  * ```
  */
@@ -728,8 +728,8 @@ export function lassoCoordinateDescentAlgorithm(
  * @concept lasso
  * @example
  * ```ts
- * import { lassoCoordinateDescent } from 'mdml-engine/optim'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { lassoCoordinateDescent } from 'omai-engine/optim'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(lassoCoordinateDescent([[1, 0], [0, 1]], [3, 0.5], 1).coef) // => [2, 0]
  * ```
  */
@@ -765,8 +765,8 @@ export function lassoCoordinateDescent(
  * @concept compressed-sensing
  * @example
  * ```ts
- * import { basisPursuitDenoising } from 'mdml-engine/optim'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { basisPursuitDenoising } from 'omai-engine/optim'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(basisPursuitDenoising([[1, 0], [0, 1]], [3, -0.5], 1).coef) // => [2, 0]
  * ```
  */

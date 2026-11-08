@@ -6,7 +6,7 @@
  * collection over a training run is an `Algorithm`, and the predictive is the average of the network over samples.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { foldIn, type Key, key as makeKey, normal } from '../random/index.ts'
 import { add, mul, ravel, type Tensor, tensor, toFlat, type Value } from '../tensor/index.ts'
 import { type Algorithm, channels, type StepContext } from '../trace/index.ts'
@@ -34,13 +34,13 @@ export interface SwagState {
  * @returns The state.
  * @example
  * ```ts
- * import { swagState } from 'mdml-engine/nn'
+ * import { swagState } from 'omai-engine/nn'
  * swagState(3, 5).count // => 0
  * ```
  */
 export function swagState(dim: number, rank = 20): SwagState {
   if (!Number.isInteger(rank) || rank < 1)
-    throw new MdmlError('value', `swagState: rank must be a positive integer, got ${rank}`)
+    throw new OmaiError('value', `swagState: rank must be a positive integer, got ${rank}`)
   return {
     count: 0,
     rank,
@@ -59,14 +59,14 @@ export function swagState(dim: number, rank = 20): SwagState {
  * @returns The new state.
  * @example
  * ```ts
- * import { swagCollect, swagState } from 'mdml-engine/nn'
+ * import { swagCollect, swagState } from 'omai-engine/nn'
  * const s = swagCollect(swagCollect(swagState(2), [1, 2]), [3, 2])
  * s.mean // => [2, 2]
  * ```
  */
 export function swagCollect(state: SwagState, theta: ArrayLike<number>): SwagState {
   const d = state.mean.length
-  if (theta.length !== d) throw new MdmlError('shape', `swagCollect: expected ${d} parameters, got ${theta.length}`)
+  if (theta.length !== d) throw new OmaiError('shape', `swagCollect: expected ${d} parameters, got ${theta.length}`)
   const n = state.count
   const mean = state.mean.map((m, i) => (n * m + (theta[i] as number)) / (n + 1))
   const squares = state.squares.map((m, i) => (n * m + (theta[i] as number) ** 2) / (n + 1))
@@ -82,7 +82,7 @@ export function swagCollect(state: SwagState, theta: ArrayLike<number>): SwagSta
  * @returns One variance per parameter.
  * @example
  * ```ts
- * import { swagCollect, swagState, swagVariance } from 'mdml-engine/nn'
+ * import { swagCollect, swagState, swagVariance } from 'omai-engine/nn'
  * swagVariance(swagCollect(swagCollect(swagState(1), [1]), [3])) // => [1]
  * ```
  */
@@ -110,8 +110,8 @@ export interface SwagSampleOptions {
  * @returns `[d, d]`.
  * @example
  * ```ts
- * import { swagCollect, swagCovariance, swagState } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { swagCollect, swagCovariance, swagState } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * const s = [[0], [2]].reduce(swagCollect, swagState(1, 5))
  * toArray(swagCovariance(s)) // => [[1]]
  * ```
@@ -144,8 +144,8 @@ export function swagCovariance(state: SwagState, options: SwagSampleOptions = {}
  * @returns The sample.
  * @example
  * ```ts
- * import { swagSample, swagState } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
+ * import { swagSample, swagState } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
  * swagSample(swagState(2), key(0), { scale: 0 }) // => [0, 0]
  * ```
  */
@@ -208,9 +208,9 @@ export interface SwagRunState {
  * @reference Maddox, Izmailov, Garipov, Vetrov and Wilson (2019), A simple baseline for Bayesian uncertainty in deep learning.
  * @example
  * ```ts
- * import { swagAlgorithm } from 'mdml-engine/nn'
- * import { runAlgorithm } from 'mdml-engine/trace'
- * import { add, tensor, type Value } from 'mdml-engine/tensor'
+ * import { swagAlgorithm } from 'omai-engine/nn'
+ * import { runAlgorithm } from 'omai-engine/trace'
+ * import { add, tensor, type Value } from 'omai-engine/tensor'
  * const walk = { init: () => ({ w: tensor([0]) }), step: (p: { w: Value }) => ({ w: add(p.w, 1) }) }
  * runAlgorithm(swagAlgorithm(walk, { burnIn: 2 }), { maxSteps: 6 }).state.swag.count // => 4
  * ```
@@ -290,8 +290,8 @@ export function swagAlgorithm(trajectory: SwagTrajectory, options: SwagAlgorithm
  * @returns `unravel(flat)`.
  * @example
  * ```ts
- * import { swagUnravel } from 'mdml-engine/nn'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { swagUnravel } from 'omai-engine/nn'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * toArray(swagUnravel({ w: tensor([0, 0]) })([3, 4]).w) // => [3, 4]
  * ```
  */
@@ -320,9 +320,9 @@ export interface SwagPredictive {
  * @returns The mean prediction and every sample's.
  * @example
  * ```ts
- * import { swagCollect, swagPredictive, swagState, swagUnravel } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { swagCollect, swagPredictive, swagState, swagUnravel } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * const state = [[1], [3]].reduce(swagCollect, swagState(1, 5))
  * const template = { w: tensor([0]) }
  * toArray(swagPredictive(state, swagUnravel(template), (p) => p.w, key(0), 4, { scale: 0 }).mean) // => [2]

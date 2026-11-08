@@ -1,7 +1,7 @@
-import { smoothSolvers } from 'mdml-engine/optim'
-import { choice, defaults, dict, union } from 'mdml-engine/space'
-import type { Value } from 'mdml-engine/tensor'
-import type { Config } from 'mdml-engine/trace'
+import { smoothSolvers } from 'omai-engine/optim'
+import { choice, defaults, dict, union } from 'omai-engine/space'
+import type { Value } from 'omai-engine/tensor'
+import type { Config } from 'omai-engine/trace'
 import { describe, expect, it } from 'vitest'
 import { variantsOfSlot } from './slots.ts'
 import type { Variant } from './useSession.ts'
@@ -62,12 +62,12 @@ describe('variantsOfSlot knobs', () => {
 
 describe('a comparison over the solver slot of a method', () => {
   it('runs one session per solver on one objective, and every deterministic one reaches the same minimum', async () => {
-    const { add, matmul, tensor } = await import('mdml-engine/tensor')
-    const { classificationLosses, penalties } = await import('mdml-engine/losses')
+    const { add, matmul, tensor } = await import('omai-engine/tensor')
+    const { classificationLosses, penalties } = await import('omai-engine/losses')
     const { gradientContract, gradientDefaults, loggedSolver, solverContract, solverDefaults } = await import(
-      'mdml-engine/optim'
+      'omai-engine/optim'
     )
-    const { Log, defineMethod, metricSeries, session } = await import('mdml-engine/trace')
+    const { Log, defineMethod, metricSeries, session } = await import('omai-engine/trace')
     const x = [
       [-1.2, -0.8, 1],
       [-0.9, -1.1, 1],

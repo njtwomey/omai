@@ -5,8 +5,8 @@ import {
   stripRecord,
   structureSteps,
   vectorFieldRecord,
-} from 'mdml-engine/exposition'
-import { structure } from 'mdml-engine/scene'
+} from 'omai-engine/exposition'
+import { structure } from 'omai-engine/scene'
 import { describe, expect, it } from 'vitest'
 import { vectorFieldAt, vectorFieldLayers, vectorFieldView } from './fields.ts'
 import { imageGridView, imageStepIndex } from './images.ts'

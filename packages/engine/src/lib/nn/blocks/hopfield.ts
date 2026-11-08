@@ -6,7 +6,7 @@
  * Boltzmann machine, the other energy-based block, is in `rbm.ts`.
  */
 
-import { MdmlError, maxOf } from '../../base/index.ts'
+import { maxOf, OmaiError } from '../../base/index.ts'
 import { pinv } from '../../numerics/linalg/index.ts'
 import { foldIn, type Key, randint } from '../../random/index.ts'
 import {
@@ -43,14 +43,14 @@ export type HopfieldRule = 'hebb' | 'pseudo-inverse'
  * @returns The symmetric weights `[n, n]`.
  * @example
  * ```ts
- * import { hopfieldWeights } from 'mdml-engine/nn/blocks'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { hopfieldWeights } from 'omai-engine/nn/blocks'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(hopfieldWeights([[1, -1]])) // => [[0, -0.5], [-0.5, 0]]
  * ```
  */
 export function hopfieldWeights(patterns: TensorLike, rule: HopfieldRule = 'hebb'): Value {
   const x = asTensor(patterns)
-  if (x.shape.length !== 2) throw new MdmlError('shape', 'hopfieldWeights: patterns must be [p, n]')
+  if (x.shape.length !== 2) throw new OmaiError('shape', 'hopfieldWeights: patterns must be [p, n]')
   const n = x.shape[1] ?? 0
   const w = rule === 'hebb' ? matmul(transpose(x), x) : matmul(pinv(x), x)
   const scaled = rule === 'hebb' ? mul(w, 1 / n) : w
@@ -66,8 +66,8 @@ export function hopfieldWeights(patterns: TensorLike, rule: HopfieldRule = 'hebb
  * @returns The energy (a scalar, or `[B]`).
  * @example
  * ```ts
- * import { hopfieldEnergy } from 'mdml-engine/nn/blocks'
- * import { item } from 'mdml-engine/tensor'
+ * import { hopfieldEnergy } from 'omai-engine/nn/blocks'
+ * import { item } from 'omai-engine/tensor'
  * item(hopfieldEnergy([[0, 1], [1, 0]], [1, 1])) // => -1
  * ```
  */
@@ -100,7 +100,7 @@ export interface AssociativeMemory {
  * @returns The memory.
  * @example
  * ```ts
- * import { classicalMemory, hopfieldWeights } from 'mdml-engine/nn/blocks'
+ * import { classicalMemory, hopfieldWeights } from 'omai-engine/nn/blocks'
  * const m = classicalMemory(hopfieldWeights([[1, -1, 1, -1]]))
  * m.update([1, 1, 1, -1], 1) // => -1
  * ```
@@ -154,14 +154,14 @@ export interface DenseMemoryOptions {
  * @reference Krotov and Hopfield (2016), Dense associative memory for pattern recognition.
  * @example
  * ```ts
- * import { denseAssociativeMemory } from 'mdml-engine/nn/blocks'
+ * import { denseAssociativeMemory } from 'omai-engine/nn/blocks'
  * const m = denseAssociativeMemory([[1, -1, 1, -1], [1, 1, -1, -1]])
  * m.update([1, -1, 1, 1], 3) // => -1
  * ```
  */
 export function denseAssociativeMemory(patterns: TensorLike, options: DenseMemoryOptions = {}): AssociativeMemory {
   const x = asTensor(patterns)
-  if (x.shape.length !== 2) throw new MdmlError('shape', 'denseAssociativeMemory: patterns must be [p, n]')
+  if (x.shape.length !== 2) throw new OmaiError('shape', 'denseAssociativeMemory: patterns must be [p, n]')
   const [p, n] = x.shape as [number, number]
   const xi = Float64Array.from(toFlat(x))
   const a = options.degree ?? 3
@@ -239,8 +239,8 @@ const isStable = (memory: AssociativeMemory, s: ArrayLike<number>): boolean => {
  * @returns The algorithm.
  * @example
  * ```ts
- * import { classicalMemory, hopfieldRecallAlgorithm, hopfieldWeights } from 'mdml-engine/nn/blocks'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { classicalMemory, hopfieldRecallAlgorithm, hopfieldWeights } from 'omai-engine/nn/blocks'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const stored = [[1, -1, 1, -1, 1, -1]]
  * const algo = hopfieldRecallAlgorithm(classicalMemory(hopfieldWeights(stored)), [1, 1, 1, -1, 1, -1])
  * runAlgorithm(algo, { maxSteps: 50 }).state.state // => [1, -1, 1, -1, 1, -1]
@@ -252,7 +252,7 @@ export function hopfieldRecallAlgorithm(
   options: HopfieldRecallOptions = {},
 ): Algorithm<HopfieldRecallState> {
   const initial = toFlat(asTensor(start))
-  if (initial.length !== memory.size) throw new MdmlError('shape', 'hopfieldRecallAlgorithm: start has the wrong size')
+  if (initial.length !== memory.size) throw new OmaiError('shape', 'hopfieldRecallAlgorithm: start has the wrong size')
   const stored = options.patterns === undefined ? undefined : asTensor(options.patterns)
   const order = options.order ?? 'sequential'
   const n = memory.size
@@ -312,8 +312,8 @@ export function hopfieldRecallAlgorithm(
  * @reference Ramsauer et al. (2021), Hopfield networks is all you need.
  * @example
  * ```ts
- * import { modernHopfieldUpdate } from 'mdml-engine/nn/blocks'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { modernHopfieldUpdate } from 'omai-engine/nn/blocks'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(modernHopfieldUpdate([[1, 0], [0, 1]], [0.9, 0.1], 50)).map((v) => Math.round(v)) // => [1, 0]
  * ```
  */
@@ -333,8 +333,8 @@ export function modernHopfieldUpdate(patterns: TensorLike, state: TensorLike, be
  * @returns The energy (a scalar, or `[B]`).
  * @example
  * ```ts
- * import { modernHopfieldEnergy } from 'mdml-engine/nn/blocks'
- * import { item } from 'mdml-engine/tensor'
+ * import { modernHopfieldEnergy } from 'omai-engine/nn/blocks'
+ * import { item } from 'omai-engine/tensor'
  * item(modernHopfieldEnergy([[1, 0], [0, 1]], [1, 0], 100)) > item(modernHopfieldEnergy([[1, 0], [0, 1]], [1, 0], 1)) // => false
  * ```
  */
@@ -369,8 +369,8 @@ export interface ModernHopfieldState {
  * @returns The algorithm.
  * @example
  * ```ts
- * import { modernHopfieldAlgorithm } from 'mdml-engine/nn/blocks'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { modernHopfieldAlgorithm } from 'omai-engine/nn/blocks'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const a = modernHopfieldAlgorithm([[1, 0, 0], [0, 1, 0]], [0.8, 0.3, 0.1], 20)
  * runAlgorithm(a, { maxSteps: 20 }).state.state.map((v) => Math.round(v)) // => [1, 0, 0]
  * ```
@@ -437,8 +437,8 @@ export interface ModernHopfieldOptions {
  *
  * @example
  * ```ts
- * import { ModernHopfield } from 'mdml-engine/nn/blocks'
- * import { key } from 'mdml-engine/random'
+ * import { ModernHopfield } from 'omai-engine/nn/blocks'
+ * import { key } from 'omai-engine/random'
  * new ModernHopfield(4, 3, { key: key(0) }).forward([[1, 0, 0, 0]]).shape // => [1, 4]
  * ```
  */

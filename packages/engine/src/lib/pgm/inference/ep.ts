@@ -5,7 +5,7 @@
  * posterior and a log-evidence estimate.
  */
 
-import { type Json, logAddExp, MdmlError } from '../../base/index.ts'
+import { type Json, logAddExp, OmaiError } from '../../base/index.ts'
 import { gaussHermite } from '../../numerics/quadrature/index.ts'
 import { logNdtr } from '../../numerics/special/index.ts'
 import { item } from '../../tensor/index.ts'
@@ -80,12 +80,12 @@ function qOf(c: Compiled, sites: readonly Float64Array[], i: number): Float64Arr
  * @param model - The model.
  * @param options - Evidence, power, damping and stopping rule.
  * @returns The algorithm.
- * @throws MdmlError with code `value` for a power outside (0, 1] or damping outside [0, 1).
+ * @throws OmaiError with code `value` for a power outside (0, 1] or damping outside [0, 1).
  * @concept expectation-propagation
  * @example
  * ```ts
- * import { isingModel, expectationPropagationAlgorithm } from 'mdml-engine/pgm'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { isingModel, expectationPropagationAlgorithm } from 'omai-engine/pgm'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * runAlgorithm(expectationPropagationAlgorithm(isingModel({ rows: 3, cols: 3, coupling: 0.3 })), { maxSteps: 200 }).status // => 'converged'
  * ```
  */
@@ -97,8 +97,8 @@ export function expectationPropagationAlgorithm(
   const alpha = options.power ?? 1
   const damping = options.damping ?? 0
   const tol = options.tol ?? 1e-10
-  if (!(alpha > 0 && alpha <= 1)) throw new MdmlError('value', 'expectationPropagation: the power must be in (0, 1]')
-  if (!(damping >= 0 && damping < 1)) throw new MdmlError('value', 'expectationPropagation: damping must be in [0, 1)')
+  if (!(alpha > 0 && alpha <= 1)) throw new OmaiError('value', 'expectationPropagation: the power must be in (0, 1]')
+  if (!(damping >= 0 && damping < 1)) throw new OmaiError('value', 'expectationPropagation: damping must be in [0, 1)')
   return {
     name: 'expectationPropagation',
     config: { power: alpha, damping, tol } as Json,
@@ -181,7 +181,7 @@ export function expectationPropagationAlgorithm(
  * @concept expectation-propagation
  * @example
  * ```ts
- * import { isingModel, expectationPropagation, beliefPropagation } from 'mdml-engine/pgm'
+ * import { isingModel, expectationPropagation, beliefPropagation } from 'omai-engine/pgm'
  * const m = isingModel({ rows: 2, cols: 2, coupling: 0.3, field: 0.2 })
  * const ep = expectationPropagation(m).marginals
  * const bp = beliefPropagation(m).marginals
@@ -331,7 +331,7 @@ function tiltedMoments(
     logs[k] = Math.log(rule.weights[k] ?? 0) + alpha * logT(z)
     if ((logs[k] ?? Number.NEGATIVE_INFINITY) > max) max = logs[k] ?? max
   }
-  if (max === Number.NEGATIVE_INFINITY) throw new MdmlError('value', 'gaussianEp: a tilted distribution has zero mass')
+  if (max === Number.NEGATIVE_INFINITY) throw new OmaiError('value', 'gaussianEp: a tilted distribution has zero mass')
   let s0 = 0
   let s1 = 0
   let s2 = 0
@@ -378,12 +378,12 @@ function posterior(
  * @param sites - The sites.
  * @param options - Power, damping, stopping rule and quadrature points.
  * @returns The algorithm.
- * @throws MdmlError with code `value` for a power outside (0, 1] or mismatched site weights.
+ * @throws OmaiError with code `value` for a power outside (0, 1] or mismatched site weights.
  * @concept expectation-propagation
  * @example
  * ```ts
- * import { gaussianEpAlgorithm } from 'mdml-engine/pgm'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { gaussianEpAlgorithm } from 'omai-engine/pgm'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const sites = [{ kind: 'probit' as const, weights: [1, 0.5], label: 1 as const }, { kind: 'probit' as const, weights: [-0.3, 1], label: -1 as const }]
  * runAlgorithm(gaussianEpAlgorithm({ mean: [0, 0], covariance: [[1, 0], [0, 1]] }, sites), { maxSteps: 100 }).status // => 'converged'
  * ```
@@ -397,10 +397,10 @@ export function gaussianEpAlgorithm(
   const alpha = options.power ?? 1
   const damping = options.damping ?? 0
   const tol = options.tol ?? 1e-10
-  if (!(alpha > 0 && alpha <= 1)) throw new MdmlError('value', 'gaussianEp: the power must be in (0, 1]')
-  if (!(damping >= 0 && damping < 1)) throw new MdmlError('value', 'gaussianEp: damping must be in [0, 1)')
+  if (!(alpha > 0 && alpha <= 1)) throw new OmaiError('value', 'gaussianEp: the power must be in (0, 1]')
+  if (!(damping >= 0 && damping < 1)) throw new OmaiError('value', 'gaussianEp: damping must be in [0, 1)')
   for (const s of sites)
-    if (s.weights.length !== d) throw new MdmlError('shape', `gaussianEp: site weights need ${d} entries`)
+    if (s.weights.length !== d) throw new OmaiError('shape', `gaussianEp: site weights need ${d} entries`)
   const P0 = inverse(prior.covariance)
   const h0 = matVec(P0, prior.mean)
   const raw = gaussHermite(options.quadraturePoints ?? 64)
@@ -473,7 +473,7 @@ export function gaussianEpAlgorithm(
  * @concept expectation-propagation
  * @example
  * ```ts
- * import { gaussianEp } from 'mdml-engine/pgm'
+ * import { gaussianEp } from 'omai-engine/pgm'
  * // One probit site is matched exactly: Z = Phi(m / sqrt(1 + v)) = Phi(0) = 1/2.
  * Math.round(Math.exp(gaussianEp({ mean: [0], covariance: [[1]] }, [{ kind: 'probit', weights: [1], label: 1 }]).logMarginalLikelihood) * 1e12) / 1e12 // => 0.5
  * ```

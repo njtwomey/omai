@@ -4,7 +4,7 @@
  * the three counts that define them, filtered and ranked by any one of them.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import type { FrequentItemset } from './itemsets.ts'
 
 /** The counts that define a rule's measures. */
@@ -40,10 +40,10 @@ export interface RuleMeasures {
  *
  * @param counts - The basket counts.
  * @returns The measures.
- * @throws MdmlError with code `value` when `n` is not positive or a count exceeds its bounds.
+ * @throws OmaiError with code `value` when `n` is not positive or a count exceeds its bounds.
  * @example
  * ```ts
- * import { ruleMeasures } from 'mdml-engine/patterns'
+ * import { ruleMeasures } from 'omai-engine/patterns'
  * const m = ruleMeasures({ n: 10, both: 3, antecedent: 4, consequent: 5 })
  * [m.support, m.confidence, m.lift, m.leverage] // => [0.3, 0.75, 1.5, 0.1]
  * ```
@@ -51,7 +51,7 @@ export interface RuleMeasures {
 export function ruleMeasures(counts: RuleCounts): RuleMeasures {
   const { n, both, antecedent, consequent } = counts
   if (!(n > 0) || both > antecedent || both > consequent || both < 0) {
-    throw new MdmlError('value', 'ruleMeasures: counts are inconsistent')
+    throw new OmaiError('value', 'ruleMeasures: counts are inconsistent')
   }
   const sA = antecedent / n
   const sC = consequent / n
@@ -102,10 +102,10 @@ export interface AssociationRuleOptions {
  * @param n - The number of baskets.
  * @param options - The metric, its threshold and a limit on the consequent's size.
  * @returns The rules, ranked by the metric.
- * @throws MdmlError with code `value` when a subset of a frequent itemset is missing from the list.
+ * @throws OmaiError with code `value` when a subset of a frequent itemset is missing from the list.
  * @example
  * ```ts
- * import { apriori, associationRules } from 'mdml-engine/patterns'
+ * import { apriori, associationRules } from 'omai-engine/patterns'
  * const tx = [[0, 1], [0, 1], [0, 1], [0, 2], [1]]
  * const rules = associationRules(apriori(tx, { minSupport: 0.4 }), tx.length, { minThreshold: 0.7 })
  * rules.map((r) => `${r.antecedent}=>${r.consequent}:${r.confidence}`) // => ['0=>1:0.75', '1=>0:0.75']
@@ -131,7 +131,7 @@ export function associationRules(
       const a = counts.get(antecedent.join(','))
       const c = counts.get(consequent.join(','))
       if (a === undefined || c === undefined)
-        throw new MdmlError('value', 'associationRules: itemsets are not closed downward')
+        throw new OmaiError('value', 'associationRules: itemsets are not closed downward')
       const measures = ruleMeasures({ n, both: s.count, antecedent: a, consequent: c })
       if (measures[metric] >= threshold - 1e-12) out.push({ antecedent, consequent, count: s.count, ...measures })
     }

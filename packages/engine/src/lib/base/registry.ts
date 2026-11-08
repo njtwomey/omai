@@ -8,7 +8,7 @@
  * @index structure Registries of named entries, the shape dataset and environment registries share.
  */
 
-import { MdmlError } from './errors.ts'
+import { OmaiError } from './errors.ts'
 
 /** What every registry entry has: a name, unique within its registry, to look it up by. */
 export interface Named {
@@ -30,18 +30,18 @@ export interface Registry<E extends Named> {
  *
  * @param entries - The entries.
  * @returns The registry.
- * @throws MdmlError with code `value` when two entries share a name.
+ * @throws OmaiError with code `value` when two entries share a name.
  * @concept registries
  * @example
  * ```ts
- * import { registry } from 'mdml-engine/base'
+ * import { registry } from 'omai-engine/base'
  * registry([{ name: 'a' }, { name: 'b' }]).entries.length // => 2
  * ```
  */
 export function registry<E extends Named>(entries: readonly E[]): Registry<E> {
   const seen = new Set<string>()
   for (const e of entries) {
-    if (seen.has(e.name)) throw new MdmlError('value', `registry: the name '${e.name}' is registered twice`)
+    if (seen.has(e.name)) throw new OmaiError('value', `registry: the name '${e.name}' is registered twice`)
     seen.add(e.name)
   }
   return { entries: [...entries] }
@@ -54,11 +54,11 @@ export function registry<E extends Named>(entries: readonly E[]): Registry<E> {
  * @param base - The registry to extend.
  * @param entries - The entries to add.
  * @returns The extended registry.
- * @throws MdmlError with code `value` when two of the added entries share a name.
+ * @throws OmaiError with code `value` when two of the added entries share a name.
  * @concept registries
  * @example
  * ```ts
- * import { register, registry } from 'mdml-engine/base'
+ * import { register, registry } from 'omai-engine/base'
  * const base = registry([{ name: 'a', v: 1 }])
  * const more = register(base, [{ name: 'b', v: 2 }, { name: 'a', v: 3 }])
  * more.entries.map((e) => `${e.name}${e.v}`) // => ['a3', 'b2']
@@ -69,7 +69,7 @@ export function register<E extends Named>(base: Registry<E>, entries: readonly E
   const added = new Set<string>()
   const byName = new Map(base.entries.map((e) => [e.name, e] as const))
   for (const e of entries) {
-    if (added.has(e.name)) throw new MdmlError('value', `register: the name '${e.name}' is added twice`)
+    if (added.has(e.name)) throw new OmaiError('value', `register: the name '${e.name}' is added twice`)
     added.add(e.name)
     byName.set(e.name, e)
   }
@@ -85,7 +85,7 @@ export function register<E extends Named>(base: Registry<E>, entries: readonly E
  * @concept registries
  * @example
  * ```ts
- * import { find, registry } from 'mdml-engine/base'
+ * import { find, registry } from 'omai-engine/base'
  * find(registry([{ name: 'a' }]), 'b') // => undefined
  * ```
  */
@@ -99,18 +99,18 @@ export function find<E extends Named>(reg: Registry<E>, name: string): E | undef
  * @param reg - The registry.
  * @param name - The entry's name.
  * @returns The entry.
- * @throws MdmlError with code `value` when nothing of that name is registered.
+ * @throws OmaiError with code `value` when nothing of that name is registered.
  * @concept registries
  * @example
  * ```ts
- * import { lookup, registry } from 'mdml-engine/base'
+ * import { lookup, registry } from 'omai-engine/base'
  * lookup(registry([{ name: 'a', v: 1 }]), 'a').v // => 1
  * lookup(registry([{ name: 'a', v: 1 }]), 'b') // => throws value
  * ```
  */
 export function lookup<E extends Named>(reg: Registry<E>, name: string): E {
   const found = find(reg, name)
-  if (found === undefined) throw new MdmlError('value', `lookup: nothing named '${name}' is registered`)
+  if (found === undefined) throw new OmaiError('value', `lookup: nothing named '${name}' is registered`)
   return found
 }
 
@@ -124,7 +124,7 @@ export function lookup<E extends Named>(reg: Registry<E>, name: string): E {
  * @concept registries
  * @example
  * ```ts
- * import { matchesText } from 'mdml-engine/base'
+ * import { matchesText } from 'omai-engine/base'
  * matchesText('two MOONS', ['moons', 'Two moons', undefined]) // => true
  * matchesText('moons real', ['moons', 'Two moons']) // => false
  * matchesText('', ['anything']) // => true

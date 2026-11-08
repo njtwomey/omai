@@ -5,7 +5,7 @@
  * statistics.
  */
 
-import { heap, MdmlError } from '../../base/index.ts'
+import { heap, OmaiError } from '../../base/index.ts'
 import { cauchy, foldIn, type Key, normal, randint, uniform } from '../../random/index.ts'
 import { concreteOrThrow, item, promoteFloat, type Tensor, type TensorLike, toFlat } from '../../tensor/index.ts'
 import { type DistanceMetric, metricFunction } from '../geometry/index.ts'
@@ -42,8 +42,8 @@ export interface HashFamily {
  * @concept locality-sensitive-hashing
  * @example
  * ```ts
- * import { randomHyperplanes } from 'mdml-engine/numerics/spatial'
- * import { key } from 'mdml-engine/random'
+ * import { randomHyperplanes } from 'omai-engine/numerics/spatial'
+ * import { key } from 'omai-engine/random'
  * randomHyperplanes(key(0), 3, 4).hash([1, 2, 3]).length // => 4
  * ```
  */
@@ -75,8 +75,8 @@ export function randomHyperplanes(key: Key, dim: number, k: number): HashFamily 
  * @returns The family.
  * @example
  * ```ts
- * import { pStableHash } from 'mdml-engine/numerics/spatial'
- * import { key } from 'mdml-engine/random'
+ * import { pStableHash } from 'omai-engine/numerics/spatial'
+ * import { key } from 'omai-engine/random'
  * pStableHash(key(1), 2, 3, { w: 1 }).hash([0.5, -0.5]).length // => 3
  * ```
  */
@@ -123,7 +123,7 @@ export function pStableHash(
  * @returns The probability.
  * @example
  * ```ts
- * import { collisionProbability } from 'mdml-engine/numerics/spatial'
+ * import { collisionProbability } from 'omai-engine/numerics/spatial'
  * collisionProbability('hyperplane', Math.PI / 2) // => 0.5
  * ```
  */
@@ -149,7 +149,7 @@ export function collisionProbability(
  * @returns The candidate probability.
  * @example
  * ```ts
- * import { bandingProbability } from 'mdml-engine/numerics/spatial'
+ * import { bandingProbability } from 'omai-engine/numerics/spatial'
  * Math.round(bandingProbability(0.8, 5, 20) * 1000) / 1000 // => 1
  * ```
  */
@@ -172,8 +172,8 @@ const MERSENNE = 2147483647
  * @concept minhash
  * @example
  * ```ts
- * import { estimateJaccard, minHash } from 'mdml-engine/numerics/spatial'
- * import { key } from 'mdml-engine/random'
+ * import { estimateJaccard, minHash } from 'omai-engine/numerics/spatial'
+ * import { key } from 'omai-engine/random'
  * const [a, b] = minHash([[1, 2, 3, 4], [1, 2, 3, 5]], key(0), 256)
  * Math.abs(estimateJaccard(a, b) - 0.6) < 0.15 // => true
  * ```
@@ -207,7 +207,7 @@ export function minHash(sets: readonly (readonly number[])[], key: Key, n = 128)
  * @returns The estimate.
  * @example
  * ```ts
- * import { estimateJaccard } from 'mdml-engine/numerics/spatial'
+ * import { estimateJaccard } from 'omai-engine/numerics/spatial'
  * estimateJaccard([1, 2, 3, 4], [1, 2, 0, 4]) // => 0.75
  * ```
  */
@@ -227,7 +227,7 @@ export function estimateJaccard(a: readonly number[], b: readonly number[]): num
  * @returns Candidate pairs (i < j), sorted.
  * @example
  * ```ts
- * import { minHashBanding } from 'mdml-engine/numerics/spatial'
+ * import { minHashBanding } from 'omai-engine/numerics/spatial'
  * minHashBanding([[1, 2, 3, 4], [1, 2, 9, 9], [7, 7, 7, 7]], 2, 2) // => [[0, 1]]
  * ```
  */
@@ -280,7 +280,7 @@ export interface LshIndex {
  * @returns Sets of indices into the given perturbation list, cheapest first.
  * @example
  * ```ts
- * import { probeSequence } from 'mdml-engine/numerics/spatial'
+ * import { probeSequence } from 'omai-engine/numerics/spatial'
  * probeSequence([{ fn: 0, score: 0.1 }, { fn: 1, score: 0.2 }, { fn: 0, score: 0.9 }], 3) // => [[0], [1], [0, 1]]
  * ```
  */
@@ -324,8 +324,8 @@ export function probeSequence(
  * @returns The index.
  * @example
  * ```ts
- * import { lshIndex } from 'mdml-engine/numerics/spatial'
- * import { key } from 'mdml-engine/random'
+ * import { lshIndex } from 'omai-engine/numerics/spatial'
+ * import { key } from 'omai-engine/random'
  * const index = lshIndex([[0, 0], [0.1, 0], [5, 5]], { family: 'pstable', tables: 4, k: 2, w: 2, key: key(0) })
  * index.query([0.05, 0], 1).indices.length // => 1
  * ```
@@ -372,7 +372,7 @@ export function lshIndex(
   return {
     tables: L,
     query: (q, kNearest, queryOptions = {}) => {
-      if (q.length !== d) throw new MdmlError('shape', 'lshIndex: query dimension mismatch')
+      if (q.length !== d) throw new OmaiError('shape', 'lshIndex: query dimension mismatch')
       const probes = queryOptions.probes ?? 0
       const candidates = new Set<number>()
       let probesUsed = 0

@@ -5,7 +5,7 @@
  * one component at a time against those already found (deflation, one component per step).
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { type IterativeEstimator, iterative, type LearnData, matrixView } from '../learn/index.ts'
 import { linalg } from '../numerics/index.ts'
 import { normal } from '../random/index.ts'
@@ -44,7 +44,7 @@ function contrast(fun: IcaContrast, wx: readonly number[]): { g: number[]; gPrim
  * @returns The decorrelated matrix.
  * @example
  * ```ts
- * import { symmetricDecorrelation } from 'mdml-engine/decomposition'
+ * import { symmetricDecorrelation } from 'omai-engine/decomposition'
  * symmetricDecorrelation([[2, 0], [0, 3]]) // => [[1, 0], [0, 1]]
  * ```
  */
@@ -79,7 +79,7 @@ const icaSchema = channels({
  * @returns The algorithm.
  * @example
  * ```ts
- * import { fastIcaAlgorithm } from 'mdml-engine/decomposition'
+ * import { fastIcaAlgorithm } from 'omai-engine/decomposition'
  * fastIcaAlgorithm([[1, -1, 0.5, -0.5]], [[1]]).name // => 'fast-ica'
  * ```
  */
@@ -131,8 +131,8 @@ export function fastIcaAlgorithm(
  * @returns The algorithm; k steps.
  * @example
  * ```ts
- * import { fastIcaDeflationAlgorithm } from 'mdml-engine/decomposition'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { fastIcaDeflationAlgorithm } from 'omai-engine/decomposition'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const z = [[1, -1, 0.5, -0.5], [0.5, 0.5, -1, 1]]
  * runAlgorithm(fastIcaDeflationAlgorithm(z, [[1, 0.2], [0.1, 1]]), { maxSteps: 2 }).state.w.length // => 2
  * ```
@@ -227,7 +227,7 @@ function whiten(data: LearnData, k: number): Whitened {
   if (hit !== undefined) return hit
   const m = matrixView(data.x, 'fastIca', { minSamples: 2 })
   if (!(Number.isInteger(k) && k >= 1 && k <= Math.min(m.n, m.d)))
-    throw new MdmlError('value', `fastIca: nComponents must be in 1..${Math.min(m.n, m.d)}`)
+    throw new OmaiError('value', `fastIca: nComponents must be in 1..${Math.min(m.n, m.d)}`)
   const mean = columnMeans(m)
   const xc = centred(m, mean)
   const { s, vt } = thinSvd(xc, m.n, m.d)
@@ -255,7 +255,7 @@ export type IcaVerbs = Omit<ProjectionVerbs, 'score'>
  * @index estimator FastICA independent component analysis.
  * @example
  * ```ts
- * import { fastIca } from 'mdml-engine/decomposition'
+ * import { fastIca } from 'omai-engine/decomposition'
  * const t = Array.from({ length: 60 }, (_, i) => i / 6)
  * const x = t.map((v) => [Math.sin(2 * v) + 0.5 * ((v * 3) % 1), Math.sign(Math.sin(3 * v)) + 0.4 * Math.sin(2 * v)])
  * fastIca.with({ nComponents: 2 }).fit({ x }).params.components.length // => 2

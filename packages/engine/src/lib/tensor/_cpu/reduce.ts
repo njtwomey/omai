@@ -1,4 +1,4 @@
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import type { ReduceKernel } from '../backend.ts'
 import { allocate, type DType } from '../dtype.ts'
 import { sizeOf, stridesOf } from '../shape.ts'
@@ -22,7 +22,7 @@ export function reduce<D extends DType>(
   const reduced = new Set(axes)
   // max and min have no identity in the dtype: an empty reduction with outputs to fill is numpy's ValueError.
   if ((op === 'max' || op === 'min') && x.data.length === 0 && sizeOf(x.shape.filter((_, a) => !reduced.has(a))) > 0) {
-    throw new MdmlError('value', `${op}: cannot reduce a zero-length axis (no identity)`, { shape: x.shape })
+    throw new OmaiError('value', `${op}: cannot reduce a zero-length axis (no identity)`, { shape: x.shape })
   }
   const keptShape = x.shape.map((n, axis) => (reduced.has(axis) ? 1 : n))
   const outShape = keepDims ? keptShape : x.shape.filter((_, axis) => !reduced.has(axis))
@@ -70,7 +70,7 @@ export function reduce<D extends DType>(
 
 export function argReduce(op: 'max' | 'min', x: Tensor, axis: number, keepDims: boolean): Tensor<'int32'> {
   const { outer, n, inner } = lanes(x.shape, axis)
-  if (n === 0 && outer * inner > 0) throw new MdmlError('value', `arg${op}: cannot reduce a zero-length axis`)
+  if (n === 0 && outer * inner > 0) throw new OmaiError('value', `arg${op}: cannot reduce a zero-length axis`)
   const out = new Int32Array(outer * inner)
   for (let o = 0; o < outer; o++) {
     for (let k = 0; k < inner; k++) {

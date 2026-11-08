@@ -67,7 +67,7 @@ const startOf = (p: EigenProblem): EigenIterationOptions => ({
  * @concept eigenvalues
  * @example
  * ```ts
- * import { eigenIterations } from 'mdml-engine/numerics/linalg'
+ * import { eigenIterations } from 'omai-engine/numerics/linalg'
  * eigenIterations.names // => ['power', 'inverse', 'rayleigh']
  * ```
  */
@@ -117,11 +117,11 @@ export const eigenIterations: OptionTable<EigenIterationMethod, EigenIterationPr
  * @param config - The option and its knobs, such as `{ kind: 'inverse', shift: 1.2 }`.
  * @param problem - The matrix and the start (a vector `x0` or a `key`).
  * @returns The algorithm; its state is an {@link EigenIterationState}.
- * @throws MdmlError with code `shape` for a matrix that is not square.
+ * @throws OmaiError with code `shape` for a matrix that is not square.
  * @concept eigenvalues
  * @example
  * ```ts
- * import { eigenIteration } from 'mdml-engine/numerics/linalg'
+ * import { eigenIteration } from 'omai-engine/numerics/linalg'
  * eigenIteration({ kind: 'rayleigh' }, { a: [[2, 1], [1, 2]], x0: [1, 0.9] }).name // => 'rayleigh-quotient-iteration'
  * ```
  */

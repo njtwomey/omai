@@ -6,7 +6,7 @@
  * noise, which also carries the forecasts of integrated (ARIMA) models.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import type { LinearGaussianModel } from '../dynamics/filtering/index.ts'
 import { dgemm } from '../numerics/linalg/index.ts'
 
@@ -82,10 +82,10 @@ function stationaryCovariance(phi: Float64Array, loading: Float64Array): Float64
  * @param ar - The autoregressive coefficients phi_1..phi_p (stationary).
  * @param ma - The moving-average coefficients theta_1..theta_q.
  * @returns The form.
- * @throws MdmlError with code `value` when the process is not stationary.
+ * @throws OmaiError with code `value` when the process is not stationary.
  * @example
  * ```ts
- * import { armaForm } from 'mdml-engine/timeseries'
+ * import { armaForm } from 'omai-engine/timeseries'
  * // The AR(1) with phi = 0.5 has state variance 1 / (1 - 0.25).
  * armaForm([0.5], []).p0[0].toFixed(6) // => '1.333333'
  * ```
@@ -99,7 +99,7 @@ export function armaForm(ar: ArrayLike<number>, ma: ArrayLike<number>): ArmaForm
   for (let i = 0; i < ma.length; i++) loading[i + 1] = ma[i] ?? 0
   const p0 = stationaryCovariance(phi, loading)
   if (!p0.every(Number.isFinite) || (p0[0] ?? 0) <= 0)
-    throw new MdmlError('value', 'armaForm: the autoregressive polynomial is not stationary')
+    throw new OmaiError('value', 'armaForm: the autoregressive polynomial is not stationary')
   return { r, phi, loading, p0 }
 }
 
@@ -114,7 +114,7 @@ export function armaForm(ar: ArrayLike<number>, ma: ArrayLike<number>): ArmaForm
  * @returns The model.
  * @example
  * ```ts
- * import { armaStateSpace } from 'mdml-engine/timeseries'
+ * import { armaStateSpace } from 'omai-engine/timeseries'
  * armaStateSpace([0.5], [0.4]).F // => [[0.5, 1], [0, 0]]
  * ```
  */
@@ -169,7 +169,7 @@ export interface ArmaFilterResult {
  * @returns The filter output.
  * @example
  * ```ts
- * import { armaFilter } from 'mdml-engine/timeseries'
+ * import { armaFilter } from 'omai-engine/timeseries'
  * // White noise: every prediction error is the observation itself with unit relative variance.
  * armaFilter([1, -2, 3], [], []).sumSquares // => 14
  * ```
@@ -187,7 +187,7 @@ export function armaFilter(y: ArrayLike<number>, ar: ArrayLike<number>, ma: Arra
  * @returns The filter output.
  * @example
  * ```ts
- * import { armaForm, filterForm } from 'mdml-engine/timeseries'
+ * import { armaForm, filterForm } from 'omai-engine/timeseries'
  * filterForm([1, -2, 3], armaForm([], [])).sumSquares // => 14
  * ```
  */
@@ -256,7 +256,7 @@ export function filterForm(y: ArrayLike<number>, form: ArmaForm): ArmaFilterResu
  * @returns The log-likelihood.
  * @example
  * ```ts
- * import { armaLogLikelihood } from 'mdml-engine/timeseries'
+ * import { armaLogLikelihood } from 'omai-engine/timeseries'
  * armaLogLikelihood([0.5], [], [], 1).toFixed(6) // => '-1.043939'
  * ```
  */
@@ -293,7 +293,7 @@ export interface StateForecast {
  * @returns Means and variances.
  * @example
  * ```ts
- * import { forecastStateSpace } from 'mdml-engine/timeseries'
+ * import { forecastStateSpace } from 'omai-engine/timeseries'
  * // A random walk from 3: the variance grows by sigma2 per step.
  * const f = forecastStateSpace([1], [1], [1], [3], [0], 2, 3)
  * [Array.from(f.mean), Array.from(f.variance)] // => [[3, 3, 3], [0, 2, 4]]

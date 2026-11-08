@@ -4,7 +4,7 @@
  * converting them as `imshow` would), and transforming groups.
  */
 
-import { clamp, MdmlError, maxOf, minOf } from '../base/index.ts'
+import { clamp, maxOf, minOf, OmaiError } from '../base/index.ts'
 import { transform as checkTransform, finite, size, vertices } from './_check.ts'
 import type {
   CircleNode,
@@ -35,10 +35,10 @@ import type {
  * @returns The scene.
  * @concept scene-graph
  * @index function Build a Scene from nodes; rect, circle and path sit beside it.
- * @throws MdmlError `value` when the width or height is not a finite number >= 0.
+ * @throws OmaiError `value` when the width or height is not a finite number >= 0.
  * @example
  * ```ts
- * import { scene, circle } from 'mdml-engine/scene'
+ * import { scene, circle } from 'omai-engine/scene'
  * scene(100, 50, [circle(50, 25, 10, { fill: 'tab0' })]).children.length // => 1
  * ```
  */
@@ -61,10 +61,10 @@ export function scene(
  * @param height - Height.
  * @param style - Fill, stroke, corner radius, id and title.
  * @returns The node.
- * @throws MdmlError `value` when a coordinate is not finite or the width or height is not a finite number >= 0.
+ * @throws OmaiError `value` when a coordinate is not finite or the width or height is not a finite number >= 0.
  * @example
  * ```ts
- * import { rect } from 'mdml-engine/scene'
+ * import { rect } from 'omai-engine/scene'
  * rect(0, 0, 10, 5, { fill: 'tab1' }).width // => 10
  * ```
  */
@@ -88,10 +88,10 @@ export function rect(
  * @param r - Radius.
  * @param style - Fill, stroke, id and title.
  * @returns The node.
- * @throws MdmlError `value` when the centre is not finite or the radius is not a finite number >= 0.
+ * @throws OmaiError `value` when the centre is not finite or the radius is not a finite number >= 0.
  * @example
  * ```ts
- * import { circle } from 'mdml-engine/scene'
+ * import { circle } from 'omai-engine/scene'
  * circle(5, 5, 2).r // => 2
  * ```
  */
@@ -110,10 +110,10 @@ export function circle(cx: number, cy: number, r: number, style: Style & NodeBas
  * @param ry - Vertical radius.
  * @param style - Fill, stroke, id and title.
  * @returns The node.
- * @throws MdmlError `value` when the centre is not finite or a radius is not a finite number >= 0.
+ * @throws OmaiError `value` when the centre is not finite or a radius is not a finite number >= 0.
  * @example
  * ```ts
- * import { ellipse } from 'mdml-engine/scene'
+ * import { ellipse } from 'omai-engine/scene'
  * ellipse(0, 0, 3, 1).rx // => 3
  * ```
  */
@@ -132,10 +132,10 @@ export function ellipse(cx: number, cy: number, rx: number, ry: number, style: S
  * @param y2 - End y.
  * @param style - Stroke, id and title.
  * @returns The node.
- * @throws MdmlError `value` when a coordinate is not finite.
+ * @throws OmaiError `value` when a coordinate is not finite.
  * @example
  * ```ts
- * import { line } from 'mdml-engine/scene'
+ * import { line } from 'omai-engine/scene'
  * line(0, 0, 3, 4).x2 // => 3
  * ```
  */
@@ -153,10 +153,10 @@ export function line(x1: number, y1: number, x2: number, y2: number, style: Styl
  * @param y2 - End y.
  * @param style - Stroke, id and title.
  * @returns The node.
- * @throws MdmlError `value` when a coordinate is not finite.
+ * @throws OmaiError `value` when a coordinate is not finite.
  * @example
  * ```ts
- * import { arrow } from 'mdml-engine/scene'
+ * import { arrow } from 'omai-engine/scene'
  * arrow(0, 0, 3, 4).arrow // => true
  * ```
  */
@@ -171,10 +171,10 @@ export function arrow(x1: number, y1: number, x2: number, y2: number, style: Sty
  * @param points - The vertices in order.
  * @param style - Stroke, fill, closure, smoothing, arrow head, id and title.
  * @returns The node.
- * @throws MdmlError `value` when a vertex is not a pair of finite numbers.
+ * @throws OmaiError `value` when a vertex is not a pair of finite numbers.
  * @example
  * ```ts
- * import { path } from 'mdml-engine/scene'
+ * import { path } from 'omai-engine/scene'
  * path([[0, 0], [1, 1], [2, 0]]).points.length // => 3
  * ```
  */
@@ -192,10 +192,10 @@ export function path(
  * @param points - The vertices in order.
  * @param style - Fill, stroke, id and title.
  * @returns The node.
- * @throws MdmlError `value` when a vertex is not a pair of finite numbers.
+ * @throws OmaiError `value` when a vertex is not a pair of finite numbers.
  * @example
  * ```ts
- * import { polygon } from 'mdml-engine/scene'
+ * import { polygon } from 'omai-engine/scene'
  * polygon([[0, 0], [1, 0], [0, 1]]).closed // => true
  * ```
  */
@@ -212,10 +212,10 @@ export function polygon(points: readonly (readonly [number, number])[], style: S
  * @param content - The text.
  * @param style - Size, fill, anchor, baseline, weight, id and title.
  * @returns The node.
- * @throws MdmlError `value` when the anchor is not finite or the size is not a finite number >= 0.
+ * @throws OmaiError `value` when the anchor is not finite or the size is not a finite number >= 0.
  * @example
  * ```ts
- * import { text } from 'mdml-engine/scene'
+ * import { text } from 'omai-engine/scene'
  * text(0, 10, 'hello', { anchor: 'middle' }).text // => 'hello'
  * ```
  */
@@ -238,10 +238,10 @@ export function text(
  * @param source - The TeX source.
  * @param style - Size, fill, anchor, id and title.
  * @returns The node.
- * @throws MdmlError `value` when the anchor is not finite or the size is not a finite number >= 0.
+ * @throws OmaiError `value` when the anchor is not finite or the size is not a finite number >= 0.
  * @example
  * ```ts
- * import { tex } from 'mdml-engine/scene'
+ * import { tex } from 'omai-engine/scene'
  * tex(0, 0, '\\alpha').tex // => '\\alpha'
  * ```
  */
@@ -277,12 +277,12 @@ function flattenSource(source: ImageSource): { shape: number[]; data: ArrayLike<
   const c = Array.isArray(first) ? first.length : 0
   const data: number[] = []
   for (const row of rows) {
-    if (row.length !== w) throw new MdmlError('shape', 'toPixels: rows of different lengths')
+    if (row.length !== w) throw new OmaiError('shape', 'toPixels: rows of different lengths')
     for (const cell of row) {
       if (c === 0) data.push(cell as number)
       else {
         const channels = cell as readonly number[]
-        if (channels.length !== c) throw new MdmlError('shape', 'toPixels: pixels with different channel counts')
+        if (channels.length !== c) throw new OmaiError('shape', 'toPixels: pixels with different channel counts')
         data.push(...channels)
       }
     }
@@ -298,10 +298,10 @@ function flattenSource(source: ImageSource): { shape: number[]; data: ArrayLike<
  * @param source - A tensor or nested arrays of shape `[h, w]`, `[h, w, 1]`, `[h, w, 3]` or `[h, w, 4]`.
  * @param options - The value range mapped to 0 to 255.
  * @returns The pixels.
- * @throws MdmlError with code `shape` for any other shape or ragged arrays.
+ * @throws OmaiError with code `shape` for any other shape or ragged arrays.
  * @example
  * ```ts
- * import { toPixels } from 'mdml-engine/scene'
+ * import { toPixels } from 'omai-engine/scene'
  * Array.from(toPixels([[0, 1]]).rgba) // => [0, 0, 0, 255, 255, 255, 255, 255]
  * Array.from(toPixels([[[1, 0, 0]]]).rgba) // => [255, 0, 0, 255]
  * ```
@@ -310,9 +310,9 @@ export function toPixels(source: ImageSource, options: { readonly range?: readon
   const { shape, data } = flattenSource(source)
   const [h = 0, w = 0, c = 1] = shape
   if (shape.length < 2 || shape.length > 3 || ![1, 3, 4].includes(c)) {
-    throw new MdmlError('shape', `toPixels: need shape [h, w], [h, w, 1], [h, w, 3] or [h, w, 4], got [${shape}]`)
+    throw new OmaiError('shape', `toPixels: need shape [h, w], [h, w, 1], [h, w, 3] or [h, w, 4], got [${shape}]`)
   }
-  if (data.length !== h * w * c) throw new MdmlError('shape', 'toPixels: data does not match the shape')
+  if (data.length !== h * w * c) throw new OmaiError('shape', 'toPixels: data does not match the shape')
   const finite: number[] = []
   for (let i = 0; i < data.length; i++) {
     const v = data[i] as number
@@ -345,10 +345,10 @@ export function toPixels(source: ImageSource, options: { readonly range?: readon
  * @param source - The pixels, or image data to convert.
  * @param options - Smoothing when scaled (off by default, so pixels stay crisp), id and title.
  * @returns The node.
- * @throws MdmlError `value` when the corner is not finite or the drawn width or height is not a finite number >= 0.
+ * @throws OmaiError `value` when the corner is not finite or the drawn width or height is not a finite number >= 0.
  * @example
  * ```ts
- * import { image } from 'mdml-engine/scene'
+ * import { image } from 'omai-engine/scene'
  * image(0, 0, 10, 10, { width: 1, height: 1, rgba: new Uint8ClampedArray(4) }).width // => 10
  * image(0, 0, 20, 10, [[0, 0.5, 1]]).pixels.width // => 3
  * ```
@@ -373,11 +373,11 @@ export function image(
  * @param children - The grouped nodes.
  * @param transform - Translation, rotation in degrees, scale, opacity, id and title.
  * @returns The node.
- * @throws MdmlError `value` when the translation or rotation is not finite or the scale is not a finite number other than
+ * @throws OmaiError `value` when the translation or rotation is not finite or the scale is not a finite number other than
  *   0.
  * @example
  * ```ts
- * import { group, circle } from 'mdml-engine/scene'
+ * import { group, circle } from 'omai-engine/scene'
  * group([circle(0, 0, 1)], { translate: [5, 5] }).translate // => [5, 5]
  * ```
  */
@@ -396,7 +396,7 @@ export function group(
  * @returns `true` for scenes.
  * @example
  * ```ts
- * import { isScene, scene } from 'mdml-engine/scene'
+ * import { isScene, scene } from 'omai-engine/scene'
  * isScene(scene(1, 1, [])) // => true
  * isScene({}) // => false
  * ```

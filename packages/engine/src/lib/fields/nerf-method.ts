@@ -64,8 +64,8 @@ export interface NerfProblem {
  * @returns The data, the model and the options.
  * @example
  * ```ts
- * import { nerfProblem } from 'mdml-engine/fields'
- * import { key } from 'mdml-engine/random'
+ * import { nerfProblem } from 'omai-engine/fields'
+ * import { key } from 'omai-engine/random'
  * const config = { views: 3, heldOut: 1, resolution: 4, objects: 1, positionEncoding: { kind: 'frequency', octaves: 2, includeInput: true }, directionEncoding: { kind: 'frequency', octaves: 1, includeInput: true }, width: 8, depth: 1, densityActivation: 'softplus', hierarchical: false, samples: 4, fineSamples: 4, batchRays: 8, optimiser: { kind: 'adam' }, learningRate: 0.01 }
  * nerfProblem(config, key(0)).data.images.shape // => [3, 4, 4, 3]
  * ```
@@ -114,8 +114,8 @@ export function nerfProblem(config: NerfMethodConfig, key: Key): NerfProblem {
  * @index estimator Fit a NeRF to multi-view images as a session.
  * @example
  * ```ts
- * import { fitNerfMethod } from 'mdml-engine/fields'
- * import { Log, metricSeries, session } from 'mdml-engine/trace'
+ * import { fitNerfMethod } from 'omai-engine/fields'
+ * import { Log, metricSeries, session } from 'omai-engine/trace'
  * const s = session(fitNerfMethod, {
  *   config: { views: 3, heldOut: 1, resolution: 4, objects: 1, width: 8, depth: 1, samples: 4, batchRays: 8 },
  *   logs: { 'nerf/loss': Log() },

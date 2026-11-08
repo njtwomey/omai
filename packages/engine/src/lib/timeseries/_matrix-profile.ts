@@ -3,7 +3,7 @@
  * the merge of two profiles (STUMPY's top-k merge), one batch of diagonals into a fresh profile, and the row writer and
  * clone used by the row-wise algorithms. Public algorithms re-export the option types.
  */
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { rollingIsFinite, seriesOf } from '../signal/index.ts'
 import type { TensorLike } from '../tensor/index.ts'
 import type { RunOptions } from '../trace/index.ts'
@@ -51,11 +51,11 @@ export function setup(tA: TensorLike, m: number, options: MatrixProfileOptions, 
   const a = seriesOf(tA, name)
   const selfJoin = options.tB === undefined
   const b = options.tB === undefined ? a : seriesOf(options.tB, name)
-  if (!Number.isInteger(m) || m < 3) throw new MdmlError('value', `${name}: the window must be at least 3`)
-  if (m > Math.min(a.length, b.length)) throw new MdmlError('value', `${name}: the window is longer than a series`)
+  if (!Number.isInteger(m) || m < 3) throw new OmaiError('value', `${name}: the window must be at least 3`)
+  if (m > Math.min(a.length, b.length)) throw new OmaiError('value', `${name}: the window is longer than a series`)
   const exclusion = selfJoin ? checkSelfJoin(m, a.length) : 0
   const k = options.k ?? 1
-  if (!Number.isInteger(k) || k < 1) throw new MdmlError('value', `${name}: k must be a positive integer`)
+  if (!Number.isInteger(k) || k < 1) throw new OmaiError('value', `${name}: k must be a positive integer`)
   return {
     a,
     b,

@@ -1,6 +1,6 @@
-import { lines, type Panel } from 'mdml-render/charts'
-import { figure, gridSpec } from 'mdml-render/figure'
-import { ControlPanel, FigureFrame, FigureGrid, Toggle, useColourMode } from 'mdml-render/react'
+import { lines, type Panel } from 'omai-render/charts'
+import { figure, gridSpec } from 'omai-render/figure'
+import { ControlPanel, FigureFrame, FigureGrid, Toggle, useColourMode } from 'omai-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 

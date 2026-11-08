@@ -3,8 +3,8 @@ independent multiclass outputs (Gaussian naive Bayes per output)."""
 
 import numpy as np
 import sklearn
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import rng
 from sklearn.linear_model import LinearRegression
 from sklearn.multioutput import MultiOutputClassifier, MultiOutputRegressor, RegressorChain
 from sklearn.naive_bayes import GaussianNB

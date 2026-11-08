@@ -4,7 +4,7 @@
  * constant) and an adjustable kernel origin. The base the other image filters are built on.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { type BorderMode, padArray, padModeOf } from '../../numerics/convolution/index.ts'
 import {
   add,
@@ -34,7 +34,7 @@ export interface BorderOptions {
 
 function checkOrigin(origin: number, size: number, name: string): void {
   if (!Number.isInteger(origin) || origin < -Math.floor(size / 2) || origin > Math.floor((size - 1) / 2))
-    throw new MdmlError('value', `${name}: the origin must satisfy -(size // 2) <= origin <= (size - 1) // 2`)
+    throw new OmaiError('value', `${name}: the origin must satisfy -(size // 2) <= origin <= (size - 1) // 2`)
 }
 
 /** Extend one axis by `before` and `after` samples under an ndimage border mode. */
@@ -53,12 +53,12 @@ function extend(x: Value, axis: number, before: number, after: number, options: 
  * @param axis - Axis (default -1).
  * @param options - Border mode, constant and origin (default 0, centred).
  * @returns The correlation, the shape of x.
- * @throws MdmlError with code `value` for an invalid origin.
+ * @throws OmaiError with code `value` for an invalid origin.
  * @concept correlation
  * @example
  * ```ts
- * import { image } from 'mdml-engine/signal'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { image } from 'omai-engine/signal'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(image.correlate1d([1, 2, 3, 4], [1, 0, -1])) // => [-1, -2, -2, -1]
  * ```
  */
@@ -70,7 +70,7 @@ export function correlate1d(
 ): Value {
   const v = float(x)
   const w = float(weights)
-  if (w.shape.length !== 1 || (w.shape[0] ?? 0) < 1) throw new MdmlError('shape', 'correlate1d: weights are 1-D')
+  if (w.shape.length !== 1 || (w.shape[0] ?? 0) < 1) throw new OmaiError('shape', 'correlate1d: weights are 1-D')
   const a = axisOf(axis, v.shape.length, 'correlate1d')
   const k = w.shape[0] ?? 1
   const origin = options.origin ?? 0
@@ -99,8 +99,8 @@ export function correlate1d(
  * @concept convolution
  * @example
  * ```ts
- * import { image } from 'mdml-engine/signal'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { image } from 'omai-engine/signal'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(image.convolve1d([1, 2, 3, 4], [1, 0, -1])) // => [1, 2, 2, 1]
  * ```
  */
@@ -120,7 +120,7 @@ export function convolve1d(
 function origins(origin: number | readonly number[] | undefined, rank: number): number[] {
   if (origin === undefined) return new Array<number>(rank).fill(0)
   if (typeof origin === 'number') return new Array<number>(rank).fill(origin)
-  if (origin.length !== rank) throw new MdmlError('shape', `expected ${rank} origins`)
+  if (origin.length !== rank) throw new OmaiError('shape', `expected ${rank} origins`)
   return [...origin]
 }
 
@@ -135,8 +135,8 @@ function origins(origin: number | readonly number[] | undefined, rank: number): 
  * @concept correlation
  * @example
  * ```ts
- * import { image } from 'mdml-engine/signal'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { image } from 'omai-engine/signal'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(image.correlateNd([[1, 2], [3, 4]], [[0, 1], [0, 0]], { mode: 'constant' })) // => [[0, 0], [1, 2]]
  * ```
  */
@@ -148,7 +148,7 @@ export function correlateNd(
   const v = float(x)
   const w = float(weights)
   const rank = v.shape.length
-  if (w.shape.length !== rank) throw new MdmlError('shape', 'correlateNd: weights must have the rank of the input')
+  if (w.shape.length !== rank) throw new OmaiError('shape', 'correlateNd: weights must have the rank of the input')
   const o = origins(options.origin, rank)
   let ext = v
   for (let d = 0; d < rank; d++) {
@@ -188,8 +188,8 @@ export function correlateNd(
  * @concept convolution
  * @example
  * ```ts
- * import { image } from 'mdml-engine/signal'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { image } from 'omai-engine/signal'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(image.convolveNd([[1, 2], [3, 4]], [[0, 1], [0, 0]], { mode: 'constant' })) // => [[3, 4], [0, 0]]
  * ```
  */

@@ -21,7 +21,7 @@ export type StackOffset = 'zero' | 'expand' | 'wiggle'
  * @returns The layer of bands.
  * @example
  * ```ts
- * import { stackedAreas } from 'mdml-render/charts'
+ * import { stackedAreas } from 'omai-render/charts'
  * stackedAreas([0, 1], [{ name: 'a', y: [1, 1] }, { name: 'b', y: [2, 2] }]).extent.y // => [0, 3]
  * ```
  */

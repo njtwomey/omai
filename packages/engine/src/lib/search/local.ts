@@ -5,7 +5,7 @@
  * neighbourhoods for permutations and bit strings, and local search over any configuration space.
  */
 
-import { argmaxOf, type Json, MdmlError } from '../base/index.ts'
+import { argmaxOf, type Json, OmaiError } from '../base/index.ts'
 import { Generator, type Key } from '../random/index.ts'
 import { type Space, type SpaceValue, sample, neighbours as spaceNeighbours } from '../space/index.ts'
 import { type Algorithm, channels, runAlgorithm, type TraceSchema } from '../trace/index.ts'
@@ -93,7 +93,7 @@ const LOCAL_SCHEMA: TraceSchema = channels({
 function startState<S>(problem: LocalSearchProblem<S>, key: Key, name: string): S {
   if (problem.initial !== undefined) return problem.initial
   if (problem.random !== undefined) return problem.random(key)
-  throw new MdmlError('value', `${name}: the problem needs an initial state or a random one`)
+  throw new OmaiError('value', `${name}: the problem needs an initial state or a random one`)
 }
 
 function begin<S>(problem: LocalSearchProblem<S>, state: S): Mutable<S> {
@@ -216,7 +216,7 @@ function hillConfig(options: HillClimbingOptions): {
   const sideways = options.sideways ?? 0
   const tries = options.tries ?? 100
   if (!(Number.isInteger(sideways) && sideways >= 0)) {
-    throw new MdmlError('value', `hillClimbing: sideways ${sideways} must be a non-negative integer`)
+    throw new OmaiError('value', `hillClimbing: sideways ${sideways} must be a non-negative integer`)
   }
   return { variant, sideways, tries }
 }
@@ -231,7 +231,7 @@ function hillConfig(options: HillClimbingOptions): {
  * @concept local-search
  * @example
  * ```ts
- * import { hillClimbingAlgorithm } from 'mdml-engine/search'
+ * import { hillClimbingAlgorithm } from 'omai-engine/search'
  * const p = { initial: 0, neighbours: (x: number) => [x - 1, x + 1], value: (x: number) => -((x - 3) ** 2) }
  * hillClimbingAlgorithm(p).name // => 'hill-climbing'
  * ```
@@ -298,7 +298,7 @@ export function hillClimbingAlgorithm<S>(
  * @concept local-search
  * @example
  * ```ts
- * import { hillClimbing } from 'mdml-engine/search'
+ * import { hillClimbing } from 'omai-engine/search'
  * const p = { initial: 0, neighbours: (x: number) => [x - 1, x + 1], value: (x: number) => -((x - 3) ** 2) }
  * const r = hillClimbing(p)
  * [r.state, r.status, r.iterations] // => [3, 'local-optimum', 4]
@@ -325,11 +325,11 @@ export interface RestartState<S> {
  * @param problem - The problem (needs `random`).
  * @param options - The climbing options for each restart.
  * @returns The algorithm.
- * @throws MdmlError with code `value` when the problem has no `random` state.
+ * @throws OmaiError with code `value` when the problem has no `random` state.
  * @concept local-search
  * @example
  * ```ts
- * import { randomRestartHillClimbingAlgorithm } from 'mdml-engine/search'
+ * import { randomRestartHillClimbingAlgorithm } from 'omai-engine/search'
  * const p = { random: () => 0, neighbours: (x: number) => [x - 1, x + 1], value: (x: number) => -Math.abs(x) }
  * randomRestartHillClimbingAlgorithm(p).name // => 'random-restart-hill-climbing'
  * ```
@@ -339,7 +339,7 @@ export function randomRestartHillClimbingAlgorithm<S>(
   options: HillClimbingOptions = {},
 ): Algorithm<RestartState<S>> {
   const random = problem.random
-  if (random === undefined) throw new MdmlError('value', 'randomRestartHillClimbing: the problem needs random')
+  if (random === undefined) throw new OmaiError('value', 'randomRestartHillClimbing: the problem needs random')
   const {
     maxIterations = 10_000,
     tracer: _t,
@@ -389,12 +389,12 @@ export function randomRestartHillClimbingAlgorithm<S>(
  * @param problem - The problem (needs `random`).
  * @param options - The number of restarts (default 100), the climbing options for each, and tracing.
  * @returns The best climb, with its status (`goal` when a restart reached one) and the evaluations of all restarts.
- * @throws MdmlError with code `value` when the problem has no `random` state.
+ * @throws OmaiError with code `value` when the problem has no `random` state.
  * @concept local-search
  * @example
  * ```ts
- * import { randint } from 'mdml-engine/random'
- * import { randomRestartHillClimbing } from 'mdml-engine/search'
+ * import { randint } from 'omai-engine/random'
+ * import { randomRestartHillClimbing } from 'omai-engine/search'
  * // Two peaks: x = -4 (value 2) and x = 4 (value 5); restarts from random points in [-9, 9] find the higher one.
  * const p = { random: (k: Parameters<typeof randint>[0]) => randint(k, [], -9, 10).data[0] ?? 0, neighbours: (x: number) => [x - 1, x + 1], value: (x: number) => Math.max(2 - Math.abs(x + 4), 5 - Math.abs(x - 4)), isGoal: (x: number) => x === 4 }
  * randomRestartHillClimbing(p, { restarts: 20, seed: 0 }).state // => 4
@@ -415,7 +415,7 @@ export function randomRestartHillClimbing<S>(
   }
   const { state } = runAlgorithm(randomRestartHillClimbingAlgorithm(problem, climb), { ...run, maxSteps: restarts })
   const best = state.best
-  if (best === null) throw new MdmlError('value', 'randomRestartHillClimbing: restarts must be at least 1')
+  if (best === null) throw new OmaiError('value', 'randomRestartHillClimbing: restarts must be at least 1')
   return { ...best, evaluations: state.evaluations }
 }
 
@@ -429,7 +429,7 @@ export type CoolingSchedule = (t: number) => number
  * @returns The schedule.
  * @example
  * ```ts
- * import { exponentialSchedule } from 'mdml-engine/search'
+ * import { exponentialSchedule } from 'omai-engine/search'
  * const T = exponentialSchedule()
  * [T(0), T(100)] // => [20, 0]
  * ```
@@ -448,16 +448,16 @@ export function exponentialSchedule(
  * @param alpha - The cooling factor in (0, 1).
  * @param min - The temperature at which to stop (default 1e-3).
  * @returns The schedule.
- * @throws MdmlError with code `value` when alpha is not in (0, 1) or t0 is not positive.
+ * @throws OmaiError with code `value` when alpha is not in (0, 1) or t0 is not positive.
  * @example
  * ```ts
- * import { geometricSchedule } from 'mdml-engine/search'
+ * import { geometricSchedule } from 'omai-engine/search'
  * geometricSchedule(10, 0.5)(2) // => 2.5
  * ```
  */
 export function geometricSchedule(t0: number, alpha: number, min = 1e-3): CoolingSchedule {
   if (!(alpha > 0 && alpha < 1) || !(t0 > 0)) {
-    throw new MdmlError('value', 'geometricSchedule: need t0 > 0 and 0 < alpha < 1')
+    throw new OmaiError('value', 'geometricSchedule: need t0 > 0 and 0 < alpha < 1')
   }
   return (t) => {
     const T = t0 * alpha ** t
@@ -474,7 +474,7 @@ export function geometricSchedule(t0: number, alpha: number, min = 1e-3): Coolin
  * @returns The schedule.
  * @example
  * ```ts
- * import { logarithmicSchedule } from 'mdml-engine/search'
+ * import { logarithmicSchedule } from 'omai-engine/search'
  * logarithmicSchedule(2)(0).toFixed(4) // => '2.8854'
  * ```
  */
@@ -493,7 +493,7 @@ export function logarithmicSchedule(c: number, limit = 10_000): CoolingSchedule 
  * @concept local-search
  * @example
  * ```ts
- * import { simulatedAnnealingAlgorithm } from 'mdml-engine/search'
+ * import { simulatedAnnealingAlgorithm } from 'omai-engine/search'
  * const p = { initial: 0, neighbours: (x: number) => [x - 1, x + 1], value: (x: number) => -Math.abs(x - 3) }
  * simulatedAnnealingAlgorithm(p).name // => 'simulated-annealing'
  * ```
@@ -539,7 +539,7 @@ export function simulatedAnnealingAlgorithm<S>(
  * @index function Simulated annealing local search.
  * @example
  * ```ts
- * import { geometricSchedule, simulatedAnnealing } from 'mdml-engine/search'
+ * import { geometricSchedule, simulatedAnnealing } from 'omai-engine/search'
  * const p = { initial: 0, neighbours: (x: number) => [x - 1, x + 1], value: (x: number) => -Math.abs(x - 7), isGoal: (x: number) => x === 7 }
  * simulatedAnnealing(p, { schedule: geometricSchedule(2, 0.99), seed: 1 }).state // => 7
  * ```
@@ -563,7 +563,7 @@ export function simulatedAnnealing<S>(
  * @concept local-search
  * @example
  * ```ts
- * import { tabuSearchAlgorithm } from 'mdml-engine/search'
+ * import { tabuSearchAlgorithm } from 'omai-engine/search'
  * const p = { initial: 0, neighbours: (x: number) => [x - 1, x + 1], value: (x: number) => -Math.abs(x - 3) }
  * tabuSearchAlgorithm(p).name // => 'tabu'
  * ```
@@ -612,7 +612,7 @@ export function tabuSearchAlgorithm<S>(
  * @concept local-search
  * @example
  * ```ts
- * import { tabuSearch } from 'mdml-engine/search'
+ * import { tabuSearch } from 'omai-engine/search'
  * // A local peak at 2 (value 2) before the global one at 6 (value 6).
  * const f = (x: number) => [0, 1, 2, 1, 0, 3, 6, 2][x] ?? -10
  * const p = { initial: 0, neighbours: (x: number) => [x - 1, x + 1].filter((y) => y >= 0 && y < 8), value: f }
@@ -649,11 +649,11 @@ export interface BeamState<S> {
  * @param problem - The problem (needs `random` unless `initial` is given, which then seeds every slot).
  * @param options - The beam width k (default 4), stochastic selection and its temperature (default 1).
  * @returns The algorithm.
- * @throws MdmlError with code `value` when k is not a positive integer.
+ * @throws OmaiError with code `value` when k is not a positive integer.
  * @concept local-search
  * @example
  * ```ts
- * import { localBeamSearchAlgorithm } from 'mdml-engine/search'
+ * import { localBeamSearchAlgorithm } from 'omai-engine/search'
  * const p = { initial: 0, neighbours: (x: number) => [x - 1, x + 1], value: (x: number) => -Math.abs(x - 3) }
  * localBeamSearchAlgorithm(p).name // => 'local-beam'
  * ```
@@ -664,7 +664,7 @@ export function localBeamSearchAlgorithm<S>(
 ): Algorithm<BeamState<S>> {
   const k = options.k ?? 4
   if (!(Number.isInteger(k) && k >= 1))
-    throw new MdmlError('value', `localBeamSearch: k ${k} must be a positive integer`)
+    throw new OmaiError('value', `localBeamSearch: k ${k} must be a positive integer`)
   const temperature = options.temperature ?? 1
   const key = stateKeyOf(problem)
   type Mut = { -readonly [P in keyof BeamState<S>]: BeamState<S>[P] }
@@ -761,11 +761,11 @@ export function localBeamSearchAlgorithm<S>(
  * @param problem - The problem.
  * @param options - The width, stochastic selection, the iteration budget (default 1000), a seed or key, and tracing.
  * @returns The best state found.
- * @throws MdmlError with code `value` when k is not a positive integer.
+ * @throws OmaiError with code `value` when k is not a positive integer.
  * @concept local-search
  * @example
  * ```ts
- * import { localBeamSearch } from 'mdml-engine/search'
+ * import { localBeamSearch } from 'omai-engine/search'
  * const p = { random: () => 0, neighbours: (x: number) => [x - 1, x + 1], value: (x: number) => -Math.abs(x - 5), isGoal: (x: number) => x === 5 }
  * localBeamSearch(p, { k: 2 }).state // => 5
  * ```
@@ -803,11 +803,11 @@ export function localBeamSearch<S>(
  * @param problem - The problem.
  * @param options - The history length (default 50).
  * @returns The algorithm.
- * @throws MdmlError with code `value` when the length is not a positive integer.
+ * @throws OmaiError with code `value` when the length is not a positive integer.
  * @concept local-search
  * @example
  * ```ts
- * import { lateAcceptanceAlgorithm } from 'mdml-engine/search'
+ * import { lateAcceptanceAlgorithm } from 'omai-engine/search'
  * const p = { initial: 0, neighbours: (x: number) => [x - 1, x + 1], value: (x: number) => -Math.abs(x - 3) }
  * lateAcceptanceAlgorithm(p).name // => 'late-acceptance'
  * ```
@@ -818,7 +818,7 @@ export function lateAcceptanceAlgorithm<S>(
 ): Algorithm<LocalSearchState<S>> {
   const length = options.length ?? 50
   if (!(Number.isInteger(length) && length >= 1)) {
-    throw new MdmlError('value', `lateAcceptance: length ${length} must be a positive integer`)
+    throw new OmaiError('value', `lateAcceptance: length ${length} must be a positive integer`)
   }
   return localAlgorithm(
     'late-acceptance',
@@ -850,7 +850,7 @@ export function lateAcceptanceAlgorithm<S>(
  * @concept local-search
  * @example
  * ```ts
- * import { lateAcceptance } from 'mdml-engine/search'
+ * import { lateAcceptance } from 'omai-engine/search'
  * const p = { initial: 0, neighbours: (x: number) => [x - 1, x + 1], value: (x: number) => -Math.abs(x - 9), isGoal: (x: number) => x === 9 }
  * lateAcceptance(p, { length: 5, seed: 2 }).state // => 9
  * ```
@@ -864,7 +864,7 @@ export function lateAcceptance<S>(
 }
 
 /**
- * A local search problem over a {@link Space} (from `mdml-engine/space`): random states are samples, neighbours
+ * A local search problem over a {@link Space} (from `omai-engine/space`): random states are samples, neighbours
  * are the space's one-move neighbourhood, and the value is the given function, so any configuration space can be
  * searched by hill climbing, annealing or tabu search.
  *
@@ -875,8 +875,8 @@ export function lateAcceptance<S>(
  * @concept local-search
  * @example
  * ```ts
- * import { dict, int } from 'mdml-engine/space'
- * import { hillClimbing, spaceProblem } from 'mdml-engine/search'
+ * import { dict, int } from 'omai-engine/space'
+ * import { hillClimbing, spaceProblem } from 'omai-engine/search'
  * const p = spaceProblem(dict({ a: int(0, 9), b: int(0, 9) }), (v) => -(((v as { a: number }).a - 2) ** 2) - (((v as { b: number }).b - 7) ** 2), { initial: { a: 0, b: 0 } })
  * hillClimbing(p).state // => { a: 2, b: 7 }
  * ```
@@ -904,7 +904,7 @@ export function spaceProblem(
  * @returns Every neighbour, in a fixed order.
  * @example
  * ```ts
- * import { permutationNeighbours } from 'mdml-engine/search'
+ * import { permutationNeighbours } from 'omai-engine/search'
  * permutationNeighbours([0, 1, 2]) // => [[1, 0, 2], [2, 1, 0], [0, 2, 1]]
  * permutationNeighbours([0, 1, 2, 3], 'two-opt').length // => 6
  * ```
@@ -949,7 +949,7 @@ export function permutationNeighbours(
  * @returns One neighbour per position.
  * @example
  * ```ts
- * import { bitFlipNeighbours } from 'mdml-engine/search'
+ * import { bitFlipNeighbours } from 'omai-engine/search'
  * bitFlipNeighbours([0, 1]) // => [[1, 1], [0, 0]]
  * ```
  */

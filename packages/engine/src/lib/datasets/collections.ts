@@ -6,7 +6,7 @@
  * @index table Themed dataset collections for pickers.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import type { Dataset } from '../data/index.ts'
 import { type Generated, type GeneratorKnobs, generate } from '../data/index.ts'
 import type { Key } from '../random/index.ts'
@@ -89,7 +89,7 @@ function g(name: string, title: string, a?: GeneratorKnobs | string, b?: Generat
  *
  * @example
  * ```ts
- * import { datasetCollections } from 'mdml-engine/datasets'
+ * import { datasetCollections } from 'omai-engine/datasets'
  * datasetCollections['classification2d']?.entries.map((e) => e.name).includes('moons') // => true
  * ```
  */
@@ -341,11 +341,11 @@ export const datasetCollections: Readonly<Record<string, DatasetCollection>> = {
  * @param key - The key for generated datasets.
  * @param knobs - Knob values overriding the entry's demo knobs.
  * @returns The dataset, with its generating truth for generated entries.
- * @throws MdmlError `value` when the entry names an unknown generator.
+ * @throws OmaiError `value` when the entry names an unknown generator.
  * @example
  * ```ts
- * import { datasetCollections, loadEntry } from 'mdml-engine/datasets'
- * import { key } from 'mdml-engine/random'
+ * import { datasetCollections, loadEntry } from 'omai-engine/datasets'
+ * import { key } from 'omai-engine/random'
  * const moons = datasetCollections['classification2d']?.entries[0]
  * moons === undefined ? 0 : loadEntry(moons, key(0)).data.kind // => 'classification'
  * ```
@@ -357,6 +357,6 @@ export function loadEntry(
 ): { readonly data: Dataset } & Partial<Generated> {
   if ('load' in entry) return { data: entry.load() }
   const generator = datasetGenerators[entry.generator]
-  if (generator === undefined) throw new MdmlError('value', `loadEntry: unknown generator '${entry.generator}'`)
+  if (generator === undefined) throw new OmaiError('value', `loadEntry: unknown generator '${entry.generator}'`)
   return generate(generator, { key, knobs: { ...entry.knobs, ...knobs } })
 }

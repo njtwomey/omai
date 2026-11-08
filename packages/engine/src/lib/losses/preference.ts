@@ -6,7 +6,7 @@
  * log-probabilities with `sequenceLogProb`) and are differentiable in the policy's.
  */
 
-import { MdmlError, type Reduction } from '../base/index.ts'
+import { OmaiError, type Reduction } from '../base/index.ts'
 import { log1mexp, logSigmoid } from '../numerics/special/index.ts'
 import {
   add,
@@ -36,8 +36,8 @@ import { checkScalar, reduce } from './_reduce.ts'
  * @returns The response log-probabilities `[B]`; divide by the token count for the length-normalised form.
  * @example
  * ```ts
- * import { sequenceLogProb } from 'mdml-engine/losses'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { sequenceLogProb } from 'omai-engine/losses'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(sequenceLogProb([[-1, -2, -3], [-1, -1, -1]], [[1, 1, 0], [1, 1, 1]])) // => [-3, -3]
  * ```
  */
@@ -58,8 +58,8 @@ export function sequenceLogProb(tokenLogProbs: TensorLike, mask?: TensorLike): V
  * @concept preference-optimisation
  * @example
  * ```ts
- * import { bradleyTerry } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { bradleyTerry } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * item(bradleyTerry([1], [1])) === Math.LN2 // => true
  * ```
  */
@@ -100,8 +100,8 @@ function logitsOf(batch: PreferenceBatch): Value {
  * @returns The loss, differentiable in the policy's log-probabilities.
  * @example
  * ```ts
- * import { dpo } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { dpo } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * // A policy equal to the reference cannot tell the answers apart: log 2.
  * item(dpo({ policyChosen: [-5], policyRejected: [-7], referenceChosen: [-5], referenceRejected: [-7] })) === Math.LN2 // => true
  * ```
@@ -135,18 +135,18 @@ export interface ImplicitRewards {
  * @param batch - Policy and reference log-probabilities (both references required) `[B]`.
  * @param options - beta (default 0.1).
  * @returns The chosen and rejected rewards, the margin and the accuracy.
- * @throws MdmlError with code `value` when the reference log-probabilities are missing.
+ * @throws OmaiError with code `value` when the reference log-probabilities are missing.
  * @example
  * ```ts
- * import { implicitRewards } from 'mdml-engine/losses'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { implicitRewards } from 'omai-engine/losses'
+ * import { toArray } from 'omai-engine/tensor'
  * const r = implicitRewards({ policyChosen: [-4], policyRejected: [-8], referenceChosen: [-5], referenceRejected: [-7] }, { beta: 1 })
  * toArray(r.margin) // => [2]
  * ```
  */
 export function implicitRewards(batch: PreferenceBatch, options: { readonly beta?: number } = {}): ImplicitRewards {
   if (batch.referenceChosen === undefined || batch.referenceRejected === undefined)
-    throw new MdmlError('value', 'implicitRewards: the reference log-probabilities are required')
+    throw new OmaiError('value', 'implicitRewards: the reference log-probabilities are required')
   const [pc, pr, rc, rr] = promoteFloat(
     batch.policyChosen,
     batch.policyRejected,
@@ -171,8 +171,8 @@ export function implicitRewards(batch: PreferenceBatch, options: { readonly beta
  * @returns The loss, differentiable in the policy's log-probabilities.
  * @example
  * ```ts
- * import { ipo } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { ipo } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * item(ipo({ policyChosen: [0], policyRejected: [0] }, { tau: 0.5 })) // => 1
  * ```
  */
@@ -199,8 +199,8 @@ export function ipo(
  * @returns The loss, differentiable in the policy's log-probabilities.
  * @example
  * ```ts
- * import { kto } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { kto } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * // r = 0 and z0 = 0: sigmoid(0) = 1/2 for both kinds of answer.
  * item(kto([-3, -4], [-3, -4], [1, 0], { referencePoint: 0 })) // => 0.5
  * ```
@@ -238,8 +238,8 @@ export function kto(
  * @returns The loss: negative log-likelihood of the chosen answer plus lambda times the odds-ratio term.
  * @example
  * ```ts
- * import { orpo } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { orpo } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * // odds 1 against 1/3: the odds-ratio term is log(1 + 1/3); the likelihood term is log 2.
  * Math.abs(item(orpo([Math.log(0.5)], [Math.log(0.25)], { lambda: 1 })) - (Math.LN2 + Math.log(4 / 3))) < 1e-14 // => true
  * ```
@@ -266,8 +266,8 @@ export function orpo(
  * @returns The loss, differentiable in the log-probabilities.
  * @example
  * ```ts
- * import { simpo } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { simpo } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * item(simpo([-1], [-1], { beta: 1, gamma: 0 })) === Math.LN2 // => true
  * ```
  */

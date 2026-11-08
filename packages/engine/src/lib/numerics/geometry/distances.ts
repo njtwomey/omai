@@ -5,7 +5,7 @@
  * with the list of true metrics they may use.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import {
   abs,
   add,
@@ -134,8 +134,8 @@ function needsStatistics(metric: DistanceMetric, options: MetricOptions): boolea
  * @returns The options with `v` or `vi` filled in where the metric needs them.
  * @example
  * ```ts
- * import { resolveMetricOptions } from 'mdml-engine/numerics/geometry'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { resolveMetricOptions } from 'omai-engine/numerics/geometry'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(resolveMetricOptions('seuclidean', [[0, 0], [2, 4]]).v) // => [2, 8]
  * resolveMetricOptions('euclidean', [[0, 0], [2, 4]], { p: 2 }) // => { p: 2 }
  * ```
@@ -147,7 +147,7 @@ export function resolveMetricOptions(
 ): MetricOptions {
   if (!needsStatistics(metric, options)) return options
   const [x] = promoteFloat(points) as [Value]
-  if (x.shape.length !== 2) throw new MdmlError('shape', 'resolveMetricOptions: points must be [n, d]')
+  if (x.shape.length !== 2) throw new OmaiError('shape', 'resolveMetricOptions: points must be [n, d]')
   return metric === 'seuclidean' ? { ...options, v: sampleVariance(x) } : { ...options, vi: inverseCovariance(x) }
 }
 
@@ -164,13 +164,13 @@ export function resolveMetricOptions(
  * @param metric - The metric (default euclidean).
  * @param options - Minkowski order, weights, variances or inverse covariance.
  * @returns The distances, the broadcast shape without the last axis.
- * @throws MdmlError `shape` when the coordinate axes differ, `value` when seuclidean or mahalanobis lack their
+ * @throws OmaiError `shape` when the coordinate axes differ, `value` when seuclidean or mahalanobis lack their
  *   statistics.
  * @concept distances
  * @example
  * ```ts
- * import { distanceBetween } from 'mdml-engine/numerics/geometry'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { distanceBetween } from 'omai-engine/numerics/geometry'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(distanceBetween([[0, 0], [1, 1]], [[3, 4], [1, 1]])) // => [5, 0]
  * toArray(distanceBetween([0, 0], [3, 4], 'cityblock')) // => 7
  * ```
@@ -184,7 +184,7 @@ export function distanceBetween(
   const [x, y] = promoteFloat(a, b) as [Value, Value]
   const d = x.shape[x.shape.length - 1]
   if (x.shape.length === 0 || y.shape.length === 0 || d !== y.shape[y.shape.length - 1])
-    throw new MdmlError(
+    throw new OmaiError(
       'shape',
       `distanceBetween: the coordinate axes differ, [${x.shape.join(', ')}] against [${y.shape.join(', ')}]`,
     )
@@ -207,7 +207,7 @@ export function distanceBetween(
     }
     case 'seuclidean': {
       if (options.v === undefined)
-        throw new MdmlError('value', 'distanceBetween: seuclidean needs the variances v (resolveMetricOptions)')
+        throw new OmaiError('value', 'distanceBetween: seuclidean needs the variances v (resolveMetricOptions)')
       const v = promoteFloat(options.v)[0] as Value
       return safeSqrt(sum(div(square(sub(x, y)), v), -1))
     }
@@ -232,7 +232,7 @@ export function distanceBetween(
     }
     case 'mahalanobis': {
       if (options.vi === undefined)
-        throw new MdmlError(
+        throw new OmaiError(
           'value',
           'distanceBetween: mahalanobis needs the inverse covariance vi (resolveMetricOptions)',
         )
@@ -245,7 +245,7 @@ export function distanceBetween(
     case 'braycurtis':
       return safeDivide(sum(abs(sub(x, y)), -1), sum(abs(add(x, y)), -1))
     case 'haversine': {
-      if (d !== 2) throw new MdmlError('shape', 'distanceBetween: haversine needs [latitude, longitude] coordinates')
+      if (d !== 2) throw new OmaiError('shape', 'distanceBetween: haversine needs [latitude, longitude] coordinates')
       const lat1 = coordinate(x, 0)
       const lat2 = coordinate(y, 0)
       const dlat = sub(lat2, lat1)
@@ -271,8 +271,8 @@ export function distanceBetween(
  * @index function Pairwise distances between two sets of points, scipy metrics.
  * @example
  * ```ts
- * import { cdist } from 'mdml-engine/numerics/geometry'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { cdist } from 'omai-engine/numerics/geometry'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(cdist([[0, 0]], [[3, 4], [1, 0]])) // => [[5, 1]]
  * ```
  */
@@ -284,7 +284,7 @@ export function cdist(
 ): Value {
   const [a, b] = promoteFloat(xa, xb) as [Value, Value]
   if (a.shape.length !== 2 || b.shape.length !== 2 || a.shape[1] !== b.shape[1])
-    throw new MdmlError('shape', 'cdist: inputs must be [m, d] and [n, d]')
+    throw new OmaiError('shape', 'cdist: inputs must be [m, d] and [n, d]')
   const d = a.shape[1] ?? 0
   const resolved = needsStatistics(metric, options) ? resolveMetricOptions(metric, concat([a, b], 0), options) : options
   return distanceBetween(reshape(a, [-1, 1, d]), reshape(b, [1, -1, d]), metric, resolved)
@@ -300,8 +300,8 @@ export function cdist(
  * @returns The condensed distances.
  * @example
  * ```ts
- * import { pdist } from 'mdml-engine/numerics/geometry'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { pdist } from 'omai-engine/numerics/geometry'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(pdist([[0, 0], [3, 4], [6, 8]])) // => [5, 10, 5]
  * ```
  */
@@ -321,8 +321,8 @@ export function pdist(x: TensorLike, metric: DistanceMetric = 'euclidean', optio
  * @returns The other form.
  * @example
  * ```ts
- * import { squareform } from 'mdml-engine/numerics/geometry'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { squareform } from 'omai-engine/numerics/geometry'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(squareform([5, 10, 5])) // => [[0, 5, 10], [5, 0, 5], [10, 5, 0]]
  * ```
  */
@@ -331,7 +331,7 @@ export function squareform(d: TensorLike): Value {
   if (v.shape.length === 1) {
     const len = v.shape[0] ?? 0
     const n = (1 + Math.sqrt(1 + 8 * len)) / 2
-    if (!Number.isInteger(n)) throw new MdmlError('shape', 'squareform: the length is not n (n - 1) / 2')
+    if (!Number.isInteger(n)) throw new OmaiError('shape', 'squareform: the length is not n (n - 1) / 2')
     // Gather from [0, d_0, d_1, ...] with index 0 on the diagonal.
     const idx = new Int32Array(n * n)
     let k = 1
@@ -348,7 +348,7 @@ export function squareform(d: TensorLike): Value {
   }
   const n = v.shape[0] ?? 0
   if (v.shape.length !== 2 || v.shape[1] !== n)
-    throw new MdmlError('shape', 'squareform: expected a vector or a square matrix')
+    throw new OmaiError('shape', 'squareform: expected a vector or a square matrix')
   const idx: number[] = []
   for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) idx.push(i * n + j)
   return take(reshape(v, [-1]), fromStorage(Int32Array.from(idx), [idx.length], 'int32'), 0)
@@ -381,7 +381,7 @@ export const TRUE_METRICS: ReadonlySet<DistanceMetric> = new Set<DistanceMetric>
  * @returns The distance function.
  * @example
  * ```ts
- * import { metricFunction } from 'mdml-engine/numerics/geometry'
+ * import { metricFunction } from 'omai-engine/numerics/geometry'
  * metricFunction('cityblock', 2)([0, 0, 1, 2], 0, [0, 0, 1, 2], 2) // => 3
  * ```
  */
@@ -419,7 +419,7 @@ export function metricFunction(metric: DistanceMetric, dim: number, options: Met
       }
     }
     case 'seuclidean': {
-      if (options.v === undefined) throw new MdmlError('value', 'metricFunction: seuclidean needs the variances v')
+      if (options.v === undefined) throw new OmaiError('value', 'metricFunction: seuclidean needs the variances v')
       const v = toFlat(primalOf(promoteFloat(options.v)[0] as Value))
       return (a, ia, b, ib) => {
         let s = 0
@@ -429,7 +429,7 @@ export function metricFunction(metric: DistanceMetric, dim: number, options: Met
     }
     case 'mahalanobis': {
       if (options.vi === undefined)
-        throw new MdmlError('value', 'metricFunction: mahalanobis needs the inverse covariance vi')
+        throw new OmaiError('value', 'metricFunction: mahalanobis needs the inverse covariance vi')
       const vi = toFlat(primalOf(promoteFloat(options.vi)[0] as Value))
       return (a, ia, b, ib) => {
         let s = 0

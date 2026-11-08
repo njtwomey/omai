@@ -6,8 +6,8 @@ import numpy as np
 import scipy
 import scipy.integrate as si
 import scipy.special as sp
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import rng, softplus
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import rng, softplus
 
 REFERENCE: dict[str, str] = {"numpy": np.__version__, "scipy": scipy.__version__}
 

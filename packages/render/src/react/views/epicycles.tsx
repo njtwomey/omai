@@ -3,7 +3,7 @@
  * the pen and the spectrum.
  */
 
-import type { Epicycles } from 'mdml-engine/exposition'
+import type { Epicycles } from 'omai-engine/exposition'
 import { type ReactElement, useCallback, useMemo } from 'react'
 import type { Figure } from '../../figure/figure.ts'
 import { epicycleAspect, epicycleFrames } from '../../views/epicycles.ts'

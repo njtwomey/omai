@@ -3,9 +3,9 @@ import { defineConfig } from 'vitest/config'
 const onCi = process.env['CI'] !== undefined
 
 // Test workers: locally half the cores, so several checkouts (agents' worktrees) can test at once without saturating
-// the machine; on CI, where the runner is ours alone, all of them. Set MDML_TEST_WORKERS to a count or a percentage to
+// the machine; on CI, where the runner is ours alone, all of them. Set OMAI_TEST_WORKERS to a count or a percentage to
 // override either.
-const workers = process.env['MDML_TEST_WORKERS']
+const workers = process.env['OMAI_TEST_WORKERS']
 const maxWorkers = workers === undefined ? (onCi ? '100%' : '50%') : workers.endsWith('%') ? workers : Number(workers)
 
 // The CI runner is several times slower than a developer machine and runs the whole suite at once: a test that takes

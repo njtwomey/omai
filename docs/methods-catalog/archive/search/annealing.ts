@@ -110,8 +110,8 @@ const xy = (v: SpaceValue): [number, number] => {
  *
  * @example
  * ```ts
- * import { annealing } from 'mdml-engine/methods/search'
- * import { session } from 'mdml-engine/trace'
+ * import { annealing } from 'omai-engine/methods/search'
+ * import { session } from 'omai-engine/trace'
  * const s = session(annealing, { mode: 'eager', steps: 50, config: { objective: 'himmelblau' } })
  * s.t // => 50
  * ```

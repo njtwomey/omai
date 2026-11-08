@@ -5,7 +5,7 @@
  * recursion or by integrating the Riccati differential equation, giving time-varying gains.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { eigvals, solve, solveCare, solveDare, symmetricPart } from '../../numerics/linalg/index.ts'
 import { type StateSpace, ss } from '../../systems/index.ts'
 import {
@@ -59,8 +59,8 @@ function crossTerm(n: number, m: number, cross: TensorLike | undefined): Value {
  * @index function Continuous-time linear-quadratic regulator.
  * @example
  * ```ts
- * import { control } from 'mdml-engine/dynamics'
- * import { item } from 'mdml-engine/tensor'
+ * import { control } from 'omai-engine/dynamics'
+ * import { item } from 'omai-engine/tensor'
  * // x' = u with q = r = 1: K = 1.
  * Math.abs(item(control.lqr([[0]], [[1]], [[1]], [[1]]).K) - 1) < 1e-10 // => true
  * ```
@@ -90,8 +90,8 @@ export function lqr(a: TensorLike, b: TensorLike, q: TensorLike, r: TensorLike, 
  * @concept linear-quadratic-regulator
  * @example
  * ```ts
- * import { control } from 'mdml-engine/dynamics'
- * import { item } from 'mdml-engine/tensor'
+ * import { control } from 'omai-engine/dynamics'
+ * import { item } from 'omai-engine/tensor'
  * Number(item(control.dlqr([[1]], [[1]], [[1]], [[1]]).K).toFixed(12)) // => 0.61803398875
  * ```
  */
@@ -133,8 +133,8 @@ export interface EstimatorSolution {
  * @concept kalman-filter
  * @example
  * ```ts
- * import { control } from 'mdml-engine/dynamics'
- * import { item } from 'mdml-engine/tensor'
+ * import { control } from 'omai-engine/dynamics'
+ * import { item } from 'omai-engine/tensor'
  * Math.abs(item(control.lqe([[0]], [[1]], [[1]], [[1]], [[1]]).L) - 1) < 1e-10 // => true
  * ```
  */
@@ -169,7 +169,7 @@ export function lqe(
  * @concept kalman-filter
  * @example
  * ```ts
- * import { control } from 'mdml-engine/dynamics'
+ * import { control } from 'omai-engine/dynamics'
  * control.dlqe([[1]], [[1]], [[1]], [[1]], [[1]]).E.re.length // => 1
  * ```
  */
@@ -197,8 +197,8 @@ export function dlqe(a: TensorLike, g: TensorLike, c: TensorLike, qn: TensorLike
  * @concept lqg
  * @example
  * ```ts
- * import { control } from 'mdml-engine/dynamics'
- * import { ss } from 'mdml-engine/systems'
+ * import { control } from 'omai-engine/dynamics'
+ * import { ss } from 'omai-engine/systems'
  * control.lqg(ss([[0, 1], [0, 0]], [[0], [1]], [[1, 0]], [[0]]), [[1, 0], [0, 1]], [[1]], [[1]], [[1]]).controller.a.shape // => [2, 2]
  * ```
  */
@@ -237,11 +237,11 @@ export interface FiniteHorizonLqr {
  * @param qf - Terminal weight Qf.
  * @param horizon - N.
  * @returns The gains and cost-to-go matrices.
- * @throws MdmlError with code `value` for a negative horizon.
+ * @throws OmaiError with code `value` for a negative horizon.
  * @concept riccati-equation
  * @example
  * ```ts
- * import { control } from 'mdml-engine/dynamics'
+ * import { control } from 'omai-engine/dynamics'
  * control.riccatiRecursion([[1]], [[1]], [[1]], [[1]], [[0]], 3).gains.length // => 3
  * ```
  */
@@ -253,7 +253,7 @@ export function riccatiRecursion(
   qf: TensorLike,
   horizon: number,
 ): FiniteHorizonLqr {
-  if (!Number.isInteger(horizon) || horizon < 0) throw new MdmlError('value', 'riccatiRecursion: horizon >= 0')
+  if (!Number.isInteger(horizon) || horizon < 0) throw new OmaiError('value', 'riccatiRecursion: horizon >= 0')
   const A = asTensor(a)
   const B = asTensor(b)
   const Q = asTensor(q)
@@ -288,8 +288,8 @@ export function riccatiRecursion(
  * @concept riccati-equation
  * @example
  * ```ts
- * import { control } from 'mdml-engine/dynamics'
- * import { item } from 'mdml-engine/tensor'
+ * import { control } from 'omai-engine/dynamics'
+ * import { item } from 'omai-engine/tensor'
  * // Over a long horizon P(0) approaches the algebraic solution (1 for x' = u, q = r = 1).
  * Math.abs(item(control.riccatiOde([[0]], [[1]], [[1]], [[1]], [[0]], 20).P) - 1) < 1e-6 // => true
  * ```

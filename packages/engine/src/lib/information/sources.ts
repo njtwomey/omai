@@ -5,7 +5,7 @@
  * entropy of a memoryless source, and misses the lower entropy rate of a Markov source.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { solve } from '../numerics/linalg/index.ts'
 import { categorical, foldIn, type Key, uniform } from '../random/index.ts'
 import { type TensorLike, toFlat } from '../tensor/index.ts'
@@ -25,7 +25,7 @@ function normalised(p: TensorLike, name: string): number[] {
   const xs = Array.from(toFlat(float(p)))
   const total = xs.reduce((a, b) => a + b, 0)
   if (xs.length === 0 || xs.some((x) => !(x >= 0)) || !(total > 0))
-    throw new MdmlError('value', `${name}: need a non-empty vector of non-negative weights`)
+    throw new OmaiError('value', `${name}: need a non-empty vector of non-negative weights`)
   return xs.map((x) => x / total)
 }
 
@@ -39,12 +39,12 @@ const bits = (p: readonly number[]): number => p.reduce((a, x) => a - (x > 0 ? x
  * @param probs - Symbol probabilities (or weights).
  * @param n - The number of symbols.
  * @returns The symbols, the entropy and the sample's information content.
- * @throws MdmlError with code `value` for bad probabilities.
+ * @throws OmaiError with code `value` for bad probabilities.
  * @concept source-entropy
  * @example
  * ```ts
- * import { memorylessSource } from 'mdml-engine/information'
- * import { key } from 'mdml-engine/random'
+ * import { memorylessSource } from 'omai-engine/information'
+ * import { key } from 'omai-engine/random'
  * const s = memorylessSource(key(0), [0.5, 0.25, 0.25], 10)
  * [s.symbols.length, s.entropy] // => [10, 1.5]
  * ```
@@ -71,12 +71,12 @@ export interface MarkovSample extends SourceSample {
  * @param transition - Row-stochastic transition probabilities.
  * @param n - The number of symbols.
  * @returns The symbols, the entropy rate, the stationary distribution and the sample's conditional information content.
- * @throws MdmlError with code `value` for a non-square matrix or rows that do not sum to one.
+ * @throws OmaiError with code `value` for a non-square matrix or rows that do not sum to one.
  * @concept source-entropy
  * @example
  * ```ts
- * import { markovSource } from 'mdml-engine/information'
- * import { key } from 'mdml-engine/random'
+ * import { markovSource } from 'omai-engine/information'
+ * import { key } from 'omai-engine/random'
  * const s = markovSource(key(0), [[0.9, 0.1], [0.1, 0.9]], 5)
  * [s.stationary, Math.round(s.entropy * 1e6) / 1e6] // => [[0.5, 0.5], 0.468996]
  * ```
@@ -84,10 +84,10 @@ export interface MarkovSample extends SourceSample {
 export function markovSource(key: Key, transition: readonly (readonly number[])[], n: number): MarkovSample {
   const m = transition.length
   if (m === 0 || transition.some((r) => r.length !== m))
-    throw new MdmlError('value', 'markovSource: the transition matrix must be square')
+    throw new OmaiError('value', 'markovSource: the transition matrix must be square')
   const rows = transition.map((r) => normalised(r, 'markovSource'))
   if (transition.some((r) => Math.abs(r.reduce((a, b) => a + b, 0) - 1) > 1e-9))
-    throw new MdmlError('value', 'markovSource: the rows of the transition matrix must sum to 1')
+    throw new OmaiError('value', 'markovSource: the rows of the transition matrix must sum to 1')
   // The stationary distribution solves pi (P - I) = 0 with the sum of pi equal to 1.
   const a = Array.from({ length: m }, (_, i) =>
     Array.from({ length: m }, (_, j) => (rows[j]?.[i] ?? 0) - (i === j ? 1 : 0)),

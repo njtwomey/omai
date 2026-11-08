@@ -7,7 +7,7 @@
 
 // TODO: OpenCV's HOGDescriptor layout (Gaussian block weighting, trilinear voting) and its default people detector.
 
-import { MdmlError, toRows } from '../base/index.ts'
+import { OmaiError, toRows } from '../base/index.ts'
 import { ddot } from '../numerics/linalg/index.ts'
 import { image } from '../signal/index.ts'
 import { type TensorLike, toFlat } from '../tensor/index.ts'
@@ -32,7 +32,7 @@ export interface HogDetector {
  * @concept hog
  * @example
  * ```ts
- * import { hogFeatures } from 'mdml-engine/vision'
+ * import { hogFeatures } from 'omai-engine/vision'
  * const win = Array.from({ length: 8 }, (_, i) => Array.from({ length: 8 }, (_, j) => (j < 4 ? 0 : 1)))
  * hogFeatures([win], { pixelsPerCell: [4, 4], cellsPerBlock: [1, 1] })[0].length // => 36
  * ```
@@ -67,7 +67,7 @@ export interface HogDetectOptions {
  * @concept hog
  * @example
  * ```ts
- * import { hogDetectMultiScale, hogFeatures } from 'mdml-engine/vision'
+ * import { hogDetectMultiScale, hogFeatures } from 'omai-engine/vision'
  * const edge = Array.from({ length: 8 }, () => Array.from({ length: 8 }, (_, j) => (j < 4 ? 0 : 1)))
  * const hog = { pixelsPerCell: [4, 4], cellsPerBlock: [1, 1] } as const
  * const weights = hogFeatures([edge], hog)[0]
@@ -84,8 +84,8 @@ export function hogDetectMultiScale(
   const [wh, ww] = detector.window
   const [sy, sx] = options.stride ?? [8, 8]
   const factor = options.scaleFactor ?? 1.2
-  if (!(factor > 1)) throw new MdmlError('value', 'hogDetectMultiScale: the scale factor must exceed 1')
-  if (!(sy >= 1 && sx >= 1)) throw new MdmlError('value', 'hogDetectMultiScale: the stride is at least one pixel')
+  if (!(factor > 1)) throw new OmaiError('value', 'hogDetectMultiScale: the scale factor must exceed 1')
+  if (!(sy >= 1 && sx >= 1)) throw new OmaiError('value', 'hogDetectMultiScale: the stride is at least one pixel')
   const threshold = options.threshold ?? 0
   const boxes: number[][] = []
   const scores: number[] = []
@@ -102,7 +102,7 @@ export function hogDetectMultiScale(
         )
         const f = toFlat(image.hog(win, detector.hog ?? {}))
         if (f.length !== detector.weights.length)
-          throw new MdmlError('shape', 'hogDetectMultiScale: the weights must match the window descriptor')
+          throw new OmaiError('shape', 'hogDetectMultiScale: the weights must match the window descriptor')
         const score = ddot(f, detector.weights) + detector.bias
         if (score > threshold) {
           boxes.push([c * scale, r * scale, (c + ww) * scale, (r + wh) * scale])

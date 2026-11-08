@@ -1,8 +1,8 @@
-import { opticsClustersAt, opticsOrdering } from 'mdml-engine/cluster'
-import { reachabilityRecord } from 'mdml-engine/exposition'
-import { key, normal } from 'mdml-engine/random'
-import { type DictSpace, defaults, dict, int } from 'mdml-engine/space'
-import { toArray } from 'mdml-engine/tensor'
+import { opticsClustersAt, opticsOrdering } from 'omai-engine/cluster'
+import { reachabilityRecord } from 'omai-engine/exposition'
+import { key, normal } from 'omai-engine/random'
+import { type DictSpace, defaults, dict, int } from 'omai-engine/space'
+import { toArray } from 'omai-engine/tensor'
 import {
   type Config,
   defineMethod,
@@ -12,7 +12,7 @@ import {
   scalar,
   stateFromJson,
   stateToJson,
-} from 'mdml-engine/trace'
+} from 'omai-engine/trace'
 import {
   ControlPanel,
   type Panel,
@@ -21,7 +21,7 @@ import {
   SpaceControls,
   useSession,
   useSessionPreferences,
-} from 'mdml-render/react'
+} from 'omai-render/react'
 import { type ReactNode, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 

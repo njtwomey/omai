@@ -1,5 +1,5 @@
-import { valueGrids } from 'mdml-engine/exposition'
-import { ControlPanel, ExpositionView, NumberField } from 'mdml-render/react'
+import { valueGrids } from 'omai-engine/exposition'
+import { ControlPanel, ExpositionView, NumberField } from 'omai-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 

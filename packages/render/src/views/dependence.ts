@@ -4,8 +4,8 @@
  * as a heatmap.
  */
 import type { EChartsOption } from 'echarts'
-import { maxOf } from 'mdml-engine/base'
-import type { Dependence, DependenceCurve, DependenceSurface } from 'mdml-engine/exposition'
+import { maxOf } from 'omai-engine/base'
+import type { Dependence, DependenceCurve, DependenceSurface } from 'omai-engine/exposition'
 import { type Panel, subplots } from '../charts/compose.ts'
 import { referenceLines } from '../charts/functions.ts'
 import { lines } from '../charts/lines.ts'
@@ -110,8 +110,8 @@ function curvePanel(record: Dependence, index: number, mode: ColourMode, maxIce:
  * @returns The ECharts option.
  * @example
  * ```ts
- * import { dependence } from 'mdml-engine/exposition'
- * import { dependenceView } from 'mdml-render/views'
+ * import { dependence } from 'omai-engine/exposition'
+ * import { dependenceView } from 'omai-render/views'
  * const r = dependence({ method: 'partial dependence', features: ['a'], output: 'y', curves: [{ feature: 0, grid: [0, 1], average: [0, 1], individual: [[0, 2], [0, 0]] }] })
  * dependenceView(r).series.length // => 2
  * ```
@@ -169,8 +169,8 @@ export interface DependenceSurfaceViewOptions extends ViewOptions {
  * @returns The ECharts option.
  * @example
  * ```ts
- * import { dependence } from 'mdml-engine/exposition'
- * import { dependenceSurfaceView } from 'mdml-render/views'
+ * import { dependence } from 'omai-engine/exposition'
+ * import { dependenceSurfaceView } from 'omai-render/views'
  * const r = dependence({ method: 'ale', features: ['a', 'b'], output: 'y', curves: [], surfaces: [{ features: [0, 1], gridX: [0, 1], gridY: [0, 1], values: [[0.5, -0.5], [-0.5, 0.5]] }] })
  * Array.isArray(dependenceSurfaceView(r).series) // => true
  * ```

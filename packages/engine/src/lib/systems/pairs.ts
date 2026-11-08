@@ -44,7 +44,7 @@ function powerOf(base: readonly number[], k: number): number[] {
  * @concept laplace-transform
  * @example
  * ```ts
- * import { laplacePairs } from 'mdml-engine/systems'
+ * import { laplacePairs } from 'omai-engine/systems'
  * laplacePairs.find((q) => q.name === 'sine')?.rational({ omega: 2 }) // => { num: [2], den: [1, 0, 4] }
  * ```
  */
@@ -169,7 +169,7 @@ export const laplacePairs: readonly TransformPair[] = [
  * @concept z-transform
  * @example
  * ```ts
- * import { zTransformPairs } from 'mdml-engine/systems'
+ * import { zTransformPairs } from 'omai-engine/systems'
  * zTransformPairs.find((q) => q.name === 'geometric')?.f(3, { a: 0.5 }) // => 0.125
  * ```
  */
@@ -257,8 +257,8 @@ export const zTransformPairs: readonly TransformPair[] = [
  * @returns The transfer function.
  * @example
  * ```ts
- * import { laplacePairs, pairToTf } from 'mdml-engine/systems'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { laplacePairs, pairToTf } from 'omai-engine/systems'
+ * import { toArray } from 'omai-engine/tensor'
  * const step = laplacePairs.find((q) => q.name === 'step')
  * step === undefined ? [] : toArray(pairToTf(step).den) // => [1, 0]
  * ```

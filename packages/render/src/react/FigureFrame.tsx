@@ -4,7 +4,7 @@
  * as GIF or WebM; a settings button (a modal applied only on confirm) can sit beside them. `useFrameSize` tells content the size it is drawn at.
  */
 
-import type { Pixels } from 'mdml-engine/scene'
+import type { Pixels } from 'omai-engine/scene'
 import {
   type CSSProperties,
   createContext,
@@ -156,8 +156,8 @@ async function recordFrames(
 
 /**
  * The whole figure inside an element as one SVG document: every chart in it (re-drawn by ECharts' SVG renderer at its
- * place), every scene (`SceneView`, or an inline SVG marked `data-mdml-svg`) as drawn, and every overlay cell
- * (`data-mdml-overlay`: TeX from `data-tex` as MathML, or its text), on the background colour. Panels are parts of
+ * place), every scene (`SceneView`, or an inline SVG marked `data-omai-svg`) as drawn, and every overlay cell
+ * (`data-omai-overlay`: TeX from `data-tex` as MathML, or its text), on the background colour. Panels are parts of
  * the figure, so they export together. A magnified element (an expanded frame's fixed content) exports at its own,
  * unmagnified size.
  *
@@ -180,7 +180,7 @@ export function figureSvg(
   })
   const parts: FigurePart[] = []
   const echarts = loadEcharts()
-  for (const el of root.querySelectorAll<HTMLElement>('[data-mdml-chart]')) {
+  for (const el of root.querySelectorAll<HTMLElement>('[data-omai-chart]')) {
     const chart = echarts.getInstanceByDom(el)
     if (chart === undefined) continue
     const at = place(el.getBoundingClientRect())
@@ -188,15 +188,15 @@ export function figureSvg(
     const height = Math.round(at.height)
     parts.push({ ...at, width, height, svg: chartToSvg(chart.getOption(), { width, height, mode: options.mode }) })
   }
-  // Inline SVG drawings (a SceneView in a `data-mdml-svg` element) go in as they are drawn.
-  for (const el of root.querySelectorAll<HTMLElement>('[data-mdml-svg]')) {
+  // Inline SVG drawings (a SceneView in a `data-omai-svg` element) go in as they are drawn.
+  for (const el of root.querySelectorAll<HTMLElement>('[data-omai-svg]')) {
     const svg = el.querySelector('svg')
     if (svg === null) continue
     parts.push({ ...place(svg.getBoundingClientRect()), svg: svg.outerHTML })
   }
   // Scenes (diagrams, worlds) are SVG already: each goes in as drawn, at its place.
-  for (const el of root.querySelectorAll<SVGSVGElement>('svg[data-mdml-scene]')) {
-    if (el.closest('[data-mdml-svg]') !== null) continue
+  for (const el of root.querySelectorAll<SVGSVGElement>('svg[data-omai-scene]')) {
+    if (el.closest('[data-omai-svg]') !== null) continue
     const at = place(el.getBoundingClientRect())
     if (at.width === 0 || at.height === 0) continue
     const copy = el.cloneNode(true) as SVGSVGElement
@@ -206,7 +206,7 @@ export function figureSvg(
     parts.push({ ...at, svg: new XMLSerializer().serializeToString(copy) })
   }
   if (options.overlays ?? true)
-    for (const el of root.querySelectorAll<HTMLElement>('[data-mdml-overlay]')) {
+    for (const el of root.querySelectorAll<HTMLElement>('[data-omai-overlay]')) {
       const at = place(el.getBoundingClientRect())
       const tex = el.dataset['tex']
       const colour = getComputedStyle(el).color
@@ -445,7 +445,7 @@ export function FigureFrame(props: FigureFrameProps): ReactElement {
       <div
         ref={frameRef}
         style={{ position: 'relative', width, height, maxWidth: '100%', overflow: 'hidden' }}
-        data-mdml-frame=""
+        data-omai-frame=""
       >
         {!expanded && content(pageSize)}
       </div>

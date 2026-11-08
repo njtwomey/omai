@@ -4,7 +4,7 @@
  * and a session panel can redraw it at each step (a score field at a noise level, a system as its parameter moves).
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { rowsOf, sameLength, seal } from './_check.ts'
 
 /** The stability class of a fixed point of a two-dimensional system. */
@@ -50,11 +50,11 @@ export interface VectorField {
  *
  * @param record - The record without its `kind`.
  * @returns The record.
- * @throws MdmlError `shape` when a component grid does not match the coordinates; `value` when a fixed point or a
+ * @throws OmaiError `shape` when a component grid does not match the coordinates; `value` when a fixed point or a
  *   nullcline point is not finite.
  * @example
  * ```ts
- * import { vectorFieldRecord } from 'mdml-engine/exposition'
+ * import { vectorFieldRecord } from 'omai-engine/exposition'
  * const r = vectorFieldRecord({
  *   x: [-1, 1],
  *   y: [-1, 1],
@@ -71,11 +71,11 @@ export function vectorFieldRecord(record: Omit<VectorField, 'kind'>): VectorFiel
     rowsOf('vectorField', name, record[name], record.x.length)
   }
   for (const [k, f] of (record.fixedPoints ?? []).entries())
-    if (!f.at.every(Number.isFinite)) throw new MdmlError('value', `vectorField: fixedPoints[${k}] is not finite`)
+    if (!f.at.every(Number.isFinite)) throw new OmaiError('value', `vectorField: fixedPoints[${k}] is not finite`)
   for (const [k, n] of (record.nullclines ?? []).entries())
     for (const p of n.paths)
       if (p.some((q) => !(Number.isFinite(q[0]) && Number.isFinite(q[1]))))
-        throw new MdmlError('value', `vectorField: nullclines[${k}] holds a point that is not finite`)
+        throw new OmaiError('value', `vectorField: nullclines[${k}] holds a point that is not finite`)
   return seal({ kind: 'vectorField', ...record })
 }
 
@@ -89,7 +89,7 @@ export function vectorFieldRecord(record: Omit<VectorField, 'kind'>): VectorFiel
  * @returns The record.
  * @example
  * ```ts
- * import { sampleVectorField } from 'mdml-engine/exposition'
+ * import { sampleVectorField } from 'omai-engine/exposition'
  * const r = sampleVectorField((x, y) => [-y, x], [-1, 0, 1], [-1, 0, 1])
  * [r.u[2]?.[0], r.v[2]?.[0]] // => [-1, -1]
  * ```

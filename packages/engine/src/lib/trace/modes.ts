@@ -7,7 +7,7 @@
  * logs: the method's contract reads its state through `params`, and the mode's `extras` are derived from the state too.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import type { Key } from '../random/index.ts'
 import {
   type DictSpace,
@@ -67,7 +67,7 @@ export interface ModeTable<Problem, P extends Json> {
   /**
    * The algorithm the configuration's mode builds.
    *
-   * @throws MdmlError with code `value` when `others` are given and the mode does not admit them.
+   * @throws OmaiError with code `value` when `others` are given and the mode does not admit them.
    */
   make(problem: Problem, config: SpaceValue, key: Key, others?: SlotValues): Algorithm<unknown>
   /** The fitted parameters of a state under the configuration's mode. */
@@ -114,12 +114,12 @@ function admits(mode: Pick<ModeProperties<Json>, 'needs'>, others: SlotValues): 
  * @param table - The modes by name.
  * @param options - The tag, the default mode and metadata.
  * @returns The table.
- * @throws MdmlError with code `value` for an empty table or a default that is not a mode (as `union` does).
+ * @throws OmaiError with code `value` for an empty table or a default that is not a mode (as `union` does).
  * @index function Build the table of modes for one slot, with each mode's knobs.
  * @example
  * ```ts
- * import { modes } from 'mdml-engine/trace'
- * import { dict, real } from 'mdml-engine/space'
+ * import { modes } from 'omai-engine/trace'
+ * import { dict, real } from 'omai-engine/space'
  * const countdown = (start: number) => ({ name: 'countdown', config: {}, init: () => start, step: (n: number) => n - 1 })
  * const solvers = modes({
  *   fast: { space: dict({}), make: () => countdown(8), params: (n: number) => ({ n }) },
@@ -164,7 +164,7 @@ export function modes<Problem, P extends Json>(
     make: (problem, config, key, others) => {
       const mode = built.properties(config)
       if (others !== undefined && !admits(mode, others))
-        throw new MdmlError(
+        throw new OmaiError(
           'value',
           `modes: '${built.optionOf(config).name}' does not admit ${JSON.stringify(others)} (needs ${JSON.stringify(mode.needs)})`,
         )

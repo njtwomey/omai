@@ -5,8 +5,8 @@ and a directional light with shadow rays, an ambient term, and mirror reflection
 fraction, to depth 3. The engine must agree pixel for pixel."""
 
 import numpy as np
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray
 
 REFERENCE: dict[str, str] = {"numpy": np.__version__}
 

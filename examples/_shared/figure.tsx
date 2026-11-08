@@ -1,11 +1,11 @@
 /**
  * The page a figure is drawn on: an SVG document with a white background, and panels that hold a chart (an ECharts
- * option from `mdml-render`) or a scene under a heading. The text uses a generic font stack, so a figure reads the same
+ * option from `omai-render`) or a scene under a heading. The text uses a generic font stack, so a figure reads the same
  * on GitHub as in a browser; everything is plain SVG (no foreign objects).
  */
 
-import { isScene } from 'mdml-engine/scene'
-import { chartToSvg, sceneToSvg } from 'mdml-render/svg'
+import { isScene } from 'omai-engine/scene'
+import { chartToSvg, sceneToSvg } from 'omai-render/svg'
 import type { ReactElement, ReactNode } from 'react'
 import { INK, PAPER } from './colours.ts'
 

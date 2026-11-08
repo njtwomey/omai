@@ -7,7 +7,7 @@
  */
 
 import { z } from 'zod'
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { type Key, keyFromPath } from '../random/index.ts'
 import { contains, type DictSpace, defaults, type SpaceValue } from '../space/index.ts'
 import type { DatasetGenerator, Generated, GeneratorKnobs } from './generator.ts'
@@ -69,11 +69,11 @@ export interface RecipeCatalogue {
 }
 
 /**
- * The modifiers of `mdml-engine/data` by name.
+ * The modifiers of `omai-engine/data` by name.
  *
  * @example
  * ```ts
- * import { builtinModifiers } from 'mdml-engine/data'
+ * import { builtinModifiers } from 'omai-engine/data'
  * Object.keys(builtinModifiers).includes('missing') // => true
  * ```
  */
@@ -105,9 +105,9 @@ export const builtinModifiers: Readonly<Record<string, Modifier>> = Object.fromE
 function resolveKnobs(space: DictSpace, given: GeneratorKnobs | undefined, owner: string): GeneratorKnobs {
   for (const [name, value] of Object.entries(given ?? {})) {
     const s = space.spaces[name]
-    if (s === undefined) throw new MdmlError('value', `${owner}: unknown knob ${name}`)
+    if (s === undefined) throw new OmaiError('value', `${owner}: unknown knob ${name}`)
     if (!contains(s, value))
-      throw new MdmlError('value', `${owner}: knob ${name} = ${String(value)} is outside its space`)
+      throw new OmaiError('value', `${owner}: knob ${name} = ${String(value)} is outside its space`)
   }
   return { ...(defaults(space) as GeneratorKnobs), ...(given ?? {}) }
 }
@@ -120,19 +120,19 @@ function resolveKnobs(space: DictSpace, given: GeneratorKnobs | undefined, owner
  * @param recipe - The recipe.
  * @param catalogue - Generators (and modifiers) by name.
  * @returns The data and its truth.
- * @throws MdmlError with code `value` for an unknown generator, modifier or knob.
+ * @throws OmaiError with code `value` for an unknown generator, modifier or knob.
  * @index function Remake a dataset exactly from its recipe.
  * @example
  * ```ts
- * import { makeFromRecipe } from 'mdml-engine/data'
- * import { friedman1 } from 'mdml-engine/datasets'
+ * import { makeFromRecipe } from 'omai-engine/data'
+ * import { friedman1 } from 'omai-engine/datasets'
  * const g = makeFromRecipe({ generator: 'friedman1', knobs: { n: 30 }, seed: 1, modifiers: [{ name: 'missing', knobs: { rate: 0.1 } }] }, { generators: { friedman1 } })
  * g.data.x.shape // => [30, 10]
  * ```
  */
 export function makeFromRecipe(recipe: Recipe, catalogue: RecipeCatalogue): Generated {
   const generator = catalogue.generators[recipe.generator]
-  if (generator === undefined) throw new MdmlError('value', `makeFromRecipe: unknown generator ${recipe.generator}`)
+  if (generator === undefined) throw new OmaiError('value', `makeFromRecipe: unknown generator ${recipe.generator}`)
   const seed = recipe.seed ?? 0
   const knobs = resolveKnobs(generator.knobs, recipe.knobs, generator.name)
   let out = generator.generate(keyFromPath(seed, 'recipe', generator.name), knobs)
@@ -140,7 +140,7 @@ export function makeFromRecipe(recipe: Recipe, catalogue: RecipeCatalogue): Gene
   const stamps: { name: string; knobs: GeneratorKnobs }[] = []
   for (const [i, m] of (recipe.modifiers ?? []).entries()) {
     const modifier = modifiers[m.name]
-    if (modifier === undefined) throw new MdmlError('value', `makeFromRecipe: unknown modifier ${m.name}`)
+    if (modifier === undefined) throw new OmaiError('value', `makeFromRecipe: unknown modifier ${m.name}`)
     const mk = resolveKnobs(modifier.knobs, m.knobs, modifier.name)
     out = modifier.apply(keyFromPath(seed, 'recipe', i, m.name), out, mk)
     stamps.push({ name: m.name, knobs: mk })
@@ -161,7 +161,7 @@ function knobText(knobs: GeneratorKnobs | undefined): string {
  * @returns The description.
  * @example
  * ```ts
- * import { describeRecipe } from 'mdml-engine/data'
+ * import { describeRecipe } from 'omai-engine/data'
  * describeRecipe({ generator: 'moons', knobs: { n: 200 }, seed: 3, modifiers: [{ name: 'labelNoise', knobs: { rate: 0.2 } }] }) // => 'moons (n=200), then labelNoise (rate=0.2); seed 3'
  * ```
  */
@@ -182,7 +182,7 @@ const SpaceValueSchema: z.ZodType<SpaceValue> = z.lazy(() =>
  *
  * @example
  * ```ts
- * import { RecipeSchema } from 'mdml-engine/data'
+ * import { RecipeSchema } from 'omai-engine/data'
  * RecipeSchema.safeParse({ generator: 'moons', seed: 1 }).success // => true
  * ```
  */
@@ -215,7 +215,7 @@ function fromBase64Url(text: string): string {
  * @returns The encoded recipe.
  * @example
  * ```ts
- * import { encodeRecipe } from 'mdml-engine/data'
+ * import { encodeRecipe } from 'omai-engine/data'
  * encodeRecipe({ generator: 'moons' }) // => 'eyJnZW5lcmF0b3IiOiJtb29ucyJ9'
  * ```
  */
@@ -228,10 +228,10 @@ export function encodeRecipe(recipe: Recipe): string {
  *
  * @param text - An {@link encodeRecipe} string or recipe JSON.
  * @returns The recipe.
- * @throws MdmlError with code `schema` when the text is not a valid recipe.
+ * @throws OmaiError with code `schema` when the text is not a valid recipe.
  * @example
  * ```ts
- * import { encodeRecipe, parseRecipe } from 'mdml-engine/data'
+ * import { encodeRecipe, parseRecipe } from 'omai-engine/data'
  * parseRecipe(encodeRecipe({ generator: 'moons', seed: 2 })).seed // => 2
  * ```
  */
@@ -241,9 +241,9 @@ export function parseRecipe(text: string): Recipe {
   try {
     value = JSON.parse(trimmed.startsWith('{') ? trimmed : fromBase64Url(trimmed))
   } catch {
-    throw new MdmlError('schema', 'parseRecipe: not JSON or an encoded recipe')
+    throw new OmaiError('schema', 'parseRecipe: not JSON or an encoded recipe')
   }
   const parsed = RecipeSchema.safeParse(value)
-  if (!parsed.success) throw new MdmlError('schema', `parseRecipe: ${parsed.error.message}`)
+  if (!parsed.success) throw new OmaiError('schema', `parseRecipe: ${parsed.error.message}`)
   return parsed.data
 }

@@ -9,7 +9,7 @@ export function Crumbs(props: { readonly path: string; readonly last?: boolean }
   return (
     <nav className="mb-2 font-mono text-sm text-muted">
       <Link to="/docs" className="hover:underline">
-        mdml-engine
+        omai-engine
       </Link>
       {parts.slice(0, upto).map((p, i) => {
         const at = parts.slice(0, i + 1).join('/')

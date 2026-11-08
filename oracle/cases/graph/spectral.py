@@ -1,5 +1,5 @@
 """Graph signal processing against numpy, scipy and NetworkX: the graph Fourier transform (numpy eigh, with
-mdml-js's sign convention), the heat kernel (scipy.linalg.expm), Chebyshev filters
+omai's sign convention), the heat kernel (scipy.linalg.expm), Chebyshev filters
 (numpy.polynomial.chebyshev.chebval on the spectrum), spectral graph wavelets (the mexican-hat kernel on the
 spectrum; no reference library ships them), the Dirichlet energy, the Fiedler vector (NetworkX fiedler_vector, up to
 sign) and the spectral embedding (numpy eigh, compared as a subspace)."""
@@ -7,10 +7,10 @@ sign) and the spectral embedding (numpy eigh, compared as a subspace)."""
 import networkx as nx
 import numpy as np
 import scipy
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.graphs import GraphSpec, NxGraph, gnp, karate, relabelled, spec
-from mdml_oracle.helpers import FloatArray, rng, sign_fixed
 from numpy.polynomial import chebyshev
+from omai_oracle.fixture import Case, case
+from omai_oracle.graphs import GraphSpec, NxGraph, gnp, karate, relabelled, spec
+from omai_oracle.helpers import FloatArray, rng, sign_fixed
 from scipy.linalg import expm
 
 REFERENCE: dict[str, str] = {"networkx": nx.__version__, "scipy": scipy.__version__, "numpy": np.__version__}

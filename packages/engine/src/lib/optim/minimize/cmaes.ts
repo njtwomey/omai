@@ -4,7 +4,7 @@
  * algorithm with a `cmaes` front end.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { eigh } from '../../numerics/linalg/index.ts'
 import { Generator } from '../../random/index.ts'
 import { fromStorage, toFlat } from '../../tensor/index.ts'
@@ -79,18 +79,18 @@ export interface CmaesState extends VectorState {
  * @concept evolution-strategies
  * @example
  * ```ts
- * import { cmaesAlgorithm } from 'mdml-engine/optim'
- * import { square, sum, type Value } from 'mdml-engine/tensor'
+ * import { cmaesAlgorithm } from 'omai-engine/optim'
+ * import { square, sum, type Value } from 'omai-engine/tensor'
  * cmaesAlgorithm((x) => sum(square(x as Value)), [1, 2]).name // => 'cmaes'
  * ```
  */
 export function cmaesAlgorithm(f: Objective, x0: Parameters, options: CmaesOptions = {}): Algorithm<CmaesState> {
   const obj = flatObjective(f, x0)
   const n = obj.n
-  if (n === 0) throw new MdmlError('value', 'cmaes: no parameters')
+  if (n === 0) throw new OmaiError('value', 'cmaes: no parameters')
   const box = options.bounds === undefined ? undefined : boundArrays(options.bounds, n, 'cmaes')
   const lambda = options.popSize ?? 4 + Math.floor(3 * Math.log(n))
-  if (lambda < 2) throw new MdmlError('value', 'cmaes: popSize must be at least 2')
+  if (lambda < 2) throw new OmaiError('value', 'cmaes: popSize must be at least 2')
   const mu = Math.floor(lambda / 2)
   const raw = Array.from({ length: mu }, (_, i) => Math.log(mu + 0.5) - Math.log(i + 1))
   const total = raw.reduce((a, b) => a + b, 0)
@@ -302,8 +302,8 @@ export function cmaesAlgorithm(f: Objective, x0: Parameters, options: CmaesOptio
  * @index function Covariance matrix adaptation evolution strategy.
  * @example
  * ```ts
- * import { cmaes } from 'mdml-engine/optim'
- * import { square, sub, sum, toFlat, type Value } from 'mdml-engine/tensor'
+ * import { cmaes } from 'omai-engine/optim'
+ * import { square, sub, sum, toFlat, type Value } from 'omai-engine/tensor'
  * const r = cmaes((x) => sum(square(sub(x as Value, [1, -2, 3]))), [0, 0, 0], { seed: 0 })
  * toFlat(r.x as Value).map((v) => Math.round(v * 1e4) / 1e4) // => [1, -2, 3]
  * ```

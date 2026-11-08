@@ -7,7 +7,7 @@
  * simulation works for every type, so the closed forms can be checked against it.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { ndtri } from '../numerics/special/index.ts'
 import type { Key } from '../random/index.ts'
 import { item } from '../tensor/index.ts'
@@ -29,7 +29,7 @@ export function etsClass(spec: EtsSpec): 1 | 2 | 3 | 4 {
  * @returns The variance at each horizon, or `undefined` for classes 3 and 4 (which are simulated).
  * @example
  * ```ts
- * import { etsPredictionVariance } from 'mdml-engine/timeseries'
+ * import { etsPredictionVariance } from 'omai-engine/timeseries'
  * const fit = { spec: { error: 'mul', trend: 'none', seasonal: 'none' }, params: { alpha: 0.5, level0: 10 }, sigma2: 0.01,
  *   final: { level: 10, trend: 0, seasonal: [] } } as never
  * etsPredictionVariance(fit, 1)?.[0] // => 1
@@ -109,7 +109,7 @@ export interface EtsIntervals {
  * @returns The point forecast, the forecast variance and the intervals.
  * @example
  * ```ts
- * import { etsPredictionIntervals } from 'mdml-engine/timeseries'
+ * import { etsPredictionIntervals } from 'omai-engine/timeseries'
  * const fit = { spec: { error: 'mul', trend: 'none', seasonal: 'none' }, params: { alpha: 0.5, level0: 10 }, sigma2: 0.01,
  *   final: { level: 10, trend: 0, seasonal: [] } } as never
  * etsPredictionIntervals(fit, 2).method // => 'analytic'
@@ -124,7 +124,7 @@ export function etsPredictionIntervals(
   const requested = options.method ?? 'auto'
   const closed = etsPredictionVariance(fit, steps)
   if (requested === 'analytic' && closed === undefined)
-    throw new MdmlError('value', 'etsPredictionIntervals: no closed form for this class of model; use simulation')
+    throw new OmaiError('value', 'etsPredictionIntervals: no closed form for this class of model; use simulation')
   if (closed !== undefined && requested !== 'simulation') {
     const mean = etsForecast(fit as EtsFit, steps).mean
     return {
@@ -141,7 +141,7 @@ export function etsPredictionIntervals(
       }),
     }
   }
-  if (options.key === undefined) throw new MdmlError('value', 'etsPredictionIntervals: simulation needs a key')
+  if (options.key === undefined) throw new OmaiError('value', 'etsPredictionIntervals: simulation needs a key')
   const paths = etsSimulate(fit, steps, options.paths ?? 5000, options.key)
   const column = (h: number): number[] => paths.map((p) => p[h] ?? 0).sort((a, b) => a - b)
   const quantile = (sorted: readonly number[], q: number): number => {

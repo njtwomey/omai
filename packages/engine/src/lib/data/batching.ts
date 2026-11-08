@@ -5,7 +5,7 @@
  * length together.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { foldIn, type Key, permutation } from '../random/index.ts'
 import { type DType, fromStorage, isTensor, stack, type Tensor, tensor } from '../tensor/index.ts'
 import { take } from './rows.ts'
@@ -33,12 +33,12 @@ export interface BatchOptions {
  * @param data - The dataset.
  * @param options - Batch size, shuffling key or sampler, and whether to drop the last partial batch.
  * @returns The batches.
- * @throws MdmlError with code `value` unless `batchSize` is a whole number of at least 1.
+ * @throws OmaiError with code `value` unless `batchSize` is a whole number of at least 1.
  * @concept datasets
  * @index function Minibatches of a dataset, in order or shuffled by a key.
  * @example
  * ```ts
- * import { batches, xy } from 'mdml-engine/data'
+ * import { batches, xy } from 'omai-engine/data'
  * batches(xy([[1], [2], [3]], [1, 2, 3]), { batchSize: 2 }).map((b) => b.y.shape[0]) // => [2, 1]
  * ```
  */
@@ -63,8 +63,8 @@ export function batches<D extends Dataset>(data: D, options: BatchOptions): D[] 
  * @returns The epoch's batches.
  * @example
  * ```ts
- * import { epochBatches, xy } from 'mdml-engine/data'
- * import { key } from 'mdml-engine/random'
+ * import { epochBatches, xy } from 'omai-engine/data'
+ * import { key } from 'omai-engine/random'
  * epochBatches(xy([[1], [2], [3], [4]], [1, 2, 3, 4]), 0, { batchSize: 2, key: key(0) }).length // => 2
  * ```
  */
@@ -82,8 +82,8 @@ export function epochBatches<D extends Dataset>(data: D, epoch: number, options:
  * @returns One list of batches per epoch.
  * @example
  * ```ts
- * import { epochs, xy } from 'mdml-engine/data'
- * import { key } from 'mdml-engine/random'
+ * import { epochs, xy } from 'omai-engine/data'
+ * import { key } from 'omai-engine/random'
  * epochs(xy([[1], [2], [3]], [1, 2, 3]), 2, { batchSize: 2, key: key(0) }).map((e) => e.length) // => [2, 2]
  * ```
  */
@@ -98,11 +98,11 @@ export function epochs<D extends Dataset>(data: D, nEpochs: number, options: Bat
  * @param data - The dataset.
  * @param options - Batch size, key or sampler, and whether to drop the last partial batch.
  * @returns `{ epoch(e), length }`: the batches of epoch `e`, and the number of batches per epoch.
- * @throws MdmlError with code `value` unless `batchSize` is a whole number of at least 1.
+ * @throws OmaiError with code `value` unless `batchSize` is a whole number of at least 1.
  * @example
  * ```ts
- * import { dataLoader, xy } from 'mdml-engine/data'
- * import { key } from 'mdml-engine/random'
+ * import { dataLoader, xy } from 'omai-engine/data'
+ * import { key } from 'omai-engine/random'
  * const loader = dataLoader(xy([[1], [2], [3], [4], [5]], [1, 2, 3, 4, 5]), { batchSize: 2, key: key(0), dropLast: true })
  * loader.length // => 2
  * ```
@@ -135,28 +135,28 @@ export type CollateItem = Readonly<Record<string, number | boolean | readonly nu
  *
  * @param items - The items, all with the same fields and shapes.
  * @returns A tensor per field.
- * @throws MdmlError with code `value` for no items, mismatched fields, or a field that mixes booleans and numbers.
+ * @throws OmaiError with code `value` for no items, mismatched fields, or a field that mixes booleans and numbers.
  * @example
  * ```ts
- * import { collate } from 'mdml-engine/data'
+ * import { collate } from 'omai-engine/data'
  * collate([{ x: [1, 2], y: 0 }, { x: [3, 4], y: 1 }]).x.shape // => [2, 2]
  * ```
  */
 export function collate(items: readonly CollateItem[]): Readonly<Record<string, Tensor>> {
   const first = items[0]
-  if (first === undefined) throw new MdmlError('value', 'collate: no items')
+  if (first === undefined) throw new OmaiError('value', 'collate: no items')
   const out: Record<string, Tensor> = {}
   for (const name of Object.keys(first)) {
     const parts = items.map((it, i) => {
       const v = it[name]
-      if (v === undefined) throw new MdmlError('value', `collate: item ${i} has no field ${name}`)
+      if (v === undefined) throw new OmaiError('value', `collate: item ${i} has no field ${name}`)
       return v
     })
     const head = parts[0]
     if (typeof head === 'number' || typeof head === 'boolean') {
       const flags = parts.filter((p) => typeof p === 'boolean').length
       if (flags !== 0 && flags !== parts.length)
-        throw new MdmlError('value', `collate: field ${name} mixes booleans and numbers`)
+        throw new OmaiError('value', `collate: field ${name} mixes booleans and numbers`)
       const dtype: DType = flags > 0 ? 'bool' : parts.every(fitsInt32) ? 'int32' : 'float64'
       out[name] = tensor(parts as number[], { dtype })
     } else if (isTensor(head)) {
@@ -188,10 +188,10 @@ export interface PadOptions extends PadLayout {
  * @param options - Pad value, maximum length, padding and truncating sides, dtype (by default `int32` when every value is
  *   an integer that fits 32 bits, else `float64`).
  * @returns The padded values `[n, T, ...]`, the mask `[n, T]` and the kept lengths `[n]`.
- * @throws MdmlError with code `value` when `maxLength` is not a whole number of at least 0.
+ * @throws OmaiError with code `value` when `maxLength` is not a whole number of at least 0.
  * @example
  * ```ts
- * import { padSequences } from 'mdml-engine/data'
+ * import { padSequences } from 'omai-engine/data'
  * const p = padSequences([[1, 2, 3], [4]], { padding: 'pre' })
  * Array.from(p.values.data) // => [1, 2, 3, 0, 0, 4]
  * Array.from(p.lengths.data) // => [3, 1]
@@ -245,10 +245,10 @@ export function padSequences(
  *
  * @param data - The dataset.
  * @returns One length per row.
- * @throws MdmlError with code `value` for datasets without sequence rows.
+ * @throws OmaiError with code `value` for datasets without sequence rows.
  * @example
  * ```ts
- * import { sequenceLengths, sequences } from 'mdml-engine/data'
+ * import { sequenceLengths, sequences } from 'omai-engine/data'
  * sequenceLengths(sequences([[1, 2], [3]], [[1], [2]], ['<pad>', 'a', 'b', 'c'])) // => [2, 1]
  * ```
  */
@@ -270,7 +270,7 @@ export function sequenceLengths(data: Dataset): number[] {
     case 'parallel':
       return data.source.map((s) => s.split(/\s+/).filter((w) => w.length > 0).length)
     default:
-      throw new MdmlError('value', `sequenceLengths: ${data.kind} data has no sequence rows`)
+      throw new OmaiError('value', `sequenceLengths: ${data.kind} data has no sequence rows`)
   }
 }
 
@@ -294,11 +294,11 @@ export interface BucketOptions {
  * @param data - The dataset.
  * @param options - Bucket boundaries, batch sizes, lengths, key and whether to drop partial batches.
  * @returns The batches.
- * @throws MdmlError with code `value` when the batch sizes do not match the buckets or are not whole numbers of at least
+ * @throws OmaiError with code `value` when the batch sizes do not match the buckets or are not whole numbers of at least
  *   1, when the boundaries are not finite and strictly increasing, or when `lengths` is not one per row.
  * @example
  * ```ts
- * import { bucketBy, corpus } from 'mdml-engine/data'
+ * import { bucketBy, corpus } from 'omai-engine/data'
  * const c = corpus({ tokens: [[1], [1, 2, 3], [2], [3, 3, 3]], vocabulary: ['a', 'b', 'c', 'd'] })
  * bucketBy(c, { boundaries: [2], batchSize: 2 }).map((b) => b.tokens?.map((t) => t.length)) // => [[1, 1], [3, 3]]
  * ```
@@ -306,15 +306,15 @@ export interface BucketOptions {
 export function bucketBy<D extends Dataset>(data: D, options: BucketOptions): D[] {
   const lengths = options.lengths ?? sequenceLengths(data)
   if (lengths.length !== rowCount(data))
-    throw new MdmlError('value', `bucketBy: ${lengths.length} lengths for ${rowCount(data)} rows`)
+    throw new OmaiError('value', `bucketBy: ${lengths.length} lengths for ${rowCount(data)} rows`)
   if (!options.boundaries.every((b, i) => Number.isFinite(b) && (i === 0 || b > (options.boundaries[i - 1] ?? 0))))
-    throw new MdmlError('value', 'bucketBy: the boundaries must be finite and strictly increasing')
+    throw new OmaiError('value', 'bucketBy: the boundaries must be finite and strictly increasing')
   const nb = options.boundaries.length + 1
   const sizes =
     typeof options.batchSize === 'number' ? new Array<number>(nb).fill(options.batchSize) : options.batchSize
-  if (sizes.length !== nb) throw new MdmlError('value', `bucketBy: ${sizes.length} batch sizes for ${nb} buckets`)
+  if (sizes.length !== nb) throw new OmaiError('value', `bucketBy: ${sizes.length} batch sizes for ${nb} buckets`)
   if (!sizes.every((z) => Number.isInteger(z) && z >= 1))
-    throw new MdmlError('value', 'bucketBy: the batch sizes must be whole numbers of at least 1')
+    throw new OmaiError('value', 'bucketBy: the batch sizes must be whole numbers of at least 1')
   const buckets: number[][] = Array.from({ length: nb }, () => [])
   for (const [i, len] of lengths.entries()) {
     let b = 0

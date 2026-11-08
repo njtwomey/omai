@@ -15,9 +15,9 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 import pgmpy
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import rng
-from mdml_oracle.pgm import SPRINKLER, STUDENT, sample_rows
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import rng
+from omai_oracle.pgm import SPRINKLER, STUDENT, sample_rows
 from pgmpy.base import DAG, PDAG
 from pgmpy.causal_discovery import PC
 from pgmpy.estimators import TreeSearch

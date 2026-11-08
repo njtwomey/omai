@@ -51,7 +51,7 @@ const num = (k: Readonly<Record<string, unknown>>, name: string): number => k[na
  * @index table SGD, RMSprop, Adagrad, Adam and relatives as one slot.
  * @example
  * ```ts
- * import { optimisers } from 'mdml-engine/optim'
+ * import { optimisers } from 'omai-engine/optim'
  * optimisers.make({ kind: 'adam', b1: 0.8 })(0.01).name // => 'chain(addDecayedWeights, scaleByAdam, scaleByLearningRate)'
  * ```
  */

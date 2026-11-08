@@ -6,7 +6,7 @@
  * @index function Optuna-style samplers: random, grid, Sobol, CMA-ES, evolutionary.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import { cmaesAlgorithm, crowdingDistance, nelderMeadAlgorithm, nonDominatedSort } from '../optim/index.ts'
 import {
   foldIn,
@@ -52,8 +52,8 @@ export interface StudySampler {
  * @returns Its trials.
  * @example
  * ```ts
- * import { createStudy, ownTrials } from 'mdml-engine/tune'
- * import { real } from 'mdml-engine/space'
+ * import { createStudy, ownTrials } from 'omai-engine/tune'
+ * import { real } from 'omai-engine/space'
  * ownTrials(createStudy(real(0, 1)), 'random') // => []
  * ```
  */
@@ -71,9 +71,9 @@ export function ownTrials(study: Study, name: string): Trial[] {
  * @concept grid-search
  * @example
  * ```ts
- * import { gridSampler, createStudy } from 'mdml-engine/tune'
- * import { dict, choice } from 'mdml-engine/space'
- * import { key } from 'mdml-engine/random'
+ * import { gridSampler, createStudy } from 'omai-engine/tune'
+ * import { dict, choice } from 'omai-engine/space'
+ * import { key } from 'omai-engine/random'
  * gridSampler().ask(createStudy(dict({ a: choice([1, 2]), b: choice(['x', 'y']) })), key(0)) // => { a: 1, b: 'x' }
  * ```
  */
@@ -108,9 +108,9 @@ export function gridSampler(options: { readonly points?: number; readonly shuffl
  * @concept random-search
  * @example
  * ```ts
- * import { randomSampler, createStudy } from 'mdml-engine/tune'
- * import { real } from 'mdml-engine/space'
- * import { key } from 'mdml-engine/random'
+ * import { randomSampler, createStudy } from 'omai-engine/tune'
+ * import { real } from 'omai-engine/space'
+ * import { key } from 'omai-engine/random'
  * const x = randomSampler().ask(createStudy(real(2, 3)), key(0)) as number
  * x >= 2 && x <= 3 // => true
  * ```
@@ -130,9 +130,9 @@ export function randomSampler(): StudySampler {
  * @concept quasi-random
  * @example
  * ```ts
- * import { sobolSampler, createStudy } from 'mdml-engine/tune'
- * import { dict, real } from 'mdml-engine/space'
- * import { key } from 'mdml-engine/random'
+ * import { sobolSampler, createStudy } from 'omai-engine/tune'
+ * import { dict, real } from 'omai-engine/space'
+ * import { key } from 'omai-engine/random'
  * sobolSampler({ skip: 1 }).ask(createStudy(dict({ x: real(0, 4), y: real(0, 4) })), key(0)) // => { x: 2, y: 2 }
  * ```
  */
@@ -162,9 +162,9 @@ export function sobolSampler(options: { readonly skip?: number; readonly scrambl
  * @concept quasi-random
  * @example
  * ```ts
- * import { haltonSampler, createStudy } from 'mdml-engine/tune'
- * import { dict, real } from 'mdml-engine/space'
- * import { key } from 'mdml-engine/random'
+ * import { haltonSampler, createStudy } from 'omai-engine/tune'
+ * import { dict, real } from 'omai-engine/space'
+ * import { key } from 'omai-engine/random'
  * haltonSampler({ skip: 1 }).ask(createStudy(dict({ x: real(0, 6), y: real(0, 6) })), key(0)) // => { x: 3, y: 2 }
  * ```
  */
@@ -191,15 +191,15 @@ export function haltonSampler(options: { readonly skip?: number } = {}): StudySa
  * @concept quasi-random
  * @example
  * ```ts
- * import { latinHypercubeSampler, tune, functionObjective } from 'mdml-engine/tune'
- * import { real } from 'mdml-engine/space'
+ * import { latinHypercubeSampler, tune, functionObjective } from 'omai-engine/tune'
+ * import { real } from 'omai-engine/space'
  * const study = tune(functionObjective((x) => x as number), real(0, 1), { sampler: latinHypercubeSampler({ n: 4 }), nTrials: 4 }).study
  * study.trials.map((t) => Math.floor((t.params as number) * 4)).sort() // => [0, 1, 2, 3]
  * ```
  */
 export function latinHypercubeSampler(options: { readonly n?: number; readonly key?: Key } = {}): StudySampler {
   const n = options.n ?? 10
-  if (!(Number.isInteger(n) && n >= 1)) throw new MdmlError('value', 'latinHypercubeSampler: n must be positive')
+  if (!(Number.isInteger(n) && n >= 1)) throw new OmaiError('value', 'latinHypercubeSampler: n must be positive')
   const base = options.key ?? makeKey(0)
   return {
     name: 'latinHypercube',
@@ -277,8 +277,8 @@ export interface CmaesSamplerOptions {
  * @concept evolution-strategies
  * @example
  * ```ts
- * import { cmaesSampler, functionObjective, tune } from 'mdml-engine/tune'
- * import { box } from 'mdml-engine/space'
+ * import { cmaesSampler, functionObjective, tune } from 'omai-engine/tune'
+ * import { box } from 'omai-engine/space'
  * const sphere = functionObjective((x) => (x as number[]).reduce((s, v) => s + (v - 0.3) ** 2, 0))
  * (tune(sphere, box(-1, 1, [3]), { sampler: cmaesSampler(), nTrials: 300 }).best?.values[0] ?? 1) < 1e-4 // => true
  * ```
@@ -314,8 +314,8 @@ export function cmaesSampler(options: CmaesSamplerOptions = {}): StudySampler {
  * @concept derivative-free-optimisation
  * @example
  * ```ts
- * import { nelderMeadSampler, functionObjective, tune } from 'mdml-engine/tune'
- * import { dict, real } from 'mdml-engine/space'
+ * import { nelderMeadSampler, functionObjective, tune } from 'omai-engine/tune'
+ * import { dict, real } from 'omai-engine/space'
  * const f = functionObjective((p) => { const { x, y } = p as { x: number; y: number }; return (x - 1) ** 2 + (y + 1) ** 2 })
  * (tune(f, dict({ x: real(-3, 3), y: real(-3, 3) }), { sampler: nelderMeadSampler(), nTrials: 120 }).best?.values[0] ?? 1) < 1e-4 // => true
  * ```
@@ -380,8 +380,8 @@ export interface EvolutionarySamplerOptions {
  * @concept evolutionary-algorithms
  * @example
  * ```ts
- * import { evolutionarySampler, functionObjective, tune } from 'mdml-engine/tune'
- * import { box } from 'mdml-engine/space'
+ * import { evolutionarySampler, functionObjective, tune } from 'omai-engine/tune'
+ * import { box } from 'omai-engine/space'
  * const sphere = functionObjective((x) => (x as number[]).reduce((s, v) => s + v * v, 0))
  * (tune(sphere, box(-2, 2, [2]), { sampler: evolutionarySampler({ populationSize: 10 }), nTrials: 200, seed: 0 }).best?.values[0] ?? 1) < 0.01 // => true
  * ```
@@ -389,7 +389,7 @@ export interface EvolutionarySamplerOptions {
 export function evolutionarySampler(options: EvolutionarySamplerOptions = {}): StudySampler {
   const pop = options.populationSize ?? 20
   if (!(Number.isInteger(pop) && pop >= 2))
-    throw new MdmlError('value', 'evolutionarySampler: populationSize must be an integer of at least 2')
+    throw new OmaiError('value', 'evolutionarySampler: populationSize must be an integer of at least 2')
   const crossover = options.crossover ?? 'uniform'
   const mutation = options.mutation ?? 'resample'
   const pc = options.crossoverProbability ?? 0.9

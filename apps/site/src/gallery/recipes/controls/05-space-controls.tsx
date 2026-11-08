@@ -1,5 +1,5 @@
-import { bool, choice, defaults, dict, int, real, type SpaceValue, union } from 'mdml-engine/space'
-import { ControlPanel, SpaceControls } from 'mdml-render/react'
+import { bool, choice, defaults, dict, int, real, type SpaceValue, union } from 'omai-engine/space'
+import { ControlPanel, SpaceControls } from 'omai-render/react'
 import { type ReactNode, useState } from 'react'
 import { CodeBlock } from '../../../shell/CodeBlock.tsx'
 import type { Recipe } from '../../recipe.ts'

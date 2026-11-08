@@ -5,8 +5,8 @@ The running index `instant` is dropped; the date stays as a text column, and `ca
 the target `cnt`) stay as published.
 """
 
-from mdml_oracle.uci import source_note, zip_member
-from mdml_oracle.vendor import render_ordered_table
+from omai_oracle.uci import source_note, zip_member
+from omai_oracle.vendor import render_ordered_table
 
 TARGET = "packages/engine/src/lib/datasets/_data/bike-sharing.data.ts"
 ID, SLUG = 275, "bike+sharing+dataset"

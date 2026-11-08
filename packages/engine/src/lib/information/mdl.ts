@@ -7,7 +7,7 @@
  * that score one candidate per step.
  */
 
-import { MdmlError, maxOf, minOf } from '../base/index.ts'
+import { maxOf, minOf, OmaiError } from '../base/index.ts'
 import { lstsq } from '../numerics/linalg/index.ts'
 import { lgamma } from '../numerics/special/index.ts'
 import { fromStorage, item, toFlat } from '../tensor/index.ts'
@@ -34,7 +34,7 @@ function logFactorials(n: number): Float64Array {
 function checkCounts(counts: ArrayLike<number>, name: string): number[] {
   const c = Array.from(counts)
   if (c.length === 0 || c.some((x) => !(Number.isInteger(x) && x >= 0)))
-    throw new MdmlError('value', `${name}: counts must be a non-empty list of non-negative integers`)
+    throw new OmaiError('value', `${name}: counts must be a non-empty list of non-negative integers`)
   return c
 }
 
@@ -48,17 +48,17 @@ function checkCounts(counts: ArrayLike<number>, name: string): number[] {
  * @param k - The number of categories.
  * @param n - The sequence length.
  * @returns C(K, n).
- * @throws MdmlError with code `value` unless k >= 1 and n >= 0 are integers.
+ * @throws OmaiError with code `value` unless k >= 1 and n >= 0 are integers.
  * @concept minimum-description-length
  * @example
  * ```ts
- * import { multinomialParametricComplexity } from 'mdml-engine/information'
+ * import { multinomialParametricComplexity } from 'omai-engine/information'
  * [multinomialParametricComplexity(2, 2), multinomialParametricComplexity(3, 2)] // => [2.5, 4.5]
  * ```
  */
 export function multinomialParametricComplexity(k: number, n: number): number {
   if (!(Number.isInteger(k) && k >= 1 && Number.isInteger(n) && n >= 0))
-    throw new MdmlError('value', 'multinomialParametricComplexity: need integers k >= 1 and n >= 0')
+    throw new OmaiError('value', 'multinomialParametricComplexity: need integers k >= 1 and n >= 0')
   if (k === 1 || n === 0) return 1
   const f = logFactorials(n)
   let c2 = 0
@@ -93,7 +93,7 @@ export function multinomialParametricComplexity(k: number, n: number): number {
  * @concept minimum-description-length
  * @example
  * ```ts
- * import { nmlRegret } from 'mdml-engine/information'
+ * import { nmlRegret } from 'omai-engine/information'
  * Math.round(nmlRegret(2, 2) * 1e6) / 1e6 // => 1.321928
  * ```
  */
@@ -109,17 +109,17 @@ export function nmlRegret(k: number, n: number): number {
  * @param k - The number of categories.
  * @param n - The sequence length.
  * @returns The expansion, in bits.
- * @throws MdmlError with code `value` unless k >= 1 and n >= 1.
+ * @throws OmaiError with code `value` unless k >= 1 and n >= 1.
  * @concept minimum-description-length
  * @example
  * ```ts
- * import { nmlRegretAsymptotic } from 'mdml-engine/information'
+ * import { nmlRegretAsymptotic } from 'omai-engine/information'
  * Math.round(nmlRegretAsymptotic(2, 1000) * 1e3) / 1e3 // => 5.309
  * ```
  */
 export function nmlRegretAsymptotic(k: number, n: number): number {
   if (!(Number.isInteger(k) && k >= 1 && n >= 1))
-    throw new MdmlError('value', 'nmlRegretAsymptotic: need k >= 1 and n >= 1')
+    throw new OmaiError('value', 'nmlRegretAsymptotic: need k >= 1 and n >= 1')
   return ((k - 1) / 2) * Math.log2(n / 2) + (0.5 * Math.log(Math.PI) - lg(k / 2)) / LN2
 }
 
@@ -131,11 +131,11 @@ export function nmlRegretAsymptotic(k: number, n: number): number {
  *
  * @param counts - How often each category occurs.
  * @returns The code length in bits.
- * @throws MdmlError with code `value` for counts that are not non-negative integers.
+ * @throws OmaiError with code `value` for counts that are not non-negative integers.
  * @concept minimum-description-length
  * @example
  * ```ts
- * import { nmlCodeLength } from 'mdml-engine/information'
+ * import { nmlCodeLength } from 'omai-engine/information'
  * Math.round(nmlCodeLength([2, 0]) * 1e6) / 1e6 // => 1.321928
  * ```
  */
@@ -156,18 +156,18 @@ export function nmlCodeLength(counts: ArrayLike<number>): number {
  * @param counts - How often each category occurs.
  * @param alpha - The Dirichlet parameter (default 1/2).
  * @returns The code length in bits.
- * @throws MdmlError with code `value` for bad counts or a non-positive alpha.
+ * @throws OmaiError with code `value` for bad counts or a non-positive alpha.
  * @concept minimum-description-length
  * @example
  * ```ts
- * import { dirichletCodeLength } from 'mdml-engine/information'
+ * import { dirichletCodeLength } from 'omai-engine/information'
  * Math.round(dirichletCodeLength([1, 0], 1) * 1e9) / 1e9 // => 1
  * Math.round(dirichletCodeLength([2, 0], 0.5) * 1e6) / 1e6 // => 1.415037
  * ```
  */
 export function dirichletCodeLength(counts: ArrayLike<number>, alpha = 0.5): number {
   const h = checkCounts(counts, 'dirichletCodeLength')
-  if (!(alpha > 0)) throw new MdmlError('value', 'dirichletCodeLength: alpha must be positive')
+  if (!(alpha > 0)) throw new OmaiError('value', 'dirichletCodeLength: alpha must be positive')
   const k = h.length
   const n = h.reduce((a, b) => a + b, 0)
   let logP = lg(k * alpha) - lg(n + k * alpha)
@@ -183,16 +183,16 @@ export function dirichletCodeLength(counts: ArrayLike<number>, alpha = 0.5): num
  * @param k - The number of parameters.
  * @param n - The sample size.
  * @returns The bits.
- * @throws MdmlError with code `value` for n < 1 or a negative k.
+ * @throws OmaiError with code `value` for n < 1 or a negative k.
  * @concept minimum-description-length
  * @example
  * ```ts
- * import { parameterBits } from 'mdml-engine/information'
+ * import { parameterBits } from 'omai-engine/information'
  * parameterBits(4, 256) // => 16
  * ```
  */
 export function parameterBits(k: number, n: number): number {
-  if (!(k >= 0 && n >= 1)) throw new MdmlError('value', 'parameterBits: need k >= 0 and n >= 1')
+  if (!(k >= 0 && n >= 1)) throw new OmaiError('value', 'parameterBits: need k >= 0 and n >= 1')
   return (k / 2) * Math.log2(n)
 }
 
@@ -204,16 +204,16 @@ export function parameterBits(k: number, n: number): number {
  * @param rss - The residual sum of squares.
  * @param n - The sample size.
  * @returns The bits.
- * @throws MdmlError with code `value` unless rss > 0 and n >= 1.
+ * @throws OmaiError with code `value` unless rss > 0 and n >= 1.
  * @concept minimum-description-length
  * @example
  * ```ts
- * import { gaussianDataBits } from 'mdml-engine/information'
+ * import { gaussianDataBits } from 'omai-engine/information'
  * Math.round(gaussianDataBits(1, 2) * 1e6) / 1e6 // => 3.094
  * ```
  */
 export function gaussianDataBits(rss: number, n: number): number {
-  if (!(rss > 0 && n >= 1)) throw new MdmlError('value', 'gaussianDataBits: need rss > 0 and n >= 1')
+  if (!(rss > 0 && n >= 1)) throw new OmaiError('value', 'gaussianDataBits: need rss > 0 and n >= 1')
   return (n / 2) * Math.log2((2 * Math.PI * Math.E * rss) / n)
 }
 
@@ -247,11 +247,11 @@ function row(complexity: number, modelBits: number, dataBits: number, bic?: numb
  * @param y - The responses.
  * @param maxDegree - The largest degree (at most n - 2).
  * @returns One row per degree.
- * @throws MdmlError with code `shape` for inputs of different lengths, `value` for a degree beyond n - 2 or constant x.
+ * @throws OmaiError with code `shape` for inputs of different lengths, `value` for a degree beyond n - 2 or constant x.
  * @concept minimum-description-length
  * @example
  * ```ts
- * import { polynomialMdl } from 'mdml-engine/information'
+ * import { polynomialMdl } from 'omai-engine/information'
  * const x = [0, 1, 2, 3, 4, 5, 6, 7]
  * const rows = polynomialMdl(x, x.map((v) => 2 * v + 1 + (v % 2 ? 0.01 : -0.01)), 3)
  * rows.map((r) => r.complexity) // => [0, 1, 2, 3]
@@ -259,12 +259,12 @@ function row(complexity: number, modelBits: number, dataBits: number, bic?: numb
  */
 export function polynomialMdl(x: ArrayLike<number>, y: ArrayLike<number>, maxDegree: number): MdlRow[] {
   const n = x.length
-  if (y.length !== n) throw new MdmlError('shape', 'polynomialMdl: x and y differ in length')
+  if (y.length !== n) throw new OmaiError('shape', 'polynomialMdl: x and y differ in length')
   if (!(Number.isInteger(maxDegree) && maxDegree >= 0 && maxDegree <= n - 2))
-    throw new MdmlError('value', `polynomialMdl: maxDegree must be an integer in [0, ${n - 2}]`)
+    throw new OmaiError('value', `polynomialMdl: maxDegree must be an integer in [0, ${n - 2}]`)
   const lo = minOf(Array.from(x))
   const hi = maxOf(Array.from(x))
-  if (!(hi > lo)) throw new MdmlError('value', 'polynomialMdl: x is constant')
+  if (!(hi > lo)) throw new OmaiError('value', 'polynomialMdl: x is constant')
   const u = Array.from(x, (v) => (2 * (v - lo)) / (hi - lo) - 1)
   const my = Array.from(y).reduce((a, b) => a + b, 0) / n
   const floor =
@@ -306,25 +306,25 @@ export function polynomialMdl(x: ArrayLike<number>, y: ArrayLike<number>, maxDeg
  * @param maxBins - The largest number of bins.
  * @param precision - The resolution the values are coded to (default the range over 2^20; it shifts every row alike).
  * @returns One row per number of bins.
- * @throws MdmlError with code `value` for fewer than two observations, constant data or a non-positive precision.
+ * @throws OmaiError with code `value` for fewer than two observations, constant data or a non-positive precision.
  * @concept minimum-description-length
  * @example
  * ```ts
- * import { histogramMdl } from 'mdml-engine/information'
+ * import { histogramMdl } from 'omai-engine/information'
  * const rows = histogramMdl([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9], 3)
  * rows.map((r) => r.complexity) // => [1, 2, 3]
  * ```
  */
 export function histogramMdl(data: ArrayLike<number>, maxBins: number, precision?: number): MdlRow[] {
   const n = data.length
-  if (n < 2) throw new MdmlError('value', 'histogramMdl: need at least two observations')
+  if (n < 2) throw new OmaiError('value', 'histogramMdl: need at least two observations')
   const lo = minOf(Array.from(data))
   const hi = maxOf(Array.from(data))
-  if (!(hi > lo)) throw new MdmlError('value', 'histogramMdl: the data are constant')
+  if (!(hi > lo)) throw new OmaiError('value', 'histogramMdl: the data are constant')
   if (!(Number.isInteger(maxBins) && maxBins >= 1))
-    throw new MdmlError('value', 'histogramMdl: maxBins must be a positive integer')
+    throw new OmaiError('value', 'histogramMdl: maxBins must be a positive integer')
   const delta = precision ?? (hi - lo) / 2 ** 20
-  if (!(delta > 0)) throw new MdmlError('value', 'histogramMdl: the precision must be positive')
+  if (!(delta > 0)) throw new OmaiError('value', 'histogramMdl: the precision must be positive')
   const out: MdlRow[] = []
   for (let k = 1; k <= maxBins; k++) {
     const counts = new Array<number>(k).fill(0)
@@ -344,17 +344,17 @@ export function histogramMdl(data: ArrayLike<number>, maxBins: number, precision
  *
  * @param rows - The candidates ({@link polynomialMdl}, {@link histogramMdl}).
  * @returns The row with the least total (the first of equals).
- * @throws MdmlError with code `value` for no rows.
+ * @throws OmaiError with code `value` for no rows.
  * @concept minimum-description-length
  * @example
  * ```ts
- * import { bestMdl } from 'mdml-engine/information'
+ * import { bestMdl } from 'omai-engine/information'
  * bestMdl([{ complexity: 1, modelBits: 1, dataBits: 9, total: 10 }, { complexity: 2, modelBits: 2, dataBits: 4, total: 6 }]).complexity // => 2
  * ```
  */
 export function bestMdl(rows: readonly MdlRow[]): MdlRow {
   const first = rows[0]
-  if (first === undefined) throw new MdmlError('value', 'bestMdl: no candidates')
+  if (first === undefined) throw new OmaiError('value', 'bestMdl: no candidates')
   return rows.reduce((best, r) => (r.total < best.total ? r : best), first)
 }
 
@@ -401,12 +401,12 @@ export const mdlContract: Contract<MdlSelectionState, MdlPath> = defineContract(
  *
  * @param rows - The candidates' description lengths ({@link polynomialMdl}, {@link histogramMdl}).
  * @returns The algorithm; it completes after one step per candidate.
- * @throws MdmlError with code `value` for no rows.
+ * @throws OmaiError with code `value` for no rows.
  * @concept minimum-description-length
  * @example
  * ```ts
- * import { mdlSelectionAlgorithm } from 'mdml-engine/information'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { mdlSelectionAlgorithm } from 'omai-engine/information'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const rows = [
  *   { complexity: 1, modelBits: 1, dataBits: 9, total: 10 },
  *   { complexity: 2, modelBits: 2, dataBits: 4, total: 6 },
@@ -416,7 +416,7 @@ export const mdlContract: Contract<MdlSelectionState, MdlPath> = defineContract(
  * ```
  */
 export function mdlSelectionAlgorithm(rows: readonly MdlRow[]): Algorithm<MdlSelectionState, MdlPath> {
-  if (rows.length === 0) throw new MdmlError('value', 'mdlSelectionAlgorithm: no candidates')
+  if (rows.length === 0) throw new OmaiError('value', 'mdlSelectionAlgorithm: no candidates')
   return {
     name: 'information/mdl-selection',
     config: { candidates: rows.length },

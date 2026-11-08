@@ -4,7 +4,7 @@
  * `cv_results_` and refits the best model, so searches nest inside cross-validation.
  */
 
-import { type Decoded, type Encodable, fromJson, type Json, MdmlError, toJson } from '../base/index.ts'
+import { type Decoded, type Encodable, fromJson, type Json, OmaiError, toJson } from '../base/index.ts'
 import {
   defineEstimator,
   type Estimator,
@@ -161,7 +161,7 @@ function results(outcome: SearchOutcome): {
     const eligible = (!outcome.lastIterationOnly || iter[i] === lastIter) && !Number.isNaN(v)
     if (eligible && (bestIndex < 0 || v < (losses[bestIndex] as number))) bestIndex = i
   }
-  if (bestIndex < 0) throw new MdmlError('value', 'search: every candidate failed')
+  if (bestIndex < 0) throw new OmaiError('value', 'search: every candidate failed')
   return {
     trials,
     bestIndex,
@@ -303,10 +303,10 @@ function baseFolds(
  * @index estimator Grid search over hyperparameters with cross-validation.
  * @example
  * ```ts
- * import { gridSearchCv } from 'mdml-engine/tune'
- * import { defineEstimator } from 'mdml-engine/learn'
- * import { meanSquaredError } from 'mdml-engine/metrics'
- * import { asTensor, full } from 'mdml-engine/tensor'
+ * import { gridSearchCv } from 'omai-engine/tune'
+ * import { defineEstimator } from 'omai-engine/learn'
+ * import { meanSquaredError } from 'omai-engine/metrics'
+ * import { asTensor, full } from 'omai-engine/tensor'
  * const constant = defineEstimator(
  *   { name: 'constant', kind: 'regressor', fit: () => ({}), methods: (_, h) => ({ predict: (x) => full([asTensor(x).shape[0] ?? 0], h.c) }) },
  *   { c: 0 },
@@ -321,7 +321,7 @@ export function gridSearchCv(
   options: SearchOptions = {},
 ): SearchEstimator {
   const { space, configs } = gridOf(paramGrid, options.points ?? 5)
-  if (configs.length === 0) throw new MdmlError('value', 'gridSearchCv: the grid is empty')
+  if (configs.length === 0) throw new OmaiError('value', 'gridSearchCv: the grid is empty')
   return searchEstimator('gridSearchCv', estimator, configs[0] as SpaceValue, options, (data, _fit, run, key) => {
     const folds = baseFolds(estimator, configs[0] as SpaceValue, data, options, foldIn(key, 0))
     const study = evaluate(
@@ -351,11 +351,11 @@ export function gridSearchCv(
  * @concept random-search
  * @example
  * ```ts
- * import { randomizedSearchCv } from 'mdml-engine/tune'
- * import { defineEstimator } from 'mdml-engine/learn'
- * import { meanSquaredError } from 'mdml-engine/metrics'
- * import { real } from 'mdml-engine/space'
- * import { asTensor, full } from 'mdml-engine/tensor'
+ * import { randomizedSearchCv } from 'omai-engine/tune'
+ * import { defineEstimator } from 'omai-engine/learn'
+ * import { meanSquaredError } from 'omai-engine/metrics'
+ * import { real } from 'omai-engine/space'
+ * import { asTensor, full } from 'omai-engine/tensor'
  * const constant = defineEstimator(
  *   { name: 'constant', kind: 'regressor', fit: () => ({}), methods: (_, h) => ({ predict: (x) => full([asTensor(x).shape[0] ?? 0], h.c) }) },
  *   { c: 0 },
@@ -441,9 +441,9 @@ function halving(
     } else min = 1
     const requestedMax = options.maxResources ?? 'auto'
     if (requestedMax === 'auto' && resource !== 'nSamples')
-      throw new MdmlError('value', `${name}: maxResources must be given for the resource ${resource}`)
+      throw new OmaiError('value', `${name}: maxResources must be given for the resource ${resource}`)
     const max = requestedMax === 'auto' ? n : requestedMax
-    if (min > max) throw new MdmlError('value', `${name}: min resources ${min} exceed max resources ${max}`)
+    if (min > max) throw new OmaiError('value', `${name}: min resources ${min} exceed max resources ${max}`)
     let candidates = candidatesFor({ min, max }, foldIn(key, 3))
     const plan = halvingPlan({
       nCandidates: candidates.length,
@@ -519,10 +519,10 @@ function halving(
  * @concept successive-halving
  * @example
  * ```ts
- * import { halvingGridSearchCv } from 'mdml-engine/tune'
- * import { defineEstimator } from 'mdml-engine/learn'
- * import { meanSquaredError } from 'mdml-engine/metrics'
- * import { asTensor, full } from 'mdml-engine/tensor'
+ * import { halvingGridSearchCv } from 'omai-engine/tune'
+ * import { defineEstimator } from 'omai-engine/learn'
+ * import { meanSquaredError } from 'omai-engine/metrics'
+ * import { asTensor, full } from 'omai-engine/tensor'
  * const constant = defineEstimator(
  *   { name: 'constant', kind: 'regressor', fit: () => ({}), methods: (_, h) => ({ predict: (x) => full([asTensor(x).shape[0] ?? 0], h.c) }) },
  *   { c: 0 },
@@ -538,7 +538,7 @@ export function halvingGridSearchCv(
   options: HalvingOptions = {},
 ): SearchEstimator {
   const { space, configs } = gridOf(paramGrid, options.points ?? 5)
-  if (configs.length === 0) throw new MdmlError('value', 'halvingGridSearchCv: the grid is empty')
+  if (configs.length === 0) throw new OmaiError('value', 'halvingGridSearchCv: the grid is empty')
   return halving('halvingGridSearchCv', estimator, space, configs[0] as SpaceValue, () => configs, options, 'exhaust')
 }
 
@@ -552,15 +552,15 @@ export function halvingGridSearchCv(
  * @param options - Candidates, factor, resource, minimum and maximum resources, aggressive elimination, the metric or
  *   scoring, folds, groups and refit.
  * @returns The search, an estimator.
- * @throws MdmlError with code `value` when both the candidates and the minimum resource are `'exhaust'`.
+ * @throws OmaiError with code `value` when both the candidates and the minimum resource are `'exhaust'`.
  * @concept successive-halving
  * @example
  * ```ts
- * import { halvingRandomSearchCv } from 'mdml-engine/tune'
- * import { defineEstimator } from 'mdml-engine/learn'
- * import { meanSquaredError } from 'mdml-engine/metrics'
- * import { real } from 'mdml-engine/space'
- * import { asTensor, full } from 'mdml-engine/tensor'
+ * import { halvingRandomSearchCv } from 'omai-engine/tune'
+ * import { defineEstimator } from 'omai-engine/learn'
+ * import { meanSquaredError } from 'omai-engine/metrics'
+ * import { real } from 'omai-engine/space'
+ * import { asTensor, full } from 'omai-engine/tensor'
  * const constant = defineEstimator(
  *   { name: 'constant', kind: 'regressor', fit: () => ({}), methods: (_, h) => ({ predict: (x) => full([asTensor(x).shape[0] ?? 0], h.c) }) },
  *   { c: 0 },
@@ -578,7 +578,7 @@ export function halvingRandomSearchCv(
   const space = asDistributions(distributions)
   const requested = options.nCandidates ?? 'exhaust'
   if (requested === 'exhaust' && options.minResources === 'exhaust')
-    throw new MdmlError('value', 'halvingRandomSearchCv: nCandidates and minResources cannot both exhaust')
+    throw new OmaiError('value', 'halvingRandomSearchCv: nCandidates and minResources cannot both exhaust')
   const draw = (plan: { readonly min: number; readonly max: number }, k: Key): SpaceValue[] => {
     const count = requested === 'exhaust' ? Math.floor(plan.max / plan.min) : requested
     return Array.from({ length: count }, (_, i) => sample(space, foldIn(k, i)))

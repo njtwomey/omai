@@ -6,7 +6,7 @@
  * H-infinity norm checked, and the search for the smallest achievable gamma as a stepped bisection.
  */
 
-import { type Json, MdmlError, maxOf } from '../../base/index.ts'
+import { type Json, maxOf, OmaiError } from '../../base/index.ts'
 import { eigvals, solve, solveCare } from '../../numerics/linalg/index.ts'
 import { hinfNorm, type StateSpace, ss } from '../../systems/index.ts'
 import {
@@ -87,7 +87,7 @@ function partsOf(plant: StateFeedbackPlant | GeneralisedPlant, measured = true):
   const D21 = d21 === undefined ? concat([zeros([ny, nw - ny]), eye(ny)], 1) : asTensor(d21)
   const near = (m: Value, target: Value, what: string): void => {
     const d = toFlat(sub(m, target))
-    if (d.some((v) => Math.abs(v) > 1e-9)) throw new MdmlError('value', `hinfSynthesis: ${what}`)
+    if (d.some((v) => Math.abs(v) > 1e-9)) throw new OmaiError('value', `hinfSynthesis: ${what}`)
   }
   near(matmul(T(D12), D12), eye(nu), "D12 must satisfy D12' D12 = I")
   near(matmul(T(D12), C1), zeros([nu, n]), "D12' C1 must be zero")
@@ -127,12 +127,12 @@ export interface HinfStateFeedback {
  * @param plant - The generalised plant (only A, B1, B2, C1 and D12 are used).
  * @param gamma - The level.
  * @returns The gain and X.
- * @throws MdmlError with code `value` when the plant violates the normalisation, or `convergence` when no stabilising solution exists at this gamma.
+ * @throws OmaiError with code `value` when the plant violates the normalisation, or `convergence` when no stabilising solution exists at this gamma.
  * @concept h-infinity-control
  * @example
  * ```ts
- * import { hinfStateFeedback } from 'mdml-engine/dynamics/control'
- * import { item } from 'mdml-engine/tensor'
+ * import { hinfStateFeedback } from 'omai-engine/dynamics/control'
+ * import { item } from 'omai-engine/tensor'
  * // x' = x + w + u, z = (x, u): at gamma = 100 the gain is close to the LQR one, -(1 + sqrt 2).
  * const plant = { a: [[1]], b1: [[1]], b2: [[1]], c1: [[1], [0]], d12: [[0], [1]] }
  * Math.abs(item(hinfStateFeedback(plant, 100).K) + 1 + Math.SQRT2) < 1e-3 // => true
@@ -173,11 +173,11 @@ export interface HinfSolution {
  * @param plant - The generalised plant.
  * @param gamma - The level.
  * @returns The conditions, and the controller when they hold.
- * @throws MdmlError with code `value` when the plant violates the normalisation.
+ * @throws OmaiError with code `value` when the plant violates the normalisation.
  * @concept h-infinity-control
  * @example
  * ```ts
- * import { hinfSynthesis } from 'mdml-engine/dynamics/control'
+ * import { hinfSynthesis } from 'omai-engine/dynamics/control'
  * const plant = { a: [[1]], b1: [[1, 0]], b2: [[1]], c1: [[1], [0]], c2: [[1]], d12: [[0], [1]], d21: [[0, 1]] }
  * [hinfSynthesis(plant, 50).feasible, hinfSynthesis(plant, 0.5).feasible] // => [true, false]
  * ```
@@ -200,14 +200,14 @@ export function hinfSynthesis(plant: GeneralisedPlant, gamma: number): HinfSolut
   try {
     X = riccati(p.A, p.B2, p.B1, matmul(T(p.C1), p.C1), gamma)
   } catch (e) {
-    if (e instanceof MdmlError && (e.code === 'convergence' || e.code === 'value')) return failed({})
+    if (e instanceof OmaiError && (e.code === 'convergence' || e.code === 'value')) return failed({})
     throw e
   }
   let Y: Value
   try {
     Y = riccati(T(p.A), T(p.C2), T(p.C1), matmul(p.B1, T(p.B1)), gamma)
   } catch (e) {
-    if (e instanceof MdmlError && (e.code === 'convergence' || e.code === 'value')) return failed({ xExists: true })
+    if (e instanceof OmaiError && (e.code === 'convergence' || e.code === 'value')) return failed({ xExists: true })
     throw e
   }
   const psd = (m: Value): boolean => {
@@ -241,9 +241,9 @@ export function hinfSynthesis(plant: GeneralisedPlant, gamma: number): HinfSolut
  * @concept h-infinity-control
  * @example
  * ```ts
- * import { closedLoopFromDisturbance, hinfSynthesis } from 'mdml-engine/dynamics/control'
- * import { hinfNorm } from 'mdml-engine/systems'
- * import { item } from 'mdml-engine/tensor'
+ * import { closedLoopFromDisturbance, hinfSynthesis } from 'omai-engine/dynamics/control'
+ * import { hinfNorm } from 'omai-engine/systems'
+ * import { item } from 'omai-engine/tensor'
  * const plant = { a: [[1]], b1: [[1, 0]], b2: [[1]], c1: [[1], [0]], c2: [[1]], d12: [[0], [1]], d21: [[0, 1]] }
  * const k = hinfSynthesis(plant, 5).controller
  * k === undefined ? false : item(hinfNorm(closedLoopFromDisturbance(plant, k)).norm) < 5 // => true
@@ -308,12 +308,12 @@ export interface HinfSearchOptions {
  * @param plant - The generalised plant.
  * @param options - The starting bracket.
  * @returns The algorithm; it converges when the bracket is tight to a relative 1e-6.
- * @throws MdmlError with code `value` when the upper level of the bracket is not achievable.
+ * @throws OmaiError with code `value` when the upper level of the bracket is not achievable.
  * @concept h-infinity-control
  * @example
  * ```ts
- * import { hinfBisectionAlgorithm } from 'mdml-engine/dynamics/control'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { hinfBisectionAlgorithm } from 'omai-engine/dynamics/control'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const plant = { a: [[1]], b1: [[1, 0]], b2: [[1]], c1: [[1], [0]], c2: [[1]], d12: [[0], [1]], d21: [[0, 1]] }
  * runAlgorithm(hinfBisectionAlgorithm(plant), { maxSteps: 80 }).state.feasible > 1 // => true
  * ```
@@ -333,7 +333,7 @@ export function hinfBisectionAlgorithm(
     config: { upper, lower } as Json,
     init: () => {
       const top = hinfSynthesis(plant, upper)
-      if (!top.feasible) throw new MdmlError('value', 'hinfBisectionAlgorithm: the upper level is not achievable')
+      if (!top.feasible) throw new OmaiError('value', 'hinfBisectionAlgorithm: the upper level is not achievable')
       return {
         feasible: upper,
         infeasible: lower,

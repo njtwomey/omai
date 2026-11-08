@@ -48,7 +48,7 @@ function scheme(
  * @concept heat-equation
  * @example
  * ```ts
- * import { heatSchemes } from 'mdml-engine/dynamics/pde'
+ * import { heatSchemes } from 'omai-engine/dynamics/pde'
  * heatSchemes.make({ kind: 'crank-nicolson' }) // => 0.5
  * ```
  */
@@ -100,7 +100,7 @@ function stencil(
  * @concept advection-equation
  * @example
  * ```ts
- * import { advectionSchemes } from 'mdml-engine/dynamics/pde'
+ * import { advectionSchemes } from 'omai-engine/dynamics/pde'
  * advectionSchemes.make({ kind: 'upwind' })(0, 1, 1, 0.5, 1) // => 0.5
  * ```
  */
@@ -159,7 +159,7 @@ function profile(
  *
  * @example
  * ```ts
- * import { initialProfiles } from 'mdml-engine/dynamics/pde'
+ * import { initialProfiles } from 'omai-engine/dynamics/pde'
  * initialProfiles.make({ kind: 'pulse', left: 0.25, right: 0.5 })(0.3) // => 1
  * ```
  */
@@ -236,7 +236,7 @@ function iteration(
  * @concept poisson-equation
  * @example
  * ```ts
- * import { poissonMethods } from 'mdml-engine/dynamics/pde'
+ * import { poissonMethods } from 'omai-engine/dynamics/pde'
  * poissonMethods.make({ kind: 'sor', omega: 1.5 }) // => { method: 'sor', omega: 1.5 }
  * ```
  */

@@ -5,7 +5,7 @@
  */
 
 import { grad, jvp } from '../autodiff/index.ts'
-import { LOG_2PI, MdmlError } from '../base/index.ts'
+import { LOG_2PI, OmaiError } from '../base/index.ts'
 import { cholesky, inv, solveTriangular } from '../numerics/linalg/index.ts'
 import { lbeta, lbinom, lgamma, log1mexp, logIv } from '../numerics/special/index.ts'
 import {
@@ -145,7 +145,7 @@ function defineForm(spec: FormSpec): ExponentialFamilyForm {
 
 const param = (dist: Distribution, name: string): Value => {
   const p = dist.params[name]
-  if (p === undefined) throw new MdmlError('value', `exponentialFamily: ${dist.name} has no parameter ${name}`)
+  if (p === undefined) throw new OmaiError('value', `exponentialFamily: ${dist.name} has no parameter ${name}`)
   return p
 }
 const zeroMeasure = (x: Value): Value => mul(x, 0)
@@ -160,12 +160,12 @@ const zeroMeasure = (x: Value): Value => mul(x, 0)
  * @param dist - The distribution.
  * @returns Its natural parameters, sufficient statistics, log partition, base measure, mean parameters and Fisher
  *   information.
- * @throws MdmlError with code `not-implemented` for distributions that are not (or not here) exponential families.
+ * @throws OmaiError with code `not-implemented` for distributions that are not (or not here) exponential families.
  * @concept exponential-families
  * @example
  * ```ts
- * import { exponentialFamily, poisson } from 'mdml-engine/dists'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { exponentialFamily, poisson } from 'omai-engine/dists'
+ * import { toFlat } from 'omai-engine/tensor'
  * // For the Poisson, A(eta) = exp(eta): the Fisher information is exp(eta) = the rate.
  * toFlat(exponentialFamily(poisson(3)).fisherInformation()).map((v) => Math.round(v * 1e12) / 1e12) // => [3]
  * ```
@@ -476,6 +476,6 @@ export function exponentialFamily(dist: Distribution): ExponentialFamilyForm {
       })
     }
     default:
-      throw new MdmlError('not-implemented', `exponentialFamily: no exponential-family form for ${dist.name}`)
+      throw new OmaiError('not-implemented', `exponentialFamily: no exponential-family form for ${dist.name}`)
   }
 }

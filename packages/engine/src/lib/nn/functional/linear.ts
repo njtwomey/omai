@@ -4,7 +4,7 @@
  * or max without materialising them.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import {
   add,
   asTensor,
@@ -45,8 +45,8 @@ import {
  * @concept layers
  * @example
  * ```ts
- * import { linear } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { linear } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(linear([[1, 2]], [[1, 1], [0, 1]], [0.5, 0])) // => [[3.5, 2]]
  * ```
  */
@@ -66,8 +66,8 @@ export function linear(x: TensorLike, weight: TensorLike, bias?: TensorLike): Va
  * @returns Output `[..., out]`.
  * @example
  * ```ts
- * import { bilinear } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { bilinear } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(bilinear([[1, 2]], [[3, 4]], [[[1, 0], [0, 1]]])) // => [[11]]
  * ```
  */
@@ -75,7 +75,7 @@ export function bilinear(x1: TensorLike, x2: TensorLike, weight: TensorLike, bia
   const [a, b, w] = promoteFloat(x1, x2, weight) as [Value, Value, Value]
   const [out = 0, in1 = 0, in2 = 0] = w.shape
   if (a.shape.at(-1) !== in1 || b.shape.at(-1) !== in2)
-    throw new MdmlError('shape', 'bilinear: inputs must end in the weight sizes in1 and in2')
+    throw new OmaiError('shape', 'bilinear: inputs must end in the weight sizes in1 and in2')
   const lead = a.shape.slice(0, -1)
   const af = reshape(a, [-1, in1])
   const bf = reshape(b, [-1, 1, in2])
@@ -109,8 +109,8 @@ const indices = (x: TensorLike): Tensor<'int32'> => primalOf(asTensor(x, 'int32'
  * @concept embeddings
  * @example
  * ```ts
- * import { embedding } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { embedding } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(embedding([2, 0], [[0, 0], [1, 1], [2, 2]])) // => [[2, 2], [0, 0]]
  * ```
  */
@@ -118,7 +118,7 @@ export function embedding(input: TensorLike, weight: TensorLike, options: Embedd
   const [w] = promoteFloat(weight) as [Value]
   const idx = indices(input)
   const n = w.shape[0] ?? 0
-  if (toFlat(idx).some((i) => i < 0 || i >= n)) throw new MdmlError('value', `embedding: indices must be in [0, ${n})`)
+  if (toFlat(idx).some((i) => i < 0 || i >= n)) throw new OmaiError('value', `embedding: indices must be in [0, ${n})`)
   let rows = take(w, reshape(idx, [-1]), 0)
   if (options.maxNorm !== undefined) {
     const lengths = norm(rows, options.normType ?? 2, 1, true)
@@ -158,8 +158,8 @@ export interface EmbeddingBagOptions {
  * @returns `[bags, dim]`.
  * @example
  * ```ts
- * import { embeddingBag } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { embeddingBag } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(embeddingBag([0, 1, 2], [[1, 0], [3, 0], [5, 2]], { offsets: [0, 2], mode: 'sum' })) // => [[4, 0], [5, 2]]
  * ```
  */
@@ -173,14 +173,14 @@ export function embeddingBag(input: TensorLike, weight: TensorLike, options: Emb
     const [bags = 0, m = 0] = idx.shape
     starts = Array.from({ length: bags + 1 }, (_, i) => i * m)
   } else {
-    if (options.offsets === undefined) throw new MdmlError('value', 'embeddingBag: a 1-D input needs offsets')
+    if (options.offsets === undefined) throw new OmaiError('value', 'embeddingBag: a 1-D input needs offsets')
     starts = toFlat(indices(options.offsets))
     if (!(options.includeLastOffset ?? false)) starts.push(flat.length)
   }
   const bags = starts.length - 1
   const mode = options.mode ?? 'mean'
   if (options.perSampleWeights !== undefined && mode !== 'sum')
-    throw new MdmlError('value', "embeddingBag: perSampleWeights needs mode 'sum'")
+    throw new OmaiError('value', "embeddingBag: perSampleWeights needs mode 'sum'")
   // Each kept position's bag, skipping the padding index.
   const keep: number[] = []
   const bagOf: number[] = []

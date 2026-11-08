@@ -8,7 +8,7 @@
  * (nonparametric, shifted Poisson or shifted negative binomial, the last two fitted exactly on the truncated support).
  */
 
-import { logSumExpOf, MdmlError } from '../../base/index.ts'
+import { logSumExpOf, OmaiError } from '../../base/index.ts'
 import { brentq } from '../../numerics/roots/index.ts'
 import { fminbound } from '../../optim/index.ts'
 import { foldIn, type Key, normal, uniform } from '../../random/index.ts'
@@ -53,7 +53,7 @@ export type DurationFamily = 'nonparametric' | 'poisson' | 'negative-binomial'
  * @returns The duration table `[k][cap]`.
  * @example
  * ```ts
- * import { learning } from 'mdml-engine/pgm'
+ * import { learning } from 'omai-engine/pgm'
  * learning.geometricDurations([0.5], 3) // => [[0.5, 0.25, 0.25]]
  * ```
  */
@@ -70,7 +70,7 @@ export function geometricDurations(stay: readonly number[], cap: number): number
  * @returns The semi-Markov parameters.
  * @example
  * ```ts
- * import { learning } from 'mdml-engine/pgm'
+ * import { learning } from 'omai-engine/pgm'
  * const p = { kind: 'categorical', start: [0.5, 0.5], transition: [[0.5, 0.5], [0.25, 0.75]], emission: [[0.9, 0.1], [0.2, 0.8]] } as const
  * learning.hsmmFromHmm(p, 2).transition // => [[0, 1], [1, 0]]
  * ```
@@ -106,18 +106,18 @@ export interface HsmmPosterior {
  * @param params - The parameters.
  * @param sequence - The observations.
  * @returns The log likelihood and the expected counts.
- * @throws MdmlError with code `value` for an empty sequence or an observation the emissions cannot read.
+ * @throws OmaiError with code `value` for an empty sequence or an observation the emissions cannot read.
  * @concept hidden-markov-models
  * @example
  * ```ts
- * import { learning } from 'mdml-engine/pgm'
+ * import { learning } from 'omai-engine/pgm'
  * const p = { kind: 'categorical', start: [1, 0], transition: [[0, 1], [1, 0]], emission: [[1, 0], [0, 1]], duration: [[0, 1], [1, 0]] } as const
  * learning.hsmmPosterior(p, [0, 0, 1]).occupancy // => [[1, 0], [1, 0], [0, 1]]
  * ```
  */
 export function hsmmPosterior(params: HsmmParameters, sequence: HmmSequence): HsmmPosterior {
   const T = sequence.length
-  if (T === 0) throw new MdmlError('value', 'hsmm: empty sequence')
+  if (T === 0) throw new OmaiError('value', 'hsmm: empty sequence')
   const K = params.start.length
   const D = params.duration[0]?.length ?? 0
   const obs = sequence.map((o) => (params.kind === 'categorical' ? o : vector(o)))
@@ -171,7 +171,7 @@ export function hsmmPosterior(params: HsmmParameters, sequence: HmmSequence): Hs
   }
   const logLikelihood = lse(Array.from({ length: K }, (_, j) => (aStar[0]?.[j] ?? NEG) + (bStar[0]?.[j] ?? NEG)))
   if (!Number.isFinite(logLikelihood))
-    throw new MdmlError('value', 'hsmm: the sequence has probability zero under the model')
+    throw new OmaiError('value', 'hsmm: the sequence has probability zero under the model')
   const start = Array.from({ length: K }, (_, j) =>
     Math.exp((aStar[0]?.[j] ?? NEG) + (bStar[0]?.[j] ?? NEG) - logLikelihood),
   )
@@ -230,7 +230,7 @@ export function hsmmPosterior(params: HsmmParameters, sequence: HmmSequence): Hs
  * @concept hidden-markov-models
  * @example
  * ```ts
- * import { learning } from 'mdml-engine/pgm'
+ * import { learning } from 'omai-engine/pgm'
  * const p = { kind: 'categorical', start: [1, 0], transition: [[0, 1], [1, 0]], emission: [[1, 0], [0, 1]], duration: [[0, 1], [1, 0]] } as const
  * learning.hsmmLogLikelihood(p, [[0, 0, 1]]) // => 0
  * ```
@@ -248,7 +248,7 @@ export function hsmmLogLikelihood(params: HsmmParameters, sequences: readonly Hm
  * @returns The duration pmf, length `cap`.
  * @example
  * ```ts
- * import { learning } from 'mdml-engine/pgm'
+ * import { learning } from 'omai-engine/pgm'
  * learning.poissonDurations(1, 3).map((p) => Math.round(p * 1000) / 1000) // => [0.4, 0.4, 0.2]
  * ```
  */
@@ -273,7 +273,7 @@ export function poissonDurations(lambda: number, cap: number): number[] {
  * @returns The duration pmf, length `cap`.
  * @example
  * ```ts
- * import { learning } from 'mdml-engine/pgm'
+ * import { learning } from 'omai-engine/pgm'
  * learning.negativeBinomialDurations(1, 0.5, 3).map((p) => Math.round(p * 1000) / 1000) // => [0.571, 0.286, 0.143]
  * ```
  */
@@ -299,7 +299,7 @@ const meanOf = (pmf: readonly number[]): number => pmf.reduce((a, v, u) => a + v
  * @returns The rate.
  * @example
  * ```ts
- * import { learning } from 'mdml-engine/pgm'
+ * import { learning } from 'omai-engine/pgm'
  * Math.round(learning.fitPoissonDurations(learning.poissonDurations(3, 10)) * 1e6) / 1e6 // => 3
  * ```
  */
@@ -324,7 +324,7 @@ export function fitPoissonDurations(counts: readonly number[]): number {
  * @returns The size and success probability.
  * @example
  * ```ts
- * import { learning } from 'mdml-engine/pgm'
+ * import { learning } from 'omai-engine/pgm'
  * const fit = learning.fitNegativeBinomialDurations(learning.negativeBinomialDurations(3, 0.4, 30), 1)
  * [Math.round(fit.r * 100) / 100, Math.round(fit.p * 100) / 100] // => [3, 0.4]
  * ```
@@ -393,8 +393,8 @@ export type HsmmState = {
  * @concept hidden-markov-models
  * @example
  * ```ts
- * import { learning } from 'mdml-engine/pgm'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { learning } from 'omai-engine/pgm'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const p = { kind: 'categorical', start: [0.5, 0.5], transition: [[0, 1], [1, 0]], emission: [[0.8, 0.2], [0.3, 0.7]], duration: [[0.5, 0.5], [0.5, 0.5]] } as const
  * const alg = learning.hsmmAlgorithm([[0, 0, 1, 1, 0, 0, 1, 1]], p)
  * runAlgorithm(alg, { maxSteps: 5 }).steps // => 5
@@ -504,8 +504,8 @@ function initialSize(pmf: readonly number[]): number {
  * @returns The state of each step, the segment boundaries (the first step of each segment) and the observations.
  * @example
  * ```ts
- * import { learning } from 'mdml-engine/pgm'
- * import { key } from 'mdml-engine/random'
+ * import { learning } from 'omai-engine/pgm'
+ * import { key } from 'omai-engine/random'
  * const p = { kind: 'categorical', start: [1, 0], transition: [[0, 1], [1, 0]], emission: [[1, 0], [0, 1]], duration: [[0, 1], [1, 0]] } as const
  * learning.hsmmSample(p, 5, key(0)).states // => [0, 0, 1, 0, 0]
  * ```

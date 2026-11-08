@@ -6,7 +6,7 @@
  * masked convolutions leaves to the upper right.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { foldIn, type Key } from '../../random/index.ts'
 import {
   add,
@@ -42,8 +42,8 @@ export interface CausalConv1dOptions {
  *
  * @example
  * ```ts
- * import { CausalConv1d } from 'mdml-engine/nn/blocks'
- * import { zeros } from 'mdml-engine/tensor'
+ * import { CausalConv1d } from 'omai-engine/nn/blocks'
+ * import { zeros } from 'omai-engine/tensor'
  * new CausalConv1d(2, 3, 2, { dilation: 4 }).forward(zeros([1, 2, 10])).shape // => [1, 3, 10]
  * ```
  */
@@ -60,7 +60,7 @@ export class CausalConv1d extends Module {
     super()
     this.groups = options.groups ?? 1
     if (inChannels % this.groups !== 0 || outChannels % this.groups !== 0)
-      throw new MdmlError('value', 'CausalConv1d: channels must be divisible by groups')
+      throw new OmaiError('value', 'CausalConv1d: channels must be divisible by groups')
     this.inChannels = inChannels
     this.outChannels = outChannels
     this.kernelSize = kernelSize
@@ -116,8 +116,8 @@ export type PixelCnnMaskType = 'A' | 'B'
  * @reference van den Oord, Kalchbrenner and Kavukcuoglu (2016), Pixel recurrent neural networks.
  * @example
  * ```ts
- * import { pixelCnnMask } from 'mdml-engine/nn/blocks'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { pixelCnnMask } from 'omai-engine/nn/blocks'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(pixelCnnMask(1, 1, 3, 'A')) // => [[[[1, 1, 1], [1, 0, 0], [0, 0, 0]]]]
  * ```
  */
@@ -129,9 +129,9 @@ export function pixelCnnMask(
   colours = 1,
 ): Tensor {
   const [kh, kw] = typeof kernelSize === 'number' ? [kernelSize, kernelSize] : [kernelSize[0] ?? 1, kernelSize[1] ?? 1]
-  if (kh % 2 === 0 || kw % 2 === 0) throw new MdmlError('value', 'pixelCnnMask: the kernel must have odd sides')
+  if (kh % 2 === 0 || kw % 2 === 0) throw new OmaiError('value', 'pixelCnnMask: the kernel must have odd sides')
   if (outChannels % colours !== 0 || inChannels % colours !== 0)
-    throw new MdmlError('value', `pixelCnnMask: channels must be divisible by ${colours} colour groups`)
+    throw new OmaiError('value', `pixelCnnMask: channels must be divisible by ${colours} colour groups`)
   const ch = (kh - 1) / 2
   const cw = (kw - 1) / 2
   const outGroup = outChannels / colours
@@ -175,8 +175,8 @@ export interface MaskedConv2dOptions {
  *
  * @example
  * ```ts
- * import { MaskedConv2d } from 'mdml-engine/nn/blocks'
- * import { zeros } from 'mdml-engine/tensor'
+ * import { MaskedConv2d } from 'omai-engine/nn/blocks'
+ * import { zeros } from 'omai-engine/tensor'
  * new MaskedConv2d(1, 4, 5, 'A').forward(zeros([1, 1, 8, 8])).shape // => [1, 4, 8, 8]
  * ```
  */
@@ -265,8 +265,8 @@ export interface GatedMaskedConvOptions {
  * @reference van den Oord et al. (2016), Conditional image generation with PixelCNN decoders.
  * @example
  * ```ts
- * import { GatedMaskedConv } from 'mdml-engine/nn/blocks'
- * import { zeros } from 'mdml-engine/tensor'
+ * import { GatedMaskedConv } from 'omai-engine/nn/blocks'
+ * import { zeros } from 'omai-engine/tensor'
  * new GatedMaskedConv(4, 3).forward({ v: zeros([1, 4, 6, 6]), h: zeros([1, 4, 6, 6]) }).h.shape // => [1, 4, 6, 6]
  * ```
  */
@@ -277,7 +277,7 @@ export class GatedMaskedConv extends Composite<GatedStacks, GatedStacksOutput> {
   readonly first: boolean
 
   constructor(channels: number, kernelSize: number, options: GatedMaskedConvOptions = {}) {
-    if (kernelSize % 2 === 0) throw new MdmlError('value', 'GatedMaskedConv: the kernel size must be odd')
+    if (kernelSize % 2 === 0) throw new OmaiError('value', 'GatedMaskedConv: the kernel size must be odd')
     const k = initKey('GatedMaskedConv', options.key)
     const half = (kernelSize - 1) / 2
     super({

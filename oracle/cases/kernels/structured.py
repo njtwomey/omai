@@ -15,10 +15,10 @@ import networkx as nx
 import numpy as np
 import scipy
 import sklearn
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.graphs import NxGraph, gnp, spec, undirected_family
-from mdml_oracle.helpers import FloatArray, rng, uniform
-from mdml_oracle.kernels import gp_case
+from omai_oracle.fixture import Case, case
+from omai_oracle.graphs import NxGraph, gnp, spec, undirected_family
+from omai_oracle.helpers import FloatArray, rng, uniform
+from omai_oracle.kernels import gp_case
 from scipy.linalg import expm
 from scipy.sparse import csr_matrix
 from scipy.spatial.distance import cdist

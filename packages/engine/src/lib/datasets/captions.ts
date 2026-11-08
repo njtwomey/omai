@@ -75,8 +75,8 @@ function questions(objects: readonly SceneObject[]): SceneQuestion[] {
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { captionedShapes } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { captionedShapes } from 'omai-engine/datasets'
  * (generate(captionedShapes, { knobs: { n: 3 } }).truth.extra?.['captions'] as string[]).length // => 3
  * ```
  */

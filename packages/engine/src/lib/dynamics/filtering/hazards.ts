@@ -6,7 +6,7 @@
  * the run length, which is what `bocpd` takes.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { betainc, gammaincc } from '../../numerics/special/index.ts'
 import { item } from '../../tensor/index.ts'
 import { positive } from './_check.ts'
@@ -20,19 +20,19 @@ import { survivalHazard } from './changepoint.ts'
  * @param rate - The probability of a changepoint at each step once the minimum is reached, in (0, 1).
  * @param minSegment - The shortest segment (at least 1).
  * @returns The hazard function of the run length.
- * @throws MdmlError with code `value` for a rate outside (0, 1) or a minimum below 1.
+ * @throws OmaiError with code `value` for a rate outside (0, 1) or a minimum below 1.
  * @concept hazard-function
  * @example
  * ```ts
- * import { filtering } from 'mdml-engine/dynamics'
+ * import { filtering } from 'omai-engine/dynamics'
  * const h = filtering.minimumSegmentHazard(0.05, 4)
  * [h(3), h(4)] // => [0, 0.05]
  * ```
  */
 export function minimumSegmentHazard(rate: number, minSegment: number): (runLength: number) => number {
-  if (!(rate > 0 && rate < 1)) throw new MdmlError('value', 'minimumSegmentHazard: the rate must be in (0, 1)')
+  if (!(rate > 0 && rate < 1)) throw new OmaiError('value', 'minimumSegmentHazard: the rate must be in (0, 1)')
   if (!(Number.isInteger(minSegment) && minSegment >= 1))
-    throw new MdmlError('value', 'minimumSegmentHazard: the minimum segment must be an integer of at least 1')
+    throw new OmaiError('value', 'minimumSegmentHazard: the minimum segment must be an integer of at least 1')
   return (r) => (r >= minSegment ? rate : 0)
 }
 
@@ -44,11 +44,11 @@ export function minimumSegmentHazard(rate: number, minSegment: number): (runLeng
  * @param shape - The Weibull shape (> 0).
  * @param scale - The Weibull scale, about the typical segment length (> 0).
  * @returns The hazard function of the run length.
- * @throws MdmlError with code `value` for a shape or scale that is not positive.
+ * @throws OmaiError with code `value` for a shape or scale that is not positive.
  * @concept hazard-function
  * @example
  * ```ts
- * import { filtering } from 'mdml-engine/dynamics'
+ * import { filtering } from 'omai-engine/dynamics'
  * const h = filtering.weibullHazard(3, 20)
  * [h(5) < h(15), Math.round(filtering.weibullHazard(1, 10)(7) * 1e6) / 1e6] // => [true, 0.095163]
  * ```
@@ -67,11 +67,11 @@ export function weibullHazard(shape: number, scale: number): (runLength: number)
  * @param shape - The gamma shape (> 0).
  * @param rate - The gamma rate, one over the scale (> 0).
  * @returns The hazard function of the run length.
- * @throws MdmlError with code `value` for a shape or rate that is not positive.
+ * @throws OmaiError with code `value` for a shape or rate that is not positive.
  * @concept hazard-function
  * @example
  * ```ts
- * import { filtering } from 'mdml-engine/dynamics'
+ * import { filtering } from 'omai-engine/dynamics'
  * const h = filtering.gammaHazard(8, 0.4)
  * [h(5) < h(25), Math.round(filtering.gammaHazard(1, 0.1)(7) * 1e6) / 1e6] // => [true, 0.095163]
  * ```
@@ -90,17 +90,17 @@ export function gammaHazard(shape: number, rate: number): (runLength: number) =>
  * @param successes - The number of successes that ends the count (> 0, not necessarily an integer).
  * @param p - The success probability, in (0, 1).
  * @returns The hazard function of the run length.
- * @throws MdmlError with code `value` for successes that are not positive or a probability outside (0, 1).
+ * @throws OmaiError with code `value` for successes that are not positive or a probability outside (0, 1).
  * @concept hazard-function
  * @example
  * ```ts
- * import { filtering } from 'mdml-engine/dynamics'
+ * import { filtering } from 'omai-engine/dynamics'
  * const h = filtering.negativeBinomialHazard(6, 0.2)
  * [h(3) < h(30), Math.round(filtering.negativeBinomialHazard(1, 0.1)(7) * 1e6) / 1e6] // => [true, 0.1]
  * ```
  */
 export function negativeBinomialHazard(successes: number, p: number): (runLength: number) => number {
   positive('negativeBinomialHazard', 'successes', successes)
-  if (!(p > 0 && p < 1)) throw new MdmlError('value', 'negativeBinomialHazard: the probability must be in (0, 1)')
+  if (!(p > 0 && p < 1)) throw new OmaiError('value', 'negativeBinomialHazard: the probability must be in (0, 1)')
   return survivalHazard((r) => (r <= 1 ? 1 : 1 - item(betainc(successes, r - 1, p))))
 }

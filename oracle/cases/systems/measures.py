@@ -8,8 +8,8 @@ from typing import cast
 import control as ct
 import numpy as np
 import scipy.signal as sg
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray
 
 REFERENCE: dict[str, str] = {"control": ct.__version__}
 

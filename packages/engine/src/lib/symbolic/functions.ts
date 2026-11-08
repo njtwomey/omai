@@ -4,7 +4,7 @@
  * `fn` to apply a function by name. Each evaluates exactly where it can and stays symbolic otherwise.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { MINUS_ONE, makeMul, makePow, numFromRational } from './_canon.ts'
 import { makeFn } from './_functions.ts'
 import { rat } from './_rational.ts'
@@ -17,16 +17,16 @@ import { asExpr, type Expr, type ExprLike } from './expr.ts'
  * @param name - The function name (an identifier).
  * @param args - The arguments.
  * @returns The application.
- * @throws MdmlError with code `value` for an invalid name.
+ * @throws OmaiError with code `value` for an invalid name.
  * @example
  * ```ts
- * import { fn, sym, toText } from 'mdml-engine/symbolic'
+ * import { fn, sym, toText } from 'omai-engine/symbolic'
  * toText(fn('f', sym('x'), 2)) // => 'f(x, 2)'
  * toText(fn('sin', 0)) // => '0'
  * ```
  */
 export function fn(name: string, ...args: readonly ExprLike[]): Expr {
-  if (!/^[A-Za-z][A-Za-z0-9_]*$/.test(name)) throw new MdmlError('value', `fn: '${name}' is not a function name`)
+  if (!/^[A-Za-z][A-Za-z0-9_]*$/.test(name)) throw new OmaiError('value', `fn: '${name}' is not a function name`)
   return makeFn(name, args.map(asExpr))
 }
 
@@ -37,7 +37,7 @@ export function fn(name: string, ...args: readonly ExprLike[]): Expr {
  * @returns exp(x), with exp(0) = 1, exp(log(y)) = y and exp(n log y) = y^n.
  * @example
  * ```ts
- * import { exp, log, sym, toText } from 'mdml-engine/symbolic'
+ * import { exp, log, sym, toText } from 'omai-engine/symbolic'
  * toText(exp(log(sym('y')))) // => 'y'
  * ```
  */
@@ -53,7 +53,7 @@ export function exp(x: ExprLike): Expr {
  * @returns The logarithm.
  * @example
  * ```ts
- * import { E, log, toText } from 'mdml-engine/symbolic'
+ * import { E, log, toText } from 'omai-engine/symbolic'
  * toText(log(E)) // => '1'
  * toText(log(8, 2)) // => 'log(8)/log(2)'
  * ```
@@ -72,12 +72,12 @@ export function log(x: ExprLike, base?: ExprLike): Expr {
  * @returns x^(1/n).
  * @example
  * ```ts
- * import { root, toText } from 'mdml-engine/symbolic'
+ * import { root, toText } from 'omai-engine/symbolic'
  * toText(root(16, 4)) // => '2'
  * ```
  */
 export function root(x: ExprLike, n: number): Expr {
-  if (!Number.isInteger(n) || n < 1) throw new MdmlError('value', 'root: the index must be a positive integer')
+  if (!Number.isInteger(n) || n < 1) throw new OmaiError('value', 'root: the index must be a positive integer')
   return makePow(asExpr(x), numFromRational(rat(1n, BigInt(n))))
 }
 
@@ -88,7 +88,7 @@ export function root(x: ExprLike, n: number): Expr {
  * @returns |x|.
  * @example
  * ```ts
- * import { abs, mul, sym, toText } from 'mdml-engine/symbolic'
+ * import { abs, mul, sym, toText } from 'omai-engine/symbolic'
  * toText(abs(mul(-3, sym('x')))) // => '3*Abs(x)'
  * ```
  */
@@ -103,7 +103,7 @@ export function abs(x: ExprLike): Expr {
  * @returns sign(x).
  * @example
  * ```ts
- * import { sign, toText } from 'mdml-engine/symbolic'
+ * import { sign, toText } from 'omai-engine/symbolic'
  * toText(sign(-5)) // => '-1'
  * ```
  */
@@ -118,7 +118,7 @@ export function sign(x: ExprLike): Expr {
  * @returns floor(x).
  * @example
  * ```ts
- * import { floor, rational, toText } from 'mdml-engine/symbolic'
+ * import { floor, rational, toText } from 'omai-engine/symbolic'
  * toText(floor(rational(-7, 2))) // => '-4'
  * ```
  */
@@ -133,7 +133,7 @@ export function floor(x: ExprLike): Expr {
  * @returns ceiling(x).
  * @example
  * ```ts
- * import { ceiling, rational, toText } from 'mdml-engine/symbolic'
+ * import { ceiling, rational, toText } from 'omai-engine/symbolic'
  * toText(ceiling(rational(7, 2))) // => '4'
  * ```
  */
@@ -148,7 +148,7 @@ export function ceiling(x: ExprLike): Expr {
  * @returns x!.
  * @example
  * ```ts
- * import { factorial, toText } from 'mdml-engine/symbolic'
+ * import { factorial, toText } from 'omai-engine/symbolic'
  * toText(factorial(5)) // => '120'
  * ```
  */
@@ -163,7 +163,7 @@ export function factorial(x: ExprLike): Expr {
  * @returns Γ(x).
  * @example
  * ```ts
- * import { gamma, rational, toText } from 'mdml-engine/symbolic'
+ * import { gamma, rational, toText } from 'omai-engine/symbolic'
  * toText(gamma(rational(1, 2))) // => 'sqrt(pi)'
  * ```
  */
@@ -178,7 +178,7 @@ export function gamma(x: ExprLike): Expr {
  * @returns erf(x).
  * @example
  * ```ts
- * import { erf, neg, sym, toText } from 'mdml-engine/symbolic'
+ * import { erf, neg, sym, toText } from 'omai-engine/symbolic'
  * toText(erf(neg(sym('x')))) // => '-erf(x)'
  * ```
  */
@@ -193,7 +193,7 @@ export function erf(x: ExprLike): Expr {
  * @returns re(x) (x itself when x is known to be real).
  * @example
  * ```ts
- * import { re, sym, toText } from 'mdml-engine/symbolic'
+ * import { re, sym, toText } from 'omai-engine/symbolic'
  * toText(re(sym('t', { real: true }))) // => 't'
  * ```
  */
@@ -208,7 +208,7 @@ export function re(x: ExprLike): Expr {
  * @returns im(x) (zero when x is known to be real).
  * @example
  * ```ts
- * import { im, toText } from 'mdml-engine/symbolic'
+ * import { im, toText } from 'omai-engine/symbolic'
  * toText(im(3)) // => '0'
  * ```
  */

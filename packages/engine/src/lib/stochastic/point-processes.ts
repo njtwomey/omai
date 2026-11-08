@@ -8,7 +8,7 @@
  */
 
 import { grad, hessian } from '../autodiff/index.ts'
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import type { Distribution } from '../dists/index.ts'
 import { brentq, fsolve } from '../numerics/roots/index.ts'
 import { exponential, foldIn, type Key, poisson, uniform } from '../random/index.ts'
@@ -92,7 +92,7 @@ function eventAlgorithm(
   horizon: number,
   propose: (s: EventState, key: Key) => EventProposal,
 ): Algorithm<EventState, PointProcessPath> {
-  if (!(horizon > 0 && Number.isFinite(horizon))) throw new MdmlError('value', `${name}: the horizon must be > 0`)
+  if (!(horizon > 0 && Number.isFinite(horizon))) throw new OmaiError('value', `${name}: the horizon must be > 0`)
   return {
     name,
     config: { ...config, horizon },
@@ -149,7 +149,7 @@ export interface EventOptions extends TraceOptions {
 function runEvents(key: Key, alg: Algorithm<EventState, PointProcessPath>, options: EventOptions): Float64Array {
   const cap = options.maxEvents ?? 1e6
   const r = runAlgorithm(alg, { ...traceOf(options), key, maxSteps: cap + 1 })
-  if (!r.state.finished) throw new MdmlError('convergence', `${alg.name}: more than ${cap} proposals`)
+  if (!r.state.finished) throw new OmaiError('convergence', `${alg.name}: more than ${cap} proposals`)
   return Float64Array.from(historyArray(r.state.events))
 }
 
@@ -165,18 +165,18 @@ function draw(key: Key, rate: number): number {
  * @param rate - The intensity (> 0).
  * @param horizon - T.
  * @returns The algorithm; its state is an {@link EventState} (the events are a linked list, `historyArray` reads them).
- * @throws MdmlError with code `value` for a rate that is not positive or a horizon that is not.
+ * @throws OmaiError with code `value` for a rate that is not positive or a horizon that is not.
  * @concept poisson-process
  * @example
  * ```ts
- * import { key } from 'mdml-engine/random'
- * import { poissonProcessAlgorithm } from 'mdml-engine/stochastic'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { key } from 'omai-engine/random'
+ * import { poissonProcessAlgorithm } from 'omai-engine/stochastic'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * runAlgorithm(poissonProcessAlgorithm(5, 2), { key: key(0), maxSteps: 1000 }).state.finished // => true
  * ```
  */
 export function poissonProcessAlgorithm(rate: number, horizon: number): Algorithm<EventState, PointProcessPath> {
-  if (!(rate > 0)) throw new MdmlError('value', 'poissonProcessAlgorithm: the rate must be positive')
+  if (!(rate > 0)) throw new OmaiError('value', 'poissonProcessAlgorithm: the rate must be positive')
   return eventAlgorithm('poisson-process', { rate }, horizon, (s, k) => ({
     t: s.t + draw(k, rate),
     accept: true,
@@ -198,14 +198,14 @@ export function poissonProcessAlgorithm(rate: number, horizon: number): Algorith
  * @concept poisson-process
  * @example
  * ```ts
- * import { key } from 'mdml-engine/random'
- * import { poissonProcess } from 'mdml-engine/stochastic'
+ * import { key } from 'omai-engine/random'
+ * import { poissonProcess } from 'omai-engine/stochastic'
  * poissonProcess(key(0), 0, 10).length // => 0
  * poissonProcess(key(0), 5, 2).every((t) => t > 0 && t <= 2) // => true
  * ```
  */
 export function poissonProcess(key: Key, rate: number, horizon: number, options: EventOptions = {}): Float64Array {
-  if (!(rate >= 0)) throw new MdmlError('value', 'poissonProcess: the rate must be >= 0')
+  if (!(rate >= 0)) throw new OmaiError('value', 'poissonProcess: the rate must be >= 0')
   if (rate === 0) return new Float64Array(0)
   return runEvents(key, poissonProcessAlgorithm(rate, horizon), options)
 }
@@ -219,13 +219,13 @@ export function poissonProcess(key: Key, rate: number, horizon: number, options:
  * @param horizon - T.
  * @param maxIntensity - A bound lambdaMax on lambda over [0, T].
  * @returns The algorithm; its state is an {@link EventState}.
- * @throws MdmlError with code `value` when the bound is not positive; stepping throws when the intensity exceeds it.
+ * @throws OmaiError with code `value` when the bound is not positive; stepping throws when the intensity exceeds it.
  * @concept poisson-process
  * @example
  * ```ts
- * import { key } from 'mdml-engine/random'
- * import { thinningAlgorithm } from 'mdml-engine/stochastic'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { key } from 'omai-engine/random'
+ * import { thinningAlgorithm } from 'omai-engine/stochastic'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * runAlgorithm(thinningAlgorithm((t) => (t < 1 ? 0 : 3), 2, 3), { key: key(0), maxSteps: 1000 }).state.finished // => true
  * ```
  */
@@ -234,12 +234,12 @@ export function thinningAlgorithm(
   horizon: number,
   maxIntensity: number,
 ): Algorithm<EventState, PointProcessPath> {
-  if (!(maxIntensity > 0)) throw new MdmlError('value', 'inhomogeneousPoisson: the bound must be positive')
+  if (!(maxIntensity > 0)) throw new OmaiError('value', 'inhomogeneousPoisson: the bound must be positive')
   return eventAlgorithm('thinning', { maxIntensity }, horizon, (s, k) => {
     const t = s.t + draw(foldIn(k, 0), maxIntensity)
     const lambda = t <= horizon ? intensity(t) : 0
     if (!(lambda >= 0) || lambda > maxIntensity * (1 + 1e-12)) {
-      throw new MdmlError('value', `inhomogeneousPoisson: intensity ${lambda} at ${t} is outside [0, bound]`)
+      throw new OmaiError('value', `inhomogeneousPoisson: intensity ${lambda} at ${t} is outside [0, bound]`)
     }
     return {
       t,
@@ -262,12 +262,12 @@ export function thinningAlgorithm(
  * @param maxIntensity - A bound lambdaMax on lambda over [0, T].
  * @param options - The proposal cap and tracing.
  * @returns The event times.
- * @throws MdmlError with code `value` when the intensity exceeds the bound.
+ * @throws OmaiError with code `value` when the intensity exceeds the bound.
  * @concept poisson-process
  * @example
  * ```ts
- * import { key } from 'mdml-engine/random'
- * import { inhomogeneousPoisson } from 'mdml-engine/stochastic'
+ * import { key } from 'omai-engine/random'
+ * import { inhomogeneousPoisson } from 'omai-engine/stochastic'
  * inhomogeneousPoisson(key(0), (t) => (t < 1 ? 0 : 3), 2, 3).every((t) => t >= 1) // => true
  * ```
  */
@@ -290,7 +290,7 @@ export function inhomogeneousPoisson(
  * @concept counting-process
  * @example
  * ```ts
- * import { countingProcess } from 'mdml-engine/stochastic'
+ * import { countingProcess } from 'omai-engine/stochastic'
  * Array.from(countingProcess([0.5, 1.2, 3], [0, 1, 2, 5])) // => [0, 1, 2, 3]
  * ```
  */
@@ -320,10 +320,10 @@ export function countingProcess(events: ArrayLike<number>, times: ArrayLike<numb
  * @concept renewal-process
  * @example
  * ```ts
- * import { gamma } from 'mdml-engine/dists'
- * import { key } from 'mdml-engine/random'
- * import { renewalProcessAlgorithm } from 'mdml-engine/stochastic'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { gamma } from 'omai-engine/dists'
+ * import { key } from 'omai-engine/random'
+ * import { renewalProcessAlgorithm } from 'omai-engine/stochastic'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * runAlgorithm(renewalProcessAlgorithm(gamma(2, 2), 10), { key: key(0), maxSteps: 1000 }).state.finished // => true
  * ```
  */
@@ -333,7 +333,7 @@ export function renewalProcessAlgorithm(
 ): Algorithm<EventState, PointProcessPath> {
   return eventAlgorithm('renewal-process', {}, horizon, (s, k) => {
     const gap = primalNumbers(interarrival.sample(k, [1]))[0] ?? Number.NaN
-    if (!(gap >= 0)) throw new MdmlError('value', 'renewalProcess: gaps must be non-negative')
+    if (!(gap >= 0)) throw new OmaiError('value', 'renewalProcess: gaps must be non-negative')
     // a zero gap would not advance the clock: nudge by the smallest step
     return { t: s.t + Math.max(gap, Number.MIN_VALUE), accept: true, memory: 0 }
   })
@@ -351,9 +351,9 @@ export function renewalProcessAlgorithm(
  * @concept renewal-process
  * @example
  * ```ts
- * import { gamma } from 'mdml-engine/dists'
- * import { key } from 'mdml-engine/random'
- * import { renewalProcess } from 'mdml-engine/stochastic'
+ * import { gamma } from 'omai-engine/dists'
+ * import { key } from 'omai-engine/random'
+ * import { renewalProcess } from 'omai-engine/stochastic'
  * renewalProcess(key(0), gamma(2, 2), 10).every((t) => t <= 10) // => true
  * ```
  */
@@ -378,8 +378,8 @@ export function renewalProcess(
  * @concept renewal-process
  * @example
  * ```ts
- * import { exponential } from 'mdml-engine/dists'
- * import { renewalFunction } from 'mdml-engine/stochastic'
+ * import { exponential } from 'omai-engine/dists'
+ * import { renewalFunction } from 'omai-engine/stochastic'
  * Math.abs(renewalFunction(exponential(2), 3, 3000).values.at(-1) - 6) < 0.01 // => true
  * ```
  */
@@ -389,7 +389,7 @@ export function renewalFunction(
   steps = 1000,
 ): { readonly times: Float64Array; readonly values: Float64Array } {
   positiveInteger(steps, 'steps', 'renewalFunction')
-  if (!(horizon > 0)) throw new MdmlError('value', 'renewalFunction: the horizon must be positive')
+  if (!(horizon > 0)) throw new OmaiError('value', 'renewalFunction: the horizon must be positive')
   const h = horizon / steps
   const times = Float64Array.from({ length: steps + 1 }, (_, i) => i * h)
   const f = primalNumbers(interarrival.cdf(fromStorage(times, [steps + 1], 'float64')))
@@ -424,7 +424,7 @@ function hawkesNumbers(p: HawkesParams): { mu: number; alpha: number; beta: numb
     number,
     number,
   ]
-  if (!(mu > 0 && alpha >= 0 && beta > 0)) throw new MdmlError('value', 'hawkes: need mu > 0, alpha >= 0, beta > 0')
+  if (!(mu > 0 && alpha >= 0 && beta > 0)) throw new OmaiError('value', 'hawkes: need mu > 0, alpha >= 0, beta > 0')
   return { mu, alpha, beta }
 }
 
@@ -436,13 +436,13 @@ function hawkesNumbers(p: HawkesParams): { mu: number; alpha: number; beta: numb
  * @param params - mu, alpha and beta.
  * @param horizon - T.
  * @returns The algorithm; its state is an {@link EventState}.
- * @throws MdmlError with code `value` unless mu > 0, alpha >= 0 and beta > 0.
+ * @throws OmaiError with code `value` unless mu > 0, alpha >= 0 and beta > 0.
  * @concept hawkes-process
  * @example
  * ```ts
- * import { key } from 'mdml-engine/random'
- * import { hawkesProcessAlgorithm } from 'mdml-engine/stochastic'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { key } from 'omai-engine/random'
+ * import { hawkesProcessAlgorithm } from 'omai-engine/stochastic'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * runAlgorithm(hawkesProcessAlgorithm({ mu: 1, alpha: 0.5, beta: 1 }, 10), { key: key(0), maxSteps: 1000 }).state.finished // => true
  * ```
  */
@@ -474,8 +474,8 @@ export function hawkesProcessAlgorithm(params: HawkesParams, horizon: number): A
  * @reference Y. Ogata, On Lewis' simulation method for point processes, IEEE Trans. Inf. Theory 27 (1981).
  * @example
  * ```ts
- * import { key } from 'mdml-engine/random'
- * import { hawkesProcess } from 'mdml-engine/stochastic'
+ * import { key } from 'omai-engine/random'
+ * import { hawkesProcess } from 'omai-engine/stochastic'
  * hawkesProcess(key(0), { mu: 1, alpha: 0.5, beta: 1 }, 10).every((t) => t <= 10) // => true
  * ```
  */
@@ -498,8 +498,8 @@ export function hawkesProcess(
  * @concept hawkes-process
  * @example
  * ```ts
- * import { hawkesIntensity } from 'mdml-engine/stochastic'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { hawkesIntensity } from 'omai-engine/stochastic'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(hawkesIntensity({ mu: 1, alpha: 2, beta: 1 }, [0], [0, 1])).map((v) => Math.round(v * 1e12) / 1e12) // => [1, 1.735758882343]
  * ```
  */
@@ -525,8 +525,8 @@ export function hawkesIntensity(params: HawkesParams, events: TensorLike, times:
  * @concept hawkes-process
  * @example
  * ```ts
- * import { hawkesLogLikelihood } from 'mdml-engine/stochastic'
- * import { item } from 'mdml-engine/tensor'
+ * import { hawkesLogLikelihood } from 'omai-engine/stochastic'
+ * import { item } from 'omai-engine/tensor'
  * // no excitation: a Poisson process, n log mu - mu T
  * Math.abs(item(hawkesLogLikelihood({ mu: 2, alpha: 0, beta: 1 }, [0.5, 1.5], 3)) - (2 * Math.log(2) - 6)) < 1e-12 // => true
  * ```
@@ -579,7 +579,7 @@ export interface HawkesEmState {
  *   EM-type algorithm, JASA 103 (2008).
  * @example
  * ```ts
- * import { hawkesEmAlgorithm } from 'mdml-engine/stochastic'
+ * import { hawkesEmAlgorithm } from 'omai-engine/stochastic'
  * hawkesEmAlgorithm([1, 2, 2.5], 3, { mu: 1, alpha: 0.5, beta: 1 }).name // => 'hawkes-em'
  * ```
  */
@@ -676,8 +676,8 @@ export function hawkesEmAlgorithm(
  * @concept hawkes-process
  * @example
  * ```ts
- * import { key } from 'mdml-engine/random'
- * import { fitHawkes, hawkesProcess } from 'mdml-engine/stochastic'
+ * import { key } from 'omai-engine/random'
+ * import { fitHawkes, hawkesProcess } from 'omai-engine/stochastic'
  * const events = hawkesProcess(key(0), { mu: 1, alpha: 0.6, beta: 1.5 }, 60)
  * fitHawkes(events, 60).converged // => true
  * ```
@@ -694,7 +694,7 @@ export function fitHawkes(
 ): HawkesFit {
   const ev = asFloat(asTensor(events))
   const n = ev.shape[0] ?? 0
-  if (n < 3) throw new MdmlError('value', 'fitHawkes: needs at least three events')
+  if (n < 3) throw new OmaiError('value', 'fitHawkes: needs at least three events')
   const rate = n / horizon
   const init = options.init ?? { mu: rate / 2, alpha: rate / 2, beta: rate }
   const em = runAlgorithm(hawkesEmAlgorithm(ev, horizon, init), {
@@ -757,8 +757,8 @@ export function fitHawkes(
  * @concept cox-process
  * @example
  * ```ts
- * import { key } from 'mdml-engine/random'
- * import { coxProcessAlgorithm } from 'mdml-engine/stochastic'
+ * import { key } from 'omai-engine/random'
+ * import { coxProcessAlgorithm } from 'omai-engine/stochastic'
  * coxProcessAlgorithm(key(0), () => ({ intensity: () => 2, max: 2 }), 4).intensity(1) // => 2
  * ```
  */
@@ -783,8 +783,8 @@ export function coxProcessAlgorithm(
  * @concept cox-process
  * @example
  * ```ts
- * import { key, uniform } from 'mdml-engine/random'
- * import { coxProcess } from 'mdml-engine/stochastic'
+ * import { key, uniform } from 'omai-engine/random'
+ * import { coxProcess } from 'omai-engine/stochastic'
  * // a mixed Poisson process: the rate is uniform on [1, 5]
  * const c = coxProcess(key(0), (k) => { const r = 1 + 4 * uniform(k, [1]).data[0]; return { intensity: () => r, max: r } }, 4)
  * c.events.every((t) => t <= 4) // => true
@@ -812,8 +812,8 @@ export function coxProcess(
  * @concept cox-process
  * @example
  * ```ts
- * import { key } from 'mdml-engine/random'
- * import { logGaussianCoxProcess, ouCovariance } from 'mdml-engine/stochastic'
+ * import { key } from 'omai-engine/random'
+ * import { logGaussianCoxProcess, ouCovariance } from 'omai-engine/stochastic'
  * logGaussianCoxProcess(key(0), [0.5, 1.5, 2.5], 1, { covariance: ouCovariance({ theta: 1, sigma: 0.5 }), mean: 1 }).counts.length // => 3
  * ```
  */
@@ -823,7 +823,7 @@ export function logGaussianCoxProcess(
   cellSize: number,
   options: { readonly covariance: CovarianceFunction; readonly mean?: TensorLike },
 ): { readonly intensity: Float64Array; readonly counts: Int32Array } {
-  if (!(cellSize > 0)) throw new MdmlError('value', 'logGaussianCoxProcess: the cell size must be positive')
+  if (!(cellSize > 0)) throw new OmaiError('value', 'logGaussianCoxProcess: the cell size must be positive')
   const c = asFloat(asTensor(centres))
   const cells = c.shape[0] ?? 0
   const meanValue = options.mean ?? 0
@@ -847,9 +847,9 @@ export function logGaussianCoxProcess(
  * @concept marked-point-process
  * @example
  * ```ts
- * import { exponential } from 'mdml-engine/dists'
- * import { key } from 'mdml-engine/random'
- * import { markedPoissonProcess } from 'mdml-engine/stochastic'
+ * import { exponential } from 'omai-engine/dists'
+ * import { key } from 'omai-engine/random'
+ * import { markedPoissonProcess } from 'omai-engine/stochastic'
  * const m = markedPoissonProcess(key(0), 3, 5, exponential(1))
  * m.marks.length === m.times.length // => true
  * ```

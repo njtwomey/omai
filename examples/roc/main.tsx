@@ -1,12 +1,12 @@
 /**
  * Example "The metrics of a classifier" (a README example): a support vector classifier is fitted as a session (its tape
  * is kept) and scored on 300 held-out points of the two-moons data. Everything shown is the library's own: the ROC
- * curve, the precision-recall curve and the precision-recall gain curve from `mdml-engine/metrics` drawn by the render
+ * curve, the precision-recall curve and the precision-recall gain curve from `omai-engine/metrics` drawn by the render
  * package's charts, and the contingency table (the confusion matrix with its margins and rates) drawn by the render
  * package's `ContingencyTable` component at the decision threshold 0.
  */
-import { generate } from 'mdml-engine/data'
-import { moons } from 'mdml-engine/datasets'
+import { generate } from 'omai-engine/data'
+import { moons } from 'omai-engine/datasets'
 import {
   averagePrecisionScore,
   precisionRecallCurve,
@@ -14,13 +14,13 @@ import {
   rocAucScore,
   rocCurve,
   thresholdConfusion,
-} from 'mdml-engine/metrics'
-import { key } from 'mdml-engine/random'
-import { svc } from 'mdml-engine/svm'
-import { toFlat } from 'mdml-engine/tensor'
-import { precisionRecallChart, prGainChart, rocChart } from 'mdml-render/charts'
-import { ContingencyTable, ThemeProvider } from 'mdml-render/react'
-import { categoricalColour } from 'mdml-render/theme'
+} from 'omai-engine/metrics'
+import { key } from 'omai-engine/random'
+import { svc } from 'omai-engine/svm'
+import { toFlat } from 'omai-engine/tensor'
+import { precisionRecallChart, prGainChart, rocChart } from 'omai-render/charts'
+import { ContingencyTable, ThemeProvider } from 'omai-render/react'
+import { categoricalColour } from 'omai-render/theme'
 import { INK } from '../_shared/colours.ts'
 import type { ExampleModule, Outcome } from '../_shared/contract.ts'
 import { Figure, Panel } from '../_shared/figure.tsx'

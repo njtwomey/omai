@@ -1,5 +1,5 @@
 import * as echarts from 'echarts'
-import { curveSet } from 'mdml-engine/exposition'
+import { curveSet } from 'omai-engine/exposition'
 import { describe, expect, it } from 'vitest'
 import { curveSetFrames, curveSetView, curveStyles } from './curves.ts'
 

@@ -5,7 +5,7 @@
  * each step, so the transcript grows token by token and the highlight moves with the cursor.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { seal } from './_check.ts'
 
 /** One token of a transcript. */
@@ -41,11 +41,11 @@ export interface Transcript {
  *
  * @param record - The record without its `kind`.
  * @returns The record.
- * @throws MdmlError `shape` when a track does not have one weight per token or `emitted` is not a token; `value` when
+ * @throws OmaiError `shape` when a track does not have one weight per token or `emitted` is not a token; `value` when
  *   a weight is negative or not finite.
  * @example
  * ```ts
- * import { transcript } from 'mdml-engine/exposition'
+ * import { transcript } from 'omai-engine/exposition'
  * const t = transcript({ tokens: [{ text: 'Hi' }, { text: ' there' }], tracks: [{ name: 'head', weights: [0.3, 0.7] }], emitted: 1 })
  * t.emitted // => 1
  * ```
@@ -54,13 +54,13 @@ export function transcript(record: Omit<Transcript, 'kind'>): Transcript {
   const n = record.tokens.length
   for (const [k, t] of (record.tracks ?? []).entries()) {
     if (t.weights.length !== n)
-      throw new MdmlError('shape', `transcript: tracks[${k}] has ${t.weights.length} weights, expected ${n}`)
+      throw new OmaiError('shape', `transcript: tracks[${k}] has ${t.weights.length} weights, expected ${n}`)
     for (const [i, w] of t.weights.entries())
       if (!(Number.isFinite(w) && w >= 0))
-        throw new MdmlError('value', `transcript: tracks[${k}].weights[${i}] is not a weight`)
+        throw new OmaiError('value', `transcript: tracks[${k}].weights[${i}] is not a weight`)
   }
   if (record.emitted !== undefined && !(Number.isInteger(record.emitted) && record.emitted >= 0 && record.emitted < n))
-    throw new MdmlError('shape', `transcript: emitted ${record.emitted} is not one of the ${n} tokens`)
+    throw new OmaiError('shape', `transcript: emitted ${record.emitted} is not one of the ${n} tokens`)
   return seal({ kind: 'transcript', ...record })
 }
 
@@ -71,7 +71,7 @@ export function transcript(record: Omit<Transcript, 'kind'>): Transcript {
  * @returns The turns in order, each with its role (`undefined` for tokens without one).
  * @example
  * ```ts
- * import { transcript, turnsOf } from 'mdml-engine/exposition'
+ * import { transcript, turnsOf } from 'omai-engine/exposition'
  * const t = transcript({ tokens: [{ text: 'a', role: 'user' }, { text: 'b', role: 'user' }, { text: 'c', role: 'assistant' }] })
  * turnsOf(t) // => [{ role: 'user', from: 0, to: 2 }, { role: 'assistant', from: 2, to: 3 }]
  * ```

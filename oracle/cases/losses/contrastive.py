@@ -11,9 +11,9 @@ import numpy as np
 import optax
 import torch
 import torch.nn.functional as F
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray, rng
-from mdml_oracle.torch_helpers import to_numpy, to_torch
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray, rng
+from omai_oracle.torch_helpers import to_numpy, to_torch
 
 jax.config.update("jax_enable_x64", True)
 

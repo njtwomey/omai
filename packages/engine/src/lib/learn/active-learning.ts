@@ -6,7 +6,7 @@
  * loop of fit, query and label (the stream-based case is in `stream-active-learning.ts`).
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { ddot, dnrm2 } from '../numerics/linalg/index.ts'
 import {
   bootstrapIndices,
@@ -50,7 +50,7 @@ function probaRows(
  * @concept active-learning
  * @example
  * ```ts
- * import { leastConfidence } from 'mdml-engine/learn'
+ * import { leastConfidence } from 'omai-engine/learn'
  * leastConfidence([[0.9, 0.1], [0.5, 0.5]]) // => [0.09999999999999998, 0.5]
  * ```
  */
@@ -69,7 +69,7 @@ export function leastConfidence(proba: TensorLike): number[] {
  * @returns One margin per row.
  * @example
  * ```ts
- * import { classMargin } from 'mdml-engine/learn'
+ * import { classMargin } from 'omai-engine/learn'
  * classMargin([[0.7, 0.2, 0.1], [0.4, 0.35, 0.25]]).map((v) => Math.round(v * 100) / 100) // => [0.5, 0.05]
  * ```
  */
@@ -88,7 +88,7 @@ export function classMargin(proba: TensorLike): number[] {
  * @returns One entropy per row.
  * @example
  * ```ts
- * import { predictiveEntropy } from 'mdml-engine/learn'
+ * import { predictiveEntropy } from 'omai-engine/learn'
  * predictiveEntropy([[1, 0], [0.5, 0.5]]) // => [0, Math.LN2]
  * ```
  */
@@ -149,7 +149,7 @@ function scoreStrategy(
  * @returns The strategy.
  * @example
  * ```ts
- * import { uncertaintySampling } from 'mdml-engine/learn'
+ * import { uncertaintySampling } from 'omai-engine/learn'
  * uncertaintySampling().name // => 'uncertainty'
  * ```
  */
@@ -165,7 +165,7 @@ export function uncertaintySampling(): QueryStrategy {
  * @returns The strategy.
  * @example
  * ```ts
- * import { marginSampling } from 'mdml-engine/learn'
+ * import { marginSampling } from 'omai-engine/learn'
  * marginSampling().name // => 'margin'
  * ```
  */
@@ -181,7 +181,7 @@ export function marginSampling(): QueryStrategy {
  * @returns The strategy.
  * @example
  * ```ts
- * import { entropySampling } from 'mdml-engine/learn'
+ * import { entropySampling } from 'omai-engine/learn'
  * entropySampling().name // => 'entropy'
  * ```
  */
@@ -197,7 +197,7 @@ export function entropySampling(): QueryStrategy {
  * @returns The strategy.
  * @example
  * ```ts
- * import { randomSampling } from 'mdml-engine/learn'
+ * import { randomSampling } from 'omai-engine/learn'
  * randomSampling().name // => 'random'
  * ```
  */
@@ -218,7 +218,7 @@ function committeeVotes(ctx: QueryContext): { readonly classes: readonly number[
  * @returns The strategy (it uses the committee).
  * @example
  * ```ts
- * import { voteEntropySampling } from 'mdml-engine/learn'
+ * import { voteEntropySampling } from 'omai-engine/learn'
  * voteEntropySampling().committee // => true
  * ```
  */
@@ -267,7 +267,7 @@ function committeeProba(ctx: QueryContext): {
  * @returns The strategy (it uses the committee).
  * @example
  * ```ts
- * import { consensusEntropySampling } from 'mdml-engine/learn'
+ * import { consensusEntropySampling } from 'omai-engine/learn'
  * consensusEntropySampling().name // => 'consensus-entropy'
  * ```
  */
@@ -289,7 +289,7 @@ export function consensusEntropySampling(): QueryStrategy {
  * @returns The strategy (it uses the committee).
  * @example
  * ```ts
- * import { maxDisagreementSampling } from 'mdml-engine/learn'
+ * import { maxDisagreementSampling } from 'omai-engine/learn'
  * maxDisagreementSampling().name // => 'max-disagreement'
  * ```
  */
@@ -324,7 +324,7 @@ export function maxDisagreementSampling(): QueryStrategy {
  * @returns The strategy.
  * @example
  * ```ts
- * import { expectedErrorReduction } from 'mdml-engine/learn'
+ * import { expectedErrorReduction } from 'omai-engine/learn'
  * expectedErrorReduction({ loss: 'log' }).name // => 'expected-error-reduction'
  * ```
  */
@@ -377,7 +377,7 @@ function stackRows(a: MatrixView, b: MatrixView): MatrixView {
  * @returns The strategy.
  * @example
  * ```ts
- * import { rankedBatchSampling } from 'mdml-engine/learn'
+ * import { rankedBatchSampling } from 'omai-engine/learn'
  * rankedBatchSampling().name // => 'ranked-batch'
  * ```
  */
@@ -431,7 +431,7 @@ export function rankedBatchSampling(): QueryStrategy {
  * @concept active-learning
  * @example
  * ```ts
- * import { expectedModelChangeScores } from 'mdml-engine/learn'
+ * import { expectedModelChangeScores } from 'omai-engine/learn'
  * const s = expectedModelChangeScores([[0.9, 0.1], [0.5, 0.5]], [[1], [1]])
  * s[1] > s[0] // => true
  * ```
@@ -439,7 +439,7 @@ export function rankedBatchSampling(): QueryStrategy {
 export function expectedModelChangeScores(proba: TensorLike, x: TensorLike): number[] {
   const p = matrixView(proba, 'expectedModelChangeScores')
   const f = matrixView(x, 'expectedModelChangeScores')
-  if (p.n !== f.n) throw new MdmlError('shape', 'expectedModelChangeScores: proba and x must have the same rows')
+  if (p.n !== f.n) throw new OmaiError('shape', 'expectedModelChangeScores: proba and x must have the same rows')
   return Array.from({ length: p.n }, (_, i) => {
     const rowX = f.data.subarray(i * f.d, (i + 1) * f.d)
     const xNorm = Math.hypot(dnrm2(rowX), 1)
@@ -470,7 +470,7 @@ export interface ExpectedModelChangeOptions {
  * @concept active-learning
  * @example
  * ```ts
- * import { expectedModelChange } from 'mdml-engine/learn'
+ * import { expectedModelChange } from 'omai-engine/learn'
  * expectedModelChange().name // => 'expected-model-change'
  * ```
  */
@@ -499,19 +499,19 @@ export function expectedModelChange(options: ExpectedModelChangeOptions = {}): Q
  * @concept active-learning
  * @example
  * ```ts
- * import { baldAcquisition } from 'mdml-engine/learn'
+ * import { baldAcquisition } from 'omai-engine/learn'
  * const s = baldAcquisition([[[0.99, 0.01], [0.5, 0.5]], [[0.01, 0.99], [0.5, 0.5]]])
  * s[0] > 0.6 && s[1] === 0 // => true
  * ```
  */
 export function baldAcquisition(memberProbas: readonly TensorLike[]): number[] {
-  if (memberProbas.length === 0) throw new MdmlError('value', 'baldAcquisition: need at least one member')
+  if (memberProbas.length === 0) throw new OmaiError('value', 'baldAcquisition: need at least one member')
   const views = memberProbas.map((m) => matrixView(m, 'baldAcquisition'))
   const n = views[0]?.n ?? 0
   const k = views[0]?.d ?? 0
   const M = views.length
   for (const v of views) {
-    if (v.n !== n || v.d !== k) throw new MdmlError('shape', 'baldAcquisition: all member probas must be [n, k]')
+    if (v.n !== n || v.d !== k) throw new OmaiError('shape', 'baldAcquisition: all member probas must be [n, k]')
   }
   const mean = new Float64Array(n * k)
   const expectedEnt = new Float64Array(n)
@@ -533,7 +533,7 @@ export function baldAcquisition(memberProbas: readonly TensorLike[]): number[] {
  * @concept active-learning
  * @example
  * ```ts
- * import { baldSampling } from 'mdml-engine/learn'
+ * import { baldSampling } from 'omai-engine/learn'
  * baldSampling().committee // => true
  * ```
  */
@@ -567,7 +567,7 @@ export interface BatchBaldOptions {
  * @concept active-learning
  * @example
  * ```ts
- * import { batchBald } from 'mdml-engine/learn'
+ * import { batchBald } from 'omai-engine/learn'
  * const m1 = [[0.95, 0.05], [0.95, 0.05], [0.5, 0.5]]
  * const m2 = [[0.05, 0.95], [0.05, 0.95], [0.5, 0.5]]
  * batchBald([m1, m2], 1).indices // => [0]
@@ -578,13 +578,13 @@ export function batchBald(
   n: number,
   options: BatchBaldOptions = {},
 ): { readonly indices: number[]; readonly scores: number[] } {
-  if (memberProbas.length === 0) throw new MdmlError('value', 'batchBald: need at least one member')
+  if (memberProbas.length === 0) throw new OmaiError('value', 'batchBald: need at least one member')
   const views = memberProbas.map((m) => matrixView(m, 'batchBald'))
   const poolSize = views[0]?.n ?? 0
   const k = views[0]?.d ?? 0
   const M = views.length
   for (const v of views) {
-    if (v.n !== poolSize || v.d !== k) throw new MdmlError('shape', 'batchBald: all member probas must be [n, k]')
+    if (v.n !== poolSize || v.d !== k) throw new OmaiError('shape', 'batchBald: all member probas must be [n, k]')
   }
   const batchSize = Math.min(integerOption(n, 'n', 'batchBald'), poolSize)
   const individualEnt = new Float64Array(poolSize)
@@ -691,7 +691,7 @@ export interface DensityWeightedOptions {
  * @concept active-learning
  * @example
  * ```ts
- * import { densityWeightedUncertainty } from 'mdml-engine/learn'
+ * import { densityWeightedUncertainty } from 'omai-engine/learn'
  * // Outlier at x = 100 has slightly higher raw uncertainty but much lower pool density than the cluster near 0.
  * const scores = densityWeightedUncertainty([0.45, 0.45, 0.45, 0.5], [[0], [0.1], [-0.1], [100]], { beta: 1, gamma: 1 })
  * scores[0] > scores[3] // => true
@@ -705,9 +705,9 @@ export function densityWeightedUncertainty(
   const m = matrixView(x, 'densityWeightedUncertainty')
   const u = targetVector(Array.from(uncertainty), 'densityWeightedUncertainty', m.n)
   const beta = options.beta ?? 1
-  if (!(beta >= 0)) throw new MdmlError('value', 'densityWeightedUncertainty: beta must be >= 0')
+  if (!(beta >= 0)) throw new OmaiError('value', 'densityWeightedUncertainty: beta must be >= 0')
   const gamma = options.gamma ?? 1 / Math.max(1, m.d)
-  if (!(gamma > 0)) throw new MdmlError('value', 'densityWeightedUncertainty: gamma must be > 0')
+  if (!(gamma > 0)) throw new OmaiError('value', 'densityWeightedUncertainty: gamma must be > 0')
   const gram = rbfGram(m, m, gamma)
   return Array.from({ length: m.n }, (_, i) => {
     let sim = 0
@@ -724,7 +724,7 @@ export function densityWeightedUncertainty(
  * @concept active-learning
  * @example
  * ```ts
- * import { densityWeightedSampling } from 'mdml-engine/learn'
+ * import { densityWeightedSampling } from 'omai-engine/learn'
  * densityWeightedSampling({ beta: 1.5 }).name // => 'density-weighted'
  * ```
  */
@@ -760,7 +760,7 @@ export interface CoreSetOptions {
  * @concept active-learning
  * @example
  * ```ts
- * import { coreSetGreedy } from 'mdml-engine/learn'
+ * import { coreSetGreedy } from 'omai-engine/learn'
  * coreSetGreedy([[0], [2], [10]], 2, { labeled: [[0]] }).indices // => [2, 1]
  * ```
  */
@@ -783,7 +783,7 @@ export function coreSetGreedy(
  * @concept active-learning
  * @example
  * ```ts
- * import { coreSetSampling } from 'mdml-engine/learn'
+ * import { coreSetSampling } from 'omai-engine/learn'
  * coreSetSampling().name // => 'core-set'
  * ```
  */
@@ -815,7 +815,7 @@ export interface BadgeOptions {
  * @concept active-learning
  * @example
  * ```ts
- * import { badgeSelection } from 'mdml-engine/learn'
+ * import { badgeSelection } from 'omai-engine/learn'
  * // Rows 0 and 1 are the same uncertain point: a batch of three never takes both before the other two rows.
  * const p = [[0.6, 0.4], [0.6, 0.4], [0.4, 0.6], [0.55, 0.45]]
  * badgeSelection(p, [[-4], [-4], [4], [0]], 3).includes(1) // => false
@@ -824,7 +824,7 @@ export interface BadgeOptions {
 export function badgeSelection(proba: TensorLike, x: TensorLike, n: number, options: BadgeOptions = {}): number[] {
   const p = matrixView(proba, 'badgeSelection')
   const f = matrixView(x, 'badgeSelection')
-  if (p.n !== f.n) throw new MdmlError('shape', 'badgeSelection: proba and x must have the same number of rows')
+  if (p.n !== f.n) throw new OmaiError('shape', 'badgeSelection: proba and x must have the same number of rows')
   const count = Math.min(integerOption(n, 'n', 'badgeSelection'), p.n)
   const dAug = f.d + 1
   const dim = p.d * dAug
@@ -894,7 +894,7 @@ export function badgeSelection(proba: TensorLike, x: TensorLike, n: number, opti
  * @concept active-learning
  * @example
  * ```ts
- * import { badgeSampling } from 'mdml-engine/learn'
+ * import { badgeSampling } from 'omai-engine/learn'
  * badgeSampling().name // => 'badge'
  * ```
  */
@@ -960,9 +960,9 @@ export interface ActiveLearningResult {
  * @concept active-learning
  * @example
  * ```ts
- * import { activeLearningAlgorithm, defineEstimator, uncertaintySampling } from 'mdml-engine/learn'
- * import { tensor } from 'mdml-engine/tensor'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { activeLearningAlgorithm, defineEstimator, uncertaintySampling } from 'omai-engine/learn'
+ * import { tensor } from 'omai-engine/tensor'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const est = defineEstimator({ name: 't', kind: 'classifier', fit: () => ({}), methods: () => ({ classes: [0, 1], predictProba: (x) => tensor(Array.from({ length: x.shape[0] }, () => [0.5, 0.5])) }) }, {})
  * const alg = activeLearningAlgorithm(est, { labeled: { x: [[0], [1]], y: [0, 1] }, pool: [[0.2], [0.8]], oracle: () => [0], strategy: uncertaintySampling(), budget: 1 })
  * runAlgorithm(alg, { maxSteps: 2 }).state.queried.length // => 1
@@ -976,7 +976,7 @@ export function activeLearningAlgorithm(
   const labeled0 = matrixView(options.labeled.x, 'activeLearning', { nFeatures: pool.d })
   const y0 = targetVector(options.labeled.y ?? [], 'activeLearning', labeled0.n)
   const batch = options.batchSize ?? 1
-  if (!(Number.isInteger(batch) && batch >= 1)) throw new MdmlError('value', 'activeLearning: batchSize must be >= 1')
+  if (!(Number.isInteger(batch) && batch >= 1)) throw new OmaiError('value', 'activeLearning: batchSize must be >= 1')
   const budget = Math.min(options.budget ?? pool.n, pool.n)
   const scorer: Scorer | undefined =
     options.evaluation === undefined ? undefined : Object.values(scorersOf(options.scoring))[0]
@@ -1027,11 +1027,11 @@ export function activeLearningAlgorithm(
       )
       const indices = picks.map((p) => s.remaining[p] ?? -1)
       if (indices.some((i) => i < 0) || new Set(indices).size !== indices.length) {
-        throw new MdmlError('value', `activeLearning: ${options.strategy.name} returned invalid pool indices`)
+        throw new OmaiError('value', `activeLearning: ${options.strategy.name} returned invalid pool indices`)
       }
       const labels = options.oracle(indices)
       if (labels.length !== indices.length)
-        throw new MdmlError('shape', 'activeLearning: the oracle must label every queried row')
+        throw new OmaiError('shape', 'activeLearning: the oracle must label every queried row')
       const x = stackRows(s.x, takeRows(pool, indices))
       const chosen = new Set(indices)
       const next: ActiveLearningState = {
@@ -1071,9 +1071,9 @@ export function activeLearningAlgorithm(
  * @index function Pool-based active learning with query strategies.
  * @example
  * ```ts
- * import { activeLearning, uncertaintySampling } from 'mdml-engine/learn'
- * import { defineEstimator } from 'mdml-engine/learn'
- * import { tensor } from 'mdml-engine/tensor'
+ * import { activeLearning, uncertaintySampling } from 'omai-engine/learn'
+ * import { defineEstimator } from 'omai-engine/learn'
+ * import { tensor } from 'omai-engine/tensor'
  * const threshold = defineEstimator(
  *   { name: 't', kind: 'classifier', fit: () => ({}), methods: () => ({ classes: [0, 1], predictProba: (x) => tensor(Array.from({ length: x.shape[0] }, (_, i) => { const p = 1 / (1 + Math.exp(-x.data[i])); return [1 - p, p] })) }) },
  *   {},
@@ -1110,7 +1110,7 @@ export function activeLearning(estimator: Estimator, options: ActiveLearningOpti
  * @returns `[n + m, d]`.
  * @example
  * ```ts
- * import { appendRows } from 'mdml-engine/learn'
+ * import { appendRows } from 'omai-engine/learn'
  * appendRows([[1, 2]], [[3, 4]]).shape // => [2, 2]
  * ```
  */

@@ -3,7 +3,7 @@
 import numpy as np
 import sklearn
 import torch
-from mdml_oracle.fixture import Case, case
+from omai_oracle.fixture import Case, case
 from sklearn.utils.class_weight import compute_sample_weight
 from torch.nn.utils.rnn import pad_sequence
 

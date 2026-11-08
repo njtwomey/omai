@@ -6,7 +6,7 @@ and a uniform unigram, its Witten-Bell weights by the total count of the order),
 
 from collections import Counter
 
-from mdml_oracle.fixture import Case, case
+from omai_oracle.fixture import Case, case
 
 REFERENCE: dict[str, str] = {"python": "stdlib"}
 

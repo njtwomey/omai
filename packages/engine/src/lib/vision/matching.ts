@@ -4,7 +4,7 @@
  * on the two nearest.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import type { TensorLike } from '../tensor/index.ts'
 import { valuesOf } from './_image.ts'
 
@@ -46,12 +46,12 @@ const POPCOUNT = Uint8Array.from({ length: 256 }, (_, i) => {
  * @concept descriptor-matching
  * @example
  * ```ts
- * import { descriptorDistance } from 'mdml-engine/vision'
+ * import { descriptorDistance } from 'omai-engine/vision'
  * descriptorDistance([0b1010], [0b0110], 'hamming') // => 2
  * ```
  */
 export function descriptorDistance(a: ArrayLike<number>, b: ArrayLike<number>, norm: MatchNorm = 'l2'): number {
-  if (a.length !== b.length) throw new MdmlError('shape', 'descriptorDistance: descriptors differ in length')
+  if (a.length !== b.length) throw new OmaiError('shape', 'descriptorDistance: descriptors differ in length')
   let s = 0
   for (let i = 0; i < a.length; i++) {
     const x = a[i] ?? 0
@@ -75,7 +75,7 @@ export function descriptorDistance(a: ArrayLike<number>, b: ArrayLike<number>, n
  * @concept descriptor-matching
  * @example
  * ```ts
- * import { knnMatch } from 'mdml-engine/vision'
+ * import { knnMatch } from 'omai-engine/vision'
  * knnMatch([[0, 0]], [[3, 4], [1, 0], [0, 2]], 2)[0].map((m) => m.trainIdx) // => [1, 2]
  * ```
  */
@@ -105,7 +105,7 @@ export function knnMatch(
  * @concept descriptor-matching
  * @example
  * ```ts
- * import { matchDescriptors } from 'mdml-engine/vision'
+ * import { matchDescriptors } from 'omai-engine/vision'
  * matchDescriptors([[0, 0], [5, 5]], [[5, 4], [1, 0]]).map((m) => m.trainIdx) // => [1, 0]
  * ```
  */
@@ -131,7 +131,7 @@ export function matchDescriptors(
  * @concept descriptor-matching
  * @example
  * ```ts
- * import { ratioTestMatch } from 'mdml-engine/vision'
+ * import { ratioTestMatch } from 'omai-engine/vision'
  * ratioTestMatch([[0, 0], [5, 5]], [[0, 0.1], [5, 4.9], [5, 5.1]]).map((m) => m.queryIdx) // => [0]
  * ```
  */

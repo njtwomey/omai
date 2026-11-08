@@ -7,7 +7,7 @@
  * too, for turning any matrix of one kind into the other.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import {
   choice,
   type DictSpace,
@@ -111,8 +111,8 @@ function gammaOf(options: SimilarityOptions, kernel: 'gaussian' | 'laplacian'): 
  *
  * @example
  * ```ts
- * import { cosineSimilarity } from 'mdml-engine/distances'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { cosineSimilarity } from 'omai-engine/distances'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * toArray(cosineSimilarity.compute(tensor([1, 0]), tensor([1, 1]), {})) // => 0.707107
  * ```
  */
@@ -129,8 +129,8 @@ export const cosineSimilarity: SimilarityEntry = {
  *
  * @example
  * ```ts
- * import { dotSimilarity } from 'mdml-engine/distances'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { dotSimilarity } from 'omai-engine/distances'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * toArray(dotSimilarity.compute(tensor([1, 2]), tensor([3, 4]), {})) // => 11
  * ```
  */
@@ -148,8 +148,8 @@ export const dotSimilarity: SimilarityEntry = {
  *
  * @example
  * ```ts
- * import { pearsonSimilarity } from 'mdml-engine/distances'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { pearsonSimilarity } from 'omai-engine/distances'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * toArray(pearsonSimilarity.compute(tensor([1, 2, 3]), tensor([3, 2, 1]), {})) // => -1
  * ```
  */
@@ -168,8 +168,8 @@ export const pearsonSimilarity: SimilarityEntry = {
  *
  * @example
  * ```ts
- * import { gaussianSimilarity } from 'mdml-engine/distances'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { gaussianSimilarity } from 'omai-engine/distances'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * toArray(gaussianSimilarity.compute(tensor([0, 0]), tensor([1, 0]), { gamma: 1 })) // => 0.367879
  * ```
  */
@@ -187,8 +187,8 @@ export const gaussianSimilarity: SimilarityEntry = {
  *
  * @example
  * ```ts
- * import { laplacianSimilarity } from 'mdml-engine/distances'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { laplacianSimilarity } from 'omai-engine/distances'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * toArray(laplacianSimilarity.compute(tensor([0, 0]), tensor([1, 1]), { gamma: 0.5 })) // => 0.367879
  * ```
  */
@@ -221,8 +221,8 @@ function innerParameters(): Readonly<Record<string, Space>> {
  *
  * @example
  * ```ts
- * import { inverseDistanceSimilarity } from 'mdml-engine/distances'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { inverseDistanceSimilarity } from 'omai-engine/distances'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * toArray(inverseDistanceSimilarity.compute(tensor([0, 0]), tensor([3, 4]), { distance: 'manhattan' })) // => 0.125
  * ```
  */
@@ -247,7 +247,7 @@ export const inverseDistanceSimilarity: SimilarityEntry = {
  *
  * @example
  * ```ts
- * import { similarities } from 'mdml-engine/distances'
+ * import { similarities } from 'omai-engine/distances'
  * similarities.gaussian.range // => [0, 1]
  * Object.keys(similarities).length // => 6
  * ```
@@ -266,7 +266,7 @@ export const similarities: Readonly<Record<SimilarityName, SimilarityEntry>> = {
  *
  * @example
  * ```ts
- * import { similarityNames } from 'mdml-engine/distances'
+ * import { similarityNames } from 'omai-engine/distances'
  * similarityNames.includes('gaussian') // => true
  * ```
  */
@@ -278,8 +278,8 @@ export const similarityNames: readonly SimilarityName[] = Object.keys(similariti
  *
  * @example
  * ```ts
- * import { similaritySpace } from 'mdml-engine/distances'
- * import { defaults } from 'mdml-engine/space'
+ * import { similaritySpace } from 'omai-engine/distances'
+ * import { defaults } from 'omai-engine/space'
  * defaults(similaritySpace) // => { name: 'cosine' }
  * ```
  */
@@ -294,17 +294,17 @@ export const similaritySpace: UnionSpace = union(
  * @param name - A registered name (`'cosine'`, `'gaussian'`, ...) or an alias (`'rbf'`, `'linear'`,
  *   `'correlation'`).
  * @returns The entry.
- * @throws MdmlError `value` for a name that is not registered.
+ * @throws OmaiError `value` for a name that is not registered.
  * @example
  * ```ts
- * import { similarityEntry } from 'mdml-engine/distances'
+ * import { similarityEntry } from 'omai-engine/distances'
  * similarityEntry('rbf').name // => 'gaussian'
  * ```
  */
 export function similarityEntry(name: string): SimilarityEntry {
   const canonical = Object.hasOwn(similarityAliases, name) ? similarityAliases[name as SimilarityAlias] : name
   if (!Object.hasOwn(similarities, canonical))
-    throw new MdmlError(
+    throw new OmaiError(
       'value',
       `unknown similarity '${name}'; the registered names are ${similarityNames.join(', ')}`,
       { name },
@@ -331,12 +331,12 @@ export interface DistanceToSimilarityOptions {
  * @param d - Distances, any shape.
  * @param options - The form and scale.
  * @returns The similarities, the same shape, differentiable.
- * @throws MdmlError `value` for an unknown form.
+ * @throws OmaiError `value` for an unknown form.
  * @concept distances
  * @example
  * ```ts
- * import { distanceToSimilarity } from 'mdml-engine/distances'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { distanceToSimilarity } from 'omai-engine/distances'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(distanceToSimilarity([0, 1, 3])) // => [1, 0.5, 0.25]
  * toArray(distanceToSimilarity([0, 2], { form: 'linear', scale: 4 })) // => [1, 0.5]
  * ```
@@ -355,7 +355,7 @@ export function distanceToSimilarity(d: TensorLike, options: DistanceToSimilarit
     case 'linear':
       return maximum(sub(1, scaled), 0)
     default:
-      throw new MdmlError('value', `distanceToSimilarity: unknown form '${String(options.form)}'`)
+      throw new OmaiError('value', `distanceToSimilarity: unknown form '${String(options.form)}'`)
   }
 }
 
@@ -380,12 +380,12 @@ export interface SimilarityToDistanceOptions {
  * @param s - Similarities, any shape.
  * @param options - The form.
  * @returns The distances, the same shape, differentiable.
- * @throws MdmlError `value` for an unknown form.
+ * @throws OmaiError `value` for an unknown form.
  * @concept distances
  * @example
  * ```ts
- * import { similarityToDistance } from 'mdml-engine/distances'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { similarityToDistance } from 'omai-engine/distances'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(similarityToDistance([1, 0.5, 0.25], { form: 'inverse' })) // => [0, 1, 3]
  * toArray(similarityToDistance([1, 0, -1], { form: 'chord' })) // => [0, 1.414214, 2]
  * ```
@@ -400,6 +400,6 @@ export function similarityToDistance(s: TensorLike, options: SimilarityToDistanc
     case 'chord':
       return sqrt(maximum(sub(2, mul(x, 2)), 0))
     default:
-      throw new MdmlError('value', `similarityToDistance: unknown form '${String(options.form)}'`)
+      throw new OmaiError('value', `similarityToDistance: unknown form '${String(options.form)}'`)
   }
 }

@@ -1,6 +1,6 @@
-import { cartesian, fn, points, secantLine, tangentLine } from 'mdml-render/charts'
-import { figure } from 'mdml-render/figure'
-import { Chart, ControlPanel, FigureFrame, NumberField, useColourMode } from 'mdml-render/react'
+import { cartesian, fn, points, secantLine, tangentLine } from 'omai-render/charts'
+import { figure } from 'omai-render/figure'
+import { Chart, ControlPanel, FigureFrame, NumberField, useColourMode } from 'omai-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 

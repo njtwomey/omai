@@ -4,7 +4,7 @@
  * sparse grids, which need far fewer points in higher dimensions.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import {
   concat,
   fromStorage,
@@ -36,13 +36,13 @@ export type Range = readonly [number, number] | ((...outer: number[]) => readonl
  * @index function Iterated adaptive integration over several variables.
  * @example
  * ```ts
- * import { nquad } from 'mdml-engine/numerics/quadrature'
- * import { item, mul } from 'mdml-engine/tensor'
+ * import { nquad } from 'omai-engine/numerics/quadrature'
+ * import { item, mul } from 'omai-engine/tensor'
  * Math.abs(item(nquad((x, y) => mul(x, y), [[0, 1], [0, 2]])) - 1) < 1e-12 // => true
  * ```
  */
 export function nquad(f: (...xs: Value[]) => Value, ranges: readonly Range[], options: QuadOptions = {}): Value {
-  if (ranges.length === 0) throw new MdmlError('value', 'nquad: at least one range is needed')
+  if (ranges.length === 0) throw new OmaiError('value', 'nquad: at least one range is needed')
   const limits = (k: number, outer: readonly number[]): readonly [number, number] => {
     const r = ranges[k] as Range
     return typeof r === 'function' ? r(...outer) : r
@@ -77,8 +77,8 @@ export function nquad(f: (...xs: Value[]) => Value, ranges: readonly Range[], op
  * @returns The integral.
  * @example
  * ```ts
- * import { dblquad } from 'mdml-engine/numerics/quadrature'
- * import { item, mul } from 'mdml-engine/tensor'
+ * import { dblquad } from 'omai-engine/numerics/quadrature'
+ * import { item, mul } from 'omai-engine/tensor'
  * // x y over the triangle 0 <= y <= x <= 1: 1/8.
  * Math.abs(item(dblquad((y, x) => mul(x, y), 0, 1, 0, (x) => x)) - 0.125) < 1e-12 // => true
  * ```
@@ -109,8 +109,8 @@ export function dblquad(
  * @returns The integral.
  * @example
  * ```ts
- * import { tplquad } from 'mdml-engine/numerics/quadrature'
- * import { item, mul } from 'mdml-engine/tensor'
+ * import { tplquad } from 'omai-engine/numerics/quadrature'
+ * import { item, mul } from 'omai-engine/tensor'
  * // x y z over the unit cube: 1/8.
  * Math.abs(item(tplquad((z, y, x) => mul(mul(z, y), x), 0, 1, 0, 1, 0, 1)) - 0.125) < 1e-12 // => true
  * ```
@@ -173,7 +173,7 @@ function gaussOnInterval(n: number): { x: number[]; w: number[] } {
  * @returns The rule.
  * @example
  * ```ts
- * import { productGaussRule } from 'mdml-engine/numerics/quadrature'
+ * import { productGaussRule } from 'omai-engine/numerics/quadrature'
  * productGaussRule([[0, 1], [0, 1]], 3).points.shape // => [9, 2]
  * ```
  */
@@ -213,7 +213,7 @@ function binomial(n: number, k: number): number {
  * @concept sparse-grids
  * @example
  * ```ts
- * import { sparseGridRule } from 'mdml-engine/numerics/quadrature'
+ * import { sparseGridRule } from 'omai-engine/numerics/quadrature'
  * Array.from(sparseGridRule([[0, 1], [0, 1], [0, 1]], 2).weights.data).reduce((a, b) => a + b) // => 1
  * ```
  */
@@ -252,8 +252,8 @@ export function sparseGridRule(box: readonly (readonly [number, number])[], leve
  * @returns The estimate.
  * @example
  * ```ts
- * import { cubature, productGaussRule } from 'mdml-engine/numerics/quadrature'
- * import { item, prod } from 'mdml-engine/tensor'
+ * import { cubature, productGaussRule } from 'omai-engine/numerics/quadrature'
+ * import { item, prod } from 'omai-engine/tensor'
  * Math.abs(item(cubature((p) => prod(p, -1), productGaussRule([[0, 1], [0, 2]], 2))) - 1) < 1e-13 // => true
  * ```
  */

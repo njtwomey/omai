@@ -49,8 +49,8 @@ export interface CustomVjpSpec {
  * @index function Define a function with a hand-written reverse rule.
  * @example
  * ```ts
- * import { customVjp, grad } from 'mdml-engine/autodiff'
- * import { log1p, exp, mul, sigmoid, tensor, toArray, type Value } from 'mdml-engine/tensor'
+ * import { customVjp, grad } from 'omai-engine/autodiff'
+ * import { log1p, exp, mul, sigmoid, tensor, toArray, type Value } from 'omai-engine/tensor'
  * const softplus = customVjp({
  *   name: 'softplus',
  *   forward: (x) => log1p(exp(x)),
@@ -90,8 +90,8 @@ export function customVjp(spec: CustomVjpSpec): (...inputs: Value[]) => Value {
  * @concept stop-gradient
  * @example
  * ```ts
- * import { stopGradient, grad } from 'mdml-engine/autodiff'
- * import { mul, tensor, toArray, type Value } from 'mdml-engine/tensor'
+ * import { stopGradient, grad } from 'omai-engine/autodiff'
+ * import { mul, tensor, toArray, type Value } from 'omai-engine/tensor'
  * toArray(grad((x: Value) => mul(x, stopGradient(x)))(tensor(3))) // => 3
  * ```
  */
@@ -127,8 +127,8 @@ function floatIndices(xs: readonly Value[]): number[] {
  * @concept custom-derivatives
  * @example
  * ```ts
- * import { customJvp, grad, jvp } from 'mdml-engine/autodiff'
- * import { add, exp, log, mul, sigmoid, tensor, toArray, type Value } from 'mdml-engine/tensor'
+ * import { customJvp, grad, jvp } from 'omai-engine/autodiff'
+ * import { add, exp, log, mul, sigmoid, tensor, toArray, type Value } from 'omai-engine/tensor'
  * const softplus = customJvp({
  *   name: 'softplus',
  *   forward: (x) => log(add(exp(x), 1)),
@@ -248,8 +248,8 @@ function residualTrace(
  * @index function Gradient checkpointing: recompute the forward pass instead of storing it.
  * @example
  * ```ts
- * import { checkpoint, grad } from 'mdml-engine/autodiff'
- * import { matmul, sum, tanh, tensor, toArray, type Value } from 'mdml-engine/tensor'
+ * import { checkpoint, grad } from 'omai-engine/autodiff'
+ * import { matmul, sum, tanh, tensor, toArray, type Value } from 'omai-engine/tensor'
  * const w = tensor([[1, 0], [0, 2]])
  * const layer = checkpoint((x) => tanh(matmul(x, w)), { policy: 'matmuls' })
  * toArray(grad((x: Value) => sum(layer(x)))(tensor([0, 0]))) // => [1, 2]
@@ -322,8 +322,8 @@ export function checkpoint(
  * @concept straight-through-estimator
  * @example
  * ```ts
- * import { straightThrough, grad } from 'mdml-engine/autodiff'
- * import { round, sum, tensor, toArray, type Value } from 'mdml-engine/tensor'
+ * import { straightThrough, grad } from 'omai-engine/autodiff'
+ * import { round, sum, tensor, toArray, type Value } from 'omai-engine/tensor'
  * const roundST = straightThrough(round)
  * toArray(roundST(tensor([0.4, 1.6]))) // => [0, 2]
  * toArray(grad((x: Value) => sum(roundST(x)))(tensor([0.4, 1.6]))) // => [1, 1]

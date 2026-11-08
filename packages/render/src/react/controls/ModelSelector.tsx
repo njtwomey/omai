@@ -5,7 +5,7 @@
  * puts out of reach are drawn disabled with the reason as their title.
  */
 
-import { asModeConfig, defaults, type Space, type SpaceValue, type UnionSpace } from 'mdml-engine/space'
+import { asModeConfig, defaults, type Space, type SpaceValue, type UnionSpace } from 'omai-engine/space'
 import { type ReactNode, useId, useState } from 'react'
 import { OptionSettings } from './_OptionSettings.tsx'
 import { cx, labelClass } from './classes.ts'

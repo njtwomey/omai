@@ -7,7 +7,7 @@
  * @index structure The metric contract: a spec plus a function returning a MetricResult.
  */
 
-import { estimate, MdmlError, type MetricResult, type MetricSpec } from '../base/index.ts'
+import { estimate, type MetricResult, type MetricSpec, OmaiError } from '../base/index.ts'
 import { asTensor, isValue, type TensorLike, toFlat, toVector } from '../tensor/index.ts'
 
 /** Options every metric accepts. */
@@ -39,7 +39,7 @@ export type MetricFunction<A extends readonly unknown[]> = ((...args: A) => Metr
  * @returns The function with `spec`.
  * @example
  * ```ts
- * import { defineMetric, metricResult } from 'mdml-engine/metrics'
+ * import { defineMetric, metricResult } from 'omai-engine/metrics'
  * const spec = { name: 'one', direction: 'higher', range: [0, 1], inputs: 'values', category: 'demo' } as const
  * const one = defineMetric(spec, () => metricResult('one', 1, 1))
  * one.spec.name // => 'one'
@@ -62,7 +62,7 @@ export function defineMetric<A extends readonly unknown[]>(
  * @returns The result.
  * @example
  * ```ts
- * import { metricResult } from 'mdml-engine/metrics'
+ * import { metricResult } from 'omai-engine/metrics'
  * metricResult('accuracy', 0.75, 4).estimate.value // => 0.75
  * ```
  */
@@ -91,20 +91,20 @@ export interface Columns {
  * @param n - The number of samples.
  * @param sampleWeight - The weights, if any.
  * @returns The weights.
- * @throws MdmlError with code `shape` when the length differs from n, and `value` for a negative or non-finite weight.
+ * @throws OmaiError with code `shape` when the length differs from n, and `value` for a negative or non-finite weight.
  * @example
  * ```ts
- * import { sampleWeights } from 'mdml-engine/metrics'
+ * import { sampleWeights } from 'omai-engine/metrics'
  * Array.from(sampleWeights('demo', 2)) // => [1, 1]
  * ```
  */
 export function sampleWeights(name: string, n: number, sampleWeight?: TensorLike): Float64Array {
   if (sampleWeight === undefined) return new Float64Array(n).fill(1)
   const w = Float64Array.from(toFlat(asTensor(sampleWeight)))
-  if (w.length !== n) throw new MdmlError('shape', `${name}: sampleWeight must have one entry per sample`)
+  if (w.length !== n) throw new OmaiError('shape', `${name}: sampleWeight must have one entry per sample`)
   for (const v of w)
     if (!(v >= 0 && v < Number.POSITIVE_INFINITY))
-      throw new MdmlError('value', `${name}: sampleWeight must be finite and non-negative (got ${v})`)
+      throw new OmaiError('value', `${name}: sampleWeight must be finite and non-negative (got ${v})`)
   return w
 }
 
@@ -115,7 +115,7 @@ export function sampleWeights(name: string, n: number, sampleWeight?: TensorLike
  * @returns Its values.
  * @example
  * ```ts
- * import { flat } from 'mdml-engine/metrics'
+ * import { flat } from 'omai-engine/metrics'
  * Array.from(flat([[1, 2], [3, 4]])) // => [1, 2, 3, 4]
  * ```
  */
@@ -136,7 +136,7 @@ export interface ShapedArray {
  * @returns Its shape and row-major values.
  * @example
  * ```ts
- * import { shapedArray } from 'mdml-engine/metrics'
+ * import { shapedArray } from 'omai-engine/metrics'
  * shapedArray([[1, 2], [3, 4]]).shape // => [2, 2]
  * ```
  */
@@ -153,11 +153,11 @@ export function shapedArray(x: TensorLike): ShapedArray {
  * @param yPred - Predictions of the same shape.
  * @param options - Options carrying the sample weights.
  * @returns The sample and output counts, the row-major values and the weights.
- * @throws MdmlError with code `shape` when the shapes differ or have more than two axes, `value` for no samples or a
+ * @throws OmaiError with code `shape` when the shapes differ or have more than two axes, `value` for no samples or a
  * bad weight.
  * @example
  * ```ts
- * import { columns } from 'mdml-engine/metrics'
+ * import { columns } from 'omai-engine/metrics'
  * columns('demo', [[1, 2], [3, 4]], [[1, 2], [3, 5]]).k // => 2
  * ```
  */
@@ -165,12 +165,12 @@ export function columns(name: string, yTrue: TensorLike, yPred: TensorLike, opti
   const t = asTensor(yTrue)
   const p = asTensor(yPred)
   if (t.shape.length !== p.shape.length || t.shape.some((d, i) => d !== p.shape[i])) {
-    throw new MdmlError('shape', `${name}: yTrue [${t.shape.join(', ')}] and yPred [${p.shape.join(', ')}] differ`)
+    throw new OmaiError('shape', `${name}: yTrue [${t.shape.join(', ')}] and yPred [${p.shape.join(', ')}] differ`)
   }
-  if (t.shape.length > 2) throw new MdmlError('shape', `${name}: expected 1-D or 2-D targets`)
+  if (t.shape.length > 2) throw new OmaiError('shape', `${name}: expected 1-D or 2-D targets`)
   const n = t.shape[0] ?? 1
   const k = t.shape.length === 2 ? (t.shape[1] ?? 1) : 1
-  if (n === 0) throw new MdmlError('value', `${name}: needs at least one sample`)
+  if (n === 0) throw new OmaiError('value', `${name}: needs at least one sample`)
   const weight = sampleWeights(name, n, options.sampleWeight)
   return { n, k, yTrue: Float64Array.from(toFlat(t)), yPred: Float64Array.from(toFlat(p)), weight }
 }
@@ -184,7 +184,7 @@ export function columns(name: string, yTrue: TensorLike, yPred: TensorLike, opti
  * @returns The metric function with `spec` attached.
  * @example
  * ```ts
- * import { perOutputMetric } from 'mdml-engine/metrics'
+ * import { perOutputMetric } from 'omai-engine/metrics'
  * const spec = { name: 'bias', direction: 'lower', range: [-Infinity, Infinity], inputs: 'values', category: 'demo' } as const
  * const bias = perOutputMetric(spec, (t, p) => p.reduce((a, v, i) => a + v - (t[i] ?? 0), 0) / p.length)
  * bias([1, 2], [2, 4]).estimate.value // => 1.5
@@ -225,7 +225,7 @@ export function perOutputMetric<O extends MetricOptions>(
  * @returns The sum of value times weight over the sum of weights (NaN when the weights sum to 0).
  * @example
  * ```ts
- * import { weightedMean } from 'mdml-engine/metrics'
+ * import { weightedMean } from 'omai-engine/metrics'
  * weightedMean([1, 3], [3, 1]) // => 1.5
  * ```
  */
@@ -250,10 +250,10 @@ export function weightedMean(values: ArrayLike<number>, weight: ArrayLike<number
  * @param percentile - The rank in [0, 100].
  * @param average - Average at exact ties (default true).
  * @returns The percentile (NaN when every weight is zero).
- * @throws MdmlError with code `shape` unless `values` and `weights` are vectors.
+ * @throws OmaiError with code `shape` unless `values` and `weights` are vectors.
  * @example
  * ```ts
- * import { weightedPercentile } from 'mdml-engine/metrics'
+ * import { weightedPercentile } from 'omai-engine/metrics'
  * weightedPercentile([1, 2, 3, 4], undefined, 50) // => 2.5
  * ```
  */
@@ -295,7 +295,7 @@ export function weightedPercentile(
  * @returns The length of the first axis (the length of a string array).
  * @example
  * ```ts
- * import { rowCount } from 'mdml-engine/metrics'
+ * import { rowCount } from 'omai-engine/metrics'
  * rowCount([[1, 2], [3, 4], [5, 6]]) // => 3
  * ```
  */
@@ -312,7 +312,7 @@ export function rowCount(x: MetricInput): number {
  * @returns The selected rows in the order of `rows`, as nested arrays for numeric input.
  * @example
  * ```ts
- * import { selectRows } from 'mdml-engine/metrics'
+ * import { selectRows } from 'omai-engine/metrics'
  * selectRows(['a', 'b', 'c'], [2, 0]) // => ['c', 'a']
  * ```
  */
@@ -354,7 +354,7 @@ export interface StreamingMetric<O extends MetricOptions, I> {
  * @returns The accumulator.
  * @example
  * ```ts
- * import { meanAbsoluteError, streaming } from 'mdml-engine/metrics'
+ * import { meanAbsoluteError, streaming } from 'omai-engine/metrics'
  * const s = streaming(meanAbsoluteError)
  * s.update([1, 2], [2, 2])
  * s.update([3], [5])
@@ -375,7 +375,7 @@ export function streaming<O extends MetricOptions, I extends MetricInput>(metric
     update(yTrue, yPred, sampleWeight) {
       const t = rows(yTrue)
       const p = rows(yPred)
-      if (t.length !== p.length) throw new MdmlError('shape', 'streaming: yTrue and yPred differ in length')
+      if (t.length !== p.length) throw new OmaiError('shape', 'streaming: yTrue and yPred differ in length')
       for (const v of t) trues.push(v)
       for (const v of p) preds.push(v)
       if (sampleWeight !== undefined) weighted = true
@@ -383,7 +383,7 @@ export function streaming<O extends MetricOptions, I extends MetricInput>(metric
       else for (const v of flat(sampleWeight)) weights.push(v)
     },
     compute(options) {
-      if (trues.length === 0) throw new MdmlError('value', 'streaming: no batches seen')
+      if (trues.length === 0) throw new OmaiError('value', 'streaming: no batches seen')
       const opts = { ...(options ?? {}), ...(weighted ? { sampleWeight: weights } : {}) } as unknown as O
       return metric(trues as unknown as I, preds as unknown as I, opts)
     },
@@ -415,7 +415,7 @@ function selectRowsList(t: ReturnType<typeof asTensor>): unknown[] {
  * @returns True for a non-empty array of strings.
  * @example
  * ```ts
- * import { isStringInput } from 'mdml-engine/metrics'
+ * import { isStringInput } from 'omai-engine/metrics'
  * isStringInput(['a', 'b']) // => true
  * ```
  */

@@ -10,7 +10,7 @@
  * traced algorithm whose state serialises.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { dgemv } from '../numerics/linalg/index.ts'
 import type { Key } from '../random/index.ts'
 import {
@@ -39,8 +39,8 @@ import type { GamProblem, GamState } from './pirls.ts'
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { GAM_DEFAULTS, fitGam, gamPosteriorTarget, gamProblem, s } from 'mdml-engine/gam'
- * import { families } from 'mdml-engine/dists'
+ * import { GAM_DEFAULTS, fitGam, gamPosteriorTarget, gamProblem, s } from 'omai-engine/gam'
+ * import { families } from 'omai-engine/dists'
  * const x = Array.from({ length: 40 }, (_, i) => [i / 39])
  * const hyper = { ...GAM_DEFAULTS, family: families.poisson(), terms: [s(0, { k: 5 })] }
  * const problem = gamProblem(x, x.map((r) => Math.round(3 * (r[0] ?? 0) + 1)), hyper)
@@ -73,8 +73,8 @@ export function gamPosteriorTarget(problem: GamProblem, state: GamState): LogDen
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { extendedModel, extendedPosteriorTarget, linear } from 'mdml-engine/gam'
- * import { families } from 'mdml-engine/dists'
+ * import { extendedModel, extendedPosteriorTarget, linear } from 'omai-engine/gam'
+ * import { families } from 'omai-engine/dists'
  * const m = extendedModel([[0], [1], [2], [3]], [0.2, 0.4, 0.5, 0.8], families.betaRegression(), [[linear(0)]])
  * extendedPosteriorTarget(m, [], [2]).dim // => 2
  * ```
@@ -118,12 +118,12 @@ export interface PosteriorKernelOptions {
  * @param target - The posterior log density.
  * @param options - The method, the covariance and the tuning.
  * @returns The kernel.
- * @throws MdmlError `shape` if the covariance does not match the target's dimension.
+ * @throws OmaiError `shape` if the covariance does not match the target's dimension.
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { posteriorKernel } from 'mdml-engine/gam'
- * import { numericTarget } from 'mdml-engine/sampling'
+ * import { posteriorKernel } from 'omai-engine/gam'
+ * import { numericTarget } from 'omai-engine/sampling'
  * const t = numericTarget((x) => -0.5 * (x[0] ?? 0) ** 2, 1, { grad: (x) => [-(x[0] ?? 0)] })
  * posteriorKernel(t, { covariance: [1] }).name // => 'hmc'
  * ```
@@ -131,7 +131,7 @@ export interface PosteriorKernelOptions {
 export function posteriorKernel(target: LogDensity, options: PosteriorKernelOptions): MCMCKernel {
   const p = target.dim
   if (options.covariance.length !== p * p) {
-    throw new MdmlError('shape', `posteriorKernel: a ${p} x ${p} covariance needs ${p * p} entries`)
+    throw new OmaiError('shape', `posteriorKernel: a ${p} x ${p} covariance needs ${p * p} entries`)
   }
   if (options.method === 'metropolis') {
     const f = options.scale ?? 2.38 / Math.sqrt(p)
@@ -172,9 +172,9 @@ export interface PosteriorDraws {
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { samplePosterior } from 'mdml-engine/gam'
- * import { key } from 'mdml-engine/random'
- * import { numericTarget } from 'mdml-engine/sampling'
+ * import { samplePosterior } from 'omai-engine/gam'
+ * import { key } from 'omai-engine/random'
+ * import { numericTarget } from 'omai-engine/sampling'
  * const t = numericTarget((x) => -0.5 * (x[0] ?? 0) ** 2, 1, { grad: (x) => [-(x[0] ?? 0)] })
  * samplePosterior(t, [0], { covariance: [1], key: key(0), numDraws: 50 }).count // => 50
  * ```
@@ -219,9 +219,9 @@ export function samplePosterior(
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { posteriorSampler } from 'mdml-engine/gam'
- * import { numericTarget } from 'mdml-engine/sampling'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { posteriorSampler } from 'omai-engine/gam'
+ * import { numericTarget } from 'omai-engine/sampling'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const t = numericTarget((x) => -0.5 * (x[0] ?? 0) ** 2, 1, { grad: (x) => [-(x[0] ?? 0)] })
  * runAlgorithm(posteriorSampler(t, [0], { covariance: [1] }), { seed: 1, maxSteps: 20 }).steps // => 20
  * ```

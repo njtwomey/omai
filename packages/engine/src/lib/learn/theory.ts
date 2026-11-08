@@ -11,7 +11,7 @@
  * stated assumptions and are usually loose.
  */
 
-import { type Json, MdmlError, maxOf, minOf } from '../base/index.ts'
+import { type Json, maxOf, minOf, OmaiError } from '../base/index.ts'
 import { binomialExact } from '../foundations/combinatorics.ts'
 import { svd } from '../numerics/linalg/index.ts'
 import { brentq } from '../numerics/roots/index.ts'
@@ -23,10 +23,10 @@ import { type Algorithm, channels, runAlgorithm } from '../trace/index.ts'
 
 const finite = (who: string, name: string, v: number, min = 0, open = false): void => {
   if (!Number.isFinite(v) || (open ? v <= min : v < min))
-    throw new MdmlError('value', `${who}: ${name} must be ${open ? '>' : '>='} ${min}`)
+    throw new OmaiError('value', `${who}: ${name} must be ${open ? '>' : '>='} ${min}`)
 }
 const unit = (who: string, delta: number): void => {
-  if (!(delta > 0 && delta < 1)) throw new MdmlError('value', `${who}: delta must be in (0, 1)`)
+  if (!(delta > 0 && delta < 1)) throw new OmaiError('value', `${who}: delta must be in (0, 1)`)
 }
 
 /** Whether a PAC statement is for a class that contains the target (realisable) or not (agnostic). */
@@ -46,7 +46,7 @@ export type PacSetting = 'realisable' | 'agnostic'
  * @concept learning-theory
  * @example
  * ```ts
- * import { pacSampleComplexity } from 'mdml-engine/learn'
+ * import { pacSampleComplexity } from 'omai-engine/learn'
  * pacSampleComplexity(Math.log(1000), 0.1, 0.05) // => 100
  * pacSampleComplexity(Math.log(1000), 0.1, 0.05, 'agnostic') // => 2120
  * ```
@@ -81,7 +81,7 @@ export function pacSampleComplexity(
  * @concept learning-theory
  * @example
  * ```ts
- * import { pacFiniteBound } from 'mdml-engine/learn'
+ * import { pacFiniteBound } from 'omai-engine/learn'
  * pacFiniteBound(100, Math.log(1000), 0.05) // => 0.0990
  * pacFiniteBound(100, Math.log(1000), 0.05, 'agnostic') // => 0.2225
  * ```
@@ -105,7 +105,7 @@ export function pacFiniteBound(n: number, logSize: number, delta: number, settin
  * @concept learning-theory
  * @example
  * ```ts
- * import { unionBound } from 'mdml-engine/learn'
+ * import { unionBound } from 'omai-engine/learn'
  * unionBound(1000, Math.log(100), 0.1) // => 4.1223e-7
  * ```
  */
@@ -124,14 +124,14 @@ export function unionBound(n: number, logSize: number, epsilon: number): number 
  * @concept learning-theory
  * @example
  * ```ts
- * import { sauerBound } from 'mdml-engine/learn'
+ * import { sauerBound } from 'omai-engine/learn'
  * sauerBound(5, 2) // => 16
  * sauerBound(3, 5) // => 8
  * ```
  */
 export function sauerBound(n: number, d: number): number {
   if (!(Number.isInteger(n) && n >= 0 && Number.isInteger(d) && d >= 0))
-    throw new MdmlError('value', 'sauerBound: n and d must be non-negative integers')
+    throw new OmaiError('value', 'sauerBound: n and d must be non-negative integers')
   let total = 0n
   for (let i = 0; i <= Math.min(d, n); i++) total += binomialExact(n, i)
   return Number(total)
@@ -149,7 +149,7 @@ export function sauerBound(n: number, d: number): number {
  * @concept learning-theory
  * @example
  * ```ts
- * import { vcBound } from 'mdml-engine/learn'
+ * import { vcBound } from 'omai-engine/learn'
  * vcBound(10000, 10, 0.05) // => 0.0951
  * ```
  */
@@ -157,7 +157,7 @@ export function vcBound(n: number, d: number, delta: number): number {
   finite('vcBound', 'n', n, 0, true)
   finite('vcBound', 'd', d, 0, true)
   unit('vcBound', delta)
-  if (n < d) throw new MdmlError('value', 'vcBound: the bound needs n >= d')
+  if (n < d) throw new OmaiError('value', 'vcBound: the bound needs n >= d')
   return Math.sqrt((d * (Math.log((2 * n) / d) + 1) + Math.log(4 / delta)) / n)
 }
 
@@ -173,7 +173,7 @@ export function vcBound(n: number, d: number, delta: number): number {
  * @concept learning-theory
  * @example
  * ```ts
- * import { vcSampleComplexity } from 'mdml-engine/learn'
+ * import { vcSampleComplexity } from 'omai-engine/learn'
  * vcSampleComplexity(3, 0.1, 0.05) // => 1686
  * ```
  */
@@ -284,7 +284,7 @@ function halfspaces(dimension: number): ConceptClass {
  * @concept learning-theory
  * @example
  * ```ts
- * import { conceptClasses } from 'mdml-engine/learn'
+ * import { conceptClasses } from 'omai-engine/learn'
  * conceptClasses.halfspaces(2).vcDimension // => 3
  * ```
  */
@@ -301,20 +301,20 @@ export const conceptClasses: {
  * @param points - The k points, each an array of the class's dimension.
  * @param cls - The class.
  * @returns How many labellings are realised.
- * @throws MdmlError with code `value` for more than 16 points or points of the wrong dimension.
+ * @throws OmaiError with code `value` for more than 16 points or points of the wrong dimension.
  * @concept learning-theory
  * @example
  * ```ts
- * import { conceptClasses, shatterCount } from 'mdml-engine/learn'
+ * import { conceptClasses, shatterCount } from 'omai-engine/learn'
  * shatterCount([[0], [1], [2]], conceptClasses.interval) // => 7
  * shatterCount([[0, 0], [1, 0], [0, 1]], conceptClasses.halfspaces(2)) // => 8
  * ```
  */
 export function shatterCount(points: readonly (readonly number[])[], cls: ConceptClass): number {
   const k = points.length
-  if (k > 16) throw new MdmlError('value', 'shatterCount: at most 16 points')
+  if (k > 16) throw new OmaiError('value', 'shatterCount: at most 16 points')
   if (points.some((p) => p.length !== cls.dimension))
-    throw new MdmlError('shape', `shatterCount: ${cls.name} needs points of dimension ${cls.dimension}`)
+    throw new OmaiError('shape', `shatterCount: ${cls.name} needs points of dimension ${cls.dimension}`)
   let count = 0
   for (let mask = 0; mask < 2 ** k; mask++) {
     const labels = Array.from({ length: k }, (_, i) => (mask >> i) % 2 === 1)
@@ -332,7 +332,7 @@ export function shatterCount(points: readonly (readonly number[])[], cls: Concep
  * @concept learning-theory
  * @example
  * ```ts
- * import { conceptClasses, isShattered } from 'mdml-engine/learn'
+ * import { conceptClasses, isShattered } from 'omai-engine/learn'
  * isShattered([[0, 0], [1, 0], [0, 1], [1, 1]], conceptClasses.halfspaces(2)) // => false
  * ```
  */
@@ -379,7 +379,7 @@ function randomPoints(cls: ConceptClass, k: number, key: Key): number[][] {
  * @concept learning-theory
  * @example
  * ```ts
- * import { conceptClasses, growthFunction } from 'mdml-engine/learn'
+ * import { conceptClasses, growthFunction } from 'omai-engine/learn'
  * growthFunction(conceptClasses.interval, 4) // => 11
  * growthFunction(conceptClasses.halfspaces(2), 5) // => 22
  * ```
@@ -414,7 +414,7 @@ export interface VcSearch {
  * @concept learning-theory
  * @example
  * ```ts
- * import { conceptClasses, vcDimensionByShattering } from 'mdml-engine/learn'
+ * import { conceptClasses, vcDimensionByShattering } from 'omai-engine/learn'
  * vcDimensionByShattering(conceptClasses.boxes(2)).vcDimension // => 4
  * ```
  */
@@ -470,7 +470,7 @@ function matrixOf(
   x: TensorLike,
 ): { readonly rows: number; readonly cols: number; readonly data: Float64Array } {
   const t = asTensor(x)
-  if (t.shape.length !== 2) throw new MdmlError('shape', `${who}: expects a matrix`)
+  if (t.shape.length !== 2) throw new OmaiError('shape', `${who}: expects a matrix`)
   return { rows: t.shape[0] ?? 0, cols: t.shape[1] ?? 0, data: Float64Array.from(toFlat(t)) }
 }
 
@@ -487,8 +487,8 @@ function matrixOf(
  * @concept learning-theory
  * @example
  * ```ts
- * import { rademacherAlgorithm } from 'mdml-engine/learn'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { rademacherAlgorithm } from 'omai-engine/learn'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const alg = rademacherAlgorithm([[1, 1, 1, 1]], { draws: 3 })
  * runAlgorithm(alg, { maxSteps: 3 }).state.values.length // => 3
  * ```
@@ -554,7 +554,7 @@ export function rademacherAlgorithm(
  * @concept learning-theory
  * @example
  * ```ts
- * import { empiricalRademacher } from 'mdml-engine/learn'
+ * import { empiricalRademacher } from 'omai-engine/learn'
  * empiricalRademacher([[1, 1, 1, 1]], { draws: 4000 }).estimate < 0.05 // => true
  * ```
  */
@@ -584,7 +584,7 @@ export function empiricalRademacher(
  * @concept learning-theory
  * @example
  * ```ts
- * import { rademacherBoundFinite } from 'mdml-engine/learn'
+ * import { rademacherBoundFinite } from 'omai-engine/learn'
  * rademacherBoundFinite(100, Math.log(1000)) // => 0.3717
  * ```
  */
@@ -607,7 +607,7 @@ export function rademacherBoundFinite(n: number, logSize: number, maxNorm: numbe
  * @concept learning-theory
  * @example
  * ```ts
- * import { rademacherBoundLinear } from 'mdml-engine/learn'
+ * import { rademacherBoundLinear } from 'omai-engine/learn'
  * rademacherBoundLinear(2, 100, 1.5) // => 0.3
  * ```
  */
@@ -620,7 +620,7 @@ export function rademacherBoundLinear(norm: number, n: number, radius?: number, 
     for (const v of m.data) s += v * v
     return (norm * Math.sqrt(s)) / m.rows
   }
-  if (radius === undefined) throw new MdmlError('value', 'rademacherBoundLinear: needs a radius or a feature matrix')
+  if (radius === undefined) throw new OmaiError('value', 'rademacherBoundLinear: needs a radius or a feature matrix')
   return (norm * radius) / Math.sqrt(n)
 }
 
@@ -645,7 +645,7 @@ export interface RademacherBoundOptions {
  * @concept learning-theory
  * @example
  * ```ts
- * import { rademacherGeneralisationBound } from 'mdml-engine/learn'
+ * import { rademacherGeneralisationBound } from 'omai-engine/learn'
  * rademacherGeneralisationBound(0.05, 1000, 0.05) // => 0.2288
  * ```
  */
@@ -685,7 +685,7 @@ export interface MarginBoundOptions {
  * @concept learning-theory
  * @example
  * ```ts
- * import { marginBound } from 'mdml-engine/learn'
+ * import { marginBound } from 'omai-engine/learn'
  * marginBound([2, 3, 2.5, 4], 1, 1, 0.05, { gamma: 1 }).fraction // => 0
  * ```
  */
@@ -700,7 +700,7 @@ export function marginBound(
   finite('marginBound', 'gamma', gamma, 0, true)
   unit('marginBound', delta)
   const n = margins.length
-  if (n === 0) throw new MdmlError('value', 'marginBound: needs at least one margin')
+  if (n === 0) throw new OmaiError('value', 'marginBound: needs at least one margin')
   let below = 0
   for (let i = 0; i < n; i++) if ((margins[i] ?? 0) < gamma) below++
   const fraction = below / n
@@ -730,7 +730,7 @@ export interface RidgeStabilityOptions {
  * @concept learning-theory
  * @example
  * ```ts
- * import { ridgeUniformStability } from 'mdml-engine/learn'
+ * import { ridgeUniformStability } from 'omai-engine/learn'
  * ridgeUniformStability(100, 1, { radius: 1, labelBound: 1 }) // => 0.16
  * ```
  */
@@ -756,7 +756,7 @@ export function ridgeUniformStability(n: number, lambda: number, options: RidgeS
  * @concept learning-theory
  * @example
  * ```ts
- * import { stabilityBound } from 'mdml-engine/learn'
+ * import { stabilityBound } from 'omai-engine/learn'
  * stabilityBound(0.0001, 1000, 0.05) // => 0.0544
  * ```
  */
@@ -784,7 +784,7 @@ export type Learner = (x: Float64Array[], y: Float64Array) => (x: Float64Array) 
  * @concept learning-theory
  * @example
  * ```ts
- * import { empiricalStability } from 'mdml-engine/learn'
+ * import { empiricalStability } from 'omai-engine/learn'
  * const meanFit = (x: Float64Array[], y: Float64Array) => { const m = y.reduce((a, b) => a + b, 0) / y.length; return () => m }
  * const train = { x: [[0], [1], [2], [3]].map((r) => Float64Array.from(r)), y: Float64Array.from([0, 1, 2, 3]) }
  * const swap = [{ x: Float64Array.from([9]), y: 10 }]
@@ -823,7 +823,7 @@ export function empiricalStability(
  * @concept learning-theory
  * @example
  * ```ts
- * import { klBernoulli } from 'mdml-engine/learn'
+ * import { klBernoulli } from 'omai-engine/learn'
  * klBernoulli(0.5, 0.5) // => 0
  * ```
  */
@@ -843,12 +843,12 @@ export function klBernoulli(q: number, p: number): number {
  * @concept learning-theory
  * @example
  * ```ts
- * import { klInverse } from 'mdml-engine/learn'
+ * import { klInverse } from 'omai-engine/learn'
  * klInverse(0.1, 0.05) // => 0.2201
  * ```
  */
 export function klInverse(q: number, c: number): number {
-  if (!(q >= 0 && q <= 1)) throw new MdmlError('value', 'klInverse: q must be in [0, 1]')
+  if (!(q >= 0 && q <= 1)) throw new OmaiError('value', 'klInverse: q must be in [0, 1]')
   finite('klInverse', 'c', c)
   if (q >= 1 || c === Number.POSITIVE_INFINITY) return 1
   if (c === 0) return q
@@ -866,7 +866,7 @@ export function klInverse(q: number, c: number): number {
  * @concept learning-theory
  * @example
  * ```ts
- * import { klInverseLower } from 'mdml-engine/learn'
+ * import { klInverseLower } from 'omai-engine/learn'
  * klInverseLower(0.5, 0.05) // => 0.3458
  * ```
  */
@@ -887,7 +887,7 @@ export function klInverseLower(q: number, c: number): number {
  * @concept learning-theory
  * @example
  * ```ts
- * import { gaussianKl } from 'mdml-engine/learn'
+ * import { gaussianKl } from 'omai-engine/learn'
  * gaussianKl([1, 0], 1, [0, 0], 1) // => 0.5
  * ```
  */
@@ -898,13 +898,13 @@ export function gaussianKl(
   sdP: number | ArrayLike<number>,
 ): number {
   const d = meanQ.length
-  if (meanP.length !== d) throw new MdmlError('shape', 'gaussianKl: means differ in length')
+  if (meanP.length !== d) throw new OmaiError('shape', 'gaussianKl: means differ in length')
   const at = (s: number | ArrayLike<number>, j: number): number => (typeof s === 'number' ? s : (s[j] ?? 0))
   let kl = 0
   for (let j = 0; j < d; j++) {
     const sq = at(sdQ, j)
     const sp = at(sdP, j)
-    if (!(sq > 0 && sp > 0)) throw new MdmlError('value', 'gaussianKl: standard deviations must be positive')
+    if (!(sq > 0 && sp > 0)) throw new OmaiError('value', 'gaussianKl: standard deviations must be positive')
     kl += Math.log(sp / sq) + (sq * sq + ((meanQ[j] ?? 0) - (meanP[j] ?? 0)) ** 2) / (2 * sp * sp) - 0.5
   }
   return kl
@@ -923,13 +923,13 @@ export function gaussianKl(
  * @concept learning-theory
  * @example
  * ```ts
- * import { gaussianGibbsRisk } from 'mdml-engine/learn'
+ * import { gaussianGibbsRisk } from 'omai-engine/learn'
  * gaussianGibbsRisk([1], 1, [[1]], [1]) // => 0.1587
  * ```
  */
 export function gaussianGibbsRisk(mean: ArrayLike<number>, sd: number, x: TensorLike, y: ArrayLike<number>): number {
   const m = matrixOf('gaussianGibbsRisk', x)
-  if (m.rows !== y.length || m.cols !== mean.length) throw new MdmlError('shape', 'gaussianGibbsRisk: shapes disagree')
+  if (m.rows !== y.length || m.cols !== mean.length) throw new OmaiError('shape', 'gaussianGibbsRisk: shapes disagree')
   finite('gaussianGibbsRisk', 'sd', sd, 0, true)
   let total = 0
   for (let i = 0; i < m.rows; i++) {
@@ -958,7 +958,7 @@ export function gaussianGibbsRisk(mean: ArrayLike<number>, sd: number, x: Tensor
  * @concept learning-theory
  * @example
  * ```ts
- * import { mcAllesterBound } from 'mdml-engine/learn'
+ * import { mcAllesterBound } from 'omai-engine/learn'
  * mcAllesterBound(0.1, 5, 1000, 0.05) // => 0.1779
  * ```
  */
@@ -982,7 +982,7 @@ export function mcAllesterBound(empiricalRisk: number, kl: number, n: number, de
  * @concept learning-theory
  * @example
  * ```ts
- * import { seegerBound } from 'mdml-engine/learn'
+ * import { seegerBound } from 'omai-engine/learn'
  * seegerBound(0.1, 5, 1000, 0.05) // => 0.1531
  * ```
  */
@@ -1008,7 +1008,7 @@ export function seegerBound(empiricalRisk: number, kl: number, n: number, delta:
  * @concept learning-theory
  * @example
  * ```ts
- * import { catoniBound } from 'mdml-engine/learn'
+ * import { catoniBound } from 'omai-engine/learn'
  * catoniBound(0.1, 5, 1000, 0.05, 1) // => 0.1619
  * ```
  */
@@ -1038,13 +1038,13 @@ export function catoniBound(empiricalRisk: number, kl: number, n: number, delta:
  * @concept learning-theory
  * @example
  * ```ts
- * import { hedgeRegretBound } from 'mdml-engine/learn'
+ * import { hedgeRegretBound } from 'omai-engine/learn'
  * hedgeRegretBound(1000, 10) // => 33.9307
  * ```
  */
 export function hedgeRegretBound(T: number, N: number, eta?: number): number {
   finite('hedgeRegretBound', 'T', T, 0, true)
-  if (!(N >= 2)) throw new MdmlError('value', 'hedgeRegretBound: needs at least 2 experts')
+  if (!(N >= 2)) throw new OmaiError('value', 'hedgeRegretBound: needs at least 2 experts')
   const e = eta ?? Math.sqrt((8 * Math.log(N)) / T)
   finite('hedgeRegretBound', 'eta', e, 0, true)
   return Math.log(N) / e + (e * T) / 8
@@ -1063,7 +1063,7 @@ export function hedgeRegretBound(T: number, N: number, eta?: number): number {
  * @concept learning-theory
  * @example
  * ```ts
- * import { ogdRegretBound } from 'mdml-engine/learn'
+ * import { ogdRegretBound } from 'omai-engine/learn'
  * ogdRegretBound(10000, 2, 1) // => 200
  * ```
  */
@@ -1087,7 +1087,7 @@ export function ogdRegretBound(T: number, D: number, G: number, eta?: number): n
  * @concept learning-theory
  * @example
  * ```ts
- * import { mutualInformationBound } from 'mdml-engine/learn'
+ * import { mutualInformationBound } from 'omai-engine/learn'
  * mutualInformationBound(10, 1000) // => 0.0707
  * ```
  */
@@ -1126,13 +1126,13 @@ export interface BiasVariance {
  * @concept learning-theory
  * @example
  * ```ts
- * import { biasVariance } from 'mdml-engine/learn'
+ * import { biasVariance } from 'omai-engine/learn'
  * biasVariance([[1, 2], [3, 2]], [1, 1]).variance // => 0.5
  * ```
  */
 export function biasVariance(predictions: TensorLike, truth: ArrayLike<number>, noiseVariance = 0): BiasVariance {
   const p = matrixOf('biasVariance', predictions)
-  if (p.cols !== truth.length) throw new MdmlError('shape', 'biasVariance: predictions and truth disagree in length')
+  if (p.cols !== truth.length) throw new OmaiError('shape', 'biasVariance: predictions and truth disagree in length')
   const bias2At: number[] = []
   const varianceAt: number[] = []
   for (let j = 0; j < p.cols; j++) {
@@ -1180,7 +1180,7 @@ export interface BiasVarianceZeroOne {
  * @concept learning-theory
  * @example
  * ```ts
- * import { biasVarianceZeroOne } from 'mdml-engine/learn'
+ * import { biasVarianceZeroOne } from 'omai-engine/learn'
  * biasVarianceZeroOne([[1, 0], [1, 1], [0, 1]], [1, 1]).variance // => 0.3333
  * ```
  */
@@ -1191,7 +1191,7 @@ export function biasVarianceZeroOne(
 ): BiasVarianceZeroOne {
   const p = matrixOf('biasVarianceZeroOne', predictions)
   if (p.cols !== optimal.length)
-    throw new MdmlError('shape', 'biasVarianceZeroOne: predictions and optimal labels disagree in length')
+    throw new OmaiError('shape', 'biasVarianceZeroOne: predictions and optimal labels disagree in length')
   let bias = 0
   let variance = 0
   let unbiased = 0
@@ -1204,7 +1204,7 @@ export function biasVarianceZeroOne(
       const v = p.data[r * p.cols + j] ?? 0
       counts.set(v, (counts.get(v) ?? 0) + 1)
     }
-    if (counts.size > 2) throw new MdmlError('value', 'biasVarianceZeroOne: the decomposition is for two classes')
+    if (counts.size > 2) throw new OmaiError('value', 'biasVarianceZeroOne: the decomposition is for two classes')
     let main = Number.NaN
     let best = -1
     for (const [label, c] of [...counts].sort((a, b) => a[0] - b[0])) {
@@ -1274,8 +1274,8 @@ export interface BiasVarianceState {
  * @concept learning-theory
  * @example
  * ```ts
- * import { biasVarianceAlgorithm } from 'mdml-engine/learn'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { biasVarianceAlgorithm } from 'omai-engine/learn'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const alg = biasVarianceAlgorithm({
  *   sample: () => ({ x: [Float64Array.from([0])], y: Float64Array.from([1]) }),
  *   fit: (_x, y) => () => y[0] ?? 0,
@@ -1326,7 +1326,7 @@ export function biasVarianceAlgorithm(study: BiasVarianceStudy): Algorithm<BiasV
  * @concept learning-theory
  * @example
  * ```ts
- * import { monteCarloBiasVariance } from 'mdml-engine/learn'
+ * import { monteCarloBiasVariance } from 'omai-engine/learn'
  * const r = monteCarloBiasVariance({
  *   sample: () => ({ x: [Float64Array.from([0])], y: Float64Array.from([1]) }),
  *   fit: (_x, y) => () => y[0] ?? 0,
@@ -1363,8 +1363,8 @@ export interface DegreesOfFreedomState {
  * @concept learning-theory
  * @example
  * ```ts
- * import { degreesOfFreedomAlgorithm } from 'mdml-engine/learn'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { degreesOfFreedomAlgorithm } from 'omai-engine/learn'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const alg = degreesOfFreedomAlgorithm((y) => y, [0, 0, 0], 1, { draws: 2 })
  * runAlgorithm(alg, { maxSteps: 2 }).state.values.length // => 2
  * ```
@@ -1410,7 +1410,7 @@ export function degreesOfFreedomAlgorithm(
  * @concept learning-theory
  * @example
  * ```ts
- * import { effectiveDegreesOfFreedom } from 'mdml-engine/learn'
+ * import { effectiveDegreesOfFreedom } from 'omai-engine/learn'
  * effectiveDegreesOfFreedom((y) => y, [0, 0, 0, 0], 1, { draws: 2000 }).estimate > 3.5 // => true
  * ```
  */
@@ -1443,7 +1443,7 @@ export function effectiveDegreesOfFreedom(
  * @concept learning-theory
  * @example
  * ```ts
- * import { ridgeDegreesOfFreedom } from 'mdml-engine/learn'
+ * import { ridgeDegreesOfFreedom } from 'omai-engine/learn'
  * ridgeDegreesOfFreedom([2, 1], 1, true) // => 1.3
  * ```
  */
@@ -1463,7 +1463,7 @@ export function ridgeDegreesOfFreedom(x: TensorLike, lambda: number, singular = 
  * @concept learning-theory
  * @example
  * ```ts
- * import { lassoDegreesOfFreedom } from 'mdml-engine/learn'
+ * import { lassoDegreesOfFreedom } from 'omai-engine/learn'
  * lassoDegreesOfFreedom([0, 1.5, 0, -2]) // => 2
  * ```
  */
@@ -1483,7 +1483,7 @@ export function lassoDegreesOfFreedom(coefficients: ArrayLike<number>, intercept
  * @concept learning-theory
  * @example
  * ```ts
- * import { knnDegreesOfFreedom } from 'mdml-engine/learn'
+ * import { knnDegreesOfFreedom } from 'omai-engine/learn'
  * knnDegreesOfFreedom(100, 5) // => 20
  * ```
  */
@@ -1504,7 +1504,7 @@ export function knnDegreesOfFreedom(n: number, k: number): number {
  * @concept learning-theory
  * @example
  * ```ts
- * import { covariancePenalty } from 'mdml-engine/learn'
+ * import { covariancePenalty } from 'omai-engine/learn'
  * covariancePenalty(1, 5, 50) // => 0.2
  * ```
  */

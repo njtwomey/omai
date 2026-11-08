@@ -3,7 +3,7 @@
  * contributions to each class, a query's neighbours, and the trials of a search.
  */
 
-import type { CoefficientTable, LikelihoodTable, NeighbourRecord, SearchTrials } from 'mdml-engine/exposition'
+import type { CoefficientTable, LikelihoodTable, NeighbourRecord, SearchTrials } from 'omai-engine/exposition'
 import { type ReactElement, useCallback, useMemo } from 'react'
 import type { Figure } from '../../figure/figure.ts'
 import {

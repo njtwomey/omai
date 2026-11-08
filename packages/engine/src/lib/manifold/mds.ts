@@ -5,7 +5,7 @@
  * isotonic regression of the embedded distances on the dissimilarities).
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { type DistanceAlias, type DistanceName, distanceMatrix, type MetricSlot } from '../distances/index.ts'
 import { type IterativeEstimator, iterative, matrixView, poolAdjacentViolators } from '../learn/index.ts'
 import { linalg } from '../numerics/index.ts'
@@ -24,7 +24,7 @@ import { type Embedding, type EmbeddingParams, type EmbeddingVerbs, embeddingVer
  * @returns The embedding `[n, k]` and the eigenvalues used.
  * @example
  * ```ts
- * import { classicalMds } from 'mdml-engine/manifold'
+ * import { classicalMds } from 'omai-engine/manifold'
  * classicalMds([[0, 2], [2, 0]], 1).eigenvalues // => [2]
  * ```
  */
@@ -33,7 +33,7 @@ export function classicalMds(
   k: number,
 ): { readonly embedding: Embedding; readonly eigenvalues: number[] } {
   const n = d.length
-  if (!(Number.isInteger(k) && k >= 1 && k <= n)) throw new MdmlError('value', `classicalMds: k must be in 1..${n}`)
+  if (!(Number.isInteger(k) && k >= 1 && k <= n)) throw new OmaiError('value', `classicalMds: k must be in 1..${n}`)
   const sq = d.map((r) => r.map((v) => v * v))
   const rowMean = sq.map((r) => r.reduce((a, v) => a + v, 0) / n)
   const all = rowMean.reduce((a, v) => a + v, 0) / n
@@ -131,8 +131,8 @@ function disparitiesOf(d: ArrayLike<number>, dist: ArrayLike<number>, n: number,
  * @returns The algorithm.
  * @example
  * ```ts
- * import { smacofAlgorithm } from 'mdml-engine/manifold'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { smacofAlgorithm } from 'omai-engine/manifold'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const d = [0, 1, 2, 1, 0, 1, 2, 1, 0]
  * const out = runAlgorithm(smacofAlgorithm(d, [[0, 0.1], [1, -0.1], [2.5, 0]]), { maxSteps: 50 })
  * out.state.stress < 1e-3 // => true
@@ -214,8 +214,8 @@ export function smacofAlgorithm(
  * @returns The algorithm.
  * @example
  * ```ts
- * import { classicalMdsAlgorithm } from 'mdml-engine/manifold'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { classicalMdsAlgorithm } from 'omai-engine/manifold'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * runAlgorithm(classicalMdsAlgorithm([0, 2, 2, 0], 2, 1), { maxSteps: 1 }).state.x.length // => 2
  * ```
  */
@@ -270,7 +270,7 @@ export interface MdsHyper {
  * @index estimator Metric and non-metric multidimensional scaling (SMACOF).
  * @example
  * ```ts
- * import { mds } from 'mdml-engine/manifold'
+ * import { mds } from 'omai-engine/manifold'
  * mds.with({ variant: 'classical' }).fit({ x: [[0, 0], [3, 0], [0, 4]] }).params.embedding.length // => 3
  * ```
  */

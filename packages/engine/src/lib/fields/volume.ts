@@ -6,7 +6,7 @@
  * gradient flows to the densities and colours (and so to the network that produced them) without a custom backward pass.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import {
   add,
   asTensor,
@@ -59,14 +59,14 @@ export interface VolumeOptions {
  * @param t - The sample distances `[rays, n]` (increasing), for the depth and the spacings.
  * @param options - Spacings, the last spacing, and the background.
  * @returns The colour, depth, accumulated opacity, weights and transmittance.
- * @throws MdmlError with code `shape` when the shapes do not agree.
+ * @throws OmaiError with code `shape` when the shapes do not agree.
  * @concept volume-rendering
  * @reference Mildenhall et al. (2020), NeRF: representing scenes as neural radiance fields for view synthesis.
  * @index function Differentiable volume rendering: composite densities and colours along rays.
  * @example
  * ```ts
- * import { volumeRender } from 'mdml-engine/fields'
- * import { toArray, tensor } from 'mdml-engine/tensor'
+ * import { volumeRender } from 'omai-engine/fields'
+ * import { toArray, tensor } from 'omai-engine/tensor'
  * // Constant density 1 over a unit-length ray (two samples, spacing 0.5): alpha = 1 - exp(-1).
  * const r = volumeRender(tensor([[1, 1]]), tensor([[[1, 0, 0], [1, 0, 0]]]), tensor([[0, 0.5]]), { delta: tensor([[0.5, 0.5]]) })
  * [(toArray(r.alpha) as number[])[0].toFixed(6), (toArray(r.colour) as number[][])[0].map((v) => v.toFixed(3))] // => ['0.632121', ['0.632', '0.000', '0.000']]
@@ -75,11 +75,11 @@ export interface VolumeOptions {
 export function volumeRender(density: Value, colour: Value, t: Value, options: VolumeOptions = {}): VolumeRender {
   const [rays, n] = density.shape
   if (density.shape.length !== 2 || rays === undefined || n === undefined)
-    throw new MdmlError('shape', `volumeRender: densities must be [rays, n], got [${density.shape.join(', ')}]`)
+    throw new OmaiError('shape', `volumeRender: densities must be [rays, n], got [${density.shape.join(', ')}]`)
   if (colour.shape.length !== 3 || colour.shape[0] !== rays || colour.shape[1] !== n || colour.shape[2] !== 3)
-    throw new MdmlError('shape', `volumeRender: colours must be [${rays}, ${n}, 3], got [${colour.shape.join(', ')}]`)
+    throw new OmaiError('shape', `volumeRender: colours must be [${rays}, ${n}, 3], got [${colour.shape.join(', ')}]`)
   if (t.shape.length !== 2 || t.shape[0] !== rays || t.shape[1] !== n)
-    throw new MdmlError('shape', `volumeRender: distances must be [${rays}, ${n}], got [${t.shape.join(', ')}]`)
+    throw new OmaiError('shape', `volumeRender: distances must be [${rays}, ${n}], got [${t.shape.join(', ')}]`)
   const delta =
     options.delta ??
     (n === 1

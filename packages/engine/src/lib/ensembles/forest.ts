@@ -7,7 +7,7 @@
  * to the leaves it falls in across totally random trees grown without targets.
  */
 
-import { argmaxOf, MdmlError } from '../base/index.ts'
+import { argmaxOf, OmaiError } from '../base/index.ts'
 import { categorical, type Distribution, normal } from '../dists/index.ts'
 import type { Exposition } from '../exposition/index.ts'
 import { type IterativeEstimator, iterative } from '../learn/bases/iterative.ts'
@@ -85,7 +85,7 @@ export interface ForestVerbs extends Verbs, FittedFacts {
  *
  * @example
  * ```ts
- * import type { ForestPath } from 'mdml-engine/ensembles'
+ * import type { ForestPath } from 'omai-engine/ensembles'
  * const path: ForestPath = 'model/proximity'
  * path // => 'model/proximity'
  * ```
@@ -223,7 +223,7 @@ function forestEstimator(name: string, classifier: boolean, defaults: ForestHype
       algorithm: (learn, h): Algorithm<AveragingState<FittedTree>, ForestPath> => {
         const data = prepare(learn)
         const n = data.x.n
-        if (!(h.nEstimators >= 1)) throw new MdmlError('value', `${name}: nEstimators must be at least 1`)
+        if (!(h.nEstimators >= 1)) throw new OmaiError('value', `${name}: nEstimators must be at least 1`)
         const options = growOf(h)
         const member: AveragingMember<FittedTree, 'ensemble/importances'> = {
           fit: (counts, key) => {
@@ -357,8 +357,8 @@ const base = (
  * @index estimator Random forest; regressor and extra-trees twins beside it.
  * @example
  * ```ts
- * import { randomForestClassifier } from 'mdml-engine/ensembles'
- * import { key } from 'mdml-engine/random'
+ * import { randomForestClassifier } from 'omai-engine/ensembles'
+ * import { key } from 'omai-engine/random'
  * const x = Array.from({ length: 40 }, (_, i) => [i / 40, ((i * 7) % 11) / 11])
  * const y = x.map(([a = 0]) => (a < 0.5 ? 0 : 1))
  * randomForestClassifier({ nEstimators: 8 }).fit({ x, y }, { key: key(0) }).params.trees.length // => 8
@@ -377,8 +377,8 @@ export function randomForestClassifier(hyper: Partial<ForestHyper> = {}): Forest
  * @concept ensembles
  * @example
  * ```ts
- * import { randomForestRegressor } from 'mdml-engine/ensembles'
- * import { key } from 'mdml-engine/random'
+ * import { randomForestRegressor } from 'omai-engine/ensembles'
+ * import { key } from 'omai-engine/random'
  * const x = Array.from({ length: 30 }, (_, i) => [i / 30])
  * randomForestRegressor({ nEstimators: 5 }).fit({ x, y: x.map(([a = 0]) => a * a) }, { key: key(0) }).params.trees.length // => 5
  * ```
@@ -402,8 +402,8 @@ export function randomForestRegressor(
  * @concept ensembles
  * @example
  * ```ts
- * import { extraTreesClassifier } from 'mdml-engine/ensembles'
- * import { key } from 'mdml-engine/random'
+ * import { extraTreesClassifier } from 'omai-engine/ensembles'
+ * import { key } from 'omai-engine/random'
  * const x = Array.from({ length: 40 }, (_, i) => [i / 40, ((i * 7) % 11) / 11])
  * const y = x.map(([a = 0]) => (a < 0.5 ? 0 : 1))
  * extraTreesClassifier({ nEstimators: 6 }).fit({ x, y }, { key: key(0) }).params.oobScore // => null
@@ -421,8 +421,8 @@ export function extraTreesClassifier(hyper: Partial<ForestHyper> = {}): ForestEs
  * @concept ensembles
  * @example
  * ```ts
- * import { extraTreesRegressor } from 'mdml-engine/ensembles'
- * import { key } from 'mdml-engine/random'
+ * import { extraTreesRegressor } from 'omai-engine/ensembles'
+ * import { key } from 'omai-engine/random'
  * const x = Array.from({ length: 30 }, (_, i) => [i / 30])
  * extraTreesRegressor({ nEstimators: 5 }).fit({ x, y: x.map(([a = 0]) => a) }, { key: key(0) }).params.trees.length // => 5
  * ```
@@ -468,7 +468,7 @@ export interface EmbeddingVerbs extends Verbs, FittedFacts {
  *
  * @example
  * ```ts
- * import type { EmbeddingPath } from 'mdml-engine/ensembles'
+ * import type { EmbeddingPath } from 'omai-engine/ensembles'
  * const path: EmbeddingPath = 'ensemble/leaves'
  * path // => 'ensemble/leaves'
  * ```
@@ -495,8 +495,8 @@ export type EmbeddingEstimator = IterativeEstimator<
  * @concept ensembles
  * @example
  * ```ts
- * import { randomTreesEmbeddingAlgorithm } from 'mdml-engine/ensembles'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { randomTreesEmbeddingAlgorithm } from 'omai-engine/ensembles'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const x = Array.from({ length: 20 }, (_, i) => [i / 20, (i * 3) % 7])
  * const alg = randomTreesEmbeddingAlgorithm({ x }, { nEstimators: 3, maxDepth: 2, minSamplesSplit: 2 })
  * runAlgorithm(alg, { maxSteps: 10, seed: 0 }).state.trees.length // => 3
@@ -552,9 +552,9 @@ export function randomTreesEmbeddingAlgorithm(
  * @concept ensembles
  * @example
  * ```ts
- * import { randomTreesEmbedding } from 'mdml-engine/ensembles'
- * import { key } from 'mdml-engine/random'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { randomTreesEmbedding } from 'omai-engine/ensembles'
+ * import { key } from 'omai-engine/random'
+ * import { toFlat } from 'omai-engine/tensor'
  * const x = Array.from({ length: 20 }, (_, i) => [i / 20])
  * const f = randomTreesEmbedding({ nEstimators: 3, maxDepth: 2 }).fit({ x }, { key: key(0) })
  * // One leaf per tree is hot in every row.

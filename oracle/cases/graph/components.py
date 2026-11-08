@@ -6,8 +6,8 @@ from collections.abc import Iterable
 import networkx as nx
 import numpy as np
 import scipy
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.graphs import NxGraph, directed_family, ints, sparse, spec, undirected_family
+from omai_oracle.fixture import Case, case
+from omai_oracle.graphs import NxGraph, directed_family, ints, sparse, spec, undirected_family
 from scipy.sparse.csgraph import connected_components
 
 REFERENCE: dict[str, str] = {"networkx": nx.__version__, "scipy": scipy.__version__}

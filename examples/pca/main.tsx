@@ -6,14 +6,14 @@
  * variance each component explains, and the loadings.
  */
 
-import { iris } from 'mdml-engine/datasets'
-import { pca } from 'mdml-engine/decomposition'
-import { componentsRecord, type Exposition } from 'mdml-engine/exposition'
-import { key } from 'mdml-engine/random'
-import { toFlat } from 'mdml-engine/tensor'
-import { figure } from 'mdml-render/figure'
-import { categoricalColour } from 'mdml-render/theme'
-import { stillOf } from 'mdml-render/views'
+import { iris } from 'omai-engine/datasets'
+import { pca } from 'omai-engine/decomposition'
+import { componentsRecord, type Exposition } from 'omai-engine/exposition'
+import { key } from 'omai-engine/random'
+import { toFlat } from 'omai-engine/tensor'
+import { figure } from 'omai-render/figure'
+import { categoricalColour } from 'omai-render/theme'
+import { stillOf } from 'omai-render/views'
 import { INK } from '../_shared/colours.ts'
 import type { ExampleModule, Outcome } from '../_shared/contract.ts'
 import { Figure, Panel } from '../_shared/figure.tsx'

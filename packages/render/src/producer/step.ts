@@ -4,8 +4,8 @@
  * Pure, and shared by the main-thread producer and the worker's.
  */
 
-import { maxOf, minOf } from 'mdml-engine/base'
-import type { RunStatus, SliceBudget } from 'mdml-engine/trace'
+import { maxOf, minOf } from 'omai-engine/base'
+import type { RunStatus, SliceBudget } from 'omai-engine/trace'
 
 /**
  * The head of a comparison: the furthest step every variant has reached, so the shared cursor never shows a step a

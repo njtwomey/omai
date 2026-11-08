@@ -3,7 +3,7 @@
  * class proportions, row counts and impurity, growth played step by step, and every candidate split of a clicked node.
  */
 
-import type { TreeRecord } from 'mdml-engine/exposition'
+import type { TreeRecord } from 'omai-engine/exposition'
 import { type ReactElement, type RefObject, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { type Figure, scaleFigure } from '../../figure/figure.ts'
 import { tokens } from '../../theme/tokens.ts'
@@ -110,7 +110,7 @@ function TreeFigure(props: {
     >
       <div
         ref={scroller}
-        data-mdml-svg=""
+        data-omai-svg=""
         style={{
           height: treeHeight,
           width: '100%',

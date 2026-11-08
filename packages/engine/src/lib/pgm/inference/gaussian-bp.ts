@@ -5,7 +5,7 @@
  * guarantees convergence.
  */
 
-import { type Json, MdmlError, maxOf } from '../../base/index.ts'
+import { type Json, maxOf, OmaiError } from '../../base/index.ts'
 import { eigvalsh } from '../../numerics/linalg/index.ts'
 import { toArray } from '../../tensor/index.ts'
 import {
@@ -85,7 +85,7 @@ function information(
   const base = model.kind === 'linearGaussianBayesNet' ? gmrfFromLinearGaussian(model) : model
   const full = base.kind === 'gmrf' ? matVec(base.precision, base.mean) : [...base.potential]
   for (const v of Object.keys(evidence)) {
-    if (!base.variables.includes(v)) throw new MdmlError('value', `gaussian belief propagation: unknown variable ${v}`)
+    if (!base.variables.includes(v)) throw new OmaiError('value', `gaussian belief propagation: unknown variable ${v}`)
   }
   const a = base.variables.map((_, i) => i).filter((i) => !((base.variables[i] ?? '') in evidence))
   const b = base.variables.map((_, i) => i).filter((i) => (base.variables[i] ?? '') in evidence)
@@ -156,8 +156,8 @@ function beliefs(p: Prepared, P: Float64Array, H: Float64Array): { means: Float6
  * @concept gaussian-belief-propagation
  * @example
  * ```ts
- * import { gmrf, gaussianBpAlgorithm } from 'mdml-engine/pgm'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { gmrf, gaussianBpAlgorithm } from 'omai-engine/pgm'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const f = gmrf(['a', 'b', 'c'], [1, 2, 3], [[2, -1, 0], [-1, 2, -1], [0, -1, 2]])
  * runAlgorithm(gaussianBpAlgorithm(f), { maxSteps: 50 }).status // => 'converged'
  * ```
@@ -167,7 +167,7 @@ export function gaussianBpAlgorithm(model: GaussianModel, options: GaussianBpOpt
   const damping = options.damping ?? 0
   const tol = options.tol ?? 1e-12
   if (!(damping >= 0 && damping < 1))
-    throw new MdmlError('value', 'gaussian belief propagation: damping must be in [0, 1)')
+    throw new OmaiError('value', 'gaussian belief propagation: damping must be in [0, 1)')
   const sequential = options.schedule === 'sequential'
   const m = p.edges.length
   return {
@@ -224,7 +224,7 @@ export function gaussianBpAlgorithm(model: GaussianModel, options: GaussianBpOpt
  * @concept gaussian-belief-propagation
  * @example
  * ```ts
- * import { linearGaussianBayesNet, gaussianBeliefPropagation } from 'mdml-engine/pgm'
+ * import { linearGaussianBayesNet, gaussianBeliefPropagation } from 'omai-engine/pgm'
  * const g = linearGaussianBayesNet([
  *   { name: 'x', parents: [], weights: [], intercept: 0, variance: 1 },
  *   { name: 'y', parents: ['x'], weights: [1], intercept: 0, variance: 1 },
@@ -261,7 +261,7 @@ export function gaussianBeliefPropagation(model: GaussianModel, options: Gaussia
  * @concept gaussian-belief-propagation
  * @example
  * ```ts
- * import { gmrf, isWalkSummable } from 'mdml-engine/pgm'
+ * import { gmrf, isWalkSummable } from 'omai-engine/pgm'
  * isWalkSummable(gmrf(['a', 'b', 'c'], [0, 0, 0], [[2, -1, 0], [-1, 2, -1], [0, -1, 2]])) // => true
  * ```
  */

@@ -4,7 +4,7 @@
  * by a minimum graph cut of a data term plus a contrast-sensitive smoothness term (Boykov and Jolly).
  */
 
-import { type Json, MdmlError } from '../../base/index.ts'
+import { type Json, OmaiError } from '../../base/index.ts'
 import { digraph, minCut } from '../../graph/index.ts'
 import { fromStorage, primalOf, type Tensor, type TensorLike, toFlat } from '../../tensor/index.ts'
 import {
@@ -63,7 +63,7 @@ function histogram(data: Float64Array, nbins: number): { counts: Float64Array; c
  * @concept thresholding
  * @example
  * ```ts
- * import { image } from 'mdml-engine/signal'
+ * import { image } from 'omai-engine/signal'
  * image.thresholdOtsu([0, 0, 0, 1, 10, 10, 11, 10], 4) // => 1.375
  * ```
  */
@@ -113,7 +113,7 @@ export function thresholdOtsu(x: TensorLike, nbins = 256): number {
  * @concept thresholding
  * @example
  * ```ts
- * import { image } from 'mdml-engine/signal'
+ * import { image } from 'omai-engine/signal'
  * const t = image.thresholdLi([1, 1.2, 0.9, 1.1, 7, 7.5, 6.8, 7.2])
  * t > 1.2 && t < 6.8 // => true
  * ```
@@ -239,8 +239,8 @@ class Heap {
  * @concept watershed
  * @example
  * ```ts
- * import { image } from 'mdml-engine/signal'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { image } from 'omai-engine/signal'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(image.watershed([[0, 1, 5, 1, 0]], [[1, 0, 0, 0, 2]])) // => [[1, 1, 1, 2, 2]]
  * ```
  */
@@ -250,10 +250,10 @@ export function watershed(
   options: { readonly connectivity?: 1 | 2; readonly mask?: TensorLike } = {},
 ): Tensor {
   const img = valuesOf(x)
-  if (img.shape.length !== 2) throw new MdmlError('shape', 'watershed: images are [H, W]')
+  if (img.shape.length !== 2) throw new OmaiError('shape', 'watershed: images are [H, W]')
   const [h = 0, w = 0] = img.shape
   const lab = valuesOf(markers).data
-  if (lab.length !== h * w) throw new MdmlError('shape', 'watershed: markers must have the image shape')
+  if (lab.length !== h * w) throw new OmaiError('shape', 'watershed: markers must have the image shape')
   const mask = options.mask === undefined ? new Float64Array(h * w).fill(1) : valuesOf(options.mask).data
   const out = Float64Array.from(lab, (v, i) => ((mask[i] ?? 0) !== 0 ? v : 0))
   // Neighbours ordered as scikit-image: by distance, then by raveled offset.
@@ -335,8 +335,8 @@ export const watershedContract: Contract<WatershedState, WatershedPath> = define
  * @concept watershed
  * @example
  * ```ts
- * import { image } from 'mdml-engine/signal'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { image } from 'omai-engine/signal'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const alg = image.watershedAlgorithm([[0, 1, 5, 1, 0]], [[1, 0, 0, 0, 2]], { levels: 5 })
  * Array.from(runAlgorithm(alg, { maxSteps: 20 }).state.labels) // => [1, 1, 1, 2, 2]
  * ```
@@ -347,10 +347,10 @@ export function watershedAlgorithm(
   options: { readonly connectivity?: 1 | 2; readonly mask?: TensorLike; readonly levels?: number } = {},
 ): Algorithm<WatershedState, WatershedPath> {
   const img = valuesOf(x)
-  if (img.shape.length !== 2) throw new MdmlError('shape', 'watershedAlgorithm: images are [H, W]')
+  if (img.shape.length !== 2) throw new OmaiError('shape', 'watershedAlgorithm: images are [H, W]')
   const [h = 0, w = 0] = img.shape
   const lab = valuesOf(markers).data
-  if (lab.length !== h * w) throw new MdmlError('shape', 'watershedAlgorithm: markers must have the image shape')
+  if (lab.length !== h * w) throw new OmaiError('shape', 'watershedAlgorithm: markers must have the image shape')
   const mask = options.mask === undefined ? new Float64Array(h * w).fill(1) : valuesOf(options.mask).data
   const levels = Math.max(1, Math.round(options.levels ?? 16))
   let lo = Number.POSITIVE_INFINITY
@@ -484,12 +484,12 @@ export interface FelzenszwalbState {
  * @param x - Image `[H, W]` or `[H, W, C]`.
  * @param options - Scale, smoothing sigma and minimum size.
  * @returns The algorithm.
- * @throws MdmlError with code `shape` unless the image is `[H, W]` or `[H, W, C]`.
+ * @throws OmaiError with code `shape` unless the image is `[H, W]` or `[H, W, C]`.
  * @concept graph-segmentation
  * @example
  * ```ts
- * import { image } from 'mdml-engine/signal'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { image } from 'omai-engine/signal'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const x = Array.from({ length: 10 }, () => Array.from({ length: 10 }, (_, j) => (j < 5 ? 0 : 1)))
  * const run = runAlgorithm(image.felzenszwalbAlgorithm(x, { minSize: 20 }), { maxSteps: 800 })
  * [run.status, run.state.components] // => ['converged', 2]
@@ -502,7 +502,7 @@ export function felzenszwalbAlgorithm(
   const v = valuesOf(x)
   const [h = 0, w = 0, c = 1] = v.shape
   if (v.shape.length < 2 || v.shape.length > 3)
-    throw new MdmlError('shape', 'felzenszwalb: images are [H, W] or [H, W, C]')
+    throw new OmaiError('shape', 'felzenszwalb: images are [H, W] or [H, W, C]')
   const sigma = options.sigma ?? 0.8
   const smoothed = Float64Array.from(
     primalOf(gaussianFilter(fromStorage(v.data, [h, w, c], 'float64'), [sigma, sigma, 0], { mode: 'reflect' })).data,
@@ -605,9 +605,9 @@ export function felzenszwalbAlgorithm(
  * @concept graph-segmentation
  * @example
  * ```ts
- * import { image } from 'mdml-engine/signal'
- * import { runAlgorithm } from 'mdml-engine/trace'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { image } from 'omai-engine/signal'
+ * import { runAlgorithm } from 'omai-engine/trace'
+ * import { toFlat } from 'omai-engine/tensor'
  * const run = runAlgorithm(image.felzenszwalbAlgorithm([[0, 0, 9, 9]], { minSize: 2 }), { maxSteps: 20 })
  * toFlat(image.felzenszwalbLabels(run.state)) // => [0, 0, 1, 1]
  * ```
@@ -642,8 +642,8 @@ export function felzenszwalbLabels(state: FelzenszwalbState): Tensor {
  * @concept graph-segmentation
  * @example
  * ```ts
- * import { image } from 'mdml-engine/signal'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { image } from 'omai-engine/signal'
+ * import { toFlat } from 'omai-engine/tensor'
  * const x = Array.from({ length: 10 }, () => Array.from({ length: 10 }, (_, j) => (j < 5 ? 0 : 1)))
  * new Set(toFlat(image.felzenszwalb(x, { minSize: 20 }))).size // => 2
  * ```
@@ -674,14 +674,14 @@ export interface GraphCutOptions {
  * @concept graph-cuts
  * @example
  * ```ts
- * import { image } from 'mdml-engine/signal'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { image } from 'omai-engine/signal'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(image.graphCut([[0.1, 0.9, 0.8], [0.2, 0.7, 0.1]], { foreground: 0.8, background: 0.1, lambda: 0.05 }).mask) // => [[0, 1, 1], [0, 1, 0]]
  * ```
  */
 export function graphCut(x: TensorLike, options: GraphCutOptions): { readonly mask: Tensor; readonly energy: number } {
   const v = valuesOf(x)
-  if (v.shape.length !== 2) throw new MdmlError('shape', 'graphCut: images are [H, W]')
+  if (v.shape.length !== 2) throw new OmaiError('shape', 'graphCut: images are [H, W]')
   const [h = 0, w = 0] = v.shape
   const n = h * w
   const lambda = options.lambda ?? 1

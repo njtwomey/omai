@@ -24,7 +24,7 @@ import {
   searchTrials,
   type TreeNode,
   treeRecord,
-} from 'mdml-engine/exposition'
+} from 'omai-engine/exposition'
 import { describe, expect, it } from 'vitest'
 import { componentsView } from './components.ts'
 import { episodeView } from './episodes.ts'

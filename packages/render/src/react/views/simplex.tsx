@@ -3,7 +3,7 @@
  * paths and fixed points.
  */
 
-import type { Simplex } from 'mdml-engine/exposition'
+import type { Simplex } from 'omai-engine/exposition'
 import { type ReactElement, useCallback } from 'react'
 import type { Figure } from '../../figure/figure.ts'
 import { simplexView } from '../../views/simplex.ts'

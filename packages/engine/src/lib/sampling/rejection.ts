@@ -7,7 +7,7 @@
  * resumes the same stream), and a function that runs it until it has the draws or the proposal budget is spent.
  */
 
-import { logAddExp, MdmlError } from '../base/index.ts'
+import { logAddExp, OmaiError } from '../base/index.ts'
 import { foldIn, type Key, uniformStream } from '../random/index.ts'
 import { fromStorage, type Tensor } from '../tensor/index.ts'
 import {
@@ -158,14 +158,14 @@ export interface RejectionState extends RejectionBaseState {
  * @param q - The proposal.
  * @param options - Key, number of draws, log M and the proposal budget.
  * @returns The algorithm; its state is a {@link RejectionState}.
- * @throws MdmlError with code `shape` when dimensions differ, and `value` for a bad number of draws.
+ * @throws OmaiError with code `shape` when dimensions differ, and `value` for a bad number of draws.
  * @concept rejection-sampling
  * @example
  * ```ts
- * import { numericTarget, proposalFromDistribution, rejectionAlgorithm } from 'mdml-engine/sampling'
- * import { normal } from 'mdml-engine/dists'
- * import { key } from 'mdml-engine/random'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { numericTarget, proposalFromDistribution, rejectionAlgorithm } from 'omai-engine/sampling'
+ * import { normal } from 'omai-engine/dists'
+ * import { key } from 'omai-engine/random'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const t = numericTarget((x) => -0.5 * (x[0] ?? 0) ** 2, 1)
  * const alg = rejectionAlgorithm(t, proposalFromDistribution(normal(0, 2)), { key: key(0), n: 5, logEnvelope: 1.6 })
  * runAlgorithm(alg, { maxSteps: 1000 }).state.accepted // => 5
@@ -176,10 +176,10 @@ export function rejectionAlgorithm(
   q: ChainProposal,
   options: RejectionOptions,
 ): Algorithm<RejectionState, RejectionPath> {
-  if (q.dim !== target.dim) throw new MdmlError('shape', 'rejectionSample: proposal and target dimensions differ')
+  if (q.dim !== target.dim) throw new OmaiError('shape', 'rejectionSample: proposal and target dimensions differ')
   const { n } = options
   if (!(Number.isInteger(n) && n >= 0))
-    throw new MdmlError('value', 'rejectionSample: n must be a non-negative integer')
+    throw new OmaiError('value', 'rejectionSample: n must be a non-negative integer')
   const dim = target.dim
   const budget = options.maxProposals ?? 1000 * Math.max(1, n)
   return {
@@ -247,14 +247,14 @@ export function rejectionAlgorithm(
  * @param q - The proposal.
  * @param options - Key, number of draws, log M and the proposal budget.
  * @returns The draws, proposals, acceptance rate, completeness and envelope violations.
- * @throws MdmlError with code `shape` when dimensions differ, and `value` for a bad number of draws.
+ * @throws OmaiError with code `shape` when dimensions differ, and `value` for a bad number of draws.
  * @concept rejection-sampling
  * @reference J. von Neumann, Various techniques used in connection with random digits (1951).
  * @example
  * ```ts
- * import { numericTarget, proposalFromDistribution, rejectionSample } from 'mdml-engine/sampling'
- * import { normal } from 'mdml-engine/dists'
- * import { key } from 'mdml-engine/random'
+ * import { numericTarget, proposalFromDistribution, rejectionSample } from 'omai-engine/sampling'
+ * import { normal } from 'omai-engine/dists'
+ * import { key } from 'omai-engine/random'
  * // pi(x) = exp(-x^2 / 2) and q = N(0, 2^2): pi / q <= 2 sqrt(2 pi).
  * const t = numericTarget((x) => -0.5 * (x[0] ?? 0) ** 2, 1)
  * const r = rejectionSample(t, proposalFromDistribution(normal(0, 2)), { key: key(0), n: 500, logEnvelope: Math.log(2 * Math.sqrt(2 * Math.PI)) })
@@ -321,7 +321,7 @@ function insertAbscissa(
   ds.splice(i, 0, r.grad[0] ?? 0)
   for (let j = 1; j < ds.length; j++) {
     if ((ds[j] ?? 0) > (ds[j - 1] ?? 0) + 1e-9 * (1 + Math.abs(ds[j - 1] ?? 0))) {
-      throw new MdmlError('value', 'adaptiveRejectionSample: the density is not log-concave')
+      throw new OmaiError('value', 'adaptiveRejectionSample: the density is not log-concave')
     }
   }
   return { abscissae: xs, logDensities: hs, slopes: ds }
@@ -408,15 +408,15 @@ function samplePiece(d: number, x0: number, a: number, b: number, u: number): nu
  * @param target - A one-dimensional log-concave target with a gradient.
  * @param options - Key, number of draws, starting points, domain, hull size and proposal budget.
  * @returns The algorithm; its state is an {@link AdaptiveRejectionState}.
- * @throws MdmlError with code `value` for a target that is not one-dimensional with a gradient, fewer than two
+ * @throws OmaiError with code `value` for a target that is not one-dimensional with a gradient, fewer than two
  *   starting points, points outside the domain, an envelope that cannot be normalised (wrong slopes at infinite
  *   bounds), or a density found not to be log-concave.
  * @concept adaptive-rejection-sampling
  * @example
  * ```ts
- * import { adaptiveRejectionAlgorithm, numericTarget } from 'mdml-engine/sampling'
- * import { key } from 'mdml-engine/random'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { adaptiveRejectionAlgorithm, numericTarget } from 'omai-engine/sampling'
+ * import { key } from 'omai-engine/random'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const t = numericTarget((x) => -0.5 * (x[0] ?? 0) ** 2, 1, { grad: (x) => [-(x[0] ?? 0)] })
  * const s = runAlgorithm(adaptiveRejectionAlgorithm(t, { key: key(0), n: 100 }), { maxSteps: 1000 }).state
  * s.abscissae.length > 2 // => true
@@ -427,7 +427,7 @@ export function adaptiveRejectionAlgorithm(
   options: AdaptiveRejectionOptions,
 ): Algorithm<AdaptiveRejectionState, RejectionPath> {
   if (target.dim !== 1 || !target.hasGradient) {
-    throw new MdmlError('value', 'adaptiveRejectionSample: need a one-dimensional target with a gradient')
+    throw new OmaiError('value', 'adaptiveRejectionSample: need a one-dimensional target with a gradient')
   }
   const { n } = options
   const [lo, hi] = options.domain ?? [Number.NEGATIVE_INFINITY, Number.POSITIVE_INFINITY]
@@ -435,7 +435,7 @@ export function adaptiveRejectionAlgorithm(
   const budget = options.maxProposals ?? 100 * Math.max(1, n)
   const init = [...(options.initialPoints ?? [-1, 1])].sort((a, b) => a - b)
   if (init.length < 2 || init.some((x) => !(x > lo && x < hi))) {
-    throw new MdmlError('value', 'adaptiveRejectionSample: need two starting points inside the domain')
+    throw new OmaiError('value', 'adaptiveRejectionSample: need two starting points inside the domain')
   }
   return {
     name: 'adaptive-rejection',
@@ -448,11 +448,11 @@ export function adaptiveRejectionAlgorithm(
       }
       for (const x of init) h = insertAbscissa(target, h, x)
       if (!h.logDensities.every(Number.isFinite))
-        throw new MdmlError('value', 'adaptiveRejectionSample: the log density must be finite at the starting points')
+        throw new OmaiError('value', 'adaptiveRejectionSample: the log density must be finite at the starting points')
       const d0 = h.slopes[0] ?? 0
       const d1 = h.slopes[h.slopes.length - 1] ?? 0
       if ((lo === Number.NEGATIVE_INFINITY && !(d0 > 0)) || (hi === Number.POSITIVE_INFINITY && !(d1 < 0))) {
-        throw new MdmlError(
+        throw new OmaiError(
           'value',
           'adaptiveRejectionSample: with an infinite bound the outer tangents must point down',
         )
@@ -475,7 +475,7 @@ export function adaptiveRejectionAlgorithm(
       const env = hullOf(s, lo, hi)
       const total = env.logMass.reduce((a, b) => logAddExp(a, b), Number.NEGATIVE_INFINITY)
       if (!Number.isFinite(total))
-        throw new MdmlError('value', 'adaptiveRejectionSample: the envelope cannot be normalised')
+        throw new OmaiError('value', 'adaptiveRejectionSample: the envelope cannot be normalised')
       // Choose a piece by its mass, then invert its exponential CDF.
       let u = rand.next()
       let j = 0
@@ -542,15 +542,15 @@ export function adaptiveRejectionAlgorithm(
  * @param target - A one-dimensional log-concave target with a gradient.
  * @param options - Key, number of draws, starting points, domain, hull size and proposal budget.
  * @returns The draws `[n, 1]`, proposals, acceptance rate, completeness and the final abscissae.
- * @throws MdmlError with code `value` for a target that is not one-dimensional with a gradient, fewer than two
+ * @throws OmaiError with code `value` for a target that is not one-dimensional with a gradient, fewer than two
  *   starting points, points outside the domain, an envelope that cannot be normalised (wrong slopes at infinite
  *   bounds), or a density found not to be log-concave.
  * @concept adaptive-rejection-sampling
  * @reference W. R. Gilks and P. Wild, Adaptive rejection sampling for Gibbs sampling (Applied Statistics 1992).
  * @example
  * ```ts
- * import { adaptiveRejectionSample, numericTarget } from 'mdml-engine/sampling'
- * import { key } from 'mdml-engine/random'
+ * import { adaptiveRejectionSample, numericTarget } from 'omai-engine/sampling'
+ * import { key } from 'omai-engine/random'
  * const t = numericTarget((x) => -0.5 * (x[0] ?? 0) ** 2, 1, { grad: (x) => [-(x[0] ?? 0)] })
  * const r = adaptiveRejectionSample(t, { key: key(0), n: 1000 })
  * r.acceptanceRate > 0.9 // => true
@@ -600,10 +600,10 @@ export interface RatioOfUniformsBounds {
  * @param density - f(x) >= 0, unnormalised.
  * @param options - The bounds to use as they are, or the interval to search (default [-30, 30]).
  * @returns The rectangle.
- * @throws MdmlError with code `value` for a density that is zero on the search range or bounds that are not finite.
+ * @throws OmaiError with code `value` for a density that is zero on the search range or bounds that are not finite.
  * @example
  * ```ts
- * import { ratioOfUniformsBounds } from 'mdml-engine/sampling'
+ * import { ratioOfUniformsBounds } from 'omai-engine/sampling'
  * ratioOfUniformsBounds((x) => Math.exp(-0.5 * x * x), {}).uMax // => 1.01
  * ```
  */
@@ -626,11 +626,11 @@ export function ratioOfUniformsBounds(
       vMin = Math.min(vMin, x * s)
       vMax = Math.max(vMax, x * s)
     }
-    if (!(uMax > 0)) throw new MdmlError('value', 'ratioOfUniforms: the density is zero on the search range')
+    if (!(uMax > 0)) throw new OmaiError('value', 'ratioOfUniforms: the density is zero on the search range')
     bounds = { uMax: 1.01 * uMax, vMin: 1.01 * vMin, vMax: 1.01 * vMax }
   }
   if (![bounds.uMax, bounds.vMin, bounds.vMax].every(Number.isFinite) || !(bounds.uMax > 0)) {
-    throw new MdmlError('value', 'ratioOfUniforms: the bounds must be finite with uMax > 0')
+    throw new OmaiError('value', 'ratioOfUniforms: the bounds must be finite with uMax > 0')
   }
   return bounds
 }
@@ -650,13 +650,13 @@ const safeDensity =
  * @param density - f(x) >= 0, unnormalised (log densities: pass exp of them).
  * @param options - Key, number of draws, bounds or search range, and the proposal budget.
  * @returns The algorithm; its state is a {@link RejectionBaseState}.
- * @throws MdmlError with code `value` for a density that is zero on the search range or bounds that are not finite.
+ * @throws OmaiError with code `value` for a density that is zero on the search range or bounds that are not finite.
  * @concept ratio-of-uniforms
  * @example
  * ```ts
- * import { ratioOfUniformsAlgorithm } from 'mdml-engine/sampling'
- * import { key } from 'mdml-engine/random'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { ratioOfUniformsAlgorithm } from 'omai-engine/sampling'
+ * import { key } from 'omai-engine/random'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const alg = ratioOfUniformsAlgorithm((x) => Math.exp(-0.5 * x * x), { key: key(0), n: 10 })
  * runAlgorithm(alg, { maxSteps: 1000 }).state.accepted // => 10
  * ```
@@ -716,15 +716,15 @@ export function ratioOfUniformsAlgorithm(
  * @param density - f(x) >= 0, unnormalised (log densities: pass exp of them).
  * @param options - Key, number of draws, bounds or search range, and the proposal budget.
  * @returns The draws `[n, 1]`, proposals, acceptance rate, completeness and the rectangle used.
- * @throws MdmlError with code `value` for a density that is zero on the search range or bounds that are not
+ * @throws OmaiError with code `value` for a density that is zero on the search range or bounds that are not
  *   finite.
  * @concept ratio-of-uniforms
  * @reference A. J. Kinderman and J. F. Monahan, Computer generation of random variables using the ratio of uniform
  *   deviates (ACM TOMS 1977).
  * @example
  * ```ts
- * import { ratioOfUniforms } from 'mdml-engine/sampling'
- * import { key } from 'mdml-engine/random'
+ * import { ratioOfUniforms } from 'omai-engine/sampling'
+ * import { key } from 'omai-engine/random'
  * // The standard normal: the region has area sqrt(2 pi) / 2 inside a 1 x 2 sqrt(2 / e) box.
  * const r = ratioOfUniforms((x) => Math.exp(-0.5 * x * x), { key: key(0), n: 2000 })
  * Math.abs(r.acceptanceRate - Math.sqrt(Math.PI * Math.E) / 4) < 0.03 // => true

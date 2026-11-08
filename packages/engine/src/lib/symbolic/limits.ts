@@ -4,7 +4,7 @@
  * term, l'Hopital, numeric check).
  */
 
-import { type Complex, MdmlError } from '../base/index.ts'
+import { type Complex, OmaiError } from '../base/index.ts'
 import { attempt, bounded } from './_budget.ts'
 import { isInfinite, MINUS_ONE, makeAdd, makeMul, makePow, NAN, NEG_INF, OO, ZERO, ZOO } from './_canon.ts'
 import { makeFn } from './_functions.ts'
@@ -118,12 +118,12 @@ function compose(e: Expr, x: ExprSym, x0: Expr, dir: '+' | '-', steps: Step[] | 
     if (e.name === 'log' && isZeroLimit(L)) return NEG_INF
     if (DISCONTINUOUS.has(e.name)) {
       const z = evalComplex(L, new Map())
-      if (z === undefined || z[1] !== 0) throw new MdmlError('not-implemented', 'limit: at a jump')
+      if (z === undefined || z[1] !== 0) throw new OmaiError('not-implemented', 'limit: at a jump')
       const jump = e.name === 'sign' ? z[0] === 0 : Number.isInteger(z[0])
       if (jump) {
         // At the jump the side decides: compare the argument just beside the point with its limit.
         const v = sample(e.args[0] as Expr, x, x0, dir, 1e-8)
-        if (v === undefined || v === z[0]) throw new MdmlError('not-implemented', 'limit: at a jump')
+        if (v === undefined || v === z[0]) throw new OmaiError('not-implemented', 'limit: at a jump')
         const below = v < z[0]
         const k = z[0]
         const value =
@@ -144,7 +144,7 @@ function compose(e: Expr, x: ExprSym, x0: Expr, dir: '+' | '-', steps: Step[] | 
         steps.push({ rule: `continuity of ${e.name}`, before: limitNode(e, x, x0, dir), after: v })
       return v
     }
-    throw new MdmlError('not-implemented', `limit: ${e.name} has no limit here (it oscillates or is undefined)`)
+    throw new OmaiError('not-implemented', `limit: ${e.name} has no limit here (it oscillates or is undefined)`)
   }
   if (e.kind === 'pow') {
     if (hasSymbol(e.exp, x)) {
@@ -156,7 +156,7 @@ function compose(e: Expr, x: ExprSym, x0: Expr, dir: '+' | '-', steps: Step[] | 
     const v = makePow(Lb, e.exp)
     if (isFiniteExpr(v) || v.key === OO.key || v.key === NEG_INF.key) return v
     if (isZeroLimit(Lb)) return makeMul([makeFn('sign', [makePow(sampleSign(e.base, x, x0, dir), e.exp)]), OO])
-    throw new MdmlError('not-implemented', 'limit: no method applies to this power')
+    throw new OmaiError('not-implemented', 'limit: no method applies to this power')
   }
   if (e.kind === 'mul') {
     const Ls = e.args.map(lim)
@@ -176,7 +176,7 @@ function compose(e: Expr, x: ExprSym, x0: Expr, dir: '+' | '-', steps: Step[] | 
         try {
           return run()
         } catch (err) {
-          if (!(err instanceof MdmlError)) throw err
+          if (!(err instanceof OmaiError)) throw err
         }
       }
     }
@@ -187,12 +187,12 @@ function compose(e: Expr, x: ExprSym, x0: Expr, dir: '+' | '-', steps: Step[] | 
     if (v.key !== NAN.key) return v
   }
   const [n, d] = numerDenom(together(e))
-  if (!hasSymbol(d, x)) throw new MdmlError('not-implemented', 'limit: no method applies')
+  if (!hasSymbol(d, x)) throw new OmaiError('not-implemented', 'limit: no method applies')
   return lHopital(n, d, e, x, x0, dir, steps, depth)
 }
 
 function oneSided(e: Expr, x: ExprSym, x0: Expr, dir: '+' | '-', steps: Step[] | undefined, depth: number): Expr {
-  if (depth > 12) throw new MdmlError('not-implemented', 'limit: no method terminated')
+  if (depth > 12) throw new OmaiError('not-implemented', 'limit: no method terminated')
   if (!hasSymbol(e, x)) return e
   if (isFiniteExpr(x0) && !hasDiscontinuity(e)) {
     const direct = substitute(e, [[x, x0]])
@@ -204,12 +204,12 @@ function oneSided(e: Expr, x: ExprSym, x0: Expr, dir: '+' | '-', steps: Step[] |
   }
   try {
     // Series of floor, ceiling and sign would treat them as smooth; their jumps are handled by composition.
-    if (hasDiscontinuity(e)) throw new MdmlError('not-implemented', 'limit: discontinuous function')
+    if (hasDiscontinuity(e)) throw new OmaiError('not-implemented', 'limit: discontinuous function')
     // A series whose coefficients grow too large gives up its share of the work to the other methods.
     const viaSeries = attempt(0.5, () => fromSeries(e, x, x0, dir, steps))
     if (viaSeries !== undefined) return viaSeries
   } catch (err) {
-    if (!(err instanceof MdmlError) || (err.code !== 'not-implemented' && err.code !== 'convergence')) throw err
+    if (!(err instanceof OmaiError) || (err.code !== 'not-implemented' && err.code !== 'convergence')) throw err
   }
   return compose(e, x, x0, dir, steps, depth)
 }
@@ -253,7 +253,7 @@ function crossCheck(e: Expr, x: ExprSym, x0: Expr, dir: '+' | '-', value: Expr, 
     })
   }
   if (!ok) {
-    throw new MdmlError(
+    throw new OmaiError(
       'convergence',
       `limit: the symbolic result ${value.key} disagrees with values ${v1}, ${v2} near the point`,
     )
@@ -265,7 +265,7 @@ function limitImpl(e: Expr, x: ExprSym, x0v: ExprLike, dir: LimitDirection, step
   if (dir === '+-' && !isInfinite(x0)) {
     const a = limitImpl(e, x, x0, '+', steps)
     const b = limitImpl(e, x, x0, '-', steps)
-    if (a.key !== b.key) throw new MdmlError('value', `limit: the one-sided limits differ (${a.key} and ${b.key})`)
+    if (a.key !== b.key) throw new OmaiError('value', `limit: the one-sided limits differ (${a.key} and ${b.key})`)
     return a
   }
   const side = dir === '-' ? '-' : '+'
@@ -287,11 +287,11 @@ function limitImpl(e: Expr, x: ExprSym, x0v: ExprLike, dir: LimitDirection, step
  * @param x0 - The point (a number, an expression, or `oo` / `-oo`).
  * @param dir - `'+'` (default), `'-'` or `'+-'`.
  * @returns The limit (possibly `oo`, `-oo`).
- * @throws MdmlError with code `value` when two-sided limits differ, `convergence` when the numeric check
+ * @throws OmaiError with code `value` when two-sided limits differ, `convergence` when the numeric check
  *   contradicts the result or the work budget runs out, `not-implemented` when no method applies.
  * @example
  * ```ts
- * import { limit, oo, parse, sym, toText } from 'mdml-engine/symbolic'
+ * import { limit, oo, parse, sym, toText } from 'omai-engine/symbolic'
  * const x = sym('x')
  * toText(limit(parse('sin(x)/x'), x, 0)) // => '1'
  * toText(limit(parse('(1 + 1/x)^x'), x, oo)) // => 'E'
@@ -312,7 +312,7 @@ export function limit(e: Expr, x: ExprSym, x0: ExprLike, dir: LimitDirection = '
  * @returns The limit and its steps.
  * @example
  * ```ts
- * import { limitSteps, parse, sym } from 'mdml-engine/symbolic'
+ * import { limitSteps, parse, sym } from 'omai-engine/symbolic'
  * limitSteps(parse('(1 - cos(x))/x^2'), sym('x'), 0).steps[0]?.rule // => 'series expansion: leading term of order 0'
  * ```
  */

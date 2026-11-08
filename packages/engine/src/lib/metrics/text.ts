@@ -5,7 +5,7 @@
  * distinct-n diversity.
  */
 
-import { MdmlError, type MetricResult, type MetricSpec, maxOf } from '../base/index.ts'
+import { type MetricResult, type MetricSpec, maxOf, OmaiError } from '../base/index.ts'
 import type { TensorLike } from '../tensor/index.ts'
 import {
   editCounts,
@@ -35,12 +35,12 @@ const list = (x: Texts): readonly string[] => (typeof x === 'string' ? [x] : x)
 
 const referenceLists = (name: string, refs: References, n: number): (readonly string[])[] => {
   const r = typeof refs === 'string' ? [refs] : refs
-  if (r.length !== n) throw new MdmlError('shape', `${name}: ${r.length} references for ${n} hypotheses`)
+  if (r.length !== n) throw new OmaiError('shape', `${name}: ${r.length} references for ${n} hypotheses`)
   return r.map((x) => (typeof x === 'string' ? [x] : x))
 }
 
 const sameLength = (name: string, a: readonly unknown[], b: readonly unknown[]): void => {
-  if (a.length !== b.length) throw new MdmlError('shape', `${name}: ${a.length} references for ${b.length} hypotheses`)
+  if (a.length !== b.length) throw new OmaiError('shape', `${name}: ${a.length} references for ${b.length} hypotheses`)
 }
 
 /** Python's str.split(): whitespace-separated tokens. */
@@ -125,7 +125,7 @@ const preserved = (a: Alignment): number =>
  * @concept text-evaluation
  * @example
  * ```ts
- * import { wordErrorRate } from 'mdml-engine/metrics'
+ * import { wordErrorRate } from 'omai-engine/metrics'
  * wordErrorRate('the cat sat on the mat', 'the cat sit on mat').estimate.value // => 0.3333333333333333
  * ```
  */
@@ -146,7 +146,7 @@ export const wordErrorRate: MetricFunction<[Texts, Texts]> = defineMetric(
  * @returns The metric result, with the alignment counts in the breakdown.
  * @example
  * ```ts
- * import { characterErrorRate } from 'mdml-engine/metrics'
+ * import { characterErrorRate } from 'omai-engine/metrics'
  * characterErrorRate('kitten', 'sitting').estimate.value // => 0.5
  * ```
  */
@@ -167,7 +167,7 @@ export const characterErrorRate: MetricFunction<[Texts, Texts]> = defineMetric(
  * @returns The metric result, in [0, 1].
  * @example
  * ```ts
- * import { matchErrorRate } from 'mdml-engine/metrics'
+ * import { matchErrorRate } from 'omai-engine/metrics'
  * matchErrorRate('a b c', 'a x c d').estimate.value // => 0.5
  * ```
  */
@@ -189,7 +189,7 @@ export const matchErrorRate: MetricFunction<[Texts, Texts]> = defineMetric(
  * @returns The metric result, in [0, 1].
  * @example
  * ```ts
- * import { wordInformationPreserved } from 'mdml-engine/metrics'
+ * import { wordInformationPreserved } from 'omai-engine/metrics'
  * wordInformationPreserved('a b c d', 'a b').estimate.value // => 0.5
  * ```
  */
@@ -209,7 +209,7 @@ export const wordInformationPreserved: MetricFunction<[Texts, Texts]> = defineMe
  * @returns The metric result, in [0, 1].
  * @example
  * ```ts
- * import { wordInformationLost } from 'mdml-engine/metrics'
+ * import { wordInformationLost } from 'omai-engine/metrics'
  * wordInformationLost('a b c d', 'a b').estimate.value // => 0.5
  * ```
  */
@@ -239,7 +239,7 @@ const PUNCT_13A: readonly [RegExp, string][] = [
  * @returns The tokens joined by single spaces.
  * @example
  * ```ts
- * import { tokenize13a } from 'mdml-engine/metrics'
+ * import { tokenize13a } from 'omai-engine/metrics'
  * tokenize13a('Hello, world (3.5 kg)!') // => 'Hello , world ( 3.5 kg ) !'
  * ```
  */
@@ -365,7 +365,7 @@ function corpusBleu(refs: (readonly string[])[], hyps: readonly string[], option
  * @returns The score, with the brevity penalty, lengths and n-gram precisions in the breakdown.
  * @example
  * ```ts
- * import { bleuScore } from 'mdml-engine/metrics'
+ * import { bleuScore } from 'omai-engine/metrics'
  * Number(bleuScore(['the cat is on the mat'], ['the cat is on the mat']).estimate.value.toFixed(10)) // => 100
  * ```
  */
@@ -387,7 +387,7 @@ export const bleuScore: MetricFunction<[References, Texts, BleuOptions?]> = defi
  * @returns The score in [0, 100].
  * @example
  * ```ts
- * import { sentenceBleu } from 'mdml-engine/metrics'
+ * import { sentenceBleu } from 'omai-engine/metrics'
  * Number(sentenceBleu('the cat is on the mat', 'the cat sat on the mat').estimate.value.toFixed(4)) // => 37.9918
  * ```
  */
@@ -488,7 +488,7 @@ function chrfF(stats: readonly number[], options: ChrfOptions): number {
  * @returns The score in [0, 100].
  * @example
  * ```ts
- * import { chrfScore } from 'mdml-engine/metrics'
+ * import { chrfScore } from 'omai-engine/metrics'
  * chrfScore(['abc'], ['abc']).estimate.value // => 100
  * ```
  */
@@ -591,7 +591,7 @@ function tercom(sent: string, options: TerOptions): string[] {
  * @returns The rate, with the edits and reference length in the breakdown.
  * @example
  * ```ts
- * import { translationEditRate } from 'mdml-engine/metrics'
+ * import { translationEditRate } from 'omai-engine/metrics'
  * // One shift moves "the cat" to the front.
  * translationEditRate(['the cat sat on the mat'], ['sat on the mat the cat']).estimate.value // => 16.666666666666664
  * ```
@@ -687,7 +687,7 @@ function rougeResult(
  * @returns The mean F-measure, with mean precision and recall in the breakdown.
  * @example
  * ```ts
- * import { rougeN } from 'mdml-engine/metrics'
+ * import { rougeN } from 'omai-engine/metrics'
  * rougeN(['the cat sat'], ['the cat ran']).estimate.value // => 0.6666666666666666
  * ```
  */
@@ -715,7 +715,7 @@ export const rougeN: MetricFunction<[References, Texts, (RougeOptions & { readon
  * @returns The mean F-measure, with mean precision and recall in the breakdown.
  * @example
  * ```ts
- * import { rougeL } from 'mdml-engine/metrics'
+ * import { rougeL } from 'omai-engine/metrics'
  * rougeL(['a b c d'], ['a c d']).breakdown?.['recall'] // => 0.75
  * ```
  */
@@ -761,7 +761,7 @@ function lcsIndices(ref: readonly string[], can: readonly string[]): number[] {
  * @returns The mean F-measure, with mean precision and recall in the breakdown.
  * @example
  * ```ts
- * import { rougeLsum } from 'mdml-engine/metrics'
+ * import { rougeLsum } from 'omai-engine/metrics'
  * rougeLsum(['a b\nc d'], ['c d\na b']).estimate.value // => 1
  * ```
  */
@@ -849,7 +849,7 @@ function squad(
  * @returns The percentage in [0, 100].
  * @example
  * ```ts
- * import { exactMatch } from 'mdml-engine/metrics'
+ * import { exactMatch } from 'omai-engine/metrics'
  * exactMatch([['The Eiffel Tower', 'Eiffel tower']], ['eiffel tower!']).estimate.value // => 100
  * ```
  */
@@ -868,7 +868,7 @@ export const exactMatch: MetricFunction<[References, Texts]> = defineMetric(
  * @returns The percentage in [0, 100].
  * @example
  * ```ts
- * import { tokenF1 } from 'mdml-engine/metrics'
+ * import { tokenF1 } from 'omai-engine/metrics'
  * tokenF1(['the big red dog'], ['a red dog']).estimate.value // => 80
  * ```
  */
@@ -892,7 +892,7 @@ export interface BertScoreOptions {
 /**
  * BERTScore (Zhang et al., 2020) from token embeddings, as torchmetrics computes it once embeddings are extracted:
  * after normalising each token embedding, precision is the weighted mean over candidate tokens of the best cosine
- * similarity to a reference token, recall the same from the reference side, F1 their harmonic mean. mdml ships no
+ * similarity to a reference token, recall the same from the reference side, F1 their harmonic mean. omai ships no
  * BERT; pass the contextual embeddings of each sentence's tokens.
  *
  * @param targetEmbeddings - The reference token embeddings of each sentence, `[R_i, D]`.
@@ -901,7 +901,7 @@ export interface BertScoreOptions {
  * @returns The mean F1, with mean precision and recall in the breakdown.
  * @example
  * ```ts
- * import { bertScore } from 'mdml-engine/metrics'
+ * import { bertScore } from 'omai-engine/metrics'
  * bertScore([[[1, 0], [0, 1]]], [[[1, 0]]]).breakdown?.['precision'] // => 1
  * ```
  */
@@ -916,7 +916,7 @@ export const bertScore: MetricFunction<[readonly TensorLike[], readonly TensorLi
       sameLength('bertScore', targetEmbeddings, predEmbeddings)
       const unit = (x: TensorLike): { n: number; d: number; data: Float64Array } => {
         const m = shapedArray(x)
-        if (m.shape.length !== 2) throw new MdmlError('shape', 'bertScore: embeddings are [tokens, D]')
+        if (m.shape.length !== 2) throw new OmaiError('shape', 'bertScore: embeddings are [tokens, D]')
         const n = m.shape[0] ?? 0
         const d = m.shape[1] ?? 0
         const data = Float64Array.from(m.data)
@@ -980,7 +980,7 @@ export const bertScore: MetricFunction<[readonly TensorLike[], readonly TensorLi
  * @returns The metric result.
  * @example
  * ```ts
- * import { perplexity } from 'mdml-engine/metrics'
+ * import { perplexity } from 'omai-engine/metrics'
  * perplexity([[0, 0], [0, 0]], [0, 1]).estimate.value // => 2
  * ```
  */
@@ -991,7 +991,7 @@ export const perplexity: MetricFunction<[TensorLike, TensorLike, { readonly igno
     const t = shapedArray(targets).data
     const v = l.shape[l.shape.length - 1] ?? 0
     if (l.data.length !== t.length * v)
-      throw new MdmlError('shape', 'perplexity: logits are [..., T, V] for targets [..., T]')
+      throw new OmaiError('shape', 'perplexity: logits are [..., T, V] for targets [..., T]')
     let nll = 0
     let count = 0
     for (const [i, target] of t.entries()) {
@@ -1016,7 +1016,7 @@ export const perplexity: MetricFunction<[TensorLike, TensorLike, { readonly igno
  * @returns The ratio in [0, 1].
  * @example
  * ```ts
- * import { distinctN } from 'mdml-engine/metrics'
+ * import { distinctN } from 'omai-engine/metrics'
  * distinctN(['a b a b'], { n: 2 }).estimate.value // => 0.6666666666666666
  * ```
  */

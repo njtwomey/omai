@@ -2,16 +2,16 @@
 
 # vision
 
-Classical computer vision, OpenCV-shaped, available as `mdml-engine/vision`: colour spaces and balance, histograms and equalisation, thresholds, contours and shape descriptors, drawing, keypoints and descriptors with matching, multi-view geometry and camera models, stereo disparity, boxes and non-maximum suppression, tracking, denoising, segmentation, pyramids and sliding-window features. Images are `[H, W]` or `[H, W, C]` tensors (channels last, RGB) in [0, 1]; points are (x, y). It builds on the scipy.ndimage-style operators of `signal/image`.
+Classical computer vision, OpenCV-shaped, available as `omai-engine/vision`: colour spaces and balance, histograms and equalisation, thresholds, contours and shape descriptors, drawing, keypoints and descriptors with matching, multi-view geometry and camera models, stereo disparity, boxes and non-maximum suppression, tracking, denoising, segmentation, pyramids and sliding-window features. Images are `[H, W]` or `[H, W, C]` tensors (channels last, RGB) in [0, 1]; points are (x, y). It builds on the scipy.ndimage-style operators of `signal/image`.
 
-- function `boxes.ts` (file): Detection boxes: format conversions, IoU and non-maximum suppression. `src/lib/vision/boxes.ts:1` `mdml-engine/vision`
-- function `calibration.ts` (file): Zhang's camera calibration and stereo rectification. `src/lib/vision/calibration.ts:1` `mdml-engine/vision`
-- function `camera.ts` (file): Pinhole camera with lens distortion: project, undistort, Rodrigues. `src/lib/vision/camera.ts:1` `mdml-engine/vision`
-- function `sfm.ts` (file): Structure from motion in steps: RANSAC two-view start, bundle adjustment. `src/lib/vision/sfm.ts:1` `mdml-engine/vision`
-- function `tracking.ts` (file): SORT tracking, mean shift and pyramidal point tracking over frames. `src/lib/vision/tracking.ts:1` `mdml-engine/vision`
+- function `boxes.ts` (file): Detection boxes: format conversions, IoU and non-maximum suppression. `src/lib/vision/boxes.ts:1` `omai-engine/vision`
+- function `calibration.ts` (file): Zhang's camera calibration and stereo rectification. `src/lib/vision/calibration.ts:1` `omai-engine/vision`
+- function `camera.ts` (file): Pinhole camera with lens distortion: project, undistort, Rodrigues. `src/lib/vision/camera.ts:1` `omai-engine/vision`
+- function `sfm.ts` (file): Structure from motion in steps: RANSAC two-view start, bundle adjustment. `src/lib/vision/sfm.ts:1` `omai-engine/vision`
+- function `tracking.ts` (file): SORT tracking, mean shift and pyramidal point tracking over frames. `src/lib/vision/tracking.ts:1` `omai-engine/vision`
 
-- function `cvtColor`: Convert between colour spaces, like cv2.cvtColor. `src/lib/vision/colour.ts:361` `mdml-engine/vision`
-- function `fast`: FAST-9 corner detector. `src/lib/vision/fast.ts:92` `mdml-engine/vision`
-- function `findHomography`: Robust homography from point correspondences. `src/lib/vision/geometry.ts:257` `mdml-engine/vision`
-- function `orb`: ORB keypoint descriptors; matchDescriptors in matching.ts. `src/lib/vision/descriptors.ts:230` `mdml-engine/vision`
-- function `threshold`: Global thresholding: binary, truncate, to-zero and inverse variants. `src/lib/vision/thresholds.ts:40` `mdml-engine/vision`
+- function `cvtColor`: Convert between colour spaces, like cv2.cvtColor. `src/lib/vision/colour.ts:361` `omai-engine/vision`
+- function `fast`: FAST-9 corner detector. `src/lib/vision/fast.ts:92` `omai-engine/vision`
+- function `findHomography`: Robust homography from point correspondences. `src/lib/vision/geometry.ts:257` `omai-engine/vision`
+- function `orb`: ORB keypoint descriptors; matchDescriptors in matching.ts. `src/lib/vision/descriptors.ts:230` `omai-engine/vision`
+- function `threshold`: Global thresholding: binary, truncate, to-zero and inverse variants. `src/lib/vision/thresholds.ts:40` `omai-engine/vision`

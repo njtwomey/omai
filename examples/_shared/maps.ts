@@ -6,9 +6,9 @@
  * are that window, so nothing is drawn outside them.
  */
 
-import { cartesian, contours, heatmap, type Layer, points } from 'mdml-render/charts'
-import { figure } from 'mdml-render/figure'
-import { categoricalColour } from 'mdml-render/theme'
+import { cartesian, contours, heatmap, type Layer, points } from 'omai-render/charts'
+import { figure } from 'omai-render/figure'
+import { categoricalColour } from 'omai-render/theme'
 import { INK, mix, PAPER, tab } from './colours.ts'
 
 /** The two class colours (tab10's blue and orange), used for the rows and the ends of the class ramp. */

@@ -6,8 +6,8 @@ import numpy as np
 import scipy
 import scipy.sparse as sps
 import scipy.sparse.linalg as sla
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray, rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray, rng
 
 REFERENCE: dict[str, str] = {"scipy": scipy.__version__}
 

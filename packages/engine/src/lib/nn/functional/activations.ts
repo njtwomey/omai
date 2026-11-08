@@ -6,7 +6,7 @@
  * @index function Activation functions as plain tensor functions, torch.nn.functional style.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { erf, logaddexp } from '../../numerics/special/index.ts'
 import {
   abs as absOp,
@@ -41,8 +41,8 @@ const f = (x: TensorLike): Value => promoteFloat(x)[0] as Value
  * @concept activations
  * @example
  * ```ts
- * import { relu } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { relu } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(relu([-1, 2])) // => [0, 2]
  * ```
  */
@@ -58,8 +58,8 @@ export function relu(x: TensorLike): Value {
  * @returns The activation.
  * @example
  * ```ts
- * import { leakyRelu } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { leakyRelu } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(leakyRelu([-2, 3], 0.1)) // => [-0.2, 3]
  * ```
  */
@@ -76,8 +76,8 @@ export function leakyRelu(x: TensorLike, slope = 0.01): Value {
  * @returns The activation.
  * @example
  * ```ts
- * import { elu } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { elu } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(elu([0, 1])) // => [0, 1]
  * ```
  */
@@ -96,8 +96,8 @@ const SELU_SCALE = 1.0507009873554805
  * @returns The activation.
  * @example
  * ```ts
- * import { selu } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { selu } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(selu([0])) // => [0]
  * ```
  */
@@ -113,8 +113,8 @@ export function selu(x: TensorLike): Value {
  * @returns The activation.
  * @example
  * ```ts
- * import { gelu } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { gelu } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(gelu([0])) // => [0]
  * ```
  */
@@ -134,8 +134,8 @@ export function gelu(x: TensorLike, approximate: 'none' | 'tanh' = 'none'): Valu
  * @returns The activation.
  * @example
  * ```ts
- * import { silu } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { silu } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(silu([0])) // => [0]
  * ```
  */
@@ -151,8 +151,8 @@ export function silu(x: TensorLike): Value {
  * @returns The activation.
  * @example
  * ```ts
- * import { mish } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { mish } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(mish([0])) // => [0]
  * ```
  */
@@ -170,8 +170,8 @@ export function mish(x: TensorLike): Value {
  * @returns The activation.
  * @example
  * ```ts
- * import { softplus } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { softplus } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(softplus([100])) // => [100]
  * ```
  */
@@ -190,8 +190,8 @@ export function softplus(x: TensorLike, beta = 1, threshold = 20): Value {
  * @returns The activation.
  * @example
  * ```ts
- * import { hardtanh } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { hardtanh } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(hardtanh([-3, 0.5])) // => [-1, 0.5]
  * ```
  */
@@ -206,8 +206,8 @@ export function hardtanh(x: TensorLike, min = -1, max = 1): Value {
  * @returns The activation.
  * @example
  * ```ts
- * import { hardsigmoid } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { hardsigmoid } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(hardsigmoid([0])) // => [0.5]
  * ```
  */
@@ -223,22 +223,22 @@ export function hardsigmoid(x: TensorLike): Value {
  * @returns The activation, half as wide.
  * @example
  * ```ts
- * import { glu } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { glu } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(glu([2, 0])) // => [1]
  * ```
  */
 export function glu(x: TensorLike, axis = -1): Value {
   const v = f(x)
   const n = v.shape[axis < 0 ? v.shape.length + axis : axis] ?? 0
-  if (n % 2 !== 0) throw new MdmlError('shape', 'glu: the split axis must have even length')
+  if (n % 2 !== 0) throw new OmaiError('shape', 'glu: the split axis must have even length')
   return mul(sliceAxis(v, axis, 0, n / 2), sigmoidOp(sliceAxis(v, axis, n / 2, n)))
 }
 
 const halves = (x: TensorLike, axis: number, name: string): [Value, Value] => {
   const v = f(x)
   const n = v.shape[axis < 0 ? v.shape.length + axis : axis] ?? 0
-  if (n % 2 !== 0) throw new MdmlError('shape', `${name}: the split axis must have even length`)
+  if (n % 2 !== 0) throw new OmaiError('shape', `${name}: the split axis must have even length`)
   return [sliceAxis(v, axis, 0, n / 2), sliceAxis(v, axis, n / 2, n)]
 }
 
@@ -251,8 +251,8 @@ const halves = (x: TensorLike, axis: number, name: string): [Value, Value] => {
  * @reference Shazeer (2020), GLU variants improve transformer.
  * @example
  * ```ts
- * import { swiglu } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { swiglu } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(swiglu([0, 5])) // => [0]
  * ```
  */
@@ -269,8 +269,8 @@ export function swiglu(x: TensorLike, axis = -1): Value {
  * @returns The activation, half as wide.
  * @example
  * ```ts
- * import { geglu } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { geglu } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(geglu([0, 3])) // => [0]
  * ```
  */
@@ -287,8 +287,8 @@ export function geglu(x: TensorLike, axis = -1): Value {
  * @returns The activation, half as wide.
  * @example
  * ```ts
- * import { reglu } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { reglu } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(reglu([2, 3])) // => [6]
  * ```
  */
@@ -304,8 +304,8 @@ export function reglu(x: TensorLike, axis = -1): Value {
  * @returns The activation.
  * @example
  * ```ts
- * import { relu6 } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { relu6 } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(relu6([-1, 3, 9])) // => [0, 3, 6]
  * ```
  */
@@ -320,8 +320,8 @@ export function relu6(x: TensorLike): Value {
  * @returns The activation.
  * @example
  * ```ts
- * import { hardswish } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { hardswish } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(hardswish([-4, 0, 4])) // => [-0, 0, 4]
  * ```
  */
@@ -338,8 +338,8 @@ export function hardswish(x: TensorLike): Value {
  * @returns The activation.
  * @example
  * ```ts
- * import { celu } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { celu } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(celu([0, 2])) // => [0, 2]
  * ```
  */
@@ -355,8 +355,8 @@ export function celu(x: TensorLike, alpha = 1): Value {
  * @returns The activation.
  * @example
  * ```ts
- * import { softsign } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { softsign } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(softsign([1, -3])) // => [0.5, -0.75]
  * ```
  */
@@ -372,8 +372,8 @@ export function softsign(x: TensorLike): Value {
  * @returns The activation.
  * @example
  * ```ts
- * import { logsigmoid } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { logsigmoid } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(logsigmoid([0])).map((v) => Math.round(v * 1e6) / 1e6) // => [-0.693147]
  * ```
  */
@@ -390,8 +390,8 @@ export function logsigmoid(x: TensorLike): Value {
  * @returns The activation.
  * @example
  * ```ts
- * import { prelu } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { prelu } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(prelu([[-2, 3]], [0.25])) // => [[-0.5, 3]]
  * ```
  */
@@ -410,8 +410,8 @@ export function prelu(x: TensorLike, weight: TensorLike): Value {
  * @returns The activation.
  * @example
  * ```ts
- * import { tanhshrink } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { tanhshrink } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(tanhshrink([0])) // => [0]
  * ```
  */
@@ -429,8 +429,8 @@ export function tanhshrink(x: TensorLike): Value {
  * @returns The activation.
  * @example
  * ```ts
- * import { softshrink } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { softshrink } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(softshrink([-2, 0.2, 1])) // => [-1.5, 0, 0.5]
  * ```
  */
@@ -447,8 +447,8 @@ export function softshrink(x: TensorLike, lambda = 0.5): Value {
  * @returns The activation.
  * @example
  * ```ts
- * import { hardshrink } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { hardshrink } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(hardshrink([-2, 0.2, 1])) // => [-2, 0, 1]
  * ```
  */
@@ -466,8 +466,8 @@ export function hardshrink(x: TensorLike, lambda = 0.5): Value {
  * @returns The activation.
  * @example
  * ```ts
- * import { threshold } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { threshold } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(threshold([1, 3], 2, -1)) // => [-1, 3]
  * ```
  */
@@ -506,8 +506,8 @@ export type ActivationName =
  * @returns The function.
  * @example
  * ```ts
- * import { activation } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { activation } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(activation('relu')([-1, 1])) // => [0, 1]
  * ```
  */

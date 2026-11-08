@@ -6,8 +6,8 @@ jump-diffusion price and log-return density as Poisson mixtures (scipy.stats.poi
 import numpy as np
 import scipy
 import scipy.stats as st
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray
 from scipy.integrate import solve_ivp
 
 REFERENCE: dict[str, str] = {"scipy": scipy.__version__, "numpy": np.__version__}

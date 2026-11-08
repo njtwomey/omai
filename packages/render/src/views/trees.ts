@@ -5,9 +5,9 @@
  */
 
 import type { EChartsOption } from 'echarts'
-import { maxOf } from 'mdml-engine/base'
-import type { TreeNode, TreeRecord } from 'mdml-engine/exposition'
-import { group, line, type Paint, rect, type Scene, type SceneNode, scene, text } from 'mdml-engine/scene'
+import { maxOf } from 'omai-engine/base'
+import type { TreeNode, TreeRecord } from 'omai-engine/exposition'
+import { group, line, type Paint, rect, type Scene, type SceneNode, scene, text } from 'omai-engine/scene'
 import { referenceLines } from '../charts/functions.ts'
 import { lines } from '../charts/lines.ts'
 import { cartesian, type Layer } from '../charts/plot.ts'
@@ -72,8 +72,8 @@ export function nodePrediction(tree: TreeRecord, node: TreeNode): string {
  * @index function A decision tree as a scene of cards: `treeScene(record)`.
  * @example
  * ```ts
- * import { treeRecord } from 'mdml-engine/exposition'
- * import { treeScene } from 'mdml-render/views'
+ * import { treeRecord } from 'omai-engine/exposition'
+ * import { treeScene } from 'omai-render/views'
  * const t = treeRecord({ criterion: 'gini', features: ['x'], classes: ['a', 'b'], nodes: [
  *   { id: 0, parent: null, depth: 0, rows: [0, 1], value: [1, 1], impurity: 0.5, candidates: [], split: { feature: 0, threshold: 0.5, left: 1, right: 2 }, order: 0 },
  *   { id: 1, parent: 0, depth: 1, rows: [0], value: [1, 0], impurity: 0, candidates: [], order: 1 },

@@ -19,10 +19,10 @@ export type RankMethod = 'average' | 'min' | 'max' | 'dense' | 'ordinal'
  * @param x - The values (no NaN): a vector (a tensor, a typed array or a flat array).
  * @param method - Tie handling (default `'average'`).
  * @returns A float64 tensor of shape `[n]`, the ranks.
- * @throws MdmlError with code `value` for NaN entries and `shape` unless `x` is a vector.
+ * @throws OmaiError with code `value` for NaN entries and `shape` unless `x` is a vector.
  * @example
  * ```ts
- * import { ranksOf } from 'mdml-engine/stats'
+ * import { ranksOf } from 'omai-engine/stats'
  * ranksOf([10, 20, 10]) // => [1.5, 3, 1.5]
  * ranksOf([10, 20, 10], 'min') // => [1, 3, 1]
  * ```
@@ -39,10 +39,10 @@ export function ranksOf(x: TensorLike, method: RankMethod = 'average'): Tensor<'
  * @param x - The sample (flattened).
  * @param options - method (default `'average'`).
  * @returns The ranks.
- * @throws MdmlError with code `value` for NaN entries.
+ * @throws OmaiError with code `value` for NaN entries.
  * @example
  * ```ts
- * import { rankdata } from 'mdml-engine/stats'
+ * import { rankdata } from 'omai-engine/stats'
  * rankdata([0, 2, 3, 2]) // => [1, 2.5, 4, 2.5]
  * rankdata([0, 2, 3, 2], { method: 'dense' }) // => [1, 2, 3, 2]
  * rankdata([0, 2, 3, 2], { method: 'ordinal' }) // => [1, 2, 4, 3]
@@ -61,7 +61,7 @@ export function rankdata(x: TensorLike, options: { readonly method?: RankMethod 
  * @returns An int32 tensor of shape `[k]`: one count per distinct value.
  * @example
  * ```ts
- * import { tieCounts } from 'mdml-engine/stats'
+ * import { tieCounts } from 'omai-engine/stats'
  * tieCounts([3, 1, 3, 2, 3]) // => [1, 1, 3]
  * ```
  */
@@ -78,7 +78,7 @@ export function tieCounts(x: TensorLike): Tensor<'int32'> {
  * @returns The factor in (0, 1].
  * @example
  * ```ts
- * import { tieCorrection } from 'mdml-engine/stats'
+ * import { tieCorrection } from 'omai-engine/stats'
  * tieCorrection([1, 2, 3]) // => 1
  * tieCorrection([1, 2.5, 2.5, 4]) // => 0.9
  * ```
@@ -99,7 +99,7 @@ export function tieCorrection(x: TensorLike): number {
  * @returns The tie term (0 without ties).
  * @example
  * ```ts
- * import { tieTerm } from 'mdml-engine/stats'
+ * import { tieTerm } from 'omai-engine/stats'
  * tieTerm([1, 1, 2, 3, 3, 3]) // => 30
  * ```
  */

@@ -4,7 +4,7 @@
  * variable-order Adams method in Nordsieck form that forms the nonstiff half of LSODE and LSODA.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import type { Value } from '../../tensor/index.ts'
 import { implicitCorrection, isTracedState, type JacobianOption, jacobianAt, luApply, realLu } from './_newton.ts'
 import {
@@ -78,8 +78,8 @@ type MultistepKind = 'bashforth' | 'moulton' | 'pece'
 function multistep(kind: MultistepKind, options: MultistepOptions): Stepper<MultistepState> {
   const dt = options.dt
   const order = options.order ?? 4
-  if (!(dt > 0) || !Number.isFinite(dt)) throw new MdmlError('value', 'multistep: dt must be positive')
-  if (!Number.isInteger(order) || order < 1 || order > 5) throw new MdmlError('value', 'multistep: order is 1 to 5')
+  if (!(dt > 0) || !Number.isFinite(dt)) throw new OmaiError('value', 'multistep: dt must be positive')
+  if (!Number.isInteger(order) || order < 1 || order > 5) throw new OmaiError('value', 'multistep: order is 1 to 5')
   const jac = options.jac ?? 'autodiff'
   const corrections = options.corrections ?? 1
   const name =
@@ -113,7 +113,7 @@ function multistep(kind: MultistepKind, options: MultistepOptions): Stepper<Mult
       }
     },
     step: (s) => {
-      if (s.status !== 'running') throw new MdmlError('value', `${name}: the integration has ended`)
+      if (s.status !== 'running') throw new OmaiError('value', `${name}: the integration has ended`)
       if (atBound(s)) return { ...s, tOld: s.t, t: s.tBound, status: 'finished', attempts: [] }
       const c: Counter = { ...s.counts }
       const f = tally(s.f, c)
@@ -241,11 +241,11 @@ function newtonSolve(
  *
  * @param options - Step size and order (default 4).
  * @returns The stepper.
- * @throws MdmlError with code `value` for a bad step or order.
+ * @throws OmaiError with code `value` for a bad step or order.
  * @concept linear-multistep
  * @example
  * ```ts
- * import { adamsBashforth } from 'mdml-engine/dynamics/ode'
+ * import { adamsBashforth } from 'omai-engine/dynamics/ode'
  * adamsBashforth({ dt: 0.1, order: 3 }).name // => 'adams-bashforth-3'
  * ```
  */
@@ -262,7 +262,7 @@ export function adamsBashforth(options: MultistepOptions): Stepper<MultistepStat
  * @concept linear-multistep
  * @example
  * ```ts
- * import { adamsMoulton } from 'mdml-engine/dynamics/ode'
+ * import { adamsMoulton } from 'omai-engine/dynamics/ode'
  * adamsMoulton({ dt: 0.1, order: 2 }).name // => 'adams-moulton-2'
  * ```
  */
@@ -279,7 +279,7 @@ export function adamsMoulton(options: MultistepOptions): Stepper<MultistepState>
  * @concept predictor-corrector
  * @example
  * ```ts
- * import { pece } from 'mdml-engine/dynamics/ode'
+ * import { pece } from 'omai-engine/dynamics/ode'
  * pece({ dt: 0.1 }).name // => 'abm-pece-4'
  * ```
  */
@@ -305,16 +305,16 @@ export const ADAMS_ERROR_COEFFICIENTS: readonly number[] = (() => {
  *
  * @param q - The order (1 to 12).
  * @returns `[l_0, ..., l_q]`.
- * @throws MdmlError with code `value` for an order outside 1..12.
+ * @throws OmaiError with code `value` for an order outside 1..12.
  * @concept nordsieck
  * @example
  * ```ts
- * import { nordsieckAdamsL } from 'mdml-engine/dynamics/ode'
+ * import { nordsieckAdamsL } from 'omai-engine/dynamics/ode'
  * nordsieckAdamsL(2) // => [0.5, 1, 0.5]
  * ```
  */
 export function nordsieckAdamsL(q: number): number[] {
-  if (!Number.isInteger(q) || q < 1 || q > 12) throw new MdmlError('value', 'nordsieckAdamsL: order is 1 to 12')
+  if (!Number.isInteger(q) || q < 1 || q > 12) throw new OmaiError('value', 'nordsieckAdamsL: order is 1 to 12')
   // prod_{i=1}^{q-1} (u + i) as coefficients in u.
   let poly = [1]
   for (let i = 1; i < q; i++) {
@@ -395,7 +395,7 @@ function rescale(z: readonly Value[], r: number): Value[] {
  * @concept nordsieck
  * @example
  * ```ts
- * import { adams } from 'mdml-engine/dynamics/ode'
+ * import { adams } from 'omai-engine/dynamics/ode'
  * adams().order // => 12
  * ```
  */
@@ -440,7 +440,7 @@ export function adams(options: AdamsOptions = {}): Stepper<NordsieckState> {
       }
     },
     step: (s) => {
-      if (s.status !== 'running') throw new MdmlError('value', 'adams: the integration has ended')
+      if (s.status !== 'running') throw new OmaiError('value', 'adams: the integration has ended')
       if (atBound(s)) return { ...s, tOld: s.t, t: s.tBound, status: 'finished', attempts: [] }
       const c: Counter = { ...s.counts }
       const f = tally(s.f, c)

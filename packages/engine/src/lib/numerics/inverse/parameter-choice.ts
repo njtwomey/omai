@@ -4,7 +4,7 @@
  * parameter grid scaled to the singular values.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { primalOf, type Tensor, type TensorLike, toFlat, toVector } from '../../tensor/index.ts'
 import { vectorOf } from '../_vector.ts'
 import type { SpectralData } from './tikhonov.ts'
@@ -20,11 +20,11 @@ function arrays(data: SpectralData): { s: number[]; beta: number[] } {
  * @param data - The SVD of the problem (see `spectralData`).
  * @param n - Number of parameters (default 100).
  * @returns The grid `[n]`, decreasing, starting at the largest singular value.
- * @throws MdmlError with code `value` when the singular values are all zero.
+ * @throws OmaiError with code `value` when the singular values are all zero.
  * @example
  * ```ts
- * import { lambdaGrid, spectralData } from 'mdml-engine/numerics/inverse'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { lambdaGrid, spectralData } from 'omai-engine/numerics/inverse'
+ * import { toFlat } from 'omai-engine/tensor'
  * const grid = toFlat(lambdaGrid(spectralData([[2, 0], [0, 1]], [1, 1]), 3))
  * [grid.length, grid[0]] // => [3, 2]
  * ```
@@ -35,7 +35,7 @@ export function lambdaGrid(data: SpectralData, n = 100): Tensor<'float64', [numb
 
 function gridOf(s: readonly number[], n: number, name: string): number[] {
   const hi = s[0] ?? 1
-  if (!(hi > 0)) throw new MdmlError('value', `${name}: the singular values are all zero`)
+  if (!(hi > 0)) throw new OmaiError('value', `${name}: the singular values are all zero`)
   const lo = Math.max((s[s.length - 1] ?? hi * 1e-16) / 10, hi * 1e-16)
   return Array.from({ length: n }, (_, i) => hi * (lo / hi) ** (i / (n - 1)))
 }
@@ -80,11 +80,11 @@ export interface ParameterChoice {
  * @param options - The parameters to scan `[k]` (default 100 geometric) and |b|^2 (to include the part outside
  *   range(A)).
  * @returns The corner parameter and the curvature curve.
- * @throws MdmlError with code `shape` unless the parameters are a vector, and `not-differentiable` for a traced value.
+ * @throws OmaiError with code `shape` unless the parameters are a vector, and `not-differentiable` for a traced value.
  * @concept l-curve
  * @example
  * ```ts
- * import { lCurve, spectralData } from 'mdml-engine/numerics/inverse'
+ * import { lCurve, spectralData } from 'omai-engine/numerics/inverse'
  * lCurve(spectralData([[1, 0, 0], [0, 0.1, 0], [0, 0, 0.001]], [1, 0.1, 0.01])).lambda > 0 // => true
  * ```
  */
@@ -148,10 +148,10 @@ export function lCurve(
  * @param m - Number of data points.
  * @param options - Parameters to scan `[k]` and |b|^2.
  * @returns The minimiser and G along the scan.
- * @throws MdmlError with code `shape` unless the parameters are a vector, and `not-differentiable` for a traced value.
+ * @throws OmaiError with code `shape` unless the parameters are a vector, and `not-differentiable` for a traced value.
  * @example
  * ```ts
- * import { gcv, spectralData } from 'mdml-engine/numerics/inverse'
+ * import { gcv, spectralData } from 'omai-engine/numerics/inverse'
  * gcv(spectralData([[1, 0], [0, 0.01], [0, 0]], [1, 0.02, 0.1]), 3).lambda > 0 // => true
  * ```
  */
@@ -188,7 +188,7 @@ export function gcv(
  * @returns The parameter.
  * @example
  * ```ts
- * import { discrepancyPrinciple, spectralData } from 'mdml-engine/numerics/inverse'
+ * import { discrepancyPrinciple, spectralData } from 'omai-engine/numerics/inverse'
  * discrepancyPrinciple(spectralData([[1, 0], [0, 0.1]], [1, 0.1]), 0.05) > 0 // => true
  * ```
  */
@@ -207,7 +207,7 @@ export function discrepancyPrinciple(
   let lo = Math.log((s[s.length - 1] ?? 1) * 1e-8 || 1e-300)
   let hi = Math.log((s[0] ?? 1) * 1e4)
   if (residual(Math.exp(lo)) > target)
-    throw new MdmlError('value', 'discrepancyPrinciple: the noise level is below the attainable residual')
+    throw new OmaiError('value', 'discrepancyPrinciple: the noise level is below the attainable residual')
   for (let it = 0; it < 200 && hi - lo > 1e-12; it++) {
     const mid = (lo + hi) / 2
     if (residual(Math.exp(mid)) > target) hi = mid
@@ -224,10 +224,10 @@ export function discrepancyPrinciple(
  * @param data - From spectralData.
  * @param options - The grid `[k]` (default 100 geometric parameters).
  * @returns The choice and the criterion (the grid without its last point, `[k - 1]`).
- * @throws MdmlError with code `shape` unless the grid is a vector, and `not-differentiable` for a traced value.
+ * @throws OmaiError with code `shape` unless the grid is a vector, and `not-differentiable` for a traced value.
  * @example
  * ```ts
- * import { quasiOptimality, spectralData } from 'mdml-engine/numerics/inverse'
+ * import { quasiOptimality, spectralData } from 'omai-engine/numerics/inverse'
  * quasiOptimality(spectralData([[1, 0], [0, 0.01]], [1, 0.02])).lambda > 0 // => true
  * ```
  */

@@ -8,7 +8,7 @@
  * predictions give a doubly robust average effect.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { matrixView } from '../learn/validation.ts'
 import { foldIn, key as makeKey, permutation } from '../random/index.ts'
 import { fromStorage, type TensorLike, toFlat } from '../tensor/index.ts'
@@ -96,7 +96,7 @@ function leafMoments(
 /** The effect at the rows of `x` from the listed trees: ratio of the summed leaf moments per leaf size. */
 function forestEffect(trees: readonly CausalTreeRecord[], x: TensorLike, d: number, fallback: number): Float64Array {
   const m = matrixView(x, 'causalForest')
-  if (m.d !== d) throw new MdmlError('shape', `causalForest: expected ${d} covariates, got ${m.d}`)
+  if (m.d !== d) throw new OmaiError('shape', `causalForest: expected ${d} covariates, got ${m.d}`)
   const num = new Float64Array(m.n)
   const den = new Float64Array(m.n)
   for (const t of trees) {
@@ -122,8 +122,8 @@ function forestEffect(trees: readonly CausalTreeRecord[], x: TensorLike, d: numb
  * @returns The algorithm; it observes the number of trees `grown`.
  * @example
  * ```ts
- * import { causalForestAlgorithm } from 'mdml-engine/causal'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { causalForestAlgorithm } from 'omai-engine/causal'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const x = Array.from({ length: 60 }, (_, i) => [Math.sin(i), Math.cos(2 * i)])
  * const treatment = x.map((_, i) => (Math.sin(5 * i) > 0 ? 1 : 0))
  * const outcome = x.map((r, i) => (r[0] ?? 0) + (treatment[i] ?? 0) * (1 + (r[1] ?? 0)))
@@ -210,8 +210,8 @@ export function causalForestAlgorithm(
  * @returns The forest.
  * @example
  * ```ts
- * import { causalForestAlgorithm, causalForestOf } from 'mdml-engine/causal'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { causalForestAlgorithm, causalForestOf } from 'omai-engine/causal'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const x = Array.from({ length: 60 }, (_, i) => [Math.sin(i), Math.cos(2 * i)])
  * const treatment = x.map((_, i) => (Math.sin(5 * i) > 0 ? 1 : 0))
  * const outcome = x.map((r, i) => (r[0] ?? 0) + (treatment[i] ?? 0))
@@ -278,7 +278,7 @@ export function causalForestOf(state: CausalForestState, data: CausalData): Caus
  * @returns The forest.
  * @example
  * ```ts
- * import { causalForest } from 'mdml-engine/causal'
+ * import { causalForest } from 'omai-engine/causal'
  * const x = Array.from({ length: 80 }, (_, i) => [Math.sin(i), Math.cos(2 * i)])
  * const treatment = x.map((_, i) => (Math.sin(5 * i) > 0 ? 1 : 0))
  * const outcome = x.map((r, i) => (r[0] ?? 0) + (treatment[i] ?? 0) * (1 + (r[1] ?? 0)))

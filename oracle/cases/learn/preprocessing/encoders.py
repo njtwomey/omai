@@ -5,8 +5,8 @@ from typing import Any
 
 import numpy as np
 import sklearn
-from mdml_oracle.fixture import Case, case, encode, encode_all, encode_params
-from mdml_oracle.helpers import FloatArray, rng
+from omai_oracle.fixture import Case, case, encode, encode_all, encode_params
+from omai_oracle.helpers import FloatArray, rng
 from sklearn.model_selection import KFold, StratifiedKFold
 from sklearn.preprocessing import (
     LabelBinarizer,

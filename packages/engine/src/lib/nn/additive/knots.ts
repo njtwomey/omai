@@ -7,7 +7,7 @@
  * splines, a sigmoid for bounded ones), so the constraint holds exactly at every step of training.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { choice, dict, type Option, type OptionTable, optionTable, real } from '../../space/index.ts'
 import { placeKnots } from '../../stats/smoothing/index.ts'
 import {
@@ -59,7 +59,7 @@ const placement = (
  *
  * @example
  * ```ts
- * import { splineKnots } from 'mdml-engine/nn'
+ * import { splineKnots } from 'omai-engine/nn'
  * splineKnots.make({ kind: 'learnable', init: 'quantile' }).learnable // => true
  * splineKnots.properties({ kind: 'quantile' }).needsData // => true
  * ```
@@ -102,10 +102,10 @@ export const splineKnots: OptionTable<KnotPlacement, KnotProperties> = optionTab
  * @param sample - The feature's values (required for `quantile`).
  * @param minGap - Neighbouring knots at least this share of the range apart (default 1e-3).
  * @returns The interior knots, ascending.
- * @throws MdmlError `value` for `quantile` without a sample.
+ * @throws OmaiError `value` for `quantile` without a sample.
  * @example
  * ```ts
- * import { placeInterior } from 'mdml-engine/nn'
+ * import { placeInterior } from 'omai-engine/nn'
  * placeInterior('uniform', 3, 0, 1) // => [0.25, 0.5, 0.75]
  * placeInterior('quantile', 1, 0, 10, [0, 1, 2, 9, 10]) // => [2]
  * ```
@@ -121,7 +121,7 @@ export function placeInterior(
   const even = Array.from({ length: count }, (_, i) => lo + ((hi - lo) * (i + 1)) / (count + 1))
   if (count === 0 || rule === 'uniform') return even
   if (sample === undefined || sample.length === 0)
-    throw new MdmlError('value', 'placeInterior: quantile knots need a sample')
+    throw new OmaiError('value', 'placeInterior: quantile knots need a sample')
   const placed = toFlat(asTensor(placeKnots(Array.from(sample), count + 2, { rule: 'quantile' }))).slice(1, -1)
   const edges = [lo, ...placed, hi]
   const apart = edges.every((e, i) => i === 0 || e - (edges[i - 1] as number) > minGap * (hi - lo))
@@ -195,8 +195,8 @@ function curvature(raw: Value, greville: Value, sign: 1 | -1): Value {
  *
  * @example
  * ```ts
- * import { splineShapes } from 'mdml-engine/nn'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { splineShapes } from 'omai-engine/nn'
+ * import { toFlat } from 'omai-engine/tensor'
  * const up = splineShapes.make({ kind: 'increasing' })
  * toFlat(up.apply([0, -1, 5, -9], [0, 1, 2, 3])).every((c, i, a) => i === 0 || c >= a[i - 1]) // => true
  * ```
@@ -254,7 +254,7 @@ export const splineShapes: OptionTable<ShapeTransform, ShapeProperties> = option
     (k) => {
       const lower = (k['lower'] ?? 0) as number
       const upper = (k['upper'] ?? 1) as number
-      if (!(upper > lower)) throw new MdmlError('value', 'bounded: upper must exceed lower')
+      if (!(upper > lower)) throw new OmaiError('value', 'bounded: upper must exceed lower')
       return transform('bounded', (raw) => add(mul(sigmoid(raw), upper - lower), lower), 0, 0)
     },
   ),

@@ -24,7 +24,7 @@ export interface SegmentContact {
  * @concept collision-detection
  * @example
  * ```ts
- * import { closestPointOnSegment } from 'mdml-engine/numerics/geometry'
+ * import { closestPointOnSegment } from 'omai-engine/numerics/geometry'
  * closestPointOnSegment([1, 1], [0, 0], [2, 0]) // => { point: [1, 0], distance: 1 }
  * closestPointOnSegment([3, 0], [0, 0], [2, 0]).distance // => 1
  * ```
@@ -54,7 +54,7 @@ export function closestPointOnSegment(
  * @concept collision-detection
  * @example
  * ```ts
- * import { raySegmentHit } from 'mdml-engine/numerics/geometry'
+ * import { raySegmentHit } from 'omai-engine/numerics/geometry'
  * raySegmentHit([0, 0], [1, 0], [2, -1], [2, 1]).t // => 2
  * raySegmentHit([0, 0], [-1, 0], [2, -1], [2, 1]).t // => Infinity
  * ```
@@ -95,7 +95,7 @@ export function raySegmentHit(o: Point2, d: Point2, a: Point2, b: Point2): Segme
  * @concept collision-detection
  * @example
  * ```ts
- * import { sweptCircleHit } from 'mdml-engine/numerics/geometry'
+ * import { sweptCircleHit } from 'omai-engine/numerics/geometry'
  * sweptCircleHit([0, 0], [4, 0], 0.5, [2, -1], [2, 1]).t // => 0.375
  * sweptCircleHit([0, 0], [1, 0], 0.5, [2, -1], [2, 1]).t // => Infinity
  * ```
@@ -167,7 +167,7 @@ export function sweptCircleHit(p: Point2, d: Point2, r: number, a: Point2, b: Po
  * @concept collision-detection
  * @example
  * ```ts
- * import { segmentsTouch } from 'mdml-engine/numerics/geometry'
+ * import { segmentsTouch } from 'omai-engine/numerics/geometry'
  * segmentsTouch([0, 0], [2, 2], [0, 2], [2, 0]) // => true
  * segmentsTouch([0, 0], [1, 0], [1, 0], [1, 5]) // => true
  * segmentsTouch([0, 0], [1, 0], [2, 0], [3, 0]) // => false

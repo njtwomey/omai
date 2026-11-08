@@ -40,8 +40,8 @@ const keyAt =
  * @returns `[B, C, T + d (k - 1)]`.
  * @example
  * ```ts
- * import { blocks } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { blocks } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(blocks.causalPad([[[1, 2]]], 2, 2)) // => [[[0, 0, 1, 2]]]
  * ```
  */
@@ -72,8 +72,8 @@ export interface TemporalBlockOptions {
  *   sequence modeling.
  * @example
  * ```ts
- * import { blocks } from 'mdml-engine/nn'
- * import { zeros } from 'mdml-engine/tensor'
+ * import { blocks } from 'omai-engine/nn'
+ * import { zeros } from 'omai-engine/tensor'
  * new blocks.TemporalBlock(3, 5, { dilation: 2 }).eval().forward(zeros([2, 3, 10])).shape // => [2, 5, 10]
  * ```
  */
@@ -121,7 +121,7 @@ export class TemporalBlock extends Composite {
  *
  * @example
  * ```ts
- * import { blocks } from 'mdml-engine/nn'
+ * import { blocks } from 'omai-engine/nn'
  * new blocks.TCN(2, [4, 4, 4]).receptiveField // => 29
  * ```
  */
@@ -187,8 +187,8 @@ export interface WaveNetBlockOutput {
  * @reference van den Oord et al. (2016), WaveNet: a generative model for raw audio.
  * @example
  * ```ts
- * import { blocks } from 'mdml-engine/nn'
- * import { zeros } from 'mdml-engine/tensor'
+ * import { blocks } from 'omai-engine/nn'
+ * import { zeros } from 'omai-engine/tensor'
  * new blocks.WaveNetBlock(4, 6, { dilation: 2 }).forward(zeros([1, 4, 8])).skip.shape // => [1, 6, 8]
  * ```
  */
@@ -268,8 +268,8 @@ export interface WaveNetOptions {
  *
  * @example
  * ```ts
- * import { blocks } from 'mdml-engine/nn'
- * import { zeros } from 'mdml-engine/tensor'
+ * import { blocks } from 'omai-engine/nn'
+ * import { zeros } from 'omai-engine/tensor'
  * new blocks.WaveNet(1, 8, { layersPerStack: 2, stacks: 1 }).forward(zeros([1, 1, 6])).shape // => [1, 8, 6]
  * ```
  */
@@ -349,8 +349,8 @@ export interface StackedRecurrentOptions {
  *
  * @example
  * ```ts
- * import { blocks } from 'mdml-engine/nn'
- * import { zeros } from 'mdml-engine/tensor'
+ * import { blocks } from 'omai-engine/nn'
+ * import { zeros } from 'omai-engine/tensor'
  * new blocks.StackedRecurrent(3, 4, 3).eval().forward(zeros([2, 5, 3])).shape // => [2, 5, 4]
  * ```
  */

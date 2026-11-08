@@ -29,7 +29,7 @@ export interface RidgeState {
  *
  * @example
  * ```ts
- * import { ridge } from 'mdml-engine/methods/linear'
+ * import { ridge } from 'omai-engine/methods/linear'
  * ridge.fit({ x: [[0], [1], [2]], y: [1, 3, 5] }).params.coef.length // => 1
  * ```
  */

@@ -1,5 +1,5 @@
 import { expect, describe as group, it } from 'vitest'
-import { isMdmlError, quantileOf } from '../base/index.ts'
+import { isOmaiError, quantileOf } from '../base/index.ts'
 import { key } from '../random/index.ts'
 import { dict, int, real } from '../space/index.ts'
 import { add, mul, reshape, type Tensor, tensor, toFlat, type Value } from '../tensor/index.ts'
@@ -242,7 +242,7 @@ function codeOf(f: () => unknown): string | undefined {
   try {
     f()
   } catch (e) {
-    return isMdmlError(e) ? e.code : `not an MdmlError: ${String(e)}`
+    return isOmaiError(e) ? e.code : `not an OmaiError: ${String(e)}`
   }
   return undefined
 }

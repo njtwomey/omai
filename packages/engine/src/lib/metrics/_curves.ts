@@ -5,7 +5,7 @@
  * Private to the domain.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import type { TensorLike } from '../tensor/index.ts'
 import type { Label } from './_labels.ts'
 import { positives } from './_scores.ts'
@@ -29,9 +29,9 @@ export interface ThresholdRows {
 export function thresholdRows(yTrue: MetricInput, yScore: TensorLike, options: RowOptions): ThresholdRows {
   const y = positives(yTrue, options.posLabel)
   const s = flat(yScore)
-  if (s.length !== y.length) throw new MdmlError('shape', 'yTrue and yScore have different lengths')
+  if (s.length !== y.length) throw new OmaiError('shape', 'yTrue and yScore have different lengths')
   // A NaN score ties with every other in the sort and would be placed by the order of the data.
-  if (s.some(Number.isNaN)) throw new MdmlError('value', 'confusionMatrixAtThresholds: scores must not be NaN')
+  if (s.some(Number.isNaN)) throw new OmaiError('value', 'confusionMatrixAtThresholds: scores must not be NaN')
   const w = sampleWeights('confusionMatrixAtThresholds', y.length, options.sampleWeight)
   // A stable ascending sort, reversed (sklearn's mergesort[::-1]): decreasing scores.
   const order = Array.from(s.keys())

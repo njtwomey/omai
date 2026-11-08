@@ -7,7 +7,7 @@
 //   cotangent: with w = (1 / A)^T g (the filter run backwards in time), x-bar = B^T w (likewise backwards),
 //              b-bar_k = sum_n w[n] x[n - k] and a-bar_k = -sum_n w[n] y[n - k].
 // Both rules are written with this primitive and tensor operations, so higher derivatives work.
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import {
   add,
   bind1,
@@ -28,7 +28,7 @@ import {
 function run(b: ArrayLike<number>, a: ArrayLike<number>, x: Tensor): Tensor {
   const [batch = 1, n = 0] = x.shape
   const a0 = a[0] ?? 1
-  if (a0 === 0) throw new MdmlError('value', 'lfilter: the leading denominator coefficient must be non-zero')
+  if (a0 === 0) throw new OmaiError('value', 'lfilter: the leading denominator coefficient must be non-zero')
   const k = Math.max(b.length, a.length) - 1
   const bn = Float64Array.from({ length: k + 1 }, (_, i) => (b[i] ?? 0) / a0)
   const an = Float64Array.from({ length: k + 1 }, (_, i) => (a[i] ?? 0) / a0)
@@ -95,6 +95,6 @@ const iirPrimitive: Primitive<null> = definePrimitive<null>({
  */
 export function iir(b: Value, a: Value, x: Value): Value {
   if (b.shape.length !== 1 || a.shape.length !== 1 || x.shape.length !== 2)
-    throw new MdmlError('shape', 'lfilter: coefficients are 1-D and signals [batch, n]')
+    throw new OmaiError('shape', 'lfilter: coefficients are 1-D and signals [batch, n]')
   return bind1(iirPrimitive, [b, a, x], null)
 }

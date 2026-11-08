@@ -35,7 +35,7 @@ function coarseness(
  * @concept graph-segmentation
  * @example
  * ```ts
- * import { image } from 'mdml-engine/signal'
+ * import { image } from 'omai-engine/signal'
  * image.felzenszwalbCoarseness.make({ kind: 'coarse' }).scale // => 500
  * ```
  */

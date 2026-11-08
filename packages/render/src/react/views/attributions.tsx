@@ -4,7 +4,7 @@
  * importances with every repeat as a dot.
  */
 
-import type { FeatureAttributions, Importances } from 'mdml-engine/exposition'
+import type { FeatureAttributions, Importances } from 'omai-engine/exposition'
 import { type ReactElement, useCallback, useMemo } from 'react'
 import { type Figure, figure as makeFigure } from '../../figure/figure.ts'
 import {

@@ -4,4 +4,4 @@
 
 Mathematical foundations computed, drawn and stepped through for teaching: trigonometry, vectors, rotations, coordinates, curves, surfaces, calculus, series, linear algebra with worked steps, number theory, combinatorics, complex analysis and elementary probability.
 
-- function `vectors.ts` (file): Vector and line-plane geometry, computed and drawable for teaching. `src/lib/foundations/vectors.ts:1` `mdml-engine/foundations`
+- function `vectors.ts` (file): Vector and line-plane geometry, computed and drawable for teaching. `src/lib/foundations/vectors.ts:1` `omai-engine/foundations`

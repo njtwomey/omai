@@ -4,7 +4,7 @@
  * gear also chooses the option, where the knobs are kept) stays with the list, which passes `onToggle` and `onChange`.
  */
 
-import { asModeConfig, type Space, type SpaceValue } from 'mdml-engine/space'
+import { asModeConfig, type Space, type SpaceValue } from 'omai-engine/space'
 import { type ReactNode, useRef } from 'react'
 import { cx } from './classes.ts'
 import { SlidersIcon } from './icons.tsx'

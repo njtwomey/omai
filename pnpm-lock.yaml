@@ -226,10 +226,10 @@ importers:
 
   apps/pocs:
     dependencies:
-      mdml-engine:
+      omai-engine:
         specifier: workspace:*
         version: link:../../packages/engine
-      mdml-render:
+      omai-render:
         specifier: workspace:*
         version: link:../../packages/render
       react:
@@ -260,13 +260,13 @@ importers:
 
   apps/site:
     dependencies:
-      mdml-engine:
+      omai-engine:
         specifier: workspace:*
         version: link:../../packages/engine
-      mdml-meta:
+      omai-meta:
         specifier: workspace:*
         version: link:../../packages/meta
-      mdml-render:
+      omai-render:
         specifier: workspace:*
         version: link:../../packages/render
       react:
@@ -297,10 +297,10 @@ importers:
 
   examples:
     dependencies:
-      mdml-engine:
+      omai-engine:
         specifier: workspace:*
         version: link:../packages/engine
-      mdml-render:
+      omai-render:
         specifier: workspace:*
         version: link:../packages/render
       react:
@@ -325,10 +325,10 @@ importers:
 
   packages/meta:
     dependencies:
-      mdml-engine:
+      omai-engine:
         specifier: workspace:*
         version: link:../engine
-      mdml-render:
+      omai-render:
         specifier: workspace:*
         version: link:../render
       sucrase:
@@ -359,7 +359,7 @@ importers:
       katex:
         specifier: 0.16.47
         version: 0.16.47
-      mdml-engine:
+      omai-engine:
         specifier: workspace:*
         version: link:../engine
     devDependencies:

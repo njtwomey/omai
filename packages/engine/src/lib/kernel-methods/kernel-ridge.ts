@@ -5,7 +5,7 @@
  * `looPress`) without refitting, and the `kernelRidge` estimator on the iterative base.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { type Distribution, normal } from '../dists/index.ts'
 import {
   type Kernel,
@@ -92,7 +92,7 @@ const WHO = 'kernelRidge'
 
 function validateAlpha(alpha: number, who: string): number {
   if (!Number.isFinite(alpha) || alpha <= 0) {
-    throw new MdmlError('value', `${who}: alpha must be a positive finite number, got ${alpha}`)
+    throw new OmaiError('value', `${who}: alpha must be a positive finite number, got ${alpha}`)
   }
   return alpha
 }
@@ -107,7 +107,7 @@ function gramSystem(k: TensorLike, alpha: number, who: string): GramSystem {
   const t = primalOf(asTensor(k))
   const n = t.shape[0] ?? 0
   if (t.shape.length !== 2 || t.shape[1] !== n) {
-    throw new MdmlError('shape', `${who}: expected a square Gram matrix [n, n], got [${t.shape.join(', ')}]`)
+    throw new OmaiError('shape', `${who}: expected a square Gram matrix [n, n], got [${t.shape.join(', ')}]`)
   }
   const a = Float64Array.from(toFlat(t))
   for (let i = 0; i < n; i++) a[i * n + i] = (a[i * n + i] ?? 0) + alpha
@@ -121,10 +121,10 @@ function targetRows(
 ): { readonly rows: Float64Array; readonly n: number; readonly k: number; readonly multi: boolean } {
   const t = primalOf(asTensor(y))
   if (t.shape.length !== 1 && t.shape.length !== 2) {
-    throw new MdmlError('shape', `${who}: expected y to be 1-D or 2-D, got [${t.shape.join(', ')}]`)
+    throw new OmaiError('shape', `${who}: expected y to be 1-D or 2-D, got [${t.shape.join(', ')}]`)
   }
   const rows = Float64Array.from(toFlat(t))
-  if (rows.some((v) => !Number.isFinite(v))) throw new MdmlError('value', `${who}: y has non-finite entries`)
+  if (rows.some((v) => !Number.isFinite(v))) throw new OmaiError('value', `${who}: y has non-finite entries`)
   return { rows, n: t.shape[0] ?? 0, k: t.shape[1] ?? 1, multi: t.shape.length === 2 }
 }
 
@@ -149,13 +149,13 @@ function matmulRows(a: Float64Array, b: Float64Array, n: number, k: number): Flo
  * @param y - Targets `[n]` or `[n, m]`.
  * @param alpha - Regularisation `alpha > 0` (default 1).
  * @returns The dual weights, shaped like `y`.
- * @throws MdmlError `shape` if `k` is not square or disagrees with `y`; `value` if `alpha` is not positive.
+ * @throws OmaiError `shape` if `k` is not square or disagrees with `y`; `value` if `alpha` is not positive.
  * @concept kernel-ridge
  * @reference C. Saunders, A. Gammerman and V. Vovk, Ridge regression learning algorithm in dual variables (ICML 1998).
  * @example
  * ```ts
- * import { solveKernelRidge } from 'mdml-engine/kernel-methods'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { solveKernelRidge } from 'omai-engine/kernel-methods'
+ * import { toFlat } from 'omai-engine/tensor'
  * toFlat(solveKernelRidge([[2, 0], [0, 2]], [3, 6], 1)) // => [1, 2]
  * ```
  */
@@ -163,7 +163,7 @@ export function solveKernelRidge(k: TensorLike, y: TensorLike, alpha = 1): Tenso
   const sys = gramSystem(k, validateAlpha(alpha, 'solveKernelRidge'), 'solveKernelRidge')
   const t = targetRows(y, 'solveKernelRidge')
   if (t.n !== sys.n) {
-    throw new MdmlError('shape', `solveKernelRidge: the Gram matrix has ${sys.n} rows but y has ${t.n}`)
+    throw new OmaiError('shape', `solveKernelRidge: the Gram matrix has ${sys.n} rows but y has ${t.n}`)
   }
   const c = matmulRows(sys.inverse, t.rows, sys.n, t.k)
   return fromStorage(c, t.multi ? [t.n, t.k] : [t.n], 'float64')
@@ -179,8 +179,8 @@ export function solveKernelRidge(k: TensorLike, y: TensorLike, alpha = 1): Tenso
  * @concept kernel-ridge
  * @example
  * ```ts
- * import { hatDiagonal } from 'mdml-engine/kernel-methods'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { hatDiagonal } from 'omai-engine/kernel-methods'
+ * import { toFlat } from 'omai-engine/tensor'
  * toFlat(hatDiagonal([[3, 0], [0, 1]], 1)) // => [0.75, 0.5]
  * ```
  */
@@ -208,8 +208,8 @@ export function hatDiagonal(k: TensorLike, alpha = 1): Tensor {
  *   and kernel ridge regression (Pattern Recognition 40, 2007).
  * @example
  * ```ts
- * import { looPredictions } from 'mdml-engine/kernel-methods'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { looPredictions } from 'omai-engine/kernel-methods'
+ * import { toFlat } from 'omai-engine/tensor'
  * toFlat(looPredictions([[2, 1], [1, 2]], [3, 3], 1)) // => [1, 1]
  * ```
  */
@@ -217,7 +217,7 @@ export function looPredictions(k: TensorLike, y: TensorLike, alpha = 1): Tensor 
   const sys = gramSystem(k, validateAlpha(alpha, 'looPredictions'), 'looPredictions')
   const t = targetRows(y, 'looPredictions')
   if (t.n !== sys.n) {
-    throw new MdmlError('shape', `looPredictions: the Gram matrix has ${sys.n} rows but y has ${t.n}`)
+    throw new OmaiError('shape', `looPredictions: the Gram matrix has ${sys.n} rows but y has ${t.n}`)
   }
   const c = matmulRows(sys.inverse, t.rows, sys.n, t.k)
   const out = new Float64Array(t.n * t.k)
@@ -239,7 +239,7 @@ export function looPredictions(k: TensorLike, y: TensorLike, alpha = 1): Tensor 
  * @concept kernel-ridge
  * @example
  * ```ts
- * import { looPress } from 'mdml-engine/kernel-methods'
+ * import { looPress } from 'omai-engine/kernel-methods'
  * looPress([[2, 1], [1, 2]], [3, 3], 1) // => 8
  * ```
  */
@@ -264,8 +264,8 @@ interface Prepared {
 function prepare(data: LearnData, h: KernelRidgeHyper): Prepared {
   const m = matrixView(data.x, WHO)
   const t = targetRows(data.y ?? [], WHO)
-  if (t.n !== m.n) throw new MdmlError('shape', `${WHO}: x has ${m.n} rows but y has ${t.n}`)
-  if (data.weights !== undefined) throw new MdmlError('value', `${WHO}: sample weights are not supported`)
+  if (t.n !== m.n) throw new OmaiError('shape', `${WHO}: x has ${m.n} rows but y has ${t.n}`)
+  if (data.weights !== undefined) throw new OmaiError('value', `${WHO}: sample weights are not supported`)
   validateAlpha(h.alpha, WHO)
   const kernel = resolveKernel(h as KernelChoice, data.x)
   return { n: m.n, d: m.d, k: t.k, multi: t.multi, kernel, gram: kernelMatrix(h, kernel, data.x), y: t.rows }
@@ -329,8 +329,8 @@ function verbsOf(p: KernelRidgeParams, h: KernelRidgeHyper): KernelRidgeVerbs {
  * @index estimator Kernel ridge regression with exact leave-one-out shortcuts.
  * @example
  * ```ts
- * import { kernelRidge } from 'mdml-engine/kernel-methods'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { kernelRidge } from 'omai-engine/kernel-methods'
+ * import { toFlat } from 'omai-engine/tensor'
  * const fitted = kernelRidge.with({ kernel: 'linear', alpha: 1e-8 }).fit({ x: [[1, 0], [1, 1], [1, 2]], y: [1, 3, 5] })
  * toFlat(fitted.predict([[1, 3]])).map((v) => Math.round(v * 1000) / 1000) // => [7]
  * ```

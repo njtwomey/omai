@@ -6,7 +6,7 @@
  */
 
 import { customJvp } from '../../autodiff/index.ts'
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import {
   add,
   concat,
@@ -59,8 +59,8 @@ import {
  * @concept polynomials
  * @example
  * ```ts
- * import { polyval } from 'mdml-engine/numerics/polynomial'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { polyval } from 'omai-engine/numerics/polynomial'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(polyval([0, 1, 2], [1, 2, 3])) // => [1, 6, 17]
  * ```
  */
@@ -86,8 +86,8 @@ export function polyval(x: TensorLike, c: TensorLike): Value {
  * @returns `[m, deg + 1]`.
  * @example
  * ```ts
- * import { polyvander } from 'mdml-engine/numerics/polynomial'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { polyvander } from 'omai-engine/numerics/polynomial'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(polyvander([2, 3], 2)) // => [[1, 2, 4], [1, 3, 9]]
  * ```
  */
@@ -111,8 +111,8 @@ export function polyvander(x: TensorLike, deg: number): Value {
  * @index function Least-squares polynomial fit in the power basis.
  * @example
  * ```ts
- * import { polyfit } from 'mdml-engine/numerics/polynomial'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { polyfit } from 'omai-engine/numerics/polynomial'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(polyfit([0, 1, 2, 3], [1, 3, 5, 7], 1)).map((v) => Math.round(v * 1e12) / 1e12) // => [1, 2]
  * ```
  */
@@ -129,8 +129,8 @@ export function polyfit(x: TensorLike, y: TensorLike, deg: number, w?: TensorLik
  * @returns The coefficients `[m]` or `[m, k]`.
  * @example
  * ```ts
- * import { polyvander, weightedFit } from 'mdml-engine/numerics/polynomial'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { polyvander, weightedFit } from 'omai-engine/numerics/polynomial'
+ * import { toArray } from 'omai-engine/tensor'
  * (toArray(weightedFit(polyvander([0, 1, 2], 1), [1, 3, 5])) as number[]).map((v) => Math.round(v * 1e12) / 1e12) // => [1, 2]
  * ```
  */
@@ -171,10 +171,10 @@ function safeDivide(a: Value, b: Value): Value {
  * @param c - Coefficients `[k]`, lowest first.
  * @param tol - Coefficients of absolute value at most `tol` count as zero (default 0).
  * @returns The trimmed coefficients `[k']`.
- * @throws MdmlError with code `shape` unless `c` is a vector, and `not-differentiable` for a traced value.
+ * @throws OmaiError with code `shape` unless `c` is a vector, and `not-differentiable` for a traced value.
  * @example
  * ```ts
- * import { polytrim } from 'mdml-engine/numerics/polynomial'
+ * import { polytrim } from 'omai-engine/numerics/polynomial'
  * polytrim([1, 2, 0, 0]) // => [1, 2]
  * ```
  */
@@ -190,10 +190,10 @@ export function polytrim(c: TensorLike, tol = 0): Tensor<'float64', [number]> {
  * @param m - Order (default 1).
  * @param scl - Scale per differentiation (default 1).
  * @returns Coefficients of the derivative.
- * @throws MdmlError with code `shape` unless `c` is a vector, and `not-differentiable` for a traced value.
+ * @throws OmaiError with code `shape` unless `c` is a vector, and `not-differentiable` for a traced value.
  * @example
  * ```ts
- * import { polyder } from 'mdml-engine/numerics/polynomial'
+ * import { polyder } from 'omai-engine/numerics/polynomial'
  * polyder([1, 2, 3, 4]) // => [2, 6, 12]
  * ```
  */
@@ -212,10 +212,10 @@ export function polyder(c: TensorLike, m = 1, scl = 1): Tensor<'float64', [numbe
  * @param lbnd - Lower bound (default 0).
  * @param scl - Scale (default 1).
  * @returns Coefficients of the integral.
- * @throws MdmlError with code `shape` unless `c` and `k` are vectors, and `not-differentiable` for a traced value.
+ * @throws OmaiError with code `shape` unless `c` and `k` are vectors, and `not-differentiable` for a traced value.
  * @example
  * ```ts
- * import { polyint } from 'mdml-engine/numerics/polynomial'
+ * import { polyint } from 'omai-engine/numerics/polynomial'
  * polyint([2, 6, 12]) // => [0, 2, 3, 4]
  * ```
  */
@@ -230,10 +230,10 @@ export function polyint(c: TensorLike, m = 1, k: TensorLike = [], lbnd = 0, scl 
  * @param a - Coefficients `[p]`, lowest first.
  * @param b - Coefficients `[q]`, lowest first.
  * @returns The sum, trimmed of trailing zeros.
- * @throws MdmlError with code `shape` unless `a` and `b` are vectors, and `not-differentiable` for a traced value.
+ * @throws OmaiError with code `shape` unless `a` and `b` are vectors, and `not-differentiable` for a traced value.
  * @example
  * ```ts
- * import { polyadd } from 'mdml-engine/numerics/polynomial'
+ * import { polyadd } from 'omai-engine/numerics/polynomial'
  * polyadd([1, 2], [3, 4, 5]) // => [4, 6, 5]
  * ```
  */
@@ -248,10 +248,10 @@ export function polyadd(a: TensorLike, b: TensorLike): Tensor<'float64', [number
  * @param a - Coefficients `[p]`, lowest first.
  * @param b - Coefficients `[q]`, lowest first.
  * @returns a - b, trimmed of trailing zeros.
- * @throws MdmlError with code `shape` unless `a` and `b` are vectors, and `not-differentiable` for a traced value.
+ * @throws OmaiError with code `shape` unless `a` and `b` are vectors, and `not-differentiable` for a traced value.
  * @example
  * ```ts
- * import { polysub } from 'mdml-engine/numerics/polynomial'
+ * import { polysub } from 'omai-engine/numerics/polynomial'
  * polysub([1, 2, 3], [1, 2]) // => [0, 0, 3]
  * ```
  */
@@ -267,10 +267,10 @@ export function polysub(a: TensorLike, b: TensorLike): Tensor<'float64', [number
  * @param a - Coefficients `[p]`, lowest first.
  * @param b - Coefficients `[q]`, lowest first.
  * @returns The product `[p + q - 1]`.
- * @throws MdmlError with code `shape` unless `a` and `b` are vectors, and `not-differentiable` for a traced value.
+ * @throws OmaiError with code `shape` unless `a` and `b` are vectors, and `not-differentiable` for a traced value.
  * @example
  * ```ts
- * import { polymul } from 'mdml-engine/numerics/polynomial'
+ * import { polymul } from 'omai-engine/numerics/polynomial'
  * polymul([1, 1], [-1, 1]) // => [-1, 0, 1]
  * ```
  */
@@ -292,11 +292,11 @@ export interface PolynomialDivision {
  * @param a - Dividend `[p]`, lowest first.
  * @param b - Divisor `[q]`, lowest first (non-zero).
  * @returns Quotient and remainder.
- * @throws MdmlError with code `value` for the zero divisor, `shape` unless `a` and `b` are vectors, and
+ * @throws OmaiError with code `value` for the zero divisor, `shape` unless `a` and `b` are vectors, and
  *   `not-differentiable` for a traced value.
  * @example
  * ```ts
- * import { polydiv } from 'mdml-engine/numerics/polynomial'
+ * import { polydiv } from 'omai-engine/numerics/polynomial'
  * polydiv([-1, 0, 1], [1, 1]) // => { quotient: [-1, 1], remainder: [0] }
  * ```
  */
@@ -311,12 +311,12 @@ export function polydiv(a: TensorLike, b: TensorLike): PolynomialDivision {
  *
  * @param c - Coefficients `[k]`, lowest first (degree >= 1).
  * @returns `[n, n]` with n the degree.
- * @throws MdmlError with code `value` below degree 1, `shape` unless `c` is a vector, and `not-differentiable` for a
+ * @throws OmaiError with code `value` below degree 1, `shape` unless `c` is a vector, and `not-differentiable` for a
  *   traced value.
  * @example
  * ```ts
- * import { companion } from 'mdml-engine/numerics/polynomial'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { companion } from 'omai-engine/numerics/polynomial'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(companion([-2, 0, 1])) // => [[0, 2], [1, 0]]
  * ```
  */
@@ -338,12 +338,12 @@ export interface ComplexRoots {
  *
  * @param c - Coefficients `[k]`, lowest first.
  * @returns Real and imaginary parts, each `[n]` with n the degree.
- * @throws MdmlError with code `shape` unless `c` is a vector, and `not-differentiable` for a traced value.
+ * @throws OmaiError with code `shape` unless `c` is a vector, and `not-differentiable` for a traced value.
  * @concept polynomial-roots
  * @example
  * ```ts
- * import { polyroots } from 'mdml-engine/numerics/polynomial'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { polyroots } from 'omai-engine/numerics/polynomial'
+ * import { toFlat } from 'omai-engine/tensor'
  * toFlat(polyroots([-2, 0, 1]).re).map((v) => Math.round(v * 1e12) / 1e12) // => [-1.414213562373, 1.414213562373]
  * ```
  */
@@ -359,10 +359,10 @@ export function polyroots(c: TensorLike): ComplexRoots {
  *
  * @param roots - Real roots `[n]`, or real and imaginary parts (each `[n]`).
  * @returns Coefficients `[n + 1]`, lowest first.
- * @throws MdmlError with code `shape` unless the roots are vectors, and `not-differentiable` for a traced value.
+ * @throws OmaiError with code `shape` unless the roots are vectors, and `not-differentiable` for a traced value.
  * @example
  * ```ts
- * import { polyFromRoots } from 'mdml-engine/numerics/polynomial'
+ * import { polyFromRoots } from 'omai-engine/numerics/polynomial'
  * polyFromRoots([1, -1]) // => [-1, 0, 1]
  * ```
  */
@@ -414,15 +414,15 @@ const charpolyPrimitive = customJvp({
  * @concept polynomials
  * @example
  * ```ts
- * import { charpoly } from 'mdml-engine/numerics/polynomial'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { charpoly } from 'omai-engine/numerics/polynomial'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(charpoly([[2, 0], [0, 3]])) // => [6, -5, 1]
  * ```
  */
 export function charpoly(a: TensorLike): Value {
   const [av] = promoteFloat(a) as [Value]
   if (av.shape.length !== 2 || av.shape[0] !== av.shape[1]) {
-    throw new MdmlError('shape', 'charpoly: expected a square matrix')
+    throw new OmaiError('shape', 'charpoly: expected a square matrix')
   }
   if ((av.shape[0] ?? 0) === 0) return fromStorage(new Float64Array([1]), [1], 'float64')
   return charpolyPrimitive(av)

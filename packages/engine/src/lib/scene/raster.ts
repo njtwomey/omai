@@ -3,7 +3,7 @@
  * reinforcement learning, animation frames in Node and image tests.
  */
 
-import { clamp, MdmlError, type Vec2 } from '../base/index.ts'
+import { clamp, OmaiError, type Vec2 } from '../base/index.ts'
 import { palettes, parsePaint, type Rgba } from './paint.ts'
 import { projectLayers } from './projection.ts'
 import type { Paint, Pixels, Scene, SceneNode, Style, ThemeToken, Transform } from './types.ts'
@@ -464,11 +464,11 @@ export interface RasterOptions {
  * @param s - The scene.
  * @param options - Output size, theme and palette, background and supersampling.
  * @returns Straight RGBA pixels.
- * @throws MdmlError with code `value` for a non-positive output size or an invalid colour.
+ * @throws OmaiError with code `value` for a non-positive output size or an invalid colour.
  * @concept scene-graph
  * @example
  * ```ts
- * import { rasterise, rect, scene } from 'mdml-engine/scene'
+ * import { rasterise, rect, scene } from 'omai-engine/scene'
  * const px = rasterise(scene(4, 4, [rect(0, 0, 2, 4, { fill: '#ff0000' })]), { background: '#000000' })
  * Array.from(px.rgba.slice(0, 4)) // => [255, 0, 0, 255]
  * Array.from(px.rgba.slice(8, 12)) // => [0, 0, 0, 255]
@@ -479,7 +479,7 @@ export function rasterise(s: Scene, options: RasterOptions = {}): Pixels {
   const height = options.height ?? Math.round(s.height)
   const k = Math.max(1, Math.round(options.samples ?? 1))
   if (!(width > 0 && height > 0 && Number.isInteger(width) && Number.isInteger(height))) {
-    throw new MdmlError('value', `rasterise: need a positive integer size, got ${width} by ${height}`)
+    throw new OmaiError('value', `rasterise: need a positive integer size, got ${width} by ${height}`)
   }
   const palette = { ...palettes[options.mode ?? 'light'], ...options.palette }
   const canvas: Canvas = { width: width * k, height: height * k, data: new Float32Array(width * height * k * k * 4) }

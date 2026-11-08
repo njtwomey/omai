@@ -1,4 +1,4 @@
-import { dict, real } from 'mdml-engine/space'
+import { dict, real } from 'omai-engine/space'
 import {
   functionObjective,
   medianPruner,
@@ -6,10 +6,10 @@ import {
   randomSampler,
   successiveHalvingPruner,
   tune,
-} from 'mdml-engine/tune'
-import { intermediateChart } from 'mdml-render/charts'
-import { figure } from 'mdml-render/figure'
-import { Chart, Choice, ControlPanel, FigureFrame, useColourMode } from 'mdml-render/react'
+} from 'omai-engine/tune'
+import { intermediateChart } from 'omai-render/charts'
+import { figure } from 'omai-render/figure'
+import { Chart, Choice, ControlPanel, FigureFrame, useColourMode } from 'omai-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 

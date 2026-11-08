@@ -4,14 +4,14 @@
 
 The headless figure model: `figure` gives a fixed size, box aspect, padding and type size per medium, `gridSpec`, `withMarginals` and `bento` lay out panels (with `layoutGrid` placing them in pixels), data aspects (`fitDataAspect`) and axis limit policies (`resolveLimits`) keep figures steady as controls move, and `linkStore` shares hover and brushing between figures.
 
-- function `bento`: A bento-box layout of panels from named areas: `bento(['a a b', 'c d b'])`. `src/figure/grid.ts:237` `mdml-render/figure`
-- function `figure`: Make a figure sized for a medium: `figure({ medium: 'slide' })`. `src/figure/figure.ts:111` `mdml-render/figure`
-- function `fitDataAspect`: Widen an axis range to meet a data aspect: `fitDataAspect(x, y, box, 'equal')`. `src/figure/aspect.ts:37` `mdml-render/figure`
-- function `gridSpec`: Make a grid of panels: `gridSpec(2, 3)`. `src/figure/grid.ts:107` `mdml-render/figure`
-- function `layoutGrid`: Place a grid's cells in pixels inside a rectangle: `layoutGrid(spec, area)`. `src/figure/grid.ts:154` `mdml-render/figure`
-- function `linkStore`: Share hover, selection and brush between figures: `linkStore()`. `src/figure/linking.ts:48` `mdml-render/figure`
-- function `resolveLimits`: Turn an axis limit policy into a range: `resolveLimits(policy, extent)`. `src/figure/limits.ts:150` `mdml-render/figure`
-- function `scaleFigure`: Rescale a figure to another width: `scaleFigure(fig, 1280)`. `src/figure/figure.ts:150` `mdml-render/figure`
-- function `withMarginals`: A scatter grid with marginal axes on top and right: `withMarginals()`. `src/figure/grid.ts:200` `mdml-render/figure`
+- function `bento`: A bento-box layout of panels from named areas: `bento(['a a b', 'c d b'])`. `src/figure/grid.ts:237` `omai-render/figure`
+- function `figure`: Make a figure sized for a medium: `figure({ medium: 'slide' })`. `src/figure/figure.ts:111` `omai-render/figure`
+- function `fitDataAspect`: Widen an axis range to meet a data aspect: `fitDataAspect(x, y, box, 'equal')`. `src/figure/aspect.ts:37` `omai-render/figure`
+- function `gridSpec`: Make a grid of panels: `gridSpec(2, 3)`. `src/figure/grid.ts:107` `omai-render/figure`
+- function `layoutGrid`: Place a grid's cells in pixels inside a rectangle: `layoutGrid(spec, area)`. `src/figure/grid.ts:154` `omai-render/figure`
+- function `linkStore`: Share hover, selection and brush between figures: `linkStore()`. `src/figure/linking.ts:48` `omai-render/figure`
+- function `resolveLimits`: Turn an axis limit policy into a range: `resolveLimits(policy, extent)`. `src/figure/limits.ts:150` `omai-render/figure`
+- function `scaleFigure`: Rescale a figure to another width: `scaleFigure(fig, 1280)`. `src/figure/figure.ts:150` `omai-render/figure`
+- function `withMarginals`: A scatter grid with marginal axes on top and right: `withMarginals()`. `src/figure/grid.ts:200` `omai-render/figure`
 
-- structure `Figure`: A figure's size, aspect, padding and type size, as `figure()` returns it. `src/figure/figure.ts:27` `mdml-render/figure`
+- structure `Figure`: A figure's size, aspect, padding and type size, as `figure()` returns it. `src/figure/figure.ts:27` `omai-render/figure`

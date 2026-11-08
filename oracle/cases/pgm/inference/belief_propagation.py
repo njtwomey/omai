@@ -6,9 +6,9 @@ Asia after three iterations, so the loopy cases use networks where it converges.
 import numpy as np
 import pgmpy
 import pyagrum as gum
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import rng
-from mdml_oracle.pgm import SPRINKLER, NodeSpec, Potential, definition, hashables, random_potentials, stable
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import rng
+from omai_oracle.pgm import SPRINKLER, NodeSpec, Potential, definition, hashables, random_potentials, stable
 from pgmpy.factors.discrete import DiscreteFactor
 from pgmpy.inference import BeliefPropagationWithMessagePassing
 from pgmpy.models import FactorGraph

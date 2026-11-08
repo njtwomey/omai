@@ -7,7 +7,7 @@
  * by side on the same integrand, one batch of draws per step. Importance sampling is in `importance.ts`.
  */
 
-import { type Estimate, type Json, MdmlError, meanOf, varianceOf } from '../base/index.ts'
+import { type Estimate, type Json, meanOf, OmaiError, varianceOf } from '../base/index.ts'
 import { solve } from '../numerics/linalg/index.ts'
 import { foldIn, halton, type Key, normal, scrambledSobol, uniform } from '../random/index.ts'
 import { tensor, toFlat } from '../tensor/index.ts'
@@ -27,7 +27,7 @@ function normalEstimate(value: number, standardError: number, method: string): E
 
 function checkN(n: number, minimum: number, who: string): void {
   if (!(Number.isInteger(n) && n >= minimum))
-    throw new MdmlError('value', `${who}: n must be an integer of at least ${minimum}, got ${n}`)
+    throw new OmaiError('value', `${who}: n must be an integer of at least ${minimum}, got ${n}`)
 }
 
 /** A draw of `n` independent samples from the distribution being integrated against. */
@@ -72,12 +72,12 @@ export interface MonteCarloEstimateOptions<T = number> {
  *
  * @param options - Integrand, sampler (default uniform on `[0, 1)`), key and `n`.
  * @returns The estimate with its 95% normal interval.
- * @throws MdmlError with code `value` for `n < 2`.
+ * @throws OmaiError with code `value` for `n < 2`.
  * @concept monte-carlo
  * @example
  * ```ts
- * import { monteCarloEstimate } from 'mdml-engine/sampling'
- * import { key } from 'mdml-engine/random'
+ * import { monteCarloEstimate } from 'omai-engine/sampling'
+ * import { key } from 'omai-engine/random'
  * const e = monteCarloEstimate({ fn: (u) => u * u, key: key(0), n: 20000 })
  * Math.abs(e.value - 1 / 3) < 4 * (e.standardError ?? 0) // => true
  * ```
@@ -126,13 +126,13 @@ export interface ControlVariateResult extends ReducedEstimate {
  *
  * @param options - Integrand, controls with their means, sampler, key and `n`.
  * @returns The estimate with `beta`, `R`, and the plain standard error for comparison.
- * @throws MdmlError with code `value` for fewer than `controls + 2` samples or no controls.
+ * @throws OmaiError with code `value` for fewer than `controls + 2` samples or no controls.
  * @concept control-variates
  * @reference A. B. Owen, Monte Carlo theory, methods and examples (2013), chapter 8.
  * @example
  * ```ts
- * import { controlVariateEstimate } from 'mdml-engine/sampling'
- * import { key } from 'mdml-engine/random'
+ * import { controlVariateEstimate } from 'omai-engine/sampling'
+ * import { key } from 'omai-engine/random'
  * const e = controlVariateEstimate({
  *   fn: (u) => Math.exp(u),
  *   controls: [{ fn: (u) => u, mean: 0.5 }],
@@ -145,7 +145,7 @@ export interface ControlVariateResult extends ReducedEstimate {
 export function controlVariateEstimate<T = number>(options: ControlVariateOptions<T>): ControlVariateResult {
   const { fn, controls, n } = options
   const p = controls.length
-  if (p === 0) throw new MdmlError('value', 'controlVariateEstimate: at least one control is needed')
+  if (p === 0) throw new OmaiError('value', 'controlVariateEstimate: at least one control is needed')
   checkN(n, p + 2, 'controlVariateEstimate')
   const draw = (options.sample ?? (uniformSampler as unknown as Sampler<T>))(options.key, n)
   const f = draw.map((x) => fn(x))
@@ -209,12 +209,12 @@ export interface AntitheticResult extends ReducedEstimate {
  *
  * @param options - Integrand, dimension, distribution, key and number of pairs.
  * @returns The estimate with the pair correlation and the plain standard error for the same evaluations.
- * @throws MdmlError with code `value` for fewer than 2 pairs or a non-positive dimension.
+ * @throws OmaiError with code `value` for fewer than 2 pairs or a non-positive dimension.
  * @concept antithetic-variates
  * @example
  * ```ts
- * import { antitheticEstimate } from 'mdml-engine/sampling'
- * import { key } from 'mdml-engine/random'
+ * import { antitheticEstimate } from 'omai-engine/sampling'
+ * import { key } from 'omai-engine/random'
  * const e = antitheticEstimate({ fn: (x) => Math.exp(x[0] ?? 0), dim: 1, key: key(0), pairs: 2000 })
  * [Math.abs(e.value - (Math.E - 1)) < 4 * (e.standardError ?? 0), e.pairCorrelation < -0.9] // => [true, true]
  * ```
@@ -223,7 +223,7 @@ export function antitheticEstimate(options: AntitheticOptions): AntitheticResult
   const { fn, dim, pairs } = options
   checkN(pairs, 2, 'antitheticEstimate')
   if (!(Number.isInteger(dim) && dim >= 1))
-    throw new MdmlError('value', `antitheticEstimate: dim must be a positive integer, got ${dim}`)
+    throw new OmaiError('value', `antitheticEstimate: dim must be a positive integer, got ${dim}`)
   const kind = options.distribution ?? 'uniform'
   const base = kind === 'uniform' ? uniform(options.key, [pairs, dim]).data : normal(options.key, [pairs, dim]).data
   const first = new Float64Array(pairs)
@@ -268,19 +268,19 @@ export interface Stratum<T = number> {
  *
  * @param count - Number of strata.
  * @returns The strata.
- * @throws MdmlError with code `value` for a non-positive count.
+ * @throws OmaiError with code `value` for a non-positive count.
  * @concept stratified-sampling
  * @example
  * ```ts
- * import { uniformStrata } from 'mdml-engine/sampling'
- * import { key } from 'mdml-engine/random'
+ * import { uniformStrata } from 'omai-engine/sampling'
+ * import { key } from 'omai-engine/random'
  * const s = uniformStrata(4)
  * [s.length, s[2]?.weight, (s[2]?.sample(key(0), 1)[0] ?? 0) >= 0.5] // => [4, 0.25, true]
  * ```
  */
 export function uniformStrata(count: number): Stratum<number>[] {
   if (!(Number.isInteger(count) && count >= 1))
-    throw new MdmlError('value', `uniformStrata: count must be a positive integer, got ${count}`)
+    throw new OmaiError('value', `uniformStrata: count must be a positive integer, got ${count}`)
   return Array.from({ length: count }, (_, j) => ({
     weight: 1 / count,
     sample: (key: Key, n: number) => Array.from(uniform(key, [n]).data, (u) => (j + u) / count),
@@ -339,12 +339,12 @@ function allocate(weights: readonly number[], n: number): number[] {
  *
  * @param options - Strata, integrand, budget `n`, allocation, pilot size and key.
  * @returns The estimate, the per-stratum counts, means and variances.
- * @throws MdmlError with code `value` for weights that are not a partition or too small a budget.
+ * @throws OmaiError with code `value` for weights that are not a partition or too small a budget.
  * @concept stratified-sampling
  * @example
  * ```ts
- * import { stratifiedEstimate, uniformStrata } from 'mdml-engine/sampling'
- * import { key } from 'mdml-engine/random'
+ * import { stratifiedEstimate, uniformStrata } from 'omai-engine/sampling'
+ * import { key } from 'omai-engine/random'
  * const e = stratifiedEstimate({ strata: uniformStrata(10), fn: (u) => u * u, n: 1000, key: key(0) })
  * [Math.abs(e.value - 1 / 3) < 0.01, e.varianceReductionFactor > 10] // => [true, true]
  * ```
@@ -352,10 +352,10 @@ function allocate(weights: readonly number[], n: number): number[] {
 export function stratifiedEstimate<T = number>(options: StratifiedOptions<T>): StratifiedResult {
   const { strata, fn, n } = options
   const S = strata.length
-  if (S === 0) throw new MdmlError('value', 'stratifiedEstimate: at least one stratum is needed')
+  if (S === 0) throw new OmaiError('value', 'stratifiedEstimate: at least one stratum is needed')
   const wsum = strata.reduce((a, s) => a + s.weight, 0)
   if (!strata.every((s) => s.weight > 0) || Math.abs(wsum - 1) > 1e-9) {
-    throw new MdmlError('value', `stratifiedEstimate: weights must be positive and sum to 1, got sum ${wsum}`)
+    throw new OmaiError('value', `stratifiedEstimate: weights must be positive and sum to 1, got sum ${wsum}`)
   }
   checkN(n, 2 * S, 'stratifiedEstimate')
   let counts: number[]
@@ -435,12 +435,12 @@ export interface RaoBlackwellResult extends ReducedEstimate {
  *
  * @param options - Sampler of joint draws, the raw and conditional estimators, key and `n`.
  * @returns The estimate with both parts of the variance decomposition.
- * @throws MdmlError with code `value` for `n < 2`.
+ * @throws OmaiError with code `value` for `n < 2`.
  * @concept rao-blackwellisation
  * @example
  * ```ts
- * import { raoBlackwellEstimate } from 'mdml-engine/sampling'
- * import { key, uniform } from 'mdml-engine/random'
+ * import { raoBlackwellEstimate } from 'omai-engine/sampling'
+ * import { key, uniform } from 'omai-engine/random'
  * // h = X + Y with X, Y uniform: E[h | X] = X + 1/2.
  * const e = raoBlackwellEstimate<[number, number]>({
  *   sample: (k, n) => {
@@ -499,13 +499,13 @@ export interface QuasiMonteCarloOptions {
  *
  * @param options - Integrand, dimension, points, replicates, sequence and key.
  * @returns The estimate with the plain Monte Carlo standard error for the same number of evaluations.
- * @throws MdmlError with code `value` for fewer than two replicates.
+ * @throws OmaiError with code `value` for fewer than two replicates.
  * @concept quasi-monte-carlo
  * @reference A. B. Owen, Randomized Halton sequences and Sobol nets, in Monte Carlo and Quasi-Monte Carlo Methods (2003).
  * @example
  * ```ts
- * import { quasiMonteCarloEstimate } from 'mdml-engine/sampling'
- * import { key } from 'mdml-engine/random'
+ * import { quasiMonteCarloEstimate } from 'omai-engine/sampling'
+ * import { key } from 'omai-engine/random'
  * const e = quasiMonteCarloEstimate({ fn: (u) => (u[0] ?? 0) * (u[1] ?? 0), dim: 2, n: 1024, key: key(0) })
  * Math.abs(e.value - 0.25) < 1e-3 // => true
  * ```
@@ -605,8 +605,8 @@ function sumsEstimate(s: readonly number[]): { value: number; se: number } {
  * @concept variance-reduction
  * @example
  * ```ts
- * import { varianceReductionAlgorithm, varianceReductionEstimates } from 'mdml-engine/sampling'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { varianceReductionAlgorithm, varianceReductionEstimates } from 'omai-engine/sampling'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const res = runAlgorithm(varianceReductionAlgorithm({ batches: 100 }), { seed: 3, maxSteps: 1000 })
  * Math.abs(varianceReductionEstimates(res.state).stratified.value - (Math.E - 1)) < 0.01 // => true
  * ```
@@ -652,12 +652,12 @@ export function varianceReductionEstimates(
  *
  * @param options - Integrand, control, batch size, truth and number of batches.
  * @returns The algorithm.
- * @throws MdmlError with code `value` for an odd or too small batch.
+ * @throws OmaiError with code `value` for an odd or too small batch.
  * @concept variance-reduction
  * @example
  * ```ts
- * import { varianceReductionAlgorithm, varianceReductionEstimates } from 'mdml-engine/sampling'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { varianceReductionAlgorithm, varianceReductionEstimates } from 'omai-engine/sampling'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const res = runAlgorithm(varianceReductionAlgorithm({ batches: 200 }), { seed: 1, maxSteps: 1000 })
  * const { plain, control } = varianceReductionEstimates(res.state)
  * [res.state.batches, control.se < plain.se / 5] // => [200, true]
@@ -669,7 +669,7 @@ export function varianceReductionAlgorithm(options: VarianceReductionOptions = {
   const m = options.batch ?? 10
   const total = options.batches ?? 1000
   if (!(Number.isInteger(m) && m >= 2 && m % 2 === 0))
-    throw new MdmlError('value', `varianceReductionAlgorithm: batch must be an even integer of at least 2, got ${m}`)
+    throw new OmaiError('value', `varianceReductionAlgorithm: batch must be an even integer of at least 2, got ${m}`)
   const metrics = Object.fromEntries(
     VARIANCE_REDUCTION_TECHNIQUES.flatMap((name) => [
       [`${name}/value`, { description: `the ${name} estimate` }],

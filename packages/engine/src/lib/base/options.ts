@@ -3,7 +3,7 @@
  * and metric reductions, the alternative hypothesis of a test, and confidence levels.
  */
 
-import { MdmlError } from './errors.ts'
+import { OmaiError } from './errors.ts'
 
 /** How a loss or metric reduces over samples. */
 export type Reduction = 'mean' | 'sum' | 'none'
@@ -14,7 +14,7 @@ export type Reduction = 'mean' | 'sum' | 'none'
  * @returns The default.
  * @example
  * ```ts
- * import { defaultReduction } from 'mdml-engine/base'
+ * import { defaultReduction } from 'omai-engine/base'
  * defaultReduction // => 'mean'
  * ```
  */
@@ -29,7 +29,7 @@ export type Alternative = 'two-sided' | 'less' | 'greater'
  * @returns The default.
  * @example
  * ```ts
- * import { defaultAlternative } from 'mdml-engine/base'
+ * import { defaultAlternative } from 'omai-engine/base'
  * defaultAlternative // => 'two-sided'
  * ```
  */
@@ -44,7 +44,7 @@ export type ConfidenceLevel = number
  * @returns The default.
  * @example
  * ```ts
- * import { defaultConfidenceLevel } from 'mdml-engine/base'
+ * import { defaultConfidenceLevel } from 'omai-engine/base'
  * defaultConfidenceLevel // => 0.95
  * ```
  */
@@ -55,16 +55,16 @@ export const defaultConfidenceLevel: ConfidenceLevel = 0.95
  *
  * @param level - The level, or undefined for the default.
  * @returns The level.
- * @throws MdmlError with code `value` when the level is outside (0, 1).
+ * @throws OmaiError with code `value` when the level is outside (0, 1).
  * @example
  * ```ts
- * import { resolveConfidenceLevel } from 'mdml-engine/base'
+ * import { resolveConfidenceLevel } from 'omai-engine/base'
  * resolveConfidenceLevel() // => 0.95
  * resolveConfidenceLevel(0.9) // => 0.9
  * ```
  */
 export function resolveConfidenceLevel(level: ConfidenceLevel = defaultConfidenceLevel): ConfidenceLevel {
-  if (!(level > 0 && level < 1)) throw new MdmlError('value', `confidence level must lie in (0, 1), got ${level}`)
+  if (!(level > 0 && level < 1)) throw new OmaiError('value', `confidence level must lie in (0, 1), got ${level}`)
   return level
 }
 
@@ -78,7 +78,7 @@ export function resolveConfidenceLevel(level: ConfidenceLevel = defaultConfidenc
  * @returns The option.
  * @example
  * ```ts
- * import { numberOr } from 'mdml-engine/base'
+ * import { numberOr } from 'omai-engine/base'
  * numberOr({ g: 9.8, label: 'earth' }, 'g', 10) // => 9.8
  * numberOr({ g: 'high' }, 'g', 10) // => 10
  * ```

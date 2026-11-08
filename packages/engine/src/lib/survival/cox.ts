@@ -9,7 +9,7 @@
  */
 
 import { hessian, valueAndGrad } from '../autodiff/index.ts'
-import { MdmlError, type TestResult } from '../base/index.ts'
+import { OmaiError, type TestResult } from '../base/index.ts'
 import { loggedSolver, type SmoothProblem, smoothSolvers } from '../optim/index.ts'
 import type { Key } from '../random/index.ts'
 import { key as makeKey } from '../random/index.ts'
@@ -64,10 +64,10 @@ export interface CoxData {
  * @param x - Covariates `[n, p]` (a vector is one covariate).
  * @param options - `strata` (a baseline hazard for each value) and the covariate `names`.
  * @returns The data.
- * @throws MdmlError with code `shape` when the lengths disagree.
+ * @throws OmaiError with code `shape` when the lengths disagree.
  * @example
  * ```ts
- * import { coxData } from 'mdml-engine/survival'
+ * import { coxData } from 'omai-engine/survival'
  * coxData([1, 2, 3], [1, 0, 1], [[0.5], [1], [2]]).p // => 1
  * ```
  */
@@ -81,12 +81,12 @@ export function coxData(
   const t = asTensor(x)
   const n = t.shape[0] ?? 0
   const p = t.shape.length === 1 ? 1 : (t.shape[1] ?? 0)
-  if (n !== sample.n || p < 1) throw new MdmlError('shape', `coxData: ${n} covariate rows for ${sample.n} times`)
+  if (n !== sample.n || p < 1) throw new OmaiError('shape', `coxData: ${n} covariate rows for ${sample.n} times`)
   const strata =
     options.strata === undefined ? new Float64Array(n) : Float64Array.from(toFlat(asTensor(options.strata)))
-  if (strata.length !== n) throw new MdmlError('shape', `coxData: ${strata.length} strata for ${n} subjects`)
+  if (strata.length !== n) throw new OmaiError('shape', `coxData: ${strata.length} strata for ${n} subjects`)
   const names = options.names ?? Array.from({ length: p }, (_, j) => `x${j}`)
-  if (names.length !== p) throw new MdmlError('shape', `coxData: ${names.length} names for ${p} covariates`)
+  if (names.length !== p) throw new OmaiError('shape', `coxData: ${names.length} names for ${p} covariates`)
   return { sample, x: Float64Array.from(toFlat(t)), p, strata, names }
 }
 
@@ -213,7 +213,7 @@ export interface CoxProblemOptions {
  * @returns The problem, starting at `beta = 0`.
  * @example
  * ```ts
- * import { coxData, coxProblem } from 'mdml-engine/survival'
+ * import { coxData, coxProblem } from 'omai-engine/survival'
  * const prob = coxProblem(coxData([1, 2, 3, 4], [1, 1, 1, 0], [0, 1, 2, 3]), { ties: 'breslow' })
  * Number(prob.logLikelihood([0]).toFixed(4)) // => -3.1781
  * ```
@@ -221,10 +221,10 @@ export interface CoxProblemOptions {
 export function coxProblem(data: CoxData, options: CoxProblemOptions = {}): CoxProblem {
   const ties = options.ties ?? 'efron'
   const ridge = options.ridge ?? 0
-  if (!(ridge >= 0)) throw new MdmlError('value', `coxProblem: ridge must be >= 0, got ${ridge}`)
+  if (!(ridge >= 0)) throw new OmaiError('value', `coxProblem: ridge must be >= 0, got ${ridge}`)
   const plan = planOf(data, ties)
   const { n, p } = plan
-  if (plan.slotGroup.length === 0) throw new MdmlError('value', 'coxProblem: needs at least one event')
+  if (plan.slotGroup.length === 0) throw new OmaiError('value', 'coxProblem: needs at least one event')
   const X = fromStorage(plan.x, [n, p], 'float64')
   const delta = tensor(Array.from(plan.event))
   const zero = tensor([0])
@@ -302,8 +302,8 @@ export const coxDefaults: CoxHyper = {
  * @returns The algorithm.
  * @example
  * ```ts
- * import { coxAlgorithm, coxData } from 'mdml-engine/survival'
- * import { key } from 'mdml-engine/random'
+ * import { coxAlgorithm, coxData } from 'omai-engine/survival'
+ * import { key } from 'omai-engine/random'
  * coxAlgorithm(coxData([1, 2, 3, 4], [1, 1, 1, 0], [0, 1, 2, 3]), {}, key(0)).name // => 'newton'
  * ```
  */
@@ -414,11 +414,11 @@ function breslowBaseline(data: CoxData, beta: readonly number[], ties: CoxTies):
  * @param hyper - `ties`, `ridge`, `solver`, `maxIter` and `level`.
  * @param run - Run options (`key`, `tracer`, `policy`, `parent`) to record the solver's steps.
  * @returns The fit.
- * @throws MdmlError with code `value` when there is no event.
+ * @throws OmaiError with code `value` when there is no event.
  * @index function Cox proportional hazards fit with Breslow or Efron ties.
  * @example
  * ```ts
- * import { coxData, coxPh } from 'mdml-engine/survival'
+ * import { coxData, coxPh } from 'omai-engine/survival'
  * const fit = coxPh(coxData([1, 2, 3, 4, 5, 6], [1, 1, 0, 1, 1, 1], [0.1, 0.8, 0.3, 1.5, 1.1, 2.0]))
  * fit.converged // => true
  * fit.coefficients[0]?.hazardRatio !== undefined // => true
@@ -517,7 +517,7 @@ export function coxPh(
  * @returns `H0(t)`.
  * @example
  * ```ts
- * import { baselineHazardAt, coxData, coxPh } from 'mdml-engine/survival'
+ * import { baselineHazardAt, coxData, coxPh } from 'omai-engine/survival'
  * const fit = coxPh(coxData([1, 2, 3, 4], [1, 1, 1, 0], [0.2, 0.9, 0.4, 1.3]))
  * baselineHazardAt(fit, 0.5) // => 0
  * ```
@@ -541,7 +541,7 @@ export function baselineHazardAt(fit: Pick<CoxFit, 'baseline'>, t: number, strat
  * @returns `S(t | x)` for each time.
  * @example
  * ```ts
- * import { coxData, coxPh, coxPredictSurvival } from 'mdml-engine/survival'
+ * import { coxData, coxPh, coxPredictSurvival } from 'omai-engine/survival'
  * const fit = coxPh(coxData([1, 2, 3, 4], [1, 1, 1, 0], [0.2, 0.9, 0.4, 1.3]))
  * coxPredictSurvival(fit, [0.5], [0, 10])[0] // => 1
  * ```
@@ -569,7 +569,7 @@ export function coxPredictSurvival(
  * @returns An `n x p` tensor in the order of the data, with `NaN` rows for censored subjects.
  * @example
  * ```ts
- * import { coxData, coxPh, schoenfeldResiduals } from 'mdml-engine/survival'
+ * import { coxData, coxPh, schoenfeldResiduals } from 'omai-engine/survival'
  * const data = coxData([1, 2, 3, 4], [1, 1, 1, 0], [0.2, 0.9, 0.4, 1.3])
  * const r = schoenfeldResiduals(data, coxPh(data).beta)
  * r.shape // => [4, 1]
@@ -618,7 +618,7 @@ export function schoenfeldResiduals(data: CoxData, beta: readonly number[]): Ten
  * @returns One residual per subject, in the order of the data.
  * @example
  * ```ts
- * import { coxData, coxPh, martingaleResiduals } from 'mdml-engine/survival'
+ * import { coxData, coxPh, martingaleResiduals } from 'omai-engine/survival'
  * const data = coxData([1, 2, 3, 4], [1, 1, 1, 0], [0.2, 0.9, 0.4, 1.3])
  * martingaleResiduals(data, coxPh(data, { ties: 'breslow' })).length // => 4
  * ```

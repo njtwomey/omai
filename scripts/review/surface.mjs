@@ -17,7 +17,7 @@ const exports = readFileSync(process.argv[2], 'utf8')
     const [pkg, domain = ''] = module.split('/')
     return { kind, module, name, pkg, domain }
   })
-const engine = exports.filter((e) => e.pkg === 'mdml-engine')
+const engine = exports.filter((e) => e.pkg === 'omai-engine')
 const inCore = engine.filter((e) => CORE.has(e.domain))
 
 const byName = new Map()
@@ -27,7 +27,7 @@ const sharedCore = shared.filter(([, v]) => v.some((e) => CORE.has(e.domain)))
 console.log(`COLLISIONS: ${shared.length} engine export names appear in 2+ entry points (of ${byName.size} distinct)`)
 console.log(`  with at least one core definition: ${sharedCore.length}`)
 for (const [name, v] of sharedCore.sort((a, b) => b[1].length - a[1].length).slice(0, 14)) {
-  const modules = [...new Set(v.map((e) => e.module.replace('mdml-engine/', '')))]
+  const modules = [...new Set(v.map((e) => e.module.replace('omai-engine/', '')))]
   console.log(`  ${name} x${v.length}: ${modules.slice(0, 6).join(', ')}`)
 }
 

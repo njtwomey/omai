@@ -113,8 +113,8 @@ interface Cursor {
  * @returns The algorithm and its result reader.
  * @example
  * ```ts
- * import { type LineProcedure, steppedLineSearch } from 'mdml-engine/optim'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { type LineProcedure, steppedLineSearch } from 'omai-engine/optim'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * // A procedure that accepts the unit step after one evaluation.
  * function* procedure(): LineProcedure {
  *   const point = yield { alpha: 1, valueOnly: false, interval: [0, 1] }
@@ -332,8 +332,8 @@ function* backtrackingProcedure(start: LineStart, options: BacktrackingOptions):
  * @concept line-search
  * @example
  * ```ts
- * import { backtrackingAlgorithm } from 'mdml-engine/optim'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { backtrackingAlgorithm } from 'omai-engine/optim'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const phi = { at: (a: number) => ({ value: (a - 0.3) ** 2, slope: 2 * (a - 0.3) }) }
  * const run = runAlgorithm(backtrackingAlgorithm(phi, { value: 0.09, slope: -0.6 }, { interpolation: 'halving' }), {
  *   maxSteps: 60,
@@ -358,8 +358,8 @@ export function backtrackingAlgorithm(
  * @returns The algorithm and the reader of a finished state as a line-search result.
  * @example
  * ```ts
- * import { backtrackingSearch } from 'mdml-engine/optim'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { backtrackingSearch } from 'omai-engine/optim'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const phi = { at: (a: number) => ({ value: (a - 0.3) ** 2, slope: 2 * (a - 0.3) }) }
  * const search = backtrackingSearch(phi, { value: 0.09, slope: -0.6 }, { interpolation: 'halving' })
  * const run = runAlgorithm(search.algorithm, { maxSteps: 60 })
@@ -527,14 +527,14 @@ function* hagerZhangProcedure(start: LineStart, options: HagerZhangOptions): Lin
  * @param start - phi(0), phi'(0) < 0 and the first step.
  * @param options - delta, sigma, epsilon, gamma, rho, the largest step and the evaluation cap.
  * @returns The algorithm.
- * @throws MdmlError with code `value` unless 0 < delta < sigma < 1.
+ * @throws OmaiError with code `value` unless 0 < delta < sigma < 1.
  * @concept line-search
  * @reference W. W. Hager and H. Zhang, A new conjugate gradient method with guaranteed descent and an efficient line
  * search, SIAM J. Optim. 16 (2005); Algorithm 851: CG_DESCENT, ACM TOMS 32 (2006).
  * @example
  * ```ts
- * import { hagerZhangAlgorithm } from 'mdml-engine/optim'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { hagerZhangAlgorithm } from 'omai-engine/optim'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const phi = { at: (a: number) => ({ value: (a - 0.25) ** 2, slope: 2 * (a - 0.25) }) }
  * const run = runAlgorithm(hagerZhangAlgorithm(phi, { value: 0.0625, slope: -0.5 }), { maxSteps: 60 })
  * [run.status, run.state.trials.length, run.state.outcome?.alpha] // => ['converged', 2, 0.25]
@@ -555,11 +555,11 @@ export function hagerZhangAlgorithm(
  * @param start - phi(0), phi'(0) < 0 and the first step.
  * @param options - delta, sigma, epsilon, gamma, rho, the largest step and the evaluation cap.
  * @returns The algorithm and the reader of a finished state as a line-search result.
- * @throws MdmlError with code `value` unless 0 < delta < sigma < 1.
+ * @throws OmaiError with code `value` unless 0 < delta < sigma < 1.
  * @example
  * ```ts
- * import { hagerZhangSearch } from 'mdml-engine/optim'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { hagerZhangSearch } from 'omai-engine/optim'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const phi = { at: (a: number) => ({ value: (a - 0.25) ** 2, slope: 2 * (a - 0.25) }) }
  * const search = hagerZhangSearch(phi, { value: 0.0625, slope: -0.5 })
  * const run = runAlgorithm(search.algorithm, { maxSteps: 60 })

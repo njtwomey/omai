@@ -5,7 +5,7 @@
  * Gaussian components.
  */
 
-import { type Json, logSumExpOf, MdmlError, pairwiseSum } from '../base/index.ts'
+import { type Json, logSumExpOf, OmaiError, pairwiseSum } from '../base/index.ts'
 import { type Tensor, type TensorLike, tensor } from '../tensor/index.ts'
 import { type Algorithm, channels, runAlgorithm } from '../trace/index.ts'
 import { checkProbability, distribution, h2, matrixOf } from './_matrices.ts'
@@ -39,8 +39,8 @@ export interface RateDistortionState {
  * @concept rate-distortion
  * @example
  * ```ts
- * import { rateDistortionAlgorithm } from 'mdml-engine/information'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { rateDistortionAlgorithm } from 'omai-engine/information'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const hamming = [[0, 1], [1, 0]]
  * runAlgorithm(rateDistortionAlgorithm([0.5, 0.5], hamming, 2), { maxSteps: 500 }).status // => 'converged'
  * ```
@@ -53,7 +53,7 @@ export function rateDistortionAlgorithm(
 ): Algorithm<RateDistortionState> {
   const d = matrixOf(distortion, 'rateDistortionAlgorithm')
   const p = distribution(source, d.nx, 'rateDistortionAlgorithm')
-  if (!(beta > 0)) throw new MdmlError('value', 'rateDistortionAlgorithm: beta must be positive')
+  if (!(beta > 0)) throw new OmaiError('value', 'rateDistortionAlgorithm: beta must be positive')
   const tol = options.tol ?? 1e-12
   const { nx, ny } = d
   const evaluate = (q: Float64Array, change: number): RateDistortionState => {
@@ -131,8 +131,8 @@ export interface RateDistortionPoint {
  * @concept rate-distortion
  * @example
  * ```ts
- * import { binaryEntropy, rateDistortion } from 'mdml-engine/information'
- * import { item } from 'mdml-engine/tensor'
+ * import { binaryEntropy, rateDistortion } from 'omai-engine/information'
+ * import { item } from 'omai-engine/tensor'
  * // A fair bit under Hamming distortion: R(D) = 1 - h(D).
  * const point = rateDistortion([0.5, 0.5], [[0, 1], [1, 0]], 2, { base: 2 })
  * Math.abs(point.rate - (1 - item(binaryEntropy(point.distortion, { base: 2 })))) < 1e-9 // => true
@@ -175,7 +175,7 @@ export function rateDistortion(
  * @concept rate-distortion
  * @example
  * ```ts
- * import { rateDistortionCurve } from 'mdml-engine/information'
+ * import { rateDistortionCurve } from 'omai-engine/information'
  * const curve = rateDistortionCurve([0.5, 0.5], [[0, 1], [1, 0]], [1, 2, 4])
  * curve.every((p, i) => i === 0 || p.rate > (curve[i - 1]?.rate ?? 0)) // => true
  * ```
@@ -201,7 +201,7 @@ export function rateDistortionCurve(
  * @concept rate-distortion
  * @example
  * ```ts
- * import { reverseWaterFilling } from 'mdml-engine/information'
+ * import { reverseWaterFilling } from 'omai-engine/information'
  * reverseWaterFilling([4, 1, 0.25], 1.25).allocation // => [0.5, 0.5, 0.25]
  * ```
  */
@@ -212,7 +212,7 @@ export function reverseWaterFilling(
 ): WaterFillingResult {
   const total = pairwiseSum(variances)
   if (variances.length === 0 || variances.some((s) => !(s > 0)) || !(distortion > 0 && distortion <= total))
-    throw new MdmlError('value', 'reverseWaterFilling: variances must be positive and 0 < D <= sum of variances')
+    throw new OmaiError('value', 'reverseWaterFilling: variances must be positive and 0 < D <= sum of variances')
   const sorted = [...variances].sort((a, b) => a - b)
   let level = sorted[sorted.length - 1] ?? 0
   let below = 0
@@ -241,13 +241,13 @@ export function reverseWaterFilling(
  * @concept rate-distortion
  * @example
  * ```ts
- * import { binaryRateDistortion } from 'mdml-engine/information'
+ * import { binaryRateDistortion } from 'omai-engine/information'
  * binaryRateDistortion(0.5, 0, { base: 2 }) // => 1
  * ```
  */
 export function binaryRateDistortion(p: number, distortion: number, options: { readonly base?: number } = {}): number {
   checkProbability(p, 'binaryRateDistortion')
-  if (!(distortion >= 0)) throw new MdmlError('value', 'binaryRateDistortion: distortion must be non-negative')
+  if (!(distortion >= 0)) throw new OmaiError('value', 'binaryRateDistortion: distortion must be non-negative')
   return distortion >= Math.min(p, 1 - p) ? 0 : (h2(p) - h2(distortion)) / logOfBase(options.base)
 }
 
@@ -261,7 +261,7 @@ export function binaryRateDistortion(p: number, distortion: number, options: { r
  * @concept rate-distortion
  * @example
  * ```ts
- * import { gaussianRateDistortion } from 'mdml-engine/information'
+ * import { gaussianRateDistortion } from 'omai-engine/information'
  * gaussianRateDistortion(4, 1, { base: 2 }) // => 1
  * ```
  */
@@ -271,6 +271,6 @@ export function gaussianRateDistortion(
   options: { readonly base?: number } = {},
 ): number {
   if (!(variance > 0 && distortion > 0))
-    throw new MdmlError('value', 'gaussianRateDistortion: arguments must be positive')
+    throw new OmaiError('value', 'gaussianRateDistortion: arguments must be positive')
   return Math.max(0, 0.5 * Math.log(variance / distortion)) / logOfBase(options.base)
 }

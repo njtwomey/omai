@@ -4,10 +4,10 @@
 
 Ensembles of learners: bagging with out-of-bag bookkeeping, random forests and extra trees, the random trees embedding, AdaBoost (SAMME, SAMME.R and R2) over any base estimator, gradient boosting with its losses, histogram boosting with leaf-wise growth, the cyclic booster behind explainable boosting, and voting and stacking. Each is a stepped algorithm, one member or stage per step, built on the iterative base, so the members' sum builds up on the tape and every stage can be read back.
 
-- estimator `adaBoostClassifier`: AdaBoost (SAMME) over any base estimator. `src/lib/ensembles/adaboost.ts:629` `mdml-engine/ensembles`
-- estimator `baggingClassifier`: Bagging with out-of-bag bookkeeping. `src/lib/ensembles/bagging.ts:312` `mdml-engine/ensembles`
-- estimator `explainableBoostingClassifier`: Cyclic boosting of additive terms (explainable boosting machine). `src/lib/ensembles/cyclic.ts:524` `mdml-engine/ensembles`
-- estimator `gradientBoostingClassifier`: Gradient boosting over trees; regressor twin beside it. `src/lib/ensembles/gradient-boosting.ts:99` `mdml-engine/ensembles`
-- estimator `histGradientBoostingClassifier`: Histogram gradient boosting with leaf-wise growth. `src/lib/ensembles/histogram-boosting.ts:392` `mdml-engine/ensembles`
-- estimator `randomForestClassifier`: Random forest; regressor and extra-trees twins beside it. `src/lib/ensembles/forest.ts:367` `mdml-engine/ensembles`
-- estimator `stackingClassifier`: Stacked generalisation; voting ensembles sit beside it. `src/lib/ensembles/stacking.ts:579` `mdml-engine/ensembles`
+- estimator `adaBoostClassifier`: AdaBoost (SAMME) over any base estimator. `src/lib/ensembles/adaboost.ts:629` `omai-engine/ensembles`
+- estimator `baggingClassifier`: Bagging with out-of-bag bookkeeping. `src/lib/ensembles/bagging.ts:312` `omai-engine/ensembles`
+- estimator `explainableBoostingClassifier`: Cyclic boosting of additive terms (explainable boosting machine). `src/lib/ensembles/cyclic.ts:524` `omai-engine/ensembles`
+- estimator `gradientBoostingClassifier`: Gradient boosting over trees; regressor twin beside it. `src/lib/ensembles/gradient-boosting.ts:99` `omai-engine/ensembles`
+- estimator `histGradientBoostingClassifier`: Histogram gradient boosting with leaf-wise growth. `src/lib/ensembles/histogram-boosting.ts:392` `omai-engine/ensembles`
+- estimator `randomForestClassifier`: Random forest; regressor and extra-trees twins beside it. `src/lib/ensembles/forest.ts:367` `omai-engine/ensembles`
+- estimator `stackingClassifier`: Stacked generalisation; voting ensembles sit beside it. `src/lib/ensembles/stacking.ts:579` `omai-engine/ensembles`

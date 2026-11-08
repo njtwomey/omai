@@ -7,7 +7,7 @@
  * parameters: log likelihood, state posteriors and the Viterbi path.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { initialCentres } from '../../cluster/index.ts'
 import { type Key, uniform } from '../../random/index.ts'
 import { type Algorithm, channels, iterate } from '../../trace/index.ts'
@@ -63,11 +63,11 @@ const vector = (o: HmmObservation): readonly number[] => (typeof o === 'number' 
  *
  * @param params - The parameters.
  * @returns The core model, ready for `hmmChain`, `forwardBackward` and `hmmSample`.
- * @throws MdmlError with code `value` for rows that are not distributions or covariances that are not positive definite.
+ * @throws OmaiError with code `value` for rows that are not distributions or covariances that are not positive definite.
  * @concept hidden-markov-models
  * @example
  * ```ts
- * import { learning } from 'mdml-engine/pgm'
+ * import { learning } from 'omai-engine/pgm'
  * const params = { kind: 'categorical', start: [1, 0], transition: [[0.9, 0.1], [0.2, 0.8]], emission: [[0.7, 0.3], [0.1, 0.9]] }
  * learning.hmmFromParameters(params).states // => ['s0', 's1']
  * ```
@@ -97,11 +97,11 @@ export function hmmFromParameters(params: HmmParameters): HiddenMarkovModel {
  * @param params - The parameters.
  * @param sequence - The observations, a symbol index or a vector per step.
  * @returns The log likelihood, the posteriors `[T][K]` and the Viterbi path.
- * @throws MdmlError with code `value` for a symbol or vector the model cannot emit.
+ * @throws OmaiError with code `value` for a symbol or vector the model cannot emit.
  * @concept hidden-markov-models
  * @example
  * ```ts
- * import { learning } from 'mdml-engine/pgm'
+ * import { learning } from 'omai-engine/pgm'
  * const params = { kind: 'categorical', start: [0.5, 0.5], transition: [[0.9, 0.1], [0.1, 0.9]], emission: [[0.9, 0.1], [0.1, 0.9]] }
  * learning.hmmDecode(params, [0, 0, 1, 1]).path // => [0, 0, 1, 1]
  * ```
@@ -143,12 +143,12 @@ export interface HmmInitOptions {
  * @param options - States, emission family and the shape of the start.
  * @param key - The random key.
  * @returns The parameters.
- * @throws MdmlError with code `value` for fewer than one state, categorical data that are not symbol indices, or no data.
+ * @throws OmaiError with code `value` for fewer than one state, categorical data that are not symbol indices, or no data.
  * @concept hidden-markov-models
  * @example
  * ```ts
- * import { learning } from 'mdml-engine/pgm'
- * import { key } from 'mdml-engine/random'
+ * import { learning } from 'omai-engine/pgm'
+ * import { key } from 'omai-engine/random'
  * const p = learning.initialHmmParameters([[0, 1, 2, 1, 0]], { states: 2, emission: 'categorical' }, key(0))
  * p.transition // => [[0.5, 0.5], [0.5, 0.5]]
  * ```
@@ -160,9 +160,9 @@ export function initialHmmParameters(
 ): HmmParameters {
   const K = options.states
   if (!(Number.isInteger(K) && K >= 1))
-    throw new MdmlError('value', 'initialHmmParameters: states must be a positive integer')
+    throw new OmaiError('value', 'initialHmmParameters: states must be a positive integer')
   const rows = sequences.flat().map(vector)
-  if (rows.length === 0) throw new MdmlError('value', 'initialHmmParameters: no observations')
+  if (rows.length === 0) throw new OmaiError('value', 'initialHmmParameters: no observations')
   const stay = options.stay ?? 1 / K
   const transition = Array.from({ length: K }, (_, i) =>
     Array.from({ length: K }, (_, j) => (K === 1 ? 1 : i === j ? stay : (1 - stay) / (K - 1))),
@@ -173,7 +173,7 @@ export function initialHmmParameters(
     for (const r of rows) {
       const v = r[0] ?? 0
       if (!(Number.isInteger(v) && v >= 0))
-        throw new MdmlError('value', 'initialHmmParameters: symbols must be integers >= 0')
+        throw new OmaiError('value', 'initialHmmParameters: symbols must be integers >= 0')
       largest = Math.max(largest, v)
     }
     const S = options.symbols ?? largest + 1
@@ -215,7 +215,7 @@ export function initialHmmParameters(
  * @concept hidden-markov-models
  * @example
  * ```ts
- * import { learning } from 'mdml-engine/pgm'
+ * import { learning } from 'omai-engine/pgm'
  * const p = { kind: 'categorical', start: [0.5, 0.5], transition: [[0.5, 0.5], [0.5, 0.5]], emission: [[0.5, 0.5], [0.5, 0.5]] } as const
  * learning.emissionMStep(p, [[0, 1]], [[[1, 0], [0, 1]]], {}) // => { emission: [[1, 0], [0, 1]] }
  * ```
@@ -317,8 +317,8 @@ function emStep(
  * @concept hidden-markov-models
  * @example
  * ```ts
- * import { learning } from 'mdml-engine/pgm'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { learning } from 'omai-engine/pgm'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const start = { kind: 'categorical', start: [0.5, 0.5], transition: [[0.6, 0.4], [0.4, 0.6]], emission: [[0.7, 0.3], [0.2, 0.8]] }
  * const alg = learning.baumWelchAlgorithm([[0, 0, 1, 1, 0, 0, 1, 1]], start, { tol: 1e-6 })
  * runAlgorithm(alg, { maxSteps: 30 }).state.params.kind // => 'categorical'
@@ -410,8 +410,8 @@ export interface BaumWelchFitOptions extends BaumWelchOptions, Omit<HmmInitOptio
  * @concept hidden-markov-models
  * @example
  * ```ts
- * import { learning } from 'mdml-engine/pgm'
- * import { key } from 'mdml-engine/random'
+ * import { learning } from 'omai-engine/pgm'
+ * import { key } from 'omai-engine/random'
  * const x = [0, 0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 1, 1]
  * learning.baumWelch([x], { states: 2, emission: 'categorical', key: key(0), maxIter: 50 }).params.kind // => 'categorical'
  * ```

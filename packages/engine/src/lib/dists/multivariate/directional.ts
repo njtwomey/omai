@@ -4,7 +4,7 @@
  * with a simple reparameterised sampler.
  */
 
-import { LOG_2PI, MdmlError, maxOf } from '../../base/index.ts'
+import { LOG_2PI, maxOf, OmaiError } from '../../base/index.ts'
 import { digamma, ive, lgamma, logIv } from '../../numerics/special/index.ts'
 import {
   beta as betaDraw,
@@ -61,8 +61,8 @@ import { batchShapeOf, broadcastBatch, type Distribution, defineDistribution, va
  *   (as in torch), and quantiles are numerical.
  * @example
  * ```ts
- * import { vonMises } from 'mdml-engine/dists'
- * import { item } from 'mdml-engine/tensor'
+ * import { vonMises } from 'omai-engine/dists'
+ * import { item } from 'omai-engine/tensor'
  * item(vonMises(0, 1).cdf(0)) // => 0.5
  * ```
  */
@@ -146,20 +146,20 @@ function uniformDirections(key: Key, shape: readonly number[], m: number): Value
  * @returns The distribution with event shape `[d]`: closed-form mean A_d(kappa) mu, variances, mode and entropy, and
  *   `sample` by Wood's (1994) rejection sampler. It has no reparameterised sampler; use {@link powerSpherical} for
  *   pathwise gradients.
- * @throws MdmlError with code `value` when the mean direction is not a unit vector.
+ * @throws OmaiError with code `value` when the mean direction is not a unit vector.
  * @example
  * ```ts
- * import { vonMisesFisher } from 'mdml-engine/dists'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { vonMisesFisher } from 'omai-engine/dists'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(vonMisesFisher([0, 0, 1], 2).mode()) // => [0, 0, 1]
  * ```
  */
 export function vonMisesFisher(meanDirection: TensorLike, concentration: TensorLike): Distribution {
   const [mu, kappa] = promoteFloat(meanDirection, concentration) as [Value, Value]
   const d = mu.shape[mu.shape.length - 1] ?? 0
-  if (d < 2) throw new MdmlError('shape', 'vonMisesFisher: the mean direction needs at least two coordinates')
+  if (d < 2) throw new OmaiError('shape', 'vonMisesFisher: the mean direction needs at least two coordinates')
   if (toFlat(primalOf(sum(square(mu), -1))).some((v) => Math.abs(v - 1) > 1e-8))
-    throw new MdmlError('value', 'vonMisesFisher: the mean direction must be a unit vector')
+    throw new OmaiError('value', 'vonMisesFisher: the mean direction must be a unit vector')
   validateParams('vonMisesFisher', { concentration: [kappa, 'positive'] })
   const batchShape = batchShapeOf(sum(mu, -1), kappa)
   const order = d / 2 - 1
@@ -211,7 +211,7 @@ function woodDraw(key: Key, kappa: number, d: number): number {
     const u = uniformNoise(foldIn(k, 1), []).data[0] ?? 0.5
     if (kappa * w + m * Math.log(1 - x0 * w) - c >= Math.log(u)) return w
   }
-  throw new MdmlError('convergence', 'vonMisesFisher: the rejection sampler did not accept')
+  throw new OmaiError('convergence', 'vonMisesFisher: the rejection sampler did not accept')
 }
 
 /**
@@ -226,8 +226,8 @@ function woodDraw(key: Key, kappa: number, d: number): number {
  * @reference De Cao, N. and Aziz, W. (2020). The power spherical distribution. arXiv:2006.04437.
  * @example
  * ```ts
- * import { powerSpherical } from 'mdml-engine/dists'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { powerSpherical } from 'omai-engine/dists'
+ * import { toArray } from 'omai-engine/tensor'
  * // E[t] = (alpha - beta) / (alpha + beta) = 2 / 4 with d = 3, kappa = 2.
  * toArray(powerSpherical([0, 0, 1], 2).mean()) // => [0, 0, 0.5]
  * ```
@@ -235,9 +235,9 @@ function woodDraw(key: Key, kappa: number, d: number): number {
 export function powerSpherical(meanDirection: TensorLike, concentration: TensorLike): Distribution {
   const [mu, kappa] = promoteFloat(meanDirection, concentration) as [Value, Value]
   const d = mu.shape[mu.shape.length - 1] ?? 0
-  if (d < 2) throw new MdmlError('shape', 'powerSpherical: the mean direction needs at least two coordinates')
+  if (d < 2) throw new OmaiError('shape', 'powerSpherical: the mean direction needs at least two coordinates')
   if (toFlat(primalOf(sum(square(mu), -1))).some((v) => Math.abs(v - 1) > 1e-8))
-    throw new MdmlError('value', 'powerSpherical: the mean direction must be a unit vector')
+    throw new OmaiError('value', 'powerSpherical: the mean direction must be a unit vector')
   validateParams('powerSpherical', { concentration: [kappa, 'nonNegative'] })
   const batchShape = batchShapeOf(sum(mu, -1), kappa)
   const half = (d - 1) / 2

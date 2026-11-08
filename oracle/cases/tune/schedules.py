@@ -7,8 +7,8 @@ import warnings
 
 import numpy as np
 import sklearn
-from mdml_oracle.fixture import Case, Json, case
-from mdml_oracle.helpers import rng
+from omai_oracle.fixture import Case, Json, case
+from omai_oracle.helpers import rng
 from sklearn.dummy import DummyClassifier, DummyRegressor
 from sklearn.exceptions import ConvergenceWarning
 from sklearn.experimental import enable_halving_search_cv  # pyright: ignore[reportUnusedImport]  # noqa: F401

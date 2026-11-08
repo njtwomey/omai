@@ -1,5 +1,5 @@
-import { dict, int } from 'mdml-engine/space'
-import { type Config, defineMethod, Log, type Method, scalar, stateFromJson, stateToJson } from 'mdml-engine/trace'
+import { dict, int } from 'omai-engine/space'
+import { type Config, defineMethod, Log, type Method, scalar, stateFromJson, stateToJson } from 'omai-engine/trace'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fakeWire, tickingClock } from '../../producer/_fake.ts'
 import { workerProducer } from '../../producer/client.ts'

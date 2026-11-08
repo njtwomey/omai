@@ -5,7 +5,7 @@
  */
 
 import { jvp } from '../../autodiff/index.ts'
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import {
   add,
   asTensor,
@@ -33,7 +33,7 @@ function basis(x: Value, i: number): Value {
 
 function points(x: TensorLike): Value {
   const v = asTensor(x)
-  if (v.shape.length !== 2) throw new MdmlError('shape', 'differential operators take points as [m, d]')
+  if (v.shape.length !== 2) throw new OmaiError('shape', 'differential operators take points as [m, d]')
   return v
 }
 
@@ -47,19 +47,19 @@ function points(x: TensorLike): Value {
  * @param i - The coordinate.
  * @param order - The derivative order (default 1).
  * @returns A function of the points.
- * @throws MdmlError with code `value` for a negative order.
+ * @throws OmaiError with code `value` for a negative order.
  * @concept physics-informed-networks
  * @example
  * ```ts
- * import { partialDerivative } from 'mdml-engine/dynamics/pde'
- * import { mul, sliceAxis, reshape, tensor, toFlat } from 'mdml-engine/tensor'
+ * import { partialDerivative } from 'omai-engine/dynamics/pde'
+ * import { mul, sliceAxis, reshape, tensor, toFlat } from 'omai-engine/tensor'
  * // u = x^2 y at (1, 2) and (3, 1): u_xx = 2 y.
  * const u = (p) => { const x = reshape(sliceAxis(p, 1, 0, 1), [-1]); const y = reshape(sliceAxis(p, 1, 1, 2), [-1]); return mul(mul(x, x), y) }
  * toFlat(partialDerivative(u, 0, 2)(tensor([[1, 2], [3, 1]]))) // => [4, 2]
  * ```
  */
 export function partialDerivative(u: PointField, i: number, order = 1): (x: TensorLike) => Value {
-  if (!Number.isInteger(order) || order < 0) throw new MdmlError('value', 'partialDerivative: order >= 0')
+  if (!Number.isInteger(order) || order < 0) throw new OmaiError('value', 'partialDerivative: order >= 0')
   return (x) => {
     const p = points(x)
     let f: PointField = u
@@ -79,8 +79,8 @@ export function partialDerivative(u: PointField, i: number, order = 1): (x: Tens
  * @concept physics-informed-networks
  * @example
  * ```ts
- * import { gradientOf } from 'mdml-engine/dynamics/pde'
- * import { mul, sum, tensor, toArray } from 'mdml-engine/tensor'
+ * import { gradientOf } from 'omai-engine/dynamics/pde'
+ * import { mul, sum, tensor, toArray } from 'omai-engine/tensor'
  * // u = |x|^2 / 2 per point: the gradient is x.
  * toArray(gradientOf((p) => mul(sum(mul(p, p), 1), 0.5))(tensor([[1, 2]]))) // => [[1, 2]]
  * ```
@@ -104,8 +104,8 @@ export function gradientOf(u: PointField): (x: TensorLike) => Value {
  * @concept physics-informed-networks
  * @example
  * ```ts
- * import { divergenceOf } from 'mdml-engine/dynamics/pde'
- * import { mul, tensor, toFlat } from 'mdml-engine/tensor'
+ * import { divergenceOf } from 'omai-engine/dynamics/pde'
+ * import { mul, tensor, toFlat } from 'omai-engine/tensor'
  * // F = 3 x: divergence 3 d.
  * toFlat(divergenceOf((p) => mul(p, 3))(tensor([[1, 2], [0, 5]]))) // => [6, 6]
  * ```
@@ -131,8 +131,8 @@ export function divergenceOf(F: PointField): (x: TensorLike) => Value {
  * @concept physics-informed-networks
  * @example
  * ```ts
- * import { laplacianOf } from 'mdml-engine/dynamics/pde'
- * import { mul, sum, tensor, toFlat } from 'mdml-engine/tensor'
+ * import { laplacianOf } from 'omai-engine/dynamics/pde'
+ * import { mul, sum, tensor, toFlat } from 'omai-engine/tensor'
  * toFlat(laplacianOf((p) => sum(mul(p, p), 1))(tensor([[1, 2, 3]]))) // => [6]
  * ```
  */
@@ -155,12 +155,12 @@ export function laplacianOf(u: PointField): (x: TensorLike) => Value {
  *
  * @param F - The field `[m, d] -> [m, d]` with d = 2 or 3.
  * @returns A function of the points.
- * @throws MdmlError with code `shape` for other dimensions.
+ * @throws OmaiError with code `shape` for other dimensions.
  * @concept physics-informed-networks
  * @example
  * ```ts
- * import { curlOf } from 'mdml-engine/dynamics/pde'
- * import { neg, sliceAxis, concat, tensor, toFlat } from 'mdml-engine/tensor'
+ * import { curlOf } from 'omai-engine/dynamics/pde'
+ * import { neg, sliceAxis, concat, tensor, toFlat } from 'omai-engine/tensor'
  * // F = (-y, x): curl 2.
  * toFlat(curlOf((p) => concat([neg(sliceAxis(p, 1, 1, 2)), sliceAxis(p, 1, 0, 1)], 1))(tensor([[1, 1]]))) // => [2]
  * ```
@@ -172,7 +172,7 @@ export function curlOf(F: PointField): (x: TensorLike) => Value {
     const J = (j: number, i: number): Value => reshape(sliceAxis(jvp(F, p, basis(p, i)).tangent, 1, j, j + 1), [-1])
     if (d === 2) return sub(J(1, 0), J(0, 1))
     if (d === 3) return stack([sub(J(2, 1), J(1, 2)), sub(J(0, 2), J(2, 0)), sub(J(1, 0), J(0, 1))], 1)
-    throw new MdmlError('shape', 'curlOf: the field must be 2-D or 3-D')
+    throw new OmaiError('shape', 'curlOf: the field must be 2-D or 3-D')
   }
 }
 
@@ -185,8 +185,8 @@ export function curlOf(F: PointField): (x: TensorLike) => Value {
  * @concept physics-informed-networks
  * @example
  * ```ts
- * import { timeDerivativeOf } from 'mdml-engine/dynamics/pde'
- * import { mul, sum, tensor, toFlat } from 'mdml-engine/tensor'
+ * import { timeDerivativeOf } from 'omai-engine/dynamics/pde'
+ * import { mul, sum, tensor, toFlat } from 'omai-engine/tensor'
  * // u = t x: u_t = x.
  * toFlat(timeDerivativeOf((t, x) => mul(t, sum(x, 1)))(tensor([0.5, 2]), tensor([[3], [4]]))) // => [3, 4]
  * ```
@@ -222,8 +222,8 @@ export interface CollocationDerivatives {
  * @concept physics-informed-networks
  * @example
  * ```ts
- * import { pdeResidual } from 'mdml-engine/dynamics/pde'
- * import { mul, sub, sum, tensor, toFlat } from 'mdml-engine/tensor'
+ * import { pdeResidual } from 'omai-engine/dynamics/pde'
+ * import { mul, sub, sum, tensor, toFlat } from 'omai-engine/tensor'
  * // u = x^2 + y^2 solves Delta u = 4.
  * toFlat(pdeResidual((p) => sum(mul(p, p), 1), (d) => sub(d.laplacian, 4), tensor([[1, 2], [0.5, 0.1]]))) // => [0, 0]
  * ```

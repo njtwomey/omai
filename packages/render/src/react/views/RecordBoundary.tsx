@@ -3,7 +3,7 @@
  * from a newer engine) shows a one-line note in its place and the rest of the page keeps drawing.
  */
 
-import type { Exposition } from 'mdml-engine/exposition'
+import type { Exposition } from 'omai-engine/exposition'
 import { Component, type ReactElement, type ReactNode } from 'react'
 
 /** Props of {@link RecordBoundary}. */

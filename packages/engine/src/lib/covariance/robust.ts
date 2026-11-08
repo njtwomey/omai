@@ -6,7 +6,7 @@
  */
 
 import { contaminationThreshold, type OutlierVerbs, outlierExposition, outlierVerbs } from '../anomaly/index.ts'
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { chi2 } from '../dists/index.ts'
 import {
   ExplainedEstimatorClass,
@@ -93,8 +93,8 @@ function oneCStep(m: MatrixView, s: CStepState, h: number): CStepState {
  * @returns The algorithm.
  * @example
  * ```ts
- * import { cStepAlgorithm } from 'mdml-engine/covariance'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { cStepAlgorithm } from 'omai-engine/covariance'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const x = [[0, 0], [1, 0], [0, 1], [1, 1], [10, 10]]
  * runAlgorithm(cStepAlgorithm(x, [0, 1, 2, 4]), { maxSteps: 10 }).state.support // => [0, 1, 2, 3]
  * ```
@@ -205,8 +205,8 @@ function reweightMcd(m: MatrixView, raw: CStepState): FastMcdState {
  * @returns The algorithm.
  * @example
  * ```ts
- * import { fastMcdAlgorithm } from 'mdml-engine/covariance'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { fastMcdAlgorithm } from 'omai-engine/covariance'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const x = [[0, 0], [0.1, 0], [0, 0.1], [0.1, 0.1], [-0.1, 0], [0, -0.1], [10, 10]]
  * runAlgorithm(fastMcdAlgorithm(x, { nTrials: 5 }), { maxSteps: 10 }).state.support[6] // => false
  * ```
@@ -219,7 +219,7 @@ export function fastMcdAlgorithm(x: TensorLike, options: FastMcdOptions = {}): A
       ? Math.ceil(0.5 * (m.n + m.d + 1))
       : Math.floor(options.supportFraction * m.n + 1e-9)
   if (hSize <= m.d || hSize > m.n)
-    throw new MdmlError('value', 'minCovDet: the support must have more rows than features and at most n rows')
+    throw new OmaiError('value', 'minCovDet: the support must have more rows than features and at most n rows')
   const nTrials = Math.max(1, options.nTrials ?? 30)
   return {
     name: 'fast-mcd',
@@ -310,7 +310,7 @@ export type FittedMinCovDet = IterativeFitted<MinCovDetParams, CovarianceVerbs>
  * @index estimator Robust minimum covariance determinant by FastMCD.
  * @example
  * ```ts
- * import { minCovDet } from 'mdml-engine/covariance'
+ * import { minCovDet } from 'omai-engine/covariance'
  * const x = [[0, 0], [0.1, 0], [0, 0.1], [0.1, 0.1], [-0.1, 0], [0, -0.1], [20, 20]]
  * minCovDet({ nTrials: 5 }).fit({ x }).params.support[6] // => false
  * ```
@@ -355,7 +355,7 @@ export function minCovDet(
  *
  * @example
  * ```ts
- * import { MinCovDet } from 'mdml-engine/covariance'
+ * import { MinCovDet } from 'omai-engine/covariance'
  * const x = [[0, 0], [0.1, 0], [0, 0.1], [0.1, 0.1], [-0.1, 0], [0, -0.1], [20, 20]]
  * new MinCovDet({ nTrials: 5 }).fit(x).model.params.support[6] // => false
  * ```
@@ -423,8 +423,8 @@ function envelopeVerbs(p: EllipticEnvelopeParams): EllipticEnvelopeVerbs {
  * @returns The iterative outlier detector.
  * @example
  * ```ts
- * import { ellipticEnvelope } from 'mdml-engine/covariance'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { ellipticEnvelope } from 'omai-engine/covariance'
+ * import { toFlat } from 'omai-engine/tensor'
  * const x = [[0, 0], [0.1, 0], [0, 0.1], [0.1, 0.1], [-0.1, 0], [0, -0.1], [20, 20]]
  * toFlat(ellipticEnvelope({ contamination: 0.15, nTrials: 5 }).fit({ x }).predict([[0, 0], [20, 20]])) // => [1, -1]
  * ```
@@ -541,8 +541,8 @@ export function ellipticEnvelope(
  *
  * @example
  * ```ts
- * import { EllipticEnvelope } from 'mdml-engine/covariance'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { EllipticEnvelope } from 'omai-engine/covariance'
+ * import { toFlat } from 'omai-engine/tensor'
  * const x = [[0, 0], [0.1, 0], [0, 0.1], [0.1, 0.1], [-0.1, 0], [0, -0.1], [20, 20]]
  * toFlat(new EllipticEnvelope({ contamination: 0.15, nTrials: 5 }).fit(x).predict([[0, 0], [20, 20]])) // => [1, -1]
  * ```

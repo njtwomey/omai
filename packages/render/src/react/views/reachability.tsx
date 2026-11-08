@@ -2,7 +2,7 @@
  * The React view of a reachability plot: bars in cluster order coloured by cluster, with the cut as a line.
  */
 
-import type { Reachability } from 'mdml-engine/exposition'
+import type { Reachability } from 'omai-engine/exposition'
 import { type ReactElement, useCallback } from 'react'
 import type { Figure } from '../../figure/figure.ts'
 import { reachabilityPlot } from '../../views/reachability.ts'

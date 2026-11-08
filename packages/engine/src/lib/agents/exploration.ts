@@ -6,7 +6,7 @@
  * beside the inner agent's.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import { crossEntropy, mse } from '../losses/index.ts'
 import { mlp } from '../nn/index.ts'
 import type { LearningRateSchedule, ParamTree } from '../optim/index.ts'
@@ -95,8 +95,8 @@ export interface IntrinsicState<G, B> {
  * @concept exploration
  * @example
  * ```ts
- * import { countBonusModule, dqn, intrinsicReward } from 'mdml-engine/agents'
- * import { riverSwim } from 'mdml-engine/environments'
+ * import { countBonusModule, dqn, intrinsicReward } from 'omai-engine/agents'
+ * import { riverSwim } from 'omai-engine/environments'
  * const env = riverSwim.create()
  * intrinsicReward(dqn(env), countBonusModule(env), { scale: 0.1 }).name // => 'dqn+count'
  * ```
@@ -203,9 +203,9 @@ export interface CountBonusOptions {
  * @concept exploration
  * @example
  * ```ts
- * import { countBonusModule } from 'mdml-engine/agents'
- * import { riverSwim } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { countBonusModule } from 'omai-engine/agents'
+ * import { riverSwim } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * const m = countBonusModule(riverSwim.create(), { beta: 0.5 })
  * const t = { observation: 0, action: 1, reward: 0, nextObservation: 1, terminated: false, truncated: false }
  * let s = m.init(key(0))
@@ -293,8 +293,8 @@ export interface RndState {
  * @concept exploration
  * @example
  * ```ts
- * import { rndModule } from 'mdml-engine/agents'
- * import { riverSwim } from 'mdml-engine/environments'
+ * import { rndModule } from 'omai-engine/agents'
+ * import { riverSwim } from 'omai-engine/environments'
  * rndModule(riverSwim.create(), { features: 8 }).name // => 'rnd'
  * ```
  */
@@ -402,8 +402,8 @@ export interface IcmState {
  * @concept exploration
  * @example
  * ```ts
- * import { icmModule } from 'mdml-engine/agents'
- * import { riverSwim } from 'mdml-engine/environments'
+ * import { icmModule } from 'omai-engine/agents'
+ * import { riverSwim } from 'omai-engine/environments'
  * icmModule(riverSwim.create()).config['beta'] // => 0.2
  * ```
  */
@@ -412,7 +412,7 @@ export function icmModule<O, A>(env: Spaces, options: IcmOptions = {}): BonusMod
   const act = spaceFeatures(env.actionSpace)
   const discreteActions = env.actionSpace.kind === 'discrete'
   if (!(discreteActions || env.actionSpace.kind === 'box'))
-    throw new MdmlError('value', 'icmModule: needs discrete or box actions')
+    throw new OmaiError('value', 'icmModule: needs discrete or box actions')
   const hidden = options.hidden ?? [64]
   const k = options.features ?? 32
   const key = options.key ?? makeKey(0)

@@ -7,7 +7,7 @@
  * @index function Scaled dot-product attention with masks, causal and sliding-window forms.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import type { Key } from '../../random/index.ts'
 import {
   add,
@@ -53,8 +53,8 @@ const fl = (x: TensorLike): Value => promoteFloat(x)[0] as Value
  * @returns Weights that sum to one over each row's allowed positions.
  * @example
  * ```ts
- * import { maskedSoftmax } from 'mdml-engine/nn'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { maskedSoftmax } from 'omai-engine/nn'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * toArray(maskedSoftmax([[0, 0, 5]], tensor([[true, true, false]], { dtype: 'bool' }))) // => [[0.5, 0.5, 0]]
  * ```
  */
@@ -79,8 +79,8 @@ export function maskedSoftmax(logits: TensorLike, mask: TensorLike): Value {
  * @returns A boolean mask, true where attention is allowed.
  * @example
  * ```ts
- * import { causalMask } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { causalMask } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(causalMask(3, 3, 2)) // => [[1, 0, 0], [1, 1, 0], [0, 1, 1]]
  * ```
  */
@@ -103,8 +103,8 @@ export function causalMask(length: number, sourceLength: number = length, window
  * @returns A boolean mask.
  * @example
  * ```ts
- * import { localMask } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { localMask } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(localMask(3, 3, 1)) // => [[1, 1, 0], [1, 1, 1], [0, 1, 1]]
  * ```
  */
@@ -164,8 +164,8 @@ const repeatKv = (x: Value, groups: number): Value => (groups === 1 ? x : repeat
  * @reference Vaswani et al. (2017), Attention is all you need.
  * @example
  * ```ts
- * import { attention } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { attention } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(attention([[1, 0]], [[1, 0], [0, 1]], [[1, 2], [3, 4]], { causal: true }).output) // => [[1, 2]]
  * ```
  */
@@ -181,7 +181,7 @@ export function attention(
   if (options.enableGqa === true) {
     const hq = q.shape[q.shape.length - 3] ?? 1
     const hk = k.shape[k.shape.length - 3] ?? 1
-    if (hq % hk !== 0) throw new MdmlError('shape', `attention: ${hq} query heads do not divide into ${hk} groups`)
+    if (hq % hk !== 0) throw new OmaiError('shape', `attention: ${hq} query heads do not divide into ${hk} groups`)
     k = repeatKv(k, hq / hk)
     v = repeatKv(v, hq / hk)
   }
@@ -226,7 +226,7 @@ const softmaxLast = (z: Value): Value => {
  * @concept attention
  * @example
  * ```ts
- * import { scaledDotProductAttention } from 'mdml-engine/nn'
+ * import { scaledDotProductAttention } from 'omai-engine/nn'
  * scaledDotProductAttention([[[1, 0], [0, 1]]], [[[1, 0], [0, 1]]], [[[1], [2]]]).shape // => [1, 2, 1]
  * ```
  */
@@ -247,15 +247,15 @@ export function scaledDotProductAttention(
  * @returns `[B, H, L, D]`.
  * @example
  * ```ts
- * import { splitHeads } from 'mdml-engine/nn'
- * import { zeros } from 'mdml-engine/tensor'
+ * import { splitHeads } from 'omai-engine/nn'
+ * import { zeros } from 'omai-engine/tensor'
  * splitHeads(zeros([2, 5, 12]), 3).shape // => [2, 3, 5, 4]
  * ```
  */
 export function splitHeads(x: TensorLike, numHeads: number): Value {
   const v = fl(x)
   const [b = 1, l = 1, e = 1] = v.shape
-  if (e % numHeads !== 0) throw new MdmlError('shape', `splitHeads: ${e} does not divide into ${numHeads} heads`)
+  if (e % numHeads !== 0) throw new OmaiError('shape', `splitHeads: ${e} does not divide into ${numHeads} heads`)
   return swapaxes(reshape(v, [b, l, numHeads, e / numHeads]), 1, 2)
 }
 
@@ -266,8 +266,8 @@ export function splitHeads(x: TensorLike, numHeads: number): Value {
  * @returns `[B, L, H D]`.
  * @example
  * ```ts
- * import { mergeHeads } from 'mdml-engine/nn'
- * import { zeros } from 'mdml-engine/tensor'
+ * import { mergeHeads } from 'omai-engine/nn'
+ * import { zeros } from 'omai-engine/tensor'
  * mergeHeads(zeros([2, 3, 5, 4])).shape // => [2, 5, 12]
  * ```
  */
@@ -326,8 +326,8 @@ export interface MultiHeadAttentionOptions {
  * @concept attention
  * @example
  * ```ts
- * import { multiHeadAttention } from 'mdml-engine/nn'
- * import { eye, zeros } from 'mdml-engine/tensor'
+ * import { multiHeadAttention } from 'omai-engine/nn'
+ * import { eye, zeros } from 'omai-engine/tensor'
  * const x = [[[1, 0], [0, 1]]]
  * const p = { inProjWeight: zeros([6, 2]), outProjWeight: eye(2) }
  * multiHeadAttention(x, x, x, p, { numHeads: 2 }).output.shape // => [1, 2, 2]
@@ -346,7 +346,7 @@ export function multiHeadAttention(
   const [b = 1, l = 1] = q0.shape
   const proj = (x: Value, i: number, separate: Value | undefined): Value => {
     if (separate === undefined && params.inProjWeight === undefined)
-      throw new MdmlError('value', 'multiHeadAttention: need inProjWeight or separate projection weights')
+      throw new OmaiError('value', 'multiHeadAttention: need inProjWeight or separate projection weights')
     const w = separate ?? sliceAxis(params.inProjWeight as Value, 0, i * e, (i + 1) * e)
     const y = matmul(x, swapaxes(w, 0, 1))
     return params.inProjBias === undefined ? y : add(y, sliceAxis(params.inProjBias, 0, i * e, (i + 1) * e))
@@ -429,7 +429,7 @@ export interface LinearAttentionOptions {
  * @reference Katharopoulos, Vyas, Pappas and Fleuret (2020), Transformers are RNNs.
  * @example
  * ```ts
- * import { linearAttention } from 'mdml-engine/nn'
+ * import { linearAttention } from 'omai-engine/nn'
  * linearAttention([[1, 0], [0, 1]], [[1, 0], [0, 1]], [[1], [2]], { causal: true }).shape // => [2, 1]
  * ```
  */

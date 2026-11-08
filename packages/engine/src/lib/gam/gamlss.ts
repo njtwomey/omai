@@ -12,7 +12,7 @@
  * (randomised for discrete responses) and their worm-plot data check the fitted distribution.
  */
 
-import { MdmlError, maxOf } from '../base/index.ts'
+import { maxOf, OmaiError } from '../base/index.ts'
 import { dgemv } from '../numerics/linalg/index.ts'
 import { ndtri } from '../numerics/special/index.ts'
 import { nelderMead } from '../optim/index.ts'
@@ -171,15 +171,15 @@ function chooseRho(evaluate: (rho: readonly number[]) => number, start: readonly
  * @param hyper - The mode, the criterion (`reml` or `fixed`), starting or fixed smoothing parameters, tolerance, cap.
  * @param key - The run's key.
  * @returns The algorithm.
- * @throws MdmlError `value` for method `fixed` without `sp`.
+ * @throws OmaiError `value` for method `fixed` without `sp`.
  * @concept distributional-regression
  * @reference R. A. Rigby and D. M. Stasinopoulos, Generalized additive models for location, scale and shape (JRSS C 54,
  *   2005).
  * @example
  * ```ts
- * import { GAMLSS_DEFAULTS, extendedModel, gamlssAlgorithm, s } from 'mdml-engine/gam'
- * import { families } from 'mdml-engine/dists'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { GAMLSS_DEFAULTS, extendedModel, gamlssAlgorithm, s } from 'omai-engine/gam'
+ * import { families } from 'omai-engine/dists'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const x = Array.from({ length: 60 }, (_, i) => [i / 59])
  * const y = x.map((r, i) => Math.sin(4 * (r[0] ?? 0)) + (0.2 + 0.3 * (r[0] ?? 0)) * Math.sin(i * 12.9898))
  * const model = extendedModel(x, y, families.gamlssExtended('normal'), [[s(0, { k: 6 })], [s(0, { k: 4 })]])
@@ -330,8 +330,8 @@ export interface GamlssFit extends ExtendedFitResult {
  * @concept distributional-regression
  * @example
  * ```ts
- * import { GAMLSS_DEFAULTS, extendedModel, fitGamlss, s } from 'mdml-engine/gam'
- * import { families } from 'mdml-engine/dists'
+ * import { GAMLSS_DEFAULTS, extendedModel, fitGamlss, s } from 'omai-engine/gam'
+ * import { families } from 'omai-engine/dists'
  * const x = Array.from({ length: 60 }, (_, i) => [i / 59])
  * const y = x.map((r, i) => Math.sin(4 * (r[0] ?? 0)) + (0.2 + 0.3 * (r[0] ?? 0)) * Math.sin(i * 12.9898))
  * const model = extendedModel(x, y, families.gamlssExtended('normal'), [[s(0, { k: 6 })], [s(0, { k: 4 })]])
@@ -397,13 +397,13 @@ export function fitGamlss(
  * @param y - The response `[n]`.
  * @param key - The key for the randomisation.
  * @returns The residuals `[n]`.
- * @throws MdmlError `value` if the family has no distribution.
+ * @throws OmaiError `value` if the family has no distribution.
  * @concept distributional-regression
  * @example
  * ```ts
- * import { GAMLSS_DEFAULTS, extendedModel, fitGamlss, quantileResiduals, s } from 'mdml-engine/gam'
- * import { families } from 'mdml-engine/dists'
- * import { key } from 'mdml-engine/random'
+ * import { GAMLSS_DEFAULTS, extendedModel, fitGamlss, quantileResiduals, s } from 'omai-engine/gam'
+ * import { families } from 'omai-engine/dists'
+ * import { key } from 'omai-engine/random'
  * const x = Array.from({ length: 60 }, (_, i) => [i / 59])
  * const y = x.map((r, i) => Math.sin(4 * (r[0] ?? 0)) + 0.3 * Math.sin(i * 12.9898))
  * const model = extendedModel(x, y, families.gamlssExtended('normal'), [[s(0, { k: 6 })], []])
@@ -419,7 +419,7 @@ export function quantileResiduals(
 ): Float64Array {
   const family = model.family
   if (family?.distribution === undefined)
-    throw new MdmlError('value', 'quantileResiduals: the family has no distribution')
+    throw new OmaiError('value', 'quantileResiduals: the family has no distribution')
   const n = y.length
   const dist = family.distribution(fit.eta, fit.state.aux)
   const yv = fromStorage(Float64Array.from(y), [n], 'float64')
@@ -463,7 +463,7 @@ export interface WormPlot {
  * @concept distributional-regression
  * @example
  * ```ts
- * import { wormPlot } from 'mdml-engine/gam'
+ * import { wormPlot } from 'omai-engine/gam'
  * wormPlot([0.5, -1, 0.2, 1.1, -0.3]).quantile.length // => 5
  * ```
  */

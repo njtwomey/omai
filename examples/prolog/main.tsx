@@ -4,10 +4,10 @@
  * search tree: the answers are the green leaves, and the branches that end in a failure are the places where the
  * search backtracked.
  */
-import { consult, type SolveResult, sldTree, solve } from 'mdml-engine/logic'
-import type { Structure } from 'mdml-engine/scene'
-import { policies, type Run, recorder } from 'mdml-engine/trace'
-import { diagram } from 'mdml-render/structures'
+import { consult, type SolveResult, sldTree, solve } from 'omai-engine/logic'
+import type { Structure } from 'omai-engine/scene'
+import { policies, type Run, recorder } from 'omai-engine/trace'
+import { diagram } from 'omai-render/structures'
 import { INK } from '../_shared/colours.ts'
 import type { ExampleModule, Outcome } from '../_shared/contract.ts'
 import { Figure, Panel } from '../_shared/figure.tsx'

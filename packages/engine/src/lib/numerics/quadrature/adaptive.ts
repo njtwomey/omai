@@ -6,7 +6,7 @@
  * one step bisects the interval with the largest error.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import {
   add,
   div,
@@ -157,19 +157,19 @@ export interface QuadAlgorithm extends Algorithm<QuadState, QuadPath> {
  * @param b - Upper limit (may be Infinity), greater than `a`.
  * @param options - Tolerances (default 1.49e-8), subinterval limit and breakpoints.
  * @returns The algorithm, with `value(state)` for the integral.
- * @throws MdmlError with code `value` unless a < b.
+ * @throws OmaiError with code `value` unless a < b.
  * @concept quadrature
  * @example
  * ```ts
- * import { quadAlgorithm } from 'mdml-engine/numerics/quadrature'
- * import { runAlgorithm } from 'mdml-engine/trace'
- * import { sqrt } from 'mdml-engine/tensor'
+ * import { quadAlgorithm } from 'omai-engine/numerics/quadrature'
+ * import { runAlgorithm } from 'omai-engine/trace'
+ * import { sqrt } from 'omai-engine/tensor'
  * const s = runAlgorithm(quadAlgorithm((x) => sqrt(x), 0, 1), { maxSteps: 50 }).state
  * [s.intervals.length, s.converged] // => [11, true]
  * ```
  */
 export function quadAlgorithm(f: (x: Value) => Value, a: number, b: number, options: QuadOptions = {}): QuadAlgorithm {
-  if (!(a < b)) throw new MdmlError('value', 'quadAlgorithm: the lower limit must be below the upper limit')
+  if (!(a < b)) throw new OmaiError('value', 'quadAlgorithm: the lower limit must be below the upper limit')
   const { g, lo, hi } = transform(f, a, b)
   const epsabs = options.epsabs ?? 1.49e-8
   const epsrel = options.epsrel ?? 1.49e-8
@@ -269,8 +269,8 @@ export function quadAlgorithm(f: (x: Value) => Value, a: number, b: number, opti
  * @index function Adaptive Gauss-Kronrod integration, like scipy.integrate.quad.
  * @example
  * ```ts
- * import { quad } from 'mdml-engine/numerics/quadrature'
- * import { exp, item, neg, square } from 'mdml-engine/tensor'
+ * import { quad } from 'omai-engine/numerics/quadrature'
+ * import { exp, item, neg, square } from 'omai-engine/tensor'
  * Math.abs(item(quad((x) => exp(neg(square(x))), -Infinity, Infinity).value) - Math.sqrt(Math.PI)) < 1e-10 // => true
  * ```
  */
@@ -316,12 +316,12 @@ const SIMPSON_EVALUATION_CAP = 1_000_000
  * @param options - Tolerance (default 1e-10) and maximum depth (default 50).
  * @returns The estimate and the number of evaluations; `converged` is false (status `completed`) when some panel was
  *   accepted at the depth limit or the evaluation cap without meeting the tolerance.
- * @throws MdmlError with code `value` when a limit is not finite or the integrand is not finite at a point it is
+ * @throws OmaiError with code `value` when a limit is not finite or the integrand is not finite at a point it is
  * evaluated at (a NaN or an infinity anywhere would otherwise refine every panel down to the depth limit).
  * @example
  * ```ts
- * import { adaptiveSimpson } from 'mdml-engine/numerics/quadrature'
- * import { sin } from 'mdml-engine/tensor'
+ * import { adaptiveSimpson } from 'omai-engine/numerics/quadrature'
+ * import { sin } from 'omai-engine/tensor'
  * Math.abs(adaptiveSimpson((x) => sin(x), 0, Math.PI).value - 2) < 1e-9 // => true
  * ```
  */
@@ -332,13 +332,13 @@ export function adaptiveSimpson(
   options: { readonly tol?: number; readonly maxDepth?: number } = {},
 ): { readonly value: number; readonly evaluations: number; readonly converged: boolean; readonly status: RunStatus } {
   if (!Number.isFinite(a) || !Number.isFinite(b))
-    throw new MdmlError('value', 'adaptiveSimpson: the limits must be finite')
+    throw new OmaiError('value', 'adaptiveSimpson: the limits must be finite')
   let evaluations = 0
   let resolved = true
   const at = (x: number): number => {
     evaluations += 1
     const fx = toFlat(primalOf(f(promoteFloat([x])[0] as Value)))[0] ?? Number.NaN
-    if (!Number.isFinite(fx)) throw new MdmlError('value', `adaptiveSimpson: the integrand is not finite at ${x}`)
+    if (!Number.isFinite(fx)) throw new OmaiError('value', `adaptiveSimpson: the integrand is not finite at ${x}`)
     return fx
   }
   const simpsonPanel = (l: number, r: number, fl: number, fm: number, fr: number): number =>
@@ -400,8 +400,8 @@ const TANH_SINH_TMAX = 6.5
  *   (1 / sqrt(1 - x^2) on [-1, 1] is 7e-9 short): integrate from the singular end, or substitute, for those.
  * @example
  * ```ts
- * import { tanhSinh } from 'mdml-engine/numerics/quadrature'
- * import { item, log } from 'mdml-engine/tensor'
+ * import { tanhSinh } from 'omai-engine/numerics/quadrature'
+ * import { item, log } from 'omai-engine/tensor'
  * Math.abs(item(tanhSinh((x) => log(x), 0, 1).value) + 1) < 1e-10 // => true
  * ```
  */

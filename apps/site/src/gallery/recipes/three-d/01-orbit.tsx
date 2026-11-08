@@ -1,5 +1,5 @@
-import { axes3d, label3d, point3d, polyline3d, scene3d, surface3d } from 'mdml-engine/scene'
-import { Choice, ControlPanel, FigureFrame, Scene3DView } from 'mdml-render/react'
+import { axes3d, label3d, point3d, polyline3d, scene3d, surface3d } from 'omai-engine/scene'
+import { Choice, ControlPanel, FigureFrame, Scene3DView } from 'omai-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 

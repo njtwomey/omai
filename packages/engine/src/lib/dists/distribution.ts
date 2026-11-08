@@ -7,7 +7,7 @@
  * @index structure The Distribution contract: density, CDF, quantile, moments and sampling.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import type { Key } from '../random/index.ts'
 import {
   abs,
@@ -134,20 +134,20 @@ export interface DistributionSpec {
 }
 
 /**
- * Throw the error for a method a distribution does not provide (a `not-implemented` MdmlError naming it).
+ * Throw the error for a method a distribution does not provide (a `not-implemented` OmaiError naming it).
  *
  * @param name - The distribution's name.
  * @param what - The missing method, with any explanation.
  * @returns Never: it always throws.
- * @throws MdmlError with code `not-implemented`.
+ * @throws OmaiError with code `not-implemented`.
  * @example
  * ```ts
- * import { unavailable } from 'mdml-engine/dists'
+ * import { unavailable } from 'omai-engine/dists'
  * unavailable('example', 'mode') // => throws not-implemented
  * ```
  */
 export function unavailable(name: string, what: string): never {
-  throw new MdmlError('not-implemented', `${name}: ${what} is not available for this distribution`)
+  throw new OmaiError('not-implemented', `${name}: ${what} is not available for this distribution`)
 }
 
 /**
@@ -164,8 +164,8 @@ export function unavailable(name: string, what: string): never {
  * @index distribution Define a new family from its log density, sampler and moments.
  * @example
  * ```ts
- * import { defineDistribution } from 'mdml-engine/dists'
- * import { tensor, neg, item } from 'mdml-engine/tensor'
+ * import { defineDistribution } from 'omai-engine/dists'
+ * import { tensor, neg, item } from 'omai-engine/tensor'
  * const unitExponential = defineDistribution({
  *   name: 'unitExponential', params: {}, support: { kind: 'positive' }, batchShape: [],
  *   logProb: (x) => neg(x), mean: () => tensor(1), variance: () => tensor(1), mode: () => tensor(0),
@@ -244,8 +244,8 @@ export function defineDistribution(spec: DistributionSpec): Distribution {
  * @returns The broadcast shape.
  * @example
  * ```ts
- * import { batchShapeOf } from 'mdml-engine/dists'
- * import { tensor } from 'mdml-engine/tensor'
+ * import { batchShapeOf } from 'omai-engine/dists'
+ * import { tensor } from 'omai-engine/tensor'
  * batchShapeOf(tensor([1, 2, 3]), tensor(0)) // => [3]
  * ```
  */
@@ -261,7 +261,7 @@ export function batchShapeOf(...params: readonly Value[]): number[] {
  * @returns The full shape.
  * @example
  * ```ts
- * import { extendedShape, normal } from 'mdml-engine/dists'
+ * import { extendedShape, normal } from 'omai-engine/dists'
  * extendedShape(normal([0, 1], 1), [5]) // => [5, 2]
  * ```
  */
@@ -278,8 +278,8 @@ export function extendedShape(dist: Distribution, sampleShape: readonly number[]
  * @returns `v` broadcast to `batchShape` (unchanged when it already has it).
  * @example
  * ```ts
- * import { broadcastBatch } from 'mdml-engine/dists'
- * import { tensor } from 'mdml-engine/tensor'
+ * import { broadcastBatch } from 'omai-engine/dists'
+ * import { tensor } from 'omai-engine/tensor'
  * broadcastBatch(tensor(1), [2, 3]).shape // => [2, 3]
  * ```
  */
@@ -296,7 +296,7 @@ export function broadcastBatch(v: Value, batchShape: readonly number[]): Value {
  * @returns The rank.
  * @example
  * ```ts
- * import { supportRank } from 'mdml-engine/dists'
+ * import { supportRank } from 'omai-engine/dists'
  * supportRank({ kind: 'simplex' }) // => 1
  * ```
  */
@@ -331,8 +331,8 @@ const TOL = 1e-6
  * @returns A boolean value.
  * @example
  * ```ts
- * import { inSupport } from 'mdml-engine/dists'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { inSupport } from 'omai-engine/dists'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(inSupport({ kind: 'positive' }, [-1, 0, 2])) // => [0, 0, 1]
  * toArray(inSupport({ kind: 'simplex' }, [[0.2, 0.8], [0.5, 0.6]])) // => [1, 0]
  * ```
@@ -457,11 +457,11 @@ const CHECKS: Readonly<Record<ParameterConstraint, (v: number) => boolean>> = {
  * @param family - The distribution's name, for the message.
  * @param checks - Parameter name to `[value, constraint]`.
  * @returns Nothing; it throws on a violation.
- * @throws MdmlError with code `value` naming the parameter and the constraint.
+ * @throws OmaiError with code `value` naming the parameter and the constraint.
  * @example
  * ```ts
- * import { validateParams } from 'mdml-engine/dists'
- * import { tensor } from 'mdml-engine/tensor'
+ * import { validateParams } from 'omai-engine/dists'
+ * import { tensor } from 'omai-engine/tensor'
  * validateParams('normal', { scale: [tensor(-1), 'positive'] }) // => throws value
  * ```
  */
@@ -475,7 +475,7 @@ export function validateParams(
     const ok = CHECKS[constraint]
     const bad = values.find((x) => !ok(x))
     if (bad !== undefined)
-      throw new MdmlError('value', `${family}: ${name} must be ${constraint} (got ${bad})`, { parameter: name })
+      throw new OmaiError('value', `${family}: ${name} must be ${constraint} (got ${bad})`, { parameter: name })
   }
 }
 
@@ -488,8 +488,8 @@ export function validateParams(
  * @returns The sum.
  * @example
  * ```ts
- * import { sumRightmost } from 'mdml-engine/dists'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { sumRightmost } from 'omai-engine/dists'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(sumRightmost([[1, 2], [3, 4]], 1)) // => [3, 7]
  * ```
  */

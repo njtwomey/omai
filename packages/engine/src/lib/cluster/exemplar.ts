@@ -3,7 +3,7 @@
  * availability messages until a set of exemplars emerges, one damped round of messages per step.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { distanceMatrix } from '../distances/index.ts'
 import { type IterativeEstimator, iterative, matrixView } from '../learn/index.ts'
 import { foldIn, type Key, normal } from '../random/index.ts'
@@ -62,7 +62,7 @@ export interface AffinityPropagationOptions {
  * @returns The similarities `[n, n]`, flat, the same without the noise, and `n`.
  * @example
  * ```ts
- * import { affinitySimilarities } from 'mdml-engine/cluster'
+ * import { affinitySimilarities } from 'omai-engine/cluster'
  * affinitySimilarities([[0], [2]], { preference: -1 }).plain // => [-1, -4, -4, -1]
  * ```
  */
@@ -90,8 +90,8 @@ export function affinitySimilarities(
  * @returns The algorithm.
  * @example
  * ```ts
- * import { affinityPropagationAlgorithm } from 'mdml-engine/cluster'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { affinityPropagationAlgorithm } from 'omai-engine/cluster'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const s = [-1, -1, -50, -1, -1, -50, -50, -50, -1]
  * runAlgorithm(affinityPropagationAlgorithm(s, 3), { maxSteps: 200 }).state.labels.length // => 3
  * ```
@@ -224,7 +224,7 @@ export interface ExemplarVerbs {
  *
  * @example
  * ```ts
- * import { affinityPropagation } from 'mdml-engine/cluster'
+ * import { affinityPropagation } from 'omai-engine/cluster'
  * const x = [[0], [0.1], [0.2], [9], [9.1], [9.2]]
  * affinityPropagation.with({ preference: -10 }).fit({ x }).params.labels // => [0, 0, 0, 1, 1, 1]
  * ```
@@ -275,11 +275,11 @@ export const affinityPropagation: IterativeEstimator<
  * @param options - Damping, preference, window and the noise key.
  * @param maxIter - The most rounds (default 200).
  * @returns The exemplar rows, the labels and the rounds taken.
- * @throws MdmlError `convergence` when no exemplars emerged.
+ * @throws OmaiError `convergence` when no exemplars emerged.
  * @example
  * ```ts
- * import { affinityPropagationFit } from 'mdml-engine/cluster'
- * import { key } from 'mdml-engine/random'
+ * import { affinityPropagationFit } from 'omai-engine/cluster'
+ * import { key } from 'omai-engine/random'
  * affinityPropagationFit([[0], [0.1], [9], [9.1]], { preference: -10, noiseKey: key(0) }).exemplars // => [0, 3]
  * ```
  */
@@ -291,6 +291,6 @@ export function affinityPropagationFit(
   const { n, s } = affinitySimilarities(x, options)
   const out = runAlgorithm(affinityPropagationAlgorithm(s, n, options), { maxSteps: maxIter })
   const { exemplars, labels } = affinityExemplars(out.state, s, n)
-  if (exemplars.length === 0) throw new MdmlError('convergence', 'affinityPropagationFit: no exemplars emerged')
+  if (exemplars.length === 0) throw new OmaiError('convergence', 'affinityPropagationFit: no exemplars emerged')
   return { exemplars, labels, nIter: out.steps }
 }

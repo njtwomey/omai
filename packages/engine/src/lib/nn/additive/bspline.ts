@@ -9,7 +9,7 @@
  */
 
 import { customVjp } from '../../autodiff/index.ts'
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import {
   add,
   asTensor,
@@ -69,16 +69,16 @@ const column = (x: TensorLike, batched: boolean): Value => {
   if (!batched) {
     if (v.shape.length === 1) return reshape(v, [v.shape[0] ?? 0, 1])
     if (v.shape.length === 2 && v.shape[1] === 1) return v
-    throw new MdmlError('shape', `bspline: expected points [n] or [n, 1], got [${v.shape.join(', ')}]`)
+    throw new OmaiError('shape', `bspline: expected points [n] or [n, 1], got [${v.shape.join(', ')}]`)
   }
-  if (v.shape.length !== 2) throw new MdmlError('shape', `bspline: expected points [n, f], got [${v.shape.join(', ')}]`)
+  if (v.shape.length !== 2) throw new OmaiError('shape', `bspline: expected points [n, f], got [${v.shape.join(', ')}]`)
   return reshape(v, [v.shape[0] ?? 0, v.shape[1] ?? 0, 1])
 }
 
 const checkKnots = (who: string, t: Value, degree: number): number => {
-  if (!(Number.isInteger(degree) && degree >= 0)) throw new MdmlError('value', `${who}: degree must be an integer >= 0`)
+  if (!(Number.isInteger(degree) && degree >= 0)) throw new OmaiError('value', `${who}: degree must be an integer >= 0`)
   if (t.shape.length < 1 || t.shape.length > 2 || (t.shape[lastAxis(t)] ?? 0) < degree + 2)
-    throw new MdmlError('shape', `${who}: need a knot vector [m] or [f, m] with m >= degree + 2`)
+    throw new OmaiError('shape', `${who}: need a knot vector [m] or [f, m] with m >= degree + 2`)
   return t.shape[lastAxis(t)] ?? 0
 }
 
@@ -114,12 +114,12 @@ function indicator(x: Value, t: Value, m: number): Value {
  * @param degree - The degree (3 is cubic).
  * @param options - How to continue outside the knot range.
  * @returns The basis `[n, m - degree - 1]` (or `[n, f, m - degree - 1]`).
- * @throws MdmlError `shape` for a knot vector that is too short or points of the wrong shape; `value` for a bad degree.
+ * @throws OmaiError `shape` for a knot vector that is too short or points of the wrong shape; `value` for a bad degree.
  * @concept splines
  * @example
  * ```ts
- * import { bsplineBasis } from 'mdml-engine/nn'
- * import { sum, toFlat } from 'mdml-engine/tensor'
+ * import { bsplineBasis } from 'omai-engine/nn'
+ * import { sum, toFlat } from 'omai-engine/tensor'
  * const basis = bsplineBasis([0.3], [0, 0, 0, 0, 0.5, 1, 1, 1, 1], 3)
  * basis.shape // => [1, 5]
  * Math.abs(toFlat(sum(basis))[0] - 1) < 1e-12 // => true
@@ -142,7 +142,7 @@ export function bsplineBasis(x: TensorLike, knots: TensorLike, degree: number, o
  * @concept splines
  * @example
  * ```ts
- * import { bsplineBasisByOps } from 'mdml-engine/nn'
+ * import { bsplineBasisByOps } from 'omai-engine/nn'
  * bsplineBasisByOps([0.3], [0, 0, 0, 0, 0.5, 1, 1, 1, 1], 3).shape // => [1, 5]
  * ```
  */
@@ -356,8 +356,8 @@ function rawDerivative(x: Value, t: Value, m: number, degree: number, order: num
  * @concept splines
  * @example
  * ```ts
- * import { bsplineBasisDerivative } from 'mdml-engine/nn'
- * import { sum, toFlat } from 'mdml-engine/tensor'
+ * import { bsplineBasisDerivative } from 'omai-engine/nn'
+ * import { sum, toFlat } from 'omai-engine/tensor'
  * // The basis sums to one, so its derivatives sum to zero.
  * const d = bsplineBasisDerivative([0.3], [0, 0, 0, 0, 0.5, 1, 1, 1, 1], 3, 1)
  * Math.abs(toFlat(sum(d))[0]) < 1e-12 // => true
@@ -373,7 +373,7 @@ export function bsplineBasisDerivative(
   const t = asTensor(knots)
   const m = checkKnots('bsplineBasisDerivative', t, degree)
   if (!(Number.isInteger(order) && order >= 0))
-    throw new MdmlError('value', 'bsplineBasisDerivative: order must be an integer >= 0')
+    throw new OmaiError('value', 'bsplineBasisDerivative: order must be an integer >= 0')
   if (order === 0) return bsplineBasis(x, knots, degree, options)
   const xs = column(x, t.shape.length === 2)
   const xc = clipToRange(xs, t, m, degree, options.boundary)
@@ -400,8 +400,8 @@ const bounds = (v: number | ArrayLike<number>): Value =>
  * @concept splines
  * @example
  * ```ts
- * import { extendKnots } from 'mdml-engine/nn'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { extendKnots } from 'omai-engine/nn'
+ * import { toFlat } from 'omai-engine/tensor'
  * toFlat(extendKnots([0.5], 0, 1, 2)) // => [0, 0, 0, 0.5, 1, 1, 1]
  * ```
  */
@@ -446,8 +446,8 @@ export function extendKnots(
  * @concept splines
  * @example
  * ```ts
- * import { grevilleAbscissae } from 'mdml-engine/nn'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { grevilleAbscissae } from 'omai-engine/nn'
+ * import { toFlat } from 'omai-engine/tensor'
  * toFlat(grevilleAbscissae([0, 0, 0, 1, 1, 1], 2)) // => [0, 0.5, 1]
  * ```
  */
@@ -475,8 +475,8 @@ export function grevilleAbscissae(knots: TensorLike, degree: number): Value {
  * @concept splines
  * @example
  * ```ts
- * import { knotsFromLogits } from 'mdml-engine/nn'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { knotsFromLogits } from 'omai-engine/nn'
+ * import { toFlat } from 'omai-engine/tensor'
  * toFlat(knotsFromLogits([0, 0, 0], 0, 3, 0)) // => [1, 2]
  * ```
  */
@@ -490,9 +490,9 @@ export function knotsFromLogits(
   const ax = lastAxis(g)
   const parts = g.shape[ax] ?? 0
   if (g.shape.length < 1 || g.shape.length > 2 || parts < 2)
-    throw new MdmlError('shape', 'knotsFromLogits: need logits [k + 1] or [f, k + 1], k >= 1')
+    throw new OmaiError('shape', 'knotsFromLogits: need logits [k + 1] or [f, k + 1], k >= 1')
   if (!(minGap >= 0 && minGap * parts <= 1))
-    throw new MdmlError('value', 'knotsFromLogits: minGap must lie in [0, 1 / (k + 1)]')
+    throw new OmaiError('value', 'knotsFromLogits: minGap must lie in [0, 1 / (k + 1)]')
   const gaps = add(mul(softmax(g, ax), 1 - minGap * parts), minGap)
   const inner = sliceAxis(cumsum(gaps, ax), ax, 0, parts - 1)
   const low = bounds(lo)
@@ -508,12 +508,12 @@ export function knotsFromLogits(
  * @param hi - The upper boundary.
  * @param minGap - The same floor as {@link knotsFromLogits}.
  * @returns The logits `[k + 1]` (centred to mean zero).
- * @throws MdmlError `value` when the knots are not strictly increasing inside the boundaries.
+ * @throws OmaiError `value` when the knots are not strictly increasing inside the boundaries.
  * @concept splines
  * @example
  * ```ts
- * import { knotLogits, knotsFromLogits } from 'mdml-engine/nn'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { knotLogits, knotsFromLogits } from 'omai-engine/nn'
+ * import { toFlat } from 'omai-engine/tensor'
  * toFlat(knotsFromLogits(knotLogits([0.2, 0.5], 0, 1), 0, 1)).map((v) => Math.round(v * 1e9) / 1e9) // => [0.2, 0.5]
  * ```
  */
@@ -523,7 +523,7 @@ export function knotLogits(interior: TensorLike, lo: number, hi: number, minGap 
   const parts = edges.length - 1
   const share = edges.slice(1).map((e, i) => (e - (edges[i] as number)) / (hi - lo))
   if (share.some((v) => !(v > minGap)))
-    throw new MdmlError(
+    throw new OmaiError(
       'value',
       'knotLogits: interior knots must be strictly increasing inside (lo, hi), further apart than minGap',
     )

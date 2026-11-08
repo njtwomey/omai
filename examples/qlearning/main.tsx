@@ -2,11 +2,11 @@
  * Example "An agent learning": tabular Q-learning on the cliff-walking environment, trained for 300 episodes as
  * a traced run. The learning curve is drawn from the tape.
  */
-import { qLearning } from 'mdml-engine/agents'
-import { cliffWalking } from 'mdml-engine/environments'
-import { make, trainAgent } from 'mdml-engine/rl'
-import { type Run, recorder, tracePolicy } from 'mdml-engine/trace'
-import { episodeChart } from 'mdml-render/trace'
+import { qLearning } from 'omai-engine/agents'
+import { cliffWalking } from 'omai-engine/environments'
+import { make, trainAgent } from 'omai-engine/rl'
+import { type Run, recorder, tracePolicy } from 'omai-engine/trace'
+import { episodeChart } from 'omai-render/trace'
 import type { ExampleModule, Outcome } from '../_shared/contract.ts'
 import { Figure, Panel } from '../_shared/figure.tsx'
 

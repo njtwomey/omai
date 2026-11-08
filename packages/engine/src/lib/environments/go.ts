@@ -4,7 +4,7 @@
  * scores, and a way to set up a position from a text diagram for problems and tests.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { key as makeKey, randomBits } from '../random/index.ts'
 import { choice, dict, int, real } from '../space/index.ts'
 import { boardPlanes, drawBoard, other, type Seat, type TurnState, twoPlayerGame, winLoss } from './_two-player.ts'
@@ -108,7 +108,7 @@ function group(board: readonly number[], size: number, p: number): { stones: num
  * @concept multi-agent
  * @example
  * ```ts
- * import { goArea } from 'mdml-engine/environments'
+ * import { goArea } from 'omai-engine/environments'
  * goArea([1, 0, 0, 0, 1, 0, 0, 0, 2], 3) // => [2, 1]
  * ```
  */
@@ -186,17 +186,17 @@ function placeStone(
  * @param rows - The rows, top first; the board is square.
  * @param toMove - The seat to move (0 black, default; 1 white).
  * @returns The state, with the diagram as its only previous position.
- * @throws MdmlError with code `value` when the diagram is not square.
+ * @throws OmaiError with code `value` when the diagram is not square.
  * @concept multi-agent
  * @example
  * ```ts
- * import { goState } from 'mdml-engine/environments'
+ * import { goState } from 'omai-engine/environments'
  * goState(['X..', '.O.', '...']).board // => [1, 0, 0, 0, 2, 0, 0, 0, 0]
  * ```
  */
 export function goState(rows: readonly string[], toMove: Seat = 0): GoState {
   const size = rows.length
-  if (rows.some((r) => r.length !== size)) throw new MdmlError('value', 'goState: the diagram must be square')
+  if (rows.some((r) => r.length !== size)) throw new OmaiError('value', 'goState: the diagram must be square')
   const board = rows.flatMap((r) => [...r].map((ch) => ('XB'.includes(ch) ? 1 : 'OW'.includes(ch) ? 2 : 0)))
   let hash = 0
   for (const [p, v] of board.entries()) if (v !== 0) hash = toggle(hash, p, v)
@@ -215,9 +215,9 @@ export function goState(rows: readonly string[], toMove: Seat = 0): GoState {
  * @concept multi-agent
  * @example
  * ```ts
- * import { go } from 'mdml-engine/environments'
- * import { playAec } from 'mdml-engine/rl'
- * import { key } from 'mdml-engine/random'
+ * import { go } from 'omai-engine/environments'
+ * import { playAec } from 'omai-engine/rl'
+ * import { key } from 'omai-engine/random'
  * const env = go.create({ size: 5 })
  * const pass = () => 25
  * playAec(env, { player_0: pass, player_1: pass }, key(0)).returns // => { player_0: -1, player_1: 1 }
@@ -236,7 +236,7 @@ export const go: GameDefinition<GoState> = {
   create: (options) => {
     const opts = (options ?? {}) as GoOptions
     const size = opts.size ?? 9
-    if (![5, 7, 9].includes(size)) throw new MdmlError('value', 'go: size must be 5, 7 or 9')
+    if (![5, 7, 9].includes(size)) throw new OmaiError('value', 'go: size must be 5, 7 or 9')
     const komi = opts.komi ?? 7.5
     const rule = opts.ko ?? 'positional'
     const maxMoves = opts.maxMoves ?? 2 * size * size
@@ -274,7 +274,7 @@ export const go: GameDefinition<GoState> = {
           return next.passes >= 2 || moves >= maxMoves ? finish(next) : { state: next, rewards: [0, 0] }
         }
         const placed = placeStone(s, a, rule)
-        if (placed === undefined) throw new MdmlError('value', 'go: illegal move')
+        if (placed === undefined) throw new OmaiError('value', 'go: illegal move')
         const { ko: _ko, ...rest } = s
         const next: GoState = {
           ...rest,

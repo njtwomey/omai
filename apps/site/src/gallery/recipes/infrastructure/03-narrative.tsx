@@ -1,5 +1,5 @@
-import { defaults } from 'mdml-engine/space'
-import type { Config } from 'mdml-engine/trace'
+import { defaults } from 'omai-engine/space'
+import type { Config } from 'omai-engine/trace'
 import {
   ControlPanel,
   type Narrative,
@@ -8,7 +8,7 @@ import {
   SpaceControls,
   useSession,
   useSessionPreferences,
-} from 'mdml-render/react'
+} from 'omai-render/react'
 import { type ReactNode, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 import { ORBIT_STEPS, orbit } from '../../toys/orbit.ts'

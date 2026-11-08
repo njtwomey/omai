@@ -7,7 +7,7 @@
  * @index function SORT tracking, mean shift and pyramidal point tracking over frames.
  */
 
-import { type Json, MdmlError, roundHalfEven } from '../base/index.ts'
+import { type Json, OmaiError, roundHalfEven } from '../base/index.ts'
 import { filtering } from '../dynamics/index.ts'
 import { boxIou } from '../metrics/index.ts'
 import { linearSumAssignment } from '../optim/index.ts'
@@ -100,8 +100,8 @@ const rowsOfValue = (v: Value, r: number, c: number): number[][] => {
  * @concept multi-object-tracking
  * @example
  * ```ts
- * import { sortAlgorithm } from 'mdml-engine/vision'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { sortAlgorithm } from 'omai-engine/vision'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const frames = [0, 1, 2, 3].map((t) => [[10 + 2 * t, 10, 30 + 2 * t, 30]])
  * runAlgorithm(sortAlgorithm(frames), { maxSteps: 4 }).state.output.map((o) => o.id) // => [1]
  * ```
@@ -196,7 +196,7 @@ export function sortAlgorithm(frames: readonly BoxesLike[], options: SortOptions
  * @concept multi-object-tracking
  * @example
  * ```ts
- * import { sortTrack } from 'mdml-engine/vision'
+ * import { sortTrack } from 'omai-engine/vision'
  * const frames = [0, 1, 2].map((t) => [[10 + t, 10, 30 + t, 30], [60, 60 + t, 80, 80 + t]])
  * sortTrack(frames).map((f) => f.map((o) => o.id)) // => [[1, 2], [1, 2], [1, 2]]
  * ```
@@ -295,12 +295,12 @@ export interface MeanShiftState {
  * @param window - The starting window [x, y, width, height].
  * @param options - maxIter (default 100) and eps (default 1).
  * @returns The algorithm.
- * @throws MdmlError with code `value` for a window with non-positive sizes.
+ * @throws OmaiError with code `value` for a window with non-positive sizes.
  * @concept mean-shift
  * @example
  * ```ts
- * import { meanShiftAlgorithm } from 'mdml-engine/vision'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { meanShiftAlgorithm } from 'omai-engine/vision'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const prob = Array.from({ length: 20 }, (_, i) => Array.from({ length: 20 }, (_, j) => (i >= 12 && i < 16 && j >= 10 && j < 14 ? 1 : 0)))
  * runAlgorithm(meanShiftAlgorithm(prob, [6, 8, 6, 6]), { maxSteps: 50 }).state.window // => [8, 10, 6, 6]
  * ```
@@ -311,7 +311,7 @@ export function meanShiftAlgorithm(
   options: MeanShiftOptions = {},
 ): Algorithm<MeanShiftState, TrackPath> {
   const p = greyOf(prob, 'meanShift')
-  if (window[2] <= 0 || window[3] <= 0) throw new MdmlError('value', 'meanShift: the window has non-positive sizes')
+  if (window[2] <= 0 || window[3] <= 0) throw new OmaiError('value', 'meanShift: the window has non-positive sizes')
   const eps = roundHalfEven((options.eps ?? 1) ** 2)
   const niters = Math.max(options.maxIter ?? 100, 1)
   const ww = window[2]
@@ -358,7 +358,7 @@ export function meanShiftAlgorithm(
  * @concept mean-shift
  * @example
  * ```ts
- * import { meanShift } from 'mdml-engine/vision'
+ * import { meanShift } from 'omai-engine/vision'
  * const prob = Array.from({ length: 20 }, (_, i) => Array.from({ length: 20 }, (_, j) => (i >= 12 && i < 16 && j >= 10 && j < 14 ? 1 : 0)))
  * meanShift(prob, [6, 8, 6, 6]).window // => [8, 10, 6, 6]
  * ```
@@ -386,8 +386,8 @@ export function meanShift(
  * @concept mean-shift
  * @example
  * ```ts
- * import { camShiftAlgorithm } from 'mdml-engine/vision'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { camShiftAlgorithm } from 'omai-engine/vision'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const prob = Array.from({ length: 30 }, (_, i) => Array.from({ length: 30 }, (_, j) => (Math.abs(i - 15) < 3 && Math.abs(j - 12) < 7 ? 1 : 0)))
  * runAlgorithm(camShiftAlgorithm(prob, [8, 10, 8, 8]), { maxSteps: 50 }).state.box?.size.map((v) => Math.round(v)) // => [6, 15]
  * ```
@@ -475,7 +475,7 @@ export function camShiftAlgorithm(
  * @concept mean-shift
  * @example
  * ```ts
- * import { camShift } from 'mdml-engine/vision'
+ * import { camShift } from 'omai-engine/vision'
  * const prob = Array.from({ length: 30 }, (_, i) => Array.from({ length: 30 }, (_, j) => (Math.abs(i - 15) < 3 && Math.abs(j - 12) < 7 ? 1 : 0)))
  * camShift(prob, [8, 10, 8, 8]).box.size.map((v) => Math.round(v)) // => [6, 15]
  * ```
@@ -542,7 +542,7 @@ function pyramid(x: TensorLike, levels: number): Level[] {
  * @concept optical-flow
  * @example
  * ```ts
- * import { calcOpticalFlowPyrLK } from 'mdml-engine/vision'
+ * import { calcOpticalFlowPyrLK } from 'omai-engine/vision'
  * const f = (dx: number) => Array.from({ length: 32 }, (_, i) => Array.from({ length: 32 }, (_, j) => Math.sin((j - dx) / 3) * Math.cos(i / 4)))
  * calcOpticalFlowPyrLK(f(0), f(1.5), [[16, 16]]).points[0].map((v) => Math.round(v * 10) / 10) // => [17.5, 16]
  * ```
@@ -653,8 +653,8 @@ export interface KltState {
  * @concept optical-flow
  * @example
  * ```ts
- * import { kltAlgorithm } from 'mdml-engine/vision'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { kltAlgorithm } from 'omai-engine/vision'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const f = (dx: number) => Array.from({ length: 24 }, (_, i) => Array.from({ length: 24 }, (_, j) => Math.sin((j - dx) / 3) * Math.cos(i / 4)))
  * const s = runAlgorithm(kltAlgorithm([f(0), f(0.5), f(1)], [[12, 12]]), { maxSteps: 5 }).state
  * Math.round(s.points[0][0] * 10) / 10 // => 13

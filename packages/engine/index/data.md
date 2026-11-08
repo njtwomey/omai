@@ -4,30 +4,30 @@
 
 Datasets as data: schemas for columns and targets (`xy`, `xyClasses`, `table`), generators that come with their exact truth (the function, the decision boundary, the Bayes rate) and run through `generate`, recipes (`makeFromRecipe`) and modifiers (label noise, missingness, shift), splitting (`trainTestSplit`), batching and loading. The schema and modifier folders are part of this entry point.
 
-- structure `generator.ts` (file): Dataset generator contract: knobs as a Space, key to data with truth. `src/lib/data/generator.ts:1` `mdml-engine/data`
-- structure `recipes.ts` (file): Recipes: a generator, knobs, modifiers and seed as plain data. `src/lib/data/recipes.ts:1` `mdml-engine/data`
-- structure `truth.ts` (file): The known truth of a generated dataset: function, boundary, Bayes rate. `src/lib/data/truth.ts:1` `mdml-engine/data`
+- structure `generator.ts` (file): Dataset generator contract: knobs as a Space, key to data with truth. `src/lib/data/generator.ts:1` `omai-engine/data`
+- structure `recipes.ts` (file): Recipes: a generator, knobs, modifiers and seed as plain data. `src/lib/data/recipes.ts:1` `omai-engine/data`
+- structure `truth.ts` (file): The known truth of a generated dataset: function, boundary, Bayes rate. `src/lib/data/truth.ts:1` `omai-engine/data`
 
-- function `batches`: Minibatches of a dataset, in order or shuffled by a key. `src/lib/data/batching.ts:45` `mdml-engine/data`
-- function `generate`: Run a generator with a key and knob values. `src/lib/data/generator.ts:67` `mdml-engine/data`
-- function `makeFromRecipe`: Remake a dataset exactly from its recipe. `src/lib/data/recipes.ts:133` `mdml-engine/data`
-- function `table`: A data frame of named mixed-type columns. `src/lib/data/tensors.ts:251` `mdml-engine/data`
-- function `trainTestSplit`: Split any dataset kind into train and test rows. `src/lib/data/rows.ts:212` `mdml-engine/data`
-- function `xy`: Build a regression dataset from features and targets. `src/lib/data/tensors.ts:57` `mdml-engine/data`
-- function `xyClasses`: Build a classification dataset from features and class labels. `src/lib/data/tensors.ts:94` `mdml-engine/data`
+- function `batches`: Minibatches of a dataset, in order or shuffled by a key. `src/lib/data/batching.ts:45` `omai-engine/data`
+- function `generate`: Run a generator with a key and knob values. `src/lib/data/generator.ts:67` `omai-engine/data`
+- function `makeFromRecipe`: Remake a dataset exactly from its recipe. `src/lib/data/recipes.ts:133` `omai-engine/data`
+- function `table`: A data frame of named mixed-type columns. `src/lib/data/tensors.ts:251` `omai-engine/data`
+- function `trainTestSplit`: Split any dataset kind into train and test rows. `src/lib/data/rows.ts:212` `omai-engine/data`
+- function `xy`: Build a regression dataset from features and targets. `src/lib/data/tensors.ts:57` `omai-engine/data`
+- function `xyClasses`: Build a classification dataset from features and class labels. `src/lib/data/tensors.ts:94` `omai-engine/data`
 
-- dataset `stream`: A data stream with planted drift, reproducible step by step. `src/lib/data/streams.ts:210` `mdml-engine/data`
+- dataset `stream`: A data stream with planted drift, reproducible step by step. `src/lib/data/streams.ts:210` `omai-engine/data`
 
 ## data/modifiers
 
-Modifiers: keyed changes applied to generated or real data with their knobs as a `Space`, covering feature corruption (missingness, outliers, transforms, correlation), label corruption and class balance, distribution shift (covariate, concept, subpopulation, shortcut), planted leaks and duplicates, and image augmentations (crops, flips, cutout, mixup, cutmix). Part of `mdml-engine/data`.
+Modifiers: keyed changes applied to generated or real data with their knobs as a `Space`, covering feature corruption (missingness, outliers, transforms, correlation), label corruption and class balance, distribution shift (covariate, concept, subpopulation, shortcut), planted leaks and duplicates, and image augmentations (crops, flips, cutout, mixup, cutmix). Part of `omai-engine/data`.
 
-- function `features.ts` (file): Missingness, outlier and feature-noise modifiers. `src/lib/data/modifiers/features.ts:1` `mdml-engine/data`
-- function `labels.ts` (file): Label noise and class-imbalance modifiers. `src/lib/data/modifiers/labels.ts:1` `mdml-engine/data`
-- function `shift.ts` (file): Covariate shift, concept drift and partial labels. `src/lib/data/modifiers/shift.ts:1` `mdml-engine/data`
+- function `features.ts` (file): Missingness, outlier and feature-noise modifiers. `src/lib/data/modifiers/features.ts:1` `omai-engine/data`
+- function `labels.ts` (file): Label noise and class-imbalance modifiers. `src/lib/data/modifiers/labels.ts:1` `omai-engine/data`
+- function `shift.ts` (file): Covariate shift, concept drift and partial labels. `src/lib/data/modifiers/shift.ts:1` `omai-engine/data`
 
 ## data/schema
 
-The dataset schemas: one typed shape per kind of task (tabular, text, graphs, images, ranking, sequences, time series, events, comparisons, trajectories), each with a checking constructor, plus the metadata and provenance every dataset carries. Part of `mdml-engine/data`.
+The dataset schemas: one typed shape per kind of task (tabular, text, graphs, images, ranking, sequences, time series, events, comparisons, trajectories), each with a checking constructor, plus the metadata and provenance every dataset carries. Part of `omai-engine/data`.
 
-- structure `tabular.ts` (file): Dataset schemas for regression, classification and multilabel data. `src/lib/data/schema/tabular.ts:1` `mdml-engine/data`
+- structure `tabular.ts` (file): Dataset schemas for regression, classification and multilabel data. `src/lib/data/schema/tabular.ts:1` `omai-engine/data`

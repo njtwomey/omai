@@ -6,7 +6,7 @@ from typing import cast
 import numpy as np
 import scipy
 import sympy
-from mdml_oracle.fixture import Case, case
+from omai_oracle.fixture import Case, case
 from scipy.integrate import trapezoid
 from scipy.optimize import newton
 

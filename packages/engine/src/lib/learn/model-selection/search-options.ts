@@ -43,8 +43,8 @@ function design(
  * @concept hyperparameter-search
  * @example
  * ```ts
- * import { searchDesigns } from 'mdml-engine/learn/model-selection'
- * import { key } from 'mdml-engine/random'
+ * import { searchDesigns } from 'omai-engine/learn/model-selection'
+ * import { key } from 'omai-engine/random'
  * searchDesigns.make({ kind: 'grid' })({ a: [1, 2], b: [3] }, key(0)) // => [{ a: 1, b: 3 }, { a: 2, b: 3 }]
  * ```
  */

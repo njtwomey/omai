@@ -3,7 +3,7 @@
  * exist, or a session's options cannot cross, the hook computes on the main thread as before.
  */
 
-import { type WorkerLike, workerProducer } from 'mdml-render/producer'
+import { type WorkerLike, workerProducer } from 'omai-render/producer'
 
 /** Sessions computed in a worker made from `toys/worker.ts`. */
 export const toyWorkerProducer = workerProducer({

@@ -4,9 +4,9 @@ parameters and covariance (plain, weighted with relative and absolute sigma, and
 import numpy as np
 import scipy
 import scipy.optimize as so
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray
-from mdml_oracle.optim_problems import LS_T, LS_Y, RESIDUALS, exp_model, ls_summary
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray
+from omai_oracle.optim_problems import LS_T, LS_Y, RESIDUALS, exp_model, ls_summary
 
 REFERENCE: dict[str, str] = {"scipy": scipy.__version__}
 

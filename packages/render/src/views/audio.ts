@@ -4,11 +4,11 @@
  * both at the time of the viewed step, as a scene. `spectrogramOf` and `waveformEnvelope` are the pure parts.
  */
 
-import { maxOf } from 'mdml-engine/base'
-import { type AudioClip, audioDuration, playheadAt, type Spectrogram } from 'mdml-engine/exposition'
-import { rfft } from 'mdml-engine/numerics/fourier'
-import { image, line, type Pixels, polygon, type Scene, scene, text } from 'mdml-engine/scene'
-import { toArray } from 'mdml-engine/tensor'
+import { maxOf } from 'omai-engine/base'
+import { type AudioClip, audioDuration, playheadAt, type Spectrogram } from 'omai-engine/exposition'
+import { rfft } from 'omai-engine/numerics/fourier'
+import { image, line, type Pixels, polygon, type Scene, scene, text } from 'omai-engine/scene'
+import { toArray } from 'omai-engine/tensor'
 import { parseColour, sampleRamp, sequentialRamp } from '../theme/palettes.ts'
 import type { ColourMode } from '../theme/tokens.ts'
 
@@ -21,7 +21,7 @@ import type { ColourMode } from '../theme/tokens.ts'
  * @returns The spectrogram (frequencies 0 to Nyquist, windows centred on their times).
  * @example
  * ```ts
- * import { spectrogramOf } from 'mdml-render/views'
+ * import { spectrogramOf } from 'omai-render/views'
  * const tone = Array.from({ length: 512 }, (_, i) => Math.sin((2 * Math.PI * 1000 * i) / 8000))
  * const s = spectrogramOf(tone, 8000, { window: 64, hop: 32 })
  * s.frequencies[s.magnitude.map((row) => row[3] ?? 0).indexOf(Math.max(...s.magnitude.map((row) => row[3] ?? 0)))] // => 1000
@@ -60,7 +60,7 @@ export function spectrogramOf(
  * @returns One `[min, max]` per column.
  * @example
  * ```ts
- * import { waveformEnvelope } from 'mdml-render/views'
+ * import { waveformEnvelope } from 'omai-render/views'
  * waveformEnvelope([0, 1, -1, 0.5], 2) // => [[0, 1], [-1, 0.5]]
  * ```
  */
@@ -88,7 +88,7 @@ export function waveformEnvelope(samples: readonly number[], columns: number): [
  * @returns The pixels.
  * @example
  * ```ts
- * import { spectrogramPixels } from 'mdml-render/views'
+ * import { spectrogramPixels } from 'omai-render/views'
  * spectrogramPixels({ times: [0, 1], frequencies: [0, 1, 2], magnitude: [[1, 1], [1, 1], [1, 1]] }, 'dark').height // => 3
  * ```
  */
@@ -145,8 +145,8 @@ export function audioLayout(
  * @returns The scene.
  * @example
  * ```ts
- * import { audioClip } from 'mdml-engine/exposition'
- * import { audioScene } from 'mdml-render/views'
+ * import { audioClip } from 'omai-engine/exposition'
+ * import { audioScene } from 'omai-render/views'
  * const clip = audioClip({ sampleRate: 100, samples: Array.from({ length: 200 }, (_, i) => Math.sin(i)) })
  * audioScene(clip, { time: 1 }).title // => 'Waveform and spectrogram of a 2 s clip, playhead at 1 s'
  * ```
@@ -217,8 +217,8 @@ export function audioScene(clip: AudioClip, options: AudioSceneOptions = {}): Sc
  * @returns The scene.
  * @example
  * ```ts
- * import { audioClip } from 'mdml-engine/exposition'
- * import { audioSceneAt } from 'mdml-render/views'
+ * import { audioClip } from 'omai-engine/exposition'
+ * import { audioSceneAt } from 'omai-render/views'
  * const clip = audioClip({ sampleRate: 100, samples: new Array(200).fill(0), frames: [{ step: 0, time: 0 }, { step: 4, time: 2 }] })
  * audioSceneAt(clip, 2).title // => 'Waveform and spectrogram of a 2 s clip, playhead at 1 s'
  * ```

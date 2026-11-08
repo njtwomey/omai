@@ -7,7 +7,7 @@ from typing import Any
 import numpy as np
 import pyagrum as gum
 import pyagrum.influence_diagram as idm
-from mdml_oracle.fixture import Case, case
+from omai_oracle.fixture import Case, case
 
 REFERENCE: dict[str, str] = {"pyagrum": gum.__version__}
 

@@ -5,7 +5,7 @@
  * and Adelson 1983). scikit-image's Gaussian pyramids are `signal/image`'s.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { image } from '../signal/index.ts'
 import { primalOf, type Tensor, type TensorLike } from '../tensor/index.ts'
 import { type Raster, rasterOf, rasterTensor } from './_image.ts'
@@ -23,7 +23,7 @@ const KERNEL = [1 / 16, 4 / 16, 6 / 16, 4 / 16, 1 / 16]
  * @concept image-pyramid
  * @example
  * ```ts
- * import { pyrDown } from 'mdml-engine/vision'
+ * import { pyrDown } from 'omai-engine/vision'
  * pyrDown(Array.from({ length: 5 }, () => new Array(7).fill(1))).shape // => [3, 4]
  * ```
  */
@@ -53,8 +53,8 @@ export function pyrDown(x: TensorLike, options: { readonly border?: CvBorder } =
  * @concept image-pyramid
  * @example
  * ```ts
- * import { pyrUp } from 'mdml-engine/vision'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { pyrUp } from 'omai-engine/vision'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(pyrUp([[1, 1], [1, 1]])).flat().every((v) => v === 1) // => true
  * ```
  */
@@ -62,7 +62,7 @@ export function pyrUp(x: TensorLike, size?: readonly [number, number]): Tensor {
   const r = rasterOf(x, 'pyrUp')
   const [oh, ow] = size ?? [2 * r.h, 2 * r.w]
   if (Math.abs(oh - 2 * r.h) > 1 || Math.abs(ow - 2 * r.w) > 1)
-    throw new MdmlError('value', 'pyrUp: the output size must be within one of twice the input')
+    throw new OmaiError('value', 'pyrUp: the output size must be within one of twice the input')
   // Horizontal pass into rows of 2W values.
   const up = (line: (i: number) => number, n: number, out: Float64Array): void => {
     if (n === 1) {
@@ -115,7 +115,7 @@ export function pyrUp(x: TensorLike, size?: readonly [number, number]): Tensor {
  * @concept image-pyramid
  * @example
  * ```ts
- * import { buildPyramid } from 'mdml-engine/vision'
+ * import { buildPyramid } from 'omai-engine/vision'
  * buildPyramid(Array.from({ length: 8 }, () => new Array(8).fill(0)), 2).map((l) => l.shape[0]) // => [8, 4, 2]
  * ```
  */
@@ -144,7 +144,7 @@ const plus = (a: Raster, b: Raster): Raster => ({
  * @concept image-pyramid
  * @example
  * ```ts
- * import { laplacianPyramid } from 'mdml-engine/vision'
+ * import { laplacianPyramid } from 'omai-engine/vision'
  * laplacianPyramid(Array.from({ length: 8 }, (_, i) => Array.from({ length: 8 }, (_, j) => i + j)), 2).map((l) => l.shape[0]) // => [8, 4, 2]
  * ```
  */
@@ -169,14 +169,14 @@ export function laplacianPyramid(x: TensorLike, levels: number): Tensor[] {
  * @concept image-pyramid
  * @example
  * ```ts
- * import { laplacianPyramid, reconstructLaplacian } from 'mdml-engine/vision'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { laplacianPyramid, reconstructLaplacian } from 'omai-engine/vision'
+ * import { toFlat } from 'omai-engine/tensor'
  * const x = Array.from({ length: 8 }, (_, i) => Array.from({ length: 8 }, (_, j) => (i * j) % 5))
  * toFlat(reconstructLaplacian(laplacianPyramid(x, 2))).map((v) => Math.round(v * 1e9) / 1e9) // => x.flat()
  * ```
  */
 export function reconstructLaplacian(pyramid: readonly TensorLike[]): Tensor {
-  if (pyramid.length === 0) throw new MdmlError('value', 'reconstructLaplacian: the pyramid is empty')
+  if (pyramid.length === 0) throw new OmaiError('value', 'reconstructLaplacian: the pyramid is empty')
   let cur = rasterOf(pyramid[pyramid.length - 1] as TensorLike, 'reconstructLaplacian')
   for (let l = pyramid.length - 2; l >= 0; l--) {
     const band = rasterOf(pyramid[l] as TensorLike, 'reconstructLaplacian')
@@ -199,7 +199,7 @@ export function reconstructLaplacian(pyramid: readonly TensorLike[]): Tensor {
  * @concept image-blending
  * @example
  * ```ts
- * import { pyramidBlend } from 'mdml-engine/vision'
+ * import { pyramidBlend } from 'omai-engine/vision'
  * const a = Array.from({ length: 16 }, () => new Array(16).fill(1))
  * const b = Array.from({ length: 16 }, () => new Array(16).fill(0))
  * const m = Array.from({ length: 16 }, () => Array.from({ length: 16 }, (_, j) => (j < 8 ? 1 : 0)))
@@ -210,7 +210,7 @@ export function pyramidBlend(a: TensorLike, b: TensorLike, mask: TensorLike, lev
   const ra = rasterOf(a, 'pyramidBlend')
   const rb = rasterOf(b, 'pyramidBlend')
   if (ra.h !== rb.h || ra.w !== rb.w || ra.c !== rb.c)
-    throw new MdmlError('shape', 'pyramidBlend: images differ in shape')
+    throw new OmaiError('shape', 'pyramidBlend: images differ in shape')
   const la = laplacianPyramid(a, levels)
   const lb = laplacianPyramid(b, levels)
   const gm = buildPyramid(mask, levels)

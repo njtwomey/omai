@@ -3,7 +3,7 @@
  * radius, or -1 when none is near.
  */
 
-import type { Point2 } from 'mdml-engine/numerics/geometry'
+import type { Point2 } from 'omai-engine/numerics/geometry'
 import type { ReactNode } from 'react'
 import { Backdrop, useOverlay } from './InteractionOverlay.tsx'
 import { nearestPoint } from './selection.ts'

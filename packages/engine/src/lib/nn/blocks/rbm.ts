@@ -5,7 +5,7 @@
  * `Algorithm` that puts the reconstruction error and the free energy on the tape.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { foldIn, type Key, normal, subsample, uniform } from '../../random/index.ts'
 import {
   add,
@@ -51,8 +51,8 @@ const val = (p: Params, name: string): Value => p[name] as Value
  * @returns The probabilities `[B, h]`.
  * @example
  * ```ts
- * import { rbmHiddenProbabilities } from 'mdml-engine/nn/blocks'
- * import { zeros, toArray } from 'mdml-engine/tensor'
+ * import { rbmHiddenProbabilities } from 'omai-engine/nn/blocks'
+ * import { zeros, toArray } from 'omai-engine/tensor'
  * const params = { weight: zeros([2, 1]), vbias: zeros([2]), hbias: zeros([1]) }
  * toArray(rbmHiddenProbabilities(params, [[1, 0]])) // => [[0.5]]
  * ```
@@ -71,8 +71,8 @@ export function rbmHiddenProbabilities(params: Params, v: TensorLike): Value {
  * @returns The means `[B, v]`.
  * @example
  * ```ts
- * import { rbmVisibleMean } from 'mdml-engine/nn/blocks'
- * import { zeros, toArray } from 'mdml-engine/tensor'
+ * import { rbmVisibleMean } from 'omai-engine/nn/blocks'
+ * import { zeros, toArray } from 'omai-engine/tensor'
  * const params = { weight: zeros([2, 1]), vbias: zeros([2]), hbias: zeros([1]) }
  * toArray(rbmVisibleMean(params, [[1]], 'gaussian')) // => [[0, 0]]
  * ```
@@ -92,8 +92,8 @@ export function rbmVisibleMean(params: Params, h: TensorLike, visible: RbmVisibl
  * @returns The free energy per row `[B]`.
  * @example
  * ```ts
- * import { rbmFreeEnergy } from 'mdml-engine/nn/blocks'
- * import { zeros, item } from 'mdml-engine/tensor'
+ * import { rbmFreeEnergy } from 'omai-engine/nn/blocks'
+ * import { zeros, item } from 'omai-engine/tensor'
  * const params = { weight: zeros([2, 1]), vbias: zeros([2]), hbias: zeros([1]) }
  * item(rbmFreeEnergy(params, [[1, 0]])) // => -0.6931471805599453
  * ```
@@ -115,9 +115,9 @@ export function rbmFreeEnergy(params: Params, v: TensorLike, visible: RbmVisible
  * @returns Zeros and ones of the same shape.
  * @example
  * ```ts
- * import { sampleBinary } from 'mdml-engine/nn/blocks'
- * import { key } from 'mdml-engine/random'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { sampleBinary } from 'omai-engine/nn/blocks'
+ * import { key } from 'omai-engine/random'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(sampleBinary(key(0), [[1, 0]])) // => [[1, 0]]
  * ```
  */
@@ -148,9 +148,9 @@ export interface GibbsResult {
  * @returns The last visible sample, its means and the hidden probabilities given it.
  * @example
  * ```ts
- * import { rbmGibbs } from 'mdml-engine/nn/blocks'
- * import { key } from 'mdml-engine/random'
- * import { zeros } from 'mdml-engine/tensor'
+ * import { rbmGibbs } from 'omai-engine/nn/blocks'
+ * import { key } from 'omai-engine/random'
+ * import { zeros } from 'omai-engine/tensor'
  * const params = { weight: zeros([2, 1]), vbias: zeros([2]), hbias: zeros([1]) }
  * rbmGibbs(params, [[1, 0]], 3, key(0)).visible.shape // => [1, 2]
  * ```
@@ -162,7 +162,7 @@ export function rbmGibbs(
   key: Key,
   visible: RbmVisible = 'binary',
 ): GibbsResult {
-  if (!Number.isInteger(k) || k < 1) throw new MdmlError('value', `rbmGibbs: k must be a positive integer, got ${k}`)
+  if (!Number.isInteger(k) || k < 1) throw new OmaiError('value', `rbmGibbs: k must be a positive integer, got ${k}`)
   let v = asTensor(v0)
   let mean_ = v
   for (let i = 0; i < k; i++) {
@@ -186,8 +186,8 @@ export function rbmGibbs(
  * @returns The scalar loss.
  * @example
  * ```ts
- * import { rbmContrastiveLoss } from 'mdml-engine/nn/blocks'
- * import { zeros, item } from 'mdml-engine/tensor'
+ * import { rbmContrastiveLoss } from 'omai-engine/nn/blocks'
+ * import { zeros, item } from 'omai-engine/tensor'
  * const params = { weight: zeros([2, 1]), vbias: zeros([2]), hbias: zeros([1]) }
  * item(rbmContrastiveLoss(params, [[1, 0]], [[1, 0]])) // => 0
  * ```
@@ -205,7 +205,7 @@ export function rbmContrastiveLoss(
 const MAX_ENUMERATED = 20
 
 function hiddenConfigurations(h: number): Tensor {
-  if (h > MAX_ENUMERATED) throw new MdmlError('value', `rbm: ${h} hidden units are too many to enumerate`)
+  if (h > MAX_ENUMERATED) throw new OmaiError('value', `rbm: ${h} hidden units are too many to enumerate`)
   const rows = 2 ** h
   const out = new Float64Array(rows * h)
   for (let r = 0; r < rows; r++) for (let j = 0; j < h; j++) out[r * h + j] = (r >> j) & 1
@@ -232,8 +232,8 @@ function hiddenLogWeights(params: Params, visible: RbmVisible, configs: Tensor):
  * @returns The scalar `log Z`.
  * @example
  * ```ts
- * import { rbmLogPartition } from 'mdml-engine/nn/blocks'
- * import { zeros, item } from 'mdml-engine/tensor'
+ * import { rbmLogPartition } from 'omai-engine/nn/blocks'
+ * import { zeros, item } from 'omai-engine/tensor'
  * const params = { weight: zeros([2, 1]), vbias: zeros([2]), hbias: zeros([1]) }
  * item(rbmLogPartition(params)) // => 2.0794415416798357
  * ```
@@ -253,8 +253,8 @@ export function rbmLogPartition(params: Params, visible: RbmVisible = 'binary'):
  * @returns The scalar mean log-likelihood.
  * @example
  * ```ts
- * import { rbmLogLikelihood } from 'mdml-engine/nn/blocks'
- * import { zeros, item } from 'mdml-engine/tensor'
+ * import { rbmLogLikelihood } from 'omai-engine/nn/blocks'
+ * import { zeros, item } from 'omai-engine/tensor'
  * const params = { weight: zeros([2, 1]), vbias: zeros([2]), hbias: zeros([1]) }
  * item(rbmLogLikelihood(params, [[1, 0]])) // => -1.3862943611198906
  * ```
@@ -282,8 +282,8 @@ export interface RbmStatistics {
  * @returns The three expectations.
  * @example
  * ```ts
- * import { rbmModelStatistics } from 'mdml-engine/nn/blocks'
- * import { zeros, toArray } from 'mdml-engine/tensor'
+ * import { rbmModelStatistics } from 'omai-engine/nn/blocks'
+ * import { zeros, toArray } from 'omai-engine/tensor'
  * const params = { weight: zeros([2, 1]), vbias: zeros([2]), hbias: zeros([1]) }
  * toArray(rbmModelStatistics(params).hidden) // => [0.5]
  * ```
@@ -318,8 +318,8 @@ export interface RbmOptions {
  *
  * @example
  * ```ts
- * import { RBM } from 'mdml-engine/nn/blocks'
- * import { key } from 'mdml-engine/random'
+ * import { RBM } from 'omai-engine/nn/blocks'
+ * import { key } from 'omai-engine/random'
  * new RBM(6, 3, { key: key(0) }).forward([[1, 0, 1, 0, 1, 0]]).shape // => [1, 3]
  * ```
  */
@@ -422,8 +422,8 @@ const asParams = (s: CdState): Params => ({ weight: s.weight, vbias: s.vbias, hb
  * @reference Hinton (2002), Training products of experts by minimizing contrastive divergence.
  * @example
  * ```ts
- * import { contrastiveDivergenceAlgorithm } from 'mdml-engine/nn/blocks'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { contrastiveDivergenceAlgorithm } from 'omai-engine/nn/blocks'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const rows = Array.from({ length: 20 }, (_, i) => (i % 2 === 0 ? [1, 1, 0, 0] : [0, 0, 1, 1]))
  * const a = contrastiveDivergenceAlgorithm(rows, { hidden: 2, batchSize: 10, learningRate: 0.2 })
  * runAlgorithm(a, { maxSteps: 3, seed: 0 }).steps // => 3
@@ -434,7 +434,7 @@ export function contrastiveDivergenceAlgorithm(
   options: ContrastiveDivergenceOptions,
 ): Algorithm<CdState> {
   const x = asTensor(data) as Tensor
-  if (x.shape.length !== 2) throw new MdmlError('shape', 'contrastiveDivergenceAlgorithm: data must be [N, v]')
+  if (x.shape.length !== 2) throw new OmaiError('shape', 'contrastiveDivergenceAlgorithm: data must be [N, v]')
   const [n, nv] = x.shape as [number, number]
   const nh = options.hidden
   const mode = options.mode ?? 'cd'
@@ -568,8 +568,8 @@ export function contrastiveDivergenceAlgorithm(
  * @returns `weight`, `vbias` and `hbias`.
  * @example
  * ```ts
- * import { rbmParamsOf } from 'mdml-engine/nn/blocks'
- * import { zeros } from 'mdml-engine/tensor'
+ * import { rbmParamsOf } from 'omai-engine/nn/blocks'
+ * import { zeros } from 'omai-engine/tensor'
  * const z = zeros([1])
  * Object.keys(rbmParamsOf({ weight: zeros([1, 1]), vbias: z, hbias: z, velocity: { weight: zeros([1, 1]), vbias: z, hbias: z }, chain: zeros([1, 1]), reconstructionError: 0, freeEnergy: 0 })) // => ['weight', 'vbias', 'hbias']
  * ```

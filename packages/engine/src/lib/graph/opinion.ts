@@ -5,7 +5,7 @@
  * clusters). Each is an algorithm with an observable for the disagreement.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { solve } from '../numerics/linalg/index.ts'
 import { permutation, uniformStream } from '../random/index.ts'
 import { toFlat } from '../tensor/index.ts'
@@ -62,12 +62,12 @@ export interface VoterOptions {
  * @param g - The network.
  * @param options - The initial opinions and the updates per step.
  * @returns The algorithm.
- * @throws MdmlError with code `value` for a share outside [0, 1] or opinions of the wrong length.
+ * @throws OmaiError with code `value` for a share outside [0, 1] or opinions of the wrong length.
  * @concept voter-model
  * @example
  * ```ts
- * import { completeGraph, voterModelAlgorithm } from 'mdml-engine/graph'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { completeGraph, voterModelAlgorithm } from 'omai-engine/graph'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const run = runAlgorithm(voterModelAlgorithm(completeGraph(6), { initial: 0.5 }), { seed: 0, maxSteps: 10000 })
  * [run.status, new Set(run.state.opinions).size] // => ['converged', 1]
  * ```
@@ -76,9 +76,9 @@ export function voterModelAlgorithm(g: Graph, options: VoterOptions = {}): Algor
   const initial = options.initial ?? 0.5
   const per = options.updatesPerStep ?? 1
   if (!(Number.isInteger(per) && per >= 1))
-    throw new MdmlError('value', 'voterModelAlgorithm: updatesPerStep must be a positive integer')
+    throw new OmaiError('value', 'voterModelAlgorithm: updatesPerStep must be a positive integer')
   if (typeof initial === 'number') checkNumber('voterModelAlgorithm', 'initial share', initial, 0, 1)
-  else if (initial.length !== g.n) throw new MdmlError('shape', 'voterModelAlgorithm: one initial opinion per node')
+  else if (initial.length !== g.n) throw new OmaiError('shape', 'voterModelAlgorithm: one initial opinion per node')
   const agree = (o: Int32Array): boolean => o.every((x) => x === o[0])
   return {
     name: 'graph/voter-model',
@@ -137,20 +137,20 @@ export function voterModelAlgorithm(g: Graph, options: VoterOptions = {}): Algor
  * @param g - A connected undirected graph.
  * @param initial - The initial opinion of each node (0 or 1).
  * @returns The fixation probability of opinion 1.
- * @throws MdmlError with code `value` for a directed graph or one without edges, `shape` for the wrong length.
+ * @throws OmaiError with code `value` for a directed graph or one without edges, `shape` for the wrong length.
  * @concept voter-model
  * @example
  * ```ts
- * import { starGraph, voterFixationProbability } from 'mdml-engine/graph'
+ * import { starGraph, voterFixationProbability } from 'omai-engine/graph'
  * voterFixationProbability(starGraph(4), [1, 0, 0, 0, 0]) // => 0.5
  * ```
  */
 export function voterFixationProbability(g: Graph, initial: ArrayLike<number>): number {
-  if (g.directed) throw new MdmlError('value', 'voterFixationProbability: undirected graphs only')
-  if (initial.length !== g.n) throw new MdmlError('shape', 'voterFixationProbability: one opinion per node')
+  if (g.directed) throw new OmaiError('value', 'voterFixationProbability: undirected graphs only')
+  if (initial.length !== g.n) throw new OmaiError('shape', 'voterFixationProbability: one opinion per node')
   const d = degreesOf(g)
   const total = d.reduce((a, x) => a + x, 0)
-  if (total === 0) throw new MdmlError('value', 'voterFixationProbability: the graph has no edges')
+  if (total === 0) throw new OmaiError('value', 'voterFixationProbability: the graph has no edges')
   let mass = 0
   for (let v = 0; v < g.n; v++) if (initial[v] === 1) mass += d[v] ?? 0
   return mass / total
@@ -258,12 +258,12 @@ function averagingWeights(g: Graph, weighted: boolean, selfWeight: number): (v: 
  * @param initial - The opinion of each node at the start.
  * @param options - Stubbornness, self weight, trust weights and tolerance.
  * @returns The algorithm.
- * @throws MdmlError with code `shape` for the wrong number of opinions or stubbornness values, `value` outside [0, 1].
+ * @throws OmaiError with code `shape` for the wrong number of opinions or stubbornness values, `value` outside [0, 1].
  * @concept opinion-dynamics
  * @example
  * ```ts
- * import { degrootAlgorithm, pathGraph } from 'mdml-engine/graph'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { degrootAlgorithm, pathGraph } from 'omai-engine/graph'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const run = runAlgorithm(degrootAlgorithm(pathGraph(3), [0, 0, 3], { selfWeight: 0.5 }), { seed: 0, maxSteps: 400 })
  * Array.from(run.state.x, (v) => Math.round(v * 1e6) / 1e6) // => [0.75, 0.75, 0.75]
  * ```
@@ -311,11 +311,11 @@ function stubbornnessOf(
   initial: ArrayLike<number>,
   stubbornness: number | ArrayLike<number> | undefined,
 ): Float64Array {
-  if (initial.length !== g.n) throw new MdmlError('shape', 'degrootAlgorithm: one initial opinion per node')
+  if (initial.length !== g.n) throw new OmaiError('shape', 'degrootAlgorithm: one initial opinion per node')
   const raw = stubbornness ?? 0
   const out = new Float64Array(g.n)
   if (typeof raw === 'number') out.fill(raw)
-  else if (raw.length !== g.n) throw new MdmlError('shape', 'degrootAlgorithm: one stubbornness value per node')
+  else if (raw.length !== g.n) throw new OmaiError('shape', 'degrootAlgorithm: one stubbornness value per node')
   else for (let v = 0; v < g.n; v++) out[v] = raw[v] ?? 0
   for (const x of out) checkNumber('degrootAlgorithm', 'stubbornness', x, 0, 1)
   return out
@@ -329,20 +329,20 @@ function stubbornnessOf(
  * @param g - A connected undirected graph.
  * @param initial - The initial opinions.
  * @returns The consensus value.
- * @throws MdmlError with code `value` for a directed graph or one without edges, `shape` for the wrong length.
+ * @throws OmaiError with code `value` for a directed graph or one without edges, `shape` for the wrong length.
  * @concept opinion-dynamics
  * @example
  * ```ts
- * import { degrootConsensus, starGraph } from 'mdml-engine/graph'
+ * import { degrootConsensus, starGraph } from 'omai-engine/graph'
  * degrootConsensus(starGraph(4), [4, 0, 0, 0, 0]) // => 2
  * ```
  */
 export function degrootConsensus(g: Graph, initial: ArrayLike<number>): number {
-  if (g.directed) throw new MdmlError('value', 'degrootConsensus: undirected graphs only')
-  if (initial.length !== g.n) throw new MdmlError('shape', 'degrootConsensus: one opinion per node')
+  if (g.directed) throw new OmaiError('value', 'degrootConsensus: undirected graphs only')
+  if (initial.length !== g.n) throw new OmaiError('shape', 'degrootConsensus: one opinion per node')
   const d = degreesOf(g)
   const total = d.reduce((a, x) => a + x, 0)
-  if (total === 0) throw new MdmlError('value', 'degrootConsensus: the graph has no edges')
+  if (total === 0) throw new OmaiError('value', 'degrootConsensus: the graph has no edges')
   let mass = 0
   for (let v = 0; v < g.n; v++) mass += (d[v] ?? 0) * (initial[v] ?? 0)
   return mass / total
@@ -358,11 +358,11 @@ export function degrootConsensus(g: Graph, initial: ArrayLike<number>): number {
  * @param stubbornness - The weight on the own initial opinion, one number or one per node.
  * @param options - `selfWeight` and `weighted`, as for {@link degrootAlgorithm}.
  * @returns The equilibrium opinion of each node.
- * @throws MdmlError with code `shape` for wrong lengths, `value` outside [0, 1].
+ * @throws OmaiError with code `shape` for wrong lengths, `value` outside [0, 1].
  * @concept opinion-dynamics
  * @example
  * ```ts
- * import { friedkinJohnsenEquilibrium, pathGraph } from 'mdml-engine/graph'
+ * import { friedkinJohnsenEquilibrium, pathGraph } from 'omai-engine/graph'
  * Array.from(friedkinJohnsenEquilibrium(pathGraph(2), [0, 1], [0.5, 0.5]), (v) => Math.round(v * 1e6) / 1e6) // => [0.333333, 0.666667]
  * ```
  */
@@ -402,12 +402,12 @@ export function friedkinJohnsenEquilibrium(
  * @param confidence - The tolerance: the largest opinion difference a node still listens to.
  * @param tolerance - Stop when no opinion changes by more than this (default 1e-10).
  * @returns The algorithm.
- * @throws MdmlError with code `shape` for the wrong number of opinions, `value` for a negative confidence.
+ * @throws OmaiError with code `shape` for the wrong number of opinions, `value` for a negative confidence.
  * @concept opinion-dynamics
  * @example
  * ```ts
- * import { boundedConfidenceAlgorithm, completeGraph } from 'mdml-engine/graph'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { boundedConfidenceAlgorithm, completeGraph } from 'omai-engine/graph'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const run = runAlgorithm(boundedConfidenceAlgorithm(completeGraph(3), [0, 0.5, 1], 1), { seed: 0, maxSteps: 5 })
  * Array.from(run.state.x) // => [0.5, 0.5, 0.5]
  * ```
@@ -418,7 +418,7 @@ export function boundedConfidenceAlgorithm(
   confidence: number,
   tolerance = 1e-10,
 ): Algorithm<OpinionState, OpinionPath> {
-  if (initial.length !== g.n) throw new MdmlError('shape', 'boundedConfidenceAlgorithm: one initial opinion per node')
+  if (initial.length !== g.n) throw new OmaiError('shape', 'boundedConfidenceAlgorithm: one initial opinion per node')
   checkNumber('boundedConfidenceAlgorithm', 'confidence', confidence, 0)
   return {
     name: 'graph/bounded-confidence',

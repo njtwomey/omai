@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isMdmlError } from '../base/index.ts'
+import { isOmaiError } from '../base/index.ts'
 import { TRUE_METRICS } from '../numerics/geometry/index.ts'
 import { contains, defaults } from '../space/index.ts'
 import { tensor, toArray, toFlat } from '../tensor/index.ts'
@@ -37,7 +37,7 @@ describe('the distance registry', () => {
     try {
       distance([0], [1], 'euclid' as DistanceName)
     } catch (e) {
-      expect(isMdmlError(e, 'value')).toBe(true)
+      expect(isOmaiError(e, 'value')).toBe(true)
     }
   })
 

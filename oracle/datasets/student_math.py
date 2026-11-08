@@ -5,8 +5,8 @@ The repository states the data are anonymised. Only the mathematics file (`stude
 attributes as published, `G3` (the final grade) last.
 """
 
-from mdml_oracle.uci import nested_zip_member, source_note
-from mdml_oracle.vendor import render_ordered_table
+from omai_oracle.uci import nested_zip_member, source_note
+from omai_oracle.vendor import render_ordered_table
 
 TARGET = "packages/engine/src/lib/datasets/_data/student-math.data.ts"
 ID, SLUG = 320, "student+performance"

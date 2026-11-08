@@ -5,7 +5,7 @@
  * `text/representations.ts`'s `nearestWords` and `analogy`, which these loop over.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { ddot, dnrm2 } from '../numerics/linalg/index.ts'
 import { spearman } from '../stats/index.ts'
 import { analogy, nearestWords, type WordMatrix } from '../text/index.ts'
@@ -33,7 +33,7 @@ export interface AnalogyResult {
  * @concept word-embeddings
  * @example
  * ```ts
- * import { analogyAccuracy } from 'mdml-engine/embedding'
+ * import { analogyAccuracy } from 'omai-engine/embedding'
  * const v = { words: ['man', 'woman', 'king', 'queen', 'apple'], rows: [[1, 0, 0], [1, 1, 0], [1, 0, 1], [1, 1, 1], [0, 0.2, 0]].map((r) => Float64Array.from(r)) }
  * analogyAccuracy(v, [['man', 'woman', 'king', 'queen']]).accuracy // => 1
  * ```
@@ -77,11 +77,11 @@ export function analogyAccuracy(
  * @param vectors - The word vectors.
  * @param pairs - `[word1, word2, similarity]` triples.
  * @returns The correlation and the number of pairs used.
- * @throws MdmlError with code `value` for fewer than three usable pairs.
+ * @throws OmaiError with code `value` for fewer than three usable pairs.
  * @concept word-embeddings
  * @example
  * ```ts
- * import { similarityCorrelation } from 'mdml-engine/embedding'
+ * import { similarityCorrelation } from 'omai-engine/embedding'
  * const v = { words: ['a', 'b', 'c', 'd'], rows: [[1, 0], [1, 0.1], [0, 1], [0.1, 1]].map((r) => Float64Array.from(r)) }
  * similarityCorrelation(v, [['a', 'b', 9], ['c', 'd', 8], ['a', 'c', 1], ['b', 'd', 2]]).rho > 0.9 // => true
  * ```
@@ -102,7 +102,7 @@ export function similarityCorrelation(
     cos.push(ddot(u, v) / (dnrm2(u) * dnrm2(v) || 1))
     judged.push(s)
   }
-  if (cos.length < 3) throw new MdmlError('value', 'similarityCorrelation: needs at least three usable pairs')
+  if (cos.length < 3) throw new OmaiError('value', 'similarityCorrelation: needs at least three usable pairs')
   return { rho: spearman(cos, judged).statistic, pairs: cos.length }
 }
 
@@ -118,7 +118,7 @@ export function similarityCorrelation(
  * @concept word-embeddings
  * @example
  * ```ts
- * import { neighbourPurity } from 'mdml-engine/embedding'
+ * import { neighbourPurity } from 'omai-engine/embedding'
  * const v = { words: ['a', 'b', 'c', 'd'], rows: [[1, 0], [1, 0.1], [0, 1], [0.1, 1]].map((r) => Float64Array.from(r)) }
  * neighbourPurity(v, { a: 0, b: 0, c: 1, d: 1 }, 1) // => 1
  * ```

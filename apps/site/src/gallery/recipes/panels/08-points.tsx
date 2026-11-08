@@ -1,5 +1,5 @@
-import { pointsSteps } from 'mdml-engine/exposition'
-import { choice, type DictSpace, defaults, dict } from 'mdml-engine/space'
+import { pointsSteps } from 'omai-engine/exposition'
+import { choice, type DictSpace, defaults, dict } from 'omai-engine/space'
 import {
   type Config,
   defineMethod,
@@ -9,7 +9,7 @@ import {
   scalar,
   stateFromJson,
   stateToJson,
-} from 'mdml-engine/trace'
+} from 'omai-engine/trace'
 import {
   ControlPanel,
   type Panel,
@@ -18,7 +18,7 @@ import {
   SpaceControls,
   useSession,
   useSessionPreferences,
-} from 'mdml-render/react'
+} from 'omai-render/react'
 import { type ReactNode, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 

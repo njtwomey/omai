@@ -1,4 +1,4 @@
-import { sampleStabilityRegion } from 'mdml-engine/exposition'
+import { sampleStabilityRegion } from 'omai-engine/exposition'
 import { describe, expect, it } from 'vitest'
 import { stabilityRegionLayers, stabilityRegionView, stabilityVerdict } from './stability-region.ts'
 

@@ -3,7 +3,7 @@
  * method name is looked up in.
  */
 
-import { methodRegistry } from 'mdml-render/producer'
+import { methodRegistry } from 'omai-render/producer'
 import { heavyDescent } from './heavy.ts'
 import { orbit } from './orbit.ts'
 

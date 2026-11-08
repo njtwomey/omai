@@ -7,7 +7,7 @@
  */
 
 import { vjp } from '../../autodiff/index.ts'
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { foldIn, type Key, key as makeKey, normal } from '../../random/index.ts'
 import {
   add,
@@ -74,8 +74,8 @@ export interface CnfOutput {
  * @returns The log densities `[B]`.
  * @example
  * ```ts
- * import { standardNormalLogProb } from 'mdml-engine/nn/blocks'
- * import { item } from 'mdml-engine/tensor'
+ * import { standardNormalLogProb } from 'omai-engine/nn/blocks'
+ * import { item } from 'omai-engine/tensor'
  * item(standardNormalLogProb([[0, 0]])) // => -1.8378770664093453
  * ```
  */
@@ -95,9 +95,9 @@ export function standardNormalLogProb(z: TensorLike): Value {
  * @reference Grathwohl, Chen, Bettencourt, Sutskever and Duvenaud (2019), FFJORD: free-form continuous dynamics for scalable reversible generative models.
  * @example
  * ```ts
- * import { CNF } from 'mdml-engine/nn/blocks'
- * import { odeSolver } from 'mdml-engine/dynamics/ode'
- * import { key } from 'mdml-engine/random'
+ * import { CNF } from 'omai-engine/nn/blocks'
+ * import { odeSolver } from 'omai-engine/dynamics/ode'
+ * import { key } from 'omai-engine/random'
  * const flow = new CNF(2, { solver: odeSolver('RK4', { dt: 0.25 }), hidden: [8], key: key(0) })
  * flow.logProb(flow.params, [[0.5, -0.5]]).shape // => [1]
  * ```
@@ -149,7 +149,7 @@ export class CNF extends Composite<CnfInput, CnfOutput> {
   jacobianTrace(params: Params, t: number, z: Value, eps?: Value, ctx: ApplyContext = {}): Value {
     const { out, pullback } = vjp((s: Value) => this.vectorField(params, t, s, ctx), z)
     if (this.trace === 'hutchinson') {
-      if (eps === undefined) throw new MdmlError('value', 'CNF: the Hutchinson estimator needs a noise vector')
+      if (eps === undefined) throw new OmaiError('value', 'CNF: the Hutchinson estimator needs a noise vector')
       return sum(mul(pullback(eps), eps), -1, true)
     }
     // Exact: column i of the Jacobian's transpose dotted with e_i, one pullback per dimension.

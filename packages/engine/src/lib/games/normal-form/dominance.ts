@@ -4,7 +4,7 @@
  * of actions, and pure-strategy security levels.
  */
 
-import { MdmlError, maxOf, minOf } from '../../base/index.ts'
+import { maxOf, minOf, OmaiError } from '../../base/index.ts'
 import { linprog } from '../../optim/index.ts'
 import { dict, type Option, type OptionTable, optionTable } from '../../space/index.ts'
 import { stridesOf } from '../../tensor/index.ts'
@@ -34,7 +34,7 @@ export interface DominanceOptions {
 /** The payoffs of each of `player`'s actions against every profile of the others: `rows[a][s]`. */
 function payoffRows(game: NormalFormGame, player: number): number[][] {
   const u = game.payoffs[player]
-  if (u === undefined) throw new MdmlError('value', `${game.name}: no player ${player}`)
+  if (u === undefined) throw new OmaiError('value', `${game.name}: no player ${player}`)
   return actionRows(game.shape, u, player)
 }
 
@@ -98,7 +98,7 @@ function dominatedBy(rows: number[][], a: number, strict: boolean, mixed: boolea
  * @concept dominance
  * @example
  * ```ts
- * import { bimatrixGame, isDominated } from 'mdml-engine/games'
+ * import { bimatrixGame, isDominated } from 'omai-engine/games'
  * // The middle row is beaten by no pure row, but by the mix of the other two.
  * const g = bimatrixGame([[3, 0], [1, 1], [0, 3]], [[0, 0], [0, 0], [0, 0]])
  * [isDominated(g, 0, 1), isDominated(g, 0, 1, { mixed: true })] // => [false, true]
@@ -111,7 +111,7 @@ export function isDominated(
   options: DominanceOptions = {},
 ): boolean {
   const rows = payoffRows(game, player)
-  if (action < 0 || action >= rows.length) throw new MdmlError('value', `${game.name}: no action ${action}`)
+  if (action < 0 || action >= rows.length) throw new OmaiError('value', `${game.name}: no action ${action}`)
   return dominatedBy(rows, action, options.strict ?? true, options.mixed ?? false, options.tol ?? 1e-9)
 }
 
@@ -125,7 +125,7 @@ export function isDominated(
  * @concept dominance
  * @example
  * ```ts
- * import { dominatedActions, prisonersDilemma } from 'mdml-engine/games'
+ * import { dominatedActions, prisonersDilemma } from 'omai-engine/games'
  * dominatedActions(prisonersDilemma(), 0) // => [0]
  * ```
  */
@@ -143,18 +143,18 @@ export function dominatedActions(game: NormalFormGame, player: number, options: 
  * @param game - The game.
  * @param actions - The actions kept for each player.
  * @returns The restricted game.
- * @throws MdmlError with code `value` when a player keeps no action or an action does not exist.
+ * @throws OmaiError with code `value` when a player keeps no action or an action does not exist.
  * @example
  * ```ts
- * import { restrictGame, rockPaperScissors } from 'mdml-engine/games'
+ * import { restrictGame, rockPaperScissors } from 'omai-engine/games'
  * restrictGame(rockPaperScissors(), [[0, 1], [2]]).actionNames // => [['rock', 'paper'], ['scissors']]
  * ```
  */
 export function restrictGame(game: NormalFormGame, actions: readonly (readonly number[])[]): NormalFormGame {
-  if (actions.length !== game.shape.length) throw new MdmlError('value', `${game.name}: one action list per player`)
+  if (actions.length !== game.shape.length) throw new OmaiError('value', `${game.name}: one action list per player`)
   for (const [p, list] of actions.entries())
     if (list.length === 0 || list.some((a) => a < 0 || a >= (game.shape[p] ?? 0)))
-      throw new MdmlError('value', `${game.name}: player ${p} must keep existing actions`)
+      throw new OmaiError('value', `${game.name}: player ${p} must keep existing actions`)
   const shape = actions.map((l) => l.length)
   const strides = stridesOf(game.shape)
   const total = profileCount(shape)
@@ -242,7 +242,7 @@ function rule(
  * @concept dominance
  * @example
  * ```ts
- * import { dominanceRules } from 'mdml-engine/games'
+ * import { dominanceRules } from 'omai-engine/games'
  * dominanceRules.make({ kind: 'weak-pure' }) // => { strict: false, mixed: false }
  * ```
  */
@@ -287,8 +287,8 @@ export const dominanceRules: OptionTable<DominanceRule, DominanceRuleProperties>
  * @concept dominance
  * @example
  * ```ts
- * import { iteratedEliminationAlgorithm, prisonersDilemma } from 'mdml-engine/games'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { iteratedEliminationAlgorithm, prisonersDilemma } from 'omai-engine/games'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const run = runAlgorithm(iteratedEliminationAlgorithm(prisonersDilemma()), { maxSteps: 10 })
  * [run.steps, run.state.actions] // => [2, [[1], [1]]]
  * ```
@@ -340,7 +340,7 @@ export function iteratedEliminationAlgorithm(
  * @concept dominance
  * @example
  * ```ts
- * import { iteratedElimination, prisonersDilemma } from 'mdml-engine/games'
+ * import { iteratedElimination, prisonersDilemma } from 'omai-engine/games'
  * iteratedElimination(prisonersDilemma()).actions // => [[1], [1]]
  * ```
  */
@@ -365,7 +365,7 @@ export function iteratedElimination(game: NormalFormGame, options: DominanceOpti
  * @returns The level and the maxmin actions.
  * @example
  * ```ts
- * import { pureMaxmin, stagHunt } from 'mdml-engine/games'
+ * import { pureMaxmin, stagHunt } from 'omai-engine/games'
  * pureMaxmin(stagHunt(), 0) // => { value: 2, actions: [1] }
  * ```
  */

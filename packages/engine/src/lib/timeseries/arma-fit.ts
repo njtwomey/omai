@@ -7,7 +7,7 @@
  * @index function AR, MA and ARMA estimators: Yule-Walker, Burg, innovations.
  */
 
-import { MdmlError, meanOf, minOf } from '../base/index.ts'
+import { meanOf, minOf, OmaiError } from '../base/index.ts'
 import { burg, yuleWalker } from '../signal/index.ts'
 import { toFlat } from '../tensor/index.ts'
 import {
@@ -59,7 +59,7 @@ export interface FitArOptions {
  * @returns The coefficients, innovation variance and mean.
  * @example
  * ```ts
- * import { fitAr } from 'mdml-engine/timeseries'
+ * import { fitAr } from 'omai-engine/timeseries'
  * // An exact AR(1) with phi = 0.5 and no noise: least squares recovers it.
  * const y = [8, 4, 2, 1, 0.5, 0.25]
  * fitAr(y, 1, { method: 'ols', demean: false }).ar // => [0.5]
@@ -81,7 +81,7 @@ export function fitAr(y: ArrayLike<number>, order: number, options: FitArOptions
 function fitArLeastSquares(x: Float64Array, p: number, constant: boolean): ArmaEstimate {
   const n = x.length
   const m = n - p
-  if (m <= p + 1) throw new MdmlError('value', 'fitAr: the series is too short for the order')
+  if (m <= p + 1) throw new OmaiError('value', 'fitAr: the series is too short for the order')
   const columns: number[][] = constant ? [new Array<number>(m).fill(1)] : []
   for (let j = 1; j <= p; j++) columns.push(Array.from({ length: m }, (_, t) => x[p + t - j] ?? 0))
   const target = Array.from({ length: m }, (_, t) => x[p + t] ?? 0)
@@ -112,7 +112,7 @@ export type OrderCriterion = 'aic' | 'bic' | 'hqic'
  * @returns The penalty.
  * @example
  * ```ts
- * import { criterionPenalty } from 'mdml-engine/timeseries'
+ * import { criterionPenalty } from 'omai-engine/timeseries'
  * criterionPenalty('aic', 100) // => 2
  * ```
  */
@@ -154,8 +154,8 @@ export const arOrderContract: Contract<ArOrderState, ArOrderPath> = defineContra
  * @returns The algorithm; it is done after order `maxOrder`.
  * @example
  * ```ts
- * import { arOrderAlgorithm } from 'mdml-engine/timeseries'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { arOrderAlgorithm } from 'omai-engine/timeseries'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const y = [1, 1.3, 0.2, -0.6, 0.1, 0.7, 0.2, -0.3, -0.1, 0.2, 0.1, -0.1, 0, 0.1, 0.02, -0.04]
  * runAlgorithm(arOrderAlgorithm(y, 3), { maxSteps: 4 }).state.scores.length // => 4
  * ```
@@ -212,7 +212,7 @@ export function arOrderAlgorithm(
  * @returns The chosen order and the criterion at every order 0..maxOrder.
  * @example
  * ```ts
- * import { selectArOrder } from 'mdml-engine/timeseries'
+ * import { selectArOrder } from 'omai-engine/timeseries'
  * // A noiseless AR(2) is identified as order 2 (an AR(0) fits far worse).
  * const y = [1, 1.3, 0.2, -0.6, 0.1, 0.7, 0.2, -0.3, -0.1, 0.2, 0.1, -0.1, 0, 0.1, 0.02, -0.04]
  * selectArOrder(y, 3).order >= 1 // => true
@@ -237,7 +237,7 @@ export function selectArOrder(
  * @returns The moving-average coefficients and innovation variance.
  * @example
  * ```ts
- * import { fitMa } from 'mdml-engine/timeseries'
+ * import { fitMa } from 'omai-engine/timeseries'
  * // The innovations estimate of an MA(1) from the autocovariances (1.25, 0.5) of its model.
  * fitMa([1, 0.5, -0.5, 0.2, -0.3, 0.1, 0.4, -0.2], 1).ma.length // => 1
  * ```
@@ -250,7 +250,7 @@ export function fitMa(
   const x = asSeries(Float64Array.from(y), 'fitMa')
   const m = options.m ?? order
   if (!(Number.isInteger(order) && order >= 1 && m >= order && m < x.length))
-    throw new MdmlError('value', 'fitMa: need 1 <= order <= m < n')
+    throw new OmaiError('value', 'fitMa: need 1 <= order <= m < n')
   const demean = options.demean ?? true
   const gamma = autocovariance(x, m, { demean })
   const { theta, v } = innovations(gamma)
@@ -284,7 +284,7 @@ export interface HannanRissananOptions {
  * @returns The estimate.
  * @example
  * ```ts
- * import { hannanRissanen } from 'mdml-engine/timeseries'
+ * import { hannanRissanen } from 'omai-engine/timeseries'
  * const y = Array.from({ length: 60 }, (_, t) => Math.sin(t * 0.7) + 0.3 * Math.cos(t * 1.9))
  * hannanRissanen(y, [1, 1]).method // => 'hannan-rissanen'
  * ```
@@ -306,7 +306,7 @@ export function hannanRissanen(
     return { ar: beta, ma: [], sigma2, mean: mu, method: 'hannan-rissanen' }
   }
   const initial = options.initialArOrder ?? Math.max(Math.floor(Math.log(n) ** 2), 2 * Math.max(p, q))
-  if (initial + q + 1 >= n) throw new MdmlError('value', 'hannanRissanen: the series is too short')
+  if (initial + q + 1 >= n) throw new OmaiError('value', 'hannanRissanen: the series is too short')
   const long = toFlat(yuleWalker(x, initial, { method: 'mle' }).ar)
   const resid = new Float64Array(n - initial)
   for (let t = initial; t < n; t++) {
@@ -322,7 +322,7 @@ export function hannanRissanen(
   const ok = isStationary(ar) && isInvertible(ma)
   const unbiased = options.unbiased ?? ok
   if (unbiased) {
-    if (!ok) throw new MdmlError('value', 'hannanRissanen: the second-step estimate is not stationary and invertible')
+    if (!ok) throw new OmaiError('value', 'hannanRissanen: the second-step estimate is not stationary and invertible')
     const k = Math.max(p, q)
     const z = new Float64Array(n)
     for (let t = k; t < n; t++) {
@@ -444,7 +444,7 @@ function estimateOf(f: ReturnType<typeof arimaFit>, method: string): ArmaEstimat
  * @returns The estimate.
  * @example
  * ```ts
- * import { fitArma } from 'mdml-engine/timeseries'
+ * import { fitArma } from 'omai-engine/timeseries'
  * const y = [0.3, 0.9, 0.4, -0.2, 0.5, 1.1, 0.6, -0.1, 0.2, 0.8, 0.5, -0.3, 0.1, 0.7, 0.4, 0.0]
  * fitArma(y, [1, 0]).ar.length // => 1
  * ```
@@ -475,7 +475,7 @@ export function fitArma(
  * @returns The algorithm and the map from its state to the fit.
  * @example
  * ```ts
- * import { armaFitAlgorithm } from 'mdml-engine/timeseries'
+ * import { armaFitAlgorithm } from 'omai-engine/timeseries'
  * const y = [0.3, 0.9, 0.4, -0.2, 0.5, 1.1, 0.6, -0.1, 0.2, 0.8, 0.5, -0.3, 0.1, 0.7, 0.4, 0.0]
  * armaFitAlgorithm(y, [1, 1]).algorithm.name // => 'arima-mle'
  * ```

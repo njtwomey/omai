@@ -5,7 +5,7 @@
  * selectors.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import { BinaryHeap } from '../graph/index.ts'
 import { metricFunction } from '../numerics/geometry/index.ts'
 import { type Algorithm, channels, runAlgorithm, type TraceSchema } from '../trace/index.ts'
@@ -46,16 +46,16 @@ export interface ScoredPattern<P> {
  * @param a - A coverage.
  * @param b - Another of the same length.
  * @returns The similarity in [0, 1].
- * @throws MdmlError with code `shape` when the lengths differ.
+ * @throws OmaiError with code `shape` when the lengths differ.
  * @concept refinement-search
  * @example
  * ```ts
- * import { coverageSimilarity } from 'mdml-engine/search'
+ * import { coverageSimilarity } from 'omai-engine/search'
  * coverageSimilarity([1, 1, 0, 0], [1, 0, 1, 0]) // => 1 / 3
  * ```
  */
 export function coverageSimilarity(a: ArrayLike<number>, b: ArrayLike<number>): number {
-  if (a.length !== b.length) throw new MdmlError('shape', 'coverageSimilarity: coverages differ in length')
+  if (a.length !== b.length) throw new OmaiError('shape', 'coverageSimilarity: coverages differ in length')
   let any = false
   for (let i = 0; i < a.length; i++) if ((a[i] ?? 0) !== 0 || (b[i] ?? 0) !== 0) any = true
   if (!any) return 1
@@ -72,7 +72,7 @@ export function coverageSimilarity(a: ArrayLike<number>, b: ArrayLike<number>): 
  * @concept refinement-search
  * @example
  * ```ts
- * import { redundancyFilter } from 'mdml-engine/search'
+ * import { redundancyFilter } from 'omai-engine/search'
  * const scored = [
  *   { pattern: 'a', quality: 3, depth: 1, coverage: [1, 1, 0, 0] },
  *   { pattern: 'a and b', quality: 2.9, depth: 2, coverage: [1, 1, 0, 0] },
@@ -111,7 +111,7 @@ export function redundancyFilter<P>(
  * @concept refinement-search
  * @example
  * ```ts
- * import { TopK } from 'mdml-engine/search'
+ * import { TopK } from 'omai-engine/search'
  * const top = new TopK<string>(2)
  * top.add({ pattern: 'a', quality: 1, depth: 1 })
  * top.add({ pattern: 'b', quality: 3, depth: 1 })
@@ -130,15 +130,15 @@ export class TopK<P> {
    * @param k - The capacity.
    * @param options - Redundancy filtering by coverage similarity (off by default).
    * @returns The set.
-   * @throws MdmlError with code `value` when k is not a positive integer.
+   * @throws OmaiError with code `value` when k is not a positive integer.
    * @example
    * ```ts
-   * import { TopK } from 'mdml-engine/search'
+   * import { TopK } from 'omai-engine/search'
    * new TopK(3).threshold // => -Infinity
    * ```
    */
   constructor(k: number, options: { readonly maxSimilarity?: number } = {}) {
-    if (!(Number.isInteger(k) && k >= 1)) throw new MdmlError('value', `TopK: k = ${k} must be a positive integer`)
+    if (!(Number.isInteger(k) && k >= 1)) throw new OmaiError('value', `TopK: k = ${k} must be a positive integer`)
     this.k = k
     this.#redundancy = options.maxSimilarity === undefined ? undefined : { maxSimilarity: options.maxSimilarity }
   }
@@ -162,7 +162,7 @@ export class TopK<P> {
    * @returns True when it is kept.
    * @example
    * ```ts
-   * import { TopK } from 'mdml-engine/search'
+   * import { TopK } from 'omai-engine/search'
    * new TopK<string>(1).add({ pattern: 'a', quality: 1, depth: 0 }) // => true
    * ```
    */
@@ -271,7 +271,7 @@ function refinementEngine<P>(
   const minQuality = options.minQuality ?? Number.NEGATIVE_INFINITY
   const width = options.width ?? 10
   if (strategy === 'beam' && !(Number.isInteger(width) && width >= 1)) {
-    throw new MdmlError('value', `refinementBeamSearch: width ${width} must be a positive integer`)
+    throw new OmaiError('value', `refinementBeamSearch: width ${width} must be a positive integer`)
   }
   const key = stateKeyOf(problem)
   const label = (p: P): string => problem.label?.(p) ?? String(key(p))
@@ -418,7 +418,7 @@ function runRefinement<P>(algorithm: Algorithm<Internal<P>>, options: Refinement
  * @concept refinement-search
  * @example
  * ```ts
- * import { refinementExhaustiveAlgorithm } from 'mdml-engine/search'
+ * import { refinementExhaustiveAlgorithm } from 'omai-engine/search'
  * refinementExhaustiveAlgorithm({ root: '', refine: () => [], quality: () => 0 }).name // => 'refinement-exhaustive'
  * ```
  */
@@ -438,7 +438,7 @@ export function refinementExhaustiveAlgorithm<P>(
  * @concept refinement-search
  * @example
  * ```ts
- * import { refinementExhaustive } from 'mdml-engine/search'
+ * import { refinementExhaustive } from 'omai-engine/search'
  * // Patterns are sets of letters; quality rewards 'a' and 'c' and penalises length.
  * const letters = ['a', 'b', 'c']
  * const p = {
@@ -467,7 +467,7 @@ export function refinementExhaustive<P>(
  * @concept refinement-search
  * @example
  * ```ts
- * import { refinementBestFirstAlgorithm } from 'mdml-engine/search'
+ * import { refinementBestFirstAlgorithm } from 'omai-engine/search'
  * refinementBestFirstAlgorithm({ root: '', refine: () => [], quality: () => 0 }).name // => 'refinement-best-first'
  * ```
  */
@@ -487,7 +487,7 @@ export function refinementBestFirstAlgorithm<P>(
  * @concept refinement-search
  * @example
  * ```ts
- * import { refinementBestFirst } from 'mdml-engine/search'
+ * import { refinementBestFirst } from 'omai-engine/search'
  * const letters = ['a', 'b', 'c']
  * const p = {
  *   root: '',
@@ -513,11 +513,11 @@ export function refinementBestFirst<P>(
  * @param problem - The refinement problem.
  * @param options - The beam width (default 10), k, depth, a quality floor, redundancy filtering and the budget.
  * @returns The algorithm.
- * @throws MdmlError with code `value` when the width is not a positive integer.
+ * @throws OmaiError with code `value` when the width is not a positive integer.
  * @concept refinement-search
  * @example
  * ```ts
- * import { refinementBeamSearchAlgorithm } from 'mdml-engine/search'
+ * import { refinementBeamSearchAlgorithm } from 'omai-engine/search'
  * refinementBeamSearchAlgorithm({ root: '', refine: () => [], quality: () => 0 }).name // => 'refinement-beam'
  * ```
  */
@@ -535,11 +535,11 @@ export function refinementBeamSearchAlgorithm<P>(
  * @param options - The beam width (default 10), k (default 10), maxDepth (default 3), a quality floor, redundancy
  * filtering, budget and tracing.
  * @returns The top-k patterns and the effort.
- * @throws MdmlError with code `value` when the width is not a positive integer.
+ * @throws OmaiError with code `value` when the width is not a positive integer.
  * @concept refinement-search
  * @example
  * ```ts
- * import { refinementBeamSearch } from 'mdml-engine/search'
+ * import { refinementBeamSearch } from 'omai-engine/search'
  * const letters = ['a', 'b', 'c']
  * const p = {
  *   root: '',
@@ -574,11 +574,11 @@ export interface Selector {
  * @param quality - The quality of a pattern from its coverage.
  * @param options - An optimistic estimate from the coverage and a minimum support (default 1 record).
  * @returns The refinement problem; patterns are labelled `s1 & s2`.
- * @throws MdmlError with code `shape` when coverages differ in length.
+ * @throws OmaiError with code `shape` when coverages differ in length.
  * @concept refinement-search
  * @example
  * ```ts
- * import { conjunctions, refinementExhaustive } from 'mdml-engine/search'
+ * import { conjunctions, refinementExhaustive } from 'omai-engine/search'
  * // Four records with a binary target; find the conjunction that best isolates it.
  * const target = [1, 1, 0, 0]
  * const selectors = [
@@ -601,7 +601,7 @@ export function conjunctions(
 ): RefinementProblem<readonly number[]> {
   const n = selectors[0]?.covers.length ?? 0
   if (selectors.some((s) => s.covers.length !== n))
-    throw new MdmlError('shape', 'conjunctions: coverages differ in length')
+    throw new OmaiError('shape', 'conjunctions: coverages differ in length')
   const minSupport = options.minSupport ?? 1
   const cache = new Map<string, Uint8Array>()
   const coverage = (pattern: readonly number[]): Uint8Array => {

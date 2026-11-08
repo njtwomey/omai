@@ -1,5 +1,5 @@
 /**
- * Wavelet transforms, matching pywt, part of `mdml-engine/signal`: the discrete wavelet families and continuous
+ * Wavelet transforms, matching pywt, part of `omai-engine/signal`: the discrete wavelet families and continuous
  * wavelets, the discrete, stationary and continuous wavelet transforms with their inverses in one and two dimensions,
  * and wavelet-shrinkage denoising.
  *

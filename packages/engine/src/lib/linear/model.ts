@@ -6,7 +6,7 @@
  */
 
 // TODO: SAG and SAGA solvers (optim has them); ordinal (ordinal.ts) and mixed models (mixed.ts).
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import type { DispersionFamily, Link, LinkName } from '../dists/families/index.ts'
 import type { Distribution } from '../dists/index.ts'
 import { families } from '../dists/index.ts'
@@ -146,7 +146,7 @@ export function fitLinear(
   const design = designOf(data, who)
   const { family, link } = familyOf(h)
   if (!(h.alpha >= 0) || !(h.l1Ratio >= 0 && h.l1Ratio <= 1))
-    throw new MdmlError('value', `${who}: alpha must be >= 0 and l1Ratio in [0, 1]`)
+    throw new OmaiError('value', `${who}: alpha must be >= 0 and l1Ratio in [0, 1]`)
   const problem: GlmDesignProblem = {
     design,
     family,
@@ -263,8 +263,8 @@ export function penaltySpace(defaults: { readonly alpha: number; readonly l1Rati
  * @index estimator One penalised GLM estimator; logistic, ridge and lasso are configurations of it.
  * @example
  * ```ts
- * import { linearModel } from 'mdml-engine/linear'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { linearModel } from 'omai-engine/linear'
+ * import { toArray } from 'omai-engine/tensor'
  * const x = [[0], [1], [2], [3]]
  * const ols = linearModel({ family: 'gaussian' }).fit({ x, y: [1, 3, 5, 7] })
  * toArray(ols.predict([[4]])) // => [9]

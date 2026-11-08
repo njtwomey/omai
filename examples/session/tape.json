@@ -1,5 +1,5 @@
 {
-  "schema": "mdml.tape/1",
+  "schema": "omai.tape/1",
   "method": "svm/svc",
   "seed": 0,
   "title": "Pause, jump back, compare with the truth",
@@ -19,14 +19,14 @@
       "head": 45,
       "status": "converged",
       "run": {
-        "schema": "mdml.run/1",
+        "schema": "omai.run/1",
         "events": [
           {
             "type": "run",
             "runId": "svm/svc:0",
             "name": "svm/svc",
             "seed": 0,
-            "version": "0.1.2",
+            "version": "0.1.3",
             "config": {
               "loss": "hinge",
               "solver": {

@@ -34,11 +34,11 @@ export interface MemberDoc {
 
 /** One exported symbol, at its canonical home (the entry point whose folder defines it). */
 export interface SymbolDoc {
-  /** `<module>#<name>`, such as `mdml-engine/tensor#add`. */
+  /** `<module>#<name>`, such as `omai-engine/tensor#add`. */
   readonly id: string
-  /** The package, such as `mdml-engine`. */
+  /** The package, such as `omai-engine`. */
   readonly package: string
-  /** The canonical entry point, such as `mdml-engine/tensor`. */
+  /** The canonical entry point, such as `omai-engine/tensor`. */
   readonly module: string
   readonly name: string
   readonly kind: SymbolKind
@@ -73,7 +73,7 @@ export type ModuleLayer = 'core' | 'part'
 
 /** One public entry point. */
 export interface ModuleDoc {
-  /** The import specifier, such as `mdml-engine/numerics/linalg`. */
+  /** The import specifier, such as `omai-engine/numerics/linalg`. */
   readonly id: string
   readonly package: string
   /** The path below the package, such as `numerics/linalg` (`''` for a package root). */

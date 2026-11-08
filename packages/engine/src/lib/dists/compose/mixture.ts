@@ -4,7 +4,7 @@
  * (responsibilities) that form the E step of expectation maximisation.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { foldIn, type Key } from '../../random/index.ts'
 import {
   add,
@@ -59,7 +59,7 @@ export interface Mixture extends Distribution {
 function logWeightsOf(weights: MixtureWeights): Value {
   const raw =
     'logits' in weights ? (promoteFloat(weights.logits)[0] as Value) : log(promoteFloat(weights.probs)[0] as Value)
-  if (raw.shape.length === 0) throw new MdmlError('shape', 'mixture: weights need a component axis')
+  if (raw.shape.length === 0) throw new OmaiError('shape', 'mixture: weights need a component axis')
   return logSoftmax(raw, -1)
 }
 
@@ -236,13 +236,13 @@ function widest(supports: readonly Support[]): Support {
  * @param weights - `{ probs }` or `{ logits }`, `[..., K]`.
  * @param components - The K components.
  * @returns The mixture (with `logWeights` and `componentLogProbs`).
- * @throws MdmlError with code `shape` when the components disagree in shape or number.
+ * @throws OmaiError with code `shape` when the components disagree in shape or number.
  * @index distribution Mixture of any component distributions.
  * @example
  * ```ts
- * import { normal } from 'mdml-engine/dists'
- * import { mixture } from 'mdml-engine/dists/compose'
- * import { item } from 'mdml-engine/tensor'
+ * import { normal } from 'omai-engine/dists'
+ * import { mixture } from 'omai-engine/dists/compose'
+ * import { item } from 'omai-engine/tensor'
  * const m = mixture({ probs: [0.3, 0.7] }, [normal(0, 1), normal(3, 0.5)])
  * Math.abs(item(m.mean()) - 2.1) < 1e-14 // => true
  * ```
@@ -252,10 +252,10 @@ export function mixture(weights: MixtureWeights, components: readonly Distributi
   const k = lw.shape[lw.shape.length - 1] ?? 0
   const first = components[0]
   if (first === undefined || components.length !== k)
-    throw new MdmlError('shape', `mixture: ${k} weights but ${components.length} components`)
+    throw new OmaiError('shape', `mixture: ${k} weights but ${components.length} components`)
   for (const c of components)
     if (!shapesEqual(c.eventShape, first.eventShape))
-      throw new MdmlError('shape', 'mixture: components must share an event shape')
+      throw new OmaiError('shape', 'mixture: components must share an event shape')
   const eventShape = [...first.eventShape]
   const along = (f: (c: Distribution) => Value): Value => stack(components.map(f), -1 - eventShape.length)
   const lastAxis = (f: (c: Distribution) => Value): Value => stack(components.map(f), -1)
@@ -287,12 +287,12 @@ export function mixture(weights: MixtureWeights, components: readonly Distributi
  * @param weights - `{ probs }` or `{ logits }`, `[..., K]`.
  * @param component - A distribution with batch shape `[..., K]`.
  * @returns The mixture, with batch shape `[...]`.
- * @throws MdmlError with code `shape` when the component axis disagrees with the weights.
+ * @throws OmaiError with code `shape` when the component axis disagrees with the weights.
  * @example
  * ```ts
- * import { normal } from 'mdml-engine/dists'
- * import { mixtureSameFamily } from 'mdml-engine/dists/compose'
- * import { item } from 'mdml-engine/tensor'
+ * import { normal } from 'omai-engine/dists'
+ * import { mixtureSameFamily } from 'omai-engine/dists/compose'
+ * import { item } from 'omai-engine/tensor'
  * const m = mixtureSameFamily({ probs: [0.5, 0.5] }, normal([-1, 1], [1, 1]))
  * item(m.mean()) // => 0
  * ```
@@ -302,7 +302,7 @@ export function mixtureSameFamily(weights: MixtureWeights, component: Distributi
   const k = lw.shape[lw.shape.length - 1] ?? 0
   const cb = component.batchShape
   if ((cb[cb.length - 1] ?? -1) !== k)
-    throw new MdmlError('shape', `mixtureSameFamily: the component batch must end in ${k}`)
+    throw new OmaiError('shape', `mixtureSameFamily: the component batch must end in ${k}`)
   const eventShape = [...component.eventShape]
   const eventRank = eventShape.length
   // Insert the component axis into x, before its event axes.
@@ -334,9 +334,9 @@ export function mixtureSameFamily(weights: MixtureWeights, component: Distributi
  * @returns Responsibilities `[..., K]`, summing to one over the last axis.
  * @example
  * ```ts
- * import { normal } from 'mdml-engine/dists'
- * import { mixture, responsibilities } from 'mdml-engine/dists/compose'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { normal } from 'omai-engine/dists'
+ * import { mixture, responsibilities } from 'omai-engine/dists/compose'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(responsibilities(mixture({ probs: [0.5, 0.5] }, [normal(-1, 1), normal(1, 1)]), 0)).map((v) => Math.round(v * 1e12) / 1e12) // => [0.5, 0.5]
  * ```
  */

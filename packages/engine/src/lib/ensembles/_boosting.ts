@@ -1,6 +1,6 @@
 // The machinery shared by the gradient-boosting estimators (exact trees and histograms): the losses, the boosting
 // algorithm that adds one stage per step, a stage grower to plug in, the verbs of a fitted model and the estimator.
-import { argmaxOf, MdmlError, quantileOf } from '../base/index.ts'
+import { argmaxOf, OmaiError, quantileOf } from '../base/index.ts'
 import { categorical, type Distribution } from '../dists/index.ts'
 import type { Exposition } from '../exposition/index.ts'
 import { type IterativeEstimator, iterative } from '../learn/bases/iterative.ts'
@@ -224,7 +224,7 @@ export function lossSpec(
   if (classes > 0) {
     const k = classes === 2 ? 1 : classes
     if (kind === 'exponential') {
-      if (classes !== 2) throw new MdmlError('value', 'gradientBoosting: the exponential loss needs two classes')
+      if (classes !== 2) throw new OmaiError('value', 'gradientBoosting: the exponential loss needs two classes')
       const sign = (i: number): number => 2 * (y[i] ?? 0) - 1
       return {
         k,
@@ -481,15 +481,15 @@ export function boostingAlgorithm(
 ): Algorithm<BoostingState, BoostingPath> {
   const m = matrixView(data.x, name, { allowNaN: true })
   const n = m.n
-  if (data.y === undefined) throw new MdmlError('value', `${name}: needs targets y`)
+  if (data.y === undefined) throw new OmaiError('value', `${name}: needs targets y`)
   const labels = classifier ? encodeLabels(data.y, name, n) : undefined
   const y = labels === undefined ? targetVector(data.y, name, n) : Float64Array.from(labels.codes)
   const w = sampleWeightsOf(data.weights, n, name)
   const classes = labels?.classes.length ?? 0
-  if (classifier && classes < 2) throw new MdmlError('value', `${name}: needs two classes`)
+  if (classifier && classes < 2) throw new OmaiError('value', `${name}: needs two classes`)
   const loss = lossSpec(h, y, w, classes)
   if (h.leaves === 'newton' && loss.hessian === undefined)
-    throw new MdmlError('value', `${name}: Newton leaves need a smooth loss, not ${h.loss}`)
+    throw new OmaiError('value', `${name}: Newton leaves need a smooth loss, not ${h.loss}`)
   const k = loss.k
   const init = loss.init()
   const grower = makeGrower({ m, w, y, loss, h })
@@ -592,7 +592,7 @@ export function boostingAlgorithm(
  *
  * @example
  * ```ts
- * import type { BoostingPath } from 'mdml-engine/ensembles'
+ * import type { BoostingPath } from 'omai-engine/ensembles'
  * const path: BoostingPath = 'boost/trainLoss'
  * path // => 'boost/trainLoss'
  * ```

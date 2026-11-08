@@ -5,7 +5,7 @@
  * relaxation for a consistently ordered matrix.
  */
 
-import { type Json, MdmlError } from '../../base/index.ts'
+import { type Json, OmaiError } from '../../base/index.ts'
 import { fromStorage, primalOf, promoteFloat, type Tensor, type TensorLike, toFlat } from '../../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../../trace/index.ts'
 import { solveKernel } from '../linalg/_kernels.ts'
@@ -47,8 +47,8 @@ const SCHEMA = channels({
 })
 
 function checkOmega(method: StationaryMethod, omega: number): void {
-  if (!(omega > 0 && Number.isFinite(omega))) throw new MdmlError('value', 'stationary iterations need omega > 0')
-  if (method === 'sor' && omega >= 2) throw new MdmlError('value', 'SOR diverges for omega outside (0, 2)')
+  if (!(omega > 0 && Number.isFinite(omega))) throw new OmaiError('value', 'stationary iterations need omega > 0')
+  if (method === 'sor' && omega >= 2) throw new OmaiError('value', 'SOR diverges for omega outside (0, 2)')
 }
 
 /**
@@ -62,7 +62,7 @@ function checkOmega(method: StationaryMethod, omega: number): void {
  * @returns The algorithm, named for the method.
  * @example
  * ```ts
- * import { stationaryAlgorithm } from 'mdml-engine/numerics/sparse'
+ * import { stationaryAlgorithm } from 'omai-engine/numerics/sparse'
  * stationaryAlgorithm([[4, 1], [1, 3]], [1, 2], { method: 'jacobi' }).name // => 'jacobi'
  * ```
  */
@@ -73,7 +73,7 @@ export function stationaryAlgorithm(
 ): Algorithm<StationaryState> {
   const rows = rowsOf(a)
   const bv = Float64Array.from(toFlat(primalOf(promoteFloat(b)[0] as Tensor)))
-  if (bv.length !== rows.n) throw new MdmlError('shape', 'stationary iterations need b with one entry per row')
+  if (bv.length !== rows.n) throw new OmaiError('shape', 'stationary iterations need b with one entry per row')
   const method = options.method ?? 'gauss-seidel'
   const omega = options.omega ?? (method === 'sor' ? 1.5 : 1)
   checkOmega(method, omega)
@@ -81,7 +81,7 @@ export function stationaryAlgorithm(
   const atol = options.atol ?? 0
   const tol = Math.max(rtol * norm(bv), atol)
   const x0 = options.x0 === undefined ? new Array<number>(rows.n).fill(0) : Array.from(options.x0)
-  if (x0.length !== rows.n) throw new MdmlError('shape', 'stationary iterations need x0 with one entry per row')
+  if (x0.length !== rows.n) throw new OmaiError('shape', 'stationary iterations need x0 with one entry per row')
   return {
     name: method,
     config: { method, omega: method === 'gauss-seidel' ? 1 : omega, rtol, atol } as Json,
@@ -121,8 +121,8 @@ export type StationaryRun = StationaryOptions &
  * @returns The solution with its residual history.
  * @example
  * ```ts
- * import { stationarySolve } from 'mdml-engine/numerics/sparse'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { stationarySolve } from 'omai-engine/numerics/sparse'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(stationarySolve([[4, 1], [1, 3]], [1, 2], { method: 'gauss-seidel', rtol: 1e-12 }).x).map((v) => Math.round(v * 1e8) / 1e8) // => [0.09090909, 0.63636364]
  * ```
  */
@@ -156,7 +156,7 @@ export function stationarySolve(a: CsrMatrix | TensorLike, b: TensorLike, option
  * @returns The solution with its residual history.
  * @example
  * ```ts
- * import { jacobi } from 'mdml-engine/numerics/sparse'
+ * import { jacobi } from 'omai-engine/numerics/sparse'
  * jacobi([[4, 1], [1, 3]], [1, 2]).converged // => true
  * ```
  */
@@ -177,7 +177,7 @@ export function jacobi(
  * @returns The solution with its residual history.
  * @example
  * ```ts
- * import { gaussSeidel } from 'mdml-engine/numerics/sparse'
+ * import { gaussSeidel } from 'omai-engine/numerics/sparse'
  * gaussSeidel([[4, 1], [1, 3]], [1, 2]).converged // => true
  * ```
  */
@@ -198,7 +198,7 @@ export function gaussSeidel(
  * @returns The solution with its residual history.
  * @example
  * ```ts
- * import { sor } from 'mdml-engine/numerics/sparse'
+ * import { sor } from 'omai-engine/numerics/sparse'
  * sor([[4, 1], [1, 3]], [1, 2], { omega: 1.1 }).converged // => true
  * ```
  */
@@ -219,8 +219,8 @@ export function sor(
  * @returns The dense iteration matrix.
  * @example
  * ```ts
- * import { iterationMatrix } from 'mdml-engine/numerics/sparse'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { iterationMatrix } from 'omai-engine/numerics/sparse'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(iterationMatrix([[2, 1], [1, 2]], { method: 'jacobi' })) // => [[0, -0.5], [-0.5, 0]]
  * ```
  */
@@ -265,7 +265,7 @@ export function iterationMatrix(
  * @returns The largest eigenvalue magnitude of the iteration matrix.
  * @example
  * ```ts
- * import { stationarySpectralRadius } from 'mdml-engine/numerics/sparse'
+ * import { stationarySpectralRadius } from 'omai-engine/numerics/sparse'
  * stationarySpectralRadius([[2, 1], [1, 2]], { method: 'jacobi' }) // => 0.5
  * ```
  */
@@ -287,12 +287,12 @@ export function stationarySpectralRadius(
  * @returns The optimal omega in [1, 2).
  * @example
  * ```ts
- * import { sorOptimalOmega } from 'mdml-engine/numerics/sparse'
+ * import { sorOptimalOmega } from 'omai-engine/numerics/sparse'
  * sorOptimalOmega(0) // => 1
  * ```
  */
 export function sorOptimalOmega(jacobiRadius: number): number {
   if (!(jacobiRadius >= 0 && jacobiRadius < 1))
-    throw new MdmlError('value', 'sorOptimalOmega needs a Jacobi radius in [0, 1)')
+    throw new OmaiError('value', 'sorOptimalOmega needs a Jacobi radius in [0, 1)')
   return 2 / (1 + Math.sqrt(1 - jacobiRadius * jacobiRadius))
 }

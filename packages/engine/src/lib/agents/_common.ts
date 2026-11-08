@@ -1,7 +1,7 @@
 // Shared plumbing of the neural agents (private to methods/rl/agents): spaces to sizes, batches to tensors, and one
 // optimiser step on a loss of a parameter tree.
 import { valueAndGrad } from '../autodiff/index.ts'
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import {
   adam,
   applyUpdates,
@@ -26,7 +26,7 @@ export function observationSize(space: Space): number {
 
 /** The number of actions of a discrete action space. */
 export function actionCount(space: Space, name: string): number {
-  if (space.kind !== 'discrete') throw new MdmlError('value', `${name}: needs a discrete action space`)
+  if (space.kind !== 'discrete') throw new OmaiError('value', `${name}: needs a discrete action space`)
   return space.n
 }
 
@@ -35,7 +35,7 @@ export function actionBox(
   space: Space,
   name: string,
 ): { readonly size: number; readonly low: number[]; readonly high: number[] } {
-  if (space.kind !== 'box') throw new MdmlError('value', `${name}: needs a box action space`)
+  if (space.kind !== 'box') throw new OmaiError('value', `${name}: needs a box action space`)
   const size = space.shape.reduce((a, b) => a * b, 1)
   const at = (b: number | readonly number[], i: number): number => (typeof b === 'number' ? b : (b[i] ?? 0))
   return {

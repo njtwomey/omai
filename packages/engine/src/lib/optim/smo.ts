@@ -5,7 +5,7 @@
  * solution as a kernel expansion.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import type { Tensor, TensorLike } from '../tensor/index.ts'
 import {
   type Algorithm,
@@ -69,7 +69,7 @@ export interface SmoState {
 function squareFrom(x: TensorLike, name: string): { readonly data: Float64Array; readonly n: number } {
   const t = vectorFrom(x)
   const n = Math.round(Math.sqrt(t.length))
-  if (n * n !== t.length) throw new MdmlError('shape', `${name} must be square`)
+  if (n * n !== t.length) throw new OmaiError('shape', `${name} must be square`)
   return { data: t, n }
 }
 
@@ -100,14 +100,14 @@ export interface SmoResult {
  * @param problem - Q, p, labels, bounds and start.
  * @param options - Tolerance, selection rule and shrinking.
  * @returns The algorithm.
- * @throws MdmlError with code `value` when p or Q is NaN or infinite (bounds may be infinite, not NaN).
+ * @throws OmaiError with code `value` when p or Q is NaN or infinite (bounds may be infinite, not NaN).
  * @concept support-vector-machines
  * @reference R.-E. Fan, P.-H. Chen and C.-J. Lin, Working set selection using second order information for training
  * support vector machines (2005).
  * @example
  * ```ts
- * import { smoAlgorithm } from 'mdml-engine/optim'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { smoAlgorithm } from 'omai-engine/optim'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const alg = smoAlgorithm({ Q: [[1, 0], [0, 1]], p: [-1, -1], y: [1, -1], C: 10 })
  * Array.from(runAlgorithm(alg, { maxSteps: 10 }).state.alpha) // => [1, 1]
  * ```
@@ -117,7 +117,7 @@ export function smoAlgorithm(problem: SmoProblem, options: SmoOptions = {}): Alg
   const n = p.length
   const Q = matrixFrom(problem.Q, n, 'Q').data
   const y = vectorFrom(problem.y)
-  if (y.length !== n || y.some((v) => v !== 1 && v !== -1)) throw new MdmlError('value', 'smo: y must be +1 or -1')
+  if (y.length !== n || y.some((v) => v !== 1 && v !== -1)) throw new OmaiError('value', 'smo: y must be +1 or -1')
   const C = typeof problem.C === 'number' ? new Float64Array(n).fill(problem.C) : vectorFrom(problem.C)
   const eps = options.tol ?? 1e-3
   const secondOrder = options.selection !== 'first-order'
@@ -302,7 +302,7 @@ export function smoAlgorithm(problem: SmoProblem, options: SmoOptions = {}): Alg
  * @concept support-vector-machines
  * @example
  * ```ts
- * import { smoRho } from 'mdml-engine/optim'
+ * import { smoRho } from 'omai-engine/optim'
  * smoRho(Float64Array.of(0.5, 0.5), Float64Array.of(-0.5, 0.5), Float64Array.of(1, -1), Float64Array.of(1, 1)) // => -0.5
  * ```
  */
@@ -338,7 +338,7 @@ export function smoRho(alpha: Float64Array, grad: Float64Array, y: Float64Array,
  * @concept support-vector-machines
  * @example
  * ```ts
- * import { smo } from 'mdml-engine/optim'
+ * import { smo } from 'omai-engine/optim'
  * const r = smo({ Q: [[1, 0], [0, 1]], p: [-1, -1], y: [1, -1], C: 10 })
  * [r.objective, r.rho] // => [-1, 0]
  * ```
@@ -391,8 +391,8 @@ export interface SvmDualResult extends SmoResult {
  * @concept support-vector-machines
  * @example
  * ```ts
- * import { svcDual } from 'mdml-engine/optim'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { svcDual } from 'omai-engine/optim'
+ * import { toArray } from 'omai-engine/tensor'
  * const K = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
  * toArray(svcDual(K, [1, -1, -1], 10, { tol: 1e-12 }).coef).map((v) => Math.round(v * 1e6) / 1e6) // => [1.333333, -0.666667, -0.666667]
  * ```
@@ -424,7 +424,7 @@ export function svcDual(
  * @concept support-vector-machines
  * @example
  * ```ts
- * import { svrDual } from 'mdml-engine/optim'
+ * import { svrDual } from 'omai-engine/optim'
  * const r = svrDual([[1, 0], [0, 1]], [1, -1], 10, 0.1)
  * Math.round(r.bias * 1e9) / 1e9 // => 0
  * ```
@@ -454,21 +454,21 @@ export function svrDual(
  * @param nu - In (0, 1].
  * @param options - SMO options.
  * @returns alpha, coef = alpha, rho, bias and the support.
- * @throws MdmlError `domain` for nu outside (0, 1].
+ * @throws OmaiError `domain` for nu outside (0, 1].
  * @concept support-vector-machines
  * @reference B. Schoelkopf, J. Platt, J. Shawe-Taylor, A. Smola and R. Williamson, Estimating the support of a
  * high-dimensional distribution (2001).
  * @example
  * ```ts
- * import { oneClassDual } from 'mdml-engine/optim'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { oneClassDual } from 'omai-engine/optim'
+ * import { toArray } from 'omai-engine/tensor'
  * const r = oneClassDual([[1, 0, 0], [0, 1, 0], [0, 0, 1]], 0.5, { tol: 1e-12 })
  * toArray(r.coef).map((v) => Math.round(v * 1e6) / 1e6) // => [0.5, 0.5, 0.5]
  * ```
  */
 export function oneClassDual(kernel: TensorLike, nu: number, options: SmoOptions = {}): SvmDualResult {
   const K = squareFrom(kernel, 'kernel')
-  if (!(nu > 0 && nu <= 1)) throw new MdmlError('domain', `oneClassDual: nu must be in (0, 1], got ${nu}`)
+  if (!(nu > 0 && nu <= 1)) throw new OmaiError('domain', `oneClassDual: nu must be in (0, 1], got ${nu}`)
   const r = smo(oneClassProblem(K.data, nu), options)
   return { ...r, coef: r.alpha }
 }
@@ -489,12 +489,12 @@ export interface SvddResult extends SvmDualResult {
  * @param C - The penalty on points outside the ball, at least 1/n (1 is the hard ball).
  * @param options - SMO options.
  * @returns alpha, coef = alpha, rho, the squared radius and the support.
- * @throws MdmlError `domain` for C < 1/n.
+ * @throws OmaiError `domain` for C < 1/n.
  * @concept support-vector-machines
  * @reference D. Tax and R. Duin, Support vector data description (2004).
  * @example
  * ```ts
- * import { svddDual } from 'mdml-engine/optim'
+ * import { svddDual } from 'omai-engine/optim'
  * const r = svddDual([[1, 0], [0, 1]], 1, { tol: 1e-12 })
  * [r.alpha.data[0], r.alpha.data[1], r.radiusSquared] // => [0.5, 0.5, 0.5]
  * ```
@@ -502,7 +502,7 @@ export interface SvddResult extends SvmDualResult {
 export function svddDual(kernel: TensorLike, C: number, options: SmoOptions = {}): SvddResult {
   const K = squareFrom(kernel, 'kernel')
   const n = K.n
-  if (!(C * n >= 1 - 1e-12)) throw new MdmlError('domain', `svddDual: C must be at least 1/n = ${1 / n}, got ${C}`)
+  if (!(C * n >= 1 - 1e-12)) throw new OmaiError('domain', `svddDual: C must be at least 1/n = ${1 / n}, got ${C}`)
   const r = smo(svddProblem(K.data, C), options)
   let quad = 0
   for (let i = 0; i < n; i++)

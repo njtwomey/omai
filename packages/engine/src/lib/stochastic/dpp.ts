@@ -5,7 +5,7 @@
  * sample size.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { eigh, inv, slogdet, solve } from '../numerics/linalg/index.ts'
 import { foldIn, type Key, uniform } from '../random/index.ts'
 import {
@@ -37,7 +37,7 @@ import { primalNumbers } from './_shared.ts'
 function kernelOf(l: TensorLike, where: string): { l: Value; n: number } {
   const v = asFloat(asTensor(l))
   if (v.shape.length !== 2 || v.shape[0] !== v.shape[1] || (v.shape[0] ?? 0) === 0) {
-    throw new MdmlError('shape', `${where}: L must be a non-empty square matrix`)
+    throw new OmaiError('shape', `${where}: L must be a non-empty square matrix`)
   }
   return { l: v, n: v.shape[0] ?? 0 }
 }
@@ -46,7 +46,7 @@ function subsetOf(subset: readonly number[], n: number, where: string): number[]
   const seen = new Set<number>()
   for (const i of subset) {
     if (!(Number.isInteger(i) && i >= 0 && i < n) || seen.has(i)) {
-      throw new MdmlError('value', `${where}: the subset must hold distinct items in [0, ${n})`)
+      throw new OmaiError('value', `${where}: the subset must hold distinct items in [0, ${n})`)
     }
     seen.add(i)
   }
@@ -71,8 +71,8 @@ function logDet(m: Value): Value {
  * @concept determinantal-point-processes
  * @example
  * ```ts
- * import { marginalKernel } from 'mdml-engine/stochastic'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { marginalKernel } from 'omai-engine/stochastic'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(marginalKernel([[1, 0], [0, 3]])) // => [[0.5, 0], [0, 0.75]]
  * ```
  */
@@ -90,8 +90,8 @@ export function marginalKernel(l: TensorLike): Value {
  * @concept determinantal-point-processes
  * @example
  * ```ts
- * import { dppLogProbability } from 'mdml-engine/stochastic'
- * import { item } from 'mdml-engine/tensor'
+ * import { dppLogProbability } from 'omai-engine/stochastic'
+ * import { item } from 'omai-engine/tensor'
  * Math.exp(item(dppLogProbability([[1, 0], [0, 3]], [1]))) // => 0.375
  * ```
  */
@@ -112,8 +112,8 @@ export function dppLogProbability(l: TensorLike, subset: readonly number[]): Val
  * @concept determinantal-point-processes
  * @example
  * ```ts
- * import { inclusionProbability } from 'mdml-engine/stochastic'
- * import { item } from 'mdml-engine/tensor'
+ * import { inclusionProbability } from 'omai-engine/stochastic'
+ * import { item } from 'omai-engine/tensor'
  * item(inclusionProbability([[1, 0], [0, 3]], [0, 1])) // => 0.375
  * ```
  */
@@ -136,12 +136,12 @@ export function inclusionProbability(l: TensorLike, subset: readonly number[]): 
  * @concept determinantal-point-processes
  * @example
  * ```ts
- * import { elementarySymmetric } from 'mdml-engine/stochastic'
+ * import { elementarySymmetric } from 'omai-engine/stochastic'
  * Array.from(elementarySymmetric([1, 2, 3], 3)) // => [1, 6, 11, 6]
  * ```
  */
 export function elementarySymmetric(values: ArrayLike<number>, k: number): Float64Array {
-  if (!(Number.isInteger(k) && k >= 0)) throw new MdmlError('value', 'elementarySymmetric: k must be >= 0')
+  if (!(Number.isInteger(k) && k >= 0)) throw new OmaiError('value', 'elementarySymmetric: k must be >= 0')
   const e = new Float64Array(k + 1)
   e[0] = 1
   for (let n = 0; n < values.length; n++) {
@@ -174,15 +174,15 @@ function symmetricTable(lam: readonly number[], k: number): number[][] {
  * @concept determinantal-point-processes
  * @example
  * ```ts
- * import { kDppLogProbability } from 'mdml-engine/stochastic'
- * import { item } from 'mdml-engine/tensor'
+ * import { kDppLogProbability } from 'omai-engine/stochastic'
+ * import { item } from 'omai-engine/tensor'
  * Math.exp(item(kDppLogProbability([[1, 0], [0, 3]], [1]))) // => 0.75
  * ```
  */
 export function kDppLogProbability(l: TensorLike, subset: readonly number[]): Value {
   const { l: m, n } = kernelOf(l, 'kDppLogProbability')
   const a = subsetOf(subset, n, 'kDppLogProbability')
-  if (a.length === 0) throw new MdmlError('value', 'kDppLogProbability: k must be at least 1')
+  if (a.length === 0) throw new OmaiError('value', 'kDppLogProbability: k must be at least 1')
   const lam = toFlat(eigh(m).eigenvalues).map((v) => Math.max(v, 0))
   const ek = elementarySymmetric(lam, a.length)[a.length] ?? 0
   return sub(logDet(principal(m, a)), Math.log(ek))
@@ -309,13 +309,13 @@ function dppSteps(
  * @param l - The likelihood kernel.
  * @param k - The sample size for the k-DPP (omit it for the DPP).
  * @returns The algorithm; its state is a {@link DppState}.
- * @throws MdmlError with code `shape` for a kernel that is not square, and `value` when k is not in [1, n] or exceeds the rank of L.
+ * @throws OmaiError with code `shape` for a kernel that is not square, and `value` when k is not in [1, n] or exceeds the rank of L.
  * @concept determinantal-point-processes
  * @example
  * ```ts
- * import { key } from 'mdml-engine/random'
- * import { dppAlgorithm } from 'mdml-engine/stochastic'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { key } from 'omai-engine/random'
+ * import { dppAlgorithm } from 'omai-engine/stochastic'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * runAlgorithm(dppAlgorithm(key(0), [[1e9, 0], [0, 1e9]]), { maxSteps: 10 }).state.chosen.length // => 2
  * ```
  */
@@ -323,7 +323,7 @@ export function dppAlgorithm(key: Key, l: TensorLike, k?: number): Algorithm<Dpp
   const where = k === undefined ? 'sampleDpp' : 'sampleKDpp'
   const { l: m, n } = kernelOf(l, where)
   if (k !== undefined && !(Number.isInteger(k) && k >= 1 && k <= n))
-    throw new MdmlError('value', 'sampleKDpp: k must be in [1, n]')
+    throw new OmaiError('value', 'sampleKDpp: k must be in [1, n]')
   return dppSteps(k === undefined ? 'dpp' : 'k-dpp', k === undefined ? {} : { k }, key, n, () => {
     const { values, vectors } = spectral(m)
     if (k === undefined) {
@@ -332,7 +332,7 @@ export function dppAlgorithm(key: Key, l: TensorLike, k?: number): Algorithm<Dpp
     }
     const e = symmetricTable(values, k)
     const top = values.reduce((mx, v) => Math.max(mx, v), 0)
-    if (!((e[k]?.[n] ?? 0) > 1e-10 * top ** k)) throw new MdmlError('value', 'sampleKDpp: k exceeds the rank of L')
+    if (!((e[k]?.[n] ?? 0) > 1e-10 * top ** k)) throw new OmaiError('value', 'sampleKDpp: k exceeds the rank of L')
     const chosen: number[][] = []
     let left = k
     const u = uniform(foldIn(key, 0), [n]).data
@@ -365,8 +365,8 @@ function runDpp(key: Key, l: TensorLike, k: number | undefined): number[] {
  *   and B. Taskar, Determinantal point processes for machine learning (2012).
  * @example
  * ```ts
- * import { key } from 'mdml-engine/random'
- * import { sampleDpp } from 'mdml-engine/stochastic'
+ * import { key } from 'omai-engine/random'
+ * import { sampleDpp } from 'omai-engine/stochastic'
  * sampleDpp(key(0), [[1e9, 0], [0, 1e9]]) // => [0, 1]
  * ```
  */
@@ -382,12 +382,12 @@ export function sampleDpp(key: Key, l: TensorLike): number[] {
  * @param l - The likelihood kernel.
  * @param k - The sample size (at most the rank of L).
  * @returns k items, increasing.
- * @throws MdmlError with code `value` when k exceeds the rank.
+ * @throws OmaiError with code `value` when k exceeds the rank.
  * @concept determinantal-point-processes
  * @example
  * ```ts
- * import { key } from 'mdml-engine/random'
- * import { sampleKDpp } from 'mdml-engine/stochastic'
+ * import { key } from 'omai-engine/random'
+ * import { sampleKDpp } from 'omai-engine/stochastic'
  * sampleKDpp(key(0), [[2, 0.5, 0], [0.5, 1, 0.2], [0, 0.2, 1]], 2).length // => 2
  * ```
  */
@@ -408,14 +408,14 @@ export function sampleKDpp(key: Key, l: TensorLike, k: number): number[] {
  *   recommendation diversity (NeurIPS 2018).
  * @example
  * ```ts
- * import { greedyMap } from 'mdml-engine/stochastic'
+ * import { greedyMap } from 'omai-engine/stochastic'
  * greedyMap([[3, 2.9, 0], [2.9, 3, 0], [0, 0, 2]], 2) // => [0, 2]
  * ```
  */
 export function greedyMap(l: TensorLike, k?: number): number[] {
   const { l: m, n } = kernelOf(l, 'greedyMap')
   const cap = k ?? n
-  if (!(Number.isInteger(cap) && cap >= 1 && cap <= n)) throw new MdmlError('value', 'greedyMap: k must be in [1, n]')
+  if (!(Number.isInteger(cap) && cap >= 1 && cap <= n)) throw new OmaiError('value', 'greedyMap: k must be in [1, n]')
   const a = primalNumbers(m)
   const d2 = Array.from({ length: n }, (_, i) => a[i * n + i] ?? 0)
   const c: number[][] = Array.from({ length: n }, () => [])
@@ -457,11 +457,11 @@ export interface ConditionedDpp {
  * @param l - The likelihood kernel.
  * @param options - The items to include and to exclude.
  * @returns The conditioned kernel and the original indices of its items.
- * @throws MdmlError with code `value` when the sets overlap.
+ * @throws OmaiError with code `value` when the sets overlap.
  * @concept determinantal-point-processes
  * @example
  * ```ts
- * import { conditionDpp } from 'mdml-engine/stochastic'
+ * import { conditionDpp } from 'omai-engine/stochastic'
  * conditionDpp([[1, 0, 0], [0, 2, 0], [0, 0, 3]], { exclude: [1] }).items // => [0, 2]
  * ```
  */
@@ -472,7 +472,7 @@ export function conditionDpp(
   const { l: m, n } = kernelOf(l, 'conditionDpp')
   const inc = subsetOf(options.include ?? [], n, 'conditionDpp')
   const exc = subsetOf(options.exclude ?? [], n, 'conditionDpp')
-  if (inc.some((i) => exc.includes(i))) throw new MdmlError('value', 'conditionDpp: include and exclude overlap')
+  if (inc.some((i) => exc.includes(i))) throw new OmaiError('value', 'conditionDpp: include and exclude overlap')
   const keep = Array.from({ length: n }, (_, i) => i).filter((i) => !exc.includes(i))
   let kernel = principal(m, keep)
   let items = keep
@@ -504,7 +504,7 @@ export function conditionDpp(
  * @concept determinantal-point-processes
  * @example
  * ```ts
- * import { expectedSize } from 'mdml-engine/stochastic'
+ * import { expectedSize } from 'omai-engine/stochastic'
  * expectedSize([[1, 0], [0, 3]]) // => 1.25
  * ```
  */

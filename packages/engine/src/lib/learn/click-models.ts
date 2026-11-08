@@ -7,7 +7,7 @@
  * log-likelihood of a log. The EM fits are `Algorithm`s, one iteration per step, with serialisable states.
  */
 
-import { type Json, MdmlError, maxOf } from '../base/index.ts'
+import { type Json, maxOf, OmaiError } from '../base/index.ts'
 import type { InteractionData } from '../data/index.ts'
 import { toFlat } from '../tensor/index.ts'
 import { type Algorithm, runAlgorithm } from '../trace/index.ts'
@@ -24,12 +24,12 @@ export interface ClickSession {
  *
  * @param data - An interaction dataset with sessions (or users as sessions) and clicks as values.
  * @returns The sessions in order of session id.
- * @throws MdmlError with code `value` for a log without sessions or positions.
+ * @throws OmaiError with code `value` for a log without sessions or positions.
  * @concept click-models
  * @example
  * ```ts
- * import { clickSessions } from 'mdml-engine/learn'
- * import { interactions } from 'mdml-engine/data'
+ * import { clickSessions } from 'omai-engine/learn'
+ * import { interactions } from 'omai-engine/data'
  * clickSessions(interactions({ users: [0, 0, 1, 1], items: [3, 1, 2, 3], values: [0, 1, 1, 0], positions: [0, 1, 0, 1], sessions: [0, 0, 1, 1] })) // => [{ items: [3, 1], clicks: [0, 1] }, { items: [2, 3], clicks: [1, 0] }]
  * ```
  */
@@ -38,7 +38,7 @@ export function clickSessions(data: InteractionData): ClickSession[] {
   const items = toFlat(data.items)
   const values = toFlat(data.values)
   if (data.positions === undefined && data.sessions === undefined)
-    throw new MdmlError('value', 'clickSessions: needs sessions and display positions')
+    throw new OmaiError('value', 'clickSessions: needs sessions and display positions')
   const positions = data.positions === undefined ? undefined : toFlat(data.positions)
   const bySession = new Map<number, { rank: number; item: number; click: number }[]>()
   for (let i = 0; i < items.length; i++) {
@@ -107,11 +107,11 @@ function pbmLogLikelihood(
  * @param nItems - The number of items.
  * @param options - The tolerance on parameter change (default 1e-8).
  * @returns The algorithm.
- * @throws MdmlError with code `value` for no sessions.
+ * @throws OmaiError with code `value` for no sessions.
  * @concept click-models
  * @example
  * ```ts
- * import { positionBasedAlgorithm } from 'mdml-engine/learn'
+ * import { positionBasedAlgorithm } from 'omai-engine/learn'
  * positionBasedAlgorithm([{ items: [0, 1], clicks: [1, 0] }], 2).name // => 'positionBasedEm'
  * ```
  */
@@ -120,7 +120,7 @@ export function positionBasedAlgorithm(
   nItems: number,
   options: { readonly tol?: number } = {},
 ): Algorithm<PositionBasedState> {
-  if (sessions.length === 0) throw new MdmlError('value', 'positionBasedModel: needs sessions')
+  if (sessions.length === 0) throw new OmaiError('value', 'positionBasedModel: needs sessions')
   const depth = maxOf(sessions.map((s) => s.items.length))
   const tol = options.tol ?? 1e-8
   return {
@@ -192,7 +192,7 @@ export function positionBasedAlgorithm(
  * @concept click-models
  * @example
  * ```ts
- * import { positionBasedFromState } from 'mdml-engine/learn'
+ * import { positionBasedFromState } from 'omai-engine/learn'
  * positionBasedFromState({ gamma: [0.8, 0.4], alpha: [0.5], logLikelihood: 0, change: 0, iteration: 1 }).examination // => [1, 0.5]
  * ```
  */
@@ -215,7 +215,7 @@ export function positionBasedFromState(s: PositionBasedState): PositionBasedMode
  * @concept click-models
  * @example
  * ```ts
- * import { positionBasedModel } from 'mdml-engine/learn'
+ * import { positionBasedModel } from 'omai-engine/learn'
  * positionBasedModel([{ items: [0, 1], clicks: [1, 0] }, { items: [1, 0], clicks: [0, 1] }], 2).model.examination.length // => 2
  * ```
  */
@@ -240,7 +240,7 @@ export function positionBasedModel(
  * @concept click-models
  * @example
  * ```ts
- * import { positionBasedClickProbabilities } from 'mdml-engine/learn'
+ * import { positionBasedClickProbabilities } from 'omai-engine/learn'
  * positionBasedClickProbabilities({ examination: [1, 0.5], attractiveness: [0.4, 0.8], logLikelihood: 0 }, [0, 1]) // => [0.4, 0.4]
  * ```
  */
@@ -271,7 +271,7 @@ export interface CascadeModel {
  * @concept click-models
  * @example
  * ```ts
- * import { cascadeModel } from 'mdml-engine/learn'
+ * import { cascadeModel } from 'omai-engine/learn'
  * cascadeModel([{ items: [0, 1], clicks: [0, 1] }, { items: [0, 1], clicks: [1, 0] }], 2, [0, 0]).attractiveness.map((a) => Math.round(a * 100) / 100) // => [0.5, 1]
  * ```
  */
@@ -321,7 +321,7 @@ function cascadeLogLikelihood(sessions: readonly ClickSession[], attractiveness:
  * @concept click-models
  * @example
  * ```ts
- * import { cascadeClickProbabilities } from 'mdml-engine/learn'
+ * import { cascadeClickProbabilities } from 'omai-engine/learn'
  * cascadeClickProbabilities({ attractiveness: [0.5, 0.5], logLikelihood: 0 }, [0, 1]) // => [0.5, 0.25]
  * ```
  */
@@ -424,11 +424,11 @@ function dbnLogLikelihood(
  * @param nItems - The number of items.
  * @param options - The tolerance on parameter change (default 1e-8) and the pseudo-counts for attractiveness and satisfaction (default Beta(1, 1)).
  * @returns The algorithm.
- * @throws MdmlError with code `value` for no sessions.
+ * @throws OmaiError with code `value` for no sessions.
  * @concept click-models
  * @example
  * ```ts
- * import { dbnAlgorithm } from 'mdml-engine/learn'
+ * import { dbnAlgorithm } from 'omai-engine/learn'
  * dbnAlgorithm([{ items: [0, 1], clicks: [1, 0] }], 2).name // => 'dbnEm'
  * ```
  */
@@ -437,7 +437,7 @@ export function dbnAlgorithm(
   nItems: number,
   options: { readonly tol?: number; readonly prior?: number } = {},
 ): Algorithm<DbnState> {
-  if (sessions.length === 0) throw new MdmlError('value', 'dbn: needs sessions')
+  if (sessions.length === 0) throw new OmaiError('value', 'dbn: needs sessions')
   const tol = options.tol ?? 1e-8
   const prior = options.prior ?? 1
   return {
@@ -517,7 +517,7 @@ export function dbnAlgorithm(
  * @concept click-models
  * @example
  * ```ts
- * import { dbnModel } from 'mdml-engine/learn'
+ * import { dbnModel } from 'omai-engine/learn'
  * dbnModel([{ items: [0, 1], clicks: [1, 0] }, { items: [1, 0], clicks: [0, 0] }], 2, { maxIter: 5 }).model.attractiveness.length // => 2
  * ```
  */
@@ -541,7 +541,7 @@ export function dbnModel(
  * @concept click-models
  * @example
  * ```ts
- * import { dbnClickProbabilities } from 'mdml-engine/learn'
+ * import { dbnClickProbabilities } from 'omai-engine/learn'
  * dbnClickProbabilities({ attractiveness: [0.5, 0.5], satisfaction: [1, 1], continuation: 1, logLikelihood: 0 }, [0, 1]) // => [0.5, 0.25]
  * ```
  */

@@ -2,8 +2,8 @@
 
 # scene
 
-Pictures and structures as data: drawings (`Scene`: shapes, text, paths), 3-D layers, rasters, graph-shaped descriptions (`Structure`: nodes and edges for trees, networks and architectures) and timelines. The engine describes what to draw; mdml-render draws it.
+Pictures and structures as data: drawings (`Scene`: shapes, text, paths), 3-D layers, rasters, graph-shaped descriptions (`Structure`: nodes and edges for trees, networks and architectures) and timelines. The engine describes what to draw; omai-render draws it.
 
-- structure `types.ts` (file): Scene graph node types: shapes, text, paths, 3-D layers. `src/lib/scene/types.ts:1` `mdml-engine/scene`
+- structure `types.ts` (file): Scene graph node types: shapes, text, paths, 3-D layers. `src/lib/scene/types.ts:1` `omai-engine/scene`
 
-- function `scene`: Build a Scene from nodes; rect, circle and path sit beside it. `src/lib/scene/build.ts:45` `mdml-engine/scene`
+- function `scene`: Build a Scene from nodes; rect, circle and path sit beside it. `src/lib/scene/build.ts:45` `omai-engine/scene`

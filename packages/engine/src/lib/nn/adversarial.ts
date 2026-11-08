@@ -8,7 +8,7 @@
  */
 
 import { grad, valueAndGrad } from '../autodiff/index.ts'
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { crossEntropy, klDivergence } from '../losses/index.ts'
 import { adam, applyUpdates, type GradientTransformation, globalNorm } from '../optim/index.ts'
 import { foldIn, type Key, normal, split, uniform } from '../random/index.ts'
@@ -91,7 +91,7 @@ export interface AttackOptions {
  * @concept adversarial-examples
  * @example
  * ```ts
- * import { marginLoss } from 'mdml-engine/nn'
+ * import { marginLoss } from 'omai-engine/nn'
  * marginLoss([[2, 1, 0], [0, 3, 1]], [0, 0]).data // => Float64Array.of(-1, 3)
  * ```
  */
@@ -164,8 +164,8 @@ const toTensor = (v: Value): Tensor => asTensor(v) as Tensor
  * @concept adversarial-examples
  * @example
  * ```ts
- * import { fgsm } from 'mdml-engine/nn'
- * import { matmul } from 'mdml-engine/tensor'
+ * import { fgsm } from 'omai-engine/nn'
+ * import { matmul } from 'omai-engine/tensor'
  * const model = (x) => matmul(x, [[1, -1], [0, 0]])
  * fgsm(model, [[1, 0]], [0], { epsilon: 0.5 }).data // => Float64Array.of(0.5, 0)
  * ```
@@ -214,7 +214,7 @@ const stepSizeOf = (o: PgdOptions): number => o.stepSize ?? (2.5 * o.epsilon) / 
 
 function startPoint(x0: Value, options: PgdOptions): Value {
   if (options.randomStart === false) return x0
-  if (options.key === undefined) throw new MdmlError('value', 'pgd: a random start needs a key (or randomStart: false)')
+  if (options.key === undefined) throw new OmaiError('value', 'pgd: a random start needs a key (or randomStart: false)')
   return project(x0, add(x0, randomPerturbation(options.key, x0.shape, options)), options)
 }
 
@@ -232,9 +232,9 @@ function startPoint(x0: Value, options: PgdOptions): Value {
  * @concept adversarial-examples
  * @example
  * ```ts
- * import { pgd } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
- * import { matmul } from 'mdml-engine/tensor'
+ * import { pgd } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
+ * import { matmul } from 'omai-engine/tensor'
  * const model = (x) => matmul(x, [[1, -1], [0, 0]])
  * Math.max(...pgd(model, [[1, 0]], [0], { epsilon: 0.5, steps: 5, key: key(0) }).data.map((v, i) => Math.abs(v - [1, 0][i]))) <= 0.5 // => true
  * ```
@@ -300,9 +300,9 @@ function fooled(logits: Value, y: Value, targeted: boolean): boolean[] {
  * @concept adversarial-examples
  * @example
  * ```ts
- * import { pgdAlgorithm } from 'mdml-engine/nn'
- * import { runAlgorithm } from 'mdml-engine/trace'
- * import { matmul } from 'mdml-engine/tensor'
+ * import { pgdAlgorithm } from 'omai-engine/nn'
+ * import { runAlgorithm } from 'omai-engine/trace'
+ * import { matmul } from 'omai-engine/tensor'
  * const model = (x) => matmul(x, [[1, -1], [0, 0]])
  * runAlgorithm(pgdAlgorithm(model, [[0.2, 0]], [0], { epsilon: 0.5, steps: 8 }), { maxSteps: 20 }).state.successRate // => 1
  * ```
@@ -446,9 +446,9 @@ export const carliniWagnerContract: Contract<CarliniWagnerState, CarliniWagnerPa
  * @concept adversarial-examples
  * @example
  * ```ts
- * import { carliniWagnerAlgorithm } from 'mdml-engine/nn'
- * import { matmul } from 'mdml-engine/tensor'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { carliniWagnerAlgorithm } from 'omai-engine/nn'
+ * import { matmul } from 'omai-engine/tensor'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const model = (x) => matmul(x, [[1, -1], [0, 0]])
  * runAlgorithm(carliniWagnerAlgorithm(model, [[1, 0]], [0], { steps: 200, c: 10 }), { maxSteps: 200 }).state.won // => [true]
  * ```
@@ -556,8 +556,8 @@ export function carliniWagnerAlgorithm(
  * @concept adversarial-examples
  * @example
  * ```ts
- * import { carliniWagnerL2 } from 'mdml-engine/nn'
- * import { matmul } from 'mdml-engine/tensor'
+ * import { carliniWagnerL2 } from 'omai-engine/nn'
+ * import { matmul } from 'omai-engine/tensor'
  * const model = (x) => matmul(x, [[1, -1], [0, 0]])
  * carliniWagnerL2(model, [[1, 0]], [0], { steps: 200, c: 10 }).success // => [true]
  * ```
@@ -644,9 +644,9 @@ export const deepFoolContract: Contract<DeepFoolState, DeepFoolPath> = defineCon
  * @concept adversarial-examples
  * @example
  * ```ts
- * import { deepFoolAlgorithm } from 'mdml-engine/nn'
- * import { matmul } from 'mdml-engine/tensor'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { deepFoolAlgorithm } from 'omai-engine/nn'
+ * import { matmul } from 'omai-engine/tensor'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const model = (x) => matmul(x, [[1, 0], [0, 1]])
  * runAlgorithm(deepFoolAlgorithm(model, [[1, 0]]), { maxSteps: 50 }).state.successRate // => 1
  * ```
@@ -762,8 +762,8 @@ export function deepFoolAlgorithm(
  * @concept adversarial-examples
  * @example
  * ```ts
- * import { deepFool } from 'mdml-engine/nn'
- * import { matmul } from 'mdml-engine/tensor'
+ * import { deepFool } from 'omai-engine/nn'
+ * import { matmul } from 'omai-engine/tensor'
  * // Logits (x0, x1): the boundary is x0 = x1, at l2 distance 1 / sqrt(2) from (1, 0.3)... here from (1, 0).
  * const r = deepFool((x) => matmul(x, [[1, 0], [0, 1]]), [[1, 0]])
  * r.distance[0] > 0.7071 && r.distance[0] < 0.7071 * 1.05 // => true
@@ -803,8 +803,8 @@ export interface TransferResult {
  * @concept adversarial-examples
  * @example
  * ```ts
- * import { transferAttack } from 'mdml-engine/nn'
- * import { matmul } from 'mdml-engine/tensor'
+ * import { transferAttack } from 'omai-engine/nn'
+ * import { matmul } from 'omai-engine/tensor'
  * const model = (x) => matmul(x, [[1, -1], [0, 0]])
  * transferAttack(model, model, [[1, 0]], [0], { epsilon: 2, steps: 5, randomStart: false }).transferRate // => 1
  * ```
@@ -901,10 +901,10 @@ export const squareContract: Contract<SquareState, SquarePath> = defineContract(
  * @concept adversarial-examples
  * @example
  * ```ts
- * import { squareAlgorithm } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
- * import { matmul } from 'mdml-engine/tensor'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { squareAlgorithm } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
+ * import { matmul } from 'omai-engine/tensor'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const model = (x) => matmul(x, [[1, -1], [0, 0], [0, 0]])
  * runAlgorithm(squareAlgorithm(model, [[0.3, 0, 0]], [0], { epsilon: 0.5, key: key(0) }), { maxSteps: 200 }).state.done // => [true]
  * ```
@@ -1027,9 +1027,9 @@ export function squareAlgorithm(
  * @concept adversarial-examples
  * @example
  * ```ts
- * import { squareAttack } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
- * import { matmul } from 'mdml-engine/tensor'
+ * import { squareAttack } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
+ * import { matmul } from 'omai-engine/tensor'
  * const model = (x) => matmul(x, [[1, -1], [0, 0], [0, 0]])
  * squareAttack(model, [[0.3, 0, 0]], [0], { epsilon: 0.5, key: key(0) }).success // => [true]
  * ```
@@ -1067,7 +1067,7 @@ export function squareAttack(
  * @returns The share of correct predictions.
  * @example
  * ```ts
- * import { accuracyOf } from 'mdml-engine/nn'
+ * import { accuracyOf } from 'omai-engine/nn'
  * accuracyOf((x) => x, [[2, 1], [0, 1]], [0, 0]) // => 0.5
  * ```
  */
@@ -1090,8 +1090,8 @@ export function accuracyOf(model: LogitsFunction, x: TensorLike, labels: TensorL
  * @concept adversarial-examples
  * @example
  * ```ts
- * import { robustAccuracy, fgsm } from 'mdml-engine/nn'
- * import { matmul } from 'mdml-engine/tensor'
+ * import { robustAccuracy, fgsm } from 'omai-engine/nn'
+ * import { matmul } from 'omai-engine/tensor'
  * const model = (x) => matmul(x, [[1, -1], [0, 0]])
  * robustAccuracy(model, [[1, 0]], [0], [0, 2], (epsilon) => fgsm(model, [[1, 0]], [0], { epsilon })) // => [{ epsilon: 0, accuracy: 1 }, { epsilon: 2, accuracy: 0 }]
  * ```
@@ -1144,8 +1144,8 @@ export interface AdversarialStep {
  * @concept adversarial-training
  * @example
  * ```ts
- * import { adversarialTrainStep, trainState, mlp } from 'mdml-engine/nn'
- * import { sgd } from 'mdml-engine/optim'
+ * import { adversarialTrainStep, trainState, mlp } from 'omai-engine/nn'
+ * import { sgd } from 'omai-engine/optim'
  * const m = mlp([2, 4, 2])
  * const opt = sgd({ learningRate: 0.1 })
  * adversarialTrainStep(m, trainState(m, opt), [[0.5, -0.5], [-1, 1]], [0, 1], opt, { attack: { epsilon: 0.1, steps: 3 } }).state.step // => 1

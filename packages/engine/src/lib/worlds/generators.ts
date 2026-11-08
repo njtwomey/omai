@@ -4,7 +4,7 @@
  * shows each carve, with a keyed `generateMaze`, braiding to add loops, and a perfect-maze check.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import { foldIn, type Key, permutation } from '../random/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../trace/index.ts'
 import {
@@ -99,12 +99,12 @@ export interface MazeState {
  *
  * @param options - Size, topology or base world, algorithm and binary-tree bias.
  * @returns The algorithm (its `init` key chooses the start cell and Kruskal's edge order; step keys the rest).
- * @throws MdmlError with code `value` for a square-only algorithm on another topology, or a bad size.
+ * @throws OmaiError with code `value` for a square-only algorithm on another topology, or a bad size.
  * @concept procedural-generation
  * @example
  * ```ts
- * import { mazeAlgorithm, mazeOf, bridges } from 'mdml-engine/worlds'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { mazeAlgorithm, mazeOf, bridges } from 'omai-engine/worlds'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const run = runAlgorithm(mazeAlgorithm({ rows: 3, cols: 3, algorithm: 'wilson' }), { seed: 1, maxSteps: 10000 })
  * [run.status, bridges(mazeOf(run.state)).length] // => ['converged', 8]
  * ```
@@ -114,7 +114,7 @@ export function mazeAlgorithm(options: MazeOptions = {}): Algorithm<MazeState> {
   const base = baseWorld(options)
   const t = base.topology
   if (SQUARE_ONLY.includes(algorithm) && t.kind !== 'square') {
-    throw new MdmlError('value', `mazeAlgorithm: '${algorithm}' needs a square grid`)
+    throw new OmaiError('value', `mazeAlgorithm: '${algorithm}' needs a square grid`)
   }
   const rows = t.kind === 'graph' ? 1 : t.rows
   const cols = t.kind === 'graph' ? base.n : t.cols
@@ -171,8 +171,8 @@ export function mazeAlgorithm(options: MazeOptions = {}): Algorithm<MazeState> {
  * @returns The world.
  * @example
  * ```ts
- * import { mazeAlgorithm, mazeOf } from 'mdml-engine/worlds'
- * import { key } from 'mdml-engine/random'
+ * import { mazeAlgorithm, mazeOf } from 'omai-engine/worlds'
+ * import { key } from 'omai-engine/random'
  * mazeOf(mazeAlgorithm({ rows: 2, cols: 2 }).init(key(0))).walls[0] // => 6
  * ```
  */
@@ -187,12 +187,12 @@ export function mazeOf(state: MazeState): World {
  * @param key - The key.
  * @param options - Size, topology or base world, algorithm and bias, and run options (tracer, policy).
  * @returns The maze, starting in the first cell with its goal in the last (or the base world's starts and goals).
- * @throws MdmlError with code `convergence` if the cap is reached (practically never).
+ * @throws OmaiError with code `convergence` if the cap is reached (practically never).
  * @concept procedural-generation
  * @example
  * ```ts
- * import { generateMaze, toAscii } from 'mdml-engine/worlds'
- * import { key } from 'mdml-engine/random'
+ * import { generateMaze, toAscii } from 'omai-engine/worlds'
+ * import { key } from 'omai-engine/random'
  * toAscii(generateMaze(key(0), { rows: 2, cols: 3, algorithm: 'binaryTree' }), { format: 'walls' }).length // => 5
  * ```
  */
@@ -212,7 +212,7 @@ export function generateMaze(
     ...(parent === undefined ? {} : { parent }),
     ...(runId === undefined ? {} : { runId }),
   })
-  if (!run.state.done) throw new MdmlError('convergence', `generateMaze: not finished after ${cap} steps`)
+  if (!run.state.done) throw new OmaiError('convergence', `generateMaze: not finished after ${cap} steps`)
   return mazeOf(run.state)
 }
 
@@ -229,8 +229,8 @@ export function generateMaze(
  * @concept procedural-generation
  * @example
  * ```ts
- * import { braid, deadEnds, generateMaze } from 'mdml-engine/worlds'
- * import { key } from 'mdml-engine/random'
+ * import { braid, deadEnds, generateMaze } from 'omai-engine/worlds'
+ * import { key } from 'omai-engine/random'
  * deadEnds(braid(generateMaze(key(0), { rows: 5, cols: 5 }), key(1))).length // => 0
  * ```
  */
@@ -265,8 +265,8 @@ export function braid(
  * @returns Whether it is perfect.
  * @example
  * ```ts
- * import { generateMaze, isPerfectMaze } from 'mdml-engine/worlds'
- * import { key } from 'mdml-engine/random'
+ * import { generateMaze, isPerfectMaze } from 'omai-engine/worlds'
+ * import { key } from 'omai-engine/random'
  * isPerfectMaze(generateMaze(key(4), { rows: 4, cols: 4, algorithm: 'division' })) // => true
  * ```
  */

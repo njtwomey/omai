@@ -5,7 +5,7 @@
  * and linear (DLT) triangulation of points seen by two projection matrices.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import type { Point2 } from '../numerics/geometry/index.ts'
 import { fundamentalMatrix } from '../numerics/geometry/index.ts'
 import type { Key } from '../random/index.ts'
@@ -64,7 +64,7 @@ function fitEssential(a: readonly Point2[], b: readonly Point2[]): MutableRows {
  * @concept essential-matrix
  * @example
  * ```ts
- * import { findEssentialMat } from 'mdml-engine/vision'
+ * import { findEssentialMat } from 'omai-engine/vision'
  * const X = [[0, 0, 4], [1, 0, 5], [0, 1, 6], [1, 1, 4], [-1, 0.5, 5], [0.5, -1, 7], [2, 1, 6], [-1, -1, 5], [0.3, 0.8, 3]]
  * const p1 = X.map(([x, y, z]) => [x / z, y / z])
  * const p2 = X.map(([x, y, z]) => [(x - 1) / z, y / z])
@@ -86,8 +86,8 @@ export function findEssentialMat(
 ): RobustFit {
   const p1 = pointsOf(points1, 'findEssentialMat')
   const p2 = pointsOf(points2, 'findEssentialMat')
-  if (p1.length !== p2.length) throw new MdmlError('shape', 'findEssentialMat: the point sets differ in size')
-  if (p1.length < 8) throw new MdmlError('value', 'findEssentialMat: at least eight correspondences are needed')
+  if (p1.length !== p2.length) throw new OmaiError('shape', 'findEssentialMat: the point sets differ in size')
+  if (p1.length < 8) throw new OmaiError('value', 'findEssentialMat: at least eight correspondences are needed')
   const a = normalised(p1, cameraMatrix)
   const b = normalised(p2, cameraMatrix)
   const n = a.length
@@ -126,7 +126,7 @@ export function findEssentialMat(
       ...(options.key === undefined ? { seed: 0 } : { key: options.key }),
     },
   )
-  if (r.model === undefined) throw new MdmlError('value', 'findEssentialMat: the inliers are degenerate')
+  if (r.model === undefined) throw new OmaiError('value', 'findEssentialMat: the inliers are degenerate')
   const mask = new Array<number>(n).fill(0)
   for (const i of r.inliers) mask[i] = 1
   return { model: r.model, mask }
@@ -141,7 +141,7 @@ export function findEssentialMat(
  * @concept essential-matrix
  * @example
  * ```ts
- * import { decomposeEssentialMat } from 'mdml-engine/vision'
+ * import { decomposeEssentialMat } from 'omai-engine/vision'
  * const { t } = decomposeEssentialMat([[0, 0, 0], [0, 0, -1], [0, 1, 0]])
  * t.map((v) => Math.abs(v)) // => [1, 0, 0]
  * ```
@@ -176,7 +176,7 @@ export function decomposeEssentialMat(e: readonly (readonly number[])[]): {
  * @concept triangulation
  * @example
  * ```ts
- * import { triangulatePoints } from 'mdml-engine/vision'
+ * import { triangulatePoints } from 'omai-engine/vision'
  * const P1 = [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0]]
  * const P2 = [[1, 0, 0, -1], [0, 1, 0, 0], [0, 0, 1, 0]]
  * triangulatePoints(P1, P2, [[0.2, 0.1]], [[0, 0.1]]).map((p) => p.map((v) => Math.round(v * 1e9) / 1e9)) // => [[1, 0.5, 5]]
@@ -190,7 +190,7 @@ export function triangulatePoints(
 ): [number, number, number][] {
   const a = pointsOf(points1, 'triangulatePoints')
   const b = pointsOf(points2, 'triangulatePoints')
-  if (a.length !== b.length) throw new MdmlError('shape', 'triangulatePoints: the point sets differ in size')
+  if (a.length !== b.length) throw new OmaiError('shape', 'triangulatePoints: the point sets differ in size')
   const row = (Point2: readonly (readonly number[])[], r: number): number[] =>
     [0, 1, 2, 3].map((c) => Point2[r]?.[c] ?? 0)
   return a.map(([x1, y1], i) => {
@@ -217,7 +217,7 @@ export function triangulatePoints(
  * @concept relative-pose
  * @example
  * ```ts
- * import { recoverPose } from 'mdml-engine/vision'
+ * import { recoverPose } from 'omai-engine/vision'
  * const K = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
  * const X = [[0, 0, 4], [1, 0, 5], [0, 1, 6], [1, 1, 4], [-1, 0.5, 5]]
  * const p1 = X.map(([x, y, z]) => [x / z, y / z])
@@ -274,7 +274,7 @@ export function recoverPose(
  * @concept essential-matrix
  * @example
  * ```ts
- * import { essentialFromFundamental } from 'mdml-engine/vision'
+ * import { essentialFromFundamental } from 'omai-engine/vision'
  * essentialFromFundamental([[0, 0, 0], [0, 0, -1], [0, 1, 0]], [[1, 0, 0], [0, 1, 0], [0, 0, 1]]) // => [[0, 0, 0], [0, 0, -1], [0, 1, 0]]
  * ```
  */
@@ -296,7 +296,7 @@ export function essentialFromFundamental(
  * @concept epipolar-geometry
  * @example
  * ```ts
- * import { fundamentalFromEssential } from 'mdml-engine/vision'
+ * import { fundamentalFromEssential } from 'omai-engine/vision'
  * fundamentalFromEssential([[0, 0, 0], [0, 0, -1], [0, 1, 0]], [[2, 0, 0], [0, 2, 0], [0, 0, 1]]) // => [[0, 0, 0], [0, 0, -0.5], [0, 0.5, 0]]
  * ```
  */

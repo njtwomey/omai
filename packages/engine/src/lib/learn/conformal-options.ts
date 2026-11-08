@@ -23,7 +23,7 @@ export interface ScoreMemoryProperties {
  * @concept conformal-prediction
  * @example
  * ```ts
- * import { scoreMemories } from 'mdml-engine/learn'
+ * import { scoreMemories } from 'omai-engine/learn'
  * scoreMemories.make({ kind: 'window', size: 2 })([1, 2, 3, 4]) // => [3, 4]
  * ```
  */

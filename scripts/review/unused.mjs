@@ -24,7 +24,7 @@ const rows = readFileSync(process.argv[2], 'utf8')
     const [pkg, domain = ''] = module.split('/')
     return { kind, module, name, pkg, domain }
   })
-  .filter((e) => e.pkg === 'mdml-engine' && CORE.has(e.domain))
+  .filter((e) => e.pkg === 'omai-engine' && CORE.has(e.domain))
 
 // Where each name is mentioned: source files, test files, markdown files.
 const word = /[A-Za-z_]\w*/g

@@ -4,7 +4,7 @@
  * from Voronoi cell areas.
  */
 
-import { MdmlError, maxOf, minOf } from '../../base/index.ts'
+import { maxOf, minOf, OmaiError } from '../../base/index.ts'
 import {
   add,
   concat,
@@ -124,8 +124,8 @@ export interface RbfOptions {
  * @index function Radial-basis interpolation of scattered data.
  * @example
  * ```ts
- * import { rbfInterpolator } from 'mdml-engine/numerics/interpolate'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { rbfInterpolator } from 'omai-engine/numerics/interpolate'
+ * import { toArray } from 'omai-engine/tensor'
  * // Thin-plate splines with a linear term reproduce linear functions.
  * const f = rbfInterpolator([[0, 0], [1, 0], [0, 1], [1, 1], [0.5, 0.3]], [0, 1, 2, 3, 1.1])
  * toArray(f([[0.25, 0.75]])).map((v) => Math.round(v * 1e10) / 1e10) // => [1.75]
@@ -137,19 +137,19 @@ export function rbfInterpolator(
   options: RbfOptions = {},
 ): (query: TensorLike) => Value {
   const y = concreteOrThrow(promoteFloat(points)[0] as Tensor, 'rbfInterpolator')
-  if (y.shape.length !== 2) throw new MdmlError('shape', 'rbfInterpolator: points must be [n, d]')
+  if (y.shape.length !== 2) throw new OmaiError('shape', 'rbfInterpolator: points must be [n, d]')
   const [v] = promoteFloat(values) as [Value]
   const n = y.shape[0] ?? 0
   const d = y.shape[1] ?? 0
-  if (v.shape[0] !== n) throw new MdmlError('shape', 'rbfInterpolator: one value per point')
+  if (v.shape[0] !== n) throw new OmaiError('shape', 'rbfInterpolator: one value per point')
   const kernel = options.kernel ?? 'thin_plate_spline'
   if (!SCALE_INVARIANT.has(kernel) && options.epsilon === undefined)
-    throw new MdmlError('value', `rbfInterpolator: kernel ${kernel} needs epsilon`)
+    throw new OmaiError('value', `rbfInterpolator: kernel ${kernel} needs epsilon`)
   const epsilon = options.epsilon ?? 1
   const minDegree = MIN_DEGREE[kernel]
   const degree = options.degree ?? Math.max(minDegree, 0)
   if (degree !== -1 && degree < minDegree)
-    throw new MdmlError('value', `rbfInterpolator: kernel ${kernel} needs degree >= ${minDegree}`)
+    throw new OmaiError('value', `rbfInterpolator: kernel ${kernel} needs degree >= ${minDegree}`)
   const powers = monomials(d, degree)
   const yf = toFlat(y)
   const mins = Array.from({ length: d }, (_, k) => minOf(Array.from({ length: n }, (_, i) => yf[i * d + k] ?? 0)))
@@ -226,8 +226,8 @@ function sliceRows(x: Value, start: number, stop: number): Value {
  * @returns The interpolating function on query points `[q, d]`.
  * @example
  * ```ts
- * import { inverseDistanceWeighting } from 'mdml-engine/numerics/interpolate'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { inverseDistanceWeighting } from 'omai-engine/numerics/interpolate'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(inverseDistanceWeighting([[0, 0], [2, 0]], [1, 3])([[1, 0], [0, 0]])) // => [2, 1]
  * ```
  */
@@ -291,8 +291,8 @@ function convexArea(vertices: readonly Point2[]): number {
  * @concept natural-neighbour-interpolation
  * @example
  * ```ts
- * import { naturalNeighbourWeights } from 'mdml-engine/numerics/interpolate'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { naturalNeighbourWeights } from 'omai-engine/numerics/interpolate'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(naturalNeighbourWeights([[0, 0], [2, 0], [0, 2], [2, 2]], [[1, 1]]))[0].map((v) => Math.round(v * 1e12) / 1e12) // => [0.25, 0.25, 0.25, 0.25]
  * ```
  */
@@ -367,8 +367,8 @@ export function naturalNeighbourWeights(
  * @returns The interpolating function on query points `[q, 2]`.
  * @example
  * ```ts
- * import { naturalNeighbour } from 'mdml-engine/numerics/interpolate'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { naturalNeighbour } from 'omai-engine/numerics/interpolate'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(naturalNeighbour([[0, 0], [2, 0], [0, 2], [2, 2]], [0, 2, 4, 6])([[1, 1]])).map((v) => Math.round(v * 1e12) / 1e12) // => [3]
  * ```
  */

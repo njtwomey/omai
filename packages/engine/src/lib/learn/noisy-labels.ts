@@ -5,7 +5,7 @@
  * wrong, and estimating the transition matrix, is `weak-supervision.ts`.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import { inv } from '../numerics/linalg/index.ts'
 import { foldIn, type Key, permutation } from '../random/index.ts'
 import { dict, int, real } from '../space/index.ts'
@@ -34,7 +34,7 @@ const oneHot = (labels: TensorLike, k: number): Tensor => {
   const out = new Float64Array(y.length * k)
   y.forEach((c, i) => {
     if (!Number.isInteger(c) || c < 0 || c >= k)
-      throw new MdmlError('value', `loss correction: label ${c} is not a class index in [0, ${k})`)
+      throw new OmaiError('value', `loss correction: label ${c} is not a class index in [0, ${k})`)
     out[i * k + c] = 1
   })
   return fromStorage(out, [y.length, k], 'float64')
@@ -52,8 +52,8 @@ const oneHot = (labels: TensorLike, k: number): Tensor => {
  * @returns The loss of each row, `[n]`.
  * @example
  * ```ts
- * import { forwardCorrectedLoss } from 'mdml-engine/learn'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { forwardCorrectedLoss } from 'omai-engine/learn'
+ * import { toFlat } from 'omai-engine/tensor'
  * // A model sure of class 0, labels noisy with a 20 percent flip: the loss of label 1 is -log 0.2.
  * toFlat(forwardCorrectedLoss([[1, 0]], [1], [[0.8, 0.2], [0.2, 0.8]])) // => [1.6094379124341003]
  * ```
@@ -80,8 +80,8 @@ export function forwardCorrectedLoss(
  * @returns The loss of each row, `[n]`.
  * @example
  * ```ts
- * import { backwardCorrectedLoss } from 'mdml-engine/learn'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { backwardCorrectedLoss } from 'omai-engine/learn'
+ * import { toFlat } from 'omai-engine/tensor'
  * // With no noise (T the identity) the corrected loss is the plain cross-entropy.
  * toFlat(backwardCorrectedLoss([[0.5, 0.5]], [0], [[1, 0], [0, 1]])) // => [0.6931471805599453]
  * ```
@@ -109,12 +109,12 @@ export function backwardCorrectedLoss(
  * @returns The selected row indices in increasing loss (ties by index).
  * @example
  * ```ts
- * import { smallLossSelection } from 'mdml-engine/learn'
+ * import { smallLossSelection } from 'omai-engine/learn'
  * smallLossSelection([0.5, 2, 0.1, 0.9], 0.5) // => [2, 0]
  * ```
  */
 export function smallLossSelection(losses: ArrayLike<number>, keep: number): number[] {
-  if (!(keep > 0 && keep <= 1)) throw new MdmlError('value', `smallLossSelection: keep must be in (0, 1], got ${keep}`)
+  if (!(keep > 0 && keep <= 1)) throw new OmaiError('value', `smallLossSelection: keep must be in (0, 1], got ${keep}`)
   const n = losses.length
   const count = Math.max(1, Math.ceil(keep * n - 1e-12))
   return Array.from({ length: n }, (_, i) => i)
@@ -181,7 +181,7 @@ function rowLosses(proba: Float64Array, k: number, classes: readonly number[], y
  * @returns The algorithm.
  * @example
  * ```ts
- * import { coTeachingAlgorithm, gaussianNaiveBayes } from 'mdml-engine/learn'
+ * import { coTeachingAlgorithm, gaussianNaiveBayes } from 'omai-engine/learn'
  * const alg = coTeachingAlgorithm({ x: [[0], [1], [5], [6]], y: [0, 0, 1, 1] }, { base: gaussianNaiveBayes(), forgetRate: 0.25, rampRounds: 2, maxRounds: 4 })
  * alg.name // => 'co-teaching'
  * ```
@@ -190,7 +190,7 @@ export function coTeachingAlgorithm(data: LearnData, hyper: CoTeachingHyper): Al
   const who = 'coTeaching'
   const m = matrixView(data.x, who)
   const y = Float64Array.from(toFlat(asTensor(requireTargets(data, who))))
-  if (y.length !== m.n) throw new MdmlError('shape', `${who}: ${m.n} rows but ${y.length} labels`)
+  if (y.length !== m.n) throw new OmaiError('shape', `${who}: ${m.n} rows but ${y.length} labels`)
   const all = Array.from({ length: m.n }, (_, i) => i)
   const fitOn = (rows: readonly number[], key: Key): Json =>
     hyper.base.fit(
@@ -275,8 +275,8 @@ export function coTeachingAlgorithm(data: LearnData, hyper: CoTeachingHyper): Al
  * @returns The estimator.
  * @example
  * ```ts
- * import { coTeaching, gaussianNaiveBayes } from 'mdml-engine/learn'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { coTeaching, gaussianNaiveBayes } from 'omai-engine/learn'
+ * import { toFlat } from 'omai-engine/tensor'
  * const x = [[0], [0.2], [0.4], [0.1], [5], [5.2], [5.4], [5.1], [0.3], [5.3]]
  * const y = [0, 0, 0, 0, 1, 1, 1, 1, 1, 0]
  * const f = coTeaching(gaussianNaiveBayes(), { forgetRate: 0.2 }).fit({ x, y })

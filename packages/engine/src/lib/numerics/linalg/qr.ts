@@ -3,7 +3,7 @@
  * solutions built on it (`lstsq`), plus the elementary building blocks: Householder reflectors and Givens rotations.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import {
   add,
   arg,
@@ -37,7 +37,7 @@ const rightSolveTransposed = (y: Value, r: Value): Value => mT(triangularSolve(r
 
 function requireTall(shape: readonly number[]): void {
   const { m, n } = matrixShape(shape, 'qr')
-  if (m < n) throw new MdmlError('not-differentiable', 'qr: derivatives need m >= n (full column rank)')
+  if (m < n) throw new OmaiError('not-differentiable', 'qr: derivatives need m >= n (full column rank)')
 }
 
 const qrPrimitive: Primitive<null> = definePrimitive<null>({
@@ -119,13 +119,13 @@ export interface QrResult {
  *
  * @param a - Matrix `[..., m, n]`.
  * @returns `{ q, r }`, differentiable when m >= n and A has full column rank.
- * @throws MdmlError with code `value` when the input has a NaN or infinite entry.
+ * @throws OmaiError with code `value` when the input has a NaN or infinite entry.
  * @concept linear-algebra
  * @index function Reduced QR factorisation by Householder reflections.
  * @example
  * ```ts
- * import { qr } from 'mdml-engine/numerics/linalg'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { qr } from 'omai-engine/numerics/linalg'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(qr([[3, 0], [4, 1]]).r)[0] // => [-5, -0.8]
  * ```
  */
@@ -167,12 +167,12 @@ function rankDeficient(r: Value, m: number, n: number): boolean {
  * @param a - Matrix `[..., m, n]`.
  * @param b - Right-hand side `[..., m, k]` or `[m]`.
  * @returns The solution `[..., n, k]` or `[n]`, differentiable in both arguments.
- * @throws MdmlError with code `value` when `a` or `b` has a NaN or infinite entry.
+ * @throws OmaiError with code `value` when `a` or `b` has a NaN or infinite entry.
  * @index function Least-squares solution of A x = b.
  * @example
  * ```ts
- * import { lstsq } from 'mdml-engine/numerics/linalg'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { lstsq } from 'omai-engine/numerics/linalg'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(lstsq([[1, 0], [0, 1], [0, 0]], [1, 2, 3])) // => [1, 2]
  * ```
  */
@@ -205,7 +205,7 @@ export function lstsq(a: TensorLike, b: TensorLike): Value {
  * @concept orthogonal-transformations
  * @example
  * ```ts
- * import { householderReflector } from 'mdml-engine/numerics/linalg'
+ * import { householderReflector } from 'omai-engine/numerics/linalg'
  * householderReflector([3, 4]).alpha // => -5
  * ```
  */
@@ -232,7 +232,7 @@ export function householderReflector(x: readonly number[]): {
  * @returns `{ c, s, r }`.
  * @example
  * ```ts
- * import { givensRotation } from 'mdml-engine/numerics/linalg'
+ * import { givensRotation } from 'omai-engine/numerics/linalg'
  * givensRotation(3, 4) // => { c: 0.6, s: 0.8, r: 5 }
  * ```
  */

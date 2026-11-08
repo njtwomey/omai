@@ -3,7 +3,7 @@
  * and an evolving population played generation by generation with its best and mean fitness.
  */
 
-import type { BoardSteps, PopulationSteps } from 'mdml-engine/exposition'
+import type { BoardSteps, PopulationSteps } from 'omai-engine/exposition'
 import { type ReactElement, useCallback, useMemo } from 'react'
 import type { Figure } from '../../figure/figure.ts'
 import { boardFrames, populationFrames } from '../../views/boards.ts'

@@ -17,11 +17,11 @@ import { fromStorage, type Tensor, type TensorLike, toFlat, toVector } from '../
  * @param x - The points: a vector.
  * @param order - The derivative order, 1 or 2.
  * @returns A float64 tensor of shape `[x.length, k]`: the derivatives of the `k` basis functions at the points.
- * @throws MdmlError with code `shape` unless `knots` and `x` are vectors.
+ * @throws OmaiError with code `shape` unless `knots` and `x` are vectors.
  * @concept splines
  * @example
  * ```ts
- * import { bsplineDerivativeDesign } from 'mdml-engine/stats/smoothing'
+ * import { bsplineDerivativeDesign } from 'omai-engine/stats/smoothing'
  * // On [0, 1] the cubic basis sums to one, so its derivatives sum to zero.
  * const knots = [0, 0, 0, 0, 0.5, 1, 1, 1, 1]
  * const D = bsplineDerivativeDesign(knots, 3, [0.3], 1)

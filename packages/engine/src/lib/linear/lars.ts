@@ -82,8 +82,8 @@ const TINY = 1e-30
  * (2004).
  * @example
  * ```ts
- * import { designOf, larsAlgorithm } from 'mdml-engine/linear'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { designOf, larsAlgorithm } from 'omai-engine/linear'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const design = designOf({ x: [[1, 0], [0, 1], [1, 1], [2, 1]], y: [1, 2, 3, 4] }, 'demo')
  * const end = runAlgorithm(larsAlgorithm(design, { method: 'lasso' }), { maxSteps: 20 }).state
  * end.events.map((e) => e.feature) // => [0, 1]
@@ -272,7 +272,7 @@ function independent(gram: Float64Array, d: number, active: readonly number[], j
  * @returns The coefficients.
  * @example
  * ```ts
- * import { coefficientsAt } from 'mdml-engine/linear'
+ * import { coefficientsAt } from 'omai-engine/linear'
  * const path = { alphas: [2, 1, 0], coefs: [[0, 0], [1, 0], [2, 1]], order: [0, 1], events: [] }
  * coefficientsAt(path, 1.5) // => [0.5, 0]
  * coefficientsAt(path, 0.5) // => [1.5, 0.5]
@@ -307,7 +307,7 @@ export interface LarsPathResult extends LarsPath {
  * @returns The knots, the intercepts and the entry order.
  * @example
  * ```ts
- * import { larsPath } from 'mdml-engine/linear'
+ * import { larsPath } from 'omai-engine/linear'
  * const p = larsPath({ x: [[1, 0], [0, 1], [1, 1], [2, 1]], y: [1, 2, 3, 4] }, { method: 'lar' })
  * p.order // => [0, 1]
  * p.alphas.length // => 3
@@ -377,8 +377,8 @@ const LARS_DEFAULTS: LarsHyper = { method: 'lasso', alpha: 0, fitIntercept: true
  * @index estimator Least angle regression: the lasso path one knot per step.
  * @example
  * ```ts
- * import { lars } from 'mdml-engine/linear'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { lars } from 'omai-engine/linear'
+ * import { toFlat } from 'omai-engine/tensor'
  * const f = lars({ method: 'lar', nNonzeroCoefs: 1 }).fit({ x: [[1, 0.1], [2, -0.1], [3, 0.2], [4, 0]], y: [1, 2, 3, 4.1] })
  * f.params.path.order[0] // => 0
  * toFlat(f.predict([[5, 0]]))[0] > 4 // => true

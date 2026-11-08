@@ -1,8 +1,8 @@
-import { iris } from 'mdml-engine/datasets'
-import type { Point2 } from 'mdml-engine/numerics/geometry'
-import { toArray } from 'mdml-engine/tensor'
-import { cartesian, points } from 'mdml-render/charts'
-import { brushSelection, figure, linkStore } from 'mdml-render/figure'
+import { iris } from 'omai-engine/datasets'
+import type { Point2 } from 'omai-engine/numerics/geometry'
+import { toArray } from 'omai-engine/tensor'
+import { cartesian, points } from 'omai-render/charts'
+import { brushSelection, figure, linkStore } from 'omai-render/figure'
 import {
   Brush,
   Chart,
@@ -13,7 +13,7 @@ import {
   useChartProjection,
   useColourMode,
   useLinkState,
-} from 'mdml-render/react'
+} from 'omai-render/react'
 import { type ReactNode, useMemo } from 'react'
 import type { Recipe } from '../../recipe.ts'
 

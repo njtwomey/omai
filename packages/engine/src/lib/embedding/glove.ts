@@ -6,7 +6,7 @@
  * order each pass) is the named mode `gloveAdaGrad` beside the generic solvers. The word vector is `w + w~`.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import type { BatchObjective, SmoothProblem, VectorParams } from '../optim/index.ts'
 import { foldIn, type Key, permutation, uniform } from '../random/index.ts'
 import { dict, int, real, type SpaceValue } from '../space/index.ts'
@@ -54,12 +54,12 @@ const weight = (x: number, xmax: number, alpha: number): number => (x < xmax ? (
  * @param options - Dimension, window, weight function and cut-off.
  * @param key - The key for the start.
  * @returns The problem.
- * @throws MdmlError with code `value` for a corpus without co-occurrences.
+ * @throws OmaiError with code `value` for a corpus without co-occurrences.
  * @concept word-embeddings
  * @example
  * ```ts
- * import { gloveProblem } from 'mdml-engine/embedding'
- * import { key } from 'mdml-engine/random'
+ * import { gloveProblem } from 'omai-engine/embedding'
+ * import { key } from 'omai-engine/random'
  * const p = gloveProblem([['a', 'b', 'c', 'a', 'b']], { dimension: 2, window: 2 }, key(0))
  * [p.words, p.batches?.n] // => [['a', 'b', 'c'], 6]
  * ```
@@ -85,7 +85,7 @@ export function gloveProblem(sentences: readonly (readonly string[])[], options:
       counts.push(r[j] as number)
     }
   const n = counts.length
-  if (n === 0) throw new MdmlError('value', 'glove: the corpus has no co-occurrences')
+  if (n === 0) throw new OmaiError('value', 'glove: the corpus has no co-occurrences')
   const R = Int32Array.from(rows)
   const C = Int32Array.from(cols)
   const X = Float64Array.from(counts)
@@ -159,9 +159,9 @@ export interface GloveAdaGradOptions {
  * @concept word-embeddings
  * @example
  * ```ts
- * import { gloveAdaGradAlgorithm, gloveProblem } from 'mdml-engine/embedding'
- * import { key } from 'mdml-engine/random'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { gloveAdaGradAlgorithm, gloveProblem } from 'omai-engine/embedding'
+ * import { key } from 'omai-engine/random'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const p = gloveProblem([['a', 'b', 'c', 'a', 'b']], { dimension: 2, window: 2 }, key(0))
  * runAlgorithm(gloveAdaGradAlgorithm(p, { epochs: 3 }), { seed: 0, maxSteps: 1000 }).steps // => 18
  * ```
@@ -178,7 +178,7 @@ export function gloveAdaGradAlgorithm(
   const n = counts.length
   const perEpoch = Math.ceil(n / batch)
   if (!(lr > 0) || !Number.isInteger(epochs) || epochs < 1 || !Number.isInteger(batch) || batch < 1)
-    throw new MdmlError('value', 'gloveAdaGrad: need a positive learning rate, epochs and batch')
+    throw new OmaiError('value', 'gloveAdaGrad: need a positive learning rate, epochs and batch')
   const tOff = V * d
   const bOff = 2 * V * d
   const btOff = bOff + V
@@ -329,8 +329,8 @@ export interface GloveHyper extends GloveOptions {
  * @concept word-embeddings
  * @example
  * ```ts
- * import { gloveModel, gloveProblem } from 'mdml-engine/embedding'
- * import { key } from 'mdml-engine/random'
+ * import { gloveModel, gloveProblem } from 'omai-engine/embedding'
+ * import { key } from 'omai-engine/random'
  * const p = gloveProblem([['a', 'b', 'c']], { dimension: 2, window: 1 }, key(0))
  * gloveModel(p, p.x0 as Float64Array).vectors.rows.length // => 3
  * ```
@@ -373,8 +373,8 @@ export function gloveModel(
  * @concept word-embeddings
  * @example
  * ```ts
- * import { trainGlove } from 'mdml-engine/embedding'
- * import { key } from 'mdml-engine/random'
+ * import { trainGlove } from 'omai-engine/embedding'
+ * import { key } from 'omai-engine/random'
  * const m = trainGlove([['a', 'b', 'c', 'a', 'b', 'c']], { dimension: 3, window: 2, solver: { kind: 'gloveAdaGrad', epochs: 5 } }, key(0))
  * m.words // => ['a', 'b', 'c']
  * ```

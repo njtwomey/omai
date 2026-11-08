@@ -214,10 +214,10 @@ const weightsOf = (h: KanHyper): { l1: number; entropy: number; coef: number } =
  * @concept kolmogorov-arnold-networks
  * @example
  * ```ts
- * import { kanVerbs } from 'mdml-engine/learn'
- * import { KAN } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
- * import { asTensor } from 'mdml-engine/tensor'
+ * import { kanVerbs } from 'omai-engine/learn'
+ * import { KAN } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
+ * import { asTensor } from 'omai-engine/tensor'
  * const net = new KAN([1, 1], { key: key(0) })
  * const x = asTensor([[0.1], [0.5], [-0.3]])
  * kanVerbs(net, net.state, { reference: x, training: x }, { curvePoints: 5, sparsityThreshold: 0.01 }).curves().edges.length // => 1
@@ -391,8 +391,8 @@ function kanTrainer(kind: 'regressor' | 'classifier', changes: Partial<KanHyper>
  * @concept kolmogorov-arnold-networks
  * @example
  * ```ts
- * import { kanRegressor } from 'mdml-engine/learn'
- * import { key } from 'mdml-engine/random'
+ * import { kanRegressor } from 'omai-engine/learn'
+ * import { key } from 'omai-engine/random'
  * const x = Array.from({ length: 30 }, (_, i) => [-1 + i / 14.5])
  * const y = x.map(([t]) => (t ?? 0) ** 2)
  * const fit = kanRegressor.with({ hidden: [], epochs: 30, learningRate: 0.05 }).fit({ x, y }, { key: key(1) })
@@ -407,7 +407,7 @@ export const kanRegressor: KanEstimator = kanTrainer('regressor')
  * @concept kolmogorov-arnold-networks
  * @example
  * ```ts
- * import { kanClassifier } from 'mdml-engine/learn'
+ * import { kanClassifier } from 'omai-engine/learn'
  * kanClassifier.name // => 'kan-classifier'
  * ```
  */

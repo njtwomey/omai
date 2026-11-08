@@ -3,7 +3,7 @@
  * local search, as `scipy.optimize.dual_annealing`, as a traced algorithm for global minimisation within bounds.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { metricFunction } from '../../numerics/geometry/index.ts'
 import { lgamma } from '../../numerics/special/index.ts'
 import { Generator } from '../../random/index.ts'
@@ -89,8 +89,8 @@ const MIN_VISIT_BOUND = 1e-10
  * @concept simulated-annealing
  * @example
  * ```ts
- * import { dualAnnealingAlgorithm } from 'mdml-engine/optim'
- * import { square, sum, type Value } from 'mdml-engine/tensor'
+ * import { dualAnnealingAlgorithm } from 'omai-engine/optim'
+ * import { square, sum, type Value } from 'omai-engine/tensor'
  * dualAnnealingAlgorithm((x) => sum(square(x as Value)), [1, 2], { bounds: [[-5, 5], [-5, 5]] }).name // => 'dualAnnealing'
  * ```
  */
@@ -101,14 +101,14 @@ export function dualAnnealingAlgorithm(
 ): Algorithm<DualAnnealingState> {
   const obj = flatObjective(f, x0)
   const n = obj.n
-  if (n === 0) throw new MdmlError('value', 'dualAnnealing: no parameters')
+  if (n === 0) throw new OmaiError('value', 'dualAnnealing: no parameters')
   const euclid = metricFunction('euclidean', n)
   const box = finiteBounds(options.bounds, n, 'dualAnnealing')
   const range = Float64Array.from(box.upper, (u, i) => u - (box.lower[i] ?? 0))
   const t0 = options.initialTemperature ?? 5230
   const ratio = options.restartTemperatureRatio ?? 2e-5
   if (!(ratio > 0 && ratio < 1))
-    throw new MdmlError('value', 'dualAnnealing: restartTemperatureRatio must be in (0, 1)')
+    throw new OmaiError('value', 'dualAnnealing: restartTemperatureRatio must be in (0, 1)')
   const qv = options.visit ?? 2.62
   const qa = options.accept ?? -5
   const maxfun = options.maxEvaluations ?? 1e7
@@ -195,7 +195,7 @@ export function dualAnnealingAlgorithm(
         e = obj.value(x)
         nfev += 1
       }
-      if (!Number.isFinite(e)) throw new MdmlError('value', 'dualAnnealing: the objective is not finite anywhere tried')
+      if (!Number.isFinite(e)) throw new OmaiError('value', 'dualAnnealing: the objective is not finite anywhere tried')
       return {
         x,
         value: e,
@@ -354,8 +354,8 @@ export function dualAnnealingAlgorithm(
  * @concept simulated-annealing
  * @example
  * ```ts
- * import { dualAnnealing } from 'mdml-engine/optim'
- * import { cos, mul, square, sub, sum, toFlat, type Value } from 'mdml-engine/tensor'
+ * import { dualAnnealing } from 'omai-engine/optim'
+ * import { cos, mul, square, sub, sum, toFlat, type Value } from 'omai-engine/tensor'
  * // Rastrigin in 2-D: global minimum 0 at the origin
  * const f = (x: unknown) => sum(sub(square(x as Value), mul(cos(mul(x as Value, 2 * Math.PI)), 10)))
  * const r = dualAnnealing(f, [3, -2], { bounds: [[-5.12, 5.12], [-5.12, 5.12]], seed: 0, maxIterations: 200 })

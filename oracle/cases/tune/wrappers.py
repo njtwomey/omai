@@ -4,8 +4,8 @@ scores (mean squared error, which scikit-learn reports negated), their ranks and
 
 import numpy as np
 import sklearn
-from mdml_oracle.fixture import Case, Json, case
-from mdml_oracle.helpers import rng
+from omai_oracle.fixture import Case, Json, case
+from omai_oracle.helpers import rng
 from sklearn.linear_model import Ridge
 from sklearn.model_selection import GridSearchCV
 

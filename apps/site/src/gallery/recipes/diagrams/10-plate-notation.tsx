@@ -1,7 +1,7 @@
-import { plateModel, toStructure } from 'mdml-engine/pgm'
-import { type Structure, structure } from 'mdml-engine/scene'
-import { Choice, ControlPanel, StructureView } from 'mdml-render/react'
-import { nestPlates } from 'mdml-render/structures'
+import { plateModel, toStructure } from 'omai-engine/pgm'
+import { type Structure, structure } from 'omai-engine/scene'
+import { Choice, ControlPanel, StructureView } from 'omai-render/react'
+import { nestPlates } from 'omai-render/structures'
 import { type ReactNode, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 
@@ -9,7 +9,7 @@ export const recipe: Recipe = {
   title: 'Plate notation',
   question: 'How do I draw nested plates, as in latent Dirichlet allocation?',
   explain:
-    'A group with a `parent` is drawn inside its parent, so plates nest: in LDA the words of a document sit in a plate inside the documents’ plate, and the topics have a plate of their own. A plate model from mdml-engine’s `pgm` (`toStructure`) names its plates by the index sets they combine; `nestPlates` turns those names into nested plates with their sizes.',
+    'A group with a `parent` is drawn inside its parent, so plates nest: in LDA the words of a document sit in a plate inside the documents’ plate, and the topics have a plate of their own. A plate model from omai-engine’s `pgm` (`toStructure`) names its plates by the index sets they combine; `nestPlates` turns those names into nested plates with their sizes.',
 }
 
 const lda = structure(

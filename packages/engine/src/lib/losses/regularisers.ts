@@ -4,7 +4,7 @@
  * an entropy (confidence) penalty on predicted distributions. Each takes one value or any tree of parameters.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { svdvals } from '../numerics/linalg/index.ts'
 import { entr } from '../numerics/special/index.ts'
 import {
@@ -70,8 +70,8 @@ const total = (params: Penalised, f: (v: Value) => Value): Value => {
  * @concept regularisation
  * @example
  * ```ts
- * import { l1Penalty } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { l1Penalty } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * item(l1Penalty({ w: [1, -2], b: [0.5] }, { strength: 2 })) // => 7
  * ```
  */
@@ -87,8 +87,8 @@ export function l1Penalty(params: Penalised, options: { readonly strength?: numb
  * @returns The penalty, differentiable.
  * @example
  * ```ts
- * import { l2Penalty } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { l2Penalty } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * item(l2Penalty([3, 4])) // => 12.5
  * ```
  */
@@ -104,8 +104,8 @@ export function l2Penalty(params: Penalised, options: { readonly strength?: numb
  * @returns The penalty, differentiable away from zero.
  * @example
  * ```ts
- * import { elasticNet } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { elasticNet } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * item(elasticNet([2], { alpha: 1, l1Ratio: 0.5 })) // => 2
  * ```
  */
@@ -127,11 +127,11 @@ export function elasticNet(
  * @param groups - A group id in 0..G-1 for each coefficient.
  * @param options - strength (default 1) and l1Ratio (default 0).
  * @returns The penalty, differentiable away from zero groups (whose subgradient is taken as 0).
- * @throws MdmlError with code `shape` when the groups do not match the coefficients.
+ * @throws OmaiError with code `shape` when the groups do not match the coefficients.
  * @example
  * ```ts
- * import { groupLasso } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { groupLasso } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * item(groupLasso([3, 4, 0], [0, 0, 1])) === 5 * Math.SQRT2 // => true
  * ```
  */
@@ -142,7 +142,7 @@ export function groupLasso(
 ): Value {
   const [w] = promoteFloat(weights) as [Value]
   if (w.shape.reduce((a, b) => a * b, 1) !== groups.length)
-    throw new MdmlError('shape', 'groupLasso: one group id per coefficient')
+    throw new OmaiError('shape', 'groupLasso: one group id per coefficient')
   let g = 0
   for (const id of groups) g = Math.max(g, id + 1)
   const sizes = Array.from({ length: g }, () => 0)
@@ -166,8 +166,8 @@ export function groupLasso(
  * @returns The penalty, differentiable where the singular values are distinct and non-zero.
  * @example
  * ```ts
- * import { nuclearNorm } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { nuclearNorm } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * item(nuclearNorm([[3, 0], [0, -2]])) // => 5
  * ```
  */
@@ -184,8 +184,8 @@ export function nuclearNorm(matrix: TensorLike, options: { readonly strength?: n
  * @returns The penalty, differentiable.
  * @example
  * ```ts
- * import { orthogonality } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { orthogonality } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * item(orthogonality([[0, 1], [1, 0]])) // => 0
  * ```
  */
@@ -211,8 +211,8 @@ export function orthogonality(
  * @returns The penalty, differentiable.
  * @example
  * ```ts
- * import { entropyPenalty } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { entropyPenalty } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * item(entropyPenalty([[0, 0]])) === -Math.LN2 // => true
  * ```
  */

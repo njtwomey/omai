@@ -7,8 +7,8 @@ import properscoring as ps
 import scipy
 import scipy.integrate as si
 import scipy.stats as st
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray, rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray, rng
 
 REFERENCE: dict[str, str] = {"properscoring": "0.1", "scipy": scipy.__version__}
 

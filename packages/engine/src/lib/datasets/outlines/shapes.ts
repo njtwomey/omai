@@ -19,7 +19,7 @@
  * The pictures are SVG paths on a 100 x 100 canvas drawn for the note.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { normaliseOutline, resampleClosed, type SvgElement, svgOutline } from '../../graphics/index.ts'
 import type { Point2 } from '../../numerics/geometry/index.ts'
 
@@ -765,7 +765,7 @@ const BY_ID = new Map(ENTRIES.map((e) => [e.id, e]))
  * @returns The shapes: id, name, group and credit.
  * @example
  * ```ts
- * import { outlineShapes } from 'mdml-engine/datasets/outlines'
+ * import { outlineShapes } from 'omai-engine/datasets/outlines'
  * outlineShapes('curves').slice(0, 3).map((s) => s.id) // => ['circle', 'ellipse', 'square']
  * ```
  */
@@ -784,16 +784,16 @@ export function outlineShapes(group?: OutlineGroup): OutlineShape[] {
  * @param id - The shape's id (see {@link outlineShapes}).
  * @param n - How many points.
  * @returns The points.
- * @throws MdmlError with code `value` for an unknown id.
+ * @throws OmaiError with code `value` for an unknown id.
  * @example
  * ```ts
- * import { shapeOutline } from 'mdml-engine/datasets/outlines'
+ * import { shapeOutline } from 'omai-engine/datasets/outlines'
  * const p = shapeOutline('circle', 100)
  * [p.length, Math.round(Math.max(...p.map(([x, y]) => Math.hypot(x, y))) * 1e6) / 1e6] // => [100, 1]
  * ```
  */
 export function shapeOutline(id: string, n: number): Point2[] {
   const e = BY_ID.get(id)
-  if (e === undefined) throw new MdmlError('value', `shapeOutline: no shape '${id}'`)
+  if (e === undefined) throw new OmaiError('value', `shapeOutline: no shape '${id}'`)
   return e.make(n)
 }

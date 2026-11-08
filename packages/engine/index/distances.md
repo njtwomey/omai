@@ -4,7 +4,7 @@
 
 One entry point for distances and similarities between points: a registry of named distances (Euclidean, Manhattan, Minkowski, cosine, Mahalanobis, haversine and the rest of scipy's) and of named similarities (cosine, dot, Pearson, Gaussian, Laplacian, inverse distance), each a plain record with its parameters as a space so a page can pick a metric and draw its knobs; `distance`, `pairwiseDistances`, `similarity` and `pairwiseSimilarities` evaluate them by name between corresponding rows or all pairs; and conversions turn one kind into the other. The computations are numerics/geometry's; this domain names and arranges them.
 
-- function `distance`: Named distance between points, from a registry of scipy's metrics. `src/lib/distances/evaluate.ts:94` `mdml-engine/distances`
-- function `similarity`: Named similarity between points. `src/lib/distances/evaluate.ts:201` `mdml-engine/distances`
+- function `distance`: Named distance between points, from a registry of scipy's metrics. `src/lib/distances/evaluate.ts:94` `omai-engine/distances`
+- function `similarity`: Named similarity between points. `src/lib/distances/evaluate.ts:201` `omai-engine/distances`
 
-- table `distances`: Every registered distance by name. `src/lib/distances/distances.ts:459` `mdml-engine/distances`
+- table `distances`: Every registered distance by name. `src/lib/distances/distances.ts:459` `omai-engine/distances`

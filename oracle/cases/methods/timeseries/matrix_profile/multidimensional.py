@@ -6,8 +6,8 @@ from typing import Any
 
 import numpy as np
 import stumpy
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.timeseries_helpers import as_float, series
+from omai_oracle.fixture import Case, case
+from omai_oracle.timeseries_helpers import as_float, series
 from stumpy.mstump import multi_distance_profile
 
 REFERENCE: dict[str, str] = {"stumpy": version("stumpy"), "numpy": np.__version__}

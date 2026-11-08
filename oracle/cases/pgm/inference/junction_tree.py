@@ -4,9 +4,9 @@ Markov network with random potentials."""
 
 import numpy as np
 import pgmpy
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import rng
-from mdml_oracle.pgm import (
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import rng
+from omai_oracle.pgm import (
     NETWORKS,
     checked,
     definition,

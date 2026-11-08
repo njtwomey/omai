@@ -1,6 +1,6 @@
-import type { Point2 } from 'mdml-engine/numerics/geometry'
-import { cartesian, lines } from 'mdml-render/charts'
-import { figure } from 'mdml-render/figure'
+import type { Point2 } from 'omai-engine/numerics/geometry'
+import { cartesian, lines } from 'omai-render/charts'
+import { figure } from 'omai-render/figure'
 import {
   Chart,
   DraggablePoints,
@@ -10,7 +10,7 @@ import {
   Overlaid,
   useChartProjection,
   useColourMode,
-} from 'mdml-render/react'
+} from 'omai-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 

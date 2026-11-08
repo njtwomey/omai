@@ -5,7 +5,7 @@
  * pigeonhole formulas, unsatisfiable for any number of holes. Formulas are `Cnf` values for the solvers of `logic`.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { type Cnf, cnf } from '../logic/index.ts'
 import { foldIn, type Key, uniform } from '../random/index.ts'
 
@@ -36,16 +36,16 @@ function clause(key: Key, n: number, k: number, attempt: number): number[] {
  * @param ratio - The clauses per variable (default the 3-SAT threshold).
  * @param k - The clause width (default 3).
  * @returns The formula.
- * @throws MdmlError with code `value` for `k` above `n`.
+ * @throws OmaiError with code `value` for `k` above `n`.
  * @example
  * ```ts
- * import { randomKSat } from 'mdml-engine/problems'
- * import { key } from 'mdml-engine/random'
+ * import { randomKSat } from 'omai-engine/problems'
+ * import { key } from 'omai-engine/random'
  * randomKSat(key(0), 20, 4).clauses.length // => 80
  * ```
  */
 export function randomKSat(key: Key, n: number, ratio: number = SAT_THRESHOLDS[3], k = 3): Cnf {
-  if (k > n) throw new MdmlError('value', `randomKSat: clause width ${k} exceeds ${n} variables`)
+  if (k > n) throw new OmaiError('value', `randomKSat: clause width ${k} exceeds ${n} variables`)
   const m = Math.round(ratio * n)
   return cnf(
     Array.from({ length: m }, (_, i) => clause(foldIn(key, 1), n, k, i)),
@@ -65,15 +65,15 @@ export function randomKSat(key: Key, n: number, ratio: number = SAT_THRESHOLDS[3
  * @returns The formula and its assignment.
  * @example
  * ```ts
- * import { plantedKSat } from 'mdml-engine/problems'
- * import { satisfies } from 'mdml-engine/logic'
- * import { key } from 'mdml-engine/random'
+ * import { plantedKSat } from 'omai-engine/problems'
+ * import { satisfies } from 'omai-engine/logic'
+ * import { key } from 'omai-engine/random'
  * const p = plantedKSat(key(0), 30, 4.3)
  * satisfies(p.formula, p.assignment) // => true
  * ```
  */
 export function plantedKSat(key: Key, n: number, ratio: number, k = 3): PlantedSat {
-  if (k > n) throw new MdmlError('value', `plantedKSat: clause width ${k} exceeds ${n} variables`)
+  if (k > n) throw new OmaiError('value', `plantedKSat: clause width ${k} exceeds ${n} variables`)
   const bits = uniform(foldIn(key, 0), [n]).data
   const assignment = Array.from({ length: n }, (_, i) => ((bits[i] ?? 0) < 0.5 ? -(i + 1) : i + 1))
   const truth = (lit: number): boolean => assignment[Math.abs(lit) - 1] === lit
@@ -97,7 +97,7 @@ export function plantedKSat(key: Key, n: number, ratio: number, k = 3): PlantedS
  * @returns The formula.
  * @example
  * ```ts
- * import { pigeonhole } from 'mdml-engine/problems'
+ * import { pigeonhole } from 'omai-engine/problems'
  * pigeonhole(3).clauses.length // => 4 + 3 * 6
  * ```
  */

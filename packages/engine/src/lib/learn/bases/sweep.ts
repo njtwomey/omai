@@ -12,7 +12,7 @@
  * @index structure Sweep and race: run an inner method over a grid of knobs.
  */
 
-import { type Json, MdmlError } from '../../base/index.ts'
+import { type Json, OmaiError } from '../../base/index.ts'
 import { foldIn, type Key } from '../../random/index.ts'
 import { choice, type DictSpace, dict, grid, int, type Space, type SpaceValue, sample } from '../../space/index.ts'
 import {
@@ -169,11 +169,11 @@ export interface ConfigurationSummary {
  * @param names - The knobs to vary.
  * @param ranges - Spaces to use in place of the method's own for some of them.
  * @returns The dict space.
- * @throws MdmlError with code `value` for a name the method has no knob of.
+ * @throws OmaiError with code `value` for a name the method has no knob of.
  * @example
  * ```ts
- * import { knobsOf } from 'mdml-engine/learn'
- * import { dict, real } from 'mdml-engine/space'
+ * import { knobsOf } from 'omai-engine/learn'
+ * import { dict, real } from 'omai-engine/space'
  * const method = { name: 'm', config: dict({ alpha: real(0, 1), beta: real(0, 1) }), make: () => { throw new Error() }, contract: {} }
  * Object.keys(knobsOf(method, ['alpha']).spaces) // => ['alpha']
  * ```
@@ -186,7 +186,7 @@ export function knobsOf<S, C extends Config, K extends string = string>(
   const out: Record<string, Space> = {}
   for (const name of names) {
     const own = ranges[name] ?? method.config.spaces[name]
-    if (own === undefined) throw new MdmlError('value', `knobsOf: ${method.name} has no knob '${name}'`)
+    if (own === undefined) throw new OmaiError('value', `knobsOf: ${method.name} has no knob '${name}'`)
     const { when, ...rest } = own
     out[name] = when !== undefined && !names.includes(when.key) ? (rest as Space) : own
   }
@@ -219,8 +219,8 @@ function designOf<S, C extends Config, K extends string>(spec: SweepSpec<S, C, K
  * @returns The number of steps of the algorithm.
  * @example
  * ```ts
- * import { sweepTrials } from 'mdml-engine/learn'
- * import { dict, real } from 'mdml-engine/space'
+ * import { sweepTrials } from 'omai-engine/learn'
+ * import { dict, real } from 'omai-engine/space'
  * const method = { name: 'm', config: dict({ a: real(0, 1) }), make: () => { throw new Error() }, contract: {} }
  * sweepTrials({ method, vary: dict({ a: real(0, 1) }), points: 4, repeats: 3, metrics: [] }) // => 12
  * ```
@@ -254,7 +254,7 @@ const better = (a: number, b: number, direction: SweepDirection): boolean =>
  * @returns One summary per configuration that has a trial, in design order.
  * @example
  * ```ts
- * import { sweepConfigurations } from 'mdml-engine/learn'
+ * import { sweepConfigurations } from 'omai-engine/learn'
  * const state = {
  *   key: { kind: 'key' as const, words: [0, 0] as [number, number] },
  *   configs: [{ a: 1 }], tapes: [], best: 2, objective: { metric: 'm', direction: 'lower' as const },
@@ -289,7 +289,7 @@ export function sweepConfigurations(state: SweepState): ConfigurationSummary[] {
  * @returns The configuration's summary, or undefined before any trial has a finite objective.
  * @example
  * ```ts
- * import { sweepBest } from 'mdml-engine/learn'
+ * import { sweepBest } from 'omai-engine/learn'
  * const trial = (index: number, a: number, m: number) =>
  *   ({ index, config: index, repeat: 0, values: { a }, metrics: { m }, steps: 1, status: null, series: {} })
  * const state = {
@@ -375,14 +375,14 @@ function runTrial<S, C extends Config, K extends string>(
   const series: Record<string, SeriesSummary> = {}
   for (const m of spec.metrics as readonly string[]) {
     const xs = metricSeries(run, m).values
-    if (xs.length === 0) throw new MdmlError('value', `sweep: ${spec.method.name} logged no '${m}' in trial ${index}`)
+    if (xs.length === 0) throw new OmaiError('value', `sweep: ${spec.method.name} logged no '${m}' in trial ${index}`)
     series[m] = summariseSeries(xs)
     metrics[m] = xs.at(-1) as number
   }
   for (const p of spec.final ?? []) {
     const v = s.probe(s.t, p) as unknown
     if (typeof v !== 'number')
-      throw new MdmlError('value', `sweep: the derived path '${p}' gave ${typeof v}, not a number`)
+      throw new OmaiError('value', `sweep: the derived path '${p}' gave ${typeof v}, not a number`)
     metrics[p] = v
   }
   return {
@@ -400,14 +400,14 @@ function runTrial<S, C extends Config, K extends string>(
  *
  * @param spec - The inner method, the knobs and how to vary them, the repeats, the metrics and what to keep.
  * @returns The algorithm; it ends after `sweepTrials(spec)` steps.
- * @throws MdmlError with code `value` for no metrics, a non-positive count, or an objective that is not a metric.
+ * @throws OmaiError with code `value` for no metrics, a non-positive count, or an objective that is not a metric.
  * @concept log-contract
  * @index algorithm Run a method over a grid of knobs, one trial per step.
  * @example
  * ```ts
- * import { sweep } from 'mdml-engine/learn'
- * import { dict, real } from 'mdml-engine/space'
- * import { runAlgorithm, scalar } from 'mdml-engine/trace'
+ * import { sweep } from 'omai-engine/learn'
+ * import { dict, real } from 'omai-engine/space'
+ * import { runAlgorithm, scalar } from 'omai-engine/trace'
  * // The inner method logs (a - 0.3)^2 once; the sweep finds the best of five values of a.
  * const method = {
  *   name: 'bowl', config: dict({ a: real(0, 1, { default: 0.5 }) }),
@@ -427,15 +427,15 @@ export function sweep<S, C extends Config, K extends string = string>(
   const repeats = spec.repeats ?? 1
   const keep = spec.keep ?? 'none'
   const metrics: string[] = [...spec.metrics, ...(spec.final ?? [])]
-  if (metrics.length === 0) throw new MdmlError('value', 'sweep: name at least one metric to read from each trial')
+  if (metrics.length === 0) throw new OmaiError('value', 'sweep: name at least one metric to read from each trial')
   if (!Number.isInteger(repeats) || repeats < 1)
-    throw new MdmlError('value', 'sweep: repeats must be a positive integer')
+    throw new OmaiError('value', 'sweep: repeats must be a positive integer')
   const objective = {
     metric: spec.objective?.metric ?? (metrics[0] as string),
     direction: spec.objective?.direction ?? 'lower',
   } as const
   if (!metrics.includes(objective.metric))
-    throw new MdmlError('value', `sweep: the objective '${objective.metric}' is not one of the metrics`)
+    throw new OmaiError('value', `sweep: the objective '${objective.metric}' is not one of the metrics`)
   const total = sweepTrials(spec)
   const names = knobNames(spec)
   return {
@@ -502,9 +502,9 @@ export function sweep<S, C extends Config, K extends string = string>(
  * @concept log-contract
  * @example
  * ```ts
- * import { sweepMethod } from 'mdml-engine/learn'
- * import { dict, real } from 'mdml-engine/space'
- * import { scalar } from 'mdml-engine/trace'
+ * import { sweepMethod } from 'omai-engine/learn'
+ * import { dict, real } from 'omai-engine/space'
+ * import { scalar } from 'omai-engine/trace'
  * const inner = { name: 'noop', config: dict({ a: real(0, 1) }), make: () => { throw new Error('unused') }, contract: { loss: scalar() } }
  * sweepMethod({ method: inner, vary: dict({ a: real(0, 1) }), metrics: ['loss'], repeats: 4 }).name // => 'sweep(noop)'
  * ```
@@ -569,13 +569,13 @@ export interface RaceState {
  * @param method - The inner method.
  * @param variants - The variants by name, each the knobs it sets over the race's configuration.
  * @returns The method; its configuration is the inner method's, under the variants' changes.
- * @throws MdmlError with code `value` for no variants, or a variant whose configuration is outside the method's space.
+ * @throws OmaiError with code `value` for no variants, or a variant whose configuration is outside the method's space.
  * @concept log-contract
  * @example
  * ```ts
- * import { race } from 'mdml-engine/learn'
- * import { choice, dict } from 'mdml-engine/space'
- * import { scalar, session } from 'mdml-engine/trace'
+ * import { race } from 'omai-engine/learn'
+ * import { choice, dict } from 'omai-engine/space'
+ * import { scalar, session } from 'omai-engine/trace'
  * const count = {
  *   name: 'count', config: dict({ by: choice([1, 2]) }),
  *   make: (c: { by: number }) => ({ name: 'count', config: {}, init: () => 0,
@@ -592,7 +592,7 @@ export function race<S, C extends Config, K extends string = string>(
   variants: Readonly<Record<string, Partial<C>>>,
 ): Method<RaceState, C, RacePath<K>> {
   const names = Object.keys(variants)
-  if (names.length === 0) throw new MdmlError('value', 'race: need at least one variant')
+  if (names.length === 0) throw new OmaiError('value', 'race: need at least one variant')
   const configOf = (config: C, v: string): C => ({ ...config, ...variants[v] }) as C
   return defineMethod<RaceState, C, RacePath<K>>({
     name: `race(${method.name})`,

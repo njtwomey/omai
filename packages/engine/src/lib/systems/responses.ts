@@ -5,7 +5,7 @@
  * overshoot, settling time).
  */
 
-import { type Json, linspaceNumbers, MdmlError, maxOf, minOf } from '../base/index.ts'
+import { type Json, linspaceNumbers, maxOf, minOf, OmaiError } from '../base/index.ts'
 import { interp } from '../numerics/interpolate/index.ts'
 import { eigvals, expm } from '../numerics/linalg/index.ts'
 import {
@@ -123,17 +123,17 @@ function inputMatrix(u: TensorLike | null, nt: number, m: number): Value | null 
   const uv = float(u)
   if (uv.shape.length === 0) {
     if (numbers(uv)[0] === 0) return null
-    throw new MdmlError('shape', 'lsim: a scalar input must be 0')
+    throw new OmaiError('shape', 'lsim: a scalar input must be 0')
   }
   const um = uv.shape.length === 1 ? reshape(uv, [-1, 1]) : uv
-  if ((um.shape[0] ?? 0) !== nt) throw new MdmlError('shape', 'lsim: the input needs one row per time')
-  if ((um.shape[1] ?? 0) !== m) throw new MdmlError('shape', `lsim: the system has ${m} inputs`)
+  if ((um.shape[0] ?? 0) !== nt) throw new OmaiError('shape', 'lsim: the input needs one row per time')
+  if ((um.shape[1] ?? 0) !== m) throw new OmaiError('shape', `lsim: the system has ${m} inputs`)
   return um
 }
 
 function timeGrid(s: StateSpace, u: Value | null, t: TensorLike | undefined): { times: number[]; u: Value | null } {
   if (!isDiscrete(s)) {
-    if (t === undefined) throw new MdmlError('value', 'lsim: continuous-time simulation needs the times')
+    if (t === undefined) throw new OmaiError('value', 'lsim: continuous-time simulation needs the times')
     return { times: numbers(float(t)), u }
   }
   // dlsim: samples every dt up to the last time, the input interpolated linearly onto them.
@@ -163,7 +163,7 @@ function timeGrid(s: StateSpace, u: Value | null, t: TensorLike | undefined): { 
  * @concept time-response
  * @example
  * ```ts
- * import { lsimAlgorithm, tf } from 'mdml-engine/systems'
+ * import { lsimAlgorithm, tf } from 'omai-engine/systems'
  * lsimAlgorithm(tf([1], [1, 1]), [1, 1, 1], [0, 1, 2]).algorithm.name // => 'lsim'
  * ```
  */
@@ -180,15 +180,15 @@ export function lsimAlgorithm(
   const raw = inputMatrix(u, given?.length ?? (u === null ? 0 : (float(u).shape[0] ?? 0)), m)
   const { times, u: um } = timeGrid(s, raw, t)
   const nt = times.length
-  if (nt === 0) throw new MdmlError('value', 'lsim: no samples')
+  if (nt === 0) throw new OmaiError('value', 'lsim: no samples')
   const h = nt > 1 ? (times[1] ?? 0) - (times[0] ?? 0) : 1
   if (!isDiscrete(s)) {
     for (let k = 1; k < nt; k++) {
       const step = (times[k] ?? 0) - (times[k - 1] ?? 0)
       if (Math.abs(step - h) > 1e-8 + 1e-5 * Math.abs(h))
-        throw new MdmlError('value', 'lsim: times must be equally spaced')
+        throw new OmaiError('value', 'lsim: times must be equally spaced')
     }
-    if ((times[0] ?? 0) < 0) throw new MdmlError('value', 'lsim: the initial time must be nonnegative')
+    if ((times[0] ?? 0) < 0) throw new OmaiError('value', 'lsim: the initial time must be nonnegative')
   }
   const r = recursion(s, h, options.interp === false ? 'zoh' : 'foh')
   let x0: Value = options.x0 === undefined ? zeros([n, 1]) : column(float(options.x0))
@@ -240,12 +240,12 @@ function finish(result: LsimState, t: Tensor, p: number): TimeResponse {
  * @param t - Sample times; in discrete time optional (then one sample per input row, dt apart).
  * @param options - Initial state, hold, and trace options.
  * @returns Times, outputs and states.
- * @throws MdmlError with code `value` for unequal time steps or a negative start.
+ * @throws OmaiError with code `value` for unequal time steps or a negative start.
  * @concept time-response
  * @example
  * ```ts
- * import { lsim, tf } from 'mdml-engine/systems'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { lsim, tf } from 'omai-engine/systems'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(lsim(tf([1], [1, -0.5], { dt: 1 }), [1, 0, 0]).y) // => [0, 1, 0.5]
  * ```
  */
@@ -286,8 +286,8 @@ export interface ResponseOptions extends TraceOptions {
  * @returns The times.
  * @example
  * ```ts
- * import { defaultResponseTimes } from 'mdml-engine/systems'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { defaultResponseTimes } from 'omai-engine/systems'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(defaultResponseTimes([[-7]], 3)) // => [0, 0.5, 1]
  * ```
  */
@@ -309,7 +309,7 @@ function responseTimes(s: StateSpace, options: ResponseOptions): Tensor {
 
 function channel(s: StateSpace, input: number): number {
   const m = s.b.shape[1] ?? 0
-  if (input < 0 || input >= m) throw new MdmlError('value', `the system has no input ${input}`)
+  if (input < 0 || input >= m) throw new OmaiError('value', `the system has no input ${input}`)
   return input
 }
 
@@ -324,8 +324,8 @@ function channel(s: StateSpace, input: number): number {
  * @index function Step response of a linear system.
  * @example
  * ```ts
- * import { step, tf } from 'mdml-engine/systems'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { step, tf } from 'omai-engine/systems'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(step(tf([1], [1, -0.5], { dt: 1 }), { n: 3 }).y) // => [0, 1, 1.5]
  * ```
  */
@@ -351,8 +351,8 @@ export function step(sys: Lti, options: ResponseOptions = {}): TimeResponse {
  * @concept time-response
  * @example
  * ```ts
- * import { impulse, tf } from 'mdml-engine/systems'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { impulse, tf } from 'omai-engine/systems'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(impulse(tf([1], [1, -0.5], { dt: 1 }), { n: 3 }).y) // => [0, 1, 0.5]
  * ```
  */
@@ -383,8 +383,8 @@ export function impulse(sys: Lti, options: ResponseOptions = {}): TimeResponse {
  * @concept time-response
  * @example
  * ```ts
- * import { initial, ss } from 'mdml-engine/systems'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { initial, ss } from 'omai-engine/systems'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(initial(ss([[0.5]], [[1]], [[2]], [[0]], { dt: 1 }), [1], { n: 3 }).y) // => [2, 1, 0.5]
  * ```
  */
@@ -436,11 +436,11 @@ export interface StepMeasureOptions {
  * @param y - The response, one value per time.
  * @param options - The final value, the settling band and the rise limits.
  * @returns The measures.
- * @throws MdmlError with code `shape` when `t` and `y` differ in length or are empty.
+ * @throws OmaiError with code `shape` when `t` and `y` differ in length or are empty.
  * @concept time-response
  * @example
  * ```ts
- * import { stepMeasures } from 'mdml-engine/systems'
+ * import { stepMeasures } from 'omai-engine/systems'
  * const t = [0, 1, 2, 3, 4]
  * const m = stepMeasures(t, [0, 0.5, 1.2, 1.05, 1], {})
  * [m.overshoot.toFixed(1), m.peakTime, m.riseTime] // => ['20.0', 2, 1]
@@ -452,7 +452,7 @@ export function stepMeasures(
   options: StepMeasureOptions = {},
 ): StepMeasures {
   const n = t.length
-  if (n === 0 || y.length !== n) throw new MdmlError('shape', 'stepMeasures: give one response value per time')
+  if (n === 0 || y.length !== n) throw new OmaiError('shape', 'stepMeasures: give one response value per time')
   const final = options.final ?? (y[n - 1] as number)
   const band = options.settlingThreshold ?? 0.02
   const [lowFraction, highFraction] = options.riseLimits ?? [0.1, 0.9]
@@ -509,11 +509,11 @@ export function stepMeasures(
  * @param sys - The system (SISO, stable for the DC gain to be the final value).
  * @param options - Times (as {@link step}), the final value, the settling band and the rise limits.
  * @returns The measures.
- * @throws MdmlError with code `shape` for a system with several inputs or outputs.
+ * @throws OmaiError with code `shape` for a system with several inputs or outputs.
  * @concept time-response
  * @example
  * ```ts
- * import { stepInfo, tf } from 'mdml-engine/systems'
+ * import { stepInfo, tf } from 'omai-engine/systems'
  * // A first-order lag 1 / (s + 1): rise time ln 9, no overshoot, 2% settling at ln 50.
  * const m = stepInfo(tf([1], [1, 1]), { t: Array.from({ length: 2001 }, (_, i) => i * 0.005) })
  * [m.riseTime.toFixed(2), m.overshoot, m.settlingTime.toFixed(2)] // => ['2.20', 0, '3.92']
@@ -522,7 +522,7 @@ export function stepMeasures(
 export function stepInfo(sys: Lti, options: StepMeasureOptions & Pick<ResponseOptions, 't' | 'n'> = {}): StepMeasures {
   const s = toSs(sys)
   if ((s.b.shape[1] ?? 0) !== 1 || (s.c.shape[0] ?? 0) !== 1) {
-    throw new MdmlError('shape', 'stepInfo: a single-input single-output system')
+    throw new OmaiError('shape', 'stepInfo: a single-input single-output system')
   }
   const { t, n, ...rest } = options
   const r = step(sys, { ...(t === undefined ? {} : { t }), ...(n === undefined ? {} : { n }) })

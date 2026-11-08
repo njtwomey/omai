@@ -9,7 +9,7 @@
  * step, with the working memory and the fired rule in the state.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm, type TraceSchema } from '../trace/index.ts'
 import { parseTerm } from './parse.ts'
 import { type Term, termEquals, termToString } from './terms.ts'
@@ -37,7 +37,7 @@ export interface ProductionRule {
  * @returns The rule.
  * @example
  * ```ts
- * import { productionRule } from 'mdml-engine/logic'
+ * import { productionRule } from 'omai-engine/logic'
  * productionRule('grandparent', ['parent(X, Y)', 'parent(Y, Z)'], { add: ['grandparent(X, Z)'] }).conditions.length // => 2
  * ```
  */
@@ -287,7 +287,7 @@ const PRODUCTION_SCHEMA: TraceSchema = channels({
  * @returns The chosen activation, or undefined for an empty conflict set.
  * @example
  * ```ts
- * import { productionRule, resolveConflict } from 'mdml-engine/logic'
+ * import { productionRule, resolveConflict } from 'omai-engine/logic'
  * const rules = [productionRule('a', ['p']), productionRule('b', ['p', 'q'])]
  * resolveConflict([{ rule: 0, facts: [0], bindings: {} }, { rule: 1, facts: [0, 1], bindings: {} }], rules, 'specificity')?.rule // => 1
  * ```
@@ -330,10 +330,10 @@ export function resolveConflict(
  * @param facts - The initial working memory, as text (ground terms).
  * @param options - Strategy, matcher and firing limit.
  * @returns The algorithm.
- * @throws MdmlError with code `value` for a fact containing variables.
+ * @throws OmaiError with code `value` for a fact containing variables.
  * @example
  * ```ts
- * import { productionRule, productionSystemAlgorithm } from 'mdml-engine/logic'
+ * import { productionRule, productionSystemAlgorithm } from 'omai-engine/logic'
  * productionSystemAlgorithm([productionRule('r', ['p'], { add: ['q'] })], ['p']).name // => 'production-system'
  * ```
  */
@@ -348,7 +348,7 @@ export function productionSystemAlgorithm(
   const initial = facts.map((f, id) => {
     const fact = parseTerm(f)
     if (/(^|[^A-Za-z0-9_])[A-Z_]/.test(termToString(fact)))
-      throw new MdmlError('value', `production system: '${f}' is not ground`)
+      throw new OmaiError('value', `production system: '${f}' is not ground`)
     return { id, fact }
   })
   // The Rete network follows the state; it is rebuilt when the state is not the one it last produced (a seek or a fork).
@@ -452,10 +452,10 @@ export interface ProductionResult {
  * @param facts - The initial facts.
  * @param options - Strategy, matcher, firing limit and tracing.
  * @returns The final facts and the firing sequence.
- * @throws MdmlError with code `value` for a fact containing variables.
+ * @throws OmaiError with code `value` for a fact containing variables.
  * @example
  * ```ts
- * import { productionRule, runProduction } from 'mdml-engine/logic'
+ * import { productionRule, runProduction } from 'omai-engine/logic'
  * const rules = [productionRule('gp', ['parent(X, Y)', 'parent(Y, Z)'], { add: ['grandparent(X, Z)'] })]
  * runProduction(rules, ['parent(a, b)', 'parent(b, c)']).facts.at(-1) // => 'grandparent(a,c)'
  * ```

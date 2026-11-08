@@ -4,9 +4,9 @@
  * shared options, so the slot's option is the only difference between the variants.
  */
 
-import { MdmlError } from 'mdml-engine/base'
-import { asModeConfig, defaults, type Space, type SpaceValue } from 'mdml-engine/space'
-import type { Config } from 'mdml-engine/trace'
+import { OmaiError } from 'omai-engine/base'
+import { asModeConfig, defaults, type Space, type SpaceValue } from 'omai-engine/space'
+import type { Config } from 'omai-engine/trace'
 import type { ControlPath } from '../controls/space-controls.ts'
 import { settleValue, valueAt, withValueAt } from '../controls/space-controls.ts'
 import type { Variant } from './useSession.ts'
@@ -51,7 +51,7 @@ function spaceAt(space: Space, value: SpaceValue, path: ControlPath): Space | un
  * @param base - The configuration the variants share, over the space's defaults.
  * @param options - Which options to compare and how to label them.
  * @returns The variants, in the union's order.
- * @throws MdmlError with code `value` when the path holds no union.
+ * @throws OmaiError with code `value` when the path holds no union.
  * @index function Make one comparison variant per option of a slot: `variantsOfSlot(method.config, 'solver')`
  */
 export function variantsOfSlot<C extends Config>(
@@ -67,7 +67,7 @@ export function variantsOfSlot<C extends Config>(
   })
   const slot = spaceAt(space, start, at)
   if (slot?.kind !== 'union')
-    throw new MdmlError('value', `variantsOfSlot: '${at.join('.')}' is not a union of the space`)
+    throw new OmaiError('value', `variantsOfSlot: '${at.join('.')}' is not a union of the space`)
   const tag = slot.tag ?? 'kind'
   const top = String(at[0])
   const names = (options.only ?? Object.keys(slot.options)).filter(

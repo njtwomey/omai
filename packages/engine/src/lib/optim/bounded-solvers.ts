@@ -6,7 +6,7 @@
  * parameters are bounded (the hyperparameters of a Gaussian process) takes `boundedSolvers` as its solver slot.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { dict, real } from '../space/index.ts'
 import { add, asTensor, exp, mul, sigmoid, type TensorLike, toFlat, toVector, type Value } from '../tensor/index.ts'
 import { type Algorithm, type ModeSpec, type ModeTable, modes, stateFromJson, stateToJson } from '../trace/index.ts'
@@ -46,10 +46,10 @@ const sigmoidOf = (z: number): number => (z >= 0 ? 1 / (1 + Math.exp(-z)) : Math
  * @param lower - Lower bounds, a vector (`-Infinity` for none).
  * @param upper - Upper bounds, a vector (`Infinity` for none).
  * @returns The map, its inverse and the map on differentiable values.
- * @throws MdmlError `shape` when the bounds differ in length or are not vectors, and `value` when a lower bound exceeds its upper bound.
+ * @throws OmaiError `shape` when the bounds differ in length or are not vectors, and `value` when a lower bound exceeds its upper bound.
  * @example
  * ```ts
- * import { boxMap } from 'mdml-engine/optim'
+ * import { boxMap } from 'omai-engine/optim'
  * const map = boxMap([0, 0], [1, Infinity])
  * Array.from(map.fromFree(map.toFree([0.25, 3]))) // => [0.25, 3]
  * ```
@@ -58,12 +58,12 @@ export function boxMap(lowerBounds: TensorLike, upperBounds: TensorLike): BoxMap
   const lower = toVector(lowerBounds, 'boxMap')
   const upper = toVector(upperBounds, 'boxMap')
   const n = lower.length
-  if (upper.length !== n) throw new MdmlError('shape', 'boxMap: lower and upper must have the same length')
+  if (upper.length !== n) throw new OmaiError('shape', 'boxMap: lower and upper must have the same length')
   // Per coordinate: 0 free, 1 two-sided, 2 lower only, 3 upper only.
   const kind = Int8Array.from({ length: n }, (_, i) => {
     const lo = lower[i] ?? -Infinity
     const hi = upper[i] ?? Infinity
-    if (lo > hi) throw new MdmlError('value', `boxMap: lower bound ${lo} exceeds upper bound ${hi}`)
+    if (lo > hi) throw new OmaiError('value', `boxMap: lower bound ${lo} exceeds upper bound ${hi}`)
     const a = Number.isFinite(lo)
     const b = Number.isFinite(hi)
     return a && b ? 1 : a ? 2 : b ? 3 : 0
@@ -217,7 +217,7 @@ for (const name of smoothSolvers.names) {
  * @index table The solvers of a smooth objective on a box.
  * @example
  * ```ts
- * import { boundedSolvers } from 'mdml-engine/optim'
+ * import { boundedSolvers } from 'omai-engine/optim'
  * boundedSolvers.names.slice(0, 2) // => ['lbfgsb', 'slsqp']
  * boundedSolvers.modeOf({ kind: 'slsqp' }).name // => 'slsqp'
  * ```

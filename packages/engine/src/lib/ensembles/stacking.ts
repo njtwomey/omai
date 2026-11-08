@@ -8,7 +8,7 @@
  */
 
 import type { Json } from '../base/index.ts'
-import { argmaxOf, MdmlError } from '../base/index.ts'
+import { argmaxOf, OmaiError } from '../base/index.ts'
 import { categorical, type Distribution } from '../dists/index.ts'
 import type { Exposition } from '../exposition/index.ts'
 import { type IterativeEstimator, iterative } from '../learn/bases/iterative.ts'
@@ -103,7 +103,7 @@ export interface StackingVerbs extends Verbs, FittedFacts {
  *
  * @example
  * ```ts
- * import type { StackingPath } from 'mdml-engine/ensembles'
+ * import type { StackingPath } from 'omai-engine/ensembles'
  * const path: StackingPath = 'ensemble/baseScores'
  * path // => 'ensemble/baseScores'
  * ```
@@ -173,9 +173,9 @@ function metaMatrix(parts: readonly (readonly [Float64Array, number])[], m: numb
 function stackingEstimator(name: string, classifier: boolean, defaults: StackingHyper): StackingEstimator {
   const classesOf = (data: LearnData): readonly number[] => (classifier ? encodeLabels(data.y ?? [], name).classes : [])
   const algorithmOf = (data: LearnData, h: StackingHyper): Algorithm<StackingState, StackingPath> => {
-    if (h.estimators.length === 0) throw new MdmlError('value', `${name}: needs at least one base estimator`)
+    if (h.estimators.length === 0) throw new OmaiError('value', `${name}: needs at least one base estimator`)
     if (h.weights !== undefined && h.weights.length !== h.estimators.length)
-      throw new MdmlError('value', `${name}: ${h.weights.length} weights for ${h.estimators.length} estimators`)
+      throw new OmaiError('value', `${name}: ${h.weights.length} weights for ${h.estimators.length} estimators`)
     const n = rowsOf(data.x)
     const classes = classesOf(data)
     const k = classes.length
@@ -517,8 +517,8 @@ const stackingDefaults = (
  * @concept ensembles
  * @example
  * ```ts
- * import { votingClassifier, baggingClassifier } from 'mdml-engine/ensembles'
- * import { decisionTreeClassifier } from 'mdml-engine/trees'
+ * import { votingClassifier, baggingClassifier } from 'omai-engine/ensembles'
+ * import { decisionTreeClassifier } from 'omai-engine/trees'
  * const x = Array.from({ length: 40 }, (_, i) => [i / 40])
  * const y = x.map(([a = 0]) => (a < 0.5 ? 0 : 1))
  * const bases = [['a', decisionTreeClassifier({ maxDepth: 1 })], ['b', decisionTreeClassifier({ maxDepth: 2 })]]
@@ -541,9 +541,9 @@ export function votingClassifier(hyper: Partial<StackingHyper> & Pick<StackingHy
  * @concept ensembles
  * @example
  * ```ts
- * import { votingRegressor } from 'mdml-engine/ensembles'
- * import { decisionTreeRegressor } from 'mdml-engine/trees'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { votingRegressor } from 'omai-engine/ensembles'
+ * import { decisionTreeRegressor } from 'omai-engine/trees'
+ * import { toFlat } from 'omai-engine/tensor'
  * const x = Array.from({ length: 20 }, (_, i) => [i])
  * const f = votingRegressor({ estimators: [['a', decisionTreeRegressor({ maxDepth: 1 })], ['b', decisionTreeRegressor({ maxDepth: 2 })]] })
  * toFlat(f.fit({ x, y: x.map(([a = 0]) => a) }).predict([[3]])).length // => 1
@@ -568,8 +568,8 @@ export function votingRegressor(hyper: Partial<StackingHyper> & Pick<StackingHyp
  * @index estimator Stacked generalisation; voting ensembles sit beside it.
  * @example
  * ```ts
- * import { stackingClassifier } from 'mdml-engine/ensembles'
- * import { decisionTreeClassifier } from 'mdml-engine/trees'
+ * import { stackingClassifier } from 'omai-engine/ensembles'
+ * import { decisionTreeClassifier } from 'omai-engine/trees'
  * const x = Array.from({ length: 60 }, (_, i) => [i / 60, ((i * 7) % 11) / 11])
  * const y = x.map(([a = 0]) => (a < 0.5 ? 0 : 1))
  * const bases = [['stump', decisionTreeClassifier({ maxDepth: 1 })], ['deep', decisionTreeClassifier()]]
@@ -595,8 +595,8 @@ export function stackingClassifier(
  * @concept ensembles
  * @example
  * ```ts
- * import { stackingRegressor } from 'mdml-engine/ensembles'
- * import { decisionTreeRegressor } from 'mdml-engine/trees'
+ * import { stackingRegressor } from 'omai-engine/ensembles'
+ * import { decisionTreeRegressor } from 'omai-engine/trees'
  * const x = Array.from({ length: 30 }, (_, i) => [i])
  * const f = stackingRegressor({ estimators: [['a', decisionTreeRegressor({ maxDepth: 2 })]], cv: 3 })
  * f.fit({ x, y: x.map(([a = 0]) => a) }).params.mode // => 'stacking'

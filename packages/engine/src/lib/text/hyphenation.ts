@@ -4,7 +4,7 @@
  * dictionaries (as pyphen uses), hyphenating with a trace of the matching patterns, and inserting hyphens.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 
 /** A compiled set of Liang hyphenation patterns, keyed by their letters, with exceptions. */
 export interface HyphenationPatterns {
@@ -23,11 +23,11 @@ export interface HyphenationPatterns {
  * @param source - The patterns (a string or a list).
  * @param exceptions - Exception words with hyphens (default none).
  * @returns The compiled patterns.
- * @throws MdmlError with code `not-implemented` for non-standard (`/`) patterns.
+ * @throws OmaiError with code `not-implemented` for non-standard (`/`) patterns.
  * @concept hyphenation
  * @example
  * ```ts
- * import { hyphenationPatterns } from 'mdml-engine/text'
+ * import { hyphenationPatterns } from 'omai-engine/text'
  * hyphenationPatterns('hy3ph he2n hena4 hen5at 1na n2at 1tio 2io o2n').patterns.get('hyph') // => { offset: 2, values: [3] }
  * ```
  */
@@ -44,7 +44,7 @@ export function hyphenationPatterns(
       .replace(/\^\^([0-9a-f]{2})/g, (_: string, h: string) => String.fromCharCode(Number.parseInt(h, 16)))
     if (pattern.length === 0) continue
     if (pattern.includes('/') && pattern.includes('='))
-      throw new MdmlError('not-implemented', `hyphenationPatterns: non-standard pattern ${pattern}`)
+      throw new OmaiError('not-implemented', `hyphenationPatterns: non-standard pattern ${pattern}`)
     const letters: string[] = []
     const values: number[] = []
     let pending = 0
@@ -94,11 +94,11 @@ function splitSource(source: string): string[] {
  *
  * @param text - The dictionary's text.
  * @returns The compiled patterns.
- * @throws MdmlError with code `not-implemented` for non-standard (`/`) patterns.
+ * @throws OmaiError with code `not-implemented` for non-standard (`/`) patterns.
  * @concept hyphenation
  * @example
  * ```ts
- * import { hyphenationDictionary } from 'mdml-engine/text'
+ * import { hyphenationDictionary } from 'omai-engine/text'
  * hyphenationDictionary('UTF-8\nLEFTHYPHENMIN 2\n.ach4\n1ba').patterns.size // => 2
  * ```
  */
@@ -134,7 +134,7 @@ export interface HyphenateOptions {
  * @concept hyphenation
  * @example
  * ```ts
- * import { hyphenationPatterns, hyphenate } from 'mdml-engine/text'
+ * import { hyphenationPatterns, hyphenate } from 'omai-engine/text'
  * const p = hyphenationPatterns('hy3ph he2n hena4 hen5at 1na n2at 1tio 2io o2n')
  * hyphenate('hyphenation', p).parts // => ['hy', 'phen', 'ation']
  * ```
@@ -192,7 +192,7 @@ export function hyphenate(
  * @concept hyphenation
  * @example
  * ```ts
- * import { hyphenationPatterns, insertHyphens } from 'mdml-engine/text'
+ * import { hyphenationPatterns, insertHyphens } from 'omai-engine/text'
  * insertHyphens('Table', hyphenationPatterns([], ['ta-ble'])) // => 'Ta-ble'
  * ```
  */

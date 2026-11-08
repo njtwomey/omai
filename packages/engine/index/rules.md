@@ -4,5 +4,5 @@
 
 Rule learning on the `learn` contract: the rule, literal and coverage representation with the rule quality measures and prediction by ordered list, by voting and by default rule; sequential covering (CN2 ordered and unordered, PRISM), RIPPER and IREP with the MDL stopping rule, certifiably optimal and Bayesian rule lists over pre-mined antecedents, OneR, decision tables and the rules of a tree's leaves; each learner a traced algorithm whose step is one rule, prefix, proposal or feature, and a classifier on the iterative base.
 
-- estimator `cn2Classifier`: CN2 ordered rule-list classifier. `src/lib/rules/estimators.ts:245` `mdml-engine/rules`
-- estimator `ripperClassifier`: RIPPER rule-list classifier. `src/lib/rules/estimators.ts:310` `mdml-engine/rules`
+- estimator `cn2Classifier`: CN2 ordered rule-list classifier. `src/lib/rules/estimators.ts:245` `omai-engine/rules`
+- estimator `ripperClassifier`: RIPPER rule-list classifier. `src/lib/rules/estimators.ts:310` `omai-engine/rules`

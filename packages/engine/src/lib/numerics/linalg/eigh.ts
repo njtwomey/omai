@@ -35,8 +35,8 @@ import { assemble, diagEmbed, diagPart, matrices, mT, namingNonFinite, squareSiz
  * @returns The matrix `[..., n, n]`.
  * @example
  * ```ts
- * import { eigengapInverse } from 'mdml-engine/numerics/linalg'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { eigengapInverse } from 'omai-engine/numerics/linalg'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * toArray(eigengapInverse(tensor([1, 3]))) // => [[0, 0.5], [-0.5, 0]]
  * ```
  */
@@ -122,9 +122,9 @@ export interface EighResult {
  * @param a - Symmetric matrix `[..., n, n]`.
  * @param options - The method.
  * @returns `{ eigenvalues, eigenvectors }`, differentiable (eigenvectors only where eigenvalues are distinct).
- * @throws MdmlError with code `value` when the matrix has a NaN or infinite entry (a routine that decides rejects it at
+ * @throws OmaiError with code `value` when the matrix has a NaN or infinite entry (a routine that decides rejects it at
  *   its boundary; elementwise operations propagate).
- * @throws MdmlError with code `convergence` when the implicit QL iteration of the default method needs more than 60
+ * @throws OmaiError with code `convergence` when the implicit QL iteration of the default method needs more than 60
  *   sweeps for one eigenvalue (it does not happen on finite symmetric input in practice). The result is a bare value of
  *   a differentiable primitive, with no place for a status; `method: 'jacobi'` is the sibling with no such limit, and for
  *   a run that reports how it ended use `jacobiEigenSteps` or the traced `eigshAlgorithm`.
@@ -132,8 +132,8 @@ export interface EighResult {
  * @index function Symmetric eigendecomposition with derivatives.
  * @example
  * ```ts
- * import { eigh } from 'mdml-engine/numerics/linalg'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { eigh } from 'omai-engine/numerics/linalg'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(eigh([[2, 1], [1, 2]]).eigenvalues) // => [1, 3]
  * ```
  */
@@ -148,11 +148,11 @@ export function eigh(a: TensorLike, options: { readonly method?: EighMethod } = 
  *
  * @param a - Symmetric matrix `[..., n, n]`.
  * @returns The eigenvalues, differentiable (also at repeated eigenvalues, for symmetric functions of them).
- * @throws MdmlError with code `value` when the matrix has a NaN or infinite entry.
+ * @throws OmaiError with code `value` when the matrix has a NaN or infinite entry.
  * @example
  * ```ts
- * import { eigvalsh } from 'mdml-engine/numerics/linalg'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { eigvalsh } from 'omai-engine/numerics/linalg'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(eigvalsh([[4, 0], [0, 1]])) // => [1, 4]
  * ```
  */
@@ -178,7 +178,7 @@ export interface JacobiSweep {
  * @concept jacobi-eigenvalue
  * @example
  * ```ts
- * import { jacobiEigenSteps } from 'mdml-engine/numerics/linalg'
+ * import { jacobiEigenSteps } from 'omai-engine/numerics/linalg'
  * jacobiEigenSteps([[2, 1], [1, 2]]).sweeps[0].rotations.length // => 1
  * ```
  */

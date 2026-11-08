@@ -5,9 +5,9 @@ subtree sizes, DFS orders and lowest common ancestors)."""
 import networkx as nx
 import numpy as np
 import scipy
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.graphs import NxGraph, distinct_weights, edges_of, relabelled, sparse, spec, undirected_family
-from mdml_oracle.helpers import rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.graphs import NxGraph, distinct_weights, edges_of, relabelled, sparse, spec, undirected_family
+from omai_oracle.helpers import rng
 from scipy.sparse.csgraph import minimum_spanning_tree
 
 REFERENCE: dict[str, str] = {"networkx": nx.__version__, "scipy": scipy.__version__}

@@ -4,7 +4,7 @@
  * tests of one or two proportions, and the difference of two proportions with its interval.
  */
 
-import { type Alternative, type Estimate, MdmlError, type TestResult } from '../../base/index.ts'
+import { type Alternative, type Estimate, OmaiError, type TestResult } from '../../base/index.ts'
 import { binomial } from '../../dists/index.ts'
 import { betaincinv } from '../../numerics/special/index.ts'
 import { arange, item, type TensorLike, toFlat, toVector } from '../../tensor/index.ts'
@@ -16,9 +16,9 @@ import { intervalEstimate, pValueFromTails, resolveTestOptions, type TestOptions
 export type ProportionInterval = 'wald' | 'wilson' | 'agresti-coull' | 'clopper-pearson' | 'jeffreys'
 
 function counts(name: string, k: number, n: number): void {
-  if (!(Number.isInteger(n) && n >= 1)) throw new MdmlError('value', `${name}: n must be a positive integer`)
+  if (!(Number.isInteger(n) && n >= 1)) throw new OmaiError('value', `${name}: n must be a positive integer`)
   if (!(Number.isInteger(k) && k >= 0 && k <= n))
-    throw new MdmlError('value', `${name}: k must be an integer in [0, n]`)
+    throw new OmaiError('value', `${name}: k must be an integer in [0, n]`)
 }
 
 const betaPpf = (a: number, b: number, p: number): number => item(betaincinv(a, b, p))
@@ -33,7 +33,7 @@ const betaPpf = (a: number, b: number, p: number): number => item(betaincinv(a, 
  * @returns The lower and upper bound.
  * @example
  * ```ts
- * import { wilsonBounds } from 'mdml-engine/stats/tests'
+ * import { wilsonBounds } from 'omai-engine/stats/tests'
  * wilsonBounds(0.5, 4, 1.96).map((v) => Number(v.toFixed(4))) // => [0.15, 0.85]
  * ```
  */
@@ -57,7 +57,7 @@ export function wilsonBounds(p: number, n: number, z: number): readonly [number,
  * @returns The proportion with its interval.
  * @example
  * ```ts
- * import { proportionConfint } from 'mdml-engine/stats/tests'
+ * import { proportionConfint } from 'omai-engine/stats/tests'
  * proportionConfint(5, 10, { method: 'wald' }).interval // => [0.190102, 0.809898]
  * ```
  */
@@ -99,7 +99,7 @@ export function proportionConfint(
       hi = betaPpf(k + 0.5, n - k + 0.5, 1 - alpha)
       break
     default:
-      throw new MdmlError('value', `proportionConfint: unknown method ${String(method)}`)
+      throw new OmaiError('value', `proportionConfint: unknown method ${String(method)}`)
   }
   if (method === 'wald' || method === 'agresti-coull' || method === 'wilson') {
     lo = Math.min(1, Math.max(0, lo))
@@ -122,7 +122,7 @@ export function proportionConfint(
  * @returns The proportion k / n as the statistic, the exact p-value, the interval and Cohen's h against p.
  * @example
  * ```ts
- * import { binomTest } from 'mdml-engine/stats/tests'
+ * import { binomTest } from 'omai-engine/stats/tests'
  * binomTest(7, 10).pValue // => 0.34375
  * binomTest(7, 10, 0.5, { alternative: 'greater' }).pValue // => 0.171875
  * ```
@@ -134,7 +134,7 @@ export function binomTest(
   options: TestOptions & { readonly method?: ProportionInterval } = {},
 ): TestResult {
   counts('binomTest', k, n)
-  if (!(p >= 0 && p <= 1)) throw new MdmlError('value', 'binomTest: p must lie in [0, 1]')
+  if (!(p >= 0 && p <= 1)) throw new OmaiError('value', 'binomTest: p must lie in [0, 1]')
   const { alternative, level } = resolveTestOptions(options)
   const pmf = toFlat(binomial(n, p).prob(arange(0, n + 1)))
   let pValue: number
@@ -168,11 +168,11 @@ export function binomTest(
  * @param nobs - Trials: one number (for every count) or a vector of one or two.
  * @param options - value (default 0 for two samples; required for one), propVar, alternative and level.
  * @returns z, its p-value and the proportion (or difference) with its Wald interval.
- * @throws MdmlError with code `shape` unless `count` and `nobs` are numbers or vectors, and `value` for counts and
+ * @throws OmaiError with code `shape` unless `count` and `nobs` are numbers or vectors, and `value` for counts and
  * sizes that do not match.
  * @example
  * ```ts
- * import { proportionsZtest } from 'mdml-engine/stats/tests'
+ * import { proportionsZtest } from 'omai-engine/stats/tests'
  * proportionsZtest([15, 10], [50, 50]).statistic // => 1.154701
  * ```
  */
@@ -185,11 +185,11 @@ export function proportionsZtest(
   const c = typeof count === 'number' ? [count] : [...toVector(count, 'proportionsZtest')]
   const nn = typeof nobs === 'number' ? c.map(() => nobs) : [...toVector(nobs, 'proportionsZtest')]
   if (c.length !== nn.length || c.length < 1 || c.length > 2)
-    throw new MdmlError('value', 'proportionsZtest: one or two samples of matching counts and sizes')
+    throw new OmaiError('value', 'proportionsZtest: one or two samples of matching counts and sizes')
   for (let i = 0; i < c.length; i++) counts('proportionsZtest', c[i] ?? 0, nn[i] ?? 1)
   const props = c.map((v, i) => v / (nn[i] ?? 1))
   if (c.length === 1 && options.value === undefined)
-    throw new MdmlError('value', 'proportionsZtest: value must be given for one sample')
+    throw new OmaiError('value', 'proportionsZtest: value must be given for one sample')
   const value = options.value ?? 0
   const diff = c.length === 1 ? (props[0] ?? 0) - value : (props[0] ?? 0) - (props[1] ?? 0) - value
   const pooled = options.propVar ?? c.reduce((s, v) => s + v, 0) / nn.reduce((s, v) => s + v, 0)
@@ -230,7 +230,7 @@ export type DifferenceInterval = 'wald' | 'agresti-caffo' | 'newcombe'
  * @returns z, its p-value and the difference with its interval.
  * @example
  * ```ts
- * import { proportionsDifference } from 'mdml-engine/stats/tests'
+ * import { proportionsDifference } from 'omai-engine/stats/tests'
  * proportionsDifference(30, 50, 20, 50).estimate?.value // => 0.2
  * ```
  */

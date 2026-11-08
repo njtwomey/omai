@@ -4,7 +4,7 @@
  * of object detectors, `roiAlign` (Mask R-CNN) and `roiPool` (Fast R-CNN), as in torchvision.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import {
   abs,
   add,
@@ -49,15 +49,15 @@ const baseCoords = (n: number, alignCorners: boolean): number[] =>
  * @reference Jaderberg, Simonyan, Zisserman and Kavukcuoglu (2015), Spatial transformer networks.
  * @example
  * ```ts
- * import { affineGrid } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { affineGrid } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(affineGrid([[[1, 0, 0], [0, 1, 0]]], [1, 1, 1, 2], true)) // => [[[[-1, 0], [1, 0]]]]
  * ```
  */
 export function affineGrid(theta: TensorLike, size: readonly number[], alignCorners = false): Value {
   const [t] = promoteFloat(theta) as [Value]
   const d = size.length - 2
-  if (d !== 2 && d !== 3) throw new MdmlError('shape', 'affineGrid: size must be 4-D or 5-D')
+  if (d !== 2 && d !== 3) throw new OmaiError('shape', 'affineGrid: size must be 4-D or 5-D')
   const n = size[0] ?? 1
   const spatial = size.slice(2)
   // Homogeneous base coordinates [P, d + 1] in (x, y[, z], 1) order, x varying fastest.
@@ -134,15 +134,15 @@ const cubicWeights = (t: Value): Value[] => {
  * @concept spatial-transformer
  * @example
  * ```ts
- * import { gridSample } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { gridSample } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(gridSample([[[[1, 3]]]], [[[[0, 0]]]], { alignCorners: true })) // => [[[[2]]]]
  * ```
  */
 export function gridSample(input: TensorLike, grid: TensorLike, options: GridSampleOptions = {}): Value {
   const [x, g] = promoteFloat(input, grid) as [Value, Value]
   if (x.shape.length !== 4 || g.shape.length !== 4 || g.shape[3] !== 2)
-    throw new MdmlError('shape', 'gridSample: input [N, C, H, W] and grid [N, Ho, Wo, 2] (volumes: TODO)')
+    throw new OmaiError('shape', 'gridSample: input [N, C, H, W] and grid [N, Ho, Wo, 2] (volumes: TODO)')
   const [n = 1, c = 1, h = 1, w = 1] = x.shape
   const [, ho = 1, wo = 1] = g.shape
   const m = ho * wo
@@ -240,7 +240,7 @@ export interface RoiAlignOptions {
 const boxList = (boxes: TensorLike): number[][] => {
   const b = asTensor(boxes)
   if (b.shape.length === 1 && b.shape[0] === 0) return []
-  if (b.shape.length !== 2 || b.shape[1] !== 5) throw new MdmlError('shape', 'roi: boxes must be [K, 5]')
+  if (b.shape.length !== 2 || b.shape[1] !== 5) throw new OmaiError('shape', 'roi: boxes must be [K, 5]')
   const v = toFlat(b)
   return Array.from({ length: b.shape[0] ?? 0 }, (_, k) => v.slice(k * 5, k * 5 + 5))
 }
@@ -257,8 +257,8 @@ const boxList = (boxes: TensorLike): number[][] => {
  * @reference He, Gkioxari, Dollar and Girshick (2017), Mask R-CNN.
  * @example
  * ```ts
- * import { roiAlign } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { roiAlign } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(roiAlign([[[[1, 1], [1, 1]]]], [[0, 0, 0, 1, 1]], 1)) // => [[[[1]]]]
  * ```
  */
@@ -353,8 +353,8 @@ function bilinearTaps(y0: number, x0: number, h: number, w: number): [number, nu
  * @reference Girshick (2015), Fast R-CNN.
  * @example
  * ```ts
- * import { roiPool } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { roiPool } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(roiPool([[[[1, 2], [3, 4]]]], [[0, 0, 0, 1, 1]], 1)) // => [[[[4]]]]
  * ```
  */
@@ -400,8 +400,8 @@ export function roiPool(
  * @returns n copies of [[1, 0, 0], [0, 1, 0]].
  * @example
  * ```ts
- * import { identityTheta } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { identityTheta } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(identityTheta(1)) // => [[[1, 0, 0], [0, 1, 0]]]
  * ```
  */

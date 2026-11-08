@@ -1,4 +1,4 @@
-import { normal, poisson } from 'mdml-engine/dists'
+import { normal, poisson } from 'omai-engine/dists'
 import { describe, expect, it } from 'vitest'
 import { figure } from '../figure/figure.ts'
 import { barChart, bars, histogram, paretoChart } from './bars.ts'

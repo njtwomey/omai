@@ -5,7 +5,7 @@
  * against the knob logged at the same step, or against the step) that the sweep panel draws.
  */
 
-import { metricSeries, type Run } from 'mdml-engine/trace'
+import { metricSeries, type Run } from 'omai-engine/trace'
 import { type Curve, lines } from '../../charts/lines.ts'
 import type { Layer } from '../../charts/plot.ts'
 import { categoricalColour } from '../../theme/palettes.ts'

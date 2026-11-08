@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { viewedKinds, viewFor } from 'mdml-render/views'
+import { viewedKinds, viewFor } from 'omai-render/views'
 import { describe, expect, it } from 'vitest'
 import { ENTRIES } from './registry.ts'
 

@@ -3,7 +3,7 @@
  * unless given) and labelled events such as annotations, interventions or known changepoints.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { arange, fromStorage, type Tensor, type TensorLike } from '../../tensor/index.ts'
 import { checkRows, concrete, concreteFloat, defaultNames, metaFor } from './_coerce.ts'
 import type { DatasetMeta } from './common.ts'
@@ -51,10 +51,10 @@ export interface TimeSeriesOptions {
  * @param values - The observations.
  * @param options - Times or sampling rate, period, segment labels, events, channel names and metadata.
  * @returns The series.
- * @throws MdmlError with code `value` when the times decrease.
+ * @throws OmaiError with code `value` when the times decrease.
  * @example
  * ```ts
- * import { timeSeries } from 'mdml-engine/data'
+ * import { timeSeries } from 'omai-engine/data'
  * const s = timeSeries([1, 2, 4], { samplingRate: 2 })
  * Array.from(s.times.data) // => [0, 0.5, 1]
  * s.values.shape // => [3, 1]
@@ -74,7 +74,7 @@ export function timeSeries(values: TensorLike, options: TimeSeriesOptions = {}):
         )
       : concreteFloat(options.times, 'timeSeries')
   for (let i = 1; i < n; i++) {
-    if ((times.data[i] ?? 0) < (times.data[i - 1] ?? 0)) throw new MdmlError('value', 'timeSeries: times decrease')
+    if ((times.data[i] ?? 0) < (times.data[i - 1] ?? 0)) throw new OmaiError('value', 'timeSeries: times decrease')
   }
   const segments = options.segments === undefined ? undefined : concrete(options.segments, 'int32', 'timeSeries')
   checkRows('timeSeries', n, { times, segments })

@@ -5,7 +5,7 @@
  * random DAGs, random geometric and k-nearest-neighbour graphs) driven by explicit keys.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import type { DistanceMetric } from '../numerics/geometry/index.ts'
 import { kNeighboursGraph } from '../numerics/spatial/index.ts'
 import { foldIn, type Key, permutation, subsample, uniform } from '../random/index.ts'
@@ -13,12 +13,12 @@ import { concreteOrThrow, promoteFloat, type Tensor, type TensorLike, toFlat } f
 import { type EdgeInput, type Graph, graph } from './graph.ts'
 
 function count(n: number, name: string): number {
-  if (!Number.isInteger(n) || n < 0) throw new MdmlError('value', `${name}: ${n} is not a valid size`)
+  if (!Number.isInteger(n) || n < 0) throw new OmaiError('value', `${name}: ${n} is not a valid size`)
   return n
 }
 
 function probability(p: number, name: string): number {
-  if (!(p >= 0 && p <= 1)) throw new MdmlError('value', `${name}: probability ${p} is not in [0, 1]`)
+  if (!(p >= 0 && p <= 1)) throw new OmaiError('value', `${name}: probability ${p} is not in [0, 1]`)
   return p
 }
 
@@ -30,7 +30,7 @@ function probability(p: number, name: string): number {
  * @returns The graph.
  * @example
  * ```ts
- * import { completeGraph } from 'mdml-engine/graph'
+ * import { completeGraph } from 'omai-engine/graph'
  * completeGraph(4).edges.length // => 6
  * ```
  */
@@ -51,7 +51,7 @@ export function completeGraph(n: number, options: { readonly directed?: boolean 
  * @returns The graph.
  * @example
  * ```ts
- * import { pathGraph } from 'mdml-engine/graph'
+ * import { pathGraph } from 'omai-engine/graph'
  * pathGraph(4).edges.length // => 3
  * ```
  */
@@ -68,7 +68,7 @@ export function pathGraph(n: number, options: { readonly directed?: boolean } = 
  * @returns The graph.
  * @example
  * ```ts
- * import { cycleGraph } from 'mdml-engine/graph'
+ * import { cycleGraph } from 'omai-engine/graph'
  * cycleGraph(5).edges.length // => 5
  * ```
  */
@@ -84,7 +84,7 @@ export function cycleGraph(n: number, options: { readonly directed?: boolean } =
  * @returns The graph.
  * @example
  * ```ts
- * import { starGraph } from 'mdml-engine/graph'
+ * import { starGraph } from 'omai-engine/graph'
  * starGraph(3).n // => 4
  * ```
  */
@@ -102,7 +102,7 @@ export function starGraph(n: number): Graph {
  * @returns The graph.
  * @example
  * ```ts
- * import { wheelGraph } from 'mdml-engine/graph'
+ * import { wheelGraph } from 'omai-engine/graph'
  * wheelGraph(5).edges.length // => 8
  * ```
  */
@@ -124,7 +124,7 @@ export function wheelGraph(n: number): Graph {
  * @returns The graph.
  * @example
  * ```ts
- * import { gridGraph } from 'mdml-engine/graph'
+ * import { gridGraph } from 'omai-engine/graph'
  * gridGraph(2, 3).edges.length // => 7
  * gridGraph(3, 3).labels[4] // => '1,1'
  * ```
@@ -155,7 +155,7 @@ export function gridGraph(m: number, n: number, options: { readonly periodic?: b
  * @returns The graph.
  * @example
  * ```ts
- * import { hypercubeGraph } from 'mdml-engine/graph'
+ * import { hypercubeGraph } from 'omai-engine/graph'
  * hypercubeGraph(3).edges.length // => 12
  * ```
  */
@@ -175,7 +175,7 @@ export function hypercubeGraph(d: number): Graph {
  * @returns The graph.
  * @example
  * ```ts
- * import { completeBipartiteGraph } from 'mdml-engine/graph'
+ * import { completeBipartiteGraph } from 'omai-engine/graph'
  * completeBipartiteGraph(2, 3).edges.length // => 6
  * ```
  */
@@ -197,7 +197,7 @@ export function completeBipartiteGraph(m: number, n: number): Graph {
  * @returns The tree.
  * @example
  * ```ts
- * import { balancedTree } from 'mdml-engine/graph'
+ * import { balancedTree } from 'omai-engine/graph'
  * balancedTree(2, 2).n // => 7
  * ```
  */
@@ -220,12 +220,12 @@ export function balancedTree(r: number, h: number): Graph {
  * @returns The graph.
  * @example
  * ```ts
- * import { barbellGraph } from 'mdml-engine/graph'
+ * import { barbellGraph } from 'omai-engine/graph'
  * barbellGraph(3, 2).edges.length // => 9
  * ```
  */
 export function barbellGraph(m: number, bridge: number): Graph {
-  if (count(m, 'barbellGraph') < 2) throw new MdmlError('value', 'barbellGraph: each bell needs at least 2 nodes')
+  if (count(m, 'barbellGraph') < 2) throw new OmaiError('value', 'barbellGraph: each bell needs at least 2 nodes')
   count(bridge, 'barbellGraph')
   const edges: [number, number][] = []
   const right = m + bridge
@@ -245,7 +245,7 @@ export function barbellGraph(m: number, bridge: number): Graph {
  * @returns The graph.
  * @example
  * ```ts
- * import { petersenGraph } from 'mdml-engine/graph'
+ * import { petersenGraph } from 'omai-engine/graph'
  * petersenGraph().edges.length // => 15
  * ```
  */
@@ -351,7 +351,7 @@ const OFFICER = new Set([9, 14, 15, 18, 20, 22, 23, 24, 25, 26, 27, 28, 29, 30, 
  *   Research 33 (1977).
  * @example
  * ```ts
- * import { karateClubGraph } from 'mdml-engine/graph'
+ * import { karateClubGraph } from 'omai-engine/graph'
  * const g = karateClubGraph()
  * [g.n, g.edges.length, g.nodeData[33]?.['club']] // => [34, 78, 'Officer']
  * ```
@@ -373,8 +373,8 @@ export function karateClubGraph(): Graph {
  * @concept random-graphs
  * @example
  * ```ts
- * import { erdosRenyiGraph } from 'mdml-engine/graph'
- * import { key } from 'mdml-engine/random'
+ * import { erdosRenyiGraph } from 'omai-engine/graph'
+ * import { key } from 'omai-engine/random'
  * erdosRenyiGraph(key(0), 10, 1).edges.length // => 45
  * ```
  */
@@ -400,12 +400,12 @@ export function erdosRenyiGraph(key: Key, n: number, p: number, options: { reado
  * @param m - The number of edges (at most the number of pairs).
  * @param options - `directed` (default false).
  * @returns The graph.
- * @throws MdmlError with code `value` when m exceeds the number of possible edges.
+ * @throws OmaiError with code `value` when m exceeds the number of possible edges.
  * @concept random-graphs
  * @example
  * ```ts
- * import { gnmRandomGraph } from 'mdml-engine/graph'
- * import { key } from 'mdml-engine/random'
+ * import { gnmRandomGraph } from 'omai-engine/graph'
+ * import { key } from 'omai-engine/random'
  * gnmRandomGraph(key(1), 8, 5).edges.length // => 5
  * ```
  */
@@ -413,7 +413,7 @@ export function gnmRandomGraph(key: Key, n: number, m: number, options: { readon
   const directed = options.directed ?? false
   const total = directed ? n * (n - 1) : (n * (n - 1)) / 2
   if (!Number.isInteger(m) || m < 0 || m > total) {
-    throw new MdmlError('value', `gnmRandomGraph: ${m} edges do not fit in ${total} pairs`)
+    throw new OmaiError('value', `gnmRandomGraph: ${m} edges do not fit in ${total} pairs`)
   }
   const pairs: [number, number][] = []
   for (let i = 0; i < count(n, 'gnmRandomGraph'); i++) {
@@ -439,15 +439,15 @@ export function gnmRandomGraph(key: Key, n: number, m: number, options: { readon
  * @concept random-graphs
  * @example
  * ```ts
- * import { wattsStrogatzGraph } from 'mdml-engine/graph'
- * import { key } from 'mdml-engine/random'
+ * import { wattsStrogatzGraph } from 'omai-engine/graph'
+ * import { key } from 'omai-engine/random'
  * wattsStrogatzGraph(key(0), 10, 4, 0.2).edges.length // => 20
  * ```
  */
 export function wattsStrogatzGraph(key: Key, n: number, k: number, p: number): Graph {
   probability(p, 'wattsStrogatzGraph')
   if (count(k, 'wattsStrogatzGraph') >= count(n, 'wattsStrogatzGraph') && n > 0) {
-    throw new MdmlError('value', 'wattsStrogatzGraph: k must be smaller than n')
+    throw new OmaiError('value', 'wattsStrogatzGraph: k must be smaller than n')
   }
   const half = Math.floor(k / 2)
   const adj = Array.from({ length: n }, () => new Set<number>())
@@ -490,14 +490,14 @@ export function wattsStrogatzGraph(key: Key, n: number, k: number, p: number): G
  * @concept random-graphs
  * @example
  * ```ts
- * import { barabasiAlbertGraph } from 'mdml-engine/graph'
- * import { key } from 'mdml-engine/random'
+ * import { barabasiAlbertGraph } from 'omai-engine/graph'
+ * import { key } from 'omai-engine/random'
  * barabasiAlbertGraph(key(0), 20, 2).edges.length // => 36
  * ```
  */
 export function barabasiAlbertGraph(key: Key, n: number, m: number): Graph {
   if (!(Number.isInteger(m) && m >= 1 && m < count(n, 'barabasiAlbertGraph'))) {
-    throw new MdmlError('value', 'barabasiAlbertGraph: need 1 <= m < n')
+    throw new OmaiError('value', 'barabasiAlbertGraph: need 1 <= m < n')
   }
   const edges: [number, number][] = []
   const repeated: number[] = []
@@ -530,13 +530,13 @@ export function barabasiAlbertGraph(key: Key, n: number, m: number): Graph {
  * @param probs - The symmetric (for undirected graphs) block probability matrix.
  * @param options - `directed` (default false) and `selfloops` (default false).
  * @returns The graph.
- * @throws MdmlError with code `value` for a matrix of the wrong shape, an asymmetric one when undirected, or a
+ * @throws OmaiError with code `value` for a matrix of the wrong shape, an asymmetric one when undirected, or a
  *   probability outside [0, 1].
  * @concept random-graphs
  * @example
  * ```ts
- * import { stochasticBlockModel } from 'mdml-engine/graph'
- * import { key } from 'mdml-engine/random'
+ * import { stochasticBlockModel } from 'omai-engine/graph'
+ * import { key } from 'omai-engine/random'
  * stochasticBlockModel(key(0), [3, 3], [[1, 0], [0, 1]]).edges.length // => 6
  * ```
  */
@@ -550,13 +550,13 @@ export function stochasticBlockModel(
   const selfloops = options.selfloops ?? false
   const k = sizes.length
   if (probs.length !== k || probs.some((r) => r.length !== k)) {
-    throw new MdmlError('value', 'stochasticBlockModel: probs must be a square matrix with one row per block')
+    throw new OmaiError('value', 'stochasticBlockModel: probs must be a square matrix with one row per block')
   }
   for (let r = 0; r < k; r++) {
     for (let s = 0; s < k; s++) {
       probability(probs[r]?.[s] ?? 0, 'stochasticBlockModel')
       if (!directed && probs[r]?.[s] !== probs[s]?.[r]) {
-        throw new MdmlError('value', 'stochasticBlockModel: probs must be symmetric for an undirected graph')
+        throw new OmaiError('value', 'stochasticBlockModel: probs must be symmetric for an undirected graph')
       }
     }
   }
@@ -582,8 +582,8 @@ export function stochasticBlockModel(
  * @concept random-graphs
  * @example
  * ```ts
- * import { isDag, randomDag } from 'mdml-engine/graph'
- * import { key } from 'mdml-engine/random'
+ * import { isDag, randomDag } from 'omai-engine/graph'
+ * import { key } from 'omai-engine/random'
  * isDag(randomDag(key(0), 8, 0.5)) // => true
  * ```
  */
@@ -611,8 +611,8 @@ export function randomDag(key: Key, n: number, p: number): Graph {
  * @concept random-graphs
  * @example
  * ```ts
- * import { randomGeometricGraph } from 'mdml-engine/graph'
- * import { key } from 'mdml-engine/random'
+ * import { randomGeometricGraph } from 'omai-engine/graph'
+ * import { key } from 'omai-engine/random'
  * randomGeometricGraph(key(0), 6, 2).edges.length // => 15
  * ```
  */
@@ -648,7 +648,7 @@ export function randomGeometricGraph(
  * @concept nearest-neighbours
  * @example
  * ```ts
- * import { kNearestNeighbourGraph } from 'mdml-engine/graph'
+ * import { kNearestNeighbourGraph } from 'omai-engine/graph'
  * kNearestNeighbourGraph([[0], [1], [3], [7]], 1).edges.length // => 3
  * ```
  */
@@ -695,8 +695,8 @@ export function kNearestNeighbourGraph(
  * @concept random-graphs
  * @example
  * ```ts
- * import { degree, randomKnnGraph } from 'mdml-engine/graph'
- * import { key } from 'mdml-engine/random'
+ * import { degree, randomKnnGraph } from 'omai-engine/graph'
+ * import { key } from 'omai-engine/random'
  * degree(randomKnnGraph(key(0), 12, 3)).every((d) => d >= 3) // => true
  * ```
  */

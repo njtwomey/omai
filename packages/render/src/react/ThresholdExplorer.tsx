@@ -4,10 +4,10 @@
  * operating point) and in the contingency table with its rates and costs.
  */
 
-import { minOf } from 'mdml-engine/base'
-import { sweepAt, type ThresholdSweep } from 'mdml-engine/exposition'
-import { analyseThresholds, type MetricInput } from 'mdml-engine/metrics'
-import type { TensorLike } from 'mdml-engine/tensor'
+import { minOf } from 'omai-engine/base'
+import { sweepAt, type ThresholdSweep } from 'omai-engine/exposition'
+import { analyseThresholds, type MetricInput } from 'omai-engine/metrics'
+import type { TensorLike } from 'omai-engine/tensor'
 import { type ReactElement, type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import { type Figure, figure as makeFigure } from '../figure/figure.ts'
 import { formatNumber } from '../theme/format.ts'

@@ -1,8 +1,8 @@
-import { iris, wine } from 'mdml-engine/datasets'
-import { toArray } from 'mdml-engine/tensor'
-import { type AxisBrush, brushFromAxisEvent, brushRows, parallelCoordinates, type Table } from 'mdml-render/charts'
-import { figure } from 'mdml-render/figure'
-import { Chart, Choice, ColumnOrder, ControlPanel, FigureFrame, useColourMode } from 'mdml-render/react'
+import { iris, wine } from 'omai-engine/datasets'
+import { toArray } from 'omai-engine/tensor'
+import { type AxisBrush, brushFromAxisEvent, brushRows, parallelCoordinates, type Table } from 'omai-render/charts'
+import { figure } from 'omai-render/figure'
+import { Chart, Choice, ColumnOrder, ControlPanel, FigureFrame, useColourMode } from 'omai-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 

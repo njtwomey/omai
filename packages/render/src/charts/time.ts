@@ -4,7 +4,7 @@
  */
 
 import type { EChartsOption } from 'echarts'
-import { maxOf, minOf } from 'mdml-engine/base'
+import { maxOf, minOf } from 'omai-engine/base'
 import { type Figure, figure as makeFigure } from '../figure/figure.ts'
 import { sequentialRamp } from '../theme/palettes.ts'
 import { type ColourMode, tokens } from '../theme/tokens.ts'
@@ -18,7 +18,7 @@ import { chartFrame } from './plot.ts'
  * @returns The ECharts option.
  * @example
  * ```ts
- * import { calendarHeatmap } from 'mdml-render/charts'
+ * import { calendarHeatmap } from 'omai-render/charts'
  * calendarHeatmap([{ date: '2026-01-01', value: 3 }]).calendar.range // => '2026'
  * ```
  */
@@ -88,7 +88,7 @@ export interface Candle {
  * @returns The ECharts option.
  * @example
  * ```ts
- * import { candlestickChart } from 'mdml-render/charts'
+ * import { candlestickChart } from 'omai-render/charts'
  * candlestickChart([{ label: 'd1', open: 1, high: 2, low: 0.5, close: 1.5 }]).series[0].type // => 'candlestick'
  * ```
  */

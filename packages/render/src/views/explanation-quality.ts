@@ -4,7 +4,7 @@
  */
 
 import type { EChartsOption } from 'echarts'
-import type { ExplanationQuality } from 'mdml-engine/exposition'
+import type { ExplanationQuality } from 'omai-engine/exposition'
 import { bars } from '../charts/bars.ts'
 import { type Panel, subplots } from '../charts/compose.ts'
 import { matrix } from '../charts/matrices.ts'
@@ -33,8 +33,8 @@ export function qualityLayout(record: ExplanationQuality): { readonly rows: numb
  * @returns The ECharts option.
  * @example
  * ```ts
- * import { explanationQuality } from 'mdml-engine/exposition'
- * import { explanationQualityView } from 'mdml-render/views'
+ * import { explanationQuality } from 'omai-engine/exposition'
+ * import { explanationQualityView } from 'omai-render/views'
  * const r = explanationQuality({ explainers: ['a', 'b'], metrics: [{ name: 'm', category: 'faithfulness', values: [1, 2], better: 'higher' }], agreement: { metric: 'spearman', matrix: [[1, 0.5], [0.5, 1]] } })
  * explanationQualityView(r).grid.length // => 2
  * ```

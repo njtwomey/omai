@@ -4,7 +4,7 @@
  * observations rendered from the environment's scenes by the software rasteriser.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import type { Key } from '../random/index.ts'
 import { rasterise } from '../scene/index.ts'
 import { box, flatDim, flatten, type Space, type SpaceValue } from '../space/index.ts'
@@ -29,9 +29,9 @@ export interface NormalizeObservationState<S> {
  * @concept environments
  * @example
  * ```ts
- * import { normalizeObservation } from 'mdml-engine/rl'
- * import { cartPole } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { normalizeObservation } from 'omai-engine/rl'
+ * import { cartPole } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * normalizeObservation(cartPole.create()).reset(key(0)).state.stats.count > 1 // => true
  * ```
  */
@@ -41,7 +41,7 @@ export function normalizeObservation<S, A>(
 ): Env<NormalizeObservationState<S>, readonly number[], A> {
   const eps = options.epsilon ?? 1e-8
   const update = options.update ?? true
-  if (!(eps > 0)) throw new MdmlError('value', 'normalizeObservation: epsilon must be positive')
+  if (!(eps > 0)) throw new OmaiError('value', 'normalizeObservation: epsilon must be positive')
   const size = flatDim(env.observationSpace)
   const norm = (o: readonly number[], st: RunningMeanStd): number[] =>
     o.map((v, i) => (v - (st.mean[i] ?? 0)) / Math.sqrt((st.var[i] ?? 1) + eps))
@@ -89,9 +89,9 @@ export interface FrameStackState<S, O> {
  * @concept environments
  * @example
  * ```ts
- * import { frameStack } from 'mdml-engine/rl'
- * import { cartPole } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { frameStack } from 'omai-engine/rl'
+ * import { cartPole } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * frameStack(cartPole.create(), 4).reset(key(0)).observation.length // => 4
  * ```
  */
@@ -100,7 +100,7 @@ export function frameStack<S, O, A>(
   n: number,
   options: { readonly padding?: 'reset' | { readonly value: O } } = {},
 ): Env<FrameStackState<S, O>, readonly O[], A> {
-  if (!(Number.isInteger(n) && n >= 1)) throw new MdmlError('value', 'frameStack: n must be a positive integer')
+  if (!(Number.isInteger(n) && n >= 1)) throw new OmaiError('value', 'frameStack: n must be a positive integer')
   const padding = options.padding ?? 'reset'
   const start = (r: Reset<S, O>): Reset<FrameStackState<S, O>, readonly O[]> => {
     const pad = padding === 'reset' ? r.observation : padding.value
@@ -137,9 +137,9 @@ export function frameStack<S, O, A>(
  * @concept environments
  * @example
  * ```ts
- * import { flattenObservation } from 'mdml-engine/rl'
- * import { blackjack } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { flattenObservation } from 'omai-engine/rl'
+ * import { blackjack } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * flattenObservation(blackjack.create()).reset(key(0)).observation.length // => 3
  * ```
  */
@@ -157,19 +157,19 @@ export function flattenObservation<S, O, A>(env: Env<S, O, A>): Env<S, readonly 
  *
  * @param env - An environment with a discrete observation space.
  * @returns The encoding environment.
- * @throws MdmlError with code `value` when the observation space is not discrete.
+ * @throws OmaiError with code `value` when the observation space is not discrete.
  * @concept environments
  * @example
  * ```ts
- * import { oneHotObservation } from 'mdml-engine/rl'
- * import { frozenLake } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { oneHotObservation } from 'omai-engine/rl'
+ * import { frozenLake } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * oneHotObservation(frozenLake.create()).reset(key(0)).observation.slice(0, 3) // => [1, 0, 0]
  * ```
  */
 export function oneHotObservation<S, A>(env: Env<S, number, A>): Env<S, readonly number[], A> {
   const space = env.observationSpace
-  if (space.kind !== 'discrete') throw new MdmlError('value', 'oneHotObservation: needs a discrete observation space')
+  if (space.kind !== 'discrete') throw new OmaiError('value', 'oneHotObservation: needs a discrete observation space')
   const start = space.start ?? 0
   return transformObservation(
     env,
@@ -198,9 +198,9 @@ export interface TimeAwareState<S> {
  * @concept environments
  * @example
  * ```ts
- * import { timeAwareObservation } from 'mdml-engine/rl'
- * import { cartPole } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { timeAwareObservation } from 'omai-engine/rl'
+ * import { cartPole } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * const env = timeAwareObservation(cartPole.create())
  * env.step(env.reset(key(0)).state, 1, key(1)).observation[4] // => 1
  * ```
@@ -258,9 +258,9 @@ export interface PixelObservationOptions {
  * @concept environments
  * @example
  * ```ts
- * import { pixelObservation } from 'mdml-engine/rl'
- * import { cartPole } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { pixelObservation } from 'omai-engine/rl'
+ * import { cartPole } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * pixelObservation(cartPole.create(), { width: 32, height: 24 }).reset(key(0)).observation.shape // => [24, 32, 3]
  * ```
  */

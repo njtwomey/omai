@@ -4,6 +4,6 @@
 
 Embeddings learned from data: word vectors by prediction (word2vec's skip-gram and CBOW with negative sampling or a hierarchical softmax, fastText's subword n-grams), by weighted least squares on co-occurrence counts (GloVe) and in closed form (PPMI and SVD), knowledge-graph embeddings (TransE, DistMult, ComplEx, RotatE with margin and negative-sampling losses and filtered ranking), and the evaluation of embeddings by neighbours, analogies and similarity correlation. Every trained model exposes its loss as a smooth problem, so the optimiser is a slot.
 
-- function `knowledge-graph.ts` (file): Knowledge-graph embeddings: TransE, DistMult, ComplEx, RotatE. `src/lib/embedding/knowledge-graph.ts:1` `mdml-engine/embedding`
+- function `knowledge-graph.ts` (file): Knowledge-graph embeddings: TransE, DistMult, ComplEx, RotatE. `src/lib/embedding/knowledge-graph.ts:1` `omai-engine/embedding`
 
-- function `trainWord2vec`: Train skip-gram or CBOW word vectors with negative sampling. `src/lib/embedding/word2vec.ts:643` `mdml-engine/embedding`
+- function `trainWord2vec`: Train skip-gram or CBOW word vectors with negative sampling. `src/lib/embedding/word2vec.ts:643` `omai-engine/embedding`

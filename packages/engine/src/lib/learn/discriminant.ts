@@ -170,7 +170,7 @@ const regularise = (c: Float64Array, d: number, r: number): Float64Array => {
  * @returns The fitted parameters (means, priors, covariances, scores' weights and the discriminant axes).
  * @example
  * ```ts
- * import { fitDiscriminant, matrixView } from 'mdml-engine/learn'
+ * import { fitDiscriminant, matrixView } from 'omai-engine/learn'
  * const m = matrixView([[0], [2], [10], [12]], 'demo')
  * const hyper = { covariance: 'pooled', shrinkage: 0, regParam: 0, mix: 1, unbiased: false, rankTolerance: 1e-10 } as const
  * fitDiscriminant(m, [0, 0, 1, 1], [0, 1], hyper).means // => [[1], [11]]
@@ -370,8 +370,8 @@ function training(
  * @index estimator Linear and quadratic discriminant analysis.
  * @example
  * ```ts
- * import { discriminantAnalysis } from 'mdml-engine/learn'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { discriminantAnalysis } from 'omai-engine/learn'
+ * import { toFlat } from 'omai-engine/tensor'
  * const x = [[0, 0], [1, 0.2], [0.2, 1], [4, 4], [5, 4.2], [4.2, 5]]
  * const lda = discriminantAnalysis().fit({ x, y: [0, 0, 0, 1, 1, 1] })
  * toFlat(lda.predict([[0.5, 0.5], [4.5, 4.5]])) // => [0, 1]
@@ -424,8 +424,8 @@ export function discriminantAnalysis(
  * @returns The estimator.
  * @example
  * ```ts
- * import { linearDiscriminant } from 'mdml-engine/learn'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { linearDiscriminant } from 'omai-engine/learn'
+ * import { toFlat } from 'omai-engine/tensor'
  * const f = linearDiscriminant({ shrinkage: 0.1 }).fit({ x: [[0], [1], [5], [6]], y: [0, 0, 1, 1] })
  * toFlat(f.predict([[2], [4]])) // => [0, 1]
  * ```
@@ -444,8 +444,8 @@ export function linearDiscriminant(
  * @returns The estimator.
  * @example
  * ```ts
- * import { quadraticDiscriminant } from 'mdml-engine/learn'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { quadraticDiscriminant } from 'omai-engine/learn'
+ * import { toFlat } from 'omai-engine/tensor'
  * // Class 1 is spread widely around class 0, so the far points on both sides are class 1.
  * const x = [[-0.2], [0.1], [0], [0.2], [-4], [4], [-5], [5]]
  * const f = quadraticDiscriminant().fit({ x, y: [0, 0, 0, 0, 1, 1, 1, 1] })
@@ -460,7 +460,7 @@ export function quadraticDiscriminant(
 
 /** The hyperparameters of {@link kernelFisherDiscriminant}. */
 export interface KernelFisherHyper {
-  /** A kernel of `mdml-engine/kernels`, or a scikit-learn metric name with its parameters. */
+  /** A kernel of `omai-engine/kernels`, or a scikit-learn metric name with its parameters. */
   readonly kernel: Kernel | PairwiseKernelMetric
   readonly kernelOptions: PairwiseKernelOptions
   /** The ridge `mu` added to the within-class scatter of the kernel's span. */
@@ -626,8 +626,8 @@ function scoreProjected(p: DiscriminantParams, z: MatrixView): Float64Array {
  * Neural Networks for Signal Processing IX (1999).
  * @example
  * ```ts
- * import { kernelFisherDiscriminant } from 'mdml-engine/learn'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { kernelFisherDiscriminant } from 'omai-engine/learn'
+ * import { toFlat } from 'omai-engine/tensor'
  * // Two concentric classes, inseparable by a line.
  * const x = [[0.1, 0], [0, 0.2], [-0.1, 0], [0, -0.2], [2, 0], [0, 2.1], [-2, 0], [0, -2.1]]
  * const f = kernelFisherDiscriminant({ kernelOptions: { gamma: 0.5 } }).fit({ x, y: [0, 0, 0, 0, 1, 1, 1, 1] })

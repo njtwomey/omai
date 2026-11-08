@@ -6,7 +6,7 @@
  * @index structure The Tensor type, its constructors and conversions to plain arrays.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import type { Backend } from './backend.ts'
 import { cpu } from './cpu.ts'
 import { allocate, type DType, type Storage } from './dtype.ts'
@@ -55,11 +55,11 @@ function flatten(values: NestedArray, shape: Shape, depth: number, out: number[]
   if (depth === shape.length) {
     if (typeof values === 'number') out.push(values)
     else if (typeof values === 'boolean') out.push(values ? 1 : 0)
-    else throw new MdmlError('shape', 'ragged nested array: expected a number')
+    else throw new OmaiError('shape', 'ragged nested array: expected a number')
     return
   }
   if (!Array.isArray(values) || values.length !== shape[depth]) {
-    throw new MdmlError('shape', `ragged nested array at depth ${depth}: expected length ${shape[depth]}`)
+    throw new OmaiError('shape', `ragged nested array at depth ${depth}: expected length ${shape[depth]}`)
   }
   for (const v of values as readonly NestedArray[]) flatten(v, shape, depth + 1, out)
 }
@@ -77,12 +77,12 @@ function inferDType(values: NestedArray): DType {
  * @param values - A scalar or rectangular nested array.
  * @param options - The dtype (inferred by default) and backend (default the CPU backend).
  * @returns A new tensor whose shape is inferred from the nesting.
- * @throws MdmlError with code `shape` for ragged input.
+ * @throws OmaiError with code `shape` for ragged input.
  * @concept tensor
  * @index function Create a tensor from numbers or nested arrays, like numpy.array.
  * @example
  * ```ts
- * import { tensor } from 'mdml-engine/tensor'
+ * import { tensor } from 'omai-engine/tensor'
  * const t = tensor([[1, 2, 3], [4, 5, 6]])
  * t.shape // => [2, 3]
  * t.dtype // => 'float64'
@@ -111,10 +111,10 @@ export function tensor<D extends DType = 'float64'>(values: NestedArray, options
  * @param dtype - The element type.
  * @param backend - The owning backend (default CPU).
  * @returns The tensor.
- * @throws MdmlError with code `shape` when sizes disagree.
+ * @throws OmaiError with code `shape` when sizes disagree.
  * @example
  * ```ts
- * import { fromStorage } from 'mdml-engine/tensor'
+ * import { fromStorage } from 'omai-engine/tensor'
  * fromStorage(new Float64Array([1, 2, 3, 4]), [2, 2], 'float64').shape // => [2, 2]
  * ```
  */
@@ -135,7 +135,7 @@ export function fromStorage<D extends DType, S extends Shape>(
  * @returns A tensor of shape `[values.length]`.
  * @example
  * ```ts
- * import { fromVector } from 'mdml-engine/tensor'
+ * import { fromVector } from 'omai-engine/tensor'
  * fromVector([1, 2, 3]).shape // => [3]
  * ```
  */
@@ -150,7 +150,7 @@ export function fromVector(values: ArrayLike<number>): Tensor<'float64', [number
  * @returns `true` for tensors.
  * @example
  * ```ts
- * import { isTensor, tensor } from 'mdml-engine/tensor'
+ * import { isTensor, tensor } from 'omai-engine/tensor'
  * isTensor(tensor([1])) // => true
  * isTensor([1]) // => false
  * ```
@@ -166,7 +166,7 @@ export function isTensor(value: unknown): value is Tensor {
  * @returns `true` for values operations accept without conversion.
  * @example
  * ```ts
- * import { isValue, tensor } from 'mdml-engine/tensor'
+ * import { isValue, tensor } from 'omai-engine/tensor'
  * isValue(tensor(1)) // => true
  * isValue(1) // => false
  * ```
@@ -183,7 +183,7 @@ export function isValue(value: unknown): value is Value {
  * @returns A value.
  * @example
  * ```ts
- * import { asTensor } from 'mdml-engine/tensor'
+ * import { asTensor } from 'omai-engine/tensor'
  * asTensor([1, 2]).shape // => [2]
  * asTensor(new Int32Array([1, 2])).dtype // => 'int32'
  * ```
@@ -209,7 +209,7 @@ export function asTensor(x: TensorLike, dtype?: DType): Value {
  * @returns A number for a scalar, otherwise nested arrays matching the shape.
  * @example
  * ```ts
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * toArray(tensor([[1, 2], [3, 4]])) // => [[1, 2], [3, 4]]
  * ```
  */
@@ -233,7 +233,7 @@ export function toArray(t: Value): NestedArray {
  * @returns The elements.
  * @example
  * ```ts
- * import { tensor, toFlat } from 'mdml-engine/tensor'
+ * import { tensor, toFlat } from 'omai-engine/tensor'
  * toFlat(tensor([[1, 2], [3, 4]])) // => [1, 2, 3, 4]
  * ```
  */
@@ -249,10 +249,10 @@ export function toFlat(t: Value): number[] {
  * @param x - The vector: a tensor, a typed array or a nested array of depth one.
  * @param name - The caller's name, for error messages.
  * @returns The elements.
- * @throws MdmlError with code `shape` unless `x` has rank 1, and `not-differentiable` for a traced value.
+ * @throws OmaiError with code `shape` unless `x` has rank 1, and `not-differentiable` for a traced value.
  * @example
  * ```ts
- * import { tensor, toVector } from 'mdml-engine/tensor'
+ * import { tensor, toVector } from 'omai-engine/tensor'
  * toVector(tensor([1, 2, 3]), 'example') // => [1, 2, 3]
  * toVector(new Float64Array([4, 5]), 'example') // => [4, 5]
  * ```
@@ -262,7 +262,7 @@ export function toVector(x: TensorLike, name: string): readonly number[] {
   if (ArrayBuffer.isView(x) && !(x instanceof DataView)) return Array.from(x as ArrayLike<number>)
   const t = concrete(asTensor(x), name)
   if (t.shape.length !== 1)
-    throw new MdmlError('shape', `${name}: expected a vector, got shape ${formatShape(t.shape)}`)
+    throw new OmaiError('shape', `${name}: expected a vector, got shape ${formatShape(t.shape)}`)
   return Array.from(t.data)
 }
 
@@ -271,17 +271,17 @@ export function toVector(x: TensorLike, name: string): readonly number[] {
  *
  * @param t - A concrete tensor with exactly one element.
  * @returns The value.
- * @throws MdmlError with code `shape` when the tensor has more than one element.
+ * @throws OmaiError with code `shape` when the tensor has more than one element.
  * @example
  * ```ts
- * import { item, tensor } from 'mdml-engine/tensor'
+ * import { item, tensor } from 'omai-engine/tensor'
  * item(tensor([[3.5]])) // => 3.5
  * ```
  */
 export function item(t: Value): number {
   const x = concrete(t, 'item')
   if (x.data.length !== 1) {
-    throw new MdmlError('shape', `item: tensor of shape ${formatShape(x.shape)} has ${x.data.length} elements`)
+    throw new OmaiError('shape', `item: tensor of shape ${formatShape(x.shape)} has ${x.data.length} elements`)
   }
   return x.data[0] ?? 0
 }
@@ -293,7 +293,7 @@ export function item(t: Value): number {
  * @returns The copy.
  * @example
  * ```ts
- * import { clone, tensor } from 'mdml-engine/tensor'
+ * import { clone, tensor } from 'omai-engine/tensor'
  * const a = tensor([1, 2])
  * clone(a).data === a.data // => false
  * ```
@@ -303,6 +303,6 @@ export function clone<D extends DType>(t: Tensor<D>): Tensor<D> {
 }
 
 function concrete(t: Value, where: string): Tensor {
-  if (isTraced(t)) throw new MdmlError('not-differentiable', `${where} needs a concrete tensor, not a traced value`)
+  if (isTraced(t)) throw new OmaiError('not-differentiable', `${where} needs a concrete tensor, not a traced value`)
   return t
 }

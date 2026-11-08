@@ -11,8 +11,8 @@ import numpy as np
 import scipy
 import scipy.signal as ss
 import torch
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray, rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray, rng
 from pystoi import stoi
 from torchmetrics.functional.audio import (
     permutation_invariant_training,

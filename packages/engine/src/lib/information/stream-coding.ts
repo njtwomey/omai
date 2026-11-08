@@ -6,7 +6,7 @@
  * narrowing of the code interval.
  */
 
-import { MdmlError, pairwiseSum } from '../base/index.ts'
+import { OmaiError, pairwiseSum } from '../base/index.ts'
 import { type TensorLike, toFlat } from '../tensor/index.ts'
 import {
   type Algorithm,
@@ -47,10 +47,10 @@ function model(spec: FrequencyModel, name: string): Model {
   const counts = adaptive
     ? new Array<number>(spec.alphabetSize).fill(1)
     : spec.frequencies.map((f) => {
-        if (!Number.isInteger(f) || f < 0) throw new MdmlError('value', `${name}: frequencies must be integers >= 0`)
+        if (!Number.isInteger(f) || f < 0) throw new OmaiError('value', `${name}: frequencies must be integers >= 0`)
         return f
       })
-  if (counts.length === 0) throw new MdmlError('value', `${name}: empty alphabet`)
+  if (counts.length === 0) throw new OmaiError('value', `${name}: empty alphabet`)
   const increment = adaptive ? (spec.increment ?? 1) : 0
   let cumulative: number[] = []
   const rebuild = (): void => {
@@ -60,7 +60,7 @@ function model(spec: FrequencyModel, name: string): Model {
   rebuild()
   const total = (): number => cumulative[counts.length] ?? 0
   if (total() > MAX_TOTAL || total() === 0)
-    throw new MdmlError('value', `${name}: the frequencies must total between 1 and ${MAX_TOTAL}`)
+    throw new OmaiError('value', `${name}: the frequencies must total between 1 and ${MAX_TOTAL}`)
   return {
     size: counts.length,
     total,
@@ -123,12 +123,12 @@ function startingCounts(spec: FrequencyModel, name: string): number[] {
 
 function checkSymbolIn(counts: readonly number[], s: number, name: string): void {
   if (!Number.isInteger(s) || s < 0 || s >= counts.length || (counts[s] ?? 0) === 0)
-    throw new MdmlError('value', `${name}: symbol ${s} has zero probability or is out of range`)
+    throw new OmaiError('value', `${name}: symbol ${s} has zero probability or is out of range`)
 }
 
 function checkSymbol(m: Model, s: number, name: string): void {
   if (!Number.isInteger(s) || s < 0 || s >= m.size || m.freq(s) === 0)
-    throw new MdmlError('value', `${name}: symbol ${s} has zero probability or is out of range`)
+    throw new OmaiError('value', `${name}: symbol ${s} has zero probability or is out of range`)
 }
 
 /**
@@ -141,17 +141,17 @@ function checkSymbol(m: Model, s: number, name: string): void {
  * @concept arithmetic-coding
  * @example
  * ```ts
- * import { frequencyTable } from 'mdml-engine/information'
+ * import { frequencyTable } from 'omai-engine/information'
  * frequencyTable([0.5, 0.3, 0.2], 10) // => [5, 3, 2]
  * ```
  */
 export function frequencyTable(probs: TensorLike, total: number = MAX_TOTAL): number[] {
   const p = toFlat(float(probs))
   const sum = pairwiseSum(p)
-  if (p.some((v) => !(v >= 0)) || !(sum > 0)) throw new MdmlError('value', 'frequencyTable: invalid probabilities')
+  if (p.some((v) => !(v >= 0)) || !(sum > 0)) throw new OmaiError('value', 'frequencyTable: invalid probabilities')
   const positive = p.filter((v) => v > 0).length
   if (!Number.isInteger(total) || total < positive || total > MAX_TOTAL)
-    throw new MdmlError('value', `frequencyTable: total must be an integer in [${positive}, ${MAX_TOTAL}]`)
+    throw new OmaiError('value', `frequencyTable: total must be an integer in [${positive}, ${MAX_TOTAL}]`)
   const spare = total - positive
   const exact = p.map((v) => (v / sum) * spare)
   const freq = p.map((v, i) => (v > 0 ? 1 + Math.floor(exact[i] ?? 0) : 0))
@@ -183,7 +183,7 @@ const QUARTER = 2 ** 30
  * @concept arithmetic-coding
  * @example
  * ```ts
- * import { arithmeticDecode, arithmeticEncode } from 'mdml-engine/information'
+ * import { arithmeticDecode, arithmeticEncode } from 'omai-engine/information'
  * const spec = { kind: 'static', frequencies: [3, 1] } as const
  * const bits = arithmeticEncode([0, 0, 1, 0, 0, 0], spec)
  * arithmeticDecode(bits, 6, spec) // => [0, 0, 1, 0, 0, 0]
@@ -254,7 +254,7 @@ function arithmeticFinish(state: ArithmeticCore, out: number[]): void {
  * @concept arithmetic-coding
  * @example
  * ```ts
- * import { arithmeticDecode, arithmeticEncode } from 'mdml-engine/information'
+ * import { arithmeticDecode, arithmeticEncode } from 'omai-engine/information'
  * const spec = { kind: 'adaptive', alphabetSize: 3 } as const
  * arithmeticDecode(arithmeticEncode([2, 2, 2, 1], spec), 4, spec) // => [2, 2, 2, 1]
  * ```
@@ -307,7 +307,7 @@ const u32 = (x: number): number => x >>> 0
  * @concept arithmetic-coding
  * @example
  * ```ts
- * import { rangeDecode, rangeEncode } from 'mdml-engine/information'
+ * import { rangeDecode, rangeEncode } from 'omai-engine/information'
  * const spec = { kind: 'static', frequencies: [6, 1, 1] } as const
  * rangeDecode(rangeEncode([0, 0, 1, 0, 2], spec), 5, spec) // => [0, 0, 1, 0, 2]
  * ```
@@ -367,7 +367,7 @@ function rangeFinish(state: RangeCore, out: number[]): void {
  * @concept arithmetic-coding
  * @example
  * ```ts
- * import { rangeDecode, rangeEncode } from 'mdml-engine/information'
+ * import { rangeDecode, rangeEncode } from 'omai-engine/information'
  * const spec = { kind: 'adaptive', alphabetSize: 2 } as const
  * rangeDecode(rangeEncode([1, 1, 1, 0, 1], spec), 5, spec) // => [1, 1, 1, 0, 1]
  * ```
@@ -548,12 +548,12 @@ function encoderStep(
  * @param symbols - Symbols 0..m-1.
  * @param spec - The frequency model.
  * @returns The algorithm; it completes after one step per symbol plus the finishing step.
- * @throws MdmlError with code `value` for a symbol with zero probability or out of range, or a bad model.
+ * @throws OmaiError with code `value` for a symbol with zero probability or out of range, or a bad model.
  * @concept arithmetic-coding
  * @example
  * ```ts
- * import { arithmeticEncode, arithmeticEncoderAlgorithm } from 'mdml-engine/information'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { arithmeticEncode, arithmeticEncoderAlgorithm } from 'omai-engine/information'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const spec = { kind: 'static', frequencies: [3, 1] } as const
  * const run = runAlgorithm(arithmeticEncoderAlgorithm([0, 0, 1, 0], spec), { seed: 0, maxSteps: 20 })
  * [run.steps, run.state.output.join('') === arithmeticEncode([0, 0, 1, 0], spec).join('')] // => [5, true]
@@ -603,12 +603,12 @@ export function arithmeticEncoderAlgorithm(
  * @param symbols - Symbols 0..m-1.
  * @param spec - The frequency model (totals up to 2^16).
  * @returns The algorithm.
- * @throws MdmlError with code `value` for a symbol with zero probability or out of range, or a bad model.
+ * @throws OmaiError with code `value` for a symbol with zero probability or out of range, or a bad model.
  * @concept arithmetic-coding
  * @example
  * ```ts
- * import { rangeEncode, rangeEncoderAlgorithm } from 'mdml-engine/information'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { rangeEncode, rangeEncoderAlgorithm } from 'omai-engine/information'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const spec = { kind: 'static', frequencies: [6, 1, 1] } as const
  * const run = runAlgorithm(rangeEncoderAlgorithm([0, 0, 1, 0, 2], spec), { seed: 0, maxSteps: 20 })
  * run.state.output.join(',') === Array.from(rangeEncode([0, 0, 1, 0, 2], spec)).join(',') // => true
@@ -716,12 +716,12 @@ function decoderObserve(s: StreamDecoderState, range: boolean) {
  * @param length - The number of symbols to decode.
  * @param spec - The same frequency model as the encoder.
  * @returns The algorithm; it completes after `length` steps.
- * @throws MdmlError with code `value` for a bad model or length.
+ * @throws OmaiError with code `value` for a bad model or length.
  * @concept arithmetic-coding
  * @example
  * ```ts
- * import { arithmeticDecoderAlgorithm, arithmeticEncode } from 'mdml-engine/information'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { arithmeticDecoderAlgorithm, arithmeticEncode } from 'omai-engine/information'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const spec = { kind: 'adaptive', alphabetSize: 3 } as const
  * const bits = arithmeticEncode([2, 2, 1, 0], spec)
  * runAlgorithm(arithmeticDecoderAlgorithm(bits, 4, spec), { seed: 0, maxSteps: 10 }).state.output // => [2, 2, 1, 0]
@@ -733,7 +733,7 @@ export function arithmeticDecoderAlgorithm(
   spec: FrequencyModel,
 ): Algorithm<StreamDecoderState, StreamDecoderPath> {
   if (!(Number.isInteger(length) && length >= 0))
-    throw new MdmlError('value', 'arithmeticDecoderAlgorithm: length must be a non-negative integer')
+    throw new OmaiError('value', 'arithmeticDecoderAlgorithm: length must be a non-negative integer')
   const counts = startingCounts(spec, 'arithmeticDecoderAlgorithm')
   const increment = spec.kind === 'adaptive' ? (spec.increment ?? 1) : 0
   const adaptive = spec.kind === 'adaptive'
@@ -791,12 +791,12 @@ export function arithmeticDecoderAlgorithm(
  * @param length - The number of symbols to decode.
  * @param spec - The same frequency model as the encoder.
  * @returns The algorithm; it completes after `length` steps.
- * @throws MdmlError with code `value` for a bad model or length.
+ * @throws OmaiError with code `value` for a bad model or length.
  * @concept arithmetic-coding
  * @example
  * ```ts
- * import { rangeDecoderAlgorithm, rangeEncode } from 'mdml-engine/information'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { rangeDecoderAlgorithm, rangeEncode } from 'omai-engine/information'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const spec = { kind: 'static', frequencies: [5, 2, 1] } as const
  * const bytes = rangeEncode([0, 1, 0, 2], spec)
  * runAlgorithm(rangeDecoderAlgorithm(bytes, 4, spec), { seed: 0, maxSteps: 10 }).state.output // => [0, 1, 0, 2]
@@ -808,7 +808,7 @@ export function rangeDecoderAlgorithm(
   spec: FrequencyModel,
 ): Algorithm<StreamDecoderState, StreamDecoderPath> {
   if (!(Number.isInteger(length) && length >= 0))
-    throw new MdmlError('value', 'rangeDecoderAlgorithm: length must be a non-negative integer')
+    throw new OmaiError('value', 'rangeDecoderAlgorithm: length must be a non-negative integer')
   const counts = startingCounts(spec, 'rangeDecoderAlgorithm')
   const increment = spec.kind === 'adaptive' ? (spec.increment ?? 1) : 0
   const adaptive = spec.kind === 'adaptive'

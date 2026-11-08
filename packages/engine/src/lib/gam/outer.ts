@@ -10,7 +10,7 @@
  * other mode (`iteration: 'performance'`).
  */
 
-import { MdmlError, maxOf } from '../base/index.ts'
+import { maxOf, OmaiError } from '../base/index.ts'
 import { dgemm, dgemv, dpotrf, dpotrs, dsyev } from '../numerics/linalg/index.ts'
 import { fitGlm, fminbound, glmSolvers, nelderMead } from '../optim/index.ts'
 import { type Key, key as makeKey } from '../random/index.ts'
@@ -94,11 +94,11 @@ function quadratic(S: Float64Array, beta: ArrayLike<number>, p: number): number 
  * @param options - A warm start, the inner `solver`, a tolerance on the relative change of the penalised deviance
  *   (default 1e-12), the iteration cap (default 200) and the key for stochastic solvers.
  * @returns The converged fit.
- * @throws MdmlError `value` if the penalised normal equations are singular.
+ * @throws OmaiError `value` if the penalised normal equations are singular.
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { GAM_DEFAULTS, assemblePenalty, gamProblem, innerFit, s } from 'mdml-engine/gam'
+ * import { GAM_DEFAULTS, assemblePenalty, gamProblem, innerFit, s } from 'omai-engine/gam'
  * const x = Array.from({ length: 30 }, (_, i) => [i / 29])
  * const problem = gamProblem(x, x.map((r) => 2 * (r[0] ?? 0)), { ...GAM_DEFAULTS, terms: [s(0, { k: 5 })] })
  * innerFit(problem, assemblePenalty(problem.structure, [0])).beta.length === problem.design.p // => true
@@ -197,7 +197,7 @@ export interface OuterEvaluation {
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { buildDesign, logDetDerivative, penaltyStructure, s } from 'mdml-engine/gam'
+ * import { buildDesign, logDetDerivative, penaltyStructure, s } from 'omai-engine/gam'
  * const design = buildDesign([[0], [1], [2], [3], [4], [5], [6]], [s(0, { k: 5 })])
  * Math.round(logDetDerivative(penaltyStructure(design), [0])[0] ?? 0) // => 3
  * ```
@@ -266,7 +266,7 @@ function laplaceCriterion(
     w = weights.fisher
     chol = factorOf(w)
   }
-  if (chol.info !== 0) throw new MdmlError('value', 'gam: the penalised Hessian is singular')
+  if (chol.info !== 0) throw new OmaiError('value', 'gam: the penalised Hessian is singular')
   const { logDet, nullDim } = penaltyLogDet(structure, logLambda)
   let logDetH = 0
   for (let i = 0; i < p; i++) logDetH += 2 * Math.log(chol.factor[i * p + i] ?? 1)
@@ -365,12 +365,12 @@ export interface OuterSetup {
  * @param logLambda - The log smoothing parameters.
  * @param options - A warm start and whether to compute the gradient (default true for REML and ML).
  * @returns The evaluation.
- * @throws MdmlError `value` for UBRE without a known scale or for a shape-constrained design.
+ * @throws OmaiError `value` for UBRE without a known scale or for a shape-constrained design.
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { GAM_DEFAULTS, evaluateOuter, gamProblem, s } from 'mdml-engine/gam'
- * import { key } from 'mdml-engine/random'
+ * import { GAM_DEFAULTS, evaluateOuter, gamProblem, s } from 'omai-engine/gam'
+ * import { key } from 'omai-engine/random'
  * const x = Array.from({ length: 40 }, (_, i) => [i / 39])
  * const hyper = { ...GAM_DEFAULTS, terms: [s(0, { k: 6 })], iteration: 'outer' as const }
  * const problem = gamProblem(x, x.map((r) => Math.sin(5 * (r[0] ?? 0))), hyper)
@@ -384,7 +384,7 @@ export function evaluateOuter(
 ): OuterEvaluation {
   const { problem, hyper } = setup
   if (problem.design.constraints !== undefined) {
-    throw new MdmlError('value', 'gam: the outer iteration does not support shape-constrained terms')
+    throw new OmaiError('value', 'gam: the outer iteration does not support shape-constrained terms')
   }
   const S = assemblePenalty(problem.structure, logLambda)
   const fit = innerFit(problem, S, {
@@ -405,9 +405,9 @@ export function evaluateOuter(
     const denom = n - hyper.gamma * sol.edfTotal
     value = denom <= 0 ? Number.POSITIVE_INFINITY : (n * fit.deviance) / (denom * denom)
   } else if (hyper.method === 'ubre') {
-    if (problem.knownScale === undefined) throw new MdmlError('value', 'gam: UBRE needs a known scale')
+    if (problem.knownScale === undefined) throw new OmaiError('value', 'gam: UBRE needs a known scale')
     value = fit.deviance / n - problem.knownScale + (2 * problem.knownScale * hyper.gamma * sol.edfTotal) / n
-  } else throw new MdmlError('value', `gam: the outer iteration does not choose by "${hyper.method}"`)
+  } else throw new OmaiError('value', `gam: the outer iteration does not choose by "${hyper.method}"`)
   return { logLambda, fit, value, gradient: undefined, scaleUsed: problem.knownScale ?? 1, edf: sol.edfTotal }
 }
 
@@ -419,12 +419,12 @@ export function evaluateOuter(
  * @param at - The evaluation (with its gradient) to differentiate at.
  * @param h - The difference step in `log lambda` (default 0.02).
  * @returns The Hessian `[m, m]`, row-major.
- * @throws MdmlError `value` when `at` has no gradient (GCV and UBRE).
+ * @throws OmaiError `value` when `at` has no gradient (GCV and UBRE).
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { GAM_DEFAULTS, evaluateOuter, gamProblem, outerHessian, s } from 'mdml-engine/gam'
- * import { key } from 'mdml-engine/random'
+ * import { GAM_DEFAULTS, evaluateOuter, gamProblem, outerHessian, s } from 'omai-engine/gam'
+ * import { key } from 'omai-engine/random'
  * const x = Array.from({ length: 40 }, (_, i) => [i / 39])
  * const hyper = { ...GAM_DEFAULTS, terms: [s(0, { k: 6 })], iteration: 'outer' as const }
  * const problem = gamProblem(x, x.map((r, i) => Math.sin(5 * (r[0] ?? 0)) + 0.1 * Math.sin(i * 12.9898)), hyper)
@@ -433,7 +433,7 @@ export function evaluateOuter(
  * ```
  */
 export function outerHessian(setup: OuterSetup, at: OuterEvaluation, h = 0.02): Float64Array {
-  if (at.gradient === undefined) throw new MdmlError('value', 'outerHessian: needs the analytic gradient (REML or ML)')
+  if (at.gradient === undefined) throw new OmaiError('value', 'outerHessian: needs the analytic gradient (REML or ML)')
   const m = at.logLambda.length
   const out = new Float64Array(m * m)
   for (let s = 0; s < m; s++) {
@@ -484,15 +484,15 @@ export type OuterState = GamState & { readonly gradNorm: number }
  * @param hyper - The criterion (`method`), the starting `sp`, the inner `solver` and the iteration cap.
  * @param key - The run's key.
  * @returns The algorithm.
- * @throws MdmlError `value` for method `fixed` (use the performance iteration, which fits at fixed `sp`).
+ * @throws OmaiError `value` for method `fixed` (use the performance iteration, which fits at fixed `sp`).
  * @concept generalized-additive-models
  * @reference S. N. Wood, Fast stable restricted maximum likelihood and marginal likelihood estimation of semiparametric
  *   generalized linear models (JRSS B 73, 2011).
  * @example
  * ```ts
- * import { GAM_DEFAULTS, gamOuterAlgorithm, gamProblem, s } from 'mdml-engine/gam'
- * import { families } from 'mdml-engine/dists'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { GAM_DEFAULTS, gamOuterAlgorithm, gamProblem, s } from 'omai-engine/gam'
+ * import { families } from 'omai-engine/dists'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const x = Array.from({ length: 60 }, (_, i) => [i / 59])
  * const y = x.map((r) => Math.round(Math.exp(1 + Math.sin(5 * (r[0] ?? 0)))))
  * const hyper = { ...GAM_DEFAULTS, family: families.poisson(), terms: [s(0, { k: 8 })], iteration: 'outer' as const }
@@ -504,10 +504,10 @@ export function gamOuterAlgorithm(problem: GamProblem, hyper: GamHyper, key: Key
   const { design, structure } = problem
   const m = structure.blocks.length
   if (hyper.method === 'fixed') {
-    throw new MdmlError('value', 'gam: method "fixed" has no smoothing parameters to select (iteration performance)')
+    throw new OmaiError('value', 'gam: method "fixed" has no smoothing parameters to select (iteration performance)')
   }
   if (hyper.sp !== undefined && hyper.sp.length !== m) {
-    throw new MdmlError('shape', `gam: sp has ${hyper.sp.length} entries for ${m} penalties`)
+    throw new OmaiError('shape', `gam: sp has ${hyper.sp.length} entries for ${m} penalties`)
   }
   const setup: OuterSetup = { problem, hyper, key }
   const derivative = hyper.method === 'reml' || hyper.method === 'ml'
@@ -651,7 +651,7 @@ export function gamOuterAlgorithm(problem: GamProblem, hyper: GamHyper, key: Key
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { GAM_DEFAULTS, fitGamOuter, gamProblem, s } from 'mdml-engine/gam'
+ * import { GAM_DEFAULTS, fitGamOuter, gamProblem, s } from 'omai-engine/gam'
  * const x = Array.from({ length: 40 }, (_, i) => [i / 39])
  * const hyper = { ...GAM_DEFAULTS, terms: [s(0, { k: 6 })], iteration: 'outer' as const }
  * fitGamOuter(gamProblem(x, x.map((r) => Math.sin(5 * (r[0] ?? 0))), hyper), hyper).converged // => true

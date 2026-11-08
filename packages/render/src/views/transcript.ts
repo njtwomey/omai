@@ -4,9 +4,9 @@
  * highlight is never the only way to read it). The React view draws these spans as text.
  */
 
-import { maxOf } from 'mdml-engine/base'
-import { type Transcript, turnsOf } from 'mdml-engine/exposition'
-import { type Scene, scene, text } from 'mdml-engine/scene'
+import { maxOf } from 'omai-engine/base'
+import { type Transcript, turnsOf } from 'omai-engine/exposition'
+import { type Scene, scene, text } from 'omai-engine/scene'
 
 /** One token as drawn. */
 export interface TranscriptSpan {
@@ -35,8 +35,8 @@ export interface TranscriptTurn {
  * @returns The turns, each a run of spans.
  * @example
  * ```ts
- * import { transcript } from 'mdml-engine/exposition'
- * import { transcriptTurns } from 'mdml-render/views'
+ * import { transcript } from 'omai-engine/exposition'
+ * import { transcriptTurns } from 'omai-render/views'
  * const r = transcript({ tokens: [{ text: 'a', role: 'user' }, { text: 'b' }], tracks: [{ name: 'h', weights: [1, 3] }], emitted: 1 })
  * transcriptTurns(r)[1]?.spans[0]?.level // => 1
  * transcriptTurns(r)[0]?.spans[0]?.level // => 0.3333333333333333
@@ -71,8 +71,8 @@ export function transcriptTurns(record: Transcript, track = 0): TranscriptTurn[]
  * @returns The tokens (trimmed), their index and weight; none when the track has no weight.
  * @example
  * ```ts
- * import { transcript } from 'mdml-engine/exposition'
- * import { heaviestTokens } from 'mdml-render/views'
+ * import { transcript } from 'omai-engine/exposition'
+ * import { heaviestTokens } from 'omai-render/views'
  * const r = transcript({ tokens: [{ text: 'a' }, { text: ' b' }, { text: ' c' }], tracks: [{ name: 'h', weights: [1, 3, 2] }] })
  * heaviestTokens(r, 0, 2).map((t) => t.text) // => ['b', 'c']
  * ```
@@ -99,8 +99,8 @@ export function heaviestTokens(
  * @returns The scene.
  * @example
  * ```ts
- * import { transcript } from 'mdml-engine/exposition'
- * import { transcriptScene } from 'mdml-render/views'
+ * import { transcript } from 'omai-engine/exposition'
+ * import { transcriptScene } from 'omai-render/views'
  * transcriptScene(transcript({ tokens: [{ text: 'Hi', role: 'user' }] })).kind // => 'scene'
  * ```
  */

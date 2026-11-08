@@ -4,7 +4,7 @@
  * off-policy corrections V-trace (IMPALA) and Retrace.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 
 /** A per-step flag as a number (0 or 1) or a boolean. */
 type Flags = ArrayLike<number | boolean>
@@ -14,7 +14,7 @@ const flag = (xs: Flags | undefined, t: number): number => (xs === undefined ? 0
 function sameLength(name: string, n: number, ...arrays: (ArrayLike<unknown> | undefined)[]): void {
   for (const a of arrays) {
     if (a !== undefined && a.length !== n) {
-      throw new MdmlError('shape', `${name}: inputs must have the same length (${n}), got ${a.length}`)
+      throw new OmaiError('shape', `${name}: inputs must have the same length (${n}), got ${a.length}`)
     }
   }
 }
@@ -30,7 +30,7 @@ function sameLength(name: string, n: number, ...arrays: (ArrayLike<unknown> | un
  * @concept returns
  * @example
  * ```ts
- * import { discountedReturns } from 'mdml-engine/rl'
+ * import { discountedReturns } from 'omai-engine/rl'
  * discountedReturns([1, 1, 1], 0.5) // => [1.75, 1.5, 1]
  * ```
  */
@@ -61,7 +61,7 @@ export function discountedReturns(
  * @concept temporal-difference-learning
  * @example
  * ```ts
- * import { tdTargets } from 'mdml-engine/rl'
+ * import { tdTargets } from 'omai-engine/rl'
  * tdTargets([1, 1], [2, 2], [0, 1], 0.5) // => [2, 1]
  * ```
  */
@@ -90,7 +90,7 @@ export function tdTargets(
  * @concept temporal-difference-learning
  * @example
  * ```ts
- * import { tdErrors } from 'mdml-engine/rl'
+ * import { tdErrors } from 'omai-engine/rl'
  * tdErrors([1], [3], [2], [0], 0.5) // => [-1]
  * ```
  */
@@ -118,7 +118,7 @@ export function tdErrors(
  * @concept returns
  * @example
  * ```ts
- * import { nStepReturns } from 'mdml-engine/rl'
+ * import { nStepReturns } from 'omai-engine/rl'
  * nStepReturns([1, 1, 1], [0, 0, 0, 10], [0, 0, 0], 0.5, 2) // => [1.5, 4, 6]
  * ```
  */
@@ -130,9 +130,9 @@ export function nStepReturns(
   n: number,
 ): number[] {
   const T = rewards.length
-  if (values.length !== T + 1) throw new MdmlError('shape', `nStepReturns: need ${T + 1} values, got ${values.length}`)
+  if (values.length !== T + 1) throw new OmaiError('shape', `nStepReturns: need ${T + 1} values, got ${values.length}`)
   sameLength('nStepReturns', T, dones)
-  if (!(Number.isInteger(n) && n >= 1)) throw new MdmlError('value', 'nStepReturns: n must be a positive integer')
+  if (!(Number.isInteger(n) && n >= 1)) throw new OmaiError('value', 'nStepReturns: n must be a positive integer')
   return Array.from({ length: T }, (_, t) => {
     let g = 0
     let discount = 1
@@ -161,7 +161,7 @@ export function nStepReturns(
  * @concept eligibility-traces
  * @example
  * ```ts
- * import { lambdaReturns } from 'mdml-engine/rl'
+ * import { lambdaReturns } from 'omai-engine/rl'
  * lambdaReturns([0, 0], [1, 2], [0, 0], 1, 0.5) // => [1.5, 2]
  * ```
  */
@@ -208,7 +208,7 @@ export interface Advantages {
  * @index function Generalised advantage estimation.
  * @example
  * ```ts
- * import { gae } from 'mdml-engine/rl'
+ * import { gae } from 'omai-engine/rl'
  * gae([1, 1], [0, 0], [0, 1], 5, 1, 1).advantages // => [2, 1]
  * ```
  */
@@ -257,7 +257,7 @@ export interface VTraceResult {
  * @concept off-policy-learning
  * @example
  * ```ts
- * import { vtrace } from 'mdml-engine/rl'
+ * import { vtrace } from 'omai-engine/rl'
  * vtrace([1], [0.9], [0], 2, [0]).vs // => [2.8]
  * ```
  */
@@ -306,7 +306,7 @@ export function vtrace(
  * @concept off-policy-learning
  * @example
  * ```ts
- * import { retrace } from 'mdml-engine/rl'
+ * import { retrace } from 'omai-engine/rl'
  * retrace([1, 1], [1, 1], [0, 0], [0], [1]) // => [2, 1]
  * ```
  */
@@ -320,7 +320,7 @@ export function retrace(
   const T = rewards.length
   sameLength('retrace', T, discounts, nextExpectedQ)
   if (nextTakenQ.length !== T - 1 || traces.length !== T - 1) {
-    throw new MdmlError('shape', `retrace: nextTakenQ and traces need ${T - 1} entries`)
+    throw new OmaiError('shape', `retrace: nextTakenQ and traces need ${T - 1} entries`)
   }
   const out = new Array<number>(T)
   let g = (rewards[T - 1] ?? 0) + (discounts[T - 1] ?? 0) * (nextExpectedQ[T - 1] ?? 0)
@@ -343,7 +343,7 @@ export function retrace(
  * @concept off-policy-learning
  * @example
  * ```ts
- * import { retraceTraces } from 'mdml-engine/rl'
+ * import { retraceTraces } from 'omai-engine/rl'
  * retraceTraces([0.5, 0.9], [0.25, 1]) // => [1, 0.9]
  * ```
  */

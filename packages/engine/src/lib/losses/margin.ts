@@ -47,8 +47,8 @@ const margins = (scores: TensorLike, labels: TensorLike): Value => {
  * @concept losses
  * @example
  * ```ts
- * import { hinge } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { hinge } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * item(hinge([0.25, 2], [1, -1], { reduction: 'sum' })) // => 3.75
  * ```
  */
@@ -70,8 +70,8 @@ export function hinge(
  * @returns The loss, differentiable.
  * @example
  * ```ts
- * import { squaredHinge } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { squaredHinge } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * item(squaredHinge([0.5], [1])) // => 0.25
  * ```
  */
@@ -94,8 +94,8 @@ export function squaredHinge(
  * @returns The loss, differentiable.
  * @example
  * ```ts
- * import { logistic } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { logistic } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * item(logistic([0], [1])) === Math.LN2 // => true
  * ```
  */
@@ -112,8 +112,8 @@ export function logistic(scores: TensorLike, labels: TensorLike, options: LossOp
  * @returns The loss, differentiable.
  * @example
  * ```ts
- * import { exponential } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { exponential } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * item(exponential([0], [1])) // => 1
  * ```
  */
@@ -131,8 +131,8 @@ export function exponential(scores: TensorLike, labels: TensorLike, options: Los
  * @returns The loss, differentiable.
  * @example
  * ```ts
- * import { modifiedHuber } from 'mdml-engine/losses'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { modifiedHuber } from 'omai-engine/losses'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(modifiedHuber([-2, 0], [1, 1], { reduction: 'none' })) // => [8, 1]
  * ```
  */
@@ -150,8 +150,8 @@ export function modifiedHuber(scores: TensorLike, labels: TensorLike, options: L
  * @returns The loss, differentiable away from zero.
  * @example
  * ```ts
- * import { perceptron } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { perceptron } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * item(perceptron([0.5, -2], [1, 1], { reduction: 'sum' })) // => 2
  * ```
  */
@@ -176,8 +176,8 @@ export interface MulticlassMarginOptions {
  * @returns The loss, differentiable away from ties.
  * @example
  * ```ts
- * import { crammerSinger } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { crammerSinger } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * item(crammerSinger([[2, 1.5, 0]], [0])) // => 0.5
  * ```
  */
@@ -203,8 +203,8 @@ export function crammerSinger(scores: TensorLike, target: TensorLike, options: M
  * @returns The loss, differentiable away from the hinges.
  * @example
  * ```ts
- * import { westonWatkins } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { westonWatkins } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * item(westonWatkins([[1, 1.5]], [0])) // => 0.75
  * ```
  */

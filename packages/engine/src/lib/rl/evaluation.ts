@@ -8,10 +8,10 @@
 import {
   type Estimate,
   linspaceNumbers,
-  MdmlError,
   maxOf,
   meanOf,
   minOf,
+  OmaiError,
   quantileOf,
   varianceOf,
 } from '../base/index.ts'
@@ -60,14 +60,14 @@ export interface IntervalSeries {
 }
 
 function asMatrix(scores: Scores, name: string): ScoreMatrix {
-  if (scores.length === 0) throw new MdmlError('value', `${name}: no scores`)
+  if (scores.length === 0) throw new OmaiError('value', `${name}: no scores`)
   const m: ScoreMatrix =
     typeof scores[0] === 'number' ? (scores as readonly number[]).map((x) => [x]) : (scores as ScoreMatrix)
   const nTasks = m[0]?.length ?? 0
-  if (nTasks === 0) throw new MdmlError('value', `${name}: no tasks`)
+  if (nTasks === 0) throw new OmaiError('value', `${name}: no tasks`)
   for (const row of m) {
     if (row.length !== nTasks)
-      throw new MdmlError('value', `${name}: every run needs a score for each of ${nTasks} tasks`)
+      throw new OmaiError('value', `${name}: every run needs a score for each of ${nTasks} tasks`)
   }
   return m
 }
@@ -83,13 +83,13 @@ const taskMeans = (m: ScoreMatrix): number[] => (m[0] ?? []).map((_, t) => meanO
  *
  * @param scores - `scores[run][task]`, or the runs of one task.
  * @returns The IQM.
- * @throws MdmlError with code `value` for empty or ragged scores.
+ * @throws OmaiError with code `value` for empty or ragged scores.
  * @concept rl-evaluation
  * @reference Agarwal, Schwarzer, Castro, Courville and Bellemare (2021), Deep reinforcement learning at the edge of the
  *   statistical precipice.
  * @example
  * ```ts
- * import { interquartileMean } from 'mdml-engine/rl'
+ * import { interquartileMean } from 'omai-engine/rl'
  * interquartileMean([1, 2, 3, 4, 5, 6, 7, 100]) // => 4.5
  * ```
  */
@@ -108,7 +108,7 @@ export function interquartileMean(scores: Scores): number {
  * @concept rl-evaluation
  * @example
  * ```ts
- * import { aggregateMean } from 'mdml-engine/rl'
+ * import { aggregateMean } from 'omai-engine/rl'
  * aggregateMean([[1, 10], [3, 20]]) // => 8.5
  * ```
  */
@@ -124,7 +124,7 @@ export function aggregateMean(scores: Scores): number {
  * @concept rl-evaluation
  * @example
  * ```ts
- * import { aggregateMedian } from 'mdml-engine/rl'
+ * import { aggregateMedian } from 'omai-engine/rl'
  * aggregateMedian([[1, 10, 4], [3, 20, 6]]) // => 5
  * ```
  */
@@ -142,7 +142,7 @@ export function aggregateMedian(scores: Scores): number {
  * @concept rl-evaluation
  * @example
  * ```ts
- * import { optimalityGap } from 'mdml-engine/rl'
+ * import { optimalityGap } from 'omai-engine/rl'
  * optimalityGap([0.5, 1.5, 0.75, 1]) // => 0.1875
  * ```
  */
@@ -165,11 +165,11 @@ function improvement(x: readonly number[], y: readonly number[]): number {
  * @param x - Scores of X, `[runs][tasks]`.
  * @param y - Scores of Y on the same tasks.
  * @returns P(X > Y) in `[0, 1]`.
- * @throws MdmlError with code `value` when the task counts differ.
+ * @throws OmaiError with code `value` when the task counts differ.
  * @concept rl-evaluation
  * @example
  * ```ts
- * import { probabilityOfImprovement } from 'mdml-engine/rl'
+ * import { probabilityOfImprovement } from 'omai-engine/rl'
  * probabilityOfImprovement([3, 4, 5], [1, 4, 2]) // => 0.8333333333333334
  * ```
  */
@@ -177,7 +177,7 @@ export function probabilityOfImprovement(x: Scores, y: Scores): number {
   const mx = asMatrix(x, 'probabilityOfImprovement')
   const my = asMatrix(y, 'probabilityOfImprovement')
   const nTasks = mx[0]?.length ?? 0
-  if ((my[0]?.length ?? 0) !== nTasks) throw new MdmlError('value', 'probabilityOfImprovement: the task counts differ')
+  if ((my[0]?.length ?? 0) !== nTasks) throw new OmaiError('value', 'probabilityOfImprovement: the task counts differ')
   const per: number[] = []
   for (let t = 0; t < nTasks; t++) {
     per.push(
@@ -198,11 +198,11 @@ export function probabilityOfImprovement(x: Scores, y: Scores): number {
  * @param low - The score that maps to 0 on each task.
  * @param high - The score that maps to 1 on each task.
  * @returns The normalised scores.
- * @throws MdmlError with code `value` when the bounds do not match the tasks or coincide.
+ * @throws OmaiError with code `value` when the bounds do not match the tasks or coincide.
  * @concept rl-evaluation
  * @example
  * ```ts
- * import { normalizeScores } from 'mdml-engine/rl'
+ * import { normalizeScores } from 'omai-engine/rl'
  * normalizeScores([[5, 0], [10, 50]], [0, 0], [10, 100]) // => [[0.5, 0], [1, 0.5]]
  * ```
  */
@@ -210,10 +210,10 @@ export function normalizeScores(scores: ScoreMatrix, low: readonly number[], hig
   const m = asMatrix(scores, 'normalizeScores')
   const nTasks = m[0]?.length ?? 0
   if (low.length !== nTasks || high.length !== nTasks) {
-    throw new MdmlError('value', `normalizeScores: need ${nTasks} lower and upper bounds`)
+    throw new OmaiError('value', `normalizeScores: need ${nTasks} lower and upper bounds`)
   }
   for (let t = 0; t < nTasks; t++) {
-    if ((high[t] ?? 0) === (low[t] ?? 0)) throw new MdmlError('value', `normalizeScores: task ${t} has high = low`)
+    if ((high[t] ?? 0) === (low[t] ?? 0)) throw new OmaiError('value', `normalizeScores: task ${t} has high = low`)
   }
   return m.map((row) => row.map((x, t) => (x - (low[t] ?? 0)) / ((high[t] ?? 1) - (low[t] ?? 0))))
 }
@@ -227,7 +227,7 @@ export function normalizeScores(scores: ScoreMatrix, low: readonly number[], hig
  * @concept rl-evaluation
  * @example
  * ```ts
- * import { minMaxNormalizedScores } from 'mdml-engine/rl'
+ * import { minMaxNormalizedScores } from 'omai-engine/rl'
  * minMaxNormalizedScores({ a: [[0, 5]], b: [[10, 15]] }) // => { a: [[0, 0]], b: [[1, 1]] }
  * ```
  */
@@ -258,7 +258,7 @@ export function minMaxNormalizedScores(byAlgorithm: Readonly<Record<string, Scor
  * @concept bootstrap
  * @example
  * ```ts
- * import { percentileInterval } from 'mdml-engine/rl'
+ * import { percentileInterval } from 'omai-engine/rl'
  * percentileInterval([0, 1, 2, 3, 4, 5, 6, 7, 8], 0.5) // => [2, 6]
  * ```
  */
@@ -309,7 +309,7 @@ function replicate(
   options: BootstrapOptions,
 ): number[][] {
   const reps = options.reps ?? 2000
-  if (!(Number.isInteger(reps) && reps >= 1)) throw new MdmlError('value', 'bootstrap: reps must be a positive integer')
+  if (!(Number.isInteger(reps) && reps >= 1)) throw new OmaiError('value', 'bootstrap: reps must be a positive integer')
   const k = bootKey(options)
   const out: number[][] = []
   for (let r = 0; r < reps; r++) {
@@ -343,11 +343,11 @@ function bootstrapEstimate(value: number, samples: number[], level: number): Boo
  * @param statistic - The statistic of the (resampled) matrices.
  * @param options - Key, replications, level and task resampling.
  * @returns The statistic with its percentile interval, standard error and replicates.
- * @throws MdmlError with code `value` for empty or ragged scores.
+ * @throws OmaiError with code `value` for empty or ragged scores.
  * @concept bootstrap
  * @example
  * ```ts
- * import { interquartileMean, stratifiedBootstrap } from 'mdml-engine/rl'
+ * import { interquartileMean, stratifiedBootstrap } from 'omai-engine/rl'
  * const ci = stratifiedBootstrap([[1, 2], [3, 4], [5, 6], [7, 8]], interquartileMean, { seed: 0, reps: 200 })
  * ci.value // => 4.5
  * ci.interval[0] <= 4.5 && 4.5 <= ci.interval[1] // => true
@@ -384,7 +384,7 @@ const METRICS: Readonly<Record<AggregateMetric, (m: ScoreMatrix, gamma: number) 
  * @concept rl-evaluation
  * @example
  * ```ts
- * import { aggregateScores } from 'mdml-engine/rl'
+ * import { aggregateScores } from 'omai-engine/rl'
  * const a = aggregateScores([[2, 9], [4, 11], [6, 13]], { seed: 1, reps: 100 })
  * a.mean?.value // => 7.5
  * Object.keys(a) // => ['mean', 'median', 'iqm', 'optimalityGap']
@@ -421,7 +421,7 @@ export function aggregateScores(
  * @concept rl-evaluation
  * @example
  * ```ts
- * import { improvementEstimate } from 'mdml-engine/rl'
+ * import { improvementEstimate } from 'omai-engine/rl'
  * improvementEstimate([5, 6, 7], [1, 2, 3], { seed: 0, reps: 50 }).interval // => [1, 1]
  * ```
  */
@@ -446,7 +446,7 @@ export function improvementEstimate(x: Scores, y: Scores, options: BootstrapOpti
  * @concept rl-evaluation
  * @example
  * ```ts
- * import { performanceProfile } from 'mdml-engine/rl'
+ * import { performanceProfile } from 'omai-engine/rl'
  * performanceProfile([[0.1, 0.5], [0.7, 0.9]], [0, 0.5, 1], { reps: 0 }).value // => [1, 0.5, 0]
  * ```
  */
@@ -495,11 +495,11 @@ export type LearningCurveInput =
  * @param curves - The curves.
  * @param options - An explicit grid, or the number of grid points (default the shortest curve's length).
  * @returns The grid and the values of every curve on it.
- * @throws MdmlError with code `value` when there are no curves, a curve is empty, or the curves do not overlap.
+ * @throws OmaiError with code `value` when there are no curves, a curve is empty, or the curves do not overlap.
  * @concept rl-evaluation
  * @example
  * ```ts
- * import { alignCurves } from 'mdml-engine/rl'
+ * import { alignCurves } from 'omai-engine/rl'
  * alignCurves([{ steps: [0, 10], values: [0, 1] }, { steps: [0, 5, 10], values: [0, 2, 2] }], { points: 3 }).values
  * // => [[0, 0.5, 1], [0, 2, 2]]
  * ```
@@ -508,12 +508,12 @@ export function alignCurves(
   curves: readonly LearningCurveInput[],
   options: { readonly grid?: readonly number[]; readonly points?: number } = {},
 ): { readonly steps: number[]; readonly values: number[][] } {
-  if (curves.length === 0) throw new MdmlError('value', 'alignCurves: no curves')
+  if (curves.length === 0) throw new OmaiError('value', 'alignCurves: no curves')
   const parts = curves.map((c) => {
     const values = 'steps' in c ? c.values : (c as readonly number[])
     const steps = 'steps' in c ? c.steps : values.map((_, i) => i)
     if (values.length === 0 || steps.length !== values.length) {
-      throw new MdmlError('value', 'alignCurves: every curve needs as many steps as values, and at least one')
+      throw new OmaiError('value', 'alignCurves: every curve needs as many steps as values, and at least one')
     }
     return { steps, values }
   })
@@ -524,7 +524,7 @@ export function alignCurves(
   if (grid === undefined) {
     const lo = maxOf(parts.map((p) => p.steps[0] ?? 0))
     const hi = minOf(parts.map((p) => p.steps[p.steps.length - 1] ?? 0))
-    if (!(hi >= lo)) throw new MdmlError('value', 'alignCurves: the curves cover no common range of steps')
+    if (!(hi >= lo)) throw new OmaiError('value', 'alignCurves: the curves cover no common range of steps')
     const n = options.points ?? minOf(parts.map((p) => p.steps.length))
     grid = lo === hi ? [lo] : linspaceNumbers(lo, hi, n)
   }
@@ -542,11 +542,11 @@ export function alignCurves(
  *   curve (default all one task; every task needs the same number of runs), the grid and the bootstrap options (`reps:
  *   0` skips the intervals).
  * @returns The aggregate curve with its intervals.
- * @throws MdmlError with code `value` when tasks have different numbers of runs.
+ * @throws OmaiError with code `value` when tasks have different numbers of runs.
  * @concept rl-evaluation
  * @example
  * ```ts
- * import { aggregateCurves } from 'mdml-engine/rl'
+ * import { aggregateCurves } from 'omai-engine/rl'
  * aggregateCurves([[0, 1, 2], [0, 3, 4]], { aggregate: 'mean', reps: 0 }).value // => [0, 2, 3]
  * ```
  */
@@ -565,12 +565,12 @@ export function aggregateCurves(
     ...(options.points === undefined ? {} : { points: options.points }),
   })
   const tasks = options.tasks ?? values.map(() => 0)
-  if (tasks.length !== values.length) throw new MdmlError('value', 'aggregateCurves: give a task for every curve')
+  if (tasks.length !== values.length) throw new OmaiError('value', 'aggregateCurves: give a task for every curve')
   const ids = [...new Set(tasks)].sort((a, b) => a - b)
   const byTask = ids.map((id) => values.filter((_, i) => tasks[i] === id))
   const nRuns = byTask[0]?.length ?? 0
   if (byTask.some((b) => b.length !== nRuns)) {
-    throw new MdmlError('value', 'aggregateCurves: every task needs the same number of runs')
+    throw new OmaiError('value', 'aggregateCurves: every task needs the same number of runs')
   }
   // cube[step] is the [runs][tasks] matrix of that step.
   const cube: number[][][] = steps.map((_, j) =>

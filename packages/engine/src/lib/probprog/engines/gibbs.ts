@@ -4,7 +4,7 @@
  * updates for Dirichlet and beta sites. A traced `gibbsAlgorithm`, the `gibbs` function and the engine for the planner.
  */
 
-import { type Json, logSumExpOf, MdmlError } from '../../base/index.ts'
+import { type Json, logSumExpOf, OmaiError } from '../../base/index.ts'
 import { bijectors, CONJUGATES, type ConjugatePair, dirichlet } from '../../dists/index.ts'
 import { categorical as drawCategorical, foldIn, type Key } from '../../random/index.ts'
 import { numericTarget, sliceSampler } from '../../sampling/index.ts'
@@ -254,7 +254,7 @@ function collapsedCounts(
   const counts = c.alpha.map(() => new Array<number>(c.k).fill(0))
   const members = c.children.map((child) => {
     const cs = siteOf(t, child.site)
-    if (cs === undefined) throw new MdmlError('value', `gibbs: no site ${child.site}`)
+    if (cs === undefined) throw new OmaiError('value', `gibbs: no site ${child.site}`)
     const states = Int32Array.from(toFlat(primalOf(cs.value)))
     const groups =
       child.gather === undefined
@@ -298,9 +298,9 @@ function draw(key: Key, logits: readonly number[]): number {
  * @concept gibbs-sampling
  * @example
  * ```ts
- * import { gibbsAlgorithm, observe, plate, sample } from 'mdml-engine/probprog'
- * import { normal } from 'mdml-engine/dists'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { gibbsAlgorithm, observe, plate, sample } from 'omai-engine/probprog'
+ * import { normal } from 'omai-engine/dists'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const model = () => { const m = sample('m', normal(0, 1)); plate('n', 3, () => observe('y', normal(m, 1), [1, 2, 3])) }
  * runAlgorithm(gibbsAlgorithm(model, undefined), { seed: 0, maxSteps: 5 }).steps // => 5
  * ```
@@ -318,7 +318,7 @@ export function gibbsAlgorithm<D = void>(model: Model<D>, data: D, options: Gibb
     init: (key) => {
       const a = analyse(model, data, { key: foldIn(key, 0) })
       if (a.discrete.unbounded.length > 0)
-        throw new MdmlError('value', `gibbs: unbounded discrete sites (${a.discrete.unbounded.join(', ')})`)
+        throw new OmaiError('value', `gibbs: unbounded discrete sites (${a.discrete.unbounded.join(', ')})`)
       blocks = plan(model, data, a, collapseOn)
       const values: Record<string, Value> = {}
       for (const n of a.latent) {
@@ -434,7 +434,7 @@ function updateDiscrete<D = void>(
   const r = logJoint(enumerate(model, { sites: [site] }), data, others)
   const t = r.trace
   const own = siteOf(t, site)
-  if (own === undefined) throw new MdmlError('value', `gibbs: no site ${site}`)
+  if (own === undefined) throw new OmaiError('value', `gibbs: no site ${site}`)
   const depth =
     t.sites.size === 0
       ? 0
@@ -550,10 +550,10 @@ export interface GibbsRunOptions extends GibbsOptions {
  * @concept gibbs-sampling
  * @example
  * ```ts
- * import { gibbs, observe, plate, sample } from 'mdml-engine/probprog'
- * import { normal } from 'mdml-engine/dists'
- * import { key } from 'mdml-engine/random'
- * import { item } from 'mdml-engine/tensor'
+ * import { gibbs, observe, plate, sample } from 'omai-engine/probprog'
+ * import { normal } from 'omai-engine/dists'
+ * import { key } from 'omai-engine/random'
+ * import { item } from 'omai-engine/tensor'
  * const model = () => { const m = sample('m', normal(0, 1)); plate('n', 3, () => observe('y', normal(m, 1), [1, 2, 3])) }
  * Math.abs(item(gibbs(model, undefined, { key: key(0), numDraws: 2000, numWarmup: 50 }).mean('m')) - 1.5) < 0.05 // => true
  * ```
@@ -606,7 +606,7 @@ export function gibbs<D = void>(model: Model<D>, data: D, options: GibbsRunOptio
  * @concept inference-engines
  * @example
  * ```ts
- * import { gibbsEngine } from 'mdml-engine/probprog'
+ * import { gibbsEngine } from 'omai-engine/probprog'
  * gibbsEngine().name // => 'gibbs'
  * ```
  */

@@ -3,7 +3,7 @@
  * Dirichlet-multinomial and Aitchison's logistic-normal, as scipy.stats and torch.distributions.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { gaussHermite } from '../../numerics/quadrature/index.ts'
 import { digamma, lgamma, xlogy } from '../../numerics/special/index.ts'
 import { dirichlet as dirichletDraw, foldIn, type Key, multinomial as multinomialDraw } from '../../random/index.ts'
@@ -52,14 +52,14 @@ import { type CovarianceParams, multivariateNormal } from './normal.ts'
  * @index distribution Dirichlet distribution on the probability simplex.
  * @example
  * ```ts
- * import { dirichlet } from 'mdml-engine/dists'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { dirichlet } from 'omai-engine/dists'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(dirichlet([1, 3]).mean()) // => [0.25, 0.75]
  * ```
  */
 export function dirichlet(concentration: TensorLike): Distribution {
   const [alpha] = promoteFloat(concentration) as [Value]
-  if (alpha.shape.length === 0) throw new MdmlError('shape', 'dirichlet: concentrations need a category axis')
+  if (alpha.shape.length === 0) throw new OmaiError('shape', 'dirichlet: concentrations need a category axis')
   validateParams('dirichlet', { concentration: [alpha, 'positive'] })
   const k = alpha.shape[alpha.shape.length - 1] ?? 0
   const total = sum(alpha, -1)
@@ -117,13 +117,13 @@ function entropyByEnumeration(logPmf: (x: Value) => Value, n: number, k: number,
  * @returns The distribution (no reparameterisation; `entropy` enumerates outcomes and suits small n and K).
  * @example
  * ```ts
- * import { multinomial } from 'mdml-engine/dists'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { multinomial } from 'omai-engine/dists'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(multinomial(10, [0.2, 0.8]).mean()) // => [2, 8]
  * ```
  */
 export function multinomial(n: number, probs: TensorLike): Distribution {
-  if (!(Number.isInteger(n) && n >= 0)) throw new MdmlError('value', 'multinomial: n must be a non-negative integer')
+  if (!(Number.isInteger(n) && n >= 0)) throw new OmaiError('value', 'multinomial: n must be a non-negative integer')
   const [raw] = promoteFloat(probs) as [Value]
   validateParams('multinomial', { probs: [raw, 'nonNegative'] })
   const p = div(raw, sum(raw, -1, true))
@@ -162,17 +162,17 @@ export function multinomial(n: number, probs: TensorLike): Distribution {
  * @returns The distribution (no reparameterisation; `entropy` enumerates outcomes and suits small n and K).
  * @example
  * ```ts
- * import { dirichletMultinomial } from 'mdml-engine/dists'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { dirichletMultinomial } from 'omai-engine/dists'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(dirichletMultinomial(10, [1, 3]).mean()) // => [2.5, 7.5]
  * ```
  */
 export function dirichletMultinomial(n: number, concentration: TensorLike): Distribution {
   if (!(Number.isInteger(n) && n >= 0))
-    throw new MdmlError('value', 'dirichletMultinomial: n must be a non-negative integer')
+    throw new OmaiError('value', 'dirichletMultinomial: n must be a non-negative integer')
   const [alpha] = promoteFloat(concentration) as [Value]
   if (alpha.shape.length === 0)
-    throw new MdmlError('shape', 'dirichletMultinomial: concentrations need a category axis')
+    throw new OmaiError('shape', 'dirichletMultinomial: concentrations need a category axis')
   validateParams('dirichletMultinomial', { concentration: [alpha, 'positive'] })
   const k = alpha.shape[alpha.shape.length - 1] ?? 0
   const batchShape = alpha.shape.slice(0, -1)
@@ -253,8 +253,8 @@ function countsSample(
  *   about 20000 points (exact to rounding for K up to 4, approximate above).
  * @example
  * ```ts
- * import { logisticNormal } from 'mdml-engine/dists'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { logisticNormal } from 'omai-engine/dists'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(logisticNormal([0], { scale: [1] }).mean()).map((v) => Math.round(v * 1e12) / 1e12) // => [0.5, 0.5]
  * ```
  */
@@ -328,7 +328,7 @@ export function logisticNormal(
       )
     },
     mode: () => {
-      throw new MdmlError('not-implemented', 'logisticNormal: the mode has no closed form')
+      throw new OmaiError('not-implemented', 'logisticNormal: the mode has no closed form')
     },
     // H(X) = H(Y) + E[sum_i log X_i], the log-Jacobian of the additive log-ratio map.
     entropy: () =>

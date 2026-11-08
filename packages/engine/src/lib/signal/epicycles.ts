@@ -5,7 +5,7 @@
  * chained in, the partial sums, and the joints of the chain at a time.
  */
 
-import { MdmlError, maxOf } from '../base/index.ts'
+import { maxOf, OmaiError } from '../base/index.ts'
 import { fft, fftfreq, ifft } from '../numerics/fourier/index.ts'
 import { type Key, permutation } from '../random/index.ts'
 import { toFlat } from '../tensor/index.ts'
@@ -33,11 +33,11 @@ export interface CurveSpectrum {
  *
  * @param points - The curve's points, at least 2.
  * @returns The coefficients, frequencies, magnitudes, the bins by magnitude and the energy about the centroid.
- * @throws MdmlError with code `value` for fewer than 2 points.
+ * @throws OmaiError with code `value` for fewer than 2 points.
  * @concept fourier-series
  * @example
  * ```ts
- * import { curveSpectrum } from 'mdml-engine/signal'
+ * import { curveSpectrum } from 'omai-engine/signal'
  * // A unit circle, anticlockwise: all its energy is at k = 1.
  * const s = curveSpectrum(Array.from({ length: 8 }, (_, n) => [Math.cos((2 * Math.PI * n) / 8), Math.sin((2 * Math.PI * n) / 8)]))
  * [s.k[s.byMagnitude[0]], Math.round(s.energy * 1e9) / 1e9] // => [1, 1]
@@ -45,7 +45,7 @@ export interface CurveSpectrum {
  */
 export function curveSpectrum(points: readonly (readonly [number, number])[]): CurveSpectrum {
   const n = points.length
-  if (n < 2) throw new MdmlError('value', 'curveSpectrum: need at least 2 points')
+  if (n < 2) throw new OmaiError('value', 'curveSpectrum: need at least 2 points')
   const c = fft({ re: points.map((p) => p[0]), im: points.map((p) => p[1]) }, n, -1, 'forward')
   const re = toFlat(c.re)
   const im = toFlat(c.im)
@@ -68,7 +68,7 @@ export function curveSpectrum(points: readonly (readonly [number, number])[]): C
  * @concept fourier-series
  * @example
  * ```ts
- * import { curveSpectrum, keptTerms } from 'mdml-engine/signal'
+ * import { curveSpectrum, keptTerms } from 'omai-engine/signal'
  * const s = curveSpectrum([[1, 0], [0, 1], [-1, 0], [0, -1]])
  * [keptTerms(s, { count: 1 }), keptTerms(s, { energy: 0.99 })] // => [[1], [1]]
  * ```
@@ -97,7 +97,7 @@ export type ChainOrder = 'magnitude' | 'speed' | 'frequency' | 'random'
  * @concept fourier-series
  * @example
  * ```ts
- * import { chainOrder, curveSpectrum } from 'mdml-engine/signal'
+ * import { chainOrder, curveSpectrum } from 'omai-engine/signal'
  * const s = curveSpectrum([[2, 0], [0, 1], [-2, 0], [0, -1]])
  * chainOrder(s, [3, 1], 'speed').map((b) => s.k[b]) // => [1, -1]
  * ```
@@ -108,7 +108,7 @@ export function chainOrder(s: CurveSpectrum, kept: readonly number[], order: Cha
   if (order === 'magnitude') return bins
   if (order === 'speed') return bins.sort((a, b) => Math.abs(k(a)) - Math.abs(k(b)) || k(b) - k(a))
   if (order === 'frequency') return bins.sort((a, b) => k(a) - k(b))
-  if (key === undefined) throw new MdmlError('value', 'chainOrder: a random order needs a key')
+  if (key === undefined) throw new OmaiError('value', 'chainOrder: a random order needs a key')
   return Array.from(permutation(key, bins.length).data, (i) => bins[i] ?? 0)
 }
 
@@ -120,11 +120,11 @@ export function chainOrder(s: CurveSpectrum, kept: readonly number[], order: Cha
  * @param kept - The kept bins.
  * @param m - Points per cycle.
  * @returns The curve's x and y, m + 1 points.
- * @throws MdmlError with code `value` when m is too small for the kept frequencies.
+ * @throws OmaiError with code `value` when m is too small for the kept frequencies.
  * @concept fourier-series
  * @example
  * ```ts
- * import { curveSpectrum, partialSum } from 'mdml-engine/signal'
+ * import { curveSpectrum, partialSum } from 'omai-engine/signal'
  * const s = curveSpectrum([[1, 0], [0, 1], [-1, 0], [0, -1]])
  * partialSum(s, [1], 4).x.map((v) => Math.round(v) + 0) // => [1, 0, -1, 0, 1]
  * ```
@@ -135,7 +135,7 @@ export function partialSum(
   m: number,
 ): { readonly x: number[]; readonly y: number[] } {
   const top = Math.max(0, maxOf(kept.map((b) => Math.abs(s.k[b] ?? 0))))
-  if (!(Number.isInteger(m) && m > 2 * top)) throw new MdmlError('value', `partialSum: m must exceed ${2 * top}`)
+  if (!(Number.isInteger(m) && m > 2 * top)) throw new OmaiError('value', `partialSum: m must exceed ${2 * top}`)
   const re = new Array<number>(m).fill(0)
   const im = new Array<number>(m).fill(0)
   re[0] = s.re[0] ?? 0
@@ -162,7 +162,7 @@ export function partialSum(
  * @concept fourier-series
  * @example
  * ```ts
- * import { curveSpectrum, epicycleJoints } from 'mdml-engine/signal'
+ * import { curveSpectrum, epicycleJoints } from 'omai-engine/signal'
  * const s = curveSpectrum([[1, 0], [0, 1], [-1, 0], [0, -1]])
  * epicycleJoints(s, [1], 0.25).y.map((v) => Math.round(v) + 0) // => [0, 1]
  * ```

@@ -5,7 +5,7 @@
  * decomposition of a filter.
  */
 
-import { gcdOf, MdmlError } from '../base/index.ts'
+import { gcdOf, OmaiError } from '../base/index.ts'
 import { fftConvolve } from '../numerics/convolution/index.ts'
 import { fftshift, irfft, rfft } from '../numerics/fourier/index.ts'
 import type { Lti } from '../systems/index.ts'
@@ -112,8 +112,8 @@ export interface UpfirdnOptions {
  * @concept multirate
  * @example
  * ```ts
- * import { upfirdn } from 'mdml-engine/signal'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { upfirdn } from 'omai-engine/signal'
+ * import { toFlat } from 'omai-engine/tensor'
  * toFlat(upfirdn([1, 1], [1, 2, 3], { up: 2 })).map((v) => Math.round(v * 1e12) / 1e12) // => [1, 1, 2, 2, 3, 3]
  * ```
  */
@@ -121,7 +121,7 @@ export function upfirdn(h: TensorLike, x: TensorLike, options: UpfirdnOptions = 
   const up = positiveInt(options.up ?? 1, 'upfirdn: up')
   const down = positiveInt(options.down ?? 1, 'upfirdn: down')
   const hv = float(h)
-  if (hv.shape.length !== 1 || (hv.shape[0] ?? 0) === 0) throw new MdmlError('shape', 'upfirdn: h must be 1-D')
+  if (hv.shape.length !== 1 || (hv.shape[0] ?? 0) === 0) throw new OmaiError('shape', 'upfirdn: h must be 1-D')
   const r = rowsOf(float(x), options.axis ?? -1, 'upfirdn')
   return r.restore(upfirdnRows(hv, r.rows, up, down, options.mode ?? 'constant', options.cval ?? 0))
 }
@@ -161,7 +161,7 @@ export interface ResamplePolyOptions {
  * @concept multirate
  * @example
  * ```ts
- * import { resamplePoly } from 'mdml-engine/signal'
+ * import { resamplePoly } from 'omai-engine/signal'
  * resamplePoly(new Array(30).fill(1), 2, 3).shape // => [20]
  * ```
  */
@@ -229,8 +229,8 @@ export function resamplePoly(x: TensorLike, up: number, down: number, options: R
  * @index function Fourier resampling to a given number of samples.
  * @example
  * ```ts
- * import { resample } from 'mdml-engine/signal'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { resample } from 'omai-engine/signal'
+ * import { toFlat } from 'omai-engine/tensor'
  * toFlat(resample([1, 0, -1, 0], 8)).map((v) => Math.round(v * 1e12) / 1e12) // => [1, 0.707106781187, 0, -0.707106781187, -1, -0.707106781187, 0, 0.707106781187]
  * ```
  */
@@ -283,7 +283,7 @@ export interface DecimateOptions {
  * @concept multirate
  * @example
  * ```ts
- * import { decimate } from 'mdml-engine/signal'
+ * import { decimate } from 'omai-engine/signal'
  * decimate(new Array(64).fill(1), 4).shape // => [16]
  * ```
  */
@@ -331,7 +331,7 @@ export function decimate(x: TensorLike, q: number, options: DecimateOptions = {}
  * @concept multirate
  * @example
  * ```ts
- * import { interpolate } from 'mdml-engine/signal'
+ * import { interpolate } from 'omai-engine/signal'
  * interpolate([0, 1, 0, -1], 3).shape // => [12]
  * ```
  */
@@ -353,8 +353,8 @@ export function interpolate(
  * @concept multirate
  * @example
  * ```ts
- * import { downsample } from 'mdml-engine/signal'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { downsample } from 'omai-engine/signal'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(downsample([0, 1, 2, 3, 4, 5, 6], 3, 1)) // => [1, 4]
  * ```
  */
@@ -375,8 +375,8 @@ export function downsample(x: TensorLike, m: number, phase = 0): Value {
  * @concept multirate
  * @example
  * ```ts
- * import { upsample } from 'mdml-engine/signal'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { upsample } from 'omai-engine/signal'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(upsample([1, 2], 3)) // => [1, 0, 0, 2, 0, 0]
  * ```
  */
@@ -401,8 +401,8 @@ export function upsample(x: TensorLike, l: number): Value {
  * @concept polyphase
  * @example
  * ```ts
- * import { polyphase } from 'mdml-engine/signal'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { polyphase } from 'omai-engine/signal'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(polyphase([1, 2, 3, 4, 5], 2)) // => [[1, 3, 5], [2, 4, 0]]
  * ```
  */
@@ -430,14 +430,14 @@ function transposeCols(v: Value): Value {
  * @concept polyphase
  * @example
  * ```ts
- * import { polyphaseRecombine } from 'mdml-engine/signal'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { polyphaseRecombine } from 'omai-engine/signal'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(polyphaseRecombine([[1, 3, 5], [2, 4, 0]], 5)) // => [1, 2, 3, 4, 5]
  * ```
  */
 export function polyphaseRecombine(components: TensorLike, length?: number): Value {
   const c = float(components)
-  if (c.shape.length !== 2) throw new MdmlError('shape', 'polyphaseRecombine: components are [m, k]')
+  if (c.shape.length !== 2) throw new OmaiError('shape', 'polyphaseRecombine: components are [m, k]')
   const [m = 0, k = 0] = c.shape
   const flat = reshape(transposeCols(c), [m * k])
   return sliceAxis(flat, 0, 0, length ?? m * k)
@@ -454,8 +454,8 @@ export function polyphaseRecombine(components: TensorLike, length?: number): Val
  * @concept polyphase
  * @example
  * ```ts
- * import { expandFilter } from 'mdml-engine/signal'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { expandFilter } from 'omai-engine/signal'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(expandFilter([1, 2, 3], 2)) // => [1, 0, 2, 0, 3]
  * ```
  */

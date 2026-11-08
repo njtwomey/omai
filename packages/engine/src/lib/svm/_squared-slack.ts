@@ -6,7 +6,7 @@
 // of the two (SMO the default; the generic solvers admissible for the squared variant only). The one-class machine has
 // no such variant (see `one-class.ts`). Not exported from the barrel.
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import {
   analyticObjective,
   familySolvers,
@@ -60,7 +60,7 @@ export function checkSmoothSolver(
   squared: string,
 ): void {
   if (!smooth && solver.kind !== 'smo' && solver.kind !== undefined)
-    throw new MdmlError(
+    throw new OmaiError(
       'value',
       `${who}: the ${loss} loss is not smooth, only the 'smo' solver reaches it (use loss '${squared}' for ${String(solver.kind)})`,
     )

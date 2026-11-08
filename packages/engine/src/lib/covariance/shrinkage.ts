@@ -74,7 +74,7 @@ export type FittedCovariance = IterativeFitted<CovarianceParams, CovarianceVerbs
  * @returns The squared Mahalanobis distances, one per row.
  * @example
  * ```ts
- * import { squaredMahalanobis } from 'mdml-engine/covariance'
+ * import { squaredMahalanobis } from 'omai-engine/covariance'
  * squaredMahalanobis([[0, 0], [2, 0]], [0, 0], [[1, 0], [0, 1]]) // => [0, 4]
  * ```
  */
@@ -106,8 +106,8 @@ export function squaredMahalanobis(
  * @returns A 1-D tensor `[n]` of distances.
  * @example
  * ```ts
- * import { mahalanobisDistances } from 'mdml-engine/covariance'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { mahalanobisDistances } from 'omai-engine/covariance'
+ * import { toFlat } from 'omai-engine/tensor'
  * toFlat(mahalanobisDistances([[0, 0], [3, 4]], [0, 0], [[1, 0], [0, 1]])) // => [0, 5]
  * ```
  */
@@ -129,8 +129,8 @@ export function mahalanobisDistances(
  * @returns Mahalanobis distances and the log-likelihood score.
  * @example
  * ```ts
- * import { covarianceVerbs } from 'mdml-engine/covariance'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { covarianceVerbs } from 'omai-engine/covariance'
+ * import { toFlat } from 'omai-engine/tensor'
  * const v = covarianceVerbs({ location: [0, 0], covariance: [[1, 0], [0, 1]], precision: [[1, 0], [0, 1]], shrinkage: 0 })
  * toFlat(v.mahalanobis([[3, 4]])) // => [25]
  * ```
@@ -161,7 +161,7 @@ export function covarianceVerbs(p: CovarianceParams): CovarianceVerbs {
  * @returns The `anomalyScores` record.
  * @example
  * ```ts
- * import { mahalanobisRecord } from 'mdml-engine/covariance'
+ * import { mahalanobisRecord } from 'omai-engine/covariance'
  * const p = { location: [0, 0], covariance: [[1, 0], [0, 1]], precision: [[1, 0], [0, 1]], shrinkage: 0 }
  * mahalanobisRecord('empirical', [[0, 0], [2, 0]], p).scores // => [0, 4]
  * ```
@@ -225,8 +225,8 @@ function computeCovarianceState(x: TensorLike, h: Required<CovarianceHyper>, don
  * @returns The algorithm.
  * @example
  * ```ts
- * import { shrinkageAlgorithm } from 'mdml-engine/covariance'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { shrinkageAlgorithm } from 'omai-engine/covariance'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * runAlgorithm(shrinkageAlgorithm([[0, 0], [2, 2]], { method: 'shrunk', shrinkage: 0.5 }), { maxSteps: 2 }).state.covariance // => [[1, 0.5], [0.5, 1]]
  * ```
  */
@@ -278,7 +278,7 @@ export function shrinkageAlgorithm(x: TensorLike, options: CovarianceHyper = {})
  * @index estimator Empirical, Ledoit-Wolf and OAS shrunk covariance.
  * @example
  * ```ts
- * import { covarianceEstimator } from 'mdml-engine/covariance'
+ * import { covarianceEstimator } from 'omai-engine/covariance'
  * covarianceEstimator({ method: 'shrunk', shrinkage: 0.5 }).fit({ x: [[0, 0], [2, 2]] }).params.covariance // => [[1, 0.5], [0.5, 1]]
  * ```
  */
@@ -331,7 +331,7 @@ export function covarianceEstimator(
  *
  * @example
  * ```ts
- * import { CovarianceEstimator } from 'mdml-engine/covariance'
+ * import { CovarianceEstimator } from 'omai-engine/covariance'
  * new CovarianceEstimator({ method: 'empirical' }).fit([[0, 0], [2, 2]]).model.params.location // => [1, 1]
  * ```
  */

@@ -5,8 +5,8 @@ space, the nearest triangle kept, and vertex colours interpolated perspective-co
 scene is regenerated until no pixel centre lies within 0.005 pixels of an edge, so coverage is unambiguous."""
 
 import numpy as np
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray, rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray, rng
 
 REFERENCE: dict[str, str] = {"numpy": np.__version__}
 

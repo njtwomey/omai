@@ -7,7 +7,7 @@
  * @index structure Optax-style gradient transformations composed with chain.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import {
   add,
   clip,
@@ -59,8 +59,8 @@ const rate = (lr: LearningRate, step: number): number => (typeof lr === 'number'
  * @returns The new parameters.
  * @example
  * ```ts
- * import { applyUpdates } from 'mdml-engine/optim'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { applyUpdates } from 'omai-engine/optim'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * toArray((applyUpdates({ w: tensor([1, 2]) }, { w: tensor([0.5, -1]) }) as { w: never }).w) // => [1.5, 1]
  * ```
  */
@@ -75,7 +75,7 @@ export function applyUpdates(params: ParamTree, updates: ParamTree): ParamTree {
  * @returns The chained transformation.
  * @example
  * ```ts
- * import { chain, clipByGlobalNorm, scaleByLearningRate } from 'mdml-engine/optim'
+ * import { chain, clipByGlobalNorm, scaleByLearningRate } from 'omai-engine/optim'
  * chain(clipByGlobalNorm(1), scaleByLearningRate(0.1)).name // => 'chain(clipByGlobalNorm, scaleByLearningRate)'
  * ```
  */
@@ -102,8 +102,8 @@ export function chain(...transformations: readonly GradientTransformation[]): Gr
  * @returns The transformation.
  * @example
  * ```ts
- * import { scaleByLearningRate } from 'mdml-engine/optim'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { scaleByLearningRate } from 'omai-engine/optim'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * const t = scaleByLearningRate(0.1)
  * toArray(t.update(tensor([2]), t.init(tensor([0]))).updates as never) // => [-0.2]
  * ```
@@ -126,8 +126,8 @@ export function scaleByLearningRate(learningRate: LearningRate): GradientTransfo
  * @returns The norm (a 0-d value).
  * @example
  * ```ts
- * import { globalNorm } from 'mdml-engine/optim'
- * import { item, tensor } from 'mdml-engine/tensor'
+ * import { globalNorm } from 'omai-engine/optim'
+ * import { item, tensor } from 'omai-engine/tensor'
  * item(globalNorm({ a: tensor([3]), b: tensor([4]) })) // => 5
  * ```
  */
@@ -143,8 +143,8 @@ export function globalNorm(tree: ParamTree): Value {
  * @returns The transformation.
  * @example
  * ```ts
- * import { clipByGlobalNorm } from 'mdml-engine/optim'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { clipByGlobalNorm } from 'omai-engine/optim'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * toArray(clipByGlobalNorm(1).update(tensor([3, 4]), undefined).updates as never).map((v) => Math.round(v * 1e12) / 1e12) // => [0.6, 0.8]
  * ```
  */
@@ -167,8 +167,8 @@ export function clipByGlobalNorm(maxNorm: number): GradientTransformation<undefi
  * @returns The transformation.
  * @example
  * ```ts
- * import { clipByValue } from 'mdml-engine/optim'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { clipByValue } from 'omai-engine/optim'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * toArray(clipByValue(1).update(tensor([3, -0.5]), undefined).updates as never) // => [1, -0.5]
  * ```
  */
@@ -188,8 +188,8 @@ export function clipByValue(maxValue: number): GradientTransformation<undefined>
  * @returns The transformation (needs `params` in `update`).
  * @example
  * ```ts
- * import { addDecayedWeights } from 'mdml-engine/optim'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { addDecayedWeights } from 'omai-engine/optim'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * toArray(addDecayedWeights(0.5).update(tensor([1]), undefined, tensor([2])).updates as never) // => [2]
  * ```
  */
@@ -220,8 +220,8 @@ export interface TraceState {
  * @returns The transformation.
  * @example
  * ```ts
- * import { traceMomentum } from 'mdml-engine/optim'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { traceMomentum } from 'omai-engine/optim'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * const t = traceMomentum(0.5)
  * const first = t.update(tensor([2]), t.init(tensor([0])))
  * toArray(t.update(tensor([2]), first.state).updates as never) // => [3]
@@ -259,8 +259,8 @@ export interface AdamState {
  * @returns The transformation.
  * @example
  * ```ts
- * import { scaleByAdam } from 'mdml-engine/optim'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { scaleByAdam } from 'omai-engine/optim'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * const t = scaleByAdam()
  * toArray(t.update(tensor([2]), t.init(tensor([0]))).updates as never)[0] // => 0.999999995
  * ```
@@ -305,8 +305,8 @@ export interface RmsState {
  * @returns The transformation.
  * @example
  * ```ts
- * import { scaleByRms } from 'mdml-engine/optim'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { scaleByRms } from 'omai-engine/optim'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * const t = scaleByRms(0.75, 0)
  * toArray(t.update(tensor([4]), t.init(tensor([0]))).updates as never) // => [2]
  * ```
@@ -333,7 +333,7 @@ export function scaleByRms(decay = 0.99, eps = 1e-8, centered = false): Gradient
  * @returns The transformation.
  * @example
  * ```ts
- * import { scaleByAdagrad } from 'mdml-engine/optim'
+ * import { scaleByAdagrad } from 'omai-engine/optim'
  * scaleByAdagrad().name // => 'scaleByAdagrad'
  * ```
  */
@@ -357,8 +357,8 @@ export function scaleByAdagrad(
  * @returns The transformation.
  * @example
  * ```ts
- * import { identity } from 'mdml-engine/optim'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { identity } from 'omai-engine/optim'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * toArray(identity().update(tensor([1, 2]), undefined).updates as never) // => [1, 2]
  * ```
  */
@@ -372,8 +372,8 @@ export function identity(): GradientTransformation<undefined> {
  * @returns The transformation.
  * @example
  * ```ts
- * import { setToZero } from 'mdml-engine/optim'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { setToZero } from 'omai-engine/optim'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * toArray(setToZero().update(tensor([1, 2]), undefined).updates as never) // => [0, 0]
  * ```
  */
@@ -392,8 +392,8 @@ export function setToZero(): GradientTransformation<undefined> {
  * @returns The transformation.
  * @example
  * ```ts
- * import { scale } from 'mdml-engine/optim'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { scale } from 'omai-engine/optim'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * toArray(scale(-2).update(tensor([1, 2]), undefined).updates as never) // => [-2, -4]
  * ```
  */
@@ -412,8 +412,8 @@ export function scale(factor: number): GradientTransformation<undefined> {
  * @returns The transformation (needs `params` in `update`).
  * @example
  * ```ts
- * import { scaleByTrustRatio } from 'mdml-engine/optim'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { scaleByTrustRatio } from 'omai-engine/optim'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * toArray(scaleByTrustRatio().update(tensor([3, 4]), undefined, tensor([0, 10])).updates as never) // => [6, 8]
  * ```
  */
@@ -422,7 +422,7 @@ export function scaleByTrustRatio(): GradientTransformation<undefined> {
     name: 'scaleByTrustRatio',
     init: () => undefined,
     update: (grads, state, params) => {
-      if (params === undefined) throw new MdmlError('value', 'scaleByTrustRatio needs the parameters')
+      if (params === undefined) throw new OmaiError('value', 'scaleByTrustRatio needs the parameters')
       const updates = treeMap(
         (u, p) => {
           const pn = item(sqrt(sum(square(p))))
@@ -456,7 +456,7 @@ function labelLeaves(labels: unknown): unknown[] {
 function resolveLabels(labels: unknown, tree: ParamTree, count: number): unknown[] {
   const leaves = labelLeaves(typeof labels === 'function' ? (labels as (p: ParamTree) => unknown)(tree) : labels)
   if (leaves.length !== count)
-    throw new MdmlError('value', `labels have ${leaves.length} leaves but the parameters have ${count}`)
+    throw new OmaiError('value', `labels have ${leaves.length} leaves but the parameters have ${count}`)
   return leaves
 }
 
@@ -475,8 +475,8 @@ export interface MaskedState {
  * @returns The transformation.
  * @example
  * ```ts
- * import { masked, scale } from 'mdml-engine/optim'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { masked, scale } from 'omai-engine/optim'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * const t = masked(scale(10), { w: true, b: false })
  * const g = { w: tensor([1]), b: tensor([1]) }
  * const u = t.update(g, t.init(g), g).updates as { w: never; b: never }
@@ -517,11 +517,11 @@ export function masked(inner: GradientTransformation, mask: Labels): GradientTra
  * @param transforms - The transformation for each label.
  * @param labels - A tree of labels with the structure of the parameters, or a function of the parameters returning one.
  * @returns The transformation; its state holds one state per label.
- * @throws MdmlError with code `value` when a label has no transformation.
+ * @throws OmaiError with code `value` when a label has no transformation.
  * @example
  * ```ts
- * import { multiTransform, scaleByLearningRate, setToZero } from 'mdml-engine/optim'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { multiTransform, scaleByLearningRate, setToZero } from 'omai-engine/optim'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * const t = multiTransform({ train: scaleByLearningRate(0.5), frozen: setToZero() }, { w: 'train', b: 'frozen' })
  * const g = { w: tensor([2]), b: tensor([2]) }
  * const u = t.update(g, t.init(g), g).updates as { w: never; b: never }
@@ -535,7 +535,7 @@ export function multiTransform(
   const groups = (tree: ParamTree, leaves: readonly Value[]): string[] => {
     const ls = resolveLabels(labels, tree, leaves.length).map(String)
     for (const l of ls)
-      if (transforms[l] === undefined) throw new MdmlError('value', `no transformation for label '${l}'`)
+      if (transforms[l] === undefined) throw new OmaiError('value', `no transformation for label '${l}'`)
     return ls
   }
   const names = Object.keys(transforms)
@@ -581,8 +581,8 @@ export function multiTransform(
  * @returns The averaged parameters.
  * @example
  * ```ts
- * import { incrementalUpdate } from 'mdml-engine/optim'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { incrementalUpdate } from 'omai-engine/optim'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * toArray((incrementalUpdate({ w: tensor([4]) }, { w: tensor([0]) }, 0.25) as { w: never }).w) // => [1]
  * ```
  */

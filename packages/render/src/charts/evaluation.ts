@@ -5,9 +5,9 @@
  */
 
 import type { EChartsOption, SeriesOption } from 'echarts'
-import type { Estimate, MetricResult } from 'mdml-engine/base'
-import type { CalibrationCurve, PrecisionRecallCurve, PrGainCurve, RocCurve } from 'mdml-engine/metrics'
-import type { Tensor, TensorLike } from 'mdml-engine/tensor'
+import type { Estimate, MetricResult } from 'omai-engine/base'
+import type { CalibrationCurve, PrecisionRecallCurve, PrGainCurve, RocCurve } from 'omai-engine/metrics'
+import type { Tensor, TensorLike } from 'omai-engine/tensor'
 import { extentOf } from '../figure/limits.ts'
 import { formatNumber } from '../theme/format.ts'
 import { colourFor, modeOf, numbers } from './_data.ts'
@@ -32,7 +32,7 @@ function diagonal(mode: PlotOptions['mode'], from: [number, number], to: [number
 }
 
 /**
- * ROC curves (from mdml-engine's `metrics.rocCurve`) with the chance diagonal, on the unit square at equal aspect;
+ * ROC curves (from omai-engine's `metrics.rocCurve`) with the chance diagonal, on the unit square at equal aspect;
  * names may carry the AUC.
  *
  * @param curves - One curve, or named curves.
@@ -41,7 +41,7 @@ function diagonal(mode: PlotOptions['mode'], from: [number, number], to: [number
  * @index function A ROC curve chart: `rocChart(curve)`.
  * @example
  * ```ts
- * import { rocChart } from 'mdml-render/charts'
+ * import { rocChart } from 'omai-render/charts'
  * const o = rocChart([{ name: 'model (AUC 0.75)', curve: { fpr: [0, 0, 0.5, 1], tpr: [0, 0.5, 1, 1], thresholds: [Infinity, 0.8, 0.4, 0.1] } }])
  * o.xAxis[0].name // => 'false positive rate'
  * ```
@@ -65,7 +65,7 @@ export function rocChart(
 }
 
 /**
- * Precision-recall curves (from mdml-engine's `metrics.precisionRecallCurve`), recall across and precision up,
+ * Precision-recall curves (from omai-engine's `metrics.precisionRecallCurve`), recall across and precision up,
  * with the no-skill line at the prevalence when given.
  *
  * @param curves - One curve, or named curves.
@@ -73,7 +73,7 @@ export function rocChart(
  * @returns The ECharts option.
  * @example
  * ```ts
- * import { precisionRecallChart } from 'mdml-render/charts'
+ * import { precisionRecallChart } from 'omai-render/charts'
  * precisionRecallChart({ precision: [0.5, 1, 1], recall: [1, 0.5, 0], thresholds: [0.1, 0.8] }, { prevalence: 0.5 }).series.length // => 2
  * ```
  */
@@ -103,7 +103,7 @@ export function precisionRecallChart(
 }
 
 /**
- * Precision-recall-gain curves (Flach and Kull, 2015; from mdml-engine's `metrics.prGainCurve`): recall gain across
+ * Precision-recall-gain curves (Flach and Kull, 2015; from omai-engine's `metrics.prGainCurve`): recall gain across
  * and precision gain up, on the unit square where the always-positive classifier sits at the origin, so the curve's
  * area is meaningful (unlike the precision-recall curve's) and the F-gain isometrics are straight lines; the dashed
  * minor diagonal is F-gain 1/2.
@@ -113,7 +113,7 @@ export function precisionRecallChart(
  * @returns The ECharts option.
  * @example
  * ```ts
- * import { prGainChart } from 'mdml-render/charts'
+ * import { prGainChart } from 'omai-render/charts'
  * prGainChart({ precisionGain: [1, 0.5, 0], recallGain: [0, 0.5, 1], thresholds: [0.9, 0.5, 0.1], isCrossing: [true, false, true] }).xAxis[0].name // => 'recall gain'
  * ```
  */
@@ -143,7 +143,7 @@ export function prGainChart(
 }
 
 /**
- * A reliability diagram (from mdml-engine's `metrics.calibrationCurve`): observed frequency against mean forecast
+ * A reliability diagram (from omai-engine's `metrics.calibrationCurve`): observed frequency against mean forecast
  * per bin, sized by count, with the perfect-calibration diagonal.
  *
  * @param curves - One curve, or named curves.
@@ -151,7 +151,7 @@ export function prGainChart(
  * @returns The ECharts option.
  * @example
  * ```ts
- * import { calibrationChart } from 'mdml-render/charts'
+ * import { calibrationChart } from 'omai-render/charts'
  * calibrationChart({ probTrue: [0.1, 0.8], probPred: [0.2, 0.7], counts: [10, 30] }).series.length // => 3
  * ```
  */
@@ -200,7 +200,7 @@ export interface ScoreSeries {
  * @index function Train and validation scores against training size: `learningCurveChart(sizes, train, test)`.
  * @example
  * ```ts
- * import { learningCurveChart } from 'mdml-render/charts'
+ * import { learningCurveChart } from 'omai-render/charts'
  * learningCurveChart([10, 20], { mean: [0.9, 0.85], std: [0.05, 0.03] }, { mean: [0.6, 0.7] }).legend.data // => ['train', 'validation']
  * ```
  */
@@ -251,7 +251,7 @@ export function learningCurveChart(
  * @returns The ECharts option.
  * @example
  * ```ts
- * import { residualChart } from 'mdml-render/charts'
+ * import { residualChart } from 'omai-render/charts'
  * residualChart([1, 2, 3], [0.1, -0.2, 0.05]).yAxis[0].name // => 'residual'
  * ```
  */
@@ -283,7 +283,7 @@ interface IntervalApi {
  * @returns The ECharts option.
  * @example
  * ```ts
- * import { intervalChart } from 'mdml-render/charts'
+ * import { intervalChart } from 'omai-render/charts'
  * const o = intervalChart([{ name: 'a', value: { value: 0.8, interval: [0.7, 0.9] } }])
  * o.yAxis[0].data // => ['a']
  * ```
@@ -369,7 +369,7 @@ export function intervalChart(
  * @returns The ECharts option.
  * @example
  * ```ts
- * import { metricBarChart } from 'mdml-render/charts'
+ * import { metricBarChart } from 'omai-render/charts'
  * metricBarChart([{ name: 'accuracy', value: { metric: 'accuracy', estimate: { value: 0.9, interval: [0.85, 0.95] }, n: 100 } }]).xAxis[0].data // => ['accuracy']
  * ```
  */

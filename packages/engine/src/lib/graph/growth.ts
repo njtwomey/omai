@@ -7,7 +7,7 @@
  * algorithms whose tape holds the size, the giant component, the degrees and the clustering.
  */
 
-import { MdmlError, maxOf } from '../base/index.ts'
+import { maxOf, OmaiError } from '../base/index.ts'
 import { foldIn, type Key, permutation, subsample, uniformStream } from '../random/index.ts'
 import { type Algorithm, type Contract, contractSchema, defineContract, scalar, tensor } from '../trace/index.ts'
 import { checkNumber, codec } from './_run.ts'
@@ -58,7 +58,7 @@ function pairs(flat: Int32Array): [number, number][] {
  * @concept growing-networks
  * @example
  * ```ts
- * import { growthGraph } from 'mdml-engine/graph'
+ * import { growthGraph } from 'omai-engine/graph'
  * growthGraph(3, Int32Array.of(0, 1, 1, 2)).edges.length // => 2
  * ```
  */
@@ -98,7 +98,7 @@ function observeGrowth(
  * @concept growing-networks
  * @example
  * ```ts
- * import { unrankPair } from 'mdml-engine/graph'
+ * import { unrankPair } from 'omai-engine/graph'
  * [unrankPair(4, 0), unrankPair(4, 3), unrankPair(4, 5)] // => [[0, 1], [1, 2], [2, 3]]
  * ```
  */
@@ -128,22 +128,22 @@ export interface EdgeByEdgeState {
  * @param n - The number of nodes.
  * @param maxEdges - Stop after this many edges (default all pairs).
  * @returns The algorithm.
- * @throws MdmlError with code `value` for fewer than two nodes or `maxEdges` beyond the number of pairs.
+ * @throws OmaiError with code `value` for fewer than two nodes or `maxEdges` beyond the number of pairs.
  * @concept growing-networks
  * @example
  * ```ts
- * import { edgeByEdgeAlgorithm, growthGraph } from 'mdml-engine/graph'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { edgeByEdgeAlgorithm, growthGraph } from 'omai-engine/graph'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const run = runAlgorithm(edgeByEdgeAlgorithm(10, 12), { seed: 0, maxSteps: 100 })
  * [run.steps, growthGraph(10, run.state.edges).edges.length] // => [12, 12]
  * ```
  */
 export function edgeByEdgeAlgorithm(n: number, maxEdges?: number): Algorithm<EdgeByEdgeState, GrowthPath> {
-  if (!(Number.isInteger(n) && n >= 2)) throw new MdmlError('value', 'edgeByEdgeAlgorithm: need at least two nodes')
+  if (!(Number.isInteger(n) && n >= 2)) throw new OmaiError('value', 'edgeByEdgeAlgorithm: need at least two nodes')
   const total = (n * (n - 1)) / 2
   const limit = maxEdges ?? total
   if (!(Number.isInteger(limit) && limit >= 0 && limit <= total))
-    throw new MdmlError('value', `edgeByEdgeAlgorithm: maxEdges must be an integer in [0, ${total}]`)
+    throw new OmaiError('value', `edgeByEdgeAlgorithm: maxEdges must be an integer in [0, ${total}]`)
   return {
     name: 'graph/edge-by-edge',
     config: { nodes: n, maxEdges: limit },
@@ -172,7 +172,7 @@ export function edgeByEdgeAlgorithm(n: number, maxEdges?: number): Algorithm<Edg
  * @concept growing-networks
  * @example
  * ```ts
- * import { erdosRenyiConnectivityEdges } from 'mdml-engine/graph'
+ * import { erdosRenyiConnectivityEdges } from 'omai-engine/graph'
  * erdosRenyiConnectivityEdges(1) // => 0
  * ```
  */
@@ -202,12 +202,12 @@ export interface AttachmentState {
  * @param m - Edges per new node, 1 <= m < n.
  * @param rule - How targets are chosen (default `'preferential'`).
  * @returns The algorithm; it completes when the graph has n nodes.
- * @throws MdmlError with code `value` unless 1 <= m < n, or for an unknown rule.
+ * @throws OmaiError with code `value` unless 1 <= m < n, or for an unknown rule.
  * @concept growing-networks
  * @example
  * ```ts
- * import { growthGraph, preferentialAttachmentAlgorithm } from 'mdml-engine/graph'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { growthGraph, preferentialAttachmentAlgorithm } from 'omai-engine/graph'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const run = runAlgorithm(preferentialAttachmentAlgorithm(20, 2), { seed: 0, maxSteps: 100 })
  * [run.state.nodes, growthGraph(20, run.state.edges).edges.length] // => [20, 36]
  * ```
@@ -218,9 +218,9 @@ export function preferentialAttachmentAlgorithm(
   rule: AttachmentRule = 'preferential',
 ): Algorithm<AttachmentState, GrowthPath> {
   if (!(Number.isInteger(m) && m >= 1 && Number.isInteger(n) && m < n))
-    throw new MdmlError('value', 'preferentialAttachmentAlgorithm: need integers 1 <= m < n')
+    throw new OmaiError('value', 'preferentialAttachmentAlgorithm: need integers 1 <= m < n')
   if (rule !== 'preferential' && rule !== 'uniform')
-    throw new MdmlError('value', `preferentialAttachmentAlgorithm: unknown rule '${String(rule)}'`)
+    throw new OmaiError('value', `preferentialAttachmentAlgorithm: unknown rule '${String(rule)}'`)
   return {
     name: `graph/attachment-${rule}`,
     config: { nodes: n, m, rule },
@@ -265,7 +265,7 @@ export function preferentialAttachmentAlgorithm(
  * @concept growing-networks
  * @example
  * ```ts
- * import { barabasiAlbertDegreeLaw } from 'mdml-engine/graph'
+ * import { barabasiAlbertDegreeLaw } from 'omai-engine/graph'
  * barabasiAlbertDegreeLaw(3, 3) // => 0.4
  * ```
  */
@@ -283,7 +283,7 @@ export function barabasiAlbertDegreeLaw(k: number, m: number): number {
  * @concept growing-networks
  * @example
  * ```ts
- * import { uniformAttachmentDegreeLaw } from 'mdml-engine/graph'
+ * import { uniformAttachmentDegreeLaw } from 'omai-engine/graph'
  * uniformAttachmentDegreeLaw(2, 2) // => 0.3333333333333333
  * ```
  */
@@ -312,18 +312,18 @@ export interface RewiringState {
  * @param k - Each node's lattice degree (even).
  * @param p - The rewiring probability.
  * @returns The algorithm; it completes after all n k / 2 lattice edges are considered.
- * @throws MdmlError with code `value` unless 2 <= k < n with k even and p in [0, 1].
+ * @throws OmaiError with code `value` unless 2 <= k < n with k even and p in [0, 1].
  * @concept small-world-networks
  * @example
  * ```ts
- * import { rewiringAlgorithm } from 'mdml-engine/graph'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { rewiringAlgorithm } from 'omai-engine/graph'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * runAlgorithm(rewiringAlgorithm(10, 4, 0), { seed: 0, maxSteps: 100 }).steps // => 20
  * ```
  */
 export function rewiringAlgorithm(n: number, k: number, p: number): Algorithm<RewiringState, GrowthPath> {
   if (!(Number.isInteger(n) && Number.isInteger(k) && k >= 2 && k % 2 === 0 && k < n))
-    throw new MdmlError('value', 'rewiringAlgorithm: need an even integer k with 2 <= k < n')
+    throw new OmaiError('value', 'rewiringAlgorithm: need an even integer k with 2 <= k < n')
   checkNumber('rewiringAlgorithm', 'p', p, 0, 1)
   const half = k / 2
   const total = n * half
@@ -375,7 +375,7 @@ export function rewiringAlgorithm(n: number, k: number, p: number): Algorithm<Re
  * @concept small-world-networks
  * @example
  * ```ts
- * import { wattsStrogatzClustering } from 'mdml-engine/graph'
+ * import { wattsStrogatzClustering } from 'omai-engine/graph'
  * wattsStrogatzClustering(6, 0) // => 0.6
  * ```
  */
@@ -393,7 +393,7 @@ export function wattsStrogatzClustering(k: number, p: number): number {
  * @concept small-world-networks
  * @example
  * ```ts
- * import { ringLatticePathLength } from 'mdml-engine/graph'
+ * import { ringLatticePathLength } from 'omai-engine/graph'
  * ringLatticePathLength(6, 2) // => 1.8
  * ```
  */
@@ -427,8 +427,8 @@ export interface SmallWorldPoint {
  * @concept small-world-networks
  * @example
  * ```ts
- * import { smallWorldSweep } from 'mdml-engine/graph'
- * import { key } from 'mdml-engine/random'
+ * import { smallWorldSweep } from 'omai-engine/graph'
+ * import { key } from 'omai-engine/random'
  * smallWorldSweep(key(0), 40, 4, [0], 1) // => [{ p: 0, clustering: 1, pathLength: 1 }]
  * ```
  */
@@ -465,12 +465,12 @@ export interface BlockGrowthState {
  * @param shares - The probability of each block (summing to 1).
  * @param probs - The symmetric matrix of edge probabilities between blocks.
  * @returns The algorithm.
- * @throws MdmlError with code `value` for shares that do not sum to 1 or a matrix of the wrong shape or range.
+ * @throws OmaiError with code `value` for shares that do not sum to 1 or a matrix of the wrong shape or range.
  * @concept growing-networks
  * @example
  * ```ts
- * import { blockGrowthAlgorithm } from 'mdml-engine/graph'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { blockGrowthAlgorithm } from 'omai-engine/graph'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const run = runAlgorithm(blockGrowthAlgorithm(6, [1], [[1]]), { seed: 0, maxSteps: 10 })
  * run.state.edges.length / 2 // => 15
  * ```
@@ -481,7 +481,7 @@ export function blockGrowthAlgorithm(
   probs: readonly (readonly number[])[],
 ): Algorithm<BlockGrowthState, GrowthPath> {
   checkBlocks(shares, probs)
-  if (!(Number.isInteger(n) && n >= 1)) throw new MdmlError('value', 'blockGrowthAlgorithm: need at least one node')
+  if (!(Number.isInteger(n) && n >= 1)) throw new OmaiError('value', 'blockGrowthAlgorithm: need at least one node')
   const draw = (u: number): number => {
     let acc = 0
     for (let b = 0; b < shares.length; b++) {
@@ -526,9 +526,9 @@ export function blockGrowthAlgorithm(
 function checkBlocks(shares: readonly number[], probs: readonly (readonly number[])[]): void {
   const k = shares.length
   if (k === 0 || shares.some((x) => !(x >= 0)) || Math.abs(shares.reduce((a, b) => a + b, 0) - 1) > 1e-9)
-    throw new MdmlError('value', 'a block model needs shares that sum to 1')
+    throw new OmaiError('value', 'a block model needs shares that sum to 1')
   if (probs.length !== k || probs.some((r) => r.length !== k || r.some((x) => !(x >= 0 && x <= 1))))
-    throw new MdmlError('value', 'a block model needs a square matrix of probabilities, one row per block')
+    throw new OmaiError('value', 'a block model needs a square matrix of probabilities, one row per block')
 }
 
 /**
@@ -539,11 +539,11 @@ function checkBlocks(shares: readonly number[], probs: readonly (readonly number
  * @param shares - The probability of each block.
  * @param probs - The edge probabilities between blocks.
  * @returns The expected number of edges.
- * @throws MdmlError with code `value` for shares that do not sum to 1 or a bad matrix.
+ * @throws OmaiError with code `value` for shares that do not sum to 1 or a bad matrix.
  * @concept growing-networks
  * @example
  * ```ts
- * import { blockModelExpectedEdges } from 'mdml-engine/graph'
+ * import { blockModelExpectedEdges } from 'omai-engine/graph'
  * blockModelExpectedEdges(10, [0.5, 0.5], [[1, 0], [0, 1]]) // => 22.5
  * ```
  */
@@ -569,25 +569,25 @@ export function blockModelExpectedEdges(
  * @param key - The random key.
  * @param degrees - The target degree of each node (an even total).
  * @returns The graph.
- * @throws MdmlError with code `value` for a negative or non-integer degree or an odd total.
+ * @throws OmaiError with code `value` for a negative or non-integer degree or an odd total.
  * @concept growing-networks
  * @example
  * ```ts
- * import { configurationModelGraph } from 'mdml-engine/graph'
- * import { key } from 'mdml-engine/random'
+ * import { configurationModelGraph } from 'omai-engine/graph'
+ * import { key } from 'omai-engine/random'
  * const g = configurationModelGraph(key(0), [1, 1])
  * g.edges.length // => 1
  * ```
  */
 export function configurationModelGraph(key: Key, degrees: readonly number[]): Graph {
   if (degrees.some((d) => !(Number.isInteger(d) && d >= 0)))
-    throw new MdmlError('value', 'configurationModelGraph: degrees must be non-negative integers')
+    throw new OmaiError('value', 'configurationModelGraph: degrees must be non-negative integers')
   const stubs: number[] = []
   degrees.forEach((d, v) => {
     for (let i = 0; i < d; i++) stubs.push(v)
   })
   if (stubs.length % 2 !== 0)
-    throw new MdmlError('value', 'configurationModelGraph: the degrees must sum to an even number')
+    throw new OmaiError('value', 'configurationModelGraph: the degrees must sum to an even number')
   const order = permutation(key, stubs.length).data
   const seen = new Set<string>()
   const edges: [number, number][] = []

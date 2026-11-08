@@ -7,7 +7,7 @@
  */
 
 import { grad } from '../../autodiff/index.ts'
-import { type Json, MdmlError } from '../../base/index.ts'
+import { type Json, OmaiError } from '../../base/index.ts'
 import { solve } from '../../numerics/linalg/index.ts'
 import { add, concat, item, mul, neg, sliceAxis, sum, tanh, type Value } from '../../tensor/index.ts'
 import {
@@ -53,8 +53,8 @@ export interface ControlProblem {
  * @concept pontryagin-maximum-principle
  * @example
  * ```ts
- * import { pontryaginHamiltonian, type ControlProblem } from 'mdml-engine/dynamics/control'
- * import { add, item, mul, sum, tensor } from 'mdml-engine/tensor'
+ * import { pontryaginHamiltonian, type ControlProblem } from 'omai-engine/dynamics/control'
+ * import { add, item, mul, sum, tensor } from 'omai-engine/tensor'
  * // x' = u with cost u^2 / 2: H = u^2 / 2 + lambda u.
  * const p: ControlProblem = { stateSize: 1, controlSize: 1, dynamics: (_x, u) => u, runningCost: (_x, u) => mul(sum(mul(u, u)), 0.5), control: (_x, l) => mul(l, -1) }
  * item(pontryaginHamiltonian(p, tensor([0]), tensor([2]), tensor([3]))) // => 10.5
@@ -77,8 +77,8 @@ const part = (y: Value, from: number, to: number): Value => sliceAxis(y, 0, from
  * @concept pontryagin-maximum-principle
  * @example
  * ```ts
- * import { doubleIntegratorEnergy, hamiltonianSystem } from 'mdml-engine/dynamics/control'
- * import { tensor, toFlat } from 'mdml-engine/tensor'
+ * import { doubleIntegratorEnergy, hamiltonianSystem } from 'omai-engine/dynamics/control'
+ * import { tensor, toFlat } from 'omai-engine/tensor'
  * // Double integrator, cost u^2 / 2: u* = -lambda2, so x' = (v, -lambda2) and lambda' = (0, -lambda1).
  * toFlat(hamiltonianSystem(doubleIntegratorEnergy())(0, tensor([0, 0, 2, 3]))).map((v) => v + 0) // => [0, -3, 0, -2]
  * ```
@@ -105,7 +105,7 @@ export function hamiltonianSystem(problem: ControlProblem): OdeVectorField {
  * @concept pontryagin-maximum-principle
  * @example
  * ```ts
- * import { bangBang } from 'mdml-engine/dynamics/control'
+ * import { bangBang } from 'omai-engine/dynamics/control'
  * [bangBang(0.3, [-1, 1]), bangBang(-0.3, [-1, 1])] // => [-1, 1]
  * ```
  */
@@ -196,12 +196,12 @@ interface Shot {
  * @param problem - The control problem.
  * @param options - The boundary conditions, the guess and the resolution.
  * @returns The algorithm; it converges when the residual is below the tolerance.
- * @throws MdmlError with code `value` when neither a target nor a terminal cost is given, or the guess has the wrong size.
+ * @throws OmaiError with code `value` when neither a target nor a terminal cost is given, or the guess has the wrong size.
  * @concept pontryagin-maximum-principle
  * @example
  * ```ts
- * import { doubleIntegratorEnergy, pontryaginAlgorithm } from 'mdml-engine/dynamics/control'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { doubleIntegratorEnergy, pontryaginAlgorithm } from 'omai-engine/dynamics/control'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * // Rest to rest over a unit distance in time 2 at least energy: Newton finds the costate that does it.
  * const alg = pontryaginAlgorithm(doubleIntegratorEnergy(), { x0: [0, 0], target: [1, 0], horizon: 2, lambda0: [0, 0] })
  * runAlgorithm(alg, { maxSteps: 10 }).state.missNorm < 1e-8 // => true
@@ -215,10 +215,10 @@ export function pontryaginAlgorithm(
   const m = problem.controlSize
   const free = options.freeHorizon === true
   if (options.target === undefined && options.terminalCost === undefined) {
-    throw new MdmlError('value', 'pontryaginAlgorithm: give a target state or a terminal cost')
+    throw new OmaiError('value', 'pontryaginAlgorithm: give a target state or a terminal cost')
   }
   if (options.lambda0.length !== n || options.x0.length !== n) {
-    throw new MdmlError('value', `pontryaginAlgorithm: the initial state and costate guess have ${n} entries`)
+    throw new OmaiError('value', `pontryaginAlgorithm: the initial state and costate guess have ${n} entries`)
   }
   const steps = options.steps ?? 100
   const tol = options.tol ?? 1e-8
@@ -354,7 +354,7 @@ export function pontryaginAlgorithm(
  * @concept pontryagin-maximum-principle
  * @example
  * ```ts
- * import { doubleIntegratorEnergy } from 'mdml-engine/dynamics/control'
+ * import { doubleIntegratorEnergy } from 'omai-engine/dynamics/control'
  * doubleIntegratorEnergy().stateSize // => 2
  * ```
  */
@@ -384,8 +384,8 @@ export function doubleIntegratorEnergy(): ControlProblem {
  * @concept pontryagin-maximum-principle
  * @example
  * ```ts
- * import { minimumTimeDoubleIntegrator } from 'mdml-engine/dynamics/control'
- * import { tensor, toFlat } from 'mdml-engine/tensor'
+ * import { minimumTimeDoubleIntegrator } from 'omai-engine/dynamics/control'
+ * import { tensor, toFlat } from 'omai-engine/tensor'
  * // lambda2 > 0: brake with the full negative control.
  * toFlat(minimumTimeDoubleIntegrator().control(tensor([1, 0]), tensor([1, 0.5]))) // => [-1]
  * ```
@@ -426,11 +426,11 @@ export interface MinimumTimeOptions {
  * @param x0 - The starting position (rest is assumed; a negative position is mirrored).
  * @param options - Bound, the smoothing schedule, resolution and guess.
  * @returns The final shot, with the stages' final states.
- * @throws MdmlError with code `convergence` when a stage fails to converge in 60 iterations.
+ * @throws OmaiError with code `convergence` when a stage fails to converge in 60 iterations.
  * @concept pontryagin-maximum-principle
  * @example
  * ```ts
- * import { minimumTimeShooting } from 'mdml-engine/dynamics/control'
+ * import { minimumTimeShooting } from 'omai-engine/dynamics/control'
  * Math.abs(minimumTimeShooting(1).final.horizon - 2) < 0.02 // => true
  * ```
  */
@@ -455,7 +455,7 @@ export function minimumTimeShooting(
     const ctx = { log: () => undefined, emit: () => undefined, wants: () => false } as never
     for (let k = 0; k < 60 && alg.done?.(state, k) === undefined; k++) state = alg.step(state, ctx)
     if (alg.done?.(state, 60) === undefined) {
-      throw new MdmlError('convergence', `minimumTimeShooting: no convergence at smoothing ${smoothing}`)
+      throw new OmaiError('convergence', `minimumTimeShooting: no convergence at smoothing ${smoothing}`)
     }
     stages.push(state)
     lambda0 = Array.from(state.lambda0)

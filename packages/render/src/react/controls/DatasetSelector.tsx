@@ -4,7 +4,7 @@
  * provenance and, when generated, its seed and knobs as controls. Draw the data with `useDataset`.
  */
 
-import type { DatasetKind } from 'mdml-engine/data'
+import type { DatasetKind } from 'omai-engine/data'
 import {
   type DatasetEntry,
   type DatasetForm,
@@ -13,7 +13,7 @@ import {
   datasetRegistry,
   findDataset,
   whereDatasets,
-} from 'mdml-engine/datasets'
+} from 'omai-engine/datasets'
 import type { ReactNode } from 'react'
 import { DatasetKnobs } from './DatasetPicker.tsx'
 import type { DatasetSelection } from './datasets.ts'

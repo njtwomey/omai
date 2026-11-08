@@ -67,7 +67,7 @@ export interface DecodeState {
  * @concept decoding
  * @example
  * ```ts
- * import { decodingAlgorithm, bigramLanguageModel } from 'mdml-engine/nn'
+ * import { decodingAlgorithm, bigramLanguageModel } from 'omai-engine/nn'
  * decodingAlgorithm(bigramLanguageModel([[0, 1], [1, 0]]), [0], {}).name // => 'decode'
  * ```
  */
@@ -158,7 +158,7 @@ export interface GenerateResult {
  * @index function Autoregressive text generation with temperature, top-k and top-p.
  * @example
  * ```ts
- * import { generate, bigramLanguageModel } from 'mdml-engine/nn'
+ * import { generate, bigramLanguageModel } from 'omai-engine/nn'
  * generate(bigramLanguageModel([[0, 5, 0], [0, 0, 5], [5, 0, 0]]), 'a', { maxNewTokens: 4 }).text // => 'bcab'
  * ```
  */

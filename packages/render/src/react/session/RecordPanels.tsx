@@ -4,7 +4,7 @@
  * a record of the kind it draws.
  */
 
-import type { Exposition, ExpositionKind } from 'mdml-engine/exposition'
+import type { Exposition, ExpositionKind } from 'omai-engine/exposition'
 import { type ReactNode, useMemo } from 'react'
 import { figure } from '../../figure/figure.ts'
 import { imageGridFigure } from '../../views/images.ts'

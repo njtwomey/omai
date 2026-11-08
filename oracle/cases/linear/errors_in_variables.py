@@ -6,8 +6,8 @@ error scales."""
 import numpy as np
 import numpy.typing as npt
 import scipy
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import rng
 from scipy.optimize import minimize
 
 REFERENCE: dict[str, str] = {"scipy": scipy.__version__}

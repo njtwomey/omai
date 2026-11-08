@@ -47,7 +47,7 @@ function prunedScore(t: Trial, d: StudyDirection): [number, number] {
  * @concept hypervolume
  * @example
  * ```ts
- * import { hypervolumeSubsetSelection } from 'mdml-engine/tune'
+ * import { hypervolumeSubsetSelection } from 'omai-engine/tune'
  * hypervolumeSubsetSelection([[1, 4], [2, 2], [4, 1]], 1, [5, 5]) // => [1]
  * ```
  */
@@ -104,8 +104,8 @@ export function hypervolumeSubsetSelection(
  * @concept tree-structured-parzen-estimator
  * @example
  * ```ts
- * import { createStudy, splitTrials } from 'mdml-engine/tune'
- * import { real } from 'mdml-engine/space'
+ * import { createStudy, splitTrials } from 'omai-engine/tune'
+ * import { real } from 'omai-engine/space'
  * const trial = (number: number, value: number) =>
  *   ({ number, params: value, state: 'complete', values: [value], intermediate: [], source: 'x' }) as const
  * const study = createStudy(real(0, 9), { trials: [trial(0, 5), trial(1, 1), trial(2, 3)] })
@@ -195,8 +195,8 @@ function observationsOf(study: Study, trials: readonly Trial[], columns: readonl
  * @reference Bergstra et al. (2011); Ozaki et al. (2020), Multiobjective tree-structured Parzen estimator.
  * @example
  * ```ts
- * import { tpeSampler, functionObjective, tune } from 'mdml-engine/tune'
- * import { dict, real } from 'mdml-engine/space'
+ * import { tpeSampler, functionObjective, tune } from 'omai-engine/tune'
+ * import { dict, real } from 'omai-engine/space'
  * const f = functionObjective((p) => { const { x, y } = p as { x: number; y: number }; return (x - 1) ** 2 + (y + 2) ** 2 })
  * (tune(f, dict({ x: real(-5, 5), y: real(-5, 5) }), { sampler: tpeSampler(), nTrials: 80, seed: 0 }).best?.values[0] ?? 9) < 0.5 // => true
  * ```

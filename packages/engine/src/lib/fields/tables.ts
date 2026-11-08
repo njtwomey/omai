@@ -47,8 +47,8 @@ export interface EncodingProperties {
  * @index table Coordinate encodings as one slot: positional, Fourier features, hash grid.
  * @example
  * ```ts
- * import { fieldEncodings } from 'mdml-engine/fields'
- * import { key } from 'mdml-engine/random'
+ * import { fieldEncodings } from 'omai-engine/fields'
+ * import { key } from 'omai-engine/random'
  * fieldEncodings.make({ kind: 'frequency', octaves: 4, includeInput: true })(2, key(0)).outputDim // => 18
  * fieldEncodings.make({ kind: 'fourier', features: 16, sigma: 10 })(2, key(0)).outputDim // => 32
  * fieldEncodings.properties({ kind: 'hash' }).trainable // => true
@@ -144,8 +144,8 @@ export interface BackboneProperties {
  * @index table Backbones of a neural field as one slot.
  * @example
  * ```ts
- * import { fieldBackbones } from 'mdml-engine/fields'
- * import { key } from 'mdml-engine/random'
+ * import { fieldBackbones } from 'omai-engine/fields'
+ * import { key } from 'omai-engine/random'
  * fieldBackbones.make({ kind: 'siren', omega0: 30 })(2, 3, 16, 2, key(0)).outputShape([5, 2]) // => [5, 3]
  * ```
  */

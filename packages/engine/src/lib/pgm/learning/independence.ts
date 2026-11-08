@@ -4,7 +4,7 @@
  * over a data set that the PC and FCI learners query.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { lstsq } from '../../numerics/linalg/index.ts'
 import { chdtrc, ndtr, stdtr } from '../../numerics/special/index.ts'
 import { item, toArray } from '../../tensor/index.ts'
@@ -104,7 +104,7 @@ function powerDivergence(
  * @concept independence-tests
  * @example
  * ```ts
- * import { chiSquareTest } from 'mdml-engine/pgm/learning'
+ * import { chiSquareTest } from 'omai-engine/pgm/learning'
  * const data = Array.from({ length: 40 }, (_, i) => ({ a: i % 2, b: i % 2, c: Math.floor(i / 2) % 2 }))
  * [chiSquareTest(data, 'a', 'b', []).independent, chiSquareTest(data, 'a', 'c', []).independent] // => [false, true]
  * ```
@@ -132,7 +132,7 @@ export function chiSquareTest(
  * @concept independence-tests
  * @example
  * ```ts
- * import { gSquareTest } from 'mdml-engine/pgm/learning'
+ * import { gSquareTest } from 'omai-engine/pgm/learning'
  * const data = Array.from({ length: 40 }, (_, i) => ({ a: i % 2, b: i % 2 }))
  * gSquareTest(data, 'a', 'b').independent // => false
  * ```
@@ -187,11 +187,11 @@ function partialCorrelation(data: readonly DataRow[], x: string, y: string, z: r
  * @param z - The conditioning set.
  * @param options - Significance level.
  * @returns The statistic, p-value and the decision.
- * @throws MdmlError with code `value` when there are too few rows for the conditioning set.
+ * @throws OmaiError with code `value` when there are too few rows for the conditioning set.
  * @concept independence-tests
  * @example
  * ```ts
- * import { fisherZTest } from 'mdml-engine/pgm/learning'
+ * import { fisherZTest } from 'omai-engine/pgm/learning'
  * const data = Array.from({ length: 50 }, (_, i) => ({ a: i, b: 2 * i + Math.sin(i), c: Math.cos(7 * i) }))
  * [fisherZTest(data, 'a', 'b').independent, fisherZTest(data, 'a', 'c').independent] // => [false, true]
  * ```
@@ -204,7 +204,7 @@ export function fisherZTest(
   options: Pick<IndependenceOptions, 'significance'> = {},
 ): IndependenceTest {
   const n = data.length
-  if (n - z.length - 3 <= 0) throw new MdmlError('value', 'fisherZTest: too few rows for the conditioning set')
+  if (n - z.length - 3 <= 0) throw new OmaiError('value', 'fisherZTest: too few rows for the conditioning set')
   const r = Math.min(Math.max(partialCorrelation(data, x, y, z), -0.999999), 0.999999)
   const statistic = Math.sqrt(n - z.length - 3) * Math.atanh(r)
   const pValue = 2 * item(ndtr(-Math.abs(statistic)))
@@ -224,7 +224,7 @@ export function fisherZTest(
  * @concept independence-tests
  * @example
  * ```ts
- * import { partialCorrelationTest } from 'mdml-engine/pgm/learning'
+ * import { partialCorrelationTest } from 'omai-engine/pgm/learning'
  * const data = Array.from({ length: 50 }, (_, i) => ({ a: i, b: 2 * i + Math.sin(i) }))
  * partialCorrelationTest(data, 'a', 'b').statistic > 0.99 // => true
  * ```
@@ -262,7 +262,7 @@ export type CiTest =
  * @concept independence-tests
  * @example
  * ```ts
- * import { independenceOracle } from 'mdml-engine/pgm/learning'
+ * import { independenceOracle } from 'omai-engine/pgm/learning'
  * const data = Array.from({ length: 40 }, (_, i) => ({ a: i % 2, b: i % 2 }))
  * independenceOracle(data, 'chiSquare')('a', 'b', []) // => false
  * ```

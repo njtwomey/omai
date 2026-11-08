@@ -1,10 +1,10 @@
 /**
  * Structures: graph-shaped descriptions as data, with typed nodes (roles, ports, badges), edges between ports, groups
  * such as plates and repeated blocks, and annotations. They describe trees, networks, factor graphs, model
- * architectures and search trees for mdml-render to lay out; the functions here build, merge and slice them.
+ * architectures and search trees for omai-render to lay out; the functions here build, merge and slice them.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 
 /**
  * The role of a node in a structure; renderers pick shapes and colours by role.
@@ -80,7 +80,7 @@ export interface StructureGroup {
 /**
  * A graph-shaped description as data: typed nodes, typed edges, groups and annotations. Graphical models,
  * computation graphs, network architectures, trees, automata and pipelines all describe themselves this way, and
- * mdml-render lays out and draws any structure the same way.
+ * omai-render lays out and draws any structure the same way.
  *
  * @concept structures
  */
@@ -104,11 +104,11 @@ export interface Structure {
  * @param options - Groups, annotations, a title and the preferred layout direction.
  * @returns The structure.
  * @concept structures
- * @throws MdmlError `value` when two nodes share an id. (An edge to an id that is not a node is allowed: a part
+ * @throws OmaiError `value` when two nodes share an id. (An edge to an id that is not a node is allowed: a part
  *   of a structure may join nodes that another part defines; {@link mergeStructures} checks the whole.)
  * @example
  * ```ts
- * import { structure } from 'mdml-engine/scene'
+ * import { structure } from 'omai-engine/scene'
  * const s = structure('example', [{ id: 'a', label: 'a', role: 'input' }, { id: 'b', label: 'b', role: 'output' }], [{ from: 'a', to: 'b' }])
  * s.nodes.length // => 2
  * ```
@@ -127,7 +127,7 @@ export function structure(
   const { groups = [], ...rest } = options
   const ids = new Set<string>()
   for (const n of nodes) {
-    if (ids.has(n.id)) throw new MdmlError('value', `structure: the node id '${n.id}' is used twice`)
+    if (ids.has(n.id)) throw new OmaiError('value', `structure: the node id '${n.id}' is used twice`)
     ids.add(n.id)
   }
   return { kind: 'structure', type, nodes, edges, groups, ...rest }
@@ -141,11 +141,11 @@ export function structure(
  * @param parts - The structures.
  * @param options - Id prefixes per part, and the type, title and direction of the result (default: the first part's).
  * @returns The merged structure.
- * @throws MdmlError with code `value` when `prefixes` does not have one entry per part, or an edge of the result joins
+ * @throws OmaiError with code `value` when `prefixes` does not have one entry per part, or an edge of the result joins
  *   an id that is not a node.
  * @example
  * ```ts
- * import { mergeStructures, structure } from 'mdml-engine/scene'
+ * import { mergeStructures, structure } from 'omai-engine/scene'
  * const a = structure('x', [{ id: 'a', label: 'a', role: 'input' }, { id: 'b', label: 'b', role: 'output' }], [{ from: 'a', to: 'b' }])
  * const b = structure('x', [{ id: 'b', label: 'b', role: 'output' }, { id: 'c', label: 'c', role: 'output' }], [{ from: 'b', to: 'c' }])
  * mergeStructures([a, b]).nodes.map((n) => n.id) // => ['a', 'b', 'c']
@@ -163,7 +163,7 @@ export function mergeStructures(
 ): Structure {
   const { prefixes } = options
   if (prefixes !== undefined && prefixes.length !== parts.length) {
-    throw new MdmlError('value', 'mergeStructures: give one prefix per structure')
+    throw new OmaiError('value', 'mergeStructures: give one prefix per structure')
   }
   const nodes = new Map<string, StructureNode>()
   const groups = new Map<string, StructureGroup>()
@@ -212,7 +212,7 @@ export function mergeStructures(
   for (const [i, e] of merged.edges.entries())
     for (const end of [e.from, e.to])
       if (!nodes.has(end))
-        throw new MdmlError(
+        throw new OmaiError(
           'value',
           `mergeStructures: edge ${i} joins '${e.from}' to '${e.to}', and '${end}' is not a node`,
         )
@@ -226,7 +226,7 @@ export function mergeStructures(
  * @returns `true` for structures.
  * @example
  * ```ts
- * import { isStructure, structure } from 'mdml-engine/scene'
+ * import { isStructure, structure } from 'omai-engine/scene'
  * isStructure(structure('x', [], [])) // => true
  * ```
  */
@@ -243,7 +243,7 @@ export function isStructure(value: unknown): value is Structure {
  * @returns The sub-structure.
  * @example
  * ```ts
- * import { structure, subStructure } from 'mdml-engine/scene'
+ * import { structure, subStructure } from 'omai-engine/scene'
  * const s = structure('x', [{ id: 'a', label: 'a', role: 'input' }, { id: 'b', label: 'b', role: 'output' }], [{ from: 'a', to: 'b' }])
  * subStructure(s, ['b'], 'ancestors').nodes.length // => 2
  * ```

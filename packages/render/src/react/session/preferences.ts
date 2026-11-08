@@ -17,7 +17,7 @@ export interface SessionPreferences {
 /** The preferences before the reader has set any: live, holding changes. */
 export const DEFAULT_PREFERENCES: SessionPreferences = { mode: 'live', hold: true }
 
-const KEY = 'mdml-session-preferences'
+const KEY = 'omai-session-preferences'
 const listeners = new Set<() => void>()
 let current: SessionPreferences | undefined
 let stopStorage: (() => void) | undefined

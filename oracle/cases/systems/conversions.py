@@ -6,9 +6,9 @@ import numpy as np
 import numpy.typing as npt
 import scipy
 import scipy.signal as sg
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import rng
-from mdml_oracle.lti import parts, sorted_parts, stable_system
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import rng
+from omai_oracle.lti import parts, sorted_parts, stable_system
 
 REFERENCE: dict[str, str] = {"scipy": scipy.__version__}
 

@@ -5,7 +5,7 @@
  * probabilistic program scored by evidence, ELBO or PSIS-LOO.
  */
 
-import { type Json, MdmlError, meanOf } from '../base/index.ts'
+import { type Json, meanOf, OmaiError } from '../base/index.ts'
 import { foldIn, type Key } from '../random/index.ts'
 import {
   type Agent,
@@ -80,7 +80,7 @@ export interface ObjectiveOptions {
  * @returns Everything of an objective but `evaluate`.
  * @example
  * ```ts
- * import { objectiveBase } from 'mdml-engine/tune'
+ * import { objectiveBase } from 'omai-engine/tune'
  * objectiveBase({ direction: 'maximize' }, 'mine', 'minimize') // => { name: 'mine', directions: ['maximize'] }
  * ```
  */
@@ -107,8 +107,8 @@ export function objectiveBase(
  * @concept hyperparameter-optimisation
  * @example
  * ```ts
- * import { functionObjective, tune } from 'mdml-engine/tune'
- * import { real } from 'mdml-engine/space'
+ * import { functionObjective, tune } from 'omai-engine/tune'
+ * import { real } from 'omai-engine/space'
  * const objective = functionObjective((x) => ((x as number) - 0.3) ** 2)
  * Math.abs((tune(objective, real(0, 1), { nTrials: 200, seed: 1 }).best?.params as number) - 0.3) < 0.01 // => true
  * ```
@@ -127,11 +127,11 @@ export function functionObjective(
  *
  * @param objectives - The objectives.
  * @returns The combined objective (directions and names concatenated).
- * @throws MdmlError with code `value` when no objective is given.
+ * @throws OmaiError with code `value` when no objective is given.
  * @concept multi-objective-optimisation
  * @example
  * ```ts
- * import { functionObjective, multiObjective } from 'mdml-engine/tune'
+ * import { functionObjective, multiObjective } from 'omai-engine/tune'
  * const both = multiObjective([
  *   functionObjective((x) => (x as number) ** 2, { name: 'error' }),
  *   functionObjective((x) => x as number, { name: 'size', direction: 'maximize' }),
@@ -140,7 +140,7 @@ export function functionObjective(
  * ```
  */
 export function multiObjective(objectives: readonly StudyObjective[]): StudyObjective {
-  if (objectives.length === 0) throw new MdmlError('value', 'multiObjective: need at least one objective')
+  if (objectives.length === 0) throw new OmaiError('value', 'multiObjective: need at least one objective')
   const first = objectives[0] as StudyObjective
   return {
     name: objectives.map((o) => o.name).join('+'),
@@ -190,8 +190,8 @@ export interface TrainingObjectiveOptions<S> extends ObjectiveOptions {
  * @concept early-stopping
  * @example
  * ```ts
- * import { trainingObjective, tune, medianPruner } from 'mdml-engine/tune'
- * import { real } from 'mdml-engine/space'
+ * import { trainingObjective, tune, medianPruner } from 'omai-engine/tune'
+ * import { real } from 'omai-engine/space'
  * // Gradient descent on (w - 3)^2 with the learning rate as the configuration.
  * const objective = trainingObjective(
  *   (lr) => ({ name: 'gd', config: {}, init: () => 0, step: (w: number) => w - (lr as number) * 2 * (w - 3) }),
@@ -207,7 +207,7 @@ export function trainingObjective<S>(
 ): StudyObjective {
   const every = options.reportEvery ?? 1
   if (!(Number.isInteger(every) && every >= 1))
-    throw new MdmlError('value', 'trainingObjective: reportEvery must be a positive integer')
+    throw new OmaiError('value', 'trainingObjective: reportEvery must be a positive integer')
   return {
     ...objectiveBase(options, 'training', 'minimize'),
     evaluate: (params, trial) => {
@@ -255,9 +255,9 @@ export interface AgentObjectiveOptions extends ObjectiveOptions {
  * @concept agents
  * @example
  * ```ts
- * import { agentObjective } from 'mdml-engine/tune'
- * import { make, policyAgent } from 'mdml-engine/rl'
- * import { cartPole } from 'mdml-engine/environments'
+ * import { agentObjective } from 'omai-engine/tune'
+ * import { make, policyAgent } from 'omai-engine/rl'
+ * import { cartPole } from 'omai-engine/environments'
  * agentObjective(make(cartPole), () => policyAgent(() => 0)).directions // => ['maximize']
  * ```
  */
@@ -325,10 +325,10 @@ export interface ProgramFit {
  * @concept bayesian-model-selection
  * @example
  * ```ts
- * import { programObjective, tune, gridSampler } from 'mdml-engine/tune'
- * import { dict, choice } from 'mdml-engine/space'
- * import { normal } from 'mdml-engine/dists'
- * import { item } from 'mdml-engine/tensor'
+ * import { programObjective, tune, gridSampler } from 'omai-engine/tune'
+ * import { dict, choice } from 'omai-engine/space'
+ * import { normal } from 'omai-engine/dists'
+ * import { item } from 'omai-engine/tensor'
  * // Evidence of y = 1 under y ~ N(0, 1 + s^2) for a prior scale s: best near s = 1.
  * const objective = programObjective((p) => ({ logEvidence: item(normal(0, Math.sqrt(1 + (p as { s: number }).s ** 2)).logProb(1)) }))
  * tune(objective, dict({ s: choice([0.1, 1, 10]) }), { sampler: gridSampler() }).best?.params // => { s: 0.1 }
@@ -344,7 +344,7 @@ export function programObjective(
     metricNames: options.metricNames ?? [criterion],
     evaluate: (params, trial) => {
       const value = fit(params, trial)[criterion]
-      if (value === undefined) throw new MdmlError('value', `programObjective: the fit reports no ${criterion}`)
+      if (value === undefined) throw new OmaiError('value', `programObjective: the fit reports no ${criterion}`)
       return value
     },
   }

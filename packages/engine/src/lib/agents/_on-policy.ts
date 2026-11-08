@@ -5,7 +5,7 @@
  */
 
 import { valueAndGrad } from '../autodiff/index.ts'
-import { MdmlError, meanOf, varianceOf } from '../base/index.ts'
+import { meanOf, OmaiError, varianceOf } from '../base/index.ts'
 import { explainedVarianceScore } from '../metrics/index.ts'
 import type { ActivationName, Params } from '../nn/index.ts'
 import type { GradientTransformation, ParamTree } from '../optim/index.ts'
@@ -189,7 +189,7 @@ export function policyKl(old: PolicyDist, next: PolicyDist): Value {
     const quad = mul(add(varOld, square(sub(old.mean, next.mean))), mul(0.5, exp(mul(next.logStd, -2))))
     return sum(sub(add(sub(next.logStd, old.logStd), quad), 0.5), -1)
   }
-  throw new MdmlError('value', 'policyKl: distributions of different kinds')
+  throw new OmaiError('value', 'policyKl: distributions of different kinds')
 }
 
 /** The rows of a batch of distributions. */

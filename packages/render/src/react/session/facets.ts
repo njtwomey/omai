@@ -3,7 +3,7 @@
  * across them, and the number of columns to lay them in.
  */
 
-import { metricSeries, type Run } from 'mdml-engine/trace'
+import { metricSeries, type Run } from 'omai-engine/trace'
 import type { Panel } from './layout.ts'
 
 /** The small-multiples panel of a layout. */
@@ -27,7 +27,7 @@ export interface Cell {
  * @returns The cells, in order; none when the facet does not apply to the panel (paths of a panel without paths).
  * @example
  * ```ts
- * import { facetCells } from 'mdml-render/react'
+ * import { facetCells } from 'omai-render/react'
  * const cells = facetCells({ kind: 'multiples', panel: { kind: 'curves', paths: ['a', 'b'] }, over: { by: 'paths' } }, [''])
  * cells.map((c) => c.label) // => ['a', 'b']
  * ```
@@ -64,7 +64,7 @@ export function facetCells(spec: MultiplesSpec, variants: readonly string[]): Ce
  * @returns `[low, high]`, or `undefined` when nothing is recorded.
  * @example
  * ```ts
- * import { sharedLimits } from 'mdml-render/react'
+ * import { sharedLimits } from 'omai-render/react'
  * sharedLimits([], ['loss']) // => undefined
  * ```
  */
@@ -91,7 +91,7 @@ export function sharedLimits(runs: readonly Run[], paths: readonly string[]): [n
  * @returns At least one.
  * @example
  * ```ts
- * import { multiplesColumns } from 'mdml-render/react'
+ * import { multiplesColumns } from 'omai-render/react'
  * multiplesColumns(2) // => 2
  * multiplesColumns(7, 4) // => 4
  * ```

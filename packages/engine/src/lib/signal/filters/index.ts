@@ -1,5 +1,5 @@
 /**
- * Digital filter design and application, scipy.signal style, part of `mdml-engine/signal`: FIR design by windows,
+ * Digital filter design and application, scipy.signal style, part of `omai-engine/signal`: FIR design by windows,
  * frequency sampling and Parks-McClellan, IIR design from analog prototypes (Butterworth, Chebyshev, elliptic, Bessel)
  * with minimum-order selection, filtering with transfer functions or second-order sections including zero-phase
  * filtering, and frequency, group-delay and specification checks.

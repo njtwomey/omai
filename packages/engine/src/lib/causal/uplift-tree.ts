@@ -7,7 +7,7 @@
  * a minimum of units of each arm in a leaf; a bagged average of them (`upliftForest`) steadies the estimate.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { matrixView, targetVector } from '../learn/validation.ts'
 import { bootstrapIndices, foldIn, type Key, key as makeKey } from '../random/index.ts'
 import { type TensorLike, toFlat } from '../tensor/index.ts'
@@ -190,7 +190,7 @@ function applyNodes(nodes: readonly UpliftNode[], x: Float64Array, d: number, n:
  * @returns The tree.
  * @example
  * ```ts
- * import { upliftTree } from 'mdml-engine/causal'
+ * import { upliftTree } from 'omai-engine/causal'
  * const x = Array.from({ length: 80 }, (_, i) => [i < 40 ? 0 : 1])
  * const treatment = x.map((_, i) => i % 2)
  * const outcome = x.map((r, i) => ((r[0] ?? 0) === 1 && i % 2 === 1 ? 1 : 0))
@@ -204,7 +204,7 @@ export function upliftTree(data: CausalData, options: UpliftTreeOptions = {}): U
   const binary = y.every((v) => v === 0 || v === 1)
   const criterion = options.criterion ?? (binary ? 'ED' : 'tau')
   if (criterion !== 'tau' && !binary)
-    throw new MdmlError('value', `upliftTree: the ${criterion} criterion needs a 0/1 outcome`)
+    throw new OmaiError('value', `upliftTree: the ${criterion} criterion needs a 0/1 outcome`)
   const full: Required<UpliftTreeOptions> = {
     criterion,
     maxDepth: options.maxDepth ?? 4,
@@ -227,7 +227,7 @@ export function upliftTree(data: CausalData, options: UpliftTreeOptions = {}): U
   const sum = gains.reduce((a, b) => a + b, 0) || 1
   const reach = (q: TensorLike): Int32Array => {
     const v = matrixView(q, 'upliftTree')
-    if (v.d !== m.d) throw new MdmlError('shape', `upliftTree: expected ${m.d} covariates, got ${v.d}`)
+    if (v.d !== m.d) throw new OmaiError('shape', `upliftTree: expected ${m.d} covariates, got ${v.d}`)
     return applyNodes(nodes, v.data, m.d, v.n)
   }
   return {
@@ -255,7 +255,7 @@ export interface UpliftForest {
  * @returns The forest.
  * @example
  * ```ts
- * import { upliftForest } from 'mdml-engine/causal'
+ * import { upliftForest } from 'omai-engine/causal'
  * const x = Array.from({ length: 80 }, (_, i) => [i < 40 ? 0 : 1])
  * const treatment = x.map((_, i) => i % 2)
  * const outcome = x.map((r, i) => ((r[0] ?? 0) === 1 && i % 2 === 1 ? 1 : 0))

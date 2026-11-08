@@ -3,8 +3,8 @@ every rule of both algorithms."""
 
 from importlib.metadata import version
 
-from mdml_oracle.fixture import Case, case
 from nltk.stem import PorterStemmer, SnowballStemmer
+from omai_oracle.fixture import Case, case
 
 REFERENCE: dict[str, str] = {"nltk": version("nltk")}
 

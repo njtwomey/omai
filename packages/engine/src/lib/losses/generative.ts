@@ -8,7 +8,7 @@
  */
 
 import { grad, jvp } from '../autodiff/index.ts'
-import { MdmlError, type Reduction } from '../base/index.ts'
+import { OmaiError, type Reduction } from '../base/index.ts'
 import type { Distribution } from '../dists/index.ts'
 import { softplus } from '../numerics/special/index.ts'
 import { type Key, normal, split, uniform } from '../random/index.ts'
@@ -60,8 +60,8 @@ export type GanObjective = 'minimax' | 'non-saturating' | 'wasserstein' | 'hinge
  * @concept generative-adversarial-networks
  * @example
  * ```ts
- * import { discriminatorLoss } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { discriminatorLoss } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * item(discriminatorLoss([2, 0], [-1, 1], { objective: 'hinge' })) // => 1.5
  * ```
  */
@@ -82,7 +82,7 @@ export function discriminatorLoss(
     case 'least-squares':
       return mul(add(mean(square(sub(r, 1))), mean(square(f))), 0.5)
     default:
-      throw new MdmlError('value', `unknown GAN objective ${String(options.objective)}`)
+      throw new OmaiError('value', `unknown GAN objective ${String(options.objective)}`)
   }
 }
 
@@ -96,8 +96,8 @@ export function discriminatorLoss(
  * @returns The scalar loss, differentiable in the outputs.
  * @example
  * ```ts
- * import { generatorLoss } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { generatorLoss } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * item(generatorLoss([0], { objective: 'non-saturating' })) === Math.LN2 // => true
  * ```
  */
@@ -114,7 +114,7 @@ export function generatorLoss(fakeLogits: TensorLike, options: { readonly object
     case 'least-squares':
       return mul(mean(square(sub(f, 1))), 0.5)
     default:
-      throw new MdmlError('value', `unknown GAN objective ${String(options.objective)}`)
+      throw new OmaiError('value', `unknown GAN objective ${String(options.objective)}`)
   }
 }
 
@@ -139,11 +139,11 @@ function squaredGradientNorms(critic: Critic, x: Value): Value {
  * @param options - weight (default 10), target norm (default 1), and the interpolation: `alpha` `[N]` given, or
  *   drawn uniformly with `key`.
  * @returns The scalar penalty.
- * @throws MdmlError with code `value` when neither `alpha` nor `key` is given.
+ * @throws OmaiError with code `value` when neither `alpha` nor `key` is given.
  * @example
  * ```ts
- * import { gradientPenalty } from 'mdml-engine/losses'
- * import { item, mul, sum, type Value } from 'mdml-engine/tensor'
+ * import { gradientPenalty } from 'omai-engine/losses'
+ * import { item, mul, sum, type Value } from 'omai-engine/tensor'
  * const critic = (x: Value) => sum(mul(x, 3), 1)
  * item(gradientPenalty(critic, [[0, 0]], [[1, 1]], { alpha: [0.5], weight: 1 })) === (Math.sqrt(18) - 1) ** 2 // => true
  * ```
@@ -159,7 +159,7 @@ export function gradientPenalty(
   let alpha: Value
   if (options.alpha !== undefined) alpha = promoteFloat(options.alpha)[0] as Value
   else if (options.key !== undefined) alpha = uniform(options.key, [n])
-  else throw new MdmlError('value', 'gradientPenalty: pass `alpha` or a `key`')
+  else throw new OmaiError('value', 'gradientPenalty: pass `alpha` or a `key`')
   const a = reshape(alpha, [n, ...x.shape.slice(1).map(() => 1)])
   const interpolates = add(mul(a, x), mul(sub(1, a), y))
   const norms = sqrt(squaredGradientNorms(critic, interpolates))
@@ -176,8 +176,8 @@ export function gradientPenalty(
  * @returns The scalar penalty, differentiable in the critic's parameters.
  * @example
  * ```ts
- * import { r1Penalty } from 'mdml-engine/losses'
- * import { item, mul, sum, type Value } from 'mdml-engine/tensor'
+ * import { r1Penalty } from 'omai-engine/losses'
+ * import { item, mul, sum, type Value } from 'omai-engine/tensor'
  * item(r1Penalty((x: Value) => sum(mul(x, 2), 1), [[1, 1]], { gamma: 1 })) // => 4
  * ```
  */
@@ -201,8 +201,8 @@ const perSample = (v: Value): Value => (v.shape.length <= 1 ? v : sum(reshape(v,
  * @concept variational-autoencoders
  * @example
  * ```ts
- * import { gaussianKl } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { gaussianKl } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * item(gaussianKl([[0, 0]], [[0, 0]])) // => 0
  * ```
  */
@@ -226,9 +226,9 @@ export function gaussianKl(
  * @returns The estimate, differentiable.
  * @example
  * ```ts
- * import { sampledKl } from 'mdml-engine/losses'
- * import { normal } from 'mdml-engine/dists'
- * import { item } from 'mdml-engine/tensor'
+ * import { sampledKl } from 'omai-engine/losses'
+ * import { normal } from 'omai-engine/dists'
+ * import { item } from 'omai-engine/tensor'
  * item(sampledKl(normal(0, 1), normal(0, 1), [0.3, -1])) // => 0
  * ```
  */
@@ -246,8 +246,8 @@ export function sampledKl(q: Distribution, p: Distribution, z: TensorLike): Valu
  * @returns The loss, differentiable.
  * @example
  * ```ts
- * import { negativeElbo } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { negativeElbo } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * item(negativeElbo([-3, -1], [0.5, 0.5], { beta: 2 })) // => 3
  * ```
  */
@@ -269,8 +269,8 @@ export function negativeElbo(
  * @returns log p(x | z) per sample `[N]`, differentiable.
  * @example
  * ```ts
- * import { bernoulliLogLikelihood } from 'mdml-engine/losses'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { bernoulliLogLikelihood } from 'omai-engine/losses'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(bernoulliLogLikelihood([[0, 0]], [[1, 0]])).map((v) => v / Math.LN2) // => [-2]
  * ```
  */
@@ -289,8 +289,8 @@ export function bernoulliLogLikelihood(logits: TensorLike, x: TensorLike): Value
  * @returns log p(x | z) per sample `[N]`, differentiable.
  * @example
  * ```ts
- * import { gaussianLogLikelihood } from 'mdml-engine/losses'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { gaussianLogLikelihood } from 'omai-engine/losses'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(gaussianLogLikelihood([[0]], [[0]])).map((v) => v + 0.5 * Math.log(2 * Math.PI)) // => [0]
  * ```
  */
@@ -315,8 +315,8 @@ export function gaussianLogLikelihood(
  * @returns The loss, differentiable.
  * @example
  * ```ts
- * import { importanceWeightedBound } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { importanceWeightedBound } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * Math.abs(item(importanceWeightedBound([[-2, -2]])) - 2) < 1e-15 // => true
  * ```
  */
@@ -341,8 +341,8 @@ export function importanceWeightedBound(
  * @returns The loss, differentiable in the scores.
  * @example
  * ```ts
- * import { denoisingScoreMatching } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { denoisingScoreMatching } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * item(denoisingScoreMatching([[-2]], [[1]], [0.5])) // => 0
  * ```
  */
@@ -374,8 +374,8 @@ export type DiffusionParameterisation = 'epsilon' | 'x0' | 'v'
  * @returns The target, the shape of x0.
  * @example
  * ```ts
- * import { diffusionTarget } from 'mdml-engine/losses'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { diffusionTarget } from 'omai-engine/losses'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(diffusionTarget('v', [1], [2], 0.5, 0.25)) // => [0.75]
  * ```
  */
@@ -405,8 +405,8 @@ export function diffusionTarget(
  * @returns The scalar loss, differentiable in the prediction.
  * @example
  * ```ts
- * import { diffusionLoss } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { diffusionLoss } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * item(diffusionLoss([1], [2], [1], 0.6, 0.8)) // => 0
  * ```
  */
@@ -434,8 +434,8 @@ export function diffusionLoss(
  * @returns The points x_t and target velocities.
  * @example
  * ```ts
- * import { flowMatchingPath } from 'mdml-engine/losses'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { flowMatchingPath } from 'omai-engine/losses'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(flowMatchingPath([[0]], [[2]], [0.25]).xt) // => [[0.5]]
  * ```
  */
@@ -462,8 +462,8 @@ export function flowMatchingPath(
  * @returns The scalar loss, differentiable in the predictions.
  * @example
  * ```ts
- * import { flowMatching } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { flowMatching } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * item(flowMatching([[2]], [[0]], [[2]])) // => 0
  * ```
  */
@@ -502,8 +502,8 @@ export interface NoiseContrastiveOptions {
  * @concept noise-contrastive-estimation
  * @example
  * ```ts
- * import { noiseContrastive } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { noiseContrastive } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * // The model equal to the noise (and k = 1) cannot tell them apart: 2 log 2.
  * Math.abs(item(noiseContrastive([0], [0], [0], [0])) - 2 * Math.LN2) < 1e-15 // => true
  * ```
@@ -546,8 +546,8 @@ export type ProjectionKind = 'gaussian' | 'rademacher'
  * @concept score-matching
  * @example
  * ```ts
- * import { scoreMatching } from 'mdml-engine/losses'
- * import { mul, item, type Value } from 'mdml-engine/tensor'
+ * import { scoreMatching } from 'omai-engine/losses'
+ * import { mul, item, type Value } from 'omai-engine/tensor'
  * // s(x) = -x is the score of a standard normal: tr(J) = -1 per sample, 0.5 |x|^2 averages to 0.5 on [[1], [-1]].
  * item(scoreMatching((x: Value) => mul(x, -1), [[1], [-1]])) // => -0.5
  * ```
@@ -582,9 +582,9 @@ export function scoreMatching(score: (x: Value) => Value, x: TensorLike): Value 
  * @returns The scalar loss, differentiable in whatever the score model closes over.
  * @example
  * ```ts
- * import { slicedScoreMatching } from 'mdml-engine/losses'
- * import { key } from 'mdml-engine/random'
- * import { mul, item, type Value } from 'mdml-engine/tensor'
+ * import { slicedScoreMatching } from 'omai-engine/losses'
+ * import { key } from 'omai-engine/random'
+ * import { mul, item, type Value } from 'omai-engine/tensor'
  * // The score of a standard normal, -x, at the data [[1], [-1]]: v^T J v = -v^2 and (v s)^2 / 2 = (v x)^2 / 2 with v^2 = 1.
  * item(slicedScoreMatching((x: Value) => mul(x, -1), [[1], [-1]], key(0), { kind: 'rademacher' })) // => -0.5
  * ```
@@ -648,8 +648,8 @@ export interface VectorQuantisation {
  * @concept vector-quantisation
  * @example
  * ```ts
- * import { vectorQuantise } from 'mdml-engine/losses'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { vectorQuantise } from 'omai-engine/losses'
+ * import { toArray } from 'omai-engine/tensor'
  * const out = vectorQuantise([[0.9, 0], [0, 1.2]], [[1, 0], [0, 1]])
  * toArray(out.indices) // => [0, 1]
  * ```
@@ -708,8 +708,8 @@ export interface VqEmaState {
  * @returns The next state.
  * @example
  * ```ts
- * import { vqEmaUpdate } from 'mdml-engine/losses'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { vqEmaUpdate } from 'omai-engine/losses'
+ * import { toArray } from 'omai-engine/tensor'
  * const start = { counts: [1, 1], sums: [[1, 0], [0, 1]], codebook: [[1, 0], [0, 1]] }
  * const next = vqEmaUpdate(start, [[3, 0]], [0], { decay: 0.5, eps: 0 })
  * toArray(next.codebook)[0] // => [2, 0]

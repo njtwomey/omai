@@ -47,11 +47,11 @@ function tagsToTensors(x: unknown): unknown {
  *
  * @param x - The state.
  * @returns Its JSON.
- * @throws MdmlError with code `value` for a map, set, function or class instance.
+ * @throws OmaiError with code `value` for a map, set, function or class instance.
  * @concept algorithm-protocol
  * @example
  * ```ts
- * import { stateToJson } from 'mdml-engine/trace'
+ * import { stateToJson } from 'omai-engine/trace'
  * stateToJson({ n: 2, q: Float64Array.of(1, 2) }) // => { n: 2, q: { $typed: 'Float64Array', values: [1, 2] } }
  * ```
  */
@@ -64,11 +64,11 @@ export function stateToJson(x: unknown): Json {
  *
  * @param json - The JSON.
  * @returns The state.
- * @throws MdmlError with code `schema` for a malformed tag.
+ * @throws OmaiError with code `schema` for a malformed tag.
  * @concept algorithm-protocol
  * @example
  * ```ts
- * import { stateFromJson, stateToJson } from 'mdml-engine/trace'
+ * import { stateFromJson, stateToJson } from 'omai-engine/trace'
  * const back = stateFromJson(stateToJson({ q: Float64Array.of(1, 2) })) as { q: Float64Array }
  * back.q instanceof Float64Array // => true
  * ```
@@ -114,7 +114,7 @@ function fromLegacy(j: Json): Json {
  * @returns A number or one of the three strings.
  * @example
  * ```ts
- * import { numberToJson } from 'mdml-engine/trace'
+ * import { numberToJson } from 'omai-engine/trace'
  * [numberToJson(1.5), numberToJson(Number.NaN), numberToJson(-Infinity)] // => [1.5, 'nan', '-inf']
  * ```
  */
@@ -130,7 +130,7 @@ export function numberToJson(x: number): Json {
  * @returns The number.
  * @example
  * ```ts
- * import { numberFromJson } from 'mdml-engine/trace'
+ * import { numberFromJson } from 'omai-engine/trace'
  * [numberFromJson('inf'), numberFromJson(2), Number.isNaN(numberFromJson(null))] // => [Infinity, 2, true]
  * ```
  */
@@ -147,7 +147,7 @@ export function numberFromJson(j: Json | undefined): number {
  * @returns The JSON array.
  * @example
  * ```ts
- * import { numbersToJson } from 'mdml-engine/trace'
+ * import { numbersToJson } from 'omai-engine/trace'
  * numbersToJson([1, Infinity]) // => [1, 'inf']
  * ```
  */
@@ -162,7 +162,7 @@ export function numbersToJson(xs: ArrayLike<number>): Json {
  * @returns The numbers.
  * @example
  * ```ts
- * import { numbersFromJson } from 'mdml-engine/trace'
+ * import { numbersFromJson } from 'omai-engine/trace'
  * numbersFromJson([1, 'inf']) // => [1, Infinity]
  * ```
  */

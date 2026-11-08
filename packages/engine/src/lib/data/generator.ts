@@ -7,7 +7,7 @@
  * @index structure Dataset generator contract: knobs as a Space, key to data with truth.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import type { Context } from '../context/index.ts'
 import { resolveKey } from '../context/index.ts'
 import type { Key } from '../random/index.ts'
@@ -54,13 +54,13 @@ export interface GenerateOptions {
  * @param generator - The generator.
  * @param options - Knobs, key or context.
  * @returns The data and its truth.
- * @throws MdmlError with code `value` when a knob is unknown or outside its space.
+ * @throws OmaiError with code `value` when a knob is unknown or outside its space.
  * @concept datasets
  * @index function Run a generator with a key and knob values.
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { friedman1 } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { friedman1 } from 'omai-engine/datasets'
  * generate(friedman1, { knobs: { n: 50 } }).data.x.shape // => [50, 10]
  * ```
  */
@@ -71,9 +71,9 @@ export function generate<D extends Dataset>(
   const given = options.knobs ?? {}
   for (const [name, value] of Object.entries(given)) {
     const space = generator.knobs.spaces[name]
-    if (space === undefined) throw new MdmlError('value', `${generator.name}: unknown knob ${name}`)
+    if (space === undefined) throw new OmaiError('value', `${generator.name}: unknown knob ${name}`)
     if (!contains(space, value))
-      throw new MdmlError('value', `${generator.name}: knob ${name} = ${String(value)} is outside its space`)
+      throw new OmaiError('value', `${generator.name}: knob ${name} = ${String(value)} is outside its space`)
   }
   const knobs = { ...(defaults(generator.knobs) as GeneratorKnobs), ...given }
   const k = resolveKey(options, `dataset/${generator.name}`)
@@ -115,8 +115,8 @@ export interface GeneratorDescription {
  * @returns The description.
  * @example
  * ```ts
- * import { describeGenerator } from 'mdml-engine/data'
- * import { friedman1 } from 'mdml-engine/datasets'
+ * import { describeGenerator } from 'omai-engine/data'
+ * import { friedman1 } from 'omai-engine/datasets'
  * describeGenerator(friedman1).knobs.map((k) => k.name) // => ['n', 'nFeatures', 'noise']
  * ```
  */
@@ -146,7 +146,7 @@ export function describeGenerator(generator: DatasetGenerator): GeneratorDescrip
  * @returns `{ data, truth }`.
  * @example
  * ```ts
- * import { asGenerated, xy } from 'mdml-engine/data'
+ * import { asGenerated, xy } from 'omai-engine/data'
  * asGenerated(xy([[1]], [2])).truth // => {}
  * ```
  */

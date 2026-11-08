@@ -5,7 +5,7 @@
  * match a true one, micro, macro and weighted over types, with the per-type scores.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { defineMetric, type MetricFunction, metricResult } from './metric.ts'
 
 /** The tagging scheme: `bio` reads B, I, E and S prefixes by conlleval's rules (IOB1 and IOB2 included); `bilou` reads L as E and U as S. */
@@ -53,7 +53,7 @@ const chunkStart = (prev: string, tag: string, prevType: string, type: string): 
  * @concept sequence-labelling-metrics
  * @example
  * ```ts
- * import { entitySpans } from 'mdml-engine/metrics'
+ * import { entitySpans } from 'omai-engine/metrics'
  * entitySpans(['B-PER', 'I-PER', 'O', 'B-LOC']) // => [{ type: 'PER', start: 0, end: 2 }, { type: 'LOC', start: 3, end: 4 }]
  * ```
  */
@@ -82,7 +82,7 @@ export function entitySpans(tags: readonly string[], scheme: TagScheme = 'bio'):
  * @concept sequence-labelling-metrics
  * @example
  * ```ts
- * import { bioViolations } from 'mdml-engine/metrics'
+ * import { bioViolations } from 'omai-engine/metrics'
  * bioViolations(['O', 'I-PER', 'B-PER', 'I-LOC']) // => [1, 3]
  * ```
  */
@@ -132,11 +132,11 @@ const prf = (tp: number, predicted: number, support: number): PrfScores => {
  * @param yPred - The predicted tag sequences, of the same lengths.
  * @param scheme - `bio` (default) or `bilou`.
  * @returns The scores.
- * @throws MdmlError with code `shape` for sequences of different counts or lengths.
+ * @throws OmaiError with code `shape` for sequences of different counts or lengths.
  * @concept sequence-labelling-metrics
  * @example
  * ```ts
- * import { entityScores } from 'mdml-engine/metrics'
+ * import { entityScores } from 'omai-engine/metrics'
  * const t = [['O', 'O', 'O', 'B-MISC', 'I-MISC', 'I-MISC', 'O'], ['B-PER', 'I-PER', 'O']]
  * const p = [['O', 'O', 'B-MISC', 'I-MISC', 'I-MISC', 'I-MISC', 'O'], ['B-PER', 'I-PER', 'O']]
  * entityScores(t, p).f1 // => 0.5
@@ -147,7 +147,7 @@ export function entityScores(
   yPred: readonly (readonly string[])[],
   scheme: TagScheme = 'bio',
 ): EntityScores {
-  if (yTrue.length !== yPred.length) throw new MdmlError('shape', 'entityScores: different numbers of sequences')
+  if (yTrue.length !== yPred.length) throw new OmaiError('shape', 'entityScores: different numbers of sequences')
   const tp = new Map<string, number>()
   const predicted = new Map<string, number>()
   const support = new Map<string, number>()
@@ -156,7 +156,7 @@ export function entityScores(
   }
   for (const [i, t] of yTrue.entries()) {
     const p = yPred[i] as readonly string[]
-    if (t.length !== p.length) throw new MdmlError('shape', `entityScores: sequence ${i} has different lengths`)
+    if (t.length !== p.length) throw new OmaiError('shape', `entityScores: sequence ${i} has different lengths`)
     const truth = new Set(entitySpans(t, scheme).map((e) => `${e.type}|${e.start}|${e.end}`))
     for (const e of entitySpans(t, scheme)) bump(support, e.type)
     for (const e of entitySpans(p, scheme)) {
@@ -194,7 +194,7 @@ export function entityScores(
  * @concept sequence-labelling-metrics
  * @example
  * ```ts
- * import { entityF1 } from 'mdml-engine/metrics'
+ * import { entityF1 } from 'omai-engine/metrics'
  * entityF1([['B-PER', 'O']], [['B-PER', 'O']]).estimate.value // => 1
  * ```
  */

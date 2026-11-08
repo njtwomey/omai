@@ -69,8 +69,8 @@ const nanOutside = (ok: Value, v: Value): Value => where(ok, v, Number.NaN)
  * @index distribution Student's t distribution.
  * @example
  * ```ts
- * import { studentT } from 'mdml-engine/dists'
- * import { item } from 'mdml-engine/tensor'
+ * import { studentT } from 'omai-engine/dists'
+ * import { item } from 'omai-engine/tensor'
  * item(studentT(3).cdf(0)) // => 0.5
  * ```
  */
@@ -124,8 +124,8 @@ export function studentT(df: TensorLike, loc: TensorLike = 0, scale: TensorLike 
  * @returns The distribution; `rsample` is the quantile of uniform noise. Its mean and variance are undefined (NaN).
  * @example
  * ```ts
- * import { cauchy } from 'mdml-engine/dists'
- * import { item } from 'mdml-engine/tensor'
+ * import { cauchy } from 'omai-engine/dists'
+ * import { item } from 'omai-engine/tensor'
  * item(cauchy(0, 1).cdf(1)) // => 0.75
  * ```
  */
@@ -178,8 +178,8 @@ export function cauchy(loc: TensorLike = 0, scale: TensorLike = 1): Distribution
  * @returns The distribution; its mean and variance are infinite.
  * @example
  * ```ts
- * import { halfCauchy } from 'mdml-engine/dists'
- * import { item } from 'mdml-engine/tensor'
+ * import { halfCauchy } from 'omai-engine/dists'
+ * import { item } from 'omai-engine/tensor'
  * item(halfCauchy(1).cdf(1)) // => 0.5
  * ```
  */
@@ -221,8 +221,8 @@ export function halfCauchy(scale: TensorLike = 1): Distribution {
  * @returns The distribution; `rsample` is the quantile of uniform noise.
  * @example
  * ```ts
- * import { laplace } from 'mdml-engine/dists'
- * import { item } from 'mdml-engine/tensor'
+ * import { laplace } from 'omai-engine/dists'
+ * import { item } from 'omai-engine/tensor'
  * item(laplace(0, 2).variance()) // => 8
  * ```
  */
@@ -278,8 +278,8 @@ export function laplace(loc: TensorLike = 0, scale: TensorLike = 1): Distributio
  * @returns The distribution; `rsample` is loc + s logit(U).
  * @example
  * ```ts
- * import { logistic } from 'mdml-engine/dists'
- * import { item } from 'mdml-engine/tensor'
+ * import { logistic } from 'omai-engine/dists'
+ * import { item } from 'omai-engine/tensor'
  * item(logistic(0, 1).cdf(0)) // => 0.5
  * ```
  */
@@ -322,8 +322,8 @@ export function logistic(loc: TensorLike = 0, scale: TensorLike = 1): Distributi
  * @returns The distribution; `rsample` is the quantile of uniform noise.
  * @example
  * ```ts
- * import { pareto } from 'mdml-engine/dists'
- * import { item } from 'mdml-engine/tensor'
+ * import { pareto } from 'omai-engine/dists'
+ * import { item } from 'omai-engine/tensor'
  * item(pareto(3, 1).mean()) // => 1.5
  * ```
  */
@@ -379,8 +379,8 @@ export function pareto(b: TensorLike, scale: TensorLike = 1): Distribution {
  *   loc + scale sinh((eps - a) / b); the mode and entropy are numerical (as in scipy).
  * @example
  * ```ts
- * import { johnsonSU } from 'mdml-engine/dists'
- * import { item } from 'mdml-engine/tensor'
+ * import { johnsonSU } from 'omai-engine/dists'
+ * import { item } from 'omai-engine/tensor'
  * item(johnsonSU(0, 1).cdf(0)) // => 0.5
  * ```
  */
@@ -435,8 +435,8 @@ export function johnsonSU(a: TensorLike, b: TensorLike, loc: TensorLike = 0, sca
  * @reference Jones, M. C. and Pewsey, A. (2009). Sinh-arcsinh distributions. Biometrika 96(4).
  * @example
  * ```ts
- * import { sinhArcsinh } from 'mdml-engine/dists'
- * import { item } from 'mdml-engine/tensor'
+ * import { sinhArcsinh } from 'omai-engine/dists'
+ * import { item } from 'omai-engine/tensor'
  * item(sinhArcsinh(0, 1, 0, 1).cdf(0)) // => 0.5
  * Math.abs(item(sinhArcsinh(0, 1, 0, 1).variance()) - 1) < 1e-12 // => true
  * ```

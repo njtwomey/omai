@@ -4,29 +4,29 @@
 
 Probabilistic graphical models, pgmpy style: factors, Bayesian and Markov networks, factor graphs, structure learning and causal graphs, and inference both exact (variable elimination, junction trees) and approximate (belief propagation, sampling). The models and inference folders are part of this entry point.
 
-- structure `factor.ts` (file): Discrete factors, the tables inference algorithms manipulate. `src/lib/pgm/factor.ts:1` `mdml-engine/pgm`
+- structure `factor.ts` (file): Discrete factors, the tables inference algorithms manipulate. `src/lib/pgm/factor.ts:1` `omai-engine/pgm`
 
-- function `junctionTree`: Junction tree from a model's moral graph. `src/lib/pgm/triangulation.ts:540` `mdml-engine/pgm`
+- function `junctionTree`: Junction tree from a model's moral graph. `src/lib/pgm/triangulation.ts:540` `omai-engine/pgm`
 
 ## pgm/inference
 
-Inference algorithms for graphical models, part of `mdml-engine/pgm`: exact methods (enumeration, variable elimination, junction trees, forward-backward on chains), message passing (loopy and Gaussian belief propagation, expectation propagation), variational methods, MAP search and sampling.
+Inference algorithms for graphical models, part of `omai-engine/pgm`: exact methods (enumeration, variable elimination, junction trees, forward-backward on chains), message passing (loopy and Gaussian belief propagation, expectation propagation), variational methods, MAP search and sampling.
 
-- function `beliefPropagation`: Loopy and tree belief propagation. `src/lib/pgm/inference/belief-propagation.ts:343` `mdml-engine/pgm`
-- function `forwardBackward`: Forward-backward smoothing on chains; viterbi finds the best path. `src/lib/pgm/inference/chain.ts:118` `mdml-engine/pgm`
-- function `variableElimination`: Exact inference by variable elimination. `src/lib/pgm/inference/elimination.ts:318` `mdml-engine/pgm`
+- function `beliefPropagation`: Loopy and tree belief propagation. `src/lib/pgm/inference/belief-propagation.ts:343` `omai-engine/pgm`
+- function `forwardBackward`: Forward-backward smoothing on chains; viterbi finds the best path. `src/lib/pgm/inference/chain.ts:118` `omai-engine/pgm`
+- function `variableElimination`: Exact inference by variable elimination. `src/lib/pgm/inference/elimination.ts:318` `omai-engine/pgm`
 
 ## pgm/learning
 
 Learning graphical models from data, the `pgm.learning` namespace: parameter estimation (maximum likelihood, Bayesian and EM), structure learning (Chow-Liu, PC and hill climbing), the conditional independence tests and structure scores they use, and Markov equivalence classes of DAGs.
 
-- function `pc`: PC algorithm for structure learning. `src/lib/pgm/learning/structure.ts:504` `mdml-engine/pgm/learning`
+- function `pc`: PC algorithm for structure learning. `src/lib/pgm/learning/structure.ts:504` `omai-engine/pgm/learning`
 
-- algorithm `emAlgorithm`: EM for Bayesian-network parameters with missing data. `src/lib/pgm/learning/parameters.ts:271` `mdml-engine/pgm/learning`
+- algorithm `emAlgorithm`: EM for Bayesian-network parameters with missing data. `src/lib/pgm/learning/parameters.ts:271` `omai-engine/pgm/learning`
 
 ## pgm/models
 
-The graphical model types, part of `mdml-engine/pgm`: Bayes networks, Markov networks and factor graphs, linear-Gaussian networks and Gaussian Markov random fields, dynamic Bayes networks, hidden Markov models and linear dynamical systems, plate models, influence diagrams and conditional random fields.
+The graphical model types, part of `omai-engine/pgm`: Bayes networks, Markov networks and factor graphs, linear-Gaussian networks and Gaussian Markov random fields, dynamic Bayes networks, hidden Markov models and linear dynamical systems, plate models, influence diagrams and conditional random fields.
 
-- structure `bayesNet`: Discrete Bayesian network from nodes, parents and tables. `src/lib/pgm/models/bayes-net.ts:62` `mdml-engine/pgm`
-- structure `hiddenMarkovModel`: Hidden Markov model with categorical or Gaussian emissions. `src/lib/pgm/models/state-space.ts:64` `mdml-engine/pgm`
+- structure `bayesNet`: Discrete Bayesian network from nodes, parents and tables. `src/lib/pgm/models/bayes-net.ts:62` `omai-engine/pgm`
+- structure `hiddenMarkovModel`: Hidden Markov model with categorical or Gaussian emissions. `src/lib/pgm/models/state-space.ts:64` `omai-engine/pgm`

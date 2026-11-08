@@ -5,7 +5,7 @@
  * and `orthogonal.ts` call them directly, so a polynomial does not become a tensor and back between two steps.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { fromStorage, toFlat } from '../../tensor/index.ts'
 import { eigvals } from '../linalg/index.ts'
 
@@ -69,7 +69,7 @@ export function mulKernel(a: readonly number[], b: readonly number[]): number[] 
 export function divKernel(a: readonly number[], b: readonly number[]): { quotient: number[]; remainder: number[] } {
   const d = trimKernel(b)
   const lead = d[d.length - 1] ?? 0
-  if (lead === 0) throw new MdmlError('value', 'polydiv: division by the zero polynomial')
+  if (lead === 0) throw new OmaiError('value', 'polydiv: division by the zero polynomial')
   const r = [...a]
   const nq = a.length - d.length + 1
   if (nq <= 0) return { quotient: [0], remainder: trimKernel(r) }
@@ -88,7 +88,7 @@ export function divKernel(a: readonly number[], b: readonly number[]): { quotien
 export function companionKernel(c: readonly number[]): { readonly data: Float64Array; readonly n: number } {
   const p = trimKernel(c)
   const n = p.length - 1
-  if (n < 1) throw new MdmlError('value', 'companion: degree at least 1 is needed')
+  if (n < 1) throw new OmaiError('value', 'companion: degree at least 1 is needed')
   const lead = p[n] ?? 1
   const m = new Float64Array(n * n)
   for (let i = 1; i < n; i++) m[i * n + i - 1] = 1

@@ -1,6 +1,6 @@
 /**
  * Fail on type definitions that restate a canonical type instead of using it, so the vector, point, colour and complex
- * types stay singular (`Vec2`, `Vec3`, `Vec4` of `mdml-engine/base`):
+ * types stay singular (`Vec2`, `Vec3`, `Vec4` of `omai-engine/base`):
  *
  *   node scripts/type-definitions.ts --check
  *

@@ -5,7 +5,7 @@
  * rules as a traced algorithm that shows each step.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import {
   type Algorithm,
   type Contract,
@@ -33,7 +33,7 @@ export type Substitution = ReadonlyMap<string, Term>
  *
  * @example
  * ```ts
- * import { EMPTY_SUBSTITUTION } from 'mdml-engine/logic'
+ * import { EMPTY_SUBSTITUTION } from 'omai-engine/logic'
  * EMPTY_SUBSTITUTION.size // => 0
  * ```
  */
@@ -53,7 +53,7 @@ export interface BindingStore {
  * @returns The dereferenced term (only its top is resolved).
  * @example
  * ```ts
- * import { parseTerm, termToString, walk } from 'mdml-engine/logic'
+ * import { parseTerm, termToString, walk } from 'omai-engine/logic'
  * const s = new Map([['X', parseTerm('Y')], ['Y', parseTerm('f(Z)')]])
  * termToString(walk(parseTerm('X'), s)) // => 'f(Z)'
  * ```
@@ -77,7 +77,7 @@ export function walk(t: Term, s: Substitution | BindingStore): Term {
  * @returns The instantiated term.
  * @example
  * ```ts
- * import { applySubstitution, parseTerm, termToString } from 'mdml-engine/logic'
+ * import { applySubstitution, parseTerm, termToString } from 'omai-engine/logic'
  * termToString(applySubstitution(parseTerm('p(X, Y)'), new Map([['X', parseTerm('Y')], ['Y', parseTerm('a')]]))) // => 'p(a,a)'
  * ```
  */
@@ -113,7 +113,7 @@ export function applySubstitution(t: Term, s: Substitution | BindingStore): Term
  * @returns True when the variable occurs.
  * @example
  * ```ts
- * import { occursIn, parseTerm } from 'mdml-engine/logic'
+ * import { occursIn, parseTerm } from 'omai-engine/logic'
  * [occursIn('X', parseTerm('f(g(X))')), occursIn('X', parseTerm('f(Y)'))] // => [true, false]
  * ```
  */
@@ -190,7 +190,7 @@ function unifyInto(store: BindingStore, a: Term, b: Term, occursCheck: boolean):
  * @concept unification
  * @example
  * ```ts
- * import { applySubstitution, parseTerm, termToString, unify } from 'mdml-engine/logic'
+ * import { applySubstitution, parseTerm, termToString, unify } from 'omai-engine/logic'
  * const s = unify(parseTerm('f(X, g(Y))'), parseTerm('f(a, g(X))'))
  * termToString(applySubstitution(parseTerm('Y'), s)) // => 'a'
  * unify(parseTerm('f(a)'), parseTerm('f(b)')) // => null
@@ -215,7 +215,7 @@ export function unify(
  *
  * @example
  * ```ts
- * import { Bindings, parseTerm, termToString } from 'mdml-engine/logic'
+ * import { Bindings, parseTerm, termToString } from 'omai-engine/logic'
  * const b = new Bindings()
  * const m = b.mark()
  * b.unify(parseTerm('f(X)'), parseTerm('f(a)'))
@@ -290,7 +290,7 @@ export class Bindings implements BindingStore {
  * @concept unification
  * @example
  * ```ts
- * import { mgu, parseTerm, substitutionToString } from 'mdml-engine/logic'
+ * import { mgu, parseTerm, substitutionToString } from 'omai-engine/logic'
  * substitutionToString(mgu(parseTerm('p(X, f(Y))'), parseTerm('p(g(Z), f(a))'))) // => '{X/g(Z), Y/a}'
  * ```
  */
@@ -339,8 +339,8 @@ export interface UnifyState {
  * @concept unification
  * @example
  * ```ts
- * import { parseTerm, unifierOf, unifyAlgorithm } from 'mdml-engine/logic'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { parseTerm, unifierOf, unifyAlgorithm } from 'omai-engine/logic'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const run = runAlgorithm(unifyAlgorithm(parseTerm('f(X, g(Y))'), parseTerm('f(a, g(X))')), { maxSteps: 20 })
  * [run.status, run.steps, unifierOf(run.state)?.size] // => ['converged', 4, 2]
  * ```
@@ -420,8 +420,8 @@ export function unifyAlgorithm(a: Term, b: Term, options: UnifyOptions = {}): Al
  * @concept unification
  * @example
  * ```ts
- * import { parseTerm, unifierOf, unifyAlgorithm } from 'mdml-engine/logic'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { parseTerm, unifierOf, unifyAlgorithm } from 'omai-engine/logic'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * unifierOf(runAlgorithm(unifyAlgorithm(parseTerm('f(a)'), parseTerm('f(b)')), { maxSteps: 5 }).state) // => null
  * ```
  */
@@ -436,7 +436,7 @@ export function unifierOf(state: UnifyState): Substitution | null {
  * @returns An idempotent substitution with the same effect.
  * @example
  * ```ts
- * import { parseTerm, resolveSubstitution, substitutionToString } from 'mdml-engine/logic'
+ * import { parseTerm, resolveSubstitution, substitutionToString } from 'omai-engine/logic'
  * substitutionToString(resolveSubstitution(new Map([['X', parseTerm('f(Y)')], ['Y', parseTerm('a')]]))) // => '{X/f(a), Y/a}'
  * ```
  */
@@ -457,7 +457,7 @@ export function resolveSubstitution(s: Substitution): Substitution {
  * @returns The composition.
  * @example
  * ```ts
- * import { applySubstitution, composeSubstitutions, parseTerm, termToString } from 'mdml-engine/logic'
+ * import { applySubstitution, composeSubstitutions, parseTerm, termToString } from 'omai-engine/logic'
  * const c = composeSubstitutions(new Map([['X', parseTerm('f(Y)')]]), new Map([['Y', parseTerm('a')], ['X', parseTerm('b')]]))
  * termToString(applySubstitution(parseTerm('g(X, Y)'), c)) // => 'g(f(a),a)'
  * ```
@@ -479,7 +479,7 @@ export function composeSubstitutions(first: Substitution, second: Substitution):
  * @returns The text.
  * @example
  * ```ts
- * import { parseTerm, substitutionToString } from 'mdml-engine/logic'
+ * import { parseTerm, substitutionToString } from 'omai-engine/logic'
  * substitutionToString(new Map([['Y', parseTerm('b')], ['X', parseTerm('a')]])) // => '{X/a, Y/b}'
  * substitutionToString(null) // => 'fail'
  * ```
@@ -500,7 +500,7 @@ export function substitutionToString(s: Substitution | null): string {
  * @returns The renamed term.
  * @example
  * ```ts
- * import { parseTerm, renameTerm, termToString } from 'mdml-engine/logic'
+ * import { parseTerm, renameTerm, termToString } from 'omai-engine/logic'
  * termToString(renameTerm(parseTerm('f(X, g(Y, X))'), (n) => `${n}_1`)) // => 'f(X_1,g(Y_1,X_1))'
  * ```
  */
@@ -519,7 +519,7 @@ export function renameTerm(t: Term, rename: (name: string) => string): Term {
  * @returns The renamed clause and the next free number.
  * @example
  * ```ts
- * import { clauseToString, parseClause, renameApart } from 'mdml-engine/logic'
+ * import { clauseToString, parseClause, renameApart } from 'omai-engine/logic'
  * const r = renameApart(parseClause('p(X, Y) :- q(Y, X).'), 7)
  * [clauseToString(r.clause), r.next] // => ['p(_7,_8) :- q(_8,_7).', 9]
  * ```
@@ -550,7 +550,7 @@ export function renameApart(c: Clause, start: number): { readonly clause: Clause
  * @returns The matcher, or null.
  * @example
  * ```ts
- * import { matchTerm, parseTerm, substitutionToString } from 'mdml-engine/logic'
+ * import { matchTerm, parseTerm, substitutionToString } from 'omai-engine/logic'
  * substitutionToString(matchTerm(parseTerm('f(X, Y)'), parseTerm('f(a, Z)'))) // => '{X/a, Y/Z}'
  * matchTerm(parseTerm('f(a)'), parseTerm('f(X)')) // => null
  * ```
@@ -601,7 +601,7 @@ function identical(a: Term, b: Term): boolean {
  * @returns True for variants.
  * @example
  * ```ts
- * import { isVariant, parseTerm } from 'mdml-engine/logic'
+ * import { isVariant, parseTerm } from 'omai-engine/logic'
  * [isVariant(parseTerm('f(X,Y,X)'), parseTerm('f(A,B,A)')), isVariant(parseTerm('f(X,Y)'), parseTerm('f(A,A)'))] // => [true, false]
  * ```
  */
@@ -707,7 +707,7 @@ function mmStep(state: MMState): MMState {
  * @concept unification
  * @example
  * ```ts
- * import { parseTerm, unificationAlgorithm } from 'mdml-engine/logic'
+ * import { parseTerm, unificationAlgorithm } from 'omai-engine/logic'
  * unificationAlgorithm([{ left: parseTerm('f(X)'), right: parseTerm('f(a)') }]).name // => 'martelli-montanari'
  * ```
  */
@@ -753,11 +753,11 @@ export interface MMResult {
  * @param b - The other term (when `a` is a term).
  * @param options - A step budget (default 10000).
  * @returns The unifier, the status and the steps.
- * @throws MdmlError with code `value` when a term is given without its partner.
+ * @throws OmaiError with code `value` when a term is given without its partner.
  * @concept unification
  * @example
  * ```ts
- * import { martelliMontanari, parseTerm, substitutionToString } from 'mdml-engine/logic'
+ * import { martelliMontanari, parseTerm, substitutionToString } from 'omai-engine/logic'
  * const r = martelliMontanari(parseTerm('f(X, g(X))'), parseTerm('f(a, Y)'))
  * substitutionToString(r.unifier) // => '{X/a, Y/g(a)}'
  * r.steps.map((s) => s.rule) // => ['decompose', 'eliminate', 'swap', 'eliminate', 'solved']
@@ -772,7 +772,7 @@ export function martelliMontanari(
   let equations: readonly Equation[]
   if (Array.isArray(a)) equations = a as readonly Equation[]
   else {
-    if (b === undefined) throw new MdmlError('value', 'martelliMontanari: two terms or a list of equations')
+    if (b === undefined) throw new OmaiError('value', 'martelliMontanari: two terms or a list of equations')
     equations = [{ left: a as Term, right: b }]
   }
   const steps: MMStep[] = []
@@ -800,7 +800,7 @@ export function martelliMontanari(
  * @returns The restricted, resolved substitution.
  * @example
  * ```ts
- * import { parseTerm, restrictSubstitution, substitutionToString } from 'mdml-engine/logic'
+ * import { parseTerm, restrictSubstitution, substitutionToString } from 'omai-engine/logic'
  * substitutionToString(restrictSubstitution(new Map([['X', parseTerm('f(Y)')], ['Y', parseTerm('b')]]), parseTerm('p(X)'))) // => '{X/f(b)}'
  * ```
  */

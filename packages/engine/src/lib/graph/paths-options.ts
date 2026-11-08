@@ -5,7 +5,7 @@
  * from a configuration.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import {
   choice,
   dict,
@@ -76,7 +76,7 @@ function hopsToTarget(g: Graph, target: number): Int32Array {
  * @concept shortest-paths
  * @example
  * ```ts
- * import { gridGraph, pathHeuristics } from 'mdml-engine/graph'
+ * import { gridGraph, pathHeuristics } from 'omai-engine/graph'
  * const h = pathHeuristics.make({ kind: 'hops' })(gridGraph(3, 3), 8, true)
  * [h(0), h(8)] // => [4, 0]
  * ```
@@ -193,7 +193,7 @@ function method(
  * @concept shortest-paths
  * @example
  * ```ts
- * import { graph, shortestPathMethods } from 'mdml-engine/graph'
+ * import { graph, shortestPathMethods } from 'omai-engine/graph'
  * shortestPathMethods.make({ kind: 'dijkstra' })(graph([[0, 1]]), 0).name // => 'graph/dijkstra'
  * ```
  */
@@ -220,7 +220,7 @@ export const shortestPathMethods: OptionTable<SingleSourceBuilder, SingleSourceP
         weight: real(1, 10, { default: 1, label: 'heuristic weight (1 is A*)' }),
       }),
       (k) => (g, source, options) => {
-        if (options?.target === undefined) throw new MdmlError('value', 'shortestPathMethods: a-star needs a target')
+        if (options?.target === undefined) throw new OmaiError('value', 'shortestPathMethods: a-star needs a target')
         const target = nodeIndex(g, options.target)
         const weighted = options.weighted !== false
         const heuristic = pathHeuristics.make({ kind: k('heuristic') as string, count: k('landmarks') as number })(

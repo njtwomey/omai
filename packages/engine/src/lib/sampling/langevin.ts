@@ -6,7 +6,7 @@
  */
 
 import { valueAndGrad } from '../autodiff/index.ts'
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import { ddot, dgemv } from '../numerics/linalg/index.ts'
 import { foldIn, type Key, normal, subsample } from '../random/index.ts'
 import { add, asTensor, fromStorage, mul, type Tensor, type TensorLike, toFlat, type Value } from '../tensor/index.ts'
@@ -51,7 +51,7 @@ function preconditioner(a: TensorLike | number | undefined, dim: number, name: s
   }
   const diag = vectorOf(a ?? 1, dim, name)
   if (!diag.every((v) => v > 0 && Number.isFinite(v))) {
-    throw new MdmlError('value', `${name}: the preconditioner must be positive definite`)
+    throw new OmaiError('value', `${name}: the preconditioner must be positive definite`)
   }
   return {
     apply: (v) => v.map((x, i) => x * (diag[i] ?? 1)),
@@ -65,9 +65,9 @@ function preconditioner(a: TensorLike | number | undefined, dim: number, name: s
 }
 
 function langevinState(target: LogDensity, position: ArrayLike<number>, name: string): LangevinState {
-  if (!target.hasGradient) throw new MdmlError('value', `${name}: the target has no gradient`)
+  if (!target.hasGradient) throw new OmaiError('value', `${name}: the target has no gradient`)
   if (position.length !== target.dim) {
-    throw new MdmlError('shape', `${name}: the position has ${position.length} values, need ${target.dim}`)
+    throw new OmaiError('shape', `${name}: the position has ${position.length} values, need ${target.dim}`)
   }
   const x = Float64Array.from(position)
   const r = target.valueAndGrad(x)
@@ -98,15 +98,15 @@ function logTransition(to: Float64Array, from: LangevinState, eps: number, pre: 
  * @param target - The target (with a gradient).
  * @param options - Step size and preconditioner.
  * @returns The kernel.
- * @throws MdmlError with code `value` for a target without a gradient, a non-positive step size or a
+ * @throws OmaiError with code `value` for a target without a gradient, a non-positive step size or a
  *   preconditioner that is not positive definite.
  * @concept langevin-monte-carlo
  * @reference G. O. Roberts and R. L. Tweedie, Exponential convergence of Langevin distributions and their discrete
  *   approximations (Bernoulli 1996).
  * @example
  * ```ts
- * import { malaKernel, numericTarget } from 'mdml-engine/sampling'
- * import { key } from 'mdml-engine/random'
+ * import { malaKernel, numericTarget } from 'omai-engine/sampling'
+ * import { key } from 'omai-engine/random'
  * const t = numericTarget((x) => -0.5 * (x[0] ?? 0) ** 2, 1, { grad: (x) => [-(x[0] ?? 0)] })
  * const k = malaKernel(t, { stepSize: 0.1 })
  * k.step(key(0), k.init([0.2])).info.acceptanceRate > 0.9 // => true
@@ -147,14 +147,14 @@ export function malaKernel(target: LogDensity, options: LangevinOptions): MCMCKe
  * @param target - The target (with a gradient).
  * @param options - Step size and preconditioner.
  * @returns The kernel (acceptance rate always 1).
- * @throws MdmlError with code `value` for a target without a gradient or a non-positive step size.
+ * @throws OmaiError with code `value` for a target without a gradient or a non-positive step size.
  * @concept langevin-monte-carlo
  * @reference A. S. Dalalyan, Theoretical guarantees for approximate sampling from smooth and log-concave densities
  *   (JRSS B 2017).
  * @example
  * ```ts
- * import { numericTarget, ulaKernel } from 'mdml-engine/sampling'
- * import { key } from 'mdml-engine/random'
+ * import { numericTarget, ulaKernel } from 'omai-engine/sampling'
+ * import { key } from 'omai-engine/random'
  * const t = numericTarget((x) => -0.5 * (x[0] ?? 0) ** 2, 1, { grad: (x) => [-(x[0] ?? 0)] })
  * const k = ulaKernel(t, { stepSize: 0.1 })
  * k.step(key(0), k.init([0.2])).info.accepted // => true
@@ -191,17 +191,17 @@ export type StochasticGradient = (key: Key, x: Float64Array) => ArrayLike<number
  * @param b - The offset (default 1).
  * @param gamma - The decay exponent (default 0.55).
  * @returns The schedule t -> eps_t.
- * @throws MdmlError with code `value` for a non-positive scale or offset, or gamma outside (0, 1].
+ * @throws OmaiError with code `value` for a non-positive scale or offset, or gamma outside (0, 1].
  * @concept stochastic-gradient-mcmc
  * @example
  * ```ts
- * import { polynomialStepSize } from 'mdml-engine/sampling'
+ * import { polynomialStepSize } from 'omai-engine/sampling'
  * polynomialStepSize(1, 1, 0.5)(3) // => 0.5
  * ```
  */
 export function polynomialStepSize(a: number, b = 1, gamma = 0.55): (t: number) => number {
   if (!(a > 0 && b > 0 && gamma > 0 && gamma <= 1)) {
-    throw new MdmlError('value', 'polynomialStepSize: need a > 0, b > 0 and gamma in (0, 1]')
+    throw new OmaiError('value', 'polynomialStepSize: need a > 0, b > 0 and gamma in (0, 1]')
   }
   return (t) => a * (b + t) ** -gamma
 }
@@ -231,13 +231,13 @@ export interface SGLDOptions {
  * @param dim - The dimension.
  * @param options - Step size or schedule, temperature, and a target for traced log densities.
  * @returns The kernel (acceptance rate always 1).
- * @throws MdmlError with code `value` for a non-positive constant step size or temperature.
+ * @throws OmaiError with code `value` for a non-positive constant step size or temperature.
  * @concept stochastic-gradient-mcmc
  * @reference M. Welling and Y. W. Teh, Bayesian learning via stochastic gradient Langevin dynamics (ICML 2011).
  * @example
  * ```ts
- * import { sgldKernel } from 'mdml-engine/sampling'
- * import { key } from 'mdml-engine/random'
+ * import { sgldKernel } from 'omai-engine/sampling'
+ * import { key } from 'omai-engine/random'
  * const k = sgldKernel((_, x) => [-(x[0] ?? 0)], 1, { stepSize: 0.01 })
  * k.step(key(0), k.init([1])).state.t // => 1
  * ```
@@ -247,7 +247,7 @@ export function sgldKernel(gradient: StochasticGradient, dim: number, options: S
     typeof options.stepSize === 'number' ? ((() => options.stepSize) as (t: number) => number) : options.stepSize
   if (typeof options.stepSize === 'number') checkStepSize(options.stepSize, 'sgldKernel')
   const temperature = options.temperature ?? 1
-  if (!(temperature > 0)) throw new MdmlError('value', 'sgldKernel: the temperature must be positive')
+  if (!(temperature > 0)) throw new OmaiError('value', 'sgldKernel: the temperature must be positive')
   const t = options.target
   const density = (x: Float64Array): number => (t === undefined ? Number.NaN : t.logDensity(x))
   return {
@@ -255,7 +255,7 @@ export function sgldKernel(gradient: StochasticGradient, dim: number, options: S
     dim,
     config: { dim, temperature, stepSize: typeof options.stepSize === 'number' ? options.stepSize : 'schedule' },
     init: (position) => {
-      if (position.length !== dim) throw new MdmlError('shape', `sgldKernel: the position needs ${dim} values`)
+      if (position.length !== dim) throw new OmaiError('shape', `sgldKernel: the position needs ${dim} values`)
       const x = Float64Array.from(position)
       return { position: x, logDensity: density(x), t: 0 }
     },
@@ -291,13 +291,13 @@ export interface MinibatchOptions {
  *
  * @param options - Prior, batched likelihood, data size and batch size.
  * @returns The stochastic gradient estimator (for {@link sgldKernel}).
- * @throws MdmlError with code `value` unless 1 <= batchSize <= numData.
+ * @throws OmaiError with code `value` unless 1 <= batchSize <= numData.
  * @concept stochastic-gradient-mcmc
  * @example
  * ```ts
- * import { minibatchGradient } from 'mdml-engine/sampling'
- * import { key } from 'mdml-engine/random'
- * import { mul, neg, square, sub, sum, tensor, take } from 'mdml-engine/tensor'
+ * import { minibatchGradient } from 'omai-engine/sampling'
+ * import { key } from 'omai-engine/random'
+ * import { mul, neg, square, sub, sum, tensor, take } from 'omai-engine/tensor'
  * const y = tensor([1, 2, 3, 4])
  * const g = minibatchGradient({
  *   logPrior: () => tensor(0),
@@ -312,7 +312,7 @@ export interface MinibatchOptions {
 export function minibatchGradient(options: MinibatchOptions): StochasticGradient {
   const { numData: n, batchSize: b } = options
   if (!(Number.isInteger(n) && Number.isInteger(b) && b >= 1 && b <= n)) {
-    throw new MdmlError('value', 'minibatchGradient: need integers 1 <= batchSize <= numData')
+    throw new OmaiError('value', 'minibatchGradient: need integers 1 <= batchSize <= numData')
   }
   const scale = n / b
   return (key, x) => {
@@ -339,7 +339,7 @@ export function minibatchGradient(options: MinibatchOptions): StochasticGradient
  * @reference Q. Liu and D. Wang, Stein variational gradient descent (NeurIPS 2016).
  * @example
  * ```ts
- * import { svgdDirection } from 'mdml-engine/sampling'
+ * import { svgdDirection } from 'omai-engine/sampling'
  * // One particle: only the density term, k(x, x) grad log pi(x).
  * Array.from(svgdDirection(new Float64Array([1]), new Float64Array([-1]), 1, 1)) // => [-1]
  * ```
@@ -374,18 +374,18 @@ export function svgdDirection(
  * @param particles - The particles, row-major `[n, dim]` (n >= 2).
  * @param dim - The dimension.
  * @returns The bandwidth.
- * @throws MdmlError with code `value` for fewer than two particles.
+ * @throws OmaiError with code `value` for fewer than two particles.
  * @concept stein-variational-gradient-descent
  * @example
  * ```ts
- * import { medianBandwidth } from 'mdml-engine/sampling'
+ * import { medianBandwidth } from 'omai-engine/sampling'
  * // One pair at distance 2: 2^2 / log 2.
  * medianBandwidth(new Float64Array([0, 2]), 1) === 4 / Math.log(2) // => true
  * ```
  */
 export function medianBandwidth(particles: Float64Array, dim: number): number {
   const n = particles.length / dim
-  if (n < 2) throw new MdmlError('value', 'medianBandwidth: need at least two particles')
+  if (n < 2) throw new OmaiError('value', 'medianBandwidth: need at least two particles')
   const d = new Float64Array((n * (n - 1)) / 2)
   let p = 0
   for (let i = 1; i < n; i++)
@@ -431,13 +431,13 @@ export interface SVGDOptions {
  * @param initialParticles - The starting particles `[n, dim]` (n >= 2).
  * @param options - Step size, bandwidth, optimizer and tolerance.
  * @returns The algorithm.
- * @throws MdmlError with code `shape` for particles that are not `[n, dim]`, and `value` for a target without a
+ * @throws OmaiError with code `shape` for particles that are not `[n, dim]`, and `value` for a target without a
  *   gradient or a non-positive step size.
  * @concept stein-variational-gradient-descent
  * @example
  * ```ts
- * import { numericTarget, svgdAlgorithm } from 'mdml-engine/sampling'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { numericTarget, svgdAlgorithm } from 'omai-engine/sampling'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const t = numericTarget((x) => -0.5 * (x[0] ?? 0) ** 2, 1, { grad: (x) => [-(x[0] ?? 0)] })
  * runAlgorithm(svgdAlgorithm(t, [[-1], [0], [1]]), { maxSteps: 5 }).steps // => 5
  * ```
@@ -447,11 +447,11 @@ export function svgdAlgorithm(
   initialParticles: TensorLike,
   options: SVGDOptions = {},
 ): Algorithm<SVGDState> {
-  if (!target.hasGradient) throw new MdmlError('value', 'svgdAlgorithm: the target has no gradient')
+  if (!target.hasGradient) throw new OmaiError('value', 'svgdAlgorithm: the target has no gradient')
   const x0 = asTensor(initialParticles) as Tensor
   const dim = target.dim
   if (x0.shape.length !== 2 || x0.shape[1] !== dim || (x0.shape[0] ?? 0) < 2) {
-    throw new MdmlError('shape', `svgdAlgorithm: particles must be [n >= 2, ${dim}]`)
+    throw new OmaiError('shape', `svgdAlgorithm: particles must be [n >= 2, ${dim}]`)
   }
   const n = x0.shape[0] ?? 0
   const eps = options.stepSize ?? 0.1
@@ -530,7 +530,7 @@ export function svgdAlgorithm(
  * @concept stein-variational-gradient-descent
  * @example
  * ```ts
- * import { numericTarget, svgd } from 'mdml-engine/sampling'
+ * import { numericTarget, svgd } from 'omai-engine/sampling'
  * const t = numericTarget((x) => -0.5 * ((x[0] ?? 0) - 3) ** 2, 1, { grad: (x) => [3 - (x[0] ?? 0)] })
  * const r = svgd(t, [[-1], [0], [1], [2]], { maxIter: 500 })
  * const m = r.particles.data.reduce((a, b) => a + b, 0) / 4

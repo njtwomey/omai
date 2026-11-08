@@ -5,8 +5,8 @@
  */
 
 import type { EChartsOption } from 'echarts'
-import { maxOf } from 'mdml-engine/base'
-import type { ComponentsRecord } from 'mdml-engine/exposition'
+import { maxOf } from 'omai-engine/base'
+import type { ComponentsRecord } from 'omai-engine/exposition'
 import { bars } from '../charts/bars.ts'
 import { type Panel, subplots } from '../charts/compose.ts'
 import { lines } from '../charts/lines.ts'

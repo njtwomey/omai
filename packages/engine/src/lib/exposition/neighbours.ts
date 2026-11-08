@@ -25,10 +25,10 @@ export interface NeighbourRecord {
  *
  * @param record - The record without its `kind`.
  * @returns The record.
- * @throws MdmlError `shape` when indices and distances disagree.
+ * @throws OmaiError `shape` when indices and distances disagree.
  * @example
  * ```ts
- * import { neighbourRecord } from 'mdml-engine/exposition'
+ * import { neighbourRecord } from 'omai-engine/exposition'
  * neighbourRecord({ indices: [[2, 0]], distances: [[0.1, 0.4]], metric: 'euclidean' }).indices // => [[2, 0]]
  * ```
  */
@@ -58,10 +58,10 @@ export interface LikelihoodTable {
  *
  * @param table - The record without its `kind`.
  * @returns The record.
- * @throws MdmlError `shape` when the table does not match classes and features.
+ * @throws OmaiError `shape` when the table does not match classes and features.
  * @example
  * ```ts
- * import { likelihoodTable } from 'mdml-engine/exposition'
+ * import { likelihoodTable } from 'omai-engine/exposition'
  * likelihoodTable({ classes: ['a', 'b'], features: ['x'], logPriors: [-0.7, -0.7], contributions: [[-1], [-2]] }).classes // => ['a', 'b']
  * ```
  */

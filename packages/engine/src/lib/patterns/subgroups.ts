@@ -9,7 +9,7 @@
  * @index function Subgroup discovery with quality functions and beam search.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import {
   conjunctions,
   type RefinementProblem,
@@ -48,7 +48,7 @@ export type SubgroupMeasure = 'wracc' | 'klosgen' | 'relative-accuracy' | 'lift'
  * @returns A function of the counts.
  * @example
  * ```ts
- * import { subgroupQuality } from 'mdml-engine/patterns'
+ * import { subgroupQuality } from 'omai-engine/patterns'
  * subgroupQuality('wracc')({ size: 20, positives: 15, total: 100, totalPositives: 30 }) // => 0.09
  * ```
  */
@@ -88,10 +88,10 @@ export function subgroupQuality(measure: SubgroupMeasure, a?: number): (counts: 
  * @param positive - 0/1 per row: the target.
  * @param weights - Row weights (default 1 each).
  * @returns The counts.
- * @throws MdmlError with code `shape` when the lengths differ.
+ * @throws OmaiError with code `shape` when the lengths differ.
  * @example
  * ```ts
- * import { subgroupCounts } from 'mdml-engine/patterns'
+ * import { subgroupCounts } from 'omai-engine/patterns'
  * subgroupCounts([1, 1, 0, 0], [1, 0, 1, 0]) // => { size: 2, positives: 1, total: 4, totalPositives: 2 }
  * ```
  */
@@ -102,7 +102,7 @@ export function subgroupCounts(
 ): SubgroupCounts {
   const n = positive.length
   if (coverage.length !== n || (weights !== undefined && weights.length !== n)) {
-    throw new MdmlError('shape', 'subgroupCounts: lengths differ')
+    throw new OmaiError('shape', 'subgroupCounts: lengths differ')
   }
   let size = 0
   let positives = 0
@@ -155,7 +155,7 @@ export interface ColumnSelectorOptions {
  * @returns The selectors, with 0/1 coverages, in column order.
  * @example
  * ```ts
- * import { columnSelectors } from 'mdml-engine/patterns'
+ * import { columnSelectors } from 'omai-engine/patterns'
  * columnSelectors({ colour: ['r', 'g', 'r'], size: [1, 2, 3, 4].slice(0, 3) }, { bins: 2 }).map((s) => s.name) // => ['colour=g', 'colour=r', 'size<=1.5', 'size>1.5']
  * ```
  */
@@ -244,7 +244,7 @@ function numericQuality(values: ArrayLike<number>, a: number): (coverage: Uint8A
  * @returns The problem.
  * @example
  * ```ts
- * import { subgroupProblem } from 'mdml-engine/patterns'
+ * import { subgroupProblem } from 'omai-engine/patterns'
  * const sel = [{ name: 'a', covers: [1, 1, 0, 0] }]
  * subgroupProblem(sel, { kind: 'binary', positive: [1, 1, 0, 0] }).quality([0]) // => 0.25
  * ```
@@ -280,10 +280,10 @@ export function subgroupProblem(
  * @param target - The binary or numeric target.
  * @param options - The measure, number of results, depth, search kind and width, minimum size.
  * @returns The subgroups, best first.
- * @throws MdmlError with code `shape` when the target and selectors differ in length.
+ * @throws OmaiError with code `shape` when the target and selectors differ in length.
  * @example
  * ```ts
- * import { columnSelectors, discoverSubgroups } from 'mdml-engine/patterns'
+ * import { columnSelectors, discoverSubgroups } from 'omai-engine/patterns'
  * const sel = columnSelectors({ a: ['x', 'x', 'y', 'y', 'y', 'x'], b: ['p', 'q', 'p', 'q', 'p', 'q'] })
  * const best = discoverSubgroups(sel, { kind: 'binary', positive: [1, 1, 0, 0, 0, 1] }, { k: 1, depth: 1 })
  * best[0]?.description // => 'a=x'
@@ -465,10 +465,10 @@ function observeCovering(
  * @param positive - The binary target, 0/1 per row.
  * @param options - Rule count, depth, beam width, weight scheme.
  * @returns The algorithm.
- * @throws MdmlError with code `shape` when a selector's length differs from the target's.
+ * @throws OmaiError with code `shape` when a selector's length differs from the target's.
  * @example
  * ```ts
- * import { cn2SdAlgorithm } from 'mdml-engine/patterns'
+ * import { cn2SdAlgorithm } from 'omai-engine/patterns'
  * cn2SdAlgorithm([{ name: 'a', covers: [1, 0] }], [1, 0]).name // => 'cn2-sd'
  * ```
  */
@@ -479,7 +479,7 @@ export function cn2SdAlgorithm(
 ): Algorithm<CoveringSubgroupState> {
   const n = positive.length
   if (selectors.some((s) => s.covers.length !== n))
-    throw new MdmlError('shape', 'cn2Sd: selector lengths differ from the target')
+    throw new OmaiError('shape', 'cn2Sd: selector lengths differ from the target')
   const maxRules = options.rules ?? 10
   const scheme = options.scheme ?? 'multiplicative'
   const gamma = options.gamma ?? 0.5
@@ -521,10 +521,10 @@ export function cn2SdAlgorithm(
  * @param positive - The binary target, 0/1 per row.
  * @param options - Rule count, depth, minimum support and confidence.
  * @returns The algorithm.
- * @throws MdmlError with code `shape` when a selector's length differs from the target's.
+ * @throws OmaiError with code `shape` when a selector's length differs from the target's.
  * @example
  * ```ts
- * import { aprioriSdAlgorithm } from 'mdml-engine/patterns'
+ * import { aprioriSdAlgorithm } from 'omai-engine/patterns'
  * aprioriSdAlgorithm([{ name: 'a', covers: [1, 0] }], [1, 0]).name // => 'apriori-sd'
  * ```
  */
@@ -535,7 +535,7 @@ export function aprioriSdAlgorithm(
 ): Algorithm<CoveringSubgroupState> {
   const n = positive.length
   if (selectors.some((s) => s.covers.length !== n))
-    throw new MdmlError('shape', 'aprioriSd: selector lengths differ from the target')
+    throw new OmaiError('shape', 'aprioriSd: selector lengths differ from the target')
   const maxRules = options.rules ?? 10
   const depth = options.depth ?? 3
   const totalPositives = Array.from(positive).filter((v) => v > 0).length
@@ -625,10 +625,10 @@ function split(options: CoveringRunOptions): { opts: CoveringSubgroupOptions; ru
  * @param positive - The binary target.
  * @param options - Rule count, depth, beam width, weight scheme and tracing.
  * @returns The rules in the order chosen, with unweighted sizes and positives and the weighted quality at choice.
- * @throws MdmlError with code `shape` when a selector's length differs from the target's.
+ * @throws OmaiError with code `shape` when a selector's length differs from the target's.
  * @example
  * ```ts
- * import { columnSelectors, cn2Sd } from 'mdml-engine/patterns'
+ * import { columnSelectors, cn2Sd } from 'omai-engine/patterns'
  * const sel = columnSelectors({ a: ['x', 'x', 'x', 'y', 'y', 'y'], b: ['p', 'q', 'q', 'p', 'q', 'q'] })
  * cn2Sd(sel, [1, 1, 1, 0, 0, 0], { rules: 1, depth: 1 })[0]?.description // => 'a=x'
  * ```
@@ -649,10 +649,10 @@ export function cn2Sd(
  * @param positive - The binary target.
  * @param options - Rule count, depth, minimum support and confidence, and tracing.
  * @returns The rules in the order chosen.
- * @throws MdmlError with code `shape` when a selector's length differs from the target's.
+ * @throws OmaiError with code `shape` when a selector's length differs from the target's.
  * @example
  * ```ts
- * import { columnSelectors, aprioriSd } from 'mdml-engine/patterns'
+ * import { columnSelectors, aprioriSd } from 'omai-engine/patterns'
  * const sel = columnSelectors({ a: ['x', 'x', 'x', 'y', 'y', 'y'], b: ['p', 'q', 'q', 'p', 'q', 'q'] })
  * aprioriSd(sel, [1, 1, 1, 0, 0, 0], { rules: 1, depth: 1, minSupport: 0.5 })[0]?.description // => 'a=x'
  * ```

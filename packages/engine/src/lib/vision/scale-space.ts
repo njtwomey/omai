@@ -70,7 +70,7 @@ export interface ScaleSpaceOptions {
  * @concept scale-space
  * @example
  * ```ts
- * import { buildScaleSpace } from 'mdml-engine/vision'
+ * import { buildScaleSpace } from 'omai-engine/vision'
  * const img = Array.from({ length: 32 }, (_, i) => Array.from({ length: 32 }, (_, j) => Math.sin(i / 3) * Math.cos(j / 4)))
  * buildScaleSpace(img).dogs.map((o) => o.length) // => [5, 5, 5]
  * ```
@@ -183,7 +183,7 @@ function orientations(g: ScalePlane, y: number, x: number, scale: number): numbe
  * @concept sift
  * @example
  * ```ts
- * import { detectSift } from 'mdml-engine/vision'
+ * import { detectSift } from 'omai-engine/vision'
  * const img = Array.from({ length: 32 }, (_, i) => Array.from({ length: 32 }, (_, j) => Math.exp(-((i - 16) ** 2 + (j - 16) ** 2) / 18)))
  * const k = detectSift(img)[0]
  * [Math.round(k.x), Math.round(k.y)] // => [16, 16]

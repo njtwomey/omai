@@ -7,7 +7,7 @@
  */
 
 import { grad } from '../autodiff/index.ts'
-import { MdmlError, maxOf } from '../base/index.ts'
+import { maxOf, OmaiError } from '../base/index.ts'
 import {
   abs,
   asTensor,
@@ -55,7 +55,7 @@ const perAxis = (v: number | readonly number[] | undefined, d: number, fallback:
  * @reference Araujo, Norris and Sim (2019), Computing receptive fields of convolutional neural networks. Distill.
  * @example
  * ```ts
- * import { receptiveField } from 'mdml-engine/nn'
+ * import { receptiveField } from 'omai-engine/nn'
  * receptiveField([{ kernel: 3 }, { kernel: 3, stride: 2 }, { kernel: 3 }]).at(-1)?.size // => [9]
  * ```
  */
@@ -100,7 +100,7 @@ export function receptiveField(layers: readonly ConvLayerSpec[], dims?: number):
  * @returns The number of input units one output unit depends on.
  * @example
  * ```ts
- * import { receptiveFieldSize } from 'mdml-engine/nn'
+ * import { receptiveFieldSize } from 'omai-engine/nn'
  * receptiveFieldSize([1, 2, 4, 8].map((dilation) => ({ kernel: 2, dilation }))) // => 16
  * ```
  */
@@ -130,13 +130,13 @@ const geometry = (m: unknown): Geometry | undefined => {
  * @returns The specifications, input first.
  * @example
  * ```ts
- * import { layerSpecs, Conv1d, Sequential, ReLU } from 'mdml-engine/nn'
+ * import { layerSpecs, Conv1d, Sequential, ReLU } from 'omai-engine/nn'
  * layerSpecs(new Sequential(new Conv1d(1, 2, 3, { dilation: 2 }), new ReLU())) // => [{ kernel: [3], stride: [1], dilation: [2], padding: [0] }]
  * ```
  */
 export function layerSpecs(module: Module<never, unknown>): ConvLayerSpec[] {
   const kind = module.kind
-  if (/Transpose/.test(kind)) throw new MdmlError('value', `layerSpecs: ${kind} is not supported`)
+  if (/Transpose/.test(kind)) throw new OmaiError('value', `layerSpecs: ${kind} is not supported`)
   const g = geometry(module)
   if (g !== undefined) {
     return [
@@ -151,7 +151,7 @@ export function layerSpecs(module: Module<never, unknown>): ConvLayerSpec[] {
   const children = module.children()
   if (children.length > 0) return children.flatMap(([, child]) => layerSpecs(child))
   if (/Attention|LSTM|GRU|RNN|Linear|Embedding/.test(kind))
-    throw new MdmlError('value', `layerSpecs: ${kind} has no finite receptive field`)
+    throw new OmaiError('value', `layerSpecs: ${kind} has no finite receptive field`)
   return []
 }
 
@@ -162,7 +162,7 @@ export function layerSpecs(module: Module<never, unknown>): ConvLayerSpec[] {
  * @returns The levels, as {@link receptiveField}.
  * @example
  * ```ts
- * import { receptiveFieldOf, Conv2d, Sequential } from 'mdml-engine/nn'
+ * import { receptiveFieldOf, Conv2d, Sequential } from 'omai-engine/nn'
  * receptiveFieldOf(new Sequential(new Conv2d(1, 4, 3), new Conv2d(4, 4, 3))).at(-1)?.size // => [5, 5]
  * ```
  */
@@ -182,14 +182,14 @@ export function receptiveFieldOf(module: Module<never, unknown>): ReceptiveField
  * @reference Luo, Li, Urtasun and Zemel (2016), Understanding the effective receptive field in deep convolutional neural networks.
  * @example
  * ```ts
- * import { effectiveReceptiveField } from 'mdml-engine/nn'
- * import { mul, sum, toArray } from 'mdml-engine/tensor'
+ * import { effectiveReceptiveField } from 'omai-engine/nn'
+ * import { mul, sum, toArray } from 'omai-engine/tensor'
  * toArray(effectiveReceptiveField((x) => mul(x, 2), [1, 2], 0)) // => [1, 0]
  * ```
  */
 export function effectiveReceptiveField(f: (x: Value) => Value, input: TensorLike, unit: number): Value {
   const x = asTensor(input) as Tensor
-  if (sizeOf(f(x).shape) <= unit) throw new MdmlError('value', `effectiveReceptiveField: no output unit ${unit}`)
+  if (sizeOf(f(x).shape) <= unit) throw new OmaiError('value', `effectiveReceptiveField: no output unit ${unit}`)
   const g = grad((v: Value) => take(reshape(f(v), [-1]), unit, 0))(x) as Value
   const a = abs(g)
   return div(a, sum(a))

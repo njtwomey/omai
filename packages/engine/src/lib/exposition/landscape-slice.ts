@@ -6,7 +6,7 @@
  * iterate it has reached.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { seal } from './_check.ts'
 
 /** The iterates of an optimiser in the coordinates of a slice. */
@@ -62,11 +62,11 @@ export interface LandscapeSlice {
  *
  * @param record - The record without its `kind`.
  * @returns The record.
- * @throws MdmlError `shape` when the curve or the grid does not match the axes, a coordinate has the wrong number of
+ * @throws OmaiError `shape` when the curve or the grid does not match the axes, a coordinate has the wrong number of
  *   entries or the axes do not match `dims`; `value` when a grid is not increasing or a value is not finite.
  * @example
  * ```ts
- * import { landscapeSlice } from 'mdml-engine/exposition'
+ * import { landscapeSlice } from 'omai-engine/exposition'
  * const r = landscapeSlice({ dims: 1, axes: ['step'], x: [0, 1, 2], curve: [3, 1, 2], paths: [{ coords: [[0], [1]] }] })
  * r.curve // => [3, 1, 2]
  * ```
@@ -74,42 +74,42 @@ export interface LandscapeSlice {
 export function landscapeSlice(record: Omit<LandscapeSlice, 'kind'>): LandscapeSlice {
   const { dims, x, y, curve, grid } = record
   if (record.axes.length !== dims)
-    throw new MdmlError('shape', `landscapeSlice: ${record.axes.length} axes for ${dims} directions`)
+    throw new OmaiError('shape', `landscapeSlice: ${record.axes.length} axes for ${dims} directions`)
   const increasing = (name: string, a: readonly number[]): void => {
-    if (a.length < 2) throw new MdmlError('shape', `landscapeSlice: ${name} needs at least two points`)
+    if (a.length < 2) throw new OmaiError('shape', `landscapeSlice: ${name} needs at least two points`)
     for (let k = 0; k < a.length; k++) {
-      if (!Number.isFinite(a[k])) throw new MdmlError('value', `landscapeSlice: ${name}[${k}] is not finite`)
+      if (!Number.isFinite(a[k])) throw new OmaiError('value', `landscapeSlice: ${name}[${k}] is not finite`)
       if (k > 0 && (a[k] as number) <= (a[k - 1] as number))
-        throw new MdmlError('value', `landscapeSlice: ${name} is not increasing at ${k}`)
+        throw new OmaiError('value', `landscapeSlice: ${name} is not increasing at ${k}`)
     }
   }
   increasing('x', x)
   if (dims === 1) {
     if (curve === undefined || curve.length !== x.length)
-      throw new MdmlError('shape', `landscapeSlice: curve needs ${x.length} values`)
+      throw new OmaiError('shape', `landscapeSlice: curve needs ${x.length} values`)
     if (y !== undefined || grid !== undefined)
-      throw new MdmlError('shape', 'landscapeSlice: a curve has neither y nor a grid')
+      throw new OmaiError('shape', 'landscapeSlice: a curve has neither y nor a grid')
   } else {
     if (y === undefined || grid === undefined)
-      throw new MdmlError('shape', 'landscapeSlice: a plane needs y and a grid')
+      throw new OmaiError('shape', 'landscapeSlice: a plane needs y and a grid')
     increasing('y', y)
-    if (grid.length !== y.length) throw new MdmlError('shape', `landscapeSlice: grid needs ${y.length} rows`)
+    if (grid.length !== y.length) throw new OmaiError('shape', `landscapeSlice: grid needs ${y.length} rows`)
     for (const [i, row] of grid.entries())
       if (row.length !== x.length)
-        throw new MdmlError('shape', `landscapeSlice: grid[${i}] has ${row.length} entries, expected ${x.length}`)
-    if (curve !== undefined) throw new MdmlError('shape', 'landscapeSlice: a plane has no curve')
+        throw new OmaiError('shape', `landscapeSlice: grid[${i}] has ${row.length} entries, expected ${x.length}`)
+    if (curve !== undefined) throw new OmaiError('shape', 'landscapeSlice: a plane has no curve')
   }
   if (record.at !== undefined && record.at.length !== dims)
-    throw new MdmlError('shape', `landscapeSlice: at has ${record.at.length} entries, expected ${dims}`)
+    throw new OmaiError('shape', `landscapeSlice: at has ${record.at.length} entries, expected ${dims}`)
   for (const [k, p] of (record.paths ?? []).entries()) {
     for (const [i, c] of p.coords.entries())
       if (c.length !== dims)
-        throw new MdmlError(
+        throw new OmaiError(
           'shape',
           `landscapeSlice: paths[${k}].coords[${i}] has ${c.length} entries, expected ${dims}`,
         )
     if (p.loss !== undefined && p.loss.length !== p.coords.length)
-      throw new MdmlError(
+      throw new OmaiError(
         'shape',
         `landscapeSlice: paths[${k}].loss has ${p.loss.length} entries, expected ${p.coords.length}`,
       )
@@ -129,7 +129,7 @@ export function landscapeSlice(record: Omit<LandscapeSlice, 'kind'>): LandscapeS
  * @returns The record.
  * @example
  * ```ts
- * import { sampleLandscape } from 'mdml-engine/exposition'
+ * import { sampleLandscape } from 'omai-engine/exposition'
  * sampleLandscape((a) => (a - 1) ** 2, [0, 1, 2]).curve // => [1, 0, 1]
  * sampleLandscape((a, b) => a * b, [0, 1], [0, 1, 2]).grid // => [[0, 0], [0, 1], [0, 2]]
  * ```
@@ -155,10 +155,10 @@ export function sampleLandscape(
  * @param origin - The parameters the slice is centred on.
  * @param directions - One direction for a curve, two for a plane.
  * @returns coords[k] as `[alpha]` or `[alpha, beta]`.
- * @throws MdmlError `shape` when a vector's length differs from the origin's.
+ * @throws OmaiError `shape` when a vector's length differs from the origin's.
  * @example
  * ```ts
- * import { sliceCoordinates } from 'mdml-engine/exposition'
+ * import { sliceCoordinates } from 'omai-engine/exposition'
  * sliceCoordinates([[1, 1], [3, 2]], [1, 0], [[2, 0], [0, 1]]) // => [[0, 1], [1, 2]]
  * ```
  */
@@ -170,7 +170,7 @@ export function sliceCoordinates(
   const norms = directions.map((d) => d.reduce((s, v) => s + v * v, 0))
   return iterates.map((theta, k) => {
     if (theta.length !== origin.length)
-      throw new MdmlError(
+      throw new OmaiError(
         'shape',
         `sliceCoordinates: iterate ${k} has ${theta.length} entries, expected ${origin.length}`,
       )

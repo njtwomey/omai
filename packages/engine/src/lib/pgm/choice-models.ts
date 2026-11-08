@@ -7,7 +7,7 @@
  * by a zero sum of the log strengths. Every item needs at least one win and one loss for the maximum to exist.
  */
 
-import { MdmlError, maxOf } from '../base/index.ts'
+import { maxOf, OmaiError } from '../base/index.ts'
 import {
   analyticObjective,
   familySolvers,
@@ -34,7 +34,7 @@ export interface ChoiceProblem {
  * @returns The problem.
  * @example
  * ```ts
- * import { pairedComparisons } from 'mdml-engine/pgm'
+ * import { pairedComparisons } from 'omai-engine/pgm'
  * pairedComparisons(3, [[0, 1], [1, 2]]).rankings // => [[0, 1], [1, 2]]
  * ```
  */
@@ -46,17 +46,17 @@ function check(p: ChoiceProblem): void {
   const wins = new Array<number>(p.nItems).fill(0)
   const losses = new Array<number>(p.nItems).fill(0)
   for (const r of p.rankings) {
-    if (r.length < 2) throw new MdmlError('value', 'choice model: a ranking needs at least two items')
+    if (r.length < 2) throw new OmaiError('value', 'choice model: a ranking needs at least two items')
     r.forEach((item, pos) => {
       if (!(Number.isInteger(item) && item >= 0 && item < p.nItems))
-        throw new MdmlError('value', 'choice model: item out of range')
+        throw new OmaiError('value', 'choice model: item out of range')
       if (pos < r.length - 1) wins[item] = (wins[item] ?? 0) + 1
       if (pos > 0) losses[item] = (losses[item] ?? 0) + 1
     })
   }
   for (let i = 0; i < p.nItems; i++)
     if ((wins[i] ?? 0) === 0 || (losses[i] ?? 0) === 0)
-      throw new MdmlError('value', `choice model: item ${i} has no win or no loss, so its strength is not finite`)
+      throw new OmaiError('value', `choice model: item ${i} has no win or no loss, so its strength is not finite`)
 }
 
 /** The log strengths from the free vector (the last is minus the sum of the others). */
@@ -97,7 +97,7 @@ function evaluate(p: ChoiceProblem, u: ArrayLike<number>): { value: number; grad
  * @returns The objective and the start (all strengths equal).
  * @example
  * ```ts
- * import { choiceSmoothProblem, pairedComparisons } from 'mdml-engine/pgm'
+ * import { choiceSmoothProblem, pairedComparisons } from 'omai-engine/pgm'
  * choiceSmoothProblem(pairedComparisons(3, [[0, 1], [1, 2], [2, 0]])).x0 // => [0, 0]
  * ```
  */
@@ -194,7 +194,7 @@ export interface ChoiceOptions {
  * @returns The algorithm.
  * @example
  * ```ts
- * import { choiceAlgorithm, pairedComparisons } from 'mdml-engine/pgm'
+ * import { choiceAlgorithm, pairedComparisons } from 'omai-engine/pgm'
  * choiceAlgorithm(pairedComparisons(2, [[0, 1], [1, 0], [0, 1]])).name // => 'plackett-luce'
  * ```
  */
@@ -247,7 +247,7 @@ export interface ChoiceFit {
  * @returns The strengths and the likelihood.
  * @example
  * ```ts
- * import { fitPlackettLuce, pairedComparisons } from 'mdml-engine/pgm'
+ * import { fitPlackettLuce, pairedComparisons } from 'omai-engine/pgm'
  * // A beats B three times in four: the odds are three to one.
  * const fit = fitPlackettLuce(pairedComparisons(2, [[0, 1], [0, 1], [0, 1], [1, 0]]))
  * Math.round((fit.strength[0] ?? 0) / (fit.strength[1] ?? 1) * 1e6) / 1e6 // => 3
@@ -276,7 +276,7 @@ export function fitPlackettLuce(problem: ChoiceProblem, options: ChoiceOptions =
  * @returns The strengths and the likelihood.
  * @example
  * ```ts
- * import { fitBradleyTerry } from 'mdml-engine/pgm'
+ * import { fitBradleyTerry } from 'omai-engine/pgm'
  * fitBradleyTerry(2, [[0, 1], [1, 0]]).theta // => [0, 0]
  * ```
  */
@@ -297,7 +297,7 @@ export function fitBradleyTerry(
  * @returns The win probability.
  * @example
  * ```ts
- * import { winProbability } from 'mdml-engine/pgm'
+ * import { winProbability } from 'omai-engine/pgm'
  * winProbability({ theta: [Math.log(3), 0] }, 0, 1) // => 0.75
  * ```
  */

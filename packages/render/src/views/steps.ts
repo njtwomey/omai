@@ -6,11 +6,11 @@
  */
 
 import type { EChartsOption, SeriesOption } from 'echarts'
-import { maxOf } from 'mdml-engine/base'
-import { multivariateNormal } from 'mdml-engine/dists'
-import type { ClusteringSteps, EmbeddingSteps, InputRows, MixtureSteps } from 'mdml-engine/exposition'
-import { covarianceEllipse } from 'mdml-engine/numerics/geometry'
-import { toArray, toFlat } from 'mdml-engine/tensor'
+import { maxOf } from 'omai-engine/base'
+import { multivariateNormal } from 'omai-engine/dists'
+import type { ClusteringSteps, EmbeddingSteps, InputRows, MixtureSteps } from 'omai-engine/exposition'
+import { covarianceEllipse } from 'omai-engine/numerics/geometry'
+import { toArray, toFlat } from 'omai-engine/tensor'
 import { bars } from '../charts/bars.ts'
 import { type Panel, subplots } from '../charts/compose.ts'
 import { decisionRegions } from '../charts/fields.ts'
@@ -359,7 +359,7 @@ export interface DendrogramLayout {
  * @returns The leaf order and the links.
  * @example
  * ```ts
- * import { dendrogramLayout } from 'mdml-render/views'
+ * import { dendrogramLayout } from 'omai-render/views'
  * dendrogramLayout([[0, 1, 1, 2], [2, 3, 2, 3]], 3).order // => [2, 0, 1]
  * ```
  */

@@ -8,7 +8,7 @@
  * method from the observed information.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import type { CoefficientTable, Exposition } from '../exposition/index.ts'
 import { type IterativeEstimator, iterative, type LearnData } from '../learn/index.ts'
 import { logNdtr, ndtr, normalLogPdf, normalPdf } from '../numerics/special/index.ts'
@@ -50,10 +50,10 @@ export interface TobitProblem {
  * @param options - The limits (default none) and the intercept (default true).
  * @param who - The caller, for errors.
  * @returns The problem.
- * @throws MdmlError `value` when the lower limit is not below the upper one.
+ * @throws OmaiError `value` when the lower limit is not below the upper one.
  * @example
  * ```ts
- * import { tobitProblemOf } from 'mdml-engine/linear'
+ * import { tobitProblemOf } from 'omai-engine/linear'
  * const problem = tobitProblemOf({ x: [[0], [1], [2]], y: [0, 0, 1.5] }, { lower: 0 }, 'demo')
  * Array.from(problem.censoring) // => [-1, -1, 0]
  * ```
@@ -67,7 +67,7 @@ export function tobitProblemOf(
   const upper = options.upper ?? Number.POSITIVE_INFINITY
   const fitIntercept = options.fitIntercept ?? true
   if (!(lower < upper))
-    throw new MdmlError('value', `${who}: the lower limit ${lower} must be below the upper ${upper}`)
+    throw new OmaiError('value', `${who}: the lower limit ${lower} must be below the upper ${upper}`)
   const design = designOf(data, who)
   const { a, p } = withIntercept(design, fitIntercept)
   const censoring = new Int8Array(design.x.n)
@@ -167,7 +167,7 @@ export function tobitObjective(
  * @returns The smooth problem in Olsen's parameters.
  * @example
  * ```ts
- * import { tobitProblemOf, tobitSmoothProblem } from 'mdml-engine/linear'
+ * import { tobitProblemOf, tobitSmoothProblem } from 'omai-engine/linear'
  * const problem = tobitProblemOf({ x: [[0], [1], [2], [3]], y: [0, 0.4, 1.1, 2.2] }, { lower: 0 }, 'demo')
  * tobitSmoothProblem(problem).x0.length // => 3
  * ```
@@ -228,8 +228,8 @@ export type TobitState = SlotState & {
  * @returns The algorithm.
  * @example
  * ```ts
- * import { tobitAlgorithm, tobitProblemOf } from 'mdml-engine/linear'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { tobitAlgorithm, tobitProblemOf } from 'omai-engine/linear'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const x = [[0], [1], [2], [3], [4], [5]]
  * const problem = tobitProblemOf({ x, y: [0, 0, 0.6, 1.9, 2.4, 3.8] }, { lower: 0 }, 'demo')
  * runAlgorithm(tobitAlgorithm(problem), { maxSteps: 100 }).status // => 'converged'
@@ -400,7 +400,7 @@ function tableOf(par: TobitParams, fitIntercept: boolean): CoefficientTable {
  * R. Olsen, Note on the uniqueness of the maximum likelihood estimator for the Tobit model, Econometrica 46 (1978).
  * @example
  * ```ts
- * import { tobit } from 'mdml-engine/linear'
+ * import { tobit } from 'omai-engine/linear'
  * const x = [[0], [1], [2], [3], [4], [5], [6], [7]]
  * const y = [0, 0, 0, 0.9, 1.7, 3.1, 3.9, 5.2]
  * const f = tobit({ lower: 0 }).fit({ x, y })

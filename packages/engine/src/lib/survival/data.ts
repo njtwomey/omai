@@ -5,7 +5,7 @@
  * partial likelihood all run over.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { asTensor, type TensorLike, toFlat } from '../tensor/index.ts'
 
 /** Right-censored survival data: `event[i]` is 1 when the event was seen at `time[i]` and 0 when the subject was censored. */
@@ -22,30 +22,30 @@ export interface SurvivalSample {
  * @param event - Event indicators (1 or true: seen, 0 or false: censored); omitted means every event was seen.
  * @param name - The caller, for error messages.
  * @returns The sample.
- * @throws MdmlError with code `value` for a length mismatch, a negative or non-finite time, or an indicator that is not 0 or 1.
+ * @throws OmaiError with code `value` for a length mismatch, a negative or non-finite time, or an indicator that is not 0 or 1.
  * @example
  * ```ts
- * import { survivalSample } from 'mdml-engine/survival'
+ * import { survivalSample } from 'omai-engine/survival'
  * Array.from(survivalSample([2, 3, 5], [1, 0, 1]).event) // => [1, 0, 1]
  * ```
  */
 export function survivalSample(time: TensorLike, event?: TensorLike, name = 'survivalSample'): SurvivalSample {
   const t = Float64Array.from(toFlat(asTensor(time)))
   const n = t.length
-  if (n === 0) throw new MdmlError('value', `${name}: needs at least one observation`)
+  if (n === 0) throw new OmaiError('value', `${name}: needs at least one observation`)
   for (let i = 0; i < n; i++) {
     const v = t[i] ?? Number.NaN
     if (!Number.isFinite(v) || v < 0)
-      throw new MdmlError('value', `${name}: time ${i} must be finite and >= 0, got ${v}`)
+      throw new OmaiError('value', `${name}: time ${i} must be finite and >= 0, got ${v}`)
   }
   const e = new Uint8Array(n)
   if (event === undefined) e.fill(1)
   else {
     const raw = toFlat(asTensor(event))
-    if (raw.length !== n) throw new MdmlError('shape', `${name}: ${raw.length} event indicators for ${n} times`)
+    if (raw.length !== n) throw new OmaiError('shape', `${name}: ${raw.length} event indicators for ${n} times`)
     for (let i = 0; i < n; i++) {
       const v = raw[i]
-      if (v !== 0 && v !== 1) throw new MdmlError('value', `${name}: event ${i} must be 0 or 1, got ${String(v)}`)
+      if (v !== 0 && v !== 1) throw new OmaiError('value', `${name}: event ${i} must be 0 or 1, got ${String(v)}`)
       e[i] = v
     }
   }
@@ -73,7 +73,7 @@ export interface EventTable {
  * @returns The table.
  * @example
  * ```ts
- * import { eventTable, survivalSample } from 'mdml-engine/survival'
+ * import { eventTable, survivalSample } from 'omai-engine/survival'
  * const t = eventTable(survivalSample([1, 2, 2, 3, 4], [1, 1, 0, 1, 0]))
  * Array.from(t.atRisk) // => [5, 4, 2]
  * Array.from(t.events) // => [1, 1, 1]

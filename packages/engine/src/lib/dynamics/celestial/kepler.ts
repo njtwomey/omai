@@ -6,7 +6,7 @@
  * without iterating (Fourier-Bessel and Lagrange).
  */
 
-import { type Json, MdmlError } from '../../base/index.ts'
+import { type Json, OmaiError } from '../../base/index.ts'
 import { jv } from '../../numerics/special/index.ts'
 import { choice, dict, real } from '../../space/index.ts'
 import { item } from '../../tensor/index.ts'
@@ -31,7 +31,7 @@ const TWO_PI = 2 * Math.PI
  * @returns The equivalent angle in (-pi, pi].
  * @example
  * ```ts
- * import { wrapAngle } from 'mdml-engine/dynamics/celestial'
+ * import { wrapAngle } from 'omai-engine/dynamics/celestial'
  * wrapAngle(3 * Math.PI) // => 3.141592653589793
  * ```
  */
@@ -49,16 +49,16 @@ export type ConicKind = 'elliptic' | 'parabolic' | 'hyperbolic'
  * @param e - The eccentricity (non-negative).
  * @param tol - How close to 1 counts as a parabola (default 1e-12).
  * @returns The kind.
- * @throws MdmlError with code `value` for a negative or non-finite eccentricity.
+ * @throws OmaiError with code `value` for a negative or non-finite eccentricity.
  * @example
  * ```ts
- * import { conicKind } from 'mdml-engine/dynamics/celestial'
+ * import { conicKind } from 'omai-engine/dynamics/celestial'
  * [conicKind(0.3), conicKind(1), conicKind(2)] // => ['elliptic', 'parabolic', 'hyperbolic']
  * ```
  */
 export function conicKind(e: number, tol = 1e-12): ConicKind {
   if (!(e >= 0) || !Number.isFinite(e))
-    throw new MdmlError('value', `conicKind: the eccentricity must be >= 0, got ${e}`)
+    throw new OmaiError('value', `conicKind: the eccentricity must be >= 0, got ${e}`)
   return Math.abs(e - 1) <= tol ? 'parabolic' : e < 1 ? 'elliptic' : 'hyperbolic'
 }
 
@@ -70,7 +70,7 @@ export function conicKind(e: number, tol = 1e-12): ConicKind {
  * @returns The true anomaly nu, on the same branch as E.
  * @example
  * ```ts
- * import { trueFromEccentric } from 'mdml-engine/dynamics/celestial'
+ * import { trueFromEccentric } from 'omai-engine/dynamics/celestial'
  * trueFromEccentric(Math.PI, 0.5) // => 3.141592653589793
  * ```
  */
@@ -87,7 +87,7 @@ export function trueFromEccentric(E: number, e: number): number {
  * @returns The eccentric anomaly E, on the same branch as nu.
  * @example
  * ```ts
- * import { eccentricFromTrue } from 'mdml-engine/dynamics/celestial'
+ * import { eccentricFromTrue } from 'omai-engine/dynamics/celestial'
  * eccentricFromTrue(Math.PI, 0.5) // => 3.141592653589793
  * ```
  */
@@ -104,7 +104,7 @@ export function eccentricFromTrue(nu: number, e: number): number {
  * @returns The true anomaly, within (-acos(-1/e), acos(-1/e)).
  * @example
  * ```ts
- * import { trueFromHyperbolic } from 'mdml-engine/dynamics/celestial'
+ * import { trueFromHyperbolic } from 'omai-engine/dynamics/celestial'
  * trueFromHyperbolic(0, 2) // => 0
  * ```
  */
@@ -118,17 +118,17 @@ export function trueFromHyperbolic(H: number, e: number): number {
  * @param nu - True anomaly, within the asymptotes (|nu| < acos(-1/e)).
  * @param e - Eccentricity above 1.
  * @returns H.
- * @throws MdmlError with code `value` when nu is on or beyond an asymptote.
+ * @throws OmaiError with code `value` when nu is on or beyond an asymptote.
  * @example
  * ```ts
- * import { hyperbolicFromTrue } from 'mdml-engine/dynamics/celestial'
+ * import { hyperbolicFromTrue } from 'omai-engine/dynamics/celestial'
  * hyperbolicFromTrue(0, 2) // => 0
  * ```
  */
 export function hyperbolicFromTrue(nu: number, e: number): number {
   const arg = Math.sqrt((e - 1) / (e + 1)) * Math.tan(nu / 2)
   if (!(Math.abs(arg) < 1) || Math.abs(nu) >= Math.acos(-1 / e)) {
-    throw new MdmlError('value', `hyperbolicFromTrue: nu = ${nu} is beyond the asymptote of a hyperbola with e = ${e}`)
+    throw new OmaiError('value', `hyperbolicFromTrue: nu = ${nu} is beyond the asymptote of a hyperbola with e = ${e}`)
   }
   return 2 * Math.atanh(arg)
 }
@@ -142,7 +142,7 @@ export function hyperbolicFromTrue(nu: number, e: number): number {
  * @returns The mean anomaly (for an ellipse on the same branch as nu).
  * @example
  * ```ts
- * import { meanFromTrue } from 'mdml-engine/dynamics/celestial'
+ * import { meanFromTrue } from 'omai-engine/dynamics/celestial'
  * meanFromTrue(Math.PI, 0.5) // => 3.141592653589793
  * ```
  */
@@ -168,7 +168,7 @@ export function meanFromTrue(nu: number, e: number): number {
  * @returns The true anomaly nu in (-pi, pi).
  * @example
  * ```ts
- * import { meanFromTrue, solveKeplerParabolic } from 'mdml-engine/dynamics/celestial'
+ * import { meanFromTrue, solveKeplerParabolic } from 'omai-engine/dynamics/celestial'
  * Math.abs(solveKeplerParabolic(meanFromTrue(1.2, 1)) - 1.2) < 1e-14 // => true
  * ```
  */
@@ -194,7 +194,7 @@ export interface KeplerProblem {
  * @returns The residual, zero at the solution.
  * @example
  * ```ts
- * import { keplerResidual } from 'mdml-engine/dynamics/celestial'
+ * import { keplerResidual } from 'omai-engine/dynamics/celestial'
  * keplerResidual(Math.PI, Math.PI, 0.7) // => 0
  * ```
  */
@@ -323,9 +323,9 @@ interface Iteration {
 
 function iteration(problem: KeplerProblem, options: KeplerOptions): Iteration & { readonly config: Json } {
   const { M, e } = problem
-  if (!Number.isFinite(M)) throw new MdmlError('value', 'keplerAlgorithm: M must be finite')
+  if (!Number.isFinite(M)) throw new OmaiError('value', 'keplerAlgorithm: M must be finite')
   if (conicKind(e) === 'parabolic') {
-    throw new MdmlError('value', 'keplerAlgorithm: e = 1 is the parabola; use solveKeplerParabolic')
+    throw new OmaiError('value', 'keplerAlgorithm: e = 1 is the parabola; use solveKeplerParabolic')
   }
   const method = options.method ?? 'newton'
   const startKind = options.start ?? 'auto'
@@ -401,11 +401,11 @@ function iteration(problem: KeplerProblem, options: KeplerOptions): Iteration & 
  * @param problem - The mean anomaly and eccentricity (e != 1; the parabola is {@link solveKeplerParabolic}).
  * @param options - Method, start and tolerance.
  * @returns The algorithm; it stops (converged) when the residual is within the tolerance.
- * @throws MdmlError with code `value` for e = 1, a negative e or a non-finite M.
+ * @throws OmaiError with code `value` for e = 1, a negative e or a non-finite M.
  * @example
  * ```ts
- * import { keplerAlgorithm } from 'mdml-engine/dynamics/celestial'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { keplerAlgorithm } from 'omai-engine/dynamics/celestial'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const { state, steps } = runAlgorithm(keplerAlgorithm({ M: 1, e: 0.5 }), { maxSteps: 50 })
  * [steps < 8, Math.abs(state.x - 1.4987011335178484) < 1e-12] // => [true, true]
  * ```
@@ -500,11 +500,11 @@ export interface KeplerSolution {
  * @param e - Eccentricity.
  * @param options - Method, start and tolerance for the iterated cases, and the iteration cap (default 100).
  * @returns The anomaly, the true anomaly and the work done.
- * @throws MdmlError with code `convergence` when the iteration does not converge in the cap.
+ * @throws OmaiError with code `convergence` when the iteration does not converge in the cap.
  * @concept keplers-equation
  * @example
  * ```ts
- * import { solveKepler } from 'mdml-engine/dynamics/celestial'
+ * import { solveKepler } from 'omai-engine/dynamics/celestial'
  * const s = solveKepler(1, 0.5)
  * [s.kind, Math.abs(s.anomaly - 1.4987011335178484) < 1e-12] // => ['elliptic', true]
  * ```
@@ -523,7 +523,7 @@ export function solveKepler(
   const cap = options.maxIterations ?? 100
   let s = it.init()
   while (!it.converged(s) && s.iteration < cap) s = it.advance(s)
-  if (!it.converged(s)) throw new MdmlError('convergence', `solveKepler: no convergence in ${cap} iterations`)
+  if (!it.converged(s)) throw new OmaiError('convergence', `solveKepler: no convergence in ${cap} iterations`)
   const anomaly = anomalyOf(s).anomaly
   const nu = kind === 'elliptic' ? trueFromEccentric(anomaly, e) : trueFromHyperbolic(anomaly, e)
   return { anomaly, trueAnomaly: nu, kind, iterations: s.iteration, residual: s.residual }
@@ -537,7 +537,7 @@ export function solveKepler(
  * @returns The true anomaly (for an ellipse on the branch of M).
  * @example
  * ```ts
- * import { trueFromMean } from 'mdml-engine/dynamics/celestial'
+ * import { trueFromMean } from 'omai-engine/dynamics/celestial'
  * trueFromMean(0, 0.3) // => 0
  * ```
  */
@@ -553,16 +553,16 @@ export function trueFromMean(M: number, e: number): number {
  * @param e - Eccentricity in [0, 1).
  * @param terms - Terms to sum (default 60).
  * @returns The eccentric anomaly.
- * @throws MdmlError with code `value` for e outside [0, 1).
+ * @throws OmaiError with code `value` for e outside [0, 1).
  * @concept keplers-equation
  * @example
  * ```ts
- * import { keplerBesselSeries } from 'mdml-engine/dynamics/celestial'
+ * import { keplerBesselSeries } from 'omai-engine/dynamics/celestial'
  * Math.abs(keplerBesselSeries(1, 0.5, 80) - 1.4987011335178484) < 1e-12 // => true
  * ```
  */
 export function keplerBesselSeries(M: number, e: number, terms = 60): number {
-  if (!(e >= 0 && e < 1)) throw new MdmlError('value', 'keplerBesselSeries: e must be in [0, 1)')
+  if (!(e >= 0 && e < 1)) throw new OmaiError('value', 'keplerBesselSeries: e must be in [0, 1)')
   let sum = 0
   for (let n = 1; n <= terms; n++) sum += (item(jv(n, n * e)) / n) * Math.sin(n * M)
   return M + 2 * sum
@@ -581,17 +581,17 @@ export const LAPLACE_LIMIT = 0.6627434193491816
  * @param e - Eccentricity.
  * @param order - The highest power of e kept, 1 to 5 (default 5).
  * @returns The eccentric anomaly to that order.
- * @throws MdmlError with code `value` for an order outside 1..5.
+ * @throws OmaiError with code `value` for an order outside 1..5.
  * @concept keplers-equation
  * @example
  * ```ts
- * import { keplerLagrangeSeries } from 'mdml-engine/dynamics/celestial'
+ * import { keplerLagrangeSeries } from 'omai-engine/dynamics/celestial'
  * Math.abs(keplerLagrangeSeries(1, 0.1, 5) - 1.0 - 0.1 * Math.sin(1) - 0.005 * Math.sin(2)) < 1e-4 // => true
  * ```
  */
 export function keplerLagrangeSeries(M: number, e: number, order = 5): number {
   if (!Number.isInteger(order) || order < 1 || order > 5)
-    throw new MdmlError('value', 'keplerLagrangeSeries: order is 1..5')
+    throw new OmaiError('value', 'keplerLagrangeSeries: order is 1..5')
   const s = (n: number): number => Math.sin(n * M)
   const terms = [
     e * s(1),

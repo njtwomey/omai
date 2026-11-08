@@ -9,7 +9,7 @@
  */
 
 import type { Json } from '../base/index.ts'
-import { argmaxOf, MdmlError, maxOf } from '../base/index.ts'
+import { argmaxOf, maxOf, OmaiError } from '../base/index.ts'
 import { categorical, type Distribution } from '../dists/index.ts'
 import type { Exposition } from '../exposition/index.ts'
 import { type IterativeEstimator, iterative } from '../learn/bases/iterative.ts'
@@ -55,7 +55,7 @@ export interface Stump {
  * @concept boosting
  * @example
  * ```ts
- * import { bestStump } from 'mdml-engine/ensembles'
+ * import { bestStump } from 'omai-engine/ensembles'
  * const values = [[0.1, 0.4, 0.6, 0.9]]
  * const stump = bestStump(values, [[0, 1, 2, 3]], (i) => i >= 2, [0.25, 0.25, 0.25, 0.25])
  * [stump.threshold, stump.polarity, stump.error] // => [0.5, -1, 0]
@@ -111,7 +111,7 @@ export function bestStump(
  * @returns The row indices, smallest value first.
  * @example
  * ```ts
- * import { sortedRows } from 'mdml-engine/ensembles'
+ * import { sortedRows } from 'omai-engine/ensembles'
  * sortedRows([0.3, 0.1, 0.2]) // => [1, 2, 0]
  * ```
  */
@@ -174,7 +174,7 @@ export interface AdaBoostVerbs extends Verbs, FittedFacts {
  *
  * @example
  * ```ts
- * import type { AdaBoostPath } from 'mdml-engine/ensembles'
+ * import type { AdaBoostPath } from 'omai-engine/ensembles'
  * const path: AdaBoostPath = 'boost/alpha'
  * path // => 'boost/alpha'
  * ```
@@ -276,14 +276,14 @@ function adaBoostEstimator(name: string, classifier: boolean, defaults: AdaBoost
     const y = classifier ? encodeLabels(data.y ?? [], name).codes : targetVector(data.y ?? [], name)
     const w0 = sampleWeightsOf(data.weights, n, name)
     const total0 = w0.reduce((a, b) => a + b, 0)
-    if (classifier && k < 2) throw new MdmlError('value', `${name}: needs two classes`)
+    if (classifier && k < 2) throw new OmaiError('value', `${name}: needs two classes`)
     /** The member's outputs on the training rows: labels as one-hot (SAMME), probabilities (SAMME.R), values. */
     const outputsOf = (params: Json): Float64Array => {
       const f = h.estimator.revive(params)
       if (!classifier) return Float64Array.from(toFlat((f.predict as NonNullable<Verbs['predict']>)(data.x)))
       if (h.algorithm === 'SAMME.R') {
         if (f.predictProba === undefined)
-          throw new MdmlError('value', `${name}: SAMME.R needs a base with predictProba`)
+          throw new OmaiError('value', `${name}: SAMME.R needs a base with predictProba`)
         return memberProba(f, data.x, classes)
       }
       const pred = toFlat((f.predict as NonNullable<Verbs['predict']>)(data.x))
@@ -336,7 +336,7 @@ function adaBoostEstimator(name: string, classifier: boolean, defaults: AdaBoost
             stopNow = true
           } else if (samme && err >= 1 - 1 / k) {
             if (s.members.length === 0)
-              throw new MdmlError('value', `${name}: the first weak learner is no better than chance`)
+              throw new OmaiError('value', `${name}: the first weak learner is no better than chance`)
             ctx.emit('boost/stopped', { round: s.members.length, reason: 'no better than chance', error: err })
             return { ...s, stopped: true }
           } else if (samme) {
@@ -374,7 +374,7 @@ function adaBoostEstimator(name: string, classifier: boolean, defaults: AdaBoost
             next = sw
             stopNow = true
           } else if (err >= 0.5) {
-            if (s.members.length === 0) throw new MdmlError('value', `${name}: the first weak learner is too weak`)
+            if (s.members.length === 0) throw new OmaiError('value', `${name}: the first weak learner is too weak`)
             ctx.emit('boost/stopped', { round: s.members.length, reason: 'error of one half or more', error: err })
             return { ...s, stopped: true }
           } else {
@@ -618,8 +618,8 @@ function adaDefaults(hyper: Partial<AdaBoostHyper>, estimator: Estimator): AdaBo
  * @index estimator AdaBoost (SAMME) over any base estimator.
  * @example
  * ```ts
- * import { adaBoostClassifier } from 'mdml-engine/ensembles'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { adaBoostClassifier } from 'omai-engine/ensembles'
+ * import { toFlat } from 'omai-engine/tensor'
  * const x = Array.from({ length: 40 }, (_, i) => [i / 40, ((i * 7) % 11) / 11])
  * const y = x.map(([a = 0, b = 0]) => (a + b > 0.9 ? 1 : 0))
  * const fitted = adaBoostClassifier({ nEstimators: 20 }).fit({ x, y })
@@ -643,8 +643,8 @@ export function adaBoostClassifier(hyper: Partial<AdaBoostHyper> = {}): AdaBoost
  * @concept boosting
  * @example
  * ```ts
- * import { adaBoostRegressor } from 'mdml-engine/ensembles'
- * import { key } from 'mdml-engine/random'
+ * import { adaBoostRegressor } from 'omai-engine/ensembles'
+ * import { key } from 'omai-engine/random'
  * const x = Array.from({ length: 30 }, (_, i) => [i / 30])
  * adaBoostRegressor({ nEstimators: 4 }).fit({ x, y: x.map(([a = 0]) => a * a) }, { key: key(0) }).params.classes // => []
  * ```

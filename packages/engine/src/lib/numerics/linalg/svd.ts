@@ -171,16 +171,16 @@ export interface SvdResult {
  * @param a - Matrix `[..., m, n]`.
  * @param options - The method.
  * @returns `{ u, s, vh }`, differentiable (singular vectors only where singular values are distinct and non-zero).
- * @throws MdmlError with code `value` when the input has a NaN or infinite entry.
- * @throws MdmlError with code `convergence` for `method: 'golub-kahan'` when the implicit QR sweeps do not deflate
+ * @throws OmaiError with code `value` when the input has a NaN or infinite entry.
+ * @throws OmaiError with code `convergence` for `method: 'golub-kahan'` when the implicit QR sweeps do not deflate
  *   within 75 iterations of one singular value. The result is a bare value of a differentiable primitive, with no
  *   place for a status; the default `jacobi` method has no such limit, and `jacobiSvd` returns a record with `status`.
  * @concept linear-algebra
  * @index function Reduced singular value decomposition, differentiable.
  * @example
  * ```ts
- * import { svd } from 'mdml-engine/numerics/linalg'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { svd } from 'omai-engine/numerics/linalg'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(svd([[3, 0], [0, -2]]).s) // => [3, 2]
  * ```
  */
@@ -195,11 +195,11 @@ export function svd(a: TensorLike, options: { readonly method?: SvdMethod } = {}
  *
  * @param a - Matrix `[..., m, n]`.
  * @returns The singular values, differentiable.
- * @throws MdmlError with code `value` when the input has a NaN or infinite entry.
+ * @throws OmaiError with code `value` when the input has a NaN or infinite entry.
  * @example
  * ```ts
- * import { svdvals } from 'mdml-engine/numerics/linalg'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { svdvals } from 'omai-engine/numerics/linalg'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(svdvals([[0, 2], [1, 0]])) // => [2, 1]
  * ```
  */
@@ -214,11 +214,11 @@ export function svdvals(a: TensorLike): Value {
  * @param a - Matrix `[..., m, n]`.
  * @param rtol - Relative cutoff.
  * @returns The pseudo-inverse `[..., n, m]`, differentiable where the rank is locally constant.
- * @throws MdmlError with code `value` when the input has a NaN or infinite entry.
+ * @throws OmaiError with code `value` when the input has a NaN or infinite entry.
  * @example
  * ```ts
- * import { pinv } from 'mdml-engine/numerics/linalg'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { pinv } from 'omai-engine/numerics/linalg'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(pinv([[2, 0], [0, 0]])) // => [[0.5, 0], [0, 0]]
  * ```
  */
@@ -238,11 +238,11 @@ export function pinv(a: TensorLike, rtol?: number): Value {
  * @param a - Matrix `[..., m, n]`.
  * @param rank - The rank r.
  * @returns U_r diag(s_r) Vh_r, differentiable.
- * @throws MdmlError with code `value` when the input has a NaN or infinite entry.
+ * @throws OmaiError with code `value` when the input has a NaN or infinite entry.
  * @example
  * ```ts
- * import { lowRankApproximation } from 'mdml-engine/numerics/linalg'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { lowRankApproximation } from 'omai-engine/numerics/linalg'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(lowRankApproximation([[3, 0], [0, 1]], 1)) // => [[3, 0], [0, 0]]
  * ```
  */
@@ -261,10 +261,10 @@ export function lowRankApproximation(a: TensorLike, rank: number): Value {
  * @param a - Matrix `[m, n]`.
  * @param rcond - Relative cutoff (default max(m, n) eps).
  * @returns The basis `[n, nullity]`.
- * @throws MdmlError with code `value` when the input has a NaN or infinite entry.
+ * @throws OmaiError with code `value` when the input has a NaN or infinite entry.
  * @example
  * ```ts
- * import { nullSpace } from 'mdml-engine/numerics/linalg'
+ * import { nullSpace } from 'omai-engine/numerics/linalg'
  * nullSpace([[1, 1]]).shape // => [2, 1]
  * ```
  */
@@ -289,11 +289,11 @@ export function nullSpace(a: TensorLike, rcond?: number): Value {
  * @param a - Matrix `[m, n]` with m >= n for `right`.
  * @param side - `right` (default) or `left`.
  * @returns `{ u, p }`, differentiable.
- * @throws MdmlError with code `value` when the input has a NaN or infinite entry.
+ * @throws OmaiError with code `value` when the input has a NaN or infinite entry.
  * @example
  * ```ts
- * import { polar } from 'mdml-engine/numerics/linalg'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { polar } from 'omai-engine/numerics/linalg'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(polar([[2, 0], [0, 3]]).p) // => [[2, 0], [0, 3]]
  * ```
  */

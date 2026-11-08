@@ -7,7 +7,7 @@
  * aligned genes. Networks are feedforward. XOR, which no network without a hidden unit solves, is the built-in truth.
  */
 
-import { MdmlError, maxOf } from '../../base/index.ts'
+import { maxOf, OmaiError } from '../../base/index.ts'
 import { type Key, uniformStream } from '../../random/index.ts'
 import { type Algorithm, type Contract, defineContract, event, scalar, tensor } from '../../trace/index.ts'
 
@@ -82,7 +82,7 @@ export type NeatNetwork = (inputs: readonly number[]) => number[]
  * @returns The network.
  * @example
  * ```ts
- * import { neatNetwork } from 'mdml-engine/search'
+ * import { neatNetwork } from 'omai-engine/search'
  * const g = { nodes: [{ id: 0, kind: 'input' }, { id: 1, kind: 'bias' }, { id: 2, kind: 'output' }], connections: [{ innovation: 0, from: 0, to: 2, weight: 1, enabled: true }], fitness: 0, species: 0 } as const
  * neatNetwork(g)([0])[0] // => 0.5
  * ```
@@ -125,7 +125,7 @@ export const XOR_CASES: readonly (readonly [readonly [number, number], number])[
  * @returns The fitness.
  * @example
  * ```ts
- * import { xorFitness } from 'mdml-engine/search'
+ * import { xorFitness } from 'omai-engine/search'
  * xorFitness(([a, b]) => [Number((a ?? 0) !== (b ?? 0))]) // => 16
  * ```
  */
@@ -142,7 +142,7 @@ export function xorFitness(network: NeatNetwork): number {
  * @returns Whether all four cases are classified correctly.
  * @example
  * ```ts
- * import { solvesXor } from 'mdml-engine/search'
+ * import { solvesXor } from 'omai-engine/search'
  * solvesXor(([a, b]) => [Number((a ?? 0) !== (b ?? 0))]) // => true
  * ```
  */
@@ -213,12 +213,12 @@ function reaches(g: NeatGenome, start: number, target: number): boolean {
  *
  * @param options - The problem (default XOR), population, speciation and mutation settings.
  * @returns The algorithm; the state holds the population, the best genome and whether it solved the task.
- * @throws MdmlError with code `value` for a population below 4.
+ * @throws OmaiError with code `value` for a population below 4.
  * @concept neuroevolution
  * @example
  * ```ts
- * import { neatAlgorithm } from 'mdml-engine/search'
- * import { key } from 'mdml-engine/random'
+ * import { neatAlgorithm } from 'omai-engine/search'
+ * import { key } from 'omai-engine/random'
  * const alg = neatAlgorithm({ populationSize: 20 })
  * alg.init(key(0)).population.length // => 20
  * ```
@@ -236,7 +236,7 @@ export function neatAlgorithm(options: NeatOptions = {}): Algorithm<NeatState, N
   const pNode = options.mutation?.node ?? 0.05
   const survival = options.survival ?? 0.3
   const pCrossover = options.crossover ?? 0.75
-  if (size < 4) throw new MdmlError('value', 'neat: the population needs at least 4 genomes')
+  if (size < 4) throw new OmaiError('value', 'neat: the population needs at least 4 genomes')
   const biasId = nIn
   const nodes: NeatNode[] = [
     ...Array.from({ length: nIn }, (_, i) => ({ id: i, kind: 'input' as const })),

@@ -4,7 +4,7 @@
  * graphs the articulation points, bridges and biconnected components, following scipy.sparse.csgraph and NetworkX.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { runAlgorithm } from '../trace/index.ts'
 import { partitionFromLabels } from './_build.ts'
 import { biconnectivityAlgorithm, componentMethods } from './component-algorithms.ts'
@@ -30,7 +30,7 @@ export interface Components {
  * @concept connected-components
  * @example
  * ```ts
- * import { connectedComponents, graph } from 'mdml-engine/graph'
+ * import { connectedComponents, graph } from 'omai-engine/graph'
  * const c = connectedComponents(graph([[0, 1], [2, 3]], { nodes: 5 }))
  * c.count // => 3
  * c.components // => [[0, 1], [2, 3], [4]]
@@ -69,7 +69,7 @@ export function connectedComponents(g: Graph, options: { readonly connection?: '
  * @returns True when there is one component.
  * @example
  * ```ts
- * import { graph, isConnected } from 'mdml-engine/graph'
+ * import { graph, isConnected } from 'omai-engine/graph'
  * [isConnected(graph([[0, 1], [1, 2]])), isConnected(graph([[0, 1]], { nodes: 3 }))] // => [true, false]
  * ```
  */
@@ -89,7 +89,7 @@ export function isConnected(g: Graph): boolean {
  * @reference R. Tarjan, Depth-first search and linear graph algorithms, SIAM J. Computing 1 (1972).
  * @example
  * ```ts
- * import { digraph, stronglyConnectedComponents } from 'mdml-engine/graph'
+ * import { digraph, stronglyConnectedComponents } from 'omai-engine/graph'
  * const g = digraph([[0, 1], [1, 0], [1, 2], [2, 3], [3, 2]])
  * stronglyConnectedComponents(g).components // => [[0, 1], [2, 3]]
  * stronglyConnectedComponents(g, { method: 'kosaraju' }).count // => 2
@@ -112,7 +112,7 @@ export function stronglyConnectedComponents(
  * @returns True when there is one strong component.
  * @example
  * ```ts
- * import { cycleGraph, isStronglyConnected, pathGraph } from 'mdml-engine/graph'
+ * import { cycleGraph, isStronglyConnected, pathGraph } from 'omai-engine/graph'
  * [isStronglyConnected(cycleGraph(4, { directed: true })), isStronglyConnected(pathGraph(3, { directed: true }))] // => [true, false]
  * ```
  */
@@ -135,16 +135,16 @@ export interface Condensation {
  *
  * @param g - A directed graph.
  * @returns The component DAG, the mapping from nodes to components, and the members.
- * @throws MdmlError with code `value` for an undirected graph.
+ * @throws OmaiError with code `value` for an undirected graph.
  * @example
  * ```ts
- * import { condensation, digraph } from 'mdml-engine/graph'
+ * import { condensation, digraph } from 'omai-engine/graph'
  * const c = condensation(digraph([[0, 1], [1, 0], [1, 2], [2, 3], [3, 2], [0, 3]]))
  * c.graph.edges.map((e) => [e.source, e.target]) // => [[0, 1]]
  * ```
  */
 export function condensation(g: Graph): Condensation {
-  if (!g.directed) throw new MdmlError('value', 'condensation: the graph is undirected')
+  if (!g.directed) throw new OmaiError('value', 'condensation: the graph is undirected')
   const scc = stronglyConnectedComponents(g)
   const edges: [number, number][] = []
   const seen = new Set<string>()
@@ -174,7 +174,7 @@ interface Biconnectivity {
 }
 
 function biconnectivity(g: Graph, where: string): Biconnectivity {
-  if (g.directed) throw new MdmlError('value', `${where}: the graph must be undirected`)
+  if (g.directed) throw new OmaiError('value', `${where}: the graph must be undirected`)
   const { state } = runAlgorithm(biconnectivityAlgorithm(g), { maxSteps: 4 * g.n + 4 * g.out.indices.length + 8 })
   return { cut: state.cut, bridges: state.bridges, blocks: state.blocks }
 }
@@ -185,11 +185,11 @@ function biconnectivity(g: Graph, where: string): Biconnectivity {
  *
  * @param g - An undirected graph.
  * @returns The articulation points, ascending.
- * @throws MdmlError with code `value` for a directed graph.
+ * @throws OmaiError with code `value` for a directed graph.
  * @concept biconnectivity
  * @example
  * ```ts
- * import { articulationPoints, barbellGraph } from 'mdml-engine/graph'
+ * import { articulationPoints, barbellGraph } from 'omai-engine/graph'
  * articulationPoints(barbellGraph(3, 1)) // => [2, 3, 4]
  * ```
  */
@@ -203,11 +203,11 @@ export function articulationPoints(g: Graph): number[] {
  *
  * @param g - An undirected graph.
  * @returns The bridges as `[u, v]` with `u < v`, sorted.
- * @throws MdmlError with code `value` for a directed graph.
+ * @throws OmaiError with code `value` for a directed graph.
  * @concept biconnectivity
  * @example
  * ```ts
- * import { barbellGraph, bridges } from 'mdml-engine/graph'
+ * import { barbellGraph, bridges } from 'omai-engine/graph'
  * bridges(barbellGraph(3, 1)) // => [[2, 3], [3, 4]]
  * ```
  */
@@ -228,11 +228,11 @@ export interface BiconnectedComponent {
  *
  * @param g - An undirected graph.
  * @returns The blocks, each with sorted nodes and sorted `[u, v]` (`u < v`) edges, ordered by their node lists.
- * @throws MdmlError with code `value` for a directed graph.
+ * @throws OmaiError with code `value` for a directed graph.
  * @concept biconnectivity
  * @example
  * ```ts
- * import { barbellGraph, biconnectedComponents } from 'mdml-engine/graph'
+ * import { barbellGraph, biconnectedComponents } from 'omai-engine/graph'
  * biconnectedComponents(barbellGraph(3, 1)).map((b) => b.nodes) // => [[0, 1, 2], [2, 3], [3, 4], [4, 5, 6]]
  * ```
  */

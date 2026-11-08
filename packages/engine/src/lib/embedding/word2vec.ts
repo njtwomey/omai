@@ -8,7 +8,7 @@
  * `word2vecSgd` beside the library's generic solvers.
  */
 
-import { type Json, MdmlError, maxOf, sigmoidOf } from '../base/index.ts'
+import { type Json, maxOf, OmaiError, sigmoidOf } from '../base/index.ts'
 import { type HuffmanCoding, hierarchicalSoftmax, huffmanCoding } from '../losses/index.ts'
 import { logSigmoid } from '../numerics/special/index.ts'
 import { type BatchObjective, type SmoothProblem, smoothSolvers, type VectorParams } from '../optim/index.ts'
@@ -34,7 +34,7 @@ export interface Word2vecVocabulary {
  * @concept word-embeddings
  * @example
  * ```ts
- * import { word2vecVocabulary } from 'mdml-engine/embedding'
+ * import { word2vecVocabulary } from 'omai-engine/embedding'
  * word2vecVocabulary([['b', 'a', 'b'], ['c', 'b', 'a']], 2).words // => ['b', 'a']
  * ```
  */
@@ -107,12 +107,12 @@ export interface Word2vecProblem extends SmoothProblem {
  * @param options - Architecture, window, negatives, subsampling and subwords.
  * @param key - The key for the window sizes, subsampling and negatives.
  * @returns The examples.
- * @throws MdmlError with code `value` for a window or negatives below 1, or subwords with CBOW.
+ * @throws OmaiError with code `value` for a window or negatives below 1, or subwords with CBOW.
  * @concept word-embeddings
  * @example
  * ```ts
- * import { word2vecExamples, word2vecVocabulary } from 'mdml-engine/embedding'
- * import { key } from 'mdml-engine/random'
+ * import { word2vecExamples, word2vecVocabulary } from 'omai-engine/embedding'
+ * import { key } from 'omai-engine/random'
  * const s = [['a', 'b', 'c']]
  * word2vecExamples(s, word2vecVocabulary(s), { window: 1, dynamicWindow: false, negatives: 2 }, key(0)).n // => 4
  * ```
@@ -126,11 +126,11 @@ export function word2vecExamples(
   const window = options.window ?? 5
   const k = options.output === 'hierarchical-softmax' ? 0 : (options.negatives ?? 5)
   const architecture = options.architecture ?? 'skip-gram'
-  if (!Number.isInteger(window) || window < 1) throw new MdmlError('value', 'word2vec: window must be at least 1')
+  if (!Number.isInteger(window) || window < 1) throw new OmaiError('value', 'word2vec: window must be at least 1')
   if (options.output !== 'hierarchical-softmax' && (!Number.isInteger(k) || k < 1))
-    throw new MdmlError('value', 'word2vec: negatives must be at least 1')
+    throw new OmaiError('value', 'word2vec: negatives must be at least 1')
   if (options.subwords !== undefined && architecture === 'cbow')
-    throw new MdmlError('value', 'word2vec: subwords are for skip-gram')
+    throw new OmaiError('value', 'word2vec: subwords are for skip-gram')
   const V = vocabulary.words.length
   const total = vocabulary.counts.reduce((a, b) => a + b, 0)
   const rows = rowsOfWords(vocabulary, options)
@@ -209,12 +209,12 @@ function rowsOfWords(vocabulary: Word2vecVocabulary, options: Word2vecOptions): 
  * @param key - The key for the examples and the start.
  * @param minCount - The vocabulary cut-off (default 1).
  * @returns The problem.
- * @throws MdmlError with code `value` for fewer than two words or no examples.
+ * @throws OmaiError with code `value` for fewer than two words or no examples.
  * @concept word-embeddings
  * @example
  * ```ts
- * import { word2vecProblem } from 'mdml-engine/embedding'
- * import { key } from 'mdml-engine/random'
+ * import { word2vecProblem } from 'omai-engine/embedding'
+ * import { key } from 'omai-engine/random'
  * const p = word2vecProblem([['a', 'b', 'c', 'a', 'b']], { dimension: 2, window: 1, negatives: 1 }, key(0))
  * [p.inputRows, p.outputRows, p.batches?.n] // => [3, 3, 8]
  * ```
@@ -227,7 +227,7 @@ export function word2vecProblem(
 ): Word2vecProblem {
   const vocabulary = word2vecVocabulary(sentences, minCount)
   const V = vocabulary.words.length
-  if (V < 2) throw new MdmlError('value', 'word2vec: needs at least two distinct words')
+  if (V < 2) throw new OmaiError('value', 'word2vec: needs at least two distinct words')
   const opts = {
     ...options,
     architecture: options.architecture ?? 'skip-gram',
@@ -236,7 +236,7 @@ export function word2vecProblem(
   } as Word2vecProblem['options']
   const d = opts.dimension
   const examples = word2vecExamples(sentences, vocabulary, opts, foldIn(key, 0))
-  if (examples.n === 0) throw new MdmlError('value', 'word2vec: the corpus gives no training examples')
+  if (examples.n === 0) throw new OmaiError('value', 'word2vec: the corpus gives no training examples')
   const hs = opts.output === 'hierarchical-softmax'
   const coding = hs ? huffmanCoding(vocabulary.counts) : undefined
   const inputRows = V + (opts.subwords?.buckets ?? 0)
@@ -352,9 +352,9 @@ export interface Word2vecSgdOptions {
  * @concept word-embeddings
  * @example
  * ```ts
- * import { word2vecProblem, word2vecSgdAlgorithm } from 'mdml-engine/embedding'
- * import { key } from 'mdml-engine/random'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { word2vecProblem, word2vecSgdAlgorithm } from 'omai-engine/embedding'
+ * import { key } from 'omai-engine/random'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const p = word2vecProblem([['a', 'b', 'c', 'a', 'b']], { dimension: 2, window: 1, negatives: 1 }, key(0))
  * runAlgorithm(word2vecSgdAlgorithm(p, { epochs: 2 }), { seed: 0, maxSteps: 1000 }).steps // => 16
  * ```
@@ -373,7 +373,7 @@ export function word2vecSgdAlgorithm(
   const stepsPerEpoch = Math.ceil(n / batch)
   const total = stepsPerEpoch * epochs
   if (!(lr0 > 0) || !Number.isInteger(epochs) || epochs < 1 || !Number.isInteger(batch) || batch < 1)
-    throw new MdmlError('value', 'word2vecSgd: need a positive learning rate, epochs and batch')
+    throw new OmaiError('value', 'word2vecSgd: need a positive learning rate, epochs and batch')
   const inOff = 0
   const outOff = inputRows * d
   const order = (k: Key): Int32Array =>
@@ -530,7 +530,7 @@ const word2vecSgd: ModeSpec<Word2vecProblem, Word2vecSgdState, VectorParams> = {
  * @concept word-embeddings
  * @example
  * ```ts
- * import { solversWith } from 'mdml-engine/embedding'
+ * import { solversWith } from 'omai-engine/embedding'
  * solversWith({}).names.includes('lbfgs') // => true
  * ```
  */
@@ -582,8 +582,8 @@ export interface Word2vecModel {
  * @concept word-embeddings
  * @example
  * ```ts
- * import { word2vecModel, word2vecProblem } from 'mdml-engine/embedding'
- * import { key } from 'mdml-engine/random'
+ * import { word2vecModel, word2vecProblem } from 'omai-engine/embedding'
+ * import { key } from 'omai-engine/random'
  * const p = word2vecProblem([['a', 'b', 'c']], { dimension: 2, window: 1, negatives: 1 }, key(0))
  * word2vecModel(p, p.x0 as Float64Array).words // => ['a', 'b', 'c']
  * ```
@@ -634,8 +634,8 @@ export interface Word2vecHyper extends Word2vecOptions {
  * @index function Train skip-gram or CBOW word vectors with negative sampling.
  * @example
  * ```ts
- * import { trainWord2vec } from 'mdml-engine/embedding'
- * import { key } from 'mdml-engine/random'
+ * import { trainWord2vec } from 'omai-engine/embedding'
+ * import { key } from 'omai-engine/random'
  * const m = trainWord2vec([['a', 'b', 'c', 'a', 'b', 'c']], { dimension: 4, window: 1, solver: { kind: 'word2vecSgd', epochs: 2 } }, key(0))
  * m.vectors.rows.length // => 3
  * ```
@@ -665,8 +665,8 @@ export function trainWord2vec(
  * @concept word-embeddings
  * @example
  * ```ts
- * import { subwordVector, trainWord2vec } from 'mdml-engine/embedding'
- * import { key } from 'mdml-engine/random'
+ * import { subwordVector, trainWord2vec } from 'omai-engine/embedding'
+ * import { key } from 'omai-engine/random'
  * const m = trainWord2vec([['walking', 'walked', 'walks']], { dimension: 3, window: 2, subwords: { minn: 3, maxn: 4, buckets: 50 }, solver: { kind: 'word2vecSgd', epochs: 1 } }, key(1))
  * subwordVector(m, 'walker')?.length // => 3
  * ```

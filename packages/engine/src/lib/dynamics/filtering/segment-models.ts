@@ -8,7 +8,7 @@
  * closure for one-off use.
  */
 
-import { LOG_2PI, MdmlError } from '../../base/index.ts'
+import { LOG_2PI, OmaiError } from '../../base/index.ts'
 import { lgamma } from '../../numerics/special/index.ts'
 import { item } from '../../tensor/index.ts'
 import { positive } from './_check.ts'
@@ -109,7 +109,7 @@ function gaussianLog(y: number, mean: number, variance: number): number {
 }
 
 function finite(who: string, name: string, v: number): void {
-  if (!Number.isFinite(v)) throw new MdmlError('value', `${who}: ${name} must be finite`)
+  if (!Number.isFinite(v)) throw new OmaiError('value', `${who}: ${name} must be finite`)
 }
 
 const make = (start: number, length: number, stats: readonly number[]): RunStats => ({ start, length, stats })
@@ -120,11 +120,11 @@ const make = (start: number, length: number, stats: readonly number[]): RunStats
  *
  * @param model - The model and its prior.
  * @returns Its operations.
- * @throws MdmlError with code `value` for a scale, shape or rate that is not positive, or a prior that is not finite.
+ * @throws OmaiError with code `value` for a scale, shape or rate that is not positive, or a prior that is not finite.
  * @concept bayesian-changepoint-detection
  * @example
  * ```ts
- * import { filtering } from 'mdml-engine/dynamics'
+ * import { filtering } from 'omai-engine/dynamics'
  * const ops = filtering.segmentOps({ kind: 'poisson-gamma', shape: 2, rate: 1 })
  * const run = ops.update(ops.update(ops.fresh(0), 3, { t: 0, prev: 0 }), 5, { t: 1, prev: 3 })
  * [run.length, ops.predictiveMean(run, { t: 2, prev: 5 })] // => [2, 3.3333333333333335]
@@ -347,7 +347,7 @@ function posterior(ops: SegmentOps, run: RunStats): RunPosterior {
  * @concept bayesian-changepoint-detection
  * @example
  * ```ts
- * import { filtering } from 'mdml-engine/dynamics'
+ * import { filtering } from 'omai-engine/dynamics'
  * filtering.priorRun({ kind: 'bernoulli-beta', alpha: 1, beta: 1 }).predictiveMean() // => 0.5
  * ```
  */

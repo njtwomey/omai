@@ -1,4 +1,4 @@
-import { analyseThresholds } from 'mdml-engine/metrics'
+import { analyseThresholds } from 'omai-engine/metrics'
 import { describe, expect, it } from 'vitest'
 import { stillOf, viewFor } from './registry.ts'
 import {

@@ -6,8 +6,8 @@
  */
 
 import type { EChartsOption } from 'echarts'
-import { maxOf, minOf } from 'mdml-engine/base'
-import type { Epicycles } from 'mdml-engine/exposition'
+import { maxOf, minOf } from 'omai-engine/base'
+import type { Epicycles } from 'omai-engine/exposition'
 import { type Panel, subplots } from '../charts/compose.ts'
 import { lines } from '../charts/lines.ts'
 import { points } from '../charts/points.ts'

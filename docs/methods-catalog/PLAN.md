@@ -165,7 +165,7 @@ Say "go" with the wave name, and the following happens with no further questions
 
 **The standard brief** (copy, fill the angle brackets):
 
-> You are building <library code | render code | methods> for mdml in /Users/nialltwomey/workspace/whitebox-js,
+> You are building <library code | render code | methods> for omai in /Users/nialltwomey/workspace/whitebox-js,
 > working ONLY in the worktree .claude/worktrees/<name> on branch <name> (from main). Read first, binding: CLAUDE.md;
 > docs/structure.md for the domains you touch; packages/engine/src/methods/README.md, LIB.md (or RENDER.md) and the
 > chapter README tables for your scope, which name the exact functions, modes and tracks wanted. Old parked code for

@@ -8,7 +8,7 @@
  * @index function Pinhole camera with lens distortion: project, undistort, Rodrigues.
  */
 
-import { MdmlError, type Vec3 } from '../base/index.ts'
+import { OmaiError, type Vec3 } from '../base/index.ts'
 import { rotationFromMatrix, rotationFromRotvec } from '../numerics/geometry/index.ts'
 import type { Key } from '../random/index.ts'
 import { image } from '../signal/index.ts'
@@ -58,7 +58,7 @@ const coeffs = (d: Distortion | undefined): number[] => Array.from({ length: 8 }
  * @concept rotations
  * @example
  * ```ts
- * import { rodrigues } from 'mdml-engine/vision'
+ * import { rodrigues } from 'omai-engine/vision'
  * rodrigues([0, 0, Math.PI / 2]).map((r) => r.map((v) => Math.round(v * 1e12) / 1e12)) // => [[0, -1, 0], [1, 0, 0], [0, 0, 1]]
  * ```
  */
@@ -75,7 +75,7 @@ export function rodrigues(rvec: readonly number[]): MutableRows {
  * @concept rotations
  * @example
  * ```ts
- * import { rodriguesVector } from 'mdml-engine/vision'
+ * import { rodriguesVector } from 'omai-engine/vision'
  * rodriguesVector([[0, -1, 0], [1, 0, 0], [0, 0, 1]]).map((v) => Math.round(v * 1e12) / 1e12) // => [0, 0, 1.570796326795]
  * ```
  */
@@ -108,7 +108,7 @@ function distort(x: number, y: number, k: readonly number[]): [number, number] {
  * @concept camera-projection
  * @example
  * ```ts
- * import { projectPoints } from 'mdml-engine/vision'
+ * import { projectPoints } from 'omai-engine/vision'
  * projectPoints([[0, 0, 5], [1, 0, 5]], { rvec: [0, 0, 0], tvec: [0, 0, 0] }, [[100, 0, 50], [0, 100, 40], [0, 0, 1]]) // => [[50, 40], [70, 40]]
  * ```
  */
@@ -145,8 +145,8 @@ export function projectPoints(
  * @concept rotations
  * @example
  * ```ts
- * import { rodriguesValue } from 'mdml-engine/vision'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { rodriguesValue } from 'omai-engine/vision'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * toArray(rodriguesValue(tensor([0, 0, 0]))) // => [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
  * ```
  */
@@ -188,8 +188,8 @@ export function rodriguesValue(r: Value): Value {
  * @concept camera-projection
  * @example
  * ```ts
- * import { projectValue } from 'mdml-engine/vision'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { projectValue } from 'omai-engine/vision'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * toArray(projectValue(tensor([[1, 0, 5]]), tensor([0, 0, 0]), tensor([0, 0, 0]), tensor([100, 100, 50, 40]), tensor([0, 0, 0, 0]))) // => [[70, 40]]
  * ```
  */
@@ -233,7 +233,7 @@ export function projectValue(
  * @concept lens-distortion
  * @example
  * ```ts
- * import { undistortPoints } from 'mdml-engine/vision'
+ * import { undistortPoints } from 'omai-engine/vision'
  * undistortPoints([[70, 40]], [[100, 0, 50], [0, 100, 40], [0, 0, 1]], []) // => [[0.2, 0]]
  * ```
  */
@@ -312,7 +312,7 @@ export function undistortPoints(
  * @concept lens-distortion
  * @example
  * ```ts
- * import { initUndistortRectifyMap } from 'mdml-engine/vision'
+ * import { initUndistortRectifyMap } from 'omai-engine/vision'
  * initUndistortRectifyMap([[10, 0, 2], [0, 10, 1], [0, 0, 1]], [0.1], [4, 3]).mapX.shape // => [3, 4]
  * ```
  */
@@ -356,7 +356,7 @@ export function initUndistortRectifyMap(
 /** The inverse of a 3 x 3 matrix by its adjugate. */
 function invertTo(m: MutableRows): MutableRows {
   const d = det3(m)
-  if (d === 0) throw new MdmlError('value', 'singular 3 x 3 matrix')
+  if (d === 0) throw new OmaiError('value', 'singular 3 x 3 matrix')
   const a = (i: number, j: number): number => m[i]?.[j] ?? 0
   return [
     [
@@ -389,8 +389,8 @@ function invertTo(m: MutableRows): MutableRows {
  * @concept geometric-transform
  * @example
  * ```ts
- * import { remap } from 'mdml-engine/vision'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { remap } from 'omai-engine/vision'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(remap([[0, 10]], [[0.5]], [[0]])) // => [[5]]
  * ```
  */
@@ -425,7 +425,7 @@ export function remap(x: TensorLike, mapX: TensorLike, mapY: TensorLike): Tensor
  * @concept lens-distortion
  * @example
  * ```ts
- * import { undistortImage } from 'mdml-engine/vision'
+ * import { undistortImage } from 'omai-engine/vision'
  * undistortImage([[0, 1], [1, 0]], [[2, 0, 0.5], [0, 2, 0.5], [0, 0, 1]], [0.05]).shape // => [2, 2]
  * ```
  */
@@ -453,7 +453,7 @@ export function undistortImage(
  * @concept camera-projection
  * @example
  * ```ts
- * import { reprojectionError } from 'mdml-engine/vision'
+ * import { reprojectionError } from 'omai-engine/vision'
  * reprojectionError([[0, 0, 5]], [[53, 44]], { rvec: [0, 0, 0], tvec: [0, 0, 0] }, [[100, 0, 50], [0, 100, 40], [0, 0, 1]]) // => 5
  * ```
  */
@@ -466,7 +466,7 @@ export function reprojectionError(
 ): number {
   const proj = projectPoints(objectPoints, pose, cameraMatrix, distortion)
   const obs = pointsOf(imagePoints, 'reprojectionError')
-  if (obs.length !== proj.length) throw new MdmlError('shape', 'reprojectionError: one image point per object point')
+  if (obs.length !== proj.length) throw new OmaiError('shape', 'reprojectionError: one image point per object point')
   let s = 0
   proj.forEach(([u, v], i) => {
     const [a, b] = obs[i] as [number, number]
@@ -522,7 +522,7 @@ function linearPose(X: readonly Vec3[], x: readonly [number, number][]): Pose {
     R = nearestRotation([0, 1, 2].map((i) => [r0[i] ?? 0, r1[i] ?? 0, r2[i] ?? 0])).R
     t = c2.map((v) => v * lambda)
   } else {
-    if (X.length < 6) throw new MdmlError('value', 'solvePnP: six non-coplanar points are needed')
+    if (X.length < 6) throw new OmaiError('value', 'solvePnP: six non-coplanar points are needed')
     const rows: number[][] = []
     X.forEach(([a, b, c], i) => {
       const [u, v] = x[i] as [number, number]
@@ -553,7 +553,7 @@ function linearPose(X: readonly Vec3[], x: readonly [number, number][]): Pose {
  * @concept pose-estimation
  * @example
  * ```ts
- * import { projectPoints, solvePnP } from 'mdml-engine/vision'
+ * import { projectPoints, solvePnP } from 'omai-engine/vision'
  * const K = [[200, 0, 64], [0, 200, 48], [0, 0, 1]]
  * const X = [[0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0], [0.5, 0.2, 0]]
  * const x = projectPoints(X, { rvec: [0.1, -0.2, 0.05], tvec: [-0.5, -0.4, 4] }, K)
@@ -569,8 +569,8 @@ export function solvePnP(
 ): Pose {
   const X = points3Of(objectPoints, 'solvePnP')
   const x = pointsOf(imagePoints, 'solvePnP')
-  if (X.length !== x.length) throw new MdmlError('shape', 'solvePnP: one image point per object point')
-  if (X.length < 4) throw new MdmlError('value', 'solvePnP: at least four points are needed')
+  if (X.length !== x.length) throw new OmaiError('shape', 'solvePnP: one image point per object point')
+  if (X.length < 4) throw new OmaiError('value', 'solvePnP: at least four points are needed')
   const init = options.initial ?? linearPose(X, undistortPoints(x, cameraMatrix, distortion ?? []))
   const obj = tensor(X.map((p) => [...p]))
   const obs = tensor(x.map((p) => [...p]))
@@ -600,7 +600,7 @@ export function solvePnP(
  * @concept pose-estimation
  * @example
  * ```ts
- * import { projectPoints, solvePnPRansac } from 'mdml-engine/vision'
+ * import { projectPoints, solvePnPRansac } from 'omai-engine/vision'
  * const K = [[200, 0, 64], [0, 200, 48], [0, 0, 1]]
  * const X = [[0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0], [0.5, 0.2, 0], [0.2, 0.7, 0]]
  * const x = projectPoints(X, { rvec: [0, 0, 0], tvec: [0, 0, 4] }, K)
@@ -665,7 +665,7 @@ export function solvePnPRansac(
     },
   )
   const pose = r.model
-  if (pose === undefined) throw new MdmlError('value', 'solvePnPRansac: no pose fits the inliers')
+  if (pose === undefined) throw new OmaiError('value', 'solvePnPRansac: no pose fits the inliers')
   const mask = new Array<number>(X.length).fill(0)
   for (const i of r.inliers) mask[i] = 1
   return { ...pose, mask }

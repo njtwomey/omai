@@ -46,7 +46,7 @@ export interface ShapeSpec {
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { shapeRows } from 'mdml-engine/gam'
+ * import { shapeRows } from 'omai-engine/gam'
  * const grid = Float64Array.from([0, 0.5, 1])
  * const block = shapeRows({ shapes: ['increasing'], lower: undefined, upper: undefined, basis: 'cr', k: 1, Z: undefined, width: 1, grid, gridSize: 3 })
  * block?.count // => 2

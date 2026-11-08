@@ -7,7 +7,7 @@
  * as the batch grower's, so prediction, drawing and importances are shared. The stream is the rows of the data in order.
  */
 
-import { MdmlError, maxOf } from '../base/index.ts'
+import { maxOf, OmaiError } from '../base/index.ts'
 import { type IterativeEstimator, iterative } from '../learn/bases/iterative.ts'
 import { type LearnData, withDefaultScore } from '../learn/estimator.ts'
 import { encodeLabels, matrixView, rowsOf } from '../learn/validation.ts'
@@ -218,7 +218,7 @@ function routeTo(nodes: readonly HoeffdingNode[], row: ArrayLike<number>): numbe
  *
  * @example
  * ```ts
- * import type { HoeffdingPath } from 'mdml-engine/trees'
+ * import type { HoeffdingPath } from 'omai-engine/trees'
  * const path: HoeffdingPath = 'tree/split'
  * path // => 'tree/split'
  * ```
@@ -238,8 +238,8 @@ export type HoeffdingPath = 'tree/split' | 'tree/leaves' | 'tree/depth' | 'eval/
  * @concept decision-trees
  * @example
  * ```ts
- * import { hoeffdingTreeAlgorithm, hoeffdingTreeOf } from 'mdml-engine/trees'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { hoeffdingTreeAlgorithm, hoeffdingTreeOf } from 'omai-engine/trees'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const options = { gracePeriod: 10, delta: 1e-3, tieThreshold: 0.05, criterion: 'entropy' as const, nSplitPoints: 10, minBranchFraction: 0.01, categorical: [], passes: 1 }
  * const data = { x: Array.from({ length: 100 }, (_, i) => [i / 100]), y: Array.from({ length: 100 }, (_, i) => (i < 50 ? 0 : 1)) }
  * const run = runAlgorithm(hoeffdingTreeAlgorithm(data, options), { maxSteps: 100 })
@@ -251,7 +251,7 @@ export function hoeffdingTreeAlgorithm(
   options: HoeffdingOptions,
 ): Algorithm<HoeffdingState, HoeffdingPath> {
   const m = matrixView(data.x, 'hoeffdingTree', { allowNaN: true })
-  if (data.y === undefined) throw new MdmlError('value', 'hoeffdingTree: needs targets y')
+  if (data.y === undefined) throw new OmaiError('value', 'hoeffdingTree: needs targets y')
   const { classes, codes } = encodeLabels(data.y, 'hoeffdingTree', m.n)
   const k = classes.length
   const categorical = new Set(options.categorical)
@@ -371,7 +371,7 @@ export function hoeffdingTreeAlgorithm(
  * @returns The tree.
  * @example
  * ```ts
- * import { hoeffdingTreeOf } from 'mdml-engine/trees'
+ * import { hoeffdingTreeOf } from 'omai-engine/trees'
  * const root = { id: 0, parent: -1, depth: 0, counts: [3, 1], feature: -1, threshold: -2, categories: [], left: -1, right: -1 }
  * hoeffdingTreeOf({ nodes: [root], seen: 4, correct: 3 }, { classes: [0, 1], nFeatures: 1 }).value // => [[3, 1]]
  * ```
@@ -421,8 +421,8 @@ export type HoeffdingEstimator = IterativeEstimator<
  * @index estimator Streaming decision tree with the Hoeffding bound.
  * @example
  * ```ts
- * import { hoeffdingTreeClassifier } from 'mdml-engine/trees'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { hoeffdingTreeClassifier } from 'omai-engine/trees'
+ * import { toFlat } from 'omai-engine/tensor'
  * const x = Array.from({ length: 200 }, (_, i) => [i / 200])
  * const y = x.map(([v = 0]) => (v < 0.5 ? 0 : 1))
  * const fitted = hoeffdingTreeClassifier({ gracePeriod: 20, delta: 1e-3 }).fit({ x, y })

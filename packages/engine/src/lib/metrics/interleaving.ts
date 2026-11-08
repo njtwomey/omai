@@ -5,7 +5,7 @@
  * impressions won estimates the preference far more sensitively than an A/B test of the two rankers on separate users.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { foldIn, type Key, uniform } from '../random/index.ts'
 
 /** The ranker that supplied a position. */
@@ -29,8 +29,8 @@ export interface Interleaving {
  * @concept interleaving
  * @example
  * ```ts
- * import { teamDraftInterleave } from 'mdml-engine/metrics'
- * import { key } from 'mdml-engine/random'
+ * import { teamDraftInterleave } from 'omai-engine/metrics'
+ * import { key } from 'omai-engine/random'
  * const r = teamDraftInterleave([1, 2, 3], [3, 4, 5], key(0))
  * [r.items.length, new Set(r.items).size] // => [5, 5]
  * ```
@@ -69,11 +69,11 @@ export function teamDraftInterleave(
  * @param teams - The team of each position of the interleaved list.
  * @param clicks - Whether each position was clicked (1) or not (0).
  * @returns The clicks per team and the winner.
- * @throws MdmlError with code `shape` for different lengths.
+ * @throws OmaiError with code `shape` for different lengths.
  * @concept interleaving
  * @example
  * ```ts
- * import { interleavingCredit } from 'mdml-engine/metrics'
+ * import { interleavingCredit } from 'omai-engine/metrics'
  * interleavingCredit(['a', 'b', 'a', 'b'], [1, 0, 0, 1]) // => { a: 1, b: 1, winner: 'tie' }
  * ```
  */
@@ -82,7 +82,7 @@ export function interleavingCredit(
   clicks: readonly number[],
 ): { readonly a: number; readonly b: number; readonly winner: Team | 'tie' } {
   if (teams.length !== clicks.length)
-    throw new MdmlError('shape', 'interleavingCredit: teams and clicks differ in length')
+    throw new OmaiError('shape', 'interleavingCredit: teams and clicks differ in length')
   let a = 0
   let b = 0
   for (const [i, t] of teams.entries()) {
@@ -103,7 +103,7 @@ export function interleavingCredit(
  * @concept interleaving
  * @example
  * ```ts
- * import { interleavingPreference } from 'mdml-engine/metrics'
+ * import { interleavingPreference } from 'omai-engine/metrics'
  * interleavingPreference(['a', 'a', 'b', 'tie']).preference // => 0.6666666666666666
  * ```
  */

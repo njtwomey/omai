@@ -5,7 +5,7 @@
  * The model as a traced algorithm with the fish and shark counts and an extinction event.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { foldIn, permutation } from '../../random/index.ts'
 import {
   type Algorithm,
@@ -68,12 +68,12 @@ export const waTorContract: Contract<WaTorState, WaTorPath> = defineContract({
  *
  * @param options - Size, starting shares, breeding ages and shark energies.
  * @returns The algorithm.
- * @throws MdmlError with code `value` for a bad size, shares above 1 in total, or non-positive ages and energies.
+ * @throws OmaiError with code `value` for a bad size, shares above 1 in total, or non-positive ages and energies.
  * @concept wa-tor
  * @example
  * ```ts
- * import { automata } from 'mdml-engine/dynamics'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { automata } from 'omai-engine/dynamics'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * // Fish alone, breeding every step, double at first: 1 fish, 2, 4.
  * const alg = automata.waTor({ width: 30, height: 30, fish: 1 / 900, sharks: 0, fishBreed: 1 })
  * runAlgorithm(alg, { seed: 0, maxSteps: 2 }).state.fish // => 4
@@ -97,7 +97,7 @@ export function waTor(options: WaTorOptions = {}): Algorithm<WaTorState, WaTorPa
   unit('waTor', 'fish', fishShare)
   unit('waTor', 'sharks', sharkShare)
   if (fishShare + sharkShare > 1)
-    throw new MdmlError('value', 'waTor: the fish and sharks cannot fill more than the ocean')
+    throw new OmaiError('value', 'waTor: the fish and sharks cannot fill more than the ocean')
   const n = width * height
   const around = (i: number): number[] => {
     const r = Math.floor(i / width)

@@ -7,8 +7,8 @@ from importlib.metadata import version
 import cv2
 import numpy as np
 import scipy.ndimage as N
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray, rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray, rng
 
 REFERENCE: dict[str, str] = {"opencv-python-headless": version("opencv-python-headless")}
 

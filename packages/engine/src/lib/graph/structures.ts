@@ -4,16 +4,16 @@
  * queue with decrease-key for Dijkstra and Prim.
  */
 
-import { type Heap, heap, MdmlError } from '../base/index.ts'
+import { type Heap, heap, OmaiError } from '../base/index.ts'
 
 /**
- * A binary heap as a class, over `heap` from `mdml-engine/base`: the element that `compare` puts first is on top.
+ * A binary heap as a class, over `heap` from `omai-engine/base`: the element that `compare` puts first is on top.
  * The priority queue of best-first searches and of lazy-deletion Dijkstra and Prim.
  *
  * @concept priority-queues
  * @example
  * ```ts
- * import { BinaryHeap } from 'mdml-engine/graph'
+ * import { BinaryHeap } from 'omai-engine/graph'
  * const h = new BinaryHeap((a: number, b: number) => a - b, [4, 1, 3])
  * h.push(0)
  * [h.pop(), h.pop(), h.size] // => [0, 1, 2]
@@ -30,7 +30,7 @@ export class BinaryHeap<T> {
    * @returns The heap.
    * @example
    * ```ts
-   * import { BinaryHeap } from 'mdml-engine/graph'
+   * import { BinaryHeap } from 'omai-engine/graph'
    * new BinaryHeap((a: number, b: number) => b - a, [1, 5, 2]).peek() // => 5
    * ```
    */
@@ -50,7 +50,7 @@ export class BinaryHeap<T> {
    * @returns Nothing.
    * @example
    * ```ts
-   * import { BinaryHeap } from 'mdml-engine/graph'
+   * import { BinaryHeap } from 'omai-engine/graph'
    * const h = new BinaryHeap((a: number, b: number) => a - b)
    * h.push(2)
    * h.size // => 1
@@ -66,7 +66,7 @@ export class BinaryHeap<T> {
    * @returns The top element, or `undefined` when empty.
    * @example
    * ```ts
-   * import { BinaryHeap } from 'mdml-engine/graph'
+   * import { BinaryHeap } from 'omai-engine/graph'
    * new BinaryHeap((a: number, b: number) => a - b, [3, 2]).pop() // => 2
    * ```
    */
@@ -80,7 +80,7 @@ export class BinaryHeap<T> {
    * @returns The top element, or `undefined` when empty.
    * @example
    * ```ts
-   * import { BinaryHeap } from 'mdml-engine/graph'
+   * import { BinaryHeap } from 'omai-engine/graph'
    * new BinaryHeap((a: number, b: number) => a - b).peek() // => undefined
    * ```
    */
@@ -94,7 +94,7 @@ export class BinaryHeap<T> {
    * @returns A copy of the elements.
    * @example
    * ```ts
-   * import { BinaryHeap } from 'mdml-engine/graph'
+   * import { BinaryHeap } from 'omai-engine/graph'
    * new BinaryHeap((a: number, b: number) => a - b, [2, 1]).toArray().length // => 2
    * ```
    */
@@ -110,7 +110,7 @@ export class BinaryHeap<T> {
  * @concept union-find
  * @example
  * ```ts
- * import { UnionFind } from 'mdml-engine/graph'
+ * import { UnionFind } from 'omai-engine/graph'
  * const uf = new UnionFind(4)
  * uf.union(0, 1)
  * uf.union(2, 3)
@@ -128,15 +128,15 @@ export class UnionFind {
    *
    * @param n - The number of elements.
    * @returns The structure.
-   * @throws MdmlError with code `value` when `n` is negative or not an integer.
+   * @throws OmaiError with code `value` when `n` is negative or not an integer.
    * @example
    * ```ts
-   * import { UnionFind } from 'mdml-engine/graph'
+   * import { UnionFind } from 'omai-engine/graph'
    * new UnionFind(3).count // => 3
    * ```
    */
   constructor(n: number) {
-    if (!Number.isInteger(n) || n < 0) throw new MdmlError('value', `UnionFind: size ${n} is not valid`)
+    if (!Number.isInteger(n) || n < 0) throw new OmaiError('value', `UnionFind: size ${n} is not valid`)
     this.#parent = Int32Array.from({ length: n }, (_, i) => i)
     this.#rank = new Uint8Array(n)
     this.#size = new Int32Array(n).fill(1)
@@ -155,7 +155,7 @@ export class UnionFind {
    * @returns Its representative.
    * @example
    * ```ts
-   * import { UnionFind } from 'mdml-engine/graph'
+   * import { UnionFind } from 'omai-engine/graph'
    * const uf = new UnionFind(2)
    * uf.union(0, 1)
    * uf.find(0) === uf.find(1) // => true
@@ -180,7 +180,7 @@ export class UnionFind {
    * @returns True when they were in different sets (and are now merged).
    * @example
    * ```ts
-   * import { UnionFind } from 'mdml-engine/graph'
+   * import { UnionFind } from 'omai-engine/graph'
    * const uf = new UnionFind(2)
    * [uf.union(0, 1), uf.union(1, 0)] // => [true, false]
    * ```
@@ -205,7 +205,7 @@ export class UnionFind {
    * @returns True when connected.
    * @example
    * ```ts
-   * import { UnionFind } from 'mdml-engine/graph'
+   * import { UnionFind } from 'omai-engine/graph'
    * new UnionFind(2).connected(0, 1) // => false
    * ```
    */
@@ -220,7 +220,7 @@ export class UnionFind {
    * @returns The number of elements in its set.
    * @example
    * ```ts
-   * import { UnionFind } from 'mdml-engine/graph'
+   * import { UnionFind } from 'omai-engine/graph'
    * const uf = new UnionFind(3)
    * uf.union(0, 2)
    * uf.setSize(2) // => 2
@@ -237,7 +237,7 @@ export class UnionFind {
    * @returns The copy.
    * @example
    * ```ts
-   * import { UnionFind } from 'mdml-engine/graph'
+   * import { UnionFind } from 'omai-engine/graph'
    * const a = new UnionFind(3)
    * const b = a.clone()
    * b.union(0, 1)
@@ -259,7 +259,7 @@ export class UnionFind {
    * @returns The parents, ranks and sizes as arrays, and the number of sets.
    * @example
    * ```ts
-   * import { UnionFind } from 'mdml-engine/graph'
+   * import { UnionFind } from 'omai-engine/graph'
    * const uf = new UnionFind(3)
    * uf.union(0, 1)
    * UnionFind.fromJSON(uf.toJSON()).count // => 2
@@ -279,10 +279,10 @@ export class UnionFind {
    *
    * @param json - The plain data.
    * @returns The structure.
-   * @throws MdmlError with code `value` when the arrays differ in length.
+   * @throws OmaiError with code `value` when the arrays differ in length.
    * @example
    * ```ts
-   * import { UnionFind } from 'mdml-engine/graph'
+   * import { UnionFind } from 'omai-engine/graph'
    * const uf = new UnionFind(4)
    * uf.union(1, 3)
    * UnionFind.fromJSON(uf.toJSON()).connected(1, 3) // => true
@@ -295,7 +295,7 @@ export class UnionFind {
     readonly count: number
   }): UnionFind {
     if (json.rank.length !== json.parent.length || json.size.length !== json.parent.length)
-      throw new MdmlError('value', 'UnionFind.fromJSON: the arrays differ in length')
+      throw new OmaiError('value', 'UnionFind.fromJSON: the arrays differ in length')
     const uf = new UnionFind(0)
     uf.#parent = Int32Array.from(json.parent)
     uf.#rank = Uint8Array.from(json.rank)
@@ -310,7 +310,7 @@ export class UnionFind {
    * @returns The partition.
    * @example
    * ```ts
-   * import { UnionFind } from 'mdml-engine/graph'
+   * import { UnionFind } from 'omai-engine/graph'
    * const uf = new UnionFind(4)
    * uf.union(3, 1)
    * uf.sets() // => [[0], [1, 3], [2]]
@@ -336,7 +336,7 @@ export class UnionFind {
  * @concept priority-queues
  * @example
  * ```ts
- * import { IndexedQueue } from 'mdml-engine/graph'
+ * import { IndexedQueue } from 'omai-engine/graph'
  * const q = new IndexedQueue(3)
  * q.push(0, 5)
  * q.push(2, 1)
@@ -357,7 +357,7 @@ export class IndexedQueue {
    * @returns The queue.
    * @example
    * ```ts
-   * import { IndexedQueue } from 'mdml-engine/graph'
+   * import { IndexedQueue } from 'omai-engine/graph'
    * new IndexedQueue(4).size // => 0
    * ```
    */
@@ -420,7 +420,7 @@ export class IndexedQueue {
    * @returns True when queued.
    * @example
    * ```ts
-   * import { IndexedQueue } from 'mdml-engine/graph'
+   * import { IndexedQueue } from 'omai-engine/graph'
    * const q = new IndexedQueue(2)
    * q.push(1, 3)
    * [q.has(0), q.has(1)] // => [false, true]
@@ -437,7 +437,7 @@ export class IndexedQueue {
    * @returns Its priority, or `undefined` when it is not queued.
    * @example
    * ```ts
-   * import { IndexedQueue } from 'mdml-engine/graph'
+   * import { IndexedQueue } from 'omai-engine/graph'
    * const q = new IndexedQueue(2)
    * q.push(1, 3)
    * q.priority(1) // => 3
@@ -453,10 +453,10 @@ export class IndexedQueue {
    * @param key - The key.
    * @param priority - Its priority (smaller comes out first).
    * @returns Nothing.
-   * @throws MdmlError with code `value` when the key is out of range.
+   * @throws OmaiError with code `value` when the key is out of range.
    * @example
    * ```ts
-   * import { IndexedQueue } from 'mdml-engine/graph'
+   * import { IndexedQueue } from 'omai-engine/graph'
    * const q = new IndexedQueue(2)
    * q.push(0, 2)
    * q.push(0, 7)
@@ -465,7 +465,7 @@ export class IndexedQueue {
    */
   push(key: number, priority: number): void {
     if (!(key >= 0 && key < this.#position.length)) {
-      throw new MdmlError('value', `IndexedQueue: key ${key} is out of range`)
+      throw new OmaiError('value', `IndexedQueue: key ${key} is out of range`)
     }
     const at = this.#position[key] ?? -1
     this.#priority[key] = priority
@@ -488,7 +488,7 @@ export class IndexedQueue {
    * @returns True when the queue changed.
    * @example
    * ```ts
-   * import { IndexedQueue } from 'mdml-engine/graph'
+   * import { IndexedQueue } from 'omai-engine/graph'
    * const q = new IndexedQueue(1)
    * q.push(0, 2)
    * [q.decrease(0, 3), q.decrease(0, 1)] // => [false, true]
@@ -507,7 +507,7 @@ export class IndexedQueue {
    * @returns The key, or `undefined` when empty.
    * @example
    * ```ts
-   * import { IndexedQueue } from 'mdml-engine/graph'
+   * import { IndexedQueue } from 'omai-engine/graph'
    * const q = new IndexedQueue(3)
    * q.push(2, 1)
    * q.push(1, 1)
@@ -530,7 +530,7 @@ export class IndexedQueue {
    * @returns The key, or `undefined` when empty.
    * @example
    * ```ts
-   * import { IndexedQueue } from 'mdml-engine/graph'
+   * import { IndexedQueue } from 'omai-engine/graph'
    * const q = new IndexedQueue(2)
    * q.push(1, 0)
    * q.peek() // => 1

@@ -108,10 +108,10 @@ are already tensor to tensor.
    and a test. The one with reach: `lstsq` and `polyfit` on a rank-deficient system return the minimum-norm solution (today garbage of size
    1e15); 20 callers outside numerics. I recommend yes to all of Wave B; say if any should wait.
 3. **The failure convention (P3.20).** Options: (a) numeric routines return a result with one `status` vocabulary and never throw for
-   non-convergence; invalid arguments throw `MdmlError('value')`; (b) throw on non-convergence everywhere; (c) leave it per domain.
+   non-convergence; invalid arguments throw `OmaiError('value')`; (b) throw on non-convergence everywhere; (c) leave it per domain.
    I recommend (a): the vector minimisers already do it, and `RunStatus` already exists; the mathematical-programming solvers map onto it.
 4. **The NaN, Infinity and empty-input rule (P3.30).** Options: (a) elementwise operations propagate NaN like numpy, and everything that
-   summarises or decides (tests, metrics, splits, solvers) rejects non-finite input at its boundary with `MdmlError('value')`; empty input
+   summarises or decides (tests, metrics, splits, solvers) rejects non-finite input at its boundary with `OmaiError('value')`; empty input
    returns the mathematically stated value or throws, per a table; (b) reject everywhere; (c) leave it. I recommend (a).
 5. **The native-array migration (D-009 / Wave E).** Go, no-go, or only part (for example `random`, `data`, `stats`, `metrics` first)?
    It changes about 128 public signatures, staged by domain, and is the one deliberate break of the surface. I recommend starting with the

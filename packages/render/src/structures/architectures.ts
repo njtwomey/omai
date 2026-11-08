@@ -1,10 +1,10 @@
 /**
- * Views of a neural network's structure, as `describe` in `mdml-engine/nn` gives it: the full diagram (blocks and
+ * Views of a neural network's structure, as `describe` in `omai-engine/nn` gives it: the full diagram (blocks and
  * repeats as groups, skip connections, tensor shapes on the edges), a compact stack of one box per layer, the flow of
  * tensor shapes, and a treemap of parameter counts, with `flowOrder` for animating a forward pass.
  */
 
-import { maxOf, minOf } from 'mdml-engine/base'
+import { maxOf, minOf } from 'omai-engine/base'
 import {
   arrow,
   rect,
@@ -14,7 +14,7 @@ import {
   type StructureNode,
   scene,
   text,
-} from 'mdml-engine/scene'
+} from 'omai-engine/scene'
 import { type DiagramOptions, diagram } from './diagram.ts'
 
 /** The views of a network's structure. */
@@ -209,7 +209,7 @@ function paramTreemap(s: Structure, width: number): Scene {
 }
 
 /**
- * Views of a network's structure (as `describe` in `mdml-engine/nn` gives it): the full `diagram` (blocks and
+ * Views of a network's structure (as `describe` in `omai-engine/nn` gives it): the full `diagram` (blocks and
  * repeats as groups, skip connections, shapes on the edges), a `compact` stack (one box per layer, no groups or edge
  * labels), the tensor-shape flow (`shapes`: each layer a bar sized by its output per example), and a treemap of where
  * the parameters are (`params`).
@@ -221,8 +221,8 @@ function paramTreemap(s: Structure, width: number): Scene {
  * @index function Draw a network from `describe` as a scene: `architecture(desc, 'compact')`.
  * @example
  * ```ts
- * import { describe, mlp } from 'mdml-engine/nn'
- * import { architecture } from 'mdml-render/structures'
+ * import { describe, mlp } from 'omai-engine/nn'
+ * import { architecture } from 'omai-render/structures'
  * architecture(describe(mlp([2, 4, 1]), [8, 2]), 'params').title // => 'parameters'
  * ```
  */

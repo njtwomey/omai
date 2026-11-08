@@ -1,4 +1,4 @@
-# Tool versions for mdml-js. `make setup` runs `mise install`.
+# Tool versions for omai. `make setup` runs `mise install`.
 [tools]
 node = "24.22.1"
 pnpm = "12.15.0"

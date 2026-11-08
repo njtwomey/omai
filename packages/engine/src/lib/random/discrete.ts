@@ -4,7 +4,7 @@
  * geometric draws, plus Vose alias tables for O(1) sampling from a fixed discrete distribution.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { fromStorage, type Shape, sizeOf, type Tensor, type TensorLike, toVector } from '../tensor/index.ts'
 import { unitDoubles } from './_unit.ts'
 import { binomialOne, poissonOne } from './_variates.ts'
@@ -18,7 +18,7 @@ function ints(name: string, shape: Shape, draw: (i: number) => number): Tensor<'
   const out = new Int32Array(sizeOf(shape))
   for (let i = 0; i < out.length; i++) {
     const v = draw(i)
-    if (!(v <= INT32_MAX)) throw new MdmlError('value', `${name}: a draw of ${v} does not fit an int32`)
+    if (!(v <= INT32_MAX)) throw new OmaiError('value', `${name}: a draw of ${v} does not fit an int32`)
     out[i] = v
   }
   return fromStorage(out, [...shape], 'int32')
@@ -32,15 +32,15 @@ function ints(name: string, shape: Shape, draw: (i: number) => number): Tensor<'
  * @param low - Smallest value.
  * @param high - Exclusive upper bound.
  * @returns An int32 tensor.
- * @throws MdmlError with code `value` unless `high > low`.
+ * @throws OmaiError with code `value` unless `high > low`.
  * @example
  * ```ts
- * import { key, randint } from 'mdml-engine/random'
+ * import { key, randint } from 'omai-engine/random'
  * randint(key(0), [5], 0, 3).data.every((v) => v >= 0 && v < 3) // => true
  * ```
  */
 export function randint(k: Key, shape: Shape, low: number, high: number): Tensor<'int32'> {
-  if (!(high > low)) throw new MdmlError('value', `randint: need high > low, got [${low}, ${high})`)
+  if (!(high > low)) throw new OmaiError('value', `randint: need high > low, got [${low}, ${high})`)
   const u = unitDoubles(k, sizeOf(shape))
   return ints('randint', shape, (i) => low + Math.floor((u[i] ?? 0) * (high - low)))
 }
@@ -52,15 +52,15 @@ export function randint(k: Key, shape: Shape, low: number, high: number): Tensor
  * @param p - Success probability in [0, 1].
  * @param shape - Output shape.
  * @returns A bool tensor.
- * @throws MdmlError with code `value` unless `p` is in [0, 1].
+ * @throws OmaiError with code `value` unless `p` is in [0, 1].
  * @example
  * ```ts
- * import { key, bernoulli } from 'mdml-engine/random'
+ * import { key, bernoulli } from 'omai-engine/random'
  * Array.from(bernoulli(key(0), 1, [3]).data) // => [1, 1, 1]
  * ```
  */
 export function bernoulli(k: Key, p: number, shape: Shape): Tensor<'bool'> {
-  if (!(p >= 0 && p <= 1)) throw new MdmlError('value', `bernoulli: p must be in [0, 1], got ${p}`)
+  if (!(p >= 0 && p <= 1)) throw new OmaiError('value', `bernoulli: p must be in [0, 1], got ${p}`)
   const u = unitDoubles(k, sizeOf(shape))
   const out = new Uint8Array(u.length)
   for (let i = 0; i < u.length; i++) out[i] = (u[i] ?? 0) < p ? 1 : 0
@@ -70,7 +70,7 @@ export function bernoulli(k: Key, p: number, shape: Shape): Tensor<'bool'> {
 function cumulative(weights: readonly number[], name: string): number[] {
   const total = weights.reduce((a, b) => a + b, 0)
   if (!(total > 0) || !Number.isFinite(total) || weights.some((w) => w < 0 || Number.isNaN(w))) {
-    throw new MdmlError('value', `${name}: weights must be non-negative with a positive finite sum`)
+    throw new OmaiError('value', `${name}: weights must be non-negative with a positive finite sum`)
   }
   let acc = 0
   return weights.map((w) => {
@@ -103,12 +103,12 @@ function invert(cdf: readonly number[], weights: readonly number[], u: number): 
  * @param shape - Output shape.
  * @param options - `logits`: treat `weights` as unnormalised log-probabilities.
  * @returns An int32 tensor of category indices.
- * @throws MdmlError with code `value` when the weights have no positive finite sum, `shape` unless `weights` is a
+ * @throws OmaiError with code `value` when the weights have no positive finite sum, `shape` unless `weights` is a
  * vector and `not-differentiable` for traced weights.
  * @index function Samples from a categorical distribution given probabilities or logits.
  * @example
  * ```ts
- * import { key, categorical } from 'mdml-engine/random'
+ * import { key, categorical } from 'omai-engine/random'
  * Array.from(categorical(key(0), [0, 1, 0], [4]).data) // => [1, 1, 1, 1]
  * ```
  */
@@ -141,16 +141,16 @@ export function categorical(
  * nested array.
  * @param samples - Number of independent count vectors.
  * @returns An int32 tensor of shape `[samples, K]`, each row summing to `n`.
- * @throws MdmlError with code `value` for a bad `n` or weights without a positive finite sum, `shape` unless `probs`
+ * @throws OmaiError with code `value` for a bad `n` or weights without a positive finite sum, `shape` unless `probs`
  * is a vector and `not-differentiable` for traced `probs`.
  * @example
  * ```ts
- * import { key, multinomial } from 'mdml-engine/random'
+ * import { key, multinomial } from 'omai-engine/random'
  * Array.from(multinomial(key(0), 10, [0.5, 0.5], 1).data).reduce((a, b) => a + b) // => 10
  * ```
  */
 export function multinomial(k: Key, n: number, probs: TensorLike, samples: number): Tensor<'int32'> {
-  if (!Number.isInteger(n) || n < 0) throw new MdmlError('value', `multinomial: n must be a non-negative integer`)
+  if (!Number.isInteger(n) || n < 0) throw new OmaiError('value', `multinomial: n must be a non-negative integer`)
   const p = toVector(probs, 'multinomial')
   const cdf = cumulative(p, 'multinomial')
   const K = p.length
@@ -180,17 +180,17 @@ export function multinomial(k: Key, n: number, probs: TensorLike, samples: numbe
  * @param lambda - The rate (non-negative).
  * @param shape - Output shape.
  * @returns An int32 tensor.
- * @throws MdmlError with code `value` for a negative or non-finite rate, or a draw beyond the int32 range.
+ * @throws OmaiError with code `value` for a negative or non-finite rate, or a draw beyond the int32 range.
  * @reference Hormann (1993), The transformed rejection method for generating Poisson random variables.
  * @example
  * ```ts
- * import { key, poisson } from 'mdml-engine/random'
+ * import { key, poisson } from 'omai-engine/random'
  * poisson(key(0), 3, [5]).data.every((v) => v >= 0) // => true
  * ```
  */
 export function poisson(k: Key, lambda: number, shape: Shape): Tensor<'int32'> {
   if (!(lambda >= 0 && lambda < Infinity)) {
-    throw new MdmlError('value', `poisson: rate must be finite and non-negative, got ${lambda}`)
+    throw new OmaiError('value', `poisson: rate must be finite and non-negative, got ${lambda}`)
   }
   const next = uniformStream(k)
   return ints('poisson', shape, () => poissonOne(lambda, next))
@@ -205,18 +205,18 @@ export function poisson(k: Key, lambda: number, shape: Shape): Tensor<'int32'> {
  * @param p - Success probability.
  * @param shape - Output shape.
  * @returns An int32 tensor.
- * @throws MdmlError with code `value` unless `n` is a non-negative integer and `p` is in [0, 1].
+ * @throws OmaiError with code `value` unless `n` is a non-negative integer and `p` is in [0, 1].
  * @reference Kachitvichyanukul and Schmeiser (1988), Binomial random variate generation, CACM 31(2).
  * @example
  * ```ts
- * import { key, binomial } from 'mdml-engine/random'
+ * import { key, binomial } from 'omai-engine/random'
  * binomial(key(0), 10, 0.3, [5]).data.every((v) => v >= 0 && v <= 10) // => true
  * binomial(key(0), 1e6, 0.5, [3]).data.every((v) => Math.abs(v - 5e5) < 5000) // => true
  * ```
  */
 export function binomial(k: Key, n: number, p: number, shape: Shape): Tensor<'int32'> {
   if (!(p >= 0 && p <= 1) || !Number.isInteger(n) || n < 0) {
-    throw new MdmlError('value', 'binomial: need an integer n >= 0 and p in [0, 1]')
+    throw new OmaiError('value', 'binomial: need an integer n >= 0 and p in [0, 1]')
   }
   const next = uniformStream(k)
   return ints('binomial', shape, () => binomialOne(n, p, next))
@@ -229,15 +229,15 @@ export function binomial(k: Key, n: number, p: number, shape: Shape): Tensor<'in
  * @param p - Success probability in (0, 1].
  * @param shape - Output shape.
  * @returns An int32 tensor of values at least 1.
- * @throws MdmlError with code `value` unless `p` is in (0, 1], or when a draw does not fit an int32 (tiny `p`).
+ * @throws OmaiError with code `value` unless `p` is in (0, 1], or when a draw does not fit an int32 (tiny `p`).
  * @example
  * ```ts
- * import { key, geometric } from 'mdml-engine/random'
+ * import { key, geometric } from 'omai-engine/random'
  * Array.from(geometric(key(0), 1, [3]).data) // => [1, 1, 1]
  * ```
  */
 export function geometric(k: Key, p: number, shape: Shape): Tensor<'int32'> {
-  if (!(p > 0 && p <= 1)) throw new MdmlError('value', `geometric: p must be in (0, 1], got ${p}`)
+  if (!(p > 0 && p <= 1)) throw new OmaiError('value', `geometric: p must be in (0, 1], got ${p}`)
   const u = unitDoubles(k, sizeOf(shape))
   return ints('geometric', shape, (i) => (p === 1 ? 1 : Math.floor(Math.log1p(-(u[i] ?? 0)) / Math.log1p(-p)) + 1))
 }
@@ -256,11 +256,11 @@ export interface AliasTable {
  *
  * @param weights - Non-negative weights: a vector (a tensor, a typed array or a nested array).
  * @returns The table, whose `probability` and `alias` are tensors of shape `[n]`.
- * @throws MdmlError with code `value` for weights without a positive finite sum, `shape` unless `weights` is a
+ * @throws OmaiError with code `value` for weights without a positive finite sum, `shape` unless `weights` is a
  * vector and `not-differentiable` for traced weights.
  * @example
  * ```ts
- * import { aliasTable } from 'mdml-engine/random'
+ * import { aliasTable } from 'omai-engine/random'
  * aliasTable([1, 1]).alias.shape // => [2]
  * ```
  */
@@ -301,7 +301,7 @@ export function aliasTable(weights: TensorLike): AliasTable {
  * @returns An int32 tensor of category indices.
  * @example
  * ```ts
- * import { key, aliasTable, aliasSample } from 'mdml-engine/random'
+ * import { key, aliasTable, aliasSample } from 'omai-engine/random'
  * Array.from(aliasSample(key(0), aliasTable([0, 1]), [3]).data) // => [1, 1, 1]
  * ```
  */

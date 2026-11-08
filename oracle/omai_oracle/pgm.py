@@ -1,4 +1,4 @@
-"""Shared pieces for the pgm case modules: example networks in mdml-js's layout, their pgmpy models, and the
+"""Shared pieces for the pgm case modules: example networks in omai's layout, their pgmpy models, and the
 helpers that make pgmpy's results reproducible (explicit elimination orders, query-ordered axes, rounding)."""
 
 from collections.abc import Hashable, Sequence
@@ -13,7 +13,7 @@ from pgmpy.models import DiscreteBayesianNetwork, DiscreteMarkovNetwork
 from .helpers import FloatArray
 
 # Each node: name, states, parents, and P(node | parents) as rows over the node's states, one row per joint parent
-# assignment with the first parent varying slowest (mdml-js's layout).
+# assignment with the first parent varying slowest (omai's layout).
 type NodeSpec = tuple[str, list[str], list[str], list[list[float]]]
 
 ASIA: list[NodeSpec] = [
@@ -72,7 +72,7 @@ def pgmpy_model(spec: list[NodeSpec]) -> DiscreteBayesianNetwork:
 
 
 def definition(spec: list[NodeSpec]) -> list[dict[str, Any]]:
-    """A node list as mdml-js `BayesNode`s."""
+    """A node list as omai `BayesNode`s."""
     return [{"name": n, "states": s, "parents": p, "cpt": [v for row in rows for v in row]} for n, s, p, rows in spec]
 
 
@@ -196,7 +196,7 @@ def pgmpy_markov(cards: dict[str, int], potentials: list[Potential]) -> Discrete
 
 
 def markov_definition(cards: dict[str, int], potentials: list[Potential]) -> dict[str, Any]:
-    """A Markov network as mdml-js data: variables with states "0".."k-1" and potentials with their values."""
+    """A Markov network as omai data: variables with states "0".."k-1" and potentials with their values."""
     return {
         "variables": [{"name": v, "states": [str(i) for i in range(k)]} for v, k in cards.items()],
         "potentials": [
@@ -233,7 +233,7 @@ def sample_rows(spec: list[NodeSpec], n: int, seed: int) -> list[dict[str, str]]
 
 
 def cpd_rows(cpd: TabularCPD, parents: Sequence[str]) -> list[float]:
-    """A pgmpy CPD as mdml-js's flat CPT over [...parents, node] (parents in the given order)."""
+    """A pgmpy CPD as omai's flat CPT over [...parents, node] (parents in the given order)."""
     values = np.asarray(cpd.get_values(), dtype=np.float64)  # [r, prod(parent cards)] in pgmpy's evidence order
     evidence = [str(v) for v in cpd.variables[1:]]
     r = values.shape[0]

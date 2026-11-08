@@ -4,7 +4,7 @@
  * with a fixed intensity, the Ledoit-Wolf intensity or the oracle approximating shrinkage (OAS).
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import type { Tensor, TensorLike } from '../tensor/index.ts'
 import { mat, rowsOf } from './_util.ts'
 
@@ -29,7 +29,7 @@ function centred(
   const m = rowsOf(name, X)
   const n = m.rows
   const p = m.cols
-  if (n < 1) throw new MdmlError('value', `${name}: needs at least one observation`)
+  if (n < 1) throw new OmaiError('value', `${name}: needs at least one observation`)
   const mean = new Float64Array(p)
   if (!assume)
     for (let i = 0; i < n; i++) for (let j = 0; j < p; j++) mean[j] = (mean[j] ?? 0) + (m.data[i * p + j] ?? 0) / n
@@ -69,7 +69,7 @@ function shrink(c: Float64Array, p: number, shrinkage: number): Float64Array {
  * @returns The P x P covariance.
  * @example
  * ```ts
- * import { empiricalCovariance } from 'mdml-engine/stats'
+ * import { empiricalCovariance } from 'omai-engine/stats'
  * empiricalCovariance([[0, 0], [2, 2]]) // => [[1, 1], [1, 1]]
  * ```
  */
@@ -86,7 +86,7 @@ export function empiricalCovariance(X: TensorLike, options: CovarianceOptions = 
  * @returns The shrunk covariance.
  * @example
  * ```ts
- * import { shrunkCovariance } from 'mdml-engine/stats'
+ * import { shrunkCovariance } from 'omai-engine/stats'
  * shrunkCovariance([[0, 0], [2, 2]], { shrinkage: 0.5 }).covariance // => [[1, 0.5], [0.5, 1]]
  * ```
  */
@@ -95,7 +95,7 @@ export function shrunkCovariance(
   options: CovarianceOptions & { readonly shrinkage?: number } = {},
 ): ShrunkCovariance {
   const a = options.shrinkage ?? 0.1
-  if (!(a >= 0 && a <= 1)) throw new MdmlError('value', 'shrunkCovariance: shrinkage must lie in [0, 1]')
+  if (!(a >= 0 && a <= 1)) throw new OmaiError('value', 'shrunkCovariance: shrinkage must lie in [0, 1]')
   const { n, p, x, mean } = centred('shrunkCovariance', X, options.assumeCentered ?? false)
   return { covariance: mat(shrink(empirical(n, p, x), p, a), p, p), shrinkage: a, location: mat(mean, 1, p) }
 }
@@ -111,7 +111,7 @@ export function shrunkCovariance(
  * of Multivariate Analysis 88 (2004).
  * @example
  * ```ts
- * import { ledoitWolf } from 'mdml-engine/stats'
+ * import { ledoitWolf } from 'omai-engine/stats'
  * ledoitWolf([[1, 2], [2, 1], [3, 4], [4, 3]]).shrinkage // => 0.444444
  * ```
  */
@@ -155,7 +155,7 @@ export function ledoitWolf(X: TensorLike, options: CovarianceOptions = {}): Shru
  * @returns The covariance and the shrinkage.
  * @example
  * ```ts
- * import { oas } from 'mdml-engine/stats'
+ * import { oas } from 'omai-engine/stats'
  * oas([[1, 2], [2, 1], [3, 4], [4, 3]]).shrinkage // => 1
  * ```
  */

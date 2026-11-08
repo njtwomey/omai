@@ -5,7 +5,7 @@ import pandas as pd
 import scipy
 import statsmodels
 import statsmodels.api as sm
-from mdml_oracle.fixture import Case, case
+from omai_oracle.fixture import Case, case
 from scipy import stats
 from statsmodels.formula.api import ols
 

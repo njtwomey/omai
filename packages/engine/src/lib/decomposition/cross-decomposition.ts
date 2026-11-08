@@ -5,7 +5,7 @@
  * of the cross-covariance).
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import {
   defineEstimator,
   type Estimator,
@@ -56,7 +56,7 @@ function powerMethod(
 ): { xw: number[]; yw: number[] } {
   const q = y[0]?.length ?? 0
   let yScore = Array.from({ length: q }, (_, j) => column(y, j)).find((c) => c.some((v) => Math.abs(v) > EPS))
-  if (yScore === undefined) throw new MdmlError('value', 'pls: the y residual is constant')
+  if (yScore === undefined) throw new OmaiError('value', 'pls: the y residual is constant')
   const xPinv = mode === 'B' ? pinvRows(x) : undefined
   const yPinv = mode === 'B' ? pinvRows(y) : undefined
   let xw: number[] = []
@@ -145,8 +145,8 @@ export interface PlsOptions {
  * @returns The algorithm; k steps.
  * @example
  * ```ts
- * import { plsAlgorithm } from 'mdml-engine/decomposition'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { plsAlgorithm } from 'omai-engine/decomposition'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const x = [[-1, 0.2], [0, -0.3], [1, 0.1]]
  * const y = [[-1], [0], [1]]
  * runAlgorithm(plsAlgorithm(x, y, 'regression', 1), { maxSteps: 1 }).state.correlations[0] // => 0.999916
@@ -165,7 +165,7 @@ export function plsAlgorithm(
   const normY = variant !== 'regression'
   const limit = variant === 'regression' ? p : Math.min(x.length, p, q)
   if (!(Number.isInteger(k) && k >= 1 && k <= limit))
-    throw new MdmlError('value', `pls: nComponents must be in 1..${limit}`)
+    throw new OmaiError('value', `pls: nComponents must be in 1..${limit}`)
   return {
     name: `pls-${variant}`,
     config: { variant, k },
@@ -365,7 +365,7 @@ const plsEstimator = (
  * @index estimator Partial least squares regression; CCA beside it.
  * @example
  * ```ts
- * import { plsRegression } from 'mdml-engine/decomposition'
+ * import { plsRegression } from 'omai-engine/decomposition'
  * const x = [[0, 1], [1, 0], [2, 1], [3, 0], [4, 1]]
  * const y = [1, 2, 3, 4, 5]
  * plsRegression.with({ nComponents: 1 }).fit({ x, y }).params.xWeights.length // => 2
@@ -381,7 +381,7 @@ export const plsRegression: IterativeEstimator<PlsHyper, PlsState, PlsParams, Pl
  *
  * @example
  * ```ts
- * import { plsCanonical } from 'mdml-engine/decomposition'
+ * import { plsCanonical } from 'omai-engine/decomposition'
  * const x = [[0, 1], [1, 0], [2, 1], [3, 0], [4, 1]]
  * const y = [[1, 0], [2, 1], [3, 0], [4, 1], [5, 0]]
  * plsCanonical.with({ nComponents: 1 }).fit({ x, y }).params.correlations.length // => 1
@@ -398,7 +398,7 @@ export const plsCanonical: IterativeEstimator<PlsHyper, PlsState, PlsParams, Pls
  *
  * @example
  * ```ts
- * import { cca } from 'mdml-engine/decomposition'
+ * import { cca } from 'omai-engine/decomposition'
  * const x = [[0, 1], [1, 0], [2, 1], [3, 0], [4, 1]]
  * const y = [[1, 0], [2, 1], [3, 0], [4, 1], [5, 0]]
  * cca.with({ nComponents: 1 }).fit({ x, y }).params.correlations.length // => 1
@@ -419,7 +419,7 @@ export interface PlsSvdHyper {
  * @returns The estimator.
  * @example
  * ```ts
- * import { plsSvd } from 'mdml-engine/decomposition'
+ * import { plsSvd } from 'omai-engine/decomposition'
  * const x = [[0, 1], [1, 0], [2, 1], [3, 0], [4, 1]]
  * const y = [[1, 0], [2, 1], [3, 0], [4, 1], [5, 0]]
  * plsSvd({ nComponents: 1 }).fit({ x, y }).params.xWeights.length // => 2
@@ -437,7 +437,7 @@ export function plsSvd(hyper: Partial<PlsSvdHyper> = {}): Estimator<PlsSvdHyper,
         const q = b.y.z[0]?.length ?? 1
         const limit = Math.min(b.x.z.length, p, q)
         if (!(Number.isInteger(h.nComponents) && h.nComponents >= 1 && h.nComponents <= limit))
-          throw new MdmlError('value', `plsSvd: nComponents must be in 1..${limit}`)
+          throw new OmaiError('value', `plsSvd: nComponents must be in 1..${limit}`)
         const c = mm(tr(b.x.z), b.y.z)
         const { u, vt } = thinSvd(Float64Array.from(c.flat()), p, q)
         const xWeights: number[][] = []

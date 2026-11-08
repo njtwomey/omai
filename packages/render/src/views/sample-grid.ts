@@ -4,8 +4,8 @@
  * step, so the samples are seen to sharpen. The scene's size follows its content.
  */
 
-import { filmstripSteps, type GridSample, type SampleGrid, type SampleStep, sampleStepAt } from 'mdml-engine/exposition'
-import { image, rect, type Scene, type SceneNode, scene, text, toPixels } from 'mdml-engine/scene'
+import { filmstripSteps, type GridSample, type SampleGrid, type SampleStep, sampleStepAt } from 'omai-engine/exposition'
+import { image, rect, type Scene, type SceneNode, scene, text, toPixels } from 'omai-engine/scene'
 
 /** Options of {@link sampleGridScene}. */
 export interface SampleGridOptions {
@@ -69,8 +69,8 @@ function cell(
  * @returns The scene.
  * @example
  * ```ts
- * import { sampleGrid } from 'mdml-engine/exposition'
- * import { sampleGridScene } from 'mdml-render/views'
+ * import { sampleGrid } from 'omai-engine/exposition'
+ * import { sampleGridScene } from 'omai-render/views'
  * const g = sampleGrid({ modality: 'image', height: 1, width: 2, steps: [{ step: 0, samples: [[0, 1], [1, 0]] }] })
  * sampleGridScene(g, 0, { columns: 2 }).title // => '2 image samples after step 0'
  * ```

@@ -8,7 +8,7 @@
  * @index function Structure from motion in steps: RANSAC two-view start, bundle adjustment.
  */
 import type { Json } from '../base/index.ts'
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import type { Point2 } from '../numerics/geometry/index.ts'
 import type { Key } from '../random/index.ts'
 import { type RansacState, ransacAlgorithm } from '../stats/index.ts'
@@ -63,8 +63,8 @@ export interface EssentialRansacOptions {
  * @concept essential-matrix
  * @example
  * ```ts
- * import { essentialRansacAlgorithm } from 'mdml-engine/vision'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { essentialRansacAlgorithm } from 'omai-engine/vision'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const K = [[100, 0, 0], [0, 100, 0], [0, 0, 1]]
  * const X = Array.from({ length: 12 }, (_, i) => [(i % 4) - 1.5, Math.floor(i / 4) - 1, 4 + (i % 3)])
  * const p1 = X.map(([x, y, z]) => [(100 * (x as number)) / (z as number), (100 * (y as number)) / (z as number)])
@@ -80,7 +80,7 @@ export function essentialRansacAlgorithm(
 ): Algorithm<RansacState<MutableRows>> {
   const p1 = pointsOf(points1, 'essentialRansacAlgorithm')
   const p2 = pointsOf(points2, 'essentialRansacAlgorithm')
-  if (p1.length !== p2.length) throw new MdmlError('shape', 'essentialRansacAlgorithm: the point sets differ in size')
+  if (p1.length !== p2.length) throw new OmaiError('shape', 'essentialRansacAlgorithm: the point sets differ in size')
   const a = normalise(p1, cameraMatrix)
   const b = normalise(p2, cameraMatrix)
   const focal = ((cameraMatrix[0]?.[0] ?? 1) + (cameraMatrix[1]?.[1] ?? 1)) / 2
@@ -136,12 +136,12 @@ export interface TwoViewReconstruction {
  * @param points2 - The matching points in the second image.
  * @param cameraMatrix - The intrinsics.
  * @returns The pose, the points and which correspondences they are.
- * @throws MdmlError with code `value` if RANSAC found fewer than eight inliers.
+ * @throws OmaiError with code `value` if RANSAC found fewer than eight inliers.
  * @concept structure-from-motion
  * @example
  * ```ts
- * import { essentialRansacAlgorithm, twoViewReconstruction } from 'mdml-engine/vision'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { essentialRansacAlgorithm, twoViewReconstruction } from 'omai-engine/vision'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const K = [[100, 0, 0], [0, 100, 0], [0, 0, 1]]
  * const X = Array.from({ length: 12 }, (_, i) => [(i % 4) - 1.5, Math.floor(i / 4) - 1, 4 + (i % 3)])
  * const p1 = X.map(([x, y, z]) => [(100 * (x as number)) / (z as number), (100 * (y as number)) / (z as number)])
@@ -159,7 +159,7 @@ export function twoViewReconstruction(
   const p1 = pointsOf(points1, 'twoViewReconstruction')
   const p2 = pointsOf(points2, 'twoViewReconstruction')
   const inl = ransac.bestInliers
-  if (inl.length < 8) throw new MdmlError('value', 'twoViewReconstruction: fewer than eight inliers')
+  if (inl.length < 8) throw new OmaiError('value', 'twoViewReconstruction: fewer than eight inliers')
   const s1 = inl.map((i) => p1[i] as Point2)
   const s2 = inl.map((i) => p2[i] as Point2)
   const essential = findEssentialMat(s1, s2, cameraMatrix, { method: 'all' }).model
@@ -213,12 +213,12 @@ export type BundleState = RefinementState<BundleGeometry>
  * @param cameraMatrix - The intrinsics shared by the cameras.
  * @param options - The most iterations (default 50).
  * @returns The algorithm; read `state.decoded` for the poses and points, `state.rms` for the error in pixels.
- * @throws MdmlError with code `value` if the observations do not match the cameras and points.
+ * @throws OmaiError with code `value` if the observations do not match the cameras and points.
  * @concept bundle-adjustment
  * @example
  * ```ts
- * import { bundleAdjustmentAlgorithm, projectPoints } from 'mdml-engine/vision'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { bundleAdjustmentAlgorithm, projectPoints } from 'omai-engine/vision'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const K = [[200, 0, 0], [0, 200, 0], [0, 0, 1]]
  * const X = Array.from({ length: 12 }, (_, i) => [(i % 4) - 1.5, Math.floor(i / 4) - 1, 5 + (i % 3)])
  * const poses = [{ rvec: [0, 0, 0], tvec: [0, 0, 0] }, { rvec: [0, 0.1, 0], tvec: [-1, 0, 0] }, { rvec: [0.05, -0.1, 0], tvec: [0.5, 0.2, 0.1] }] as const
@@ -236,12 +236,12 @@ export function bundleAdjustmentAlgorithm(
   const V = scene.poses.length
   const N = scene.points.length
   if (V < 2 || scene.observations.length !== V)
-    throw new MdmlError('value', 'bundleAdjustmentAlgorithm: at least two cameras, one observation set each')
+    throw new OmaiError('value', 'bundleAdjustmentAlgorithm: at least two cameras, one observation set each')
   const obs = scene.observations.map((o) => pointsOf(o, 'bundleAdjustmentAlgorithm'))
   const seen = scene.poses.map((_, c) => Array.from({ length: N }, (_, j) => scene.visible?.[c]?.[j] ?? true))
   for (const [c, o] of obs.entries())
     if (o.length !== N)
-      throw new MdmlError('value', `bundleAdjustmentAlgorithm: camera ${c} needs one observation row per point`)
+      throw new OmaiError('value', `bundleAdjustmentAlgorithm: camera ${c} needs one observation row per point`)
   const index = seen.map((s) => s.flatMap((v, j) => (v ? [j] : [])))
   const observed = obs.map((o, c) => tensor((index[c] as number[]).map((j) => [...(o[j] as Point2)])))
   const intr = tensor([
@@ -307,7 +307,7 @@ export function bundleAdjustmentAlgorithm(
  * @concept structure-from-motion
  * @example
  * ```ts
- * import { addView, projectPoints } from 'mdml-engine/vision'
+ * import { addView, projectPoints } from 'omai-engine/vision'
  * const K = [[200, 0, 0], [0, 200, 0], [0, 0, 1]]
  * const X = Array.from({ length: 10 }, (_, i) => [(i % 4) - 1.5, Math.floor(i / 4) - 1, 5 + (i % 3)])
  * const truth = { rvec: [0, 0.1, 0], tvec: [-0.5, 0.1, 0] } as never
@@ -332,7 +332,7 @@ export function addView(
  * @concept bundle-adjustment
  * @example
  * ```ts
- * import { bundleReprojectionError, projectPoints } from 'mdml-engine/vision'
+ * import { bundleReprojectionError, projectPoints } from 'omai-engine/vision'
  * const K = [[200, 0, 0], [0, 200, 0], [0, 0, 1]]
  * const X = [[0, 0, 5], [1, 0, 6], [0, 1, 5]]
  * const poses = [{ rvec: [0, 0, 0], tvec: [0, 0, 0] }, { rvec: [0, 0, 0], tvec: [-1, 0, 0] }] as never

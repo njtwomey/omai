@@ -33,7 +33,7 @@ export interface PrecisionRecallCurve {
  * @concept precision-recall
  * @example
  * ```ts
- * import { precisionRecallCurve } from 'mdml-engine/metrics'
+ * import { precisionRecallCurve } from 'omai-engine/metrics'
  * precisionRecallCurve([0, 0, 1, 1], [0.1, 0.4, 0.35, 0.8]).recall // => [1, 1, 0.5, 0.5, 0]
  * ```
  */
@@ -73,7 +73,7 @@ export interface AveragePrecisionOptions extends CurveOptions {
  * @concept precision-recall
  * @example
  * ```ts
- * import { averagePrecisionScore } from 'mdml-engine/metrics'
+ * import { averagePrecisionScore } from 'omai-engine/metrics'
  * averagePrecisionScore([0, 0, 1, 1], [0.1, 0.4, 0.35, 0.8]).estimate.value // => 0.8333333333333333
  * ```
  */
@@ -207,8 +207,8 @@ function prgPoints(yTrue: MetricInput, yScore: TensorLike, options: CurveOptions
  * @concept precision-recall
  * @example
  * ```ts
- * import { prGainCurve } from 'mdml-engine/metrics'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { prGainCurve } from 'omai-engine/metrics'
+ * import { toFlat } from 'omai-engine/tensor'
  * toFlat(prGainCurve([0, 1, 1, 0, 1], [0.1, 0.9, 0.8, 0.7, 0.3]).recallGain).at(-1) // => 1
  * ```
  */
@@ -232,7 +232,7 @@ export function prGainCurve(yTrue: MetricInput, yScore: TensorLike, options: Cur
  * @returns The metric result.
  * @example
  * ```ts
- * import { prGainAuc } from 'mdml-engine/metrics'
+ * import { prGainAuc } from 'omai-engine/metrics'
  * prGainAuc([0, 1, 1, 0], [0.1, 0.9, 0.8, 0.2]).estimate.value // => 1
  * ```
  */

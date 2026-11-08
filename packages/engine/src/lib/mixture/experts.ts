@@ -7,7 +7,7 @@
  * state keeps no past (the tape records it).
  */
 
-import { MdmlError, maxOf } from '../base/index.ts'
+import { maxOf, OmaiError } from '../base/index.ts'
 import { type MatrixView, matrixView, targetVector } from '../learn/index.ts'
 import { leastSquaresSolve, matrixTensor, vectorTensor } from '../linear/index.ts'
 import { cholesky, choSolve, ddot } from '../numerics/linalg/index.ts'
@@ -97,10 +97,10 @@ function expertMeansOf(a: Float64Array, n: number, experts: readonly (readonly n
 function checkParameters(p: MoeParameters, d: number, who: string): void {
   const k = p.experts.length
   if (k < 1 || p.gate.length !== k || p.variances.length !== k)
-    throw new MdmlError('shape', `${who}: gate, experts and variances must have one entry per expert`)
+    throw new OmaiError('shape', `${who}: gate, experts and variances must have one entry per expert`)
   for (const row of [...p.gate, ...p.experts])
     if (row.length !== d + 1)
-      throw new MdmlError('shape', `${who}: expected ${d + 1} coefficients per expert (intercept and ${d} features)`)
+      throw new OmaiError('shape', `${who}: expected ${d + 1} coefficients per expert (intercept and ${d} features)`)
 }
 
 /**
@@ -109,17 +109,17 @@ function checkParameters(p: MoeParameters, d: number, who: string): void {
  * @param x - Points `[m, d]`.
  * @param gate - The gate weights `[k][d + 1]` (intercept first).
  * @returns Probabilities `[m][k]`, each row summing to one.
- * @throws MdmlError with code `shape` when the weights do not match the features.
+ * @throws OmaiError with code `shape` when the weights do not match the features.
  * @example
  * ```ts
- * import { moeGate } from 'mdml-engine/mixture'
+ * import { moeGate } from 'omai-engine/mixture'
  * moeGate([[0], [10]], [[1, 0], [0, 0]])[0] // => [0.7310585786300049, 0.2689414213699951]
  * ```
  */
 export function moeGate(x: TensorLike, gate: readonly (readonly number[])[]): number[][] {
   const m = matrixView(x, 'moeGate')
   if (gate.length < 1 || gate.some((w) => w.length !== m.d + 1))
-    throw new MdmlError('shape', `moeGate: expected gate weights of length ${m.d + 1} (intercept and ${m.d} features)`)
+    throw new OmaiError('shape', `moeGate: expected gate weights of length ${m.d + 1} (intercept and ${m.d} features)`)
   return gateLogProbs(augmentedOf(m), m.n, gate).map((row) => row.map(Math.exp))
 }
 
@@ -129,17 +129,17 @@ export function moeGate(x: TensorLike, gate: readonly (readonly number[])[]): nu
  * @param x - Points `[m, d]`.
  * @param experts - The coefficients `[k][d + 1]` (intercept first).
  * @returns Predictions `[m][k]`.
- * @throws MdmlError with code `shape` when the coefficients do not match the features.
+ * @throws OmaiError with code `shape` when the coefficients do not match the features.
  * @example
  * ```ts
- * import { moeExpertMeans } from 'mdml-engine/mixture'
+ * import { moeExpertMeans } from 'omai-engine/mixture'
  * moeExpertMeans([[2]], [[1, 1], [0, -1]]) // => [[3, -2]]
  * ```
  */
 export function moeExpertMeans(x: TensorLike, experts: readonly (readonly number[])[]): number[][] {
   const m = matrixView(x, 'moeExpertMeans')
   if (experts.length < 1 || experts.some((w) => w.length !== m.d + 1))
-    throw new MdmlError('shape', `moeExpertMeans: expected ${m.d + 1} coefficients per expert`)
+    throw new OmaiError('shape', `moeExpertMeans: expected ${m.d + 1} coefficients per expert`)
   return expertMeansOf(augmentedOf(m), m.n, experts)
 }
 
@@ -151,7 +151,7 @@ export function moeExpertMeans(x: TensorLike, experts: readonly (readonly number
  * @returns The predictions `[m]`.
  * @example
  * ```ts
- * import { moePredict } from 'mdml-engine/mixture'
+ * import { moePredict } from 'omai-engine/mixture'
  * const p = { gate: [[0, 0], [0, 0]], experts: [[0, 2], [4, 0]], variances: [1, 1] }
  * moePredict([[1]], p) // => [3]
  * ```
@@ -187,7 +187,7 @@ function logJoint(a: Float64Array, y: ArrayLike<number>, n: number, p: MoeParame
  * @returns Responsibilities `[n][k]` and the log density of each row.
  * @example
  * ```ts
- * import { moePosterior } from 'mdml-engine/mixture'
+ * import { moePosterior } from 'omai-engine/mixture'
  * const p = { gate: [[0, 0], [0, 0]], experts: [[0, 1], [0, -1]], variances: [0.1, 0.1] }
  * moePosterior([[2]], [2], p).resp[0][0].toFixed(3) // => '1.000'
  * ```
@@ -216,7 +216,7 @@ function mostResponsible(resp: readonly (readonly number[])[]): number[] {
  * @returns The expert index per row.
  * @example
  * ```ts
- * import { moeAssignments } from 'mdml-engine/mixture'
+ * import { moeAssignments } from 'omai-engine/mixture'
  * const p = { gate: [[0, 0], [0, 0]], experts: [[0, 1], [0, -1]], variances: [0.1, 0.1] }
  * moeAssignments([[2], [2]], [2, -2], p) // => [0, 1]
  * ```
@@ -414,12 +414,12 @@ const emSchema = channels({
  * @param options - The number of experts, tolerance, Newton steps on the gate, variance floor and an optional start.
  * @param key - Randomness for the start (random chords through the data).
  * @returns The algorithm.
- * @throws MdmlError with code `value` when there are more experts than rows.
+ * @throws OmaiError with code `value` when there are more experts than rows.
  * @example
  * ```ts
- * import { mixtureOfExpertsAlgorithm, moePredict } from 'mdml-engine/mixture'
- * import { key } from 'mdml-engine/random'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { mixtureOfExpertsAlgorithm, moePredict } from 'omai-engine/mixture'
+ * import { key } from 'omai-engine/random'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * // One expert is ordinary least squares; the gate has nothing to decide.
  * const x = [[0], [1], [2], [3], [4], [5]]
  * const y = [0, 1, 2, 3, 2, 1]
@@ -437,7 +437,7 @@ export function mixtureOfExpertsAlgorithm(
   const targets = targetVector(y, 'mixtureOfExperts', m.n)
   const k = options.nExperts ?? options.start?.experts.length ?? 2
   if (!(Number.isInteger(k) && k >= 1 && k <= m.n))
-    throw new MdmlError('value', `mixtureOfExperts: nExperts must be in 1..${m.n}`)
+    throw new OmaiError('value', `mixtureOfExperts: nExperts must be in 1..${m.n}`)
   const tol = options.tol ?? 1e-6
   const gateSteps = options.gateSteps ?? 3
   const gateRidge = options.gateRidge ?? 0.01

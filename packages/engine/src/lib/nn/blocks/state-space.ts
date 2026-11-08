@@ -7,7 +7,7 @@
  * and the state they hand on is the same too.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { solve } from '../../numerics/linalg/index.ts'
 import { foldIn, type Key, normal, uniform } from '../../random/index.ts'
 import {
@@ -147,8 +147,8 @@ function powers(a: ComplexValue, length: number): ComplexValue {
  * @reference Gu, Gupta, Goel and Re (2022), On the parameterization and initialization of diagonal state space models.
  * @example
  * ```ts
- * import { S4D } from 'mdml-engine/nn/blocks'
- * import { zeros } from 'mdml-engine/tensor'
+ * import { S4D } from 'omai-engine/nn/blocks'
+ * import { zeros } from 'omai-engine/tensor'
  * new S4D(4, { stateSize: 8 }).forward(zeros([1, 6, 4])).output.shape // => [1, 6, 4]
  * ```
  */
@@ -168,7 +168,7 @@ export class S4D extends SequenceMixer {
       discretisation: options.discretisation ?? 'zoh',
       mode: options.mode ?? 'convolution',
     } as const
-    if (o.stateSize % 2 !== 0) throw new MdmlError('value', 'S4D: the state size must be even')
+    if (o.stateSize % 2 !== 0) throw new OmaiError('value', 'S4D: the state size must be even')
     super({}, s4dOwn(dim, o, ownKey(initKey('S4D', options.key))))
     this.dim = dim
     this.stateSize = o.stateSize
@@ -273,8 +273,8 @@ function s4Own(dim: number, o: Required<Omit<S4Options, 'key'>>, key: Key): Para
  * @reference Gu, Goel and Re (2022), Efficiently modeling long sequences with structured state spaces.
  * @example
  * ```ts
- * import { S4 } from 'mdml-engine/nn/blocks'
- * import { zeros } from 'mdml-engine/tensor'
+ * import { S4 } from 'omai-engine/nn/blocks'
+ * import { zeros } from 'omai-engine/tensor'
  * new S4(2, { stateSize: 4 }).forward(zeros([1, 5, 2])).output.shape // => [1, 5, 2]
  * ```
  */
@@ -483,8 +483,8 @@ function s5Own(dim: number, o: Required<Omit<S5Options, 'key'>>, key: Key): Para
  * @reference Smith, Warrington and Linderman (2023), Simplified state space layers for sequence modeling.
  * @example
  * ```ts
- * import { S5 } from 'mdml-engine/nn/blocks'
- * import { zeros } from 'mdml-engine/tensor'
+ * import { S5 } from 'omai-engine/nn/blocks'
+ * import { zeros } from 'omai-engine/tensor'
  * new S5(3, { stateSize: 4 }).forward(zeros([2, 5, 3])).output.shape // => [2, 5, 3]
  * ```
  */
@@ -503,7 +503,7 @@ export class S5 extends SequenceMixer {
       dtMax: options.dtMax ?? 0.1,
       mode: options.mode ?? 'convolution',
     } as const
-    if (o.stateSize % o.blocks !== 0) throw new MdmlError('value', 'S5: the blocks must divide the state size')
+    if (o.stateSize % o.blocks !== 0) throw new OmaiError('value', 'S5: the blocks must divide the state size')
     super({}, s5Own(dim, o, ownKey(initKey('S5', options.key))))
     this.dim = dim
     this.stateSize = o.stateSize
@@ -603,8 +603,8 @@ const lruTree = (p: LRUParams): Params => ({ ...p })
  * @reference Orvieto et al. (2023), Resurrecting recurrent neural networks for long sequences.
  * @example
  * ```ts
- * import { LRUMixer } from 'mdml-engine/nn/blocks'
- * import { zeros } from 'mdml-engine/tensor'
+ * import { LRUMixer } from 'omai-engine/nn/blocks'
+ * import { zeros } from 'omai-engine/tensor'
  * new LRUMixer(3, { stateSize: 4 }).forward(zeros([1, 5, 3])).output.shape // => [1, 5, 3]
  * ```
  */

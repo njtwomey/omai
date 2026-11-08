@@ -7,7 +7,7 @@
  * state decays.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { eig } from '../../numerics/linalg/index.ts'
 import { fromStorage, type Tensor } from '../../tensor/index.ts'
 
@@ -38,7 +38,7 @@ const c = (n: number): number => Math.sqrt(2 * n + 1)
 
 function dense(measure: HippoMeasure, n: number, theta: number): Dense {
   if (!Number.isInteger(n) || n < 1)
-    throw new MdmlError('value', `hippo: the order must be a positive integer, got ${n}`)
+    throw new OmaiError('value', `hippo: the order must be a positive integer, got ${n}`)
   const a = new Float64Array(n * n)
   const b = new Float64Array(n)
   if (measure === 'legs') {
@@ -88,8 +88,8 @@ const system = (d: Dense, n: number): HippoSystem => ({
  * @reference Gu, Dao, Ermon, Rudra and Re (2020), HiPPO: recurrent memory with optimal polynomial projections.
  * @example
  * ```ts
- * import { hippoLegS } from 'mdml-engine/nn/blocks'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { hippoLegS } from 'omai-engine/nn/blocks'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(hippoLegS(2).a) // => [[-1, 0], [-1.7320508075688772, -2]]
  * ```
  */
@@ -109,8 +109,8 @@ export function hippoLegS(n: number): HippoSystem {
  * @reference Gu et al. (2020), HiPPO; Voelker, Kajic and Eliasmith (2019), Legendre memory units.
  * @example
  * ```ts
- * import { hippoLegT } from 'mdml-engine/nn/blocks'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { hippoLegT } from 'omai-engine/nn/blocks'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(hippoLegT(2, { theta: 2 }).b) // => [0.5, 0.8660254037844386]
  * ```
  */
@@ -129,8 +129,8 @@ export function hippoLegT(n: number, options: HippoOptions = {}): HippoSystem {
  * @reference Gu et al. (2020), HiPPO.
  * @example
  * ```ts
- * import { hippoLagT } from 'mdml-engine/nn/blocks'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { hippoLagT } from 'omai-engine/nn/blocks'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(hippoLagT(2).a) // => [[-0.5, 0], [-1, -0.5]]
  * ```
  */
@@ -179,8 +179,8 @@ export interface NplrHippo {
  * @reference Gu, Goel and Re (2022), Efficiently modeling long sequences with structured state spaces.
  * @example
  * ```ts
- * import { nplrHippo } from 'mdml-engine/nn/blocks'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { nplrHippo } from 'omai-engine/nn/blocks'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(nplrHippo('legs', 4).lambda.re) // => [-0.5, -0.5, -0.5, -0.5]
  * ```
  */
@@ -254,8 +254,8 @@ export function nplrHippo(measure: HippoMeasure, n: number, options: HippoOption
  * @concept state-space-models
  * @example
  * ```ts
- * import { nplrHippo, nplrReconstruct } from 'mdml-engine/nn/blocks'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { nplrHippo, nplrReconstruct } from 'omai-engine/nn/blocks'
+ * import { toFlat } from 'omai-engine/tensor'
  * toFlat(nplrReconstruct(nplrHippo('lagt', 2))).map((x) => Math.round(x * 1e9) / 1e9) // => [-0.5, 0, -1, -0.5]
  * ```
  */
@@ -300,13 +300,13 @@ export type DiagonalHippo = 'lin' | 'inv' | 'real'
  * @reference Gu, Gupta, Goel and Re (2022), On the parameterization and initialization of diagonal state space models.
  * @example
  * ```ts
- * import { s4dEigenvalues } from 'mdml-engine/nn/blocks'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { s4dEigenvalues } from 'omai-engine/nn/blocks'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(s4dEigenvalues('real', 3).re) // => [-1, -2, -3]
  * ```
  */
 export function s4dEigenvalues(kind: DiagonalHippo, count: number): ComplexPair {
-  if (!Number.isInteger(count) || count < 1) throw new MdmlError('value', `s4dEigenvalues: bad count ${count}`)
+  if (!Number.isInteger(count) || count < 1) throw new OmaiError('value', `s4dEigenvalues: bad count ${count}`)
   const big = 2 * count
   const re = Float64Array.from({ length: count }, (_, k) => (kind === 'real' ? -(k + 1) : -0.5))
   const im = Float64Array.from({ length: count }, (_, k) =>

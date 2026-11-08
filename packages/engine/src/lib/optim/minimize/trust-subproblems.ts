@@ -4,7 +4,7 @@
  * trust-dogleg, trust-ncg and trust-exact methods.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { daxpy, ddot, dgemv, dnrm2, dpotrf, dpotrs, dscal, dtrsv } from '../../numerics/linalg/index.ts'
 
 /** A quadratic model m(p) = f + g'p + p'Bp / 2 of the objective around a point. */
@@ -45,7 +45,7 @@ export interface TrustSubproblem {
  * @returns m(p).
  * @example
  * ```ts
- * import { quadraticModelValue } from 'mdml-engine/optim'
+ * import { quadraticModelValue } from 'omai-engine/optim'
  * const model = { value: 1, grad: new Float64Array([1, 0]), hessp: (v: Float64Array) => v }
  * quadraticModelValue(model, new Float64Array([-1, 0])) // => 0.5
  * ```
@@ -67,7 +67,7 @@ function boundary(z: Float64Array, d: Float64Array, radius: number): [number, nu
 }
 
 function denseHessian(model: QuadraticModel, name: string): Float64Array {
-  if (model.hess === undefined) throw new MdmlError('value', `${name} needs a dense Hessian`)
+  if (model.hess === undefined) throw new OmaiError('value', `${name} needs a dense Hessian`)
   return model.hess()
 }
 
@@ -76,11 +76,11 @@ function denseHessian(model: QuadraticModel, name: string): Float64Array {
  * point towards the Newton step, cut at the boundary. Needs a positive definite model Hessian.
  *
  * @returns The subproblem solver.
- * @throws MdmlError with code `singular` when the model Hessian is not positive definite.
+ * @throws OmaiError with code `singular` when the model Hessian is not positive definite.
  * @concept trust-region
  * @example
  * ```ts
- * import { doglegStep } from 'mdml-engine/optim'
+ * import { doglegStep } from 'omai-engine/optim'
  * const model = { value: 0, grad: new Float64Array([1, 0]), hessp: (v: Float64Array) => v, hess: () => new Float64Array([1, 0, 0, 1]) }
  * Array.from(doglegStep().solve(model, 0.5).p) // => [-0.5, 0]
  * ```
@@ -93,7 +93,7 @@ export function doglegStep(): TrustSubproblem {
       const g = model.grad
       const n = g.length
       const { factor, info } = dpotrf(denseHessian(model, 'dogleg'), n)
-      if (info !== 0) throw new MdmlError('singular', 'dogleg: the model Hessian is not positive definite')
+      if (info !== 0) throw new OmaiError('singular', 'dogleg: the model Hessian is not positive definite')
       const pB = dscal(-1, dpotrs(factor, g, n))
       if (dnrm2(pB) < radius) return { p: pB, hitsBoundary: false, iterations: 1 }
       const Bg = model.hessp(g)
@@ -123,7 +123,7 @@ export interface SteihaugOptions {
  * @concept trust-region
  * @example
  * ```ts
- * import { steihaugStep } from 'mdml-engine/optim'
+ * import { steihaugStep } from 'omai-engine/optim'
  * const model = { value: 0, grad: new Float64Array([1, 0]), hessp: (v: Float64Array) => v.map((x) => -x) }
  * steihaugStep().solve(model, 2).hitsBoundary // => true
  * ```
@@ -216,7 +216,7 @@ function smallestSingular(u: Float64Array, n: number): { s: number; z: Float64Ar
  * @reference J. J. More and D. C. Sorensen, Computing a trust region step, SIAM J. Sci. Stat. Comput. 4 (1983).
  * @example
  * ```ts
- * import { exactStep } from 'mdml-engine/optim'
+ * import { exactStep } from 'omai-engine/optim'
  * const model = { value: 0, grad: new Float64Array([1, 1]), hessp: (v: Float64Array) => v, hess: () => new Float64Array([1, 0, 0, 1]) }
  * Array.from(exactStep().solve(model, 10).p) // => [-1, -1]
  * ```

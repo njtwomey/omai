@@ -3,8 +3,8 @@ Dabney and Munos 2017, Algorithm 1) and the quantile Huber loss of QR-DQN and IQ
 
 import numpy as np
 import numpy.typing as npt
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import rng
 
 REFERENCE: dict[str, str] = {"numpy": np.__version__}
 

@@ -9,7 +9,7 @@
  */
 
 import { grad, jacfwd, vmap } from '../autodiff/index.ts'
-import { MdmlError, type TestResult } from '../base/index.ts'
+import { OmaiError, type TestResult } from '../base/index.ts'
 import { resolveKey } from '../context/index.ts'
 import type { Kernel } from '../kernels/index.ts'
 import { solve } from '../numerics/linalg/index.ts'
@@ -34,7 +34,7 @@ import { type Algorithm, channels, runAlgorithm, stateFromJson, stateToJson } fr
 function rowsOf(x: TensorLike, who: string): Tensor {
   const t = primalOf(asTensor(x))
   if (t.shape.length === 1) return reshape(t, [t.shape[0] ?? 0, 1]) as Tensor
-  if (t.shape.length !== 2) throw new MdmlError('shape', `${who}: expected points [n, d], got [${t.shape.join(', ')}]`)
+  if (t.shape.length !== 2) throw new OmaiError('shape', `${who}: expected points [n, d], got [${t.shape.join(', ')}]`)
   return t
 }
 
@@ -67,14 +67,14 @@ export interface MeanEmbedding {
  * @param x - Sample points `[n, d]`.
  * @param weights - Weights `[n]` (default uniform).
  * @returns The embedding, evaluable at any point.
- * @throws MdmlError `shape` for weights of the wrong length.
+ * @throws OmaiError `shape` for weights of the wrong length.
  * @concept kernel-mean-embedding
  * @reference A. Smola, A. Gretton, L. Song and B. Scholkopf, A Hilbert space embedding for distributions (ALT 2007).
  * @example
  * ```ts
- * import { meanEmbedding } from 'mdml-engine/kernel-methods'
- * import { rbfKernel } from 'mdml-engine/kernels'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { meanEmbedding } from 'omai-engine/kernel-methods'
+ * import { rbfKernel } from 'omai-engine/kernels'
+ * import { toFlat } from 'omai-engine/tensor'
  * toFlat(meanEmbedding(rbfKernel(), [[0], [0]]).evaluate([[0]])) // => [1]
  * ```
  */
@@ -82,7 +82,7 @@ export function meanEmbedding(kernel: Kernel, x: TensorLike, weights?: ArrayLike
   const points = rowsOf(x, 'meanEmbedding')
   const n = points.shape[0] ?? 0
   if (weights !== undefined && weights.length !== n) {
-    throw new MdmlError('shape', `meanEmbedding: ${weights.length} weights for ${n} points`)
+    throw new OmaiError('shape', `meanEmbedding: ${weights.length} weights for ${n} points`)
   }
   const w = weights === undefined ? new Float64Array(n).fill(1 / n) : Float64Array.from(weights)
   return {
@@ -114,8 +114,8 @@ export function meanEmbedding(kernel: Kernel, x: TensorLike, weights?: ArrayLike
  * @concept kernel-mean-embedding
  * @example
  * ```ts
- * import { embeddingInnerProduct, meanEmbedding } from 'mdml-engine/kernel-methods'
- * import { linearKernel } from 'mdml-engine/kernels'
+ * import { embeddingInnerProduct, meanEmbedding } from 'omai-engine/kernel-methods'
+ * import { linearKernel } from 'omai-engine/kernels'
  * embeddingInnerProduct(meanEmbedding(linearKernel(), [[1], [3]]), meanEmbedding(linearKernel(), [[2]])) // => 4
  * ```
  */
@@ -149,9 +149,9 @@ export interface MmdWitness {
  * @reference A. Gretton, K. Borgwardt, M. Rasch, B. Scholkopf and A. Smola, A kernel two-sample test (JMLR 13, 2012).
  * @example
  * ```ts
- * import { mmdWitness } from 'mdml-engine/kernel-methods'
- * import { rbfKernel } from 'mdml-engine/kernels'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { mmdWitness } from 'omai-engine/kernel-methods'
+ * import { rbfKernel } from 'omai-engine/kernels'
+ * import { toFlat } from 'omai-engine/tensor'
  * const w = mmdWitness(rbfKernel(), [[0], [0.1]], [[3], [3.1]])
  * (toFlat(w.witness([[0], [3]]))[0] ?? 0) > 0 // => true
  * ```
@@ -195,15 +195,15 @@ export interface ConditionalMeanEmbedding {
  * @param y - Output sample `[n, dy]`.
  * @param lambda - Regularisation `lambda > 0` (default 1e-3).
  * @returns The operator.
- * @throws MdmlError `value` for a non-positive `lambda`; `shape` for mismatched samples.
+ * @throws OmaiError `value` for a non-positive `lambda`; `shape` for mismatched samples.
  * @concept kernel-mean-embedding
  * @reference L. Song, J. Huang, A. Smola and K. Fukumizu, Hilbert space embeddings of conditional distributions with
  *   applications to dynamical systems (ICML 2009).
  * @example
  * ```ts
- * import { conditionalMeanEmbedding } from 'mdml-engine/kernel-methods'
- * import { rbfKernel } from 'mdml-engine/kernels'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { conditionalMeanEmbedding } from 'omai-engine/kernel-methods'
+ * import { rbfKernel } from 'omai-engine/kernels'
+ * import { toFlat } from 'omai-engine/tensor'
  * const x = [[0], [1], [2]]
  * const y = [0, 1, 2]
  * const cme = conditionalMeanEmbedding(rbfKernel(), rbfKernel(), x, y.map((v) => [v]), 1e-6)
@@ -217,12 +217,12 @@ export function conditionalMeanEmbedding(
   y: TensorLike,
   lambda = 1e-3,
 ): ConditionalMeanEmbedding {
-  if (!(lambda > 0)) throw new MdmlError('value', `conditionalMeanEmbedding: lambda must be positive, got ${lambda}`)
+  if (!(lambda > 0)) throw new OmaiError('value', `conditionalMeanEmbedding: lambda must be positive, got ${lambda}`)
   const inputs = rowsOf(x, 'conditionalMeanEmbedding')
   const outputs = rowsOf(y, 'conditionalMeanEmbedding')
   const n = inputs.shape[0] ?? 0
   if (outputs.shape[0] !== n)
-    throw new MdmlError('shape', `conditionalMeanEmbedding: ${n} inputs but ${outputs.shape[0]} outputs`)
+    throw new OmaiError('shape', `conditionalMeanEmbedding: ${n} inputs but ${outputs.shape[0]} outputs`)
   const k = gramOf(kx, inputs)
   const regularised = k.map((v, i) => v + (i % (n + 1) === 0 ? n * lambda : 0))
   const weights = (q: TensorLike): Tensor => {
@@ -240,7 +240,7 @@ export function conditionalMeanEmbedding(
       const fv = primalOf(asTensor(f))
       const cols = fv.shape[1] ?? 1
       if ((fv.shape[0] ?? 0) !== n)
-        throw new MdmlError('shape', `conditionalMeanEmbedding: f has ${fv.shape[0]} values for ${n} outputs`)
+        throw new OmaiError('shape', `conditionalMeanEmbedding: f has ${fv.shape[0]} values for ${n} outputs`)
       const beta = toFlat(weights(q))
       const m = beta.length / n
       const values = toFlat(fv)
@@ -298,14 +298,14 @@ export interface KernelBayesPosterior {
  * @param y - Observation sample `[n, dy]`.
  * @param options - The prior and the two regularisations.
  * @returns The posterior, evaluable at observations.
- * @throws MdmlError `value` for non-positive regularisation; `shape` for mismatched samples or prior.
+ * @throws OmaiError `value` for non-positive regularisation; `shape` for mismatched samples or prior.
  * @concept kernel-mean-embedding
  * @reference K. Fukumizu, L. Song and A. Gretton, Kernel Bayes' rule: Bayesian inference with positive definite kernels
  *   (JMLR 14, 2013).
  * @example
  * ```ts
- * import { kernelBayesRule } from 'mdml-engine/kernel-methods'
- * import { rbfKernel } from 'mdml-engine/kernels'
+ * import { kernelBayesRule } from 'omai-engine/kernel-methods'
+ * import { rbfKernel } from 'omai-engine/kernels'
  * const x = [[0], [1], [2], [3]]
  * const post = kernelBayesRule(rbfKernel(), rbfKernel(), x, x)
  * post.weights([[1]]).shape // => [1, 4]
@@ -323,10 +323,10 @@ export function kernelBayesRule(
   const n = inputs.shape[0] ?? 0
   const eps = options.epsilon ?? 1e-3
   const delta = options.delta ?? 1e-2
-  if (!(eps > 0) || !(delta > 0)) throw new MdmlError('value', 'kernelBayesRule: epsilon and delta must be positive')
-  if (obs.shape[0] !== n) throw new MdmlError('shape', `kernelBayesRule: ${n} inputs but ${obs.shape[0]} observations`)
+  if (!(eps > 0) || !(delta > 0)) throw new OmaiError('value', 'kernelBayesRule: epsilon and delta must be positive')
+  if (obs.shape[0] !== n) throw new OmaiError('shape', `kernelBayesRule: ${n} inputs but ${obs.shape[0]} observations`)
   if (options.prior !== undefined && options.prior.length !== n)
-    throw new MdmlError('shape', 'kernelBayesRule: the prior needs one weight per input row')
+    throw new OmaiError('shape', 'kernelBayesRule: the prior needs one weight per input row')
   const prior = options.prior === undefined ? new Float64Array(n).fill(1 / n) : Float64Array.from(options.prior)
   const gx = gramOf(kx, inputs)
   const gy = gramOf(ky, obs)
@@ -404,9 +404,9 @@ export type ScoreFunction = (x: Value) => Value
  * @reference Q. Liu, J. Lee and M. Jordan, A kernelized Stein discrepancy for goodness-of-fit tests (ICML 2016).
  * @example
  * ```ts
- * import { steinKernelGram } from 'mdml-engine/kernel-methods'
- * import { rbfKernel } from 'mdml-engine/kernels'
- * import { neg, toArray } from 'mdml-engine/tensor'
+ * import { steinKernelGram } from 'omai-engine/kernel-methods'
+ * import { rbfKernel } from 'omai-engine/kernels'
+ * import { neg, toArray } from 'omai-engine/tensor'
  * toArray(steinKernelGram(rbfKernel({ lengthScale: 1 }), (x) => neg(x), [[0]])) // => [[1]]
  * ```
  */
@@ -438,9 +438,9 @@ export function steinKernelGram(kernel: Kernel, score: ScoreFunction, x: TensorL
  * @concept kernel-stein-discrepancy
  * @example
  * ```ts
- * import { kernelSteinDiscrepancy } from 'mdml-engine/kernel-methods'
- * import { rbfKernel } from 'mdml-engine/kernels'
- * import { neg } from 'mdml-engine/tensor'
+ * import { kernelSteinDiscrepancy } from 'omai-engine/kernel-methods'
+ * import { rbfKernel } from 'omai-engine/kernels'
+ * import { neg } from 'omai-engine/tensor'
  * kernelSteinDiscrepancy(rbfKernel(), (x) => neg(x), [[0], [0]]) > 0 // => true
  * ```
  */
@@ -506,9 +506,9 @@ function bootstrapAlgorithm(u: Float64Array, n: number, total: number): Algorith
  * @reference K. Chwialkowski, H. Strathmann and A. Gretton, A kernel test of goodness of fit (ICML 2016).
  * @example
  * ```ts
- * import { steinGoodnessOfFit } from 'mdml-engine/kernel-methods'
- * import { rbfKernel } from 'mdml-engine/kernels'
- * import { neg } from 'mdml-engine/tensor'
+ * import { steinGoodnessOfFit } from 'omai-engine/kernel-methods'
+ * import { rbfKernel } from 'omai-engine/kernels'
+ * import { neg } from 'omai-engine/tensor'
  * const x = [[5], [5.2], [4.9], [5.1], [5.3], [4.8], [5.0], [5.2]]
  * steinGoodnessOfFit(rbfKernel(), (p) => neg(p), x, { nBootstrap: 199 }).pValue < 0.05 // => true
  * ```

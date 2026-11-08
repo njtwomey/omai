@@ -1,8 +1,8 @@
-import { key, normal } from 'mdml-engine/random'
-import { toArray } from 'mdml-engine/tensor'
-import { lineChart } from 'mdml-render/charts'
-import { figure } from 'mdml-render/figure'
-import { Chart, ControlPanel, FigureFrame, SeedInput, Toggle, useColourMode } from 'mdml-render/react'
+import { key, normal } from 'omai-engine/random'
+import { toArray } from 'omai-engine/tensor'
+import { lineChart } from 'omai-render/charts'
+import { figure } from 'omai-render/figure'
+import { Chart, ControlPanel, FigureFrame, SeedInput, Toggle, useColourMode } from 'omai-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 
@@ -10,7 +10,7 @@ export const recipe: Recipe = {
   title: 'Toggle and seed',
   question: 'How do I switch something on and off, and let the reader redraw random data reproducibly?',
   explain:
-    '`Toggle` is a switch with its label. `SeedInput` is a whole-number seed with a die that rerolls it; the new seed is derived from the old one by a key, so a sequence of rerolls is reproducible too. Random draws come from `key(seed)` in mdml-engine.',
+    '`Toggle` is a switch with its label. `SeedInput` is a whole-number seed with a die that rerolls it; the new seed is derived from the old one by a key, so a sequence of rerolls is reproducible too. Random draws come from `key(seed)` in omai-engine.',
 }
 
 const FIGURE = figure()

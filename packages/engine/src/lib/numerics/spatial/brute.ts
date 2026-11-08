@@ -4,7 +4,7 @@
  * approximate indexes are checked against.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import {
   fromStorage,
   primalOf,
@@ -122,14 +122,14 @@ function selectSmallest(
  * @param k - Number of neighbours.
  * @param options - Metric, its parameters, and whether to exclude self-matches.
  * @returns Indices and distances.
- * @throws MdmlError with code `value` when the data or the queries have a NaN or infinite coordinate (a NaN row used to
+ * @throws OmaiError with code `value` when the data or the queries have a NaN or infinite coordinate (a NaN row used to
  *   come back as the nearest point, with distance NaN), or when k exceeds the number of candidates.
  * @concept nearest-neighbours
  * @index function Exact k nearest neighbours by brute force.
  * @example
  * ```ts
- * import { kNearest } from 'mdml-engine/numerics/spatial'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { kNearest } from 'omai-engine/numerics/spatial'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(kNearest([[0, 0], [1, 0], [5, 5]], [[0.9, 0.1]], 2).indices) // => [[1, 0]]
  * ```
  */
@@ -144,7 +144,7 @@ export function kNearest(
   const d = cdist(queries ?? data, data, metric, metricOptions)
   const [q = 0, n = 0] = d.shape
   const values = toFlat(primalOf(d))
-  if (k > n - (excludeSelf ? 1 : 0)) throw new MdmlError('value', `kNearest: k = ${k} exceeds the number of candidates`)
+  if (k > n - (excludeSelf ? 1 : 0)) throw new OmaiError('value', `kNearest: k = ${k} exceeds the number of candidates`)
   const indices = new Int32Array(q * k)
   const flat = new Int32Array(q * k)
   const heapValue = new Float64Array(Math.max(k, 0))
@@ -168,10 +168,10 @@ export function kNearest(
  * @param r - The radius (inclusive).
  * @param options - Metric, parameters and self-exclusion.
  * @returns Per query: indices and distances.
- * @throws MdmlError with code `value` when the data or the queries have a NaN or infinite coordinate.
+ * @throws OmaiError with code `value` when the data or the queries have a NaN or infinite coordinate.
  * @example
  * ```ts
- * import { radiusNeighbours } from 'mdml-engine/numerics/spatial'
+ * import { radiusNeighbours } from 'omai-engine/numerics/spatial'
  * radiusNeighbours([[0, 0], [1, 0], [5, 5]], [[0, 0]], 1.5)[0].indices // => [0, 1]
  * ```
  */
@@ -202,12 +202,12 @@ export function radiusNeighbours(
  * @param k - Neighbours per point.
  * @param options - Mode (connectivity or distance), includeSelf (default false) and metric.
  * @returns A sparse `[n, n]` matrix.
- * @throws MdmlError with code `value` when the data have a NaN or infinite coordinate.
+ * @throws OmaiError with code `value` when the data have a NaN or infinite coordinate.
  * @example
  * ```ts
- * import { kNeighboursGraph } from 'mdml-engine/numerics/spatial'
- * import { toDense } from 'mdml-engine/numerics/sparse'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { kNeighboursGraph } from 'omai-engine/numerics/spatial'
+ * import { toDense } from 'omai-engine/numerics/sparse'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(toDense(kNeighboursGraph([[0], [1], [3]], 1))) // => [[0, 1, 0], [1, 0, 0], [0, 1, 0]]
  * ```
  */
@@ -245,11 +245,11 @@ export function kNeighboursGraph(
  * @param r - The radius.
  * @param options - Mode, includeSelf and metric.
  * @returns A sparse `[n, n]` matrix.
- * @throws MdmlError with code `value` when the data have a NaN or infinite coordinate.
+ * @throws OmaiError with code `value` when the data have a NaN or infinite coordinate.
  * @example
  * ```ts
- * import { radiusNeighboursGraph } from 'mdml-engine/numerics/spatial'
- * import { nnz } from 'mdml-engine/numerics/sparse'
+ * import { radiusNeighboursGraph } from 'omai-engine/numerics/spatial'
+ * import { nnz } from 'omai-engine/numerics/sparse'
  * nnz(radiusNeighboursGraph([[0], [1], [3]], 1.5)) // => 2
  * ```
  */

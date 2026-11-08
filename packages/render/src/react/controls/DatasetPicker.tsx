@@ -4,8 +4,8 @@
  * `useDataset` generates or loads the chosen dataset once per change, from a collection or a registry.
  */
 
-import type { Dataset, Generated } from 'mdml-engine/data'
-import type { DatasetCollection } from 'mdml-engine/datasets'
+import type { Dataset, Generated } from 'omai-engine/data'
+import type { DatasetCollection } from 'omai-engine/datasets'
 import { type ReactNode, useMemo } from 'react'
 import { useByContent } from '../_content.ts'
 import {

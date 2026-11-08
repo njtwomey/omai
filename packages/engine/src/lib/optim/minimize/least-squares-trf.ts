@@ -4,7 +4,7 @@
  * them, with an exact SVD subproblem solver, as a traced algorithm.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { nextAfter } from '../../numerics/approximation/index.ts'
 import { daxpy, ddot, dgesvd, dnrm2, dscal } from '../../numerics/linalg/index.ts'
 import type { Algorithm } from '../../trace/index.ts'
@@ -114,7 +114,7 @@ function stepToBound(x: ArrayLike<number>, s: ArrayLike<number>, box: BoundVecto
 /** The two values of t with |x + t s| = delta (scipy's intersect_trust_region). */
 function intersectTrustRegion(x: Float64Array, s: Float64Array, delta: number): [number, number] {
   const a = ddot(s, s)
-  if (a === 0) throw new MdmlError('value', 'trf: zero direction')
+  if (a === 0) throw new OmaiError('value', 'trf: zero direction')
   const b = ddot(x, s)
   const c = ddot(x, x) - delta * delta
   const d = Math.sqrt(Math.max(0, b * b - a * c))
@@ -315,8 +315,8 @@ function selectStep(
  * bound-constrained minimization problems, SIAM J. Sci. Comput. 21 (1999).
  * @example
  * ```ts
- * import { trfAlgorithm } from 'mdml-engine/optim'
- * import { sub, type Value } from 'mdml-engine/tensor'
+ * import { trfAlgorithm } from 'omai-engine/optim'
+ * import { sub, type Value } from 'omai-engine/tensor'
  * trfAlgorithm((p: Value) => sub(p, 3), [0], { bounds: [[null, 1]] }).name // => 'trf'
  * ```
  */
@@ -374,7 +374,7 @@ function trfOn(res: FlatResiduals, options: TrfOptions): Algorithm<TrfState> {
       for (let i = 0; i < n; i++) {
         const xi = res.x0[i] ?? 0
         if (!(xi >= (box.lower[i] ?? -Infinity) && xi <= (box.upper[i] ?? Infinity)))
-          throw new MdmlError('value', `trf: the start is outside the bounds (variable ${i})`)
+          throw new OmaiError('value', `trf: the start is outside the bounds (variable ${i})`)
       }
       const x = bounded ? strictlyFeasible(Float64Array.from(res.x0), box, 1e-10) : Float64Array.from(res.x0)
       const f = res.residuals(x)
@@ -562,8 +562,8 @@ function trfOn(res: FlatResiduals, options: TrfOptions): Algorithm<TrfState> {
  * @concept least-squares
  * @example
  * ```ts
- * import { trf } from 'mdml-engine/optim'
- * import { sub, tensor, toFlat, type Value } from 'mdml-engine/tensor'
+ * import { trf } from 'omai-engine/optim'
+ * import { sub, tensor, toFlat, type Value } from 'omai-engine/tensor'
  * const r = trf((p: Value) => sub(p, tensor([3, -3])), [0, 0], { bounds: [[-1, 1], [-1, 1]] })
  * [toFlat(r.x as Value).map((v) => Math.round(v * 1e6) / 1e6), r.activeMask] // => [[1, -1], [1, -1]]
  * ```

@@ -41,8 +41,8 @@ const onesOf = (v: Value): Tensor =>
  * @concept pruning
  * @example
  * ```ts
- * import { pruneScopes } from 'mdml-engine/nn'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { pruneScopes } from 'omai-engine/nn'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * const masks = pruneScopes.make({ kind: 'layerwise' })({ a: tensor([[1, 2]]), b: tensor([[3, 0.5]]) }, 0.5, {})
  * [toArray(masks['a'] as never), toArray(masks['b'] as never)] // => [[[0, 1]], [[1, 0]]]
  * ```
@@ -88,7 +88,7 @@ export interface RoundScheduleProperties {
  * @concept pruning
  * @example
  * ```ts
- * import { pruneRoundSchedules } from 'mdml-engine/nn'
+ * import { pruneRoundSchedules } from 'omai-engine/nn'
  * pruneRoundSchedules.make({ kind: 'linear' })(1, 4, 0.8) // => 0.2
  * pruneRoundSchedules.make({ kind: 'geometric' })(2, 2, 0.75) // => 0.75
  * ```

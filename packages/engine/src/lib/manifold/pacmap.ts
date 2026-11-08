@@ -7,7 +7,7 @@
  * fixed weights is a smooth problem of the layout (`pacmapProblem`), so any solver of the smooth slot can minimise it.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { type IterativeEstimator, iterative, matrixView } from '../learn/index.ts'
 import { dnrm2 } from '../numerics/linalg/index.ts'
 import { analyticObjective, type OptimiserShape, optimisers, type SmoothProblem } from '../optim/index.ts'
@@ -59,11 +59,11 @@ export interface PacmapPairOptions {
  * @param key - The key for the random pairs.
  * @param options - Neighbours per row and the mid-near and further ratios.
  * @returns The three lists of pairs.
- * @throws MdmlError with code `value` for fewer than 8 rows, or too few rows for the pairs asked for.
+ * @throws OmaiError with code `value` for fewer than 8 rows, or too few rows for the pairs asked for.
  * @example
  * ```ts
- * import { pacmapPairs } from 'mdml-engine/manifold'
- * import { key } from 'mdml-engine/random'
+ * import { pacmapPairs } from 'omai-engine/manifold'
+ * import { key } from 'omai-engine/random'
  * const x = Array.from({ length: 20 }, (_, i) => [i, (i * 7) % 5])
  * const pairs = pacmapPairs(x, key(0), { nNeighbors: 4 })
  * [pairs.near.length, pairs.mid.length, pairs.far.length] // => [80, 40, 160]
@@ -75,9 +75,9 @@ export function pacmapPairs(x: TensorLike, key: Key, options: PacmapPairOptions 
   const kMid = Math.round(kNear * (options.mnRatio ?? 0.5))
   const kFar = Math.round(kNear * (options.fpRatio ?? 2))
   if (!(Number.isInteger(kNear) && kNear >= 1 && kNear <= n - 1))
-    throw new MdmlError('value', `pacmap: nNeighbors must be in 1..${n - 1}`)
+    throw new OmaiError('value', `pacmap: nNeighbors must be in 1..${n - 1}`)
   if (n - 1 - kNear < kFar)
-    throw new MdmlError('value', `pacmap: need at least ${kNear + kFar + 1} rows for these pairs`)
+    throw new OmaiError('value', `pacmap: need at least ${kNear + kFar + 1} rows for these pairs`)
   const extra = Math.min(Math.max(kNear + 50, 60), n - 1)
   const nb = scaledNeighbours(x, extra)
   const near: PacmapPair[] = []
@@ -137,7 +137,7 @@ export interface PacmapWeights {
  * @returns The three weights.
  * @example
  * ```ts
- * import { pacmapWeights } from 'mdml-engine/manifold'
+ * import { pacmapWeights } from 'omai-engine/manifold'
  * [pacmapWeights(0).mid, pacmapWeights(50).mid, pacmapWeights(150).mid, pacmapWeights(300).mid] // => [1000, 501.5, 3, 0]
  * ```
  */
@@ -167,7 +167,7 @@ export function pacmapWeights(
  * @returns The loss (a sum over pairs) and its gradient.
  * @example
  * ```ts
- * import { pacmapLoss } from 'mdml-engine/manifold'
+ * import { pacmapLoss } from 'omai-engine/manifold'
  * // one near pair at squared distance 3 (d = 4): loss 4 / 14
  * pacmapLoss([0, 0, 1, Math.sqrt(2)], 2, { near: [[0, 1]], mid: [], far: [] }, { near: 1, mid: 0, far: 0 }).loss // => 0.2857142857142857
  * ```
@@ -220,7 +220,7 @@ export function pacmapLoss(
  * @returns The problem.
  * @example
  * ```ts
- * import { pacmapProblem } from 'mdml-engine/manifold'
+ * import { pacmapProblem } from 'omai-engine/manifold'
  * const p = pacmapProblem({ near: [[0, 1]], mid: [], far: [[0, 2]] }, { near: 1, mid: 0, far: 1 }, [[0], [1], [5]])
  * p.x0 // => [0, 1, 5]
  * ```
@@ -274,9 +274,9 @@ export const pacmapAdam: SpaceValue = { kind: 'adam', b1: 0.9, b2: 0.999, eps: 1
  * @returns The algorithm; it completes after the three phases.
  * @example
  * ```ts
- * import { pacmapAlgorithm, pacmapPairs } from 'mdml-engine/manifold'
- * import { key } from 'mdml-engine/random'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { pacmapAlgorithm, pacmapPairs } from 'omai-engine/manifold'
+ * import { key } from 'omai-engine/random'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const x = Array.from({ length: 16 }, (_, i) => [i % 4, Math.floor(i / 4)])
  * const init = x.map((r) => [r[0] * 0.01, r[1] * 0.01])
  * const alg = pacmapAlgorithm(pacmapPairs(x, key(0), { nNeighbors: 3 }), init, { phases: [5, 5, 10] })
@@ -370,7 +370,7 @@ export interface PacmapHyper {
  *
  * @example
  * ```ts
- * import { pacmap } from 'mdml-engine/manifold'
+ * import { pacmap } from 'omai-engine/manifold'
  * const x = Array.from({ length: 24 }, (_, i) => [i < 12 ? 0 : 6, (i % 12) * 0.3, (i % 5) * 0.1])
  * pacmap.with({ nNeighbors: 4, phases: [10, 10, 20] }).fit({ x }).params.embedding.length // => 24
  * ```

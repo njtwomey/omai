@@ -9,7 +9,7 @@
  */
 
 import { customVjp } from '../autodiff/index.ts'
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import { dgemm, eigh } from '../numerics/linalg/index.ts'
 import {
   familySolvers,
@@ -61,7 +61,7 @@ export interface NcaEvaluation {
  * @returns The value, gradient and per-point probabilities.
  * @example
  * ```ts
- * import { matrixView, ncaValueAndGradient } from 'mdml-engine/learn'
+ * import { matrixView, ncaValueAndGradient } from 'omai-engine/learn'
  * const x = matrixView([[0], [0.1], [5], [5.1]], 'demo')
  * const r = ncaValueAndGradient([1], 1, x, [0, 0, 1, 1])
  * r.value // => 3.999999999858
@@ -141,7 +141,7 @@ function initialMap(
   const { n, d } = x
   if (typeof init !== 'string') {
     if (init.length !== dp || init.some((r) => r.length !== d)) {
-      throw new MdmlError('shape', `metric learning: the initial map must be [${dp}, ${d}]`)
+      throw new OmaiError('shape', `metric learning: the initial map must be [${dp}, ${d}]`)
     }
     return Float64Array.from(init.flat())
   }
@@ -161,7 +161,7 @@ function initialMap(
       nComponents: dp,
     })
     if (fit.scalings.length === 0 || (fit.scalings[0]?.length ?? 0) < dp) {
-      throw new MdmlError(
+      throw new OmaiError(
         'value',
         `metric learning: the LDA initialisation has only ${fit.scalings[0]?.length ?? 0} axes for ${dp} components`,
       )
@@ -261,8 +261,8 @@ export interface NcaState extends SlotState {
  * @returns The problem.
  * @example
  * ```ts
- * import { ncaProblem } from 'mdml-engine/learn'
- * import { key } from 'mdml-engine/random'
+ * import { ncaProblem } from 'omai-engine/learn'
+ * import { key } from 'omai-engine/random'
  * const x = [[0, 5], [0.2, 1], [0.1, -3], [3, 4], [3.1, 0], [2.9, -4]]
  * ncaProblem({ x, y: [0, 0, 0, 1, 1, 1] }, { init: 'identity', nComponents: 1 }, key(0)).x0.shape // => [1, 2]
  * ```
@@ -310,9 +310,9 @@ export function ncaProblem(
  * @returns The algorithm.
  * @example
  * ```ts
- * import { ncaAlgorithm } from 'mdml-engine/learn'
- * import { key } from 'mdml-engine/random'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { ncaAlgorithm } from 'omai-engine/learn'
+ * import { key } from 'omai-engine/random'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const x = [[0, 5], [0.2, 1], [0.1, -3], [3, 4], [3.1, 0], [2.9, -4]]
  * const alg = ncaAlgorithm({ x, y: [0, 0, 0, 1, 1, 1] }, { init: 'identity', maxIter: 20, gradTol: 1e-6, nComponents: 1 }, key(0))
  * runAlgorithm(alg, { maxSteps: 30 }).state.value < -4 // => true
@@ -365,7 +365,7 @@ const ncaHyper = (hyper: Partial<NcaHyper>): NcaHyper => {
  * @reference J. Goldberger, S. Roweis, G. Hinton and R. Salakhutdinov, Neighbourhood components analysis, NIPS (2004).
  * @example
  * ```ts
- * import { neighbourhoodComponentsAnalysis } from 'mdml-engine/learn'
+ * import { neighbourhoodComponentsAnalysis } from 'omai-engine/learn'
  * const x = [[0, 5], [0.2, 1], [0.1, -3], [3, 4], [3.1, 0], [2.9, -4]]
  * const f = neighbourhoodComponentsAnalysis({ nComponents: 1, init: 'identity' }).fit({ x, y: [0, 0, 0, 1, 1, 1] })
  * f.params.objective > 5.5 // => true
@@ -505,8 +505,8 @@ export interface LmnnProblem extends SmoothProblem {
  * @returns The problem.
  * @example
  * ```ts
- * import { lmnnProblem } from 'mdml-engine/learn'
- * import { key } from 'mdml-engine/random'
+ * import { lmnnProblem } from 'omai-engine/learn'
+ * import { key } from 'omai-engine/random'
  * const x = [[0, 5], [0.2, 1], [0.1, -3], [3, 4], [3.1, 0], [2.9, -4]]
  * lmnnProblem({ x, y: [0, 0, 0, 1, 1, 1] }, { nNeighbors: 1, mu: 0.5, init: 'identity' }, key(0)).x0.shape // => [2, 2]
  * ```
@@ -628,9 +628,9 @@ const lmnnDefaultSolver = (learningRate: number, tol: number): SpaceValue => ({ 
  * JMLR 10 (2009).
  * @example
  * ```ts
- * import { lmnnAlgorithm } from 'mdml-engine/learn'
- * import { key } from 'mdml-engine/random'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { lmnnAlgorithm } from 'omai-engine/learn'
+ * import { key } from 'omai-engine/random'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const x = [[0, 5], [0.2, 1], [0.1, -3], [3, 4], [3.1, 0], [2.9, -4]]
  * const alg = lmnnAlgorithm({ x, y: [0, 0, 0, 1, 1, 1] }, { nNeighbors: 1, mu: 0.5, init: 'identity', maxIter: 50, learningRate: 1e-3, tol: 1e-9 }, key(0))
  * const end = runAlgorithm(alg, { maxSteps: 60 }).state
@@ -704,7 +704,7 @@ const lmnnHyper = (hyper: Partial<LmnnHyper>): LmnnHyper => {
  * @returns The estimator.
  * @example
  * ```ts
- * import { largeMarginNearestNeighbour } from 'mdml-engine/learn'
+ * import { largeMarginNearestNeighbour } from 'omai-engine/learn'
  * const x = [[0, 5], [0.2, 1], [0.1, -3], [3, 4], [3.1, 0], [2.9, -4]]
  * const f = largeMarginNearestNeighbour({ nNeighbors: 1, learningRate: 1e-3 }).fit({ x, y: [0, 0, 0, 1, 1, 1] })
  * f.params.components.length // => 2

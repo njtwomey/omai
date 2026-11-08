@@ -4,7 +4,7 @@
  * zero-sum games with it by linear programming.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { type LinprogOptions, linprog } from '../../optim/index.ts'
 import { toFlat } from '../../tensor/index.ts'
 import { CHANCE, TERMINAL, tablePolicy } from './_tree.ts'
@@ -40,18 +40,18 @@ export interface SequenceForm {
  *
  * @param game - A two-player game or its tree.
  * @returns The sequences, constraints and payoffs.
- * @throws MdmlError with code `value` for other than two players or without perfect recall.
+ * @throws OmaiError with code `value` for other than two players or without perfect recall.
  * @concept sequence-form
  * @reference von Stengel (1996), Efficient computation of behavior strategies.
  * @example
  * ```ts
- * import { kuhnPoker, sequenceForm } from 'mdml-engine/games'
+ * import { kuhnPoker, sequenceForm } from 'omai-engine/games'
  * sequenceForm(kuhnPoker()).sequences.map((s) => s.length) // => [13, 13]
  * ```
  */
 export function sequenceForm<S>(game: ExtensiveGame<S> | GameTree): SequenceForm {
   const tree = treeOf(game)
-  if (tree.numPlayers !== 2) throw new MdmlError('value', `${tree.name}: the sequence form needs two players`)
+  if (tree.numPlayers !== 2) throw new OmaiError('value', `${tree.name}: the sequence form needs two players`)
   const sequences: [Sequence[], Sequence[]] = [
     [{ infoset: -1, action: -1, parent: -1 }],
     [{ infoset: -1, action: -1, parent: -1 }],
@@ -84,7 +84,7 @@ export function sequenceForm<S>(game: ExtensiveGame<S> | GameTree): SequenceForm
       first[k] = sequences[p as 0 | 1].length
       for (const [a] of node.actions.entries()) sequences[p as 0 | 1].push({ infoset: k, action: a, parent: own })
     } else if (parentOf[k] !== own)
-      throw new MdmlError('value', `${tree.name}: the game lacks perfect recall at '${tree.infosets[k]?.key}'`)
+      throw new OmaiError('value', `${tree.name}: the game lacks perfect recall at '${tree.infosets[k]?.key}'`)
     for (const [a, c] of node.children.entries()) {
       const next = [...seqs]
       next[p] = (first[k] ?? 0) + a
@@ -139,11 +139,11 @@ export interface SequenceFormSolution {
  * @param game - A two-player game with perfect recall, or its tree.
  * @param options - Options for the linear programs.
  * @returns The values, realisation plans and behaviour policy.
- * @throws MdmlError with code `convergence` when a linear program fails.
+ * @throws OmaiError with code `convergence` when a linear program fails.
  * @concept sequence-form
  * @example
  * ```ts
- * import { kuhnPoker, solveSequenceForm } from 'mdml-engine/games'
+ * import { kuhnPoker, solveSequenceForm } from 'omai-engine/games'
  * Math.round(solveSequenceForm(kuhnPoker()).values[0] * 18 * 1e9) / 1e9 // => -1
  * ```
  */
@@ -180,7 +180,7 @@ export function solveSequenceForm<S>(
       },
       options,
     )
-    if (!r.success) throw new MdmlError('convergence', `solveSequenceForm: the linear program ended with '${r.status}'`)
+    if (!r.success) throw new OmaiError('convergence', `solveSequenceForm: the linear program ended with '${r.status}'`)
     return {
       plan: toFlat(r.x)
         .slice(0, nOwn)

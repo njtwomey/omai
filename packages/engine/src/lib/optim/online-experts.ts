@@ -8,7 +8,7 @@
  * gradient) and Newton-step learners that these sit beside.
  */
 
-import { type Json, MdmlError, minOf } from '../base/index.ts'
+import { type Json, minOf, OmaiError } from '../base/index.ts'
 import { ddot } from '../numerics/linalg/index.ts'
 import { categorical, exponential, foldIn, type Key, key as makeKey } from '../random/index.ts'
 import { add, asTensor, type Tensor, type TensorLike, toArray, toFlat, toVector, type Value } from '../tensor/index.ts'
@@ -84,7 +84,7 @@ const addLoss = (cum: readonly number[], l: ArrayLike<number>): number[] => cum.
  * @concept online-learning
  * @example
  * ```ts
- * import { followTheLeader } from 'mdml-engine/optim'
+ * import { followTheLeader } from 'omai-engine/optim'
  * followTheLeader().name // => 'follow-the-leader'
  * ```
  */
@@ -118,12 +118,12 @@ export function followTheLeader(): ExpertsRule<WeightState> {
  * @concept online-learning
  * @example
  * ```ts
- * import { followThePerturbedLeader } from 'mdml-engine/optim'
+ * import { followThePerturbedLeader } from 'omai-engine/optim'
  * followThePerturbedLeader(0.1).config // => { eta: 0.1 }
  * ```
  */
 export function followThePerturbedLeader(eta: number): ExpertsRule<WeightState> {
-  if (!(eta > 0)) throw new MdmlError('value', 'followThePerturbedLeader: eta must be positive')
+  if (!(eta > 0)) throw new OmaiError('value', 'followThePerturbedLeader: eta must be positive')
   return {
     name: 'follow-the-perturbed-leader',
     config: { eta },
@@ -158,12 +158,12 @@ export function followThePerturbedLeader(eta: number): ExpertsRule<WeightState> 
  * @concept online-learning
  * @example
  * ```ts
- * import { hedgeRule } from 'mdml-engine/optim'
+ * import { hedgeRule } from 'omai-engine/optim'
  * hedgeRule(0.5).name // => 'hedge'
  * ```
  */
 export function hedgeRule(eta: number): ExpertsRule<WeightState> {
-  if (!(eta > 0)) throw new MdmlError('value', 'hedgeRule: eta must be positive')
+  if (!(eta > 0)) throw new OmaiError('value', 'hedgeRule: eta must be positive')
   return {
     name: 'hedge',
     config: { eta },
@@ -197,13 +197,13 @@ export interface WeightedMajorityOptions {
  * @concept online-learning
  * @example
  * ```ts
- * import { weightedMajority } from 'mdml-engine/optim'
+ * import { weightedMajority } from 'omai-engine/optim'
  * weightedMajority({ beta: 0.5 }).name // => 'weighted-majority'
  * ```
  */
 export function weightedMajority(options: WeightedMajorityOptions = {}): ExpertsRule<WeightState> {
   const beta = options.beta ?? 0.5
-  if (!(beta > 0 && beta < 1)) throw new MdmlError('value', 'weightedMajority: beta must be in (0, 1)')
+  if (!(beta > 0 && beta < 1)) throw new OmaiError('value', 'weightedMajority: beta must be in (0, 1)')
   const randomised = options.randomised ?? false
   return {
     name: randomised ? 'randomised-weighted-majority' : 'weighted-majority',
@@ -212,7 +212,7 @@ export function weightedMajority(options: WeightedMajorityOptions = {}): Experts
     play: (s, round) => {
       const p = normalise(Float64Array.from(s.weights))
       if (round.predictions === undefined || round.outcome === undefined)
-        throw new MdmlError('value', 'weightedMajority: the problem needs predictions and outcomes')
+        throw new OmaiError('value', 'weightedMajority: the problem needs predictions and outcomes')
       // The randomised rule draws an expert in proportion to the weights; the loss recorded is its expectation p . l, which
       // is what the bound is on and keeps the regret curve free of sampling noise.
       if (randomised) return { probabilities: p, loss: ddot(p, round.losses) }
@@ -239,7 +239,7 @@ export function weightedMajority(options: WeightedMajorityOptions = {}): Experts
  * @concept online-learning
  * @example
  * ```ts
- * import { weightedMajorityMistakeBound } from 'mdml-engine/optim'
+ * import { weightedMajorityMistakeBound } from 'omai-engine/optim'
  * weightedMajorityMistakeBound(4, 10, 0.5) // => 28.9
  * ```
  */
@@ -257,7 +257,7 @@ export function weightedMajorityMistakeBound(n: number, m: number, beta: number)
  * @concept online-learning
  * @example
  * ```ts
- * import { randomisedMajorityBound } from 'mdml-engine/optim'
+ * import { randomisedMajorityBound } from 'omai-engine/optim'
  * randomisedMajorityBound(4, 10, 0.5) // => 16.6
  * ```
  */
@@ -284,14 +284,14 @@ export interface ShareOptions {
  * @concept online-learning
  * @example
  * ```ts
- * import { fixedShare } from 'mdml-engine/optim'
+ * import { fixedShare } from 'omai-engine/optim'
  * fixedShare({ eta: 1, alpha: 0.01 }).name // => 'fixed-share'
  * ```
  */
 export function fixedShare(options: ShareOptions): ExpertsRule<WeightState> {
   const { eta, alpha } = options
   if (!(eta > 0 && alpha > 0 && alpha < 1))
-    throw new MdmlError('value', 'fixedShare: needs eta > 0 and alpha in (0, 1)')
+    throw new OmaiError('value', 'fixedShare: needs eta > 0 and alpha in (0, 1)')
   return {
     name: 'fixed-share',
     config: { eta, alpha },
@@ -322,14 +322,14 @@ export function fixedShare(options: ShareOptions): ExpertsRule<WeightState> {
  * @concept online-learning
  * @example
  * ```ts
- * import { variableShare } from 'mdml-engine/optim'
+ * import { variableShare } from 'omai-engine/optim'
  * variableShare({ eta: 1, alpha: 0.05 }).name // => 'variable-share'
  * ```
  */
 export function variableShare(options: ShareOptions): ExpertsRule<WeightState> {
   const { eta, alpha } = options
   if (!(eta > 0 && alpha > 0 && alpha < 1))
-    throw new MdmlError('value', 'variableShare: needs eta > 0 and alpha in (0, 1)')
+    throw new OmaiError('value', 'variableShare: needs eta > 0 and alpha in (0, 1)')
   return {
     name: 'variable-share',
     config: { eta, alpha },
@@ -359,12 +359,12 @@ export function variableShare(options: ShareOptions): ExpertsRule<WeightState> {
  * @param switches - The number of times the chosen expert may change.
  * @returns For each prefix length t = 1..T, the best loss of a sequence with at most `switches` switches over the first t
  *   rounds, a `[T]` tensor.
- * @throws MdmlError with code `shape` unless `losses` is a matrix, and `not-differentiable` for a traced one.
+ * @throws OmaiError with code `shape` unless `losses` is a matrix, and `not-differentiable` for a traced one.
  * @concept online-learning
  * @example
  * ```ts
- * import { bestSwitchingLoss } from 'mdml-engine/optim'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { bestSwitchingLoss } from 'omai-engine/optim'
+ * import { toFlat } from 'omai-engine/tensor'
  * toFlat(bestSwitchingLoss([[0, 1], [0, 1], [1, 0], [1, 0]], 1)) // => [0, 0, 0, 0]
  * ```
  */
@@ -418,8 +418,8 @@ export interface ExpertsRunOptions {
  * @concept online-learning
  * @example
  * ```ts
- * import { expertsAlgorithm, hedgeRule } from 'mdml-engine/optim'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { expertsAlgorithm, hedgeRule } from 'omai-engine/optim'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const alg = expertsAlgorithm(hedgeRule(1), { losses: [[0, 1], [0, 1]] })
  * runAlgorithm(alg, { maxSteps: 2 }).state.expertLosses // => [0, 2]
  * ```
@@ -434,7 +434,7 @@ export function expertsAlgorithm<S>(
   const outcomes = problem.outcomes === undefined ? undefined : toVector(problem.outcomes, 'expertsAlgorithm')
   const rounds = lossRows.length
   const n = lossRows[0]?.length ?? 0
-  if (rounds === 0 || n < 2) throw new MdmlError('value', 'expertsAlgorithm: needs at least one round and two experts')
+  if (rounds === 0 || n < 2) throw new OmaiError('value', 'expertsAlgorithm: needs at least one round and two experts')
   const comparator = options.switches === undefined ? undefined : bestSwitchingLoss(lossRows, options.switches)
   return {
     name: `experts(${rule.name})`,
@@ -532,7 +532,7 @@ export interface ExpertsResult {
  * @concept online-learning
  * @example
  * ```ts
- * import { followTheLeader, runExperts } from 'mdml-engine/optim'
+ * import { followTheLeader, runExperts } from 'omai-engine/optim'
  * runExperts(followTheLeader(), { losses: [[0.5, 0], [0, 1], [1, 0], [0, 1]] }).regret // => 2
  * ```
  */
@@ -595,12 +595,12 @@ export interface Exp4Options {
  * @param losses - The `[T, K]` loss of every arm in every round (the learner sees only the pulled arm's).
  * @param options - eta and gamma.
  * @returns The algorithm over {@link Exp4State}.
- * @throws MdmlError with code `shape` unless `advice` has rank 2 or 3 and `losses` rank 2, and `not-differentiable` for a
+ * @throws OmaiError with code `shape` unless `advice` has rank 2 or 3 and `losses` rank 2, and `not-differentiable` for a
  *   traced one.
  * @concept online-learning
  * @example
  * ```ts
- * import { exp4Algorithm } from 'mdml-engine/optim'
+ * import { exp4Algorithm } from 'omai-engine/optim'
  * exp4Algorithm([[1, 0], [0, 1]], [[0, 1], [0, 1]]).name // => 'exp4'
  * ```
  */
@@ -612,7 +612,7 @@ export function exp4Algorithm(
   const losses = rowsOf(lossesLike, 'exp4Algorithm')
   const advice = asTensor(adviceLike)
   if (advice.shape.length !== 2 && advice.shape.length !== 3 && !(advice.shape.length === 1 && advice.shape[0] === 0))
-    throw new MdmlError(
+    throw new OmaiError(
       'shape',
       `exp4Algorithm: advice must be [N, K] or [T, N, K], got shape [${advice.shape.join(', ')}]`,
     )
@@ -624,7 +624,7 @@ export function exp4Algorithm(
     (perRound ? (adviceRows as number[][][])[t] : (adviceRows as number[][])) as readonly (readonly number[])[]
   const n = adviceAt(0).length
   if (rounds === 0 || k < 2 || n < 1)
-    throw new MdmlError('value', 'exp4: needs rounds, at least two arms and an expert')
+    throw new OmaiError('value', 'exp4: needs rounds, at least two arms and an expert')
   const eta = options.eta ?? Math.sqrt((2 * Math.log(Math.max(n, 2))) / (k * rounds))
   const gamma = options.gamma ?? 0
   return {
@@ -699,7 +699,7 @@ export function exp4Algorithm(
  * @concept online-learning
  * @example
  * ```ts
- * import { exp4RegretBound } from 'mdml-engine/optim'
+ * import { exp4RegretBound } from 'omai-engine/optim'
  * exp4RegretBound(1000, 4, 10) // => 135.7228
  * ```
  */
@@ -728,7 +728,7 @@ export interface PNormOptions {
  * @concept online-learning
  * @example
  * ```ts
- * import { pNormMirrorDescent } from 'mdml-engine/optim'
+ * import { pNormMirrorDescent } from 'omai-engine/optim'
  * const l = pNormMirrorDescent({ q: 2, learningRate: 0.5 })
  * Array.from(l.play(l.update(l.init(2), new Float64Array([2, -4]), 1))) // => [-1, 2]
  * ```
@@ -737,7 +737,7 @@ export function pNormMirrorDescent(
   options: PNormOptions = {},
 ): OnlineLearner<{ readonly theta: Float64Array; readonly x: Float64Array }> {
   const q = options.q ?? 2
-  if (!(q > 1)) throw new MdmlError('value', 'pNormMirrorDescent: q must exceed 1')
+  if (!(q > 1)) throw new OmaiError('value', 'pNormMirrorDescent: q must exceed 1')
   const p = q / (q - 1)
   const lr = options.learningRate ?? ((t: number) => 1 / Math.sqrt(t))
   const dual = (theta: Float64Array): Float64Array => {
@@ -781,7 +781,7 @@ export interface OnlineAdagradOptions {
  * @concept online-learning
  * @example
  * ```ts
- * import { onlineAdagrad } from 'mdml-engine/optim'
+ * import { onlineAdagrad } from 'omai-engine/optim'
  * const l = onlineAdagrad({ eta: 0.5, radius: 10 })
  * Array.from(l.play(l.update(l.init(1), new Float64Array([3]), 1))) // => [-0.5]
  * ```
@@ -816,11 +816,11 @@ export function onlineAdagrad(
  * @param gradients - The T gradients, each of dimension d: a `[T, d]` matrix.
  * @param width - D_inf, the width of the box in each coordinate (2 radius).
  * @returns The bound.
- * @throws MdmlError with code `shape` unless `gradients` is a matrix, and `not-differentiable` for a traced one.
+ * @throws OmaiError with code `shape` unless `gradients` is a matrix, and `not-differentiable` for a traced one.
  * @concept online-learning
  * @example
  * ```ts
- * import { adagradRegretBound } from 'mdml-engine/optim'
+ * import { adagradRegretBound } from 'omai-engine/optim'
  * adagradRegretBound([[3, 0], [4, 0]], 2) // => 14.1421
  * ```
  */
@@ -855,8 +855,8 @@ export interface HindsightOptions {
  * @concept online-learning
  * @example
  * ```ts
- * import { hindsightComparator } from 'mdml-engine/optim'
- * import { square, sub, sum, toFlat } from 'mdml-engine/tensor'
+ * import { hindsightComparator } from 'omai-engine/optim'
+ * import { square, sub, sum, toFlat } from 'omai-engine/tensor'
  * const f = (c: number) => (x: any) => sum(square(sub(x, c)))
  * Math.round(toFlat(hindsightComparator([f(1), f(3)], 1).point)[0] * 1e6) / 1e6 // => 2
  * ```

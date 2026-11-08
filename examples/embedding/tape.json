@@ -1,5 +1,5 @@
 {
-  "schema": "mdml.tape/1",
+  "schema": "omai.tape/1",
   "method": "manifold/tsne",
   "seed": 0,
   "title": "Handwritten digits in two dimensions",
@@ -16,14 +16,14 @@
       "head": 300,
       "status": "completed",
       "run": {
-        "schema": "mdml.run/1",
+        "schema": "omai.run/1",
         "events": [
           {
             "type": "run",
             "runId": "manifold/tsne:0",
             "name": "manifold/tsne",
             "seed": 0,
-            "version": "0.1.2",
+            "version": "0.1.3",
             "config": {
               "perplexity": 30,
               "maxIter": 300,

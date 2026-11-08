@@ -26,8 +26,8 @@ export const shapeletPatterns: readonly (readonly number[])[] = [
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { shapeletSeries } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { shapeletSeries } from 'omai-engine/datasets'
  * generate(shapeletSeries, { knobs: { n: 20, length: 40 } }).data.x.shape // => [20, 40]
  * ```
  */

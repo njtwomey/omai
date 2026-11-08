@@ -7,7 +7,7 @@
  * so each prediction is a sum of readable contributions. Moved here from `explain`, which re-exports it.
  */
 
-import { MdmlError, maxOf } from '../base/index.ts'
+import { maxOf, OmaiError } from '../base/index.ts'
 import { type IterativeEstimator, iterative } from '../learn/bases/iterative.ts'
 import type { FittedFacts, LearnData, Verbs } from '../learn/estimator.ts'
 import { withDefaultScore } from '../learn/estimator.ts'
@@ -76,7 +76,7 @@ export interface ExplainableBoostingOptions {
  *
  * @example
  * ```ts
- * import type { CyclicPath } from 'mdml-engine/ensembles'
+ * import type { CyclicPath } from 'omai-engine/ensembles'
  * const path: CyclicPath = 'boost/round'
  * path // => 'boost/round'
  * ```
@@ -121,8 +121,8 @@ export interface CyclicBooster {
  * @concept boosting
  * @example
  * ```ts
- * import { cyclicBoosting } from 'mdml-engine/ensembles'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { cyclicBoosting } from 'omai-engine/ensembles'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const x = Array.from({ length: 20 }, (_, i) => [i % 4])
  * const booster = cyclicBoosting({ x, y: x.map(([a = 0]) => 2 * a) }, { bins: 4, rounds: 200, learningRate: 0.3 })
  * const state = runAlgorithm(booster.algorithm, { maxSteps: 200, seed: 0 }).state
@@ -131,7 +131,7 @@ export interface CyclicBooster {
  */
 export function cyclicBoosting(data: LearnData, options: ExplainableBoostingOptions = {}): CyclicBooster {
   const m = matrixView(data.x, 'explainableBoosting')
-  if (data.y === undefined) throw new MdmlError('value', 'explainableBoosting: needs targets')
+  if (data.y === undefined) throw new OmaiError('value', 'explainableBoosting: needs targets')
   const y = targetVector(data.y, 'explainableBoosting', m.n)
   const task = options.loss === undefined ? (options.task ?? 'regression') : boostingLosses.make(options.loss)
   const classification = task === 'classification'
@@ -314,7 +314,7 @@ export function cyclicBoosting(data: LearnData, options: ExplainableBoostingOpti
  * @concept boosting
  * @example
  * ```ts
- * import { explainableBoosting } from 'mdml-engine/ensembles'
+ * import { explainableBoosting } from 'omai-engine/ensembles'
  * const x = Array.from({ length: 40 }, (_, i) => [i % 4, Math.floor(i / 4) % 2])
  * const y = x.map(([a, b]) => 2 * a + (b === 1 ? 5 : 0))
  * const m = explainableBoosting({ x, y }, { bins: 4, rounds: 300, learningRate: 0.2 })
@@ -339,7 +339,7 @@ export function explainableBoosting(data: LearnData, options: ExplainableBoostin
  * @returns contributions[row][term].
  * @example
  * ```ts
- * import { glassBoxContributions } from 'mdml-engine/ensembles'
+ * import { glassBoxContributions } from 'omai-engine/ensembles'
  * const model = { task: 'regression', intercept: 1, terms: [{ features: [0], edges: [0.5], values: [-1, 1] }] }
  * glassBoxContributions(model, [[0], [1]]) // => [[-1], [1]]
  * ```
@@ -367,7 +367,7 @@ export function glassBoxContributions(model: GlassBoxModel, x: TensorLike): numb
  * @returns One prediction per row.
  * @example
  * ```ts
- * import { glassBoxPredict } from 'mdml-engine/ensembles'
+ * import { glassBoxPredict } from 'omai-engine/ensembles'
  * const model = { task: 'regression', intercept: 1, terms: [{ features: [0], edges: [0.5], values: [-1, 1] }] }
  * glassBoxPredict(model, [[0], [1]]) // => [0, 2]
  * ```
@@ -387,7 +387,7 @@ export function glassBoxPredict(model: GlassBoxModel, x: TensorLike): number[] {
  * @returns One importance per term.
  * @example
  * ```ts
- * import { termImportances } from 'mdml-engine/ensembles'
+ * import { termImportances } from 'omai-engine/ensembles'
  * const model = { task: 'regression', intercept: 0, terms: [{ features: [0], edges: [0.5], values: [-1, 1] }] }
  * termImportances(model, [[0], [1], [1]]) // => [1]
  * ```
@@ -493,8 +493,8 @@ function ebmEstimator(name: string, classifier: boolean, options: ExplainableBoo
  * @concept boosting
  * @example
  * ```ts
- * import { explainableBoostingRegressor } from 'mdml-engine/ensembles'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { explainableBoostingRegressor } from 'omai-engine/ensembles'
+ * import { toFlat } from 'omai-engine/tensor'
  * const x = Array.from({ length: 40 }, (_, i) => [i % 4, Math.floor(i / 4) % 2])
  * const y = x.map(([a = 0, b = 0]) => 2 * a + 5 * b)
  * toFlat(explainableBoostingRegressor({ bins: 4, rounds: 200, learningRate: 0.3 }).fit({ x, y }).predict([[3, 1]])).map(Math.round) // => [11]
@@ -514,8 +514,8 @@ export function explainableBoostingRegressor(options: Omit<ExplainableBoostingOp
  * @index estimator Cyclic boosting of additive terms (explainable boosting machine).
  * @example
  * ```ts
- * import { explainableBoostingClassifier } from 'mdml-engine/ensembles'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { explainableBoostingClassifier } from 'omai-engine/ensembles'
+ * import { toFlat } from 'omai-engine/tensor'
  * const x = Array.from({ length: 40 }, (_, i) => [i / 40])
  * const y = x.map(([a = 0]) => (a < 0.5 ? 0 : 1))
  * toFlat(explainableBoostingClassifier({ bins: 8, rounds: 100, learningRate: 0.3 }).fit({ x, y }).predict([[0.1], [0.9]])) // => [0, 1]

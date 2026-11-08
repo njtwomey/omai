@@ -92,7 +92,7 @@ const zeros = (k: number, d: number): number[][] => Array.from({ length: k }, ()
  * @returns Statistics with no rows.
  * @example
  * ```ts
- * import { naiveBayesInit } from 'mdml-engine/learn'
+ * import { naiveBayesInit } from 'omai-engine/learn'
  * naiveBayesInit([0, 1], 2, { family: 'multinomial' }).classCount // => [0, 0]
  * ```
  */
@@ -147,7 +147,7 @@ function welford(
  * @returns The updated statistics.
  * @example
  * ```ts
- * import { naiveBayesInit, naiveBayesPartialFit } from 'mdml-engine/learn'
+ * import { naiveBayesInit, naiveBayesPartialFit } from 'omai-engine/learn'
  * const h = { family: 'multinomial' } as const
  * const p = naiveBayesPartialFit(naiveBayesInit([0, 1], 2, h), h, [3, 1], 1)
  * p.featureCount // => [[0, 0], [3, 1]]
@@ -333,8 +333,8 @@ export type NaiveBayesState = {
  * @returns The algorithm.
  * @example
  * ```ts
- * import { naiveBayesAlgorithm } from 'mdml-engine/learn'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { naiveBayesAlgorithm } from 'omai-engine/learn'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const alg = naiveBayesAlgorithm({ x: [[0], [1], [0], [1]], y: [0, 1, 0, 1] }, { family: 'bernoulli', alpha: 1, varSmoothing: 1e-9, binarize: 0, norm: false, fitPrior: true })
  * runAlgorithm(alg, { maxSteps: 10 }).state.correct // => 2
  * ```
@@ -421,8 +421,8 @@ const NB_DEFAULTS: NaiveBayesHyper = {
  * @index estimator Naive Bayes classifier with Gaussian, categorical or other likelihoods.
  * @example
  * ```ts
- * import { naiveBayes } from 'mdml-engine/learn'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { naiveBayes } from 'omai-engine/learn'
+ * import { toFlat } from 'omai-engine/tensor'
  * const nb = naiveBayes({ family: 'multinomial' }).fit({ x: [[3, 0], [2, 1], [0, 3], [1, 2]], y: [0, 0, 1, 1] })
  * toFlat(nb.predict([[4, 0], [0, 4]])) // => [0, 1]
  * ```
@@ -459,8 +459,8 @@ export function naiveBayes(
  * @returns The estimator.
  * @example
  * ```ts
- * import { gaussianNaiveBayes } from 'mdml-engine/learn'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { gaussianNaiveBayes } from 'omai-engine/learn'
+ * import { toFlat } from 'omai-engine/tensor'
  * const x = [[0], [0.2], [5], [5.2]]
  * toFlat(gaussianNaiveBayes().fit({ x, y: [0, 0, 1, 1] }).predict(x)) // => [0, 0, 1, 1]
  * ```
@@ -475,8 +475,8 @@ export const gaussianNaiveBayes = (
  * @returns The estimator.
  * @example
  * ```ts
- * import { multinomialNaiveBayes } from 'mdml-engine/learn'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { multinomialNaiveBayes } from 'omai-engine/learn'
+ * import { toFlat } from 'omai-engine/tensor'
  * const x = [[3, 0], [2, 1], [0, 3], [1, 2]]
  * toFlat(multinomialNaiveBayes().fit({ x, y: [0, 0, 1, 1] }).predict(x)) // => [0, 0, 1, 1]
  * ```
@@ -491,8 +491,8 @@ export const multinomialNaiveBayes = (
  * @returns The estimator.
  * @example
  * ```ts
- * import { bernoulliNaiveBayes } from 'mdml-engine/learn'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { bernoulliNaiveBayes } from 'omai-engine/learn'
+ * import { toFlat } from 'omai-engine/tensor'
  * const x = [[1, 0], [1, 0], [0, 1], [0, 1]]
  * toFlat(bernoulliNaiveBayes().fit({ x, y: [0, 0, 1, 1] }).predict(x)) // => [0, 0, 1, 1]
  * ```
@@ -507,8 +507,8 @@ export const bernoulliNaiveBayes = (
  * @returns The estimator.
  * @example
  * ```ts
- * import { categoricalNaiveBayes } from 'mdml-engine/learn'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { categoricalNaiveBayes } from 'omai-engine/learn'
+ * import { toFlat } from 'omai-engine/tensor'
  * const x = [[0, 1], [0, 1], [1, 0], [1, 0]]
  * toFlat(categoricalNaiveBayes().fit({ x, y: [0, 0, 1, 1] }).predict(x)) // => [0, 0, 1, 1]
  * ```
@@ -523,8 +523,8 @@ export const categoricalNaiveBayes = (
  * @returns The estimator.
  * @example
  * ```ts
- * import { complementNaiveBayes } from 'mdml-engine/learn'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { complementNaiveBayes } from 'omai-engine/learn'
+ * import { toFlat } from 'omai-engine/tensor'
  * const x = [[3, 0], [2, 1], [0, 3], [1, 2]]
  * toFlat(complementNaiveBayes().fit({ x, y: [0, 0, 1, 1] }).predict(x)) // => [0, 0, 1, 1]
  * ```
@@ -610,7 +610,7 @@ function countRow(s: DiscreteCounts, x: ArrayLike<number>, c: number, w: number)
  * @returns The counts.
  * @example
  * ```ts
- * import { discreteCounts } from 'mdml-engine/learn'
+ * import { discreteCounts } from 'omai-engine/learn'
  * const s = discreteCounts([[0, 1], [1, 1], [1, 0]], [0, 0, 1])
  * s.classCount // => [2, 1]
  * s.single[0] // => [[1, 1], [0, 1]]
@@ -637,7 +637,7 @@ export function discreteCounts(x: TensorLike, y: TensorLike, minCategories = 0):
  * @returns The symmetric matrix `[d][d]` with a zero diagonal.
  * @example
  * ```ts
- * import { conditionalMutualInformation, discreteCounts } from 'mdml-engine/learn'
+ * import { conditionalMutualInformation, discreteCounts } from 'omai-engine/learn'
  * // Features 0 and 1 copy each other inside each class, feature 2 is noise.
  * const x = [[0, 0, 0], [0, 0, 1], [1, 1, 0], [1, 1, 1], [0, 0, 1], [1, 1, 0], [0, 0, 0], [1, 1, 1]]
  * const cmi = conditionalMutualInformation(discreteCounts(x, [0, 0, 0, 0, 1, 1, 1, 1]))
@@ -788,8 +788,8 @@ function countsOf(data: LearnData, minCategories: number): DiscreteCounts {
  * @returns The algorithm.
  * @example
  * ```ts
- * import { tanAlgorithm } from 'mdml-engine/learn'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { tanAlgorithm } from 'omai-engine/learn'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const x = [[0, 0, 0], [0, 0, 1], [1, 1, 0], [1, 1, 1], [0, 0, 1], [1, 1, 0], [0, 0, 0], [1, 1, 1]]
  * const run = runAlgorithm(tanAlgorithm({ x, y: [0, 0, 0, 0, 1, 1, 1, 1] }, {}), { maxSteps: 10 })
  * run.state.edges.map((e) => [e.parent, e.child]) // => [[0, 1], [0, 2]]
@@ -860,8 +860,8 @@ export function tanAlgorithm(
  * @reference N. Friedman, D. Geiger and M. Goldszmidt, Bayesian network classifiers, Machine Learning 29 (1997).
  * @example
  * ```ts
- * import { treeAugmentedNaiveBayes } from 'mdml-engine/learn'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { treeAugmentedNaiveBayes } from 'omai-engine/learn'
+ * import { toFlat } from 'omai-engine/tensor'
  * // The class is the XOR of two features that naive Bayes cannot separate.
  * const x = [[0, 0], [0, 1], [1, 0], [1, 1], [0, 0], [0, 1], [1, 0], [1, 1]]
  * const y = [0, 1, 1, 0, 0, 1, 1, 0]
@@ -1033,8 +1033,8 @@ function aodeAlgorithm(data: LearnData, h: DiscreteBayesHyper): Algorithm<AodeSt
  * Machine Learning 58 (2005).
  * @example
  * ```ts
- * import { aode } from 'mdml-engine/learn'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { aode } from 'omai-engine/learn'
+ * import { toFlat } from 'omai-engine/tensor'
  * const x = [[0, 0], [0, 1], [1, 0], [1, 1], [0, 0], [0, 1], [1, 0], [1, 1]]
  * const y = [0, 1, 1, 0, 0, 1, 1, 0]
  * toFlat(aode({ alpha: 0.1 }).fit({ x, y }).predict(x)) // => [0, 1, 1, 0, 0, 1, 1, 0]

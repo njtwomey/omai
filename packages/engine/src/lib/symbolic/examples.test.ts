@@ -2,13 +2,13 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { type ErrorCode, isMdmlError } from '../base/index.ts'
+import { type ErrorCode, isOmaiError } from '../base/index.ts'
 import * as tensor from '../tensor/index.ts'
 import * as symbolic from './index.ts'
 
 const MODULES: Readonly<Record<string, Readonly<Record<string, unknown>>>> = {
-  'mdml-engine/symbolic': symbolic,
-  'mdml-engine/tensor': tensor,
+  'omai-engine/symbolic': symbolic,
+  'omai-engine/tensor': tensor,
 }
 
 interface Example {
@@ -78,7 +78,7 @@ describe('documentation examples', () => {
             try {
               f()
             } catch (e) {
-              expect(isMdmlError(e, code as ErrorCode), text).toBe(true)
+              expect(isOmaiError(e, code as ErrorCode), text).toBe(true)
             }
           },
         )

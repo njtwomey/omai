@@ -8,7 +8,7 @@
  * rebuilt, so it travels with a saved state and changes when the grid is refined or nodes are pruned.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { foldIn, type Key } from '../../random/index.ts'
 import { completeOption, type SpaceValue } from '../../space/index.ts'
 import { abs, asTensor, mean, type Tensor, type TensorLike, transpose, type Value } from '../../tensor/index.ts'
@@ -68,17 +68,17 @@ export interface KanOptions extends Partial<Omit<KanSpec, 'widths'>> {
  * @param widths - The widths `[n_in, ..., n_out]`.
  * @param options - Any of the structure's fields.
  * @returns The complete structure.
- * @throws MdmlError `value` for fewer than two widths or a width below 1.
+ * @throws OmaiError `value` for fewer than two widths or a width below 1.
  * @example
  * ```ts
- * import { kanSpec } from 'mdml-engine/nn'
+ * import { kanSpec } from 'omai-engine/nn'
  * kanSpec([2, 5, 1]).grid // => 5
  * kanSpec([2, 1], { basis: { kind: 'fourier' } }).basis // => { kind: 'fourier' }
  * ```
  */
 export function kanSpec(widths: readonly number[], options: Partial<Omit<KanSpec, 'widths'>> = {}): KanSpec {
   if (widths.length < 2 || widths.some((w) => !(Number.isInteger(w) && w >= 1)))
-    throw new MdmlError('value', 'kanSpec: widths need at least [n_in, n_out], each an integer >= 1')
+    throw new OmaiError('value', 'kanSpec: widths need at least [n_in, n_out], each an integer >= 1')
   return {
     widths: [...widths],
     grid: options.grid ?? 5,
@@ -114,8 +114,8 @@ export interface KanTrace {
  * @index module Kolmogorov-Arnold network of learnable spline edges.
  * @example
  * ```ts
- * import { KAN } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
+ * import { KAN } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
  * const net = new KAN([2, 5, 1], { grid: 5, degree: 3, key: key(0) })
  * net.forward([[0.1, 0.2], [0.3, -0.5]]).shape // => [2, 1]
  * net.edgeCurve(0, 1, 3, [-1, 0, 1]).shape // => [3]
@@ -241,9 +241,9 @@ export class KAN extends Module {
    */
   edgeCurve(layer: number, i: number, j: number, grid: ArrayLike<number>, state: Partial<KanState> = {}): Tensor {
     const l = this.layers[layer]
-    if (l === undefined) throw new MdmlError('value', `KAN.edgeCurve: no layer ${layer}`)
+    if (l === undefined) throw new OmaiError('value', `KAN.edgeCurve: no layer ${layer}`)
     if (!(i >= 0 && i < l.inFeatures && j >= 0 && j < l.outFeatures))
-      throw new MdmlError('value', `KAN.edgeCurve: no edge ${i} -> ${j} in layer ${layer}`)
+      throw new OmaiError('value', `KAN.edgeCurve: no edge ${i} -> ${j} in layer ${layer}`)
     const params = (state.params ?? this.params)[String(layer)] as Params
     const buffers = (state.buffers ?? this.buffers)[String(layer)] as Params
     return l.edgeCurve(params, grid, i, j, buffers)

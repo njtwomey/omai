@@ -7,7 +7,7 @@
  * the iterative ones are estimators on the iterative base, one EM or gradient step per step.
  */
 
-import { type Json, logSumExpOf, MdmlError, maxOf } from '../base/index.ts'
+import { type Json, logSumExpOf, maxOf, OmaiError } from '../base/index.ts'
 import { logSigmoid } from '../numerics/special/index.ts'
 import { type LbfgsState, lbfgsAlgorithm } from '../optim/index.ts'
 import { foldIn, type Key, key as makeKey, permutation, uniform } from '../random/index.ts'
@@ -53,12 +53,12 @@ function readVotes(votes: TensorLike, who: string, classes?: readonly number[]):
   const seen = new Set<number>()
   for (const x of mv.data) if (x !== ABSTAIN) seen.add(x)
   const cls = classes === undefined ? Array.from(seen).sort((a, b) => a - b) : [...classes]
-  if (cls.length < 2) throw new MdmlError('value', `${who}: needs at least two classes among the votes`)
+  if (cls.length < 2) throw new OmaiError('value', `${who}: needs at least two classes among the votes`)
   const index = new Map(cls.map((c, i) => [c, i]))
   const v = Int32Array.from(mv.data, (x) => {
     if (x === ABSTAIN) return -1
     const i = index.get(x)
-    if (i === undefined) throw new MdmlError('value', `${who}: vote ${x} is not among the classes ${cls.join(', ')}`)
+    if (i === undefined) throw new OmaiError('value', `${who}: vote ${x} is not among the classes ${cls.join(', ')}`)
     return i
   })
   return { n: mv.n, m: mv.d, v, classes: cls }
@@ -91,7 +91,7 @@ export interface LabellingSummary {
  * @returns The summary.
  * @example
  * ```ts
- * import { labellingMatrixSummary } from 'mdml-engine/learn'
+ * import { labellingMatrixSummary } from 'omai-engine/learn'
  * const s = labellingMatrixSummary([[0, 0], [1, -1], [0, 1], [-1, -1]])
  * s.coverage // => [0.75, 0.5]
  * s.conflict // => [0.25, 0.25]
@@ -197,7 +197,7 @@ export interface MajorityVoteResult {
  * @returns The labels, the shares and which items were covered.
  * @example
  * ```ts
- * import { majorityVote } from 'mdml-engine/learn'
+ * import { majorityVote } from 'omai-engine/learn'
  * const r = majorityVote([[0, 0, 1], [1, 1, -1], [0, 1, -1], [-1, -1, -1]])
  * r.labels // => [0, 1, -1, -1]
  * r.covered // => [true, true, true, false]
@@ -216,7 +216,7 @@ export function majorityVote(
   const { n, m, v, classes } = readVotes(votes, 'majorityVote', options.classes)
   const k = classes.length
   const w = options.weights ?? new Array<number>(m).fill(1)
-  if (w.length !== m) throw new MdmlError('shape', `majorityVote: ${w.length} weights for ${m} sources`)
+  if (w.length !== m) throw new OmaiError('shape', `majorityVote: ${w.length} weights for ${m} sources`)
   const ties = options.ties ?? 'abstain'
   const draws = ties === 'random' ? uniform(options.key ?? makeKey(0), [n]) : undefined
   const labels: number[] = []
@@ -417,8 +417,8 @@ function maximisation(
  * @returns The algorithm.
  * @example
  * ```ts
- * import { dawidSkeneAlgorithm } from 'mdml-engine/learn'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { dawidSkeneAlgorithm } from 'omai-engine/learn'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const votes = [[0, 0, 1], [1, 1, 1], [0, 0, 0], [1, 0, 1], [1, 1, 0], [0, 0, 0]]
  * const alg = dawidSkeneAlgorithm(votes, { mode: 'one-coin', classes: null, smoothing: 0, maxIter: 50, tol: 1e-10, mSteps: 5 })
  * runAlgorithm(alg, { maxSteps: 50 }).state.logLikelihood < 0 // => true
@@ -601,7 +601,7 @@ function posteriorFor(
 ): Float64Array {
   const vt = readVotes(x, 'dawidSkene', p.classes)
   if (vt.m !== p.confusions.length)
-    throw new MdmlError('shape', `dawidSkene: ${vt.m} sources, fitted on ${p.confusions.length}`)
+    throw new OmaiError('shape', `dawidSkene: ${vt.m} sources, fitted on ${p.confusions.length}`)
   return expectation(vt, p.priors, (j, _i, c, l) => logOf(p.confusions[j]?.[c]?.[l] ?? 0)).posterior
 }
 
@@ -664,8 +664,8 @@ const DS_DEFAULTS: DawidSkeneHyper = {
  * @returns The estimator.
  * @example
  * ```ts
- * import { dawidSkene } from 'mdml-engine/learn'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { dawidSkene } from 'omai-engine/learn'
+ * import { toFlat } from 'omai-engine/tensor'
  * const votes = [[0, 0, 1], [1, 1, 1], [0, 0, 0], [1, 0, 1], [1, 1, 0], [0, 0, 0]]
  * const f = dawidSkene({ mode: 'one-coin' }).fit({ x: votes })
  * f.labels // => [0, 1, 0, 1, 1, 0]
@@ -793,7 +793,7 @@ function agreementMoments(
  * @returns The algorithm.
  * @example
  * ```ts
- * import { labelModelAlgorithm } from 'mdml-engine/learn'
+ * import { labelModelAlgorithm } from 'omai-engine/learn'
  * const votes = [[0, 0, 0], [1, 1, 1], [0, 0, 1], [1, 1, 0], [0, 0, 0], [1, 1, 1]]
  * labelModelAlgorithm(votes, { classes: null, ignore: [], classBalance: null, maxIter: 50, tol: 1e-12 }).name // => 'label-model'
  * ```
@@ -917,7 +917,7 @@ const LM_DEFAULTS: LabelModelHyper = { classes: null, ignore: [], classBalance: 
  * @returns The estimator.
  * @example
  * ```ts
- * import { labelModel } from 'mdml-engine/learn'
+ * import { labelModel } from 'omai-engine/learn'
  * const votes = [[0, 0, 0], [1, 1, 1], [0, 0, 1], [1, 1, 0], [0, 0, 0], [1, 1, 1], [0, 1, 0], [1, 0, 1]]
  * const f = labelModel().fit({ x: votes })
  * f.accuracies.length // => 3
@@ -1031,10 +1031,10 @@ function readProba(
 ): { n: number; k: number; p: Float64Array; y: Int32Array } {
   const mv = matrixView(proba, who)
   const y = toFlat(asTensor(labels))
-  if (y.length !== mv.n) throw new MdmlError('shape', `${who}: ${mv.n} probability rows but ${y.length} labels`)
+  if (y.length !== mv.n) throw new OmaiError('shape', `${who}: ${mv.n} probability rows but ${y.length} labels`)
   const yi = Int32Array.from(y, (c) => {
     if (!Number.isInteger(c) || c < 0 || c >= mv.d)
-      throw new MdmlError('value', `${who}: label ${c} is not a class index in [0, ${mv.d})`)
+      throw new OmaiError('value', `${who}: label ${c} is not a class index in [0, ${mv.d})`)
     return c
   })
   return { n: mv.n, k: mv.d, p: mv.data, y: yi }
@@ -1052,7 +1052,7 @@ function readProba(
  * @returns The row-stochastic matrix `[k][k]`.
  * @example
  * ```ts
- * import { estimateNoiseTransition } from 'mdml-engine/learn'
+ * import { estimateNoiseTransition } from 'omai-engine/learn'
  * const proba = [[0.9, 0.1], [0.8, 0.2], [0.2, 0.8], [0.1, 0.9]]
  * estimateNoiseTransition(proba, [0, 0, 1, 1], { percentile: 100 }) // => [[0.9, 0.1], [0.1, 0.9]]
  * ```
@@ -1106,7 +1106,7 @@ export interface ConfidentJoint {
  * @returns The counts, thresholds, calibrated joint and per-item guesses.
  * @example
  * ```ts
- * import { confidentJoint } from 'mdml-engine/learn'
+ * import { confidentJoint } from 'omai-engine/learn'
  * const proba = [[0.9, 0.1], [0.8, 0.2], [0.3, 0.7], [0.2, 0.8], [0.1, 0.9]]
  * const r = confidentJoint(proba, [0, 0, 0, 1, 1])
  * r.counts // => [[2, 0], [0, 1]]
@@ -1158,7 +1158,7 @@ export type LabelQualityMethod = 'self_confidence' | 'normalized_margin'
  * @returns One score per item.
  * @example
  * ```ts
- * import { labelQuality } from 'mdml-engine/learn'
+ * import { labelQuality } from 'omai-engine/learn'
  * labelQuality([[0.9, 0.1], [0.2, 0.8]], [0, 0]) // => [0.9, 0.2]
  * labelQuality([[0.9, 0.1], [0.2, 0.8]], [0, 0], 'normalized_margin') // => [0.8, -0.6000000000000001]
  * ```
@@ -1200,7 +1200,7 @@ export type LabelIssueFilter =
  * @returns The indices of the flagged items, ordered by increasing `self_confidence`.
  * @example
  * ```ts
- * import { findLabelIssues } from 'mdml-engine/learn'
+ * import { findLabelIssues } from 'omai-engine/learn'
  * const proba = [[0.97, 0.03], [0.95, 0.05], [0.96, 0.04], [0.1, 0.9], [0.05, 0.95], [0.98, 0.02]]
  * findLabelIssues(proba, [0, 0, 0, 1, 1, 1], 'confident_joint') // => [5]
  * ```
@@ -1313,8 +1313,8 @@ export interface PuRisk {
  * @returns The risk and its two parts.
  * @example
  * ```ts
- * import { puRisk } from 'mdml-engine/learn'
- * import { item } from 'mdml-engine/tensor'
+ * import { puRisk } from 'omai-engine/learn'
+ * import { item } from 'omai-engine/tensor'
  * const r = puRisk([2, 2, -2, -2], [1, 0, 0, 0], 0.5, { loss: 'squared' })
  * item(r.risk).toFixed(4) // => '-0.0833'
  * item(puRisk([2, 2, -2, -2], [1, 0, 0, 0], 0.5, { loss: 'squared', nonNegative: true }).risk).toFixed(4) // => '0.1250'
@@ -1327,12 +1327,12 @@ export function puRisk(
   options: { readonly loss?: PuLoss; readonly nonNegative?: boolean } = {},
 ): PuRisk {
   const loss = options.loss ?? 'logistic'
-  if (!(prior > 0 && prior < 1)) throw new MdmlError('value', `puRisk: the prior must be in (0, 1), got ${prior}`)
+  if (!(prior > 0 && prior < 1)) throw new OmaiError('value', `puRisk: the prior must be in (0, 1), got ${prior}`)
   const s = asTensor(scores)
   const lp = toFlat(asTensor(labelledPositive))
   const nP = lp.reduce((a, b) => a + b, 0)
   const nU = lp.length - nP
-  if (nP === 0 || nU === 0) throw new MdmlError('value', 'puRisk: needs both labelled positives and unlabelled rows')
+  if (nP === 0 || nU === 0) throw new OmaiError('value', 'puRisk: needs both labelled positives and unlabelled rows')
   const maskP = fromStorage(
     Float64Array.from(lp, (v) => v / nP),
     [lp.length],
@@ -1405,8 +1405,8 @@ const augmented = (
  * @returns The estimator; `predict` gives 1 for positive and 0 for negative.
  * @example
  * ```ts
- * import { puClassifier } from 'mdml-engine/learn'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { puClassifier } from 'omai-engine/learn'
+ * import { toFlat } from 'omai-engine/tensor'
  * const x = [[2], [2.5], [3], [-2], [-2.5], [-3], [2.2], [-2.2]]
  * const y = [1, 1, 0, 0, 0, 0, 0, 0]
  * const f = puClassifier({ prior: 0.4, nonNegative: true }).fit({ x, y })
@@ -1527,7 +1527,7 @@ export interface ElkanNotoVerbs {
  * @returns The estimator; targets are 1 for a labelled positive and 0 for an unlabelled row.
  * @example
  * ```ts
- * import { elkanNoto, gaussianNaiveBayes } from 'mdml-engine/learn'
+ * import { elkanNoto, gaussianNaiveBayes } from 'omai-engine/learn'
  * const x = [[2], [2.5], [3], [3.2], [2.8], [-2], [-2.5], [-3], [2.2], [-2.2]]
  * const y = [1, 1, 1, 1, 0, 0, 0, 0, 0, 0]
  * const f = elkanNoto(gaussianNaiveBayes(), { holdout: 0.25 }).fit({ x, y })
@@ -1564,14 +1564,14 @@ export function elkanNoto(
           }),
           init: () => {
             if (y.reduce((a, v) => a + (v === 1 ? 1 : 0), 0) < 2)
-              throw new MdmlError('value', 'elkanNoto: needs at least two labelled positives')
+              throw new OmaiError('value', 'elkanNoto: needs at least two labelled positives')
             // A validation subset of all rows (so the labelling rate is the same in both parts), kept out of the base fit.
             const order = Array.from(permutation(foldIn(key, 0), n).data)
             const validation = order.slice(0, Math.max(1, Math.min(n - 1, Math.round(c.holdout * n))))
             const kept = new Set(validation)
             const held = validation.filter((i) => y[i] === 1)
             if (held.length === 0)
-              throw new MdmlError('value', 'elkanNoto: the validation rows hold no labelled positive; raise holdout')
+              throw new OmaiError('value', 'elkanNoto: the validation rows hold no labelled positive; raise holdout')
             return {
               stage: 0,
               held,
@@ -1678,7 +1678,7 @@ export interface BagData extends LearnData {
  * @returns The data.
  * @example
  * ```ts
- * import { bagData } from 'mdml-engine/learn'
+ * import { bagData } from 'omai-engine/learn'
  * bagData([[0], [1], [2]], [0, 0, 1], { y: [1, 1, 0] }).bags // => [0, 0, 1]
  * ```
  */
@@ -1697,7 +1697,7 @@ export function bagData(
 
 const bagsOf = (data: LearnData, who: string): readonly number[] => {
   const b = (data as Partial<BagData>).bags
-  if (b === undefined) throw new MdmlError('value', `${who}: needs bag ids (use bagData)`)
+  if (b === undefined) throw new OmaiError('value', `${who}: needs bag ids (use bagData)`)
   return b
 }
 
@@ -1737,8 +1737,8 @@ export interface LabelProportionVerbs {
  * @returns The estimator.
  * @example
  * ```ts
- * import { bagData, labelProportionClassifier } from 'mdml-engine/learn'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { bagData, labelProportionClassifier } from 'omai-engine/learn'
+ * import { toFlat } from 'omai-engine/tensor'
  * const x = [[-2], [-1.8], [2], [1.9], [-2.1], [2.2], [-1.9], [2.1]]
  * const data = bagData(x, [0, 0, 0, 0, 1, 1, 1, 1], { proportions: [[0.5, 0.5], [0.5, 0.5]] })
  * labelProportionClassifier().with({ l2: 0.01 }).fit(data).classes // => [0, 1]
@@ -1755,13 +1755,13 @@ export function labelProportionClassifier(
     const bags = bagsOf(data, 'labelProportions')
     const proportions = (data as Partial<BagData>).proportions
     if (proportions === undefined)
-      throw new MdmlError('value', 'labelProportions: needs proportions per bag (use bagData)')
-    if (bags.length !== n) throw new MdmlError('shape', `labelProportions: ${n} instances but ${bags.length} bag ids`)
+      throw new OmaiError('value', 'labelProportions: needs proportions per bag (use bagData)')
+    if (bags.length !== n) throw new OmaiError('shape', `labelProportions: ${n} instances but ${bags.length} bag ids`)
     const nb = proportions.length
     const k = proportions[0]?.length ?? 0
     const sizes = new Array<number>(nb).fill(0)
     for (const b of bags) {
-      if (!(b >= 0 && b < nb)) throw new MdmlError('value', `labelProportions: bag ${b} has no proportions`)
+      if (!(b >= 0 && b < nb)) throw new OmaiError('value', `labelProportions: bag ${b} has no proportions`)
       sizes[b] = (sizes[b] ?? 0) + 1
     }
     const member = new Float64Array(nb * n)
@@ -1838,7 +1838,7 @@ const logSafe = (x: Value): Value => log(maximum(x, 1e-12))
 
 /** The hyperparameters of {@link multipleInstanceSvm}. */
 export interface MultipleInstanceHyper {
-  /** The base binary classifier with a decision function (e.g. an SVM of `mdml-engine/svm`). */
+  /** The base binary classifier with a decision function (e.g. an SVM of `omai-engine/svm`). */
   readonly base: Estimator
   /** `instance` (mi-SVM): every instance of a positive bag starts positive and is relabelled by the margin; `bag` (MI-SVM): one representative per positive bag, the most positive instance. */
   readonly mode: 'instance' | 'bag'
@@ -1883,7 +1883,7 @@ export interface MultipleInstanceVerbs {
  * @returns The algorithm.
  * @example
  * ```ts
- * import { bagData, gaussianNaiveBayes, multipleInstanceAlgorithm } from 'mdml-engine/learn'
+ * import { bagData, gaussianNaiveBayes, multipleInstanceAlgorithm } from 'omai-engine/learn'
  * const data = bagData([[0], [0.1], [3], [0.2]], [0, 0, 1, 1], { y: [0, 0, 1, 1] })
  * multipleInstanceAlgorithm(data, { base: gaussianNaiveBayes(), mode: 'instance', maxIter: 10 }).name // => 'multiple-instance-instance'
  * ```
@@ -1896,7 +1896,7 @@ export function multipleInstanceAlgorithm(
   const m = matrixView(data.x, who)
   const bags = bagsOf(data, who)
   const y = Float64Array.from(toFlat(asTensor(requireTargets(data, who))))
-  if (bags.length !== m.n) throw new MdmlError('shape', `${who}: ${m.n} instances but ${bags.length} bag ids`)
+  if (bags.length !== m.n) throw new OmaiError('shape', `${who}: ${m.n} instances but ${bags.length} bag ids`)
   const members = new Map<number, number[]>()
   bags.forEach((b, i) => {
     members.set(b, [...(members.get(b) ?? []), i])
@@ -1904,7 +1904,7 @@ export function multipleInstanceAlgorithm(
   const positiveBags = Array.from(members.entries()).filter(([, rows]) => (y[rows[0] ?? 0] ?? 0) === 1)
   for (const [b, rows] of members) {
     if (new Set(rows.map((i) => y[i])).size !== 1)
-      throw new MdmlError('value', `${who}: bag ${b} has instances with different bag labels`)
+      throw new OmaiError('value', `${who}: bag ${b} has instances with different bag labels`)
   }
   const negativeRows = Array.from({ length: m.n }, (_, i) => i).filter((i) => y[i] !== 1)
   const trainingRows = (selected: readonly number[]): number[] =>
@@ -1989,7 +1989,7 @@ const fromStorageView = (m: { n: number; d: number; data: Float64Array }): Tenso
  * @returns The estimator; fit it on {@link bagData} with the bag labels as `y`.
  * @example
  * ```ts
- * import { bagData, gaussianNaiveBayes, multipleInstanceSvm } from 'mdml-engine/learn'
+ * import { bagData, gaussianNaiveBayes, multipleInstanceSvm } from 'omai-engine/learn'
  * const x = [[-2], [-2.2], [-1.8], [2], [-1.9], [-2.1], [2.2], [-2]]
  * const data = bagData(x, [0, 0, 1, 1, 2, 2, 3, 3], { y: [0, 0, 1, 1, 0, 0, 1, 1] })
  * const f = multipleInstanceSvm(gaussianNaiveBayes()).fit(data)

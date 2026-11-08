@@ -7,7 +7,7 @@
 
 // TODO: Telea's fast-marching inpainting (cv2.INPAINT_TELEA) and the fast (integral-image) mode of non-local means.
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import { image } from '../signal/index.ts'
 import { primalOf, type Tensor, type TensorLike } from '../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm } from '../trace/index.ts'
@@ -48,8 +48,8 @@ export interface NonLocalMeansOptions {
  * @concept non-local-means
  * @example
  * ```ts
- * import { nonLocalMeans } from 'mdml-engine/vision'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { nonLocalMeans } from 'omai-engine/vision'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(nonLocalMeans([[0.5, 0.5, 0.5], [0.5, 0.5, 0.5]], { patchSize: 3, searchRadius: 1 })) // => [[0.5, 0.5, 0.5], [0.5, 0.5, 0.5]]
  * ```
  */
@@ -155,7 +155,7 @@ function tvChambolle(
  * @concept total-variation
  * @example
  * ```ts
- * import { denoiseTvChambolle } from 'mdml-engine/vision'
+ * import { denoiseTvChambolle } from 'omai-engine/vision'
  * denoiseTvChambolle([[0, 1, 0], [1, 0, 1]], { weight: 0.2 }).shape // => [2, 3]
  * ```
  */
@@ -165,7 +165,7 @@ export function denoiseTvChambolle(
 ): Tensor {
   const r = rasterOf(x, 'denoiseTvChambolle')
   const weight = options.weight ?? 0.1
-  if (!(weight > 0)) throw new MdmlError('value', 'denoiseTvChambolle: the weight must be positive')
+  if (!(weight > 0)) throw new OmaiError('value', 'denoiseTvChambolle: the weight must be positive')
   return fromPlanes(
     r,
     planesOf(r).map((p) => tvChambolle(p, r.h, r.w, weight, options.eps ?? 2e-4, options.maxIter ?? 200)),
@@ -200,7 +200,7 @@ export interface DiffusionState {
  * @concept anisotropic-diffusion
  * @example
  * ```ts
- * import { anisotropicDiffusionAlgorithm } from 'mdml-engine/vision'
+ * import { anisotropicDiffusionAlgorithm } from 'omai-engine/vision'
  * anisotropicDiffusionAlgorithm([[0, 1], [1, 0]]).name // => 'perona-malik'
  * ```
  */
@@ -212,7 +212,7 @@ export function anisotropicDiffusionAlgorithm(
   const { h, w } = r
   const kappa = options.kappa ?? 0.1
   const lambda = options.lambda ?? 0.2
-  if (!(lambda > 0 && lambda <= 0.25)) throw new MdmlError('value', 'anisotropicDiffusion: lambda must be in (0, 0.25]')
+  if (!(lambda > 0 && lambda <= 0.25)) throw new OmaiError('value', 'anisotropicDiffusion: lambda must be in (0, 0.25]')
   const quad = options.conduction === 'quadratic'
   const g = (d: number): number => (quad ? 1 / (1 + (d / kappa) ** 2) : Math.exp(-((d / kappa) ** 2)))
   return {
@@ -259,7 +259,7 @@ export function anisotropicDiffusionAlgorithm(
  * @concept anisotropic-diffusion
  * @example
  * ```ts
- * import { anisotropicDiffusion } from 'mdml-engine/vision'
+ * import { anisotropicDiffusion } from 'omai-engine/vision'
  * anisotropicDiffusion([[0, 0, 1, 1], [0, 0, 1, 1]], { steps: 5 }).shape // => [2, 4]
  * ```
  */
@@ -291,7 +291,7 @@ export function anisotropicDiffusion(
  * @concept guided-filter
  * @example
  * ```ts
- * import { guidedFilter } from 'mdml-engine/vision'
+ * import { guidedFilter } from 'omai-engine/vision'
  * guidedFilter([[0, 0, 1, 1]], [[0, 0, 1, 1]], { radius: 1 }).shape // => [1, 4]
  * ```
  */
@@ -302,7 +302,7 @@ export function guidedFilter(
 ): Tensor {
   const I = greyOf(guide, 'guidedFilter')
   const p = greyOf(x, 'guidedFilter')
-  if (I.h !== p.h || I.w !== p.w) throw new MdmlError('shape', 'guidedFilter: the guide and image differ in shape')
+  if (I.h !== p.h || I.w !== p.w) throw new OmaiError('shape', 'guidedFilter: the guide and image differ in shape')
   const size = 2 * (options.radius ?? 2) + 1
   const eps = options.eps ?? 0.01
   const mean = (d: Float64Array): Float64Array =>
@@ -338,14 +338,14 @@ export interface InpaintState {
  * @concept inpainting
  * @example
  * ```ts
- * import { inpaintAlgorithm } from 'mdml-engine/vision'
+ * import { inpaintAlgorithm } from 'omai-engine/vision'
  * inpaintAlgorithm([[0, 9, 2]], [[0, 1, 0]]).name // => 'diffusion-inpaint'
  * ```
  */
 export function inpaintAlgorithm(x: TensorLike, mask: TensorLike): Algorithm<InpaintState> {
   const r = rasterOf(x, 'inpaint')
   const m = greyOf(mask, 'inpaint')
-  if (m.h !== r.h || m.w !== r.w) throw new MdmlError('shape', 'inpaint: the mask is [H, W]')
+  if (m.h !== r.h || m.w !== r.w) throw new OmaiError('shape', 'inpaint: the mask is [H, W]')
   const { h, w, c } = r
   const holes: number[] = []
   for (let i = 0; i < h * w; i++) if ((m.data[i] ?? 0) !== 0) holes.push(i)
@@ -409,8 +409,8 @@ export function inpaintAlgorithm(x: TensorLike, mask: TensorLike): Algorithm<Inp
  * @concept inpainting
  * @example
  * ```ts
- * import { inpaint } from 'mdml-engine/vision'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { inpaint } from 'omai-engine/vision'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(inpaint([[0, 9, 2]], [[0, 1, 0]])) // => [[0, 1, 2]]
  * ```
  */

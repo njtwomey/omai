@@ -101,7 +101,7 @@ function present(s: KalmanState): KalmanState {
  *
  * @example
  * ```ts
- * import type { KalmanTrackingPath } from 'mdml-engine/methods/dynamics'
+ * import type { KalmanTrackingPath } from 'omai-engine/methods/dynamics'
  * const path: KalmanTrackingPath = 'nis'
  * path // => 'nis'
  * ```
@@ -118,8 +118,8 @@ export type KalmanTrackingPath = 'truth' | 'observation' | 'estimate' | 'covaria
  *
  * @example
  * ```ts
- * import { kalmanTracking } from 'mdml-engine/methods/dynamics'
- * import { session } from 'mdml-engine/trace'
+ * import { kalmanTracking } from 'omai-engine/methods/dynamics'
+ * import { session } from 'omai-engine/trace'
  * session(kalmanTracking, { mode: 'eager', steps: 10 }).t // => 10
  * ```
  */

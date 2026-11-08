@@ -4,9 +4,9 @@ ends (degree one) and shortest-path lengths (breadth-first and by terrain cost, 
 
 import networkx as nx
 import numpy as np
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.graphs import NxGraph
-from mdml_oracle.helpers import rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.graphs import NxGraph
+from omai_oracle.helpers import rng
 
 REFERENCE: dict[str, str] = {"networkx": nx.__version__}
 

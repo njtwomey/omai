@@ -7,7 +7,7 @@
 
 // TODO: OpenCV's StereoBM pre-filtering and texture thresholds, and SGBM's Birchfield-Tomasi sampling-insensitive cost.
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import type { Tensor, TensorLike } from '../tensor/index.ts'
 import { greyOf, imageTensor } from './_image.ts'
 
@@ -127,7 +127,7 @@ function pairOf(
 ): { L: Float64Array; R: Float64Array; h: number; w: number } {
   const l = greyOf(left, name)
   const r = greyOf(right, name)
-  if (l.h !== r.h || l.w !== r.w) throw new MdmlError('shape', `${name}: the images differ in shape`)
+  if (l.h !== r.h || l.w !== r.w) throw new OmaiError('shape', `${name}: the images differ in shape`)
   return { L: l.data, R: r.data, h: l.h, w: l.w }
 }
 
@@ -144,8 +144,8 @@ function pairOf(
  * @concept stereo-matching
  * @example
  * ```ts
- * import { blockMatching } from 'mdml-engine/vision'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { blockMatching } from 'omai-engine/vision'
+ * import { toArray } from 'omai-engine/tensor'
  * const tex = (x: number, y: number) => Math.sin(x * 1.3) * Math.cos(y * 0.7) + Math.sin(x * 0.4 + y)
  * const L = Array.from({ length: 12 }, (_, y) => Array.from({ length: 24 }, (_, x) => tex(x, y)))
  * const R = Array.from({ length: 12 }, (_, y) => Array.from({ length: 24 }, (_, x) => tex(x + 3, y)))
@@ -226,8 +226,8 @@ function aggregate(
  * @concept stereo-matching
  * @example
  * ```ts
- * import { semiGlobalMatching } from 'mdml-engine/vision'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { semiGlobalMatching } from 'omai-engine/vision'
+ * import { toArray } from 'omai-engine/tensor'
  * const tex = (x: number, y: number) => Math.sin(x * 1.3) * Math.cos(y * 0.7) + Math.sin(x * 0.4 + y)
  * const L = Array.from({ length: 10 }, (_, y) => Array.from({ length: 20 }, (_, x) => tex(x, y)))
  * const R = Array.from({ length: 10 }, (_, y) => Array.from({ length: 20 }, (_, x) => tex(x + 2, y)))
@@ -286,8 +286,8 @@ export function semiGlobalMatching(
  * @concept stereo-matching
  * @example
  * ```ts
- * import { disparityToDepth } from 'mdml-engine/vision'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { disparityToDepth } from 'omai-engine/vision'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(disparityToDepth([[2, 4, -1]], 100, 0.1)) // => [[5, 2.5, 0]]
  * ```
  */
@@ -310,7 +310,7 @@ export function disparityToDepth(disparity: TensorLike, focal: number, baseline:
  * @concept stereo-matching
  * @example
  * ```ts
- * import { reprojectImageTo3D } from 'mdml-engine/vision'
+ * import { reprojectImageTo3D } from 'omai-engine/vision'
  * const Q = [[1, 0, 0, -1], [0, 1, 0, -1], [0, 0, 0, 100], [0, 0, 10, 0]]
  * reprojectImageTo3D([[2]], Q).shape // => [1, 1, 3]
  * ```

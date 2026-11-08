@@ -8,7 +8,7 @@
  * @index structure The log contract: paths a method can log and hook.
  */
 
-import { type Json, MdmlError, type MetricDirection } from '../base/index.ts'
+import { type Json, type MetricDirection, OmaiError } from '../base/index.ts'
 import type { Value } from '../tensor/index.ts'
 import type { TensorRole } from './events.ts'
 import { policies, type TracePolicy } from './policy.ts'
@@ -30,7 +30,7 @@ export type Pattern = `${string}*${string}`
  *
  * @example
  * ```ts
- * import type { Concrete } from 'mdml-engine/trace'
+ * import type { Concrete } from 'omai-engine/trace'
  * type Logged = Concrete<'solver/step' | 'taps/*'>   // 'solver/step' | `taps/${string}`
  * ```
  */
@@ -113,7 +113,7 @@ export type Contract<S, K extends string = string> = Readonly<Record<K, Source<S
  *
  * @example
  * ```ts
- * import { type PathsOf, defineContract, scalar } from 'mdml-engine/trace'
+ * import { type PathsOf, defineContract, scalar } from 'omai-engine/trace'
  * const c = defineContract({ 'a/loss': scalar(), 'a/lr': scalar() })
  * type P = PathsOf<typeof c>   // 'a/loss' | 'a/lr'
  * ```
@@ -125,7 +125,7 @@ export type PathsOf<C> = Extract<keyof C, string>
  *
  * @example
  * ```ts
- * import type { Prefixed } from 'mdml-engine/trace'
+ * import type { Prefixed } from 'omai-engine/trace'
  * type P = Prefixed<'solver', 'step'>   // 'solver/step'
  * ```
  */
@@ -162,12 +162,12 @@ export type Prefixed<P extends string, K extends string> = `${P}/${K}`
  *
  * @param contract - The paths and what each is.
  * @returns The same contract, typed by its keys.
- * @throws MdmlError with code `value` for an empty or malformed path.
+ * @throws OmaiError with code `value` for an empty or malformed path.
  * @concept log-contract
  * @index function Declare a contract so its paths keep literal types.
  * @example
  * ```ts
- * import { type Contract, type PathsOf, defineContract, scalar } from 'mdml-engine/trace'
+ * import { type Contract, type PathsOf, defineContract, scalar } from 'omai-engine/trace'
  * type BasePath = 'solver/objective'
  * const base: Contract<unknown, BasePath> = defineContract({ 'solver/objective': scalar() })
  * const own = defineContract({ ...base, 'model/accuracy': scalar() })
@@ -178,7 +178,7 @@ export type Prefixed<P extends string, K extends string> = `${P}/${K}`
 export function defineContract<C extends Contract<never>>(contract: C): C {
   for (const path of Object.keys(contract)) {
     if (path === '' || path.split('/').some((seg) => seg === ''))
-      throw new MdmlError('value', `defineContract: malformed path '${path}'`)
+      throw new OmaiError('value', `defineContract: malformed path '${path}'`)
   }
   return contract
 }
@@ -192,7 +192,7 @@ export function defineContract<C extends Contract<never>>(contract: C): C {
  * @concept log-contract
  * @example
  * ```ts
- * import { prefixContract, scalar } from 'mdml-engine/trace'
+ * import { prefixContract, scalar } from 'omai-engine/trace'
  * Object.keys(prefixContract('inner', { loss: scalar() })) // => ['inner/loss']
  * ```
  */
@@ -214,7 +214,7 @@ type Described<T> = Omit<T, 'kind' | 'description'> & { readonly description?: s
  * @returns The source.
  * @example
  * ```ts
- * import { scalar } from 'mdml-engine/trace'
+ * import { scalar } from 'omai-engine/trace'
  * scalar({ direction: 'lower' }).kind // => 'scalar'
  * ```
  */
@@ -229,7 +229,7 @@ export function scalar(options: Described<ScalarSource> = {}): ScalarSource {
  * @returns The source.
  * @example
  * ```ts
- * import { tensor } from 'mdml-engine/trace'
+ * import { tensor } from 'omai-engine/trace'
  * tensor({ role: 'state', shape: ['n'] }).role // => 'state'
  * ```
  */
@@ -244,7 +244,7 @@ export function tensor(options: Described<TensorSource>): TensorSource {
  * @returns The source.
  * @example
  * ```ts
- * import { message } from 'mdml-engine/trace'
+ * import { message } from 'omai-engine/trace'
  * message({ payload: { i: 'first index' } }).kind // => 'message'
  * ```
  */
@@ -259,7 +259,7 @@ export function message(options: Described<MessageSource> = {}): MessageSource {
  * @returns The source.
  * @example
  * ```ts
- * import { frame } from 'mdml-engine/trace'
+ * import { frame } from 'omai-engine/trace'
  * frame().kind // => 'frame'
  * ```
  */
@@ -274,7 +274,7 @@ export function frame(options: Described<FrameSource> = {}): FrameSource {
  * @returns The source.
  * @example
  * ```ts
- * import { derived } from 'mdml-engine/trace'
+ * import { derived } from 'omai-engine/trace'
  * derived({ compute: (s: number) => s * 2 }).compute(4) // => 8
  * ```
  */
@@ -289,7 +289,7 @@ export function derived<S>(options: Described<DerivedSource<S>>): DerivedSource<
  * @returns The source.
  * @example
  * ```ts
- * import { event } from 'mdml-engine/trace'
+ * import { event } from 'omai-engine/trace'
  * event({ context: { epoch: 'the epoch just finished' } }).kind // => 'event'
  * ```
  */
@@ -383,7 +383,7 @@ export type Subscription<K extends string = string> = 'off' | 'defaults' | 'all'
  * @returns The spec.
  * @example
  * ```ts
- * import { Log } from 'mdml-engine/trace'
+ * import { Log } from 'omai-engine/trace'
  * Log({ every: ['rl/episode/end', 10] }).every // => ['rl/episode/end', 10]
  * Log({ keep: 'last' }).keep // => 'last'
  * ```
@@ -400,7 +400,7 @@ export function Log(options: Omit<LogSpec, 'kind'> = {}): LogSpec {
  * @returns The spec.
  * @example
  * ```ts
- * import { On } from 'mdml-engine/trace'
+ * import { On } from 'omai-engine/trace'
  * On('earlyStopping', { patience: 5 }).name // => 'earlyStopping'
  * ```
  */
@@ -416,7 +416,7 @@ export function On(hook: Hook | string, options?: Json): HookSpec {
  * @returns `true` for patterns.
  * @example
  * ```ts
- * import { isPattern } from 'mdml-engine/trace'
+ * import { isPattern } from 'omai-engine/trace'
  * [isPattern('a/b'), isPattern('a/*')] // => [false, true]
  * ```
  */
@@ -432,7 +432,7 @@ export function isPattern(path: Path): boolean {
  * @returns `true` when it matches.
  * @example
  * ```ts
- * import { matchesPath } from 'mdml-engine/trace'
+ * import { matchesPath } from 'omai-engine/trace'
  * [matchesPath('model/**', 'model/params/w'), matchesPath('*\/loss', 'training/val/loss')] // => [true, false]
  * ```
  */
@@ -501,12 +501,12 @@ function everything<S>(contract: Contract<S>): Readonly<Record<string, LogSpec>>
  * @param subscription - What the caller asks for.
  * @param options - The method's defaults and named hooks, and the checkpoint interval.
  * @returns The resolved subscription.
- * @throws MdmlError with code `value` for an exact path the contract lacks, a hook on a path that is not an event, a
+ * @throws OmaiError with code `value` for an exact path the contract lacks, a hook on a path that is not an event, a
  *   named hook the method does not export, or a `keep` that is not `all`, `last` or a positive integer.
  * @concept log-contract
  * @example
  * ```ts
- * import { Log, resolve, scalar } from 'mdml-engine/trace'
+ * import { Log, resolve, scalar } from 'omai-engine/trace'
  * const r = resolve({ 'training/loss': scalar(), 'training/lr': scalar() }, { 'training/**': Log({ every: 5 }) })
  * r.logs.map((l) => l.path) // => ['training/loss', 'training/lr']
  * r.policy.metrics // => ['training/loss', 'training/lr']
@@ -534,15 +534,15 @@ export function resolve<S, K extends string = string>(
     const exact = contract[key]
     if (spec.kind === 'hook') {
       if (exact === undefined || exact.kind !== 'event')
-        throw new MdmlError('value', `resolve: '${key}' is not an event of the contract`)
+        throw new OmaiError('value', `resolve: '${key}' is not an event of the contract`)
       const hook = spec.hook ?? (spec.name === undefined ? undefined : options.hooks?.[spec.name]?.(spec.options))
-      if (hook === undefined) throw new MdmlError('value', `resolve: no hook '${spec.name ?? ''}' for '${key}'`)
+      if (hook === undefined) throw new OmaiError('value', `resolve: no hook '${spec.name ?? ''}' for '${key}'`)
       hooks.set(key, [...(hooks.get(key) ?? []), hook])
       continue
     }
     const keep = spec.keep
     if (keep !== undefined && keep !== 'all' && keep !== 'last' && !(Number.isInteger(keep) && keep > 0))
-      throw new MdmlError(
+      throw new OmaiError(
         'value',
         `resolve: '${key}' keeps ${String(keep)}; keep is 'all', 'last' or a positive integer`,
       )
@@ -550,7 +550,7 @@ export function resolve<S, K extends string = string>(
       logs.set(key, { path: key, source: exact, spec })
       continue
     }
-    if (!isPattern(key)) throw new MdmlError('value', `resolve: the contract has no path '${key}'`)
+    if (!isPattern(key)) throw new OmaiError('value', `resolve: the contract has no path '${key}'`)
     for (const [path, source] of Object.entries(contract)) {
       if (!matchesPath(key, path) || logs.has(path)) continue
       const every = spec.every ?? EVERY_PATH(source)
@@ -598,7 +598,7 @@ export function resolve<S, K extends string = string>(
  * @returns The schema.
  * @example
  * ```ts
- * import { contractSchema, scalar } from 'mdml-engine/trace'
+ * import { contractSchema, scalar } from 'omai-engine/trace'
  * Object.keys(contractSchema({ 'a/b': scalar() }).metrics) // => ['a/b']
  * ```
  */

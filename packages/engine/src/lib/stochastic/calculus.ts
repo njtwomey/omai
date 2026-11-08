@@ -6,7 +6,7 @@
  */
 
 import { grad } from '../autodiff/index.ts'
-import { type Estimate, estimate, MdmlError } from '../base/index.ts'
+import { type Estimate, estimate, OmaiError } from '../base/index.ts'
 import { ndtr } from '../numerics/special/index.ts'
 import type { Key } from '../random/index.ts'
 import {
@@ -40,7 +40,7 @@ function leftPoints(h: Value, n: number, where: string): Value {
   const m = h.shape[1] ?? 0
   if (m === n - 1) return h
   if (m === n) return sliceAxis(h, 1, 0, n - 1)
-  throw new MdmlError('shape', `${where}: the integrand needs ${n} or ${n - 1} time points, got ${m}`)
+  throw new OmaiError('shape', `${where}: the integrand needs ${n} or ${n - 1} time points, got ${m}`)
 }
 
 function cumulative(terms: Value): Value {
@@ -68,8 +68,8 @@ export interface IntegralOptions {
  * @concept ito-integral
  * @example
  * ```ts
- * import { itoIntegral } from 'mdml-engine/stochastic'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { itoIntegral } from 'omai-engine/stochastic'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(itoIntegral([[0, 1, 3]], [[0, 1, 3]])) // => [2]
  * ```
  */
@@ -91,8 +91,8 @@ export function itoIntegral(h: Paths | TensorLike, x: Paths | TensorLike, option
  * @concept stratonovich-integral
  * @example
  * ```ts
- * import { stratonovichIntegral } from 'mdml-engine/stochastic'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { stratonovichIntegral } from 'omai-engine/stochastic'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(stratonovichIntegral([[0, 1, 3]], [[0, 1, 3]])) // => [4.5]
  * ```
  */
@@ -104,7 +104,7 @@ export function stratonovichIntegral(
   const xv = valuesOf(x)
   const hv = valuesOf(h)
   const n = xv.shape[1] ?? 0
-  if ((hv.shape[1] ?? 0) !== n) throw new MdmlError('shape', 'stratonovichIntegral: H must be on the same grid')
+  if ((hv.shape[1] ?? 0) !== n) throw new OmaiError('shape', 'stratonovichIntegral: H must be on the same grid')
   const mid = mul(add(sliceAxis(hv, 1, 0, n - 1), sliceAxis(hv, 1, 1, n)), 0.5)
   const terms = mul(mid, pathIncrements(xv))
   return options.cumulative === true ? cumulative(terms) : sum(terms, 1)
@@ -119,8 +119,8 @@ export function stratonovichIntegral(
  * @concept ito-integral
  * @example
  * ```ts
- * import { timeIntegral } from 'mdml-engine/stochastic'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { timeIntegral } from 'omai-engine/stochastic'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(timeIntegral([[1, 2, 3]], [0, 0.5, 1])) // => [1.5]
  * ```
  */
@@ -152,15 +152,15 @@ export interface ItoLemmaCheck {
  * @concept ito-lemma
  * @example
  * ```ts
- * import { key } from 'mdml-engine/random'
- * import { brownianMotion, itoLemma, timeGrid } from 'mdml-engine/stochastic'
- * import { square } from 'mdml-engine/tensor'
+ * import { key } from 'omai-engine/random'
+ * import { brownianMotion, itoLemma, timeGrid } from 'omai-engine/stochastic'
+ * import { square } from 'omai-engine/tensor'
  * itoLemma((_t, x) => square(x), brownianMotion(key(0), timeGrid(1, 100), { paths: 3 })).residual < 1e-12 // => true
  * ```
  */
 export function itoLemma(f: (t: Value, x: Value) => Value, x: Paths): ItoLemmaCheck {
   const v = valuesOf(x)
-  if (v.shape.length !== 2) throw new MdmlError('shape', 'itoLemma: needs scalar paths [paths, n]')
+  if (v.shape.length !== 2) throw new OmaiError('shape', 'itoLemma: needs scalar paths [paths, n]')
   const n = v.shape[1] ?? 0
   const p = v.shape[0] ?? 1
   const times = x.times
@@ -201,8 +201,8 @@ export interface IsometryCheck {
  * @concept ito-isometry
  * @example
  * ```ts
- * import { key } from 'mdml-engine/random'
- * import { brownianMotion, itoIsometry, timeGrid } from 'mdml-engine/stochastic'
+ * import { key } from 'omai-engine/random'
+ * import { brownianMotion, itoIsometry, timeGrid } from 'omai-engine/stochastic'
  * const w = brownianMotion(key(0), timeGrid(1, 50), { paths: 4000 })
  * const c = itoIsometry(w.values, w)
  * Math.abs(c.lhs.value - c.rhs.value) < 4 * c.lhs.standardError // => true
@@ -225,9 +225,9 @@ export function itoIsometry(h: Paths | TensorLike, w: Paths): IsometryCheck {
  * @concept girsanov-theorem
  * @example
  * ```ts
- * import { key } from 'mdml-engine/random'
- * import { brownianMotion, girsanovWeights, timeGrid } from 'mdml-engine/stochastic'
- * import { mean, item } from 'mdml-engine/tensor'
+ * import { key } from 'omai-engine/random'
+ * import { brownianMotion, girsanovWeights, timeGrid } from 'omai-engine/stochastic'
+ * import { mean, item } from 'omai-engine/tensor'
  * const w = brownianMotion(key(0), timeGrid(1, 20), { paths: 5000 })
  * Math.abs(item(mean(girsanovWeights(0.5, w))) - 1) < 0.05 // => true
  * ```
@@ -252,7 +252,7 @@ export function girsanovWeights(theta: TensorLike, w: Paths): Value {
  * @concept girsanov-theorem
  * @example
  * ```ts
- * import { weightedExpectation } from 'mdml-engine/stochastic'
+ * import { weightedExpectation } from 'omai-engine/stochastic'
  * weightedExpectation([1, 3], [1, 1]).value // => 2
  * weightedExpectation([1, 3], [3, 1], { selfNormalised: true }).value // => 1.5
  * ```
@@ -265,7 +265,7 @@ export function weightedExpectation(
   const f = primalNumbers(values)
   const w = primalNumbers(weights)
   if (f.length !== w.length || f.length === 0) {
-    throw new MdmlError('shape', 'weightedExpectation: values and weights must have the same non-zero length')
+    throw new OmaiError('shape', 'weightedExpectation: values and weights must have the same non-zero length')
   }
   if (options.selfNormalised !== true) return sampleMean(f.map((x, i) => x * (w[i] ?? 0)))
   const sw = w.reduce((a, b) => a + b, 0)
@@ -312,9 +312,9 @@ export interface FeynmanKacResult {
  * @concept feynman-kac
  * @example
  * ```ts
- * import { key } from 'mdml-engine/random'
- * import { feynmanKac } from 'mdml-engine/stochastic'
- * import { add, square, sum, zeros } from 'mdml-engine/tensor'
+ * import { key } from 'omai-engine/random'
+ * import { feynmanKac } from 'omai-engine/stochastic'
+ * import { add, square, sum, zeros } from 'omai-engine/tensor'
  * // the heat equation u_t + u_xx / 2 = 0, u(T, x) = x^2 has u(0, x) = x^2 + T
  * const heat = { drift: (_t, y) => zeros(y.shape), diffusion: (_t, y) => add(zeros(y.shape), 1) }
  * const r = feynmanKac(key(0), { sde: heat, payoff: (y) => sum(square(y), 1) }, [1], 2, { steps: 4, paths: 20000 })
@@ -372,8 +372,8 @@ export interface BlackScholesOptions {
  * @concept black-scholes
  * @example
  * ```ts
- * import { blackScholes } from 'mdml-engine/stochastic'
- * import { item } from 'mdml-engine/tensor'
+ * import { blackScholes } from 'omai-engine/stochastic'
+ * import { item } from 'omai-engine/tensor'
  * Math.round(item(blackScholes(100, 100, 1, 0.05, 0.2)) * 1e4) / 1e4 // => 10.4506
  * ```
  */

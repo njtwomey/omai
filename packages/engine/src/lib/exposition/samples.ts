@@ -91,7 +91,7 @@ const worstGaps = {
  *
  * @example
  * ```ts
- * import { expositionSamples, isExposition } from 'mdml-engine/exposition'
+ * import { expositionSamples, isExposition } from 'omai-engine/exposition'
  * isExposition(expositionSamples.curves()) // => true
  * expositionSamples.thresholdSweep().kind // => 'thresholdSweep'
  * ```

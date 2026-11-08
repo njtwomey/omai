@@ -1,15 +1,15 @@
-import { conjugateModelOf, type SegmentModel } from 'mdml-engine/datasets'
-import { filtering } from 'mdml-engine/dynamics'
-import { defaults } from 'mdml-engine/space'
-import { asTensor, toFlat } from 'mdml-engine/tensor'
+import { conjugateModelOf, type SegmentModel } from 'omai-engine/datasets'
+import { filtering } from 'omai-engine/dynamics'
+import { defaults } from 'omai-engine/space'
+import { asTensor, toFlat } from 'omai-engine/tensor'
 import {
   bocpdDetector,
   type ChangepointData,
   changepointData,
   changepointDetectors,
   changepointPrecisionRecall,
-} from 'mdml-engine/timeseries'
-import type { Config } from 'mdml-engine/trace'
+} from 'omai-engine/timeseries'
+import type { Config } from 'omai-engine/trace'
 import {
   Choice,
   ControlPanel,
@@ -21,7 +21,7 @@ import {
   useDataset,
   useSession,
   useSessionPreferences,
-} from 'mdml-render/react'
+} from 'omai-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
 import { StaleVeil } from '../../shared/StaleVeil.tsx'
 import { BocpdView } from './BocpdView.tsx'

@@ -1,5 +1,5 @@
-import { decisionSurface, ensembleStages } from 'mdml-engine/exposition'
-import { ControlPanel, ExpositionView, NumberField, SeedInput } from 'mdml-render/react'
+import { decisionSurface, ensembleStages } from 'omai-engine/exposition'
+import { ControlPanel, ExpositionView, NumberField, SeedInput } from 'omai-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 import { crescents } from '../../toys/synthetic.ts'

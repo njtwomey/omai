@@ -5,7 +5,7 @@
  * with its own stepped algorithm. All hashing is seeded (a number or a `Key`), so a filter is reproducible.
  */
 
-import { type Json, MdmlError, popcount } from '../base/index.ts'
+import { type Json, OmaiError, popcount } from '../base/index.ts'
 import { type Algorithm, channels, stateFromJson, stateToJson } from '../trace/index.ts'
 import { doubleHashIndex, fmix32, hashPair, itemKey, type SketchItem, type SketchSeed, seedOf } from './hashing.ts'
 
@@ -26,21 +26,21 @@ export interface OptimalBloomParams {
  * @param expectedItems - Expected number of distinct insertions `n >= 1`.
  * @param targetFpr - Target false-positive rate in `(0, 1)`.
  * @returns `{ bits, hashes, expectedFpr }`, the last the rate the rounded sizes actually give.
- * @throws MdmlError with code `value` when `expectedItems < 1` or `targetFpr` is outside `(0, 1)`.
+ * @throws OmaiError with code `value` when `expectedItems < 1` or `targetFpr` is outside `(0, 1)`.
  * @concept bloom-filter
  * @example
  * ```ts
- * import { optimalBloomParams } from 'mdml-engine/sketches'
+ * import { optimalBloomParams } from 'omai-engine/sketches'
  * const p = optimalBloomParams(100, 0.01)
  * [p.bits, p.hashes] // => [959, 7]
  * ```
  */
 export function optimalBloomParams(expectedItems: number, targetFpr: number): OptimalBloomParams {
   if (!(expectedItems >= 1 && Number.isFinite(expectedItems))) {
-    throw new MdmlError('value', `optimalBloomParams: expectedItems must be >= 1, got ${expectedItems}`)
+    throw new OmaiError('value', `optimalBloomParams: expectedItems must be >= 1, got ${expectedItems}`)
   }
   if (!(targetFpr > 0 && targetFpr < 1)) {
-    throw new MdmlError('value', `optimalBloomParams: targetFpr must lie in (0, 1), got ${targetFpr}`)
+    throw new OmaiError('value', `optimalBloomParams: targetFpr must lie in (0, 1), got ${targetFpr}`)
   }
   const bits = Math.max(1, Math.ceil((-expectedItems * Math.log(targetFpr)) / (Math.LN2 * Math.LN2)))
   const hashes = Math.max(1, Math.round((bits / expectedItems) * Math.LN2))
@@ -58,7 +58,7 @@ export function optimalBloomParams(expectedItems: number, targetFpr: number): Op
  * @concept bloom-filter
  * @example
  * ```ts
- * import { bloomFalsePositiveRate } from 'mdml-engine/sketches'
+ * import { bloomFalsePositiveRate } from 'omai-engine/sketches'
  * bloomFalsePositiveRate(959, 7, 100).toFixed(4) // => '0.0100'
  * ```
  */
@@ -98,9 +98,9 @@ function resolveBloom(options: BloomFilterOptions, who: string): BloomShape {
   bits ??= 1024
   hashes ??= 7
   if (!(Number.isInteger(bits) && bits >= 1))
-    throw new MdmlError('value', `${who}: bits must be a positive integer, got ${bits}`)
+    throw new OmaiError('value', `${who}: bits must be a positive integer, got ${bits}`)
   if (!(Number.isInteger(hashes) && hashes >= 1)) {
-    throw new MdmlError('value', `${who}: hashes must be a positive integer, got ${hashes}`)
+    throw new OmaiError('value', `${who}: hashes must be a positive integer, got ${hashes}`)
   }
   return { bits, hashes, seed }
 }
@@ -183,7 +183,7 @@ function makeBloom(shape: BloomShape, words: Uint32Array, insertedAtStart: numbe
     },
     merge: (other) => {
       if (other.bits !== shape.bits || other.hashes !== shape.hashes || other.seed !== shape.seed) {
-        throw new MdmlError('shape', 'bloomFilter.merge: filters must share bits, hashes and seed')
+        throw new OmaiError('shape', 'bloomFilter.merge: filters must share bits, hashes and seed')
       }
       const merged = new Uint32Array(words.length)
       for (let i = 0; i < merged.length; i++) merged[i] = (words[i] ?? 0) | (other.words[i] ?? 0)
@@ -203,13 +203,13 @@ function makeBloom(shape: BloomShape, words: Uint32Array, insertedAtStart: numbe
  *
  * @param options - `bits` and `hashes`, or `expectedItems` and `falsePositiveRate` to size them, and `seed`.
  * @returns The filter.
- * @throws MdmlError with code `value` for non-positive sizes.
+ * @throws OmaiError with code `value` for non-positive sizes.
  * @concept bloom-filter
  * @reference B. H. Bloom, Space/time trade-offs in hash coding with allowable errors (Communications of the ACM, 1970).
  * @index structure Bloom filter for approximate set membership.
  * @example
  * ```ts
- * import { bloomFilter } from 'mdml-engine/sketches'
+ * import { bloomFilter } from 'omai-engine/sketches'
  * const bf = bloomFilter({ expectedItems: 100, falsePositiveRate: 0.01 })
  * bf.add('alpha')
  * bf.add('beta')
@@ -252,8 +252,8 @@ export interface BloomFilterAlgorithmOptions extends BloomFilterOptions {
  * @concept bloom-filter
  * @example
  * ```ts
- * import { bloomFilterAlgorithm } from 'mdml-engine/sketches'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { bloomFilterAlgorithm } from 'omai-engine/sketches'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const items = Array.from({ length: 30 }, (_, i) => `item-${i}`)
  * const res = runAlgorithm(bloomFilterAlgorithm({ items, bits: 512, hashes: 4 }), { maxSteps: 100 })
  * [res.steps, res.state.inserted, res.state.fillRatio > 0.1] // => [30, 30, true]
@@ -333,13 +333,13 @@ export interface CountingBloomFilter {
  *
  * @param options - As {@link bloomFilter}; `bits` is the number of counters.
  * @returns The filter.
- * @throws MdmlError with code `value` for non-positive sizes.
+ * @throws OmaiError with code `value` for non-positive sizes.
  * @concept bloom-filter
  * @reference L. Fan, P. Cao, J. Almeida and A. Z. Broder, Summary cache: a scalable wide-area web cache sharing
  *   protocol (IEEE/ACM Transactions on Networking, 2000).
  * @example
  * ```ts
- * import { countingBloomFilter } from 'mdml-engine/sketches'
+ * import { countingBloomFilter } from 'omai-engine/sketches'
  * const cbf = countingBloomFilter({ bits: 256, hashes: 3 })
  * cbf.add('x')
  * cbf.add('y')
@@ -411,16 +411,16 @@ function resolveCuckoo(options: CuckooFilterOptions): CuckooGeometry {
   const fingerprintBits = options.fingerprintBits ?? 12
   const maxKicks = options.maxKicks ?? 500
   if (!(Number.isInteger(capacity) && capacity >= 1)) {
-    throw new MdmlError('value', `cuckooFilter: capacity must be a positive integer, got ${capacity}`)
+    throw new OmaiError('value', `cuckooFilter: capacity must be a positive integer, got ${capacity}`)
   }
   if (!(Number.isInteger(bucketSize) && bucketSize >= 1)) {
-    throw new MdmlError('value', `cuckooFilter: bucketSize must be a positive integer, got ${bucketSize}`)
+    throw new OmaiError('value', `cuckooFilter: bucketSize must be a positive integer, got ${bucketSize}`)
   }
   if (!(Number.isInteger(fingerprintBits) && fingerprintBits >= 4 && fingerprintBits <= 16)) {
-    throw new MdmlError('value', `cuckooFilter: fingerprintBits must be in [4, 16], got ${fingerprintBits}`)
+    throw new OmaiError('value', `cuckooFilter: fingerprintBits must be in [4, 16], got ${fingerprintBits}`)
   }
   if (!(Number.isInteger(maxKicks) && maxKicks >= 0)) {
-    throw new MdmlError('value', `cuckooFilter: maxKicks must be a non-negative integer, got ${maxKicks}`)
+    throw new OmaiError('value', `cuckooFilter: maxKicks must be a non-negative integer, got ${maxKicks}`)
   }
   let numBuckets = 2
   while (numBuckets * bucketSize < capacity) numBuckets *= 2
@@ -531,13 +531,13 @@ export interface CuckooFilter {
  *
  * @param options - Capacity, bucket size, fingerprint bits, maximum kicks and seed.
  * @returns The filter.
- * @throws MdmlError with code `value` for invalid sizes.
+ * @throws OmaiError with code `value` for invalid sizes.
  * @concept cuckoo-filter
  * @reference B. Fan, D. G. Andersen, M. Kaminsky and M. D. Mitzenmacher, Cuckoo filter: practically better than Bloom
  *   (CoNEXT 2014).
  * @example
  * ```ts
- * import { cuckooFilter } from 'mdml-engine/sketches'
+ * import { cuckooFilter } from 'omai-engine/sketches'
  * const cf = cuckooFilter({ capacity: 64 })
  * cf.add('key-1')
  * const present = cf.has('key-1')
@@ -618,8 +618,8 @@ export interface CuckooFilterAlgorithmOptions extends CuckooFilterOptions {
  * @concept cuckoo-filter
  * @example
  * ```ts
- * import { cuckooFilterAlgorithm } from 'mdml-engine/sketches'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { cuckooFilterAlgorithm } from 'omai-engine/sketches'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const items = Array.from({ length: 40 }, (_, i) => `k${i}`)
  * const res = runAlgorithm(cuckooFilterAlgorithm({ items, capacity: 64 }), { maxSteps: 100 })
  * [res.state.size, res.state.failures] // => [40, 0]

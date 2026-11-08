@@ -6,7 +6,7 @@
  */
 
 import { customVjp, vjp } from '../../autodiff/index.ts'
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import type { Key } from '../../random/index.ts'
 import {
   add,
@@ -135,9 +135,9 @@ function adjointSegment(
  * @reference Chen, Rubanova, Bettencourt and Duvenaud (2018), Neural ordinary differential equations.
  * @example
  * ```ts
- * import { blocks, Linear } from 'mdml-engine/nn'
- * import { add, mul, type Value } from 'mdml-engine/tensor'
- * import { key } from 'mdml-engine/random'
+ * import { blocks, Linear } from 'omai-engine/nn'
+ * import { add, mul, type Value } from 'omai-engine/tensor'
+ * import { key } from 'omai-engine/random'
  * const euler = (f: (t: number, y: Value) => Value, y0: Value, ts: readonly number[]): Value[] =>
  *   ts.map((_, i) => i).reduce<Value[]>((ys, i) => (i === 0 ? [y0] : [...ys, add(ys[i - 1] as Value, mul(f(ts[i - 1] ?? 0, ys[i - 1] as Value), (ts[i] ?? 0) - (ts[i - 1] ?? 0)))]), [])
  * new blocks.ODEBlock(new Linear(2, 2, { key: key(0) }), { solver: euler }).forward([[1, 2]]).shape // => [1, 2]
@@ -156,7 +156,7 @@ export class ODEBlock extends Composite {
     this.solver = options.solver
     this.times = options.times ?? [0, 1]
     if (this.times.length < 2 || this.times.some((t, i) => i > 0 && t <= (this.times[i - 1] ?? t)))
-      throw new MdmlError('value', 'ODEBlock: times must increase')
+      throw new OmaiError('value', 'ODEBlock: times must increase')
     this.gradient = options.gradient ?? 'backprop'
     this.timeDependent = options.timeDependent ?? false
     this.trajectory = options.trajectory ?? false
@@ -207,9 +207,9 @@ export class ODEBlock extends Composite {
  * @reference Dupont, Doucet and Teh (2019), Augmented neural ODEs.
  * @example
  * ```ts
- * import { blocks, Linear } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
- * import type { Value } from 'mdml-engine/tensor'
+ * import { blocks, Linear } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
+ * import type { Value } from 'omai-engine/tensor'
  * const still = (_f: unknown, y0: Value, ts: readonly number[]): Value[] => ts.map(() => y0)
  * new blocks.AugmentedODEBlock(new Linear(3, 3, { key: key(0) }), 1, { solver: still }).forward([[1, 2]]).shape // => [1, 3]
  * ```
@@ -246,9 +246,9 @@ export class AugmentedODEBlock extends ODEBlock {
  * @reference Norcliffe, Bodnar, Day, Simidjievski and Lio (2020), On second order behaviour in augmented neural ODEs.
  * @example
  * ```ts
- * import { blocks, Linear } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
- * import type { Value } from 'mdml-engine/tensor'
+ * import { blocks, Linear } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
+ * import type { Value } from 'omai-engine/tensor'
  * const still = (_f: unknown, y0: Value, ts: readonly number[]): Value[] => ts.map(() => y0)
  * new blocks.SecondOrderODEBlock(new Linear(4, 2, { key: key(0) }), { solver: still }).forward([[1, 2]]).shape // => [1, 2]
  * ```
@@ -295,9 +295,9 @@ export interface CdeBlockOptions {
  *   series.
  * @example
  * ```ts
- * import { blocks, Linear } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
- * import type { Value } from 'mdml-engine/tensor'
+ * import { blocks, Linear } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
+ * import type { Value } from 'omai-engine/tensor'
  * const still = (_f: unknown, y0: Value, ts: readonly number[]): Value[] => ts.map(() => y0)
  * new blocks.CDEBlock(new Linear(2, 3, { key: key(0) }), new Linear(3, 6, { key: key(1) }), { solver: still }).forward([[[0, 1], [1, 2]]]).shape // => [1, 3]
  * ```
@@ -318,7 +318,7 @@ export class CDEBlock extends Composite {
   apply(params: Params, path: Value, ctx: ApplyContext = {}): Value {
     const [b = 1, t = 1, c = 1] = path.shape
     const times = this.times ?? Array.from({ length: t }, (_, i) => i)
-    if (times.length !== t) throw new MdmlError('shape', 'CDEBlock: one time per observation')
+    if (times.length !== t) throw new OmaiError('shape', 'CDEBlock: one time per observation')
     const p = this.parts(params, ctx)
     const at = (k: number): Value => reshape(sliceAxis(path, 1, k, k + 1), [b, c])
     let z = p.run<Value, Value>('initial', at(0))
@@ -360,9 +360,9 @@ export interface SdeBlockOptions {
  * @reference Li, Wong, Chen and Duvenaud (2020), Scalable gradients for stochastic differential equations.
  * @example
  * ```ts
- * import { blocks, Linear } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
- * import type { Value } from 'mdml-engine/tensor'
+ * import { blocks, Linear } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
+ * import type { Value } from 'omai-engine/tensor'
  * const still = (_f: unknown, _g: unknown, y0: Value, ts: readonly number[]): Value[] => ts.map(() => y0)
  * new blocks.SDEBlock(new Linear(2, 2, { key: key(0) }), new Linear(2, 2, { key: key(1) }), { solver: still }).forward([[1, 2]], { key: key(2) }).shape // => [1, 2]
  * ```
@@ -381,7 +381,7 @@ export class SDEBlock extends Composite {
   }
 
   apply(params: Params, x: Value, ctx: ApplyContext = {}): Value {
-    if (ctx.key === undefined) throw new MdmlError('value', 'SDEBlock: needs a key in the apply context')
+    if (ctx.key === undefined) throw new OmaiError('value', 'SDEBlock: needs a key in the apply context')
     const p = this.parts(params, ctx)
     const f = (_t: number, y: Value): Value => p.run<Value, Value>('drift', y)
     const g = (_t: number, y: Value): Value => p.run<Value, Value>('diffusion', y)

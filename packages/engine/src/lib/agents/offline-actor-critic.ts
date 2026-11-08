@@ -5,7 +5,7 @@
  * Each is an offline learner with a function that trains it on a dataset.
  */
 
-import { argmaxOf, type Json, MdmlError } from '../base/index.ts'
+import { argmaxOf, type Json, OmaiError } from '../base/index.ts'
 import { mse } from '../losses/index.ts'
 import { incrementalUpdate, type ParamTree } from '../optim/index.ts'
 import { foldIn, type Key, key as makeKey, normal } from '../random/index.ts'
@@ -104,8 +104,8 @@ export interface IqlState {
  * @concept offline-rl
  * @example
  * ```ts
- * import { expectileLoss } from 'mdml-engine/agents'
- * import { item, tensor } from 'mdml-engine/tensor'
+ * import { expectileLoss } from 'omai-engine/agents'
+ * import { item, tensor } from 'omai-engine/tensor'
  * item(expectileLoss(tensor([2, -2]), 0.75)) // => 2
  * ```
  */
@@ -127,8 +127,8 @@ export function expectileLoss(u: Value, tau: number): Value {
  * @concept offline-rl
  * @example
  * ```ts
- * import { iqlLearner } from 'mdml-engine/agents'
- * import { pendulum } from 'mdml-engine/environments'
+ * import { iqlLearner } from 'omai-engine/agents'
+ * import { pendulum } from 'omai-engine/environments'
  * iqlLearner(pendulum.create()).config['expectile'] // => 0.7
  * ```
  */
@@ -253,9 +253,9 @@ export function iqlLearner<O, A>(env: Spaces, options: IqlOptions = {}): Offline
  * @concept offline-rl
  * @example
  * ```ts
- * import { iql } from 'mdml-engine/agents'
- * import { cartPole } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { iql } from 'omai-engine/agents'
+ * import { cartPole } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * const t = { observation: [0, 0, 0, 0], action: 1, reward: 1, nextObservation: [0, 0, 0, 0], terminated: true, truncated: false }
  * iql(cartPole.create(), [t], { hidden: [4], steps: 30, learningRate: 1e-2 }).policy([0, 0, 0, 0], key(0)) // => 1
  * ```
@@ -317,8 +317,8 @@ export interface Td3BcState {
  * @concept offline-rl
  * @example
  * ```ts
- * import { td3bcLearner } from 'mdml-engine/agents'
- * import { pendulum } from 'mdml-engine/environments'
+ * import { td3bcLearner } from 'omai-engine/agents'
+ * import { pendulum } from 'omai-engine/environments'
  * td3bcLearner(pendulum.create()).config['alpha'] // => 2.5
  * ```
  */
@@ -327,7 +327,7 @@ export function td3bcLearner<O>(
   options: Td3BcOptions = {},
 ): OfflineLearner<Td3BcState, O, readonly number[]> {
   const sp = offlineSpaces(env)
-  if (sp.discrete) throw new MdmlError('value', 'td3bc: needs a box action space')
+  if (sp.discrete) throw new OmaiError('value', 'td3bc: needs a box action space')
   const hidden = options.hidden ?? [64, 64]
   const key = options.key ?? makeKey(0)
   const gamma = options.gamma ?? 0.99
@@ -468,8 +468,8 @@ export function td3bcLearner<O>(
  * @concept offline-rl
  * @example
  * ```ts
- * import { td3bc } from 'mdml-engine/agents'
- * import { pendulum } from 'mdml-engine/environments'
+ * import { td3bc } from 'omai-engine/agents'
+ * import { pendulum } from 'omai-engine/environments'
  * const t = { observation: [1, 0, 0], action: [0.5], reward: 0, nextObservation: [1, 0, 0], terminated: false, truncated: false }
  * td3bc(pendulum.create(), [t], { hidden: [4], steps: 4 }).agent.name // => 'td3bc'
  * ```

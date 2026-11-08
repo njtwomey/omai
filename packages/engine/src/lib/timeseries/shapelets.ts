@@ -7,7 +7,7 @@
  * distances to the chosen shapelets, on which any tabular classifier runs.
  */
 
-import { MdmlError, maxOf, minOf } from '../base/index.ts'
+import { maxOf, minOf, OmaiError } from '../base/index.ts'
 import { type Algorithm, channels, stateFromJson, stateToJson } from '../trace/index.ts'
 
 /** The distance from a series to a shapelet, and where it is attained. */
@@ -44,7 +44,7 @@ function znormalise(v: ArrayLike<number>, start: number, length: number): Float6
  * @returns The distance, its position and how many squared differences were skipped.
  * @example
  * ```ts
- * import { shapeletDistance } from 'mdml-engine/timeseries'
+ * import { shapeletDistance } from 'omai-engine/timeseries'
  * shapeletDistance([0, 0, 1, 2, 1, 0, 0], [1, 2, 1]) // => { distance: 0, position: 2, skipped: 4 }
  * ```
  */
@@ -55,7 +55,7 @@ export function shapeletDistance(
 ): ShapeletMatch {
   const m = shapelet.length
   const n = series.length
-  if (m < 1 || m > n) throw new MdmlError('value', 'shapeletDistance: the shapelet must be no longer than the series')
+  if (m < 1 || m > n) throw new OmaiError('value', 'shapeletDistance: the shapelet must be no longer than the series')
   const target = zNormalise ? znormalise(shapelet, 0, m) : shapelet
   let best = Number.POSITIVE_INFINITY
   let position = 0
@@ -107,7 +107,7 @@ export interface ShapeletSplit {
  * @returns The gain, threshold and gap.
  * @example
  * ```ts
- * import { shapeletSplit } from 'mdml-engine/timeseries'
+ * import { shapeletSplit } from 'omai-engine/timeseries'
  * shapeletSplit([0.1, 0.2, 0.9, 1.0], [0, 0, 1, 1]).gain // => 1
  * ```
  */
@@ -192,7 +192,7 @@ const overlaps = (a: Shapelet, b: Shapelet): boolean =>
  * @returns The algorithm and the number of candidates.
  * @example
  * ```ts
- * import { shapeletDiscoveryAlgorithm } from 'mdml-engine/timeseries'
+ * import { shapeletDiscoveryAlgorithm } from 'omai-engine/timeseries'
  * const x = [[0, 0, 1, 2, 1, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], [0, 1, 2, 1, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0]]
  * shapeletDiscoveryAlgorithm(x, [1, 0, 1, 0], { minLength: 3, maxLength: 3 }).candidates // => 24
  * ```
@@ -203,7 +203,7 @@ export function shapeletDiscoveryAlgorithm(
   options: ShapeletDiscoveryOptions = {},
 ): { readonly algorithm: Algorithm<ShapeletDiscoveryState>; readonly candidates: number } {
   if (series.length !== labels.length || series.length < 2)
-    throw new MdmlError('shape', 'shapelets: need labelled series')
+    throw new OmaiError('shape', 'shapelets: need labelled series')
   const shortest = minOf(series.map((s) => s.length))
   const minLength = options.minLength ?? 3
   const maxLength = Math.min(options.maxLength ?? Math.max(minLength, Math.floor(shortest / 4)), shortest)
@@ -281,7 +281,7 @@ export function shapeletDiscoveryAlgorithm(
  * @returns The best shapelets, best first.
  * @example
  * ```ts
- * import { findShapelets } from 'mdml-engine/timeseries'
+ * import { findShapelets } from 'omai-engine/timeseries'
  * const bump = [0, 1, 2, 1, 0]
  * const x = [[0, 0, ...bump, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0], [0, ...bump, 0, 0, 0], [0.1, 0, 0, 0, 0.1, 0, 0, 0, 0]]
  * findShapelets(x, [1, 0, 1, 0], { minLength: 5, maxLength: 5, k: 1 })[0]?.gain // => 1
@@ -307,7 +307,7 @@ export function findShapelets(
  * @returns One row per series, one column per shapelet.
  * @example
  * ```ts
- * import { shapeletTransform } from 'mdml-engine/timeseries'
+ * import { shapeletTransform } from 'omai-engine/timeseries'
  * shapeletTransform([[0, 1, 2, 1, 0, 0], [0, 0, 0, 0, 0, 0]], [[1, 2, 1]]) // => [[0], [2]]
  * ```
  */

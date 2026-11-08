@@ -7,7 +7,7 @@
  * degrees of freedom per term, the scale, the deviance and the AIC.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { binomial } from '../dists/families/index.ts'
 import type { Distribution } from '../dists/index.ts'
 import { encodeLabels, type IterativeEstimator, iterative, type LearnData, matrixView } from '../learn/index.ts'
@@ -137,7 +137,7 @@ function prepare(data: LearnData, h: GamHyper, kind: 'regressor' | 'classifier')
   if (kind === 'regressor') return { problem: gamProblem(data.x, data.y ?? [], h, data.weights), classes: [] }
   const { classes, codes } = encodeLabels(data.y ?? [], WHO)
   if (classes.length !== 2)
-    throw new MdmlError('value', `${WHO}: the classifier is binary, got ${classes.length} classes`)
+    throw new OmaiError('value', `${WHO}: the classifier is binary, got ${classes.length} classes`)
   return { problem: gamProblem(data.x, Array.from(codes), h, data.weights), classes: [...classes] }
 }
 
@@ -331,7 +331,7 @@ function particular(kind: 'regressor' | 'classifier') {
  * @index estimator Generalised additive model with penalised smooth terms.
  * @example
  * ```ts
- * import { gam, s } from 'mdml-engine/gam'
+ * import { gam, s } from 'omai-engine/gam'
  * const x = Array.from({ length: 40 }, (_, i) => [i / 39])
  * const y = x.map((r) => Math.sin(6 * (r[0] ?? 0)))
  * const fitted = gam.with({ terms: [s(0, { k: 8 })] }).fit({ x, y })
@@ -352,7 +352,7 @@ export const gam: IterativeEstimator<GamHyper, GamState, GamParams, GamVerbs> = 
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { gamClassifier, s } from 'mdml-engine/gam'
+ * import { gamClassifier, s } from 'omai-engine/gam'
  * const x = Array.from({ length: 40 }, (_, i) => [i / 39])
  * const y = x.map((r) => ((r[0] ?? 0) > 0.5 ? 1 : 0))
  * gamClassifier.with({ terms: [s(0, { k: 5 })], method: 'gcv' }).fit({ x, y }).classes // => [0, 1]

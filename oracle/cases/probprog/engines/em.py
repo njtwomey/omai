@@ -5,8 +5,8 @@ maximum likelihood (the loadings are unique only up to sign, so the likelihood i
 import importlib.metadata
 
 import numpy as np
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import rng
 from sklearn.decomposition import FactorAnalysis
 from sklearn.mixture import GaussianMixture
 

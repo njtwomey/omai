@@ -25,8 +25,8 @@ export interface PositionOptions {
  * @concept positional-encoding
  * @example
  * ```ts
- * import { SinusoidalPositionalEncoding } from 'mdml-engine/nn'
- * import { zeros } from 'mdml-engine/tensor'
+ * import { SinusoidalPositionalEncoding } from 'omai-engine/nn'
+ * import { zeros } from 'omai-engine/tensor'
  * new SinusoidalPositionalEncoding(4).eval().forward(zeros([2, 3, 4])).shape // => [2, 3, 4]
  * ```
  */
@@ -65,8 +65,8 @@ export class SinusoidalPositionalEncoding extends Module {
  *
  * @example
  * ```ts
- * import { LearnedPositionalEmbedding } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
+ * import { LearnedPositionalEmbedding } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
  * new LearnedPositionalEmbedding(16, 4, { key: key(0) }).parameterCount() // => 64
  * ```
  */
@@ -112,8 +112,8 @@ export class LearnedPositionalEmbedding extends Module {
  * @concept positional-encoding
  * @example
  * ```ts
- * import { RotaryEmbedding } from 'mdml-engine/nn'
- * import { zeros } from 'mdml-engine/tensor'
+ * import { RotaryEmbedding } from 'omai-engine/nn'
+ * import { zeros } from 'omai-engine/tensor'
  * new RotaryEmbedding(8).forward(zeros([1, 2, 5, 8])).shape // => [1, 2, 5, 8]
  * ```
  */

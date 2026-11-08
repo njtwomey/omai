@@ -6,7 +6,7 @@
  * @index function Discrete cosine and sine transforms of types 1 to 4.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import {
   add,
   concat,
@@ -40,7 +40,7 @@ function rawDct(x: Value, type: TrigType): Value {
   const n = x.shape[x.shape.length - 1] ?? 0
   switch (type) {
     case 1: {
-      if (n < 2) throw new MdmlError('value', 'dct type 1 needs at least two points')
+      if (n < 2) throw new OmaiError('value', 'dct type 1 needs at least two points')
       const v = n === 2 ? x : concat([x, flip(last(x, 1, n - 1), -1)], -1)
       return last(fft(v).re, 0, n)
     }
@@ -184,8 +184,8 @@ function transform(
  * @concept discrete-cosine-transform
  * @example
  * ```ts
- * import { dct } from 'mdml-engine/numerics/fourier'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { dct } from 'omai-engine/numerics/fourier'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(dct([1, 1, 1, 1])).map((v) => Math.round(v * 1e12) / 1e12) // => [8, 0, 0, 0]
  * ```
  */
@@ -206,8 +206,8 @@ export function dct(
  * @returns The signal.
  * @example
  * ```ts
- * import { dct, idct } from 'mdml-engine/numerics/fourier'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { dct, idct } from 'omai-engine/numerics/fourier'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(idct(dct([1, 2, 3]))).map((v) => Math.round(v * 1e12) / 1e12) // => [1, 2, 3]
  * ```
  */
@@ -229,8 +229,8 @@ export function idct(
  * @returns The coefficients.
  * @example
  * ```ts
- * import { dst } from 'mdml-engine/numerics/fourier'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { dst } from 'omai-engine/numerics/fourier'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(dst([1, 0, 0, 0], 1)).map((v) => Math.round(v * 1e12) / 1e12) // => [1.175570504585, 1.902113032590, 1.902113032590, 1.175570504585]
  * ```
  */
@@ -251,8 +251,8 @@ export function dst(
  * @returns The signal.
  * @example
  * ```ts
- * import { dst, idst } from 'mdml-engine/numerics/fourier'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { dst, idst } from 'omai-engine/numerics/fourier'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(idst(dst([1, 2, 3], 4), 4)).map((v) => Math.round(v * 1e12) / 1e12) // => [1, 2, 3]
  * ```
  */
@@ -279,8 +279,8 @@ function mdctBasis(n: number): Tensor {
  * @returns The window `[length]`.
  * @example
  * ```ts
- * import { sineWindow } from 'mdml-engine/numerics/fourier'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { sineWindow } from 'omai-engine/numerics/fourier'
+ * import { toArray } from 'omai-engine/tensor'
  * const w = toArray(sineWindow(4)) as number[]
  * Math.abs(w[0] ** 2 + w[2] ** 2 - 1) < 1e-12 // => true
  * ```
@@ -302,14 +302,14 @@ export function sineWindow(length: number): Tensor {
  * @concept mdct
  * @example
  * ```ts
- * import { mdct } from 'mdml-engine/numerics/fourier'
+ * import { mdct } from 'omai-engine/numerics/fourier'
  * mdct(new Array(16).fill(1), 4).shape // => [5, 4]
  * ```
  */
 export function mdct(x: TensorLike, n: number, window?: TensorLike): Value {
   const [xv] = promoteFloat(x) as [Value]
   const len = xv.shape[0] ?? 0
-  if (len % n !== 0) throw new MdmlError('value', 'mdct: the signal length must be a multiple of N')
+  if (len % n !== 0) throw new OmaiError('value', 'mdct: the signal length must be a multiple of N')
   const w = window === undefined ? sineWindow(2 * n) : (promoteFloat(window)[0] as Value)
   const padded = pad(xv, [[n, n]])
   const frames = len / n + 1
@@ -328,8 +328,8 @@ export function mdct(x: TensorLike, n: number, window?: TensorLike): Value {
  * @returns The signal `[(frames - 1) N]`.
  * @example
  * ```ts
- * import { imdct, mdct } from 'mdml-engine/numerics/fourier'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { imdct, mdct } from 'omai-engine/numerics/fourier'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(imdct(mdct([1, 2, 3, 4, 5, 6, 7, 8], 4))).map((v) => Math.round(v * 1e12) / 1e12) // => [1, 2, 3, 4, 5, 6, 7, 8]
  * ```
  */

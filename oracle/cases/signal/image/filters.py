@@ -12,9 +12,9 @@ import numpy.typing as npt
 import scipy
 import scipy.ndimage as N
 import skimage.filters as F
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray, rng
-from mdml_oracle.signal_helpers import blocks_image, smooth_image
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray, rng
+from omai_oracle.signal_helpers import blocks_image, smooth_image
 
 REFERENCE: dict[str, str] = {"scipy": scipy.__version__, "scikit-image": version("scikit-image")}
 

@@ -4,12 +4,12 @@
  * and parsed in the browser or in Node.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 
 async function streamThrough(bytes: Uint8Array, format: 'gzip' | 'deflate-raw'): Promise<Uint8Array> {
   const Decompression = (globalThis as { DecompressionStream?: typeof DecompressionStream }).DecompressionStream
   if (Decompression === undefined)
-    throw new MdmlError('not-implemented', 'archives: DecompressionStream is not available here')
+    throw new OmaiError('not-implemented', 'archives: DecompressionStream is not available here')
   const stream = new Blob([bytes.slice().buffer]).stream().pipeThrough(new Decompression(format))
   return new Uint8Array(await new Response(stream).arrayBuffer())
 }
@@ -19,10 +19,10 @@ async function streamThrough(bytes: Uint8Array, format: 'gzip' | 'deflate-raw'):
  *
  * @param bytes - Gzip data.
  * @returns The decompressed bytes.
- * @throws MdmlError with code `not-implemented` without `DecompressionStream`.
+ * @throws OmaiError with code `not-implemented` without `DecompressionStream`.
  * @example
  * ```ts
- * import { gunzip } from 'mdml-engine/data'
+ * import { gunzip } from 'omai-engine/data'
  * const packed = new Uint8Array(await new Response(new Blob(['hi']).stream().pipeThrough(new CompressionStream('gzip'))).arrayBuffer())
  * new TextDecoder().decode(await gunzip(packed)) // => 'hi'
  * ```
@@ -42,11 +42,11 @@ function text(bytes: Uint8Array, start: number, length: number): string {
  *
  * @param bytes - The archive.
  * @returns A map from file path to contents.
- * @throws MdmlError with code `value` for a header whose size is not an octal number, or a file the archive is too short
+ * @throws OmaiError with code `value` for a header whose size is not an octal number, or a file the archive is too short
  *   to hold.
  * @example
  * ```ts
- * import { untar } from 'mdml-engine/data'
+ * import { untar } from 'omai-engine/data'
  * untar(new Uint8Array(1024)).size // => 0
  * ```
  */
@@ -57,8 +57,8 @@ export function untar(bytes: Uint8Array): Map<string, Uint8Array> {
     const name = text(bytes, offset, 100)
     if (name === '') break
     const size = Number.parseInt(text(bytes, offset + 124, 12).trim() || '0', 8)
-    if (!(size >= 0)) throw new MdmlError('value', `untar: the size of ${name} is not an octal number`)
-    if (offset + 512 + size > bytes.length) throw new MdmlError('value', `untar: the archive ends inside ${name}`)
+    if (!(size >= 0)) throw new OmaiError('value', `untar: the size of ${name} is not an octal number`)
+    if (offset + 512 + size > bytes.length) throw new OmaiError('value', `untar: the archive ends inside ${name}`)
     const type = bytes[offset + 156]
     const prefix = text(bytes, offset + 345, 155)
     const path = prefix === '' ? name : `${prefix}/${name}`
@@ -74,10 +74,10 @@ export function untar(bytes: Uint8Array): Map<string, Uint8Array> {
  *
  * @param bytes - The archive.
  * @returns A map from file path to contents.
- * @throws MdmlError with code `value` for a malformed or cut-short archive or an unsupported compression method.
+ * @throws OmaiError with code `value` for a malformed or cut-short archive or an unsupported compression method.
  * @example
  * ```ts
- * import { unzip } from 'mdml-engine/data'
+ * import { unzip } from 'omai-engine/data'
  * typeof unzip // => 'function'
  * ```
  */
@@ -90,12 +90,12 @@ export async function unzip(bytes: Uint8Array): Promise<Map<string, Uint8Array>>
       break
     }
   }
-  if (end < 0) throw new MdmlError('value', 'unzip: no end of central directory record')
+  if (end < 0) throw new OmaiError('value', 'unzip: no end of central directory record')
   const count = view.getUint16(end + 10, true)
   let p = view.getUint32(end + 16, true)
   const out = new Map<string, Uint8Array>()
   for (let e = 0; e < count; e++) {
-    if (view.getUint32(p, true) !== 0x02014b50) throw new MdmlError('value', 'unzip: bad central directory entry')
+    if (view.getUint32(p, true) !== 0x02014b50) throw new OmaiError('value', 'unzip: bad central directory entry')
     const method = view.getUint16(p + 10, true)
     const compressed = view.getUint32(p + 20, true)
     const nameLength = view.getUint16(p + 28, true)
@@ -106,13 +106,13 @@ export async function unzip(bytes: Uint8Array): Promise<Map<string, Uint8Array>>
     p += 46 + nameLength + extraLength + commentLength
     if (name.endsWith('/')) continue
     if (local + 30 > bytes.length)
-      throw new MdmlError('value', `unzip: the local header of ${name} is outside the archive`)
+      throw new OmaiError('value', `unzip: the local header of ${name} is outside the archive`)
     const start = local + 30 + view.getUint16(local + 26, true) + view.getUint16(local + 28, true)
-    if (start + compressed > bytes.length) throw new MdmlError('value', `unzip: the archive ends inside ${name}`)
+    if (start + compressed > bytes.length) throw new OmaiError('value', `unzip: the archive ends inside ${name}`)
     const data = bytes.subarray(start, start + compressed)
     if (method === 0) out.set(name, data.slice())
     else if (method === 8) out.set(name, await streamThrough(data, 'deflate-raw'))
-    else throw new MdmlError('value', `unzip: compression method ${method} of ${name} is not supported`)
+    else throw new OmaiError('value', `unzip: compression method ${method} of ${name} is not supported`)
   }
   return out
 }
@@ -133,7 +133,7 @@ export interface CsvOptions {
  * @returns The column names (generated `c0, c1, ...` without a header) and the rows of fields.
  * @example
  * ```ts
- * import { parseCsv } from 'mdml-engine/data'
+ * import { parseCsv } from 'omai-engine/data'
  * parseCsv('a,b\n1,"x, y"\n').rows // => [['1', 'x, y']]
  * ```
  */
@@ -199,11 +199,11 @@ const NPY_READERS: Readonly<
  *
  * @param bytes - The file.
  * @returns The shape, the dtype descriptor and the values.
- * @throws MdmlError with code `value` for a file that is not `.npy`, an unsupported dtype, a shape that is not a list of
+ * @throws OmaiError with code `value` for a file that is not `.npy`, an unsupported dtype, a shape that is not a list of
  *   whole numbers, or a file shorter than its header says.
  * @example
  * ```ts
- * import { parseNpy } from 'mdml-engine/data'
+ * import { parseNpy } from 'omai-engine/data'
  * const header = "{'descr': '<u2', 'fortran_order': False, 'shape': (2,), }"
  * const pad = ' '.repeat(64 - ((10 + header.length + 1) % 64)) + '\n'
  * const text = new TextEncoder().encode(header + pad)
@@ -220,33 +220,33 @@ export function parseNpy(bytes: Uint8Array): {
   readonly values: Float64Array
 } {
   if (bytes[0] !== 0x93 || new TextDecoder().decode(bytes.subarray(1, 6)) !== 'NUMPY')
-    throw new MdmlError('value', 'parseNpy: not a .npy file')
+    throw new OmaiError('value', 'parseNpy: not a .npy file')
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
   const major = bytes[6] ?? 1
   const start = major === 1 ? 10 : 12
-  if (bytes.length < start) throw new MdmlError('value', 'parseNpy: the file ends inside the preamble')
+  if (bytes.length < start) throw new OmaiError('value', 'parseNpy: the file ends inside the preamble')
   const headerLength = major === 1 ? view.getUint16(8, true) : view.getUint32(8, true)
-  if (start + headerLength > bytes.length) throw new MdmlError('value', 'parseNpy: the file ends inside the header')
+  if (start + headerLength > bytes.length) throw new OmaiError('value', 'parseNpy: the file ends inside the header')
   const header = new TextDecoder().decode(bytes.subarray(start, start + headerLength))
   const descr = /'descr':\s*'([<>|=])(\w)(\d+)'/.exec(header)
   const shapeText = /'shape':\s*\(([^)]*)\)/.exec(header)?.[1] ?? ''
   const fortran = /'fortran_order':\s*True/.test(header)
-  if (descr === null) throw new MdmlError('value', 'parseNpy: no dtype in the header')
+  if (descr === null) throw new OmaiError('value', 'parseNpy: no dtype in the header')
   const [, order, kind, width] = descr as unknown as [string, string, string, string]
   const reader = NPY_READERS[`${kind}${width}`]
-  if (reader === undefined) throw new MdmlError('value', `parseNpy: dtype ${kind}${width} is not supported`)
+  if (reader === undefined) throw new OmaiError('value', `parseNpy: dtype ${kind}${width} is not supported`)
   const shape = shapeText
     .split(',')
     .map((s) => s.trim())
     .filter((s) => s !== '')
     .map(Number)
   if (!shape.every((s) => Number.isInteger(s) && s >= 0))
-    throw new MdmlError('value', `parseNpy: the shape (${shapeText}) is not a list of whole numbers`)
+    throw new OmaiError('value', `parseNpy: the shape (${shapeText}) is not a list of whole numbers`)
   const count = shape.reduce((a, b) => a * b, 1)
   const little = order !== '>'
   const offset = start + headerLength
   if (offset + count * reader.size > bytes.length)
-    throw new MdmlError(
+    throw new OmaiError(
       'value',
       `parseNpy: the file holds ${bytes.length - offset} bytes of data, ${count * reader.size} needed`,
     )

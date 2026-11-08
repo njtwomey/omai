@@ -25,7 +25,7 @@ export interface PartsOptions {
  * @returns The ECharts option.
  * @example
  * ```ts
- * import { pieChart } from 'mdml-render/charts'
+ * import { pieChart } from 'omai-render/charts'
  * pieChart([{ name: 'a', value: 1 }, { name: 'b', value: 3 }], { inner: 0.5 }).series[0].radius // => ['40%', '80%']
  * ```
  */
@@ -66,7 +66,7 @@ export function pieChart(
  * @returns The ECharts option.
  * @example
  * ```ts
- * import { funnelChart } from 'mdml-render/charts'
+ * import { funnelChart } from 'omai-render/charts'
  * funnelChart([{ name: 'visit', value: 100 }, { name: 'buy', value: 5 }]).series[0].type // => 'funnel'
  * ```
  */
@@ -112,7 +112,7 @@ export function funnelChart(
  * @returns The ECharts option.
  * @example
  * ```ts
- * import { gaugeChart } from 'mdml-render/charts'
+ * import { gaugeChart } from 'omai-render/charts'
  * gaugeChart(72, { range: [0, 100] }).series[0].max // => 100
  * ```
  */

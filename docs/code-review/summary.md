@@ -31,7 +31,7 @@ dropped the title of 14 of 61 record kinds; `parseNpy`/`untar`/`unzip` on damage
 at the edges. The gate found one regression of my own (`linprog` scaling overflowed for a denormal right-hand side): fixed.
 
 **Wave C, conventions:** one `RunStatus` vocabulary with `status` and `converged` on results, invalid arguments throw
-`MdmlError('value')` (`findings/failure-convention.md`); a NaN rule (elementwise propagate; anything that decides rejects
+`OmaiError('value')` (`findings/failure-convention.md`); a NaN rule (elementwise propagate; anything that decides rejects
 non-finite at its boundary); `make layers` now fails on tier violations and new file-level cycles; one trace stepper, one JSON
 codec, one option-table builder; shared helpers for complex arithmetic, coercions and small functions; 59 generic type names that
 meant different things (`Matrix`, `Box`, `Bounds`, `Constraint`, ...) renamed to what they are, with a `RESERVED` guard in `make

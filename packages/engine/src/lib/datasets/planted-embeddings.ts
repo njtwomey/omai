@@ -21,8 +21,8 @@ import { stamp } from './_util.ts'
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { analogyCorpus } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { analogyCorpus } from 'omai-engine/datasets'
  * generate(analogyCorpus, { knobs: { concepts: 3, attributes: 2, sentences: 10 } }).data.documents?.length // => 10
  * ```
  */
@@ -128,8 +128,8 @@ export type RelationPattern = 'symmetric' | 'inverse' | 'cycle' | 'composition'
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { plantedRelations } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { plantedRelations } from 'omai-engine/datasets'
  * generate(plantedRelations, { knobs: { groups: 2, perGroup: 6 } }).data.relationNames // => ['sibling', 'parent', 'child', 'next', 'follows']
  * ```
  */
@@ -247,8 +247,8 @@ interface LinkageRecord {
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { linkageTables } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { linkageTables } from 'omai-engine/datasets'
  * generate(linkageTables, { knobs: { entities: 20, overlap: 1, extras: 0 } }).data.documents?.length // => 40
  * ```
  */

@@ -6,7 +6,7 @@
  * table or an n-gram language model that reads the preceding words.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { bkSearch, bkTree } from './approximate-search.ts'
 import type { NgramModel } from './language-models.ts'
 
@@ -99,11 +99,11 @@ function align(
  * @param pairs - `[typed, intended]` pairs.
  * @param smoothing - The pseudo-count (default 0.5).
  * @returns The channel.
- * @throws MdmlError with code `value` for no pairs.
+ * @throws OmaiError with code `value` for no pairs.
  * @concept spelling-correction
  * @example
  * ```ts
- * import { learnChannel } from 'mdml-engine/text'
+ * import { learnChannel } from 'omai-engine/text'
  * const c = learnChannel([['teh', 'the'], ['recieve', 'receive'], ['cat', 'cat']])
  * c.logProbability('teh', 'the') > c.logProbability('tzz', 'the') // => true
  * ```
@@ -112,7 +112,7 @@ export function learnChannel(
   pairs: readonly (readonly [typed: string, intended: string])[],
   smoothing = 0.5,
 ): EditChannel {
-  if (pairs.length === 0) throw new MdmlError('value', 'learnChannel: needs at least one pair')
+  if (pairs.length === 0) throw new OmaiError('value', 'learnChannel: needs at least one pair')
   let match = 0
   let del = 0
   let ins = 0
@@ -182,7 +182,7 @@ export function learnChannel(
  * @concept spelling-correction
  * @example
  * ```ts
- * import { uniformChannel } from 'mdml-engine/text'
+ * import { uniformChannel } from 'omai-engine/text'
  * Math.exp(uniformChannel(0.01).logProbability('teh', 'the')) // => 0.01
  * ```
  */
@@ -238,11 +238,11 @@ export interface SpellingOptions {
  * @param counts - How often each word of the dictionary occurs in text.
  * @param options - The edit distance, the channel, the smoothing and an optional n-gram language model.
  * @returns The corrector.
- * @throws MdmlError with code `value` for an empty dictionary.
+ * @throws OmaiError with code `value` for an empty dictionary.
  * @concept spelling-correction
  * @example
  * ```ts
- * import { spellingCorrector } from 'mdml-engine/text'
+ * import { spellingCorrector } from 'omai-engine/text'
  * spellingCorrector(new Map([['the', 50], ['then', 5], ['they', 4]])).correct('teh') // => 'the'
  * ```
  */
@@ -250,7 +250,7 @@ export function spellingCorrector(
   counts: ReadonlyMap<string, number>,
   options: SpellingOptions = {},
 ): SpellingCorrector {
-  if (counts.size === 0) throw new MdmlError('value', 'spellingCorrector: needs a dictionary')
+  if (counts.size === 0) throw new OmaiError('value', 'spellingCorrector: needs a dictionary')
   const words = [...counts.keys()].sort()
   const tree = bkTree(words)
   const channel = options.channel ?? uniformChannel()

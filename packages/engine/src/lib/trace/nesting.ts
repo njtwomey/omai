@@ -21,7 +21,7 @@ import type { Concrete, Prefixed } from './contract.ts'
  * @concept algorithm-protocol
  * @example
  * ```ts
- * import { recorder, runAlgorithm, subRun, type Algorithm } from 'mdml-engine/trace'
+ * import { recorder, runAlgorithm, subRun, type Algorithm } from 'omai-engine/trace'
  * const inner: Algorithm<number> = { name: 'inner', config: {}, init: () => 0, step: (s) => s + 1 }
  * const outer: Algorithm<number> = {
  *   name: 'outer', config: {}, init: () => 0,
@@ -52,8 +52,8 @@ export function subRun<S>(
  * @concept log-contract
  * @example
  * ```ts
- * import { mountContext, recorder, runAlgorithm, startRun, stepContext } from 'mdml-engine/trace'
- * import { key } from 'mdml-engine/random'
+ * import { mountContext, recorder, runAlgorithm, startRun, stepContext } from 'omai-engine/trace'
+ * import { key } from 'omai-engine/random'
  * const rec = recorder()
  * const run = startRun(rec, { name: 'x', seed: 0, config: {} })
  * mountContext(stepContext(2, key(0), run), 'inner').log('loss', 0.5)

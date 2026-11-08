@@ -22,7 +22,7 @@ export interface Estimate {
 }
 
 /**
- * The result of every statistical test in mdml-js.
+ * The result of every statistical test in omai.
  *
  * @concept hypothesis-testing
  */
@@ -80,10 +80,10 @@ export interface MetricResult {
  * @param standardError - Its standard error, if known.
  * @param level - The interval's coverage (default 0.95).
  * @returns The estimate.
- * @throws MdmlError with code `value` when a standard error is given and `level` is not in (0, 1).
+ * @throws OmaiError with code `value` when a standard error is given and `level` is not in (0, 1).
  * @example
  * ```ts
- * import { estimate } from 'mdml-engine/base'
+ * import { estimate } from 'omai-engine/base'
  * estimate(1, 0.5).interval // => [0.020018, 1.979982]
  * ```
  */
@@ -108,7 +108,7 @@ export function estimate(value: number, standardError?: number, level = 0.95): E
  * @returns A one-line description.
  * @example
  * ```ts
- * import { formatResult } from 'mdml-engine/base'
+ * import { formatResult } from 'omai-engine/base'
  * formatResult({ value: 0.25, interval: [0.2, 0.3], level: 0.95 }) // => '0.25 (95% CI 0.2 to 0.3)'
  * ```
  */

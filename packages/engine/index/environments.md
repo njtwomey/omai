@@ -4,8 +4,8 @@
 
 The reinforcement-learning environments, constructables over the contracts of `rl`: gymnasium's classic control and toy-text tasks, grid worlds, bandits, continuous-control tasks with differentiable models of their dynamics, MinAtar games, procedurally generated mazes, two-player board and card games, and simultaneous-move multi-agent environments, all following the environment contracts of `lib/rl`.
 
-- structure `models.ts` (file): Differentiable models of control environments for planners. `src/lib/environments/models.ts:1` `mdml-engine/environments`
+- structure `models.ts` (file): Differentiable models of control environments for planners. `src/lib/environments/models.ts:1` `omai-engine/environments`
 
-- structure `cartPole`: CartPole-v1 environment definition. `src/lib/environments/classic-control.ts:141` `mdml-engine/environments`
+- structure `cartPole`: CartPole-v1 environment definition. `src/lib/environments/classic-control.ts:141` `omai-engine/environments`
 
-- table `environmentRegistry`: Tagged registry of every environment, with action and observation kinds. `src/lib/environments/registry.ts:319` `mdml-engine/environments`
+- table `environmentRegistry`: Tagged registry of every environment, with action and observation kinds. `src/lib/environments/registry.ts:319` `omai-engine/environments`

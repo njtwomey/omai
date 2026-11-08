@@ -5,7 +5,7 @@
  * carries its own step size, both as traced algorithms.
  */
 
-import { argmaxOf, type Json, MdmlError, meanOf, minOf } from '../../base/index.ts'
+import { argmaxOf, type Json, meanOf, minOf, OmaiError } from '../../base/index.ts'
 import { foldIn, type Key, permutation } from '../../random/index.ts'
 import { type Algorithm, channels, runAlgorithm, type TraceSchema } from '../../trace/index.ts'
 import { draws } from '../_draw.ts'
@@ -52,8 +52,8 @@ export interface Representation<G> {
  * @concept evolutionary-algorithms
  * @example
  * ```ts
- * import { key } from 'mdml-engine/random'
- * import { bitStrings } from 'mdml-engine/search'
+ * import { key } from 'omai-engine/random'
+ * import { bitStrings } from 'omai-engine/search'
  * bitStrings(5).random(key(0)).length // => 5
  * ```
  */
@@ -88,8 +88,8 @@ export function bitStrings(
  * @concept evolutionary-algorithms
  * @example
  * ```ts
- * import { key } from 'mdml-engine/random'
- * import { permutations } from 'mdml-engine/search'
+ * import { key } from 'omai-engine/random'
+ * import { permutations } from 'omai-engine/search'
  * [...permutations(4).random(key(0))].sort().join() // => '0,1,2,3'
  * ```
  */
@@ -124,12 +124,12 @@ export function permutations(
  * @param options - The crossover (default SBX), the mutation (default polynomial) and the Gaussian sigma as a fraction
  * of each range (default 0.1).
  * @returns The representation.
- * @throws MdmlError with code `shape` when the bounds differ in length, or `value` when a range is empty.
+ * @throws OmaiError with code `shape` when the bounds differ in length, or `value` when a range is empty.
  * @concept evolutionary-algorithms
  * @example
  * ```ts
- * import { key } from 'mdml-engine/random'
- * import { realVectors } from 'mdml-engine/search'
+ * import { key } from 'omai-engine/random'
+ * import { realVectors } from 'omai-engine/search'
  * realVectors([0, 0], [1, 2]).random(key(0)).every((x) => x >= 0 && x <= 2) // => true
  * ```
  */
@@ -142,8 +142,8 @@ export function realVectors(
     readonly sigma?: number
   } = {},
 ): Representation<number[]> {
-  if (lower.length !== upper.length) throw new MdmlError('shape', 'realVectors: bounds differ in length')
-  if (lower.some((lo, i) => !((upper[i] ?? lo) >= lo))) throw new MdmlError('value', 'realVectors: empty range')
+  if (lower.length !== upper.length) throw new OmaiError('shape', 'realVectors: bounds differ in length')
+  if (lower.some((lo, i) => !((upper[i] ?? lo) >= lo))) throw new OmaiError('value', 'realVectors: empty range')
   const cross = options.crossover ?? 'sbx'
   const mutation = options.mutation ?? 'polynomial'
   const clip = (x: readonly number[]): number[] =>
@@ -251,11 +251,11 @@ function select(
  * @param fitness - The fitness of a genome.
  * @param options - Population size, rates, elitism, selection and the target.
  * @returns The algorithm.
- * @throws MdmlError with code `value` when the population or elitism is invalid.
+ * @throws OmaiError with code `value` when the population or elitism is invalid.
  * @concept evolutionary-algorithms
  * @example
  * ```ts
- * import { bitStrings, geneticAlgorithmAlgorithm } from 'mdml-engine/search'
+ * import { bitStrings, geneticAlgorithmAlgorithm } from 'omai-engine/search'
  * geneticAlgorithmAlgorithm(bitStrings(8), (g) => g.reduce((a, b) => a + b, 0)).name // => 'genetic-algorithm'
  * ```
  */
@@ -271,9 +271,9 @@ export function geneticAlgorithmAlgorithm<G>(
   const selection = options.selection ?? 'tournament'
   const tournamentSize = options.tournamentSize ?? 3
   if (!(Number.isInteger(size) && size >= 2))
-    throw new MdmlError('value', `geneticAlgorithm: population ${size} must be at least 2`)
+    throw new OmaiError('value', `geneticAlgorithm: population ${size} must be at least 2`)
   if (!(Number.isInteger(elitism) && elitism >= 0 && elitism < size)) {
-    throw new MdmlError('value', `geneticAlgorithm: elitism ${elitism} must be in [0, population)`)
+    throw new OmaiError('value', `geneticAlgorithm: elitism ${elitism} must be in [0, population)`)
   }
   const target = options.target
   return {
@@ -383,12 +383,12 @@ function runOptions(options: SearchRunOptions): SearchRunOptions {
  * @param options - Population size, rates, elitism, selection, the target, the number of generations (default 100),
  * a seed or key, and tracing.
  * @returns The best genome, its fitness, the generations run and the best fitness per generation.
- * @throws MdmlError with code `value` when the population or elitism is invalid.
+ * @throws OmaiError with code `value` when the population or elitism is invalid.
  * @concept evolutionary-algorithms
  * @index function Genetic algorithm over chosen representations.
  * @example
  * ```ts
- * import { bitStrings, geneticAlgorithm } from 'mdml-engine/search'
+ * import { bitStrings, geneticAlgorithm } from 'omai-engine/search'
  * // OneMax: maximise the number of ones.
  * const r = geneticAlgorithm(bitStrings(20), (g) => g.reduce((a, b) => a + b, 0), { target: 20, generations: 200, seed: 0 })
  * [r.fitness, r.status] // => [20, 'target']
@@ -435,17 +435,17 @@ export interface Strategist {
  * A self-adaptive evolution strategy (Rechenberg 1973, Schwefel 1977) as a traced algorithm: each offspring
  * recombines two parents, mutates its step size log-normally (tau = 1 / sqrt(2 n)) and then its point by that step
  * size; the mu fittest of the offspring (comma) or of offspring and parents (plus) become the parents. Fitness is
- * maximised. (CMA-ES, which adapts a full covariance, is `cmaes` in `mdml-engine/optim`.)
+ * maximised. (CMA-ES, which adapts a full covariance, is `cmaes` in `omai-engine/optim`.)
  *
  * @param fitness - The fitness of a point.
  * @param x0 - The starting point.
  * @param options - mu, lambda, plus or comma selection, the initial sigma and recombination.
  * @returns The algorithm.
- * @throws MdmlError with code `value` when mu or lambda are invalid.
+ * @throws OmaiError with code `value` when mu or lambda are invalid.
  * @concept evolution-strategies
  * @example
  * ```ts
- * import { evolutionStrategyAlgorithm } from 'mdml-engine/search'
+ * import { evolutionStrategyAlgorithm } from 'omai-engine/search'
  * evolutionStrategyAlgorithm((x) => -x.reduce((a, v) => a + v * v, 0), [1, 1]).name // => 'evolution-strategy'
  * ```
  */
@@ -460,7 +460,7 @@ export function evolutionStrategyAlgorithm(
   const sigma0 = options.sigma ?? 1
   const recombination = options.recombination ?? 'intermediate'
   if (!(Number.isInteger(mu) && mu >= 1 && Number.isInteger(lambda) && lambda >= 1) || (!plus && lambda < mu)) {
-    throw new MdmlError('value', `evolutionStrategy: need mu >= 1 and lambda >= ${plus ? 1 : 'mu'}`)
+    throw new OmaiError('value', `evolutionStrategy: need mu >= 1 and lambda >= ${plus ? 1 : 'mu'}`)
   }
   const n = x0.length
   const tau = 1 / Math.sqrt(2 * Math.max(1, n))
@@ -540,11 +540,11 @@ export function evolutionStrategyAlgorithm(
  * @param options - mu, lambda, plus or comma, sigma, recombination, generations (default 200), the target, a seed or
  * key, and tracing.
  * @returns The best individual (point and step size), its fitness and the best fitness per generation.
- * @throws MdmlError with code `value` when mu or lambda are invalid.
+ * @throws OmaiError with code `value` when mu or lambda are invalid.
  * @concept evolution-strategies
  * @example
  * ```ts
- * import { evolutionStrategy } from 'mdml-engine/search'
+ * import { evolutionStrategy } from 'omai-engine/search'
  * const sphere = (x: readonly number[]) => -x.reduce((a, v) => a + v * v, 0)
  * evolutionStrategy(sphere, [3, -2, 1], { seed: 0 }).fitness > -1e-6 // => true
  * ```

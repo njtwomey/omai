@@ -4,7 +4,7 @@
  * approximation and the symbolic SAX representation with its MINDIST bound, and the lag of maximum cross-correlation.
  */
 
-import { type Json, MdmlError, minOf } from '../base/index.ts'
+import { type Json, minOf, OmaiError } from '../base/index.ts'
 import { correlate, correlationLags } from '../numerics/convolution/index.ts'
 import { ndtri } from '../numerics/special/index.ts'
 import { primalOf, type TensorLike, toFlat } from '../tensor/index.ts'
@@ -48,7 +48,7 @@ export interface DtwResult {
 function rows(x: TensorLike): { data: Float64Array; n: number; d: number } {
   const v = float(x)
   if (v.shape.length === 1) return { data: Float64Array.from(primalOf(v).data), n: v.shape[0] ?? 0, d: 1 }
-  if (v.shape.length !== 2) throw new MdmlError('shape', 'dtw: series are [n] or [n, d]')
+  if (v.shape.length !== 2) throw new OmaiError('shape', 'dtw: series are [n] or [n, d]')
   return { data: Float64Array.from(primalOf(v).data), n: v.shape[0] ?? 0, d: v.shape[1] ?? 0 }
 }
 
@@ -98,12 +98,12 @@ export interface DtwState {
  * @param y - Second series `[m]` or `[m, d]`.
  * @param options - Step pattern and window.
  * @returns The algorithm.
- * @throws MdmlError with code `shape` for series of different dimension.
+ * @throws OmaiError with code `shape` for series of different dimension.
  * @concept dynamic-time-warping
  * @example
  * ```ts
- * import { dtwAlgorithm } from 'mdml-engine/signal'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { dtwAlgorithm } from 'omai-engine/signal'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const run = runAlgorithm(dtwAlgorithm([0, 1, 2], [0, 1, 1, 2]), { maxSteps: 10 })
  * [run.status, run.steps, run.state.g[11]] // => ['converged', 3, 0]
  * ```
@@ -111,7 +111,7 @@ export interface DtwState {
 export function dtwAlgorithm(x: TensorLike, y: TensorLike, options: DtwOptions = {}): Algorithm<DtwState, DtwPath> {
   const a = rows(x)
   const b = rows(y)
-  if (a.d !== b.d) throw new MdmlError('shape', 'dtw: series must have the same dimension')
+  if (a.d !== b.d) throw new OmaiError('shape', 'dtw: series must have the same dimension')
   const n = a.n
   const m = b.n
   const pattern = options.stepPattern ?? 'symmetric2'
@@ -216,12 +216,12 @@ export function dtwAlgorithm(x: TensorLike, y: TensorLike, options: DtwOptions =
  *
  * @param state - A finished state of {@link dtwAlgorithm}.
  * @returns The distance, normalised distance and path.
- * @throws MdmlError with code `value` when no alignment satisfies the window or pattern.
+ * @throws OmaiError with code `value` when no alignment satisfies the window or pattern.
  * @concept dynamic-time-warping
  * @example
  * ```ts
- * import { dtwAlgorithm, dtwAlignment } from 'mdml-engine/signal'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { dtwAlgorithm, dtwAlignment } from 'omai-engine/signal'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * dtwAlignment(runAlgorithm(dtwAlgorithm([0, 1], [0, 1]), { maxSteps: 5 }).state).index1 // => [0, 1]
  * ```
  */
@@ -229,7 +229,7 @@ export function dtwAlignment(state: DtwState): DtwResult {
   const { n, m, pattern, g, dir } = state
   const distance = n === 0 || m === 0 ? Number.POSITIVE_INFINITY : (g[n * m - 1] ?? Number.POSITIVE_INFINITY)
   if (!Number.isFinite(distance))
-    throw new MdmlError('value', 'dtw: no alignment satisfies the window and step pattern')
+    throw new OmaiError('value', 'dtw: no alignment satisfies the window and step pattern')
   const index1: number[] = []
   const index2: number[] = []
   let i = n - 1
@@ -248,7 +248,7 @@ export function dtwAlignment(state: DtwState): DtwResult {
       i--
       j -= 2
       // The asymmetric (1, 2) step skips the intermediate cell of the second series.
-    } else throw new MdmlError('value', 'dtw: broken path')
+    } else throw new OmaiError('value', 'dtw: broken path')
   }
   index1.reverse()
   index2.reverse()
@@ -267,11 +267,11 @@ export function dtwAlignment(state: DtwState): DtwResult {
  * @param y - Second series `[m]` or `[m, d]`.
  * @param options - Step pattern and window.
  * @returns The distance, normalised distance and path.
- * @throws MdmlError with code `value` when no alignment satisfies the window or pattern.
+ * @throws OmaiError with code `value` when no alignment satisfies the window or pattern.
  * @concept dynamic-time-warping
  * @example
  * ```ts
- * import { dtw } from 'mdml-engine/signal'
+ * import { dtw } from 'omai-engine/signal'
  * dtw([0, 1, 2], [0, 1, 1, 2]).distance // => 0
  * ```
  */
@@ -289,7 +289,7 @@ export function dtw(x: TensorLike, y: TensorLike, options: DtwOptions = {}): Dtw
  * @concept dynamic-time-warping
  * @example
  * ```ts
- * import { lbKim } from 'mdml-engine/signal'
+ * import { lbKim } from 'omai-engine/signal'
  * lbKim([0, 2, 1], [1, 3, 1]) // => 1
  * ```
  */
@@ -327,14 +327,14 @@ export function lbKim(q: TensorLike, c: TensorLike): number {
  * @concept dynamic-time-warping
  * @example
  * ```ts
- * import { lbKeogh } from 'mdml-engine/signal'
+ * import { lbKeogh } from 'omai-engine/signal'
  * lbKeogh([0, 5, 0], [0, 1, 0], 1) // => 4
  * ```
  */
 export function lbKeogh(q: TensorLike, c: TensorLike, r: number): number {
   const a = samples(q, 'lbKeogh')
   const b = samples(c, 'lbKeogh')
-  if (a.length !== b.length) throw new MdmlError('shape', 'lbKeogh: series must have the same length')
+  if (a.length !== b.length) throw new OmaiError('shape', 'lbKeogh: series must have the same length')
   let s = 0
   for (let i = 0; i < a.length; i++) {
     let lo = Number.POSITIVE_INFINITY
@@ -360,14 +360,14 @@ export function lbKeogh(q: TensorLike, c: TensorLike, r: number): number {
  * @concept symbolic-representation
  * @example
  * ```ts
- * import { paa } from 'mdml-engine/signal'
+ * import { paa } from 'omai-engine/signal'
  * paa([1, 2, 3, 4, 5, 6], 3) // => [1.5, 3.5, 5.5]
  * ```
  */
 export function paa(x: TensorLike, w: number): number[] {
   const s = samples(x, 'paa')
   const n = s.length
-  if (!Number.isInteger(w) || w < 1 || w > n) throw new MdmlError('value', 'paa: 1 <= w <= n')
+  if (!Number.isInteger(w) || w < 1 || w > n) throw new OmaiError('value', 'paa: 1 <= w <= n')
   const out = new Array<number>(w).fill(0)
   // Sample i covers [i, i + 1) in units of 1 / n of the series; segment k covers [k n / w, (k + 1) n / w).
   for (let k = 0; k < w; k++) {
@@ -402,12 +402,12 @@ export interface SaxResult {
  * @concept symbolic-representation
  * @example
  * ```ts
- * import { sax } from 'mdml-engine/signal'
+ * import { sax } from 'omai-engine/signal'
  * sax([1, 2, 3, 4, 5, 6, 7, 8], 4, 3).word // => 'aacc'
  * ```
  */
 export function sax(x: TensorLike, w: number, a: number): SaxResult {
-  if (!Number.isInteger(a) || a < 2 || a > 26) throw new MdmlError('value', 'sax: the alphabet has 2 to 26 symbols')
+  if (!Number.isInteger(a) || a < 2 || a > 26) throw new OmaiError('value', 'sax: the alphabet has 2 to 26 symbols')
   const s = samples(x, 'sax')
   let m = 0
   for (const v of s) m += v / s.length
@@ -433,7 +433,7 @@ export function sax(x: TensorLike, w: number, a: number): SaxResult {
  * @concept symbolic-representation
  * @example
  * ```ts
- * import { sax, saxMindist } from 'mdml-engine/signal'
+ * import { sax, saxMindist } from 'omai-engine/signal'
  * const a = sax([1, 2, 3, 4, 5, 6, 7, 8], 4, 3)
  * saxMindist(a.symbols, a.symbols, a.breakpoints, 8) // => 0
  * ```
@@ -444,7 +444,7 @@ export function saxMindist(
   breakpoints: readonly number[],
   n: number,
 ): number {
-  if (s1.length !== s2.length) throw new MdmlError('shape', 'saxMindist: words must have the same length')
+  if (s1.length !== s2.length) throw new OmaiError('shape', 'saxMindist: words must have the same length')
   let s = 0
   for (const [i, r] of s1.entries()) {
     const c = s2[i] ?? 0
@@ -466,7 +466,7 @@ export function saxMindist(
  * @concept cross-correlation
  * @example
  * ```ts
- * import { crossCorrelationLag } from 'mdml-engine/signal'
+ * import { crossCorrelationLag } from 'omai-engine/signal'
  * crossCorrelationLag([0, 0, 1, 2, 1, 0], [1, 2, 1, 0, 0, 0]) // => 2
  * ```
  */

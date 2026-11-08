@@ -4,7 +4,7 @@
  * handle.
  */
 
-import type { Point2 } from 'mdml-engine/numerics/geometry'
+import type { Point2 } from 'omai-engine/numerics/geometry'
 import { createContext, type PointerEvent, type ReactNode, useContext, useMemo, useRef } from 'react'
 import type { Projection } from './projection.ts'
 

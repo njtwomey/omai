@@ -4,8 +4,8 @@ from typing import cast
 
 import numpy as np
 import sklearn
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray, rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray, rng
 from sklearn.svm import SVC, NuSVC
 
 REFERENCE: dict[str, str] = {"scikit-learn": sklearn.__version__}

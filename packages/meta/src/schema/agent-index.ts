@@ -43,7 +43,7 @@ export interface IndexEntry {
   readonly name: string
   /** `file` for a tag in a file's opening paragraph, `symbol` for a tag on a declaration. */
   readonly level: 'file' | 'symbol'
-  /** The entry point to import from, such as `mdml-engine/numerics/linalg`. */
+  /** The entry point to import from, such as `omai-engine/numerics/linalg`. */
   readonly importPath: string
   /** The source file, relative to the package root (`src/lib/numerics/linalg/lu.ts`). */
   readonly path: string

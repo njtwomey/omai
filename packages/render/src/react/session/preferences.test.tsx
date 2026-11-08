@@ -9,7 +9,7 @@ afterEach(() => {
 
 describe('session preferences', () => {
   it('reads another tab’s change from the storage event while a component listens, and stops listening after', async () => {
-    const KEY = 'mdml-session-preferences'
+    const KEY = 'omai-session-preferences'
     const store = new Map<string, string>()
     vi.stubGlobal('localStorage', {
       getItem: (k: string) => store.get(k) ?? null,

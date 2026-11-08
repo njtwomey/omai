@@ -9,7 +9,7 @@ which uses the Hessian to choose its steps. The comparison with other optimisers
 ## The method
 
 Rosenbrock's function is `f(x, y) = (1 - x)^2 + 10 (y - x^2)^2`, started at (-1.2, 1). Newton's method
-(`newton` from `mdml-engine/optim`) solves for the step with the Hessian, so it runs in 12 steps. Gradient descent with
+(`newton` from `omai-engine/optim`) solves for the step with the Hessian, so it runs in 12 steps. Gradient descent with
 learning rate 0.01 needs 2662 steps to get the gradient below 1e-5.
 
 ## What the program does

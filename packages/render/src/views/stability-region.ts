@@ -6,8 +6,8 @@
  */
 
 import type { EChartsOption, SeriesOption } from 'echarts'
-import { markVerdict, type StabilityRegion } from 'mdml-engine/exposition'
-import type { Pixels } from 'mdml-engine/scene'
+import { markVerdict, type StabilityRegion } from 'omai-engine/exposition'
+import type { Pixels } from 'omai-engine/scene'
 import { contours } from '../charts/fields.ts'
 import { lines } from '../charts/lines.ts'
 import { imageSeries } from '../charts/matrices.ts'
@@ -34,8 +34,8 @@ export interface StabilityVerdict {
  * @returns The counts.
  * @example
  * ```ts
- * import { sampleStabilityRegion } from 'mdml-engine/exposition'
- * import { stabilityVerdict } from 'mdml-render/views'
+ * import { sampleStabilityRegion } from 'omai-engine/exposition'
+ * import { stabilityVerdict } from 'omai-render/views'
  * const r = sampleStabilityRegion('euler', { numerator: [1, 1] }, { real: [-3, 1], imaginary: [-2, 2] }, {
  *   marks: [{ at: [-1, 0] }, { at: [-2.5, 0] }],
  * })
@@ -70,8 +70,8 @@ function regionPixels(record: StabilityRegion, accent: string): Pixels {
  * @returns The layers.
  * @example
  * ```ts
- * import { sampleStabilityRegion } from 'mdml-engine/exposition'
- * import { stabilityRegionLayers } from 'mdml-render/views'
+ * import { sampleStabilityRegion } from 'omai-engine/exposition'
+ * import { stabilityRegionLayers } from 'omai-render/views'
  * const r = sampleStabilityRegion('euler', { numerator: [1, 1] }, { real: [-3, 1], imaginary: [-2, 2] })
  * stabilityRegionLayers(r).length // => 3
  * ```
@@ -136,8 +136,8 @@ export function stabilityRegionLayers(record: StabilityRegion, options: ViewOpti
  * @returns The ECharts option.
  * @example
  * ```ts
- * import { sampleStabilityRegion } from 'mdml-engine/exposition'
- * import { stabilityRegionView } from 'mdml-render/views'
+ * import { sampleStabilityRegion } from 'omai-engine/exposition'
+ * import { stabilityRegionView } from 'omai-render/views'
  * const r = sampleStabilityRegion('euler', { numerator: [1, 1] }, { real: [-3, 1], imaginary: [-2, 2] })
  * stabilityRegionView(r).series.length // => 3
  * ```

@@ -4,7 +4,7 @@
  * well-conditioned eigenvectors, and `acker` is Ackermann's formula for the single-input case.
  */
 
-import { type Json, MdmlError } from '../../base/index.ts'
+import { type Json, OmaiError } from '../../base/index.ts'
 import {
   det,
   dnrm2,
@@ -63,11 +63,11 @@ function orderPoles(poles: readonly Pole[]): Cpole[] {
   const out: Cpole[] = [...real]
   for (const p of lower) {
     if (!ps.some((q) => q.re === p.re && q.im === -p.im)) {
-      throw new MdmlError('value', 'place: complex poles must come with their conjugates')
+      throw new OmaiError('value', 'place: complex poles must come with their conjugates')
     }
     out.push(p, { re: p.re, im: -p.im })
   }
-  if (out.length !== ps.length) throw new MdmlError('value', 'place: complex poles must come with their conjugates')
+  if (out.length !== ps.length) throw new OmaiError('value', 'place: complex poles must come with their conjugates')
   return out
 }
 
@@ -353,11 +353,11 @@ function placementSetup(a: TensorLike, b: TensorLike, poles: readonly Pole[], op
   const n = asTensor(a).shape[0] ?? 0
   const m = Bt.shape[1] ?? 0
   const ps = orderPoles(poles)
-  if (ps.length !== n) throw new MdmlError('value', `place: give ${n} poles, not ${ps.length}`)
+  if (ps.length !== n) throw new OmaiError('value', `place: give ${n} poles, not ${ps.length}`)
   const rankB = matrixRank(Bt)
   for (const p of ps) {
     if (ps.filter((q) => q.re === p.re && q.im === p.im).length > rankB) {
-      throw new MdmlError('value', 'place: a pole is repeated more than rank(B) times')
+      throw new OmaiError('value', 'place: a pole is repeated more than rank(B) times')
     }
   }
   const method = options.method ?? 'YT'
@@ -439,7 +439,7 @@ function placementFinish(S: PlacementSetup, X: Float64Array, iterations: number,
     try {
       k = primalOf(solve(tensor2(zr, rankB, m), rhs)) as Tensor
     } catch {
-      throw new MdmlError('value', "place: these poles can't be placed (check controllability)")
+      throw new OmaiError('value', "place: these poles can't be placed (check controllability)")
     }
     gain = primalOf(mul(k, -1)) as Tensor
   }
@@ -462,12 +462,12 @@ function placementFinish(S: PlacementSetup, X: Float64Array, iterations: number,
  * @param poles - The desired poles.
  * @param options - Method, relative tolerance and sweep cap.
  * @returns The algorithm.
- * @throws MdmlError with code `value` for the wrong number of poles or a pole repeated more than rank(B) times.
+ * @throws OmaiError with code `value` for the wrong number of poles or a pole repeated more than rank(B) times.
  * @concept pole-placement
  * @example
  * ```ts
- * import { control } from 'mdml-engine/dynamics'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { control } from 'omai-engine/dynamics'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const alg = control.placeAlgorithm([[0, 1, 0], [0, 0, 1], [0, 0, 0]], [[0, 0], [1, 0], [0, 1]], [-1, -2, -3])
  * runAlgorithm(alg, { maxSteps: 30 }).state.iterations >= 1 // => true
  * ```
@@ -542,12 +542,12 @@ export function placeAlgorithm(
  * @param state - A state of {@link placeAlgorithm}.
  * @param options - The options it was run with.
  * @returns The gain, requested and achieved poles, eigenvector matrix and sweep count.
- * @throws MdmlError with code `value` when the poles cannot be placed.
+ * @throws OmaiError with code `value` when the poles cannot be placed.
  * @concept pole-placement
  * @example
  * ```ts
- * import { control } from 'mdml-engine/dynamics'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { control } from 'omai-engine/dynamics'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const a = [[0, 1], [0, 0]]
  * const b = [[0], [1]]
  * control.placementOf(a, b, [-1, -2], runAlgorithm(control.placeAlgorithm(a, b, [-1, -2]), { maxSteps: 5 }).state).iterations // => 0
@@ -575,13 +575,13 @@ export function placementOf(
  * @param poles - The desired poles (complex ones as {re, im} with their conjugates).
  * @param options - Method (`YT` or `KNV0`), relative tolerance (default 1e-3) and iteration cap (default 30).
  * @returns The gain, requested and achieved poles, eigenvector matrix and iteration count.
- * @throws MdmlError with code `value` for the wrong number of poles, poles repeated more than rank(B) times, or
+ * @throws OmaiError with code `value` for the wrong number of poles, poles repeated more than rank(B) times, or
  * poles that cannot be placed. {@link placeAlgorithm} run to the end.
  * @concept pole-placement
  * @example
  * ```ts
- * import { control } from 'mdml-engine/dynamics'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { control } from 'omai-engine/dynamics'
+ * import { toArray } from 'omai-engine/tensor'
  * // The double integrator with poles -1, -2: K = [2, 3].
  * toArray(control.place([[0, 1], [0, 0]], [[0], [1]], [-1, -2]).gain).map((r) => r.map((v) => Math.round(v * 1e10) / 1e10)) // => [[2, 3]]
  * ```
@@ -630,12 +630,12 @@ function primalDet(X: Float64Array, n: number): number {
  * @param b - B `[n, 1]`.
  * @param poles - The desired poles.
  * @returns K `[1, n]`.
- * @throws MdmlError with code `value` for more than one input or the wrong number of poles.
+ * @throws OmaiError with code `value` for more than one input or the wrong number of poles.
  * @concept pole-placement
  * @example
  * ```ts
- * import { control } from 'mdml-engine/dynamics'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { control } from 'omai-engine/dynamics'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(control.acker([[0, 1], [0, 0]], [[0], [1]], [-1, -2])) // => [[2, 3]]
  * ```
  */
@@ -643,9 +643,9 @@ export function acker(a: TensorLike, b: TensorLike, poles: readonly Pole[]): Ten
   const A = asTensor(a)
   const B = asTensor(b)
   const n = A.shape[0] ?? 0
-  if ((B.shape[1] ?? 1) !== 1) throw new MdmlError('value', 'acker: one input only')
+  if ((B.shape[1] ?? 1) !== 1) throw new OmaiError('value', 'acker: one input only')
   const ps = orderPoles(poles)
-  if (ps.length !== n) throw new MdmlError('value', `acker: give ${n} poles`)
+  if (ps.length !== n) throw new OmaiError('value', `acker: give ${n} poles`)
   // Characteristic polynomial coefficients (highest power first) from the roots, in real arithmetic by pairs.
   let coeffs = [1]
   const mulPoly = (c: number[], f: number[]): number[] => {

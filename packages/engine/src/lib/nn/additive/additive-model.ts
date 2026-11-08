@@ -7,7 +7,7 @@
  * penalties, its term values and curves, and its effective degrees of freedom, which is what a trainer logs.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { type Link, type LinkName, linkByName } from '../../dists/families/index.ts'
 import { dgesv } from '../../numerics/linalg/index.ts'
 import { foldIn, type Key, uniform } from '../../random/index.ts'
@@ -73,7 +73,7 @@ const linkOf = (link: LinkName | Link | undefined): Link =>
  * @concept additive-models
  * @example
  * ```ts
- * import { AdditiveModel, linearTerm, splineTerm } from 'mdml-engine/nn'
+ * import { AdditiveModel, linearTerm, splineTerm } from 'omai-engine/nn'
  * const model = new AdditiveModel({ inFeatures: 2, terms: [splineTerm(0, { interiorKnots: 4 }), linearTerm(1)] })
  * model.forward([[0.2, 1], [0.7, -1]]).shape // => [2, 1]
  * model.labels // => ['s(x0)', 'x1']
@@ -94,13 +94,13 @@ export class AdditiveModel extends Composite {
     const d = options.inFeatures
     const sample = options.sample === undefined ? undefined : (asTensor(options.sample) as Value)
     if (sample !== undefined && (sample.shape.length !== 2 || sample.shape[1] !== d))
-      throw new MdmlError('shape', `AdditiveModel: sample must be [n, ${d}]`)
+      throw new OmaiError('shape', `AdditiveModel: sample must be [n, ${d}]`)
     const base = initKey('AdditiveModel', options.key)
     const names = options.featureNames
     const built = options.terms.map((spec, i) => {
       for (const f of spec.features)
         if (!(Number.isInteger(f) && f >= 0 && f < d))
-          throw new MdmlError('value', `AdditiveModel: term ${i} uses column ${f}, of ${d}`)
+          throw new OmaiError('value', `AdditiveModel: term ${i} uses column ${f}, of ${d}`)
       const label = termLabel(spec, names)
       return additiveTerms.make(spec.config)(
         spec.features,
@@ -184,7 +184,7 @@ export class AdditiveModel extends Composite {
    */
   contributions(params: Params, x: Value, ctx: ApplyContext = {}): Value {
     if (x.shape.length !== 2 || x.shape[1] !== this.inFeatures)
-      throw new MdmlError('shape', `AdditiveModel: expected [n, ${this.inFeatures}], got [${x.shape.join(', ')}]`)
+      throw new OmaiError('shape', `AdditiveModel: expected [n, ${this.inFeatures}], got [${x.shape.join(', ')}]`)
     const buffers = ctx.buffers ?? this.buffers
     const run = this.parts(params, ctx)
     const centres = this.centre ? this.centres(params, buffers) : undefined
@@ -278,7 +278,7 @@ export class AdditiveModel extends Composite {
    */
   termCurve(params: Params, term: number, grid: ArrayLike<number>, buffers: Params = this.buffers): Tensor {
     const t = this.termAt(term)
-    if (t.features.length !== 1) throw new MdmlError('value', `termCurve: ${t.label} has ${t.features.length} features`)
+    if (t.features.length !== 1) throw new OmaiError('value', `termCurve: ${t.label} has ${t.features.length} features`)
     const cols = fromStorage(Float64Array.from(grid), [grid.length, 1], 'float64')
     const v = t.module.apply(this.partParams(params, term), cols, {
       train: false,
@@ -308,7 +308,7 @@ export class AdditiveModel extends Composite {
   ): Tensor {
     const t = this.termAt(term)
     if (t.features.length !== 2)
-      throw new MdmlError('value', `termSurface: ${t.label} has ${t.features.length} features`)
+      throw new OmaiError('value', `termSurface: ${t.label} has ${t.features.length} features`)
     const points = Float64Array.from({ length: gridX.length * gridZ.length * 2 }, (_, i) => {
       const cell = Math.floor(i / 2)
       return i % 2 === 0 ? (gridX[Math.floor(cell / gridZ.length)] as number) : (gridZ[cell % gridZ.length] as number)
@@ -383,7 +383,7 @@ export class AdditiveModel extends Composite {
 
   private termAt(i: number): BuiltTerm {
     const t = this.built[i]
-    if (t === undefined) throw new MdmlError('value', `AdditiveModel: no term ${i}`)
+    if (t === undefined) throw new OmaiError('value', `AdditiveModel: no term ${i}`)
     return t
   }
 
@@ -416,7 +416,7 @@ function checkHeredity(built: readonly BuiltTerm[], heredity: Heredity): void {
     const present = t.features.filter((f) => mains.has(f)).length
     const ok = heredity === 'strong' ? present === t.features.length : present > 0
     if (!ok)
-      throw new MdmlError(
+      throw new OmaiError(
         'value',
         `AdditiveModel: ${t.label} breaks ${heredity} heredity (main effects of ${t.features.join(', ')} needed)`,
       )

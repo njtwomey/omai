@@ -3,9 +3,9 @@
  * (TensorBoard's distributions view), and a heatmap of per-layer norms for spotting vanishing or exploding gradients.
  */
 
-import { MdmlError, maxOf, minOf } from 'mdml-engine/base'
-import { dnrm2 } from 'mdml-engine/numerics/linalg'
-import { metricSeries, type Run, tensorSeries } from 'mdml-engine/trace'
+import { maxOf, minOf, OmaiError } from 'omai-engine/base'
+import { dnrm2 } from 'omai-engine/numerics/linalg'
+import { metricSeries, type Run, tensorSeries } from 'omai-engine/trace'
 import { lines } from '../charts/lines.ts'
 import { heatmap, type RampSpec } from '../charts/matrices.ts'
 import type { Layer } from '../charts/plot.ts'
@@ -21,10 +21,10 @@ import type { ColourMode } from '../theme/tokens.ts'
  * @returns The steps and their positions, in order.
  * @example
  * ```ts
- * import { stepPositions } from 'mdml-render/trace'
+ * import { stepPositions } from 'omai-render/trace'
  * const ev = (step: number, values: number[]) => ({ type: 'tensor' as const, runId: 'r', step, name: 'y', role: 'state' as const, shape: [1], values })
  * const time = (step: number, value: number) => ({ type: 'metric' as const, runId: 'r', step, name: 't', value })
- * const run = { schema: 'mdml.run/1' as const, events: [time(0, 0), ev(0, [1]), time(1, 0.5), ev(1, [2])] }
+ * const run = { schema: 'omai.run/1' as const, events: [time(0, 0), ev(0, [1]), time(1, 0.5), ev(1, [2])] }
  * stepPositions(run, 'y', 't') // => { steps: [0, 1], xs: [0, 0.5] }
  * ```
  */
@@ -54,9 +54,9 @@ export function stepPositions(run: Run, name: string, x?: string): { readonly st
  * @index function Chosen parameter elements against steps: `parameterTrajectories(run, 'w')`.
  * @example
  * ```ts
- * import { parameterTrajectories } from 'mdml-render/trace'
+ * import { parameterTrajectories } from 'omai-render/trace'
  * const ev = (step: number, values: number[]) => ({ type: 'tensor' as const, runId: 'r', step, name: 'w', role: 'param' as const, shape: [2], values })
- * const run = { schema: 'mdml.run/1' as const, events: [ev(0, [0, 1]), ev(1, [1, 2])] }
+ * const run = { schema: 'omai.run/1' as const, events: [ev(0, [0, 1]), ev(1, [1, 2])] }
  * parameterTrajectories(run, 'w').series.map((s) => s.name) // => ['w[0]', 'w[1]']
  * parameterTrajectories(run, 'w', { names: ['a', 'b'] }).series.map((s) => s.name) // => ['a', 'b']
  * ```
@@ -107,13 +107,13 @@ export function parameterTrajectories(
  * @param name - The tensor channel.
  * @param options - Bins for rebinning (default 30), ramp, smoothing of the image and colour mode.
  * @returns The layer.
- * @throws MdmlError with code `value` when the channel has neither summaries nor values.
+ * @throws OmaiError with code `value` when the channel has neither summaries nor values.
  * @index function A tensor's histogram over training: `histogramsOverTime(run, 'grad')`.
  * @example
  * ```ts
- * import { histogramsOverTime } from 'mdml-render/trace'
+ * import { histogramsOverTime } from 'omai-render/trace'
  * const ev = (step: number, values: number[]) => ({ type: 'tensor' as const, runId: 'r', step, name: 'g', role: 'grad' as const, shape: [3], values })
- * const run = { schema: 'mdml.run/1' as const, events: [ev(0, [0, 1, 2]), ev(1, [1, 2, 3])] }
+ * const run = { schema: 'omai.run/1' as const, events: [ev(0, [0, 1, 2]), ev(1, [1, 2, 3])] }
  * histogramsOverTime(run, 'g', { bins: 3 }).extent.x // => [0, 1]
  * ```
  */
@@ -124,7 +124,7 @@ export function histogramsOverTime(
 ): Layer {
   const events = tensorSeries(run, name)
   if (events.length === 0 || events.every((e) => e.summary === undefined && e.values === undefined))
-    throw new MdmlError('value', `histogramsOverTime: no summaries or values for '${name}'`)
+    throw new OmaiError('value', `histogramsOverTime: no summaries or values for '${name}'`)
   const bins = options.bins ?? 30
   let lo = Number.POSITIVE_INFINITY
   let hi = Number.NEGATIVE_INFINITY
@@ -174,9 +174,9 @@ export function histogramsOverTime(
  * @returns The layer, rows labelled by channel.
  * @example
  * ```ts
- * import { normHeatmap } from 'mdml-render/trace'
+ * import { normHeatmap } from 'omai-render/trace'
  * const s = { n: 1, mean: 0, std: 0, min: 0, max: 0, norm: 2, zeros: 0, histogram: { edges: [0, 1], counts: [1] } }
- * const run = { schema: 'mdml.run/1' as const, events: [{ type: 'tensor' as const, runId: 'r', step: 0, name: 'a', role: 'grad' as const, shape: [1], summary: s }] }
+ * const run = { schema: 'omai.run/1' as const, events: [{ type: 'tensor' as const, runId: 'r', step: 0, name: 'a', role: 'grad' as const, shape: [1], summary: s }] }
  * normHeatmap(run, ['a']).yCategories // => ['a']
  * ```
  */

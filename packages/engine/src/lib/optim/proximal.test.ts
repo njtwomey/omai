@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { checkPrimitive, grad } from '../autodiff/index.ts'
-import { isMdmlError } from '../base/index.ts'
+import { isOmaiError } from '../base/index.ts'
 import { key, normal } from '../random/index.ts'
 import {
   abs,
@@ -91,7 +91,7 @@ describe('proximal operators are differentiable', () => {
         ]),
       )
     } catch (e) {
-      expect(isMdmlError(e, 'not-differentiable')).toBe(true)
+      expect(isOmaiError(e, 'not-differentiable')).toBe(true)
     }
   })
 })

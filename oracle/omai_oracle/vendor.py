@@ -40,7 +40,7 @@ def sha256_of(*arrays: npt.ArrayLike) -> str:
 
 def load(path: Path) -> DatasetModule:
     """Import a dataset module from its file path."""
-    spec = importlib.util.spec_from_file_location(f"mdml_datasets.{path.stem}", path)
+    spec = importlib.util.spec_from_file_location(f"omai_datasets.{path.stem}", path)
     if spec is None or spec.loader is None:
         raise RuntimeError(f"cannot load {path}")
     module = importlib.util.module_from_spec(spec)

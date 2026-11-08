@@ -46,7 +46,7 @@ const views = new Map<string, LazyExoticComponent<ComponentType>>()
 function viewOf(id: string, file: string, load: RecipeLoader): LazyExoticComponent<ComponentType> {
   let View = views.get(id)
   if (View === undefined) {
-    // The code view loads with the example too: it imports mdml-render's React bindings (its icons).
+    // The code view loads with the example too: it imports omai-render's React bindings (its icons).
     View = lazy(() =>
       Promise.all([load(), import('./RecipeView.tsx')]).then(
         ([{ Example, snippet }, { RecipeView }]) => ({

@@ -1,6 +1,6 @@
-import { defaults } from 'mdml-engine/space'
-import type { Config } from 'mdml-engine/trace'
-import type { TapeFile } from 'mdml-render/producer'
+import { defaults } from 'omai-engine/space'
+import type { Config } from 'omai-engine/trace'
+import type { TapeFile } from 'omai-render/producer'
 import {
   ControlPanel,
   type Panel,
@@ -10,7 +10,7 @@ import {
   useSession,
   useSessionPreferences,
   useTape,
-} from 'mdml-render/react'
+} from 'omai-render/react'
 import { type ReactNode, useRef, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 import { ORBIT_STEPS, orbit } from '../../toys/orbit.ts'

@@ -8,7 +8,7 @@
  * on a {@link residualModel} and a scalar metric of the logits, such as the logit difference between two answers.
  */
 import { grad } from '../autodiff/index.ts'
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { type Key, normal } from '../random/index.ts'
 import {
   add,
@@ -48,8 +48,8 @@ function at(logits: Value, position: number): Value {
  * @returns The metric.
  * @example
  * ```ts
- * import { logitDifference } from 'mdml-engine/explain'
- * import { tensor, toFlat } from 'mdml-engine/tensor'
+ * import { logitDifference } from 'omai-engine/explain'
+ * import { tensor, toFlat } from 'omai-engine/tensor'
  * toFlat(logitDifference(0, 1)(tensor([[[2, 0.5]]]))) // => [1.5]
  * ```
  */
@@ -68,8 +68,8 @@ export function logitDifference(correct: number, wrong: number, position = -1): 
  * @returns The metric.
  * @example
  * ```ts
- * import { tokenLogProbability } from 'mdml-engine/explain'
- * import { tensor, toFlat } from 'mdml-engine/tensor'
+ * import { tokenLogProbability } from 'omai-engine/explain'
+ * import { tensor, toFlat } from 'omai-engine/tensor'
  * toFlat(tokenLogProbability(0)(tensor([[[0, 0]]]))) // => [-0.6931471805599453]
  * ```
  */
@@ -85,8 +85,8 @@ export function tokenLogProbability(token: number, position = -1): PatchMetric {
  * @returns The metric.
  * @example
  * ```ts
- * import { tokenProbability } from 'mdml-engine/explain'
- * import { tensor, toFlat } from 'mdml-engine/tensor'
+ * import { tokenProbability } from 'omai-engine/explain'
+ * import { tensor, toFlat } from 'omai-engine/tensor'
  * toFlat(tokenProbability(1)(tensor([[[0, 0]]]))) // => [0.5]
  * ```
  */
@@ -173,13 +173,13 @@ export interface PatchingResult {
  * @param corrupted - The corrupted prompt (same length), or tokens with a perturbation of the run (causal tracing).
  * @param options - The metric, sites, positions and direction.
  * @returns The clean and corrupted metric and the map of patched metrics and recovered shares.
- * @throws MdmlError with code `shape` if the prompts differ in length.
+ * @throws OmaiError with code `shape` if the prompts differ in length.
  * @concept mechanistic-interpretability
  * @example
  * ```ts
- * import { activationPatching, logitDifference, residualModel } from 'mdml-engine/explain'
- * import { blocks } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
+ * import { activationPatching, logitDifference, residualModel } from 'omai-engine/explain'
+ * import { blocks } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
  * const m = residualModel(new blocks.TransformerLM(6, 8, 1, 2, { key: key(0) }))
  * const r = activationPatching(m, [0, 3, 3], [1, 3, 3], { metric: logitDifference(0, 1), sites: ['embed'] })
  * r.sites // => ['embed']
@@ -193,7 +193,7 @@ export function activationPatching(
 ): PatchingResult {
   const c = corruptedOf(corrupted)
   if (c.tokens.length !== clean.length)
-    throw new MdmlError('shape', 'activationPatching: the prompts need equal length')
+    throw new OmaiError('shape', 'activationPatching: the prompts need equal length')
   const direction = options.direction ?? 'denoise'
   const sites = options.sites ?? defaultSites(model, options.heads ?? false)
   const positions =
@@ -211,7 +211,7 @@ export function activationPatching(
       const hook: SiteHook = (name, v) => {
         if (name !== site) return direction === 'denoise' ? c.perturb?.(name, v) : undefined
         const d = donor.sites.get(site)
-        if (d === undefined) throw new MdmlError('value', `activationPatching: unknown site '${site}'`)
+        if (d === undefined) throw new OmaiError('value', `activationPatching: unknown site '${site}'`)
         return replaceAt(v, d, p < 0 ? undefined : p)
       }
       const run = direction === 'denoise' ? model.run([c.tokens], hook) : model.run([clean], hook)
@@ -267,9 +267,9 @@ export interface CausalTrace {
  * @concept mechanistic-interpretability
  * @example
  * ```ts
- * import { causalTrace, residualModel, tokenProbability } from 'mdml-engine/explain'
- * import { blocks } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
+ * import { causalTrace, residualModel, tokenProbability } from 'omai-engine/explain'
+ * import { blocks } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
  * const m = residualModel(new blocks.TransformerLM(6, 8, 2, 2, { key: key(0) }))
  * const r = causalTrace(m, [0, 1, 2, 3], { subject: [1], metric: tokenProbability(4), key: key(1), kinds: ['out'] })
  * r.effects['out']?.shape // => [2, 4]
@@ -338,9 +338,9 @@ export interface AttributionPatching {
  * @concept mechanistic-interpretability
  * @example
  * ```ts
- * import { attributionPatching, logitDifference, residualModel } from 'mdml-engine/explain'
- * import { blocks } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
+ * import { attributionPatching, logitDifference, residualModel } from 'omai-engine/explain'
+ * import { blocks } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
  * const m = residualModel(new blocks.TransformerLM(6, 8, 1, 2, { key: key(0) }))
  * attributionPatching(m, [0, 3, 3], [1, 3, 3], { metric: logitDifference(0, 1), sites: ['embed'] }).attribution.shape // => [1, 3]
  * ```
@@ -352,7 +352,7 @@ export function attributionPatching(
   options: AttributionPatchingOptions,
 ): AttributionPatching {
   if (corrupted.length !== clean.length)
-    throw new MdmlError('shape', 'attributionPatching: the prompts need equal length')
+    throw new OmaiError('shape', 'attributionPatching: the prompts need equal length')
   const direction = options.direction ?? 'denoise'
   const sites = options.sites ?? defaultSites(model, options.heads ?? false)
   const cleanRun = model.run([clean])
@@ -429,9 +429,9 @@ const isComponent = (site: string): boolean => site === 'embed' || /\.(head\d+|m
  * @concept mechanistic-interpretability
  * @example
  * ```ts
- * import { logitDifference, pathPatching, residualModel } from 'mdml-engine/explain'
- * import { blocks } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
+ * import { logitDifference, pathPatching, residualModel } from 'omai-engine/explain'
+ * import { blocks } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
  * const m = residualModel(new blocks.TransformerLM(6, 8, 1, 2, { key: key(0) }))
  * pathPatching(m, [0, 3, 3], [1, 3, 3], ['embed'], { metric: logitDifference(0, 1) })[0]?.sender // => 'embed'
  * ```
@@ -443,7 +443,7 @@ export function pathPatching(
   senders: readonly string[],
   options: PathPatchingOptions,
 ): PathPatchingResult[] {
-  if (corrupted.length !== clean.length) throw new MdmlError('shape', 'pathPatching: the prompts need equal length')
+  if (corrupted.length !== clean.length) throw new OmaiError('shape', 'pathPatching: the prompts need equal length')
   const receivers = options.receivers ?? 'logits'
   const cleanRun = model.run([clean])
   const corruptRun = model.run([corrupted])
@@ -499,9 +499,9 @@ export interface LogitAttribution {
  * @concept mechanistic-interpretability
  * @example
  * ```ts
- * import { directLogitAttribution, residualModel } from 'mdml-engine/explain'
- * import { blocks } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
+ * import { directLogitAttribution, residualModel } from 'omai-engine/explain'
+ * import { blocks } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
  * const m = residualModel(new blocks.TransformerLM(6, 8, 1, 2, { key: key(0) }))
  * const a = directLogitAttribution(m, [0, 3, 3], 0, 1)
  * Math.abs(a.total - a.logitDifference) < 1e-9 // => true

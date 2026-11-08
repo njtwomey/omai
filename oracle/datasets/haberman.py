@@ -1,7 +1,7 @@
 """The UCI Haberman survival data (Haberman 1976), CC BY 4.0: 306 breast-cancer patients, five-year survival."""
 
-from mdml_oracle.uci import source_note, table_rows, zip_member
-from mdml_oracle.vendor import render_classification
+from omai_oracle.uci import source_note, table_rows, zip_member
+from omai_oracle.vendor import render_classification
 
 TARGET = "packages/engine/src/lib/datasets/_data/haberman.data.ts"
 ID, SLUG = 43, "haberman+s+survival"

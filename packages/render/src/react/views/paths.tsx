@@ -3,7 +3,7 @@
  * with standard-error bands, learning curves, and cost-complexity pruning paths.
  */
 
-import type { CrossValidationCurve, LearningCurve, PruningPath, RegularisationPath } from 'mdml-engine/exposition'
+import type { CrossValidationCurve, LearningCurve, PruningPath, RegularisationPath } from 'omai-engine/exposition'
 import { type ReactElement, useCallback } from 'react'
 import type { Figure } from '../../figure/figure.ts'
 import {

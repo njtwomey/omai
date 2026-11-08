@@ -1,8 +1,8 @@
-import { classificationLosses, penalties } from 'mdml-engine/losses'
-import { smoothSolverConfig, smoothSolvers } from 'mdml-engine/optim'
-import { type DictSpace, defaults, dict, type SpaceValue } from 'mdml-engine/space'
-import type { Tensor } from 'mdml-engine/tensor'
-import type { Config } from 'mdml-engine/trace'
+import { classificationLosses, penalties } from 'omai-engine/losses'
+import { smoothSolverConfig, smoothSolvers } from 'omai-engine/optim'
+import { type DictSpace, defaults, dict, type SpaceValue } from 'omai-engine/space'
+import type { Tensor } from 'omai-engine/tensor'
+import type { Config } from 'omai-engine/trace'
 import {
   Choice,
   ControlLayout,
@@ -23,7 +23,7 @@ import {
   useSessionPreferences,
   useSessions,
   variantsOfSlot,
-} from 'mdml-render/react'
+} from 'omai-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 import { linearClassifier } from '../../toys/linearClassifier.ts'

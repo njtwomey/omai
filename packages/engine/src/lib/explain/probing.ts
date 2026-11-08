@@ -6,7 +6,7 @@
  * the two accuracies is the probe's selectivity. The probe is a multinomial logistic regression of `linear`, so its
  * solver is that model's solver slot, and `probeLayers` runs it down a stack of layers for the where-is-it-readable map.
  */
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { matrixView } from '../learn/validation.ts'
 import { multinomial } from '../linear/index.ts'
 import { foldIn, type Key, permutation, uniform } from '../random/index.ts'
@@ -47,19 +47,19 @@ function take(m: { readonly data: Float64Array; readonly d: number }, rows: read
  * @param labels - One class label per row.
  * @param options - The key, the held-out share, the ridge penalty and the solver.
  * @returns Train and test accuracy, and the majority-class baseline.
- * @throws MdmlError with code `shape` if the labels do not match the rows.
+ * @throws OmaiError with code `shape` if the labels do not match the rows.
  * @concept probing
  * @example
  * ```ts
- * import { probeAccuracy } from 'mdml-engine/explain'
- * import { key } from 'mdml-engine/random'
+ * import { probeAccuracy } from 'omai-engine/explain'
+ * import { key } from 'omai-engine/random'
  * const x = Array.from({ length: 40 }, (_, i) => [i % 2, ((i * 7) % 5) / 5])
  * probeAccuracy(x, x.map((r) => r[0] as number), { key: key(0) }).testAccuracy // => 1
  * ```
  */
 export function probeAccuracy(activations: TensorLike, labels: readonly number[], options: ProbeOptions): ProbeResult {
   const m = matrixView(activations, 'probeAccuracy')
-  if (labels.length !== m.n) throw new MdmlError('shape', 'probeAccuracy: one label per row')
+  if (labels.length !== m.n) throw new OmaiError('shape', 'probeAccuracy: one label per row')
   const order = Array.from(permutation(options.key, m.n).data)
   const nTest = Math.max(1, Math.round(m.n * (options.testFraction ?? 0.3)))
   const test = order.slice(0, nTest)
@@ -101,14 +101,14 @@ export function probeAccuracy(activations: TensorLike, labels: readonly number[]
  * @returns Control labels, one per row.
  * @example
  * ```ts
- * import { controlTask } from 'mdml-engine/explain'
- * import { key } from 'mdml-engine/random'
+ * import { controlTask } from 'omai-engine/explain'
+ * import { key } from 'omai-engine/random'
  * const c = controlTask([5, 6, 5, 6], [0, 1, 0, 1], key(2))
  * c[0] === c[2] && c[1] === c[3] // => true
  * ```
  */
 export function controlTask(types: readonly number[], labels: readonly number[], key: Key): number[] {
-  if (types.length !== labels.length) throw new MdmlError('shape', 'controlTask: one type per label')
+  if (types.length !== labels.length) throw new OmaiError('shape', 'controlTask: one type per label')
   const distinct = [...new Set(types)]
   const u = uniform(foldIn(key, 0), [distinct.length]).data
   const assigned = new Map<number, number>()
@@ -139,8 +139,8 @@ export interface SelectivityResult {
  * @concept probing
  * @example
  * ```ts
- * import { probeSelectivity } from 'mdml-engine/explain'
- * import { key } from 'mdml-engine/random'
+ * import { probeSelectivity } from 'omai-engine/explain'
+ * import { key } from 'omai-engine/random'
  * const types = Array.from({ length: 60 }, (_, i) => i % 6)
  * const x = types.map((t) => [t % 2, (t * 3) % 5])
  * probeSelectivity(x, types.map((t) => t % 2), types, { key: key(1) }).task.testAccuracy // => 1
@@ -179,8 +179,8 @@ export interface LayerProbes {
  * @concept probing
  * @example
  * ```ts
- * import { probeLayers } from 'mdml-engine/explain'
- * import { key } from 'mdml-engine/random'
+ * import { probeLayers } from 'omai-engine/explain'
+ * import { key } from 'omai-engine/random'
  * const y = Array.from({ length: 40 }, (_, i) => i % 2)
  * const noise = y.map((_, i) => [((i * 37) % 11) / 11])
  * const signal = y.map((v, i) => [v, noise[i]?.[0] ?? 0])

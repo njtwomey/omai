@@ -1,4 +1,4 @@
-import { datasetRegistry, findDataset, loadDataset } from 'mdml-engine/datasets'
+import { datasetRegistry, findDataset, loadDataset } from 'omai-engine/datasets'
 import { describe, expect, it } from 'vitest'
 import { summarise, toFrame } from './frame.ts'
 

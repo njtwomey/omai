@@ -4,7 +4,7 @@
  * marginals and the evidence, and exact joint draws follow. Also the engine for the planner.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import type { Distribution } from '../../dists/index.ts'
 import {
   type CalibratedTree,
@@ -63,7 +63,7 @@ function supportRange(site: SampleSite): { readonly low: number; readonly states
   const s = site.fn.support
   if (s.kind === 'boolean') return { low: 0, states: 2 }
   if (s.kind === 'integerInterval') return { low: s.low, states: s.high - s.low + 1 }
-  throw new MdmlError('value', `enumeration: site ${site.name} is not finite and discrete`)
+  throw new OmaiError('value', `enumeration: site ${site.name} is not finite and discrete`)
 }
 
 /**
@@ -74,13 +74,13 @@ function supportRange(site: SampleSite): { readonly low: number; readonly states
  * @param model - The program.
  * @param data - Its data.
  * @returns The factor graph, the constant log factor and the grounded sites.
- * @throws MdmlError with code `value` for continuous latent sites, or when a factor uses a plated discrete site
+ * @throws OmaiError with code `value` for continuous latent sites, or when a factor uses a plated discrete site
  *   outside its plate.
  * @concept exact-inference
  * @example
  * ```ts
- * import { groundDiscrete, observe, sample } from 'mdml-engine/probprog'
- * import { bernoulli, normal } from 'mdml-engine/dists'
+ * import { groundDiscrete, observe, sample } from 'omai-engine/probprog'
+ * import { bernoulli, normal } from 'omai-engine/dists'
  * const g = groundDiscrete((y: number) => { const c = sample('c', bernoulli({ probs: 0.5 })); observe('y', normal(c, 1), y) }, 0.3)
  * g.graph.variables.map((v) => v.name) // => ['c']
  * ```
@@ -90,7 +90,7 @@ export function groundDiscrete<D = void>(model: Model<D>, data: D): GroundedProg
   const t = r.trace
   for (const site of t.sites.values())
     if (site.type === 'sample' && !site.isObserved && site.enumDim === undefined)
-      throw new MdmlError('value', `enumeration: site ${site.name} is not discrete; use another engine`, {
+      throw new OmaiError('value', `enumeration: site ${site.name} is not discrete; use another engine`, {
         site: site.name,
       })
   const depth = [...t.sites.values()].reduce((m, s) => s.plates.reduce((a, f) => Math.max(a, -f.dim), m), 0)
@@ -150,7 +150,7 @@ export function groundDiscrete<D = void>(model: Model<D>, data: D): GroundedProg
         const idx = info.axes.map((x) => {
           const j = plateDims.indexOf(x.plate)
           if (j < 0)
-            throw new MdmlError(
+            throw new OmaiError(
               'value',
               `enumeration: site ${f.site ?? '?'} depends on ${v} outside the plate ${x.plate}`,
             )
@@ -215,9 +215,9 @@ export interface EnumerationOptions {
  * @concept exact-inference
  * @example
  * ```ts
- * import { enumerationPosterior, observe, sample } from 'mdml-engine/probprog'
- * import { bernoulli } from 'mdml-engine/dists'
- * import { item, take, tensor } from 'mdml-engine/tensor'
+ * import { enumerationPosterior, observe, sample } from 'omai-engine/probprog'
+ * import { bernoulli } from 'omai-engine/dists'
+ * import { item, take, tensor } from 'omai-engine/tensor'
  * // Rain makes wet grass likely: P(rain | wet) = 0.2 * 0.9 / (0.2 * 0.9 + 0.8 * 0.1).
  * const sprinkler = () => {
  *   const rain = sample('rain', bernoulli({ probs: 0.2 }))
@@ -274,7 +274,7 @@ export function enumerationPosterior<D = void>(model: Model<D>, data: D, options
     const assignment: Record<string, number> = {}
     for (const s of g.sites) {
       const v = values[s.name]
-      if (v === undefined) throw new MdmlError('value', `enumeration: no value for ${s.name}`)
+      if (v === undefined) throw new OmaiError('value', `enumeration: no value for ${s.name}`)
       const flat = toFlat(primalOf(asTensor(v as TensorLike)))
       s.variables.forEach((name, j) => {
         assignment[name] = (flat[j] ?? flat[0] ?? 0) - s.low
@@ -318,8 +318,8 @@ export interface EnumerationEngineOptions {
  * @concept inference-engines
  * @example
  * ```ts
- * import { analyse, enumerationEngine, sample } from 'mdml-engine/probprog'
- * import { bernoulli } from 'mdml-engine/dists'
+ * import { analyse, enumerationEngine, sample } from 'omai-engine/probprog'
+ * import { bernoulli } from 'omai-engine/dists'
  * enumerationEngine().applies(analyse(() => { sample('c', bernoulli({ probs: 0.5 })) }, undefined)).applies // => true
  * ```
  */

@@ -7,7 +7,7 @@
  * `smoothSolvers` minimises it.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { marginRecord } from '../exposition/index.ts'
 import {
   type Kernel,
@@ -120,10 +120,10 @@ function prepare(
   const m = matrixView(data.x, WHO)
   const t = targetVector(data.y ?? [], WHO, m.n)
   if (h.form === 'nu' && data.weights !== undefined)
-    throw new MdmlError('value', `${WHO}: sample weights are not supported by the nu form`)
+    throw new OmaiError('value', `${WHO}: sample weights are not supported by the nu form`)
   const squared = h.loss === 'squaredEpsilonInsensitive'
   if (squared && h.form === 'nu')
-    throw new MdmlError(
+    throw new OmaiError(
       'value',
       `${WHO}: the squared epsilon-insensitive loss is an epsilon form (the nu form has no squared dual)`,
     )
@@ -176,8 +176,8 @@ const snapshot = (dual: Dual, smo: SmoState): Pick<SvrState, 'smo' | 'live' | 'r
  * @index estimator Support vector regression.
  * @example
  * ```ts
- * import { svr } from 'mdml-engine/svm'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { svr } from 'omai-engine/svm'
+ * import { toFlat } from 'omai-engine/tensor'
  * const fitted = svr.with({ kernel: 'linear', C: 100, epsilon: 0.01 }).fit({ x: [[0], [1], [2], [3]], y: [1, 3, 5, 7] })
  * toFlat(fitted.predict([[4]])).map((v) => Math.round(v * 10) / 10) // => [9]
  * ```
@@ -348,7 +348,7 @@ export const svr: IterativeEstimator<SvrHyper, SvrState, SvrParams, SvrVerbs, Sv
  *
  * @example
  * ```ts
- * import { nuSvr } from 'mdml-engine/svm'
+ * import { nuSvr } from 'omai-engine/svm'
  * nuSvr.fit({ x: [[0], [1], [2], [3]], y: [1, 3, 5, 7] }).params.tube >= 0 // => true
  * ```
  */

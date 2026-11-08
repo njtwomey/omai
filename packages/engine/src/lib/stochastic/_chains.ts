@@ -1,5 +1,5 @@
 // Internal helpers of the Markov chain modules: validation, classification and linear-algebra blocks.
-import { gcdOf, MdmlError } from '../base/index.ts'
+import { gcdOf, OmaiError } from '../base/index.ts'
 import { digraph, stronglyConnectedComponents } from '../graph/index.ts'
 import { solve } from '../numerics/linalg/index.ts'
 import {
@@ -31,7 +31,7 @@ function readable(x: Value): Tensor | undefined {
 function squareSize(p: TensorLike, where: string): { t: Value; n: number } {
   const t = asFloat(asTensor(p))
   if (t.shape.length !== 2 || t.shape[0] !== t.shape[1] || (t.shape[0] ?? 0) === 0) {
-    throw new MdmlError('shape', `${where}: expected a non-empty square matrix`)
+    throw new OmaiError('shape', `${where}: expected a non-empty square matrix`)
   }
   return { t, n: t.shape[0] ?? 0 }
 }
@@ -54,20 +54,20 @@ export function maybeGeneratorRows(q: TensorLike, where: string): { n: number; r
 export function stochasticRows(p: TensorLike, where: string): { n: number; rows: number[][] } {
   const t = asFloat(asTensor(p))
   if (t.shape.length !== 2 || t.shape[0] !== t.shape[1]) {
-    throw new MdmlError('shape', `${where}: the transition matrix must be square`)
+    throw new OmaiError('shape', `${where}: the transition matrix must be square`)
   }
   const n = t.shape[0] ?? 0
-  if (n === 0) throw new MdmlError('shape', `${where}: the transition matrix is empty`)
+  if (n === 0) throw new OmaiError('shape', `${where}: the transition matrix is empty`)
   const flat = primalNumbers(t)
   const rows: number[][] = []
   for (let i = 0; i < n; i++) {
     const row = flat.slice(i * n, (i + 1) * n)
     let s = 0
     for (const v of row) {
-      if (!(v >= -1e-12) || !Number.isFinite(v)) throw new MdmlError('value', `${where}: entries must be >= 0`)
+      if (!(v >= -1e-12) || !Number.isFinite(v)) throw new OmaiError('value', `${where}: entries must be >= 0`)
       s += v
     }
-    if (Math.abs(s - 1) > 1e-8) throw new MdmlError('value', `${where}: row ${i} sums to ${s}, not 1`)
+    if (Math.abs(s - 1) > 1e-8) throw new OmaiError('value', `${where}: row ${i} sums to ${s}, not 1`)
     rows.push(row)
   }
   return { n, rows }
@@ -76,9 +76,9 @@ export function stochasticRows(p: TensorLike, where: string): { n: number; rows:
 /** Concrete rows of a generator, validated (off-diagonal rates >= 0, rows summing to zero). */
 export function generatorRows(q: TensorLike, where: string): { n: number; rows: number[][] } {
   const t = asFloat(asTensor(q))
-  if (t.shape.length !== 2 || t.shape[0] !== t.shape[1]) throw new MdmlError('shape', `${where}: Q must be square`)
+  if (t.shape.length !== 2 || t.shape[0] !== t.shape[1]) throw new OmaiError('shape', `${where}: Q must be square`)
   const n = t.shape[0] ?? 0
-  if (n === 0) throw new MdmlError('shape', `${where}: the generator is empty`)
+  if (n === 0) throw new OmaiError('shape', `${where}: the generator is empty`)
   const flat = primalNumbers(t)
   const rows: number[][] = []
   for (let i = 0; i < n; i++) {
@@ -87,12 +87,12 @@ export function generatorRows(q: TensorLike, where: string): { n: number; rows: 
     for (let j = 0; j < n; j++) {
       const v = row[j] ?? 0
       if (!Number.isFinite(v) || (j !== i && v < 0)) {
-        throw new MdmlError('value', `${where}: off-diagonal rates must be finite and >= 0`)
+        throw new OmaiError('value', `${where}: off-diagonal rates must be finite and >= 0`)
       }
       s += v
     }
     if (Math.abs(s) > 1e-8 * Math.max(1, Math.abs(row[i] ?? 0))) {
-      throw new MdmlError('value', `${where}: row ${i} sums to ${s}, not 0`)
+      throw new OmaiError('value', `${where}: row ${i} sums to ${s}, not 0`)
     }
     rows.push(row)
   }
@@ -183,10 +183,10 @@ export function reach(n: number, rows: readonly (readonly number[])[], target: r
 
 /** A validated membership mask of target states. */
 export function targetMask(n: number, target: readonly number[], where: string): boolean[] {
-  if (target.length === 0) throw new MdmlError('value', `${where}: the target set is empty`)
+  if (target.length === 0) throw new OmaiError('value', `${where}: the target set is empty`)
   const mask = new Array<boolean>(n).fill(false)
   for (const s of target) {
-    if (!(Number.isInteger(s) && s >= 0 && s < n)) throw new MdmlError('value', `${where}: state ${s} out of range`)
+    if (!(Number.isInteger(s) && s >= 0 && s < n)) throw new OmaiError('value', `${where}: state ${s} out of range`)
     mask[s] = true
   }
   return mask

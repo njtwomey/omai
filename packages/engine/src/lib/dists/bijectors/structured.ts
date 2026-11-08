@@ -5,7 +5,7 @@
  * MADE masks, and permutations between layers.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { cholesky } from '../../numerics/linalg/index.ts'
 import { logSigmoid } from '../../numerics/special/index.ts'
 import {
@@ -54,8 +54,8 @@ const logTanhDerivative = (x: Value): Value => mul(sub(sub(Math.LN2, x), softplu
  * @returns The bijector (vector-valued: log-determinant sum_{i >= 1} x_i).
  * @example
  * ```ts
- * import { bijectors } from 'mdml-engine/dists'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { bijectors } from 'omai-engine/dists'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(bijectors.ordered().forward([1, 0, 0])) // => [1, 2, 3]
  * ```
  */
@@ -83,8 +83,8 @@ export function ordered(): Bijector {
  * @returns The bijector (vector-valued; changes the last axis from K - 1 to K).
  * @example
  * ```ts
- * import { bijectors } from 'mdml-engine/dists'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { bijectors } from 'omai-engine/dists'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(bijectors.stickBreaking().forward([0, 0])).map((v) => Math.round(v * 1e12) / 1e12) // => [0.333333333333, 0.333333333333, 0.333333333333]
  * ```
  */
@@ -130,14 +130,14 @@ export function stickBreaking(): Bijector {
 /** The size d of the matrix whose strictly lower triangle has n entries. */
 function strictSize(n: number): number {
   const d = (1 + Math.sqrt(1 + 8 * n)) / 2
-  if (!Number.isInteger(d)) throw new MdmlError('shape', `a strictly lower triangle cannot have ${n} entries`)
+  if (!Number.isInteger(d)) throw new OmaiError('shape', `a strictly lower triangle cannot have ${n} entries`)
   return d
 }
 
 /** The size d of the matrix whose lower triangle (with diagonal) has n entries. */
 function triangleSize(n: number): number {
   const d = (Math.sqrt(1 + 8 * n) - 1) / 2
-  if (!Number.isInteger(d)) throw new MdmlError('shape', `a lower triangle cannot have ${n} entries`)
+  if (!Number.isInteger(d)) throw new OmaiError('shape', `a lower triangle cannot have ${n} entries`)
   return d
 }
 
@@ -157,8 +157,8 @@ function padRow(row: Value, d: number): Value {
  * @returns The bijector (vector to matrix: input rank 1, output rank 2).
  * @example
  * ```ts
- * import { bijectors } from 'mdml-engine/dists'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { bijectors } from 'omai-engine/dists'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(bijectors.correlationCholesky().forward([0])) // => [[1, 0], [0, 1]]
  * ```
  */
@@ -231,8 +231,8 @@ export function correlationCholesky(): Bijector {
  * @returns The bijector (vector to matrix; log-determinant the sum of the raw diagonal entries).
  * @example
  * ```ts
- * import { bijectors } from 'mdml-engine/dists'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { bijectors } from 'omai-engine/dists'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(bijectors.lowerCholesky().forward([0, 2, 0])) // => [[1, 0], [2, 1]]
  * ```
  */
@@ -293,8 +293,8 @@ export function lowerCholesky(): Bijector {
  * @returns The bijector (matrix to matrix; the inverse is the Cholesky factorisation).
  * @example
  * ```ts
- * import { bijectors } from 'mdml-engine/dists'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { bijectors } from 'omai-engine/dists'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(bijectors.choleskyOuterProduct().forward([[2, 0], [1, 1]])) // => [[4, 2], [2, 2]]
  * ```
  */
@@ -333,8 +333,8 @@ export interface ShiftLogScale {
  * @concept normalizing-flows
  * @example
  * ```ts
- * import { bijectors } from 'mdml-engine/dists'
- * import { mul, toArray } from 'mdml-engine/tensor'
+ * import { bijectors } from 'omai-engine/dists'
+ * import { mul, toArray } from 'omai-engine/tensor'
  * const b = bijectors.affineCoupling(1, (xa) => ({ shift: xa, logScale: mul(xa, 0) }))
  * toArray(b.forward([2, 3])) // => [2, 5]
  * ```
@@ -363,11 +363,11 @@ export function affineCoupling(split: number, conditioner: (xa: Value) => ShiftL
  *
  * @param permutation - The permutation of 0 .. d - 1.
  * @returns The bijector.
- * @throws MdmlError with code `value` when `permutation` is not a permutation.
+ * @throws OmaiError with code `value` when `permutation` is not a permutation.
  * @example
  * ```ts
- * import { bijectors } from 'mdml-engine/dists'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { bijectors } from 'omai-engine/dists'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(bijectors.permute([2, 0, 1]).forward([10, 20, 30])) // => [30, 10, 20]
  * ```
  */
@@ -376,7 +376,7 @@ export function permute(permutation: readonly number[]): Bijector {
   const inverse = new Array<number>(d).fill(-1)
   for (const [i, p] of permutation.entries()) {
     if (!(Number.isInteger(p) && p >= 0 && p < d) || inverse[p] !== -1)
-      throw new MdmlError('value', 'permute: not a permutation')
+      throw new OmaiError('value', 'permute: not a permutation')
     inverse[p] = i
   }
   return defineBijector({
@@ -399,8 +399,8 @@ export function permute(permutation: readonly number[]): Bijector {
  * @concept normalizing-flows
  * @example
  * ```ts
- * import { bijectors } from 'mdml-engine/dists'
- * import { concat, mul, sliceAxis, toArray, zerosLike } from 'mdml-engine/tensor'
+ * import { bijectors } from 'omai-engine/dists'
+ * import { concat, mul, sliceAxis, toArray, zerosLike } from 'omai-engine/tensor'
  * // m_0 = 0, m_1 = y_0: an autoregressive shift.
  * const shiftByPrevious = (y) => ({ shift: concat([zerosLike(sliceAxis(y, -1, 0, 1)), sliceAxis(y, -1, 0, 1)], -1), logScale: mul(y, 0) })
  * toArray(bijectors.autoregressive(shiftByPrevious).forward([1, 1])) // => [1, 2]
@@ -439,13 +439,13 @@ export function autoregressive(conditioner: (y: Value) => ShiftLogScale): Biject
  * @returns One mask per layer: `[d, h1]`, `[h1, h2]`, ..., `[h_last, d]`.
  * @example
  * ```ts
- * import { bijectors } from 'mdml-engine/dists'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { bijectors } from 'omai-engine/dists'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(bijectors.madeMasks(2, [1])[1]) // => [[0, 1]]
  * ```
  */
 export function madeMasks(inputDim: number, hiddenSizes: readonly number[]): Tensor[] {
-  if (inputDim < 2) throw new MdmlError('value', 'madeMasks: needs at least two inputs')
+  if (inputDim < 2) throw new OmaiError('value', 'madeMasks: needs at least two inputs')
   const degrees: number[][] = [Array.from({ length: inputDim }, (_, i) => i + 1)]
   for (const h of hiddenSizes) degrees.push(Array.from({ length: h }, (_, k) => (k % (inputDim - 1)) + 1))
   const masks: Tensor[] = []

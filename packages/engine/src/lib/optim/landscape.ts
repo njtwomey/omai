@@ -6,7 +6,7 @@
  * iteration on Hessian-vector products. The loss is any scalar function of a parameter tree.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { dnrm2 } from '../numerics/linalg/blas.ts'
 import { eigsh } from '../numerics/sparse/index.ts'
 import { foldIn, type Key, normal } from '../random/index.ts'
@@ -64,7 +64,7 @@ function normaliseLeaf(d: Value, theta: Value, options: FilterNormOptions): Valu
   const axis = options.filterAxis ?? 0
   const rank = theta.shape.length
   if (axis < 0 || axis >= rank)
-    throw new MdmlError('value', `filterNormalise: filterAxis ${axis} is outside a rank-${rank} tensor`)
+    throw new OmaiError('value', `filterNormalise: filterAxis ${axis} is outside a rank-${rank} tensor`)
   // View each tensor as [filters, rest] by moving the filter axis first.
   const perm = [axis, ...Array.from({ length: rank }, (_, i) => i).filter((i) => i !== axis)]
   const inverse = perm.map((_, i) => perm.indexOf(i))
@@ -86,8 +86,8 @@ function normaliseLeaf(d: Value, theta: Value, options: FilterNormOptions): Valu
  * @concept loss-landscape
  * @example
  * ```ts
- * import { filterNormalise } from 'mdml-engine/optim'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { filterNormalise } from 'omai-engine/optim'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * toArray(filterNormalise(tensor([[1, 1], [2, 0]]), tensor([[3, 4], [0, 1]]))) // => [[3.5355339059327378, 3.5355339059327378], [1, 0]]
  * ```
  */
@@ -122,9 +122,9 @@ function asTree(x: unknown): ParamTree {
  * @concept loss-landscape
  * @example
  * ```ts
- * import { randomDirection } from 'mdml-engine/optim'
- * import { key } from 'mdml-engine/random'
- * import { tensor } from 'mdml-engine/tensor'
+ * import { randomDirection } from 'omai-engine/optim'
+ * import { key } from 'omai-engine/random'
+ * import { tensor } from 'omai-engine/tensor'
  * randomDirection(tensor([[3, 4], [0, 2]]), key(0)).shape // => [2, 2]
  * ```
  */
@@ -155,12 +155,12 @@ export interface Slice1d {
  * @param direction - The direction (for example from {@link randomDirection}).
  * @param alphas - Where to evaluate: a vector (a tensor, a typed array or a list).
  * @returns The alphas and losses, `[n]` tensors (they were `number[]`).
- * @throws MdmlError with code `shape` unless `alphas` has rank 1, and `not-differentiable` for a traced one.
+ * @throws OmaiError with code `shape` unless `alphas` has rank 1, and `not-differentiable` for a traced one.
  * @concept loss-landscape
  * @example
  * ```ts
- * import { slice1d } from 'mdml-engine/optim'
- * import { square, sum, tensor, type Value } from 'mdml-engine/tensor'
+ * import { slice1d } from 'omai-engine/optim'
+ * import { square, sum, tensor, type Value } from 'omai-engine/tensor'
  * slice1d((x: Value) => sum(square(x)), tensor([1, 0]), tensor([1, 0]), [-1, 0, 1]).losses // => [0, 1, 4]
  * ```
  */
@@ -191,12 +191,12 @@ export interface Slice2d {
  * @param alphas - Grid along `d1`: a vector (a tensor, a typed array or a list).
  * @param betas - Grid along `d2`: the same.
  * @returns The grid of losses with its two grids as tensors (the grids were `number[]`).
- * @throws MdmlError with code `shape` unless a grid has rank 1, and `not-differentiable` for a traced one.
+ * @throws OmaiError with code `shape` unless a grid has rank 1, and `not-differentiable` for a traced one.
  * @concept loss-landscape
  * @example
  * ```ts
- * import { slice2d } from 'mdml-engine/optim'
- * import { square, sum, tensor, type Value } from 'mdml-engine/tensor'
+ * import { slice2d } from 'omai-engine/optim'
+ * import { square, sum, tensor, type Value } from 'omai-engine/tensor'
  * slice2d((x: Value) => sum(square(x)), tensor([0, 0]), tensor([1, 0]), tensor([0, 1]), [0, 1], [0, 2]).losses.shape // => [2, 2]
  * ```
  */
@@ -235,9 +235,9 @@ export function slice2d(
  * @concept loss-landscape
  * @example
  * ```ts
- * import { randomSlice } from 'mdml-engine/optim'
- * import { key } from 'mdml-engine/random'
- * import { square, sum, tensor, toFlat, type Value } from 'mdml-engine/tensor'
+ * import { randomSlice } from 'omai-engine/optim'
+ * import { key } from 'omai-engine/random'
+ * import { square, sum, tensor, toFlat, type Value } from 'omai-engine/tensor'
  * toFlat(randomSlice((x: Value) => sum(square(x)), tensor([[1, 2], [3, 4]]), key(0), { alphas: [0, 0.5] }).slice.losses)[0] // => 30
  * ```
  */
@@ -264,12 +264,12 @@ export function randomSlice(
  * @param b - The other.
  * @param ts - Where to evaluate: a vector (a tensor, a typed array or a list).
  * @returns The positions and losses, `[n]` tensors (they were `number[]`).
- * @throws MdmlError with code `shape` unless `ts` has rank 1, and `not-differentiable` for a traced one.
+ * @throws OmaiError with code `shape` unless `ts` has rank 1, and `not-differentiable` for a traced one.
  * @concept mode-connectivity
  * @example
  * ```ts
- * import { interpolationSlice } from 'mdml-engine/optim'
- * import { square, sum, tensor, type Value } from 'mdml-engine/tensor'
+ * import { interpolationSlice } from 'omai-engine/optim'
+ * import { square, sum, tensor, type Value } from 'omai-engine/tensor'
  * interpolationSlice((x: Value) => sum(square(x)), tensor([-1]), tensor([1]), [0, 0.5, 1]).losses // => [1, 0, 1]
  * ```
  */
@@ -290,7 +290,7 @@ export function interpolationSlice(loss: LossFunction, a: ParamTree, b: ParamTre
  * @concept mode-connectivity
  * @example
  * ```ts
- * import { barrier } from 'mdml-engine/optim'
+ * import { barrier } from 'omai-engine/optim'
  * barrier({ alphas: [0, 0.5, 1], losses: [1, 3, 1] }) // => 2
  * ```
  */
@@ -321,12 +321,12 @@ export function barrier(slice: { readonly alphas: TensorLike; readonly losses: T
  * @param b - End.
  * @param ts - Positions in [0, 1]: a vector (a tensor, a typed array or a list).
  * @returns The positions and losses, `[n]` tensors (they were `number[]`).
- * @throws MdmlError with code `shape` unless `ts` has rank 1, and `not-differentiable` for a traced one.
+ * @throws OmaiError with code `shape` unless `ts` has rank 1, and `not-differentiable` for a traced one.
  * @concept mode-connectivity
  * @example
  * ```ts
- * import { bezierSlice } from 'mdml-engine/optim'
- * import { sum, tensor, type Value } from 'mdml-engine/tensor'
+ * import { bezierSlice } from 'omai-engine/optim'
+ * import { sum, tensor, type Value } from 'omai-engine/tensor'
  * bezierSlice((x: Value) => sum(x), tensor([0]), tensor([2]), tensor([0]), [0, 0.5, 1]).losses // => [0, 1, 0]
  * ```
  */
@@ -377,8 +377,8 @@ function finished(value: number, converged: boolean): Pick<Sharpness, 'converged
  * @concept sharpness
  * @example
  * ```ts
- * import { sharpness } from 'mdml-engine/optim'
- * import { mul, sum, tensor, type Value } from 'mdml-engine/tensor'
+ * import { sharpness } from 'omai-engine/optim'
+ * import { mul, sum, tensor, type Value } from 'omai-engine/tensor'
  * // L = x0^2 + 3 x1^2 has Hessian diag(2, 6).
  * sharpness((x: Value) => sum(mul(mul(x, x), tensor([1, 3]))), tensor([0.5, 0.5])).value.toFixed(6) // => '6.000000'
  * ```
@@ -448,7 +448,7 @@ export function sharpness(
  * @concept sharpness
  * @example
  * ```ts
- * import { stabilityThreshold } from 'mdml-engine/optim'
+ * import { stabilityThreshold } from 'omai-engine/optim'
  * stabilityThreshold(0.1) // => 20
  * ```
  */

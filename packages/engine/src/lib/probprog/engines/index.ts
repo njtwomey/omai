@@ -1,5 +1,5 @@
 /**
- * The inference engines, part of `mdml-engine/probprog`: exact ones (enumeration, conjugate updates,
+ * The inference engines, part of `omai-engine/probprog`: exact ones (enumeration, conjugate updates,
  * linear-Gaussian conditioning, chain forward-backward), MCMC (NUTS, Gibbs), weighting (importance sampling, SMC, ABC)
  * and approximations (SVI, Laplace, EM), each with the contract that lets the planner choose between them.
  *

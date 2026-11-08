@@ -4,7 +4,7 @@
  * `emPriorAdjustment`), and the posteriors adjusted to them (`adjustPriors`). Covariate shift is in `density-ratio.ts`.
  */
 
-import { argmaxOf, MdmlError } from '../base/index.ts'
+import { argmaxOf, OmaiError } from '../base/index.ts'
 import { dgemm, dgemv, pinv, solve } from '../numerics/linalg/index.ts'
 import { asTensor, fromStorage, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
 import { type Algorithm, channels, runAlgorithm, stateFromJson, stateToJson } from '../trace/index.ts'
@@ -23,8 +23,8 @@ import { encodeLabels, integerOption, matrixView, targetVector } from './validat
  * @concept label-shift
  * @example
  * ```ts
- * import { adjustPriors } from 'mdml-engine/learn'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { adjustPriors } from 'omai-engine/learn'
+ * import { toFlat } from 'omai-engine/tensor'
  * toFlat(adjustPriors([[0.5, 0.5]], [0.5, 0.5], [0.2, 0.8])) // => [0.2, 0.8]
  * ```
  */
@@ -39,7 +39,7 @@ export function adjustPriors(
   const ratios = Float64Array.from({ length: p.d }, (_, c) => {
     const s = piS[c] ?? 0
     const t = piT[c] ?? 0
-    if (s < 0 || t < 0) throw new MdmlError('value', 'adjustPriors: priors must be >= 0')
+    if (s < 0 || t < 0) throw new OmaiError('value', 'adjustPriors: priors must be >= 0')
     return s > 1e-15 ? t / s : 0
   })
   const out = new Float64Array(p.n * p.d)
@@ -94,7 +94,7 @@ export interface BbseResult {
  * @concept label-shift
  * @example
  * ```ts
- * import { blackBoxShiftEstimate } from 'mdml-engine/learn'
+ * import { blackBoxShiftEstimate } from 'omai-engine/learn'
  * const yS = [0, 0, 0, 0, 1, 1, 1, 1]
  * const pS = [0, 0, 0, 1, 1, 1, 1, 0]
  * const pT = [1, 1, 1, 1, 1, 0, 0, 1]
@@ -111,13 +111,13 @@ export function blackBoxShiftEstimate(
   const enc = encodeLabels(sourceTrue, 'blackBoxShiftEstimate')
   const classes = options.classes !== undefined ? [...options.classes] : [...enc.classes]
   const k = classes.length
-  if (k < 2) throw new MdmlError('value', 'blackBoxShiftEstimate: need at least 2 classes')
+  if (k < 2) throw new OmaiError('value', 'blackBoxShiftEstimate: need at least 2 classes')
   const classIndex = new Map(classes.map((c, i) => [c, i]))
   const yS = targetVector(sourceTrue, 'blackBoxShiftEstimate')
   const nS = yS.length
   const yCodes = Int32Array.from(yS, (v) => {
     const idx = classIndex.get(v)
-    if (idx === undefined) throw new MdmlError('value', `blackBoxShiftEstimate: unknown source label ${v}`)
+    if (idx === undefined) throw new OmaiError('value', `blackBoxShiftEstimate: unknown source label ${v}`)
     return idx
   })
 
@@ -137,7 +137,7 @@ export function blackBoxShiftEstimate(
   if (useSoft) {
     const sMat = matrixView(sTensor, 'blackBoxShiftEstimate', { nFeatures: k })
     if (sMat.n !== nS)
-      throw new MdmlError('shape', 'blackBoxShiftEstimate: sourcePred and sourceTrue row counts differ')
+      throw new OmaiError('shape', 'blackBoxShiftEstimate: sourcePred and sourceTrue row counts differ')
     const tMat = matrixView(tTensor, 'blackBoxShiftEstimate', { nFeatures: k })
     for (let i = 0; i < nS; i++) {
       const y = yCodes[i] ?? 0
@@ -157,14 +157,14 @@ export function blackBoxShiftEstimate(
     if (t.shape.length === 2 && (t.shape[1] ?? 0) === k) {
       const m = matrixView(t, 'blackBoxShiftEstimate', { nFeatures: k })
       if (expectedN !== undefined && m.n !== expectedN) {
-        throw new MdmlError('shape', 'blackBoxShiftEstimate: sourcePred and sourceTrue row counts differ')
+        throw new OmaiError('shape', 'blackBoxShiftEstimate: sourcePred and sourceTrue row counts differ')
       }
       return Int32Array.from({ length: m.n }, (_, i) => argmaxOf(m.data.subarray(i * k, (i + 1) * k)))
     }
     const v = targetVector(pred, 'blackBoxShiftEstimate', expectedN)
     return Int32Array.from(v, (lbl) => {
       const idx = classIndex.get(lbl)
-      if (idx === undefined) throw new MdmlError('value', `blackBoxShiftEstimate: unknown predicted label ${lbl}`)
+      if (idx === undefined) throw new OmaiError('value', `blackBoxShiftEstimate: unknown predicted label ${lbl}`)
       return idx
     })
   }
@@ -259,7 +259,7 @@ function resolveSourcePriors(sourceProbaOrPriors: TensorLike, k: number): Float6
   if (t.shape.length === 1 || (t.shape.length === 2 && t.shape[1] === 1 && t.shape[0] === k)) {
     const v = targetVector(t, 'emPriorAdjustment', k)
     const sum = v.reduce((a, b) => a + b, 0)
-    if (!(sum > 0)) throw new MdmlError('value', 'emPriorAdjustment: sourcePriors must have a positive sum')
+    if (!(sum > 0)) throw new OmaiError('value', 'emPriorAdjustment: sourcePriors must have a positive sum')
     return v.map((p) => Math.max(p / sum, 1e-12))
   }
   const m = matrixView(t, 'emPriorAdjustment', { nFeatures: k })
@@ -284,8 +284,8 @@ function resolveSourcePriors(sourceProbaOrPriors: TensorLike, k: number): Float6
  * @concept label-shift
  * @example
  * ```ts
- * import { emPriorAdjustmentAlgorithm } from 'mdml-engine/learn'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { emPriorAdjustmentAlgorithm } from 'omai-engine/learn'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const pT = [[0.9, 0.1], [0.8, 0.2], [0.85, 0.15], [0.2, 0.8]]
  * const alg = emPriorAdjustmentAlgorithm([0.5, 0.5], pT)
  * runAlgorithm(alg, { maxSteps: 50 }).state.priors[0] > 0.65 // => true
@@ -299,10 +299,10 @@ export function emPriorAdjustmentAlgorithm(
   const target = matrixView(targetProba, 'emPriorAdjustment')
   const nT = target.n
   const k = target.d
-  if (k < 2) throw new MdmlError('value', 'emPriorAdjustment: targetProba must have at least 2 classes')
+  if (k < 2) throw new OmaiError('value', 'emPriorAdjustment: targetProba must have at least 2 classes')
   const sourcePriors = resolveSourcePriors(sourceProbaOrPriors, k)
   const tol = options.tol ?? 1e-8
-  if (!(tol > 0)) throw new MdmlError('value', 'emPriorAdjustment: tol must be > 0')
+  if (!(tol > 0)) throw new OmaiError('value', 'emPriorAdjustment: tol must be > 0')
 
   const eStep = (priors: Float64Array): { readonly posteriors: Float64Array; readonly ll: number } => {
     const posteriors = new Float64Array(nT * k)
@@ -388,7 +388,7 @@ export function emPriorAdjustmentAlgorithm(
  * @concept label-shift
  * @example
  * ```ts
- * import { emPriorAdjustment } from 'mdml-engine/learn'
+ * import { emPriorAdjustment } from 'omai-engine/learn'
  * const pT = [[0.9, 0.1], [0.85, 0.15], [0.8, 0.2], [0.15, 0.85]]
  * const r = emPriorAdjustment([0.5, 0.5], pT)
  * r.converged && r.targetPriors[0] > 0.65 // => true

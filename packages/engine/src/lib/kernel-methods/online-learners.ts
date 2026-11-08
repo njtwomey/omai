@@ -8,7 +8,7 @@
  * The perceptron's mistake bound and the Projectron's bounded dictionary are checked in the tests.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { type Distribution, normal } from '../dists/index.ts'
 import { type KernelChoice, kernelMatrix, kernelSpace, type ResolvedKernel, resolveKernel } from '../kernels/index.ts'
 import {
@@ -76,7 +76,7 @@ function trimOldest(s: ExpansionState, budget: number): ExpansionState {
 
 function checkBudget(budget: number, who: string): void {
   if (!Number.isInteger(budget) || budget < 0)
-    throw new MdmlError('value', `${who}: budget must be a non-negative integer`)
+    throw new OmaiError('value', `${who}: budget must be a non-negative integer`)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -128,22 +128,22 @@ const KLMS_DEFAULTS: KlmsHyper = { ...KERNEL_DEFAULTS, eta: 0.3, quantisation: 0
  * @param data - Features and targets, visited in order, `epochs` times.
  * @param hyper - The hyperparameters.
  * @returns The algorithm, logging the squared error, its running mean and the dictionary size.
- * @throws MdmlError `value` for a non-positive `eta`, a negative `quantisation` or a bad budget.
+ * @throws OmaiError `value` for a non-positive `eta`, a negative `quantisation` or a bad budget.
  * @concept online-kernel
  * @reference W. Liu, P. Pokharel and J. Principe, The kernel least-mean-square algorithm (IEEE Trans. Signal Processing
  *   56, 2008); B. Chen, S. Zhao, P. Zhu and J. Principe, Quantized kernel least mean square algorithm (IEEE TNNLS 23, 2012).
  * @example
  * ```ts
- * import { klmsAlgorithm, klmsDefaults } from 'mdml-engine/kernel-methods'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { klmsAlgorithm, klmsDefaults } from 'omai-engine/kernel-methods'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const alg = klmsAlgorithm({ x: [[0], [1], [2]], y: [0, 1, 2] }, { ...klmsDefaults, kernel: 'linear', gamma: 1 })
  * runAlgorithm(alg, { maxSteps: 10 }).state.step // => 3
  * ```
  */
 export function klmsAlgorithm(data: LearnData, hyper: KlmsHyper): Algorithm<ExpansionState> {
   const who = 'klms'
-  if (!(hyper.eta > 0)) throw new MdmlError('value', `${who}: eta must be positive`)
-  if (!(hyper.quantisation >= 0)) throw new MdmlError('value', `${who}: quantisation must not be negative`)
+  if (!(hyper.eta > 0)) throw new OmaiError('value', `${who}: eta must be positive`)
+  if (!(hyper.quantisation >= 0)) throw new OmaiError('value', `${who}: quantisation must not be negative`)
   checkBudget(hyper.budget, who)
   const m = matrixView(data.x, who)
   const y = targetVector(data.y ?? [], who, m.n)
@@ -288,8 +288,8 @@ function klmsEstimator(
  * @concept online-kernel
  * @example
  * ```ts
- * import { klms } from 'mdml-engine/kernel-methods'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { klms } from 'omai-engine/kernel-methods'
+ * import { toFlat } from 'omai-engine/tensor'
  * const fit = klms({ kernel: 'linear', gamma: 1, eta: 0.2, epochs: 100 }).fit({ x: [[1], [2], [3]], y: [2, 4, 6] })
  * toFlat(fit.predict([[4]]))[0]?.toFixed(1) // => '8.0'
  * ```
@@ -309,7 +309,7 @@ export function klms(
  * @concept online-kernel
  * @example
  * ```ts
- * import { qklms } from 'mdml-engine/kernel-methods'
+ * import { qklms } from 'omai-engine/kernel-methods'
  * const x = Array.from({ length: 40 }, (_, i) => [(i % 4) * 0.1])
  * qklms({ gamma: 1, quantisation: 0.25 }).fit({ x, y: x.map((r) => r[0] ?? 0) }).dictionarySize <= 4 // => true
  * ```
@@ -430,14 +430,14 @@ function classifierUpdate(
 const item01 = (key: Key): number => toFlat(uniform(key, [1]))[0] ?? 0
 
 function validateClassifier(h: OnlineClassifierHyper, who: string): void {
-  if (!Number.isInteger(h.size) || h.size < 1) throw new MdmlError('value', `${who}: size must be a positive integer`)
-  if (!(h.forgetting > 0 && h.forgetting <= 1)) throw new MdmlError('value', `${who}: forgetting must be in (0, 1]`)
-  if (!(h.eta >= 0)) throw new MdmlError('value', `${who}: eta must not be negative`)
+  if (!Number.isInteger(h.size) || h.size < 1) throw new OmaiError('value', `${who}: size must be a positive integer`)
+  if (!(h.forgetting > 0 && h.forgetting <= 1)) throw new OmaiError('value', `${who}: forgetting must be in (0, 1]`)
+  if (!(h.eta >= 0)) throw new OmaiError('value', `${who}: eta must not be negative`)
 }
 
 function signedLabels(data: LearnData, n: number, who: string): { y: Float64Array; classes: number[] } {
   const enc = encodeLabels(data.y ?? [], who, n)
-  if (enc.classes.length !== 2) throw new MdmlError('value', `${who}: expected two classes, got ${enc.classes.length}`)
+  if (enc.classes.length !== 2) throw new OmaiError('value', `${who}: expected two classes, got ${enc.classes.length}`)
   return { y: Float64Array.from(enc.codes, (c) => (c === 1 ? 1 : -1)), classes: [...enc.classes] }
 }
 
@@ -513,14 +513,14 @@ function classifierAlgorithm(
  * @param data - Features and two-class labels, visited in order, `epochs` times.
  * @param hyper - The kernel options and the budget rule.
  * @returns The algorithm, logging the loss, mistakes and support vectors.
- * @throws MdmlError `value` unless there are two classes and the knobs are valid.
+ * @throws OmaiError `value` unless there are two classes and the knobs are valid.
  * @concept online-kernel
  * @reference F. Rosenblatt (1958); O. Dekel, S. Shalev-Shwartz and Y. Singer, The Forgetron (SIAM J. Comput. 37, 2008);
  *   F. Orabona, J. Keshet and B. Caputo, The Projectron (ICML 2008).
  * @example
  * ```ts
- * import { kernelPerceptronAlgorithm, kernelPerceptronDefaults } from 'mdml-engine/kernel-methods'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { kernelPerceptronAlgorithm, kernelPerceptronDefaults } from 'omai-engine/kernel-methods'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const data = { x: [[1], [2], [-1], [-2]], y: [1, 1, 0, 0] }
  * const alg = kernelPerceptronAlgorithm(data, { ...kernelPerceptronDefaults, kernel: 'linear', gamma: 1, epochs: 3 })
  * runAlgorithm(alg, { maxSteps: 100 }).state.mistakes // => 1
@@ -547,8 +547,8 @@ export const kernelPerceptronDefaults: OnlineClassifierHyper = CLASSIFIER_DEFAUL
  *   (JMLR 7, 2006).
  * @example
  * ```ts
- * import { kernelPassiveAggressiveAlgorithm, kernelPassiveAggressiveDefaults } from 'mdml-engine/kernel-methods'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { kernelPassiveAggressiveAlgorithm, kernelPassiveAggressiveDefaults } from 'omai-engine/kernel-methods'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const alg = kernelPassiveAggressiveAlgorithm({ x: [[1], [-1]], y: [1, 0] }, { ...kernelPassiveAggressiveDefaults, kernel: 'linear', gamma: 1 })
  * runAlgorithm(alg, { maxSteps: 10 }).state.centres.length // => 1
  * ```
@@ -557,7 +557,7 @@ export function kernelPassiveAggressiveAlgorithm(
   data: LearnData,
   hyper: PassiveAggressiveHyper,
 ): Algorithm<ExpansionState> {
-  if (!(hyper.C > 0)) throw new MdmlError('value', 'kernelPassiveAggressive: C must be positive')
+  if (!(hyper.C > 0)) throw new OmaiError('value', 'kernelPassiveAggressive: C must be positive')
   const rule: Rule = (margin, selfK) => {
     const loss = Math.max(0, 1 - margin)
     if (loss === 0) return 0
@@ -638,8 +638,8 @@ function onlineClassifier<H extends OnlineClassifierHyper>(
  * @concept online-kernel
  * @example
  * ```ts
- * import { kernelPerceptron } from 'mdml-engine/kernel-methods'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { kernelPerceptron } from 'omai-engine/kernel-methods'
+ * import { toFlat } from 'omai-engine/tensor'
  * const x = [[1, 1], [2, 1], [-1, -1], [-2, -1], [1.5, 2], [-1.5, -2]]
  * const fit = kernelPerceptron({ kernel: 'linear', gamma: 1, epochs: 3 }).fit({ x, y: [1, 1, 0, 0, 1, 0] })
  * toFlat(fit.predict([[3, 3], [-3, -3]])) // => [1, 0]
@@ -672,8 +672,8 @@ export function kernelPerceptron(
  * @concept online-kernel
  * @example
  * ```ts
- * import { kernelPassiveAggressive } from 'mdml-engine/kernel-methods'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { kernelPassiveAggressive } from 'omai-engine/kernel-methods'
+ * import { toFlat } from 'omai-engine/tensor'
  * const x = [[1, 1], [2, 1], [-1, -1], [-2, -1]]
  * const fit = kernelPassiveAggressive({ kernel: 'linear', gamma: 1, epochs: 2 }).fit({ x, y: [1, 1, 0, 0] })
  * toFlat(fit.predict([[3, 2], [-3, -2]])) // => [1, 0]

@@ -50,7 +50,7 @@ function profile(description: string, m: number, ef: number): Option<HnswProfile
  * @concept approximate-nearest-neighbours
  * @example
  * ```ts
- * import { hnswProfiles } from 'mdml-engine/numerics/spatial'
+ * import { hnswProfiles } from 'omai-engine/numerics/spatial'
  * hnswProfiles.make({ kind: 'high-recall' }).m // => 32
  * ```
  */

@@ -5,8 +5,8 @@ ExtendedKalmanFilter with the Jacobians written out), on a pendulum observed thr
 import filterpy
 import numpy as np
 from filterpy.kalman import ExtendedKalmanFilter, MerweScaledSigmaPoints, UnscentedKalmanFilter
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray, rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray, rng
 
 REFERENCE: dict[str, str] = {"filterpy": filterpy.__version__}
 

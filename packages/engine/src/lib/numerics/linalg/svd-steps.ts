@@ -4,7 +4,7 @@
  * V. A step is one rotation or one full sweep of the cyclic order; the state serialises.
  */
 
-import { type Json, MdmlError } from '../../base/index.ts'
+import { type Json, OmaiError } from '../../base/index.ts'
 import { concreteOrThrow, fromStorage, promoteFloat, type Tensor, type TensorLike } from '../../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, type RunStatus, runAlgorithm } from '../../trace/index.ts'
 
@@ -75,7 +75,7 @@ const SCHEMA = channels({
  * @returns The `n` column norms.
  * @example
  * ```ts
- * import { jacobiSingularValues } from 'mdml-engine/numerics/linalg'
+ * import { jacobiSingularValues } from 'omai-engine/numerics/linalg'
  * const state = { u: [3, 0, 0, 4], v: [1, 0, 0, 1], sweeps: 0, pair: [0, 1], rotationsInSweep: 0, maxCosine: 0, finished: false } as const
  * jacobiSingularValues(state, 2, 2) // => [3, 4]
  * ```
@@ -99,15 +99,15 @@ export function jacobiSingularValues(state: JacobiSvdState, m: number, n: number
  * @returns The algorithm.
  * @example
  * ```ts
- * import { jacobiSvdAlgorithm } from 'mdml-engine/numerics/linalg'
+ * import { jacobiSvdAlgorithm } from 'omai-engine/numerics/linalg'
  * jacobiSvdAlgorithm([[3, 0], [0, 1], [0, 0]]).name // => 'jacobi-svd'
  * ```
  */
 export function jacobiSvdAlgorithm(a: TensorLike, options: JacobiSvdOptions = {}): Algorithm<JacobiSvdState> {
   const t = concreteOrThrow(promoteFloat(a)[0] as Tensor, 'jacobiSvdAlgorithm')
-  if (t.shape.length !== 2) throw new MdmlError('shape', 'jacobiSvdAlgorithm needs a matrix')
+  if (t.shape.length !== 2) throw new OmaiError('shape', 'jacobiSvdAlgorithm needs a matrix')
   const [m, n] = t.shape as [number, number]
-  if (m < n) throw new MdmlError('shape', 'jacobiSvdAlgorithm needs at least as many rows as columns')
+  if (m < n) throw new OmaiError('shape', 'jacobiSvdAlgorithm needs at least as many rows as columns')
   const tol = options.tol ?? 1e-15
   const granularity = options.granularity ?? 'sweep'
   const identity = Array.from({ length: n * n }, (_, i) => (i % (n + 1) === 0 ? 1 : 0))
@@ -207,7 +207,7 @@ export interface JacobiSvdResult {
  * @returns U, the singular values (descending), V^T and the history.
  * @example
  * ```ts
- * import { jacobiSvd } from 'mdml-engine/numerics/linalg'
+ * import { jacobiSvd } from 'omai-engine/numerics/linalg'
  * jacobiSvd([[3, 0], [0, 1], [0, 0]]).s // => [3, 1]
  * ```
  */

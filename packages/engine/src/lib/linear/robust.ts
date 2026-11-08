@@ -7,7 +7,7 @@
  * `optim`. The first two are `Algorithm`s on the iterative base.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import {
   defineEstimator,
   type Estimator,
@@ -153,8 +153,8 @@ function weiszfeldStep(points: Float64Array, n: number, dim: number, old: readon
  * Spatial median and multivariate Theil-Sen estimators (scikit-learn's `TheilSenRegressor`).
  * @example
  * ```ts
- * import { designOf, theilSenAlgorithm } from 'mdml-engine/linear'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { designOf, theilSenAlgorithm } from 'omai-engine/linear'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const design = designOf({ x: [[0], [1], [2], [3], [4]], y: [1, 3, 5, 7, 60] }, 'demo')
  * runAlgorithm(theilSenAlgorithm(design), { maxSteps: 300 }).state.median.map((v) => Math.round(v)) // => [1, 2]
  * ```
@@ -171,7 +171,7 @@ export function theilSenAlgorithm(
   const maxSub = options.maxSubpopulation ?? 10000
   const tol = options.tol ?? 1e-3
   if (subsetSize < p || subsetSize > n)
-    throw new MdmlError('value', `theilSen: nSubsamples must be between ${p} and ${n}, got ${subsetSize}`)
+    throw new OmaiError('value', `theilSen: nSubsamples must be between ${p} and ${n}, got ${subsetSize}`)
   const total = combinationCount(n, subsetSize, maxSub)
   const solutions: Float64Array[] = []
   if (total <= maxSub) {
@@ -255,7 +255,7 @@ const THEIL_SEN_DEFAULTS: TheilSenHyper = { fitIntercept: true, maxSubpopulation
  * @returns The estimator.
  * @example
  * ```ts
- * import { theilSen } from 'mdml-engine/linear'
+ * import { theilSen } from 'omai-engine/linear'
  * const f = theilSen().fit({ x: [[0], [1], [2], [3], [4], [5]], y: [1, 3, 5, 7, 9, 100] })
  * Math.round(f.params.coef[0] ?? 0) // => 2
  * ```
@@ -333,7 +333,7 @@ export type HuberState = {
  * @returns The objective.
  * @example
  * ```ts
- * import { designOf, huberObjective } from 'mdml-engine/linear'
+ * import { designOf, huberObjective } from 'omai-engine/linear'
  * huberObjective(designOf({ x: [[0], [1]], y: [0, 1] }, 'demo'), [1], 0, 1, 1.35, 0) // => 2
  * ```
  */
@@ -369,8 +369,8 @@ export function huberObjective(
  * (2006).
  * @example
  * ```ts
- * import { designOf, huberAlgorithm } from 'mdml-engine/linear'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { designOf, huberAlgorithm } from 'omai-engine/linear'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const design = designOf({ x: [[0], [1], [2], [3], [4], [5]], y: [0.1, 1, 2.1, 2.9, 4.1, 40] }, 'demo')
  * const s = runAlgorithm(huberAlgorithm(design, { alpha: 0 }), { maxSteps: 500 }).state
  * Math.round(s.coef[0] ?? 0) // => 1
@@ -381,7 +381,7 @@ export function huberAlgorithm(design: Design, options: HuberOptions = {}): Algo
   const alpha = options.alpha ?? 1e-4
   const fitIntercept = options.fitIntercept ?? true
   const tol = options.tol ?? 1e-9
-  if (!(epsilon >= 1)) throw new MdmlError('value', 'huber: epsilon must be at least 1')
+  if (!(epsilon >= 1)) throw new OmaiError('value', 'huber: epsilon must be at least 1')
   const { n, d } = design.x
   const residuals = (coef: ArrayLike<number>, intercept: number): Float64Array =>
     Float64Array.from(
@@ -493,7 +493,7 @@ const HUBER_DEFAULTS: HuberHyper = { epsilon: 1.35, alpha: 1e-4, fitIntercept: t
  * @index estimator Huber regression, robust to outliers.
  * @example
  * ```ts
- * import { huber } from 'mdml-engine/linear'
+ * import { huber } from 'omai-engine/linear'
  * const f = huber({ alpha: 0 }).fit({ x: [[0], [1], [2], [3], [4], [5]], y: [0.1, 1, 2.1, 2.9, 4.1, 40] })
  * f.params.outliers[5] // => true
  * ```
@@ -579,10 +579,10 @@ export type QuantileFit = {
  * @param data - Features, targets and weights.
  * @param options - The quantile, the L1 penalty and the intercept.
  * @returns The coefficients, intercept and objective.
- * @throws MdmlError `value` for a quantile outside (0, 1) or a failed LP.
+ * @throws OmaiError `value` for a quantile outside (0, 1) or a failed LP.
  * @example
  * ```ts
- * import { quantileRegression } from 'mdml-engine/linear'
+ * import { quantileRegression } from 'omai-engine/linear'
  * const x = [[0], [1], [2], [3], [4]]
  * const f = quantileRegression({ x, y: [0, 1, 2, 3, 50] }, { quantile: 0.5 })
  * f.coef.map((v) => Math.round(v * 1000) / 1000) // => [1]
@@ -592,7 +592,7 @@ export function quantileRegression(data: LearnData, options: QuantileOptions = {
   const tau = options.quantile ?? 0.5
   const alpha = options.alpha ?? 0
   const fitIntercept = options.fitIntercept ?? true
-  if (!(tau > 0 && tau < 1)) throw new MdmlError('value', `quantileRegression: quantile must be in (0, 1), got ${tau}`)
+  if (!(tau > 0 && tau < 1)) throw new OmaiError('value', `quantileRegression: quantile must be in (0, 1), got ${tau}`)
   const design = designOf(data, 'quantileRegression')
   const { n, d } = design.x
   const total = design.w.reduce((a, b) => a + b, 0)
@@ -623,7 +623,7 @@ export function quantileRegression(data: LearnData, options: QuantileOptions = {
     bEq: vectorTensor(design.y),
     bounds: [0, null],
   })
-  if (!r.success) throw new MdmlError('value', `quantileRegression: the linear program failed (${r.status})`)
+  if (!r.success) throw new OmaiError('value', `quantileRegression: the linear program failed (${r.status})`)
   const x = toFlat(r.x)
   return {
     coef: Array.from({ length: d }, (_, j) => (x[j] ?? 0) - (x[d + j] ?? 0)),
@@ -652,8 +652,8 @@ export type QuantileParams = QuantileFit
  * @returns The estimator.
  * @example
  * ```ts
- * import { quantileRegressor } from 'mdml-engine/linear'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { quantileRegressor } from 'omai-engine/linear'
+ * import { toFlat } from 'omai-engine/tensor'
  * const f = quantileRegressor({ quantile: 0.5 }).fit({ x: [[0], [1], [2], [3], [4]], y: [0, 1, 2, 3, 50] })
  * toFlat(f.predict([[10]]))[0] // => 10
  * ```

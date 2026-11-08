@@ -1,4 +1,4 @@
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { cpu } from '../cpu.ts'
 import type { DType, Storage } from '../dtype.ts'
 import { formatShape, type Shape, shapesEqual, sizeOf, stridesOf } from '../shape.ts'
@@ -7,7 +7,7 @@ import type { Tensor } from '../tensor.ts'
 /** Wrap storage as a CPU tensor, checking the size. */
 export function wrap<D extends DType>(dtype: D, shape: Shape, data: Storage<D>): Tensor<D> {
   if (data.length !== sizeOf(shape)) {
-    throw new MdmlError('shape', `data of length ${data.length} does not fill shape ${formatShape(shape)}`, {
+    throw new OmaiError('shape', `data of length ${data.length} does not fill shape ${formatShape(shape)}`, {
       shape,
       length: data.length,
     })
@@ -82,6 +82,6 @@ export function lanes(
 
 export function assertSameDtype(a: Tensor, b: Tensor, op: string): void {
   if (a.dtype !== b.dtype) {
-    throw new MdmlError('dtype', `${op}: dtypes ${a.dtype} and ${b.dtype} differ`, { a: a.dtype, b: b.dtype })
+    throw new OmaiError('dtype', `${op}: dtypes ${a.dtype} and ${b.dtype} differ`, { a: a.dtype, b: b.dtype })
   }
 }

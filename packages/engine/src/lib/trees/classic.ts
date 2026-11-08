@@ -8,7 +8,7 @@
  * own `ClassicTree` type rather than a `FittedTree`; ID3 and CHAID read continuous features through equal-frequency bins.
  */
 
-import { argmaxOf, MdmlError, maxOf } from '../base/index.ts'
+import { argmaxOf, maxOf, OmaiError } from '../base/index.ts'
 import { type SplitCandidate, type TreeNode, type TreeRecord, treeRecord } from '../exposition/index.ts'
 import { type IterativeEstimator, iterative } from '../learn/bases/iterative.ts'
 import type { FittedFacts, LearnData, Verbs } from '../learn/estimator.ts'
@@ -175,8 +175,8 @@ function bonferroni(c: number, r: number): number {
  * @concept decision-trees
  * @example
  * ```ts
- * import { classicTreeAlgorithm, classicTreeOf } from 'mdml-engine/trees'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { classicTreeAlgorithm, classicTreeOf } from 'omai-engine/trees'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const options = { mode: 'id3' as const, categorical: [0], minSamplesSplit: 2, minSamplesLeaf: 1, bins: 4, alphaMerge: 0.05, alphaSplit: 0.05, confidence: 0.25, prune: false }
  * const data = { x: [[0], [0], [1], [1], [2], [2]], y: [0, 0, 1, 1, 0, 0] }
  * const alg = classicTreeAlgorithm(data, options)
@@ -188,7 +188,7 @@ export function classicTreeAlgorithm(
   options: ClassicOptions,
 ): Algorithm<ClassicState, ClassicGrowPath> {
   const m = matrixView(data.x, 'classicTree', { allowNaN: true })
-  if (data.y === undefined) throw new MdmlError('value', 'classicTree: needs targets y')
+  if (data.y === undefined) throw new OmaiError('value', 'classicTree: needs targets y')
   const { classes, codes } = encodeLabels(data.y, 'classicTree', m.n)
   const w = sampleWeightsOf(data.weights, m.n, 'classicTree')
   const k = classes.length
@@ -453,8 +453,8 @@ function cutsOf(
  * @returns The tree; pessimistic pruning is applied for C4.5 when `options.prune`.
  * @example
  * ```ts
- * import { classicTreeAlgorithm, classicTreeOf } from 'mdml-engine/trees'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { classicTreeAlgorithm, classicTreeOf } from 'omai-engine/trees'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const options = { mode: 'c45' as const, categorical: [], minSamplesSplit: 2, minSamplesLeaf: 1, bins: 4, alphaMerge: 0.05, alphaSplit: 0.05, confidence: 0.25, prune: false }
  * const data = { x: [[0], [1], [2], [3]], y: [0, 0, 1, 1] }
  * const run = runAlgorithm(classicTreeAlgorithm(data, options), { maxSteps: 20 })
@@ -492,7 +492,7 @@ export function classicTreeOf(state: ClassicState, data: LearnData, options: Cla
  * @returns The extra errors to add to e.
  * @example
  * ```ts
- * import { pessimisticErrors } from 'mdml-engine/trees'
+ * import { pessimisticErrors } from 'omai-engine/trees'
  * pessimisticErrors(6, 0, 0.25).toFixed(4) // => '1.2378'
  * ```
  */
@@ -540,7 +540,7 @@ function normalDeviate(cf: number): number {
  * @returns The pruned tree, renumbered.
  * @example
  * ```ts
- * import { pessimisticPrune } from 'mdml-engine/trees'
+ * import { pessimisticPrune } from 'omai-engine/trees'
  * const leaf = (v: number[]) => ({ v, n: v[0] + v[1] })
  * const tree = { mode: 'c45' as const, classes: [0, 1], nFeatures: 1, cuts: [null], feature: [0, -1, -1], threshold: [0.5, -2, -2], children: [[1, 2], [], []], branches: [[[], []], [], []], value: [[5, 5], [3, 2], [2, 3]], impurity: [1, 0.97, 0.97], nSamples: [10, 5, 5], depth: [0, 1, 1] }
  * pessimisticPrune(tree, 0.25).children // => [[]]
@@ -597,7 +597,7 @@ export function pessimisticPrune(tree: ClassicTree, confidence: number): Classic
  * @returns The node ids.
  * @example
  * ```ts
- * import { applyClassic } from 'mdml-engine/trees'
+ * import { applyClassic } from 'omai-engine/trees'
  * const tree = { mode: 'id3' as const, classes: [0, 1], nFeatures: 1, cuts: [null], feature: [0, -1, -1], threshold: [-2, -2, -2], children: [[1, 2], [], []], branches: [[[0], [1]], [], []], value: [[1, 1], [1, 0], [0, 1]], impurity: [1, 0, 0], nSamples: [2, 1, 1], depth: [0, 1, 1] }
  * Array.from(applyClassic(tree, [[0], [1], [7]])) // => [1, 2, 0]
  * ```
@@ -637,7 +637,7 @@ export function applyClassic(tree: ClassicTree, x: TensorLike): Int32Array {
  * @returns The probabilities.
  * @example
  * ```ts
- * import { classicProba } from 'mdml-engine/trees'
+ * import { classicProba } from 'omai-engine/trees'
  * const tree = { mode: 'id3' as const, classes: [0, 1], nFeatures: 1, cuts: [null], feature: [0, -1, -1], threshold: [-2, -2, -2], children: [[1, 2], [], []], branches: [[[0], [1]], [], []], value: [[1, 1], [3, 1], [0, 1]], impurity: [1, 0, 0], nSamples: [2, 1, 1], depth: [0, 1, 1] }
  * Array.from(classicProba(tree, [[0]]).data) // => [0.75, 0.25]
  * ```
@@ -664,7 +664,7 @@ export function classicProba(tree: ClassicTree, x: TensorLike): Tensor {
  * @returns The record.
  * @example
  * ```ts
- * import { classicRecordOf } from 'mdml-engine/trees'
+ * import { classicRecordOf } from 'omai-engine/trees'
  * const node = { id: 0, parent: -1, depth: 0, rows: Int32Array.of(0), value: [1], impurity: 0, used: [], candidates: [], feature: -1, threshold: -2, children: [], branches: [], order: -1 }
  * classicRecordOf({ nodes: [node], open: [] }, { criterion: 'entropy', features: ['x'] }).nodes.length // => 1
  * ```
@@ -735,8 +735,8 @@ export type ClassicEstimator = IterativeEstimator<ClassicHyper, ClassicState, Cl
  * @concept decision-trees
  * @example
  * ```ts
- * import { classicTreeClassifier } from 'mdml-engine/trees'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { classicTreeClassifier } from 'omai-engine/trees'
+ * import { toFlat } from 'omai-engine/tensor'
  * const data = { x: [[0], [0], [1], [1], [2], [2]], y: [0, 0, 1, 1, 0, 0] }
  * const fitted = classicTreeClassifier('id3', { categorical: [0] }).fit(data)
  * toFlat(fitted.predict([[0], [1], [2]])) // => [0, 1, 0]

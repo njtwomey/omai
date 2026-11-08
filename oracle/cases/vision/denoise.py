@@ -4,9 +4,9 @@ from importlib.metadata import version
 
 import numpy as np
 import skimage.restoration as R
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import rng
-from mdml_oracle.signal_helpers import blocks_image
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import rng
+from omai_oracle.signal_helpers import blocks_image
 
 REFERENCE: dict[str, str] = {"scikit-image": version("scikit-image")}
 

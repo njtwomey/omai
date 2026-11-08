@@ -8,7 +8,7 @@
  */
 
 import { hessian } from '../autodiff/index.ts'
-import { LOG_SQRT_2PI, MdmlError } from '../base/index.ts'
+import { LOG_SQRT_2PI, OmaiError } from '../base/index.ts'
 import { logNdtr } from '../numerics/special/index.ts'
 import { loggedSolver, type SmoothProblem, smoothSolvers } from '../optim/index.ts'
 import { type Key, key as makeKey } from '../random/index.ts'
@@ -57,24 +57,24 @@ export interface AftData {
  * @param x - Covariates `[n, p]` (a vector is one covariate); omitted for no covariates.
  * @param names - Covariate names.
  * @returns The data.
- * @throws MdmlError with code `value` for a time that is not positive, `shape` when the lengths disagree.
+ * @throws OmaiError with code `value` for a time that is not positive, `shape` when the lengths disagree.
  * @example
  * ```ts
- * import { aftData } from 'mdml-engine/survival'
+ * import { aftData } from 'omai-engine/survival'
  * aftData([1, 2, 3], [1, 0, 1], [[0.5], [1], [2]]).p // => 1
  * ```
  */
 export function aftData(time: TensorLike, event?: TensorLike, x?: TensorLike, names?: readonly string[]): AftData {
   const sample = survivalSample(time, event, 'aftData')
   for (let i = 0; i < sample.n; i++)
-    if (!((sample.time[i] ?? 0) > 0)) throw new MdmlError('value', `aftData: time ${i} must be > 0`)
+    if (!((sample.time[i] ?? 0) > 0)) throw new OmaiError('value', `aftData: time ${i} must be > 0`)
   if (x === undefined) return { sample, x: new Float64Array(0), p: 0, names: [] }
   const t = asTensor(x)
   const n = t.shape[0] ?? 0
   const p = t.shape.length === 1 ? 1 : (t.shape[1] ?? 0)
-  if (n !== sample.n) throw new MdmlError('shape', `aftData: ${n} covariate rows for ${sample.n} times`)
+  if (n !== sample.n) throw new OmaiError('shape', `aftData: ${n} covariate rows for ${sample.n} times`)
   const nm = names ?? Array.from({ length: p }, (_, j) => `x${j}`)
-  if (nm.length !== p) throw new MdmlError('shape', `aftData: ${nm.length} names for ${p} covariates`)
+  if (nm.length !== p) throw new OmaiError('shape', `aftData: ${nm.length} names for ${p} covariates`)
   return { sample, x: Float64Array.from(toFlat(t)), p, names: nm }
 }
 
@@ -142,7 +142,7 @@ function startingPoint(data: AftData, intercept: boolean, scale: boolean): numbe
  * @returns The problem.
  * @example
  * ```ts
- * import { aftData, aftProblem } from 'mdml-engine/survival'
+ * import { aftData, aftProblem } from 'omai-engine/survival'
  * const prob = aftProblem(aftData([1, 2, 3, 4], [1, 1, 0, 1]), { distribution: 'exponential' })
  * prob.dimension // => 1
  * ```
@@ -155,10 +155,10 @@ export function aftProblem(data: AftData, options: AftProblemOptions = {}): AftP
   const k = p + (intercept ? 1 : 0)
   const scaled = distribution !== 'exponential'
   const dimension = k + (scaled ? 1 : 0)
-  if (dimension === 0) throw new MdmlError('value', 'aftProblem: needs an intercept, a covariate or a free scale')
+  if (dimension === 0) throw new OmaiError('value', 'aftProblem: needs an intercept, a covariate or a free scale')
   let events = 0
   for (let i = 0; i < n; i++) events += sample.event[i] ?? 0
-  if (events === 0) throw new MdmlError('value', 'aftProblem: needs at least one event')
+  if (events === 0) throw new OmaiError('value', 'aftProblem: needs at least one event')
   const design = new Float64Array(n * k)
   for (let i = 0; i < n; i++)
     for (let j = 0; j < k; j++)
@@ -245,7 +245,7 @@ export const aftDefaults: AftHyper = {
  * @returns The algorithm.
  * @example
  * ```ts
- * import { aftAlgorithm, aftData } from 'mdml-engine/survival'
+ * import { aftAlgorithm, aftData } from 'omai-engine/survival'
  * aftAlgorithm(aftData([1, 2, 3, 4], [1, 1, 0, 1]), { distribution: 'lognormal' }).name.length > 0 // => true
  * ```
  */
@@ -305,7 +305,7 @@ export interface AftFit {
  * @returns The fit.
  * @example
  * ```ts
- * import { aft, aftData } from 'mdml-engine/survival'
+ * import { aft, aftData } from 'omai-engine/survival'
  * const fit = aft(aftData([2, 3, 4, 6, 7, 9, 12, 15], [1, 1, 0, 1, 1, 0, 1, 1]), { distribution: 'weibull' })
  * fit.scale > 0 // => true
  * fit.converged // => true
@@ -414,7 +414,7 @@ function baseQuantile(distribution: AftDistribution, p: number): number {
  * @returns `S(t | x)` for each time.
  * @example
  * ```ts
- * import { aft, aftData, aftPredictSurvival } from 'mdml-engine/survival'
+ * import { aft, aftData, aftPredictSurvival } from 'omai-engine/survival'
  * const fit = aft(aftData([2, 3, 4, 6, 7, 9, 12, 15], [1, 1, 0, 1, 1, 0, 1, 1]), { distribution: 'lognormal' })
  * aftPredictSurvival(fit, [], [1e-6])[0] // => 1
  * ```
@@ -442,7 +442,7 @@ export function aftPredictSurvival(
  * @returns The time by which a share `p` of such subjects has failed.
  * @example
  * ```ts
- * import { aft, aftData, aftPredictQuantile } from 'mdml-engine/survival'
+ * import { aft, aftData, aftPredictQuantile } from 'omai-engine/survival'
  * const fit = aft(aftData([2, 3, 4, 6, 7, 9, 12, 15]), { distribution: 'lognormal' })
  * aftPredictQuantile(fit, [], 0.5) === Math.exp(fit.intercept) // => true
  * ```
@@ -452,7 +452,7 @@ export function aftPredictQuantile(
   x: ArrayLike<number>,
   p = 0.5,
 ): number {
-  if (!(p > 0 && p < 1)) throw new MdmlError('value', `aftPredictQuantile: p must be in (0, 1), got ${p}`)
+  if (!(p > 0 && p < 1)) throw new OmaiError('value', `aftPredictQuantile: p must be in (0, 1), got ${p}`)
   let eta = fit.intercept
   for (let j = 0; j < fit.beta.length; j++) eta += (x[j] ?? 0) * (fit.beta[j] ?? 0)
   return Math.exp(eta + fit.scale * baseQuantile(fit.distribution, p))

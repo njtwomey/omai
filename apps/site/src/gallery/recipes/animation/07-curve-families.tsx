@@ -1,7 +1,7 @@
-import { foldIn, normal } from 'mdml-engine/random'
-import { type DictSpace, defaults, dict, int } from 'mdml-engine/space'
-import { toFlat } from 'mdml-engine/tensor'
-import { type Config, defineMethod, Log, type Method, scalar, stateFromJson, stateToJson } from 'mdml-engine/trace'
+import { foldIn, normal } from 'omai-engine/random'
+import { type DictSpace, defaults, dict, int } from 'omai-engine/space'
+import { toFlat } from 'omai-engine/tensor'
+import { type Config, defineMethod, Log, type Method, scalar, stateFromJson, stateToJson } from 'omai-engine/trace'
 import {
   ControlPanel,
   type Panel,
@@ -11,7 +11,7 @@ import {
   useSessionPreferences,
   useSessions,
   type Variant,
-} from 'mdml-render/react'
+} from 'omai-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 

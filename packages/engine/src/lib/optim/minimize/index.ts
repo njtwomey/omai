@@ -3,7 +3,7 @@
  * gradient, quasi-Newton, Newton and trust-region methods, nonlinear and linear least squares, constrained methods
  * (projected gradient, penalties, SLSQP, COBYLA), derivative-free and global methods (Nelder-Mead, Powell, CMA-ES,
  * differential evolution, annealing, swarms), and convex first-order methods. Each method is a traced algorithm. Part
- * of `mdml-engine/optim`.
+ * of `omai-engine/optim`.
  *
  * @inline
  */

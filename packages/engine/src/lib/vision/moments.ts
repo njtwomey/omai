@@ -4,7 +4,7 @@
  * matching by the log-scaled Hu invariants (`cv2.matchShapes`).
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import type { TensorLike } from '../tensor/index.ts'
 import { greyOf, type PointsLike, pointsOf } from './_image.ts'
 
@@ -114,7 +114,7 @@ function complete(m: Spatial): Moments {
  * @concept image-moments
  * @example
  * ```ts
- * import { moments } from 'mdml-engine/vision'
+ * import { moments } from 'omai-engine/vision'
  * const m = moments([[0, 0], [4, 0], [4, 2], [0, 2]])
  * [m.m00, m.m10 / m.m00, m.m01 / m.m00, m.mu20] // => [8, 2, 1, 10.666666666666666]
  * ```
@@ -183,7 +183,7 @@ export function moments(contour: PointsLike): Moments {
  * @concept image-moments
  * @example
  * ```ts
- * import { imageMoments } from 'mdml-engine/vision'
+ * import { imageMoments } from 'omai-engine/vision'
  * const m = imageMoments([[0, 0, 0], [0, 1, 1], [0, 0, 0]])
  * [m.m00, m.m10, m.m01] // => [2, 3, 2]
  * ```
@@ -222,7 +222,7 @@ export function imageMoments(x: TensorLike, options: { readonly binary?: boolean
  * @concept image-moments
  * @example
  * ```ts
- * import { huMoments, moments } from 'mdml-engine/vision'
+ * import { huMoments, moments } from 'omai-engine/vision'
  * huMoments(moments([[0, 0], [4, 0], [4, 4], [0, 4]]))[0] // => 0.16666666666666666
  * ```
  */
@@ -261,13 +261,13 @@ export function huMoments(m: Moments): number[] {
  * @concept shape-matching
  * @example
  * ```ts
- * import { matchShapes } from 'mdml-engine/vision'
+ * import { matchShapes } from 'omai-engine/vision'
  * const tri = [[0, 0], [4, 0], [1, 3]]
  * matchShapes(tri, tri.map(([x, y]) => [2 * x + 5, 2 * y + 1])) < 1e-12 // => true
  * ```
  */
 export function matchShapes(a: PointsLike, b: PointsLike, method: 1 | 2 | 3 = 1): number {
-  if (method !== 1 && method !== 2 && method !== 3) throw new MdmlError('value', 'matchShapes: method is 1, 2 or 3')
+  if (method !== 1 && method !== 2 && method !== 3) throw new OmaiError('value', 'matchShapes: method is 1, 2 or 3')
   const ma = huMoments(moments(a))
   const mb = huMoments(moments(b))
   const eps = 1e-5

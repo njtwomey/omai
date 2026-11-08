@@ -4,7 +4,7 @@
  * `comparisons`, or from winners and losers with `pairwise`.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { fromStorage, type Tensor, type TensorLike } from '../../tensor/index.ts'
 import { cardinality, checkRows, concrete, concreteFloat, defaultNames, metaFor } from './_coerce.ts'
 import type { DatasetMeta } from './common.ts'
@@ -33,10 +33,10 @@ export interface ComparisonData {
  * @param ranks - Finishing places `[n, k]` (0 first; ties share a place).
  * @param options - Times, player names and metadata.
  * @returns The dataset.
- * @throws MdmlError with code `shape` when participants and ranks differ in shape.
+ * @throws OmaiError with code `shape` when participants and ranks differ in shape.
  * @example
  * ```ts
- * import { comparisons } from 'mdml-engine/data'
+ * import { comparisons } from 'omai-engine/data'
  * comparisons([[0, 1], [1, 2]], [[0, 1], [0, 0]]).playerNames // => ['p0', 'p1', 'p2']
  * ```
  */
@@ -52,7 +52,7 @@ export function comparisons(
   const p = concrete(participants, 'int32', 'comparisons')
   const r = concrete(ranks, 'int32', 'comparisons')
   if (p.shape.length !== 2 || p.shape.join() !== r.shape.join())
-    throw new MdmlError('shape', `comparisons: participants ${p.shape} and ranks ${r.shape} must both be [n, k]`)
+    throw new OmaiError('shape', `comparisons: participants ${p.shape} and ranks ${r.shape} must both be [n, k]`)
   const times = options.times === undefined ? undefined : concreteFloat(options.times, 'comparisons')
   checkRows('comparisons', p.shape[0] ?? 0, { times })
   return {
@@ -74,7 +74,7 @@ export function comparisons(
  * @returns The dataset, with participants `[winner, loser]`.
  * @example
  * ```ts
- * import { pairwise } from 'mdml-engine/data'
+ * import { pairwise } from 'omai-engine/data'
  * Array.from(pairwise([0, 2], [1, 0], { ties: [false, true] }).ranks.data) // => [0, 1, 0, 0]
  * ```
  */

@@ -10,7 +10,7 @@
 
 import { valueAndGrad } from '../autodiff/index.ts'
 import type { Json } from '../base/index.ts'
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { concreteTree } from '../nn/index.ts'
 import { adam, applyUpdates, type LearningRate } from '../optim/index.ts'
 import type { Key } from '../random/index.ts'
@@ -100,9 +100,9 @@ function lensLogits(model: ResidualModel, residual: readonly Value[], lens: Tune
  * @concept mechanistic-interpretability
  * @example
  * ```ts
- * import { logitLens, residualModel } from 'mdml-engine/explain'
- * import { blocks } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
+ * import { logitLens, residualModel } from 'omai-engine/explain'
+ * import { blocks } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
  * const m = residualModel(new blocks.TransformerLM(7, 8, 2, 2, { key: key(0) }))
  * logitLens(m, [1, 2, 3]).logits.shape // => [3, 3, 7]
  * ```
@@ -129,7 +129,7 @@ export function logitLens(model: ResidualModel, tokens: readonly number[], optio
     targetProbability?: Tensor
   } = { logits: all, probabilities, entropy, prediction }
   if (options.targets !== undefined) {
-    if (options.targets.length !== t) throw new MdmlError('shape', 'logitLens: one target per position')
+    if (options.targets.length !== t) throw new OmaiError('shape', 'logitLens: one target per position')
     const rank = new Float64Array(depth * t)
     const prob = new Float64Array(depth * t)
     const flat = toFlat(all)
@@ -162,9 +162,9 @@ export function logitLens(model: ResidualModel, tokens: readonly number[], optio
  * @concept mechanistic-interpretability
  * @example
  * ```ts
- * import { lensDivergence, residualModel } from 'mdml-engine/explain'
- * import { blocks } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
+ * import { lensDivergence, residualModel } from 'omai-engine/explain'
+ * import { blocks } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
  * const m = residualModel(new blocks.TransformerLM(7, 8, 2, 2, { key: key(0) }))
  * lensDivergence(m, [[1, 2, 3], [3, 2, 1]]).at(-1) // => 0
  * ```
@@ -229,10 +229,10 @@ export interface TunedLensOptions {
  * @concept mechanistic-interpretability
  * @example
  * ```ts
- * import { lensDivergence, residualModel, tunedLensAlgorithm } from 'mdml-engine/explain'
- * import { blocks } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { lensDivergence, residualModel, tunedLensAlgorithm } from 'omai-engine/explain'
+ * import { blocks } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const m = residualModel(new blocks.TransformerLM(7, 8, 2, 2, { key: key(0) }))
  * const corpus = [[1, 2, 3, 4], [4, 3, 2, 1], [2, 2, 5, 1]]
  * const lens = runAlgorithm(tunedLensAlgorithm(m, corpus, { steps: 60 }), { maxSteps: 60 }).state.lens

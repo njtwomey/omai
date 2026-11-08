@@ -5,7 +5,7 @@
  * combined in `nearDuplicates`.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { gaussLegendre } from '../numerics/quadrature/index.ts'
 import { type Key, randomBits } from '../random/index.ts'
 import { fmix32 } from '../sketches/index.ts'
@@ -43,16 +43,16 @@ function mulmod(a: number, b: number, m: number): number {
  * @param k - The window length.
  * @param options - Base and modulus.
  * @returns The hash of each window, by start position.
- * @throws MdmlError with code `value` for k below 1.
+ * @throws OmaiError with code `value` for k below 1.
  * @concept fingerprinting
  * @example
  * ```ts
- * import { rollingHashes } from 'mdml-engine/text'
+ * import { rollingHashes } from 'omai-engine/text'
  * rollingHashes('abab', 2) // => [25027, 25283, 25027]
  * ```
  */
 export function rollingHashes(s: string | readonly number[], k: number, options: RollingHashOptions = {}): number[] {
-  if (!Number.isInteger(k) || k < 1) throw new MdmlError('value', 'rollingHashes: k must be a positive integer')
+  if (!Number.isInteger(k) || k < 1) throw new OmaiError('value', 'rollingHashes: k must be a positive integer')
   const base = options.base ?? 257
   const m = options.modulus ?? 1_000_000_007
   const c = codes(s)
@@ -80,7 +80,7 @@ export function rollingHashes(s: string | readonly number[], k: number, options:
  * @concept fingerprinting
  * @example
  * ```ts
- * import { rabinKarp } from 'mdml-engine/text'
+ * import { rabinKarp } from 'omai-engine/text'
  * rabinKarp('aba', 'abababa') // => [0, 2, 4]
  * ```
  */
@@ -111,11 +111,11 @@ export interface Fingerprint {
  * @param w - The window size.
  * @param options - Rolling hash parameters.
  * @returns The fingerprints, by position.
- * @throws MdmlError with code `value` for k or w below 1.
+ * @throws OmaiError with code `value` for k or w below 1.
  * @concept fingerprinting
  * @example
  * ```ts
- * import { winnow } from 'mdml-engine/text'
+ * import { winnow } from 'omai-engine/text'
  * winnow('adorunrunrunadorunrun', 5, 4).length // => 6
  * ```
  */
@@ -125,7 +125,7 @@ export function winnow(
   w: number,
   options: RollingHashOptions = {},
 ): Fingerprint[] {
-  if (!Number.isInteger(w) || w < 1) throw new MdmlError('value', 'winnow: w must be a positive integer')
+  if (!Number.isInteger(w) || w < 1) throw new OmaiError('value', 'winnow: w must be a positive integer')
   const hashes = rollingHashes(text, k, options)
   const out: Fingerprint[] = []
   let last = -1
@@ -156,7 +156,7 @@ export function winnow(
  * @concept fingerprinting
  * @example
  * ```ts
- * import { simhash, hammingDistance64 } from 'mdml-engine/text'
+ * import { simhash, hammingDistance64 } from 'omai-engine/text'
  * const a = simhash(['the', 'quick', 'brown', 'fox', 'jumps'])
  * const b = simhash(['the', 'quick', 'brown', 'fox', 'leaps'])
  * hammingDistance64(a, b) < hammingDistance64(a, simhash(['lorem', 'ipsum', 'dolor', 'sit', 'amet'])) // => true
@@ -189,7 +189,7 @@ export function simhash(features: ReadonlyMap<string, number> | Iterable<string>
  * @concept fingerprinting
  * @example
  * ```ts
- * import { hammingDistance64 } from 'mdml-engine/text'
+ * import { hammingDistance64 } from 'omai-engine/text'
  * hammingDistance64(0b1011n, 0b0001n) // => 2
  * ```
  */
@@ -218,18 +218,18 @@ export interface MinhashPermutations {
  * @param key - The key.
  * @param numPerm - The number of permutations (default 128).
  * @returns The permutations.
- * @throws MdmlError with code `value` for a non-positive count.
+ * @throws OmaiError with code `value` for a non-positive count.
  * @concept minhash
  * @example
  * ```ts
- * import { minhashPermutations } from 'mdml-engine/text'
- * import { key } from 'mdml-engine/random'
+ * import { minhashPermutations } from 'omai-engine/text'
+ * import { key } from 'omai-engine/random'
  * Array.from(minhashPermutations(key(0), 4).a).every((x) => x % 2 === 1) // => true
  * ```
  */
 export function minhashPermutations(key: Key, numPerm = 128): MinhashPermutations {
   if (!Number.isInteger(numPerm) || numPerm < 1)
-    throw new MdmlError('value', 'minhash: numPerm must be a positive integer')
+    throw new OmaiError('value', 'minhash: numPerm must be a positive integer')
   const bits = randomBits(key, 2 * numPerm)
   return {
     a: Uint32Array.from({ length: numPerm }, (_, i) => ((bits[2 * i] ?? 0) | 1) >>> 0),
@@ -249,8 +249,8 @@ export function minhashPermutations(key: Key, numPerm = 128): MinhashPermutation
  * @concept minhash
  * @example
  * ```ts
- * import { minhash, minhashPermutations, minhashJaccard } from 'mdml-engine/text'
- * import { key } from 'mdml-engine/random'
+ * import { minhash, minhashPermutations, minhashJaccard } from 'omai-engine/text'
+ * import { key } from 'omai-engine/random'
  * const p = minhashPermutations(key(1), 256)
  * minhashJaccard(minhash(['a', 'b', 'c'], p), minhash(['a', 'b', 'c'], p)) // => 1
  * ```
@@ -278,16 +278,16 @@ export function minhash(
  * @param a - The first signature.
  * @param b - The second signature.
  * @returns The estimate in [0, 1].
- * @throws MdmlError with code `shape` for signatures of different lengths.
+ * @throws OmaiError with code `shape` for signatures of different lengths.
  * @concept minhash
  * @example
  * ```ts
- * import { minhashJaccard } from 'mdml-engine/text'
+ * import { minhashJaccard } from 'omai-engine/text'
  * minhashJaccard(Uint32Array.of(1, 2, 3, 4), Uint32Array.of(1, 2, 0, 0)) // => 0.5
  * ```
  */
 export function minhashJaccard(a: Uint32Array, b: Uint32Array): number {
-  if (a.length !== b.length) throw new MdmlError('shape', 'minhashJaccard: signatures differ in length')
+  if (a.length !== b.length) throw new OmaiError('shape', 'minhashJaccard: signatures differ in length')
   let same = 0
   for (let i = 0; i < a.length; i++) if (a[i] === b[i]) same++
   return same / a.length
@@ -302,11 +302,11 @@ export function minhashJaccard(a: Uint32Array, b: Uint32Array): number {
  * @param numPerm - The signature length.
  * @param weights - The weights of false positives and false negatives (default 0.5 each).
  * @returns The number of bands and rows per band.
- * @throws MdmlError with code `value` for a threshold outside [0, 1] or weights not summing to 1.
+ * @throws OmaiError with code `value` for a threshold outside [0, 1] or weights not summing to 1.
  * @concept locality-sensitive-hashing
  * @example
  * ```ts
- * import { lshParameters } from 'mdml-engine/text'
+ * import { lshParameters } from 'omai-engine/text'
  * lshParameters(0.5, 32) // => { bands: 8, rows: 4 }
  * ```
  */
@@ -315,8 +315,8 @@ export function lshParameters(
   numPerm: number,
   weights: readonly [number, number] = [0.5, 0.5],
 ): { readonly bands: number; readonly rows: number } {
-  if (!(threshold >= 0 && threshold <= 1)) throw new MdmlError('value', 'lshParameters: threshold must be in [0, 1]')
-  if (Math.abs(weights[0] + weights[1] - 1) > 1e-9) throw new MdmlError('value', 'lshParameters: weights must sum to 1')
+  if (!(threshold >= 0 && threshold <= 1)) throw new OmaiError('value', 'lshParameters: threshold must be in [0, 1]')
+  if (Math.abs(weights[0] + weights[1] - 1) > 1e-9) throw new OmaiError('value', 'lshParameters: weights must sum to 1')
   // The integrands are polynomials of degree at most bands * rows <= numPerm, so Gauss-Legendre with
   // ceil((numPerm + 1) / 2) points integrates them exactly (scipy's quad, which datasketch uses, agrees to rounding).
   const rule = gaussLegendre(Math.max(1, Math.ceil((numPerm + 1) / 2)))
@@ -354,18 +354,18 @@ export function lshParameters(
  * @param bands - The number of bands.
  * @param rows - Rows per band (bands times rows at most the signature length).
  * @returns The candidate pairs [i, j] with i < j, in order.
- * @throws MdmlError with code `value` when the bands do not fit the signatures.
+ * @throws OmaiError with code `value` when the bands do not fit the signatures.
  * @concept locality-sensitive-hashing
  * @example
  * ```ts
- * import { lshCandidates } from 'mdml-engine/text'
+ * import { lshCandidates } from 'omai-engine/text'
  * lshCandidates([Uint32Array.of(1, 2, 3, 4), Uint32Array.of(1, 2, 9, 9), Uint32Array.of(7, 7, 7, 7)], 2, 2) // => [[0, 1]]
  * ```
  */
 export function lshCandidates(signatures: readonly Uint32Array[], bands: number, rows: number): [number, number][] {
   const n = signatures[0]?.length ?? 0
   if (!(bands >= 1 && rows >= 1 && bands * rows <= n))
-    throw new MdmlError('value', 'lshCandidates: bands * rows must fit the signature')
+    throw new OmaiError('value', 'lshCandidates: bands * rows must fit the signature')
   const pairs = new Set<string>()
   for (let band = 0; band < bands; band++) {
     const buckets = new Map<string, number[]>()
@@ -390,8 +390,8 @@ export function lshCandidates(signatures: readonly Uint32Array[], bands: number,
  * @concept near-duplicate-detection
  * @example
  * ```ts
- * import { nearDuplicates } from 'mdml-engine/text'
- * import { key } from 'mdml-engine/random'
+ * import { nearDuplicates } from 'omai-engine/text'
+ * import { key } from 'omai-engine/random'
  * const docs = ['the quick brown fox jumps over the lazy dog', 'the quick brown fox jumped over the lazy dog', 'an entirely different sentence about cats']
  * nearDuplicates(docs, { key: key(3), threshold: 0.5 }).map((d) => d.pair) // => [[0, 1]]
  * ```

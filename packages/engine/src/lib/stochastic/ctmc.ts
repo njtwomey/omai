@@ -4,7 +4,7 @@
  * expected hitting times, and simulation by Gillespie's algorithm (a traced algorithm) or exactly on a grid.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { expm, solve } from '../numerics/linalg/index.ts'
 import { categorical, exponential, foldIn, type Key } from '../random/index.ts'
 import {
@@ -57,8 +57,8 @@ function jumpRows(q: TensorLike, where: string): { n: number; rows: number[][]; 
  * @concept continuous-time-markov-chains
  * @example
  * ```ts
- * import { ctmcTransition } from 'mdml-engine/stochastic'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { ctmcTransition } from 'omai-engine/stochastic'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(ctmcTransition([[-1, 1], [1, -1]], 0)) // => [[1, 0], [0, 1]]
  * ```
  */
@@ -77,8 +77,8 @@ export function ctmcTransition(q: TensorLike, t: TensorLike): Value {
  * @concept continuous-time-markov-chains
  * @example
  * ```ts
- * import { ctmcDistribution } from 'mdml-engine/stochastic'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { ctmcDistribution } from 'omai-engine/stochastic'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(ctmcDistribution([[-1, 1], [1, -1]], [1, 0], 50)).map((v) => Math.round(v * 1e9) / 1e9) // => [0.5, 0.5]
  * ```
  */
@@ -91,19 +91,19 @@ export function ctmcDistribution(q: TensorLike, p0: TensorLike, t: TensorLike): 
  *
  * @param q - The generator.
  * @returns pi.
- * @throws MdmlError with code `value` when there are several closed classes.
+ * @throws OmaiError with code `value` when there are several closed classes.
  * @concept stationary-distribution
  * @example
  * ```ts
- * import { ctmcStationary } from 'mdml-engine/stochastic'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { ctmcStationary } from 'omai-engine/stochastic'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(ctmcStationary([[-2, 2], [1, -1]])).map((v) => Math.round(v * 1e12) / 1e12) // => [0.333333333333, 0.666666666667]
  * ```
  */
 export function ctmcStationary(q: TensorLike): Value {
   const { n, rows } = maybeGeneratorRows(q, 'ctmcStationary')
   if (rows !== undefined && classify(n, jumpRows(q, 'ctmcStationary').rows).closed.filter((x) => x).length !== 1) {
-    throw new MdmlError('value', 'ctmcStationary: several closed classes, no unique stationary law')
+    throw new OmaiError('value', 'ctmcStationary: several closed classes, no unique stationary law')
   }
   return stationarySolve(asFloat(asTensor(q)), n)
 }
@@ -117,8 +117,8 @@ export function ctmcStationary(q: TensorLike): Value {
  * @concept continuous-time-markov-chains
  * @example
  * ```ts
- * import { embeddedChain } from 'mdml-engine/stochastic'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { embeddedChain } from 'omai-engine/stochastic'
+ * import { toArray } from 'omai-engine/tensor'
  * const e = embeddedChain([[-4, 1, 3], [0, 0, 0], [1, 1, -2]])
  * toArray(e.transition) // => [[0, 0.25, 0.75], [0, 1, 0], [0.5, 0.5, 0]]
  * Array.from(e.rates) // => [4, 0, 2]
@@ -137,12 +137,12 @@ export function embeddedChain(q: TensorLike): { readonly transition: Tensor<'flo
  * @param q - The generator.
  * @param rate - The uniformisation rate (default max_i q_i).
  * @returns The uniformised chain and its rate.
- * @throws MdmlError with code `value` when the rate is below the largest holding rate.
+ * @throws OmaiError with code `value` when the rate is below the largest holding rate.
  * @concept continuous-time-markov-chains
  * @example
  * ```ts
- * import { uniformise } from 'mdml-engine/stochastic'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { uniformise } from 'omai-engine/stochastic'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(uniformise([[-2, 2], [1, -1]]).transition) // => [[0, 1], [0.5, 0.5]]
  * ```
  */
@@ -151,7 +151,7 @@ export function uniformise(q: TensorLike, rate?: number): { readonly transition:
   const biggest = rows.reduce((m, r, i) => Math.max(m, -(r[i] ?? 0)), 0)
   const lambda = rate ?? biggest
   if (!(lambda >= biggest && lambda > 0)) {
-    throw new MdmlError('value', 'uniformise: the rate must be positive and at least the largest holding rate')
+    throw new OmaiError('value', 'uniformise: the rate must be positive and at least the largest holding rate')
   }
   return { transition: add(eye(rows.length), div(asFloat(asTensor(q)), lambda)), rate: lambda }
 }
@@ -166,8 +166,8 @@ export function uniformise(q: TensorLike, rate?: number): { readonly transition:
  * @concept hitting-times
  * @example
  * ```ts
- * import { ctmcHittingTimes } from 'mdml-engine/stochastic'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { ctmcHittingTimes } from 'omai-engine/stochastic'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(ctmcHittingTimes([[-2, 2], [0, 0]], [1])) // => [0.5, 0]
  * ```
  */
@@ -214,14 +214,14 @@ export interface GillespieState {
  * @concept gillespie-algorithm
  * @example
  * ```ts
- * import { ctmcAlgorithm } from 'mdml-engine/stochastic'
+ * import { ctmcAlgorithm } from 'omai-engine/stochastic'
  * ctmcAlgorithm([[-1, 1], [1, -1]], 0, 5).name // => 'gillespie'
  * ```
  */
 export function ctmcAlgorithm(q: TensorLike, x0: number, horizon: number): Algorithm<GillespieState> {
   const { rows, rates } = jumpRows(q, 'ctmcAlgorithm')
-  if (!(Number.isInteger(x0) && x0 >= 0 && x0 < rows.length)) throw new MdmlError('value', 'ctmc: bad x0')
-  if (!(horizon > 0)) throw new MdmlError('value', 'ctmc: the horizon must be positive')
+  if (!(Number.isInteger(x0) && x0 >= 0 && x0 < rows.length)) throw new OmaiError('value', 'ctmc: bad x0')
+  if (!(horizon > 0)) throw new OmaiError('value', 'ctmc: the horizon must be positive')
   return {
     name: 'gillespie',
     config: { states: rows.length, horizon },
@@ -251,12 +251,12 @@ export function ctmcAlgorithm(q: TensorLike, x0: number, horizon: number): Algor
  * @param horizon - The end time.
  * @param options - The jump cap (default 100000) and tracing.
  * @returns The trajectory.
- * @throws MdmlError with code `convergence` when the jump cap is reached before the horizon.
+ * @throws OmaiError with code `convergence` when the jump cap is reached before the horizon.
  * @concept gillespie-algorithm
  * @example
  * ```ts
- * import { key } from 'mdml-engine/random'
- * import { simulateCtmc } from 'mdml-engine/stochastic'
+ * import { key } from 'omai-engine/random'
+ * import { simulateCtmc } from 'omai-engine/stochastic'
  * simulateCtmc(key(0), [[-1, 1], [0, 0]], 0, 100).states.at(-1) // => 1
  * ```
  */
@@ -269,7 +269,7 @@ export function simulateCtmc(
 ): Trajectory {
   const cap = options.maxJumps ?? 100000
   const r = runAlgorithm(ctmcAlgorithm(q, x0, horizon), { ...traceOf(options), key, maxSteps: cap + 1 })
-  if (!r.state.finished) throw new MdmlError('convergence', `simulateCtmc: more than ${cap} jumps before the horizon`)
+  if (!r.state.finished) throw new OmaiError('convergence', `simulateCtmc: more than ${cap} jumps before the horizon`)
   const jumps = historyArray(r.state.jumps)
   return { times: Float64Array.from(jumps, (j) => j.t), states: Int32Array.from(jumps, (j) => j.x) }
 }
@@ -283,7 +283,7 @@ export function simulateCtmc(
  * @concept continuous-time-markov-chains
  * @example
  * ```ts
- * import { trajectoryAt } from 'mdml-engine/stochastic'
+ * import { trajectoryAt } from 'omai-engine/stochastic'
  * Array.from(trajectoryAt({ times: Float64Array.from([0, 1, 2.5]), states: Int32Array.from([0, 2, 1]) }, [0.5, 1, 3])) // => [0, 2, 1]
  * ```
  */
@@ -316,8 +316,8 @@ export function trajectoryAt(trajectory: Trajectory, times: ArrayLike<number>): 
  * @concept continuous-time-markov-chains
  * @example
  * ```ts
- * import { key } from 'mdml-engine/random'
- * import { ctmcPaths } from 'mdml-engine/stochastic'
+ * import { key } from 'omai-engine/random'
+ * import { ctmcPaths } from 'omai-engine/stochastic'
  * ctmcPaths(key(0), [[-1, 1], [1, -1]], 0, [0, 0.5, 1], { paths: 4 }).values.shape // => [4, 3]
  * ```
  */
@@ -330,7 +330,7 @@ export function ctmcPaths(
 ): Paths {
   const { n } = generatorRows(q, 'ctmcPaths')
   const paths = positiveInteger(options.paths ?? 1, 'paths', 'ctmcPaths')
-  if (!(Number.isInteger(x0) && x0 >= 0 && x0 < n)) throw new MdmlError('value', 'ctmcPaths: bad x0')
+  if (!(Number.isInteger(x0) && x0 >= 0 && x0 < n)) throw new OmaiError('value', 'ctmcPaths: bad x0')
   const cache = new Map<number, number[][]>()
   const rowsAt = (dt: number): number[][] => {
     const hit = cache.get(dt)

@@ -4,7 +4,7 @@
  * greedy hill climbing over DAGs by score. PC's skeleton phase and hill climbing are traced algorithms.
  */
 
-import { type Json, MdmlError } from '../../base/index.ts'
+import { type Json, OmaiError } from '../../base/index.ts'
 import { dict, type OptionTable, optionTable } from '../../space/index.ts'
 import {
   type Algorithm,
@@ -88,7 +88,7 @@ export interface MutualInformationProperties {
  * @concept structure-learning
  * @example
  * ```ts
- * import { mutualInformationEstimators } from 'mdml-engine/pgm/learning'
+ * import { mutualInformationEstimators } from 'omai-engine/pgm/learning'
  * mutualInformationEstimators.where((p) => p.biasCorrected) // => ['miller-madow']
  * ```
  */
@@ -173,12 +173,12 @@ export interface ChowLiuState {
  * @param data - Discrete rows.
  * @param options - Root, class variable, states and the estimator.
  * @returns The algorithm; it is done when the tree spans the variables.
- * @throws MdmlError with code `value` for an unknown root.
+ * @throws OmaiError with code `value` for an unknown root.
  * @concept structure-learning
  * @example
  * ```ts
- * import { chowLiuAlgorithm } from 'mdml-engine/pgm/learning'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { chowLiuAlgorithm } from 'omai-engine/pgm/learning'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const data = Array.from({ length: 60 }, (_, i) => ({ a: i % 2, b: i % 2, c: (i % 2) ^ (i % 3 === 0 ? 1 : 0) }))
  * runAlgorithm(chowLiuAlgorithm(data), { maxSteps: 10 }).state.edges.length // => 2
  * ```
@@ -307,7 +307,7 @@ function chowLiuSetup(
       pairs.push({ a: names[i] as string, b: names[j] as string, w: weight(names[i] as string, names[j] as string) })
   const total = new Map(names.map((v) => [v, pairs.reduce((s, p) => s + (p.a === v || p.b === v ? p.w : 0), 0)]))
   const root = options.root ?? [...names].sort((x, y) => (total.get(y) ?? 0) - (total.get(x) ?? 0))[0] ?? ''
-  if (!names.includes(root)) throw new MdmlError('value', `chowLiu: unknown root ${root}`)
+  if (!names.includes(root)) throw new OmaiError('value', `chowLiu: unknown root ${root}`)
   return { names, all, root, cls, pairs: [...pairs].sort((x, y) => y.w - x.w) }
 }
 
@@ -323,8 +323,8 @@ function chowLiuSetup(
  * @concept structure-learning
  * @example
  * ```ts
- * import { dagEdges } from 'mdml-engine/pgm'
- * import { chowLiu } from 'mdml-engine/pgm/learning'
+ * import { dagEdges } from 'omai-engine/pgm'
+ * import { chowLiu } from 'omai-engine/pgm/learning'
  * const data = Array.from({ length: 60 }, (_, i) => ({ a: i % 2, b: i % 2, c: (i % 2) ^ (i % 3 === 0 ? 1 : 0) }))
  * dagEdges(chowLiu(data, { root: 'a' })) // => [['a', 'b'], ['a', 'c']]
  * ```
@@ -404,8 +404,8 @@ function* subsets(items: readonly string[], k: number, start = 0, acc: string[] 
  * @concept constraint-based-learning
  * @example
  * ```ts
- * import { pcAlgorithm } from 'mdml-engine/pgm/learning'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { pcAlgorithm } from 'omai-engine/pgm/learning'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const data = Array.from({ length: 200 }, (_, i) => ({ a: i % 2, b: i % 2, c: Math.floor(i / 2) % 2 }))
  * runAlgorithm(pcAlgorithm(data), { maxSteps: 10 }).state.removed.length // => 2
  * ```
@@ -495,7 +495,7 @@ export interface PcResult {
  * @index function PC algorithm for structure learning.
  * @example
  * ```ts
- * import { pc } from 'mdml-engine/pgm/learning'
+ * import { pc } from 'omai-engine/pgm/learning'
  * // a -> c <- b: c is the "or" of two independent coins.
  * const data = Array.from({ length: 400 }, (_, i) => ({ a: i % 2, b: Math.floor(i / 2) % 2, c: (i % 2) | (Math.floor(i / 2) % 2) }))
  * pc(data).cpdag.directed // => [['a', 'c'], ['b', 'c']]
@@ -595,8 +595,8 @@ function reaches(parents: ReadonlyMap<string, readonly string[]>, from: string, 
  * @concept score-based-learning
  * @example
  * ```ts
- * import { hillClimbAlgorithm } from 'mdml-engine/pgm/learning'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { hillClimbAlgorithm } from 'omai-engine/pgm/learning'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const data = Array.from({ length: 100 }, (_, i) => ({ a: i % 2, b: i % 2 }))
  * // One improving move, then a step that finds none.
  * runAlgorithm(hillClimbAlgorithm(data), { maxSteps: 10 }).steps // => 2
@@ -730,8 +730,8 @@ export function hillClimbAlgorithm(
  * @concept score-based-learning
  * @example
  * ```ts
- * import { dagEdges } from 'mdml-engine/pgm'
- * import { hillClimb } from 'mdml-engine/pgm/learning'
+ * import { dagEdges } from 'omai-engine/pgm'
+ * import { hillClimb } from 'omai-engine/pgm/learning'
  * const data = Array.from({ length: 100 }, (_, i) => ({ a: i % 2, b: i % 2, c: Math.floor(i / 2) % 2 }))
  * dagEdges(hillClimb(data).dag).length // => 1
  * ```
@@ -761,7 +761,7 @@ export function hillClimb(
  * @concept structure-learning
  * @example
  * ```ts
- * import { mutualInformationOf } from 'mdml-engine/pgm/learning'
+ * import { mutualInformationOf } from 'omai-engine/pgm/learning'
  * Math.abs(mutualInformationOf([{ a: 0, b: 0 }, { a: 1, b: 1 }], 'a', 'b') - Math.LN2) < 1e-15 // => true
  * ```
  */

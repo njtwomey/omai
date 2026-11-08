@@ -10,7 +10,7 @@
  * @index structure Trainer base: minibatch training of an nn module as a session.
  */
 
-import { type Json, MdmlError } from '../../base/index.ts'
+import { type Json, OmaiError } from '../../base/index.ts'
 import { resolveKey } from '../../context/index.ts'
 import { rowCount, type TabularData, take } from '../../data/index.ts'
 import type { Exposition } from '../../exposition/index.ts'
@@ -88,7 +88,7 @@ export interface TrainerSettings {
  *
  * @example
  * ```ts
- * import type { TrainerPath } from 'mdml-engine/learn'
+ * import type { TrainerPath } from 'omai-engine/learn'
  * type P = TrainerPath<'gan/critic'>   // 'gan/critic' | 'train/loss' | 'train/gradNorm' | ...
  * ```
  */
@@ -185,7 +185,7 @@ export interface TrainerEstimator<H extends object, K extends string = string> e
 }
 
 const isStream = (s: LearnData | LearnStream): s is LearnStream => 'draw' in s
-const EMPTY_RUN: Run = { schema: 'mdml.run/1', events: [] }
+const EMPTY_RUN: Run = { schema: 'omai.run/1', events: [] }
 
 /** Everything the loop needs for one (data, hyperparameters, key), built once. */
 interface Built {
@@ -217,12 +217,12 @@ interface Plan {
  * @concept log-contract
  * @example
  * ```ts
- * import { defineTrainer } from 'mdml-engine/learn'
- * import { mlp } from 'mdml-engine/nn'
- * import { adam } from 'mdml-engine/optim'
- * import { crossEntropy } from 'mdml-engine/losses'
- * import { key } from 'mdml-engine/random'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { defineTrainer } from 'omai-engine/learn'
+ * import { mlp } from 'omai-engine/nn'
+ * import { adam } from 'omai-engine/optim'
+ * import { crossEntropy } from 'omai-engine/losses'
+ * import { key } from 'omai-engine/random'
+ * import { toFlat } from 'omai-engine/tensor'
  * const net = defineTrainer({
  *   name: 'tiny-mlp', kind: 'classifier', defaults: { hidden: 8 },
  *   model: (_d, h, k) => mlp([2, h.hidden, 2], { key: k }),
@@ -248,7 +248,7 @@ export function defineTrainer<H extends object, K extends string = string>(
     const src = p.source?.(data, h) ?? data
     const stream = isStream(src)
     if (stream && (settings.steps === undefined || settings.batchSize === undefined))
-      throw new MdmlError('value', `${p.name}: a stream needs settings.steps and settings.batchSize`)
+      throw new OmaiError('value', `${p.name}: a stream needs settings.steps and settings.batchSize`)
     const n = stream ? (settings.steps ?? 1) * (settings.batchSize ?? 1) : (asTensor(src.x).shape[0] ?? 0)
     const rows = stream || p.validation !== undefined ? n : n - heldOut(n, settings.validationFraction)
     const batch = Math.min(settings.batchSize ?? rows, rows)

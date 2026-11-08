@@ -4,8 +4,8 @@
 
 Logic programming, satisfiability and inductive logic programming: terms, parsing, unification, SLD resolution (a small Prolog), Datalog, propositional logic and SAT solving, first-order theorem proving, answer sets and ILP, with every inference step traced.
 
-- function `resolution.ts` (file): A small Prolog engine: consult programs, answer queries by SLD resolution. `src/lib/logic/resolution.ts:1` `mdml-engine/logic`
+- function `resolution.ts` (file): A small Prolog engine: consult programs, answer queries by SLD resolution. `src/lib/logic/resolution.ts:1` `omai-engine/logic`
 
-- structure `terms.ts` (file): First-order terms and clauses, the data of logic programming. `src/lib/logic/terms.ts:1` `mdml-engine/logic`
+- structure `terms.ts` (file): First-order terms and clauses, the data of logic programming. `src/lib/logic/terms.ts:1` `omai-engine/logic`
 
-- function `solveSat`: Satisfiability by DPLL or CDCL. `src/lib/logic/sat.ts:845` `mdml-engine/logic`
+- function `solveSat`: Satisfiability by DPLL or CDCL. `src/lib/logic/sat.ts:845` `omai-engine/logic`

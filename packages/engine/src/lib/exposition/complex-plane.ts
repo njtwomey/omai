@@ -5,7 +5,7 @@
  * probes it at each step to watch the poles move as a gain or a parameter changes.
  */
 
-import { type Complex, MdmlError } from '../base/index.ts'
+import { type Complex, OmaiError } from '../base/index.ts'
 import { seal } from './_check.ts'
 
 export type { Complex }
@@ -39,7 +39,7 @@ export interface ComplexPlane {
  * @returns `true` when stable.
  * @example
  * ```ts
- * import { isStablePole } from 'mdml-engine/exposition'
+ * import { isStablePole } from 'omai-engine/exposition'
  * isStablePole('s', [-1, 2]) // => true
  * isStablePole('z', [0.6, 0.9]) // => false
  * ```
@@ -53,10 +53,10 @@ export function isStablePole(domain: 's' | 'z', pole: Complex): boolean {
  *
  * @param record - The record without its `kind`.
  * @returns The record.
- * @throws MdmlError `value` when a point is not finite; `shape` when the labels do not match the poles.
+ * @throws OmaiError `value` when a point is not finite; `shape` when the labels do not match the poles.
  * @example
  * ```ts
- * import { complexPlane } from 'mdml-engine/exposition'
+ * import { complexPlane } from 'omai-engine/exposition'
  * const r = complexPlane({ domain: 's', poles: [[-1, 2], [-1, -2]], zeros: [[-3, 0]] })
  * r.poles.length // => 2
  * ```
@@ -65,13 +65,13 @@ export function complexPlane(record: Omit<ComplexPlane, 'kind'>): ComplexPlane {
   const check = (name: string, points: readonly Complex[]): void => {
     for (const [i, p] of points.entries())
       if (!(Number.isFinite(p[0]) && Number.isFinite(p[1])))
-        throw new MdmlError('value', `complexPlane: ${name}[${i}] is not finite`)
+        throw new OmaiError('value', `complexPlane: ${name}[${i}] is not finite`)
   }
   check('poles', record.poles)
   check('zeros', record.zeros ?? [])
   for (const [k, b] of (record.locus ?? []).entries()) check(`locus[${k}]`, b.path)
   if (record.labels !== undefined && record.labels.length !== record.poles.length)
-    throw new MdmlError(
+    throw new OmaiError(
       'shape',
       `complexPlane: labels has ${record.labels.length} entries, expected ${record.poles.length}`,
     )

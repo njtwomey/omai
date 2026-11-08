@@ -6,7 +6,7 @@
  * build `R` for Runge-Kutta methods (from a Butcher tableau) and rational ones, and sample the grid.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { seal } from './_check.ts'
 import type { Complex } from './complex-plane.ts'
 
@@ -52,11 +52,11 @@ export interface StabilityRegion {
  *
  * @param record - The record without its `kind`.
  * @returns The record.
- * @throws MdmlError `shape` when the grid is smaller than two by two or the modulus does not match it; `value` when a
+ * @throws OmaiError `shape` when the grid is smaller than two by two or the modulus does not match it; `value` when a
  *   mark is not finite or a grid is not increasing.
  * @example
  * ```ts
- * import { stabilityRegion } from 'mdml-engine/exposition'
+ * import { stabilityRegion } from 'omai-engine/exposition'
  * const r = stabilityRegion({ method: 'm', x: [-1, 0], y: [0, 1], modulus: [[0.5, 1], [2, 1]], marks: [{ at: [-0.5, 0] }] })
  * r.method // => 'm'
  * ```
@@ -67,18 +67,18 @@ export function stabilityRegion(record: Omit<StabilityRegion, 'kind'>): Stabilit
     ['x', x],
     ['y', y],
   ] as const) {
-    if (a.length < 2) throw new MdmlError('shape', `stabilityRegion: ${name} needs at least two points`)
+    if (a.length < 2) throw new OmaiError('shape', `stabilityRegion: ${name} needs at least two points`)
     for (let k = 1; k < a.length; k++)
       if (!((a[k] as number) > (a[k - 1] as number)))
-        throw new MdmlError('value', `stabilityRegion: ${name} is not increasing at ${k}`)
+        throw new OmaiError('value', `stabilityRegion: ${name} is not increasing at ${k}`)
   }
-  if (modulus.length !== y.length) throw new MdmlError('shape', `stabilityRegion: modulus needs ${y.length} rows`)
+  if (modulus.length !== y.length) throw new OmaiError('shape', `stabilityRegion: modulus needs ${y.length} rows`)
   for (const [i, row] of modulus.entries())
     if (row.length !== x.length)
-      throw new MdmlError('shape', `stabilityRegion: modulus[${i}] has ${row.length} entries, expected ${x.length}`)
+      throw new OmaiError('shape', `stabilityRegion: modulus[${i}] has ${row.length} entries, expected ${x.length}`)
   for (const [k, m] of (record.marks ?? []).entries())
     if (!(Number.isFinite(m.at[0]) && Number.isFinite(m.at[1])))
-      throw new MdmlError('value', `stabilityRegion: marks[${k}] is not finite`)
+      throw new OmaiError('value', `stabilityRegion: marks[${k}] is not finite`)
   return seal({ kind: 'stabilityRegion', ...record })
 }
 
@@ -89,17 +89,17 @@ export function stabilityRegion(record: Omit<StabilityRegion, 'kind'>): Stabilit
  * @param a - The strictly lower triangular matrix of the tableau, `a[i][j]`.
  * @param b - The weights.
  * @returns The stability function.
- * @throws MdmlError `shape` when `a` is not square of the size of `b`.
+ * @throws OmaiError `shape` when `a` is not square of the size of `b`.
  * @example
  * ```ts
- * import { explicitRungeKutta } from 'mdml-engine/exposition'
+ * import { explicitRungeKutta } from 'omai-engine/exposition'
  * explicitRungeKutta([[0, 0], [0.5, 0]], [0, 1]).numerator // => [1, 1, 0.5]
  * ```
  */
 export function explicitRungeKutta(a: readonly (readonly number[])[], b: readonly number[]): StabilityFunction {
   const s = b.length
   if (a.length !== s || a.some((row) => row.length !== s))
-    throw new MdmlError('shape', `explicitRungeKutta: a must be ${s} by ${s}`)
+    throw new OmaiError('shape', `explicitRungeKutta: a must be ${s} by ${s}`)
   let v: number[] = Array.from({ length: s }, () => 1)
   const numerator = [1]
   for (let k = 1; k <= s; k++) {
@@ -131,7 +131,7 @@ function horner(coefficients: readonly number[], z: Complex): Complex {
  * @returns `|P(z) / Q(z)|` (infinite where Q vanishes).
  * @example
  * ```ts
- * import { stabilityModulus } from 'mdml-engine/exposition'
+ * import { stabilityModulus } from 'omai-engine/exposition'
  * stabilityModulus({ numerator: [1, 1] }, [-1, 0]) // => 0
  * stabilityModulus({ numerator: [1], denominator: [1, -1] }, [-1, 0]) // => 0.5
  * ```
@@ -153,7 +153,7 @@ export function stabilityModulus(r: StabilityFunction, z: Complex): number {
  * @returns The record.
  * @example
  * ```ts
- * import { sampleStabilityRegion, stableArea } from 'mdml-engine/exposition'
+ * import { sampleStabilityRegion, stableArea } from 'omai-engine/exposition'
  * const euler = sampleStabilityRegion('forward Euler', { numerator: [1, 1] }, { real: [-3, 1], imaginary: [-2, 2] }, { n: 401 })
  * Math.abs(stableArea(euler) - Math.PI) < 0.05 // => true
  * ```
@@ -189,7 +189,7 @@ export function sampleStabilityRegion(
  * @returns The area in the plane's units.
  * @example
  * ```ts
- * import { sampleStabilityRegion, stableArea } from 'mdml-engine/exposition'
+ * import { sampleStabilityRegion, stableArea } from 'omai-engine/exposition'
  * const r = sampleStabilityRegion('rk2', { numerator: [1, 1, 0.5] }, { real: [-3, 1], imaginary: [-2, 2] }, { n: 401 })
  * stableArea(r) > Math.PI // => true
  * ```
@@ -211,7 +211,7 @@ export function stableArea(record: StabilityRegion): number {
  * @returns The real-axis stability limit.
  * @example
  * ```ts
- * import { sampleStabilityRegion, realAxisLimit } from 'mdml-engine/exposition'
+ * import { sampleStabilityRegion, realAxisLimit } from 'omai-engine/exposition'
  * const r = sampleStabilityRegion('euler', { numerator: [1, 1] }, { real: [-4, 1], imaginary: [-1, 1] }, { n: 501 })
  * Math.abs((realAxisLimit(r) ?? 0) + 2) < 0.02 // => true
  * ```
@@ -236,7 +236,7 @@ export function realAxisLimit(record: StabilityRegion): number | undefined {
  * @returns The verdict.
  * @example
  * ```ts
- * import { markVerdict, sampleStabilityRegion } from 'mdml-engine/exposition'
+ * import { markVerdict, sampleStabilityRegion } from 'omai-engine/exposition'
  * const r = sampleStabilityRegion('euler', { numerator: [1, 1] }, { real: [-3, 1], imaginary: [-2, 2] })
  * markVerdict(r, [-1, 0.5]) // => 'stable'
  * markVerdict(r, [-2.5, 0]) // => 'unstable'

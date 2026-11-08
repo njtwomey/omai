@@ -6,7 +6,7 @@
  * instance per step; k = 1 with two classes is the original Relief and larger k with class-prior weighted misses is ReliefF.
  */
 
-import { type Json, MdmlError, maxOf } from '../base/index.ts'
+import { type Json, maxOf, OmaiError } from '../base/index.ts'
 import { type Key, key as makeKey, permutation, randint } from '../random/index.ts'
 import { type TensorLike, toFlat } from '../tensor/index.ts'
 import { type Algorithm, channels, runAlgorithm } from '../trace/index.ts'
@@ -45,7 +45,7 @@ export interface ReliefState {
  * @concept feature-selection
  * @example
  * ```ts
- * import { reliefAlgorithm } from 'mdml-engine/learn'
+ * import { reliefAlgorithm } from 'omai-engine/learn'
  * reliefAlgorithm([[0], [1], [10], [11]], [0, 0, 1, 1], { k: 1 }).name // => 'relief'
  * ```
  */
@@ -55,9 +55,9 @@ export function reliefAlgorithm(x: TensorLike, y: TensorLike, options: ReliefOpt
   const labels = encodeLabels(y, 'relief', n)
   const classOf = labels.codes
   const nClass = labels.classes.length
-  if (nClass < 2) throw new MdmlError('value', 'relief: needs at least two classes')
+  if (nClass < 2) throw new OmaiError('value', 'relief: needs at least two classes')
   const k = options.k ?? 10
-  if (!(Number.isInteger(k) && k >= 1)) throw new MdmlError('value', 'relief: k must be a positive integer')
+  if (!(Number.isInteger(k) && k >= 1)) throw new OmaiError('value', 'relief: k must be a positive integer')
   const iterations = options.iterations ?? n
   const prior = new Float64Array(nClass)
   for (const c of classOf) prior[c] = (prior[c] ?? 0) + 1 / n
@@ -137,7 +137,7 @@ export function reliefAlgorithm(x: TensorLike, y: TensorLike, options: ReliefOpt
  * @concept feature-selection
  * @example
  * ```ts
- * import { relief } from 'mdml-engine/learn'
+ * import { relief } from 'omai-engine/learn'
  * relief([[0], [1], [10], [11]], [0, 0, 1, 1], { k: 1 }).weights.map((v) => Math.round(v * 10000) / 10000) // => [0.7727]
  * ```
  */

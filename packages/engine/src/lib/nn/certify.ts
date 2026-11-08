@@ -7,7 +7,7 @@
  * norms of the weights.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { svdvals } from '../numerics/linalg/index.ts'
 import { ndtr, ndtri } from '../numerics/special/index.ts'
 import { foldIn, type Key, normal } from '../random/index.ts'
@@ -57,7 +57,7 @@ function radiusOf(pLower: number, sigma: number): number {
  * @concept randomised-smoothing
  * @example
  * ```ts
- * import { certifiedRadius } from 'mdml-engine/nn'
+ * import { certifiedRadius } from 'omai-engine/nn'
  * certifiedRadius(0.5, 1) // => 0
  * ```
  */
@@ -79,9 +79,9 @@ export function certifiedRadius(pALower: number, sigma: number): number {
  * @concept randomised-smoothing
  * @example
  * ```ts
- * import { smoothedCounts } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
- * import { matmul } from 'mdml-engine/tensor'
+ * import { smoothedCounts } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
+ * import { matmul } from 'omai-engine/tensor'
  * const model = (x) => matmul(x, [[1, -1]])
  * smoothedCounts(model, [10], 1, 50, key(0)) // => [50]
  * ```
@@ -170,9 +170,9 @@ const topClass = (counts: readonly number[]): number =>
  * @concept randomised-smoothing
  * @example
  * ```ts
- * import { randomisedSmoothing } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
- * import { matmul } from 'mdml-engine/tensor'
+ * import { randomisedSmoothing } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
+ * import { matmul } from 'omai-engine/tensor'
  * const model = (x) => matmul(x, [[1, -1]])
  * randomisedSmoothing(model, [3], { sigma: 0.5, key: key(0) }).prediction // => 0
  * ```
@@ -203,9 +203,9 @@ export function randomisedSmoothing(
  * @concept randomised-smoothing
  * @example
  * ```ts
- * import { certifiedAccuracy } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
- * import { matmul } from 'mdml-engine/tensor'
+ * import { certifiedAccuracy } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
+ * import { matmul } from 'omai-engine/tensor'
  * const model = (x) => matmul(x, [[1, -1]])
  * certifiedAccuracy(model, [[5], [-5]], [0, 1], [0, 1], { sigma: 0.5, key: key(0) }).curve.map((c) => c.accuracy) // => [1, 1]
  * ```
@@ -254,7 +254,7 @@ export function certifiedAccuracy(
  * @concept randomised-smoothing
  * @example
  * ```ts
- * import { linearSmoothedRadius } from 'mdml-engine/nn'
+ * import { linearSmoothedRadius } from 'omai-engine/nn'
  * linearSmoothedRadius([3, 4], 0, [1, 0], 1).radius // => 0.6
  * ```
  */
@@ -302,9 +302,9 @@ export interface SmoothingState {
  * @concept randomised-smoothing
  * @example
  * ```ts
- * import { smoothingAlgorithm } from 'mdml-engine/nn'
- * import { runAlgorithm } from 'mdml-engine/trace'
- * import { matmul } from 'mdml-engine/tensor'
+ * import { smoothingAlgorithm } from 'omai-engine/nn'
+ * import { runAlgorithm } from 'omai-engine/trace'
+ * import { matmul } from 'omai-engine/tensor'
  * const model = (x) => matmul(x, [[1, -1]])
  * runAlgorithm(smoothingAlgorithm(model, [3], { sigma: 1, steps: 3 }), { maxSteps: 10 }).state.n // => 300
  * ```
@@ -409,12 +409,12 @@ export interface IbpResult {
  * @param upper - Upper corner.
  * @param params - Parameters (default the module's).
  * @returns The output bounds and the bounds after each layer.
- * @throws MdmlError with code `value` for a layer it cannot bound.
+ * @throws OmaiError with code `value` for a layer it cannot bound.
  * @concept interval-bound-propagation
  * @example
  * ```ts
- * import { intervalBoundPropagation, Sequential, Linear } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
+ * import { intervalBoundPropagation, Sequential, Linear } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
  * const net = new Sequential(new Linear(2, 3, { key: key(0) }))
  * intervalBoundPropagation(net, [[0, 0]], [[0, 0]]).output.lower.shape // => [1, 3]
  * ```
@@ -439,7 +439,7 @@ export function intervalBoundPropagation(
         lower: toT(layer.apply(p, b.lower as never, { train: false }) as Value),
         upper: toT(layer.apply(p, b.upper as never, { train: false }) as Value),
       }
-    else throw new MdmlError('value', `intervalBoundPropagation: cannot bound a ${layer.kind} layer`)
+    else throw new OmaiError('value', `intervalBoundPropagation: cannot bound a ${layer.kind} layer`)
     layers.push(b)
   }
   return { output: b, layers }
@@ -466,15 +466,15 @@ export interface IbpCertificate {
  * @concept interval-bound-propagation
  * @example
  * ```ts
- * import { ibpCertify, Sequential, Linear } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
+ * import { ibpCertify, Sequential, Linear } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
  * ibpCertify(new Sequential(new Linear(2, 2, { key: key(0) })), [[0, 0]], [0], 0).certified.length // => 1
  * ```
  */
 export function ibpCertify(model: Sequential, x: TensorLike, labels: TensorLike, epsilon: number): IbpCertificate {
   const x0 = asTensor(x)
   const last = model.layers[model.layers.length - 1]
-  if (!(last instanceof Linear)) throw new MdmlError('value', 'ibpCertify: the network must end in a Linear layer')
+  if (!(last instanceof Linear)) throw new OmaiError('value', 'ibpCertify: the network must end in a Linear layer')
   const head = new Sequential(...model.layers.slice(0, -1))
   const headParams: Record<string, unknown> = {}
   model.layers.slice(0, -1).forEach((_, i) => {
@@ -536,12 +536,12 @@ const LIPSCHITZ: Readonly<Record<string, number>> = {
  * @param model - A `Sequential` of `Linear` layers and Lipschitz activations.
  * @param params - Parameters (default the module's).
  * @returns The bound.
- * @throws MdmlError with code `value` for a layer whose constant it does not know.
+ * @throws OmaiError with code `value` for a layer whose constant it does not know.
  * @concept lipschitz-certificates
  * @example
  * ```ts
- * import { lipschitzBound, Sequential, Linear } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
+ * import { lipschitzBound, Sequential, Linear } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
  * lipschitzBound(new Sequential(new Linear(2, 2, { key: key(0) }))) > 0 // => true
  * ```
  */
@@ -551,7 +551,7 @@ export function lipschitzBound(model: Sequential, params: Params = model.params)
     if (layer instanceof Linear) bound *= toFlat(svdvals(p['weight'] as Value))[0] ?? 0
     else {
       const c = LIPSCHITZ[layer.kind]
-      if (c === undefined) throw new MdmlError('value', `lipschitzBound: no constant for a ${layer.kind} layer`)
+      if (c === undefined) throw new OmaiError('value', `lipschitzBound: no constant for a ${layer.kind} layer`)
       bound *= c
     }
   }
@@ -568,7 +568,7 @@ export function lipschitzBound(model: Sequential, params: Params = model.params)
  * @concept lipschitz-certificates
  * @example
  * ```ts
- * import { lipschitzCertifiedRadius } from 'mdml-engine/nn'
+ * import { lipschitzCertifiedRadius } from 'omai-engine/nn'
  * lipschitzCertifiedRadius([[3, 1]], 1)[0]?.toFixed(4) // => '1.4142'
  * ```
  */

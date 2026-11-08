@@ -4,8 +4,8 @@
  */
 
 import type { EChartsOption, SeriesOption } from 'echarts'
-import { maxOf } from 'mdml-engine/base'
-import type { EpisodeRecord } from 'mdml-engine/exposition'
+import { maxOf } from 'omai-engine/base'
+import type { EpisodeRecord } from 'omai-engine/exposition'
 import { bars } from '../charts/bars.ts'
 import { type Panel, subplots } from '../charts/compose.ts'
 import { referenceLines } from '../charts/functions.ts'
@@ -49,8 +49,8 @@ export interface EpisodeViewOptions extends ViewOptions {
  * @returns The ECharts option.
  * @example
  * ```ts
- * import { episodeRecord } from 'mdml-engine/exposition'
- * import { episodeView } from 'mdml-render/views'
+ * import { episodeRecord } from 'omai-engine/exposition'
+ * import { episodeView } from 'omai-render/views'
  * episodeView(episodeRecord({ environment: 'FrozenLake', agent: 'q', returns: [0, 1, 1], lengths: [5, 8, 6] })).grid.length // => 2
  * ```
  */

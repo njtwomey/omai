@@ -4,7 +4,7 @@
  * posterior, for programs without markov structure. Also the engine for the planner.
  */
 
-import { type Json, logSumExpOf, MdmlError } from '../../base/index.ts'
+import { type Json, logSumExpOf, OmaiError } from '../../base/index.ts'
 import { bijectors } from '../../dists/index.ts'
 import { foldIn, type Key } from '../../random/index.ts'
 import { proposal, type ResamplingScheme, resample, smcSampler } from '../../sampling/index.ts'
@@ -64,10 +64,10 @@ function discover<D = void>(model: Model<D>, data: D): Loop {
     })),
     data,
   )
-  if (found === undefined) throw new MdmlError('value', 'particleFilter: the program has no markov loop')
+  if (found === undefined) throw new OmaiError('value', 'particleFilter: the program has no markov loop')
   for (const s of t.sites.values())
     if (s.type === 'sample' && !s.isObserved)
-      throw new MdmlError('value', `particleFilter: latent site ${s.name} is outside the markov loop`)
+      throw new OmaiError('value', `particleFilter: latent site ${s.name} is outside the markov loop`)
   return { ...found, before: observedLogProb(t) }
 }
 
@@ -88,14 +88,14 @@ function normalise(lw: Float64Array): Float64Array {
  * @param data - Its data.
  * @param options - Particles, resampling threshold and scheme.
  * @returns The algorithm.
- * @throws MdmlError with code `value` when the program has no markov loop or latent sites outside it.
+ * @throws OmaiError with code `value` when the program has no markov loop or latent sites outside it.
  * @concept sequential-monte-carlo
  * @example
  * ```ts
- * import { markov, observe, particleFilterAlgorithm, sample } from 'mdml-engine/probprog'
- * import { normal } from 'mdml-engine/dists'
- * import { runAlgorithm } from 'mdml-engine/trace'
- * import type { Value } from 'mdml-engine/tensor'
+ * import { markov, observe, particleFilterAlgorithm, sample } from 'omai-engine/probprog'
+ * import { normal } from 'omai-engine/dists'
+ * import { runAlgorithm } from 'omai-engine/trace'
+ * import type { Value } from 'omai-engine/tensor'
  * const walk = () => markov('t', 3, (t, x: Value | number) => { const z = sample(`x${t}`, normal(x, 1)); observe(`y${t}`, normal(z, 1), t); return z }, 0)
  * runAlgorithm(particleFilterAlgorithm(walk, undefined, { numParticles: 50 }), { seed: 0, maxSteps: 10 }).steps // => 3
  * ```
@@ -107,7 +107,7 @@ export function particleFilterAlgorithm<D = void>(
 ): Algorithm<ParticleFilterState> {
   const P = options.numParticles ?? 500
   const threshold = options.resampleThreshold ?? 0.5
-  if (!(Number.isInteger(P) && P >= 1)) throw new MdmlError('value', 'particleFilter: numParticles must be positive')
+  if (!(Number.isInteger(P) && P >= 1)) throw new OmaiError('value', 'particleFilter: numParticles must be positive')
   const loop = discover(model, data)
   return {
     name: 'particleFilter',
@@ -189,10 +189,10 @@ export function particleFilterAlgorithm<D = void>(
  * @concept sequential-monte-carlo
  * @example
  * ```ts
- * import { markov, observe, particleFilter, sample } from 'mdml-engine/probprog'
- * import { normal } from 'mdml-engine/dists'
- * import { key } from 'mdml-engine/random'
- * import type { Value } from 'mdml-engine/tensor'
+ * import { markov, observe, particleFilter, sample } from 'omai-engine/probprog'
+ * import { normal } from 'omai-engine/dists'
+ * import { key } from 'omai-engine/random'
+ * import type { Value } from 'omai-engine/tensor'
  * const walk = () => markov('t', 3, (t, x: Value | number) => { const z = sample(`x${t}`, normal(x, 1)); observe(`y${t}`, normal(z, 1), t); return z }, 0)
  * particleFilter(walk, undefined, { key: key(0), numParticles: 100 }).draws?.['x2']?.shape // => [100]
  * ```
@@ -248,10 +248,10 @@ export interface TemperedSmcOptions {
  * @concept sequential-monte-carlo
  * @example
  * ```ts
- * import { observe, sample, temperedSmc } from 'mdml-engine/probprog'
- * import { normal } from 'mdml-engine/dists'
- * import { key } from 'mdml-engine/random'
- * import { item } from 'mdml-engine/tensor'
+ * import { observe, sample, temperedSmc } from 'omai-engine/probprog'
+ * import { normal } from 'omai-engine/dists'
+ * import { key } from 'omai-engine/random'
+ * import { item } from 'omai-engine/tensor'
  * const model = () => { const m = sample('m', normal(0, 1)); observe('y', normal(m, 1), 1) }
  * Math.abs(item(temperedSmc(model, undefined, { key: key(0), numParticles: 400 }).mean('m')) - 0.5) < 0.15 // => true
  * ```
@@ -264,7 +264,7 @@ export function temperedSmc<D = void>(
   const proto = traceOf(seed(model, foldIn(options.key, 0)), data)
   const { layout, enumerated } = latentLayout(proto)
   if (enumerated.length > 0)
-    throw new MdmlError('value', 'temperedSmc: discrete latent sites are not supported; use another engine')
+    throw new OmaiError('value', 'temperedSmc: discrete latent sites are not supported; use another engine')
   const dim = layout.reduce((a, l) => a + l.size, 0)
   const byName = new Map(layout.map((l) => [l.name, l]))
   const split = (x: ArrayLike<number>): { readonly prior: number; readonly lik: number } => {
@@ -338,7 +338,7 @@ function filterable(a: ProgramAnalysis): string | undefined {
  * @concept inference-engines
  * @example
  * ```ts
- * import { smcEngine } from 'mdml-engine/probprog'
+ * import { smcEngine } from 'omai-engine/probprog'
  * smcEngine().name // => 'smc'
  * ```
  */

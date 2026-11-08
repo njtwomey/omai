@@ -104,7 +104,7 @@ describe('Chart', () => {
 describe('Chart text alternative', () => {
   it('is an image labelled by the reader\'s text, else the option\'s own description, else its title, else "Chart"', async () => {
     const labelOf = (m: Awaited<ReturnType<typeof mountElement>>): unknown =>
-      m.elements().find((e) => e.props['data-mdml-chart'] !== undefined)?.props
+      m.elements().find((e) => e.props['data-omai-chart'] !== undefined)?.props
     const cases: readonly [ChartProps, string][] = [
       [{ option: {}, label: 'Loss over steps' }, 'Loss over steps'],
       [

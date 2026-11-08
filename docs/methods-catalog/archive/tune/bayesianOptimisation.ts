@@ -124,7 +124,7 @@ const bestOf = (s: BayesianState): { readonly x: number; readonly value: number 
  *
  * @example
  * ```ts
- * import type { BayesianOptimisationPath } from 'mdml-engine/methods/tune'
+ * import type { BayesianOptimisationPath } from 'omai-engine/methods/tune'
  * const path: BayesianOptimisationPath = 'best'
  * path // => 'best'
  * ```
@@ -144,8 +144,8 @@ export type BayesianOptimisationPath = 'x' | 'value' | 'best' | 'model/params' |
  *
  * @example
  * ```ts
- * import { bayesianOptimisation } from 'mdml-engine/methods/tune'
- * import { session } from 'mdml-engine/trace'
+ * import { bayesianOptimisation } from 'omai-engine/methods/tune'
+ * import { session } from 'omai-engine/trace'
  * const s = session(bayesianOptimisation, { mode: 'eager', steps: 12 })
  * s.t // => 12
  * ```

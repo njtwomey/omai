@@ -8,7 +8,7 @@
  */
 
 import { jacfwd } from '../autodiff/index.ts'
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { contourLines } from '../numerics/geometry/index.ts'
 import { eig } from '../numerics/linalg/index.ts'
 import { fsolve } from '../numerics/roots/index.ts'
@@ -28,8 +28,8 @@ import { type OdeMethodName, solveIvp } from './ode/solve-ivp.ts'
  * @concept jacobian
  * @example
  * ```ts
- * import { fieldJacobian } from 'mdml-engine/dynamics'
- * import { mul, toArray } from 'mdml-engine/tensor'
+ * import { fieldJacobian } from 'omai-engine/dynamics'
+ * import { mul, toArray } from 'omai-engine/tensor'
  * toArray(fieldJacobian((_t, y) => mul(y, y), [3])) // => [[6]]
  * ```
  */
@@ -49,8 +49,8 @@ export function fieldJacobian(f: OdeVectorField, y: TensorLike, t = 0): Tensor {
  * @returns div f at y.
  * @example
  * ```ts
- * import { fieldDivergence } from 'mdml-engine/dynamics'
- * import { mul } from 'mdml-engine/tensor'
+ * import { fieldDivergence } from 'omai-engine/dynamics'
+ * import { mul } from 'omai-engine/tensor'
  * fieldDivergence((_t, y) => mul(y, -2), [1, 1, 1]) // => -6
  * ```
  */
@@ -69,11 +69,11 @@ export function fieldDivergence(f: OdeVectorField, y: TensorLike, t = 0): number
  * @param y - The point.
  * @param t - The time (default 0).
  * @returns The curl.
- * @throws MdmlError with code `shape` for other dimensions.
+ * @throws OmaiError with code `shape` for other dimensions.
  * @example
  * ```ts
- * import { fieldCurl } from 'mdml-engine/dynamics'
- * import { stack, sliceAxis, neg, sum } from 'mdml-engine/tensor'
+ * import { fieldCurl } from 'omai-engine/dynamics'
+ * import { stack, sliceAxis, neg, sum } from 'omai-engine/tensor'
  * fieldCurl((_t, y) => stack([neg(sum(sliceAxis(y, 0, 1, 2))), sum(sliceAxis(y, 0, 0, 1))]), [0.3, 0.2]) // => [2]
  * ```
  */
@@ -83,7 +83,7 @@ export function fieldCurl(f: OdeVectorField, y: TensorLike, t = 0): number[] {
   const j = (r: number, c: number): number => J.data[r * n + c] ?? 0
   if (n === 2) return [j(1, 0) - j(0, 1) + 0]
   if (n === 3) return [j(2, 1) - j(1, 2) + 0, j(0, 2) - j(2, 0) + 0, j(1, 0) - j(0, 1) + 0]
-  throw new MdmlError('shape', 'fieldCurl: the field must be 2-D or 3-D')
+  throw new OmaiError('shape', 'fieldCurl: the field must be 2-D or 3-D')
 }
 
 /** The kind of an equilibrium from its linearisation. */
@@ -118,7 +118,7 @@ export interface FixedPointReport {
  * @concept fixed-point-classification
  * @example
  * ```ts
- * import { classifyFixedPoint } from 'mdml-engine/dynamics'
+ * import { classifyFixedPoint } from 'omai-engine/dynamics'
  * [classifyFixedPoint([[0, 1], [-1, 0]]).type, classifyFixedPoint([[1, 0], [0, -1]]).type] // => ['center', 'saddle']
  * ```
  */
@@ -167,12 +167,12 @@ export interface FixedPointOptions {
  * @param f - The field.
  * @param options - Seeds or a box with a count and key, tolerances and time.
  * @returns The distinct equilibria with their classification.
- * @throws MdmlError with code `value` when neither seeds nor a box is given.
+ * @throws OmaiError with code `value` when neither seeds nor a box is given.
  * @concept fixed-point-classification
  * @example
  * ```ts
- * import { fixedPoints } from 'mdml-engine/dynamics'
- * import { mul, stack, sub, sum, sliceAxis } from 'mdml-engine/tensor'
+ * import { fixedPoints } from 'omai-engine/dynamics'
+ * import { mul, stack, sub, sum, sliceAxis } from 'omai-engine/tensor'
  * // x' = x - x^3, y' = -y: equilibria at x = -1, 0, 1.
  * const f = (_t, y) => { const x = sum(sliceAxis(y, 0, 0, 1)); return stack([sub(x, mul(mul(x, x), x)), mul(sum(sliceAxis(y, 0, 1, 2)), -1)]) }
  * fixedPoints(f, { seeds: [[-2, 1], [0.1, 0], [3, -1]] }).map((p) => p.type) // => ['stable-node', 'saddle', 'stable-node']
@@ -189,7 +189,7 @@ export function fixedPoints(f: OdeVectorField, options: FixedPointOptions): Fixe
     seeds = Array.from({ length: count }, (_, i) =>
       box.map(([lo, hi], j) => lo + (hi - lo) * (u.data[i * box.length + j] ?? 0)),
     )
-  } else throw new MdmlError('value', 'fixedPoints: give seeds or a box')
+  } else throw new OmaiError('value', 'fixedPoints: give seeds or a box')
   const tol = options.tol ?? 1e-10
   const distinct = options.distinct ?? 1e-6
   const found: FixedPointReport[] = []
@@ -221,8 +221,8 @@ export function fixedPoints(f: OdeVectorField, options: FixedPointOptions): Fixe
  * @concept nullcline
  * @example
  * ```ts
- * import { nullclines } from 'mdml-engine/dynamics'
- * import { stack, sub, sum, sliceAxis } from 'mdml-engine/tensor'
+ * import { nullclines } from 'omai-engine/dynamics'
+ * import { stack, sub, sum, sliceAxis } from 'omai-engine/tensor'
  * // x' = y - x, y' = -y: the x-nullcline is the diagonal.
  * const lines = nullclines((_t, v) => stack([sub(sum(sliceAxis(v, 0, 1, 2)), sum(sliceAxis(v, 0, 0, 1))), sum(sliceAxis(v, 0, 1, 2))]), [-1, 1], [-1, 1], 11)
  * lines[0].length > 0 // => true
@@ -280,8 +280,8 @@ export interface StreamlineOptions {
  * @concept phase-portrait
  * @example
  * ```ts
- * import { streamline } from 'mdml-engine/dynamics'
- * import { neg } from 'mdml-engine/tensor'
+ * import { streamline } from 'omai-engine/dynamics'
+ * import { neg } from 'omai-engine/tensor'
  * streamline((_t, y) => neg(y), [1, 1], { tEnd: 1, points: 5 }).points.shape // => [5, 2]
  * ```
  */
@@ -320,8 +320,8 @@ export function streamline(
  * @concept flow-map
  * @example
  * ```ts
- * import { flowMap } from 'mdml-engine/dynamics'
- * import { neg, toArray } from 'mdml-engine/tensor'
+ * import { flowMap } from 'omai-engine/dynamics'
+ * import { neg, toArray } from 'omai-engine/tensor'
  * toArray(flowMap((_t, y) => neg(y), [[1], [2]], Math.log(2), { rtol: 1e-12, atol: 1e-14 })).map((r) => Math.round(r[0] * 1e9) / 1e9) // => [0.5, 1]
  * ```
  */
@@ -366,12 +366,12 @@ export interface ManifoldBranch {
  * @param kind - `stable` or `unstable`.
  * @param options - Offset along the eigenvector (default 1e-6), duration (default 10) and sampling.
  * @returns The two branches.
- * @throws MdmlError with code `value` when the point has no real eigenvalue of the needed sign.
+ * @throws OmaiError with code `value` when the point has no real eigenvalue of the needed sign.
  * @concept invariant-manifold
  * @example
  * ```ts
- * import { invariantManifold } from 'mdml-engine/dynamics'
- * import { stack, sliceAxis, sum, neg } from 'mdml-engine/tensor'
+ * import { invariantManifold } from 'omai-engine/dynamics'
+ * import { stack, sliceAxis, sum, neg } from 'omai-engine/tensor'
  * // x' = x, y' = -y: the unstable manifold is the x-axis.
  * const f = (_t, y) => stack([sum(sliceAxis(y, 0, 0, 1)), neg(sum(sliceAxis(y, 0, 1, 2)))])
  * invariantManifold(f, [0, 0], 'unstable', { tEnd: 5 }).length // => 2
@@ -396,7 +396,7 @@ export function invariantManifold(
       if (pick < 0 || Math.abs(re[i] ?? 0) > Math.abs(re[pick] ?? 0)) pick = i
     }
   }
-  if (pick < 0) throw new MdmlError('value', `invariantManifold: no real ${kind} eigenvalue at this point`)
+  if (pick < 0) throw new OmaiError('value', `invariantManifold: no real ${kind} eigenvalue at this point`)
   const v = Array.from({ length: n }, (_, r) => vectors.re.data[r * n + pick] ?? 0)
   const eps = options.offset ?? 1e-6
   const tEnd = (kind === 'stable' ? -1 : 1) * (options.tEnd ?? 10)

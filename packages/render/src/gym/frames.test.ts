@@ -1,4 +1,4 @@
-import { scene } from 'mdml-engine/scene'
+import { scene } from 'omai-engine/scene'
 import { describe, expect, it } from 'vitest'
 import { filmstrip } from './frames.ts'
 

@@ -4,7 +4,7 @@
  * tuples for code written in that style.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import { foldIn, type Key, key as makeKey } from '../random/index.ts'
 import type { Scene } from '../scene/index.ts'
 import { type Space, sample as sampleSpace } from '../space/index.ts'
@@ -30,8 +30,8 @@ export interface MakeConfig {
  * @concept environments
  * @example
  * ```ts
- * import { listEnvironments } from 'mdml-engine/rl'
- * import * as rl from 'mdml-engine/environments'
+ * import { listEnvironments } from 'omai-engine/rl'
+ * import * as rl from 'omai-engine/environments'
  * listEnvironments(rl).some((d) => d.id === 'CartPole-v1') // => true
  * ```
  */
@@ -44,7 +44,7 @@ export function listEnvironments(module: Readonly<Record<string, unknown>>): Env
 function lookup(id: string, registry: readonly EnvDefinition[] | undefined): EnvDefinition {
   const found = registry?.find((d) => d.id === id)
   if (found === undefined) {
-    throw new MdmlError(
+    throw new OmaiError(
       'value',
       `make: no environment '${id}' in the registry (pass registry: listEnvironments(module))`,
     )
@@ -60,13 +60,13 @@ function lookup(id: string, registry: readonly EnvDefinition[] | undefined): Env
  * @param options - Options for the definition.
  * @param config - Time-limit override, wrappers and the registry.
  * @returns The environment.
- * @throws MdmlError with code `value` for an id missing from the registry.
+ * @throws OmaiError with code `value` for an id missing from the registry.
  * @concept environments
  * @index function Make an environment by name with wrappers, like gymnasium.make.
  * @example
  * ```ts
- * import { make, listEnvironments } from 'mdml-engine/rl'
- * import * as rl from 'mdml-engine/environments'
+ * import { make, listEnvironments } from 'omai-engine/rl'
+ * import * as rl from 'omai-engine/environments'
  * make(rl.cartPole).spec.id // => 'CartPole-v1'
  * make('MountainCar-v0', {}, { registry: listEnvironments(rl) }).spec.maxEpisodeSteps // => 200
  * ```
@@ -96,8 +96,8 @@ export function make<S, O, A>(
  * @concept environments
  * @example
  * ```ts
- * import { GymEnv } from 'mdml-engine/rl'
- * import { cartPole } from 'mdml-engine/environments'
+ * import { GymEnv } from 'omai-engine/rl'
+ * import { cartPole } from 'omai-engine/environments'
  * const env = new GymEnv(cartPole)
  * env.reset({ seed: 0 })
  * env.step(1)[1] // => 1
@@ -163,7 +163,7 @@ export class GymEnv<O, A> {
 
   /** Advance one step: `[observation, reward, terminated, truncated, info]`. */
   step(action: A): [O, number, boolean, boolean, Readonly<Record<string, Json>>] {
-    if (this.done) throw new MdmlError('value', 'GymEnv.step: call reset() first (the episode has ended)')
+    if (this.done) throw new OmaiError('value', 'GymEnv.step: call reset() first (the episode has ended)')
     this.t += 1
     const r = this.env.step(this.current, action, foldIn(foldIn(this.key, 2 * this.resets + 1), this.t))
     this.current = r.state

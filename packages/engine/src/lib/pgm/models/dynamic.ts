@@ -4,7 +4,7 @@
  * separate past from future, and exact filtering by Murphy's interface algorithm.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { type Factor, factorProduct, logFactor, permuteFactor } from '../factor.ts'
 import { topologicalOrder } from '../graphs.ts'
 import { calibrate, junctionTreeQuery } from '../inference/junction-tree.ts'
@@ -47,11 +47,11 @@ const prev = (name: string): string => `${name}@prev`
  * @param initial - The nodes of the first slice.
  * @param transition - The transition template.
  * @returns The network.
- * @throws MdmlError with code `value` for mismatched slices, unknown parents, cycles or invalid CPTs.
+ * @throws OmaiError with code `value` for mismatched slices, unknown parents, cycles or invalid CPTs.
  * @concept dynamic-bayes-networks
  * @example
  * ```ts
- * import { dynamicBayesNet } from 'mdml-engine/pgm'
+ * import { dynamicBayesNet } from 'omai-engine/pgm'
  * const dbn = dynamicBayesNet(
  *   [{ name: 'z', states: ['a', 'b'], parents: [], cpt: [0.5, 0.5] }],
  *   [{ name: 'z', states: ['a', 'b'], parents: [], previous: ['z'], cpt: [0.9, 0.1, 0.2, 0.8] }],
@@ -63,19 +63,19 @@ export function dynamicBayesNet(initial: readonly BayesNode[], transition: reado
   const first = bayesNet(initial)
   const states = new Map(first.nodes.map((n) => [n.name, n.states]))
   if (transition.length !== first.nodes.length || new Set(transition.map((n) => n.name)).size !== transition.length)
-    throw new MdmlError('value', 'dynamicBayesNet: both slices need the same variables')
+    throw new OmaiError('value', 'dynamicBayesNet: both slices need the same variables')
   for (const n of transition) {
     const s = states.get(n.name)
     if (s === undefined || s.length !== n.states.length || s.some((x, i) => x !== n.states[i]))
-      throw new MdmlError('value', `dynamicBayesNet: ${n.name} differs between the slices`)
+      throw new OmaiError('value', `dynamicBayesNet: ${n.name} differs between the slices`)
     for (const p of [...n.parents, ...n.previous])
-      if (!states.has(p)) throw new MdmlError('value', `dynamicBayesNet: ${n.name} has unknown parent ${p}`)
+      if (!states.has(p)) throw new OmaiError('value', `dynamicBayesNet: ${n.name} has unknown parent ${p}`)
   }
   let ordered: TemplateNode[]
   try {
     ordered = topologicalOrder(transition)
   } catch (e) {
-    throw new MdmlError('value', `dynamicBayesNet: ${(e as Error).message}`)
+    throw new OmaiError('value', `dynamicBayesNet: ${(e as Error).message}`)
   }
   const dbn: DynamicBayesNet = { kind: 'dynamicBayesNet', initial: first, transition: ordered }
   unroll(dbn, 2) // validates the transition CPTs
@@ -88,11 +88,11 @@ export function dynamicBayesNet(initial: readonly BayesNode[], transition: reado
  * @param dbn - The network.
  * @param T - Number of slices (at least 1).
  * @returns The unrolled Bayes network.
- * @throws MdmlError with code `value` for T < 1.
+ * @throws OmaiError with code `value` for T < 1.
  * @concept dynamic-bayes-networks
  * @example
  * ```ts
- * import { dynamicBayesNet, unroll } from 'mdml-engine/pgm'
+ * import { dynamicBayesNet, unroll } from 'omai-engine/pgm'
  * const dbn = dynamicBayesNet(
  *   [{ name: 'z', states: ['a', 'b'], parents: [], cpt: [0.5, 0.5] }],
  *   [{ name: 'z', states: ['a', 'b'], parents: [], previous: ['z'], cpt: [0.9, 0.1, 0.2, 0.8] }],
@@ -101,7 +101,7 @@ export function dynamicBayesNet(initial: readonly BayesNode[], transition: reado
  * ```
  */
 export function unroll(dbn: DynamicBayesNet, T: number): BayesNet {
-  if (!(T >= 1) || !Number.isInteger(T)) throw new MdmlError('value', 'unroll: T must be a positive integer')
+  if (!(T >= 1) || !Number.isInteger(T)) throw new OmaiError('value', 'unroll: T must be a positive integer')
   const nodes: BayesNode[] = dbn.initial.nodes.map((n) => ({
     name: at(n.name, 0),
     states: n.states,
@@ -130,7 +130,7 @@ export function unroll(dbn: DynamicBayesNet, T: number): BayesNet {
  * @concept dynamic-bayes-networks
  * @example
  * ```ts
- * import { dynamicBayesNet, interfaceVariables } from 'mdml-engine/pgm'
+ * import { dynamicBayesNet, interfaceVariables } from 'omai-engine/pgm'
  * const dbn = dynamicBayesNet(
  *   [{ name: 'z', states: ['a', 'b'], parents: [], cpt: [0.5, 0.5] }, { name: 'x', states: ['u', 'v'], parents: ['z'], cpt: [0.7, 0.3, 0.1, 0.9] }],
  *   [{ name: 'z', states: ['a', 'b'], parents: [], previous: ['z'], cpt: [0.9, 0.1, 0.2, 0.8] }, { name: 'x', states: ['u', 'v'], parents: ['z'], previous: [], cpt: [0.7, 0.3, 0.1, 0.9] }],
@@ -168,11 +168,11 @@ function pointMass(name: string, states: readonly string[], index: number): Fact
  * @param dbn - The network.
  * @param evidence - Observed states (names or indices) for each slice, by template name.
  * @returns The filtered marginals of every slice and the log-likelihood of the evidence.
- * @throws MdmlError with code `value` for impossible evidence.
+ * @throws OmaiError with code `value` for impossible evidence.
  * @concept dynamic-bayes-networks
  * @example
  * ```ts
- * import { dynamicBayesNet, dbnFilter, factorValues } from 'mdml-engine/pgm'
+ * import { dynamicBayesNet, dbnFilter, factorValues } from 'omai-engine/pgm'
  * const dbn = dynamicBayesNet(
  *   [{ name: 'z', states: ['a', 'b'], parents: [], cpt: [0.5, 0.5] }, { name: 'x', states: ['u', 'v'], parents: ['z'], cpt: [0.8, 0.2, 0.2, 0.8] }],
  *   [{ name: 'z', states: ['a', 'b'], parents: [], previous: ['z'], cpt: [1, 0, 0, 1] }, { name: 'x', states: ['u', 'v'], parents: ['z'], previous: [], cpt: [0.8, 0.2, 0.2, 0.8] }],
@@ -231,7 +231,7 @@ export function dbnFilter(
     }
     belief = next === null ? null : renamed(permuteFactor(next, iface), prev)
   }
-  if (!Number.isFinite(logLikelihood)) throw new MdmlError('value', 'dbnFilter: the evidence is impossible')
+  if (!Number.isFinite(logLikelihood)) throw new OmaiError('value', 'dbnFilter: the evidence is impossible')
   return { marginals, logLikelihood }
 }
 

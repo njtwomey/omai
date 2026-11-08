@@ -1,4 +1,4 @@
-import { decisionSurface } from 'mdml-engine/exposition'
+import { decisionSurface } from 'omai-engine/exposition'
 import { describe, expect, it } from 'vitest'
 import {
   cellAt,

@@ -33,8 +33,8 @@ import { uciTable } from './_uci.ts'
  * @concept datasets
  * @example
  * ```ts
- * import { rowCount } from 'mdml-engine/data'
- * import { autoMpg } from 'mdml-engine/datasets'
+ * import { rowCount } from 'omai-engine/data'
+ * import { autoMpg } from 'omai-engine/datasets'
  * rowCount(autoMpg()) // => 398
  * autoMpg().columns['horsepower']?.kind // => 'numeric'
  * ```
@@ -56,8 +56,8 @@ export function autoMpg(): TableData {
  * @concept datasets
  * @example
  * ```ts
- * import { rowCount } from 'mdml-engine/data'
- * import { abalone } from 'mdml-engine/datasets'
+ * import { rowCount } from 'omai-engine/data'
+ * import { abalone } from 'omai-engine/datasets'
  * rowCount(abalone()) // => 4177
  * abalone().columns['sex']?.kind // => 'categorical'
  * ```
@@ -77,8 +77,8 @@ export function abalone(): TableData {
  * @concept datasets
  * @example
  * ```ts
- * import { rowCount } from 'mdml-engine/data'
- * import { heartDisease } from 'mdml-engine/datasets'
+ * import { rowCount } from 'omai-engine/data'
+ * import { heartDisease } from 'omai-engine/datasets'
  * rowCount(heartDisease()) // => 303
  * heartDisease().columns['num']?.kind // => 'categorical'
  * ```
@@ -97,8 +97,8 @@ export function heartDisease(): TableData {
  * @concept datasets
  * @example
  * ```ts
- * import { rowCount } from 'mdml-engine/data'
- * import { hepatitis } from 'mdml-engine/datasets'
+ * import { rowCount } from 'omai-engine/data'
+ * import { hepatitis } from 'omai-engine/datasets'
  * rowCount(hepatitis()) // => 155
  * hepatitis().columns['class']?.kind // => 'categorical'
  * ```
@@ -116,8 +116,8 @@ export function hepatitis(): TableData {
  * @concept datasets
  * @example
  * ```ts
- * import { rowCount } from 'mdml-engine/data'
- * import { zoo } from 'mdml-engine/datasets'
+ * import { rowCount } from 'omai-engine/data'
+ * import { zoo } from 'omai-engine/datasets'
  * rowCount(zoo()) // => 101
  * zoo().columns['type']?.kind // => 'categorical'
  * ```
@@ -143,8 +143,8 @@ export function zoo(): TableData {
  * @concept datasets
  * @example
  * ```ts
- * import { rowCount } from 'mdml-engine/data'
- * import { ticTacToe } from 'mdml-engine/datasets'
+ * import { rowCount } from 'omai-engine/data'
+ * import { ticTacToe } from 'omai-engine/datasets'
  * rowCount(ticTacToe()) // => 958
  * ticTacToe().columns['class']?.kind // => 'categorical'
  * ```
@@ -163,8 +163,8 @@ export function ticTacToe(): TableData {
  * @concept datasets
  * @example
  * ```ts
- * import { rowCount } from 'mdml-engine/data'
- * import { carEvaluation } from 'mdml-engine/datasets'
+ * import { rowCount } from 'omai-engine/data'
+ * import { carEvaluation } from 'omai-engine/datasets'
  * rowCount(carEvaluation()) // => 1728
  * carEvaluation().columns['class']?.kind // => 'categorical'
  * ```
@@ -198,8 +198,8 @@ export function carEvaluation(): TableData {
  * @concept datasets
  * @example
  * ```ts
- * import { rowCount } from 'mdml-engine/data'
- * import { congressionalVoting } from 'mdml-engine/datasets'
+ * import { rowCount } from 'omai-engine/data'
+ * import { congressionalVoting } from 'omai-engine/datasets'
  * rowCount(congressionalVoting()) // => 435
  * congressionalVoting().columns['party']?.kind // => 'categorical'
  * ```
@@ -223,8 +223,8 @@ export function congressionalVoting(): TableData {
  * @concept datasets
  * @example
  * ```ts
- * import { rowCount } from 'mdml-engine/data'
- * import { mushroom } from 'mdml-engine/datasets'
+ * import { rowCount } from 'omai-engine/data'
+ * import { mushroom } from 'omai-engine/datasets'
  * rowCount(mushroom()) // => 2000
  * mushroom().columns['class']?.kind // => 'categorical'
  * ```
@@ -245,8 +245,8 @@ export function mushroom(): TableData {
  * @concept datasets
  * @example
  * ```ts
- * import { rowCount } from 'mdml-engine/data'
- * import { adultIncome } from 'mdml-engine/datasets'
+ * import { rowCount } from 'omai-engine/data'
+ * import { adultIncome } from 'omai-engine/datasets'
  * rowCount(adultIncome()) // => 2500
  * adultIncome().columns['income']?.kind // => 'categorical'
  * ```
@@ -264,8 +264,8 @@ export function adultIncome(): TableData {
  * @concept datasets
  * @example
  * ```ts
- * import { rowCount } from 'mdml-engine/data'
- * import { dermatology } from 'mdml-engine/datasets'
+ * import { rowCount } from 'omai-engine/data'
+ * import { dermatology } from 'omai-engine/datasets'
  * rowCount(dermatology()) // => 366
  * dermatology().columns['age']?.kind // => 'numeric'
  * ```
@@ -299,8 +299,8 @@ export function dermatology(): TableData {
  * @concept datasets
  * @example
  * ```ts
- * import { rowCount } from 'mdml-engine/data'
- * import { forestFires } from 'mdml-engine/datasets'
+ * import { rowCount } from 'omai-engine/data'
+ * import { forestFires } from 'omai-engine/datasets'
  * rowCount(forestFires()) // => 517
  * forestFires().columns['month']?.kind // => 'categorical'
  * ```
@@ -329,8 +329,8 @@ export function forestFires(): TableData {
  * @concept datasets
  * @example
  * ```ts
- * import { rowCount } from 'mdml-engine/data'
- * import { studentMath } from 'mdml-engine/datasets'
+ * import { rowCount } from 'omai-engine/data'
+ * import { studentMath } from 'omai-engine/datasets'
  * rowCount(studentMath()) // => 395
  * studentMath().columns['school']?.kind // => 'categorical'
  * ```
@@ -348,8 +348,8 @@ export function studentMath(): TableData {
  * @concept datasets
  * @example
  * ```ts
- * import { rowCount } from 'mdml-engine/data'
- * import { servo } from 'mdml-engine/datasets'
+ * import { rowCount } from 'omai-engine/data'
+ * import { servo } from 'omai-engine/datasets'
  * rowCount(servo()) // => 167
  * servo().columns['motor']?.kind // => 'categorical'
  * ```
@@ -368,8 +368,8 @@ export function servo(): TableData {
  * @concept datasets
  * @example
  * ```ts
- * import { rowCount } from 'mdml-engine/data'
- * import { bikeSharingDaily } from 'mdml-engine/datasets'
+ * import { rowCount } from 'omai-engine/data'
+ * import { bikeSharingDaily } from 'omai-engine/datasets'
  * rowCount(bikeSharingDaily()) // => 731
  * bikeSharingDaily().columns['cnt']?.kind // => 'numeric'
  * ```

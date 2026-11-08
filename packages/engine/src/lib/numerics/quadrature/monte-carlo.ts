@@ -4,7 +4,7 @@
  * weights.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { foldIn, halton, type Key, uniform } from '../../random/index.ts'
 import {
   add,
@@ -60,13 +60,13 @@ function standardError(values: Value, n: number): number {
  * @param key - Random key.
  * @param n - Number of samples.
  * @returns The estimate and its standard error.
- * @throws MdmlError with code `value` when `n` is not a positive integer.
+ * @throws OmaiError with code `value` when `n` is not a positive integer.
  * @concept monte-carlo
  * @example
  * ```ts
- * import { monteCarlo } from 'mdml-engine/numerics/quadrature'
- * import { key } from 'mdml-engine/random'
- * import { item, sum, square } from 'mdml-engine/tensor'
+ * import { monteCarlo } from 'omai-engine/numerics/quadrature'
+ * import { key } from 'omai-engine/random'
+ * import { item, sum, square } from 'omai-engine/tensor'
  * const r = monteCarlo((p) => sum(square(p), -1), [[0, 1], [0, 1]], key(0), 20000)
  * Math.abs(item(r.value) - 2 / 3) < 4 * r.standardError // => true
  * ```
@@ -77,7 +77,7 @@ export function monteCarlo(
   key: Key,
   n: number,
 ): MonteCarloResult {
-  if (!Number.isInteger(n) || n < 1) throw new MdmlError('value', 'monteCarlo: n must be a positive integer')
+  if (!Number.isInteger(n) || n < 1) throw new OmaiError('value', 'monteCarlo: n must be a positive integer')
   const u = uniform(key, [n, box.length]).data as Float64Array
   const values = mul(f(scaleToBox(u, n, box)), boxVolume(box))
   return { value: mean(values), standardError: standardError(values, n), samples: n }
@@ -96,9 +96,9 @@ export function monteCarlo(
  * @returns The estimate and its standard error.
  * @example
  * ```ts
- * import { quasiMonteCarlo } from 'mdml-engine/numerics/quadrature'
- * import { key } from 'mdml-engine/random'
- * import { item, sum, square } from 'mdml-engine/tensor'
+ * import { quasiMonteCarlo } from 'omai-engine/numerics/quadrature'
+ * import { key } from 'omai-engine/random'
+ * import { item, sum, square } from 'omai-engine/tensor'
  * Math.abs(item(quasiMonteCarlo((p) => sum(square(p), -1), [[0, 1], [0, 1]], key(0), 1024).value) - 2 / 3) < 1e-3 // => true
  * ```
  */
@@ -109,7 +109,7 @@ export function quasiMonteCarlo(
   n: number,
   replicates = 16,
 ): MonteCarloResult {
-  if (replicates < 2) throw new MdmlError('value', 'quasiMonteCarlo: at least two replicates are needed')
+  if (replicates < 2) throw new OmaiError('value', 'quasiMonteCarlo: at least two replicates are needed')
   const d = box.length
   const base = halton(n, d).data as Float64Array
   const estimates: Value[] = []
@@ -150,9 +150,9 @@ export interface ImportanceResult extends MonteCarloResult {
  * @concept importance-sampling
  * @example
  * ```ts
- * import { importanceIntegral } from 'mdml-engine/numerics/quadrature'
- * import { key, normal } from 'mdml-engine/random'
- * import { exp, item, mul, neg, square, sum, sub } from 'mdml-engine/tensor'
+ * import { importanceIntegral } from 'omai-engine/numerics/quadrature'
+ * import { key, normal } from 'omai-engine/random'
+ * import { exp, item, mul, neg, square, sum, sub } from 'omai-engine/tensor'
  * // The integral of exp(-x^2) over the line, with a standard normal proposal: sqrt(pi).
  * const proposal = { sample: (k, n) => normal(k, [n, 1]), logDensity: (p) => sub(mul(sum(square(p), -1), -0.5), 0.9189385332046727) }
  * const r = importanceIntegral((p) => exp(neg(sum(square(p), -1))), proposal, key(1), 20000)

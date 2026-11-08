@@ -7,8 +7,8 @@ from typing import Any
 import arviz_base as azb
 import arviz_stats as azs
 import numpy as np
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray, rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray, rng
 from scipy.special import logsumexp
 
 REFERENCE: dict[str, str] = {

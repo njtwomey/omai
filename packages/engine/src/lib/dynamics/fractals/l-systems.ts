@@ -6,7 +6,7 @@
  * and the generation-by-generation algorithm that logs the string's length and the curve it draws.
  */
 
-import { type Json, MdmlError } from '../../base/index.ts'
+import { type Json, OmaiError } from '../../base/index.ts'
 import { foldIn, key as keyOf } from '../../random/index.ts'
 import {
   type Algorithm,
@@ -75,11 +75,11 @@ export const L_SYSTEMS: Readonly<Record<LSystemName, LSystem>> = {
 
 function checkSystem(name: string, system: LSystem): void {
   for (const [symbol, rule] of Object.entries(system.rules)) {
-    if (symbol.length !== 1) throw new MdmlError('value', `${name}: rule symbol '${symbol}' must be one character`)
+    if (symbol.length !== 1) throw new OmaiError('value', `${name}: rule symbol '${symbol}' must be one character`)
     if (typeof rule !== 'string') {
       const total = rule.reduce((s, r) => s + r.p, 0)
       if (rule.length === 0 || rule.some((r) => !(r.p >= 0)) || Math.abs(total - 1) > 1e-9)
-        throw new MdmlError('value', `${name}: the alternatives for '${symbol}' need non-negative chances summing to 1`)
+        throw new OmaiError('value', `${name}: the alternatives for '${symbol}' need non-negative chances summing to 1`)
     }
   }
 }
@@ -92,11 +92,11 @@ function checkSystem(name: string, system: LSystem): void {
  * @param system - The grammar.
  * @param u - Uniform numbers in [0, 1), one per character of `text` (only used by stochastic rules; may be omitted if none).
  * @returns The next string.
- * @throws MdmlError with code `value` for a rule symbol of more than one character or alternatives whose chances do not sum to 1.
+ * @throws OmaiError with code `value` for a rule symbol of more than one character or alternatives whose chances do not sum to 1.
  * @concept l-systems
  * @example
  * ```ts
- * import { fractals } from 'mdml-engine/dynamics'
+ * import { fractals } from 'omai-engine/dynamics'
  * fractals.rewriteOnce('F', fractals.L_SYSTEMS.koch) // => 'F+F--F+F'
  * ```
  */
@@ -131,17 +131,17 @@ export function rewriteOnce(text: string, system: LSystem, u?: ArrayLike<number>
  * @param generations - How many.
  * @param seed - The seed for stochastic rules (default 0).
  * @returns The string.
- * @throws MdmlError with code `value` for negative generations.
+ * @throws OmaiError with code `value` for negative generations.
  * @concept l-systems
  * @example
  * ```ts
- * import { fractals } from 'mdml-engine/dynamics'
+ * import { fractals } from 'omai-engine/dynamics'
  * fractals.rewrite(fractals.L_SYSTEMS.dragon, 2) // => 'FX+YF++-FX-YF+'
  * ```
  */
 export function rewrite(system: LSystem, generations: number, seed = 0): string {
   if (!(Number.isInteger(generations) && generations >= 0))
-    throw new MdmlError('value', `rewrite: bad generations ${generations}`)
+    throw new OmaiError('value', `rewrite: bad generations ${generations}`)
   let text = system.axiom
   for (let g = 0; g < generations; g++) text = rewriteOnce(text, system, draws(foldIn(keyOf(seed), g), text.length))
   return text
@@ -164,11 +164,11 @@ export interface Turtle {
  * @param angle - The turning angle in degrees.
  * @param options - The step length (default 1) and the drawing symbols (default `F`).
  * @returns The segments and their bounds.
- * @throws MdmlError with code `value` for a `]` with no `[`.
+ * @throws OmaiError with code `value` for a `]` with no `[`.
  * @concept l-systems
  * @example
  * ```ts
- * import { fractals } from 'mdml-engine/dynamics'
+ * import { fractals } from 'omai-engine/dynamics'
  * Array.from(fractals.turtle('F+F', 90).segments).map(Math.round) // => [0, 0, 1, 0, 1, 0, 1, 1]
  * ```
  */
@@ -206,7 +206,7 @@ export function turtle(
     else if (ch === '[') stack.push([x, y, h])
     else if (ch === ']') {
       const top = stack.pop()
-      if (top === undefined) throw new MdmlError('value', 'turtle: a ] with no matching [')
+      if (top === undefined) throw new OmaiError('value', 'turtle: a ] with no matching [')
       ;[x, y, h] = top
     }
   }
@@ -260,12 +260,12 @@ export const lSystemContract: Contract<LSystemState, LSystemPath> = defineContra
  *
  * @param options - The grammar and the length limit.
  * @returns The algorithm.
- * @throws MdmlError with code `value` for a malformed grammar, or when a generation would exceed `maxLength`.
+ * @throws OmaiError with code `value` for a malformed grammar, or when a generation would exceed `maxLength`.
  * @concept l-systems
  * @example
  * ```ts
- * import { fractals } from 'mdml-engine/dynamics'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { fractals } from 'omai-engine/dynamics'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * runAlgorithm(fractals.lSystemAlgorithm(), { seed: 0, maxSteps: 3 }).state.text.length // => 148
  * ```
  */
@@ -287,7 +287,7 @@ export function lSystemAlgorithm(options: LSystemOptions = {}): Algorithm<LSyste
     step: (s, ctx) => {
       const text = rewriteOnce(s.text, system, draws(foldIn(ctx.key, 0), s.text.length))
       if (text.length > maxLength)
-        throw new MdmlError(
+        throw new OmaiError(
           'value',
           `lSystemAlgorithm: generation ${s.generation + 1} has more than ${maxLength} characters`,
         )

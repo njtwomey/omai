@@ -7,7 +7,7 @@
  * @index structure Immutable symbolic expression tree in canonical form.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { bounded } from './_budget.ts'
 import {
   E as CE,
@@ -172,7 +172,7 @@ export interface Derivation {
  * roughly one exact rational operation, one expression node built or one term of polynomial arithmetic), so that
  * any input returns after a bounded, machine-independent amount of work. Every operation has a budget; when it
  * runs out the operation returns its documented fallback (`integrate` the terms it finished plus an unevaluated
- * integral, `simplify` the best form found so far, `factor` its input) or throws a MdmlError with code
+ * integral, `simplify` the best form found so far, `factor` its input) or throws a OmaiError with code
  * `convergence`. Raise the limits for inputs that need more; operations called inside another draw on its budget.
  */
 export interface WorkBudget {
@@ -190,10 +190,10 @@ export interface WorkBudget {
  * @param budget - Work limits (see {@link WorkBudget}).
  * @param f - The computation.
  * @returns What `f` returns.
- * @throws MdmlError with code `convergence` when the budget runs out outside an operation with a fallback.
+ * @throws OmaiError with code `convergence` when the budget runs out outside an operation with a fallback.
  * @example
  * ```ts
- * import { expand, parse, toText, withWorkBudget } from 'mdml-engine/symbolic'
+ * import { expand, parse, toText, withWorkBudget } from 'omai-engine/symbolic'
  * const big = parse('(a + b)*(c + d)*(e + f)*(g + h)*(i + j)*(k + l)*(m + n)*(o + p)*(q + r)*(s + t)*(u + v)')
  * expand(big) // => throws convergence
  * withWorkBudget({ terms: 4096 }, () => expand(big)).kind // => 'add'
@@ -208,7 +208,7 @@ export function withWorkBudget<T>(budget: WorkBudget, f: () => T): T {
  *
  * @example
  * ```ts
- * import { pi, sin, toText } from 'mdml-engine/symbolic'
+ * import { pi, sin, toText } from 'omai-engine/symbolic'
  * toText(sin(pi)) // => '0'
  * ```
  */
@@ -218,7 +218,7 @@ export const pi: Expr = PI
  *
  * @example
  * ```ts
- * import { E, log, toText } from 'mdml-engine/symbolic'
+ * import { E, log, toText } from 'omai-engine/symbolic'
  * toText(log(E)) // => '1'
  * ```
  */
@@ -228,7 +228,7 @@ export const E: Expr = CE
  *
  * @example
  * ```ts
- * import { I, mul, toText } from 'mdml-engine/symbolic'
+ * import { I, mul, toText } from 'omai-engine/symbolic'
  * toText(mul(I, I)) // => '-1'
  * ```
  */
@@ -238,7 +238,7 @@ export const I: Expr = CI
  *
  * @example
  * ```ts
- * import { add, oo, toText } from 'mdml-engine/symbolic'
+ * import { add, oo, toText } from 'omai-engine/symbolic'
  * toText(add(oo, 1)) // => 'oo'
  * ```
  */
@@ -248,7 +248,7 @@ export const oo: Expr = OO
  *
  * @example
  * ```ts
- * import { div, toText } from 'mdml-engine/symbolic'
+ * import { div, toText } from 'omai-engine/symbolic'
  * toText(div(1, 0)) // => 'zoo'
  * ```
  */
@@ -258,7 +258,7 @@ export const zoo: Expr = ZOO
  *
  * @example
  * ```ts
- * import { oo, sub, toText } from 'mdml-engine/symbolic'
+ * import { oo, sub, toText } from 'omai-engine/symbolic'
  * toText(sub(oo, oo)) // => 'nan'
  * ```
  */
@@ -271,7 +271,7 @@ export const nan: Expr = CNAN
  * @returns True for expression nodes.
  * @example
  * ```ts
- * import { isExpr, sym } from 'mdml-engine/symbolic'
+ * import { isExpr, sym } from 'omai-engine/symbolic'
  * isExpr(sym('x')) // => true
  * isExpr(2) // => false
  * ```
@@ -285,10 +285,10 @@ export function isExpr(x: unknown): x is Expr {
  *
  * @param x - The value.
  * @returns The expression.
- * @throws MdmlError with code `value` for anything else.
+ * @throws OmaiError with code `value` for anything else.
  * @example
  * ```ts
- * import { asExpr, toText } from 'mdml-engine/symbolic'
+ * import { asExpr, toText } from 'omai-engine/symbolic'
  * toText(asExpr(3)) // => '3'
  * toText(asExpr(0.5)) // => '0.5'
  * ```
@@ -302,7 +302,7 @@ export function asExpr(x: ExprLike): Expr {
     return Number.isInteger(x) ? numFromRational(rat(BigInt(x))) : rawFloat(x)
   }
   if (isExpr(x)) return x
-  throw new MdmlError('value', 'asExpr: expected an expression, number or bigint')
+  throw new OmaiError('value', 'asExpr: expected an expression, number or bigint')
 }
 
 /**
@@ -313,7 +313,7 @@ export function asExpr(x: ExprLike): Expr {
  * @returns The symbol.
  * @example
  * ```ts
- * import { sym, toText } from 'mdml-engine/symbolic'
+ * import { sym, toText } from 'omai-engine/symbolic'
  * toText(sym('x')) // => 'x'
  * ```
  */
@@ -334,7 +334,7 @@ export function sym(name: string, assumptions: Assumptions = {}): ExprSym {
  * @returns The symbols, in order.
  * @example
  * ```ts
- * import { symbols } from 'mdml-engine/symbolic'
+ * import { symbols } from 'omai-engine/symbolic'
  * symbols('x, y z').map((s) => s.name) // => ['x', 'y', 'z']
  * ```
  */
@@ -352,7 +352,7 @@ export function symbols(names: string, assumptions: Assumptions = {}): ExprSym[]
  * @returns The rational number.
  * @example
  * ```ts
- * import { num, toText } from 'mdml-engine/symbolic'
+ * import { num, toText } from 'omai-engine/symbolic'
  * toText(num('0.25')) // => '1/4'
  * toText(num(0.1)) // => '1/10'
  * ```
@@ -370,16 +370,16 @@ export function num(value: number | bigint | string): Expr {
  * @param p - Numerator (an integer).
  * @param q - Denominator (a non-zero integer).
  * @returns The normalised rational.
- * @throws MdmlError with code `value` for non-integers and `domain` for a zero denominator.
+ * @throws OmaiError with code `value` for non-integers and `domain` for a zero denominator.
  * @example
  * ```ts
- * import { rational, toText } from 'mdml-engine/symbolic'
+ * import { rational, toText } from 'omai-engine/symbolic'
  * toText(rational(6, -4)) // => '-3/2'
  * ```
  */
 export function rational(p: number | bigint, q: number | bigint = 1): Expr {
   if ((typeof p === 'number' && !Number.isInteger(p)) || (typeof q === 'number' && !Number.isInteger(q))) {
-    throw new MdmlError('value', 'rational: numerator and denominator must be integers')
+    throw new OmaiError('value', 'rational: numerator and denominator must be integers')
   }
   return numFromRational(rat(BigInt(p), BigInt(q)))
 }
@@ -391,7 +391,7 @@ export function rational(p: number | bigint, q: number | bigint = 1): Expr {
  * @returns Their sum.
  * @example
  * ```ts
- * import { add, sym, toText } from 'mdml-engine/symbolic'
+ * import { add, sym, toText } from 'omai-engine/symbolic'
  * const x = sym('x')
  * toText(add(x, 1, x)) // => '2*x + 1'
  * ```
@@ -408,7 +408,7 @@ export function add(...terms: readonly ExprLike[]): Expr {
  * @returns a - b.
  * @example
  * ```ts
- * import { sub, sym, toText } from 'mdml-engine/symbolic'
+ * import { sub, sym, toText } from 'omai-engine/symbolic'
  * toText(sub(sym('x'), sym('y'))) // => 'x - y'
  * ```
  */
@@ -423,7 +423,7 @@ export function sub(a: ExprLike, b: ExprLike): Expr {
  * @returns Their product.
  * @example
  * ```ts
- * import { mul, sym, toText } from 'mdml-engine/symbolic'
+ * import { mul, sym, toText } from 'omai-engine/symbolic'
  * const x = sym('x')
  * toText(mul(2, x, x)) // => '2*x**2'
  * ```
@@ -440,7 +440,7 @@ export function mul(...factors: readonly ExprLike[]): Expr {
  * @returns a * b^-1.
  * @example
  * ```ts
- * import { div, sym, toText } from 'mdml-engine/symbolic'
+ * import { div, sym, toText } from 'omai-engine/symbolic'
  * toText(div(sym('x'), 2)) // => 'x/2'
  * ```
  */
@@ -456,7 +456,7 @@ export function div(a: ExprLike, b: ExprLike): Expr {
  * @returns The power.
  * @example
  * ```ts
- * import { pow, rational, toText } from 'mdml-engine/symbolic'
+ * import { pow, rational, toText } from 'omai-engine/symbolic'
  * toText(pow(8, rational(1, 2))) // => '2*sqrt(2)'
  * ```
  */
@@ -471,7 +471,7 @@ export function pow(base: ExprLike, exponent: ExprLike): Expr {
  * @returns -1 * a.
  * @example
  * ```ts
- * import { neg, sym, toText } from 'mdml-engine/symbolic'
+ * import { neg, sym, toText } from 'omai-engine/symbolic'
  * toText(neg(sym('x'))) // => '-x'
  * ```
  */
@@ -486,7 +486,7 @@ export function neg(a: ExprLike): Expr {
  * @returns a^(1/2).
  * @example
  * ```ts
- * import { sqrt, toText } from 'mdml-engine/symbolic'
+ * import { sqrt, toText } from 'omai-engine/symbolic'
  * toText(sqrt(12)) // => '2*sqrt(3)'
  * ```
  */
@@ -501,7 +501,7 @@ export function sqrt(a: ExprLike): Expr {
  * @returns The symbols.
  * @example
  * ```ts
- * import { add, free, mul, sym } from 'mdml-engine/symbolic'
+ * import { add, free, mul, sym } from 'omai-engine/symbolic'
  * free(add(mul(sym('y'), sym('x')), 1)).map((s) => s.name) // => ['x', 'y']
  * ```
  */
@@ -532,7 +532,7 @@ export function free(e: Expr): ExprSym[] {
  * @returns True when `s` occurs in `e`.
  * @example
  * ```ts
- * import { dependsOn, sym } from 'mdml-engine/symbolic'
+ * import { dependsOn, sym } from 'omai-engine/symbolic'
  * dependsOn(sym('x'), sym('y')) // => false
  * ```
  */
@@ -549,7 +549,7 @@ export function dependsOn(e: Expr, s: ExprSym): boolean {
  * @returns The substituted expression.
  * @example
  * ```ts
- * import { add, mul, substitute, sym, toText } from 'mdml-engine/symbolic'
+ * import { add, mul, substitute, sym, toText } from 'omai-engine/symbolic'
  * const x = sym('x')
  * toText(substitute(add(mul(x, x), x), { x: 3 })) // => '12'
  * ```
@@ -587,7 +587,7 @@ export function substitute(
  * @returns True when the trees are identical.
  * @example
  * ```ts
- * import { add, equals, sym } from 'mdml-engine/symbolic'
+ * import { add, equals, sym } from 'omai-engine/symbolic'
  * const [x, y] = [sym('x'), sym('y')]
  * equals(add(x, y), add(y, x)) // => true
  * ```

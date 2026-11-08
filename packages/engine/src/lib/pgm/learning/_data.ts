@@ -1,6 +1,6 @@
 // Coding tabular data for the learners (not re-exported): discrete columns as state indices (-1 for missing) with their
 // state names, and continuous columns as numbers.
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 
 /** One row of data: a value per variable; null or undefined (or a missing key) is missing. */
 export type DataRow = Readonly<Record<string, string | number | null | undefined>>
@@ -34,7 +34,7 @@ export function code(
   weights?: readonly number[],
 ): Coded {
   const n = rows.length
-  if (weights !== undefined && weights.length !== n) throw new MdmlError('shape', 'one weight per row')
+  if (weights !== undefined && weights.length !== n) throw new OmaiError('shape', 'one weight per row')
   const resolved: Record<string, readonly string[]> = {}
   const codes: Record<string, Int32Array> = {}
   for (const v of names) {
@@ -49,7 +49,7 @@ export function code(
         continue
       }
       const k = index.get(String(x))
-      if (k === undefined) throw new MdmlError('value', `data: ${v} has state ${String(x)} outside [${s.join(', ')}]`)
+      if (k === undefined) throw new OmaiError('value', `data: ${v} has state ${String(x)} outside [${s.join(', ')}]`)
       col[i] = k
     }
     codes[v] = col
@@ -100,7 +100,7 @@ export function numericColumns(rows: readonly DataRow[], names: readonly string[
     Float64Array.from(rows, (r) => {
       const x = r[v]
       if (typeof x !== 'number' || Number.isNaN(x))
-        throw new MdmlError('value', `data: ${v} needs a number in every row`)
+        throw new OmaiError('value', `data: ${v} needs a number in every row`)
       return x
     }),
   )

@@ -5,8 +5,8 @@
  */
 
 import type { EChartsOption } from 'echarts'
-import { maxOf } from 'mdml-engine/base'
-import { type PointsSteps, pointsAt } from 'mdml-engine/exposition'
+import { maxOf } from 'omai-engine/base'
+import { type PointsSteps, pointsAt } from 'omai-engine/exposition'
 import {
   axes3d,
   type Camera,
@@ -19,7 +19,7 @@ import {
   type Scene3D,
   scene,
   scene3d,
-} from 'mdml-engine/scene'
+} from 'omai-engine/scene'
 import { cartesian, type Layer } from '../charts/plot.ts'
 import { points } from '../charts/points.ts'
 import { categoricalColour, colourScale, sequentialRamp } from '../theme/palettes.ts'
@@ -53,8 +53,8 @@ export const CAMERA_PRESETS: readonly CameraPreset[] = ['iso', 'front', 'side', 
  * @returns `[low, high]`.
  * @example
  * ```ts
- * import { pointsSteps } from 'mdml-engine/exposition'
- * import { pointsStepsValueRange } from 'mdml-render/views'
+ * import { pointsSteps } from 'omai-engine/exposition'
+ * import { pointsStepsValueRange } from 'omai-render/views'
  * const r = pointsSteps({ dims: 2, steps: [{ step: 0, points: [[0, 0], [1, 1]], values: [3, 7] }] })
  * pointsStepsValueRange(r) // => [3, 7]
  * ```
@@ -73,7 +73,7 @@ export function pointsStepsValueRange(record: PointsSteps): [number, number] {
  * @returns One opacity per point.
  * @example
  * ```ts
- * import { trailOpacity } from 'mdml-render/views'
+ * import { trailOpacity } from 'omai-render/views'
  * trailOpacity([0, 5, 10], 10) // => [0.1, 0.55, 1]
  * ```
  */
@@ -92,7 +92,7 @@ export function trailOpacity(born: readonly number[], fade?: number): number[] {
  * @returns The camera's angles and projection.
  * @example
  * ```ts
- * import { cameraPreset } from 'mdml-render/views'
+ * import { cameraPreset } from 'omai-render/views'
  * cameraPreset('top') // => { projection: 'orthographic', azimuth: -90, elevation: 90 }
  * ```
  */
@@ -136,8 +136,8 @@ function valueColours(record: PointsSteps, values: readonly number[], mode: Colo
  * @returns One `[low, high]` per coordinate.
  * @example
  * ```ts
- * import { pointsSteps } from 'mdml-engine/exposition'
- * import { pointsStepsLimits } from 'mdml-render/views'
+ * import { pointsSteps } from 'omai-engine/exposition'
+ * import { pointsStepsLimits } from 'omai-render/views'
  * const r = pointsSteps({ dims: 2, steps: [{ step: 0, points: [[0, 1]] }, { step: 1, points: [[4, -1]] }] })
  * pointsStepsLimits(r) // => [[0, 4], [-1, 1]]
  * ```
@@ -159,8 +159,8 @@ export function pointsStepsLimits(record: PointsSteps): [number, number][] {
  * @returns The ECharts option.
  * @example
  * ```ts
- * import { pointsSteps } from 'mdml-engine/exposition'
- * import { pointsStepsView } from 'mdml-render/views'
+ * import { pointsSteps } from 'omai-engine/exposition'
+ * import { pointsStepsView } from 'omai-render/views'
  * const r = pointsSteps({ dims: 2, steps: [{ step: 0, points: [[0, 0]] }, { step: 1, points: [[1, 1]] }] })
  * pointsStepsView(r, 1).series.length // => 2
  * ```
@@ -260,8 +260,8 @@ export function pointsStepsView(
  * @returns The 3-D scene.
  * @example
  * ```ts
- * import { pointsSteps } from 'mdml-engine/exposition'
- * import { pointsStepsScene3d } from 'mdml-render/views'
+ * import { pointsSteps } from 'omai-engine/exposition'
+ * import { pointsStepsScene3d } from 'omai-render/views'
  * const r = pointsSteps({ dims: 3, steps: [{ step: 0, points: [[0, 0, 0], [1, 2, 3]] }] })
  * pointsStepsScene3d(r, 0).items.length // => 8
  * ```
@@ -319,8 +319,8 @@ export function pointsStepsScene3d(
  * @returns The scene.
  * @example
  * ```ts
- * import { pointsSteps } from 'mdml-engine/exposition'
- * import { pointsStepsScene } from 'mdml-render/views'
+ * import { pointsSteps } from 'omai-engine/exposition'
+ * import { pointsStepsScene } from 'omai-render/views'
  * const r = pointsSteps({ dims: 3, steps: [{ step: 0, points: [[0, 0, 0], [1, 2, 3]] }] })
  * pointsStepsScene(r, 0).kind // => 'scene'
  * ```

@@ -4,7 +4,7 @@
 
 Stochastic processes and stochastic calculus: Brownian motion and Ito calculus, SDE solvers, diffusions, Markov chains, random walks, branching processes, queues, point processes, determinantal point processes, random measures, Gaussian processes, and fractional and Levy processes.
 
-- function `brownianMotion`: Brownian motion sample paths on a time grid. `src/lib/stochastic/brownian.ts:123` `mdml-engine/stochastic`
-- function `sdeint`: Solve a stochastic differential equation with Euler-Maruyama or Milstein. `src/lib/stochastic/sde.ts:195` `mdml-engine/stochastic`
-- function `simulateChain`: Simulate paths of a discrete Markov chain. `src/lib/stochastic/markov-chains.ts:498` `mdml-engine/stochastic`
-- function `stationaryDistribution`: Stationary distribution of a Markov chain. `src/lib/stochastic/markov-chains.ts:121` `mdml-engine/stochastic`
+- function `brownianMotion`: Brownian motion sample paths on a time grid. `src/lib/stochastic/brownian.ts:123` `omai-engine/stochastic`
+- function `sdeint`: Solve a stochastic differential equation with Euler-Maruyama or Milstein. `src/lib/stochastic/sde.ts:195` `omai-engine/stochastic`
+- function `simulateChain`: Simulate paths of a discrete Markov chain. `src/lib/stochastic/markov-chains.ts:498` `omai-engine/stochastic`
+- function `stationaryDistribution`: Stationary distribution of a Markov chain. `src/lib/stochastic/markov-chains.ts:121` `omai-engine/stochastic`

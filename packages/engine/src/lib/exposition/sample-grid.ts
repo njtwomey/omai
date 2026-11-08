@@ -5,7 +5,7 @@
  * to show at a step.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { seal } from './_check.ts'
 
 /** A sample: an image as flat row-major pixel values (grey, or interleaved red, green and blue), or a string. */
@@ -44,11 +44,11 @@ export interface SampleGrid {
  *
  * @param record - The record without its `kind`.
  * @returns The record.
- * @throws MdmlError `value` for an image size that is not whole positive pixels or steps out of order; `shape` when an
+ * @throws OmaiError `value` for an image size that is not whole positive pixels or steps out of order; `shape` when an
  *   image has the wrong number of values, a text sample is not a string, or the labels do not match the samples.
  * @example
  * ```ts
- * import { sampleGrid } from 'mdml-engine/exposition'
+ * import { sampleGrid } from 'omai-engine/exposition'
  * const g = sampleGrid({ modality: 'text', steps: [{ step: 0, samples: ['xqz', 'ab'] }] })
  * g.steps.length // => 1
  * ```
@@ -66,21 +66,21 @@ export function sampleGrid(record: Omit<SampleGrid, 'kind'>): SampleGrid {
         width > 0
       )
     )
-      throw new MdmlError('value', 'sampleGrid: images need a height and width in whole pixels')
+      throw new OmaiError('value', 'sampleGrid: images need a height and width in whole pixels')
   }
   const size = (record.height ?? 0) * (record.width ?? 0) * (record.channels ?? 1)
   let previous = Number.NEGATIVE_INFINITY
   for (const [t, s] of record.steps.entries()) {
-    if (s.step < previous) throw new MdmlError('value', `sampleGrid: steps[${t}] is out of order`)
+    if (s.step < previous) throw new OmaiError('value', `sampleGrid: steps[${t}] is out of order`)
     previous = s.step
     for (const [i, x] of s.samples.entries()) {
       if (record.modality === 'text' && typeof x !== 'string')
-        throw new MdmlError('shape', `sampleGrid: steps[${t}].samples[${i}] is not text`)
+        throw new OmaiError('shape', `sampleGrid: steps[${t}].samples[${i}] is not text`)
       if (record.modality === 'image' && (typeof x === 'string' || x.length !== size))
-        throw new MdmlError('shape', `sampleGrid: steps[${t}].samples[${i}] is not ${size} pixel values`)
+        throw new OmaiError('shape', `sampleGrid: steps[${t}].samples[${i}] is not ${size} pixel values`)
     }
     if (s.labels !== undefined && s.labels.length !== s.samples.length)
-      throw new MdmlError(
+      throw new OmaiError(
         'shape',
         `sampleGrid: steps[${t}].labels has ${s.labels.length} entries, expected ${s.samples.length}`,
       )
@@ -96,7 +96,7 @@ export function sampleGrid(record: Omit<SampleGrid, 'kind'>): SampleGrid {
  * @returns The recorded step, or `undefined` for a record without steps.
  * @example
  * ```ts
- * import { sampleGrid, sampleStepAt } from 'mdml-engine/exposition'
+ * import { sampleGrid, sampleStepAt } from 'omai-engine/exposition'
  * const g = sampleGrid({ modality: 'text', steps: [{ step: 0, samples: ['a'] }, { step: 5, samples: ['b'] }] })
  * sampleStepAt(g, 4)?.samples // => ['a']
  * ```
@@ -117,7 +117,7 @@ export function sampleStepAt(record: SampleGrid, step: number): SampleStep | und
  * @returns The earlier steps, earliest first, without the viewed one.
  * @example
  * ```ts
- * import { filmstripSteps, sampleGrid } from 'mdml-engine/exposition'
+ * import { filmstripSteps, sampleGrid } from 'omai-engine/exposition'
  * const g = sampleGrid({ modality: 'text', steps: [0, 1, 2, 4, 8, 16, 32].map((step) => ({ step, samples: ['x'] })) })
  * filmstripSteps(g, 32, 3).map((s) => s.step) // => [0, 4, 16]
  * ```

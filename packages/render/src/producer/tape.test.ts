@@ -1,4 +1,4 @@
-import { dict, int } from 'mdml-engine/space'
+import { dict, int } from 'omai-engine/space'
 import {
   type Config,
   defineMethod,
@@ -11,7 +11,7 @@ import {
   stateFromJson,
   stateToJson,
   tensor,
-} from 'mdml-engine/trace'
+} from 'omai-engine/trace'
 import { describe, expect, it } from 'vitest'
 import { type FakeWire, fakeWire, tickingClock } from './_fake.ts'
 import { workerProducer } from './client.ts'
@@ -132,12 +132,12 @@ describe('the tape as a file', () => {
   it('rejects what is not a tape file', () => {
     expect(() => parseTape('not json')).toThrow(/JSON/)
     expect(() => parseTape({ schema: 'other' })).toThrow(/not a tape file/)
-    expect(() => parseTape({ schema: 'mdml.tape/1', method: 'orbit', seed: 0, variants: [{}] })).toThrow(/malformed/)
+    expect(() => parseTape({ schema: 'omai.tape/1', method: 'orbit', seed: 0, variants: [{}] })).toThrow(/malformed/)
     expect(() =>
-      replaySessions(parseTape({ schema: 'mdml.tape/1', method: 'nope', seed: 0, variants: [] }), registry),
+      replaySessions(parseTape({ schema: 'omai.tape/1', method: 'nope', seed: 0, variants: [] }), registry),
     ).toThrow(/no method called/)
     // The parts of a variant that were cast unchecked: a step, a path's kind, the firing steps and a probe.
-    const run = { schema: 'mdml.run/1', events: [] }
+    const run = { schema: 'omai.run/1', events: [] }
     const variant = { label: '', head: 3, kinds: { r: 'scalar' }, run }
     for (const [bad, message] of [
       [{ head: 1.5 }, /non-negative integer/],
@@ -149,10 +149,10 @@ describe('the tape as a file', () => {
       [{ probes: [{ t: 1 }] }, /probe 0/],
     ] as const)
       expect(
-        () => parseTape({ schema: 'mdml.tape/1', method: 'orbit', seed: 0, variants: [{ ...variant, ...bad }] }),
+        () => parseTape({ schema: 'omai.tape/1', method: 'orbit', seed: 0, variants: [{ ...variant, ...bad }] }),
         JSON.stringify(bad),
       ).toThrow(message)
-    expect(parseTape({ schema: 'mdml.tape/1', method: 'orbit', seed: 0, variants: [variant] }).variants[0]?.head).toBe(
+    expect(parseTape({ schema: 'omai.tape/1', method: 'orbit', seed: 0, variants: [variant] }).variants[0]?.head).toBe(
       3,
     )
   })

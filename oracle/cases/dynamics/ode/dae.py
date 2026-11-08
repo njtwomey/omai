@@ -1,14 +1,14 @@
 """Index-1 DAEs against the equivalent ODE solved by scipy's Radau at tight tolerance.
 
-Robertson's problem with the conservation law y1 + y2 + y3 = 1 as the algebraic equation; mdml-js solves the
+Robertson's problem with the conservation law y1 + y2 + y3 = 1 as the algebraic equation; omai solves the
 DAE (singular mass matrix) with Radau and BDF, so the comparison is at the DAE solver's tolerance.
 """
 
 import numpy as np
 import scipy
 import scipy.integrate as si
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray
 
 REFERENCE: dict[str, str] = {"numpy": np.__version__, "scipy": scipy.__version__}
 

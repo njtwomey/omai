@@ -1,5 +1,5 @@
-import { MdmlError } from 'mdml-engine/base'
-import { type Exposition, type ExpositionKind, expositionSamples } from 'mdml-engine/exposition'
+import { OmaiError } from 'omai-engine/base'
+import { type Exposition, type ExpositionKind, expositionSamples } from 'omai-engine/exposition'
 import { describe, expect, it } from 'vitest'
 import { stillOf, viewedKinds, viewFor } from './registry.ts'
 
@@ -19,6 +19,6 @@ describe('the registry of record views, over a small valid record of every kind'
       expect(run).toThrow(
         expect.objectContaining({ code: 'value', message: expect.stringContaining('no standard view') }),
       )
-    expect(() => viewFor('curves')).not.toThrow(MdmlError)
+    expect(() => viewFor('curves')).not.toThrow(OmaiError)
   })
 })

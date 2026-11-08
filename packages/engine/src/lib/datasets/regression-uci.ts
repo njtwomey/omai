@@ -57,7 +57,7 @@ import { uciRegression } from './_uci.ts'
  * @concept datasets
  * @example
  * ```ts
- * import { concreteStrength } from 'mdml-engine/datasets'
+ * import { concreteStrength } from 'omai-engine/datasets'
  * concreteStrength().x.shape // => [1030, 8]
  * ```
  */
@@ -82,7 +82,7 @@ export function concreteStrength(): RegressionData {
  * @concept datasets
  * @example
  * ```ts
- * import { energyEfficiency } from 'mdml-engine/datasets'
+ * import { energyEfficiency } from 'omai-engine/datasets'
  * energyEfficiency().y.shape // => [768, 2]
  * ```
  */
@@ -106,7 +106,7 @@ export function energyEfficiency(): RegressionData {
  * @concept datasets
  * @example
  * ```ts
- * import { yachtHydrodynamics } from 'mdml-engine/datasets'
+ * import { yachtHydrodynamics } from 'omai-engine/datasets'
  * yachtHydrodynamics().x.shape // => [308, 6]
  * ```
  */
@@ -130,7 +130,7 @@ export function yachtHydrodynamics(): RegressionData {
  * @concept datasets
  * @example
  * ```ts
- * import { airfoilSelfNoise } from 'mdml-engine/datasets'
+ * import { airfoilSelfNoise } from 'omai-engine/datasets'
  * airfoilSelfNoise().x.shape // => [1503, 5]
  * ```
  */
@@ -155,7 +155,7 @@ export function airfoilSelfNoise(): RegressionData {
  * @concept datasets
  * @example
  * ```ts
- * import { wineQualityRed } from 'mdml-engine/datasets'
+ * import { wineQualityRed } from 'omai-engine/datasets'
  * wineQualityRed().x.shape // => [1599, 11]
  * ```
  */
@@ -180,7 +180,7 @@ export function wineQualityRed(): RegressionData {
  * @concept datasets
  * @example
  * ```ts
- * import { wineQualityWhite } from 'mdml-engine/datasets'
+ * import { wineQualityWhite } from 'omai-engine/datasets'
  * wineQualityWhite().x.shape // => [4898, 11]
  * ```
  */

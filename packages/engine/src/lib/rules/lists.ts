@@ -9,7 +9,7 @@
  * expanded, or one proposal, per step.
  */
 
-import { type Json, MdmlError, maxOf, minOf } from '../base/index.ts'
+import { type Json, maxOf, minOf, OmaiError } from '../base/index.ts'
 import type { LearnData } from '../learn/estimator.ts'
 import { lgamma } from '../numerics/special/index.ts'
 import { eclat } from '../patterns/index.ts'
@@ -81,7 +81,7 @@ function mineUncached(rd: RuleData, o: AntecedentOptions): { antecedents: Antece
  * @returns The antecedents and their coverages.
  * @example
  * ```ts
- * import { mineAntecedents } from 'mdml-engine/rules'
+ * import { mineAntecedents } from 'omai-engine/rules'
  * mineAntecedents({ x: [[0], [0], [1], [1]], y: [0, 0, 1, 1] }, { minSupport: 0.5, maxCardinality: 1 }).literals.length // => 2
  * ```
  */
@@ -178,17 +178,17 @@ const CORELS_SCHEMA: TraceSchema = channels({
  * @param data - Features and class labels.
  * @param options - The penalty, the node budget and the antecedent mining options.
  * @returns The algorithm.
- * @throws MdmlError with code `value` for a negative lambda.
+ * @throws OmaiError with code `value` for a negative lambda.
  * @example
  * ```ts
- * import { corelsAlgorithm } from 'mdml-engine/rules'
+ * import { corelsAlgorithm } from 'omai-engine/rules'
  * corelsAlgorithm({ x: [[0], [1]], y: [0, 1] }).name // => 'corels'
  * ```
  */
 export function corelsAlgorithm(data: LearnData, options: CorelsOptions = {}): Algorithm<CorelsState> {
   const rd = ruleData(data, options.nominal ?? [], 'corels')
   const lambda = options.lambda ?? 0.01
-  if (!(lambda >= 0)) throw new MdmlError('value', 'corels: lambda must be non-negative')
+  if (!(lambda >= 0)) throw new OmaiError('value', 'corels: lambda must be non-negative')
   const maxNodes = options.maxNodes ?? 200_000
   const { antecedents } = mine(rd, options)
   const A = antecedents.masks.length
@@ -365,8 +365,8 @@ export function corelsAlgorithm(data: LearnData, options: CorelsOptions = {}): A
  * @returns The model.
  * @example
  * ```ts
- * import { corelsAlgorithm, corelsModel } from 'mdml-engine/rules'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { corelsAlgorithm, corelsModel } from 'omai-engine/rules'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const data = { x: [[0], [0], [0], [1], [1], [1]], y: [0, 0, 0, 1, 1, 1] }
  * const o = { minSupport: 0.3, maxCardinality: 1 }
  * const { state } = runAlgorithm(corelsAlgorithm(data, o), { maxSteps: 100 })
@@ -384,10 +384,10 @@ export function corelsModel(data: LearnData, s: CorelsState, options: CorelsOpti
  * @param data - Features and class labels.
  * @param options - Penalty, budget, antecedent mining and tracing.
  * @returns The model and whether optimality was certified.
- * @throws MdmlError with code `value` for a negative lambda.
+ * @throws OmaiError with code `value` for a negative lambda.
  * @example
  * ```ts
- * import { fitCorels, modelText } from 'mdml-engine/rules'
+ * import { fitCorels, modelText } from 'omai-engine/rules'
  * const data = { x: [[0], [0], [0], [1], [1], [1]], y: [0, 0, 0, 1, 1, 1] }
  * const r = fitCorels(data, { minSupport: 0.3, maxCardinality: 1 })
  * [r.certified, modelText(r.model).split('\n').length] // => [true, 2]
@@ -472,7 +472,7 @@ function posteriorOf(
   const lambda = options.listLength ?? 3
   const eta = options.ruleSize ?? 1
   const alpha = options.alpha ?? 1
-  if (!(lambda > 0 && eta > 0 && alpha > 0)) throw new MdmlError('value', 'bayesianRuleList: priors must be positive')
+  if (!(lambda > 0 && eta > 0 && alpha > 0)) throw new OmaiError('value', 'bayesianRuleList: priors must be positive')
   const { antecedents } = mine(rd, options)
   const A = antecedents.masks.length
   const maxCard = Math.max(1, maxOf(antecedents.literals.map((l) => l.length)))
@@ -516,10 +516,10 @@ function posteriorOf(
  * @param list - The antecedent indices in order.
  * @param options - The prior and the antecedent mining options.
  * @returns The log posterior.
- * @throws MdmlError with code `value` for non-positive prior means.
+ * @throws OmaiError with code `value` for non-positive prior means.
  * @example
  * ```ts
- * import { ruleListLogPosterior } from 'mdml-engine/rules'
+ * import { ruleListLogPosterior } from 'omai-engine/rules'
  * const data = { x: [[0], [0], [1], [1]], y: [0, 0, 1, 1] }
  * const o = { nominal: [0], minSupport: 0.3, maxCardinality: 1 }
  * ruleListLogPosterior(data, [0], o) > ruleListLogPosterior(data, [], o) // => true
@@ -543,10 +543,10 @@ export function ruleListLogPosterior(
  * @param data - Features and class labels.
  * @param options - The prior's means, the Dirichlet parameter and the antecedent mining options.
  * @returns The algorithm.
- * @throws MdmlError with code `value` for non-positive prior means.
+ * @throws OmaiError with code `value` for non-positive prior means.
  * @example
  * ```ts
- * import { bayesianRuleListAlgorithm } from 'mdml-engine/rules'
+ * import { bayesianRuleListAlgorithm } from 'omai-engine/rules'
  * bayesianRuleListAlgorithm({ x: [[0], [1]], y: [0, 1] }).name // => 'bayesian-rule-list'
  * ```
  */
@@ -646,8 +646,8 @@ export function bayesianRuleListAlgorithm(
  * @returns The model.
  * @example
  * ```ts
- * import { bayesianRuleListAlgorithm, bayesianRuleListModel } from 'mdml-engine/rules'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { bayesianRuleListAlgorithm, bayesianRuleListModel } from 'omai-engine/rules'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const data = { x: [[0], [0], [0], [1], [1], [1]], y: [0, 0, 0, 1, 1, 1] }
  * const o = { minSupport: 0.3, maxCardinality: 1 }
  * const { state } = runAlgorithm(bayesianRuleListAlgorithm(data, o), { maxSteps: 200, seed: 1 })
@@ -669,10 +669,10 @@ export function bayesianRuleListModel(
  * @param data - Features and class labels.
  * @param options - The prior, antecedent mining, `steps` (default 2000), a seed and tracing.
  * @returns The model.
- * @throws MdmlError with code `value` for non-positive prior means.
+ * @throws OmaiError with code `value` for non-positive prior means.
  * @example
  * ```ts
- * import { fitBayesianRuleList } from 'mdml-engine/rules'
+ * import { fitBayesianRuleList } from 'omai-engine/rules'
  * const data = { x: [[0], [0], [0], [0], [1], [1], [1], [1]], y: [0, 0, 0, 0, 1, 1, 1, 1] }
  * fitBayesianRuleList(data, { minSupport: 0.3, maxCardinality: 1, seed: 2 }).rules.length > 0 // => true
  * ```

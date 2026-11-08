@@ -11,13 +11,13 @@ import * as worlds from '../worlds/index.ts'
 import * as graphics from './index.ts'
 
 const MODULES: Readonly<Record<string, Readonly<Record<string, unknown>>>> = {
-  'mdml-engine/graphics': graphics,
-  'mdml-engine/worlds': worlds,
-  'mdml-engine/foundations': foundations,
-  'mdml-engine/scene': scene,
-  'mdml-engine/random': random,
-  'mdml-engine/tensor': tensor,
-  'mdml-engine/trace': trace,
+  'omai-engine/graphics': graphics,
+  'omai-engine/worlds': worlds,
+  'omai-engine/foundations': foundations,
+  'omai-engine/scene': scene,
+  'omai-engine/random': random,
+  'omai-engine/tensor': tensor,
+  'omai-engine/trace': trace,
 }
 
 interface Example {

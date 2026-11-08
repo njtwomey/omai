@@ -64,7 +64,7 @@ const membersOfSchema = (): ObjectJson[] =>
 describe('events: the interfaces and the schema are one vocabulary', () => {
   it('the schema parses every kind of event to itself and knows exactly the interface’s fields', () => {
     for (const event of Object.values(samples)) expect(TraceEventSchema.parse(event)).toEqual(event)
-    expect(RunSchema.parse({ schema: 'mdml.run/1', events: Object.values(samples) }).events).toEqual(
+    expect(RunSchema.parse({ schema: 'omai.run/1', events: Object.values(samples) }).events).toEqual(
       Object.values(samples),
     )
     const members = membersOfSchema()

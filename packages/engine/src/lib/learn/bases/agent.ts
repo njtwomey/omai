@@ -10,7 +10,7 @@
  * @index structure Agent base: an RL agent learning in an environment, as a session.
  */
 
-import { lookup, MdmlError } from '../../base/index.ts'
+import { lookup, OmaiError } from '../../base/index.ts'
 import { environmentRegistry } from '../../environments/index.ts'
 import { type Exposition, valueGrids } from '../../exposition/index.ts'
 import { foldIn, type Key, key as makeKey } from '../../random/index.ts'
@@ -77,7 +77,7 @@ export interface AgentSchedule {
  *
  * @example
  * ```ts
- * import type { AgentPath } from 'mdml-engine/learn'
+ * import type { AgentPath } from 'omai-engine/learn'
  * type P = AgentPath<'dqn/replay'>   // 'dqn/replay' | 'episode/return' | 'episode/length' | ...
  * ```
  */
@@ -167,9 +167,9 @@ const metricNames = (agent: Agent<unknown, never, never>): string[] => Object.ke
  * @concept log-contract
  * @example
  * ```ts
- * import { defineAgentMethod } from 'mdml-engine/learn'
- * import { qLearning } from 'mdml-engine/agents'
- * import { metricSeries } from 'mdml-engine/trace'
+ * import { defineAgentMethod } from 'omai-engine/learn'
+ * import { qLearning } from 'omai-engine/agents'
+ * import { metricSeries } from 'omai-engine/trace'
  * const q = defineAgentMethod({
  *   name: 'q-learning/frozen-lake', defaults: { alpha: 0.2 },
  *   environment: () => 'frozenLake',
@@ -196,7 +196,7 @@ export function defineAgentMethod<H extends object, G, O, A, K extends string = 
     if (named === undefined) return make(choice as EnvDefinition<unknown, O, A>, undefined, config)
     const entry = lookup(environmentRegistry, named.id)
     if (entry.multiAgent !== undefined)
-      throw new MdmlError('value', `${p.name}: ${named.id} is a multi-agent environment`)
+      throw new OmaiError('value', `${p.name}: ${named.id} is a multi-agent environment`)
     return make(
       entry.definition as EnvDefinition<unknown, O, A>,
       'options' in named ? named.options : undefined,
@@ -214,12 +214,12 @@ export function defineAgentMethod<H extends object, G, O, A, K extends string = 
   const budget = (h: H, env: Env<unknown, O, A>): number => {
     const s = p.schedule(h)
     if (s.unit === 'episode') {
-      if (s.episodes === undefined) throw new MdmlError('value', `${p.name}: an episode unit needs schedule.episodes`)
+      if (s.episodes === undefined) throw new OmaiError('value', `${p.name}: an episode unit needs schedule.episodes`)
       return s.episodes
     }
     const length = s.maxEpisodeSteps ?? env.spec.maxEpisodeSteps ?? 1000
     const steps = s.steps ?? (s.episodes === undefined ? undefined : s.episodes * length)
-    if (steps === undefined) throw new MdmlError('value', `${p.name}: give schedule.episodes or schedule.steps`)
+    if (steps === undefined) throw new OmaiError('value', `${p.name}: give schedule.episodes or schedule.steps`)
     return steps
   }
   const algorithmOf = (h: H, key: Key): Algorithm<TrainState<G, unknown, O>, AgentPath> => {
@@ -283,7 +283,7 @@ export function defineAgentMethod<H extends object, G, O, A, K extends string = 
     })
     const mapsOf = (st: TrainState<G, unknown, O>): GridMaps => {
       const maps = gridMaps(st.agent, p.grid?.(h))
-      if (maps === undefined) throw new MdmlError('value', `${p.name}: only tabular agents have value and action maps`)
+      if (maps === undefined) throw new OmaiError('value', `${p.name}: only tabular agents have value and action maps`)
       return maps
     }
     out['agent/value-map'] = derived<TrainState<G, unknown, O>>({

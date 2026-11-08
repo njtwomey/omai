@@ -4,8 +4,8 @@ elimination, and the evidence of the network's joint table."""
 
 import numpy as np
 import pgmpy
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.pgm import NETWORKS, definition, joint_table, pgmpy_model, state_index, ve_query
+from omai_oracle.fixture import Case, case
+from omai_oracle.pgm import NETWORKS, definition, joint_table, pgmpy_model, state_index, ve_query
 
 REFERENCE: dict[str, str] = {"pgmpy": pgmpy.__version__}
 

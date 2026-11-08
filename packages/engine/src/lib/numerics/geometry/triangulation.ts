@@ -4,12 +4,12 @@
  * alpha shapes, the boundary of the triangles below a circumradius.
  */
 
-import { MdmlError, minOf, type Vec2 } from '../../base/index.ts'
+import { minOf, OmaiError, type Vec2 } from '../../base/index.ts'
 import { concreteOrThrow, fromStorage, promoteFloat, type Tensor, type TensorLike, toFlat } from '../../tensor/index.ts'
 
 /**
  * A point in the plane, `[x, y]`: the position type of polygons, triangulations, contours, outlines, rasterisation and
- * the interaction overlays of mdml-render, so a signature says it takes a place and not any pair. A `Vec2` of `base`.
+ * the interaction overlays of omai-render, so a signature says it takes a place and not any pair. A `Vec2` of `base`.
  */
 export type Point2 = Vec2
 
@@ -35,7 +35,7 @@ export interface Delaunay {
  * @returns The signed area times two.
  * @example
  * ```ts
- * import { orient } from 'mdml-engine/numerics/geometry'
+ * import { orient } from 'omai-engine/numerics/geometry'
  * orient([0, 0], [1, 0], [0, 1]) // => 1
  * ```
  */
@@ -97,7 +97,7 @@ function inCircleSign(a: Point2, b: Point2, c: Point2, d: Point2): number {
  * @returns A positive number when `d` is inside, negative when outside, zero when on the circle.
  * @example
  * ```ts
- * import { inCircle } from 'mdml-engine/numerics/geometry'
+ * import { inCircle } from 'omai-engine/numerics/geometry'
  * Math.sign(inCircle([0, 0], [1, 0], [0, 1], [0.5, 0.5])) // => 1
  * Math.sign(inCircle([0, 0], [1, 0], [0, 1], [2, 2])) // => -1
  * ```
@@ -130,7 +130,7 @@ export function inCircle(a: Point2, b: Point2, c: Point2, d: Point2): number {
  * @returns The point equally far from the three vertices.
  * @example
  * ```ts
- * import { circumcentre } from 'mdml-engine/numerics/geometry'
+ * import { circumcentre } from 'omai-engine/numerics/geometry'
  * circumcentre([0, 0], [2, 0], [0, 2]) // => [1, 1]
  * ```
  */
@@ -150,10 +150,10 @@ export function circumcentre(a: Point2, b: Point2, c: Point2): Point2 {
  *
  * @param points - Points `[n, 2]`.
  * @returns The points as `[x, y]` pairs.
- * @throws MdmlError with code `shape` unless the points are `[n, 2]`.
+ * @throws OmaiError with code `shape` unless the points are `[n, 2]`.
  * @example
  * ```ts
- * import { toPoints } from 'mdml-engine/numerics/geometry'
+ * import { toPoints } from 'omai-engine/numerics/geometry'
  * toPoints([[0, 1], [2, 3]]) // => [[0, 1], [2, 3]]
  * ```
  */
@@ -161,7 +161,7 @@ export function toPoints(points: TensorLike | readonly Point2[]): Point2[] {
   if (Array.isArray(points) && (points.length === 0 || Array.isArray(points[0])))
     return (points as readonly Point2[]).map((p) => [p[0], p[1]])
   const t = concreteOrThrow(promoteFloat(points as TensorLike)[0] as Tensor, 'points')
-  if (t.shape.length !== 2 || t.shape[1] !== 2) throw new MdmlError('shape', 'points must be [n, 2]')
+  if (t.shape.length !== 2 || t.shape[1] !== 2) throw new OmaiError('shape', 'points must be [n, 2]')
   const flat = toFlat(t)
   return Array.from({ length: t.shape[0] ?? 0 }, (_, i) => [flat[2 * i] ?? 0, flat[2 * i + 1] ?? 0])
 }
@@ -177,16 +177,16 @@ export function toPoints(points: TensorLike | readonly Point2[]): Point2[] {
  * @index function Delaunay triangulation of planar points.
  * @example
  * ```ts
- * import { delaunay } from 'mdml-engine/numerics/geometry'
+ * import { delaunay } from 'omai-engine/numerics/geometry'
  * delaunay([[0, 0], [1, 0], [0, 1], [1, 1]]).simplices.length // => 2
  * ```
  */
 export function delaunay(points: TensorLike | readonly Point2[]): Delaunay {
   const pts = toPoints(points)
   const n = pts.length
-  if (n < 3) throw new MdmlError('value', 'delaunay: at least three points are needed')
+  if (n < 3) throw new OmaiError('value', 'delaunay: at least three points are needed')
   if (pts.some(([x, y]) => !Number.isFinite(x) || !Number.isFinite(y)))
-    throw new MdmlError('value', 'delaunay: the points must be finite')
+    throw new OmaiError('value', 'delaunay: the points must be finite')
   let minX = Number.POSITIVE_INFINITY
   let minY = Number.POSITIVE_INFINITY
   let maxX = Number.NEGATIVE_INFINITY
@@ -256,7 +256,7 @@ export function delaunay(points: TensorLike | readonly Point2[]): Delaunay {
   const simplices = tris
     .filter((t, i) => alive[i] && t[0] < n && t[1] < n && t[2] < n)
     .map((t): Tri => (orient(at(t[0]), at(t[1]), at(t[2])) > 0 ? t : [t[0], t[2], t[1]]))
-  if (simplices.length === 0) throw new MdmlError('value', 'delaunay: the points are collinear')
+  if (simplices.length === 0) throw new OmaiError('value', 'delaunay: the points are collinear')
   // Neighbours across the edge opposite each vertex.
   const edgeOwner = new Map<string, { tri: number; vertex: number }[]>()
   simplices.forEach((t, ti) => {
@@ -323,7 +323,7 @@ export function delaunay(points: TensorLike | readonly Point2[]): Delaunay {
  * @returns The three weights.
  * @example
  * ```ts
- * import { barycentricCoordinates } from 'mdml-engine/numerics/geometry'
+ * import { barycentricCoordinates } from 'omai-engine/numerics/geometry'
  * barycentricCoordinates([[0, 0], [1, 0], [0, 1]], [0.25, 0.25]) // => [0.5, 0.25, 0.25]
  * ```
  */
@@ -333,7 +333,7 @@ export function barycentricCoordinates(
 ): [number, number, number] {
   const [a, b, c] = triangle
   const area = orient(a, b, c)
-  if (area === 0) throw new MdmlError('value', 'barycentricCoordinates: degenerate triangle')
+  if (area === 0) throw new OmaiError('value', 'barycentricCoordinates: degenerate triangle')
   const l1 = orient(p, c, a) / area
   const l2 = orient(p, a, b) / area
   return [1 - l1 - l2, l1, l2]
@@ -361,7 +361,7 @@ export interface Voronoi {
  * @concept voronoi
  * @example
  * ```ts
- * import { voronoi } from 'mdml-engine/numerics/geometry'
+ * import { voronoi } from 'omai-engine/numerics/geometry'
  * voronoi([[0, 0], [2, 0], [0, 2], [2, 2], [1, 1]]).regions[4].length // => 4
  * ```
  */
@@ -413,7 +413,7 @@ export function voronoi(points: TensorLike | readonly Point2[]): Voronoi {
  * @returns The boundary edges and the kept triangles.
  * @example
  * ```ts
- * import { alphaShape } from 'mdml-engine/numerics/geometry'
+ * import { alphaShape } from 'omai-engine/numerics/geometry'
  * alphaShape([[0, 0], [1, 0], [0, 1], [1, 1]], 10).edges.length // => 4
  * ```
  */
@@ -451,7 +451,7 @@ export function alphaShape(
  * @returns The vertex indices of each triangle.
  * @example
  * ```ts
- * import { delaunay, simplexTensor } from 'mdml-engine/numerics/geometry'
+ * import { delaunay, simplexTensor } from 'omai-engine/numerics/geometry'
  * simplexTensor(delaunay([[0, 0], [1, 0], [0, 1]])).shape // => [1, 3]
  * ```
  */

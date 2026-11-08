@@ -3,8 +3,8 @@ probability of evidence, on the Asia, student and sprinkler networks."""
 
 import numpy as np
 import pgmpy
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.pgm import NETWORKS, definition, evidence_arg, hashables, order_arg, pgmpy_model, stable, ve_query
+from omai_oracle.fixture import Case, case
+from omai_oracle.pgm import NETWORKS, definition, evidence_arg, hashables, order_arg, pgmpy_model, stable, ve_query
 from pgmpy.inference import VariableElimination
 
 REFERENCE: dict[str, str] = {"pgmpy": pgmpy.__version__}

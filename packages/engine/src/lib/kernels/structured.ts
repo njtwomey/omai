@@ -5,7 +5,7 @@
  * between graphs.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import {
   type Graph,
   heatKernel,
@@ -68,8 +68,8 @@ export interface WhiteNoiseOptions {
  * @concept kernel-functions
  * @example
  * ```ts
- * import { whiteNoiseKernel } from 'mdml-engine/kernels'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { whiteNoiseKernel } from 'omai-engine/kernels'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(whiteNoiseKernel({ noiseLevel: 0.5 }).k([[0], [1]])) // => [[0.5, 0], [0, 0.5]]
  * ```
  */
@@ -99,8 +99,8 @@ export interface ConstantOptions {
  * @concept kernel-functions
  * @example
  * ```ts
- * import { constantKernel } from 'mdml-engine/kernels'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { constantKernel } from 'omai-engine/kernels'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(constantKernel({ value: 2 }).k([[0], [5]], [[1]])) // => [[2], [2]]
  * ```
  */
@@ -124,8 +124,8 @@ export function constantKernel(options: ConstantOptions = {}): Kernel {
  * @concept histogram-kernels
  * @example
  * ```ts
- * import { chi2Distance } from 'mdml-engine/kernels'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { chi2Distance } from 'omai-engine/kernels'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(chi2Distance([[1, 0]], [[0, 1], [1, 0]])) // => [[2, 0]]
  * ```
  */
@@ -157,8 +157,8 @@ export interface Chi2Options {
  *   2007).
  * @example
  * ```ts
- * import { chi2Kernel } from 'mdml-engine/kernels'
- * import { item } from 'mdml-engine/tensor'
+ * import { chi2Kernel } from 'omai-engine/kernels'
+ * import { item } from 'omai-engine/tensor'
  * item(chi2Kernel({ gamma: 0.5 }).k([1, 0], [0, 1])) === Math.exp(-1) // => true
  * ```
  */
@@ -181,8 +181,8 @@ export function chi2Kernel(options: Chi2Options = {}): Kernel {
  * @reference A. Vedaldi and A. Zisserman, Efficient additive kernels via explicit feature maps (TPAMI 2012).
  * @example
  * ```ts
- * import { additiveChi2Kernel } from 'mdml-engine/kernels'
- * import { item } from 'mdml-engine/tensor'
+ * import { additiveChi2Kernel } from 'omai-engine/kernels'
+ * import { item } from 'omai-engine/tensor'
  * item(additiveChi2Kernel().k([1, 2], [1, 0])) // => 1
  * ```
  */
@@ -216,8 +216,8 @@ export interface SkewedChi2Options {
  *   kernels (DAGM 2010).
  * @example
  * ```ts
- * import { skewedChi2Kernel } from 'mdml-engine/kernels'
- * import { item } from 'mdml-engine/tensor'
+ * import { skewedChi2Kernel } from 'omai-engine/kernels'
+ * import { item } from 'omai-engine/tensor'
  * item(skewedChi2Kernel({ skewedness: 1 }).k([0], [3])) // => 0.8
  * ```
  */
@@ -243,8 +243,8 @@ export function skewedChi2Kernel(options: SkewedChi2Options = {}): Kernel {
  *   Classification using intersection kernel support vector machines is efficient (CVPR 2008).
  * @example
  * ```ts
- * import { histogramIntersectionKernel } from 'mdml-engine/kernels'
- * import { item } from 'mdml-engine/tensor'
+ * import { histogramIntersectionKernel } from 'omai-engine/kernels'
+ * import { item } from 'omai-engine/tensor'
  * item(histogramIntersectionKernel().k([3, 1, 0], [1, 2, 4])) // => 2
  * ```
  */
@@ -312,13 +312,13 @@ function kmers(s: string, k: number): Map<string, number> {
  * @param b - Strings (default a).
  * @param options - k and normalisation.
  * @returns `[a.length, b.length]`.
- * @throws MdmlError `domain` for k < 1.
+ * @throws OmaiError `domain` for k < 1.
  * @concept string-kernels
  * @reference C. Leslie, E. Eskin and W. S. Noble, The spectrum kernel (PSB 2002).
  * @example
  * ```ts
- * import { spectrumKernel } from 'mdml-engine/kernels'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { spectrumKernel } from 'omai-engine/kernels'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(spectrumKernel(['abab'], ['bab', 'aaa'], { k: 2 })) // => [[3, 0]]
  * ```
  */
@@ -328,7 +328,7 @@ export function spectrumKernel(
   options: SpectrumOptions = {},
 ): Tensor<'float64'> {
   const k = options.k ?? 3
-  if (!(Number.isInteger(k) && k >= 1)) throw new MdmlError('domain', `spectrumKernel: k must be >= 1, got ${k}`)
+  if (!(Number.isInteger(k) && k >= 1)) throw new OmaiError('domain', `spectrumKernel: k must be >= 1, got ${k}`)
   const features = new Map<string, Map<string, number>>()
   const of = (s: string): Map<string, number> => {
     let f = features.get(s)
@@ -395,13 +395,13 @@ function ssk(s: string, t: string, n: number, lambda: number): number {
  * @param b - Strings (default a).
  * @param options - Subsequence length, decay and normalisation.
  * @returns `[a.length, b.length]`.
- * @throws MdmlError `domain` for n < 1 or lambda outside (0, 1].
+ * @throws OmaiError `domain` for n < 1 or lambda outside (0, 1].
  * @concept string-kernels
  * @reference H. Lodhi et al., Text classification using string kernels (JMLR 2, 2002).
  * @example
  * ```ts
- * import { subsequenceKernel } from 'mdml-engine/kernels'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { subsequenceKernel } from 'omai-engine/kernels'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(subsequenceKernel(['cat'], ['cart'], { n: 2, lambda: 1, normalise: false })) // => [[3]]
  * ```
  */
@@ -412,9 +412,9 @@ export function subsequenceKernel(
 ): Tensor<'float64'> {
   const n = options.n ?? 2
   const lambda = options.lambda ?? 0.5
-  if (!(Number.isInteger(n) && n >= 1)) throw new MdmlError('domain', `subsequenceKernel: n must be >= 1, got ${n}`)
+  if (!(Number.isInteger(n) && n >= 1)) throw new OmaiError('domain', `subsequenceKernel: n must be >= 1, got ${n}`)
   if (!(lambda > 0 && lambda <= 1))
-    throw new MdmlError('domain', `subsequenceKernel: lambda must be in (0, 1], got ${lambda}`)
+    throw new OmaiError('domain', `subsequenceKernel: lambda must be in (0, 1], got ${lambda}`)
   return pairwise(a, b, (s, t) => ssk(s, t, n, lambda), options.normalise ?? true)
 }
 
@@ -441,8 +441,8 @@ export interface SetKernelOptions {
  *   distributions (ALT 2007).
  * @example
  * ```ts
- * import { linearKernel, setKernel } from 'mdml-engine/kernels'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { linearKernel, setKernel } from 'omai-engine/kernels'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(setKernel(linearKernel(), [[[1], [3]]], [[[2]]])) // => [[4]]
  * ```
  */
@@ -477,8 +477,8 @@ export function setKernel(
  * @reference L. Ralaivola et al., Graph kernels for chemical informatics (Neural Networks 18, 2005).
  * @example
  * ```ts
- * import { jaccardKernel } from 'mdml-engine/kernels'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { jaccardKernel } from 'omai-engine/kernels'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(jaccardKernel([['a', 'b', 'c']], [['b', 'c', 'd'], []])) // => [[0.5, 0]]
  * ```
  */
@@ -521,9 +521,9 @@ function laplacianOf(g: Graph | TensorLike, options: GraphKernelOptions): Value 
  * @reference R. I. Kondor and J. Lafferty, Diffusion kernels on graphs and other discrete structures (ICML 2002).
  * @example
  * ```ts
- * import { diffusionKernel } from 'mdml-engine/kernels'
- * import { pathGraph } from 'mdml-engine/graph'
- * import { sum, item } from 'mdml-engine/tensor'
+ * import { diffusionKernel } from 'omai-engine/kernels'
+ * import { pathGraph } from 'omai-engine/graph'
+ * import { sum, item } from 'omai-engine/tensor'
  * Math.round(item(sum(diffusionKernel(pathGraph(3), 0.7))) * 1e9) / 1e9 // => 3
  * ```
  */
@@ -543,9 +543,9 @@ export function diffusionKernel(g: Graph | TensorLike, beta: TensorLike, options
  * @reference A. J. Smola and R. Kondor, Kernels and regularization on graphs (COLT 2003).
  * @example
  * ```ts
- * import { regularisedLaplacianKernel } from 'mdml-engine/kernels'
- * import { pathGraph } from 'mdml-engine/graph'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { regularisedLaplacianKernel } from 'omai-engine/kernels'
+ * import { pathGraph } from 'omai-engine/graph'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(regularisedLaplacianKernel(pathGraph(2), 0.5)) // => [[0.75, 0.25], [0.25, 0.75]]
  * ```
  */
@@ -580,15 +580,15 @@ export interface WlSubtreeOptions {
  * @concept graph-kernels
  * @example
  * ```ts
- * import { wlSubtreeFeatures } from 'mdml-engine/kernels'
- * import { pathGraph } from 'mdml-engine/graph'
+ * import { wlSubtreeFeatures } from 'omai-engine/kernels'
+ * import { pathGraph } from 'omai-engine/graph'
  * [...wlSubtreeFeatures(pathGraph(3), { iterations: 1 }).values()].sort() // => [1, 2, 3]
  * ```
  */
 export function wlSubtreeFeatures(g: Graph, options: WlSubtreeOptions = {}): Map<string, number> {
   const iterations = options.iterations ?? 3
   if (!(Number.isInteger(iterations) && iterations >= 0))
-    throw new MdmlError('domain', `wlSubtreeFeatures: iterations must be >= 0, got ${iterations}`)
+    throw new OmaiError('domain', `wlSubtreeFeatures: iterations must be >= 0, got ${iterations}`)
   // Unlabelled graphs start from one constant label (Shervashidze et al.), so round 1 is the degree colouring. It is
   // not empty, which would make a degree-0 and a degree-1 node look alike to the refinement.
   const labels = options.nodeLabels?.[0] ?? Array.from({ length: g.n }, () => '*')
@@ -618,9 +618,9 @@ export function wlSubtreeFeatures(g: Graph, options: WlSubtreeOptions = {}): Map
  * @reference N. Shervashidze et al., Weisfeiler-Lehman graph kernels (JMLR 12, 2011).
  * @example
  * ```ts
- * import { wlSubtreeKernel } from 'mdml-engine/kernels'
- * import { pathGraph } from 'mdml-engine/graph'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { wlSubtreeKernel } from 'omai-engine/kernels'
+ * import { pathGraph } from 'omai-engine/graph'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(wlSubtreeKernel([pathGraph(3)], undefined, { iterations: 1 })) // => [[14]]
  * ```
  */

@@ -4,7 +4,7 @@
  * 2009) with the quality curve R_NX read from it, and Kruskal's stress.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { distanceMatrix } from '../distances/index.ts'
 import { matrixView } from '../learn/index.ts'
 import { geometry } from '../numerics/index.ts'
@@ -18,7 +18,7 @@ import { type TensorLike, toFlat } from '../tensor/index.ts'
  * @returns The rank matrix `[n, n]`.
  * @example
  * ```ts
- * import { neighbourRanks } from 'mdml-engine/manifold'
+ * import { neighbourRanks } from 'omai-engine/manifold'
  * neighbourRanks([[0], [1], [3]]) // => [[0, 1, 2], [1, 0, 2], [2, 1, 0]]
  * ```
  */
@@ -36,7 +36,7 @@ export function neighbourRanks(x: TensorLike): number[][] {
 
 function checkK(n: number, k: number, who: string): void {
   if (!(Number.isInteger(k) && k >= 1 && k < n / 2))
-    throw new MdmlError('value', `${who}: nNeighbors must be in 1..${Math.ceil(n / 2) - 1}`)
+    throw new OmaiError('value', `${who}: nNeighbors must be in 1..${Math.ceil(n / 2) - 1}`)
 }
 
 /** The penalty of Venna and Kaski: sum over i of the ranks in `a` beyond k of the k nearest in `b`, normalised. */
@@ -58,7 +58,7 @@ function rankPenalty(a: number[][], b: number[][], k: number): number {
  * @returns The trustworthiness in [0, 1].
  * @example
  * ```ts
- * import { trustworthiness } from 'mdml-engine/manifold'
+ * import { trustworthiness } from 'omai-engine/manifold'
  * trustworthiness([[0], [1], [2], [3], [4], [5]], [[0], [1], [2], [3], [4], [5]], 2) // => 1
  * ```
  */
@@ -78,7 +78,7 @@ export function trustworthiness(x: TensorLike, embedded: TensorLike, nNeighbors 
  * @returns The continuity in [0, 1].
  * @example
  * ```ts
- * import { continuity } from 'mdml-engine/manifold'
+ * import { continuity } from 'omai-engine/manifold'
  * continuity([[0], [1], [2], [3], [4], [5]], [[0], [1], [2], [3], [4], [5]], 2) // => 1
  * ```
  */
@@ -98,7 +98,7 @@ export function continuity(x: TensorLike, embedded: TensorLike, nNeighbors = 5):
  * @returns The preserved fraction in [0, 1].
  * @example
  * ```ts
- * import { neighbourhoodPreservation } from 'mdml-engine/manifold'
+ * import { neighbourhoodPreservation } from 'omai-engine/manifold'
  * neighbourhoodPreservation([[0], [1], [2], [3], [10]], [[0], [1], [2], [3], [10]], 2) // => 1
  * ```
  */
@@ -125,7 +125,7 @@ export function neighbourhoodPreservation(x: TensorLike, embedded: TensorLike, n
  * @returns The (n - 1) x (n - 1) counts.
  * @example
  * ```ts
- * import { coRankingMatrix } from 'mdml-engine/manifold'
+ * import { coRankingMatrix } from 'omai-engine/manifold'
  * coRankingMatrix([[0], [1], [3]], [[0], [1], [3]]) // => [[3, 0], [0, 3]]
  * ```
  */
@@ -153,7 +153,7 @@ export function coRankingMatrix(x: TensorLike, embedded: TensorLike): number[][]
  * @returns R_NX for K = 1 .. n - 2 and the log-scale area under it.
  * @example
  * ```ts
- * import { rnxCurve } from 'mdml-engine/manifold'
+ * import { rnxCurve } from 'omai-engine/manifold'
  * rnxCurve([[4, 0, 0], [0, 4, 0], [0, 0, 4]]).curve // => [1, 1]
  * ```
  */
@@ -187,7 +187,7 @@ export function rnxCurve(q: readonly (readonly number[])[]): { readonly curve: n
  * @returns Raw stress (the sum of squared differences over pairs) and stress-1.
  * @example
  * ```ts
- * import { embeddingStress } from 'mdml-engine/manifold'
+ * import { embeddingStress } from 'omai-engine/manifold'
  * embeddingStress([[0], [2]], [[0], [1]]).raw // => 1
  * ```
  */

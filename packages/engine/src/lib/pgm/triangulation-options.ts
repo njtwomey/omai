@@ -35,7 +35,7 @@ const criterion = (
  * @concept elimination-orderings
  * @example
  * ```ts
- * import { eliminationHeuristics, undirectedGraph } from 'mdml-engine/pgm'
+ * import { eliminationHeuristics, undirectedGraph } from 'omai-engine/pgm'
  * const cost = eliminationHeuristics.make({ kind: 'minDegree' })
  * cost(undirectedGraph([['a', 'b'], ['a', 'c']]), 'a', {}) // => 2
  * ```

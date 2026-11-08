@@ -1,6 +1,6 @@
 """Annual flow of the river Nile at Aswan, 1871 to 1970, R's datasets::Nile (Cobb 1978; Durbin and Koopman 2001)."""
 
-from mdml_oracle.vendor import csv_rows, fetch_pinned, render_table
+from omai_oracle.vendor import csv_rows, fetch_pinned, render_table
 
 TARGET = "packages/engine/src/lib/datasets/_data/nile.data.ts"
 URL = "https://vincentarelbundock.github.io/Rdatasets/csv/datasets/Nile.csv"

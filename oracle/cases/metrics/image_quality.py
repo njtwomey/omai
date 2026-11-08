@@ -9,8 +9,8 @@ import numpy as np
 import sewar.full_ref as S
 import skimage.metrics as K
 import torch
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray, rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray, rng
 from torchmetrics.functional.image import universal_image_quality_index
 
 REFERENCE: dict[str, str] = {

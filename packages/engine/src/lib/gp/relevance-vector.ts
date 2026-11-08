@@ -6,7 +6,7 @@
  * left and the log evidence, so the pruning can be watched.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { marginRecord } from '../exposition/index.ts'
 import { type Kernel, rbfKernel } from '../kernels/index.ts'
 import { type IterativeEstimator, iterative, type LearnData, matrixView, targetVector } from '../learn/index.ts'
@@ -230,7 +230,7 @@ function verbsOf(params: RvmParams, h: RvmHyper): RvmVerbs {
  *
  * @example
  * ```ts
- * import type { RvmPath } from 'mdml-engine/gp'
+ * import type { RvmPath } from 'omai-engine/gp'
  * const path: RvmPath = 'model/relevance-vectors'
  * path // => 'model/relevance-vectors'
  * ```
@@ -248,8 +248,8 @@ export type RvmPath = 'model/relevance-vectors'
  * @reference M. E. Tipping, Sparse Bayesian learning and the relevance vector machine (2001).
  * @example
  * ```ts
- * import { relevanceVectorMachine } from 'mdml-engine/gp'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { relevanceVectorMachine } from 'omai-engine/gp'
+ * import { toFlat } from 'omai-engine/tensor'
  * const x = Array.from({ length: 25 }, (_, i) => [i / 4])
  * const fitted = relevanceVectorMachine.fit({ x, y: x.map(([v]) => Math.sin(v as number)) })
  * fitted.params.relevant.length < 25 // => true
@@ -285,7 +285,7 @@ export const relevanceVectorMachine: IterativeEstimator<RvmHyper, RvmState, RvmP
     }),
   algorithm: (data, h): Algorithm<RvmState, RvmPath> => {
     const p = prepare(data, h)
-    if (!(h.threshold > 0)) throw new MdmlError('domain', `${WHO}: threshold must be positive`)
+    if (!(h.threshold > 0)) throw new OmaiError('domain', `${WHO}: threshold must be positive`)
     const variance = p.t.reduce((a, b) => a + b * b, 0) / p.n - (p.t.reduce((a, b) => a + b, 0) / p.n) ** 2
     const evidence = (s: RvmState): number => {
       const post = posterior(p, { lambda: s.lambda, noise: s.noise, keep: s.keep })

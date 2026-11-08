@@ -5,8 +5,8 @@
  * only feeds them pointer events.
  */
 
-import type { DecisionSurface } from 'mdml-engine/exposition'
-import type { Pixels } from 'mdml-engine/scene'
+import type { DecisionSurface } from 'omai-engine/exposition'
+import type { Pixels } from 'omai-engine/scene'
 import { parseColour, sampleRamp, sequentialRamp } from '../theme/palettes.ts'
 import type { ColourMode } from '../theme/tokens.ts'
 
@@ -24,7 +24,7 @@ export interface Viewport {
  * @returns `true` when equal.
  * @example
  * ```ts
- * import { sameViewport } from 'mdml-render/views'
+ * import { sameViewport } from 'omai-render/views'
  * sameViewport({ x: [0, 1], y: [0, 1] }, { x: [0, 1], y: [0, 1] }) // => true
  * ```
  */
@@ -40,7 +40,7 @@ export function sameViewport(a: Viewport, b: Viewport): boolean {
  * @returns The clamped viewport.
  * @example
  * ```ts
- * import { clampViewport } from 'mdml-render/views'
+ * import { clampViewport } from 'omai-render/views'
  * clampViewport({ x: [-3, -1], y: [0, 1] }, { x: [-2, 1], y: [-1, 1] }).x // => [-2, 0]
  * ```
  */
@@ -65,7 +65,7 @@ export function clampViewport(view: Viewport, domain: Viewport): Viewport {
  * @returns The new viewport.
  * @example
  * ```ts
- * import { zoomViewport } from 'mdml-render/views'
+ * import { zoomViewport } from 'omai-render/views'
  * zoomViewport({ x: [0, 4], y: [0, 2] }, [0, 0], 2) // => { x: [0, 2], y: [0, 1] }
  * ```
  */
@@ -96,7 +96,7 @@ export function zoomViewport(
  * @returns The new viewport.
  * @example
  * ```ts
- * import { panViewport } from 'mdml-render/views'
+ * import { panViewport } from 'omai-render/views'
  * panViewport({ x: [0, 4], y: [0, 2] }, 0.5, -1) // => { x: [2, 6], y: [-2, 0] }
  * ```
  */
@@ -120,7 +120,7 @@ export function panViewport(view: Viewport, dx: number, dy: number, domain?: Vie
  * @returns The data point.
  * @example
  * ```ts
- * import { pixelToData } from 'mdml-render/views'
+ * import { pixelToData } from 'omai-render/views'
  * pixelToData({ x: [0, 4], y: [0, 2] }, [400, 200], 100, 50) // => [1, 1.5]
  * ```
  */
@@ -138,7 +138,7 @@ export function pixelToData(view: Viewport, size: readonly [number, number], px:
  * @returns The pixel as `[px, py]`, `py` from the top.
  * @example
  * ```ts
- * import { dataToPixel } from 'mdml-render/views'
+ * import { dataToPixel } from 'omai-render/views'
  * dataToPixel({ x: [0, 4], y: [0, 2] }, [400, 200], 1, 1.5) // => [100, 50]
  * ```
  */
@@ -154,7 +154,7 @@ export function dataToPixel(view: Viewport, size: readonly [number, number], x: 
  * @returns Left, top, width and height as fractions in [0, 1].
  * @example
  * ```ts
- * import { minimapRect } from 'mdml-render/views'
+ * import { minimapRect } from 'omai-render/views'
  * minimapRect({ x: [0, 1], y: [0, 1] }, { x: [-1, 1], y: [-1, 1] }) // => { left: 0.5, top: 0, width: 0.5, height: 0.5 }
  * ```
  */
@@ -189,8 +189,8 @@ export interface GridCell {
  * @returns The cell.
  * @example
  * ```ts
- * import { decisionSurface } from 'mdml-engine/exposition'
- * import { cellAt } from 'mdml-render/views'
+ * import { decisionSurface } from 'omai-engine/exposition'
+ * import { cellAt } from 'omai-render/views'
  * const s = decisionSurface({ features: ['a', 'b'], x: [0, 1], y: [0, 1], values: [[1, 2], [3, 4]] })
  * cellAt(s, 0.9, 0.1)?.value // => 2
  * ```
@@ -221,8 +221,8 @@ export function cellAt(surface: DecisionSurface, x: number, y: number): GridCell
  * @returns The viewport.
  * @example
  * ```ts
- * import { decisionSurface } from 'mdml-engine/exposition'
- * import { surfaceViewport } from 'mdml-render/views'
+ * import { decisionSurface } from 'omai-engine/exposition'
+ * import { surfaceViewport } from 'omai-render/views'
  * surfaceViewport(decisionSurface({ features: ['a', 'b'], x: [0, 2], y: [1, 3] })) // => { x: [0, 2], y: [1, 3] }
  * ```
  */
@@ -258,8 +258,8 @@ export function gridRange(values: readonly (readonly number[])[]): [number, numb
  * @returns The pixels (one per grid cell).
  * @example
  * ```ts
- * import { decisionSurface } from 'mdml-engine/exposition'
- * import { surfaceRaster } from 'mdml-render/views'
+ * import { decisionSurface } from 'omai-engine/exposition'
+ * import { surfaceRaster } from 'omai-render/views'
  * const s = decisionSurface({ features: ['a', 'b'], x: [0, 1], y: [0, 1], values: [[0, 1], [1, 0]] })
  * surfaceRaster(s).width // => 2
  * ```

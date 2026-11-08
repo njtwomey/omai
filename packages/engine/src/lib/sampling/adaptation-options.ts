@@ -43,7 +43,7 @@ const windowOptions = (k: Knobs<number | boolean>, dense: boolean): WindowAdapta
  * @concept window-adaptation
  * @example
  * ```ts
- * import { windowAdaptationForms } from 'mdml-engine/sampling'
+ * import { windowAdaptationForms } from 'omai-engine/sampling'
  * windowAdaptationForms.make({ kind: 'dense', targetAcceptance: 0.9 }).dense // => true
  * ```
  */
@@ -72,7 +72,7 @@ export const windowAdaptationForms: OptionTable<WindowAdaptationOptions, Record<
  * @concept adaptive-metropolis
  * @example
  * ```ts
- * import { randomWalkAdaptations } from 'mdml-engine/sampling'
+ * import { randomWalkAdaptations } from 'omai-engine/sampling'
  * randomWalkAdaptations.make({ kind: 'scale-only' }).adaptCovariance // => false
  * ```
  */

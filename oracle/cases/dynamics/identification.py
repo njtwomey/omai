@@ -3,8 +3,8 @@ given) and exact DMD eigenvalues from numpy's SVD and eigendecomposition (Tu et 
 
 import numpy as np
 import pysindy as ps
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray, rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray, rng
 from scipy.integrate import solve_ivp
 
 REFERENCE: dict[str, str] = {"pysindy": ps.__version__ if hasattr(ps, "__version__") else "installed"}

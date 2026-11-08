@@ -111,7 +111,7 @@ another name**: every one restates the shape, because the engine has no canonica
 lives in `scene/three-d.ts`, `Point2` in `graphics/rasterise.ts`, `Matrix` in seven places). The proposal is a few
 canonical types in `base` (`Vec2`, `Vec3`, `Vec4`, `Vector`, `Matrix`, readonly, tuples and arrays of `number`), and the
 vector-named definitions (about 42, listed by `types.mjs`) become aliases of them, in the engine and in render (which
-already depends on `mdml-engine`). It is a change of types only: no runtime, the same structural types, so nothing
+already depends on `omai-engine`). It is a change of types only: no runtime, the same structural types, so nothing
 type-checks differently. The signature digest of the declarations that change moves, which `make api-surface-check`
 reports; that is the intended, reviewed change.
 

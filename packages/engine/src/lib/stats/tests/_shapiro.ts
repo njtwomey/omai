@@ -1,6 +1,6 @@
 // The Shapiro-Wilk W statistic and its p-value by Royston's algorithm AS R94 (1995), as scipy.stats.shapiro computes
 // them. Shared by tests/distribution.ts (the test) and tests/result.ts (the normality assumption check).
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { normPpf, normSf, poly, sortedCopy } from '../_util.ts'
 
 const C1 = [0, 0.221157, -0.147981, -2.07119, 4.434685, -2.706056]
@@ -14,7 +14,7 @@ const G = [-2.273, 0.459]
 /** The Shapiro-Wilk statistic W and its upper-tail p-value. */
 export function shapiroWilk(x: ArrayLike<number>): { w: number; p: number } {
   const n = x.length
-  if (n < 3) throw new MdmlError('value', 'shapiro: needs at least 3 observations')
+  if (n < 3) throw new OmaiError('value', 'shapiro: needs at least 3 observations')
   const y = sortedCopy(x)
   const mid = y[n >> 1] ?? 0
   for (let i = 0; i < n; i++) y[i] = (y[i] ?? 0) - mid
@@ -50,7 +50,7 @@ export function shapiroWilk(x: ArrayLike<number>): { w: number; p: number } {
     for (let i = i1; i <= n2; i++) a[i] = -(m[i] ?? 0) / fac
   }
   const range = (y[n - 1] ?? 0) - (y[0] ?? 0)
-  if (range < 1e-19) throw new MdmlError('value', 'shapiro: the sample is constant')
+  if (range < 1e-19) throw new OmaiError('value', 'shapiro: the sample is constant')
   const coef = (i: number, j: number): number => (i === j ? 0 : Math.sign(i - j) * (a[Math.min(i, j)] ?? 0))
   // W as the squared correlation of the data with the coefficients (1-based indices as in AS R94).
   let sa = -(a[1] ?? 0)

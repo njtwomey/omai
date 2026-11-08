@@ -4,7 +4,7 @@
  * (scipy.signal.gammatone), with a bank of them that turns a signal into a cochleagram.
  */
 
-import { type Complex, cadd, cexp, cmul, MdmlError } from '../../base/index.ts'
+import { type Complex, cadd, cexp, cmul, OmaiError } from '../../base/index.ts'
 import { stack, type Tensor, type TensorLike, toFlat, type Value } from '../../tensor/index.ts'
 import { constant } from '../_shared.ts'
 import { lfilter } from '../filters/index.ts'
@@ -57,7 +57,7 @@ export interface MelFilterOptions {
  * @concept mel-filter-bank
  * @example
  * ```ts
- * import { audio } from 'mdml-engine/signal'
+ * import { audio } from 'omai-engine/signal'
  * audio.melFilterBank(16000, 512, { nMels: 40 }).shape // => [40, 257]
  * ```
  */
@@ -115,7 +115,7 @@ export interface ChromaFilterOptions {
  * @concept chroma
  * @example
  * ```ts
- * import { audio } from 'mdml-engine/signal'
+ * import { audio } from 'omai-engine/signal'
  * audio.chromaFilterBank(22050, 2048).shape // => [12, 1025]
  * ```
  */
@@ -177,7 +177,7 @@ export interface GammatoneOptions {
  * @concept gammatone-filter
  * @example
  * ```ts
- * import { audio } from 'mdml-engine/signal'
+ * import { audio } from 'omai-engine/signal'
  * const g = audio.gammatone(1000, 'iir', { fs: 16000 })
  * [g.b.length, g.a.length] // => [5, 9]
  * ```
@@ -188,11 +188,11 @@ export function gammatone(
   options: GammatoneOptions = {},
 ): { readonly b: number[]; readonly a: number[] } {
   const fs = options.fs ?? 2
-  if (!(freq > 0 && freq < fs / 2)) throw new MdmlError('value', 'gammatone: the frequency must be in (0, fs / 2)')
+  if (!(freq > 0 && freq < fs / 2)) throw new OmaiError('value', 'gammatone: the frequency must be in (0, fs / 2)')
   const erb = freq / 9.26449 + 24.7
   if (ftype === 'fir') {
     const order = options.order ?? 4
-    if (!Number.isInteger(order) || order < 1 || order > 24) throw new MdmlError('value', 'gammatone: order in 1..24')
+    if (!Number.isInteger(order) || order < 1 || order > 24) throw new OmaiError('value', 'gammatone: order in 1..24')
     const numtaps = options.numtaps ?? Math.max(Math.trunc(fs * 0.015), 15)
     const bw = 1.019 * erb
     let fact = 1
@@ -261,7 +261,7 @@ export function gammatone(
  * @concept gammatone-filter
  * @example
  * ```ts
- * import { audio } from 'mdml-engine/signal'
+ * import { audio } from 'omai-engine/signal'
  * const x = Array.from({ length: 64 }, (_, i) => Math.sin((2 * Math.PI * 1000 * i) / 8000))
  * audio.gammatoneBank(x, [500, 1000, 2000], 8000).shape // => [3, 64]
  * ```
@@ -276,6 +276,6 @@ export function gammatoneBank(
     const g = gammatone(f, ftype, { fs })
     return lfilter(g.b, g.a, x)
   })
-  if (bands.length === 0) throw new MdmlError('value', 'gammatoneBank: no centre frequencies')
+  if (bands.length === 0) throw new OmaiError('value', 'gammatoneBank: no centre frequencies')
   return stack(bands)
 }

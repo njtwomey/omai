@@ -36,9 +36,9 @@ export interface RefinementState<D> {
  * @concept bundle-adjustment
  * @example
  * ```ts
- * import { steppedRefinement } from 'mdml-engine/vision'
- * import { runAlgorithm } from 'mdml-engine/trace'
- * import { tensor, sub } from 'mdml-engine/tensor'
+ * import { steppedRefinement } from 'omai-engine/vision'
+ * import { runAlgorithm } from 'omai-engine/trace'
+ * import { tensor, sub } from 'omai-engine/tensor'
  * // Fit a point to two observations: the RMS error per point settles at its residual.
  * const alg = steppedRefinement('point', {}, (p) => sub(p, tensor([1, 2])), [0, 0], (x) => Array.from(x), 10)
  * Array.from(runAlgorithm(alg, { maxSteps: 10 }).state.decoded).map(Math.round) // => [1, 2]

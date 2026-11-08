@@ -7,7 +7,7 @@
  * highest-degree selection as an algorithm that adds one seed per step, with the marginal gains on the tape.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { foldIn, type Key, uniform } from '../random/index.ts'
 import { type Algorithm, type Contract, contractSchema, defineContract, message, scalar } from '../trace/index.ts'
 import { checkNumber, codec } from './_run.ts'
@@ -56,12 +56,12 @@ function csr(n: number, pairs: readonly (readonly [number, number])[]): LiveEdge
  * @param samples - How many live-edge graphs.
  * @param options - `p` and `weighted`.
  * @returns The samples.
- * @throws MdmlError with code `value` for a bad model, probability or sample count.
+ * @throws OmaiError with code `value` for a bad model, probability or sample count.
  * @concept influence-maximisation
  * @example
  * ```ts
- * import { liveEdgeSamples, pathGraph } from 'mdml-engine/graph'
- * import { key } from 'mdml-engine/random'
+ * import { liveEdgeSamples, pathGraph } from 'omai-engine/graph'
+ * import { key } from 'omai-engine/random'
  * liveEdgeSamples(pathGraph(4), 'ic', key(0), 2, { p: 1 })[0]?.indices.length // => 6
  * ```
  */
@@ -75,10 +75,10 @@ export function liveEdgeSamples(
   const p = options.p ?? 0.1
   const weighted = options.weighted ?? false
   if (model !== 'ic' && model !== 'lt')
-    throw new MdmlError('value', `liveEdgeSamples: unknown model '${String(model)}'`)
+    throw new OmaiError('value', `liveEdgeSamples: unknown model '${String(model)}'`)
   checkNumber('liveEdgeSamples', 'p', p, 0, 1)
   if (!(Number.isInteger(samples) && samples >= 1))
-    throw new MdmlError('value', 'liveEdgeSamples: samples must be a positive integer')
+    throw new OmaiError('value', 'liveEdgeSamples: samples must be a positive integer')
   const out: LiveEdgeSample[] = []
   for (let r = 0; r < samples; r++) {
     const pairs: [number, number][] = []
@@ -120,7 +120,7 @@ export function liveEdgeSamples(
  * @concept influence-maximisation
  * @example
  * ```ts
- * import { liveEdgeReach } from 'mdml-engine/graph'
+ * import { liveEdgeReach } from 'omai-engine/graph'
  * const chain = { indptr: Int32Array.of(0, 1, 2, 2), indices: Int32Array.of(1, 2) }
  * liveEdgeReach(chain, [0]) // => 3
  * liveEdgeReach(chain, [2]) // => 1
@@ -161,8 +161,8 @@ export function liveEdgeReach(sample: LiveEdgeSample, seeds: readonly number[]):
  * @concept influence-maximisation
  * @example
  * ```ts
- * import { estimateSpread, liveEdgeSamples, pathGraph } from 'mdml-engine/graph'
- * import { key } from 'mdml-engine/random'
+ * import { estimateSpread, liveEdgeSamples, pathGraph } from 'omai-engine/graph'
+ * import { key } from 'omai-engine/random'
  * estimateSpread(liveEdgeSamples(pathGraph(5), 'ic', key(0), 4, { p: 1 }), [0]) // => 5
  * ```
  */
@@ -181,18 +181,18 @@ export function estimateSpread(samples: readonly LiveEdgeSample[], seeds: readon
  * @param seeds - The seed nodes.
  * @param p - The activation probability of each edge.
  * @returns The expected number of active nodes.
- * @throws MdmlError with code `value` for more than 22 directed edges.
+ * @throws OmaiError with code `value` for more than 22 directed edges.
  * @concept influence-maximisation
  * @example
  * ```ts
- * import { exactIndependentCascadeSpread, pathGraph } from 'mdml-engine/graph'
+ * import { exactIndependentCascadeSpread, pathGraph } from 'omai-engine/graph'
  * exactIndependentCascadeSpread(pathGraph(3), [0], 0.5) // => 1.75
  * ```
  */
 export function exactIndependentCascadeSpread(g: Graph, seeds: readonly NodeId[], p: number): number {
   const m = g.out.indices.length
   if (m > 22)
-    throw new MdmlError('value', `exactIndependentCascadeSpread: ${m} directed edges are too many to enumerate`)
+    throw new OmaiError('value', `exactIndependentCascadeSpread: ${m} directed edges are too many to enumerate`)
   checkNumber('exactIndependentCascadeSpread', 'p', p, 0, 1)
   const sources = new Int32Array(m)
   for (let u = 0; u < g.n; u++) sources.fill(u, g.out.indptr[u] ?? 0, g.out.indptr[u + 1] ?? 0)
@@ -270,12 +270,12 @@ export const influenceContract: Contract<InfluenceState, InfluencePath> = define
  * @param k - How many seeds.
  * @param options - Model, activation probability, selection rule and number of samples.
  * @returns The algorithm.
- * @throws MdmlError with code `value` when k is not in [1, n] or the options are bad.
+ * @throws OmaiError with code `value` when k is not in [1, n] or the options are bad.
  * @concept influence-maximisation
  * @example
  * ```ts
- * import { influenceMaximisationAlgorithm, starGraph } from 'mdml-engine/graph'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { influenceMaximisationAlgorithm, starGraph } from 'omai-engine/graph'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * runAlgorithm(influenceMaximisationAlgorithm(starGraph(6), 1, { p: 1, samples: 3 }), { seed: 0, maxSteps: 1 }).state.seeds // => [0]
  * ```
  */
@@ -288,9 +288,9 @@ export function influenceMaximisationAlgorithm(
   const method = options.method ?? 'celf'
   const samples = options.samples ?? 200
   if (!(Number.isInteger(k) && k >= 1 && k <= g.n))
-    throw new MdmlError('value', `influenceMaximisationAlgorithm: k must be in [1, ${g.n}]`)
+    throw new OmaiError('value', `influenceMaximisationAlgorithm: k must be in [1, ${g.n}]`)
   if (method !== 'greedy' && method !== 'celf' && method !== 'degree')
-    throw new MdmlError('value', `influenceMaximisationAlgorithm: unknown method '${String(method)}'`)
+    throw new OmaiError('value', `influenceMaximisationAlgorithm: unknown method '${String(method)}'`)
   const live: LiveEdgeOptions = {
     ...(options.p === undefined ? {} : { p: options.p }),
     ...(options.weighted === undefined ? {} : { weighted: options.weighted }),

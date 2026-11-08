@@ -3,8 +3,8 @@
  * overlay of active nodes, edges and value badges drawn over it.
  */
 
-import type { DiagramRecord } from 'mdml-engine/exposition'
-import type { Scene } from 'mdml-engine/scene'
+import type { DiagramRecord } from 'omai-engine/exposition'
+import type { Scene } from 'omai-engine/scene'
 import { diagram } from '../structures/diagram.ts'
 
 /**
@@ -16,9 +16,9 @@ import { diagram } from '../structures/diagram.ts'
  * @returns The scene.
  * @example
  * ```ts
- * import { diagramRecord } from 'mdml-engine/exposition'
- * import { structure } from 'mdml-engine/scene'
- * import { diagramScene } from 'mdml-render/views'
+ * import { diagramRecord } from 'omai-engine/exposition'
+ * import { structure } from 'omai-engine/scene'
+ * import { diagramScene } from 'omai-render/views'
  * const s = structure('net', [{ id: 'x', label: 'x', role: 'input' }, { id: 'y', label: 'y', role: 'output' }], [{ from: 'x', to: 'y' }])
  * diagramScene(diagramRecord({ structure: s })).kind // => 'scene'
  * ```

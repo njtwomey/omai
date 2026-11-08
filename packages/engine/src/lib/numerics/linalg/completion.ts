@@ -6,7 +6,7 @@
  * entries; predictions and the completed matrix come from the state.
  */
 
-import { type Json, MdmlError } from '../../base/index.ts'
+import { type Json, OmaiError } from '../../base/index.ts'
 import { type Key, normal, permutation } from '../../random/index.ts'
 import { concreteOrThrow, fromStorage, promoteFloat, type Tensor, type TensorLike } from '../../tensor/index.ts'
 import { type Algorithm, channels, type RunOptions, type RunStatus, runAlgorithm } from '../../trace/index.ts'
@@ -54,12 +54,12 @@ function validate(obs: ObservedEntries): { m: number; n: number; count: number }
   const [m, n] = obs.shape
   const count = obs.values.length
   if (obs.rows.length !== count || obs.cols.length !== count)
-    throw new MdmlError('shape', 'ObservedEntries: rows, cols and values need the same length')
+    throw new OmaiError('shape', 'ObservedEntries: rows, cols and values need the same length')
   for (let k = 0; k < count; k++) {
     const i = obs.rows[k] ?? -1
     const j = obs.cols[k] ?? -1
     if (!Number.isInteger(i) || !Number.isInteger(j) || i < 0 || i >= m || j < 0 || j >= n)
-      throw new MdmlError('value', `ObservedEntries: entry ${k} lies outside the ${m} x ${n} matrix`)
+      throw new OmaiError('value', `ObservedEntries: entry ${k} lies outside the ${m} x ${n} matrix`)
   }
   return { m, n, count }
 }
@@ -70,7 +70,7 @@ function startFactors(options: FactorOptions, m: number, n: number, key: Key): {
     const u = concreteOrThrow(promoteFloat(options.init.u)[0] as Tensor, 'completion')
     const v = concreteOrThrow(promoteFloat(options.init.v)[0] as Tensor, 'completion')
     if (u.shape[0] !== m || u.shape[1] !== r || v.shape[0] !== n || v.shape[1] !== r)
-      throw new MdmlError('shape', `completion: init factors must be [${m}, ${r}] and [${n}, ${r}]`)
+      throw new OmaiError('shape', `completion: init factors must be [${m}, ${r}] and [${n}, ${r}]`)
     return { u: Array.from(u.data), v: Array.from(v.data) }
   }
   const scale = options.initScale ?? 0.1
@@ -83,7 +83,7 @@ function startFactors(options: FactorOptions, m: number, n: number, key: Key): {
 
 function checkRank(rank: number): void {
   if (!Number.isInteger(rank) || rank < 1)
-    throw new MdmlError('value', 'completion needs an integer rank of at least 1')
+    throw new OmaiError('value', 'completion needs an integer rank of at least 1')
 }
 
 function byRow(obs: ObservedEntries, m: number): number[][] {
@@ -160,7 +160,7 @@ const deserialiseFactors = (j: Json): FactorState => j as unknown as FactorState
  * @returns The algorithm.
  * @example
  * ```ts
- * import { alsCompletionAlgorithm } from 'mdml-engine/numerics/linalg'
+ * import { alsCompletionAlgorithm } from 'omai-engine/numerics/linalg'
  * alsCompletionAlgorithm({ shape: [2, 2], rows: [0, 1], cols: [0, 1], values: [1, 2] }, { rank: 1 }).name // => 'als-completion'
  * ```
  */
@@ -245,7 +245,7 @@ export interface SgdCompletionOptions extends FactorOptions {
  * @returns The algorithm.
  * @example
  * ```ts
- * import { sgdCompletionAlgorithm } from 'mdml-engine/numerics/linalg'
+ * import { sgdCompletionAlgorithm } from 'omai-engine/numerics/linalg'
  * sgdCompletionAlgorithm({ shape: [2, 2], rows: [0, 1], cols: [0, 1], values: [1, 2] }, { rank: 1 }).name // => 'sgd-completion'
  * ```
  */
@@ -343,7 +343,7 @@ export interface ImplicitAlsOptions extends FactorOptions {
  * @returns The algorithm.
  * @example
  * ```ts
- * import { implicitAlsAlgorithm } from 'mdml-engine/numerics/linalg'
+ * import { implicitAlsAlgorithm } from 'omai-engine/numerics/linalg'
  * implicitAlsAlgorithm({ shape: [2, 2], rows: [0, 1], cols: [0, 1], values: [3, 1] }, { rank: 1 }).name // => 'implicit-als'
  * ```
  */
@@ -351,7 +351,7 @@ export function implicitAlsAlgorithm(obs: ObservedEntries, options: ImplicitAlsO
   checkRank(options.rank)
   const { m, n, count } = validate(obs)
   for (let k = 0; k < count; k++)
-    if (!((obs.values[k] ?? 0) > 0)) throw new MdmlError('value', 'implicitAls needs positive counts')
+    if (!((obs.values[k] ?? 0) > 0)) throw new OmaiError('value', 'implicitAls needs positive counts')
   const r = options.rank
   const lambda = options.lambda ?? 0.1
   const alpha = options.alpha ?? 40
@@ -447,7 +447,7 @@ export function implicitAlsAlgorithm(obs: ObservedEntries, options: ImplicitAlsO
  * @returns The predicted entry.
  * @example
  * ```ts
- * import { predictEntry } from 'mdml-engine/numerics/linalg'
+ * import { predictEntry } from 'omai-engine/numerics/linalg'
  * const state = { u: [1, 2], v: [3, 4], rowBias: [0], colBias: [0], mean: 1, iteration: 0, next: 'rows', objective: 0, rmse: 0 } as const
  * predictEntry(state, 2, 0, 0) // => 12
  * ```
@@ -493,7 +493,7 @@ function denseSvd(a: Float64Array, m: number, n: number): { u: Float64Array; s: 
  * @returns The largest singular value.
  * @example
  * ```ts
- * import { softImputeLambdaMax } from 'mdml-engine/numerics/linalg'
+ * import { softImputeLambdaMax } from 'omai-engine/numerics/linalg'
  * softImputeLambdaMax({ shape: [2, 2], rows: [0, 1], cols: [0, 1], values: [3, 4] }) // => 4
  * ```
  */
@@ -517,7 +517,7 @@ export function softImputeLambdaMax(obs: ObservedEntries): number {
  * @returns The algorithm.
  * @example
  * ```ts
- * import { softImputeAlgorithm } from 'mdml-engine/numerics/linalg'
+ * import { softImputeAlgorithm } from 'omai-engine/numerics/linalg'
  * softImputeAlgorithm({ shape: [2, 2], rows: [0, 1], cols: [0, 1], values: [3, 4] }).name // => 'soft-impute'
  * ```
  */
@@ -629,7 +629,7 @@ export interface CompletionResult {
  * @returns The completed matrix and the objective history.
  * @example
  * ```ts
- * import { softImpute } from 'mdml-engine/numerics/linalg'
+ * import { softImpute } from 'omai-engine/numerics/linalg'
  * softImpute({ shape: [2, 2], rows: [0, 0, 1], cols: [0, 1, 0], values: [1, 2, 2] }, { lambda: 0.01 }).completed.shape // => [2, 2]
  * ```
  */
@@ -675,7 +675,7 @@ export function softImpute(
  * @returns The `m x n` matrix.
  * @example
  * ```ts
- * import { factorsToMatrix } from 'mdml-engine/numerics/linalg'
+ * import { factorsToMatrix } from 'omai-engine/numerics/linalg'
  * const state = { u: [1, 2], v: [3, 4], rowBias: [0, 0], colBias: [0, 0], mean: 0, iteration: 0, next: 'rows', objective: 0, rmse: 0 } as const
  * factorsToMatrix(state, 1).shape // => [2, 2]
  * ```

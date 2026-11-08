@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { checkPrimitive } from '../autodiff/index.ts'
-import { isMdmlError } from '../base/index.ts'
+import { isOmaiError } from '../base/index.ts'
 import { concat, reshape, type Tensor, tensor, toFlat, type Value } from '../tensor/index.ts'
 import * as S from './index.ts'
 
@@ -72,7 +72,7 @@ describe('interconnections', () => {
       S.feedback(S.ss([[-1]], [[1]], [[1]], [[1]]), 1, 1)
       expect.unreachable()
     } catch (e) {
-      expect(isMdmlError(e, 'singular')).toBe(true)
+      expect(isOmaiError(e, 'singular')).toBe(true)
     }
   })
 })

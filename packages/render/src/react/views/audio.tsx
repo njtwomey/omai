@@ -4,7 +4,7 @@
  * the step cursor along as it sounds. Playback needs a browser's `AudioContext`; without one the button says so.
  */
 
-import { type AudioClip, audioDuration, playheadAt, stepAt } from 'mdml-engine/exposition'
+import { type AudioClip, audioDuration, playheadAt, stepAt } from 'omai-engine/exposition'
 import { type ReactElement, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { audioLayout, audioSceneAt, spectrogramOf } from '../../views/audio.ts'
 import { FigureFrame } from '../FigureFrame.tsx'
@@ -164,7 +164,7 @@ export function AudioView(props: AudioViewProps): ReactElement {
         }}
         aria-label="The clip: click to move the playhead, or use the left and right arrow keys to step it"
         className="block cursor-crosshair border-0 bg-transparent p-0"
-        data-mdml-svg=""
+        data-omai-svg=""
         style={{ width: W, height: H }}
       >
         <SceneView scene={scene} width={W} height={H} mode={mode} />

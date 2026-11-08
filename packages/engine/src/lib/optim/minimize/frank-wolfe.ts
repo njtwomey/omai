@@ -4,7 +4,7 @@
  * Oracles for the simplex, L1, L2 and nuclear-norm balls and the box are included.
  */
 
-import { argmaxOf, argminOf, MdmlError } from '../../base/index.ts'
+import { argmaxOf, argminOf, OmaiError } from '../../base/index.ts'
 import { daxpy, ddot, dnrm2, svd } from '../../numerics/linalg/index.ts'
 import { fromStorage, primalOf, toFlat } from '../../tensor/index.ts'
 import type { Algorithm } from '../../trace/index.ts'
@@ -36,7 +36,7 @@ export type Lmo = (grad: Float64Array) => FrankWolfeAtom
  * @concept frank-wolfe
  * @example
  * ```ts
- * import { simplexLmo } from 'mdml-engine/optim'
+ * import { simplexLmo } from 'omai-engine/optim'
  * Array.from(simplexLmo()(new Float64Array([0.3, -1, 2])).vertex) // => [0, 1, 0]
  * ```
  */
@@ -56,7 +56,7 @@ export function simplexLmo(radius = 1): Lmo {
  * @returns The oracle.
  * @example
  * ```ts
- * import { l1BallLmo } from 'mdml-engine/optim'
+ * import { l1BallLmo } from 'omai-engine/optim'
  * Array.from(l1BallLmo(2)(new Float64Array([0.3, -1, 0.5])).vertex) // => [0, 2, 0]
  * ```
  */
@@ -78,7 +78,7 @@ export function l1BallLmo(r = 1): Lmo {
  * @returns The oracle.
  * @example
  * ```ts
- * import { boxLmo } from 'mdml-engine/optim'
+ * import { boxLmo } from 'omai-engine/optim'
  * Array.from(boxLmo(0, 1)(new Float64Array([0.3, -1])).vertex) // => [0, 1]
  * ```
  */
@@ -102,7 +102,7 @@ export function boxLmo(lo: number | ArrayLike<number>, hi: number | ArrayLike<nu
  * @returns The oracle.
  * @example
  * ```ts
- * import { l2BallLmo } from 'mdml-engine/optim'
+ * import { l2BallLmo } from 'omai-engine/optim'
  * Array.from(l2BallLmo(5)(new Float64Array([3, 4])).vertex) // => [-3, -4]
  * ```
  */
@@ -123,7 +123,7 @@ export function l2BallLmo(r = 1, center?: ArrayLike<number>): Lmo {
  * @returns The oracle.
  * @example
  * ```ts
- * import { nuclearBallLmo } from 'mdml-engine/optim'
+ * import { nuclearBallLmo } from 'omai-engine/optim'
  * Array.from(nuclearBallLmo(1, 2, 2)(new Float64Array([2, 0, 0, 1])).vertex) // => [-1, 0, 0, 0]
  * ```
  */
@@ -183,8 +183,8 @@ export interface FrankWolfeState extends VectorState {
  * @concept frank-wolfe
  * @example
  * ```ts
- * import { frankWolfeAlgorithm, simplexLmo } from 'mdml-engine/optim'
- * import { square, sum, type Value } from 'mdml-engine/tensor'
+ * import { frankWolfeAlgorithm, simplexLmo } from 'omai-engine/optim'
+ * import { square, sum, type Value } from 'omai-engine/tensor'
  * frankWolfeAlgorithm((x) => sum(square(x as Value)), [1, 0], simplexLmo()).name // => 'frankWolfe'
  * ```
  */
@@ -250,7 +250,7 @@ export function frankWolfeAlgorithm(
       let away: ActiveAtom | undefined
       if (activeSet) {
         if (fw.id === undefined)
-          throw new MdmlError('value', 'away and pairwise steps need a polytope oracle with vertex ids')
+          throw new OmaiError('value', 'away and pairwise steps need a polytope oracle with vertex ids')
         away = s.active.reduce((best, a) => (ddot(g, a.vertex) > ddot(g, best.vertex) ? a : best))
         const dAway = daxpy(-1, away.vertex, s.x)
         if (variant === 'pairwise') {
@@ -348,8 +348,8 @@ export function frankWolfeAlgorithm(
  * @concept frank-wolfe
  * @example
  * ```ts
- * import { frankWolfe, simplexLmo } from 'mdml-engine/optim'
- * import { square, sub, sum, toArray, type Value } from 'mdml-engine/tensor'
+ * import { frankWolfe, simplexLmo } from 'omai-engine/optim'
+ * import { square, sub, sum, toArray, type Value } from 'omai-engine/tensor'
  * // The projection of (1, 0.4, -1) onto the simplex is (0.8, 0.2, 0).
  * const r = frankWolfe((x) => sum(square(sub(x as Value, [1, 0.4, -1]))), [1, 0, 0], simplexLmo(), { variant: 'away' })
  * toArray(r.x as Value).map((v) => Math.round(v * 1e8) / 1e8) // => [0.8, 0.2, 0]

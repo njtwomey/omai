@@ -4,7 +4,7 @@
  * (Douglas-Rachford) form, a lasso solver with a cached Cholesky factor, and global consensus ADMM for sums of terms.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import { cholesky, choSolve, daxpy, dgemv, dnrm2, dscal } from '../numerics/linalg/index.ts'
 import {
   add,
@@ -103,7 +103,7 @@ interface Dense {
 function dense(a: TensorLike | undefined, rows: number, cols: number, scale: number): Dense {
   if (a === undefined) return { data: null, rows, cols, scale }
   const t = primalOf(asTensor(a))
-  if (t.shape.length !== 2) throw new MdmlError('shape', 'admm: constraint matrices must be 2-D')
+  if (t.shape.length !== 2) throw new OmaiError('shape', 'admm: constraint matrices must be 2-D')
   return { data: Float64Array.from(t.data), rows: t.shape[0] ?? 0, cols: t.shape[1] ?? 0, scale: 1 }
 }
 
@@ -136,11 +136,11 @@ const SCHEMA = channels({
  * @param problem - The partial minimisations and the constraint.
  * @param options - Starting points (vectors; sizes from x0 and z0), penalty, adaptation, relaxation and tolerances.
  * @returns The algorithm.
- * @throws MdmlError with code `shape` unless a starting point or `c` has rank 1, and `not-differentiable` for a traced one.
+ * @throws OmaiError with code `shape` unless a starting point or `c` has rank 1, and `not-differentiable` for a traced one.
  * @concept admm
  * @example
  * ```ts
- * import { admmAlgorithm } from 'mdml-engine/optim'
+ * import { admmAlgorithm } from 'omai-engine/optim'
  * const alg = admmAlgorithm({ xUpdate: (z, u) => z.map((v, i) => v - (u[i] ?? 0)), zUpdate: (ax, u) => ax.map((v, i) => v + (u[i] ?? 0)) }, { x0: [0] })
  * alg.name // => 'admm'
  * ```
@@ -277,8 +277,8 @@ function splitRun(options: AdmmRunOptions): {
  * @index function Alternating direction method of multipliers.
  * @example
  * ```ts
- * import { admm } from 'mdml-engine/optim'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { admm } from 'omai-engine/optim'
+ * import { toArray } from 'omai-engine/tensor'
  * // min (x - 1)^2 / 2 + (z + 1)^2 / 2 subject to x = z: both meet at 0.
  * const r = admm({
  *   xUpdate: (z, u, rho) => z.map((v, i) => (1 + rho * (v - (u[i] ?? 0))) / (1 + rho)),
@@ -306,8 +306,8 @@ export function admm(problem: AdmmProblem, options: AdmmRunOptions = {}): AdmmRe
  * @concept admm
  * @example
  * ```ts
- * import { admmProx, proxL1, proxSquaredL2 } from 'mdml-engine/optim'
- * import { add, sub, toArray } from 'mdml-engine/tensor'
+ * import { admmProx, proxL1, proxSquaredL2 } from 'omai-engine/optim'
+ * import { add, sub, toArray } from 'omai-engine/tensor'
  * // min |x - 3|^2 / 2 + |x|_1: the soft threshold of 3 at 1.
  * const r = admmProx((v, t) => add(proxSquaredL2(sub(v, 3), t), 3), proxL1, [0])
  * toArray(r.z).map((v) => Math.round(v * 1e8) / 1e8) // => [2]
@@ -337,18 +337,18 @@ export type AdmmLassoOptions = AdmmRunOptions
  * @param lambda - The L1 weight.
  * @param options - Penalty, adaptation, relaxation, tolerances, iteration cap and run options.
  * @returns The result; `z` is the sparse solution.
- * @throws MdmlError with code `value` when `lambda` is negative or not finite.
+ * @throws OmaiError with code `value` when `lambda` is negative or not finite.
  * @concept admm
  * @example
  * ```ts
- * import { admmLasso } from 'mdml-engine/optim'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { admmLasso } from 'omai-engine/optim'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(admmLasso([[1, 0], [0, 1]], [3, 0.5], 1).z).map((v) => Math.round(v * 1e6) / 1e6) // => [2, 0]
  * ```
  */
 export function admmLasso(a: TensorLike, b: TensorLike, lambda: number, options: AdmmLassoOptions = {}): AdmmResult {
   if (!(lambda >= 0) || !Number.isFinite(lambda))
-    throw new MdmlError('value', `admmLasso: lambda must be finite and non-negative, got ${lambda}`)
+    throw new OmaiError('value', `admmLasso: lambda must be finite and non-negative, got ${lambda}`)
   const av = primalOf(asTensor(a))
   const n = av.shape[1] ?? 0
   const at = Float64Array.from(av.data)
@@ -404,7 +404,7 @@ export interface ConsensusState {
  * @concept admm
  * @example
  * ```ts
- * import { consensusAdmmAlgorithm, proxSquaredL2 } from 'mdml-engine/optim'
+ * import { consensusAdmmAlgorithm, proxSquaredL2 } from 'omai-engine/optim'
  * consensusAdmmAlgorithm([proxSquaredL2], [0]).name // => 'consensusAdmm'
  * ```
  */
@@ -417,7 +417,7 @@ export function consensusAdmmAlgorithm(
   const shape = start.shape
   const n = start.data.length
   const N = proxes.length
-  if (N === 0) throw new MdmlError('value', 'consensusAdmm: give at least one term')
+  if (N === 0) throw new OmaiError('value', 'consensusAdmm: give at least one term')
   const rho = options.rho ?? 1
   const absTol = options.absTol ?? 1e-9
   const relTol = options.relTol ?? 1e-9
@@ -479,8 +479,8 @@ export function consensusAdmmAlgorithm(
  * @concept admm
  * @example
  * ```ts
- * import { consensusAdmm, type Prox } from 'mdml-engine/optim'
- * import { add, div, toArray } from 'mdml-engine/tensor'
+ * import { consensusAdmm, type Prox } from 'omai-engine/optim'
+ * import { add, div, toArray } from 'omai-engine/tensor'
  * // Terms (x - a_i)^2 / 2 for a = 1, 2, 6: the consensus is their mean.
  * const proxAt = (a: number): Prox => (v, t) => div(add(v, a * t), 1 + t)
  * toArray(consensusAdmm([proxAt(1), proxAt(2), proxAt(6)], [0]).z).map((v) => Math.round(v * 1e8) / 1e8) // => [3]

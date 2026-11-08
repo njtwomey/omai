@@ -36,7 +36,7 @@ function accuracy(
  * @concept shooting-method
  * @example
  * ```ts
- * import { shootingAccuracies } from 'mdml-engine/dynamics/ode'
+ * import { shootingAccuracies } from 'omai-engine/dynamics/ode'
  * shootingAccuracies.make({ kind: 'standard' }).method // => 'RK45'
  * ```
  */

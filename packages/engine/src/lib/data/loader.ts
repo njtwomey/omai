@@ -4,7 +4,7 @@
  * they survive reloads, and `load` checks the checksum before parsing or caching anything.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import type { Dataset } from './schema/common.ts'
 
 /**
@@ -59,7 +59,7 @@ export interface AssetCache {
  * @returns The cache.
  * @example
  * ```ts
- * import { memoryCache } from 'mdml-engine/data'
+ * import { memoryCache } from 'omai-engine/data'
  * const cache = memoryCache()
  * await cache.set('k', new Uint8Array([1]))
  * (await cache.get('k'))?.length // => 1
@@ -81,13 +81,13 @@ export function memoryCache(): AssetCache {
 function request<T>(r: IDBRequest<T>): Promise<T> {
   return new Promise((resolve, reject) => {
     r.onsuccess = () => resolve(r.result)
-    r.onerror = () => reject(r.error ?? new MdmlError('value', 'IndexedDB request failed'))
+    r.onerror = () => reject(r.error ?? new OmaiError('value', 'IndexedDB request failed'))
   })
 }
 
 /** Options of {@link indexedDbCache}. */
 export interface IndexedDbCacheOptions {
-  /** The database name (default `mdml-assets`). */
+  /** The database name (default `omai-assets`). */
   readonly name?: string
   /** The IndexedDB factory (default `globalThis.indexedDB`). */
   readonly factory?: IDBFactory
@@ -98,21 +98,21 @@ export interface IndexedDbCacheOptions {
  *
  * @param options - Database name and factory.
  * @returns The cache.
- * @throws MdmlError with code `not-implemented` where IndexedDB is unavailable (such as Node).
+ * @throws OmaiError with code `not-implemented` where IndexedDB is unavailable (such as Node).
  * @example
  * ```ts
- * import { indexedDbCache } from 'mdml-engine/data'
+ * import { indexedDbCache } from 'omai-engine/data'
  * typeof indexedDbCache // => 'function'
  * ```
  */
 export function indexedDbCache(options: IndexedDbCacheOptions = {}): AssetCache {
   const factory = options.factory ?? (globalThis as { indexedDB?: IDBFactory }).indexedDB
-  if (factory === undefined) throw new MdmlError('not-implemented', 'indexedDbCache: IndexedDB is not available here')
+  if (factory === undefined) throw new OmaiError('not-implemented', 'indexedDbCache: IndexedDB is not available here')
   const storeName = 'assets'
   let opened: Promise<IDBDatabase> | undefined
   const db = (): Promise<IDBDatabase> => {
     if (opened === undefined) {
-      const r = factory.open(options.name ?? 'mdml-assets', 1)
+      const r = factory.open(options.name ?? 'omai-assets', 1)
       r.onupgradeneeded = () => {
         if (!r.result.objectStoreNames.contains(storeName)) r.result.createObjectStore(storeName)
       }
@@ -143,13 +143,13 @@ export function indexedDbCache(options: IndexedDbCacheOptions = {}): AssetCache 
  * @returns The digest.
  * @example
  * ```ts
- * import { sha256Hex } from 'mdml-engine/data'
+ * import { sha256Hex } from 'omai-engine/data'
  * await sha256Hex(new TextEncoder().encode('abc')) // => 'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad'
  * ```
  */
 export async function sha256Hex(bytes: Uint8Array): Promise<string> {
   const subtle = globalThis.crypto?.subtle
-  if (subtle === undefined) throw new MdmlError('not-implemented', 'sha256Hex: Web Crypto is not available here')
+  if (subtle === undefined) throw new OmaiError('not-implemented', 'sha256Hex: Web Crypto is not available here')
   const digest = await subtle.digest('SHA-256', bytes.slice().buffer)
   return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, '0')).join('')
 }
@@ -174,10 +174,10 @@ export interface LoadOptions {
  * @param ref - The dataset reference.
  * @param options - Cache and fetch function.
  * @returns The dataset.
- * @throws MdmlError with code `value` when a download fails or its checksum differs.
+ * @throws OmaiError with code `value` when a download fails or its checksum differs.
  * @example
  * ```ts
- * import { load, xy } from 'mdml-engine/data'
+ * import { load, xy } from 'omai-engine/data'
  * (await load({ kind: 'embedded', name: 'tiny', load: () => xy([[1]], [2]) })).kind // => 'regression'
  * ```
  */
@@ -194,13 +194,13 @@ async function fetchPinned(name: string, file: RemoteFile, options: LoadOptions)
   const cached = await options.cache?.get(file.sha256)
   if (cached !== undefined && (await sha256Hex(cached)) === file.sha256) return cached
   const fetcher = options.fetch ?? (globalThis.fetch as Fetcher | undefined)
-  if (fetcher === undefined) throw new MdmlError('not-implemented', `load: no fetch to download ${name}`)
+  if (fetcher === undefined) throw new OmaiError('not-implemented', `load: no fetch to download ${name}`)
   const response = await fetcher(file.url)
-  if (!response.ok) throw new MdmlError('value', `load: downloading ${name} failed with status ${response.status}`)
+  if (!response.ok) throw new OmaiError('value', `load: downloading ${name} failed with status ${response.status}`)
   const bytes = new Uint8Array(await response.arrayBuffer())
   const digest = await sha256Hex(bytes)
   if (digest !== file.sha256)
-    throw new MdmlError('value', `load: ${name} has checksum ${digest}, expected ${file.sha256}`)
+    throw new OmaiError('value', `load: ${name} has checksum ${digest}, expected ${file.sha256}`)
   await options.cache?.set(file.sha256, bytes)
   return bytes
 }

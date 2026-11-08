@@ -5,7 +5,7 @@
  * transition probabilities, and the random-walk subgraph samplers of GraphSAINT.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { foldIn, type Key, subsample, uniform, uniformStream } from '../random/index.ts'
 import { type Graph, graph, hasEdge, type NodeId, nodeIndex, subgraph } from './graph.ts'
 
@@ -71,12 +71,12 @@ export interface NeighbourSampleOptions {
  * @param key - The random key.
  * @param options - Direction and whether to draw with replacement.
  * @returns The layers, the sampled edges per hop, the receptive field and the sampled subgraph.
- * @throws MdmlError with code `value` for a non-integer fan-out.
+ * @throws OmaiError with code `value` for a non-integer fan-out.
  * @concept neighbour-sampling
  * @example
  * ```ts
- * import { neighbourSample, starGraph } from 'mdml-engine/graph'
- * import { key } from 'mdml-engine/random'
+ * import { neighbourSample, starGraph } from 'omai-engine/graph'
+ * import { key } from 'omai-engine/random'
  * const s = neighbourSample(starGraph(10), [0], [3], key(0))
  * [s.hops[0]?.src.length, s.hops[0]?.weight[0]] // => [3, 3.3333333333333335]
  * ```
@@ -91,7 +91,7 @@ export function neighbourSample(
   const direction = options.direction ?? 'in'
   const replace = options.replace ?? false
   if (fanouts.some((f) => !Number.isInteger(f)))
-    throw new MdmlError('value', 'neighbourSample: fan-outs must be integers')
+    throw new OmaiError('value', 'neighbourSample: fan-outs must be integers')
   const known: number[] = [...new Set(targets.map((v) => nodeIndex(g, v)))]
   const seen = new Set(known)
   const layers: number[][] = [[...known]]
@@ -144,11 +144,11 @@ export function neighbourSample(
  * @param k - The fan-out.
  * @param replace - Whether the draws are with replacement (default false).
  * @returns The variance of the estimate of the sum.
- * @throws MdmlError with code `value` unless 1 <= k (and k <= d without replacement).
+ * @throws OmaiError with code `value` unless 1 <= k (and k <= d without replacement).
  * @concept neighbour-sampling
  * @example
  * ```ts
- * import { neighbourSampleVariance } from 'mdml-engine/graph'
+ * import { neighbourSampleVariance } from 'omai-engine/graph'
  * Math.round(neighbourSampleVariance([1, 2, 3, 4], 2) * 1e6) / 1e6 // => 6.666667
  * neighbourSampleVariance([1, 2, 3, 4], 4) // => 0
  * ```
@@ -156,7 +156,7 @@ export function neighbourSample(
 export function neighbourSampleVariance(values: ArrayLike<number>, k: number, replace = false): number {
   const d = values.length
   if (!(Number.isInteger(k) && k >= 1 && (replace || k <= d)))
-    throw new MdmlError(
+    throw new OmaiError(
       'value',
       'neighbourSampleVariance: need an integer fan-out in [1, d] (any k >= 1 with replacement)',
     )
@@ -206,12 +206,12 @@ function steps(g: Graph, v: number, weighted: boolean): { nodes: number[]; weigh
  * @param key - The random key.
  * @param options - `weighted` and `walksPerNode`.
  * @returns The walks, each `[start, ...]` with at most `length + 1` nodes.
- * @throws MdmlError with code `value` for a negative length.
+ * @throws OmaiError with code `value` for a negative length.
  * @concept neighbour-sampling
  * @example
  * ```ts
- * import { pathGraph, randomWalks } from 'mdml-engine/graph'
- * import { key } from 'mdml-engine/random'
+ * import { pathGraph, randomWalks } from 'omai-engine/graph'
+ * import { key } from 'omai-engine/random'
  * randomWalks(pathGraph(2), [0], 3, key(0))[0] // => [0, 1, 0, 1]
  * ```
  */
@@ -234,7 +234,7 @@ function walk(
   bias: (previous: number, x: number) => number,
 ): number[][] {
   if (!(Number.isInteger(length) && length >= 0))
-    throw new MdmlError('value', 'walk: length must be a non-negative integer')
+    throw new OmaiError('value', 'walk: length must be a non-negative integer')
   const weighted = options.weighted ?? false
   const per = options.walksPerNode ?? 1
   const out: number[][] = []
@@ -266,7 +266,7 @@ export interface Node2VecOptions extends WalkSampleOptions {
 }
 
 function node2vecBias(g: Graph, p: number, q: number): (previous: number, x: number) => number {
-  if (!(p > 0 && q > 0)) throw new MdmlError('value', 'node2vec: p and q must be positive')
+  if (!(p > 0 && q > 0)) throw new OmaiError('value', 'node2vec: p and q must be positive')
   return (previous, x) => (x === previous ? 1 / p : hasEdge(g, previous, x) ? 1 : 1 / q)
 }
 
@@ -281,12 +281,12 @@ function node2vecBias(g: Graph, p: number, q: number): (previous: number, x: num
  * @param key - The random key.
  * @param options - `p`, `q`, `weighted` and `walksPerNode`.
  * @returns The walks.
- * @throws MdmlError with code `value` for a non-positive p or q or a negative length.
+ * @throws OmaiError with code `value` for a non-positive p or q or a negative length.
  * @concept neighbour-sampling
  * @example
  * ```ts
- * import { node2vecWalks, pathGraph } from 'mdml-engine/graph'
- * import { key } from 'mdml-engine/random'
+ * import { node2vecWalks, pathGraph } from 'omai-engine/graph'
+ * import { key } from 'omai-engine/random'
  * // On a path with a tiny return parameter p the walk bounces straight back.
  * node2vecWalks(pathGraph(3), [1], 4, key(0), { p: 1e-9 })[0]?.slice(2) // => [1, 0, 1]
  * ```
@@ -311,11 +311,11 @@ export function node2vecWalks(
  * @param current - Where it is.
  * @param options - `p`, `q` and `weighted`.
  * @returns The candidate next nodes and their probabilities.
- * @throws MdmlError with code `value` for a non-positive p or q.
+ * @throws OmaiError with code `value` for a non-positive p or q.
  * @concept neighbour-sampling
  * @example
  * ```ts
- * import { graph, node2vecTransition } from 'mdml-engine/graph'
+ * import { graph, node2vecTransition } from 'omai-engine/graph'
  * // Came from 0 to 1: back to 0 (1 / p = 0.5), to 2 which is adjacent to 0 (1), to 3 further out (1 / q = 4).
  * const g = graph([[0, 1], [1, 2], [0, 2], [1, 3]])
  * node2vecTransition(g, 0, 1, { p: 2, q: 0.25 }).probabilities // => [0.09090909090909091, 0.18181818181818182, 0.7272727272727273]
@@ -352,12 +352,12 @@ export interface WalkSubgraph {
  * @param length - Steps per walk.
  * @param key - The random key.
  * @returns The visited nodes and the induced subgraph.
- * @throws MdmlError with code `value` for more roots than nodes.
+ * @throws OmaiError with code `value` for more roots than nodes.
  * @concept neighbour-sampling
  * @example
  * ```ts
- * import { completeGraph, randomWalkSubgraph } from 'mdml-engine/graph'
- * import { key } from 'mdml-engine/random'
+ * import { completeGraph, randomWalkSubgraph } from 'omai-engine/graph'
+ * import { key } from 'omai-engine/random'
  * randomWalkSubgraph(completeGraph(6), [0], 0, key(0)).nodes // => [0]
  * ```
  */
@@ -370,7 +370,7 @@ export function randomWalkSubgraph(
   let starts: readonly NodeId[]
   if (typeof roots === 'number') {
     if (!(Number.isInteger(roots) && roots >= 0 && roots <= g.n))
-      throw new MdmlError('value', 'randomWalkSubgraph: bad number of roots')
+      throw new OmaiError('value', 'randomWalkSubgraph: bad number of roots')
     starts = Array.from(subsample(foldIn(key, 0), g.n, roots).data)
   } else starts = roots
   const nodes = [...new Set(randomWalks(g, starts, length, foldIn(key, 1)).flat())].sort((a, b) => a - b)
@@ -408,12 +408,12 @@ export interface LayerwiseOptions {
  * @param key - The random key.
  * @param options - `mode`.
  * @returns One sample per layer.
- * @throws MdmlError with code `value` for a non-positive size, or when a layer has no candidates.
+ * @throws OmaiError with code `value` for a non-positive size, or when a layer has no candidates.
  * @concept neighbour-sampling
  * @example
  * ```ts
- * import { layerwiseImportanceSample, starGraph } from 'mdml-engine/graph'
- * import { key } from 'mdml-engine/random'
+ * import { layerwiseImportanceSample, starGraph } from 'omai-engine/graph'
+ * import { key } from 'omai-engine/random'
  * layerwiseImportanceSample(starGraph(5), [1], [4], key(0))[0]?.nodes // => [0]
  * ```
  */
@@ -429,7 +429,7 @@ export function layerwiseImportanceSample(
   const layers: LayerSample[] = []
   sizes.forEach((draws, l) => {
     if (!(Number.isInteger(draws) && draws >= 1))
-      throw new MdmlError('value', 'layerwiseImportanceSample: sizes must be positive integers')
+      throw new OmaiError('value', 'layerwiseImportanceSample: sizes must be positive integers')
     const score = new Map<number, number>()
     for (const v of above) {
       const nb = neighbourList(g, v, 'in')
@@ -437,7 +437,7 @@ export function layerwiseImportanceSample(
     }
     const candidates = [...score.keys()].sort((a, b) => a - b)
     if (candidates.length === 0)
-      throw new MdmlError('value', 'layerwiseImportanceSample: the layer has no neighbours to draw from')
+      throw new OmaiError('value', 'layerwiseImportanceSample: the layer has no neighbours to draw from')
     const total = [...score.values()].reduce((a, b) => a + b, 0)
     const p = candidates.map((u) => (score.get(u) ?? 0) / total)
     const next = uniformStream(foldIn(key, l), 64)
@@ -470,7 +470,7 @@ export function layerwiseImportanceSample(
  * @concept neighbour-sampling
  * @example
  * ```ts
- * import { sampledAggregate, starGraph } from 'mdml-engine/graph'
+ * import { sampledAggregate, starGraph } from 'omai-engine/graph'
  * // The hub of a star averages its leaves; one drawn leaf with weight 4 stands in for all four.
  * sampledAggregate(starGraph(4), [0], { nodes: [1], probabilities: [0.25], weights: [4] }, [0, 1, 2, 3, 4]) // => [1]
  * ```

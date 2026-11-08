@@ -5,9 +5,9 @@ from typing import Literal
 
 import numpy as np
 import pywt
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import rng
-from mdml_oracle.signal_helpers import smooth_image
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import rng
+from omai_oracle.signal_helpers import smooth_image
 from skimage.restoration import denoise_wavelet
 
 REFERENCE: dict[str, str] = {"pywt": pywt.__version__, "scikit-image": version("scikit-image")}

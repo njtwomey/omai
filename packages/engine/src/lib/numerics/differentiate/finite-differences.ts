@@ -5,7 +5,7 @@
  * matrices.
  */
 
-import { type Complex, cadd, cdiv, cexp, clog, cmul, csub, MdmlError } from '../../base/index.ts'
+import { type Complex, cadd, cdiv, cexp, clog, cmul, csub, OmaiError } from '../../base/index.ts'
 import {
   add,
   concat,
@@ -52,7 +52,7 @@ export interface DerivativeResult {
  * @index function Derivative of a scalar function by Richardson-extrapolated differences.
  * @example
  * ```ts
- * import { derivative } from 'mdml-engine/numerics/differentiate'
+ * import { derivative } from 'omai-engine/numerics/differentiate'
  * Math.abs(derivative(Math.exp, 1).df - Math.E) < 1e-12 // => true
  * ```
  */
@@ -111,8 +111,8 @@ export interface GradientOptions {
  * @returns The derivative estimates, the shape of y.
  * @example
  * ```ts
- * import { gradient } from 'mdml-engine/numerics/differentiate'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { gradient } from 'omai-engine/numerics/differentiate'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(gradient([1, 2, 4, 7, 11])) // => [1, 1.5, 2.5, 3.5, 4]
  * ```
  */
@@ -122,7 +122,7 @@ export function gradient(y: TensorLike, options: GradientOptions = {}): Value {
   const axis = (options.axis ?? 0) < 0 ? rank + (options.axis ?? 0) : (options.axis ?? 0)
   const n = yv.shape[axis] ?? 0
   const edge = options.edgeOrder ?? 1
-  if (n < edge + 1) throw new MdmlError('shape', `gradient: at least ${edge + 1} samples are needed along the axis`)
+  if (n < edge + 1) throw new OmaiError('shape', `gradient: at least ${edge + 1} samples are needed along the axis`)
   // Work on the last axis, then move it back.
   const z = moveaxis(yv, axis, -1)
   const at = (start: number, stop: number): Value => sliceAxis(z, -1, start, stop)
@@ -131,7 +131,7 @@ export function gradient(y: TensorLike, options: GradientOptions = {}): Value {
     typeof spacing === 'number'
       ? Array.from({ length: n }, (_, i) => i * spacing)
       : toFlat(concreteOrThrow(promoteFloat(spacing)[0] as Tensor, 'spacing'))
-  if (xs.length !== n) throw new MdmlError('shape', 'gradient: coordinates must match the axis length')
+  if (xs.length !== n) throw new OmaiError('shape', 'gradient: coordinates must match the axis length')
   const vector = (values: readonly number[]): Tensor =>
     fromStorage(Float64Array.from(values), [values.length], 'float64')
   const d = (i: number): number => (xs[i + 1] ?? 0) - (xs[i] ?? 0)
@@ -198,11 +198,11 @@ function steps(x: readonly number[], relative: number): number[] {
  * @param x - The point `[n]`.
  * @param options - Method and relative step.
  * @returns The Jacobian `[m, n]`.
- * @throws MdmlError with code `shape` unless `x` is a vector, and `not-differentiable` for a traced value.
+ * @throws OmaiError with code `shape` unless `x` is a vector, and `not-differentiable` for a traced value.
  * @example
  * ```ts
- * import { jacobianFd } from 'mdml-engine/numerics/differentiate'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { jacobianFd } from 'omai-engine/numerics/differentiate'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(jacobianFd(([a, b]) => [a * b, a + b], [2, 3])).flat().map((v) => Math.round(v * 1e8) / 1e8) // => [3, 2, 1, 1]
  * ```
  */
@@ -236,11 +236,11 @@ export function jacobianFd(f: (x: number[]) => readonly number[], point: TensorL
  * @param x - The point `[n]`.
  * @param options - Relative step.
  * @returns The Hessian `[n, n]`.
- * @throws MdmlError with code `shape` unless `x` is a vector, and `not-differentiable` for a traced value.
+ * @throws OmaiError with code `shape` unless `x` is a vector, and `not-differentiable` for a traced value.
  * @example
  * ```ts
- * import { hessianFd } from 'mdml-engine/numerics/differentiate'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { hessianFd } from 'omai-engine/numerics/differentiate'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(hessianFd(([a, b]) => a * a * b, [1, 2])).flat().map((v) => Math.round(v * 1e5) / 1e5) // => [4, 2, 2, 0]
  * ```
  */
@@ -283,21 +283,21 @@ export function hessianFd(
  * @param stencil - The sample points `[n]` (distinct).
  * @param x0 - Where the derivative is wanted (default 0).
  * @returns The weights `[n]`, one per stencil point.
- * @throws MdmlError with code `value` when the order is not below the number of points or a point is repeated, `shape`
+ * @throws OmaiError with code `value` when the order is not below the number of points or a point is repeated, `shape`
  *   unless `stencil` is a vector, and `not-differentiable` for a traced value.
  * @concept finite-differences
  * @example
  * ```ts
- * import { finiteDifferenceWeights } from 'mdml-engine/numerics/differentiate'
+ * import { finiteDifferenceWeights } from 'omai-engine/numerics/differentiate'
  * finiteDifferenceWeights(2, [-1, 0, 1]) // => [1, -2, 1]
  * ```
  */
 export function finiteDifferenceWeights(order: number, points: TensorLike, x0 = 0): Tensor<'float64', [number]> {
   const stencil = toVector(points, 'finiteDifferenceWeights')
   const n = stencil.length
-  if (order >= n) throw new MdmlError('value', 'finiteDifferenceWeights: need more points than the derivative order')
+  if (order >= n) throw new OmaiError('value', 'finiteDifferenceWeights: need more points than the derivative order')
   if (new Set(stencil).size !== n)
-    throw new MdmlError('value', 'finiteDifferenceWeights: the stencil points must be distinct')
+    throw new OmaiError('value', 'finiteDifferenceWeights: the stencil points must be distinct')
   // c[j][k]: weight of point j for derivative k, built point by point.
   const c: number[][] = Array.from({ length: n }, () => new Array<number>(order + 1).fill(0))
   let c1 = 1
@@ -333,7 +333,7 @@ export function finiteDifferenceWeights(order: number, points: TensorLike, x0 = 
 
 /**
  * A complex number as a record with named parts, for writing functions differentiated by {@link complexStep}. It is the
- * record form of `Complex` (`[re, im]` of `mdml-engine/base`), which is what the arithmetic of `base` takes; the two
+ * record form of `Complex` (`[re, im]` of `omai-engine/base`), which is what the arithmetic of `base` takes; the two
  * are one concept in two shapes, and a pair converts to a record and back without loss.
  */
 export interface ComplexNumber {
@@ -399,7 +399,7 @@ export const complexOps: {
  * @returns The derivative.
  * @example
  * ```ts
- * import { complexStep, complexOps as C } from 'mdml-engine/numerics/differentiate'
+ * import { complexStep, complexOps as C } from 'omai-engine/numerics/differentiate'
  * complexStep((z) => C.mul(z, C.exp(z)), 0) // => 1
  * ```
  */
@@ -417,15 +417,15 @@ export function complexStep(f: (z: ComplexNumber) => ComplexNumber, x: number, h
  * @returns The matrix `[n, n]`.
  * @example
  * ```ts
- * import { differenceMatrix } from 'mdml-engine/numerics/differentiate'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { differenceMatrix } from 'omai-engine/numerics/differentiate'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(differenceMatrix(3))[1] // => [-0.5, 0, 0.5]
  * ```
  */
 export function differenceMatrix(n: number, options: { readonly order?: 1 | 2; readonly h?: number } = {}): Tensor {
   const order = options.order ?? 1
   const h = options.h ?? 1
-  if (n < (order === 1 ? 3 : 4)) throw new MdmlError('value', 'differenceMatrix: too few points')
+  if (n < (order === 1 ? 3 : 4)) throw new OmaiError('value', 'differenceMatrix: too few points')
   const d = new Float64Array(n * n)
   const set = (r: number, c: number, v: number): void => {
     d[r * n + c] = v

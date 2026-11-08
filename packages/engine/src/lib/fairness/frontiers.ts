@@ -5,7 +5,7 @@
  * rates when base rates differ (Kleinberg, Mullainathan and Raghavan; Chouldechova).
  */
 
-import { MdmlError, maxOf } from '../base/index.ts'
+import { maxOf, OmaiError } from '../base/index.ts'
 import { type GroupRateValues, groupDisparities, tableRates } from '../exposition/index.ts'
 import { calibrationByGroup } from './group-metrics.ts'
 import { optimiseThresholds, thresholdDecisions } from './post-processing.ts'
@@ -24,7 +24,7 @@ export interface TradeoffPoint {
  * @returns The indices of the points on the frontier, by increasing violation.
  * @example
  * ```ts
- * import { paretoFrontier } from 'mdml-engine/fairness'
+ * import { paretoFrontier } from 'omai-engine/fairness'
  * paretoFrontier([{ accuracy: 0.8, violation: 0.2 }, { accuracy: 0.7, violation: 0.25 }, { accuracy: 0.75, violation: 0.05 }]) // => [2, 0]
  * ```
  */
@@ -59,17 +59,17 @@ export interface SelectionOptions {
  * @param points - Candidates' accuracies and violations (from a grid of models or hyperparameters).
  * @param options - The budget or the price.
  * @returns The index of the chosen candidate.
- * @throws MdmlError `value` without candidates.
+ * @throws OmaiError `value` without candidates.
  * @example
  * ```ts
- * import { selectFairModel } from 'mdml-engine/fairness'
+ * import { selectFairModel } from 'omai-engine/fairness'
  * const points = [{ accuracy: 0.8, violation: 0.2 }, { accuracy: 0.75, violation: 0.05 }]
  * selectFairModel(points, { maxViolation: 0.1 }) // => 1
  * selectFairModel(points, { price: 0.1 }) // => 0
  * ```
  */
 export function selectFairModel(points: readonly TradeoffPoint[], options: SelectionOptions = {}): number {
-  if (points.length === 0) throw new MdmlError('value', 'selectFairModel: no candidates')
+  if (points.length === 0) throw new OmaiError('value', 'selectFairModel: no candidates')
   const budget = options.maxViolation
   let best = -1
   if (budget !== undefined) {
@@ -157,7 +157,7 @@ export interface ThresholdFrontier {
  * @returns The thresholds, their points and the frontier.
  * @example
  * ```ts
- * import { thresholdFrontier } from 'mdml-engine/fairness'
+ * import { thresholdFrontier } from 'omai-engine/fairness'
  * const r = thresholdFrontier([0.9, 0.7, 0.4, 0.2, 0.6, 0.45, 0.3, 0.1], [1, 1, 0, 0, 1, 1, 0, 0], [0, 0, 0, 0, 1, 1, 1, 1], { count: 5 })
  * r.group // => 1
  * r.points.length // => 5
@@ -170,7 +170,7 @@ export function thresholdFrontier(
   options: ThresholdFrontierOptions = {},
 ): ThresholdFrontier {
   if (scores.length !== labels.length || scores.length !== groups.length)
-    throw new MdmlError('shape', 'thresholdFrontier: inputs differ in length')
+    throw new OmaiError('shape', 'thresholdFrontier: inputs differ in length')
   const k = maxOf(groups) + 1
   const base = options.base ?? 0.5
   const constraint = options.constraint ?? 'demographicParity'
@@ -219,7 +219,7 @@ export interface ImpossibilityPoint {
  * @returns The base rates and the disparities before and after.
  * @example
  * ```ts
- * import { impossibilityAt } from 'mdml-engine/fairness'
+ * import { impossibilityAt } from 'omai-engine/fairness'
  * const r = impossibilityAt([0.8, 0.8, 0.8, 0.2, 0.8, 0.2, 0.2, 0.2], [1, 1, 0, 0, 1, 0, 0, 0], [0, 0, 0, 0, 1, 1, 1, 1])
  * r.baseRates // => [0.5, 0.25]
  * ```

@@ -9,7 +9,7 @@
  * and the trainable network are in `diffusion-samplers.ts`.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { foldIn, type Key, normal, uniform } from '../random/index.ts'
 import {
   add,
@@ -81,7 +81,7 @@ export interface ScheduleSpec {
  * @returns The schedule.
  * @example
  * ```ts
- * import { defineSchedule } from 'mdml-engine/stochastic'
+ * import { defineSchedule } from 'omai-engine/stochastic'
  * const s = defineSchedule({ name: 've', kind: 've', tMin: 0.01, tMax: 1, alpha: () => 1, sigma: (t) => t })
  * Math.abs(s.diffusionSquared(0.5) - 1) < 1e-8 // => true
  * ```
@@ -114,7 +114,7 @@ export function defineSchedule(spec: ScheduleSpec): NoiseSchedule {
  * @concept diffusion-models
  * @example
  * ```ts
- * import { linearSchedule } from 'mdml-engine/stochastic'
+ * import { linearSchedule } from 'omai-engine/stochastic'
  * const s = linearSchedule()
  * Math.abs(s.diffusionSquared(0.5) - (0.1 + 0.5 * 19.9)) < 1e-12 // => true
  * ```
@@ -146,7 +146,7 @@ const ALPHA_BAR_FLOOR = 1e-5
  * @returns The schedule.
  * @example
  * ```ts
- * import { cosineSchedule } from 'mdml-engine/stochastic'
+ * import { cosineSchedule } from 'omai-engine/stochastic'
  * Math.abs(cosineSchedule().alpha(0) - 1) < 1e-12 // => true
  * ```
  */
@@ -176,7 +176,7 @@ export function cosineSchedule(options: { readonly s?: number } = {}): NoiseSche
  * @returns The schedule.
  * @example
  * ```ts
- * import { sigmoidSchedule } from 'mdml-engine/stochastic'
+ * import { sigmoidSchedule } from 'omai-engine/stochastic'
  * Math.abs(sigmoidSchedule().alpha(0) - 1) < 1e-12 // => true
  * ```
  */
@@ -206,7 +206,7 @@ export function sigmoidSchedule(
  * @returns The betas.
  * @example
  * ```ts
- * import { linearBetas } from 'mdml-engine/stochastic'
+ * import { linearBetas } from 'omai-engine/stochastic'
  * linearBetas(3, { start: 0, end: 1 }) // => [0, 0.5, 1]
  * ```
  */
@@ -223,7 +223,7 @@ export function linearBetas(n = 1000, options: { readonly start?: number; readon
  * @returns The betas.
  * @example
  * ```ts
- * import { cosineBetas } from 'mdml-engine/stochastic'
+ * import { cosineBetas } from 'omai-engine/stochastic'
  * cosineBetas(1000).length // => 1000
  * ```
  */
@@ -240,10 +240,10 @@ export function cosineBetas(n: number, options: { readonly s?: number; readonly 
  *
  * @param betas - The betas of the n steps.
  * @returns The schedule, with tMin = 1 / n and tMax = 1.
- * @throws MdmlError with code `value` for a beta outside [0, 1).
+ * @throws OmaiError with code `value` for a beta outside [0, 1).
  * @example
  * ```ts
- * import { discreteSchedule, linearBetas } from 'mdml-engine/stochastic'
+ * import { discreteSchedule, linearBetas } from 'omai-engine/stochastic'
  * const betas = linearBetas(10, { start: 0.1, end: 0.1 })
  * Math.abs(discreteSchedule(betas).alpha(0.1) ** 2 - 0.9) < 1e-14 // => true
  * ```
@@ -252,7 +252,7 @@ export function discreteSchedule(betas: readonly number[]): NoiseSchedule {
   const n = betas.length
   const logBar = [0]
   for (const b of betas) {
-    if (!(b >= 0 && b < 1)) throw new MdmlError('value', 'discreteSchedule: betas must lie in [0, 1)')
+    if (!(b >= 0 && b < 1)) throw new OmaiError('value', 'discreteSchedule: betas must lie in [0, 1)')
     logBar.push((logBar[logBar.length - 1] ?? 0) + Math.log1p(-b))
   }
   const at = (t: number): number => {
@@ -285,7 +285,7 @@ export function discreteSchedule(betas: readonly number[]): NoiseSchedule {
  * @returns The schedule, with zero drift and `diffusionSquared(t) = 2 sigma(t)^2 log(sigmaMax / sigmaMin)`.
  * @example
  * ```ts
- * import { veSchedule } from 'mdml-engine/stochastic'
+ * import { veSchedule } from 'omai-engine/stochastic'
  * veSchedule({ sigmaMin: 1, sigmaMax: 100 }).sigma(0.5) // => 10
  * ```
  */
@@ -312,7 +312,7 @@ export function veSchedule(options: { readonly sigmaMin?: number; readonly sigma
  * @returns The schedule.
  * @example
  * ```ts
- * import { edmSchedule } from 'mdml-engine/stochastic'
+ * import { edmSchedule } from 'omai-engine/stochastic'
  * edmSchedule().sigma(3) // => 3
  * ```
  */
@@ -345,7 +345,7 @@ export function snr(schedule: NoiseSchedule, t: number): number {
  * @returns The four coefficients.
  * @example
  * ```ts
- * import { edmPreconditioning } from 'mdml-engine/stochastic'
+ * import { edmPreconditioning } from 'omai-engine/stochastic'
  * edmPreconditioning(0.5, 0.5).cSkip // => 0.5
  * ```
  */
@@ -371,8 +371,8 @@ export function edmPreconditioning(
  * @returns The noise levels `[n]`.
  * @example
  * ```ts
- * import { edmNoiseLevels } from 'mdml-engine/stochastic'
- * import { key } from 'mdml-engine/random'
+ * import { edmNoiseLevels } from 'omai-engine/stochastic'
+ * import { key } from 'omai-engine/random'
  * edmNoiseLevels(key(0), 5).length // => 5
  * ```
  */
@@ -408,7 +408,7 @@ function invert(f: (t: number) => number, target: number, lo: number, hi: number
  * @returns The time in [tMin / 100, tMax].
  * @example
  * ```ts
- * import { linearSchedule, timeAtLogSnr } from 'mdml-engine/stochastic'
+ * import { linearSchedule, timeAtLogSnr } from 'omai-engine/stochastic'
  * const s = linearSchedule()
  * Math.abs(timeAtLogSnr(s, s.logSnr(0.3)) - 0.3) < 1e-9 // => true
  * ```
@@ -428,7 +428,7 @@ export function timeAtLogSnr(schedule: NoiseSchedule, logSnr: number): number {
  * @returns `n + 1` decreasing times ending in 0.
  * @example
  * ```ts
- * import { linearSchedule, samplerTimes } from 'mdml-engine/stochastic'
+ * import { linearSchedule, samplerTimes } from 'omai-engine/stochastic'
  * samplerTimes(linearSchedule(), 2).length // => 3
  * ```
  */
@@ -437,7 +437,7 @@ export function samplerTimes(
   n: number,
   options: { readonly spacing?: TimeSpacing } = {},
 ): number[] {
-  if (!(n >= 1)) throw new MdmlError('value', 'samplerTimes: need at least one step')
+  if (!(n >= 1)) throw new OmaiError('value', 'samplerTimes: need at least one step')
   const [hi, lo] = [schedule.tMax, schedule.tMin]
   const u = (i: number): number => (n === 1 ? 0 : i / (n - 1))
   const points = Array.from({ length: n }, (_, i): number => {
@@ -454,7 +454,7 @@ export function samplerTimes(
         return invert((t) => schedule.sigma(t), sigma, lo / 100, hi)
       }
       default:
-        throw new MdmlError('value', `samplerTimes: unknown spacing ${String(options.spacing)}`)
+        throw new OmaiError('value', `samplerTimes: unknown spacing ${String(options.spacing)}`)
     }
   })
   return [...points, 0]
@@ -496,8 +496,8 @@ export interface ForwardSample {
  * @concept diffusion-models
  * @example
  * ```ts
- * import { forwardSample, linearSchedule } from 'mdml-engine/stochastic'
- * import { key } from 'mdml-engine/random'
+ * import { forwardSample, linearSchedule } from 'omai-engine/stochastic'
+ * import { key } from 'omai-engine/random'
  * forwardSample(linearSchedule(), [[1, 1]], 0.5, key(0)).xt.shape // => [1, 2]
  * ```
  */
@@ -527,7 +527,7 @@ export function forwardSample(
  * @concept diffusion-models
  * @example
  * ```ts
- * import { vpSde } from 'mdml-engine/stochastic'
+ * import { vpSde } from 'omai-engine/stochastic'
  * vpSde().schedule.name // => 'linear'
  * ```
  */
@@ -542,7 +542,7 @@ export function vpSde(options: { readonly betaMin?: number; readonly betaMax?: n
  * @returns As {@link vpSde}.
  * @example
  * ```ts
- * import { veSde } from 'mdml-engine/stochastic'
+ * import { veSde } from 'omai-engine/stochastic'
  * veSde().schedule.kind // => 've'
  * ```
  */
@@ -584,12 +584,12 @@ export type DiffusionModel = (xt: Value, t: number) => Value
  * @param alpha - The signal scale.
  * @param sigma - The noise scale.
  * @returns The estimates of x0 and epsilon.
- * @throws MdmlError with code `value` for the velocity of a variance-exploding schedule.
+ * @throws OmaiError with code `value` for the velocity of a variance-exploding schedule.
  * @concept diffusion-models
  * @example
  * ```ts
- * import { toX0AndNoise } from 'mdml-engine/stochastic'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { toX0AndNoise } from 'omai-engine/stochastic'
+ * import { toArray } from 'omai-engine/tensor'
  * // x_t = 0.6 * 2 + 0.8 * 1 = 2: the noise estimate 1 gives x0 = 2.
  * toArray(toX0AndNoise('epsilon', [1], [2], 0.6, 0.8).x0) // => [2]
  * ```
@@ -609,7 +609,7 @@ export function toX0AndNoise(
       return { x0: o, noise: div(sub(x, mul(o, alpha)), sigma) }
     case 'v': {
       if (Math.abs(alpha * alpha + sigma * sigma - 1) > 1e-6)
-        throw new MdmlError('value', 'toX0AndNoise: the velocity needs a variance-preserving schedule')
+        throw new OmaiError('value', 'toX0AndNoise: the velocity needs a variance-preserving schedule')
       return { x0: sub(mul(x, alpha), mul(o, sigma)), noise: add(mul(x, sigma), mul(o, alpha)) }
     }
     case 'score':
@@ -643,7 +643,7 @@ export interface WeightingOptions {
  * @concept diffusion-models
  * @example
  * ```ts
- * import { linearSchedule, snr, x0ErrorWeight } from 'mdml-engine/stochastic'
+ * import { linearSchedule, snr, x0ErrorWeight } from 'omai-engine/stochastic'
  * const s = linearSchedule()
  * Math.abs(x0ErrorWeight(s, 0.4, 'simple') - snr(s, 0.4)) < 1e-12 // => true
  * ```
@@ -741,8 +741,8 @@ export interface DiffusionLossOptions extends WeightingOptions {
  * @concept diffusion-models
  * @example
  * ```ts
- * import { linearSchedule, weightedDiffusionLoss } from 'mdml-engine/stochastic'
- * import { item } from 'mdml-engine/tensor'
+ * import { linearSchedule, weightedDiffusionLoss } from 'omai-engine/stochastic'
+ * import { item } from 'omai-engine/tensor'
  * item(weightedDiffusionLoss([[1, 2]], [[0, 0]], [[1, 2]], [0.5], linearSchedule())) // => 0
  * ```
  */
@@ -795,8 +795,8 @@ export interface DiffusionBatch {
  * @returns The batch.
  * @example
  * ```ts
- * import { diffusionBatch, linearSchedule } from 'mdml-engine/stochastic'
- * import { key } from 'mdml-engine/random'
+ * import { diffusionBatch, linearSchedule } from 'omai-engine/stochastic'
+ * import { key } from 'omai-engine/random'
  * diffusionBatch(linearSchedule(), [[0, 0], [1, 1]], key(0)).times.length // => 2
  * ```
  */
@@ -832,8 +832,8 @@ const key0 = (k: Key, i: number): Key => foldIn(k, i)
  * @concept diffusion-models
  * @example
  * ```ts
- * import { classifierFreeGuidance } from 'mdml-engine/stochastic'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { classifierFreeGuidance } from 'omai-engine/stochastic'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(classifierFreeGuidance([2], [1], 3)) // => [4]
  * ```
  */
@@ -852,8 +852,8 @@ export function classifierFreeGuidance(conditional: TensorLike, unconditional: T
  * @returns The guided score.
  * @example
  * ```ts
- * import { guidedScore } from 'mdml-engine/stochastic'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { guidedScore } from 'omai-engine/stochastic'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(guidedScore([1], [2], 3)) // => [7]
  * ```
  */
@@ -872,8 +872,8 @@ export function guidedScore(score: TensorLike, classifierGradient: TensorLike, s
  * @returns The guided noise prediction.
  * @example
  * ```ts
- * import { guidedNoise } from 'mdml-engine/stochastic'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { guidedNoise } from 'omai-engine/stochastic'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(guidedNoise([1], [2], 0.5, 3)) // => [-2]
  * ```
  */
@@ -891,8 +891,8 @@ export function guidedNoise(noise: TensorLike, classifierGradient: TensorLike, s
  * @returns The guided model.
  * @example
  * ```ts
- * import { guidedModel } from 'mdml-engine/stochastic'
- * import { tensor, toArray } from 'mdml-engine/tensor'
+ * import { guidedModel } from 'omai-engine/stochastic'
+ * import { tensor, toArray } from 'omai-engine/tensor'
  * toArray(guidedModel(() => tensor([2]), () => tensor([1]), 3)(tensor([0]), 0.5)) // => [4]
  * ```
  */
@@ -942,12 +942,12 @@ export interface GaussianMixtureTruth {
  *
  * @param spec - Means, standard deviations and weights.
  * @returns The truth.
- * @throws MdmlError with code `value` for no components or non-positive spreads or weights.
+ * @throws OmaiError with code `value` for no components or non-positive spreads or weights.
  * @concept diffusion-models
  * @example
  * ```ts
- * import { gaussianMixtureTruth, linearSchedule } from 'mdml-engine/stochastic'
- * import { item, sum } from 'mdml-engine/tensor'
+ * import { gaussianMixtureTruth, linearSchedule } from 'omai-engine/stochastic'
+ * import { item, sum } from 'omai-engine/tensor'
  * // One standard normal: the score at x is -x at every noise level.
  * const t = gaussianMixtureTruth({ means: [[0]], stds: 1 })
  * Math.abs(item(sum(t.score([[2]], linearSchedule(), 0.5))) + 2) < 1e-12 // => true
@@ -956,13 +956,13 @@ export interface GaussianMixtureTruth {
 export function gaussianMixtureTruth(spec: GaussianMixtureSpec): GaussianMixtureTruth {
   const k = spec.means.length
   const dim = spec.means[0]?.length ?? 0
-  if (k === 0 || dim === 0) throw new MdmlError('value', 'gaussianMixtureTruth: need at least one component')
+  if (k === 0 || dim === 0) throw new OmaiError('value', 'gaussianMixtureTruth: need at least one component')
   const stds = Array.from({ length: k }, (_, i) =>
     typeof spec.stds === 'number' ? spec.stds : (spec.stds?.[i] ?? 0.3),
   )
   const raw = spec.weights ?? new Array<number>(k).fill(1)
   if (stds.some((s) => !(s > 0)) || raw.some((w) => !(w > 0)))
-    throw new MdmlError('value', 'gaussianMixtureTruth: spreads and weights must be positive')
+    throw new OmaiError('value', 'gaussianMixtureTruth: spreads and weights must be positive')
   const total = raw.reduce((a, b) => a + b, 0)
   const logWeights = raw.map((w) => Math.log(w / total))
   const means = tensor(spec.means.map((m) => [...m]))

@@ -4,7 +4,7 @@
  * OpenSpiel's solvers.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { Generator, type Key } from '../../random/index.ts'
 import { type Algorithm, runAlgorithm } from '../../trace/index.ts'
 import type { GameRunOptions } from '../normal-form/index.ts'
@@ -66,13 +66,13 @@ function sample(probs: ArrayLike<number>, u: number): number {
  * @param game - A game or its tree.
  * @param options - The sampling scheme and exploration.
  * @returns The algorithm; each step is one iteration.
- * @throws MdmlError with code `value` for an exploration outside (0, 1].
+ * @throws OmaiError with code `value` for an exploration outside (0, 1].
  * @concept counterfactual-regret
  * @reference Lanctot, Waugh, Zinkevich and Bowling (2009), Monte Carlo sampling for regret minimization in extensive games.
  * @example
  * ```ts
- * import { kuhnPoker, mccfrAlgorithm } from 'mdml-engine/games'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { kuhnPoker, mccfrAlgorithm } from 'omai-engine/games'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * runAlgorithm(mccfrAlgorithm(kuhnPoker()), { maxSteps: 10, seed: 0 }).state.t // => 10
  * ```
  */
@@ -83,7 +83,7 @@ export function mccfrAlgorithm<S>(
   const tree = treeOf(game)
   const sampling = options.sampling ?? 'external'
   const eps = options.exploration ?? 0.6
-  if (!(eps > 0 && eps <= 1)) throw new MdmlError('value', 'mccfr: exploration must be in (0, 1]')
+  if (!(eps > 0 && eps <= 1)) throw new OmaiError('value', 'mccfr: exploration must be in (0, 1]')
   const n = tree.numPlayers
   const external = (
     s: { regrets: Float64Array[]; sums: Float64Array[] },
@@ -192,7 +192,7 @@ export function mccfrAlgorithm<S>(
  * @concept counterfactual-regret
  * @example
  * ```ts
- * import { kuhnPoker, mccfr } from 'mdml-engine/games'
+ * import { kuhnPoker, mccfr } from 'omai-engine/games'
  * mccfr(kuhnPoker(), { iterations: 3000, seed: 1 }).exploitability < 0.05 // => true
  * ```
  */

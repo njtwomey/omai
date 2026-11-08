@@ -10,7 +10,7 @@
  * (exact) or the ELBO (variational, warm-started from the previous posterior) at every step.
  */
 
-import { MdmlError, maxOf } from '../../base/index.ts'
+import { maxOf, OmaiError } from '../../base/index.ts'
 import { foldIn, type Key, key as makeKey, normal, uniform } from '../../random/index.ts'
 import { toFlat } from '../../tensor/index.ts'
 import { type Algorithm, channels, stateFromJson, stateToJson } from '../../trace/index.ts'
@@ -70,11 +70,11 @@ function logGaussian(x: readonly number[], mean: readonly number[], variances: r
  * @param params - The parameters.
  * @param sequence - The observations.
  * @returns The log likelihood and the posterior moments.
- * @throws MdmlError with code `value` when the product chain would exceed 4096 states.
+ * @throws OmaiError with code `value` when the product chain would exceed 4096 states.
  * @concept hidden-markov-models
  * @example
  * ```ts
- * import { learning } from 'mdml-engine/pgm'
+ * import { learning } from 'omai-engine/pgm'
  * const p = { start: [[0.5, 0.5]], transition: [[[0.9, 0.1], [0.1, 0.9]]], loadings: [[[0], [3]]], bias: [0], variances: [1] }
  * Math.round(learning.factorialHmmExact(p, [0, 3]).objective * 1e4) / 1e4 // => -4.6512
  * ```
@@ -83,7 +83,7 @@ export function factorialHmmExact(params: FactorialHmmParameters, sequence: Fact
   const K = sizes(params)
   const M = K.length
   const J = K.reduce((a, v) => a * v, 1)
-  if (J > 4096) throw new MdmlError('value', `factorialHmmExact: ${J} joint states is too many`)
+  if (J > 4096) throw new OmaiError('value', `factorialHmmExact: ${J} joint states is too many`)
   const x = sequence.map(vec)
   const T = x.length
   const tuple = (j: number): number[] => {
@@ -170,7 +170,7 @@ export interface VariationalResult extends FactorialMoments {
  * @concept hidden-markov-models
  * @example
  * ```ts
- * import { learning } from 'mdml-engine/pgm'
+ * import { learning } from 'omai-engine/pgm'
  * const p = { start: [[0.5, 0.5]], transition: [[[0.9, 0.1], [0.1, 0.9]]], loadings: [[[0], [3]]], bias: [0], variances: [1] }
  * Math.round(learning.factorialHmmVariational(p, [0, 3]).objective * 1e4) / 1e4 // => -4.6512
  * ```
@@ -318,8 +318,8 @@ export type FactorialHmmState = {
  * @concept hidden-markov-models
  * @example
  * ```ts
- * import { learning } from 'mdml-engine/pgm'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { learning } from 'omai-engine/pgm'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const p = { start: [[0.5, 0.5]], transition: [[[0.8, 0.2], [0.2, 0.8]]], loadings: [[[0], [2]]], bias: [0], variances: [1] }
  * runAlgorithm(learning.factorialHmmAlgorithm([[0, 0.1, 2, 2.2]], p), { maxSteps: 3 }).steps // => 3
  * ```
@@ -460,8 +460,8 @@ export function factorialHmmAlgorithm(
  * @returns The states `[m][t]` and the observations `[t][d]`.
  * @example
  * ```ts
- * import { learning } from 'mdml-engine/pgm'
- * import { key } from 'mdml-engine/random'
+ * import { learning } from 'omai-engine/pgm'
+ * import { key } from 'omai-engine/random'
  * const p = { start: [[1, 0]], transition: [[[1, 0], [0, 1]]], loadings: [[[0], [3]]], bias: [1], variances: [1e-12] }
  * learning.factorialHmmSample(p, 2, key(0)).states // => [[0, 0]]
  * ```

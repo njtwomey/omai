@@ -7,7 +7,7 @@
  * problem at a state, so it applies to a model whichever algorithm produced the state.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { dgemm, dgemv, dgeqrf, dpotrf, dpotrs, dsyev } from '../numerics/linalg/index.ts'
 import { betainc, gammaincc, ndtr, ndtri } from '../numerics/special/index.ts'
 import { type Key, normal } from '../random/index.ts'
@@ -54,7 +54,7 @@ export interface GamFitContext {
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { GAM_DEFAULTS, fitContext, fitGam, gamProblem, s } from 'mdml-engine/gam'
+ * import { GAM_DEFAULTS, fitContext, fitGam, gamProblem, s } from 'omai-engine/gam'
  * const x = Array.from({ length: 40 }, (_, i) => [i / 39])
  * const hyper = { ...GAM_DEFAULTS, terms: [s(0, { k: 6 })] }
  * const problem = gamProblem(x, x.map((r) => Math.sin(5 * (r[0] ?? 0))), hyper)
@@ -134,7 +134,7 @@ function fSf(x: number, d1: number, d2: number): number {
  *   definite quadratic forms in non-central normal variables (Computational Statistics and Data Analysis 53, 2009).
  * @example
  * ```ts
- * import { weightedChiSquareSf } from 'mdml-engine/gam'
+ * import { weightedChiSquareSf } from 'omai-engine/gam'
  * Math.abs(weightedChiSquareSf(3.841458820694124, [1]) - 0.05) < 1e-9 // => true
  * ```
  */
@@ -169,7 +169,7 @@ export function weightedChiSquareSf(x: number, weights: readonly number[]): numb
  * @reference S. N. Wood, On p-values for smooth components of an extended empirical Bayesian GAM (Biometrika 100, 2013).
  * @example
  * ```ts
- * import { referenceTest } from 'mdml-engine/gam'
+ * import { referenceTest } from 'omai-engine/gam'
  * // One coefficient of 3 standard errors, tested as a Wald statistic on one degree of freedom.
  * const r = referenceTest([1, 2, 3, 4], 4, 1, [3], [1], 1, 0)
  * [Math.round(r.statistic), r.rank] // => [9, 1]
@@ -356,7 +356,7 @@ function parametricRow(ctx: GamFitContext, label: string, offset: number, w: num
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { GAM_DEFAULTS, fitContext, fitGam, gamProblem, gamSummary, s } from 'mdml-engine/gam'
+ * import { GAM_DEFAULTS, fitContext, fitGam, gamProblem, gamSummary, s } from 'omai-engine/gam'
  * const x = Array.from({ length: 60 }, (_, i) => [i / 59])
  * const y = x.map((r, i) => Math.sin(6 * (r[0] ?? 0)) + 0.3 * Math.sin(i * 12.9898))
  * const hyper = { ...GAM_DEFAULTS, terms: [s(0, { k: 8 })] }
@@ -441,8 +441,8 @@ export function gamSummary(ctx: GamFitContext): GamSummary {
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { GAM_DEFAULTS, fitContext, fitGam, gamProblem, s, sampleCoefficients } from 'mdml-engine/gam'
- * import { key } from 'mdml-engine/random'
+ * import { GAM_DEFAULTS, fitContext, fitGam, gamProblem, s, sampleCoefficients } from 'omai-engine/gam'
+ * import { key } from 'omai-engine/random'
  * const x = Array.from({ length: 30 }, (_, i) => [i / 29])
  * const hyper = { ...GAM_DEFAULTS, terms: [s(0, { k: 5 })] }
  * const problem = gamProblem(x, x.map((r) => r[0] ?? 0), hyper)
@@ -507,7 +507,7 @@ export interface Band {
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { GAM_DEFAULTS, bandFromDesign, fitContext, fitGam, gamProblem, linear } from 'mdml-engine/gam'
+ * import { GAM_DEFAULTS, bandFromDesign, fitContext, fitGam, gamProblem, linear } from 'omai-engine/gam'
  * const x = Array.from({ length: 20 }, (_, i) => [i / 19])
  * const hyper = { ...GAM_DEFAULTS, terms: [linear(0)] }
  * const problem = gamProblem(x, x.map((r) => 3 * (r[0] ?? 0)), hyper)
@@ -540,7 +540,7 @@ export function bandFromDesign(
     se[i] = Math.sqrt(Math.max(a, 0))
   }
   const level = options.level ?? 0.95
-  if (!(level > 0 && level < 1)) throw new MdmlError('value', 'bands: level must lie in (0, 1)')
+  if (!(level > 0 && level < 1)) throw new OmaiError('value', 'bands: level must lie in (0, 1)')
   let multiplier = item(ndtri(0.5 + level / 2))
   if (options.simultaneous !== undefined) {
     const draws = options.simultaneous.draws ?? 5000
@@ -587,11 +587,11 @@ export function bandFromDesign(
  * @param x - New covariates `[m, d]`.
  * @param options - The level, and `simultaneous` for the simulation-based multiplier.
  * @returns The band of the partial effect (the intercept is not included).
- * @throws MdmlError `value` for an index with no term.
+ * @throws OmaiError `value` for an index with no term.
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { GAM_DEFAULTS, fitContext, fitGam, gamProblem, s, termBand } from 'mdml-engine/gam'
+ * import { GAM_DEFAULTS, fitContext, fitGam, gamProblem, s, termBand } from 'omai-engine/gam'
  * const x = Array.from({ length: 50 }, (_, i) => [i / 49])
  * const hyper = { ...GAM_DEFAULTS, terms: [s(0, { k: 6 })] }
  * const problem = gamProblem(x, x.map((r, i) => Math.sin(5 * (r[0] ?? 0)) + 0.2 * Math.sin(i * 12.9898)), hyper)
@@ -601,7 +601,7 @@ export function bandFromDesign(
  */
 export function termBand(ctx: GamFitContext, term: number, x: TensorLike, options: BandOptions = {}): Band {
   const t = ctx.problem.design.terms[term]
-  if (t === undefined) throw new MdmlError('value', `termBand: no term ${term}`)
+  if (t === undefined) throw new OmaiError('value', `termBand: no term ${term}`)
   const { X, n } = evaluateDesign(ctx.problem.design, x)
   const columns = Array.from({ length: t.width }, (_, j) => t.offset + j)
   return bandFromDesign(ctx, X, n, columns, { ...options, scale: 'link' })
@@ -618,7 +618,7 @@ export function termBand(ctx: GamFitContext, term: number, x: TensorLike, option
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { GAM_DEFAULTS, fitContext, fitGam, gamProblem, predictionBand, s } from 'mdml-engine/gam'
+ * import { GAM_DEFAULTS, fitContext, fitGam, gamProblem, predictionBand, s } from 'omai-engine/gam'
  * const x = Array.from({ length: 50 }, (_, i) => [i / 49])
  * const hyper = { ...GAM_DEFAULTS, terms: [s(0, { k: 6 })] }
  * const problem = gamProblem(x, x.map((r) => 2 * (r[0] ?? 0)), hyper)
@@ -649,8 +649,8 @@ export function predictionBand(ctx: GamFitContext, x: TensorLike, options: BandO
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { GAM_DEFAULTS, fitContext, fitGam, gamProblem, s, simulateCurves } from 'mdml-engine/gam'
- * import { key } from 'mdml-engine/random'
+ * import { GAM_DEFAULTS, fitContext, fitGam, gamProblem, s, simulateCurves } from 'omai-engine/gam'
+ * import { key } from 'omai-engine/random'
  * const x = Array.from({ length: 30 }, (_, i) => [i / 29])
  * const hyper = { ...GAM_DEFAULTS, terms: [s(0, { k: 5 })] }
  * const problem = gamProblem(x, x.map((r) => r[0] ?? 0), hyper)
@@ -671,7 +671,7 @@ export function simulateCurves(
   const draws = sampleCoefficients(ctx, count, key)
   const t = options.term === undefined ? undefined : design.terms[options.term]
   if (options.term !== undefined && t === undefined)
-    throw new MdmlError('value', `simulateCurves: no term ${options.term}`)
+    throw new OmaiError('value', `simulateCurves: no term ${options.term}`)
   const out = new Float64Array(count * n)
   for (let s = 0; s < count; s++)
     for (let i = 0; i < n; i++) {

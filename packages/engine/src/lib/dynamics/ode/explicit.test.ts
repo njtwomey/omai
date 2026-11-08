@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isMdmlError } from '../../base/index.ts'
+import { isOmaiError } from '../../base/index.ts'
 import { neg, tensor, toFlat } from '../../tensor/index.ts'
 import { orderConditions, stepperOrder } from './convergence.ts'
 import { butcherTableau, EULER, explicitRk, HEUN, KUTTA3, MIDPOINT, RALSTON, RK4, RK38, rkStages } from './explicit.ts'
@@ -29,7 +29,7 @@ describe('explicit Runge-Kutta', () => {
     try {
       butcherTableau('bad', [[], [0.3]], [0.5, 0.5], [0, 1], 2)
     } catch (e) {
-      expect(isMdmlError(e, 'value')).toBe(true)
+      expect(isOmaiError(e, 'value')).toBe(true)
     }
   })
 

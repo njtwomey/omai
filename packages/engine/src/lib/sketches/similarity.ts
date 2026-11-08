@@ -3,7 +3,7 @@
  * Jaccard signature and banded LSH index with S-curve collision probability.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { gaussLegendre } from '../numerics/quadrature/index.ts'
 import { bandingProbability } from '../numerics/spatial/index.ts'
 import { fmix32, hash32, type SketchItem, type SketchSeed, seedOf } from './hashing.ts'
@@ -77,7 +77,7 @@ export interface LshIndex {
  *
  * @example
  * ```ts
- * import { minHash } from 'mdml-engine/sketches'
+ * import { minHash } from 'omai-engine/sketches'
  * const sigA = minHash(['a', 'b', 'c', 'd'], { numHashes: 256 })
  * const sigB = minHash(['b', 'c', 'd', 'e'], { numHashes: 256 })
  * Math.abs(sigA.jaccard(sigB) - 3 / 5) < 0.15 // => true
@@ -87,7 +87,7 @@ export function minHash(items: Iterable<SketchItem> = [], options: MinHashOption
   const numHashes = options.numHashes ?? 128
   const seed = seedOf(options.seed)
   if (!Number.isInteger(numHashes) || numHashes < 1) {
-    throw new MdmlError('value', `minHash: numHashes must be a positive integer, got ${numHashes}`)
+    throw new OmaiError('value', `minHash: numHashes must be a positive integer, got ${numHashes}`)
   }
 
   function build(values: Uint32Array): MinHashSignature {
@@ -111,7 +111,7 @@ export function minHash(items: Iterable<SketchItem> = [], options: MinHashOption
       },
       merge(other: MinHashSignature): MinHashSignature {
         if (other.numHashes !== numHashes || other.seed !== seed) {
-          throw new MdmlError('value', 'minHash.merge: numHashes and seed must match')
+          throw new OmaiError('value', 'minHash.merge: numHashes and seed must match')
         }
         const merged = new Uint32Array(numHashes)
         for (let i = 0; i < numHashes; i++) {
@@ -144,7 +144,7 @@ export function minHash(items: Iterable<SketchItem> = [], options: MinHashOption
  *
  * @example
  * ```ts
- * import { minHash, minHashJaccard } from 'mdml-engine/sketches'
+ * import { minHash, minHashJaccard } from 'omai-engine/sketches'
  * const s1 = minHash([1, 2, 3], { numHashes: 64 })
  * const s2 = minHash([1, 2, 3], { numHashes: 64 })
  * minHashJaccard(s1, s2) // => 1
@@ -152,7 +152,7 @@ export function minHash(items: Iterable<SketchItem> = [], options: MinHashOption
  */
 export function minHashJaccard(sigA: MinHashSignature, sigB: MinHashSignature): number {
   if (sigA.numHashes !== sigB.numHashes) {
-    throw new MdmlError(
+    throw new OmaiError(
       'value',
       `minHashJaccard: signature lengths must match (${sigA.numHashes} vs ${sigB.numHashes})`,
     )
@@ -176,7 +176,7 @@ export function minHashJaccard(sigA: MinHashSignature, sigB: MinHashSignature): 
  *
  * @example
  * ```ts
- * import { lshCollisionProbability } from 'mdml-engine/sketches'
+ * import { lshCollisionProbability } from 'omai-engine/sketches'
  * lshCollisionProbability(0.8, 20, 5).toFixed(4) // => '0.9996'
  * ```
  */
@@ -206,7 +206,7 @@ function bandBucketKey(values: Uint32Array, band: number, rows: number): number 
  *
  * @example
  * ```ts
- * import { lshIndex, minHash } from 'mdml-engine/sketches'
+ * import { lshIndex, minHash } from 'omai-engine/sketches'
  * const idx = lshIndex({ bands: 16, rows: 4 })
  * idx.add('doc1', minHash(['a', 'b', 'c', 'd'], { numHashes: 64 }))
  * idx.add('doc2', minHash(['a', 'b', 'c', 'd'], { numHashes: 64 }))
@@ -216,10 +216,10 @@ function bandBucketKey(values: Uint32Array, band: number, rows: number): number 
 export function lshIndex(options: LshIndexOptions): LshIndex {
   const { bands, rows } = options
   if (!Number.isInteger(bands) || bands < 1) {
-    throw new MdmlError('value', `lshIndex: bands must be a positive integer, got ${bands}`)
+    throw new OmaiError('value', `lshIndex: bands must be a positive integer, got ${bands}`)
   }
   if (!Number.isInteger(rows) || rows < 1) {
-    throw new MdmlError('value', `lshIndex: rows must be a positive integer, got ${rows}`)
+    throw new OmaiError('value', `lshIndex: rows must be a positive integer, got ${rows}`)
   }
 
   const tables: Map<number, string[]>[] = Array.from({ length: bands }, () => new Map<number, string[]>())
@@ -230,7 +230,7 @@ export function lshIndex(options: LshIndexOptions): LshIndex {
     threshold: (1 / bands) ** (1 / rows),
     add(id: string, signature: MinHashSignature): void {
       if (signature.numHashes < bands * rows) {
-        throw new MdmlError(
+        throw new OmaiError(
           'value',
           `lshIndex.add: signature has ${signature.numHashes} hashes, need at least bands * rows = ${bands * rows}`,
         )
@@ -249,7 +249,7 @@ export function lshIndex(options: LshIndexOptions): LshIndex {
     },
     query(signature: MinHashSignature): readonly string[] {
       if (signature.numHashes < bands * rows) {
-        throw new MdmlError(
+        throw new OmaiError(
           'value',
           `lshIndex.query: signature has ${signature.numHashes} hashes, need at least bands * rows = ${bands * rows}`,
         )
@@ -301,7 +301,7 @@ export function lshIndex(options: LshIndexOptions): LshIndex {
  * @concept minhash
  * @example
  * ```ts
- * import { exactJaccard } from 'mdml-engine/sketches'
+ * import { exactJaccard } from 'omai-engine/sketches'
  * exactJaccard(['a', 'b', 'c', 'd'], ['b', 'c', 'd', 'e']) // => 0.6
  * ```
  */
@@ -334,12 +334,12 @@ export interface LshParams {
  * @param numHashes - The signature length.
  * @param weights - `[falsePositive, falseNegative]` weights (default `[0.5, 0.5]`).
  * @returns The best `bands`, `rows` and their error.
- * @throws MdmlError with code `value` for a threshold outside `(0, 1)` or `numHashes < 1`.
+ * @throws OmaiError with code `value` for a threshold outside `(0, 1)` or `numHashes < 1`.
  * @concept locality-sensitive-hashing
  * @reference J. Leskovec, A. Rajaraman and J. Ullman, Mining of Massive Datasets, section 3.4.
  * @example
  * ```ts
- * import { lshOptimalParams } from 'mdml-engine/sketches'
+ * import { lshOptimalParams } from 'omai-engine/sketches'
  * const p = lshOptimalParams(0.5, 128)
  * p.bands * p.rows <= 128 // => true
  * ```
@@ -350,10 +350,10 @@ export function lshOptimalParams(
   weights: readonly [number, number] = [0.5, 0.5],
 ): LshParams {
   if (!(threshold > 0 && threshold < 1)) {
-    throw new MdmlError('value', `lshOptimalParams: threshold must lie in (0, 1), got ${threshold}`)
+    throw new OmaiError('value', `lshOptimalParams: threshold must lie in (0, 1), got ${threshold}`)
   }
   if (!(Number.isInteger(numHashes) && numHashes >= 1)) {
-    throw new MdmlError('value', `lshOptimalParams: numHashes must be a positive integer, got ${numHashes}`)
+    throw new OmaiError('value', `lshOptimalParams: numHashes must be a positive integer, got ${numHashes}`)
   }
   const rule = gaussLegendre(Math.min(128, Math.ceil(numHashes / 2) + 1))
   const xs = Array.from(rule.nodes.data)

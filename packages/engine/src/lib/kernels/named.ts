@@ -5,7 +5,7 @@
  * JSON. Support vector machines and kernel ridge regression use these.
  */
 
-import { MdmlError, varianceOf } from '../base/index.ts'
+import { OmaiError, varianceOf } from '../base/index.ts'
 import { choice, real, type Space } from '../space/index.ts'
 import { asTensor, primalOf, type TensorLike, toFlat } from '../tensor/index.ts'
 import type { Kernel } from './kernel.ts'
@@ -35,11 +35,11 @@ export type ResolvedKernel = {
  * @param choice - The kernel choice.
  * @param x - Training rows `[n, d]`.
  * @returns The same kernel with a numeric gamma, as plain JSON.
- * @throws MdmlError `value` for `'scale'` with a NaN or infinite entry in the rows.
+ * @throws OmaiError `value` for `'scale'` with a NaN or infinite entry in the rows.
  * @concept kernel-functions
  * @example
  * ```ts
- * import { resolveKernel } from 'mdml-engine/kernels'
+ * import { resolveKernel } from 'omai-engine/kernels'
  * resolveKernel({ kernel: 'rbf', gamma: 'auto', degree: 3, coef0: 1 }, [[0, 1], [2, 3]]).gamma // => 0.5
  * ```
  */
@@ -50,7 +50,7 @@ export function resolveKernel(choice: KernelChoice, x: TensorLike): ResolvedKern
   if (choice.gamma === 'auto') gamma = 1 / d
   else if (choice.gamma === 'scale') {
     const values = toFlat(t)
-    if (!values.every(Number.isFinite)) throw new MdmlError('value', "resolveKernel: gamma 'scale' needs finite rows")
+    if (!values.every(Number.isFinite)) throw new OmaiError('value', "resolveKernel: gamma 'scale' needs finite rows")
     // The two-pass variance: E[x^2] - E[x]^2 cancels to zero or below for data far from the origin.
     const constant = values.every((v) => v === values[0])
     const variance = constant ? 0 : varianceOf(values)
@@ -76,7 +76,7 @@ export function resolveKernel(choice: KernelChoice, x: TensorLike): ResolvedKern
  * @index function Gram matrix of a kernel chosen by name.
  * @example
  * ```ts
- * import { kernelMatrix } from 'mdml-engine/kernels'
+ * import { kernelMatrix } from 'omai-engine/kernels'
  * const choice = { kernel: 'linear' as const, gamma: 1, degree: 3, coef0: 0 }
  * Array.from(kernelMatrix(choice, { kernel: 'linear', gamma: 1, degree: 3, coef0: 0 }, [[1, 2]], [[3, 4], [0, 1]])) // => [11, 2]
  * ```
@@ -104,7 +104,7 @@ const NAMES = ['rbf', 'linear', 'poly', 'sigmoid', 'laplacian'] as const
  * @concept kernel-functions
  * @example
  * ```ts
- * import { kernelSpace } from 'mdml-engine/kernels'
+ * import { kernelSpace } from 'omai-engine/kernels'
  * Object.keys(kernelSpace({ kernel: 'rbf', gamma: 0.5, degree: 3, coef0: 1 })) // => ['kernel', 'gamma', 'degree', 'coef0']
  * ```
  */

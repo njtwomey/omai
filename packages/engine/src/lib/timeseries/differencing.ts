@@ -4,7 +4,7 @@
  * start it. Missing values (NaN) propagate through differences, as in pandas.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { polymul } from '../numerics/polynomial/index.ts'
 import { type TensorLike, toFlat } from '../tensor/index.ts'
 import { asSeries } from './_series.ts'
@@ -16,10 +16,10 @@ import { asSeries } from './_series.ts'
  * @param order - How many times to difference (default 1).
  * @param lag - The lag, 12 for a monthly seasonal difference (default 1).
  * @returns The differenced series.
- * @throws MdmlError with code `value` for a non-positive order or lag.
+ * @throws OmaiError with code `value` for a non-positive order or lag.
  * @example
  * ```ts
- * import { difference } from 'mdml-engine/timeseries'
+ * import { difference } from 'omai-engine/timeseries'
  * difference([1, 4, 9, 16, 25]) // => [3, 5, 7, 9]
  * difference([1, 4, 9, 16, 25], 2) // => [2, 2, 2]
  * difference([1, 2, 5, 6, 9, 10], 1, 2) // => [4, 4, 4, 4]
@@ -27,7 +27,7 @@ import { asSeries } from './_series.ts'
  */
 export function difference(y: TensorLike, order = 1, lag = 1): number[] {
   if (!(Number.isInteger(order) && order >= 0 && Number.isInteger(lag) && lag >= 1))
-    throw new MdmlError('value', 'difference: order must be a non-negative integer and lag a positive integer')
+    throw new OmaiError('value', 'difference: order must be a non-negative integer and lag a positive integer')
   let x: number[] = Array.from(asSeries(y, 'difference'))
   for (let k = 0; k < order; k++) x = x.slice(lag).map((v, i) => v - (x[i] ?? 0))
   return x
@@ -43,14 +43,14 @@ export function difference(y: TensorLike, order = 1, lag = 1): number[] {
  * @returns The polynomial `[1, -c_1, ..., -c_k]`, so that y_t = z_t + sum c_j y_(t-j) integrates the differences z.
  * @example
  * ```ts
- * import { differencePolynomial } from 'mdml-engine/timeseries'
+ * import { differencePolynomial } from 'omai-engine/timeseries'
  * differencePolynomial(1, 1, 4) // => [1, -1, 0, 0, -1, 1]
  * differencePolynomial(2) // => [1, -2, 1]
  * ```
  */
 export function differencePolynomial(d: number, seasonal = 0, period = 1): number[] {
   if (!(Number.isInteger(d) && d >= 0 && Number.isInteger(seasonal) && seasonal >= 0 && Number.isInteger(period)))
-    throw new MdmlError('value', 'differencePolynomial: orders must be non-negative integers')
+    throw new OmaiError('value', 'differencePolynomial: orders must be non-negative integers')
   let poly = [1]
   for (let i = 0; i < d; i++) poly = toFlat(polymul(poly, [1, -1]))
   for (let i = 0; i < seasonal; i++)
@@ -67,17 +67,17 @@ export function differencePolynomial(d: number, seasonal = 0, period = 1): numbe
  * @param order - The order of differencing that produced `z` (default 1).
  * @param lag - The lag (default 1).
  * @returns The original series, `initial.length + z.length` values.
- * @throws MdmlError with code `shape` when `initial` has the wrong length.
+ * @throws OmaiError with code `shape` when `initial` has the wrong length.
  * @example
  * ```ts
- * import { difference, integrate } from 'mdml-engine/timeseries'
+ * import { difference, integrate } from 'omai-engine/timeseries'
  * const y = [1, 4, 9, 16, 25]
  * integrate(difference(y, 2), [1, 4], 2) // => [1, 4, 9, 16, 25]
  * ```
  */
 export function integrate(z: TensorLike, initial: readonly number[], order = 1, lag = 1): number[] {
   if (initial.length !== order * lag)
-    throw new MdmlError('shape', `integrate: expected ${order * lag} initial values, got ${initial.length}`)
+    throw new OmaiError('shape', `integrate: expected ${order * lag} initial values, got ${initial.length}`)
   let x: number[] = Array.from(asSeries(z, 'integrate'))
   // Level k of the original series, the k-th difference w_k, starts with the first `lag` values of the k-th difference of
   // `initial`; each level is the running sum (at stride `lag`) of the next one.

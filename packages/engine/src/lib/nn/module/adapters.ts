@@ -5,7 +5,7 @@
  * is trained, with parameter-count accounting (`parameterCounts`) to show how small it is.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { foldIn, type Key } from '../../random/index.ts'
 import {
   add,
@@ -81,10 +81,10 @@ export interface LoRAOptions {
  * @param base - The module.
  * @param attention - For an attention layer, which projections.
  * @returns The targets.
- * @throws MdmlError with code `value` for a module this does not know.
+ * @throws OmaiError with code `value` for a module this does not know.
  * @example
  * ```ts
- * import { loraTargets, Linear } from 'mdml-engine/nn'
+ * import { loraTargets, Linear } from 'omai-engine/nn'
  * loraTargets(new Linear(3, 2)).map((t) => t.name) // => ['weight']
  * ```
  */
@@ -105,7 +105,7 @@ export function loraTargets(
       return { name: which, path: [`${which}_proj_weight`] }
     })
   }
-  throw new MdmlError('value', `loraTargets: no default targets for a ${base.kind}; give them`)
+  throw new OmaiError('value', `loraTargets: no default targets for a ${base.kind}; give them`)
 }
 
 /**
@@ -121,8 +121,8 @@ export function loraTargets(
  * @index module Low-rank adapter wrapped around chosen weights, with merge and unmerge.
  * @example
  * ```ts
- * import { LoRA, Linear } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
+ * import { LoRA, Linear } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
  * const lora = new LoRA(new Linear(8, 4, { key: key(0) }), { rank: 2, key: key(1) })
  * lora.loraParameterCount() // => 24
  * ```
@@ -139,7 +139,7 @@ export class LoRA<I, O> extends Module<I, O> {
   constructor(base: Module<I, O>, options: LoRAOptions) {
     super()
     if (!Number.isInteger(options.rank) || options.rank < 1)
-      throw new MdmlError('value', `LoRA: rank must be a positive integer, got ${options.rank}`)
+      throw new OmaiError('value', `LoRA: rank must be a positive integer, got ${options.rank}`)
     this.base = base
     this.rank = options.rank
     this.alpha = options.alpha ?? options.rank
@@ -153,7 +153,7 @@ export class LoRA<I, O> extends Module<I, O> {
   private weightShape(base: Params, t: LoRATarget): readonly [number, number] {
     const w = getIn(base, t.path) as Value | undefined
     if (w === undefined || w.shape.length !== 2)
-      throw new MdmlError('value', `LoRA: target ${t.name} (${t.path.join('.')}) is not a matrix of the base module`)
+      throw new OmaiError('value', `LoRA: target ${t.name} (${t.path.join('.')}) is not a matrix of the base module`)
     const rows = t.rows === undefined ? w.shape[0] : t.rows[1] - t.rows[0]
     return [rows ?? 0, w.shape[1] ?? 0]
   }
@@ -266,7 +266,7 @@ export class LoRA<I, O> extends Module<I, O> {
  * @returns r (d_in + d_out).
  * @example
  * ```ts
- * import { loraParameterCount } from 'mdml-engine/nn'
+ * import { loraParameterCount } from 'omai-engine/nn'
  * loraParameterCount(768, 768, 8) // => 12288
  * ```
  */
@@ -291,7 +291,7 @@ export interface ParameterCounts {
  * @returns Total, trainable and frozen counts and the trainable share.
  * @example
  * ```ts
- * import { parameterCounts, Linear } from 'mdml-engine/nn'
+ * import { parameterCounts, Linear } from 'omai-engine/nn'
  * parameterCounts(new Linear(3, 2).requiresGrad(false)).trainable // => 0
  * ```
  */
@@ -318,7 +318,7 @@ export function parameterCounts(module: AnyModule): ParameterCounts {
  * @returns The module.
  * @example
  * ```ts
- * import { trainOnly, parameterCounts, Linear } from 'mdml-engine/nn'
+ * import { trainOnly, parameterCounts, Linear } from 'omai-engine/nn'
  * parameterCounts(trainOnly(new Linear(3, 2), (p) => p === 'bias')).trainable // => 2
  * ```
  */
@@ -347,7 +347,7 @@ function rebuild(tree: Params, values: readonly Value[]): Params {
  * @concept bitfit
  * @example
  * ```ts
- * import { bitFit, parameterCounts, mlp } from 'mdml-engine/nn'
+ * import { bitFit, parameterCounts, mlp } from 'omai-engine/nn'
  * parameterCounts(bitFit(mlp([4, 8, 2]))).trainable // => 10
  * ```
  */
@@ -369,7 +369,7 @@ export interface BottleneckAdapterOptions {
  * @concept adapters
  * @example
  * ```ts
- * import { BottleneckAdapter } from 'mdml-engine/nn'
+ * import { BottleneckAdapter } from 'omai-engine/nn'
  * new BottleneckAdapter(16, 4).parameterCount() // => 16 * 4 + 4 + 4 * 16 + 16
  * ```
  */
@@ -432,7 +432,7 @@ export class BottleneckAdapter extends Module {
  * @concept adapters
  * @example
  * ```ts
- * import { withAdapter, parameterCounts, BottleneckAdapter, Linear } from 'mdml-engine/nn'
+ * import { withAdapter, parameterCounts, BottleneckAdapter, Linear } from 'omai-engine/nn'
  * parameterCounts(withAdapter(new Linear(4, 16), new BottleneckAdapter(16, 2))).trainable // => 82
  * ```
  */
@@ -485,9 +485,9 @@ class Adapted extends Module {
  * @concept prompt-tuning
  * @example
  * ```ts
- * import { PromptTuning, Sequential } from 'mdml-engine/nn'
- * import { zeros } from 'mdml-engine/tensor'
- * import { key } from 'mdml-engine/random'
+ * import { PromptTuning, Sequential } from 'omai-engine/nn'
+ * import { zeros } from 'omai-engine/tensor'
+ * import { key } from 'omai-engine/random'
  * new PromptTuning(new Sequential(), 3, 4, { key: key(0) }).forward(zeros([2, 5, 4])).shape // => [2, 8, 4]
  * ```
  */
@@ -546,9 +546,9 @@ export class PromptTuning extends Module {
  * @concept prefix-tuning
  * @example
  * ```ts
- * import { PrefixAttention, MultiheadAttention } from 'mdml-engine/nn'
- * import { zeros } from 'mdml-engine/tensor'
- * import { key } from 'mdml-engine/random'
+ * import { PrefixAttention, MultiheadAttention } from 'omai-engine/nn'
+ * import { zeros } from 'omai-engine/tensor'
+ * import { key } from 'omai-engine/random'
  * const attn = new MultiheadAttention(8, 2, { batchFirst: true, key: key(0) })
  * new PrefixAttention(attn, 3, { key: key(1) }).forward(zeros([2, 5, 8])).weights?.shape // => [2, 5, 8]
  * ```
@@ -590,7 +590,7 @@ export class PrefixAttention extends Module<Value | AttentionInput, AttentionOut
 
   apply(params: Params, x: Value | AttentionInput, ctx: ApplyContext = {}): AttentionOutput {
     const input: AttentionInput = isValue(x) ? { query: x } : x
-    if (input.attnMask !== undefined) throw new MdmlError('value', 'PrefixAttention: attnMask is not supported')
+    if (input.attnMask !== undefined) throw new OmaiError('value', 'PrefixAttention: attnMask is not supported')
     const q = asTensor(input.query as TensorLike)
     const k = input.key === undefined ? q : asTensor(input.key)
     const v = input.value === undefined ? k : asTensor(input.value)

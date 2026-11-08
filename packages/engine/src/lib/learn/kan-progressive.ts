@@ -385,7 +385,7 @@ function progressiveVerbs(p: ProgressiveKanParams, h: ProgressiveKanHyper): Prog
  * @concept kolmogorov-arnold-networks
  * @example
  * ```ts
- * import { progressiveKan, progressivePlan } from 'mdml-engine/learn'
+ * import { progressiveKan, progressivePlan } from 'omai-engine/learn'
  * progressivePlan(progressiveKan.hyper).map((p) => p.kind) // => ['train', 'prune', 'refine', 'train', 'refine', 'train']
  * ```
  */

@@ -62,7 +62,7 @@ const paramsOf = (s: MoeState): Pick<MoeState, 'gate' | 'experts' | 'variances'>
  *
  * @example
  * ```ts
- * import type { MoePath } from 'mdml-engine/methods/mixture'
+ * import type { MoePath } from 'omai-engine/methods/mixture'
  * const path: MoePath = 'model/gating'
  * path // => 'model/gating'
  * ```
@@ -75,7 +75,7 @@ export type MoePath = 'model/assignments' | 'model/experts' | 'model/gating'
  *
  * @example
  * ```ts
- * import { moe } from 'mdml-engine/methods/mixture'
+ * import { moe } from 'omai-engine/methods/mixture'
  * const x = Array.from({ length: 40 }, (_, i) => [i / 40])
  * const y = x.map(([v]) => (v < 0.5 ? 4 * v : 2 - 2 * v))
  * moe.fit({ x, y }).params.experts.length // => 2

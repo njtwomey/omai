@@ -1,7 +1,7 @@
-import { cartesian, contours, heatmap, type Smoothing } from 'mdml-render/charts'
-import { figure } from 'mdml-render/figure'
-import { Chart, Choice, ControlPanel, FigureFrame, NumberField, useColourMode } from 'mdml-render/react'
-import { formatNumber } from 'mdml-render/theme'
+import { cartesian, contours, heatmap, type Smoothing } from 'omai-render/charts'
+import { figure } from 'omai-render/figure'
+import { Chart, Choice, ControlPanel, FigureFrame, NumberField, useColourMode } from 'omai-render/react'
+import { formatNumber } from 'omai-render/theme'
 import { type ReactNode, useMemo, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 

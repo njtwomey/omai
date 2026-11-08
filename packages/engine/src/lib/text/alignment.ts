@@ -4,7 +4,7 @@
  * alignment as two gapped rows and scoring a given alignment.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import type { Sequence } from './similarity.ts'
 
 /**
@@ -48,7 +48,7 @@ function align<T>(a: Sequence<T>, b: Sequence<T>, scoring: AlignmentScoring<T | 
   const open = scoring.gapOpen ?? gap
   const extend = scoring.gapExtend ?? gap
   if (![open, extend, scoring.match ?? 1, scoring.mismatch ?? -1].every(Number.isFinite))
-    throw new MdmlError('value', 'alignment: scores must be finite')
+    throw new OmaiError('value', 'alignment: scores must be finite')
   const sub =
     scoring.substitution ??
     ((p: T | string, q: T | string): number => (p === q ? (scoring.match ?? 1) : (scoring.mismatch ?? -1)))
@@ -149,11 +149,11 @@ function align<T>(a: Sequence<T>, b: Sequence<T>, scoring: AlignmentScoring<T | 
  * @param b - The second sequence.
  * @param scoring - Match, mismatch and gap scores (default 1, -1, -1).
  * @returns The alignment.
- * @throws MdmlError with code `value` for non-finite scores.
+ * @throws OmaiError with code `value` for non-finite scores.
  * @concept sequence-alignment
  * @example
  * ```ts
- * import { needlemanWunsch, formatAlignment } from 'mdml-engine/text'
+ * import { needlemanWunsch, formatAlignment } from 'omai-engine/text'
  * const r = needlemanWunsch('GATTACA', 'GCATGCU', { match: 1, mismatch: -1, gap: -1 })
  * [r.score, formatAlignment('GATTACA', 'GCATGCU', r)] // => [0, ['G-ATTACA', 'GCA-TGCU']]
  * ```
@@ -174,11 +174,11 @@ export function needlemanWunsch<T>(
  * @param b - The second sequence.
  * @param scoring - Match, mismatch and gap scores (default 1, -1, -1).
  * @returns The alignment (empty, score 0, when no pair scores positively).
- * @throws MdmlError with code `value` for non-finite scores.
+ * @throws OmaiError with code `value` for non-finite scores.
  * @concept sequence-alignment
  * @example
  * ```ts
- * import { smithWaterman, formatAlignment } from 'mdml-engine/text'
+ * import { smithWaterman, formatAlignment } from 'omai-engine/text'
  * const r = smithWaterman('TGTTACGG', 'GGTTGACTA', { match: 3, mismatch: -3, gap: -2 })
  * [r.score, formatAlignment('TGTTACGG', 'GGTTGACTA', r)] // => [13, ['GTT-AC', 'GTTGAC']]
  * ```
@@ -202,7 +202,7 @@ export function smithWaterman<T>(
  * @concept sequence-alignment
  * @example
  * ```ts
- * import { formatAlignment } from 'mdml-engine/text'
+ * import { formatAlignment } from 'omai-engine/text'
  * formatAlignment('ab', 'b', { score: 0, pairs: [[0, -1], [1, 0]], startA: 0, endA: 2, startB: 0, endB: 1 }) // => ['ab', '-b']
  * ```
  */
@@ -229,7 +229,7 @@ export function formatAlignment(a: string, b: string, alignment: Alignment, gap 
  * @concept sequence-alignment
  * @example
  * ```ts
- * import { alignmentScore } from 'mdml-engine/text'
+ * import { alignmentScore } from 'omai-engine/text'
  * alignmentScore('ab', 'b', [[0, -1], [1, 0]]) // => 0
  * ```
  */

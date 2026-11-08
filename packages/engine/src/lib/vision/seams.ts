@@ -4,7 +4,7 @@
  * one at a time (transposing for height).
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import type { Tensor, TensorLike } from '../tensor/index.ts'
 import {
   type Algorithm,
@@ -27,8 +27,8 @@ import { imageTensor, type Raster, rasterOf, rasterTensor } from './_image.ts'
  * @concept seam-carving
  * @example
  * ```ts
- * import { seamEnergy } from 'mdml-engine/vision'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { seamEnergy } from 'omai-engine/vision'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(seamEnergy([[0, 0, 1, 1]])) // => [[0, 0.5, 0.5, 0]]
  * ```
  */
@@ -62,13 +62,13 @@ export function seamEnergy(x: TensorLike): Tensor {
  * @concept seam-carving
  * @example
  * ```ts
- * import { findVerticalSeam } from 'mdml-engine/vision'
+ * import { findVerticalSeam } from 'omai-engine/vision'
  * findVerticalSeam([[5, 1, 5], [5, 5, 1], [5, 1, 5]]) // => [1, 2, 1]
  * ```
  */
 export function findVerticalSeam(energy: TensorLike): number[] {
   const r = rasterOf(energy, 'findVerticalSeam')
-  if (r.c !== 1) throw new MdmlError('shape', 'findVerticalSeam: the energy is [H, W]')
+  if (r.c !== 1) throw new OmaiError('shape', 'findVerticalSeam: the energy is [H, W]')
   const { h, w } = r
   const M = Float64Array.from(r.data)
   const back = new Int32Array(h * w)
@@ -114,15 +114,15 @@ function dropSeam(r: Raster, seam: readonly number[]): Raster {
  * @concept seam-carving
  * @example
  * ```ts
- * import { removeVerticalSeam } from 'mdml-engine/vision'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { removeVerticalSeam } from 'omai-engine/vision'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(removeVerticalSeam([[1, 2, 3], [4, 5, 6]], [0, 2])) // => [[2, 3], [4, 5]]
  * ```
  */
 export function removeVerticalSeam(x: TensorLike, seam: readonly number[]): Tensor {
   const r = rasterOf(x, 'removeVerticalSeam')
   if (seam.length !== r.h || seam.some((v) => !(v >= 0 && v < r.w)))
-    throw new MdmlError('value', 'removeVerticalSeam: one column per row, inside the image')
+    throw new OmaiError('value', 'removeVerticalSeam: one column per row, inside the image')
   return rasterTensor(dropSeam(r, seam))
 }
 
@@ -186,12 +186,12 @@ export interface SeamCarveState {
  * @param size - The target [height, width], no larger than the image.
  * @param options - Masks to protect or remove, and their strength.
  * @returns The algorithm.
- * @throws MdmlError with code `value` unless the target fits the image, and `shape` for a mask of the wrong shape.
+ * @throws OmaiError with code `value` unless the target fits the image, and `shape` for a mask of the wrong shape.
  * @concept seam-carving
  * @example
  * ```ts
- * import { seamCarveAlgorithm, seamCarveImage } from 'mdml-engine/vision'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { seamCarveAlgorithm, seamCarveImage } from 'omai-engine/vision'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const img = Array.from({ length: 6 }, (_, i) => Array.from({ length: 8 }, (_, j) => (i * j) % 3))
  * const run = runAlgorithm(seamCarveAlgorithm(img, [5, 6]), { maxSteps: 20 })
  * [run.steps, seamCarveImage(run.state).shape] // => [3, [5, 6]]
@@ -205,12 +205,12 @@ export function seamCarveAlgorithm(
   const r0 = rasterOf(x, 'seamCarve')
   const [th, tw] = size
   if (th > r0.h || tw > r0.w || th < 1 || tw < 1)
-    throw new MdmlError('value', 'seamCarve: the target must fit the image')
+    throw new OmaiError('value', 'seamCarve: the target must fit the image')
   const strength = options.bias ?? 1e6
   const maskOf = (m: TensorLike | undefined, sign: number): Float64Array | undefined => {
     if (m === undefined) return undefined
     const mr = rasterOf(m, 'seamCarve')
-    if (mr.h !== r0.h || mr.w !== r0.w || mr.c !== 1) throw new MdmlError('shape', 'seamCarve: a mask is [H, W]')
+    if (mr.h !== r0.h || mr.w !== r0.w || mr.c !== 1) throw new OmaiError('shape', 'seamCarve: a mask is [H, W]')
     return Float64Array.from(mr.data, (v) => (v !== 0 ? sign * strength : 0))
   }
   const keep = maskOf(options.protect, 1)
@@ -274,8 +274,8 @@ function transposeFlat(data: Float64Array, h: number, w: number): Float64Array {
  * @concept seam-carving
  * @example
  * ```ts
- * import { seamCarveAlgorithm, seamCarveImage } from 'mdml-engine/vision'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { seamCarveAlgorithm, seamCarveImage } from 'omai-engine/vision'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const run = runAlgorithm(seamCarveAlgorithm([[1, 2, 3], [4, 5, 6]], [2, 2]), { maxSteps: 5 })
  * seamCarveImage(run.state).shape // => [2, 2]
  * ```
@@ -296,7 +296,7 @@ export function seamCarveImage(state: SeamCarveState): Tensor {
  * @concept seam-carving
  * @example
  * ```ts
- * import { seamCarve } from 'mdml-engine/vision'
+ * import { seamCarve } from 'omai-engine/vision'
  * seamCarve(Array.from({ length: 6 }, (_, i) => Array.from({ length: 8 }, (_, j) => (i * j) % 3)), [5, 6]).shape // => [5, 6]
  * ```
  */

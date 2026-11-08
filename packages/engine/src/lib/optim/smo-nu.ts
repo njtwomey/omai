@@ -4,7 +4,7 @@
  * Includes the nu-SVC and nu-SVR duals, which return the solution as a kernel expansion like their C counterparts.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import type { TensorLike } from '../tensor/index.ts'
 import { type Algorithm, channels, runAlgorithm, stateFromJson, stateToJson } from '../trace/index.ts'
 import { finiteVectorFrom, matrixFrom, vectorFrom, vectorTensor } from './_programming.ts'
@@ -35,11 +35,11 @@ export interface SmoNuProblem {
  * @param labels - +1 or -1.
  * @param nu - In (0, 1], at most 2 min(n+, n-) / n for the problem to be feasible.
  * @returns The start alpha0.
- * @throws MdmlError `domain` when nu is infeasible for the class sizes.
+ * @throws OmaiError `domain` when nu is infeasible for the class sizes.
  * @concept support-vector-machines
  * @example
  * ```ts
- * import { nuSvcStart } from 'mdml-engine/optim'
+ * import { nuSvcStart } from 'omai-engine/optim'
  * Array.from(nuSvcStart([1, 1, -1, -1], 0.5)) // => [1, 0, 1, 0]
  * ```
  */
@@ -47,9 +47,9 @@ export function nuSvcStart(labels: TensorLike, nu: number): Float64Array {
   const y = vectorFrom(labels)
   const n = y.length
   const positives = y.reduce((c, v) => c + (v > 0 ? 1 : 0), 0)
-  if (!(nu > 0 && nu <= 1)) throw new MdmlError('domain', `nuSvc: nu must be in (0, 1], got ${nu}`)
+  if (!(nu > 0 && nu <= 1)) throw new OmaiError('domain', `nuSvc: nu must be in (0, 1], got ${nu}`)
   if (nu * n > 2 * Math.min(positives, n - positives) + 1e-9)
-    throw new MdmlError('domain', `nuSvc: nu = ${nu} is infeasible for ${positives} and ${n - positives} samples`)
+    throw new OmaiError('domain', `nuSvc: nu = ${nu} is infeasible for ${positives} and ${n - positives} samples`)
   let sumPos = (nu * n) / 2
   let sumNeg = (nu * n) / 2
   const alpha = new Float64Array(n)
@@ -76,12 +76,12 @@ export function nuSvcStart(labels: TensorLike, nu: number): Float64Array {
  * @concept support-vector-machines
  * @example
  * ```ts
- * import { nuSvrStart } from 'mdml-engine/optim'
+ * import { nuSvrStart } from 'omai-engine/optim'
  * Array.from(nuSvrStart(2, 1, 1)) // => [1, 0, 1, 0]
  * ```
  */
 export function nuSvrStart(n: number, C: number, nu: number): Float64Array {
-  if (!(nu > 0 && nu <= 1)) throw new MdmlError('domain', `nuSvr: nu must be in (0, 1], got ${nu}`)
+  if (!(nu > 0 && nu <= 1)) throw new OmaiError('domain', `nuSvr: nu must be in (0, 1], got ${nu}`)
   let sum = (C * nu * n) / 2
   const alpha = new Float64Array(2 * n)
   for (let i = 0; i < n; i++) {
@@ -127,7 +127,7 @@ function classOffsets(alpha: Float64Array, grad: Float64Array, y: Float64Array, 
  * @concept support-vector-machines
  * @example
  * ```ts
- * import { nuRho } from 'mdml-engine/optim'
+ * import { nuRho } from 'omai-engine/optim'
  * nuRho(Float64Array.of(0.5, 0.5), Float64Array.of(1, 0.5), Float64Array.of(1, -1), 1) // => { rho: 0.25, margin: 0.75 }
  * ```
  */
@@ -150,13 +150,13 @@ export function nuRho(
  * @param problem - Q, p, labels, bound and feasible start.
  * @param options - Tolerance (default 1e-3).
  * @returns The algorithm.
- * @throws MdmlError with code `value` when p or Q is NaN or infinite (bounds may be infinite, not NaN).
+ * @throws OmaiError with code `value` when p or Q is NaN or infinite (bounds may be infinite, not NaN).
  * @concept support-vector-machines
  * @reference C.-C. Chang and C.-J. Lin, Training nu-support vector classifiers: theory and algorithms (2001).
  * @example
  * ```ts
- * import { nuSmoAlgorithm, nuSvcStart } from 'mdml-engine/optim'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { nuSmoAlgorithm, nuSvcStart } from 'omai-engine/optim'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const y = [1, 1, -1, -1]
  * const K = [[1, 0.5, 0.1, 0], [0.5, 1, 0, 0.1], [0.1, 0, 1, 0.5], [0, 0.1, 0.5, 1]]
  * const Q = K.map((row, i) => row.map((v, j) => v * (y[i] as number) * (y[j] as number)))
@@ -169,7 +169,7 @@ export function nuSmoAlgorithm(problem: SmoNuProblem, options: Pick<SmoOptions, 
   const n = p.length
   const Q = matrixFrom(problem.Q, n, 'Q').data
   const y = vectorFrom(problem.y)
-  if (y.length !== n || y.some((v) => v !== 1 && v !== -1)) throw new MdmlError('value', 'smoNu: y must be +1 or -1')
+  if (y.length !== n || y.some((v) => v !== 1 && v !== -1)) throw new OmaiError('value', 'smoNu: y must be +1 or -1')
   const C = problem.C
   const eps = options.tol ?? 1e-3
   const QD = Float64Array.from({ length: n }, (_, i) => Q[i * n + i] ?? 0)
@@ -241,7 +241,7 @@ export function nuSmoAlgorithm(problem: SmoNuProblem, options: Pick<SmoOptions, 
     }),
     init: () => {
       const alpha = vectorFrom(problem.alpha0)
-      if (alpha.length !== n) throw new MdmlError('shape', 'smoNu: alpha0 must have one entry per variable')
+      if (alpha.length !== n) throw new OmaiError('shape', 'smoNu: alpha0 must have one entry per variable')
       return {
         alpha,
         grad: gradientOf(alpha),
@@ -337,7 +337,7 @@ function solveNu(
  * @reference C.-C. Chang and C.-J. Lin, Training nu-support vector classifiers: theory and algorithms (2001).
  * @example
  * ```ts
- * import { nuSvcDual } from 'mdml-engine/optim'
+ * import { nuSvcDual } from 'omai-engine/optim'
  * const r = nuSvcDual([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]], [1, 1, -1, -1], 0.5, { tol: 1e-12 })
  * [r.support.length, Math.round(r.margin * 1e6) / 1e6] // => [4, 0.5]
  * ```
@@ -380,7 +380,7 @@ export function nuSvcDual(kernel: TensorLike, labels: TensorLike, nu: number, op
  * @concept support-vector-machines
  * @example
  * ```ts
- * import { nuSvrDual } from 'mdml-engine/optim'
+ * import { nuSvrDual } from 'omai-engine/optim'
  * const r = nuSvrDual([[1, 0], [0, 1]], [1, -1], 10, 1, { tol: 1e-12 })
  * r.converged // => true
  * ```

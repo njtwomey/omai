@@ -4,7 +4,7 @@
  * shown, and the `minimizeScalar` front end.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import {
   type Algorithm,
   channels,
@@ -86,8 +86,8 @@ function validBracket(s: BracketState): boolean {
  * @concept scalar-minimisation
  * @example
  * ```ts
- * import { bracketAlgorithm } from 'mdml-engine/optim'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { bracketAlgorithm } from 'omai-engine/optim'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const run = runAlgorithm(bracketAlgorithm((x) => (x - 3) ** 2), { maxSteps: 50 })
  * [run.status, run.state.fb < run.state.fa && run.state.fb < run.state.fc] // => ['converged', true]
  * ```
@@ -215,11 +215,11 @@ export function bracketAlgorithm(
  * @param f - The function.
  * @param options - Starting points, growth limit and iteration cap.
  * @returns The bracket.
- * @throws MdmlError with code `convergence` when no valid bracket is found.
+ * @throws OmaiError with code `convergence` when no valid bracket is found.
  * @concept scalar-minimisation
  * @example
  * ```ts
- * import { bracket } from 'mdml-engine/optim'
+ * import { bracket } from 'omai-engine/optim'
  * const b = bracket((x) => (x - 3) ** 2)
  * b.fb < b.fa && b.fb < b.fc // => true
  * ```
@@ -228,9 +228,9 @@ export function bracket(f: ScalarFunction, options: BracketSearchOptions = {}): 
   const run = runAlgorithm(bracketAlgorithm(f, options), { maxSteps: Number.MAX_SAFE_INTEGER })
   const s = run.state
   if (!s.found && s.fc < s.fb)
-    throw new MdmlError('convergence', 'bracket: no valid bracket within the iteration limit')
+    throw new OmaiError('convergence', 'bracket: no valid bracket within the iteration limit')
   if (!validBracket(s))
-    throw new MdmlError('convergence', 'bracket: the search ended without a valid bracket', {
+    throw new OmaiError('convergence', 'bracket: the search ended without a valid bracket', {
       xa: s.xa,
       xb: s.xb,
       xc: s.xc,
@@ -302,11 +302,11 @@ function startBracket(f: ScalarFunction, options: ScalarOptions): Bracket {
   if (br.length === 2) return bracket(f, { xa: br[0], xb: br[1] })
   let [xa, xb, xc] = br
   if (xa > xc) [xa, xc] = [xc, xa]
-  if (!(xa < xb && xb < xc)) throw new MdmlError('value', 'bracket must satisfy xa < xb < xc')
+  if (!(xa < xb && xb < xc)) throw new OmaiError('value', 'bracket must satisfy xa < xb < xc')
   const fa = f(xa)
   const fb = f(xb)
   const fc = f(xc)
-  if (!(fb < fa && fb < fc)) throw new MdmlError('value', 'bracket must satisfy f(xb) < f(xa) and f(xb) < f(xc)')
+  if (!(fb < fa && fb < fc)) throw new OmaiError('value', 'bracket must satisfy f(xb) < f(xa) and f(xb) < f(xc)')
   return { xa, xb, xc, fa, fb, fc, nfev: 3 }
 }
 
@@ -335,7 +335,7 @@ function finish(alg: Algorithm<ScalarState>, options: ScalarOptions, steps: numb
  * @returns The algorithm.
  * @example
  * ```ts
- * import { brentAlgorithm } from 'mdml-engine/optim'
+ * import { brentAlgorithm } from 'omai-engine/optim'
  * brentAlgorithm((x) => x * x).name // => 'brent'
  * ```
  */
@@ -444,7 +444,7 @@ export function brentAlgorithm(f: ScalarFunction, options: ScalarOptions = {}): 
  * @returns The algorithm.
  * @example
  * ```ts
- * import { goldenAlgorithm } from 'mdml-engine/optim'
+ * import { goldenAlgorithm } from 'omai-engine/optim'
  * goldenAlgorithm((x) => x * x).name // => 'golden'
  * ```
  */
@@ -502,17 +502,17 @@ export function goldenAlgorithm(f: ScalarFunction, options: ScalarOptions = {}):
  * @param f - The function.
  * @param options - `bounds` (required) and the absolute tolerance xatol (default 1e-5).
  * @returns The algorithm.
- * @throws MdmlError with code `value` when the bounds are missing, infinite or reversed.
+ * @throws OmaiError with code `value` when the bounds are missing, infinite or reversed.
  * @example
  * ```ts
- * import { fminboundAlgorithm } from 'mdml-engine/optim'
+ * import { fminboundAlgorithm } from 'omai-engine/optim'
  * fminboundAlgorithm((x) => x * x, { bounds: [-1, 2] }).name // => 'fminbound'
  * ```
  */
 export function fminboundAlgorithm(f: ScalarFunction, options: ScalarOptions = {}): Algorithm<ScalarState> {
   const bounds = options.bounds
   if (bounds === undefined || !Number.isFinite(bounds[0]) || !Number.isFinite(bounds[1]) || bounds[0] > bounds[1])
-    throw new MdmlError('value', 'fminbound needs finite bounds [lo, hi] with lo <= hi')
+    throw new OmaiError('value', 'fminbound needs finite bounds [lo, hi] with lo <= hi')
   const xatol = options.tol ?? 1e-5
   const sqrtEps = Math.sqrt(2.2e-16)
   const goldenMean = 0.5 * (3 - Math.sqrt(5))
@@ -626,7 +626,7 @@ export function fminboundAlgorithm(f: ScalarFunction, options: ScalarOptions = {
  * @concept scalar-minimisation
  * @example
  * ```ts
- * import { brent } from 'mdml-engine/optim'
+ * import { brent } from 'omai-engine/optim'
  * Math.round(brent((x) => (x - 2) ** 2 + 1).x * 1e8) / 1e8 // => 2
  * ```
  */
@@ -643,7 +643,7 @@ export function brent(f: ScalarFunction, options: ScalarOptions = {}): ScalarRes
  * @concept scalar-minimisation
  * @example
  * ```ts
- * import { golden } from 'mdml-engine/optim'
+ * import { golden } from 'omai-engine/optim'
  * Math.round(golden((x) => (x - 2) ** 2 + 1).x * 1e7) / 1e7 // => 2
  * ```
  */
@@ -660,7 +660,7 @@ export function golden(f: ScalarFunction, options: ScalarOptions = {}): ScalarRe
  * @concept scalar-minimisation
  * @example
  * ```ts
- * import { fminbound } from 'mdml-engine/optim'
+ * import { fminbound } from 'omai-engine/optim'
  * Math.round(fminbound((x) => (x - 2) ** 2, { bounds: [3, 5] }).x * 1e4) / 1e4 // => 3
  * ```
  */
@@ -679,7 +679,7 @@ export function fminbound(f: ScalarFunction, options: ScalarOptions = {}): Scala
  * @concept scalar-minimisation
  * @example
  * ```ts
- * import { golden, minimizeScalar } from 'mdml-engine/optim'
+ * import { golden, minimizeScalar } from 'omai-engine/optim'
  * Math.round(minimizeScalar((x) => Math.cosh(x - 1), { method: golden }).x * 1e6) / 1e6 // => 1
  * Math.round(minimizeScalar((x) => -x, { bounds: [0, 2] }).x * 1e4) / 1e4 // => 2
  * ```

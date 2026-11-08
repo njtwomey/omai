@@ -7,7 +7,7 @@
  * estimator on the iterative base, with the fixed-effects table, the group effects (BLUPs) and group-aware prediction.
  */
 
-import { type Json, LOG_2PI, MdmlError } from '../base/index.ts'
+import { type Json, LOG_2PI, OmaiError } from '../base/index.ts'
 import type { CoefficientTable, Exposition } from '../exposition/index.ts'
 import {
   type IterativeEstimator,
@@ -66,7 +66,7 @@ export interface MixedLayout {
 /** The rows of `x` split into group labels and features. */
 function splitGroups(x: MatrixView, groupColumn: number, who: string): { labels: number[]; features: MatrixView } {
   if (!Number.isInteger(groupColumn) || groupColumn < 0 || groupColumn >= x.d)
-    throw new MdmlError('value', `${who}: groupColumn ${groupColumn} is not a column of x`)
+    throw new OmaiError('value', `${who}: groupColumn ${groupColumn} is not a column of x`)
   const d = x.d - 1
   const features = new Float64Array(x.n * d)
   const labels: number[] = []
@@ -85,29 +85,29 @@ function splitGroups(x: MatrixView, groupColumn: number, who: string): { labels:
  * @param layout - Where the group column is, the intercepts, and the random slopes.
  * @param who - The caller, for errors.
  * @returns The problem.
- * @throws MdmlError `value` for sample weights (not supported), a missing random effect, or too few rows.
+ * @throws OmaiError `value` for sample weights (not supported), a missing random effect, or too few rows.
  * @example
  * ```ts
- * import { mixedProblemOf } from 'mdml-engine/linear'
+ * import { mixedProblemOf } from 'omai-engine/linear'
  * const layout = { groupColumn: 0, fitIntercept: true, randomIntercept: true, randomSlopes: [] }
  * const p = mixedProblemOf({ x: [[1, 0], [1, 1], [2, 0], [2, 1]], y: [1, 2, 3, 4] }, layout, 'demo')
  * p.labels // => [1, 2]
  * ```
  */
 export function mixedProblemOf(data: LearnData, layout: MixedLayout, who: string): MixedProblem {
-  if (data.weights !== undefined) throw new MdmlError('value', `${who}: sample weights are not supported`)
+  if (data.weights !== undefined) throw new OmaiError('value', `${who}: sample weights are not supported`)
   const x = matrixView(data.x, who)
   const y = targetVector(data.y ?? [], who, x.n)
   const { labels, features } = splitGroups(x, layout.groupColumn, who)
   const d = features.d
   for (const j of layout.randomSlopes)
     if (!Number.isInteger(j) || j < 0 || j >= d)
-      throw new MdmlError('value', `${who}: random slope ${j} is not a feature`)
+      throw new OmaiError('value', `${who}: random slope ${j} is not a feature`)
   const p = d + (layout.fitIntercept ? 1 : 0)
   const q = (layout.randomIntercept ? 1 : 0) + layout.randomSlopes.length
-  if (q === 0) throw new MdmlError('value', `${who}: needs at least one random effect`)
+  if (q === 0) throw new OmaiError('value', `${who}: needs at least one random effect`)
   const distinct = [...new Set(labels)].sort((a, b) => a - b)
-  if (x.n <= p) throw new MdmlError('value', `${who}: needs more rows than fixed effects`)
+  if (x.n <= p) throw new OmaiError('value', `${who}: needs more rows than fixed effects`)
   const index = new Map(distinct.map((l, i) => [l, i]))
   const acc = distinct.map(() => ({
     n: 0,
@@ -194,7 +194,7 @@ function choleskySolveColumns(u: Float64Array, b: Float64Array, n: number, cols:
  * @returns The profile, or `undefined` when a matrix is not positive definite.
  * @example
  * ```ts
- * import { covarianceFactor, mixedProblemOf, mixedProfile } from 'mdml-engine/linear'
+ * import { covarianceFactor, mixedProblemOf, mixedProfile } from 'omai-engine/linear'
  * const layout = { groupColumn: 0, fitIntercept: true, randomIntercept: true, randomSlopes: [] }
  * const x = [[1, 0], [1, 1], [1, 2], [2, 0], [2, 1], [2, 2], [3, 0], [3, 1], [3, 2]]
  * const p = mixedProblemOf({ x, y: [1, 2.1, 2.9, 3, 4.2, 4.8, 0.8, 2, 3.2] }, layout, 'demo')
@@ -299,7 +299,7 @@ export type MixedState = SlotState & {
  * @returns The objective and the start (identity factor).
  * @example
  * ```ts
- * import { mixedProblemOf, mixedSmoothProblem } from 'mdml-engine/linear'
+ * import { mixedProblemOf, mixedSmoothProblem } from 'omai-engine/linear'
  * const layout = { groupColumn: 0, fitIntercept: true, randomIntercept: true, randomSlopes: [] }
  * const x = [[1, 0], [1, 1], [1, 2], [2, 0], [2, 1], [2, 2], [3, 0], [3, 1], [3, 2]]
  * const p = mixedProblemOf({ x, y: [1, 2.1, 2.9, 3, 4.2, 4.8, 0.8, 2, 3.2] }, layout, 'demo')
@@ -389,8 +389,8 @@ export function mixedSmoothProblem(problem: MixedProblem, options: MixedOptions 
  * @returns The algorithm.
  * @example
  * ```ts
- * import { mixedAlgorithm, mixedProblemOf } from 'mdml-engine/linear'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { mixedAlgorithm, mixedProblemOf } from 'omai-engine/linear'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const layout = { groupColumn: 0, fitIntercept: true, randomIntercept: true, randomSlopes: [] }
  * const x = [[1, 0], [1, 1], [1, 2], [2, 0], [2, 1], [2, 2], [3, 0], [3, 1], [3, 2]]
  * const p = mixedProblemOf({ x, y: [1, 2.1, 2.9, 3, 4.2, 4.8, 0.8, 2, 3.2] }, layout, 'demo')
@@ -516,7 +516,7 @@ function paramsOf(problem: MixedProblem, h: MixedHyper, s: MixedState, featureNa
   const { p, q, nObs } = problem
   const L = covarianceFactor(s.theta, q, h.covariance)
   const prof = mixedProfile(problem, L, h.reml)
-  if (prof === undefined) throw new MdmlError('value', 'mixedModel: the fit ended at a singular covariance')
+  if (prof === undefined) throw new OmaiError('value', 'mixedModel: the fit ended at a singular covariance')
   const d = p - (h.fitIntercept ? 1 : 0)
   const rows = (a: ArrayLike<number>, n: number, c: number): number[][] =>
     Array.from({ length: n }, (_, i) => Array.from({ length: c }, (__, j) => a[i * c + j] ?? 0))
@@ -614,7 +614,7 @@ function fixedTable(p: MixedParams, h: MixedHyper, names: readonly string[]): Co
  * @index estimator Linear mixed-effects model for grouped data.
  * @example
  * ```ts
- * import { mixedModel } from 'mdml-engine/linear'
+ * import { mixedModel } from 'omai-engine/linear'
  * const x = [[1, 0], [1, 1], [1, 2], [2, 0], [2, 1], [2, 2], [3, 0], [3, 1], [3, 2], [4, 0], [4, 1], [4, 2]]
  * const y = [1, 2.1, 2.9, 3, 4.2, 4.8, 0.8, 2, 3.2, 2.1, 2.9, 4.2]
  * const f = mixedModel().fit({ x, y })

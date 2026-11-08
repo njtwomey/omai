@@ -5,8 +5,8 @@ from importlib.metadata import version
 
 import numpy as np
 from hmmlearn.hmm import CategoricalHMM, GaussianHMM
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray, rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray, rng
 
 REFERENCE: dict[str, str] = {"hmmlearn": version("hmmlearn"), "numpy": np.__version__}
 

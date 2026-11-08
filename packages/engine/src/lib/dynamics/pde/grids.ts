@@ -4,7 +4,7 @@
  * points) that carry their boundary forcing.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { type CsrMatrix, fromCoo } from '../../numerics/sparse/index.ts'
 import { fromStorage, type Tensor } from '../../tensor/index.ts'
 
@@ -33,17 +33,17 @@ export interface Grid2d {
  * @param b - Right end (b > a).
  * @param n - Number of nodes.
  * @returns The grid.
- * @throws MdmlError with code `value` for fewer than two nodes or an empty interval.
+ * @throws OmaiError with code `value` for fewer than two nodes or an empty interval.
  * @concept finite-difference
  * @example
  * ```ts
- * import { grid1d } from 'mdml-engine/dynamics/pde'
+ * import { grid1d } from 'omai-engine/dynamics/pde'
  * grid1d(0, 1, 5).dx // => 0.25
  * ```
  */
 export function grid1d(a: number, b: number, n: number): Grid1d {
-  if (!Number.isInteger(n) || n < 2) throw new MdmlError('value', 'grid1d: at least two nodes')
-  if (!(b > a)) throw new MdmlError('value', 'grid1d: need b > a')
+  if (!Number.isInteger(n) || n < 2) throw new OmaiError('value', 'grid1d: at least two nodes')
+  if (!(b > a)) throw new OmaiError('value', 'grid1d: need b > a')
   const dx = (b - a) / (n - 1)
   return { a, b, n, dx, x: Float64Array.from({ length: n }, (_, i) => (i === n - 1 ? b : a + i * dx)) }
 }
@@ -58,7 +58,7 @@ export function grid1d(a: number, b: number, n: number): Grid1d {
  * @returns The grid.
  * @example
  * ```ts
- * import { grid2d } from 'mdml-engine/dynamics/pde'
+ * import { grid2d } from 'omai-engine/dynamics/pde'
  * grid2d([0, 1], 3, [0, 2], 5).size // => 15
  * ```
  */
@@ -95,7 +95,7 @@ export type BoundaryCondition =
  * @returns The condition.
  * @example
  * ```ts
- * import { dirichlet } from 'mdml-engine/dynamics/pde'
+ * import { dirichlet } from 'omai-engine/dynamics/pde'
  * dirichlet(1).kind // => 'dirichlet'
  * ```
  */
@@ -110,7 +110,7 @@ export function dirichlet(value: BoundaryValue = 0): BoundaryCondition {
  * @returns The condition.
  * @example
  * ```ts
- * import { neumann } from 'mdml-engine/dynamics/pde'
+ * import { neumann } from 'omai-engine/dynamics/pde'
  * neumann().kind // => 'neumann'
  * ```
  */
@@ -125,15 +125,15 @@ export function neumann(value: BoundaryValue = 0): BoundaryCondition {
  * @param beta - Coefficient of the outward normal derivative (non-zero).
  * @param value - The right-hand side (or a function of time and position).
  * @returns The condition.
- * @throws MdmlError with code `value` when beta is zero (that is a Dirichlet condition).
+ * @throws OmaiError with code `value` when beta is zero (that is a Dirichlet condition).
  * @example
  * ```ts
- * import { robin } from 'mdml-engine/dynamics/pde'
+ * import { robin } from 'omai-engine/dynamics/pde'
  * robin(1, 2, 0).kind // => 'robin'
  * ```
  */
 export function robin(alpha: number, beta: number, value: BoundaryValue = 0): BoundaryCondition {
-  if (beta === 0) throw new MdmlError('value', 'robin: beta = 0 is a Dirichlet condition')
+  if (beta === 0) throw new OmaiError('value', 'robin: beta = 0 is a Dirichlet condition')
   return { kind: 'robin', alpha, beta, value }
 }
 
@@ -143,7 +143,7 @@ export function robin(alpha: number, beta: number, value: BoundaryValue = 0): Bo
  * @returns The condition.
  * @example
  * ```ts
- * import { periodic } from 'mdml-engine/dynamics/pde'
+ * import { periodic } from 'omai-engine/dynamics/pde'
  * periodic().kind // => 'periodic'
  * ```
  */
@@ -160,7 +160,7 @@ export function periodic(): BoundaryCondition {
  * @returns The value (0 for periodic).
  * @example
  * ```ts
- * import { boundaryValue, dirichlet } from 'mdml-engine/dynamics/pde'
+ * import { boundaryValue, dirichlet } from 'omai-engine/dynamics/pde'
  * boundaryValue(dirichlet((t, x) => 2 * t + x), 3, 1) // => 7
  * ```
  */
@@ -259,17 +259,17 @@ function lineStencil(
  * @param right - The condition at b.
  * @param k - The diffusion coefficient (default 1).
  * @returns The operator with its boundary forcing.
- * @throws MdmlError with code `value` when only one side is periodic.
+ * @throws OmaiError with code `value` when only one side is periodic.
  * @concept finite-difference
  * @example
  * ```ts
- * import { dirichlet, grid1d, laplacian1d } from 'mdml-engine/dynamics/pde'
+ * import { dirichlet, grid1d, laplacian1d } from 'omai-engine/dynamics/pde'
  * laplacian1d(grid1d(0, 1, 5), dirichlet(), dirichlet()).fixed.length // => 2
  * ```
  */
 export function laplacian1d(grid: Grid1d, left: BoundaryCondition, right: BoundaryCondition, k = 1): DiscreteOperator {
   if ((left.kind === 'periodic') !== (right.kind === 'periodic')) {
-    throw new MdmlError('value', 'laplacian1d: periodic conditions go on both sides')
+    throw new OmaiError('value', 'laplacian1d: periodic conditions go on both sides')
   }
   const n = grid.n
   const t: Triplets = { rows: [], cols: [], vals: [] }
@@ -316,11 +316,11 @@ export interface RectangleConditions {
  * @param bcs - The four side conditions.
  * @param k - The diffusion coefficient (default 1).
  * @returns The operator with its boundary forcing.
- * @throws MdmlError with code `value` when only one side of a pair is periodic.
+ * @throws OmaiError with code `value` when only one side of a pair is periodic.
  * @concept finite-difference
  * @example
  * ```ts
- * import { dirichlet, grid2d, laplacian2d } from 'mdml-engine/dynamics/pde'
+ * import { dirichlet, grid2d, laplacian2d } from 'omai-engine/dynamics/pde'
  * const d = dirichlet()
  * laplacian2d(grid2d([0, 1], 4, [0, 1], 4), { left: d, right: d, bottom: d, top: d }).fixed.length // => 12
  * ```
@@ -330,7 +330,7 @@ export function laplacian2d(grid: Grid2d, bcs: RectangleConditions, k = 1): Disc
     (bcs.left.kind === 'periodic') !== (bcs.right.kind === 'periodic') ||
     (bcs.bottom.kind === 'periodic') !== (bcs.top.kind === 'periodic')
   ) {
-    throw new MdmlError('value', 'laplacian2d: periodic conditions go on both sides of a pair')
+    throw new OmaiError('value', 'laplacian2d: periodic conditions go on both sides of a pair')
   }
   const { nx, ny } = grid
   const idx = (i: number, j: number): number => i * ny + j
@@ -387,7 +387,7 @@ export function laplacian2d(grid: Grid2d, bcs: RectangleConditions, k = 1): Disc
  * @returns The corrected values (a copy).
  * @example
  * ```ts
- * import { applyDirichlet, dirichlet, grid1d, laplacian1d } from 'mdml-engine/dynamics/pde'
+ * import { applyDirichlet, dirichlet, grid1d, laplacian1d } from 'omai-engine/dynamics/pde'
  * const op = laplacian1d(grid1d(0, 1, 3), dirichlet(1), dirichlet(2))
  * Array.from(applyDirichlet([0, 0, 0], op, 0)) // => [1, 0, 2]
  * ```
@@ -405,7 +405,7 @@ export function applyDirichlet(u: ArrayLike<number>, op: DiscreteOperator, t: nu
  * @returns The coordinates.
  * @example
  * ```ts
- * import { grid1d, gridPoints } from 'mdml-engine/dynamics/pde'
+ * import { grid1d, gridPoints } from 'omai-engine/dynamics/pde'
  * Array.from(gridPoints(grid1d(0, 1, 3)).data) // => [0, 0.5, 1]
  * ```
  */

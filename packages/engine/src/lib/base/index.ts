@@ -1,5 +1,5 @@
 /**
- * The foundation every other domain builds on: the library's error type `MdmlError` and its codes, the `Registry` shape
+ * The foundation every other domain builds on: the library's error type `OmaiError` and its codes, the `Registry` shape
  * that the dataset and environment registries share, JSON helpers, shared result records (`Estimate`, `TestResult`,
  * `MetricResult`), small scalar helpers (clamping, extrema, bit counts), the canonical small vectors (`Vec2`, `Vec3`,
  * `Vec4`), complex numbers as pairs (`Complex`, `cmul`, `cdiv`...) and the version. It imports nothing else from the engine.

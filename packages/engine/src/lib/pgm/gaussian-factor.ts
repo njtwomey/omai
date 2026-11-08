@@ -5,7 +5,7 @@
  * node.
  */
 
-import { LOG_2PI, MdmlError } from '../base/index.ts'
+import { LOG_2PI, OmaiError } from '../base/index.ts'
 import {
   checkSquare,
   dotVec,
@@ -52,19 +52,19 @@ export interface GaussianMoments {
  * @param h - The vector h.
  * @param g - The log normaliser (default 0).
  * @returns The factor.
- * @throws MdmlError with code `shape` for mismatched sizes, `value` for repeated variables.
+ * @throws OmaiError with code `shape` for mismatched sizes, `value` for repeated variables.
  * @concept gaussian-factors
  * @example
  * ```ts
- * import { gaussianFactor } from 'mdml-engine/pgm'
+ * import { gaussianFactor } from 'omai-engine/pgm'
  * gaussianFactor(['x'], [[2]], [4]).h // => [4]
  * ```
  */
 export function gaussianFactor(variables: readonly string[], K: Rows, h: readonly number[], g = 0): GaussianFactor {
   const n = variables.length
-  if (new Set(variables).size !== n) throw new MdmlError('value', 'gaussianFactor: variables must be distinct')
+  if (new Set(variables).size !== n) throw new OmaiError('value', 'gaussianFactor: variables must be distinct')
   checkSquare(K, n, 'gaussianFactor')
-  if (h.length !== n) throw new MdmlError('shape', `gaussianFactor: h needs ${n} entries`)
+  if (h.length !== n) throw new OmaiError('shape', `gaussianFactor: h needs ${n} entries`)
   return { variables: [...variables], K: symmetrise(K), h: [...h], g }
 }
 
@@ -76,11 +76,11 @@ export function gaussianFactor(variables: readonly string[], K: Rows, h: readonl
  * @param covariance - The covariance (positive definite).
  * @param logMass - log of the total mass (default 0: a normalised density).
  * @returns The factor.
- * @throws MdmlError with code `value` when the covariance is not positive definite.
+ * @throws OmaiError with code `value` when the covariance is not positive definite.
  * @concept gaussian-factors
  * @example
  * ```ts
- * import { gaussianFromMoments } from 'mdml-engine/pgm'
+ * import { gaussianFromMoments } from 'omai-engine/pgm'
  * gaussianFromMoments(['x'], [2], [[0.5]]).K // => [[2]]
  * ```
  */
@@ -104,11 +104,11 @@ export function gaussianFromMoments(
  *
  * @param f - The factor.
  * @returns Mean, covariance and log mass.
- * @throws MdmlError with code `value` when K is not positive definite.
+ * @throws OmaiError with code `value` when K is not positive definite.
  * @concept gaussian-factors
  * @example
  * ```ts
- * import { gaussianFactor, gaussianToMoments } from 'mdml-engine/pgm'
+ * import { gaussianFactor, gaussianToMoments } from 'omai-engine/pgm'
  * gaussianToMoments(gaussianFactor(['x'], [[2]], [4])).mean // => [2]
  * ```
  */
@@ -127,7 +127,7 @@ export function gaussianToMoments(f: GaussianFactor): GaussianMoments {
  * @returns log integral of phi.
  * @example
  * ```ts
- * import { gaussianFromMoments, gaussianLogMass } from 'mdml-engine/pgm'
+ * import { gaussianFromMoments, gaussianLogMass } from 'omai-engine/pgm'
  * Math.abs(gaussianLogMass(gaussianFromMoments(['x', 'y'], [1, 2], [[2, 0.5], [0.5, 1]], 3)) - 3) < 1e-12 // => true
  * ```
  */
@@ -152,7 +152,7 @@ function expand(f: GaussianFactor, variables: readonly string[]): { K: number[][
  * @concept gaussian-factors
  * @example
  * ```ts
- * import { gaussianFactor, gaussianProduct } from 'mdml-engine/pgm'
+ * import { gaussianFactor, gaussianProduct } from 'omai-engine/pgm'
  * gaussianProduct(gaussianFactor(['x'], [[1]], [1]), gaussianFactor(['x', 'y'], [[1, 0], [0, 2]], [0, 1])).K // => [[2, 0], [0, 2]]
  * ```
  */
@@ -175,16 +175,16 @@ export function gaussianProduct(a: GaussianFactor, b: GaussianFactor): GaussianF
  * @param a - Numerator.
  * @param b - Denominator.
  * @returns a / b over a's variables.
- * @throws MdmlError with code `value` when b mentions a variable a does not.
+ * @throws OmaiError with code `value` when b mentions a variable a does not.
  * @example
  * ```ts
- * import { gaussianFactor, gaussianDivide } from 'mdml-engine/pgm'
+ * import { gaussianFactor, gaussianDivide } from 'omai-engine/pgm'
  * gaussianDivide(gaussianFactor(['x'], [[3]], [2]), gaussianFactor(['x'], [[1]], [1])).K // => [[2]]
  * ```
  */
 export function gaussianDivide(a: GaussianFactor, b: GaussianFactor): GaussianFactor {
   for (const v of b.variables)
-    if (!a.variables.includes(v)) throw new MdmlError('value', `gaussianDivide: ${v} is not in the numerator`)
+    if (!a.variables.includes(v)) throw new OmaiError('value', `gaussianDivide: ${v} is not in the numerator`)
   const eb = expand(b, a.variables)
   return {
     variables: [...a.variables],
@@ -202,18 +202,18 @@ export function gaussianDivide(a: GaussianFactor, b: GaussianFactor): GaussianFa
  * @param f - The factor.
  * @param variables - Variables to integrate out (K_YY must be positive definite).
  * @returns The marginal factor.
- * @throws MdmlError with code `value` for unknown variables or a non-positive-definite K_YY.
+ * @throws OmaiError with code `value` for unknown variables or a non-positive-definite K_YY.
  * @concept gaussian-factors
  * @example
  * ```ts
- * import { gaussianFromMoments, gaussianMarginalise, gaussianToMoments } from 'mdml-engine/pgm'
+ * import { gaussianFromMoments, gaussianMarginalise, gaussianToMoments } from 'omai-engine/pgm'
  * const f = gaussianFromMoments(['x', 'y'], [1, 2], [[2, 0.5], [0.5, 1]])
  * gaussianToMoments(gaussianMarginalise(f, ['y'])).covariance.map((r) => r.map((v) => Math.round(v * 1e12) / 1e12)) // => [[2]]
  * ```
  */
 export function gaussianMarginalise(f: GaussianFactor, variables: readonly string[]): GaussianFactor {
   for (const v of variables)
-    if (!f.variables.includes(v)) throw new MdmlError('value', `gaussianMarginalise: ${v} is not in the factor`)
+    if (!f.variables.includes(v)) throw new OmaiError('value', `gaussianMarginalise: ${v} is not in the factor`)
   if (variables.length === 0) return f
   const keep = f.variables.filter((v) => !variables.includes(v))
   const x = keep.map((v) => f.variables.indexOf(v))
@@ -240,7 +240,7 @@ export function gaussianMarginalise(f: GaussianFactor, variables: readonly strin
  * @concept gaussian-factors
  * @example
  * ```ts
- * import { gaussianFromMoments, gaussianReduce, gaussianToMoments } from 'mdml-engine/pgm'
+ * import { gaussianFromMoments, gaussianReduce, gaussianToMoments } from 'omai-engine/pgm'
  * const f = gaussianFromMoments(['x', 'y'], [0, 0], [[1, 0.5], [0.5, 1]])
  * gaussianToMoments(gaussianReduce(f, { y: 2 })).mean.map((v) => Math.round(v * 1e12) / 1e12) // => [1]
  * ```
@@ -268,7 +268,7 @@ export function gaussianReduce(f: GaussianFactor, evidence: Readonly<Record<stri
  * @returns g + h^T x - x^T K x / 2.
  * @example
  * ```ts
- * import { gaussianFactor, gaussianLogValue } from 'mdml-engine/pgm'
+ * import { gaussianFactor, gaussianLogValue } from 'omai-engine/pgm'
  * gaussianLogValue(gaussianFactor(['x'], [[2]], [1], 0.5), { x: 1 }) // => 0.5
  * ```
  */
@@ -283,16 +283,16 @@ export function gaussianLogValue(f: GaussianFactor, x: Readonly<Record<string, n
  * @param f - The factor.
  * @param variables - A permutation of its variables.
  * @returns The permuted factor.
- * @throws MdmlError with code `value` when `variables` is not a permutation.
+ * @throws OmaiError with code `value` when `variables` is not a permutation.
  * @example
  * ```ts
- * import { gaussianFactor, permuteGaussian } from 'mdml-engine/pgm'
+ * import { gaussianFactor, permuteGaussian } from 'omai-engine/pgm'
  * permuteGaussian(gaussianFactor(['x', 'y'], [[1, 0], [0, 2]], [3, 4]), ['y', 'x']).h // => [4, 3]
  * ```
  */
 export function permuteGaussian(f: GaussianFactor, variables: readonly string[]): GaussianFactor {
   if (variables.length !== f.variables.length || variables.some((v) => !f.variables.includes(v))) {
-    throw new MdmlError('value', 'permuteGaussian: not a permutation of the scope')
+    throw new OmaiError('value', 'permuteGaussian: not a permutation of the scope')
   }
   const { K, h } = expand(f, variables)
   return { variables: [...variables], K, h, g: f.g }
@@ -309,11 +309,11 @@ export function permuteGaussian(f: GaussianFactor, variables: readonly string[])
  * @param intercept - The intercept b.
  * @param variance - The noise variance (positive).
  * @returns The factor.
- * @throws MdmlError with code `value` for a non-positive variance or mismatched weights.
+ * @throws OmaiError with code `value` for a non-positive variance or mismatched weights.
  * @concept gaussian-factors
  * @example
  * ```ts
- * import { linearGaussianFactor, gaussianLogValue } from 'mdml-engine/pgm'
+ * import { linearGaussianFactor, gaussianLogValue } from 'omai-engine/pgm'
  * const f = linearGaussianFactor('y', ['x'], [2], 1, 0.25)
  * Math.abs(gaussianLogValue(f, { x: 1, y: 3 }) - Math.log(1 / Math.sqrt(2 * Math.PI * 0.25))) < 1e-12 // => true
  * ```
@@ -325,9 +325,9 @@ export function linearGaussianFactor(
   intercept: number,
   variance: number,
 ): GaussianFactor {
-  if (!(variance > 0)) throw new MdmlError('value', `linearGaussianFactor: ${child} needs a positive variance`)
+  if (!(variance > 0)) throw new OmaiError('value', `linearGaussianFactor: ${child} needs a positive variance`)
   if (weights.length !== parents.length)
-    throw new MdmlError('shape', `linearGaussianFactor: one weight per parent of ${child}`)
+    throw new OmaiError('shape', `linearGaussianFactor: one weight per parent of ${child}`)
   const a = [...weights.map((w) => w), -1]
   const K = a.map((x) => a.map((y) => (x * y) / variance))
   const h = a.map((x) => (-intercept * x) / variance)

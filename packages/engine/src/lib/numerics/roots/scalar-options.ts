@@ -5,7 +5,7 @@
  * `rootAlgorithm` builds the steppable algorithm a configuration names.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import {
   type DictSpace,
   defaults,
@@ -80,7 +80,7 @@ const openKnobs = dict({
 })
 
 const needs = (what: string, has: boolean, name: string): void => {
-  if (!has) throw new MdmlError('value', `${name}: the problem needs ${what}`)
+  if (!has) throw new OmaiError('value', `${name}: the problem needs ${what}`)
 }
 
 function bracketed(
@@ -109,7 +109,7 @@ function bracketed(
  * @index table The scalar root finders as one named slot.
  * @example
  * ```ts
- * import { rootFinders } from 'mdml-engine/numerics/roots'
+ * import { rootFinders } from 'omai-engine/numerics/roots'
  * rootFinders.names // => ['bisect', 'brentq', 'ridder', 'toms748', 'newton', 'halley', 'secant']
  * ```
  */
@@ -198,11 +198,11 @@ export const rootFinders: OptionTable<RootFinder, RootFinderProperties> = option
  * @param config - The option and its knobs, such as `{ kind: 'bisect', xtol: 1e-6 }` (knobs not given take defaults).
  * @param problem - The function and what the method needs (a bracket, a start, derivatives).
  * @returns The algorithm; its state is a {@link RootState}.
- * @throws MdmlError with code `value` when the problem lacks what the method needs.
+ * @throws OmaiError with code `value` when the problem lacks what the method needs.
  * @concept root-finding
  * @example
  * ```ts
- * import { rootAlgorithm } from 'mdml-engine/numerics/roots'
+ * import { rootAlgorithm } from 'omai-engine/numerics/roots'
  * rootAlgorithm({ kind: 'newton' }, { f: (x) => x * x - 2, x0: 1, fprime: (x) => 2 * x }).name // => 'newton'
  * ```
  */
@@ -216,18 +216,18 @@ export function rootAlgorithm(config: SpaceValue, problem: RootProblem): Algorit
  * @param kind - The option: `bisect`, `brentq`, `ridder`, `toms748`, `newton`, `halley` or `secant`.
  * @param knobs - Values for some of the option's own knobs.
  * @returns The configuration, `{ kind, ...knobs }` with every knob of the option.
- * @throws MdmlError with code `value` for an option the table lacks or a knob it lacks.
+ * @throws OmaiError with code `value` for an option the table lacks or a knob it lacks.
  * @example
  * ```ts
- * import { rootFinderValue } from 'mdml-engine/numerics/roots'
+ * import { rootFinderValue } from 'omai-engine/numerics/roots'
  * rootFinderValue('newton', { tol: 1e-10 }) // => { kind: 'newton', tol: 1e-10, rtol: 0, maxIterations: 50 }
  * ```
  */
 export function rootFinderValue(kind: string, knobs: Readonly<Record<string, number>> = {}): SpaceValue {
   const space = rootFinders.space
   const option = space.options[kind]
-  if (option === undefined) throw new MdmlError('value', `'${kind}' is not one of ${rootFinders.names.join(', ')}`)
+  if (option === undefined) throw new OmaiError('value', `'${kind}' is not one of ${rootFinders.names.join(', ')}`)
   for (const name of Object.keys(knobs))
-    if (!(name in option.spaces)) throw new MdmlError('value', `'${kind}' has no knob '${name}'`)
+    if (!(name in option.spaces)) throw new OmaiError('value', `'${kind}' has no knob '${name}'`)
   return { [space.tag ?? 'kind']: kind, ...(defaults(option) as Readonly<Record<string, SpaceValue>>), ...knobs }
 }

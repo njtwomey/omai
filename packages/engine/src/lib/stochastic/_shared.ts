@@ -3,7 +3,7 @@
  * numbers from scalars and traced values, and float64 vectors.
  */
 
-import { type Estimate, estimate, MdmlError } from '../base/index.ts'
+import { type Estimate, estimate, OmaiError } from '../base/index.ts'
 import {
   asTensor,
   concreteOrThrow,
@@ -24,11 +24,11 @@ export type TimesLike = readonly number[] | Float64Array
 /** Validate a time grid: finite and strictly increasing, with at least one point. */
 export function asTimes(times: TimesLike, where: string): Float64Array {
   const t = Float64Array.from(times)
-  if (t.length === 0) throw new MdmlError('value', `${where}: the time grid is empty`)
+  if (t.length === 0) throw new OmaiError('value', `${where}: the time grid is empty`)
   for (let i = 0; i < t.length; i++) {
-    if (!Number.isFinite(t[i] ?? Number.NaN)) throw new MdmlError('value', `${where}: times must be finite`)
+    if (!Number.isFinite(t[i] ?? Number.NaN)) throw new OmaiError('value', `${where}: times must be finite`)
     if (i > 0 && !((t[i] ?? 0) > (t[i - 1] ?? 0))) {
-      throw new MdmlError('value', `${where}: times must be strictly increasing`)
+      throw new OmaiError('value', `${where}: times must be strictly increasing`)
     }
   }
   return t
@@ -43,7 +43,7 @@ export function stepsOf(times: Float64Array): Float64Array {
 export function numberOf(x: TensorLike, where: string): number {
   if (typeof x === 'number') return x
   const t = concreteOrThrow(asTensor(x), where)
-  if (t.data.length !== 1) throw new MdmlError('shape', `${where}: expected a scalar`)
+  if (t.data.length !== 1) throw new OmaiError('shape', `${where}: expected a scalar`)
   return t.data[0] ?? Number.NaN
 }
 
@@ -60,7 +60,7 @@ export function vector(data: ArrayLike<number>, shape: readonly number[] = [data
 
 /** Validate a positive integer. */
 export function positiveInteger(n: number, name: string, where: string): number {
-  if (!(Number.isInteger(n) && n >= 1)) throw new MdmlError('value', `${where}: ${name} must be a positive integer`)
+  if (!(Number.isInteger(n) && n >= 1)) throw new OmaiError('value', `${where}: ${name} must be a positive integer`)
   return n
 }
 
@@ -69,10 +69,10 @@ export function checkProbabilities(p: ArrayLike<number>, where: string, tol = 1e
   let s = 0
   for (let i = 0; i < p.length; i++) {
     const v = p[i] ?? Number.NaN
-    if (!(v >= 0) || !Number.isFinite(v)) throw new MdmlError('value', `${where}: probabilities must be >= 0`)
+    if (!(v >= 0) || !Number.isFinite(v)) throw new OmaiError('value', `${where}: probabilities must be >= 0`)
     s += v
   }
-  if (Math.abs(s - 1) > tol) throw new MdmlError('value', `${where}: probabilities must sum to 1 (got ${s})`)
+  if (Math.abs(s - 1) > tol) throw new OmaiError('value', `${where}: probabilities must sum to 1 (got ${s})`)
 }
 
 /** The tracing fields of an options object, without undefined entries. */

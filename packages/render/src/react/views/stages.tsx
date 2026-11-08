@@ -4,8 +4,8 @@
  * form that suits it, beside its data and fitted parameters.
  */
 
-import { maxOf } from 'mdml-engine/base'
-import type { EnsembleStages, PipelineStages, StageData, StageParameter } from 'mdml-engine/exposition'
+import { maxOf } from 'omai-engine/base'
+import type { EnsembleStages, PipelineStages, StageData, StageParameter } from 'omai-engine/exposition'
 import { type CSSProperties, type ReactElement, type ReactNode, useCallback, useMemo, useState } from 'react'
 import type { Figure } from '../../figure/figure.ts'
 import { formatNumber } from '../../theme/format.ts'

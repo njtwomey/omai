@@ -7,14 +7,14 @@
  * @index structure The known truth of a generated dataset: function, boundary, Bayes rate.
  */
 
-import { type Estimate, estimate, MdmlError } from '../base/index.ts'
+import { type Estimate, estimate, OmaiError } from '../base/index.ts'
 import { linearSumAssignment } from '../optim/index.ts'
 import type { Key } from '../random/index.ts'
 import type { Structure } from '../scene/index.ts'
 import { argmax, full, max, reshape, softmax, stack, sub, type Tensor, toFlat, type Value } from '../tensor/index.ts'
 
 /**
- * The generating probabilistic program of a dataset: a `mdml-engine/probprog` program over rows `{ x, y, n }`
+ * The generating probabilistic program of a dataset: a `omai-engine/probprog` program over rows `{ x, y, n }`
  * (features, targets and the row count), with the densities and draws it implies. Programs live in probprog, which
  * imports data, so this is the structural contract they satisfy (`probprog.generatingProgram` builds one); the truth's `logProb`,
  * `posterior` and `regressionFunction` follow from it (see {@link completeTruth}).
@@ -100,8 +100,8 @@ export interface Truth {
  * @returns A function from features `[n, d]` to class probabilities `[n, k]`.
  * @example
  * ```ts
- * import { posteriorFromJoint } from 'mdml-engine/data'
- * import { mul, sub, tensor, toFlat } from 'mdml-engine/tensor'
+ * import { posteriorFromJoint } from 'omai-engine/data'
+ * import { mul, sub, tensor, toFlat } from 'omai-engine/tensor'
  * // Two classes with log p(x, k) = -(x - k)^2 / 2: at x = 0.5 they are equally likely.
  * const post = posteriorFromJoint((x, y) => mul(-0.5, mul(sub(x, y), sub(x, y))), 2)
  * toFlat(post(tensor([[0.5]]))) // => [0.5, 0.5]
@@ -125,18 +125,18 @@ export function posteriorFromJoint(logJoint: (x: Value, y: Value) => Value, nCla
  * @param truth - The truth of a generated dataset.
  * @param x - Features `[n, d]`.
  * @returns Class indices `[n]` (int32) or predicted values.
- * @throws MdmlError with code `value` when the truth has neither a posterior nor a regression function.
+ * @throws OmaiError with code `value` when the truth has neither a posterior nor a regression function.
  * @example
  * ```ts
- * import { bayesPredict } from 'mdml-engine/data'
- * import { mul, tensor, toFlat } from 'mdml-engine/tensor'
+ * import { bayesPredict } from 'omai-engine/data'
+ * import { mul, tensor, toFlat } from 'omai-engine/tensor'
  * toFlat(bayesPredict({ regressionFunction: (x) => mul(x, 2) }, tensor([1, 2]))) // => [2, 4]
  * ```
  */
 export function bayesPredict(truth: Truth, x: Value): Value {
   if (truth.posterior !== undefined) return argmax(truth.posterior(x), 1)
   if (truth.regressionFunction !== undefined) return truth.regressionFunction(x)
-  throw new MdmlError('value', 'bayesPredict: the truth has neither a posterior nor a regression function')
+  throw new OmaiError('value', 'bayesPredict: the truth has neither a posterior nor a regression function')
 }
 
 /**
@@ -148,8 +148,8 @@ export function bayesPredict(truth: Truth, x: Value): Value {
  * @returns The estimate.
  * @example
  * ```ts
- * import { bayesErrorEstimate } from 'mdml-engine/data'
- * import { tensor } from 'mdml-engine/tensor'
+ * import { bayesErrorEstimate } from 'omai-engine/data'
+ * import { tensor } from 'omai-engine/tensor'
  * bayesErrorEstimate(() => tensor([[0.9, 0.1], [0.7, 0.3]]), tensor([[0], [1]])).value // => 0.2
  * ```
  */
@@ -180,8 +180,8 @@ export interface CompleteTruthOptions {
  * @returns The completed truth (given fields are never overwritten).
  * @example
  * ```ts
- * import { completeTruth } from 'mdml-engine/data'
- * import { mul, tensor, toFlat } from 'mdml-engine/tensor'
+ * import { completeTruth } from 'omai-engine/data'
+ * import { mul, tensor, toFlat } from 'omai-engine/tensor'
  * completeTruth({ noiseScale: 0.5 }).bayesError // => 0.25
  * const program = { kind: 'program' as const, model: () => undefined, features: 'x', logProb: (x) => mul(x, 0), sample: () => ({ x: tensor([0]) }) }
  * toFlat(completeTruth({ program }).logProb?.(tensor([1, 2])) ?? tensor([])) // => [0, 0]
@@ -218,21 +218,21 @@ export function completeTruth(truth: Truth, options: CompleteTruthOptions = {}):
  * @param truth - A truth with `clusters`.
  * @param labels - Predicted cluster labels `[n]`.
  * @returns The matched accuracy in [0, 1] (1 for no rows).
- * @throws MdmlError with code `value` when the truth has no clusters or `labels` has another length.
+ * @throws OmaiError with code `value` when the truth has no clusters or `labels` has another length.
  * @example
  * ```ts
- * import { clusterAgreement } from 'mdml-engine/data'
- * import { tensor } from 'mdml-engine/tensor'
+ * import { clusterAgreement } from 'omai-engine/data'
+ * import { tensor } from 'omai-engine/tensor'
  * clusterAgreement({ clusters: tensor([0, 0, 1, 1], { dtype: 'int32' }) }, [1, 1, 0, 0]) // => 1
  * clusterAgreement({ clusters: tensor([0, 0, 0, 0, 0, 1, 1], { dtype: 'int32' }) }, [0, 0, 0, 1, 1, 0, 0]) // => 0.5714285714285714
  * ```
  */
 export function clusterAgreement(truth: Truth, labels: Value | readonly number[]): number {
-  if (truth.clusters === undefined) throw new MdmlError('value', 'clusterAgreement: the truth has no clusters')
+  if (truth.clusters === undefined) throw new OmaiError('value', 'clusterAgreement: the truth has no clusters')
   const a = truth.clusters.data
   const b = Array.isArray(labels) ? labels : toFlat(labels as Value)
   if (b.length !== a.length)
-    throw new MdmlError('value', `clusterAgreement: labels has ${b.length} entries, the truth has ${a.length}`)
+    throw new OmaiError('value', `clusterAgreement: labels has ${b.length} entries, the truth has ${a.length}`)
   if (a.length === 0) return 1
   const classes = new Map<number, number>()
   const clusters = new Map<number, number>()
@@ -254,17 +254,17 @@ export function clusterAgreement(truth: Truth, labels: Value | readonly number[]
  * @param predict - The fitted function.
  * @param x - Feature rows `[n, d]`.
  * @returns `mean((predict(x) - f(x))^2)`.
- * @throws MdmlError with code `value` when the truth has no regression function.
+ * @throws OmaiError with code `value` when the truth has no regression function.
  * @example
  * ```ts
- * import { excessRisk } from 'mdml-engine/data'
- * import { add, tensor } from 'mdml-engine/tensor'
+ * import { excessRisk } from 'omai-engine/data'
+ * import { add, tensor } from 'omai-engine/tensor'
  * excessRisk({ regressionFunction: (x) => x }, (x) => add(x, 1), tensor([1, 2, 3])) // => 1
  * ```
  */
 export function excessRisk(truth: Truth, predict: (x: Value) => Value, x: Value): number {
   const f = truth.regressionFunction
-  if (f === undefined) throw new MdmlError('value', 'excessRisk: the truth has no regression function')
+  if (f === undefined) throw new OmaiError('value', 'excessRisk: the truth has no regression function')
   const d = sub(predict(x), f(x))
   const flat = toFlat(d)
   const s = flat.reduce((acc, v) => acc + v * v, 0)

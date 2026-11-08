@@ -7,7 +7,7 @@
  * forecasts carry analytic prediction variances for additive models.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { ndtri } from '../numerics/special/index.ts'
 import type { BfgsState } from '../optim/index.ts'
 import { type Key, normal } from '../random/index.ts'
@@ -48,7 +48,7 @@ export interface EtsParameters {
  *
  * @example
  * ```ts
- * import { smoothingModels } from 'mdml-engine/timeseries'
+ * import { smoothingModels } from 'omai-engine/timeseries'
  * Object.keys(smoothingModels) // => ['simple', 'holt', 'damped']
  * ```
  */
@@ -68,7 +68,7 @@ export const smoothingModels: Readonly<Record<string, EtsSpec>> = {
  * @returns The specification.
  * @example
  * ```ts
- * import { holtWintersAdditive } from 'mdml-engine/timeseries'
+ * import { holtWintersAdditive } from 'omai-engine/timeseries'
  * holtWintersAdditive(12).seasonal // => 'add'
  * ```
  */
@@ -83,7 +83,7 @@ export function holtWintersAdditive(period: number): EtsSpec {
  * @returns The specification.
  * @example
  * ```ts
- * import { holtWintersMultiplicative } from 'mdml-engine/timeseries'
+ * import { holtWintersMultiplicative } from 'omai-engine/timeseries'
  * holtWintersMultiplicative(4).error // => 'mul'
  * ```
  */
@@ -100,7 +100,7 @@ interface Resolved {
 function resolve(spec: EtsSpec): Resolved {
   const m = spec.seasonal === 'none' ? 0 : (spec.period ?? 0)
   if (spec.seasonal !== 'none' && !(Number.isInteger(m) && m >= 2))
-    throw new MdmlError('value', 'ETS: a seasonal component needs a period of at least 2')
+    throw new OmaiError('value', 'ETS: a seasonal component needs a period of at least 2')
   return { spec, m, damped: spec.trend !== 'none' && spec.damped === true }
 }
 
@@ -183,7 +183,7 @@ export interface EtsFilterResult {
  * @returns Fitted values, residuals, states, the log-likelihood and the final state.
  * @example
  * ```ts
- * import { etsFilter } from 'mdml-engine/timeseries'
+ * import { etsFilter } from 'omai-engine/timeseries'
  * // Simple smoothing with alpha = 0.5 from level 10: the level moves halfway to each observation.
  * const f = etsFilter([12, 14], { error: 'add', trend: 'none', seasonal: 'none' }, { alpha: 0.5, level0: 10 })
  * Array.from(f.level) // => [11, 12.5]
@@ -253,8 +253,8 @@ export interface EtsState {
  * @returns The algorithm; it is done after the last observation.
  * @example
  * ```ts
- * import { etsAlgorithm } from 'mdml-engine/timeseries'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { etsAlgorithm } from 'omai-engine/timeseries'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const spec = { error: 'add', trend: 'none', seasonal: 'none' } as const
  * runAlgorithm(etsAlgorithm([12, 14, 13], spec, { alpha: 0.5, level0: 10 }), { maxSteps: 10 }).state.level // => 12.75
  * ```
@@ -441,7 +441,7 @@ export interface EtsProblem {
  * @returns The algorithm and the map from its state to the fit.
  * @example
  * ```ts
- * import { etsFitAlgorithm } from 'mdml-engine/timeseries'
+ * import { etsFitAlgorithm } from 'omai-engine/timeseries'
  * etsFitAlgorithm([3, 5, 4, 6, 5, 7, 6, 8], { error: 'add', trend: 'add', seasonal: 'none' }).algorithm.name // => 'ets-fit'
  * ```
  */
@@ -449,9 +449,9 @@ export function etsFitAlgorithm(y: ArrayLike<number>, spec: EtsSpec, options: Et
   const x = asSeries(Float64Array.from(y), 'etsFit')
   const r = resolve(spec)
   const layout = layoutOf(r)
-  if (x.length < layout.size + 1) throw new MdmlError('value', 'etsFit: the series is too short for the model')
+  if (x.length < layout.size + 1) throw new OmaiError('value', 'etsFit: the series is too short for the model')
   if ((spec.error === 'mul' || spec.trend === 'mul' || spec.seasonal === 'mul') && x.some((v) => !(v > 0)))
-    throw new MdmlError('value', 'etsFit: multiplicative components need a positive series')
+    throw new OmaiError('value', 'etsFit: multiplicative components need a positive series')
   const objective = (u: Float64Array): number => {
     const f = etsFilterQuick(x, r, layout.toParams(u))
     return Number.isFinite(f) ? -f / x.length : 1e10
@@ -511,7 +511,7 @@ function etsFilterQuick(x: Float64Array, r: Resolved, params: EtsParameters): nu
  * @index function Fit exponential smoothing (ETS) models.
  * @example
  * ```ts
- * import { etsFit, smoothingModels } from 'mdml-engine/timeseries'
+ * import { etsFit, smoothingModels } from 'omai-engine/timeseries'
  * const f = etsFit([3, 5, 4, 6, 5, 7, 6, 8, 7, 9, 8, 10], smoothingModels['holt'] as never)
  * f.params.alpha > 0 // => true
  * ```
@@ -547,7 +547,7 @@ export interface EtsForecast {
  * @returns The forecast.
  * @example
  * ```ts
- * import { etsForecast } from 'mdml-engine/timeseries'
+ * import { etsForecast } from 'omai-engine/timeseries'
  * const fit = { spec: { error: 'add', trend: 'add', seasonal: 'none' }, params: { alpha: 0.5, beta: 0.2, level0: 0, trend0: 0 },
  *   logLikelihood: 0, sigma2: 1, nparams: 4, aic: 0, bic: 0, nobs: 10, final: { level: 10, trend: 2, seasonal: [] },
  *   converged: true, iterations: 0 } as const
@@ -622,8 +622,8 @@ export function etsForecast(fit: EtsFit, steps: number, levels: readonly number[
  * @returns The paths, `[path][step]`.
  * @example
  * ```ts
- * import { etsSimulate } from 'mdml-engine/timeseries'
- * import { key } from 'mdml-engine/random'
+ * import { etsSimulate } from 'omai-engine/timeseries'
+ * import { key } from 'omai-engine/random'
  * const fit = { spec: { error: 'mul', trend: 'none', seasonal: 'none' }, params: { alpha: 0.3, level0: 10 }, sigma2: 0.01,
  *   final: { level: 10, trend: 0, seasonal: [] } } as never
  * etsSimulate(fit, 3, 4, key(0)).length // => 4

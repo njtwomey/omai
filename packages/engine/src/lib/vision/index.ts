@@ -1,5 +1,5 @@
 /**
- * Classical computer vision, OpenCV-shaped, available as `mdml-engine/vision`: colour spaces and balance,
+ * Classical computer vision, OpenCV-shaped, available as `omai-engine/vision`: colour spaces and balance,
  * histograms and equalisation, thresholds, contours and shape descriptors, drawing, keypoints and descriptors with
  * matching, multi-view geometry and camera models, stereo disparity, boxes and non-maximum suppression, tracking,
  * denoising, segmentation, pyramids and sliding-window features. Images are `[H, W]` or `[H, W, C]` tensors (channels

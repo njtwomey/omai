@@ -1,6 +1,6 @@
 """Motor Trend road tests of 32 cars (Henderson and Velleman 1981), R's datasets::mtcars via Rdatasets."""
 
-from mdml_oracle.vendor import csv_rows, fetch_pinned, render_table
+from omai_oracle.vendor import csv_rows, fetch_pinned, render_table
 
 TARGET = "packages/engine/src/lib/datasets/_data/mtcars.data.ts"
 URL = "https://vincentarelbundock.github.io/Rdatasets/csv/datasets/mtcars.csv"

@@ -4,7 +4,7 @@
  * (shadow) traversal with statistics of the work done, and the hierarchy as a drawable tree.
  */
 
-import { MdmlError, type Vec3 } from '../base/index.ts'
+import { OmaiError, type Vec3 } from '../base/index.ts'
 import { type Structure, type StructureEdge, type StructureNode, structure } from '../scene/index.ts'
 import type { Ray } from './camera.ts'
 import { bounds, type Hit, intersect, RAY_EPSILON, type RayShape, slabs } from './intersect.ts'
@@ -77,19 +77,19 @@ const area = (b: Aabb): number => {
  * @param shapes - The shapes (no planes; unbounded shapes are traced separately).
  * @param options - Leaf size, split rule and bins.
  * @returns The hierarchy.
- * @throws MdmlError with code `value` for a plane, no shapes, or a leaf size below 1.
+ * @throws OmaiError with code `value` for a plane, no shapes, or a leaf size below 1.
  * @concept bounding-volume-hierarchy
  * @example
  * ```ts
- * import { buildBvh, sphere } from 'mdml-engine/graphics'
+ * import { buildBvh, sphere } from 'omai-engine/graphics'
  * const bvh = buildBvh([sphere([0, 0, 0], 1), sphere([5, 0, 0], 1), sphere([10, 0, 0], 1)], { maxLeaf: 1 })
  * [bvh.nodes.length, bvh.nodes[0].min.map(Math.round), bvh.nodes[0].max.map(Math.round)] // => [5, [-1, -1, -1], [11, 1, 1]]
  * ```
  */
 export function buildBvh(shapes: readonly RayShape[], options: BvhOptions = {}): Bvh {
-  if (shapes.length === 0) throw new MdmlError('value', 'buildBvh: need at least one shape')
+  if (shapes.length === 0) throw new OmaiError('value', 'buildBvh: need at least one shape')
   const maxLeaf = options.maxLeaf ?? 2
-  if (!(Number.isInteger(maxLeaf) && maxLeaf >= 1)) throw new MdmlError('value', 'buildBvh: maxLeaf must be >= 1')
+  if (!(Number.isInteger(maxLeaf) && maxLeaf >= 1)) throw new OmaiError('value', 'buildBvh: maxLeaf must be >= 1')
   const bins = Math.max(2, Math.floor(options.bins ?? 12))
   // Boxes are padded by a relative 1e-9 so traversal stays conservative for hits found within rounding of a face.
   const boxes = shapes.map((s) => {
@@ -230,7 +230,7 @@ export interface TraversalStats {
  * @concept bounding-volume-hierarchy
  * @example
  * ```ts
- * import { buildBvh, intersectBvh, sphere } from 'mdml-engine/graphics'
+ * import { buildBvh, intersectBvh, sphere } from 'omai-engine/graphics'
  * const bvh = buildBvh([sphere([0, 0, 0], 1), sphere([5, 0, 0], 1), sphere([10, 0, 0], 1)], { maxLeaf: 1 })
  * const r = intersectBvh(bvh, { origin: [10, 0, 5], direction: [0, 0, -1] })
  * [r.hit?.index, r.hit?.t, r.stats.shapeTests] // => [2, 4, 1]
@@ -303,7 +303,7 @@ export function intersectBvh(
  * @concept bounding-volume-hierarchy
  * @example
  * ```ts
- * import { buildBvh, occludedBvh, sphere } from 'mdml-engine/graphics'
+ * import { buildBvh, occludedBvh, sphere } from 'omai-engine/graphics'
  * const bvh = buildBvh([sphere([0, 0, 0], 1)])
  * [occludedBvh(bvh, { origin: [0, 0, 5], direction: [0, 0, -1] }, 10), occludedBvh(bvh, { origin: [0, 0, 5], direction: [0, 0, -1] }, 3)] // => [true, false]
  * ```
@@ -337,7 +337,7 @@ export function occludedBvh(bvh: Bvh, ray: Ray, tMax: number, tMin: number = RAY
  * @concept bounding-volume-hierarchy
  * @example
  * ```ts
- * import { buildBvh, bvhStructure, sphere } from 'mdml-engine/graphics'
+ * import { buildBvh, bvhStructure, sphere } from 'omai-engine/graphics'
  * const s = bvhStructure(buildBvh([sphere([0, 0, 0], 1), sphere([5, 0, 0], 1)], { maxLeaf: 1 }))
  * [s.nodes.length, s.edges.length] // => [3, 2]
  * ```

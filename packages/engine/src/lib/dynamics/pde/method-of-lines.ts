@@ -4,7 +4,7 @@
  * 2-D reaction-diffusion equations.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { type CsrMatrix, fromCoo, spmv } from '../../numerics/sparse/index.ts'
 import { add, fromStorage, mul, type Tensor, type Value } from '../../tensor/index.ts'
 import type { OdeVectorField } from '../ode/problem.ts'
@@ -29,9 +29,9 @@ import {
  * @concept finite-difference
  * @example
  * ```ts
- * import { firstDerivative1d, grid1d } from 'mdml-engine/dynamics/pde'
- * import { spmv } from 'mdml-engine/numerics/sparse'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { firstDerivative1d, grid1d } from 'omai-engine/dynamics/pde'
+ * import { spmv } from 'omai-engine/numerics/sparse'
+ * import { toFlat } from 'omai-engine/tensor'
  * const g = grid1d(0, 1, 5)
  * toFlat(spmv(firstDerivative1d(g), Array.from(g.x, (x) => x * x))).map((v) => Math.round(v * 1e12) / 1e12) // => [0, 0.5, 1, 1.5, 2]
  * ```
@@ -132,13 +132,13 @@ function boundaryRate(bc: BoundaryCondition, t: number, at: readonly number[]): 
  * @param grid - The grid.
  * @param options - Coefficients, terms and boundary conditions.
  * @returns The ODE system.
- * @throws MdmlError with code `value` when the velocity needs an upwind side the conditions do not allow.
+ * @throws OmaiError with code `value` when the velocity needs an upwind side the conditions do not allow.
  * @concept method-of-lines
  * @example
  * ```ts
- * import { dirichlet, grid1d, semiDiscretise } from 'mdml-engine/dynamics/pde'
- * import { solveIvp } from 'mdml-engine/dynamics/ode'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { dirichlet, grid1d, semiDiscretise } from 'omai-engine/dynamics/pde'
+ * import { solveIvp } from 'omai-engine/dynamics/ode'
+ * import { toFlat } from 'omai-engine/tensor'
  * const g = grid1d(0, 1, 21)
  * const mol = semiDiscretise(g, { diffusion: 1, left: dirichlet(), right: dirichlet() })
  * const u = toFlat(solveIvp(mol.field, [0, 0.1], Array.from(g.x, (x) => Math.sin(Math.PI * x)), { method: 'BDF', rtol: 1e-8, atol: 1e-10, tEval: [0.1] }).y)
@@ -194,11 +194,11 @@ export function semiDiscretise(grid: Grid1d, options: MolOptions1d): MolSystem {
  * @param grid - The grid.
  * @param options - Diffusion, reaction and the side conditions.
  * @returns The ODE system over the flattened nodes.
- * @throws MdmlError with code `value` for a negative diffusion coefficient.
+ * @throws OmaiError with code `value` for a negative diffusion coefficient.
  * @concept method-of-lines
  * @example
  * ```ts
- * import { dirichlet, grid2d, semiDiscretise2d } from 'mdml-engine/dynamics/pde'
+ * import { dirichlet, grid2d, semiDiscretise2d } from 'omai-engine/dynamics/pde'
  * const d = dirichlet()
  * semiDiscretise2d(grid2d([0, 1], 5, [0, 1], 5), { diffusion: 1, bcs: { left: d, right: d, bottom: d, top: d } }).size // => 25
  * ```
@@ -212,7 +212,7 @@ export function semiDiscretise2d(
   },
 ): MolSystem {
   const D = options.diffusion ?? 1
-  if (D < 0) throw new MdmlError('value', 'semiDiscretise2d: the diffusion coefficient must be non-negative')
+  if (D < 0) throw new OmaiError('value', 'semiDiscretise2d: the diffusion coefficient must be non-negative')
   const op = laplacian2d(grid, options.bcs)
   const n = grid.size
   const fixed = new Set(op.fixed.map((f) => f.index))

@@ -7,7 +7,7 @@
  * condition for Watts's global cascades.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { eigsh } from '../numerics/sparse/index.ts'
 import { foldIn, type Key, subsample, uniform, uniformStream } from '../random/index.ts'
 import { type Algorithm, type Contract, contractSchema, defineContract, event, scalar, tensor } from '../trace/index.ts'
@@ -102,12 +102,12 @@ const RECOVERED = 3
  * @param g - The contact network.
  * @param options - Model, rates, seeds, vaccinated nodes and horizon.
  * @returns The algorithm.
- * @throws MdmlError with code `value` for a negative rate or an unknown model.
+ * @throws OmaiError with code `value` for a negative rate or an unknown model.
  * @concept network-epidemics
  * @example
  * ```ts
- * import { networkEpidemicAlgorithm, completeGraph } from 'mdml-engine/graph'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { networkEpidemicAlgorithm, completeGraph } from 'omai-engine/graph'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const run = runAlgorithm(networkEpidemicAlgorithm(completeGraph(5), { gamma: 1, beta: 0 }), { seed: 0, maxSteps: 50 })
  * [run.state.counts, run.status] // => [[4, 0, 0, 1], 'converged']
  * ```
@@ -122,7 +122,7 @@ export function networkEpidemicAlgorithm(
   const sigma = options.sigma ?? 1
   const horizon = options.horizon ?? Number.POSITIVE_INFINITY
   if (model !== 'SIR' && model !== 'SIS' && model !== 'SEIR')
-    throw new MdmlError('value', `networkEpidemicAlgorithm: unknown model '${String(model)}'`)
+    throw new OmaiError('value', `networkEpidemicAlgorithm: unknown model '${String(model)}'`)
   checkNumber('networkEpidemicAlgorithm', 'beta', beta, 0)
   checkNumber('networkEpidemicAlgorithm', 'gamma', gamma, 0)
   checkNumber('networkEpidemicAlgorithm', 'sigma', sigma, 0)
@@ -147,7 +147,7 @@ export function networkEpidemicAlgorithm(
       for (const v of immune) status[v] = RECOVERED
       const pressure = new Int32Array(n)
       for (const v of seeds) {
-        if (immune.has(v)) throw new MdmlError('value', `networkEpidemicAlgorithm: seed ${v} is immune`)
+        if (immune.has(v)) throw new OmaiError('value', `networkEpidemicAlgorithm: seed ${v} is immune`)
         status[v] = INFECTIOUS
         touch(pressure, v, 1)
       }
@@ -240,17 +240,17 @@ export function networkEpidemicAlgorithm(
  * @param beta - The infection rate across an edge.
  * @param gamma - The recovery rate.
  * @returns The transmissibility, in [0, 1].
- * @throws MdmlError with code `value` when both rates are zero or either is negative.
+ * @throws OmaiError with code `value` when both rates are zero or either is negative.
  * @concept network-epidemics
  * @example
  * ```ts
- * import { sirTransmissibility } from 'mdml-engine/graph'
+ * import { sirTransmissibility } from 'omai-engine/graph'
  * sirTransmissibility(1, 3) // => 0.25
  * ```
  */
 export function sirTransmissibility(beta: number, gamma: number): number {
   if (!(beta >= 0 && gamma >= 0 && beta + gamma > 0))
-    throw new MdmlError('value', 'sirTransmissibility: need non-negative rates, not both zero')
+    throw new OmaiError('value', 'sirTransmissibility: need non-negative rates, not both zero')
   return beta / (beta + gamma)
 }
 
@@ -280,20 +280,20 @@ export interface EpidemicFinalSize {
  * @param degrees - The degree of each node.
  * @param transmissibility - T in [0, 1], for example {@link sirTransmissibility}.
  * @returns The final size, the fixed point, R0 and the threshold.
- * @throws MdmlError with code `value` for an empty sequence or a transmissibility outside [0, 1].
+ * @throws OmaiError with code `value` for an empty sequence or a transmissibility outside [0, 1].
  * @concept network-epidemics
  * @example
  * ```ts
- * import { epidemicFinalSize } from 'mdml-engine/graph'
+ * import { epidemicFinalSize } from 'omai-engine/graph'
  * epidemicFinalSize([3, 3, 3, 3], 0).finalSize // => 0
  * epidemicFinalSize([3, 3, 3, 3], 1).finalSize // => 1
  * ```
  */
 export function epidemicFinalSize(degrees: ArrayLike<number>, transmissibility: number): EpidemicFinalSize {
   const k = Array.from(degrees)
-  if (k.length === 0) throw new MdmlError('value', 'epidemicFinalSize: no degrees')
+  if (k.length === 0) throw new OmaiError('value', 'epidemicFinalSize: no degrees')
   if (!(transmissibility >= 0 && transmissibility <= 1))
-    throw new MdmlError('value', 'epidemicFinalSize: transmissibility must be in [0, 1]')
+    throw new OmaiError('value', 'epidemicFinalSize: transmissibility must be in [0, 1]')
   const n = k.length
   const mean = k.reduce((a, d) => a + d, 0) / n
   const second = k.reduce((a, d) => a + d * d, 0) / n
@@ -327,17 +327,17 @@ export function epidemicFinalSize(degrees: ArrayLike<number>, transmissibility: 
  *
  * @param r0 - The basic reproduction number.
  * @returns The final size.
- * @throws MdmlError with code `value` for a negative R0.
+ * @throws OmaiError with code `value` for a negative R0.
  * @concept network-epidemics
  * @example
  * ```ts
- * import { homogeneousFinalSize } from 'mdml-engine/graph'
+ * import { homogeneousFinalSize } from 'omai-engine/graph'
  * Math.round(homogeneousFinalSize(2) * 10000) / 10000 // => 0.7968
  * homogeneousFinalSize(0.9) // => 0
  * ```
  */
 export function homogeneousFinalSize(r0: number): number {
-  if (!(r0 >= 0)) throw new MdmlError('value', 'homogeneousFinalSize: R0 must be non-negative')
+  if (!(r0 >= 0)) throw new OmaiError('value', 'homogeneousFinalSize: R0 must be non-negative')
   if (r0 <= 1) return 0
   let z = 1
   for (let i = 0; i < 100000; i++) {
@@ -370,7 +370,7 @@ export interface EpidemicThresholds {
  * @concept network-epidemics
  * @example
  * ```ts
- * import { completeGraph, epidemicThresholds } from 'mdml-engine/graph'
+ * import { completeGraph, epidemicThresholds } from 'omai-engine/graph'
  * const t = epidemicThresholds(completeGraph(5))
  * [Math.round(t.lambdaMax * 1e6) / 1e6, t.spectral, t.percolation] // => [4, 0.25, 0.3333333333333333]
  * ```
@@ -407,18 +407,18 @@ export type VaccinationStrategy = 'random' | 'degree' | 'acquaintance'
  * @param strategy - `'random'`, `'degree'` (highest degree first, ties by index) or `'acquaintance'`.
  * @param key - The random key (unused by `'degree'`).
  * @returns The nodes, ascending.
- * @throws MdmlError with code `value` for a count beyond the number of nodes or an unknown strategy.
+ * @throws OmaiError with code `value` for a count beyond the number of nodes or an unknown strategy.
  * @concept network-epidemics
  * @example
  * ```ts
- * import { starGraph, vaccinationSet } from 'mdml-engine/graph'
- * import { key } from 'mdml-engine/random'
+ * import { starGraph, vaccinationSet } from 'omai-engine/graph'
+ * import { key } from 'omai-engine/random'
  * vaccinationSet(starGraph(6), 1, 'degree', key(0)) // => [0]
  * ```
  */
 export function vaccinationSet(g: Graph, count: number, strategy: VaccinationStrategy, key: Key): number[] {
   if (!(Number.isInteger(count) && count >= 0 && count <= g.n))
-    throw new MdmlError('value', `vaccinationSet: count must be an integer in [0, ${g.n}]`)
+    throw new OmaiError('value', `vaccinationSet: count must be an integer in [0, ${g.n}]`)
   const degree = (v: number): number => (g.out.indptr[v + 1] ?? 0) - (g.out.indptr[v] ?? 0)
   if (strategy === 'random') return Array.from(subsample(key, g.n, count).data).sort((a, b) => a - b)
   if (strategy === 'degree')
@@ -427,7 +427,7 @@ export function vaccinationSet(g: Graph, count: number, strategy: VaccinationStr
       .slice(0, count)
       .sort((a, b) => a - b)
   if (strategy !== 'acquaintance')
-    throw new MdmlError('value', `vaccinationSet: unknown strategy '${String(strategy)}'`)
+    throw new OmaiError('value', `vaccinationSet: unknown strategy '${String(strategy)}'`)
   const chosen = new Set<number>()
   const next = uniformStream(key, 64)
   for (let guard = 0; chosen.size < count && guard < 200 * Math.max(count, 1); guard++) {
@@ -450,16 +450,16 @@ export function vaccinationSet(g: Graph, count: number, strategy: VaccinationStr
  *
  * @param r0 - The basic reproduction number.
  * @returns The share to immunise, in [0, 1).
- * @throws MdmlError with code `value` for a negative R0.
+ * @throws OmaiError with code `value` for a negative R0.
  * @concept network-epidemics
  * @example
  * ```ts
- * import { herdImmunityThreshold } from 'mdml-engine/graph'
+ * import { herdImmunityThreshold } from 'omai-engine/graph'
  * herdImmunityThreshold(4) // => 0.75
  * ```
  */
 export function herdImmunityThreshold(r0: number): number {
-  if (!(r0 >= 0)) throw new MdmlError('value', 'herdImmunityThreshold: R0 must be non-negative')
+  if (!(r0 >= 0)) throw new OmaiError('value', 'herdImmunityThreshold: R0 must be non-negative')
   return r0 <= 1 ? 0 : 1 - 1 / r0
 }
 
@@ -534,12 +534,12 @@ function cascadeObserve(s: CascadeState): {
  * @param p - The activation probability (default 0.1); with `weighted` the edge weights are used instead.
  * @param options - `weighted`.
  * @returns The algorithm.
- * @throws MdmlError with code `value` for a probability outside [0, 1].
+ * @throws OmaiError with code `value` for a probability outside [0, 1].
  * @concept information-cascades
  * @example
  * ```ts
- * import { independentCascadeAlgorithm, pathGraph } from 'mdml-engine/graph'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { independentCascadeAlgorithm, pathGraph } from 'omai-engine/graph'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const run = runAlgorithm(independentCascadeAlgorithm(pathGraph(5), [0], 1), { seed: 0, maxSteps: 10 })
  * [run.state.adopted, run.steps] // => [5, 5]
  * ```
@@ -616,12 +616,12 @@ export interface LinearThresholdOptions extends CascadeOptions {
  * @param seeds - The initially active nodes: labels, or a count to draw at random.
  * @param options - `threshold` (a number or `'random'`, default `'random'`) and `weighted`.
  * @returns The algorithm.
- * @throws MdmlError with code `value` for a threshold outside [0, 1].
+ * @throws OmaiError with code `value` for a threshold outside [0, 1].
  * @concept information-cascades
  * @example
  * ```ts
- * import { linearThresholdAlgorithm, pathGraph } from 'mdml-engine/graph'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { linearThresholdAlgorithm, pathGraph } from 'omai-engine/graph'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * // On a path every inner node has two neighbours: one active neighbour is half its influence.
  * runAlgorithm(linearThresholdAlgorithm(pathGraph(6), [0], { threshold: 0.5 }), { seed: 0, maxSteps: 20 }).state.adopted // => 6
  * ```
@@ -697,20 +697,20 @@ export function linearThresholdAlgorithm(
  * @param degrees - The degree of each node.
  * @param threshold - The common threshold phi in (0, 1].
  * @returns The ratio; a global cascade is possible above 1.
- * @throws MdmlError with code `value` for a threshold outside (0, 1] or an empty sequence.
+ * @throws OmaiError with code `value` for a threshold outside (0, 1] or an empty sequence.
  * @concept information-cascades
  * @example
  * ```ts
- * import { wattsCascadeCondition } from 'mdml-engine/graph'
+ * import { wattsCascadeCondition } from 'omai-engine/graph'
  * wattsCascadeCondition([3, 3, 3, 3], 0.2) // => 2
  * wattsCascadeCondition([3, 3, 3, 3], 0.5) // => 0
  * ```
  */
 export function wattsCascadeCondition(degrees: ArrayLike<number>, threshold: number): number {
   const k = Array.from(degrees)
-  if (k.length === 0) throw new MdmlError('value', 'wattsCascadeCondition: no degrees')
+  if (k.length === 0) throw new OmaiError('value', 'wattsCascadeCondition: no degrees')
   if (!(threshold > 0 && threshold <= 1))
-    throw new MdmlError('value', 'wattsCascadeCondition: threshold must be in (0, 1]')
+    throw new OmaiError('value', 'wattsCascadeCondition: threshold must be in (0, 1]')
   const mean = k.reduce((a, d) => a + d, 0) / k.length
   if (mean === 0) return 0
   const limit = Math.floor(1 / threshold + 1e-12)

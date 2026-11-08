@@ -7,7 +7,8 @@
  *
  * The last released version is the highest `v<version>` tag, on this clone or on `origin`. The three
  * packages are released in lockstep, as one version and one release, so the new version is written to `packages/{engine,render,meta}/package.json`
- * and to `packages/engine/src/lib/base/version.ts` (a test keeps the constant equal to the manifest). The changelog
+ * and to `packages/engine/src/lib/base/version.ts` (a test keeps the constant equal to the manifest), and the examples are
+ * run again because their tapes carry the version. The changelog
  * must already have a `## <version>` entry. The commit is "Release <version>" and its tag is
  * `v<version>`; pushing the tag makes the `pack` workflow build the tarballs and publish the GitHub release. It refuses to run with uncommitted changes.
  */
@@ -86,7 +87,15 @@ if (dry) {
   process.exit(0)
 }
 for (const e of edits) writeFileSync(join(ROOT, e.file), e.text)
-git('add', ...edits.map((e) => e.file))
+// The tapes of the examples carry the library version, so they are written again for the new one and go in the commit
+// (otherwise `make readme-examples-check` fails from the release on).
+const examples = spawnSync(process.execPath, [join(ROOT, 'scripts/readme-examples.ts')], {
+  cwd: ROOT,
+  stdio: 'inherit',
+})
+if (examples.status !== 0)
+  throw new Error('release: the examples failed to run again; the version files are written but not committed')
+git('add', ...edits.map((e) => e.file), 'examples')
 git('commit', '-m', `Release ${next}`)
 git('tag', '-a', tag, '-m', next)
 console.log(`release: committed "Release ${next}" and tagged ${tag}`)

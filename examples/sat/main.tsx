@@ -3,9 +3,9 @@
  * Boolean formula, which has no solution, and two solvers proving it: DPLL by backtracking and CDCL by learning a clause
  * from each conflict. Both are traced runs; the figure is their conflicts so far and the depth of the search, read back from the tapes.
  */
-import { type Cnf, cdcl, cnf, dpll } from 'mdml-engine/logic'
-import { type Run, recorder, tracePolicy } from 'mdml-engine/trace'
-import { runsChart } from 'mdml-render/trace'
+import { type Cnf, cdcl, cnf, dpll } from 'omai-engine/logic'
+import { type Run, recorder, tracePolicy } from 'omai-engine/trace'
+import { runsChart } from 'omai-render/trace'
 import { INK } from '../_shared/colours.ts'
 import type { ExampleModule, Outcome } from '../_shared/contract.ts'
 import { Figure, Panel } from '../_shared/figure.tsx'

@@ -6,7 +6,7 @@ from typing import cast
 import cvxpy as cp
 import numpy as np
 
-from mdml_oracle.helpers import FloatArray, rng
+from omai_oracle.helpers import FloatArray, rng
 
 
 def cvx_minimize(objective: object, x: cp.Variable, constraints: Sequence[object] = ()) -> tuple[FloatArray, float]:

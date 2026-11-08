@@ -8,7 +8,7 @@
  */
 
 import { grad, jacobian } from '../../autodiff/index.ts'
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { solve } from '../../numerics/linalg/index.ts'
 import { foldIn, type Key } from '../../random/index.ts'
 import {
@@ -47,8 +47,8 @@ export interface HamiltonianOptions {
  * @reference Greydanus, Dzamba and Yosinski (2019), Hamiltonian neural networks.
  * @example
  * ```ts
- * import { HamiltonianNet } from 'mdml-engine/nn/blocks'
- * import { key } from 'mdml-engine/random'
+ * import { HamiltonianNet } from 'omai-engine/nn/blocks'
+ * import { key } from 'omai-engine/random'
  * new HamiltonianNet(1, { hidden: [16], key: key(0) }).forward([[0.5, 0]]).shape // => [1, 2]
  * ```
  */
@@ -125,9 +125,9 @@ export interface LagrangianOptions {
  * @reference Cranmer, Greydanus, Hoyer, Battaglia, Spergel and Ho (2020), Lagrangian neural networks.
  * @example
  * ```ts
- * import { LagrangianNet } from 'mdml-engine/nn/blocks'
- * import { Lambda } from 'mdml-engine/nn'
- * import { mul, sliceAxis, square, sub, toArray } from 'mdml-engine/tensor'
+ * import { LagrangianNet } from 'omai-engine/nn/blocks'
+ * import { Lambda } from 'omai-engine/nn'
+ * import { mul, sliceAxis, square, sub, toArray } from 'omai-engine/tensor'
  * // L = (qdot^2 - q^2) / 2: a unit harmonic oscillator, qddot = -q.
  * const L = new Lambda((x) => mul(sub(square(sliceAxis(x, -1, 1, 2)), square(sliceAxis(x, -1, 0, 1))), 0.5))
  * toArray(new LagrangianNet(1, { lagrangian: L }).accelerations({}, [[1, 0]])) // => [[-1]]
@@ -164,7 +164,7 @@ export class LagrangianNet extends Composite {
     const n = this.freedom
     const s = asTensor(state)
     if (s.shape[s.shape.length - 1] !== 2 * n)
-      throw new MdmlError('shape', `LagrangianNet: the state needs ${2 * n} entries`)
+      throw new OmaiError('shape', `LagrangianNet: the state needs ${2 * n} entries`)
     const rows = s.shape[0] ?? 1
     const single = (x: Value): Value => sum(this.lagrangian(params, reshape(x, [1, 2 * n]), ctx))
     const out: Value[] = []

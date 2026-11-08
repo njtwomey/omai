@@ -3,7 +3,7 @@
  * constraint allows (in a box, on a curve, on a grid), with keyboard nudges.
  */
 
-import type { Point2 } from 'mdml-engine/numerics/geometry'
+import type { Point2 } from 'omai-engine/numerics/geometry'
 import { type KeyboardEvent, type ReactNode, useState } from 'react'
 import type { Constraint } from './constraints.ts'
 import { Backdrop, useOverlay } from './InteractionOverlay.tsx'

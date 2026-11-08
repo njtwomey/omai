@@ -1,4 +1,4 @@
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { asTensor, cast, type DType, isTensor, type Tensor, type TensorLike } from '../../tensor/index.ts'
 import type { DatasetKind, DatasetMeta } from './common.ts'
 
@@ -8,13 +8,13 @@ import type { DatasetKind, DatasetMeta } from './common.ts'
  */
 export function concrete<D extends DType>(x: TensorLike, dtype: D, name: string): Tensor<D> {
   const t = asTensor(x)
-  if (!isTensor(t)) throw new MdmlError('value', `${name}: datasets hold concrete tensors`)
+  if (!isTensor(t)) throw new OmaiError('value', `${name}: datasets hold concrete tensors`)
   if (dtype === 'int32' && (t.dtype === 'float64' || t.dtype === 'float32')) {
     const data = t.data as ArrayLike<number>
     for (let i = 0; i < data.length; i++) {
       const v = data[i] as number
       if (!Number.isInteger(v) || Math.abs(v) > 2 ** 31 - 1)
-        throw new MdmlError('value', `${name}: entry ${i} is ${v}, not a whole number that fits 32 bits`)
+        throw new OmaiError('value', `${name}: entry ${i} is ${v}, not a whole number that fits 32 bits`)
     }
   }
   return (t.dtype === dtype ? t : cast(t, dtype)) as Tensor<D>
@@ -23,7 +23,7 @@ export function concrete<D extends DType>(x: TensorLike, dtype: D, name: string)
 /** A concrete floating tensor, keeping float32 input as float32. */
 export function concreteFloat(x: TensorLike, name: string): Tensor {
   const t = asTensor(x)
-  if (!isTensor(t)) throw new MdmlError('value', `${name}: datasets hold concrete tensors`)
+  if (!isTensor(t)) throw new OmaiError('value', `${name}: datasets hold concrete tensors`)
   return (t.dtype === 'float64' || t.dtype === 'float32' ? t : cast(t, 'float64')) as Tensor
 }
 
@@ -46,7 +46,7 @@ export function checkRows(
   for (const [f, v] of Object.entries(fields)) {
     if (v === undefined) continue
     const m = isTensor(v) ? (v.shape[0] ?? 0) : v.length
-    if (m !== n) throw new MdmlError('shape', `${name}: ${f} has ${m} rows, expected ${n}`)
+    if (m !== n) throw new OmaiError('shape', `${name}: ${f} has ${m} rows, expected ${n}`)
   }
 }
 
@@ -75,7 +75,7 @@ export function padRagged(
   for (const s of seqs) longest = Math.max(longest, s.length)
   const t = layout.maxLength ?? longest
   if (!Number.isInteger(t) || t < 0)
-    throw new MdmlError('value', `padRagged: the padded length must be a whole number, got ${t}`)
+    throw new OmaiError('value', `padRagged: the padded length must be a whole number, got ${t}`)
   const values = new Float64Array(seqs.length * t).fill(padValue)
   const mask = new Uint8Array(seqs.length * t)
   const lengths = new Int32Array(seqs.length)

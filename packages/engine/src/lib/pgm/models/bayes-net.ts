@@ -5,7 +5,7 @@
  * pgmpy.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { foldIn, type Key, uniform } from '../../random/index.ts'
 import { type Factor, factor } from '../factor.ts'
 import {
@@ -46,12 +46,12 @@ export interface BayesNet {
  *
  * @param nodes - The nodes, in any order.
  * @returns The network.
- * @throws MdmlError with code `value` for unknown parents, cycles or invalid CPTs.
+ * @throws OmaiError with code `value` for unknown parents, cycles or invalid CPTs.
  * @concept bayes-networks
  * @index structure Discrete Bayesian network from nodes, parents and tables.
  * @example
  * ```ts
- * import { bayesNet } from 'mdml-engine/pgm'
+ * import { bayesNet } from 'omai-engine/pgm'
  * const bn = bayesNet([
  *   { name: 'rain', states: ['no', 'yes'], parents: [], cpt: [0.8, 0.2] },
  *   { name: 'wet', states: ['no', 'yes'], parents: ['rain'], cpt: [0.9, 0.1, 0.2, 0.8] },
@@ -61,26 +61,26 @@ export interface BayesNet {
  */
 export function bayesNet(nodes: readonly BayesNode[]): BayesNet {
   const byName = new Map(nodes.map((n) => [n.name, n]))
-  if (byName.size !== nodes.length) throw new MdmlError('value', 'bayesNet: node names must be distinct')
+  if (byName.size !== nodes.length) throw new OmaiError('value', 'bayesNet: node names must be distinct')
   for (const n of nodes) {
-    if (n.states.length === 0) throw new MdmlError('value', `bayesNet: ${n.name} has no states`)
+    if (n.states.length === 0) throw new OmaiError('value', `bayesNet: ${n.name} has no states`)
     for (const p of n.parents)
-      if (!byName.has(p)) throw new MdmlError('value', `bayesNet: ${n.name} has unknown parent ${p}`)
+      if (!byName.has(p)) throw new OmaiError('value', `bayesNet: ${n.name} has unknown parent ${p}`)
     const rows = n.parents.reduce((k, p) => k * (byName.get(p)?.states.length ?? 1), 1)
     const k = n.states.length
     if (n.cpt.length !== rows * k)
-      throw new MdmlError('shape', `bayesNet: ${n.name} needs ${rows * k} CPT entries, got ${n.cpt.length}`)
+      throw new OmaiError('shape', `bayesNet: ${n.name} needs ${rows * k} CPT entries, got ${n.cpt.length}`)
     for (let r = 0; r < rows; r++) {
       const row = n.cpt.slice(r * k, (r + 1) * k)
       if (row.some((v) => !(v >= 0)) || Math.abs(row.reduce((a, b) => a + b, 0) - 1) > 1e-9) {
-        throw new MdmlError('value', `bayesNet: row ${r} of ${n.name}'s CPT is not a distribution`)
+        throw new OmaiError('value', `bayesNet: row ${r} of ${n.name}'s CPT is not a distribution`)
       }
     }
   }
   try {
     return { kind: 'bayesNet', nodes: topologicalOrder(nodes) }
   } catch (e) {
-    throw new MdmlError('value', `bayesNet: ${(e as Error).message}`)
+    throw new OmaiError('value', `bayesNet: ${(e as Error).message}`)
   }
 }
 
@@ -90,16 +90,16 @@ export function bayesNet(nodes: readonly BayesNode[]): BayesNet {
  * @param bn - The network.
  * @param name - The node.
  * @returns The node.
- * @throws MdmlError with code `value` for an unknown name.
+ * @throws OmaiError with code `value` for an unknown name.
  * @example
  * ```ts
- * import { bayesNet, bayesNode } from 'mdml-engine/pgm'
+ * import { bayesNet, bayesNode } from 'omai-engine/pgm'
  * bayesNode(bayesNet([{ name: 'a', states: ['0', '1'], parents: [], cpt: [0.5, 0.5] }]), 'a').states.length // => 2
  * ```
  */
 export function bayesNode(bn: BayesNet, name: string): BayesNode {
   const n = bn.nodes.find((x) => x.name === name)
-  if (n === undefined) throw new MdmlError('value', `unknown variable ${name}`)
+  if (n === undefined) throw new OmaiError('value', `unknown variable ${name}`)
   return n
 }
 
@@ -111,7 +111,7 @@ export function bayesNode(bn: BayesNet, name: string): BayesNode {
  * @concept factors
  * @example
  * ```ts
- * import { bayesNet, bayesFactors } from 'mdml-engine/pgm'
+ * import { bayesNet, bayesFactors } from 'omai-engine/pgm'
  * bayesFactors(bayesNet([{ name: 'a', states: ['0', '1'], parents: [], cpt: [0.5, 0.5] }]))[0]?.variables // => ['a']
  * ```
  */
@@ -135,7 +135,7 @@ function rowOf(bn: BayesNet, n: BayesNode, assignment: Readonly<Record<string, n
  * @returns P(node | parents), over its states.
  * @example
  * ```ts
- * import { bayesNet, cptRow } from 'mdml-engine/pgm'
+ * import { bayesNet, cptRow } from 'omai-engine/pgm'
  * const bn = bayesNet([{ name: 'a', states: ['0', '1'], parents: [], cpt: [0.5, 0.5] }, { name: 'b', states: ['0', '1'], parents: ['a'], cpt: [0.9, 0.1, 0.3, 0.7] }])
  * cptRow(bn, 'b', { a: 1 }) // => [0.3, 0.7]
  * ```
@@ -155,7 +155,7 @@ export function cptRow(bn: BayesNet, name: string, assignment: Readonly<Record<s
  * @returns The probability.
  * @example
  * ```ts
- * import { bayesNet, jointProbability } from 'mdml-engine/pgm'
+ * import { bayesNet, jointProbability } from 'omai-engine/pgm'
  * const bn = bayesNet([{ name: 'a', states: ['0', '1'], parents: [], cpt: [0.25, 0.75] }])
  * jointProbability(bn, { a: 1 }) // => 0.75
  * ```
@@ -187,8 +187,8 @@ function drawRow(row: ArrayLike<number>, u: number): number {
  * @concept sampling
  * @example
  * ```ts
- * import { bayesNet, forwardSample } from 'mdml-engine/pgm'
- * import { key } from 'mdml-engine/random'
+ * import { bayesNet, forwardSample } from 'omai-engine/pgm'
+ * import { key } from 'omai-engine/random'
  * forwardSample(bayesNet([{ name: 'a', states: ['0', '1'], parents: [], cpt: [0, 1] }]), key(0)) // => { a: 1 }
  * ```
  */
@@ -212,8 +212,8 @@ export function forwardSample(bn: BayesNet, key: Key): Record<string, number> {
  * @concept sampling
  * @example
  * ```ts
- * import { bayesNet, ancestralSample } from 'mdml-engine/pgm'
- * import { key } from 'mdml-engine/random'
+ * import { bayesNet, ancestralSample } from 'omai-engine/pgm'
+ * import { key } from 'omai-engine/random'
  * ancestralSample(bayesNet([{ name: 'a', states: ['0', '1'], parents: [], cpt: [0, 1] }]), key(0), 3) // => [{ a: 1 }, { a: 1 }, { a: 1 }]
  * ```
  */
@@ -223,7 +223,7 @@ export function ancestralSample(bn: BayesNet, key: Key, n: number): Record<strin
 
 function dagNode(g: DirectedModel, name: string): DagNode {
   const n = g.nodes.find((x) => x.name === name)
-  if (n === undefined) throw new MdmlError('value', `unknown variable ${name}`)
+  if (n === undefined) throw new OmaiError('value', `unknown variable ${name}`)
   return n
 }
 
@@ -235,7 +235,7 @@ function dagNode(g: DirectedModel, name: string): DagNode {
  * @returns Its children, in node order.
  * @example
  * ```ts
- * import { dag, children } from 'mdml-engine/pgm'
+ * import { dag, children } from 'omai-engine/pgm'
  * children(dag([['a', 'b'], ['a', 'c']]), 'a') // => ['b', 'c']
  * ```
  */
@@ -253,7 +253,7 @@ export function children(g: DirectedModel, name: string): string[] {
  * @concept bayes-networks
  * @example
  * ```ts
- * import { dag, markovBlanket } from 'mdml-engine/pgm'
+ * import { dag, markovBlanket } from 'omai-engine/pgm'
  * markovBlanket(dag([['a', 'b'], ['c', 'b'], ['d', 'a']]), 'a') // => ['b', 'c', 'd']
  * ```
  */
@@ -280,7 +280,7 @@ export function markovBlanket(g: DirectedModel, name: string): string[] {
  * @concept d-separation
  * @example
  * ```ts
- * import { dag, dSeparated } from 'mdml-engine/pgm'
+ * import { dag, dSeparated } from 'omai-engine/pgm'
  * const collider = dag([['a', 'c'], ['b', 'c']])
  * dSeparated(collider, ['a'], ['b'], []) // => true
  * dSeparated(collider, ['a'], ['b'], ['c']) // => false
@@ -309,7 +309,7 @@ export function dSeparated(
  * @concept d-separation
  * @example
  * ```ts
- * import { dag, activeTrailNodes } from 'mdml-engine/pgm'
+ * import { dag, activeTrailNodes } from 'omai-engine/pgm'
  * const g = dag([['a', 'c'], ['b', 'c'], ['c', 'd']])
  * activeTrailNodes(g, 'a', []) // => ['a', 'c', 'd']
  * activeTrailNodes(g, 'a', ['d']) // => ['a', 'b', 'c']
@@ -350,7 +350,7 @@ export function activeTrailNodes(g: DirectedModel, start: string, observed: read
  * @concept d-separation
  * @example
  * ```ts
- * import { dag, minimalDSeparator } from 'mdml-engine/pgm'
+ * import { dag, minimalDSeparator } from 'omai-engine/pgm'
  * minimalDSeparator(dag([['a', 'b'], ['b', 'c'], ['a', 'd'], ['d', 'c']]), 'a', 'c') // => ['b', 'd']
  * ```
  */
@@ -386,7 +386,7 @@ export interface Independence {
  * @concept d-separation
  * @example
  * ```ts
- * import { dag, localIndependencies } from 'mdml-engine/pgm'
+ * import { dag, localIndependencies } from 'omai-engine/pgm'
  * localIndependencies(dag([['a', 'b'], ['b', 'c']])) // => [{ x: ['c'], y: ['a'], given: ['b'] }]
  * ```
  */
@@ -413,7 +413,7 @@ export function localIndependencies(g: DirectedModel): Independence[] {
  * @concept d-separation
  * @example
  * ```ts
- * import { dag, independencies } from 'mdml-engine/pgm'
+ * import { dag, independencies } from 'omai-engine/pgm'
  * independencies(dag([['a', 'b'], ['b', 'c']])) // => [{ x: ['a'], y: ['c'], given: ['b'] }]
  * ```
  */

@@ -1,5 +1,5 @@
-import { orbitCamera } from 'mdml-engine/datasets'
-import type { PinholeCamera } from 'mdml-engine/graphics'
+import { orbitCamera } from 'omai-engine/datasets'
+import type { PinholeCamera } from 'omai-engine/graphics'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { PixelCanvas } from './PixelCanvas.tsx'
 

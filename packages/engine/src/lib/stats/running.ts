@@ -4,7 +4,7 @@
  * quantile, and exponentially weighted moving mean, variance and standard deviation matching pandas' `ewm`.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import type { Tensor, TensorLike } from '../tensor/index.ts'
 import { sample, sortedCopy, vec } from './_util.ts'
 
@@ -29,7 +29,7 @@ export interface MomentState {
  * @returns A state with no observations.
  * @example
  * ```ts
- * import { momentState } from 'mdml-engine/stats'
+ * import { momentState } from 'omai-engine/stats'
  * momentState().n // => 0
  * ```
  */
@@ -55,7 +55,7 @@ export function momentState(): MomentState {
  * statistical moments, Sandia report SAND2008-6212 (2008).
  * @example
  * ```ts
- * import { momentState, push } from 'mdml-engine/stats'
+ * import { momentState, push } from 'omai-engine/stats'
  * push(push(momentState(), 1), 3).mean // => 2
  * ```
  */
@@ -85,7 +85,7 @@ export function push(state: MomentState, x: number): MomentState {
  * @returns The updated state.
  * @example
  * ```ts
- * import { momentState, pushAll } from 'mdml-engine/stats'
+ * import { momentState, pushAll } from 'omai-engine/stats'
  * pushAll(momentState(), [1, 2, 3, 4]).m2 // => 5
  * ```
  */
@@ -104,7 +104,7 @@ export function pushAll(state: MomentState, xs: TensorLike): MomentState {
  * @returns The state of the union.
  * @example
  * ```ts
- * import { merge, momentState, pushAll } from 'mdml-engine/stats'
+ * import { merge, momentState, pushAll } from 'omai-engine/stats'
  * merge(pushAll(momentState(), [1, 2]), pushAll(momentState(), [3, 4])).m2 // => 5
  * ```
  */
@@ -154,7 +154,7 @@ export interface RunningMoments {
  * @returns The moments (`NaN` where undefined).
  * @example
  * ```ts
- * import { momentState, momentsOf, pushAll } from 'mdml-engine/stats'
+ * import { momentState, momentsOf, pushAll } from 'omai-engine/stats'
  * momentsOf(pushAll(momentState(), [1, 2, 3, 4]), { ddof: 1 }).variance // => 1.6666666666666667
  * ```
  */
@@ -199,12 +199,12 @@ export interface P2State {
  * storing observations, Communications of the ACM 28 (1985).
  * @example
  * ```ts
- * import { p2Quantile } from 'mdml-engine/stats'
+ * import { p2Quantile } from 'omai-engine/stats'
  * p2Quantile(0.5).n // => 0
  * ```
  */
 export function p2Quantile(p: number): P2State {
-  if (!(p > 0 && p < 1)) throw new MdmlError('value', 'p2Quantile: p must lie in (0, 1)')
+  if (!(p > 0 && p < 1)) throw new OmaiError('value', 'p2Quantile: p must lie in (0, 1)')
   return { p, n: 0, heights: [], positions: [1, 2, 3, 4, 5], desired: [1, 1 + 2 * p, 1 + 4 * p, 3 + 2 * p, 5] }
 }
 
@@ -215,17 +215,17 @@ export function p2Quantile(p: number): P2State {
  * @param state - The estimator.
  * @param x - The observation.
  * @returns The updated estimator.
- * @throws MdmlError with code `value` when `x` is not finite (a NaN would move the positions and no height).
+ * @throws OmaiError with code `value` when `x` is not finite (a NaN would move the positions and no height).
  * @example
  * ```ts
- * import { p2Estimate, p2Push, p2Quantile } from 'mdml-engine/stats'
+ * import { p2Estimate, p2Push, p2Quantile } from 'omai-engine/stats'
  * let s = p2Quantile(0.5)
  * for (const x of [5, 1, 4, 2, 3]) s = p2Push(s, x)
  * p2Estimate(s) // => 3
  * ```
  */
 export function p2Push(state: P2State, x: number): P2State {
-  if (!Number.isFinite(x)) throw new MdmlError('value', `p2Push: the observation must be finite, got ${x}`)
+  if (!Number.isFinite(x)) throw new OmaiError('value', `p2Push: the observation must be finite, got ${x}`)
   const p = state.p
   if (state.n < 5) {
     const heights = [...state.heights, x].sort((a, b) => a - b)
@@ -281,7 +281,7 @@ export function p2Push(state: P2State, x: number): P2State {
  * @returns The estimated quantile (`NaN` before any observation).
  * @example
  * ```ts
- * import { p2Estimate, p2Push, p2Quantile } from 'mdml-engine/stats'
+ * import { p2Estimate, p2Push, p2Quantile } from 'omai-engine/stats'
  * p2Estimate(p2Push(p2Push(p2Quantile(0.5), 1), 2)) // => 1.5
  * ```
  */
@@ -321,21 +321,21 @@ export interface EwmState {
 
 function alphaOf(o: EwmOptions): number {
   const given = [o.alpha, o.span, o.com, o.halflife].filter((v) => v !== undefined).length
-  if (given !== 1) throw new MdmlError('value', 'ewm: give exactly one of alpha, span, com or halflife')
+  if (given !== 1) throw new OmaiError('value', 'ewm: give exactly one of alpha, span, com or halflife')
   if (o.alpha !== undefined) {
-    if (!(o.alpha > 0 && o.alpha <= 1)) throw new MdmlError('value', 'ewm: alpha must lie in (0, 1]')
+    if (!(o.alpha > 0 && o.alpha <= 1)) throw new OmaiError('value', 'ewm: alpha must lie in (0, 1]')
     return o.alpha
   }
   if (o.span !== undefined) {
-    if (!(o.span >= 1)) throw new MdmlError('value', 'ewm: span must be at least 1')
+    if (!(o.span >= 1)) throw new OmaiError('value', 'ewm: span must be at least 1')
     return 2 / (o.span + 1)
   }
   if (o.com !== undefined) {
-    if (!(o.com >= 0)) throw new MdmlError('value', 'ewm: com must be non-negative')
+    if (!(o.com >= 0)) throw new OmaiError('value', 'ewm: com must be non-negative')
     return 1 / (1 + o.com)
   }
   const h = o.halflife ?? 1
-  if (!(h > 0)) throw new MdmlError('value', 'ewm: halflife must be positive')
+  if (!(h > 0)) throw new OmaiError('value', 'ewm: halflife must be positive')
   return 1 - Math.exp(-Math.LN2 / h)
 }
 
@@ -346,7 +346,7 @@ function alphaOf(o: EwmOptions): number {
  * @returns The empty state.
  * @example
  * ```ts
- * import { ewmState } from 'mdml-engine/stats'
+ * import { ewmState } from 'omai-engine/stats'
  * ewmState({ span: 3 }).alpha // => 0.5
  * ```
  */
@@ -371,7 +371,7 @@ export function ewmState(options: EwmOptions): EwmState {
  * @returns The updated state.
  * @example
  * ```ts
- * import { ewmPush, ewmState } from 'mdml-engine/stats'
+ * import { ewmPush, ewmState } from 'omai-engine/stats'
  * ewmPush(ewmPush(ewmState({ alpha: 0.5 }), 0), 3).mean // => 2
  * ```
  */
@@ -412,7 +412,7 @@ function ewmVarianceOf(s: EwmState, bias: boolean): number {
  * @returns The running average at each point.
  * @example
  * ```ts
- * import { ewmMean } from 'mdml-engine/stats'
+ * import { ewmMean } from 'omai-engine/stats'
  * ewmMean([0, 3, 3], { alpha: 0.5, adjust: false }) // => [0, 1.5, 2.25]
  * ```
  */
@@ -435,7 +435,7 @@ export function ewmMean(x: TensorLike, options: EwmOptions): Tensor {
  * @returns The running variance at each point.
  * @example
  * ```ts
- * import { ewmVar } from 'mdml-engine/stats'
+ * import { ewmVar } from 'omai-engine/stats'
  * ewmVar([0, 2], { alpha: 0.5 }) // => [NaN, 2]
  * ```
  */
@@ -457,7 +457,7 @@ export function ewmVar(x: TensorLike, options: EwmOptions & { readonly bias?: bo
  * @returns The running standard deviation at each point.
  * @example
  * ```ts
- * import { ewmStd } from 'mdml-engine/stats'
+ * import { ewmStd } from 'omai-engine/stats'
  * ewmStd([0, 2], { alpha: 0.5, bias: true }) // => [0, 0.9428090415820634]
  * ```
  */

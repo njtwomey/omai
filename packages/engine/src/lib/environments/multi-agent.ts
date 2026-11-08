@@ -5,7 +5,7 @@
  * physics step it runs on.
  */
 
-import { MdmlError, numberOr } from '../base/index.ts'
+import { numberOr, OmaiError } from '../base/index.ts'
 import {
   matchingPennies,
   type NormalFormGame,
@@ -90,8 +90,8 @@ export interface MatrixGameOptions {
  * @concept multi-agent
  * @example
  * ```ts
- * import { matrixGame } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { matrixGame } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * const env = matrixGame.create({ game: 'stagHunt' })
  * env.step(env.reset(key(0)).state, { player_0: 0, player_1: 0 }, key(1)).rewards // => { player_0: 4, player_1: 4 }
  * ```
@@ -110,11 +110,11 @@ export const matrixGame: ParallelDefinition<MatrixGameState, number, number> = {
     const opts = (options ?? {}) as MatrixGameOptions
     const name = opts.game ?? 'prisonersDilemma'
     const payoffs = opts.payoffs ?? MATRIX_GAMES[name]
-    if (payoffs === undefined) throw new MdmlError('value', `matrixGame: no game ${name}`)
+    if (payoffs === undefined) throw new OmaiError('value', `matrixGame: no game ${name}`)
     const n0 = payoffs.length
     const n1 = payoffs[0]?.length ?? 0
     if (n0 === 0 || n1 === 0 || payoffs.some((row) => row.length !== n1))
-      throw new MdmlError('value', 'matrixGame: payoffs must be a non-empty n0 x n1 bimatrix')
+      throw new OmaiError('value', 'matrixGame: payoffs must be a non-empty n0 x n1 bimatrix')
     const agents = ['player_0', 'player_1']
     const rounds = opts.rounds
     const code = (s: MatrixGameState): number => (s.last === undefined ? 0 : 1 + s.last[0] * n1 + s.last[1])
@@ -138,7 +138,7 @@ export const matrixGame: ParallelDefinition<MatrixGameState, number, number> = {
         const a0 = actions['player_0'] ?? 0
         const a1 = actions['player_1'] ?? 0
         if (!(a0 >= 0 && a0 < n0 && a1 >= 0 && a1 < n1 && Number.isInteger(a0) && Number.isInteger(a1)))
-          throw new MdmlError('value', `matrixGame: actions out of range (${a0}, ${a1})`)
+          throw new OmaiError('value', `matrixGame: actions out of range (${a0}, ${a1})`)
         const [r0, r1] = payoffs[a0]?.[a1] ?? [0, 0]
         const state: MatrixGameState = { t: s.t + 1, last: [a0, a1] }
         const o = code(state)
@@ -243,7 +243,7 @@ const manhattan = (a: readonly [number, number], b: readonly [number, number]): 
  * @concept multi-agent
  * @example
  * ```ts
- * import { pursuitEvasion } from 'mdml-engine/environments'
+ * import { pursuitEvasion } from 'omai-engine/environments'
  * pursuitEvasion.create({ pursuers: 3, evaderControl: 'agent' }).possibleAgents // => ['pursuer_0', 'pursuer_1', 'pursuer_2', 'evader_0']
  * ```
  */
@@ -270,7 +270,7 @@ export const pursuitEvasion: ParallelDefinition<PursuitState, readonly number[],
     const size = o.size ?? 8
     const nP = o.pursuers ?? 2
     const nE = o.evaders ?? 1
-    if (nP + nE > size * size) throw new MdmlError('value', 'pursuitEvasion: too many agents for the grid')
+    if (nP + nE > size * size) throw new OmaiError('value', 'pursuitEvasion: too many agents for the grid')
     const control = o.evaderControl ?? 'random'
     const radius = o.captureRadius ?? 1
     const nCatch = o.nCatch ?? 1
@@ -279,7 +279,7 @@ export const pursuitEvasion: ParallelDefinition<PursuitState, readonly number[],
     const urgency = o.urgencyReward ?? -0.1
     const local = o.observation === 'local'
     const range = o.obsRange ?? 5
-    if (range % 2 !== 1 || range < 1) throw new MdmlError('value', 'pursuitEvasion: obsRange must be odd')
+    if (range % 2 !== 1 || range < 1) throw new OmaiError('value', 'pursuitEvasion: obsRange must be odd')
     const maxCycles = o.maxCycles ?? 100
     const pursuerNames = Array.from({ length: nP }, (_, i) => `pursuer_${i}`)
     const evaderNames = control === 'agent' ? Array.from({ length: nE }, (_, i) => `evader_${i}`) : []
@@ -484,7 +484,7 @@ export const MPE: {
  * @concept multi-agent
  * @example
  * ```ts
- * import { particleStep } from 'mdml-engine/environments'
+ * import { particleStep } from 'omai-engine/environments'
  * particleStep([[0, 0]], [[0, 0]], [[1, 0]]).velocities // => [[0.5, 0]]
  * ```
  */
@@ -548,8 +548,8 @@ export const PARTICLE_MOVES: readonly (readonly [number, number])[] = [
  * @concept multi-agent
  * @example
  * ```ts
- * import { cooperativeNavigation } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { cooperativeNavigation } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * cooperativeNavigation.create().reset(key(0)).observations['agent_0']?.length // => 18
  * ```
  */
@@ -675,7 +675,7 @@ export const cooperativeNavigation: ParallelDefinition<NavigationState, readonly
  * @concept multi-agent
  * @example
  * ```ts
- * import { navigationCoverage } from 'mdml-engine/environments'
+ * import { navigationCoverage } from 'omai-engine/environments'
  * navigationCoverage({ positions: [[0, 0]], velocities: [[0, 0]], landmarks: [[3, 4]], t: 0 }) // => -5
  * ```
  */

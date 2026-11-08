@@ -7,7 +7,7 @@
  * is minimised by L-BFGS or by any other solver of the slot (`fairRepresentationAlgorithm`).
  */
 
-import { type Json, MdmlError, maxOf } from '../base/index.ts'
+import { type Json, maxOf, OmaiError } from '../base/index.ts'
 import {
   infNorm,
   linprog,
@@ -60,11 +60,11 @@ export interface ReweighingCell {
  * @param labels - Each row's binary label.
  * @param groups - Each row's group index.
  * @returns A weight per row, and the group-and-label cells (group-major, label 0 then 1).
- * @throws MdmlError `shape` when the two differ in length.
+ * @throws OmaiError `shape` when the two differ in length.
  * @concept algorithmic-fairness
  * @example
  * ```ts
- * import { reweighingWeights } from 'mdml-engine/fairness'
+ * import { reweighingWeights } from 'omai-engine/fairness'
  * reweighingWeights([1, 1, 0, 0, 0, 1], [0, 0, 0, 1, 1, 1]).weights // => [0.75, 0.75, 1.5, 0.75, 0.75, 1.5]
  * ```
  */
@@ -72,7 +72,7 @@ export function reweighingWeights(
   labels: readonly number[],
   groups: readonly number[],
 ): { readonly weights: number[]; readonly cells: ReweighingCell[] } {
-  if (labels.length !== groups.length) throw new MdmlError('shape', 'reweighingWeights: one group per label')
+  if (labels.length !== groups.length) throw new OmaiError('shape', 'reweighingWeights: one group per label')
   const n = labels.length
   const k = Math.max(-1, maxOf(groups)) + 1
   const joint = Array.from({ length: k }, () => [0, 0])
@@ -125,11 +125,11 @@ function midRank(sorted: readonly number[], v: number): number {
  * @param groups - Each row's group index.
  * @param options - The repair level in [0, 1] (default 1) and columns to leave as they are (the protected one).
  * @returns The repaired features, row-major.
- * @throws MdmlError `value` for a level outside [0, 1]; `shape` when the groups do not match the rows.
+ * @throws OmaiError `value` for a level outside [0, 1]; `shape` when the groups do not match the rows.
  * @concept algorithmic-fairness
  * @example
  * ```ts
- * import { repairFeatures } from 'mdml-engine/fairness'
+ * import { repairFeatures } from 'omai-engine/fairness'
  * Array.from(repairFeatures([0, 1, 10, 11], 1, [0, 0, 1, 1])) // => [5, 6, 5, 6]
  * ```
  */
@@ -140,9 +140,9 @@ export function repairFeatures(
   options: { readonly level?: number; readonly skip?: readonly number[] } = {},
 ): Float64Array {
   const level = options.level ?? 1
-  if (!(level >= 0 && level <= 1)) throw new MdmlError('value', 'repairFeatures: the level is in [0, 1]')
+  if (!(level >= 0 && level <= 1)) throw new OmaiError('value', 'repairFeatures: the level is in [0, 1]')
   const n = groups.length
-  if (x.length !== n * d) throw new MdmlError('shape', `repairFeatures: ${x.length} values for ${n} rows of ${d}`)
+  if (x.length !== n * d) throw new OmaiError('shape', `repairFeatures: ${x.length} values for ${n} rows of ${d}`)
   const k = Math.max(-1, maxOf(groups)) + 1
   const members = Array.from({ length: k }, (): number[] => [])
   for (const [i, g] of groups.entries()) members[g]?.push(i)
@@ -189,11 +189,11 @@ export interface Massaged {
  * @param groups - Group indices `[N]`.
  * @param options - The privileged group's index (default 0); every other group is unprivileged.
  * @returns The new labels and the rows promoted and demoted.
- * @throws MdmlError `shape` when the inputs differ in length.
+ * @throws OmaiError `shape` when the inputs differ in length.
  * @concept algorithmic-fairness
  * @example
  * ```ts
- * import { massageLabels } from 'mdml-engine/fairness'
+ * import { massageLabels } from 'omai-engine/fairness'
  * const r = massageLabels([1, 1, 1, 0, 1, 0, 0, 0], [0.9, 0.8, 0.6, 0.3, 0.7, 0.5, 0.4, 0.1], [0, 0, 0, 0, 1, 1, 1, 1])
  * r.promoted // => [5]
  * r.demoted // => [2]
@@ -206,7 +206,7 @@ export function massageLabels(
   options: { readonly privileged?: number } = {},
 ): Massaged {
   if (labels.length !== scores.length || labels.length !== groups.length)
-    throw new MdmlError('shape', 'massageLabels: inputs differ in length')
+    throw new OmaiError('shape', 'massageLabels: inputs differ in length')
   const privileged = options.privileged ?? 0
   const n = labels.length
   const isPriv = groups.map((g) => g === privileged)
@@ -254,11 +254,11 @@ export interface SampleCell {
  * @param scores - A ranker's scores `[N]`.
  * @param groups - Group indices `[N]`.
  * @returns The row indices of the resample (with repeats), and each cell's size before and after.
- * @throws MdmlError `shape` when the inputs differ in length.
+ * @throws OmaiError `shape` when the inputs differ in length.
  * @concept algorithmic-fairness
  * @example
  * ```ts
- * import { preferentialSample } from 'mdml-engine/fairness'
+ * import { preferentialSample } from 'omai-engine/fairness'
  * const r = preferentialSample([1, 1, 1, 0, 1, 0, 0, 0], [0.9, 0.8, 0.6, 0.3, 0.7, 0.5, 0.4, 0.1], [0, 0, 0, 0, 1, 1, 1, 1])
  * r.rows // => [0, 1, 3, 3, 4, 4, 6, 7]
  * ```
@@ -269,7 +269,7 @@ export function preferentialSample(
   groups: readonly number[],
 ): { readonly rows: number[]; readonly cells: SampleCell[] } {
   if (labels.length !== scores.length || labels.length !== groups.length)
-    throw new MdmlError('shape', 'preferentialSample: inputs differ in length')
+    throw new OmaiError('shape', 'preferentialSample: inputs differ in length')
   const { cells: weights } = reweighingWeights(labels, groups)
   const rows: number[] = []
   const cells: SampleCell[] = []
@@ -320,11 +320,11 @@ export interface LabelMapping {
  * @param groups - Group indices `[N]`.
  * @param options - epsilon and the flip cap.
  * @returns The mapping, each group's new rate, the shared rate and the distortion.
- * @throws MdmlError `value` when the programme has no solution (a flip cap too tight for epsilon).
+ * @throws OmaiError `value` when the programme has no solution (a flip cap too tight for epsilon).
  * @concept algorithmic-fairness
  * @example
  * ```ts
- * import { optimisedLabelMapping } from 'mdml-engine/fairness'
+ * import { optimisedLabelMapping } from 'omai-engine/fairness'
  * const m = optimisedLabelMapping([1, 1, 1, 0, 1, 0, 0, 0], [0, 0, 0, 0, 1, 1, 1, 1], { epsilon: 0 })
  * Math.abs((m.rates[0] ?? 0) - (m.rates[1] ?? 1)) < 1e-9 // => true
  * m.distortion.toFixed(3) // => '0.250'
@@ -335,7 +335,7 @@ export function optimisedLabelMapping(
   groups: readonly number[],
   options: LabelMappingOptions = {},
 ): LabelMapping {
-  if (labels.length !== groups.length) throw new MdmlError('shape', 'optimisedLabelMapping: one group per label')
+  if (labels.length !== groups.length) throw new OmaiError('shape', 'optimisedLabelMapping: one group per label')
   const n = labels.length
   const k = Math.max(-1, maxOf(groups)) + 1
   const eps = options.epsilon ?? 0.02
@@ -371,7 +371,7 @@ export function optimisedLabelMapping(
     j === v - 1 ? [0, 1] : j % 2 === 0 ? [0, Math.min(1, cap)] : [Math.max(0, 1 - cap), 1],
   )
   const r = linprog({ c, aUb, bUb, bounds })
-  if (!r.success) throw new MdmlError('value', `optimisedLabelMapping: no mapping meets the constraints (${r.message})`)
+  if (!r.success) throw new OmaiError('value', `optimisedLabelMapping: no mapping meets the constraints (${r.message})`)
   const x = Array.from(toFlat(r.x))
   const positive = Array.from({ length: k }, (_, g): [number, number] => [x[2 * g] ?? 0, x[2 * g + 1] ?? 1])
   const rates = positive.map(
@@ -414,7 +414,7 @@ export interface FairRepresentation {
  * @returns memberships[i][k].
  * @example
  * ```ts
- * import { fairRepresentationMemberships } from 'mdml-engine/fairness'
+ * import { fairRepresentationMemberships } from 'omai-engine/fairness'
  * const rep = { prototypes: [[0], [10]], labels: [0, 1], losses: { reconstruction: 0, prediction: 0, parity: 0 } }
  * fairRepresentationMemberships(rep, [[0]])[0]?.[0] // => 1
  * ```
@@ -453,11 +453,11 @@ export interface FairRepresentationProblem extends SmoothProblem {
  * @param groups - Group indices `[n]` (0 the privileged group).
  * @param options - Prototypes, loss weights and key.
  * @returns The problem: the objective, the start and the losses of a parameter vector.
- * @throws MdmlError `shape` when labels or groups differ in length from the rows.
+ * @throws OmaiError `shape` when labels or groups differ in length from the rows.
  * @concept algorithmic-fairness
  * @example
  * ```ts
- * import { fairRepresentationProblem } from 'mdml-engine/fairness'
+ * import { fairRepresentationProblem } from 'omai-engine/fairness'
  * const x = [[0], [1], [2], [3], [1], [2], [3], [4]]
  * fairRepresentationProblem(x, [0, 0, 1, 1, 0, 1, 1, 1], [0, 0, 0, 0, 1, 1, 1, 1], { prototypes: 2 }).prototypes // => 2
  * ```
@@ -471,7 +471,7 @@ export function fairRepresentationProblem(
   const n = x.length
   const d = x[0]?.length ?? 0
   if (labels.length !== n || groups.length !== n)
-    throw new MdmlError('shape', 'learnFairRepresentation: one label and group per row')
+    throw new OmaiError('shape', 'learnFairRepresentation: one label and group per row')
   const K = options.prototypes ?? 5
   const ax = options.weights?.reconstruction ?? 0.01
   const ay = options.weights?.prediction ?? 1
@@ -564,8 +564,8 @@ export const fairRepresentationSolver: SpaceValue = smoothSolverConfig({ kind: '
  * @concept algorithmic-fairness
  * @example
  * ```ts
- * import { fairRepresentationAlgorithm } from 'mdml-engine/fairness'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { fairRepresentationAlgorithm } from 'omai-engine/fairness'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const x = [[0], [1], [2], [3], [1], [2], [3], [4]]
  * const a = fairRepresentationAlgorithm(x, [0, 0, 1, 1, 0, 1, 1, 1], [0, 0, 0, 0, 1, 1, 1, 1], { prototypes: 2 })
  * runAlgorithm(a, { maxSteps: 3 }).state.x.length // => 4
@@ -627,7 +627,7 @@ export function fairRepresentationAlgorithm(
  * @concept algorithmic-fairness
  * @example
  * ```ts
- * import { learnFairRepresentation } from 'mdml-engine/fairness'
+ * import { learnFairRepresentation } from 'omai-engine/fairness'
  * const x = [[0], [1], [2], [3], [1], [2], [3], [4]]
  * learnFairRepresentation(x, [0, 0, 1, 1, 0, 1, 1, 1], [0, 0, 0, 0, 1, 1, 1, 1], { prototypes: 2 }).prototypes.length // => 2
  * ```

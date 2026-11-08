@@ -4,7 +4,7 @@
  * notation with `bigO` and `removeO`.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { bounded } from './_budget.ts'
 import {
   MINUS_ONE,
@@ -92,12 +92,12 @@ function backToX(s: S, f: Frame): Expr {
  * @param dir - Direction (default `'+'`).
  * @param budget - Work limits (see {@link WorkBudget}).
  * @returns The series plus O((x - x0)^n).
- * @throws MdmlError with code `not-implemented` at essential singularities and branch points needing
+ * @throws OmaiError with code `not-implemented` at essential singularities and branch points needing
  *   fractional powers (Puiseux series), and with code `convergence` when the work budget runs out (coefficients
  *   that grow too large to normalise); no partial series is returned, since its order would be wrong.
  * @example
  * ```ts
- * import { parse, series, sym, toText } from 'mdml-engine/symbolic'
+ * import { parse, series, sym, toText } from 'omai-engine/symbolic'
  * toText(series(parse('sin(x)'), sym('x'))) // => 'x - x**3/6 + x**5/120 + O(x**6)'
  * toText(series(parse('1/sin(x)'), sym('x'), 0, 4)) // => '1/x + x/6 + 7*x**3/360 + O(x**4)'
  * series(parse('exp(sin(x))'), sym('x'), 0, 8, '+', { steps: 100 }) // => throws convergence
@@ -140,10 +140,10 @@ function isZeroPoint(p: Expr): boolean {
  * @param dir - Direction.
  * @param budget - Work limits, as for series.
  * @returns The series and its steps.
- * @throws MdmlError with code `convergence` when the work budget runs out.
+ * @throws OmaiError with code `convergence` when the work budget runs out.
  * @example
  * ```ts
- * import { parse, seriesSteps, sym } from 'mdml-engine/symbolic'
+ * import { parse, seriesSteps, sym } from 'omai-engine/symbolic'
  * seriesSteps(parse('exp(sin(x))'), sym('x'), 0, 4).steps.map((s) => s.rule) // => ['series of sin', 'series of exp']
  * ```
  */
@@ -189,14 +189,14 @@ function seriesStepsBody(e: Expr, x: ExprSym, x0: Expr, n: number, dir: SeriesDi
  * @returns The polynomial in (x - x0).
  * @example
  * ```ts
- * import { parse, sym, taylor, toText } from 'mdml-engine/symbolic'
+ * import { parse, sym, taylor, toText } from 'omai-engine/symbolic'
  * toText(taylor(parse('exp(x)'), sym('x'), 0, 4)) // => 'x**3/6 + x**2/2 + x + 1'
  * ```
  */
 export function taylor(e: Expr, x: ExprSym, x0: ExprLike = 0, n = 6): Expr {
   return bounded('taylor', () => {
     const [s, f] = expansion(e, x, asExpr(x0), n, '+')
-    if (s.v < 0) throw new MdmlError('value', 'taylor: the expression has a pole here; use series for Laurent terms')
+    if (s.v < 0) throw new OmaiError('value', 'taylor: the expression has a pole here; use series for Laurent terms')
     return backToX(s, f)
   })
 }
@@ -211,7 +211,7 @@ export function taylor(e: Expr, x: ExprSym, x0: ExprLike = 0, n = 6): Expr {
  * @returns `{ start, coefficients }` with coefficients[i] multiplying (x - x0)^(start + i).
  * @example
  * ```ts
- * import { parse, seriesCoefficients, sym, toText } from 'mdml-engine/symbolic'
+ * import { parse, seriesCoefficients, sym, toText } from 'omai-engine/symbolic'
  * seriesCoefficients(parse('cos(x)'), sym('x'), 0, 5).coefficients.map(toText) // => ['1', '0', '-1/2', '0', '1/24']
  * ```
  */
@@ -227,7 +227,7 @@ export function seriesCoefficients(
 function coefficientsBody(e: Expr, x: ExprSym, x0: Expr, n: number): { start: number; coefficients: Expr[] } {
   const [s] = expansion(e, x, x0, n, '+')
   if (s.c.some((c) => JSON.stringify(c.key).includes(LOG_T.key))) {
-    throw new MdmlError('value', 'seriesCoefficients: the series has logarithmic terms')
+    throw new OmaiError('value', 'seriesCoefficients: the series has logarithmic terms')
   }
   const coefficients: Expr[] = []
   for (let k = s.v; k < n; k++) coefficients.push(s.c[k - s.v] ?? ZERO)
@@ -243,7 +243,7 @@ function coefficientsBody(e: Expr, x: ExprSym, x0: Expr, n: number): { start: nu
  * @returns The residue.
  * @example
  * ```ts
- * import { parse, residue, sym, toText } from 'mdml-engine/symbolic'
+ * import { parse, residue, sym, toText } from 'omai-engine/symbolic'
  * toText(residue(parse('exp(x)/x^2'), sym('x'))) // => '1'
  * ```
  */
@@ -264,10 +264,10 @@ export function residue(e: Expr, x: ExprSym, x0: ExprLike = 0): Expr {
  * @param n - Denominator degree.
  * @param x0 - The expansion point (default 0).
  * @returns The rational approximant.
- * @throws MdmlError with code `singular` when the approximant does not exist.
+ * @throws OmaiError with code `singular` when the approximant does not exist.
  * @example
  * ```ts
- * import { pade, parse, sym, toText } from 'mdml-engine/symbolic'
+ * import { pade, parse, sym, toText } from 'omai-engine/symbolic'
  * toText(pade(parse('exp(x)'), sym('x'), 1, 1)) // => '-(x + 2)/(x - 2)'
  * ```
  */
@@ -277,7 +277,7 @@ export function pade(e: Expr, x: ExprSym, m: number, n: number, x0: ExprLike = 0
 
 function padeBody(e: Expr, x: ExprSym, m: number, n: number, p: Expr): Expr {
   const { start, coefficients } = coefficientsBody(e, x, p, m + n + 1)
-  if (start < 0) throw new MdmlError('value', 'pade: the expression has a pole at the expansion point')
+  if (start < 0) throw new OmaiError('value', 'pade: the expression has a pole at the expansion point')
   const c = (k: number): Expr => (k < start ? ZERO : (coefficients[k - start] ?? ZERO))
   // Solve sum_{j=1..n} q_j c_{k-j} = -c_k for k = m+1..m+n.
   const rows: Expr[][] = []
@@ -302,7 +302,7 @@ function gauss(rows: Expr[][], rhs: Expr[]): Expr[] {
   for (let c = 0; c < n; c++) {
     let piv = -1
     for (let i = c; i < n; i++) if (cancel((m[i] as Expr[])[c] as Expr).key !== ZERO.key) piv = piv < 0 ? i : piv
-    if (piv < 0) throw new MdmlError('singular', 'pade: the approximant does not exist (singular system)')
+    if (piv < 0) throw new OmaiError('singular', 'pade: the approximant does not exist (singular system)')
     ;[m[c], m[piv]] = [m[piv] as Expr[], m[c] as Expr[]]
     const row = m[c] as Expr[]
     const inv = makePow(row[c] as Expr, MINUS_ONE)
@@ -328,7 +328,7 @@ function gauss(rows: Expr[][], rhs: Expr[]): Expr[] {
  * @returns The order term.
  * @example
  * ```ts
- * import { add, bigO, parse, sym, toText } from 'mdml-engine/symbolic'
+ * import { add, bigO, parse, sym, toText } from 'omai-engine/symbolic'
  * const x = sym('x')
  * toText(add(parse('1 + x + x^3'), bigO(parse('x^2'), x))) // => '1 + x + O(x**2)'
  * ```
@@ -344,7 +344,7 @@ export function bigO(e: Expr, x: ExprSym, x0: ExprLike = 0): Expr {
  * @returns The expression without its order terms.
  * @example
  * ```ts
- * import { parse, removeO, series, sym, toText } from 'mdml-engine/symbolic'
+ * import { parse, removeO, series, sym, toText } from 'omai-engine/symbolic'
  * toText(removeO(series(parse('cos(x)'), sym('x'), 0, 4))) // => '1 - x**2/2'
  * ```
  */

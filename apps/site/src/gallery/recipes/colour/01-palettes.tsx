@@ -1,7 +1,7 @@
-import { cartesian, heatmap, type RampSpec } from 'mdml-render/charts'
-import { figure } from 'mdml-render/figure'
-import { Chart, ControlPanel, FigureFrame, Select, Toggle, useColourMode } from 'mdml-render/react'
-import { colourBlindCheck, divergingRamp, sequentialRamp, simulateColourVision, tab10 } from 'mdml-render/theme'
+import { cartesian, heatmap, type RampSpec } from 'omai-render/charts'
+import { figure } from 'omai-render/figure'
+import { Chart, ControlPanel, FigureFrame, Select, Toggle, useColourMode } from 'omai-render/react'
+import { colourBlindCheck, divergingRamp, sequentialRamp, simulateColourVision, tab10 } from 'omai-render/theme'
 import { type ReactNode, useMemo, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 

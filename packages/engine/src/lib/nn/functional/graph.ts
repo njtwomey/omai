@@ -4,7 +4,7 @@
  * (GAT), GraphSAGE and GIN convolutions, and global and top-k graph pooling.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import {
   add,
   asTensor,
@@ -49,16 +49,16 @@ export interface Edges {
  *
  * @param edgeIndex - `[2, E]` integers.
  * @returns The sources and targets.
- * @throws MdmlError with code `shape` for another shape.
+ * @throws OmaiError with code `shape` for another shape.
  * @example
  * ```ts
- * import { edgeList } from 'mdml-engine/nn'
+ * import { edgeList } from 'omai-engine/nn'
  * edgeList([[0, 1], [1, 2]]).target // => [1, 2]
  * ```
  */
 export function edgeList(edgeIndex: TensorLike): Edges {
   const e = asTensor(edgeIndex, 'int32')
-  if (e.shape.length !== 2 || e.shape[0] !== 2) throw new MdmlError('shape', 'edgeList: edge index must be [2, E]')
+  if (e.shape.length !== 2 || e.shape[0] !== 2) throw new OmaiError('shape', 'edgeList: edge index must be [2, E]')
   const flat = toFlat(primalOf(e))
   const m = e.shape[1] ?? 0
   return { source: flat.slice(0, m), target: flat.slice(m) }
@@ -80,8 +80,8 @@ export type Aggregation = 'sum' | 'mean' | 'max'
  * @returns `[numNodes, ...]`.
  * @example
  * ```ts
- * import { aggregate } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { aggregate } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(aggregate([[1], [3], [5]], [0, 0, 2], 3, 'mean')) // => [[2], [0], [5]]
  * ```
  */
@@ -143,8 +143,8 @@ export interface MessagePassingOptions {
  * @reference Gilmer, Schoenholz, Riley, Vinyals and Dahl (2017), Neural message passing for quantum chemistry.
  * @example
  * ```ts
- * import { messagePassing } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { messagePassing } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(messagePassing([[1], [2], [4]], [[0, 1, 2], [1, 2, 0]])) // => [[4], [1], [2]]
  * ```
  */
@@ -171,8 +171,8 @@ export function messagePassing(x: TensorLike, edgeIndex: TensorLike, options: Me
  * @returns Weights `[E, ...]` summing to one over each node's incoming edges.
  * @example
  * ```ts
- * import { edgeSoftmax } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { edgeSoftmax } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(edgeSoftmax([0, 0, 3], [1, 1, 0], 2)) // => [0.5, 0.5, 1]
  * ```
  */
@@ -211,8 +211,8 @@ export function edgeSoftmax(scores: TensorLike, target: readonly number[], numNo
  * @returns The extended edge index and weights.
  * @example
  * ```ts
- * import { addSelfLoops } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { addSelfLoops } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(addSelfLoops([[0], [1]], 2).edgeIndex) // => [[0, 0, 1], [1, 0, 1]]
  * ```
  */
@@ -247,8 +247,8 @@ export function addSelfLoops(
  * @returns The (extended) edge index and normalised weights.
  * @example
  * ```ts
- * import { gcnNorm } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { gcnNorm } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(gcnNorm([[0, 1], [1, 0]], 2).weight) // => [0.5, 0.5, 0.5, 0.5]
  * ```
  */
@@ -310,8 +310,8 @@ export interface GcnOptions {
  * @reference Kipf and Welling (2017), Semi-supervised classification with graph convolutional networks.
  * @example
  * ```ts
- * import { gcnConv } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { gcnConv } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(gcnConv([[1], [3]], [[0, 1], [1, 0]], [[1]])) // => [[2], [2]]
  * ```
  */
@@ -370,8 +370,8 @@ export interface GatOptions {
  * @reference Velickovic et al. (2018), Graph attention networks.
  * @example
  * ```ts
- * import { gatConv } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { gatConv } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(gatConv([[1], [3]], [[0, 1], [1, 0]], { weight: [[1]], attSrc: [[0]], attDst: [[0]] }).output) // => [[2], [2]]
  * ```
  */
@@ -437,8 +437,8 @@ export interface SageParams {
  * @reference Hamilton, Ying and Leskovec (2017), Inductive representation learning on large graphs.
  * @example
  * ```ts
- * import { sageConv } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { sageConv } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(sageConv([[1], [3]], [[0], [1]], { weightNeighbour: [[1]], weightRoot: [[1]] })) // => [[1], [4]]
  * ```
  */
@@ -473,8 +473,8 @@ export function sageConv(
  * @reference Xu, Hu, Leskovec and Jegelka (2019), How powerful are graph neural networks?
  * @example
  * ```ts
- * import { ginConv } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { ginConv } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(ginConv([[1], [3]], [[0], [1]], (h) => h)) // => [[1], [4]]
  * ```
  */
@@ -494,8 +494,8 @@ export function ginConv(x: TensorLike, edgeIndex: TensorLike, mlp: (h: Value) =>
  * @returns `[numGraphs, F]`.
  * @example
  * ```ts
- * import { globalPool } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { globalPool } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(globalPool([[1], [3], [5]], [0, 0, 1], 'sum')) // => [[4], [5]]
  * ```
  */
@@ -535,7 +535,7 @@ export interface TopKPoolResult {
  * @reference Gao and Ji (2019), Graph U-Nets.
  * @example
  * ```ts
- * import { topKPool } from 'mdml-engine/nn'
+ * import { topKPool } from 'omai-engine/nn'
  * topKPool([[1], [3], [2], [0]], [[0, 1, 2], [1, 2, 3]], [1]).perm // => [1, 2]
  * ```
  */

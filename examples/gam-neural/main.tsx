@@ -6,14 +6,14 @@
  * points. The dashed line is the truth the data was drawn from, the thin dark line the classic GAM (REML chooses its
  * smoothing), and the dots on the bottom edge the knots.
  */
-import { generate } from 'mdml-engine/data'
-import { sineCurve } from 'mdml-engine/datasets'
-import { additiveRegressor, gam, s as splineOf } from 'mdml-engine/gam'
-import { key } from 'mdml-engine/random'
-import { circle, line, path, rect, type Scene, type SceneNode, scene, timeline } from 'mdml-engine/scene'
-import { asTensor, fromStorage, toFlat } from 'mdml-engine/tensor'
-import { Log, metricSeries } from 'mdml-engine/trace'
-import { cartesian, lines, points } from 'mdml-render/charts'
+import { generate } from 'omai-engine/data'
+import { sineCurve } from 'omai-engine/datasets'
+import { additiveRegressor, gam, s as splineOf } from 'omai-engine/gam'
+import { key } from 'omai-engine/random'
+import { circle, line, path, rect, type Scene, type SceneNode, scene, timeline } from 'omai-engine/scene'
+import { asTensor, fromStorage, toFlat } from 'omai-engine/tensor'
+import { Log, metricSeries } from 'omai-engine/trace'
+import { cartesian, lines, points } from 'omai-render/charts'
 import { MUTED, mix, PAPER, tab } from '../_shared/colours.ts'
 import type { ExampleModule, Outcome } from '../_shared/contract.ts'
 import { Figure, Panel } from '../_shared/figure.tsx'

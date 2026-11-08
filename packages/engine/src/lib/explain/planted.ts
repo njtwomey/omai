@@ -40,7 +40,7 @@ const identity = (n: number): number[][] =>
  * @concept mechanistic-interpretability
  * @example
  * ```ts
- * import { plantedCopyCircuit } from 'mdml-engine/explain'
+ * import { plantedCopyCircuit } from 'omai-engine/explain'
  * plantedCopyCircuit().truth.head // => 0
  * ```
  */

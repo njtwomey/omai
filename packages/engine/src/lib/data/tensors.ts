@@ -5,7 +5,7 @@
  * `describe`, a pandas-style summary of a dataset.
  */
 
-import { MdmlError, quantileOf } from '../base/index.ts'
+import { OmaiError, quantileOf } from '../base/index.ts'
 import { asTensor, cast, fromStorage, isTensor, type Tensor, type TensorLike } from '../tensor/index.ts'
 import { cardinality, concrete, concreteFloat, defaultNames, metaFor } from './schema/_coerce.ts'
 import { type Dataset, type DatasetMeta, perRowFields, rowCount } from './schema/common.ts'
@@ -28,7 +28,7 @@ function features(x: TensorLike, name: string): Tensor {
 function weightsOf(meta: TabularMeta, n: number, name: string): { readonly weights?: Tensor } {
   if (meta.weights === undefined) return {}
   const w = concreteFloat(meta.weights, name)
-  if ((w.shape[0] ?? 0) !== n) throw new MdmlError('shape', `${name}: ${w.shape[0]} weights for ${n} rows`)
+  if ((w.shape[0] ?? 0) !== n) throw new OmaiError('shape', `${name}: ${w.shape[0]} weights for ${n} rows`)
   return { weights: w }
 }
 
@@ -50,7 +50,7 @@ function strip<T extends TabularMeta>(meta: T): Partial<DatasetMeta> {
  * @index function Build a regression dataset from features and targets.
  * @example
  * ```ts
- * import { xy } from 'mdml-engine/data'
+ * import { xy } from 'omai-engine/data'
  * xy([[1, 2], [3, 4]], [0.5, 1.5]).featureNames // => ['x0', 'x1']
  * ```
  */
@@ -62,7 +62,7 @@ export function xy(
   const xs = features(x, 'xy')
   const ys = concreteFloat(y, 'xy')
   const n = xs.shape[0] ?? 0
-  if ((ys.shape[0] ?? 0) !== n) throw new MdmlError('shape', `xy: ${ys.shape[0]} targets for ${n} rows`)
+  if ((ys.shape[0] ?? 0) !== n) throw new OmaiError('shape', `xy: ${ys.shape[0]} targets for ${n} rows`)
   const k = ys.shape.length === 2 ? (ys.shape[1] ?? 1) : 1
   return {
     kind: 'regression',
@@ -83,11 +83,11 @@ export function xy(
  *   unlabelled row (the sentinel of `semiSupervisedSplit`, skipped by `classCounts`).
  * @param meta - Class names, feature names, sample weights and other metadata.
  * @returns The dataset.
- * @throws MdmlError with code `value` for a label that is not a whole number, `shape` for a length mismatch.
+ * @throws OmaiError with code `value` for a label that is not a whole number, `shape` for a length mismatch.
  * @index function Build a classification dataset from features and class labels.
  * @example
  * ```ts
- * import { xyClasses } from 'mdml-engine/data'
+ * import { xyClasses } from 'omai-engine/data'
  * xyClasses([[0], [1]], [0, 1]).classes // => ['0', '1']
  * ```
  */
@@ -99,7 +99,7 @@ export function xyClasses(
   const xs = features(x, 'xyClasses')
   const ys = concrete(y, 'int32', 'xyClasses')
   const n = xs.shape[0] ?? 0
-  if ((ys.shape[0] ?? 0) !== n) throw new MdmlError('shape', `xyClasses: ${ys.shape[0]} labels for ${n} rows`)
+  if ((ys.shape[0] ?? 0) !== n) throw new OmaiError('shape', `xyClasses: ${ys.shape[0]} labels for ${n} rows`)
   const k = Math.max(cardinality(ys.data), meta.classes?.length ?? 0)
   return {
     kind: 'classification',
@@ -121,7 +121,7 @@ export function xyClasses(
  * @returns The dataset.
  * @example
  * ```ts
- * import { xyMultilabel } from 'mdml-engine/data'
+ * import { xyMultilabel } from 'omai-engine/data'
  * xyMultilabel([[0], [1]], [[1, 0, 1], [0, 1, 0]]).labels // => ['l0', 'l1', 'l2']
  * ```
  */
@@ -134,7 +134,7 @@ export function xyMultilabel(
   const ys = concrete(y, 'int32', 'xyMultilabel')
   const n = xs.shape[0] ?? 0
   if (ys.shape.length !== 2 || ys.shape[0] !== n)
-    throw new MdmlError('shape', `xyMultilabel: indicators must be [${n}, L]`)
+    throw new OmaiError('shape', `xyMultilabel: indicators must be [${n}, L]`)
   return {
     kind: 'multilabel',
     x: xs,
@@ -155,7 +155,7 @@ export function xyMultilabel(
  * @returns The dataset.
  * @example
  * ```ts
- * import { xyMultiOutput } from 'mdml-engine/data'
+ * import { xyMultiOutput } from 'omai-engine/data'
  * xyMultiOutput([[0], [1]], [[0, 2], [1, 0]]).outputs[1]?.classes // => ['0', '1', '2']
  * ```
  */
@@ -170,7 +170,7 @@ export function xyMultiOutput(
   const ys = concrete(y, 'int32', 'xyMultiOutput')
   const n = xs.shape[0] ?? 0
   if (ys.shape.length !== 2 || ys.shape[0] !== n)
-    throw new MdmlError('shape', `xyMultiOutput: targets must be [${n}, k]`)
+    throw new OmaiError('shape', `xyMultiOutput: targets must be [${n}, k]`)
   const k = ys.shape[1] ?? 0
   const outputs =
     meta.outputs ??
@@ -203,7 +203,7 @@ function toColumn(name: string, c: ColumnInput, text: boolean, levels?: readonly
   // The first value decides the column's type; a value of another type is an error (it used to become NaN, a level or 1).
   const row = c.findIndex((v) => v !== null && typeof v !== type)
   if (row >= 0)
-    throw new MdmlError('value', `table: column ${name} mixes ${type} and ${typeof c[row]} values (row ${row})`)
+    throw new OmaiError('value', `table: column ${name} mixes ${type} and ${typeof c[row]} values (row ${row})`)
   if (typeof first === 'boolean') {
     return {
       kind: 'boolean',
@@ -222,7 +222,7 @@ function toColumn(name: string, c: ColumnInput, text: boolean, levels?: readonly
     const codes = Int32Array.from(values, (v) => {
       if (v === null) return -1
       const i = index.get(v)
-      if (i === undefined) throw new MdmlError('value', `table: ${name} has value ${v} outside its levels`)
+      if (i === undefined) throw new OmaiError('value', `table: ${name} has value ${v} outside its levels`)
       return i
     })
     return { kind: 'categorical', codes: fromStorage(codes, [codes.length], 'int32'), levels: lv }
@@ -238,12 +238,12 @@ function toColumn(name: string, c: ColumnInput, text: boolean, levels?: readonly
  * @param columns - The columns by name.
  * @param options - The target column, text columns, explicit category levels and metadata.
  * @returns The table.
- * @throws MdmlError with code `shape` when columns differ in length; `value` for a column that mixes types (numbers
+ * @throws OmaiError with code `shape` when columns differ in length; `value` for a column that mixes types (numbers
  *   with strings, booleans with numbers), a value outside the given levels, or a missing target.
  * @index function A data frame of named mixed-type columns.
  * @example
  * ```ts
- * import { table } from 'mdml-engine/data'
+ * import { table } from 'omai-engine/data'
  * const t = table({ age: [30, null], city: ['Cork', 'Bray'] })
  * t.columns['city']?.kind // => 'categorical'
  * ```
@@ -262,7 +262,7 @@ export function table(
     out[name] = toColumn(name, c, options.text?.includes(name) === true, options.levels?.[name])
   }
   if (options.target !== undefined && out[options.target] === undefined)
-    throw new MdmlError('value', `table: no target column ${options.target}`)
+    throw new OmaiError('value', `table: no target column ${options.target}`)
   const data: TableData = {
     kind: 'table',
     columns: out,
@@ -288,17 +288,17 @@ export interface TableEncoding {
  * @param data - The table.
  * @param options - How categorical features are encoded.
  * @returns The tabular dataset.
- * @throws MdmlError with code `value` when the table has no target.
+ * @throws OmaiError with code `value` when the table has no target.
  * @example
  * ```ts
- * import { table, tableToXy } from 'mdml-engine/data'
+ * import { table, tableToXy } from 'omai-engine/data'
  * const d = tableToXy(table({ size: [1, 2, 3], colour: ['red', 'blue', 'red'], label: ['a', 'b', 'a'] }, { target: 'label' }))
  * d.featureNames // => ['size', 'colour=blue', 'colour=red']
  * ```
  */
 export function tableToXy(data: TableData, options: TableEncoding = {}): RegressionData | ClassificationData {
   const target = data.target
-  if (target === undefined) throw new MdmlError('value', 'tableToXy: the table has no target column')
+  if (target === undefined) throw new OmaiError('value', 'tableToXy: the table has no target column')
   const n = rowCount(data)
   const cols: Float64Array[] = []
   const names: string[] = []
@@ -337,7 +337,7 @@ export function tableToXy(data: TableData, options: TableEncoding = {}): Regress
   if (t.kind === 'categorical') return xyClasses(xs, t.codes, { ...meta, classes: t.levels })
   if (t.kind === 'boolean') return xyClasses(xs, cast(t.values, 'int32'), { ...meta, classes: ['false', 'true'] })
   if (t.kind === 'numeric') return xy(xs, t.values, { ...meta, targetNames: [target] })
-  throw new MdmlError('value', 'tableToXy: a text column cannot be the target')
+  throw new OmaiError('value', 'tableToXy: a text column cannot be the target')
 }
 
 /**
@@ -348,7 +348,7 @@ export function tableToXy(data: TableData, options: TableEncoding = {}): Regress
  * @returns The tensors by field name.
  * @example
  * ```ts
- * import { toTensors, xy } from 'mdml-engine/data'
+ * import { toTensors, xy } from 'omai-engine/data'
  * Object.keys(toTensors(xy([[1]], [2]))) // => ['x', 'y']
  * ```
  */
@@ -370,11 +370,11 @@ export function toTensors(data: Dataset): Readonly<Record<string, Tensor>> {
  * @param template - The dataset whose names and metadata are kept.
  * @param tensors - Replacement fields by name.
  * @returns The new dataset.
- * @throws MdmlError with code `value` for a field that is not a per-row tensor field of the template.
+ * @throws OmaiError with code `value` for a field that is not a per-row tensor field of the template.
  * @example
  * ```ts
- * import { fromTensors, xy } from 'mdml-engine/data'
- * import { tensor } from 'mdml-engine/tensor'
+ * import { fromTensors, xy } from 'omai-engine/data'
+ * import { tensor } from 'omai-engine/tensor'
  * fromTensors(xy([[1]], [2]), { y: tensor([5]) }).y.data // => Float64Array [5]
  * ```
  */
@@ -384,7 +384,7 @@ export function fromTensors<D extends Dataset>(template: D, tensors: Readonly<Re
   const out: Record<string, unknown> = { ...template }
   for (const [name, value] of Object.entries(tensors)) {
     if (!fields.has(name) || !isTensor(record[name]))
-      throw new MdmlError('value', `fromTensors: ${name} is not a per-row tensor field of ${template.kind} data`)
+      throw new OmaiError('value', `fromTensors: ${name} is not a per-row tensor field of ${template.kind} data`)
     const old = record[name] as Tensor
     const t = asTensor(value)
     out[name] = t.dtype === old.dtype ? t : cast(t, old.dtype)
@@ -453,7 +453,7 @@ function column(x: Tensor, j: number): Float64Array {
  * @returns The summary.
  * @example
  * ```ts
- * import { describe, xy } from 'mdml-engine/data'
+ * import { describe, xy } from 'omai-engine/data'
  * describe(xy([[1], [2], [3], [4]], [0, 0, 1, 1])).features[0]?.median // => 2.5
  * ```
  */

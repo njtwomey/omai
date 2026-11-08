@@ -24,8 +24,8 @@ export type AbMetric = 'conversion' | 'continuous' | 'revenue'
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { abTest } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { abTest } from 'omai-engine/datasets'
  * generate(abTest, { knobs: { users: 100 } }).data.columns['arm']?.kind // => 'categorical'
  * ```
  */
@@ -157,8 +157,8 @@ export const abTest: DatasetGenerator<TableData> = {
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { networkExperiment } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { networkExperiment } from 'omai-engine/datasets'
  * generate(networkExperiment, { knobs: { units: 40 } }).truth.extra?.['totalEffect'] // => 1.5
  * ```
  */
@@ -278,8 +278,8 @@ export const networkExperiment: DatasetGenerator<RegressionData> = {
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { carryoverExperiment } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { carryoverExperiment } from 'omai-engine/datasets'
  * generate(carryoverExperiment, { knobs: { users: 20, stickiness: 1, persistence: 0.5, firstEffect: 2 } }).truth.extra?.['naiveBias'] // => 1
  * ```
  */

@@ -5,7 +5,7 @@
  * tracked along the way.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { type Algorithm, runAlgorithm } from '../../trace/index.ts'
 import type { GameRunOptions } from '../normal-form/index.ts'
 import { averageOf, CFR_SCHEMA, cfrObservation, regretMatch } from './_regrets.ts'
@@ -61,13 +61,13 @@ export interface CfrResult {
  * @param game - A game or its tree.
  * @param options - The variant, alternation and DCFR's parameters.
  * @returns The algorithm; each step is one iteration.
- * @throws MdmlError with code `value` for an unknown variant.
+ * @throws OmaiError with code `value` for an unknown variant.
  * @concept counterfactual-regret
  * @reference Zinkevich, Johanson, Bowling and Piccione (2007), Regret minimization in games with incomplete information.
  * @example
  * ```ts
- * import { cfrAlgorithm, kuhnPoker } from 'mdml-engine/games'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { cfrAlgorithm, kuhnPoker } from 'omai-engine/games'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * runAlgorithm(cfrAlgorithm(kuhnPoker()), { maxSteps: 10 }).state.t // => 10
  * ```
  */
@@ -78,7 +78,7 @@ export function cfrAlgorithm<S>(
   const tree = treeOf(game)
   const variant = options.variant ?? 'cfr'
   if (!['cfr', 'cfr+', 'linear', 'discounted'].includes(variant))
-    throw new MdmlError('value', `cfr: unknown variant '${variant}'`)
+    throw new OmaiError('value', `cfr: unknown variant '${variant}'`)
   const alternating = options.alternating ?? true
   const plus = variant === 'cfr+'
   const discounted = variant === 'linear' || variant === 'discounted'
@@ -192,7 +192,7 @@ export function cfrAlgorithm<S>(
  * @index function Counterfactual regret minimisation for imperfect-information games.
  * @example
  * ```ts
- * import { cfr, kuhnPoker } from 'mdml-engine/games'
+ * import { cfr, kuhnPoker } from 'omai-engine/games'
  * cfr(kuhnPoker(), { iterations: 200 }).exploitability < 0.01 // => true
  * ```
  */
@@ -219,7 +219,7 @@ export function cfr<S>(game: ExtensiveGame<S> | GameTree, options: CfrOptions = 
  * @concept counterfactual-regret
  * @example
  * ```ts
- * import { cfrPlus, kuhnPoker } from 'mdml-engine/games'
+ * import { cfrPlus, kuhnPoker } from 'omai-engine/games'
  * cfrPlus(kuhnPoker(), { iterations: 200 }).exploitability < 0.001 // => true
  * ```
  */

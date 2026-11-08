@@ -8,8 +8,8 @@ import io
 import numpy as np
 from dppy.exact_sampling import elementary_symmetric_polynomials
 from dppy.finite_dpps import FiniteDPP
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray, rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray, rng
 
 REFERENCE: dict[str, str] = {"dppy": "0.3.3", "numpy": np.__version__}
 

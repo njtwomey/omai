@@ -7,7 +7,7 @@
  * it can be inspected, counted and pruned, not a feature store.
  */
 
-import { type Json, MdmlError, maxOf, minOf } from '../base/index.ts'
+import { type Json, maxOf, minOf, OmaiError } from '../base/index.ts'
 import type { Estimator, LearnData } from './estimator.ts'
 import { crossValScore } from './model-selection/cross-validation.ts'
 import { fromView } from './validation.ts'
@@ -89,11 +89,11 @@ const SYMBOL: Readonly<Record<FeatureArithmetic, string>> = { add: '+', subtract
  * @param target - The name of the table to build features for.
  * @param options - Primitives, depth and the cap.
  * @returns The features of the target table, one value per row, by increasing depth.
- * @throws MdmlError with code `value` for an unknown table, a child pointing at a missing parent, or a parent index out of range.
+ * @throws OmaiError with code `value` for an unknown table, a child pointing at a missing parent, or a parent index out of range.
  * @concept feature-engineering
  * @example
  * ```ts
- * import { deepFeatureSynthesis } from 'mdml-engine/learn'
+ * import { deepFeatureSynthesis } from 'omai-engine/learn'
  * const customers = { name: 'customers', columns: { age: [30, 40] } }
  * const orders = { name: 'orders', columns: { customer: [0, 0, 1], amount: [5, 7, 2] }, parent: { table: 'customers', key: 'customer' } }
  * deepFeatureSynthesis([customers, orders], 'customers', { aggregations: ['sum'] }).map((f) => f.name) // => ['age', 'COUNT(orders)', 'SUM(orders.amount)']
@@ -105,7 +105,7 @@ export function deepFeatureSynthesis(
   options: SynthesisOptions = {},
 ): SynthesisedFeature[] {
   const byName = new Map(tables.map((t) => [t.name, t]))
-  if (!byName.has(target)) throw new MdmlError('value', `deepFeatureSynthesis: no table '${target}'`)
+  if (!byName.has(target)) throw new OmaiError('value', `deepFeatureSynthesis: no table '${target}'`)
   const aggs = options.aggregations ?? DEFAULT_AGGREGATIONS
   const transforms = options.transforms ?? DEFAULT_TRANSFORMS
   const maxDepth = options.maxDepth ?? 1
@@ -118,14 +118,14 @@ export function deepFeatureSynthesis(
     if (t.parent === undefined) continue
     const parent = byName.get(t.parent.table)
     if (parent === undefined)
-      throw new MdmlError('value', `deepFeatureSynthesis: '${t.name}' points at a missing table '${t.parent.table}'`)
+      throw new OmaiError('value', `deepFeatureSynthesis: '${t.name}' points at a missing table '${t.parent.table}'`)
     const key = t.columns[t.parent.key]
     if (key === undefined)
-      throw new MdmlError('value', `deepFeatureSynthesis: '${t.name}' has no key column '${t.parent.key}'`)
+      throw new OmaiError('value', `deepFeatureSynthesis: '${t.name}' has no key column '${t.parent.key}'`)
     for (let i = 0; i < key.length; i++) {
       const k = key[i] ?? -1
       if (!(Number.isInteger(k) && k >= 0 && k < rowsOf(parent)))
-        throw new MdmlError(
+        throw new OmaiError(
           'value',
           `deepFeatureSynthesis: '${t.name}.${t.parent.key}' has a row index outside '${parent.name}'`,
         )
@@ -262,9 +262,9 @@ function correlation(a: ArrayLike<number>, b: ArrayLike<number>): number {
  * @concept feature-engineering
  * @example
  * ```ts
- * import { selectSynthesised } from 'mdml-engine/learn'
- * import { defineEstimator } from 'mdml-engine/learn'
- * import { asTensor, full, item, mean } from 'mdml-engine/tensor'
+ * import { selectSynthesised } from 'omai-engine/learn'
+ * import { defineEstimator } from 'omai-engine/learn'
+ * import { asTensor, full, item, mean } from 'omai-engine/tensor'
  * const meanModel = defineEstimator({ name: 'mean', kind: 'regressor', fit: (d) => ({ m: item(mean(d.y as never)) }), methods: (p) => ({ predict: (x) => full([asTensor(x).shape[0] as number], p.m) }) }, {})
  * const f = { name: 'a', values: Float64Array.from([1, 2, 3, 4, 5, 6, 7, 8]), depth: 0, definition: 'a' }
  * selectSynthesised([f], [1, 2, 3, 4, 5, 6, 7, 8], { estimator: meanModel, maxFeatures: 1, folds: 2 }).features.length // => 1

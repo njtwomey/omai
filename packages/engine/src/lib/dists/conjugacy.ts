@@ -6,7 +6,7 @@
  * to update it from observations, as probabilistic programs use to skip sampling.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { inv } from '../numerics/linalg/index.ts'
 import {
   add,
@@ -57,12 +57,12 @@ export interface ConjugatePair {
 const count = (data: Value): number => data.shape[0] ?? 0
 const known = (fixed: Readonly<Record<string, Value>>, name: string, pair: string): Value => {
   const v = fixed[name]
-  if (v === undefined) throw new MdmlError('value', `conjugatePosterior: ${pair} needs the known ${name}`)
+  if (v === undefined) throw new OmaiError('value', `conjugatePosterior: ${pair} needs the known ${name}`)
   return v
 }
 const priorParam = (prior: Distribution, name: string): Value => {
   const v = prior.params[name]
-  if (v === undefined) throw new MdmlError('value', `conjugatePosterior: the prior has no parameter ${name}`)
+  if (v === undefined) throw new OmaiError('value', `conjugatePosterior: the prior has no parameter ${name}`)
   return v
 }
 const transposeLast = (m: Value): Value => swapaxes(m, -1, -2)
@@ -268,7 +268,7 @@ const symmetrise = (m: Value): Value => mul(add(m, transposeLast(m)), 0.5)
  * @returns The conjugate pair, or undefined.
  * @example
  * ```ts
- * import { conjugatePrior } from 'mdml-engine/dists'
+ * import { conjugatePrior } from 'omai-engine/dists'
  * conjugatePrior('poisson', 'rate')?.prior // => 'gamma'
  * ```
  */
@@ -285,12 +285,12 @@ export function conjugatePrior(likelihood: string, parameter: string): Conjugate
  * @param data - Observations along the first axis.
  * @param fixed - The likelihood's known parameters.
  * @returns The posterior distribution.
- * @throws MdmlError with code `not-implemented` when the pair is not conjugate here, or `value` when the prior's
+ * @throws OmaiError with code `not-implemented` when the pair is not conjugate here, or `value` when the prior's
  *   family does not match or a known parameter is missing.
  * @example
  * ```ts
- * import { beta, conjugatePosterior } from 'mdml-engine/dists'
- * import { item } from 'mdml-engine/tensor'
+ * import { beta, conjugatePosterior } from 'omai-engine/dists'
+ * import { item } from 'omai-engine/tensor'
  * // Beta(1, 1) and three successes in four Bernoulli trials: Beta(4, 2), with mean 2/3.
  * item(conjugatePosterior(beta(1, 1), 'bernoulli', 'probs', [1, 1, 0, 1]).mean()) // => 0.6666666666666666
  * ```
@@ -304,9 +304,9 @@ export function conjugatePosterior(
 ): Distribution {
   const pair = conjugatePrior(likelihood, parameter)
   if (pair === undefined)
-    throw new MdmlError('not-implemented', `conjugatePosterior: no conjugate prior for ${likelihood}.${parameter}`)
+    throw new OmaiError('not-implemented', `conjugatePosterior: no conjugate prior for ${likelihood}.${parameter}`)
   if (pair.prior !== prior.name)
-    throw new MdmlError('value', `conjugatePosterior: ${likelihood}.${parameter} takes a ${pair.prior} prior`)
+    throw new OmaiError('value', `conjugatePosterior: ${likelihood}.${parameter} takes a ${pair.prior} prior`)
   const values: Record<string, Value> = {}
   for (const [k, v] of Object.entries(fixed)) values[k] = promoteFloat(v)[0] as Value
   return pair.posterior(prior, promoteFloat(data)[0] as Value, values)

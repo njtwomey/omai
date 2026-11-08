@@ -4,7 +4,7 @@
  * aleatoric (observation noise) components by the law of total variance and mutual information (BALD).
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { bootstrapIndices, foldIn, type Key } from '../random/index.ts'
 import { asTensor, fromStorage, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
 import { type Algorithm, channels, runAlgorithm, stateFromJson, stateToJson } from '../trace/index.ts'
@@ -85,8 +85,8 @@ function isClassificationProba(member: TensorLike, options: DeepEnsemblePredictO
  * @concept uncertainty-quantification
  * @example
  * ```ts
- * import { deepEnsemblePredict } from 'mdml-engine/learn'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { deepEnsemblePredict } from 'omai-engine/learn'
+ * import { toFlat } from 'omai-engine/tensor'
  * const u = deepEnsemblePredict([[1, 2], [3, 2]], { memberVariances: [[0.5, 0.25], [0.5, 0.25]] })
  * toFlat(u.mean) // => [2, 2]
  * toFlat(u.epistemicVariance) // => [1, 0]
@@ -99,14 +99,14 @@ export function deepEnsemblePredict(
   options: DeepEnsemblePredictOptions = {},
 ): UncertaintySummary {
   const M = members.length
-  if (M === 0) throw new MdmlError('value', 'deepEnsemblePredict: need at least one ensemble member')
+  if (M === 0) throw new OmaiError('value', 'deepEnsemblePredict: need at least one ensemble member')
   if (isClassificationProba(members[0] as TensorLike, options)) {
     const views = members.map((m) => matrixView(m, 'deepEnsemblePredict'))
     const n = views[0]?.n ?? 0
     const k = views[0]?.d ?? 0
     for (const v of views) {
       if (v.n !== n || v.d !== k) {
-        throw new MdmlError(
+        throw new OmaiError(
           'shape',
           'deepEnsemblePredict: all classification member probabilities must have shape [n, k]',
         )
@@ -157,18 +157,18 @@ export function deepEnsemblePredict(
   const vecs = members.map((m) => targetVector(m, 'deepEnsemblePredict'))
   const n = vecs[0]?.length ?? 0
   for (const v of vecs) {
-    if (v.length !== n) throw new MdmlError('shape', 'deepEnsemblePredict: all member predictions must have length n')
+    if (v.length !== n) throw new OmaiError('shape', 'deepEnsemblePredict: all member predictions must have length n')
   }
   const vars =
     options.memberVariances === undefined
       ? undefined
       : options.memberVariances.map((v) => {
           const tv = targetVector(v, 'deepEnsemblePredict', n)
-          for (const s of tv) if (s < 0) throw new MdmlError('value', 'deepEnsemblePredict: variances must be >= 0')
+          for (const s of tv) if (s < 0) throw new OmaiError('value', 'deepEnsemblePredict: variances must be >= 0')
           return tv
         })
   if (vars !== undefined && vars.length !== M) {
-    throw new MdmlError('shape', 'deepEnsemblePredict: memberVariances must match members length')
+    throw new OmaiError('shape', 'deepEnsemblePredict: memberVariances must match members length')
   }
 
   const meanData = new Float64Array(n)
@@ -226,8 +226,8 @@ export function deepEnsemblePredict(
  * @concept uncertainty-quantification
  * @example
  * ```ts
- * import { ensembleUncertainty } from 'mdml-engine/learn'
- * import { tensor, toFlat } from 'mdml-engine/tensor'
+ * import { ensembleUncertainty } from 'omai-engine/learn'
+ * import { tensor, toFlat } from 'omai-engine/tensor'
  * const member = (slope: number) => ({ estimator: 'line', kind: 'regressor', params: {}, predict: (x) => tensor(x.map(([v]) => slope * v)) })
  * toFlat(ensembleUncertainty([member(1), member(3)], [[1]]).epistemicVariance) // => [1]
  * ```
@@ -237,7 +237,7 @@ export function ensembleUncertainty(
   x: TensorLike,
   options: DeepEnsemblePredictOptions = {},
 ): UncertaintySummary {
-  if (members.length === 0) throw new MdmlError('value', 'ensembleUncertainty: need at least one member')
+  if (members.length === 0) throw new OmaiError('value', 'ensembleUncertainty: need at least one member')
   const classifier = members[0]?.kind === 'classifier'
   const predictions = members.map((f) =>
     (classifier
@@ -278,9 +278,9 @@ export interface DeepEnsembleState {
  * @concept uncertainty-quantification
  * @example
  * ```ts
- * import { deepEnsembleAlgorithm } from 'mdml-engine/learn'
- * import { defineEstimator } from 'mdml-engine/learn'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { deepEnsembleAlgorithm } from 'omai-engine/learn'
+ * import { defineEstimator } from 'omai-engine/learn'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const mean = defineEstimator(
  *   { name: 'mean', kind: 'regressor', fit: (d) => ({ m: d.y.reduce((a, b) => a + b, 0) / d.y.length }), methods: (p) => ({ predict: (x) => x.map(() => p.m) }) },
  *   {},
@@ -347,9 +347,9 @@ export interface DeepEnsemble {
  * @concept uncertainty-quantification
  * @example
  * ```ts
- * import { deepEnsemble } from 'mdml-engine/learn'
- * import { defineEstimator } from 'mdml-engine/learn'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { deepEnsemble } from 'omai-engine/learn'
+ * import { defineEstimator } from 'omai-engine/learn'
+ * import { toFlat } from 'omai-engine/tensor'
  * const mean = defineEstimator(
  *   { name: 'mean', kind: 'regressor', fit: (d) => ({ m: d.y.reduce((a, b) => a + b, 0) / d.y.length }), methods: (p) => ({ predict: (x) => x.map(() => p.m) }) },
  *   {},
@@ -376,7 +376,7 @@ export function deepEnsemble(estimator: Estimator, data: LearnData, options: Dee
  * @concept uncertainty-quantification
  * @example
  * ```ts
- * import { disagreement } from 'mdml-engine/learn'
+ * import { disagreement } from 'omai-engine/learn'
  * disagreement([[1, 5], [3, 5]]) // => [1, 0]
  * ```
  */
@@ -437,9 +437,9 @@ function unpackPass(out: StochasticPassOutput): {
  * @concept uncertainty-quantification
  * @example
  * ```ts
- * import { mcDropoutAlgorithm } from 'mdml-engine/learn'
- * import { key, normal } from 'mdml-engine/random'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { mcDropoutAlgorithm } from 'omai-engine/learn'
+ * import { key, normal } from 'omai-engine/random'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const alg = mcDropoutAlgorithm((k) => normal(k, [2]), { passes: 4, key: key(0) })
  * runAlgorithm(alg, { maxSteps: 4, key: key(0) }).state.samples.length // => 4
  * ```
@@ -479,7 +479,7 @@ export function mcDropoutAlgorithm(
       const { mean, variance } = unpackPass(forward(passKey))
       const flat = Float64Array.from(toFlat(mean))
       const n = flat.length
-      if (s.t > 0 && n !== s.sum.length) throw new MdmlError('shape', 'mcDropout: the passes differ in shape')
+      if (s.t > 0 && n !== s.sum.length) throw new OmaiError('shape', 'mcDropout: the passes differ in shape')
       const sum = new Float64Array(n)
       const sumSq = new Float64Array(n)
       const varSum = new Float64Array(n)
@@ -539,9 +539,9 @@ export function mcDropoutAlgorithm(
  * @concept uncertainty-quantification
  * @example
  * ```ts
- * import { mcDropoutPredict } from 'mdml-engine/learn'
- * import { key, normal } from 'mdml-engine/random'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { mcDropoutPredict } from 'omai-engine/learn'
+ * import { key, normal } from 'omai-engine/random'
+ * import { toFlat } from 'omai-engine/tensor'
  * const res = mcDropoutPredict((k) => normal(k, [2]), { passes: 10, key: key(42) })
  * res.samples.length // => 10
  * toFlat(res.epistemicVariance).every((v) => v > 0) // => true
@@ -570,8 +570,8 @@ export function mcDropoutPredict(
  * @concept uncertainty-quantification
  * @example
  * ```ts
- * import { monteCarloDropout } from 'mdml-engine/learn'
- * import { key } from 'mdml-engine/random'
+ * import { monteCarloDropout } from 'omai-engine/learn'
+ * import { key } from 'omai-engine/random'
  * monteCarloDropout(() => [1, 2], { passes: 3, key: key(0) }).samples.length // => 3
  * ```
  */

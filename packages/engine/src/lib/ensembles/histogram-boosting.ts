@@ -50,8 +50,8 @@ function invertedCdfPercentile(sorted: ArrayLike<number>, percent: number): numb
  * @returns The thresholds and the binned data.
  * @example
  * ```ts
- * import { binFeatures } from 'mdml-engine/ensembles'
- * import { matrixView } from 'mdml-engine/learn'
+ * import { binFeatures } from 'omai-engine/ensembles'
+ * import { matrixView } from 'omai-engine/learn'
  * const b = binFeatures(matrixView([[1], [2], [4], [Number.NaN]], 'demo', { allowNaN: true }), 255)
  * b.edges[0] // => [1.5, 3]
  * Array.from(b.codes) // => [0, 1, 2, 3]
@@ -353,8 +353,8 @@ const histDefaults = (
  * @concept boosting
  * @example
  * ```ts
- * import { histGradientBoostingRegressor } from 'mdml-engine/ensembles'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { histGradientBoostingRegressor } from 'omai-engine/ensembles'
+ * import { toFlat } from 'omai-engine/tensor'
  * const x = Array.from({ length: 60 }, (_, i) => [i / 60])
  * const y = x.map(([a = 0]) => (a < 0.5 ? 1 : 3))
  * const fitted = histGradientBoostingRegressor({ nEstimators: 30, minSamplesLeaf: 5 }).fit({ x, y })
@@ -382,8 +382,8 @@ export function histGradientBoostingRegressor(
  * @index estimator Histogram gradient boosting with leaf-wise growth.
  * @example
  * ```ts
- * import { histGradientBoostingClassifier } from 'mdml-engine/ensembles'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { histGradientBoostingClassifier } from 'omai-engine/ensembles'
+ * import { toFlat } from 'omai-engine/tensor'
  * const x = Array.from({ length: 60 }, (_, i) => [i / 60])
  * const y = x.map(([a = 0]) => (a < 0.5 ? 0 : 1))
  * toFlat(histGradientBoostingClassifier({ nEstimators: 20, minSamplesLeaf: 5 }).fit({ x, y }).predict([[0.1], [0.9]])) // => [0, 1]

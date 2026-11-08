@@ -4,7 +4,7 @@
  * generator of children's measurements whose conditional quantiles are known exactly.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import {
   type DatasetGenerator,
   type DatasetRef,
@@ -47,7 +47,7 @@ export interface DiabetesOptions {
  * @concept datasets
  * @example
  * ```ts
- * import { diabetes } from 'mdml-engine/datasets'
+ * import { diabetes } from 'omai-engine/datasets'
  * diabetes().x.shape // => [442, 10]
  * ```
  */
@@ -84,15 +84,15 @@ export function diabetes(options: DiabetesOptions = {}): RegressionData {
  *
  * @param set - Which data set, 1 to 4.
  * @returns The dataset.
- * @throws MdmlError with code `value` for a set outside 1 to 4.
+ * @throws OmaiError with code `value` for a set outside 1 to 4.
  * @example
  * ```ts
- * import { anscombe } from 'mdml-engine/datasets'
+ * import { anscombe } from 'omai-engine/datasets'
  * anscombe(4).x.shape // => [11, 1]
  * ```
  */
 export function anscombe(set: 1 | 2 | 3 | 4): RegressionData {
-  if (![1, 2, 3, 4].includes(set)) throw new MdmlError('value', `anscombe: set ${set} is not 1 to 4`)
+  if (![1, 2, 3, 4].includes(set)) throw new OmaiError('value', `anscombe: set ${set} is not 1 to 4`)
   const x = ANSCOMBE_COLUMNS[`x${set}`] as readonly number[]
   const y = ANSCOMBE_COLUMNS[`y${set}`] as readonly number[]
   return xy(matrix(x, x.length, 1), vector(y), {
@@ -116,7 +116,7 @@ export function anscombe(set: 1 | 2 | 3 | 4): RegressionData {
  * @returns The dataset with targets `[20, 3]`.
  * @example
  * ```ts
- * import { linnerud } from 'mdml-engine/datasets'
+ * import { linnerud } from 'omai-engine/datasets'
  * linnerud().y.shape // => [20, 3]
  * ```
  */
@@ -151,7 +151,7 @@ const MTCARS_META = {
  * @returns The table.
  * @example
  * ```ts
- * import { mtcars } from 'mdml-engine/datasets'
+ * import { mtcars } from 'omai-engine/datasets'
  * mtcars().target // => 'mpg'
  * ```
  */
@@ -169,7 +169,7 @@ export function mtcars(): TableData {
  * @returns The dataset.
  * @example
  * ```ts
- * import { mtcarsRegression } from 'mdml-engine/datasets'
+ * import { mtcarsRegression } from 'omai-engine/datasets'
  * mtcarsRegression().featureNames.length // => 10
  * ```
  */
@@ -209,17 +209,17 @@ const HOUSING_FEATURES = [
  *
  * @param bytes - The gzipped tar archive.
  * @returns The dataset.
- * @throws MdmlError with code `value` when the archive has no `cal_housing.data`.
+ * @throws OmaiError with code `value` when the archive has no `cal_housing.data`.
  * @example
  * ```ts
- * import { parseCaliforniaHousing } from 'mdml-engine/datasets'
+ * import { parseCaliforniaHousing } from 'omai-engine/datasets'
  * typeof parseCaliforniaHousing // => 'function'
  * ```
  */
 export async function parseCaliforniaHousing(bytes: Uint8Array): Promise<RegressionData> {
   const files = untar(await gunzip(bytes))
   const entry = [...files.entries()].find(([name]) => name.endsWith('cal_housing.data'))
-  if (entry === undefined) throw new MdmlError('value', 'parseCaliforniaHousing: no cal_housing.data in the archive')
+  if (entry === undefined) throw new OmaiError('value', 'parseCaliforniaHousing: no cal_housing.data in the archive')
   const rows = parseCsv(new TextDecoder().decode(entry[1]), { header: false }).rows.map((r) => r.map(Number))
   const n = rows.length
   const x = new Float64Array(n * 8)
@@ -258,7 +258,7 @@ export async function parseCaliforniaHousing(bytes: Uint8Array): Promise<Regress
  *
  * @example
  * ```ts
- * import { californiaHousing } from 'mdml-engine/datasets'
+ * import { californiaHousing } from 'omai-engine/datasets'
  * californiaHousing.kind // => 'remote'
  * ```
  */
@@ -298,7 +298,7 @@ export interface GrowthChart {
  * @returns The chart.
  * @example
  * ```ts
- * import { growthChart } from 'mdml-engine/datasets'
+ * import { growthChart } from 'omai-engine/datasets'
  * growthChart('stature', 'female').ageMonths[0] // => 24
  * ```
  */
@@ -338,7 +338,7 @@ function interpolate(xs: readonly number[], ys: readonly number[], x: number): n
  * @returns The measurement.
  * @example
  * ```ts
- * import { growthChart, growthValue } from 'mdml-engine/datasets'
+ * import { growthChart, growthValue } from 'omai-engine/datasets'
  * const chart = growthChart('weight', 'male')
  * growthValue(chart, 24, 0) === chart.M[0] // => true
  * ```
@@ -357,8 +357,8 @@ export function growthValue(chart: GrowthChart, ageMonths: number, z: number): n
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { growthCurves } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { growthCurves } from 'omai-engine/datasets'
  * generate(growthCurves, { knobs: { n: 20, measure: 'stature' } }).data.targetNames // => ['stature (cm)']
  * ```
  */

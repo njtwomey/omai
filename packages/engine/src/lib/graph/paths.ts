@@ -5,7 +5,7 @@
  * `k-shortest-paths.ts`.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { fromStorage, type Tensor } from '../tensor/index.ts'
 import { runAlgorithm } from '../trace/index.ts'
 import { weightFunction } from './_run.ts'
@@ -64,12 +64,12 @@ function dijkstraCore(
  * @param source - The source.
  * @param options - `weighted` (default true), and a `target` to stop at once it is settled.
  * @returns Distances and predecessors.
- * @throws MdmlError with code `domain` when a negative weight is reached.
+ * @throws OmaiError with code `domain` when a negative weight is reached.
  * @concept shortest-paths
  * @index function Single-source shortest paths with non-negative weights.
  * @example
  * ```ts
- * import { dijkstra, graph } from 'mdml-engine/graph'
+ * import { dijkstra, graph } from 'omai-engine/graph'
  * const r = dijkstra(graph([[0, 1, 4], [0, 2, 1], [2, 1, 2], [1, 3, 5]]), 0)
  * Array.from(r.distance) // => [0, 3, 1, 8]
  * Array.from(r.predecessor) // => [-1, 2, 0, 1]
@@ -93,17 +93,17 @@ export function dijkstra(
  * @param source - The source.
  * @param options - `weighted` (default true).
  * @returns Distances and predecessors.
- * @throws MdmlError with code `value` when a negative cycle is reachable from the source.
+ * @throws OmaiError with code `value` when a negative cycle is reachable from the source.
  * @concept shortest-paths
  * @example
  * ```ts
- * import { bellmanFord, digraph } from 'mdml-engine/graph'
+ * import { bellmanFord, digraph } from 'omai-engine/graph'
  * Array.from(bellmanFord(digraph([[0, 1, 4], [0, 2, 5], [2, 1, -3]]), 0).distance) // => [0, 2, 5]
  * ```
  */
 export function bellmanFord(g: Graph, source: NodeId, options: PathOptions = {}): ShortestPaths {
   const { state } = runAlgorithm(bellmanFordAlgorithm(g, source, options), { maxSteps: g.n + 1 })
-  if (state.negativeCycle) throw new MdmlError('value', 'bellmanFord: the graph has a negative cycle')
+  if (state.negativeCycle) throw new OmaiError('value', 'bellmanFord: the graph has a negative cycle')
   return { source: nodeIndex(g, source), distance: state.distance, predecessor: state.predecessor }
 }
 
@@ -127,11 +127,11 @@ export interface AStarResult {
  * @param target - The target.
  * @param options - The heuristic (default 0) and `weighted` (default true).
  * @returns The path, its length and the nodes expanded.
- * @throws MdmlError with code `domain` for a negative weight.
+ * @throws OmaiError with code `domain` for a negative weight.
  * @concept shortest-paths
  * @example
  * ```ts
- * import { aStar, gridGraph } from 'mdml-engine/graph'
+ * import { aStar, gridGraph } from 'omai-engine/graph'
  * const g = gridGraph(3, 3)
  * const manhattan = (v: number) => Math.abs(Math.floor(v / 3) - 2) + Math.abs((v % 3) - 2)
  * const r = aStar(g, 0, 8, { heuristic: manhattan })
@@ -158,18 +158,18 @@ export function aStar(
  * @param g - The graph.
  * @param options - `weighted` (default true).
  * @returns The distance matrix and the predecessor matrix.
- * @throws MdmlError with code `value` when there is a negative cycle.
+ * @throws OmaiError with code `value` when there is a negative cycle.
  * @concept shortest-paths
  * @example
  * ```ts
- * import { floydWarshall, pathGraph } from 'mdml-engine/graph'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { floydWarshall, pathGraph } from 'omai-engine/graph'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(floydWarshall(pathGraph(3)).distance) // => [[0, 1, 2], [1, 0, 1], [2, 1, 0]]
  * ```
  */
 export function floydWarshall(g: Graph, options: PathOptions = {}): AllPairsShortestPaths {
   const { state } = runAlgorithm(floydWarshallAlgorithm(g, options), { maxSteps: g.n + 1 })
-  if (state.negativeCycle) throw new MdmlError('value', 'floydWarshall: the graph has a negative cycle')
+  if (state.negativeCycle) throw new OmaiError('value', 'floydWarshall: the graph has a negative cycle')
   const n = g.n
   return {
     distance: fromStorage(state.distance, [n, n], 'float64'),
@@ -185,12 +185,12 @@ export function floydWarshall(g: Graph, options: PathOptions = {}): AllPairsShor
  * @param g - The graph.
  * @param options - `weighted` (default true).
  * @returns The distance matrix and the predecessor matrix.
- * @throws MdmlError with code `value` when there is a negative cycle.
+ * @throws OmaiError with code `value` when there is a negative cycle.
  * @concept shortest-paths
  * @example
  * ```ts
- * import { digraph, johnson } from 'mdml-engine/graph'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { digraph, johnson } from 'omai-engine/graph'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(johnson(digraph([[0, 1, 2], [1, 2, -1]])).distance)[0] // => [0, 2, 1]
  * ```
  */
@@ -213,7 +213,7 @@ export function johnson(g: Graph, options: PathOptions = {}): AllPairsShortestPa
         }
       }
     }
-    if (changed && round === n) throw new MdmlError('value', 'johnson: the graph has a negative cycle')
+    if (changed && round === n) throw new OmaiError('value', 'johnson: the graph has a negative cycle')
   }
   const reweighted = (k: number): number => {
     const u = g.out.indices[k] ?? 0
@@ -256,7 +256,7 @@ function sourceOf(g: Graph, k: number): number {
  * @returns The nodes from source to target, or null when the target is unreachable.
  * @example
  * ```ts
- * import { dijkstra, pathGraph, reconstructPath } from 'mdml-engine/graph'
+ * import { dijkstra, pathGraph, reconstructPath } from 'omai-engine/graph'
  * reconstructPath(dijkstra(pathGraph(4), 0).predecessor, 0, 3) // => [0, 1, 2, 3]
  * ```
  */
@@ -297,7 +297,7 @@ export interface WeightedPath {
  * @returns The path and its length, or null when the target is unreachable.
  * @example
  * ```ts
- * import { graph, shortestPath } from 'mdml-engine/graph'
+ * import { graph, shortestPath } from 'omai-engine/graph'
  * shortestPath(graph([['a', 'b', 1], ['b', 'c', 1], ['a', 'c', 5]]), 'a', 'c') // => { path: [0, 1, 2], cost: 2 }
  * ```
  */

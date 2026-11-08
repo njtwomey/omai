@@ -6,7 +6,7 @@
  * `houghLine` of `signal/image` exactly.
  */
 import type { Json } from '../base/index.ts'
-import { MdmlError, maxOf } from '../base/index.ts'
+import { maxOf, OmaiError } from '../base/index.ts'
 import { type CannyOptions, cannyStages } from '../signal/image/index.ts'
 import { fromStorage, type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
 import {
@@ -63,8 +63,8 @@ export const cannyContract: Contract<CannyState, CannyPath> = defineContract({
  * @concept edge-detection
  * @example
  * ```ts
- * import { cannyAlgorithm } from 'mdml-engine/vision'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { cannyAlgorithm } from 'omai-engine/vision'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const x = Array.from({ length: 12 }, () => Array.from({ length: 12 }, (_, j) => (j < 6 ? 0 : 1)))
  * runAlgorithm(cannyAlgorithm(x), { maxSteps: 50 }).state.stage // => 'hysteresis'
  * ```
@@ -178,8 +178,8 @@ export interface HoughGeometry {
  * @concept hough-transform
  * @example
  * ```ts
- * import { houghLineAlgorithm } from 'mdml-engine/vision'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { houghLineAlgorithm } from 'omai-engine/vision'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const edges = Array.from({ length: 5 }, () => [0, 0, 1, 0, 0])
  * const { algorithm } = houghLineAlgorithm(edges)
  * Math.max(...runAlgorithm(algorithm, { maxSteps: 20 }).state.accumulator) // => 5
@@ -273,13 +273,13 @@ export interface HoughPeaksState {
  * @param geometry - Its angles and distances.
  * @param options - Threshold, suppression window and the number of peaks.
  * @returns The algorithm.
- * @throws MdmlError with code `shape` when the accumulator does not match the geometry.
+ * @throws OmaiError with code `shape` when the accumulator does not match the geometry.
  * @concept hough-transform
  * @example
  * ```ts
- * import { houghLineAlgorithm, houghPeaksAlgorithm } from 'mdml-engine/vision'
- * import { runAlgorithm } from 'mdml-engine/trace'
- * import { fromStorage } from 'mdml-engine/tensor'
+ * import { houghLineAlgorithm, houghPeaksAlgorithm } from 'omai-engine/vision'
+ * import { runAlgorithm } from 'omai-engine/trace'
+ * import { fromStorage } from 'omai-engine/tensor'
  * const edges = Array.from({ length: 20 }, () => Array.from({ length: 20 }, (_, j) => (j === 7 ? 1 : 0)))
  * const { algorithm, geometry } = houghLineAlgorithm(edges)
  * const acc = fromStorage(runAlgorithm(algorithm, { maxSteps: 100 }).state.accumulator, [...geometry.shape], 'float64')
@@ -293,7 +293,7 @@ export function houghPeaksAlgorithm(
 ): Algorithm<HoughPeaksState, GreedyPath> {
   const [nd, nt] = geometry.shape
   if (accumulator.shape[0] !== nd || accumulator.shape[1] !== nt)
-    throw new MdmlError('shape', 'houghLinePeaks: the accumulator does not match the geometry')
+    throw new OmaiError('shape', 'houghLinePeaks: the accumulator does not match the geometry')
   const acc0 = Float64Array.from(toFlat(accumulator))
   const maxVotes = acc0.reduce((a, b) => Math.max(a, b), 0)
   const threshold = options.threshold ?? 0.5 * maxVotes
@@ -349,9 +349,9 @@ export function houghPeaksAlgorithm(
  * @concept hough-transform
  * @example
  * ```ts
- * import { houghLineAlgorithm, houghLinePeaks } from 'mdml-engine/vision'
- * import { runAlgorithm } from 'mdml-engine/trace'
- * import { fromStorage } from 'mdml-engine/tensor'
+ * import { houghLineAlgorithm, houghLinePeaks } from 'omai-engine/vision'
+ * import { runAlgorithm } from 'omai-engine/trace'
+ * import { fromStorage } from 'omai-engine/tensor'
  * const edges = Array.from({ length: 20 }, (_, i) => Array.from({ length: 20 }, (_, j) => (j === 7 ? 1 : 0)))
  * const { algorithm, geometry } = houghLineAlgorithm(edges)
  * const acc = runAlgorithm(algorithm, { maxSteps: 100 }).state.accumulator

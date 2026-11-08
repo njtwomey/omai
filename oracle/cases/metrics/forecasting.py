@@ -8,9 +8,9 @@ from importlib.metadata import version
 import numpy as np
 import properscoring as ps
 import torchmetrics.functional.regression as TR
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray, rng
-from mdml_oracle.torch_helpers import to_numpy, to_torch
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray, rng
+from omai_oracle.torch_helpers import to_numpy, to_torch
 
 REFERENCE: dict[str, str] = {"torchmetrics": version("torchmetrics"), "properscoring": "0.1"}
 

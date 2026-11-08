@@ -1,5 +1,5 @@
 /**
- * Headless views of exposition records (`mdml-engine/exposition`): for each kind of record a method returns (decision
+ * Headless views of exposition records (`omai-engine/exposition`): for each kind of record a method returns (decision
  * surfaces, regularisation paths, trees, clustering steps, attributions and many more), the chart option, scene or
  * player frames that explain it. `viewFor(kind)` is the registry naming each kind's standard view and
  * `stillOf(record)` draws any record as a headless still.

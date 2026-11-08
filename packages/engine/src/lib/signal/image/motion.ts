@@ -4,7 +4,7 @@
  * squares) and Horn-Schunck (a global smoothness prior solved by Jacobi iterations, also as a traced algorithm).
  */
 
-import { type Json, MdmlError } from '../../base/index.ts'
+import { type Json, OmaiError } from '../../base/index.ts'
 import { fft2, ifft2 } from '../../numerics/fourier/index.ts'
 import { fromStorage, primalOf, type Tensor, type TensorLike, toFlat } from '../../tensor/index.ts'
 import { type Algorithm, type RunOptions, runAlgorithm } from '../../trace/index.ts'
@@ -28,8 +28,8 @@ import { gaussianFilter, uniformFilter } from './filters.ts'
  * @concept template-matching
  * @example
  * ```ts
- * import { image } from 'mdml-engine/signal'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { image } from 'omai-engine/signal'
+ * import { toArray } from 'omai-engine/tensor'
  * const x = [[0, 0, 0, 0], [0, 1, 2, 0], [0, 3, 4, 0], [0, 0, 0, 0]]
  * Math.round(((toArray(image.matchTemplate(x, [[1, 2], [3, 4]])) as number[][])[1]?.[1] ?? 0) * 1e9) / 1e9 // => 1
  * ```
@@ -37,7 +37,7 @@ import { gaussianFilter, uniformFilter } from './filters.ts'
 export function matchTemplate(x: TensorLike, template: TensorLike, padInput = false): Tensor {
   const img0 = planeOf(x, 'matchTemplate')
   const t = planeOf(template, 'matchTemplate')
-  if (t.h > img0.h || t.w > img0.w) throw new MdmlError('shape', 'matchTemplate: the template is larger than the image')
+  if (t.h > img0.h || t.w > img0.w) throw new OmaiError('shape', 'matchTemplate: the template is larger than the image')
   let img = img0
   let r0 = 0
   let c0 = 0
@@ -89,7 +89,7 @@ export function matchTemplate(x: TensorLike, template: TensorLike, padInput = fa
  * @concept image-registration
  * @example
  * ```ts
- * import { image } from 'mdml-engine/signal'
+ * import { image } from 'omai-engine/signal'
  * const a = Array.from({ length: 8 }, (_, i) => Array.from({ length: 8 }, (_, j) => Math.sin(i) + Math.cos(2 * j)))
  * const b = a.map((_, i) => a[(i + 6) % 8] as number[])
  * image.phaseCrossCorrelation(a, b).shift // => [-2, 0]
@@ -101,7 +101,7 @@ export function phaseCrossCorrelation(
 ): { readonly shift: [number, number]; readonly error: number; readonly phasediff: number } {
   const a = planeOf(reference, 'phaseCrossCorrelation')
   const b = planeOf(moving, 'phaseCrossCorrelation')
-  if (a.h !== b.h || a.w !== b.w) throw new MdmlError('shape', 'phaseCrossCorrelation: images differ in shape')
+  if (a.h !== b.h || a.w !== b.w) throw new OmaiError('shape', 'phaseCrossCorrelation: images differ in shape')
   const fa = fft2(fromStorage(a.data, [a.h, a.w], 'float64'))
   const fb = fft2(fromStorage(b.data, [b.h, b.w], 'float64'))
   const ar = toFlat(fa.re)
@@ -151,8 +151,8 @@ export function phaseCrossCorrelation(
  * @concept block-matching
  * @example
  * ```ts
- * import { image } from 'mdml-engine/signal'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { image } from 'omai-engine/signal'
+ * import { toFlat } from 'omai-engine/tensor'
  * const a = Array.from({ length: 16 }, (_, i) => Array.from({ length: 16 }, (_, j) => Math.sin(i / 2) * Math.cos(j / 3)))
  * const b = a.map((_, i) => (a[i - 1] ?? a[0]) as number[])
  * toFlat(image.blockMatching(a, b, { block: 4, radius: 2 }).vectors).slice(10, 12) // => [1, 0]
@@ -229,8 +229,8 @@ function derivatives(a: Plane, b: Plane): { ix: Float64Array; iy: Float64Array; 
  * @concept optical-flow
  * @example
  * ```ts
- * import { image } from 'mdml-engine/signal'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { image } from 'omai-engine/signal'
+ * import { toFlat } from 'omai-engine/tensor'
  * const f = (dx: number) => Array.from({ length: 20 }, (_, i) => Array.from({ length: 20 }, (_, j) => Math.sin((j - dx) / 3) + Math.cos(i / 4)))
  * Math.round((toFlat(image.lucasKanade(f(0), f(0.2)))[400 + 210] ?? 0) * 10) / 10 // => 0.2
  * ```
@@ -294,7 +294,7 @@ export interface HornSchunckState {
  * @concept optical-flow
  * @example
  * ```ts
- * import { image } from 'mdml-engine/signal'
+ * import { image } from 'omai-engine/signal'
  * image.hornSchunckAlgorithm([[0, 1], [1, 0]], [[1, 0], [0, 1]]).name // => 'horn-schunck'
  * ```
  */
@@ -364,8 +364,8 @@ export function hornSchunckAlgorithm(
  * @concept optical-flow
  * @example
  * ```ts
- * import { image } from 'mdml-engine/signal'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { image } from 'omai-engine/signal'
+ * import { toFlat } from 'omai-engine/tensor'
  * const f = (dx: number) => Array.from({ length: 16 }, (_, i) => Array.from({ length: 16 }, (_, j) => Math.sin((j - dx) / 3) + Math.cos(i / 4)))
  * (toFlat(image.hornSchunck(f(0), f(0.2), { alpha: 0.5 }))[256 + 136] ?? 0) > 0.1 // => true
  * ```

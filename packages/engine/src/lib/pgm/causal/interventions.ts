@@ -4,7 +4,7 @@
  * interventional means and covariances of linear-Gaussian networks.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { type Factor, factorValues } from '../factor.ts'
 import { variableElimination } from '../inference/elimination.ts'
 import { type BayesNet, bayesNet, bayesNode } from '../models/bayes-net.ts'
@@ -21,7 +21,7 @@ export type Interventions = Readonly<Record<string, string | number>>
 function stateIndex(states: readonly string[], v: string | number, name: string): number {
   const i = typeof v === 'number' ? v : states.indexOf(v)
   if (!(Number.isInteger(i) && i >= 0 && i < states.length))
-    throw new MdmlError('value', `do: ${name} has no state ${String(v)}`)
+    throw new OmaiError('value', `do: ${name} has no state ${String(v)}`)
   return i
 }
 
@@ -33,12 +33,12 @@ function stateIndex(states: readonly string[], v: string | number, name: string)
  * @param model - The model.
  * @param interventions - do(X = x) for each intervened variable.
  * @returns The mutilated model, of the same kind.
- * @throws MdmlError with code `value` for unknown variables or states.
+ * @throws OmaiError with code `value` for unknown variables or states.
  * @concept interventions
  * @example
  * ```ts
- * import { bayesNet } from 'mdml-engine/pgm'
- * import { doIntervention } from 'mdml-engine/pgm/causal'
+ * import { bayesNet } from 'omai-engine/pgm'
+ * import { doIntervention } from 'omai-engine/pgm/causal'
  * const bn = bayesNet([{ name: 'a', states: ['0', '1'], parents: [], cpt: [0.5, 0.5] }, { name: 'b', states: ['0', '1'], parents: ['a'], cpt: [0.9, 0.1, 0.2, 0.8] }])
  * const cut = doIntervention(bn, { b: '1' }) as typeof bn
  * cut.nodes.map((n) => [n.name, n.parents, n.cpt]) // => [['a', [], [0.5, 0.5]], ['b', [], [0, 1]]]
@@ -50,7 +50,7 @@ export function doIntervention(
 ): BayesNet | Scm | LinearGaussianBayesNet {
   const names = new Set(model.kind === 'scm' ? model.variables.map((v) => v.name) : model.nodes.map((n) => n.name))
   for (const v of Object.keys(interventions))
-    if (!names.has(v)) throw new MdmlError('value', `do: unknown variable ${v}`)
+    if (!names.has(v)) throw new OmaiError('value', `do: unknown variable ${v}`)
   if (model.kind === 'bayesNet') {
     return bayesNet(
       model.nodes.map((n) => {
@@ -66,7 +66,7 @@ export function doIntervention(
       model.nodes.map((n) => {
         const value = interventions[n.name]
         if (value === undefined) return n
-        if (typeof value !== 'number') throw new MdmlError('value', `do: ${n.name} needs a numeric value`)
+        if (typeof value !== 'number') throw new OmaiError('value', `do: ${n.name} needs a numeric value`)
         return { ...n, parents: [], weights: [], intercept: value, variance: 1e-300 }
       }),
     )
@@ -79,7 +79,7 @@ export function doIntervention(
         const s = stateIndex(v.states, value, v.name)
         return { ...v, parents: [], noise: [1], assign: [s] }
       }
-      if (typeof value !== 'number') throw new MdmlError('value', `do: ${v.name} needs a numeric value`)
+      if (typeof value !== 'number') throw new OmaiError('value', `do: ${v.name} needs a numeric value`)
       return {
         ...v,
         parents: [],
@@ -100,12 +100,12 @@ export function doIntervention(
  * @param interventions - The interventions.
  * @param evidence - Observed states after the intervention.
  * @returns The distribution over the query.
- * @throws MdmlError with code `value` when a query variable is intervened on.
+ * @throws OmaiError with code `value` when a query variable is intervened on.
  * @concept interventions
  * @example
  * ```ts
- * import { bayesNet, factorValues } from 'mdml-engine/pgm'
- * import { interventionalDistribution } from 'mdml-engine/pgm/causal'
+ * import { bayesNet, factorValues } from 'omai-engine/pgm'
+ * import { interventionalDistribution } from 'omai-engine/pgm/causal'
  * // Seeing b = 1 is evidence about a; setting b = 1 is not.
  * const bn = bayesNet([{ name: 'a', states: ['0', '1'], parents: [], cpt: [0.5, 0.5] }, { name: 'b', states: ['0', '1'], parents: ['a'], cpt: [0.9, 0.1, 0.2, 0.8] }])
  * factorValues(interventionalDistribution(bn, ['a'], { b: '1' })) // => [0.5, 0.5]
@@ -118,7 +118,7 @@ export function interventionalDistribution(
   evidence: Readonly<Record<string, string | number>> = {},
 ): Factor {
   for (const q of query)
-    if (q in interventions) throw new MdmlError('value', `interventionalDistribution: ${q} is intervened on`)
+    if (q in interventions) throw new OmaiError('value', `interventionalDistribution: ${q} is intervened on`)
   const cut = doIntervention(bn, interventions) as BayesNet
   return variableElimination(cut, query, { evidence }).posterior
 }
@@ -135,8 +135,8 @@ export function interventionalDistribution(
  * @concept interventions
  * @example
  * ```ts
- * import { bayesNet } from 'mdml-engine/pgm'
- * import { averageCausalEffect } from 'mdml-engine/pgm/causal'
+ * import { bayesNet } from 'omai-engine/pgm'
+ * import { averageCausalEffect } from 'omai-engine/pgm/causal'
  * const bn = bayesNet([{ name: 'x', states: ['0', '1'], parents: [], cpt: [0.5, 0.5] }, { name: 'y', states: ['0', '1'], parents: ['x'], cpt: [0.9, 0.1, 0.4, 0.6] }])
  * Math.round(averageCausalEffect(bn, 'x', 'y', { treated: '1', control: '0', outcome: '1' }) * 1e12) / 1e12 // => 0.5
  * ```
@@ -164,8 +164,8 @@ export function averageCausalEffect(
  * @concept interventions
  * @example
  * ```ts
- * import { linearGaussianBayesNet } from 'mdml-engine/pgm'
- * import { linearInterventionalMoments } from 'mdml-engine/pgm/causal'
+ * import { linearGaussianBayesNet } from 'omai-engine/pgm'
+ * import { linearInterventionalMoments } from 'omai-engine/pgm/causal'
  * const g = linearGaussianBayesNet([
  *   { name: 'x', parents: [], weights: [], intercept: 0, variance: 1 },
  *   { name: 'y', parents: ['x'], weights: [2], intercept: 1, variance: 1 },

@@ -4,7 +4,7 @@
  * (scipy.signal residue and residuez), which give the time response term by term.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { complexOps as C, type ComplexNumber } from '../numerics/differentiate/index.ts'
 import { type PartialFractions, residue, residuez } from '../numerics/polynomial/index.ts'
 import { pad, type TensorLike, toFlat, type Value } from '../tensor/index.ts'
@@ -37,8 +37,8 @@ function equalLength(b: Value, a: Value, atEnd: boolean): [Value, Value] {
  * @concept difference-equations
  * @example
  * ```ts
- * import { differenceToTf } from 'mdml-engine/systems'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { differenceToTf } from 'omai-engine/systems'
+ * import { toArray } from 'omai-engine/tensor'
  * // y[n] - 0.5 y[n-1] = x[n-1]  ->  H(z) = z^-1 / (1 - 0.5 z^-1) = 1 / (z - 0.5).
  * toArray(differenceToTf([0, 1], [1, -0.5]).num) // => [1]
  * ```
@@ -79,18 +79,18 @@ function sumLatex(terms: readonly (readonly [number, string])[]): string {
  *
  * @param sys - A discrete system (single input and output).
  * @returns The coefficients and the equation.
- * @throws MdmlError with code `value` for a continuous system.
+ * @throws OmaiError with code `value` for a continuous system.
  * @concept difference-equations
  * @example
  * ```ts
- * import { tf, tfToDifference } from 'mdml-engine/systems'
+ * import { tf, tfToDifference } from 'omai-engine/systems'
  * tfToDifference(tf([1], [1, -0.5], { dt: 1 })).latex // => 'y[n] = 0.5 y[n-1] + x[n-1]'
  * ```
  */
 export function tfToDifference(sys: Lti): Equation {
-  if (!isDiscrete(sys)) throw new MdmlError('value', 'tfToDifference: the system must be discrete')
+  if (!isDiscrete(sys)) throw new OmaiError('value', 'tfToDifference: the system must be discrete')
   const g = toTf(sys)
-  if (g.num.shape.length !== 1) throw new MdmlError('shape', 'tfToDifference: one output is needed')
+  if (g.num.shape.length !== 1) throw new OmaiError('shape', 'tfToDifference: one output is needed')
   const [b, a] = equalLength(g.num, g.den, false)
   const bn = numbers(b)
   const an = numbers(a)
@@ -111,8 +111,8 @@ export function tfToDifference(sys: Lti): Equation {
  * @concept differential-equations
  * @example
  * ```ts
- * import { differentialToTf } from 'mdml-engine/systems'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { differentialToTf } from 'omai-engine/systems'
+ * import { toArray } from 'omai-engine/tensor'
  * // y'' + 3 y' + 2 y = u.
  * toArray(differentialToTf([1], [1, 3, 2]).den) // => [1, 3, 2]
  * ```
@@ -129,18 +129,18 @@ const derivative = (symbol: string, order: number): string =>
  *
  * @param sys - A continuous system (single input and output).
  * @returns The coefficients and the equation.
- * @throws MdmlError with code `value` for a discrete system.
+ * @throws OmaiError with code `value` for a discrete system.
  * @concept differential-equations
  * @example
  * ```ts
- * import { tf, tfToDifferential } from 'mdml-engine/systems'
+ * import { tf, tfToDifferential } from 'omai-engine/systems'
  * tfToDifferential(tf([2], [1, 3, 2])).latex // => "y'' + 3 y' + 2 y = 2 u"
  * ```
  */
 export function tfToDifferential(sys: Lti): Equation {
-  if (isDiscrete(sys)) throw new MdmlError('value', 'tfToDifferential: the system must be continuous')
+  if (isDiscrete(sys)) throw new OmaiError('value', 'tfToDifferential: the system must be continuous')
   const g = toTf(sys)
-  if (g.num.shape.length !== 1) throw new MdmlError('shape', 'tfToDifferential: one output is needed')
+  if (g.num.shape.length !== 1) throw new OmaiError('shape', 'tfToDifferential: one output is needed')
   const bn = trimLeading(numbers(g.num))
   const an = numbers(g.den)
   const side = (c: readonly number[], symbol: string): string =>
@@ -189,7 +189,7 @@ function termsOf(pf: PartialFractions): InverseTerm[] {
  * @concept laplace-transform
  * @example
  * ```ts
- * import { inverseLaplace } from 'mdml-engine/systems'
+ * import { inverseLaplace } from 'omai-engine/systems'
  * // 1 / (s + 1)  ->  e^{-t}.
  * inverseLaplace([1], [1, 1]).at(1) // => 0.36787944117144233
  * ```
@@ -219,7 +219,7 @@ export function inverseLaplace(num: TensorLike, den: TensorLike): InverseTransfo
  * @concept z-transform
  * @example
  * ```ts
- * import { inverseZ } from 'mdml-engine/systems'
+ * import { inverseZ } from 'omai-engine/systems'
  * // 1 / (1 - 0.5 z^-1)  ->  0.5^n.
  * inverseZ([1], [1, -0.5]).at(3) // => 0.125
  * ```

@@ -14,7 +14,7 @@
  */
 
 import { hvp, valueAndGrad } from '../../autodiff/index.ts'
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { lgamma, ndtr, ndtri } from '../../numerics/special/index.ts'
 import {
   add,
@@ -102,7 +102,7 @@ export interface ExtendedFamily {
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { families } from 'mdml-engine/dists'
+ * import { families } from 'omai-engine/dists'
  * [families.hessIndex(0, 0, 2), families.hessIndex(0, 1, 2), families.hessIndex(1, 1, 2)] // => [0, 1, 2]
  * ```
  */
@@ -136,8 +136,8 @@ const vec = (a: ArrayLike<number>): Value => fromStorage(Float64Array.from(a), [
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { families } from 'mdml-engine/dists'
- * import { exp, mul, sub } from 'mdml-engine/tensor'
+ * import { families } from 'omai-engine/dists'
+ * import { exp, mul, sub } from 'omai-engine/tensor'
  * // Poisson with a log link: l = y eta - exp(eta) (up to a constant)
  * const f = families.tensorExtendedFamily({
  *   name: 'po', predictors: ['mean'], links: [families.log()],
@@ -233,7 +233,7 @@ const variance = (y: ArrayLike<number>, w: ArrayLike<number>): number => {
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { families } from 'mdml-engine/dists'
+ * import { families } from 'omai-engine/dists'
  * const d = families.gaussianLocationScale().derivatives(Float64Array.of(1), Float64Array.of(1), [Float64Array.of(0), Float64Array.of(0)], [], 2)
  * [d.grad[0]?.[0], d.grad[1]?.[0], d.hess[0]?.[0], d.hess[2]?.[0]] // => [1, 0, -1, -2]
  * ```
@@ -300,7 +300,7 @@ const logitOf = (p: number): number => Math.log(p / (1 - p))
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { families } from 'mdml-engine/dists'
+ * import { families } from 'omai-engine/dists'
  * const f = families.betaRegression()
  * f.aux(Float64Array.of(0.2, 0.5, 0.8), Float64Array.of(1, 1, 1))[0]?.name // => 'logPrecision'
  * ```
@@ -336,7 +336,7 @@ export function betaRegression(): ExtendedFamily {
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { families } from 'mdml-engine/dists'
+ * import { families } from 'omai-engine/dists'
  * families.negativeBinomialTheta().predictors // => ['mean']
  * ```
  */
@@ -379,7 +379,7 @@ function lgammaNumber(x: number): number {
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { families } from 'mdml-engine/dists'
+ * import { families } from 'omai-engine/dists'
  * families.zeroInflatedPoissonLogit().predictors // => ['count', 'zero']
  * ```
  */
@@ -430,17 +430,17 @@ export function zeroInflatedPoissonLogit(): ExtendedFamily {
  * @param categories - The number of categories `K >= 3`; the response holds the codes `0 .. K - 1`.
  * @param link - `logit` (default) or `probit`.
  * @returns The family.
- * @throws MdmlError `value` for fewer than three categories.
+ * @throws OmaiError `value` for fewer than three categories.
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { families } from 'mdml-engine/dists'
+ * import { families } from 'omai-engine/dists'
  * families.orderedCategorical(4).aux(Float64Array.of(0, 1, 2, 3, 1), Float64Array.of(1, 1, 1, 1, 1)).length // => 2
  * ```
  */
 export function orderedCategorical(categories: number, link: 'logit' | 'probit' = 'logit'): ExtendedFamily {
   if (!Number.isInteger(categories) || categories < 3) {
-    throw new MdmlError('value', 'orderedCategorical: needs at least three categories')
+    throw new OmaiError('value', 'orderedCategorical: needs at least three categories')
   }
   const cdf = (x: Value): Value => (link === 'logit' ? sigmoid(x) : ndtr(x))
   const inv = link === 'logit' ? logitOf : (p: number): number => item(ndtri(p))
@@ -490,17 +490,17 @@ export function orderedCategorical(categories: number, link: 'logit' | 'probit' 
  *
  * @param classes - The number of classes `K >= 3` (use the binomial family for two); the response holds `0 .. K - 1`.
  * @returns The family, with predictors `class1 .. class(K-1)`.
- * @throws MdmlError `value` for fewer than three classes.
+ * @throws OmaiError `value` for fewer than three classes.
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { families } from 'mdml-engine/dists'
+ * import { families } from 'omai-engine/dists'
  * families.multinomialLogit(3).predictors // => ['class1', 'class2']
  * ```
  */
 export function multinomialLogit(classes: number): ExtendedFamily {
   if (!Number.isInteger(classes) || classes < 3)
-    throw new MdmlError('value', 'multinomialLogit: needs at least three classes')
+    throw new OmaiError('value', 'multinomialLogit: needs at least three classes')
   const K = classes - 1
   return tensorExtendedFamily({
     name: 'multinomial',
@@ -538,7 +538,7 @@ export function multinomialLogit(classes: number): ExtendedFamily {
  * @concept generalized-additive-models
  * @example
  * ```ts
- * import { families } from 'mdml-engine/dists'
+ * import { families } from 'omai-engine/dists'
  * families.tweedieEstimated().aux(Float64Array.of(0, 1, 2), Float64Array.of(1, 1, 1)).length // => 2
  * ```
  */

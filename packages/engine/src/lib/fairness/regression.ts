@@ -5,7 +5,7 @@
  * mean prediction and mean residual (calibration in the mean) between groups.
  */
 
-import { MdmlError, maxOf, minOf } from '../base/index.ts'
+import { maxOf, minOf, OmaiError } from '../base/index.ts'
 import { labelValues, sortLabels } from '../metrics/_labels.ts'
 import type { MetricInput } from '../metrics/metric.ts'
 import { ks2samp, wassersteinDistance } from '../stats/tests/index.ts'
@@ -13,7 +13,7 @@ import { ks2samp, wassersteinDistance } from '../stats/tests/index.ts'
 /** Rows of each group, by sorted group label. */
 function byGroup(name: string, groups: MetricInput, n: number): { names: string[]; rows: number[][] } {
   const g = labelValues(groups)
-  if (g.length !== n) throw new MdmlError('shape', `${name}: one group per row`)
+  if (g.length !== n) throw new OmaiError('shape', `${name}: one group per row`)
   const names = sortLabels(g).map(String)
   return { names, rows: names.map((label) => g.flatMap((v, i) => (String(v) === label ? [i] : []))) }
 }
@@ -41,7 +41,7 @@ export interface GroupLoss {
  * @concept algorithmic-fairness
  * @example
  * ```ts
- * import { boundedGroupLoss } from 'mdml-engine/fairness'
+ * import { boundedGroupLoss } from 'omai-engine/fairness'
  * boundedGroupLoss([1, 2, 3, 4], [1, 2, 2, 6], ['a', 'a', 'b', 'b']).worst // => { group: 'b', loss: 2.5 }
  * ```
  */
@@ -51,7 +51,7 @@ export function boundedGroupLoss(
   groups: MetricInput,
   options: { readonly loss?: RegressionLoss } = {},
 ): GroupLoss {
-  if (yTrue.length !== yPred.length) throw new MdmlError('shape', 'boundedGroupLoss: one prediction per target')
+  if (yTrue.length !== yPred.length) throw new OmaiError('shape', 'boundedGroupLoss: one prediction per target')
   const { names, rows } = byGroup('boundedGroupLoss', groups, yTrue.length)
   const lossOf = (i: number): number => {
     const e = (yPred[i] ?? 0) - (yTrue[i] ?? 0)
@@ -115,7 +115,7 @@ function pairwise(
  * @concept algorithmic-fairness
  * @example
  * ```ts
- * import { distributionParity } from 'mdml-engine/fairness'
+ * import { distributionParity } from 'omai-engine/fairness'
  * distributionParity([0.1, 0.2, 0.8, 0.9], ['a', 'a', 'b', 'b']).value // => 1
  * distributionParity([0.1, 0.2, 0.8, 0.9], ['a', 'a', 'b', 'b'], { distance: 'wasserstein' }).value.toFixed(2) // => '0.70'
  * ```
@@ -141,7 +141,7 @@ export function distributionParity(
  * @concept algorithmic-fairness
  * @example
  * ```ts
- * import { equalOpportunityInDistribution } from 'mdml-engine/fairness'
+ * import { equalOpportunityInDistribution } from 'omai-engine/fairness'
  * equalOpportunityInDistribution([0.9, 0.2, 0.9, 0.3], [1, 0, 1, 0], ['a', 'a', 'b', 'b']).value // => 0
  * ```
  */
@@ -152,7 +152,7 @@ export function equalOpportunityInDistribution(
   options: { readonly distance?: DistributionDistance; readonly positive?: number } = {},
 ): DistributionParity {
   if (scores.length !== yTrue.length)
-    throw new MdmlError('shape', 'equalOpportunityInDistribution: one target per score')
+    throw new OmaiError('shape', 'equalOpportunityInDistribution: one target per score')
   const cut = options.positive ?? 1
   const { names, rows } = byGroup('equalOpportunityInDistribution', groups, scores.length)
   return pairwise(
@@ -186,7 +186,7 @@ export interface RegressionGaps {
  * @concept algorithmic-fairness
  * @example
  * ```ts
- * import { regressionGaps } from 'mdml-engine/fairness'
+ * import { regressionGaps } from 'omai-engine/fairness'
  * const r = regressionGaps([1, 3, 2, 6], [1, 3, 1, 5], ['a', 'a', 'b', 'b'])
  * r.meanDifference // => 1
  * r.calibrationGap // => 1
@@ -197,7 +197,7 @@ export function regressionGaps(
   yPred: readonly number[],
   groups: MetricInput,
 ): RegressionGaps {
-  if (yTrue.length !== yPred.length) throw new MdmlError('shape', 'regressionGaps: one prediction per target')
+  if (yTrue.length !== yPred.length) throw new OmaiError('shape', 'regressionGaps: one prediction per target')
   const { names, rows } = byGroup('regressionGaps', groups, yTrue.length)
   const mean = (r: readonly number[], f: (i: number) => number): number =>
     r.reduce((s, i) => s + f(i), 0) / Math.max(1, r.length)

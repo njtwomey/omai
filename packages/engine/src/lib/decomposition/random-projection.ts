@@ -47,8 +47,8 @@ export interface RandomProjectionVerbs {
  * @returns The estimator.
  * @example
  * ```ts
- * import { randomProjection } from 'mdml-engine/decomposition'
- * import { key } from 'mdml-engine/random'
+ * import { randomProjection } from 'omai-engine/decomposition'
+ * import { key } from 'omai-engine/random'
  * const x = Array.from({ length: 10 }, (_, i) => Array.from({ length: 20 }, (_, j) => Math.sin(i * j)))
  * randomProjection({ nComponents: 5 }).fit({ x }, { key: key(0) }).params.components.length // => 5
  * ```

@@ -21,7 +21,7 @@ const scoreThreshold = (): ReturnType<typeof real> =>
  * @concept non-maximum-suppression
  * @example
  * ```ts
- * import { softNmsMethods } from 'mdml-engine/vision'
+ * import { softNmsMethods } from 'omai-engine/vision'
  * softNmsMethods.make({ kind: 'linear', iouThreshold: 0.5 }).iouThreshold // => 0.5
  * ```
  */
@@ -56,7 +56,7 @@ export const softNmsMethods: OptionTable<SoftNmsOptions, Record<string, never>> 
  * @concept seam-carving
  * @example
  * ```ts
- * import { seamMaskStrengths } from 'mdml-engine/vision'
+ * import { seamMaskStrengths } from 'omai-engine/vision'
  * seamMaskStrengths.make({ kind: 'gentle' }).bias // => 1000
  * ```
  */
@@ -92,7 +92,7 @@ export const seamMaskStrengths: OptionTable<SeamCarveOptions, Record<string, nev
  * @concept mean-shift
  * @example
  * ```ts
- * import { meanShiftCriteria } from 'mdml-engine/vision'
+ * import { meanShiftCriteria } from 'omai-engine/vision'
  * meanShiftCriteria.make({ kind: 'standard' }) // => { maxIter: 100, eps: 1 }
  * ```
  */
@@ -134,7 +134,7 @@ export const meanShiftCriteria: OptionTable<MeanShiftOptions, Record<string, nev
  * @concept flood-fill
  * @example
  * ```ts
- * import { floodFillModes } from 'mdml-engine/vision'
+ * import { floodFillModes } from 'omai-engine/vision'
  * floodFillModes.make({ kind: 'fixed', loDiff: 0.2 }).fixedRange // => true
  * ```
  */
@@ -185,7 +185,7 @@ export interface SimplificationOptions {
  * @concept polygon-simplification
  * @example
  * ```ts
- * import { simplifications } from 'mdml-engine/vision'
+ * import { simplifications } from 'omai-engine/vision'
  * simplifications.make({ kind: 'polyline', epsilon: 2 }) // => { epsilon: 2, closed: false }
  * ```
  */

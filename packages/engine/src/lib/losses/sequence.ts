@@ -7,7 +7,7 @@
  * off a classifier's outputs.
  */
 
-import { MdmlError, type Reduction } from '../base/index.ts'
+import { OmaiError, type Reduction } from '../base/index.ts'
 import {
   add,
   asTensor,
@@ -110,12 +110,12 @@ function targetRows(targets: TensorLike, lengths: readonly number[] | undefined,
  * @param targets - Label sequences without blanks: `[N, S]` padded (use `targetLengths`) or `[S]`.
  * @param options - blank, inputLengths, targetLengths, reduction and zeroInfinity.
  * @returns The loss, differentiable in the log-probabilities.
- * @throws MdmlError with code `shape` when the targets and the batch disagree.
+ * @throws OmaiError with code `shape` when the targets and the batch disagree.
  * @concept ctc
  * @example
  * ```ts
- * import { ctc } from 'mdml-engine/losses'
- * import { item } from 'mdml-engine/tensor'
+ * import { ctc } from 'omai-engine/losses'
+ * import { item } from 'omai-engine/tensor'
  * // Two frames of uniform probabilities over {blank, a}: the target "a" has alignments aa, a-, -a, so p = 3/4.
  * const logp = [[Math.log(0.5), Math.log(0.5)], [Math.log(0.5), Math.log(0.5)]]
  * Math.abs(item(ctc(logp, [1], { reduction: 'sum' })) + Math.log(0.75)) < 1e-14 // => true
@@ -125,12 +125,12 @@ export function ctc(logProbs: TensorLike, targets: TensorLike, options: CtcOptio
   const [lp] = promoteFloat(logProbs) as [Value]
   const batched = lp.shape.length === 3
   if (!batched && lp.shape.length !== 2)
-    throw new MdmlError('shape', 'ctc: log-probabilities must be [T, N, C] or [T, C]')
+    throw new OmaiError('shape', 'ctc: log-probabilities must be [T, N, C] or [T, C]')
   const frames = lp.shape[0] ?? 0
   const n = batched ? (lp.shape[1] ?? 1) : 1
   const blank = options.blank ?? 0
   const rows = targetRows(targets, options.targetLengths, n)
-  if (rows.length !== n) throw new MdmlError('shape', `ctc: ${rows.length} targets for a batch of ${n}`)
+  if (rows.length !== n) throw new OmaiError('shape', `ctc: ${rows.length} targets for a batch of ${n}`)
   const losses = rows.map((target, i) => {
     const sequence = batched ? squeeze(sliceAxis(lp, 1, i, i + 1), 1) : lp
     const valid = options.inputLengths?.[i] ?? frames
@@ -198,7 +198,7 @@ class Lattice {
  * @returns The extended target, the log-likelihood, alpha, beta and the state and label posteriors.
  * @example
  * ```ts
- * import { ctcTrellis } from 'mdml-engine/losses'
+ * import { ctcTrellis } from 'omai-engine/losses'
  * const half = Math.log(0.5)
  * const t = ctcTrellis([[half, half], [half, half]], [1])
  * t.labelPosterior[0] // => [0.3333333333333333, 0.6666666666666666]
@@ -271,10 +271,10 @@ export function ctcTrellis(
  * @param target - The label sequence, without blanks.
  * @param options - blank (default 0).
  * @returns The class at every frame (blank included) and the log-probability of that path.
- * @throws MdmlError with code `value` when the frames cannot emit the target.
+ * @throws OmaiError with code `value` when the frames cannot emit the target.
  * @example
  * ```ts
- * import { ctcForcedAlignment } from 'mdml-engine/losses'
+ * import { ctcForcedAlignment } from 'omai-engine/losses'
  * const lp = [[-0.1, -3], [-3, -0.1], [-3, -0.1], [-0.1, -3]].map((r) => r.map((v) => v))
  * ctcForcedAlignment(lp, [1]).path // => [0, 1, 1, 0]
  * ```
@@ -288,7 +288,7 @@ export function ctcForcedAlignment(
   const [frames, classes] = [lp.shape[0] ?? 0, lp.shape[1] ?? 0]
   const flat = toFlat(lp)
   const blank = options.blank ?? 0
-  if (frames < minimumFrames(target)) throw new MdmlError('value', 'ctcForcedAlignment: too few frames for the target')
+  if (frames < minimumFrames(target)) throw new OmaiError('value', 'ctcForcedAlignment: too few frames for the target')
   const extended = extend(target, blank)
   const states = extended.length
   const skip = skipAllowed(extended, blank)
@@ -326,7 +326,7 @@ export function ctcForcedAlignment(
  * @returns The decoded label sequence.
  * @example
  * ```ts
- * import { ctcGreedyDecode } from 'mdml-engine/losses'
+ * import { ctcGreedyDecode } from 'omai-engine/losses'
  * ctcGreedyDecode([[0, 5, 0], [0, 5, 0], [5, 0, 0], [0, 5, 0], [0, 0, 5]]) // => [1, 1, 2]
  * ```
  */

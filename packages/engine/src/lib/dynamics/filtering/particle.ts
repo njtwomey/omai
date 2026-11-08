@@ -4,7 +4,7 @@
  * resampling on low effective sample size, and particle smoothing by forward filtering and backward simulation.
  */
 
-import { logSumExpOf, MdmlError } from '../../base/index.ts'
+import { logSumExpOf, OmaiError } from '../../base/index.ts'
 import { foldIn, type Key, key as makeKey, uniform } from '../../random/index.ts'
 import {
   asTensor,
@@ -66,18 +66,18 @@ function searchSorted(c: Float64Array, u: number): number {
  * @param scheme - The scheme.
  * @param u - Uniform variates in [0, 1): N for multinomial, stratified and residual, the first one for systematic.
  * @returns N particle indices.
- * @throws MdmlError with code `value` when there are too few uniforms.
+ * @throws OmaiError with code `value` when there are too few uniforms.
  * @concept particle-filter
  * @example
  * ```ts
- * import { filtering } from 'mdml-engine/dynamics'
+ * import { filtering } from 'omai-engine/dynamics'
  * filtering.resampleIndices([0.1, 0.2, 0.7], 'systematic', [0.5]) // => [1, 2, 2]
  * ```
  */
 export function resampleIndices(weights: readonly number[], scheme: Resampling, u: readonly number[]): number[] {
   const N = weights.length
   const needed = scheme === 'systematic' ? 1 : N
-  if (u.length < needed) throw new MdmlError('value', `resampleIndices: ${scheme} needs ${needed} uniforms`)
+  if (u.length < needed) throw new OmaiError('value', `resampleIndices: ${scheme} needs ${needed} uniforms`)
   if (scheme === 'residual') {
     const out: number[] = []
     const residual = new Float64Array(N)
@@ -242,7 +242,7 @@ function pfAlgorithm(
   const threshold = options.essThreshold ?? 0.5
   const root = options.key ?? makeKey(0)
   if (auxiliary && model.predict === undefined)
-    throw new MdmlError('value', 'auxiliaryParticleFilter: the model needs predict')
+    throw new OmaiError('value', 'auxiliaryParticleFilter: the model needs predict')
   const zAt = (t: number): Value => reshape(sliceAxis(Z, 0, t, t + 1), Z.shape.slice(1))
   const identity = Array.from({ length: N }, (_, i) => i)
   return {
@@ -345,10 +345,10 @@ function pfAlgorithm(
  * @concept particle-filter
  * @example
  * ```ts
- * import { filtering } from 'mdml-engine/dynamics'
- * import { key, normal } from 'mdml-engine/random'
- * import { runAlgorithm } from 'mdml-engine/trace'
- * import { add, mul, sub, sum, square } from 'mdml-engine/tensor'
+ * import { filtering } from 'omai-engine/dynamics'
+ * import { key, normal } from 'omai-engine/random'
+ * import { runAlgorithm } from 'omai-engine/trace'
+ * import { add, mul, sub, sum, square } from 'omai-engine/tensor'
  * const model = {
  *   initial: (k, n) => normal(k, [n, 1]),
  *   transition: (k, x) => add(x, mul(normal(k, x.shape), 0.1)),
@@ -375,14 +375,14 @@ export function bootstrapParticleAlgorithm(
  * @param observations - `[T, ...]`.
  * @param options - Particle count, resampling scheme and key.
  * @returns The algorithm; it is done after the last observation.
- * @throws MdmlError with code `value` when the model has no `predict`.
+ * @throws OmaiError with code `value` when the model has no `predict`.
  * @concept particle-filter
  * @example
  * ```ts
- * import { filtering } from 'mdml-engine/dynamics'
- * import { key, normal } from 'mdml-engine/random'
- * import { runAlgorithm } from 'mdml-engine/trace'
- * import { add, mul, sub, sum, square } from 'mdml-engine/tensor'
+ * import { filtering } from 'omai-engine/dynamics'
+ * import { key, normal } from 'omai-engine/random'
+ * import { runAlgorithm } from 'omai-engine/trace'
+ * import { add, mul, sub, sum, square } from 'omai-engine/tensor'
  * const model = {
  *   initial: (k, n) => normal(k, [n, 1]),
  *   transition: (k, x) => add(x, mul(normal(k, x.shape), 0.1)),
@@ -454,9 +454,9 @@ function runPf(
  * @concept particle-filter
  * @example
  * ```ts
- * import { filtering } from 'mdml-engine/dynamics'
- * import { key, normal } from 'mdml-engine/random'
- * import { add, mul, sub, sum, square } from 'mdml-engine/tensor'
+ * import { filtering } from 'omai-engine/dynamics'
+ * import { key, normal } from 'omai-engine/random'
+ * import { add, mul, sub, sum, square } from 'omai-engine/tensor'
  * const model = {
  *   initial: (k, n) => normal(k, [n, 1]),
  *   transition: (k, x) => add(x, mul(normal(k, x.shape), 0.1)),
@@ -482,13 +482,13 @@ export function bootstrapParticleFilter(
  * @param observations - `[T, ...]`.
  * @param options - Particle count, resampling scheme, key and tracing.
  * @returns Weighted means, the log-evidence, ESS and the particle history.
- * @throws MdmlError with code `value` when the model has no `predict`.
+ * @throws OmaiError with code `value` when the model has no `predict`.
  * @concept particle-filter
  * @example
  * ```ts
- * import { filtering } from 'mdml-engine/dynamics'
- * import { key, normal } from 'mdml-engine/random'
- * import { add, mul, sub, sum, square } from 'mdml-engine/tensor'
+ * import { filtering } from 'omai-engine/dynamics'
+ * import { key, normal } from 'omai-engine/random'
+ * import { add, mul, sub, sum, square } from 'omai-engine/tensor'
  * const model = {
  *   initial: (k, n) => normal(k, [n, 1]),
  *   transition: (k, x) => add(x, mul(normal(k, x.shape), 0.1)),
@@ -514,13 +514,13 @@ export function auxiliaryParticleFilter(
  * @param filtered - A particle filter's output.
  * @param options - Number of trajectories (default 100) and key.
  * @returns The smoothed means `[T, d]` and the sampled trajectories `[M, T, d]`.
- * @throws MdmlError with code `value` when the model has no transition density.
+ * @throws OmaiError with code `value` when the model has no transition density.
  * @concept particle-smoother
  * @example
  * ```ts
- * import { filtering } from 'mdml-engine/dynamics'
- * import { key, normal } from 'mdml-engine/random'
- * import { add, mul, sub, sum, square } from 'mdml-engine/tensor'
+ * import { filtering } from 'omai-engine/dynamics'
+ * import { key, normal } from 'omai-engine/random'
+ * import { add, mul, sub, sum, square } from 'omai-engine/tensor'
  * const model = {
  *   initial: (k, n) => normal(k, [n, 1]),
  *   transition: (k, x) => add(x, mul(normal(k, x.shape), 0.1)),
@@ -537,7 +537,7 @@ export function particleSmoother(
   options: { readonly trajectories?: number; readonly key?: Key } = {},
 ): { readonly means: Tensor; readonly trajectories: Tensor } {
   const logT = model.logTransition
-  if (logT === undefined) throw new MdmlError('value', 'particleSmoother: the model needs logTransition')
+  if (logT === undefined) throw new OmaiError('value', 'particleSmoother: the model needs logTransition')
   const M = options.trajectories ?? 100
   const T = filtered.particles.length
   const root = options.key ?? makeKey(0)

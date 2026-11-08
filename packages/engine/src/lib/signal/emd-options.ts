@@ -24,7 +24,7 @@ export interface SiftStopProperties {
  * @concept empirical-mode-decomposition
  * @example
  * ```ts
- * import { siftStops } from 'mdml-engine/signal'
+ * import { siftStops } from 'omai-engine/signal'
  * siftStops.names // => ['sd', 's-number', 'fixed']
  * ```
  */

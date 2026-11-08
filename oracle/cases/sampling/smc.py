@@ -6,8 +6,8 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 from blackjax.smc import ess, resampling, solver
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray, rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray, rng
 
 jax.config.update("jax_enable_x64", True)
 

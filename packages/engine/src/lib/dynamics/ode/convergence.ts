@@ -5,7 +5,7 @@
  * cost.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { complexOps as C, type ComplexNumber } from '../../numerics/differentiate/index.ts'
 import type { TensorLike, Value } from '../../tensor/index.ts'
 import { floatState, numbersOf, rms } from './_vec.ts'
@@ -36,17 +36,17 @@ function treeKey(t: RootedTree): string {
  *
  * @param maxOrder - The largest order (1 to 10).
  * @returns The trees, grouped by order.
- * @throws MdmlError with code `value` outside 1..10.
+ * @throws OmaiError with code `value` outside 1..10.
  * @concept butcher-trees
  * @example
  * ```ts
- * import { rootedTrees } from 'mdml-engine/dynamics/ode'
+ * import { rootedTrees } from 'omai-engine/dynamics/ode'
  * rootedTrees(5).map((ts) => ts.length) // => [1, 1, 2, 4, 9]
  * ```
  */
 export function rootedTrees(maxOrder: number): RootedTree[][] {
   if (!Number.isInteger(maxOrder) || maxOrder < 1 || maxOrder > 10) {
-    throw new MdmlError('value', 'rootedTrees: the order is 1 to 10')
+    throw new OmaiError('value', 'rootedTrees: the order is 1 to 10')
   }
   const byOrder: RootedTree[][] = [[], [[]]]
   for (let n = 2; n <= maxOrder; n++) {
@@ -109,7 +109,7 @@ export interface OrderReport {
  * @concept butcher-trees
  * @example
  * ```ts
- * import { orderConditions, RK4 } from 'mdml-engine/dynamics/ode'
+ * import { orderConditions, RK4 } from 'omai-engine/dynamics/ode'
  * orderConditions(RK4, 6).order // => 4
  * ```
  */
@@ -144,17 +144,17 @@ export interface ConvergenceStudy {
  * @param error - The error for a step h.
  * @param steps - The step sizes (at least two, positive).
  * @returns The errors, fitted order and consecutive local orders.
- * @throws MdmlError with code `value` with fewer than two steps.
+ * @throws OmaiError with code `value` with fewer than two steps.
  * @concept order-of-convergence
  * @example
  * ```ts
- * import { convergenceOrder } from 'mdml-engine/dynamics/ode'
+ * import { convergenceOrder } from 'omai-engine/dynamics/ode'
  * Math.round(convergenceOrder((h) => 3 * h ** 2, [0.1, 0.05, 0.025]).order) // => 2
  * ```
  */
 export function convergenceOrder(error: (h: number) => number, steps: readonly number[]): ConvergenceStudy {
   if (steps.length < 2 || steps.some((h) => !(h > 0))) {
-    throw new MdmlError('value', 'convergenceOrder: give at least two positive steps')
+    throw new OmaiError('value', 'convergenceOrder: give at least two positive steps')
   }
   const errors = steps.map((h) => error(h))
   const xs = steps.map(Math.log)
@@ -187,8 +187,8 @@ export function convergenceOrder(error: (h: number) => number, steps: readonly n
  * @concept order-of-convergence
  * @example
  * ```ts
- * import { rk4, stepperOrder } from 'mdml-engine/dynamics/ode'
- * import { neg } from 'mdml-engine/tensor'
+ * import { rk4, stepperOrder } from 'omai-engine/dynamics/ode'
+ * import { neg } from 'omai-engine/tensor'
  * Math.round(stepperOrder((dt) => rk4({ dt }), (_t, y) => neg(y), [0, 1], [1], [Math.exp(-1)], [0.2, 0.1, 0.05]).order) // => 4
  * ```
  */
@@ -248,7 +248,7 @@ function complexSolve(m: ComplexNumber[][], rhs: ComplexNumber[]): ComplexNumber
  * @concept a-stability
  * @example
  * ```ts
- * import { stabilityFunction, EULER } from 'mdml-engine/dynamics/ode'
+ * import { stabilityFunction, EULER } from 'omai-engine/dynamics/ode'
  * stabilityFunction(EULER, { re: -1, im: 0 }) // => { re: 0, im: 0 }
  * ```
  */
@@ -285,7 +285,7 @@ export interface SampledStabilityRegion {
  * @concept a-stability
  * @example
  * ```ts
- * import { stabilityRegion, RK4 } from 'mdml-engine/dynamics/ode'
+ * import { stabilityRegion, RK4 } from 'omai-engine/dynamics/ode'
  * stabilityRegion(RK4, { n: 5 }).stable.length // => 5
  * ```
  */
@@ -333,7 +333,7 @@ export interface AStabilityReport {
  * @concept a-stability
  * @example
  * ```ts
- * import { aStability, BACKWARD_EULER, RK4 } from 'mdml-engine/dynamics/ode'
+ * import { aStability, BACKWARD_EULER, RK4 } from 'omai-engine/dynamics/ode'
  * [aStability(BACKWARD_EULER).lStable, aStability(RK4).aStable] // => [true, false]
  * ```
  */
@@ -375,7 +375,7 @@ export function aStability(method: RungeKuttaCoefficients): AStabilityReport {
  * @concept linear-multistep
  * @example
  * ```ts
- * import { boundaryLocus } from 'mdml-engine/dynamics/ode'
+ * import { boundaryLocus } from 'omai-engine/dynamics/ode'
  * // Forward Euler: y_{n+1} - y_n = h f_n traces the circle |z + 1| = 1.
  * Math.round(boundaryLocus([-1, 1], [1, 0], 4).re[2] ?? 0) // => -2
  * ```
@@ -426,8 +426,8 @@ export interface WorkPrecisionPoint {
  * @concept work-precision
  * @example
  * ```ts
- * import { workPrecision } from 'mdml-engine/dynamics/ode'
- * import { neg } from 'mdml-engine/tensor'
+ * import { workPrecision } from 'omai-engine/dynamics/ode'
+ * import { neg } from 'omai-engine/tensor'
  * workPrecision((_t, y) => neg(y), [0, 1], [1], [Math.exp(-1)], ['RK45', 'DOP853'], [1e-4, 1e-8]).length // => 4
  * ```
  */

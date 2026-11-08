@@ -4,7 +4,7 @@
  * closed-form KL terms, the Renyi divergence bound and the importance-weighted (IWAE) bound.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { klDivergence } from '../dists/index.ts'
 import { foldIn, type Key } from '../random/index.ts'
 import {
@@ -81,9 +81,9 @@ export interface Particle {
  * @concept variational-inference
  * @example
  * ```ts
- * import { autoNormal, observe, particle, sample } from 'mdml-engine/probprog'
- * import { normal } from 'mdml-engine/dists'
- * import { key } from 'mdml-engine/random'
+ * import { autoNormal, observe, particle, sample } from 'omai-engine/probprog'
+ * import { normal } from 'omai-engine/dists'
+ * import { key } from 'omai-engine/random'
  * const model = () => { const m = sample('m', normal(0, 1)); observe('y', normal(m, 1), 0) }
  * particle(key(0), model, autoNormal(model), undefined, { m_auto_loc: 0, m_auto_scale: 1 }).guideTrace.sites.has('m') // => true
  * ```
@@ -114,8 +114,8 @@ export function particle<D = void>(
  * @concept variational-inference
  * @example
  * ```ts
- * import { autoNormal, elboAt, observe, sample } from 'mdml-engine/probprog'
- * import { normal } from 'mdml-engine/dists'
+ * import { autoNormal, elboAt, observe, sample } from 'omai-engine/probprog'
+ * import { normal } from 'omai-engine/dists'
  * const model = () => { const m = sample('m', normal(0, 1)); observe('y', normal(m, 1), 0) }
  * // q = N(0, 1) = the prior: at m = 0 the ELBO term is log N(0; 0, 1).
  * Math.abs(elboAt(model, autoNormal(model), undefined, { m_auto_loc: 0, m_auto_scale: 1 }, { m: 0 }).elbo + 0.5 * Math.log(2 * Math.PI)) < 1e-14 // => true
@@ -162,7 +162,7 @@ function scoreTerms(p: Particle, signal: number): Value {
  * @concept variational-inference
  * @example
  * ```ts
- * import { traceElbo } from 'mdml-engine/probprog'
+ * import { traceElbo } from 'omai-engine/probprog'
  * traceElbo({ numParticles: 2 }).name // => 'traceElbo'
  * ```
  */
@@ -200,7 +200,7 @@ export function traceElbo(options: TraceElboOptions = {}): ElboEstimator<{ reado
  * @concept variational-inference
  * @example
  * ```ts
- * import { traceMeanFieldElbo } from 'mdml-engine/probprog'
+ * import { traceMeanFieldElbo } from 'omai-engine/probprog'
  * traceMeanFieldElbo().name // => 'traceMeanFieldElbo'
  * ```
  */
@@ -259,19 +259,19 @@ export interface RenyiElboOptions {
  *
  * @param options - Alpha and the number of particles.
  * @returns The estimator.
- * @throws MdmlError with code `value` for alpha = 1.
+ * @throws OmaiError with code `value` for alpha = 1.
  * @concept variational-inference
  * @example
  * ```ts
- * import { renyiElbo } from 'mdml-engine/probprog'
+ * import { renyiElbo } from 'omai-engine/probprog'
  * renyiElbo({ alpha: 0.5 }).name // => 'renyiElbo'
  * ```
  */
 export function renyiElbo(options: RenyiElboOptions = {}): ElboEstimator<null> {
   const alpha = options.alpha ?? 0
   const k = options.numParticles ?? 2
-  if (alpha === 1) throw new MdmlError('value', 'renyiElbo: alpha = 1 is the ELBO; use traceElbo')
-  if (!(Number.isInteger(k) && k >= 1)) throw new MdmlError('value', 'renyiElbo: numParticles must be positive')
+  if (alpha === 1) throw new OmaiError('value', 'renyiElbo: alpha = 1 is the ELBO; use traceElbo')
+  if (!(Number.isInteger(k) && k >= 1)) throw new OmaiError('value', 'renyiElbo: numParticles must be positive')
   return {
     name: 'renyiElbo',
     init: () => null,
@@ -297,7 +297,7 @@ export function renyiElbo(options: RenyiElboOptions = {}): ElboEstimator<null> {
  * @concept variational-inference
  * @example
  * ```ts
- * import { importanceWeightedElbo } from 'mdml-engine/probprog'
+ * import { importanceWeightedElbo } from 'omai-engine/probprog'
  * importanceWeightedElbo({ numParticles: 8 }).name // => 'importanceWeightedElbo'
  * ```
  */
@@ -315,7 +315,7 @@ export function importanceWeightedElbo(options: { readonly numParticles?: number
  * @returns The bound.
  * @example
  * ```ts
- * import { renyiBound } from 'mdml-engine/probprog'
+ * import { renyiBound } from 'omai-engine/probprog'
  * renyiBound([0, 0], 0) // => 0
  * ```
  */

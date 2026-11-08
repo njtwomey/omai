@@ -15,7 +15,7 @@
  * @returns The dot product.
  * @example
  * ```ts
- * import { ddot } from 'mdml-engine/numerics/linalg'
+ * import { ddot } from 'omai-engine/numerics/linalg'
  * ddot([1, 2, 3], [4, 5, 6]) // => 32
  * ```
  */
@@ -33,7 +33,7 @@ export function ddot(x: ArrayLike<number>, y: ArrayLike<number>): number {
  * @returns The index.
  * @example
  * ```ts
- * import { idamax } from 'mdml-engine/numerics/linalg'
+ * import { idamax } from 'omai-engine/numerics/linalg'
  * idamax([1, -3, 2]) // => 1
  * ```
  */
@@ -58,7 +58,7 @@ export function idamax(x: ArrayLike<number>): number {
  * @returns The sum.
  * @example
  * ```ts
- * import { dasum } from 'mdml-engine/numerics/linalg'
+ * import { dasum } from 'omai-engine/numerics/linalg'
  * dasum([1, -3, 2]) // => 6
  * ```
  */
@@ -76,7 +76,7 @@ export function dasum(x: ArrayLike<number>): number {
  * @returns |x|.
  * @example
  * ```ts
- * import { dnrm2 } from 'mdml-engine/numerics/linalg'
+ * import { dnrm2 } from 'omai-engine/numerics/linalg'
  * dnrm2([3e200, 4e200]) // => 5e200
  * dnrm2([Infinity, -Infinity]) // => Infinity
  * ```
@@ -110,7 +110,7 @@ export function dnrm2(x: ArrayLike<number>): number {
  * @returns y + alpha x.
  * @example
  * ```ts
- * import { daxpy } from 'mdml-engine/numerics/linalg'
+ * import { daxpy } from 'omai-engine/numerics/linalg'
  * Array.from(daxpy(2, [1, 1], [1, 2])) // => [3, 4]
  * ```
  */
@@ -128,7 +128,7 @@ export function daxpy(alpha: number, x: ArrayLike<number>, y: ArrayLike<number>)
  * @returns alpha x.
  * @example
  * ```ts
- * import { dscal } from 'mdml-engine/numerics/linalg'
+ * import { dscal } from 'omai-engine/numerics/linalg'
  * Array.from(dscal(0.5, [2, 4])) // => [1, 2]
  * ```
  */
@@ -149,7 +149,7 @@ export function dscal(alpha: number, x: ArrayLike<number>): Float64Array {
  * @returns The product.
  * @example
  * ```ts
- * import { dgemv } from 'mdml-engine/numerics/linalg'
+ * import { dgemv } from 'omai-engine/numerics/linalg'
  * Array.from(dgemv([1, 2, 3, 4], 2, 2, [1, 1], true)) // => [4, 6]
  * ```
  */
@@ -190,7 +190,7 @@ export function dgemv(
  * @returns The product, m x n row-major.
  * @example
  * ```ts
- * import { dgemm } from 'mdml-engine/numerics/linalg'
+ * import { dgemm } from 'omai-engine/numerics/linalg'
  * Array.from(dgemm([1, 2, 3, 4], [5, 6, 7, 8], 2, 2, 2)) // => [19, 22, 43, 50]
  * Array.from(dgemm([1, 2, 3, 4], [1, 0, 0, 1], 2, 2, 2, { transposeA: true })) // => [1, 3, 2, 4]
  * ```

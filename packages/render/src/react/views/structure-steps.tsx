@@ -2,7 +2,7 @@
  * The React view of a structure whose node and edge looks follow a run: the graph at a step, drawn as a scene.
  */
 
-import type { StructureSteps } from 'mdml-engine/exposition'
+import type { StructureSteps } from 'omai-engine/exposition'
 import { type ReactElement, useMemo } from 'react'
 import { structureStepsScene } from '../../views/structure-steps.ts'
 import { SceneFrame } from '../SceneFrame.tsx'

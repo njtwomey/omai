@@ -8,7 +8,7 @@
  */
 
 import { jacfwd } from '../autodiff/index.ts'
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import {
   add,
   concat,
@@ -121,11 +121,11 @@ export interface KernelSpec<P extends KernelParams> {
  * @param x - Points `[n, d]`, one point `[d]` or a scalar.
  * @param name - The calling function, for the error message.
  * @returns The rows and whether the input was a single point.
- * @throws MdmlError `shape` for inputs of rank 3 or more.
+ * @throws OmaiError `shape` for inputs of rank 3 or more.
  * @concept kernel-functions
  * @example
  * ```ts
- * import { asRows } from 'mdml-engine/kernels'
+ * import { asRows } from 'omai-engine/kernels'
  * asRows([1, 2, 3], 'example').rows.shape // => [1, 3]
  * asRows([[1], [2]], 'example').single // => false
  * ```
@@ -135,7 +135,7 @@ export function asRows(x: TensorLike, name: string): { readonly rows: Value; rea
   if (v.shape.length === 0) return { rows: reshape(v, [1, 1]), single: true }
   if (v.shape.length === 1) return { rows: reshape(v, [1, -1]), single: true }
   if (v.shape.length === 2) return { rows: v, single: false }
-  throw new MdmlError('shape', `${name}: points must be [d] or [n, d], got [${v.shape.join(', ')}]`)
+  throw new OmaiError('shape', `${name}: points must be [d] or [n, d], got [${v.shape.join(', ')}]`)
 }
 
 function structureOf(params: KernelParams): string {
@@ -161,13 +161,13 @@ function resolveConstraints(
     if (isTensor(leaf)) {
       const values = Array.from(leaf.data)
       if (values.some((v) => !Number.isFinite(v)))
-        throw new MdmlError('domain', `${name}: hyperparameter ${path} must be finite`, { values })
+        throw new OmaiError('domain', `${name}: hyperparameter ${path} must be finite`, { values })
       if (c === 'positive') {
         if (values.some((v) => v < 0))
-          throw new MdmlError('domain', `${name}: hyperparameter ${path} must be non-negative`, { values })
+          throw new OmaiError('domain', `${name}: hyperparameter ${path} must be non-negative`, { values })
         const zero = values.length > 0 && values.every((v) => v === 0)
         if (values.includes(0) && STRICTLY_POSITIVE.has(path.slice(path.lastIndexOf('.') + 1)))
-          throw new MdmlError('domain', `${name}: hyperparameter ${path} must be positive, got 0`, { values })
+          throw new OmaiError('domain', `${name}: hyperparameter ${path} must be positive, got 0`, { values })
         // log(0) is not finite, so a variance-like positive hyperparameter set to exactly zero is held fixed.
         if (zero) c = 'fixed'
       }
@@ -179,17 +179,17 @@ function resolveConstraints(
 
 /**
  * Define a kernel from its matrix function: the result checks point shapes, handles single points, rebuilds itself
- * from new hyperparameters and supplies a diagonal. Every kernel in mdml-js is made this way, and so can new ones.
+ * from new hyperparameters and supplies a diagonal. Every kernel in omai is made this way, and so can new ones.
  *
  * @param spec - Name, hyperparameters, constraints, the matrix function and optionally a diagonal.
  * @returns The kernel.
- * @throws MdmlError `domain` for a negative or non-finite hyperparameter, or a zero length scale, period, alpha or decay;
+ * @throws OmaiError `domain` for a negative or non-finite hyperparameter, or a zero length scale, period, alpha or decay;
  *   `shape` for bad points.
  * @concept kernel-functions
  * @example
  * ```ts
- * import { defineKernel } from 'mdml-engine/kernels'
- * import { matmul, mul, swapaxes, tensor, toArray } from 'mdml-engine/tensor'
+ * import { defineKernel } from 'omai-engine/kernels'
+ * import { matmul, mul, swapaxes, tensor, toArray } from 'omai-engine/tensor'
  * const scaledLinear = defineKernel({
  *   name: 'scaled-linear',
  *   params: { variance: tensor(2) },
@@ -230,7 +230,7 @@ export function defineKernel<P extends KernelParams>(spec: KernelSpec<P>): Kerne
       }
       const b = asRows(y, spec.name)
       if (a.rows.shape[1] !== b.rows.shape[1])
-        throw new MdmlError('shape', `${spec.name}: points of dimension ${a.rows.shape[1]} and ${b.rows.shape[1]}`)
+        throw new OmaiError('shape', `${spec.name}: points of dimension ${a.rows.shape[1]} and ${b.rows.shape[1]}`)
       const out = spec.matrix(params, a.rows, b.rows, parts)
       if (a.single && b.single) return reshape(out, [])
       return a.single || b.single ? reshape(out, [-1]) : out
@@ -242,7 +242,7 @@ export function defineKernel<P extends KernelParams>(spec: KernelSpec<P>): Kerne
     },
     withParams(next: KernelParams): Kernel {
       if (structureOf(next) !== structure)
-        throw new MdmlError('value', `${spec.name}: withParams needs hyperparameters of the same structure`)
+        throw new OmaiError('value', `${spec.name}: withParams needs hyperparameters of the same structure`)
       return defineKernel({ ...spec, params: next as P, constraints })
     },
   }
@@ -281,7 +281,7 @@ function combinedPsd(kernels: readonly Kernel[]): Pick<KernelSpec<KernelParams>,
 }
 
 function combine(name: 'sum' | 'product', kernels: readonly Kernel[]): Kernel {
-  if (kernels.length === 0) throw new MdmlError('value', `${name}Kernel needs at least one kernel`)
+  if (kernels.length === 0) throw new OmaiError('value', `${name}Kernel needs at least one kernel`)
   const join = name === 'sum' ? add : mul
   const fold = (values: readonly Value[]): Value =>
     values.slice(1).reduce((acc: Value, v) => join(acc, v), values[0] as Value)
@@ -306,8 +306,8 @@ function combine(name: 'sum' | 'product', kernels: readonly Kernel[]): Kernel {
  * @concept kernel-algebra
  * @example
  * ```ts
- * import { constantKernel, linearKernel, sumKernel } from 'mdml-engine/kernels'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { constantKernel, linearKernel, sumKernel } from 'omai-engine/kernels'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(sumKernel(linearKernel(), constantKernel({ value: 1 })).k([[1, 2]], [[3, 4]])) // => [[12]]
  * ```
  */
@@ -324,8 +324,8 @@ export function sumKernel(...kernels: readonly Kernel[]): Kernel {
  * @concept kernel-algebra
  * @example
  * ```ts
- * import { constantKernel, linearKernel, productKernel } from 'mdml-engine/kernels'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { constantKernel, linearKernel, productKernel } from 'omai-engine/kernels'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(productKernel(linearKernel(), constantKernel({ value: 2 })).k([[1, 2]], [[3, 4]])) // => [[22]]
  * ```
  */
@@ -343,8 +343,8 @@ export function productKernel(...kernels: readonly Kernel[]): Kernel {
  * @concept kernel-algebra
  * @example
  * ```ts
- * import { rbfKernel, scaleKernel } from 'mdml-engine/kernels'
- * import { item } from 'mdml-engine/tensor'
+ * import { rbfKernel, scaleKernel } from 'omai-engine/kernels'
+ * import { item } from 'omai-engine/tensor'
  * item(scaleKernel(rbfKernel(), 3).k([0], [0])) // => 3
  * ```
  */
@@ -370,18 +370,18 @@ export function scaleKernel(kernel: Kernel, outputScale: TensorLike = 1): Kernel
  * @param kernel - The base kernel.
  * @param exponent - The power p (a setting, not a hyperparameter).
  * @returns The exponentiated kernel.
- * @throws MdmlError `domain` for an exponent that is not finite.
+ * @throws OmaiError `domain` for an exponent that is not finite.
  * @concept kernel-algebra
  * @example
  * ```ts
- * import { linearKernel, powerKernel } from 'mdml-engine/kernels'
- * import { item } from 'mdml-engine/tensor'
+ * import { linearKernel, powerKernel } from 'omai-engine/kernels'
+ * import { item } from 'omai-engine/tensor'
  * item(powerKernel(linearKernel(), 2).k([1, 2], [3, 1])) // => 25
  * ```
  */
 export function powerKernel(kernel: Kernel, exponent: number): Kernel {
   if (!Number.isFinite(exponent))
-    throw new MdmlError('domain', `powerKernel: the exponent must be finite, got ${exponent}`)
+    throw new OmaiError('domain', `powerKernel: the exponent must be finite, got ${exponent}`)
   return defineKernel({
     name: 'power',
     params: { base: kernel.params },
@@ -404,19 +404,19 @@ export function powerKernel(kernel: Kernel, exponent: number): Kernel {
  * @param kernel - The base kernel (of the selected dimension).
  * @param dims - Column indices.
  * @returns The restricted kernel.
- * @throws MdmlError `value` for no columns or an index that is not a non-negative whole number, and from `k` for an index
+ * @throws OmaiError `value` for no columns or an index that is not a non-negative whole number, and from `k` for an index
  *   beyond the input's columns.
  * @concept kernel-algebra
  * @example
  * ```ts
- * import { linearKernel, onDimensions } from 'mdml-engine/kernels'
- * import { item } from 'mdml-engine/tensor'
+ * import { linearKernel, onDimensions } from 'omai-engine/kernels'
+ * import { item } from 'omai-engine/tensor'
  * item(onDimensions(linearKernel(), [1]).k([5, 2], [7, 3])) // => 6
  * ```
  */
 export function onDimensions(kernel: Kernel, dims: readonly number[]): Kernel {
   if (dims.length === 0 || !dims.every((d) => Number.isInteger(d) && d >= 0))
-    throw new MdmlError(
+    throw new OmaiError(
       'value',
       `onDimensions: dims must be a non-empty list of non-negative whole numbers, got [${dims}]`,
     )
@@ -425,7 +425,7 @@ export function onDimensions(kernel: Kernel, dims: readonly number[]): Kernel {
   const pick = (x: Value): Value => {
     const columns = x.shape[1] ?? 0
     if (widest >= columns)
-      throw new MdmlError('value', `onDimensions: column ${widest} is beyond the ${columns} columns of the input`)
+      throw new OmaiError('value', `onDimensions: column ${widest} is beyond the ${columns} columns of the input`)
     return take(x, index, 1)
   }
   return defineKernel({
@@ -456,7 +456,7 @@ export function onDimensions(kernel: Kernel, dims: readonly number[]): Kernel {
  * @concept kernel-algebra
  * @example
  * ```ts
- * import { ard, hyperparameters, rbfKernel } from 'mdml-engine/kernels'
+ * import { ard, hyperparameters, rbfKernel } from 'omai-engine/kernels'
  * hyperparameters(ard(rbfKernel({ lengthScale: 2 }), 3))[0]?.shape // => [3]
  * ```
  */
@@ -488,17 +488,17 @@ export function ard(kernel: Kernel, dim: number): Kernel {
  * @param kernel - The kernel.
  * @param paths - Pytree paths of the hyperparameters to fix (as in `kernel.constraints`).
  * @returns The kernel with those hyperparameters fixed, also after `withParams`.
- * @throws MdmlError `value` for an unknown path.
+ * @throws OmaiError `value` for an unknown path.
  * @concept kernel-hyperparameters
  * @example
  * ```ts
- * import { fixHyperparameters, rationalQuadraticKernel, theta } from 'mdml-engine/kernels'
+ * import { fixHyperparameters, rationalQuadraticKernel, theta } from 'omai-engine/kernels'
  * theta(fixHyperparameters(rationalQuadraticKernel(), ['alpha'])).shape // => [1]
  * ```
  */
 export function fixHyperparameters(kernel: Kernel, paths: readonly string[]): Kernel {
   for (const path of paths) {
-    if (!(path in kernel.constraints)) throw new MdmlError('value', `fixHyperparameters: no hyperparameter ${path}`)
+    if (!(path in kernel.constraints)) throw new OmaiError('value', `fixHyperparameters: no hyperparameter ${path}`)
   }
   const constraints = { ...kernel.constraints }
   for (const path of paths) constraints[path] = 'fixed'
@@ -532,7 +532,7 @@ export interface Hyperparameter {
  * @concept kernel-hyperparameters
  * @example
  * ```ts
- * import { hyperparameters, rationalQuadraticKernel } from 'mdml-engine/kernels'
+ * import { hyperparameters, rationalQuadraticKernel } from 'omai-engine/kernels'
  * hyperparameters(rationalQuadraticKernel()).map((h) => h.name) // => ['alpha', 'lengthScale']
  * ```
  */
@@ -556,8 +556,8 @@ export function hyperparameters(kernel: Kernel): Hyperparameter[] {
  * @concept kernel-hyperparameters
  * @example
  * ```ts
- * import { rbfKernel, theta } from 'mdml-engine/kernels'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { rbfKernel, theta } from 'omai-engine/kernels'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(theta(rbfKernel({ lengthScale: Math.E }))) // => [1]
  * ```
  */
@@ -577,11 +577,11 @@ export function theta(kernel: Kernel): Tensor<'float64'> {
  * @param kernel - The kernel.
  * @param t - theta `[p]` (possibly traced).
  * @returns The kernel with those hyperparameters.
- * @throws MdmlError `shape` when t has the wrong length.
+ * @throws OmaiError `shape` when t has the wrong length.
  * @concept kernel-hyperparameters
  * @example
  * ```ts
- * import { hyperparameters, rbfKernel, withTheta } from 'mdml-engine/kernels'
+ * import { hyperparameters, rbfKernel, withTheta } from 'omai-engine/kernels'
  * hyperparameters(withTheta(rbfKernel(), [1]))[0]?.value[0] === Math.E // => true
  * ```
  */
@@ -594,13 +594,13 @@ export function withTheta(kernel: Kernel, t: TensorLike): Kernel {
     const constraint = kernel.constraints[names[i] ?? ''] ?? 'positive'
     if (constraint === 'fixed') return leaf
     const size = sizeOf(leaf.shape)
-    if (offset + size > (v.shape[0] ?? 0)) throw new MdmlError('shape', 'withTheta: theta is too short')
+    if (offset + size > (v.shape[0] ?? 0)) throw new OmaiError('shape', 'withTheta: theta is too short')
     const slice = reshape(sliceAxis(v, 0, offset, offset + size), leaf.shape)
     offset += size
     return constraint === 'positive' ? exp(slice) : slice
   })
   if (v.shape.length !== 1 || offset !== v.shape[0])
-    throw new MdmlError('shape', `withTheta: theta must have ${offset} entries, got [${v.shape.join(', ')}]`)
+    throw new OmaiError('shape', `withTheta: theta must have ${offset} entries, got [${v.shape.join(', ')}]`)
   return kernel.withParams(treeUnflatten(def, next) as KernelParams)
 }
 
@@ -618,20 +618,20 @@ export interface GramOptions {
  * @param options - Diagonal jitter.
  * @returns `[n, n]` (`[1, 1]` for a single point `[d]`, `[0, 0]` for no points), differentiable in the points and the
  *   hyperparameters.
- * @throws MdmlError `value` for a jitter that is negative or not finite.
+ * @throws OmaiError `value` for a jitter that is negative or not finite.
  * @concept kernel-functions
  * @index function Gram matrix of a kernel over a set of points.
  * @example
  * ```ts
- * import { gram, linearKernel } from 'mdml-engine/kernels'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { gram, linearKernel } from 'omai-engine/kernels'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(gram(linearKernel(), [[1, 0], [1, 1]], { jitter: 0.5 })) // => [[1.5, 1], [1, 2.5]]
  * ```
  */
 export function gram(kernel: Kernel, x: TensorLike, options: GramOptions = {}): Value {
   const jitter = options.jitter ?? 0
   if (!Number.isFinite(jitter) || jitter < 0)
-    throw new MdmlError('value', `gram: the jitter must be finite and non-negative, got ${jitter}`)
+    throw new OmaiError('value', `gram: the jitter must be finite and non-negative, got ${jitter}`)
   // A single point [d] is one row: the matrix is [1, 1], not the scalar `kernel.k(x)` drops the axes to.
   const k = kernel.k(asRows(x, 'gram').rows)
   return jitter === 0 ? k : add(k, mul(eye(k.shape[0] ?? 0), jitter))
@@ -647,8 +647,8 @@ export function gram(kernel: Kernel, x: TensorLike, options: GramOptions = {}): 
  * @concept kernel-functions
  * @example
  * ```ts
- * import { crossGram, linearKernel } from 'mdml-engine/kernels'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { crossGram, linearKernel } from 'omai-engine/kernels'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(crossGram(linearKernel(), [[1, 2]], [[1, 0], [0, 1], [1, 1]])) // => [[1, 2, 3]]
  * ```
  */
@@ -674,7 +674,7 @@ export interface GramGradient {
  * @concept kernel-hyperparameters
  * @example
  * ```ts
- * import { gramGradient, rbfKernel } from 'mdml-engine/kernels'
+ * import { gramGradient, rbfKernel } from 'omai-engine/kernels'
  * gramGradient(rbfKernel(), [[0], [1], [3]]).gradient.shape // => [3, 3, 1]
  * ```
  */
@@ -702,7 +702,7 @@ function formatNumber(v: number): string {
  * @concept kernel-algebra
  * @example
  * ```ts
- * import { formatKernel, rbfKernel, scaleKernel, sumKernel, whiteNoiseKernel } from 'mdml-engine/kernels'
+ * import { formatKernel, rbfKernel, scaleKernel, sumKernel, whiteNoiseKernel } from 'omai-engine/kernels'
  * formatKernel(sumKernel(scaleKernel(rbfKernel({ lengthScale: 1.5 }), 2), whiteNoiseKernel({ noiseLevel: 0.1 })))
  * // => '2 * rbf(lengthScale=1.5) + white(noiseLevel=0.1)'
  * ```

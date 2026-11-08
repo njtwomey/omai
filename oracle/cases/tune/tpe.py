@@ -6,7 +6,7 @@ history, so the comparison is exact up to floating point.
 
 The histories have no repeated values of a parameter: Optuna orders tied observations with numpy's default argsort,
 whose order among equal values depends on the platform's sort kernel, and the order decides which tied observation gets
-which bandwidth. mdml-js breaks ties by trial order (a stable sort)."""
+which bandwidth. omai breaks ties by trial order (a stable sort)."""
 
 import math
 from collections.abc import Callable
@@ -14,8 +14,8 @@ from typing import Literal
 
 import numpy as np
 import optuna
-from mdml_oracle.fixture import Case, Json, case
-from mdml_oracle.helpers import FloatArray, rng
+from omai_oracle.fixture import Case, Json, case
+from omai_oracle.helpers import FloatArray, rng
 from optuna.distributions import (
     BaseDistribution,
     CategoricalDistribution,

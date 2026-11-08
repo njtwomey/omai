@@ -19,8 +19,8 @@ import { stamp } from './_util.ts'
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { dbnClickLogs } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { dbnClickLogs } from 'omai-engine/datasets'
  * generate(dbnClickLogs, { knobs: { sessions: 10, listLength: 5 } }).data.positions?.shape // => [50]
  * ```
  */

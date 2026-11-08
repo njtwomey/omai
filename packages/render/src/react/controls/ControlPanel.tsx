@@ -4,7 +4,7 @@
  * narrow screens) or in a bar above or below it.
  */
 
-import { maxOf } from 'mdml-engine/base'
+import { maxOf } from 'omai-engine/base'
 import { type CSSProperties, createContext, type ReactNode, useContext, useId, useState } from 'react'
 import { cx } from './classes.ts'
 import { ChevronDownIcon } from './icons.tsx'

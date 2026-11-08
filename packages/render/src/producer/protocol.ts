@@ -6,8 +6,8 @@
  * name). Plain data both ways, so a worker and a test double speak the same language.
  */
 
-import { type Json, MdmlError } from 'mdml-engine/base'
-import type { Config, RunStatus, SessionOptions, Subscription, TraceEvent } from 'mdml-engine/trace'
+import { type Json, OmaiError } from 'omai-engine/base'
+import type { Config, RunStatus, SessionOptions, Subscription, TraceEvent } from 'omai-engine/trace'
 
 /** The part of {@link SessionOptions} that crosses to a worker: all of it JSON. */
 export interface WireOptions {
@@ -182,24 +182,24 @@ function functionIn(x: unknown, path: string, seen: Set<unknown>): string | unde
  *
  * @param options - The options a page gives `useSession`.
  * @returns The wire options.
- * @throws MdmlError with code `value` naming what cannot cross.
+ * @throws OmaiError with code `value` naming what cannot cross.
  */
 export function wireOptions<S, C extends Config>(options: SessionOptions<S, C>): WireOptions {
   if (options.key !== undefined)
-    throw new MdmlError('value', 'a worker session is made from a seed: a ready-made key cannot cross')
-  if (options.start !== undefined) throw new MdmlError('value', 'a worker session cannot start from a given state')
+    throw new OmaiError('value', 'a worker session is made from a seed: a ready-made key cannot cross')
+  if (options.start !== undefined) throw new OmaiError('value', 'a worker session cannot start from a given state')
   const logs = options.logs as Subscription | undefined
   if (logs !== undefined && typeof logs === 'object') {
     for (const [path, spec] of Object.entries(logs)) {
       if (spec.kind === 'hook' && spec.hook !== undefined)
-        throw new MdmlError(
+        throw new OmaiError(
           'value',
           `the hook on '${path}' is a function and cannot cross to a worker: export it in Method.hooks and use On('name', options)`,
         )
     }
   }
   const found = functionIn(options.config, 'config', new Set())
-  if (found !== undefined) throw new MdmlError('value', `${found} is a function and cannot cross to a worker`)
+  if (found !== undefined) throw new OmaiError('value', `${found} is a function and cannot cross to a worker`)
   return {
     ...(options.config === undefined ? {} : { config: options.config as Json }),
     ...(options.seed === undefined ? {} : { seed: options.seed }),

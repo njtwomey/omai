@@ -1,7 +1,7 @@
 """The UCI tic-tac-toe endgame data (Aha 1991), CC BY 4.0: all 958 final boards where x moved first, won by x or not."""
 
-from mdml_oracle.uci import source_note, table_rows, zip_member
-from mdml_oracle.vendor import render_ordered_table
+from omai_oracle.uci import source_note, table_rows, zip_member
+from omai_oracle.vendor import render_ordered_table
 
 TARGET = "packages/engine/src/lib/datasets/_data/tic-tac-toe.data.ts"
 ID, SLUG = 101, "tic+tac+toe+endgame"

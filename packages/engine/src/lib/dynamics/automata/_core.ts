@@ -1,6 +1,6 @@
 // Small helpers shared by the automata and agent-based models: a state codec for checkpoints, modular indices on a
 // torus, a hash of a board for period detection, and the bits of a keyed uniform stream. Not exported.
-import { type Json, MdmlError } from '../../base/index.ts'
+import { type Json, OmaiError } from '../../base/index.ts'
 import type { Key } from '../../random/index.ts'
 import { uniform } from '../../random/index.ts'
 import { stateFromJson, stateToJson } from '../../trace/index.ts'
@@ -23,12 +23,12 @@ export function mod(i: number, n: number): number {
 /** Check that a size is a positive integer. */
 export function positiveInt(name: string, what: string, x: number): void {
   if (!(Number.isInteger(x) && x >= 1))
-    throw new MdmlError('value', `${name}: ${what} must be a positive integer, got ${x}`)
+    throw new OmaiError('value', `${name}: ${what} must be a positive integer, got ${x}`)
 }
 
 /** Check that a number lies in [0, 1]. */
 export function unit(name: string, what: string, x: number): void {
-  if (!(x >= 0 && x <= 1)) throw new MdmlError('value', `${name}: ${what} must be in [0, 1], got ${x}`)
+  if (!(x >= 0 && x <= 1)) throw new OmaiError('value', `${name}: ${what} must be in [0, 1], got ${x}`)
 }
 
 /** A 53-bit hash of the bytes of a board (two FNV-1a passes), for spotting a state that has come round again. */

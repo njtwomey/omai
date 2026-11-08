@@ -6,8 +6,8 @@ from typing import Any
 
 import numpy as np
 import pgmpy
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.pgm import NodeSpec, checked, definition, exact_posterior, pgmpy_model
+from omai_oracle.fixture import Case, case
+from omai_oracle.pgm import NodeSpec, checked, definition, exact_posterior, pgmpy_model
 from pgmpy.factors.discrete import DiscreteFactor, TabularCPD
 from pgmpy.inference import DBNInference
 from pgmpy.models import DynamicBayesianNetwork

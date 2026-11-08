@@ -1,4 +1,4 @@
-import { type DatasetEntry, datasetRegistry, loadDataset } from 'mdml-engine/datasets'
+import { type DatasetEntry, datasetRegistry, loadDataset } from 'omai-engine/datasets'
 import { type ReactNode, useDeferredValue, useMemo, useState } from 'react'
 import { type Frame, type FrameColumn, summarise, toFrame } from './frame.ts'
 

@@ -8,7 +8,7 @@
  * `H1` and the characteristic time of the lower bound).
  */
 
-import { argmaxOf, MdmlError, minOf } from '../base/index.ts'
+import { argmaxOf, minOf, OmaiError } from '../base/index.ts'
 import { foldIn, type Key } from '../random/index.ts'
 import { type Env, isBandit } from '../rl/index.ts'
 import {
@@ -95,11 +95,11 @@ export interface BestArmOptions {
 }
 
 const requireDelta = (delta: number, name: string): void => {
-  if (!(delta > 0 && delta < 1)) throw new MdmlError('value', `${name}: delta ${delta} must be in (0, 1)`)
+  if (!(delta > 0 && delta < 1)) throw new OmaiError('value', `${name}: delta ${delta} must be in (0, 1)`)
 }
 
 function armsOf<S>(env: Env<S, unknown, number>, name: string): number {
-  if (env.actionSpace.kind !== 'discrete') throw new MdmlError('value', `${name}: needs a bandit with discrete arms`)
+  if (env.actionSpace.kind !== 'discrete') throw new OmaiError('value', `${name}: needs a bandit with discrete arms`)
   return env.actionSpace.n
 }
 
@@ -226,12 +226,12 @@ export interface SuccessiveEliminationOptions extends BestArmOptions {
  * @param env - The bandit (its oracle is used only to score the result).
  * @param options - The confidence, the sub-Gaussian scale and the budget.
  * @returns The algorithm; its state's `recommendation` is the arm named once it stops.
- * @throws MdmlError with code `value` for `delta` outside (0, 1) or fewer than two arms.
+ * @throws OmaiError with code `value` for `delta` outside (0, 1) or fewer than two arms.
  * @concept best-arm-identification
  * @example
  * ```ts
- * import { successiveEliminationAlgorithm } from 'mdml-engine/agents'
- * import { bernoulliBandit } from 'mdml-engine/environments'
+ * import { successiveEliminationAlgorithm } from 'omai-engine/agents'
+ * import { bernoulliBandit } from 'omai-engine/environments'
  * successiveEliminationAlgorithm(bernoulliBandit.create({ probs: [0.2, 0.8] })).name // => 'successive-elimination'
  * ```
  */
@@ -243,7 +243,7 @@ export function successiveEliminationAlgorithm<S, O>(
   const delta = options.delta ?? 0.05
   const sigma = options.sigma ?? 0.5
   requireDelta(delta, 'successiveElimination')
-  if (arms < 2) throw new MdmlError('value', 'successiveElimination: needs at least two arms')
+  if (arms < 2) throw new OmaiError('value', 'successiveElimination: needs at least two arms')
   const radius = (n: number): number => sigma * Math.sqrt((2 * Math.log((4 * arms * n * n) / delta)) / n)
   return {
     name: 'successive-elimination',
@@ -310,12 +310,12 @@ export interface MedianEliminationOptions extends BestArmOptions {
  * @param env - The bandit.
  * @param options - The accuracy, confidence, sub-Gaussian scale and budget.
  * @returns The algorithm.
- * @throws MdmlError with code `value` for `delta` outside (0, 1), a non-positive `epsilon`, or fewer than two arms.
+ * @throws OmaiError with code `value` for `delta` outside (0, 1), a non-positive `epsilon`, or fewer than two arms.
  * @concept best-arm-identification
  * @example
  * ```ts
- * import { medianEliminationAlgorithm } from 'mdml-engine/agents'
- * import { bernoulliBandit } from 'mdml-engine/environments'
+ * import { medianEliminationAlgorithm } from 'omai-engine/agents'
+ * import { bernoulliBandit } from 'omai-engine/environments'
  * medianEliminationAlgorithm(bernoulliBandit.create({ probs: [0.2, 0.8] })).name // => 'median-elimination'
  * ```
  */
@@ -328,8 +328,8 @@ export function medianEliminationAlgorithm<S, O>(
   const epsilon = options.epsilon ?? 0.1
   const sigma = options.sigma ?? 0.5
   requireDelta(delta, 'medianElimination')
-  if (!(epsilon > 0)) throw new MdmlError('value', 'medianElimination: epsilon must be positive')
-  if (arms < 2) throw new MdmlError('value', 'medianElimination: needs at least two arms')
+  if (!(epsilon > 0)) throw new OmaiError('value', 'medianElimination: epsilon must be positive')
+  if (arms < 2) throw new OmaiError('value', 'medianElimination: needs at least two arms')
   const stagePulls = (e: number, d: number): number => Math.ceil(((2 * sigma) ** 2 * 4 * Math.log(3 / d)) / (e * e))
   return {
     name: 'median-elimination',
@@ -390,12 +390,12 @@ export interface LucbOptions extends BestArmOptions {
  * @param env - The bandit.
  * @param options - The confidence, the sub-Gaussian scale, the slack `epsilon` and the budget.
  * @returns The algorithm.
- * @throws MdmlError with code `value` for `delta` outside (0, 1) or fewer than two arms.
+ * @throws OmaiError with code `value` for `delta` outside (0, 1) or fewer than two arms.
  * @concept best-arm-identification
  * @example
  * ```ts
- * import { lucbAlgorithm } from 'mdml-engine/agents'
- * import { bernoulliBandit } from 'mdml-engine/environments'
+ * import { lucbAlgorithm } from 'omai-engine/agents'
+ * import { bernoulliBandit } from 'omai-engine/environments'
  * lucbAlgorithm(bernoulliBandit.create({ probs: [0.2, 0.8] })).name // => 'lucb'
  * ```
  */
@@ -408,7 +408,7 @@ export function lucbAlgorithm<S, O>(
   const sigma = options.sigma ?? 0.5
   const slack = options.epsilon ?? 0
   requireDelta(delta, 'lucb')
-  if (arms < 2) throw new MdmlError('value', 'lucb: needs at least two arms')
+  if (arms < 2) throw new OmaiError('value', 'lucb: needs at least two arms')
   const beta = (u: number, t: number): number =>
     sigma * Math.sqrt((2 * Math.log((5 * arms * t ** 4) / (4 * delta))) / u)
   return {
@@ -484,21 +484,21 @@ export interface CharacteristicTime {
  * @param means - The arms' means (the best one is the largest).
  * @param sigma - The standard deviation of the rewards (default 1).
  * @returns The weights and `1 / T*`.
- * @throws MdmlError with code `value` for fewer than two arms or a best arm that is not unique.
+ * @throws OmaiError with code `value` for fewer than two arms or a best arm that is not unique.
  * @concept best-arm-identification
  * @example
  * ```ts
- * import { characteristicTime } from 'mdml-engine/agents'
+ * import { characteristicTime } from 'omai-engine/agents'
  * const { weights, time } = characteristicTime([1, 0, 0])
  * [weights[1] === weights[2], Math.round(time * 100) / 100] // => [true, 11.66]
  * ```
  */
 export function characteristicTime(means: readonly number[], sigma = 1): CharacteristicTime {
-  if (means.length < 2) throw new MdmlError('value', 'characteristicTime: needs at least two arms')
+  if (means.length < 2) throw new OmaiError('value', 'characteristicTime: needs at least two arms')
   const best = argmaxOf(means)
   const gaps = means.map((m) => (means[best] ?? 0) - m)
   const others = gaps.flatMap((g, i) => (i === best ? [] : [g]))
-  if (others.some((g) => !(g > 0))) throw new MdmlError('value', 'characteristicTime: the best arm must be unique')
+  if (others.some((g) => !(g > 0))) throw new OmaiError('value', 'characteristicTime: the best arm must be unique')
   // With the best arm's weight 1, the others have x_a = 1 / (Delta_a^2 / (2 sigma^2 T) - 1) for the common value T.
   const total = (t: number): number =>
     others.reduce((a, g) => a + (1 / ((g * g) / (2 * sigma * sigma * t) - 1)) ** 2, 0)
@@ -530,20 +530,20 @@ export function characteristicTime(means: readonly number[], sigma = 1): Charact
  *
  * @param means - The arms' means.
  * @returns `H1`.
- * @throws MdmlError with code `value` for fewer than two arms or a tie for best.
+ * @throws OmaiError with code `value` for fewer than two arms or a tie for best.
  * @concept best-arm-identification
  * @example
  * ```ts
- * import { hardness } from 'mdml-engine/agents'
+ * import { hardness } from 'omai-engine/agents'
  * hardness([0.9, 0.5, 0.5]) // => 18.75
  * ```
  */
 export function hardness(means: readonly number[]): number {
-  if (means.length < 2) throw new MdmlError('value', 'hardness: needs at least two arms')
+  if (means.length < 2) throw new OmaiError('value', 'hardness: needs at least two arms')
   const sorted = [...means].sort((a, b) => b - a)
   const top = sorted[0] ?? 0
   const second = sorted[1] ?? 0
-  if (!(top > second)) throw new MdmlError('value', 'hardness: the best arm must be unique')
+  if (!(top > second)) throw new OmaiError('value', 'hardness: the best arm must be unique')
   let h = 1 / (top - second) ** 2
   for (const m of sorted.slice(1)) h += 1 / (top - m) ** 2
   return h
@@ -574,12 +574,12 @@ export interface TrackAndStopOptions {
  * @param env - The bandit with Gaussian arms.
  * @param options - The confidence, standard deviation, threshold and budget.
  * @returns The algorithm.
- * @throws MdmlError with code `value` for `delta` outside (0, 1) or fewer than two arms.
+ * @throws OmaiError with code `value` for `delta` outside (0, 1) or fewer than two arms.
  * @concept best-arm-identification
  * @example
  * ```ts
- * import { trackAndStopAlgorithm } from 'mdml-engine/agents'
- * import { gaussianBandit } from 'mdml-engine/environments'
+ * import { trackAndStopAlgorithm } from 'omai-engine/agents'
+ * import { gaussianBandit } from 'omai-engine/environments'
  * trackAndStopAlgorithm(gaussianBandit.create({ means: [1, 0] })).name // => 'track-and-stop'
  * ```
  */
@@ -591,7 +591,7 @@ export function trackAndStopAlgorithm<S, O>(
   const delta = options.delta ?? 0.05
   const sigma = options.sigma ?? 1
   requireDelta(delta, 'trackAndStop')
-  if (arms < 2) throw new MdmlError('value', 'trackAndStop: needs at least two arms')
+  if (arms < 2) throw new OmaiError('value', 'trackAndStop: needs at least two arms')
   const threshold = options.threshold ?? ((t, d, k) => Math.log(((k - 1) * (1 + Math.log(Math.max(t, 1)))) / d))
   const statistic = (s: BestArmState): number => {
     const a = leader(s)
@@ -657,8 +657,8 @@ export function trackAndStopAlgorithm<S, O>(
  * @concept best-arm-identification
  * @example
  * ```ts
- * import { lucbAlgorithm, runBestArm } from 'mdml-engine/agents'
- * import { bernoulliBandit } from 'mdml-engine/environments'
+ * import { lucbAlgorithm, runBestArm } from 'omai-engine/agents'
+ * import { bernoulliBandit } from 'omai-engine/environments'
  * const env = bernoulliBandit.create({ probs: [0.1, 0.9] })
  * runBestArm(env, lucbAlgorithm(env), { seed: 1 }).recommendation // => 1
  * ```
@@ -675,7 +675,7 @@ export function runBestArm<S, O>(
   })
   const s = result.state
   const recommendation = s.recommendation >= 0 ? s.recommendation : leader(s)
-  if (!isBandit(env)) throw new MdmlError('value', `runBestArm: ${env.spec.id} has no oracle to score the arm by`)
+  if (!isBandit(env)) throw new OmaiError('value', `runBestArm: ${env.spec.id} has no oracle to score the arm by`)
   const best = env.oracle.optimalAction?.(s.envState as S)
   const truth = env.oracle
   const armsCount = s.counts.length

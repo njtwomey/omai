@@ -1,4 +1,4 @@
-import { pointsSteps } from 'mdml-engine/exposition'
+import { pointsSteps } from 'omai-engine/exposition'
 import { describe, expect, it } from 'vitest'
 import {
   CAMERA_PRESETS,

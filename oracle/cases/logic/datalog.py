@@ -7,8 +7,8 @@ from importlib.metadata import version
 
 import clingo
 from cases.logic._datalog import evaluate
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import rng
 
 REFERENCE: dict[str, str] = {"clingo": version("clingo")}
 

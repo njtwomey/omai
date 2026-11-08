@@ -4,8 +4,8 @@ from typing import Any, cast
 
 import cma  # pyright: ignore[reportMissingTypeStubs]
 import numpy as np
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.optim_problems import PROBLEMS
+from omai_oracle.fixture import Case, case
+from omai_oracle.optim_problems import PROBLEMS
 
 REFERENCE: dict[str, str] = {"cma": str(cma.__version__)}
 

@@ -5,9 +5,9 @@ from typing import Any
 import numpy as np
 import optax  # pyright: ignore[reportMissingTypeStubs]
 import torch
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray
-from mdml_oracle.optim_trajectories import (
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray
+from omai_oracle.optim_trajectories import (
     A_MATRIX,
     C_MATRIX,
     P0,

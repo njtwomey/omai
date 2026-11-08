@@ -22,29 +22,29 @@ import * as trace from '../trace/index.ts'
 import * as learn from './index.ts'
 
 const MODULES: Readonly<Record<string, Readonly<Record<string, unknown>>>> = {
-  'mdml-engine/agents': agents,
-  'mdml-engine/autodiff': autodiff,
-  'mdml-engine/base': base,
-  'mdml-engine/data': data,
-  'mdml-engine/dists': dists,
-  'mdml-engine/exposition': exposition,
-  'mdml-engine/losses': losses,
-  'mdml-engine/metrics': metrics,
-  'mdml-engine/nn': nn,
-  'mdml-engine/optim': optim,
-  'mdml-engine/random': random,
-  'mdml-engine/space': space,
-  'mdml-engine/stats': stats,
-  'mdml-engine/svm': svm,
-  'mdml-engine/tensor': tensor,
-  'mdml-engine/trace': trace,
-  'mdml-engine/learn': learn,
+  'omai-engine/agents': agents,
+  'omai-engine/autodiff': autodiff,
+  'omai-engine/base': base,
+  'omai-engine/data': data,
+  'omai-engine/dists': dists,
+  'omai-engine/exposition': exposition,
+  'omai-engine/losses': losses,
+  'omai-engine/metrics': metrics,
+  'omai-engine/nn': nn,
+  'omai-engine/optim': optim,
+  'omai-engine/random': random,
+  'omai-engine/space': space,
+  'omai-engine/stats': stats,
+  'omai-engine/svm': svm,
+  'omai-engine/tensor': tensor,
+  'omai-engine/trace': trace,
+  'omai-engine/learn': learn,
   ...Object.fromEntries(
     Object.entries(learn)
       .filter(([, v]) => typeof v === 'object' && v !== null && !Array.isArray(v))
       .flatMap(([k, v]) => {
         const folder = k.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`)
-        return [[`mdml-engine/learn/${folder}`, v as Readonly<Record<string, unknown>>]]
+        return [[`omai-engine/learn/${folder}`, v as Readonly<Record<string, unknown>>]]
       }),
   ),
 }
@@ -101,7 +101,7 @@ function compileExample(code: readonly string[]): string {
 }
 
 /**
- * Whether a computed value matches the value an example states. As in the examples runner of `mdml-meta`
+ * Whether a computed value matches the value an example states. As in the examples runner of `omai-meta`
  * (`runner/compare.ts`), a number written with d decimals matches any value that rounds to it at d decimals; an integer
  * or a longer literal matches to a relative 1e-12. Arrays and plain objects compare element by element; anything else
  * must be equal.
@@ -173,7 +173,7 @@ describe('documentation examples', () => {
             try {
               f()
             } catch (e) {
-              expect(base.isMdmlError(e, code as base.ErrorCode), text).toBe(true)
+              expect(base.isOmaiError(e, code as base.ErrorCode), text).toBe(true)
             }
           },
         )

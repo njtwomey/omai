@@ -4,7 +4,7 @@
  * estimation by EM with inside-outside as a traced algorithm.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import { type Algorithm, runAlgorithm, type TracePolicy, type Tracer } from '../trace/index.ts'
 import type { Grammar, GrammarSymbol, ParseTree, Production } from './parsing.ts'
 
@@ -126,7 +126,7 @@ function chart(
  * @concept probabilistic-parsing
  * @example
  * ```ts
- * import { grammar, viterbiParse, treeToString } from 'mdml-engine/text'
+ * import { grammar, viterbiParse, treeToString } from 'omai-engine/text'
  * const g = grammar("S -> NP VP [1.0]\nNP -> 'I' [0.6] | 'fish' [0.4]\nVP -> V NP [0.7] | 'fish' [0.3]\nV -> 'eat' [1.0]")
  * const r = viterbiParse(g, ['I', 'eat', 'fish'])
  * [r === undefined ? '' : treeToString(r.tree), r?.probability] // => ['(S (NP I) (VP (V eat) (NP fish)))', 0.168]
@@ -165,7 +165,7 @@ export function viterbiParse(
  * @concept probabilistic-parsing
  * @example
  * ```ts
- * import { grammar, sentenceProbability } from 'mdml-engine/text'
+ * import { grammar, sentenceProbability } from 'omai-engine/text'
  * const g = grammar("S -> S S [0.4] | 'a' [0.6]")
  * sentenceProbability(g, ['a', 'a', 'a']) // => 0.06912
  * ```
@@ -180,7 +180,7 @@ function checkCnf(g: Grammar, name: string): void {
     const ok =
       (p.rhs.length === 2 && p.rhs.every((s) => 'nonterminal' in s)) ||
       (p.rhs.length === 1 && 'terminal' in (p.rhs[0] as GrammarSymbol))
-    if (!ok) throw new MdmlError('value', `${name}: the grammar must be in Chomsky normal form`)
+    if (!ok) throw new OmaiError('value', `${name}: the grammar must be in Chomsky normal form`)
   }
 }
 
@@ -191,11 +191,11 @@ function checkCnf(g: Grammar, name: string): void {
  * @param g - The grammar (CNF).
  * @param tokens - The words.
  * @returns The sentence probability and expected production counts (in production order; zero without a parse).
- * @throws MdmlError with code `value` for a grammar not in CNF.
+ * @throws OmaiError with code `value` for a grammar not in CNF.
  * @concept probabilistic-parsing
  * @example
  * ```ts
- * import { grammar, insideOutside } from 'mdml-engine/text'
+ * import { grammar, insideOutside } from 'omai-engine/text'
  * const g = grammar("S -> A B [1.0]\nA -> 'a' [1.0]\nB -> 'b' [1.0]")
  * insideOutside(g, ['a', 'b']).expectedCounts // => [1, 1, 1]
  * ```
@@ -282,12 +282,12 @@ export interface PcfgEmState {
  * @param sentences - Token lists (each must have a parse).
  * @param options - Convergence tolerance (default 1e-8).
  * @returns The algorithm.
- * @throws MdmlError with code `value` for a grammar not in CNF or a sentence without a parse.
+ * @throws OmaiError with code `value` for a grammar not in CNF or a sentence without a parse.
  * @concept probabilistic-parsing
  * @example
  * ```ts
- * import { grammar, pcfgEmAlgorithm } from 'mdml-engine/text'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { grammar, pcfgEmAlgorithm } from 'omai-engine/text'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const g = grammar("S -> S S [0.5] | 'a' [0.5]")
  * const r = runAlgorithm(pcfgEmAlgorithm(g, [['a'], ['a', 'a']]), { maxSteps: 200 })
  * r.state.grammar.productions[0]?.probability // => 0.25
@@ -303,7 +303,7 @@ export function pcfgEmAlgorithm(
   const loglik = (gr: Grammar): number =>
     sentences.reduce((s, t) => {
       const p = insideOutside(gr, t).probability
-      if (!(p > 0)) throw new MdmlError('value', `pcfgEm: no parse of ${t.join(' ')}`)
+      if (!(p > 0)) throw new OmaiError('value', `pcfgEm: no parse of ${t.join(' ')}`)
       return s + Math.log(p)
     }, 0)
   return {
@@ -340,7 +340,7 @@ export function pcfgEmAlgorithm(
  * @concept probabilistic-parsing
  * @example
  * ```ts
- * import { grammar, trainPcfg } from 'mdml-engine/text'
+ * import { grammar, trainPcfg } from 'omai-engine/text'
  * trainPcfg(grammar("S -> S S [0.5] | 'a' [0.5]"), [['a'], ['a', 'a']]).grammar.productions[1]?.probability // => 0.75
  * ```
  */

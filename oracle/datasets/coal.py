@@ -1,6 +1,6 @@
 """Dates of British coal-mining disasters 1851 to 1962 (Jarrett 1979), boot::coal via Rdatasets."""
 
-from mdml_oracle.vendor import csv_rows, fetch_pinned, render_table
+from omai_oracle.vendor import csv_rows, fetch_pinned, render_table
 
 TARGET = "packages/engine/src/lib/datasets/_data/coal.data.ts"
 URL = "https://vincentarelbundock.github.io/Rdatasets/csv/boot/coal.csv"

@@ -93,8 +93,8 @@ function withUniformOutliers(
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { blobsWithOutliers } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { blobsWithOutliers } from 'omai-engine/datasets'
  * const { data } = generate(blobsWithOutliers, { knobs: { n: 100, contamination: 0.2 } })
  * data.classes // => ['inlier', 'outlier']
  * Array.from(data.y.data).filter((v) => v === 1).length // => 20
@@ -145,8 +145,8 @@ export const blobsWithOutliers: DatasetGenerator<ClassificationData> = {
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { moonsWithOutliers } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { moonsWithOutliers } from 'omai-engine/datasets'
  * generate(moonsWithOutliers, { knobs: { n: 50 } }).data.x.shape // => [50, 2]
  * ```
  */
@@ -189,9 +189,9 @@ export const moonsWithOutliers: DatasetGenerator<ClassificationData> = {
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { linearOutliers } from 'mdml-engine/datasets'
- * import { tensor, toFlat } from 'mdml-engine/tensor'
+ * import { generate } from 'omai-engine/data'
+ * import { linearOutliers } from 'omai-engine/datasets'
+ * import { tensor, toFlat } from 'omai-engine/tensor'
  * const { truth } = generate(linearOutliers, { knobs: { slope: 2, intercept: 1 } })
  * toFlat(truth.regressionFunction?.(tensor([[0], [1]])) ?? tensor([])) // => [1, 3]
  * ```

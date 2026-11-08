@@ -3,7 +3,7 @@
  * coloured by group, revealed along x as a player.
  */
 
-import type { CurveSet } from 'mdml-engine/exposition'
+import type { CurveSet } from 'omai-engine/exposition'
 import { type ReactElement, useCallback } from 'react'
 import type { Figure } from '../../figure/figure.ts'
 import { curveSetFrames, curveSetView } from '../../views/curves.ts'

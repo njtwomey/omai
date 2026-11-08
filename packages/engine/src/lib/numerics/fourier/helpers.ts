@@ -4,7 +4,7 @@
  * teaching and checking.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import {
   type ComplexValue,
   fromStorage,
@@ -24,8 +24,8 @@ import {
  * @returns Frequencies `[n]`.
  * @example
  * ```ts
- * import { fftfreq } from 'mdml-engine/numerics/fourier'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { fftfreq } from 'omai-engine/numerics/fourier'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(fftfreq(4)) // => [0, 0.25, -0.5, -0.25]
  * ```
  */
@@ -45,8 +45,8 @@ export function fftfreq(n: number, d = 1): Tensor {
  * @returns Frequencies `[floor(n/2) + 1]`.
  * @example
  * ```ts
- * import { rfftfreq } from 'mdml-engine/numerics/fourier'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { rfftfreq } from 'omai-engine/numerics/fourier'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(rfftfreq(4, 0.5)) // => [0, 0.5, 1]
  * ```
  */
@@ -76,8 +76,8 @@ function shiftAxes(x: Value, axes: number | readonly number[] | undefined, inver
  * @returns The shifted values.
  * @example
  * ```ts
- * import { fftshift, fftfreq } from 'mdml-engine/numerics/fourier'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { fftshift, fftfreq } from 'omai-engine/numerics/fourier'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(fftshift(fftfreq(5))) // => [-0.4, -0.2, 0, 0.2, 0.4]
  * ```
  */
@@ -101,8 +101,8 @@ export function fftshift(x: TensorLike | ComplexValue, axes?: number | readonly 
  * @returns The unshifted values.
  * @example
  * ```ts
- * import { ifftshift } from 'mdml-engine/numerics/fourier'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { ifftshift } from 'omai-engine/numerics/fourier'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(ifftshift([-2, -1, 0, 1, 2])) // => [0, 1, 2, -2, -1]
  * ```
  */
@@ -127,12 +127,12 @@ export function ifftshift(x: TensorLike | ComplexValue, axes?: number | readonly
  * @returns The length.
  * @example
  * ```ts
- * import { nextFastLen } from 'mdml-engine/numerics/fourier'
+ * import { nextFastLen } from 'omai-engine/numerics/fourier'
  * nextFastLen(97) // => 98
  * ```
  */
 export function nextFastLen(target: number, real = false): number {
-  if (!(target >= 1)) throw new MdmlError('value', 'nextFastLen: target must be at least 1')
+  if (!(target >= 1)) throw new OmaiError('value', 'nextFastLen: target must be at least 1')
   const primes = real ? [2, 3, 5] : [2, 3, 5, 7, 11]
   for (let n = Math.ceil(target); ; n++) {
     let m = n
@@ -166,8 +166,8 @@ function unitRoot(m: number, n: number): [number, number] {
  * @returns The matrix as a complex pair.
  * @example
  * ```ts
- * import { dftMatrix } from 'mdml-engine/numerics/fourier'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { dftMatrix } from 'omai-engine/numerics/fourier'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(dftMatrix(2).re) // => [[1, 1], [1, -1]]
  * ```
  */
@@ -194,7 +194,7 @@ export function dftMatrix(n: number, scale: 'none' | 'n' | 'sqrtn' = 'none'): { 
  * @returns The spectrum.
  * @example
  * ```ts
- * import { dft } from 'mdml-engine/numerics/fourier'
+ * import { dft } from 'omai-engine/numerics/fourier'
  * dft([1, 2, 3, 4]).re // => [10, -2, -2, -2]
  * ```
  */

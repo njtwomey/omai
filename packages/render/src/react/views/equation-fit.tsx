@@ -4,7 +4,7 @@
  * truth and the residual strip beneath.
  */
 
-import { coefficientErrors, type EquationFit } from 'mdml-engine/exposition'
+import { coefficientErrors, type EquationFit } from 'omai-engine/exposition'
 import { type ReactElement, useMemo } from 'react'
 import {
   equationFitView,

@@ -1,6 +1,6 @@
-import { confusionMatrix } from 'mdml-engine/metrics'
-import { ContingencyTable, ControlPanel, Select, Toggle } from 'mdml-render/react'
-import { categoricalColour } from 'mdml-render/theme'
+import { confusionMatrix } from 'omai-engine/metrics'
+import { ContingencyTable, ControlPanel, Select, Toggle } from 'omai-render/react'
+import { categoricalColour } from 'omai-render/theme'
 import { type ReactNode, useMemo, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 
@@ -8,7 +8,7 @@ export const recipe: Recipe = {
   title: 'Contingency table',
   question: 'How do I show classification results with their margins and rates?',
   explain:
-    '`ContingencyTable` takes any confusion matrix (`confusionMatrix(yTrue, yPred)` from `mdml-engine/metrics`) and draws it with its margins: row totals with each class’s recall and miss rate, column totals with precision and false discovery rate, and the grand total with accuracy. With two classes and a `positive` index the cells are named TP, FN, FP and TN, and the rates read sensitivity (recall), specificity, precision and their complements. Hover a rate for its acronym (TPR, TNR, PPV, …) and formula, and to outline what it divides: the numerator solid, the rest of the denominator dashed.',
+    '`ContingencyTable` takes any confusion matrix (`confusionMatrix(yTrue, yPred)` from `omai-engine/metrics`) and draws it with its margins: row totals with each class’s recall and miss rate, column totals with precision and false discovery rate, and the grand total with accuracy. With two classes and a `positive` index the cells are named TP, FN, FP and TN, and the rates read sensitivity (recall), specificity, precision and their complements. Hover a rate for its acronym (TPR, TNR, PPV, …) and formula, and to outline what it divides: the numerator solid, the rest of the denominator dashed.',
 }
 
 // Fixed predictions: a three-class problem and a two-class screening test.

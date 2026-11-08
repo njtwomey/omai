@@ -8,7 +8,7 @@
  * diffusion step) per step, so a session shows the labels spread and `fittedAt(t)` is the model at round `t`.
  */
 
-import { argmaxOf, type Json, MdmlError, maxOf, minOf } from '../base/index.ts'
+import { argmaxOf, type Json, maxOf, minOf, OmaiError } from '../base/index.ts'
 import { type KernelChoice, kernelMatrix, kernelSpace, type ResolvedKernel, resolveKernel } from '../kernels/index.ts'
 import { dgemm, solve } from '../numerics/linalg/index.ts'
 import { kNearest } from '../numerics/spatial/index.ts'
@@ -32,7 +32,7 @@ export const UNLABELLED = -1
  * @returns `true` for an unlabelled row.
  * @example
  * ```ts
- * import { isUnlabelled } from 'mdml-engine/learn'
+ * import { isUnlabelled } from 'omai-engine/learn'
  * isUnlabelled(-1) // => true
  * isUnlabelled(Number.NaN) // => true
  * isUnlabelled(0) // => false
@@ -51,10 +51,10 @@ type Partial_ = { readonly m: MatrixView; readonly y: Float64Array; readonly cla
 function readPartial(data: LearnData, who: string, needClasses = true): Partial_ {
   const m = matrixView(data.x, who)
   const y = Float64Array.from(toFlat(asTensor(requireTargets(data, who))))
-  if (y.length !== m.n) throw new MdmlError('shape', `${who}: ${m.n} rows but ${y.length} targets`)
+  if (y.length !== m.n) throw new OmaiError('shape', `${who}: ${m.n} rows but ${y.length} targets`)
   const seen = new Set<number>()
   for (const v of y) if (!isUnlabelled(v)) seen.add(v)
-  if (seen.size === 0) throw new MdmlError('value', `${who}: needs at least one labelled row`)
+  if (seen.size === 0) throw new OmaiError('value', `${who}: needs at least one labelled row`)
   const classes = needClasses ? Array.from(seen).sort((a, b) => a - b) : []
   return { m, y, classes }
 }
@@ -177,8 +177,8 @@ export type SelfTrainingParams = SelfTrainingState & { readonly classes: number[
  * @returns The algorithm.
  * @example
  * ```ts
- * import { gaussianNaiveBayes, selfTrainingAlgorithm } from 'mdml-engine/learn'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { gaussianNaiveBayes, selfTrainingAlgorithm } from 'omai-engine/learn'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const x = [[0], [0.2], [0.4], [5], [5.2], [5.4]]
  * const alg = selfTrainingAlgorithm({ x, y: [0, -1, -1, 1, -1, -1] }, { base: gaussianNaiveBayes(), criterion: 'threshold', threshold: 0.75, kBest: 10, maxIter: 10 })
  * runAlgorithm(alg, { maxSteps: 10 }).state.labels // => [0, 0, 0, 1, 1, 1]
@@ -283,8 +283,8 @@ const SELF_DEFAULTS = {
  * @returns The estimator.
  * @example
  * ```ts
- * import { gaussianNaiveBayes, selfTraining } from 'mdml-engine/learn'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { gaussianNaiveBayes, selfTraining } from 'omai-engine/learn'
+ * import { toFlat } from 'omai-engine/tensor'
  * const x = [[0], [0.2], [0.4], [5], [5.2], [5.4]]
  * const f = selfTraining(gaussianNaiveBayes()).fit({ x, y: [0, -1, -1, 1, -1, -1] })
  * f.transduction // => [0, 0, 0, 1, 1, 1]
@@ -382,8 +382,8 @@ function viewsOf(d: number, a: readonly number[] | null, b: readonly number[] | 
  * @returns The algorithm.
  * @example
  * ```ts
- * import { coTrainingAlgorithm, gaussianNaiveBayes } from 'mdml-engine/learn'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { coTrainingAlgorithm, gaussianNaiveBayes } from 'omai-engine/learn'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const x = [[0, 0], [0.2, 0.1], [0.1, 0.3], [5, 5], [5.2, 5.1], [5.1, 5.3]]
  * const alg = coTrainingAlgorithm({ x, y: [0, -1, -1, 1, -1, -1] }, { base: gaussianNaiveBayes(), viewA: null, viewB: null, growth: 2, pool: 10, threshold: 0.5, maxRounds: 5 })
  * runAlgorithm(alg, { maxSteps: 10 }).state.labels // => [0, 0, 0, 1, 1, 1]
@@ -557,8 +557,8 @@ const CO_DEFAULTS = {
  * @returns The estimator.
  * @example
  * ```ts
- * import { coTraining, gaussianNaiveBayes } from 'mdml-engine/learn'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { coTraining, gaussianNaiveBayes } from 'omai-engine/learn'
+ * import { toFlat } from 'omai-engine/tensor'
  * const x = [[0, 0], [0.2, 0.1], [0.1, 0.3], [0.3, 0.2], [5, 5], [5.2, 5.1], [5.1, 5.3], [5.3, 5.2]]
  * const f = coTraining(gaussianNaiveBayes(), { growth: 2 }).fit({ x, y: [0, 0, -1, -1, 1, 1, -1, -1] })
  * toFlat(f.predict([[0.1, 0.1], [5.1, 5.2]])) // => [0, 1]
@@ -637,7 +637,7 @@ export type TriTrainingParams = TriTrainingState & {
  * @returns The algorithm.
  * @example
  * ```ts
- * import { gaussianNaiveBayes, triTrainingAlgorithm } from 'mdml-engine/learn'
+ * import { gaussianNaiveBayes, triTrainingAlgorithm } from 'omai-engine/learn'
  * triTrainingAlgorithm({ x: [[0], [1], [2]], y: [0, 1, -1] }, { base: gaussianNaiveBayes(), maxRounds: 3 }).name // => 'tri-training'
  * ```
  */
@@ -833,8 +833,8 @@ function triVerbs(p: TriTrainingParams, h: TriTrainingHyper): PseudoLabelVerbs {
  * @returns The estimator.
  * @example
  * ```ts
- * import { gaussianNaiveBayes, triTraining } from 'mdml-engine/learn'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { gaussianNaiveBayes, triTraining } from 'omai-engine/learn'
+ * import { toFlat } from 'omai-engine/tensor'
  * const x = [[0], [0.1], [0.2], [0.3], [5], [5.1], [5.2], [5.3]]
  * const f = triTraining(gaussianNaiveBayes()).fit({ x, y: [0, 0, -1, -1, 1, 1, -1, -1] })
  * toFlat(f.predict([[0.15], [5.15]])) // => [0, 1]
@@ -975,7 +975,7 @@ function graphAlgorithm(
   const who = variant === 'propagation' ? 'labelPropagation' : 'labelSpreading'
   const { m, y, classes } = readPartial(data, who)
   if (variant === 'spreading' && !(h.alpha > 0 && h.alpha < 1)) {
-    throw new MdmlError('value', `${who}: alpha must be in (0, 1), got ${h.alpha}`)
+    throw new OmaiError('value', `${who}: alpha must be in (0, 1), got ${h.alpha}`)
   }
   const k = classes.length
   const n = m.n
@@ -1137,8 +1137,8 @@ function graphEstimator(
  * @returns The algorithm.
  * @example
  * ```ts
- * import { labelPropagationAlgorithm } from 'mdml-engine/learn'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { labelPropagationAlgorithm } from 'omai-engine/learn'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const alg = labelPropagationAlgorithm({ x: [[0], [1], [10], [11]], y: [0, -1, 1, -1] }, { kernel: 'rbf', gamma: 0.5, nNeighbors: 7, alpha: 0.2, maxIter: 1000, tol: 1e-3 })
  * runAlgorithm(alg, { maxSteps: 1000 }).status // => 'converged'
  * ```
@@ -1157,8 +1157,8 @@ export function labelPropagationAlgorithm(data: LearnData, hyper: GraphLabelHype
  * @returns The algorithm.
  * @example
  * ```ts
- * import { labelSpreadingAlgorithm } from 'mdml-engine/learn'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { labelSpreadingAlgorithm } from 'omai-engine/learn'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const alg = labelSpreadingAlgorithm({ x: [[0], [1], [10], [11]], y: [0, -1, 1, -1] }, { kernel: 'rbf', gamma: 0.5, nNeighbors: 7, alpha: 0.2, maxIter: 30, tol: 1e-3 })
  * runAlgorithm(alg, { maxSteps: 30 }).status // => 'converged'
  * ```
@@ -1177,8 +1177,8 @@ export function labelSpreadingAlgorithm(data: LearnData, hyper: GraphLabelHyper)
  * @index estimator Semi-supervised labelling by propagation over a neighbour graph.
  * @example
  * ```ts
- * import { labelPropagation } from 'mdml-engine/learn'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { labelPropagation } from 'omai-engine/learn'
+ * import { toFlat } from 'omai-engine/tensor'
  * const f = labelPropagation({ gamma: 0.5 }).fit({ x: [[0], [1], [2], [10], [11], [12]], y: [0, -1, -1, 1, -1, -1] })
  * f.transduction // => [0, 0, 0, 1, 1, 1]
  * toFlat(f.predict([[1.5], [10.5]])) // => [0, 1]
@@ -1202,8 +1202,8 @@ export function labelPropagation(
  * @returns The estimator.
  * @example
  * ```ts
- * import { labelSpreading } from 'mdml-engine/learn'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { labelSpreading } from 'omai-engine/learn'
+ * import { toFlat } from 'omai-engine/tensor'
  * const f = labelSpreading({ gamma: 0.5 }).fit({ x: [[0], [1], [2], [10], [11], [12]], y: [0, -1, -1, 1, -1, -1] })
  * toFlat(f.predict([[1.5], [10.5]])) // => [0, 1]
  * ```
@@ -1304,8 +1304,8 @@ function graphLaplacian(m: MatrixView, h: LaplacianRlsHyper): Float64Array {
  * @returns The algorithm.
  * @example
  * ```ts
- * import { laplacianRlsAlgorithm } from 'mdml-engine/learn'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { laplacianRlsAlgorithm } from 'omai-engine/learn'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const h = { kernel: 'rbf', gamma: 1, degree: 3, coef0: 1, gammaA: 0.1, gammaI: 1, nNeighbors: 1, graphGamma: 1, normalised: false } as const
  * runAlgorithm(laplacianRlsAlgorithm({ x: [[0], [1], [5]], y: [0, -1, 1] }, h), { maxSteps: 3 }).steps // => 1
  * ```
@@ -1321,7 +1321,7 @@ export function laplacianRlsAlgorithm(
   const n = m.n
   const lab = labelledRows(y)
   const classes = task === 'classification' ? Array.from(new Set(lab.map((i) => y[i] ?? 0))).sort((a, b) => a - b) : []
-  if (lab.length === 0) throw new MdmlError('value', `${who}: needs at least one labelled row`)
+  if (lab.length === 0) throw new OmaiError('value', `${who}: needs at least one labelled row`)
   const outputs = task === 'regression' ? 1 : classes.length === 2 ? 1 : classes.length
   const resolved = resolveKernel(h, fromView(m))
   const kmat = kernelMatrix(h, resolved, fromView(m))
@@ -1475,8 +1475,8 @@ function laplacianRls(
  * @returns The estimator; `decisionFunction` gives the expansion's value.
  * @example
  * ```ts
- * import { laplacianRlsClassifier } from 'mdml-engine/learn'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { laplacianRlsClassifier } from 'omai-engine/learn'
+ * import { toFlat } from 'omai-engine/tensor'
  * const x = [[0], [0.5], [1], [1.5], [6], [6.5], [7], [7.5]]
  * const f = laplacianRlsClassifier({ gamma: 0.5, nNeighbors: 2 }).fit({ x, y: [0, -1, -1, -1, 1, -1, -1, -1] })
  * toFlat(f.predict([[0.2], [7.2]])) // => [0, 1]
@@ -1496,8 +1496,8 @@ export function laplacianRlsClassifier(
  * @returns The estimator.
  * @example
  * ```ts
- * import { laplacianRlsRegressor } from 'mdml-engine/learn'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { laplacianRlsRegressor } from 'omai-engine/learn'
+ * import { toFlat } from 'omai-engine/tensor'
  * const x = [[0], [1], [2], [3], [4]]
  * const f = laplacianRlsRegressor({ gamma: 0.5, gammaA: 1e-6, gammaI: 0, nNeighbors: 2 }).fit({ x, y: [0, Number.NaN, 2, Number.NaN, 4] })
  * toFlat(f.predict([[2]]))[0].toFixed(1) // => '2.0'
@@ -1567,8 +1567,8 @@ export interface S3vmVerbs {
  * @returns The algorithm.
  * @example
  * ```ts
- * import { s3vmAlgorithm } from 'mdml-engine/learn'
- * import { svc } from 'mdml-engine/svm'
+ * import { s3vmAlgorithm } from 'omai-engine/learn'
+ * import { svc } from 'omai-engine/svm'
  * const alg = s3vmAlgorithm({ x: [[0], [1], [5], [6]], y: [0, -1, -1, 1] }, { base: svc.with({ kernel: 'linear' }), unlabelledWeight: 1, startWeight: 0.1, positiveFraction: null, maxSteps: 50 })
  * alg.name // => 's3vm'
  * ```
@@ -1576,7 +1576,7 @@ export interface S3vmVerbs {
 export function s3vmAlgorithm(data: LearnData, hyper: S3vmHyper): Algorithm<S3vmState> {
   const who = 's3vm'
   const { m, y, classes } = readPartial(data, who)
-  if (classes.length !== 2) throw new MdmlError('value', `${who}: needs exactly two classes among the labelled rows`)
+  if (classes.length !== 2) throw new OmaiError('value', `${who}: needs exactly two classes among the labelled rows`)
   const n = m.n
   const lab = labelledRows(y)
   const unl = unlabelledRows(y)
@@ -1691,13 +1691,13 @@ export function s3vmAlgorithm(data: LearnData, hyper: S3vmHyper): Algorithm<S3vm
  * margin pushed through the low-density gap by labelling the unlabelled rows and improving the labelling pair by pair.
  * The fitted value is the final base model; `transduction` holds the labels the search ended with.
  *
- * @param base - A binary classifier with sample weights and a decision function, e.g. `svc` of `mdml-engine/svm`.
+ * @param base - A binary classifier with sample weights and a decision function, e.g. `svc` of `omai-engine/svm`.
  * @param hyper - `unlabelledWeight`, `startWeight`, `positiveFraction`, `maxSteps`.
  * @returns The estimator.
  * @example
  * ```ts
- * import { s3vm } from 'mdml-engine/learn'
- * import { svc } from 'mdml-engine/svm'
+ * import { s3vm } from 'omai-engine/learn'
+ * import { svc } from 'omai-engine/svm'
  * const f = s3vm(svc.with({ kernel: 'linear', C: 10 })).fit({ x: [[0], [0.5], [1], [5], [5.5], [6]], y: [0, -1, -1, -1, -1, 1] })
  * f.transduction // => [0, 0, 0, 1, 1, 1]
  * ```

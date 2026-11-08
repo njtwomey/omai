@@ -5,7 +5,7 @@ variance gamma characteristic function (closed form, numpy complex powers)."""
 import numpy as np
 import scipy
 import scipy.stats as st
-from mdml_oracle.fixture import Case, case
+from omai_oracle.fixture import Case, case
 from scipy.integrate import quad
 
 REFERENCE: dict[str, str] = {"scipy": scipy.__version__, "numpy": np.__version__}

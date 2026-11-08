@@ -5,7 +5,7 @@
 
 import { type Context, createContext } from './context.ts'
 
-// The one documented piece of module state in mdml-js: the context that convenience layers (class wrappers,
+// The one documented piece of module state in omai: the context that convenience layers (class wrappers,
 // scripts) use when none is given. Core functions never read it; they take keys or contexts explicitly.
 let current: Context = createContext()
 
@@ -16,7 +16,7 @@ let current: Context = createContext()
  * @concept context
  * @example
  * ```ts
- * import { defaultContext } from 'mdml-engine/context'
+ * import { defaultContext } from 'omai-engine/context'
  * defaultContext().kind // => 'context'
  * ```
  */
@@ -33,7 +33,7 @@ export function defaultContext(): Context {
  * @concept context
  * @example
  * ```ts
- * import { createContext, defaultContext, setDefaultContext } from 'mdml-engine/context'
+ * import { createContext, defaultContext, setDefaultContext } from 'omai-engine/context'
  * const previous = setDefaultContext(createContext({ seed: 7 }))
  * defaultContext().seed // => 7
  * setDefaultContext(previous).seed // => 7

@@ -8,7 +8,7 @@
  * the output penalty and weight decay of networks.
  */
 
-import { MdmlError, numberOr } from '../../base/index.ts'
+import { numberOr, OmaiError } from '../../base/index.ts'
 import { foldIn, type Key, normal } from '../../random/index.ts'
 import {
   choice,
@@ -61,7 +61,7 @@ import { differenceRoughness, SplineLayer } from './spline-layer.ts'
  * @concept additive-models
  * @example
  * ```ts
- * import { ExULayer } from 'mdml-engine/nn'
+ * import { ExULayer } from 'omai-engine/nn'
  * new ExULayer(1, 16).forward([[0.2], [0.8]]).shape // => [2, 16]
  * ```
  */
@@ -110,7 +110,7 @@ export class ExULayer extends Module {
  * @concept additive-models
  * @example
  * ```ts
- * import { TensorSpline2d } from 'mdml-engine/nn'
+ * import { TensorSpline2d } from 'omai-engine/nn'
  * new TensorSpline2d({ interiorKnots: 3 }).forward([[0.2, 0.9], [0.5, 0.5]]).shape // => [2, 1]
  * ```
  */
@@ -318,7 +318,7 @@ function featureNet(
  *
  * @example
  * ```ts
- * import { additiveTerms } from 'mdml-engine/nn'
+ * import { additiveTerms } from 'omai-engine/nn'
  * additiveTerms.names // => ['spline', 'net', 'linear', 'tensorSpline']
  * additiveTerms.properties({ kind: 'net' }).neural // => true
  * ```
@@ -337,7 +337,7 @@ export const additiveTerms: OptionTable<TermBuilder, TermProperties> = optionTab
       order: int(0, 4, { default: 2, label: 'difference order' }),
     }),
     (k) => (features, label, ctx) => {
-      if (features.length !== 1) throw new MdmlError('value', `spline term ${label}: takes one feature`)
+      if (features.length !== 1) throw new OmaiError('value', `spline term ${label}: takes one feature`)
       const sample = columnsOf(ctx.sample, features)
       const layer = new SplineLayer({
         inFeatures: 1,
@@ -458,7 +458,7 @@ export const additiveTerms: OptionTable<TermBuilder, TermProperties> = optionTab
       order: int(0, 4, { default: 2, label: 'difference order' }),
     }),
     (k) => (features, label, ctx) => {
-      if (features.length !== 2) throw new MdmlError('value', `tensorSpline term ${label}: takes two features`)
+      if (features.length !== 2) throw new OmaiError('value', `tensorSpline term ${label}: takes two features`)
       const sample = columnsOf(ctx.sample, features)
       const surface = new TensorSpline2d({
         interiorKnots: numberOr(k, 'interiorKnots', 5),
@@ -520,7 +520,7 @@ const defined = (o: Record<string, SpaceValue | undefined>): Record<string, Spac
  * @concept additive-models
  * @example
  * ```ts
- * import { splineTerm } from 'mdml-engine/nn'
+ * import { splineTerm } from 'omai-engine/nn'
  * splineTerm(0, { interiorKnots: 6, knots: { kind: 'learnable' } }).features // => [0]
  * ```
  */
@@ -560,7 +560,7 @@ export interface NetTermOptions {
  * @concept additive-models
  * @example
  * ```ts
- * import { netTerm } from 'mdml-engine/nn'
+ * import { netTerm } from 'omai-engine/nn'
  * netTerm(2, { unit: 'exu', featureDropout: 0.1 }).config // => { kind: 'net', unit: 'exu', featureDropout: 0.1 }
  * ```
  */
@@ -577,7 +577,7 @@ export function netTerm(feature: number, options: NetTermOptions = {}): TermSpec
  * @concept additive-models
  * @example
  * ```ts
- * import { subnetTerm } from 'mdml-engine/nn'
+ * import { subnetTerm } from 'omai-engine/nn'
  * subnetTerm([0, 1, 2], { width: 8 }).features // => [0, 1, 2]
  * ```
  */
@@ -599,7 +599,7 @@ export function subnetTerm(features: readonly number[], options: NetTermOptions 
  * @concept additive-models
  * @example
  * ```ts
- * import { linearTerm } from 'mdml-engine/nn'
+ * import { linearTerm } from 'omai-engine/nn'
  * linearTerm(1).config // => { kind: 'linear' }
  * ```
  */
@@ -626,7 +626,7 @@ export interface InteractionTermOptions extends SplineTermOptions, NetTermOption
  * @concept additive-models
  * @example
  * ```ts
- * import { interactionTerm } from 'mdml-engine/nn'
+ * import { interactionTerm } from 'omai-engine/nn'
  * interactionTerm([0, 1]).config // => { kind: 'tensorSpline' }
  * interactionTerm([0, 1], { form: 'net', width: 8 }).config // => { kind: 'net', width: 8 }
  * ```
@@ -651,7 +651,7 @@ export function interactionTerm(pair: readonly [number, number], options: Intera
  * @concept additive-models
  * @example
  * ```ts
- * import { splineTerm, termLabel } from 'mdml-engine/nn'
+ * import { splineTerm, termLabel } from 'omai-engine/nn'
  * termLabel(splineTerm(1), ['age', 'bmi']) // => 's(bmi)'
  * ```
  */

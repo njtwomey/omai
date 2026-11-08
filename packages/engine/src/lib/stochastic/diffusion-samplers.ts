@@ -7,7 +7,7 @@
  */
 
 import type { Json } from '../base/index.ts'
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { pointsSteps } from '../exposition/index.ts'
 import { foldIn, type Key, normal } from '../random/index.ts'
 import { add, clip as clamp, div, mul, sub, type Tensor, toArray, type Value } from '../tensor/index.ts'
@@ -131,12 +131,12 @@ const sq = (x: number): number => x * x
  *
  * @param options - Schedule, model and what it predicts, shape, steps, method and its parameters.
  * @returns The algorithm; its paths are {@link DiffusionSamplerPath}.
- * @throws MdmlError with code `value` for an unknown method or times that do not decrease to zero.
+ * @throws OmaiError with code `value` for an unknown method or times that do not decrease to zero.
  * @concept diffusion-models
  * @example
  * ```ts
- * import { diffusionSampler, gaussianMixtureTruth, linearSchedule } from 'mdml-engine/stochastic'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { diffusionSampler, gaussianMixtureTruth, linearSchedule } from 'omai-engine/stochastic'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const schedule = linearSchedule()
  * const truth = gaussianMixtureTruth({ means: [[3]], stds: 0.5 })
  * const sampler = diffusionSampler({ schedule, model: truth.model(schedule, 'epsilon'), shape: [2, 1], steps: 20 })
@@ -153,7 +153,7 @@ export function diffusionSampler(options: DiffusionSamplerOptions): Algorithm<Sa
     samplerTimes(schedule, options.steps, options.spacing === undefined ? {} : { spacing: options.spacing })
   const steps = times.length - 1
   if (steps < 1 || times[steps] !== 0 || times.some((t, i) => i > 0 && !(t < (times[i - 1] ?? 0))))
-    throw new MdmlError('value', 'diffusionSampler: times must decrease to zero')
+    throw new OmaiError('value', 'diffusionSampler: times must decrease to zero')
   const clip = options.clipX0
 
   /** The model's clean-sample and noise estimates at (x, t). */
@@ -236,7 +236,7 @@ export function diffusionSampler(options: DiffusionSamplerOptions): Algorithm<Sa
           break
         }
         default:
-          throw new MdmlError('value', `diffusionSampler: unknown method ${String(method)}`)
+          throw new OmaiError('value', `diffusionSampler: unknown method ${String(method)}`)
       }
       const nextState: SamplerState = {
         x: next as Tensor,
@@ -269,8 +269,8 @@ function clipTo(x: Value, range: readonly [number, number]): Value {
  * @returns The algorithm.
  * @example
  * ```ts
- * import { ddpmSampler, linearSchedule } from 'mdml-engine/stochastic'
- * import { zeros } from 'mdml-engine/tensor'
+ * import { ddpmSampler, linearSchedule } from 'omai-engine/stochastic'
+ * import { zeros } from 'omai-engine/tensor'
  * ddpmSampler({ schedule: linearSchedule(), model: (x) => zeros(x.shape), shape: [1, 1], steps: 5 }).name // => 'diffusion-ddpm'
  * ```
  */
@@ -287,8 +287,8 @@ export function ddpmSampler(
  * @returns The algorithm.
  * @example
  * ```ts
- * import { ddimSampler, linearSchedule } from 'mdml-engine/stochastic'
- * import { zeros } from 'mdml-engine/tensor'
+ * import { ddimSampler, linearSchedule } from 'omai-engine/stochastic'
+ * import { zeros } from 'omai-engine/tensor'
  * ddimSampler({ schedule: linearSchedule(), model: (x) => zeros(x.shape), shape: [1, 1], steps: 5 }).name // => 'diffusion-ddim'
  * ```
  */
@@ -306,7 +306,7 @@ export function ddimSampler(
  * @returns The final cloud (at zero noise) and the last clean-sample estimate.
  * @example
  * ```ts
- * import { gaussianMixtureTruth, linearSchedule, sampleDiffusion } from 'mdml-engine/stochastic'
+ * import { gaussianMixtureTruth, linearSchedule, sampleDiffusion } from 'omai-engine/stochastic'
  * const schedule = linearSchedule()
  * const truth = gaussianMixtureTruth({ means: [[3]], stds: 0.1 })
  * const { x } = sampleDiffusion({ schedule, model: truth.model(schedule, 'epsilon'), shape: [50, 1], steps: 50 })

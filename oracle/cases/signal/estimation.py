@@ -9,9 +9,9 @@ import padasip as pa
 import scipy
 import scipy.signal as S
 import scipy.stats as st
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray, rng
-from mdml_oracle.signal_helpers import smooth_image, tones
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray, rng
+from omai_oracle.signal_helpers import smooth_image, tones
 from padasip.filters import FilterLMS, FilterNLMS, FilterRLS
 
 REFERENCE: dict[str, str] = {

@@ -1,6 +1,6 @@
-import { accumulatedLocalEffects, partialDependence } from 'mdml-engine/explain'
-import { dependence } from 'mdml-engine/exposition'
-import { tensor } from 'mdml-engine/tensor'
+import { accumulatedLocalEffects, partialDependence } from 'omai-engine/explain'
+import { dependence } from 'omai-engine/exposition'
+import { tensor } from 'omai-engine/tensor'
 import {
   Choice,
   ControlPanel,
@@ -10,7 +10,7 @@ import {
   SeedInput,
   Select,
   Toggle,
-} from 'mdml-render/react'
+} from 'omai-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 import { normals, regressor } from '../../toys/synthetic.ts'

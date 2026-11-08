@@ -4,15 +4,15 @@
  * gradient. The figure has two panels from the session's `model/posterior` record: the posterior given the data with
  * the kernel's initial hyperparameters, before any learning, and with the learned ones.
  */
-import { grad } from 'mdml-engine/autodiff'
-import { generate } from 'mdml-engine/data'
-import { sineCurve } from 'mdml-engine/datasets'
-import type { Exposition } from 'mdml-engine/exposition'
-import { gpRegression, negativeLogMarginalLikelihood } from 'mdml-engine/gp'
-import { constantKernel, productKernel, rbfKernel } from 'mdml-engine/kernels'
-import { key } from 'mdml-engine/random'
-import { tensor, toFlat } from 'mdml-engine/tensor'
-import { stillOf } from 'mdml-render/views'
+import { grad } from 'omai-engine/autodiff'
+import { generate } from 'omai-engine/data'
+import { sineCurve } from 'omai-engine/datasets'
+import type { Exposition } from 'omai-engine/exposition'
+import { gpRegression, negativeLogMarginalLikelihood } from 'omai-engine/gp'
+import { constantKernel, productKernel, rbfKernel } from 'omai-engine/kernels'
+import { key } from 'omai-engine/random'
+import { tensor, toFlat } from 'omai-engine/tensor'
+import { stillOf } from 'omai-render/views'
 import type { ExampleModule, Outcome } from '../_shared/contract.ts'
 import { Figure, Panel } from '../_shared/figure.tsx'
 

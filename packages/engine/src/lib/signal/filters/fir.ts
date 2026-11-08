@@ -4,7 +4,7 @@
  * (`remez`), and conversion of a linear-phase filter to minimum phase.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { fft, ifft, irfft } from '../../numerics/fourier/index.ts'
 import { interp } from '../../numerics/interpolate/index.ts'
 import { type Tensor, type TensorLike, toFlat } from '../../tensor/index.ts'
@@ -23,7 +23,7 @@ import { type RemezType, remezKernel } from './_remez.ts'
  * @concept fir-design
  * @example
  * ```ts
- * import { kaiserBeta } from 'mdml-engine/signal'
+ * import { kaiserBeta } from 'omai-engine/signal'
  * Math.round(kaiserBeta(65) * 1e5) / 1e5 // => 6.20426
  * ```
  */
@@ -43,7 +43,7 @@ export function kaiserBeta(a: number): number {
  * @concept fir-design
  * @example
  * ```ts
- * import { kaiserAtten } from 'mdml-engine/signal'
+ * import { kaiserAtten } from 'omai-engine/signal'
  * Math.round(kaiserAtten(211, 0.0375) * 1e4) / 1e4 // => 64.481
  * ```
  */
@@ -57,18 +57,18 @@ export function kaiserAtten(numtaps: number, width: number): number {
  * @param ripple - Ripple bound |H - D| in dB (the stopband attenuation), at least 8.
  * @param width - Transition width as a fraction of the Nyquist frequency.
  * @returns The number of taps and the Kaiser beta.
- * @throws MdmlError with code `value` for a ripple below 8 dB.
+ * @throws OmaiError with code `value` for a ripple below 8 dB.
  * @concept fir-design
  * @example
  * ```ts
- * import { kaiserord } from 'mdml-engine/signal'
+ * import { kaiserord } from 'omai-engine/signal'
  * const { numtaps, beta } = kaiserord(65, 0.0375)
  * [numtaps, Math.round(beta * 1e5) / 1e5] // => [213, 6.20426]
  * ```
  */
 export function kaiserord(ripple: number, width: number): { readonly numtaps: number; readonly beta: number } {
   const a = Math.abs(ripple)
-  if (a < 8) throw new MdmlError('value', `kaiserord: the ripple ${a} is too small for the Kaiser formula`)
+  if (a < 8) throw new OmaiError('value', `kaiserord: the ripple ${a} is too small for the Kaiser formula`)
   return { numtaps: Math.ceil((a - 7.95) / 2.285 / (Math.PI * width) + 1), beta: kaiserBeta(a) }
 }
 
@@ -94,37 +94,37 @@ export interface FirwinOptions {
  * @param cutoff - Cutoff frequency or band edges (in the units of fs, strictly increasing, in (0, fs / 2)).
  * @param options - Width, window, pass-zero, scaling and sampling rate.
  * @returns The taps `[numtaps]`.
- * @throws MdmlError with code `value` for invalid cutoffs or an even length passing Nyquist.
+ * @throws OmaiError with code `value` for invalid cutoffs or an even length passing Nyquist.
  * @concept fir-design
  * @example
  * ```ts
- * import { firwin } from 'mdml-engine/signal'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { firwin } from 'omai-engine/signal'
+ * import { toFlat } from 'omai-engine/tensor'
  * toFlat(firwin(3, 0.5)).map((v) => Math.round(v * 1e8) / 1e8) // => [0.0462215, 0.907557, 0.0462215]
  * ```
  */
 export function firwin(numtaps: number, cutoff: number | readonly number[], options: FirwinOptions = {}): Tensor {
   const nyq = (options.fs ?? 2) / 2
   const c = (typeof cutoff === 'number' ? [cutoff] : [...cutoff]).map((v) => v / nyq)
-  if (c.length === 0) throw new MdmlError('value', 'firwin: at least one cutoff frequency is needed')
-  if (c.some((v) => v <= 0 || v >= 1)) throw new MdmlError('value', 'firwin: cutoffs must lie in (0, fs / 2)')
+  if (c.length === 0) throw new OmaiError('value', 'firwin: at least one cutoff frequency is needed')
+  if (c.some((v) => v <= 0 || v >= 1)) throw new OmaiError('value', 'firwin: cutoffs must lie in (0, fs / 2)')
   for (let i = 1; i < c.length; i++)
-    if ((c[i] ?? 0) <= (c[i - 1] ?? 0)) throw new MdmlError('value', 'firwin: cutoffs must increase')
+    if ((c[i] ?? 0) <= (c[i - 1] ?? 0)) throw new OmaiError('value', 'firwin: cutoffs must increase')
   let window: WindowSpec = options.window ?? 'hamming'
   if (options.width !== undefined) window = ['kaiser', kaiserBeta(kaiserAtten(numtaps, options.width / nyq))]
   let passZero = options.passZero ?? true
   if (passZero === 'lowpass' || passZero === 'bandstop') {
     if (passZero === 'lowpass' ? c.length !== 1 : c.length <= 1)
-      throw new MdmlError('value', `firwin: wrong number of cutoffs for '${passZero}'`)
+      throw new OmaiError('value', `firwin: wrong number of cutoffs for '${passZero}'`)
     passZero = true
   } else if (passZero === 'highpass' || passZero === 'bandpass') {
     if (passZero === 'highpass' ? c.length !== 1 : c.length <= 1)
-      throw new MdmlError('value', `firwin: wrong number of cutoffs for '${passZero}'`)
+      throw new OmaiError('value', `firwin: wrong number of cutoffs for '${passZero}'`)
     passZero = false
   }
   const passNyquist = (c.length % 2 === 0) === passZero
   if (passNyquist && numtaps % 2 === 0)
-    throw new MdmlError('value', 'firwin: an even number of taps must have zero response at Nyquist')
+    throw new OmaiError('value', 'firwin: an even number of taps must have zero response at Nyquist')
   const edges = [...(passZero ? [0] : []), ...c, ...(passNyquist ? [1] : [])]
   const alpha = 0.5 * (numtaps - 1)
   const m = Array.from({ length: numtaps }, (_, i) => i - alpha)
@@ -168,12 +168,12 @@ export interface Firwin2Options {
  * @param gain - Gains at those frequencies.
  * @param options - Grid size, window, symmetry and sampling rate.
  * @returns The taps `[numtaps]`.
- * @throws MdmlError with code `value` for invalid frequencies or gains impossible for the filter type.
+ * @throws OmaiError with code `value` for invalid frequencies or gains impossible for the filter type.
  * @concept fir-design
  * @example
  * ```ts
- * import { firwin2 } from 'mdml-engine/signal'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { firwin2 } from 'omai-engine/signal'
+ * import { toFlat } from 'omai-engine/tensor'
  * toFlat(firwin2(3, [0, 0.5, 1], [1, 1, 0])).map((v) => Math.round(v * 1e8) / 1e8) // => [0.01707107, 0.75, 0.01707107]
  * ```
  */
@@ -184,23 +184,23 @@ export function firwin2(
   options: Firwin2Options = {},
 ): Tensor {
   const nyq = (options.fs ?? 2) / 2
-  if (freq.length !== gain.length) throw new MdmlError('value', 'firwin2: freq and gain must have the same length')
+  if (freq.length !== gain.length) throw new OmaiError('value', 'firwin2: freq and gain must have the same length')
   const nfreqs = options.nfreqs ?? 1 + 2 ** Math.ceil(Math.log2(numtaps))
-  if (numtaps >= nfreqs) throw new MdmlError('value', 'firwin2: numtaps must be less than nfreqs')
+  if (numtaps >= nfreqs) throw new OmaiError('value', 'firwin2: numtaps must be less than nfreqs')
   if (freq[0] !== 0 || freq[freq.length - 1] !== nyq)
-    throw new MdmlError('value', 'firwin2: freq must run from 0 to fs / 2')
+    throw new OmaiError('value', 'firwin2: freq must run from 0 to fs / 2')
   const f = [...freq]
   for (let k = 1; k < f.length; k++) {
-    if ((f[k] ?? 0) < (f[k - 1] ?? 0)) throw new MdmlError('value', 'firwin2: freq must be non-decreasing')
-    if (k >= 2 && f[k] === f[k - 2]) throw new MdmlError('value', 'firwin2: a frequency may occur at most twice')
+    if ((f[k] ?? 0) < (f[k - 1] ?? 0)) throw new OmaiError('value', 'firwin2: freq must be non-decreasing')
+    if (k >= 2 && f[k] === f[k - 2]) throw new OmaiError('value', 'firwin2: a frequency may occur at most twice')
   }
-  if (f[1] === 0 || f[f.length - 2] === nyq) throw new MdmlError('value', 'firwin2: 0 and fs / 2 must not repeat')
+  if (f[1] === 0 || f[f.length - 2] === nyq) throw new OmaiError('value', 'firwin2: 0 and fs / 2 must not repeat')
   const anti = options.antisymmetric ?? false
   const ftype = anti ? (numtaps % 2 === 0 ? 4 : 3) : numtaps % 2 === 0 ? 2 : 1
   const g0 = gain[0] ?? 0
   const gl = gain[gain.length - 1] ?? 0
   if ((ftype === 2 && gl !== 0) || (ftype === 3 && (g0 !== 0 || gl !== 0)) || (ftype === 4 && g0 !== 0))
-    throw new MdmlError('value', `firwin2: a type ${ftype} filter cannot have this gain at 0 or Nyquist`)
+    throw new OmaiError('value', `firwin2: a type ${ftype} filter cannot have this gain at 0 or Nyquist`)
   const eps = Number.EPSILON * nyq
   for (let k = 0; k + 1 < f.length; k++) {
     if (f[k] === f[k + 1]) {
@@ -251,12 +251,12 @@ export interface RemezOptions {
  * @param desired - Desired gain in each band.
  * @param options - Weights, type, sampling rate, iterations and grid density.
  * @returns The taps `[numtaps]`.
- * @throws MdmlError with code `convergence` when the exchange does not converge.
+ * @throws OmaiError with code `convergence` when the exchange does not converge.
  * @concept fir-design
  * @example
  * ```ts
- * import { remez } from 'mdml-engine/signal'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { remez } from 'omai-engine/signal'
+ * import { toFlat } from 'omai-engine/tensor'
  * const h = toFlat(remez(11, [0, 0.1, 0.2, 0.5], [1, 0]))
  * Math.abs(h.reduce((a, v) => a + v, 0) - 1) < 0.05 // => true
  * ```
@@ -269,11 +269,11 @@ export function remez(
 ): Tensor {
   const fs = options.fs ?? 1
   if (bands.length !== 2 * desired.length)
-    throw new MdmlError('value', 'remez: bands must be pairs, one per desired gain')
+    throw new OmaiError('value', 'remez: bands must be pairs, one per desired gain')
   const weight = options.weight ?? desired.map(() => 1)
-  if (weight.length !== desired.length) throw new MdmlError('value', 'remez: one weight per band')
+  if (weight.length !== desired.length) throw new OmaiError('value', 'remez: one weight per band')
   for (const b of bands)
-    if (b < 0 || b > fs / 2) throw new MdmlError('value', 'remez: band edges must lie in [0, fs / 2]')
+    if (b < 0 || b > fs / 2) throw new OmaiError('value', 'remez: band edges must lie in [0, fs / 2]')
   return constant(
     remezKernel(
       numtaps,
@@ -323,12 +323,12 @@ function cexp(z: { re: Float64Array; im: Float64Array }): { re: Float64Array; im
  * @param h - Linear-phase (symmetric) taps.
  * @param options - Method, FFT length and halving.
  * @returns The minimum-phase taps.
- * @throws MdmlError with code `value` for an FFT shorter than h or 'hilbert' without halving.
+ * @throws OmaiError with code `value` for an FFT shorter than h or 'hilbert' without halving.
  * @concept minimum-phase
  * @example
  * ```ts
- * import { minimumPhase } from 'mdml-engine/signal'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { minimumPhase } from 'omai-engine/signal'
+ * import { toFlat } from 'omai-engine/tensor'
  * toFlat(minimumPhase([0.25, 0.5, 0.25])).map((v) => Math.round(v * 1e4) / 1e4) // => [0.494, 0.5058]
  * ```
  */
@@ -338,9 +338,9 @@ export function minimumPhase(h: TensorLike, options: MinimumPhaseOptions = {}): 
   const nHalf = Math.floor(n / 2)
   const method = options.method ?? 'homomorphic'
   const half = options.half ?? true
-  if (method === 'hilbert' && !half) throw new MdmlError('value', "minimumPhase: half = false needs 'homomorphic'")
+  if (method === 'hilbert' && !half) throw new OmaiError('value', "minimumPhase: half = false needs 'homomorphic'")
   const nFft = options.nFft ?? 2 ** Math.ceil(Math.log2((2 * (n - 1)) / 0.01))
-  if (nFft < n) throw new MdmlError('value', `minimumPhase: nFft must be at least ${n}`)
+  if (nFft < n) throw new OmaiError('value', `minimumPhase: nFft must be at least ${n}`)
   const padded = new Float64Array(nFft)
   padded.set(taps)
   const spec = fftOf(padded, new Float64Array(nFft))

@@ -1,4 +1,4 @@
-import { datasetRegistry, generatorEntry, moons, registerDatasets } from 'mdml-engine/datasets'
+import { datasetRegistry, generatorEntry, moons, registerDatasets } from 'omai-engine/datasets'
 import { describe, expect, it } from 'vitest'
 import { collectionOf, entriesOf, entryKnobSpace, loadSelection, selectEntry } from './datasets.ts'
 

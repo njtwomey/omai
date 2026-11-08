@@ -4,7 +4,7 @@
  * other variants, and the Monte Carlo standard error of posterior summaries.
  */
 
-import { MdmlError, quantileOf } from '../../base/index.ts'
+import { OmaiError, quantileOf } from '../../base/index.ts'
 import { beta } from '../../dists/index.ts'
 import type { TensorLike } from '../../tensor/index.ts'
 import { toFlat } from '../../tensor/index.ts'
@@ -62,14 +62,14 @@ export type RhatMethod = 'rank' | 'split' | 'folded' | 'zScale' | 'identity'
  * @param x - Draws `[chain, draw]` (at least two chains and four draws).
  * @param options - The method (default `rank`).
  * @returns R-hat, NaN for too few chains or draws or for draws containing NaN.
- * @throws MdmlError with code `shape` for inputs that are not `[chain, draw]` or `[draw]`.
+ * @throws OmaiError with code `shape` for inputs that are not `[chain, draw]` or `[draw]`.
  * @concept r-hat
  * @reference A. Vehtari, A. Gelman, D. Simpson, B. Carpenter and P.-C. Burkner, Rank-normalization, folding, and
  *   localization: an improved R-hat for assessing convergence of MCMC (Bayesian Analysis 2021).
  * @index function Split R-hat convergence diagnostic; ess gives effective sample size.
  * @example
  * ```ts
- * import { rhat } from 'mdml-engine/sampling'
+ * import { rhat } from 'omai-engine/sampling'
  * // Two chains stuck in different places: R-hat far above 1.01 (the rank-normalised form is bounded).
  * const stuck = [[0, 0.1, -0.1, 0.05, 0, -0.05], [5, 5.1, 4.9, 5.05, 5, 4.95]]
  * rhat(stuck) > 1.5 // => true
@@ -96,7 +96,7 @@ export function rhat(x: TensorLike, options: { readonly method?: RhatMethod } = 
     case 'identity':
       return rhatCore(d)
     default:
-      throw new MdmlError('value', `rhat: unknown method ${String(method)}`)
+      throw new OmaiError('value', `rhat: unknown method ${String(method)}`)
   }
 }
 
@@ -197,7 +197,7 @@ function essQuantile(d: Draws, prob: number, relative: boolean): number {
 }
 
 function scalarProb(prob: EssOptions['prob'], method: string): number {
-  if (typeof prob !== 'number') throw new MdmlError('value', `ess: the ${method} method needs a probability`)
+  if (typeof prob !== 'number') throw new OmaiError('value', `ess: the ${method} method needs a probability`)
   return prob
 }
 
@@ -213,13 +213,13 @@ function scalarProb(prob: EssOptions['prob'], method: string): number {
  * @param options - The method, a probability for `tail`, `quantile` and `local`, and `relative`.
  * @returns The effective sample size (relative to the number of draws with `relative`), NaN for too few draws or
  *   draws containing NaN.
- * @throws MdmlError with code `value` when `quantile` or `local` lacks its probability.
+ * @throws OmaiError with code `value` when `quantile` or `local` lacks its probability.
  * @concept effective-sample-size
  * @reference A. Vehtari et al., Rank-normalization, folding, and localization (Bayesian Analysis 2021); C. J. Geyer,
  *   Practical Markov chain Monte Carlo (Statistical Science 1992).
  * @example
  * ```ts
- * import { ess } from 'mdml-engine/sampling'
+ * import { ess } from 'omai-engine/sampling'
  * // Alternating draws are anti-correlated: more effective draws (19.3) than draws (16).
  * ess([1, -1, 1, -1, 1, -1, 1, -1, 1, -1, 1, -1, 1, -1, 1, -1], { method: 'identity' }) > 16 // => true
  * ess([3, 3, 3, 3, 3, 3]) // => 6
@@ -252,7 +252,7 @@ export function ess(x: TensorLike, options: EssOptions = {}): number {
     case 'local': {
       const p = options.prob
       if (typeof p === 'number' || p === undefined) {
-        throw new MdmlError('value', 'ess: the local method needs an interval [low, high] of probabilities')
+        throw new OmaiError('value', 'ess: the local method needs an interval [low, high] of probabilities')
       }
       const lo = quantileOf(d.data, p[0])
       const hi = quantileOf(d.data, p[1])
@@ -269,7 +269,7 @@ export function ess(x: TensorLike, options: EssOptions = {}): number {
     case 'identity':
       return essCore(d, relative)
     default:
-      throw new MdmlError('value', `ess: unknown method ${String(method)}`)
+      throw new OmaiError('value', `ess: unknown method ${String(method)}`)
   }
 }
 
@@ -285,12 +285,12 @@ export type McseMethod = 'mean' | 'sd' | 'median' | 'quantile'
  * @param x - Draws `[chain, draw]` or `[draw]` (at least four draws).
  * @param options - The quantity (default `mean`) and the probability of `quantile`.
  * @returns The standard error, NaN for too few draws or draws containing NaN.
- * @throws MdmlError with code `value` when `quantile` lacks its probability.
+ * @throws OmaiError with code `value` when `quantile` lacks its probability.
  * @concept monte-carlo-standard-error
  * @reference A. Vehtari et al., Rank-normalization, folding, and localization (Bayesian Analysis 2021), section 4.
  * @example
  * ```ts
- * import { ess, mcse } from 'mdml-engine/sampling'
+ * import { ess, mcse } from 'omai-engine/sampling'
  * const x = [0.3, -1.2, 0.8, 1.9, -0.4, 0.1, -0.9, 1.1]
  * const sd = Math.sqrt(x.reduce((s, v) => s + (v - 0.2125) ** 2, 0) / 7)
  * Math.abs(mcse(x) - sd / Math.sqrt(ess(x, { method: 'mean' }))) < 1e-12 // => true
@@ -315,11 +315,11 @@ export function mcse(x: TensorLike, options: { readonly method?: McseMethod; rea
       return mcseQuantile(d, 0.5)
     case 'quantile': {
       const p = options.prob
-      if (p === undefined) throw new MdmlError('value', 'mcse: the quantile method needs a probability')
+      if (p === undefined) throw new OmaiError('value', 'mcse: the quantile method needs a probability')
       return mcseQuantile(d, p)
     }
     default:
-      throw new MdmlError('value', `mcse: unknown method ${String(method)}`)
+      throw new OmaiError('value', `mcse: unknown method ${String(method)}`)
   }
 }
 

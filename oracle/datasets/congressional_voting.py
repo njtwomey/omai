@@ -4,8 +4,8 @@ The `?` entries (not yea or nay: absent, paired or abstaining, not necessarily u
 (`null`).
 """
 
-from mdml_oracle.uci import source_note, table_rows, zip_member
-from mdml_oracle.vendor import render_ordered_table
+from omai_oracle.uci import source_note, table_rows, zip_member
+from omai_oracle.vendor import render_ordered_table
 
 TARGET = "packages/engine/src/lib/datasets/_data/congressional-voting.data.ts"
 ID, SLUG = 105, "congressional+voting+records"

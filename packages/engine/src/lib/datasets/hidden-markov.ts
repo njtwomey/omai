@@ -19,8 +19,8 @@ const lengthKnob = int(10, 100_000, { default: 300, label: 'length', description
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { dishonestCasino } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { dishonestCasino } from 'omai-engine/datasets'
  * generate(dishonestCasino, { knobs: { length: 50 } }).data.y.shape // => [50]
  * ```
  */
@@ -86,8 +86,8 @@ export const dishonestCasino: DatasetGenerator<ClassificationData> = {
  *
  * @example
  * ```ts
- * import { generate } from 'mdml-engine/data'
- * import { regimeSwitching } from 'mdml-engine/datasets'
+ * import { generate } from 'omai-engine/data'
+ * import { regimeSwitching } from 'omai-engine/datasets'
  * generate(regimeSwitching, { knobs: { length: 50 } }).data.x.shape // => [50, 1]
  * ```
  */

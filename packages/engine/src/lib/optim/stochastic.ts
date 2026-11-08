@@ -9,7 +9,7 @@
  */
 
 import type { Json } from '../base/index.ts'
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { daxpy, dnrm2 } from '../numerics/linalg/index.ts'
 import { type Key, subsample } from '../random/index.ts'
 import { asTensor, primalOf, toFlat, type Value } from '../tensor/index.ts'
@@ -70,13 +70,13 @@ export interface GradientState extends VectorState {
  * @param x0 - The start (a vector, or any parameter tree).
  * @param options - The optimiser, learning rate, schedule, batch size and the gradient tolerance.
  * @returns The algorithm; its steps are keyed, so the batches are the same on every run of a key.
- * @throws MdmlError with code `value` for a batch without `batches`, or a batch that is not a positive integer.
+ * @throws OmaiError with code `value` for a batch without `batches`, or a batch that is not a positive integer.
  * @concept optimisers
  * @example
  * ```ts
- * import { gradientAlgorithm } from 'mdml-engine/optim'
- * import { runAlgorithm } from 'mdml-engine/trace'
- * import { square, sub, sum, type Value } from 'mdml-engine/tensor'
+ * import { gradientAlgorithm } from 'omai-engine/optim'
+ * import { runAlgorithm } from 'omai-engine/trace'
+ * import { square, sub, sum, type Value } from 'omai-engine/tensor'
  * const alg = gradientAlgorithm((x: Value) => sum(square(sub(x, 2))), [0, 0], { learningRate: 0.25 })
  * Array.from(runAlgorithm(alg, { seed: 0, maxSteps: 60 }).state.x, Math.round) // => [2, 2]
  * ```
@@ -94,9 +94,9 @@ export function gradientAlgorithm(
   const batch = options.batch ?? null
   const n = options.batches?.n
   if (batch !== null && (!Number.isInteger(batch) || batch < 1))
-    throw new MdmlError('value', `gradientAlgorithm: the batch must be a positive integer or null, got ${batch}`)
+    throw new OmaiError('value', `gradientAlgorithm: the batch must be a positive integer or null, got ${batch}`)
   if (batch !== null && n === undefined)
-    throw new MdmlError('value', 'gradientAlgorithm: a batch needs the problem to say how many examples it sums over')
+    throw new OmaiError('value', 'gradientAlgorithm: a batch needs the problem to say how many examples it sums over')
   const stochastic = batch !== null && n !== undefined && batch < n
   const full = flatObjective(objective, x0)
   const evaluate = (x: Float64Array, k: Key): { value: number; grad: Float64Array } => {

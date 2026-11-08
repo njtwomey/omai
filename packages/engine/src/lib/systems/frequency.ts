@@ -4,7 +4,7 @@
  * with its count of encirclements of -1, which decides closed-loop stability (python-control style).
  */
 
-import { MdmlError, roundHalfEven } from '../base/index.ts'
+import { OmaiError, roundHalfEven } from '../base/index.ts'
 import { complexOps as C, type ComplexNumber } from '../numerics/differentiate/index.ts'
 import { eigvals, solve } from '../numerics/linalg/index.ts'
 import type { ComplexArray } from '../numerics/polynomial/index.ts'
@@ -113,8 +113,8 @@ function pointsFor(sys: Lti, w: readonly number[]): Points {
  * @concept frequency-response
  * @example
  * ```ts
- * import { findfreqs } from 'mdml-engine/systems'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { findfreqs } from 'omai-engine/systems'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(findfreqs([1], [1, 1], 3)) // => [0.01, 0.31622776601683794, 10]
  * ```
  */
@@ -172,8 +172,8 @@ function frequencies(sys: Lti, w: TensorLike | undefined, n: number): Tensor {
  * @concept frequency-response
  * @example
  * ```ts
- * import { freqresp, tf } from 'mdml-engine/systems'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { freqresp, tf } from 'omai-engine/systems'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(freqresp(tf([1], [1, 1]), [1]).h.im) // => [-0.5]
  * ```
  */
@@ -190,8 +190,8 @@ export function freqresp(sys: Lti, w?: TensorLike, options: { readonly n?: numbe
  * @returns The response: scalars for single-input single-output systems, `[outputs, inputs]` otherwise.
  * @example
  * ```ts
- * import { evalfr, tf } from 'mdml-engine/systems'
- * import { item } from 'mdml-engine/tensor'
+ * import { evalfr, tf } from 'omai-engine/systems'
+ * import { item } from 'omai-engine/tensor'
  * item(evalfr(tf([1], [1, 1]), { re: 1, im: 0 }).re) // => 0.5
  * ```
  */
@@ -209,8 +209,8 @@ export function evalfr(sys: Lti, s: ComplexNumber): ComplexValue {
  * @returns The gain: a scalar, or `[outputs, inputs]`.
  * @example
  * ```ts
- * import { dcgain, tf } from 'mdml-engine/systems'
- * import { item } from 'mdml-engine/tensor'
+ * import { dcgain, tf } from 'omai-engine/systems'
+ * import { item } from 'omai-engine/tensor'
  * item(dcgain(tf([3], [1, 2]))) // => 1.5
  * ```
  */
@@ -261,7 +261,7 @@ export interface BodeResponse {
 }
 
 function siso(h: ComplexValue, name: string): void {
-  if (h.re.shape.length !== 1) throw new MdmlError('shape', `${name}: one input and one output are supported`)
+  if (h.re.shape.length !== 1) throw new OmaiError('shape', `${name}: one input and one output are supported`)
 }
 
 function bodeOf(w: Tensor, h: ComplexValue): BodeResponse {
@@ -283,8 +283,8 @@ function bodeOf(w: Tensor, h: ComplexValue): BodeResponse {
  * @index function Bode frequency response.
  * @example
  * ```ts
- * import { bode, tf } from 'mdml-engine/systems'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { bode, tf } from 'omai-engine/systems'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(bode(tf([1], [1, 1]), [1]).phase) // => [-45]
  * ```
  */
@@ -304,8 +304,8 @@ export function bode(sys: Lti, w?: TensorLike, options: { readonly n?: number } 
  * @concept nichols-chart
  * @example
  * ```ts
- * import { nichols, tf } from 'mdml-engine/systems'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { nichols, tf } from 'omai-engine/systems'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(nichols(tf([1], [1, 0, 0]), [1]).phase) // => [-180]
  * ```
  */
@@ -344,7 +344,7 @@ export interface NyquistOptions {
  * @concept nyquist-criterion
  * @example
  * ```ts
- * import { nyquist, tf } from 'mdml-engine/systems'
+ * import { nyquist, tf } from 'omai-engine/systems'
  * nyquist(tf([2], [1, 1])).count // => 0
  * ```
  */

@@ -7,7 +7,7 @@
  * builds its classifiers on.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import { type Key, permutation } from '../random/index.ts'
 import { type Tensor, type TensorLike, toFlat } from '../tensor/index.ts'
 import { Log } from '../trace/index.ts'
@@ -69,7 +69,7 @@ const isConstant = (m: Json): m is ConstantModel =>
 const isConstantFit = (f: Fitted | ConstantModel): f is ConstantModel => !('estimator' in f)
 
 function targetsOf(data: LearnData, who: string): MatrixView {
-  if (data.y === undefined) throw new MdmlError('value', `${who}: needs targets y of shape [n, outputs]`)
+  if (data.y === undefined) throw new OmaiError('value', `${who}: needs targets y of shape [n, outputs]`)
   return matrixView(data.y, who)
 }
 
@@ -77,7 +77,7 @@ function orderOf(order: OutputsHyper['order'], t: number, key: Key): number[] {
   if (order === 'random') return Array.from(toFlat(permutation(key, t)))
   if (order === undefined) return Array.from({ length: t }, (_, i) => i)
   if ([...order].sort((a, b) => a - b).some((v, i) => v !== i) || order.length !== t) {
-    throw new MdmlError('value', `outputs: the order ${order.join(',')} is not a permutation of 0..${t - 1}`)
+    throw new OmaiError('value', `outputs: the order ${order.join(',')} is not a permutation of 0..${t - 1}`)
   }
   return [...order]
 }
@@ -119,8 +119,8 @@ function featureOf(f: Fitted | ConstantModel, x: TensorLike, n: number, method: 
  * @returns The estimator.
  * @example
  * ```ts
- * import { kNeighboursRegressor, outputsEstimator } from 'mdml-engine/learn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { kNeighboursRegressor, outputsEstimator } from 'omai-engine/learn'
+ * import { toArray } from 'omai-engine/tensor'
  * const est = outputsEstimator('twins', {
  *   estimator: kNeighboursRegressor({ nNeighbors: 1 }),
  *   chain: false,
@@ -300,8 +300,8 @@ function outputsVerbs(p: OutputsParams, h: OutputsHyper): OutputsVerbs {
  * @returns The estimator.
  * @example
  * ```ts
- * import { independentOutputs, kNeighboursRegressor } from 'mdml-engine/learn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { independentOutputs, kNeighboursRegressor } from 'omai-engine/learn'
+ * import { toArray } from 'omai-engine/tensor'
  * const est = independentOutputs('twins', kNeighboursRegressor({ nNeighbors: 1 }), 'regression')
  * toArray(est.fit({ x: [[0], [1]], y: [[0, 5], [1, 6]] }).predict([[0.1]])) // => [[0, 5]]
  * ```
@@ -324,8 +324,8 @@ export function independentOutputs(
  * @returns The estimator.
  * @example
  * ```ts
- * import { kNeighboursRegressor, outputChain } from 'mdml-engine/learn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { kNeighboursRegressor, outputChain } from 'omai-engine/learn'
+ * import { toArray } from 'omai-engine/tensor'
  * const est = outputChain('link', kNeighboursRegressor({ nNeighbors: 1 }), 'regression', { order: [1, 0] })
  * toArray(est.fit({ x: [[0], [1]], y: [[0, 5], [1, 6]] }).predict([[0.1]])) // => [[0, 5]]
  * ```
@@ -353,9 +353,9 @@ export function outputChain(
  * @returns The estimator; `predict` gives `[m, T]`, `score` the mean R squared.
  * @example
  * ```ts
- * import { multiOutputRegressor } from 'mdml-engine/learn'
- * import { kNeighboursRegressor } from 'mdml-engine/learn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { multiOutputRegressor } from 'omai-engine/learn'
+ * import { kNeighboursRegressor } from 'omai-engine/learn'
+ * import { toArray } from 'omai-engine/tensor'
  * const f = multiOutputRegressor(kNeighboursRegressor({ nNeighbors: 1 })).fit({ x: [[0], [1], [2]], y: [[0, 10], [1, 11], [2, 12]] })
  * toArray(f.predict([[1.1]])) // => [[1, 11]]
  * ```
@@ -375,8 +375,8 @@ export function multiOutputRegressor(
  * @returns The estimator.
  * @example
  * ```ts
- * import { multiOutputClassifier, kNeighboursClassifier } from 'mdml-engine/learn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { multiOutputClassifier, kNeighboursClassifier } from 'omai-engine/learn'
+ * import { toArray } from 'omai-engine/tensor'
  * const x = [[0], [1], [10], [11]]
  * const f = multiOutputClassifier(kNeighboursClassifier({ nNeighbors: 1 })).fit({ x, y: [[0, 5], [0, 5], [1, 7], [1, 7]] })
  * toArray(f.predict([[0.4], [10.6]])) // => [[0, 5], [1, 7]]
@@ -398,8 +398,8 @@ export function multiOutputClassifier(
  * @returns The estimator.
  * @example
  * ```ts
- * import { regressorChain, kNeighboursRegressor } from 'mdml-engine/learn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { regressorChain, kNeighboursRegressor } from 'omai-engine/learn'
+ * import { toArray } from 'omai-engine/tensor'
  * const f = regressorChain(kNeighboursRegressor({ nNeighbors: 1 }), { order: [1, 0] }).fit({
  *   x: [[0], [1], [2]],
  *   y: [[0, 10], [1, 11], [2, 12]],

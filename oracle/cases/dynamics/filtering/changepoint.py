@@ -7,8 +7,8 @@ penalty 5 it returns 16 segments costing 248.88; the optimum has 15 costing 248.
 
 import numpy as np
 import ruptures as rpt
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import FloatArray, rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import FloatArray, rng
 
 REFERENCE: dict[str, str] = {"ruptures": rpt.__version__}
 

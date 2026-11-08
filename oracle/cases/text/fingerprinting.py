@@ -6,7 +6,7 @@ from importlib.metadata import version
 
 import numpy as np
 from datasketch import MinHash, MinHashLSH
-from mdml_oracle.fixture import Case, case
+from omai_oracle.fixture import Case, case
 from sklearn.utils import murmurhash3_32
 
 REFERENCE: dict[str, str] = {"datasketch": version("datasketch"), "scikit-learn": version("scikit-learn")}

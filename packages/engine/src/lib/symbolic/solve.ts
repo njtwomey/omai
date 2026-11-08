@@ -4,7 +4,7 @@
  * principal solutions), with steps, and systems of linear equations by Gauss-Jordan elimination in exact arithmetic.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { bounded } from './_budget.ts'
 import {
   asCoeffMul,
@@ -34,11 +34,11 @@ const neg = (a: Expr): Expr => makeMul([MINUS_ONE, a])
 
 function asZero(eq: Expr): Expr {
   if (eq.kind === 'rel') {
-    if (eq.op !== '==') throw new MdmlError('value', 'solve: inequalities are not supported')
+    if (eq.op !== '==') throw new OmaiError('value', 'solve: inequalities are not supported')
     return makeAdd([eq.lhs, neg(eq.rhs)])
   }
   if (eq.kind === 'const' && (eq.name === 'true' || eq.name === 'false')) {
-    throw new MdmlError('value', 'solve: the equation is identically true or false')
+    throw new OmaiError('value', 'solve: the equation is identically true or false')
   }
   return eq
 }
@@ -176,11 +176,11 @@ function sortSolutions(xs: readonly Expr[]): Expr[] {
 }
 
 function solveZero(f: Expr, x: ExprSym, steps: Step[] | undefined, depth: number): Expr[] {
-  if (depth > 6) throw new MdmlError('not-implemented', 'solve: no method applies')
+  if (depth > 6) throw new OmaiError('not-implemented', 'solve: no method applies')
   const t = together(f)
   const [n, d] = numerDenom(t)
   if (!hasSymbol(n, x)) {
-    if (isZero(n)) throw new MdmlError('value', 'solve: the equation holds for every x')
+    if (isZero(n)) throw new OmaiError('value', 'solve: the equation holds for every x')
     return []
   }
   const keep = (sols: Expr[]): Expr[] =>
@@ -262,7 +262,7 @@ function solveZero(f: Expr, x: ExprSym, steps: Step[] | undefined, depth: number
     }
   }
   // Two terms a*h(u) = b*h(v) with the same invertible h is beyond this solver.
-  throw new MdmlError('not-implemented', 'solve: no method applies to this equation')
+  throw new OmaiError('not-implemented', 'solve: no method applies to this equation')
 }
 
 function solveImpl(eq: Expr, x: ExprSym, steps: Step[] | undefined): Expr[] {
@@ -284,11 +284,11 @@ function solveImpl(eq: Expr, x: ExprSym, steps: Step[] | undefined): Expr[] {
  * @param eq - An equation `eq(lhs, rhs)`, or an expression equal to zero.
  * @param x - The unknown.
  * @returns The solutions.
- * @throws MdmlError with code `not-implemented` when no method applies, `value` for an identity.
+ * @throws OmaiError with code `not-implemented` when no method applies, `value` for an identity.
  * @index function Solve equations symbolically.
  * @example
  * ```ts
- * import { parse, solve, sym, toText } from 'mdml-engine/symbolic'
+ * import { parse, solve, sym, toText } from 'omai-engine/symbolic'
  * const x = sym('x')
  * solve(parse('x^2 - 5x + 6'), x).map(toText) // => ['2', '3']
  * solve(parse('Eq(exp(2*x) - 3*exp(x), -2)'), x).map(toText) // => ['0', 'log(2)']
@@ -309,7 +309,7 @@ export function solve(eq: Expr, x: ExprSym): Expr[] {
  * @returns The solutions (as a `List` expression) and the steps.
  * @example
  * ```ts
- * import { parse, solveSteps, sym } from 'mdml-engine/symbolic'
+ * import { parse, solveSteps, sym } from 'omai-engine/symbolic'
  * solveSteps(parse('2^x - 8'), sym('x')).steps[0]?.rule // => 'take a logarithm'
  * ```
  */
@@ -329,10 +329,10 @@ export function solveSteps(eq: Expr, x: ExprSym): Derivation {
  * @param eqs - Equations (relations or expressions equal to zero), linear in `vars`.
  * @param vars - The unknowns.
  * @returns The solution, by variable name.
- * @throws MdmlError with code `value` when an equation is not linear or the system is inconsistent.
+ * @throws OmaiError with code `value` when an equation is not linear or the system is inconsistent.
  * @example
  * ```ts
- * import { parse, solveLinearSystem, sym, toText } from 'mdml-engine/symbolic'
+ * import { parse, solveLinearSystem, sym, toText } from 'omai-engine/symbolic'
  * const s = solveLinearSystem([parse('x + y - 3'), parse('Eq(x - y, 1)')], [sym('x'), sym('y')])
  * [toText(s['x'] ?? 0), toText(s['y'] ?? 0)] // => ['2', '1']
  * ```
@@ -357,7 +357,7 @@ export function solveLinearSystem(eqs: readonly Expr[], vars: readonly ExprSym[]
       // Check linearity: f must equal sum coeff_i v_i + constant.
       const rebuilt = makeAdd([constant, ...coeffs.map((c, i) => makeMul([c, vars[i] as Expr]))])
       if (!isZero(makeAdd([f, neg(rebuilt)])))
-        throw new MdmlError('value', 'solveLinearSystem: an equation is not linear')
+        throw new OmaiError('value', 'solveLinearSystem: an equation is not linear')
       return [...coeffs, cancel(neg(constant))]
     })
     const n = rows.length
@@ -388,7 +388,7 @@ export function solveLinearSystem(eqs: readonly Expr[], vars: readonly ExprSym[]
     }
     for (let i = r; i < n; i++) {
       if (!isZero((rows[i] as Expr[])[m] as Expr))
-        throw new MdmlError('value', 'solveLinearSystem: the system is inconsistent')
+        throw new OmaiError('value', 'solveLinearSystem: the system is inconsistent')
     }
     const out: Record<string, Expr> = {}
     pivots.forEach((c, i) => {

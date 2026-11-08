@@ -33,7 +33,7 @@ function kind(
  * @concept edit-distance
  * @example
  * ```ts
- * import { dpKinds } from 'mdml-engine/text'
+ * import { dpKinds } from 'omai-engine/text'
  * dpKinds.make({ kind: 'sellers', k: 2 }) // => { kind: 'sellers', k: 2 }
  * ```
  */

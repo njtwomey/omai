@@ -4,7 +4,7 @@
  * global importances (permutation importance, impurity decrease, mean |SHAP|) with their spread.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { rowsOf, sameLength, seal } from './_check.ts'
 
 /**
@@ -86,12 +86,12 @@ export interface FeatureAttributions {
  *
  * @param record - The record without its `kind`.
  * @returns The record.
- * @throws MdmlError `shape` when a row's values or data do not have one entry per feature, or the predictions,
+ * @throws OmaiError `shape` when a row's values or data do not have one entry per feature, or the predictions,
  *   rows, errors, interactions or convergence do not match the rows; `value` when the convergence names a row that was
  *   not explained.
  * @example
  * ```ts
- * import { featureAttributions } from 'mdml-engine/exposition'
+ * import { featureAttributions } from 'omai-engine/exposition'
  * const r = featureAttributions({ method: 'exact', features: ['a', 'b'], output: 'prediction', baseValue: 1, values: [[2, -0.5]], data: [[3, 4]], predictions: [2.5] })
  * r.values[0].length // => 2
  * ```
@@ -111,7 +111,7 @@ export function featureAttributions(record: Omit<FeatureAttributions, 'kind'>): 
     sameLength(k, 'partners', record.partners.length, d)
     for (const p of record.partners)
       if (!(Number.isInteger(p) && p >= -1 && p < d))
-        throw new MdmlError('value', `${k}: partner ${p} is not a feature (or -1 for none)`)
+        throw new OmaiError('value', `${k}: partner ${p} is not a feature (or -1 for none)`)
   }
   if (record.standardErrors !== undefined) {
     sameLength(k, 'standardErrors', record.standardErrors.length, n)
@@ -126,14 +126,14 @@ export function featureAttributions(record: Omit<FeatureAttributions, 'kind'>): 
   }
   const layout = record.layout
   if (layout?.kind === 'image' && layout.shape[0] * layout.shape[1] !== d)
-    throw new MdmlError('shape', `${k}: an image of ${layout.shape.join('x')} for ${d} features`)
+    throw new OmaiError('shape', `${k}: an image of ${layout.shape.join('x')} for ${d} features`)
   if (layout?.kind === 'tokens' && layout.spans !== undefined) sameLength(k, 'layout.spans', layout.spans.length, d)
   if (layout?.kind === 'series' && layout.time !== undefined) sameLength(k, 'layout.time', layout.time.length, d)
   if (record.segments !== undefined) sameLength(k, 'segments', record.segments.length, d)
   const c = record.convergence
   if (c !== undefined) {
     if (!(Number.isInteger(c.row) && c.row >= 0 && c.row < n))
-      throw new MdmlError('value', `${k}: convergence.row ${c.row} is not an explained row`)
+      throw new OmaiError('value', `${k}: convergence.row ${c.row} is not an explained row`)
     sameLength(k, 'convergence.estimates', c.estimates.length, c.samples.length)
     rowsOf(k, 'convergence.estimates', c.estimates, d)
     if (c.standardErrors !== undefined) {
@@ -173,11 +173,11 @@ export interface Importances {
  *
  * @param record - The record without its `kind`.
  * @returns The record.
- * @throws MdmlError `shape` when the means, spreads or repeats do not have one entry per feature, or the repeats
+ * @throws OmaiError `shape` when the means, spreads or repeats do not have one entry per feature, or the repeats
  *   differ in count.
  * @example
  * ```ts
- * import { importances } from 'mdml-engine/exposition'
+ * import { importances } from 'omai-engine/exposition'
  * const r = importances({ method: 'permutation', features: ['a', 'b'], mean: [0.3, 0.01], spread: [0.05, 0.01], metric: 'accuracy', direction: 'higher' })
  * r.kind // => 'importances'
  * ```

@@ -4,9 +4,9 @@ import warnings
 
 import control as ct
 import numpy as np
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import rng
-from mdml_oracle.lti import schur_stable_system, stable_system, system_norm
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import rng
+from omai_oracle.lti import schur_stable_system, stable_system, system_norm
 
 REFERENCE: dict[str, str] = {"control": ct.__version__}
 

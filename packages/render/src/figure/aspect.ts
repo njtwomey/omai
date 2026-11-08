@@ -4,7 +4,7 @@
  * `adjustable='datalim'`) or by shrinking the plotting box (`boxForAspect`, `adjustable='box'`).
  */
 
-import { MdmlError } from 'mdml-engine/base'
+import { OmaiError } from 'omai-engine/base'
 
 /** A closed interval `[low, high]` of data values. */
 export type Range = readonly [low: number, high: number]
@@ -25,11 +25,11 @@ export type DataAspect = 'auto' | 'equal' | number
  * @param box - The plotting area's width and height in pixels.
  * @param aspect - The data aspect.
  * @returns The adjusted ranges.
- * @throws MdmlError with code `value` for a non-positive numeric aspect.
+ * @throws OmaiError with code `value` for a non-positive numeric aspect.
  * @index function Widen an axis range to meet a data aspect: `fitDataAspect(x, y, box, 'equal')`.
  * @example
  * ```ts
- * import { fitDataAspect } from 'mdml-render/figure'
+ * import { fitDataAspect } from 'omai-render/figure'
  * fitDataAspect([-1, 1], [-1, 1], { width: 400, height: 200 }, 'equal') // => { x: [-2, 2], y: [-1, 1] }
  * fitDataAspect([0, 4], [0, 1], { width: 100, height: 100 }, 'equal') // => { x: [0, 4], y: [-1.5, 2.5] }
  * ```
@@ -42,7 +42,7 @@ export function fitDataAspect(
 ): { readonly x: Range; readonly y: Range } {
   if (aspect === 'auto') return { x, y }
   const ratio = aspect === 'equal' ? 1 : aspect
-  if (!(ratio > 0)) throw new MdmlError('value', 'fitDataAspect: the aspect must be positive')
+  if (!(ratio > 0)) throw new OmaiError('value', 'fitDataAspect: the aspect must be positive')
   if (!(box.width > 0 && box.height > 0)) return { x, y }
   const dx = x[1] - x[0]
   const dy = y[1] - y[0]
@@ -71,7 +71,7 @@ export function fitDataAspect(
  * @returns The width and height.
  * @example
  * ```ts
- * import { boxForAspect } from 'mdml-render/figure'
+ * import { boxForAspect } from 'omai-render/figure'
  * boxForAspect([0, 2], [0, 1], { width: 300, height: 300 }, 'equal') // => { width: 300, height: 150 }
  * ```
  */

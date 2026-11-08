@@ -5,7 +5,7 @@
  * an `outputDim`, so a backbone can be sized from it; the functional forms are in `functional/coordinate-encodings`.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { foldIn, type Key, uniform } from '../../random/index.ts'
 import type { Tensor, Value } from '../../tensor/index.ts'
 import {
@@ -28,7 +28,7 @@ import { initKey, Module, type Params } from './module.ts'
  * @concept coordinate-encoding
  * @example
  * ```ts
- * import { IdentityEncoding } from 'mdml-engine/nn'
+ * import { IdentityEncoding } from 'omai-engine/nn'
  * new IdentityEncoding(3).forward([[1, 2, 3]]).shape // => [1, 3]
  * ```
  */
@@ -59,7 +59,7 @@ export class IdentityEncoding extends Module {
  * @concept coordinate-encoding
  * @example
  * ```ts
- * import { FrequencyEncoding } from 'mdml-engine/nn'
+ * import { FrequencyEncoding } from 'omai-engine/nn'
  * const enc = new FrequencyEncoding(3, { octaves: 4, includeInput: true })
  * [enc.outputDim, enc.forward([[0, 0, 0]]).shape] // => [27, [1, 27]]
  * ```
@@ -100,8 +100,8 @@ export class FrequencyEncoding extends Module {
  * @concept coordinate-encoding
  * @example
  * ```ts
- * import { FourierFeatureEncoding } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
+ * import { FourierFeatureEncoding } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
  * const enc = new FourierFeatureEncoding(2, { features: 16, sigma: 5, key: key(0) })
  * [enc.outputDim, enc.parameterCount()] // => [32, 0]
  * ```
@@ -151,8 +151,8 @@ export class FourierFeatureEncoding extends Module {
  * @index module Instant-NGP multiresolution hash grid encoding of coordinates.
  * @example
  * ```ts
- * import { HashGridEncoding } from 'mdml-engine/nn'
- * import { key } from 'mdml-engine/random'
+ * import { HashGridEncoding } from 'omai-engine/nn'
+ * import { key } from 'omai-engine/random'
  * const enc = new HashGridEncoding({ dim: 2, levels: 4, log2TableSize: 8 }, { key: key(0) })
  * [enc.outputDim, enc.parameterCount(), enc.forward([[0.1, -0.3]]).shape] // => [8, 2048, [1, 8]]
  * ```
@@ -175,13 +175,13 @@ export class HashGridEncoding extends Module {
 
   apply(params: Params, x: Value): Value {
     const table = params['table'] as Value | undefined
-    if (table === undefined) throw new MdmlError('value', 'HashGridEncoding: the parameters hold no table')
+    if (table === undefined) throw new OmaiError('value', 'HashGridEncoding: the parameters hold no table')
     return hashGridEncode(x, table, this.config)
   }
 
   outputShape(inputShape: readonly number[]): number[] {
     if (inputShape[inputShape.length - 1] !== this.config.dim)
-      throw new MdmlError(
+      throw new OmaiError(
         'shape',
         `HashGridEncoding: expected ${this.config.dim} coordinates, got [${inputShape.join(', ')}]`,
       )

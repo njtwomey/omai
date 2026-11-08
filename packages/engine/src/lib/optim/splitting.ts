@@ -4,7 +4,7 @@
  * Chambolle-Pock primal-dual hybrid gradient method for min F(K x) + G(x), all as traced algorithms.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { daxpy, ddot, dnrm2 } from '../numerics/linalg/index.ts'
 import { asOperator, type CsrMatrix, type LinearOperator } from '../numerics/sparse/index.ts'
 import { key, normal } from '../random/index.ts'
@@ -67,8 +67,8 @@ export interface ProximalGradientState extends VectorState {
  * @concept proximal-gradient
  * @example
  * ```ts
- * import { proximalGradientAlgorithm, proxL1 } from 'mdml-engine/optim'
- * import { square, sub, sum, type Value } from 'mdml-engine/tensor'
+ * import { proximalGradientAlgorithm, proxL1 } from 'omai-engine/optim'
+ * import { square, sub, sum, type Value } from 'omai-engine/tensor'
  * proximalGradientAlgorithm((x) => sum(square(sub(x as Value, 2))), proxL1, [0]).name // => 'ista'
  * ```
  */
@@ -209,8 +209,8 @@ export function proximalGradientAlgorithm(
  * @concept proximal-gradient
  * @example
  * ```ts
- * import { ista, proxL1 } from 'mdml-engine/optim'
- * import { square, sub, sum, toArray, type Value } from 'mdml-engine/tensor'
+ * import { ista, proxL1 } from 'omai-engine/optim'
+ * import { square, sub, sum, toArray, type Value } from 'omai-engine/tensor'
  * // argmin (x - 2)^2 + |x|: the soft threshold of 2 at 1/2.
  * toArray(ista((x) => sum(square(sub(x as Value, 2))), proxL1, [0], { stepSize: 0.5 }).x as Value) // => [1.5]
  * ```
@@ -237,8 +237,8 @@ export function ista(f: Objective, prox: Prox, x0: TensorLike, options: Proximal
  * @index function Accelerated proximal gradient for composite objectives.
  * @example
  * ```ts
- * import { fista, proxL1 } from 'mdml-engine/optim'
- * import { square, sub, sum, toArray, type Value } from 'mdml-engine/tensor'
+ * import { fista, proxL1 } from 'omai-engine/optim'
+ * import { square, sub, sum, toArray, type Value } from 'omai-engine/tensor'
  * const r = fista((x) => sum(square(sub(x as Value, 2))), proxL1, [0], { restart: 'function' })
  * toArray(r.x as Value).map((v) => Math.round(v * 1e8) / 1e8) // => [1.5]
  * ```
@@ -317,7 +317,7 @@ function operatorNorm(op: LinearOperator, iterations = 50): number {
  * @concept primal-dual
  * @example
  * ```ts
- * import { chambollePockAlgorithm, proxL1, proxSquaredL2 } from 'mdml-engine/optim'
+ * import { chambollePockAlgorithm, proxL1, proxSquaredL2 } from 'omai-engine/optim'
  * chambollePockAlgorithm({ K: [[1, 0], [0, 1]], proxG: proxSquaredL2, proxF: proxL1 }, [1, 1]).name // => 'chambollePock'
  * ```
  */
@@ -329,14 +329,14 @@ export function chambollePockAlgorithm(
   const op = asOperator(problem.K)
   const [m, n] = op.shape
   const rmatvec = op.rmatvec
-  if (rmatvec === undefined) throw new MdmlError('value', 'chambollePock: the operator needs rmatvec (K^T)')
+  if (rmatvec === undefined) throw new OmaiError('value', 'chambollePock: the operator needs rmatvec (K^T)')
   const K = (x: Float64Array): Float64Array => flatOf(op.matvec(asVec(x)))
   const Kt = (y: Float64Array): Float64Array => flatOf(rmatvec(asVec(y)))
   const proxF = problem.proxF
   const proxFConj: Prox =
     problem.proxFConjugate ??
     ((v, s) => {
-      if (proxF === undefined) throw new MdmlError('value', 'chambollePock: give proxF or proxFConjugate')
+      if (proxF === undefined) throw new OmaiError('value', 'chambollePock: give proxF or proxFConjugate')
       const vv = flatOf(v)
       const inner = flatOf(proxF(asVec(vv.map((e) => e / s)), 1 / s))
       return asVec(vv.map((e, i) => e - s * (inner[i] ?? 0)))
@@ -441,8 +441,8 @@ export interface PrimalDualResult extends MinimizeResult {
  * @concept primal-dual
  * @example
  * ```ts
- * import { chambollePock, proxL1, proxSquaredL2 } from 'mdml-engine/optim'
- * import { add, sub, toArray, type Value } from 'mdml-engine/tensor'
+ * import { chambollePock, proxL1, proxSquaredL2 } from 'omai-engine/optim'
+ * import { add, sub, toArray, type Value } from 'omai-engine/tensor'
  * // min |x|_2^2 / 2 + |x - 3|_1 written as F(Kx) with K = I and F = |. - 3|_1.
  * const r = chambollePock(
  *   { K: [[1, 0], [0, 1]], proxG: proxSquaredL2, proxF: (v, t) => add(proxL1(sub(v, 3), t), 3) },

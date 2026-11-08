@@ -31,7 +31,7 @@ function scheme(description: string, method: 'YT' | 'KNV0'): Option<PlaceOptions
  * @concept pole-placement
  * @example
  * ```ts
- * import { control } from 'mdml-engine/dynamics'
+ * import { control } from 'omai-engine/dynamics'
  * control.placementSchemes.make({ kind: 'knv0' }).method // => 'KNV0'
  * ```
  */

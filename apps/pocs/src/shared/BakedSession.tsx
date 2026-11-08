@@ -1,4 +1,4 @@
-import type { Config, Method, Session, Subscription } from 'mdml-engine/trace'
+import type { Config, Method, Session, Subscription } from 'omai-engine/trace'
 import {
   type LiveSession,
   SessionPlayer,
@@ -6,7 +6,7 @@ import {
   useScrubClick,
   useSession,
   useSessionPreferences,
-} from 'mdml-render/react'
+} from 'omai-render/react'
 import { type ReactNode, useEffect, useMemo, useState } from 'react'
 import { ComputeGate } from './ComputeGate.tsx'
 import { StaleVeil } from './StaleVeil.tsx'

@@ -1,14 +1,14 @@
 {
-  "name": "mdml-examples",
+  "name": "omai-examples",
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "description": "The runnable programs behind the README's Examples: each folder computes with mdml-engine and draws with mdml-render. Never published.",
+  "description": "The runnable programs behind the README's Examples: each folder computes with omai-engine and draws with omai-render. Never published.",
   "dependencies": {
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
-    "mdml-engine": "workspace:*",
-    "mdml-render": "workspace:*"
+    "omai-engine": "workspace:*",
+    "omai-render": "workspace:*"
   },
   "devDependencies": {
     "@types/react": "^19.3.0",

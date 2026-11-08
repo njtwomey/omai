@@ -1,5 +1,5 @@
 import type { EChartsOption, SeriesOption } from 'echarts'
-import { maxOf, minOf } from 'mdml-engine/base'
+import { maxOf, minOf } from 'omai-engine/base'
 import type { Layer } from '../charts/plot.ts'
 import { type Figure, type FigureOptions, figure as makeFigure } from '../figure/figure.ts'
 import { formatNumber } from '../theme/format.ts'
@@ -101,7 +101,7 @@ export function outlined(l: Layer, mode: ColourMode, width = 0.9): Layer {
  * @returns The fragment to spread into the option.
  * @example
  * ```ts
- * import { ariaOf } from 'mdml-render/views'
+ * import { ariaOf } from 'omai-render/views'
  * ariaOf('A vector field').aria.label.description // => 'A vector field'
  * ```
  */

@@ -5,7 +5,7 @@
  * exposes the log likelihood, how far it moved, and the responsibilities, means and weights.
  */
 
-import { MdmlError, maxOf } from '../base/index.ts'
+import { maxOf, OmaiError } from '../base/index.ts'
 import { initialCentres, lloydAlgorithm } from '../cluster/index.ts'
 import { multivariateNormal } from '../dists/index.ts'
 import { type MatrixView, matrixView } from '../learn/index.ts'
@@ -35,7 +35,7 @@ export interface MixtureParameters {
  * @returns The log joint densities.
  * @example
  * ```ts
- * import { componentLogDensities } from 'mdml-engine/mixture'
+ * import { componentLogDensities } from 'omai-engine/mixture'
  * componentLogDensities([[0]], [1], [[0]], [[[1]]])[0][0].toFixed(4) // => '-0.9189'
  * ```
  */
@@ -61,7 +61,7 @@ export function componentLogDensities(
  * @returns Responsibilities `[n][k]` and the log density of each row.
  * @example
  * ```ts
- * import { normaliseLogDensities } from 'mdml-engine/mixture'
+ * import { normaliseLogDensities } from 'omai-engine/mixture'
  * normaliseLogDensities([[0, 0]]).resp // => [[0.5, 0.5]]
  * ```
  */
@@ -84,7 +84,7 @@ export function normaliseLogDensities(logJoint: readonly (readonly number[])[]):
  * @returns Responsibilities `[m][k]` and the log density of each row.
  * @example
  * ```ts
- * import { mixturePosterior } from 'mdml-engine/mixture'
+ * import { mixturePosterior } from 'omai-engine/mixture'
  * const p = { weights: [0.5, 0.5], means: [[0], [10]], covariances: [[[1]], [[1]]] }
  * mixturePosterior([[0.1]], p).resp[0][0].toFixed(3) // => '1.000'
  * ```
@@ -103,7 +103,7 @@ export function mixturePosterior(
  * @returns The component index per row.
  * @example
  * ```ts
- * import { componentLabels } from 'mdml-engine/mixture'
+ * import { componentLabels } from 'omai-engine/mixture'
  * componentLabels([[0.2, 0.8], [0.9, 0.1]]) // => [1, 0]
  * ```
  */
@@ -215,8 +215,8 @@ const emSchema = channels({
  * @index algorithm Gaussian mixture by EM, stepwise; no estimator wraps it.
  * @example
  * ```ts
- * import { gaussianEmAlgorithm } from 'mdml-engine/mixture'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { gaussianEmAlgorithm } from 'omai-engine/mixture'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const x = [[0], [0.2], [10], [10.2]]
  * const start = { weights: [0.5, 0.5], means: [[0], [10]], covariances: [[[1]], [[1]]] }
  * runAlgorithm(gaussianEmAlgorithm(x, start), { maxSteps: 20 }).state.means[1][0].toFixed(1) // => '10.1'
@@ -300,18 +300,18 @@ export interface MixtureInitOptions {
  * @param init - `kmeans` or `random`.
  * @param key - Randomness.
  * @returns Responsibilities `[n][k]`, each row summing to one.
- * @throws MdmlError with code `value` unless `k` is an integer in `1..n`.
+ * @throws OmaiError with code `value` unless `k` is an integer in `1..n`.
  * @example
  * ```ts
- * import { initialResponsibilities } from 'mdml-engine/mixture'
- * import { key } from 'mdml-engine/random'
+ * import { initialResponsibilities } from 'omai-engine/mixture'
+ * import { key } from 'omai-engine/random'
  * initialResponsibilities([[0], [0.1], [9], [9.1]], 2, 'kmeans', key(0)).map((r) => r[0] + r[1]) // => [1, 1, 1, 1]
  * ```
  */
 export function initialResponsibilities(x: TensorLike, k: number, init: 'kmeans' | 'random', key: Key): number[][] {
   const m = matrixView(x, 'gaussianMixture')
   if (!(Number.isInteger(k) && k >= 1 && k <= m.n))
-    throw new MdmlError('value', `gaussianMixture: nComponents must be in 1..${m.n}`)
+    throw new OmaiError('value', `gaussianMixture: nComponents must be in 1..${m.n}`)
   if (init === 'kmeans') {
     const lloyd = lloydAlgorithm(x, initialCentres(x, k, 'k-means++', key))
     const labels = runAlgorithm(lloyd, { maxSteps: 300 }).state.labels
@@ -335,8 +335,8 @@ export function initialResponsibilities(x: TensorLike, k: number, init: 'kmeans'
  * @returns Initial weights, means and covariances.
  * @example
  * ```ts
- * import { initialMixture } from 'mdml-engine/mixture'
- * import { key } from 'mdml-engine/random'
+ * import { initialMixture } from 'omai-engine/mixture'
+ * import { key } from 'omai-engine/random'
  * initialMixture([[0], [0.1], [9], [9.1]], { nComponents: 2 }, key(0)).weights // => [0.5, 0.5]
  * ```
  */
@@ -344,7 +344,7 @@ export function initialMixture(x: TensorLike, options: MixtureInitOptions, key: 
   const m = matrixView(x, 'gaussianMixture')
   const k = options.nComponents ?? 2
   if (!(Number.isInteger(k) && k >= 1 && k <= m.n))
-    throw new MdmlError('value', `gaussianMixture: nComponents must be in 1..${m.n}`)
+    throw new OmaiError('value', `gaussianMixture: nComponents must be in 1..${m.n}`)
   const init = options.init ?? 'kmeans'
   if (typeof init !== 'string')
     return {
@@ -365,7 +365,7 @@ export function initialMixture(x: TensorLike, options: MixtureInitOptions, key: 
  * @returns The parameter count.
  * @example
  * ```ts
- * import { mixtureParameterCount } from 'mdml-engine/mixture'
+ * import { mixtureParameterCount } from 'omai-engine/mixture'
  * mixtureParameterCount(2, 2, 'full') // => 11
  * ```
  */

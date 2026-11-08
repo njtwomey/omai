@@ -4,7 +4,7 @@
  * inner session's panels and the tests draw layouts over it).
  */
 
-import type { Session } from 'mdml-engine/trace'
+import type { Session } from 'omai-engine/trace'
 import { type ReactNode, useEffect, useState } from 'react'
 import { cx, iconButtonClass } from '../controls/classes.ts'
 import { type LiveSession, STILL_HANDLE } from './useSession.ts'

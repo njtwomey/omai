@@ -4,7 +4,7 @@
  * distribution, and the Yeo-Johnson and Box-Cox power transforms, each with an inverse.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { interp } from '../../numerics/interpolate/index.ts'
 import { ndtr, ndtri } from '../../numerics/special/index.ts'
 import { subsample } from '../../random/index.ts'
@@ -74,8 +74,8 @@ function isConstant(variance: number, mean: number, n: number): boolean {
  * @index estimator Standardise features to zero mean and unit variance.
  * @example
  * ```ts
- * import { standardScaler } from 'mdml-engine/learn/preprocessing'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { standardScaler } from 'omai-engine/learn/preprocessing'
+ * import { toArray } from 'omai-engine/tensor'
  * const s = standardScaler().fit({ x: [[0, 1], [2, 1]] })
  * s.params.mean // => [1, 1]
  * toArray(s.transform([[2, 3]])) // => [[1, 2]]
@@ -168,8 +168,8 @@ function columnRange(col: Float64Array): [number, number] {
  * @returns The estimator.
  * @example
  * ```ts
- * import { minMaxScaler } from 'mdml-engine/learn/preprocessing'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { minMaxScaler } from 'omai-engine/learn/preprocessing'
+ * import { toArray } from 'omai-engine/tensor'
  * const s = minMaxScaler().fit({ x: [[0], [4]] })
  * toArray(s.transform([[1], [8]])) // => [[0.25], [2]]
  * toArray(minMaxScaler({ clip: true }).fit({ x: [[0], [4]] }).transform([[8]])) // => [[1]]
@@ -179,7 +179,7 @@ export function minMaxScaler(
   hyper: Partial<MinMaxScalerHyper> = {},
 ): Estimator<MinMaxScalerHyper, FittedScaler<MinMaxScalerParams>> {
   const range = hyper.featureRange ?? [0, 1]
-  if (!(range[0] < range[1])) throw new MdmlError('value', 'minMaxScaler: featureRange must be increasing')
+  if (!(range[0] < range[1])) throw new OmaiError('value', 'minMaxScaler: featureRange must be increasing')
   return defineEstimator(
     {
       name: 'min-max-scaler',
@@ -225,8 +225,8 @@ export type MaxAbsScalerParams = { readonly maxAbs: number[]; readonly scale: nu
  * @returns The estimator.
  * @example
  * ```ts
- * import { maxAbsScaler } from 'mdml-engine/learn/preprocessing'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { maxAbsScaler } from 'omai-engine/learn/preprocessing'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(maxAbsScaler().fit({ x: [[-4], [2]] }).transform([[1]])) // => [[0.25]]
  * ```
  */
@@ -277,7 +277,7 @@ export type RobustScalerParams = { readonly center: number[]; readonly scale: nu
  * @returns The estimator.
  * @example
  * ```ts
- * import { robustScaler } from 'mdml-engine/learn/preprocessing'
+ * import { robustScaler } from 'omai-engine/learn/preprocessing'
  * const s = robustScaler().fit({ x: [[1], [2], [3], [4], [100]] })
  * s.params // => { center: [3], scale: [2] }
  * ```
@@ -287,7 +287,7 @@ export function robustScaler(
 ): Estimator<RobustScalerHyper, FittedScaler<RobustScalerParams>> {
   const q = hyper.quantileRange ?? [25, 75]
   if (!(q[0] >= 0 && q[0] < q[1] && q[1] <= 100)) {
-    throw new MdmlError('value', 'robustScaler: quantileRange must satisfy 0 <= lo < hi <= 100')
+    throw new OmaiError('value', 'robustScaler: quantileRange must satisfy 0 <= lo < hi <= 100')
   }
   return defineEstimator(
     {
@@ -340,8 +340,8 @@ export type RowNorm = 'l1' | 'l2' | 'max'
  * @returns The estimator.
  * @example
  * ```ts
- * import { normalizer } from 'mdml-engine/learn/preprocessing'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { normalizer } from 'omai-engine/learn/preprocessing'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(normalizer().fit({ x: [[3, 4]] }).transform([[3, 4], [0, 0]])) // => [[0.6, 0.8], [0, 0]]
  * toArray(normalizer({ norm: 'l1' }).fit({ x: [[1, 3]] }).transform([[1, 3]])) // => [[0.25, 0.75]]
  * ```
@@ -478,8 +478,8 @@ function quantileColumn(
  * @returns The estimator.
  * @example
  * ```ts
- * import { quantileTransformer } from 'mdml-engine/learn/preprocessing'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { quantileTransformer } from 'omai-engine/learn/preprocessing'
+ * import { toArray } from 'omai-engine/tensor'
  * const q = quantileTransformer({ nQuantiles: 5 }).fit({ x: [[1], [2], [3], [4], [5]] })
  * toArray(q.transform([[2], [3.5], [9]])) // => [[0.25], [0.625], [1]]
  * toArray(q.inverseTransform([[0.625]])) // => [[3.5]]
@@ -496,7 +496,7 @@ export function quantileTransformer(
         dict({ nQuantiles: int(10, 2000, { log: true }), outputDistribution: choice(['uniform', 'normal']) }),
       fit: (data, h, options) => {
         let m = matrixView(data.x, 'quantileTransformer', { allowNaN: true })
-        if (h.nQuantiles < 2) throw new MdmlError('value', 'quantileTransformer: nQuantiles must be at least 2')
+        if (h.nQuantiles < 2) throw new OmaiError('value', 'quantileTransformer: nQuantiles must be at least 2')
         if (m.n > h.subsample) {
           m = takeRows(m, toFlat(subsample(keyFor(options, 'quantileTransformer'), m.n, h.subsample)))
         }
@@ -569,11 +569,11 @@ function powerColumn(
  *
  * @param hyper - The method (default `'yeo-johnson'`) and whether to standardise (default true).
  * @returns The estimator.
- * @throws MdmlError with code `domain` when Box-Cox meets non-positive data.
+ * @throws OmaiError with code `domain` when Box-Cox meets non-positive data.
  * @example
  * ```ts
- * import { powerTransformer } from 'mdml-engine/learn/preprocessing'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { powerTransformer } from 'omai-engine/learn/preprocessing'
+ * import { toArray } from 'omai-engine/tensor'
  * const p = powerTransformer().fit({ x: [[1], [2], [3], [10]] })
  * const back = toArray(p.inverseTransform(p.transform([[3]])))
  * Math.abs(back[0][0] - 3) < 1e-9 // => true
@@ -595,7 +595,7 @@ export function powerTransformer(
         for (let j = 0; j < m.d; j++) {
           const v = present(columnOf(m, j))
           if (h.method === 'box-cox' && v.some((t) => t <= 0)) {
-            throw new MdmlError('domain', 'powerTransformer: Box-Cox needs strictly positive data')
+            throw new OmaiError('domain', 'powerTransformer: Box-Cox needs strictly positive data')
           }
           const fitted = h.method === 'box-cox' ? boxcox(v) : yeojohnson(v)
           lambdas.push(fitted.lambda)

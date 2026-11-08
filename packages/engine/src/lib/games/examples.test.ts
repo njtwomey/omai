@@ -8,10 +8,10 @@ import * as trace from '../trace/index.ts'
 import * as games from './index.ts'
 
 const MODULES: Readonly<Record<string, Readonly<Record<string, unknown>>>> = {
-  'mdml-engine/games': games,
-  'mdml-engine/random': random,
-  'mdml-engine/tensor': tensor,
-  'mdml-engine/trace': trace,
+  'omai-engine/games': games,
+  'omai-engine/random': random,
+  'omai-engine/tensor': tensor,
+  'omai-engine/trace': trace,
 }
 
 interface Example {

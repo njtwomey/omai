@@ -1,4 +1,4 @@
-import { MdmlError, sigmoidOf } from '../../base/index.ts'
+import { OmaiError, sigmoidOf } from '../../base/index.ts'
 import {
   asTensor,
   concat,
@@ -87,7 +87,7 @@ export function composedFunctions(
 /** Require classification data. */
 export function requireClassification(input: Generated, name: string): Generated<ClassificationData> {
   if (input.data.kind !== 'classification')
-    throw new MdmlError('value', `${name}: needs classification data, got ${input.data.kind}`)
+    throw new OmaiError('value', `${name}: needs classification data, got ${input.data.kind}`)
   return input as Generated<ClassificationData>
 }
 
@@ -95,7 +95,7 @@ export function requireClassification(input: Generated, name: string): Generated
 export function requireTabular(input: Generated, name: string): Generated<TabularData> {
   const k = input.data.kind
   if (k !== 'classification' && k !== 'regression' && k !== 'multilabel' && k !== 'multioutput')
-    throw new MdmlError('value', `${name}: needs data with a feature matrix, got ${k}`)
+    throw new OmaiError('value', `${name}: needs data with a feature matrix, got ${k}`)
   return input as Generated<TabularData>
 }
 
@@ -103,7 +103,7 @@ export function requireTabular(input: Generated, name: string): Generated<Tabula
 export function columnsOf(columns: readonly number[] | undefined, d: number, name: string): number[] {
   const cols = columns === undefined ? Array.from({ length: d }, (_, j) => j) : [...columns]
   for (const j of cols) {
-    if (!(Number.isInteger(j) && j >= 0 && j < d)) throw new MdmlError('value', `${name}: no column ${j} in ${d}`)
+    if (!(Number.isInteger(j) && j >= 0 && j < d)) throw new OmaiError('value', `${name}: no column ${j} in ${d}`)
   }
   return cols
 }

@@ -2,7 +2,7 @@
 // classical, heteroscedasticity-robust and cluster-robust covariances on number arrays, scalar normal and t
 // distribution functions, and the small row and column selections the estimators share. Nothing here is exported
 // from the domain.
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { matrixView, targetVector } from '../learn/validation.ts'
 import { dgesv } from '../numerics/linalg/index.ts'
 import { betainc, chdtrc, fdtrc, ndtr, ndtri, stdtr, stdtrit } from '../numerics/special/index.ts'
@@ -45,7 +45,7 @@ export function prepare(x: TensorLike, treatment: TensorLike, outcome: TensorLik
   const m = matrixView(x, who)
   const t = targetVector(treatment, who, m.n)
   const y = targetVector(outcome, who, m.n)
-  for (const v of t) if (v !== 0 && v !== 1) throw new MdmlError('value', `${who}: the treatment must be 0 or 1`)
+  for (const v of t) if (v !== 0 && v !== 1) throw new OmaiError('value', `${who}: the treatment must be 0 or 1`)
   return { n: m.n, d: m.d, x: m.data, t, y }
 }
 
@@ -176,7 +176,7 @@ export function covariance(
   }
   let groups = 0
   if (kind === 'cluster') {
-    if (clusters === undefined) throw new MdmlError('value', 'cluster-robust covariance needs the cluster of each row')
+    if (clusters === undefined) throw new OmaiError('value', 'cluster-robust covariance needs the cluster of each row')
     const sums = new Map<number, Float64Array>()
     for (let i = 0; i < n; i++) {
       const g = clusters[i] ?? 0

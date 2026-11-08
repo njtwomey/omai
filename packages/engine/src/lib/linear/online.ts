@@ -7,7 +7,7 @@
  * the larger label is the positive one); a multiclass problem wraps them in `oneVsRest`.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import {
   type Kernel,
   type PairwiseKernelMetric,
@@ -98,7 +98,7 @@ function binaryProblem(
   const x = matrixView(data.x, who)
   const { classes, codes } = encodeLabels(data.y ?? [], who, x.n)
   if (classes.length > 2) {
-    throw new MdmlError('value', `${who}: binary labels only (found ${classes.length} classes); wrap it in oneVsRest`)
+    throw new OmaiError('value', `${who}: binary labels only (found ${classes.length} classes); wrap it in oneVsRest`)
   }
   const classes2 = classes.length === 2 ? classes : [classes[0] ?? 0, (classes[0] ?? 0) + 1]
   return { x, y: Int8Array.from(codes, (c) => (c === 1 ? 1 : -1)), classes: classes2 }
@@ -151,9 +151,9 @@ function trainingErrors(w: readonly number[], b: number, x: MatrixView, y: Int8A
  * Networks 1 (1990).
  * @example
  * ```ts
- * import { perceptronAlgorithm } from 'mdml-engine/linear'
- * import { key } from 'mdml-engine/random'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { perceptronAlgorithm } from 'omai-engine/linear'
+ * import { key } from 'omai-engine/random'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const hyper = { variant: 'plain', maxEpochs: 10, shuffle: false, fitIntercept: true } as const
  * const alg = perceptronAlgorithm({ x: [[0], [1], [3], [4]], y: [0, 0, 1, 1] }, hyper, key(0))
  * runAlgorithm(alg, { maxSteps: 40 }).state.mistakes // => 8
@@ -311,8 +311,8 @@ const PERCEPTRON_DEFAULTS: PerceptronHyper = { variant: 'plain', maxEpochs: 20, 
  * @returns The estimator.
  * @example
  * ```ts
- * import { perceptron } from 'mdml-engine/linear'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { perceptron } from 'omai-engine/linear'
+ * import { toFlat } from 'omai-engine/tensor'
  * const f = perceptron({ variant: 'averaged' }).fit({ x: [[0], [1], [3], [4]], y: [0, 0, 1, 1] })
  * toFlat(f.predict([[0.5], [3.5]])) // => [0, 1]
  * ```
@@ -348,7 +348,7 @@ export function perceptron(
 
 /** The hyperparameters of {@link kernelPerceptron}. */
 export interface KernelPerceptronHyper {
-  /** A kernel of `mdml-engine/kernels`, or a scikit-learn metric name with its parameters. */
+  /** A kernel of `omai-engine/kernels`, or a scikit-learn metric name with its parameters. */
   readonly kernel: Kernel | PairwiseKernelMetric
   readonly kernelOptions: PairwiseKernelOptions
   readonly maxEpochs: number
@@ -392,9 +392,9 @@ export type KernelPerceptronParams = {
  * @returns The algorithm.
  * @example
  * ```ts
- * import { kernelPerceptronAlgorithm } from 'mdml-engine/linear'
- * import { key } from 'mdml-engine/random'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { kernelPerceptronAlgorithm } from 'omai-engine/linear'
+ * import { key } from 'omai-engine/random'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * // XOR is not linearly separable, but an RBF kernel perceptron learns it.
  * const x = [[0, 0], [1, 1], [0, 1], [1, 0]]
  * const hyper = { kernel: 'rbf', kernelOptions: { gamma: 2 }, maxEpochs: 50, shuffle: false } as const
@@ -488,8 +488,8 @@ const KERNEL_PERCEPTRON_DEFAULTS: KernelPerceptronHyper = {
  * @returns The estimator.
  * @example
  * ```ts
- * import { kernelPerceptron } from 'mdml-engine/linear'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { kernelPerceptron } from 'omai-engine/linear'
+ * import { toFlat } from 'omai-engine/tensor'
  * const x = [[0, 0], [1, 1], [0, 1], [1, 0]]
  * const f = kernelPerceptron({ kernelOptions: { gamma: 2 } }).fit({ x, y: [0, 0, 1, 1] })
  * toFlat(f.predict(x)) // => [0, 0, 1, 1]
@@ -699,9 +699,9 @@ function passiveAlgorithm(
  * algorithms, JMLR 7 (2006).
  * @example
  * ```ts
- * import { passiveAggressiveAlgorithm } from 'mdml-engine/linear'
- * import { key } from 'mdml-engine/random'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { passiveAggressiveAlgorithm } from 'omai-engine/linear'
+ * import { key } from 'omai-engine/random'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const hyper = { variant: 'pa1', c: 1, epsilon: 0.1, maxEpochs: 5, shuffle: false, fitIntercept: true } as const
  * const alg = passiveAggressiveAlgorithm({ x: [[0], [1], [3], [4]], y: [0, 0, 1, 1] }, hyper, key(0))
  * runAlgorithm(alg, { maxSteps: 20 }).state.mistakes // => 7
@@ -733,8 +733,8 @@ const PA_DEFAULTS: PassiveAggressiveHyper = {
  * @returns The estimator.
  * @example
  * ```ts
- * import { passiveAggressive } from 'mdml-engine/linear'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { passiveAggressive } from 'omai-engine/linear'
+ * import { toFlat } from 'omai-engine/tensor'
  * const f = passiveAggressive({ variant: 'pa2', c: 0.5 }).fit({ x: [[0], [1], [3], [4]], y: [0, 0, 1, 1] })
  * toFlat(f.predict([[0.5], [3.5]])) // => [0, 1]
  * ```
@@ -791,8 +791,8 @@ export interface PassiveRegressorVerbs {
  * @returns The estimator.
  * @example
  * ```ts
- * import { passiveAggressiveRegressor } from 'mdml-engine/linear'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { passiveAggressiveRegressor } from 'omai-engine/linear'
+ * import { toFlat } from 'omai-engine/tensor'
  * const f = passiveAggressiveRegressor({ epsilon: 0.01, maxEpochs: 50 }).fit({ x: [[0], [1], [2], [3]], y: [1, 3, 5, 7] })
  * Math.round(toFlat(f.predict([[4]]))[0] ?? 0) // => 9
  * ```

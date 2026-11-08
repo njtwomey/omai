@@ -4,7 +4,7 @@
  * and FFT-based and overlap-add convolution for long signals.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import {
   add,
   allocate,
@@ -31,7 +31,7 @@ export type ConvolutionMode = 'full' | 'same' | 'valid'
 function vector(x: TensorLike, name: string): Value {
   const [v] = promoteFloat(x) as [Value]
   if (v.shape.length !== 1 || (v.shape[0] ?? 0) === 0)
-    throw new MdmlError('shape', `${name}: inputs must be non-empty 1-D arrays`)
+    throw new OmaiError('shape', `${name}: inputs must be non-empty 1-D arrays`)
   return v
 }
 
@@ -118,8 +118,8 @@ function sumOf(a: MaybeZero, b: MaybeZero): MaybeZero {
  * @index function Discrete 1-D linear convolution, like numpy.convolve.
  * @example
  * ```ts
- * import { convolve } from 'mdml-engine/numerics/convolution'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { convolve } from 'omai-engine/numerics/convolution'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(convolve([1, 2, 3], [0, 1, 0.5])) // => [0, 1, 2.5, 4, 1.5]
  * ```
  */
@@ -142,8 +142,8 @@ export function convolve(a: TensorLike, v: TensorLike, mode: ConvolutionMode = '
  * @returns The correlation.
  * @example
  * ```ts
- * import { correlate } from 'mdml-engine/numerics/convolution'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { correlate } from 'omai-engine/numerics/convolution'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(correlate([1, 2, 3], [0, 1, 0.5], 'full')) // => [0.5, 2, 3.5, 3, 0]
  * ```
  */
@@ -165,7 +165,7 @@ export function correlate(a: TensorLike, v: TensorLike, mode: ConvolutionMode = 
  * @returns The lags.
  * @example
  * ```ts
- * import { correlationLags } from 'mdml-engine/numerics/convolution'
+ * import { correlationLags } from 'omai-engine/numerics/convolution'
  * correlationLags(3, 2) // => [-1, 0, 1, 2]
  * ```
  */
@@ -221,8 +221,8 @@ function cropNd(
  * @returns The convolution.
  * @example
  * ```ts
- * import { fftConvolve } from 'mdml-engine/numerics/convolution'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { fftConvolve } from 'omai-engine/numerics/convolution'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(fftConvolve([1, 2, 3], [0, 1, 0.5])).map((v) => Math.round(v * 1e12) / 1e12) // => [0, 1, 2.5, 4, 1.5]
  * ```
  */
@@ -233,7 +233,7 @@ export function fftConvolve(
   axes?: readonly number[],
 ): Value {
   const [a, b] = promoteFloat(in1, in2) as [Value, Value]
-  if (a.shape.length !== b.shape.length) throw new MdmlError('shape', 'fftConvolve: inputs must have the same rank')
+  if (a.shape.length !== b.shape.length) throw new OmaiError('shape', 'fftConvolve: inputs must have the same rank')
   const list = (axes ?? a.shape.map((_, i) => i)).map((x) => (x < 0 ? x + a.shape.length : x))
   const sizes = list.map((ax) => nextFastLen((a.shape[ax] ?? 0) + (b.shape[ax] ?? 0) - 1))
   const product = cMul(fftn(a, sizes, list), fftn(b, sizes, list))
@@ -256,8 +256,8 @@ export function fftConvolve(
  * @returns The convolution.
  * @example
  * ```ts
- * import { oaConvolve } from 'mdml-engine/numerics/convolution'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { oaConvolve } from 'omai-engine/numerics/convolution'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(oaConvolve([1, 2, 3, 4, 5, 6], [1, -1])).map((v) => Math.round(v * 1e12) / 1e12) // => [1, 1, 1, 1, 1, 1, -6]
  * ```
  */

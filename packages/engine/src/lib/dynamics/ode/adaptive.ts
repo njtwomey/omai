@@ -5,7 +5,7 @@
  * `RungeKutta`, with `rk23`, `rk45` and `dop853` matching scipy's methods.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import type { Value } from '../../tensor/index.ts'
 import * as dop from './_dop853.ts'
 import {
@@ -55,7 +55,7 @@ function embedded(
   p?: readonly (readonly number[])[],
 ): EmbeddedTableau {
   if (e.length !== base.b.length + 1) {
-    throw new MdmlError('value', `${base.name}: the error weights need one entry per stage plus one`)
+    throw new OmaiError('value', `${base.name}: the error weights need one entry per stage plus one`)
   }
   return { ...base, e: [...e], errorOrder, ...(p === undefined ? {} : { p }) }
 }
@@ -67,17 +67,17 @@ function embedded(
  * @param bHat - The embedded weights (one per stage; a further entry weights the derivative at the new point).
  * @param errorOrder - The order of the embedded estimate (the error is O(h^(errorOrder + 1))).
  * @returns The pair.
- * @throws MdmlError with code `value` when the lengths do not match.
+ * @throws OmaiError with code `value` when the lengths do not match.
  * @example
  * ```ts
- * import { embeddedPair, HEUN } from 'mdml-engine/dynamics/ode'
+ * import { embeddedPair, HEUN } from 'omai-engine/dynamics/ode'
  * embeddedPair(HEUN, [1, 0], 1).e // => [-0.5, 0.5, 0]
  * ```
  */
 export function embeddedPair(tableau: ButcherTableau, bHat: readonly number[], errorOrder: number): EmbeddedTableau {
   const s = tableau.b.length
   if (bHat.length !== s && bHat.length !== s + 1) {
-    throw new MdmlError('value', `embeddedPair: ${tableau.name} needs ${s} embedded weights`)
+    throw new OmaiError('value', `embeddedPair: ${tableau.name} needs ${s} embedded weights`)
   }
   const e = Array.from({ length: s + 1 }, (_, i) => (tableau.b[i] ?? 0) - (bHat[i] ?? 0))
   return embedded(tableau, e, errorOrder)
@@ -291,8 +291,8 @@ function weightedNorm(e: readonly number[], k: readonly Value[], h: number, scal
  * @concept adaptive-step-size
  * @example
  * ```ts
- * import { adaptiveRk, DORMAND_PRINCE } from 'mdml-engine/dynamics/ode'
- * import { tensor } from 'mdml-engine/tensor'
+ * import { adaptiveRk, DORMAND_PRINCE } from 'omai-engine/dynamics/ode'
+ * import { tensor } from 'omai-engine/tensor'
  * const s = adaptiveRk(DORMAND_PRINCE)
  * s.step(s.init((_t, y) => y, 0, tensor([1]), 1)).attempts.length // => 1
  * ```
@@ -324,7 +324,7 @@ export function adaptiveRk(tableau: EmbeddedTableau, options: AdaptiveOptions = 
       return { ...base, hAbs, f, fy, k: [], h: 0, errPrev: 1, errPrev2: 1, counts: snapshot(c) }
     },
     step: (s) => {
-      if (s.status !== 'running') throw new MdmlError('value', `${tableau.name}: the integration has ended`)
+      if (s.status !== 'running') throw new OmaiError('value', `${tableau.name}: the integration has ended`)
       if (atBound(s)) return { ...s, tOld: s.t, t: s.tBound, status: 'finished', attempts: [] }
       const c: Counter = { ...s.counts }
       const f = tally(s.f, c)
@@ -473,7 +473,7 @@ function dop853Dense(s: AdaptiveState): DenseSegment {
  * @returns The stepper.
  * @example
  * ```ts
- * import { rk23 } from 'mdml-engine/dynamics/ode'
+ * import { rk23 } from 'omai-engine/dynamics/ode'
  * rk23().order // => 3
  * ```
  */
@@ -488,7 +488,7 @@ export function rk23(options: AdaptiveOptions = {}): Stepper<AdaptiveState> {
  * @returns The stepper.
  * @example
  * ```ts
- * import { rk45 } from 'mdml-engine/dynamics/ode'
+ * import { rk45 } from 'omai-engine/dynamics/ode'
  * rk45().order // => 5
  * ```
  */
@@ -503,7 +503,7 @@ export function rk45(options: AdaptiveOptions = {}): Stepper<AdaptiveState> {
  * @returns The stepper.
  * @example
  * ```ts
- * import { dop853 } from 'mdml-engine/dynamics/ode'
+ * import { dop853 } from 'omai-engine/dynamics/ode'
  * dop853().order // => 8
  * ```
  */
@@ -518,7 +518,7 @@ export function dop853(options: AdaptiveOptions = {}): Stepper<AdaptiveState> {
  * @returns The stepper.
  * @example
  * ```ts
- * import { heunEuler } from 'mdml-engine/dynamics/ode'
+ * import { heunEuler } from 'omai-engine/dynamics/ode'
  * heunEuler().order // => 2
  * ```
  */
@@ -533,7 +533,7 @@ export function heunEuler(options: AdaptiveOptions = {}): Stepper<AdaptiveState>
  * @returns The stepper.
  * @example
  * ```ts
- * import { fehlberg45 } from 'mdml-engine/dynamics/ode'
+ * import { fehlberg45 } from 'omai-engine/dynamics/ode'
  * fehlberg45().order // => 4
  * ```
  */
@@ -548,7 +548,7 @@ export function fehlberg45(options: AdaptiveOptions = {}): Stepper<AdaptiveState
  * @returns The stepper.
  * @example
  * ```ts
- * import { cashKarp } from 'mdml-engine/dynamics/ode'
+ * import { cashKarp } from 'omai-engine/dynamics/ode'
  * cashKarp().name // => 'cash-karp'
  * ```
  */
@@ -563,7 +563,7 @@ export function cashKarp(options: AdaptiveOptions = {}): Stepper<AdaptiveState> 
  * @returns The stepper.
  * @example
  * ```ts
- * import { tsit5 } from 'mdml-engine/dynamics/ode'
+ * import { tsit5 } from 'omai-engine/dynamics/ode'
  * tsit5().name // => 'tsit5'
  * ```
  */

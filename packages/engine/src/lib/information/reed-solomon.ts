@@ -4,7 +4,7 @@
  * Berlekamp-Massey algorithm, a Chien search and Forney's formula.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import {
   type Algorithm,
   type Contract,
@@ -60,36 +60,36 @@ const PRIMITIVE: Readonly<Record<number, number>> = {
  * @param m - Bits per element (2 to 16; default 8, as for bytes).
  * @param primitive - The primitive polynomial (default 0x11d for m = 8, the usual choice for Reed-Solomon).
  * @returns The field.
- * @throws MdmlError with code `value` when the polynomial is not primitive.
+ * @throws OmaiError with code `value` when the polynomial is not primitive.
  * @concept finite-fields
  * @example
  * ```ts
- * import { galoisField } from 'mdml-engine/information'
+ * import { galoisField } from 'omai-engine/information'
  * const f = galoisField(8)
  * f.mul(2, 0x8e) // => 1
  * f.mul(f.inverse(7), 7) // => 1
  * ```
  */
 export function galoisField(m = 8, primitive?: number): GaloisField {
-  if (!Number.isInteger(m) || m < 2 || m > 16) throw new MdmlError('value', 'galoisField: m must be in [2, 16]')
+  if (!Number.isInteger(m) || m < 2 || m > 16) throw new OmaiError('value', 'galoisField: m must be in [2, 16]')
   const prim = primitive ?? PRIMITIVE[m] ?? 0
   const size = 1 << m
   const exp = new Int32Array(2 * size)
   const log = new Int32Array(size).fill(-1)
   let x = 1
   for (let i = 0; i < size - 1; i++) {
-    if (log[x] !== -1) throw new MdmlError('value', `galoisField: 0x${prim.toString(16)} is not primitive`)
+    if (log[x] !== -1) throw new OmaiError('value', `galoisField: 0x${prim.toString(16)} is not primitive`)
     exp[i] = x
     log[x] = i
     x <<= 1
     if (x & size) x ^= prim
   }
-  if (x !== 1) throw new MdmlError('value', `galoisField: 0x${prim.toString(16)} is not primitive`)
+  if (x !== 1) throw new OmaiError('value', `galoisField: 0x${prim.toString(16)} is not primitive`)
   for (let i = size - 1; i < 2 * size; i++) exp[i] = exp[i - (size - 1)] ?? 0
   const order = size - 1
   const mul = (a: number, b: number): number => (a === 0 || b === 0 ? 0 : (exp[(log[a] ?? 0) + (log[b] ?? 0)] ?? 0))
   const div = (a: number, b: number): number => {
-    if (b === 0) throw new MdmlError('value', 'galoisField: division by zero')
+    if (b === 0) throw new OmaiError('value', 'galoisField: division by zero')
     return a === 0 ? 0 : (exp[((log[a] ?? 0) - (log[b] ?? 0) + order) % order] ?? 0)
   }
   return {
@@ -131,7 +131,7 @@ export interface ReedSolomonCode {
  * @concept reed-solomon
  * @example
  * ```ts
- * import { reedSolomon } from 'mdml-engine/information'
+ * import { reedSolomon } from 'omai-engine/information'
  * reedSolomon(2).generator // => [1, 3, 2]
  * ```
  */
@@ -141,7 +141,7 @@ export function reedSolomon(
 ): ReedSolomonCode {
   const field = galoisField(options.m ?? 8, options.primitive)
   if (!Number.isInteger(nsym) || nsym < 1 || nsym >= field.size - 1)
-    throw new MdmlError('value', `reedSolomon: nsym must be an integer in [1, ${field.size - 2}]`)
+    throw new OmaiError('value', `reedSolomon: nsym must be an integer in [1, ${field.size - 2}]`)
   const fcr = options.fcr ?? 0
   let g = [1]
   for (let i = 0; i < nsym; i++) {
@@ -159,7 +159,7 @@ export function reedSolomon(
 function symbols(code: ReedSolomonCode, xs: ArrayLike<number>, name: string): number[] {
   const out = Array.from(xs)
   if (out.some((v) => !Number.isInteger(v) || v < 0 || v >= code.field.size))
-    throw new MdmlError('value', `${name}: symbols must be integers in [0, ${code.field.size - 1}]`)
+    throw new OmaiError('value', `${name}: symbols must be integers in [0, ${code.field.size - 1}]`)
   return out
 }
 
@@ -173,14 +173,14 @@ function symbols(code: ReedSolomonCode, xs: ArrayLike<number>, name: string): nu
  * @concept reed-solomon
  * @example
  * ```ts
- * import { reedSolomon, rsEncode } from 'mdml-engine/information'
+ * import { reedSolomon, rsEncode } from 'omai-engine/information'
  * rsEncode(reedSolomon(4), [1, 2, 3, 4]).slice(4) // => [117, 163, 178, 96]
  * ```
  */
 export function rsEncode(code: ReedSolomonCode, message: ArrayLike<number>): number[] {
   const msg = symbols(code, message, 'rsEncode')
   if (msg.length + code.nsym > code.field.size - 1)
-    throw new MdmlError('value', `rsEncode: at most ${code.field.size - 1 - code.nsym} message symbols`)
+    throw new OmaiError('value', `rsEncode: at most ${code.field.size - 1 - code.nsym} message symbols`)
   const g = code.generator
   const out = [...msg, ...new Array<number>(code.nsym).fill(0)]
   for (let i = 0; i < msg.length; i++) {
@@ -277,13 +277,13 @@ const TOO_MANY = 'rsDecode: too many errors to correct'
  * @param received - The received codeword (message symbols then nsym parity symbols).
  * @param options - Known erasure positions (indices into `received`).
  * @returns The algorithm.
- * @throws MdmlError with code `value` for symbols out of the field, a word of the wrong length, erasures out of range
+ * @throws OmaiError with code `value` for symbols out of the field, a word of the wrong length, erasures out of range
  * or more than nsym erasures.
  * @concept reed-solomon
  * @example
  * ```ts
- * import { reedSolomon, rsDecodeAlgorithm, rsDecodeResult, rsEncode } from 'mdml-engine/information'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { reedSolomon, rsDecodeAlgorithm, rsDecodeResult, rsEncode } from 'omai-engine/information'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const code = reedSolomon(4)
  * const word = rsEncode(code, [1, 2, 3, 4])
  * word[1] = 99
@@ -301,11 +301,11 @@ export function rsDecodeAlgorithm(
   const n = r.length
   const nsym = code.nsym
   if (n <= nsym || n > f.size - 1)
-    throw new MdmlError('value', `rsDecode: expected ${nsym + 1} to ${f.size - 1} symbols`)
+    throw new OmaiError('value', `rsDecode: expected ${nsym + 1} to ${f.size - 1} symbols`)
   const erasures = [...new Set(options.erasures ?? [])]
   if (erasures.some((e) => !Number.isInteger(e) || e < 0 || e >= n))
-    throw new MdmlError('value', 'rsDecode: erasure positions out of range')
-  if (erasures.length > nsym) throw new MdmlError('value', 'rsDecode: too many erasures')
+    throw new OmaiError('value', 'rsDecode: erasure positions out of range')
+  if (erasures.length > nsym) throw new OmaiError('value', 'rsDecode: too many erasures')
   const rho = erasures.length
   const locatorOf = (i: number): number => f.pow(2, n - 1 - i)
   const syndromesOf = (word: readonly number[]): number[] =>
@@ -405,19 +405,19 @@ export function rsDecodeAlgorithm(
  * @param state - A finished state of {@link rsDecodeAlgorithm}.
  * @param code - The code (for the number of parity symbols).
  * @returns The message, the corrected codeword and the corrected positions.
- * @throws MdmlError with code `value` when the decoding failed (too many errors).
+ * @throws OmaiError with code `value` when the decoding failed (too many errors).
  * @concept reed-solomon
  * @example
  * ```ts
- * import { reedSolomon, rsDecodeAlgorithm, rsDecodeResult, rsEncode } from 'mdml-engine/information'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { reedSolomon, rsDecodeAlgorithm, rsDecodeResult, rsEncode } from 'omai-engine/information'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const code = reedSolomon(4)
  * const run = runAlgorithm(rsDecodeAlgorithm(code, rsEncode(code, [1, 2, 3])), { maxSteps: 20 })
  * rsDecodeResult(run.state, code).errata // => []
  * ```
  */
 export function rsDecodeResult(state: RsDecodeState, code: ReedSolomonCode): RsDecodeResult {
-  if (state.failure !== null) throw new MdmlError('value', state.failure)
+  if (state.failure !== null) throw new OmaiError('value', state.failure)
   const n = state.received.length
   return { message: state.corrected.slice(0, n - code.nsym), codeword: [...state.corrected], errata: [...state.errata] }
 }
@@ -431,11 +431,11 @@ export function rsDecodeResult(state: RsDecodeState, code: ReedSolomonCode): RsD
  * @param received - The received codeword (message symbols then nsym parity symbols).
  * @param options - Known erasure positions (indices into `received`).
  * @returns The corrected message and codeword and the corrected positions.
- * @throws MdmlError with code `value` when there are too many errors to correct.
+ * @throws OmaiError with code `value` when there are too many errors to correct.
  * @concept reed-solomon
  * @example
  * ```ts
- * import { reedSolomon, rsDecode, rsEncode } from 'mdml-engine/information'
+ * import { reedSolomon, rsDecode, rsEncode } from 'omai-engine/information'
  * const code = reedSolomon(4)
  * const word = rsEncode(code, [1, 2, 3, 4])
  * word[1] = 99

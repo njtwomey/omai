@@ -9,7 +9,7 @@
  * one rule or revisits one rule.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import type { LearnData } from '../learn/estimator.ts'
 import { foilGain } from '../logic/ilp/index.ts'
 import { lgamma } from '../numerics/special/index.ts'
@@ -114,7 +114,7 @@ function logChoose2(n: number, k: number): number {
  * @returns The description length.
  * @example
  * ```ts
- * import { ruleSetDescriptionLength } from 'mdml-engine/rules'
+ * import { ruleSetDescriptionLength } from 'omai-engine/rules'
  * ruleSetDescriptionLength([], 10, 0, 0, 10, 4) > ruleSetDescriptionLength([2], 10, 4, 0, 6, 0) // => true
  * ```
  */
@@ -316,10 +316,10 @@ function modelOfRipper(rd: RuleData, s: RipperState): RuleModel {
  * @param data - Features and class labels.
  * @param options - Mode, optimisation passes, split, length and slack.
  * @returns The algorithm.
- * @throws MdmlError with code `value` for a grow fraction outside (0, 1).
+ * @throws OmaiError with code `value` for a grow fraction outside (0, 1).
  * @example
  * ```ts
- * import { ripperAlgorithm } from 'mdml-engine/rules'
+ * import { ripperAlgorithm } from 'omai-engine/rules'
  * ripperAlgorithm({ x: [[0], [1]], y: [0, 1] }).name // => 'ripper'
  * ```
  */
@@ -335,7 +335,7 @@ export function ripperAlgorithm(data: LearnData, options: RipperOptions = {}): A
     maxThresholds: options.maxThresholds ?? 24,
   }
   if (!(o.growFraction > 0 && o.growFraction < 1))
-    throw new MdmlError('value', 'ripper: growFraction must be in (0, 1)')
+    throw new OmaiError('value', 'ripper: growFraction must be in (0, 1)')
   const ctx: Ctx = { rd, pool: literalPool(rd, o.maxThresholds), o }
   const counts = countClasses(
     rd,
@@ -531,8 +531,8 @@ function prunedByDL(ctx: Ctx, s: RipperState, c: number): Rule[] {
  * @returns The model.
  * @example
  * ```ts
- * import { ripperAlgorithm, ripperModel } from 'mdml-engine/rules'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { ripperAlgorithm, ripperModel } from 'omai-engine/rules'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const data = { x: [[0], [1], [2], [3], [4], [5], [6], [7]], y: [0, 0, 0, 1, 1, 1, 1, 1] }
  * const { state } = runAlgorithm(ripperAlgorithm(data), { maxSteps: 50, seed: 1 })
  * ripperModel(data, state).rules.length > 0 // => true
@@ -548,10 +548,10 @@ export function ripperModel(data: LearnData, s: RipperState, options: Pick<Rippe
  * @param data - Features and class labels.
  * @param options - The options of {@link ripperAlgorithm}, a seed (for the grow and prune splits) and tracing.
  * @returns The rule model.
- * @throws MdmlError with code `value` for a grow fraction outside (0, 1).
+ * @throws OmaiError with code `value` for a grow fraction outside (0, 1).
  * @example
  * ```ts
- * import { fitRipper, modelText } from 'mdml-engine/rules'
+ * import { fitRipper, modelText } from 'omai-engine/rules'
  * const data = { x: [[0], [1], [2], [3], [4], [5], [6], [7], [8], [9]], y: [1, 1, 1, 1, 1, 0, 0, 0, 0, 0] }
  * modelText(fitRipper(data, { seed: 3 })).split('\n').at(-1) // => 'ELSE 1'
  * ```

@@ -6,7 +6,7 @@
  */
 
 import { vjp } from '../autodiff/index.ts'
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { keyFor } from '../learn/_shared.ts'
 import { matrixView } from '../learn/validation.ts'
 import { gaussLegendre } from '../numerics/quadrature/index.ts'
@@ -32,7 +32,7 @@ export type Target = number | readonly number[]
 
 function concrete(x: TensorLike, who: string): Tensor {
   const t = asTensor(x)
-  if (!isTensor(t)) throw new MdmlError('value', `${who}: expected concrete inputs`)
+  if (!isTensor(t)) throw new OmaiError('value', `${who}: expected concrete inputs`)
   return t.dtype === 'float64' ? t : fromStorage(Float64Array.from(toFlat(t)), t.shape, 'float64')
 }
 
@@ -45,8 +45,8 @@ function concrete(x: TensorLike, who: string): Tensor {
  * @returns The gradients.
  * @example
  * ```ts
- * import * as explain from 'mdml-engine/explain'
- * import { matmul, toArray } from 'mdml-engine/tensor'
+ * import * as explain from 'omai-engine/explain'
+ * import { matmul, toArray } from 'omai-engine/tensor'
  * toArray(explain.targetGradient((x) => matmul(x, [[1, 0], [0, 5]]), [[1, 1]], 1)) // => [[0, 5]]
  * ```
  */
@@ -60,7 +60,7 @@ export function targetGradient(model: DifferentiableModel, x: TensorLike, target
   for (let i = 0; i < n; i++) {
     const t = typeof target === 'number' ? target : (target[i] ?? 0)
     if (!(Number.isInteger(t) && t >= 0 && t < k))
-      throw new MdmlError('value', `targetGradient: target ${t} outside [0, ${k})`)
+      throw new OmaiError('value', `targetGradient: target ${t} outside [0, ${k})`)
     cot[i * k + t] = 1
   }
   return pullback(fromStorage(cot, o.shape, 'float64')) as Tensor
@@ -77,8 +77,8 @@ export function targetGradient(model: DifferentiableModel, x: TensorLike, target
  * @concept attribution
  * @example
  * ```ts
- * import * as explain from 'mdml-engine/explain'
- * import { matmul, toArray } from 'mdml-engine/tensor'
+ * import * as explain from 'omai-engine/explain'
+ * import { matmul, toArray } from 'omai-engine/tensor'
  * const linear = (x) => matmul(x, [[2], [-3]])
  * toArray(explain.saliency(linear, [[1, 1]])) // => [[2, 3]]
  * ```
@@ -104,8 +104,8 @@ export function saliency(
  * @returns Attributions `[n, d]`.
  * @example
  * ```ts
- * import * as explain from 'mdml-engine/explain'
- * import { matmul, toArray } from 'mdml-engine/tensor'
+ * import * as explain from 'omai-engine/explain'
+ * import { matmul, toArray } from 'omai-engine/tensor'
  * toArray(explain.inputXGradient((x) => matmul(x, [[2], [-3]]), [[1, 2]])) // => [[2, -6]]
  * ```
  */
@@ -129,13 +129,13 @@ export type PathMethod = 'gausslegendre' | 'riemann_left' | 'riemann_right' | 'r
  * @returns The path positions and their weights (summing to 1).
  * @example
  * ```ts
- * import * as explain from 'mdml-engine/explain'
+ * import * as explain from 'omai-engine/explain'
  * explain.pathRule('riemann_trapezoid', 3) // => { alphas: [0, 0.5, 1], weights: [1 / 6, 1 / 3, 1 / 6] }
  * ```
  */
 export function pathRule(method: PathMethod, n: number): { readonly alphas: number[]; readonly weights: number[] } {
   if (!(Number.isInteger(n) && n >= (method === 'gausslegendre' ? 1 : 2)))
-    throw new MdmlError('value', `pathRule: bad number of steps ${n}`)
+    throw new OmaiError('value', `pathRule: bad number of steps ${n}`)
   if (method === 'gausslegendre') {
     const r = gaussLegendre(n)
     return { alphas: toFlat(r.nodes).map((v) => 0.5 * (1 + v)), weights: toFlat(r.weights).map((w) => 0.5 * w) }
@@ -174,7 +174,7 @@ function baselineOf(xt: Tensor, baseline: TensorLike | undefined, who: string): 
   if (b.data.length === xt.data.length)
     return fromStorage(Float64Array.from(b.data as Float64Array), xt.shape, 'float64')
   const d = xt.shape[1] ?? 1
-  if (b.data.length !== d) throw new MdmlError('shape', `${who}: the baseline must be [d] or the shape of x`)
+  if (b.data.length !== d) throw new OmaiError('shape', `${who}: the baseline must be [d] or the shape of x`)
   const n = xt.shape[0] ?? 1
   return fromStorage(
     Float64Array.from({ length: n * d }, (_, i) => (b.data as Float64Array)[i % d] ?? 0),
@@ -195,8 +195,8 @@ function baselineOf(xt: Tensor, baseline: TensorLike | undefined, who: string): 
  * @index function Integrated-gradients attribution for differentiable models.
  * @example
  * ```ts
- * import * as explain from 'mdml-engine/explain'
- * import { square, sum, toArray } from 'mdml-engine/tensor'
+ * import * as explain from 'omai-engine/explain'
+ * import { square, sum, toArray } from 'omai-engine/tensor'
  * const r = explain.integratedGradients((x) => sum(square(x), 1), [[1, 2]], { nSteps: 4 })
  * toArray(r.attributions).map((row) => row.map((v) => Math.round(v * 1e12) / 1e12)) // => [[1, 4]]
  * ```
@@ -262,8 +262,8 @@ export interface SmoothGradOptions {
  * @returns Attributions `[n, d]`.
  * @example
  * ```ts
- * import * as explain from 'mdml-engine/explain'
- * import { matmul, toArray } from 'mdml-engine/tensor'
+ * import * as explain from 'omai-engine/explain'
+ * import { matmul, toArray } from 'omai-engine/tensor'
  * // A linear model's gradient does not change under noise.
  * toArray(explain.smoothGrad((x) => matmul(x, [[2], [-3]]), [[1, 1]], { nSamples: 5 })) // => [[2, -3]]
  * ```
@@ -271,7 +271,7 @@ export interface SmoothGradOptions {
 export function smoothGrad(model: DifferentiableModel, x: TensorLike, options: SmoothGradOptions = {}): Tensor {
   const xt = concrete(x, 'smoothGrad')
   const ns = options.nSamples ?? 50
-  if (!(Number.isInteger(ns) && ns >= 1)) throw new MdmlError('value', 'smoothGrad: nSamples must be >= 1')
+  if (!(Number.isInteger(ns) && ns >= 1)) throw new OmaiError('value', 'smoothGrad: nSamples must be >= 1')
   const key = options.key ?? keyFor({}, 'smoothGrad')
   const sd = options.stdev ?? 0.15
   const total = new Float64Array(xt.data.length)
@@ -304,8 +304,8 @@ export interface ExpectedGradientsOptions {
  * @returns Attributions `[n, d]`.
  * @example
  * ```ts
- * import * as explain from 'mdml-engine/explain'
- * import { matmul, toArray } from 'mdml-engine/tensor'
+ * import * as explain from 'omai-engine/explain'
+ * import { matmul, toArray } from 'omai-engine/tensor'
  * // For a linear model: w (x - mean background) exactly, whatever the samples.
  * toArray(explain.expectedGradients((x) => matmul(x, [[2], [1]]), [[3, 3]], [[1, 1], [1, 1]], { nSamples: 8 })) // => [[4, 2]]
  * ```
@@ -320,7 +320,7 @@ export function expectedGradients(
   const bg = matrixView(background, 'expectedGradients')
   const n = xt.shape[0] ?? 1
   const d = xt.shape[1] ?? 1
-  if (bg.d !== d) throw new MdmlError('shape', 'expectedGradients: the background must have the features of x')
+  if (bg.d !== d) throw new OmaiError('shape', 'expectedGradients: the background must have the features of x')
   const ns = options.nSamples ?? 100
   const key = options.key ?? keyFor({}, 'expectedGradients')
   const xd = xt.data as Float64Array
@@ -359,8 +359,8 @@ export interface DeepLiftLayer {
  * @returns Attributions `[n, d]`.
  * @example
  * ```ts
- * import * as explain from 'mdml-engine/explain'
- * import { add, matmul, relu, toArray } from 'mdml-engine/tensor'
+ * import * as explain from 'omai-engine/explain'
+ * import { add, matmul, relu, toArray } from 'omai-engine/tensor'
  * const layers = [{ fn: (v) => add(matmul(v, [[1], [1]]), -1) }, { fn: relu, nonlinear: true }]
  * // f(x) = relu(x1 + x2 - 1): from the zero baseline (f = 0) to (2, 1) (f = 2), shared as 4/3 and 2/3.
  * toArray(explain.deepLift(layers, [[2, 1]])).map((r) => r.map((v) => Math.round(v * 1e12) / 1e12)) // => [[1.333333333333, 0.666666666667]]
@@ -435,8 +435,8 @@ export interface GradientShapOptions {
  * @returns Attributions `[n, d]`.
  * @example
  * ```ts
- * import * as explain from 'mdml-engine/explain'
- * import { matmul, toArray } from 'mdml-engine/tensor'
+ * import * as explain from 'omai-engine/explain'
+ * import { matmul, toArray } from 'omai-engine/tensor'
  * // For a linear model: w (x - baseline) whatever the samples, when the baselines agree.
  * toArray(explain.gradientShap((x) => matmul(x, [[2], [1]]), [[3, 3]], [[1, 1]], { nSamples: 4 })) // => [[4, 2]]
  * ```
@@ -451,9 +451,9 @@ export function gradientShap(
   const bg = matrixView(background, 'gradientShap')
   const n = xt.shape[0] ?? 1
   const d = xt.shape[1] ?? 1
-  if (bg.d !== d) throw new MdmlError('shape', 'gradientShap: the background must have the features of x')
+  if (bg.d !== d) throw new OmaiError('shape', 'gradientShap: the background must have the features of x')
   const ns = options.nSamples ?? 50
-  if (!(Number.isInteger(ns) && ns >= 1)) throw new MdmlError('value', 'gradientShap: nSamples must be >= 1')
+  if (!(Number.isInteger(ns) && ns >= 1)) throw new OmaiError('value', 'gradientShap: nSamples must be >= 1')
   const key = options.key ?? keyFor({}, 'gradientShap')
   const sd = options.stdev ?? 0
   const xd = xt.data as Float64Array
@@ -500,8 +500,8 @@ export interface NoiseTunnelOptions {
  * @returns Attributions `[n, d]`.
  * @example
  * ```ts
- * import * as explain from 'mdml-engine/explain'
- * import { matmul, toArray } from 'mdml-engine/tensor'
+ * import * as explain from 'omai-engine/explain'
+ * import { matmul, toArray } from 'omai-engine/tensor'
  * // A linear model's gradient does not change under noise, so its VarGrad is zero.
  * const f = (x) => matmul(x, [[2], [-3]])
  * toArray(explain.noiseTunnel((v) => explain.saliency(f, v, { abs: false }), [[1, 1]], { type: 'vargrad', nSamples: 5 })) // => [[0, 0]]
@@ -510,7 +510,7 @@ export interface NoiseTunnelOptions {
 export function noiseTunnel(attribute: (x: Tensor) => Tensor, x: TensorLike, options: NoiseTunnelOptions = {}): Tensor {
   const xt = concrete(x, 'noiseTunnel')
   const ns = options.nSamples ?? 25
-  if (!(Number.isInteger(ns) && ns >= 1)) throw new MdmlError('value', 'noiseTunnel: nSamples must be >= 1')
+  if (!(Number.isInteger(ns) && ns >= 1)) throw new OmaiError('value', 'noiseTunnel: nSamples must be >= 1')
   const key = options.key ?? keyFor({}, 'noiseTunnel')
   const sd = options.stdev ?? 0.15
   const type = options.type ?? 'smoothgrad'
@@ -582,8 +582,8 @@ function modifiedBackward(
  * @returns Attributions shaped like x.
  * @example
  * ```ts
- * import * as explain from 'mdml-engine/explain'
- * import { matmul, relu, toArray } from 'mdml-engine/tensor'
+ * import * as explain from 'omai-engine/explain'
+ * import { matmul, relu, toArray } from 'omai-engine/tensor'
  * const layers = [{ fn: (v) => matmul(v, [[1, -1], [1, 1]]) }, { fn: relu, nonlinear: true }, { fn: (v) => matmul(v, [[1], [-1]]) }]
  * // The second hidden unit's negative weight is blocked on the way back.
  * toArray(explain.guidedBackprop(layers, [[1, 2]])) // => [[1, 1]]
@@ -607,8 +607,8 @@ export function guidedBackprop(
  * @returns Attributions shaped like x.
  * @example
  * ```ts
- * import * as explain from 'mdml-engine/explain'
- * import { matmul, relu, toArray } from 'mdml-engine/tensor'
+ * import * as explain from 'omai-engine/explain'
+ * import { matmul, relu, toArray } from 'omai-engine/tensor'
  * const layers = [{ fn: (v) => matmul(v, [[1, -1], [1, 1]]) }, { fn: relu, nonlinear: true }, { fn: (v) => matmul(v, [[1], [1]]) }]
  * // Both hidden units pass a signal back, though the first is inactive at x.
  * toArray(explain.deconvolution(layers, [[-2, 1]])) // => [[0, 2]]
@@ -634,8 +634,8 @@ export function deconvolution(
  * @returns The maps `[n, h, w]` (or `[n, 1, l]`) as nested arrays.
  * @example
  * ```ts
- * import * as explain from 'mdml-engine/explain'
- * import { matmul, reshape } from 'mdml-engine/tensor'
+ * import * as explain from 'omai-engine/explain'
+ * import { matmul, reshape } from 'omai-engine/tensor'
  * // One channel on a 1 x 2 grid, the output its sum: every cell weighs in with its activation.
  * const head = (x) => reshape(x, [1, 1, 1, 2])
  * const tail = (a) => matmul(reshape(a, [1, 2]), [[1], [1]])
@@ -650,7 +650,7 @@ export function gradCam(
 ): number[][][] {
   const xt = concrete(x, 'gradCam')
   const a = concrete(head(xt), 'gradCam')
-  if (a.shape.length < 3) throw new MdmlError('shape', 'gradCam: the layer must have channels and a grid')
+  if (a.shape.length < 3) throw new OmaiError('shape', 'gradCam: the layer must have channels and a grid')
   const [n = 1, c = 1] = a.shape
   const grid = a.shape.slice(2)
   const h = grid.length === 1 ? 1 : (grid[0] ?? 1)
@@ -685,7 +685,7 @@ export function gradCam(
  * @returns The resized map `[H][W]`.
  * @example
  * ```ts
- * import * as explain from 'mdml-engine/explain'
+ * import * as explain from 'omai-engine/explain'
  * explain.interpolateMap([[1, 2]], [2, 4]) // => [[1, 1, 2, 2], [1, 1, 2, 2]]
  * ```
  */
@@ -697,7 +697,7 @@ export function interpolateMap(
   const h = map.length
   const w = map[0]?.length ?? 0
   const [H, W] = size
-  if (h === 0 || w === 0) throw new MdmlError('shape', 'interpolateMap: an empty map')
+  if (h === 0 || w === 0) throw new OmaiError('shape', 'interpolateMap: an empty map')
   const at = (r: number, q: number): number =>
     map[Math.min(h - 1, Math.max(0, r))]?.[Math.min(w - 1, Math.max(0, q))] ?? 0
   return Array.from({ length: H }, (_, i) =>
@@ -743,8 +743,8 @@ export type LrpRule =
  * @returns Relevances `[n, d]`.
  * @example
  * ```ts
- * import * as explain from 'mdml-engine/explain'
- * import { toArray } from 'mdml-engine/tensor'
+ * import * as explain from 'omai-engine/explain'
+ * import { toArray } from 'omai-engine/tensor'
  * // One dense layer without bias: relevance is each input's contribution w x.
  * toArray(explain.lrp([{ kind: 'linear', weight: [[2], [-1]] }], [[1, 3]])).map((r) => r.map((v) => Math.round(v * 1e6) / 1e6)) // => [[2, -3]]
  * ```
@@ -772,7 +772,7 @@ export function lrp(
     widths.push(width)
     const dl = dense[li]
     if (l.kind === 'linear' && dl !== undefined) {
-      if (dl.inW !== width) throw new MdmlError('shape', `lrp: layer ${li} expects ${dl.inW} inputs, got ${width}`)
+      if (dl.inW !== width) throw new OmaiError('shape', `lrp: layer ${li} expects ${dl.inW} inputs, got ${width}`)
       const out = new Float64Array(n * dl.outW)
       for (let i = 0; i < n; i++)
         for (let k = 0; k < dl.outW; k++) {

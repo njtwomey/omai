@@ -4,7 +4,7 @@
  * estimation, robust and extreme-value statistics, and smoothing bases for additive models.
  *
  * NaN in the data: a routine that ranks, sorts or compares (rank and Kolmogorov-Smirnov tests, Kendall, `histogram`)
- * rejects it with `MdmlError('value')`, since a NaN would be taken for a tie, and so does one that reads values as
+ * rejects it with `OmaiError('value')`, since a NaN would be taken for a tie, and so does one that reads values as
  * categories (`mutualInformationTest`, `gTestConditional`) or keeps a running estimate (`p2Push`, which also rejects an
  * infinity); a routine that only sums (means, t tests, Pearson) propagates it. A test whose statistic is undefined (constant or identical samples) returns NaN for the
  * statistic and the p-value, never a number.

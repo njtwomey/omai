@@ -1,7 +1,7 @@
-import { type DatasetKind, rowCount } from 'mdml-engine/data'
-import { DATASET_MODALITIES, type DatasetModality, datasetRegistry } from 'mdml-engine/datasets'
-import { scatterChart } from 'mdml-render/charts'
-import { figure } from 'mdml-render/figure'
+import { type DatasetKind, rowCount } from 'omai-engine/data'
+import { DATASET_MODALITIES, type DatasetModality, datasetRegistry } from 'omai-engine/datasets'
+import { scatterChart } from 'omai-render/charts'
+import { figure } from 'omai-render/figure'
 import {
   Chart,
   Choice,
@@ -13,7 +13,7 @@ import {
   tagLabel,
   useColourMode,
   useDataset,
-} from 'mdml-render/react'
+} from 'omai-render/react'
 import { type ReactNode, useMemo, useState } from 'react'
 import type { Recipe } from '../../recipe.ts'
 
@@ -21,7 +21,7 @@ export const recipe: Recipe = {
   title: 'Dataset selector',
   question: 'How do I let the reader choose a dataset by what it is, and turn its knobs?',
   explain:
-    '`DatasetSelector` lists the tagged dataset registry of mdml-engine (`datasetRegistry`: every generator, vendored real dataset and remote asset with its kind, modality, real or synthetic flag, size and provenance). Its props are the filters (`kind`, `modality`, `real`, `form`), a search box narrows further, and the chosen entry shows its description, its provenance and, when generated, a seed and its knobs. `useDataset` generates or loads the selection once per change; the same seed always gives the same data. `DatasetPicker` is the compact select over one hand-picked collection.',
+    '`DatasetSelector` lists the tagged dataset registry of omai-engine (`datasetRegistry`: every generator, vendored real dataset and remote asset with its kind, modality, real or synthetic flag, size and provenance). Its props are the filters (`kind`, `modality`, `real`, `form`), a search box narrows further, and the chosen entry shows its description, its provenance and, when generated, a seed and its knobs. `useDataset` generates or loads the selection once per change; the same seed always gives the same data. `DatasetPicker` is the compact select over one hand-picked collection.',
 }
 
 const FIGURE = figure({ aspect: 1.25 })

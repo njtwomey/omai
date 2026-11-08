@@ -4,7 +4,7 @@
  * and `curveFit` for fitting a model to data with parameter covariances (as `scipy.optimize.curve_fit`).
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { cholesky, daxpy, ddot, dgesvd, dnrm2, dscal, solveTriangular } from '../../numerics/linalg/index.ts'
 import {
   asTensor,
@@ -104,8 +104,8 @@ export interface GaussNewtonState extends LeastSquaresState {
  * @concept least-squares
  * @example
  * ```ts
- * import { gaussNewtonAlgorithm } from 'mdml-engine/optim'
- * import { sub, type Value } from 'mdml-engine/tensor'
+ * import { gaussNewtonAlgorithm } from 'omai-engine/optim'
+ * import { sub, type Value } from 'omai-engine/tensor'
  * gaussNewtonAlgorithm((p: Value) => sub(p, 1), [0]).name // => 'gaussNewton'
  * ```
  */
@@ -218,8 +218,8 @@ function gaussNewtonOn(res: FlatResiduals, options: GaussNewtonOptions): Algorit
  * @concept least-squares
  * @example
  * ```ts
- * import { gaussNewton } from 'mdml-engine/optim'
- * import { mul, sub, tensor, toFlat, type Value } from 'mdml-engine/tensor'
+ * import { gaussNewton } from 'omai-engine/optim'
+ * import { mul, sub, tensor, toFlat, type Value } from 'omai-engine/tensor'
  * // x^2 = [4, 9] elementwise from [1, 1].
  * const r = gaussNewton((x: Value) => sub(mul(x, x), tensor([4, 9])), [1, 1])
  * toFlat(r.x as Value).map((v) => Math.round(v * 1e8) / 1e8) // => [2, 3]
@@ -254,8 +254,8 @@ export type LeastSquaresSolveOptions = LevenbergMarquardtOptions &
  * @index function Nonlinear least squares, scipy style, with bounds and robust losses.
  * @example
  * ```ts
- * import { leastSquares } from 'mdml-engine/optim'
- * import { sub, type Value } from 'mdml-engine/tensor'
+ * import { leastSquares } from 'omai-engine/optim'
+ * import { sub, type Value } from 'omai-engine/tensor'
  * const r = leastSquares((p: Value) => sub(p, 3), [0], { bounds: [[null, 1]] })
  * [r.converged, Math.round(r.cost * 1e8) / 1e8, r.activeMask] // => [true, 2, [1]]
  * ```
@@ -304,13 +304,13 @@ export interface CurveFitResult {
  * @param p0 - The initial parameters (any parameter tree).
  * @param options - sigma, absoluteSigma, bounds, loss and the least-squares options.
  * @returns The fitted parameters, covariance, standard errors and the least-squares result.
- * @throws MdmlError with code `convergence` when the fit fails.
+ * @throws OmaiError with code `convergence` when the fit fails.
  * @concept least-squares
  * @index function Fit a parametric curve to data by nonlinear least squares.
  * @example
  * ```ts
- * import { curveFit } from 'mdml-engine/optim'
- * import { add, mul, sliceAxis, toFlat, type Value } from 'mdml-engine/tensor'
+ * import { curveFit } from 'omai-engine/optim'
+ * import { add, mul, sliceAxis, toFlat, type Value } from 'omai-engine/tensor'
  * const line = (x: Value, p: unknown) => add(mul(sliceAxis(p as Value, 0, 0, 1), x), sliceAxis(p as Value, 0, 1, 2))
  * const fit = curveFit(line, [0, 1, 2, 3], [1, 3, 5, 7], [0, 0])
  * toFlat(fit.popt as Value).map((v) => Math.round(v * 1e8) / 1e8) // => [2, 1]
@@ -343,7 +343,7 @@ export function curveFit(
     method: rest.method ?? (plain ? (levenbergMarquardt as LeastSquaresMethod) : (trf as LeastSquaresMethod)),
   })
   if (!result.converged && result.status !== 'completed')
-    throw new MdmlError('convergence', `curveFit: optimal parameters not found: ${result.message}`)
+    throw new OmaiError('convergence', `curveFit: optimal parameters not found: ${result.message}`)
   const J = Float64Array.from(toFlat(result.jacobian))
   const [m, n] = result.jacobian.shape as [number, number]
   const { s, v } = dgesvd(J, m, n)

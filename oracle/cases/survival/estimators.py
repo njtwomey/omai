@@ -6,8 +6,8 @@ from its definition.
 import numpy as np
 import scipy
 import statsmodels
-from mdml_oracle.fixture import Case, case
 from numpy.typing import NDArray
+from omai_oracle.fixture import Case, case
 from scipy import stats
 from scipy.optimize import minimize
 from statsmodels.duration.hazard_regression import PHReg

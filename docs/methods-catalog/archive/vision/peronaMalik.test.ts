@@ -1,4 +1,4 @@
-import type { DecisionSurface } from 'mdml-engine/exposition'
+import type { DecisionSurface } from 'omai-engine/exposition'
 import { describe, expect, it } from 'vitest'
 import { metricSeries, session, tensorSeries } from '../../lib/trace/index.ts'
 import { peronaMalik } from './peronaMalik.ts'

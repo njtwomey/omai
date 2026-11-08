@@ -10,7 +10,7 @@ rows. This example records the run and draws the result from the recording.
 
 The data is 100 points from the blobs generator: three Gaussian clusters that overlap (standard deviation 1.3 in a box of
 half-width 6). The generator keeps the label of each point. The algorithm is `gaussianEmAlgorithm` from
-`mdml-engine/mixture`, started from random responsibilities and run until the log likelihood changes by less than 1e-5.
+`omai-engine/mixture`, started from random responsibilities and run until the log likelihood changes by less than 1e-5.
 
 ## What the program does
 

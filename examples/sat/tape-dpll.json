@@ -1,12 +1,12 @@
 {
-  "schema": "mdml.run/1",
+  "schema": "omai.run/1",
   "events": [
     {
       "type": "run",
       "runId": "dpll:none",
       "name": "dpll",
       "seed": null,
-      "version": "0.1.2",
+      "version": "0.1.3",
       "config": {
         "branching": "first",
         "pureLiterals": true

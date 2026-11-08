@@ -1,4 +1,4 @@
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { asTensor, type TensorLike, toFlat } from '../tensor/index.ts'
 import { isStringInput, type MetricInput, sampleWeights } from './metric.ts'
 
@@ -8,17 +8,17 @@ export type Label = number | string
 /** The values of a label input: numbers or strings. */
 export function labelValues(x: MetricInput): Label[] {
   const values = isStringInput(x) ? [...x] : toFlat(asTensor(x as TensorLike))
-  if (values.length === 0) throw new MdmlError('value', 'a metric of labels needs at least one sample')
+  if (values.length === 0) throw new OmaiError('value', 'a metric of labels needs at least one sample')
   // A NaN is not a label: as a Map key it would equal itself, so a missing label would count as a class and as correct.
   if (values.some((v) => typeof v === 'number' && Number.isNaN(v)))
-    throw new MdmlError('value', 'a metric of labels does not accept NaN labels (drop or encode the missing ones)')
+    throw new OmaiError('value', 'a metric of labels does not accept NaN labels (drop or encode the missing ones)')
   return values
 }
 
 /** Reject `sampleWeight` for a metric that has no weighted definition (silently ignoring it would be a wrong answer). */
 export function rejectSampleWeight(name: string, options: { readonly sampleWeight?: TensorLike } | undefined): void {
   if (options?.sampleWeight !== undefined)
-    throw new MdmlError('value', `${name}: sampleWeight is not supported by this metric`)
+    throw new OmaiError('value', `${name}: sampleWeight is not supported by this metric`)
 }
 
 /** Sort labels as sklearn's unique_labels does: numbers numerically, strings lexicographically. */
@@ -49,7 +49,7 @@ export function encodeLabels(
 ): EncodedLabels {
   const t = labelValues(yTrue)
   const p = labelValues(yPred)
-  if (t.length !== p.length) throw new MdmlError('shape', `${name}: yTrue and yPred have different lengths`)
+  if (t.length !== p.length) throw new OmaiError('shape', `${name}: yTrue and yPred have different lengths`)
   const classes = options.labels === undefined ? sortLabels([...t, ...p]) : [...options.labels]
   const index = new Map<Label, number>(classes.map((c, i) => [c, i]))
   return {
@@ -101,7 +101,7 @@ export interface Indicator {
 /** Read a 2-D 0/1 indicator matrix. */
 export function indicator(name: string, x: TensorLike): Indicator {
   const t = asTensor(x)
-  if (t.shape.length !== 2) throw new MdmlError('shape', `${name}: expected an [N, L] indicator matrix`)
+  if (t.shape.length !== 2) throw new OmaiError('shape', `${name}: expected an [N, L] indicator matrix`)
   return { n: t.shape[0] ?? 0, l: t.shape[1] ?? 0, data: Float64Array.from(toFlat(t)) }
 }
 

@@ -57,7 +57,7 @@ export interface GmmVerbs {
  *
  * @example
  * ```ts
- * import type { GmmPath } from 'mdml-engine/methods/mixture'
+ * import type { GmmPath } from 'omai-engine/methods/mixture'
  * const path: GmmPath = 'model/centres'
  * path // => 'model/centres'
  * ```
@@ -69,7 +69,7 @@ export type GmmPath = 'model/centres' | 'model/density'
  *
  * @example
  * ```ts
- * import { gmm } from 'mdml-engine/methods/mixture'
+ * import { gmm } from 'omai-engine/methods/mixture'
  * gmm.with({ nComponents: 2 }).fit({ x: [[0, 0], [0, 1], [9, 9], [9, 8]] }).params.means.length // => 2
  * ```
  */

@@ -1,4 +1,4 @@
-import { landscapeSlice, sampleLandscape } from 'mdml-engine/exposition'
+import { landscapeSlice, sampleLandscape } from 'omai-engine/exposition'
 import { describe, expect, it } from 'vitest'
 import {
   contourLevels,

@@ -5,7 +5,7 @@
  * finite models.
  */
 
-import { type Json, MdmlError } from '../base/index.ts'
+import { type Json, OmaiError } from '../base/index.ts'
 import { type Structure, type StructureNode, structure } from '../scene/index.ts'
 import { type Algorithm, channels, type RunOptions, runAlgorithm, type TraceSchema } from '../trace/index.ts'
 import { atom, compound, type Term, termSize, termToString, termVariables, variable } from './terms.ts'
@@ -90,7 +90,7 @@ function folLex(text: string): Tok[] {
       continue
     }
     const m = /^[A-Za-z_0-9][A-Za-z0-9_']*/.exec(text.slice(i))
-    if (m === null) throw new MdmlError('value', `parseFol: unexpected ${JSON.stringify(c)} at ${i}`)
+    if (m === null) throw new OmaiError('value', `parseFol: unexpected ${JSON.stringify(c)} at ${i}`)
     const w = m[0]
     const kw: Readonly<Record<string, string>> = {
       all: 'all',
@@ -120,11 +120,11 @@ function folLex(text: string): Tok[] {
  *
  * @param text - The formula.
  * @returns The formula.
- * @throws MdmlError with code `value` on a syntax error.
+ * @throws OmaiError with code `value` on a syntax error.
  * @concept first-order-logic
  * @example
  * ```ts
- * import { folToString, parseFol } from 'mdml-engine/logic'
+ * import { folToString, parseFol } from 'omai-engine/logic'
  * folToString(parseFol('all x.(man(x) -> mortal(x))')) // => '∀x (man(x) → mortal(x))'
  * folToString(parseFol('exists y. loves(y, f(Z)) & -hates(Z, y)')) // => '∃y (loves(y,f(Z)) ∧ ¬hates(Z,y))'
  * ```
@@ -134,7 +134,7 @@ export function parseFol(text: string): FolFormula {
   let pos = 0
   const peek = (): Tok | undefined => toks[pos]
   const fail = (what: string): never => {
-    throw new MdmlError('value', `parseFol: ${what} at ${toks[pos]?.at ?? text.length}`)
+    throw new OmaiError('value', `parseFol: ${what} at ${toks[pos]?.at ?? text.length}`)
   }
   const expect = (t: string): void => {
     if (peek()?.t !== t) fail(`expected ${t}`)
@@ -242,7 +242,7 @@ export function parseFol(text: string): FolFormula {
  * @returns The text.
  * @example
  * ```ts
- * import { folToString, parseFol } from 'mdml-engine/logic'
+ * import { folToString, parseFol } from 'omai-engine/logic'
  * folToString(parseFol('-(p(a) | q(a)) <-> exists x. r(x)')) // => '¬(p(a) ∨ q(a)) ↔ ∃x r(x)'
  * ```
  */
@@ -279,7 +279,7 @@ export function folToString(f: FolFormula): string {
  * @returns The text.
  * @example
  * ```ts
- * import { clauseText } from 'mdml-engine/logic'
+ * import { clauseText } from 'omai-engine/logic'
  * clauseText([{ positive: false, atom: { kind: 'atom', name: 'p' } }, { positive: true, atom: { kind: 'atom', name: 'q' } }]) // => '¬p ∨ q'
  * ```
  */
@@ -403,7 +403,7 @@ export interface ClausalFormOptions {
  * @concept first-order-logic
  * @example
  * ```ts
- * import { clausalForm, clauseText, parseFol } from 'mdml-engine/logic'
+ * import { clausalForm, clauseText, parseFol } from 'omai-engine/logic'
  * clausalForm(parseFol('all x.(person(x) -> exists y. mother(y, x))')).map(clauseText) // => ['¬person(X1) ∨ mother(sk1(X1),X1)']
  * clausalForm(parseFol('-(all x. p(x))')).map(clauseText) // => ['¬p(sk1)']
  * ```
@@ -511,7 +511,7 @@ function tidyClause(c: readonly FolLiteral[]): FolClause | null {
  * @concept first-order-logic
  * @example
  * ```ts
- * import { clausalForm, parseFol, subsumes } from 'mdml-engine/logic'
+ * import { clausalForm, parseFol, subsumes } from 'omai-engine/logic'
  * const [c] = clausalForm(parseFol('p(X) | q(X)'))
  * const [d] = clausalForm(parseFol('p(a) | q(a) | r'))
  * subsumes(c, d) === null // => false
@@ -816,7 +816,7 @@ function proofOf(steps: readonly ProofStep[], empty: ProofStep): ProofStep[] {
  * @concept resolution-proving
  * @example
  * ```ts
- * import { clausalForm, parseFol, resolutionAlgorithm } from 'mdml-engine/logic'
+ * import { clausalForm, parseFol, resolutionAlgorithm } from 'omai-engine/logic'
  * resolutionAlgorithm(clausalForm(parseFol('p')), clausalForm(parseFol('-p'))).name // => 'given-clause-resolution'
  * ```
  */
@@ -851,11 +851,11 @@ export interface ProverResult {
  * @param conjecture - The conjecture (text or parsed), or null.
  * @param options - Budgets, set of support, selection weight and tracing.
  * @returns The status, the proof, and the effort.
- * @throws MdmlError with code `value` on a syntax error.
+ * @throws OmaiError with code `value` on a syntax error.
  * @concept resolution-proving
  * @example
  * ```ts
- * import { proveFol } from 'mdml-engine/logic'
+ * import { proveFol } from 'omai-engine/logic'
  * proveFol(['all x.(man(x) -> mortal(x))', 'man(socrates)'], 'mortal(socrates)').status // => 'theorem'
  * proveFol(['all x.(p(x) -> q(x))', 'q(a)'], 'p(a)').status // => 'countersatisfiable'
  * // The barber paradox needs factoring.
@@ -893,7 +893,7 @@ export function proveFol(
  * @returns True for a valid refutation.
  * @example
  * ```ts
- * import { checkProof, proveFol } from 'mdml-engine/logic'
+ * import { checkProof, proveFol } from 'omai-engine/logic'
  * checkProof(proveFol(['p(a)', 'all x.(p(x) -> q(x))'], 'q(a)').proof) // => true
  * ```
  */
@@ -925,7 +925,7 @@ export function checkProof(proof: readonly ProofStep[]): boolean {
  * @concept resolution-proving
  * @example
  * ```ts
- * import { proofStructure, proveFol } from 'mdml-engine/logic'
+ * import { proofStructure, proveFol } from 'omai-engine/logic'
  * proofStructure(proveFol(['p(a)', 'all x.(p(x) -> q(x))'], 'q(a)').proof).nodes.map((n) => n.label) // => ['p(a)', '¬p(X1) ∨ q(X1)', '¬q(a)', '¬p(a)', '□']
  * ```
  */
@@ -948,10 +948,10 @@ export function proofStructure(proof: readonly ProofStep[]): Structure {
  * @param clauses - Function-free clauses.
  * @param domain - The constants to instantiate variables with.
  * @returns True when a model over the domain exists.
- * @throws MdmlError with code `value` for function symbols or more than 20 ground atoms.
+ * @throws OmaiError with code `value` for function symbols or more than 20 ground atoms.
  * @example
  * ```ts
- * import { clausalForm, hasFiniteModel, parseFol } from 'mdml-engine/logic'
+ * import { clausalForm, hasFiniteModel, parseFol } from 'omai-engine/logic'
  * hasFiniteModel(clausalForm([parseFol('all x.(p(x) -> q(x))'), parseFol('q(a)'), parseFol('-p(a)')]), ['a']) // => true
  * ```
  */
@@ -972,7 +972,7 @@ export function hasFiniteModel(clauses: readonly FolClause[], domain: readonly s
       const g = c.map((l) => ({ positive: l.positive, atom: applySubstitution(l.atom, s) }))
       for (const l of g) {
         if (l.atom.kind === 'compound' && l.atom.args.some((a) => a.kind === 'compound')) {
-          throw new MdmlError('value', 'hasFiniteModel: function symbols are not supported')
+          throw new OmaiError('value', 'hasFiniteModel: function symbols are not supported')
         }
         const key = termToString(l.atom)
         if (!atoms.has(key)) atoms.set(key, atoms.size)
@@ -980,7 +980,7 @@ export function hasFiniteModel(clauses: readonly FolClause[], domain: readonly s
       ground.push(g)
     }
   }
-  if (atoms.size > 20) throw new MdmlError('value', 'hasFiniteModel: more than 20 ground atoms')
+  if (atoms.size > 20) throw new OmaiError('value', 'hasFiniteModel: more than 20 ground atoms')
   for (let m = 0; m < 2 ** atoms.size; m++) {
     const value = (l: FolLiteral): boolean => (((m >> (atoms.get(termToString(l.atom)) ?? 0)) & 1) === 1) === l.positive
     if (ground.every((c) => c.some(value))) return true

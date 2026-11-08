@@ -4,7 +4,7 @@
  * convolutions, transposed convolutions for upsampling, and `unfold` and `fold` for sliding local blocks.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { col2im, convNd, convTranspose, im2col } from '../../numerics/convolution/index.ts'
 import { expandDims, promoteFloat, squeeze, type TensorLike, type Value } from '../../tensor/index.ts'
 
@@ -49,7 +49,7 @@ const numpyMode = (mode: PaddingMode | undefined): 'constant' | 'reflect' | 'edg
 function batched(x: Value, d: number, name: string, f: (v: Value) => Value): Value {
   if (x.shape.length === d + 2) return f(x)
   if (x.shape.length === d + 1) return squeeze(f(expandDims(x, 0)), 0)
-  throw new MdmlError('shape', `${name}: input must be [B, C, ...${d} spatial] or [C, ...${d} spatial]`)
+  throw new OmaiError('shape', `${name}: input must be [B, C, ...${d} spatial] or [C, ...${d} spatial]`)
 }
 
 /**
@@ -64,14 +64,14 @@ function batched(x: Value, d: number, name: string, f: (v: Value) => Value): Val
  * @concept convolution
  * @example
  * ```ts
- * import { conv } from 'mdml-engine/nn'
+ * import { conv } from 'omai-engine/nn'
  * conv(new Array(2).fill(new Array(3).fill(new Array(5).fill(1))), new Array(4).fill(new Array(3).fill([1, 1, 1])), { padding: 1 }).shape // => [2, 4, 5]
  * ```
  */
 export function conv(input: TensorLike, weight: TensorLike, options: ConvOptions = {}): Value {
   const [x, w] = promoteFloat(input, weight) as [Value, Value]
   const d = w.shape.length - 2
-  if (d < 1) throw new MdmlError('shape', 'conv: weight must be [C_out, C_in / groups, ...kernel]')
+  if (d < 1) throw new OmaiError('shape', 'conv: weight must be [C_out, C_in / groups, ...kernel]')
   return batched(x, d, 'conv', (v) =>
     convNd(v, w, {
       ...(options.bias === undefined ? {} : { bias: options.bias }),
@@ -89,7 +89,7 @@ const rankChecked =
   (d: number, name: string) =>
   (input: TensorLike, weight: TensorLike, options: ConvOptions = {}): Value => {
     const [w] = promoteFloat(weight) as [Value]
-    if (w.shape.length !== d + 2) throw new MdmlError('shape', `${name}: weight must have ${d + 2} axes`)
+    if (w.shape.length !== d + 2) throw new OmaiError('shape', `${name}: weight must have ${d + 2} axes`)
     return conv(input, w, options)
   }
 
@@ -102,8 +102,8 @@ const rankChecked =
  * @returns `[B, C_out, L_out]`.
  * @example
  * ```ts
- * import { conv1d } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { conv1d } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(conv1d([[[1, 2, 3, 4]]], [[[1, 0, -1]]])) // => [[[-2, -2]]]
  * ```
  */
@@ -120,8 +120,8 @@ export function conv1d(input: TensorLike, weight: TensorLike, options: ConvOptio
  * @returns `[B, C_out, H_out, W_out]`.
  * @example
  * ```ts
- * import { conv2d } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { conv2d } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(conv2d([[[[1, 2], [3, 4]]]], [[[[1, 1], [1, 1]]]])) // => [[[[10]]]]
  * ```
  */
@@ -138,7 +138,7 @@ export function conv2d(input: TensorLike, weight: TensorLike, options: ConvOptio
  * @returns `[B, C_out, D_out, H_out, W_out]`.
  * @example
  * ```ts
- * import { conv3d } from 'mdml-engine/nn'
+ * import { conv3d } from 'omai-engine/nn'
  * conv3d([[[[[1, 2], [3, 4]], [[5, 6], [7, 8]]]]], [[[[[1]]]]]).shape // => [1, 1, 2, 2, 2]
  * ```
  */
@@ -156,8 +156,8 @@ export function conv3d(input: TensorLike, weight: TensorLike, options: ConvOptio
  * @returns `[B, C_in multiplier, *O]`.
  * @example
  * ```ts
- * import { depthwiseConv } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { depthwiseConv } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(depthwiseConv([[[1, 2, 3], [1, 1, 1]]], [[[1, 1]], [[2, 0]]])) // => [[[3, 5], [2, 2]]]
  * ```
  */
@@ -166,7 +166,7 @@ export function depthwiseConv(input: TensorLike, weight: TensorLike, options: Om
   const d = w.shape.length - 2
   const c = x.shape[x.shape.length - d - 1] ?? 0
   if (w.shape[1] !== 1 || (w.shape[0] ?? 0) % c !== 0)
-    throw new MdmlError('shape', 'depthwiseConv: weight must be [C_in multiplier, 1, ...kernel]')
+    throw new OmaiError('shape', 'depthwiseConv: weight must be [C_in multiplier, 1, ...kernel]')
   return conv(x, w, { ...options, groups: c })
 }
 
@@ -181,8 +181,8 @@ export function depthwiseConv(input: TensorLike, weight: TensorLike, options: Om
  * @returns `[B, C_out, *O]`.
  * @example
  * ```ts
- * import { separableConv } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { separableConv } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(separableConv([[[1, 2, 3]]], [[[1, 1]]], [[[2]]])) // => [[[6, 10]]]
  * ```
  */
@@ -209,7 +209,7 @@ export function separableConv(
  * @returns The output length.
  * @example
  * ```ts
- * import { convTransposeOutputSize } from 'mdml-engine/nn'
+ * import { convTransposeOutputSize } from 'omai-engine/nn'
  * convTransposeOutputSize(16, 4, 2, 1) // => 32
  * ```
  */
@@ -235,14 +235,14 @@ export function convTransposeOutputSize(
  * @concept transposed-convolution
  * @example
  * ```ts
- * import { convTransposed } from 'mdml-engine/nn'
+ * import { convTransposed } from 'omai-engine/nn'
  * convTransposed([[[[1, 2], [3, 4]]]], [[[[1, 1], [1, 1]]]], { stride: 2 }).shape // => [1, 1, 4, 4]
  * ```
  */
 export function convTransposed(input: TensorLike, weight: TensorLike, options: ConvTransposeOptions = {}): Value {
   const [x, w] = promoteFloat(input, weight) as [Value, Value]
   const d = w.shape.length - 2
-  if (d < 1) throw new MdmlError('shape', 'convTransposed: weight must be [C_in, C_out / groups, ...kernel]')
+  if (d < 1) throw new OmaiError('shape', 'convTransposed: weight must be [C_in, C_out / groups, ...kernel]')
   const stride = spread(options.stride, d, 1)
   const padding = spread(options.padding, d, 0)
   const dilation = spread(options.dilation, d, 1)
@@ -254,7 +254,7 @@ export function convTransposed(input: TensorLike, weight: TensorLike, options: C
       const base = convTransposeOutputSize(spatial[i] ?? 0, w.shape[i + 2] ?? 1, stride[i], padding[i], 0, dilation[i])
       const extra = s - base
       if (extra < 0 || extra >= Math.max(stride[i] ?? 1, dilation[i] ?? 1))
-        throw new MdmlError('value', `convTransposed: output size ${s} is not reachable along axis ${i}`)
+        throw new OmaiError('value', `convTransposed: output size ${s} is not reachable along axis ${i}`)
       return extra
     })
   }
@@ -274,7 +274,7 @@ const transposeRank =
   (d: number, name: string) =>
   (input: TensorLike, weight: TensorLike, options: ConvTransposeOptions = {}): Value => {
     const [w] = promoteFloat(weight) as [Value]
-    if (w.shape.length !== d + 2) throw new MdmlError('shape', `${name}: weight must have ${d + 2} axes`)
+    if (w.shape.length !== d + 2) throw new OmaiError('shape', `${name}: weight must have ${d + 2} axes`)
     return convTransposed(input, w, options)
   }
 
@@ -287,8 +287,8 @@ const transposeRank =
  * @returns `[B, C_out, L_out]`.
  * @example
  * ```ts
- * import { convTranspose1d } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { convTranspose1d } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(convTranspose1d([[[1, 2]]], [[[1, 1, 1]]], { stride: 2 })) // => [[[1, 1, 3, 2, 2]]]
  * ```
  */
@@ -305,7 +305,7 @@ export function convTranspose1d(input: TensorLike, weight: TensorLike, options: 
  * @returns `[B, C_out, H_out, W_out]`.
  * @example
  * ```ts
- * import { convTranspose2d } from 'mdml-engine/nn'
+ * import { convTranspose2d } from 'omai-engine/nn'
  * convTranspose2d([[[[1, 2], [3, 4]]]], [[[[1, 1, 1], [1, 1, 1], [1, 1, 1]]]], { stride: 2, padding: 1, outputPadding: 1 }).shape // => [1, 1, 4, 4]
  * ```
  */
@@ -322,7 +322,7 @@ export function convTranspose2d(input: TensorLike, weight: TensorLike, options: 
  * @returns `[B, C_out, D_out, H_out, W_out]`.
  * @example
  * ```ts
- * import { convTranspose3d } from 'mdml-engine/nn'
+ * import { convTranspose3d } from 'omai-engine/nn'
  * convTranspose3d([[[[[1]]]]], [[[[[1, 1], [1, 1]], [[1, 1], [1, 1]]]]]).shape // => [1, 1, 2, 2, 2]
  * ```
  */
@@ -347,7 +347,7 @@ export interface UnfoldOptions {
  * @returns The blocks.
  * @example
  * ```ts
- * import { unfold } from 'mdml-engine/nn'
+ * import { unfold } from 'omai-engine/nn'
  * unfold([[[[1, 2, 3], [4, 5, 6], [7, 8, 9]]]], 2).shape // => [1, 4, 4]
  * ```
  */
@@ -372,8 +372,8 @@ export function unfold(input: TensorLike, kernelSize: SpatialSize, options: Unfo
  * @returns `[B, C, *outputSize]`.
  * @example
  * ```ts
- * import { fold, unfold } from 'mdml-engine/nn'
- * import { toArray } from 'mdml-engine/tensor'
+ * import { fold, unfold } from 'omai-engine/nn'
+ * import { toArray } from 'omai-engine/tensor'
  * toArray(fold(unfold([[[[1, 1], [1, 1]]]], 1), [2, 2], 1)) // => [[[[1, 1], [1, 1]]]]
  * ```
  */

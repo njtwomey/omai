@@ -1,4 +1,4 @@
-import { conceptScores, ruleSet, ruleText } from 'mdml-engine/exposition'
+import { conceptScores, ruleSet, ruleText } from 'omai-engine/exposition'
 import { describe, expect, it } from 'vitest'
 import { stillOf, viewFor } from './registry.ts'
 import { conceptView, ruleListView } from './rules.ts'

@@ -56,7 +56,7 @@ export type { MatrixProfile } from './_profile.ts'
  * @concept matrix-profile
  * @example
  * ```ts
- * import { stumpAlgorithm } from 'mdml-engine/timeseries'
+ * import { stumpAlgorithm } from 'omai-engine/timeseries'
  * stumpAlgorithm([0, 1, 3, 2, 9, 1, 14, 15, 1, 2, 2, 10, 7], 4).name // => 'stump'
  * ```
  */
@@ -92,7 +92,7 @@ export function stumpAlgorithm(tA: TensorLike, m: number, options: StumpOptions 
  * @concept matrix-profile
  * @example
  * ```ts
- * import { stump } from 'mdml-engine/timeseries'
+ * import { stump } from 'omai-engine/timeseries'
  * const mp = stump([0, 1, 3, 2, 9, 1, 14, 15, 1, 2, 2, 10, 7], 4)
  * Array.from(mp.I) // => [9, 8, 9, 1, 9, 2, 3, 4, 1, 0]
  * ```
@@ -113,7 +113,7 @@ export function stump(tA: TensorLike, m: number, options: StumpOptions & MatrixP
  * @concept matrix-profile
  * @example
  * ```ts
- * import { stompAlgorithm } from 'mdml-engine/timeseries'
+ * import { stompAlgorithm } from 'omai-engine/timeseries'
  * stompAlgorithm([0, 1, 3, 2, 9, 1, 14, 15, 1, 2, 2, 10, 7], 4).name // => 'stomp'
  * ```
  */
@@ -185,7 +185,7 @@ export function stompAlgorithm(
  * @concept matrix-profile
  * @example
  * ```ts
- * import { stomp } from 'mdml-engine/timeseries'
+ * import { stomp } from 'omai-engine/timeseries'
  * Array.from(stomp([0, 1, 3, 2, 9, 1, 14, 15, 1, 2, 2, 10, 7], 4).I) // => [9, 8, 9, 1, 9, 2, 3, 4, 1, 0]
  * ```
  */
@@ -217,7 +217,7 @@ export interface StampOptions extends StumpOptions {
  * @concept matrix-profile
  * @example
  * ```ts
- * import { stampAlgorithm } from 'mdml-engine/timeseries'
+ * import { stampAlgorithm } from 'omai-engine/timeseries'
  * stampAlgorithm([0, 1, 3, 2, 9, 1, 14, 15, 1, 2, 2, 10, 7], 4).name // => 'stamp'
  * ```
  */
@@ -273,7 +273,7 @@ export function stampAlgorithm(tA: TensorLike, m: number, options: StampOptions 
  * @concept matrix-profile
  * @example
  * ```ts
- * import { stamp } from 'mdml-engine/timeseries'
+ * import { stamp } from 'omai-engine/timeseries'
  * Array.from(stamp([0, 1, 3, 2, 9, 1, 14, 15, 1, 2, 2, 10, 7], 4).I) // => [9, 8, 9, 1, 9, 2, 3, 4, 1, 0]
  * ```
  */

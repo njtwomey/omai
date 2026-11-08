@@ -4,7 +4,7 @@
  * top-k insertion), the non-normalised p-norm kernel, and the profile container.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { checkWindow, exclusionZone, rollingMeanStd, subsequenceStats } from '../signal/index.ts'
 
 /** A matrix profile: for every window, its k nearest-neighbour distances and indices, and its left and right
@@ -303,6 +303,6 @@ export function checkSelfJoin(m: number, n: number): number {
   checkWindow(m, n)
   const zone = exclusionZone(m)
   if (Math.floor((n - m + 1) / 2) <= zone)
-    throw new MdmlError('value', `the series (length ${n}) is too short for a self-join with window ${m}`)
+    throw new OmaiError('value', `the series (length ${n}) is too short for a self-join with window ${m}`)
   return zone
 }

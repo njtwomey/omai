@@ -448,7 +448,7 @@ const marksFromState = (names: readonly string[], marks: readonly (readonly [str
  * @concept causal-discovery
  * @example
  * ```ts
- * import { fciAlgorithm } from 'mdml-engine/pgm/causal'
+ * import { fciAlgorithm } from 'omai-engine/pgm/causal'
  * fciAlgorithm([{ a: 0, b: 1 }, { a: 1, b: 0 }, { a: 2, b: 3 }, { a: 3, b: 2 }]).name // => 'pgm/fci'
  * ```
  */
@@ -599,8 +599,8 @@ function pagOf(
  * @concept causal-discovery
  * @example
  * ```ts
- * import { fci } from 'mdml-engine/pgm/causal'
- * import { key, normal } from 'mdml-engine/random'
+ * import { fci } from 'omai-engine/pgm/causal'
+ * import { key, normal } from 'omai-engine/random'
  * // a -> c <- b: the collider is oriented, the other marks stay circles.
  * const z = normal(key(3), [500, 3]).data
  * const rows = Array.from({ length: 500 }, (_, i) => { const a = z[3 * i] ?? 0, b = z[3 * i + 1] ?? 0; return { a, b, c: a + b + 0.5 * (z[3 * i + 2] ?? 0) } })

@@ -6,8 +6,8 @@ checked in the engine's tests by cropping instead."""
 from importlib.metadata import version
 
 import numpy as np
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import rng
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import rng
 from skimage.feature import haar_like_feature
 from skimage.transform import integral_image
 

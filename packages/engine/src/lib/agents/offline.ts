@@ -6,7 +6,7 @@
  * and behaviour cloning as the simplest learner.
  */
 
-import { argmaxOf, type Json, MdmlError } from '../base/index.ts'
+import { argmaxOf, type Json, OmaiError } from '../base/index.ts'
 import { crossEntropy, gaussianNll, mse } from '../losses/index.ts'
 import type { ParamTree } from '../optim/index.ts'
 import { foldIn, type Key, key as makeKey, normal, randint } from '../random/index.ts'
@@ -43,9 +43,9 @@ export interface CollectOptions {
  * @concept offline-rl
  * @example
  * ```ts
- * import { collectDataset } from 'mdml-engine/agents'
- * import { cartPole } from 'mdml-engine/environments'
- * import { make } from 'mdml-engine/rl'
+ * import { collectDataset } from 'omai-engine/agents'
+ * import { cartPole } from 'omai-engine/environments'
+ * import { make } from 'omai-engine/rl'
  * const data = collectDataset(make(cartPole), () => 1, { episodes: 2 })
  * data.filter((t) => t.terminated).length // => 2
  * ```
@@ -85,7 +85,7 @@ export function collectDataset<S, O, A>(
  * @concept offline-rl
  * @example
  * ```ts
- * import { datasetEpisodes } from 'mdml-engine/agents'
+ * import { datasetEpisodes } from 'omai-engine/agents'
  * const t = { observation: 0, action: 0, reward: 1, nextObservation: 0, terminated: false, truncated: false }
  * datasetEpisodes([t, { ...t, terminated: true }, t]).map((e) => e.length) // => [2, 1]
  * ```
@@ -146,13 +146,13 @@ export interface OfflineState<G> {
  * @param dataset - The dataset.
  * @param options - Steps and batch size.
  * @returns The algorithm.
- * @throws MdmlError with code `value` for an empty dataset.
+ * @throws OmaiError with code `value` for an empty dataset.
  * @concept offline-rl
  * @example
  * ```ts
- * import { behaviourCloningLearner, offlineAlgorithm } from 'mdml-engine/agents'
- * import { cartPole } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { behaviourCloningLearner, offlineAlgorithm } from 'omai-engine/agents'
+ * import { cartPole } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * const t = { observation: [0, 0, 0, 0], action: 1, reward: 1, nextObservation: [0, 0, 0, 0], terminated: false, truncated: false }
  * offlineAlgorithm(behaviourCloningLearner(cartPole.create()), [t]).name // => 'behaviourCloning'
  * ```
@@ -162,7 +162,7 @@ export function offlineAlgorithm<G, O, A>(
   dataset: TransitionDataset<O, A>,
   options: OfflineOptions = {},
 ): Algorithm<OfflineState<G>> {
-  if (dataset.length === 0) throw new MdmlError('value', `${learner.name}: the dataset is empty`)
+  if (dataset.length === 0) throw new OmaiError('value', `${learner.name}: the dataset is empty`)
   const steps = options.steps ?? 1000
   const batchSize = options.batchSize ?? 64
   return {
@@ -191,9 +191,9 @@ export function offlineAlgorithm<G, O, A>(
  * @concept offline-rl
  * @example
  * ```ts
- * import { behaviourCloningLearner, offlineAgent } from 'mdml-engine/agents'
- * import { cartPole } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { behaviourCloningLearner, offlineAgent } from 'omai-engine/agents'
+ * import { cartPole } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * const learner = behaviourCloningLearner(cartPole.create(), { hidden: [4] })
  * offlineAgent(learner, learner.init(key(0), [])).name // => 'behaviourCloning'
  * ```
@@ -231,9 +231,9 @@ export interface OfflineResult<G, O, A> {
  * @concept offline-rl
  * @example
  * ```ts
- * import { behaviourCloningLearner, trainOffline } from 'mdml-engine/agents'
- * import { cartPole } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { behaviourCloningLearner, trainOffline } from 'omai-engine/agents'
+ * import { cartPole } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * const t = { observation: [0, 0, 0, 0], action: 1, reward: 1, nextObservation: [0, 0, 0, 0], terminated: false, truncated: false }
  * trainOffline(behaviourCloningLearner(cartPole.create(), { hidden: [4] }), [t], { steps: 20 }).policy([0, 0, 0, 0], key(0)) // => 1
  * ```
@@ -303,8 +303,8 @@ function policyNet(sp: OfflineSpaces, hidden: readonly number[], key: Key) {
  * @concept offline-rl
  * @example
  * ```ts
- * import { behaviourCloningLearner } from 'mdml-engine/agents'
- * import { pendulum } from 'mdml-engine/environments'
+ * import { behaviourCloningLearner } from 'omai-engine/agents'
+ * import { pendulum } from 'omai-engine/environments'
  * behaviourCloningLearner(pendulum.create(), { loss: 'gaussian' }).config // => { hidden: [64, 64], loss: 'gaussian' }
  * ```
  */
@@ -374,9 +374,9 @@ export function behaviourCloningLearner<O, A>(
  * @concept offline-rl
  * @example
  * ```ts
- * import { behaviourCloning } from 'mdml-engine/agents'
- * import { cartPole } from 'mdml-engine/environments'
- * import { key } from 'mdml-engine/random'
+ * import { behaviourCloning } from 'omai-engine/agents'
+ * import { cartPole } from 'omai-engine/environments'
+ * import { key } from 'omai-engine/random'
  * const t = { observation: [0, 0, 0, 0], action: 0, reward: 1, nextObservation: [0, 0, 0, 0], terminated: false, truncated: false }
  * behaviourCloning(cartPole.create(), [t], { hidden: [4], steps: 50, learningRate: 0.05 }).policy([0, 0, 0, 0], key(0)) // => 0
  * ```

@@ -4,7 +4,7 @@
  * aligned text pairs. The constructors check that the per-document fields agree.
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import type { Tensor, TensorLike } from '../../tensor/index.ts'
 import { checkRows, concrete, metaFor } from './_coerce.ts'
 import type { DatasetMeta } from './common.ts'
@@ -62,23 +62,23 @@ export interface CorpusOptions {
  * @param options - Documents, tokens, labels, classes and vocabulary.
  * @param meta - Name, description and provenance.
  * @returns The corpus.
- * @throws MdmlError with code `value` when there are neither documents nor tokens, or a token id is out of range.
+ * @throws OmaiError with code `value` when there are neither documents nor tokens, or a token id is out of range.
  * @example
  * ```ts
- * import { corpus } from 'mdml-engine/data'
+ * import { corpus } from 'omai-engine/data'
  * corpus({ tokens: [[0, 1], [1]], vocabulary: ['a', 'b'] }).tokens?.length // => 2
  * ```
  */
 export function corpus(options: CorpusOptions, meta: Partial<DatasetMeta> = {}): CorpusData {
   const n = options.documents?.length ?? options.tokens?.length
-  if (n === undefined) throw new MdmlError('value', 'corpus: give documents or tokens')
+  if (n === undefined) throw new OmaiError('value', 'corpus: give documents or tokens')
   const labels = options.labels === undefined ? undefined : concrete(options.labels, 'int32', 'corpus')
   checkRows('corpus', n, { documents: options.documents, tokens: options.tokens, labels })
   const v = options.vocabulary?.length
   if (v !== undefined && options.tokens !== undefined) {
     for (const doc of options.tokens) {
       for (const t of doc) {
-        if (!(t >= 0 && t < v)) throw new MdmlError('value', `corpus: token id ${t} outside a vocabulary of ${v}`)
+        if (!(t >= 0 && t < v)) throw new OmaiError('value', `corpus: token id ${t} outside a vocabulary of ${v}`)
       }
     }
   }
@@ -101,10 +101,10 @@ export function corpus(options: CorpusOptions, meta: Partial<DatasetMeta> = {}):
  * @param tagNames - The tag set.
  * @param meta - Name, description and provenance.
  * @returns The dataset.
- * @throws MdmlError with code `shape` when a sentence's tags and tokens differ in length.
+ * @throws OmaiError with code `shape` when a sentence's tags and tokens differ in length.
  * @example
  * ```ts
- * import { sequenceLabelling } from 'mdml-engine/data'
+ * import { sequenceLabelling } from 'omai-engine/data'
  * sequenceLabelling([['the', 'cat']], [[0, 1]], ['DET', 'NOUN']).tagNames.length // => 2
  * ```
  */
@@ -117,7 +117,7 @@ export function sequenceLabelling(
   checkRows('sequenceLabelling', tokens.length, { tags })
   tokens.forEach((sentence, i) => {
     if ((tags[i]?.length ?? -1) !== sentence.length)
-      throw new MdmlError(
+      throw new OmaiError(
         'shape',
         `sequenceLabelling: sentence ${i} has ${sentence.length} tokens and ${tags[i]?.length} tags`,
       )
@@ -132,10 +132,10 @@ export function sequenceLabelling(
  * @param target - Target texts, aligned with the sources.
  * @param meta - Languages, name and provenance.
  * @returns The dataset.
- * @throws MdmlError with code `shape` when the sides differ in length.
+ * @throws OmaiError with code `shape` when the sides differ in length.
  * @example
  * ```ts
- * import { parallel } from 'mdml-engine/data'
+ * import { parallel } from 'omai-engine/data'
  * parallel(['one', 'two'], ['un', 'deux'], { sourceLanguage: 'en', targetLanguage: 'fr' }).target[1] // => 'deux'
  * ```
  */

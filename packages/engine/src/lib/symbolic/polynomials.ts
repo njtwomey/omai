@@ -4,7 +4,7 @@
  * isolation by Sturm sequences, resultants and discriminants, following SymPy's `Poly`.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { bounded } from './_budget.ts'
 import { HALF, I, MINUS_ONE, makeAdd, makeMul, makePow, numFromRational, ONE, PI, ratOf, ZERO } from './_canon.ts'
 import { factorUnivariate } from './_factor.ts'
@@ -76,10 +76,10 @@ function toP(p: Poly): P {
  * @param e - The expression (sums, products and non-negative integer powers of generators and rationals).
  * @param gens - The generators, in order.
  * @returns The polynomial.
- * @throws MdmlError with code `value` when `e` is not a polynomial in the generators.
+ * @throws OmaiError with code `value` when `e` is not a polynomial in the generators.
  * @example
  * ```ts
- * import { parse, poly } from 'mdml-engine/symbolic'
+ * import { parse, poly } from 'omai-engine/symbolic'
  * poly(parse('(x + 1)^2'), parse('x')).terms.map((t) => t.monom[0]) // => [2, 1, 0]
  * ```
  */
@@ -89,12 +89,12 @@ export function poly(e: Expr, ...gens: readonly Expr[]): Poly {
     for (const g of findGens(e)) {
       if (all.some((h) => h.key === g.key)) continue
       if (gens.some((h) => contains(g, h) || (h.kind === 'sym' && hasSymbol(g, h)))) {
-        throw new MdmlError('value', `poly: not a polynomial in the given generators (contains ${g.key})`)
+        throw new OmaiError('value', `poly: not a polynomial in the given generators (contains ${g.key})`)
       }
       all.push(g)
     }
     const p = exprToP(e, all)
-    if (p === undefined) throw new MdmlError('value', 'poly: not a polynomial (negative or fractional powers)')
+    if (p === undefined) throw new OmaiError('value', 'poly: not a polynomial (negative or fractional powers)')
     return fromP(p, all)
   })
 }
@@ -106,7 +106,7 @@ export function poly(e: Expr, ...gens: readonly Expr[]): Poly {
  * @returns Its expanded expression.
  * @example
  * ```ts
- * import { parse, poly, polyToExpr, toText } from 'mdml-engine/symbolic'
+ * import { parse, poly, polyToExpr, toText } from 'omai-engine/symbolic'
  * toText(polyToExpr(poly(parse('(x + 1)*(x - 1)')))) // => 'x**2 - 1'
  * ```
  */
@@ -133,7 +133,7 @@ function genIndex(p: Poly, gen?: Expr): number {
  * @returns The degree.
  * @example
  * ```ts
- * import { degree, parse } from 'mdml-engine/symbolic'
+ * import { degree, parse } from 'omai-engine/symbolic'
  * degree(parse('x^3*y + y^5'), parse('x')) // => 3
  * ```
  */
@@ -156,7 +156,7 @@ export function degree(f: Expr | Poly, gen?: Expr): number {
  * @returns Coefficients from degree n down to 0.
  * @example
  * ```ts
- * import { coefficients, parse, toText } from 'mdml-engine/symbolic'
+ * import { coefficients, parse, toText } from 'omai-engine/symbolic'
  * coefficients(parse('a*x^2 + 3*x - 1'), parse('x')).map(toText) // => ['a', '3', '-1']
  * ```
  */
@@ -187,7 +187,7 @@ export function coefficients(f: Expr | Poly, gen?: Expr): Expr[] {
  * @returns The coefficient of the highest power.
  * @example
  * ```ts
- * import { leadingCoefficient, parse, toText } from 'mdml-engine/symbolic'
+ * import { leadingCoefficient, parse, toText } from 'omai-engine/symbolic'
  * toText(leadingCoefficient(parse('3*x^2 + x'), parse('x'))) // => '3'
  * ```
  */
@@ -215,7 +215,7 @@ function common(f: Expr | Poly, g: Expr | Poly, gens: readonly Expr[]): [P, P, r
  * @returns The quotient and remainder as expressions.
  * @example
  * ```ts
- * import { parse, polyDiv, toText } from 'mdml-engine/symbolic'
+ * import { parse, polyDiv, toText } from 'omai-engine/symbolic'
  * const { quotient, remainder } = polyDiv(parse('x^3 + 2x + 1'), parse('x - 1'))
  * [toText(quotient), toText(remainder)] // => ['x**2 + x + 3', '4']
  * ```
@@ -223,7 +223,7 @@ function common(f: Expr | Poly, g: Expr | Poly, gens: readonly Expr[]): [P, P, r
 export function polyDiv(f: Expr | Poly, g: Expr | Poly, ...gens: readonly Expr[]): { quotient: Expr; remainder: Expr } {
   return bounded('polyDiv', () => {
     const [pf, pg, all] = common(f, g, gens)
-    if (pg.terms.length === 0) throw new MdmlError('domain', 'polyDiv: division by zero')
+    if (pg.terms.length === 0) throw new OmaiError('domain', 'polyDiv: division by zero')
     const [q, r] = pdivmod(pf, pg)
     return { quotient: pToExpr(q, all), remainder: pToExpr(r, all) }
   })
@@ -239,7 +239,7 @@ export function polyDiv(f: Expr | Poly, g: Expr | Poly, ...gens: readonly Expr[]
  * @returns The gcd.
  * @example
  * ```ts
- * import { parse, polyGcd, toText } from 'mdml-engine/symbolic'
+ * import { parse, polyGcd, toText } from 'omai-engine/symbolic'
  * toText(polyGcd(parse('x^2 - 1'), parse('x^2 - 3x + 2'))) // => 'x - 1'
  * ```
  */
@@ -276,7 +276,7 @@ function leadCoeff(p: P): Rational {
  * @returns The lcm.
  * @example
  * ```ts
- * import { parse, polyLcm, toText } from 'mdml-engine/symbolic'
+ * import { parse, polyLcm, toText } from 'omai-engine/symbolic'
  * toText(polyLcm(parse('x^2 - 1'), parse('x^2 - 3x + 2'))) // => 'x**3 - 2*x**2 - x + 2'
  * ```
  */
@@ -461,7 +461,7 @@ function sortRoots(rs: Root[]): Root[] {
  * @returns The roots with multiplicities.
  * @example
  * ```ts
- * import { exactRoots, parse, toText } from 'mdml-engine/symbolic'
+ * import { exactRoots, parse, toText } from 'omai-engine/symbolic'
  * exactRoots(parse('x^3 - x^2 - 2x + 2'), parse('x')).map((r) => toText(r.value)) // => ['-sqrt(2)', '1', 'sqrt(2)']
  * ```
  */
@@ -492,7 +492,7 @@ export function exactRoots(f: Expr | Poly, x?: Expr): Root[] {
 function univariate(f: Expr | Poly, x?: Expr): U {
   const p = asPoly(f, x)
   const cs = coefficients(p, p.gens[Math.max(0, genIndex(p, x))]).reverse()
-  if (!cs.every((c) => c.kind === 'num')) throw new MdmlError('value', 'sturm: needs rational coefficients')
+  if (!cs.every((c) => c.kind === 'num')) throw new OmaiError('value', 'sturm: needs rational coefficients')
   return utrim(cs.map((c) => ratOf(c as ExprNum)))
 }
 
@@ -517,7 +517,7 @@ function sturmDense(f: U): U[] {
  * @returns The sequence as expressions.
  * @example
  * ```ts
- * import { parse, sturm, toText } from 'mdml-engine/symbolic'
+ * import { parse, sturm, toText } from 'omai-engine/symbolic'
  * sturm(parse('x^3 - 2x + 1'), parse('x')).map(toText) // => ['x**3 - 2*x + 1', '3*x**2 - 2', '4*x/3 - 1', '5/16']
  * ```
  */
@@ -564,7 +564,7 @@ function toBound(e: Expr | number | undefined, fallback: 'inf' | '-inf'): Ration
   if (e.kind === 'num') return ratOf(e)
   if (e.kind === 'const' && e.name === 'oo') return 'inf'
   if (e.kind === 'const' && e.name === '-oo') return '-inf'
-  throw new MdmlError('value', 'countRealRoots: bounds must be rational numbers or infinities')
+  throw new OmaiError('value', 'countRealRoots: bounds must be rational numbers or infinities')
 }
 
 /**
@@ -577,7 +577,7 @@ function toBound(e: Expr | number | undefined, fallback: 'inf' | '-inf'): Ration
  * @returns The count.
  * @example
  * ```ts
- * import { countRealRoots, parse } from 'mdml-engine/symbolic'
+ * import { countRealRoots, parse } from 'omai-engine/symbolic'
  * countRealRoots(parse('x^3 - 2x + 1'), parse('x')) // => 3
  * countRealRoots(parse('x^2 - 2'), parse('x'), 0, 1) // => 0
  * ```
@@ -603,7 +603,7 @@ export function countRealRoots(f: Expr | Poly, x?: Expr, a?: Expr | number, b?: 
  * @returns Pairs [lo, hi] containing exactly one root each.
  * @example
  * ```ts
- * import { parse, realRootIntervals, toText } from 'mdml-engine/symbolic'
+ * import { parse, realRootIntervals, toText } from 'omai-engine/symbolic'
  * realRootIntervals(parse('x^2 - 2'), parse('x')).length // => 2
  * ```
  */
@@ -667,7 +667,7 @@ function sylvester(a: readonly Expr[], b: readonly Expr[]): Expr[][] {
  * @returns The resultant, expanded.
  * @example
  * ```ts
- * import { parse, resultant, toText } from 'mdml-engine/symbolic'
+ * import { parse, resultant, toText } from 'omai-engine/symbolic'
  * toText(resultant(parse('x^2 + y'), parse('x - y'), parse('x'))) // => 'y**2 + y'
  * ```
  */
@@ -690,7 +690,7 @@ export function resultant(f: Expr | Poly, g: Expr | Poly, x: Expr): Expr {
  * @returns The discriminant, expanded.
  * @example
  * ```ts
- * import { discriminant, parse, toText } from 'mdml-engine/symbolic'
+ * import { discriminant, parse, toText } from 'omai-engine/symbolic'
  * toText(discriminant(parse('a*x^2 + b*x + c'), parse('x'))) // => '-4*a*c + b**2'
  * ```
  */
@@ -706,7 +706,7 @@ export function discriminant(f: Expr | Poly, x: Expr): Expr {
     // res(f, f') is divisible by lc(f) as a polynomial in the other symbols.
     const gens = poly(makeAdd([signed, cs[0] as Expr])).gens
     const quotient = pdivExact(toP(poly(signed, ...gens)), toP(poly(cs[0] as Expr, ...gens)))
-    if (quotient === undefined) throw new MdmlError('value', 'discriminant: resultant not divisible by lc')
+    if (quotient === undefined) throw new OmaiError('value', 'discriminant: resultant not divisible by lc')
     return pToExpr(quotient, gens)
   })
 }

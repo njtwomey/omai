@@ -5,7 +5,7 @@
  * and NOTEARS are traced algorithms.
  */
 
-import { argmaxOf, type Json, MdmlError } from '../../base/index.ts'
+import { argmaxOf, type Json, OmaiError } from '../../base/index.ts'
 import { expm, lstsq } from '../../numerics/linalg/index.ts'
 import { applyUpdates, type GradientTransformation } from '../../optim/index.ts'
 import { dict, type OptionTable, optionTable } from '../../space/index.ts'
@@ -85,8 +85,8 @@ function* subsets(items: readonly string[]): Generator<string[]> {
  * @concept causal-discovery
  * @example
  * ```ts
- * import { gesAlgorithm } from 'mdml-engine/pgm/causal'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { gesAlgorithm } from 'omai-engine/pgm/causal'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const data = Array.from({ length: 200 }, (_, i) => ({ a: Math.sin(i), b: 2 * Math.sin(i) + Math.cos(3 * i) }))
  * runAlgorithm(gesAlgorithm(data), { maxSteps: 20 }).state.cpdag.undirected // => [['a', 'b']]
  * ```
@@ -234,7 +234,7 @@ export function gesAlgorithm(data: readonly DataRow[], options: GesOptions = {})
  * @concept causal-discovery
  * @example
  * ```ts
- * import { ges } from 'mdml-engine/pgm/causal'
+ * import { ges } from 'omai-engine/pgm/causal'
  * const data = Array.from({ length: 300 }, (_, i) => {
  *   const a = Math.sin(1.3 * i), b = Math.cos(2.1 * i)
  *   return { a, b, c: a + b + 0.3 * Math.sin(5.7 * i) }
@@ -369,7 +369,7 @@ function correlation(a: Float64Array, b: Float64Array): number {
  * @concept causal-discovery
  * @example
  * ```ts
- * import { exogeneityMeasures } from 'mdml-engine/pgm/causal'
+ * import { exogeneityMeasures } from 'omai-engine/pgm/causal'
  * exogeneityMeasures.where((p) => p.likelihoodRatio) // => ['pwling']
  * ```
  */
@@ -449,9 +449,9 @@ export interface LingamState {
  * @concept causal-discovery
  * @example
  * ```ts
- * import { directLingamAlgorithm } from 'mdml-engine/pgm/causal'
- * import { key, uniform } from 'mdml-engine/random'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { directLingamAlgorithm } from 'omai-engine/pgm/causal'
+ * import { key, uniform } from 'omai-engine/random'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const u = uniform(key(0), [400, 2]).data
  * const rows = Array.from({ length: 400 }, (_, i) => { const x = (u[2 * i] ?? 0) - 0.5; return { y: 2 * x + ((u[2 * i + 1] ?? 0) - 0.5), x } })
  * runAlgorithm(directLingamAlgorithm(rows), { maxSteps: 5 }).state.order // => [1, 0]
@@ -527,8 +527,8 @@ export function directLingamAlgorithm(
  * @concept causal-discovery
  * @example
  * ```ts
- * import { directLingam } from 'mdml-engine/pgm/causal'
- * import { key, uniform } from 'mdml-engine/random'
+ * import { directLingam } from 'omai-engine/pgm/causal'
+ * import { key, uniform } from 'omai-engine/random'
  * const u = uniform(key(0), [400, 2]).data
  * const rows = Array.from({ length: 400 }, (_, i) => { const x = (u[2 * i] ?? 0) - 0.5; return { y: 2 * x + ((u[2 * i + 1] ?? 0) - 0.5), x } })
  * directLingam(rows).order // => ['x', 'y']
@@ -608,8 +608,8 @@ export interface NotearsState {
  * @concept causal-discovery
  * @example
  * ```ts
- * import { notearsAlgorithm } from 'mdml-engine/pgm/causal'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { notearsAlgorithm } from 'omai-engine/pgm/causal'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const rows = Array.from({ length: 100 }, (_, i) => ({ x: Math.sin(i), y: 2 * Math.sin(i) + 0.5 * Math.cos(3 * i) }))
  * runAlgorithm(notearsAlgorithm(rows, { innerSteps: 50 }), { maxSteps: 3 }).steps // => 3
  * ```
@@ -764,9 +764,9 @@ export function notearsAlgorithm(data: readonly DataRow[], options: NotearsOptio
  * @concept causal-discovery
  * @example
  * ```ts
- * import { notears } from 'mdml-engine/pgm/causal'
- * import { dagEdges } from 'mdml-engine/pgm'
- * import { key, normal } from 'mdml-engine/random'
+ * import { notears } from 'omai-engine/pgm/causal'
+ * import { dagEdges } from 'omai-engine/pgm'
+ * import { key, normal } from 'omai-engine/random'
  * const z = normal(key(1), [300, 2]).data
  * const rows = Array.from({ length: 300 }, (_, i) => { const x = z[2 * i] ?? 0; return { x, y: 1.5 * x + 0.5 * (z[2 * i + 1] ?? 0) } })
  * dagEdges(notears(rows).dag).length // => 1
@@ -797,7 +797,7 @@ export function notears(
   try {
     result = dag(edges, names)
   } catch {
-    throw new MdmlError('value', 'notears: the thresholded graph has a cycle (raise the threshold or the iterations)')
+    throw new OmaiError('value', 'notears: the thresholded graph has a cycle (raise the threshold or the iterations)')
   }
   return { weights, dag: result, h: r.state.h, status: r.status }
 }

@@ -1,4 +1,4 @@
-import { equationFit } from 'mdml-engine/exposition'
+import { equationFit } from 'omai-engine/exposition'
 import { describe, expect, it } from 'vitest'
 import { equationFitView, fittedTex, residualStripView, termCounts, truthTex } from './equation-fit.ts'
 

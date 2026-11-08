@@ -1,4 +1,4 @@
-# mdml-js: structure
+# omai: structure
 
 This document is the table of contents of the whole library as designed: every package, folder and file, with what
 each file contains. It is written for review before implementation. It does not describe any existing code. Read it top
@@ -12,14 +12,14 @@ library can grow for years without reorganising.
 ## 1. Shape of the repository
 
 ```
-mdml-js/
+omai/
   packages/
-    engine/      mdml-engine   compute: tensors to reinforcement learning, plus datasets           (published)
-    render/      mdml-render   headless figures: ECharts options, layouts, scene graphs, SVG; React (published)
-    meta/        mdml-meta     docs metadata: schema, docstring extractor, example runner, worker  (published)
+    engine/      omai-engine   compute: tensors to reinforcement learning, plus datasets           (published)
+    render/      omai-render   headless figures: ECharts options, layouts, scene graphs, SVG; React (published)
+    meta/        omai-meta     docs metadata: schema, docstring extractor, example runner, worker  (published)
   apps/
-    docs/        how to use mdml-engine: how-tos, API reference, live examples, trace viewer      (private)
-    gallery/     what mdml-render can draw: galleries of charts, graphs, diagrams, environments    (private)
+    docs/        how to use omai-engine: how-tos, API reference, live examples, trace viewer      (private)
+    gallery/     what omai-render can draw: galleries of charts, graphs, diagrams, environments    (private)
   oracle/        Python ground truth: generates golden fixtures and vendors static datasets (uv)
   scripts/       repository tooling in TypeScript (barrels, layering, docs build, packing, smoke test)
   docs/          structure.md (this file), decisions.md, extending.md, conventions.md
@@ -33,7 +33,7 @@ the slide and blog tool, the separate documentation site) consume the three publ
 ## 2. Conventions every file follows
 
 **Packages and entry points.** Every folder is an entry point. `packages/engine/src/lib/numerics/linalg/` is imported
-as `mdml-engine/numerics/linalg`; its parent `mdml-engine/numerics` re-exports it as the namespace `linalg`.
+as `omai-engine/numerics/linalg`; its parent `omai-engine/numerics` re-exports it as the namespace `linalg`.
 Index files (`index.ts`) are generated from the folder contents and never edited, so adding a file never edits another
 file.
 
@@ -85,7 +85,7 @@ statsmodels, NetworkX, pgmpy, gymnasium and others), the oracle has a case file 
 `oracle/cases/<domain>/<file>.py`, that computes reference outputs for fixed inputs. `make fixtures` regenerates the
 JSON fixtures; tests read them, so the test suite never needs Python. Each folder below names its oracle libraries.
 
-## 3. mdml-engine core, `packages/engine/src/lib/`
+## 3. omai-engine core, `packages/engine/src/lib/`
 
 The core is 24 domains in 9 tiers. A domain may import only domains in lower tiers.
 
@@ -103,8 +103,8 @@ The core is 24 domains in 9 tiers. A domain may import only domains in lower tie
 
 ### 3.1 `base/` (tier 0): what every file may assume
 
-- `errors.ts`: `MdmlError` (one class with a `code`: shape, dtype, value, domain, schema, convergence, singular,
-  not-implemented) and `details`; `isMdmlError`, `invariant`, `assertShape`, `assertFinite`.
+- `errors.ts`: `OmaiError` (one class with a `code`: shape, dtype, value, domain, schema, convergence, singular,
+  not-implemented) and `details`; `isOmaiError`, `invariant`, `assertShape`, `assertFinite`.
 - `json.ts`: the `Json` type and `JsonSchema`; `toJson`/`fromJson` for values with non-finite numbers
   (`Infinity`, `NaN` encoded as strings) so traces and fixtures round-trip.
 - `options.ts`: shared option shapes: `Tolerance` (`atol`, `rtol`, `maxIter`), `Reduction` (`mean`, `sum`, `none`),
@@ -115,7 +115,7 @@ The core is 24 domains in 9 tiers. A domain may import only domains in lower tie
 
 ### 3.2 `scene/` (tier 0): drawings as data
 
-Environments, diagrams and graphical models describe what they look like as a scene graph; mdml-render draws it.
+Environments, diagrams and graphical models describe what they look like as a scene graph; omai-render draws it.
 Living in tier 0 lets the engine produce drawings without depending on the renderer.
 - `types.ts`: `Scene`, `SceneNode` (`rect`, `circle`, `ellipse`, `line`, `path`, `polygon`, `text`, `image`, `group`),
   `Style`, `Paint` (theme tokens `fg`, `bg`, `surface`, `muted`, `grid`, `accent`, `tab0`..`tab9`, or literal colours),
@@ -707,7 +707,7 @@ oracle: scipy.integrate, python-control, filterpy, statsmodels
 oracle: pgmpy, networkx for structure; brute-force enumeration for exact checks
 
 A model is plain data. Every model type has `modelGraph(model)`, a structure description (nodes with roles, edges,
-plates, factor nodes) that mdml-render draws, and inference algorithms emit `message` events so the drawing can be
+plates, factor nodes) that omai-render draws, and inference algorithms emit `message` events so the drawing can be
 animated.
 - `factor.ts`: `DiscreteFactor` (scope, cardinalities, values in log space), `factorProduct`, `marginalise` (sum and
   max), `reduce` (evidence), `normalise`, `factorDivide`, `toTable`.
@@ -854,7 +854,7 @@ calls the functional form. `ctx` carries the train flag, the key for dropout, ac
 How a network is trained, end to end: parameters are a pytree; `apply` builds an autodiff graph; a loss from
 `learn/losses` produces a scalar `Var`; `valueAndGrad` gives the gradient pytree; an `optim` transformation turns
 gradients into updates; `fitAlgorithm` wraps this as an `Algorithm`, so `runAlgorithm` emits `loss`, metric and
-parameter-norm events per step; `nn/describe` turns the model into an architecture spec that mdml-render draws.
+parameter-norm events per step; `nn/describe` turns the model into an architecture spec that omai-render draws.
 - `functional/activations.ts`: `relu`, `leakyRelu`, `elu`, `selu`, `gelu` (exact and tanh), `silu`, `mish`, `softplus`,
   `hardTanh`, `hardSigmoid`, `glu`, `swiglu`, `activation(name)`.
 - `functional/linear.ts`: `linear`, `bilinear`, `embedding`, `embeddingBag`.
@@ -945,7 +945,7 @@ reward, terminated, truncated, info }`, plus `render(state) -> Scene`. A gymnasi
   `klBernoulli`.
 - `training.ts`: `trainAgent` (episodes or steps as a traced algorithm, checkpoints with doubling spacing, greedy
   evaluation episodes), `replayEpisode` (recompute any episode from the nearest checkpoint and its key).
-## 4. mdml-engine methods, `packages/engine/src/methods/`
+## 4. omai-engine methods, `packages/engine/src/methods/`
 
 Methods are named models, algorithms, environments, datasets and studies built from the core. Areas are grouped below
 the way a reader looks for them; on disk they are flat folders (`methods/svm/`, `methods/cluster/`). Each area has an
@@ -1272,7 +1272,7 @@ oracle: PyTorch (losses and single steps with fixed weights), diffusers schedule
 
 oracle: PyTorch (forward and backward of each model with exported weights); Hugging Face for tokenizer-level checks
 
-Each file defines a model with `init`, `apply`, `describe` (its architecture spec, which mdml-render draws), a
+Each file defines a model with `init`, `apply`, `describe` (its architecture spec, which omai-render draws), a
 training recipe as a traced algorithm, and an sklearn-style estimator where that makes sense.
 - `mlp.ts`: `mlp`, `mlpClassifier`, `mlpRegressor` (sklearn.neural_network semantics).
 - `cnn.ts`: `leNet`, `vggLite`, `resNetLite` (CIFAR-style), feature-map taps.
@@ -1413,14 +1413,14 @@ oracle: scikit-optimize and optuna on fixed seeds (statistical agreement), close
 - `portfolios.ts`: greedy portfolios, warm starting across tasks.
 - `importance.ts`: fANOVA hyperparameter importance.
 - `sweeps.ts`: grid and random sweeps, learning-rate range tests.
-## 5. mdml-render, `packages/render/src/`
+## 5. omai-render, `packages/render/src/`
 
 Headless first: everything outside `react/` returns data (ECharts option objects, layouts, `Scene` graphs, SVG strings)
 and runs in Node, so the slide and blog tools can render figures without a browser. `react/` binds that data to React
-19. The render package depends on mdml-engine for types (`Scene`, `Run`, `ComputationGraph`, `ArchitectureSpec`,
+19. The render package depends on omai-engine for types (`Scene`, `Run`, `ComputationGraph`, `ArchitectureSpec`,
 graphical-model structures, `Graph`) and never on its algorithms.
 
-Entry points: `mdml-render` (all headless parts), `mdml-render/<part>`, and `mdml-render/react`.
+Entry points: `omai-render` (all headless parts), `omai-render/<part>`, and `omai-render/react`.
 
 oracle: none (rendering is checked by snapshot tests of options and scenes, and browser tests in Chromium)
 
@@ -1507,11 +1507,11 @@ oracle: none (rendering is checked by snapshot tests of options and scenes, and 
   `space` definitions.
 - `theme.tsx`: `ThemeProvider`, `useColourMode` (light, dark, system; persisted by the host app).
 
-## 6. mdml-meta, `packages/meta/src/`
+## 6. omai-meta, `packages/meta/src/`
 
-Turns the source into documentation data and runs examples. Entry points: `mdml-meta` (schema and runner, browser
-safe), `mdml-meta/extract` (Node only), `mdml-meta/modules` (generated loader map), `mdml-meta/worker`,
-`mdml-meta/react`, and `mdml-meta/catalogue.json` (generated at build).
+Turns the source into documentation data and runs examples. Entry points: `omai-meta` (schema and runner, browser
+safe), `omai-meta/extract` (Node only), `omai-meta/modules` (generated loader map), `omai-meta/worker`,
+`omai-meta/react`, and `omai-meta/catalogue.json` (generated at build).
 
 `schema/`
 - `catalogue.ts`: zod schemas and types: `SymbolDoc` (id, package, module path, name, kind, signature, summary,
@@ -1554,7 +1554,7 @@ safe), `mdml-meta/extract` (Node only), `mdml-meta/modules` (generated loader ma
 
 `react/`
 - `LiveExample.tsx`: an editable example with outputs beside each `// =>` line, re-run on edit, figures and traces
-  rendered with mdml-render.
+  rendered with omai-render.
 - `CodeEditor.tsx`: CodeMirror 6 editor with TypeScript highlighting, completion from the catalogue, run on Mod-Enter.
 - `ValueView.tsx`: renders any example output (scalars, tensors as tables, scenes, charts, runs).
 - `ApiSymbol.tsx`: a symbol's documentation (signature, parameters, returns, examples, related concepts).
@@ -1563,10 +1563,10 @@ safe), `mdml-meta/extract` (Node only), `mdml-meta/modules` (generated loader ma
 ## 7. Apps
 
 Both apps are private Vite and React 19 applications with a navigation bar, a persistent light/dark toggle (system
-default, stored choice, no flash), theme tokens from `mdml-render/theme` and Tailwind CSS. They consume the
+default, stored choice, no flash), theme tokens from `omai-render/theme` and Tailwind CSS. They consume the
 packages exactly as an outside project would.
 
-`apps/docs/` (the counterpart of mdml-engine: how to use it)
+`apps/docs/` (the counterpart of omai-engine: how to use it)
 - `src/main.tsx`, `src/routes.tsx`: entry and routes.
 - `src/shell/`: `AppShell.tsx`, `NavBar.tsx`, `ThemeToggle.tsx`, `Sidebar.tsx` (domains and modules).
 - `src/pages/`: `Home.tsx`, `HowTo.tsx` (renders a how-to with live examples), `Module.tsx` (a module's API),
@@ -1575,7 +1575,7 @@ packages exactly as an outside project would.
   autodiff, optimisation, distributions, sampling, graphical models, probabilistic programming, estimators, neural
   networks, reinforcement learning, datasets, and so on). Their code blocks are runnable examples checked by the build.
 
-`apps/gallery/` (the counterpart of mdml-render: what it can draw)
+`apps/gallery/` (the counterpart of omai-render: what it can draw)
 - `src/main.tsx`, `src/routes.tsx`, `src/shell/`: as in docs.
 - `src/pages/`: `Home.tsx`, `Section.tsx` (a grid of entries), `Entry.tsx` (one figure with its code, editable).
 - `src/entries/`: one file per gallery section, each exporting entries whose code returns a figure: `charts.ts`,
@@ -1586,11 +1586,11 @@ packages exactly as an outside project would.
 
 A uv project (root `pyproject.toml` with dependency groups `oracle` and `dev`) using pydantic and pydantic-settings.
 It has two jobs: produce golden fixtures from reference libraries, and vendor static datasets.
-- `oracle/mdml_oracle/settings.py`: `OracleSettings` (pydantic-settings, reads the root `.env`; output directories,
+- `oracle/omai_oracle/settings.py`: `OracleSettings` (pydantic-settings, reads the root `.env`; output directories,
   which cases to run).
-- `oracle/mdml_oracle/fixture.py`: `Case` and `Fixture` pydantic models (inputs, outputs, tolerances, reference
+- `oracle/omai_oracle/fixture.py`: `Case` and `Fixture` pydantic models (inputs, outputs, tolerances, reference
   library and version, seed), JSON encoding of non-finite floats and complex numbers, deterministic writing.
-- `oracle/mdml_oracle/cli.py`: `CliApp` commands: `generate` (all or a path prefix), `check` (regenerate to a
+- `oracle/omai_oracle/cli.py`: `CliApp` commands: `generate` (all or a path prefix), `check` (regenerate to a
   temporary directory and diff against committed fixtures), `list`.
 - `oracle/cases/<domain>/<file>.py`: one case file per engine file that has a Python counterpart, mirroring the engine
   path (for example `oracle/cases/numerics/special/erf.py` uses `scipy.special`; `oracle/cases/nn/module/layers.py`
@@ -1631,7 +1631,7 @@ For a reviewer checking coverage, and for users arriving from Python.
 
 ### scikit-learn
 
-| sklearn                                                     | mdml                                                          |
+| sklearn                                                     | omai                                                          |
 | ----------------------------------------------------------- | ------------------------------------------------------------- |
 | `base`, estimator API                                       | `engine/lib/learn/estimator.ts`                               |
 | `linear_model`                                              | `methods/linear/`, `methods/glm/`                             |
@@ -1663,7 +1663,7 @@ For a reviewer checking coverage, and for users arriving from Python.
 
 ### PyTorch
 
-| torch                                 | mdml                                          |
+| torch                                 | omai                                          |
 | ------------------------------------- | --------------------------------------------- |
 | `torch.Tensor`, tensor ops            | `lib/tensor/`                                 |
 | `torch.autograd`, `torch.func`        | `lib/autodiff/`                               |
@@ -1680,7 +1680,7 @@ For a reviewer checking coverage, and for users arriving from Python.
 
 ### NumPy and SciPy
 
-| numpy / scipy                         | mdml                                              |
+| numpy / scipy                         | omai                                              |
 | ------------------------------------- | ------------------------------------------------- |
 | `numpy` arrays, ufuncs, reductions    | `lib/tensor/`                                     |
 | `numpy.random`                        | `lib/random/`                                     |
@@ -1701,7 +1701,7 @@ For a reviewer checking coverage, and for users arriving from Python.
 
 ### Other familiar libraries
 
-| library                       | mdml                                                                               |
+| library                       | omai                                                                               |
 | ----------------------------- | ---------------------------------------------------------------------------------- |
 | statsmodels (GLM, tsa, tests) | `methods/glm/`, `methods/timeseries/`, `lib/stats/tests/`                          |
 | mgcv, pygam                   | `methods/gam/`, `lib/stats/smoothing/`                                             |
@@ -1736,10 +1736,10 @@ pipeline (tensor to trace to figure to docs) is proven early:
    activations, `Sequential`, `fit`, `describe`); `rl` (`env.ts`, `gym.ts`, `rollout.ts`) with
    `methods/rl/environments/classic-control.ts` (CartPole and its render).
 5. `data` schemas for regression with `methods/datasets/regression` (`friedman1` generated, `diabetes` vendored).
-6. `mdml-render`: theme, `charts/lines.ts`, `layout/layered.ts`, `diagram/`, `graphs/graphical-models.ts`,
+6. `omai-render`: theme, `charts/lines.ts`, `layout/layered.ts`, `diagram/`, `graphs/graphical-models.ts`,
    `graphs/computation.ts`, `architecture/` (a transformer spec), `trace/metrics.ts`, `svg/`, `react/` (Chart,
    SceneView, TraceView).
-7. `mdml-meta`: schema, extractor, runner with `// =>` checks, module map; the docs and gallery apps showing the
+7. `omai-meta`: schema, extractor, runner with `// =>` checks, module map; the docs and gallery apps showing the
    slice; the oracle producing the first fixtures; CI, packing and the smoke test.
 
 After the slice, each remaining file in this document becomes a `port` or `build` task, taken in tier order.
@@ -1757,7 +1757,7 @@ These are the structural choices most worth challenging:
 4. **Tier placement.** `space` at tier 3, `data` at tier 4, `stats` above `dists`, `learn` at tier 7 below `nn`. Any
    cycle these hide?
 5. **Scene graph in the engine.** `scene` lives in the engine (tier 0) so environments and models can describe their own
-   pictures without depending on the renderer. Alternative: a tiny fourth package `mdml-scene`.
+   pictures without depending on the renderer. Alternative: a tiny fourth package `omai-scene`.
 6. **Datasets in the engine package.** Static datasets inflate the engine tarball; the alternative is a fifth package
-   `mdml-datasets`.
+   `omai-datasets`.
 7. **Coverage gaps.** Anything a comprehensive ML, statistics and numerics library should have that has no file here.

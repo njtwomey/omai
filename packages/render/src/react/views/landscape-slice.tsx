@@ -3,8 +3,8 @@
  * button switching to a surface to orbit.
  */
 
-import type { LandscapeSlice } from 'mdml-engine/exposition'
-import { fitCamera, camera as makeCamera } from 'mdml-engine/scene'
+import type { LandscapeSlice } from 'omai-engine/exposition'
+import { fitCamera, camera as makeCamera } from 'omai-engine/scene'
 import { type ReactElement, useCallback, useMemo, useState } from 'react'
 import type { Figure } from '../../figure/figure.ts'
 import { landscapeSliceScene3d, landscapeSliceView, sliceMinimum } from '../../views/landscape-slice.ts'

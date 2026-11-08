@@ -8,7 +8,7 @@
  * in `choice-models.ts`.
  */
 
-import { MdmlError } from '../base/index.ts'
+import { OmaiError } from '../base/index.ts'
 import { ndtr, ndtri } from '../numerics/special/index.ts'
 import { item } from '../tensor/index.ts'
 import { type Algorithm, channels, stateFromJson, stateToJson } from '../trace/index.ts'
@@ -25,7 +25,7 @@ const phi = (x: number): number => Math.exp(-0.5 * x * x) / Math.sqrt(2 * Math.P
  * @returns A's expected score, in (0, 1).
  * @example
  * ```ts
- * import { eloExpected } from 'mdml-engine/pgm'
+ * import { eloExpected } from 'omai-engine/pgm'
  * eloExpected(1500, 1500) // => 0.5
  * ```
  */
@@ -44,7 +44,7 @@ export function eloExpected(ra: number, rb: number, scale = 400): number {
  * @returns The new ratings.
  * @example
  * ```ts
- * import { eloUpdate } from 'mdml-engine/pgm'
+ * import { eloUpdate } from 'omai-engine/pgm'
  * eloUpdate(1500, 1500, 1) // => [1516, 1484]
  * ```
  */
@@ -77,7 +77,7 @@ const Q = Math.log(10) / 400
  * @returns The new rating.
  * @example
  * ```ts
- * import { glickoUpdate } from 'mdml-engine/pgm'
+ * import { glickoUpdate } from 'omai-engine/pgm'
  * const p = glickoUpdate({ r: 1500, rd: 200 }, [
  *   { opponent: { r: 1400, rd: 30 }, score: 1 },
  *   { opponent: { r: 1550, rd: 100 }, score: 0 },
@@ -111,7 +111,7 @@ export function glickoUpdate(player: GlickoRating, results: readonly GlickoResul
  * @returns The new deviation.
  * @example
  * ```ts
- * import { glickoInflate } from 'mdml-engine/pgm'
+ * import { glickoInflate } from 'omai-engine/pgm'
  * glickoInflate(50, 10, 3) // => 52.91502622129181
  * ```
  */
@@ -136,7 +136,7 @@ const SCALE2 = 173.7178
  * @returns The new rating, deviation and volatility.
  * @example
  * ```ts
- * import { glicko2Update } from 'mdml-engine/pgm'
+ * import { glicko2Update } from 'omai-engine/pgm'
  * const p = glicko2Update({ r: 1500, rd: 200, sigma: 0.06 }, [
  *   { opponent: { r: 1400, rd: 30 }, score: 1 },
  *   { opponent: { r: 1550, rd: 100 }, score: 0 },
@@ -261,7 +261,7 @@ function vw(t: number, eps: number, draw: boolean): { v: number; w: number } {
  * @returns The new beliefs, in the order given.
  * @example
  * ```ts
- * import { trueskillUpdate } from 'mdml-engine/pgm'
+ * import { trueskillUpdate } from 'omai-engine/pgm'
  * const [[w], [l]] = trueskillUpdate([{ mu: 25, sigma: 25 / 3 }], [{ mu: 25, sigma: 25 / 3 }])
  * [Math.round((w?.mu ?? 0) * 1000) / 1000, Math.round((l?.mu ?? 0) * 1000) / 1000] // => [29.396, 20.604]
  * ```
@@ -272,7 +272,7 @@ export function trueskillUpdate(
   draw = false,
   env: TrueSkillEnvironment = {},
 ): [TrueSkillRating[], TrueSkillRating[]] {
-  if (winners.length === 0 || losers.length === 0) throw new MdmlError('value', 'trueskillUpdate: empty team')
+  if (winners.length === 0 || losers.length === 0) throw new OmaiError('value', 'trueskillUpdate: empty team')
   const e = environment(env)
   const dynamic = (r: TrueSkillRating): number => r.sigma * r.sigma + e.tau * e.tau
   const sumVar = (team: readonly TrueSkillRating[]): number => team.reduce((a, r) => a + dynamic(r), 0)
@@ -338,7 +338,7 @@ export interface RatingOptions {
  * @returns The algorithm and the number of steps.
  * @example
  * ```ts
- * import { ratingAlgorithm } from 'mdml-engine/pgm'
+ * import { ratingAlgorithm } from 'omai-engine/pgm'
  * ratingAlgorithm('elo', [{ a: 0, b: 1, score: 1 }], 2).steps // => 1
  * ```
  */

@@ -28,7 +28,7 @@ import { scoreOfSum } from './_stages.ts'
  *
  * @example
  * ```ts
- * import type { AveragingPath } from 'mdml-engine/ensembles'
+ * import type { AveragingPath } from 'omai-engine/ensembles'
  * const path: AveragingPath = 'ensemble/oobScore'
  * path // => 'ensemble/oobScore'
  * ```
@@ -102,8 +102,8 @@ export interface AveragingTarget {
  * @concept ensembles
  * @example
  * ```ts
- * import { averagingAlgorithm } from 'mdml-engine/ensembles'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { averagingAlgorithm } from 'omai-engine/ensembles'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * // Members that each predict the mean of the rows they saw.
  * const y = [1, 2, 3, 4]
  * const member = {
@@ -210,7 +210,7 @@ function errorOf(
  * @returns The sources.
  * @example
  * ```ts
- * import { averagingSources } from 'mdml-engine/ensembles'
+ * import { averagingSources } from 'omai-engine/ensembles'
  * Object.keys(averagingSources(true)).includes('ensemble/oobError') // => true
  * ```
  */

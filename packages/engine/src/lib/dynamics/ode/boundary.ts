@@ -4,7 +4,7 @@
  * alongside single and multiple shooting with Jacobians taken by differentiating through the integrator.
  */
 
-import { MdmlError, maxOf } from '../../base/index.ts'
+import { maxOf, OmaiError } from '../../base/index.ts'
 import { pinv } from '../../numerics/linalg/index.ts'
 import { fsolveAlgorithm, type SystemPath, type SystemState, systemContract } from '../../numerics/roots/index.ts'
 import { concat, reshape, sliceAxis, sub, type Tensor, type TensorLike, type Value } from '../../tensor/index.ts'
@@ -127,13 +127,13 @@ export const bvpContract: Contract<BvpState, BvpPath> = defineContract({
  * @returns The algorithm; it is done when the residuals meet the tolerance (`converged`), the node budget is exceeded
  * (`failed`), the Jacobian is singular (`diverged`) or the boundary conditions are not met after ten iterations
  * (`failed`). Read the solution off the final state with {@link bvpSolution}.
- * @throws MdmlError with code `shape` or `value` for bad inputs.
+ * @throws OmaiError with code `shape` or `value` for bad inputs.
  * @concept boundary-value-problem
  * @example
  * ```ts
- * import { solveBvpAlgorithm } from 'mdml-engine/dynamics/ode'
- * import { concat, neg, sliceAxis, sub, tensor } from 'mdml-engine/tensor'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { solveBvpAlgorithm } from 'omai-engine/dynamics/ode'
+ * import { concat, neg, sliceAxis, sub, tensor } from 'omai-engine/tensor'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const fun = (_x, y) => concat([sliceAxis(y, 0, 1, 2), neg(sliceAxis(y, 0, 0, 1))], 0)
  * const bc = (ya, yb) => concat([sliceAxis(ya, 0, 0, 1), sub(sliceAxis(yb, 0, 0, 1), 1)], 0)
  * const alg = solveBvpAlgorithm(fun, bc, [0, 0.5, 1, Math.PI / 2], tensor([[0, 0, 0, 0], [1, 1, 1, 1]]), { tol: 1e-6 })
@@ -149,12 +149,12 @@ export function solveBvpAlgorithm(
 ): Algorithm<BvpState, BvpPath> {
   const xs0: Float64Array = numbersOf(floatState(x))
   const yv = floatState(y)
-  if (yv.shape.length !== 2) throw new MdmlError('shape', 'solveBvp: y must be [n, m]')
+  if (yv.shape.length !== 2) throw new OmaiError('shape', 'solveBvp: y must be [n, m]')
   const n = yv.shape[0] ?? 0
   const m0 = yv.shape[1] ?? 0
-  if (m0 !== xs0.length) throw new MdmlError('shape', `solveBvp: y needs ${xs0.length} columns`)
+  if (m0 !== xs0.length) throw new OmaiError('shape', `solveBvp: y needs ${xs0.length} columns`)
   const h0: Float64Array = Float64Array.from({ length: xs0.length - 1 }, (_, j) => (xs0[j + 1] ?? 0) - (xs0[j] ?? 0))
-  if (h0.some((v) => !(v > 0))) throw new MdmlError('value', 'solveBvp: x must be strictly increasing')
+  if (h0.some((v) => !(v > 0))) throw new OmaiError('value', 'solveBvp: x must be strictly increasing')
   const yN0: Float64Array = Float64Array.from(numbersOf(yv))
   const p0: Float64Array =
     options.p === undefined ? new Float64Array(0) : Float64Array.from(numbersOf(floatState(options.p)))
@@ -169,7 +169,7 @@ export function solveBvpAlgorithm(
   if (options.S !== undefined) {
     const sv = floatState(options.S)
     S = Float64Array.from(numbersOf(sv))
-    if (S.length !== n * n) throw new MdmlError('shape', `solveBvp: S must be ${n} x ${n}`)
+    if (S.length !== n * n) throw new OmaiError('shape', `solveBvp: S must be ${n} x ${n}`)
     const ps = numbersOf(pinv(sv))
     B = new Float64Array(n * n)
     for (let i = 0; i < n; i++) {
@@ -192,7 +192,7 @@ export function solveBvpAlgorithm(
     const out = numbersOf(
       fun(fromNumbers(xv, [xv.length]), fromNumbers(yy, [n, xv.length]), fromNumbers(pp, [pp.length])),
     )
-    if (out.length !== n * xv.length) throw new MdmlError('shape', `solveBvp: fun must return [${n}, ${xv.length}]`)
+    if (out.length !== n * xv.length) throw new OmaiError('shape', `solveBvp: fun must return [${n}, ${xv.length}]`)
     return Float64Array.from(out)
   }
   const field: NumField =
@@ -223,7 +223,7 @@ export function solveBvpAlgorithm(
         }
   const bcN: NumBc = (ya, yb, pp) => {
     const out = numbersOf(bc(fromNumbers(ya, [n]), fromNumbers(yb, [n]), fromNumbers(pp, [pp.length])))
-    if (out.length !== n + k) throw new MdmlError('shape', `solveBvp: bc must return ${n + k} residuals`)
+    if (out.length !== n + k) throw new OmaiError('shape', `solveBvp: bc must return ${n + k} residuals`)
     return Float64Array.from(out)
   }
   const stateOf = (
@@ -323,7 +323,7 @@ export function solveBvpAlgorithm(
  * @returns The solution.
  * @example
  * ```ts
- * import { bvpSolution } from 'mdml-engine/dynamics/ode'
+ * import { bvpSolution } from 'omai-engine/dynamics/ode'
  * bvpSolution({ iteration: 1, status: 0, x: [0, 1], y: [0, 1], p: [], f: [1, 1], rms: [0], maxBc: 0 }, 1).success // => true
  * ```
  */
@@ -360,13 +360,13 @@ export function bvpSolution(state: BvpState, n: number): BvpSolution {
  * @param y - The initial guess `[n, m]`.
  * @param options - Parameters, singular term, tolerances and node budget.
  * @returns The solution with its mesh, spline, residuals and status.
- * @throws MdmlError with code `shape` or `value` for bad inputs.
+ * @throws OmaiError with code `shape` or `value` for bad inputs.
  * @concept boundary-value-problem
  * @index function Boundary value problems by collocation.
  * @example
  * ```ts
- * import { solveBvp } from 'mdml-engine/dynamics/ode'
- * import { concat, neg, sliceAxis, sub, tensor } from 'mdml-engine/tensor'
+ * import { solveBvp } from 'omai-engine/dynamics/ode'
+ * import { concat, neg, sliceAxis, sub, tensor } from 'omai-engine/tensor'
  * // y'' = -y on [0, pi/2], y(0) = 0, y(pi/2) = 1: y = sin x.
  * const fun = (_x, y) => concat([sliceAxis(y, 0, 1, 2), neg(sliceAxis(y, 0, 0, 1))], 0)
  * const bc = (ya, yb) => concat([sliceAxis(ya, 0, 0, 1), sub(sliceAxis(yb, 0, 0, 1), 1)], 0)
@@ -419,7 +419,7 @@ function integrate(f: OdeVectorField, t0: number, t1: number, y0: Value, options
     atol: options.atol ?? 1e-12,
     tEval: [t1],
   })
-  if (!sol.success) throw new MdmlError('convergence', `shooting: the integration failed: ${sol.message}`)
+  if (!sol.success) throw new OmaiError('convergence', `shooting: the integration failed: ${sol.message}`)
   return sol.ys[sol.ys.length - 1] as Value
 }
 
@@ -489,9 +489,9 @@ function shootingResult(s: SystemState, maxIterations: number, n: number, segmen
  * @concept shooting-method
  * @example
  * ```ts
- * import { shootingOf, singleShootingAlgorithm } from 'mdml-engine/dynamics/ode'
- * import { runAlgorithm } from 'mdml-engine/trace'
- * import { concat, neg, sliceAxis, sub } from 'mdml-engine/tensor'
+ * import { shootingOf, singleShootingAlgorithm } from 'omai-engine/dynamics/ode'
+ * import { runAlgorithm } from 'omai-engine/trace'
+ * import { concat, neg, sliceAxis, sub } from 'omai-engine/tensor'
  * const f = (_t, y) => concat([sliceAxis(y, 0, 1, 2), neg(sliceAxis(y, 0, 0, 1))], 0)
  * const bc = (ya, yb) => concat([sliceAxis(ya, 0, 0, 1), sub(sliceAxis(yb, 0, 0, 1), 1)], 0)
  * const run = runAlgorithm(singleShootingAlgorithm(f, bc, [0, Math.PI / 2], [0, 0.5]), { maxSteps: 50 })
@@ -520,7 +520,7 @@ export function singleShootingAlgorithm(
  * @concept shooting-method
  * @example
  * ```ts
- * import { shootingOf } from 'mdml-engine/dynamics/ode'
+ * import { shootingOf } from 'omai-engine/dynamics/ode'
  * shootingOf({ x: [0, 1], residual: [0], iteration: 3, functionCalls: 5, history: [1, 0], jacobian: null, stepLength: 1, backtracks: 0, jacobianAge: 0, converged: true }, 2).iterations // => 3
  * ```
  */
@@ -541,8 +541,8 @@ export function shootingOf(state: SystemState, n: number, options: ShootingOptio
  * @concept shooting-method
  * @example
  * ```ts
- * import { shooting } from 'mdml-engine/dynamics/ode'
- * import { concat, neg, sliceAxis, sub } from 'mdml-engine/tensor'
+ * import { shooting } from 'omai-engine/dynamics/ode'
+ * import { concat, neg, sliceAxis, sub } from 'omai-engine/tensor'
  * const f = (_t, y) => concat([sliceAxis(y, 0, 1, 2), neg(sliceAxis(y, 0, 0, 1))], 0)
  * const bc = (ya, yb) => concat([sliceAxis(ya, 0, 0, 1), sub(sliceAxis(yb, 0, 0, 1), 1)], 0)
  * const r = shooting(f, bc, [0, Math.PI / 2], [0, 0.5])
@@ -575,12 +575,12 @@ export function shooting(
  * @param guesses - Guesses `[nodes - 1, n]` for the state at each node but the last.
  * @param options - Integrator, tolerances and iteration cap.
  * @returns The algorithm.
- * @throws MdmlError with code `value` for fewer than two nodes or mismatched guesses.
+ * @throws OmaiError with code `value` for fewer than two nodes or mismatched guesses.
  * @concept shooting-method
  * @example
  * ```ts
- * import { multipleShootingAlgorithm } from 'mdml-engine/dynamics/ode'
- * import { concat, neg, sliceAxis, sub } from 'mdml-engine/tensor'
+ * import { multipleShootingAlgorithm } from 'omai-engine/dynamics/ode'
+ * import { concat, neg, sliceAxis, sub } from 'omai-engine/tensor'
  * const f = (_t, y) => concat([sliceAxis(y, 0, 1, 2), neg(sliceAxis(y, 0, 0, 1))], 0)
  * const bc = (ya, yb) => concat([sliceAxis(ya, 0, 0, 1), sub(sliceAxis(yb, 0, 0, 1), 1)], 0)
  * multipleShootingAlgorithm(f, bc, [0, 0.8, Math.PI / 2], [[0, 0.5], [0.5, 0.5]]).name // => 'ode/multiple-shooting'
@@ -593,11 +593,11 @@ export function multipleShootingAlgorithm(
   guesses: TensorLike,
   options: ShootingOptions = {},
 ): Algorithm<SystemState, ShootPath> {
-  if (nodes.length < 2) throw new MdmlError('value', 'multipleShooting: give at least two nodes')
+  if (nodes.length < 2) throw new OmaiError('value', 'multipleShooting: give at least two nodes')
   const g = floatState(guesses)
   const segments = nodes.length - 1
   if (g.shape.length !== 2 || g.shape[0] !== segments) {
-    throw new MdmlError('value', `multipleShooting: give ${segments} guesses as [${segments}, n]`)
+    throw new OmaiError('value', `multipleShooting: give ${segments} guesses as [${segments}, n]`)
   }
   const n = g.shape[1] ?? 0
   const residual = (z: Value): Value => {
@@ -624,12 +624,12 @@ export function multipleShootingAlgorithm(
  * @param guesses - Guesses `[nodes - 1, n]` for the state at each node but the last.
  * @param options - Integrator, tolerances and iteration cap.
  * @returns The states at the nodes and convergence information.
- * @throws MdmlError with code `value` for fewer than two nodes or mismatched guesses.
+ * @throws OmaiError with code `value` for fewer than two nodes or mismatched guesses.
  * @concept shooting-method
  * @example
  * ```ts
- * import { multipleShooting } from 'mdml-engine/dynamics/ode'
- * import { concat, neg, sliceAxis, sub } from 'mdml-engine/tensor'
+ * import { multipleShooting } from 'omai-engine/dynamics/ode'
+ * import { concat, neg, sliceAxis, sub } from 'omai-engine/tensor'
  * const f = (_t, y) => concat([sliceAxis(y, 0, 1, 2), neg(sliceAxis(y, 0, 0, 1))], 0)
  * const bc = (ya, yb) => concat([sliceAxis(ya, 0, 0, 1), sub(sliceAxis(yb, 0, 0, 1), 1)], 0)
  * const r = multipleShooting(f, bc, [0, 0.8, Math.PI / 2], [[0, 0.5], [0.5, 0.5]])

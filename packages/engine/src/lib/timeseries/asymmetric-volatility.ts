@@ -9,7 +9,7 @@
  * asymmetry visible (a symmetric parabola for GARCH, tilted for GJR, EGARCH and APARCH).
  */
 
-import { MdmlError, meanOf, varianceOf } from '../base/index.ts'
+import { meanOf, OmaiError, varianceOf } from '../base/index.ts'
 import { lgamma } from '../numerics/special/index.ts'
 import { type Key, normal, studentT } from '../random/index.ts'
 import type { SpaceValue } from '../space/index.ts'
@@ -64,8 +64,8 @@ function shapeOf(spec: AsymmetricSpec): VolatilitySpec {
   const q = spec.q ?? 1
   const o = egarch ? (spec.o ?? 1) : p
   for (const v of [p, o, q])
-    if (!(Number.isInteger(v) && v >= 0)) throw new MdmlError('value', 'volatility: lags must be non-negative integers')
-  if (p + (egarch ? o : 0) === 0) throw new MdmlError('value', 'volatility: need at least one lag of the shock')
+    if (!(Number.isInteger(v) && v >= 0)) throw new OmaiError('value', 'volatility: lags must be non-negative integers')
+  if (p + (egarch ? o : 0) === 0) throw new OmaiError('value', 'volatility: need at least one lag of the shock')
   return { egarch, p, o, q, constantMean: spec.mean !== 'zero', student: spec.distribution === 't' }
 }
 
@@ -88,7 +88,7 @@ function expectedAbs(student: boolean, nu: number): number {
  * @returns s2_t for every residual.
  * @example
  * ```ts
- * import { asymmetricVariance } from 'mdml-engine/timeseries'
+ * import { asymmetricVariance } from 'omai-engine/timeseries'
  * // EGARCH(1,1,1) with all coefficients zero except omega: constant variance exp(omega).
  * Array.from(asymmetricVariance([1, -1, 2], { kind: 'egarch' }, { mu: 0, omega: 0.5, alpha: [0], gamma: [0], beta: [0] }))[2]?.toFixed(6) // => '1.648721'
  * ```
@@ -146,7 +146,7 @@ export function asymmetricVariance(
  * @returns The log-likelihood (Gaussian or standardised Student-t innovations).
  * @example
  * ```ts
- * import { asymmetricLogLikelihood } from 'mdml-engine/timeseries'
+ * import { asymmetricLogLikelihood } from 'omai-engine/timeseries'
  * asymmetricLogLikelihood([1], { kind: 'egarch', mean: 'zero' }, { mu: 0, omega: 0, alpha: [0], gamma: [0], beta: [0] }).toFixed(6) // => '-1.418939'
  * ```
  */
@@ -260,7 +260,7 @@ export interface AsymmetricFitOptions {
  * @returns The algorithm and the map from its unconstrained vector to the fit.
  * @example
  * ```ts
- * import { asymmetricFitAlgorithm } from 'mdml-engine/timeseries'
+ * import { asymmetricFitAlgorithm } from 'omai-engine/timeseries'
  * const y = Array.from({ length: 60 }, (_, i) => Math.sin(i * 1.7) * (1 + 0.5 * Math.cos(i * 0.3)))
  * asymmetricFitAlgorithm(y, { kind: 'egarch' }).algorithm.name // => 'egarch-fit'
  * ```
@@ -277,7 +277,7 @@ export function asymmetricFitAlgorithm(
   const x = asSeries(Float64Array.from(y), 'asymmetricFit')
   const n = x.length
   if (n < 10 * (r.p + r.o + r.q + 2))
-    throw new MdmlError('value', 'asymmetricFit: the series is too short for the model')
+    throw new OmaiError('value', 'asymmetricFit: the series is too short for the model')
   const centre = meanOf(x)
   const scale = Math.sqrt(varianceOf(x, 0)) || 1
   const z = Float64Array.from(x, (v) => v / scale)
@@ -338,8 +338,8 @@ export function asymmetricFitAlgorithm(
  * @returns The fitted model.
  * @example
  * ```ts
- * import { asymmetricFit, asymmetricSimulate } from 'mdml-engine/timeseries'
- * import { key } from 'mdml-engine/random'
+ * import { asymmetricFit, asymmetricSimulate } from 'omai-engine/timeseries'
+ * import { key } from 'omai-engine/random'
  * const spec = { kind: 'egarch', mean: 'zero' } as const
  * const y = asymmetricSimulate(key(3), 800, spec, { mu: 0, omega: -0.1, alpha: [0.2], gamma: [-0.1], beta: [0.9] })
  * asymmetricFit(y, spec).params.beta[0] > 0.5 // => true
@@ -366,8 +366,8 @@ export function asymmetricFit(
  * @returns The series.
  * @example
  * ```ts
- * import { asymmetricSimulate } from 'mdml-engine/timeseries'
- * import { key } from 'mdml-engine/random'
+ * import { asymmetricSimulate } from 'omai-engine/timeseries'
+ * import { key } from 'omai-engine/random'
  * asymmetricSimulate(key(0), 5, { kind: 'egarch', mean: 'zero' }, { mu: 0, omega: 0, alpha: [0.1], gamma: [0], beta: [0.5] }).length // => 5
  * ```
  */
@@ -440,8 +440,8 @@ export function asymmetricSimulate(
  * @returns The variance forecasts.
  * @example
  * ```ts
- * import { asymmetricForecast } from 'mdml-engine/timeseries'
- * import { key } from 'mdml-engine/random'
+ * import { asymmetricForecast } from 'omai-engine/timeseries'
+ * import { key } from 'omai-engine/random'
  * const fit = { spec: { kind: 'egarch', mean: 'zero' }, params: { mu: 0, omega: 0, alpha: [0], gamma: [0], beta: [0.5] } } as never
  * asymmetricForecast(fit, [0.5, -1, 0.2, 1], 3, key(0), 50).variance.length // => 3
  * ```
@@ -489,7 +489,7 @@ export interface NewsImpactCurve {
  * @returns The curve.
  * @example
  * ```ts
- * import { newsImpactCurve } from 'mdml-engine/timeseries'
+ * import { newsImpactCurve } from 'omai-engine/timeseries'
  * const fit = { spec: { p: 1, o: 1, q: 1 }, params: { mu: 0, omega: 0.1, alpha: [0.05], gamma: [0.1], beta: [0.8] } } as never
  * const c = newsImpactCurve(fit, [-2, 2])
  * c.variance[0] > c.variance[1] // => true

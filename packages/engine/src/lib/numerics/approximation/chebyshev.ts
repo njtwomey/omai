@@ -4,7 +4,7 @@
  * finer grids until the coefficients fall below machine precision (as the chebfun constructor).
  */
 
-import { type Json, MdmlError, maxOf } from '../../base/index.ts'
+import { type Json, maxOf, OmaiError } from '../../base/index.ts'
 import {
   add,
   fromStorage,
@@ -63,18 +63,18 @@ export interface Chebyshev {
  * @param coefficients - c_0, c_1, ... in the Chebyshev basis `[k]`.
  * @param domain - The interval (default [-1, 1]).
  * @returns The expansion.
- * @throws MdmlError with code `value` for an empty domain, `shape` unless the coefficients are a vector, and
+ * @throws OmaiError with code `value` for an empty domain, `shape` unless the coefficients are a vector, and
  *   `not-differentiable` for a traced value.
  * @example
  * ```ts
- * import { chebyshev } from 'mdml-engine/numerics/approximation'
- * import { item } from 'mdml-engine/tensor'
+ * import { chebyshev } from 'omai-engine/numerics/approximation'
+ * import { item } from 'omai-engine/tensor'
  * item(chebyshev([0, 0, 1]).evaluate(0.5)) // => -0.5
  * ```
  */
 export function chebyshev(coefficients: TensorLike, domain: readonly [number, number] = [-1, 1]): Chebyshev {
   const [a, b] = domain
-  if (!(b > a)) throw new MdmlError('value', 'chebyshev: the domain must be an increasing interval')
+  if (!(b > a)) throw new OmaiError('value', 'chebyshev: the domain must be an increasing interval')
   const entries = toVector(coefficients, 'chebyshev')
   const c = entries.length === 0 ? [0] : [...entries]
   const toT = (x: Value): Value => mul(add(mul(x, 2), -(a + b)), 1 / (b - a))
@@ -198,11 +198,11 @@ function trimCoefficients(c: readonly number[]): number[] {
  *
  * @param values - f at x_j = cos(j pi / (n - 1)), j = 0..n - 1 (from 1 down to -1), a vector `[n]`.
  * @returns The coefficients `[n]`.
- * @throws MdmlError with code `shape` unless `values` is a vector, and `not-differentiable` for a traced value.
+ * @throws OmaiError with code `shape` unless `values` is a vector, and `not-differentiable` for a traced value.
  * @example
  * ```ts
- * import { chebyshevCoefficients } from 'mdml-engine/numerics/approximation'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { chebyshevCoefficients } from 'omai-engine/numerics/approximation'
+ * import { toFlat } from 'omai-engine/tensor'
  * // x^2 = (T_0 + T_2) / 2.
  * toFlat(chebyshevCoefficients([1, 0, 1])).map((v) => Math.round(v * 1e12) / 1e12) // => [0.5, 0, 0.5]
  * ```
@@ -249,13 +249,13 @@ export interface ChebfunState {
  * @param domain - The interval (default [-1, 1]).
  * @param options - Tolerance and the largest sample size.
  * @returns The algorithm.
- * @throws MdmlError with code `value` (while stepping) when the function is not finite on the domain.
+ * @throws OmaiError with code `value` (while stepping) when the function is not finite on the domain.
  * @concept chebyshev-approximation
  * @example
  * ```ts
- * import { chebfunAlgorithm } from 'mdml-engine/numerics/approximation'
- * import { runAlgorithm } from 'mdml-engine/trace'
- * import { exp } from 'mdml-engine/tensor'
+ * import { chebfunAlgorithm } from 'omai-engine/numerics/approximation'
+ * import { runAlgorithm } from 'omai-engine/trace'
+ * import { exp } from 'omai-engine/tensor'
  * const run = runAlgorithm(chebfunAlgorithm((x) => exp(x)), { maxSteps: 20 })
  * [run.status, run.steps, run.state.coefficients.length] // => ['converged', 2, 33]
  * ```
@@ -277,7 +277,7 @@ export function chebfunAlgorithm(
       const xs = Array.from({ length: n }, (_, j) => (a + b) / 2 + ((b - a) / 2) * Math.cos((j * Math.PI) / (n - 1)))
       const values = toFlat(primalOf(f(fromStorage(Float64Array.from(xs), [n], 'float64'))))
       if (values.some((v) => !Number.isFinite(v)))
-        throw new MdmlError('value', 'chebfun: the function is not finite on the domain')
+        throw new OmaiError('value', 'chebfun: the function is not finite on the domain')
       const c = coefficientsOf(values)
       const scale = Math.max(maxOf(c.map(Math.abs)), Number.MIN_VALUE)
       // Converged when the last few coefficients (an eighth of them, at least 4) are all negligible.
@@ -318,14 +318,14 @@ export function chebfunAlgorithm(
  * @param domain - The interval (default [-1, 1]).
  * @param options - Tolerance (default 2^-52 times 10) and the largest sample size (default 2^16 + 1).
  * @returns The expansion (a record of tensors); its coefficients show the decay.
- * @throws MdmlError with code `convergence` when the coefficients do not decay within the largest sample size (the
+ * @throws OmaiError with code `convergence` when the coefficients do not decay within the largest sample size (the
  *   return is a fitted polynomial, a bare value; use {@link chebfunAlgorithm} for a run that ends with a status).
  * @concept chebyshev-approximation
  * @index function Adaptive Chebyshev approximation of a smooth function.
  * @example
  * ```ts
- * import { chebfun } from 'mdml-engine/numerics/approximation'
- * import { exp } from 'mdml-engine/tensor'
+ * import { chebfun } from 'omai-engine/numerics/approximation'
+ * import { exp } from 'omai-engine/tensor'
  * const f = chebfun((x) => exp(x))
  * f.coefficients.shape[0] < 20 && Math.abs(f.sum() - (Math.E - 1 / Math.E)) < 1e-14 // => true
  * ```
@@ -339,7 +339,7 @@ export function chebfun(
   const maxPoints = options.maxPoints ?? 65537
   const s = runAlgorithm(chebfunAlgorithm(f, domain, options), { maxSteps: Number.MAX_SAFE_INTEGER }).state
   if (!s.converged)
-    throw new MdmlError('convergence', `chebfun: no convergence with ${maxPoints} points (is the function smooth?)`)
+    throw new OmaiError('convergence', `chebfun: no convergence with ${maxPoints} points (is the function smooth?)`)
   const c = s.coefficients
   const scale = Math.max(maxOf(c.map(Math.abs)), Number.MIN_VALUE)
   let last = c.length - 1

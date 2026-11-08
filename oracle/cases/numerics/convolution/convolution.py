@@ -7,9 +7,9 @@ import scipy
 import scipy.signal as sg
 import torch
 import torch.nn.functional as tf
-from mdml_oracle.fixture import Case, case
-from mdml_oracle.helpers import rng
-from mdml_oracle.torch_helpers import to_numpy, to_torch
+from omai_oracle.fixture import Case, case
+from omai_oracle.helpers import rng
+from omai_oracle.torch_helpers import to_numpy, to_torch
 
 REFERENCE: dict[str, str] = {"numpy": np.__version__, "scipy": scipy.__version__, "torch": torch.__version__}
 

@@ -47,7 +47,7 @@ import { type KindPath, kindProbes } from './kinds.ts'
  *
  * @example
  * ```ts
- * import type { IterativePath } from 'mdml-engine/learn'
+ * import type { IterativePath } from 'omai-engine/learn'
  * type P = IterativePath<'tree/split'>   // 'tree/split' | 'fit/iteration/end' | 'model/params' | ... | `solver/${string}`
  * ```
  */
@@ -171,9 +171,9 @@ export interface IterativeEstimator<
  * @returns The session with `fittedAt`.
  * @example
  * ```ts
- * import { fittedSession } from 'mdml-engine/learn'
- * import { defineMethod, session } from 'mdml-engine/trace'
- * import { dict } from 'mdml-engine/space'
+ * import { fittedSession } from 'omai-engine/learn'
+ * import { defineMethod, session } from 'omai-engine/trace'
+ * import { dict } from 'omai-engine/space'
  * const m = defineMethod({
  *   name: 'count', config: dict({}),
  *   make: () => ({ name: 'count', config: {}, init: () => 0, step: (s) => s + 1, serialise: (s) => s, deserialise: (j) => j }),
@@ -192,7 +192,7 @@ export function fittedSession<S, P extends Json, V extends Verbs & FittedFacts, 
   })) as IterativeSession<S, P, V, K>
 }
 
-const EMPTY_RUN: Run = { schema: 'mdml.run/1', events: [] }
+const EMPTY_RUN: Run = { schema: 'omai.run/1', events: [] }
 
 /**
  * An estimator over the iterative base.
@@ -203,8 +203,8 @@ const EMPTY_RUN: Run = { schema: 'mdml.run/1', events: [] }
  * @concept log-contract
  * @example
  * ```ts
- * import { iterative } from 'mdml-engine/learn'
- * import { asTensor, full } from 'mdml-engine/tensor'
+ * import { iterative } from 'omai-engine/learn'
+ * import { asTensor, full } from 'omai-engine/tensor'
  * // The mean of the targets, found by averaging one more row per step.
  * const mean = iterative({
  *   name: 'running-mean', kind: 'regressor', defaults: {},

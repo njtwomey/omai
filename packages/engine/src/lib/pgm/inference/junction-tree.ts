@@ -5,7 +5,7 @@
  */
 
 import type { Json } from '../../base/index.ts'
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { type Algorithm, channels, runAlgorithm, type TracePolicy, type Tracer } from '../../trace/index.ts'
 import {
   type Factor,
@@ -107,7 +107,7 @@ function setup(model: DiscreteModel, options: JunctionTreeOptions): Setup {
   )
   for (const f of scoped) {
     const home = tree.cliques.findIndex((c) => f.variables.every((v) => c.includes(v)))
-    if (home < 0) throw new MdmlError('value', `junction tree: no clique holds [${f.variables.join(', ')}]`)
+    if (home < 0) throw new OmaiError('value', `junction tree: no clique holds [${f.variables.join(', ')}]`)
     potentials[home] = factorProductAll([potentials[home] as Factor, f])
   }
   const neighbours = tree.cliques.map(() => [] as number[])
@@ -146,8 +146,8 @@ const project = (f: Factor, keep: readonly string[], mode: 'sum' | 'max'): Facto
  * @concept junction-trees
  * @example
  * ```ts
- * import { bayesNet, junctionTreeAlgorithm } from 'mdml-engine/pgm'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { bayesNet, junctionTreeAlgorithm } from 'omai-engine/pgm'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const bn = bayesNet([
  *   { name: 'a', states: ['0', '1'], parents: [], cpt: [0.5, 0.5] },
  *   { name: 'b', states: ['0', '1'], parents: ['a'], cpt: [0.9, 0.1, 0.2, 0.8] },
@@ -267,7 +267,7 @@ function beliefs(s: Setup, state: JunctionTreeState, hugin: boolean, mode: 'sum'
  * @concept junction-trees
  * @example
  * ```ts
- * import { bayesNet, calibrate } from 'mdml-engine/pgm'
+ * import { bayesNet, calibrate } from 'omai-engine/pgm'
  * const bn = bayesNet([
  *   { name: 'a', states: ['0', '1'], parents: [], cpt: [0.5, 0.5] },
  *   { name: 'b', states: ['0', '1'], parents: ['a'], cpt: [0.9, 0.1, 0.2, 0.8] },
@@ -320,11 +320,11 @@ function pathEdges(tree: JunctionTree, a: number, b: number): number[] {
  * @param calibrated - A sum-calibrated tree.
  * @param variables - The query variables.
  * @returns The normalised posterior over them, in the order given.
- * @throws MdmlError with code `value` for observed or unknown variables, or a max-calibrated tree.
+ * @throws OmaiError with code `value` for observed or unknown variables, or a max-calibrated tree.
  * @concept junction-trees
  * @example
  * ```ts
- * import { bayesNet, calibrate, junctionTreeQuery, factorValues } from 'mdml-engine/pgm'
+ * import { bayesNet, calibrate, junctionTreeQuery, factorValues } from 'omai-engine/pgm'
  * const bn = bayesNet([
  *   { name: 'a', states: ['0', '1'], parents: [], cpt: [0.5, 0.5] },
  *   { name: 'b', states: ['0', '1'], parents: ['a'], cpt: [0.9, 0.1, 0.2, 0.8] },
@@ -333,16 +333,16 @@ function pathEdges(tree: JunctionTree, a: number, b: number): number[] {
  * ```
  */
 export function junctionTreeQuery(calibrated: CalibratedTree, variables: readonly string[]): Factor {
-  if (calibrated.mode !== 'sum') throw new MdmlError('value', 'junctionTreeQuery: needs a sum-calibrated tree')
+  if (calibrated.mode !== 'sum') throw new OmaiError('value', 'junctionTreeQuery: needs a sum-calibrated tree')
   for (const v of variables) {
-    if (v in calibrated.evidence) throw new MdmlError('value', `junctionTreeQuery: ${v} is observed`)
+    if (v in calibrated.evidence) throw new OmaiError('value', `junctionTreeQuery: ${v} is observed`)
   }
   const { tree, cliqueBeliefs, separatorBeliefs } = calibrated
   const single = tree.cliques.findIndex((c) => variables.every((v) => c.includes(v)))
   if (single >= 0) return normaliseFactor(factorMarginal(cliqueBeliefs[single] as Factor, variables))
   const homes = variables.map((v) => {
     const i = tree.cliques.findIndex((c) => c.includes(v))
-    if (i < 0) throw new MdmlError('value', `junctionTreeQuery: unknown variable ${v}`)
+    if (i < 0) throw new OmaiError('value', `junctionTreeQuery: unknown variable ${v}`)
     return i
   })
   const edges = new Set<number>()
@@ -366,7 +366,7 @@ export function junctionTreeQuery(calibrated: CalibratedTree, variables: readonl
  * @concept junction-trees
  * @example
  * ```ts
- * import { bayesNet, junctionTreeMarginals, factorValues } from 'mdml-engine/pgm'
+ * import { bayesNet, junctionTreeMarginals, factorValues } from 'omai-engine/pgm'
  * const bn = bayesNet([{ name: 'a', states: ['0', '1'], parents: [], cpt: [0.25, 0.75] }])
  * Object.values(junctionTreeMarginals(bn)).map(factorValues) // => [[0.25, 0.75]]
  * ```
@@ -399,7 +399,7 @@ export function junctionTreeMarginals(
  * @concept map-inference
  * @example
  * ```ts
- * import { bayesNet, junctionTreeMap } from 'mdml-engine/pgm'
+ * import { bayesNet, junctionTreeMap } from 'omai-engine/pgm'
  * const bn = bayesNet([
  *   { name: 'a', states: ['0', '1'], parents: [], cpt: [0.6, 0.4] },
  *   { name: 'b', states: ['0', '1'], parents: ['a'], cpt: [0.5, 0.5, 0.1, 0.9] },

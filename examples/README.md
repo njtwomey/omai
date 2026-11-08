@@ -1,7 +1,7 @@
 # Examples
 
-Each folder is a program. `main.tsx` computes with `mdml-engine` (a traced run, an estimator session) and draws the
-result with `mdml-render`; `figure.svg` is its figure and `tape.json` the tape of the run behind it, which the
+Each folder is a program. `main.tsx` computes with `omai-engine` (a traced run, an estimator session) and draws the
+result with `omai-render`; `figure.svg` is its figure and `tape.json` the tape of the run behind it, which the
 site's player can replay. `make readme-examples` runs them all and writes these files (`make readme-examples-check`
 fails when they are stale). To add an example, add a folder with a `main.tsx` that follows
 `_shared/contract.ts`; nothing else lists it. This file is generated.

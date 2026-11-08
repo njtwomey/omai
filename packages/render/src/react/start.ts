@@ -3,7 +3,7 @@
  * session is, and the fraction of the run computed. Pure, shared by `useSession`, `useLiveRun` and the player.
  */
 
-import type { Mode } from 'mdml-engine/trace'
+import type { Mode } from 'omai-engine/trace'
 
 /**
  * When a session computes and where the cursor stands at the start.

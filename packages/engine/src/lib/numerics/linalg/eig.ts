@@ -5,7 +5,7 @@
  * steppable algorithm (`powerIterationAlgorithm`, `inverseIterationAlgorithm`, `rayleighQuotientIterationAlgorithm`).
  */
 
-import { MdmlError } from '../../base/index.ts'
+import { OmaiError } from '../../base/index.ts'
 import { type Key, key as makeKey, normal } from '../../random/index.ts'
 import { concreteOrThrow, fromStorage, promoteFloat, type Tensor, type TensorLike, toFlat } from '../../tensor/index.ts'
 import {
@@ -34,7 +34,7 @@ export interface ComplexTensor {
 function concreteSquare(a: TensorLike, name: string): { data: Float64Array; n: number } {
   const [v] = promoteFloat(a)
   const t = concreteOrThrow(v as Tensor, name)
-  if (t.shape.length !== 2) throw new MdmlError('shape', `${name}: expected a single square matrix`)
+  if (t.shape.length !== 2) throw new OmaiError('shape', `${name}: expected a single square matrix`)
   return { data: Float64Array.from(t.data), n: squareSize(t.shape, name) }
 }
 
@@ -46,7 +46,7 @@ function concreteSquare(a: TensorLike, name: string): { data: Float64Array; n: n
  * @concept eigenvalues
  * @example
  * ```ts
- * import { hessenberg } from 'mdml-engine/numerics/linalg'
+ * import { hessenberg } from 'omai-engine/numerics/linalg'
  * hessenberg([[1, 2, 3], [4, 5, 6], [7, 8, 10]]).h.data[6] // => 0
  * ```
  */
@@ -62,13 +62,13 @@ export function hessenberg(a: TensorLike): { readonly h: Tensor; readonly q: Ten
  *
  * @param a - Square matrix.
  * @returns T and orthogonal Z.
- * @throws MdmlError with code `convergence` if the QR iteration stalls (60 n sweeps; finite input does not do it in
+ * @throws OmaiError with code `convergence` if the QR iteration stalls (60 n sweeps; finite input does not do it in
  *   practice). The return is a bare pair of tensors with no place for a status, so this is the one outcome that
  *   throws; a non-finite entry is a `value` error before that.
  * @concept eigenvalues
  * @example
  * ```ts
- * import { schur } from 'mdml-engine/numerics/linalg'
+ * import { schur } from 'omai-engine/numerics/linalg'
  * schur([[2, 0], [0, 1]]).t.data[2] // => 0
  * ```
  */
@@ -83,11 +83,11 @@ export function schur(a: TensorLike): { readonly t: Tensor; readonly z: Tensor }
  *
  * @param a - Square matrix.
  * @returns Real and imaginary parts.
- * @throws MdmlError with code `convergence` if the QR iteration stalls (see {@link schur}).
+ * @throws OmaiError with code `convergence` if the QR iteration stalls (see {@link schur}).
  * @example
  * ```ts
- * import { eigvals } from 'mdml-engine/numerics/linalg'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { eigvals } from 'omai-engine/numerics/linalg'
+ * import { toFlat } from 'omai-engine/tensor'
  * toFlat(eigvals([[0, -1], [1, 0]]).im).sort((a, b) => a - b) // => [-1, 1]
  * ```
  */
@@ -107,13 +107,13 @@ export function eigvals(a: TensorLike): ComplexTensor {
  *
  * @param a - Square matrix.
  * @returns The eigenvalues and eigenvectors, as real and imaginary parts.
- * @throws MdmlError with code `convergence` if the QR iteration stalls (see {@link schur}).
+ * @throws OmaiError with code `convergence` if the QR iteration stalls (see {@link schur}).
  * @concept eigenvalues
  * @index function Eigenvalues and eigenvectors of a general real matrix.
  * @example
  * ```ts
- * import { eig } from 'mdml-engine/numerics/linalg'
- * import { toFlat } from 'mdml-engine/tensor'
+ * import { eig } from 'omai-engine/numerics/linalg'
+ * import { toFlat } from 'omai-engine/tensor'
  * toFlat(eig([[2, 1], [0, 3]]).values.re).sort((a, b) => a - b) // => [2, 3]
  * ```
  */
@@ -232,12 +232,12 @@ function iterationResult(s: EigenIterationState, converged: boolean, iterations:
  * @param a - Square matrix.
  * @param options - Iterations, tolerance on the change of the estimate, start vector or key.
  * @returns The algorithm; its state is an {@link EigenIterationState}.
- * @throws MdmlError with code `shape` for a matrix that is not square.
+ * @throws OmaiError with code `shape` for a matrix that is not square.
  * @concept eigenvalues
  * @example
  * ```ts
- * import { powerIterationAlgorithm } from 'mdml-engine/numerics/linalg'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { powerIterationAlgorithm } from 'omai-engine/numerics/linalg'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const s = runAlgorithm(powerIterationAlgorithm([[2, 0], [0, 1]], { x0: [1, 1] }), { maxSteps: 100 }).state
  * Math.round((s.value ?? 0) * 1e8) / 1e8 // => 2
  * ```
@@ -275,12 +275,12 @@ export function powerIterationAlgorithm(
  * @param shift - The shift.
  * @param options - Iterations, tolerance, start vector or key.
  * @returns The algorithm; its state is an {@link EigenIterationState}.
- * @throws MdmlError with code `shape` for a matrix that is not square.
+ * @throws OmaiError with code `shape` for a matrix that is not square.
  * @concept eigenvalues
  * @example
  * ```ts
- * import { inverseIterationAlgorithm } from 'mdml-engine/numerics/linalg'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { inverseIterationAlgorithm } from 'omai-engine/numerics/linalg'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * const s = runAlgorithm(inverseIterationAlgorithm([[2, 0], [0, 1]], 0.9, { x0: [1, 1] }), { maxSteps: 100 }).state
  * Math.round((s.value ?? 0) * 1e8) / 1e8 // => 1
  * ```
@@ -320,12 +320,12 @@ export function inverseIterationAlgorithm(
  * @param a - Square (ideally symmetric) matrix.
  * @param options - Iterations, tolerance, start vector or key.
  * @returns The algorithm; its state is an {@link EigenIterationState}.
- * @throws MdmlError with code `shape` for a matrix that is not square.
+ * @throws OmaiError with code `shape` for a matrix that is not square.
  * @concept eigenvalues
  * @example
  * ```ts
- * import { rayleighQuotientIterationAlgorithm } from 'mdml-engine/numerics/linalg'
- * import { runAlgorithm } from 'mdml-engine/trace'
+ * import { rayleighQuotientIterationAlgorithm } from 'omai-engine/numerics/linalg'
+ * import { runAlgorithm } from 'omai-engine/trace'
  * runAlgorithm(rayleighQuotientIterationAlgorithm([[2, 1], [1, 2]], { x0: [1, 0.9] }), { maxSteps: 50 }).state.converged // => true
  * ```
  */
@@ -378,7 +378,7 @@ export function rayleighQuotientIterationAlgorithm(
  * @concept eigenvalues
  * @example
  * ```ts
- * import { powerIteration } from 'mdml-engine/numerics/linalg'
+ * import { powerIteration } from 'omai-engine/numerics/linalg'
  * Math.round(powerIteration([[2, 0], [0, 1]]).value * 1e8) / 1e8 // => 2
  * ```
  */
@@ -398,7 +398,7 @@ export function powerIteration(a: TensorLike, options: EigenIterationOptions = {
  * @returns The eigenvalue nearest the shift, its vector and the history.
  * @example
  * ```ts
- * import { inverseIteration } from 'mdml-engine/numerics/linalg'
+ * import { inverseIteration } from 'omai-engine/numerics/linalg'
  * Math.round(inverseIteration([[2, 0], [0, 1]], 0.9).value * 1e8) / 1e8 // => 1
  * ```
  */
@@ -421,7 +421,7 @@ export function inverseIteration(
  * @returns An eigenvalue, its vector and the history.
  * @example
  * ```ts
- * import { rayleighQuotientIteration } from 'mdml-engine/numerics/linalg'
+ * import { rayleighQuotientIteration } from 'omai-engine/numerics/linalg'
  * rayleighQuotientIteration([[2, 1], [1, 2]], { x0: [1, 0.9] }).converged // => true
  * ```
  */

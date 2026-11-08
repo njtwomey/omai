@@ -1,4 +1,4 @@
-import { arrow, axes3d, circle, group, path, rect, scene, scene3d, text } from 'mdml-engine/scene'
+import { arrow, axes3d, circle, group, path, rect, scene, scene3d, text } from 'omai-engine/scene'
 import { renderToString } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { tokens } from '../theme/tokens.ts'

@@ -4,14 +4,14 @@
 
 Clustering as traced `Algorithm`s with estimators on the iterative base: k-means (Lloyd, mini-batch, Elkan's bounds, bisecting, kernel), density clustering (DBSCAN, OPTICS, HDBSCAN with its condensed tree, mean shift), hierarchical (agglomerative with the linkage matrix and cophenetic correlation, BIRCH), medoids (PAM, CLARA), fuzzy c-means, spectral clustering, affinity propagation, constrained k-means, and the choice of k (elbow, gap statistic, stability). States keep no history; the tape records the labels, centres and objectives of every step.
 
-- function `gapStatistic`: Gap statistic for choosing the number of clusters. `src/lib/cluster/validity.ts:93` `mdml-engine/cluster`
+- function `gapStatistic`: Gap statistic for choosing the number of clusters. `src/lib/cluster/validity.ts:93` `omai-engine/cluster`
 
-- estimator `agglomerativeClustering`: Agglomerative clustering with the linkage matrix. `src/lib/cluster/hierarchical.ts:418` `mdml-engine/cluster`
-- estimator `bisectingKMeans`: Bisecting k-means; Elkan and kernel k-means beside it. `src/lib/cluster/kmeans-variants.ts:365` `mdml-engine/cluster`
-- estimator `dbscan`: DBSCAN density clustering. `src/lib/cluster/density.ts:168` `mdml-engine/cluster`
-- estimator `hdbscanClustering`: HDBSCAN with its condensed tree. `src/lib/cluster/density.ts:1182` `mdml-engine/cluster`
-- estimator `kMedoids`: k-medoids (PAM, CLARA). `src/lib/cluster/medoids.ts:301` `mdml-engine/cluster`
-- estimator `spectralClustering`: Spectral clustering on an affinity graph. `src/lib/cluster/spectral.ts:153` `mdml-engine/cluster`
+- estimator `agglomerativeClustering`: Agglomerative clustering with the linkage matrix. `src/lib/cluster/hierarchical.ts:418` `omai-engine/cluster`
+- estimator `bisectingKMeans`: Bisecting k-means; Elkan and kernel k-means beside it. `src/lib/cluster/kmeans-variants.ts:365` `omai-engine/cluster`
+- estimator `dbscan`: DBSCAN density clustering. `src/lib/cluster/density.ts:168` `omai-engine/cluster`
+- estimator `hdbscanClustering`: HDBSCAN with its condensed tree. `src/lib/cluster/density.ts:1182` `omai-engine/cluster`
+- estimator `kMedoids`: k-medoids (PAM, CLARA). `src/lib/cluster/medoids.ts:301` `omai-engine/cluster`
+- estimator `spectralClustering`: Spectral clustering on an affinity graph. `src/lib/cluster/spectral.ts:153` `omai-engine/cluster`
 
-- algorithm `lloydAlgorithm`: Lloyd's k-means, one step at a time; plain k-means has no estimator. `src/lib/cluster/kmeans.ts:155` `mdml-engine/cluster`
-- algorithm `miniBatchKMeansAlgorithm`: Mini-batch k-means, one batch at a time; no estimator wraps it. `src/lib/cluster/kmeans.ts:228` `mdml-engine/cluster`
+- algorithm `lloydAlgorithm`: Lloyd's k-means, one step at a time; plain k-means has no estimator. `src/lib/cluster/kmeans.ts:155` `omai-engine/cluster`
+- algorithm `miniBatchKMeansAlgorithm`: Mini-batch k-means, one batch at a time; no estimator wraps it. `src/lib/cluster/kmeans.ts:228` `omai-engine/cluster`
