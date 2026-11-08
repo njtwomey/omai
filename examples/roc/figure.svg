@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="420" height="380" viewBox="0 0 420 380"><title>The ROC curve of the support vector classifier on 300 test points</title><rect width="100%" height="100%" fill="#ffffff"></rect><svg x="0" y="0" width="420" height="380" overflow="visible"><svg width="420" height="380" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" baseProfile="full" viewBox="0 0 420 380">
+<rect width="420" height="380" x="0" y="0" fill="#ffffff"></rect>
+<path d="M61 336.5L414.2 336.5" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr10-cls-53"></path>
+<path d="M61 305.5L414.2 305.5" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr10-cls-53"></path>
+<path d="M61 274.5L414.2 274.5" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr10-cls-53"></path>
+<path d="M61 243.5L414.2 243.5" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr10-cls-53"></path>
+<path d="M61 213.5L414.2 213.5" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr10-cls-53"></path>
+<path d="M61 182.5L414.2 182.5" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr10-cls-53"></path>
+<path d="M61 151.5L414.2 151.5" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr10-cls-53"></path>
+<path d="M61 120.5L414.2 120.5" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr10-cls-53"></path>
+<path d="M61 89.5L414.2 89.5" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr10-cls-53"></path>
+<path d="M61 59.5L414.2 59.5" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr10-cls-53"></path>
+<path d="M61 28.5L414.2 28.5" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr10-cls-53"></path>
+<path d="M61.5 28L61.5 336" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr10-cls-53"></path>
+<path d="M96.5 28L96.5 336" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr10-cls-53"></path>
+<path d="M131.5 28L131.5 336" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr10-cls-53"></path>
+<path d="M167.5 28L167.5 336" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr10-cls-53"></path>
+<path d="M202.5 28L202.5 336" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr10-cls-53"></path>
+<path d="M237.5 28L237.5 336" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr10-cls-53"></path>
+<path d="M273.5 28L273.5 336" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr10-cls-53"></path>
+<path d="M308.5 28L308.5 336" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr10-cls-53"></path>
+<path d="M343.5 28L343.5 336" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr10-cls-53"></path>
+<path d="M379.5 28L379.5 336" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr10-cls-53"></path>
+<path d="M414.5 28L414.5 336" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr10-cls-53"></path>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:11px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" xml:space="preserve" y="-5.5" transform="matrix(0,-1,1,0,19,182)" fill="#424a53">true positive rate</text>
+<path d="M61.5 336L61.5 28" fill="none" pointer-events="visible" stroke="#afb8c1" stroke-linecap="round" class="zr10-cls-53"></path>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:11px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" xml:space="preserve" y="5.5" transform="translate(237.6 364)" fill="#424a53">false positive rate</text>
+<path d="M61 336.5L414.2 336.5" fill="none" pointer-events="visible" stroke="#afb8c1" stroke-linecap="round" class="zr10-cls-53"></path>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(53 336)" fill="#6e7781">0</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(53 305.2)" fill="#6e7781">0.1</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(53 274.4)" fill="#6e7781">0.2</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(53 243.6)" fill="#6e7781">0.3</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(53 212.8)" fill="#6e7781">0.4</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(53 182)" fill="#6e7781">0.5</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(53 151.2)" fill="#6e7781">0.6</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(53 120.4)" fill="#6e7781">0.7</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(53 89.6)" fill="#6e7781">0.8</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(53 58.8)" fill="#6e7781">0.9</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(53 28)" fill="#6e7781">1</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(61 344)" fill="#6e7781">0</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(96.32 344)" fill="#6e7781">0.1</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(131.64 344)" fill="#6e7781">0.2</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(166.96 344)" fill="#6e7781">0.3</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(202.28 344)" fill="#6e7781">0.4</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(237.6 344)" fill="#6e7781">0.5</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(272.92 344)" fill="#6e7781">0.6</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(308.24 344)" fill="#6e7781">0.7</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(343.56 344)" fill="#6e7781">0.8</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(378.88 344)" fill="#6e7781">0.9</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(414.2 344)" fill="#6e7781">1</text>
+<g clip-path="url(#zr10-c0)">
+<path d="M61 336L414.2 28" fill="none" pointer-events="visible" stroke="#6e7781" stroke-dasharray="4,2" stroke-linejoin="bevel" class="zr10-cls-55"></path>
+</g>
+<g clip-path="url(#zr10-c1)">
+<path d="M61 336L61 333.9L61 149.1L63.4 149.1L63.4 124.5L65.7 124.5L65.7 112.2L68.1 112.2L68.1 110.1L70.4 110.1L70.4 95.8L72.8 95.8L72.8 91.7L75.1 91.7L75.1 77.3L77.5 77.3L77.5 75.2L79.8 75.2L79.8 65L84.5 65L84.5 62.9L86.9 62.9L86.9 60.9L91.6 60.9L91.6 58.8L94 58.8L94 56.7L101 56.7L101 50.6L105.7 50.6L105.7 48.5L108.1 48.5L108.1 44.4L110.4 44.4L110.4 38.3L129.3 38.3L129.3 36.2L138.7 36.2L138.7 34.2L143.4 34.2L143.4 32.1L211.7 32.1L211.7 30.1L223.5 30.1L223.5 28L414.2 28" fill="none" pointer-events="visible" stroke="#1f77b4" stroke-width="2" stroke-linejoin="bevel" class="zr10-cls-55"></path>
+</g>
+<defs >
+<clipPath id="zr10-c0">
+<path d="M60 27.5l356 0l0 309l-356 0Z" fill="#000" class="zr10-cls-54"></path>
+</clipPath>
+<clipPath id="zr10-c1">
+<path d="M60 27l356 0l0 310l-356 0Z" fill="#000" class="zr10-cls-54"></path>
+</clipPath>
+</defs>
+<style ><![CDATA[
+.zr10-cls-53:hover {
+pointer-events:none;
+}
+.zr10-cls-54:hover {
+cursor:pointer;
+fill:rgba(0,0,0,1);
+}
+.zr10-cls-55:hover {
+cursor:pointer;
+}
+
+]]>
+
+</style>
+</svg></svg></svg>

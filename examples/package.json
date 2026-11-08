@@ -1,0 +1,17 @@
+{
+  "name": "mdml-examples",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "The runnable programs behind the README's Examples: each folder computes with mdml-engine and draws with mdml-render. Never published.",
+  "dependencies": {
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "mdml-engine": "workspace:*",
+    "mdml-render": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0"
+  }
+}

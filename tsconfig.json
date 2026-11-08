@@ -3,9 +3,10 @@
   "compilerOptions": {
     "noEmit": true,
     "types": ["node"],
+    "jsx": "react-jsx",
     "isolatedDeclarations": false,
     "declaration": false,
     "declarationMap": false
   },
-  "include": ["scripts", "vitest.config.ts"]
+  "include": ["scripts", "examples", "vitest.config.ts"]
 }
