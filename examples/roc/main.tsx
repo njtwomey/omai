@@ -21,6 +21,7 @@ import { toFlat } from 'mdml-engine/tensor'
 import { precisionRecallChart, prGainChart, rocChart } from 'mdml-render/charts'
 import { ContingencyTable, ThemeProvider } from 'mdml-render/react'
 import { categoricalColour } from 'mdml-render/theme'
+import { INK } from '../_shared/colours.ts'
 import type { ExampleModule, Outcome } from '../_shared/contract.ts'
 import { Figure, Panel } from '../_shared/figure.tsx'
 import { TABLE_STYLE } from '../_shared/table-style.ts'
@@ -29,7 +30,7 @@ export const meta: ExampleModule['meta'] = {
   title: 'The metrics of a classifier',
   summary:
     'The ROC curve, the precision-recall curve, the precision-recall gain curve and the contingency table of a support vector classifier on held-out data.',
-  readme: true,
+  readme: false,
   alt: 'The ROC, precision-recall and precision-recall gain curves of a classifier, and its contingency table with totals and rates',
 }
 
@@ -81,7 +82,7 @@ export function View({ result }: { result: Result }) {
       <Panel x={0} width={400} height={330} title="ROC curve" still={roc} />
       <Panel x={400} width={400} height={330} title="precision-recall curve" still={pr} />
       <Panel x={800} width={400} height={330} title="precision-recall gain curve" still={gain} />
-      <text x={20} y={392} fontFamily="sans-serif" fontSize={13} fontWeight={600} fill="#333333">
+      <text x={20} y={392} fontFamily="sans-serif" fontSize={13} fontWeight={600} fill={INK}>
         contingency table at decision threshold 0
       </text>
       <foreignObject x={20} y={402} width={900} height={290}>

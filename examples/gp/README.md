@@ -8,8 +8,9 @@ and a length scale. Choosing them well matters, and the usual way is to maximise
 
 - It draws 14 noisy points from a sine curve and fits a GP with the kernel `amplitude * rbf(length scale)`, starting from
   an amplitude of 1 and a length scale of 0.5. The noise variance is 0.03.
-- It shows `grad` on the library's `negativeLogMarginalLikelihood`: the gradient with respect to the log length scale.
-  For a small test problem it prints 0.1209288, and a finite difference gives the same number.
+- It shows `grad` on the library's `negativeLogMarginalLikelihood`, which is a function of the kernel's hyperparameters
+  (their logs: `theta = [log amplitude, log length scale]`). For a small test problem, at amplitude 1 and length scale 1, the
+  gradient is [0.6427, 0.1209], and a finite difference gives the same two numbers.
 - It fits the hyperparameters with L-BFGS-B on that gradient, as a session, so each step is on the tape. It took 11 steps.
 - It asks the session for the `model/posterior` record at step 0 and at the end. The render package draws both.
 

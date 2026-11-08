@@ -1,5 +1,5 @@
 /**
- * README example "Bayesian logistic regression, approximated four ways": one probabilistic program, inferred by NUTS (the
+ * Example "Bayesian logistic regression, approximated four ways": one probabilistic program, inferred by NUTS (the
  * reference), the Laplace approximation, mean-field variational inference and full-rank variational inference. The
  * dataset knows the true class boundary. The figure draws the weight posteriors and the predicted probability from the
  * posteriors the engines return; the tape is the full-rank variational run (its ELBO).
@@ -35,7 +35,7 @@ export const meta: ExampleModule['meta'] = {
   title: 'Bayesian logistic regression, approximated four ways',
   summary:
     'The weight posterior by NUTS, Laplace and two variational fits, and the predicted probability beside the true boundary.',
-  readme: true,
+  readme: false,
   alt: 'The weight posterior of a Bayesian logistic regression by NUTS, Laplace and two variational fits, and the predicted probability with the true boundary',
 }
 
@@ -120,10 +120,10 @@ export function run(): Outcome<Result> {
     labels: y,
     nuts: draws(nuts, 5),
     ellipses: [
-      { name: 'NUTS', colour: '#222222', sample: draws(nuts, 5) },
-      { name: 'Laplace', colour: '#d62728', sample: draws(laplace, 6) },
-      { name: 'mean-field VI', colour: '#9467bd', sample: draws(meanField, 7) },
-      { name: 'full-rank VI', colour: '#2ca02c', sample: draws(fullRank, 8) },
+      { name: 'NUTS', colour: 'fg', sample: draws(nuts, 5) },
+      { name: 'Laplace', colour: 'tab3', sample: draws(laplace, 6) },
+      { name: 'mean-field VI', colour: 'tab4', sample: draws(meanField, 7) },
+      { name: 'full-rank VI', colour: 'tab2', sample: draws(fullRank, 8) },
     ],
     probability: gridOfValues(probability, GRID),
     trueProbability: gridOfValues(
@@ -165,7 +165,7 @@ export function View({ result }: { result: Result }) {
           x: thin.map((r) => r[1] ?? 0),
           y: thin.map((r) => r[2] ?? 0),
           name: 'NUTS draws',
-          colour: '#8a94a0',
+          colour: 'muted',
           size: 3,
           opacity: 0.4,
           outline: false,

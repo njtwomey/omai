@@ -10,10 +10,11 @@ import { generate } from 'mdml-engine/data'
 import { sineCurve } from 'mdml-engine/datasets'
 import { additiveRegressor, gam, s as splineOf } from 'mdml-engine/gam'
 import { key } from 'mdml-engine/random'
-import { circle, line, path, rect, type Scene, scene, timeline } from 'mdml-engine/scene'
+import { circle, line, path, rect, type Scene, type SceneNode, scene, timeline } from 'mdml-engine/scene'
 import { asTensor, fromStorage, toFlat } from 'mdml-engine/tensor'
 import { Log, metricSeries } from 'mdml-engine/trace'
 import { cartesian, lines, points } from 'mdml-render/charts'
+import { MUTED, mix, PAPER, tab } from '../_shared/colours.ts'
 import type { ExampleModule, Outcome } from '../_shared/contract.ts'
 import { Figure, Panel } from '../_shared/figure.tsx'
 import { pixelText, pixelTextWidth } from '../_shared/pixel-text.ts'
@@ -134,11 +135,11 @@ function interpolate(grid: readonly number[], values: readonly number[], at: num
   return (values[i - 1] ?? 0) * (1 - t) + (values[i] ?? 0) * t
 }
 
-const TRUTH = '#6b7280'
-const FIT = '#e8743b'
-const BASIS = '#f4b89c'
-const CLASSIC = '#222222'
-const POINT = '#6b7280'
+const TRUTH = 'muted'
+const FIT = 'tab1'
+const BASIS = mix(tab(1), PAPER, 0.55)
+const CLASSIC = 'fg'
+const POINT = 'muted'
 
 /** The ticks of an axis from `lo` to `hi`, about `count` of them at round numbers. */
 function ticks(lo: number, hi: number, count: number): number[] {
@@ -162,9 +163,9 @@ const label = (v: number): string => (Math.abs(v) < 1e-9 ? '0' : String(Number(v
 function frame(r: Result, i: number): Scene {
   const W = 820
   const H = 400
-  const edge = '#9ca3af'
-  const grid = '#e5e7eb'
-  const ink = '#374151'
+  const edge = mix(MUTED, PAPER, 0.3)
+  const grid = 'grid'
+  const ink = 'fg'
   const [mx, my, mw, mh] = [58, 70, 470, 282] as const
   const [lx, ly, lw, lh] = [584, 70, 214, 282] as const
   const xLo = r.grid[0] ?? 0
@@ -174,10 +175,10 @@ function frame(r: Result, i: number): Scene {
   const xs = (v: number): number => mx + ((v - xLo) / (xHi - xLo)) * mw
   const ys = (v: number): number => my + mh - ((Math.max(yLo, Math.min(yHi, v)) - yLo) / (yHi - yLo)) * mh
   const curve = (values: readonly number[]): [number, number][] => values.map((v, k) => [xs(r.grid[k] ?? 0), ys(v)])
-  const nodes: Scene['nodes'][number][] = []
-  nodes.push(rect(0, 0, W, H, { fill: '#ffffff' }))
+  const nodes: SceneNode[] = []
+  nodes.push(rect(0, 0, W, H, { fill: 'bg' }))
   // the main plot: grid, ticks and labels
-  nodes.push(rect(mx, my, mw, mh, { fill: '#ffffff', stroke: edge }))
+  nodes.push(rect(mx, my, mw, mh, { fill: 'bg', stroke: edge }))
   for (const v of ticks(xLo, xHi, 5)) {
     nodes.push(line(xs(v), my, xs(v), my + mh, { stroke: grid }))
     nodes.push(...pixelText(label(v), xs(v), my + mh + 6, { anchor: 'middle', fill: ink }))
@@ -200,7 +201,7 @@ function frame(r: Result, i: number): Scene {
   const bottom = Math.floor(Math.min(...logged))
   const lyOf = (v: number): number => ly + lh - ((v - bottom) / (top - bottom)) * lh
   const lxOf = (step: number): number => lx + (step / STEPS) * lw
-  nodes.push(rect(lx, ly, lw, lh, { fill: '#ffffff', stroke: edge }))
+  nodes.push(rect(lx, ly, lw, lh, { fill: 'bg', stroke: edge }))
   for (let d = bottom; d <= top; d++) {
     nodes.push(line(lx, lyOf(d), lx + lw, lyOf(d), { stroke: grid }))
     nodes.push(...pixelText(label(10 ** d), lx - 6, lyOf(d) - 3, { anchor: 'end', fill: ink }))
@@ -213,12 +214,12 @@ function frame(r: Result, i: number): Scene {
   nodes.push(...pixelText('LOSS', lx, ly - 14, { fill: ink }))
   const upTo = Math.min(r.loss.length, (r.steps[i] ?? 0) + 1)
   const history = logged.slice(0, upTo).map((v, k): [number, number] => [lxOf(k), lyOf(v)])
-  if (history.length > 1) nodes.push(path(history, { stroke: '#1f77b4', strokeWidth: 2 }))
+  if (history.length > 1) nodes.push(path(history, { stroke: 'tab0', strokeWidth: 2 }))
   nodes.push(line(lxOf(r.steps[i] ?? 0), ly, lxOf(r.steps[i] ?? 0), ly + lh, { stroke: ink, dash: [3, 3] }))
   // the title and the legend
   nodes.push(...pixelText(`AFTER ${r.steps[i] ?? 0} STEPS`, 10, 8, { scale: 2, fill: ink }))
   let at = 10
-  const entry = (draw: (x: number) => Scene['nodes'][number][], text: string): void => {
+  const entry = (draw: (x: number) => SceneNode[], text: string): void => {
     nodes.push(...draw(at))
     nodes.push(...pixelText(text, at + 24, 40, { fill: ink }))
     at += 24 + pixelTextWidth(text) + 16
@@ -283,7 +284,7 @@ export function View({ result }: { result: Result }) {
       legend: true,
     },
   )
-  const loss = cartesian([lines([{ y: [...result.loss], name: 'training loss', colour: '#1f77b4', width: 2 }])], {
+  const loss = cartesian([lines([{ y: [...result.loss], name: 'training loss', colour: 'tab0', width: 2 }])], {
     x: { label: 'step' },
     y: { label: 'loss', scale: 'log' },
     legend: false,

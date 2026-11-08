@@ -39,10 +39,11 @@ are run by the build.
 
 ## Examples
 
-Each example below is part of a program in `examples/<name>/main.tsx`. The program computes with the library, draws the
-figure with the render package and keeps the tape of its run. The values in the comments are what the programs printed.
-`examples/README.md` lists more examples. `make readme-examples` runs them all again, and `make readme-examples-check`
-fails if a figure is out of date.
+The programs below are a few of the examples in [`examples/`](examples/), shown to give a taste. There are more there, with a
+README, a figure and the tape of the run for each (listed in [`examples/README.md`](examples/README.md)). Each is a program
+in `examples/<name>/main.tsx` that computes with the library, draws its figure with the render package and keeps the tape
+of its run; the values in the comments are what the programs printed. `make readme-examples` runs them all again, and
+`make readme-examples-check` fails if a figure is out of date.
 
 ### An optimiser's trace
 
@@ -94,124 +95,38 @@ run.fittedAt(run.t).score(data) // => 0.892, where 1 - truth.bayesError = 0.941 
 
 ### A Gaussian process and the gradient of its likelihood
 
-The likelihood is written as an ordinary function of the kernel's hyperparameter, and `grad` differentiates it.
+How well a Gaussian process explains the data depends on the kernel's hyperparameters. Here the kernel is an amplitude times
+an RBF with a length scale, so there are two, and the library's `negativeLogMarginalLikelihood` is a function of their
+logs, `theta = [log amplitude, log length scale]`. `grad` differentiates it with respect to both.
 
 ```ts
 import { grad } from 'mdml-engine/autodiff'
-import { gram, rbfKernel, withTheta } from 'mdml-engine/kernels'
-import { choSolve, cholesky } from 'mdml-engine/numerics/linalg'
-import { add, diagonal, eye, log, mul, sum, tensor, type Value } from 'mdml-engine/tensor'
+import { negativeLogMarginalLikelihood } from 'mdml-engine/gp'
+import { constantKernel, productKernel, rbfKernel } from 'mdml-engine/kernels'
+import { tensor } from 'mdml-engine/tensor'
 
 const x = tensor([[0], [0.7], [1.5], [2.2]])
 const y = tensor([0.1, 0.9, 0.8, -0.2])
-const kernel = rbfKernel({ lengthScale: 1 })
-
-const nll = (theta: Value) => {
-  // negative log marginal likelihood, up to a constant
-  const L = cholesky(add(gram(withTheta(kernel, theta), x), mul(eye(4), 0.1)))
-  const a = choSolve(L, y)
-  return add(mul(sum(mul(y, a)), 0.5), sum(log(diagonal(L))))
-}
-grad(nll)(tensor([0])) // => [0.1209288], d nll / d log(lengthScale)
+const kernel = productKernel(constantKernel({ value: 1 }), rbfKernel({ lengthScale: 1 }))
+const nll = negativeLogMarginalLikelihood(kernel, x, y, { alpha: 0.1 }) // a function of theta
+grad(nll)(tensor([0, 0])) // => [0.6427, 0.1209]: amplitude 1 and length scale 1; a finite difference agrees
 ```
 
-The library has its own version, `negativeLogMarginalLikelihood` in `mdml-engine/gp`, with a hand-derived gradient. It
-gives the same number to ten digits and is faster inside an optimiser. A test checks both against a finite difference.
-`gpRegression` fits the kernel with it, one optimiser step at a time:
-
-```ts
-import { generate } from 'mdml-engine/data'
-import { sineCurve } from 'mdml-engine/datasets'
-import { gpRegression } from 'mdml-engine/gp'
-import { constantKernel, productKernel, rbfKernel } from 'mdml-engine/kernels'
-import { key } from 'mdml-engine/random'
-
-const { data } = generate(sineCurve, { knobs: { n: 14, noise: 0.15, design: 'sorted' }, key: key(0) })
-const kernel = productKernel(constantKernel({ value: 1 }), rbfKernel({ lengthScale: 0.5 }))
-const fit = gpRegression.with({ kernel, alpha: 0.03 }).session(data, { key: key(1) })
-fit.advance() // L-BFGS-B on the gradient above: 11 steps
-fit.fittedAt(fit.t).params.logMarginalLikelihood // => -3.572, with amplitude 0.417 and length scale 0.14
-fit.probe(fit.t, 'model/posterior', { resolution: 120, samples: 3, seed: 3 }) // the mean, the band and three draws
-```
-
-![A Gaussian process fitted to noisy sine data, with its uncertainty band](examples/gp/figure.svg)
-
-### Bayesian logistic regression
-
-The posterior of a logistic regression has no closed form. The model is written once as a probabilistic program, and
-the inference is chosen separately. NUTS is the reference here, and the dataset knows the true class boundary.
-
-```ts
-import { bernoulli, multivariateNormal } from 'mdml-engine/dists'
-import { autoMultivariateNormal, laplaceApproximation, mcmc, observe, plate, sample, svi } from 'mdml-engine/probprog'
-import { eye, matmul, mul } from 'mdml-engine/tensor'
-
-// X is a column of ones and the two features of 60 points of two blobs; y holds their 0/1 labels
-const prior = multivariateNormal([0, 0, 0], { covariance: mul(eye(3), 25) })
-const model = (y: number[]) => {
-  const w = sample('w', prior)
-  plate('n', y.length, () => observe('y', bernoulli({ logits: matmul(X, w) }), y))
-}
-mcmc(model, y, { key: key(3), numChains: 4, numWarmup: 500, numDraws: 1000 }) // NUTS: 4000 draws, R-hat at most 1.002
-laplaceApproximation(model, y, { key: key(1) }) // a Gaussian at the MAP, with the inverse Hessian as covariance
-svi(model, y, { key: key(2), numSteps: 2000 }).posterior // mean-field variational inference
-svi(model, y, { key: key(2), numSteps: 2000, guide: autoMultivariateNormal(model) }).posterior // full-rank
-```
-
-The Laplace approximation is a Gaussian at the MAP whose covariance is the inverse of the Hessian there. The MAP comes
-from handing the model to a solver as an objective:
-
-```ts
-import { hessian } from 'mdml-engine/autodiff'
-import { inv } from 'mdml-engine/numerics/linalg'
-import { lbfgs } from 'mdml-engine/optim'
-import { potentialEnergy } from 'mdml-engine/probprog'
-import { neg, tensor, type Value } from 'mdml-engine/tensor'
-
-const um = potentialEnergy(model, y) // the log joint on the unconstrained reals
-const map = lbfgs((u) => neg(um.fn(u as Value)), tensor([0, 0, 0]), {}) // => [-0.088, -0.186, 1.123]
-inv(hessian((u) => neg(um.fn(u)))(map.x)) // its diagonal gives the Laplace standard deviations 0.61, 0.25, 0.29
-```
-
-Posterior mean ± standard deviation of the intercept and the two weights:
-
-|                  | intercept    | feature 1    | feature 2   |
-| ---------------- | ------------ | ------------ | ----------- |
-| NUTS (reference) | -0.13 ± 0.66 | -0.24 ± 0.28 | 1.32 ± 0.35 |
-| Laplace          | -0.09 ± 0.61 | -0.19 ± 0.25 | 1.12 ± 0.29 |
-| mean-field VI    | -0.07 ± 0.46 | -0.21 ± 0.19 | 1.26 ± 0.28 |
-| full-rank VI     | -0.09 ± 0.60 | -0.25 ± 0.23 | 1.31 ± 0.30 |
-
-Mean-field VI treats the weights as independent, so its spread is smaller than NUTS. Full-rank VI is close to NUTS.
-Laplace sits on the mode, and the posterior is skewed (the mode of feature 2 is 1.12 and the mean is 1.32), so it is
-narrower than NUTS and off to one side. A probit model changes one line, `bernoulli({ probs: ndtr(matmul(X, w)) })`. NUTS
-gives -0.09 ± 0.35, -0.09 ± 0.13 and 0.68 ± 0.15 for it, and Laplace gives -0.06 ± 0.34, -0.07 ± 0.13 and 0.62 ± 0.14.
-
-![The weight posterior of a Bayesian logistic regression by NUTS, Laplace and two variational fits, and the predicted probability with the true boundary](examples/logistic/figure.svg)
+The gradient says which way each hyperparameter should move to explain the data better. `gpRegression` uses it to fit the
+kernel; see [examples/gp](examples/gp).
 
 ### Second derivatives
 
-`grad` can be applied to its own result, and `hessian` and `hvp` are built from it. Newton's method uses the Hessian. On
-the Rosenbrock function it takes 12 steps where gradient descent takes 2662.
+`grad` can be applied to its own result, and `hessian` is built from it.
 
 ```ts
-import { grad, hessian, hvp } from 'mdml-engine/autodiff'
-import { minimize, newton, sgd } from 'mdml-engine/optim'
-import { mul, tensor, type Value } from 'mdml-engine/tensor'
+import { grad, hessian } from 'mdml-engine/autodiff'
+import { mul, take, tensor, type Value } from 'mdml-engine/tensor'
 
 const cube = (x: Value) => mul(mul(x, x), x)
-grad(grad(cube))(tensor(2)) // => 12
-hessian(rosenbrock)(tensor([1, 1])) // => [[82, -40], [-40, 20]]
-hvp(rosenbrock, tensor([1, 1]), tensor([1, 0])) // => [82, -40]
-newton(rosenbrock, [-1.2, 1]).steps // => 12
-minimize(rosenbrock, tensor([-1.2, 1]), { method: sgd({ learningRate: 0.01 }), maxSteps: 5000, gradTol: 1e-5 }).steps // => 2662
+grad(grad(cube))(tensor(2)) // => 12, since the second derivative of x^3 is 6x
+hessian((p) => mul(mul(take(p, 0), take(p, 0)), take(p, 1)))(tensor([1, 2])) // => [[4, 2], [2, 0]], for x^2 y
 ```
-
-`hvp` gives the Hessian times a vector without forming the Hessian. It costs about two gradients however many
-parameters there are, so it still works for large models. The ellipses in the figure come from the Hessian at the start
-and at the minimum.
-
-![Newton's path against gradient descent on the Rosenbrock function, with the curvature at two points](examples/newton/figure.svg)
 
 ### Bijections between distributions
 
@@ -238,36 +153,53 @@ inference run on constrained parameters: they work on the reals, and the Jacobia
 
 ![A Normal, the map exp, the log-normal it gives, and a coupling layer turning a Gaussian into a banana](examples/bijectors/figure.svg)
 
-### An agent learning
+### A decision tree
 
-Q-learning on the cliff-walking gridworld. The learning curve is drawn from the recorded run.
+A decision tree classifies a flower by asking a few questions about its measurements, one after another. It is fitted
+as a session, one node per step, and the library draws both the tree and the regions of the plane it cuts.
 
 ```ts
-import { qLearning } from 'mdml-engine/agents'
-import { cliffWalking } from 'mdml-engine/environments'
-import { make, trainAgent } from 'mdml-engine/rl'
-import { recorder, tracePolicy } from 'mdml-engine/trace'
+import { iris } from 'mdml-engine/datasets'
+import { key } from 'mdml-engine/random'
+import { decisionTreeClassifier } from 'mdml-engine/trees'
 
-const tape = recorder()
-const agent = qLearning(cliffWalking.create(), { alpha: 0.5, gamma: 1, epsilon: 0.1 })
-const trained = trainAgent(make(cliffWalking), agent, {
-  episodes: 300,
-  seed: 0,
-  tracer: tape,
-  policy: tracePolicy({ metrics: false }),
-})
-trained.returns.slice(0, 3) // => [-2216, -41, -88]; the mean of the last 50 episodes is -53.8
+// data: the 150 iris flowers with only petal length and petal width
+const fit = decisionTreeClassifier({ maxDepth: 3, record: 5 }).session(data, { key: key(1) })
+fit.advance() // 9 steps, one node decided in each
+fit.probe(fit.t, 'model/structure') // the tree, drawn by the render package
+fit.probe(fit.t, 'model/decision-surface') // the rectangles of the plane, drawn the same way
+fit.fittedAt(fit.t).predict(data.x) // 146 of the 150 flowers right
 ```
 
-![Episode returns while Q-learning learns to walk along the cliff](examples/qlearning/figure.svg)
+![A decision tree on iris petal length and width, drawn as a tree of splits beside the regions of the plane it makes](examples/decision-tree/figure.svg)
+
+### A support vector classifier
+
+A support vector classifier draws a boundary with a margin on each side, and only the rows near the boundary (the support
+vectors) decide where it goes. The penalty `C` sets how much the margin may be crossed.
+
+```ts
+import { generate } from 'mdml-engine/data'
+import { moons } from 'mdml-engine/datasets'
+import { key } from 'mdml-engine/random'
+import { svc } from 'mdml-engine/svm'
+
+const { data, truth } = generate(moons, { knobs: { n: 100, noise: 0.25 }, key: key(0) })
+const loose = svc.with({ kernel: 'rbf', C: 0.2 }).session(data, { key: key(1) })
+const tight = svc.with({ kernel: 'rbf', C: 50 }).session(data, { key: key(1) })
+loose.advance() // 48 steps: 68 support vectors, accuracy 0.895 on 400 new points
+tight.advance() // 119 steps: 17 support vectors, accuracy 0.945, where 1 - truth.bayesError = 0.940 is the best possible
+```
+
+![Two support vector classifiers on the two-moons data: the score as a heat map with the boundary and margins as contours, and the support vectors ringed](examples/svm/figure.svg)
 
 ## Packages
 
-| package       | what it is                                                                                                                                                                        |
-| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `mdml-engine` | the library: tensors, autodiff, numerics, distributions, optimisation, kernels, learning, neural networks, RL, graphs, datasets and the trace. Imports as `mdml-engine/<domain>`. |
-| `mdml-render` | figures from results and traces: charts, layouts, drawings, SVG and animation export, and React components.                                                                       |
-| `mdml-meta`   | the documentation tooling: it reads the descriptions in the code, runs the examples and keeps the list of concepts.                                                               |
+| package       | what it is                                                                                                                                                                         |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `mdml-engine` | the library: tensors, autodiff, numerics, distributions, optimisation, kernels, learning, neural networks, RL, graphs, datasets and the trace. Imports as `mdml-engine/<domain>`.  |
+| `mdml-render` | figures from results and traces: charts, layouts, drawings, SVG and animation export, and React components.                                                                        |
+| `mdml-meta`   | the documentation tooling: it reads the descriptions in the code, runs the examples and keeps the list of concepts.                                                                |
 
 The packages share a version number (see `CHANGELOG.md`).
 

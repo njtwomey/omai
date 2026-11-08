@@ -14,6 +14,7 @@ import { toFlat } from 'mdml-engine/tensor'
 import { figure } from 'mdml-render/figure'
 import { categoricalColour } from 'mdml-render/theme'
 import { stillOf } from 'mdml-render/views'
+import { INK } from '../_shared/colours.ts'
 import type { ExampleModule, Outcome } from '../_shared/contract.ts'
 import { Figure, Panel } from '../_shared/figure.tsx'
 
@@ -63,7 +64,7 @@ export function View({ result }: { result: Exposition }) {
       {SPECIES.map((name, i) => (
         <g key={name} transform={`translate(${60 + i * 120}, 462)`}>
           <circle r={5} fill={categoricalColour(i)} />
-          <text x={10} y={4} fontSize={12} fontFamily="system-ui, sans-serif" fill="#333333">
+          <text x={10} y={4} fontSize={12} fontFamily="system-ui, sans-serif" fill={INK}>
             {name}
           </text>
         </g>

@@ -8,6 +8,7 @@ import { consult, type SolveResult, sldTree, solve } from 'mdml-engine/logic'
 import type { Structure } from 'mdml-engine/scene'
 import { policies, type Run, recorder } from 'mdml-engine/trace'
 import { diagram } from 'mdml-render/structures'
+import { INK } from '../_shared/colours.ts'
 import type { ExampleModule, Outcome } from '../_shared/contract.ts'
 import { Figure, Panel } from '../_shared/figure.tsx'
 
@@ -100,7 +101,7 @@ export function View({ result }: { result: Result }) {
   const height = Math.max(scene.height + 30, y + 20)
   return (
     <Figure width={left + scene.width + 40} height={height} title={meta.alt}>
-      <text x={20} y={22} fontFamily="system-ui, sans-serif" fontSize={14} fontWeight={600} fill="#333333">
+      <text x={20} y={22} fontFamily="system-ui, sans-serif" fontSize={14} fontWeight={600} fill={INK}>
         A Prolog program and the search that answers one question
       </text>
       {placed.map((l) => (
@@ -111,7 +112,7 @@ export function View({ result }: { result: Result }) {
           fontFamily={l.bold ? 'system-ui, sans-serif' : 'ui-monospace, Menlo, monospace'}
           fontSize={l.bold ? 13 : 12}
           fontWeight={l.bold ? 600 : 400}
-          fill="#333333"
+          fill={INK}
         >
           {l.text}
         </text>

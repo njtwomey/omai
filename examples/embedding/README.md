@@ -9,7 +9,7 @@ places every point on a plane so that we can look at it. Different methods keep 
 - It places them on a plane with three methods: PCA, a linear projection that keeps the directions of greatest variation;
   t-SNE, which tries to keep each point's neighbours near it (fitted as a session of 300 steps, so it has a tape); and
   UMAP, which also keeps neighbours together and works from a graph of nearest neighbours.
-- It measures each layout: for each point, the share of its 5 nearest neighbours *on the plane* that are the same digit.
+- It measures each layout: for each point, the share of its 5 nearest neighbours _on the plane_ that are the same digit.
 
 ## What to look for
 

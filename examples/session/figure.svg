@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="780" height="410" viewBox="0 0 780 410"><title>The decision surface of a support vector classifier at step 3 and at the end</title><rect width="100%" height="100%" fill="#ffffff"></rect><text x="195" y="19" text-anchor="middle" font-family="system-ui, -apple-system, &#x27;Segoe UI&#x27;, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="#333333">after 3 steps: accuracy 0.53</text><svg x="0" y="26" width="390" height="340" overflow="visible"><svg width="390" height="340" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" baseProfile="full" viewBox="0 0 390 340">
+<svg xmlns="http://www.w3.org/2000/svg" width="780" height="410" viewBox="0 0 780 410"><title>The decision surface of a support vector classifier at step 3 and at the end</title><rect width="100%" height="100%" fill="#ffffff"></rect><text x="195" y="19" text-anchor="middle" font-family="system-ui, -apple-system, &#x27;Segoe UI&#x27;, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="#1f2328">after 3 steps: accuracy 0.53</text><svg x="0" y="26" width="390" height="340" overflow="visible"><svg width="390" height="340" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" baseProfile="full" viewBox="0 0 390 340">
 <rect width="390" height="340" x="0" y="0" fill="#ffffff"></rect>
 <path d="M61 296.5L390 296.5" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr0-cls-0"></path>
 <path d="M61 283.5L390 283.5" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr0-cls-0"></path>
@@ -209,7 +209,7 @@ fill:rgba(0,0,0,0);
 ]]>
 
 </style>
-</svg></svg><text x="585" y="19" text-anchor="middle" font-family="system-ui, -apple-system, &#x27;Segoe UI&#x27;, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="#333333">after all 45 steps: accuracy 0.89</text><svg x="390" y="26" width="390" height="340" overflow="visible"><svg width="390" height="340" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" baseProfile="full" viewBox="0 0 390 340">
+</svg></svg><text x="585" y="19" text-anchor="middle" font-family="system-ui, -apple-system, &#x27;Segoe UI&#x27;, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="#1f2328">after all 45 steps: accuracy 0.89</text><svg x="390" y="26" width="390" height="340" overflow="visible"><svg width="390" height="340" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" baseProfile="full" viewBox="0 0 390 340">
 <rect width="390" height="340" x="0" y="0" fill="#ffffff"></rect>
 <path d="M61 296.5L390 296.5" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr1-cls-4"></path>
 <path d="M61 283.5L390 283.5" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr1-cls-4"></path>
@@ -420,4 +420,4 @@ fill:rgba(0,0,0,0);
 ]]>
 
 </style>
-</svg></svg><text x="390" y="394" text-anchor="middle" font-family="system-ui, sans-serif" font-size="13" fill="#333333">The same run, stopped and then asked for its earlier state. The best accuracy anyone could reach on this data is 0.94.</text></svg>
+</svg></svg><text x="390" y="394" text-anchor="middle" font-family="system-ui, sans-serif" font-size="13" fill="#1f2328">The same run, stopped and then asked for its earlier state. The best accuracy anyone could reach on this data is 0.94.</text></svg>

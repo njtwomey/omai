@@ -9,6 +9,7 @@ import type { Exposition } from 'mdml-engine/exposition'
 import { key } from 'mdml-engine/random'
 import { svc } from 'mdml-engine/svm'
 import { stillOf } from 'mdml-render/views'
+import { INK } from '../_shared/colours.ts'
 import type { ExampleModule, Outcome } from '../_shared/contract.ts'
 import { Figure, Panel } from '../_shared/figure.tsx'
 
@@ -71,7 +72,7 @@ export function View({ result }: { result: Result }) {
         title={`after all ${result.steps} steps: accuracy ${result.finalAccuracy.toFixed(2)}`}
         still={stillOf(result.final, { mode: 'light' })}
       />
-      <text x={390} y={394} textAnchor="middle" fontFamily="system-ui, sans-serif" fontSize={13} fill="#333333">
+      <text x={390} y={394} textAnchor="middle" fontFamily="system-ui, sans-serif" fontSize={13} fill={INK}>
         The same run, stopped and then asked for its earlier state. The best accuracy anyone could reach on this data is{' '}
         {result.best.toFixed(2)}.
       </text>

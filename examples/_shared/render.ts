@@ -9,6 +9,7 @@ import { tapeOf } from 'mdml-render/producer'
 import * as React from 'react'
 import { createElement, type ReactElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
+import { PAPER } from './colours.ts'
 import type { Tape } from './contract.ts'
 
 // The render package's .tsx files are compiled by tsx with the classic JSX transform, which reads a global `React`.
@@ -48,5 +49,5 @@ export async function tapeJson(name: string, tape: Tape, title: string): Promise
 
 /** A timeline of scenes as GIF bytes, in Node: the engine's rasteriser draws the frames (without text) on white. */
 export async function animationGif(timeline: Timeline): Promise<Uint8Array> {
-  return encodeGif(await timelineFrames(timeline, { background: '#ffffff' }), { fps: timeline.fps })
+  return encodeGif(await timelineFrames(timeline, { background: PAPER }), { fps: timeline.fps })
 }

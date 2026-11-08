@@ -6,8 +6,7 @@
  */
 import { adam, bfgs, lbfgs, minimizer, newton, sgd } from 'mdml-engine/optim'
 import { add, mul, square, sub, take, tensor, type Value } from 'mdml-engine/tensor'
-import { type Run, recorder, runAlgorithm, tracePolicy } from 'mdml-engine/trace'
-import { metricSeries } from 'mdml-engine/trace'
+import { metricSeries, type Run, recorder, runAlgorithm, tracePolicy } from 'mdml-engine/trace'
 import { cartesian, lines, points } from 'mdml-render/charts'
 import { figure } from 'mdml-render/figure'
 import { parameterPath } from 'mdml-render/trace'
@@ -23,17 +22,18 @@ export const meta: ExampleModule['meta'] = {
   alt: 'Six optimisers on the Rosenbrock function: their paths over the function and the loss against the step on a log axis',
 }
 
-const rosenbrock = (p: Value): Value => add(square(sub(1, take(p, 0))), mul(10, square(sub(take(p, 1), square(take(p, 0))))))
+const rosenbrock = (p: Value): Value =>
+  add(square(sub(1, take(p, 0))), mul(10, square(sub(take(p, 1), square(take(p, 0))))))
 const f = (x: number, y: number): number => (1 - x) ** 2 + 10 * (y - x * x) ** 2
 
 /** The methods in the order they are drawn, with their colours (first order dashed, curvature solid). */
 const METHODS = [
-  { key: 'gradient-descent', name: 'gradient descent', colour: '#1f77b4', curvature: false },
-  { key: 'momentum', name: 'momentum', colour: '#9467bd', curvature: false },
-  { key: 'adam', name: 'Adam', colour: '#17becf', curvature: false },
-  { key: 'bfgs', name: 'BFGS', colour: '#2ca02c', curvature: true },
-  { key: 'lbfgs', name: 'L-BFGS', colour: '#d62728', curvature: true },
-  { key: 'newton', name: 'Newton', colour: '#ff7f0e', curvature: true },
+  { key: 'gradient-descent', name: 'gradient descent', colour: 'tab0', curvature: false },
+  { key: 'momentum', name: 'momentum', colour: 'tab4', curvature: false },
+  { key: 'adam', name: 'Adam', colour: 'tab9', curvature: false },
+  { key: 'bfgs', name: 'BFGS', colour: 'tab2', curvature: true },
+  { key: 'lbfgs', name: 'L-BFGS', colour: 'tab3', curvature: true },
+  { key: 'newton', name: 'Newton', colour: 'tab1', curvature: true },
 ] as const
 
 /** Everything the figure draws, read from the tapes. */
@@ -136,7 +136,9 @@ export function View({ result }: { result: Result }) {
     [
       ...fieldLayers({ window, field, label: 'log10(1 + f)', colourBar: false, levels: 10 }),
       lines(result.methods.map((m) => one(m, !m.curvature))),
-      points([{ x: [START[0]], y: [START[1]], colour: 'fg', size: 9, symbol: 'emptyCircle', name: '__start', outline: false }]),
+      points([
+        { x: [START[0]], y: [START[1]], colour: 'fg', size: 9, symbol: 'emptyCircle', name: '__start', outline: false },
+      ]),
       points([{ x: [1], y: [1], colour: 'fg', size: 9, symbol: 'diamond', name: '__minimum', outline: false }]),
     ],
     {

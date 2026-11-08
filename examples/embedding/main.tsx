@@ -14,6 +14,7 @@ import { session } from 'mdml-engine/trace'
 import { cartesian, points } from 'mdml-render/charts'
 import { figure } from 'mdml-render/figure'
 import { categoricalColour } from 'mdml-render/theme'
+import { INK } from '../_shared/colours.ts'
 import type { ExampleModule, Outcome } from '../_shared/contract.ts'
 import { Figure, Panel } from '../_shared/figure.tsx'
 
@@ -126,7 +127,7 @@ export function View({ result }: { result: Result }) {
   const heading = 56
   return (
     <Figure width={3 * PANEL.width} height={heading + PANEL.height + 60} title={meta.alt}>
-      <text x={14} y={22} fontFamily="system-ui, sans-serif" fontSize={14} fontWeight={600} fill="#333333">
+      <text x={14} y={22} fontFamily="system-ui, sans-serif" fontSize={14} fontWeight={600} fill={INK}>
         The same 600 handwritten digits (64 pixels each) on a plane, three ways, coloured by the digit
       </text>
       <g transform="translate(0, 30)">
@@ -144,7 +145,7 @@ export function View({ result }: { result: Result }) {
       {DIGIT_NAMES.map((name, c) => (
         <g key={name} transform={`translate(${160 + c * 85}, ${heading + PANEL.height + 46})`}>
           <circle r={6} fill={categoricalColour(c)} />
-          <text x={12} y={5} fontSize={13} fontFamily="system-ui, sans-serif" fill="#333333">
+          <text x={12} y={5} fontSize={13} fontFamily="system-ui, sans-serif" fill={INK}>
             digit {name}
           </text>
         </g>

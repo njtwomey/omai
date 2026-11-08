@@ -1,5 +1,5 @@
 /**
- * README example "Second order: grad of grad, Hessians and Newton": `grad(grad(f))`, `hessian` and `hvp` from
+ * Example "Second order: grad of grad, Hessians and Newton": `grad(grad(f))`, `hessian` and `hvp` from
  * `mdml-engine/autodiff`, then Newton's method against gradient descent on the Rosenbrock function. Both runs are
  * traced, and the figure draws their paths from the tapes, with the local quadratic model (the Hessian's ellipse) at
  * two points (scaled for display: every ellipse has the same long axis, and only its shape is the Hessian's).
@@ -18,7 +18,7 @@ import { axesOf, fieldLayers, gridOfValues, gridRows, windowOf } from '../_share
 export const meta: ExampleModule['meta'] = {
   title: 'Second order: grad of grad, Hessians and Newton',
   summary: 'grad(grad(f)), hessian and hvp; Newton reaches the minimum in 12 steps where gradient descent needs 2662.',
-  readme: true,
+  readme: false,
   alt: "Newton's path against gradient descent on the Rosenbrock function, with the curvature at two points",
 }
 
@@ -94,7 +94,7 @@ export function View({ result }: { result: Result }) {
     gridRows(axes).map(([x, y]) => Math.log10(1 + (1 - (x ?? 0)) ** 2 + 10 * ((y ?? 0) - (x ?? 0) ** 2) ** 2)),
     n,
   )
-  const colours = ['#d62728', '#2ca02c']
+  const colours = ['tab3', 'tab2']
   const layers = [
     ...fieldLayers({ window, field, label: 'log10(1 + f)', colourBar: false, levels: 10 }),
     lines([
@@ -102,15 +102,15 @@ export function View({ result }: { result: Result }) {
         x: descent.map((p) => p[0]),
         y: descent.map((p) => p[1]),
         name: 'gradient descent',
-        colour: '#1f77b4',
+        colour: 'tab0',
         width: 1.8,
         dash: 'dashed',
       },
-      { x: steps.map((p) => p[0]), y: steps.map((p) => p[1]), name: 'Newton', colour: '#ff7f0e', width: 2, markers: true },
+      { x: steps.map((p) => p[0]), y: steps.map((p) => p[1]), name: 'Newton', colour: 'tab1', width: 2, markers: true },
       ...result.curvature.map((c, i) => ({
         ...(shapes[i] as { x: number[]; y: number[] }),
         name: c.name,
-        colour: colours[i] ?? '#333333',
+        colour: colours[i] ?? 'fg',
         width: 2,
       })),
     ]),

@@ -6,11 +6,12 @@
 
 import type { DecisionSurface } from 'mdml-engine/exposition'
 import { cartesian, contours, heatmap, points } from 'mdml-render/charts'
+import { mix, PAPER, tab } from './colours.ts'
 
 /** The two class colours (tab10 blue and orange), used by the surface and by the points. */
-export const CLASS_COLOURS = ['#1f77b4', '#ff7f0e'] as const
+export const CLASS_COLOURS = [tab(0), tab(1)] as const
 /** Their pale tints, for the shading, so the points stay visible on it. */
-const TINTS = ['#9ec6e3', '#ffc48a'] as const
+const TINTS = [mix(tab(0), PAPER, 0.45), mix(tab(1), PAPER, 0.45)] as const
 
 /** The chart of a binary classifier's probability surface with its training rows (from a `decisionSurface` record). */
 export function probabilitySurface(surface: DecisionSurface, options: { readonly legend?: boolean } = {}): unknown {
@@ -25,13 +26,13 @@ export function probabilitySurface(surface: DecisionSurface, options: { readonly
     heatmap(p1, {
       x,
       y,
-      ramp: [TINTS[0], '#ffffff', TINTS[1]],
+      ramp: [TINTS[0], PAPER, TINTS[1]],
       range: [0, 1],
       centre: 0.5,
       colourBar: false,
     }),
     // The decision boundary is the 0.5 contour of that same probability.
-    contours(p1, { x, y, levels: [0.5], labels: false, colour: '#222222', width: 1.5 }),
+    contours(p1, { x, y, levels: [0.5], labels: false, colour: 'fg', width: 1.5 }),
   ]
   const rows = surface.rows
   if (rows !== undefined) {

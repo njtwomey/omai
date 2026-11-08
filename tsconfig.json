@@ -8,5 +8,5 @@
     "declaration": false,
     "declarationMap": false
   },
-  "include": ["scripts", "examples", "vitest.config.ts"]
+  "include": ["scripts", "examples", "vitest.config.ts", "packages/render/src/react/css.d.ts"]
 }

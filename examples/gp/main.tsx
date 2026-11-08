@@ -1,5 +1,5 @@
 /**
- * README example "A Gaussian process, tuned by a gradient": the library's negative log marginal likelihood differentiated
+ * Example "A Gaussian process, tuned by a gradient": the library's negative log marginal likelihood differentiated
  * by `grad` with respect to the log of the kernel's hyperparameters, and `gpRegression` fitting them step by step on that
  * gradient. The figure has two panels from the session's `model/posterior` record: the posterior given the data with
  * the kernel's initial hyperparameters, before any learning, and with the learned ones.
@@ -20,7 +20,7 @@ export const meta: ExampleModule['meta'] = {
   title: 'A Gaussian process, tuned by a gradient',
   summary:
     'grad of the marginal likelihood written as a plain function, and a Gaussian process fitted on that gradient.',
-  readme: true,
+  readme: false,
   alt: 'A Gaussian process on noisy sine data, before and after its hyperparameters are learned, each with its uncertainty band',
 }
 
@@ -32,10 +32,20 @@ interface Result {
 }
 
 export function run(): Outcome<Result> {
-  // The gradient of the library's negative log marginal likelihood in the log length scale, by `grad`.
+  // The gradient of the library's negative log marginal likelihood with respect to the kernel's two hyperparameters
+  // (their logs: the amplitude and the length scale), by `grad`, checked against a finite difference.
   const x = tensor([[0], [0.7], [1.5], [2.2]])
   const y = tensor([0.1, 0.9, 0.8, -0.2])
-  const nll = negativeLogMarginalLikelihood(rbfKernel({ lengthScale: 1 }), x, y, { alpha: 0.1 })
+  const kernel = productKernel(constantKernel({ value: 1 }), rbfKernel({ lengthScale: 1 }))
+  const nll = negativeLogMarginalLikelihood(kernel, x, y, { alpha: 0.1 })
+  const theta = [0, 0] // log amplitude 0 and log length scale 0: amplitude 1, length scale 1
+  const g = Array.from(toFlat(grad(nll)(tensor(theta))))
+  const h = 1e-5
+  const numeric = theta.map((_, i) => {
+    const up = theta.map((v, j) => (j === i ? v + h : v))
+    const down = theta.map((v, j) => (j === i ? v - h : v))
+    return (Number(toFlat(nll(tensor(up)))[0]) - Number(toFlat(nll(tensor(down)))[0])) / (2 * h)
+  })
 
   // The fit: L-BFGS-B on that gradient, one step at a time.
   const { data } = generate(sineCurve, { knobs: { n: 14, noise: 0.15, design: 'sorted' }, key: key(0) })
@@ -51,7 +61,8 @@ export function run(): Outcome<Result> {
   const initial = fit.probe(0, 'model/posterior', look) as Exposition
   const learned = fit.probe(fit.t, 'model/posterior', look) as Exposition
   const notes = [
-    `grad(nll)(tensor([0])) = ${toFlat(grad(nll)(tensor([0])))}`,
+    `nll at theta = [0, 0]: ${Number(toFlat(nll(tensor(theta)))[0])}`,
+    `grad(nll)(tensor([0, 0])) = ${g}; finite difference ${numeric}`,
     `before learning: ${describe(0)}`,
     `after ${fit.t} steps: ${describe(fit.t)}`,
   ]

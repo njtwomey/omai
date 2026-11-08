@@ -9,15 +9,16 @@
 import { cartesian, contours, heatmap, type Layer, points } from 'mdml-render/charts'
 import { figure } from 'mdml-render/figure'
 import { categoricalColour } from 'mdml-render/theme'
+import { INK, mix, PAPER, tab } from './colours.ts'
 
 /** The two class colours (tab10's blue and orange), used for the rows and the ends of the class ramp. */
 export const CLASS_COLOURS: readonly [string, string] = [categoricalColour(0), categoricalColour(1)]
 
 /** The ramp of a two-class field: class 0, white, class 1. */
-export const CLASS_RAMP: readonly string[] = [CLASS_COLOURS[0], '#f5f5f5', CLASS_COLOURS[1]]
+export const CLASS_RAMP: readonly string[] = [CLASS_COLOURS[0], mix(PAPER, INK, 0.04), CLASS_COLOURS[1]]
 
 /** The ramp of a density or a likelihood: white to a muted blue-grey, so coloured rows stay readable over it. */
-export const DENSITY_RAMP: readonly string[] = ['#ffffff', '#dfe6ee', '#9bb0c8']
+export const DENSITY_RAMP: readonly string[] = [PAPER, mix(PAPER, tab(0), 0.15), mix(PAPER, tab(0), 0.45)]
 
 /** The window a map covers: the data's extent in each coordinate and a small margin. */
 export interface Window {

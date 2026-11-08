@@ -7,6 +7,7 @@
 import { isScene } from 'mdml-engine/scene'
 import { chartToSvg, sceneToSvg } from 'mdml-render/svg'
 import type { ReactElement, ReactNode } from 'react'
+import { INK, PAPER } from './colours.ts'
 
 const FONT = "system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif"
 
@@ -16,7 +17,7 @@ export type Still = unknown
 /** A chart option or scene as SVG text, on white. */
 export function svgOf(still: Still, width: number, height: number): string {
   if (isScene(still)) return sceneToSvg(still, { mode: 'light' })
-  const option = { ...(still as Parameters<typeof chartToSvg>[0]), backgroundColor: '#ffffff' }
+  const option = { ...(still as Parameters<typeof chartToSvg>[0]), backgroundColor: PAPER }
   // ECharts draws an image element with the default aspect ratio rule (the picture kept square and centred), which leaves
   // blank bands beside a heat map; stretching it to the plotting area is what makes the shading fill the axes.
   return chartToSvg(option, { width, height, mode: 'light' }).replace(/<image /g, '<image preserveAspectRatio="none" ')
@@ -28,7 +29,7 @@ export function Figure(props: { width: number; height: number; title: string; ch
   return (
     <svg xmlns="http://www.w3.org/2000/svg" width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
       <title>{props.title}</title>
-      <rect width="100%" height="100%" fill="#ffffff" />
+      <rect width="100%" height="100%" fill={PAPER} />
       {props.children}
     </svg>
   )
@@ -47,15 +48,7 @@ export function Panel(props: {
   return (
     <>
       {title === undefined ? null : (
-        <text
-          x={x + width / 2}
-          y={19}
-          textAnchor="middle"
-          fontFamily={FONT}
-          fontSize={13}
-          fontWeight={600}
-          fill="#333333"
-        >
+        <text x={x + width / 2} y={19} textAnchor="middle" fontFamily={FONT} fontSize={13} fontWeight={600} fill={INK}>
           {title}
         </text>
       )}

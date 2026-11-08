@@ -12,6 +12,7 @@ import { key } from 'mdml-engine/random'
 import { item, mul, square, sub, tensor, toArray, toFlat } from 'mdml-engine/tensor'
 import { cartesian, histogram, lines, points } from 'mdml-render/charts'
 import { figure } from 'mdml-render/figure'
+import { mix, PAPER, tab } from '../_shared/colours.ts'
 import type { ExampleModule, Outcome } from '../_shared/contract.ts'
 import { Figure, Panel } from '../_shared/figure.tsx'
 import { fieldLayers } from '../_shared/maps.ts'
@@ -39,6 +40,9 @@ interface Result {
 const BANANA = { x: [-3.5, 3.5], y: [-3.5, 6] } as const
 const BANANA_GRID = 80
 
+/** The histograms' colour: the first category, lightened towards the page so the density line stays readable over it. */
+const tab0Tint = mix(tab(0), PAPER, 0.6)
+
 export function run(): Outcome<Result> {
   // exp pushes a Normal onto the positive reals; logProb adds the log-Jacobian for you.
   const lognormal = transformed(normal(0, 1), bijectors.exp())
@@ -50,8 +54,14 @@ export function run(): Outcome<Result> {
   const banana = transformed(normal([0, 0], [1, 1]), bend)
 
   const ys = Array.from({ length: 160 }, (_, i) => 0.02 + (i * 7.98) / 159)
-  const gx = Array.from({ length: BANANA_GRID }, (_, i) => BANANA.x[0] + (i * (BANANA.x[1] - BANANA.x[0])) / (BANANA_GRID - 1))
-  const gy = Array.from({ length: BANANA_GRID }, (_, i) => BANANA.y[0] + (i * (BANANA.y[1] - BANANA.y[0])) / (BANANA_GRID - 1))
+  const gx = Array.from(
+    { length: BANANA_GRID },
+    (_, i) => BANANA.x[0] + (i * (BANANA.x[1] - BANANA.x[0])) / (BANANA_GRID - 1),
+  )
+  const gy = Array.from(
+    { length: BANANA_GRID },
+    (_, i) => BANANA.y[0] + (i * (BANANA.y[1] - BANANA.y[0])) / (BANANA_GRID - 1),
+  )
   const notes = [
     `logProb at 0.5, 1, 2: ${[0.5, 1, 2].map((y) => `${item(lognormal.logProb(y)).toFixed(6)} (closed form ${closedForm(y).toFixed(6)})`)}`,
     `mean of 4000 draws ${(draws.reduce((a, b) => a + b, 0) / draws.length).toFixed(3)} (exp(1/2) = 1.649)`,
@@ -92,40 +102,74 @@ export function View({ result }: { result: Result }) {
         bins: 28,
         range: [-3.5, 3.5],
         density: true,
-        colour: '#9fb4c9',
+        colour: tab0Tint,
         name: `draws, area ${two(share(result.base, -3.5, 3.5))}`,
       }),
-      lines([{ x: grid, y: grid.map(normalDensity), colour: '#222222', width: 2, name: `p(x), area ${two(area(grid, grid.map(normalDensity)))}` }]),
+      lines([
+        {
+          x: grid,
+          y: grid.map(normalDensity),
+          colour: 'fg',
+          width: 2,
+          name: `p(x), area ${two(area(grid, grid.map(normalDensity)))}`,
+        },
+      ]),
     ],
-    { figure: frame, x: { label: 'x', limits: [-3.5, 3.5] }, y: { label: 'density p(x)', limits: [0, 0.5] }, legend: true },
+    {
+      figure: frame,
+      x: { label: 'x', limits: [-3.5, 3.5] },
+      y: { label: 'density p(x)', limits: [0, 0.5] },
+      legend: true,
+    },
   )
-  const map = cartesian(
-    [lines([{ x: grid, y: grid.map(Math.exp), colour: '#d62728', width: 2 }])],
-    { figure: wide, x: { label: 'x', limits: [-3.5, 3.5] }, y: { label: 'y = exp(x)', limits: [0, 8] }, legend: false },
-  )
+  const map = cartesian([lines([{ x: grid, y: grid.map(Math.exp), colour: 'tab3', width: 2 }])], {
+    figure: wide,
+    x: { label: 'x', limits: [-3.5, 3.5] },
+    y: { label: 'y = exp(x)', limits: [0, 8] },
+    legend: false,
+  })
   const right = cartesian(
     [
       histogram(logNormal.draws, {
         bins: 40,
         range: [0, 8],
         density: true,
-        colour: '#9fb4c9',
+        colour: tab0Tint,
         name: `draws, area ${two(share(logNormal.draws, 0, 8))}`,
       }),
-      lines([{ x: logNormal.y, y: lognormalDensity, colour: '#222222', width: 2, name: `p(y), area ${two(area(logNormal.y, lognormalDensity))}` }]),
+      lines([
+        {
+          x: logNormal.y,
+          y: lognormalDensity,
+          colour: 'fg',
+          width: 2,
+          name: `p(y), area ${two(area(logNormal.y, lognormalDensity))}`,
+        },
+      ]),
     ],
-    { figure: frame, x: { label: 'y = exp(x)', limits: [0, 8] }, y: { label: 'density p(y)', limits: [0, 0.8] }, legend: true },
+    {
+      figure: frame,
+      x: { label: 'y = exp(x)', limits: [0, 8] },
+      y: { label: 'density p(y)', limits: [0, 0.8] },
+      legend: true,
+    },
   )
   const window = { x: BANANA.x, y: BANANA.y }
   const bent = cartesian(
     [
-      ...fieldLayers({ window, field: banana.density, label: 'density', levels: 8, range: [0, Math.max(...banana.density.flat())] }),
+      ...fieldLayers({
+        window,
+        field: banana.density,
+        label: 'density',
+        levels: 8,
+        range: [0, Math.max(...banana.density.flat())],
+      }),
       points([
         {
           x: banana.cloud.map((r) => r[0] ?? 0),
           y: banana.cloud.map((r) => r[1] ?? 0),
           name: '250 samples',
-          colour: '#d62728',
+          colour: 'tab3',
           size: 3,
           opacity: 0.6,
           outline: false,

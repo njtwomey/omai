@@ -1,5 +1,5 @@
 /**
- * README example "An agent learning": tabular Q-learning on the cliff-walking environment, trained for 300 episodes as
+ * Example "An agent learning": tabular Q-learning on the cliff-walking environment, trained for 300 episodes as
  * a traced run. The learning curve is drawn from the tape.
  */
 import { qLearning } from 'mdml-engine/agents'
@@ -13,7 +13,7 @@ import { Figure, Panel } from '../_shared/figure.tsx'
 export const meta: ExampleModule['meta'] = {
   title: 'An agent learning',
   summary: 'Q-learning on the cliff-walking gridworld: the return of each episode, drawn from the recorded run.',
-  readme: true,
+  readme: false,
   alt: 'Episode returns while Q-learning learns to walk along the cliff',
 }
 

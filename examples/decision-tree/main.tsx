@@ -1,5 +1,5 @@
 /**
- * Example "A decision tree and the regions it cuts" (in the index, not in the README): a CART classifier grown one node
+ * Example "A decision tree and the regions it cuts": a CART classifier grown one node
  * per step on two measurements of Fisher's iris flowers. Both pictures are the library's own: the left one is the
  * session's `model/structure` record drawn by the render package's tree view, and the right one its
  * `model/decision-surface` record, where every leaf of the tree is a rectangle of the plane.
@@ -17,7 +17,7 @@ export const meta: ExampleModule['meta'] = {
   title: 'A decision tree and the regions it cuts',
   summary:
     'A classification tree on two iris measurements, drawn by the library as its splits and as the regions of the plane.',
-  readme: false,
+  readme: true,
   alt: 'A decision tree on iris petal length and width, drawn as a tree of splits beside the regions of the plane it makes',
 }
 

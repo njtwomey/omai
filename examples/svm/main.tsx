@@ -1,5 +1,5 @@
 /**
- * Example "Support vectors and the margin" (in the index, not in the README): a support vector classifier with a
+ * Example "Support vectors and the margin": a support vector classifier with a
  * Gaussian kernel fitted twice to the same two-moons data, with a small and a large penalty C. Each panel draws one
  * quantity, the score f(x) the model gives every point of the plane: as a heat map (orange where f is positive, class 1;
  * blue where it is negative), with f = 0 as the decision boundary (solid) and f = -1 and f = 1 as the margins (dashed).
@@ -19,7 +19,7 @@ export const meta: ExampleModule['meta'] = {
   title: 'Support vectors and the margin',
   summary:
     'A kernel support vector classifier with a small and a large C: the score, the boundary, the margins and the support vectors.',
-  readme: false,
+  readme: true,
   alt: 'Two support vector classifiers on the two-moons data: the score as a heat map with the boundary and margins as contours, and the support vectors ringed',
 }
 

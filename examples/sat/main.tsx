@@ -6,6 +6,7 @@
 import { type Cnf, cdcl, cnf, dpll } from 'mdml-engine/logic'
 import { type Run, recorder, tracePolicy } from 'mdml-engine/trace'
 import { runsChart } from 'mdml-render/trace'
+import { INK } from '../_shared/colours.ts'
 import type { ExampleModule, Outcome } from '../_shared/contract.ts'
 import { Figure, Panel } from '../_shared/figure.tsx'
 
@@ -56,7 +57,7 @@ export function View({ result }: { result: Result }) {
   ]
   return (
     <Figure width={900} height={420} title={meta.alt}>
-      <text x={12} y={22} fontFamily="system-ui, sans-serif" fontSize={14} fontWeight={600} fill="#333333">
+      <text x={12} y={22} fontFamily="system-ui, sans-serif" fontSize={14} fontWeight={600} fill={INK}>
         Can 6 pigeons each have their own hole among 5 holes? No: two SAT solvers prove it, one step at a time
       </text>
       <g transform="translate(0, 30)">
@@ -69,7 +70,7 @@ export function View({ result }: { result: Result }) {
           still={runsChart(both, 'level')}
         />
       </g>
-      <text x={450} y={410} textAnchor="middle" fontFamily="system-ui, sans-serif" fontSize={12} fill="#444444">
+      <text x={450} y={410} textAnchor="middle" fontFamily="system-ui, sans-serif" fontSize={12} fill={INK}>
         A conflict is a dead end: the choices made so far cannot all be right. DPLL backs up and tries again; CDCL also
         learns a rule from each dead end.
       </text>
