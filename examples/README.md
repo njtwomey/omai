@@ -98,11 +98,11 @@ A classification tree on two iris measurements, drawn by the library as its spli
 
 [decision-tree/main.tsx](decision-tree/main.tsx), [decision-tree/README.md](decision-tree/README.md), tape: [tape.json](decision-tree/tape.json)
 
-## A rolled-up sheet, flattened
+## Handwritten digits in two dimensions
 
-A Swiss roll as it is, by PCA and by t-SNE, each point coloured by its true position along the sheet.
+600 handwritten digits, each 64 numbers, placed on a plane by PCA, t-SNE and UMAP and coloured by the digit.
 
-![Three panels of a Swiss roll coloured by position along the sheet: the roll seen end-on as a spiral, its PCA projection where layers overlap, and its t-SNE embedding, with the t-SNE objective under them](embedding/figure.svg)
+![The same 600 handwritten digits placed on a plane by PCA, t-SNE and UMAP, each point coloured by its digit](embedding/figure.svg)
 
 [embedding/main.tsx](embedding/main.tsx), [embedding/README.md](embedding/README.md), tape: [tape.json](embedding/tape.json)
 

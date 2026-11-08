@@ -1,17 +1,17 @@
 /**
- * README example "A Gaussian process, tuned by a gradient": the gradient of the negative log marginal likelihood written
- * as an ordinary function and differentiated by `grad`, then `gpRegression` fitting the kernel step by step on that
- * gradient. The figure is the session's `model/posterior` record: the mean, the band and three draws.
+ * README example "A Gaussian process, tuned by a gradient": the library's negative log marginal likelihood differentiated
+ * by `grad` with respect to the log of the kernel's hyperparameters, and `gpRegression` fitting them step by step on that
+ * gradient. The figure has two panels from the session's `model/posterior` record: the posterior given the data with
+ * the kernel's initial hyperparameters, before any learning, and with the learned ones.
  */
 import { grad } from 'mdml-engine/autodiff'
 import { generate } from 'mdml-engine/data'
 import { sineCurve } from 'mdml-engine/datasets'
 import type { Exposition } from 'mdml-engine/exposition'
-import { gpRegression } from 'mdml-engine/gp'
-import { constantKernel, gram, productKernel, rbfKernel, withTheta } from 'mdml-engine/kernels'
-import { cholesky, choSolve } from 'mdml-engine/numerics/linalg'
+import { gpRegression, negativeLogMarginalLikelihood } from 'mdml-engine/gp'
+import { constantKernel, productKernel, rbfKernel } from 'mdml-engine/kernels'
 import { key } from 'mdml-engine/random'
-import { add, diagonal, eye, log, mul, sum, tensor, toFlat, type Value } from 'mdml-engine/tensor'
+import { tensor, toFlat } from 'mdml-engine/tensor'
 import { stillOf } from 'mdml-render/views'
 import type { ExampleModule, Outcome } from '../_shared/contract.ts'
 import { Figure, Panel } from '../_shared/figure.tsx'
@@ -32,16 +32,10 @@ interface Result {
 }
 
 export function run(): Outcome<Result> {
-  // The gradient, as an ordinary function of the log hyperparameter.
+  // The gradient of the library's negative log marginal likelihood in the log length scale, by `grad`.
   const x = tensor([[0], [0.7], [1.5], [2.2]])
   const y = tensor([0.1, 0.9, 0.8, -0.2])
-  const kernel = rbfKernel({ lengthScale: 1 })
-  const nll = (theta: Value): Value => {
-    // negative log marginal likelihood, up to a constant
-    const L = cholesky(add(gram(withTheta(kernel, theta), x), mul(eye(4), 0.1)))
-    const a = choSolve(L, y)
-    return add(mul(sum(mul(y, a)), 0.5), sum(log(diagonal(L))))
-  }
+  const nll = negativeLogMarginalLikelihood(rbfKernel({ lengthScale: 1 }), x, y, { alpha: 0.1 })
 
   // The fit: L-BFGS-B on that gradient, one step at a time.
   const { data } = generate(sineCurve, { knobs: { n: 14, noise: 0.15, design: 'sorted' }, key: key(0) })
@@ -65,8 +59,8 @@ export function run(): Outcome<Result> {
     result: {
       initial,
       learned,
-      initialTitle: `before learning: ${describe(0)}`,
-      learnedTitle: `after ${fit.t} steps: ${describe(fit.t)}`,
+      initialTitle: `initial hyperparameters: ${describe(0)}`,
+      learnedTitle: `learned in ${fit.t} steps: ${describe(fit.t)}`,
     },
     tapes: { session: fit },
     notes,

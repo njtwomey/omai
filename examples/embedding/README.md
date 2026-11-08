@@ -1,38 +1,23 @@
-# A rolled-up sheet, flattened
+# Handwritten digits in two dimensions
 
-A Swiss roll is a flat 2-D sheet curled up in 3-D. Two points far apart along the sheet can be close in space where the
-layers touch. This example asks two methods to lay the points out in a plane again and measures how well each keeps
-points that are neighbours on the sheet together.
-
-![A Swiss roll as it is, by PCA and by t-SNE, coloured by position along the sheet](figure.svg)
-
-## The data and the method
-
-The data is 200 points from the Swiss roll generator, which keeps each point's true position along the sheet (the angle
-t of the spiral, from 4.8 to 14.1). PCA is the linear projection onto the two directions of largest variance. t-SNE
-(`tsne` in `mdml-engine/manifold`, perplexity 30, 300 steps) moves points in the plane by gradient descent so that
-neighbour probabilities in the plane match those in 3-D.
+Each image in the digits data is 8 by 8 pixels, so it is a point in 64 dimensions, and nobody can look at that. An embedding
+places every point on a plane so that we can look at it. Different methods keep different things.
 
 ## What the program does
 
-1. Generate the roll, fit PCA with two components and transform the data.
-2. Run t-SNE as a session with a checkpoint every 100 steps (the tape is 134 KB). Read its embedding at the last step,
-   and its objective (the KL divergence) back at every tenth step.
-3. Draw the three layouts side by side on one colour scale, the position along the sheet. The first panel is the data
-   itself, x against z, where the roll shows as a spiral. The curve underneath is the t-SNE objective.
+- It takes 60 examples of each digit, 600 in all, from the 1,797 handwritten digits that the library ships.
+- It places them on a plane with three methods: PCA, a linear projection that keeps the directions of greatest variation;
+  t-SNE, which tries to keep each point's neighbours near it (fitted as a session of 300 steps, so it has a tape); and
+  UMAP, which also keeps neighbours together and works from a graph of nearest neighbours.
+- It measures each layout: for each point, the share of its 5 nearest neighbours *on the plane* that are the same digit.
 
 ## What to look for
 
-A good layout is a smooth gradient of colour. In the PCA panel the colours are mixed: the projection looks at the roll
-from one side, so different layers land on top of each other. The t-SNE panel has patches of one colour, so neighbours
-are kept together, but the sheet comes out in several pieces and is not unrolled into one strip. The KL divergence
-stays near 1.85 for the first 100 steps (the early-exaggeration phase) and falls to 0.417 when it ends.
+- Each dot is one digit, coloured by which digit it really is. The methods were not given the colours.
+- PCA mixes the digits: only 59% of a point's neighbours show the same digit.
+- t-SNE and UMAP both give separate groups, one for most digits: 98% of neighbours show the same digit. Two features of
+  the neighbour methods are worth knowing: the distances between the groups mean little, and the size of a group
+  does not tell you much about the data. They show which points belong together.
 
-As numbers: the mean distance on the sheet (length along it and height across it, in the data's units) between a point
-and its 5 nearest neighbours in the layout is 4.07 for the neighbours in the original 3-D space, 14.93 in the PCA plane
-and 7.04 in the t-SNE plane. Two random points are 32.93 apart. t-SNE keeps the sheet's neighbours together much better
-than PCA does, but not as well as the 3-D space; it does not recover the sheet's global shape.
-
-## Run it
-
-`make readme-examples ARGS="embedding"` rewrites `figure.svg` and `tape.json`. The program is [main.tsx](main.tsx).
+The tape of the t-SNE run is `tape.json`. To run it again: `make readme-examples ARGS="embedding"`.
+Source: [main.tsx](main.tsx). Figure: [figure.svg](figure.svg).
