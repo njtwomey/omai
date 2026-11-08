@@ -6,7 +6,7 @@
       "runId": "sampleChains:none",
       "name": "sampleChains",
       "seed": null,
-      "version": "0.1.7",
+      "version": "0.1.8",
       "config": {
         "sampler": "windowAdaptation",
         "numChains": 1,
@@ -20,7 +20,7 @@
       "runId": "sampleChains:none/sampling/window-adaptation#1",
       "name": "sampling/window-adaptation",
       "seed": null,
-      "version": "0.1.7",
+      "version": "0.1.8",
       "config": {
         "dim": 2,
         "dense": false,
@@ -507,7 +507,7 @@
       "runId": "sampleChains:none/chain-0",
       "name": "hmc",
       "seed": null,
-      "version": "0.1.7",
+      "version": "0.1.8",
       "config": {
         "dim": 2,
         "stepSize": 0.28983420499580126,

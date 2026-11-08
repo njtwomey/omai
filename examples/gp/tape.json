@@ -26,7 +26,7 @@
             "runId": "gp/regression:0",
             "name": "gp/regression",
             "seed": 0,
-            "version": "0.1.7",
+            "version": "0.1.8",
             "config": {
               "alpha": 0.03,
               "restarts": 0,

@@ -21,7 +21,7 @@
             "runId": "decomposition/pca:0",
             "name": "decomposition/pca",
             "seed": 0,
-            "version": "0.1.7",
+            "version": "0.1.8",
             "config": {
               "nComponents": 4,
               "whiten": false,
