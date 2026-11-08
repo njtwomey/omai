@@ -28,14 +28,14 @@ a main entry. Defaults keep every existing figure as it is, except where an item
 Each is built by one worker in its own worktree (`agent-<id>-<word>`), tested only for its own files (`nice -n 15 env
 OMAI_TEST_WORKERS=1 make verify`), and merged by the main session. At most two workers run at once.
 
-| id | package | items | main files |
-| --- | --- | --- | --- |
-| R1 | Packaging, frames, controls, maths (render/react) | 2, 3 (chrome, zoom controls), 11, 12, 37, 39 | `packages/render/package.json`, `react/FigureFrame.tsx`, `SceneFrame.tsx`, `StructureView.tsx`, `react/interaction/*`, `react/controls/*`, `react/MathView.tsx`, `maths.css` |
-| R2 | Charts: axes, type size, layers, matrices (render/charts) | 4, 5, 6, 7, 8, 9 (regions, plot rect), 10, 40 | `charts/plot.ts`, `compose.ts`, `points.ts`, `bars.ts`, `fields.ts`, `functions.ts`, `annotations.ts`, `tuning.ts`, `matrices.ts` |
-| R3 | Sessions and players (render/session, usePlayback) | 25, 26, 27, 28, 29, 30, 31 (snapshot), 33 | `session/useSession.ts`, `react/usePlayback.ts`, `react/start.ts`, `session/SessionPlayer.tsx`, `preferences.ts`, `RowsPanel.tsx` and the panels, `trace/algorithm.ts` |
-| E1 | Index, docs and small engine functions | 1, 31 (docs), 34, 35, 36, migration note | `stochastic/diffusion-*.ts`, `datasets/{densities,manifolds}.ts`, `optim/schedules.ts`, `sampling/importance.ts`, `CHANGELOG.md` |
-| E2 | Structure diagrams | 13 to 20 | `scene/structure.ts`, `structures/{diagram,styles}.ts`, `layout/trees.ts`, `nn/describe.ts` |
-| E3 | Worlds and belief propagation | 21, 22, 23, 24, 32 | `worlds/drawing.ts`, `gym/worlds.ts`, `environments/classic-control.ts`, `react/SceneView.tsx`, `pgm/inference/belief-propagation.ts` |
+| id  | package                                                   | items                                         | main files                                                                                                                                                                   |
+| --- | --------------------------------------------------------- | --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| R1  | Packaging, frames, controls, maths (render/react)         | 2, 3 (chrome, zoom controls), 11, 12, 37, 39  | `packages/render/package.json`, `react/FigureFrame.tsx`, `SceneFrame.tsx`, `StructureView.tsx`, `react/interaction/*`, `react/controls/*`, `react/MathView.tsx`, `maths.css` |
+| R2  | Charts: axes, type size, layers, matrices (render/charts) | 4, 5, 6, 7, 8, 9 (regions, plot rect), 10, 40 | `charts/plot.ts`, `compose.ts`, `points.ts`, `bars.ts`, `fields.ts`, `functions.ts`, `annotations.ts`, `tuning.ts`, `matrices.ts`                                            |
+| R3  | Sessions and players (render/session, usePlayback)        | 25, 26, 27, 28, 29, 30, 31 (snapshot), 33     | `session/useSession.ts`, `react/usePlayback.ts`, `react/start.ts`, `session/SessionPlayer.tsx`, `preferences.ts`, `RowsPanel.tsx` and the panels, `trace/algorithm.ts`       |
+| E1  | Index, docs and small engine functions                    | 1, 31 (docs), 34, 35, 36, migration note      | `stochastic/diffusion-*.ts`, `datasets/{densities,manifolds}.ts`, `optim/schedules.ts`, `sampling/importance.ts`, `CHANGELOG.md`                                             |
+| E2  | Structure diagrams                                        | 13 to 20                                      | `scene/structure.ts`, `structures/{diagram,styles}.ts`, `layout/trees.ts`, `nn/describe.ts`                                                                                  |
+| E3  | Worlds and belief propagation                             | 21, 22, 23, 24, 32                            | `worlds/drawing.ts`, `gym/worlds.ts`, `environments/classic-control.ts`, `react/SceneView.tsx`, `pgm/inference/belief-propagation.ts`                                        |
 
 Design of the larger ones:
 - R2: first `fontSize` plumbing in `plot.ts` and `compose.ts` (4, then 5's colour-bar text and reserved margin), then `adjustable:
