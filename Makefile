@@ -43,6 +43,14 @@ api-surface: ## Regenerate docs/api-surface.txt, the digest of every export's na
 api-surface-check: ## Fail if the public surface differs from docs/api-surface.txt (ARGS="--compare <full file>" for a diff)
 	$(NODE) scripts/api-surface.ts --check
 
+.PHONY: readme-examples
+readme-examples: ## Run the programs in examples/ and write their figures, tapes and index (ARGS="<name>..." for some)
+	$(NODE) scripts/readme-examples.ts $(ARGS)
+
+.PHONY: readme-examples-check
+readme-examples-check: ## Run the programs in examples/ into a temporary directory and fail if the files there differ (stale figures)
+	$(NODE) scripts/readme-examples.ts --check
+
 .PHONY: layers
 layers: ## Check layering: no import cycles between domains, the tiers of the core, no new file cycles, the package rules
 	$(NODE) scripts/layers.ts
@@ -127,7 +135,7 @@ verify: ## Checks scoped to what changed against BASE (default main): the gate f
 	$(NODE) scripts/verify.ts --base $(or $(BASE),main)
 
 .PHONY: check
-check: barrels-check agent-index-check layers api-surface-check lint typecheck test examples ## Everything, every test (periodic full run; `verify` is the per-change gate)
+check: barrels-check agent-index-check layers api-surface-check lint typecheck test examples readme-examples-check ## Everything, every test (periodic full run; `verify` is the per-change gate)
 
 .PHONY: clean
 clean: ## Remove build outputs

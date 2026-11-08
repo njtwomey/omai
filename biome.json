@@ -16,7 +16,10 @@
       "!pnpm-lock.yaml",
       "!packages/*/src/**/index.ts",
       "!packages/*/index",
-      "!docs/methods-catalog"
+      "!docs/methods-catalog",
+      "!examples/README.md",
+      "!examples/*/figure.svg",
+      "!examples/*/tape*.json"
     ]
   },
   "formatter": {

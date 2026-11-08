@@ -11,6 +11,9 @@
  *   foundation and itself, except for the few imports listed there with their reason. No total order.
  * - No file-level import cycle inside a domain (value imports only), except the ones written out in the allowlist of
  *   scripts/layers-rules.ts; the cycles found are printed.
+ * - examples/ (the programs behind the README) import the packages only through their entry points
+ *   (`mdml-engine/<domain>`, `mdml-render/<domain>`: never a file, `src` or `dist`), plus react and node, and each other's
+ *   shared helpers by relative path; they never import mdml-meta.
  * - mdml-engine never imports mdml-render or mdml-meta; mdml-render never imports mdml-meta (it draws core contracts
  *   and exposition records, never algorithms); headless render code never imports React or render/react.
  * Test files are exempt: tests may use higher layers to check lower ones.
@@ -103,6 +106,30 @@ for (const file of files) {
   }
 }
 
+// examples/: public entry points only.
+const EXAMPLES = join(ROOT, 'examples')
+const ENTRY = /^mdml-(engine|render)\/[a-z][a-z0-9-]*(\/[a-z][a-z0-9-]*)*$/
+const exampleFiles = existsSync(EXAMPLES)
+  ? readdirSync(EXAMPLES, { withFileTypes: true })
+      .filter((d) => d.isDirectory() && d.name !== 'node_modules')
+      .flatMap((d) => walk(join(EXAMPLES, d.name)))
+  : []
+for (const file of exampleFiles) {
+  for (const match of readFileSync(file, 'utf8').matchAll(IMPORT)) {
+    const spec = match[1] ?? match[2] ?? ''
+    const where = `${relative(ROOT, file)} imports '${spec}'`
+    if (spec.startsWith('.')) {
+      if (!resolve(dirname(file), spec).startsWith(`${EXAMPLES}/`))
+        errors.push(`${where}: an example stays inside examples/`)
+    } else if (/^mdml-/.test(spec)) {
+      if (!ENTRY.test(spec) || /\/(src|dist|lib)(\/|$)/.test(spec))
+        errors.push(`${where}: examples import entry points (mdml-engine/<domain>), never files`)
+    } else if (!/^(node:|react(\/|$)|react-dom(\/|$))/.test(spec)) {
+      errors.push(`${where}: examples import mdml-engine, mdml-render, react and node only`)
+    }
+  }
+}
+
 for (const { path } of cycles(domains)) {
   const steps = path.slice(1).map((to, i) => `  ${domains.get(path[i] as string)?.get(to)}`)
   errors.push(`import cycle between core domains: ${path.join(' -> ')}\n${steps.join('\n')}`)
@@ -126,5 +153,5 @@ if (errors.length > 0) {
 }
 const units = (g: Graph): number => new Set([...g.keys(), ...[...g.values()].flatMap((m) => [...m.keys()])]).size
 console.log(
-  `layers: ${files.length} files checked; ${units(domains)} domains import without cycles; ${fileCycles.found.length} allowed file cycle(s)`,
+  `layers: ${files.length + exampleFiles.length} files checked; ${units(domains)} domains import without cycles; ${fileCycles.found.length} allowed file cycle(s)`,
 )
