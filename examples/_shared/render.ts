@@ -10,9 +10,30 @@ import { createElement, type ReactElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import type { Tape } from './contract.ts'
 
-/** A view rendered to markup (no browser: the view is plain SVG). */
+/**
+ * zrender names the ids and classes of each chart it draws from counters shared by the whole process (`zr20-c0`,
+ * `zr20-cls-328`), so the same figure came out differently when an example ran alone or after others. They are
+ * renumbered by order of first appearance in the document: instances `zr0`, `zr1`, ... and classes `cls-0`, `cls-1`, ...
+ */
+export function renumberZrender(svg: string): string {
+  const instances = new Map<string, number>()
+  const classes = new Map<string, number>()
+  const index = (map: Map<string, number>, id: string): number => {
+    const known = map.get(id)
+    if (known !== undefined) return known
+    map.set(id, map.size)
+    return map.size - 1
+  }
+  return svg.replace(/\bzr(\d+)-(?:cls-(\d+))?/g, (_, instance: string, cls: string | undefined) =>
+    cls === undefined
+      ? `zr${index(instances, instance)}-`
+      : `zr${index(instances, instance)}-cls-${index(classes, cls)}`,
+  )
+}
+
+/** A view rendered to markup (no browser: the view is plain SVG), with the zrender names renumbered per document. */
 export function renderView<R>(View: (props: { readonly result: R }) => ReactElement, result: R): string {
-  return renderToStaticMarkup(createElement(View, { result }))
+  return renumberZrender(renderToStaticMarkup(createElement(View, { result })))
 }
 
 /** A tape as JSON: a session as a `mdml.tape/1` file (its method, config and events), a recorder's run as it is. */
