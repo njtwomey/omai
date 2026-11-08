@@ -148,7 +148,6 @@ export function importanceChart(
       show: true,
       position: 'right',
       color: t.fgSecondary,
-      fontSize: 10,
       formatter: (p: { value: unknown }) => {
         const v = Array.isArray(p.value) ? p.value[0] : p.value
         return typeof v === 'number' ? formatPercent(v, 0) : ''

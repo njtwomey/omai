@@ -27,7 +27,7 @@ import {
   toHex,
 } from '../theme/palettes.ts'
 import { type ColourMode, tokens } from '../theme/tokens.ts'
-import { axisCoords, type Grid2D, grid2d, modeOf } from './_data.ts'
+import { axisCoords, colourFor, type Grid2D, grid2d, modeOf } from './_data.ts'
 import { type Resampling, repeatCells, resample } from './_resample.ts'
 import { cartesian, type Layer, layer, type PlotOptions } from './plot.ts'
 import { DIMMED_OPACITY, dimColour, type ImageEncoder, type ValueFilter } from './selection.ts'
@@ -388,6 +388,15 @@ export interface MatrixOptions {
   /** Write each cell's value in it (default true for up to 400 cells). */
   readonly annotate?: boolean
   readonly format?: (value: number) => string
+  /** A colour for each row's label, top to bottom (an `undefined` keeps the axis colour): a token name or CSS colour. */
+  readonly rowColours?: readonly (string | undefined)[]
+  /** A colour for each column's label, left to right. */
+  readonly colColours?: readonly (string | undefined)[]
+  /**
+   * A mark written in a cell, from its value, row and column: a symbol or short text (`✓`, `×`). A cell where it
+   * returns `undefined` keeps its value (when `annotate`) or stays blank.
+   */
+  readonly marks?: (value: number, row: number, col: number) => string | undefined
   readonly colourBar?: boolean
   readonly label?: string
   readonly mode?: ColourMode
@@ -404,7 +413,7 @@ interface CellApi {
  * right, each cell coloured along a ramp with its value written in a contrasting colour.
  *
  * @param z - The matrix `[rows, cols]`.
- * @param options - Labels, ramp, range, centre, annotation, number format and colour bar.
+ * @param options - Labels, label colours, ramp, range, centre, annotation, number format, cell marks and colour bar.
  * @returns The layer, with categories on both axes.
  * @example
  * ```ts
@@ -430,6 +439,7 @@ export function matrix(z: TensorLike, options: MatrixOptions = {}): Layer {
   const fmt = options.format ?? ((v: number): string => formatNumber(v, { digits: 3 }))
   const annotate = options.annotate ?? g.rows * g.cols <= 400
   const t = tokens(mode)
+  const paintOf = (c: string | undefined): string | undefined => (c === undefined ? undefined : colourFor(c, mode))
   const data: { value: number[]; colour: string; dimmed: string; text: string; ink: string }[] = []
   for (let r = 0; r < g.rows; r++)
     for (let c = 0; c < g.cols; c++) {
@@ -439,7 +449,9 @@ export function matrix(z: TensorLike, options: MatrixOptions = {}): Layer {
       // Category index of the row on the y axis, which lists rows bottom-up so row 0 sits at the top.
       // Its colour outside a colour bar selection: blended towards the background.
       const dimmed = mixColours(t.bg, colour, DIMMED_OPACITY)
-      data.push({ value: [c, g.rows - 1 - r, v], colour, dimmed, text: Number.isFinite(v) ? fmt(v) : '', ink })
+      const mark = options.marks?.(v, r, c)
+      const text = mark ?? (annotate && Number.isFinite(v) ? fmt(v) : '')
+      data.push({ value: [c, g.rows - 1 - r, v], colour, dimmed, text, ink })
     }
   // Cells outside a colour bar selection are drawn dimmed, values and all.
   const renderer =
@@ -459,7 +471,7 @@ export function matrix(z: TensorLike, options: MatrixOptions = {}): Layer {
             shape: { x: cx - w / 2, y: cy - h / 2, width: w, height: h },
             style: { fill: dim ? d.dimmed : d.colour },
           },
-          ...(annotate
+          ...(d.text !== ''
             ? [
                 {
                   type: 'text',
@@ -496,6 +508,8 @@ export function matrix(z: TensorLike, options: MatrixOptions = {}): Layer {
     {
       xCategories: cols,
       yCategories: [...rows].reverse(),
+      ...(options.colColours === undefined ? {} : { xLabelColours: options.colColours.map(paintOf) }),
+      ...(options.rowColours === undefined ? {} : { yLabelColours: [...options.rowColours].reverse().map(paintOf) }),
       ...(showBar
         ? {
             colourBar: {
@@ -510,6 +524,72 @@ export function matrix(z: TensorLike, options: MatrixOptions = {}): Layer {
         : {}),
     },
   )
+}
+
+/** Options of {@link maskMatrix}. */
+export interface MaskOptions {
+  /** The colour of the cells that are on (default the first series colour, `tab0`): a token name or CSS colour. */
+  readonly on?: string
+  /** The colour of the cells that are off (default a light neutral). */
+  readonly off?: string
+  readonly rowLabels?: readonly string[]
+  readonly colLabels?: readonly string[]
+  /** A colour per row label, top to bottom. */
+  readonly rowColours?: readonly (string | undefined)[]
+  /** A colour per column label, left to right. */
+  readonly colColours?: readonly (string | undefined)[]
+  /** A mark written in a cell from whether it is on, its row and its column (`✓` for on, say). */
+  readonly marks?: (on: boolean, row: number, col: number) => string | undefined
+  readonly mode?: ColourMode
+}
+
+/**
+ * A boolean matrix as a figure (an attention mask, a causal mask, a missing-data pattern): cells that are on in one
+ * colour and cells that are off in another, row and column labels optionally coloured and cells optionally marked.
+ * A mask is a `matrix` of 0 and 1 without a colour bar or values written in the cells.
+ *
+ * @param mask - The mask `[rows, cols]`: booleans, or numbers where nonzero is on.
+ * @param options - On and off colours, labels and their colours, marks and colour mode.
+ * @returns The layer, with categories on both axes.
+ * @index function A boolean matrix, an attention or causal mask: `maskMatrix(mask, { rowLabels })`.
+ * @example
+ * ```ts
+ * import { maskMatrix } from 'omai-render/charts'
+ * const causal = maskMatrix([[true, false], [true, true]], { rowLabels: ['a', 'b'], marks: (on) => (on ? '✓' : undefined) })
+ * causal.series[0].data.length // => 4
+ * causal.yCategories // => ['b', 'a']
+ * ```
+ */
+export function maskMatrix(
+  mask: TensorLike | readonly (readonly (boolean | number)[])[],
+  options: MaskOptions = {},
+): Layer {
+  const mode = options.mode ?? 'light'
+  const t = tokens(mode)
+  const rows =
+    Array.isArray(mask) && Array.isArray(mask[0]) ? (mask as readonly (readonly (boolean | number)[])[]) : undefined
+  const values: number[][] =
+    rows !== undefined
+      ? rows.map((r) => r.map((v) => (v === true || (typeof v === 'number' && v !== 0) ? 1 : 0)))
+      : (() => {
+          const g = grid2d(mask as TensorLike, 'maskMatrix')
+          return Array.from({ length: g.rows }, (_, i) =>
+            Array.from(g.values.subarray(i * g.cols, (i + 1) * g.cols), (v) => (v !== 0 ? 1 : 0)),
+          )
+        })()
+  const marks = options.marks
+  return matrix(values, {
+    mode,
+    ramp: [options.off === undefined ? t.grid : colourFor(options.off, mode), colourFor(options.on ?? 'tab0', mode)],
+    range: [0, 1],
+    annotate: false,
+    colourBar: false,
+    ...(options.rowLabels === undefined ? {} : { rowLabels: options.rowLabels }),
+    ...(options.colLabels === undefined ? {} : { colLabels: options.colLabels }),
+    ...(options.rowColours === undefined ? {} : { rowColours: options.rowColours }),
+    ...(options.colColours === undefined ? {} : { colColours: options.colColours }),
+    ...(marks === undefined ? {} : { marks: (v: number, r: number, c: number) => marks(v !== 0, r, c) }),
+  })
 }
 
 /**

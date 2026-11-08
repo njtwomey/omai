@@ -30,8 +30,14 @@ export interface PointSet {
   readonly sizeRange?: readonly [number, number]
   /** A value per point coloured along a sequential ramp (instead of groups). */
   readonly values?: readonly number[]
-  /** A text label per point, drawn beside it. */
+  /** A text label per point, drawn beside it (with `symbol: 'none'`, the label alone marks the point). */
   readonly labels?: readonly string[]
+  /** Label size in pixels (default the figure's type size). */
+  readonly labelSize?: number
+  /** Where a label sits against its point (default `right`); `inside` centres it on the point. */
+  readonly labelPosition?: 'right' | 'top' | 'left' | 'bottom' | 'inside'
+  /** Label colour (default the secondary text colour): a token name or any CSS colour. */
+  readonly labelColour?: string
   readonly name?: string
   readonly colour?: string
   /** Marker size in pixels (default 7). */
@@ -86,7 +92,9 @@ export function points(
     allX.push(...x)
     allY.push(...y)
     const n = x.length
-    const size = p.size ?? 7
+    // A symbol of 'none' draws no label in ECharts: the marker is a circle of size zero instead.
+    const hidden = p.symbol === 'none'
+    const size = hidden ? 0 : (p.size ?? 7)
     const [smin, smax] = p.sizeRange ?? [4, 28]
     const sizeOf = (() => {
       if (p.sizes === undefined) return (): number => size
@@ -116,9 +124,11 @@ export function points(
         if (groups[i] !== g) continue
         data.push({
           value: [x[i], y[i]],
-          ...(p.sizes === undefined ? {} : { symbolSize: sizeOf(i) }),
+          ...(p.sizes === undefined || hidden ? {} : { symbolSize: sizeOf(i) }),
           ...(valueColour === undefined ? {} : { itemStyle: { color: valueColour(p.values?.[i] ?? 0) } }),
-          ...(p.labels?.[i] === undefined ? {} : { label: { show: true, formatter: p.labels[i], position: 'right' } }),
+          ...(p.labels?.[i] === undefined
+            ? {}
+            : { label: { show: true, formatter: p.labels[i], position: p.labelPosition ?? 'right' } }),
           index: i,
         })
       }
@@ -128,7 +138,9 @@ export function points(
         type: 'scatter',
         name,
         data,
-        symbol: p.symbol ?? (p.shapes === true ? (MARKERS[gi % MARKERS.length] ?? 'circle') : 'circle'),
+        symbol: hidden
+          ? 'circle'
+          : (p.symbol ?? (p.shapes === true ? (MARKERS[gi % MARKERS.length] ?? 'circle') : 'circle')),
         symbolSize: size,
         color: colour,
         itemStyle: {
@@ -136,7 +148,10 @@ export function points(
           opacity: p.opacity ?? 0.9,
           ...(p.outline === false ? {} : { borderColor: bg, borderWidth: 0.8 }),
         },
-        label: { color: tokens(mode).fgSecondary, fontSize: 10 },
+        label: {
+          color: p.labelColour === undefined ? tokens(mode).fgSecondary : colourFor(p.labelColour, mode),
+          ...(p.labelSize === undefined ? {} : { fontSize: p.labelSize }),
+        },
         emphasis: { scale: 1.3 },
         clip: true,
       } as SeriesOption)

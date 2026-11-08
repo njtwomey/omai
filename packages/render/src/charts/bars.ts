@@ -34,6 +34,8 @@ export interface BarOptions {
   readonly horizontal?: boolean
   /** Write each bar's value on it (default false). */
   readonly labels?: boolean
+  /** Size of those value labels in pixels (default the figure's type size). */
+  readonly labelSize?: number
   readonly colourOffset?: number
 }
 
@@ -144,7 +146,7 @@ export function bars(
             label: {
               show: true,
               position: horizontal ? 'right' : 'top',
-              fontSize: 10,
+              ...(options.labelSize === undefined ? {} : { fontSize: options.labelSize }),
               // Short numbers, not the raw float (0.8068181818181818).
               formatter: (p: { readonly value?: unknown }): string => {
                 const h = Array.isArray(p.value) ? p.value[p.value.length - 1] : p.value

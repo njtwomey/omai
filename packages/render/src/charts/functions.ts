@@ -378,7 +378,8 @@ export function taylor(
  * thresholds, targets), with optional labels.
  *
  * @param lines - `x` and `y` values, each a number or `{ value, label }`.
- * @param options - Colour (default `muted`), dash (default dashed) and colour mode.
+ * @param options - Colour (default `muted`), dash (default dashed), label size (default the figure's type size) and
+ * colour mode.
  * @returns The layer (it does not affect the axis ranges).
  * @example
  * ```ts
@@ -391,7 +392,13 @@ export function referenceLines(
     readonly x?: readonly (number | { readonly value: number; readonly label?: string })[]
     readonly y?: readonly (number | { readonly value: number; readonly label?: string })[]
   },
-  options: { readonly colour?: string; readonly dash?: 'solid' | 'dashed' | 'dotted'; readonly mode?: ColourMode } = {},
+  options: {
+    readonly colour?: string
+    readonly dash?: 'solid' | 'dashed' | 'dotted'
+    readonly mode?: ColourMode
+    /** Label size in pixels (default the figure's type size). */
+    readonly fontSize?: number
+  } = {},
 ): Layer {
   const colour = colourFor(options.colour ?? 'muted', options.mode ?? 'light')
   const item = (axis: 'xAxis' | 'yAxis', v: number | { readonly value: number; readonly label?: string }) => {
@@ -399,7 +406,15 @@ export function referenceLines(
     const label = typeof v === 'number' ? undefined : v.label
     return {
       [axis]: value,
-      label: label === undefined ? { show: false } : { show: true, formatter: label, color: colour, fontSize: 10 },
+      label:
+        label === undefined
+          ? { show: false }
+          : {
+              show: true,
+              formatter: label,
+              color: colour,
+              ...(options.fontSize === undefined ? {} : { fontSize: options.fontSize }),
+            },
     }
   }
   const series = {

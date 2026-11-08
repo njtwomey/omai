@@ -12,7 +12,8 @@ import { chartProjection, type PixelConverter, type Projection } from './project
  * Give the chart fixed axis limits so the projection does not move under the reader's hand.
  *
  * @param gridIndex - Which grid (set of axes) of the chart (default 0).
- * @returns The projection (`null` until the chart exists) and the chart's `onInit` handler.
+ * @returns The projection (`null` until the chart exists; its `rect` is the plotting box in pixels, so a caller can
+ * map data to pixels with the chart's own geometry) and the chart's `onInit` handler.
  * @index function React hook: projection of a live Chart for overlays: `useChartProjection()`
  */
 export function useChartProjection(gridIndex = 0): {

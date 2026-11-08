@@ -29,6 +29,26 @@ describe('projections', () => {
     expect(chartProjection(chart).toPixel([1, 2])).toEqual([2, 4])
     expect(chartProjection(chart).toData([2, 4])).toEqual([1, 2])
   })
+
+  it("gives the plotting box in pixels: from the margins, and from a live chart's grid", () => {
+    expect(projection.rect).toEqual({ x: 20, y: 10, width: 200, height: 100 })
+    const chart = {
+      convertToPixel: (_: { gridIndex: number }, v: number[]) => v,
+      convertFromPixel: (_: { gridIndex: number }, v: number[]) => v,
+      getOption: () => ({
+        grid: [
+          { left: 56, top: 28, width: 400, height: 250 },
+          { left: 1, top: 2, width: 3, height: 4 },
+        ],
+      }),
+    }
+    expect(chartProjection(chart).rect).toEqual({ x: 56, y: 28, width: 400, height: 250 })
+    expect(chartProjection(chart, 1).rect).toEqual({ x: 1, y: 2, width: 3, height: 4 })
+    // Without an option (or a grid placed by percentages) the box is not known.
+    const { getOption: _, ...bare } = chart
+    expect(chartProjection(bare).rect).toBeNull()
+    expect(chartProjection({ ...chart, getOption: () => ({ grid: [{ left: '10%' }] }) }).rect).toBeNull()
+  })
 })
 
 describe('constraints', () => {
