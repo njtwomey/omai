@@ -11,12 +11,14 @@ import { type Figure, figure as makeFigure, plotArea, type Rect } from '../figur
 import { type CellSpec, type GridSpec, layoutGrid, linkedGroups, sharedGroups } from '../figure/grid.ts'
 import { legibleRange, padRange, resolveLimits, unionRange } from '../figure/limits.ts'
 import { tokens } from '../theme/tokens.ts'
-import { chartFrame, type Layer, logRange, type PlotOptions, panelParts } from './plot.ts'
+import { chartFrame, colourBarWidth, type Layer, logRange, type PlotOptions, panelParts } from './plot.ts'
 
 /** What one axes cell of a subplot grid draws: layers and per-panel axis options. */
 export interface Panel {
   readonly layers: readonly Layer[]
-  readonly options?: Pick<PlotOptions, 'x' | 'y' | 'y2' | 'aspect' | 'previous'> & { readonly title?: string }
+  readonly options?: Pick<PlotOptions, 'x' | 'y' | 'y2' | 'aspect' | 'adjustable' | 'previous'> & {
+    readonly title?: string
+  }
 }
 
 /** Options of {@link subplots}. */
@@ -54,9 +56,12 @@ export function subplotRects(
   panels: Readonly<Record<string, Panel>>,
   fig: Figure,
 ): Record<string, Rect> {
-  const hasBar = Object.values(panels).some((p) => p.layers.some((l) => l.colourBar !== undefined))
+  const bar = colourBarWidth(
+    Object.values(panels).flatMap((p) => p.layers),
+    fig.fontSize,
+  )
   const area = plotArea(fig)
-  return layoutGrid(grid, { ...area, width: area.width - (hasBar ? 64 : 0) })
+  return layoutGrid(grid, { ...area, width: area.width - bar })
 }
 
 function bottomOf(c: CellSpec): number {
@@ -175,6 +180,7 @@ export function subplots(
       panel.layers,
       {
         mode,
+        fontSize: fig.fontSize,
         ...po,
         x: { ...po.x, ...(xr === undefined ? {} : { limits: xr }), ...(hideX.has(cell.id) ? { show: false } : {}) },
         y: { ...po.y, ...(yr === undefined ? {} : { limits: yr }), ...(hideY.has(cell.id) ? { show: false } : {}) },

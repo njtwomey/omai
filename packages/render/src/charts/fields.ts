@@ -16,7 +16,7 @@ import { categoricalColour, colourScale, mixColours, parseColour, sequentialRamp
 import { type ColourMode, tokens } from '../theme/tokens.ts'
 import { axisCoords, colourFor, type Grid2D, grid2d, gridRows, numbers } from './_data.ts'
 import { resample } from './_resample.ts'
-import { imageSeries } from './matrices.ts'
+import { imageSeries, type RampSpec, rampStops } from './matrices.ts'
 import { type Layer, layer } from './plot.ts'
 
 /** Options of {@link contours}. */
@@ -34,6 +34,8 @@ export interface ContourOptions {
   readonly opacity?: number
   /** Label each level on its longest line (default true). */
   readonly labels?: boolean
+  /** Size of the level labels in pixels (default the figure's type size). */
+  readonly fontSize?: number
   readonly mode?: ColourMode
   readonly name?: string
 }
@@ -112,7 +114,7 @@ export function contours(z: TensorLike, options: ContourOptions = {}): Layer {
       label: {
         show: true,
         formatter: (p: { value: number[] }) => formatNumber(p.value[2] ?? 0, { digits: 3 }),
-        fontSize: 10,
+        ...(options.fontSize === undefined ? {} : { fontSize: options.fontSize }),
         backgroundColor: t.bg,
         padding: [1, 3],
         borderRadius: 2,
@@ -315,7 +317,9 @@ export function fieldArrows(
  * Arrows as a layer (an ECharts lines series with arrow heads), coloured by magnitude along viridis or in one colour.
  *
  * @param arrows - The arrows (from {@link fieldArrows}, or any segments).
- * @param options - A single colour (default by magnitude), head size, width, colour mode.
+ * @param options - A single colour (default by magnitude), the magnitude range and ramp of the colouring (as
+ * `heatmap`'s `range` and `ramp`; fixing the range keeps colours comparable between frames), head size, width and
+ * colour mode.
  * @returns The layer.
  * @index function Arrows of a vector field: `vectorField(fieldArrows(f, { x, y }))`.
  * @example
@@ -328,6 +332,10 @@ export function vectorField(
   arrows: readonly FieldArrow[],
   options: {
     readonly colour?: string
+    /** The magnitudes mapped to the ramp (default the arrows' own extent). */
+    readonly range?: Range
+    /** The colour ramp of the magnitudes (default viridis). */
+    readonly ramp?: RampSpec
     readonly head?: number
     readonly width?: number
     readonly mode?: ColourMode
@@ -335,8 +343,11 @@ export function vectorField(
 ): Layer {
   const mode = options.mode ?? 'light'
   const mags = arrows.map((a) => a.magnitude)
-  const [lo, hi] = extentOf(mags) ?? [0, 1]
-  const scaleOf = colourScale(sequentialRamp('viridis'), [lo, hi])
+  const [lo, hi] = options.range ?? extentOf(mags) ?? [0, 1]
+  const scaleOf = colourScale(options.ramp === undefined ? sequentialRamp('viridis') : rampStops(options.ramp, mode), [
+    lo,
+    hi,
+  ])
   const fixed = options.colour === undefined ? undefined : colourFor(options.colour, mode)
   const series = {
     type: 'lines',

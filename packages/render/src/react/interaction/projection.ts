@@ -13,6 +13,19 @@ import type { Point2 } from 'omai-engine/numerics/geometry'
 export interface Projection {
   toPixel(p: Point2): Point2
   toData(p: Point2): Point2
+  /**
+   * The plotting box in pixels (origin top left): where the axes are inside the drawing area, so a caller can place its
+   * own marks with the chart's geometry. `null` while it is not known (a chart between two redraws).
+   */
+  readonly rect?: PlotBox | null
+}
+
+/** A rectangle in pixels: the plotting box of a projection. */
+export interface PlotBox {
+  readonly x: number
+  readonly y: number
+  readonly width: number
+  readonly height: number
 }
 
 /** Space left around a plot area, in pixels. */
@@ -44,6 +57,7 @@ export function linearProjection(options: {
   const [x0, x1] = x
   const [y0, y1] = y
   return {
+    rect: { x: m.left, y: m.top, width: w, height: h },
     toPixel: ([u, v]) => [m.left + ((u - x0) / (x1 - x0)) * w, m.top + ((y1 - v) / (y1 - y0)) * h],
     toData: ([px, py]) => [x0 + ((px - m.left) / w) * (x1 - x0), y1 - ((py - m.top) / h) * (y1 - y0)],
   }
@@ -53,6 +67,8 @@ export function linearProjection(options: {
 export interface PixelConverter {
   convertToPixel(finder: { readonly gridIndex: number }, value: number[]): number[] | number
   convertFromPixel(finder: { readonly gridIndex: number }, value: number[]): number[] | number
+  /** The chart's current option, from which the grid's box is read (optional: without it `rect` is `null`). */
+  getOption?(): unknown
 }
 
 /**
@@ -62,7 +78,7 @@ export interface PixelConverter {
  *
  * @param chart - The chart instance (or anything with ECharts' `convertToPixel` and `convertFromPixel`).
  * @param gridIndex - Which grid (default 0).
- * @returns The projection.
+ * @returns The projection; its `rect` is the grid's plotting box in pixels, read from the chart's option.
  */
 export function chartProjection(chart: PixelConverter, gridIndex = 0): Projection {
   const finder = { gridIndex }
@@ -78,6 +94,16 @@ export function chartProjection(chart: PixelConverter, gridIndex = 0): Projectio
   }
   const none: Point2 = [Number.NaN, Number.NaN]
   return {
+    // The grid of the chart's option, in pixels (omai's charts place every grid with numbers).
+    get rect(): PlotBox | null {
+      const grids = (chart.getOption?.() as { readonly grid?: readonly Record<string, unknown>[] } | undefined)?.grid
+      const g = grids?.[gridIndex]
+      const n = (k: string): number | undefined => (typeof g?.[k] === 'number' ? (g[k] as number) : undefined)
+      const [x, y, width, height] = [n('left'), n('top'), n('width'), n('height')]
+      return x === undefined || y === undefined || width === undefined || height === undefined
+        ? null
+        : { x, y, width, height }
+    },
     toPixel: (p) => {
       const out = pair(chart.convertToPixel(finder, [p[0], p[1]]))
       if (out !== null) {

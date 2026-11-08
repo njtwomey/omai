@@ -8,7 +8,7 @@
  */
 
 import type { EChartsOption, SeriesOption } from 'echarts'
-import { type DataAspect, fitDataAspect, type Range } from '../figure/aspect.ts'
+import { boxForAspect, type DataAspect, fitDataAspect, type Range } from '../figure/aspect.ts'
 import { type Figure, figure as makeFigure, plotArea, type Rect } from '../figure/figure.ts'
 import { type Limits, legibleRange, padRange, resolveLimits, unionRange } from '../figure/limits.ts'
 import { axisStyle, baseOption } from '../theme/echarts.ts'
@@ -40,6 +40,10 @@ export interface Layer {
   readonly colourBar?: ColourBar
   readonly xCategories?: readonly string[]
   readonly yCategories?: readonly string[]
+  /** A colour per x category label (an `undefined` keeps the axis colour): matrices that tint their column labels. */
+  readonly xLabelColours?: readonly (string | undefined)[]
+  /** A colour per y category label, in the order of `yCategories`. */
+  readonly yLabelColours?: readonly (string | undefined)[]
   readonly secondary?: boolean
 }
 
@@ -49,6 +53,13 @@ export interface ColourBar {
   readonly max: number
   readonly colours: readonly string[]
   readonly label?: string
+  /** Type size of the bar's text in pixels (default the figure's type size less one). */
+  readonly fontSize?: number
+  /**
+   * The room the bar takes right of the plot in pixels, its label included. By default it follows the label's length
+   * and the type size (at least 64 px), so a long label is not clipped.
+   */
+  readonly width?: number
   /** The index, within the layer's series, of the series the bar describes (default 0). */
   readonly target?: number
   /** Discrete levels (a piecewise bar) instead of a continuous ramp. */
@@ -95,6 +106,12 @@ export interface AxisSpec {
   readonly splitLine?: boolean
   readonly inverse?: boolean
   readonly format?: 'number' | 'percent' | 'power' | ((value: number) => string)
+  /**
+   * How the tick labels are set. `interval`: on a category axis how many labels to skip between shown ones (0 shows
+   * every label, `'auto'` lets the chart hide overlaps), on a value axis the step between ticks. `rotate`: degrees
+   * (positive anticlockwise). `fontSize`: the labels' size in pixels (default the figure's type size less one).
+   */
+  readonly ticks?: { readonly interval?: number | 'auto'; readonly rotate?: number; readonly fontSize?: number }
 }
 
 /** Options shared by every cartesian chart. */
@@ -109,6 +126,12 @@ export interface PlotOptions {
   readonly y2?: AxisSpec
   /** The data aspect (default auto); `equal` widens a range so units are square in the plotting area. */
   readonly aspect?: DataAspect
+  /**
+   * How a data `aspect` is met: `datalim` (default) widens the short axis range about its centre and keeps the plotting
+   * box; `box` keeps the ranges and shrinks the plotting box, centred in the plotting area, so no blank margin is left
+   * inside the axes (matplotlib's `adjustable`).
+   */
+  readonly adjustable?: 'datalim' | 'box'
   /** Show a legend of the named series (default: when more than one series is named). */
   readonly legend?: boolean
   /** Tooltip trigger (default `item`). */
@@ -121,6 +144,8 @@ export interface PlotOptions {
 
 /** One placed panel: the ECharts components of a set of layers on one grid. */
 export interface PanelParts {
+  /** The plotting box in pixels (the grid): the given rectangle, or the shrunken box when `adjustable` is `box`. */
+  readonly rect: Rect
   readonly grid: Readonly<Record<string, unknown>>
   readonly xAxis: Readonly<Record<string, unknown>>
   readonly yAxis: readonly Readonly<Record<string, unknown>>[]
@@ -153,8 +178,11 @@ function linearTicks(
   r: Range,
   pixels: number,
   dim: 'x' | 'y',
+  fontSize: number,
 ): { readonly splitNumber: number; readonly showMinLabel: boolean; readonly showMaxLabel: boolean } {
-  const splitNumber = Math.max(2, Math.min(10, Math.round(pixels / (dim === 'x' ? 70 : 50))))
+  // Bigger type needs more room per tick (the spacing is for the default 11 px).
+  const room = Math.max(1, fontSize / 11)
+  const splitNumber = Math.max(2, Math.min(10, Math.round(pixels / ((dim === 'x' ? 70 : 50) * room))))
   const step = echartsNice((r[1] - r[0]) / splitNumber)
   const onTick = (v: number): boolean => Math.abs(v / step - Math.round(v / step)) < 1e-6
   return { splitNumber, showMinLabel: onTick(r[0]), showMaxLabel: onTick(r[1]) }
@@ -213,7 +241,7 @@ function niceUp(v: number): number {
  *
  * @param layers - The layers.
  * @param options - Axes, aspect and colour mode.
- * @param rect - The plotting area in pixels.
+ * @param area - The plotting area in pixels (the plotting box is this, or shrunk inside it under `adjustable: 'box'`).
  * @param index - The grid's index (and its x axis's).
  * @param yIndex - The index of its first y axis.
  * @param seriesIndex - The global index of its first series (for colour bars).
@@ -227,15 +255,19 @@ function niceUp(v: number): number {
  */
 export function panelParts(
   layers: readonly Layer[],
-  options: Omit<PlotOptions, 'figure' | 'title' | 'legend' | 'tooltip' | 'zoom'>,
-  rect: Rect,
+  options: Omit<PlotOptions, 'figure' | 'title' | 'legend' | 'tooltip' | 'zoom'> & {
+    /** The figure's type size in pixels (default 11). */
+    readonly fontSize?: number
+  },
+  area: Rect,
   index: number,
   yIndex: number,
   seriesIndex: number,
 ): PanelParts {
   const mode = options.mode ?? 'light'
   const t = tokens(mode)
-  const style = axisStyle(mode)
+  const fontSize = options.fontSize ?? 11
+  const style = axisStyle(mode, fontSize)
   const tight = layers.length > 0 && layers.every((l) => l.extent.tight === true)
   const pad = tight ? 0 : 0.04
   const xCats = layers.find((l) => l.xCategories !== undefined)?.xCategories
@@ -265,10 +297,26 @@ export function panelParts(
   }
   let xr = range(xScale, options.x, xExtent, options.previous?.x, 'x')
   let yr = range(yScale, options.y, yExtent, options.previous?.y, 'y')
+  let rect: Rect = area
   if (xr !== undefined && yr !== undefined && xScale === 'linear' && yScale === 'linear') {
-    const fitted = fitDataAspect(xr, yr, rect, options.aspect ?? 'auto')
-    xr = fitted.x
-    yr = fitted.y
+    if (options.adjustable === 'box') {
+      // The ranges stay; the plotting box shrinks to the aspect and sits in the middle of the area.
+      const box = boxForAspect(xr, yr, area, options.aspect ?? 'auto')
+      rect = {
+        x: area.x + (area.width - box.width) / 2,
+        y: area.y + (area.height - box.height) / 2,
+        width: box.width,
+        height: box.height,
+      }
+    } else {
+      const fitted = fitDataAspect(xr, yr, area, options.aspect ?? 'auto')
+      xr = fitted.x
+      yr = fitted.y
+    }
+  }
+  const labelColours = {
+    x: layers.find((l) => l.xLabelColours !== undefined)?.xLabelColours,
+    y: layers.find((l) => l.yLabelColours !== undefined)?.yLabelColours,
   }
   const axis = (
     dim: 'x' | 'y',
@@ -281,7 +329,11 @@ export function panelParts(
   ): Record<string, unknown> => {
     const show = spec?.show ?? true
     const ticks =
-      r !== undefined && scale === 'linear' ? linearTicks(r, dim === 'x' ? rect.width : rect.height, dim) : undefined
+      r !== undefined && scale === 'linear'
+        ? linearTicks(r, dim === 'x' ? rect.width : rect.height, dim, fontSize)
+        : undefined
+    const tick = spec?.ticks
+    const colours = dim === 'x' ? labelColours.x : labelColours.y
     return {
       ...style,
       type: scale === 'linear' ? 'value' : scale === 'category' ? 'category' : scale,
@@ -291,6 +343,7 @@ export function panelParts(
       ...(cats === undefined ? {} : { data: [...cats] }),
       ...(r === undefined ? {} : { min: r[0], max: r[1] }),
       ...(ticks === undefined ? {} : { splitNumber: ticks.splitNumber }),
+      ...(typeof tick?.interval === 'number' && scale !== 'category' ? { interval: tick.interval } : {}),
       ...(spec?.inverse === true ? { inverse: true } : {}),
       ...(scale === 'log' ? { logBase: 10 } : {}),
       nameGap: dim === 'x' ? style.nameGap : Math.round(style.nameGap * 1.5),
@@ -300,6 +353,12 @@ export function panelParts(
         show,
         ...(ticks === undefined ? {} : { showMinLabel: ticks.showMinLabel, showMaxLabel: ticks.showMaxLabel }),
         ...(scale === 'category' || scale === 'time' ? {} : { formatter: formatter(spec, scale) }),
+        ...(tick?.fontSize === undefined ? {} : { fontSize: tick.fontSize }),
+        ...(tick?.rotate === undefined ? {} : { rotate: tick.rotate }),
+        ...(typeof tick?.interval === 'number' && scale === 'category' ? { interval: tick.interval } : {}),
+        ...(scale === 'category' && colours?.some((c) => c !== undefined) === true
+          ? { color: (_value: unknown, i: number): string => colours[i] ?? t.muted }
+          : {}),
       },
       splitLine: { ...style.splitLine, show: spec?.splitLine ?? (scale !== 'category' && position === undefined) },
       ...(scale === 'category' ? { boundaryGap: true } : {}),
@@ -316,7 +375,8 @@ export function panelParts(
   const legendNames: string[] = []
   for (const l of layers) {
     const first = seriesIndex + series.length
-    const select = l.colourBar?.select
+    const bar = l.colourBar
+    const select = bar?.select
     for (const [i, s] of l.series.entries()) {
       const yAxisIndex = l.secondary === true && hasSecondary ? yIndex + 1 : yIndex
       // The series a colour bar's selection recolours is found by id.
@@ -326,7 +386,6 @@ export function panelParts(
       const name = (s as { name?: unknown }).name
       if (typeof name === 'string' && !name.startsWith('__') && !legendNames.includes(name)) legendNames.push(name)
     }
-    const bar = l.colourBar
     if (bar !== undefined) {
       const common = {
         ...(select === undefined
@@ -341,7 +400,7 @@ export function panelParts(
         top: rect.y,
         itemWidth: 10,
         itemHeight: Math.max(40, rect.height - 24),
-        textStyle: { color: t.muted, fontSize: 10, fontFamily: t.font },
+        textStyle: { color: t.muted, fontSize: bar?.fontSize ?? fontSize - 1, fontFamily: t.font },
         ...(bar.label === undefined ? {} : { textGap: 6 }),
         formatter: (v: number | string) => (typeof v === 'number' ? formatNumber(v, { digits: 3 }) : v),
       }
@@ -384,6 +443,7 @@ export function panelParts(
     }
   }
   return {
+    rect,
     grid: {
       left: rect.x,
       top: rect.y,
@@ -466,6 +526,89 @@ export function chartFrame(
 }
 
 /**
+ * The room a colour bar takes right of the plot, in pixels: the widest bar's own `width`, or by default its label's
+ * length at the type size (at least 64 px, which fits the end values), so a long label is not clipped. Zero without a
+ * colour bar. Used by {@link cartesian} and `subplotRects` to leave the room.
+ *
+ * @param layers - The layers.
+ * @param fontSize - The figure's type size in pixels.
+ * @returns The width reserved, in pixels.
+ * @example
+ * ```ts
+ * import { colourBarWidth, layer } from 'omai-render/charts'
+ * const bar = { min: 0, max: 1, colours: ['#000', '#fff'] }
+ * colourBarWidth([layer([], {}, { colourBar: bar })], 11) // => 64
+ * colourBarWidth([layer([], {}, { colourBar: { ...bar, width: 90 } })], 11) // => 90
+ * colourBarWidth([], 11) // => 0
+ * ```
+ */
+export function colourBarWidth(layers: readonly Layer[], fontSize: number): number {
+  let width = 0
+  for (const l of layers) {
+    const bar = l.colourBar
+    if (bar === undefined) continue
+    const size = bar.fontSize ?? fontSize - 1
+    const chars = Math.max(5, ...(bar.label ?? '').split('\n').map((line) => line.length))
+    // The bar's gap from the plot, its swatch, the text gap, the text (about 0.6 of the type size per character), a margin.
+    const need = bar.width ?? Math.max(64, Math.ceil(12 + 10 + 6 + chars * size * 0.6 + 6))
+    width = Math.max(width, need)
+  }
+  return width
+}
+
+// What `cartesian` and `plotRectOf` share: the figure (its top padding grown for a legend that wraps) and the parts.
+function layout(
+  layers: readonly Layer[],
+  options: PlotOptions,
+): { readonly fig: Figure; readonly mode: ColourMode; readonly parts: PanelParts } {
+  const given = options.figure ?? makeFigure({ mode: options.mode ?? 'light' })
+  const mode = options.mode ?? given.mode
+  const hasY2 = layers.some((l) => l.secondary === true)
+  const rectOf = (f: Figure): Rect => {
+    const area = plotArea(f)
+    return { ...area, width: area.width - colourBarWidth(layers, f.fontSize) - (hasY2 ? 40 : 0) }
+  }
+  let fig = given
+  let parts = panelParts(layers, { ...options, mode, fontSize: fig.fontSize }, rectOf(fig), 0, 0, 0)
+  // A legend too long for one line wraps; the plot area gives way beneath it, a line of type for each extra row.
+  if (options.legend ?? parts.legendNames.length > 1) {
+    const need = parts.legendNames.reduce((w, n) => w + n.length * fig.fontSize * 0.62 + 44, 0)
+    const rows = Math.max(1, Math.ceil(need / Math.max(1, fig.width - fig.padding.left - fig.padding.right)))
+    if (rows > 1) {
+      fig = { ...fig, padding: { ...fig.padding, top: fig.padding.top + (rows - 1) * (fig.fontSize + 9) } }
+      parts = panelParts(layers, { ...options, mode, fontSize: fig.fontSize }, rectOf(fig), 0, 0, 0)
+    }
+  }
+  return { fig, mode, parts }
+}
+
+/**
+ * Where the plotting box of a {@link cartesian} chart lands in the figure, in pixels (origin top left): the same
+ * geometry `cartesian` draws with, including the room for a colour bar or a second axis, a wrapped legend, and the
+ * shrunken box of `adjustable: 'box'`. With the axis ranges it lets a caller place its own marks over the chart
+ * (a pixel is `rect.x + (value - range[0]) / (range[1] - range[0]) * rect.width` on a linear x axis).
+ *
+ * @param layers - The layers, as given to `cartesian`.
+ * @param options - The options, as given to `cartesian`.
+ * @returns The plotting box and the axis ranges it shows.
+ * @index function The pixel rectangle and ranges of a cartesian plot: `plotRectOf(layers, options)`.
+ * @example
+ * ```ts
+ * import { lines, plotRectOf } from 'omai-render/charts'
+ * import { figure } from 'omai-render/figure'
+ * const where = plotRectOf([lines([{ x: [0, 1], y: [0, 1] }])], { figure: figure() })
+ * where.rect // => { x: 56, y: 28, width: 564, height: 328 }
+ * ```
+ */
+export function plotRectOf(
+  layers: readonly Layer[],
+  options: PlotOptions = {},
+): { readonly rect: Rect; readonly ranges: PanelParts['ranges'] } {
+  const { parts } = layout(layers, options)
+  return { rect: parts.rect, ranges: parts.ranges }
+}
+
+/**
  * Draw layers on one pair of axes: the figure's plotting area, axes from the limit policies and the data aspect,
  * legend, tooltip and colour bars. Every single-panel chart builder is `cartesian` of its layers, so layers from
  * different builders combine freely (`cartesian([band(...), lines(...), points(...)])`).
@@ -482,25 +625,7 @@ export function chartFrame(
  * ```
  */
 export function cartesian(layers: readonly Layer[], options: PlotOptions = {}): EChartsOption {
-  const given = options.figure ?? makeFigure({ mode: options.mode ?? 'light' })
-  const mode = options.mode ?? given.mode
-  const hasBar = layers.some((l) => l.colourBar !== undefined)
-  const hasY2 = layers.some((l) => l.secondary === true)
-  const rectOf = (f: Figure): Rect => {
-    const area = plotArea(f)
-    return { ...area, width: area.width - (hasBar ? 64 : 0) - (hasY2 ? 40 : 0) }
-  }
-  let fig = given
-  let parts = panelParts(layers, { ...options, mode }, rectOf(fig), 0, 0, 0)
-  // A legend too long for one line wraps; the plot area gives way beneath it, a line of type for each extra row.
-  if (options.legend ?? parts.legendNames.length > 1) {
-    const need = parts.legendNames.reduce((w, n) => w + n.length * fig.fontSize * 0.62 + 44, 0)
-    const rows = Math.max(1, Math.ceil(need / Math.max(1, fig.width - fig.padding.left - fig.padding.right)))
-    if (rows > 1) {
-      fig = { ...fig, padding: { ...fig.padding, top: fig.padding.top + (rows - 1) * (fig.fontSize + 9) } }
-      parts = panelParts(layers, { ...options, mode }, rectOf(fig), 0, 0, 0)
-    }
-  }
+  const { fig, mode, parts } = layout(layers, options)
   const option: Record<string, unknown> = {
     ...chartFrame(
       { ...fig, mode },

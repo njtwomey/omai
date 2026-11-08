@@ -8,7 +8,7 @@ export const recipe: Recipe = {
   title: 'Bar charts',
   question: 'How do I compare groups with bars, error bars, stacks and a Pareto line?',
   explain:
-    '`barChart(categories, groups, options)` places groups side by side (or `stacked`, or `horizontal`) and draws `errors` as error bars on each bar; value axes keep zero. `pareto` (or `paretoChart`) sorts the categories and adds the cumulative share on a secondary axis. Both panels are one figure (`subplots`), so it expands and exports as a whole.',
+    '`barChart(categories, groups, options)` places groups side by side (or `stacked`, or `horizontal`) and draws `errors` as error bars on each bar; value axes keep zero. `pareto` (or `paretoChart`) sorts the categories and adds the cumulative share on a secondary axis. Both panels are one figure (`subplots`), so it expands and exports as a whole. Category labels take `x: { ticks: { interval, rotate, fontSize } }` (rotate them, or skip some), and `labels: true` writes each bar’s value, at `labelSize` if you give one.',
 }
 
 const fig = figure({ width: 860, aspect: 2.3 })
@@ -25,16 +25,21 @@ export default function Bars(): ReactNode {
   const [groups, setGroups] = useState(2)
   const [stacked, setStacked] = useState(false)
   const [horizontal, setHorizontal] = useState(false)
+  const [rotate, setRotate] = useState(false)
   const option = useMemo(
     () =>
       subplots(
         grid,
         {
           r0c0: {
-            layers: [bars(models, all.slice(0, groups), { mode, stacked, horizontal })],
+            layers: [
+              bars(models, all.slice(0, groups), { mode, stacked, horizontal, labels: groups === 1, labelSize: 10 }),
+            ],
             options: {
               title: 'accuracy by model',
-              ...(horizontal ? { x: { label: 'accuracy' } } : { y: { label: 'accuracy' } }),
+              ...(horizontal
+                ? { x: { label: 'accuracy' } }
+                : { y: { label: 'accuracy' }, x: rotate ? { ticks: { rotate: 40, fontSize: 11 } } : {} }),
             },
           },
           r0c1: {
@@ -44,14 +49,15 @@ export default function Bars(): ReactNode {
         },
         { mode, figure: fig, tooltip: 'axis' },
       ),
-    [mode, groups, stacked, horizontal],
+    [mode, groups, stacked, horizontal, rotate],
   )
   return (
     <div className="flex flex-col gap-3">
-      <ControlPanel columns={3}>
+      <ControlPanel columns={4}>
         <NumberField label="groups" value={groups} onChange={setGroups} min={1} max={3} integer />
         <Toggle label="stacked" value={stacked} onChange={setStacked} />
         <Toggle label="horizontal" value={horizontal} onChange={setHorizontal} />
+        <Toggle label="rotate labels" value={rotate} onChange={setRotate} />
       </ControlPanel>
       <FigureFrame figure={fig} filename="bars">
         <Chart option={option} />
