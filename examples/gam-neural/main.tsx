@@ -16,6 +16,7 @@ import { Log, metricSeries } from 'mdml-engine/trace'
 import { cartesian, lines, points } from 'mdml-render/charts'
 import type { ExampleModule, Outcome } from '../_shared/contract.ts'
 import { Figure, Panel } from '../_shared/figure.tsx'
+import { pixelText, pixelTextWidth } from '../_shared/pixel-text.ts'
 
 export const meta: ExampleModule['meta'] = {
   title: 'A neural additive model, from its spline bases',
@@ -138,48 +139,96 @@ const FIT = '#e8743b'
 const BASIS = '#f4b89c'
 const CLASSIC = '#222222'
 const POINT = '#6b7280'
-const EDGE = '#cbd5e1'
+
+/** The ticks of an axis from `lo` to `hi`, about `count` of them at round numbers. */
+function ticks(lo: number, hi: number, count: number): number[] {
+  const raw = (hi - lo) / count
+  const magnitude = 10 ** Math.floor(Math.log10(raw))
+  const step = [1, 2, 5, 10].map((m) => m * magnitude).find((v) => v >= raw) ?? raw
+  const first = Math.ceil(lo / step - 1e-9) * step
+  const out: number[] = []
+  for (let v = first; v <= hi + 1e-9; v += step) out.push(Math.round(v / step) * step)
+  return out
+}
+
+/** A number as a short label. */
+const label = (v: number): string => (Math.abs(v) < 1e-9 ? '0' : String(Number(v.toPrecision(3))))
 
 /**
- * One frame of the animation, in shapes only (the rasteriser draws no text): the weighted basis functions in pale
- * orange, their sum in red, the points, the truth (grey, dashed by dots) and the classic GAM in blue; the knots as ticks
- * on the bottom edge; under the plot the loss so far and a bar that fills as training goes.
+ * One frame of the animation, as a chart: the axes with grid lines, tick labels and axis labels, a legend, the data,
+ * the truth, the classic GAM, the weighted bases and their sum, the knots, and beside it the training loss up to this
+ * step. It is drawn in shapes (the rasteriser draws no text, so the labels are built from a pixel font).
  */
 function frame(r: Result, i: number): Scene {
-  const W = 540
-  const H = 330
-  const [px0, py0, pw, ph] = [10, 10, 520, 235] as const
-  const lo = Math.min(...r.y, ...r.truth, ...r.classic) - 0.15
-  const hi = Math.max(...r.y, ...r.truth, ...r.classic) + 0.15
-  const xs = (v: number): number => px0 + ((v - (r.grid[0] ?? 0)) / ((r.grid.at(-1) ?? 1) - (r.grid[0] ?? 0))) * pw
-  const ys = (v: number): number => py0 + ph - ((Math.max(lo, Math.min(hi, v)) - lo) / (hi - lo)) * ph
+  const W = 820
+  const H = 400
+  const edge = '#9ca3af'
+  const grid = '#e5e7eb'
+  const ink = '#374151'
+  const [mx, my, mw, mh] = [58, 70, 470, 282] as const
+  const [lx, ly, lw, lh] = [584, 70, 214, 282] as const
+  const xLo = r.grid[0] ?? 0
+  const xHi = r.grid.at(-1) ?? 1
+  const yLo = Math.min(...r.y, ...r.truth) - 0.12
+  const yHi = Math.max(...r.y, ...r.truth) + 0.12
+  const xs = (v: number): number => mx + ((v - xLo) / (xHi - xLo)) * mw
+  const ys = (v: number): number => my + mh - ((Math.max(yLo, Math.min(yHi, v)) - yLo) / (yHi - yLo)) * mh
   const curve = (values: readonly number[]): [number, number][] => values.map((v, k) => [xs(r.grid[k] ?? 0), ys(v)])
-  const nodes = []
-  nodes.push(rect(px0, py0, pw, ph, { fill: '#ffffff', stroke: EDGE }))
-  nodes.push(line(px0, ys(0), px0 + pw, ys(0), { stroke: EDGE, dash: [3, 3] }))
+  const nodes: Scene['nodes'][number][] = []
+  nodes.push(rect(0, 0, W, H, { fill: '#ffffff' }))
+  // the main plot: grid, ticks and labels
+  nodes.push(rect(mx, my, mw, mh, { fill: '#ffffff', stroke: edge }))
+  for (const v of ticks(xLo, xHi, 5)) {
+    nodes.push(line(xs(v), my, xs(v), my + mh, { stroke: grid }))
+    nodes.push(...pixelText(label(v), xs(v), my + mh + 6, { anchor: 'middle', fill: ink }))
+  }
+  for (const v of ticks(yLo, yHi, 6)) {
+    nodes.push(line(mx, ys(v), mx + mw, ys(v), { stroke: grid }))
+    nodes.push(...pixelText(label(v), mx - 6, ys(v) - 3, { anchor: 'end', fill: ink }))
+  }
+  nodes.push(...pixelText('X', mx + mw / 2, my + mh + 24, { anchor: 'middle', fill: ink }))
+  nodes.push(...pixelText('EFFECT', mx, my - 14, { fill: ink }))
   for (const basis of r.bases[i] ?? []) nodes.push(path(curve(basis), { stroke: BASIS, strokeWidth: 1.2 }))
-  nodes.push(path(curve(r.truth), { stroke: TRUTH, strokeWidth: 2, dash: [2, 3] }))
-  nodes.push(path(curve(r.classic), { stroke: CLASSIC, strokeWidth: 2 }))
-  nodes.push(path(curve(r.curves[i] ?? []), { stroke: FIT, strokeWidth: 2.5 }))
-  for (const [k, v] of r.x.entries()) nodes.push(circle(xs(v), ys(r.y[k] ?? 0), 3, { fill: POINT }))
-  for (const knot of r.knots[i] ?? [])
-    nodes.push(line(xs(knot), py0 + ph - 7, xs(knot), py0 + ph, { stroke: FIT, strokeWidth: 2 }))
-  // The loss so far, on the axes of the whole run.
-  const [lx, ly, lw, lh] = [10, 258, 520, 56] as const
+  nodes.push(path(curve(r.truth), { stroke: TRUTH, strokeWidth: 2, dash: [6, 4] }))
+  nodes.push(path(curve(r.classic), { stroke: CLASSIC, strokeWidth: 1.6, dash: [2, 3] }))
+  nodes.push(path(curve(r.curves[i] ?? []), { stroke: FIT, strokeWidth: 3 }))
+  for (const [k, v] of r.x.entries()) nodes.push(circle(xs(v), ys(r.y[k] ?? 0), 2.2, { fill: POINT, opacity: 0.6 }))
+  for (const knot of r.knots[i] ?? []) nodes.push(circle(xs(knot), ys(yLo + 0.06), 3.5, { fill: FIT }))
+  // the loss so far, on the axes of the whole run, with a mark at this step
   const logged = r.loss.map((v) => Math.log10(v))
-  const top = Math.max(...logged)
-  const bottom = Math.min(...logged)
+  const top = Math.ceil(Math.max(...logged))
+  const bottom = Math.floor(Math.min(...logged))
+  const lyOf = (v: number): number => ly + lh - ((v - bottom) / (top - bottom)) * lh
+  const lxOf = (step: number): number => lx + (step / STEPS) * lw
+  nodes.push(rect(lx, ly, lw, lh, { fill: '#ffffff', stroke: edge }))
+  for (let d = bottom; d <= top; d++) {
+    nodes.push(line(lx, lyOf(d), lx + lw, lyOf(d), { stroke: grid }))
+    nodes.push(...pixelText(label(10 ** d), lx - 6, lyOf(d) - 3, { anchor: 'end', fill: ink }))
+  }
+  for (const v of ticks(0, STEPS, 4)) {
+    nodes.push(line(lxOf(v), ly, lxOf(v), ly + lh, { stroke: grid }))
+    nodes.push(...pixelText(label(v), lxOf(v), ly + lh + 6, { anchor: 'middle', fill: ink }))
+  }
+  nodes.push(...pixelText('STEP', lx + lw / 2, ly + lh + 24, { anchor: 'middle', fill: ink }))
+  nodes.push(...pixelText('LOSS', lx, ly - 14, { fill: ink }))
   const upTo = Math.min(r.loss.length, (r.steps[i] ?? 0) + 1)
-  const loss = logged
-    .slice(0, upTo)
-    .map((v, k): [number, number] => [
-      lx + (k / (r.loss.length - 1)) * lw,
-      ly + lh - ((v - bottom) / (top - bottom)) * lh,
-    ])
-  nodes.push(rect(lx, ly, lw, lh, { fill: '#ffffff', stroke: EDGE }))
-  if (loss.length > 1) nodes.push(path(loss, { stroke: FIT, strokeWidth: 2 }))
-  nodes.push(rect(lx, 320, lw, 4, { fill: EDGE }))
-  nodes.push(rect(lx, 320, (lw * (r.steps[i] ?? 0)) / STEPS, 4, { fill: FIT }))
+  const history = logged.slice(0, upTo).map((v, k): [number, number] => [lxOf(k), lyOf(v)])
+  if (history.length > 1) nodes.push(path(history, { stroke: '#1f77b4', strokeWidth: 2 }))
+  nodes.push(line(lxOf(r.steps[i] ?? 0), ly, lxOf(r.steps[i] ?? 0), ly + lh, { stroke: ink, dash: [3, 3] }))
+  // the title and the legend
+  nodes.push(...pixelText(`AFTER ${r.steps[i] ?? 0} STEPS`, 10, 8, { scale: 2, fill: ink }))
+  let at = 10
+  const entry = (draw: (x: number) => Scene['nodes'][number][], text: string): void => {
+    nodes.push(...draw(at))
+    nodes.push(...pixelText(text, at + 24, 40, { fill: ink }))
+    at += 24 + pixelTextWidth(text) + 16
+  }
+  entry((x) => [circle(x + 8, 43, 3, { fill: POINT, opacity: 0.6 })], 'DATA')
+  entry((x) => [line(x, 43, x + 18, 43, { stroke: TRUTH, strokeWidth: 2, dash: [5, 3] })], 'TRUTH')
+  entry((x) => [line(x, 43, x + 18, 43, { stroke: BASIS, strokeWidth: 2 })], 'WEIGHTED BASIS')
+  entry((x) => [line(x, 43, x + 18, 43, { stroke: CLASSIC, strokeWidth: 2, dash: [2, 3] })], 'CLASSIC GAM')
+  entry((x) => [line(x, 43, x + 18, 43, { stroke: FIT, strokeWidth: 3 })], 'SPLINE, NO PENALTY')
+  entry((x) => [circle(x + 8, 43, 3.5, { fill: FIT })], 'KNOTS')
   return scene(W, H, nodes)
 }
 

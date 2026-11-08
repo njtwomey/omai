@@ -38,15 +38,15 @@ grad(grad(f)), hessian and hvp; Newton reaches the minimum in 12 steps where gra
 
 ![Newton's path against gradient descent on the Rosenbrock function, with the curvature at two points](newton/figure.svg)
 
-[newton/main.tsx](newton/main.tsx), tape: [tape-gradient-descent.json](newton/tape-gradient-descent.json), tape: [tape-newton.json](newton/tape-newton.json)
+[newton/main.tsx](newton/main.tsx), [newton/README.md](newton/README.md), tape: [tape-gradient-descent.json](newton/tape-gradient-descent.json), tape: [tape-newton.json](newton/tape-newton.json)
 
-## An optimiser leaves a trace
+## Optimisers, first and second order
 
-Three optimisers on the Rosenbrock function; the paths over its contours are drawn from the recorded runs.
+Gradient descent, momentum and Adam against BFGS, L-BFGS and Newton on the Rosenbrock function: the paths and the loss from the recorded runs.
 
-![Three optimisers on the Rosenbrock function: their paths over the contours](optimisers/figure.svg)
+![Six optimisers on the Rosenbrock function: their paths over the function and the loss against the step on a log axis](optimisers/figure.svg)
 
-[optimisers/main.tsx](optimisers/main.tsx), tape: [tape-adam.json](optimisers/tape-adam.json), tape: [tape-gradient-descent.json](optimisers/tape-gradient-descent.json), tape: [tape-momentum.json](optimisers/tape-momentum.json)
+[optimisers/main.tsx](optimisers/main.tsx), [optimisers/README.md](optimisers/README.md), tape: [tape-adam.json](optimisers/tape-adam.json), tape: [tape-bfgs.json](optimisers/tape-bfgs.json), tape: [tape-gradient-descent.json](optimisers/tape-gradient-descent.json), tape: [tape-lbfgs.json](optimisers/tape-lbfgs.json), tape: [tape-momentum.json](optimisers/tape-momentum.json), tape: [tape-newton.json](optimisers/tape-newton.json)
 
 ## An agent learning
 
@@ -84,17 +84,17 @@ Expectation-maximisation for three overlapping Gaussians: the density, the log l
 
 ## A decision tree and the regions it cuts
 
-A classification tree drawn as its splits and as the probability map and boundary it makes of the plane.
+A depth-2 classification tree on two iris measurements: its questions, and the three rectangles they cut.
 
-![A decision tree on the two-moons data, drawn as a tree of splits beside the probability of class 1 over the plane with the 0.5 contour as the boundary](decision-tree/figure.svg)
+![A decision tree on iris petal length and width drawn as boxes of questions and leaves, beside the plane of the two features cut into the three rectangles of its leaves](decision-tree/figure.svg)
 
 [decision-tree/main.tsx](decision-tree/main.tsx), [decision-tree/README.md](decision-tree/README.md), tape: [tape.json](decision-tree/tape.json)
 
 ## A rolled-up sheet, flattened
 
-PCA and t-SNE on a Swiss roll, each point coloured by its true position along the sheet.
+A Swiss roll as it is, by PCA and by t-SNE, each point coloured by its true position along the sheet.
 
-![A Swiss roll in two dimensions by PCA, where layers of the roll overlap, and by t-SNE, where points close on the sheet stay close](embedding/figure.svg)
+![Three panels of a Swiss roll coloured by position along the sheet: the roll seen end-on as a spiral, its PCA projection where layers overlap, and its t-SNE embedding, with the t-SNE objective under them](embedding/figure.svg)
 
 [embedding/main.tsx](embedding/main.tsx), [embedding/README.md](embedding/README.md), tape: [tape.json](embedding/tape.json)
 
