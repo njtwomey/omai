@@ -84,9 +84,9 @@ Expectation-maximisation for three overlapping Gaussians: the density, the log l
 
 ## A decision tree and the regions it cuts
 
-A depth-2 classification tree on two iris measurements: its questions, and the three rectangles they cut.
+A classification tree on two iris measurements, drawn by the library as its splits and as the regions of the plane.
 
-![A decision tree on iris petal length and width drawn as boxes of questions and leaves, beside the plane of the two features cut into the three rectangles of its leaves](decision-tree/figure.svg)
+![A decision tree on iris petal length and width, drawn as a tree of splits beside the regions of the plane it makes](decision-tree/figure.svg)
 
 [decision-tree/main.tsx](decision-tree/main.tsx), [decision-tree/README.md](decision-tree/README.md), tape: [tape.json](decision-tree/tape.json)
 

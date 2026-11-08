@@ -1,1 +1,3167 @@
-{"schema":"mdml.run/1","events":[{"type":"run","runId":"bandit:thompsonBernoulli:none","name":"bandit:thompsonBernoulli","seed":null,"version":"0.1.2","config":{"env":"BernoulliBandit-v0","agent":{"arms":5,"prior":[1,1]},"pulls":400}},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":0,"name":"bandit/arm","value":0},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":0,"name":"bandit/regret","value":0.49999999999999994},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":1,"name":"bandit/arm","value":3},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":1,"name":"bandit/regret","value":0.5999999999999999},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":2,"name":"bandit/arm","value":0},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":2,"name":"bandit/regret","value":1.0999999999999999},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":3,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":3,"name":"bandit/regret","value":1.0999999999999999},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":4,"name":"bandit/arm","value":2},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":4,"name":"bandit/regret","value":1.2999999999999998},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":5,"name":"bandit/arm","value":0},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":5,"name":"bandit/regret","value":1.7999999999999998},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":6,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":6,"name":"bandit/regret","value":1.7999999999999998},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":7,"name":"bandit/arm","value":0},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":7,"name":"bandit/regret","value":2.3},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":8,"name":"bandit/arm","value":0},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":8,"name":"bandit/regret","value":2.8},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":9,"name":"bandit/arm","value":2},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":9,"name":"bandit/regret","value":3},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":10,"name":"bandit/arm","value":2},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":10,"name":"bandit/regret","value":3.2},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":11,"name":"bandit/arm","value":2},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":11,"name":"bandit/regret","value":3.4000000000000004},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":12,"name":"bandit/arm","value":2},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":12,"name":"bandit/regret","value":3.6000000000000005},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":13,"name":"bandit/arm","value":2},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":13,"name":"bandit/regret","value":3.8000000000000007},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":14,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":14,"name":"bandit/regret","value":3.8000000000000007},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":15,"name":"bandit/arm","value":1},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":15,"name":"bandit/regret","value":4.15},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":16,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":16,"name":"bandit/regret","value":4.15},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":17,"name":"bandit/arm","value":1},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":17,"name":"bandit/regret","value":4.5},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":18,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":18,"name":"bandit/regret","value":4.5},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":19,"name":"bandit/arm","value":1},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":19,"name":"bandit/regret","value":4.85},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":20,"name":"bandit/arm","value":2},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":20,"name":"bandit/regret","value":5.05},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":21,"name":"bandit/arm","value":3},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":21,"name":"bandit/regret","value":5.1499999999999995},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":22,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":22,"name":"bandit/regret","value":5.1499999999999995},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":23,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":23,"name":"bandit/regret","value":5.1499999999999995},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":24,"name":"bandit/arm","value":1},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":24,"name":"bandit/regret","value":5.499999999999999},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":25,"name":"bandit/arm","value":1},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":25,"name":"bandit/regret","value":5.849999999999999},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":26,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":26,"name":"bandit/regret","value":5.849999999999999},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":27,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":27,"name":"bandit/regret","value":5.849999999999999},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":28,"name":"bandit/arm","value":3},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":28,"name":"bandit/regret","value":5.949999999999998},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":29,"name":"bandit/arm","value":1},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":29,"name":"bandit/regret","value":6.299999999999998},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":30,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":30,"name":"bandit/regret","value":6.299999999999998},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":31,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":31,"name":"bandit/regret","value":6.299999999999998},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":32,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":32,"name":"bandit/regret","value":6.299999999999998},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":33,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":33,"name":"bandit/regret","value":6.299999999999998},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":34,"name":"bandit/arm","value":3},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":34,"name":"bandit/regret","value":6.399999999999998},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":35,"name":"bandit/arm","value":3},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":35,"name":"bandit/regret","value":6.499999999999997},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":36,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":36,"name":"bandit/regret","value":6.499999999999997},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":37,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":37,"name":"bandit/regret","value":6.499999999999997},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":38,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":38,"name":"bandit/regret","value":6.499999999999997},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":39,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":39,"name":"bandit/regret","value":6.499999999999997},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":40,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":40,"name":"bandit/regret","value":6.499999999999997},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":41,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":41,"name":"bandit/regret","value":6.499999999999997},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":42,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":42,"name":"bandit/regret","value":6.499999999999997},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":43,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":43,"name":"bandit/regret","value":6.499999999999997},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":44,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":44,"name":"bandit/regret","value":6.499999999999997},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":45,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":45,"name":"bandit/regret","value":6.499999999999997},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":46,"name":"bandit/arm","value":2},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":46,"name":"bandit/regret","value":6.6999999999999975},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":47,"name":"bandit/arm","value":2},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":47,"name":"bandit/regret","value":6.899999999999998},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":48,"name":"bandit/arm","value":0},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":48,"name":"bandit/regret","value":7.399999999999998},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":49,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":49,"name":"bandit/regret","value":7.399999999999998},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":50,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":50,"name":"bandit/regret","value":7.399999999999998},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":51,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":51,"name":"bandit/regret","value":7.399999999999998},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":52,"name":"bandit/arm","value":3},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":52,"name":"bandit/regret","value":7.499999999999997},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":53,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":53,"name":"bandit/regret","value":7.499999999999997},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":54,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":54,"name":"bandit/regret","value":7.499999999999997},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":55,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":55,"name":"bandit/regret","value":7.499999999999997},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":56,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":56,"name":"bandit/regret","value":7.499999999999997},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":57,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":57,"name":"bandit/regret","value":7.499999999999997},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":58,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":58,"name":"bandit/regret","value":7.499999999999997},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":59,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":59,"name":"bandit/regret","value":7.499999999999997},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":60,"name":"bandit/arm","value":1},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":60,"name":"bandit/regret","value":7.849999999999997},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":61,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":61,"name":"bandit/regret","value":7.849999999999997},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":62,"name":"bandit/arm","value":2},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":62,"name":"bandit/regret","value":8.049999999999997},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":63,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":63,"name":"bandit/regret","value":8.049999999999997},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":64,"name":"bandit/arm","value":3},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":64,"name":"bandit/regret","value":8.149999999999997},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":65,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":65,"name":"bandit/regret","value":8.149999999999997},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":66,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":66,"name":"bandit/regret","value":8.149999999999997},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":67,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":67,"name":"bandit/regret","value":8.149999999999997},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":68,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":68,"name":"bandit/regret","value":8.149999999999997},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":69,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":69,"name":"bandit/regret","value":8.149999999999997},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":70,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":70,"name":"bandit/regret","value":8.149999999999997},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":71,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":71,"name":"bandit/regret","value":8.149999999999997},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":72,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":72,"name":"bandit/regret","value":8.149999999999997},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":73,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":73,"name":"bandit/regret","value":8.149999999999997},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":74,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":74,"name":"bandit/regret","value":8.149999999999997},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":75,"name":"bandit/arm","value":2},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":75,"name":"bandit/regret","value":8.349999999999996},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":76,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":76,"name":"bandit/regret","value":8.349999999999996},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":77,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":77,"name":"bandit/regret","value":8.349999999999996},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":78,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":78,"name":"bandit/regret","value":8.349999999999996},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":79,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":79,"name":"bandit/regret","value":8.349999999999996},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":80,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":80,"name":"bandit/regret","value":8.349999999999996},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":81,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":81,"name":"bandit/regret","value":8.349999999999996},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":82,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":82,"name":"bandit/regret","value":8.349999999999996},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":83,"name":"bandit/arm","value":3},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":83,"name":"bandit/regret","value":8.449999999999996},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":84,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":84,"name":"bandit/regret","value":8.449999999999996},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":85,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":85,"name":"bandit/regret","value":8.449999999999996},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":86,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":86,"name":"bandit/regret","value":8.449999999999996},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":87,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":87,"name":"bandit/regret","value":8.449999999999996},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":88,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":88,"name":"bandit/regret","value":8.449999999999996},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":89,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":89,"name":"bandit/regret","value":8.449999999999996},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":90,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":90,"name":"bandit/regret","value":8.449999999999996},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":91,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":91,"name":"bandit/regret","value":8.449999999999996},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":92,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":92,"name":"bandit/regret","value":8.449999999999996},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":93,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":93,"name":"bandit/regret","value":8.449999999999996},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":94,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":94,"name":"bandit/regret","value":8.449999999999996},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":95,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":95,"name":"bandit/regret","value":8.449999999999996},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":96,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":96,"name":"bandit/regret","value":8.449999999999996},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":97,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":97,"name":"bandit/regret","value":8.449999999999996},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":98,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":98,"name":"bandit/regret","value":8.449999999999996},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":99,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":99,"name":"bandit/regret","value":8.449999999999996},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":100,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":100,"name":"bandit/regret","value":8.449999999999996},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":101,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":101,"name":"bandit/regret","value":8.449999999999996},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":102,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":102,"name":"bandit/regret","value":8.449999999999996},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":103,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":103,"name":"bandit/regret","value":8.449999999999996},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":104,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":104,"name":"bandit/regret","value":8.449999999999996},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":105,"name":"bandit/arm","value":3},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":105,"name":"bandit/regret","value":8.549999999999995},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":106,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":106,"name":"bandit/regret","value":8.549999999999995},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":107,"name":"bandit/arm","value":3},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":107,"name":"bandit/regret","value":8.649999999999995},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":108,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":108,"name":"bandit/regret","value":8.649999999999995},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":109,"name":"bandit/arm","value":3},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":109,"name":"bandit/regret","value":8.749999999999995},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":110,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":110,"name":"bandit/regret","value":8.749999999999995},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":111,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":111,"name":"bandit/regret","value":8.749999999999995},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":112,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":112,"name":"bandit/regret","value":8.749999999999995},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":113,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":113,"name":"bandit/regret","value":8.749999999999995},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":114,"name":"bandit/arm","value":1},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":114,"name":"bandit/regret","value":9.099999999999994},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":115,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":115,"name":"bandit/regret","value":9.099999999999994},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":116,"name":"bandit/arm","value":3},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":116,"name":"bandit/regret","value":9.199999999999994},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":117,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":117,"name":"bandit/regret","value":9.199999999999994},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":118,"name":"bandit/arm","value":0},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":118,"name":"bandit/regret","value":9.699999999999994},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":119,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":119,"name":"bandit/regret","value":9.699999999999994},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":120,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":120,"name":"bandit/regret","value":9.699999999999994},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":121,"name":"bandit/arm","value":3},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":121,"name":"bandit/regret","value":9.799999999999994},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":122,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":122,"name":"bandit/regret","value":9.799999999999994},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":123,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":123,"name":"bandit/regret","value":9.799999999999994},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":124,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":124,"name":"bandit/regret","value":9.799999999999994},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":125,"name":"bandit/arm","value":3},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":125,"name":"bandit/regret","value":9.899999999999993},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":126,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":126,"name":"bandit/regret","value":9.899999999999993},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":127,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":127,"name":"bandit/regret","value":9.899999999999993},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":128,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":128,"name":"bandit/regret","value":9.899999999999993},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":129,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":129,"name":"bandit/regret","value":9.899999999999993},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":130,"name":"bandit/arm","value":3},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":130,"name":"bandit/regret","value":9.999999999999993},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":131,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":131,"name":"bandit/regret","value":9.999999999999993},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":132,"name":"bandit/arm","value":3},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":132,"name":"bandit/regret","value":10.099999999999993},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":133,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":133,"name":"bandit/regret","value":10.099999999999993},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":134,"name":"bandit/arm","value":3},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":134,"name":"bandit/regret","value":10.199999999999992},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":135,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":135,"name":"bandit/regret","value":10.199999999999992},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":136,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":136,"name":"bandit/regret","value":10.199999999999992},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":137,"name":"bandit/arm","value":3},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":137,"name":"bandit/regret","value":10.299999999999992},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":138,"name":"bandit/arm","value":3},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":138,"name":"bandit/regret","value":10.399999999999991},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":139,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":139,"name":"bandit/regret","value":10.399999999999991},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":140,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":140,"name":"bandit/regret","value":10.399999999999991},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":141,"name":"bandit/arm","value":3},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":141,"name":"bandit/regret","value":10.499999999999991},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":142,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":142,"name":"bandit/regret","value":10.499999999999991},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":143,"name":"bandit/arm","value":3},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":143,"name":"bandit/regret","value":10.59999999999999},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":144,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":144,"name":"bandit/regret","value":10.59999999999999},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":145,"name":"bandit/arm","value":3},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":145,"name":"bandit/regret","value":10.69999999999999},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":146,"name":"bandit/arm","value":3},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":146,"name":"bandit/regret","value":10.79999999999999},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":147,"name":"bandit/arm","value":3},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":147,"name":"bandit/regret","value":10.89999999999999},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":148,"name":"bandit/arm","value":3},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":148,"name":"bandit/regret","value":10.99999999999999},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":149,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":149,"name":"bandit/regret","value":10.99999999999999},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":150,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":150,"name":"bandit/regret","value":10.99999999999999},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":151,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":151,"name":"bandit/regret","value":10.99999999999999},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":152,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":152,"name":"bandit/regret","value":10.99999999999999},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":153,"name":"bandit/arm","value":2},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":153,"name":"bandit/regret","value":11.199999999999989},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":154,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":154,"name":"bandit/regret","value":11.199999999999989},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":155,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":155,"name":"bandit/regret","value":11.199999999999989},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":156,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":156,"name":"bandit/regret","value":11.199999999999989},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":157,"name":"bandit/arm","value":3},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":157,"name":"bandit/regret","value":11.299999999999988},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":158,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":158,"name":"bandit/regret","value":11.299999999999988},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":159,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":159,"name":"bandit/regret","value":11.299999999999988},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":160,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":160,"name":"bandit/regret","value":11.299999999999988},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":161,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":161,"name":"bandit/regret","value":11.299999999999988},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":162,"name":"bandit/arm","value":3},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":162,"name":"bandit/regret","value":11.399999999999988},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":163,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":163,"name":"bandit/regret","value":11.399999999999988},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":164,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":164,"name":"bandit/regret","value":11.399999999999988},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":165,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":165,"name":"bandit/regret","value":11.399999999999988},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":166,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":166,"name":"bandit/regret","value":11.399999999999988},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":167,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":167,"name":"bandit/regret","value":11.399999999999988},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":168,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":168,"name":"bandit/regret","value":11.399999999999988},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":169,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":169,"name":"bandit/regret","value":11.399999999999988},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":170,"name":"bandit/arm","value":3},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":170,"name":"bandit/regret","value":11.499999999999988},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":171,"name":"bandit/arm","value":3},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":171,"name":"bandit/regret","value":11.599999999999987},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":172,"name":"bandit/arm","value":3},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":172,"name":"bandit/regret","value":11.699999999999987},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":173,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":173,"name":"bandit/regret","value":11.699999999999987},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":174,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":174,"name":"bandit/regret","value":11.699999999999987},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":175,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":175,"name":"bandit/regret","value":11.699999999999987},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":176,"name":"bandit/arm","value":3},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":176,"name":"bandit/regret","value":11.799999999999986},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":177,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":177,"name":"bandit/regret","value":11.799999999999986},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":178,"name":"bandit/arm","value":3},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":178,"name":"bandit/regret","value":11.899999999999986},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":179,"name":"bandit/arm","value":3},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":179,"name":"bandit/regret","value":11.999999999999986},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":180,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":180,"name":"bandit/regret","value":11.999999999999986},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":181,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":181,"name":"bandit/regret","value":11.999999999999986},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":182,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":182,"name":"bandit/regret","value":11.999999999999986},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":183,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":183,"name":"bandit/regret","value":11.999999999999986},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":184,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":184,"name":"bandit/regret","value":11.999999999999986},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":185,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":185,"name":"bandit/regret","value":11.999999999999986},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":186,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":186,"name":"bandit/regret","value":11.999999999999986},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":187,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":187,"name":"bandit/regret","value":11.999999999999986},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":188,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":188,"name":"bandit/regret","value":11.999999999999986},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":189,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":189,"name":"bandit/regret","value":11.999999999999986},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":190,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":190,"name":"bandit/regret","value":11.999999999999986},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":191,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":191,"name":"bandit/regret","value":11.999999999999986},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":192,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":192,"name":"bandit/regret","value":11.999999999999986},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":193,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":193,"name":"bandit/regret","value":11.999999999999986},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":194,"name":"bandit/arm","value":3},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":194,"name":"bandit/regret","value":12.099999999999985},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":195,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":195,"name":"bandit/regret","value":12.099999999999985},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":196,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":196,"name":"bandit/regret","value":12.099999999999985},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":197,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":197,"name":"bandit/regret","value":12.099999999999985},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":198,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":198,"name":"bandit/regret","value":12.099999999999985},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":199,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":199,"name":"bandit/regret","value":12.099999999999985},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":200,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":200,"name":"bandit/regret","value":12.099999999999985},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":201,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":201,"name":"bandit/regret","value":12.099999999999985},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":202,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":202,"name":"bandit/regret","value":12.099999999999985},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":203,"name":"bandit/arm","value":1},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":203,"name":"bandit/regret","value":12.449999999999985},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":204,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":204,"name":"bandit/regret","value":12.449999999999985},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":205,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":205,"name":"bandit/regret","value":12.449999999999985},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":206,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":206,"name":"bandit/regret","value":12.449999999999985},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":207,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":207,"name":"bandit/regret","value":12.449999999999985},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":208,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":208,"name":"bandit/regret","value":12.449999999999985},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":209,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":209,"name":"bandit/regret","value":12.449999999999985},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":210,"name":"bandit/arm","value":3},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":210,"name":"bandit/regret","value":12.549999999999985},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":211,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":211,"name":"bandit/regret","value":12.549999999999985},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":212,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":212,"name":"bandit/regret","value":12.549999999999985},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":213,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":213,"name":"bandit/regret","value":12.549999999999985},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":214,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":214,"name":"bandit/regret","value":12.549999999999985},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":215,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":215,"name":"bandit/regret","value":12.549999999999985},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":216,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":216,"name":"bandit/regret","value":12.549999999999985},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":217,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":217,"name":"bandit/regret","value":12.549999999999985},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":218,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":218,"name":"bandit/regret","value":12.549999999999985},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":219,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":219,"name":"bandit/regret","value":12.549999999999985},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":220,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":220,"name":"bandit/regret","value":12.549999999999985},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":221,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":221,"name":"bandit/regret","value":12.549999999999985},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":222,"name":"bandit/arm","value":3},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":222,"name":"bandit/regret","value":12.649999999999984},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":223,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":223,"name":"bandit/regret","value":12.649999999999984},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":224,"name":"bandit/arm","value":3},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":224,"name":"bandit/regret","value":12.749999999999984},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":225,"name":"bandit/arm","value":2},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":225,"name":"bandit/regret","value":12.949999999999983},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":226,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":226,"name":"bandit/regret","value":12.949999999999983},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":227,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":227,"name":"bandit/regret","value":12.949999999999983},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":228,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":228,"name":"bandit/regret","value":12.949999999999983},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":229,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":229,"name":"bandit/regret","value":12.949999999999983},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":230,"name":"bandit/arm","value":2},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":230,"name":"bandit/regret","value":13.149999999999983},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":231,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":231,"name":"bandit/regret","value":13.149999999999983},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":232,"name":"bandit/arm","value":1},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":232,"name":"bandit/regret","value":13.499999999999982},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":233,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":233,"name":"bandit/regret","value":13.499999999999982},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":234,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":234,"name":"bandit/regret","value":13.499999999999982},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":235,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":235,"name":"bandit/regret","value":13.499999999999982},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":236,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":236,"name":"bandit/regret","value":13.499999999999982},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":237,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":237,"name":"bandit/regret","value":13.499999999999982},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":238,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":238,"name":"bandit/regret","value":13.499999999999982},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":239,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":239,"name":"bandit/regret","value":13.499999999999982},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":240,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":240,"name":"bandit/regret","value":13.499999999999982},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":241,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":241,"name":"bandit/regret","value":13.499999999999982},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":242,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":242,"name":"bandit/regret","value":13.499999999999982},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":243,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":243,"name":"bandit/regret","value":13.499999999999982},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":244,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":244,"name":"bandit/regret","value":13.499999999999982},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":245,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":245,"name":"bandit/regret","value":13.499999999999982},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":246,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":246,"name":"bandit/regret","value":13.499999999999982},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":247,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":247,"name":"bandit/regret","value":13.499999999999982},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":248,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":248,"name":"bandit/regret","value":13.499999999999982},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":249,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":249,"name":"bandit/regret","value":13.499999999999982},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":250,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":250,"name":"bandit/regret","value":13.499999999999982},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":251,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":251,"name":"bandit/regret","value":13.499999999999982},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":252,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":252,"name":"bandit/regret","value":13.499999999999982},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":253,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":253,"name":"bandit/regret","value":13.499999999999982},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":254,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":254,"name":"bandit/regret","value":13.499999999999982},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":255,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":255,"name":"bandit/regret","value":13.499999999999982},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":256,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":256,"name":"bandit/regret","value":13.499999999999982},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":257,"name":"bandit/arm","value":3},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":257,"name":"bandit/regret","value":13.599999999999982},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":258,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":258,"name":"bandit/regret","value":13.599999999999982},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":259,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":259,"name":"bandit/regret","value":13.599999999999982},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":260,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":260,"name":"bandit/regret","value":13.599999999999982},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":261,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":261,"name":"bandit/regret","value":13.599999999999982},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":262,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":262,"name":"bandit/regret","value":13.599999999999982},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":263,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":263,"name":"bandit/regret","value":13.599999999999982},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":264,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":264,"name":"bandit/regret","value":13.599999999999982},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":265,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":265,"name":"bandit/regret","value":13.599999999999982},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":266,"name":"bandit/arm","value":0},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":266,"name":"bandit/regret","value":14.099999999999982},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":267,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":267,"name":"bandit/regret","value":14.099999999999982},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":268,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":268,"name":"bandit/regret","value":14.099999999999982},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":269,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":269,"name":"bandit/regret","value":14.099999999999982},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":270,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":270,"name":"bandit/regret","value":14.099999999999982},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":271,"name":"bandit/arm","value":3},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":271,"name":"bandit/regret","value":14.199999999999982},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":272,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":272,"name":"bandit/regret","value":14.199999999999982},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":273,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":273,"name":"bandit/regret","value":14.199999999999982},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":274,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":274,"name":"bandit/regret","value":14.199999999999982},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":275,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":275,"name":"bandit/regret","value":14.199999999999982},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":276,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":276,"name":"bandit/regret","value":14.199999999999982},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":277,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":277,"name":"bandit/regret","value":14.199999999999982},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":278,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":278,"name":"bandit/regret","value":14.199999999999982},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":279,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":279,"name":"bandit/regret","value":14.199999999999982},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":280,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":280,"name":"bandit/regret","value":14.199999999999982},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":281,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":281,"name":"bandit/regret","value":14.199999999999982},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":282,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":282,"name":"bandit/regret","value":14.199999999999982},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":283,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":283,"name":"bandit/regret","value":14.199999999999982},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":284,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":284,"name":"bandit/regret","value":14.199999999999982},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":285,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":285,"name":"bandit/regret","value":14.199999999999982},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":286,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":286,"name":"bandit/regret","value":14.199999999999982},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":287,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":287,"name":"bandit/regret","value":14.199999999999982},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":288,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":288,"name":"bandit/regret","value":14.199999999999982},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":289,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":289,"name":"bandit/regret","value":14.199999999999982},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":290,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":290,"name":"bandit/regret","value":14.199999999999982},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":291,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":291,"name":"bandit/regret","value":14.199999999999982},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":292,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":292,"name":"bandit/regret","value":14.199999999999982},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":293,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":293,"name":"bandit/regret","value":14.199999999999982},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":294,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":294,"name":"bandit/regret","value":14.199999999999982},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":295,"name":"bandit/arm","value":3},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":295,"name":"bandit/regret","value":14.299999999999981},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":296,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":296,"name":"bandit/regret","value":14.299999999999981},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":297,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":297,"name":"bandit/regret","value":14.299999999999981},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":298,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":298,"name":"bandit/regret","value":14.299999999999981},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":299,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":299,"name":"bandit/regret","value":14.299999999999981},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":300,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":300,"name":"bandit/regret","value":14.299999999999981},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":301,"name":"bandit/arm","value":3},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":301,"name":"bandit/regret","value":14.39999999999998},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":302,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":302,"name":"bandit/regret","value":14.39999999999998},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":303,"name":"bandit/arm","value":2},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":303,"name":"bandit/regret","value":14.59999999999998},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":304,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":304,"name":"bandit/regret","value":14.59999999999998},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":305,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":305,"name":"bandit/regret","value":14.59999999999998},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":306,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":306,"name":"bandit/regret","value":14.59999999999998},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":307,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":307,"name":"bandit/regret","value":14.59999999999998},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":308,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":308,"name":"bandit/regret","value":14.59999999999998},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":309,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":309,"name":"bandit/regret","value":14.59999999999998},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":310,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":310,"name":"bandit/regret","value":14.59999999999998},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":311,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":311,"name":"bandit/regret","value":14.59999999999998},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":312,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":312,"name":"bandit/regret","value":14.59999999999998},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":313,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":313,"name":"bandit/regret","value":14.59999999999998},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":314,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":314,"name":"bandit/regret","value":14.59999999999998},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":315,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":315,"name":"bandit/regret","value":14.59999999999998},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":316,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":316,"name":"bandit/regret","value":14.59999999999998},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":317,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":317,"name":"bandit/regret","value":14.59999999999998},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":318,"name":"bandit/arm","value":3},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":318,"name":"bandit/regret","value":14.69999999999998},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":319,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":319,"name":"bandit/regret","value":14.69999999999998},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":320,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":320,"name":"bandit/regret","value":14.69999999999998},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":321,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":321,"name":"bandit/regret","value":14.69999999999998},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":322,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":322,"name":"bandit/regret","value":14.69999999999998},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":323,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":323,"name":"bandit/regret","value":14.69999999999998},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":324,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":324,"name":"bandit/regret","value":14.69999999999998},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":325,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":325,"name":"bandit/regret","value":14.69999999999998},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":326,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":326,"name":"bandit/regret","value":14.69999999999998},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":327,"name":"bandit/arm","value":2},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":327,"name":"bandit/regret","value":14.899999999999979},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":328,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":328,"name":"bandit/regret","value":14.899999999999979},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":329,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":329,"name":"bandit/regret","value":14.899999999999979},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":330,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":330,"name":"bandit/regret","value":14.899999999999979},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":331,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":331,"name":"bandit/regret","value":14.899999999999979},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":332,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":332,"name":"bandit/regret","value":14.899999999999979},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":333,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":333,"name":"bandit/regret","value":14.899999999999979},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":334,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":334,"name":"bandit/regret","value":14.899999999999979},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":335,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":335,"name":"bandit/regret","value":14.899999999999979},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":336,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":336,"name":"bandit/regret","value":14.899999999999979},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":337,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":337,"name":"bandit/regret","value":14.899999999999979},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":338,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":338,"name":"bandit/regret","value":14.899999999999979},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":339,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":339,"name":"bandit/regret","value":14.899999999999979},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":340,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":340,"name":"bandit/regret","value":14.899999999999979},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":341,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":341,"name":"bandit/regret","value":14.899999999999979},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":342,"name":"bandit/arm","value":3},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":342,"name":"bandit/regret","value":14.999999999999979},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":343,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":343,"name":"bandit/regret","value":14.999999999999979},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":344,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":344,"name":"bandit/regret","value":14.999999999999979},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":345,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":345,"name":"bandit/regret","value":14.999999999999979},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":346,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":346,"name":"bandit/regret","value":14.999999999999979},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":347,"name":"bandit/arm","value":3},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":347,"name":"bandit/regret","value":15.099999999999978},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":348,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":348,"name":"bandit/regret","value":15.099999999999978},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":349,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":349,"name":"bandit/regret","value":15.099999999999978},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":350,"name":"bandit/arm","value":3},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":350,"name":"bandit/regret","value":15.199999999999978},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":351,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":351,"name":"bandit/regret","value":15.199999999999978},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":352,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":352,"name":"bandit/regret","value":15.199999999999978},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":353,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":353,"name":"bandit/regret","value":15.199999999999978},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":354,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":354,"name":"bandit/regret","value":15.199999999999978},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":355,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":355,"name":"bandit/regret","value":15.199999999999978},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":356,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":356,"name":"bandit/regret","value":15.199999999999978},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":357,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":357,"name":"bandit/regret","value":15.199999999999978},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":358,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":358,"name":"bandit/regret","value":15.199999999999978},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":359,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":359,"name":"bandit/regret","value":15.199999999999978},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":360,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":360,"name":"bandit/regret","value":15.199999999999978},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":361,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":361,"name":"bandit/regret","value":15.199999999999978},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":362,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":362,"name":"bandit/regret","value":15.199999999999978},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":363,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":363,"name":"bandit/regret","value":15.199999999999978},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":364,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":364,"name":"bandit/regret","value":15.199999999999978},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":365,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":365,"name":"bandit/regret","value":15.199999999999978},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":366,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":366,"name":"bandit/regret","value":15.199999999999978},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":367,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":367,"name":"bandit/regret","value":15.199999999999978},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":368,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":368,"name":"bandit/regret","value":15.199999999999978},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":369,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":369,"name":"bandit/regret","value":15.199999999999978},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":370,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":370,"name":"bandit/regret","value":15.199999999999978},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":371,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":371,"name":"bandit/regret","value":15.199999999999978},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":372,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":372,"name":"bandit/regret","value":15.199999999999978},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":373,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":373,"name":"bandit/regret","value":15.199999999999978},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":374,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":374,"name":"bandit/regret","value":15.199999999999978},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":375,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":375,"name":"bandit/regret","value":15.199999999999978},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":376,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":376,"name":"bandit/regret","value":15.199999999999978},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":377,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":377,"name":"bandit/regret","value":15.199999999999978},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":378,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":378,"name":"bandit/regret","value":15.199999999999978},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":379,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":379,"name":"bandit/regret","value":15.199999999999978},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":380,"name":"bandit/arm","value":2},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":380,"name":"bandit/regret","value":15.399999999999977},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":381,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":381,"name":"bandit/regret","value":15.399999999999977},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":382,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":382,"name":"bandit/regret","value":15.399999999999977},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":383,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":383,"name":"bandit/regret","value":15.399999999999977},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":384,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":384,"name":"bandit/regret","value":15.399999999999977},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":385,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":385,"name":"bandit/regret","value":15.399999999999977},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":386,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":386,"name":"bandit/regret","value":15.399999999999977},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":387,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":387,"name":"bandit/regret","value":15.399999999999977},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":388,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":388,"name":"bandit/regret","value":15.399999999999977},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":389,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":389,"name":"bandit/regret","value":15.399999999999977},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":390,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":390,"name":"bandit/regret","value":15.399999999999977},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":391,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":391,"name":"bandit/regret","value":15.399999999999977},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":392,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":392,"name":"bandit/regret","value":15.399999999999977},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":393,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":393,"name":"bandit/regret","value":15.399999999999977},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":394,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":394,"name":"bandit/regret","value":15.399999999999977},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":395,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":395,"name":"bandit/regret","value":15.399999999999977},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":396,"name":"bandit/arm","value":3},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":396,"name":"bandit/regret","value":15.499999999999977},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":397,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":397,"name":"bandit/regret","value":15.499999999999977},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":398,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":398,"name":"bandit/regret","value":15.499999999999977},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":399,"name":"bandit/arm","value":4},{"type":"metric","runId":"bandit:thompsonBernoulli:none","step":399,"name":"bandit/regret","value":15.499999999999977},{"type":"end","runId":"bandit:thompsonBernoulli:none","status":"completed","steps":400,"summary":{}}]}
+{
+  "schema": "mdml.run/1",
+  "events": [
+    {
+      "type": "run",
+      "runId": "bandit:thompsonBernoulli:none",
+      "name": "bandit:thompsonBernoulli",
+      "seed": null,
+      "version": "0.1.2",
+      "config": {
+        "env": "BernoulliBandit-v0",
+        "agent": {
+          "arms": 5,
+          "prior": [1,1]
+        },
+        "pulls": 400
+      }
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":0,"name":"bandit/arm","value":0},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 0,
+      "name": "bandit/regret",
+      "value": 0.49999999999999994
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":1,"name":"bandit/arm","value":3},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 1,
+      "name": "bandit/regret",
+      "value": 0.5999999999999999
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":2,"name":"bandit/arm","value":0},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 2,
+      "name": "bandit/regret",
+      "value": 1.0999999999999999
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":3,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 3,
+      "name": "bandit/regret",
+      "value": 1.0999999999999999
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":4,"name":"bandit/arm","value":2},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 4,
+      "name": "bandit/regret",
+      "value": 1.2999999999999998
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":5,"name":"bandit/arm","value":0},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 5,
+      "name": "bandit/regret",
+      "value": 1.7999999999999998
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":6,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 6,
+      "name": "bandit/regret",
+      "value": 1.7999999999999998
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":7,"name":"bandit/arm","value":0},
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":7,"name":"bandit/regret","value":2.3},
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":8,"name":"bandit/arm","value":0},
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":8,"name":"bandit/regret","value":2.8},
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":9,"name":"bandit/arm","value":2},
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":9,"name":"bandit/regret","value":3},
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":10,"name":"bandit/arm","value":2},
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":10,"name":"bandit/regret","value":3.2},
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":11,"name":"bandit/arm","value":2},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 11,
+      "name": "bandit/regret",
+      "value": 3.4000000000000004
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":12,"name":"bandit/arm","value":2},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 12,
+      "name": "bandit/regret",
+      "value": 3.6000000000000005
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":13,"name":"bandit/arm","value":2},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 13,
+      "name": "bandit/regret",
+      "value": 3.8000000000000007
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":14,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 14,
+      "name": "bandit/regret",
+      "value": 3.8000000000000007
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":15,"name":"bandit/arm","value":1},
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":15,"name":"bandit/regret","value":4.15},
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":16,"name":"bandit/arm","value":4},
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":16,"name":"bandit/regret","value":4.15},
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":17,"name":"bandit/arm","value":1},
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":17,"name":"bandit/regret","value":4.5},
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":18,"name":"bandit/arm","value":4},
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":18,"name":"bandit/regret","value":4.5},
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":19,"name":"bandit/arm","value":1},
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":19,"name":"bandit/regret","value":4.85},
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":20,"name":"bandit/arm","value":2},
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":20,"name":"bandit/regret","value":5.05},
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":21,"name":"bandit/arm","value":3},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 21,
+      "name": "bandit/regret",
+      "value": 5.1499999999999995
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":22,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 22,
+      "name": "bandit/regret",
+      "value": 5.1499999999999995
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":23,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 23,
+      "name": "bandit/regret",
+      "value": 5.1499999999999995
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":24,"name":"bandit/arm","value":1},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 24,
+      "name": "bandit/regret",
+      "value": 5.499999999999999
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":25,"name":"bandit/arm","value":1},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 25,
+      "name": "bandit/regret",
+      "value": 5.849999999999999
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":26,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 26,
+      "name": "bandit/regret",
+      "value": 5.849999999999999
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":27,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 27,
+      "name": "bandit/regret",
+      "value": 5.849999999999999
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":28,"name":"bandit/arm","value":3},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 28,
+      "name": "bandit/regret",
+      "value": 5.949999999999998
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":29,"name":"bandit/arm","value":1},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 29,
+      "name": "bandit/regret",
+      "value": 6.299999999999998
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":30,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 30,
+      "name": "bandit/regret",
+      "value": 6.299999999999998
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":31,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 31,
+      "name": "bandit/regret",
+      "value": 6.299999999999998
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":32,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 32,
+      "name": "bandit/regret",
+      "value": 6.299999999999998
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":33,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 33,
+      "name": "bandit/regret",
+      "value": 6.299999999999998
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":34,"name":"bandit/arm","value":3},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 34,
+      "name": "bandit/regret",
+      "value": 6.399999999999998
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":35,"name":"bandit/arm","value":3},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 35,
+      "name": "bandit/regret",
+      "value": 6.499999999999997
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":36,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 36,
+      "name": "bandit/regret",
+      "value": 6.499999999999997
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":37,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 37,
+      "name": "bandit/regret",
+      "value": 6.499999999999997
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":38,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 38,
+      "name": "bandit/regret",
+      "value": 6.499999999999997
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":39,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 39,
+      "name": "bandit/regret",
+      "value": 6.499999999999997
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":40,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 40,
+      "name": "bandit/regret",
+      "value": 6.499999999999997
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":41,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 41,
+      "name": "bandit/regret",
+      "value": 6.499999999999997
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":42,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 42,
+      "name": "bandit/regret",
+      "value": 6.499999999999997
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":43,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 43,
+      "name": "bandit/regret",
+      "value": 6.499999999999997
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":44,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 44,
+      "name": "bandit/regret",
+      "value": 6.499999999999997
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":45,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 45,
+      "name": "bandit/regret",
+      "value": 6.499999999999997
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":46,"name":"bandit/arm","value":2},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 46,
+      "name": "bandit/regret",
+      "value": 6.6999999999999975
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":47,"name":"bandit/arm","value":2},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 47,
+      "name": "bandit/regret",
+      "value": 6.899999999999998
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":48,"name":"bandit/arm","value":0},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 48,
+      "name": "bandit/regret",
+      "value": 7.399999999999998
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":49,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 49,
+      "name": "bandit/regret",
+      "value": 7.399999999999998
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":50,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 50,
+      "name": "bandit/regret",
+      "value": 7.399999999999998
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":51,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 51,
+      "name": "bandit/regret",
+      "value": 7.399999999999998
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":52,"name":"bandit/arm","value":3},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 52,
+      "name": "bandit/regret",
+      "value": 7.499999999999997
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":53,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 53,
+      "name": "bandit/regret",
+      "value": 7.499999999999997
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":54,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 54,
+      "name": "bandit/regret",
+      "value": 7.499999999999997
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":55,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 55,
+      "name": "bandit/regret",
+      "value": 7.499999999999997
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":56,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 56,
+      "name": "bandit/regret",
+      "value": 7.499999999999997
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":57,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 57,
+      "name": "bandit/regret",
+      "value": 7.499999999999997
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":58,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 58,
+      "name": "bandit/regret",
+      "value": 7.499999999999997
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":59,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 59,
+      "name": "bandit/regret",
+      "value": 7.499999999999997
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":60,"name":"bandit/arm","value":1},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 60,
+      "name": "bandit/regret",
+      "value": 7.849999999999997
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":61,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 61,
+      "name": "bandit/regret",
+      "value": 7.849999999999997
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":62,"name":"bandit/arm","value":2},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 62,
+      "name": "bandit/regret",
+      "value": 8.049999999999997
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":63,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 63,
+      "name": "bandit/regret",
+      "value": 8.049999999999997
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":64,"name":"bandit/arm","value":3},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 64,
+      "name": "bandit/regret",
+      "value": 8.149999999999997
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":65,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 65,
+      "name": "bandit/regret",
+      "value": 8.149999999999997
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":66,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 66,
+      "name": "bandit/regret",
+      "value": 8.149999999999997
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":67,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 67,
+      "name": "bandit/regret",
+      "value": 8.149999999999997
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":68,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 68,
+      "name": "bandit/regret",
+      "value": 8.149999999999997
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":69,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 69,
+      "name": "bandit/regret",
+      "value": 8.149999999999997
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":70,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 70,
+      "name": "bandit/regret",
+      "value": 8.149999999999997
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":71,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 71,
+      "name": "bandit/regret",
+      "value": 8.149999999999997
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":72,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 72,
+      "name": "bandit/regret",
+      "value": 8.149999999999997
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":73,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 73,
+      "name": "bandit/regret",
+      "value": 8.149999999999997
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":74,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 74,
+      "name": "bandit/regret",
+      "value": 8.149999999999997
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":75,"name":"bandit/arm","value":2},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 75,
+      "name": "bandit/regret",
+      "value": 8.349999999999996
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":76,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 76,
+      "name": "bandit/regret",
+      "value": 8.349999999999996
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":77,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 77,
+      "name": "bandit/regret",
+      "value": 8.349999999999996
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":78,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 78,
+      "name": "bandit/regret",
+      "value": 8.349999999999996
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":79,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 79,
+      "name": "bandit/regret",
+      "value": 8.349999999999996
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":80,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 80,
+      "name": "bandit/regret",
+      "value": 8.349999999999996
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":81,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 81,
+      "name": "bandit/regret",
+      "value": 8.349999999999996
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":82,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 82,
+      "name": "bandit/regret",
+      "value": 8.349999999999996
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":83,"name":"bandit/arm","value":3},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 83,
+      "name": "bandit/regret",
+      "value": 8.449999999999996
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":84,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 84,
+      "name": "bandit/regret",
+      "value": 8.449999999999996
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":85,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 85,
+      "name": "bandit/regret",
+      "value": 8.449999999999996
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":86,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 86,
+      "name": "bandit/regret",
+      "value": 8.449999999999996
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":87,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 87,
+      "name": "bandit/regret",
+      "value": 8.449999999999996
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":88,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 88,
+      "name": "bandit/regret",
+      "value": 8.449999999999996
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":89,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 89,
+      "name": "bandit/regret",
+      "value": 8.449999999999996
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":90,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 90,
+      "name": "bandit/regret",
+      "value": 8.449999999999996
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":91,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 91,
+      "name": "bandit/regret",
+      "value": 8.449999999999996
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":92,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 92,
+      "name": "bandit/regret",
+      "value": 8.449999999999996
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":93,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 93,
+      "name": "bandit/regret",
+      "value": 8.449999999999996
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":94,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 94,
+      "name": "bandit/regret",
+      "value": 8.449999999999996
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":95,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 95,
+      "name": "bandit/regret",
+      "value": 8.449999999999996
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":96,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 96,
+      "name": "bandit/regret",
+      "value": 8.449999999999996
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":97,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 97,
+      "name": "bandit/regret",
+      "value": 8.449999999999996
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":98,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 98,
+      "name": "bandit/regret",
+      "value": 8.449999999999996
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":99,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 99,
+      "name": "bandit/regret",
+      "value": 8.449999999999996
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":100,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 100,
+      "name": "bandit/regret",
+      "value": 8.449999999999996
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":101,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 101,
+      "name": "bandit/regret",
+      "value": 8.449999999999996
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":102,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 102,
+      "name": "bandit/regret",
+      "value": 8.449999999999996
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":103,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 103,
+      "name": "bandit/regret",
+      "value": 8.449999999999996
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":104,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 104,
+      "name": "bandit/regret",
+      "value": 8.449999999999996
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":105,"name":"bandit/arm","value":3},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 105,
+      "name": "bandit/regret",
+      "value": 8.549999999999995
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":106,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 106,
+      "name": "bandit/regret",
+      "value": 8.549999999999995
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":107,"name":"bandit/arm","value":3},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 107,
+      "name": "bandit/regret",
+      "value": 8.649999999999995
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":108,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 108,
+      "name": "bandit/regret",
+      "value": 8.649999999999995
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":109,"name":"bandit/arm","value":3},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 109,
+      "name": "bandit/regret",
+      "value": 8.749999999999995
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":110,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 110,
+      "name": "bandit/regret",
+      "value": 8.749999999999995
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":111,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 111,
+      "name": "bandit/regret",
+      "value": 8.749999999999995
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":112,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 112,
+      "name": "bandit/regret",
+      "value": 8.749999999999995
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":113,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 113,
+      "name": "bandit/regret",
+      "value": 8.749999999999995
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":114,"name":"bandit/arm","value":1},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 114,
+      "name": "bandit/regret",
+      "value": 9.099999999999994
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":115,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 115,
+      "name": "bandit/regret",
+      "value": 9.099999999999994
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":116,"name":"bandit/arm","value":3},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 116,
+      "name": "bandit/regret",
+      "value": 9.199999999999994
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":117,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 117,
+      "name": "bandit/regret",
+      "value": 9.199999999999994
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":118,"name":"bandit/arm","value":0},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 118,
+      "name": "bandit/regret",
+      "value": 9.699999999999994
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":119,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 119,
+      "name": "bandit/regret",
+      "value": 9.699999999999994
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":120,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 120,
+      "name": "bandit/regret",
+      "value": 9.699999999999994
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":121,"name":"bandit/arm","value":3},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 121,
+      "name": "bandit/regret",
+      "value": 9.799999999999994
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":122,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 122,
+      "name": "bandit/regret",
+      "value": 9.799999999999994
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":123,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 123,
+      "name": "bandit/regret",
+      "value": 9.799999999999994
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":124,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 124,
+      "name": "bandit/regret",
+      "value": 9.799999999999994
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":125,"name":"bandit/arm","value":3},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 125,
+      "name": "bandit/regret",
+      "value": 9.899999999999993
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":126,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 126,
+      "name": "bandit/regret",
+      "value": 9.899999999999993
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":127,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 127,
+      "name": "bandit/regret",
+      "value": 9.899999999999993
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":128,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 128,
+      "name": "bandit/regret",
+      "value": 9.899999999999993
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":129,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 129,
+      "name": "bandit/regret",
+      "value": 9.899999999999993
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":130,"name":"bandit/arm","value":3},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 130,
+      "name": "bandit/regret",
+      "value": 9.999999999999993
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":131,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 131,
+      "name": "bandit/regret",
+      "value": 9.999999999999993
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":132,"name":"bandit/arm","value":3},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 132,
+      "name": "bandit/regret",
+      "value": 10.099999999999993
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":133,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 133,
+      "name": "bandit/regret",
+      "value": 10.099999999999993
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":134,"name":"bandit/arm","value":3},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 134,
+      "name": "bandit/regret",
+      "value": 10.199999999999992
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":135,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 135,
+      "name": "bandit/regret",
+      "value": 10.199999999999992
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":136,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 136,
+      "name": "bandit/regret",
+      "value": 10.199999999999992
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":137,"name":"bandit/arm","value":3},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 137,
+      "name": "bandit/regret",
+      "value": 10.299999999999992
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":138,"name":"bandit/arm","value":3},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 138,
+      "name": "bandit/regret",
+      "value": 10.399999999999991
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":139,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 139,
+      "name": "bandit/regret",
+      "value": 10.399999999999991
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":140,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 140,
+      "name": "bandit/regret",
+      "value": 10.399999999999991
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":141,"name":"bandit/arm","value":3},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 141,
+      "name": "bandit/regret",
+      "value": 10.499999999999991
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":142,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 142,
+      "name": "bandit/regret",
+      "value": 10.499999999999991
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":143,"name":"bandit/arm","value":3},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 143,
+      "name": "bandit/regret",
+      "value": 10.59999999999999
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":144,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 144,
+      "name": "bandit/regret",
+      "value": 10.59999999999999
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":145,"name":"bandit/arm","value":3},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 145,
+      "name": "bandit/regret",
+      "value": 10.69999999999999
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":146,"name":"bandit/arm","value":3},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 146,
+      "name": "bandit/regret",
+      "value": 10.79999999999999
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":147,"name":"bandit/arm","value":3},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 147,
+      "name": "bandit/regret",
+      "value": 10.89999999999999
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":148,"name":"bandit/arm","value":3},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 148,
+      "name": "bandit/regret",
+      "value": 10.99999999999999
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":149,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 149,
+      "name": "bandit/regret",
+      "value": 10.99999999999999
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":150,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 150,
+      "name": "bandit/regret",
+      "value": 10.99999999999999
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":151,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 151,
+      "name": "bandit/regret",
+      "value": 10.99999999999999
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":152,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 152,
+      "name": "bandit/regret",
+      "value": 10.99999999999999
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":153,"name":"bandit/arm","value":2},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 153,
+      "name": "bandit/regret",
+      "value": 11.199999999999989
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":154,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 154,
+      "name": "bandit/regret",
+      "value": 11.199999999999989
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":155,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 155,
+      "name": "bandit/regret",
+      "value": 11.199999999999989
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":156,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 156,
+      "name": "bandit/regret",
+      "value": 11.199999999999989
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":157,"name":"bandit/arm","value":3},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 157,
+      "name": "bandit/regret",
+      "value": 11.299999999999988
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":158,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 158,
+      "name": "bandit/regret",
+      "value": 11.299999999999988
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":159,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 159,
+      "name": "bandit/regret",
+      "value": 11.299999999999988
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":160,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 160,
+      "name": "bandit/regret",
+      "value": 11.299999999999988
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":161,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 161,
+      "name": "bandit/regret",
+      "value": 11.299999999999988
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":162,"name":"bandit/arm","value":3},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 162,
+      "name": "bandit/regret",
+      "value": 11.399999999999988
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":163,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 163,
+      "name": "bandit/regret",
+      "value": 11.399999999999988
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":164,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 164,
+      "name": "bandit/regret",
+      "value": 11.399999999999988
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":165,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 165,
+      "name": "bandit/regret",
+      "value": 11.399999999999988
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":166,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 166,
+      "name": "bandit/regret",
+      "value": 11.399999999999988
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":167,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 167,
+      "name": "bandit/regret",
+      "value": 11.399999999999988
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":168,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 168,
+      "name": "bandit/regret",
+      "value": 11.399999999999988
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":169,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 169,
+      "name": "bandit/regret",
+      "value": 11.399999999999988
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":170,"name":"bandit/arm","value":3},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 170,
+      "name": "bandit/regret",
+      "value": 11.499999999999988
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":171,"name":"bandit/arm","value":3},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 171,
+      "name": "bandit/regret",
+      "value": 11.599999999999987
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":172,"name":"bandit/arm","value":3},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 172,
+      "name": "bandit/regret",
+      "value": 11.699999999999987
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":173,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 173,
+      "name": "bandit/regret",
+      "value": 11.699999999999987
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":174,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 174,
+      "name": "bandit/regret",
+      "value": 11.699999999999987
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":175,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 175,
+      "name": "bandit/regret",
+      "value": 11.699999999999987
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":176,"name":"bandit/arm","value":3},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 176,
+      "name": "bandit/regret",
+      "value": 11.799999999999986
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":177,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 177,
+      "name": "bandit/regret",
+      "value": 11.799999999999986
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":178,"name":"bandit/arm","value":3},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 178,
+      "name": "bandit/regret",
+      "value": 11.899999999999986
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":179,"name":"bandit/arm","value":3},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 179,
+      "name": "bandit/regret",
+      "value": 11.999999999999986
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":180,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 180,
+      "name": "bandit/regret",
+      "value": 11.999999999999986
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":181,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 181,
+      "name": "bandit/regret",
+      "value": 11.999999999999986
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":182,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 182,
+      "name": "bandit/regret",
+      "value": 11.999999999999986
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":183,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 183,
+      "name": "bandit/regret",
+      "value": 11.999999999999986
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":184,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 184,
+      "name": "bandit/regret",
+      "value": 11.999999999999986
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":185,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 185,
+      "name": "bandit/regret",
+      "value": 11.999999999999986
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":186,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 186,
+      "name": "bandit/regret",
+      "value": 11.999999999999986
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":187,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 187,
+      "name": "bandit/regret",
+      "value": 11.999999999999986
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":188,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 188,
+      "name": "bandit/regret",
+      "value": 11.999999999999986
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":189,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 189,
+      "name": "bandit/regret",
+      "value": 11.999999999999986
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":190,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 190,
+      "name": "bandit/regret",
+      "value": 11.999999999999986
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":191,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 191,
+      "name": "bandit/regret",
+      "value": 11.999999999999986
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":192,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 192,
+      "name": "bandit/regret",
+      "value": 11.999999999999986
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":193,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 193,
+      "name": "bandit/regret",
+      "value": 11.999999999999986
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":194,"name":"bandit/arm","value":3},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 194,
+      "name": "bandit/regret",
+      "value": 12.099999999999985
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":195,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 195,
+      "name": "bandit/regret",
+      "value": 12.099999999999985
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":196,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 196,
+      "name": "bandit/regret",
+      "value": 12.099999999999985
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":197,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 197,
+      "name": "bandit/regret",
+      "value": 12.099999999999985
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":198,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 198,
+      "name": "bandit/regret",
+      "value": 12.099999999999985
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":199,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 199,
+      "name": "bandit/regret",
+      "value": 12.099999999999985
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":200,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 200,
+      "name": "bandit/regret",
+      "value": 12.099999999999985
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":201,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 201,
+      "name": "bandit/regret",
+      "value": 12.099999999999985
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":202,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 202,
+      "name": "bandit/regret",
+      "value": 12.099999999999985
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":203,"name":"bandit/arm","value":1},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 203,
+      "name": "bandit/regret",
+      "value": 12.449999999999985
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":204,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 204,
+      "name": "bandit/regret",
+      "value": 12.449999999999985
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":205,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 205,
+      "name": "bandit/regret",
+      "value": 12.449999999999985
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":206,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 206,
+      "name": "bandit/regret",
+      "value": 12.449999999999985
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":207,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 207,
+      "name": "bandit/regret",
+      "value": 12.449999999999985
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":208,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 208,
+      "name": "bandit/regret",
+      "value": 12.449999999999985
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":209,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 209,
+      "name": "bandit/regret",
+      "value": 12.449999999999985
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":210,"name":"bandit/arm","value":3},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 210,
+      "name": "bandit/regret",
+      "value": 12.549999999999985
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":211,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 211,
+      "name": "bandit/regret",
+      "value": 12.549999999999985
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":212,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 212,
+      "name": "bandit/regret",
+      "value": 12.549999999999985
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":213,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 213,
+      "name": "bandit/regret",
+      "value": 12.549999999999985
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":214,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 214,
+      "name": "bandit/regret",
+      "value": 12.549999999999985
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":215,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 215,
+      "name": "bandit/regret",
+      "value": 12.549999999999985
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":216,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 216,
+      "name": "bandit/regret",
+      "value": 12.549999999999985
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":217,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 217,
+      "name": "bandit/regret",
+      "value": 12.549999999999985
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":218,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 218,
+      "name": "bandit/regret",
+      "value": 12.549999999999985
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":219,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 219,
+      "name": "bandit/regret",
+      "value": 12.549999999999985
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":220,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 220,
+      "name": "bandit/regret",
+      "value": 12.549999999999985
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":221,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 221,
+      "name": "bandit/regret",
+      "value": 12.549999999999985
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":222,"name":"bandit/arm","value":3},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 222,
+      "name": "bandit/regret",
+      "value": 12.649999999999984
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":223,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 223,
+      "name": "bandit/regret",
+      "value": 12.649999999999984
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":224,"name":"bandit/arm","value":3},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 224,
+      "name": "bandit/regret",
+      "value": 12.749999999999984
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":225,"name":"bandit/arm","value":2},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 225,
+      "name": "bandit/regret",
+      "value": 12.949999999999983
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":226,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 226,
+      "name": "bandit/regret",
+      "value": 12.949999999999983
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":227,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 227,
+      "name": "bandit/regret",
+      "value": 12.949999999999983
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":228,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 228,
+      "name": "bandit/regret",
+      "value": 12.949999999999983
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":229,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 229,
+      "name": "bandit/regret",
+      "value": 12.949999999999983
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":230,"name":"bandit/arm","value":2},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 230,
+      "name": "bandit/regret",
+      "value": 13.149999999999983
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":231,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 231,
+      "name": "bandit/regret",
+      "value": 13.149999999999983
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":232,"name":"bandit/arm","value":1},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 232,
+      "name": "bandit/regret",
+      "value": 13.499999999999982
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":233,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 233,
+      "name": "bandit/regret",
+      "value": 13.499999999999982
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":234,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 234,
+      "name": "bandit/regret",
+      "value": 13.499999999999982
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":235,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 235,
+      "name": "bandit/regret",
+      "value": 13.499999999999982
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":236,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 236,
+      "name": "bandit/regret",
+      "value": 13.499999999999982
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":237,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 237,
+      "name": "bandit/regret",
+      "value": 13.499999999999982
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":238,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 238,
+      "name": "bandit/regret",
+      "value": 13.499999999999982
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":239,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 239,
+      "name": "bandit/regret",
+      "value": 13.499999999999982
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":240,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 240,
+      "name": "bandit/regret",
+      "value": 13.499999999999982
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":241,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 241,
+      "name": "bandit/regret",
+      "value": 13.499999999999982
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":242,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 242,
+      "name": "bandit/regret",
+      "value": 13.499999999999982
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":243,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 243,
+      "name": "bandit/regret",
+      "value": 13.499999999999982
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":244,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 244,
+      "name": "bandit/regret",
+      "value": 13.499999999999982
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":245,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 245,
+      "name": "bandit/regret",
+      "value": 13.499999999999982
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":246,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 246,
+      "name": "bandit/regret",
+      "value": 13.499999999999982
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":247,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 247,
+      "name": "bandit/regret",
+      "value": 13.499999999999982
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":248,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 248,
+      "name": "bandit/regret",
+      "value": 13.499999999999982
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":249,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 249,
+      "name": "bandit/regret",
+      "value": 13.499999999999982
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":250,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 250,
+      "name": "bandit/regret",
+      "value": 13.499999999999982
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":251,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 251,
+      "name": "bandit/regret",
+      "value": 13.499999999999982
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":252,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 252,
+      "name": "bandit/regret",
+      "value": 13.499999999999982
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":253,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 253,
+      "name": "bandit/regret",
+      "value": 13.499999999999982
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":254,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 254,
+      "name": "bandit/regret",
+      "value": 13.499999999999982
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":255,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 255,
+      "name": "bandit/regret",
+      "value": 13.499999999999982
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":256,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 256,
+      "name": "bandit/regret",
+      "value": 13.499999999999982
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":257,"name":"bandit/arm","value":3},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 257,
+      "name": "bandit/regret",
+      "value": 13.599999999999982
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":258,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 258,
+      "name": "bandit/regret",
+      "value": 13.599999999999982
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":259,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 259,
+      "name": "bandit/regret",
+      "value": 13.599999999999982
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":260,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 260,
+      "name": "bandit/regret",
+      "value": 13.599999999999982
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":261,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 261,
+      "name": "bandit/regret",
+      "value": 13.599999999999982
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":262,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 262,
+      "name": "bandit/regret",
+      "value": 13.599999999999982
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":263,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 263,
+      "name": "bandit/regret",
+      "value": 13.599999999999982
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":264,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 264,
+      "name": "bandit/regret",
+      "value": 13.599999999999982
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":265,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 265,
+      "name": "bandit/regret",
+      "value": 13.599999999999982
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":266,"name":"bandit/arm","value":0},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 266,
+      "name": "bandit/regret",
+      "value": 14.099999999999982
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":267,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 267,
+      "name": "bandit/regret",
+      "value": 14.099999999999982
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":268,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 268,
+      "name": "bandit/regret",
+      "value": 14.099999999999982
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":269,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 269,
+      "name": "bandit/regret",
+      "value": 14.099999999999982
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":270,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 270,
+      "name": "bandit/regret",
+      "value": 14.099999999999982
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":271,"name":"bandit/arm","value":3},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 271,
+      "name": "bandit/regret",
+      "value": 14.199999999999982
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":272,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 272,
+      "name": "bandit/regret",
+      "value": 14.199999999999982
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":273,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 273,
+      "name": "bandit/regret",
+      "value": 14.199999999999982
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":274,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 274,
+      "name": "bandit/regret",
+      "value": 14.199999999999982
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":275,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 275,
+      "name": "bandit/regret",
+      "value": 14.199999999999982
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":276,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 276,
+      "name": "bandit/regret",
+      "value": 14.199999999999982
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":277,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 277,
+      "name": "bandit/regret",
+      "value": 14.199999999999982
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":278,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 278,
+      "name": "bandit/regret",
+      "value": 14.199999999999982
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":279,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 279,
+      "name": "bandit/regret",
+      "value": 14.199999999999982
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":280,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 280,
+      "name": "bandit/regret",
+      "value": 14.199999999999982
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":281,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 281,
+      "name": "bandit/regret",
+      "value": 14.199999999999982
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":282,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 282,
+      "name": "bandit/regret",
+      "value": 14.199999999999982
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":283,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 283,
+      "name": "bandit/regret",
+      "value": 14.199999999999982
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":284,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 284,
+      "name": "bandit/regret",
+      "value": 14.199999999999982
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":285,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 285,
+      "name": "bandit/regret",
+      "value": 14.199999999999982
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":286,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 286,
+      "name": "bandit/regret",
+      "value": 14.199999999999982
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":287,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 287,
+      "name": "bandit/regret",
+      "value": 14.199999999999982
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":288,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 288,
+      "name": "bandit/regret",
+      "value": 14.199999999999982
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":289,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 289,
+      "name": "bandit/regret",
+      "value": 14.199999999999982
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":290,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 290,
+      "name": "bandit/regret",
+      "value": 14.199999999999982
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":291,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 291,
+      "name": "bandit/regret",
+      "value": 14.199999999999982
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":292,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 292,
+      "name": "bandit/regret",
+      "value": 14.199999999999982
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":293,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 293,
+      "name": "bandit/regret",
+      "value": 14.199999999999982
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":294,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 294,
+      "name": "bandit/regret",
+      "value": 14.199999999999982
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":295,"name":"bandit/arm","value":3},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 295,
+      "name": "bandit/regret",
+      "value": 14.299999999999981
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":296,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 296,
+      "name": "bandit/regret",
+      "value": 14.299999999999981
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":297,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 297,
+      "name": "bandit/regret",
+      "value": 14.299999999999981
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":298,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 298,
+      "name": "bandit/regret",
+      "value": 14.299999999999981
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":299,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 299,
+      "name": "bandit/regret",
+      "value": 14.299999999999981
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":300,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 300,
+      "name": "bandit/regret",
+      "value": 14.299999999999981
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":301,"name":"bandit/arm","value":3},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 301,
+      "name": "bandit/regret",
+      "value": 14.39999999999998
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":302,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 302,
+      "name": "bandit/regret",
+      "value": 14.39999999999998
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":303,"name":"bandit/arm","value":2},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 303,
+      "name": "bandit/regret",
+      "value": 14.59999999999998
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":304,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 304,
+      "name": "bandit/regret",
+      "value": 14.59999999999998
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":305,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 305,
+      "name": "bandit/regret",
+      "value": 14.59999999999998
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":306,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 306,
+      "name": "bandit/regret",
+      "value": 14.59999999999998
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":307,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 307,
+      "name": "bandit/regret",
+      "value": 14.59999999999998
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":308,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 308,
+      "name": "bandit/regret",
+      "value": 14.59999999999998
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":309,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 309,
+      "name": "bandit/regret",
+      "value": 14.59999999999998
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":310,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 310,
+      "name": "bandit/regret",
+      "value": 14.59999999999998
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":311,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 311,
+      "name": "bandit/regret",
+      "value": 14.59999999999998
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":312,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 312,
+      "name": "bandit/regret",
+      "value": 14.59999999999998
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":313,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 313,
+      "name": "bandit/regret",
+      "value": 14.59999999999998
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":314,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 314,
+      "name": "bandit/regret",
+      "value": 14.59999999999998
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":315,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 315,
+      "name": "bandit/regret",
+      "value": 14.59999999999998
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":316,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 316,
+      "name": "bandit/regret",
+      "value": 14.59999999999998
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":317,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 317,
+      "name": "bandit/regret",
+      "value": 14.59999999999998
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":318,"name":"bandit/arm","value":3},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 318,
+      "name": "bandit/regret",
+      "value": 14.69999999999998
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":319,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 319,
+      "name": "bandit/regret",
+      "value": 14.69999999999998
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":320,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 320,
+      "name": "bandit/regret",
+      "value": 14.69999999999998
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":321,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 321,
+      "name": "bandit/regret",
+      "value": 14.69999999999998
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":322,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 322,
+      "name": "bandit/regret",
+      "value": 14.69999999999998
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":323,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 323,
+      "name": "bandit/regret",
+      "value": 14.69999999999998
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":324,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 324,
+      "name": "bandit/regret",
+      "value": 14.69999999999998
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":325,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 325,
+      "name": "bandit/regret",
+      "value": 14.69999999999998
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":326,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 326,
+      "name": "bandit/regret",
+      "value": 14.69999999999998
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":327,"name":"bandit/arm","value":2},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 327,
+      "name": "bandit/regret",
+      "value": 14.899999999999979
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":328,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 328,
+      "name": "bandit/regret",
+      "value": 14.899999999999979
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":329,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 329,
+      "name": "bandit/regret",
+      "value": 14.899999999999979
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":330,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 330,
+      "name": "bandit/regret",
+      "value": 14.899999999999979
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":331,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 331,
+      "name": "bandit/regret",
+      "value": 14.899999999999979
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":332,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 332,
+      "name": "bandit/regret",
+      "value": 14.899999999999979
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":333,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 333,
+      "name": "bandit/regret",
+      "value": 14.899999999999979
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":334,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 334,
+      "name": "bandit/regret",
+      "value": 14.899999999999979
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":335,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 335,
+      "name": "bandit/regret",
+      "value": 14.899999999999979
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":336,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 336,
+      "name": "bandit/regret",
+      "value": 14.899999999999979
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":337,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 337,
+      "name": "bandit/regret",
+      "value": 14.899999999999979
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":338,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 338,
+      "name": "bandit/regret",
+      "value": 14.899999999999979
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":339,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 339,
+      "name": "bandit/regret",
+      "value": 14.899999999999979
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":340,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 340,
+      "name": "bandit/regret",
+      "value": 14.899999999999979
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":341,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 341,
+      "name": "bandit/regret",
+      "value": 14.899999999999979
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":342,"name":"bandit/arm","value":3},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 342,
+      "name": "bandit/regret",
+      "value": 14.999999999999979
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":343,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 343,
+      "name": "bandit/regret",
+      "value": 14.999999999999979
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":344,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 344,
+      "name": "bandit/regret",
+      "value": 14.999999999999979
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":345,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 345,
+      "name": "bandit/regret",
+      "value": 14.999999999999979
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":346,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 346,
+      "name": "bandit/regret",
+      "value": 14.999999999999979
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":347,"name":"bandit/arm","value":3},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 347,
+      "name": "bandit/regret",
+      "value": 15.099999999999978
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":348,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 348,
+      "name": "bandit/regret",
+      "value": 15.099999999999978
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":349,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 349,
+      "name": "bandit/regret",
+      "value": 15.099999999999978
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":350,"name":"bandit/arm","value":3},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 350,
+      "name": "bandit/regret",
+      "value": 15.199999999999978
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":351,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 351,
+      "name": "bandit/regret",
+      "value": 15.199999999999978
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":352,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 352,
+      "name": "bandit/regret",
+      "value": 15.199999999999978
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":353,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 353,
+      "name": "bandit/regret",
+      "value": 15.199999999999978
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":354,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 354,
+      "name": "bandit/regret",
+      "value": 15.199999999999978
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":355,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 355,
+      "name": "bandit/regret",
+      "value": 15.199999999999978
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":356,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 356,
+      "name": "bandit/regret",
+      "value": 15.199999999999978
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":357,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 357,
+      "name": "bandit/regret",
+      "value": 15.199999999999978
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":358,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 358,
+      "name": "bandit/regret",
+      "value": 15.199999999999978
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":359,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 359,
+      "name": "bandit/regret",
+      "value": 15.199999999999978
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":360,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 360,
+      "name": "bandit/regret",
+      "value": 15.199999999999978
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":361,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 361,
+      "name": "bandit/regret",
+      "value": 15.199999999999978
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":362,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 362,
+      "name": "bandit/regret",
+      "value": 15.199999999999978
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":363,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 363,
+      "name": "bandit/regret",
+      "value": 15.199999999999978
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":364,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 364,
+      "name": "bandit/regret",
+      "value": 15.199999999999978
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":365,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 365,
+      "name": "bandit/regret",
+      "value": 15.199999999999978
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":366,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 366,
+      "name": "bandit/regret",
+      "value": 15.199999999999978
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":367,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 367,
+      "name": "bandit/regret",
+      "value": 15.199999999999978
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":368,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 368,
+      "name": "bandit/regret",
+      "value": 15.199999999999978
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":369,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 369,
+      "name": "bandit/regret",
+      "value": 15.199999999999978
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":370,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 370,
+      "name": "bandit/regret",
+      "value": 15.199999999999978
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":371,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 371,
+      "name": "bandit/regret",
+      "value": 15.199999999999978
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":372,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 372,
+      "name": "bandit/regret",
+      "value": 15.199999999999978
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":373,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 373,
+      "name": "bandit/regret",
+      "value": 15.199999999999978
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":374,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 374,
+      "name": "bandit/regret",
+      "value": 15.199999999999978
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":375,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 375,
+      "name": "bandit/regret",
+      "value": 15.199999999999978
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":376,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 376,
+      "name": "bandit/regret",
+      "value": 15.199999999999978
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":377,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 377,
+      "name": "bandit/regret",
+      "value": 15.199999999999978
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":378,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 378,
+      "name": "bandit/regret",
+      "value": 15.199999999999978
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":379,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 379,
+      "name": "bandit/regret",
+      "value": 15.199999999999978
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":380,"name":"bandit/arm","value":2},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 380,
+      "name": "bandit/regret",
+      "value": 15.399999999999977
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":381,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 381,
+      "name": "bandit/regret",
+      "value": 15.399999999999977
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":382,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 382,
+      "name": "bandit/regret",
+      "value": 15.399999999999977
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":383,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 383,
+      "name": "bandit/regret",
+      "value": 15.399999999999977
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":384,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 384,
+      "name": "bandit/regret",
+      "value": 15.399999999999977
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":385,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 385,
+      "name": "bandit/regret",
+      "value": 15.399999999999977
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":386,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 386,
+      "name": "bandit/regret",
+      "value": 15.399999999999977
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":387,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 387,
+      "name": "bandit/regret",
+      "value": 15.399999999999977
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":388,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 388,
+      "name": "bandit/regret",
+      "value": 15.399999999999977
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":389,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 389,
+      "name": "bandit/regret",
+      "value": 15.399999999999977
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":390,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 390,
+      "name": "bandit/regret",
+      "value": 15.399999999999977
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":391,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 391,
+      "name": "bandit/regret",
+      "value": 15.399999999999977
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":392,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 392,
+      "name": "bandit/regret",
+      "value": 15.399999999999977
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":393,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 393,
+      "name": "bandit/regret",
+      "value": 15.399999999999977
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":394,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 394,
+      "name": "bandit/regret",
+      "value": 15.399999999999977
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":395,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 395,
+      "name": "bandit/regret",
+      "value": 15.399999999999977
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":396,"name":"bandit/arm","value":3},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 396,
+      "name": "bandit/regret",
+      "value": 15.499999999999977
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":397,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 397,
+      "name": "bandit/regret",
+      "value": 15.499999999999977
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":398,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 398,
+      "name": "bandit/regret",
+      "value": 15.499999999999977
+    },
+    {"type":"metric","runId":"bandit:thompsonBernoulli:none","step":399,"name":"bandit/arm","value":4},
+    {
+      "type": "metric",
+      "runId": "bandit:thompsonBernoulli:none",
+      "step": 399,
+      "name": "bandit/regret",
+      "value": 15.499999999999977
+    },
+    {
+      "type": "end",
+      "runId": "bandit:thompsonBernoulli:none",
+      "status": "completed",
+      "steps": 400,
+      "summary": {}
+    }
+  ]
+}

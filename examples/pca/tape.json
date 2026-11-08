@@ -1,1 +1,165 @@
-{"schema":"mdml.tape/1","method":"decomposition/pca","seed":0,"title":"Principal components of the iris data","variants":[{"label":"session","config":{"nComponents":4,"whiten":false,"solver":"power"},"head":4,"status":"completed","run":{"schema":"mdml.run/1","events":[{"type":"run","runId":"decomposition/pca:0","name":"decomposition/pca","seed":0,"version":"0.1.2","config":{"nComponents":4,"whiten":false,"solver":"power"},"channels":{"metrics":{"solver/explained":{"description":"the share of the variance explained by the components found so far"},"solver/found":{"description":"the number of components found"}},"tensors":{"solver/components":{"role":"state","description":"the principal axes found so far","shape":["k","d"]}},"messages":{"fit/iteration/end":{"description":"","payload":{"t":"the iteration just finished"}}},"episodes":false,"frames":false}},{"type":"checkpoint","runId":"decomposition/pca:0","step":0,"state":{"mean":[5.843333333333335,3.057333333333334,3.7580000000000027,1.199333333333334],"components":[],"singularValues":[],"explainedVariance":[],"explainedVarianceRatio":[],"noiseVariance":0,"totalVariance":4.572957046979861}},{"type":"checkpoint","runId":"decomposition/pca:0","step":1,"state":{"mean":[5.843333333333335,3.057333333333334,3.7580000000000027,1.199333333333334],"components":[[0.3613865917853418,-0.08452251406459839,0.8566706059498422,0.35828919715155355]],"singularValues":[25.09996044218386],"explainedVariance":[4.228241706034863],"explainedVarianceRatio":[0.924618723201728],"noiseVariance":0.11490511364833249,"totalVariance":4.572957046979861}},{"type":"checkpoint","runId":"decomposition/pca:0","step":2,"state":{"mean":[5.843333333333335,3.057333333333334,3.7580000000000027,1.199333333333334],"components":[[0.3613865917853418,-0.08452251406459839,0.8566706059498422,0.35828919715155355],[0.6565887712869644,0.7301614347849125,-0.1733726627958364,-0.07548101991755009]],"singularValues":[25.09996044218386,6.013147382308734],"explainedVariance":[4.228241706034863,0.24267074792863344],"explainedVarianceRatio":[0.924618723201728,0.053066483117067895],"noiseVariance":0.05102229650818213,"totalVariance":4.572957046979861}},{"type":"checkpoint","runId":"decomposition/pca:0","step":3,"state":{"mean":[5.843333333333335,3.057333333333334,3.7580000000000027,1.199333333333334],"components":[[0.3613865917853418,-0.08452251406459839,0.8566706059498422,0.35828919715155355],[0.6565887712869644,0.7301614347849125,-0.1733726627958364,-0.07548101991755009],[-0.5820298513060289,0.5979108301003074,0.07623607582106103,0.5458314320198577]],"singularValues":[25.09996044218386,6.013147382308734,3.4136806391921004],"explainedVariance":[4.228241706034863,0.24267074792863344,0.07820950004291938],"explainedVarianceRatio":[0.924618723201728,0.053066483117067895,0.017102609807929783],"noiseVariance":0.023835092973444993,"totalVariance":4.572957046979861}},{"type":"checkpoint","runId":"decomposition/pca:0","step":4,"state":{"mean":[5.843333333333335,3.057333333333334,3.7580000000000027,1.199333333333334],"components":[[0.3613865917853418,-0.08452251406459839,0.8566706059498422,0.35828919715155355],[0.6565887712869644,0.7301614347849125,-0.1733726627958364,-0.07548101991755009],[-0.5820298513060289,0.5979108301003074,0.07623607582106103,0.5458314320198577],[0.3154871929038181,-0.3197231036659676,-0.4798389869946135,0.7536574252641932]],"singularValues":[25.09996044218386,6.013147382308734,3.4136806391921004,1.884523508222693],"explainedVariance":[4.228241706034863,0.24267074792863344,0.07820950004291938,0.02383509297344944],"explainedVarianceRatio":[0.924618723201728,0.053066483117067895,0.017102609807929783,0.005212183873275381],"noiseVariance":0,"totalVariance":4.572957046979861}},{"type":"end","runId":"decomposition/pca:0","status":"completed","steps":4,"summary":{}}]},"kinds":{"solver/explained":"scalar","solver/found":"scalar","solver/components":"tensor","fit/iteration/end":"event","model/params":"derived","model/embedding":"derived"},"fired":{"fit/iteration/end":[0,1,2,3]},"probes":[]}]}
+{
+  "schema": "mdml.tape/1",
+  "method": "decomposition/pca",
+  "seed": 0,
+  "title": "Principal components of the iris data",
+  "variants": [
+    {
+      "label": "session",
+      "config": {
+        "nComponents": 4,
+        "whiten": false,
+        "solver": "power"
+      },
+      "head": 4,
+      "status": "completed",
+      "run": {
+        "schema": "mdml.run/1",
+        "events": [
+          {
+            "type": "run",
+            "runId": "decomposition/pca:0",
+            "name": "decomposition/pca",
+            "seed": 0,
+            "version": "0.1.2",
+            "config": {
+              "nComponents": 4,
+              "whiten": false,
+              "solver": "power"
+            },
+            "channels": {
+              "metrics": {
+                "solver/explained": {
+                  "description": "the share of the variance explained by the components found so far"
+                },
+                "solver/found": {
+                  "description": "the number of components found"
+                }
+              },
+              "tensors": {
+                "solver/components": {
+                  "role": "state",
+                  "description": "the principal axes found so far",
+                  "shape": ["k","d"]
+                }
+              },
+              "messages": {
+                "fit/iteration/end": {
+                  "description": "",
+                  "payload": {
+                    "t": "the iteration just finished"
+                  }
+                }
+              },
+              "episodes": false,
+              "frames": false
+            }
+          },
+          {
+            "type": "checkpoint",
+            "runId": "decomposition/pca:0",
+            "step": 0,
+            "state": {
+              "mean": [5.843333333333335,3.057333333333334,3.7580000000000027,1.199333333333334],
+              "components": [],
+              "singularValues": [],
+              "explainedVariance": [],
+              "explainedVarianceRatio": [],
+              "noiseVariance": 0,
+              "totalVariance": 4.572957046979861
+            }
+          },
+          {
+            "type": "checkpoint",
+            "runId": "decomposition/pca:0",
+            "step": 1,
+            "state": {
+              "mean": [5.843333333333335,3.057333333333334,3.7580000000000027,1.199333333333334],
+              "components": [
+                [0.3613865917853418,-0.08452251406459839,0.8566706059498422,0.35828919715155355]
+              ],
+              "singularValues": [25.09996044218386],
+              "explainedVariance": [4.228241706034863],
+              "explainedVarianceRatio": [0.924618723201728],
+              "noiseVariance": 0.11490511364833249,
+              "totalVariance": 4.572957046979861
+            }
+          },
+          {
+            "type": "checkpoint",
+            "runId": "decomposition/pca:0",
+            "step": 2,
+            "state": {
+              "mean": [5.843333333333335,3.057333333333334,3.7580000000000027,1.199333333333334],
+              "components": [
+                [0.3613865917853418,-0.08452251406459839,0.8566706059498422,0.35828919715155355],
+                [0.6565887712869644,0.7301614347849125,-0.1733726627958364,-0.07548101991755009]
+              ],
+              "singularValues": [25.09996044218386,6.013147382308734],
+              "explainedVariance": [4.228241706034863,0.24267074792863344],
+              "explainedVarianceRatio": [0.924618723201728,0.053066483117067895],
+              "noiseVariance": 0.05102229650818213,
+              "totalVariance": 4.572957046979861
+            }
+          },
+          {
+            "type": "checkpoint",
+            "runId": "decomposition/pca:0",
+            "step": 3,
+            "state": {
+              "mean": [5.843333333333335,3.057333333333334,3.7580000000000027,1.199333333333334],
+              "components": [
+                [0.3613865917853418,-0.08452251406459839,0.8566706059498422,0.35828919715155355],
+                [0.6565887712869644,0.7301614347849125,-0.1733726627958364,-0.07548101991755009],
+                [-0.5820298513060289,0.5979108301003074,0.07623607582106103,0.5458314320198577]
+              ],
+              "singularValues": [25.09996044218386,6.013147382308734,3.4136806391921004],
+              "explainedVariance": [4.228241706034863,0.24267074792863344,0.07820950004291938],
+              "explainedVarianceRatio": [0.924618723201728,0.053066483117067895,0.017102609807929783],
+              "noiseVariance": 0.023835092973444993,
+              "totalVariance": 4.572957046979861
+            }
+          },
+          {
+            "type": "checkpoint",
+            "runId": "decomposition/pca:0",
+            "step": 4,
+            "state": {
+              "mean": [5.843333333333335,3.057333333333334,3.7580000000000027,1.199333333333334],
+              "components": [
+                [0.3613865917853418,-0.08452251406459839,0.8566706059498422,0.35828919715155355],
+                [0.6565887712869644,0.7301614347849125,-0.1733726627958364,-0.07548101991755009],
+                [-0.5820298513060289,0.5979108301003074,0.07623607582106103,0.5458314320198577],
+                [0.3154871929038181,-0.3197231036659676,-0.4798389869946135,0.7536574252641932]
+              ],
+              "singularValues": [25.09996044218386,6.013147382308734,3.4136806391921004,1.884523508222693],
+              "explainedVariance": [4.228241706034863,0.24267074792863344,0.07820950004291938,0.02383509297344944],
+              "explainedVarianceRatio": [0.924618723201728,0.053066483117067895,0.017102609807929783,0.005212183873275381],
+              "noiseVariance": 0,
+              "totalVariance": 4.572957046979861
+            }
+          },
+          {
+            "type": "end",
+            "runId": "decomposition/pca:0",
+            "status": "completed",
+            "steps": 4,
+            "summary": {}
+          }
+        ]
+      },
+      "kinds": {
+        "solver/explained": "scalar",
+        "solver/found": "scalar",
+        "solver/components": "tensor",
+        "fit/iteration/end": "event",
+        "model/params": "derived",
+        "model/embedding": "derived"
+      },
+      "fired": {
+        "fit/iteration/end": [0,1,2,3]
+      },
+      "probes": []
+    }
+  ]
+}
