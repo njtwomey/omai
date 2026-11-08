@@ -3,6 +3,20 @@
 Versions are released in lockstep for omai-engine, omai-render and omai-meta. Up to 0.1.3 the packages were published as
 mdml-engine, mdml-render and mdml-meta.
 
+## 0.1.6
+
+Convolutional sparse coding and dictionary learning, ported from the AIFN engine. Nothing else in the packages changes.
+- `omai-engine/optim`: `convolutionalSynthesis` and its adjoint `convolutionalAnalysis`; `convolutionalSparseCode` (ISTA or
+  FISTA, built on `proximalGradientAlgorithm` and `proxL1`) and `convolutionalDictionaryLearning`, each with an
+  `Algorithm` form that serialises and resumes and logs on typed `cdl/` paths; `matchFilters` (learnt against known
+  filters, up to shift and sign). The signal is a vector or an `[N, 1]` column, so a window of a `TimeSeriesData` works,
+  including the `electrocardiogram` dataset (the docs show how). With every code map at zero, the filter update no longer
+  divides by zero (the AIFN version returned `NaN`). `initialisation: 'energy'` starts the filters on the most energetic
+  stretches and recovers planted pulses for every key; the default stays `'random'`.
+- `omai-engine/datasets`: `pulseTrain`, a signal of planted pulses with known filters, sparse maps and positions as its truth.
+- `omai-engine/decomposition`: `convolutionalDictionaryMethod` and `convolutionalDictionaryProblem`, a session over
+  `pulseTrain` with the probes `cdl/filters`, `cdl/codes`, `cdl/reconstruction`, `cdl/planted` and `cdl/recovery`.
+
 ## 0.1.5
 
 Closes the gaps found by decksmith while it moved its slides onto omai 0.1.4, and adds the front page to the repository's
