@@ -141,7 +141,8 @@ export function forceLayout(graph: LayoutGraph, options: ForceOptions = {}): For
  * Nodes evenly around a circle, in order.
  *
  * @param graph - The graph.
- * @param options - The radius (default enough for the nodes to sit apart) and margin.
+ * @param options - The radius (default enough for the nodes to sit apart: `gap` pixels, default 12, between neighbours of
+ * the widest size) and margin.
  * @returns The layout.
  * @example
  * ```ts
@@ -153,11 +154,11 @@ export function forceLayout(graph: LayoutGraph, options: ForceOptions = {}): For
  */
 export function circularLayout(
   graph: LayoutGraph,
-  options: { readonly radius?: number; readonly margin?: number } = {},
+  options: { readonly radius?: number; readonly gap?: number; readonly margin?: number } = {},
 ): GraphLayout {
   const n = graph.nodes.length
   const widest = Math.max(10, maxOf(graph.nodes.map((v) => Math.max(v.width, v.height))))
-  const radius = options.radius ?? Math.max(widest, (n * (widest + 12)) / (2 * Math.PI))
+  const radius = options.radius ?? Math.max(widest, (n * (widest + (options.gap ?? 12))) / (2 * Math.PI))
   const xy = graph.nodes.map((_, i): [number, number] => {
     const a = (2 * Math.PI * i) / Math.max(n, 1) - Math.PI / 2
     return [radius * Math.cos(a), radius * Math.sin(a)]

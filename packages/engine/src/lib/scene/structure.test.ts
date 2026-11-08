@@ -100,4 +100,23 @@ describe('structure', () => {
     expect(() => mergeStructures([layer], { prefixes: [] })).toThrow()
     expect(mergeStructures([]).nodes).toEqual([])
   })
+
+  it('keeps position, look, bidirectional and labelAt through merging, prefixes and slicing', () => {
+    const part = structure(
+      'x',
+      [
+        { id: 'a', label: 'a', role: 'input', position: [10, 20], look: { shape: 'stack', fill: 'tab1' } },
+        { id: 'b', label: 'b\nsecond line', role: 'output', look: { stroke: 'tab2' } },
+      ],
+      [{ from: 'a', to: 'b', bidirectional: true, labelAt: 0.25, look: { stroke: 'tab3', arrow: false } }],
+    )
+    const over = structure('x', [{ id: 'b', label: 'b', role: 'output', look: { dash: [2, 2] } }], [])
+    const m = mergeStructures([part, over], { prefixes: ['p', 'p'] })
+    expect(m.nodes[0]).toMatchObject({ id: 'p/a', position: [10, 20], look: { shape: 'stack', fill: 'tab1' } })
+    expect(m.nodes[1]?.look).toEqual({ stroke: 'tab2', dash: [2, 2] })
+    expect(m.edges[0]).toMatchObject({ bidirectional: true, labelAt: 0.25, look: { stroke: 'tab3', arrow: false } })
+    expect(subStructure(part, ['a'], 'descendants').edges[0]).toMatchObject({ bidirectional: true, labelAt: 0.25 })
+    // The records are plain data: they survive a JSON round trip.
+    expect(JSON.parse(JSON.stringify(part))).toEqual(part)
+  })
 })

@@ -9,6 +9,7 @@ import { maxOf, minOf } from 'omai-engine/base'
 import {
   circle,
   group as groupNode,
+  type Paint,
   path,
   rect,
   type Scene,
@@ -22,19 +23,27 @@ import {
   text,
 } from 'omai-engine/scene'
 import { circularLayout, forceLayout } from '../layout/force.ts'
-import { boxBoundary, type EdgeRoute, type GraphLayout, type LayoutBox, type LayoutGraph } from '../layout/graph.ts'
+import {
+  boxBoundary,
+  type EdgeRoute,
+  type GraphLayout,
+  type LayoutBox,
+  type LayoutGraph,
+  manualLayout,
+} from '../layout/graph.ts'
 import { bipartiteLayout } from '../layout/grids.ts'
 import { layered } from '../layout/layered.ts'
 import { tidyTree } from '../layout/trees.ts'
-import { type NodeLook, type StructureStyle, styleFor } from './styles.ts'
+import { type EdgeLook, type NodeLook, type StructureStyle, styleFor } from './styles.ts'
 
 /** Options of {@link diagram}. */
 export interface DiagramOptions {
   /**
    * The layout (default the style's: layered for most kinds, a tidy tree for trees, force for networks); `bipartite`
-   * puts factors in one row and the variables in another, as factor graphs are drawn.
+   * puts factors in one row and the variables in another, as factor graphs are drawn; `manual` puts every node at its
+   * `position` (the default when every node has one) and throws `OmaiError` `value` for a node without.
    */
-  readonly layout?: 'layered' | 'tree' | 'circular' | 'force' | 'bipartite'
+  readonly layout?: 'layered' | 'tree' | 'circular' | 'force' | 'bipartite' | 'manual'
   /** Ranks or depths down the page or across it (default the structure's own preference, else down). */
   readonly direction?: 'down' | 'right'
   /** The visual language (default the one for the structure's type). */
@@ -48,28 +57,40 @@ export interface DiagramOptions {
   readonly frames?: readonly StructureOverlay[]
   /** The seed of a force layout (default 0). */
   readonly seed?: number
-  /** Space between ranks (default 56) and between neighbours (default 28). */
+  /**
+   * Space between ranks (default 56) and between neighbours (default 28). Layered honours both; tree both (as the
+   * space between depths and between siblings); bipartite both (the gap between the two rows, and the space between
+   * nodes along a row); circular `nodeSep` (the gap between neighbours on the circle); force `rankSep` (the ideal edge
+   * length); manual neither.
+   */
   readonly rankSep?: number
   readonly nodeSep?: number
 }
 
 const CHAR = 0.6
 
+/** One line of a node's text: the label's lines are `main` (the label's size and colour), the rest small and muted. */
+interface Line {
+  readonly text: string
+  readonly main: boolean
+}
+
 function lines(
   n: StructureNode,
   badges: Readonly<Record<string, string | number>> | undefined,
   look: NodeLook,
-): string[] {
-  const out = [n.label]
+): Line[] {
+  const out: Line[] = n.label.split('\n').map((text) => ({ text, main: true }))
   // Round shapes keep to their label (and badges); their detail shows on hover.
   const compact = look.shape === 'circle' || look.shape === 'dot' || look.shape === 'square'
-  if (n.detail !== undefined && !compact) out.push(n.detail)
+  if (n.detail !== undefined && !compact) out.push({ text: n.detail, main: false })
   if (badges !== undefined && Object.keys(badges).length > 0)
-    out.push(
-      Object.entries(badges)
+    out.push({
+      text: Object.entries(badges)
         .map(([k, v]) => `${k} ${typeof v === 'number' ? Number(v.toPrecision(4)) : v}`)
         .join(' · '),
-    )
+      main: false,
+    })
   return out
 }
 
@@ -77,8 +98,11 @@ const isTex = (s: string): boolean => s.length > 2 && s.startsWith('$') && s.end
 const textWidth = (s: string, size: number): number =>
   isTex(s) ? (s.length - 2) * size * 0.45 : s.length * size * CHAR
 
-function nodeSize(look: NodeLook, content: readonly string[], size: number): { width: number; height: number } {
-  const wide = maxOf(content.map((s, i) => textWidth(s, i === 0 ? size : size - 2)))
+/** The room the boxes behind the first take in a `stack`: two more, each offset by this much up and to the right. */
+const STACK = 4
+
+function nodeSize(look: NodeLook, content: readonly Line[], size: number): { width: number; height: number } {
+  const wide = maxOf(content.map((l) => textWidth(l.text, l.main ? size : size - 2)))
   const tall = size + 6 + (content.length - 1) * (size + 2)
   switch (look.shape) {
     case 'dot':
@@ -93,9 +117,21 @@ function nodeSize(look: NodeLook, content: readonly string[], size: number): { w
       return { width: Math.max(56, wide * 1.25 + 20), height: Math.max(32, tall + 12) }
     case 'diamond':
       return { width: Math.max(56, wide * 1.6 + 16), height: Math.max(40, tall * 1.6) }
-    default:
+    case 'none':
+      return { width: wide + 8, height: tall }
+    case 'stack':
+      return { width: Math.max(40, wide + 20) + 2 * STACK, height: Math.max(28, tall + 8) + 2 * STACK }
+    case 'rect':
+    case 'round':
       return { width: Math.max(40, wide + 20), height: Math.max(28, tall + 8) }
   }
+}
+
+/** The front box of a node: the whole box, or for a `stack` the box without the room its back boxes take. */
+function frontOf(look: NodeLook, b: LayoutBox): LayoutBox {
+  return look.shape === 'stack'
+    ? { x: b.x - STACK, y: b.y + STACK, width: b.width - 2 * STACK, height: b.height - 2 * STACK }
+    : b
 }
 
 function shapeNodes(look: NodeLook, b: LayoutBox, active: boolean): SceneNode[] {
@@ -134,36 +170,67 @@ function shapeNodes(look: NodeLook, b: LayoutBox, active: boolean): SceneNode[] 
       return [rect(x0, y0, b.width, b.height, style)]
     case 'round':
       return [rect(x0, y0, b.width, b.height, { radius: 7, ...style })]
+    case 'none':
+      // Text only: an invisible box the size of the text, so the node can still be hovered and picked.
+      return [
+        rect(x0, y0, b.width, b.height, { fill: 'bg', stroke: active ? 'accent' : 'none', opacity: active ? 1 : 0 }),
+      ]
+    case 'stack': {
+      // Back boxes first, each peeking out up and to the right of the one in front.
+      const f = frontOf(look, b)
+      return [2, 1, 0].map((k) =>
+        rect(f.x - f.width / 2 + k * STACK, f.y - f.height / 2 - k * STACK, f.width, f.height, { radius: 3, ...style }),
+      )
+    }
   }
 }
 
-function labelNodes(look: NodeLook, content: readonly string[], b: LayoutBox, size: number): SceneNode[] {
-  // Factors and dots carry their label outside, below.
-  const outside = look.shape === 'square' || look.shape === 'dot'
-  const top = outside ? b.y + b.height / 2 + size : b.y - ((content.length - 1) * (size + 2)) / 2
-  return content.map((s, i) => {
-    const y = top + i * (size + 2)
-    const fill = i === 0 && !outside ? look.text : 'muted'
-    const sz = i === 0 ? size : size - 2
-    return isTex(s)
-      ? tex(b.x, y, s.slice(1, -1), { size: sz + 2, fill, anchor: 'middle' })
-      : text(b.x, y, s, { size: sz, fill, anchor: 'middle', baseline: 'middle' })
+/** Whether a look carries its label outside the shape, below it (factors and dots). */
+const isOutside = (look: NodeLook): boolean => look.shape === 'square' || look.shape === 'dot'
+
+/** The vertical centre of each line of a node's text. */
+function lineYs(look: NodeLook, count: number, b: LayoutBox, size: number): number[] {
+  const c = frontOf(look, b)
+  const top = isOutside(look) ? b.y + b.height / 2 + size : c.y - ((count - 1) * (size + 2)) / 2
+  return Array.from({ length: count }, (_, i) => top + i * (size + 2))
+}
+
+function labelNodes(look: NodeLook, content: readonly Line[], b: LayoutBox, size: number): SceneNode[] {
+  const outside = isOutside(look)
+  const ys = lineYs(look, content.length, b, size)
+  const x = frontOf(look, b).x
+  return content.map((line, i) => {
+    const y = ys[i] as number
+    const fill = line.main && !outside ? look.text : 'muted'
+    const sz = line.main ? size : size - 2
+    return isTex(line.text)
+      ? tex(x, y, line.text.slice(1, -1), { size: sz + 2, fill, anchor: 'middle' })
+      : text(x, y, line.text, { size: sz, fill, anchor: 'middle', baseline: 'middle' })
   })
 }
 
 /** The point where a ray from a node's centre at `angle` leaves its outline. */
 function outlineAt(look: NodeLook, b: LayoutBox, angle: number): [number, number] {
   const [ux, uy] = [Math.cos(angle), Math.sin(angle)]
-  if (look.shape === 'circle' || look.shape === 'dot') {
-    const r = Math.min(b.width, b.height) / 2
-    return [b.x + r * ux, b.y + r * uy]
+  switch (look.shape) {
+    case 'circle':
+    case 'dot': {
+      const r = Math.min(b.width, b.height) / 2
+      return [b.x + r * ux, b.y + r * uy]
+    }
+    case 'ellipse': {
+      const [a, c] = [b.width / 2, b.height / 2]
+      const t = 1 / Math.hypot(ux / a, uy / c)
+      return [b.x + t * ux, b.y + t * uy]
+    }
+    case 'diamond':
+    case 'square':
+    case 'rect':
+    case 'round':
+    case 'none':
+    case 'stack':
+      return boxBoundary(b, [b.x + ux * 1e4, b.y + uy * 1e4])
   }
-  if (look.shape === 'ellipse') {
-    const [a, c] = [b.width / 2, b.height / 2]
-    const t = 1 / Math.hypot(ux / a, uy / c)
-    return [b.x + t * ux, b.y + t * uy]
-  }
-  return boxBoundary(b, [b.x + ux * 1e4, b.y + uy * 1e4])
 }
 
 /**
@@ -208,6 +275,37 @@ function selfLoop(
   return { points, label: centreOut(angle, reach + 9), direction }
 }
 
+/** A box as `[x0, y0, x1, y1]`. */
+type Rect = readonly [number, number, number, number]
+
+const overlaps = (a: Rect, b: Rect): boolean => a[0] < b[2] && b[0] < a[2] && a[1] < b[3] && b[1] < a[3]
+
+/** The point a fraction `t` (0 to 1) of the way along a polyline, by length. */
+function pointAlong(points: readonly (readonly [number, number])[], t: number): [number, number] {
+  const first = points[0]
+  if (first === undefined) return [0, 0]
+  const lengths = points
+    .slice(1)
+    .map((p, i) =>
+      Math.hypot(
+        p[0] - (points[i] as readonly [number, number])[0],
+        p[1] - (points[i] as readonly [number, number])[1],
+      ),
+    )
+  const total = lengths.reduce((a, b) => a + b, 0)
+  let left = Math.min(1, Math.max(0, t)) * total
+  for (const [i, len] of lengths.entries()) {
+    const a = points[i] as readonly [number, number]
+    const b = points[i + 1] as readonly [number, number]
+    if (left <= len || i === lengths.length - 1) {
+      const f = len === 0 ? 0 : Math.min(1, left / len)
+      return [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f]
+    }
+    left -= len
+  }
+  return [first[0], first[1]]
+}
+
 /** Every group's members, with the members of its descendant groups. */
 function groupMembers(s: Structure): Map<string, Set<string>> {
   const parent = new Map(s.groups.map((g) => [g.id, g.parent]))
@@ -241,7 +339,14 @@ function depthOf(s: Structure, id: string): number {
  * self-loops as teardrops on the node's freest side, groups as plates (with their count), repeated blocks and clusters
  * around their members (nested by `parent`), and an optional overlay of active nodes and edges and value badges (with
  * `frames`, nodes are sized for every frame's badges, so an animation never moves the layout). Labels written `$...$`
- * are typeset as TeX.
+ * are typeset as TeX, and a label with `\n` takes several lines.
+ *
+ * A node's `look` (shape, fill, stroke, text colour, outline width and dash; the shapes include `none`, text alone, and
+ * `stack`, boxes piled behind the first) and an edge's `look` override the style's. With `layout: 'manual'` (or when
+ * every node has a `position`) nodes go where they are put. An edge with `bidirectional` is drawn once with an arrow
+ * head at each end (an edge the other way round between the same nodes is absorbed into it and leaves the layout
+ * graph, so ranks are unaffected). An edge label sits at the middle of the edge, or at `labelAt` along it, in a layer
+ * above the nodes on a plate, and is moved off the nodes it would cover.
  *
  * @param s - The structure.
  * @param options - Layout, direction, style, overlay (and the frames it comes from), seed and spacing.
@@ -261,14 +366,14 @@ export function diagram(s: Structure, options: DiagramOptions = {}): Scene {
   const overlay = options.overlay
   const active = new Set(overlay?.active ?? [])
   const activeEdges = new Set((overlay?.edges ?? []).map((e) => `${e.from}\u0000${e.to}`))
-  const looks = new Map(s.nodes.map((n) => [n.id, style.node(n.role)]))
+  const looks = new Map(s.nodes.map((n): [string, NodeLook] => [n.id, { ...style.node(n.role), ...n.look }]))
   const content = new Map(
     s.nodes.map((n) => [n.id, lines(n, overlay?.badges?.[n.id] ?? n.badges, looks.get(n.id) as NodeLook)]),
   )
   // A node's box fits its content in this frame and, given the animation's frames, in every one of them.
   const sizeOf = (n: StructureNode): { width: number; height: number } => {
     const look = looks.get(n.id) as NodeLook
-    let box = nodeSize(look, content.get(n.id) as string[], size)
+    let box = nodeSize(look, content.get(n.id) as Line[], size)
     for (const f of options.frames ?? []) {
       const other = nodeSize(look, lines(n, f.badges?.[n.id] ?? n.badges, look), size)
       box = { width: Math.max(box.width, other.width), height: Math.max(box.height, other.height) }
@@ -276,7 +381,13 @@ export function diagram(s: Structure, options: DiagramOptions = {}): Scene {
     return box
   }
   // Self-loops are drawn here, not by the layout: the layout routes the other edges.
-  const routed = s.edges.filter((e) => e.from !== e.to)
+  // A bidirectional edge absorbs the edge the other way round between its ends: one line, arrow heads at both ends.
+  const absorbed = new Set<StructureEdge>()
+  for (const e of s.edges) {
+    if (e.bidirectional !== true || absorbed.has(e)) continue
+    for (const t of s.edges) if (t !== e && t.from === e.to && t.to === e.from && !absorbed.has(t)) absorbed.add(t)
+  }
+  const routed = s.edges.filter((e) => e.from !== e.to && !absorbed.has(e))
   const graph: LayoutGraph = {
     nodes: s.nodes.map((n) => ({
       id: n.id,
@@ -287,25 +398,43 @@ export function diagram(s: Structure, options: DiagramOptions = {}): Scene {
     groups: s.groups.map((g) => ({ id: g.id, ...(g.parent === undefined ? {} : { parent: g.parent }) })),
   }
   const direction = options.direction ?? s.direction ?? 'down'
-  const which = options.layout ?? style.layout
+  const placedByHand = s.nodes.length > 0 && s.nodes.every((n) => n.position !== undefined)
+  const which = options.layout ?? (placedByHand ? 'manual' : style.layout)
+  const widest = Math.max(10, maxOf(graph.nodes.map((v) => Math.max(v.width, v.height))))
   const layout: GraphLayout =
-    which === 'tree'
-      ? tidyTree(graph, { direction })
-      : which === 'circular'
-        ? circularLayout(graph)
-        : which === 'force'
-          ? forceLayout(graph, { seed: options.seed ?? 0 })
-          : which === 'bipartite'
-            ? bipartiteLayout(
-                graph,
-                s.nodes.filter((n) => n.role !== 'factor').map((n) => n.id),
-                { orientation: direction === 'right' ? 'columns' : 'rows', gap: options.rankSep ?? 110 },
-              )
-            : layered(graph, {
-                direction,
-                ...(options.rankSep === undefined ? {} : { rankSep: options.rankSep }),
-                ...(options.nodeSep === undefined ? {} : { nodeSep: options.nodeSep }),
+    which === 'manual'
+      ? manualLayout(
+          graph,
+          Object.fromEntries(s.nodes.flatMap((n) => (n.position === undefined ? [] : [[n.id, n.position]]))),
+        )
+      : which === 'tree'
+        ? tidyTree(graph, {
+            direction,
+            ...(options.rankSep === undefined ? {} : { levelSep: options.rankSep }),
+            ...(options.nodeSep === undefined ? {} : { siblingSep: options.nodeSep }),
+          })
+        : which === 'circular'
+          ? circularLayout(graph, options.nodeSep === undefined ? {} : { gap: options.nodeSep })
+          : which === 'force'
+            ? forceLayout(graph, {
+                seed: options.seed ?? 0,
+                ...(options.rankSep === undefined ? {} : { length: options.rankSep }),
               })
+            : which === 'bipartite'
+              ? bipartiteLayout(
+                  graph,
+                  s.nodes.filter((n) => n.role !== 'factor').map((n) => n.id),
+                  {
+                    orientation: direction === 'right' ? 'columns' : 'rows',
+                    gap: options.rankSep ?? 110,
+                    ...(options.nodeSep === undefined ? {} : { spacing: widest + options.nodeSep }),
+                  },
+                )
+              : layered(graph, {
+                  direction,
+                  ...(options.rankSep === undefined ? {} : { rankSep: options.rankSep }),
+                  ...(options.nodeSep === undefined ? {} : { nodeSep: options.nodeSep }),
+                })
 
   // Groups: deepest first, each around its members and its child groups, with room for its label.
   const members = groupMembers(s)
@@ -329,7 +458,14 @@ export function diagram(s: Structure, options: DiagramOptions = {}): Scene {
       x1 = Math.max(x1, c[2])
       y1 = Math.max(y1, c[3])
     }
-    if (Number.isFinite(x0)) boxes.set(g.id, [x0 - 12, y0 - 24, x1 + 12, y1 + (g.count === undefined ? 12 : 22)])
+    // The box is at least as wide as its label (which starts 8 px in).
+    if (Number.isFinite(x0))
+      boxes.set(g.id, [
+        x0 - 12,
+        y0 - 24,
+        Math.max(x1 + 12, x0 - 12 + textWidth(g.label, size - 1) + 16),
+        y1 + (g.count === undefined ? 12 : 22),
+      ])
   }
   const groupScene: SceneNode[] = [...s.groups]
     .sort((a, b) => depthOf(s, a.id) - depthOf(s, b.id))
@@ -359,17 +495,21 @@ export function diagram(s: Structure, options: DiagramOptions = {}): Scene {
       return out
     })
 
-  // An edge with a twin in the other direction bends to its left, so the pair (and their labels) separate.
-  const pairs = new Set(s.edges.map((e) => `${e.from}\u0000${e.to}`))
+  // An edge with a twin in the other direction bends to its left, so the pair (and their labels) separate: a straight
+  // edge into a bow, a routed one (through the ranks it crosses) with its inner points moved aside.
+  const pairs = new Set(s.edges.filter((e) => !absorbed.has(e)).map((e) => `${e.from}\u0000${e.to}`))
   const bend = (points: readonly (readonly [number, number])[]): (readonly [number, number])[] => {
     const a = points[0]
     const b = points[points.length - 1]
-    if (a === undefined || b === undefined || points.length !== 2) return [...points]
+    if (a === undefined || b === undefined || points.length < 2) return [...points]
     const dx = b[0] - a[0]
     const dy = b[1] - a[1]
     const len = Math.hypot(dx, dy) || 1
     const off = 10
-    return [a, [(a[0] + b[0]) / 2 + (dy / len) * off, (a[1] + b[1]) / 2 - (dx / len) * off], b]
+    if (points.length === 2) return [a, [(a[0] + b[0]) / 2 + (dy / len) * off, (a[1] + b[1]) / 2 - (dx / len) * off], b]
+    return points.map((p, i): [number, number] =>
+      i === 0 || i === points.length - 1 ? [p[0], p[1]] : [p[0] + (dy / len) * off, p[1] - (dx / len) * off],
+    )
   }
   // Each route belongs to the next routed edge with its ends (layouts skip edges whose ends are missing).
   const routeOf = new Map<StructureEdge, EdgeRoute>()
@@ -382,9 +522,32 @@ export function diagram(s: Structure, options: DiagramOptions = {}): Scene {
     next++
   }
   const loopExtent: [number, number][] = []
+  const edgeLook = (e: StructureEdge): EdgeLook => ({ ...style.edge(e), ...e.look })
+  /** An arrow head at the start of an edge: a short reversed arrow lying on its first stretch. */
+  const tailArrow = (
+    points: readonly (readonly [number, number])[],
+    id: string,
+    stroke: Paint,
+    strokeWidth: number,
+  ): SceneNode[] => {
+    const a = points[0]
+    const b = points[1]
+    if (a === undefined || b === undefined) return []
+    const len = Math.hypot(b[0] - a[0], b[1] - a[1])
+    if (len < 1e-9) return []
+    const reach = Math.min(len, 8 + 2 * strokeWidth)
+    const from: [number, number] = [a[0] + ((b[0] - a[0]) / len) * reach, a[1] + ((b[1] - a[1]) / len) * reach]
+    return [path([from, [a[0], a[1]]], { id, stroke, strokeWidth, arrow: true })]
+  }
+  // Labels of straight and routed edges are drawn after the nodes, so they are collected here.
+  const pending: { readonly edge: StructureEdge; readonly points: readonly (readonly [number, number])[] }[] = []
   const edgeScene: SceneNode[] = s.edges.flatMap((e, i) => {
-    const look = style.edge(e)
+    if (absorbed.has(e)) return []
+    const look = edgeLook(e)
     const on = activeEdges.has(`${e.from}\u0000${e.to}`)
+    const stroke = on ? 'accent' : look.stroke
+    const strokeWidth = on ? 2.5 : (look.strokeWidth ?? 1.2)
+    const arrow = look.arrow || e.bidirectional === true
     if (e.from === e.to) {
       const b = layout.nodes[e.from]
       if (b === undefined) return []
@@ -393,9 +556,9 @@ export function diagram(s: Structure, options: DiagramOptions = {}): Scene {
       const out: SceneNode[] = [
         path(loop.points, {
           id: `edge:${i}`,
-          stroke: on ? 'accent' : look.stroke,
-          strokeWidth: on ? 2.5 : (look.strokeWidth ?? 1.2),
-          arrow: look.arrow,
+          stroke,
+          strokeWidth,
+          arrow,
           smooth: true,
           ...(look.dash === undefined ? {} : { dash: look.dash }),
         }),
@@ -415,21 +578,15 @@ export function diagram(s: Structure, options: DiagramOptions = {}): Scene {
     const out: SceneNode[] = [
       path(route.points, {
         id: `edge:${i}`,
-        stroke: on ? 'accent' : look.stroke,
-        strokeWidth: on ? 2.5 : (look.strokeWidth ?? 1.2),
-        arrow: look.arrow,
+        stroke,
+        strokeWidth,
+        arrow,
         smooth: route.points.length > 2,
         ...(look.dash === undefined ? {} : { dash: look.dash }),
       }),
+      ...(e.bidirectional === true ? tailArrow(route.points, `edge:${i}:tail`, stroke, strokeWidth) : []),
     ]
-    if (e.label !== undefined) {
-      const mid = route.points[Math.floor((route.points.length - 1) / 2)]
-      const next = route.points[Math.floor((route.points.length - 1) / 2) + 1] ?? mid
-      if (mid !== undefined && next !== undefined)
-        out.push(
-          text((mid[0] + next[0]) / 2 + 4, (mid[1] + next[1]) / 2 - 4, e.label, { size: size - 2, fill: 'muted' }),
-        )
-    }
+    if (e.label !== undefined) pending.push({ edge: e, points: route.points })
     return out
   })
 
@@ -440,7 +597,72 @@ export function diagram(s: Structure, options: DiagramOptions = {}): Scene {
     return [
       groupNode([...shapeNodes(look, b, active.has(n.id)), ...labelNodes(look, content.get(n.id) ?? [], b, size)], {
         id: n.id,
-        title: [n.label, n.detail].filter((x) => x !== undefined).join(': '),
+        title: [n.label.replaceAll('\n', ' '), n.detail].filter((x) => x !== undefined).join(': '),
+      }),
+    ]
+  })
+
+  // Edge labels, above the nodes and on a plate that hides what is under them; the middle of the edge is the default
+  // place, moved aside along the edge or to its other side when that would cover a node or an earlier label.
+  const fs = size - 2
+  const nodeBoxes = [...Object.values(layout.nodes)].map(
+    (b): Rect => [b.x - b.width / 2, b.y - b.height / 2, b.x + b.width / 2, b.y + b.height / 2],
+  )
+  const labelBoxes: Rect[] = []
+  const labelScene: SceneNode[] = pending.flatMap(({ edge, points }) => {
+    const label = edge.label as string
+    const w = textWidth(label, fs)
+    // The text's box for an anchor, as drawn: centred (an explicit `labelAt`) or starting at the anchor.
+    const boxAt = (x: number, y: number, centred: boolean): Rect => [
+      (centred ? x - w / 2 : x) - 3,
+      y - fs * 0.5 - 2,
+      (centred ? x + w / 2 : x + w) + 3,
+      y + fs * 0.5 + 2,
+    ]
+    let x: number
+    let y: number
+    let centred = false
+    if (edge.labelAt !== undefined) {
+      ;[x, y] = pointAlong(points, edge.labelAt)
+      centred = true
+    } else {
+      const k = Math.floor((points.length - 1) / 2)
+      const mid = points[k]
+      const nxt = points[k + 1] ?? mid
+      if (mid === undefined || nxt === undefined) return []
+      ;[x, y] = [(mid[0] + nxt[0]) / 2 + 4, (mid[1] + nxt[1]) / 2 - 4]
+      const clear = (r: Rect): boolean => ![...nodeBoxes, ...labelBoxes].some((q) => overlaps(r, q))
+      if (!clear(boxAt(x, y, false))) {
+        search: for (const t of [0.5, 0.4, 0.6, 0.3, 0.7, 0.2, 0.8]) {
+          const [px, py] = pointAlong(points, t)
+          for (const [dx, dy] of [
+            [4, -4],
+            [-w - 4, -4],
+            [4, fs + 6],
+            [-w - 4, fs + 6],
+            [-w / 2, -26],
+            [-w / 2, 34],
+            [-w / 2, -44],
+            [-w / 2, 52],
+          ] as const) {
+            if (clear(boxAt(px + dx, py + dy, false))) {
+              ;[x, y] = [px + dx, py + dy]
+              break search
+            }
+          }
+        }
+      }
+    }
+    const box = boxAt(x, y, centred)
+    labelBoxes.push(box)
+    loopExtent.push([box[0], box[1]], [box[2], box[3]])
+    return [
+      rect(box[0], box[1], box[2] - box[0], box[3] - box[1], { fill: 'bg', stroke: 'none', opacity: 0.9, radius: 3 }),
+      text(x, y, label, {
+        size: fs,
+        fill: 'muted',
+        baseline: 'middle',
+        ...(centred ? { anchor: 'middle' as const } : {}),
       }),
     ]
   })
@@ -448,9 +670,26 @@ export function diagram(s: Structure, options: DiagramOptions = {}): Scene {
   const notes: SceneNode[] = (s.annotations ?? []).flatMap((a) => {
     const target = a.target === undefined ? undefined : (layout.nodes[a.target] ?? undefined)
     const fill = a.kind === 'warning' ? 'tab3' : a.kind === 'highlight' ? 'accent' : 'muted'
-    if (target === undefined) return [text(8, 14, a.text, { size: size - 1, fill })]
-    return [text(target.x + target.width / 2 + 6, target.y - target.height / 2, a.text, { size: size - 2, fill })]
+    if (target === undefined) {
+      loopExtent.push([8 + textWidth(a.text, size - 1), 14 + size])
+      return [text(8, 14, a.text, { size: size - 1, fill })]
+    }
+    const [nx, ny] = [target.x + target.width / 2 + 6, target.y - target.height / 2]
+    loopExtent.push([nx + textWidth(a.text, size - 2), ny + 4])
+    return [text(nx, ny, a.text, { size: size - 2, fill })]
   })
+  // Labels written below a shape (factors and dots) reach past its box.
+  for (const n of s.nodes) {
+    const b = layout.nodes[n.id]
+    const look = looks.get(n.id) as NodeLook
+    if (b === undefined || !isOutside(look)) continue
+    const rows = content.get(n.id) ?? []
+    const ys = lineYs(look, rows.length, b, size)
+    rows.forEach((l, i) => {
+      const half = textWidth(l.text, l.main ? size : size - 2) / 2
+      loopExtent.push([b.x - half, (ys[i] as number) - size / 2], [b.x + half, (ys[i] as number) + size / 2])
+    })
+  }
 
   // Groups and notes can reach past the layout's own box: grow the scene to hold them.
   let [minX, minY, maxX, maxY] = [0, 0, layout.width, layout.height]
@@ -466,7 +705,7 @@ export function diagram(s: Structure, options: DiagramOptions = {}): Scene {
     maxX = Math.max(maxX, x + 6)
     maxY = Math.max(maxY, y + 6)
   }
-  const children = [...groupScene, ...edgeScene, ...nodeScene, ...notes]
+  const children = [...groupScene, ...edgeScene, ...nodeScene, ...labelScene, ...notes]
   return scene(
     maxX - minX,
     maxY - minY,
