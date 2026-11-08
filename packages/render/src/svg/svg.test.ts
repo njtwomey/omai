@@ -21,6 +21,27 @@ import { chartToSvg, composeSvg, exportSize, svgDataUrl, svgToPng } from './expo
 import { arrowHeadPoints, smoothPathData, straightPathData } from './paths.ts'
 import { escapeXml, sceneToSvg } from './svg.ts'
 
+describe('sceneToSvg: fill and stroke opacity', () => {
+  it('writes fill-opacity and stroke-opacity, and gives an arrow head its outline opacity', () => {
+    const svg = sceneToSvg(
+      scene(20, 20, [
+        rect(0, 0, 10, 10, { fill: 'tab0', stroke: 'tab0', fillOpacity: 0.2, strokeOpacity: 0.7 }),
+        path(
+          [
+            [0, 0],
+            [5, 5],
+          ],
+          { arrow: true, strokeOpacity: 0.5 },
+        ),
+      ]),
+    )
+    expect(svg).toContain('fill-opacity="0.2"')
+    expect(svg).toContain('stroke-opacity="0.7"')
+    expect(svg).toContain('fill-opacity="0.5"')
+    expect(sceneToSvg(scene(20, 20, [rect(0, 0, 10, 10, { fill: 'tab0' })]))).not.toContain('fill-opacity')
+  })
+})
+
 describe('sceneToSvg', () => {
   it('draws every node kind with the default paint rules', () => {
     const s = scene(

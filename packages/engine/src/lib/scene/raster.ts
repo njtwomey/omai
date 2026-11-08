@@ -315,7 +315,7 @@ function stroke(
   const mask = maskFor(draw.canvas, pieces, 1)
   if (mask === undefined) return
   for (const piece of pieces) scan(mask, [piece])
-  composite(draw.canvas, mask, colour, opacity)
+  composite(draw.canvas, mask, colour, opacity * (style.strokeOpacity ?? 1))
 }
 
 function fill(draw: Draw, ring: readonly Vec2[], paint: Paint, m: Affine, opacity: number): void {
@@ -331,7 +331,7 @@ function fill(draw: Draw, ring: readonly Vec2[], paint: Paint, m: Affine, opacit
 function shape(draw: Draw, ring: readonly Vec2[], closed: boolean, style: Style, m: Affine, opacity: number): void {
   const o = opacity * (style.opacity ?? 1)
   const fillPaint = style.fill ?? (closed && style.stroke === undefined ? 'fg' : 'none')
-  if (closed) fill(draw, ring, fillPaint, m, o)
+  if (closed) fill(draw, ring, fillPaint, m, o * (style.fillOpacity ?? 1))
   const strokePaint = style.stroke ?? (closed ? 'none' : 'fg')
   stroke(draw, ring, closed, style, strokePaint, m, o, false)
 }
@@ -410,7 +410,7 @@ function drawNode(draw: Draw, node: SceneNode, m: Affine, opacity: number): void
       const pts = node.smooth === true ? smoothed(node.points, closed) : node.points
       if (node.arrow === true && !closed) {
         const o = opacity * (node.opacity ?? 1)
-        if (node.fill !== undefined) fill(draw, pts, node.fill, m, o)
+        if (node.fill !== undefined) fill(draw, pts, node.fill, m, o * (node.fillOpacity ?? 1))
         stroke(draw, pts, false, node, node.stroke ?? 'fg', m, o, true)
         return
       }

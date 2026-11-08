@@ -114,3 +114,187 @@ export function texError(tex: string, macros: Readonly<Record<string, string>> =
     return e instanceof Error ? e.message : String(e)
   }
 }
+
+/** The box a piece of TeX takes once typeset: its width and its height with its depth, in pixels. */
+export interface TexExtent {
+  readonly width: number
+  readonly height: number
+}
+
+/** A node of KaTeX's tree of spans and glyphs, as far as measuring needs it. */
+interface KatexDom {
+  readonly classes?: readonly string[]
+  readonly style?: Readonly<Record<string, string | undefined>>
+  readonly children?: readonly KatexDom[]
+  readonly text?: string
+  readonly width?: number
+  readonly italic?: number
+  readonly height?: number
+  readonly depth?: number
+}
+
+type DomTreeBuilder = (tex: string, options: Record<string, unknown>) => KatexDom
+
+/** KaTeX's own sizes (`size1` to `size11`), in ems of the base size: what `\tiny` to `\Huge` and the scripts scale by. */
+const KATEX_SIZES = [0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.2, 1.44, 1.728, 2.074, 2.488]
+
+/** An `em` length of a style, in ems (anything else counts for nothing). */
+function emLength(value: string | undefined): number {
+  if (value === undefined || !value.endsWith('em')) return 0
+  const v = Number(value.slice(0, -2))
+  return Number.isFinite(v) ? v : 0
+}
+
+/**
+ * The TeX that sets a glyph in the font a symbol node was set in, read from its classes: a run of glyphs KaTeX merged
+ * into one node carries only the first one's width, so the others are measured one by one in the same font.
+ */
+function fontWrap(classes: readonly string[]): readonly [string, string] {
+  const has = (c: string): boolean => classes.includes(c)
+  if (has('textsf') && has('textbf')) return ['\\textsf{\\textbf{', '}}']
+  for (const name of [
+    'textbf',
+    'textsf',
+    'textit',
+    'texttt',
+    'mathbf',
+    'mathit',
+    'mathsf',
+    'mathtt',
+    'mathcal',
+    'mathscr',
+  ])
+    if (has(name)) return [`\\${name}{`, '}']
+  if (has('mathnormal')) return ['', '']
+  return ['\\mathrm{', '}']
+}
+
+const glyphs = new Map<string, number>()
+
+/** The width in ems of one glyph in the font of the given classes (measured through KaTeX once, then cached). */
+function glyphWidth(classes: readonly string[], ch: string, build: DomTreeBuilder): number {
+  if (ch === ' ') return 0.25
+  if (!/^[a-zA-Z0-9.,:;!?()+=<>/|'*@-]$/.test(ch)) return 0.5
+  const [open, close] = fontWrap(classes)
+  const key = `${open}${ch}${close}`
+  const hit = glyphs.get(key)
+  if (hit !== undefined) return hit
+  const find = (n: KatexDom): number | undefined => {
+    if (n.text !== undefined) return n.width
+    for (const c of n.children ?? []) {
+      const w = find(c)
+      if (w !== undefined) return w
+    }
+    return undefined
+  }
+  let w = 0.5
+  try {
+    w = find(build(key, { output: 'html', throwOnError: true, strict: 'ignore' })) ?? 0.5
+  } catch {
+    w = 0.5
+  }
+  glyphs.set(key, w)
+  return w
+}
+
+/** The width of a span or glyph in ems of the size it is drawn at; `scale` is the em of its parent in ems of the base. */
+function domWidth(node: KatexDom, scale: number, build: DomTreeBuilder): number {
+  if (node.text !== undefined) {
+    const classes = node.classes ?? []
+    const run = [...node.text]
+    const sum = run.length <= 1 ? (node.width ?? 0) : run.reduce((a, ch) => a + glyphWidth(classes, ch, build), 0)
+    return (sum + (node.italic ?? 0)) * scale
+  }
+  const classes = node.classes ?? []
+  let own = scale
+  if (classes.includes('sizing') || classes.includes('fontsize-ensurer')) {
+    const from = classes.find((c) => /^reset-size\d+$/.test(c))
+    const to = classes.find((c) => /^size\d+$/.test(c))
+    const a = KATEX_SIZES[Number(from?.slice(10)) - 1]
+    const b = KATEX_SIZES[Number(to?.slice(4)) - 1]
+    if (a !== undefined && b !== undefined) own = scale * (b / a)
+  }
+  const style = node.style ?? {}
+  const edges = emLength(style['marginLeft']) + emLength(style['marginRight'])
+  const padding = emLength(style['paddingLeft']) + emLength(style['paddingRight'])
+  const widths = (node.children ?? []).map((c) => domWidth(c, own, build))
+  // A vertical list is a table: its rows (`vlist-t`) take the widest row, a row's cells (`vlist-r`) add up, and the
+  // lines inside a cell (`vlist`) are blocks that take the widest line.
+  const inner =
+    classes.includes('vlist') || classes.includes('vlist-t')
+      ? Math.max(0, ...widths)
+      : classes.includes('nulldelimiter')
+        ? 0.12 * own
+        : classes.includes('strut')
+          ? 0
+          : widths.reduce((a, b) => a + b, 0)
+  const least = emLength(style['minWidth']) * own
+  return Math.max(inner, least) + (edges + padding) * own
+}
+
+/** KaTeX's stylesheet sets `.katex` to 1.21 times the surrounding font size. */
+const KATEX_SCALE = 1.21
+
+const extents = new Map<string, TexExtent>()
+
+/** The cruder estimate used when KaTeX cannot give a tree: commands count one glyph, braces and `^`, `_` nothing. */
+function sourceExtent(tex: string): TexExtent {
+  // In ems of the base size, like the tree's measure.
+  const glyphs = tex
+    .replace(
+      /\\(?:mathbf|mathrm|mathit|mathsf|mathcal|mathbb|boldsymbol|textbf|textrm|textit|textsf|text|left|right|mid)\b/g,
+      '',
+    )
+    .replace(/\\[a-zA-Z]+/g, 'a')
+    .replace(/[{}^_\s\\]/g, '').length
+  return { width: glyphs * 0.55, height: 1.2 }
+}
+
+/**
+ * The size of typeset TeX in pixels at a font size, measured from KaTeX's own layout (every glyph's width in its font
+ * and the spacing, scripts, fractions and roots round it), so a node or a label can be given a box that fits the
+ * formula rather than its source text: `\mathbf{x}_t` is as wide as a bold x with a small t, `q(x_t \mid x_0)` about
+ * five ems. The widths are of KaTeX's HTML output, which the page draws (with the stylesheet that `omai-render/react`
+ * imports, which sets it 1.21 times the surrounding size); the result is within a few percent of the browser's own
+ * measurement. TeX that does not parse, or a KaTeX
+ * without its tree builder, falls back to an estimate from the source (commands count one glyph, braces and `^`, `_`
+ * none). Results are cached per formula and macro set.
+ *
+ * @param tex - The TeX source, without `$` delimiters.
+ * @param size - The font size in pixels.
+ * @param macros - The macros (default the shared registry).
+ * @returns The width, and the height with the depth, in pixels.
+ * @example
+ * ```ts
+ * import { texExtent } from 'omai-render/maths'
+ * texExtent('x', 10).width > 0 // => true
+ * texExtent('x^2 + y^2', 10).width > texExtent('x^2', 10).width // => true
+ * texExtent('\\frac{a}{b}', 20).height > texExtent('a', 20).height // => true
+ * ```
+ */
+export function texExtent(tex: string, size: number, macros?: Readonly<Record<string, string>>): TexExtent {
+  const key = tex
+  const hit = macros === undefined ? extents.get(key) : undefined
+  let em = hit
+  if (em === undefined) {
+    const build = (katex as unknown as { __renderToDomTree?: DomTreeBuilder }).__renderToDomTree
+    try {
+      if (build === undefined) throw new Error('no tree builder')
+      const tree = build(tex, {
+        output: 'html',
+        throwOnError: true,
+        strict: 'ignore',
+        macros: { ...(macros ?? sharedMacros) },
+      })
+      em = { width: domWidth(tree, 1, build), height: (tree.height ?? 0) + (tree.depth ?? 0) }
+      if (!(em.width > 0)) em = sourceExtent(tex)
+    } catch {
+      em = sourceExtent(tex)
+    }
+    if (macros === undefined) {
+      if (extents.size > 2000) extents.clear()
+      extents.set(key, em)
+    }
+  }
+  return { width: em.width * size * KATEX_SCALE, height: em.height * size * KATEX_SCALE }
+}

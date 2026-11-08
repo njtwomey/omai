@@ -112,6 +112,15 @@ describe('rasterise', () => {
     expect(lit(headed)).toBeGreaterThan(18)
   })
 
+  it('scales the fill and the outline by their own opacity', () => {
+    const px = draw([
+      rect(2, 2, 10, 10, { fill: '#ffffff', stroke: '#ffffff', strokeWidth: 2, fillOpacity: 0.25, strokeOpacity: 1 }),
+    ])
+    expect(at(px, 7, 7)[0]).toBeGreaterThan(55)
+    expect(at(px, 7, 7)[0]).toBeLessThan(72)
+    expect(at(px, 7, 2)[0]).toBeGreaterThan(240)
+  })
+
   it('composites with opacity, groups and literal alpha', () => {
     const px = rasterise(scene(4, 4, [group([rect(0, 0, 4, 4, { fill: '#ff0000', opacity: 0.5 })], { opacity: 1 })]), {
       background: '#ffffff',

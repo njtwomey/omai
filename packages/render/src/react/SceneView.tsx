@@ -71,13 +71,18 @@ function strokeProps(s: Style, ctx: Ctx, defaultStroke?: Paint): Record<string, 
     stroke: stroke ?? 'none',
     strokeWidth: s.strokeWidth ?? 1,
     ...(s.dash === undefined ? {} : { strokeDasharray: s.dash.join(' ') }),
+    ...(s.strokeOpacity === undefined ? {} : { strokeOpacity: s.strokeOpacity }),
     ...(s.opacity === undefined ? {} : { opacity: s.opacity }),
   }
 }
 
 function closedProps(s: Style, ctx: Ctx): Record<string, unknown> {
   const filled = s.fill === undefined && s.stroke === undefined ? 'fg' : s.fill
-  return { fill: resolvePaint(filled, ctx.t) ?? 'none', ...strokeProps(s, ctx) }
+  return {
+    fill: resolvePaint(filled, ctx.t) ?? 'none',
+    ...(s.fillOpacity === undefined ? {} : { fillOpacity: s.fillOpacity }),
+    ...strokeProps(s, ctx),
+  }
 }
 
 function emphasis(node: SceneNode, ctx: Ctx): Record<string, unknown> {
@@ -137,6 +142,7 @@ function Node(props: { readonly node: SceneNode; readonly ctx: Ctx }): ReactNode
             <polygon
               points={arrowHeadPoints([node.x1, node.y1], [node.x2, node.y2], size)}
               fill={String(s['stroke'])}
+              fillOpacity={node.strokeOpacity}
               opacity={node.opacity}
             />
           ) : null}
@@ -148,7 +154,11 @@ function Node(props: { readonly node: SceneNode; readonly ctx: Ctx }): ReactNode
       const d = node.smooth === true ? smoothPathData(node.points, closed) : straightPathData(node.points, closed)
       const paint = closed
         ? closedProps(node, ctx)
-        : { fill: resolvePaint(node.fill, ctx.t) ?? 'none', ...strokeProps(node, ctx, 'fg') }
+        : {
+            fill: resolvePaint(node.fill, ctx.t) ?? 'none',
+            ...(node.fillOpacity === undefined ? {} : { fillOpacity: node.fillOpacity }),
+            ...strokeProps(node, ctx, 'fg'),
+          }
       const last = node.points[node.points.length - 1]
       const before = node.points[node.points.length - 2]
       const size = 4 + 2 * (node.strokeWidth ?? 1)
@@ -160,6 +170,7 @@ function Node(props: { readonly node: SceneNode; readonly ctx: Ctx }): ReactNode
             <polygon
               points={arrowHeadPoints(before, last, size)}
               fill={String(paint['stroke'])}
+              fillOpacity={node.strokeOpacity}
               opacity={node.opacity}
             />
           ) : null}
