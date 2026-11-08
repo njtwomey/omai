@@ -122,6 +122,14 @@ A multilayer perceptron on the two moons: the loss at every step, and the decisi
 
 [neural-network/main.tsx](neural-network/main.tsx), [neural-network/README.md](neural-network/README.md), tape: [tape.json](neural-network/tape.json)
 
+## Predators and prey, from an equation
+
+The Lotka-Volterra differential equations solved with an adaptive ODE solver: the two populations, the loop they trace, and the step sizes the solver chose.
+
+![Prey and predator populations over time, the closed loop they trace in the prey and predator plane, and the solver step size against time](ode/figure.svg)
+
+[ode/main.tsx](ode/main.tsx), tape: [tape.json](ode/tape.json)
+
 ## Principal components of the iris data
 
 PCA found one component per step: the flowers in the first two components, the variance each explains, the loadings.
@@ -152,7 +160,7 @@ Six pigeons cannot each have their own hole in five holes. Two SAT solvers, DPLL
 
 ![Conflicts and decision level against steps for the DPLL and CDCL solvers on the pigeonhole formula with six pigeons and five holes](sat/figure.svg)
 
-[sat/main.tsx](sat/main.tsx), [sat/README.md](sat/README.md), tape: [tape-dpll.json](sat/tape-dpll.json), tape: [tape-cdcl.json](sat/tape-cdcl.json)
+[sat/main.tsx](sat/main.tsx), [sat/README.md](sat/README.md), tape: [tape-cdcl.json](sat/tape-cdcl.json), tape: [tape-dpll.json](sat/tape-dpll.json)
 
 ## Support vectors and the margin
 
