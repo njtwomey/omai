@@ -119,6 +119,7 @@ mdml-js/
   apps/
     docs/        how to use mdml-engine: how-tos, API reference, concepts, live examples, traces (private)
     gallery/     what mdml-render can draw: charts, diagrams, scenes, animations, environments    (private)
+  examples/      one folder per example: main.tsx computes with mdml-engine and draws with mdml-render; figure.svg, tape.json  (private)
   oracle/        Python ground truth: golden fixtures and dataset vendoring (uv, pydantic)
   scripts/       repository tooling in TypeScript
   docs/          structure.md (this file), decisions.md, extending.md, conventions.md, concepts.yaml, history/
@@ -129,6 +130,13 @@ mdml-js/
 `apps/site` is the one site: the gallery shows off `render` and the docs document `engine`. Outside projects (the
 encyclopedia, the slide and blog tool) consume the three published packages as release tarballs; pages that explain
 a method are the encyclopedia's, composed from the packages, and the site has no hub (removed 2026-10-28).
+
+`examples/` holds the programs behind the README's Examples. A folder `examples/<name>/` has a `main.tsx` that exports
+`meta`, `run()` (the compute, returning the result and the tapes of its runs) and `View` (a React component drawing the
+result with `mdml-render`; contract in `examples/_shared/contract.ts`). `make readme-examples` finds the folders, runs
+them and writes `figure.svg`, `tape*.json` and the index `examples/README.md`; `make readme-examples-check` (part of
+`make check`) fails when those files are stale. Examples import the packages through their entry points only, which
+`make layers` checks. Adding an example is adding a folder.
 
 ## 2. Conventions every file follows
 
