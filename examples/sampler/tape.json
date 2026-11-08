@@ -6,7 +6,7 @@
       "runId": "sampleChains:none",
       "name": "sampleChains",
       "seed": null,
-      "version": "0.1.6",
+      "version": "0.1.7",
       "config": {
         "sampler": "windowAdaptation",
         "numChains": 4,
@@ -20,7 +20,7 @@
       "runId": "sampleChains:none/sampling/window-adaptation#1",
       "name": "sampling/window-adaptation",
       "seed": null,
-      "version": "0.1.6",
+      "version": "0.1.7",
       "config": {
         "dim": 2,
         "dense": false,
@@ -788,7 +788,7 @@
       "runId": "sampleChains:none/chain-0",
       "name": "nuts",
       "seed": null,
-      "version": "0.1.6",
+      "version": "0.1.7",
       "config": {
         "dim": 2,
         "stepSize": 0.3545374201067027,
@@ -1265,7 +1265,7 @@
       "runId": "sampleChains:none/sampling/window-adaptation#3",
       "name": "sampling/window-adaptation",
       "seed": null,
-      "version": "0.1.6",
+      "version": "0.1.7",
       "config": {
         "dim": 2,
         "dense": false,
@@ -2033,7 +2033,7 @@
       "runId": "sampleChains:none/chain-1",
       "name": "nuts",
       "seed": null,
-      "version": "0.1.6",
+      "version": "0.1.7",
       "config": {
         "dim": 2,
         "stepSize": 0.5547788079468204,
@@ -2510,7 +2510,7 @@
       "runId": "sampleChains:none/sampling/window-adaptation#5",
       "name": "sampling/window-adaptation",
       "seed": null,
-      "version": "0.1.6",
+      "version": "0.1.7",
       "config": {
         "dim": 2,
         "dense": false,
@@ -3278,7 +3278,7 @@
       "runId": "sampleChains:none/chain-2",
       "name": "nuts",
       "seed": null,
-      "version": "0.1.6",
+      "version": "0.1.7",
       "config": {
         "dim": 2,
         "stepSize": 0.4981890234298403,
@@ -3755,7 +3755,7 @@
       "runId": "sampleChains:none/sampling/window-adaptation#7",
       "name": "sampling/window-adaptation",
       "seed": null,
-      "version": "0.1.6",
+      "version": "0.1.7",
       "config": {
         "dim": 2,
         "dense": false,
@@ -4523,7 +4523,7 @@
       "runId": "sampleChains:none/chain-3",
       "name": "nuts",
       "seed": null,
-      "version": "0.1.6",
+      "version": "0.1.7",
       "config": {
         "dim": 2,
         "stepSize": 0.41740629423146003,
