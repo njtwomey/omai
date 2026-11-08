@@ -1,0 +1,213 @@
+[
+  {
+    "id": "csc-in-progress",
+    "title": "Convolutional sparse coding and dictionary learning, with the synthetic ECG beat (ported by another agent; not counted as a gap)",
+    "area": "signal",
+    "patterns": [
+      "aifn-compute/signal/sparse#*",
+      "aifn-methods/data/signals#syntheticEcg",
+      "aifn-methods/data/signals#syntheticBeat"
+    ],
+    "size": "M",
+    "inProgress": true
+  },
+  {
+    "id": "readout",
+    "title": "Readout: a labelled value under a figure",
+    "area": "render",
+    "patterns": ["aifn-render#Readout"],
+    "size": "S"
+  },
+  {
+    "id": "render-small",
+    "title": "Small render parts: status text, code editor",
+    "area": "render",
+    "patterns": ["aifn-render/controls#StatusText", "aifn-render/controls#CodeEditor"],
+    "size": "S"
+  },
+  {
+    "id": "cost-accounting",
+    "title": "Cost leftovers: convolution algorithm costs, dilated tap coverage, decode throughput, fine-tuning compute, reference LLM configurations",
+    "area": "nn",
+    "patterns": [
+      "aifn-compute/nn/functional#*",
+      "aifn-compute/nn/attention#attentionCost",
+      "aifn-compute/nn/attention#kvCacheMemory",
+      "aifn-compute/nn/attention#layerLinearCost",
+      "aifn-methods/neural/quantisation/**#*",
+      "aifn-methods/neural/convolutional#convolutionAlgorithmCosts",
+      "aifn-methods/neural/convolutional#winogradRelativeError"
+    ],
+    "size": "M"
+  },
+  {
+    "id": "teaching-datasets",
+    "title": "Teaching dataset generators with their truth (full-covariance Gaussians, learning curves, Swiss-roll slice, shapes, signals, tuning surfaces)",
+    "area": "datasets",
+    "patterns": ["aifn-methods/data/**#*"],
+    "size": "M"
+  },
+  {
+    "id": "semi-supervised",
+    "title": "Semi-supervised helpers: consistency training, Laplacian-regularised fits, entropy minimisation, semi-supervised GAN, VAE and mixtures",
+    "area": "learn",
+    "patterns": [
+      "aifn-methods/learning/semi-supervised#*",
+      "aifn-methods/neural/semi-supervised#*",
+      "aifn-methods/generative/gan#*",
+      "aifn-methods/unsupervised/clustering#*"
+    ],
+    "size": "M"
+  },
+  {
+    "id": "generative-runs",
+    "title": "Generative model runs: autoencoder and VAE, energy-based (JEM), RBM and DBN, toy diffusion mixtures, flows trainers",
+    "area": "nn",
+    "patterns": ["aifn-methods/generative/**#*"],
+    "size": "L"
+  },
+  {
+    "id": "scientific-ml",
+    "title": "Scientific machine learning: physics-informed networks, neural operators (FNO, DeepONet), neural ODE runs",
+    "area": "nn",
+    "patterns": [
+      "aifn-methods/neural/pinn#*",
+      "aifn-methods/neural/operator#*",
+      "aifn-methods/neural/ode#*",
+      "aifn-methods/neural/ode-mixtures#*",
+      "aifn-methods/dynamics/**#*"
+    ],
+    "size": "L"
+  },
+  {
+    "id": "rule-explanation",
+    "title": "Rule lists and explanation helpers: CBA and CMAR, boolean rule column generation, rule simplification, subgroup descriptions, RuleFit",
+    "area": "rules",
+    "patterns": [
+      "aifn-compute/learning/rules#*",
+      "aifn-compute/learning/explain#*",
+      "aifn-compute/learning/subgroups#*",
+      "aifn-methods/learning/linear#ruleFitPath",
+      "aifn-methods/learning/linear#ruleImportances"
+    ],
+    "size": "M"
+  },
+  {
+    "id": "logic-helpers",
+    "title": "Logic programming and induction helpers: propositionalisation, concept lattices, generality search, string-program synthesis",
+    "area": "logic",
+    "patterns": ["aifn-compute/logic/**#*", "aifn-methods/algorithms/**#*"],
+    "size": "M"
+  },
+  {
+    "id": "sequence-and-attention",
+    "title": "Efficient-attention and state-space helpers: sparse and block masks, mLSTM, Linformer, Nystrom and LSH attention, parity and recall probes",
+    "area": "nn",
+    "patterns": [
+      "aifn-compute/nn/attention#*",
+      "aifn-compute/nn/sequence#*",
+      "aifn-methods/neural/sequence#*",
+      "aifn-compute/nn/decoding#*",
+      "aifn-compute/nn/sets#*",
+      "aifn-compute/nn/equivariant#*",
+      "aifn-compute/nn/training#*",
+      "aifn-compute/nn/layers#*"
+    ],
+    "size": "M"
+  },
+  {
+    "id": "graph-networks",
+    "title": "Graph neural network helpers: batching, attention and pooling variants, temporal reach, k-WL, rewiring",
+    "area": "graph",
+    "patterns": ["aifn-compute/nn/graph#*", "aifn-methods/neural/graph#*", "aifn-compute/graph/**#*"],
+    "size": "M"
+  },
+  {
+    "id": "rating-models",
+    "title": "Rating systems: Elo, Glicko and TrueSkill through time with the federations' scales",
+    "area": "pgm",
+    "patterns": ["aifn-methods/inference/rating-models#*"],
+    "size": "M"
+  },
+  {
+    "id": "hpo-extras",
+    "title": "Hyperparameter-search extras: max-value entropy search, q-EI, EHVI, BOHB, population-based training, portfolios",
+    "area": "tune",
+    "patterns": ["aifn-methods/optimisation/**#*"],
+    "size": "M"
+  },
+  {
+    "id": "language-and-post-training",
+    "title": "Language-model and post-training toys: Kneser-Ney, character corpora, GRPO, best-of-N, reward-model data",
+    "area": "text",
+    "patterns": [
+      "aifn-methods/neural/language-models#*",
+      "aifn-methods/neural/post-training#*",
+      "aifn-methods/neural/reward-models#*",
+      "aifn-methods/neural/contrastive#*",
+      "aifn-methods/neural/full-batch#*",
+      "aifn-methods/neural/grokking#*"
+    ],
+    "size": "M"
+  },
+  {
+    "id": "theory-studies",
+    "title": "Learning-theory studies: concentration study, double descent, adaptive-holdout maximum, James-Stein risk",
+    "area": "learn",
+    "patterns": ["aifn-methods/theory/**#*"],
+    "size": "S"
+  },
+  {
+    "id": "gym-helpers",
+    "title": "Gym helpers: grid views, maze sets, action names, a training row",
+    "area": "rl",
+    "patterns": ["aifn-methods/gym/**#*", "aifn-render/gym#*"],
+    "size": "S"
+  },
+  {
+    "id": "small-numerics",
+    "title": "Small numerics and utilities: power-of-two tests, DCT matrix, 1-D optimal transport plan, relative L2 error, star discrepancy, scans, partial derivatives",
+    "area": "numerics",
+    "patterns": [
+      "aifn-compute/foundation/**#*",
+      "aifn-compute/numerics/**#*",
+      "aifn-compute/transport#*",
+      "aifn-compute/learning/metrics#*",
+      "aifn-compute/learning/selection#*",
+      "aifn-compute/learning/validate#*",
+      "aifn-compute/learning/calibration#*",
+      "aifn-compute/learning/off-policy#*",
+      "aifn-compute/optim/**#*",
+      "aifn-compute/signal/**#*",
+      "aifn-compute/dynamics/**#*",
+      "aifn-compute/probability/**#*"
+    ],
+    "size": "S"
+  },
+  {
+    "id": "filtering-and-inference",
+    "title": "Inference helpers: innovation statistics, run-length rows, clutter EP, learner models, factor graphs",
+    "area": "pgm",
+    "patterns": ["aifn-compute/inference/**#*", "aifn-methods/inference/**#*"],
+    "size": "S"
+  },
+  {
+    "id": "vision-and-capsules",
+    "title": "Detection anchors and targets, capsule routing, deformable convolution",
+    "area": "vision",
+    "patterns": ["aifn-methods/vision/**#*", "aifn-methods/neural/convolutional#*"],
+    "size": "M"
+  },
+  {
+    "id": "learning-method-runs",
+    "title": "Other method runs: multi-fidelity and sparse GPs, GAMLSS, ridge hypergradients, forward stagewise, Cox likelihood, recommenders, constant-velocity model, fuzzy graphs",
+    "area": "learn",
+    "patterns": [
+      "aifn-methods/learning/**#*",
+      "aifn-methods/unsupervised/**#*",
+      "aifn-methods/retrieval/**#*",
+      "aifn-methods/timeseries#*"
+    ],
+    "size": "M"
+  }
+]

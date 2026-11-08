@@ -13,6 +13,7 @@
       "!**/*.data.ts",
       "!**/fixtures",
       "!docs/port-map.json",
+      "!docs/aifn/data",
       "!pnpm-lock.yaml",
       "!packages/*/src/**/index.ts",
       "!packages/*/index",

@@ -1,0 +1,2764 @@
+{
+  "modules": [
+    {
+      "aifn": "aifn-compute/foundation/tensor",
+      "omai": ["omai-engine/tensor", "omai-engine/base"],
+      "reason": "tensors and their primitives"
+    },
+    {
+      "aifn": "aifn-compute/foundation/random",
+      "omai": ["omai-engine/random"],
+      "reason": "seeded draws (streams there, keys here)"
+    },
+    { "aifn": "aifn-compute/foundation/trace", "omai": ["omai-engine/trace"], "reason": "the run and trace contract" },
+    { "aifn": "aifn-compute/foundation/space", "omai": ["omai-engine/space"], "reason": "spaces of values" },
+    {
+      "aifn": "aifn-compute/foundation/contracts",
+      "omai": [
+        "omai-engine/base",
+        "omai-engine/trace",
+        "omai-engine/learn",
+        "omai-engine/problems",
+        "omai-engine/optim"
+      ],
+      "reason": "shared contracts"
+    },
+    { "aifn": "aifn-compute/foundation/pytree", "omai": ["omai-engine/tensor"], "reason": "trees of tensors" },
+    {
+      "aifn": "aifn-compute/foundation/fourier",
+      "omai": ["omai-engine/numerics/fourier"],
+      "reason": "Fourier transforms"
+    },
+    {
+      "aifn": "aifn-compute/foundation/convolution",
+      "omai": ["omai-engine/numerics/convolution", "omai-engine/nn"],
+      "reason": "convolutions"
+    },
+    { "aifn": "aifn-compute/foundation/autodiff", "omai": ["omai-engine/autodiff"], "reason": "differentiation" },
+    {
+      "aifn": "aifn-compute/numerics/special",
+      "omai": ["omai-engine/numerics/special", "omai-engine/tensor", "omai-engine/information"],
+      "reason": "special functions"
+    },
+    {
+      "aifn": "aifn-compute/numerics/linalg",
+      "omai": ["omai-engine/numerics/linalg", "omai-engine/distances", "omai-engine/numerics/approximation"],
+      "reason": "linear algebra"
+    },
+    {
+      "aifn": "aifn-compute/numerics/geometry",
+      "omai": ["omai-engine/numerics/geometry", "omai-engine/dynamics/pde"],
+      "reason": "geometry and grids"
+    },
+    {
+      "aifn": "aifn-compute/numerics/interpolate",
+      "omai": ["omai-engine/numerics/interpolate", "omai-engine/numerics/approximation", "omai-engine/nn"],
+      "reason": "interpolation and splines"
+    },
+    {
+      "aifn": "aifn-compute/numerics/quadrature",
+      "omai": ["omai-engine/numerics/quadrature", "omai-engine/random"],
+      "reason": "integration and quasi-random sequences"
+    },
+    { "aifn": "aifn-compute/numerics/roots", "omai": ["omai-engine/numerics/roots"], "reason": "root finding" },
+    {
+      "aifn": "aifn-compute/numerics/neighbours",
+      "omai": ["omai-engine/numerics/spatial", "omai-engine/cluster"],
+      "reason": "spatial trees and nearest neighbours"
+    },
+    {
+      "aifn": "aifn-compute/numerics/factorisation",
+      "omai": ["omai-engine/decomposition", "omai-engine/numerics/linalg"],
+      "reason": "factorisations"
+    },
+    {
+      "aifn": "aifn-compute/numerics/regularisation",
+      "omai": ["omai-engine/numerics/inverse"],
+      "reason": "regularised inverse problems"
+    },
+    { "aifn": "aifn-compute/probability/distributions", "omai": ["omai-engine/dists"], "reason": "distributions" },
+    {
+      "aifn": "aifn-compute/probability/stats",
+      "omai": ["omai-engine/stats", "omai-engine/timeseries", "omai-engine/signal"],
+      "reason": "statistics"
+    },
+    {
+      "aifn": "aifn-compute/probability/tests",
+      "omai": [
+        "omai-engine/stats/tests",
+        "omai-engine/stats",
+        "omai-engine/learn/model-selection",
+        "omai-engine/survival",
+        "omai-engine/metrics"
+      ],
+      "reason": "hypothesis tests"
+    },
+    {
+      "aifn": "aifn-compute/probability/information",
+      "omai": ["omai-engine/information"],
+      "reason": "information measures"
+    },
+    {
+      "aifn": "aifn-compute/probability/likelihoods",
+      "omai": ["omai-engine/dists", "omai-engine/linear", "omai-engine/losses"],
+      "reason": "likelihoods"
+    },
+    { "aifn": "aifn-compute/probability/samplers", "omai": ["omai-engine/sampling"], "reason": "samplers" },
+    { "aifn": "aifn-compute/probability/markov", "omai": ["omai-engine/stochastic"], "reason": "Markov chains" },
+    {
+      "aifn": "aifn-compute/learning/estimators",
+      "omai": ["omai-engine/learn"],
+      "reason": "the estimator contract and data helpers"
+    },
+    { "aifn": "aifn-compute/learning/metrics", "omai": ["omai-engine/metrics"], "reason": "metrics" },
+    {
+      "aifn": "aifn-compute/learning/validate",
+      "omai": ["omai-engine/learn/model-selection"],
+      "reason": "cross-validation"
+    },
+    { "aifn": "aifn-compute/learning/kernels", "omai": ["omai-engine/kernels"], "reason": "kernels" },
+    { "aifn": "aifn-compute/learning/losses", "omai": ["omai-engine/losses"], "reason": "losses" },
+    {
+      "aifn": "aifn-compute/learning/compose",
+      "omai": ["omai-engine/learn"],
+      "reason": "pipelines and target transforms"
+    },
+    {
+      "aifn": "aifn-compute/learning/selection",
+      "omai": ["omai-engine/learn/model-selection", "omai-engine/probprog"],
+      "reason": "model selection"
+    },
+    {
+      "aifn": "aifn-compute/learning/explain",
+      "omai": ["omai-engine/explain", "omai-engine/exposition"],
+      "reason": "explanation"
+    },
+    {
+      "aifn": "aifn-compute/learning/rules",
+      "omai": ["omai-engine/rules", "omai-engine/exposition", "omai-engine/explain"],
+      "reason": "rule learning"
+    },
+    {
+      "aifn": "aifn-compute/learning/conformal",
+      "omai": ["omai-engine/learn", "omai-engine/metrics"],
+      "reason": "conformal prediction"
+    },
+    {
+      "aifn": "aifn-compute/learning/calibration",
+      "omai": ["omai-engine/learn", "omai-engine/metrics"],
+      "reason": "calibration"
+    },
+    { "aifn": "aifn-compute/learning/off-policy", "omai": ["omai-engine/rl"], "reason": "off-policy evaluation" },
+    { "aifn": "aifn-compute/learning/subgroups", "omai": ["omai-engine/patterns"], "reason": "subgroup discovery" },
+    {
+      "aifn": "aifn-compute/nn/**",
+      "omai": ["omai-engine/nn", "omai-engine/nn/blocks"],
+      "reason": "neural network layers and functions"
+    },
+    {
+      "aifn": "aifn-compute/dynamics/ode",
+      "omai": ["omai-engine/dynamics/ode", "omai-engine/dynamics"],
+      "reason": "ODE solvers"
+    },
+    { "aifn": "aifn-compute/dynamics/control", "omai": ["omai-engine/dynamics/control"], "reason": "control" },
+    {
+      "aifn": "aifn-compute/dynamics/fields",
+      "omai": ["omai-engine/dynamics", "omai-engine/fields"],
+      "reason": "vector fields"
+    },
+    {
+      "aifn": "aifn-compute/graph/**",
+      "omai": ["omai-engine/graph", "omai-engine/search", "omai-engine/nn", "omai-engine/learn"],
+      "reason": "graphs"
+    },
+    {
+      "aifn": "aifn-compute/signal/**",
+      "omai": [
+        "omai-engine/signal",
+        "omai-engine/timeseries",
+        "omai-engine/optim",
+        "omai-engine/systems",
+        "omai-engine/numerics"
+      ],
+      "reason": "signal processing"
+    },
+    { "aifn": "aifn-compute/systems", "omai": ["omai-engine/systems"], "reason": "linear systems" },
+    { "aifn": "aifn-compute/optim/**", "omai": ["omai-engine/optim"], "reason": "optimisers" },
+    {
+      "aifn": "aifn-compute/logic/**",
+      "omai": ["omai-engine/logic"],
+      "reason": "logic and inductive logic programming"
+    },
+    {
+      "aifn": "aifn-compute/inference/**",
+      "omai": ["omai-engine/pgm", "omai-engine/dynamics/filtering", "omai-engine/sampling", "omai-engine/probprog"],
+      "reason": "probabilistic inference"
+    },
+    {
+      "aifn": "aifn-compute/transport",
+      "omai": ["omai-engine/optim", "omai-engine/losses"],
+      "reason": "optimal transport"
+    },
+    {
+      "aifn": "aifn-methods/data/**",
+      "omai": ["omai-engine/datasets", "omai-engine/data", "omai-engine/problems", "omai-engine/signal"],
+      "reason": "datasets and generators"
+    },
+    {
+      "aifn": "aifn-methods/learning/**",
+      "omai": [
+        "omai-engine/linear",
+        "omai-engine/learn",
+        "omai-engine/svm",
+        "omai-engine/trees",
+        "omai-engine/ensembles",
+        "omai-engine/gp",
+        "omai-engine/kernel-methods",
+        "omai-engine/gam",
+        "omai-engine/survival",
+        "omai-engine/kernels",
+        "omai-engine/explain",
+        "omai-engine/rules",
+        "omai-engine/mixture",
+        "omai-engine/cluster",
+        "omai-engine/nn"
+      ],
+      "reason": "supervised learning methods"
+    },
+    {
+      "aifn": "aifn-methods/unsupervised/**",
+      "omai": [
+        "omai-engine/cluster",
+        "omai-engine/decomposition",
+        "omai-engine/manifold",
+        "omai-engine/embedding",
+        "omai-engine/anomaly",
+        "omai-engine/mixture",
+        "omai-engine/kernels"
+      ],
+      "reason": "unsupervised methods"
+    },
+    {
+      "aifn": "aifn-methods/optimisation/**",
+      "omai": ["omai-engine/tune", "omai-engine/optim"],
+      "reason": "optimisation methods"
+    },
+    {
+      "aifn": "aifn-methods/theory/**",
+      "omai": ["omai-engine/learn", "omai-engine/stats", "omai-engine/information"],
+      "reason": "learning theory studies"
+    },
+    {
+      "aifn": "aifn-methods/gym/**",
+      "omai": ["omai-engine/rl", "omai-engine/environments", "omai-engine/worlds", "omai-engine/agents"],
+      "reason": "RL gym"
+    },
+    {
+      "aifn": "aifn-methods/neural/**",
+      "omai": ["omai-engine/nn", "omai-engine/nn/blocks"],
+      "reason": "neural methods"
+    },
+    {
+      "aifn": "aifn-methods/generative/**",
+      "omai": ["omai-engine/nn", "omai-engine/stochastic", "omai-engine/nn/blocks"],
+      "reason": "generative models"
+    },
+    {
+      "aifn": "aifn-methods/inference/**",
+      "omai": ["omai-engine/pgm", "omai-engine/probprog", "omai-engine/dynamics/filtering"],
+      "reason": "inference models"
+    },
+    {
+      "aifn": "aifn-methods/dynamics/**",
+      "omai": ["omai-engine/dynamics", "omai-engine/dynamics/pde"],
+      "reason": "dynamics"
+    },
+    { "aifn": "aifn-methods/evaluation/**", "omai": ["omai-engine/metrics"], "reason": "evaluation" },
+    { "aifn": "aifn-methods/vision/**", "omai": ["omai-engine/vision"], "reason": "vision" },
+    { "aifn": "aifn-methods/information/**", "omai": ["omai-engine/information"], "reason": "information" },
+    {
+      "aifn": "aifn-methods/retrieval/**",
+      "omai": ["omai-engine/text", "omai-engine/learn", "omai-engine/sketches"],
+      "reason": "retrieval"
+    },
+    { "aifn": "aifn-methods/timeseries", "omai": ["omai-engine/timeseries"], "reason": "time series" },
+    { "aifn": "aifn-methods/text/**", "omai": ["omai-engine/text"], "reason": "text" },
+    {
+      "aifn": "aifn-methods/algorithms/**",
+      "omai": ["omai-engine/search", "omai-engine/logic", "omai-engine/symbolic"],
+      "reason": "algorithms"
+    },
+    {
+      "aifn": "aifn-render",
+      "omai": [
+        "omai-render/figure",
+        "omai-render/charts",
+        "omai-render/react",
+        "omai-render/theme",
+        "omai-render/layout",
+        "omai-render/structures",
+        "omai-render/maths",
+        "omai-render/gym",
+        "omai-engine/space"
+      ],
+      "reason": "the render root re-exports the figure building blocks"
+    },
+    {
+      "aifn": "aifn-render/**",
+      "omai": [
+        "omai-render/figure",
+        "omai-render/charts",
+        "omai-render/react",
+        "omai-render/theme",
+        "omai-render/layout",
+        "omai-render/structures",
+        "omai-render/maths",
+        "omai-render/gym",
+        "omai-engine/space"
+      ],
+      "reason": "render building blocks"
+    }
+  ],
+  "symbols": [
+    {
+      "aifn": "aifn-compute/foundation/random#normals",
+      "omai": ["omai-engine/random#normal"],
+      "reason": "normal(key, shape) draws a tensor of the given shape"
+    },
+    {
+      "aifn": "aifn-compute/foundation/random#standardNormals",
+      "omai": ["omai-engine/random#normal"],
+      "reason": "normal(key, shape) draws a tensor of the given shape"
+    },
+    {
+      "aifn": "aifn-compute/foundation/random#integers",
+      "omai": ["omai-engine/random#randint"],
+      "reason": "renamed (numpy randint)"
+    },
+    {
+      "aifn": "aifn-compute/foundation/random#units",
+      "omai": ["omai-engine/random#uniform"],
+      "reason": "uniform(key, shape) in [0, 1)"
+    },
+    {
+      "aifn": "aifn-compute/foundation/random#child",
+      "omai": ["omai-engine/random#foldIn"],
+      "reason": "AIFN streams are mutable seeded counters (stream(seed), child(s, name)); omai uses immutable keys (key, foldIn, keyFromPath) or a Generator; the draws differ for the same seed"
+    },
+    {
+      "aifn": "aifn-compute/foundation/tensor#fromData",
+      "omai": ["omai-engine/tensor#fromStorage"],
+      "reason": "wraps a typed array as a tensor"
+    },
+    {
+      "aifn": "aifn-compute/foundation/tensor#fromRows",
+      "omai": ["omai-engine/tensor#asTensor"],
+      "reason": "a matrix from nested arrays"
+    },
+    {
+      "aifn": "aifn-compute/foundation/tensor#complexAbs",
+      "omai": ["omai-engine/tensor#absComplex"],
+      "reason": "renamed"
+    },
+    { "aifn": "aifn-compute/foundation/tensor#realPart", "omai": ["omai-engine/tensor#real"], "reason": "renamed" },
+    { "aifn": "aifn-compute/foundation/tensor#imagPart", "omai": ["omai-engine/tensor#imag"], "reason": "renamed" },
+    {
+      "aifn": "aifn-compute/foundation/tensor#expj",
+      "omai": ["omai-engine/tensor#cis"],
+      "reason": "renamed: the unit phasor"
+    },
+    {
+      "aifn": "aifn-compute/foundation/trace#trace",
+      "omai": ["omai-engine/trace#runAlgorithm"],
+      "reason": "runs an algorithm for n steps and returns the recorded trace"
+    },
+    {
+      "aifn": "aifn-compute/foundation/trace#run",
+      "omai": ["omai-engine/trace#runAlgorithm"],
+      "reason": "runs an algorithm to its final state"
+    },
+    {
+      "aifn": "aifn-compute/foundation/space#space",
+      "omai": ["omai-engine/space#dict"],
+      "reason": "a space of named dimensions"
+    },
+    {
+      "aifn": "aifn-compute/foundation/space#oneOf",
+      "omai": ["omai-engine/space#choice"],
+      "reason": "a choice among listed values"
+    },
+    {
+      "aifn": "aifn-compute/foundation/fourier#nextPowerOfTwo",
+      "omai": ["omai-engine/numerics/fourier#nextFastLen"],
+      "reason": "nextFastLen is the next fast FFT length (scipy next_fast_len), not strictly a power of two"
+    },
+    {
+      "aifn": "aifn-compute/numerics/special#normalCdf",
+      "omai": ["omai-engine/numerics/special#ndtr"],
+      "reason": "renamed (scipy ndtr)"
+    },
+    {
+      "aifn": "aifn-compute/numerics/special#studentTCdf",
+      "omai": ["omai-engine/numerics/special#stdtr"],
+      "reason": "renamed (scipy stdtr)"
+    },
+    {
+      "aifn": "aifn-compute/numerics/special#studentTQuantile",
+      "omai": ["omai-engine/numerics/special#stdtrit"],
+      "reason": "renamed (scipy stdtrit)"
+    },
+    {
+      "aifn": "aifn-compute/numerics/special#logChoose",
+      "omai": ["omai-engine/numerics/special#lbinom"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-compute/numerics/special#normalQuantile",
+      "omai": ["omai-engine/numerics/special#ndtri"],
+      "reason": "renamed (scipy ndtri)"
+    },
+    {
+      "aifn": "aifn-compute/numerics/special#logGamma",
+      "omai": ["omai-engine/numerics/special#lgamma"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-compute/numerics/special#regularisedBeta",
+      "omai": ["omai-engine/numerics/special#betainc"],
+      "reason": "renamed (scipy betainc)"
+    },
+    {
+      "aifn": "aifn-compute/numerics/special#regularisedBetaInverse",
+      "omai": ["omai-engine/numerics/special#betaincinv"],
+      "reason": "renamed (scipy betaincinv)"
+    },
+    {
+      "aifn": "aifn-compute/numerics/special#regularisedGammaP",
+      "omai": ["omai-engine/numerics/special#gammainc"],
+      "reason": "renamed (scipy gammainc)"
+    },
+    {
+      "aifn": "aifn-compute/numerics/special#logFactorial",
+      "omai": ["omai-engine/numerics/special#lfactorial"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-compute/numerics/linalg#eigh2",
+      "omai": ["omai-engine/numerics/linalg#eigh"],
+      "reason": "a closed-form 2x2 helper returning plain numbers; omai has the general eigh on tensors"
+    },
+    {
+      "aifn": "aifn-compute/numerics/linalg#svd2",
+      "omai": ["omai-engine/numerics/linalg#svd"],
+      "reason": "a closed-form 2x2 helper returning plain numbers; omai has the general svd on tensors"
+    },
+    {
+      "aifn": "aifn-compute/numerics/linalg#eig2",
+      "omai": ["omai-engine/numerics/linalg#eigh"],
+      "reason": "a closed-form 2x2 helper returning plain numbers"
+    },
+    {
+      "aifn": "aifn-compute/numerics/linalg#cholesky2",
+      "omai": ["omai-engine/numerics/linalg#cholesky"],
+      "reason": "a closed-form 2x2 helper returning plain numbers"
+    },
+    {
+      "aifn": "aifn-compute/numerics/interpolate#chebyshevInterpolation",
+      "omai": ["omai-engine/numerics/interpolate#chebyshevInterpolant"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-compute/numerics/interpolate#naturalCubicSpline",
+      "omai": ["omai-engine/numerics/interpolate#cubicSpline"],
+      "reason": "cubicSpline with the natural boundary condition"
+    },
+    {
+      "aifn": "aifn-compute/numerics/interpolate#clampedKnots",
+      "omai": ["omai-engine/nn#splineKnots"],
+      "reason": "the clamped knot vector of a B-spline"
+    },
+    {
+      "aifn": "aifn-compute/numerics/interpolate#psplineGcvPath",
+      "omai": ["omai-engine/numerics/interpolate#makeInterpSpline"],
+      "reason": "only the spline fit; the GCV path over the penalty is in the gam domain"
+    },
+    {
+      "aifn": "aifn-compute/numerics/regularisation#landweberSteps",
+      "omai": ["omai-engine/numerics/inverse#landweberAlgorithm"],
+      "reason": "the same iteration as an Algorithm"
+    },
+    {
+      "aifn": "aifn-compute/numerics/roots#newtonRoot",
+      "omai": ["omai-engine/numerics/roots#newton"],
+      "reason": "renamed (scipy newton)"
+    },
+    {
+      "aifn": "aifn-compute/numerics/roots#findRoot",
+      "omai": ["omai-engine/numerics/roots#brentq"],
+      "reason": "bracketed root finding (scipy brentq)"
+    },
+    {
+      "aifn": "aifn-compute/numerics/factorisation#johnsonLindenstraussDimension",
+      "omai": ["omai-engine/numerics/linalg#johnsonLindenstraussDim"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-compute/numerics/factorisation#johnsonLindenstraussEpsilon",
+      "omai": ["omai-engine/numerics/linalg#johnsonLindenstraussDim"],
+      "reason": "the same bound solved for epsilon: omai has the dimension for epsilon only"
+    },
+    {
+      "aifn": "aifn-compute/numerics/factorisation#nmfSteps",
+      "omai": ["omai-engine/decomposition#nmfAlgorithm"],
+      "reason": "the same iteration as an Algorithm"
+    },
+    {
+      "aifn": "aifn-compute/numerics/quadrature#integrate",
+      "omai": ["omai-engine/numerics/quadrature#quad"],
+      "reason": "renamed (scipy quad)"
+    },
+    {
+      "aifn": "aifn-compute/numerics/quadrature#scrambledHalton",
+      "omai": ["omai-engine/random#halton"],
+      "reason": "omai has halton (and scrambledSobol)"
+    },
+    {
+      "aifn": "aifn-compute/probability/distributions#Normal",
+      "omai": ["omai-engine/dists#normal"],
+      "reason": "AIFN distribution classes are factory functions in omai"
+    },
+    {
+      "aifn": "aifn-compute/probability/distributions#Binomial",
+      "omai": ["omai-engine/dists#binomial"],
+      "reason": "AIFN distribution classes are factory functions in omai"
+    },
+    {
+      "aifn": "aifn-compute/probability/distributions#Poisson",
+      "omai": ["omai-engine/dists#poisson"],
+      "reason": "AIFN distribution classes are factory functions in omai"
+    },
+    {
+      "aifn": "aifn-compute/probability/distributions#Beta",
+      "omai": ["omai-engine/dists#beta"],
+      "reason": "AIFN distribution classes are factory functions in omai"
+    },
+    {
+      "aifn": "aifn-compute/probability/distributions#Exponential",
+      "omai": ["omai-engine/dists#exponential"],
+      "reason": "AIFN distribution classes are factory functions in omai"
+    },
+    {
+      "aifn": "aifn-compute/probability/distributions#NegativeBinomial",
+      "omai": ["omai-engine/dists#negativeBinomial"],
+      "reason": "AIFN distribution classes are factory functions in omai"
+    },
+    {
+      "aifn": "aifn-compute/probability/distributions#Cauchy",
+      "omai": ["omai-engine/dists#cauchy"],
+      "reason": "AIFN distribution classes are factory functions in omai"
+    },
+    {
+      "aifn": "aifn-compute/probability/distributions#Gumbel",
+      "omai": ["omai-engine/dists#gumbel"],
+      "reason": "AIFN distribution classes are factory functions in omai"
+    },
+    {
+      "aifn": "aifn-compute/probability/distributions#Hypergeometric",
+      "omai": ["omai-engine/dists#hypergeometric"],
+      "reason": "AIFN distribution classes are factory functions in omai"
+    },
+    {
+      "aifn": "aifn-compute/probability/distributions#Logistic",
+      "omai": ["omai-engine/dists#logistic"],
+      "reason": "AIFN distribution classes are factory functions in omai"
+    },
+    {
+      "aifn": "aifn-compute/probability/distributions#StudentT",
+      "omai": ["omai-engine/dists#studentT"],
+      "reason": "AIFN distribution classes are factory functions in omai"
+    },
+    {
+      "aifn": "aifn-compute/probability/distributions#TruncatedNormal",
+      "omai": ["omai-engine/dists#truncatedNormal"],
+      "reason": "AIFN distribution classes are factory functions in omai"
+    },
+    {
+      "aifn": "aifn-compute/probability/stats#standardDeviation",
+      "omai": ["omai-engine/stats#std"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-compute/probability/stats#ecdfAt",
+      "omai": ["omai-engine/stats#ecdf"],
+      "reason": "ecdf returns a function"
+    },
+    {
+      "aifn": "aifn-compute/probability/stats#correlation",
+      "omai": ["omai-engine/stats#pearson"],
+      "reason": "renamed (Pearson)"
+    },
+    {
+      "aifn": "aifn-compute/probability/stats#boxCox",
+      "omai": ["omai-engine/stats#boxcox"],
+      "reason": "renamed (scipy boxcox)"
+    },
+    {
+      "aifn": "aifn-compute/probability/stats#yeoJohnson",
+      "omai": ["omai-engine/stats#yeojohnson"],
+      "reason": "renamed (scipy yeojohnson)"
+    },
+    {
+      "aifn": "aifn-compute/probability/stats#multivariateKde",
+      "omai": ["omai-engine/stats#gaussianKde"],
+      "reason": "Gaussian kernel density estimate in any dimension"
+    },
+    { "aifn": "aifn-compute/probability/stats#sampleAcf", "omai": ["omai-engine/timeseries#acf"], "reason": "renamed" },
+    {
+      "aifn": "aifn-compute/probability/stats#crossCorrelation",
+      "omai": ["omai-engine/numerics/convolution#correlate"],
+      "reason": "the correlation of two sequences"
+    },
+    {
+      "aifn": "aifn-compute/probability/tests#binomialTest",
+      "omai": ["omai-engine/stats/tests#binomTest"],
+      "reason": "renamed (scipy binomtest)"
+    },
+    {
+      "aifn": "aifn-compute/probability/tests#ksTest",
+      "omai": ["omai-engine/stats/tests#kstest"],
+      "reason": "renamed (scipy kstest)"
+    },
+    {
+      "aifn": "aifn-compute/probability/tests#ksStatistic",
+      "omai": ["omai-engine/stats/tests#kstest"],
+      "reason": "the statistic is part of the test result"
+    },
+    {
+      "aifn": "aifn-compute/probability/tests#twoSampleKsSf",
+      "omai": ["omai-engine/stats/tests#ks2samp"],
+      "reason": "the p-value is part of the test result"
+    },
+    {
+      "aifn": "aifn-compute/probability/tests#welchTTest",
+      "omai": ["omai-engine/stats/tests#ttestInd"],
+      "reason": "ttestInd with unequal variances (scipy ttest_ind equal_var=false)"
+    },
+    {
+      "aifn": "aifn-compute/probability/tests#proportionInterval",
+      "omai": ["omai-engine/stats/tests#proportionConfint"],
+      "reason": "renamed (statsmodels proportion_confint)"
+    },
+    {
+      "aifn": "aifn-compute/probability/tests#kolmogorovSf",
+      "omai": ["omai-engine/numerics/special#kolmogorov"],
+      "reason": "renamed (scipy kolmogorov)"
+    },
+    {
+      "aifn": "aifn-compute/probability/tests#kolmogorovNull",
+      "omai": ["omai-engine/numerics/special#kolmogorov"],
+      "reason": "the limiting distribution is `kolmogorov`"
+    },
+    {
+      "aifn": "aifn-compute/probability/tests#wilcoxonSignedRank",
+      "omai": ["omai-engine/stats/tests#wilcoxon"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-compute/probability/tests#friedmanTest",
+      "omai": ["omai-engine/stats/tests#friedman"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-compute/probability/tests#fiveByTwoCvTest",
+      "omai": ["omai-engine/learn/model-selection#fiveByTwoCvTTest"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-compute/probability/tests#nemenyiCriticalDifference",
+      "omai": ["omai-engine/learn/model-selection#criticalDifference"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-compute/probability/information#infoNceBound",
+      "omai": ["omai-engine/information#infoNce"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-compute/probability/samplers#dirichlet",
+      "omai": ["omai-engine/random#dirichlet"],
+      "reason": "a draw in omai takes a key"
+    },
+    {
+      "aifn": "aifn-compute/probability/samplers#multivariateNormal",
+      "omai": ["omai-engine/random#multivariateNormal"],
+      "reason": "a draw in omai takes a key"
+    },
+    {
+      "aifn": "aifn-compute/numerics/linalg#conditionNumber",
+      "omai": ["omai-engine/numerics/linalg#cond"],
+      "reason": "the matrix condition number; the same-named omai function is the condition of a scalar function"
+    },
+    {
+      "aifn": "aifn-compute/graph/traversal#breadthFirstSearch",
+      "omai": ["omai-engine/graph#bfs"],
+      "reason": "the graph traversal; the same-named omai function is the search-problem version"
+    },
+    {
+      "aifn": "aifn-compute/learning/estimators#asTensor",
+      "omai": ["omai-engine/tensor#asTensor"],
+      "reason": "the same helper"
+    },
+    { "aifn": "aifn-compute/learning/kernels#rbf", "omai": ["omai-engine/kernels#rbfKernel"], "reason": "renamed" },
+    {
+      "aifn": "aifn-compute/learning/kernels#matern52",
+      "omai": ["omai-engine/kernels#maternKernel"],
+      "reason": "maternKernel with nu = 5/2"
+    },
+    {
+      "aifn": "aifn-compute/learning/metrics#accuracy",
+      "omai": ["omai-engine/metrics#accuracyScore"],
+      "reason": "renamed (sklearn accuracy_score)"
+    },
+    {
+      "aifn": "aifn-compute/learning/metrics#errorRate",
+      "omai": ["omai-engine/metrics#zeroOneLoss"],
+      "reason": "the error rate is the zero-one loss"
+    },
+    {
+      "aifn": "aifn-compute/learning/metrics#auroc",
+      "omai": ["omai-engine/metrics#rocAucScore"],
+      "reason": "renamed (sklearn roc_auc_score)"
+    },
+    {
+      "aifn": "aifn-compute/learning/metrics#recall",
+      "omai": ["omai-engine/metrics#recallScore"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-compute/learning/metrics#precision",
+      "omai": ["omai-engine/metrics#precisionScore"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-compute/learning/metrics#averagePrecision",
+      "omai": ["omai-engine/metrics#averagePrecisionScore"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-compute/learning/metrics#balancedAccuracy",
+      "omai": ["omai-engine/metrics#balancedAccuracyScore"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-compute/learning/metrics#brierScore",
+      "omai": ["omai-engine/metrics#brierScoreLoss"],
+      "reason": "renamed (sklearn brier_score_loss); the same-named omai function belongs to survival analysis"
+    },
+    {
+      "aifn": "aifn-compute/learning/metrics#gaussianLogScore",
+      "omai": ["omai-engine/metrics#logScore"],
+      "reason": "the log score of a Gaussian predictive"
+    },
+    {
+      "aifn": "aifn-compute/learning/metrics#reliabilityDiagram",
+      "omai": ["omai-engine/metrics#calibrationCurve"],
+      "reason": "the binned data of a reliability diagram"
+    },
+    {
+      "aifn": "aifn-compute/learning/metrics#countsAtThreshold",
+      "omai": ["omai-engine/metrics#confusionMatrix"],
+      "reason": "confusion counts at a threshold"
+    },
+    {
+      "aifn": "aifn-compute/learning/metrics#binaryRates",
+      "omai": ["omai-engine/metrics#confusionMatrix"],
+      "reason": "rates are read from the confusion matrix"
+    },
+    {
+      "aifn": "aifn-compute/learning/explain#activationMaximisation",
+      "omai": ["omai-engine/explain#featureVisualisation"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-compute/learning/explain#classActivationMap",
+      "omai": ["omai-engine/explain#gradCam"],
+      "reason": "Grad-CAM"
+    },
+    {
+      "aifn": "aifn-compute/learning/explain#exactShapley",
+      "omai": ["omai-engine/explain#shapleyValues"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-compute/learning/explain#inputGradient",
+      "omai": ["omai-engine/explain#saliency"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-compute/learning/explain#faceSearch",
+      "omai": ["omai-engine/explain#faceCounterfactual"],
+      "reason": "FACE counterfactual search"
+    },
+    {
+      "aifn": "aifn-compute/learning/explain#faceGraph",
+      "omai": ["omai-engine/explain#faceCounterfactual"],
+      "reason": "the FACE graph is built inside faceCounterfactual"
+    },
+    {
+      "aifn": "aifn-compute/learning/validate#gridSearch",
+      "omai": ["omai-engine/learn/model-selection#gridSearchCV"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-compute/learning/validate#nested",
+      "omai": ["omai-engine/learn/model-selection#nestedCrossValidation"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-compute/learning/validate#expandingWindow",
+      "omai": ["omai-engine/learn/model-selection#expandingWindowSplit"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-compute/learning/validate#spatialBlocks",
+      "omai": ["omai-engine/learn/model-selection#spatialBlockSplit"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-compute/learning/validate#nndmLeaveOneOut",
+      "omai": ["omai-engine/learn/model-selection#leaveOneOut"],
+      "reason": "only the plain leave-one-out; nearest-neighbour distance matching is not in omai (see knndm)"
+    },
+    {
+      "aifn": "aifn-compute/learning/losses#softmaxCrossEntropy",
+      "omai": ["omai-engine/losses#crossEntropy"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-compute/learning/losses#meanSquaredErrorLoss",
+      "omai": ["omai-engine/losses#mse"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-compute/learning/rules#sequentialCovering",
+      "omai": ["omai-engine/rules#fitCovering"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-compute/learning/rules#applyCoveringRules",
+      "omai": ["omai-engine/rules#coveringModel"],
+      "reason": "prediction is a method of the fitted covering model"
+    },
+    {
+      "aifn": "aifn-compute/learning/rules#applyClassRules",
+      "omai": ["omai-engine/rules#coveringModel"],
+      "reason": "prediction is a method of the fitted rule model"
+    },
+    { "aifn": "aifn-compute/learning/rules#ripper", "omai": ["omai-engine/rules#fitRipper"], "reason": "renamed" },
+    {
+      "aifn": "aifn-compute/learning/rules#applyRipper",
+      "omai": ["omai-engine/rules#ripperModel"],
+      "reason": "prediction is a method of the fitted model"
+    },
+    { "aifn": "aifn-compute/learning/rules#corels", "omai": ["omai-engine/rules#fitCorels"], "reason": "renamed" },
+    {
+      "aifn": "aifn-compute/learning/rules#bayesianRuleListTrace",
+      "omai": ["omai-engine/rules#bayesianRuleListAlgorithm"],
+      "reason": "the same search as an Algorithm"
+    },
+    {
+      "aifn": "aifn-compute/learning/rules#c45Rules",
+      "omai": ["omai-engine/rules#treeRuleSet"],
+      "reason": "rules read off a tree"
+    },
+    {
+      "aifn": "aifn-compute/learning/rules#ruleProbabilities",
+      "omai": ["omai-engine/rules#smoothedProbabilities"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-compute/learning/rules#nominalConditions",
+      "omai": ["omai-engine/rules#mineAntecedents"],
+      "reason": "candidate conditions are mined inside the rule learners"
+    },
+    {
+      "aifn": "aifn-compute/learning/rules#thresholdConditions",
+      "omai": ["omai-engine/rules#mineAntecedents"],
+      "reason": "candidate conditions are mined inside the rule learners"
+    },
+    {
+      "aifn": "aifn-compute/learning/selection#oneStandardError",
+      "omai": ["omai-engine/learn/model-selection#oneStandardErrorRule"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-compute/learning/selection#informationCriteria",
+      "omai": ["omai-engine/learn/model-selection#aic"],
+      "reason": "aic, aicc and bic are separate functions in omai"
+    },
+    {
+      "aifn": "aifn-compute/learning/selection#pseudoBmaPlusWeights",
+      "omai": ["omai-engine/probprog#pseudoBmaWeights"],
+      "reason": "pseudo-BMA+ is the Bayesian bootstrap variant of pseudoBmaWeights"
+    },
+    {
+      "aifn": "aifn-compute/learning/compose#transformTarget",
+      "omai": ["omai-engine/learn#transformedTargetRegressor"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-compute/learning/compose#logTarget",
+      "omai": ["omai-engine/learn#transformedTargetRegressor"],
+      "reason": "a transformedTargetRegressor with the log function"
+    },
+    {
+      "aifn": "aifn-compute/learning/compose#powerTarget",
+      "omai": ["omai-engine/learn#transformedTargetRegressor"],
+      "reason": "a transformedTargetRegressor with a power transform"
+    },
+    {
+      "aifn": "aifn-compute/learning/compose#columns",
+      "omai": ["omai-engine/learn#columnTransformer"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-compute/learning/calibration#poolAdjacentViolatorsSteps",
+      "omai": ["omai-engine/learn#poolAdjacentViolators"],
+      "reason": "the same iteration"
+    },
+    {
+      "aifn": "aifn-compute/learning/conformal#splitConformalRegression",
+      "omai": ["omai-engine/learn#splitConformalRegressor"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-compute/learning/conformal#conformalClassification",
+      "omai": ["omai-engine/learn#splitConformalClassifier"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-compute/learning/conformal#conformalisedQuantileRegression",
+      "omai": ["omai-engine/learn#conformalizedQuantileRegressor"],
+      "reason": "renamed (US spelling)"
+    },
+    {
+      "aifn": "aifn-compute/optim/first-order#adamRule",
+      "omai": ["omai-engine/optim#adam"],
+      "reason": "AIFN gives the update rule alone; omai gives the optimiser"
+    },
+    {
+      "aifn": "aifn-compute/optim/first-order#sgdRule",
+      "omai": ["omai-engine/optim#sgd"],
+      "reason": "AIFN gives the update rule alone; omai gives the optimiser"
+    },
+    {
+      "aifn": "aifn-compute/optim/first-order#momentum",
+      "omai": ["omai-engine/optim#sgd"],
+      "reason": "sgd with a momentum option"
+    },
+    { "aifn": "aifn-compute/optim#objectiveFn", "omai": ["omai-engine/optim#Objective"], "reason": "renamed type" },
+    { "aifn": "aifn-compute/optim/derivative-free#cmaEs", "omai": ["omai-engine/optim#cmaes"], "reason": "renamed" },
+    {
+      "aifn": "aifn-compute/optim/proximal#thresholding",
+      "omai": ["omai-engine/optim#proxL1"],
+      "reason": "soft thresholding is the proximal operator of the l1 norm"
+    },
+    {
+      "aifn": "aifn-compute/dynamics/ode#rungeKutta",
+      "omai": ["omai-engine/dynamics/ode#rk4"],
+      "reason": "an explicit Runge-Kutta step; omai has rk4, rk45 and tableaux (RungeKuttaCoefficients)"
+    },
+    {
+      "aifn": "aifn-compute/dynamics/ode#dormandPrince",
+      "omai": ["omai-engine/dynamics/ode#rk45"],
+      "reason": "rk45 is Dormand-Prince"
+    },
+    {
+      "aifn": "aifn-compute/dynamics/ode#symplectic",
+      "omai": ["omai-engine/dynamics/ode#symplecticIntegrate"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-compute/dynamics/ode#amplification",
+      "omai": ["omai-engine/dynamics/ode#stabilityFunction"],
+      "reason": "the amplification factor is the stability function"
+    },
+    {
+      "aifn": "aifn-compute/dynamics/ode#withEvents",
+      "omai": ["omai-engine/dynamics/ode#event"],
+      "reason": "events are options of solveIvp"
+    },
+    { "aifn": "aifn-compute/systems#transferFunction", "omai": ["omai-engine/systems#tf"], "reason": "renamed" },
+    { "aifn": "aifn-compute/nn/layers#Mlp", "omai": ["omai-engine/nn#mlp"], "reason": "renamed; a function in omai" },
+    { "aifn": "aifn-compute/nn/layers#GruCell", "omai": ["omai-engine/nn#GRUCell"], "reason": "renamed" },
+    {
+      "aifn": "aifn-compute/nn/training#trainingLoop",
+      "omai": ["omai-engine/nn#fit"],
+      "reason": "the training loop over a module"
+    },
+    {
+      "aifn": "aifn-compute/nn/functional#avgPool1d",
+      "omai": ["omai-engine/nn#AvgPool1d"],
+      "reason": "a layer class in omai"
+    },
+    {
+      "aifn": "aifn-compute/nn/functional#avgPool2d",
+      "omai": ["omai-engine/nn#AvgPool2d"],
+      "reason": "a layer class in omai"
+    },
+    {
+      "aifn": "aifn-compute/nn/functional#maxPool1d",
+      "omai": ["omai-engine/nn#MaxPool1d"],
+      "reason": "a layer class in omai"
+    },
+    {
+      "aifn": "aifn-compute/nn/graph#graphConv",
+      "omai": ["omai-engine/nn#GCNConv"],
+      "reason": "graph convolution layer"
+    },
+    {
+      "aifn": "aifn-compute/nn/graph#GraphConv",
+      "omai": ["omai-engine/nn#GCNConv"],
+      "reason": "graph convolution layer"
+    },
+    {
+      "aifn": "aifn-compute/nn/graph#sampledComputationGraph",
+      "omai": ["omai-engine/autodiff#computationGraph"],
+      "reason": "the computation graph of a layer"
+    },
+    {
+      "aifn": "aifn-compute/nn/sequence#rgLru",
+      "omai": ["omai-engine/nn#lru"],
+      "reason": "the real-gated LRU of Griffin is the lru layer"
+    },
+    { "aifn": "aifn-compute/nn/sequence#lruRingInit", "omai": ["omai-engine/nn#lruInit"], "reason": "renamed" },
+    {
+      "aifn": "aifn-compute/nn/sequence#ssdChunked",
+      "omai": ["omai-engine/nn#ssd"],
+      "reason": "the chunked form of ssd"
+    },
+    {
+      "aifn": "aifn-compute/nn/sequence#ssdQuadratic",
+      "omai": ["omai-engine/nn#ssd"],
+      "reason": "the quadratic form of ssd"
+    },
+    {
+      "aifn": "aifn-compute/nn/decoding#speculativeDecoding",
+      "omai": ["omai-engine/nn#SpeculativeResult"],
+      "reason": "speculative decoding of the nn domain"
+    },
+    {
+      "aifn": "aifn-compute/nn/quantise#quantisationParams",
+      "omai": ["omai-engine/nn#QuantisedParams"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-compute/graph#fromEdges",
+      "omai": ["omai-engine/graph#graph"],
+      "reason": "a graph from an edge list"
+    },
+    { "aifn": "aifn-compute/graph#adjacency", "omai": ["omai-engine/graph#adjacencyMatrix"], "reason": "renamed" },
+    {
+      "aifn": "aifn-compute/graph#treeFromParents",
+      "omai": ["omai-engine/graph#graph"],
+      "reason": "a tree is a graph; omai has no parent-array constructor"
+    },
+    {
+      "aifn": "aifn-compute/graph/propagation#harmonicLabels",
+      "omai": ["omai-engine/graph#labelPropagation"],
+      "reason": "the harmonic function solution is label propagation"
+    },
+    {
+      "aifn": "aifn-compute/graph/propagation#harmonicExtension",
+      "omai": ["omai-engine/graph#labelPropagation"],
+      "reason": "the harmonic function solution is label propagation"
+    },
+    {
+      "aifn": "aifn-compute/graph/isomorphism#weisfeilerLeman",
+      "omai": ["omai-engine/graph#weisfeilerLehman"],
+      "reason": "spelling (Lehman)"
+    },
+    {
+      "aifn": "aifn-compute/graph/traversal#unweightedShortestPaths",
+      "omai": ["omai-engine/graph#bfs"],
+      "reason": "hop distances come from a breadth-first search"
+    },
+    {
+      "aifn": "aifn-compute/graph/traversal#hopDistances",
+      "omai": ["omai-engine/graph#bfs"],
+      "reason": "hop distances come from a breadth-first search"
+    },
+    {
+      "aifn": "aifn-compute/graph/matrices#rescaledLaplacian",
+      "omai": ["omai-engine/graph#chebyshevFilterCoefficients"],
+      "reason": "the rescaled Laplacian is formed inside the Chebyshev filter"
+    },
+    {
+      "aifn": "aifn-compute/graph/structures#balancedTreeGraph",
+      "omai": ["omai-engine/graph#balancedTree"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-compute/signal#unwrapPhase",
+      "omai": ["omai-engine/signal#unwrap"],
+      "reason": "renamed (numpy unwrap)"
+    },
+    {
+      "aifn": "aifn-compute/signal/sparse#orthogonalMatchingPursuitSteps",
+      "omai": ["omai-engine/optim#orthogonalMatchingPursuit"],
+      "reason": "the same iteration as an Algorithm"
+    },
+    {
+      "aifn": "aifn-compute/signal/sparse#matchingPursuitSteps",
+      "omai": ["omai-engine/optim#matchingPursuit"],
+      "reason": "the same iteration as an Algorithm"
+    },
+    {
+      "aifn": "aifn-compute/signal/sparse#hardThreshold",
+      "omai": ["omai-engine/optim#iterativeHardThresholding"],
+      "reason": "only inside iterativeHardThresholding"
+    },
+    {
+      "aifn": "aifn-compute/signal/similarity#keoghEnvelope",
+      "omai": ["omai-engine/signal#envelope"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-compute/signal/similarity#dtwProgram",
+      "omai": ["omai-engine/signal#dtwAlgorithm"],
+      "reason": "the same dynamic programme as an Algorithm"
+    },
+    {
+      "aifn": "aifn-compute/signal/similarity#scrimpProfile",
+      "omai": ["omai-engine/timeseries#stomp"],
+      "reason": "omai has stamp and stomp; SCRIMP (anytime) is not there"
+    },
+    {
+      "aifn": "aifn-compute/signal/similarity#scrimpSteps",
+      "omai": ["omai-engine/timeseries#stomp"],
+      "reason": "omai has stamp and stomp; SCRIMP (anytime) is not there"
+    },
+    {
+      "aifn": "aifn-compute/inference/filtering#kalmanFilterSteps",
+      "omai": ["omai-engine/dynamics/filtering#kalmanFilterAlgorithm"],
+      "reason": "the same iteration as an Algorithm"
+    },
+    {
+      "aifn": "aifn-compute/inference/filtering#rtsSmootherSteps",
+      "omai": ["omai-engine/dynamics/filtering#rtsSmoother"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-compute/inference/filtering#normalisedEstimationErrorSquared",
+      "omai": ["omai-engine/dynamics/filtering#nees"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-compute/inference/message-passing#beliefPropagationSteps",
+      "omai": ["omai-engine/pgm#beliefPropagationAlgorithm"],
+      "reason": "the same iteration as an Algorithm"
+    },
+    {
+      "aifn": "aifn-compute/inference/model#discreteFactorGraph",
+      "omai": ["omai-engine/pgm#FactorGraph"],
+      "reason": "a type in omai"
+    },
+    {
+      "aifn": "aifn-methods/data/synthetic#pinwheel",
+      "omai": ["omai-engine/datasets#pinwheelDensity"],
+      "reason": "renamed: the pinwheel with its exact density"
+    },
+    {
+      "aifn": "aifn-methods/data/synthetic#gaussianRing",
+      "omai": ["omai-engine/datasets#gaussianMixtureDensity"],
+      "reason": "gaussianMixtureDensity has the circle layout"
+    },
+    {
+      "aifn": "aifn-methods/data/synthetic#contextualBlockModel",
+      "omai": ["omai-engine/datasets#contextualSbm"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-methods/data/synthetic#linearRegressionData",
+      "omai": ["omai-engine/datasets#makeRegression"],
+      "reason": "a linear regression problem with a known weight vector"
+    },
+    {
+      "aifn": "aifn-methods/data/synthetic#arSeries",
+      "omai": ["omai-engine/datasets#armaProcess"],
+      "reason": "an autoregressive series is an ARMA process with no moving-average part"
+    },
+    {
+      "aifn": "aifn-methods/data/synthetic#arRegimes",
+      "omai": ["omai-engine/datasets#regimeSwitching"],
+      "reason": "regime-switching series"
+    },
+    {
+      "aifn": "aifn-methods/data/synthetic#classifierOutputs",
+      "omai": ["omai-engine/datasets#miscalibratedPredictions"],
+      "reason": "synthetic classifier outputs with known calibration"
+    },
+    {
+      "aifn": "aifn-methods/data/synthetic#censoredSurvival",
+      "omai": ["omai-engine/datasets#survivalData"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-methods/data/synthetic#weibullPhSurvival",
+      "omai": ["omai-engine/datasets#survivalData"],
+      "reason": "survivalData has the Weibull family"
+    },
+    {
+      "aifn": "aifn-methods/data/synthetic#meanShifts",
+      "omai": ["omai-engine/datasets#changepointSeries"],
+      "reason": "changepointSeries has mean, variance and rate shifts"
+    },
+    {
+      "aifn": "aifn-methods/data/synthetic#varianceShifts",
+      "omai": ["omai-engine/datasets#changepointSeries"],
+      "reason": "changepointSeries has mean, variance and rate shifts"
+    },
+    {
+      "aifn": "aifn-methods/data/synthetic#poissonShifts",
+      "omai": ["omai-engine/datasets#changepointSeries"],
+      "reason": "changepointSeries has mean, variance and rate shifts"
+    },
+    {
+      "aifn": "aifn-methods/data/synthetic#antiderivativeData",
+      "omai": ["omai-engine/datasets#antiderivativeOperator"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-methods/data/synthetic#heatOperatorData",
+      "omai": ["omai-engine/datasets#heatOperator"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-methods/data/synthetic#logBandit",
+      "omai": ["omai-engine/datasets#loggedBandit"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-methods/data/synthetic#moleculeGraph",
+      "omai": ["omai-engine/datasets#smallMolecules"],
+      "reason": "the molecule set"
+    },
+    {
+      "aifn": "aifn-methods/data/synthetic#unevenSinusoids",
+      "omai": ["omai-engine/datasets#sinusoids"],
+      "reason": "sinusoids"
+    },
+    {
+      "aifn": "aifn-methods/data/synthetic#coupledProcesses",
+      "omai": ["omai-engine/datasets#coupledSeries"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-methods/data/real#coalMining",
+      "omai": ["omai-engine/datasets#coalMiningDisasters"],
+      "reason": "renamed"
+    },
+    { "aifn": "aifn-methods/data/targets#banana", "omai": ["omai-engine/datasets#bananaDensity"], "reason": "renamed" },
+    { "aifn": "aifn-methods/data/targets#funnel", "omai": ["omai-engine/datasets#funnelDensity"], "reason": "renamed" },
+    { "aifn": "aifn-methods/data#recipe", "omai": ["omai-engine/data#Recipe"], "reason": "a type in omai" },
+    {
+      "aifn": "aifn-methods/learning/linear#linearRegression",
+      "omai": ["omai-engine/linear#linearModel"],
+      "reason": "the penalised GLM core with the Gaussian family"
+    },
+    {
+      "aifn": "aifn-methods/learning/linear#LinearRegressionModel",
+      "omai": ["omai-engine/linear#LinearModel"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-methods/learning/linear#elasticNet",
+      "omai": ["omai-engine/linear#linearModel"],
+      "reason": "linearModel with an elastic-net penalty"
+    },
+    {
+      "aifn": "aifn-methods/learning/linear#elasticNetPath",
+      "omai": ["omai-engine/linear#enetPath"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-methods/learning/linear#leastAngleRegression",
+      "omai": ["omai-engine/linear#lars"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-methods/learning/linear#bestSubset",
+      "omai": ["omai-engine/linear#subsetRegression"],
+      "reason": "subsetRegression with best: exact search"
+    },
+    {
+      "aifn": "aifn-methods/learning/linear#stepwise",
+      "omai": ["omai-engine/linear#subsetRegression"],
+      "reason": "subsetRegression with forward or backward search"
+    },
+    {
+      "aifn": "aifn-methods/learning/linear#groupLassoPath",
+      "omai": ["omai-engine/linear#groupLasso"],
+      "reason": "the group lasso; its path is a loop over the penalty"
+    },
+    {
+      "aifn": "aifn-methods/learning/linear#bayesianLinearEvidence",
+      "omai": ["omai-engine/linear#maximiseEvidence"],
+      "reason": "MacKay evidence maximisation"
+    },
+    {
+      "aifn": "aifn-methods/learning/linear#evidenceMaximisation",
+      "omai": ["omai-engine/linear#maximiseEvidence"],
+      "reason": "MacKay evidence maximisation"
+    },
+    {
+      "aifn": "aifn-methods/learning/linear#LinearEvidence",
+      "omai": ["omai-engine/linear#EvidenceFit"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-methods/learning/linear#linearSgdSteps",
+      "omai": ["omai-engine/linear#linearModel"],
+      "reason": "linearModel with the gradient solver of smoothSolvers"
+    },
+    {
+      "aifn": "aifn-methods/learning/neighbours#kNearestNeighbours",
+      "omai": ["omai-engine/learn#kNeighboursClassifier"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-methods/learning/neighbours#kNearestNeighboursRegression",
+      "omai": ["omai-engine/learn#kNeighboursRegressor"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-methods/learning/neighbours#NeighboursRegressor",
+      "omai": ["omai-engine/learn#kNeighboursRegressor"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-methods/learning/generalised/glm#logisticRegression",
+      "omai": ["omai-engine/linear#linearModel"],
+      "reason": "linearModel with the binomial family"
+    },
+    {
+      "aifn": "aifn-methods/learning/generalised/glm#glm",
+      "omai": ["omai-engine/linear#linearModel"],
+      "reason": "the penalised GLM core"
+    },
+    {
+      "aifn": "aifn-methods/learning/generalised/glm#multinomialLogisticRegression",
+      "omai": ["omai-engine/linear#multinomial"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-methods/learning/kernel-methods#supportVectorMachine",
+      "omai": ["omai-engine/svm#svc"],
+      "reason": "renamed (libsvm C-SVC)"
+    },
+    {
+      "aifn": "aifn-methods/learning/kernel-methods#SupportVectorMachineModel",
+      "omai": ["omai-engine/svm#svc"],
+      "reason": "the model of svc"
+    },
+    {
+      "aifn": "aifn-methods/learning/kernel-methods#linearSvm",
+      "omai": ["omai-engine/svm#svc"],
+      "reason": "svc with the linear kernel"
+    },
+    {
+      "aifn": "aifn-methods/learning/kernel-methods#smoSteps",
+      "omai": ["omai-engine/svm#svcSolvers"],
+      "reason": "SMO is one of the solvers of svc"
+    },
+    {
+      "aifn": "aifn-methods/learning/trees-and-ensembles#decisionTree",
+      "omai": ["omai-engine/trees#decisionTreeClassifier"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-methods/learning/trees-and-ensembles/bagging#randomForest",
+      "omai": ["omai-engine/ensembles#randomForestClassifier"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-methods/learning/trees-and-ensembles/boosting#adaBoost",
+      "omai": ["omai-engine/ensembles#adaBoostClassifier"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-methods/learning/trees-and-ensembles/boosting#gradientBoosting",
+      "omai": ["omai-engine/ensembles#gradientBoostingClassifier"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-methods/learning/preprocessing#randomOverSample",
+      "omai": ["omai-engine/learn/preprocessing#randomOverSampler"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-methods/learning/preprocessing#randomUnderSample",
+      "omai": ["omai-engine/learn/preprocessing#randomUnderSampler"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-methods/learning/preprocessing#removeTomekLinks",
+      "omai": ["omai-engine/learn/preprocessing#tomekLinks"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-methods/learning/preprocessing#powerTransform",
+      "omai": ["omai-engine/learn/preprocessing#powerTransformer"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-methods/learning/reductions#oneVersusOne",
+      "omai": ["omai-engine/learn#oneVsOne"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-methods/learning/reductions#oneVersusRest",
+      "omai": ["omai-engine/learn#oneVsRest"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-methods/learning/reductions#exhaustiveCode",
+      "omai": ["omai-engine/learn#outputCode"],
+      "reason": "outputCode with the exhaustive code"
+    },
+    {
+      "aifn": "aifn-methods/learning/survival#aftSurvival",
+      "omai": ["omai-engine/survival#aftPredictSurvival"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-methods/learning/semi-supervised#selfTrainingSteps",
+      "omai": ["omai-engine/learn#selfTraining"],
+      "reason": "self-training is an estimator of omai-engine/learn"
+    },
+    {
+      "aifn": "aifn-methods/learning/semi-supervised#coTrainingSteps",
+      "omai": ["omai-engine/learn#coTraining"],
+      "reason": "co-training is an estimator of omai-engine/learn"
+    },
+    {
+      "aifn": "aifn-methods/learning/semi-supervised#triTrainingSteps",
+      "omai": ["omai-engine/learn#triTraining"],
+      "reason": "tri-training is an estimator of omai-engine/learn"
+    },
+    {
+      "aifn": "aifn-methods/learning/semi-supervised#transductiveSvmFit",
+      "omai": ["omai-engine/learn#s3vm"],
+      "reason": "S3VM is an estimator of omai-engine/learn"
+    },
+    {
+      "aifn": "aifn-methods/learning/semi-supervised#transductiveSvmDecision",
+      "omai": ["omai-engine/learn#s3vm"],
+      "reason": "S3VM is an estimator of omai-engine/learn"
+    },
+    {
+      "aifn": "aifn-methods/learning/semi-supervised#transductiveSvmStages",
+      "omai": ["omai-engine/learn#s3vm"],
+      "reason": "S3VM is an estimator of omai-engine/learn"
+    },
+    {
+      "aifn": "aifn-methods/unsupervised/clustering#kmeans",
+      "omai": ["omai-engine/cluster#lloydAlgorithm"],
+      "reason": "Lloyd's algorithm as an Algorithm; the estimator of the cluster domain is configured with it"
+    },
+    {
+      "aifn": "aifn-methods/unsupervised/clustering#linkage",
+      "omai": ["omai-engine/cluster#Linkage"],
+      "reason": "a type in omai"
+    },
+    {
+      "aifn": "aifn-methods/unsupervised/clustering#gaussianMixture",
+      "omai": ["omai-engine/mixture#gaussianEmAlgorithm"],
+      "reason": "Gaussian mixture by EM in omai-engine/mixture"
+    },
+    {
+      "aifn": "aifn-methods/unsupervised/anomaly#knnScore",
+      "omai": ["omai-engine/anomaly#knnDetector"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-methods/unsupervised/anomaly#localOutlierScore",
+      "omai": ["omai-engine/anomaly#localOutlierFactors"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-methods/unsupervised/anomaly#oneClassScore",
+      "omai": ["omai-engine/svm#oneClassSvm"],
+      "reason": "the score is the decision function of oneClassSvm"
+    },
+    {
+      "aifn": "aifn-methods/unsupervised/embedding/manifold#laplacianEigenmaps",
+      "omai": ["omai-engine/manifold#spectralEmbedding"],
+      "reason": "renamed (sklearn SpectralEmbedding)"
+    },
+    {
+      "aifn": "aifn-methods/unsupervised/embedding/linear#metricMds",
+      "omai": ["omai-engine/manifold#mds"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-methods/unsupervised/embedding/neighbour#tsneSteps",
+      "omai": ["omai-engine/manifold#tsne"],
+      "reason": "the same iteration inside the estimator"
+    },
+    {
+      "aifn": "aifn-methods/unsupervised/embedding/neighbour#umapSteps",
+      "omai": ["omai-engine/manifold#umap"],
+      "reason": "umap is an estimator in manifold"
+    },
+    {
+      "aifn": "aifn-methods/unsupervised/clustering#gaussianMixtureSteps",
+      "omai": ["omai-engine/mixture#gaussianEmAlgorithm"],
+      "reason": "the same EM iteration as an Algorithm"
+    },
+    {
+      "aifn": "aifn-compute/numerics/neighbours#kmeansPlusPlus",
+      "omai": ["omai-engine/cluster#initialCentres"],
+      "reason": "k-means++ seeding is initialCentres with init 'k-means++'"
+    },
+    {
+      "aifn": "aifn-compute/numerics/neighbours#lloydUpdate",
+      "omai": ["omai-engine/cluster#lloydAlgorithm"],
+      "reason": "one Lloyd step is one step of lloydAlgorithm"
+    },
+    {
+      "aifn": "aifn-compute/numerics/neighbours#assignNearest",
+      "omai": ["omai-engine/cluster#nearestCentres"],
+      "reason": "renamed"
+    },
+    { "aifn": "aifn-methods/theory#unitGrid", "omai": ["omai-engine/tensor#linspace"], "reason": "the grid on [0, 1]" },
+    {
+      "aifn": "aifn-methods/theory#leastSquaresWeights",
+      "omai": ["omai-engine/linear#leastSquaresSolve"],
+      "reason": "minimum-norm or ridge least squares"
+    },
+    {
+      "aifn": "aifn-methods/theory/bias-variance#fitAndPredict",
+      "omai": ["omai-engine/learn#biasVariance"],
+      "reason": "the resampling loop is inside biasVariance"
+    },
+    {
+      "aifn": "aifn-methods/theory/bias-variance#biasVarianceSweep",
+      "omai": ["omai-engine/learn#biasVariance"],
+      "reason": "biasVariance over a grid of settings"
+    },
+    {
+      "aifn": "aifn-methods/theory/concentration#bernoulliKl",
+      "omai": ["omai-engine/learn#klBernoulli"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-methods/theory/concentration#tailBounds",
+      "omai": ["omai-engine/stats#chernoffBound"],
+      "reason": "chernoffBound and the Hoeffding and Bernstein bounds of omai-engine/stats"
+    },
+    {
+      "aifn": "aifn-methods/theory/capacity#shatteringTable",
+      "omai": ["omai-engine/learn#isShattered"],
+      "reason": "isShattered tests one set; the table is a loop over sets"
+    },
+    {
+      "aifn": "aifn-methods/theory/shrinkage#jamesSteinRisk",
+      "omai": ["omai-engine/stats#jamesStein"],
+      "reason": "the estimator; the risk curves are not in omai"
+    },
+    {
+      "aifn": "aifn-methods/theory/algorithm-comparison#typeIErrorReplicate",
+      "omai": ["omai-engine/learn/model-selection#compareAlgorithms"],
+      "reason": "comparing two algorithms with the tests of omai-engine/learn/model-selection"
+    },
+    {
+      "aifn": "aifn-methods/optimisation/bayesian#ucbBeta",
+      "omai": ["omai-engine/tune#upperConfidenceBound"],
+      "reason": "the confidence-bound acquisition"
+    },
+    {
+      "aifn": "aifn-methods/optimisation/tree-parzen#treeParzenSteps",
+      "omai": ["omai-engine/tune#tpeSampler"],
+      "reason": "the TPE sampler of a study"
+    },
+    {
+      "aifn": "aifn-methods/optimisation/importance#fanova",
+      "omai": ["omai-engine/tune#fanovaImportance"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-methods/optimisation/multi-objective#hypervolumeImprovement",
+      "omai": ["omai-engine/optim#hypervolumeContributions"],
+      "reason": "the hypervolume of a point set and the contribution of each"
+    },
+    { "aifn": "aifn-methods/gym/agents#qLearningAgent", "omai": ["omai-engine/agents#qLearning"], "reason": "renamed" },
+    { "aifn": "aifn-methods/gym/agents#sarsaAgent", "omai": ["omai-engine/agents#sarsa"], "reason": "renamed" },
+    {
+      "aifn": "aifn-methods/gym/environments#cliffWalkingEnvironment",
+      "omai": ["omai-engine/environments#cliffWalking"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-methods/gym/environments#gridworldEnvironment",
+      "omai": ["omai-engine/environments#gridWorld"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-methods/gym/environments#mazeEnvironment",
+      "omai": ["omai-engine/problems#mazeWorld"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-methods/gym#optimalValues",
+      "omai": ["omai-engine/rl#valueIteration"],
+      "reason": "the optimal values by value iteration"
+    },
+    { "aifn": "aifn-methods/gym/agents#valuesFromQ", "omai": ["omai-engine/agents#qValues"], "reason": "renamed" },
+    { "aifn": "aifn-methods/gym#qFromValues", "omai": ["omai-engine/agents#qValues"], "reason": "renamed" },
+    {
+      "aifn": "aifn-methods/generative/diffusion#probabilityFlowSampler",
+      "omai": ["omai-engine/stochastic#probabilityFlow"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-methods/generative/diffusion#reverseSdeSampler",
+      "omai": ["omai-engine/stochastic#reverseSde"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-methods/generative/boltzmann#hopfieldRecall",
+      "omai": ["omai-engine/nn/blocks#hopfieldRecallAlgorithm"],
+      "reason": "Hopfield recall as an Algorithm"
+    },
+    {
+      "aifn": "aifn-methods/generative/boltzmann#hebbianWeights",
+      "omai": ["omai-engine/nn/blocks#hopfieldWeights"],
+      "reason": "the Hebbian weights of a Hopfield network"
+    },
+    {
+      "aifn": "aifn-methods/generative/flows#realNvpRun",
+      "omai": ["omai-engine/dists/bijectors#affineCoupling"],
+      "reason": "RealNVP is a stack of affine coupling layers in the bijectors; the training run is the generic trainer"
+    },
+    {
+      "aifn": "aifn-methods/generative/gan#ganRun",
+      "omai": ["omai-engine/nn#GanOptions"],
+      "reason": "the GAN training run of the nn domain (GanPlayer for the view)"
+    },
+    {
+      "aifn": "aifn-compute/logic/resolution#prologProgram",
+      "omai": ["omai-engine/logic#consult"],
+      "reason": "a Prolog program is consulted into a database"
+    },
+    { "aifn": "aifn-compute/logic/resolution#solveQuery", "omai": ["omai-engine/logic#solve"], "reason": "renamed" },
+    {
+      "aifn": "aifn-compute/logic/resolution#leastHerbrandModel",
+      "omai": ["omai-engine/logic#leastModel"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-compute/logic/propositional#prop",
+      "omai": ["omai-engine/logic#atom"],
+      "reason": "a propositional atom"
+    },
+    {
+      "aifn": "aifn-compute/logic/propositional#formulaText",
+      "omai": ["omai-engine/logic#formulaToString"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-compute/logic/propositional#interpretations",
+      "omai": ["omai-engine/logic#allModels"],
+      "reason": "the models of a formula"
+    },
+    {
+      "aifn": "aifn-compute/logic/induction#foilProblem",
+      "omai": ["omai-engine/logic/ilp#foil"],
+      "reason": "FOIL takes the task directly"
+    },
+    {
+      "aifn": "aifn-compute/logic/induction#foilSteps",
+      "omai": ["omai-engine/logic/ilp#foilAlgorithm"],
+      "reason": "the same iteration as an Algorithm"
+    },
+    {
+      "aifn": "aifn-compute/logic/induction#bottomClauseSearch",
+      "omai": ["omai-engine/logic/ilp#bottomClause"],
+      "reason": "renamed"
+    },
+    { "aifn": "aifn-compute/logic/induction#relativeLgg", "omai": ["omai-engine/logic/ilp#rlgg"], "reason": "renamed" },
+    {
+      "aifn": "aifn-compute/logic/induction#clauseLggTrace",
+      "omai": ["omai-engine/logic/ilp#lgg"],
+      "reason": "the lgg without its trace"
+    },
+    {
+      "aifn": "aifn-compute/logic/induction#termLggTraced",
+      "omai": ["omai-engine/logic/ilp#lgg"],
+      "reason": "the lgg without its trace"
+    },
+    {
+      "aifn": "aifn-compute/logic/induction#thetaSubsumptionTrace",
+      "omai": ["omai-engine/logic/ilp#thetaSubsumes"],
+      "reason": "the test without its trace"
+    },
+    {
+      "aifn": "aifn-compute/logic/induction#versionSpaceVote",
+      "omai": ["omai-engine/logic/ilp#classifyByVersionSpace"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-compute/logic/induction#mineClosedRules",
+      "omai": ["omai-engine/patterns#closedItemsets"],
+      "reason": "closed itemsets; the rule step is associationRules"
+    },
+    {
+      "aifn": "aifn-compute/inference/filtering#normalGamma",
+      "omai": ["omai-engine/dists#conjugatePosterior"],
+      "reason": "conjugate updates are conjugatePosterior with the pair named"
+    },
+    {
+      "aifn": "aifn-compute/inference/filtering#poissonGamma",
+      "omai": ["omai-engine/dists#conjugatePosterior"],
+      "reason": "conjugate updates are conjugatePosterior with the pair named"
+    },
+    {
+      "aifn": "aifn-compute/inference/filtering#normalKnownVariance",
+      "omai": ["omai-engine/dists#conjugatePosterior"],
+      "reason": "conjugate updates are conjugatePosterior with the pair named"
+    },
+    {
+      "aifn": "aifn-compute/inference/filtering#trackingMetrics",
+      "omai": ["omai-engine/dynamics/filtering#nees"],
+      "reason": "nees; the innovation statistic is not separate"
+    },
+    {
+      "aifn": "aifn-compute/inference/filtering#bocpdForecast",
+      "omai": ["omai-engine/dynamics/filtering#bocpd"],
+      "reason": "the forecast is read from the bocpd result"
+    },
+    {
+      "aifn": "aifn-compute/inference/filtering#bocpdPredictiveDensity",
+      "omai": ["omai-engine/dynamics/filtering#bocpd"],
+      "reason": "the predictive density is read from the bocpd result"
+    },
+    {
+      "aifn": "aifn-compute/nn/sequence#hippoOnline",
+      "omai": ["omai-engine/nn/blocks#hippoLegS"],
+      "reason": "the HiPPO systems of nn/blocks"
+    },
+    {
+      "aifn": "aifn-compute/nn/sequence#hippoReconstruct",
+      "omai": ["omai-engine/nn/blocks#hippoLegS"],
+      "reason": "the HiPPO systems of nn/blocks"
+    },
+    {
+      "aifn": "aifn-compute/nn/sequence#hippoWindow",
+      "omai": ["omai-engine/nn/blocks#hippoLegT"],
+      "reason": "the HiPPO systems of nn/blocks"
+    },
+    {
+      "aifn": "aifn-compute/nn/sequence#lruConvolve",
+      "omai": ["omai-engine/nn#lruScan"],
+      "reason": "the LRU as a scan"
+    },
+    { "aifn": "aifn-compute/nn/sequence#lruKernel", "omai": ["omai-engine/nn#lru"], "reason": "the LRU layer" },
+    {
+      "aifn": "aifn-compute/nn/sequence#rgLruLambda",
+      "omai": ["omai-engine/nn#lruEigenvalues"],
+      "reason": "the diagonal recurrence eigenvalues"
+    },
+    {
+      "aifn": "aifn-compute/nn/sequence#linearAttentionRecurrent",
+      "omai": ["omai-engine/nn#linearAttention"],
+      "reason": "linearAttention has the recurrent form"
+    },
+    {
+      "aifn": "aifn-compute/nn/sequence#linearAttentionWeights",
+      "omai": ["omai-engine/nn#linearAttention"],
+      "reason": "linearAttention"
+    },
+    {
+      "aifn": "aifn-compute/learning/calibration#dirichletCalibration",
+      "omai": ["omai-engine/learn#betaCalibration"],
+      "reason": "the closest omai calibrator is beta calibration (two classes); the multiclass Dirichlet calibrator is not in omai"
+    },
+    {
+      "aifn": "aifn-compute/learning/conformal#setCoverage",
+      "omai": ["omai-engine/learn#intervalCoverage"],
+      "reason": "the coverage of an interval; the set version is a one-liner"
+    },
+    {
+      "aifn": "aifn-compute/inference/expectation-propagation#epLogEvidence",
+      "omai": ["omai-engine/pgm#expectationPropagation"],
+      "reason": "the evidence is a field of the result"
+    },
+    {
+      "aifn": "aifn-compute/signal/similarity#matrixProfile",
+      "omai": ["omai-engine/timeseries#stomp"],
+      "reason": "omai has stamp and stomp"
+    },
+    {
+      "aifn": "aifn-compute/signal/similarity#slidingMeanStd",
+      "omai": ["omai-engine/stats#std"],
+      "reason": "a sliding window statistic; the rolling form is a helper of stomp"
+    },
+    {
+      "aifn": "aifn-compute/graph/measures#edgeHomophily",
+      "omai": ["omai-engine/graph#homophily"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-compute/graph/structures#cliqueExpansion",
+      "omai": ["omai-engine/graph#cliqueNumber"],
+      "reason": "a different clique function; clique expansion of a hypergraph is not in omai"
+    },
+    {
+      "aifn": "aifn-compute/graph/matrices#randomWalkEncoding",
+      "omai": ["omai-engine/graph#randomWalkPositionalEncoding"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-compute/graph/matrices#laplacianEncoding",
+      "omai": ["omai-engine/graph#laplacianPositionalEncoding"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-compute/nn/graph#dirichletEnergy",
+      "omai": ["omai-engine/graph#dirichletEnergy"],
+      "reason": "in the graph domain"
+    },
+    {
+      "aifn": "aifn-compute/nn/graph#chebyshevFilter",
+      "omai": ["omai-engine/graph#chebyshevFilter"],
+      "reason": "in the graph domain"
+    },
+    {
+      "aifn": "aifn-compute/nn/graph#computationGraph",
+      "omai": ["omai-engine/autodiff#computationGraph"],
+      "reason": "in the autodiff domain"
+    },
+    {
+      "aifn": "aifn-compute/nn/training#gradCam",
+      "omai": ["omai-engine/explain#gradCam"],
+      "reason": "in the explain domain"
+    },
+    {
+      "aifn": "aifn-compute/nn/functional#im2col",
+      "omai": ["omai-engine/numerics/convolution#im2col"],
+      "reason": "in the convolution domain"
+    },
+    {
+      "aifn": "aifn-compute/learning/explain#medianAbsoluteDeviation",
+      "omai": ["omai-engine/stats#medianAbsoluteDeviation"],
+      "reason": "in the stats domain"
+    },
+    {
+      "aifn": "aifn-compute/numerics/linalg#inverse",
+      "omai": ["omai-engine/numerics/linalg#inv"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-compute/signal#magnitude",
+      "omai": ["omai-engine/tensor#absComplex"],
+      "reason": "the modulus of a complex spectrum"
+    },
+    {
+      "aifn": "aifn-compute/signal/image#gaussianKernel",
+      "omai": ["omai-engine/signal/image#gaussianFilter"],
+      "reason": "a Gaussian smoothing filter; the kernel itself is a one-liner"
+    },
+    {
+      "aifn": "aifn-methods/unsupervised/anomaly#oneClassSvm",
+      "omai": ["omai-engine/svm#oneClassSvm"],
+      "reason": "in the svm domain"
+    },
+    {
+      "aifn": "aifn-methods/learning/generalised/gam#gamlssModel",
+      "omai": ["omai-engine/dists/families#gamlssNormal"],
+      "reason": "GAMLSS families live in dists/families; the model is a gam estimator"
+    },
+    {
+      "aifn": "aifn-methods/inference/sequence-models#sampleHmm",
+      "omai": ["omai-engine/pgm#hmmSample"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-methods/inference/sequence-models#dishonestCasino",
+      "omai": ["omai-engine/datasets#dishonestCasino"],
+      "reason": "in the datasets domain"
+    },
+    {
+      "aifn": "aifn-methods/learning/survival#aftModel",
+      "omai": ["omai-engine/survival#aftPredictSurvival"],
+      "reason": "the accelerated failure time model of the survival domain"
+    },
+    {
+      "aifn": "aifn-methods/learning/survival#harrellConcordance",
+      "omai": ["omai-engine/survival#concordanceIndex"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-methods/neural/reward-models#fitBradleyTerry",
+      "omai": ["omai-engine/pgm#fitBradleyTerry"],
+      "reason": "in the pgm domain"
+    },
+    {
+      "aifn": "aifn-methods/neural/contrastive#similarities",
+      "omai": ["omai-engine/distances#similarities"],
+      "reason": "in the distances domain"
+    },
+    {
+      "aifn": "aifn-methods/learning/kernel-methods#crammerSinger",
+      "omai": ["omai-engine/losses#crammerSinger"],
+      "reason": "in the losses domain"
+    },
+    {
+      "aifn": "aifn-methods/learning/linear#elasticNet",
+      "omai": ["omai-engine/linear#linearModel"],
+      "reason": "linearModel with an elastic-net penalty"
+    },
+    {
+      "aifn": "aifn-methods/neural/pinn#burgers",
+      "omai": ["omai-engine/dynamics/pde#BURGERS"],
+      "reason": "the Burgers equation of the pde domain; the network is not"
+    },
+    {
+      "aifn": "aifn-methods/neural/pinn#heat",
+      "omai": ["omai-engine/dynamics/pde#heat"],
+      "reason": "the heat equation of the pde domain; the network is not"
+    },
+    { "aifn": "aifn-methods/data/real#karateClub", "omai": ["omai-engine/datasets#karateClub"], "reason": "same" },
+    {
+      "aifn": "aifn-methods/dynamics/maps#lyapunovExponent",
+      "omai": ["omai-engine/dynamics#largestLyapunovExponent"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-methods/dynamics/pde#heatEquation",
+      "omai": ["omai-engine/dynamics/pde#heat"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-methods/dynamics/pde#periodicGrid",
+      "omai": ["omai-engine/dynamics/pde#periodic"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-methods/information/channels#blahutArimotoCapacity",
+      "omai": ["omai-engine/information#blahutArimotoAlgorithm"],
+      "reason": "the same iteration as an Algorithm"
+    },
+    {
+      "aifn": "aifn-compute/probability/distributions#ChiSquare",
+      "omai": ["omai-engine/dists#chi2"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-compute/numerics/regularisation#differenceOperator",
+      "omai": ["omai-engine/numerics/inverse#tikhonov"],
+      "reason": "the difference operator is the L argument of tikhonov"
+    },
+    {
+      "aifn": "aifn-compute/graph/propagation#pointAffinity",
+      "omai": ["omai-engine/cluster#affinityMatrix"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-compute/graph/propagation#neighbourhoodGraph",
+      "omai": ["omai-engine/graph#kNearestNeighbourGraph"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-compute/graph/propagation#randomWalkMatrix",
+      "omai": ["omai-engine/graph#degreeMatrix"],
+      "reason": "the transition matrix is the degree-normalised adjacency"
+    },
+    {
+      "aifn": "aifn-compute/learning/validate#assignment",
+      "omai": ["omai-engine/optim#AssignmentResult"],
+      "reason": "the assignment solver of optim (Hungarian)"
+    },
+    {
+      "aifn": "aifn-compute/numerics/neighbours#treeQuery",
+      "omai": ["omai-engine/numerics/spatial#kNearest"],
+      "reason": "queries on the spatial trees of omai-engine/numerics/spatial"
+    },
+    {
+      "aifn": "aifn-compute/numerics/neighbours#treeSearch",
+      "omai": ["omai-engine/numerics/spatial#kNearest"],
+      "reason": "queries on the spatial trees of omai-engine/numerics/spatial"
+    },
+    {
+      "aifn": "aifn-methods/learning/preprocessing#whitening",
+      "omai": ["omai-engine/decomposition#pca"],
+      "reason": "pca with whitening"
+    },
+    {
+      "aifn": "aifn-compute/probability/tests#tTestPower",
+      "omai": ["omai-engine/stats#powerTTest"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-compute/numerics/interpolate#pspline",
+      "omai": ["omai-engine/gam#s"],
+      "reason": "a P-spline smooth term: s(i, { basis: \"ps\" })"
+    },
+    {
+      "aifn": "aifn-compute/numerics/interpolate#psplineGcvPath",
+      "omai": ["omai-engine/gam#s"],
+      "reason": "a P-spline smooth; the penalty is chosen by the gam fitting methods (GCV, REML)"
+    },
+    {
+      "aifn": "aifn-compute/learning/selection#ridgeCv",
+      "omai": ["omai-engine/linear#cvPath"],
+      "reason": "a cross-validated penalty path (with an elastic-net mixing of 0 for ridge)"
+    },
+    {
+      "aifn": "aifn-compute/probability/likelihoods#gaussianFamily",
+      "omai": ["omai-engine/dists/families#gaussian"],
+      "reason": "renamed"
+    },
+    {
+      "aifn": "aifn-methods/neural/quantisation#adapterParameters",
+      "omai": ["omai-engine/nn#loraParameterCount"],
+      "reason": "renamed: the parameters of one LoRA adapter"
+    },
+    {
+      "aifn": "aifn-methods/neural/operator#deepOnet",
+      "omai": ["omai-engine/nn/blocks#DeepONet"],
+      "reason": "a block class in omai"
+    },
+    {
+      "aifn": "aifn-methods/neural/operator#FourierNeuralOperator1d",
+      "omai": ["omai-engine/nn/blocks#FourierLayer"],
+      "reason": "omai has the spectral convolution and the Fourier layer; the stacked network is built from them"
+    },
+    {
+      "aifn": "aifn-methods/neural/operator#applyFourierMultiplier",
+      "omai": ["omai-engine/nn/blocks#SpectralConv1d"],
+      "reason": "the spectral convolution layer"
+    },
+    {
+      "aifn": "aifn-methods/neural/operator#applyModeMultiplier",
+      "omai": ["omai-engine/nn/blocks#SpectralConv1d"],
+      "reason": "the spectral convolution layer"
+    },
+    {
+      "aifn": "aifn-methods/neural/operator#fitFourierMultiplier",
+      "omai": ["omai-engine/nn/blocks#SpectralConv1d"],
+      "reason": "the layer; fitting is the generic trainer"
+    },
+    {
+      "aifn": "aifn-methods/neural/ode#odeRun",
+      "omai": ["omai-engine/nn/blocks#ODEBlock"],
+      "reason": "a neural ODE block; the run is the generic trainer"
+    }
+  ],
+  "design": [
+    {
+      "aifn": "aifn-compute/foundation/random#stream",
+      "omai": ["omai-engine/random#key", "omai-engine/random#Generator"],
+      "reason": "AIFN streams are mutable seeded counters (stream(seed), child(s, name)); omai uses immutable keys (key, foldIn, keyFromPath) or a Generator; the draws differ for the same seed"
+    },
+    {
+      "aifn": "aifn-compute/foundation/random#child",
+      "omai": ["omai-engine/random#foldIn", "omai-engine/random#keyFromPath"],
+      "reason": "AIFN streams are mutable seeded counters (stream(seed), child(s, name)); omai uses immutable keys (key, foldIn, keyFromPath) or a Generator; the draws differ for the same seed"
+    },
+    {
+      "aifn": "aifn-compute/foundation/random#Stream",
+      "omai": ["omai-engine/random#Key", "omai-engine/random#Generator"],
+      "reason": "AIFN streams are mutable seeded counters (stream(seed), child(s, name)); omai uses immutable keys (key, foldIn, keyFromPath) or a Generator; the draws differ for the same seed"
+    },
+    {
+      "aifn": "aifn-compute/foundation/tensor#float64Data",
+      "omai": ["omai-engine/tensor#Tensor"],
+      "reason": "omai reads the elements of a tensor as its `data` typed array, no function"
+    },
+    {
+      "aifn": "aifn-compute/foundation/tensor#readonlyData",
+      "omai": ["omai-engine/tensor#Tensor"],
+      "reason": "omai reads the elements of a tensor as its `data` typed array, no function"
+    },
+    {
+      "aifn": "aifn-compute/learning/estimators#dataset",
+      "omai": ["omai-engine/data#Dataset"],
+      "reason": "AIFN estimators are capability-typed models fitted on a `dataset(x, y)` record (Fitted, Predicts, Decides); omai estimators follow the sklearn-style Estimator of omai-engine/learn, so a port rewrites the fit and predict calls"
+    },
+    {
+      "aifn": "aifn-compute/learning/estimators#classProbabilities",
+      "omai": ["omai-engine/learn#Estimator"],
+      "reason": "AIFN estimators are capability-typed models fitted on a `dataset(x, y)` record (Fitted, Predicts, Decides); omai estimators follow the sklearn-style Estimator of omai-engine/learn, so a port rewrites the fit and predict calls"
+    },
+    {
+      "aifn": "aifn-compute/learning/estimators#hasPredictive",
+      "omai": ["omai-engine/learn#Estimator"],
+      "reason": "AIFN estimators are capability-typed models fitted on a `dataset(x, y)` record (Fitted, Predicts, Decides); omai estimators follow the sklearn-style Estimator of omai-engine/learn, so a port rewrites the fit and predict calls"
+    },
+    {
+      "aifn": "aifn-compute/learning/estimators#Supervised",
+      "omai": ["omai-engine/data#Dataset"],
+      "reason": "AIFN estimators are capability-typed models fitted on a `dataset(x, y)` record (Fitted, Predicts, Decides); omai estimators follow the sklearn-style Estimator of omai-engine/learn, so a port rewrites the fit and predict calls"
+    },
+    {
+      "aifn": "aifn-methods/data/synthetic#regression1d",
+      "omai": [
+        "omai-engine/datasets#heteroscedastic",
+        "omai-engine/datasets#lineData",
+        "omai-engine/datasets#sineCurve",
+        "omai-engine/datasets#piecewiseLinear"
+      ],
+      "reason": "AIFN has one generator taking f and the noise sigma(x); omai has several fixed 1-D generators (lineData, heteroscedastic, sineCurve, piecewiseLinear and more)"
+    },
+    {
+      "aifn": "aifn-methods/learning/mixture-density#mdnModel",
+      "omai": ["omai-engine/losses#mixtureDensityNll", "omai-engine/dists/compose#mixtureDensityFromOutput"],
+      "reason": "omai has the mixture-density loss and the output-to-mixture map, and trains the network with the generic trainer; there is no ready MDN model"
+    },
+    {
+      "aifn": "aifn-methods/learning/mixture-density#mdnPredict",
+      "omai": ["omai-engine/dists/compose#mixtureDensityFromOutput"],
+      "reason": "see mdnModel"
+    },
+    {
+      "aifn": "aifn-render#Plot",
+      "omai": ["omai-render/react#Chart", "omai-render/charts#cartesian"],
+      "reason": "AIFN draws a chart as a React tree of layer components (<Plot><Curve/><Points/></Plot>) on an axis model; omai-render builds layers as data with the functions of omai-render/charts and draws them with Chart"
+    },
+    {
+      "aifn": "aifn-render#Plots",
+      "omai": ["omai-render/charts#subplots", "omai-render/react#FigureGrid"],
+      "reason": "AIFN draws a chart as a React tree of layer components (<Plot><Curve/><Points/></Plot>) on an axis model; omai-render builds layers as data with the functions of omai-render/charts and draws them with Chart"
+    },
+    {
+      "aifn": "aifn-render#useAxis",
+      "omai": ["omai-render/charts#cartesian"],
+      "reason": "AIFN draws a chart as a React tree of layer components (<Plot><Curve/><Points/></Plot>) on an axis model; omai-render builds layers as data with the functions of omai-render/charts and draws them with Chart"
+    },
+    {
+      "aifn": "aifn-render#AxisModel",
+      "omai": ["omai-render/charts#cartesian"],
+      "reason": "AIFN draws a chart as a React tree of layer components (<Plot><Curve/><Points/></Plot>) on an axis model; omai-render builds layers as data with the functions of omai-render/charts and draws them with Chart"
+    },
+    {
+      "aifn": "aifn-render#Curve",
+      "omai": ["omai-render/charts#lines", "omai-render/charts#fn"],
+      "reason": "AIFN draws a chart as a React tree of layer components (<Plot><Curve/><Points/></Plot>) on an axis model; omai-render builds layers as data with the functions of omai-render/charts and draws them with Chart"
+    },
+    {
+      "aifn": "aifn-render#Points",
+      "omai": ["omai-render/charts#points"],
+      "reason": "AIFN draws a chart as a React tree of layer components (<Plot><Curve/><Points/></Plot>) on an axis model; omai-render builds layers as data with the functions of omai-render/charts and draws them with Chart"
+    },
+    {
+      "aifn": "aifn-render#Segments",
+      "omai": ["omai-render/charts#lines"],
+      "reason": "AIFN draws a chart as a React tree of layer components (<Plot><Curve/><Points/></Plot>) on an axis model; omai-render builds layers as data with the functions of omai-render/charts and draws them with Chart"
+    },
+    {
+      "aifn": "aifn-render#Raster",
+      "omai": ["omai-render/charts#heatmap", "omai-render/charts#image"],
+      "reason": "AIFN draws a chart as a React tree of layer components (<Plot><Curve/><Points/></Plot>) on an axis model; omai-render builds layers as data with the functions of omai-render/charts and draws them with Chart"
+    },
+    {
+      "aifn": "aifn-render#Pixels",
+      "omai": ["omai-render/charts#image"],
+      "reason": "AIFN draws a chart as a React tree of layer components (<Plot><Curve/><Points/></Plot>) on an axis model; omai-render builds layers as data with the functions of omai-render/charts and draws them with Chart"
+    },
+    {
+      "aifn": "aifn-render#Bars",
+      "omai": ["omai-render/charts#bars"],
+      "reason": "AIFN draws a chart as a React tree of layer components (<Plot><Curve/><Points/></Plot>) on an axis model; omai-render builds layers as data with the functions of omai-render/charts and draws them with Chart"
+    },
+    {
+      "aifn": "aifn-render#Area",
+      "omai": ["omai-render/charts#band"],
+      "reason": "AIFN draws a chart as a React tree of layer components (<Plot><Curve/><Points/></Plot>) on an axis model; omai-render builds layers as data with the functions of omai-render/charts and draws them with Chart"
+    },
+    {
+      "aifn": "aifn-render#Vectors",
+      "omai": ["omai-render/charts#fieldArrows"],
+      "reason": "AIFN draws a chart as a React tree of layer components (<Plot><Curve/><Points/></Plot>) on an axis model; omai-render builds layers as data with the functions of omai-render/charts and draws them with Chart"
+    },
+    {
+      "aifn": "aifn-render#Contours",
+      "omai": ["omai-render/charts#contours"],
+      "reason": "AIFN draws a chart as a React tree of layer components (<Plot><Curve/><Points/></Plot>) on an axis model; omai-render builds layers as data with the functions of omai-render/charts and draws them with Chart"
+    },
+    {
+      "aifn": "aifn-render#Shapes",
+      "omai": ["omai-render/charts#polygons"],
+      "reason": "AIFN draws a chart as a React tree of layer components (<Plot><Curve/><Points/></Plot>) on an axis model; omai-render builds layers as data with the functions of omai-render/charts and draws them with Chart"
+    },
+    {
+      "aifn": "aifn-render#Rug",
+      "omai": ["omai-render/charts#rug"],
+      "reason": "AIFN draws a chart as a React tree of layer components (<Plot><Curve/><Points/></Plot>) on an axis model; omai-render builds layers as data with the functions of omai-render/charts and draws them with Chart"
+    },
+    {
+      "aifn": "aifn-render#Histogram",
+      "omai": ["omai-render/charts#histogram"],
+      "reason": "AIFN draws a chart as a React tree of layer components (<Plot><Curve/><Points/></Plot>) on an axis model; omai-render builds layers as data with the functions of omai-render/charts and draws them with Chart"
+    },
+    {
+      "aifn": "aifn-render#Density",
+      "omai": ["omai-render/charts#density"],
+      "reason": "AIFN draws a chart as a React tree of layer components (<Plot><Curve/><Points/></Plot>) on an axis model; omai-render builds layers as data with the functions of omai-render/charts and draws them with Chart"
+    },
+    {
+      "aifn": "aifn-render#Annotation",
+      "omai": ["omai-render/charts#annotations"],
+      "reason": "AIFN draws a chart as a React tree of layer components (<Plot><Curve/><Points/></Plot>) on an axis model; omai-render builds layers as data with the functions of omai-render/charts and draws them with Chart"
+    },
+    {
+      "aifn": "aifn-render#seriesLayers",
+      "omai": ["omai-render/charts#layer"],
+      "reason": "AIFN draws a chart as a React tree of layer components (<Plot><Curve/><Points/></Plot>) on an axis model; omai-render builds layers as data with the functions of omai-render/charts and draws them with Chart"
+    },
+    {
+      "aifn": "aifn-render#SeriesSpec",
+      "omai": ["omai-render/charts#layer"],
+      "reason": "AIFN draws a chart as a React tree of layer components (<Plot><Curve/><Points/></Plot>) on an axis model; omai-render builds layers as data with the functions of omai-render/charts and draws them with Chart"
+    },
+    {
+      "aifn": "aifn-render#Segment",
+      "omai": ["omai-render/charts#lines"],
+      "reason": "AIFN draws a chart as a React tree of layer components (<Plot><Curve/><Points/></Plot>) on an axis model; omai-render builds layers as data with the functions of omai-render/charts and draws them with Chart"
+    },
+    {
+      "aifn": "aifn-render#Vector",
+      "omai": ["omai-render/charts#fieldArrows"],
+      "reason": "AIFN draws a chart as a React tree of layer components (<Plot><Curve/><Points/></Plot>) on an axis model; omai-render builds layers as data with the functions of omai-render/charts and draws them with Chart"
+    },
+    {
+      "aifn": "aifn-render#FilledShape",
+      "omai": ["omai-render/charts#polygons"],
+      "reason": "AIFN draws a chart as a React tree of layer components (<Plot><Curve/><Points/></Plot>) on an axis model; omai-render builds layers as data with the functions of omai-render/charts and draws them with Chart"
+    },
+    {
+      "aifn": "aifn-render#Vec2",
+      "omai": ["omai-engine/base#Vec2"],
+      "reason": "AIFN draws a chart as a React tree of layer components (<Plot><Curve/><Points/></Plot>) on an axis model; omai-render builds layers as data with the functions of omai-render/charts and draws them with Chart"
+    },
+    {
+      "aifn": "aifn-render#PlotPointer",
+      "omai": ["omai-render/react#useChartProjection"],
+      "reason": "AIFN draws a chart as a React tree of layer components (<Plot><Curve/><Points/></Plot>) on an axis model; omai-render builds layers as data with the functions of omai-render/charts and draws them with Chart"
+    },
+    {
+      "aifn": "aifn-render#Handle",
+      "omai": ["omai-render/react#DraggablePoints", "omai-render/react#DraggableLine", "omai-render/react#Brush"],
+      "reason": "AIFN binds a parameter to a Handle layer inside a Plot; omai has the dragging tools as components over a chart (DraggablePoints, DraggableLine, Brush) with constraints"
+    },
+    {
+      "aifn": "aifn-render#Figure",
+      "omai": ["omai-render/react#FigureFrame", "omai-render/figure#figure"],
+      "reason": "AIFN frames a figure with Figure and Controls and lays out controls and dashboards with components; omai-render has FigureFrame, FigureGrid and ControlPanel"
+    },
+    {
+      "aifn": "aifn-render#FigureSize",
+      "omai": ["omai-render/figure#figure"],
+      "reason": "AIFN frames a figure with Figure and Controls and lays out controls and dashboards with components; omai-render has FigureFrame, FigureGrid and ControlPanel"
+    },
+    {
+      "aifn": "aifn-render#Dashboard",
+      "omai": ["omai-render/react#FigureGrid"],
+      "reason": "AIFN frames a figure with Figure and Controls and lays out controls and dashboards with components; omai-render has FigureFrame, FigureGrid and ControlPanel"
+    },
+    {
+      "aifn": "aifn-render#DashboardRow",
+      "omai": ["omai-render/react#FigureGrid"],
+      "reason": "AIFN frames a figure with Figure and Controls and lays out controls and dashboards with components; omai-render has FigureFrame, FigureGrid and ControlPanel"
+    },
+    {
+      "aifn": "aifn-render#DashboardCell",
+      "omai": ["omai-render/react#FigureGrid"],
+      "reason": "AIFN frames a figure with Figure and Controls and lays out controls and dashboards with components; omai-render has FigureFrame, FigureGrid and ControlPanel"
+    },
+    {
+      "aifn": "aifn-render#ControlRow",
+      "omai": ["omai-render/react#ControlPanel"],
+      "reason": "AIFN frames a figure with Figure and Controls and lays out controls and dashboards with components; omai-render has FigureFrame, FigureGrid and ControlPanel"
+    },
+    {
+      "aifn": "aifn-render#ControlGroup",
+      "omai": ["omai-render/react#ControlPanel"],
+      "reason": "AIFN frames a figure with Figure and Controls and lays out controls and dashboards with components; omai-render has FigureFrame, FigureGrid and ControlPanel"
+    },
+    {
+      "aifn": "aifn-render#FrameContext",
+      "omai": ["omai-render/react#useFrameSize"],
+      "reason": "AIFN frames a figure with Figure and Controls and lays out controls and dashboards with components; omai-render has FigureFrame, FigureGrid and ControlPanel"
+    },
+    {
+      "aifn": "aifn-render#useElementSize",
+      "omai": ["omai-render/react#useFrameSize"],
+      "reason": "AIFN frames a figure with Figure and Controls and lays out controls and dashboards with components; omai-render has FigureFrame, FigureGrid and ControlPanel"
+    },
+    {
+      "aifn": "aifn-render#useFigureState",
+      "omai": ["omai-render/react#SpaceControls", "omai-engine/space#real"],
+      "reason": "AIFN keeps the controls of a figure in one typed state (useFigureState with slider, int, float, choice, setting, toggle, row, variants, when); omai describes controls as a Space (omai-engine/space) and draws them with SpaceControls and the field components"
+    },
+    {
+      "aifn": "aifn-render#slider",
+      "omai": ["omai-render/react#SpaceControls", "omai-engine/space#real"],
+      "reason": "AIFN keeps the controls of a figure in one typed state (useFigureState with slider, int, float, choice, setting, toggle, row, variants, when); omai describes controls as a Space (omai-engine/space) and draws them with SpaceControls and the field components"
+    },
+    {
+      "aifn": "aifn-render#int",
+      "omai": ["omai-render/react#SpaceControls", "omai-engine/space#real"],
+      "reason": "AIFN keeps the controls of a figure in one typed state (useFigureState with slider, int, float, choice, setting, toggle, row, variants, when); omai describes controls as a Space (omai-engine/space) and draws them with SpaceControls and the field components"
+    },
+    {
+      "aifn": "aifn-render#float",
+      "omai": ["omai-render/react#SpaceControls", "omai-engine/space#real"],
+      "reason": "AIFN keeps the controls of a figure in one typed state (useFigureState with slider, int, float, choice, setting, toggle, row, variants, when); omai describes controls as a Space (omai-engine/space) and draws them with SpaceControls and the field components"
+    },
+    {
+      "aifn": "aifn-render#choice",
+      "omai": ["omai-render/react#SpaceControls", "omai-engine/space#real"],
+      "reason": "AIFN keeps the controls of a figure in one typed state (useFigureState with slider, int, float, choice, setting, toggle, row, variants, when); omai describes controls as a Space (omai-engine/space) and draws them with SpaceControls and the field components"
+    },
+    {
+      "aifn": "aifn-render#setting",
+      "omai": ["omai-render/react#SpaceControls", "omai-engine/space#real"],
+      "reason": "AIFN keeps the controls of a figure in one typed state (useFigureState with slider, int, float, choice, setting, toggle, row, variants, when); omai describes controls as a Space (omai-engine/space) and draws them with SpaceControls and the field components"
+    },
+    {
+      "aifn": "aifn-render#toggle",
+      "omai": ["omai-render/react#SpaceControls", "omai-engine/space#real"],
+      "reason": "AIFN keeps the controls of a figure in one typed state (useFigureState with slider, int, float, choice, setting, toggle, row, variants, when); omai describes controls as a Space (omai-engine/space) and draws them with SpaceControls and the field components"
+    },
+    {
+      "aifn": "aifn-render#row",
+      "omai": ["omai-render/react#SpaceControls", "omai-engine/space#real"],
+      "reason": "AIFN keeps the controls of a figure in one typed state (useFigureState with slider, int, float, choice, setting, toggle, row, variants, when); omai describes controls as a Space (omai-engine/space) and draws them with SpaceControls and the field components"
+    },
+    {
+      "aifn": "aifn-render#variants",
+      "omai": ["omai-render/react#SpaceControls", "omai-engine/space#real"],
+      "reason": "AIFN keeps the controls of a figure in one typed state (useFigureState with slider, int, float, choice, setting, toggle, row, variants, when); omai describes controls as a Space (omai-engine/space) and draws them with SpaceControls and the field components"
+    },
+    {
+      "aifn": "aifn-render#when",
+      "omai": ["omai-render/react#SpaceControls", "omai-engine/space#real"],
+      "reason": "AIFN keeps the controls of a figure in one typed state (useFigureState with slider, int, float, choice, setting, toggle, row, variants, when); omai describes controls as a Space (omai-engine/space) and draws them with SpaceControls and the field components"
+    },
+    {
+      "aifn": "aifn-render#SwitchDef",
+      "omai": ["omai-render/react#SpaceControls", "omai-engine/space#real"],
+      "reason": "AIFN keeps the controls of a figure in one typed state (useFigureState with slider, int, float, choice, setting, toggle, row, variants, when); omai describes controls as a Space (omai-engine/space) and draws them with SpaceControls and the field components"
+    },
+    {
+      "aifn": "aifn-render#Param",
+      "omai": ["omai-render/react#SpaceControls", "omai-engine/space#real"],
+      "reason": "AIFN keeps the controls of a figure in one typed state (useFigureState with slider, int, float, choice, setting, toggle, row, variants, when); omai describes controls as a Space (omai-engine/space) and draws them with SpaceControls and the field components"
+    },
+    {
+      "aifn": "aifn-render#SliderDef",
+      "omai": ["omai-render/react#SpaceControls", "omai-engine/space#real"],
+      "reason": "AIFN keeps the controls of a figure in one typed state (useFigureState with slider, int, float, choice, setting, toggle, row, variants, when); omai describes controls as a Space (omai-engine/space) and draws them with SpaceControls and the field components"
+    },
+    {
+      "aifn": "aifn-render#NumberDef",
+      "omai": ["omai-render/react#SpaceControls", "omai-engine/space#real"],
+      "reason": "AIFN keeps the controls of a figure in one typed state (useFigureState with slider, int, float, choice, setting, toggle, row, variants, when); omai describes controls as a Space (omai-engine/space) and draws them with SpaceControls and the field components"
+    },
+    {
+      "aifn": "aifn-render#ParamDef",
+      "omai": ["omai-render/react#SpaceControls", "omai-engine/space#real"],
+      "reason": "AIFN keeps the controls of a figure in one typed state (useFigureState with slider, int, float, choice, setting, toggle, row, variants, when); omai describes controls as a Space (omai-engine/space) and draws them with SpaceControls and the field components"
+    },
+    {
+      "aifn": "aifn-render#FigureState",
+      "omai": ["omai-render/react#SpaceControls", "omai-engine/space#real"],
+      "reason": "AIFN keeps the controls of a figure in one typed state (useFigureState with slider, int, float, choice, setting, toggle, row, variants, when); omai describes controls as a Space (omai-engine/space) and draws them with SpaceControls and the field components"
+    },
+    {
+      "aifn": "aifn-render#useComputed",
+      "omai": ["omai-render/producer#workerProducer", "omai-render/react#useSession"],
+      "reason": "AIFN runs a call of an engine export in a worker (useComputed with call(address, args)); omai runs methods as sessions on a producer (workerProducer, useSession)"
+    },
+    {
+      "aifn": "aifn-render#call",
+      "omai": ["omai-render/producer#workerProducer", "omai-render/react#useSession"],
+      "reason": "AIFN runs a call of an engine export in a worker (useComputed with call(address, args)); omai runs methods as sessions on a producer (workerProducer, useSession)"
+    },
+    {
+      "aifn": "aifn-render#Task",
+      "omai": ["omai-render/producer#workerProducer", "omai-render/react#useSession"],
+      "reason": "AIFN runs a call of an engine export in a worker (useComputed with call(address, args)); omai runs methods as sessions on a producer (workerProducer, useSession)"
+    },
+    {
+      "aifn": "aifn-render#useStreamed",
+      "omai": ["omai-render/producer#workerProducer", "omai-render/react#useSession"],
+      "reason": "AIFN runs a call of an engine export in a worker (useComputed with call(address, args)); omai runs methods as sessions on a producer (workerProducer, useSession)"
+    },
+    {
+      "aifn": "aifn-render#Diagram",
+      "omai": ["omai-render/structures#diagram", "omai-render/react#StructureView"],
+      "reason": "AIFN draws diagrams from a spec of nodes, edges and groups with small builders (variable, factor, link, op, projector, reparam); omai-render draws an engine Structure (diagram, architecture, bayesNetCards) from the model itself"
+    },
+    {
+      "aifn": "aifn-render#DiagramSpec",
+      "omai": ["omai-render/structures#diagram", "omai-render/react#StructureView"],
+      "reason": "AIFN draws diagrams from a spec of nodes, edges and groups with small builders (variable, factor, link, op, projector, reparam); omai-render draws an engine Structure (diagram, architecture, bayesNetCards) from the model itself"
+    },
+    {
+      "aifn": "aifn-render#DiagramNode",
+      "omai": ["omai-render/structures#diagram", "omai-render/react#StructureView"],
+      "reason": "AIFN draws diagrams from a spec of nodes, edges and groups with small builders (variable, factor, link, op, projector, reparam); omai-render draws an engine Structure (diagram, architecture, bayesNetCards) from the model itself"
+    },
+    {
+      "aifn": "aifn-render#DiagramEdge",
+      "omai": ["omai-render/structures#diagram", "omai-render/react#StructureView"],
+      "reason": "AIFN draws diagrams from a spec of nodes, edges and groups with small builders (variable, factor, link, op, projector, reparam); omai-render draws an engine Structure (diagram, architecture, bayesNetCards) from the model itself"
+    },
+    {
+      "aifn": "aifn-render#DiagramGroup",
+      "omai": ["omai-render/structures#diagram", "omai-render/react#StructureView"],
+      "reason": "AIFN draws diagrams from a spec of nodes, edges and groups with small builders (variable, factor, link, op, projector, reparam); omai-render draws an engine Structure (diagram, architecture, bayesNetCards) from the model itself"
+    },
+    {
+      "aifn": "aifn-render#link",
+      "omai": ["omai-render/structures#diagram", "omai-render/react#StructureView"],
+      "reason": "AIFN draws diagrams from a spec of nodes, edges and groups with small builders (variable, factor, link, op, projector, reparam); omai-render draws an engine Structure (diagram, architecture, bayesNetCards) from the model itself"
+    },
+    {
+      "aifn": "aifn-render#variable",
+      "omai": ["omai-render/structures#diagram", "omai-render/react#StructureView"],
+      "reason": "AIFN draws diagrams from a spec of nodes, edges and groups with small builders (variable, factor, link, op, projector, reparam); omai-render draws an engine Structure (diagram, architecture, bayesNetCards) from the model itself"
+    },
+    {
+      "aifn": "aifn-render#factor",
+      "omai": ["omai-render/structures#diagram", "omai-render/react#StructureView"],
+      "reason": "AIFN draws diagrams from a spec of nodes, edges and groups with small builders (variable, factor, link, op, projector, reparam); omai-render draws an engine Structure (diagram, architecture, bayesNetCards) from the model itself"
+    },
+    {
+      "aifn": "aifn-render#op",
+      "omai": ["omai-render/structures#diagram", "omai-render/react#StructureView"],
+      "reason": "AIFN draws diagrams from a spec of nodes, edges and groups with small builders (variable, factor, link, op, projector, reparam); omai-render draws an engine Structure (diagram, architecture, bayesNetCards) from the model itself"
+    },
+    {
+      "aifn": "aifn-render#projector",
+      "omai": ["omai-render/structures#diagram", "omai-render/react#StructureView"],
+      "reason": "AIFN draws diagrams from a spec of nodes, edges and groups with small builders (variable, factor, link, op, projector, reparam); omai-render draws an engine Structure (diagram, architecture, bayesNetCards) from the model itself"
+    },
+    {
+      "aifn": "aifn-render#reparam",
+      "omai": ["omai-render/structures#diagram", "omai-render/react#StructureView"],
+      "reason": "AIFN draws diagrams from a spec of nodes, edges and groups with small builders (variable, factor, link, op, projector, reparam); omai-render draws an engine Structure (diagram, architecture, bayesNetCards) from the model itself"
+    },
+    {
+      "aifn": "aifn-render#merge",
+      "omai": ["omai-render/structures#diagram", "omai-render/react#StructureView"],
+      "reason": "AIFN draws diagrams from a spec of nodes, edges and groups with small builders (variable, factor, link, op, projector, reparam); omai-render draws an engine Structure (diagram, architecture, bayesNetCards) from the model itself"
+    },
+    {
+      "aifn": "aifn-render#Tone",
+      "omai": ["omai-render/structures#diagram", "omai-render/react#StructureView"],
+      "reason": "AIFN draws diagrams from a spec of nodes, edges and groups with small builders (variable, factor, link, op, projector, reparam); omai-render draws an engine Structure (diagram, architecture, bayesNetCards) from the model itself"
+    },
+    {
+      "aifn": "aifn-render#ElementState",
+      "omai": ["omai-render/structures#diagram", "omai-render/react#StructureView"],
+      "reason": "AIFN draws diagrams from a spec of nodes, edges and groups with small builders (variable, factor, link, op, projector, reparam); omai-render draws an engine Structure (diagram, architecture, bayesNetCards) from the model itself"
+    },
+    {
+      "aifn": "aifn-render#Side",
+      "omai": ["omai-render/structures#diagram", "omai-render/react#StructureView"],
+      "reason": "AIFN draws diagrams from a spec of nodes, edges and groups with small builders (variable, factor, link, op, projector, reparam); omai-render draws an engine Structure (diagram, architecture, bayesNetCards) from the model itself"
+    },
+    {
+      "aifn": "aifn-render#circleLayout",
+      "omai": ["omai-render/structures#diagram", "omai-render/react#StructureView"],
+      "reason": "AIFN draws diagrams from a spec of nodes, edges and groups with small builders (variable, factor, link, op, projector, reparam); omai-render draws an engine Structure (diagram, architecture, bayesNetCards) from the model itself"
+    },
+    {
+      "aifn": "aifn-render#forceLayout",
+      "omai": ["omai-render/structures#diagram", "omai-render/react#StructureView"],
+      "reason": "AIFN draws diagrams from a spec of nodes, edges and groups with small builders (variable, factor, link, op, projector, reparam); omai-render draws an engine Structure (diagram, architecture, bayesNetCards) from the model itself"
+    },
+    { "aifn": "aifn-render#TreeView", "omai": ["omai-render/react#TreeView"], "reason": "a tree drawn as a diagram" },
+    {
+      "aifn": "aifn-render#MathText",
+      "omai": ["omai-render/react#Tex"],
+      "reason": "text with inline maths is a Tex with the shared macros"
+    },
+    {
+      "aifn": "aifn-render/diagram/specs#autoencoder",
+      "omai": ["omai-render/structures#architecture", "omai-render/structures#bayesNetCards"],
+      "reason": "AIFN ships hand-drawn diagram specs of named architectures; omai draws architectures from the engine models (architecture) and graphical models (bayesNetCards)"
+    },
+    {
+      "aifn": "aifn-render/diagram/specs#gru",
+      "omai": ["omai-render/structures#architecture", "omai-render/structures#bayesNetCards"],
+      "reason": "AIFN ships hand-drawn diagram specs of named architectures; omai draws architectures from the engine models (architecture) and graphical models (bayesNetCards)"
+    },
+    {
+      "aifn": "aifn-render/diagram/specs#latentDiffusion",
+      "omai": ["omai-render/structures#architecture", "omai-render/structures#bayesNetCards"],
+      "reason": "AIFN ships hand-drawn diagram specs of named architectures; omai draws architectures from the engine models (architecture) and graphical models (bayesNetCards)"
+    },
+    {
+      "aifn": "aifn-render/diagram/specs#lda",
+      "omai": ["omai-render/structures#architecture", "omai-render/structures#bayesNetCards"],
+      "reason": "AIFN ships hand-drawn diagram specs of named architectures; omai draws architectures from the engine models (architecture) and graphical models (bayesNetCards)"
+    },
+    {
+      "aifn": "aifn-render/diagram/specs#lstm",
+      "omai": ["omai-render/structures#architecture", "omai-render/structures#bayesNetCards"],
+      "reason": "AIFN ships hand-drawn diagram specs of named architectures; omai draws architectures from the engine models (architecture) and graphical models (bayesNetCards)"
+    },
+    {
+      "aifn": "aifn-render/diagram/specs#transformer",
+      "omai": ["omai-render/structures#architecture", "omai-render/structures#bayesNetCards"],
+      "reason": "AIFN ships hand-drawn diagram specs of named architectures; omai draws architectures from the engine models (architecture) and graphical models (bayesNetCards)"
+    },
+    {
+      "aifn": "aifn-render/diagram/specs#vae",
+      "omai": ["omai-render/structures#architecture", "omai-render/structures#bayesNetCards"],
+      "reason": "AIFN ships hand-drawn diagram specs of named architectures; omai draws architectures from the engine models (architecture) and graphical models (bayesNetCards)"
+    },
+    {
+      "aifn": "aifn-render#EquationSteps",
+      "omai": ["omai-render/react#Derivation"],
+      "reason": "a stepped derivation: Derivation"
+    },
+    {
+      "aifn": "aifn-render#EquationStep",
+      "omai": ["omai-render/react#Derivation"],
+      "reason": "a stepped derivation: Derivation"
+    },
+    {
+      "aifn": "aifn-render#seriesColor",
+      "omai": [
+        "omai-render/theme#categoricalColour",
+        "omai-render/theme#sequentialRamp",
+        "omai-render/react#useColourMode"
+      ],
+      "reason": "colours and theme: the theme tokens and ramps of omai-render/theme"
+    },
+    {
+      "aifn": "aifn-render#useTheme",
+      "omai": [
+        "omai-render/theme#categoricalColour",
+        "omai-render/theme#sequentialRamp",
+        "omai-render/react#useColourMode"
+      ],
+      "reason": "colours and theme: the theme tokens and ramps of omai-render/theme"
+    },
+    {
+      "aifn": "aifn-render#chrome",
+      "omai": [
+        "omai-render/theme#categoricalColour",
+        "omai-render/theme#sequentialRamp",
+        "omai-render/react#useColourMode"
+      ],
+      "reason": "colours and theme: the theme tokens and ramps of omai-render/theme"
+    },
+    {
+      "aifn": "aifn-render#mute",
+      "omai": [
+        "omai-render/theme#categoricalColour",
+        "omai-render/theme#sequentialRamp",
+        "omai-render/react#useColourMode"
+      ],
+      "reason": "colours and theme: the theme tokens and ramps of omai-render/theme"
+    },
+    {
+      "aifn": "aifn-render#sequential",
+      "omai": [
+        "omai-render/theme#categoricalColour",
+        "omai-render/theme#sequentialRamp",
+        "omai-render/react#useColourMode"
+      ],
+      "reason": "colours and theme: the theme tokens and ramps of omai-render/theme"
+    },
+    {
+      "aifn": "aifn-render#MARKER_SHAPES",
+      "omai": [
+        "omai-render/theme#categoricalColour",
+        "omai-render/theme#sequentialRamp",
+        "omai-render/react#useColourMode"
+      ],
+      "reason": "colours and theme: the theme tokens and ramps of omai-render/theme"
+    },
+    {
+      "aifn": "aifn-render#useScaleColor",
+      "omai": [
+        "omai-render/theme#categoricalColour",
+        "omai-render/theme#sequentialRamp",
+        "omai-render/react#useColourMode"
+      ],
+      "reason": "colours and theme: the theme tokens and ramps of omai-render/theme"
+    },
+    {
+      "aifn": "aifn-render#Slider",
+      "omai": ["omai-render/react#NumberField"],
+      "reason": "the same control under another name in omai-render/react"
+    },
+    {
+      "aifn": "aifn-render#NumberSelector",
+      "omai": ["omai-render/react#NumberField"],
+      "reason": "the same control under another name in omai-render/react"
+    },
+    {
+      "aifn": "aifn-render#Switch",
+      "omai": ["omai-render/react#Toggle"],
+      "reason": "the same control under another name in omai-render/react"
+    },
+    {
+      "aifn": "aifn-render#usePlayhead",
+      "omai": ["omai-render/react#usePlayback"],
+      "reason": "the same control under another name in omai-render/react"
+    },
+    {
+      "aifn": "aifn-render#GridView",
+      "omai": ["omai-render/gym#worldView", "omai-render/gym#filmstrip"],
+      "reason": "AIFN draws grid worlds and training runs with components; omai-render/gym draws a world and its frames from the environment"
+    },
+    {
+      "aifn": "aifn-render#GridOverlay",
+      "omai": ["omai-render/gym#worldView", "omai-render/gym#filmstrip"],
+      "reason": "AIFN draws grid worlds and training runs with components; omai-render/gym draws a world and its frames from the environment"
+    },
+    {
+      "aifn": "aifn-render#GymTrainer",
+      "omai": ["omai-render/gym#worldView", "omai-render/gym#filmstrip"],
+      "reason": "AIFN draws grid worlds and training runs with components; omai-render/gym draws a world and its frames from the environment"
+    },
+    {
+      "aifn": "aifn-render#trainingRun",
+      "omai": ["omai-render/gym#worldView", "omai-render/gym#filmstrip"],
+      "reason": "AIFN draws grid worlds and training runs with components; omai-render/gym draws a world and its frames from the environment"
+    },
+    {
+      "aifn": "aifn-methods/theory#targetFunction",
+      "omai": ["omai-engine/datasets#sineCurve", "omai-engine/datasets#dampedSine"],
+      "reason": "AIFN names one-dimensional target functions of the theory demos; omai has the fixed regression curves of omai-engine/datasets"
+    },
+    {
+      "aifn": "aifn-methods/theory#drawTrainingSet",
+      "omai": ["omai-engine/datasets#heteroscedastic", "omai-engine/datasets#lineData"],
+      "reason": "a training draw from a one-dimensional target; omai generates it with a dataset generator"
+    },
+    {
+      "aifn": "aifn-methods/optimisation/bayesian#bayesianOptimisationSteps",
+      "omai": ["omai-engine/tune#gpSampler", "omai-engine/tune#studyAlgorithm"],
+      "reason": "Bayesian optimisation is a study with a Gaussian-process sampler in omai-engine/tune, run as a traced algorithm"
+    },
+    {
+      "aifn": "aifn-methods/optimisation/bayesian#multiFidelityBayesianOptimisationSteps",
+      "omai": ["omai-engine/tune#gpSampler", "omai-engine/tune#successiveHalvingPruner"],
+      "reason": "a study with a GP sampler and a halving pruner"
+    },
+    {
+      "aifn": "aifn-methods/optimisation/multi-fidelity#multiFidelitySteps",
+      "omai": ["omai-engine/tune#successiveHalvingPruner", "omai-engine/tune#hyperbandSchedule"],
+      "reason": "successive halving and hyperband are pruners and schedules of tune"
+    },
+    {
+      "aifn": "aifn-compute/foundation/trace#live",
+      "omai": ["omai-render/react#useLiveRun", "omai-engine/trace#Session"],
+      "reason": "AIFN gives a generator of steps for a play loop; omai runs an Algorithm as a Session and a React page plays it with useLiveRun"
+    },
+    {
+      "aifn": "aifn-compute/nn/functional#networkCost",
+      "omai": ["omai-engine/nn#describe", "omai-engine/nn#functionFlops", "omai-engine/nn#memoryEstimate"],
+      "reason": "AIFN has closed-form cost calculators by layer shape; omai estimates parameters, FLOPs and memory from the built module (nn describe, functionFlops, memoryEstimate), so a figure builds the layer and asks"
+    },
+    {
+      "aifn": "aifn-compute/nn/functional#layerCost",
+      "omai": ["omai-engine/nn#describe", "omai-engine/nn#functionFlops", "omai-engine/nn#memoryEstimate"],
+      "reason": "AIFN has closed-form cost calculators by layer shape; omai estimates parameters, FLOPs and memory from the built module (nn describe, functionFlops, memoryEstimate), so a figure builds the layer and asks"
+    },
+    {
+      "aifn": "aifn-compute/nn/functional#convolutionCost",
+      "omai": ["omai-engine/nn#describe", "omai-engine/nn#functionFlops", "omai-engine/nn#memoryEstimate"],
+      "reason": "AIFN has closed-form cost calculators by layer shape; omai estimates parameters, FLOPs and memory from the built module (nn describe, functionFlops, memoryEstimate), so a figure builds the layer and asks"
+    },
+    {
+      "aifn": "aifn-compute/nn/functional#convolutionStackCost",
+      "omai": ["omai-engine/nn#describe", "omai-engine/nn#functionFlops", "omai-engine/nn#memoryEstimate"],
+      "reason": "AIFN has closed-form cost calculators by layer shape; omai estimates parameters, FLOPs and memory from the built module (nn describe, functionFlops, memoryEstimate), so a figure builds the layer and asks"
+    },
+    {
+      "aifn": "aifn-compute/nn/attention#attentionCost",
+      "omai": ["omai-engine/nn#functionFlops", "omai-engine/nn#describe"],
+      "reason": "AIFN has closed-form cost calculators by layer shape; omai estimates parameters, FLOPs and memory from the built module (nn describe, functionFlops, memoryEstimate), so a figure builds the layer and asks"
+    },
+    {
+      "aifn": "aifn-compute/nn/attention#layerLinearCost",
+      "omai": ["omai-engine/nn#functionFlops", "omai-engine/nn#describe"],
+      "reason": "AIFN has closed-form cost calculators by layer shape; omai estimates parameters, FLOPs and memory from the built module (nn describe, functionFlops, memoryEstimate), so a figure builds the layer and asks"
+    },
+    {
+      "aifn": "aifn-compute/nn/attention#kvCacheMemory",
+      "omai": ["omai-engine/nn#KVCache", "omai-engine/nn#memoryEstimate"],
+      "reason": "AIFN has closed-form cost calculators by layer shape; omai estimates parameters, FLOPs and memory from the built module (nn describe, functionFlops, memoryEstimate), so a figure builds the layer and asks"
+    },
+    {
+      "aifn": "aifn-methods/neural/quantisation#fineTuningMemory",
+      "omai": ["omai-engine/nn#memoryEstimate", "omai-engine/nn#loraParameterCount"],
+      "reason": "AIFN has closed-form cost calculators by layer shape; omai estimates parameters, FLOPs and memory from the built module (nn describe, functionFlops, memoryEstimate), so a figure builds the layer and asks"
+    },
+    {
+      "aifn": "aifn-methods/neural/quantisation#servingMemory",
+      "omai": ["omai-engine/nn#memoryEstimate", "omai-engine/nn#loraParameterCount"],
+      "reason": "AIFN has closed-form cost calculators by layer shape; omai estimates parameters, FLOPs and memory from the built module (nn describe, functionFlops, memoryEstimate), so a figure builds the layer and asks"
+    }
+  ],
+  "internal": [
+    {
+      "aifn": "aifn-compute/foundation/tensor#unwrap",
+      "reason": "the autodiff machinery of the AIFN tensor (a traced value to its primal); omai differentiates through `grad`"
+    },
+    { "aifn": "aifn-compute/foundation/tensor#shapeOfValue", "reason": "a helper of the AIFN primitive machinery" },
+    {
+      "aifn": "aifn-compute/foundation/tensor#dense",
+      "reason": "the namespace of dense (non-sparse) tensor helpers of the AIFN tensor module"
+    },
+    {
+      "aifn": "aifn-compute/numerics/linalg#apply2",
+      "reason": "applies a 2x2 plain-array matrix to a point; a one-liner beside the closed-form 2x2 helpers"
+    },
+    { "aifn": "aifn-compute/numerics/linalg#Mat2", "reason": "the plain-array 2x2 type of the closed-form helpers" },
+    {
+      "aifn": "aifn-render/ui/**#*",
+      "reason": "shadcn UI primitives re-exported by aifn-render (Button, Table, Select, Input, Textarea); omai-render ships no UI kit, an app brings its own"
+    },
+    { "aifn": "aifn-render#ui", "reason": "the shadcn namespace re-exported by aifn-render" },
+    {
+      "aifn": "aifn-render#cn",
+      "reason": "a class-name merge helper (clsx and tailwind-merge) of the AIFN render package"
+    },
+    { "aifn": "aifn-render#Button", "reason": "shadcn primitive" },
+    { "aifn": "aifn-render#Table", "reason": "shadcn primitive" }
+  ],
+  "none": [
+    {
+      "aifn": "aifn-compute/learning/rules#cbaBuild",
+      "reason": "class-association-rule classifiers (CBA, CMAR) are not in omai"
+    },
+    {
+      "aifn": "aifn-compute/learning/rules#cbaPredict",
+      "reason": "class-association-rule classifiers (CBA, CMAR) are not in omai"
+    },
+    {
+      "aifn": "aifn-compute/learning/rules#cmarBuild",
+      "reason": "class-association-rule classifiers (CBA, CMAR) are not in omai"
+    },
+    {
+      "aifn": "aifn-compute/learning/rules#cmarPredict",
+      "reason": "class-association-rule classifiers (CBA, CMAR) are not in omai"
+    },
+    {
+      "aifn": "aifn-methods/data/synthetic#randomWalk",
+      "reason": "omai has a random-walk environment, not a random-walk series generator"
+    }
+  ]
+}
