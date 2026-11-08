@@ -1,0 +1,294 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1320" height="326" viewBox="0 0 1320 326"><title>The three shape functions of a neural additive model against the true ones after training, and its training loss</title><rect width="100%" height="100%" fill="#ffffff"></rect><text x="165" y="19" text-anchor="middle" font-family="system-ui, -apple-system, &#x27;Segoe UI&#x27;, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="#333333">2 sin(2 pi x)</text><svg x="0" y="26" width="330" height="300" overflow="visible"><svg width="330" height="300" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" baseProfile="full" viewBox="0 0 330 300">
+<rect width="330" height="300" x="0" y="0" fill="#ffffff"></rect>
+<path d="M61 256.5L330 256.5" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr2-cls-9"></path>
+<path d="M61 248.5L330 248.5" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr2-cls-9"></path>
+<path d="M61 223.5L330 223.5" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr2-cls-9"></path>
+<path d="M61 199.5L330 199.5" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr2-cls-9"></path>
+<path d="M61 174.5L330 174.5" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr2-cls-9"></path>
+<path d="M61 150.5L330 150.5" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr2-cls-9"></path>
+<path d="M61 125.5L330 125.5" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr2-cls-9"></path>
+<path d="M61 101.5L330 101.5" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr2-cls-9"></path>
+<path d="M61 76.5L330 76.5" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr2-cls-9"></path>
+<path d="M61 52.5L330 52.5" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr2-cls-9"></path>
+<path d="M61 28.5L330 28.5" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr2-cls-9"></path>
+<path d="M61.5 28L61.5 256" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr2-cls-9"></path>
+<path d="M69.5 28L69.5 256" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr2-cls-9"></path>
+<path d="M94.5 28L94.5 256" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr2-cls-9"></path>
+<path d="M119.5 28L119.5 256" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr2-cls-9"></path>
+<path d="M144.5 28L144.5 256" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr2-cls-9"></path>
+<path d="M170.5 28L170.5 256" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr2-cls-9"></path>
+<path d="M195.5 28L195.5 256" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr2-cls-9"></path>
+<path d="M220.5 28L220.5 256" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr2-cls-9"></path>
+<path d="M245.5 28L245.5 256" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr2-cls-9"></path>
+<path d="M270.5 28L270.5 256" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr2-cls-9"></path>
+<path d="M295.5 28L295.5 256" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr2-cls-9"></path>
+<path d="M320.5 28L320.5 256" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr2-cls-9"></path>
+<path d="M330.5 28L330.5 256" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr2-cls-9"></path>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:11px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" xml:space="preserve" y="-5.5" transform="matrix(0,-1,1,0,19,142)" fill="#424a53">contribution to y</text>
+<path d="M61.5 256L61.5 28" fill="none" pointer-events="visible" stroke="#afb8c1" stroke-linecap="round" class="zr2-cls-9"></path>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:11px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5.5" transform="translate(195.5 284)" fill="#424a53">x0</text>
+<path d="M61 256.5L330 256.5" fill="none" pointer-events="visible" stroke="#afb8c1" stroke-linecap="round" class="zr2-cls-9"></path>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(53 248.0191)" fill="#6e7781">-2</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(53 223.5249)" fill="#6e7781">-1.5</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(53 199.0306)" fill="#6e7781">-1</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(53 174.5364)" fill="#6e7781">-0.5</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(53 150.0422)" fill="#6e7781">0</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(53 125.548)" fill="#6e7781">0.5</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(53 101.0537)" fill="#6e7781">1</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(53 76.5595)" fill="#6e7781">1.5</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(53 52.0653)" fill="#6e7781">2</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(69.5036 264)" fill="#6e7781">0</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(94.5656 264)" fill="#6e7781">0.1</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(119.6276 264)" fill="#6e7781">0.2</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(144.6896 264)" fill="#6e7781">0.3</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(169.7517 264)" fill="#6e7781">0.4</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(194.8137 264)" fill="#6e7781">0.5</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(219.8757 264)" fill="#6e7781">0.6</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(244.9377 264)" fill="#6e7781">0.7</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(269.9997 264)" fill="#6e7781">0.8</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(295.0618 264)" fill="#6e7781">0.9</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(320.1238 264)" fill="#6e7781">1</text>
+<g clip-path="url(#zr2-c0)">
+<path d="M71 146L75.2 135.7L79.4 125.5L83.6 115.6L87.8 106.1L92.1 97.1L96.3 88.6L100.5 80.9L104.7 73.9L109 67.7L113.2 62.5L117.4 58.2L121.6 55L125.8 52.8L130.1 51.8L134.3 51.8L138.5 52.9L142.7 55L147 58.3L151.2 62.5L155.4 67.8L159.6 73.9L163.8 80.9L168.1 88.7L172.3 97.1L176.5 106.2L180.7 115.7L184.9 125.6L189.2 135.8L193.4 146.1L197.6 156.5L201.8 166.7L206.1 176.8L210.3 186.6L214.5 196L218.7 204.9L222.9 213.1L227.2 220.6L231.4 227.4L235.6 233.2L239.8 238.1L244 242.1L248.3 245L252.5 246.8L256.7 247.6L260.9 247.2L265.2 245.8L269.4 243.2L273.6 239.7L277.8 235.1L282 229.6L286.3 223.1L290.5 215.9L294.7 207.9L298.9 199.2L303.2 190L307.4 180.4L311.6 170.4L315.8 160.2L320 149.8" fill="none" pointer-events="visible" stroke="#6b7280" stroke-width="2.5" stroke-linejoin="bevel" class="zr2-cls-11"></path>
+</g>
+<g clip-path="url(#zr2-c1)">
+<path d="M71 126.1L75.2 116.1L79.4 106.2L83.6 96.2L87.8 86.3L92.1 76.3L96.3 66.3L100.5 56.4L104.7 46.4L109 36.4L113.2 36.6L117.4 37.5L121.6 38.5L125.8 39.4L130.1 40.4L134.3 41.4L138.5 42.3L142.7 43.3L147 44.2L151.2 45.2L155.4 46.2L159.6 53.1L163.8 61.6L168.1 70.3L172.3 80L176.5 89.6L180.7 99.2L184.9 108.9L189.2 118.5L193.4 128.2L197.6 137.8L201.8 147.5L206.1 157.1L210.3 166.8L214.5 176.4L218.7 186.1L222.9 195.7L227.2 205.4L231.4 210.4L235.6 215L239.8 219.5L244 221.2L248.3 221.9L252.5 222.7L256.7 223.4L260.9 224.1L265.2 224.9L269.4 225.6L273.6 224.9L277.8 217.4L282 209.9L286.3 202.3L290.5 194.8L294.7 187.3L298.9 179.8L303.2 169.9L307.4 159L311.6 148.1L315.8 137.1L320 126.2" fill="none" pointer-events="visible" stroke="#1f77b4" stroke-width="2" stroke-linejoin="bevel" class="zr2-cls-11"></path>
+</g>
+<path d="M-5 -5l139.9 0l0 21l-139.9 0Z" transform="translate(175.09 5)" fill="rgb(0,0,0)" fill-opacity="0" stroke="#b7b9be" stroke-width="0" class="zr2-cls-9"></path>
+<path d="M0.8 0L11.3 0A0.8 0.8 0 0 1 12 0.7L12 2.3A0.8 0.8 0 0 1 11.3 3L0.8 3A0.8 0.8 0 0 1 0 2.3L0 0.8A0.8 0.8 0 0 1 0.7 0Z" transform="translate(175.09 9)" fill="#6b7280" ecmeta_series_index="0" ecmeta_data_index="0" ecmeta_ssr_type="legend" ecmeta_silent="true" class="zr2-cls-9"></path>
+<text dominant-baseline="central" text-anchor="start" style="font-size:11px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" xml:space="preserve" x="17" y="1.5" transform="translate(175.09 9)" fill="#424a53">true curve</text>
+<path d="M0 -4l66.1 0l0 11l-66.1 0Z" transform="translate(175.09 9)" fill="none" pointer-events="visible" ecmeta_series_index="0" ecmeta_data_index="0" ecmeta_ssr_type="legend" class="zr2-cls-12"></path>
+<path d="M0.8 0L11.3 0A0.8 0.8 0 0 1 12 0.7L12 2.3A0.8 0.8 0 0 1 11.3 3L0.8 3A0.8 0.8 0 0 1 0 2.3L0 0.8A0.8 0.8 0 0 1 0.7 0Z" transform="translate(251.15 9)" fill="#1f77b4" ecmeta_series_index="1" ecmeta_data_index="1" ecmeta_ssr_type="legend" ecmeta_silent="true" class="zr2-cls-9"></path>
+<text dominant-baseline="central" text-anchor="start" style="font-size:11px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" x="17" y="1.5" transform="translate(251.15 9)" fill="#424a53">learned</text>
+<path d="M0 -4l53.9 0l0 11l-53.8 0Z" transform="translate(251.15 9)" fill="none" pointer-events="visible" ecmeta_series_index="1" ecmeta_data_index="1" ecmeta_ssr_type="legend" class="zr2-cls-12"></path>
+<defs >
+<clipPath id="zr2-c0">
+<path d="M59 26.8l273 0l0 230.5l-273 0Z" fill="#000" class="zr2-cls-10"></path>
+</clipPath>
+<clipPath id="zr2-c1">
+<path d="M60 27l271 0l0 230l-271 0Z" fill="#000" class="zr2-cls-10"></path>
+</clipPath>
+</defs>
+<style ><![CDATA[
+.zr2-cls-9:hover {
+pointer-events:none;
+}
+.zr2-cls-10:hover {
+cursor:pointer;
+fill:rgba(0,0,0,1);
+}
+.zr2-cls-11:hover {
+cursor:pointer;
+}
+.zr2-cls-12:hover {
+cursor:pointer;
+fill:rgba(0,0,0,0);
+}
+
+]]>
+
+</style>
+</svg></svg><text x="495" y="19" text-anchor="middle" font-family="system-ui, -apple-system, &#x27;Segoe UI&#x27;, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="#333333">exp(2x) - (e^2 - 1)/2</text><svg x="330" y="26" width="330" height="300" overflow="visible"><svg width="330" height="300" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" baseProfile="full" viewBox="0 0 330 300">
+<rect width="330" height="300" x="0" y="0" fill="#ffffff"></rect>
+<path d="M56 256.5L330 256.5" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr3-cls-13"></path>
+<path d="M56 234.5L330 234.5" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr3-cls-13"></path>
+<path d="M56 201.5L330 201.5" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr3-cls-13"></path>
+<path d="M56 169.5L330 169.5" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr3-cls-13"></path>
+<path d="M56 136.5L330 136.5" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr3-cls-13"></path>
+<path d="M56 103.5L330 103.5" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr3-cls-13"></path>
+<path d="M56 70.5L330 70.5" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr3-cls-13"></path>
+<path d="M56 38.5L330 38.5" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr3-cls-13"></path>
+<path d="M56 28.5L330 28.5" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr3-cls-13"></path>
+<path d="M56.5 28L56.5 256" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr3-cls-13"></path>
+<path d="M65.5 28L65.5 256" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr3-cls-13"></path>
+<path d="M91.5 28L91.5 256" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr3-cls-13"></path>
+<path d="M116.5 28L116.5 256" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr3-cls-13"></path>
+<path d="M142.5 28L142.5 256" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr3-cls-13"></path>
+<path d="M168.5 28L168.5 256" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr3-cls-13"></path>
+<path d="M194.5 28L194.5 256" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr3-cls-13"></path>
+<path d="M219.5 28L219.5 256" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr3-cls-13"></path>
+<path d="M245.5 28L245.5 256" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr3-cls-13"></path>
+<path d="M271.5 28L271.5 256" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr3-cls-13"></path>
+<path d="M297.5 28L297.5 256" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr3-cls-13"></path>
+<path d="M322.5 28L322.5 256" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr3-cls-13"></path>
+<path d="M330.5 28L330.5 256" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr3-cls-13"></path>
+<path d="M56.5 256L56.5 28" fill="none" pointer-events="visible" stroke="#afb8c1" stroke-linecap="round" class="zr3-cls-13"></path>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:11px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5.5" transform="translate(193 284)" fill="#424a53">x1</text>
+<path d="M56 256.5L330 256.5" fill="none" pointer-events="visible" stroke="#afb8c1" stroke-linecap="round" class="zr3-cls-13"></path>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(48 234.4086)" fill="#6e7781">-2</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(48 201.6458)" fill="#6e7781">-1</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(48 168.883)" fill="#6e7781">0</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(48 136.1202)" fill="#6e7781">1</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(48 103.3574)" fill="#6e7781">2</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(48 70.5946)" fill="#6e7781">3</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(48 37.8318)" fill="#6e7781">4</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(65.0022 264)" fill="#6e7781">0</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(90.7596 264)" fill="#6e7781">0.1</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(116.517 264)" fill="#6e7781">0.2</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(142.2744 264)" fill="#6e7781">0.3</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(168.0318 264)" fill="#6e7781">0.4</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(193.7891 264)" fill="#6e7781">0.5</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(219.5465 264)" fill="#6e7781">0.6</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(245.3039 264)" fill="#6e7781">0.7</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(271.0613 264)" fill="#6e7781">0.8</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(296.8187 264)" fill="#6e7781">0.9</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(322.5761 264)" fill="#6e7781">1</text>
+<g clip-path="url(#zr3-c0)">
+<path d="M66.1 240.4L70.4 239.3L74.7 238.1L79 236.9L83.3 235.7L87.6 234.4L91.9 233.1L96.2 231.7L100.5 230.3L104.8 228.8L109.1 227.3L113.4 225.7L117.7 224.1L122 222.4L126.3 220.7L130.6 218.9L134.9 217.1L139.2 215.2L143.5 213.2L147.8 211.1L152.1 209L156.4 206.8L160.7 204.6L165 202.2L169.3 199.8L173.6 197.3L177.9 194.7L182.2 192L186.5 189.3L190.8 186.4L195.2 183.5L199.5 180.4L203.8 177.2L208.1 174L212.4 170.6L216.7 167.1L221 163.5L225.3 159.8L229.6 155.9L233.9 151.9L238.2 147.8L242.5 143.5L246.8 139.1L251.1 134.5L255.4 129.8L259.7 124.9L264 119.9L268.3 114.7L272.6 109.3L276.9 103.7L281.2 98L285.5 92L289.8 85.8L294.1 79.5L298.4 72.9L302.7 66.1L307 59L311.3 51.8L315.6 44.2L319.9 36.4" fill="none" pointer-events="visible" stroke="#6b7280" stroke-width="2.5" stroke-linejoin="bevel" class="zr3-cls-15"></path>
+</g>
+<g clip-path="url(#zr3-c1)">
+<path d="M66.1 247.6L70.4 245.8L74.7 244L79 242.2L83.3 240.4L87.6 238.6L91.9 236.8L96.2 235L100.5 233.2L104.8 231.4L109.1 229.6L113.4 227.8L117.7 226L122 224.2L126.3 222.4L130.6 220.6L134.9 218.8L139.2 217L143.5 215.2L147.8 213.4L152.1 211.6L156.4 209.8L160.7 208L165 206.2L169.3 204.4L173.6 202.6L177.9 200.8L182.2 199L186.5 197.2L190.8 195.4L195.2 193.6L199.5 191.8L203.8 189.5L208.1 185.4L212.4 181.3L216.7 177.2L221 173.2L225.3 169.1L229.6 165L233.9 160.9L238.2 156.9L242.5 152.8L246.8 147.9L251.1 141.8L255.4 135.7L259.7 129.5L264 123.4L268.3 117.3L272.6 111.1L276.9 105L281.2 98.8L285.5 92.7L289.8 86.6L294.1 80.4L298.4 74.3L302.7 68.1L307 62L311.3 55.9L315.6 49.7L319.9 43.6" fill="none" pointer-events="visible" stroke="#1f77b4" stroke-width="2" stroke-linejoin="bevel" class="zr3-cls-15"></path>
+</g>
+<defs >
+<clipPath id="zr3-c0">
+<path d="M54 26.8l278 0l0 230.5l-278 0Z" fill="#000" class="zr3-cls-14"></path>
+</clipPath>
+<clipPath id="zr3-c1">
+<path d="M55 27l276 0l0 230l-276 0Z" fill="#000" class="zr3-cls-14"></path>
+</clipPath>
+</defs>
+<style ><![CDATA[
+.zr3-cls-13:hover {
+pointer-events:none;
+}
+.zr3-cls-14:hover {
+cursor:pointer;
+fill:rgba(0,0,0,1);
+}
+.zr3-cls-15:hover {
+cursor:pointer;
+}
+
+]]>
+
+</style>
+</svg></svg><text x="825" y="19" text-anchor="middle" font-family="system-ui, -apple-system, &#x27;Segoe UI&#x27;, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="#333333">4 (x - 1/2)^2 - 1/3</text><svg x="660" y="26" width="330" height="300" overflow="visible"><svg width="330" height="300" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" baseProfile="full" viewBox="0 0 330 300">
+<rect width="330" height="300" x="0" y="0" fill="#ffffff"></rect>
+<path d="M56 256.5L330 256.5" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr4-cls-16"></path>
+<path d="M56 247.5L330 247.5" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr4-cls-16"></path>
+<path d="M56 207.5L330 207.5" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr4-cls-16"></path>
+<path d="M56 168.5L330 168.5" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr4-cls-16"></path>
+<path d="M56 128.5L330 128.5" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr4-cls-16"></path>
+<path d="M56 88.5L330 88.5" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr4-cls-16"></path>
+<path d="M56 48.5L330 48.5" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr4-cls-16"></path>
+<path d="M56 28.5L330 28.5" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr4-cls-16"></path>
+<path d="M56.5 28L56.5 256" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr4-cls-16"></path>
+<path d="M66.5 28L66.5 256" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr4-cls-16"></path>
+<path d="M91.5 28L91.5 256" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr4-cls-16"></path>
+<path d="M117.5 28L117.5 256" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr4-cls-16"></path>
+<path d="M142.5 28L142.5 256" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr4-cls-16"></path>
+<path d="M168.5 28L168.5 256" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr4-cls-16"></path>
+<path d="M193.5 28L193.5 256" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr4-cls-16"></path>
+<path d="M218.5 28L218.5 256" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr4-cls-16"></path>
+<path d="M244.5 28L244.5 256" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr4-cls-16"></path>
+<path d="M269.5 28L269.5 256" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr4-cls-16"></path>
+<path d="M295.5 28L295.5 256" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr4-cls-16"></path>
+<path d="M320.5 28L320.5 256" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr4-cls-16"></path>
+<path d="M330.5 28L330.5 256" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr4-cls-16"></path>
+<path d="M56.5 256L56.5 28" fill="none" pointer-events="visible" stroke="#afb8c1" stroke-linecap="round" class="zr4-cls-16"></path>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:11px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5.5" transform="translate(193 284)" fill="#424a53">x2</text>
+<path d="M56 256.5L330 256.5" fill="none" pointer-events="visible" stroke="#afb8c1" stroke-linecap="round" class="zr4-cls-16"></path>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(48 247.5442)" fill="#6e7781">-0.4</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(48 207.7348)" fill="#6e7781">-0.2</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(48 167.9253)" fill="#6e7781">0</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(48 128.1158)" fill="#6e7781">0.2</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(48 88.3064)" fill="#6e7781">0.4</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(48 48.4969)" fill="#6e7781">0.6</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(66.1231 264)" fill="#6e7781">0</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(91.531 264)" fill="#6e7781">0.1</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(116.9389 264)" fill="#6e7781">0.2</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(142.3468 264)" fill="#6e7781">0.3</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(167.7547 264)" fill="#6e7781">0.4</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(193.1626 264)" fill="#6e7781">0.5</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(218.5705 264)" fill="#6e7781">0.6</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(243.9784 264)" fill="#6e7781">0.7</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(269.3863 264)" fill="#6e7781">0.8</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(294.7942 264)" fill="#6e7781">0.9</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(320.2021 264)" fill="#6e7781">1</text>
+<g clip-path="url(#zr4-c0)">
+<path d="M66.1 42.6L70.4 55.9L74.7 68.6L79 81L83.3 92.9L87.6 104.3L91.9 115.2L96.2 125.7L100.5 135.8L104.8 145.4L109.1 154.5L113.4 163.2L117.7 171.4L122 179.2L126.3 186.5L130.6 193.4L134.9 199.8L139.2 205.7L143.5 211.2L147.8 216.3L152.1 220.8L156.4 225L160.7 228.6L165 231.8L169.3 234.6L173.6 236.9L177.9 238.7L182.2 240.1L186.5 241L190.8 241.5L195.2 241.5L199.5 241.1L203.8 240.2L208.1 238.8L212.4 237L216.7 234.8L221 232.1L225.3 228.9L229.6 225.3L233.9 221.2L238.2 216.6L242.5 211.6L246.8 206.2L251.1 200.3L255.4 193.9L259.7 187.1L264 179.8L268.3 172L272.6 163.9L276.9 155.2L281.2 146.1L285.5 136.5L289.8 126.5L294.1 116L298.4 105.1L302.7 93.7L307 81.9L311.3 69.6L315.6 56.8L319.9 43.6" fill="none" pointer-events="visible" stroke="#6b7280" stroke-width="2.5" stroke-linejoin="bevel" class="zr4-cls-18"></path>
+</g>
+<g clip-path="url(#zr4-c1)">
+<path d="M66.1 67.4L70.4 75.5L74.7 83.5L79 91.5L83.3 99.6L87.6 107.6L91.9 115.6L96.2 123.6L100.5 131.7L104.8 139.7L109.1 147.7L113.4 155.8L117.7 163.8L122 171.8L126.3 179.9L130.6 187.9L134.9 195.9L139.2 203.9L143.5 212L147.8 220L152.1 228L156.4 236.1L160.7 238.1L165 238.7L169.3 239.4L173.6 240L177.9 240.6L182.2 241.3L186.5 241.9L190.8 242.5L195.2 243.1L199.5 243.8L203.8 244.4L208.1 245L212.4 245.7L216.7 246.3L221 246.9L225.3 247.6L229.6 246.1L233.9 238.1L238.2 230.1L242.5 222L246.8 214L251.1 206L255.4 197.9L259.7 189.9L264 181.9L268.3 173.8L272.6 165.8L276.9 157.8L281.2 149.8L285.5 141.7L289.8 133.7L294.1 124.6L298.4 109.9L302.7 95.2L307 80.5L311.3 65.8L315.6 51.1L319.9 36.4" fill="none" pointer-events="visible" stroke="#1f77b4" stroke-width="2" stroke-linejoin="bevel" class="zr4-cls-18"></path>
+</g>
+<defs >
+<clipPath id="zr4-c0">
+<path d="M54 26.8l278 0l0 230.5l-278 0Z" fill="#000" class="zr4-cls-17"></path>
+</clipPath>
+<clipPath id="zr4-c1">
+<path d="M55 27l276 0l0 230l-276 0Z" fill="#000" class="zr4-cls-17"></path>
+</clipPath>
+</defs>
+<style ><![CDATA[
+.zr4-cls-16:hover {
+pointer-events:none;
+}
+.zr4-cls-17:hover {
+cursor:pointer;
+fill:rgba(0,0,0,1);
+}
+.zr4-cls-18:hover {
+cursor:pointer;
+}
+
+]]>
+
+</style>
+</svg></svg><text x="1155" y="19" text-anchor="middle" font-family="system-ui, -apple-system, &#x27;Segoe UI&#x27;, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="#333333">training loss</text><svg x="990" y="26" width="330" height="300" overflow="visible"><svg width="330" height="300" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" baseProfile="full" viewBox="0 0 330 300">
+<rect width="330" height="300" x="0" y="0" fill="#ffffff"></rect>
+<path d="M69.1 256.5L330 256.5" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr5-cls-19"></path>
+<path d="M69.1 226.5L330 226.5" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr5-cls-19"></path>
+<path d="M69.1 127.5L330 127.5" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr5-cls-19"></path>
+<path d="M69.1 28.5L330 28.5" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr5-cls-19"></path>
+<path d="M69.5 28L69.5 256" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr5-cls-19"></path>
+<path d="M79.5 28L79.5 256" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr5-cls-19"></path>
+<path d="M108.5 28L108.5 256" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr5-cls-19"></path>
+<path d="M137.5 28L137.5 256" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr5-cls-19"></path>
+<path d="M166.5 28L166.5 256" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr5-cls-19"></path>
+<path d="M195.5 28L195.5 256" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr5-cls-19"></path>
+<path d="M224.5 28L224.5 256" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr5-cls-19"></path>
+<path d="M253.5 28L253.5 256" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr5-cls-19"></path>
+<path d="M282.5 28L282.5 256" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr5-cls-19"></path>
+<path d="M311.5 28L311.5 256" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr5-cls-19"></path>
+<path d="M330.5 28L330.5 256" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr5-cls-19"></path>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:11px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" xml:space="preserve" y="-5.5" transform="matrix(0,-1,1,0,19,142)" fill="#424a53">squared error</text>
+<path d="M69.5 256L69.5 28" fill="none" pointer-events="visible" stroke="#afb8c1" stroke-linecap="round" class="zr5-cls-19"></path>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:11px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5.5" transform="translate(199.55 284)" fill="#424a53">step</text>
+<path d="M69.1 256.5L330 256.5" fill="none" pointer-events="visible" stroke="#afb8c1" stroke-linecap="round" class="zr5-cls-19"></path>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(61.1 256)" fill="#6e7781">0.05</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(61.1 226.1721)" fill="#6e7781">10⁻¹</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(61.1 127.0861)" fill="#6e7781">1</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(61.1 28)" fill="#6e7781">10</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(78.763 264)" fill="#6e7781">0</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(107.8683 264)" fill="#6e7781">30</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(136.9736 264)" fill="#6e7781">60</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(166.0789 264)" fill="#6e7781">90</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(195.1842 264)" fill="#6e7781">120</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(224.2895 264)" fill="#6e7781">150</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(253.3948 264)" fill="#6e7781">180</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(282.5001 264)" fill="#6e7781">210</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(311.6054 264)" fill="#6e7781">240</text>
+<g clip-path="url(#zr5-c0)">
+<path d="M78.8 54.2L79.7 55.9L80.7 57.5L81.7 59.2L82.6 61.2L83.6 63.4L84.6 66L85.6 69L86.5 72.6L87.5 76.9L88.5 82L89.4 87.8L90.4 94.3L91.4 101.1L92.3 107.6L93.3 112.8L94.3 116.5L95.3 119.6L96.2 122.3L97.2 124.4L98.2 125.2L99.1 125.2L100.1 124.9L101.1 125.1L102 126.4L103 128.7L104 131.5L105 134L105.9 135.8L106.9 136.7L107.9 136.9L108.8 136.8L109.8 136.9L110.8 137.4L111.7 138.6L112.7 140L113.7 141.5L114.7 142.8L115.6 143.9L116.6 144.7L117.6 145.2L118.5 145.5L119.5 145.9L120.5 146.5L121.5 147.2L122.4 148L123.4 148.8L124.4 149.6L125.3 150.3L126.3 150.7L127.3 150.9L128.2 151.1L129.2 151.2L130.2 151.5L131.2 152L132.1 152.6L133.1 153.3L134.1 153.9L135 154.4L136 154.8L137 155L137.9 155.1L138.9 155.3L139.9 155.6L140.9 156.1L141.8 156.6L142.8 157.1L143.8 157.5L144.7 157.8L145.7 158.1L146.7 158.3L147.6 158.6L148.6 158.9L149.6 159.3L150.6 159.7L151.5 160.1L152.5 160.4L153.5 160.7L154.4 161L155.4 161.3L156.4 161.6L157.3 162L158.3 162.3L159.3 162.6L160.3 163L161.2 163.3L162.2 163.6L163.2 163.9L164.1 164.3L165.1 164.6L166.1 164.9L167 165.2L168 165.5L169 165.9L170 166.2L170.9 166.5L171.9 166.9L172.9 167.2L173.8 167.5L174.8 167.8L175.8 168.1L176.8 168.4L177.7 168.8L178.7 169.1L179.7 169.4L180.6 169.7L181.6 170L182.6 170.3L183.5 170.6L184.5 171L185.5 171.3L186.5 171.6L187.4 171.9L188.4 172.2L189.4 172.6L190.3 172.9L191.3 173.2L192.3 173.6L193.2 173.9L194.2 174.3L195.2 174.7L196.2 175.1L197.1 175.5L198.1 175.9L199.1 176.3L200 176.8L201 177.2L202 178.1L202.9 178.7L203.9 179.5L204.9 180.6L205.9 181.7L206.8 182.9L207.8 184.3L208.8 185.8L209.7 187.4L210.7 189.2L211.7 191L212.6 192.8L213.6 194.5L214.6 196.2L215.6 197.8L216.5 199.3L217.5 200.8L218.5 202.3L219.4 203.7L220.4 205L221.4 206.4L222.3 207.8L223.3 209.2L224.3 210.5L225.3 211.8L226.2 212.9L227.2 213.9L228.2 215L229.1 216L230.1 216.9L231.1 217.7L232.1 218.5L233 219.1L234 219.6L235 219.9L235.9 220.3L236.9 220.8L237.9 221.3L238.8 221.6L239.8 222.1L240.8 222.8L241.8 223.4L242.7 223.7L243.7 224.2L244.7 224.8L245.6 225.1L246.6 225.4L247.6 225.6L248.5 225.9L249.5 226.1L250.5 226.4L251.5 226.6L252.4 227L253.4 227.3L254.4 227.5L255.3 227.7L256.3 227.9L257.3 228L258.2 228.1L259.2 228.2L260.2 228.3L261.2 228.3L262.1 228.4L263.1 228.5L264.1 228.5L265 228.6L266 228.6L267 228.7L267.9 228.8L268.9 228.8L269.9 228.9L270.9 228.9L271.8 228.9L272.8 229L273.8 229L274.7 229L275.7 229.1L276.7 229.1L277.6 229.1L278.6 229.1L279.6 229.1L280.6 229L281.5 228.9L282.5 228.9L283.5 228.9L284.4 229L285.4 229.2L286.4 229.3L287.4 229.3L288.3 229.2L289.3 229.2L290.3 229.1L291.2 229.2L292.2 229.3L293.2 229.4L294.1 229.4L295.1 229.4L296.1 229.3L297.1 229.3L298 229.3L299 229.4L300 229.5L300.9 229.5L301.9 229.4L302.9 229.3L303.8 229.4L304.8 229.4L305.8 229.5L306.8 229.5L307.7 229.5L308.7 229.5L309.7 229.5L310.6 229.5L311.6 229.5L312.6 229.6L313.5 229.6L314.5 229.6L315.5 229.5L316.5 229.5L317.4 229.5L318.4 229.6L319.4 229.6L320.3 229.6" fill="none" pointer-events="visible" stroke="#1f77b4" stroke-width="2" stroke-linejoin="bevel" class="zr5-cls-21"></path>
+</g>
+<defs >
+<clipPath id="zr5-c0">
+<path d="M68 27l264 0l0 230l-264 0Z" fill="#000" class="zr5-cls-20"></path>
+</clipPath>
+</defs>
+<style ><![CDATA[
+.zr5-cls-19:hover {
+pointer-events:none;
+}
+.zr5-cls-20:hover {
+cursor:pointer;
+fill:rgba(0,0,0,1);
+}
+.zr5-cls-21:hover {
+cursor:pointer;
+}
+
+]]>
+
+</style>
+</svg></svg></svg>
