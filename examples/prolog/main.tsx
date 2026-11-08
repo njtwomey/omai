@@ -55,12 +55,74 @@ export function run(): Outcome<Result> {
   return { result: { tree, answers, failures }, tapes: { run }, notes }
 }
 
+/** The clauses of the program as listed under their predicate and number, as the tree's edges name them. */
+function clauseLines(): string[] {
+  const counts = new Map<string, number>()
+  return program
+    .trim()
+    .split('\n')
+    .map((clause) => {
+      const name = /^(\w+)\(([^)]*)\)/.exec(clause)
+      const arity = name === null ? 0 : (name[2] ?? '').split(',').length
+      const predicate = `${name?.[1] ?? '?'}/${arity}`
+      const index = (counts.get(predicate) ?? 0) + 1
+      counts.set(predicate, index)
+      return `${predicate} #${index}   ${clause}`
+    })
+}
+
 export function View({ result }: { result: Result }) {
   const scene = diagram(result.tree, { layout: 'layered', direction: 'down', rankSep: 90, nodeSep: 60 })
-  const title = `?- ${query}.   ${result.answers.join(' ;  ')}   (${result.failures} failed ${result.failures === 1 ? 'branch' : 'branches'})`
+  const left = 400
+  const lines: { text: string; bold?: boolean; gap?: number }[] = [
+    { text: 'The program', bold: true },
+    ...clauseLines().map((text) => ({ text })),
+    { text: 'The query', bold: true, gap: 16 },
+    { text: `?- ${query}.` },
+    { text: 'The answers', bold: true, gap: 16 },
+    { text: result.answers.join('   ') },
+    { text: 'How to read the tree', bold: true, gap: 16 },
+    { text: 'Each arrow replaces the goal above it with' },
+    { text: 'what is left to prove after one clause is used;' },
+    { text: 'the arrow names the clause (predicate and number).' },
+    { text: '[ ] is an empty goal: it is proved, and the' },
+    { text: 'value found for W is an answer.' },
+    { text: 'fail: no clause matches, so the search goes' },
+    { text: 'back (backtracks) to try the next one.' },
+  ]
+  let y = 40
+  const placed = lines.map((l) => {
+    y += l.gap ?? 0
+    const at = y
+    y += 19
+    return { ...l, y: at }
+  })
+  const height = Math.max(scene.height + 30, y + 20)
   return (
-    <Figure width={scene.width + 90} height={scene.height + 30} title={meta.alt}>
-      <Panel width={scene.width + 90} height={scene.height} title={title} still={scene} />
+    <Figure width={left + scene.width + 40} height={height} title={meta.alt}>
+      <text x={20} y={22} fontFamily="system-ui, sans-serif" fontSize={14} fontWeight={600} fill="#333333">
+        A Prolog program and the search that answers one question
+      </text>
+      {placed.map((l) => (
+        <text
+          key={l.y}
+          x={20}
+          y={l.y}
+          fontFamily={l.bold ? 'system-ui, sans-serif' : 'ui-monospace, Menlo, monospace'}
+          fontSize={l.bold ? 13 : 12}
+          fontWeight={l.bold ? 600 : 400}
+          fill="#333333"
+        >
+          {l.text}
+        </text>
+      ))}
+      <Panel
+        x={left}
+        width={scene.width + 40}
+        height={scene.height}
+        title="the proof search for the query"
+        still={scene}
+      />
     </Figure>
   )
 }

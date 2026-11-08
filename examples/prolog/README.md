@@ -1,31 +1,37 @@
-# A logic program and its proof search
+# A Prolog program and the search that answers one question
 
-Prolog answers a question by searching for a proof. This example loads a small family database, asks
-`?- grandparent(tom, W).` and draws the search the engine made.
-
-![The search tree of grandparent(tom, W): three answers and one failed branch](figure.svg)
+Prolog answers a question by searching. A program is a list of facts and rules. A question (a query) is a goal, and the
+search tries to prove it from the program. This example runs a small family database and draws the search.
 
 ## The program
 
-`parent/2` has six facts (Tom is the parent of Bob, Liz and Sam; Bob of Ann and Pat; Liz of Joe) and
-`grandparent(X, Z) :- parent(X, Y), parent(Y, Z)` is the one rule. `consult` loads the text into a database and
-`solve` answers the query by SLD resolution: depth first, left to right, with backtracking. With `recordTree: true` it
-also keeps every resolvent it reached, and `sldTree` turns those into a structure that `diagram` draws.
+```
+parent(tom, bob).   parent(tom, liz).   parent(tom, sam).
+parent(bob, ann).   parent(bob, pat).   parent(liz, joe).
+grandparent(X, Z) :- parent(X, Y), parent(Y, Z).
+```
 
-## What to look for
+The first six lines are facts (who is whose parent). The last is a rule: X is a grandparent of Z if X is a parent of some
+Y and Y is a parent of Z.
 
-- The root is the query. The rule rewrites it into two goals, `parent(tom, _), parent(_, W)`.
-- The first goal has three matching facts, so the tree branches three ways: Bob, Liz and Sam.
-- Under Bob there are two facts for the second goal, and under Liz one. The leaves marked `[]` have no goals left:
-  each is an answer (`W = ann`, `W = pat`, `W = joe`).
-- Sam has no children, so `parent(sam, W)` matches nothing. The branch ends in `fail` and the search backs up to try
-  the next clause. That is a backtrack.
+## What the program does
 
-## The tape
+- It loads the program with `consult` and asks `?- grandparent(tom, W).` ("who are Tom's grandchildren?") with `solve`,
+  which uses SLD resolution, Prolog's search, and records every step on a tape.
+- It turns the recorded search into a tree with `sldTree`, and the render package draws the tree.
 
-The run is also recorded as a trace (`tape.json`): one event for each call, exit, redo and failure, in the order
-the engine took them (Byrd's box model). It printed `20 steps, 7 inferences, 9 nodes in the tree, 1 failed branches`.
+## How to read the figure
 
-## Run it
+- The program is listed on the left with each clause numbered, in the same way as the arrows are named.
+- The top box is the query. The first arrow uses the rule (`grandparent/2 #1`), which turns the query into two smaller goals,
+  `parent(tom, _2), parent(_2, W)`.
+- That goal can use any of the first three facts about Tom (`parent/2 #1`, `#2`, `#3`), giving three branches: Bob, Liz and
+  Sam are tried one at a time. Under each, the second goal is solved with the facts about that child.
+- A box with `[ ]` is an empty goal. Everything has been proved, and the value of `W` along that path is an answer:
+  `ann` and `pat` through Bob, `joe` through Liz.
+- The box marked `fail` is the one branch that went nowhere: Sam has no children in the program, so no clause matches and
+  the search backs up (backtracks).
+- 20 steps and 7 inferences were needed in all.
 
-`make readme-examples ARGS="prolog"` writes `figure.svg` and `tape.json`. The program is [main.tsx](main.tsx).
+The tape of the run is `tape.json`. To run it again: `make readme-examples ARGS="prolog"`.
+Source: [main.tsx](main.tsx). Figure: [figure.svg](figure.svg).
