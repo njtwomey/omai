@@ -1,3 +1,4 @@
+import { describe as describeNet, mlp } from 'omai-engine/nn'
 import { type Scene, type SceneNode, type Structure, structure } from 'omai-engine/scene'
 import { describe, expect, it } from 'vitest'
 import { diagram } from './diagram.ts'
@@ -430,5 +431,259 @@ describe('diagram: detail lines, TeX edge labels, group looks, notes and outside
     const t = f(both)
     for (const id of ['edge:0', 'edge:1'])
       expect(crosses(edgePoints(both, id), { x0: t.x, y0: t.y - 5, x1: t.x + 7, y1: t.y + 5 })).toBe(false)
+  })
+})
+
+describe('diagram: routing, kinds of edge, label plates, origin and corners', () => {
+  const at = (id: string, x: number, y: number, extra: object = {}): ReturnType<typeof node> =>
+    node(id, { position: [x, y], ...extra })
+  const longest = (p: readonly Pt[], q: readonly Pt[]): number => {
+    let best = 0
+    for (let i = 0; i + 1 < p.length; i++)
+      for (let j = 0; j + 1 < q.length; j++) {
+        const [a, b, c, d] = [p[i], p[i + 1], q[j], q[j + 1]] as [Pt, Pt, Pt, Pt]
+        for (const k of [0, 1] as const) {
+          const m = k === 0 ? 1 : 0
+          if (Math.abs(a[m] - b[m]) > 1e-6 || Math.abs(c[m] - d[m]) > 1e-6 || Math.abs(a[m] - c[m]) > 0.5) continue
+          best = Math.max(
+            best,
+            Math.min(Math.max(a[k], b[k]), Math.max(c[k], d[k])) - Math.max(Math.min(a[k], b[k]), Math.min(c[k], d[k])),
+          )
+        }
+      }
+    return best
+  }
+
+  it('lets edges pass through an invisible node and through a node that says it is not an obstacle', () => {
+    const row = (extra: object): Structure =>
+      structure('x', [at('a', 0, 0), at('ghost', 120, 0, extra), at('b', 240, 0)], [{ from: 'a', to: 'b' }])
+    // A box in the way: the edge goes round it.
+    expect(edgePoints(diagram(row({}), { route: 'orthogonal' }), 'edge:0').length).toBeGreaterThan(2)
+    // Invisible (no outline, no text): straight through, as one segment.
+    const ghost = { label: '', look: { shape: 'none' } }
+    expect(edgePoints(diagram(row(ghost), { route: 'orthogonal' }), 'edge:0')).toHaveLength(2)
+    // Said so: a visible node that edges may cross; and invisible but said to be an obstacle.
+    expect(edgePoints(diagram(row({ obstacle: false }), { route: 'orthogonal' }), 'edge:0')).toHaveLength(2)
+    expect(
+      edgePoints(diagram(row({ ...ghost, obstacle: true }), { route: 'orthogonal' }), 'edge:0').length,
+    ).toBeGreaterThan(2)
+  })
+
+  it('still starts and ends an edge at a node that is not an obstacle, and keeps labels clear of nodes that are', () => {
+    const t = structure(
+      'x',
+      [at('a', 0, 0), at('ph', 200, 100, { label: '', obstacle: false })],
+      [{ from: 'a', to: 'ph', label: 'into the placeholder' }],
+    )
+    const s = diagram(t, { route: 'orthogonal' })
+    const [p, ph] = [edgePoints(s, 'edge:0'), boxOf(s, 'ph')]
+    const [first, last] = [p[0] as Pt, p.at(-1) as Pt]
+    expect(last[0] >= ph.x0 - 1 && last[0] <= ph.x1 + 1 && last[1] >= ph.y0 - 1 && last[1] <= ph.y1 + 1).toBe(true)
+    expect(first[0]).toBeLessThanOrEqual(boxOf(s, 'a').x1 + 1)
+  })
+
+  it('draws edges of different colours into one box on separate ports and keeps their own colours', () => {
+    const t = structure(
+      'x',
+      [at('a', 0, 0), at('b', 0, 60), at('w', 200, 200, { label: 'wide box' })],
+      [
+        { from: 'a', to: 'w', look: { stroke: 'tab0' } },
+        { from: 'b', to: 'w', look: { stroke: 'tab1' } },
+      ],
+    )
+    const s = diagram(t, { route: 'orthogonal' })
+    const [p, q] = [edgePoints(s, 'edge:0'), edgePoints(s, 'edge:1')]
+    expect((p.at(-1) as Pt)[0] === (q.at(-1) as Pt)[0] && (p.at(-1) as Pt)[1] === (q.at(-1) as Pt)[1]).toBe(false)
+    expect(longest(p, q)).toBeLessThan(1)
+    // Alike, the same two edges merge into one port.
+    const same = diagram(
+      structure('x', t.nodes, [
+        { from: 'a', to: 'w' },
+        { from: 'b', to: 'w' },
+      ]),
+      { route: 'orthogonal' },
+    )
+    expect(edgePoints(same, 'edge:0').at(-1)).toEqual(edgePoints(same, 'edge:1').at(-1))
+    // `merge: false` separates even those.
+    const apart = diagram(
+      structure('x', t.nodes, [
+        { from: 'a', to: 'w' },
+        { from: 'b', to: 'w' },
+      ]),
+      { route: 'orthogonal', merge: false },
+    )
+    expect(edgePoints(apart, 'edge:0').at(-1)).not.toEqual(edgePoints(apart, 'edge:1').at(-1))
+  })
+
+  it('honours the sides and places an edge asks for, under the manual layout', () => {
+    const t = structure(
+      'x',
+      [at('a', 0, 0), at('b', 0, 160), at('w', 200, 80, { label: 'wide box' })],
+      [
+        { from: 'a', to: 'w', toSide: 'top', look: { stroke: 'tab0' } },
+        { from: 'b', to: 'w', toSide: 'bottom', look: { stroke: 'tab1' } },
+        { from: 'a', to: 'b', fromSide: 'left', toSide: 'left' },
+        { from: 'w', to: 'a', fromSide: 'top', fromAt: 0.9, toSide: 'right', toAt: 0.1 },
+      ],
+    )
+    const s = diagram(t, { route: 'orthogonal' })
+    const w = boxOf(s, 'w')
+    const [p, q, r, u] = [0, 1, 2, 3].map((i) => edgePoints(s, `edge:${i}`)) as [Pt[], Pt[], Pt[], Pt[]]
+    expect((p.at(-1) as Pt)[1]).toBeCloseTo(w.y0, 6)
+    expect((q.at(-1) as Pt)[1]).toBeCloseTo(w.y1, 6)
+    expect((r[0] as Pt)[0]).toBeCloseTo(boxOf(s, 'a').x0, 6)
+    expect((r.at(-1) as Pt)[0]).toBeCloseTo(boxOf(s, 'b').x0, 6)
+    expect((u[0] as Pt)[1]).toBeCloseTo(w.y0, 6)
+    // Near the right end of the top side, and near the top of a's right side.
+    expect((u[0] as Pt)[0]).toBeGreaterThan((w.x0 + w.x1) / 2)
+    expect((u.at(-1) as Pt)[0]).toBeCloseTo(boxOf(s, 'a').x1, 6)
+    for (const e of [p, q, r, u]) expect(rectilinear(e as Pt[])).toBe(true)
+  })
+
+  it('separates three edges of different looks into one wide box', () => {
+    const t = structure(
+      'x',
+      [
+        at('a', -300, 0),
+        at('b', -300, 70),
+        at('c', -300, 140),
+        at('w', 0, 300, { label: 'a wide box that takes all three' }),
+      ],
+      ['tab0', 'tab1', 'tab2'].map((stroke, i) => ({
+        from: 'abc'[i] as string,
+        to: 'w',
+        look: { stroke: stroke as 'tab0' },
+      })),
+    )
+    const s = diagram(t, { route: 'orthogonal' })
+    const ps = [0, 1, 2].map((i) => edgePoints(s, `edge:${i}`))
+    expect(new Set(ps.map((p) => (p.at(-1) as Pt)[0])).size).toBe(3)
+    for (let i = 0; i < 3; i++)
+      for (let j = i + 1; j < 3; j++) expect(longest(ps[i] as Pt[], ps[j] as Pt[])).toBeLessThan(1)
+  })
+
+  for (const layout of ['layered', 'manual'] as const)
+    for (const direction of ['down', 'right'] as const)
+      it(`keeps the dashed target edge of an autoencoder off the solid edges (${layout}, ${direction})`, () => {
+        const net = describeNet(mlp([8, 3, 8]), [32, 8], { target: 'reconstruct' })
+        // Placed in a row (or a column), as a slide would, for the manual layout.
+        const placed =
+          layout === 'manual'
+            ? structure(
+                net.type,
+                net.nodes.map((n, i) => ({
+                  ...n,
+                  position: (direction === 'down' ? [0, i * 110] : [i * 190, 0]) as [number, number],
+                })),
+                net.edges,
+                { title: net.title as string },
+              )
+            : net
+        const s = diagram(placed, { route: 'orthogonal', direction, layout })
+        const ps = placed.edges.map((_, i) => edgePoints(s, `edge:${i}`))
+        const t = placed.edges.findIndex((e) => e.kind === 'skip')
+        const target = ps[t] as Pt[]
+        expect(rectilinear(target)).toBe(true)
+        ps.forEach((p, i) => {
+          if (i !== t) expect(longest(target, p), `target with edge ${i}`).toBeLessThan(1)
+        })
+        for (const n of placed.nodes) {
+          if (n.id === 'input' || n.id === 'output') continue
+          expect(crosses(target, boxOf(s, n.id)), `target through ${n.id}`).toBe(false)
+        }
+        // It does not share a port with the solid edges at its two ends.
+        const solidEnds = ps.filter((_, i) => i !== t).flatMap((p) => [p[0] as Pt, p.at(-1) as Pt])
+        for (const end of [target[0] as Pt, target.at(-1) as Pt])
+          expect(solidEnds.some((q) => Math.hypot(q[0] - end[0], q[1] - end[1]) < 2)).toBe(false)
+      })
+
+  it('draws the label plate in the page colour by default, in a given paint, or not at all', () => {
+    const t = structure('x', [at('a', 0, 0), at('b', 200, 0)], [{ from: 'a', to: 'b', label: 'rank' }])
+    const plates = (s: Scene): SceneNode[] =>
+      all(s).flatMap((q) => (q.node.kind === 'rect' && q.node.id === 'edge:0:plate' ? [q.node] : []))
+    expect(plates(diagram(t))[0]).toMatchObject({ fill: 'bg', opacity: 0.9 })
+    expect(plates(diagram(t, { labelPlate: 'page' }))).toEqual(plates(diagram(t)))
+    expect(plates(diagram(t, { labelPlate: 'surface' }))[0]).toMatchObject({ fill: 'surface', opacity: 1 })
+    expect(plates(diagram(t, { labelPlate: '#222222' }))[0]).toMatchObject({ fill: '#222222' })
+    expect(plates(diagram(t, { labelPlate: 'none' }))).toHaveLength(0)
+    expect(all(diagram(t, { labelPlate: 'none' })).some((q) => q.node.kind === 'text' && q.node.text === 'rank')).toBe(
+      true,
+    )
+  })
+
+  for (const route of ['straight', 'orthogonal'] as const)
+    it(`keeps a label with no plate off its own edge, the nodes and the other edges (${route})`, () => {
+      const t = structure(
+        'x',
+        [at('a', 0, 0), at('b', 200, 0), at('c', 100, 120), at('d', 100, -120)],
+        [
+          { from: 'a', to: 'b', label: 'no plate here' },
+          { from: 'c', to: 'd', label: 'cross' },
+        ],
+      )
+      const s = diagram(t, { route, labelPlate: 'none' })
+      for (const [i, text] of ['no plate here', 'cross'].entries()) {
+        const l = all(s).find((q) => q.node.kind === 'text' && q.node.text === text)
+        if (l?.node.kind !== 'text') throw new Error('label')
+        const w = text.length * 10 * 0.6
+        const x0 = (l.node.anchor === 'middle' ? l.node.x - w / 2 : l.node.x) + l.dx
+        const box = { x0: x0 - 1, x1: x0 + w + 1, y0: l.node.y + l.dy - 5, y1: l.node.y + l.dy + 5 }
+        expect(crosses(edgePoints(s, `edge:${i}`), box), `${text}: on its own edge`).toBe(false)
+        for (const n of t.nodes) {
+          const b = boxOf(s, n.id)
+          expect(box.x1 <= b.x0 || box.x0 >= b.x1 || box.y1 <= b.y0 || box.y0 >= b.y1, `${text}: on ${n.id}`).toBe(true)
+        }
+      }
+    })
+
+  it('gives an edge label stable ids, `edge:<i>:label` for the label and `edge:<i>:plate` for its plate', () => {
+    const t = structure(
+      'x',
+      [at('a', 0, 0), at('b', 200, 0), at('c', 400, 0)],
+      [
+        { from: 'a', to: 'b' },
+        { from: 'b', to: 'c', label: 'two\nlines' },
+      ],
+    )
+    const s = diagram(t, { route: 'orthogonal' })
+    const label = all(s).find((q) => q.node.kind === 'group' && q.node.id === 'edge:1:label')
+    if (label?.node.kind !== 'group') throw new Error('no label group')
+    expect(label.node.children.map((c) => c.kind)).toEqual(['rect', 'text', 'text'])
+    expect(label.node.children[0]).toMatchObject({ id: 'edge:1:plate' })
+    expect(all(s).some((q) => q.node.kind === 'group' && q.node.id === 'edge:0:label')).toBe(false)
+    const bare = all(diagram(t, { labelPlate: 'none' })).find(
+      (q) => q.node.kind === 'group' && q.node.id === 'edge:1:label',
+    )
+    if (bare?.node.kind !== 'group') throw new Error('no label group')
+    expect(bare.node.children.map((c) => c.kind)).toEqual(['text', 'text'])
+  })
+
+  it('puts a position at the same place whichever nodes are shown, when given an origin, and sizes the scene by it', () => {
+    const full = structure('x', [at('a', 0, 0), at('b', 100, 50), at('c', 260, 120)], [{ from: 'b', to: 'c' }])
+    const part = structure('x', full.nodes.slice(1), full.edges)
+    // The origin is the top left of the drawing: left of and above every node's box.
+    const [f, p] = [diagram(full, { origin: [-30, -20] }), diagram(part, { origin: [-30, -20] })]
+    expect(boxOf(p, 'b')).toEqual(boxOf(f, 'b'))
+    expect(boxOf(p, 'c')).toEqual(boxOf(f, 'c'))
+    expect(p.width).toBeCloseTo(260 + 20 + 30 + 2 * 16, 0)
+    // Without it, the subset moves to the margin.
+    expect(boxOf(diagram(part), 'b').x0).toBeLessThan(boxOf(p, 'b').x0)
+    // A node left of the origin still fits in the scene.
+    const left = diagram(structure('x', [at('a', -100, 0), at('b', 100, 0)], []), { origin: [0, 0] })
+    expect(boxOf(left, 'a').x0).toBeGreaterThanOrEqual(0)
+    expect(boxOf(left, 'b').x1).toBeLessThanOrEqual(left.width)
+  })
+
+  it('rounds the corners of orthogonal edges with a corner radius, and leaves straight ones and the default alone', () => {
+    const t = structure('x', [at('a', 0, 0), at('b', 200, 120)], [{ from: 'a', to: 'b' }])
+    const find = (s: Scene): SceneNode | undefined =>
+      all(s).find((q) => q.node.kind === 'path' && q.node.id === 'edge:0')?.node
+    expect(find(diagram(t, { route: 'orthogonal' }))).not.toHaveProperty('cornerRadius')
+    expect(find(diagram(t, { route: 'orthogonal', cornerRadius: 0 }))).not.toHaveProperty('cornerRadius')
+    const rounded = diagram(t, { route: 'orthogonal', cornerRadius: 8 })
+    expect(find(rounded)).toMatchObject({ cornerRadius: 8, smooth: false, arrow: true })
+    // The route's points are the corners, not the curve.
+    expect(rectilinear(edgePoints(rounded, 'edge:0'))).toBe(true)
+    expect(find(diagram(t, { cornerRadius: 8 }))).not.toHaveProperty('cornerRadius')
   })
 })

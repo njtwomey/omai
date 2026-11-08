@@ -129,6 +129,7 @@ class Walk {
         break
       case 'path':
         this.points(at, n['points'], 2)
+        if (n['cornerRadius'] !== undefined) this.size(at, 'cornerRadius', n['cornerRadius'])
         break
       case 'text':
       case 'tex':

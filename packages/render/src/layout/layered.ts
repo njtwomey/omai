@@ -14,6 +14,8 @@ import {
   type LayoutBox,
   type LayoutGraph,
   normaliseLayout,
+  passableNodes,
+  portReach,
 } from './graph.ts'
 import { separateRoutes, sideReach } from './orthogonal.ts'
 
@@ -34,9 +36,12 @@ export interface LayeredOptions {
    * routes every edge through the channels between ranks: down from the source, across the channel, down through the
    * column of each rank it skips (the dummy of a long edge), across the next channel, and into the target
    * perpendicular to its side, with edges that leave or enter at one port merged and parallel runs in a channel on
-   * tracks of their own.
+   * tracks of their own. Edges with different `mergeKey`s that meet at one port are given ports side by side; the
+   * sides an edge leaves and enters by are the ones facing along the ranks, so `fromSide` and `toSide` are not used.
    */
   readonly route?: EdgeRouting
+  /** Whether edges with the same `mergeKey` share a port (default true); `false` gives every edge a port of its own. */
+  readonly merge?: boolean
 }
 
 interface Item {
@@ -414,7 +419,13 @@ export function layered(graph: LayoutGraph, options: LayeredOptions = {}): Graph
         route: 'orthogonal',
       })
     }
-    return normaliseLayout(nodes, separateRoutes(ortho, { nodes }), groupBoxes(graph, nodes), margin)
+    const spread = separateRoutes(ortho, {
+      nodes,
+      reach: portReach(graph),
+      passable: passableNodes(graph),
+      ends: real.map((e, i) => ({ key: options.merge === false ? `#${i}` : (e.mergeKey ?? '') })),
+    })
+    return normaliseLayout(nodes, spread, groupBoxes(graph, nodes), margin)
   }
   // Routes: through the dummies of each chain, clipped to the end boxes; reversed edges are turned back.
   const routes: EdgeRoute[] = []

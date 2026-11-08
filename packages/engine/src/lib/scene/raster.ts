@@ -193,6 +193,40 @@ function smoothed(points: readonly Vec2[], closed: boolean): Vec2[] {
   return out
 }
 
+// Round the corners of a polyline: each interior vertex becomes a cubic curve between points `r` back along its two
+// segments (limited to half the shorter one), 8 samples per corner.
+function rounded(points: readonly Vec2[], closed: boolean, r: number): Vec2[] {
+  const n = points.length
+  if (n < 3 || !(r > 0)) return [...points]
+  const out: Vec2[] = []
+  const first = closed ? 0 : 1
+  const last = closed ? n : n - 1
+  if (!closed) out.push(points[0] as Vec2)
+  for (let i = first; i < last; i++) {
+    const [u, v, w] = [points[(i - 1 + n) % n] as Vec2, points[i] as Vec2, points[(i + 1) % n] as Vec2]
+    const [lu, lw] = [Math.hypot(u[0] - v[0], u[1] - v[1]), Math.hypot(w[0] - v[0], w[1] - v[1])]
+    const d = Math.min(r, lu / 2, lw / 2)
+    if (!(d > 1e-9)) {
+      out.push(v)
+      continue
+    }
+    const a: Vec2 = [v[0] + ((u[0] - v[0]) / lu) * d, v[1] + ((u[1] - v[1]) / lu) * d]
+    const b: Vec2 = [v[0] + ((w[0] - v[0]) / lw) * d, v[1] + ((w[1] - v[1]) / lw) * d]
+    const k = 0.5523
+    const c1: Vec2 = [a[0] + (v[0] - a[0]) * k, a[1] + (v[1] - a[1]) * k]
+    const c2: Vec2 = [b[0] + (v[0] - b[0]) * k, b[1] + (v[1] - b[1]) * k]
+    for (let s = 0; s <= 8; s++) {
+      const t = s / 8
+      const m = 1 - t
+      const coord = (j: 0 | 1): number =>
+        m * m * m * a[j] + 3 * m * m * t * c1[j] + 3 * m * t * t * c2[j] + t * t * t * b[j]
+      out.push([coord(0), coord(1)])
+    }
+  }
+  if (!closed) out.push(points[n - 1] as Vec2)
+  return out
+}
+
 // Split a polyline into dashes by arc length.
 function dashed(points: readonly Vec2[], closed: boolean, pattern: readonly number[]): Vec2[][] {
   const total = pattern.reduce((s, x) => s + Math.max(0, x), 0)
@@ -407,7 +441,12 @@ function drawNode(draw: Draw, node: SceneNode, m: Affine, opacity: number): void
     }
     case 'path': {
       const closed = node.closed === true
-      const pts = node.smooth === true ? smoothed(node.points, closed) : node.points
+      const pts =
+        node.smooth === true
+          ? smoothed(node.points, closed)
+          : node.cornerRadius === undefined
+            ? node.points
+            : rounded(node.points, closed, node.cornerRadius)
       if (node.arrow === true && !closed) {
         const o = opacity * (node.opacity ?? 1)
         if (node.fill !== undefined) fill(draw, pts, node.fill, m, o)

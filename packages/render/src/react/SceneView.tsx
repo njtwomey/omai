@@ -5,7 +5,7 @@
 
 import { type Paint, projectLayers, recolour, type Scene, type SceneNode, type Style } from 'omai-engine/scene'
 import { type CSSProperties, type PointerEvent, type ReactElement, type ReactNode, useMemo } from 'react'
-import { arrowHeadPoints, smoothPathData, straightPathData } from '../svg/paths.ts'
+import { arrowHeadPoints, roundedPathData, smoothPathData, straightPathData } from '../svg/paths.ts'
 import { pngDataUrl } from '../svg/png.ts'
 import { type ColourMode, type Tokens, resolvePaint as themePaint, tokens as themeTokens } from '../theme/tokens.ts'
 import { Tex } from './MathView.tsx'
@@ -145,7 +145,12 @@ function Node(props: { readonly node: SceneNode; readonly ctx: Ctx }): ReactNode
     }
     case 'path': {
       const closed = node.closed === true
-      const d = node.smooth === true ? smoothPathData(node.points, closed) : straightPathData(node.points, closed)
+      const d =
+        node.smooth === true
+          ? smoothPathData(node.points, closed)
+          : node.cornerRadius === undefined
+            ? straightPathData(node.points, closed)
+            : roundedPathData(node.points, node.cornerRadius, closed)
       const paint = closed
         ? closedProps(node, ctx)
         : { fill: resolvePaint(node.fill, ctx.t) ?? 'none', ...strokeProps(node, ctx, 'fg') }

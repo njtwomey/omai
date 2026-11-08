@@ -7,7 +7,7 @@
 import { type Paint, projectLayers, type Scene, type SceneNode, type Style } from 'omai-engine/scene'
 import { texToHtml } from '../maths/tex.ts'
 import { type ColourMode, resolvePaint } from '../theme/tokens.ts'
-import { arrowHeadPoints, smoothPathData, straightPathData } from './paths.ts'
+import { arrowHeadPoints, roundedPathData, smoothPathData, straightPathData } from './paths.ts'
 import { pngDataUrl } from './png.ts'
 
 /**
@@ -73,7 +73,12 @@ function nodeSvg(node: SceneNode, mode: ColourMode, font: string): string {
     }
     case 'path': {
       const isClosed = node.closed === true
-      const d = node.smooth === true ? smoothPathData(node.points, isClosed) : straightPathData(node.points, isClosed)
+      const d =
+        node.smooth === true
+          ? smoothPathData(node.points, isClosed)
+          : node.cornerRadius === undefined
+            ? straightPathData(node.points, isClosed)
+            : roundedPathData(node.points, node.cornerRadius, isClosed)
       const p = isClosed ? closed(node, mode) : { fill: paint(node.fill, mode) ?? 'none', ...stroke(node, mode, 'fg') }
       const last = node.points[node.points.length - 1]
       const before = node.points[node.points.length - 2]

@@ -75,9 +75,34 @@ export interface DiagramOptions {
    * the other nodes, else a detour; edges that leave or enter at one port merge, and parallel runs get tracks of their
    * own. A layered layout routes through its rank channels (long edges down the column of each rank they skip). Meant
    * for flowcharts and pipelines (layered and manual layouts); straight stays right for trees, networks and fan-in
-   * layers of a network. Edge `via` waypoints are honoured under the manual layout, by both routes.
+   * layers of a network. Edge `via` waypoints are honoured under the manual layout, by both routes. An edge's
+   * `fromSide` and `toSide` (and `fromAt`, `toAt` along them) fix the sides it leaves and enters by, under every layout
+   * but the layered one, whose edges run along the ranks. Edges that leave or enter at one port merge into one line
+   * only when they look the same (colour, width, dash, kind); edges that look different get ports side by side.
+   * Nodes that are not obstacles (`StructureNode.obstacle`) are crossed rather than avoided.
    */
   readonly route?: EdgeRouting
+  /**
+   * Whether edges that look the same share a port where they leave or enter a node (default true: they merge into one
+   * line). `false` gives every edge a port of its own along the side. Orthogonal routes only.
+   */
+  readonly merge?: boolean
+  /** The radius of the rounded corners of orthogonal edges, in pixels (default 0: sharp corners). */
+  readonly cornerRadius?: number
+  /**
+   * The fill of the plate behind an edge label: `page` (the default: the page background, a little see-through, which
+   * hides the line under the label), `none` (no plate: the label sits beside its edge, off the nodes and the other
+   * edges, and the line is not hidden), or any paint (a card colour, when the diagram is drawn on a card).
+   */
+  readonly labelPlate?: 'page' | 'none' | Paint
+  /**
+   * Under the `manual` layout, the point of the node positions' own units that becomes the top left of the drawing
+   * (default: the top left of everything drawn). A fixed origin gives the same position the same place in the scene
+   * whichever nodes are shown, so the states of an animation line up; the scene then runs from the origin to the far
+   * edge of what is drawn. Positions are node centres, so choose an origin left of and above every node's box; anything
+   * beyond it still fits (the scene is widened to hold it) but then moves with the content.
+   */
+  readonly origin?: readonly [x: number, y: number]
 }
 
 const CHAR = 0.6
@@ -363,11 +388,35 @@ function pointAlong(points: readonly (readonly [number, number])[], t: number): 
   return [first[0], first[1]]
 }
 
+/** The index of the segment of a polyline a fraction `t` (0 to 1) of the way along it, by length, lies on. */
+function segmentAt(points: readonly (readonly [number, number])[], t: number): number {
+  const lengths = points
+    .slice(1)
+    .map((p, i) =>
+      Math.hypot(
+        p[0] - (points[i] as readonly [number, number])[0],
+        p[1] - (points[i] as readonly [number, number])[1],
+      ),
+    )
+  let left = Math.min(1, Math.max(0, t)) * lengths.reduce((a, b) => a + b, 0)
+  for (const [i, len] of lengths.entries()) {
+    if (left <= len) return i
+    left -= len
+  }
+  return Math.max(0, lengths.length - 1)
+}
+
 /** The plate that hides what is under a block of text: a box in the background colour, a little see-through. */
 const padded = (r: Rect): Rect => [r[0] - 2, r[1] - 2, r[2] + 2, r[3] + 2]
 
-const plateOf = (box: Rect): SceneNode =>
-  rect(box[0], box[1], box[2] - box[0], box[3] - box[1], { fill: 'bg', stroke: 'none', opacity: 0.9, radius: 3 })
+const plateOf = (box: Rect, fill: Paint = 'bg', opacity = 0.9, id?: string): SceneNode =>
+  rect(box[0], box[1], box[2] - box[0], box[3] - box[1], {
+    fill,
+    stroke: 'none',
+    opacity,
+    radius: 3,
+    ...(id === undefined ? {} : { id }),
+  })
 
 /** Whether the segment from `p` to `q` crosses the inside of a box (Liang and Barsky's clipping). */
 function segmentHits(p: readonly [number, number], q: readonly [number, number], r: Rect): boolean {
@@ -532,6 +581,20 @@ export function diagram(s: Structure, options: DiagramOptions = {}): Scene {
   const placedByHand = s.nodes.length > 0 && s.nodes.every((n) => n.position !== undefined)
   const which = options.layout ?? (placedByHand ? 'manual' : style.layout)
   const orthogonal = options.route === 'orthogonal'
+  const edgeLook = (e: StructureEdge): EdgeLook => ({ ...style.edge(e), ...e.look })
+  // Nodes edges may cross: said so, or invisible (no outline and no text), which only holds a place.
+  const obstacle = (n: StructureNode): boolean =>
+    n.obstacle ??
+    !(
+      (looks.get(n.id) as NodeLook).shape === 'none' &&
+      (content.get(n.id) ?? []).every((l) => l.text.trim() === '') &&
+      n.note === undefined
+    )
+  // Edges merge at a port only when they are drawn the same.
+  const mergeKey = (e: StructureEdge): string => {
+    const look = edgeLook(e)
+    return JSON.stringify([look.stroke, look.strokeWidth ?? 1.2, look.dash ?? null, e.kind ?? null])
+  }
   // An orthogonal edge may leave or enter a round shape only near the middle of a side, where its outline is.
   const reachOf = (look: NodeLook, box: { readonly width: number; readonly height: number }): number | undefined => {
     switch (look.shape) {
@@ -555,12 +618,22 @@ export function diagram(s: Structure, options: DiagramOptions = {}): Scene {
         ...box,
         ...(n.group === undefined ? {} : { group: n.group }),
         ...(reach === undefined ? {} : { reach }),
+        ...(orthogonal && !obstacle(n) ? { obstacle: false } : {}),
       }
     }),
     edges: routed.map((e) => ({
       from: e.from,
       to: e.to,
       ...(which === 'manual' && e.via !== undefined && e.via.length > 0 ? { via: e.via } : {}),
+      ...(orthogonal
+        ? {
+            mergeKey: mergeKey(e),
+            ...(e.fromSide === undefined ? {} : { fromSide: e.fromSide }),
+            ...(e.toSide === undefined ? {} : { toSide: e.toSide }),
+            ...(e.fromAt === undefined ? {} : { fromAt: e.fromAt }),
+            ...(e.toAt === undefined ? {} : { toAt: e.toAt }),
+          }
+        : {}),
     })),
     groups: s.groups.map((g) => ({ id: g.id, ...(g.parent === undefined ? {} : { parent: g.parent }) })),
   }
@@ -574,6 +647,8 @@ export function diagram(s: Structure, options: DiagramOptions = {}): Scene {
           {
             route: routing,
             flow: direction,
+            ...(options.origin === undefined ? {} : { origin: options.origin }),
+            ...(options.merge === undefined ? {} : { merge: options.merge }),
           },
         )
       : which === 'tree'
@@ -602,13 +677,17 @@ export function diagram(s: Structure, options: DiagramOptions = {}): Scene {
               : layered(graph, {
                   direction,
                   route: routing,
+                  ...(options.merge === undefined ? {} : { merge: options.merge }),
                   ...(options.rankSep === undefined ? {} : { rankSep: options.rankSep }),
                   ...(options.nodeSep === undefined ? {} : { nodeSep: options.nodeSep }),
                 })
   // The layouts that draw straight lines take right angles from the router, which keeps their node boxes.
   const layout: GraphLayout =
     orthogonal && which !== 'manual' && which !== 'layered'
-      ? withOrthogonalRoutes(placed, graph, { flow: direction })
+      ? withOrthogonalRoutes(placed, graph, {
+          flow: direction,
+          ...(options.merge === undefined ? {} : { merge: options.merge }),
+        })
       : placed
 
   // Groups: deepest first, each around its members and its child groups, with room for its label.
@@ -708,7 +787,6 @@ export function diagram(s: Structure, options: DiagramOptions = {}): Scene {
     next++
   }
   const loopExtent: [number, number][] = []
-  const edgeLook = (e: StructureEdge): EdgeLook => ({ ...style.edge(e), ...e.look })
   /** An arrow head at the start of an edge: a short reversed arrow lying on its first stretch. */
   const tailArrow = (
     points: readonly (readonly [number, number])[],
@@ -730,6 +808,7 @@ export function diagram(s: Structure, options: DiagramOptions = {}): Scene {
   // Labels of straight and routed edges are drawn after the nodes, so they are collected here.
   const pending: {
     readonly edge: StructureEdge
+    readonly index: number
     readonly points: readonly (readonly [number, number])[]
     readonly orthogonal: boolean
   }[] = []
@@ -802,19 +881,21 @@ export function diagram(s: Structure, options: DiagramOptions = {}): Scene {
         strokeWidth,
         arrow,
         smooth: curved && points.length > 2,
+        ...(orthogonalRoute && (options.cornerRadius ?? 0) > 0 ? { cornerRadius: options.cornerRadius as number } : {}),
         ...(look.dash === undefined ? {} : { dash: look.dash }),
       }),
       ...(e.bidirectional === true ? tailArrow(points, `edge:${i}:tail`, stroke, strokeWidth) : []),
     ]
-    if (e.label !== undefined) pending.push({ edge: e, points, orthogonal: orthogonalRoute })
+    if (e.label !== undefined) pending.push({ edge: e, index: i, points, orthogonal: orthogonalRoute })
     return out
   })
 
   // Text beside nodes (the labels of factors and dots, and notes) takes the first place that no edge, node or other
   // text covers: under the node by default, then above, then to its right and its left.
-  const nodeBoxes = [...Object.values(layout.nodes)].map(
-    (b): Rect => [b.x - b.width / 2, b.y - b.height / 2, b.x + b.width / 2, b.y + b.height / 2],
-  )
+  const solid = new Set(s.nodes.filter(obstacle).map((n) => n.id))
+  const nodeBoxes = Object.entries(layout.nodes)
+    .filter(([id]) => solid.has(id))
+    .map(([, b]): Rect => [b.x - b.width / 2, b.y - b.height / 2, b.x + b.width / 2, b.y + b.height / 2])
   const beside: Rect[] = []
   const covered = (r: Rect): boolean =>
     [...nodeBoxes, ...beside].some((q) => overlaps(r, q)) || drawn.some((d) => polylineHits(d.points, r))
@@ -899,7 +980,10 @@ export function diagram(s: Structure, options: DiagramOptions = {}): Scene {
   // place (the middle of the longest segment, for an orthogonal edge), moved aside along the edge or to its other side
   // when that would cover a node or an earlier label. A label may have several lines, each plain or TeX.
   const labelBoxes: Rect[] = []
-  const labelScene: SceneNode[] = pending.flatMap(({ edge, points, orthogonal: right }) => {
+  const plate = options.labelPlate ?? 'page'
+  // Without a plate the line under a label would show through it: the label then keeps off its own edge too.
+  const plated = plate !== 'none'
+  const labelScene: SceneNode[] = pending.flatMap(({ edge, index, points, orthogonal: right }) => {
     const rows = (edge.label as string).split('\n')
     const w = maxOf(rows.map((r) => textWidth(r, fs)))
     const tall = fs + (rows.length - 1) * step
@@ -916,6 +1000,25 @@ export function diagram(s: Structure, options: DiagramOptions = {}): Scene {
     if (edge.labelAt !== undefined) {
       ;[x, y] = pointAlong(points, edge.labelAt)
       centred = true
+      if (!plated) {
+        // Beside the line at that point, not on it: above or below a flat stretch, to the side of an upright one.
+        const k = Math.max(0, Math.min(points.length - 2, segmentAt(points, edge.labelAt)))
+        const [p, q] = [points[k] as readonly [number, number], points[k + 1] as readonly [number, number]]
+        const flat = Math.abs(p[1] - q[1]) < Math.abs(p[0] - q[0])
+        const near: [number, number][] = flat
+          ? [
+              [x, y - (tall / 2 + 7)],
+              [x, y + (tall / 2 + 7)],
+            ]
+          : [
+              [x + w / 2 + 7, y],
+              [x - w / 2 - 7, y],
+            ]
+        const free = near.find(
+          ([cx, cy]) => ![...nodeBoxes, ...labelBoxes].some((o) => overlaps(boxAt(cx, cy, true), o)),
+        )
+        ;[x, y] = free ?? (near[0] as [number, number])
+      }
     } else if (right) {
       // On the middle of a long segment, on its plate; beside the segment when that is covered; never on a node.
       const segs = points.slice(1).map((q, k) => ({
@@ -943,9 +1046,11 @@ export function diagram(s: Structure, options: DiagramOptions = {}): Scene {
       }
       const all = [...on, ...off]
       const others = drawn.filter((d) => d.edge !== edge)
+      const own = drawn.filter((d) => d.edge === edge)
       const free = (r: Rect, lines: boolean): boolean =>
         ![...nodeBoxes, ...labelBoxes].some((q) => overlaps(r, q)) &&
-        (!lines || !others.some((d) => polylineHits(d.points, r)))
+        (!lines || !others.some((d) => polylineHits(d.points, r))) &&
+        (plated || !own.some((d) => polylineHits(d.points, r)))
       const pick =
         all.find((c) => free(boxAt(c.x, c.y, c.centred), true)) ??
         all.find((c) => free(boxAt(c.x, c.y, c.centred), false))
@@ -963,7 +1068,10 @@ export function diagram(s: Structure, options: DiagramOptions = {}): Scene {
       const nxt = points[k + 1] ?? mid
       if (mid === undefined || nxt === undefined) return []
       ;[x, y] = [(mid[0] + nxt[0]) / 2 + 4, (mid[1] + nxt[1]) / 2 - 4]
-      const clear = (r: Rect): boolean => ![...nodeBoxes, ...labelBoxes].some((q) => overlaps(r, q))
+      const own = drawn.filter((d) => d.edge === edge)
+      const clear = (r: Rect): boolean =>
+        ![...nodeBoxes, ...labelBoxes].some((q) => overlaps(r, q)) &&
+        (plated || !own.some((d) => polylineHits(d.points, r)))
       if (!clear(boxAt(x, y, false))) {
         search: for (const t of [0.5, 0.4, 0.6, 0.3, 0.7, 0.2, 0.8]) {
           const [px, py] = pointAlong(points, t)
@@ -989,21 +1097,33 @@ export function diagram(s: Structure, options: DiagramOptions = {}): Scene {
     labelBoxes.push(box)
     loopExtent.push([box[0], box[1]], [box[2], box[3]])
     const top = y - ((rows.length - 1) * step) / 2
+    // The label is one group, `edge:<i>:label`, with its plate `edge:<i>:plate` (if any) under the text lines.
     return [
-      plateOf(box),
-      ...rows.map((row, i) =>
-        isTex(row)
-          ? tex(x, top + i * step, row.slice(1, -1), {
-              size: fs + 2,
-              fill: 'muted',
-              anchor: centred ? 'middle' : 'start',
-            })
-          : text(x, top + i * step, row, {
-              size: fs,
-              fill: 'muted',
-              baseline: 'middle',
-              ...(centred ? { anchor: 'middle' as const } : {}),
-            }),
+      groupNode(
+        [
+          ...(plated
+            ? [
+                plate === 'page'
+                  ? plateOf(box, 'bg', 0.9, `edge:${index}:plate`)
+                  : plateOf(box, plate, 1, `edge:${index}:plate`),
+              ]
+            : []),
+          ...rows.map((row, i) =>
+            isTex(row)
+              ? tex(x, top + i * step, row.slice(1, -1), {
+                  size: fs + 2,
+                  fill: 'muted',
+                  anchor: centred ? 'middle' : 'start',
+                })
+              : text(x, top + i * step, row, {
+                  size: fs,
+                  fill: 'muted',
+                  baseline: 'middle',
+                  ...(centred ? { anchor: 'middle' as const } : {}),
+                }),
+          ),
+        ],
+        { id: `edge:${index}:label` },
       ),
     ]
   })
@@ -1028,6 +1148,12 @@ export function diagram(s: Structure, options: DiagramOptions = {}): Scene {
     maxX = Math.max(maxX, x1 + 8)
     maxY = Math.max(maxY, y1 + 8)
   }
+  // A fixed origin lets nodes lie left of or above it: the scene is widened to hold them.
+  if (options.origin !== undefined)
+    for (const b of Object.values(layout.nodes)) {
+      minX = Math.min(minX, b.x - b.width / 2 - 16)
+      minY = Math.min(minY, b.y - b.height / 2 - 16)
+    }
   for (const [x, y] of loopExtent) {
     minX = Math.min(minX, x - 6)
     minY = Math.min(minY, y - 6)

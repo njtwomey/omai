@@ -99,6 +99,22 @@ describe('rasterise', () => {
       ),
     ])
     expect(lit(smooth)).toBeGreaterThan(20)
+    // A corner radius rounds the corner (nothing is drawn in the very corner) and leaves the straight stretches alone.
+    const corner = (cornerRadius?: number): Pixels =>
+      draw([
+        path(
+          [
+            [2, 2],
+            [18, 2],
+            [18, 18],
+          ],
+          { strokeWidth: 3, stroke: '#ffffff', ...(cornerRadius === undefined ? {} : { cornerRadius }) },
+        ),
+      ])
+    expect(at(corner(), 18, 2)[0]).toBe(255)
+    expect(at(corner(8), 18, 2)[0]).toBe(0)
+    expect(at(corner(8), 10, 2)[0]).toBe(255)
+    expect(at(corner(8), 18, 10)[0]).toBe(255)
     const headed = draw([
       path(
         [

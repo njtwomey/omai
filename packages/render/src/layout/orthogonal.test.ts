@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { type EdgeRoute, type LayoutBox, type LayoutGraph, manualLayout, withOrthogonalRoutes } from './graph.ts'
+import {
+  type EdgeRoute,
+  type LayoutBox,
+  type LayoutGraph,
+  manualLayout,
+  passableNodes,
+  withOrthogonalRoutes,
+} from './graph.ts'
 import { layered } from './layered.ts'
 import { orthogonalRoutes, separateRoutes, sideReach } from './orthogonal.ts'
 import { tidyTree } from './trees.ts'
@@ -226,6 +233,172 @@ describe('orthogonalRoutes: the rules', () => {
   })
 })
 
+describe('orthogonalRoutes: ports, kinds of edge and boxes that are not obstacles', () => {
+  const xs = (p: Points): number[] => p.map((q) => q[0])
+  const ys = (p: Points): number[] => p.map((q) => q[1])
+
+  it('gives edges of different kinds into one side ports of their own, nested so they do not cross', () => {
+    // Three boxes down the left, one wide box below: three Ls would all enter the top of it at its middle.
+    const nodes = { a: box(0, 0), b: box(0, 70), c: box(0, 140), w: box(300, 300, 360, 30) }
+    const edges = ['a', 'b', 'c'].map((from) => ({ from, to: 'w', mergeKey: from }))
+    const rs = orthogonalRoutes(nodes, edges)
+    const ends = rs.map((r) => route(r).at(-1) as [number, number])
+    // Three ports along the top, 12 apart, all on the box's top side.
+    expect(new Set(ends.map((e) => e[0])).size).toBe(3)
+    for (const e of ends) expect(e[1]).toBe(285)
+    const sorted = ends.map((e) => e[0]).sort((p, q) => p - q)
+    expect(sorted[1] as number).toBeCloseTo(300, 9)
+    expect((sorted[1] as number) - (sorted[0] as number)).toBeCloseTo(12, 9)
+    // The farthest turn (a, the highest) takes the outermost port, so no edge crosses another.
+    expect(ends[0]?.[0]).toBeGreaterThan(ends[1]?.[0] as number)
+    expect(ends[1]?.[0]).toBeGreaterThan(ends[2]?.[0] as number)
+    for (let i = 0; i < rs.length; i++)
+      for (let j = i + 1; j < rs.length; j++)
+        expect(overlapLength(route(rs[i]), route(rs[j])), `${i} with ${j}`).toBeLessThan(1)
+    for (const r of rs) expect(rectilinear(route(r))).toBe(true)
+  })
+
+  it('merges edges of one kind at a port, and with merge false gives each its own', () => {
+    const nodes = { a: box(0, 0), b: box(0, 70), c: box(0, 140), w: box(300, 300, 360, 30) }
+    const edges = ['a', 'b', 'c'].map((from) => ({ from, to: 'w' }))
+    const merged = orthogonalRoutes(nodes, edges)
+    expect(new Set(merged.map((r) => route(r).at(-1)?.[0])).size).toBe(1)
+    const apart = orthogonalRoutes(nodes, edges, { merge: false })
+    expect(new Set(apart.map((r) => route(r).at(-1)?.[0])).size).toBe(3)
+  })
+
+  it('honours the side and the place along it that an edge asks for', () => {
+    const nodes = { a: box(0, 0, 60, 40), b: box(200, 0, 60, 40) }
+    const [top] = orthogonalRoutes(nodes, [{ from: 'a', to: 'b', fromSide: 'top', toSide: 'top' }])
+    const p = route(top)
+    expect(ys(p)[0]).toBe(-20)
+    expect(ys(p).at(-1)).toBe(-20)
+    expect(rectilinear(p)).toBe(true)
+    // From the start of the stretch ports may use, to its end: 0 is the left end of a top side, 1 the right end.
+    const [pinned] = orthogonalRoutes(nodes, [
+      { from: 'a', to: 'b', fromSide: 'bottom', toSide: 'bottom', fromAt: 0, toAt: 1 },
+    ])
+    const q = route(pinned)
+    expect(xs(q)[0]).toBeCloseTo(0 - (60 / 2 - 8), 9)
+    expect(xs(q).at(-1)).toBeCloseTo(200 + (60 / 2 - 8), 9)
+    expect(rectilinear(q)).toBe(true)
+    // Along a side only: a straight edge between boxes that overlap on an axis takes the place asked for.
+    const [straight] = orthogonalRoutes({ a: box(0, 0, 60, 20), b: box(0, 100, 60, 20) }, [
+      { from: 'a', to: 'b', fromAt: 0.75, toAt: 0.75 },
+    ])
+    expect(route(straight)).toEqual([
+      [11, 10],
+      [11, 90],
+    ])
+  })
+
+  it('keeps the pinned port of an edge where it is and moves the others around it', () => {
+    const nodes = { a: box(0, 0), b: box(100, -100), t: box(50, 100, 100, 20) }
+    const rs = orthogonalRoutes(nodes, [
+      { from: 'a', to: 't', mergeKey: 'a', toAt: 0.5 },
+      { from: 'b', to: 't', mergeKey: 'b' },
+    ])
+    const [p, q] = [route(rs[0]).at(-1) as [number, number], route(rs[1]).at(-1) as [number, number]]
+    expect(p[0]).toBe(50)
+    expect(Math.abs(q[0] - p[0])).toBeGreaterThanOrEqual(11.99)
+  })
+
+  it('lets routes pass through boxes that are not obstacles, and still ends edges at them', () => {
+    const nodes = { a: box(0, 0), b: box(200, 0), ghost: box(100, 0), g2: box(0, 100) }
+    const [blocked] = orthogonalRoutes(nodes, [{ from: 'a', to: 'b' }])
+    expect(through(route(blocked), nodes.ghost)).toBe(false)
+    expect(route(blocked).length).toBeGreaterThan(2)
+    const [open] = orthogonalRoutes(nodes, [{ from: 'a', to: 'b' }], { passable: ['ghost'] })
+    expect(route(open)).toEqual([
+      [20, 0],
+      [180, 0],
+    ])
+    // An edge into the ghost itself still starts and ends at it.
+    const [into] = orthogonalRoutes(nodes, [{ from: 'a', to: 'ghost' }], { passable: ['ghost'] })
+    expect(onBoundary(route(into).at(-1) as [number, number], nodes.ghost)).toBe(true)
+    expect(
+      passableNodes({
+        nodes: [
+          { id: 'a', width: 1, height: 1, obstacle: false },
+          { id: 'b', width: 1, height: 1 },
+        ],
+        edges: [],
+      }),
+    ).toEqual(['a'])
+  })
+
+  it('leaves a free side for an edge that runs back past a row of boxes, and does not run over the solid edge', () => {
+    // The autoencoder in a row: input to loss, the target edge dashed, across all the boxes in between.
+    const names = ['x', 'enc', 'z', 'dec', 'xh', 'loss']
+    const nodes = Object.fromEntries(names.map((id, i) => [id, box(i * 120, 0, 60, 28)]))
+    const solid = names.slice(1).map((to, i) => ({ from: names[i] as string, to, mergeKey: 'solid' }))
+    for (const order of ['last', 'first'] as const) {
+      const target = { from: 'x', to: 'loss', mergeKey: 'dashed' }
+      const rs = orthogonalRoutes(nodes, order === 'last' ? [...solid, target] : [target, ...solid])
+      const t = route(order === 'last' ? rs[rs.length - 1] : rs[0])
+      const last = solid[solid.length - 1] as { from: string; to: string }
+      const s = route(rs.find((r) => r.from === last.from && r.to === last.to))
+      expect(rectilinear(t)).toBe(true)
+      for (const id of names.slice(1, -1))
+        expect(through(t, nodes[id] as LayoutBox), `${order}: through ${id}`).toBe(false)
+      // It leaves and enters by the top or bottom, which the solid edges do not use, and shares no stretch with them.
+      expect((t[0] as [number, number])[1]).not.toBe(0)
+      expect((t.at(-1) as [number, number])[1]).not.toBe(0)
+      for (const r of rs)
+        if (route(r) !== t) expect(overlapLength(t, route(r)), `${order}: with ${r.from}>${r.to}`).toBeLessThan(1)
+      expect(s.length).toBe(2)
+    }
+  })
+
+  it('keeps every route off the boxes that are obstacles, with kinds, pinned ports and passable boxes in the mix', () => {
+    let seed = 11
+    const rnd = (): number => {
+      seed = (seed * 1664525 + 1013904223) % 4294967296
+      return seed / 4294967296
+    }
+    for (let trial = 0; trial < 60; trial++) {
+      const nodes: Record<string, LayoutBox> = {}
+      const seen = new Set<string>()
+      for (let i = 0; i < 9; i++) {
+        const [x, y] = [Math.round(rnd() * 5) * 90, Math.round(rnd() * 5) * 70]
+        if (seen.has(`${x},${y}`)) continue
+        seen.add(`${x},${y}`)
+        nodes[`n${i}`] = box(x, y, 50, 24)
+      }
+      const keep = Object.keys(nodes)
+      const passable = keep.filter(() => rnd() < 0.2)
+      const edges = keep.flatMap((from, i) =>
+        keep.slice(i + 1).flatMap((to) =>
+          rnd() < 0.25
+            ? [
+                {
+                  from,
+                  to,
+                  mergeKey: rnd() < 0.5 ? 'a' : 'b',
+                  ...(rnd() < 0.3 ? { fromAt: rnd() } : {}),
+                  ...(rnd() < 0.3 ? { toAt: rnd() } : {}),
+                },
+              ]
+            : [],
+        ),
+      )
+      const rs = orthogonalRoutes(nodes, edges, { passable })
+      expect(rs).toHaveLength(edges.length)
+      for (const r of rs) {
+        expect(rectilinear(r.points), `${r.from}->${r.to} rectilinear`).toBe(true)
+        expect(onBoundary(r.points[0] as [number, number], nodes[r.from] as LayoutBox), `${r.from} start`).toBe(true)
+        expect(onBoundary(r.points.at(-1) as [number, number], nodes[r.to] as LayoutBox), `${r.to} end`).toBe(true)
+        for (const id of keep) {
+          if (id === r.from || id === r.to || passable.includes(id)) continue
+          expect(through(r.points, nodes[id] as LayoutBox), `trial ${trial}: ${r.from}->${r.to} through ${id}`).toBe(
+            false,
+          )
+        }
+      }
+    }
+  })
+})
+
 describe('separateRoutes', () => {
   const z = (from: string, x0: number, x1: number): EdgeRoute => ({
     from,
@@ -406,5 +579,24 @@ describe('manualLayout and the other layouts with edge routes', () => {
     expect(o.nodes).toEqual(l.nodes)
     for (const e of o.edges) expect(rectilinear(e.points)).toBe(true)
     expect(o.edges.map((e) => e.route)).toEqual(['orthogonal', 'orthogonal', 'orthogonal'])
+  })
+
+  it('puts the origin at the top left of the drawing, so the same position is the same place whichever nodes are shown', () => {
+    const all: LayoutGraph = {
+      nodes: ['a', 'b', 'c'].map((id) => ({ id, width: 40, height: 20 })),
+      edges: [{ from: 'b', to: 'c' }],
+    }
+    const some: LayoutGraph = { nodes: all.nodes.slice(1), edges: all.edges }
+    const pos = { a: [0, 0], b: [100, 50], c: [200, 120] } as const
+    const full = manualLayout(all, pos, { origin: [0, 0] })
+    const part = manualLayout(some, pos, { origin: [0, 0] })
+    expect(part.nodes['b']).toEqual(full.nodes['b'])
+    expect(part.nodes['c']).toEqual(full.nodes['c'])
+    // The origin is at the margin, and the size runs from it to the far edge: it does not shrink to the box of the nodes.
+    expect(full.nodes['a']).toEqual({ x: 16, y: 16, width: 40, height: 20 })
+    expect(part.width).toBe(220 + 2 * 16)
+    expect(part.height).toBe(130 + 2 * 16)
+    // Without an origin, the drawing starts at the margin whichever nodes there are.
+    expect(manualLayout(some, pos).nodes['b']?.x).toBe(16 + 20)
   })
 })

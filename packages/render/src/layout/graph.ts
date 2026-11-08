@@ -5,7 +5,7 @@
  */
 
 import { OmaiError } from 'omai-engine/base'
-import { type OrthogonalOptions, orthogonalRoutes } from './orthogonal.ts'
+import { type OrthogonalOptions, orthogonalRoutes, type PortSide } from './orthogonal.ts'
 
 /** A node to place: its id and box size in pixels, and the group it belongs to, if any. */
 export interface LayoutNode {
@@ -19,6 +19,11 @@ export interface LayoutNode {
    * ask for less.
    */
   readonly reach?: number
+  /**
+   * Whether orthogonal routes keep clear of the node (default true). `false` lets edges pass through it (an invisible
+   * placeholder, a caption); it remains the end of its own edges.
+   */
+  readonly obstacle?: boolean
 }
 
 /**
@@ -30,6 +35,22 @@ export interface LayoutEdge {
   readonly from: string
   readonly to: string
   readonly via?: readonly (readonly [number, number])[]
+  /** Orthogonal routes: the side of `from` the edge leaves by (default the one facing the target). */
+  readonly fromSide?: PortSide
+  /** Orthogonal routes: the side of `to` the edge enters by (default the one facing the source). */
+  readonly toSide?: PortSide
+  /**
+   * Orthogonal routes: where along its side the edge leaves, from 0 (the left end of a top or bottom side, the top of
+   * a left or right one) to 1, over the stretch ports may use (default the router's choice, usually the middle).
+   */
+  readonly fromAt?: number
+  /** Orthogonal routes: where along its side the edge enters, as `fromAt`. */
+  readonly toAt?: number
+  /**
+   * Orthogonal routes: edges that leave or enter a node at one port are drawn as one line only when they have the same
+   * key (default: all of them do); edges with different keys get ports side by side.
+   */
+  readonly mergeKey?: string
 }
 
 /**
@@ -161,6 +182,8 @@ export function groupBoxes(
  * @param edges - Edge routes.
  * @param groups - Group boxes.
  * @param margin - Space around the drawing (default 16).
+ * @param origin - The point that becomes the top left of the drawing, inside the margin (default: the top left of
+ *   everything, so the drawing starts at the margin); the size then runs from the origin to the far edges.
  * @returns The normalised layout.
  */
 export function normaliseLayout(
@@ -168,6 +191,7 @@ export function normaliseLayout(
   edges: readonly EdgeRoute[],
   groups: Readonly<Record<string, LayoutBox>>,
   margin = 16,
+  origin?: readonly [x: number, y: number],
 ): GraphLayout {
   let [x0, y0, x1, y1] = [Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY, -Infinity, -Infinity]
   const take = (b: LayoutBox): void => {
@@ -180,8 +204,9 @@ export function normaliseLayout(
   for (const b of Object.values(groups)) take(b)
   for (const e of edges) for (const [x, y] of e.points) take({ x, y, width: 0, height: 0 })
   if (!Number.isFinite(x0)) return { nodes: {}, edges: [], groups: {}, width: 2 * margin, height: 2 * margin }
-  const dx = margin - x0
-  const dy = margin - y0
+  const [ox, oy] = origin ?? [x0, y0]
+  const dx = margin - ox
+  const dy = margin - oy
   const move = (b: LayoutBox): LayoutBox => ({ ...b, x: b.x + dx, y: b.y + dy })
   const map = (r: Readonly<Record<string, LayoutBox>>): Record<string, LayoutBox> =>
     Object.fromEntries(Object.entries(r).map(([k, b]) => [k, move(b)]))
@@ -189,8 +214,8 @@ export function normaliseLayout(
     nodes: map(nodes),
     edges: edges.map((e) => ({ ...e, points: e.points.map(([x, y]): [number, number] => [x + dx, y + dy]) })),
     groups: map(groups),
-    width: x1 - x0 + 2 * margin,
-    height: y1 - y0 + 2 * margin,
+    width: x1 - ox + 2 * margin,
+    height: y1 - oy + 2 * margin,
   }
 }
 
@@ -202,6 +227,16 @@ export function normaliseLayout(
  */
 export function portReach(graph: LayoutGraph): Record<string, number> {
   return Object.fromEntries(graph.nodes.flatMap((n) => (n.reach === undefined ? [] : [[n.id, n.reach]])))
+}
+
+/**
+ * The nodes of a graph that routes may pass through (those with `obstacle: false`).
+ *
+ * @param graph - The graph.
+ * @returns Their ids.
+ */
+export function passableNodes(graph: LayoutGraph): string[] {
+  return graph.nodes.filter((n) => n.obstacle === false).map((n) => n.id)
 }
 
 /**
@@ -228,7 +263,11 @@ export function withOrthogonalRoutes(
   options: OrthogonalOptions = {},
   margin = 16,
 ): GraphLayout {
-  const edges = orthogonalRoutes(layout.nodes, graph.edges, { reach: portReach(graph), ...options })
+  const edges = orthogonalRoutes(layout.nodes, graph.edges, {
+    reach: portReach(graph),
+    passable: passableNodes(graph),
+    ...options,
+  })
   return normaliseLayout(layout.nodes, edges, layout.groups, margin)
 }
 
@@ -240,6 +279,16 @@ export interface ManualLayoutOptions {
   readonly route?: EdgeRouting
   /** The direction the flow runs, which an orthogonal route prefers to enter along (default `down`). */
   readonly flow?: 'down' | 'right'
+  /**
+   * The point of the layout's own units that becomes the top left of the drawing, inside the margin (default: the top
+   * left of everything drawn, so a drawing always starts at the margin). Given, the same position gives the same place
+   * in the picture whatever other nodes there are, which lines up the states of an animation that shows different
+   * nodes; the size then follows the origin (the right and bottom edges of what is drawn, measured from it, plus the
+   * margins), and anything left of or above the origin has negative coordinates.
+   */
+  readonly origin?: readonly [x: number, y: number]
+  /** Whether edges that look the same share a port (default true; see `OrthogonalOptions.merge`). */
+  readonly merge?: boolean
 }
 
 /**
@@ -278,8 +327,10 @@ export function manualLayout(
     options.route === 'orthogonal'
       ? orthogonalRoutes(placed, graph.edges, {
           reach: portReach(graph),
+          passable: passableNodes(graph),
           ...(options.flow === undefined ? {} : { flow: options.flow }),
+          ...(options.merge === undefined ? {} : { merge: options.merge }),
         })
       : straightRoutes(placed, graph.edges)
-  return normaliseLayout(placed, routes, {}, options.margin ?? 16)
+  return normaliseLayout(placed, routes, {}, options.margin ?? 16, options.origin)
 }
