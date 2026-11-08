@@ -26,30 +26,32 @@ export const meta: ExampleModule['meta'] = {
   alt: 'The training loss of a small network on two moons, and its decision surface at the start, the middle and the end of training',
 }
 
-/** A classifier: a 2-6-6-2 network, cross-entropy, Adam, minibatches of 30 rows for 16 epochs (one session step is one epoch). */
+/** A classifier: a 2-16-16-2 network, cross-entropy, Adam, minibatches of 20 rows for 150 epochs (one session step is one epoch). */
 const network = defineTrainer({
   name: 'moons-mlp',
   kind: 'classifier',
   defaults: {},
-  model: (_data, _hyper, k) => mlp([2, 6, 6, 2], { key: k }),
+  model: (_data, _hyper, k) => mlp([2, 16, 16, 2], { key: k }),
   objective: () => (prediction, target) => crossEntropy(prediction, target),
   optimiser: (rate) => adam({ learningRate: rate }),
-  settings: () => ({ learningRate: 0.05, epochs: 16, batchSize: 30, unit: 'epoch' }),
+  settings: () => ({ learningRate: 0.02, epochs: 150, batchSize: 20, unit: 'epoch' }),
 })
 
 interface Result {
   readonly run: Run
-  readonly surfaces: readonly { readonly step: number; readonly surface: Exposition }[]
+  readonly surfaces: readonly { readonly step: number; readonly accuracy: number; readonly surface: Exposition }[]
 }
 
 export function run(): Outcome<Result> {
-  const { data, truth } = generate(moons, { knobs: { n: 80, noise: 0.25 }, key: key(0) })
-  const training = network.session(data, { key: key(1) })
+  const { data, truth } = generate(moons, { knobs: { n: 200, noise: 0.25 }, key: key(0) })
+  // A step budget longer than the training keeps the session's checkpoints few, so the tape stays small.
+  const training = network.session(data, { key: key(1), steps: 20000 })
   training.advance()
-  const steps = [0, Math.floor(training.t / 2), training.t]
+  const steps = [0, Math.round(training.t * 0.07), Math.round(training.t * 0.3), training.t]
   const surfaces = steps.map((step) => ({
     step,
-    surface: training.probe(step, 'model/decision-surface', { resolution: 36 }) as Exposition,
+    accuracy: training.fittedAt(step).score?.(data) ?? Number.NaN,
+    surface: training.probe(step, 'model/decision-surface', { resolution: 48 }) as Exposition,
   }))
   const loss = metricSeries(training.run(), 'train/loss').values
   const accuracy = steps.map((t) => (training.fittedAt(t).score?.(data) ?? Number.NaN).toFixed(3))
@@ -64,12 +66,12 @@ export function View({ result }: { result: Result }) {
   return (
     <Row
       alt={meta.alt}
-      width={330}
+      width={300}
       height={300}
       panels={[
         { title: 'training loss', still: metricChart(result.run, ['train/loss']) },
-        ...result.surfaces.map(({ step, surface }) => ({
-          title: `step ${step}`,
+        ...result.surfaces.map(({ step, accuracy, surface }) => ({
+          title: `step ${step}: accuracy ${accuracy.toFixed(3)}`,
           still: probabilitySurface(surface as unknown as DecisionSurface, { legend: false }),
         })),
       ]}

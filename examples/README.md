@@ -62,7 +62,7 @@ The ROC curve, the precision-recall curve, the precision-recall gain curve and t
 
 ![The ROC, precision-recall and precision-recall gain curves of a classifier, and its contingency table with totals and rates](roc/figure.svg)
 
-[roc/main.tsx](roc/main.tsx), tape: [tape.json](roc/tape.json)
+[roc/main.tsx](roc/main.tsx), [roc/README.md](roc/README.md), tape: [tape.json](roc/tape.json)
 
 ## Pause, jump back, compare with the truth
 
