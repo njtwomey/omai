@@ -62,6 +62,7 @@ import { blobsWithOutliers, linearOutliers, moonsWithOutliers } from './outliers
 import { analogyCorpus, linkageTables, plantedRelations } from './planted-embeddings.ts'
 import { irtResponses, pottsSamples } from './planted-pgm.ts'
 import { miscalibratedPredictions, survivalData } from './predictions.ts'
+import { pulseTrain } from './pulse-trains.ts'
 import { clickLogs, implicitFeedback, lowRankRatings, movielensSmall, zipfianCatalogue } from './ranking.ts'
 import {
   type DatasetEntry,
@@ -234,6 +235,7 @@ export const datasetGenerators: Readonly<Record<string, DatasetGenerator>> = {
   plantedSeries,
   plantedTransactions,
   pottsSamples,
+  pulseTrain,
   poissonProcess,
   positiveUnlabelled,
   quantileCurves,
@@ -416,6 +418,7 @@ export const datasetRegistry: DatasetRegistry = registry<DatasetEntry>([
     ['shapeletSeries', 'Series with a planted shapelet'],
     ['sinusoids', 'Sinusoids'],
     ['plantedSeries', 'Planted motif, discord and regime'],
+    ['pulseTrain', 'Planted pulses at sparse positions'],
     ['garchReturns', 'GARCH returns'],
     ['coupledSeries', 'Coupled series'],
   ]),

@@ -1998,6 +1998,15 @@ that records the objective, gradient norm, step size and (by policy) the iterate
   (sklearn's Cholesky OMP, atoms or squared-residual tolerance), `cosamp`, `iterativeHardThresholding` (normalised
   IHT or a fixed step), `basisPursuit` (ADMM with a cached projection), `basisPursuitDenoising` and
   `lassoCoordinateDescent` (sklearn's coordinate descent with the duality-gap test, elastic net).
+- `convolutional-sparse.ts`: convolutional sparse coding and dictionary learning of one signal (filters as rows,
+  sparse activation maps, full convolution; Grosse 2007, Zeiler 2010, Garcia-Cardona and Wohlberg 2018):
+  `convolutionalSynthesis`, `convolutionalAnalysis` (its adjoint), `convolutionalSparseCodeAlgorithm` and
+  `convolutionalSparseCode` (the convolutional lasso by `proximalGradientAlgorithm` with `proxL1`, FISTA or ISTA),
+  `convolutionalDictionaryLearningAlgorithm` and `convolutionalDictionaryLearning` (filter update by projected FISTA on
+  the normal equations with `|d_k| <= 1`, then warm-started coding; random or most-energetic initial stretches;
+  `convolutionalDictionaryContract` with the objective on the tape and the filters, maps and reconstruction as `curves`
+  probes), `matchFilters` (learnt against known filters up to shift and sign). It sits here beside `dictionary.ts`
+  (sparse representations are `optim`'s); the signal is a plain series, so a window of `TimeSeriesData.values` works.
 - `dictionary.ts`: `sparseEncode` (sklearn's sparse_encode: OMP, coordinate-descent lasso, thresholding; TODO: LARS
   and lasso-LARS coding), dictionary learning (`ksvd`, `mod`, `onlineDictionaryLearning` of Mairal et al. with
   minibatches from keys), recovery guarantees (`mutualCoherence`, `babelFunction`, `coherenceSparsityBound`,
@@ -4410,6 +4419,10 @@ thin SVD with scikit-learn's sign convention, projection and reconstruction.
   maximum-likelihood iteration, one per step), `factorAnalysis` with varimax and quartimax (`rotateLoadings`),
   `latentVerbs` and `latentCovariance`. `random-projection.ts`: `randomProjection` (Gaussian and sparse, the
   Johnson-Lindenstrauss dimension, a distortion report).
+- `convolutional-method.ts`: `convolutionalDictionaryMethod` (a session over a `pulseTrain` signal and
+  `convolutionalDictionaryLearningAlgorithm` of `optim`, with `cdl/planted` and `cdl/recovery` probes beside the
+  learner's contract) and `convolutionalDictionaryProblem`. It is here and not in `optim` because `datasets` reaches
+  `optim`, so `optim` cannot import the generator.
 - TODO: Infomax ICA, online and coordinate-descent NMF with penalties, truncated SVD and dictionary learning as
   estimators (`text/representations.ts` and `optim/dictionary.ts` have the routines), kernel PCA pre-images.
 
@@ -6958,6 +6971,9 @@ built from: `data`, `random`, `dists`, `probprog`, `stochastic`, `graph`, `text`
 - `timeseries.ts` also has `plantedSeries` (a motif planted repeatedly, a discord and a regime change with known
   positions), `garchReturns` (the conditional variance as truth) and `coupledSeries` (VAR or coupled logistic maps
   through a known directed graph).
+- `pulse-trains.ts`: `pulseTrain`, known unit-norm pulses (bump, biphasic, fast-rise slow-decay, plateau) placed at
+  separated positions with random signs and sizes in noise, the filters and sparse maps as truth (the generative model
+  of convolutional sparse coding; `matchFilters` in `optim` compares learnt filters with them).
 - `planted-pgm.ts`: `irtResponses` (0/1 test responses from known abilities and 1PL, 2PL or 3PL items, the abilities as
   the regression target and the true items in the truth) and `pottsSamples` (Swendsen-Wang samples of the Potts lattice at
   a multiple of the critical coupling, with each sample's magnetisation as the target and the energy, the critical
