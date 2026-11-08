@@ -37,6 +37,12 @@ figures.
 **Documented in the code.** Every folder, file and export has a short description, and the examples in the descriptions
 are run by the build.
 
+**Easy for coding agents to find their way around.** The repository has an `llms.txt` at the root, and one in each main
+package (`packages/engine/llms.txt` and `packages/render/llms.txt`). They list the main things in each area, one line each,
+with the file and line and the import path. An agent (or a person) can start there, open the file for the area it needs,
+and then read the source. The lists are generated from `@index` tags in the code's own descriptions, and a check fails if
+they are out of date.
+
 ## Examples
 
 The programs below are a few of the examples in [`examples/`](examples/), shown to give a taste. There are more there, with a
