@@ -1,47 +1,49 @@
 /**
  * Example "A Gaussian mixture, step by step" (in the index, not in the README): expectation-maximisation for a mixture
- * of three Gaussians on overlapping blobs, recorded step by step. A `mixtureSteps` record is read off the tape
- * (log likelihood, weights, means, covariances and responsibilities at every step) and drawn by the library's view:
- * the components as ellipses, the log likelihood climbing, the weights. The second panel colours each row by its
- * largest responsibility, so the rows between two components stand out. The blobs carry their truth, so the fit can be
- * scored against the labels that made them.
+ * of three Gaussians on overlapping blobs, recorded step by step. Everything drawn is read off the recording: the
+ * log likelihood at each kept step, and the weights, means, covariances and responsibilities of the last kept step.
+ * Left, the density the mixture gives the plane (a heat map and its contours, on the density scale) with each row
+ * coloured by the component most responsible for it; middle, the log likelihood climbing; right, the rows whose
+ * largest responsibility is below 0.9, shared between components, picked out.
  */
 import { generate } from 'mdml-engine/data'
 import { blobs } from 'mdml-engine/datasets'
-import { type Exposition, type MixtureSteps, mixtureSteps } from 'mdml-engine/exposition'
 import { adjustedRandScore } from 'mdml-engine/metrics'
-import { componentLabels, gaussianEmAlgorithm, initialMixture } from 'mdml-engine/mixture'
+import { componentLabels, gaussianEmAlgorithm, initialMixture, mixturePosterior } from 'mdml-engine/mixture'
 import { key } from 'mdml-engine/random'
 import { toArray } from 'mdml-engine/tensor'
 import { metricSeries, policies, type Run, recorder, runAlgorithm, tensorSeries } from 'mdml-engine/trace'
-import { cartesian, points } from 'mdml-render/charts'
-import { stillOf } from 'mdml-render/views'
+import { cartesian, lines, points } from 'mdml-render/charts'
+import { figure } from 'mdml-render/figure'
 import type { ExampleModule, Outcome } from '../_shared/contract.ts'
 import { Figure, Panel } from '../_shared/figure.tsx'
+import { axesOf, densityMap, gridOfValues, gridRows, windowOf } from '../_shared/maps.ts'
 
 export const meta: ExampleModule['meta'] = {
   title: 'A Gaussian mixture, step by step',
   summary:
-    'Expectation-maximisation for three overlapping Gaussians: the components, the log likelihood and the soft assignments.',
+    'Expectation-maximisation for three overlapping Gaussians: the density, the log likelihood and the soft assignments.',
   readme: false,
-  alt: 'A Gaussian mixture fitted by EM: components as ellipses with the log likelihood and weights, and each row coloured by its largest responsibility',
+  alt: 'A Gaussian mixture fitted by EM: the density it gives the plane with the rows coloured by component, the log likelihood over the steps, and the largest responsibility of each row',
 }
 
 interface Result {
-  readonly steps: MixtureSteps
-  /** The largest responsibility of each row at the last step. */
-  readonly confidence: readonly number[]
+  readonly rows: number[][]
+  /** The density of the mixture on a grid over the data's window. */
+  readonly density: number[][]
+  /** The most responsible component and the largest responsibility of each row at the last kept step. */
+  readonly component: number[]
+  readonly confidence: number[]
+  readonly steps: number[]
+  readonly logLikelihood: number[]
 }
 
-/** The values of a tensor channel at each step the log likelihood was logged at (not the start), cut into rows of `width`. */
-function rowsOver(run: Run, name: string, width: number): number[][][] {
-  const logged = new Set(metricSeries(run, 'logLikelihood').steps)
-  return tensorSeries(run, name)
-    .filter((e) => logged.has(e.step))
-    .map((e) => {
-      const flat = e.values ?? []
-      return Array.from({ length: flat.length / width }, (_, i) => flat.slice(i * width, (i + 1) * width))
-    })
+const GRID = 60
+
+/** The values of a tensor channel at the last step it was kept, cut into rows of `width`. */
+function lastRows(run: Run, name: string, width: number): number[][] {
+  const flat = tensorSeries(run, name).at(-1)?.values ?? []
+  return Array.from({ length: flat.length / width }, (_, i) => flat.slice(i * width, (i + 1) * width))
 }
 
 export function run(): Outcome<Result> {
@@ -64,58 +66,87 @@ export function run(): Outcome<Result> {
   })
   const run = tape.run()
 
-  // Everything below is read off the recorded run, not off the final state.
-  const means = rowsOver(run, 'means', 2)
-  const k = means[0]?.length ?? 0
-  const features = ['x0', 'x1'] as const
-  const x = toArray(data.x) as number[][]
-  const steps = mixtureSteps({
-    family: 'gaussian',
-    objective: metricSeries(run, 'logLikelihood').values,
-    weights: rowsOver(run, 'weights', k).map((r) => r[0] ?? []),
+  // The mixture at the last kept step, as the recording holds it.
+  const means = lastRows(run, 'means', 2)
+  const k = means.length
+  const mixture = {
+    weights: lastRows(run, 'weights', k)[0] ?? [],
     means,
-    covariances: rowsOver(run, 'covariances', 4),
-    responsibilities: rowsOver(run, 'responsibilities', k),
-    rows: { points: x, features },
-  })
-  const last = steps.responsibilities?.at(-1) ?? []
-  const confidence = last.map((r) => Math.max(...r))
+    covariances: lastRows(run, 'covariances', 4).map((r) => [
+      [r[0] ?? 0, r[1] ?? 0],
+      [r[2] ?? 0, r[3] ?? 0],
+    ]),
+  }
+  const resp = lastRows(run, 'responsibilities', k)
+  const rows = toArray(data.x) as number[][]
+  const grid = gridRows(axesOf(windowOf(rows), GRID))
+  const density = gridOfValues(
+    mixturePosterior(grid, mixture).logNorm.map((v) => Math.exp(v)),
+    GRID,
+  )
+  const logged = metricSeries(run, 'logLikelihood')
   const ari = adjustedRandScore(data.y, componentLabels(fit.state.resp)).estimate.value
-  const ll = steps.objective
-  const uncertain = confidence.filter((c) => c < 0.9).length
+  const confidence = resp.map((r) => Math.max(...r))
   const notes = [
-    `${fit.steps} steps, ${fit.status}; mean log likelihood ${ll[0]?.toFixed(3)} at the first kept step, ${fit.state.logLikelihood.toFixed(3)} at the end`,
-    `adjusted Rand index against the true blobs ${ari.toFixed(3)}; ${uncertain} of ${confidence.length} rows have no component above 0.9`,
+    `${fit.steps} steps, ${fit.status}; mean log likelihood ${logged.values[0]?.toFixed(3)} at the first kept step, ${fit.state.logLikelihood.toFixed(3)} at the end`,
+    `adjusted Rand index against the true blobs ${ari.toFixed(3)}; ${confidence.filter((c) => c < 0.9).length} of ${rows.length} rows have no component above 0.9`,
   ]
-  return { result: { steps, confidence }, tapes: { run }, notes }
+  return {
+    result: {
+      rows,
+      density,
+      component: componentLabels(resp),
+      confidence,
+      steps: logged.steps,
+      logLikelihood: logged.values,
+    },
+    tapes: { run },
+    notes,
+  }
 }
 
 export function View({ result }: { result: Result }) {
-  const pts = result.steps.rows?.points ?? []
-  const soft = cartesian(
-    [
-      points([
-        {
-          x: pts.map((p) => p[0] ?? 0),
-          y: pts.map((p) => p[1] ?? 0),
-          values: [...result.confidence],
-          size: 7,
-          name: 'rows',
-        },
-      ]),
-    ],
-    { x: { label: 'x0' }, y: { label: 'x1' }, aspect: 'equal' },
+  const window = windowOf(result.rows)
+  const left = densityMap({
+    window,
+    field: result.density,
+    label: 'density',
+    rows: result.rows,
+    groups: result.component,
+    names: ['component 0', 'component 1', 'component 2'],
+    width: 400,
+    height: 340,
+    xLabel: 'x0',
+    yLabel: 'x1',
+  })
+  const small = figure({ width: 300, height: 340, padding: { top: 30, right: 14, bottom: 38, left: 56 } })
+  const middle = cartesian(
+    [lines([{ x: result.steps, y: result.logLikelihood, name: 'log likelihood', markers: true }])],
+    { figure: small, x: { label: 'EM step' }, y: { label: 'mean log likelihood' }, legend: false },
   )
+  // The soft assignments: rows with one component above 0.9 are plain, the rest are shared between components.
+  const part = (shared: boolean) => {
+    const idx = result.confidence.flatMap((c, i) => (c < 0.9 === shared ? [i] : []))
+    return {
+      x: idx.map((i) => result.rows[i]?.[0] ?? 0),
+      y: idx.map((i) => result.rows[i]?.[1] ?? 0),
+      name: shared ? 'shared (largest below 0.9)' : 'one component above 0.9',
+      colour: shared ? 'tab3' : 'muted',
+      size: shared ? 9 : 6,
+      opacity: 1,
+    }
+  }
+  const right = cartesian([points([part(false)]), points([part(true)])], {
+    figure: figure({ width: 400, height: 340, padding: { top: 30, right: 12, bottom: 38, left: 42 } }),
+    x: { label: 'x0', limits: [...window.x] },
+    y: { label: 'x1', limits: [...window.y] },
+    legend: true,
+  })
   return (
-    <Figure width={1080} height={400} title={meta.alt}>
-      <Panel
-        x={0}
-        width={640}
-        height={374}
-        title="components, log likelihood, weights"
-        still={stillOf(result.steps as Exposition, { mode: 'light' })}
-      />
-      <Panel x={660} width={420} height={374} title="largest responsibility of each row" still={soft} />
+    <Figure width={1100} height={366} title={meta.alt}>
+      <Panel x={0} width={400} height={340} title="density and most responsible component" still={left} />
+      <Panel x={400} width={300} height={340} title="log likelihood" still={middle} />
+      <Panel x={700} width={400} height={340} title="rows shared between components" still={right} />
     </Figure>
   )
 }
