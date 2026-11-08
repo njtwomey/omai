@@ -3,8 +3,7 @@
  * of three Gaussians on overlapping blobs, recorded step by step. Everything drawn is read off the recording: the
  * log likelihood at each kept step, and the weights, means, covariances and responsibilities of the last kept step.
  * Left, the density the mixture gives the plane (a heat map and its contours, on the density scale) with each row
- * coloured by the component most responsible for it; middle, the log likelihood climbing; right, the rows whose
- * largest responsibility is below 0.9, shared between components, picked out.
+ * coloured by the component most responsible for it; right, the log likelihood climbing.
  */
 import { generate } from 'mdml-engine/data'
 import { blobs } from 'mdml-engine/datasets'
@@ -13,7 +12,7 @@ import { componentLabels, gaussianEmAlgorithm, initialMixture, mixturePosterior 
 import { key } from 'mdml-engine/random'
 import { toArray } from 'mdml-engine/tensor'
 import { metricSeries, policies, type Run, recorder, runAlgorithm, tensorSeries } from 'mdml-engine/trace'
-import { cartesian, lines, points } from 'mdml-render/charts'
+import { cartesian, lines } from 'mdml-render/charts'
 import { figure } from 'mdml-render/figure'
 import type { ExampleModule, Outcome } from '../_shared/contract.ts'
 import { Figure, Panel } from '../_shared/figure.tsx'
@@ -24,7 +23,7 @@ export const meta: ExampleModule['meta'] = {
   summary:
     'Expectation-maximisation for three overlapping Gaussians: the density, the log likelihood and the soft assignments.',
   readme: false,
-  alt: 'A Gaussian mixture fitted by EM: the density it gives the plane with the rows coloured by component, the log likelihood over the steps, and the largest responsibility of each row',
+  alt: 'A Gaussian mixture fitted by EM: the density it gives the plane with the rows coloured by component, and the log likelihood over the steps',
 }
 
 interface Result {
@@ -124,29 +123,10 @@ export function View({ result }: { result: Result }) {
     [lines([{ x: result.steps, y: result.logLikelihood, name: 'log likelihood', markers: true }])],
     { figure: small, x: { label: 'EM step' }, y: { label: 'mean log likelihood' }, legend: false },
   )
-  // The soft assignments: rows with one component above 0.9 are plain, the rest are shared between components.
-  const part = (shared: boolean) => {
-    const idx = result.confidence.flatMap((c, i) => (c < 0.9 === shared ? [i] : []))
-    return {
-      x: idx.map((i) => result.rows[i]?.[0] ?? 0),
-      y: idx.map((i) => result.rows[i]?.[1] ?? 0),
-      name: shared ? 'shared (largest below 0.9)' : 'one component above 0.9',
-      colour: shared ? 'tab3' : 'muted',
-      size: shared ? 9 : 6,
-      opacity: 1,
-    }
-  }
-  const right = cartesian([points([part(false)]), points([part(true)])], {
-    figure: figure({ width: 400, height: 340, padding: { top: 30, right: 12, bottom: 38, left: 42 } }),
-    x: { label: 'x0', limits: [...window.x] },
-    y: { label: 'x1', limits: [...window.y] },
-    legend: true,
-  })
   return (
-    <Figure width={1100} height={366} title={meta.alt}>
-      <Panel x={0} width={400} height={340} title="density and most responsible component" still={left} />
-      <Panel x={400} width={300} height={340} title="log likelihood" still={middle} />
-      <Panel x={700} width={400} height={340} title="rows shared between components" still={right} />
+    <Figure width={720} height={366} title={meta.alt}>
+      <Panel x={0} width={420} height={340} title="density and most responsible component" still={left} />
+      <Panel x={420} width={300} height={340} title="log likelihood" still={middle} />
     </Figure>
   )
 }

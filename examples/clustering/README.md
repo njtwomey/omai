@@ -20,14 +20,13 @@ half-width 6). The generator keeps the label of each point. The algorithm is `ga
    the last kept step.
 3. Evaluate the mixture's density on a grid that covers exactly the data's extent, and draw it as a heat map with contours.
    Each row is coloured by its most responsible component.
-4. Draw the log likelihood against the step, and pick out the rows whose largest responsibility is below 0.9.
+4. Draw the log likelihood against the step.
 
 ## What to look for
 
 The run converges in 58 steps; the mean log likelihood climbs from -4.594 at the first kept step to -4.112 and never goes
 down, as EM guarantees. The contours follow the clouds, and are not circles because each component has its own covariance.
-Only 8 of the 100 rows have no component above 0.9: they lie between two clouds. Compared with the true blobs, the
-adjusted Rand index is 0.808.
+Compared with the true blobs, the adjusted Rand index is 0.808.
 
 ## Run it
 

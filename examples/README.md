@@ -70,7 +70,7 @@ A support vector classifier as a session: its decision surface at step 3 and at 
 
 ![The decision surface of a support vector classifier at step 3 and at the end](session/figure.svg)
 
-[session/main.tsx](session/main.tsx), tape: [tape.json](session/tape.json)
+[session/main.tsx](session/main.tsx), [session/README.md](session/README.md), tape: [tape.json](session/tape.json)
 
 # More
 
@@ -86,7 +86,7 @@ Epsilon-greedy, UCB1 and Thompson sampling on a five-armed bandit: the regret cu
 
 Expectation-maximisation for three overlapping Gaussians: the density, the log likelihood and the soft assignments.
 
-![A Gaussian mixture fitted by EM: the density it gives the plane with the rows coloured by component, the log likelihood over the steps, and the largest responsibility of each row](clustering/figure.svg)
+![A Gaussian mixture fitted by EM: the density it gives the plane with the rows coloured by component, and the log likelihood over the steps](clustering/figure.svg)
 
 [clustering/main.tsx](clustering/main.tsx), [clustering/README.md](clustering/README.md), tape: [tape.json](clustering/tape.json)
 
