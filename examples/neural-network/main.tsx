@@ -52,7 +52,7 @@ export function run(): Outcome<Result> {
     surface: training.probe(step, 'model/decision-surface', { resolution: 36 }) as Exposition,
   }))
   const loss = metricSeries(training.run(), 'train/loss').values
-  const accuracy = steps.map((t) => training.fittedAt(t).score(data).toFixed(3))
+  const accuracy = steps.map((t) => (training.fittedAt(t).score?.(data) ?? Number.NaN).toFixed(3))
   const notes = [
     `${training.t} steps; loss ${loss[0]?.toFixed(3)} at the start, ${loss.at(-1)?.toFixed(3)} at the end`,
     `accuracy at steps ${steps.join(', ')}: ${accuracy.join(', ')}; best possible ${(1 - (truth.bayesError ?? 0)).toFixed(3)}`,
