@@ -1,0 +1,245 @@
+{
+  "schema": "mdml.run/1",
+  "events": [
+    {
+      "type": "run",
+      "runId": "newton:none",
+      "name": "newton",
+      "seed": null,
+      "version": "0.1.2",
+      "config": {},
+      "channels": {
+        "metrics": {
+          "loss": {
+            "description": "objective value",
+            "direction": "lower"
+          },
+          "gradNorm": {
+            "description": "infinity norm of the gradient"
+          },
+          "step": {
+            "description": "length of the last accepted step"
+          },
+          "nfev": {
+            "description": "objective evaluations so far"
+          },
+          "tau": {
+            "description": "multiple of the identity added to the Hessian"
+          }
+        },
+        "tensors": {
+          "x": {
+            "role": "param",
+            "description": "current iterate"
+          },
+          "grad": {
+            "role": "grad",
+            "description": "gradient at the iterate"
+          }
+        },
+        "messages": {
+          "lineSearch": {
+            "description": "the line search of the step: accepted step, evaluations and trial points"
+          }
+        },
+        "episodes": false,
+        "frames": false
+      }
+    },
+    {"type":"metric","runId":"newton:none","step":0,"name":"loss","value":6.776000000000001},
+    {"type":"metric","runId":"newton:none","step":0,"name":"gradNorm","value":25.519999999999996},
+    {"type":"metric","runId":"newton:none","step":0,"name":"step","value":0},
+    {"type":"metric","runId":"newton:none","step":0,"name":"nfev","value":1},
+    {"type":"metric","runId":"newton:none","step":0,"name":"tau","value":0},
+    {
+      "type": "tensor",
+      "runId": "newton:none",
+      "step": 0,
+      "name": "x",
+      "role": "param",
+      "shape": [2],
+      "values": [-1.2,1]
+    },
+    {"type":"metric","runId":"newton:none","step":1,"name":"loss","value":3.9280378004375165},
+    {"type":"metric","runId":"newton:none","step":1,"name":"gradNorm","value":5.917479961580638},
+    {"type":"metric","runId":"newton:none","step":1,"name":"step","value":0.2452595969326114},
+    {"type":"metric","runId":"newton:none","step":1,"name":"nfev","value":2},
+    {"type":"metric","runId":"newton:none","step":1,"name":"tau","value":0},
+    {
+      "type": "tensor",
+      "runId": "newton:none",
+      "step": 1,
+      "name": "x",
+      "role": "param",
+      "shape": [2],
+      "values": [-0.9755102040816325,0.9012244897959178]
+    },
+    {"type":"metric","runId":"newton:none","step":2,"name":"loss","value":3.256410092194457},
+    {"type":"metric","runId":"newton:none","step":2,"name":"gradNorm","value":5.96700157661656},
+    {"type":"metric","runId":"newton:none","step":2,"name":"step","value":0.40132939616670177},
+    {"type":"metric","runId":"newton:none","step":2,"name":"nfev","value":4},
+    {"type":"metric","runId":"newton:none","step":2,"name":"tau","value":0},
+    {
+      "type": "tensor",
+      "runId": "newton:none",
+      "step": 2,
+      "name": "x",
+      "role": "param",
+      "shape": [2],
+      "values": [-0.7885769165866988,0.5460889800903043]
+    },
+    {"type":"metric","runId":"newton:none","step":3,"name":"loss","value":2.3900168875633416},
+    {"type":"metric","runId":"newton:none","step":3,"name":"gradNorm","value":5.598825643848384},
+    {"type":"metric","runId":"newton:none","step":3,"name":"step","value":0.5388026211429593},
+    {"type":"metric","runId":"newton:none","step":3,"name":"nfev","value":6},
+    {"type":"metric","runId":"newton:none","step":3,"name":"tau","value":0},
+    {
+      "type": "tensor",
+      "runId": "newton:none",
+      "step": 3,
+      "name": "x",
+      "role": "param",
+      "shape": [2],
+      "values": [-0.48560522787682153,0.10053716448317579]
+    },
+    {"type":"metric","runId":"newton:none","step":4,"name":"loss","value":1.4349047181237984},
+    {"type":"metric","runId":"newton:none","step":4,"name":"gradNorm","value":3.214710874474513},
+    {"type":"metric","runId":"newton:none","step":4,"name":"step","value":0.4746607033097221},
+    {"type":"metric","runId":"newton:none","step":4,"name":"nfev","value":7},
+    {"type":"metric","runId":"newton:none","step":4,"name":"tau","value":0},
+    {
+      "type": "tensor",
+      "runId": "newton:none",
+      "step": 4,
+      "name": "x",
+      "role": "param",
+      "shape": [2],
+      "values": [-0.0846868524888561,-0.15356368073925636]
+    },
+    {"type":"metric","runId":"newton:none","step":5,"name":"loss","value":0.7283419439502509},
+    {"type":"metric","runId":"newton:none","step":5,"name":"gradNorm","value":1.3246561872521978},
+    {"type":"metric","runId":"newton:none","step":5,"name":"step","value":0.28276490010347366},
+    {"type":"metric","runId":"newton:none","step":5,"name":"nfev","value":8},
+    {"type":"metric","runId":"newton:none","step":5,"name":"tau","value":0},
+    {
+      "type": "tensor",
+      "runId": "newton:none",
+      "step": 5,
+      "name": "x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.17267050482313123,-0.03641770612673491]
+    },
+    {"type":"metric","runId":"newton:none","step":6,"name":"loss","value":0.3826797212750282},
+    {"type":"metric","runId":"newton:none","step":6,"name":"gradNorm","value":2.5332004114256312},
+    {"type":"metric","runId":"newton:none","step":6,"name":"step","value":0.40302972361495004},
+    {"type":"metric","runId":"newton:none","step":6,"name":"nfev","value":9},
+    {"type":"metric","runId":"newton:none","step":6,"name":"tau","value":0},
+    {
+      "type": "tensor",
+      "runId": "newton:none",
+      "step": 6,
+      "name": "x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.528563776143736,0.15271964488004386]
+    },
+    {"type":"metric","runId":"newton:none","step":7,"name":"loss","value":0.11741766398603902},
+    {"type":"metric","runId":"newton:none","step":7,"name":"gradNorm","value":0.356073251128437},
+    {"type":"metric","runId":"newton:none","step":7,"name":"step","value":0.29912184648734697},
+    {"type":"metric","runId":"newton:none","step":7,"name":"nfev","value":10},
+    {"type":"metric","runId":"newton:none","step":7,"name":"tau","value":0},
+    {
+      "type": "tensor",
+      "runId": "newton:none",
+      "step": 7,
+      "name": "x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.6619941420895051,0.42043258160439806]
+    },
+    {"type":"metric","runId":"newton:none","step":8,"name":"loss","value":0.04647495647144788},
+    {"type":"metric","runId":"newton:none","step":8,"name":"gradNorm","value":2.087027331904368},
+    {"type":"metric","runId":"newton:none","step":8,"name":"step","value":0.4279025629445596},
+    {"type":"metric","runId":"newton:none","step":8,"name":"nfev","value":11},
+    {"type":"metric","runId":"newton:none","step":8,"name":"tau","value":0},
+    {
+      "type": "tensor",
+      "runId": "newton:none",
+      "step": 8,
+      "name": "x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.911247534285855,0.7682448152206631]
+    },
+    {"type":"metric","runId":"newton:none","step":9,"name":"loss","value":0.0024427922635564623},
+    {"type":"metric","runId":"newton:none","step":9,"name":"gradNorm","value":0.0387800673713816},
+    {"type":"metric","runId":"newton:none","step":9,"name":"step","value":0.13996736244126823},
+    {"type":"metric","runId":"newton:none","step":9,"name":"nfev","value":12},
+    {"type":"metric","runId":"newton:none","step":9,"name":"tau","value":0},
+    {
+      "type": "tensor",
+      "runId": "newton:none",
+      "step": 9,
+      "name": "x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9508242040636521,0.9025003542425767]
+    },
+    {"type":"metric","runId":"newton:none","step":10,"name":"loss","value":0.00005392290119785038},
+    {"type":"metric","runId":"newton:none","step":10,"name":"gradNorm","value":0.08782004014026107},
+    {"type":"metric","runId":"newton:none","step":10,"name":"step","value":0.10383623765261836},
+    {"type":"metric","runId":"newton:none","step":10,"name":"nfev","value":13},
+    {"type":"metric","runId":"newton:none","step":10,"name":"tau","value":0},
+    {
+      "type": "tensor",
+      "runId": "newton:none",
+      "step": 10,
+      "name": "x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9985062985115762,0.9947412460363483]
+    },
+    {"type":"metric","runId":"newton:none","step":11,"name":"loss","value":4.262367507152087e-9},
+    {"type":"metric","runId":"newton:none","step":11,"name":"gradNorm","value":0.000048287821060149076},
+    {"type":"metric","runId":"newton:none","step":11,"name":"step","value":0.005322141233125669},
+    {"type":"metric","runId":"newton:none","step":11,"name":"nfev","value":14},
+    {"type":"metric","runId":"newton:none","step":11,"name":"tau","value":0},
+    {
+      "type": "tensor",
+      "runId": "newton:none",
+      "step": 11,
+      "name": "x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9999350330917722,0.9998680291217429]
+    },
+    {"type":"metric","runId":"newton:none","step":12,"name":"loss","value":1.8514812924865096e-16},
+    {"type":"metric","runId":"newton:none","step":12,"name":"gradNorm","value":1.6350976394710102e-7},
+    {"type":"metric","runId":"newton:none","step":12,"name":"step","value":0.00014708553081187157},
+    {"type":"metric","runId":"newton:none","step":12,"name":"nfev","value":15},
+    {"type":"metric","runId":"newton:none","step":12,"name":"tau","value":0},
+    {
+      "type": "tensor",
+      "runId": "newton:none",
+      "step": 12,
+      "name": "x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.999999997347792,0.9999999904752295]
+    },
+    {
+      "type": "end",
+      "runId": "newton:none",
+      "status": "converged",
+      "steps": 12,
+      "summary": {
+        "loss": 1.8514812924865096e-16,
+        "gradNorm": 1.6350976394710102e-7,
+        "step": 0.00014708553081187157,
+        "nfev": 15,
+        "tau": 0
+      }
+    }
+  ]
+}

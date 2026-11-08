@@ -46,15 +46,6 @@
       "shape": [2],
       "values": [-1.2,1]
     },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 0,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-25.519999999999996,-8.799999999999999]
-    },
     {"type":"metric","runId":"minimizer:0","step":1,"name":"loss","value":4.531000000604233},
     {"type":"metric","runId":"minimizer:0","step":1,"name":"gradNorm","value":9.303848675741657},
     {
@@ -65,15 +56,6 @@
       "role": "param",
       "shape": [2],
       "values": [-1.100000000039185,1.0999999998863637]
-    },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 1,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-9.040000009043892,-2.200000003996867]
     },
     {"type":"metric","runId":"minimizer:0","step":2,"name":"loss","value":4.300721354283996},
     {"type":"metric","runId":"minimizer:0","step":2,"name":"gradNorm","value":3.9892041884552536},
@@ -86,15 +68,6 @@
       "shape": [2],
       "values": [-1.0119853958723481,1.1830597531483071]
     },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 2,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [2.4100425751371075,3.1789062337878793]
-    },
     {"type":"metric","runId":"minimizer:0","step":3,"name":"loss","value":4.82742525033335},
     {"type":"metric","runId":"minimizer:0","step":3,"name":"gradNorm","value":10.457330407095464},
     {
@@ -105,15 +78,6 @@
       "role": "param",
       "shape": [2],
       "values": [-0.9498877934175013,1.222499693562257]
-    },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 3,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [8.26687640566691,6.404257469573746]
     },
     {"type":"metric","runId":"minimizer:0","step":4,"name":"loss","value":5.078864370928494},
     {"type":"metric","runId":"minimizer:0","step":4,"name":"gradNorm","value":12.411797224317391},
@@ -126,15 +90,6 @@
       "shape": [2],
       "values": [-0.9181602927604345,1.2171206437247617]
     },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 4,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [9.903115259823291,7.4820464104566975]
-    },
     {"type":"metric","runId":"minimizer:0","step":5,"name":"loss","value":4.904513059319933},
     {"type":"metric","runId":"minimizer:0","step":5,"name":"gradNorm","value":11.5111463400312},
     {
@@ -145,15 +100,6 @@
       "role": "param",
       "shape": [2],
       "values": [-0.9108266047060004,1.1836184858002752]
-    },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 5,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [9.076139059033135,7.080267639200288]
     },
     {"type":"metric","runId":"minimizer:0","step":6,"name":"loss","value":4.5145196051572904},
     {"type":"metric","runId":"minimizer:0","step":6,"name":"gradNorm","value":8.872867585357783},
@@ -166,15 +112,6 @@
       "shape": [2],
       "values": [-0.9198849543893449,1.1340357484538195]
     },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 6,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [6.7516904923599945,5.756948382838647]
-    },
     {"type":"metric","runId":"minimizer:0","step":7,"name":"loss","value":4.138780373418447},
     {"type":"metric","runId":"minimizer:0","step":7,"name":"gradNorm","value":5.218032752193871},
     {
@@ -185,15 +122,6 @@
       "role": "param",
       "shape": [2],
       "values": [-0.938279713314825,1.0757791902480665]
-    },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 7,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [3.4574240046806626,3.9082073965983266]
     },
     {"type":"metric","runId":"minimizer:0","step":8,"name":"loss","value":3.92756265377646},
     {"type":"metric","runId":"minimizer:0","step":8,"name":"gradNorm","value":1.8964257707404453},
@@ -206,15 +134,6 @@
       "shape": [2],
       "values": [-0.9597190807745682,1.0143686869871644]
     },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 8,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-0.337460479088755,1.866159459687644]
-    },
     {"type":"metric","runId":"minimizer:0","step":9,"name":"loss","value":3.913473507237038},
     {"type":"metric","runId":"minimizer:0","step":9,"name":"gradNorm","value":4.03988726195433},
     {
@@ -225,15 +144,6 @@
       "role": "param",
       "shape": [2],
       "values": [-0.9782386893516093,0.9548250173190803]
-    },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 9,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-4.039663510952644,-0.04251832050548021]
     },
     {"type":"metric","runId":"minimizer:0","step":10,"name":"loss","value":4.011638567008119},
     {"type":"metric","runId":"minimizer:0","step":10,"name":"gradNorm","value":7.126581535743723},
@@ -246,15 +156,6 @@
       "shape": [2],
       "values": [-0.9886097853498991,0.9018048250195947]
     },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 10,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-6.964580162569275,-1.5108896533995764]
-    },
     {"type":"metric","runId":"minimizer:0","step":11,"name":"loss","value":4.086352454981084},
     {"type":"metric","runId":"minimizer:0","step":11,"name":"gradNorm","value":8.891156859169447},
     {
@@ -265,15 +166,6 @@
       "role": "param",
       "shape": [2],
       "values": [-0.9875779303922064,0.8587398354941217]
-    },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 11,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-8.580047393249014,-2.3314066620726415]
     },
     {"type":"metric","runId":"minimizer:0","step":12,"name":"loss","value":4.050421505128119},
     {"type":"metric","runId":"minimizer:0","step":12,"name":"gradNorm","value":9.08380536245332},
@@ -286,15 +178,6 @@
       "shape": [2],
       "values": [-0.9746221461097547,0.8268887808506036]
     },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 12,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-8.74436758457092,-2.459990936739611]
-    },
     {"type":"metric","runId":"minimizer:0","step":13,"name":"loss","value":3.907569142097556},
     {"type":"metric","runId":"minimizer:0","step":13,"name":"gradNorm","value":7.956966717507962},
     {
@@ -305,15 +188,6 @@
       "role": "param",
       "shape": [2],
       "values": [-0.9513794224688296,0.8052791819336864]
-    },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 13,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-7.702325601856785,-1.9968724712687447]
     },
     {"type":"metric","runId":"minimizer:0","step":14,"name":"loss","value":3.7199482104441146},
     {"type":"metric","runId":"minimizer:0","step":14,"name":"gradNorm","value":6.009712623195799},
@@ -326,15 +200,6 @@
       "shape": [2],
       "values": [-0.9205607992400604,0.7914014552552995]
     },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 14,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-5.904309336301675,-1.1206145968439851]
-    },
     {"type":"metric","runId":"minimizer:0","step":15,"name":"loss","value":3.5539977271641745},
     {"type":"metric","runId":"minimizer:0","step":15,"name":"gradNorm","value":3.8272075239361625},
     {
@@ -345,15 +210,6 @@
       "role": "param",
       "shape": [2],
       "values": [-0.8851981606469143,0.7819750882117594]
-    },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 15,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-3.8270736262798706,-0.03201390801841564]
     },
     {"type":"metric","runId":"minimizer:0","step":16,"name":"loss","value":3.4451567596570305},
     {"type":"metric","runId":"minimizer:0","step":16,"name":"gradNorm","value":2.154206917249822},
@@ -366,15 +222,6 @@
       "shape": [2],
       "values": [-0.8482368289533189,0.7735218116664372]
     },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 16,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-1.8637360574991682,1.0803218734731046]
-    },
     {"type":"metric","runId":"minimizer:0","step":17,"name":"loss","value":3.390509043686171},
     {"type":"metric","runId":"minimizer:0","step":17,"name":"gradNorm","value":2.0799359187872266},
     {
@@ -385,15 +232,6 @@
       "role": "param",
       "shape": [2],
       "values": [-0.8122504552133756,0.7628319987593541]
-    },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 17,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-0.27539095057372664,2.061623935300365]
     },
     {"type":"metric","runId":"minimizer:0","step":18,"name":"loss","value":3.3622096826567183},
     {"type":"metric","runId":"minimizer:0","step":18,"name":"gradNorm","value":2.920038161988445},
@@ -406,15 +244,6 @@
       "shape": [2],
       "values": [-0.7791984935323256,0.747386665375482]
     },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 18,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [0.8124818377711724,2.804727461048726]
-    },
     {"type":"metric","runId":"minimizer:0","step":19,"name":"loss","value":3.328293772541075},
     {"type":"metric","runId":"minimizer:0","step":19,"name":"gradNorm","value":3.536516840620347},
     {
@@ -425,15 +254,6 @@
       "role": "param",
       "shape": [2],
       "values": [-0.7502745392225411,0.7256487300305039]
-    },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 19,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [1.383343402187407,3.254736916498151]
     },
     {"type":"metric","runId":"minimizer:0","step":20,"name":"loss","value":3.268371305048592},
     {"type":"metric","runId":"minimizer:0","step":20,"name":"gradNorm","value":3.715691813693539},
@@ -446,15 +266,6 @@
       "shape": [2],
       "values": [-0.7258939421455306,0.697116435103324]
     },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 20,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [1.489936050235415,3.4038883971949008]
-    },
     {"type":"metric","runId":"minimizer:0","step":21,"name":"loss","value":3.178737397974317},
     {"type":"metric","runId":"minimizer:0","step":21,"name":"gradNorm","value":3.4991772350851917},
     {
@@ -465,15 +276,6 @@
       "role": "param",
       "shape": [2],
       "values": [-0.7058011318637386,0.662161303636096]
-    },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 21,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [1.2186244139480635,3.28012131791923]
     },
     {"type":"metric","runId":"minimizer:0","step":22,"name":"loss","value":3.0688191512633045},
     {"type":"metric","runId":"minimizer:0","step":22,"name":"gradNorm","value":3.0094579500940597},
@@ -486,15 +288,6 @@
       "shape": [2],
       "values": [-0.6892351841649236,0.6217774272358315]
     },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 22,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [0.6668518573718631,2.934645762899508]
-    },
     {"type":"metric","runId":"minimizer:0","step":23,"name":"loss","value":2.9538033327112805},
     {"type":"metric","runId":"minimizer:0","step":23,"name":"gradNorm","value":2.432670063343817},
     {
@@ -505,15 +298,6 @@
       "role": "param",
       "shape": [2],
       "values": [-0.6751023666940522,0.5773507845720235]
-    },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 23,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-0.06684223813282353,2.431751581122259]
     },
     {"type":"metric","runId":"minimizer:0","step":24,"name":"loss","value":2.8474428903132125},
     {"type":"metric","runId":"minimizer:0","step":24,"name":"gradNorm","value":2.043294164448834},
@@ -526,15 +310,6 @@
       "shape": [2],
       "values": [-0.6621350127162926,0.5304825870436607]
     },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 24,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-0.8860290344214201,1.8411962395771142]
-    },
     {"type":"metric","runId":"minimizer:0","step":25,"name":"loss","value":2.757268261125806},
     {"type":"metric","runId":"minimizer:0","step":25,"name":"gradNorm","value":2.098541768538888},
     {
@@ -545,15 +320,6 @@
       "role": "param",
       "shape": [2],
       "values": [-0.6490366241350314,0.4828492483826561]
-    },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 25,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-1.6988286019538636,1.232014178281161]
     },
     {"type":"metric","runId":"minimizer:0","step":26,"name":"loss","value":2.6830801145993313},
     {"type":"metric","runId":"minimizer:0","step":26,"name":"gradNorm","value":2.513106388381949},
@@ -566,15 +332,6 @@
       "shape": [2],
       "values": [-0.6346157655255624,0.4360709570590885]
     },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 26,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-2.423065655639923,0.666675744109857]
-    },
     {"type":"metric","runId":"minimizer:0","step":27,"name":"loss","value":2.618563589596754},
     {"type":"metric","runId":"minimizer:0","step":27,"name":"gradNorm","value":3.000631664471547},
     {
@@ -585,15 +342,6 @@
       "role": "param",
       "shape": [2],
       "values": [-0.6179025031586074,0.39157632219376154]
-    },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 27,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-2.9942590387330603,0.195456375681774]
     },
     {"type":"metric","runId":"minimizer:0","step":28,"name":"loss","value":2.5548945183329193},
     {"type":"metric","runId":"minimizer:0","step":28,"name":"gradNorm","value":3.376971550276044},
@@ -606,15 +354,6 @@
       "shape": [2],
       "values": [-0.5982320883535606,0.35047413472562916]
     },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 28,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-3.373720268157445,-0.14814993620466232]
-    },
     {"type":"metric","runId":"minimizer:0","step":29,"name":"loss","value":2.484567872885796},
     {"type":"metric","runId":"minimizer:0","step":29,"name":"gradNorm","value":3.5701801875026096},
     {
@@ -625,15 +364,6 @@
       "role": "param",
       "shape": [2],
       "values": [-0.5752806815307954,0.31345887377340365]
-    },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 29,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-3.5530044581972353,-0.3497797753826548]
     },
     {"type":"metric","runId":"minimizer:0","step":30,"name":"loss","value":2.4038281626472227},
     {"type":"metric","runId":"minimizer:0","step":30,"name":"gradNorm","value":3.5762703203943556},
@@ -646,15 +376,6 @@
       "shape": [2],
       "values": [-0.5490485749169671,0.2807742138398641]
     },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 30,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-3.552272849421354,-0.4136024755697665]
-    },
     {"type":"metric","runId":"minimizer:0","step":31,"name":"loss","value":2.313015520055219},
     {"type":"metric","runId":"minimizer:0","step":31,"name":"gradNorm","value":3.431670998555799},
     {
@@ -665,15 +386,6 @@
       "role": "param",
       "shape": [2],
       "values": [-0.5198003559180899,0.25224137047034517]
-    },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 31,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-3.412838981562169,-0.3590207908445564]
     },
     {"type":"metric","runId":"minimizer:0","step":32,"name":"loss","value":2.215248185773122},
     {"type":"metric","runId":"minimizer:0","step":32,"name":"gradNorm","value":3.193761966384486},
@@ -686,15 +398,6 @@
       "shape": [2],
       "values": [-0.48798020119666313,0.2273399346681664]
     },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 32,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-3.186470027025157,-0.21569484183538878]
-    },
     {"type":"metric","runId":"minimizer:0","step":33,"name":"loss","value":2.1144770868014136},
     {"type":"metric","runId":"minimizer:0","step":33,"name":"gradNorm","value":2.9247770131840705},
     {
@@ -705,15 +408,6 @@
       "role": "param",
       "shape": [2],
       "values": [-0.45412133529698934,0.20531904685673008]
-    },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 33,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-2.924720741443421,-0.01814280630381082]
     },
     {"type":"metric","runId":"minimizer:0","step":34,"name":"loss","value":2.0138834630294644},
     {"type":"metric","runId":"minimizer:0","step":34,"name":"gradNorm","value":2.6782073075082167},
@@ -726,15 +420,6 @@
       "shape": [2],
       "values": [-0.4187644965469062,0.18531742833566908]
     },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 34,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-2.6707983314529145,0.1990744953497059]
-    },
     {"type":"metric","runId":"minimizer:0","step":35,"name":"loss","value":1.9151160677680912},
     {"type":"metric","runId":"minimizer:0","step":35,"name":"gradNorm","value":2.488223124574308},
     {
@@ -745,15 +430,6 @@
       "role": "param",
       "shape": [2],
       "values": [-0.38239472259094953,0.16647639970791636]
-    },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 35,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-2.4550393823389087,0.4050135168501423]
     },
     {"type":"metric","runId":"minimizer:0","step":36,"name":"loss","value":1.8183595495586111},
     {"type":"metric","runId":"minimizer:0","step":36,"name":"gradNorm","value":2.364705234603602},
@@ -766,15 +442,6 @@
       "shape": [2],
       "values": [-0.3454007381539896,0.1480356277604567]
     },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 36,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-2.29381226634379,0.5746791568627165]
-    },
     {"type":"metric","runId":"minimizer:0","step":37,"name":"loss","value":1.7229202693814534},
     {"type":"metric","runId":"minimizer:0","step":37,"name":"gradNorm","value":2.2970402652651702},
     {
@@ -785,15 +452,6 @@
       "role": "param",
       "shape": [2],
       "values": [-0.308057110976805,0.12940550739811]
-    },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 37,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-2.1909174854546123,0.690126475494689]
     },
     {"type":"metric","runId":"minimizer:0","step":38,"name":"loss","value":1.6279484329249712},
     {"type":"metric","runId":"minimizer:0","step":38,"name":"gradNorm","value":2.2648617653286807},
@@ -806,15 +464,6 @@
       "shape": [2],
       "values": [-0.2705262520238302,0.11021346307112544]
     },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 38,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-2.1403597319884655,0.7405802007412909]
-    },
     {"type":"metric","runId":"minimizer:0","step":39,"name":"loss","value":1.5330093874104775},
     {"type":"metric","runId":"minimizer:0","step":39,"name":"gradNorm","value":2.248562220235755},
     {
@@ -825,15 +474,6 @@
       "role": "param",
       "shape": [2],
       "values": [-0.2328754425552956,0.0903246423186555]
-    },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 39,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-2.129537704782214,0.7218734114666143]
     },
     {"type":"metric","runId":"minimizer:0","step":40,"name":"loss","value":1.438368559093637},
     {"type":"metric","runId":"minimizer:0","step":40,"name":"gradNorm","value":2.2345049564228416},
@@ -846,15 +486,6 @@
       "shape": [2],
       "values": [-0.19510340293226025,0.0698401948666908]
     },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 40,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-2.1422314964875997,0.635497140618858]
-    },
     {"type":"metric","runId":"minimizer:0","step":41,"name":"loss","value":1.3449867155287263},
     {"type":"metric","runId":"minimizer:0","step":41,"name":"gradNorm","value":2.215403066685472},
     {
@@ -865,15 +496,6 @@
       "role": "param",
       "shape": [2],
       "values": [-0.1571712281920919,0.04907791378780191]
-    },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 41,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-2.161099761916168,0.4875023763278257]
     },
     {"type":"metric","runId":"minimizer:0","step":42,"name":"loss","value":1.2543010301533506},
     {"type":"metric","runId":"minimizer:0","step":42,"name":"gradNorm","value":2.1885961491879087},
@@ -886,15 +508,6 @@
       "shape": [2],
       "values": [-0.11903338384427009,0.028540153779149955]
     },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 42,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-2.169640630248341,0.2874241461946523]
-    },
     {"type":"metric","runId":"minimizer:0","step":43,"name":"loss","value":1.1678938735481785},
     {"type":"metric","runId":"minimizer:0","step":43,"name":"gradNorm","value":2.1542164339311203},
     {
@@ -905,15 +518,6 @@
       "role": "param",
       "shape": [2],
       "values": [-0.0806654855346085,0.008872970480503905]
-    },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 43,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-2.1536966284325714,0.047320998479395415]
     },
     {"type":"metric","runId":"minimizer:0","step":44,"name":"loss","value":1.0871438341930146},
     {"type":"metric","runId":"minimizer:0","step":44,"name":"gradNorm","value":2.113989539340804},
@@ -926,15 +530,6 @@
       "shape": [2],
       "values": [-0.042086526286402526,-0.009180920091165914]
     },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 44,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-2.1026106476064945,-0.2190439157204393]
-    },
     {"type":"metric","runId":"minimizer:0","step":45,"name":"loss","value":1.0129321305441665},
     {"type":"metric","runId":"minimizer:0","step":45,"name":"gradNorm","value":2.070608196147403},
     {
@@ -945,15 +540,6 @@
       "role": "param",
       "shape": [2],
       "values": [-0.003373970584800462,-0.02483374803286744]
-    },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 45,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-2.0101010109122526,-0.4969026342074908]
     },
     {"type":"metric","runId":"minimizer:0","step":46,"name":"loss","value":0.9454549360674135},
     {"type":"metric","runId":"minimizer:0","step":46,"name":"gradNorm","value":2.0272389146392733},
@@ -966,15 +552,6 @@
       "shape": [2],
       "values": [0.03532927761544387,-0.03730742985944394]
     },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 46,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-1.87485580228692,-0.7711117543254609]
-    },
     {"type":"metric","runId":"minimizer:0","step":47,"name":"loss","value":0.8841719613394794},
     {"type":"metric","runId":"minimizer:0","step":47,"name":"gradNorm","value":1.986682379903661},
     {
@@ -985,15 +562,6 @@
       "role": "param",
       "shape": [2],
       "values": [0.07381653013951389,-0.045889352703873613]
-    },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 47,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-1.700782531293432,-1.0267646565142277]
     },
     {"type":"metric","runId":"minimizer:0","step":48,"name":"loss","value":0.8279019662084329},
     {"type":"metric","runId":"minimizer:0","step":48,"name":"gradNorm","value":1.9500057991886524},
@@ -1006,15 +574,6 @@
       "shape": [2],
       "values": [0.11182758791996249,-0.04998597608901621]
     },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 48,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-1.4968143878700975,-1.249827710180263]
-    },
     {"type":"metric","runId":"minimizer:0","step":49,"name":"loss","value":0.775053703946404},
     {"type":"metric","runId":"minimizer:0","step":49,"name":"gradNorm","value":1.915023952884584},
     {
@@ -1025,15 +584,6 @@
       "role": "param",
       "shape": [2],
       "values": [0.14906702236692415,-0.04917003875006235]
-    },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 49,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-1.276184108663498,-1.4278203181480684]
     },
     {"type":"metric","runId":"minimizer:0","step":50,"name":"loss","value":0.7239556403678049},
     {"type":"metric","runId":"minimizer:0","step":50,"name":"gradNorm","value":1.8754909386437524},
@@ -1046,15 +596,6 @@
       "shape": [2],
       "values": [0.18522908581776695,-0.04321695389945242]
     },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 50,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-1.055133332862107,-1.550535362646762]
-    },
     {"type":"metric","runId":"minimizer:0","step":51,"name":"loss","value":0.6732228037457868},
     {"type":"metric","runId":"minimizer:0","step":51,"name":"gradNorm","value":1.8218114176196814},
     {
@@ -1065,15 +606,6 @@
       "role": "param",
       "shape": [2],
       "values": [0.22002695463052163,-0.03212685802570877]
-    },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 51,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-0.851118529733375,-1.6107743757938078]
     },
     {"type":"metric","runId":"minimizer:0","step":52,"name":"loss","value":0.622080316077559},
     {"type":"metric","runId":"minimizer:0","step":52,"name":"gradNorm","value":1.7434193386400376},
@@ -1086,15 +618,6 @@
       "shape": [2],
       "values": [0.2532230733303148,-0.016130513022187747]
     },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 52,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-0.6806830947588769,-1.6050487577807548]
-    },
     {"type":"metric","runId":"minimizer:0","step":53,"name":"loss","value":0.5705581710103007},
     {"type":"metric","runId":"minimizer:0","step":53,"name":"gradNorm","value":1.6322451788828298},
     {
@@ -1105,15 +628,6 @@
       "role": "param",
       "shape": [2],
       "values": [0.28465666091975567,0.004320824315309158]
-    },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 53,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-0.5572622311202765,-1.534171805813512]
     },
     {"type":"metric","runId":"minimizer:0","step":54,"name":"loss","value":0.5194885497813392},
     {"type":"metric","runId":"minimizer:0","step":54,"name":"gradNorm","value":1.486459436109257},
@@ -1126,15 +640,6 @@
       "shape": [2],
       "values": [0.31426425223434395,0.02858008949691811]
     },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 54,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-0.4892446162132197,-1.4036386147098652]
-    },
     {"type":"metric","runId":"minimizer:0","step":55,"name":"loss","value":0.47028033727758667},
     {"type":"metric","runId":"minimizer:0","step":55,"name":"gradNorm","value":1.3139410379442877},
     {
@@ -1145,15 +650,6 @@
       "role": "param",
       "shape": [2],
       "values": [0.342089687674453,0.05584173061296894]
-    },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 55,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-0.47860915438653706,-1.2236724760047175]
     },
     {"type":"metric","runId":"minimizer:0","step":56,"name":"loss","value":0.4245116171232258},
     {"type":"metric","runId":"minimizer:0","step":56,"name":"gradNorm","value":1.135127159440463},
@@ -1166,15 +662,6 @@
       "shape": [2],
       "values": [0.3682812412004204,0.08518999124398159]
     },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 56,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-0.5203773553313,-1.0088216275228126]
-    },
     {"type":"metric","runId":"minimizer:0","step":57,"name":"loss","value":0.3834518818339742},
     {"type":"metric","runId":"minimizer:0","step":57,"name":"gradNorm","value":0.9835487162397856},
     {
@@ -1185,15 +672,6 @@
       "role": "param",
       "shape": [2],
       "values": [0.393075364070188,0.11565677064998488]
-    },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 57,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-0.602987024569644,-0.7770294237785194]
     },
     {"type":"metric","runId":"minimizer:0","step":58,"name":"loss","value":0.3476714131642544},
     {"type":"metric","runId":"minimizer:0","step":58,"name":"gradNorm","value":0.8966278422896514},
@@ -1206,15 +684,6 @@
       "shape": [2],
       "values": [0.4167684529429843,0.1462872300062484]
     },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 58,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-0.7095396115084907,-0.5481742672448026]
-    },
     {"type":"metric","runId":"minimizer:0","step":59,"name":"loss","value":0.31688579563095803},
     {"type":"metric","runId":"minimizer:0","step":59,"name":"gradNorm","value":0.8882957447525742},
     {
@@ -1225,15 +694,6 @@
       "role": "param",
       "shape": [2],
       "values": [0.4396797667130543,0.17620972688927622]
-    },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 59,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-0.8197487774536159,-0.3421714073513926]
     },
     {"type":"metric","runId":"minimizer:0","step":60,"name":"loss","value":0.29010747132619064},
     {"type":"metric","runId":"minimizer:0","step":60,"name":"gradNorm","value":0.9293315061040235},
@@ -1246,15 +706,6 @@
       "shape": [2],
       "values": [0.46210987909159695,0.20470422170051134]
     },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 60,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-0.9123538140569183,-0.1768263730707803]
-    },
     {"type":"metric","runId":"minimizer:0","step":61,"name":"loss","value":0.2660546555277248},
     {"type":"metric","runId":"minimizer:0","step":61,"name":"gradNorm","value":0.9699865435671724},
     {
@@ -1265,15 +716,6 @@
       "role": "param",
       "shape": [2],
       "values": [0.48429977037938293,0.23126101726469742]
-    },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 61,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-0.9677586201231603,-0.06570500649651256]
     },
     {"type":"metric","runId":"minimizer:0","step":62,"name":"loss","value":0.24365172162740473},
     {"type":"metric","runId":"minimizer:0","step":62,"name":"gradNorm","value":0.9708185276699672},
@@ -1286,15 +728,6 @@
       "shape": [2],
       "values": [0.5063958422655261,0.25562083885763925]
     },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 62,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-0.9706813740262396,-0.016318204123447755]
-    },
     {"type":"metric","runId":"minimizer:0","step":63,"name":"loss","value":0.22240307551950744},
     {"type":"metric","runId":"minimizer:0","step":63,"name":"gradNorm","value":0.9130576228285853},
     {
@@ -1305,15 +738,6 @@
       "role": "param",
       "shape": [2],
       "values": [0.5284258404177742,0.2777886168077441]
-    },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 63,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-0.9125999787707602,-0.028905040269737725]
     },
     {"type":"metric","runId":"minimizer:0","step":64,"name":"loss","value":0.20246976561840754},
     {"type":"metric","runId":"minimizer:0","step":64,"name":"gradNorm","value":0.7995033238690886},
@@ -1326,15 +750,6 @@
       "shape": [2],
       "values": [0.5502899357091197,0.2980166837632635]
     },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 64,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-0.7937131831598413,-0.09604659158967022]
-    },
     {"type":"metric","runId":"minimizer:0","step":65,"name":"loss","value":0.18441388784519624},
     {"type":"metric","runId":"minimizer:0","step":65,"name":"gradNorm","value":0.6562856903755538},
     {
@@ -1345,15 +760,6 @@
       "role": "param",
       "shape": [2],
       "values": [0.5717700088036249,0.31675746676498945]
-    },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 65,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-0.6240131472859893,-0.20326952404615795]
     },
     {"type":"metric","runId":"minimizer:0","step":66,"name":"loss","value":0.16874284303739262},
     {"type":"metric","runId":"minimizer:0","step":66,"name":"gradNorm","value":0.5368991656807246},
@@ -1366,15 +772,6 @@
       "shape": [2],
       "values": [0.592558330998436,0.33459017258696655]
     },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 66,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-0.42296044515315473,-0.33070406097370997]
-    },
     {"type":"metric","runId":"minimizer:0","step":67,"name":"loss","value":0.1555002709641633},
     {"type":"metric","runId":"minimizer:0","step":67,"name":"gradNorm","value":0.5048841837239642},
     {
@@ -1385,15 +782,6 @@
       "role": "param",
       "shape": [2],
       "values": [0.6123040882053927,0.35213000462872796]
-    },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 67,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-0.21730623851642705,-0.4557258360861882]
     },
     {"type":"metric","runId":"minimizer:0","step":68,"name":"loss","value":0.14414001023908402},
     {"type":"metric","runId":"minimizer:0","step":68,"name":"gradNorm","value":0.557542573772233},
@@ -1406,15 +794,6 @@
       "shape": [2],
       "values": [0.6306725101673645,0.36993196439633225]
     },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 68,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-0.03694728472060427,-0.5563170136894435]
-    },
     {"type":"metric","runId":"minimizer:0","step":69,"name":"loss","value":0.1337664734898764},
     {"type":"metric","runId":"minimizer:0","step":69,"name":"gradNorm","value":0.6213025909737002},
     {
@@ -1425,15 +804,6 @@
       "role": "param",
       "shape": [2],
       "values": [0.6474073293292925,0.3884037231976248]
-    },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 69,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [0.09067318447952577,-0.6146505374332434]
     },
     {"type":"metric","runId":"minimizer:0","step":70,"name":"loss","value":0.12360101221974462},
     {"type":"metric","runId":"minimizer:0","step":70,"name":"gradNorm","value":0.6372616999872023},
@@ -1446,15 +816,6 @@
       "shape": [2],
       "values": [0.6623843200736238,0.40774223952389715]
     },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 70,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [0.1464099681263762,-0.6202149591099948]
-    },
     {"type":"metric","runId":"minimizer:0","step":71,"name":"loss","value":0.11338009734807959},
     {"type":"metric","runId":"minimizer:0","step":71,"name":"gradNorm","value":0.5850404750712529},
     {
@@ -1465,15 +826,6 @@
       "role": "param",
       "shape": [2],
       "values": [0.6756435149876971,0.4279057561391841]
-    },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 71,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [0.12390979916803779,-0.5717680641149292]
     },
     {"type":"metric","runId":"minimizer:0","step":72,"name":"loss","value":0.1034267617508564},
     {"type":"metric","runId":"minimizer:0","step":72,"name":"gradNorm","value":0.4786311066867057},
@@ -1486,15 +838,6 @@
       "shape": [2],
       "values": [0.6873913198550118,0.4486267620206769]
     },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 72,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [0.03138060441653889,-0.4776012918267636]
-    },
     {"type":"metric","runId":"minimizer:0","step":73,"name":"loss","value":0.09435431422793017},
     {"type":"metric","runId":"minimizer:0","step":73,"name":"gradNorm","value":0.37065187384586784},
     {
@@ -1505,15 +848,6 @@
       "role": "param",
       "shape": [2],
       "values": [0.6979704141543893,0.46946398862459937]
-    },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 73,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-0.10993212228957855,-0.3539742082050079]
     },
     {"type":"metric","runId":"minimizer:0","step":74,"name":"loss","value":0.08661138355585357},
     {"type":"metric","runId":"minimizer:0","step":74,"name":"gradNorm","value":0.3496441340465734},
@@ -1526,15 +860,6 @@
       "shape": [2],
       "values": [0.7078028475143263,0.48988438611710533]
     },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 74,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-0.2701161140481569,-0.2220096966456675]
-    },
     {"type":"metric","runId":"minimizer:0","step":75,"name":"loss","value":0.08017801892659379},
     {"type":"metric","runId":"minimizer:0","step":75,"name":"gradNorm","value":0.4293239488160505},
     {
@@ -1545,15 +870,6 @@
       "role": "param",
       "shape": [2],
       "values": [0.7173177410568675,0.5093605405836408]
-    },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 75,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-0.4166157423945269,-0.10368402102572949]
     },
     {"type":"metric","runId":"minimizer:0","step":76,"name":"loss","value":0.07460346912695688},
     {"type":"metric","runId":"minimizer:0","step":76,"name":"gradNorm","value":0.5207910254164724},
@@ -1566,15 +882,6 @@
       "shape": [2],
       "values": [0.7268780072207012,0.5274658503174748]
     },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 76,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-0.5204896201323133,-0.01771574127325648]
-    },
     {"type":"metric","runId":"minimizer:0","step":77,"name":"loss","value":0.0693304644586191},
     {"type":"metric","runId":"minimizer:0","step":77,"name":"gradNorm","value":0.5622206100588232},
     {
@@ -1585,15 +892,6 @@
       "role": "param",
       "shape": [2],
       "values": [0.7367202375252211,0.5439496513721183]
-    },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 77,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-0.5617141347528933,0.023858859858001402]
     },
     {"type":"metric","runId":"minimizer:0","step":78,"name":"loss","value":0.06405793276353962},
     {"type":"metric","runId":"minimizer:0","step":78,"name":"gradNorm","value":0.5330485995747247},
@@ -1606,15 +904,6 @@
       "shape": [2],
       "values": [0.7469189608273262,0.5587778989201618]
     },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 78,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-0.5327513439831081,0.017799297535778802]
-    },
     {"type":"metric","runId":"minimizer:0","step":79,"name":"loss","value":0.05888594962705587},
     {"type":"metric","runId":"minimizer:0","step":79,"name":"gradNorm","value":0.4409430785195798},
     {
@@ -1625,15 +914,6 @@
       "role": "param",
       "shape": [2],
       "values": [0.7573818183909018,0.5721316393510968]
-    },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 79,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-0.439927375033998,-0.02991158956024309]
     },
     {"type":"metric","runId":"minimizer:0","step":80,"name":"loss","value":0.05415901477081041},
     {"type":"metric","runId":"minimizer:0","step":80,"name":"gradNorm","value":0.3202028910756954},
@@ -1646,15 +926,6 @@
       "shape": [2],
       "values": [0.7678767581136139,0.584363896483575]
     },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 80,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-0.3023529023750985,-0.10541638334996994]
-    },
     {"type":"metric","runId":"minimizer:0","step":81,"name":"loss","value":0.05014707312215848},
     {"type":"metric","runId":"minimizer:0","step":81,"name":"gradNorm","value":0.2409513260424709},
     {
@@ -1665,15 +936,6 @@
       "role": "param",
       "shape": [2],
       "values": [0.778086704630677,0.595923855623686]
-    },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 81,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-0.14830725910144194,-0.18990128598680656]
     },
     {"type":"metric","runId":"minimizer:0","step":82,"name":"loss","value":0.04681582064802895},
     {"type":"metric","runId":"minimizer:0","step":82,"name":"gradNorm","value":0.26374034396393053},
@@ -1686,15 +948,6 @@
       "shape": [2],
       "values": [0.7876816959097209,0.6072638411083232]
     },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 82,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-0.009414519846651814,-0.263572259257816]
-    },
     {"type":"metric","runId":"minimizer:0","step":83,"name":"loss","value":0.04385633562923004},
     {"type":"metric","runId":"minimizer:0","step":83,"name":"gradNorm","value":0.3217125088106419},
     {
@@ -1705,15 +958,6 @@
       "role": "param",
       "shape": [2],
       "values": [0.7963939252965504,0.6187484400322721]
-    },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 83,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [0.08638784290572238,-0.3098968843395067]
     },
     {"type":"metric","runId":"minimizer:0","step":84,"name":"loss","value":0.04093156239060469},
     {"type":"metric","runId":"minimizer:0","step":84,"name":"gradNorm","value":0.3414691900129696},
@@ -1726,15 +970,6 @@
       "shape": [2],
       "values": [0.8040789726315456,0.6305851954279473]
     },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 84,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [0.12141116385387307,-0.31915597600508994]
-    },
     {"type":"metric","runId":"minimizer:0","step":85,"name":"loss","value":0.03792478855654391},
     {"type":"metric","runId":"minimizer:0","step":85,"name":"gradNorm","value":0.3047722769399693},
     {
@@ -1745,15 +980,6 @@
       "role": "param",
       "shape": [2],
       "values": [0.8107484352439205,0.6427918896408813]
-    },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 85,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [0.09241638942524866,-0.2904227121916847]
     },
     {"type":"metric","runId":"minimizer:0","step":86,"name":"loss","value":0.034987358182988273},
     {"type":"metric","runId":"minimizer:0","step":86,"name":"gradNorm","value":0.2317154406779904},
@@ -1766,15 +992,6 @@
       "shape": [2],
       "values": [0.8165656877154323,0.6552070927921706]
     },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 86,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [0.011117331584384604,-0.2314485912401243]
-    },
     {"type":"metric","runId":"minimizer:0","step":87,"name":"loss","value":0.032365356587327004},
     {"type":"metric","runId":"minimizer:0","step":87,"name":"gradNorm","value":0.18527168165457014},
     {
@@ -1785,15 +1002,6 @@
       "role": "param",
       "shape": [2],
       "values": [0.8218059853597468,0.6675404387078516]
-    },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 87,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-0.09917462717077802,-0.15649277730505506]
     },
     {"type":"metric","runId":"minimizer:0","step":88,"name":"loss","value":0.03017213154979428},
     {"type":"metric","runId":"minimizer:0","step":88,"name":"gradNorm","value":0.2254041917277672},
@@ -1806,15 +1014,6 @@
       "shape": [2],
       "values": [0.8267914209821589,0.6794498101737398]
     },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 88,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-0.209690871217289,-0.08268487271915204]
-    },
     {"type":"metric","runId":"minimizer:0","step":89,"name":"loss","value":0.028302138488093334},
     {"type":"metric","runId":"minimizer:0","step":89,"name":"gradNorm","value":0.29446653096374015},
     {
@@ -1825,15 +1024,6 @@
       "role": "param",
       "shape": [2],
       "values": [0.8318173381099931,0.6906266108386181]
-    },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 89,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-0.293327988351641,-0.025869462835530488]
     },
     {"type":"metric","runId":"minimizer:0","step":90,"name":"loss","value":0.0265404967093163},
     {"type":"metric","runId":"minimizer:0","step":90,"name":"gradNorm","value":0.3309370387875324},
@@ -1846,15 +1036,6 @@
       "shape": [2],
       "values": [0.8370881687139134,0.700868896760786]
     },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 90,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-0.33092302154468156,0.0030458911994557525]
-    },
     {"type":"metric","runId":"minimizer:0","step":91,"name":"loss","value":0.024750378071298918},
     {"type":"metric","runId":"minimizer:0","step":91,"name":"gradNorm","value":0.3153275322079898},
     {
@@ -1865,15 +1046,6 @@
       "role": "param",
       "shape": [2],
       "values": [0.8426774842096223,0.7101255826638039]
-    },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 91,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-0.31532727237105557,0.0004048053989125222]
     },
     {"type":"metric","runId":"minimizer:0","step":92,"name":"loss","value":0.022968037793102504},
     {"type":"metric","runId":"minimizer:0","step":92,"name":"gradNorm","value":0.25429736426644745},
@@ -1886,15 +1058,6 @@
       "shape": [2],
       "values": [0.8485206745747507,0.7185023516181228]
     },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 92,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-0.2525570806774295,-0.029699671253342608]
-    },
     {"type":"metric","runId":"minimizer:0","step":93,"name":"loss","value":0.021334903747497636},
     {"type":"metric","runId":"minimizer:0","step":93,"name":"gradNorm","value":0.17737048038774136},
     {
@@ -1905,15 +1068,6 @@
       "role": "param",
       "shape": [2],
       "values": [0.8544408575439189,0.7262293900494674]
-    },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 93,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-0.15988338098458427,-0.07679577981840158]
     },
     {"type":"metric","runId":"minimizer:0","step":94,"name":"loss","value":0.01994641295825271},
     {"type":"metric","runId":"minimizer:0","step":94,"name":"gradNorm","value":0.14092228138748694},
@@ -1926,15 +1080,6 @@
       "shape": [2],
       "values": [0.8602009648675097,0.7336002863847865]
     },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 94,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-0.06126483510428701,-0.12690827148416517]
-    },
     {"type":"metric","runId":"minimizer:0","step":95,"name":"loss","value":0.018762492295390166},
     {"type":"metric","runId":"minimizer:0","step":95,"name":"gradNorm","value":0.1672915664031595},
     {
@@ -1945,15 +1090,6 @@
       "role": "param",
       "shape": [2],
       "values": [0.8655687853224365,0.7408982402713636]
-    },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 95,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [0.018890091620273664,-0.16622163706389248]
     },
     {"type":"metric","runId":"minimizer:0","step":96,"name":"loss","value":0.01765368323958898},
     {"type":"metric","runId":"minimizer:0","step":96,"name":"gradNorm","value":0.19476315368885866},
@@ -1966,15 +1102,6 @@
       "shape": [2],
       "values": [0.870378362180211,0.7483285732624461]
     },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 96,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [0.06209763356725162,-0.18459840178121079]
-    },
     {"type":"metric","runId":"minimizer:0","step":97,"name":"loss","value":0.01652455500734289},
     {"type":"metric","runId":"minimizer:0","step":97,"name":"gradNorm","value":0.18803499381806593},
     {
@@ -1985,15 +1112,6 @@
       "role": "param",
       "shape": [2],
       "values": [0.8745717902088758,0.755974584876493]
-    },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 97,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [0.06053421398428649,-0.1780246270532948]
     },
     {"type":"metric","runId":"minimizer:0","step":98,"name":"loss","value":0.01539015061905538},
     {"type":"metric","runId":"minimizer:0","step":98,"name":"gradNorm","value":0.1504994006578338},
@@ -2006,15 +1124,6 @@
       "shape": [2],
       "values": [0.8782106277904069,0.7637873182803249]
     },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 98,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [0.01871074996957639,-0.14933176967391493]
-    },
     {"type":"metric","runId":"minimizer:0","step":99,"name":"loss","value":0.01433942023400048},
     {"type":"metric","runId":"minimizer:0","step":99,"name":"gradNorm","value":0.11746922118546901},
     {
@@ -2025,15 +1134,6 @@
       "role": "param",
       "shape": [2],
       "values": [0.8814547228004957,0.7716104428494375]
-    },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 99,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-0.048389238661023876,-0.10703970995722623]
     },
     {"type":"metric","runId":"minimizer:0","step":100,"name":"loss","value":0.013434991017043317},
     {"type":"metric","runId":"minimizer:0","step":100,"name":"gradNorm","value":0.13541949795828837},
@@ -2046,15 +1146,6 @@
       "shape": [2],
       "values": [0.8845155580113611,0.7792319363413956]
     },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 100,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-0.12002105399734964,-0.06271672045507604]
-    },
     {"type":"metric","runId":"minimizer:0","step":101,"name":"loss","value":0.012653305885504403},
     {"type":"metric","runId":"minimizer:0","step":101,"name":"gradNorm","value":0.17786066361032246},
     {
@@ -2065,15 +1156,6 @@
       "role": "param",
       "shape": [2],
       "values": [0.8875981552930979,0.7864473297573676]
-    },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 101,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-0.17569623780920673,-0.0276631104468561]
     },
     {"type":"metric","runId":"minimizer:0","step":102,"name":"loss","value":0.011916581574713103},
     {"type":"metric","runId":"minimizer:0","step":102,"name":"gradNorm","value":0.20096353955998017},
@@ -2086,15 +1168,6 @@
       "shape": [2],
       "values": [0.8908480561045579,0.7931168303916647]
     },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 102,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-0.20072108880260078,-0.00986857347209602]
-    },
     {"type":"metric","runId":"minimizer:0","step":103,"name":"loss","value":0.011172412921584949},
     {"type":"metric","runId":"minimizer:0","step":103,"name":"gradNorm","value":0.19018600292420806},
     {
@@ -2105,15 +1178,6 @@
       "role": "param",
       "shape": [2],
       "values": [0.8943175507620318,0.7992011507614681]
-    },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 103,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-0.18980358774880435,-0.012054616790624362]
     },
     {"type":"metric","runId":"minimizer:0","step":104,"name":"loss","value":0.010436750044926262},
     {"type":"metric","runId":"minimizer:0","step":104,"name":"gradNorm","value":0.15119337652820963},
@@ -2126,15 +1190,6 @@
       "shape": [2],
       "values": [0.8979592921924878,0.8047674328860597]
     },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 104,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-0.14792456626021763,-0.03126915097548144]
-    },
     {"type":"metric","runId":"minimizer:0","step":105,"name":"loss","value":0.009763378277722489},
     {"type":"metric","runId":"minimizer:0","step":105,"name":"gradNorm","value":0.10686863727843404},
     {
@@ -2145,15 +1200,6 @@
       "role": "param",
       "shape": [2],
       "values": [0.9016476316280849,0.8099652880659209]
-    },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 105,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-0.08839292448745652,-0.060063271092276604]
     },
     {"type":"metric","runId":"minimizer:0","step":106,"name":"loss","value":0.009180548878551641},
     {"type":"metric","runId":"minimizer:0","step":106,"name":"gradNorm","value":0.09337405601539459},
@@ -2166,15 +1212,6 @@
       "shape": [2],
       "values": [0.9052205027281536,0.8149812341233251]
     },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 106,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-0.028685942879015602,-0.0888584887217192]
-    },
     {"type":"metric","runId":"minimizer:0","step":107,"name":"loss","value":0.00866282434749386},
     {"type":"metric","runId":"minimizer:0","step":107,"name":"gradNorm","value":0.10979377274301544},
     {
@@ -2185,15 +1222,6 @@
       "role": "param",
       "shape": [2],
       "values": [0.9085292526992581,0.8199854881604086]
-    },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 107,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [0.014751376330287697,-0.1087982969972745]
     },
     {"type":"metric","runId":"minimizer:0","step":108,"name":"loss","value":0.008161788947148809},
     {"type":"metric","runId":"minimizer:0","step":108,"name":"gradNorm","value":0.11844394604069669},
@@ -2206,15 +1234,6 @@
       "shape": [2],
       "values": [0.9114818654812592,0.8250866714428413]
     },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 108,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [0.031238053954347922,-0.11425039316709906]
-    },
     {"type":"metric","runId":"minimizer:0","step":109,"name":"loss","value":0.007656072644861276},
     {"type":"metric","runId":"minimizer:0","step":109,"name":"gradNorm","value":0.1059005604559952},
     {
@@ -2225,15 +1244,6 @@
       "role": "param",
       "shape": [2],
       "values": [0.914067255430211,0.8303070758514857]
-    },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 109,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [0.01869455755847796,-0.10423743196465773]
     },
     {"type":"metric","runId":"minimizer:0","step":110,"name":"loss","value":0.007166398508362748},
     {"type":"metric","runId":"minimizer:0","step":110,"name":"gradNorm","value":0.08399959795523279},
@@ -2246,15 +1256,6 @@
       "shape": [2],
       "values": [0.916354287061655,0.8355845821853045]
     },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 110,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-0.01625434836255968,-0.08241194461938939]
-    },
     {"type":"metric","runId":"minimizer:0","step":111,"name":"loss","value":0.006725047634958236},
     {"type":"metric","runId":"minimizer:0","step":111,"name":"gradNorm","value":0.08245091061013443},
     {
@@ -2265,15 +1266,6 @@
       "role": "param",
       "shape": [2],
       "values": [0.9184670839643977,0.8407991374262641]
-    },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 111,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-0.060835048720733156,-0.05565293799599802]
     },
     {"type":"metric","runId":"minimizer:0","step":112,"name":"loss","value":0.006338296241237556},
     {"type":"metric","runId":"minimizer:0","step":112,"name":"gradNorm","value":0.10529955649913503},
@@ -2286,15 +1278,6 @@
       "shape": [2],
       "values": [0.9205453801539603,0.8458144691920003]
     },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 112,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-0.1003873076865795,-0.0317865546159779]
-    },
     {"type":"metric","runId":"minimizer:0","step":113,"name":"loss","value":0.005982236806417145},
     {"type":"metric","runId":"minimizer:0","step":113,"name":"gradNorm","value":0.12409417636438633},
     {
@@ -2305,15 +1288,6 @@
       "role": "param",
       "shape": [2],
       "values": [0.922702765738163,0.8505216516876248]
-    },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 113,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-0.12289991591551983,-0.017174844264609135]
     },
     {"type":"metric","runId":"minimizer:0","step":114,"name":"loss","value":0.005631224728945113},
     {"type":"metric","runId":"minimizer:0","step":114,"name":"gradNorm","value":0.12333294117805571},
@@ -2326,15 +1300,6 @@
       "shape": [2],
       "values": [0.9249955451526998,0.8548713404143522]
     },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 114,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-0.12242857141800335,-0.014908362759760152]
-    },
     {"type":"metric","runId":"minimizer:0","step":115,"name":"loss","value":0.005283701668916643},
     {"type":"metric","runId":"minimizer:0","step":115,"name":"gradNorm","value":0.10331542839547637},
     {
@@ -2345,15 +1310,6 @@
       "role": "param",
       "shape": [2],
       "values": [0.9274109325819049,0.8588856765038904]
-    },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 115,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-0.10046352240005046,-0.024107227370964157]
     },
     {"type":"metric","runId":"minimizer:0","step":116,"name":"loss","value":0.004958190448245958},
     {"type":"metric","runId":"minimizer:0","step":116,"name":"gradNorm","value":0.07655078200280174},
@@ -2366,15 +1322,6 @@
       "shape": [2],
       "values": [0.9298769692413899,0.8626475424476819]
     },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 116,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-0.06497678051674749,-0.04047270955741533]
-    },
     {"type":"metric","runId":"minimizer:0","step":117,"name":"loss","value":0.004668328405333727},
     {"type":"metric","runId":"minimizer:0","step":117,"name":"gradNorm","value":0.06407704217581554},
     {
@@ -2385,15 +1332,6 @@
       "role": "param",
       "shape": [2],
       "values": [0.9322898681129432,0.8662718829281618]
-    },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 117,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [-0.027553757042498267,-0.05785030515774503]
     },
     {"type":"metric","runId":"minimizer:0","step":118,"name":"loss","value":0.004407229855806476},
     {"type":"metric","runId":"minimizer:0","step":118,"name":"gradNorm","value":0.07027183812152342},
@@ -2406,15 +1344,6 @@
       "shape": [2],
       "values": [0.9345493969340193,0.8698690526599486]
     },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 118,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [0.00044121280706943544,-0.07027045299581092]
-    },
     {"type":"metric","runId":"minimizer:0","step":119,"name":"loss","value":0.004156905156829496},
     {"type":"metric","runId":"minimizer:0","step":119,"name":"gradNorm","value":0.07468633310407323},
     {
@@ -2425,15 +1354,6 @@
       "role": "param",
       "shape": [2],
       "values": [0.9365908354028253,0.8735120948436358]
-    },
-    {
-      "type": "tensor",
-      "runId": "minimizer:0",
-      "step": 119,
-      "name": "grad.x",
-      "role": "grad",
-      "shape": [2],
-      "values": [0.011433646654351065,-0.07380596233852676]
     },
     {"type":"metric","runId":"minimizer:0","step":120,"name":"loss","value":0.003908585478880778},
     {"type":"metric","runId":"minimizer:0","step":120,"name":"gradNorm","value":0.06777351914722418},
@@ -2446,23 +1366,1444 @@
       "shape": [2],
       "values": [0.9384036033443413,0.8772179901238708]
     },
+    {"type":"metric","runId":"minimizer:0","step":121,"name":"loss","value":0.0036697338762356024},
+    {"type":"metric","runId":"minimizer:0","step":121,"name":"gradNorm","value":0.05713006023032853},
     {
       "type": "tensor",
       "runId": "minimizer:0",
-      "step": 120,
-      "name": "grad.x",
-      "role": "grad",
+      "step": 121,
+      "name": "params.x",
+      "role": "param",
       "shape": [2],
-      "values": [0.0038044685329177708,-0.06766665291545904]
+      "values": [0.940031366978251,0.880947939185398]
+    },
+    {"type":"metric","runId":"minimizer:0","step":122,"name":"loss","value":0.0034519490211339433},
+    {"type":"metric","runId":"minimizer:0","step":122,"name":"gradNorm","value":0.0591542508226052},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 122,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9415547013260379,0.8846253586433985]
+    },
+    {"type":"metric","runId":"minimizer:0","step":123,"name":"loss","value":0.0032562963646558417},
+    {"type":"metric","runId":"minimizer:0","step":123,"name":"gradNorm","value":0.07258941966471419},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 123,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.943063032641181,0.8881646332430195]
+    },
+    {"type":"metric","runId":"minimizer:0","step":124,"name":"loss","value":0.0030729906158796375},
+    {"type":"metric","runId":"minimizer:0","step":124,"name":"gradNorm","value":0.08152961180146034},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 124,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9446256887289518,0.8915006075309012]
+    },
+    {"type":"metric","runId":"minimizer:0","step":125,"name":"loss","value":0.002893481447250606},
+    {"type":"metric","runId":"minimizer:0","step":125,"name":"gradNorm","value":0.07813792471864968},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 125,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9462715454574065,0.8946091904542233]
+    },
+    {"type":"metric","runId":"minimizer:0","step":126,"name":"loss","value":0.0027191766928703377},
+    {"type":"metric","runId":"minimizer:0","step":126,"name":"gradNorm","value":0.06438877495124676},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 126,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9479833319218319,0.8975129608885533]
+    },
+    {"type":"metric","runId":"minimizer:0","step":127,"name":"loss","value":0.002557337788898889},
+    {"type":"metric","runId":"minimizer:0","step":127,"name":"gradNorm","value":0.049903321045084166},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 127,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9497074832707983,0.9002709672949101]
+    },
+    {"type":"metric","runId":"minimizer:0","step":128,"name":"loss","value":0.0024109222218476572},
+    {"type":"metric","runId":"minimizer:0","step":128,"name":"gradNorm","value":0.04573246581950769},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 128,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9513752791660427,0.9029571742403751]
+    },
+    {"type":"metric","runId":"minimizer:0","step":129,"name":"loss","value":0.002275128032904971},
+    {"type":"metric","runId":"minimizer:0","step":129,"name":"gradNorm","value":0.04872488631957546},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 129,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9529275188215928,0.9056355009457127]
+    },
+    {"type":"metric","runId":"minimizer:0","step":130,"name":"loss","value":0.0021436254184429944},
+    {"type":"metric","runId":"minimizer:0","step":130,"name":"gradNorm","value":0.048282021264741216},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 130,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9543342253355428,0.9083400522099867]
+    },
+    {"type":"metric","runId":"minimizer:0","step":131,"name":"loss","value":0.002015624148602328},
+    {"type":"metric","runId":"minimizer:0","step":131,"name":"gradNorm","value":0.04298140151677851},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 131,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.955603019132272,0.9110668638779413]
+    },
+    {"type":"metric","runId":"minimizer:0","step":132,"name":"loss","value":0.0018952940426627156},
+    {"type":"metric","runId":"minimizer:0","step":132,"name":"gradNorm","value":0.04047542458758217},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 132,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9567740405501912,0.9137791742986467]
+    },
+    {"type":"metric","runId":"minimizer:0","step":133,"name":"loss","value":0.0017854475440319442},
+    {"type":"metric","runId":"minimizer:0","step":133,"name":"gradNorm","value":0.046095843513254006},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 133,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9579040743084503,0.9164234708251322]
+    },
+    {"type":"metric","runId":"minimizer:0","step":134,"name":"loss","value":0.0016839356062845901},
+    {"type":"metric","runId":"minimizer:0","step":134,"name":"gradNorm","value":0.0530676514697136},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 134,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9590461074251593,0.9189500285000077]
+    },
+    {"type":"metric","runId":"minimizer:0","step":135,"name":"loss","value":0.0015866199421711654},
+    {"type":"metric","runId":"minimizer:0","step":135,"name":"gradNorm","value":0.05401937196201616},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 135,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9602317255772447,0.9213305235527515]
+    },
+    {"type":"metric","runId":"minimizer:0","step":136,"name":"loss","value":0.0014922613898503837},
+    {"type":"metric","runId":"minimizer:0","step":136,"name":"gradNorm","value":0.04773589003996175},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 136,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9614622616468123,0.9235668215987175]
+    },
+    {"type":"metric","runId":"minimizer:0","step":137,"name":"loss","value":0.0014030971960809536},
+    {"type":"metric","runId":"minimizer:0","step":137,"name":"gradNorm","value":0.03852637423767134},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 137,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9627111604117523,0.925688516924079]
+    },
+    {"type":"metric","runId":"minimizer:0","step":138,"name":"loss","value":0.0013211110329406233},
+    {"type":"metric","runId":"minimizer:0","step":138,"name":"gradNorm","value":0.033262479223155596},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 138,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9639359417444017,0.9277409015512166]
+    },
+    {"type":"metric","runId":"minimizer:0","step":139,"name":"loss","value":0.0012452577801307862},
+    {"type":"metric","runId":"minimizer:0","step":139,"name":"gradNorm","value":0.0334357197847343},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 139,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9650948776220617,0.9297682992879367]
+    },
+    {"type":"metric","runId":"minimizer:0","step":140,"name":"loss","value":0.0011728987090258293},
+    {"type":"metric","runId":"minimizer:0","step":140,"name":"gradNorm","value":0.03355115128989019},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 140,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9661621363164133,0.9317990134814372]
+    },
+    {"type":"metric","runId":"minimizer:0","step":141,"name":"loss","value":0.0011029910153824336},
+    {"type":"metric","runId":"minimizer:0","step":141,"name":"gradNorm","value":0.031125777654278455},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 141,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9671360835097188,0.9338371459978516]
+    },
+    {"type":"metric","runId":"minimizer:0","step":142,"name":"loss","value":0.0010367894295626808},
+    {"type":"metric","runId":"minimizer:0","step":142,"name":"gradNorm","value":0.029488360527128943},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 142,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9680382309649701,0.9358637253267407]
+    },
+    {"type":"metric","runId":"minimizer:0","step":143,"name":"loss","value":0.0009755930351697922},
+    {"type":"metric","runId":"minimizer:0","step":143,"name":"gradNorm","value":0.03211589610199877},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 143,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9689038810229469,0.9378460531212348]
+    },
+    {"type":"metric","runId":"minimizer:0","step":144,"name":"loss","value":0.0009188398944030683},
+    {"type":"metric","runId":"minimizer:0","step":144,"name":"gradNorm","value":0.03614260024543786},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 144,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9697684739974776,0.9397512696919599]
+    },
+    {"type":"metric","runId":"minimizer:0","step":145,"name":"loss","value":0.0008648795973698687},
+    {"type":"metric","runId":"minimizer:0","step":145,"name":"gradNorm","value":0.03700707449646845},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 145,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9706549400715873,0.9415588807414517]
+    },
+    {"type":"metric","runId":"minimizer:0","step":146,"name":"loss","value":0.000812999442791244},
+    {"type":"metric","runId":"minimizer:0","step":146,"name":"gradNorm","value":0.03350614297441182},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 146,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9715666147452684,0.9432677398757723]
+    },
+    {"type":"metric","runId":"minimizer:0","step":147,"name":"loss","value":0.0007639274262872306},
+    {"type":"metric","runId":"minimizer:0","step":147,"name":"gradNorm","value":0.02800874312804458},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 147,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9724879099059303,0.944895338654375]
+    },
+    {"type":"metric","runId":"minimizer:0","step":148,"name":"loss","value":0.0007184262410255125},
+    {"type":"metric","runId":"minimizer:0","step":148,"name":"gradNorm","value":0.024455873471180924},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 148,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9733919202783714,0.946470246665724]
+    },
+    {"type":"metric","runId":"minimizer:0","step":149,"name":"loss","value":0.0006760937000302398},
+    {"type":"metric","runId":"minimizer:0","step":149,"name":"gradNorm","value":0.023911786649161663},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 149,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9742516332265267,0.9480210239693985]
+    },
+    {"type":"metric","runId":"minimizer:0","step":150,"name":"loss","value":0.0006358758712585764},
+    {"type":"metric","runId":"minimizer:0","step":150,"name":"gradNorm","value":0.023628126199238715},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 150,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9750502937959737,0.949566008813336]
+    },
+    {"type":"metric","runId":"minimizer:0","step":151,"name":"loss","value":0.0005973467456611382},
+    {"type":"metric","runId":"minimizer:0","step":151,"name":"gradNorm","value":0.022295971815624014},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 151,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9757870947888633,0.9511077451422411]
+    },
+    {"type":"metric","runId":"minimizer:0","step":152,"name":"loss","value":0.0005609700339555525},
+    {"type":"metric","runId":"minimizer:0","step":152,"name":"gradNorm","value":0.02174229924073855},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 152,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9764763886608361,0.9526337991732262]
+    },
+    {"type":"metric","runId":"minimizer:0","step":153,"name":"loss","value":0.000527172561424639},
+    {"type":"metric","runId":"minimizer:0","step":153,"name":"gradNorm","value":0.02344357134951879},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 153,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9771412043556272,0.9541231691324809]
+    },
+    {"type":"metric","runId":"minimizer:0","step":154,"name":"loss","value":0.0004956359847971192},
+    {"type":"metric","runId":"minimizer:0","step":154,"name":"gradNorm","value":0.02551585983371907},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 154,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9778039700220718,0.955555421434641]
+    },
+    {"type":"metric","runId":"minimizer:0","step":155,"name":"loss","value":0.0004656951536112691},
+    {"type":"metric","runId":"minimizer:0","step":155,"name":"gradNorm","value":0.025494475950758096},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 155,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9784782028068529,0.9569188539959684]
+    },
+    {"type":"metric","runId":"minimizer:0","step":156,"name":"loss","value":0.0004371308541412831},
+    {"type":"metric","runId":"minimizer:0","step":156,"name":"gradNorm","value":0.02298751449288558},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 156,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9791642809600771,0.9582146319732077]
+    },
+    {"type":"metric","runId":"minimizer:0","step":157,"name":"loss","value":0.0004102437037559785},
+    {"type":"metric","runId":"minimizer:0","step":157,"name":"gradNorm","value":0.01968966500026073},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 157,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9798506140790237,0.9594556163067873]
+    },
+    {"type":"metric","runId":"minimizer:0","step":158,"name":"loss","value":0.00038523299016980926},
+    {"type":"metric","runId":"minimizer:0","step":158,"name":"gradNorm","value":0.017751660503658007},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 158,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9805193464777996,0.9606607504687508]
+    },
+    {"type":"metric","runId":"minimizer:0","step":159,"name":"loss","value":0.00036182422868089633},
+    {"type":"metric","runId":"minimizer:0","step":159,"name":"gradNorm","value":0.017274163421390057},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 159,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9811540324245179,0.9618475310567212]
+    },
+    {"type":"metric","runId":"minimizer:0","step":160,"name":"loss","value":0.0003396007651141338},
+    {"type":"metric","runId":"minimizer:0","step":160,"name":"gradNorm","value":0.016789445549949083},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 160,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9817461365265959,0.9630256495155595]
+    },
+    {"type":"metric","runId":"minimizer:0","step":161,"name":"loss","value":0.0003184760031501664},
+    {"type":"metric","runId":"minimizer:0","step":161,"name":"gradNorm","value":0.0160603012152444},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 161,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9822978986112841,0.9641942064025969]
+    },
+    {"type":"metric","runId":"minimizer:0","step":162,"name":"loss","value":0.0002986472113421165},
+    {"type":"metric","runId":"minimizer:0","step":162,"name":"gradNorm","value":0.01620436369548716},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 162,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9828207131889503,0.9653433160406684]
+    },
+    {"type":"metric","runId":"minimizer:0","step":163,"name":"loss","value":0.0002801808900224343},
+    {"type":"metric","runId":"minimizer:0","step":163,"name":"gradNorm","value":0.01738295585085697},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 163,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9833300123265594,0.9664591228968694]
+    },
+    {"type":"metric","runId":"minimizer:0","step":164,"name":"loss","value":0.00026285311311256593},
+    {"type":"metric","runId":"minimizer:0","step":164,"name":"gradNorm","value":0.018168437879404347},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 164,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9838389579838379,0.9675299700746299]
+    },
+    {"type":"metric","runId":"minimizer:0","step":165,"name":"loss","value":0.0002464172863411131},
+    {"type":"metric","runId":"minimizer:0","step":165,"name":"gradNorm","value":0.017461969022605116},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 165,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.984353552313064,0.9685511715039644]
+    },
+    {"type":"metric","runId":"minimizer:0","step":166,"name":"loss","value":0.00023086049277124646},
+    {"type":"metric","runId":"minimizer:0","step":166,"name":"gradNorm","value":0.015544634319602376},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 166,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9848710109449982,0.9695265904143491]
+    },
+    {"type":"metric","runId":"minimizer:0","step":167,"name":"loss","value":0.0002162994148801999},
+    {"type":"metric","runId":"minimizer:0","step":167,"name":"gradNorm","value":0.013685117331876127},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 167,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.985381796067951,0.9704666443564632]
+    },
+    {"type":"metric","runId":"minimizer:0","step":168,"name":"loss","value":0.00020272044687641165},
+    {"type":"metric","runId":"minimizer:0","step":168,"name":"gradNorm","value":0.012781201625184441},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 168,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9858742024799589,0.9713838251048613]
+    },
+    {"type":"metric","runId":"minimizer:0","step":169,"name":"loss","value":0.00018994881126352628},
+    {"type":"metric","runId":"minimizer:0","step":169,"name":"gradNorm","value":0.01241006572214466},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 169,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9863394400022715,0.9722877442629843]
+    },
+    {"type":"metric","runId":"minimizer:0","step":170,"name":"loss","value":0.00017785015396224444},
+    {"type":"metric","runId":"minimizer:0","step":170,"name":"gradNorm","value":0.011963449264102996},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 170,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9867751072120582,0.9731817555432443]
+    },
+    {"type":"metric","runId":"minimizer:0","step":171,"name":"loss","value":0.0001664450178256702},
+    {"type":"metric","runId":"minimizer:0","step":171,"name":"gradNorm","value":0.011736733377021778},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 171,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9871857651873452,0.9740624059283751]
+    },
+    {"type":"metric","runId":"minimizer:0","step":172,"name":"loss","value":0.00015579165485884606},
+    {"type":"metric","runId":"minimizer:0","step":172,"name":"gradNorm","value":0.012174577136605427},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 172,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.987580605760449,0.9749217141814547]
+    },
+    {"type":"metric","runId":"minimizer:0","step":173,"name":"loss","value":0.00014584032781643461},
+    {"type":"metric","runId":"minimizer:0","step":173,"name":"gradNorm","value":0.012788115133468923},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 173,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9879694048385089,0.9757511132683868]
+    },
+    {"type":"metric","runId":"minimizer:0","step":174,"name":"loss","value":0.00013646765051619842},
+    {"type":"metric","runId":"minimizer:0","step":174,"name":"gradNorm","value":0.012716062572480957},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 174,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9883585684368992,0.9765452965520945]
+    },
+    {"type":"metric","runId":"minimizer:0","step":175,"name":"loss","value":0.00012761125859546378},
+    {"type":"metric","runId":"minimizer:0","step":175,"name":"gradNorm","value":0.011743261336598532},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 175,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9887489016729736,0.9773043835234878]
+    },
+    {"type":"metric","runId":"minimizer:0","step":176,"name":"loss","value":0.00011929744157955662},
+    {"type":"metric","runId":"minimizer:0","step":176,"name":"gradNorm","value":0.010442962471358095},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 176,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9891358895780213,0.9780336414724937]
+    },
+    {"type":"metric","runId":"minimizer:0","step":177,"name":"loss","value":0.00011154108599583263},
+    {"type":"metric","runId":"minimizer:0","step":177,"name":"gradNorm","value":0.009546313004614072},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 177,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.989512171024974,0.9787410772282283]
+    },
+    {"type":"metric","runId":"minimizer:0","step":178,"name":"loss","value":0.00010428190710293003},
+    {"type":"metric","runId":"minimizer:0","step":178,"name":"gradNorm","value":0.009134485356379155},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 178,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.989870994324207,0.9794340794820638]
+    },
+    {"type":"metric","runId":"minimizer:0","step":179,"name":"loss","value":0.00009744139694981783},
+    {"type":"metric","runId":"minimizer:0","step":179,"name":"gradNorm","value":0.008827711314227023},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 179,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9902091238740591,0.9801165990493049]
+    },
+    {"type":"metric","runId":"minimizer:0","step":180,"name":"loss","value":0.00009099824725226025},
+    {"type":"metric","runId":"minimizer:0","step":180,"name":"gradNorm","value":0.008599027718192384},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 180,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9905280162811756,0.9807880120712726]
+    },
+    {"type":"metric","runId":"minimizer:0","step":181,"name":"loss","value":0.00008497096623510256},
+    {"type":"metric","runId":"minimizer:0","step":181,"name":"gradNorm","value":0.008718541370328362},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 181,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9908329078916523,0.9814440101420638]
+    },
+    {"type":"metric","runId":"minimizer:0","step":182,"name":"loss","value":0.0000793486016482095},
+    {"type":"metric","runId":"minimizer:0","step":182,"name":"gradNorm","value":0.009060952157190012},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 182,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9911303706255169,0.9820789741735236]
+    },
+    {"type":"metric","runId":"minimizer:0","step":183,"name":"loss","value":0.00007407815412611272},
+    {"type":"metric","runId":"minimizer:0","step":183,"name":"gradNorm","value":0.009112396824688973},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 183,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.991425502357517,0.9826886996048779]
+    },
+    {"type":"metric","runId":"minimizer:0","step":184,"name":"loss","value":0.0000691167994059051},
+    {"type":"metric","runId":"minimizer:0","step":184,"name":"gradNorm","value":0.008602265745763935},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 184,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9917199828943927,0.9832722796548087]
+    },
+    {"type":"metric","runId":"minimizer:0","step":185,"name":"loss","value":0.00006446184620282833},
+    {"type":"metric","runId":"minimizer:0","step":185,"name":"gradNorm","value":0.007768291950239923},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 185,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9920117586892927,0.9838324084165948]
+    },
+    {"type":"metric","runId":"minimizer:0","step":186,"name":"loss","value":0.000060118706136247405},
+    {"type":"metric","runId":"minimizer:0","step":186,"name":"gradNorm","value":0.0070739801615289834},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 186,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9922963589220669,0.9843741034510328]
+    },
+    {"type":"metric","runId":"minimizer:0","step":187,"name":"loss","value":0.0000560643006469004},
+    {"type":"metric","runId":"minimizer:0","step":187,"name":"gradNorm","value":0.006694589768879292},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 187,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9925691414683219,0.9849025294403907]
+    },
+    {"type":"metric","runId":"minimizer:0","step":188,"name":"loss","value":0.00005226012948088396},
+    {"type":"metric","runId":"minimizer:0","step":188,"name":"gradNorm","value":0.006453544324940721},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 188,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9928274197792152,0.9854209396301434]
+    },
+    {"type":"metric","runId":"minimizer:0","step":189,"name":"loss","value":0.00004868713468884562},
+    {"type":"metric","runId":"minimizer:0","step":189,"name":"gradNorm","value":0.006276119594467134},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 189,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9930715559164681,0.9859296199944495]
+    },
+    {"type":"metric","runId":"minimizer:0","step":190,"name":"loss","value":0.00004534725532108104},
+    {"type":"metric","runId":"minimizer:0","step":190,"name":"gradNorm","value":0.006291199943669998},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 190,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9933046279060019,0.9864262137152564]
+    },
+    {"type":"metric","runId":"minimizer:0","step":191,"name":"loss","value":0.00004223511993590785},
+    {"type":"metric","runId":"minimizer:0","step":191,"name":"gradNorm","value":0.00646060223240258},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 191,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9935309343743879,0.9869071698884354]
+    },
+    {"type":"metric","runId":"minimizer:0","step":192,"name":"loss","value":0.000039326828654465496},
+    {"type":"metric","runId":"minimizer:0","step":192,"name":"gradNorm","value":0.0064903750472620125},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 192,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.993754088902431,0.9873695876293027]
+    },
+    {"type":"metric","runId":"minimizer:0","step":193,"name":"loss","value":0.00003659934992627992},
+    {"type":"metric","runId":"minimizer:0","step":193,"name":"gradNorm","value":0.006181561136728707},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 193,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9939755771619617,0.9878126111005215]
+    },
+    {"type":"metric","runId":"minimizer:0","step":194,"name":"loss","value":0.00003404626527322245},
+    {"type":"metric","runId":"minimizer:0","step":194,"name":"gradNorm","value":0.005643870526749971},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 194,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9941943757875897,0.9882377969501613]
+    },
+    {"type":"metric","runId":"minimizer:0","step":195,"name":"loss","value":0.00003166698958240459},
+    {"type":"metric","runId":"minimizer:0","step":195,"name":"gradNorm","value":0.005157168781194566},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 195,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9944077138516281,0.9886483770833968]
+    },
+    {"type":"metric","runId":"minimizer:0","step":196,"name":"loss","value":0.000029450181268963504},
+    {"type":"metric","runId":"minimizer:0","step":196,"name":"gradNorm","value":0.0048596514014554995},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 196,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.994612543827589,0.9890478364900647]
+    },
+    {"type":"metric","runId":"minimizer:0","step":197,"name":"loss","value":0.000027377172770152882},
+    {"type":"metric","runId":"minimizer:0","step":197,"name":"gradNorm","value":0.004671473192184967},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 197,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9948070074554622,0.989438497218236]
+    },
+    {"type":"metric","runId":"minimizer:0","step":198,"name":"loss","value":0.000025436714544461603},
+    {"type":"metric","runId":"minimizer:0","step":198,"name":"gradNorm","value":0.004541766181718003},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 198,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9949912414341614,0.9898207411503489]
+    },
+    {"type":"metric","runId":"minimizer:0","step":199,"name":"loss","value":0.000023626800396597237},
+    {"type":"metric","runId":"minimizer:0","step":199,"name":"gradNorm","value":0.004530770401672997},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 199,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.995167216502084,0.9901931667913855]
+    },
+    {"type":"metric","runId":"minimizer:0","step":200,"name":"loss","value":0.000021943040111965222},
+    {"type":"metric","runId":"minimizer:0","step":200,"name":"gradNorm","value":0.004608482561759906},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 200,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9953377629875576,0.9905535313775321]
+    },
+    {"type":"metric","runId":"minimizer:0","step":201,"name":"loss","value":0.000020373488804149436},
+    {"type":"metric","runId":"minimizer:0","step":201,"name":"gradNorm","value":0.004597788290286466},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 201,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9955052906496851,0.9908999874346782]
+    },
+    {"type":"metric","runId":"minimizer:0","step":202,"name":"loss","value":0.00001890658544389265},
+    {"type":"metric","runId":"minimizer:0","step":202,"name":"gradNorm","value":0.004378569783581952},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 202,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9956708078767977,0.99123202956123]
+    },
+    {"type":"metric","runId":"minimizer:0","step":203,"name":"loss","value":0.000017537766143583794},
+    {"type":"metric","runId":"minimizer:0","step":203,"name":"gradNorm","value":0.004020112308830638},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 203,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9958336603992397,0.9915507461879448]
+    },
+    {"type":"metric","runId":"minimizer:0","step":204,"name":"loss","value":0.00001626486299694934},
+    {"type":"metric","runId":"minimizer:0","step":204,"name":"gradNorm","value":0.003693357725660717},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 204,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9959920481315194,0.9918583203075151]
+    },
+    {"type":"metric","runId":"minimizer:0","step":205,"name":"loss","value":0.000015081271505412355},
+    {"type":"metric","runId":"minimizer:0","step":205,"name":"gradNorm","value":0.0034815401414807576},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 205,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9961440188651176,0.9921570704565568]
+    },
+    {"type":"metric","runId":"minimizer:0","step":206,"name":"loss","value":0.000013977725322276978},
+    {"type":"metric","runId":"minimizer:0","step":206,"name":"gradNorm","value":0.003342736712134532},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 206,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9962884437345129,0.9924485098880914]
+    },
+    {"type":"metric","runId":"minimizer:0","step":207,"name":"loss","value":0.00001294840337554799},
+    {"type":"metric","runId":"minimizer:0","step":207,"name":"gradNorm","value":0.0032529041822739247},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 207,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9964255280060752,0.9927328544898507]
+    },
+    {"type":"metric","runId":"minimizer:0","step":208,"name":"loss","value":0.00001199116737369992},
+    {"type":"metric","runId":"minimizer:0","step":208,"name":"gradNorm","value":0.003240537572153389},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 208,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9965566610820497,0.9930091682001428]
+    },
+    {"type":"metric","runId":"minimizer:0","step":209,"name":"loss","value":0.000011102569417785934},
+    {"type":"metric","runId":"minimizer:0","step":209,"name":"gradNorm","value":0.0032700544777289463},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 209,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9966837307948615,0.9932760248732385]
+    },
+    {"type":"metric","runId":"minimizer:0","step":210,"name":"loss","value":0.000010276249846024947},
+    {"type":"metric","runId":"minimizer:0","step":210,"name":"gradNorm","value":0.003229398164805311},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 210,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9968082649471688,0.9935323363493815]
+    },
+    {"type":"metric","runId":"minimizer:0","step":211,"name":"loss","value":0.000009506579588530774},
+    {"type":"metric","runId":"minimizer:0","step":211,"name":"gradNorm","value":0.003058054291076468},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 211,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9969308135307562,0.9937779480919456]
+    },
+    {"type":"metric","runId":"minimizer:0","step":212,"name":"loss","value":0.000008790925597717064},
+    {"type":"metric","runId":"minimizer:0","step":212,"name":"gradNorm","value":0.0028133495617008917},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 212,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.997050839038094,0.9940137447730645]
+    },
+    {"type":"metric","runId":"minimizer:0","step":213,"name":"loss","value":0.000008127228238261856},
+    {"type":"metric","runId":"minimizer:0","step":213,"name":"gradNorm","value":0.002600032150195648},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 213,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9971671230591853,0.9942412582038233]
+    },
+    {"type":"metric","runId":"minimizer:0","step":214,"name":"loss","value":0.0000075114871414718175},
+    {"type":"metric","runId":"minimizer:0","step":214,"name":"gradNorm","value":0.0024579313752440693},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 214,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9972784549479148,0.9944620036196098]
+    },
+    {"type":"metric","runId":"minimizer:0","step":215,"name":"loss","value":0.0000069390908244251774},
+    {"type":"metric","runId":"minimizer:0","step":215,"name":"gradNorm","value":0.0023614071767467447},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 215,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.997384255173725,0.9946768792090096]
+    },
+    {"type":"metric","runId":"minimizer:0","step":216,"name":"loss","value":0.000006407201714339295},
+    {"type":"metric","runId":"minimizer:0","step":216,"name":"gradNorm","value":0.0023037064619069025},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 216,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9974848453371457,0.9948859063358755]
+    },
+    {"type":"metric","runId":"minimizer:0","step":217,"name":"loss","value":0.000005914236881886108},
+    {"type":"metric","runId":"minimizer:0","step":217,"name":"gradNorm","value":0.002295208337342131},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 217,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9975812674131024,0.9950884041239416]
+    },
+    {"type":"metric","runId":"minimizer:0","step":218,"name":"loss","value":0.000005457760039289228},
+    {"type":"metric","runId":"minimizer:0","step":218,"name":"gradNorm","value":0.0022969859571402187},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 218,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9976747762562547,0.9952834787045417]
+    },
+    {"type":"metric","runId":"minimizer:0","step":219,"name":"loss","value":0.000005034380575388632},
+    {"type":"metric","runId":"minimizer:0","step":219,"name":"gradNorm","value":0.0022393538780883667},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 219,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9977662742480289,0.9954705680033721]
+    },
+    {"type":"metric","runId":"minimizer:0","step":220,"name":"loss","value":0.0000046414447030185045},
+    {"type":"metric","runId":"minimizer:0","step":220,"name":"gradNorm","value":0.002102251695695284},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 220,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9978559622174672,0.9956497780260991]
+    },
+    {"type":"metric","runId":"minimizer:0","step":221,"name":"loss","value":0.000004277497980296023},
+    {"type":"metric","runId":"minimizer:0","step":221,"name":"gradNorm","value":0.001935819389929602},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 221,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9979433548122694,0.9958218680363345]
+    },
+    {"type":"metric","runId":"minimizer:0","step":222,"name":"loss","value":0.000003940987260212088},
+    {"type":"metric","runId":"minimizer:0","step":222,"name":"gradNorm","value":0.001800730303538676},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 222,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9980276218186714,0.9959879218564477]
+    },
+    {"type":"metric","runId":"minimizer:0","step":223,"name":"loss","value":0.0000036295731541631997},
+    {"type":"metric","runId":"minimizer:0","step":223,"name":"gradNorm","value":0.001709096410334579},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 223,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9981080637681555,0.996148889977439]
+    },
+    {"type":"metric","runId":"minimizer:0","step":224,"name":"loss","value":0.0000033410311859536365},
+    {"type":"metric","runId":"minimizer:0","step":224,"name":"gradNorm","value":0.0016458362793130977},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 224,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9981844815198765,0.9963052339023952]
+    },
+    {"type":"metric","runId":"minimizer:0","step":225,"name":"loss","value":0.0000030740025468564857},
+    {"type":"metric","runId":"minimizer:0","step":225,"name":"gradNorm","value":0.0016122757486370194},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 225,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9982572706440813,0.9964568355432648]
+    },
+    {"type":"metric","runId":"minimizer:0","step":226,"name":"loss","value":0.000002827403692271092},
+    {"type":"metric","runId":"minimizer:0","step":226,"name":"gradNorm","value":0.00160571955683542},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 226,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9983272185982639,0.9966031927496167]
+    },
+    {"type":"metric","runId":"minimizer:0","step":227,"name":"loss","value":0.0000025996724255472816},
+    {"type":"metric","runId":"minimizer:0","step":227,"name":"gradNorm","value":0.001589659171159128},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 227,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.998395128604007,0.996743781594059]
+    },
+    {"type":"metric","runId":"minimizer:0","step":228,"name":"loss","value":0.000002389084398761218},
+    {"type":"metric","runId":"minimizer:0","step":228,"name":"gradNorm","value":0.001526062272729198},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 228,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9984614680011875,0.9968783949948805]
+    },
+    {"type":"metric","runId":"minimizer:0","step":229,"name":"loss","value":0.0000021944269253543133},
+    {"type":"metric","runId":"minimizer:0","step":229,"name":"gradNorm","value":0.0014195590764200178},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 229,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9985262103793919,0.9970072947390428]
+    },
+    {"type":"metric","runId":"minimizer:0","step":230,"name":"loss","value":0.0000020148652508577305},
+    {"type":"metric","runId":"minimizer:0","step":230,"name":"gradNorm","value":0.0013101444768255652},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 230,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9985889319544946,0.9971311187708172]
+    },
+    {"type":"metric","runId":"minimizer:0","step":231,"name":"loss","value":0.0000018493538750133504},
+    {"type":"metric","runId":"minimizer:0","step":231,"name":"gradNorm","value":0.0012275246112149305},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 231,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.998649093091475,0.9972506103232087]
+    },
+    {"type":"metric","runId":"minimizer:0","step":232,"name":"loss","value":0.0000016966237863695038},
+    {"type":"metric","runId":"minimizer:0","step":232,"name":"gradNorm","value":0.0011701888693395083},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 232,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9987063507799967,0.9973663173293463]
+    },
+    {"type":"metric","runId":"minimizer:0","step":233,"name":"loss","value":0.0000015556557999401598},
+    {"type":"metric","runId":"minimizer:0","step":233,"name":"gradNorm","value":0.0011317237259148465},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 233,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.998760745579293,0.9974784126963407]
+    },
+    {"type":"metric","runId":"minimizer:0","step":234,"name":"loss","value":0.000001425772352491351},
+    {"type":"metric","runId":"minimizer:0","step":234,"name":"gradNorm","value":0.001114107262278394},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 234,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9988126816327395,0.9975867137252172]
+    },
+    {"type":"metric","runId":"minimizer:0","step":235,"name":"loss","value":0.0000013062585039232935},
+    {"type":"metric","runId":"minimizer:0","step":235,"name":"gradNorm","value":0.001105621767708091},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 235,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9988627275518074,0.997690873873764]
+    },
+    {"type":"metric","runId":"minimizer:0","step":236,"name":"loss","value":0.000001196211230602993},
+    {"type":"metric","runId":"minimizer:0","step":236,"name":"gradNorm","value":0.001078173760103171},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 236,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9989113524484245,0.9977906368714674]
+    },
+    {"type":"metric","runId":"minimizer:0","step":237,"name":"loss","value":0.0000010948173820823327},
+    {"type":"metric","runId":"minimizer:0","step":237,"name":"gradNorm","value":0.001017768250563461},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 237,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9989587339949847,0.9978860214872721]
+    },
+    {"type":"metric","runId":"minimizer:0","step":238,"name":"loss","value":0.000001001519601112419},
+    {"type":"metric","runId":"minimizer:0","step":238,"name":"gradNorm","value":0.0009404271288772085},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 238,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9990047279530005,0.9979773509235426]
+    },
+    {"type":"metric","runId":"minimizer:0","step":239,"name":"loss","value":9.158107936020657e-7},
+    {"type":"metric","runId":"minimizer:0","step":239,"name":"gradNorm","value":0.0008724907138023386},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 239,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9990490004121368,0.9980651256781842]
+    },
+    {"type":"metric","runId":"minimizer:0","step":240,"name":"loss","value":8.370584882629977e-7},
+    {"type":"metric","runId":"minimizer:0","step":240,"name":"gradNorm","value":0.0008235046626285521},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 240,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9990912424137288,0.9981498171794]
+    },
+    {"type":"metric","runId":"minimizer:0","step":241,"name":"loss","value":7.6463999484561e-7},
+    {"type":"metric","runId":"minimizer:0","step":241,"name":"gradNorm","value":0.0007889427096617538},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 241,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9991313520787763,0.9982316927126829]
+    },
+    {"type":"metric","runId":"minimizer:0","step":242,"name":"loss","value":6.98103554393957e-7},
+    {"type":"metric","runId":"minimizer:0","step":242,"name":"gradNorm","value":0.0007679075981070828},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 242,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.999169495429987,0.9983107570544955]
+    },
+    {"type":"metric","runId":"minimizer:0","step":243,"name":"loss","value":6.370782210587866e-7},
+    {"type":"metric","runId":"minimizer:0","step":243,"name":"gradNorm","value":0.0007582970110529225},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 243,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9992060257932476,0.9983868301342701]
+    },
+    {"type":"metric","runId":"minimizer:0","step":244,"name":"loss","value":5.81123610598954e-7},
+    {"type":"metric","runId":"minimizer:0","step":244,"name":"gradNorm","value":0.0007451169730991784},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 244,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9992413148563613,0.9984597096494164]
+    },
+    {"type":"metric","runId":"minimizer:0","step":245,"name":"loss","value":5.297773740044501e-7},
+    {"type":"metric","runId":"minimizer:0","step":245,"name":"gradNorm","value":0.0007125570792031205},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 245,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9992755887205351,0.9985293288531931]
+    },
+    {"type":"metric","runId":"minimizer:0","step":246,"name":"loss","value":4.826817078626013e-7},
+    {"type":"metric","runId":"minimizer:0","step":246,"name":"gradNorm","value":0.000662430594473558},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 246,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9993088518166907,0.9985958298168475]
+    },
+    {"type":"metric","runId":"minimizer:0","step":247,"name":"loss","value":4.3955903799406776e-7},
+    {"type":"metric","runId":"minimizer:0","step":247,"name":"gradNorm","value":0.0006113760645151476},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 247,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9993409297861138,0.9986595222722258]
+    },
+    {"type":"metric","runId":"minimizer:0","step":248,"name":"loss","value":4.001016246168287e-7},
+    {"type":"metric","runId":"minimizer:0","step":248,"name":"gradNorm","value":0.0005717549005231009},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 248,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9993715990788743,0.9987207590643302]
+    },
+    {"type":"metric","runId":"minimizer:0","step":249,"name":"loss","value":3.6397346859977257e-7},
+    {"type":"metric","runId":"minimizer:0","step":249,"name":"gradNorm","value":0.0005433759202367128},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 249,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9994007294176016,0.9987797992464125]
+    },
+    {"type":"metric","runId":"minimizer:0","step":250,"name":"loss","value":3.308983051954471e-7},
+    {"type":"metric","runId":"minimizer:0","step":250,"name":"gradNorm","value":0.000524034095712765},
+    {
+      "type": "tensor",
+      "runId": "minimizer:0",
+      "step": 250,
+      "name": "params.x",
+      "role": "param",
+      "shape": [2],
+      "values": [0.9994283649686855,0.9988367301298232]
     },
     {
       "type": "end",
       "runId": "minimizer:0",
       "status": "completed",
-      "steps": 120,
+      "steps": 250,
       "summary": {
-        "loss": 0.003908585478880778,
-        "gradNorm": 0.06777351914722418
+        "loss": 3.308983051954471e-7,
+        "gradNorm": 0.000524034095712765
       }
     }
   ]
