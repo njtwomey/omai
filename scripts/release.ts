@@ -5,11 +5,11 @@
  *   node scripts/release.ts --dry-run       print what would change and change nothing
  *   node scripts/release.ts --push          also push the commit and the tags to `origin`
  *
- * The last released version is the highest `mdml-engine-v<version>` tag, on this clone or on `origin`. The three
- * packages are released in lockstep, so the new version is written to `packages/{engine,render,meta}/package.json`
+ * The last released version is the highest `v<version>` tag, on this clone or on `origin`. The three
+ * packages are released in lockstep, as one version and one release, so the new version is written to `packages/{engine,render,meta}/package.json`
  * and to `packages/engine/src/lib/base/version.ts` (a test keeps the constant equal to the manifest). The changelog
- * must already have a `## <version>` entry. The commit is "Release <version>" and each package gets a tag
- * `<package>-v<version>`. It refuses to run with uncommitted changes.
+ * must already have a `## <version>` entry. The commit is "Release <version>" and its tag is
+ * `v<version>`; pushing the tag makes the `pack` workflow build the tarballs and publish the GitHub release. It refuses to run with uncommitted changes.
  */
 import { spawnSync } from 'node:child_process'
 import { readFileSync, writeFileSync } from 'node:fs'
@@ -34,24 +34,24 @@ const parse = (v: string): Version | undefined => {
 }
 const compare = (a: Version, b: Version): number => a[0] - b[0] || a[1] - b[1] || a[2] - b[2]
 
-/** The released versions: `mdml-engine-v<version>` tags here and on origin. */
+/** The released versions: `v<version>` tags here and on origin. */
 function released(): Version[] {
-  const local = git('tag', '--list', 'mdml-engine-v*').split('\n')
+  const local = git('tag', '--list', 'v*').split('\n')
   let remote: string[] = []
   try {
-    remote = git('ls-remote', '--tags', 'origin', 'mdml-engine-v*')
+    remote = git('ls-remote', '--tags', 'origin', 'v*')
       .split('\n')
       .map((l) => l.split('refs/tags/')[1] ?? '')
   } catch {
     // no network or no origin: the local tags are what there is
   }
   return [...local, ...remote]
-    .map((t) => parse(t.replace(/^mdml-engine-v/, '').replace(/\^\{\}$/, '')))
+    .map((t) => parse(t.replace(/^v/, '').replace(/\^\{\}$/, '')))
     .filter((v): v is Version => v !== undefined)
 }
 
 const last = released().sort(compare).at(-1)
-if (last === undefined) throw new Error('release: no mdml-engine-v<version> tag found')
+if (last === undefined) throw new Error('release: no v<version> tag found')
 const next = `${last[0]}.${last[1]}.${last[2] + 1}`
 console.log(`release: last released ${last.join('.')}, next ${next}`)
 
@@ -79,21 +79,21 @@ if (versionOut === versionText && !versionText.includes(`'${next}'`))
   throw new Error(`release: no VERSION in ${versionFile}`)
 edits.push({ file: versionFile, text: versionOut })
 
-const tags = PACKAGES.map((p) => `mdml-${p}-v${next}`)
+const tag = `v${next}`
 if (dry) {
   console.log(`release (dry run): would write ${edits.map((e) => e.file).join(', ')}`)
   console.log(
-    `release (dry run): would commit "Release ${next}" and tag ${tags.join(', ')}${push ? ', then push' : ''}`,
+    `release (dry run): would commit "Release ${next}" and tag ${tag}${push ? ', then push' : ''}`,
   )
   process.exit(0)
 }
 for (const e of edits) writeFileSync(join(ROOT, e.file), e.text)
 git('add', ...edits.map((e) => e.file))
 git('commit', '-m', `Release ${next}`)
-for (const t of tags) git('tag', '-a', t, '-m', `${t}`)
-console.log(`release: committed "Release ${next}" and tagged ${tags.join(', ')}`)
+git('tag', '-a', tag, '-m', next)
+console.log(`release: committed "Release ${next}" and tagged ${tag}`)
 if (push) {
   git('push', 'origin', 'HEAD')
-  git('push', 'origin', ...tags)
-  console.log('release: pushed the commit and the tags')
+  git('push', 'origin', tag)
+  console.log('release: pushed the commit and the tag')
 }
