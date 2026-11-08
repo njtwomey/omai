@@ -8,7 +8,7 @@ import type { Exposition, ExpositionKind } from 'omai-engine/exposition'
 import { type ReactNode, useMemo } from 'react'
 import { imageGridFigure } from '../../views/images.ts'
 import { stripAspect } from '../../views/strips.ts'
-import { FigureFrame } from '../FigureFrame.tsx'
+import { FigureChromeProvider, FigureFrame } from '../FigureFrame.tsx'
 import { AudioView } from '../views/audio.tsx'
 import { EquationFitView } from '../views/equation-fit.tsx'
 import { ImageGridView } from '../views/images.tsx'
@@ -44,13 +44,19 @@ function useRecord<K extends ExpositionKind>(
 }
 
 // A frame saying why nothing is drawn yet.
-function Nothing(props: { readonly title: string; readonly filename: string; readonly problem?: string }): ReactNode {
+function Nothing(props: {
+  readonly title: string
+  readonly filename: string
+  readonly problem?: string
+  readonly chrome?: boolean
+}): ReactNode {
   const base = usePanelFigure()
   return (
     <FigureFrame
       figure={base}
       title={props.title}
       filename={props.filename}
+      {...(props.chrome === undefined ? {} : { chrome: props.chrome })}
       caption={<Note>{props.problem === undefined ? 'nothing recorded yet' : `unavailable: ${props.problem}`}</Note>}
     >
       <div className="h-full" />
@@ -75,6 +81,8 @@ export function StripPanel(props: {
   readonly t: number
   readonly title: string
   readonly filename: string
+  /** Draw the figure's frame without its buttons (default true; the panel's provider or `PanelFigureProvider` may say). */
+  readonly chrome?: boolean
 }): ReactNode {
   const base = usePanelFigure()
   const { record, problem } = useRecord(props.live, props.t, 'strip', props.panel.path, props.panel.args)
@@ -84,7 +92,11 @@ export function StripPanel(props: {
     [record, base],
   )
   if (record === undefined) return <Nothing {...props} {...(problem === undefined ? {} : { problem })} />
-  return <StripView record={record} figure={fig} title={props.title} filename={props.filename} />
+  return (
+    <FigureChromeProvider chrome={props.chrome}>
+      <StripView record={record} figure={fig} title={props.title} filename={props.filename} />
+    </FigureChromeProvider>
+  )
 }
 
 /**
@@ -100,11 +112,17 @@ export function TablePanel(props: {
   readonly t: number
   readonly title: string
   readonly filename: string
+  /** Draw the figure's frame without its buttons (default true; the panel's provider or `PanelFigureProvider` may say). */
+  readonly chrome?: boolean
 }): ReactNode {
   const base = usePanelFigure()
   const { record, problem } = useRecord(props.live, props.t, 'markedTable', props.panel.path, props.panel.args)
   if (record === undefined) return <Nothing {...props} {...(problem === undefined ? {} : { problem })} />
-  return <MarkedTableView record={record} figure={base} title={props.title} filename={props.filename} />
+  return (
+    <FigureChromeProvider chrome={props.chrome}>
+      <MarkedTableView record={record} figure={base} title={props.title} filename={props.filename} />
+    </FigureChromeProvider>
+  )
 }
 
 /**
@@ -120,6 +138,8 @@ export function ImagesPanel(props: {
   readonly t: number
   readonly title: string
   readonly filename: string
+  /** Draw the figure's frame without its buttons (default true; the panel's provider or `PanelFigureProvider` may say). */
+  readonly chrome?: boolean
 }): ReactNode {
   const base = usePanelFigure()
   const { panel, t } = props
@@ -131,14 +151,16 @@ export function ImagesPanel(props: {
   )
   if (record === undefined) return <Nothing {...props} {...(problem === undefined ? {} : { problem })} />
   return (
-    <ImageGridView
-      record={record}
-      step={t}
-      figure={fig}
-      title={props.title}
-      filename={props.filename}
-      {...(panel.columns === undefined ? {} : { columns: panel.columns })}
-    />
+    <FigureChromeProvider chrome={props.chrome}>
+      <ImageGridView
+        record={record}
+        step={t}
+        figure={fig}
+        title={props.title}
+        filename={props.filename}
+        {...(panel.columns === undefined ? {} : { columns: panel.columns })}
+      />
+    </FigureChromeProvider>
   )
 }
 
@@ -155,20 +177,24 @@ export function GraphPanel(props: {
   readonly t: number
   readonly title: string
   readonly filename: string
+  /** Draw the figure's frame without its buttons (default true; the panel's provider or `PanelFigureProvider` may say). */
+  readonly chrome?: boolean
 }): ReactNode {
   const base = usePanelFigure()
   const { panel, t } = props
   const { record, problem } = useRecord(props.live, t, 'structureSteps', panel.path, panel.args)
   if (record === undefined) return <Nothing {...props} {...(problem === undefined ? {} : { problem })} />
   return (
-    <StructureStepsView
-      record={record}
-      step={t}
-      figure={base}
-      title={props.title}
-      filename={props.filename}
-      {...(panel.layout === undefined ? {} : { layout: panel.layout })}
-    />
+    <FigureChromeProvider chrome={props.chrome}>
+      <StructureStepsView
+        record={record}
+        step={t}
+        figure={base}
+        title={props.title}
+        filename={props.filename}
+        {...(panel.layout === undefined ? {} : { layout: panel.layout })}
+      />
+    </FigureChromeProvider>
   )
 }
 
@@ -185,22 +211,26 @@ export function PointsPanel(props: {
   readonly t: number
   readonly title: string
   readonly filename: string
+  /** Draw the figure's frame without its buttons (default true; the panel's provider or `PanelFigureProvider` may say). */
+  readonly chrome?: boolean
 }): ReactNode {
   const base = usePanelFigure()
   const { record, problem } = useRecord(props.live, props.t, 'pointsSteps', props.panel.path, props.panel.args)
   if (record === undefined) return <Nothing {...props} {...(problem === undefined ? {} : { problem })} />
   const { colour, fade, camera } = props.panel
   return (
-    <PointsStepsView
-      record={record}
-      step={props.t}
-      figure={base}
-      title={props.title}
-      filename={props.filename}
-      {...(colour === undefined ? {} : { colour })}
-      {...(fade === undefined ? {} : { fade })}
-      {...(camera === undefined ? {} : { camera })}
-    />
+    <FigureChromeProvider chrome={props.chrome}>
+      <PointsStepsView
+        record={record}
+        step={props.t}
+        figure={base}
+        title={props.title}
+        filename={props.filename}
+        {...(colour === undefined ? {} : { colour })}
+        {...(fade === undefined ? {} : { fade })}
+        {...(camera === undefined ? {} : { camera })}
+      />
+    </FigureChromeProvider>
   )
 }
 
@@ -217,11 +247,17 @@ export function ScenePanel(props: {
   readonly t: number
   readonly title: string
   readonly filename: string
+  /** Draw the figure's frame without its buttons (default true; the panel's provider or `PanelFigureProvider` may say). */
+  readonly chrome?: boolean
 }): ReactNode {
   const base = usePanelFigure()
   const { record, problem } = useRecord(props.live, props.t, 'sceneSteps', props.panel.path, props.panel.args)
   if (record === undefined) return <Nothing {...props} {...(problem === undefined ? {} : { problem })} />
-  return <SceneStepsView record={record} step={props.t} figure={base} title={props.title} filename={props.filename} />
+  return (
+    <FigureChromeProvider chrome={props.chrome}>
+      <SceneStepsView record={record} step={props.t} figure={base} title={props.title} filename={props.filename} />
+    </FigureChromeProvider>
+  )
 }
 
 /**
@@ -237,19 +273,23 @@ export function LandscapePanel(props: {
   readonly t: number
   readonly title: string
   readonly filename: string
+  /** Draw the figure's frame without its buttons (default true; the panel's provider or `PanelFigureProvider` may say). */
+  readonly chrome?: boolean
 }): ReactNode {
   const base = usePanelFigure()
   const { panel, t } = props
   const { record, problem } = useRecord(props.live, t, 'landscapeSlice', panel.path, panel.args)
   if (record === undefined) return <Nothing {...props} {...(problem === undefined ? {} : { problem })} />
   return (
-    <LandscapeSliceView
-      record={record}
-      figure={base}
-      title={props.title}
-      filename={props.filename}
-      {...(panel.surface === undefined ? {} : { surface: panel.surface })}
-    />
+    <FigureChromeProvider chrome={props.chrome}>
+      <LandscapeSliceView
+        record={record}
+        figure={base}
+        title={props.title}
+        filename={props.filename}
+        {...(panel.surface === undefined ? {} : { surface: panel.surface })}
+      />
+    </FigureChromeProvider>
   )
 }
 
@@ -266,11 +306,17 @@ export function StabilityPanel(props: {
   readonly t: number
   readonly title: string
   readonly filename: string
+  /** Draw the figure's frame without its buttons (default true; the panel's provider or `PanelFigureProvider` may say). */
+  readonly chrome?: boolean
 }): ReactNode {
   const base = usePanelFigure()
   const { record, problem } = useRecord(props.live, props.t, 'stabilityRegion', props.panel.path, props.panel.args)
   if (record === undefined) return <Nothing {...props} {...(problem === undefined ? {} : { problem })} />
-  return <StabilityRegionView record={record} figure={base} title={props.title} filename={props.filename} />
+  return (
+    <FigureChromeProvider chrome={props.chrome}>
+      <StabilityRegionView record={record} figure={base} title={props.title} filename={props.filename} />
+    </FigureChromeProvider>
+  )
 }
 
 /**
@@ -286,12 +332,18 @@ export function EquationPanel(props: {
   readonly t: number
   readonly title: string
   readonly filename: string
+  /** Draw the figure's frame without its buttons (default true; the panel's provider or `PanelFigureProvider` may say). */
+  readonly chrome?: boolean
 }): ReactNode {
   const base = usePanelFigure()
   const tall = useMemo(() => reshaped(base, { height: Math.round(base.height * TALL_RATIO) }), [base])
   const { record, problem } = useRecord(props.live, props.t, 'equationFit', props.panel.path, props.panel.args)
   if (record === undefined) return <Nothing {...props} {...(problem === undefined ? {} : { problem })} />
-  return <EquationFitView record={record} figure={tall} title={props.title} filename={props.filename} />
+  return (
+    <FigureChromeProvider chrome={props.chrome}>
+      <EquationFitView record={record} figure={tall} title={props.title} filename={props.filename} />
+    </FigureChromeProvider>
+  )
 }
 
 /**
@@ -308,18 +360,22 @@ export function AudioPanel(props: {
   readonly t: number
   readonly title: string
   readonly filename: string
+  /** Draw the figure's frame without its buttons (default true; the panel's provider or `PanelFigureProvider` may say). */
+  readonly chrome?: boolean
 }): ReactNode {
   const { record, problem } = useRecord(props.live, props.t, 'audio', props.panel.path, props.panel.args)
   const cursor = useStepCursor()
   if (record === undefined) return <Nothing {...props} {...(problem === undefined ? {} : { problem })} />
   return (
-    <AudioView
-      record={record}
-      step={props.t}
-      title={props.title}
-      filename={props.filename}
-      onStep={(s) => cursor?.scrub(Math.min(s, cursor.head))}
-    />
+    <FigureChromeProvider chrome={props.chrome}>
+      <AudioView
+        record={record}
+        step={props.t}
+        title={props.title}
+        filename={props.filename}
+        onStep={(s) => cursor?.scrub(Math.min(s, cursor.head))}
+      />
+    </FigureChromeProvider>
   )
 }
 
@@ -336,11 +392,17 @@ export function TranscriptPanel(props: {
   readonly t: number
   readonly title: string
   readonly filename: string
+  /** Draw the figure's frame without its buttons (default true; the panel's provider or `PanelFigureProvider` may say). */
+  readonly chrome?: boolean
 }): ReactNode {
   const base = usePanelFigure()
   const { record, problem } = useRecord(props.live, props.t, 'transcript', props.panel.path, props.panel.args)
   if (record === undefined) return <Nothing {...props} {...(problem === undefined ? {} : { problem })} />
-  return <TranscriptView record={record} figure={base} title={props.title} filename={props.filename} />
+  return (
+    <FigureChromeProvider chrome={props.chrome}>
+      <TranscriptView record={record} figure={base} title={props.title} filename={props.filename} />
+    </FigureChromeProvider>
+  )
 }
 
 /**
@@ -356,17 +418,21 @@ export function SamplesPanel(props: {
   readonly t: number
   readonly title: string
   readonly filename: string
+  /** Draw the figure's frame without its buttons (default true; the panel's provider or `PanelFigureProvider` may say). */
+  readonly chrome?: boolean
 }): ReactNode {
   const { panel, t } = props
   const { record, problem } = useRecord(props.live, t, 'sampleGrid', panel.path, panel.args)
   if (record === undefined) return <Nothing {...props} {...(problem === undefined ? {} : { problem })} />
   return (
-    <SampleGridView
-      record={record}
-      step={t}
-      title={props.title}
-      filename={props.filename}
-      {...(panel.filmstrip === undefined ? {} : { filmstrip: panel.filmstrip })}
-    />
+    <FigureChromeProvider chrome={props.chrome}>
+      <SampleGridView
+        record={record}
+        step={t}
+        title={props.title}
+        filename={props.filename}
+        {...(panel.filmstrip === undefined ? {} : { filmstrip: panel.filmstrip })}
+      />
+    </FigureChromeProvider>
   )
 }

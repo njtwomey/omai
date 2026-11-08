@@ -55,6 +55,50 @@ export function useFrameSize(): FrameSize | undefined {
   return useContext(FrameContext)
 }
 
+const ChromeContext = createContext<boolean | undefined>(undefined)
+
+/**
+ * Set whether the frames below it draw their toolbar (the expand, export and settings buttons), for every
+ * {@link FigureFrame} in the subtree whose own `chrome` prop is not given: the default for a player's panels, a page's
+ * figures. A frame's own `chrome` always wins. With `chrome` undefined it passes the setting of an enclosing provider
+ * through (and the frames' own default, true, without one). Nested, the innermost given setting wins.
+ *
+ * @param props - The setting (`undefined` leaves the enclosing one) and the frames.
+ * @returns The frames, with the setting in context.
+ * @example
+ * ```tsx
+ * import { FigureChromeProvider, SessionPanels } from 'omai-render/react'
+ * const bare = (
+ *   <FigureChromeProvider chrome={false}>
+ *     <SessionPanels live={live} at={at} layout={layout} />
+ *   </FigureChromeProvider>
+ * )
+ * ```
+ */
+export function FigureChromeProvider(props: {
+  readonly chrome: boolean | undefined
+  readonly children?: ReactNode
+}): ReactNode {
+  return props.chrome === undefined ? (
+    props.children
+  ) : (
+    <ChromeContext.Provider value={props.chrome}>{props.children}</ChromeContext.Provider>
+  )
+}
+
+/**
+ * Whether a figure draws its toolbar: its own setting when given, else the one a {@link FigureChromeProvider} above it
+ * gives, else true. For a component that decides about its own buttons (a zoom control) the way {@link FigureFrame}
+ * does about its toolbar.
+ *
+ * @param own - The component's own `chrome` prop, if any.
+ * @returns Whether to draw the buttons.
+ */
+export function useFigureChrome(own?: boolean): boolean {
+  const inherited = useContext(ChromeContext)
+  return own ?? inherited ?? true
+}
+
 /** What a frame needs of a playback to record it: the frame count and rate, the current frame, seek and pause. */
 export interface FramePlayback {
   readonly count: number
@@ -79,7 +123,8 @@ export interface FigureFrameProps {
   readonly children: ReactNode | ((size: FrameSize) => ReactNode)
   /**
    * Draw the figure bare (default true draws the toolbar): false leaves out the expand, export and settings buttons whatever
-   * the other props say, and keeps the title and caption, for a figure placed in a slide or a page of its own.
+   * the other props say, and keeps the title and caption, for a figure placed in a slide or a page of its own. Not given,
+   * it is the setting of an enclosing {@link FigureChromeProvider} (or `PanelFigureProvider`), else true.
    */
   readonly chrome?: boolean
   /** Offer the expand-to-modal button (default true). */
@@ -257,7 +302,7 @@ export function FigureFrame(props: FigureFrameProps): ReactElement {
   const modalExportRef = useRef<HTMLButtonElement | null>(null)
   const scaledRef = useRef<HTMLDivElement | null>(null)
   const playback = props.playback
-  const chrome = props.chrome ?? true
+  const chrome = useFigureChrome(props.chrome)
   const formats = !chrome
     ? []
     : (props.exportFormats ??

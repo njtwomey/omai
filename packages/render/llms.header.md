@@ -68,15 +68,23 @@ below are the folders of `src`; `react` is large and its index is nested by its 
   `history` is a ring buffer of that many states (stepping back stops at `oldest`), and it returns `phase` (the
   status) and `progress`.
 - Slides and hidden pages (React). Four things on the handle serve a host that shows and hides sessions:
-  - `active` (hook option of `useSession`, `useSessions` and `useLiveRun`, default true): while false nothing computes
-    (no priming, the producer stopped, a worker paused, the player's clock off) and the tape and the state are kept; it
-    carries on when true again. `live.halt()` and `live.pause()` are the imperative forms; `dispose()` throws the tape
-    away, and is safe to call from a frame that was already queued.
+  - `active` (hook option of `useSession`, `useSessions`, `useLiveRun` and `usePlayback`, default true): while false
+    nothing computes (no priming, the producer stopped, a worker paused, the player's clock off) and the tape and the
+    state are kept; it carries on when true again (a `usePlayback` that was playing is still `playing`, its clock off,
+    and plays on from the same frame unless the caller paused it meanwhile). `live.halt()` and `live.pause()` are the
+    imperative forms; `dispose()` throws the tape away, and is safe to call from a frame that was already queued.
   - `live.disposed` is true after `dispose()` until `compute`, `play`, `advance` or `apply` uses the session again. The
     `status` then reads `'preparing'` (a session at step 0), which is not a restart; check `disposed` to tell them apart.
   - `live.madeWith` is `{ config, seed }` of the run on the tape (`live.session.config` and `.seed`). A change of the
     options is applied after 250 ms, or held until play, so until then the options are newer than the run: draw what the
-    run was made with from `madeWith`.
+    run was made with from `madeWith`. `useLiveRun` has the same, `run.madeWith`: `{ algorithm, config, seed, maxSteps,
+    capacity }` of its run (it remakes at once, there is no pause). Neither holds what is computed from the data (the
+    true function, the dataset): take your own snapshot where the run is replaced (in the producer, or in a ref).
+  - The controller is the one source of truth. `pause()`, `seek(n)`, `step()` and `reset()` of `usePlayback`,
+    `useLiveRun` and the `SessionPlayer` win over a clock tick that was queued before them, so `pause(); seek(0)` leaves
+    the player paused at step 0 whatever frame callback comes next; a tick reads the latest position and the playing
+    flag, not what the last render saw, and a controller kept from an earlier render acts on the latest state.
+    `live.playingNow()` is the same for a host's own callback.
   - `live.progress` is the step reached over the options' `steps` while the run goes on, and exactly 1 once it has
     ended, whatever its length (a run that converges after 8 of 1000 steps jumps to 1 on its last step).
 - Player and panel settings (React). `SessionPlayer` takes `fps` (the rate; with `onFpsChange` the host owns it),
@@ -86,7 +94,10 @@ below are the folders of `src`; `react` is large and its index is nested by its 
   under the key `omai-session-preferences` by default) gives a subtree its own, read by `useSessionPreferences` and
   changed by `useSetSessionPreferences`. The size of every panel (width, height, type size, padding) is the figure of a
   `PanelFigureProvider figure={figure({ width: 640, height: 400, fontSize: 14 })}` above them, or the `figure` prop of
-  `SessionPanels`; the default is 440 by 320.
+  `SessionPanels`; the default is 440 by 320. The expand and export buttons of every panel's frame go with
+  `chrome={false}` on the same provider (`PanelFigureProvider chrome={false}`), on `SessionPanels`, `TapeView` and
+  `TapeChannels`, or on one panel component (`StripPanel`, `FieldPanel`, `ZoomPanel`, ...); `FigureChromeProvider` sets
+  it for any frames below it, and a frame's own `chrome` prop wins.
 - States that an algorithm changes in place (React and engine). What a view draws at a step comes from what was
   recorded at that step (`observe`, or `ctx.log` and `ctx.emit` at emit time), or from `session.stateAt(t)`, which is
   exact through checkpoints; `session.state` is the live object. An algorithm that mutates its state in place gives

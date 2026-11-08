@@ -1,6 +1,7 @@
+import type { ReactElement } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { inAct, invoke, type Mounted, mountElement, resetGlobals } from './_harness.tsx'
-import { FigureFrame, type FrameSize } from './FigureFrame.tsx'
+import { FigureChromeProvider, FigureFrame, type FrameSize } from './FigureFrame.tsx'
 
 afterEach(() => {
   resetGlobals()
@@ -110,5 +111,41 @@ describe('FigureFrame', () => {
     expect(alerts()).toEqual(['export failed: mp4 needs an export handler or a playback'])
     expect(labels(m)).toContain('Export')
     await m.unmount()
+  })
+})
+
+describe('FigureChromeProvider', () => {
+  const frame = (chrome?: boolean): ReactElement => (
+    <FigureFrame title="T" width={200} height={100} {...(chrome === undefined ? {} : { chrome })}>
+      <span>x</span>
+    </FigureFrame>
+  )
+
+  it('sets the default of the frames below it; the frame’s own prop wins, and the innermost provider', async () => {
+    const hidden = await mountElement(<FigureChromeProvider chrome={false}>{frame()}</FigureChromeProvider>)
+    expect(labels(hidden)).toEqual([])
+    expect(hidden.text()).toContain('T')
+    await hidden.unmount()
+    const own = await mountElement(<FigureChromeProvider chrome={false}>{frame(true)}</FigureChromeProvider>)
+    expect(labels(own)).toEqual(expect.arrayContaining(['Export', 'Expand']))
+    await own.unmount()
+    const nested = await mountElement(
+      <FigureChromeProvider chrome={false}>
+        <FigureChromeProvider chrome={true}>{frame()}</FigureChromeProvider>
+      </FigureChromeProvider>,
+    )
+    expect(labels(nested)).toContain('Expand')
+    await nested.unmount()
+    // An undefined setting leaves the one above.
+    const through = await mountElement(
+      <FigureChromeProvider chrome={false}>
+        <FigureChromeProvider chrome={undefined}>{frame()}</FigureChromeProvider>
+      </FigureChromeProvider>,
+    )
+    expect(labels(through)).toEqual([])
+    await through.unmount()
+    const plain = await mountElement(frame())
+    expect(labels(plain)).toContain('Expand')
+    await plain.unmount()
   })
 })

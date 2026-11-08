@@ -24,7 +24,7 @@ import {
   zoomViewport,
 } from '../../views/zoom.ts'
 import { saveBlob } from '../_download.ts'
-import { FigureFrame, type FrameSize } from '../FigureFrame.tsx'
+import { FigureChromeProvider, FigureFrame, type FrameSize } from '../FigureFrame.tsx'
 import { useColourMode, useTokens } from '../theme.tsx'
 import type { Panel } from './layout.ts'
 import { ToolButton, useSettled } from './parts.tsx'
@@ -79,6 +79,8 @@ export function ZoomPanel(props: {
   readonly t: number
   readonly title: string
   readonly filename: string
+  /** Draw the figure's frame without its buttons (default true; the panel's provider or `PanelFigureProvider` may say). */
+  readonly chrome?: boolean
 }): ReactNode {
   const base = usePanelFigure()
   const { live, panel, t } = props
@@ -126,63 +128,65 @@ export function ZoomPanel(props: {
       ? 'the probe is not a decision surface with values'
       : undefined)
   return (
-    <FigureFrame
-      figure={base}
-      title={props.title}
-      filename={props.filename}
-      exportFormats={['png']}
-      onExport={(_, frame) => {
-        frame.querySelector('canvas')?.toBlob((b) => {
-          if (b !== null) saveBlob(b, 'image/png', `${props.filename}.png`)
-        })
-      }}
-      caption={
-        <div className="flex flex-col gap-1">
-          <div className="flex flex-wrap items-center gap-1">
-            <ToolButton
-              label="+"
-              title="Zoom in"
-              onClick={() => setView(zoomViewport(view, centre(view), 2, domain))}
-            />
-            <ToolButton
-              label="−"
-              title="Zoom out"
-              onClick={() => setView(zoomViewport(view, centre(view), 0.5, domain))}
-            />
-            <ToolButton
-              label="reset"
-              title="Reset the viewport"
-              disabled={sameViewport(view, panel.view)}
-              onClick={() => setView(panel.view)}
-            />
-            <span className="ml-1 text-xs text-muted tabular-nums">
-              {`zoom ${((domain.x[1] - domain.x[0]) / (view.x[1] - view.x[0])).toPrecision(3)}×`}
+    <FigureChromeProvider chrome={props.chrome}>
+      <FigureFrame
+        figure={base}
+        title={props.title}
+        filename={props.filename}
+        exportFormats={['png']}
+        onExport={(_, frame) => {
+          frame.querySelector('canvas')?.toBlob((b) => {
+            if (b !== null) saveBlob(b, 'image/png', `${props.filename}.png`)
+          })
+        }}
+        caption={
+          <div className="flex flex-col gap-1">
+            <div className="flex flex-wrap items-center gap-1">
+              <ToolButton
+                label="+"
+                title="Zoom in"
+                onClick={() => setView(zoomViewport(view, centre(view), 2, domain))}
+              />
+              <ToolButton
+                label="−"
+                title="Zoom out"
+                onClick={() => setView(zoomViewport(view, centre(view), 0.5, domain))}
+              />
+              <ToolButton
+                label="reset"
+                title="Reset the viewport"
+                disabled={sameViewport(view, panel.view)}
+                onClick={() => setView(panel.view)}
+              />
+              <span className="ml-1 text-xs text-muted tabular-nums">
+                {`zoom ${((domain.x[1] - domain.x[0]) / (view.x[1] - view.x[0])).toPrecision(3)}×`}
+              </span>
+            </div>
+            <span className="text-xs text-(--wb-fg) tabular-nums" aria-live="polite" data-testid="inspector">
+              {readout(shown?.surface, pointer)}
             </span>
+            {problem === undefined ? null : <Note>unavailable: {problem}</Note>}
           </div>
-          <span className="text-xs text-(--wb-fg) tabular-nums" aria-live="polite" data-testid="inspector">
-            {readout(shown?.surface, pointer)}
-          </span>
-          {problem === undefined ? null : <Note>unavailable: {problem}</Note>}
-        </div>
-      }
-    >
-      {(size) => (
-        <Picture
-          size={size}
-          view={view}
-          setView={setView}
-          domain={domain}
-          home={panel.view}
-          shown={shown}
-          picture={picture}
-          mini={mini}
-          border={tk.fg}
-          bg={tk.bg}
-          label={props.title}
-          onPointer={setPointer}
-        />
-      )}
-    </FigureFrame>
+        }
+      >
+        {(size) => (
+          <Picture
+            size={size}
+            view={view}
+            setView={setView}
+            domain={domain}
+            home={panel.view}
+            shown={shown}
+            picture={picture}
+            mini={mini}
+            border={tk.fg}
+            bg={tk.bg}
+            label={props.title}
+            onPointer={setPointer}
+          />
+        )}
+      </FigureFrame>
+    </FigureChromeProvider>
   )
 }
 

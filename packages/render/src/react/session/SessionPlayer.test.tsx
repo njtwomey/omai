@@ -4,7 +4,7 @@ import { type ComponentProps, type ReactElement, useState } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { type FakeFrames, fakeFrames, inAct, mountElement, resetGlobals } from '../_harness.tsx'
 import type { StartPolicy } from '../start.ts'
-import type { PlaybackController } from '../usePlayback.ts'
+import { type PlaybackController, useTicker } from '../usePlayback.ts'
 import { SessionPlayer } from './SessionPlayer.tsx'
 import { type LiveSession, useSession } from './useSession.ts'
 
@@ -43,12 +43,27 @@ const page: {
   at: number | null
   active: boolean
   poke?: () => void
+  setAt?: (at: number | null) => void
+  /** Mount the clock that runs ahead of the player's own (it keeps a frame pending, which other tests count). */
+  ahead?: boolean
+  /** Run once, by a ticker mounted ahead of the player's own, so before its tick in the same frame. */
+  before?: () => void
   live?: LiveSession<S, Config>
   playhead: { current: number }
 } = {
   at: null,
   active: true,
   playhead: { current: -1 },
+}
+
+/** A clock ahead of the player's own in every frame, which calls what a test left in `page.before`, once. */
+function Before(): null {
+  useTicker(true, 60, () => {
+    const call = page.before
+    delete page.before
+    call?.()
+  })
+  return null
 }
 
 function Page(props: {
@@ -59,13 +74,19 @@ function Page(props: {
   const [at, setAt] = useState<number | null>(null)
   const [, poke] = useState(0)
   page.poke = () => poke((n) => n + 1)
+  page.setAt = setAt
   const live = useSession(count, { steps: props.steps ?? 200 }, [], {
     start: props.start,
     active: page.active,
   })
   page.at = at
   page.live = live
-  return <SessionPlayer {...props.player} live={live} at={at} onScrub={setAt} playhead={page.playhead} />
+  return (
+    <>
+      {page.ahead === true ? <Before /> : null}
+      <SessionPlayer {...props.player} live={live} at={at} onScrub={setAt} playhead={page.playhead} />
+    </>
+  )
 }
 
 const controller = (): PlaybackController => seen.controller as PlaybackController
@@ -76,7 +97,10 @@ beforeEach(() => {
   frames = fakeFrames()
   page.at = null
   page.active = true
+  page.ahead = false
+  delete page.before
   page.playhead.current = -1
+  delete page.before
   delete seen.controller
 })
 afterEach(() => {
@@ -273,5 +297,87 @@ describe('the rate, the eager toggle and the statistics line', () => {
     await frames.frames(5)
     expect(live().head).toBeGreaterThan(0)
     expect(live().computing).toBe(true)
+  })
+})
+
+describe('the player: a pause or a seek wins over a tick queued before it', () => {
+  async function playingAt(): Promise<number> {
+    page.ahead = true
+    await mountElement(<Page start="first" />)
+    await untilDone()
+    await inAct(() => controller().setFps(60))
+    await inAct(() => controller().play())
+    await frames.frame()
+    for (let n = 0; n < 4; n++) await frames.frame(100)
+    expect(controller().playing).toBe(true)
+    const at = page.at as number
+    expect(at).toBeGreaterThan(10)
+    return at
+  }
+
+  it("the player's own pause then seek to 0", async () => {
+    await playingAt()
+    page.before = () => {
+      controller().pause()
+      controller().seek(0)
+    }
+    await frames.frame(100)
+    expect(page.at).toBe(0)
+    expect(controller().playing).toBe(false)
+    await frames.frames(3)
+    expect(page.at).toBe(0)
+    expect(page.playhead.current).toBe(0)
+  })
+
+  it('the host pauses the handle and scrubs the page to 0 (parking a slide)', async () => {
+    await playingAt()
+    page.before = () => {
+      live().pause()
+      page.setAt?.(0)
+    }
+    await frames.frame(100)
+    expect(page.at).toBe(0)
+    expect(controller().playing).toBe(false)
+    await frames.frames(3)
+    expect(page.at).toBe(0)
+  })
+
+  it('the player step and reset win too, and a seek then play carries on from the step sought', async () => {
+    await playingAt()
+    page.before = () => {
+      controller().reset()
+    }
+    await frames.frame(100)
+    expect(page.at).toBe(0)
+    expect(controller().playing).toBe(false)
+    await inAct(() => controller().play())
+    await frames.frame(100)
+    page.before = () => {
+      controller().pause()
+      controller().seek(10)
+      controller().step(1)
+    }
+    await frames.frame(100)
+    expect(page.at).toBe(11)
+    expect(controller().playing).toBe(false)
+    await frames.frames(2)
+    expect(page.at).toBe(11)
+  })
+
+  it('a seek while priming is not undone by a tick', async () => {
+    page.ahead = true
+    await mountElement(<Page start="first" />)
+    await frames.frames(2)
+    await inAct(() => controller().play())
+    await frames.frame(100)
+    page.before = () => {
+      controller().pause()
+      controller().seek(1)
+    }
+    await frames.frame(100)
+    expect(controller().playing).toBe(false)
+    expect(page.at).toBe(1)
+    await frames.frames(3)
+    expect(page.at).toBe(1)
   })
 })

@@ -18,6 +18,7 @@ import {
   derived,
   Log,
   type Method,
+  scalar,
   session,
   stateFromJson,
   stateToJson,
@@ -25,7 +26,12 @@ import {
 } from 'omai-engine/trace'
 import { renderToString } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
+import { FigureChromeProvider } from '../FigureFrame.tsx'
+import { FieldPanel } from './FieldPanel.tsx'
+import { StripPanel, TablePanel } from './RecordPanels.tsx'
+import { PanelFigureProvider } from './RowsPanel.tsx'
 import { SessionPanels } from './SessionPanels.tsx'
+import { TapeChannels } from './TapeView.tsx'
 import { type LiveSession, STILL_HANDLE } from './useSession.ts'
 
 // A method of nothing but its configuration: a counter, and a probe of each record kind the panels draw.
@@ -108,8 +114,28 @@ const toy: Method<State, Config> = defineMethod<State, Config>({
   defaults: { position: Log({ detail: 'full' }), matrix: Log({ detail: 'full' }) },
 })
 
-function liveOf(steps: number): LiveSession<State, Config> {
-  const s = session(toy, { mode: 'eager', steps })
+// A method that logs a scalar, so its tape has a curve.
+const curve: Method<State, Config> = defineMethod<State, Config>({
+  name: 'curve',
+  config: dict({ n: int(1, 10, { default: 2 }) }),
+  make: () => ({
+    name: 'curve',
+    config: {},
+    init: () => ({ k: 0 }),
+    step: (s, ctx) => {
+      ctx.log('loss', 1 / (s.k + 1))
+      return { k: s.k + 1 }
+    },
+    done: (s) => (s.k >= 10 ? 'completed' : undefined),
+    serialise: (s) => stateToJson(s),
+    deserialise: (j) => stateFromJson(j) as State,
+  }),
+  contract: { loss: scalar() },
+  defaults: { loss: Log() },
+})
+
+function liveOf(steps: number, method: Method<State, Config> = toy): LiveSession<State, Config> {
+  const s = session(method, { mode: 'eager', steps })
   return {
     session: s,
     madeWith: { config: s.config, seed: s.seed },
@@ -182,5 +208,96 @@ describe('the panels of probed records', () => {
     )
     expect(html).toContain('the probe is not a strip record')
     expect(html).toContain('the probe is not a vector field')
+  })
+})
+
+describe('chrome: the buttons of the panels’ frames', () => {
+  const layout = [
+    { kind: 'field', path: 'flow', title: 'the field' },
+    { kind: 'strip', path: 'tags', title: 'the strip' },
+    { kind: 'table', path: 'results', title: 'the table' },
+    { kind: 'images', path: 'glyphs', title: 'the images' },
+    { kind: 'graph', path: 'net', title: 'the graph' },
+    { kind: 'tensor', path: 'matrix', title: 'the matrix' },
+    { kind: 'strip', path: 'wrong', title: 'a wrong strip' },
+  ] as const
+  const buttons = (html: string): number => (html.match(/aria-label="(Expand|Export)"/g) ?? []).length
+  const panels = (extra: { chrome?: boolean } = {}): string =>
+    renderToString(<SessionPanels id="t/chrome" live={liveOf(4)} at={2} layout={layout} {...extra} />)
+
+  it('are drawn by default', () => {
+    expect(buttons(panels())).toBeGreaterThanOrEqual(layout.length)
+  })
+
+  it('are all left out by `chrome={false}` of SessionPanels, the titles staying', () => {
+    const html = panels({ chrome: false })
+    expect(buttons(html)).toBe(0)
+    expect(html).toContain('the strip at step 2')
+    expect(html).toContain('a wrong strip at step 2')
+  })
+
+  it('are all left out by a PanelFigureProvider, and a FigureChromeProvider, above the panels', () => {
+    const inProvider = renderToString(
+      <PanelFigureProvider chrome={false}>
+        <SessionPanels id="t/chrome" live={liveOf(4)} at={2} layout={layout} />
+      </PanelFigureProvider>,
+    )
+    expect(buttons(inProvider)).toBe(0)
+    const inChrome = renderToString(
+      <FigureChromeProvider chrome={false}>
+        <SessionPanels id="t/chrome" live={liveOf(4)} at={2} layout={layout} />
+      </FigureChromeProvider>,
+    )
+    expect(buttons(inChrome)).toBe(0)
+  })
+
+  it('a panel’s own prop wins over the provider, and the innermost provider wins', () => {
+    const live = liveOf(4)
+    const own = (chrome: boolean): string =>
+      renderToString(
+        <PanelFigureProvider chrome={!chrome}>
+          <StripPanel
+            live={live}
+            t={2}
+            title="s"
+            filename="s"
+            panel={{ kind: 'strip', path: 'tags' }}
+            chrome={chrome}
+          />
+          <TablePanel
+            live={live}
+            t={2}
+            title="t"
+            filename="t"
+            panel={{ kind: 'table', path: 'wrong' }}
+            chrome={chrome}
+          />
+          <FieldPanel
+            live={live}
+            t={2}
+            title="f"
+            filename="f"
+            panel={{ kind: 'field', path: 'flow' }}
+            chrome={chrome}
+          />
+        </PanelFigureProvider>,
+      )
+    expect(buttons(own(false))).toBe(0)
+    expect(buttons(own(true))).toBeGreaterThanOrEqual(3)
+    const nested = renderToString(
+      <PanelFigureProvider chrome={false}>
+        <PanelFigureProvider chrome={true}>
+          <StripPanel live={live} t={2} title="s" filename="s" panel={{ kind: 'strip', path: 'tags' }} />
+        </PanelFigureProvider>
+      </PanelFigureProvider>,
+    )
+    expect(buttons(nested)).toBeGreaterThanOrEqual(1)
+  })
+
+  it('reach the tape views', () => {
+    const live = liveOf(4, curve)
+    const on = renderToString(<TapeChannels live={live} at={null} />)
+    expect(buttons(on)).toBeGreaterThan(0)
+    expect(buttons(renderToString(<TapeChannels live={live} at={null} chrome={false} />))).toBe(0)
   })
 })

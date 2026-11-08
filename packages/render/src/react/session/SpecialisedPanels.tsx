@@ -36,6 +36,8 @@ export function SpecialisedPanel(props: {
   readonly t: number
   readonly title: string
   readonly filename: string
+  /** Draw the figure's frame without its buttons (default true; the panel's provider or `PanelFigureProvider` may say). */
+  readonly chrome?: boolean
 }): ReactNode {
   const { panel, ...common } = props
   switch (panel.kind) {

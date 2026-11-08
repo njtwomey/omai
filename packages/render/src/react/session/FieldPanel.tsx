@@ -9,7 +9,7 @@ import { type ReactNode, useMemo } from 'react'
 import { cartesian, type Layer } from '../../charts/plot.ts'
 import { vectorFieldLayers } from '../../views/fields.ts'
 import { Chart } from '../Chart.tsx'
-import { FigureFrame } from '../FigureFrame.tsx'
+import { FigureChromeProvider, FigureFrame } from '../FigureFrame.tsx'
 import { useColourMode } from '../theme.tsx'
 import type { Panel } from './layout.ts'
 import { Note, usePanelFigure, useProbe, useRun } from './RowsPanel.tsx'
@@ -31,6 +31,8 @@ export function FieldPanel(props: {
   readonly t: number
   readonly title: string
   readonly filename: string
+  /** Draw the figure's frame without its buttons (default true; the panel's provider or `PanelFigureProvider` may say). */
+  readonly chrome?: boolean
 }): ReactNode {
   const base = usePanelFigure()
   const { live, panel, t } = props
@@ -76,13 +78,15 @@ export function FieldPanel(props: {
   const problem =
     probed.error ?? (record === undefined && probed.value !== undefined ? 'the probe is not a vector field' : undefined)
   return (
-    <FigureFrame
-      figure={base}
-      title={props.title}
-      filename={props.filename}
-      {...(problem === undefined ? {} : { caption: <Note>unavailable: {problem}</Note> })}
-    >
-      {option === undefined ? <div className="h-full" /> : <Chart figure={base} option={option} />}
-    </FigureFrame>
+    <FigureChromeProvider chrome={props.chrome}>
+      <FigureFrame
+        figure={base}
+        title={props.title}
+        filename={props.filename}
+        {...(problem === undefined ? {} : { caption: <Note>unavailable: {problem}</Note> })}
+      >
+        {option === undefined ? <div className="h-full" /> : <Chart figure={base} option={option} />}
+      </FigureFrame>
+    </FigureChromeProvider>
   )
 }

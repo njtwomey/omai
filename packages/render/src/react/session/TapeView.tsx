@@ -15,7 +15,7 @@ import { figure } from '../../figure/index.ts'
 import { episodeCurves } from '../../trace/episodes.ts'
 import { metricCurves, metricNames } from '../../trace/metrics.ts'
 import { Chart } from '../Chart.tsx'
-import { FigureFrame } from '../FigureFrame.tsx'
+import { FigureChromeProvider, FigureFrame } from '../FigureFrame.tsx'
 import { SceneView } from '../SceneView.tsx'
 import { useColourMode } from '../theme.tsx'
 import { ExpositionView } from '../views/ExpositionView.tsx'
@@ -43,6 +43,8 @@ export interface TapeViewProps<S, C extends Config> {
   readonly onEpisodeClick?: (episode: number) => void
   /** Extra panels, drawn after the tape's own. */
   readonly children?: ReactNode
+  /** Draw the figures' frames without their buttons (default true; a `PanelFigureProvider` above may say). */
+  readonly chrome?: boolean
 }
 
 function groupByPrefix(names: readonly string[]): Map<string, string[]> {
@@ -100,100 +102,104 @@ export function TapeChannels<S, C extends Config>(
   const frameList = useMemo(() => frames(run), [run])
   const frameAt = frameList.filter((f) => f.step <= viewed).at(-1)
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap gap-4">
-        {[...groups].map(([prefix, names]) => (
-          <MetricGroup
-            key={prefix}
-            prefix={prefix}
-            names={names}
-            run={run}
-            viewed={viewed}
-            head={head}
-            mode={mode}
-            onScrub={props.onScrub}
-          />
-        ))}
-        {eps.length > 0 ? (
-          <Chart
-            figure={base}
-            option={cartesian(episodeCurves(run, { mode, window: 10 }), {
-              mode,
-              figure: base,
-              title: 'return per episode (click one)',
-              x: { label: 'episode' },
-            })}
-            onEvents={{
-              click: (p: unknown) => {
-                const i = (p as { readonly dataIndex?: number }).dataIndex
-                if (i !== undefined) onEpisodeClick?.(i)
-              },
-            }}
-          />
-        ) : null}
-        {tensorNames.map((name) => (
-          <TensorPanel
-            key={name}
-            name={name}
-            events={run.events.filter((e): e is TensorEvent => e.type === 'tensor' && e.name === name)}
-            viewed={viewed}
-            mode={mode}
-          />
-        ))}
-        {frameAt === undefined ? null : (
-          <div className="flex flex-col gap-1">
-            <div className="text-sm opacity-70">frame at step {frameAt.step}</div>
-            <SceneView scene={frameAt.frame as unknown as Scene} width={320} mode={mode} />
-          </div>
-        )}
-        {kinds.map((kind) => {
-          const list = messages(run, kind)
-          const latest = list.filter((m) => m.step <= viewed).at(-1)
-          if (latest !== undefined && isExposition(latest.payload))
-            return (
-              <div key={kind} className="flex flex-col gap-1">
-                <div className="text-sm opacity-70">
-                  {kind} at step {latest.step}
-                </div>
-                <ExpositionView record={latest.payload} figure={small} />
-              </div>
-            )
-          return (
-            <div key={kind} className="flex max-w-xs flex-col gap-1 text-xs">
-              <div className="text-sm opacity-70">
-                {kind} ({list.length})
-              </div>
-              {list
-                .filter((m) => m.step <= viewed)
-                .slice(-6)
-                .map((m) => (
-                  <div key={m.step} className="truncate font-mono">
-                    {m.step}: {JSON.stringify(m.payload)}
+    <FigureChromeProvider chrome={props.chrome}>
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-wrap gap-4">
+          {[...groups].map(([prefix, names]) => (
+            <MetricGroup
+              key={prefix}
+              prefix={prefix}
+              names={names}
+              run={run}
+              viewed={viewed}
+              head={head}
+              mode={mode}
+              onScrub={props.onScrub}
+            />
+          ))}
+          {eps.length > 0 ? (
+            <Chart
+              figure={base}
+              option={cartesian(episodeCurves(run, { mode, window: 10 }), {
+                mode,
+                figure: base,
+                title: 'return per episode (click one)',
+                x: { label: 'episode' },
+              })}
+              onEvents={{
+                click: (p: unknown) => {
+                  const i = (p as { readonly dataIndex?: number }).dataIndex
+                  if (i !== undefined) onEpisodeClick?.(i)
+                },
+              }}
+            />
+          ) : null}
+          {tensorNames.map((name) => (
+            <TensorPanel
+              key={name}
+              name={name}
+              events={run.events.filter((e): e is TensorEvent => e.type === 'tensor' && e.name === name)}
+              viewed={viewed}
+              mode={mode}
+            />
+          ))}
+          {frameAt === undefined ? null : (
+            <div className="flex flex-col gap-1">
+              <div className="text-sm opacity-70">frame at step {frameAt.step}</div>
+              <SceneView scene={frameAt.frame as unknown as Scene} width={320} mode={mode} />
+            </div>
+          )}
+          {kinds.map((kind) => {
+            const list = messages(run, kind)
+            const latest = list.filter((m) => m.step <= viewed).at(-1)
+            if (latest !== undefined && isExposition(latest.payload))
+              return (
+                <div key={kind} className="flex flex-col gap-1">
+                  <div className="text-sm opacity-70">
+                    {kind} at step {latest.step}
                   </div>
-                ))}
-            </div>
-          )
-        })}
-        {Object.keys(s.method.projections ?? {}).map((name) => {
-          // A projection of the tape so far; it may have nothing to project yet, and says why when it throws.
-          let record: unknown
-          try {
-            record = s.project(name)
-          } catch (e) {
+                  <ExpositionView record={latest.payload} figure={small} />
+                </div>
+              )
             return (
-              <Note key={name}>{`projection ${name} unavailable: ${e instanceof Error ? e.message : String(e)}`}</Note>
+              <div key={kind} className="flex max-w-xs flex-col gap-1 text-xs">
+                <div className="text-sm opacity-70">
+                  {kind} ({list.length})
+                </div>
+                {list
+                  .filter((m) => m.step <= viewed)
+                  .slice(-6)
+                  .map((m) => (
+                    <div key={m.step} className="truncate font-mono">
+                      {m.step}: {JSON.stringify(m.payload)}
+                    </div>
+                  ))}
+              </div>
             )
-          }
-          return record !== undefined && isExposition(record) ? (
-            <div key={name} className="flex flex-col gap-1">
-              <div className="text-sm opacity-70">{name}, from the tape so far</div>
-              <ExpositionView record={record} figure={small} />
-            </div>
-          ) : null
-        })}
-        {props.children}
+          })}
+          {Object.keys(s.method.projections ?? {}).map((name) => {
+            // A projection of the tape so far; it may have nothing to project yet, and says why when it throws.
+            let record: unknown
+            try {
+              record = s.project(name)
+            } catch (e) {
+              return (
+                <Note
+                  key={name}
+                >{`projection ${name} unavailable: ${e instanceof Error ? e.message : String(e)}`}</Note>
+              )
+            }
+            return record !== undefined && isExposition(record) ? (
+              <div key={name} className="flex flex-col gap-1">
+                <div className="text-sm opacity-70">{name}, from the tape so far</div>
+                <ExpositionView record={record} figure={small} />
+              </div>
+            ) : null
+          })}
+          {props.children}
+        </div>
       </div>
-    </div>
+    </FigureChromeProvider>
   )
 }
 
