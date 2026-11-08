@@ -16,6 +16,8 @@ Bayesian optimisation and Gaussian-process stacks, tabular and interpretable lib
 and CRFs, and a group of adjacent libraries) and then asked which omai domains had no reference lens at all
 ([blind-spots.md](blind-spots.md)).
 
+Start with [plan.md](plan.md): the short, directional version (the big gaps, an order, and what needs a decision).
+
 Files:
 
 | file                                                               | covers                                                                                                                                                                        |
