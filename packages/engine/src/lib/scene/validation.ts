@@ -50,9 +50,11 @@ class Walk {
     this.paint(at, 'fill', node['fill'])
     this.paint(at, 'stroke', node['stroke'])
     if (node['strokeWidth'] !== undefined) this.size(at, 'strokeWidth', node['strokeWidth'])
-    const opacity = node['opacity']
-    if (opacity !== undefined && !(isNum(opacity) && opacity >= 0 && opacity <= 1))
-      this.fail(at, `opacity is ${String(opacity)}, expected a number in [0, 1]`)
+    for (const key of ['opacity', 'fillOpacity', 'strokeOpacity']) {
+      const opacity = node[key]
+      if (opacity !== undefined && !(isNum(opacity) && opacity >= 0 && opacity <= 1))
+        this.fail(at, `${key} is ${String(opacity)}, expected a number in [0, 1]`)
+    }
     const dash = node['dash']
     if (dash !== undefined && !(Array.isArray(dash) && dash.every((d) => isNum(d) && d >= 0)))
       this.fail(at, `dash is ${JSON.stringify(dash)}, expected lengths >= 0`)

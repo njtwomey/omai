@@ -7302,6 +7302,11 @@ Design rules:
   with an optional `look`), node `note`s and detail lines, edge waypoints (`via`, manual layout), layered, tree,
   circular, force and bipartite (factor graphs) layouts, node sizes held steady across an animation's `frames`. Text
   beside a node (a factor's label, a note) takes the first free place under, above or beside it.
+  Looks: nodes take the `pill` shape, `fontWeight`, `fontSize` and fill, outline and whole-shape opacity; groups take
+  `fillOpacity` (a pale tint under a solid frame) and a label with its own weight, size and position (`top-left`,
+  `top-centre`, `bottom-left`; the room for it grows with its size); edges take an opacity and a label style
+  (`labelColour`, `labelSize`, `labelWeight`); a `note` may be a `StructureNote` (side, tie line, colour, size, weight).
+  A `$...$` line is sized by its typeset width (`texExtent`).
 - `styles.ts`: the visual language per structure kind: graphical models, computation graphs, neural architectures,
   decision and search trees, automata, pipelines, networks.
 - `architectures.ts`: views of a network structure: compact stack, expanded block, tensor-shape flow, parameter-count
@@ -7329,6 +7334,8 @@ Design rules:
 
 `maths/`
 - `tex.ts`: typesetting through KaTeX for HTML and MathJax for SVG (used by `tex` scene nodes and SVG export).
+  `texExtent` measures typeset TeX from KaTeX's own layout (a tree of glyph widths and spacing, no DOM), so diagrams size
+  a node or a label by the formula as drawn, not by its source text.
 - `macros.ts`: the shared macro registry (vectors, matrices, sets, distributions, operators, as in aifn-engine's
   `math-macros.tsx`), exported so consumers and their own packages get the same symbols with one import, and
   extendable with their own.

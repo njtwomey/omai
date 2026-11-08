@@ -33,13 +33,16 @@ export type Paint = ThemeToken | 'none' | `#${string}` | `rgba(${string})`
  * Stroke and fill shared by every drawable node. Every renderer applies the same defaults: a closed shape (rect,
  * circle, ellipse, closed path) with neither `fill` nor `stroke` set is filled with `fg`; a line or open path with no
  * `stroke` is stroked with `fg`; otherwise an unset paint draws nothing. `strokeWidth` defaults to 1, `opacity` to 1,
- * and `dash` lists alternating dash and gap lengths.
+ * and `dash` lists alternating dash and gap lengths. `fillOpacity` and `strokeOpacity` (each 1 by default) scale the
+ * fill and the outline alone, on top of `opacity`: a pale tint with a solid outline is `fillOpacity: 0.15`.
  */
 export interface Style {
   readonly fill?: Paint
   readonly stroke?: Paint
   readonly strokeWidth?: number
   readonly opacity?: number
+  readonly fillOpacity?: number
+  readonly strokeOpacity?: number
   readonly dash?: readonly number[]
 }
 

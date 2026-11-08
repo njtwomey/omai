@@ -16,7 +16,10 @@ import {
   type SceneNode,
   type Structure,
   type StructureEdge,
+  type StructureGroup,
   type StructureNode,
+  type StructureNote,
+  type StructureNotePosition,
   type StructureOverlay,
   scene,
   tex,
@@ -36,7 +39,8 @@ import {
 import { bipartiteLayout } from '../layout/grids.ts'
 import { layered } from '../layout/layered.ts'
 import { tidyTree } from '../layout/trees.ts'
-import { type EdgeLook, type NodeLook, type StructureStyle, styleFor } from './styles.ts'
+import { texExtent } from '../maths/tex.ts'
+import { type EdgeLook, type GroupLook, type NodeLook, type StructureStyle, styleFor } from './styles.ts'
 
 /** Options of {@link diagram}. */
 export interface DiagramOptions {
@@ -108,14 +112,19 @@ function lines(
 }
 
 const isTex = (s: string): boolean => s.length > 2 && s.startsWith('$') && s.endsWith('$')
-const textWidth = (s: string, size: number): number =>
-  isTex(s) ? (s.length - 2) * size * 0.45 : s.length * size * CHAR
+/**
+ * The width of a line of text drawn at `size`: the source length times a glyph width, a little more when bold; a line
+ * written `$...$` is measured as typeset (it is drawn two pixels larger, and KaTeX's own layout gives its width).
+ */
+const textWidth = (s: string, size: number, bold = false): number =>
+  isTex(s) ? texExtent(s.slice(1, -1), size + 2).width : s.length * size * CHAR * (bold ? 1.05 : 1)
 
 /** The room the boxes behind the first take in a `stack`: two more, each offset by this much up and to the right. */
 const STACK = 4
 
 function nodeSize(look: NodeLook, content: readonly Line[], size: number): { width: number; height: number } {
-  const wide = maxOf(content.map((l) => textWidth(l.text, l.main ? size : size - 2)))
+  const bold = look.fontWeight === 'bold'
+  const wide = maxOf(content.map((l) => textWidth(l.text, l.main ? size : size - 2, l.main && bold)))
   const tall = size + 6 + (content.length - 1) * (size + 2)
   switch (look.shape) {
     case 'dot':
@@ -137,6 +146,8 @@ function nodeSize(look: NodeLook, content: readonly Line[], size: number): { wid
     case 'rect':
     case 'round':
       return { width: Math.max(40, wide + 20), height: Math.max(28, tall + 8) }
+    case 'pill':
+      return { width: Math.max(48, wide + 28), height: Math.max(28, tall + 8) }
   }
 }
 
@@ -154,6 +165,9 @@ function shapeNodes(look: NodeLook, b: LayoutBox, active: boolean): SceneNode[] 
     stroke,
     strokeWidth: active ? 2.5 : (look.strokeWidth ?? 1.2),
     ...(look.dash === undefined ? {} : { dash: look.dash }),
+    ...(look.fillOpacity === undefined ? {} : { fillOpacity: look.fillOpacity }),
+    ...(look.strokeOpacity === undefined ? {} : { strokeOpacity: look.strokeOpacity }),
+    ...(look.opacity === undefined ? {} : { opacity: look.opacity }),
   }
   const x0 = b.x - b.width / 2
   const y0 = b.y - b.height / 2
@@ -162,7 +176,18 @@ function shapeNodes(look: NodeLook, b: LayoutBox, active: boolean): SceneNode[] 
     case 'dot': {
       const r = Math.min(b.width, b.height) / 2
       const outer = circle(b.x, b.y, r, style)
-      return look.double === true ? [outer, circle(b.x, b.y, r - 4, { fill: 'none', stroke, strokeWidth: 1 })] : [outer]
+      return look.double === true
+        ? [
+            outer,
+            circle(b.x, b.y, r - 4, {
+              fill: 'none',
+              stroke,
+              strokeWidth: 1,
+              ...(look.strokeOpacity === undefined ? {} : { strokeOpacity: look.strokeOpacity }),
+              ...(look.opacity === undefined ? {} : { opacity: look.opacity }),
+            }),
+          ]
+        : [outer]
     }
     case 'ellipse':
       return [{ kind: 'ellipse', cx: b.x, cy: b.y, rx: b.width / 2, ry: b.height / 2, ...style }]
@@ -183,6 +208,8 @@ function shapeNodes(look: NodeLook, b: LayoutBox, active: boolean): SceneNode[] 
       return [rect(x0, y0, b.width, b.height, style)]
     case 'round':
       return [rect(x0, y0, b.width, b.height, { radius: 7, ...style })]
+    case 'pill':
+      return [rect(x0, y0, b.width, b.height, { radius: b.height / 2, ...style })]
     case 'none':
       // Text only: an invisible box the size of the text, so the node can still be hovered and picked.
       return [
@@ -251,6 +278,107 @@ function spotsAround(b: LayoutBox, rows: readonly string[], sizes: readonly numb
   ]
 }
 
+/**
+ * The vertical centre of each row of a block of lines, relative to the middle of the block, and how far the first row
+ * reaches above its centre and the last below. Plain rows are `size + 2` apart; a typeset row taller than a plain one
+ * (a fraction, a script, a norm) pushes its neighbours away so the lines do not touch.
+ */
+function rowCentres(
+  rows: readonly string[],
+  size: number,
+): { centres: number[]; tall: number; above: number; below: number } {
+  const heightOf = (row: string): number =>
+    isTex(row) ? Math.max(size, texExtent(row.slice(1, -1), size + 2).height + 3) : size
+  const centres = [0]
+  for (let i = 1; i < rows.length; i++)
+    centres.push((centres[i - 1] as number) + (heightOf(rows[i - 1] as string) + heightOf(rows[i] as string)) / 2 + 2)
+  const span = (centres[centres.length - 1] as number) - (centres[0] as number)
+  const above = heightOf(rows[0] as string) / 2
+  const below = heightOf(rows[rows.length - 1] as string) / 2
+  return { centres: centres.map((c) => c - span / 2), tall: span + above + below, above, below }
+}
+
+/** A node's note as it is drawn: where, whether tied to the node and how, and its text style. */
+interface NoteSpec {
+  readonly text: string
+  readonly position: StructureNotePosition | undefined
+  readonly tie: false | 'solid' | 'dashed'
+  readonly colour: Paint
+  readonly size: number | undefined
+  readonly bold: boolean
+}
+
+function noteSpecOf(note: string | StructureNote): NoteSpec {
+  if (typeof note === 'string')
+    return { text: note, position: undefined, tie: false, colour: 'muted', size: undefined, bold: false }
+  return {
+    text: note.text,
+    position: note.position,
+    tie: note.tie === 'dashed' ? 'dashed' : note.tie === true ? 'solid' : false,
+    colour: note.colour ?? 'muted',
+    size: note.size,
+    bold: note.weight === 'bold',
+  }
+}
+
+/**
+ * Where a note fixed to one side of its node sits: centred above or below it, or beside it, with room for a tie line
+ * when it has one (the gap between the outline and the text is half a line, and 12 px with a tie).
+ */
+function noteSpot(
+  b: LayoutBox,
+  rows: readonly string[],
+  size: number,
+  position: StructureNotePosition,
+  tied: boolean,
+  bold: boolean,
+): Spot {
+  const gap = tied ? 12 : size / 2
+  const width = maxOf(rows.map((r) => textWidth(r, size, bold)))
+  const { centres, above, below } = rowCentres(rows, size)
+  const [first, last] = [centres[0] as number, centres[centres.length - 1] as number]
+  // The rows of a block whose middle is at `y`, and the box they cover.
+  const at = (x: number, y: number, anchor: Spot['anchor']): Spot => {
+    const ys = centres.map((c) => y + c)
+    const x0 = anchor === 'middle' ? x - width / 2 : anchor === 'end' ? x - width : x
+    return { x, ys, anchor, box: [x0, y + first - above, x0 + width, y + last + below] }
+  }
+  switch (position) {
+    case 'above':
+      return at(b.x, b.y - b.height / 2 - gap - below - last, 'middle')
+    case 'below':
+      return at(b.x, b.y + b.height / 2 + gap + above - first, 'middle')
+    case 'left':
+      return at(b.x - b.width / 2 - gap, b.y, 'end')
+    case 'right':
+      return at(b.x + b.width / 2 + gap, b.y, 'start')
+  }
+}
+
+/** The tie line from a node's outline to the box of its note: along the axis the note sits on, with a pixel to spare. */
+function tieBetween(b: LayoutBox, box: Rect): [[number, number], [number, number]] {
+  const [top, bottom] = [b.y - b.height / 2, b.y + b.height / 2]
+  if (box[3] <= top + 0.5)
+    return [
+      [b.x, top],
+      [b.x, box[3] + 1],
+    ]
+  if (box[1] >= bottom - 0.5)
+    return [
+      [b.x, bottom],
+      [b.x, box[1] - 1],
+    ]
+  if (box[0] >= b.x + b.width / 2 - 0.5)
+    return [
+      [b.x + b.width / 2, b.y],
+      [box[0] - 1, b.y],
+    ]
+  return [
+    [b.x - b.width / 2, b.y],
+    [box[2] + 1, b.y],
+  ]
+}
+
 function labelNodes(look: NodeLook, content: readonly Line[], b: LayoutBox, size: number, spot?: Spot): SceneNode[] {
   const outside = isOutside(look)
   const ys = spot?.ys ?? lineYs(look, content.length, b, size)
@@ -262,7 +390,13 @@ function labelNodes(look: NodeLook, content: readonly Line[], b: LayoutBox, size
     const sz = line.main ? size : size - 2
     return isTex(line.text)
       ? tex(x, y, line.text.slice(1, -1), { size: sz + 2, fill, anchor })
-      : text(x, y, line.text, { size: sz, fill, anchor, baseline: 'middle' })
+      : text(x, y, line.text, {
+          size: sz,
+          fill,
+          anchor,
+          baseline: 'middle',
+          ...(line.main && look.fontWeight !== undefined ? { weight: look.fontWeight } : {}),
+        })
   })
 }
 
@@ -279,6 +413,18 @@ function outlineAt(look: NodeLook, b: LayoutBox, angle: number): [number, number
       const [a, c] = [b.width / 2, b.height / 2]
       const t = 1 / Math.hypot(ux / a, uy / c)
       return [b.x + t * ux, b.y + t * uy]
+    }
+    case 'pill': {
+      // A stadium: flat top and bottom, a half circle at each end.
+      const r = b.height / 2
+      const flat = Math.max(0, b.width / 2 - r)
+      const ty = uy === 0 ? Number.POSITIVE_INFINITY : r / Math.abs(uy)
+      if (Math.abs(ux) * ty <= flat) return [b.x + ux * ty, b.y + uy * ty]
+      // The end circle, centred on (±flat, 0): the ray's far intersection with it.
+      const cx = Math.sign(ux) * flat
+      const dot = ux * cx
+      const t = dot + Math.sqrt(dot * dot - (cx * cx - r * r))
+      return [b.x + ux * t, b.y + uy * t]
     }
     case 'diamond':
     case 'square':
@@ -419,6 +565,13 @@ function enterOutline(
     half = Math.abs(offset) < across ? along * Math.sqrt(1 - (offset / across) ** 2) : along
   } else if (look.shape === 'diamond') {
     half = Math.abs(offset) < across ? along * (1 - Math.abs(offset) / across) : along
+  } else if (look.shape === 'pill') {
+    // The ends are half circles of radius `hh`: a line along the axis meets the end circle past the flat middle.
+    const flat = Math.max(0, hw - hh)
+    if (horizontal) half = Math.abs(offset) < hh ? flat + Math.sqrt(hh * hh - offset * offset) : along
+    else
+      half =
+        Math.abs(offset) <= flat ? hh : Math.abs(offset) < hw ? Math.sqrt(hh * hh - (Math.abs(offset) - flat) ** 2) : hh
   }
   return horizontal ? [b.x - Math.sign(inward[0]) * half, p[1]] : [p[0], b.y - Math.sign(inward[1]) * half]
 }
@@ -513,9 +666,10 @@ export function diagram(s: Structure, options: DiagramOptions = {}): Scene {
   // A node's box fits its content in this frame and, given the animation's frames, in every one of them.
   const sizeOf = (n: StructureNode): { width: number; height: number } => {
     const look = looks.get(n.id) as NodeLook
-    let box = nodeSize(look, content.get(n.id) as Line[], size)
+    const nsize = look.fontSize ?? size
+    let box = nodeSize(look, content.get(n.id) as Line[], nsize)
     for (const f of options.frames ?? []) {
-      const other = nodeSize(look, lines(n, f.badges?.[n.id] ?? n.badges, look), size)
+      const other = nodeSize(look, lines(n, f.badges?.[n.id] ?? n.badges, look), nsize)
       box = { width: Math.max(box.width, other.width), height: Math.max(box.height, other.height) }
     }
     return box
@@ -538,6 +692,7 @@ export function diagram(s: Structure, options: DiagramOptions = {}): Scene {
       case 'circle':
       case 'ellipse':
       case 'diamond':
+      case 'pill':
         return 0.35 * (Math.min(box.width, box.height) / 2)
       case 'dot':
       case 'square':
@@ -611,7 +766,11 @@ export function diagram(s: Structure, options: DiagramOptions = {}): Scene {
       ? withOrthogonalRoutes(placed, graph, { flow: direction })
       : placed
 
-  // Groups: deepest first, each around its members and its child groups, with room for its label.
+  // Groups: deepest first, each around its members and its child groups, with room for its label. The label is one
+  // under the type size, and the room for it 24 px; a `labelSize` takes the room with it (its size plus 13).
+  const groupLookOf = (g: StructureGroup): GroupLook => ({ ...style.group(g), ...g.look })
+  const labelSizeOf = (look: GroupLook): number => look.labelSize ?? size - 1
+  const labelRoom = (look: GroupLook): number => (look.labelSize === undefined ? 24 : look.labelSize + 13)
   const members = groupMembers(s)
   const boxes = new Map<string, [number, number, number, number]>()
   const ordered = [...s.groups].sort((a, b) => depthOf(s, b.id) - depthOf(s, a.id))
@@ -624,14 +783,24 @@ export function diagram(s: Structure, options: DiagramOptions = {}): Scene {
       y0 = Math.min(y0, b.y - b.height / 2)
       x1 = Math.max(x1, b.x + b.width / 2)
       y1 = Math.max(y1, b.y + b.height / 2)
-      // A note under a member is inside the group's frame.
-      const note = s.nodes.find((m) => m.id === id)?.note
-      if (note !== undefined) {
-        const rows = note.split('\n')
-        const half = maxOf(rows.map((r) => textWidth(r, size - 2))) / 2
-        x0 = Math.min(x0, b.x - half)
-        x1 = Math.max(x1, b.x + half)
-        y1 = Math.max(y1, b.y + b.height / 2 + 4 + rows.length * (size - 2 + 2))
+      // A note beside a member is inside the group's frame: under it unless it says another side.
+      const noted = s.nodes.find((m) => m.id === id)?.note
+      if (noted !== undefined) {
+        const spec = noteSpecOf(noted)
+        const rows = spec.text.split('\n')
+        const ns = spec.size ?? size - 2
+        if (spec.position === undefined) {
+          const half = maxOf(rows.map((r) => textWidth(r, ns, spec.bold))) / 2
+          x0 = Math.min(x0, b.x - half)
+          x1 = Math.max(x1, b.x + half)
+          y1 = Math.max(y1, b.y + b.height / 2 + 4 + rows.length * (ns + 2) + (spec.tie === false ? 0 : 8))
+        } else {
+          const box = noteSpot(b, rows, ns, spec.position, spec.tie !== false, spec.bold).box
+          x0 = Math.min(x0, box[0])
+          y0 = Math.min(y0, box[1])
+          x1 = Math.max(x1, box[2])
+          y1 = Math.max(y1, box[3])
+        }
       }
     }
     for (const child of s.groups.filter((c) => c.parent === g.id)) {
@@ -642,22 +811,32 @@ export function diagram(s: Structure, options: DiagramOptions = {}): Scene {
       x1 = Math.max(x1, c[2])
       y1 = Math.max(y1, c[3])
     }
-    // The box is at least as wide as its label (which starts 8 px in).
-    if (Number.isFinite(x0))
+    // The box is at least as wide as its label (which starts 8 px in), and has room for it at the top or the bottom.
+    if (Number.isFinite(x0)) {
+      const look = groupLookOf(g)
+      const room = labelRoom(look)
+      const below = look.labelPosition === 'bottom-left'
       boxes.set(g.id, [
         x0 - 12,
-        y0 - 24,
-        Math.max(x1 + 12, x0 - 12 + textWidth(g.label, size - 1) + 16),
-        y1 + (g.count === undefined ? 12 : 22),
+        y0 - (below ? 12 : room),
+        Math.max(x1 + 12, x0 - 12 + textWidth(g.label, labelSizeOf(look), look.labelWeight === 'bold') + 16),
+        y1 + (below ? room : g.count === undefined ? 12 : 22),
       ])
+    }
   }
   const groupScene: SceneNode[] = [...s.groups]
     .sort((a, b) => depthOf(s, a.id) - depthOf(s, b.id))
     .flatMap((g) => {
       const b = boxes.get(g.id)
       if (b === undefined) return []
-      const look = { ...style.group(g), ...g.look }
+      const look = groupLookOf(g)
       const [x0, y0, x1, y1] = b
+      const lsz = labelSizeOf(look)
+      const position = look.labelPosition ?? 'top-left'
+      const labelAt: [number, number] =
+        position === 'bottom-left'
+          ? [x0 + 8, y1 - 7]
+          : [position === 'top-centre' ? (x0 + x1) / 2 : x0 + 8, y0 + labelRoom(look) - 10]
       const out: SceneNode[] = [
         rect(x0, y0, x1 - x0, y1 - y0, {
           id: `group:${g.id}`,
@@ -666,13 +845,21 @@ export function diagram(s: Structure, options: DiagramOptions = {}): Scene {
           radius: look.radius,
           ...(look.strokeWidth === undefined ? {} : { strokeWidth: look.strokeWidth }),
           ...(look.dash === undefined ? {} : { dash: look.dash }),
+          ...(look.fillOpacity === undefined ? {} : { fillOpacity: look.fillOpacity }),
+          ...(look.strokeOpacity === undefined ? {} : { strokeOpacity: look.strokeOpacity }),
+          ...(look.opacity === undefined ? {} : { opacity: look.opacity }),
         }),
-        text(x0 + 8, y0 + 14, g.label, { size: size - 1, fill: look.text ?? 'muted' }),
+        text(labelAt[0], labelAt[1], g.label, {
+          size: lsz,
+          fill: look.text ?? 'muted',
+          ...(position === 'top-centre' ? { anchor: 'middle' as const } : {}),
+          ...(look.labelWeight === undefined ? {} : { weight: look.labelWeight }),
+        }),
       ]
       if (g.count !== undefined)
         out.push(
           text(x1 - 8, y1 - 7, g.kind === 'repeat' ? `× ${g.count}` : String(g.count), {
-            size: size - 1,
+            size: lsz,
             fill: look.text ?? 'fg',
             anchor: 'end',
           }),
@@ -715,6 +902,7 @@ export function diagram(s: Structure, options: DiagramOptions = {}): Scene {
     id: string,
     stroke: Paint,
     strokeWidth: number,
+    opacity?: number,
   ): SceneNode[] => {
     const a = points[0]
     const b = points[1]
@@ -723,7 +911,15 @@ export function diagram(s: Structure, options: DiagramOptions = {}): Scene {
     if (len < 1e-9) return []
     const reach = Math.min(len, 8 + 2 * strokeWidth)
     const from: [number, number] = [a[0] + ((b[0] - a[0]) / len) * reach, a[1] + ((b[1] - a[1]) / len) * reach]
-    return [path([from, [a[0], a[1]]], { id, stroke, strokeWidth, arrow: true })]
+    return [
+      path([from, [a[0], a[1]]], {
+        id,
+        stroke,
+        strokeWidth,
+        arrow: true,
+        ...(opacity === undefined ? {} : { opacity }),
+      }),
+    ]
   }
   // What is drawn of each edge, for the labels and notes that must keep off the lines.
   const drawn: { readonly edge: StructureEdge; readonly points: readonly (readonly [number, number])[] }[] = []
@@ -733,8 +929,9 @@ export function diagram(s: Structure, options: DiagramOptions = {}): Scene {
     readonly points: readonly (readonly [number, number])[]
     readonly orthogonal: boolean
   }[] = []
+  // Edge labels, notes and the details of a node are two points under the type size.
   const fs = size - 2
-  const step = fs + 2
+  const labelSize = fs
   const edgeScene: SceneNode[] = s.edges.flatMap((e, i) => {
     if (absorbed.has(e)) return []
     const look = edgeLook(e)
@@ -756,12 +953,15 @@ export function diagram(s: Structure, options: DiagramOptions = {}): Scene {
           arrow,
           smooth: true,
           ...(look.dash === undefined ? {} : { dash: look.dash }),
+          ...(look.opacity === undefined ? {} : { opacity: look.opacity }),
         }),
       ]
       if (e.label !== undefined) {
         const [lx, ly] = loop.label
         const rows = e.label.split('\n')
-        const w = maxOf(rows.map((r) => textWidth(r, fs)))
+        const fs = look.labelSize ?? labelSize
+        const step = fs + 2
+        const w = maxOf(rows.map((r) => textWidth(r, fs, look.labelWeight === 'bold')))
         const half = ((rows.length - 1) * step) / 2
         const anchor = Math.abs(loop.direction[0]) < 0.4 ? 'middle' : loop.direction[0] > 0 ? 'start' : 'end'
         loopExtent.push([lx - w, ly - size - half], [lx + w, ly + size + half])
@@ -769,8 +969,14 @@ export function diagram(s: Structure, options: DiagramOptions = {}): Scene {
           const y = ly - half + k * step
           out.push(
             isTex(row)
-              ? tex(lx, y, row.slice(1, -1), { size: fs + 2, fill: 'muted', anchor })
-              : text(lx, y, row, { size: fs, fill: 'muted', anchor, baseline: 'middle' }),
+              ? tex(lx, y, row.slice(1, -1), { size: fs + 2, fill: look.labelColour ?? 'muted', anchor })
+              : text(lx, y, row, {
+                  size: fs,
+                  fill: look.labelColour ?? 'muted',
+                  anchor,
+                  baseline: 'middle',
+                  ...(look.labelWeight === undefined ? {} : { weight: look.labelWeight }),
+                }),
           )
         })
       }
@@ -803,8 +1009,9 @@ export function diagram(s: Structure, options: DiagramOptions = {}): Scene {
         arrow,
         smooth: curved && points.length > 2,
         ...(look.dash === undefined ? {} : { dash: look.dash }),
+        ...(look.opacity === undefined ? {} : { opacity: look.opacity }),
       }),
-      ...(e.bidirectional === true ? tailArrow(points, `edge:${i}:tail`, stroke, strokeWidth) : []),
+      ...(e.bidirectional === true ? tailArrow(points, `edge:${i}:tail`, stroke, strokeWidth, look.opacity) : []),
     ]
     if (e.label !== undefined) pending.push({ edge: e, points, orthogonal: orthogonalRoute })
     return out
@@ -822,6 +1029,7 @@ export function diagram(s: Structure, options: DiagramOptions = {}): Scene {
     const b = layout.nodes[n.id]
     if (b === undefined) return []
     const look = looks.get(n.id) as NodeLook
+    const nsize = look.fontSize ?? size
     const rows = content.get(n.id) ?? []
     let spot: Spot | undefined
     const plates: SceneNode[] = []
@@ -831,12 +1039,12 @@ export function diagram(s: Structure, options: DiagramOptions = {}): Scene {
       reach = [Math.min(reach[0], r[0]), Math.min(reach[1], r[1]), Math.max(reach[2], r[2]), Math.max(reach[3], r[3])]
     }
     if (isOutside(look) && rows.length > 0) {
-      const sizes = rows.map((l) => (l.main ? size : size - 2))
+      const sizes = rows.map((l) => (l.main ? nsize : nsize - 2))
       const spots = spotsAround(
         b,
         rows.map((l) => l.text),
         sizes,
-        b.y + b.height / 2 + size,
+        b.y + b.height / 2 + nsize,
       )
       const free = spots.find((sp) => !covered(sp.box))
       spot = free ?? (spots[0] as Spot)
@@ -849,42 +1057,69 @@ export function diagram(s: Structure, options: DiagramOptions = {}): Scene {
         const width = textWidth(l.text, sizes[i] as number)
         const x0 = at.anchor === 'middle' ? at.x - width / 2 : at.anchor === 'end' ? at.x - width : at.x
         const y = at.ys[i] as number
-        loopExtent.push([x0, y - size / 2], [x0 + width, y + size / 2])
+        loopExtent.push([x0, y - nsize / 2], [x0 + width, y + nsize / 2])
       })
     }
     const noteNodes: SceneNode[] = []
     if (n.note !== undefined) {
-      const noteRows = n.note.split('\n')
+      const spec = noteSpecOf(n.note)
+      const noteRows = spec.text.split('\n')
+      const ns = spec.size ?? fs
+      // A tie needs room between the node and its note.
+      const extra = spec.tie === false ? 0 : 8
       const home: LayoutBox = {
         x: b.x,
         y: (reach[1] + reach[3]) / 2,
-        width: 2 * Math.max(b.x - reach[0], reach[2] - b.x),
-        height: reach[3] - reach[1],
+        width: 2 * Math.max(b.x - reach[0], reach[2] - b.x) + 2 * extra,
+        height: reach[3] - reach[1] + 2 * extra,
       }
-      const spots = spotsAround(
-        home,
-        noteRows,
-        noteRows.map(() => fs),
-        home.y + home.height / 2 + fs,
-      )
-      const free = spots.find((sp) => !covered(sp.box))
-      const at = free ?? (spots[0] as Spot)
-      if (free === undefined) plates.push(plateOf(padded(at.box)))
+      let at: Spot
+      if (spec.position !== undefined) {
+        // A side the note asked for: there, and on a plate only when something else is already there.
+        at = noteSpot(home, noteRows, ns, spec.position, spec.tie !== false, spec.bold)
+        if (covered(at.box)) plates.push(plateOf(padded(at.box)))
+      } else {
+        const spots = spotsAround(
+          home,
+          noteRows,
+          noteRows.map(() => ns),
+          home.y + home.height / 2 + ns,
+        )
+        const free = spots.find((sp) => !covered(sp.box))
+        at = free ?? (spots[0] as Spot)
+        if (free === undefined) plates.push(plateOf(padded(at.box)))
+      }
       beside.push(at.box)
       nodeBoxes.push(at.box)
       loopExtent.push([at.box[0], at.box[1]], [at.box[2], at.box[3]])
+      if (spec.tie !== false) {
+        const [from, to] = tieBetween(b, at.box)
+        noteNodes.push(
+          path([from, to], {
+            stroke: spec.colour,
+            strokeWidth: 1,
+            ...(spec.tie === 'dashed' ? { dash: [3, 3] } : {}),
+          }),
+        )
+      }
       noteRows.forEach((row, i) => {
         const y = at.ys[i] as number
         noteNodes.push(
           isTex(row)
-            ? tex(at.x, y, row.slice(1, -1), { size: fs + 2, fill: 'muted', anchor: at.anchor })
-            : text(at.x, y, row, { size: fs, fill: 'muted', anchor: at.anchor, baseline: 'middle' }),
+            ? tex(at.x, y, row.slice(1, -1), { size: ns + 2, fill: spec.colour, anchor: at.anchor })
+            : text(at.x, y, row, {
+                size: ns,
+                fill: spec.colour,
+                anchor: at.anchor,
+                baseline: 'middle',
+                ...(spec.bold ? { weight: 'bold' as const } : {}),
+              }),
         )
       })
     }
     return [
       groupNode(
-        [...shapeNodes(look, b, active.has(n.id)), ...plates, ...labelNodes(look, rows, b, size, spot), ...noteNodes],
+        [...shapeNodes(look, b, active.has(n.id)), ...plates, ...labelNodes(look, rows, b, nsize, spot), ...noteNodes],
         {
           id: n.id,
           title: [n.label.replaceAll('\n', ' '), n.detail?.replaceAll('\n', ' ')]
@@ -900,9 +1135,11 @@ export function diagram(s: Structure, options: DiagramOptions = {}): Scene {
   // when that would cover a node or an earlier label. A label may have several lines, each plain or TeX.
   const labelBoxes: Rect[] = []
   const labelScene: SceneNode[] = pending.flatMap(({ edge, points, orthogonal: right }) => {
+    const look = edgeLook(edge)
+    const fs = look.labelSize ?? labelSize
     const rows = (edge.label as string).split('\n')
-    const w = maxOf(rows.map((r) => textWidth(r, fs)))
-    const tall = fs + (rows.length - 1) * step
+    const w = maxOf(rows.map((r) => textWidth(r, fs, look.labelWeight === 'bold')))
+    const { centres, tall } = rowCentres(rows, fs)
     // The text's box for an anchor, as drawn: centred (an explicit `labelAt`) or starting at the anchor.
     const boxAt = (x: number, y: number, centred: boolean): Rect => [
       (centred ? x - w / 2 : x) - 3,
@@ -988,21 +1225,21 @@ export function diagram(s: Structure, options: DiagramOptions = {}): Scene {
     const box = boxAt(x, y, centred)
     labelBoxes.push(box)
     loopExtent.push([box[0], box[1]], [box[2], box[3]])
-    const top = y - ((rows.length - 1) * step) / 2
     return [
       plateOf(box),
       ...rows.map((row, i) =>
         isTex(row)
-          ? tex(x, top + i * step, row.slice(1, -1), {
+          ? tex(x, y + (centres[i] as number), row.slice(1, -1), {
               size: fs + 2,
-              fill: 'muted',
+              fill: look.labelColour ?? 'muted',
               anchor: centred ? 'middle' : 'start',
             })
-          : text(x, top + i * step, row, {
+          : text(x, y + (centres[i] as number), row, {
               size: fs,
-              fill: 'muted',
+              fill: look.labelColour ?? 'muted',
               baseline: 'middle',
               ...(centred ? { anchor: 'middle' as const } : {}),
+              ...(look.labelWeight === undefined ? {} : { weight: look.labelWeight }),
             }),
       ),
     ]

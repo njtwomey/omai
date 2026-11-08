@@ -41,13 +41,14 @@ function stroke(s: Style, mode: ColourMode, fallback?: Paint): Record<string, st
     stroke: paint(s.stroke ?? fallback, mode) ?? 'none',
     'stroke-width': s.strokeWidth ?? 1,
     'stroke-dasharray': s.dash?.join(' '),
+    'stroke-opacity': s.strokeOpacity,
     opacity: s.opacity,
   }
 }
 
 function closed(s: Style, mode: ColourMode): Record<string, string | number | undefined> {
   const fill = s.fill === undefined && s.stroke === undefined ? 'fg' : s.fill
-  return { fill: paint(fill, mode) ?? 'none', ...stroke(s, mode) }
+  return { fill: paint(fill, mode) ?? 'none', 'fill-opacity': s.fillOpacity, ...stroke(s, mode) }
 }
 
 function title(node: SceneNode): string {
@@ -67,19 +68,21 @@ function nodeSvg(node: SceneNode, mode: ColourMode, font: string): string {
       const s = stroke(node, mode, 'fg')
       const head =
         node.arrow === true
-          ? `<polygon${attrs({ points: arrowHeadPoints([node.x1, node.y1], [node.x2, node.y2], 4 + 2 * (node.strokeWidth ?? 1)), fill: s['stroke'], opacity: node.opacity })}/>`
+          ? `<polygon${attrs({ points: arrowHeadPoints([node.x1, node.y1], [node.x2, node.y2], 4 + 2 * (node.strokeWidth ?? 1)), fill: s['stroke'], 'fill-opacity': node.strokeOpacity, opacity: node.opacity })}/>`
           : ''
       return `<g${attrs(id)}>${title(node)}<line${attrs({ x1: node.x1, y1: node.y1, x2: node.x2, y2: node.y2, ...s })}/>${head}</g>`
     }
     case 'path': {
       const isClosed = node.closed === true
       const d = node.smooth === true ? smoothPathData(node.points, isClosed) : straightPathData(node.points, isClosed)
-      const p = isClosed ? closed(node, mode) : { fill: paint(node.fill, mode) ?? 'none', ...stroke(node, mode, 'fg') }
+      const p = isClosed
+        ? closed(node, mode)
+        : { fill: paint(node.fill, mode) ?? 'none', 'fill-opacity': node.fillOpacity, ...stroke(node, mode, 'fg') }
       const last = node.points[node.points.length - 1]
       const before = node.points[node.points.length - 2]
       const head =
         node.arrow === true && last !== undefined && before !== undefined
-          ? `<polygon${attrs({ points: arrowHeadPoints(before, last, 4 + 2 * (node.strokeWidth ?? 1)), fill: p['stroke'], opacity: node.opacity })}/>`
+          ? `<polygon${attrs({ points: arrowHeadPoints(before, last, 4 + 2 * (node.strokeWidth ?? 1)), fill: p['stroke'], 'fill-opacity': node.strokeOpacity, opacity: node.opacity })}/>`
           : ''
       return `<g${attrs(id)}>${title(node)}<path${attrs({ d, 'stroke-linejoin': 'round', 'stroke-linecap': 'round', ...p })}/>${head}</g>`
     }

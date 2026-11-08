@@ -39,7 +39,7 @@ export interface StructurePort {
 /**
  * The outline of a node. `none` draws the label alone (a transparent box the size of the text, for captions and
  * annotations that sit among the nodes); `stack` draws a few boxes offset behind the first (a batch, an ensemble, a
- * repeated layer).
+ * repeated layer); `pill` is a box with fully rounded ends (a radius of half its height), for titles and tags.
  */
 export type StructureNodeShape =
   | 'rect'
@@ -51,10 +51,15 @@ export type StructureNodeShape =
   | 'dot'
   | 'none'
   | 'stack'
+  | 'pill'
 
 /**
  * How one node is drawn when it should differ from the style's look for its role: any field given replaces the style's
- * (`shape`, the fill, the outline, the label colour, the outline width and dash).
+ * (`shape`, the fill, the outline, the label colour, the outline width and dash). `fillOpacity` and `strokeOpacity`
+ * (0 to 1) make the fill or the outline see-through alone, `opacity` the whole shape (not its label). `fontWeight` and
+ * `fontSize` set the label's text (a plain line: a line written `$...$` is typeset by KaTeX in its own face, where
+ * `\\textsf{\\textbf{...}}` is a bold sans-serif); the detail and badge lines stay small and muted, two points
+ * under `fontSize`.
  */
 export interface StructureNodeLook {
   readonly shape?: StructureNodeShape
@@ -63,24 +68,58 @@ export interface StructureNodeLook {
   readonly text?: Paint
   readonly strokeWidth?: number
   readonly dash?: readonly number[]
+  readonly fillOpacity?: number
+  readonly strokeOpacity?: number
+  readonly opacity?: number
+  readonly fontWeight?: 'normal' | 'bold'
+  readonly fontSize?: number
 }
 
 /**
  * How one edge is drawn when it should differ from the style's look for its kind: any field given replaces the
- * style's (the colour, the width, the dash, and whether it has an arrow head at its end).
+ * style's (the colour, the width, the dash, and whether it has an arrow head at its end). `opacity` (0 to 1) fades the
+ * line and its arrow head. The label is muted and two points under the diagram's type size unless `labelColour`,
+ * `labelSize` or `labelWeight` say otherwise.
  */
 export interface StructureEdgeLook {
   readonly stroke?: Paint
   readonly strokeWidth?: number
   readonly dash?: readonly number[]
   readonly arrow?: boolean
+  readonly opacity?: number
+  /** The colour of the label (default `muted`). */
+  readonly labelColour?: Paint
+  /** The type size of the label in pixels (default two under the diagram's type size). */
+  readonly labelSize?: number
+  /** The weight of the label's plain lines (default normal). */
+  readonly labelWeight?: 'normal' | 'bold'
+}
+
+/** Where a note sits beside its node: `below` is the default. */
+export type StructureNotePosition = 'below' | 'above' | 'left' | 'right'
+
+/**
+ * A note with its own look, the record form of {@link StructureNode.note}. Left alone it is a string: small and muted,
+ * with no tie, in the first free place beside the node. `position` fixes the side (the note is centred on the node
+ * above or below it, beside it to the left or right) and the group frame and the scene grow to hold it; `tie` draws a
+ * thin line from the node's outline to the note (`true` solid, `'dashed'` dashed), and moves the note a little further
+ * out to leave room for it; `colour`, `size` (pixels) and `weight` set the text (the default is muted, two under the
+ * diagram's type size, normal).
+ */
+export interface StructureNote {
+  readonly text: string
+  readonly position?: StructureNotePosition
+  readonly tie?: boolean | 'dashed'
+  readonly colour?: Paint
+  readonly size?: number
+  readonly weight?: 'normal' | 'bold'
 }
 
 /**
  * A node of a {@link Structure}: an id, a label (`\n` starts a new line), a role, an optional enclosing group, detail
  * lines (a muted line under the label; `\n` starts another), value badges (shapes, parameter counts, current values),
  * ports and free-form data. A `position` (the node's centre) places it by hand under the `manual` layout, and a `look`
- * overrides how the style draws it. A `note` is text under the node that takes no part in the layout. Free-standing
+ * overrides how the style draws it. A `note` is text beside the node that takes no part in the layout. Free-standing
  * text, a caption among the nodes, is a node with `look: { shape: 'none' }` (and a `position` under `manual`).
  */
 export interface StructureNode {
@@ -99,9 +138,10 @@ export interface StructureNode {
   /**
    * Small muted text drawn under the node (`\n` starts a new line, and a line written `$...$` is typeset as TeX). It is
    * part of the drawing, not of the layout: it takes the first free place beside the node that no edge, node or other
-   * label covers (under it, then above, then to its sides) and widens the scene to hold it.
+   * label covers (under it, then above, then to its sides) and widens the scene to hold it. A {@link StructureNote}
+   * says where it sits, whether a line ties it to the node, and its colour, size and weight.
    */
-  readonly note?: string
+  readonly note?: string | StructureNote
 }
 
 /**
@@ -134,9 +174,15 @@ export interface StructureAnnotation {
   readonly kind?: 'note' | 'warning' | 'highlight'
 }
 
+/** Where a group's label sits: at the top left (the default), centred along the top, or at the bottom left. */
+export type StructureGroupLabelPosition = 'top-left' | 'top-centre' | 'bottom-left'
+
 /**
  * How one group is drawn when it should differ from the style's look for its kind: any field given replaces the
- * style's (the frame's colour, width and dash, the fill, and the colour of the label and count).
+ * style's (the frame's colour, width and dash, the fill, and the colour of the label and count). `fillOpacity` and
+ * `strokeOpacity` (0 to 1) make the fill or the frame see-through alone, which gives a pale tinted region with a clear
+ * frame (`fill: 'tab0', fillOpacity: 0.12`); `opacity` fades the whole frame. The label's weight, position and size
+ * are free, and the room reserved for it grows with its size.
  */
 export interface StructureGroupLook {
   readonly stroke?: Paint
@@ -146,6 +192,15 @@ export interface StructureGroupLook {
   readonly dash?: readonly number[]
   /** The colour of the group's label and count. */
   readonly text?: Paint
+  readonly fillOpacity?: number
+  readonly strokeOpacity?: number
+  readonly opacity?: number
+  /** The weight of the group's label (default normal). */
+  readonly labelWeight?: 'normal' | 'bold'
+  /** Where the label sits (default `top-left`). */
+  readonly labelPosition?: StructureGroupLabelPosition
+  /** The type size of the label in pixels (default one under the diagram's type size). */
+  readonly labelSize?: number
 }
 
 /** A group of nodes: a plate, a repeated block, a cluster. A `look` overrides how the style draws it. */

@@ -148,6 +148,8 @@ describe('the scene builders check their arguments where the drawing is made', (
     bad([{ kind: 'group', children: [], scale: 0 }], /scale is 0/)
     bad([{ kind: 'circle', cx: 0, cy: 0, r: 1, fill: '#zzz' }], /fill is "#zzz", expected a colour/)
     bad([{ kind: 'circle', cx: 0, cy: 0, r: 1, opacity: 2 }], /opacity is 2/)
+    bad([{ kind: 'circle', cx: 0, cy: 0, r: 1, fillOpacity: -1 }], /fillOpacity is -1/)
+    bad([{ kind: 'circle', cx: 0, cy: 0, r: 1, strokeOpacity: 3 }], /strokeOpacity is 3/)
     bad([circle(0, 0, 1, { id: 'x' }), circle(1, 1, 1, { id: 'x' })], /duplicate id 'x'/)
     bad([{ kind: 'blob' }], /unknown node kind "blob"/)
     bad(

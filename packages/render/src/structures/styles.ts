@@ -4,7 +4,14 @@
  * automata, neural networks and a generic fallback, looked up with `styleFor`.
  */
 
-import type { NodeRole, Paint, StructureEdge, StructureGroup, StructureNodeShape } from 'omai-engine/scene'
+import type {
+  NodeRole,
+  Paint,
+  StructureEdge,
+  StructureGroup,
+  StructureGroupLabelPosition,
+  StructureNodeShape,
+} from 'omai-engine/scene'
 
 /** The outline of a node: the shapes a structure's nodes can ask for (`look.shape`), including `none` and `stack`. */
 export type NodeShape = StructureNodeShape
@@ -22,6 +29,13 @@ export interface NodeLook {
   readonly dash?: readonly number[]
   /** A second outline just inside the first (deterministic nodes, accepting states). */
   readonly double?: boolean
+  /** How see-through the fill and the outline are alone (0 to 1), and the whole shape (not its label). */
+  readonly fillOpacity?: number
+  readonly strokeOpacity?: number
+  readonly opacity?: number
+  /** The weight and size in pixels of the label's own lines (default normal, the style's `fontSize`). */
+  readonly fontWeight?: 'normal' | 'bold'
+  readonly fontSize?: number
 }
 
 /** How one kind of edge is drawn. */
@@ -30,6 +44,12 @@ export interface EdgeLook {
   readonly strokeWidth?: number
   readonly dash?: readonly number[]
   readonly arrow: boolean
+  /** How see-through the line and its arrow head are (0 to 1). */
+  readonly opacity?: number
+  /** The label's colour (default `muted`), size in pixels (default two under the style's `fontSize`) and weight. */
+  readonly labelColour?: Paint
+  readonly labelSize?: number
+  readonly labelWeight?: 'normal' | 'bold'
 }
 
 /** How one kind of group is drawn. */
@@ -41,6 +61,14 @@ export interface GroupLook {
   readonly strokeWidth?: number
   /** The colour of the group's label and count (default: muted label, plain count). */
   readonly text?: Paint
+  /** How see-through the fill and the frame are alone (0 to 1), and the whole frame. */
+  readonly fillOpacity?: number
+  readonly strokeOpacity?: number
+  readonly opacity?: number
+  /** The label's weight (default normal), place (default `top-left`) and size in pixels (default one under `fontSize`). */
+  readonly labelWeight?: 'normal' | 'bold'
+  readonly labelPosition?: StructureGroupLabelPosition
+  readonly labelSize?: number
 }
 
 /** The visual language of one kind of structure: node looks by role, edge looks by kind, group looks by kind. */
