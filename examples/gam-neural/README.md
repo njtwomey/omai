@@ -1,36 +1,28 @@
-# A neural additive model, learning its shapes
+# A neural additive model, from its spline bases
 
-![The three fitted shape functions moving toward the true ones while the loss falls](learning.gif)
+This is the model of the proof of concept "Generalised additive model, neural" in `apps/pocs`, run without its page. A
+generalised additive model fits `y` as a sum of smooth functions of the features. Here there is one feature, and its
+function is a learnable cubic B-spline: a sum of basis functions, each multiplied by a coefficient. The coefficients and
+the positions of the knots are trained by an optimiser, as the weights of a network are.
 
-A generalised additive model writes the output as a sum of one function per feature, `y = f0(x0) + f1(x1) + f2(x2)`, so
-what it learns can be drawn as three curves. A neural additive model gives each feature its own small network (two
-hidden layers of 12 units here) and adds their outputs.
+## What the program does
 
-## The data and the model
-
-`additiveModel` generates 200 rows with three uniform features. `y` is the sum of `2 sin(2 pi x0)`, `exp(2 x1)` (shifted)
-and `4 (x2 - 1/2)^2` (shifted), plus noise of standard deviation 0.3. The generator hands back the true functions, so the
-learned curves can be compared with them. `additiveRegressor` with a `netTerm` per feature is trained on the squared
-error by Adam, as a session, for 250 steps.
-
-## The animation
-
-`learning.gif` has one frame for each of 17 steps (0, 1, 2, 4, 7, ... 250), and holds on the last. Each frame asks the
-session for the three curves at that step: `probe(step, 'predictor/0/term/<feature>/curve')`. Left to right the panels
-are features 0, 1 and 2. The grey curve is the truth, the blue one what the network has learned. Under them is the loss
-(on a log scale) up to this step, and a bar that fills as training goes. The frames contain shapes only: the
-rasteriser the library uses outside a browser draws no text.
+- It draws 16 noisy points from a sine curve (`sineCurve`, noise 0.2) and keeps the true curve for comparison.
+- It trains the spline with 11 interior knots (learnable) and a smoothness penalty of zero, for 600 steps. With no
+  penalty nothing stops the curve from following the points, and with 15 coefficients for 16 points it can pass through
+  all of them.
+- It asks the training session, at 21 chosen steps, for the curve, for the weighted basis functions (the pieces that add
+  up to the curve) and for the knots. These come from the tape of the run.
+- For comparison it fits a classic GAM of the same data, whose smoothing is chosen by REML, with 7 bases.
 
 ## What to look for
 
-- At step 0 the curves are flat. The simple shapes (the quadratic, the exponential) are found first; the sine takes longer.
-- The loss starts at 5.4 and settles at 0.092, which is the noise variance (0.09): the network cannot do better than the
-  noise, and it has not overfitted much.
-- `figure.svg` is the last frame drawn with axes: the true and learned curves and the loss. The root mean square gap
-  between learned and true curve is 0.40, 0.18 and 0.04. Feature 0 is the weakest: ReLU networks draw
-  piecewise-linear curves, and a sine needs more segments than 12 units give.
+- `learning.gif` shows the pale orange weighted bases and their sum in red. At step 0 the sum is almost flat. As the
+  steps go on the bases grow and move, the knots (the red ticks) shift, and the red curve is pulled up to the points.
+  The loss under the plot falls from 0.4 to about 1e-6.
+- `figure.svg` shows the start, the end, and the loss. At the end the red curve goes through every point (the root mean
+  square distance from the points is 0.003, where the noise is 0.2) and is wiggly between them. The blue classic GAM
+  is smooth and stays near the dotted true curve (the red one is 0.27 away from it). That is what a penalty is for.
 
-## Run it
-
-`make readme-examples ARGS="gam-neural"` writes `learning.gif`, `figure.svg` and `tape.json`. The program is
-[main.tsx](main.tsx). The shared figure code is in [../_shared](../_shared).
+The tape of the run is in `tape.json`. To run it again: `make readme-examples ARGS="gam-neural"`.
+Source: [main.tsx](main.tsx). Figure: [figure.svg](figure.svg). Animation: [learning.gif](learning.gif).
