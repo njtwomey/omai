@@ -15,7 +15,7 @@ Ready-made datasets: generators with exact truths, vendored real datasets (iris,
 
 - structure `Density`: A 2-D target with exact log density and sampler, for samplers and flows. `src/lib/datasets/densities.ts:51` `omai-engine/datasets`
 
-- table `datasetRegistry`: Tagged registry of every generator, vendored and remote dataset. `src/lib/datasets/catalogue.ts:331` `omai-engine/datasets`
+- table `datasetRegistry`: Tagged registry of every generator, vendored and remote dataset. `src/lib/datasets/catalogue.ts:333` `omai-engine/datasets`
 
 - dataset `airPassengers`: Vendored monthly airline passenger series. `src/lib/datasets/timeseries.ts:404` `omai-engine/datasets`
 - dataset `bananaDensity`: Haario's banana: a curved, correlated target for MCMC. `src/lib/datasets/densities.ts:313` `omai-engine/datasets`

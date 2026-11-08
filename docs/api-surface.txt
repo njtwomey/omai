@@ -7,9 +7,9 @@ omai-engine/cluster	148	badcc4ba79d1
 omai-engine/context	11	172aca3d0e69
 omai-engine/covariance	39	c69c4f002bf6
 omai-engine/data	235	c5edf0d5eb00
-omai-engine/datasets	320	f06c1f639e24
+omai-engine/datasets	321	dd7c6d6000fc
 omai-engine/datasets/outlines	14	320562518bb3
-omai-engine/decomposition	76	0c5ca479ef99
+omai-engine/decomposition	81	feac56a72ca7
 omai-engine/distances	50	8963026c8675
 omai-engine/dists	115	243d4898406c
 omai-engine/dists/bijectors	49	a78babd4f2e1
@@ -65,7 +65,7 @@ omai-engine/numerics/roots	55	3d31f879c533
 omai-engine/numerics/sparse	72	bf1f1575c648
 omai-engine/numerics/spatial	45	0979524cbbc7
 omai-engine/numerics/special	77	cd8034800153
-omai-engine/optim	791	827d75965df5
+omai-engine/optim	807	cf49c66eae2e
 omai-engine/patterns	63	d3340c16b350
 omai-engine/pgm	370	6b1d1a9406cf
 omai-engine/pgm/causal	59	1dc2cc4bcf4f
@@ -119,4 +119,4 @@ omai-render/svg	18	a511ae0dae6f
 omai-render/theme	45	7ffc358f5150
 omai-render/trace	21	4dae0ac972d4
 omai-render/views	266	aa65704aaa1a
-total	17968	e4aa3bb2945e
+total	17990	1b0701560bac

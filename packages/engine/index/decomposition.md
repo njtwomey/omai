@@ -2,8 +2,9 @@
 
 # decomposition
 
-Linear and factor decompositions as transformers: PCA (exact, randomised or by power iteration one component per step, with whitening and the inverse transform; incremental and sparse variants), FastICA, non-negative matrix factorisation (multiplicative and HALS updates), cross-decomposition (CCA, PLS), principal-component and reduced-rank regression, factor analysis and random projections. Each iterative routine is a traced `Algorithm` and each model an estimator on the iterative base.
+Linear and factor decompositions as transformers: PCA (exact, randomised or by power iteration one component per step, with whitening and the inverse transform; incremental and sparse variants), FastICA, non-negative matrix factorisation (multiplicative and HALS updates), cross-decomposition (CCA, PLS), principal-component and reduced-rank regression, factor analysis and random projections, and convolutional dictionary learning of a signal as a session over a planted pulse train. Each iterative routine is a traced `Algorithm` and each model an estimator on the iterative base.
 
+- estimator `convolutionalDictionaryMethod`: Learn filters from a planted pulse train as a session, with the recovery. `src/lib/decomposition/convolutional-method.ts:164` `omai-engine/decomposition`
 - estimator `factorAnalysis`: Factor analysis by EM. `src/lib/decomposition/probabilistic.ts:329` `omai-engine/decomposition`
 - estimator `fastIca`: FastICA independent component analysis. `src/lib/decomposition/ica.ts:264` `omai-engine/decomposition`
 - estimator `nmf`: Non-negative matrix factorisation by multiplicative or HALS updates. `src/lib/decomposition/nmf.ts:316` `omai-engine/decomposition`

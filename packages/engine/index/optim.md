@@ -4,10 +4,14 @@
 
 Optimisation: optax-style gradient transformations and optimisers with schedules, scipy-style minimisation (line searches, quasi-Newton, trust regions, constrained), linear and quadratic programming, sparse approximation, optimal transport and implicit differentiation through solutions. The `minimize` folder is part of this entry point.
 
+- structure `convolutional-sparse.ts` (file): Convolutional sparse coding and dictionary learning: filters, sparse maps, a signal. `src/lib/optim/convolutional-sparse.ts:1` `omai-engine/optim`
 - structure `transform.ts` (file): Optax-style gradient transformations composed with chain. `src/lib/optim/transform.ts:1` `omai-engine/optim`
 
 - function `adam`: Adam as a gradient transformation, like torch.optim.Adam. `src/lib/optim/adaptive.ts:69` `omai-engine/optim`
 - function `admm`: Alternating direction method of multipliers. `src/lib/optim/admm.ts:290` `omai-engine/optim`
+- function `convolutionalDictionaryLearning`: Learn filters and sparse activation maps from a signal. `src/lib/optim/convolutional-sparse.ts:741` `omai-engine/optim`
+- function `convolutionalSparseCode`: Sparse activations of known filters in a signal: where does each occur? `src/lib/optim/convolutional-sparse.ts:298` `omai-engine/optim`
+- function `convolutionalSynthesis`: Sum of filters convolved with sparse activation maps: the signal they make. `src/lib/optim/convolutional-sparse.ts:144` `omai-engine/optim`
 - function `fista`: Accelerated proximal gradient for composite objectives. `src/lib/optim/splitting.ts:246` `omai-engine/optim`
 - function `inverseSqrtDecay`: Inverse-square-root decay of a learning rate. `src/lib/optim/schedules.ts:156` `omai-engine/optim`
 - function `linprog`: Linear programming by simplex or interior point, scipy form. `src/lib/optim/linear-programming.ts:392` `omai-engine/optim`
@@ -16,6 +20,9 @@ Optimisation: optax-style gradient transformations and optimisers with schedules
 - function `sgd`: SGD with momentum, Nesterov and weight decay. `src/lib/optim/first-order.ts:67` `omai-engine/optim`
 - function `sinkhorn`: Entropic optimal transport by Sinkhorn iterations. `src/lib/optim/transport.ts:491` `omai-engine/optim`
 - function `slicedWasserstein`: Sliced Wasserstein distance with explicit projections; always the p-th root. `src/lib/optim/wasserstein.ts:158` `omai-engine/optim`
+
+- algorithm `convolutionalDictionaryLearningAlgorithm`: Learn shift-invariant filters and their sparse activations from one signal. `src/lib/optim/convolutional-sparse.ts:577` `omai-engine/optim`
+- algorithm `convolutionalSparseCodeAlgorithm`: Convolutional lasso over filters by proximal gradient, FISTA or ISTA. `src/lib/optim/convolutional-sparse.ts:213` `omai-engine/optim`
 
 - table `boundedSolvers`: The solvers of a smooth objective on a box. `src/lib/optim/bounded-solvers.ts:225` `omai-engine/optim`
 - table `optimisers`: SGD, RMSprop, Adagrad, Adam and relatives as one slot. `src/lib/optim/optimiser-table.ts:58` `omai-engine/optim`
