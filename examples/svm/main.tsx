@@ -1,34 +1,48 @@
 /**
  * Example "Support vectors and the margin" (in the index, not in the README): a support vector classifier with a
- * Gaussian kernel fitted twice to the same two-moons data, with a small and a large penalty C. Each panel is the
- * `model/support-vectors` record of the fitted session joined to its `model/decision-surface` record: the boundary, the
- * margins (dashed), the support vectors ringed, and the functional margin y·f(x) of every training row.
+ * Gaussian kernel fitted twice to the same two-moons data, with a small and a large penalty C. Each panel draws one
+ * quantity, the score f(x) the model gives every point of the plane: as a heat map (orange where f is positive, class 1;
+ * blue where it is negative), with f = 0 as the decision boundary (solid) and f = -1 and f = 1 as the margins (dashed).
+ * The rows ringed are the support vectors, taken from the session's `model/support-vectors` record.
  */
 import { generate } from 'mdml-engine/data'
 import { moons } from 'mdml-engine/datasets'
-import { type DecisionSurface, type Exposition, type MarginRecord, marginRecord } from 'mdml-engine/exposition'
+import type { MarginRecord } from 'mdml-engine/exposition'
 import { key } from 'mdml-engine/random'
 import { svc } from 'mdml-engine/svm'
-import { stillOf } from 'mdml-render/views'
+import { toArray, toFlat } from 'mdml-engine/tensor'
 import type { ExampleModule, Outcome, Tape } from '../_shared/contract.ts'
 import { Row } from '../_shared/figure.tsx'
+import { axesOf, classMap, gridOfValues, gridRows, windowOf } from '../_shared/maps.ts'
 
 export const meta: ExampleModule['meta'] = {
   title: 'Support vectors and the margin',
   summary:
-    'A kernel support vector classifier with a small and a large C: the margins, and which rows are support vectors.',
+    'A kernel support vector classifier with a small and a large C: the score, the boundary, the margins and the support vectors.',
   readme: false,
-  alt: 'Two support vector classifiers on the two-moons data: boundary, margins and support vectors for a small and a large C',
+  alt: 'Two support vector classifiers on the two-moons data: the score as a heat map with the boundary and margins as contours, and the support vectors ringed',
 }
 
-interface Result {
-  readonly fits: readonly { readonly title: string; readonly record: MarginRecord }[]
+interface Panel {
+  readonly title: string
+  readonly rows: number[][]
+  readonly labels: number[]
+  readonly score: number[][]
+  readonly support: readonly number[]
 }
+interface Result {
+  readonly panels: readonly Panel[]
+}
+
+const GRID = 60
 
 export function run(): Outcome<Result> {
   const { data, truth } = generate(moons, { knobs: { n: 100, noise: 0.25 }, key: key(0) })
   const test = generate(moons, { knobs: { n: 400, noise: 0.25 }, key: key(9) }).data
-  const fits: { title: string; record: MarginRecord }[] = []
+  const rows = toArray(data.x) as number[][]
+  const labels = Array.from(toFlat(data.y))
+  const axes = axesOf(windowOf(rows), GRID)
+  const panels: Panel[] = []
   const tapes: Record<string, Tape> = {}
   const notes = [`best possible accuracy ${(1 - (truth.bayesError ?? 0)).toFixed(3)}`]
   for (const [name, C] of [
@@ -37,29 +51,49 @@ export function run(): Outcome<Result> {
   ] as const) {
     const fit = svc.with({ kernel: 'rbf', C }).session(data, { key: key(1) })
     fit.advance()
-    // Two records of the finished fit, joined: the support vectors, and the surface with the rows they index.
-    const support = fit.probe(fit.t, 'model/support-vectors') as MarginRecord
-    const surface = fit.probe(fit.t, 'model/decision-surface', { resolution: 60 }) as DecisionSurface
-    const { kind: _, ...rest } = support
-    const record = marginRecord({ ...rest, ...(surface.rows === undefined ? {} : { rows: surface.rows }), surface })
-    fits.push({ title: `C = ${C}`, record })
-    tapes[name] = fit
     const model = fit.fittedAt(fit.t)
-    const inside = support.margins.filter((m) => m < 1 - 1e-6).length
+    const support = (fit.probe(fit.t, 'model/support-vectors') as MarginRecord).support
+    const score = gridOfValues(toFlat(model.decisionFunction(gridRows(axes))), GRID)
+    panels.push({ title: `C = ${C}: ${support.length} support vectors`, rows, labels, score, support })
+    tapes[name] = fit
+    const inside = (fit.probe(fit.t, 'model/support-vectors') as MarginRecord).margins.filter(
+      (m) => m < 1 - 1e-6,
+    ).length
     notes.push(
-      `C = ${C}: ${fit.t} steps, ${support.support.length} support vectors (${inside} inside the margin), accuracy ${model.score(data).toFixed(3)} on the training rows, ${model.score(test).toFixed(3)} on 400 new ones`,
+      `C = ${C}: ${fit.t} steps, ${support.length} support vectors (${inside} inside the margin), accuracy ${model.score(data).toFixed(3)} on the training rows, ${model.score(test).toFixed(3)} on 400 new ones`,
     )
   }
-  return { result: { fits }, tapes, notes }
+  return { result: { panels }, tapes, notes }
 }
 
 export function View({ result }: { result: Result }) {
+  const window = windowOf(result.panels[0]?.rows ?? [])
   return (
     <Row
       alt={meta.alt}
-      width={560}
-      height={340}
-      panels={result.fits.map((f) => ({ title: f.title, still: stillOf(f.record as Exposition, { mode: 'light' }) }))}
+      width={440}
+      height={380}
+      panels={result.panels.map((p) => ({
+        title: p.title,
+        still: classMap({
+          window,
+          field: p.score,
+          centre: 0,
+          range: [-2, 2],
+          label: 'score f(x)',
+          boundary: 0,
+          dashed: [-1, 1],
+          rows: p.rows,
+          labels: p.labels,
+          classNames: ['class 0', 'class 1'],
+          ringed: p.support,
+          ringName: 'support vector',
+          width: 440,
+          height: 380,
+          xLabel: 'x0',
+          yLabel: 'x1',
+        }),
+      }))}
     />
   )
 }
