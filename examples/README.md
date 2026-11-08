@@ -38,15 +38,15 @@ grad(grad(f)), hessian and hvp; Newton reaches the minimum in 12 steps where gra
 
 ![Newton's path against gradient descent on the Rosenbrock function, with the curvature at two points](newton/figure.svg)
 
-[newton/main.tsx](newton/main.tsx), tape: [tape-newton.json](newton/tape-newton.json), tape: [tape-gradient-descent.json](newton/tape-gradient-descent.json)
+[newton/main.tsx](newton/main.tsx), [newton/README.md](newton/README.md), tape: [tape-gradient-descent.json](newton/tape-gradient-descent.json), tape: [tape-newton.json](newton/tape-newton.json)
 
-## An optimiser leaves a trace
+## Optimisers, first and second order
 
-Three optimisers on the Rosenbrock function; the paths over its contours are drawn from the recorded runs.
+Gradient descent, momentum and Adam against BFGS, L-BFGS and Newton on the Rosenbrock function: the paths and the loss from the recorded runs.
 
-![Three optimisers on the Rosenbrock function: their paths over the contours](optimisers/figure.svg)
+![Six optimisers on the Rosenbrock function: their paths over the function and the loss against the step on a log axis](optimisers/figure.svg)
 
-[optimisers/main.tsx](optimisers/main.tsx), tape: [tape-gradient-descent.json](optimisers/tape-gradient-descent.json), tape: [tape-momentum.json](optimisers/tape-momentum.json), tape: [tape-adam.json](optimisers/tape-adam.json)
+[optimisers/main.tsx](optimisers/main.tsx), [optimisers/README.md](optimisers/README.md), tape: [tape-adam.json](optimisers/tape-adam.json), tape: [tape-bfgs.json](optimisers/tape-bfgs.json), tape: [tape-gradient-descent.json](optimisers/tape-gradient-descent.json), tape: [tape-lbfgs.json](optimisers/tape-lbfgs.json), tape: [tape-momentum.json](optimisers/tape-momentum.json), tape: [tape-newton.json](optimisers/tape-newton.json)
 
 ## An agent learning
 
@@ -66,6 +66,70 @@ A support vector classifier as a session: its decision surface at step 3 and at 
 
 # More
 
+## Which arm to pull
+
+Epsilon-greedy, UCB1 and Thompson sampling on a five-armed bandit: the regret curves and how often each arm was pulled.
+
+![Cumulative regret of three bandit strategies over 400 pulls, and the number of pulls of each of the five arms](bandit/figure.svg)
+
+[bandit/main.tsx](bandit/main.tsx), [bandit/README.md](bandit/README.md), tape: [tape-epsilon-greedy.json](bandit/tape-epsilon-greedy.json), tape: [tape-thompson.json](bandit/tape-thompson.json), tape: [tape-ucb1.json](bandit/tape-ucb1.json)
+
+## A Gaussian mixture, step by step
+
+Expectation-maximisation for three overlapping Gaussians: the density, the log likelihood and the soft assignments.
+
+![A Gaussian mixture fitted by EM: the density it gives the plane with the rows coloured by component, the log likelihood over the steps, and the largest responsibility of each row](clustering/figure.svg)
+
+[clustering/main.tsx](clustering/main.tsx), [clustering/README.md](clustering/README.md), tape: [tape.json](clustering/tape.json)
+
+## A decision tree and the regions it cuts
+
+A classification tree drawn as its splits and as the probability map and boundary it makes of the plane.
+
+![A decision tree on the two-moons data, drawn as a tree of splits beside the probability of class 1 over the plane with the 0.5 contour as the boundary](decision-tree/figure.svg)
+
+[decision-tree/main.tsx](decision-tree/main.tsx), [decision-tree/README.md](decision-tree/README.md), tape: [tape.json](decision-tree/tape.json)
+
+## A rolled-up sheet, flattened
+
+PCA and t-SNE on a Swiss roll, each point coloured by its true position along the sheet.
+
+![A Swiss roll in two dimensions by PCA, where layers of the roll overlap, and by t-SNE, where points close on the sheet stay close](embedding/figure.svg)
+
+[embedding/main.tsx](embedding/main.tsx), [embedding/README.md](embedding/README.md), tape: [tape.json](embedding/tape.json)
+
+## A neural additive model, learning its shapes
+
+One small network per feature, summed: the three fitted curves move toward the true ones as the loss falls (learning.gif).
+
+![The three shape functions of a neural additive model against the true ones after training, and its training loss](gam-neural/figure.svg)
+
+[gam-neural/main.tsx](gam-neural/main.tsx), [gam-neural/README.md](gam-neural/README.md), tape: [tape.json](gam-neural/tape.json)
+
+## A small neural network, trained and watched
+
+A multilayer perceptron on the two moons: the loss at every step, and the decision surface at the start, the middle and the end.
+
+![The training loss of a small network on two moons, and its decision surface at the start, the middle and the end of training](neural-network/figure.svg)
+
+[neural-network/main.tsx](neural-network/main.tsx), [neural-network/README.md](neural-network/README.md), tape: [tape.json](neural-network/tape.json)
+
+## Principal components of the iris data
+
+PCA found one component per step: the flowers in the first two components, the variance each explains, the loadings.
+
+![PCA of the iris data: the rows in the plane of the first two components coloured by species, the variance explained and the loadings](pca/figure.svg)
+
+[pca/main.tsx](pca/main.tsx), [pca/README.md](pca/README.md), tape: [tape.json](pca/tape.json)
+
+## A logic program and its proof search
+
+A small Prolog family database; the query is answered by SLD resolution and the search tree is drawn from the run.
+
+![The search tree of the query grandparent(tom, W): the answers, and the branches that fail and backtrack](prolog/figure.svg)
+
+[prolog/main.tsx](prolog/main.tsx), [prolog/README.md](prolog/README.md), tape: [tape.json](prolog/tape.json)
+
 ## A metric curve
 
 The ROC curve and AUC of a support vector classifier on held-out data.
@@ -73,4 +137,28 @@ The ROC curve and AUC of a support vector classifier on held-out data.
 ![The ROC curve of the support vector classifier on 300 test points](roc/figure.svg)
 
 [roc/main.tsx](roc/main.tsx), tape: [tape.json](roc/tape.json)
+
+## A sampler on a banana
+
+NUTS on a twisted Gaussian: the draws over the true density, the trace of one coordinate, R-hat and effective sample size.
+
+![Draws of four NUTS chains over the contours of the banana density, and the trace of the first coordinate](sampler/figure.svg)
+
+[sampler/main.tsx](sampler/main.tsx), [sampler/README.md](sampler/README.md), tape: [tape.json](sampler/tape.json)
+
+## A SAT solver at work
+
+Six pigeons in five holes as a Boolean formula: DPLL and CDCL both prove it unsatisfiable, and their traces differ.
+
+![Conflicts and decision level against steps for the DPLL and CDCL solvers on the pigeonhole formula with six pigeons and five holes](sat/figure.svg)
+
+[sat/main.tsx](sat/main.tsx), [sat/README.md](sat/README.md), tape: [tape-cdcl.json](sat/tape-cdcl.json), tape: [tape-dpll.json](sat/tape-dpll.json)
+
+## Support vectors and the margin
+
+A kernel support vector classifier with a small and a large C: the score, the boundary, the margins and the support vectors.
+
+![Two support vector classifiers on the two-moons data: the score as a heat map with the boundary and margins as contours, and the support vectors ringed](svm/figure.svg)
+
+[svm/main.tsx](svm/main.tsx), [svm/README.md](svm/README.md), tape: [tape-large-c.json](svm/tape-large-c.json), tape: [tape-small-c.json](svm/tape-small-c.json)
 

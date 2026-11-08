@@ -1,15 +1,20 @@
 /**
  * README example "Bijections between distributions": a Normal pushed through `exp` is the log-normal (`transformed` applies
  * the log-Jacobian, so `logProb` matches the closed form), and a coupling layer bends a 2-D Gaussian into a banana. The
- * figure draws the base, the map, the transformed density against samples, and the banana.
+ * figure draws the base, the map, the transformed density against samples, and the banana. Every distribution is drawn
+ * on the density scale (a histogram is normalised to a density, the curves are the engine's `logProb` exponentiated), so
+ * what changes under the map is the density itself, and the banana is a heat map of its density with contours of the
+ * same density.
  */
 import { bijectors, normal } from 'mdml-engine/dists'
 import { transformed } from 'mdml-engine/dists/compose'
 import { key } from 'mdml-engine/random'
 import { item, mul, square, sub, tensor, toArray, toFlat } from 'mdml-engine/tensor'
-import { cartesian, contours, histogram, lines, points } from 'mdml-render/charts'
+import { cartesian, histogram, lines, points } from 'mdml-render/charts'
+import { figure } from 'mdml-render/figure'
 import type { ExampleModule, Outcome } from '../_shared/contract.ts'
-import { Row } from '../_shared/figure.tsx'
+import { Figure, Panel } from '../_shared/figure.tsx'
+import { fieldLayers } from '../_shared/maps.ts'
 
 export const meta: ExampleModule['meta'] = {
   title: 'Bijections between distributions',
@@ -30,6 +35,10 @@ interface Result {
   }
 }
 
+/** The window of the banana panel (the heat map covers exactly this) and its grid. */
+const BANANA = { x: [-3.5, 3.5], y: [-3.5, 6] } as const
+const BANANA_GRID = 80
+
 export function run(): Outcome<Result> {
   // exp pushes a Normal onto the positive reals; logProb adds the log-Jacobian for you.
   const lognormal = transformed(normal(0, 1), bijectors.exp())
@@ -41,8 +50,8 @@ export function run(): Outcome<Result> {
   const banana = transformed(normal([0, 0], [1, 1]), bend)
 
   const ys = Array.from({ length: 160 }, (_, i) => 0.02 + (i * 7.98) / 159)
-  const gx = Array.from({ length: 60 }, (_, i) => -4 + (i * 8) / 59)
-  const gy = Array.from({ length: 60 }, (_, i) => -2 + (i * 9) / 59)
+  const gx = Array.from({ length: BANANA_GRID }, (_, i) => BANANA.x[0] + (i * (BANANA.x[1] - BANANA.x[0])) / (BANANA_GRID - 1))
+  const gy = Array.from({ length: BANANA_GRID }, (_, i) => BANANA.y[0] + (i * (BANANA.y[1] - BANANA.y[0])) / (BANANA_GRID - 1))
   const notes = [
     `logProb at 0.5, 1, 2: ${[0.5, 1, 2].map((y) => `${item(lognormal.logProb(y)).toFixed(6)} (closed form ${closedForm(y).toFixed(6)})`)}`,
     `mean of 4000 draws ${(draws.reduce((a, b) => a + b, 0) / draws.length).toFixed(3)} (exp(1/2) = 1.649)`,
@@ -61,70 +70,83 @@ export function run(): Outcome<Result> {
   return { result, notes }
 }
 
+/** The area under a curve by the trapezoid rule. */
+const area = (x: readonly number[], y: readonly number[]): number =>
+  x.reduce((acc, xi, i) => (i === 0 ? 0 : acc + ((xi - (x[i - 1] ?? 0)) * ((y[i] ?? 0) + (y[i - 1] ?? 0))) / 2), 0)
+
 export function View({ result }: { result: Result }) {
   const grid = Array.from({ length: 121 }, (_, i) => -3.5 + (i * 7) / 120)
   const normalDensity = (x: number): number => Math.exp(-(x * x) / 2) / Math.sqrt(2 * Math.PI)
-  const bars = 24
-  const barsY = 32
+  const { logNormal, banana } = result
+  // The log-normal density by the change of variables: p_Y(y) = p_X(log y) / |dy/dx| with dy/dx = y.
+  const lognormalDensity = logNormal.y.map((y) => normalDensity(Math.log(y)) / y)
+  // The histogram is a density (counts / (n * bin width)), so its area is the share of the draws inside the axes.
+  const share = (draws: readonly number[], lo: number, hi: number): number =>
+    draws.filter((d) => d >= lo && d <= hi).length / draws.length
+  const two = (v: number): string => v.toFixed(2)
+  const frame = figure({ width: 440, height: 340, padding: { top: 30, right: 14, bottom: 38, left: 50 } })
+  const wide = figure({ width: 520, height: 340, padding: { top: 30, right: 14, bottom: 38, left: 50 } })
   const left = cartesian(
     [
-      histogram(result.base, { bins: bars, range: [-3.5, 3.5], colour: '#9fb4c9' }),
-      lines([
-        {
-          x: grid,
-          y: grid.map((x) => normalDensity(x) * result.base.length * (7 / bars)),
-          colour: '#222222',
-          width: 2,
-        },
-      ]),
+      histogram(result.base, {
+        bins: 28,
+        range: [-3.5, 3.5],
+        density: true,
+        colour: '#9fb4c9',
+        name: `draws, area ${two(share(result.base, -3.5, 3.5))}`,
+      }),
+      lines([{ x: grid, y: grid.map(normalDensity), colour: '#222222', width: 2, name: `p(x), area ${two(area(grid, grid.map(normalDensity)))}` }]),
     ],
-    { x: { label: 'x' }, y: { label: 'count' }, legend: false },
+    { figure: frame, x: { label: 'x', limits: [-3.5, 3.5] }, y: { label: 'density p(x)', limits: [0, 0.5] }, legend: true },
   )
-  const map = cartesian([lines([{ x: grid, y: grid.map(Math.exp), colour: '#d95f02', width: 2 }])], {
-    x: { label: 'x' },
-    y: { label: 'exp(x)', limits: [0, 8] },
-  })
-  const { logNormal, banana } = result
+  const map = cartesian(
+    [lines([{ x: grid, y: grid.map(Math.exp), colour: '#d62728', width: 2 }])],
+    { figure: wide, x: { label: 'x', limits: [-3.5, 3.5] }, y: { label: 'y = exp(x)', limits: [0, 8] }, legend: false },
+  )
   const right = cartesian(
     [
-      histogram(logNormal.draws, { bins: barsY, range: [0, 8], colour: '#9fb4c9' }),
-      lines([
-        {
-          x: logNormal.y,
-          y: logNormal.density.map((d) => d * logNormal.draws.length * (8 / barsY)),
-          colour: '#222222',
-          width: 2,
-        },
-      ]),
+      histogram(logNormal.draws, {
+        bins: 40,
+        range: [0, 8],
+        density: true,
+        colour: '#9fb4c9',
+        name: `draws, area ${two(share(logNormal.draws, 0, 8))}`,
+      }),
+      lines([{ x: logNormal.y, y: lognormalDensity, colour: '#222222', width: 2, name: `p(y), area ${two(area(logNormal.y, lognormalDensity))}` }]),
     ],
-    { x: { label: 'y = exp(x)' }, y: { label: 'count' }, legend: false },
+    { figure: frame, x: { label: 'y = exp(x)', limits: [0, 8] }, y: { label: 'density p(y)', limits: [0, 0.8] }, legend: true },
   )
+  const window = { x: BANANA.x, y: BANANA.y }
   const bent = cartesian(
     [
+      ...fieldLayers({ window, field: banana.density, label: 'density', levels: 8, range: [0, Math.max(...banana.density.flat())] }),
       points([
         {
           x: banana.cloud.map((r) => r[0] ?? 0),
           y: banana.cloud.map((r) => r[1] ?? 0),
-          colour: '#9fb4c9',
+          name: '250 samples',
+          colour: '#d62728',
           size: 3,
-          opacity: 0.5,
+          opacity: 0.6,
+          outline: false,
         },
       ]),
-      contours(banana.density, { x: banana.x, y: banana.y, levels: 6, labels: false, colour: '#222222', width: 1.5 }),
     ],
-    { x: { label: 'y1' }, y: { label: 'y2' } },
+    {
+      figure: figure({ width: 520, height: 340, padding: { top: 30, right: 40, bottom: 38, left: 50 } }),
+      x: { label: 'y1', limits: [...window.x] },
+      y: { label: 'y2', limits: [...window.y] },
+      legend: true,
+    },
   )
   return (
-    <Row
-      alt={meta.alt}
-      width={300}
-      height={280}
-      panels={[
-        { title: 'x ~ Normal(0, 1)', still: left },
-        { title: 'the map exp', still: map },
-        { title: 'exp(x): the log-normal', still: right },
-        { title: 'a coupling layer: a banana', still: bent },
-      ]}
-    />
+    <Figure width={960} height={732} title={meta.alt}>
+      <Panel x={0} width={440} height={340} title="x ~ Normal(0, 1): the density p(x)" still={left} />
+      <Panel x={440} width={520} height={340} title="the map y = exp(x), with dy/dx = exp(x)" still={map} />
+      <g transform="translate(0 366)">
+        <Panel x={0} width={440} height={340} title="y = exp(x): p(y) = p(x) / |dy/dx|" still={right} />
+        <Panel x={440} width={520} height={340} title="a coupling layer: the density of the banana" still={bent} />
+      </g>
+    </Figure>
   )
 }

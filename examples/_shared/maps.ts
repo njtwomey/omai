@@ -80,6 +80,8 @@ export interface ClassMapOptions {
   /** Class index of each row (0 or 1). */
   readonly labels: readonly number[]
   readonly classNames: readonly [string, string]
+  /** Further layers drawn over the map and under the rows (for example a second contour, the true boundary). */
+  readonly extra?: readonly Layer[]
   /** Rows to ring (the support vectors), with the legend name. */
   readonly ringed?: readonly number[]
   readonly ringName?: string
@@ -119,6 +121,7 @@ export function classMap(o: ClassMapOptions): unknown {
         labels: false,
       }),
     )
+  layers.push(...(o.extra ?? []))
   for (const c of [0, 1] as const) {
     const idx = o.labels.flatMap((l, i) => (l === c ? [i] : []))
     layers.push(
@@ -234,6 +237,8 @@ export function fieldLayers(o: {
   readonly label: string
   readonly levels?: number | readonly number[]
   readonly colourBar?: boolean
+  /** The values at the two ends of the ramp (default the field's own extent; a density starts at 0). */
+  readonly range?: readonly [number, number]
 }): Layer[] {
   const axes = axesOf(o.window, o.field.length)
   return [
@@ -241,7 +246,7 @@ export function fieldLayers(o: {
       x: o.window.x,
       y: o.window.y,
       ramp: DENSITY_RAMP,
-      range: [Math.min(...o.field.flat()), Math.max(...o.field.flat())],
+      range: o.range ?? [Math.min(...o.field.flat()), Math.max(...o.field.flat())],
       resolution: 96,
       label: o.label,
       colourBar: o.colourBar ?? true,
