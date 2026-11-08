@@ -5,6 +5,7 @@
  */
 
 import { OmaiError } from '../base/index.ts'
+import type { Paint } from './types.ts'
 
 /**
  * The role of a node in a structure; renderers pick shapes and colours by role.
@@ -36,8 +37,49 @@ export interface StructurePort {
 }
 
 /**
- * A node of a {@link Structure}: an id, a label, a role, an optional enclosing group, a detail line, value badges
- * (shapes, parameter counts, current values), ports and free-form data.
+ * The outline of a node. `none` draws the label alone (a transparent box the size of the text, for captions and
+ * annotations that sit among the nodes); `stack` draws a few boxes offset behind the first (a batch, an ensemble, a
+ * repeated layer).
+ */
+export type StructureNodeShape =
+  | 'rect'
+  | 'round'
+  | 'circle'
+  | 'ellipse'
+  | 'diamond'
+  | 'square'
+  | 'dot'
+  | 'none'
+  | 'stack'
+
+/**
+ * How one node is drawn when it should differ from the style's look for its role: any field given replaces the style's
+ * (`shape`, the fill, the outline, the label colour, the outline width and dash).
+ */
+export interface StructureNodeLook {
+  readonly shape?: StructureNodeShape
+  readonly fill?: Paint
+  readonly stroke?: Paint
+  readonly text?: Paint
+  readonly strokeWidth?: number
+  readonly dash?: readonly number[]
+}
+
+/**
+ * How one edge is drawn when it should differ from the style's look for its kind: any field given replaces the
+ * style's (the colour, the width, the dash, and whether it has an arrow head at its end).
+ */
+export interface StructureEdgeLook {
+  readonly stroke?: Paint
+  readonly strokeWidth?: number
+  readonly dash?: readonly number[]
+  readonly arrow?: boolean
+}
+
+/**
+ * A node of a {@link Structure}: an id, a label (`\n` starts a new line), a role, an optional enclosing group, a detail
+ * line, value badges (shapes, parameter counts, current values), ports and free-form data. A `position` (the node's
+ * centre) places it by hand under the `manual` layout, and a `look` overrides how the style draws it.
  */
 export interface StructureNode {
   readonly id: string
@@ -48,9 +90,18 @@ export interface StructureNode {
   readonly badges?: Readonly<Record<string, string | number>>
   readonly ports?: readonly StructurePort[]
   readonly data?: Readonly<Record<string, unknown>>
+  /** The centre of the node, in the diagram's own units: the `manual` layout places the node there. */
+  readonly position?: readonly [number, number]
+  /** Overrides of the style's look for this node. */
+  readonly look?: StructureNodeLook
 }
 
-/** An edge of a {@link Structure}, optionally between named ports of its end nodes. */
+/**
+ * An edge of a {@link Structure}, optionally between named ports of its end nodes. `bidirectional` draws one line with
+ * an arrow head at both ends (an edge written the other way round between the same nodes is absorbed into it); `look`
+ * overrides how the style draws it; `labelAt` (0 at the `from` end to 1 at the `to` end, along the line) places the
+ * label.
+ */
 export interface StructureEdge {
   readonly from: string
   readonly to: string
@@ -59,6 +110,9 @@ export interface StructureEdge {
   readonly label?: string
   readonly directed?: boolean
   readonly kind?: 'data' | 'dependency' | 'skip' | 'message' | 'other'
+  readonly bidirectional?: boolean
+  readonly look?: StructureEdgeLook
+  readonly labelAt?: number
 }
 
 /** A note attached to a node or group of a {@link Structure} (or to the whole structure when `target` is omitted). */
@@ -182,6 +236,7 @@ export function mergeStructures(
       nodes.set(node.id, {
         ...old,
         ...node,
+        ...((old.look ?? node.look) ? { look: { ...old.look, ...node.look } } : {}),
         ...((old.badges ?? node.badges) ? { badges: { ...old.badges, ...node.badges } } : {}),
         ...((old.data ?? node.data) ? { data: { ...old.data, ...node.data } } : {}),
         ...(ports.size > 0 ? { ports: [...ports.values()] } : {}),

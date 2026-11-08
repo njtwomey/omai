@@ -19,6 +19,17 @@ group('describe', () => {
     expect(s.groups?.map((g) => g.id)).toEqual(['group:1', 'group:1.body', 'group:2'])
   })
 
+  it('a target adds a labelled skip edge from the input to the output (an autoencoder)', () => {
+    const ae = NN.mlp([8, 3, 8])
+    const plain = NN.describe(ae, [4, 8])
+    expect(plain.edges.some((e) => e.from === 'input' && e.to === 'output')).toBe(false)
+    expect(NN.describe(ae, [4, 8], { target: false })).toEqual(plain)
+    const s = NN.describe(ae, [4, 8], { target: true })
+    expect(s.edges.at(-1)).toEqual({ from: 'input', to: 'output', label: 'target', kind: 'skip' })
+    expect(s.edges.slice(0, -1)).toEqual(plain.edges)
+    expect(NN.describe(ae, [4, 8], { target: 'reconstruct' }).edges.at(-1)?.label).toBe('reconstruct')
+  })
+
   it('composite blocks list their parts and repeats', () => {
     const stack = new NN.blocks.TransformerStack(3, (i) => new NN.blocks.TransformerBlock(8, 2, { key: key(10 + i) }))
     const row = NN.layerTable(stack, [1, 4, 8])[0]

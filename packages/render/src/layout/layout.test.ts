@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { circularLayout, forceLayout, spectralLayout } from './force.ts'
-import type { GraphLayout, LayoutBox, LayoutGraph } from './graph.ts'
+import { type GraphLayout, type LayoutBox, type LayoutGraph, manualLayout } from './graph.ts'
 import { bipartiteLayout, gridLayout, latticeLayout } from './grids.ts'
 import { layered } from './layered.ts'
 import { dendrogram, radialTree, tidyTree } from './trees.ts'
@@ -133,5 +133,43 @@ describe('force, circular, spectral and grid layouts', () => {
     expect(
       at(latticeLayout(ring, 2, { spacing: 30 }), 'b').x - at(latticeLayout(ring, 2, { spacing: 30 }), 'a').x,
     ).toBe(30)
+  })
+})
+
+describe('manual layout and spacing options', () => {
+  const g: LayoutGraph = {
+    nodes: [
+      { id: 'hub', width: 40, height: 20 },
+      { id: 'a', width: 20, height: 20 },
+      { id: 'b', width: 20, height: 20 },
+    ],
+    edges: [
+      { from: 'hub', to: 'a' },
+      { from: 'hub', to: 'b' },
+    ],
+  }
+
+  it('puts every node at its position and clips straight edges to the boxes', () => {
+    const l = manualLayout(g, { hub: [0, 0], a: [100, 0], b: [0, 80] })
+    expect(at(l, 'a').x - at(l, 'hub').x).toBe(100)
+    expect(at(l, 'b').y - at(l, 'hub').y).toBe(80)
+    expect(at(l, 'hub').x - 20).toBe(16)
+    expect(l.edges[0]?.points[0]?.[0]).toBeCloseTo(at(l, 'hub').x + 20, 9)
+    expect(l.edges[0]?.points[1]?.[0]).toBeCloseTo(at(l, 'a').x - 10, 9)
+  })
+
+  it('throws for a node without a position or a position that is not a number', () => {
+    expect(() => manualLayout(g, { hub: [0, 0], a: [1, 1] })).toThrow(/'b' has no position/)
+    expect(() => manualLayout(g, { hub: [0, 0], a: [1, 1], b: [Number.NaN, 0] })).toThrow(/not finite/)
+  })
+
+  it('the tree layout honours its level and sibling spacing, the circle its gap', () => {
+    const t = { ...g, nodes: nodes(['hub', 'a', 'b'], 20) }
+    const gap = (l: GraphLayout): [number, number] => [at(l, 'b').x - at(l, 'a').x, at(l, 'a').y - at(l, 'hub').y]
+    expect(gap(tidyTree(t))).toEqual([36, 76])
+    expect(gap(tidyTree(t, { levelSep: 100, siblingSep: 50 }))).toEqual([70, 120])
+    const ring = { nodes: nodes(['a', 'b', 'c', 'd'], 20), edges: [] }
+    const span = (l: GraphLayout): number => l.width
+    expect(span(circularLayout(ring, { gap: 40 }))).toBeGreaterThan(span(circularLayout(ring)))
   })
 })

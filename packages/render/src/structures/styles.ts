@@ -4,12 +4,15 @@
  * automata, neural networks and a generic fallback, looked up with `styleFor`.
  */
 
-import type { NodeRole, Paint, StructureEdge, StructureGroup } from 'omai-engine/scene'
+import type { NodeRole, Paint, StructureEdge, StructureGroup, StructureNodeShape } from 'omai-engine/scene'
 
-/** The outline of a node. */
-export type NodeShape = 'rect' | 'round' | 'circle' | 'ellipse' | 'diamond' | 'square' | 'dot'
+/** The outline of a node: the shapes a structure's nodes can ask for (`look.shape`), including `none` and `stack`. */
+export type NodeShape = StructureNodeShape
 
-/** How one role of node is drawn. */
+/**
+ * How one role of node is drawn. A node's own `look` (see `StructureNodeLook`) replaces fields of it, and a
+ * `StructureEdgeLook` those of {@link EdgeLook}.
+ */
 export interface NodeLook {
   readonly shape: NodeShape
   readonly fill: Paint

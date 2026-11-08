@@ -19,7 +19,7 @@ export const recipe: Recipe = {
   title: 'Network architectures',
   question: 'How do I draw a neural network: as a diagram, a stack, its tensor shapes, or where its parameters are?',
   explain:
-    '`describe(module, inputShape)` in omai-engine turns a network into a `Structure` (layers with shapes, parameter counts and FLOPs; residual and parallel blocks as groups). `architecture(structure, view)` draws it four ways: the full `diagram`, a `compact` stack, the `shapes` of the tensors flowing through, and a `params` treemap.',
+    '`describe(module, inputShape)` in omai-engine turns a network into a `Structure` (layers with shapes, parameter counts and FLOPs; residual and parallel blocks as groups; `target` draws the input as the output’s target, as in an autoencoder). `architecture(structure, view)` draws it four ways: the full `diagram`, a `compact` stack, the `shapes` of the tensors flowing through, and a `params` treemap.',
 }
 
 function residualMlp(): Structure {
@@ -27,9 +27,13 @@ function residualMlp(): Structure {
   return describeNet(new Sequential(new Linear(8, 32), block(), block(), new Linear(32, 2)), [16, 8])
 }
 
+/** An autoencoder: the output is compared with the input, drawn as the `target` edge. */
+const autoencoder = (): Structure => describeNet(mlp([16, 6, 2, 6, 16]), [32, 16], { target: 'reconstruct' })
+
 const NETWORKS: Readonly<Record<string, () => Structure>> = {
   'multilayer perceptron': () => describeNet(mlp([4, 64, 64, 3]), [32, 4]),
   'residual MLP': residualMlp,
+  autoencoder,
   'small CNN': () =>
     describeNet(
       new Sequential(

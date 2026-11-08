@@ -4,6 +4,8 @@
  * diagram can swap layouts freely.
  */
 
+import { OmaiError } from 'omai-engine/base'
+
 /** A node to place: its id and box size in pixels, and the group it belongs to, if any. */
 export interface LayoutNode {
   readonly id: string
@@ -163,4 +165,37 @@ export function normaliseLayout(
     width: x1 - x0 + 2 * margin,
     height: y1 - y0 + 2 * margin,
   }
+}
+
+/**
+ * A layout from positions given by hand: each node's box is centred on its position (with the size the graph gives it),
+ * edges are straight lines clipped to the boxes, and the whole is shifted to sit inside the margin.
+ *
+ * @param graph - The graph (nodes with sizes, and edges).
+ * @param positions - The centre of every node by id, in the layout's own units.
+ * @param margin - Space around the drawing (default 16).
+ * @returns The layout (group boxes are left to the caller, as for the other layouts' groups of a diagram).
+ * @throws OmaiError `value` when a node has no position or a position is not finite.
+ * @example
+ * ```ts
+ * import { manualLayout } from 'omai-render/layout'
+ * const g = { nodes: ['a', 'b'].map((id) => ({ id, width: 20, height: 10 })), edges: [{ from: 'a', to: 'b' }] }
+ * const l = manualLayout(g, { a: [0, 0], b: [100, 0] })
+ * l.nodes['b'].x - l.nodes['a'].x // => 100
+ * ```
+ */
+export function manualLayout(
+  graph: LayoutGraph,
+  positions: Readonly<Record<string, readonly [number, number]>>,
+  margin = 16,
+): GraphLayout {
+  const placed: Record<string, LayoutBox> = {}
+  for (const n of graph.nodes) {
+    const at = positions[n.id]
+    if (at === undefined) throw new OmaiError('value', `manualLayout: the node '${n.id}' has no position`)
+    if (!Number.isFinite(at[0]) || !Number.isFinite(at[1]))
+      throw new OmaiError('value', `manualLayout: the position of '${n.id}' is not finite`)
+    placed[n.id] = { x: at[0], y: at[1], width: n.width, height: n.height }
+  }
+  return normaliseLayout(placed, straightRoutes(placed, graph.edges), {}, margin)
 }

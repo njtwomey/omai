@@ -239,6 +239,11 @@ export function flops(module: Module, inputShape: readonly number[]): number {
 export interface DescribeOptions {
   /** Show each composite block's parts as nodes in its group (default false: one node per block). */
   readonly expandParts?: boolean
+  /**
+   * Add an edge from the input to the output, the target the network is trained towards (an autoencoder's
+   * reconstruction target, a regression's labels): `true` labels it `target`, a string gives its label (default off).
+   */
+  readonly target?: boolean | string
 }
 
 /**
@@ -250,7 +255,8 @@ export interface DescribeOptions {
  *
  * @param module - The module.
  * @param inputShape - The shape of one input batch (for example `[batch, features]`).
- * @param options - Whether to show composite blocks' parts.
+ * @param options - Whether to show composite blocks' parts, and whether to draw the input as the output's target (an
+ *   edge of kind `skip` from `input` to `output`, as in an autoencoder).
  * @returns The structure.
  * @concept architectures
  * @index function A module as a drawable Structure: layers, shapes, parameters.
@@ -258,6 +264,9 @@ export interface DescribeOptions {
  * ```ts
  * import { describe, mlp } from 'omai-engine/nn'
  * describe(mlp([2, 4, 1]), [8, 2]).nodes.map((n) => n.label) // => ['input', 'Linear', 'ReLU', 'Linear', 'output']
+ * // An autoencoder (8 -> 3 -> 8) whose output is compared with its own input:
+ * const ae = describe(mlp([8, 3, 8]), [32, 8], { target: 'reconstruct' })
+ * ae.edges.find((e) => e.kind === 'skip')?.label // => 'reconstruct'
  * ```
  */
 export function describe(module: Module, inputShape: readonly number[], options: DescribeOptions = {}): Structure {
@@ -355,6 +364,13 @@ export function describe(module: Module, inputShape: readonly number[], options:
   const [last, out] = visit(module, '', 'input', inputShape)
   nodes.push({ id: 'output', label: 'output', role: 'output', badges: { shape: shapeText(out) } })
   edges.push({ from: last, to: 'output', label: shapeText(out), kind: 'data' })
+  if (options.target !== undefined && options.target !== false)
+    edges.push({
+      from: 'input',
+      to: 'output',
+      label: typeof options.target === 'string' ? options.target : 'target',
+      kind: 'skip',
+    })
   return structure('architecture', nodes, edges, { groups, title: module.kind, direction: 'down' })
 }
 
