@@ -6,7 +6,7 @@
  */
 import { generate } from 'mdml-engine/data'
 import { moons } from 'mdml-engine/datasets'
-import type { Exposition } from 'mdml-engine/exposition'
+import type { DecisionSurface, Exposition } from 'mdml-engine/exposition'
 import { defineTrainer } from 'mdml-engine/learn'
 import { crossEntropy } from 'mdml-engine/losses'
 import { mlp } from 'mdml-engine/nn'
@@ -14,9 +14,9 @@ import { adam } from 'mdml-engine/optim'
 import { key } from 'mdml-engine/random'
 import { metricSeries, type Run } from 'mdml-engine/trace'
 import { metricChart } from 'mdml-render/trace'
-import { stillOf } from 'mdml-render/views'
 import type { ExampleModule, Outcome } from '../_shared/contract.ts'
 import { Row } from '../_shared/figure.tsx'
+import { probabilitySurface } from '../_shared/probability-surface.ts'
 
 export const meta: ExampleModule['meta'] = {
   title: 'A small neural network, trained and watched',
@@ -70,7 +70,7 @@ export function View({ result }: { result: Result }) {
         { title: 'training loss', still: metricChart(result.run, ['train/loss']) },
         ...result.surfaces.map(({ step, surface }) => ({
           title: `step ${step}`,
-          still: stillOf(surface, { mode: 'light' }),
+          still: probabilitySurface(surface as unknown as DecisionSurface, { legend: false }),
         })),
       ]}
     />
