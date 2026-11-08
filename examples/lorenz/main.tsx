@@ -20,12 +20,14 @@ export const meta: ExampleModule['meta'] = {
     'The Lorenz equations from seven starting points one part in a thousand apart: the paths separate and follow different turns of the butterfly.',
   readme: false,
   alt: 'Seven paths of the Lorenz system started a hair apart, seen from the front, with fading tails',
-  home: { label: 'Chaos', fps: 20, seconds: 28 },
+  home: { label: 'Chaos', fps: 30, seconds: 22 },
 }
 
 const PARTICLES = 7
 const END = 40
-const STEP = 0.02
+const STEP = 0.01
+/** Each live step advances this many samples (0.06 time units), so at 30 frames a second the paths move 1.8 time units a second. */
+const PER_STEP = 6
 
 interface Result {
   readonly t: number[]
@@ -53,8 +55,8 @@ export function run(): Outcome<Result> {
 }
 
 /**
- * Solved live, as it is watched: each step advances every particle by 0.08 time units, one call of `solveIvp` for each,
- * from where it was left. (`run` solves each particle over the whole time at once.)
+ * Solved live, as it is watched: each step advances every particle by 0.06 time units, one call of `solveIvp` for each,
+ * from where it was left, read back every 0.01. (`run` solves each particle over the whole time at once.)
  */
 export function live(): Live<Result> {
   const field = lorenzField()
@@ -64,15 +66,23 @@ export function live(): Live<Result> {
   return {
     step: () => {
       const from = t.at(-1) ?? 0
+      const tEval = Array.from({ length: PER_STEP }, (_, i) => from + (i + 1) * STEP)
       states.forEach((state, k) => {
-        const solved = solveIvp(field, [from, from + 0.08], tensor(state), { method: 'RK45', rtol: 1e-9, atol: 1e-11 })
-        const end = Array.from(toFlat(solved.ys.at(-1) ?? tensor(state)))
-        states[k] = end
-        paths[k]?.x.push(end[0] ?? 0)
-        paths[k]?.z.push(end[2] ?? 0)
+        const solved = solveIvp(field, [from, from + PER_STEP * STEP], tensor(state), {
+          method: 'RK45',
+          rtol: 1e-9,
+          atol: 1e-11,
+          tEval,
+        })
+        solved.ys.forEach((y) => {
+          const v = Array.from(toFlat(y))
+          paths[k]?.x.push(v[0] ?? 0)
+          paths[k]?.z.push(v[2] ?? 0)
+        })
+        states[k] = Array.from(toFlat(solved.ys.at(-1) ?? tensor(state)))
       })
-      t.push(from + 0.08)
-      return from + 0.08 < END
+      t.push(...tEval)
+      return (t.at(-1) ?? 0) < END
     },
     result: () => ({ t, paths }),
   }
@@ -89,7 +99,7 @@ export function View({ result, at, mode = 'light' }: { result: Result; at?: numb
       lines(
         result.paths.flatMap((p, k) =>
           fadingTrail(p.x.slice(0, upTo), p.z.slice(0, upTo), {
-            length: at === undefined ? 400 : 140,
+            length: at === undefined ? 400 : 200,
             name: `particle ${k + 1}`,
             colour: `tab${k}`,
             width: 2,

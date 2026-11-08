@@ -189,8 +189,8 @@
     "animation": false,
     "home": {
       "label": "Chaos",
-      "fps": 20,
-      "seconds": 28
+      "fps": 30,
+      "seconds": 22
     },
     "tapes": []
   },
