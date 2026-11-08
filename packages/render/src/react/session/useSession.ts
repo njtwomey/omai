@@ -57,8 +57,12 @@ export interface LiveHandle {
   readonly producer?: { readonly kind: 'inline' | 'worker'; readonly fallback?: string }
   /** What went wrong in the producer, once something has (a worker that failed, a method it could not make). */
   readonly error?: string | undefined
-  /** Tell the producer which step the consumer is viewing (a worker with a lookahead computes up to it and no more). */
-  follow?(step: number): void
+  /**
+   * Tell the producer which step the consumer is viewing and, when it plays, at what rate in steps per second (a worker
+   * with a lookahead computes up to the step and no more; the main-thread producer paces itself by both, see
+   * `SessionHookOptions.lookahead`).
+   */
+  follow?(step: number, fps?: number): void
   /** Counts the probe answers that have arrived from a worker, so panels reading probes ask again. */
   readonly probed?: number
   /** The start policy in force: when the run is computed and where the cursor starts (see {@link StartPolicy}). */
@@ -191,12 +195,26 @@ export interface SessionHookOptions {
    * that is not showing), where `dispose()` would throw the tape away. `step` by hand still computes.
    */
   readonly active?: boolean
+  /**
+   * How far ahead of the cursor the main-thread producer computes while a live session (`'play'` policy) is playing, in
+   * steps: once that far ahead it stops, and goes on when the cursor has used half of it, so the frames go to drawing
+   * the animation and not to a buffer nobody is watching. By default half a second of playback at the player's rate
+   * (at least 8 steps); `false` computes the whole run ahead as fast as the frame budget allows (the behaviour before
+   * pacing). Primed and eager sessions compute the whole run whatever this says (but take a smaller share of each frame
+   * while it plays). A worker has its own `lookahead` in `workerProducer`.
+   */
+  readonly lookahead?: number | false
 }
 
 /** Milliseconds of computation per animation frame while computing ahead and playing: the rest of the frame is the page's. */
 const FRAME_MS = 12
 /** The same while priming and nothing plays (a whole run in the background): less, so the page stays responsive. */
 const PRIME_MS = 8
+/** The same while a primed or eager run, which must be computed whole, is played: little, the frames are the animation's. */
+const PLAYING_PRIME_MS = 4
+/** Seconds of playback a live session computes ahead of the cursor by default, and the fewest steps that is. */
+const LOOKAHEAD_SECONDS = 0.5
+const LOOKAHEAD_MIN_STEPS = 8
 /** How often the version moves while computing ahead, so views redraw at a steady rate rather than every frame. */
 const BUMP_MS = 100
 /** The pause after the last change before an unheld change is applied (one remake per slider drag). */
@@ -287,6 +305,8 @@ export function useSessions<S, C extends Config>(
   activeNow.current = active
   const hooks = useRef(hook)
   hooks.current = hook
+  // Where the cursor stands and how fast it plays (told by the player), and whether the producer is resting at its lookahead.
+  const pacing = useRef({ cursor: 0, fps: 0, resting: false })
   const [lastMs, setLastMs] = useState(0)
   const bump = useCallback(() => setVersion((v) => v + 1), [])
   const apply = useCallback((): readonly Session<S, C>[] => {
@@ -331,18 +351,42 @@ export function useSessions<S, C extends Config>(
   useEffect(() => {
     if (producer.background || !computing || typeof requestAnimationFrame !== 'function') return
     let lastBump: number | undefined
+    // The head the views were last told about: the version moves when the head has (at most every BUMP_MS), not on every frame.
+    let shown = Number.NaN
     let cost = 0
     let handle = requestAnimationFrame(function tick(now: number) {
       // A frame queued before `dispose()` or before the session went inactive may still come: it computes nothing.
       if (disposedNow.current || !activeNow.current) return
       const sessions = current.current.sessions
       const t0 = performance.now() // allow: the frame budget and the cost of the frame's work; not on the tape
-      current.current.advance({ ms: playingNow.current ? FRAME_MS : PRIME_MS, clock: () => performance.now() }) // allow: as above
+      // The share of the frame given to computing: all the run ahead when priming; while playing, a live session
+      // computes only as far ahead as the page will use and rests (no work, the frame is the drawing's) until the cursor
+      // has used half of it, and a primed or eager run, which must be whole, takes a small share.
+      let ms = PRIME_MS
+      if (playingNow.current) {
+        ms = FRAME_MS
+        const ahead = hooks.current.lookahead
+        const rate = pacing.current.fps
+        if (prime) ms = PLAYING_PRIME_MS
+        else if (ahead !== false && (ahead !== undefined || rate > 0)) {
+          const want = ahead ?? Math.max(LOOKAHEAD_MIN_STEPS, Math.ceil(rate * LOOKAHEAD_SECONDS))
+          const lead =
+            sharedHead(sessions.map((s) => ({ head: s.t, done: s.status !== undefined }))) - pacing.current.cursor
+          if (pacing.current.resting && lead <= want / 2) pacing.current.resting = false
+          else if (!pacing.current.resting && lead >= want) pacing.current.resting = true
+          if (pacing.current.resting) ms = 0
+        }
+      }
+      if (ms > 0) current.current.advance({ ms, clock: () => performance.now() }) // allow: as above
       cost = performance.now() - t0 // allow: as above
       const ended = sessions.every((s) => s.status !== undefined)
-      if (ended || lastBump === undefined || now - lastBump >= BUMP_MS) {
+      // The views move when the head did (a frame that computed nothing, resting at the lookahead, has nothing new), and
+      // at the end.
+      const here = sharedHead(sessions.map((s) => ({ head: s.t, done: s.status !== undefined })))
+      if (ended || (here !== shown && (lastBump === undefined || now - lastBump >= BUMP_MS))) {
         lastBump = now
-        setLastMs(cost)
+        shown = here
+        if (ms > 0) setLastMs(cost)
         bump()
       }
       if (ended) {
@@ -352,7 +396,7 @@ export function useSessions<S, C extends Config>(
       handle = requestAnimationFrame(tick)
     })
     return () => cancelAnimationFrame(handle)
-  }, [computing, producer, bump])
+  }, [computing, producer, bump, prime])
   // A producer in a worker computes by itself: told to start or stop with `computing`, it reports back as the tape
   // grows (the version moves at most every BUMP_MS), and the hook stops computing when every run has ended.
   useEffect(() => {
@@ -408,7 +452,11 @@ export function useSessions<S, C extends Config>(
     if (current.current.sessions.some((s) => s.status === undefined)) setComputing(true)
   }
   const halt = (): void => setComputing(false)
-  const follow = (step: number): void => current.current.follow(step)
+  const follow = (step: number, fps?: number): void => {
+    pacing.current.cursor = step
+    if (fps !== undefined) pacing.current.fps = fps
+    current.current.follow(step)
+  }
   const play = (): void => {
     playingNow.current = true
     setPlaying(true)

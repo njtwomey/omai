@@ -175,6 +175,81 @@ describe('start: play (live, the default)', () => {
   })
 })
 
+describe('pacing: how far ahead of the cursor a playing live session computes', () => {
+  /** Run frames until the head stops moving for a while (or the limit); returns the head it stood at. */
+  async function settle(m: { readonly current: LiveSession<S, Config> }, limit = 120): Promise<number> {
+    let last = -1
+    let still = 0
+    for (let n = 0; n < limit && still < 8; n++) {
+      await frames.frame()
+      const head = m.current.head
+      still = head === last ? still + 1 : 0
+      last = head
+    }
+    return last
+  }
+
+  it('rests once it is `lookahead` steps ahead of the cursor, and goes on when the cursor has used half of it', async () => {
+    const m = await mountSession({ lookahead: 20 })
+    m.current.play()
+    m.current.follow?.(0, 30)
+    const rested = await settle(m)
+    // A slice may overshoot the limit by the steps of one frame, but it does not run away: the run is far from done.
+    expect(rested).toBeGreaterThanOrEqual(20)
+    expect(rested).toBeLessThan(60)
+    expect(m.current.done).toBe(false)
+    // Resting is not stopping: the session is still computing, and still playing.
+    expect(m.current.computing).toBe(true)
+    expect(m.current.status).toBe('running')
+    // The cursor moves up, but not past half the lookahead: still resting.
+    m.current.follow?.(rested - 15, 30)
+    expect(await settle(m)).toBe(rested)
+    // Half used (the lead is 10 or less): it goes on.
+    m.current.follow?.(rested - 8, 30)
+    expect(await settle(m)).toBeGreaterThan(rested)
+    await m.unmount()
+  })
+
+  it("takes half a second of the player's rate, and at least 8 steps, by default, and nothing before the rate is known", async () => {
+    const slow = await mountSession({})
+    slow.current.play()
+    slow.current.follow?.(0, 4)
+    const small = await settle(slow)
+    expect(small).toBeGreaterThanOrEqual(8)
+    expect(small).toBeLessThan(40)
+    await slow.unmount()
+    const quick = await mountSession({})
+    quick.current.play()
+    quick.current.follow?.(0, 120)
+    const large = await settle(quick)
+    expect(large).toBeGreaterThanOrEqual(60)
+    await quick.unmount()
+    // No rate told: nothing to pace by, so the run is computed as before.
+    const unpaced = await mountSession({})
+    unpaced.current.play()
+    await untilDone(unpaced)
+    expect(unpaced.current.done).toBe(true)
+    await unpaced.unmount()
+  })
+
+  it('is switched off by `lookahead: false`, and does not hold a primed or eager run, which must be whole', async () => {
+    const off = await mountSession({ lookahead: false })
+    off.current.play()
+    off.current.follow?.(0, 30)
+    await untilDone(off)
+    expect(off.current.done).toBe(true)
+    await off.unmount()
+    for (const start of ['first', 'end'] as const) {
+      const whole = await mountSession({ start })
+      whole.current.play()
+      whole.current.follow?.(0, 30)
+      await untilDone(whole)
+      expect(whole.current.done).toBe(true)
+      await whole.unmount()
+    }
+  })
+})
+
 // A factory that hands back real inline producers and keeps them, to watch what happens to them.
 function watched(): { factory: ProducerFactory; made: Producer<never, never>[]; disposed: () => number } {
   const made: Producer<never, never>[] = []

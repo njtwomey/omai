@@ -183,6 +183,21 @@ describe('the player over the start policies', () => {
     expect(live().head).toBeGreaterThan(0)
   })
 
+  it('live: the cursor waits for a preroll of a quarter of a second of steps before it moves', async () => {
+    await mountElement(<Page start="play" player={{ fps: 60 }} />)
+    await inAct(() => controller().play())
+    // Frame by frame: the cursor stands at the start until 15 steps (a quarter of a second at 60 a second) stand ahead.
+    let headWhenItMoved = -1
+    for (let n = 0; n < 20 && headWhenItMoved < 0; n++) {
+      await frames.frame()
+      if ((page.at ?? 0) > 0) headWhenItMoved = live().head
+    }
+    expect(headWhenItMoved).toBeGreaterThanOrEqual(15)
+    // And it goes on from there.
+    await frames.frames(6)
+    expect(page.at).toBeGreaterThan(0)
+  })
+
   it('the host can start and stop the clock through the handle', async () => {
     await mountElement(<Page start="first" />)
     await untilDone()

@@ -87,6 +87,17 @@ below are the folders of `src`; `react` is large and its index is nested by its 
     `live.playingNow()` is the same for a host's own callback.
   - `live.progress` is the step reached over the options' `steps` while the run goes on, and exactly 1 once it has
     ended, whatever its length (a run that converges after 8 of 1000 steps jumps to 1 on its last step).
+- Pacing live playback (React). A live session (the `'play'` start policy) computes only as far ahead of the cursor as the
+  page will use while it plays: half a second of playback at the player's `fps` (at least 8 steps), then it rests, and goes
+  on when the cursor has used half of that. The frames go to drawing the animation and not to a buffer nobody is watching
+  (on the main thread a producer took about 12 ms of every frame, however far ahead it was). `lookahead` in the hook options
+  sets the steps (a number) or turns pacing off (`false`, the earlier behaviour); a worker has its own `lookahead` in
+  `workerProducer`. The player tells the producer the cursor and the rate through `live.follow(step, fps)`; a host that
+  drives its own clock calls it too. Primed (`'first'`) and eager (`'end'`) sessions compute the whole run whatever this says,
+  at a smaller share of the frame while they play. `SessionPlayer` plays a live run with a preroll: after Play (and whenever
+  it catches up with the head) the clock waits for a quarter of a second of steps, or at most 250 ms and one step, so a
+  method slower than the rate plays in even bursts; the statistics line shows "buffering" and the steps ahead. A single step
+  dearer than a frame still blocks the main thread; only a worker helps there.
 - Player and panel settings (React). `SessionPlayer` takes `fps` (the rate; with `onFpsChange` the host owns it),
   `eagerToggle={false}` (hide the Eager button) and `statistics={false}` (hide the line of event counts and slice
   time). Its starting rate and mode come from the session preferences: a `SessionPreferencesProvider` with `defaults`

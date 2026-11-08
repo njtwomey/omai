@@ -18,12 +18,16 @@ import { type MutableRefObject, type ReactElement, useEffect, useMemo, useRef, u
 import { Player } from '../Player.tsx'
 import type { StartPolicy } from '../start.ts'
 import { type PlaybackController, useTicker } from '../usePlayback.ts'
+import { prerollDecision } from './_preroll.ts'
 import { useSessionPreferences, useSetSessionPreferences } from './preferences.ts'
 import { SessionExport, type SessionExportProps } from './SessionExport.tsx'
 import { type LiveSession, type LiveSessions, variantsOf } from './useSession.ts'
 
 /** Steps per second the player's menu offers. */
 const RATES = [1, 2, 5, 10, 30, 60, 120, 300, 1000]
+
+/** The longest the clock waits for the preroll to fill, in milliseconds. */
+const PREROLL_MAX_MS = 250
 
 /**
  * The player and status line of a session, or of a comparison of several.
@@ -92,8 +96,6 @@ export function SessionPlayer<S, C extends Config>(props: {
   // A producer with a lookahead computes up to the cursor and no more: tell it where the cursor stands (and again after
   // a remake, which made a new producer).
   const follow = live.follow
-  // biome-ignore lint/correctness/useExhaustiveDependencies: once per step and per remake; `follow` reads the latest producer
-  useEffect(() => follow?.(viewed), [viewed, first])
   const preferences = useSessionPreferences()
   const setPreferences = useSetSessionPreferences()
   const [picked, setPicked] = useState<number | undefined>(undefined)
@@ -102,6 +104,10 @@ export function SessionPlayer<S, C extends Config>(props: {
     setPicked(rate)
     props.onFpsChange?.(rate)
   }
+  // Told the step and the rate: a worker with a lookahead computes up to the step, and the main-thread producer paces itself
+  // by both (half a second of playback ahead, by default).
+  // biome-ignore lint/correctness/useExhaustiveDependencies: once per step, rate and remake; `follow` reads the latest producer
+  useEffect(() => follow?.(viewed, fps), [viewed, fps, first])
   // The cursor ticks through the tape at `fps` steps per second: it waits at the head of an unfinished run for the
   // producer, and stops at the end of a finished one.
   const [tickingState, setTickingState] = useState(false)
@@ -142,9 +148,23 @@ export function SessionPlayer<S, C extends Config>(props: {
   }
   const stop = (): void => {
     setTicking(false)
+    setBuffering(false)
     jumpToEnd.current = false
     told.current = []
     handlers.current.pause()
+  }
+  // A live run is played with a preroll: the clock waits until a quarter of a second of steps stands ahead of it, and again
+  // whenever it catches up with the head, so a method slower than the rate plays in even bursts and not one jerk per step.
+  const prerollSteps = Math.max(2, Math.ceil(fps * 0.25))
+  const bufferingNow = useRef(false)
+  // When the wait began: a method too slow to fill the preroll in a quarter of a second plays on what it has (one step is
+  // enough) rather than keeping the reader waiting for the steps to pile up.
+  const bufferingSince = useRef(0)
+  const [buffering, setBufferingState] = useState(false)
+  const setBuffering = (on: boolean): void => {
+    if (on && !bufferingNow.current) bufferingSince.current = performance.now() // allow: how long the clock has waited; not on the tape
+    bufferingNow.current = on
+    setBufferingState(on)
   }
   useTicker(
     ticking && live.active,
@@ -153,6 +173,23 @@ export function SessionPlayer<S, C extends Config>(props: {
       // A tick queued before the clock was stopped (here, or by the host's `live.pause()`) moves nothing.
       if (!tickingNow.current || handlers.current.playingNow?.() === false) return
       const { head: h, done } = cursor.current
+      // Live and unfinished: wait for the preroll (at the start, and after catching up with the head).
+      if (policy === 'play' && !done) {
+        const decision = prerollDecision({
+          buffering: bufferingNow.current,
+          ahead: h - pos.current,
+          preroll: prerollSteps,
+          waitedMs: bufferingNow.current ? performance.now() - bufferingSince.current : 0, // allow: how long the clock has waited; not on the tape
+          maxMs: PREROLL_MAX_MS,
+        })
+        if (decision === 'wait') return
+        if (decision === 'starved') {
+          if (pos.current !== h) tell(h, true)
+          setBuffering(true)
+          return
+        }
+        if (bufferingNow.current) setBuffering(false)
+      } else if (bufferingNow.current) setBuffering(false)
       const next = pos.current + n
       if (next < h) tell(next, true)
       else if (done) {
@@ -229,6 +266,7 @@ export function SessionPlayer<S, C extends Config>(props: {
     // play from the step being looked at (the start of a fresh run), not from wherever the first tick finds the head.
     else if (at === null) tell(viewed)
     live.compute()
+    setBuffering(policy === 'play' && !live.done && head - pos.current < prerollSteps)
     setTicking(true)
   }
   const play = (): void => {
@@ -328,6 +366,12 @@ export function SessionPlayer<S, C extends Config>(props: {
         <div className="flex flex-wrap items-center gap-3 text-xs text-muted">
           {statistics ? <span>{counts || 'nothing recorded'}</span> : null}
           {statistics ? <span>last slice {live.lastMs.toFixed(1)} ms</span> : null}
+          {statistics && ticking && !live.done ? (
+            <span>
+              {buffering ? 'buffering, ' : ''}
+              {Math.max(0, head - viewed)} steps ahead
+            </span>
+          ) : null}
           {live.producer?.fallback === undefined ? null : <span>main thread: {live.producer.fallback}</span>}
           {props.pageExport === undefined ? null : (
             <SessionExport live={live} at={at} onScrub={onScrub} {...props.pageExport} />

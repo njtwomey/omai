@@ -3,6 +3,23 @@
 Versions are released in lockstep for omai-engine, omai-render and omai-meta. Up to 0.1.3 the packages were published as
 mdml-engine, mdml-render and mdml-meta.
 
+## 0.1.8
+
+Live playback is paced, so a playing session no longer spends its frames building a buffer nobody is watching. Measured on the
+main thread with a 5 ms step and a 3000-step run (30 steps a second), the median frame went from 23 ms to 8 ms, the buffer
+from about 880 steps ahead of the cursor to 15, and the steps computed in 8 s from 1119 to 249, with the cursor at the same
+place.
+- `useSession` and `useSessions` (main-thread producer, `'play'` start policy): while playing, computing stops once the head is
+  `lookahead` steps ahead of the cursor and goes on when half of that is used. By default that is half a second of playback
+  at the player's rate (at least 8 steps); `lookahead` in the hook options sets a number of steps, or `false` for the earlier
+  behaviour (the whole run as fast as the frame budget allows). A primed or eager session still computes the whole run, at
+  4 ms a frame while it plays (it was 12). The view moves when the head moves, so a resting producer never leaves the player
+  waiting on a stale head. `LiveHandle.follow(step, fps?)` takes the rate.
+- `SessionPlayer` plays a live run with a preroll: after Play, and whenever the clock catches up with the head, it waits for a
+  quarter of a second of steps, or at most 250 ms and one step, then plays; the statistics line shows "buffering" and the steps
+  ahead. Pressing Play therefore waits up to about 250 ms before the first motion (it was 40 to 120 ms). A single step
+  dearer than a frame on the main thread still blocks the page at the step's rate: use a worker.
+
 ## 0.1.7
 
 Fixes and additions from decksmith's work on 0.1.6, including orthogonal edge routing for diagrams. Everything is optional and the defaults draw as before, except the
