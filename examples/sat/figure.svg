@@ -1,0 +1,159 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="346" viewBox="0 0 900 346"><title>Conflicts and decision level against steps for the DPLL and CDCL solvers on the pigeonhole formula with six pigeons and five holes</title><rect width="100%" height="100%" fill="#ffffff"></rect><text x="225" y="19" text-anchor="middle" font-family="system-ui, -apple-system, &#x27;Segoe UI&#x27;, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="#333333">conflicts so far</text><svg x="0" y="26" width="450" height="320" overflow="visible"><svg width="450" height="320" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" baseProfile="full" viewBox="0 0 450 320">
+<rect width="450" height="320" x="0" y="0" fill="#ffffff"></rect>
+<path d="M61 276.5L450 276.5" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr0-cls-0"></path>
+<path d="M61 267.5L450 267.5" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr0-cls-0"></path>
+<path d="M61 234.5L450 234.5" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr0-cls-0"></path>
+<path d="M61 200.5L450 200.5" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr0-cls-0"></path>
+<path d="M61 167.5L450 167.5" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr0-cls-0"></path>
+<path d="M61 134.5L450 134.5" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr0-cls-0"></path>
+<path d="M61 101.5L450 101.5" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr0-cls-0"></path>
+<path d="M61 68.5L450 68.5" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr0-cls-0"></path>
+<path d="M61 35.5L450 35.5" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr0-cls-0"></path>
+<path d="M61 28.5L450 28.5" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr0-cls-0"></path>
+<path d="M61.5 28L61.5 276" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr0-cls-0"></path>
+<path d="M75.5 28L75.5 276" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr0-cls-0"></path>
+<path d="M134.5 28L134.5 276" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr0-cls-0"></path>
+<path d="M192.5 28L192.5 276" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr0-cls-0"></path>
+<path d="M251.5 28L251.5 276" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr0-cls-0"></path>
+<path d="M309.5 28L309.5 276" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr0-cls-0"></path>
+<path d="M368.5 28L368.5 276" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr0-cls-0"></path>
+<path d="M426.5 28L426.5 276" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr0-cls-0"></path>
+<path d="M450.5 28L450.5 276" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr0-cls-0"></path>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:11px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="-5.5" transform="matrix(0,-1,1,0,19,152)" fill="#424a53">conflicts</text>
+<path d="M61.5 276L61.5 28" fill="none" pointer-events="visible" stroke="#afb8c1" stroke-linecap="round" class="zr0-cls-0"></path>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:11px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5.5" transform="translate(255.5 304)" fill="#424a53">step</text>
+<path d="M61 276.5L450 276.5" fill="none" pointer-events="visible" stroke="#afb8c1" stroke-linecap="round" class="zr0-cls-0"></path>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(53 266.8148)" fill="#6e7781">0</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(53 233.7746)" fill="#6e7781">20</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(53 200.7343)" fill="#6e7781">40</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(53 167.6941)" fill="#6e7781">60</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(53 134.6539)" fill="#6e7781">80</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(53 101.6136)" fill="#6e7781">100</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(53 68.5734)" fill="#6e7781">120</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(53 35.5332)" fill="#6e7781">140</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(75.4074 284)" fill="#6e7781">0</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(133.879 284)" fill="#6e7781">50</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(192.3506 284)" fill="#6e7781">100</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(250.8223 284)" fill="#6e7781">150</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(309.2939 284)" fill="#6e7781">200</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(367.7655 284)" fill="#6e7781">250</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(426.2371 284)" fill="#6e7781">300</text>
+<g clip-path="url(#zr0-c0)">
+<path d="M75.4 266.8L76.6 266.8L77.7 266.8L78.9 266.8L80.1 266.8L81.3 265.2L82.4 263.5L83.6 263.5L84.8 263.5L85.9 261.9L87.1 260.2L88.3 260.2L89.4 258.6L90.6 256.9L91.8 256.9L92.9 256.9L94.1 256.9L95.3 255.3L96.5 253.6L97.6 253.6L98.8 253.6L100 251.9L101.1 250.3L102.3 250.3L103.5 248.6L104.6 247L105.8 247L107 247L108.2 247L109.3 245.3L110.5 243.7L111.7 243.7L112.8 243.7L114 242L115.2 240.4L116.3 240.4L117.5 238.7L118.7 237.1L119.8 237.1L121 237.1L122.2 235.4L123.4 233.8L124.5 233.8L125.7 233.8L126.9 232.1L128 230.5L129.2 230.5L130.4 228.8L131.5 227.2L132.7 227.2L133.9 227.2L135 227.2L136.2 227.2L137.4 225.5L138.6 223.9L139.7 223.9L140.9 223.9L142.1 222.2L143.2 220.6L144.4 220.6L145.6 218.9L146.7 217.3L147.9 217.3L149.1 217.3L150.3 217.3L151.4 215.6L152.6 214L153.8 214L154.9 214L156.1 212.3L157.3 210.6L158.4 210.6L159.6 209L160.8 207.3L161.9 207.3L163.1 207.3L164.3 207.3L165.5 205.7L166.6 204L167.8 204L169 204L170.1 202.4L171.3 200.7L172.5 200.7L173.6 199.1L174.8 197.4L176 197.4L177.1 197.4L178.3 195.8L179.5 194.1L180.7 194.1L181.8 194.1L183 192.5L184.2 190.8L185.3 190.8L186.5 189.2L187.7 187.5L188.8 187.5L190 187.5L191.2 187.5L192.4 187.5L193.5 185.9L194.7 184.2L195.9 184.2L197 184.2L198.2 182.6L199.4 180.9L200.5 180.9L201.7 179.3L202.9 177.6L204 177.6L205.2 177.6L206.4 177.6L207.6 176L208.7 174.3L209.9 174.3L211.1 174.3L212.2 172.7L213.4 171L214.6 171L215.7 169.3L216.9 167.7L218.1 167.7L219.2 167.7L220.4 167.7L221.6 166L222.8 164.4L223.9 164.4L225.1 164.4L226.3 162.7L227.4 161.1L228.6 161.1L229.8 159.4L230.9 157.8L232.1 157.8L233.3 157.8L234.5 156.1L235.6 154.5L236.8 154.5L238 154.5L239.1 152.8L240.3 151.2L241.5 151.2L242.6 149.5L243.8 147.9L245 147.9L246.1 147.9L247.3 147.9L248.5 147.9L249.7 146.2L250.8 144.6L252 144.6L253.2 144.6L254.3 142.9L255.5 141.3L256.7 141.3L257.8 139.6L259 138L260.2 138L261.3 138L262.5 138L263.7 136.3L264.9 134.7L266 134.7L267.2 134.7L268.4 133L269.5 131.3L270.7 131.3L271.9 129.7L273 128L274.2 128L275.4 128L276.5 128L277.7 126.4L278.9 124.7L280.1 124.7L281.2 124.7L282.4 123.1L283.6 121.4L284.7 121.4L285.9 119.8L287.1 118.1L288.2 118.1L289.4 118.1L290.6 116.5L291.8 114.8L292.9 114.8L294.1 114.8L295.3 113.2L296.4 111.5L297.6 111.5L298.8 109.9L299.9 108.2L301.1 108.2L302.3 108.2L303.4 108.2L304.6 106.6L305.8 104.9L307 104.9L308.1 104.9L309.3 103.3L310.5 101.6L311.6 101.6L312.8 100L314 98.3L315.1 98.3L316.3 98.3L317.5 98.3L318.6 96.7L319.8 95L321 95L322.2 95L323.3 93.4L324.5 91.7L325.7 91.7L326.8 90L328 88.4L329.2 88.4L330.3 88.4L331.5 88.4L332.7 86.7L333.9 85.1L335 85.1L336.2 85.1L337.4 83.4L338.5 81.8L339.7 81.8L340.9 80.1L342 78.5L343.2 78.5L344.4 78.5L345.5 76.8L346.7 75.2L347.9 75.2L349.1 75.2L350.2 73.5L351.4 71.9L352.6 71.9L353.7 70.2L354.9 68.6" fill="none" pointer-events="visible" stroke="#1f77b4" stroke-width="2" stroke-linejoin="bevel" class="zr0-cls-2"></path>
+</g>
+<g clip-path="url(#zr0-c1)">
+<path d="M75.4 266.8L76.6 266.8L77.7 266.8L78.9 266.8L80.1 266.8L81.3 266.8L82.4 266.8L83.6 266.8L84.8 266.8L85.9 266.8L87.1 266.8L88.3 265.2L89.4 263.5L90.6 263.5L91.8 263.5L92.9 263.5L94.1 261.9L95.3 261.9L96.5 261.9L97.6 260.2L98.8 260.2L100 258.6L101.1 256.9L102.3 255.3L103.5 255.3L104.6 255.3L105.8 255.3L107 255.3L108.2 255.3L109.3 253.6L110.5 253.6L111.7 253.6L112.8 251.9L114 251.9L115.2 250.3L116.3 248.6L117.5 248.6L118.7 248.6L119.8 248.6L121 248.6L122.2 248.6L123.4 247L124.5 245.3L125.7 245.3L126.9 245.3L128 245.3L129.2 243.7L130.4 243.7L131.5 242L132.7 240.4L133.9 240.4L135 240.4L136.2 238.7L137.4 237.1L138.6 237.1L139.7 237.1L140.9 235.4L142.1 233.8L143.2 232.1L144.4 232.1L145.6 232.1L146.7 230.5L147.9 228.8L149.1 227.2L150.3 227.2L151.4 227.2L152.6 225.5L153.8 225.5L154.9 223.9L156.1 222.2L157.3 220.6L158.4 220.6L159.6 220.6L160.8 220.6L161.9 220.6L163.1 220.6L164.3 220.6L165.5 220.6L166.6 218.9L167.8 218.9L169 218.9L170.1 217.3L171.3 217.3L172.5 215.6L173.6 214L174.8 214L176 214L177.1 212.3L178.3 212.3L179.5 210.6L180.7 210.6L181.8 209L183 207.3L184.2 207.3L185.3 205.7L186.5 204L187.7 204L188.8 204L190 202.4L191.2 200.7L192.4 200.7L193.5 199.1L194.7 197.4L195.9 197.4L197 197.4L198.2 197.4L199.4 197.4L200.5 197.4L201.7 197.4L202.9 197.4L204 197.4L205.2 197.4L206.4 195.8L207.6 195.8L208.7 195.8L209.9 195.8L211.1 195.8L212.2 195.8L213.4 194.1L214.6 192.5L215.7 192.5L216.9 192.5L218.1 192.5L219.2 192.5L220.4 190.8L221.6 189.2L222.8 187.5L223.9 185.9L225.1 185.9L226.3 184.2L227.4 184.2L228.6 182.6L229.8 180.9L230.9 180.9L232.1 180.9L233.3 180.9L234.5 180.9L235.6 180.9L236.8 180.9L238 180.9L239.1 180.9L240.3 180.9L241.5 179.3L242.6 177.6L243.8 177.6L245 177.6L246.1 176L247.3 176L248.5 176L249.7 174.3L250.8 172.7L252 171L253.2 171L254.3 171L255.5 169.3L256.7 167.7L257.8 167.7L259 166L260.2 166L261.3 164.4L262.5 162.7L263.7 162.7L264.9 162.7L266 162.7L267.2 162.7L268.4 161.1L269.5 159.4L270.7 159.4L271.9 157.8L273 156.1L274.2 154.5L275.4 154.5L276.5 154.5L277.7 152.8L278.9 151.2L280.1 149.5L281.2 149.5L282.4 147.9L283.6 146.2L284.7 146.2L285.9 144.6L287.1 142.9L288.2 142.9L289.4 142.9L290.6 142.9L291.8 141.3L292.9 141.3L294.1 139.6L295.3 138L296.4 136.3L297.6 136.3L298.8 134.7L299.9 134.7L301.1 134.7L302.3 133L303.4 131.3L304.6 129.7L305.8 129.7L307 129.7L308.1 129.7L309.3 129.7L310.5 129.7L311.6 128L312.8 128L314 128L315.1 126.4L316.3 124.7L317.5 123.1L318.6 123.1L319.8 121.4L321 119.8L322.2 119.8L323.3 118.1L324.5 118.1L325.7 116.5L326.8 114.8L328 113.2L329.2 113.2L330.3 113.2L331.5 113.2L332.7 111.5L333.9 109.9L335 109.9L336.2 109.9L337.4 108.2L338.5 106.6L339.7 106.6L340.9 104.9L342 104.9L343.2 104.9L344.4 103.3L345.5 101.6L346.7 101.6L347.9 101.6L349.1 101.6L350.2 101.6L351.4 101.6L352.6 100L353.7 100L354.9 98.3L356.1 96.7L357.2 96.7L358.4 96.7L359.6 95L360.7 95L361.9 93.4L363.1 91.7L364.3 90L365.4 90L366.6 88.4L367.8 86.7L368.9 86.7L370.1 86.7L371.3 86.7L372.4 85.1L373.6 85.1L374.8 85.1L376 83.4L377.1 81.8L378.3 80.1L379.5 80.1L380.6 80.1L381.8 80.1L383 78.5L384.1 78.5L385.3 78.5L386.5 76.8L387.6 75.2L388.8 73.5L390 73.5L391.2 73.5L392.3 71.9L393.5 70.2L394.7 68.6L395.8 68.6L397 66.9L398.2 66.9L399.3 66.9L400.5 65.3L401.7 63.6L402.8 62L404 62L405.2 62L406.4 62L407.5 60.3L408.7 60.3L409.9 58.7L411 57L412.2 55.4L413.4 55.4L414.5 53.7L415.7 52.1L416.9 52.1L418.1 52.1L419.2 52.1L420.4 50.4L421.6 48.7L422.7 47.1L423.9 47.1L425.1 47.1L426.2 45.4L427.4 45.4L428.6 43.8L429.7 43.8L430.9 42.1L432.1 40.5L433.3 40.5L434.4 38.8L435.6 37.2" fill="none" pointer-events="visible" stroke="#ff7f0e" stroke-width="2" stroke-linejoin="bevel" class="zr0-cls-2"></path>
+</g>
+<path d="M-5 -5l111.5 0l0 21l-111.5 0Z" transform="translate(323.47 5)" fill="rgb(0,0,0)" fill-opacity="0" stroke="#b7b9be" stroke-width="0" class="zr0-cls-0"></path>
+<path d="M0.8 0L11.3 0A0.8 0.8 0 0 1 12 0.7L12 2.3A0.8 0.8 0 0 1 11.3 3L0.8 3A0.8 0.8 0 0 1 0 2.3L0 0.8A0.8 0.8 0 0 1 0.7 0Z" transform="translate(323.47 9)" fill="#1f77b4" ecmeta_series_index="0" ecmeta_data_index="0" ecmeta_ssr_type="legend" ecmeta_silent="true" class="zr0-cls-0"></path>
+<text dominant-baseline="central" text-anchor="start" style="font-size:11px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" x="17" y="1.5" transform="translate(323.47 9)" fill="#424a53">DPLL</text>
+<path d="M0 -4l44.6 0l0 11l-44.6 0Z" transform="translate(323.47 9)" fill="none" pointer-events="visible" ecmeta_series_index="0" ecmeta_data_index="0" ecmeta_ssr_type="legend" class="zr0-cls-3"></path>
+<path d="M0.8 0L11.3 0A0.8 0.8 0 0 1 12 0.7L12 2.3A0.8 0.8 0 0 1 11.3 3L0.8 3A0.8 0.8 0 0 1 0 2.3L0 0.8A0.8 0.8 0 0 1 0.7 0Z" transform="translate(378.08 9)" fill="#ff7f0e" ecmeta_series_index="1" ecmeta_data_index="1" ecmeta_ssr_type="legend" ecmeta_silent="true" class="zr0-cls-0"></path>
+<text dominant-baseline="central" text-anchor="start" style="font-size:11px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" x="17" y="1.5" transform="translate(378.08 9)" fill="#424a53">CDCL</text>
+<path d="M0 -4l46.9 0l0 11l-46.9 0Z" transform="translate(378.08 9)" fill="none" pointer-events="visible" ecmeta_series_index="1" ecmeta_data_index="1" ecmeta_ssr_type="legend" class="zr0-cls-3"></path>
+<defs >
+<clipPath id="zr0-c0">
+<path d="M59 27l392 0l0 250l-392 0Z" fill="#000" class="zr0-cls-1"></path>
+</clipPath>
+<clipPath id="zr0-c1">
+<path d="M59 27l392 0l0 250l-392 0Z" fill="#000" class="zr0-cls-1"></path>
+</clipPath>
+</defs>
+<style ><![CDATA[
+.zr0-cls-0:hover {
+pointer-events:none;
+}
+.zr0-cls-1:hover {
+cursor:pointer;
+fill:rgba(0,0,0,1);
+}
+.zr0-cls-2:hover {
+cursor:pointer;
+}
+.zr0-cls-3:hover {
+cursor:pointer;
+fill:rgba(0,0,0,0);
+}
+
+]]>
+
+</style>
+</svg></svg><text x="675" y="19" text-anchor="middle" font-family="system-ui, -apple-system, &#x27;Segoe UI&#x27;, Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="#333333">decision level (depth of the search)</text><svg x="450" y="26" width="450" height="320" overflow="visible"><svg width="450" height="320" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" baseProfile="full" viewBox="0 0 450 320">
+<rect width="450" height="320" x="0" y="0" fill="#ffffff"></rect>
+<path d="M61 276.5L450 276.5" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr1-cls-4"></path>
+<path d="M61 267.5L450 267.5" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr1-cls-4"></path>
+<path d="M61 228.5L450 228.5" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr1-cls-4"></path>
+<path d="M61 190.5L450 190.5" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr1-cls-4"></path>
+<path d="M61 152.5L450 152.5" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr1-cls-4"></path>
+<path d="M61 113.5L450 113.5" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr1-cls-4"></path>
+<path d="M61 75.5L450 75.5" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr1-cls-4"></path>
+<path d="M61 37.5L450 37.5" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr1-cls-4"></path>
+<path d="M61 28.5L450 28.5" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr1-cls-4"></path>
+<path d="M61.5 28L61.5 276" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr1-cls-4"></path>
+<path d="M75.5 28L75.5 276" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr1-cls-4"></path>
+<path d="M134.5 28L134.5 276" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr1-cls-4"></path>
+<path d="M192.5 28L192.5 276" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr1-cls-4"></path>
+<path d="M251.5 28L251.5 276" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr1-cls-4"></path>
+<path d="M309.5 28L309.5 276" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr1-cls-4"></path>
+<path d="M368.5 28L368.5 276" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr1-cls-4"></path>
+<path d="M426.5 28L426.5 276" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr1-cls-4"></path>
+<path d="M450.5 28L450.5 276" fill="none" pointer-events="visible" stroke="#d0d7de" class="zr1-cls-4"></path>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:11px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="-5.5" transform="matrix(0,-1,1,0,19,152)" fill="#424a53">level</text>
+<path d="M61.5 276L61.5 28" fill="none" pointer-events="visible" stroke="#afb8c1" stroke-linecap="round" class="zr1-cls-4"></path>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:11px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5.5" transform="translate(255.5 304)" fill="#424a53">step</text>
+<path d="M61 276.5L450 276.5" fill="none" pointer-events="visible" stroke="#afb8c1" stroke-linecap="round" class="zr1-cls-4"></path>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(53 266.8148)" fill="#6e7781">0</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(53 228.5432)" fill="#6e7781">2</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(53 190.2716)" fill="#6e7781">4</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(53 152)" fill="#6e7781">6</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(53 113.7284)" fill="#6e7781">8</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(53 75.4568)" fill="#6e7781">10</text>
+<text dominant-baseline="central" text-anchor="end" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" transform="translate(53 37.1852)" fill="#6e7781">12</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(75.4074 284)" fill="#6e7781">0</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(133.879 284)" fill="#6e7781">50</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(192.3506 284)" fill="#6e7781">100</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(250.8223 284)" fill="#6e7781">150</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(309.2939 284)" fill="#6e7781">200</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(367.7655 284)" fill="#6e7781">250</text>
+<text dominant-baseline="central" text-anchor="middle" style="font-size:10px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" y="5" transform="translate(426.2371 284)" fill="#6e7781">300</text>
+<g clip-path="url(#zr1-c0)">
+<path d="M75.4 266.8L76.6 247.7L77.7 228.5L78.9 209.4L80.1 190.3L81.3 190.3L82.4 209.4L83.6 190.3L84.8 171.1L85.9 171.1L87.1 190.3L88.3 171.1L89.4 171.1L90.6 228.5L91.8 209.4L92.9 190.3L94.1 171.1L95.3 171.1L96.5 190.3L97.6 171.1L98.8 152L100 152L101.1 171.1L102.3 152L103.5 152L104.6 209.4L105.8 190.3L107 171.1L108.2 152L109.3 152L110.5 171.1L111.7 152L112.8 132.9L114 132.9L115.2 152L116.3 132.9L117.5 132.9L118.7 190.3L119.8 171.1L121 152L122.2 152L123.4 171.1L124.5 152L125.7 132.9L126.9 132.9L128 152L129.2 132.9L130.4 132.9L131.5 247.7L132.7 228.5L133.9 209.4L135 190.3L136.2 171.1L137.4 171.1L138.6 190.3L139.7 171.1L140.9 152L142.1 152L143.2 171.1L144.4 152L145.6 152L146.7 209.4L147.9 190.3L149.1 171.1L150.3 152L151.4 152L152.6 171.1L153.8 152L154.9 132.9L156.1 132.9L157.3 152L158.4 132.9L159.6 132.9L160.8 190.3L161.9 171.1L163.1 152L164.3 132.9L165.5 132.9L166.6 152L167.8 132.9L169 113.7L170.1 113.7L171.3 132.9L172.5 113.7L173.6 113.7L174.8 171.1L176 152L177.1 132.9L178.3 132.9L179.5 152L180.7 132.9L181.8 113.7L183 113.7L184.2 132.9L185.3 113.7L186.5 113.7L187.7 228.5L188.8 209.4L190 190.3L191.2 171.1L192.4 152L193.5 152L194.7 171.1L195.9 152L197 132.9L198.2 132.9L199.4 152L200.5 132.9L201.7 132.9L202.9 190.3L204 171.1L205.2 152L206.4 132.9L207.6 132.9L208.7 152L209.9 132.9L211.1 113.7L212.2 113.7L213.4 132.9L214.6 113.7L215.7 113.7L216.9 171.1L218.1 152L219.2 132.9L220.4 113.7L221.6 113.7L222.8 132.9L223.9 113.7L225.1 94.6L226.3 94.6L227.4 113.7L228.6 94.6L229.8 94.6L230.9 152L232.1 132.9L233.3 113.7L234.5 113.7L235.6 132.9L236.8 113.7L238 94.6L239.1 94.6L240.3 113.7L241.5 94.6L242.6 94.6L243.8 209.4L245 190.3L246.1 171.1L247.3 152L248.5 132.9L249.7 132.9L250.8 152L252 132.9L253.2 113.7L254.3 113.7L255.5 132.9L256.7 113.7L257.8 113.7L259 171.1L260.2 152L261.3 132.9L262.5 113.7L263.7 113.7L264.9 132.9L266 113.7L267.2 94.6L268.4 94.6L269.5 113.7L270.7 94.6L271.9 94.6L273 152L274.2 132.9L275.4 113.7L276.5 94.6L277.7 94.6L278.9 113.7L280.1 94.6L281.2 75.5L282.4 75.5L283.6 94.6L284.7 75.5L285.9 75.5L287.1 132.9L288.2 113.7L289.4 94.6L290.6 94.6L291.8 113.7L292.9 94.6L294.1 75.5L295.3 75.5L296.4 94.6L297.6 75.5L298.8 75.5L299.9 190.3L301.1 171.1L302.3 152L303.4 132.9L304.6 132.9L305.8 152L307 132.9L308.1 113.7L309.3 113.7L310.5 132.9L311.6 113.7L312.8 113.7L314 171.1L315.1 152L316.3 132.9L317.5 113.7L318.6 113.7L319.8 132.9L321 113.7L322.2 94.6L323.3 94.6L324.5 113.7L325.7 94.6L326.8 94.6L328 152L329.2 132.9L330.3 113.7L331.5 94.6L332.7 94.6L333.9 113.7L335 94.6L336.2 75.5L337.4 75.5L338.5 94.6L339.7 75.5L340.9 75.5L342 132.9L343.2 113.7L344.4 94.6L345.5 94.6L346.7 113.7L347.9 94.6L349.1 75.5L350.2 75.5L351.4 94.6L352.6 75.5L353.7 75.5L354.9 75.5" fill="none" pointer-events="visible" stroke="#1f77b4" stroke-width="2" stroke-linejoin="bevel" class="zr1-cls-6"></path>
+</g>
+<g clip-path="url(#zr1-c1)">
+<path d="M75.4 266.8L76.6 247.7L77.7 228.5L78.9 209.4L80.1 190.3L81.3 171.1L82.4 152L83.6 132.9L84.8 113.7L85.9 94.6L87.1 75.5L88.3 94.6L89.4 132.9L90.6 113.7L91.8 94.6L92.9 75.5L94.1 113.7L95.3 94.6L96.5 75.5L97.6 113.7L98.8 94.6L100 113.7L101.1 132.9L102.3 190.3L103.5 171.1L104.6 152L105.8 132.9L107 113.7L108.2 94.6L109.3 171.1L110.5 152L111.7 132.9L112.8 171.1L114 152L115.2 171.1L116.3 190.3L117.5 171.1L118.7 152L119.8 132.9L121 113.7L122.2 94.6L123.4 113.7L124.5 152L125.7 132.9L126.9 113.7L128 94.6L129.2 113.7L130.4 94.6L131.5 113.7L132.7 132.9L133.9 113.7L135 94.6L136.2 132.9L137.4 152L138.6 132.9L139.7 113.7L140.9 132.9L142.1 152L143.2 171.1L144.4 152L145.6 132.9L146.7 152L147.9 171.1L149.1 190.3L150.3 171.1L151.4 152L152.6 171.1L153.8 152L154.9 171.1L156.1 190.3L157.3 266.8L158.4 247.7L159.6 228.5L160.8 209.4L161.9 190.3L163.1 171.1L164.3 152L165.5 132.9L166.6 171.1L167.8 152L169 132.9L170.1 171.1L171.3 152L172.5 171.1L173.6 190.3L174.8 171.1L176 152L177.1 171.1L178.3 152L179.5 171.1L180.7 152L181.8 171.1L183 190.3L184.2 171.1L185.3 190.3L186.5 209.4L187.7 190.3L188.8 171.1L190 190.3L191.2 209.4L192.4 190.3L193.5 209.4L194.7 228.5L195.9 209.4L197 190.3L198.2 171.1L199.4 152L200.5 132.9L201.7 113.7L202.9 94.6L204 75.5L205.2 56.3L206.4 152L207.6 132.9L208.7 113.7L209.9 94.6L211.1 75.5L212.2 56.3L213.4 152L214.6 171.1L215.7 152L216.9 132.9L218.1 113.7L219.2 94.6L220.4 113.7L221.6 132.9L222.8 152L223.9 171.1L225.1 152L226.3 171.1L227.4 152L228.6 171.1L229.8 209.4L230.9 190.3L232.1 171.1L233.3 152L234.5 132.9L235.6 113.7L236.8 94.6L238 75.5L239.1 56.3L240.3 37.2L241.5 75.5L242.6 94.6L243.8 75.5L245 56.3L246.1 94.6L247.3 75.5L248.5 56.3L249.7 75.5L250.8 94.6L252 113.7L253.2 94.6L254.3 75.5L255.5 94.6L256.7 113.7L257.8 94.6L259 113.7L260.2 94.6L261.3 113.7L262.5 132.9L263.7 113.7L264.9 94.6L266 75.5L267.2 56.3L268.4 75.5L269.5 94.6L270.7 75.5L271.9 94.6L273 113.7L274.2 132.9L275.4 113.7L276.5 94.6L277.7 113.7L278.9 132.9L280.1 152L281.2 132.9L282.4 152L283.6 171.1L284.7 152L285.9 171.1L287.1 190.3L288.2 171.1L289.4 152L290.6 132.9L291.8 152L292.9 132.9L294.1 152L295.3 171.1L296.4 190.3L297.6 171.1L298.8 190.3L299.9 171.1L301.1 152L302.3 171.1L303.4 190.3L304.6 209.4L305.8 190.3L307 171.1L308.1 152L309.3 132.9L310.5 113.7L311.6 152L312.8 132.9L314 113.7L315.1 132.9L316.3 152L317.5 171.1L318.6 152L319.8 171.1L321 190.3L322.2 171.1L323.3 190.3L324.5 171.1L325.7 190.3L326.8 209.4L328 228.5L329.2 209.4L330.3 190.3L331.5 171.1L332.7 190.3L333.9 209.4L335 190.3L336.2 171.1L337.4 190.3L338.5 209.4L339.7 190.3L340.9 209.4L342 190.3L343.2 171.1L344.4 190.3L345.5 266.8L346.7 247.7L347.9 228.5L349.1 209.4L350.2 190.3L351.4 171.1L352.6 190.3L353.7 171.1L354.9 190.3L356.1 209.4L357.2 190.3L358.4 171.1L359.6 190.3L360.7 171.1L361.9 190.3L363.1 209.4L364.3 228.5L365.4 209.4L366.6 228.5L367.8 247.7L368.9 228.5L370.1 209.4L371.3 190.3L372.4 209.4L373.6 190.3L374.8 171.1L376 190.3L377.1 209.4L378.3 228.5L379.5 209.4L380.6 190.3L381.8 171.1L383 190.3L384.1 171.1L385.3 152L386.5 171.1L387.6 190.3L388.8 209.4L390 190.3L391.2 171.1L392.3 190.3L393.5 209.4L394.7 228.5L395.8 209.4L397 228.5L398.2 209.4L399.3 190.3L400.5 209.4L401.7 228.5L402.8 247.7L404 228.5L405.2 209.4L406.4 190.3L407.5 209.4L408.7 190.3L409.9 209.4L411 228.5L412.2 247.7L413.4 228.5L414.5 247.7L415.7 266.8L416.9 247.7L418.1 228.5L419.2 209.4L420.4 228.5L421.6 247.7L422.7 266.8L423.9 247.7L425.1 228.5L426.2 247.7L427.4 228.5L428.6 247.7L429.7 228.5L430.9 247.7L432.1 266.8L433.3 247.7L434.4 266.8L435.6 266.8" fill="none" pointer-events="visible" stroke="#ff7f0e" stroke-width="2" stroke-linejoin="bevel" class="zr1-cls-6"></path>
+</g>
+<path d="M-5 -5l111.5 0l0 21l-111.5 0Z" transform="translate(323.47 5)" fill="rgb(0,0,0)" fill-opacity="0" stroke="#b7b9be" stroke-width="0" class="zr1-cls-4"></path>
+<path d="M0.8 0L11.3 0A0.8 0.8 0 0 1 12 0.7L12 2.3A0.8 0.8 0 0 1 11.3 3L0.8 3A0.8 0.8 0 0 1 0 2.3L0 0.8A0.8 0.8 0 0 1 0.7 0Z" transform="translate(323.47 9)" fill="#1f77b4" ecmeta_series_index="0" ecmeta_data_index="0" ecmeta_ssr_type="legend" ecmeta_silent="true" class="zr1-cls-4"></path>
+<text dominant-baseline="central" text-anchor="start" style="font-size:11px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" x="17" y="1.5" transform="translate(323.47 9)" fill="#424a53">DPLL</text>
+<path d="M0 -4l44.6 0l0 11l-44.6 0Z" transform="translate(323.47 9)" fill="none" pointer-events="visible" ecmeta_series_index="0" ecmeta_data_index="0" ecmeta_ssr_type="legend" class="zr1-cls-7"></path>
+<path d="M0.8 0L11.3 0A0.8 0.8 0 0 1 12 0.7L12 2.3A0.8 0.8 0 0 1 11.3 3L0.8 3A0.8 0.8 0 0 1 0 2.3L0 0.8A0.8 0.8 0 0 1 0.7 0Z" transform="translate(378.08 9)" fill="#ff7f0e" ecmeta_series_index="1" ecmeta_data_index="1" ecmeta_ssr_type="legend" ecmeta_silent="true" class="zr1-cls-4"></path>
+<text dominant-baseline="central" text-anchor="start" style="font-size:11px;font-family:'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;" x="17" y="1.5" transform="translate(378.08 9)" fill="#424a53">CDCL</text>
+<path d="M0 -4l46.9 0l0 11l-46.9 0Z" transform="translate(378.08 9)" fill="none" pointer-events="visible" ecmeta_series_index="1" ecmeta_data_index="1" ecmeta_ssr_type="legend" class="zr1-cls-7"></path>
+<defs >
+<clipPath id="zr1-c0">
+<path d="M59 27l392 0l0 250l-392 0Z" fill="#000" class="zr1-cls-5"></path>
+</clipPath>
+<clipPath id="zr1-c1">
+<path d="M59 27l392 0l0 250l-392 0Z" fill="#000" class="zr1-cls-5"></path>
+</clipPath>
+</defs>
+<style ><![CDATA[
+.zr1-cls-4:hover {
+pointer-events:none;
+}
+.zr1-cls-5:hover {
+cursor:pointer;
+fill:rgba(0,0,0,1);
+}
+.zr1-cls-6:hover {
+cursor:pointer;
+}
+.zr1-cls-7:hover {
+cursor:pointer;
+fill:rgba(0,0,0,0);
+}
+
+]]>
+
+</style>
+</svg></svg></svg>
