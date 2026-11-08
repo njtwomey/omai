@@ -1,4 +1,4 @@
-# A SAT solver at work
+# Two SAT solvers on a hard puzzle
 
 The pigeonhole puzzle: put six pigeons into five holes with at most one pigeon in each hole. It cannot be done, and a
 SAT solver has to prove that. The puzzle is written as a Boolean formula in conjunctive normal form (30 variables,

@@ -10,9 +10,9 @@ import type { ExampleModule, Outcome } from '../_shared/contract.ts'
 import { Figure, Panel } from '../_shared/figure.tsx'
 
 export const meta: ExampleModule['meta'] = {
-  title: 'A SAT solver at work',
+  title: 'Two SAT solvers on a hard puzzle',
   summary:
-    'Six pigeons in five holes as a Boolean formula: DPLL and CDCL both prove it unsatisfiable, and their traces differ.',
+    'Six pigeons cannot each have their own hole in five holes. Two SAT solvers, DPLL and CDCL, both prove it, and their traces differ.',
   readme: false,
   alt: 'Conflicts and decision level against steps for the DPLL and CDCL solvers on the pigeonhole formula with six pigeons and five holes',
 }
@@ -55,15 +55,24 @@ export function View({ result }: { result: Result }) {
     { name: 'CDCL', run: result.runs.cdcl },
   ]
   return (
-    <Figure width={900} height={346} title={meta.alt}>
-      <Panel x={0} width={450} height={320} title="conflicts so far" still={runsChart(both, 'conflicts')} />
-      <Panel
-        x={450}
-        width={450}
-        height={320}
-        title="decision level (depth of the search)"
-        still={runsChart(both, 'level')}
-      />
+    <Figure width={900} height={420} title={meta.alt}>
+      <text x={12} y={22} fontFamily="system-ui, sans-serif" fontSize={14} fontWeight={600} fill="#333333">
+        Can 6 pigeons each have their own hole among 5 holes? No: two SAT solvers prove it, one step at a time
+      </text>
+      <g transform="translate(0, 30)">
+        <Panel x={0} width={450} height={320} title="conflicts found so far" still={runsChart(both, 'conflicts')} />
+        <Panel
+          x={450}
+          width={450}
+          height={320}
+          title="decision level (how deep the search is)"
+          still={runsChart(both, 'level')}
+        />
+      </g>
+      <text x={450} y={410} textAnchor="middle" fontFamily="system-ui, sans-serif" fontSize={12} fill="#444444">
+        A conflict is a dead end: the choices made so far cannot all be right. DPLL backs up and tries again; CDCL also
+        learns a rule from each dead end.
+      </text>
     </Figure>
   )
 }

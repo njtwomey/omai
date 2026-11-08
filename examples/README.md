@@ -146,13 +146,13 @@ NUTS on a twisted Gaussian: the draws over the true density, the trace of one co
 
 [sampler/main.tsx](sampler/main.tsx), [sampler/README.md](sampler/README.md), tape: [tape.json](sampler/tape.json)
 
-## A SAT solver at work
+## Two SAT solvers on a hard puzzle
 
-Six pigeons in five holes as a Boolean formula: DPLL and CDCL both prove it unsatisfiable, and their traces differ.
+Six pigeons cannot each have their own hole in five holes. Two SAT solvers, DPLL and CDCL, both prove it, and their traces differ.
 
 ![Conflicts and decision level against steps for the DPLL and CDCL solvers on the pigeonhole formula with six pigeons and five holes](sat/figure.svg)
 
-[sat/main.tsx](sat/main.tsx), [sat/README.md](sat/README.md), tape: [tape-cdcl.json](sat/tape-cdcl.json), tape: [tape-dpll.json](sat/tape-dpll.json)
+[sat/main.tsx](sat/main.tsx), [sat/README.md](sat/README.md), tape: [tape-dpll.json](sat/tape-dpll.json), tape: [tape-cdcl.json](sat/tape-cdcl.json)
 
 ## Support vectors and the margin
 
