@@ -11,6 +11,7 @@ import { pca } from 'mdml-engine/decomposition'
 import { componentsRecord, type Exposition } from 'mdml-engine/exposition'
 import { key } from 'mdml-engine/random'
 import { toFlat } from 'mdml-engine/tensor'
+import { figure } from 'mdml-render/figure'
 import { categoricalColour } from 'mdml-render/theme'
 import { stillOf } from 'mdml-render/views'
 import type { ExampleModule, Outcome } from '../_shared/contract.ts'
@@ -52,10 +53,15 @@ const SPECIES = ['setosa', 'versicolor', 'virginica']
 
 export function View({ result }: { result: Exposition }) {
   return (
-    <Figure width={760} height={456} title={meta.alt}>
-      <Panel width={760} height={430} still={stillOf(result, { mode: 'light' })} />
+    <Figure width={1000} height={476} title={meta.alt}>
+      <Panel
+        width={1000}
+        height={420}
+        title="Four measurements of 150 iris flowers, reduced to the two directions that keep most of the variance"
+        still={stillOf(result, { mode: 'light', figure: figure({ width: 1000, height: 420 }) })}
+      />
       {SPECIES.map((name, i) => (
-        <g key={name} transform={`translate(${250 + i * 110}, 447)`}>
+        <g key={name} transform={`translate(${60 + i * 120}, 462)`}>
           <circle r={5} fill={categoricalColour(i)} />
           <text x={10} y={4} fontSize={12} fontFamily="system-ui, sans-serif" fill="#333333">
             {name}

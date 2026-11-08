@@ -1,31 +1,25 @@
 # Principal components of the iris data
 
-Principal component analysis (PCA) finds the directions along which the data varies most. This example finds them one at
-a time, so the tape shows the components appearing in order of variance.
-
-![PCA of the iris data](figure.svg)
-
-## The data and the method
-
-The data is the vendored iris data set: 150 flowers, four measurements each (sepal and petal length and width), three
-species. The model is `pca` from `mdml-engine/decomposition` with the `power` solver, which finds one component per step
-by power iteration, keeping each new one orthogonal to those already found.
+Each of the 150 iris flowers is described by four measurements: sepal length, sepal width, petal length and petal width.
+Principal component analysis (PCA) finds new directions in that four-dimensional space, ordered by how much of the
+variation between flowers they carry, so that the first two directions can stand in for all four.
 
 ## What the program does
 
-1. Load the data and start a session with four components; one `advance()` runs the four steps.
-2. Ask the session for its `model/params` (the components and the variance each explains) and `model/embedding` (every
-   flower in component coordinates).
-3. Put those into a `components` record, coloured by species, and draw it with the render package's components view.
+- It fits PCA to the iris data as a session, with the power-iteration solver, which finds one component per step. It took
+  4 steps, one for each component.
+- It asks the session for the components and for each flower's position along them, and builds the library's `components`
+  record from them. The render package draws the record; the example only adds the legend of the three species.
 
 ## What to look for
 
-Left, the flowers in the plane of the first two components, with each measurement's loading as an arrow: the species fall
-into groups, setosa far from the other two. Top right, the share of the variance each component explains: 92.5%, 5.3%,
-1.7% and 0.5%, so two components carry nearly all of it. Bottom right, the loadings as a matrix: the first component
-weights petal length most (0.86) and the other three lightly; the second is mostly the two sepal measurements (0.66 and 0.73).
+- On the left each dot is a flower, placed by its first two components and coloured by species. The arrows show how each
+  measurement points in that plane. Setosa (blue) is set apart from the other two, and the long arrow for petal length shows
+  what separates it.
+- Top right, the bar chart is the share of the variance that each component explains: 92.5%, 5.3%, 1.7% and 0.5%. The
+  first component alone carries most of it. The line is the running total.
+- Bottom right, the table of loadings says how much each measurement contributes to each component. The first component is
+  mostly petal length (0.857) and the second mostly sepal width (0.73).
 
-## Run it
-
-`make readme-examples ARGS="pca"` rewrites `figure.svg` and `tape.json`.
-The program is [main.tsx](main.tsx).
+The tape of the run is `tape.json`. To run it again: `make readme-examples ARGS="pca"`.
+Source: [main.tsx](main.tsx). Figure: [figure.svg](figure.svg).
