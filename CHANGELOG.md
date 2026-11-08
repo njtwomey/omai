@@ -5,7 +5,7 @@ mdml-engine, mdml-render and mdml-meta.
 
 ## 0.1.7
 
-Fixes and small additions from decksmith's work on 0.1.6. Everything is optional and the defaults draw as before, except the
+Fixes and additions from decksmith's work on 0.1.6, including orthogonal edge routing for diagrams. Everything is optional and the defaults draw as before, except the
 line height of colour-bar labels.
 - Sessions and players: `pause()`, `seek()` and `reset()` now win over a tick already queued, in `useLiveRun`,
   `usePlayback` and `SessionPlayer` (a `seek` after a `pause` could be overwritten by a late tick, so a run parked at the
@@ -25,6 +25,16 @@ line height of colour-bar labels.
 - Worlds: `greedyPath` never steps onto hazardous terrain (holes, lava, cliffs) unless `skip` says otherwise; the path of a world
   scene is the node `path`, the walls one group `walls`, and the explored and frontier overlays of `worldView` the groups
   `explored` and `frontier`, so `tones` and `recolour` reach them.
+- Structure diagrams: `route: 'orthogonal'` on `diagram()` (default `'straight'`, unchanged) draws edges with right-angle bends:
+  a connector leaves the side or bottom facing its target and enters perpendicular to its side with the arrowhead pointing in;
+  straight when the boxes overlap on an axis, else an L or a Z (bend at the middle of the gap) that clears the other nodes with
+  the fewest bends, else a detour; parallel segments are spread and edges that share a port merge; labels sit on a plate in the
+  middle of the longest segment; bounds come from the routed points. The layered layout routes through its rank channels, the
+  manual layout takes `route`, and the other layouts are re-routed (`withOrthogonalRoutes`). New: `StructureEdge.via` (waypoints),
+  a multi-line muted `detail`, multi-line and TeX edge labels, `StructureGroup.look` (colours, dashed frame), `StructureNode.note`
+  (text under a node), and factor and dot labels that avoid edges and nodes. Known limits: overlapping boxes still fall back to a
+  slanted line, and the shapes do not minimise crossings. Existing diagrams are unchanged except where a factor or dot label
+  crossed an edge or a node, which now moves.
 - Belief propagation: the observation's frame lists `sent`, the messages (by variable and factor name) the last step sent.
 
 ## 0.1.6

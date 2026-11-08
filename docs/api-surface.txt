@@ -76,7 +76,7 @@ omai-engine/random	52	07ee37b9bd6f
 omai-engine/rl	272	e873cab5f3fa
 omai-engine/rules	78	608fe8846362
 omai-engine/sampling	276	827b634c9fad
-omai-engine/scene	96	67883cd6cd64
+omai-engine/scene	97	e9bd29f736bc
 omai-engine/search	280	070c120faed9
 omai-engine/signal	374	8f6a6cb8ab0f
 omai-engine/signal/audio	86	fe25e9b7c0f3
@@ -110,13 +110,13 @@ omai-render/animation	24	6fe8aea56c92
 omai-render/charts	158	96e8fb833bda
 omai-render/figure	38	caac3c78ae53
 omai-render/gym	6	32b6352a0038
-omai-render/layout	25	4acf0ac590e7
+omai-render/layout	35	1bf987e6ed61
 omai-render/maths	19	f0fe4c3f75b4
 omai-render/producer	46	94e5f0e89b8f
 omai-render/react	457	687d08fd04ee
-omai-render/structures	22	e2a05e48db15
+omai-render/structures	22	1899814be613
 omai-render/svg	18	a511ae0dae6f
 omai-render/theme	45	7ffc358f5150
 omai-render/trace	21	4dae0ac972d4
 omai-render/views	266	aa65704aaa1a
-total	17995	9a763633052c
+total	18006	d6a85bf5908f

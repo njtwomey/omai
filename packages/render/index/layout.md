@@ -2,12 +2,12 @@
 
 # layout
 
-Graph layout: positions only, with no rendering and no layout library. `layered` (Sugiyama) for directed graphs, `tidyTree`, `radialTree` and `dendrogram` for trees, `forceLayout`, `circularLayout` and `spectralLayout`, and `gridLayout`, `bipartiteLayout` and `latticeLayout`, all taking a `LayoutGraph` and returning a `GraphLayout`.
+Graph layout: positions only, with no rendering and no layout library. `layered` (Sugiyama) for directed graphs, `tidyTree`, `radialTree` and `dendrogram` for trees, `forceLayout`, `circularLayout` and `spectralLayout`, and `gridLayout`, `bipartiteLayout` and `latticeLayout`, all taking a `LayoutGraph` and returning a `GraphLayout`, and `orthogonalRoutes` for right-angled edges (also the `route: 'orthogonal'` option of `layered` and `manualLayout`).
 
 - function `dendrogram`: Lay out merges at their heights: `dendrogram(graph, heights)`. `src/layout/trees.ts:176` `omai-render/layout`
 - function `forceLayout`: A seeded force-directed layout: `forceLayout(graph, { seed: 1 })`. `src/layout/force.ts:59` `omai-render/layout`
-- function `layered`: Lay out a directed graph in layers: `layered({ nodes, edges })`. `src/layout/layered.ts:116` `omai-render/layout`
+- function `layered`: Lay out a directed graph in layers: `layered({ nodes, edges })`. `src/layout/layered.ts:126` `omai-render/layout`
 - function `tidyTree`: Lay out a tree with parents over their children: `tidyTree(graph)`. `src/layout/trees.ts:92` `omai-render/layout`
 
-- structure `GraphLayout`: What every layout returns: node boxes, edge routes and group boxes. `src/layout/graph.ts:54` `omai-render/layout`
-- structure `LayoutGraph`: The graph every layout takes: nodes with sizes, edges and optional groups. `src/layout/graph.ts:28` `omai-render/layout`
+- structure `GraphLayout`: What every layout returns: node boxes, edge routes and group boxes. `src/layout/graph.ts:77` `omai-render/layout`
+- structure `LayoutGraph`: The graph every layout takes: nodes with sizes, edges and optional groups. `src/layout/graph.ts:46` `omai-render/layout`
