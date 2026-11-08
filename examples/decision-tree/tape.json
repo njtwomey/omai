@@ -1,1 +1,277 @@
-{"schema":"mdml.tape/1","method":"decision-tree-classifier","seed":0,"title":"A decision tree and the regions it cuts","variants":[{"label":"session","config":{"criterion":"gini","growth":"depth","minSamplesLeaf":1,"ccpAlpha":0,"maxDepth":3},"head":13,"status":"converged","run":{"schema":"mdml.run/1","events":[{"type":"run","runId":"decision-tree-classifier:0","name":"decision-tree-classifier","seed":0,"version":"0.1.2","config":{"criterion":"gini","growth":"depth","minSamplesLeaf":1,"ccpAlpha":0,"maxDepth":3},"channels":{"metrics":{"tree/leaves":{"description":"leaves so far"},"tree/depth":{"description":"depth of the deepest node so far"},"tree/impurity":{"description":"weighted impurity of the leaves","direction":"lower"},"eval/accuracy":{"description":"training accuracy of the tree so far","direction":"higher"}},"tensors":{"tree/candidates":{"role":"output","description":"every candidate split of the node: feature, threshold, left and right impurity, decrease","shape":["candidates",5]}},"messages":{"fit/iteration/end":{"description":"","payload":{"t":"the iteration just finished"}},"tree/split":{"description":"the node just decided: its feature, threshold and impurity decrease, or that it is a leaf","payload":{"node":"node id","feature":"feature index","threshold":"cut","decrease":"weighted impurity decrease"}}},"episodes":false,"frames":false}},{"type":"checkpoint","runId":"decision-tree-classifier:0","step":0,"state":{"nodes":[{"id":0,"parent":-1,"depth":0,"isLeft":false,"rows":{"$typed":"Int32Array","values":[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143,144,145,146,147,148,149]},"weight":150,"value":[75,75],"impurity":0.5,"candidates":[],"left":-1,"right":-1,"order":-1}],"open":[0],"decided":0}},{"type":"message","runId":"decision-tree-classifier:0","step":0,"kind":"tree/split","payload":{"node":0,"depth":0,"samples":150,"impurity":0.5,"leaf":false,"feature":1,"threshold":-0.1388898182803864,"decrease":0.1701722980532558,"left":1,"right":2}},{"type":"metric","runId":"decision-tree-classifier:0","step":0,"name":"tree/leaves","value":2},{"type":"metric","runId":"decision-tree-classifier:0","step":0,"name":"tree/impurity","value":0.3298277019467442},{"type":"metric","runId":"decision-tree-classifier:0","step":0,"name":"eval/accuracy","value":0.76},{"type":"message","runId":"decision-tree-classifier:0","step":1,"kind":"tree/split","payload":{"node":1,"depth":1,"samples":41,"impurity":0.04759071980963725,"leaf":false,"feature":1,"threshold":-0.2653402551218179,"decrease":0.0018970189701897411,"left":3,"right":4}},{"type":"metric","runId":"decision-tree-classifier:0","step":1,"name":"tree/leaves","value":3},{"type":"metric","runId":"decision-tree-classifier:0","step":1,"name":"tree/impurity","value":0.3279306829765545},{"type":"metric","runId":"decision-tree-classifier:0","step":1,"name":"eval/accuracy","value":0.76},{"type":"message","runId":"decision-tree-classifier:0","step":2,"kind":"tree/split","payload":{"node":2,"depth":2,"samples":35,"impurity":0,"leaf":true}},{"type":"metric","runId":"decision-tree-classifier:0","step":2,"name":"tree/leaves","value":3},{"type":"metric","runId":"decision-tree-classifier:0","step":2,"name":"tree/impurity","value":0.3279306829765545},{"type":"metric","runId":"decision-tree-classifier:0","step":2,"name":"eval/accuracy","value":0.76},{"type":"message","runId":"decision-tree-classifier:0","step":3,"kind":"tree/split","payload":{"node":3,"depth":2,"samples":6,"impurity":0.2777777777777777,"leaf":false,"feature":1,"threshold":-0.2503808560774619,"decrease":0.011111111111111108,"left":5,"right":6}},{"type":"metric","runId":"decision-tree-classifier:0","step":3,"name":"tree/leaves","value":4},{"type":"metric","runId":"decision-tree-classifier:0","step":3,"name":"tree/impurity","value":0.31681957186544335},{"type":"metric","runId":"decision-tree-classifier:0","step":3,"name":"eval/accuracy","value":0.7666666666666667},{"type":"message","runId":"decision-tree-classifier:0","step":4,"kind":"tree/split","payload":{"node":4,"depth":3,"samples":1,"impurity":0,"leaf":true}},{"type":"metric","runId":"decision-tree-classifier:0","step":4,"name":"tree/leaves","value":4},{"type":"metric","runId":"decision-tree-classifier:0","step":4,"name":"tree/impurity","value":0.31681957186544335},{"type":"metric","runId":"decision-tree-classifier:0","step":4,"name":"eval/accuracy","value":0.7666666666666667},{"type":"message","runId":"decision-tree-classifier:0","step":5,"kind":"tree/split","payload":{"node":5,"depth":3,"samples":5,"impurity":0,"leaf":true}},{"type":"metric","runId":"decision-tree-classifier:0","step":5,"name":"tree/leaves","value":4},{"type":"metric","runId":"decision-tree-classifier:0","step":5,"name":"tree/impurity","value":0.31681957186544335},{"type":"metric","runId":"decision-tree-classifier:0","step":5,"name":"eval/accuracy","value":0.7666666666666667},{"type":"checkpoint","runId":"decision-tree-classifier:0","step":6,"state":{"nodes":[{"id":0,"parent":-1,"depth":0,"isLeft":false,"rows":{"$typed":"Int32Array","values":[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143,144,145,146,147,148,149]},"weight":150,"value":[75,75],"impurity":0.5,"candidates":[{"feature":0,"threshold":-0.41253524979639566,"impurityLeft":0,"impurityRight":0.46875,"decrease":0.125},{"feature":0,"threshold":-0.4577294955865241,"impurityLeft":0,"impurityRight":0.4712792842018987,"decrease":0.11983471074380175},{"feature":0,"threshold":-0.49854591179801305,"impurityLeft":0,"impurityRight":0.4736629938188659,"decrease":0.11475409836065575},{"feature":0,"threshold":-0.28621268206171296,"impurityLeft":0.06243496357960443,"impurityRight":0.4703057693665702,"decrease":0.11398753049606936},{"feature":0,"threshold":-0.5235019811271546,"impurityLeft":0,"impurityRight":0.47590719809637116,"decrease":0.10975609756097565},{"feature":1,"threshold":-0.1388898182803864,"impurityLeft":0.04759071980963725,"impurityRight":0.435990236512078,"decrease":0.1701722980532558},{"feature":1,"threshold":-0.06404673178195469,"impurityLeft":0.12192816635160675,"impurityRight":0.42603550295857995,"decrease":0.16722408026755847},{"feature":1,"threshold":-0.09321182157077737,"impurityLeft":0.08869659275283936,"impurityRight":0.43357498471482225,"decrease":0.1652901543142795},{"feature":1,"threshold":-0.1470914167110909,"impurityLeft":0.04875000000000007,"impurityRight":0.44033057851239665,"decrease":0.16409090909090912},{"feature":1,"threshold":-0.04107856514473979,"impurityLeft":0.1527777777777779,"impurityRight":0.4231064975009612,"decrease":0.16339869281045744}],"left":1,"right":2,"order":0,"split":{"feature":1,"threshold":-0.1388898182803864,"decrease":0.1701722980532558,"missingLeft":false}},{"id":1,"parent":0,"depth":1,"isLeft":true,"rows":{"$typed":"Int32Array","values":[7,10,11,22,23,24,29,39,41,42,46,51,54,60,61,62,70,71,72,76,81,83,84,86,94,99,101,102,104,113,115,120,125,126,130,139,140,141,142,144,146]},"weight":41,"value":[1,40],"impurity":0.04759071980963725,"candidates":[{"feature":0,"threshold":1.0164060952276692,"impurityLeft":0.1049382716049383,"impurityRight":0,"decrease":0.0004155374887082535},{"feature":0,"threshold":1.0409570030576392,"impurityLeft":0.09972299168975085,"impurityRight":0,"decrease":0.00037655113393240627},{"feature":0,"threshold":1.0797621125987267,"impurityLeft":0.09500000000000008,"impurityRight":0,"decrease":0.00034146341463417033},{"feature":0,"threshold":1.125899169267032,"impurityLeft":0.09070294784580502,"impurityRight":0,"decrease":0.00030971738288814604},{"feature":0,"threshold":1.1943049551957052,"impurityLeft":0.08677685950413205,"impurityRight":0,"decrease":0.00028085735402814585},{"feature":1,"threshold":-0.2653402551218179,"impurityLeft":0,"impurityRight":0.2777777777777777,"decrease":0.0018970189701897411},{"feature":1,"threshold":-0.2789405901822958,"impurityLeft":0,"impurityRight":0.24489795918367352,"decrease":0.0015795586527294167},{"feature":1,"threshold":-0.29562265054038345,"impurityLeft":0,"impurityRight":0.21875,"decrease":0.0013414634146341807},{"feature":1,"threshold":-0.3143088561235051,"impurityLeft":0,"impurityRight":0.19753086419753085,"decrease":0.0011562782294489964},{"feature":1,"threshold":-0.3249065905344729,"impurityLeft":0,"impurityRight":0.17999999999999994,"decrease":0.0010081300813008526}],"left":3,"right":4,"order":1,"split":{"feature":1,"threshold":-0.2653402551218179,"decrease":0.0018970189701897411,"missingLeft":true}},{"id":2,"parent":0,"depth":1,"isLeft":false,"rows":{"$typed":"Int32Array","values":[0,1,2,3,4,5,6,8,9,12,13,14,15,16,17,18,19,20,21,25,26,27,28,30,31,32,33,34,35,36,37,38,40,43,44,45,47,48,49,50,52,53,55,56,57,58,59,63,64,65,66,67,68,69,73,74,75,77,78,79,80,82,85,87,88,89,90,91,92,93,95,96,97,98,100,103,105,106,107,108,109,110,111,112,114,116,117,118,119,121,122,123,124,127,128,129,131,132,133,134,135,136,137,138,143,145,147,148,149]},"weight":109,"value":[74,35],"impurity":0.435990236512078,"candidates":[],"left":-1,"right":-1,"order":-1},{"id":3,"parent":1,"depth":2,"isLeft":true,"rows":{"$typed":"Int32Array","values":[10,11,22,23,24,29,39,41,42,46,51,54,61,62,70,71,72,76,81,83,84,86,94,99,102,104,113,115,125,126,139,141,142,144,146]},"weight":35,"value":[0,35],"impurity":0,"candidates":[],"left":-1,"right":-1,"order":2},{"id":4,"parent":1,"depth":2,"isLeft":false,"rows":{"$typed":"Int32Array","values":[7,60,101,120,130,140]},"weight":6,"value":[1,5],"impurity":0.2777777777777777,"candidates":[{"feature":0,"threshold":0.8750706926125031,"impurityLeft":0,"impurityRight":0.4444444444444444,"decrease":0.0022222222222222188},{"feature":0,"threshold":0.44428246143156946,"impurityLeft":0,"impurityRight":0.375,"decrease":0.0011111111111111072},{"feature":0,"threshold":1.0164060952276692,"impurityLeft":0.375,"impurityRight":0,"decrease":0.0011111111111111072},{"feature":0,"threshold":0.10679215601000938,"impurityLeft":0,"impurityRight":0.31999999999999984,"decrease":0.0004444444444444451},{"feature":0,"threshold":1.2751446604565224,"impurityLeft":0.31999999999999984,"impurityRight":0,"decrease":0.0004444444444444451},{"feature":1,"threshold":-0.2503808560774619,"impurityLeft":0,"impurityRight":0,"decrease":0.011111111111111108},{"feature":1,"threshold":-0.22343506968664656,"impurityLeft":0.5,"impurityRight":0,"decrease":0.004444444444444441},{"feature":1,"threshold":-0.19189562014116604,"impurityLeft":0.4444444444444444,"impurityRight":0,"decrease":0.0022222222222222188},{"feature":1,"threshold":-0.16579415183999097,"impurityLeft":0.375,"impurityRight":0,"decrease":0.0011111111111111072},{"feature":1,"threshold":-0.1470914167110909,"impurityLeft":0.31999999999999984,"impurityRight":0,"decrease":0.0004444444444444451}],"left":5,"right":6,"order":3,"split":{"feature":1,"threshold":-0.2503808560774619,"decrease":0.011111111111111108,"missingLeft":false}},{"id":5,"parent":4,"depth":3,"isLeft":true,"rows":{"$typed":"Int32Array","values":[140]},"weight":1,"value":[1,0],"impurity":0,"candidates":[],"left":-1,"right":-1,"order":4},{"id":6,"parent":4,"depth":3,"isLeft":false,"rows":{"$typed":"Int32Array","values":[7,60,101,120,130]},"weight":5,"value":[0,5],"impurity":0,"candidates":[],"left":-1,"right":-1,"order":5}],"open":[2],"decided":6}},{"type":"message","runId":"decision-tree-classifier:0","step":6,"kind":"tree/split","payload":{"node":6,"depth":1,"samples":109,"impurity":0.435990236512078,"leaf":false,"feature":0,"threshold":1.3929147770094916,"decrease":0.07903511071256107,"left":7,"right":8}},{"type":"metric","runId":"decision-tree-classifier:0","step":6,"name":"tree/leaves","value":5},{"type":"metric","runId":"decision-tree-classifier:0","step":6,"name":"tree/impurity","value":0.2377844611528823},{"type":"metric","runId":"decision-tree-classifier:0","step":6,"name":"eval/accuracy","value":0.8466666666666667},{"type":"message","runId":"decision-tree-classifier:0","step":7,"kind":"tree/split","payload":{"node":7,"depth":2,"samples":95,"impurity":0.3559002770083104,"leaf":false,"feature":0,"threshold":-0.41253524979639566,"decrease":0.03135222672064785,"left":9,"right":10}},{"type":"metric","runId":"decision-tree-classifier:0","step":7,"name":"tree/leaves","value":6},{"type":"metric","runId":"decision-tree-classifier:0","step":7,"name":"tree/impurity","value":0.20643223443223446},{"type":"metric","runId":"decision-tree-classifier:0","step":7,"name":"eval/accuracy","value":0.8466666666666667},{"type":"message","runId":"decision-tree-classifier:0","step":8,"kind":"tree/split","payload":{"node":8,"depth":3,"samples":30,"impurity":0,"leaf":true}},{"type":"metric","runId":"decision-tree-classifier:0","step":8,"name":"tree/leaves","value":6},{"type":"metric","runId":"decision-tree-classifier:0","step":8,"name":"tree/impurity","value":0.20643223443223446},{"type":"metric","runId":"decision-tree-classifier:0","step":8,"name":"eval/accuracy","value":0.8466666666666667},{"type":"message","runId":"decision-tree-classifier:0","step":9,"kind":"tree/split","payload":{"node":9,"depth":3,"samples":65,"impurity":0.447810650887574,"leaf":true}},{"type":"metric","runId":"decision-tree-classifier:0","step":9,"name":"tree/leaves","value":6},{"type":"metric","runId":"decision-tree-classifier:0","step":9,"name":"tree/impurity","value":0.20643223443223446},{"type":"metric","runId":"decision-tree-classifier:0","step":9,"name":"eval/accuracy","value":0.8466666666666667},{"type":"message","runId":"decision-tree-classifier:0","step":10,"kind":"tree/split","payload":{"node":10,"depth":2,"samples":14,"impurity":0.13265306122448983,"leaf":false,"feature":0,"threshold":1.4874877907402682,"decrease":0.003492063492063496,"left":11,"right":12}},{"type":"metric","runId":"decision-tree-classifier:0","step":10,"name":"tree/leaves","value":7},{"type":"metric","runId":"decision-tree-classifier:0","step":10,"name":"tree/impurity","value":0.20294017094017097},{"type":"metric","runId":"decision-tree-classifier:0","step":10,"name":"eval/accuracy","value":0.8466666666666667},{"type":"message","runId":"decision-tree-classifier:0","step":11,"kind":"tree/split","payload":{"node":11,"depth":3,"samples":3,"impurity":0.4444444444444444,"leaf":true}},{"type":"metric","runId":"decision-tree-classifier:0","step":11,"name":"tree/leaves","value":7},{"type":"metric","runId":"decision-tree-classifier:0","step":11,"name":"tree/impurity","value":0.20294017094017097},{"type":"metric","runId":"decision-tree-classifier:0","step":11,"name":"eval/accuracy","value":0.8466666666666667},{"type":"checkpoint","runId":"decision-tree-classifier:0","step":12,"state":{"nodes":[{"id":0,"parent":-1,"depth":0,"isLeft":false,"rows":{"$typed":"Int32Array","values":[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143,144,145,146,147,148,149]},"weight":150,"value":[75,75],"impurity":0.5,"candidates":[{"feature":0,"threshold":-0.41253524979639566,"impurityLeft":0,"impurityRight":0.46875,"decrease":0.125},{"feature":0,"threshold":-0.4577294955865241,"impurityLeft":0,"impurityRight":0.4712792842018987,"decrease":0.11983471074380175},{"feature":0,"threshold":-0.49854591179801305,"impurityLeft":0,"impurityRight":0.4736629938188659,"decrease":0.11475409836065575},{"feature":0,"threshold":-0.28621268206171296,"impurityLeft":0.06243496357960443,"impurityRight":0.4703057693665702,"decrease":0.11398753049606936},{"feature":0,"threshold":-0.5235019811271546,"impurityLeft":0,"impurityRight":0.47590719809637116,"decrease":0.10975609756097565},{"feature":1,"threshold":-0.1388898182803864,"impurityLeft":0.04759071980963725,"impurityRight":0.435990236512078,"decrease":0.1701722980532558},{"feature":1,"threshold":-0.06404673178195469,"impurityLeft":0.12192816635160675,"impurityRight":0.42603550295857995,"decrease":0.16722408026755847},{"feature":1,"threshold":-0.09321182157077737,"impurityLeft":0.08869659275283936,"impurityRight":0.43357498471482225,"decrease":0.1652901543142795},{"feature":1,"threshold":-0.1470914167110909,"impurityLeft":0.04875000000000007,"impurityRight":0.44033057851239665,"decrease":0.16409090909090912},{"feature":1,"threshold":-0.04107856514473979,"impurityLeft":0.1527777777777779,"impurityRight":0.4231064975009612,"decrease":0.16339869281045744}],"left":1,"right":2,"order":0,"split":{"feature":1,"threshold":-0.1388898182803864,"decrease":0.1701722980532558,"missingLeft":false}},{"id":1,"parent":0,"depth":1,"isLeft":true,"rows":{"$typed":"Int32Array","values":[7,10,11,22,23,24,29,39,41,42,46,51,54,60,61,62,70,71,72,76,81,83,84,86,94,99,101,102,104,113,115,120,125,126,130,139,140,141,142,144,146]},"weight":41,"value":[1,40],"impurity":0.04759071980963725,"candidates":[{"feature":0,"threshold":1.0164060952276692,"impurityLeft":0.1049382716049383,"impurityRight":0,"decrease":0.0004155374887082535},{"feature":0,"threshold":1.0409570030576392,"impurityLeft":0.09972299168975085,"impurityRight":0,"decrease":0.00037655113393240627},{"feature":0,"threshold":1.0797621125987267,"impurityLeft":0.09500000000000008,"impurityRight":0,"decrease":0.00034146341463417033},{"feature":0,"threshold":1.125899169267032,"impurityLeft":0.09070294784580502,"impurityRight":0,"decrease":0.00030971738288814604},{"feature":0,"threshold":1.1943049551957052,"impurityLeft":0.08677685950413205,"impurityRight":0,"decrease":0.00028085735402814585},{"feature":1,"threshold":-0.2653402551218179,"impurityLeft":0,"impurityRight":0.2777777777777777,"decrease":0.0018970189701897411},{"feature":1,"threshold":-0.2789405901822958,"impurityLeft":0,"impurityRight":0.24489795918367352,"decrease":0.0015795586527294167},{"feature":1,"threshold":-0.29562265054038345,"impurityLeft":0,"impurityRight":0.21875,"decrease":0.0013414634146341807},{"feature":1,"threshold":-0.3143088561235051,"impurityLeft":0,"impurityRight":0.19753086419753085,"decrease":0.0011562782294489964},{"feature":1,"threshold":-0.3249065905344729,"impurityLeft":0,"impurityRight":0.17999999999999994,"decrease":0.0010081300813008526}],"left":3,"right":4,"order":1,"split":{"feature":1,"threshold":-0.2653402551218179,"decrease":0.0018970189701897411,"missingLeft":true}},{"id":2,"parent":0,"depth":1,"isLeft":false,"rows":{"$typed":"Int32Array","values":[0,1,2,3,4,5,6,8,9,12,13,14,15,16,17,18,19,20,21,25,26,27,28,30,31,32,33,34,35,36,37,38,40,43,44,45,47,48,49,50,52,53,55,56,57,58,59,63,64,65,66,67,68,69,73,74,75,77,78,79,80,82,85,87,88,89,90,91,92,93,95,96,97,98,100,103,105,106,107,108,109,110,111,112,114,116,117,118,119,121,122,123,124,127,128,129,131,132,133,134,135,136,137,138,143,145,147,148,149]},"weight":109,"value":[74,35],"impurity":0.435990236512078,"candidates":[{"feature":0,"threshold":1.3929147770094916,"impurityLeft":0.3559002770083104,"impurityRight":0.13265306122448983,"decrease":0.07903511071256107},{"feature":0,"threshold":1.4874877907402682,"impurityLeft":0.3698458975426906,"impurityRight":0,"decrease":0.07518691880421882},{"feature":0,"threshold":1.4068015025350886,"impurityLeft":0.3643663194444444,"impurityRight":0.14201183431952646,"decrease":0.07131743511330661},{"feature":0,"threshold":1.3862893847149762,"impurityLeft":0.35853327297419657,"impurityRight":0.23111111111111104,"decrease":0.06902760969050242},{"feature":0,"threshold":1.5704071031175497,"impurityLeft":0.3775124987246199,"impurityRight":0,"decrease":0.06766132270719424},{"feature":1,"threshold":0.5496204895119193,"impurityLeft":0.4994054696789536,"impurityRight":0.2368319876970395,"decrease":0.043193247772587845},{"feature":1,"threshold":0.5505511779446833,"impurityLeft":0.49870726802642906,"impurityRight":0.24080000000000013,"decrease":0.04039471310838123},{"feature":1,"threshold":0.5431091867863015,"impurityLeft":0.4993622448979591,"impurityRight":0.25631897472410103,"decrease":0.03982496270102293},{"feature":1,"threshold":0.5178713367333443,"impurityLeft":0.4998220007119971,"impurityRight":0.26977040816326525,"decrease":0.039501512566252006},{"feature":1,"threshold":0.8189863825751804,"impurityLeft":0.48816568047337283,"impurityRight":0.12070759625390237,"decrease":0.03802718146014964}],"left":7,"right":8,"order":6,"split":{"feature":0,"threshold":1.3929147770094916,"decrease":0.07903511071256107,"missingLeft":true}},{"id":3,"parent":1,"depth":2,"isLeft":true,"rows":{"$typed":"Int32Array","values":[10,11,22,23,24,29,39,41,42,46,51,54,61,62,70,71,72,76,81,83,84,86,94,99,102,104,113,115,125,126,139,141,142,144,146]},"weight":35,"value":[0,35],"impurity":0,"candidates":[],"left":-1,"right":-1,"order":2},{"id":4,"parent":1,"depth":2,"isLeft":false,"rows":{"$typed":"Int32Array","values":[7,60,101,120,130,140]},"weight":6,"value":[1,5],"impurity":0.2777777777777777,"candidates":[{"feature":0,"threshold":0.8750706926125031,"impurityLeft":0,"impurityRight":0.4444444444444444,"decrease":0.0022222222222222188},{"feature":0,"threshold":0.44428246143156946,"impurityLeft":0,"impurityRight":0.375,"decrease":0.0011111111111111072},{"feature":0,"threshold":1.0164060952276692,"impurityLeft":0.375,"impurityRight":0,"decrease":0.0011111111111111072},{"feature":0,"threshold":0.10679215601000938,"impurityLeft":0,"impurityRight":0.31999999999999984,"decrease":0.0004444444444444451},{"feature":0,"threshold":1.2751446604565224,"impurityLeft":0.31999999999999984,"impurityRight":0,"decrease":0.0004444444444444451},{"feature":1,"threshold":-0.2503808560774619,"impurityLeft":0,"impurityRight":0,"decrease":0.011111111111111108},{"feature":1,"threshold":-0.22343506968664656,"impurityLeft":0.5,"impurityRight":0,"decrease":0.004444444444444441},{"feature":1,"threshold":-0.19189562014116604,"impurityLeft":0.4444444444444444,"impurityRight":0,"decrease":0.0022222222222222188},{"feature":1,"threshold":-0.16579415183999097,"impurityLeft":0.375,"impurityRight":0,"decrease":0.0011111111111111072},{"feature":1,"threshold":-0.1470914167110909,"impurityLeft":0.31999999999999984,"impurityRight":0,"decrease":0.0004444444444444451}],"left":5,"right":6,"order":3,"split":{"feature":1,"threshold":-0.2503808560774619,"decrease":0.011111111111111108,"missingLeft":false}},{"id":5,"parent":4,"depth":3,"isLeft":true,"rows":{"$typed":"Int32Array","values":[140]},"weight":1,"value":[1,0],"impurity":0,"candidates":[],"left":-1,"right":-1,"order":4},{"id":6,"parent":4,"depth":3,"isLeft":false,"rows":{"$typed":"Int32Array","values":[7,60,101,120,130]},"weight":5,"value":[0,5],"impurity":0,"candidates":[],"left":-1,"right":-1,"order":5},{"id":7,"parent":2,"depth":2,"isLeft":true,"rows":{"$typed":"Int32Array","values":[0,2,4,5,6,8,9,12,13,14,15,17,18,19,20,21,26,27,28,31,32,33,34,35,36,37,38,40,43,44,45,47,48,49,50,52,53,55,56,57,58,59,63,64,65,66,68,69,73,74,75,77,78,79,80,82,85,89,90,91,92,93,95,96,97,98,100,103,105,106,107,108,109,111,112,116,117,118,119,121,123,124,128,129,132,133,134,135,136,138,143,145,147,148,149]},"weight":95,"value":[73,22],"impurity":0.3559002770083104,"candidates":[{"feature":0,"threshold":-0.41253524979639566,"impurityLeft":0,"impurityRight":0.447810650887574,"decrease":0.03135222672064785},{"feature":0,"threshold":-0.4577294955865241,"impurityLeft":0,"impurityRight":0.4444444444444444,"decrease":0.02984795321637435},{"feature":0,"threshold":-0.49854591179801305,"impurityLeft":0,"impurityRight":0.4410781911338828,"decrease":0.02838858339879559},{"feature":0,"threshold":-0.5235019811271546,"impurityLeft":0,"impurityRight":0.4377162629757785,"decrease":0.02697213622291033},{"feature":0,"threshold":-0.5538029902612498,"impurityLeft":0,"impurityRight":0.4343625288804873,"decrease":0.02559674548690572},{"feature":1,"threshold":0.5431091867863015,"impurityLeft":0.4763705103969753,"impurityRight":0.14993752603082044,"decrease":0.030336960413456127},{"feature":1,"threshold":0.549613645595711,"impurityLeft":0.47261204164780446,"impurityRight":0.1527777777777779,"decrease":0.02842951350006226},{"feature":1,"threshold":0.5178713367333443,"impurityLeft":0.4780962682531098,"impurityRight":0.17381656804733736,"decrease":0.028092834949628148},{"feature":1,"threshold":0.5505511779446833,"impurityLeft":0.46875,"impurityRight":0.1557265731100046,"decrease":0.02660918253079514},{"feature":1,"threshold":0.40086070725424033,"impurityLeft":0.48611111111111105,"impurityRight":0.20913530594656704,"decrease":0.026476955099613543}],"left":9,"right":10,"order":7,"split":{"feature":0,"threshold":-0.41253524979639566,"decrease":0.03135222672064785,"missingLeft":false}},{"id":8,"parent":2,"depth":2,"isLeft":false,"rows":{"$typed":"Int32Array","values":[1,3,16,25,30,67,87,88,110,114,122,127,131,137]},"weight":14,"value":[1,13],"impurity":0.13265306122448983,"candidates":[{"feature":0,"threshold":1.4874877907402682,"impurityLeft":0.4444444444444444,"impurityRight":0,"decrease":0.003492063492063496},{"feature":0,"threshold":1.5704071031175497,"impurityLeft":0.375,"impurityRight":0,"decrease":0.002380952380952385},{"feature":0,"threshold":1.6417142024210736,"impurityLeft":0.31999999999999984,"impurityRight":0,"decrease":0.0017142857142857233},{"feature":0,"threshold":1.751246009543539,"impurityLeft":0.2777777777777777,"impurityRight":0,"decrease":0.0012698412698412779},{"feature":0,"threshold":1.8479293374763537,"impurityLeft":0.24489795918367352,"impurityRight":0,"decrease":0.0009523809523809535},{"feature":1,"threshold":0.27205648005331956,"impurityLeft":0.31999999999999984,"impurityRight":0,"decrease":0.0017142857142857233},{"feature":1,"threshold":0.3161783812509969,"impurityLeft":0.2777777777777777,"impurityRight":0,"decrease":0.0012698412698412779},{"feature":1,"threshold":0.37978544358294114,"impurityLeft":0.24489795918367352,"impurityRight":0,"decrease":0.0009523809523809535},{"feature":1,"threshold":0.4260132262745205,"impurityLeft":0.21875,"impurityRight":0,"decrease":0.0007142857142857178},{"feature":1,"threshold":0.47040559472119325,"impurityLeft":0.19753086419753085,"impurityRight":0,"decrease":0.0005291005291005331}],"left":11,"right":12,"order":10,"split":{"feature":0,"threshold":1.4874877907402682,"decrease":0.003492063492063496,"missingLeft":false}},{"id":9,"parent":7,"depth":3,"isLeft":true,"rows":{"$typed":"Int32Array","values":[0,6,9,13,15,19,20,26,31,32,34,43,47,49,50,52,56,58,59,64,73,93,96,100,105,106,109,111,112,135]},"weight":30,"value":[30,0],"impurity":0,"candidates":[],"left":-1,"right":-1,"order":8},{"id":10,"parent":7,"depth":3,"isLeft":false,"rows":{"$typed":"Int32Array","values":[2,4,5,8,12,14,17,18,21,27,28,33,35,36,37,38,40,44,45,48,53,55,57,63,65,66,68,69,74,75,77,78,79,80,82,85,89,90,91,92,95,97,98,103,107,108,116,117,118,119,121,123,124,128,129,132,133,134,136,138,143,145,147,148,149]},"weight":65,"value":[43,22],"impurity":0.447810650887574,"candidates":[],"left":-1,"right":-1,"order":9},{"id":11,"parent":8,"depth":3,"isLeft":true,"rows":{"$typed":"Int32Array","values":[30,114,131]},"weight":3,"value":[1,2],"impurity":0.4444444444444444,"candidates":[],"left":-1,"right":-1,"order":11},{"id":12,"parent":8,"depth":3,"isLeft":false,"rows":{"$typed":"Int32Array","values":[1,3,16,25,67,87,88,110,122,127,137]},"weight":11,"value":[0,11],"impurity":0,"candidates":[],"left":-1,"right":-1,"order":-1}],"open":[12],"decided":12}},{"type":"message","runId":"decision-tree-classifier:0","step":12,"kind":"tree/split","payload":{"node":12,"depth":3,"samples":11,"impurity":0,"leaf":true}},{"type":"metric","runId":"decision-tree-classifier:0","step":12,"name":"tree/leaves","value":7},{"type":"metric","runId":"decision-tree-classifier:0","step":12,"name":"tree/impurity","value":0.20294017094017097},{"type":"metric","runId":"decision-tree-classifier:0","step":12,"name":"eval/accuracy","value":0.8466666666666667},{"type":"end","runId":"decision-tree-classifier:0","status":"converged","steps":13,"summary":{}}]},"kinds":{"fit/iteration/end":"event","model/params":"derived","model/decision-surface":"derived","model/predictions":"derived","tree/split":"message","tree/candidates":"tensor","tree/leaves":"scalar","tree/depth":"scalar","tree/impurity":"scalar","eval/accuracy":"scalar","model/structure":"derived","model/importances":"derived"},"fired":{"fit/iteration/end":[0,1,2,3,4,5,6,7,8,9,10,11,12]},"probes":[]}]}
+{
+  "schema": "mdml.tape/1",
+  "method": "decision-tree-classifier",
+  "seed": 0,
+  "title": "A decision tree and the regions it cuts",
+  "variants": [
+    {
+      "label": "session",
+      "config": {
+        "criterion": "gini",
+        "growth": "depth",
+        "minSamplesLeaf": 1,
+        "ccpAlpha": 0,
+        "maxDepth": 2
+      },
+      "head": 5,
+      "status": "converged",
+      "run": {
+        "schema": "mdml.run/1",
+        "events": [
+          {
+            "type": "run",
+            "runId": "decision-tree-classifier:0",
+            "name": "decision-tree-classifier",
+            "seed": 0,
+            "version": "0.1.2",
+            "config": {
+              "criterion": "gini",
+              "growth": "depth",
+              "minSamplesLeaf": 1,
+              "ccpAlpha": 0,
+              "maxDepth": 2
+            },
+            "channels": {
+              "metrics": {
+                "tree/leaves": {
+                  "description": "leaves so far"
+                },
+                "tree/depth": {
+                  "description": "depth of the deepest node so far"
+                },
+                "tree/impurity": {
+                  "description": "weighted impurity of the leaves",
+                  "direction": "lower"
+                },
+                "eval/accuracy": {
+                  "description": "training accuracy of the tree so far",
+                  "direction": "higher"
+                }
+              },
+              "tensors": {
+                "tree/candidates": {
+                  "role": "output",
+                  "description": "every candidate split of the node: feature, threshold, left and right impurity, decrease",
+                  "shape": ["candidates",5]
+                }
+              },
+              "messages": {
+                "fit/iteration/end": {
+                  "description": "",
+                  "payload": {
+                    "t": "the iteration just finished"
+                  }
+                },
+                "tree/split": {
+                  "description": "the node just decided: its feature, threshold and impurity decrease, or that it is a leaf",
+                  "payload": {
+                    "node": "node id",
+                    "feature": "feature index",
+                    "threshold": "cut",
+                    "decrease": "weighted impurity decrease"
+                  }
+                }
+              },
+              "episodes": false,
+              "frames": false
+            }
+          },
+          {
+            "type": "checkpoint",
+            "runId": "decision-tree-classifier:0",
+            "step": 0,
+            "state": {
+              "nodes": [
+                {
+                  "id": 0,
+                  "parent": -1,
+                  "depth": 0,
+                  "isLeft": false,
+                  "rows": {
+                    "$typed": "Int32Array",
+                    "values": [
+                      0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
+                      24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45,
+                      46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67,
+                      68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89,
+                      90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108,
+                      109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125,
+                      126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142,
+                      143, 144, 145, 146, 147, 148, 149
+                    ]
+                  },
+                  "weight": 150,
+                  "value": [50,50,50],
+                  "impurity": 0.6666666666666667,
+                  "candidates": [],
+                  "left": -1,
+                  "right": -1,
+                  "order": -1
+                }
+              ],
+              "open": [0],
+              "decided": 0
+            }
+          },
+          {
+            "type": "message",
+            "runId": "decision-tree-classifier:0",
+            "step": 0,
+            "kind": "tree/split",
+            "payload": {
+              "node": 0,
+              "depth": 0,
+              "samples": 150,
+              "impurity": 0.6666666666666667,
+              "leaf": false,
+              "feature": 0,
+              "threshold": 2.45,
+              "decrease": 0.3333333333333334,
+              "left": 1,
+              "right": 2
+            }
+          },
+          {"type":"metric","runId":"decision-tree-classifier:0","step":0,"name":"tree/leaves","value":2},
+          {
+            "type": "metric",
+            "runId": "decision-tree-classifier:0",
+            "step": 0,
+            "name": "tree/impurity",
+            "value": 0.3333333333333333
+          },
+          {
+            "type": "metric",
+            "runId": "decision-tree-classifier:0",
+            "step": 0,
+            "name": "eval/accuracy",
+            "value": 0.6666666666666666
+          },
+          {
+            "type": "message",
+            "runId": "decision-tree-classifier:0",
+            "step": 1,
+            "kind": "tree/split",
+            "payload": {
+              "node": 1,
+              "depth": 1,
+              "samples": 50,
+              "impurity": 0,
+              "leaf": true
+            }
+          },
+          {"type":"metric","runId":"decision-tree-classifier:0","step":1,"name":"tree/leaves","value":2},
+          {
+            "type": "metric",
+            "runId": "decision-tree-classifier:0",
+            "step": 1,
+            "name": "tree/impurity",
+            "value": 0.3333333333333333
+          },
+          {
+            "type": "metric",
+            "runId": "decision-tree-classifier:0",
+            "step": 1,
+            "name": "eval/accuracy",
+            "value": 0.6666666666666666
+          },
+          {
+            "type": "message",
+            "runId": "decision-tree-classifier:0",
+            "step": 2,
+            "kind": "tree/split",
+            "payload": {
+              "node": 2,
+              "depth": 1,
+              "samples": 100,
+              "impurity": 0.5,
+              "leaf": false,
+              "feature": 1,
+              "threshold": 1.75,
+              "decrease": 0.2597960279119699,
+              "left": 3,
+              "right": 4
+            }
+          },
+          {"type":"metric","runId":"decision-tree-classifier:0","step":2,"name":"tree/leaves","value":3},
+          {
+            "type": "metric",
+            "runId": "decision-tree-classifier:0",
+            "step": 2,
+            "name": "tree/impurity",
+            "value": 0.07353730542136341
+          },
+          {"type":"metric","runId":"decision-tree-classifier:0","step":2,"name":"eval/accuracy","value":0.96},
+          {
+            "type": "message",
+            "runId": "decision-tree-classifier:0",
+            "step": 3,
+            "kind": "tree/split",
+            "payload": {
+              "node": 3,
+              "depth": 2,
+              "samples": 54,
+              "impurity": 0.16803840877914955,
+              "leaf": true
+            }
+          },
+          {"type":"metric","runId":"decision-tree-classifier:0","step":3,"name":"tree/leaves","value":3},
+          {
+            "type": "metric",
+            "runId": "decision-tree-classifier:0",
+            "step": 3,
+            "name": "tree/impurity",
+            "value": 0.07353730542136341
+          },
+          {"type":"metric","runId":"decision-tree-classifier:0","step":3,"name":"eval/accuracy","value":0.96},
+          {
+            "type": "message",
+            "runId": "decision-tree-classifier:0",
+            "step": 4,
+            "kind": "tree/split",
+            "payload": {
+              "node": 4,
+              "depth": 2,
+              "samples": 46,
+              "impurity": 0.04253308128544431,
+              "leaf": true
+            }
+          },
+          {"type":"metric","runId":"decision-tree-classifier:0","step":4,"name":"tree/leaves","value":3},
+          {
+            "type": "metric",
+            "runId": "decision-tree-classifier:0",
+            "step": 4,
+            "name": "tree/impurity",
+            "value": 0.07353730542136341
+          },
+          {"type":"metric","runId":"decision-tree-classifier:0","step":4,"name":"eval/accuracy","value":0.96},
+          {
+            "type": "end",
+            "runId": "decision-tree-classifier:0",
+            "status": "converged",
+            "steps": 5,
+            "summary": {}
+          }
+        ]
+      },
+      "kinds": {
+        "fit/iteration/end": "event",
+        "model/params": "derived",
+        "model/decision-surface": "derived",
+        "model/predictions": "derived",
+        "tree/split": "message",
+        "tree/candidates": "tensor",
+        "tree/leaves": "scalar",
+        "tree/depth": "scalar",
+        "tree/impurity": "scalar",
+        "eval/accuracy": "scalar",
+        "model/structure": "derived",
+        "model/importances": "derived"
+      },
+      "fired": {
+        "fit/iteration/end": [0,1,2,3,4]
+      },
+      "probes": []
+    }
+  ]
+}
