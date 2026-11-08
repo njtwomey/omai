@@ -3,6 +3,23 @@
 Versions are released in lockstep for omai-engine, omai-render and omai-meta. Up to 0.1.3 the packages were published as
 mdml-engine, mdml-render and mdml-meta.
 
+## 0.1.9
+
+Follow-ups from decksmith and from the circular statistics page.
+- `useLiveRun`: `stepsPerFrame: 'auto'` times the steps as they run and takes as many per frame as fit in `frameBudgetMs` (default
+  8, at most `maxStepsPerFrame`, default 16), so a cheap algorithm plays fast and a dear one does not stall the page; no fixed
+  number suits a method whose step cost varies with the data. `catchUpMs` (default 40) bounds the time one tick spends computing
+  the steps a slow frame owes: before, a long frame was paid back in one tick of up to half a second of frames' steps (a freeze
+  of 500 ms with a 4.7 ms step); past the bound the rest of the debt is dropped and the animation runs a little slow. With cheap
+  steps nothing changes. `useLiveRun` is not paced like `useSession` (it computes in the frame that draws), so a step dearer than a
+  frame still blocks the main thread: use `useSession` with `workerProducer`.
+- `omai-engine/worlds`: `policyPath` follows a policy's own actions from a cell (to the goal, stuck where blocked, round a loop,
+  or into a hazard, which ends the path), so a policy that has not learnt yet shows as it is; `greedyPath` follows values and can
+  show a full path where the policy is stuck.
+- Popups: `Select` takes `container` (as `Popover` does; `menuContainer` is kept), its menu is at least as wide as its trigger, and
+  Escape closes the popup before any handler of a surrounding card or dialog sees it (the capture phase).
+- Docs: `active` keeps a playing run playing when a slide is shown again; pause explicitly to stay paused.
+
 ## 0.1.8
 
 Live playback is paced, so a playing session no longer spends its frames building a buffer nobody is watching. Measured on the
