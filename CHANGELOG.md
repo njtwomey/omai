@@ -3,6 +3,30 @@
 Versions are released in lockstep for omai-engine, omai-render and omai-meta. Up to 0.1.3 the packages were published as
 mdml-engine, mdml-render and mdml-meta.
 
+## 0.1.7
+
+Fixes and small additions from decksmith's work on 0.1.6. Everything is optional and the defaults draw as before, except the
+line height of colour-bar labels.
+- Sessions and players: `pause()`, `seek()` and `reset()` now win over a tick already queued, in `useLiveRun`,
+  `usePlayback` and `SessionPlayer` (a `seek` after a `pause` could be overwritten by a late tick, so a run parked at the
+  start or the end could land a few steps off). Every controller verb reads the current position and playing flag, not the
+  values of the render it was made in, so a controller kept from an earlier render acts on the present state.
+  `usePlayback` takes `active`, as `useLiveRun` and `useSession` do. `useLiveRun` has `madeWith` (the algorithm, config,
+  seed, `maxSteps` and `capacity` the current run was made with; the data a slide draws is not captured, and the TSDoc shows
+  how to snapshot it). `LiveHandle.playingNow()` is the synchronous playing flag.
+- `chrome={false}` on the panel components (`SessionPanels`, `TapeView`, `RowsPanel`, `FieldPanel`, `ZoomPanel` and the record
+  panels), and `FigureChromeProvider` and `PanelFigureProvider chrome` to set it for all panels below; a frame's own `chrome`
+  wins. `StructureView` follows the provider.
+- Charts: the lines of a multi-line colour-bar label are spaced at 1.3 times the type size (they were one type size apart, so a
+  second line touched the value under it); `ticks.fontFamily` and `ticks.fontWeight`; point labels take `labelWeight` and
+  `labelFamily`; `maskMatrix`'s `on` may be a function of the row and column, to colour cells by part.
+- Controls: `Popover` and `Select appearance="menu"` take `container` (draw into a given element, placed in its coordinates and
+  corrected for the scale it is drawn at, for a scaled slide), and `PopoverContainer` sets it for all popups below.
+- Worlds: `greedyPath` never steps onto hazardous terrain (holes, lava, cliffs) unless `skip` says otherwise; the path of a world
+  scene is the node `path`, the walls one group `walls`, and the explored and frontier overlays of `worldView` the groups
+  `explored` and `frontier`, so `tones` and `recolour` reach them.
+- Belief propagation: the observation's frame lists `sent`, the messages (by variable and factor name) the last step sent.
+
 ## 0.1.6
 
 Convolutional sparse coding and dictionary learning, ported from the AIFN engine. Nothing else in the packages changes.

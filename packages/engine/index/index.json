@@ -364,7 +364,7 @@
     {"kind":"function","name":"apriori","level":"symbol","importPath":"omai-engine/patterns","path":"src/lib/patterns/itemsets.ts","line":307,"description":"Frequent itemsets by Apriori; FP-growth and Eclat beside it.","domain":"patterns","folder":"patterns"},
     {"kind":"structure","name":"factor.ts","level":"file","importPath":"omai-engine/pgm","path":"src/lib/pgm/factor.ts","line":1,"description":"Discrete factors, the tables inference algorithms manipulate.","domain":"pgm","folder":"pgm"},
     {"kind":"function","name":"junctionTree","level":"symbol","importPath":"omai-engine/pgm","path":"src/lib/pgm/triangulation.ts","line":540,"description":"Junction tree from a model's moral graph.","domain":"pgm","folder":"pgm"},
-    {"kind":"function","name":"beliefPropagation","level":"symbol","importPath":"omai-engine/pgm","path":"src/lib/pgm/inference/belief-propagation.ts","line":436,"description":"Loopy and tree belief propagation.","domain":"pgm","folder":"pgm/inference"},
+    {"kind":"function","name":"beliefPropagation","level":"symbol","importPath":"omai-engine/pgm","path":"src/lib/pgm/inference/belief-propagation.ts","line":457,"description":"Loopy and tree belief propagation.","domain":"pgm","folder":"pgm/inference"},
     {"kind":"function","name":"forwardBackward","level":"symbol","importPath":"omai-engine/pgm","path":"src/lib/pgm/inference/chain.ts","line":118,"description":"Forward-backward smoothing on chains; viterbi finds the best path.","domain":"pgm","folder":"pgm/inference"},
     {"kind":"function","name":"variableElimination","level":"symbol","importPath":"omai-engine/pgm","path":"src/lib/pgm/inference/elimination.ts","line":318,"description":"Exact inference by variable elimination.","domain":"pgm","folder":"pgm/inference"},
     {"kind":"function","name":"pc","level":"symbol","importPath":"omai-engine/pgm/learning","path":"src/lib/pgm/learning/structure.ts","line":504,"description":"PC algorithm for structure learning.","domain":"pgm","folder":"pgm/learning"},
@@ -570,7 +570,7 @@
     {"kind":"function","name":"orb","level":"symbol","importPath":"omai-engine/vision","path":"src/lib/vision/descriptors.ts","line":230,"description":"ORB keypoint descriptors; matchDescriptors in matching.ts.","domain":"vision","folder":"vision"},
     {"kind":"function","name":"threshold","level":"symbol","importPath":"omai-engine/vision","path":"src/lib/vision/thresholds.ts","line":40,"description":"Global thresholding: binary, truncate, to-zero and inverse variants.","domain":"vision","folder":"vision"},
     {"kind":"function","name":"rules.ts","level":"file","importPath":"omai-engine/worlds","path":"src/lib/worlds/rules.ts","line":1,"description":"Composable rules turning a world into a task.","domain":"worlds","folder":"worlds"},
-    {"kind":"function","name":"greedyPath","level":"symbol","importPath":"omai-engine/worlds","path":"src/lib/worlds/paths.ts","line":28,"description":"The greedy path up a value per cell, for drawing a policy.","domain":"worlds","folder":"worlds"},
+    {"kind":"function","name":"greedyPath","level":"symbol","importPath":"omai-engine/worlds","path":"src/lib/worlds/paths.ts","line":31,"description":"The greedy path up a value per cell, for drawing a policy.","domain":"worlds","folder":"worlds"},
     {"kind":"structure","name":"world","level":"symbol","importPath":"omai-engine/worlds","path":"src/lib/worlds/world.ts","line":211,"description":"A grid, hex or graph world with walls, terrain and items.","domain":"worlds","folder":"worlds"}
   ]
 }

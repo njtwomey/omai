@@ -67,7 +67,7 @@ omai-engine/numerics/spatial	45	0979524cbbc7
 omai-engine/numerics/special	77	cd8034800153
 omai-engine/optim	807	cf49c66eae2e
 omai-engine/patterns	63	d3340c16b350
-omai-engine/pgm	370	6b1d1a9406cf
+omai-engine/pgm	371	08fde433e085
 omai-engine/pgm/causal	59	1dc2cc4bcf4f
 omai-engine/pgm/learning	123	a9e76fe66003
 omai-engine/problems	55	af621d373b9a
@@ -99,7 +99,7 @@ omai-engine/trace	154	ca34ca38dc13
 omai-engine/trees	92	b31797072f4f
 omai-engine/tune	141	0b821c7e910d
 omai-engine/vision	323	7f6612700f81
-omai-engine/worlds	144	965010bd0949
+omai-engine/worlds	144	d900e1bec49e
 omai-meta/concepts	2	24f549c806df
 omai-meta/extract	38	73f918d90002
 omai-meta/modules	2	3a8143e3e82b
@@ -107,16 +107,16 @@ omai-meta/react	4	00bbae450856
 omai-meta/runner	30	c08ed41c7c29
 omai-meta/schema	23	13ecddd780a9
 omai-render/animation	24	6fe8aea56c92
-omai-render/charts	158	fbeafc6dfe96
+omai-render/charts	158	96e8fb833bda
 omai-render/figure	38	caac3c78ae53
 omai-render/gym	6	32b6352a0038
 omai-render/layout	25	4acf0ac590e7
 omai-render/maths	19	f0fe4c3f75b4
 omai-render/producer	46	94e5f0e89b8f
-omai-render/react	453	46b7d8751bc1
+omai-render/react	457	687d08fd04ee
 omai-render/structures	22	e2a05e48db15
 omai-render/svg	18	a511ae0dae6f
 omai-render/theme	45	7ffc358f5150
 omai-render/trace	21	4dae0ac972d4
 omai-render/views	266	aa65704aaa1a
-total	17990	1b0701560bac
+total	17995	9a763633052c

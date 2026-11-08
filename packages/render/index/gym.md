@@ -5,6 +5,6 @@
 Pictures of environments and worlds: `worldView` draws a grid world from above (with a policy, path or search overlays), `raycastViews` gives the first-person view beside the map, `pathFrames` animates a path, and `filmstrip` puts an environment's rendered frames side by side.
 
 - function `filmstrip`: Rendered environment frames side by side: `filmstrip(frames, { columns: 5 })`. `src/gym/frames.ts:15` `omai-render/gym`
-- function `pathFrames`: Scenes of an agent walking a path: `pathFrames(world, cells)`. `src/gym/worlds.ts:230` `omai-render/gym`
-- function `raycastViews`: First-person ray-cast view beside the map: `raycastViews(world, pose, { width, height })`. `src/gym/worlds.ts:175` `omai-render/gym`
+- function `pathFrames`: Scenes of an agent walking a path: `pathFrames(world, cells)`. `src/gym/worlds.ts:235` `omai-render/gym`
+- function `raycastViews`: First-person ray-cast view beside the map: `raycastViews(world, pose, { width, height })`. `src/gym/worlds.ts:180` `omai-render/gym`
 - function `worldView`: Draw a grid world with a policy or path: `worldView(world, { policy })`. `src/gym/worlds.ts:81` `omai-render/gym`
