@@ -7709,6 +7709,9 @@ library for the same computation. They do not set a higher bar than that library
 - `scripts/layers.ts`, with its rules and tables in `scripts/layers-rules.ts` and their test beside it: no import cycles
   between core domains (a cycle is reported as its path, one import per step), the tiers of section 2 (foundation,
   machinery, listed exceptions), no new file-level cycle inside a domain, and the package rules (section 1).
+- `scripts/release.ts` (`make release`): the release: the next version is the highest `mdml-engine-v<version>` tag (here or on origin) plus 0.0.1; it
+  writes it to the three package manifests and `base/version.ts`, commits "Release <version>" and tags each package; `ARGS="--dry-run"` previews,
+  `ARGS="--push"` pushes the commit and the tags. The changelog needs the entry first.
 - `scripts/examples.ts` (`make examples`): every `@example` of the engine core run in worker threads with its `// =>`
   lines checked (about 6,000 in under 20 seconds; `--methods` adds the methods' optional examples, `--only` narrows to module or file prefixes,
   `--coverage` reports documentation coverage). How-tos join it when they exist.

@@ -114,6 +114,10 @@ pack: build ## Build every package and pack it into tarballs/ (what a release wo
 	@for p in $(PACKAGES); do $(PNPM) --dir packages/$$p pack --pack-destination $(CURDIR)/tarballs || exit 1; done
 	@ls -l tarballs | awk 'NR>1 {printf "%10.2f MB  %s\n", $$5/1e6, $$9}'
 
+.PHONY: release
+release: ## Release the last released version + 0.0.1: bump the packages, commit and tag (ARGS="--dry-run" to preview, ARGS="--push" to publish)
+	$(NODE) scripts/release.ts $(ARGS)
+
 .PHONY: pocs
 pocs: ## Serve the proofs of concept (live single-page demos kept out of the site) at http://localhost:5310
 	$(PNPM) --dir apps/pocs exec vite
