@@ -77,9 +77,11 @@ export interface StructureEdgeLook {
 }
 
 /**
- * A node of a {@link Structure}: an id, a label (`\n` starts a new line), a role, an optional enclosing group, a detail
- * line, value badges (shapes, parameter counts, current values), ports and free-form data. A `position` (the node's
- * centre) places it by hand under the `manual` layout, and a `look` overrides how the style draws it.
+ * A node of a {@link Structure}: an id, a label (`\n` starts a new line), a role, an optional enclosing group, detail
+ * lines (a muted line under the label; `\n` starts another), value badges (shapes, parameter counts, current values),
+ * ports and free-form data. A `position` (the node's centre) places it by hand under the `manual` layout, and a `look`
+ * overrides how the style draws it. A `note` is text under the node that takes no part in the layout. Free-standing
+ * text, a caption among the nodes, is a node with `look: { shape: 'none' }` (and a `position` under `manual`).
  */
 export interface StructureNode {
   readonly id: string
@@ -94,13 +96,22 @@ export interface StructureNode {
   readonly position?: readonly [number, number]
   /** Overrides of the style's look for this node. */
   readonly look?: StructureNodeLook
+  /**
+   * Small muted text drawn under the node (`\n` starts a new line, and a line written `$...$` is typeset as TeX). It is
+   * part of the drawing, not of the layout: it takes the first free place beside the node that no edge, node or other
+   * label covers (under it, then above, then to its sides) and widens the scene to hold it.
+   */
+  readonly note?: string
 }
 
 /**
  * An edge of a {@link Structure}, optionally between named ports of its end nodes. `bidirectional` draws one line with
  * an arrow head at both ends (an edge written the other way round between the same nodes is absorbed into it); `look`
  * overrides how the style draws it; `labelAt` (0 at the `from` end to 1 at the `to` end, along the line) places the
- * label.
+ * label. A label may have several lines (`\n`), and a line written `$...$` is typeset as TeX. `via` lists waypoints the
+ * edge passes through, in the same units as node `position`s: under the `manual` layout a straight edge is the
+ * polyline through them and an orthogonal one runs right-angled legs between them (other layouts place the nodes
+ * themselves and ignore `via`).
  */
 export interface StructureEdge {
   readonly from: string
@@ -113,6 +124,7 @@ export interface StructureEdge {
   readonly bidirectional?: boolean
   readonly look?: StructureEdgeLook
   readonly labelAt?: number
+  readonly via?: readonly (readonly [number, number])[]
 }
 
 /** A note attached to a node or group of a {@link Structure} (or to the whole structure when `target` is omitted). */
@@ -122,13 +134,28 @@ export interface StructureAnnotation {
   readonly kind?: 'note' | 'warning' | 'highlight'
 }
 
-/** A group of nodes: a plate, a repeated block, a cluster. */
+/**
+ * How one group is drawn when it should differ from the style's look for its kind: any field given replaces the
+ * style's (the frame's colour, width and dash, the fill, and the colour of the label and count).
+ */
+export interface StructureGroupLook {
+  readonly stroke?: Paint
+  readonly fill?: Paint
+  readonly strokeWidth?: number
+  /** The frame's dash pattern (`[6, 4]` dashed; `[]` solid, over a style whose frame is dashed). */
+  readonly dash?: readonly number[]
+  /** The colour of the group's label and count. */
+  readonly text?: Paint
+}
+
+/** A group of nodes: a plate, a repeated block, a cluster. A `look` overrides how the style draws it. */
 export interface StructureGroup {
   readonly id: string
   readonly label: string
   readonly kind: 'plate' | 'repeat' | 'cluster' | 'block'
   readonly parent?: string
   readonly count?: number | string
+  readonly look?: StructureGroupLook
 }
 
 /**
@@ -244,7 +271,12 @@ export function mergeStructures(
     }
     for (const g of part.groups) {
       const group: StructureGroup = { ...g, id: p(g.id), ...(g.parent === undefined ? {} : { parent: p(g.parent) }) }
-      groups.set(group.id, { ...groups.get(group.id), ...group })
+      const old = groups.get(group.id)
+      groups.set(group.id, {
+        ...old,
+        ...group,
+        ...((old?.look ?? group.look) ? { look: { ...old?.look, ...group.look } } : {}),
+      })
     }
     for (const e of part.edges) {
       const edge: StructureEdge = { ...e, from: p(e.from), to: p(e.to) }
