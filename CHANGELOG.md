@@ -18,6 +18,21 @@ Follow-ups from decksmith and from the circular statistics page.
   show a full path where the policy is stuck.
 - Popups: `Select` takes `container` (as `Popover` does; `menuContainer` is kept), its menu is at least as wide as its trigger, and
   Escape closes the popup before any handler of a surrounding card or dialog sees it (the capture phase).
+- Structure diagrams, routing (decksmith round 2): `StructureNode.obstacle` (an invisible node, shape `none` with no label, is now
+  crossed by orthogonal edges, and a node can be marked as passable); `StructureEdge.fromSide`, `toSide`, `fromAt` and `toAt`
+  (which side an edge leaves and enters by, and where along it); edges that look different (colour, width, dash, kind) get
+  ports side by side instead of merging into one port and one colour (`DiagramOptions.merge: false` gives every edge its own);
+  a back or skip edge leaves a free side (the autoencoder's dashed edge no longer overdraws the solid one); parallel edges
+  entering one wide box are spread; `DiagramOptions.labelPlate` (`'page'`, `'none'` or a paint, for a card that is not the page
+  colour), `cornerRadius` (rounded right-angle corners; `cornerRadius` on a scene path), ids for edge labels (`edge:<i>:label`
+  with its plate `edge:<i>:plate`) and `origin` for manual layouts (so states of a figure line up). Orthogonal diagrams whose
+  edges of different looks met at one port now have shifted ports; straight routes are unchanged.
+- Structure diagrams, looks: `fillOpacity` and `strokeOpacity` on scene styles and on node and group looks (pale tinted
+  regions); edge `labelColour`, `labelSize` and `labelWeight`; `StructureGroupLook.labelWeight`, `labelPosition` and
+  `labelSize`; node shape `'pill'` and `fontWeight` and `fontSize` on the node look; `StructureNode.note` may be a record
+  (`position` above, below or beside, a solid or dashed `tie`, colour, size and weight); and TeX labels are sized from their
+  typeset width (`texExtent` in `omai-render/maths`), so the boxes around them fit: **existing diagrams with TeX labels come
+  out smaller**.
 - Docs: `active` keeps a playing run playing when a slide is shown again; pause explicitly to stay paused.
 
 ## 0.1.8

@@ -13,7 +13,7 @@ React 19 bindings of omai-render. Figures: `Chart` (an ECharts option), `SceneVi
 - function `Player`: React component: play, step and scrub a playback controller: `<Player controller={c} />` `src/react/Player.tsx:74` `omai-render/react`
 - function `Scene3DView`: React component: a 3-D scene you orbit by dragging: `<Scene3DView scene={scene3d} />` `src/react/Scene3DView.tsx:35` `omai-render/react`
 - function `SceneFrame`: React component: a Scene in a frame with expand and export: `<SceneFrame scene={scene} />` `src/react/SceneFrame.tsx:55` `omai-render/react`
-- function `SceneView`: React component: draw a Scene as SVG with click and hover: `<SceneView scene={scene} />` `src/react/SceneView.tsx:251` `omai-render/react`
+- function `SceneView`: React component: draw a Scene as SVG with click and hover: `<SceneView scene={scene} />` `src/react/SceneView.tsx:267` `omai-render/react`
 - function `StructureView`: React component: draw an engine Structure as a diagram: `<StructureView structure={s} />` `src/react/StructureView.tsx:53` `omai-render/react`
 - function `Tex`: React component: typeset TeX with the shared macros: `<Tex display>{source}</Tex>` `src/react/MathView.tsx:53` `omai-render/react`
 - function `ThemeProvider`: React component: force a colour mode for the figures inside: `<ThemeProvider mode="light">...</ThemeProvider>` `src/react/theme.tsx:64` `omai-render/react`
