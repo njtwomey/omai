@@ -17,7 +17,9 @@ export type Still = unknown
 export function svgOf(still: Still, width: number, height: number): string {
   if (isScene(still)) return sceneToSvg(still, { mode: 'light' })
   const option = { ...(still as Parameters<typeof chartToSvg>[0]), backgroundColor: '#ffffff' }
-  return chartToSvg(option, { width, height, mode: 'light' })
+  // ECharts draws an image element with the default aspect ratio rule (the picture kept square and centred), which leaves
+  // blank bands beside a heat map; stretching it to the plotting area is what makes the shading fill the axes.
+  return chartToSvg(option, { width, height, mode: 'light' }).replace(/<image /g, '<image preserveAspectRatio="none" ')
 }
 
 /** The page: `width` by `height` pixels, white. */
