@@ -23,7 +23,7 @@
             "runId": "manifold/tsne:0",
             "name": "manifold/tsne",
             "seed": 0,
-            "version": "0.1.4",
+            "version": "0.1.5",
             "config": {
               "perplexity": 30,
               "maxIter": 300,

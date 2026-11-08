@@ -1,6 +1,6 @@
 {
   "name": "omai-render",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "omai figures: ECharts options, layouts, scene and structure drawing, SVG and animation export; React bindings.",
   "license": "MIT",
   "type": "module",
