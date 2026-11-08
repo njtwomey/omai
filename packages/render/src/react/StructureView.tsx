@@ -7,7 +7,7 @@ import type { Structure, StructureNode, StructureOverlay } from 'omai-engine/sce
 import { type ReactElement, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { type DiagramOptions, diagram } from '../structures/diagram.ts'
 import { cx, iconButtonClass } from './controls/classes.ts'
-import { FigureFrame, type FigureFrameProps } from './FigureFrame.tsx'
+import { FigureFrame, type FigureFrameProps, useFigureChrome } from './FigureFrame.tsx'
 import { SceneView } from './SceneView.tsx'
 
 /** Props of {@link StructureView}. */
@@ -59,11 +59,12 @@ export function StructureView(props: StructureViewProps): ReactElement {
     className,
     frames,
     frame = true,
-    chrome = true,
+    chrome: ownChrome,
     details: wantDetails = true,
     zoomControls = true,
     ...layout
   } = props
+  const chrome = useFigureChrome(ownChrome)
   const details = chrome && wantDetails
   const zooming = chrome && zoomControls
   const options: DiagramOptions = { ...layout, ...(overlay === undefined ? {} : { overlay }) }

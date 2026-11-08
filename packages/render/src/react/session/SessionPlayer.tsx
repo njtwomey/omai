@@ -104,11 +104,19 @@ export function SessionPlayer<S, C extends Config>(props: {
   }
   // The cursor ticks through the tape at `fps` steps per second: it waits at the head of an unfinished run for the
   // producer, and stops at the end of a finished one.
-  const [ticking, setTicking] = useState(false)
+  const [tickingState, setTickingState] = useState(false)
+  // The clock's switch, set at the moment of the call (the render that follows it is later): a tick queued before a
+  // `pause`, a `seek` or a reset must find the clock off.
+  const tickingNow = useRef(false)
+  const ticking = tickingState
+  const setTicking = (on: boolean): void => {
+    tickingNow.current = on
+    setTickingState(on)
+  }
   const cursor = useRef({ viewed, head, done: live.done })
   cursor.current = { viewed, head, done: live.done }
-  const handlers = useRef({ onScrub, onReset: props.onReset, pause: live.pause })
-  handlers.current = { onScrub, onReset: props.onReset, pause: live.pause }
+  const handlers = useRef({ onScrub, onReset: props.onReset, pause: live.pause, playingNow: live.playingNow })
+  handlers.current = { onScrub, onReset: props.onReset, pause: live.pause, playingNow: live.playingNow }
   // The playhead: the step the clock has reached. Ticks add to it rather than to the step the page last rendered, so
   // a slow render does not slow the clock; the page is told the step once per tick, and only when it changed. The steps
   // told but not yet rendered are remembered, to tell the page catching up from the page moving the cursor itself.
@@ -142,6 +150,8 @@ export function SessionPlayer<S, C extends Config>(props: {
     ticking && live.active,
     fps,
     (n) => {
+      // A tick queued before the clock was stopped (here, or by the host's `live.pause()`) moves nothing.
+      if (!tickingNow.current || handlers.current.playingNow?.() === false) return
       const { head: h, done } = cursor.current
       const next = pos.current + n
       if (next < h) tell(next, true)
@@ -253,19 +263,23 @@ export function SessionPlayer<S, C extends Config>(props: {
     toggle: () => (playing ? pause() : play()),
     step: (dir) => {
       stop()
-      if (dir === -1) onScrub(Math.max(0, viewed - 1))
+      // From the latest position (`pos`: a seek or a tick not rendered yet counts), not from the one last rendered.
+      const here = Math.min(pos.current, head)
+      if (dir === -1) tell(Math.max(0, here - 1))
       else if (live.stale) live.apply()
-      else if (viewed < head) onScrub(viewed + 1)
+      else if (here < head) tell(here + 1)
       else if (!live.done) {
         live.advance({ steps: 1 })
-        onScrub(viewed + 1)
+        tell(here + 1)
       }
     },
     seek: (f) => {
       jumpToEnd.current = false
-      if (f < head) onScrub(Math.max(0, f))
+      told.current = []
+      if (f < head) tell(Math.max(0, f))
       else {
         if (live.stale) live.apply()
+        pos.current = head
         onScrub(null)
         live.compute()
       }
@@ -273,14 +287,14 @@ export function SessionPlayer<S, C extends Config>(props: {
     setFps,
     reset: () => {
       stop()
-      onScrub(0)
+      tell(0)
     },
     ...(props.onReset === undefined
       ? {}
       : {
           resetForm: () => {
             stop()
-            onScrub(0)
+            tell(0)
             handlers.current.onReset?.()
           },
         }),

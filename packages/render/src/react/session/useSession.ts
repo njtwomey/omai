@@ -83,6 +83,12 @@ export interface LiveHandle {
   /** Stop playing (the tape, and the priming of one, carry on). */
   pause(): void
   /**
+   * Whether play is on at this moment: `playing` as `play()`, `pause()`, `dispose()` and `apply()` have just left it,
+   * before the render they cause. A callback queued ahead of that render (a clock tick) reads this and not `playing`,
+   * which it closed over, so a `pause()` takes effect on it at once. Absent on a handle made by hand, which never plays.
+   */
+  playingNow?(): boolean
+  /**
    * Whether the session was let go of (`dispose()`) and nothing has used it since. Its `status` then reads
    * `'preparing'`, because the tape is at step 0 with nothing computed, which is not a restart: check this to tell a
    * disposed session from a fresh one. Cleared by `compute`, `play`, `advance` and `apply`. (It is a flag beside `status`
@@ -290,6 +296,7 @@ export function useSessions<S, C extends Config>(
     current.current = next
     setProducer(next)
     setComputing(false)
+    playingNow.current = false
     setPlaying(false)
     disposedNow.current = false
     setDisposed(false)
@@ -403,15 +410,20 @@ export function useSessions<S, C extends Config>(
   const halt = (): void => setComputing(false)
   const follow = (step: number): void => current.current.follow(step)
   const play = (): void => {
+    playingNow.current = true
     setPlaying(true)
     compute()
   }
-  const pause = (): void => setPlaying(false)
+  const pause = (): void => {
+    playingNow.current = false
+    setPlaying(false)
+  }
   const dispose = (): void => {
     current.current.dispose()
     disposedNow.current = true
     setDisposed(true)
     setComputing(false)
+    playingNow.current = false
     setPlaying(false)
     bump()
   }
@@ -439,6 +451,7 @@ export function useSessions<S, C extends Config>(
     playing,
     play,
     pause,
+    playingNow: (): boolean => playingNow.current,
     disposed,
     active,
     dispose,

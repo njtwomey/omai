@@ -4,6 +4,7 @@
  * with the same seed), with play, pause, step, seek and loop, and the animation-frame ticker they share (`useTicker`).
  */
 
+import type { Json } from 'omai-engine/base'
 import type { Frame, Timeline } from 'omai-engine/scene'
 import { type Algorithm, iterate, type RunStatus } from 'omai-engine/trace'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -82,55 +83,82 @@ export interface PlaybackOptions {
   readonly loop?: boolean
   /** Start playing at once (default false). A reader who prefers reduced motion gets a paused player whatever this says. */
   readonly autoplay?: boolean
+  /**
+   * Whether the clock runs (default true), with the meaning it has on `useLiveRun` and `useSession`. While false the
+   * clock is off and nothing advances; the frame, the rate and `playing` are kept (a player that was playing is still
+   * `playing`), and it carries on from where it stood when this is true again, unless the caller paused it meanwhile.
+   * Use it for a player on a page that is hidden (a slide that is not showing). A step or a seek by hand still moves.
+   */
+  readonly active?: boolean
 }
 
 /**
  * Playback over `count` precomputed frames: play and pause at a target rate, step, seek, loop or stop at the end.
  * Playing from the last frame starts again from the first.
  *
+ * The controller's state is the single source of truth: `pause()`, `seek()`, `step()` and `reset()` win over a tick
+ * that was already queued before them (a tick reads the latest frame and the playing flag, not what the last render
+ * saw), so `pause(); seek(0)` leaves the player paused at frame 0 whatever frame callback comes after.
+ *
  * @param count - The number of frames.
- * @param options - Rate, looping and autoplay.
+ * @param options - Rate, looping, autoplay and `active`.
  * @returns The controller.
  * @index function React hook: drive n precomputed frames with play, step and seek: `usePlayback(n)`
  */
 export function usePlayback(count: number, options: PlaybackOptions = {}): PlaybackController {
-  const { loop = false } = options
+  const { loop = false, active = true } = options
   const [frame, setFrame] = useState(0)
-  const [playing, setPlaying] = useState(() => (options.autoplay ?? false) && !prefersReducedMotion())
+  const [playing, setPlayingState] = useState(() => (options.autoplay ?? false) && !prefersReducedMotion())
   const [fps, setFps] = useState(options.fps ?? 10)
   const shown = Math.min(frame, Math.max(count - 1, 0))
-  useTicker(playing && count > 1, fps, (n) => {
-    const next = advanceFrame(shown, n, count, loop)
-    setFrame(next.frame)
+  // What a callback queued before the latest render must read: the controller's state, kept in refs and set at the
+  // moment of the call, not when the render that follows it commits.
+  const frameAt = useRef(0)
+  const playingNow = useRef(playing)
+  const latest = useRef({ count, loop, active })
+  latest.current = { count, loop, active }
+  const setPlaying = useCallback((on: boolean): void => {
+    playingNow.current = on
+    setPlayingState(on)
+  }, [])
+  const moveTo = useCallback((to: number): void => {
+    frameAt.current = to
+    setFrame(to)
+  }, [])
+  const shownNow = useCallback((): number => Math.min(frameAt.current, Math.max(latest.current.count - 1, 0)), [])
+  useTicker(playing && active && count > 1, fps, (n) => {
+    const now = latest.current
+    if (!playingNow.current || !now.active || now.count <= 1) return
+    const next = advanceFrame(shownNow(), n, now.count, now.loop)
+    moveTo(next.frame)
     if (next.ended) setPlaying(false)
   })
-  const play = useCallback(() => {
-    if (!loop && shown >= count - 1) setFrame(0)
-    setPlaying(true)
-  }, [loop, shown, count])
-  const pause = useCallback(() => setPlaying(false), [])
-  return useMemo(
-    () => ({
-      frame: shown,
-      count,
-      playing,
-      fps,
-      open: false,
+  const verbs = useMemo(() => {
+    const play = (): void => {
+      const { count: n, loop: wrap } = latest.current
+      if (!wrap && shownNow() >= n - 1) moveTo(0)
+      setPlaying(true)
+    }
+    const pause = (): void => setPlaying(false)
+    return {
       play,
       pause,
-      toggle: () => (playing ? pause() : play()),
-      step: (dir: 1 | -1) => {
+      toggle: (): void => (playingNow.current ? pause() : play()),
+      step: (dir: 1 | -1): void => {
         setPlaying(false)
-        setFrame(advanceFrame(shown, dir, count, loop).frame)
+        const { count: n, loop: wrap } = latest.current
+        moveTo(advanceFrame(shownNow(), dir, n, wrap).frame)
       },
-      seek: (f: number) => setFrame(Math.min(Math.max(Math.round(f), 0), Math.max(count - 1, 0))),
-      setFps,
-      reset: () => {
+      seek: (f: number): void => moveTo(Math.min(Math.max(Math.round(f), 0), Math.max(latest.current.count - 1, 0))),
+      reset: (): void => {
         setPlaying(false)
-        setFrame(0)
+        moveTo(0)
       },
-    }),
-    [shown, count, playing, fps, play, pause, loop],
+    }
+  }, [moveTo, setPlaying, shownNow])
+  return useMemo(
+    () => ({ frame: shown, count, playing, fps, open: false, ...verbs, setFps }),
+    [shown, count, playing, fps, verbs],
   )
 }
 
@@ -191,6 +219,20 @@ export interface LiveRunOptions extends PlaybackOptions {
   readonly active?: boolean
 }
 
+/** What a run of {@link useLiveRun} was made with (see {@link LiveRun.madeWith}). */
+export interface LiveRunMadeWith<S> {
+  /** The algorithm of the run. */
+  readonly algorithm: Algorithm<S>
+  /** The algorithm's `config`, as the run was made with it. */
+  readonly config: Json
+  /** The seed of the run. */
+  readonly seed: number
+  /** The step budget (`maxSteps`). */
+  readonly maxSteps: number
+  /** The states the run keeps (`history`, or the whole run when it is primed), which is what its ring buffer was made for. */
+  readonly capacity: number
+}
+
 /** What {@link useLiveRun} returns. */
 export interface LiveRun<S> {
   readonly controller: PlaybackController
@@ -216,6 +258,34 @@ export interface LiveRun<S> {
    * a step forward, `controller.reset()` and a new algorithm or seed.
    */
   readonly disposed: boolean
+  /**
+   * What the run on the tape was made with: the algorithm and its `config`, the `seed`, the step budget and the number
+   * of states kept, which are everything the hook keys a run by (a change to any of them remakes the
+   * run, which starts again from its first state; `stepsPerFrame`, `fps` and the like do not). It is read in one
+   * place, and switches in the render that remakes the run (also `controller.reset()` and a play after `dispose()`),
+   * so a figure that draws what the run was made with reads it here and not from the options, which may be newer.
+   * The hook holds nothing back and has no pause before a remake (a caller that debounces a slider does so before
+   * the options reach the hook), so the two differ only for the render in between.
+   *
+   * It holds the options, not what depends on them: a figure that draws something computed from the data (the true
+   * function, the dataset the algorithm was given) must take its own snapshot when the run is replaced, in the
+   * producer that makes the algorithm or in a ref the caller assigns in the same place.
+   *
+   * @example
+   * ```tsx
+   * // The data and its truth are the caller's, so the caller snapshots them with the algorithm, in one memo:
+   * const made = useMemo(() => {
+   *   const data = makeData(noise, seed)
+   *   return { algorithm: fitting(data), truth: data.truth } // `truth` stays with the algorithm it belongs to
+   * }, [noise, seed])
+   * const live = useLiveRun(made.algorithm, { maxSteps: 200, seed, start: 'first' })
+   * // `live.madeWith.seed` and `live.madeWith.config` are those of the run on the tape; `made.truth` goes with it only
+   * // because `made` and the algorithm were replaced together. Reading `truth` from the current options would show
+   * // the new data under the old run.
+   * drawTruth(made.truth)
+   * ```
+   */
+  readonly madeWith: LiveRunMadeWith<S>
   /**
    * Stop computing and release the states and the generator; the run starts again from step 0 if played. Safe to call
    * at any time, including from an animation frame or a ticker callback that was already queued.
@@ -246,13 +316,30 @@ export function useLiveRun<S>(algorithm: Algorithm<S>, options: LiveRunOptions):
     if (item === undefined) throw new Error(`${algorithm.name}: iterate yielded nothing`)
     const states = new RingBuffer<typeof item>(capacity)
     states.push(kept(algorithm, item))
-    return { gen, states }
+    const madeWith: LiveRunMadeWith<S> = { algorithm, config: algorithm.config, seed, maxSteps, capacity }
+    return { gen, states, madeWith }
   }, [algorithm, maxSteps, seed, capacity])
+  const makeNow = useRef(make)
+  makeNow.current = make
   const run = useRef<ReturnType<typeof make> | null>(null)
   const [version, setVersion] = useState(0)
-  // The cursor is an absolute index (states ever produced), so it stays on its state as the ring drops older ones.
+  // The cursor is an absolute index (states ever produced), so it stays on its state as the ring drops older ones. The
+  // state is what renders; `at` is the same value, set at the moment of the call, and is what a callback reads: a tick
+  // queued before a `seek` must continue from the sought step, not from the one the last render saw.
   const [cursor, setCursor] = useState(0)
-  const [playing, setPlaying] = useState(() => (options.autoplay ?? false) && !prefersReducedMotion())
+  const at = useRef(0)
+  const [playing, setPlayingState] = useState(() => (options.autoplay ?? false) && !prefersReducedMotion())
+  const playingNow = useRef(playing)
+  const activeNow = useRef(active)
+  activeNow.current = active
+  const setPlaying = useCallback((on: boolean): void => {
+    playingNow.current = on
+    setPlayingState(on)
+  }, [])
+  const moveTo = useCallback((to: number): void => {
+    at.current = to
+    setCursor(to)
+  }, [])
   const [fps, setFps] = useState(options.fps ?? 10)
   const [released, setReleased] = useState(false)
   // Set by `release` before anything renders, so a frame callback queued before the dispose sees it at once.
@@ -263,15 +350,17 @@ export function useLiveRun<S>(algorithm: Algorithm<S>, options: LiveRunOptions):
     run.current?.gen.return(undefined)
     run.current = make()
     madeFor.current = make
+    at.current = 0
   }
   const r = run.current as ReturnType<typeof make>
   const last = r.states.last as NonNullable<typeof r.states.last>
   const finished = last.status !== undefined
-  // A fresh run (new algorithm or seed) starts from its first state.
+  // A fresh run (new algorithm or seed) starts from its first state (`at` was reset with it; a seek made since the
+  // render is kept).
   // biome-ignore lint/correctness/useExhaustiveDependencies: reset exactly when the run is remade
   useEffect(() => {
     disposed.current = false
-    setCursor(0)
+    setCursor(at.current)
     setReleased(false)
   }, [make])
 
@@ -291,33 +380,40 @@ export function useLiveRun<S>(algorithm: Algorithm<S>, options: LiveRunOptions):
     return added
   }
 
+  /** The cursor, clamped to the states kept now. */
+  const clamped = (states: { readonly dropped: number; readonly length: number }): number =>
+    Math.min(Math.max(at.current, states.dropped), states.dropped + states.length - 1)
   const dropped = r.states.dropped
   const count = r.states.length
   const abs = Math.min(Math.max(cursor, dropped), dropped + count - 1)
   const shown = abs - dropped
-  const positioned = useRef(abs)
-  positioned.current = abs
-  const forward = (frames: number): void => {
+  /** Move forward `frames` frames from the latest position (whatever the playing flag says). */
+  const advance = (frames: number): void => {
     // A frame queued before `dispose` finds no run: there is nothing to move through.
     if (run.current === null || disposed.current) return
-    let at = positioned.current
+    const live = run.current.states
+    let to = clamped(live)
     for (let k = 0; k < frames; k++) {
-      const live = (run.current as ReturnType<typeof make>).states
-      if (at < live.dropped + live.length - 1) at++
+      if (to < live.dropped + live.length - 1) to++
       else if (extend(stepsPerFrame) > 0) {
         setVersion((v) => v + 1)
-        at = live.dropped + live.length - 1
+        to = live.dropped + live.length - 1
       } else {
         setPlaying(false)
         break
       }
     }
-    positioned.current = at
-    setCursor(at)
+    moveTo(to)
+  }
+  // A tick queued before a `pause`, `seek`, `reset` or `dispose` (or before the run went inactive) may still come
+  // after it: it does nothing then, and when it moves it starts from where the cursor is now.
+  const tick = (frames: number): void => {
+    if (!playingNow.current || !activeNow.current) return
+    advance(frames)
   }
   // The clock may fall behind when frames are slow, and then runs the algorithm several frames' steps at once, but no
   // more than half a second's worth.
-  useTicker(playing && active, fps, forward, Math.max(4, Math.ceil(fps / 2)))
+  useTicker(playing && active, fps, tick, Math.max(4, Math.ceil(fps / 2)))
 
   // Priming: the whole run, in slices of each animation frame, from the moment the run is made.
   // biome-ignore lint/correctness/useExhaustiveDependencies: restarts for a new run (`make`) or a reset (`epoch`); `extend` reads the latest run
@@ -338,7 +434,7 @@ export function useLiveRun<S>(algorithm: Algorithm<S>, options: LiveRunOptions):
   const parked = useRef(true)
   // biome-ignore lint/correctness/useExhaustiveDependencies: on the edge to finished
   useEffect(() => {
-    if (finished && start === 'end' && parked.current) setCursor(Number.POSITIVE_INFINITY)
+    if (finished && start === 'end' && parked.current) moveTo(Number.POSITIVE_INFINITY)
   }, [finished])
 
   const notified = useRef<unknown>(null)
@@ -359,9 +455,9 @@ export function useLiveRun<S>(algorithm: Algorithm<S>, options: LiveRunOptions):
     madeFor.current = null
     setPlaying(false)
     setReleased(true)
-    setCursor(0)
+    moveTo(0)
     setVersion((v) => v + 1)
-  }, [])
+  }, [setPlaying, moveTo])
   // Leaving releases the run, after a microtask so that a strict-mode double effect, which cleans up and sets up again at
   // once, keeps it.
   const leaving = useRef(false)
@@ -379,6 +475,8 @@ export function useLiveRun<S>(algorithm: Algorithm<S>, options: LiveRunOptions):
   }, [])
 
   const item = r.states.at(shown) ?? last
+  // The verbs read the refs and the run as it is now, never what this render saw, so a controller kept from an earlier
+  // render, or a call made before the render of the one before it, acts on the latest state.
   const controller: PlaybackController = {
     frame: shown,
     count,
@@ -389,24 +487,30 @@ export function useLiveRun<S>(algorithm: Algorithm<S>, options: LiveRunOptions):
       parked.current = false
       disposed.current = false
       setReleased(false)
-      if (finished && shown >= count - 1) setCursor(dropped)
+      const live = run.current?.states
+      if (live !== undefined && live.last?.status !== undefined && clamped(live) >= live.dropped + live.length - 1) {
+        moveTo(live.dropped)
+      }
       setPlaying(true)
     },
     pause: () => setPlaying(false),
-    toggle: () => (playing ? controller.pause() : controller.play()),
+    toggle: () => (playingNow.current ? controller.pause() : controller.play()),
     step: (dir) => {
       parked.current = false
       setPlaying(false)
-      if (dir < 0) setCursor(Math.max(abs - 1, dropped))
-      else {
+      if (dir < 0) {
+        const live = run.current?.states
+        if (live !== undefined) moveTo(Math.max(clamped(live) - 1, live.dropped))
+      } else {
         disposed.current = false
         setReleased(false)
-        forward(1)
+        advance(1)
       }
     },
     seek: (f) => {
       parked.current = false
-      setCursor(dropped + Math.min(Math.max(Math.round(f), 0), count - 1))
+      const live = run.current?.states
+      moveTo(live === undefined ? 0 : live.dropped + Math.min(Math.max(Math.round(f), 0), live.length - 1))
     },
     setFps,
     reset: () => {
@@ -415,8 +519,8 @@ export function useLiveRun<S>(algorithm: Algorithm<S>, options: LiveRunOptions):
       setReleased(false)
       setPlaying(false)
       run.current?.gen.return(undefined)
-      run.current = make()
-      setCursor(0)
+      run.current = makeNow.current()
+      moveTo(0)
       setEpoch((e) => e + 1)
       setVersion((v) => v + 1)
     },
@@ -431,6 +535,7 @@ export function useLiveRun<S>(algorithm: Algorithm<S>, options: LiveRunOptions):
     progress: progressOf(dropped + count - 1, finished, maxSteps),
     oldest: r.states.at(0)?.t ?? 0,
     disposed: released,
+    madeWith: r.madeWith,
     dispose: release,
   }
 }

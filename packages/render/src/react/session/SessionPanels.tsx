@@ -97,9 +97,14 @@ export function SessionPanels(
      * type size). The same as wrapping the panels in a `PanelFigureProvider`.
      */
     readonly figure?: Figure
+    /**
+     * Whether the panels draw their toolbar: the expand and export buttons of each figure's frame (default true).
+     * `false` leaves them all out, for panels placed in a slide. The same as `chrome` of a `PanelFigureProvider`.
+     */
+    readonly chrome?: boolean
   },
 ): ReactNode {
-  const { layout, live, figure: panelFigure, ...ctx } = props
+  const { layout, live, figure: panelFigure, chrome, ...ctx } = props
   const variants = variantsOf(live)
   const single = variants.length === 1 ? variants[0] : undefined
   const head = live.head
@@ -171,7 +176,13 @@ export function SessionPanels(
       </div>
     </StepCursorProvider>
   )
-  return panelFigure === undefined ? grid : <PanelFigureProvider figure={panelFigure}>{grid}</PanelFigureProvider>
+  return panelFigure === undefined && chrome === undefined ? (
+    grid
+  ) : (
+    <PanelFigureProvider {...(panelFigure === undefined ? {} : { figure: panelFigure })} chrome={chrome}>
+      {grid}
+    </PanelFigureProvider>
+  )
 }
 
 // A panel of the tape over every variant at once: curves or a sweep, overlaid.

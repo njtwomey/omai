@@ -18,7 +18,7 @@ import { type Figure, figure } from '../../figure/index.ts'
 import { categoricalColour } from '../../theme/index.ts'
 import { useByContent } from '../_content.ts'
 import { Chart } from '../Chart.tsx'
-import { FigureFrame } from '../FigureFrame.tsx'
+import { FigureChromeProvider, FigureFrame } from '../FigureFrame.tsx'
 import { useColourMode } from '../theme.tsx'
 import { ExpositionView } from '../views/ExpositionView.tsx'
 import type { Panel, RowSource } from './layout.ts'
@@ -42,7 +42,8 @@ const PanelFigureContext = createContext<Figure | undefined>(undefined)
  * Set the figure the session panels below it are drawn at: its width and height, type size (`fontSize`), padding and
  * medium, for every panel of `SessionPanels` and of the specialised panels at once (the tape views too, where the
  * default differs). Panels that derive their own shape (a strip's aspect, a grid of images, the tall equation figure)
- * keep the width, type size and padding and change the height as they need. Nested, the innermost wins.
+ * keep the width, type size and padding and change the height as they need. With `chrome={false}` the same provider
+ * takes the expand and export buttons off every panel's frame. Either is optional. Nested, the innermost wins.
  *
  * @param props - The figure and the panels.
  * @returns The panels, with the figure in context.
@@ -52,14 +53,28 @@ const PanelFigureContext = createContext<Figure | undefined>(undefined)
  * import { PanelFigureProvider, SessionPanels } from 'omai-render/react'
  * const large = figure({ width: 640, height: 400, fontSize: 14 })
  * const panels = (
- *   <PanelFigureProvider figure={large}>
+ *   <PanelFigureProvider figure={large} chrome={false}>
  *     <SessionPanels live={live} at={at} layout={layout} />
  *   </PanelFigureProvider>
  * )
  * ```
  */
-export function PanelFigureProvider(props: { readonly figure: Figure; readonly children?: ReactNode }): ReactElement {
-  return <PanelFigureContext.Provider value={props.figure}>{props.children}</PanelFigureContext.Provider>
+export function PanelFigureProvider(props: {
+  readonly figure?: Figure
+  /**
+   * Whether the panels draw their toolbar (the expand, export and settings buttons of each figure's frame; default
+   * true), as `chrome` of a `FigureFrame`: `false` leaves them all out, for panels placed in a slide. A panel's own
+   * `chrome` prop wins; not given, the enclosing provider's setting stays.
+   */
+  readonly chrome?: boolean | undefined
+  readonly children?: ReactNode
+}): ReactElement {
+  const inner = <FigureChromeProvider chrome={props.chrome}>{props.children}</FigureChromeProvider>
+  return props.figure === undefined ? (
+    inner
+  ) : (
+    <PanelFigureContext.Provider value={props.figure}>{inner}</PanelFigureContext.Provider>
+  )
 }
 
 /**
@@ -241,6 +256,8 @@ export function RowsPanel(props: {
   readonly y?: Tensor
   /** The per-row channels: values, size, marks, regions and focus. */
   readonly channels?: RowChannelSpecs
+  /** Draw the frame without its buttons (default true; a `PanelFigureProvider` above may say). */
+  readonly chrome?: boolean
 }): ReactNode {
   const base = usePanelFigure()
   const { overlay, live, t, x, y, channels = {} } = props
@@ -481,24 +498,28 @@ export function RowsPanel(props: {
   // The decision surface is an exposition view (its own frame); the rest is one chart in this panel's frame.
   if (surface.value !== undefined)
     return (
-      <ExpositionView
-        record={surface.value as never}
+      <FigureChromeProvider chrome={props.chrome}>
+        <ExpositionView
+          record={surface.value as never}
+          figure={base}
+          title={props.title}
+          filename={props.filename}
+          points={rowsOf(xs, d)}
+          {...(groups === undefined ? {} : { labels: groups })}
+        />
+      </FigureChromeProvider>
+    )
+  return (
+    <FigureChromeProvider chrome={props.chrome}>
+      <FigureFrame
         figure={base}
         title={props.title}
         filename={props.filename}
-        points={rowsOf(xs, d)}
-        {...(groups === undefined ? {} : { labels: groups })}
-      />
-    )
-  return (
-    <FigureFrame
-      figure={base}
-      title={props.title}
-      filename={props.filename}
-      {...(error === undefined ? {} : { caption: <Note>unavailable: {error}</Note> })}
-    >
-      <Chart figure={base} option={option} />
-    </FigureFrame>
+        {...(error === undefined ? {} : { caption: <Note>unavailable: {error}</Note> })}
+      >
+        <Chart figure={base} option={option} />
+      </FigureFrame>
+    </FigureChromeProvider>
   )
 }
 
