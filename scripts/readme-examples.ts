@@ -87,7 +87,7 @@ function indexOf(): string {
       '',
       `![${e.module.meta.alt}](${e.name}/figure.svg)`,
       '',
-      `[${e.name}/main.tsx](${e.name}/main.tsx)${tapes.map((t) => `, tape: [${t}](${e.name}/${t})`).join('')}`,
+      `[${e.name}/main.tsx](${e.name}/main.tsx)${existsSync(join(EXAMPLES, e.name, 'README.md')) ? `, [${e.name}/README.md](${e.name}/README.md)` : ''}${tapes.map((t) => `, tape: [${t}](${e.name}/${t})`).join('')}`,
       '',
     ].join('\n')
   }
