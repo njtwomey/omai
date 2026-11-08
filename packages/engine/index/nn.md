@@ -6,8 +6,8 @@ Neural networks: functional layers (`nn.functional`), PyTorch-shaped modules (`n
 
 - function `init.ts` (file): Weight initialisers: Xavier, Kaiming, LeCun, orthogonal. `src/lib/nn/init.ts:1` `omai-engine/nn`
 
-- function `describe`: A module as a drawable Structure: layers, shapes, parameters. `src/lib/nn/describe.ts:263` `omai-engine/nn`
-- function `summary`: A torchinfo-style text summary of a module. `src/lib/nn/describe.ts:384` `omai-engine/nn`
+- function `describe`: A module as a drawable Structure: layers, shapes, parameters. `src/lib/nn/describe.ts:272` `omai-engine/nn`
+- function `summary`: A torchinfo-style text summary of a module. `src/lib/nn/describe.ts:400` `omai-engine/nn`
 
 ## nn/blocks
 

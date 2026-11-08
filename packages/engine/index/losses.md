@@ -8,6 +8,7 @@ Differentiable training objectives, torch.nn style: regression, classification, 
 
 - function `crossEntropy`: Categorical cross-entropy from logits. `src/lib/losses/classification.ts:244` `omai-engine/losses`
 - function `mse`: Mean squared error, torch.nn.functional style. `src/lib/losses/regression.ts:47` `omai-engine/losses`
+- function `slicedWasserstein`: Sliced Wasserstein distance by random projections; returns the power, root with a flag. `src/lib/losses/divergence.ts:372` `omai-engine/losses`
 
 - table `classificationLosses`: The binary classification losses as one slot. `src/lib/losses/tables.ts:121` `omai-engine/losses`
 - table `multiclassLosses`: The multi-class losses as one slot. `src/lib/losses/tables.ts:291` `omai-engine/losses`

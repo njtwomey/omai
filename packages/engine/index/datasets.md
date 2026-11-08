@@ -2,29 +2,41 @@
 
 # datasets
 
-Ready-made datasets: generators with exact truths, vendored real datasets (iris, wine, MovieLens samples and more) and themed collections, for regression, classification, clustering, ranking and time series. The way in is the tagged registry: `datasetRegistry`, queried with `whereDatasets` and loaded with `loadDataset`. It sits at the top of the core so a truth can come from any other domain.
+Ready-made datasets: generators with exact truths, vendored real datasets (iris, wine, MovieLens samples and more) and themed collections, for regression, classification, clustering, ranking and time series. The way in is the tagged registry: `datasetRegistry`, queried with `whereDatasets` and loaded with `loadDataset`. It sits at the top of the core so a truth can come from any other domain. The two-dimensional target densities (`densities`) have exact log densities for testing samplers, flows and diffusion models.
 
 - structure `registry.ts` (file): Registry machinery: entries, tags, queries, load and fetch. `src/lib/datasets/registry.ts:1` `omai-engine/datasets`
 
 - table `collections.ts` (file): Themed dataset collections for pickers. `src/lib/datasets/collections.ts:1` `omai-engine/datasets`
 
+- module `densities.ts` (file): Two-dimensional target densities with exact log densities, for MCMC, flows and diffusion models. `src/lib/datasets/densities.ts:1` `omai-engine/datasets`
+
 - function `loadDataset`: Make or load a registry entry's data synchronously. `src/lib/datasets/registry.ts:345` `omai-engine/datasets`
 - function `whereDatasets`: Registry entries matching kind, modality, size or free text. `src/lib/datasets/registry.ts:269` `omai-engine/datasets`
+
+- structure `Density`: A 2-D target with exact log density and sampler, for samplers and flows. `src/lib/datasets/densities.ts:51` `omai-engine/datasets`
 
 - table `datasetRegistry`: Tagged registry of every generator, vendored and remote dataset. `src/lib/datasets/catalogue.ts:331` `omai-engine/datasets`
 
 - dataset `airPassengers`: Vendored monthly airline passenger series. `src/lib/datasets/timeseries.ts:404` `omai-engine/datasets`
+- dataset `bananaDensity`: Haario's banana: a curved, correlated target for MCMC. `src/lib/datasets/densities.ts:313` `omai-engine/datasets`
 - dataset `blobs`: Isotropic Gaussian blobs with the exact class posterior. `src/lib/datasets/classification.ts:104` `omai-engine/datasets`
 - dataset `changepointSeries`: Series with tunable changepoints for detection methods. `src/lib/datasets/changepoints.ts:156` `omai-engine/datasets`
+- dataset `checkerboardDensity`: The FFJORD checkerboard: uniform on the dark squares of a 4 by 4 board. `src/lib/datasets/densities.ts:395` `omai-engine/datasets`
 - dataset `circles`: A large circle containing a smaller one. `src/lib/datasets/classification.ts:350` `omai-engine/datasets`
+- dataset `densitySamples`: Labelled samples from any 2-D density, with the exact log density as truth. `src/lib/datasets/densities.ts:455` `omai-engine/datasets`
 - dataset `digits`: Vendored 8x8 handwritten digits. `src/lib/datasets/classification-real.ts:152` `omai-engine/datasets`
 - dataset `fieldImage`: Procedural colour image as coordinate-to-colour data, with its continuous truth. `src/lib/datasets/neural-fields.ts:228` `omai-engine/datasets`
 - dataset `friedman1`: Friedman's first nonlinear regression problem. `src/lib/datasets/regression.ts:140` `omai-engine/datasets`
+- dataset `funnelDensity`: Neal's funnel in two dimensions, whose neck defeats fixed step sizes. `src/lib/datasets/densities.ts:355` `omai-engine/datasets`
+- dataset `gaussianMixtureDensity`: Eight Gaussians on a circle, or a 5 by 5 grid of them. `src/lib/datasets/densities.ts:167` `omai-engine/datasets`
 - dataset `makeRegression`: Linear regression problem, like sklearn make_regression. `src/lib/datasets/regression.ts:305` `omai-engine/datasets`
 - dataset `moons`: Two interleaving half circles. `src/lib/datasets/classification.ts:323` `omai-engine/datasets`
 - dataset `multiViewImages`: Posed multi-view images of a small scene, with held-out views. `src/lib/datasets/multiview.ts:240` `omai-engine/datasets`
+- dataset `pinwheelDensity`: Pinwheel of swirled elongated Gaussians. `src/lib/datasets/densities.ts:243` `omai-engine/datasets`
+- dataset `ringDensity`: Concentric rings with exact log density and sampler. `src/lib/datasets/densities.ts:89` `omai-engine/datasets`
 - dataset `shapes`: Images of circles, squares and triangles with labels. `src/lib/datasets/images.ts:64` `omai-engine/datasets`
 - dataset `signedDistance`: Exact signed distance samples of sphere, box, torus or union shapes. `src/lib/datasets/neural-fields.ts:125` `omai-engine/datasets`
 - dataset `sineCurve`: Noisy sine regression with known function. `src/lib/datasets/regression-curves.ts:137` `omai-engine/datasets`
 - dataset `spirals`: Interleaved spiral arms. `src/lib/datasets/classification.ts:460` `omai-engine/datasets`
+- dataset `swissRoll`: The Swiss roll in 3-D (sklearn make_swiss_roll), optionally with a hole. `src/lib/datasets/manifolds.ts:123` `omai-engine/datasets`
 - dataset `xor`: The XOR problem as four Gaussian blobs. `src/lib/datasets/classification.ts:393` `omai-engine/datasets`

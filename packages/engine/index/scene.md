@@ -6,4 +6,5 @@ Pictures and structures as data: drawings (`Scene`: shapes, text, paths), 3-D la
 
 - structure `types.ts` (file): Scene graph node types: shapes, text, paths, 3-D layers. `src/lib/scene/types.ts:1` `omai-engine/scene`
 
+- function `recolour`: Redraw named nodes of a Scene in another paint. `src/lib/scene/build.ts:446` `omai-engine/scene`
 - function `scene`: Build a Scene from nodes; rect, circle and path sit beside it. `src/lib/scene/build.ts:45` `omai-engine/scene`

@@ -2,9 +2,49 @@
 
 # stochastic
 
-Stochastic processes and stochastic calculus: Brownian motion and Ito calculus, SDE solvers, diffusions, Markov chains, random walks, branching processes, queues, point processes, determinantal point processes, random measures, Gaussian processes, and fractional and Levy processes.
+Stochastic processes and stochastic calculus: Brownian motion and Ito calculus, SDE solvers, diffusions, Markov chains, random walks, branching processes, queues, point processes, determinantal point processes, random measures, Gaussian processes, and fractional and Levy processes. Diffusion generative models are here too: noise schedules, the forward process, losses and guidance (`diffusion-models`), the reverse samplers (`diffusion-samplers`) and the score network with its trainer (`diffusion-training`).
+
+- module `diffusion-models.ts` (file): Diffusion models: noise schedules, forward process, losses, guidance, exact mixture score. `src/lib/stochastic/diffusion-models.ts:1` `omai-engine/stochastic`
+- module `diffusion-samplers.ts` (file): Reverse diffusion samplers as stepped algorithms: DDPM, DDIM, Euler, Heun, DPM-Solver-2. `src/lib/stochastic/diffusion-samplers.ts:1` `omai-engine/stochastic`
+- module `diffusion-training.ts` (file): Training a diffusion model on low-dimensional data, then sampling it end to end. `src/lib/stochastic/diffusion-training.ts:1` `omai-engine/stochastic`
 
 - function `brownianMotion`: Brownian motion sample paths on a time grid. `src/lib/stochastic/brownian.ts:123` `omai-engine/stochastic`
+- function `classifierFreeGuidance`: Combine conditional and unconditional predictions with a guidance scale. `src/lib/stochastic/diffusion-models.ts:894` `omai-engine/stochastic`
+- function `cosineSchedule`: Cosine variance-preserving noise schedule (Nichol and Dhariwal). `src/lib/stochastic/diffusion-models.ts:160` `omai-engine/stochastic`
+- function `defineSchedule`: Build a custom diffusion noise schedule from its alpha and sigma. `src/lib/stochastic/diffusion-models.ts:94` `omai-engine/stochastic`
+- function `diffusionBatch`: A noised training batch for a diffusion model: times and x_t. `src/lib/stochastic/diffusion-models.ts:856` `omai-engine/stochastic`
+- function `discreteSchedule`: Noise schedule from a list of discrete DDPM betas. `src/lib/stochastic/diffusion-models.ts:260` `omai-engine/stochastic`
+- function `edmPreconditioning`: EDM preconditioning of a network: skip, output and input scalings. `src/lib/stochastic/diffusion-models.ts:377` `omai-engine/stochastic`
+- function `edmSchedule`: EDM noise schedule where the time is the noise scale. `src/lib/stochastic/diffusion-models.ts:330` `omai-engine/stochastic`
+- function `forwardMarginal`: Signal and noise scales of the forward process at a time. `src/lib/stochastic/diffusion-models.ts:505` `omai-engine/stochastic`
+- function `forwardSample`: Noise clean samples to a time in one step: q(x_t | x_0). `src/lib/stochastic/diffusion-models.ts:544` `omai-engine/stochastic`
+- function `gaussianMixtureTruth`: Exact noised score of a Gaussian mixture, to verify samplers and networks. `src/lib/stochastic/diffusion-models.ts:1012` `omai-engine/stochastic`
+- function `guidedModel`: Classifier-free guided model from a conditional and an unconditional one. `src/lib/stochastic/diffusion-models.ts:954` `omai-engine/stochastic`
+- function `linearSchedule`: Linear-beta variance-preserving noise schedule of the VP-SDE. `src/lib/stochastic/diffusion-models.ts:128` `omai-engine/stochastic`
+- function `networkModel`: A trained score network as a DiffusionModel for a sampler. `src/lib/stochastic/diffusion-training.ts:120` `omai-engine/stochastic`
+- function `sampleDiffusion`: Run a diffusion sampler to the end and return the samples. `src/lib/stochastic/diffusion-samplers.ts:322` `omai-engine/stochastic`
+- function `samplerTimes`: Times a sampler visits: uniform, quadratic, log-SNR or Karras spacing. `src/lib/stochastic/diffusion-models.ts:461` `omai-engine/stochastic`
 - function `sdeint`: Solve a stochastic differential equation with Euler-Maruyama or Milstein. `src/lib/stochastic/sde.ts:195` `omai-engine/stochastic`
+- function `sigmoidSchedule`: Sigmoid variance-preserving noise schedule. `src/lib/stochastic/diffusion-models.ts:191` `omai-engine/stochastic`
 - function `simulateChain`: Simulate paths of a discrete Markov chain. `src/lib/stochastic/markov-chains.ts:498` `omai-engine/stochastic`
+- function `snr`: Signal-to-noise ratio of a noise schedule at a time. `src/lib/stochastic/diffusion-models.ts:357` `omai-engine/stochastic`
 - function `stationaryDistribution`: Stationary distribution of a Markov chain. `src/lib/stochastic/markov-chains.ts:121` `omai-engine/stochastic`
+- function `toX0AndNoise`: Convert an epsilon, x0, v or score prediction to clean sample and noise. `src/lib/stochastic/diffusion-models.ts:648` `omai-engine/stochastic`
+- function `veSchedule`: Variance-exploding noise schedule (NCSN, sigma from min to max). `src/lib/stochastic/diffusion-models.ts:302` `omai-engine/stochastic`
+- function `veSde`: Variance-exploding SDE of a diffusion model. `src/lib/stochastic/diffusion-models.ts:591` `omai-engine/stochastic`
+- function `vpSde`: Variance-preserving SDE of a diffusion model, with reverse and flow forms. `src/lib/stochastic/diffusion-models.ts:575` `omai-engine/stochastic`
+- function `weightedDiffusionLoss`: Diffusion training loss: simple, min-SNR, ELBO or EDM weighting. `src/lib/stochastic/diffusion-models.ts:801` `omai-engine/stochastic`
+
+- algorithm `ddimSampler`: DDIM sampler (deterministic, or noisy with eta) as a steppable Algorithm. `src/lib/stochastic/diffusion-samplers.ts:300` `omai-engine/stochastic`
+- algorithm `ddpmSampler`: DDPM ancestral sampler as a steppable Algorithm. `src/lib/stochastic/diffusion-samplers.ts:281` `omai-engine/stochastic`
+- algorithm `diffusionSampler`: Reverse diffusion sampler: DDPM, DDIM, Euler, Heun or DPM-Solver-2. `src/lib/stochastic/diffusion-samplers.ts:149` `omai-engine/stochastic`
+- algorithm `diffusionTrainer`: Train a diffusion network: minibatch, time, noise, weighted loss, optimiser step. `src/lib/stochastic/diffusion-training.ts:177` `omai-engine/stochastic`
+
+- structure `DiffusionModel`: A network function (x_t, t) giving a diffusion model's prediction. `src/lib/stochastic/diffusion-models.ts:626` `omai-engine/stochastic`
+- structure `DiffusionSde`: A diffusion's forward SDE together with its noise schedule. `src/lib/stochastic/diffusion-models.ts:600` `omai-engine/stochastic`
+- structure `NoiseSchedule`: A diffusion noise schedule: signal and noise scales, log-SNR, forward drift. `src/lib/stochastic/diffusion-models.ts:49` `omai-engine/stochastic`
+- structure `ScoreNetwork`: A score network: module, time encoding and size for diffusion data. `src/lib/stochastic/diffusion-training.ts:48` `omai-engine/stochastic`
+
+- table `samplerProperties`: Order, evaluations per step and stochasticity of each diffusion sampler. `src/lib/stochastic/diffusion-samplers.ts:351` `omai-engine/stochastic`
+
+- module `scoreNetwork`: Small MLP over a noisy sample and a Fourier time encoding. `src/lib/stochastic/diffusion-training.ts:72` `omai-engine/stochastic`

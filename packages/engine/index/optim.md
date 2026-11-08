@@ -9,15 +9,17 @@ Optimisation: optax-style gradient transformations and optimisers with schedules
 - function `adam`: Adam as a gradient transformation, like torch.optim.Adam. `src/lib/optim/adaptive.ts:69` `omai-engine/optim`
 - function `admm`: Alternating direction method of multipliers. `src/lib/optim/admm.ts:290` `omai-engine/optim`
 - function `fista`: Accelerated proximal gradient for composite objectives. `src/lib/optim/splitting.ts:246` `omai-engine/optim`
+- function `inverseSqrtDecay`: Inverse-square-root decay of a learning rate. `src/lib/optim/schedules.ts:156` `omai-engine/optim`
 - function `linprog`: Linear programming by simplex or interior point, scipy form. `src/lib/optim/linear-programming.ts:392` `omai-engine/optim`
 - function `milp`: Mixed-integer linear programming by branch and bound. `src/lib/optim/integer.ts:464` `omai-engine/optim`
 - function `quadprog`: Convex quadratic programming by active set or interior point. `src/lib/optim/quadratic.ts:307` `omai-engine/optim`
 - function `sgd`: SGD with momentum, Nesterov and weight decay. `src/lib/optim/first-order.ts:67` `omai-engine/optim`
 - function `sinkhorn`: Entropic optimal transport by Sinkhorn iterations. `src/lib/optim/transport.ts:491` `omai-engine/optim`
+- function `slicedWasserstein`: Sliced Wasserstein distance with explicit projections; always the p-th root. `src/lib/optim/wasserstein.ts:158` `omai-engine/optim`
 
 - table `boundedSolvers`: The solvers of a smooth objective on a box. `src/lib/optim/bounded-solvers.ts:225` `omai-engine/optim`
 - table `optimisers`: SGD, RMSprop, Adagrad, Adam and relatives as one slot. `src/lib/optim/optimiser-table.ts:58` `omai-engine/optim`
-- table `schedules`: Learning-rate schedules as one slot. `src/lib/optim/schedule-table.ts:56` `omai-engine/optim`
+- table `schedules`: Learning-rate schedules as one slot. `src/lib/optim/schedule-table.ts:57` `omai-engine/optim`
 - table `smoothSolvers`: Smooth-objective solvers as one slot: gradient descent to L-BFGS. `src/lib/optim/solvers.ts:279` `omai-engine/optim`
 
 ## optim/minimize

@@ -2,8 +2,10 @@
 
 # worlds
 
-Discrete worlds shared by search, reinforcement learning and graphics: grid, hexagonal and graph maps with walls, terrain and items, ASCII maps, rules and transition models, keyed maze and level generators, textbook worlds, continuous motion with collision and line of sight, and analysis of the cell graph.
+Discrete worlds shared by search, reinforcement learning and graphics: grid, hexagonal and graph maps with walls, terrain and items, ASCII maps, rules and transition models, keyed maze and level generators, textbook worlds, continuous motion with collision and line of sight, analysis of the cell graph, and paths read off per-cell values.
 
 - function `rules.ts` (file): Composable rules turning a world into a task. `src/lib/worlds/rules.ts:1` `omai-engine/worlds`
+
+- function `greedyPath`: The greedy path up a value per cell, for drawing a policy. `src/lib/worlds/paths.ts:28` `omai-engine/worlds`
 
 - structure `world`: A grid, hex or graph world with walls, terrain and items. `src/lib/worlds/world.ts:211` `omai-engine/worlds`
