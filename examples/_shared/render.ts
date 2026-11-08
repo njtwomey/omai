@@ -3,6 +3,8 @@
  * them: a view rendered to static SVG markup, and a tape as the library's tape file.
  */
 
+import type { Timeline } from 'mdml-engine/scene'
+import { encodeGif, timelineFrames } from 'mdml-render/animation'
 import { tapeOf } from 'mdml-render/producer'
 import { createElement, type ReactElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
@@ -17,4 +19,9 @@ export function renderView<R>(View: (props: { readonly result: R }) => ReactElem
 export async function tapeJson(name: string, tape: Tape, title: string): Promise<unknown> {
   if (!('advance' in tape)) return tape
   return tapeOf(tape.method.name, [{ label: name, session: tape }], { requests: [], title })
+}
+
+/** A timeline of scenes as GIF bytes, in Node: the engine's rasteriser draws the frames (without text) on white. */
+export async function animationGif(timeline: Timeline): Promise<Uint8Array> {
+  return encodeGif(await timelineFrames(timeline, { background: '#ffffff' }), { fps: timeline.fps })
 }

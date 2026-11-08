@@ -1,7 +1,7 @@
 /**
  * Run the programs in `examples/` and write what they make: the figure of each (`examples/<name>/figure.svg`), the
- * tapes of its runs (`tape.json`, or `tape-<name>.json` when there are several) and the generated index
- * `examples/README.md`.
+ * tapes of its runs (`tape.json`, or `tape-<name>.json` when there are several), an animation when `run` returns one
+ * (`learning.gif`, from a timeline of scenes) and the generated index `examples/README.md`.
  *
  *   node scripts/readme-examples.ts            run every example and write the files (or: make readme-examples)
  *   node scripts/readme-examples.ts <name>...  only these examples (the index is rewritten from all of them)
@@ -36,7 +36,7 @@ const args = process.argv.slice(2)
 const check = args.includes('--check')
 const only = new Set(check ? [] : args.filter((a) => !a.startsWith('--')))
 
-const { renderView, tapeJson } = await import('../examples/_shared/render.ts')
+const { animationGif, renderView, tapeJson } = await import('../examples/_shared/render.ts')
 const { prettyJson } = await import('../examples/_shared/pretty-json.ts')
 type ExampleModule = import('../examples/_shared/contract.ts').ExampleModule
 type Tape = import('../examples/_shared/contract.ts').Tape
@@ -47,7 +47,7 @@ const names = readdirSync(EXAMPLES, { withFileTypes: true })
   .sort()
 
 /** The files an example makes, by path relative to `examples/`. */
-const made = new Map<string, string>()
+const made = new Map<string, string | Uint8Array>()
 const entries: { name: string; module: ExampleModule; tapeFiles: string[] }[] = []
 
 for (const name of names) {
@@ -58,7 +58,7 @@ for (const name of names) {
   entries.push(entry)
   if (only.size > 0 && !only.has(name)) continue
   console.log(name)
-  const { result, tapes = {}, notes = [] } = await entry.module.run()
+  const { result, tapes = {}, notes = [], animation } = await entry.module.run()
   for (const note of notes) console.log(`  ${note}`)
   const svg = renderView(entry.module.View, result)
   if (!svg.startsWith('<svg')) throw new Error(`examples/${name}: View must render an <svg> document`)
@@ -71,6 +71,11 @@ for (const name of names) {
     made.set(`${name}/${file}`, `${prettyJson(json)}\n`)
     entry.tapeFiles.push(file)
   }
+  if (animation !== undefined) {
+    const gif = await animationGif(animation)
+    made.set(`${name}/learning.gif`, gif)
+    console.log(`  ${(gif.length / 1024).toFixed(0)} KB animation, ${animation.frames.length} frames`)
+  }
   console.log(`  ${(svg.length / 1024).toFixed(0)} KB figure, ${keys.length} tape(s)`)
 }
 
@@ -80,6 +85,9 @@ function indexOf(): string {
   const more = entries.filter((e) => !e.module.meta.readme)
   const section = (e: (typeof entries)[number]): string => {
     const tapes = tapeFilesOf(e.name)
+    const gif = existsSync(join(EXAMPLES, e.name, 'learning.gif'))
+      ? `, animation: [learning.gif](${e.name}/learning.gif)`
+      : ''
     return [
       `## ${e.module.meta.title}`,
       '',
@@ -135,13 +143,14 @@ if (!check) {
     write(tmp)
     const differ: string[] = []
     for (const path of made.keys()) {
-      const have = existsSync(join(EXAMPLES, path)) ? readFileSync(join(EXAMPLES, path), 'utf8') : undefined
-      if (have !== readFileSync(join(tmp, path), 'utf8')) differ.push(path)
+      const have = existsSync(join(EXAMPLES, path)) ? readFileSync(join(EXAMPLES, path)) : undefined
+      if (have === undefined || !have.equals(readFileSync(join(tmp, path)))) differ.push(path)
     }
     // Generated files left in an example's folder that nothing makes any more.
     for (const name of names)
       for (const f of readdirSync(join(EXAMPLES, name)))
-        if (/^(figure\.svg|tape(-.*)?\.json)$/.test(f) && !made.has(`${name}/${f}`)) differ.push(`${name}/${f} (stale)`)
+        if (/^(figure\.svg|learning\.gif|tape(-.*)?\.json)$/.test(f) && !made.has(`${name}/${f}`))
+          differ.push(`${name}/${f} (stale)`)
     if (differ.length > 0) {
       console.error(`readme-examples-check: ${differ.length} file(s) differ from a fresh run:`)
       for (const d of differ) console.error(`  examples/${d}`)
