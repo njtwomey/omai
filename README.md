@@ -195,11 +195,9 @@ tight.advance() // 119 steps: 17 support vectors, accuracy 0.945, where 1 - trut
 
 ## Packages
 
-| package       | what it is                                                                                                                                                                         |
-| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `mdml-engine` | the library: tensors, autodiff, numerics, distributions, optimisation, kernels, learning, neural networks, RL, graphs, datasets and the trace. Imports as `mdml-engine/<domain>`.  |
-| `mdml-render` | figures from results and traces: charts, layouts, drawings, SVG and animation export, and React components.                                                                        |
-| `mdml-meta`   | the documentation tooling: it reads the descriptions in the code, runs the examples and keeps the list of concepts.                                                                |
+- `mdml-engine`: the library of tensors, autodiff, numerics, distributions, optimisation, kernels, learning, neural networks, RL, graphs, datasets and the trace. Imports as `mdml-engine/<domain>`.
+- `mdml-render`: figures from results and traces: charts, layouts, drawings, SVG and animation export, and React components.
+- `mdml-meta`: the documentation tooling: it reads the descriptions in the code, runs the examples and keeps the list of concepts.
 
 The packages share a version number (see `CHANGELOG.md`).
 
