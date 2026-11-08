@@ -4019,7 +4019,9 @@ dependency, so its layouts are checked structurally (TODO: golden-test them agai
 - `ascii.ts`: `fromAscii` and `toAscii` (the usual ASCII map conventions: one character per cell, or thin walls drawn
   between cells; custom legends and terrains; square or hexagonal rows), `fromRows`.
 - `drawing.ts`: `toStructure` (the cell graph), `toScene` (a top-down drawing with theme tokens: terrain, walls, items,
-  starts and goals, per-cell values, a path, the agent as a cell or a pose).
+  starts and goals, per-cell values drawn by `valueStyle` (a paint, or a colour ramp on a fixed range), a path, the agent
+  as a cell or a pose).
+- `paths.ts`: `greedyPath`, the path up a value per cell from a start (to draw a policy the values imply).
 - `rules.ts`: what entering a cell does (cost, reward, terminate, teleport, slip probabilities, wind, one-way cells,
   pickups, doors opened by keys), action sets (moves, king's moves, hexagonal moves, turning), composed rule sets and
   `applyRules`.
@@ -7736,6 +7738,9 @@ library for the same computation. They do not set a higher bar than that library
 - `apps/site/plugins/build-docs.ts` (`make docs-catalogue`): the docs catalogue extracted once (about 3 seconds) and
   written as the site's static docs files (section 8); `--if-stale` returns at once when they are newer than the
   engine's source, omai-meta's `extract/` and `schema/`, and the generator.
+- `scripts/copy-assets.mjs`: run after `tsc` by the `build` script of omai-render. It copies every `.css` file under `src/` to
+  `dist/` (tsc does not), so the `import './maths.css'` left in the emitted JavaScript resolves, and fails the build when
+  a relative `.css` import in `dist/` has no file.
 - `scripts/thumbs.ts` (`make thumbs`): the gallery thumbnails. Opens each recipe page of the site in headless Chrome
   (driven over the DevTools protocol, no dependency, four tabs at a time), light and dark, and saves the first figure of
   the page as `apps/site/public/thumbs/<section>/<slug>-<theme>.webp`, which the gallery and the front page show. Unless
