@@ -10,7 +10,7 @@ import { key } from 'mdml-engine/random'
 import { svc } from 'mdml-engine/svm'
 import { stillOf } from 'mdml-render/views'
 import type { ExampleModule, Outcome } from '../_shared/contract.ts'
-import { Row } from '../_shared/figure.tsx'
+import { Figure, Panel } from '../_shared/figure.tsx'
 
 export const meta: ExampleModule['meta'] = {
   title: 'Pause, jump back, compare with the truth',
@@ -24,6 +24,9 @@ interface Result {
   readonly early: Exposition
   readonly final: Exposition
   readonly steps: number
+  readonly earlyAccuracy: number
+  readonly finalAccuracy: number
+  readonly best: number
 }
 
 export function run(): Outcome<Result> {
@@ -37,19 +40,41 @@ export function run(): Outcome<Result> {
     `accuracy at step 3 ${run.fittedAt(3).score(data).toFixed(3)}, at the end ${run.fittedAt(run.t).score(data).toFixed(3)}`,
     `best possible ${(1 - (truth.bayesError ?? 0)).toFixed(3)}; ${run.t} steps, ${run.status}`,
   ]
-  return { result: { early, final, steps: run.t }, tapes: { session: run }, notes }
+  return {
+    result: {
+      early,
+      final,
+      steps: run.t,
+      earlyAccuracy: run.fittedAt(3).score(data),
+      finalAccuracy: run.fittedAt(run.t).score(data),
+      best: 1 - (truth.bayesError ?? 0),
+    },
+    tapes: { session: run },
+    notes,
+  }
 }
 
 export function View({ result }: { result: Result }) {
   return (
-    <Row
-      alt={meta.alt}
-      width={380}
-      height={340}
-      panels={[
-        { title: 'step 3', still: stillOf(result.early, { mode: 'light' }) },
-        { title: `step ${result.steps} (the end)`, still: stillOf(result.final, { mode: 'light' }) },
-      ]}
-    />
+    <Figure width={780} height={410} title={meta.alt}>
+      <Panel
+        x={0}
+        width={390}
+        height={340}
+        title={`after 3 steps: accuracy ${result.earlyAccuracy.toFixed(2)}`}
+        still={stillOf(result.early, { mode: 'light' })}
+      />
+      <Panel
+        x={390}
+        width={390}
+        height={340}
+        title={`after all ${result.steps} steps: accuracy ${result.finalAccuracy.toFixed(2)}`}
+        still={stillOf(result.final, { mode: 'light' })}
+      />
+      <text x={390} y={394} textAnchor="middle" fontFamily="system-ui, sans-serif" fontSize={13} fill="#333333">
+        The same run, stopped and then asked for its earlier state. The best accuracy anyone could reach on this data is{' '}
+        {result.best.toFixed(2)}.
+      </text>
+    </Figure>
   )
 }

@@ -22,7 +22,7 @@ grad of the marginal likelihood written as a plain function, and a Gaussian proc
 
 ![A Gaussian process on noisy sine data, before and after its hyperparameters are learned, each with its uncertainty band](gp/figure.svg)
 
-[gp/main.tsx](gp/main.tsx), tape: [tape.json](gp/tape.json)
+[gp/main.tsx](gp/main.tsx), [gp/README.md](gp/README.md), tape: [tape.json](gp/tape.json)
 
 ## Bayesian logistic regression, approximated four ways
 
