@@ -169,7 +169,7 @@ export function arrow(x1: number, y1: number, x2: number, y2: number, style: Sty
  * A polyline (open by default) or polygon.
  *
  * @param points - The vertices in order.
- * @param style - Stroke, fill, closure, smoothing, arrow head, id and title.
+ * @param style - Stroke, fill, closure, smoothing, rounded corners (`cornerRadius`), arrow head, id and title.
  * @returns The node.
  * @throws OmaiError `value` when a vertex is not a pair of finite numbers.
  * @example
@@ -180,7 +180,13 @@ export function arrow(x1: number, y1: number, x2: number, y2: number, style: Sty
  */
 export function path(
   points: readonly (readonly [number, number])[],
-  style: Style & NodeBase & { readonly closed?: boolean; readonly arrow?: boolean; readonly smooth?: boolean } = {},
+  style: Style &
+    NodeBase & {
+      readonly closed?: boolean
+      readonly arrow?: boolean
+      readonly smooth?: boolean
+      readonly cornerRadius?: number
+    } = {},
 ): PathNode {
   vertices('path', points, 2)
   return { kind: 'path', points, ...style }

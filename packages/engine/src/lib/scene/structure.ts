@@ -115,6 +115,9 @@ export interface StructureNote {
   readonly weight?: 'normal' | 'bold'
 }
 
+/** A side of a node's box: where an orthogonal edge leaves or enters it. */
+export type StructureSide = 'top' | 'right' | 'bottom' | 'left'
+
 /**
  * A node of a {@link Structure}: an id, a label (`\n` starts a new line), a role, an optional enclosing group, detail
  * lines (a muted line under the label; `\n` starts another), value badges (shapes, parameter counts, current values),
@@ -142,6 +145,12 @@ export interface StructureNode {
    * says where it sits, whether a line ties it to the node, and its colour, size and weight.
    */
   readonly note?: string | StructureNote
+  /**
+   * Whether orthogonal edges keep clear of the node (default true, except for an invisible node, shape `none` with no
+   * label, detail or badges, which edges pass through). `false` lets edges and labels cross it (a placeholder that
+   * holds a position, a caption an edge may run over); edges that join the node still start and end at it.
+   */
+  readonly obstacle?: boolean
 }
 
 /**
@@ -151,7 +160,11 @@ export interface StructureNode {
  * label. A label may have several lines (`\n`), and a line written `$...$` is typeset as TeX. `via` lists waypoints the
  * edge passes through, in the same units as node `position`s: under the `manual` layout a straight edge is the
  * polyline through them and an orthogonal one runs right-angled legs between them (other layouts place the nodes
- * themselves and ignore `via`).
+ * themselves and ignore `via`). With `route: 'orthogonal'`, `fromSide` and `toSide` say which side of its end nodes the
+ * edge leaves and enters by (default the side facing the other end), and `fromAt` and `toAt` where along that side
+ * (0 to 1, from the left of a top or bottom side or the top of a left or right one; default the router's choice).
+ * Edges that leave or enter at one port are drawn as one line only when they look the same (colour, width, dash and
+ * kind); edges that look different get ports side by side.
  */
 export interface StructureEdge {
   readonly from: string
@@ -165,6 +178,10 @@ export interface StructureEdge {
   readonly look?: StructureEdgeLook
   readonly labelAt?: number
   readonly via?: readonly (readonly [number, number])[]
+  readonly fromSide?: StructureSide
+  readonly toSide?: StructureSide
+  readonly fromAt?: number
+  readonly toAt?: number
 }
 
 /** A note attached to a node or group of a {@link Structure} (or to the whole structure when `target` is omitted). */

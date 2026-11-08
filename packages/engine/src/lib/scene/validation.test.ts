@@ -140,6 +140,19 @@ describe('the scene builders check their arguments where the drawing is made', (
         expect.objectContaining({ code: 'value', message: expect.stringMatching(pattern) }),
       )
     bad(
+      [
+        {
+          kind: 'path',
+          points: [
+            [0, 0],
+            [1, 1],
+          ],
+          cornerRadius: -2,
+        },
+      ],
+      /children\[0\]: cornerRadius is -2/,
+    )
+    bad(
       [{ kind: 'group', children: [{ kind: 'circle', cx: 0, cy: 0, r: -1 }] }],
       /children\[0\]\.children\[0\]: r is -1/,
     )

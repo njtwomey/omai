@@ -96,6 +96,12 @@ export interface PathNode extends Style, NodeBase {
   readonly closed?: boolean
   readonly arrow?: boolean
   readonly smooth?: boolean
+  /**
+   * Round the corners of the polyline with arcs of this radius, in scene units (default 0: sharp corners). Each corner's
+   * radius is limited to half the shorter of its two segments, so the line still passes through the middle of every
+   * segment; the ends and the arrow head are unchanged. Ignored when `smooth` is set (that splines the whole path).
+   */
+  readonly cornerRadius?: number
 }
 
 /** A text label anchored at a point. */

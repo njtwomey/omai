@@ -18,7 +18,7 @@ import { describe, expect, it } from 'vitest'
 import { lineChart } from '../charts/lines.ts'
 import { figure } from '../figure/figure.ts'
 import { chartToSvg, composeSvg, exportSize, svgDataUrl, svgToPng } from './export.ts'
-import { arrowHeadPoints, smoothPathData, straightPathData } from './paths.ts'
+import { arrowHeadPoints, roundedPathData, smoothPathData, straightPathData } from './paths.ts'
 import { escapeXml, sceneToSvg } from './svg.ts'
 
 describe('sceneToSvg: fill and stroke opacity', () => {
@@ -122,6 +122,22 @@ describe('sceneToSvg', () => {
     ).toBe(true)
     expect(arrowHeadPoints([0, 0], [0, 0], 2)).toBe('0,0 0,0 0,0')
     expect(escapeXml('<a>')).toBe('&lt;a&gt;')
+  })
+  it('writes rounded corners: a quarter circle at each right angle, limited to half the shorter segment', () => {
+    const corner: [number, number][] = [
+      [0, 0],
+      [10, 0],
+      [10, 10],
+    ]
+    expect(roundedPathData(corner, 4)).toBe('M0,0L6,0C8.2092,0 10,1.7908 10,4L10,10')
+    // Half of the shorter segment at most: 10 long segments give a radius of 5 for a request of 50.
+    expect(roundedPathData(corner, 50)).toBe(roundedPathData(corner, 5))
+    expect(roundedPathData(corner, 0)).toBe(straightPathData(corner))
+    expect(roundedPathData(corner.slice(0, 2), 4)).toBe(straightPathData(corner.slice(0, 2)))
+    expect(roundedPathData([...corner, [0, 10]], 3, true).endsWith('Z')).toBe(true)
+    const svg = sceneToSvg(scene(20, 20, [path(corner, { stroke: 'fg', cornerRadius: 4, arrow: true })]))
+    expect(svg).toContain('d="M0,0L6,0C8.2092,0 10,1.7908 10,4L10,10"')
+    expect(svg.match(/<polygon/g)?.length).toBe(1)
   })
 })
 
