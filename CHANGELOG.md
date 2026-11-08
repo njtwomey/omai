@@ -3,6 +3,67 @@
 Versions are released in lockstep for omai-engine, omai-render and omai-meta. Up to 0.1.3 the packages were published as
 mdml-engine, mdml-render and mdml-meta.
 
+## 0.1.5
+
+Closes the gaps found by decksmith while it moved its slides onto omai 0.1.4, and adds the front page to the repository's
+website. Everything new is optional and the defaults draw as before, except where a line below says otherwise.
+
+Packaging and the agent index:
+- `omai-render` now ships `dist/react/maths.css`: the build copies stylesheets after `tsc` and fails if a `.css` import in
+  `dist/` has no file. (0.1.4 imported a file it did not ship.)
+- The diffusion kit (`stochastic`: noise schedules, `forwardSample`, `weightedDiffusionLoss`, `ddimSampler`,
+  `diffusionTrainer`, `scoreNetwork`, `networkModel`), the 2-D target densities (`datasets/densities`) and importance
+  sampling are in `llms.txt` and `index/*.md`, with `@index` tags. Both `slicedWasserstein` functions (`losses`: returns
+  the power unless `root`; `optim`: always the root) are indexed and say which is which.
+
+Render:
+- `chrome={false}` on `FigureFrame` and `SceneFrame` draws the figure bare (no expand, export or settings buttons);
+  `StructureView` takes `chrome={false}` and `zoomControls`.
+- Charts: axis labels follow `figure.fontSize` (`cartesian`, `subplots`); the literal 10 and 12 px sizes in the layers
+  are gone, so labels that were 10 px are now the figure's size (11 px at the default); give `fontSize` or `labelSize`
+  to pin one. Colour bars take `fontSize` and `width` and reserve room for long labels. `adjustable: 'box'` shrinks the
+  plot box for `aspect: 'equal'` instead of widening the ranges. `AxisSpec.ticks` (`interval`, `rotate`, `fontSize`).
+  `points` labels take `labelSize`, `labelPosition` and `labelColour` and show with `symbol: 'none'`. `annotations`
+  takes `regions` (shaded rectangles and bands); `plotRectOf` and `Projection.rect` give the plot rectangle.
+  `vectorField` takes `range` and `ramp`. Matrices take `rowColours`, `colColours` and `marks`, and there is a
+  `maskMatrix`.
+- `DraggableLine` takes `handle` (`bar`, `square` or `circle`; hollow or solid), `DraggablePoints` takes `shape`.
+  `NumberField` takes `parse` and `draftText`, so a value can be shown and typed as words. `Select` takes
+  `appearance="menu"` (a library popup in place of the browser's list; `DatasetPicker` passes it on). `Tex`, `Equation`
+  and `Derivation` take `align`. `SceneView` and `SceneFrame` take `tones` (draw named nodes in other paints).
+- Sessions and players: `useSession` and `useLiveRun` take `active` (nothing computes while false; the tape is kept),
+  expose `disposed` and, on a session, `madeWith` (the config and seed the current run was made with). A callback queued
+  before `dispose()` no longer throws or advances a disposed run. `SessionPlayer` takes `fps`, `onFpsChange`,
+  `eagerToggle` and `statistics`; `SessionPreferencesProvider` and `useSetSessionPreferences` set the defaults (the
+  stored value still wins; `storage={false}` keeps nothing); `PanelFigureProvider` and `usePanelFigure` set the size and
+  type size of every panel; `SessionPanels` takes `figure`. A finished run reports `progress` 1 against its own length.
+
+Structure diagrams (`omai-engine/scene` `structure` and `omai-render/structures`):
+- `StructureNode.position` and `layout: 'manual'`; `look` on nodes and edges (colour, stroke, dash, shape) with the
+  shapes `none` (text only) and `stack`; multi-line labels (`\n`); `bidirectional` and `labelAt` on edges; `describe`
+  takes `target` (an input to output edge, for an autoencoder).
+- Edge labels are drawn above the nodes on a small plate and move off nodes they would cover; group boxes are as wide as
+  their labels; the scene grows to hold labels below shapes and notes (so a diagram can be a little larger and a label a
+  little off where it was). The tree, bipartite, circular and force layouts honour `rankSep` and `nodeSep`.
+
+Engine:
+- Worlds: `valueStyle` for `toScene` and `worldView` values (a paint or a colour ramp, `range`, `maxOpacity`); a `NaN`
+  among the values no longer switches all shading off; `greedyPath`. Scenes: `recolour`.
+- Belief propagation: `granularity: 'factor' | 'message'` takes smaller steps and ends in the same beliefs; every
+  variable's belief is in the observation's frame.
+- `inverseSqrtDecay` (and an `inverseSqrt` schedule in the table); `swissRoll` takes `dimension: 2`;
+  `importanceEstimate` (unbiased estimate with its standard error).
+- Traced states: `Algorithm` documents what a view may read (`observe` and `ctx.log` at emit time; `session.state` is the
+  live object; `stateAt` is exact through checkpoints) and takes an optional `snapshot`, which `useLiveRun` uses when it
+  keeps a state.
+
+Moving from the earlier library, what changes an answer:
+- Random draws come from keys, so a toy example's numbers differ from the old streams.
+- `linearModel`'s `alpha` is the penalty on the per-sample deviance: an old `l2` on a summed loss is `alpha = l2 / n`.
+  Numbers are rounded half to even.
+- A training run's loss is the batch loss before the update, so it is one iteration behind the old figure.
+- The diffusion forward process takes continuous times `t`, where the old code drew integer levels 1 to 1000.
+
 ## 0.1.4
 
 The project is renamed omai (Observable Methods in Machine Learning); the repository is `njtwomey/omai`. Nothing else

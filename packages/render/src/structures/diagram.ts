@@ -276,7 +276,7 @@ function selfLoop(
 }
 
 /** A box as `[x0, y0, x1, y1]`. */
-type Rect = readonly [number, number, number, number]
+type Rect = readonly [x0: number, y0: number, x1: number, y1: number]
 
 const overlaps = (a: Rect, b: Rect): boolean => a[0] < b[2] && b[0] < a[2] && a[1] < b[3] && b[1] < a[3]
 
