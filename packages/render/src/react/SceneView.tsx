@@ -3,7 +3,7 @@
  * resolved for the colour mode, 3-D layers projected, TeX labels typeset, with hover and click hit-testing.
  */
 
-import { type Paint, projectLayers, type Scene, type SceneNode, type Style } from 'omai-engine/scene'
+import { type Paint, projectLayers, recolour, type Scene, type SceneNode, type Style } from 'omai-engine/scene'
 import { type CSSProperties, type PointerEvent, type ReactElement, type ReactNode, useMemo } from 'react'
 import { arrowHeadPoints, smoothPathData, straightPathData } from '../svg/paths.ts'
 import { pngDataUrl } from '../svg/png.ts'
@@ -25,6 +25,11 @@ export interface SceneViewProps {
   readonly onNodeHover?: (id: string | null, node: SceneNode | null) => void
   /** Ids of nodes to draw emphasised (an accent outline). */
   readonly highlight?: readonly string[]
+  /**
+   * Paints to draw named nodes in, by node id (`recolour` in `omai-engine/scene`): the pole of a cart-pole at its limit
+   * in a warning colour, a chosen cell in the accent. The scene itself is not changed.
+   */
+  readonly tones?: Readonly<Record<string, Paint>>
   /** The part of the scene to show, `[x, y, width, height]` in scene coordinates (default all of it): pan and zoom. */
   readonly viewBox?: readonly [number, number, number, number]
   /** Content drawn over the scene, in scene coordinates (overlays, handles). */
@@ -247,7 +252,12 @@ export function SceneView(props: SceneViewProps): ReactElement {
   const { scene, onNodeClick, onNodeHover, highlight = [], children, className, style } = props
   const pageMode = useColourMode()
   const mode = props.mode ?? pageMode
-  const flat = useMemo(() => projectLayers(scene), [scene])
+  const toneKey = props.tones === undefined ? '' : JSON.stringify(props.tones)
+  // biome-ignore lint/correctness/useExhaustiveDependencies: tones are compared by content (`toneKey`), not by identity
+  const flat = useMemo(
+    () => projectLayers(props.tones === undefined ? scene : recolour(scene, props.tones)),
+    [scene, toneKey],
+  )
   const ctx: Ctx = useMemo(() => ({ t: themeTokens(mode), highlight: new Set(highlight) }), [mode, highlight])
   const width = props.width ?? scene.width
   const height = props.height ?? (props.width === undefined ? scene.height : (width * scene.height) / scene.width)

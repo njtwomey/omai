@@ -25,6 +25,13 @@ export interface NumberFieldProps extends NumberSpec {
   readonly onChange: (value: number) => void
   /** How the value shows when not being edited (default {@link formatFieldValue}). */
   readonly format?: (value: number) => string
+  /**
+   * Reads what is typed (default: a decimal number), so a value shown as words by `format` ("none", "strong") can be
+   * typed back. Return `null` for text that is not a value. Bounds and `integer` still apply to what it returns.
+   */
+  readonly parse?: (text: string) => number | null
+  /** The text the field holds when focused for editing (default the value as a plain number; use `format` to start from the words). */
+  readonly draftText?: (value: number) => string
   /** A unit shown beside the label. */
   readonly unit?: string
   /** The dropdown's values (default: 11 between the bounds); `false` hides it. */
@@ -62,7 +69,14 @@ export function NumberField(props: NumberFieldProps): ReactNode {
   const commit = (v: number): void => {
     if (v !== value && Number.isFinite(v)) onChange(v)
   }
-  const draft = useNumberDraft({ value, spec, onCommit: commit, format })
+  const draft = useNumberDraft({
+    value,
+    spec,
+    onCommit: commit,
+    format,
+    ...(props.parse === undefined ? {} : { parse: props.parse }),
+    ...(props.draftText === undefined ? {} : { draftText: props.draftText }),
+  })
   const down = stepNumber(spec, value, -1)
   const up = stepNumber(spec, value, 1)
   const error = draft.error

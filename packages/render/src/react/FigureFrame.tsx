@@ -77,6 +77,11 @@ export interface FigureFrameProps {
   readonly caption?: ReactNode
   /** The content: nodes, or a function of the frame size (to draw larger in the modal). */
   readonly children: ReactNode | ((size: FrameSize) => ReactNode)
+  /**
+   * Draw the figure bare (default true draws the toolbar): false leaves out the expand, export and settings buttons whatever
+   * the other props say, and keeps the title and caption, for a figure placed in a slide or a page of its own.
+   */
+  readonly chrome?: boolean
   /** Offer the expand-to-modal button (default true). */
   readonly expandable?: boolean
   /**
@@ -252,17 +257,20 @@ export function FigureFrame(props: FigureFrameProps): ReactElement {
   const modalExportRef = useRef<HTMLButtonElement | null>(null)
   const scaledRef = useRef<HTMLDivElement | null>(null)
   const playback = props.playback
-  const formats =
-    props.exportFormats ??
-    ([
-      'png',
-      'svg',
-      ...(playback === undefined ? [] : ['gif', ...(canEncodeVideo() ? ['webm'] : [])]),
-    ] as ExportFormat[])
+  const chrome = props.chrome ?? true
+  const formats = !chrome
+    ? []
+    : (props.exportFormats ??
+      ([
+        'png',
+        'svg',
+        ...(playback === undefined ? [] : ['gif', ...(canEncodeVideo() ? ['webm'] : [])]),
+      ] as ExportFormat[]))
+  const expandable = chrome && (props.expandable ?? true)
   const [busy, setBusy] = useState<string | null>(null)
   // Why the last export gave nothing, shown beside the busy readout until the next export starts.
   const [note, setNote] = useState<string | null>(null)
-  const hasTools = formats.length > 0 || (props.expandable ?? true) || props.settings !== undefined
+  const hasTools = formats.length > 0 || expandable || (chrome && props.settings !== undefined)
 
   useEffect(() => {
     if (!expanded) return
@@ -408,7 +416,7 @@ export function FigureFrame(props: FigureFrameProps): ReactElement {
           </Popover>
         </>
       )}
-      {(props.expandable ?? true) && (
+      {expandable && (
         <button
           ref={inModal ? undefined : expandRef}
           type="button"

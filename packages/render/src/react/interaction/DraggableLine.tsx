@@ -23,6 +23,16 @@ export interface DraggableLineProps {
   readonly label?: string
   /** A CSS colour or `var(--wb-…)` token (default the foreground). */
   readonly colour?: string
+  /**
+   * The handle on the line's end. `shape`: a `bar` across the line (the default, 10 by 20), a `square` or a `circle`;
+   * `size`: the side of the square or the diameter of the circle (default 10); `fill`: `hollow` (the page colour, the
+   * default) or `solid` (the line's colour).
+   */
+  readonly handle?: {
+    readonly shape?: 'bar' | 'square' | 'circle'
+    readonly size?: number
+    readonly fill?: 'hollow' | 'solid'
+  }
 }
 
 /**
@@ -113,15 +123,12 @@ export function DraggableLine(props: DraggableLineProps): ReactNode {
         strokeDasharray={dragging ? undefined : '5 4'}
       />
       <g transform={`translate(${top[0]}, ${top[1]})`}>
-        <rect
-          x={vertical ? -5 : -10}
-          y={vertical ? -10 : -5}
-          width={vertical ? 10 : 20}
-          height={vertical ? 20 : 10}
-          rx={3}
-          fill="var(--wb-bg)"
+        <Handle
+          shape={props.handle?.shape ?? 'bar'}
+          size={props.handle?.size ?? 10}
+          vertical={vertical}
+          fill={props.handle?.fill === 'solid' ? colour : 'var(--wb-bg)'}
           stroke={colour}
-          strokeWidth={1.5}
         />
         {props.label !== undefined && (
           <text
@@ -138,4 +145,18 @@ export function DraggableLine(props: DraggableLineProps): ReactNode {
       </g>
     </g>
   )
+}
+
+/** The handle drawn at a line's end: a bar across the line, a square or a circle, centred on the end. */
+function Handle(props: {
+  readonly shape: 'bar' | 'square' | 'circle'
+  readonly size: number
+  readonly vertical: boolean
+  readonly fill: string
+  readonly stroke: string
+}): ReactNode {
+  const { shape, size, vertical, fill, stroke } = props
+  if (shape === 'circle') return <circle r={size / 2} fill={fill} stroke={stroke} strokeWidth={1.5} />
+  const [w, h] = shape === 'square' ? [size, size] : vertical ? [size, 2 * size] : [2 * size, size]
+  return <rect x={-w / 2} y={-h / 2} width={w} height={h} rx={3} fill={fill} stroke={stroke} strokeWidth={1.5} />
 }

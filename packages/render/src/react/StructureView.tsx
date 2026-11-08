@@ -23,6 +23,13 @@ export interface StructureViewProps extends Omit<DiagramOptions, 'overlay' | 'fr
   readonly onNodeClick?: (node: StructureNode) => void
   /** Show the hovered node's details under the diagram (default true). */
   readonly details?: boolean
+  /** Show the zoom and fit buttons under the diagram (default true); the diagram still pans and zooms with the pointer. */
+  readonly zoomControls?: boolean
+  /**
+   * Draw the diagram bare (default true draws the frame's buttons, the zoom buttons and the details line): false leaves
+   * out all three, whatever `frame`, `details` and `zoomControls` say, for a diagram placed in a slide or a page.
+   */
+  readonly chrome?: boolean
   /**
    * Hold the diagram in a `FigureFrame` (an expand button and an export menu above it) at its drawn size: the default,
    * with the frame's export file named `diagram`, or with the given name, title, caption and playback (to record an
@@ -44,7 +51,21 @@ type View = readonly [x: number, y: number, width: number, height: number]
  * @index function React component: draw an engine Structure as a diagram: `<StructureView structure={s} />`
  */
 export function StructureView(props: StructureViewProps): ReactElement {
-  const { structure, overlay, width, onNodeClick, details = true, className, frames, frame = true, ...layout } = props
+  const {
+    structure,
+    overlay,
+    width,
+    onNodeClick,
+    className,
+    frames,
+    frame = true,
+    chrome = true,
+    details: wantDetails = true,
+    zoomControls = true,
+    ...layout
+  } = props
+  const details = chrome && wantDetails
+  const zooming = chrome && zoomControls
   const options: DiagramOptions = { ...layout, ...(overlay === undefined ? {} : { overlay }) }
   // biome-ignore lint/correctness/useExhaustiveDependencies: options are compared by content, frames by reference
   const drawing = useMemo(
@@ -143,7 +164,13 @@ export function StructureView(props: StructureViewProps): ReactElement {
     frame === false ? (
       drawingBox
     ) : (
-      <FigureFrame width={drawnWidth} height={drawnHeight} filename="diagram" {...(frame === true ? {} : frame)}>
+      <FigureFrame
+        width={drawnWidth}
+        height={drawnHeight}
+        filename="diagram"
+        chrome={chrome}
+        {...(frame === true ? {} : frame)}
+      >
         {drawingBox}
       </FigureFrame>
     )
@@ -151,35 +178,39 @@ export function StructureView(props: StructureViewProps): ReactElement {
     <div className={cx('flex w-fit max-w-full flex-col gap-2', className)}>
       {framed}
       {/* The hovered node's details and the zoom buttons share a row under the diagram, so neither covers it. */}
-      <div className="flex min-w-0 items-center justify-between gap-3">
-        {details ? <Details node={hover} overlay={overlay} /> : <span />}
-        <div className="flex shrink-0">
-          <button
-            type="button"
-            className={cx(iconButtonClass, 'rounded-l-md')}
-            aria-label="Zoom in"
-            onClick={() => zoom(1 / 1.3)}
-          >
-            +
-          </button>
-          <button
-            type="button"
-            className={cx(iconButtonClass, '-ml-px')}
-            aria-label="Zoom out"
-            onClick={() => zoom(1.3)}
-          >
-            −
-          </button>
-          <button
-            type="button"
-            className={cx(iconButtonClass, '-ml-px w-auto rounded-r-md px-2 text-xs')}
-            aria-label="Fit"
-            onClick={() => setView(null)}
-          >
-            fit
-          </button>
+      {(details || zooming) && (
+        <div className="flex min-w-0 items-center justify-between gap-3">
+          {details ? <Details node={hover} overlay={overlay} /> : <span />}
+          {zooming && (
+            <div className="flex shrink-0">
+              <button
+                type="button"
+                className={cx(iconButtonClass, 'rounded-l-md')}
+                aria-label="Zoom in"
+                onClick={() => zoom(1 / 1.3)}
+              >
+                +
+              </button>
+              <button
+                type="button"
+                className={cx(iconButtonClass, '-ml-px')}
+                aria-label="Zoom out"
+                onClick={() => zoom(1.3)}
+              >
+                −
+              </button>
+              <button
+                type="button"
+                className={cx(iconButtonClass, '-ml-px w-auto rounded-r-md px-2 text-xs')}
+                aria-label="Fit"
+                onClick={() => setView(null)}
+              >
+                fit
+              </button>
+            </div>
+          )}
         </div>
-      </div>
+      )}
     </div>
   )
 }

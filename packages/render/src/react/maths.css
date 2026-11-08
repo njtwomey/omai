@@ -18,3 +18,28 @@
   font-family: var(--wb-mono-font, ui-monospace, monospace);
   cursor: help;
 }
+
+/* Display equations flush to one side (the `align` prop of Tex, Equation and Derivation): KaTeX centres its block and the
+   MathML block centres itself, so both are put back to the start or the end of the box. */
+.wb-tex-left .katex-display,
+.wb-tex-left .katex-display > .katex {
+  text-align: left;
+}
+
+.wb-tex-right .katex-display,
+.wb-tex-right .katex-display > .katex {
+  text-align: right;
+}
+
+.wb-tex-left math[display="block"] {
+  margin-inline: 0 auto;
+}
+
+.wb-tex-right math[display="block"] {
+  margin-inline: auto 0;
+}
+
+.wb-tex-left .katex-display > .katex > .katex-html,
+.wb-tex-right .katex-display > .katex > .katex-html {
+  display: block;
+}

@@ -29,6 +29,14 @@ describe('parsing and validation', () => {
     expect(checkNumber({ min: 0, max: 1 }, '0.25')).toEqual({ value: 0.25 })
   })
 
+  it('reads a value typed as words with a parse, and still applies the bounds', () => {
+    const words: Record<string, number> = { none: 0, weak: 1, strong: 2 }
+    const parse = (t: string): number | null => words[t.trim().toLowerCase()] ?? null
+    expect(checkNumber({ min: 0, max: 2 }, 'Strong', parse)).toEqual({ value: 2 })
+    expect(checkNumber({ min: 0, max: 1 }, 'strong', parse)).toEqual({ error: 'must be ≤ 1' })
+    expect(checkNumber({ min: 0, max: 2 }, 'loud', parse)).toEqual({ error: 'not a number' })
+  })
+
   it('clamps and rounds programmatic values', () => {
     expect(clampNumber({ min: 0, max: 10, integer: true }, 3.6)).toBe(4)
     expect(clampNumber({ min: 0, max: 10 }, 12)).toBe(10)

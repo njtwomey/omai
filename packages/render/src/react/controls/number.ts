@@ -78,10 +78,15 @@ export function validateNumber(spec: NumberSpec, x: number): string | null {
  *
  * @param spec - The number's rules.
  * @param text - The draft.
+ * @param parse - Reads the draft instead of {@link parseNumber}, for a value shown as words ("none", "strong").
  * @returns The value, or the reason it is refused.
  */
-export function checkNumber(spec: NumberSpec, text: string): NumberCheck {
-  const x = parseNumber(text)
+export function checkNumber(
+  spec: NumberSpec,
+  text: string,
+  parse: (text: string) => number | null = parseNumber,
+): NumberCheck {
+  const x = parse(text)
   if (x === null) return { error: 'not a number' }
   const error = validateNumber(spec, x)
   return error === null ? { value: x } : { error }

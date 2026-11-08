@@ -9,8 +9,8 @@ import { SceneView, type SceneViewProps } from './SceneView.tsx'
 
 /** Props of {@link SceneFrame}. */
 export interface SceneFrameProps
-  extends Pick<SceneViewProps, 'scene' | 'mode' | 'onNodeClick' | 'onNodeHover' | 'highlight' | 'children'>,
-    Pick<FigureFrameProps, 'title' | 'caption' | 'playback' | 'exportFormats' | 'className'> {
+  extends Pick<SceneViewProps, 'scene' | 'mode' | 'onNodeClick' | 'onNodeHover' | 'highlight' | 'tones' | 'children'>,
+    Pick<FigureFrameProps, 'title' | 'caption' | 'playback' | 'exportFormats' | 'chrome' | 'expandable' | 'className'> {
   /** The largest drawn width and height (default 720 by 720); the scene keeps its aspect and never grows. */
   readonly maxWidth?: number
   readonly maxHeight?: number
@@ -64,6 +64,8 @@ export function SceneFrame(props: SceneFrameProps): ReactElement {
       {...(caption === undefined ? {} : { caption })}
       {...(playback === undefined ? {} : { playback })}
       {...(exportFormats === undefined ? {} : { exportFormats })}
+      {...(props.chrome === undefined ? {} : { chrome: props.chrome })}
+      {...(props.expandable === undefined ? {} : { expandable: props.expandable })}
       {...(props.className === undefined ? {} : { className: props.className })}
     >
       {(frame) => (
@@ -75,6 +77,7 @@ export function SceneFrame(props: SceneFrameProps): ReactElement {
           {...(props.onNodeClick === undefined ? {} : { onNodeClick: props.onNodeClick })}
           {...(props.onNodeHover === undefined ? {} : { onNodeHover: props.onNodeHover })}
           {...(props.highlight === undefined ? {} : { highlight: props.highlight })}
+          {...(props.tones === undefined ? {} : { tones: props.tones })}
         >
           {props.children}
         </SceneView>

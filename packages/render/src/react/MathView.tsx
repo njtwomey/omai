@@ -12,6 +12,9 @@ import { type EquationTemplate, toTex } from '../maths/live.ts'
 import { macros as sharedMacros } from '../maths/macros.ts'
 import { type TexOutput, texToHtml } from '../maths/tex.ts'
 
+/** Where a display equation sits in its box. */
+export type Align = 'left' | 'center' | 'right'
+
 interface MathSettings {
   readonly macros: Readonly<Record<string, string>>
   readonly output: TexOutput
@@ -43,13 +46,15 @@ export function MathProvider(props: {
  * TeX typeset by KaTeX with the shared macros: `<Tex>{String.raw`\xvec^\top \thetavec`}</Tex>`. Invalid input shows
  * KaTeX's error rather than throwing.
  *
- * @param props - The TeX as children, display mode, extra macros, class and style.
+ * @param props - The TeX as children, display mode, alignment of a display equation, extra macros, class and style.
  * @returns The typeset maths.
  * @index function React component: typeset TeX with the shared macros: `<Tex display>{source}</Tex>`
  */
 export function Tex(props: {
   readonly children: string
   readonly display?: boolean
+  /** Where a display equation sits in its box (default `center`, as KaTeX draws it); `left` and `right` flush it. */
+  readonly align?: Align
   readonly macros?: Readonly<Record<string, string>>
   readonly className?: string
   readonly style?: CSSProperties
@@ -66,8 +71,12 @@ export function Tex(props: {
     [children, display, macros, settings],
   )
   const Tag = display ? 'div' : 'span'
+  const className =
+    props.align === undefined || props.align === 'center'
+      ? props.className
+      : [props.className, `wb-tex-${props.align}`].filter(Boolean).join(' ')
   // biome-ignore lint/security/noDangerouslySetInnerHtml: KaTeX output, from TeX with only \htmlClass trusted
-  return <Tag className={props.className} style={props.style} dangerouslySetInnerHTML={{ __html: html }} />
+  return <Tag className={className} style={props.style} dangerouslySetInnerHTML={{ __html: html }} />
 }
 
 /**
@@ -81,6 +90,8 @@ export function Tex(props: {
 export function Equation(props: {
   readonly children: EquationTemplate | string
   readonly display?: boolean
+  /** Where the equation sits in its box (default `center`). */
+  readonly align?: Align
   readonly className?: string
   readonly style?: CSSProperties
 }): ReactElement {
@@ -88,6 +99,7 @@ export function Equation(props: {
   return (
     <Tex
       display={props.display ?? true}
+      {...(props.align === undefined ? {} : { align: props.align })}
       {...(props.className === undefined ? {} : { className: props.className })}
       {...(props.style === undefined ? {} : { style: props.style })}
     >
@@ -99,16 +111,22 @@ export function Equation(props: {
 /**
  * Steps of a derivation as aligned equations (an `aligned` environment, one step per row, each with an optional note).
  *
- * @param props - The steps (see `derivationTex`) and a class.
+ * @param props - The steps (see `derivationTex`), their alignment in the box and a class.
  * @returns The typeset derivation.
  * @index function React component: aligned derivation steps with notes: `<Derivation steps={steps} />`
  */
 export function Derivation(props: {
   readonly steps: readonly DerivationStep[]
+  /** Where the steps sit in their box (default `center`). */
+  readonly align?: Align
   readonly className?: string
 }): ReactElement {
   return (
-    <Tex display {...(props.className === undefined ? {} : { className: props.className })}>
+    <Tex
+      display
+      {...(props.align === undefined ? {} : { align: props.align })}
+      {...(props.className === undefined ? {} : { className: props.className })}
+    >
       {derivationTex(props.steps)}
     </Tex>
   )

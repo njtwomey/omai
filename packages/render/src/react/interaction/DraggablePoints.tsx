@@ -4,7 +4,7 @@
  */
 
 import type { Point2 } from 'omai-engine/numerics/geometry'
-import { type KeyboardEvent, type ReactNode, useState } from 'react'
+import { type KeyboardEvent, type ReactNode, type PointerEvent as ReactPointerEvent, useState } from 'react'
 import type { Constraint } from './constraints.ts'
 import { Backdrop, useOverlay } from './InteractionOverlay.tsx'
 
@@ -22,8 +22,10 @@ export interface DraggablePointsProps {
   readonly max?: number
   /** A double click (or Delete key) on a point removes it (default false). */
   readonly remove?: boolean
-  /** Handle radius in pixels (default 6). */
+  /** Handle radius in pixels (default 6); a square handle has this as its half side. */
   readonly radius?: number
+  /** The handle's shape (default `circle`). */
+  readonly shape?: 'circle' | 'square'
   /** Handle colour (default the accent token). */
   readonly colour?: string | ((index: number) => string)
   /** Accessible names of the handles (default "point 1", ...). */
@@ -43,7 +45,7 @@ export interface DraggablePointsProps {
  * @index function React component: points the reader drags, adds or removes: `<DraggablePoints points={pts} onChange={setPts} add />`
  */
 export function DraggablePoints(props: DraggablePointsProps): ReactNode {
-  const { points, onChange, add = false, remove = false, radius = 6, labels, onActive } = props
+  const { points, onChange, add = false, remove = false, radius = 6, shape = 'circle', labels, onActive } = props
   const { projection, dataOf } = useOverlay()
   const [active, setActive] = useState(-1)
   const ruleFor = (i: number): Constraint | undefined => props.constrainEach?.(i) ?? props.constrain
@@ -118,40 +120,37 @@ export function DraggablePoints(props: DraggablePointsProps): ReactNode {
       {points.map((p, i) => {
         const [cx, cy] = projection.toPixel(p)
         if (!Number.isFinite(cx) || !Number.isFinite(cy)) return null
-        return (
-          // biome-ignore lint/a11y/useSemanticElements: an SVG handle; there is no native draggable point
-          <circle
-            // biome-ignore lint/suspicious/noArrayIndexKey: points are identified by position in the list
-            key={i}
-            cx={cx}
-            cy={cy}
-            r={i === active ? radius + 2 : radius}
-            role="button"
-            tabIndex={0}
-            aria-label={labels?.[i] ?? `point ${i + 1}`}
-            fill={colourOf(i)}
-            stroke="var(--wb-bg, #fff)"
-            strokeWidth={2}
-            style={{ cursor: i === active ? 'grabbing' : 'grab', outline: 'none' }}
-            onPointerDown={(e) => {
-              e.stopPropagation()
-              e.currentTarget.setPointerCapture(e.pointerId)
-              setActive(i)
-              onActive?.(i)
-            }}
-            onPointerMove={(e) => {
-              if (e.currentTarget.hasPointerCapture(e.pointerId)) move(i, dataOf(e))
-            }}
-            onPointerUp={() => {
-              setActive(-1)
-              onActive?.(-1)
-            }}
-            onDoubleClick={() => {
-              if (remove) onChange(points.filter((_, j) => j !== i))
-            }}
-            onKeyDown={(e) => nudge(i, e)}
-          />
-        )
+        const r = i === active ? radius + 2 : radius
+        const handle = {
+          role: 'button',
+          tabIndex: 0,
+          'aria-label': labels?.[i] ?? `point ${i + 1}`,
+          fill: colourOf(i),
+          stroke: 'var(--wb-bg, #fff)',
+          strokeWidth: 2,
+          style: { cursor: i === active ? 'grabbing' : 'grab', outline: 'none' },
+          onPointerDown: (e: ReactPointerEvent<SVGElement>): void => {
+            e.stopPropagation()
+            e.currentTarget.setPointerCapture(e.pointerId)
+            setActive(i)
+            onActive?.(i)
+          },
+          onPointerMove: (e: ReactPointerEvent<SVGElement>): void => {
+            if (e.currentTarget.hasPointerCapture(e.pointerId)) move(i, dataOf(e))
+          },
+          onPointerUp: (): void => {
+            setActive(-1)
+            onActive?.(-1)
+          },
+          onDoubleClick: (): void => {
+            if (remove) onChange(points.filter((_, j) => j !== i))
+          },
+          onKeyDown: (e: KeyboardEvent<SVGElement>): void => nudge(i, e),
+        } as const
+        // biome-ignore lint/suspicious/noArrayIndexKey: points are identified by position in the list
+        if (shape === 'square') return <rect key={i} x={cx - r} y={cy - r} width={2 * r} height={2 * r} {...handle} />
+        // biome-ignore lint/suspicious/noArrayIndexKey: points are identified by position in the list
+        return <circle key={i} cx={cx} cy={cy} r={r} {...handle} />
       })}
     </g>
   )

@@ -20,12 +20,14 @@ import { SeedInput } from './controls/SeedInput.tsx'
 import { Select } from './controls/Select.tsx'
 import { SpaceControls } from './controls/SpaceControls.tsx'
 import { Toggle } from './controls/Toggle.tsx'
+import { FigureFrame } from './FigureFrame.tsx'
 import { Brush } from './interaction/Brush.tsx'
 import { DraggableLine } from './interaction/DraggableLine.tsx'
 import { DraggablePoints } from './interaction/DraggablePoints.tsx'
 import { InteractionOverlay } from './interaction/InteractionOverlay.tsx'
 import { NearestHover } from './interaction/NearestHover.tsx'
 import { linearProjection } from './interaction/projection.ts'
+import { Tex } from './MathView.tsx'
 import { Player } from './Player.tsx'
 import { StructureView } from './StructureView.tsx'
 import { ThresholdExplorer } from './ThresholdExplorer.tsx'
@@ -295,5 +297,89 @@ describe('registry selectors render on the server', () => {
     )
     expect(game).toContain('2 agents')
     expect(game).toContain('observations (player_0)')
+  })
+
+  it('draws a figure and a structure bare with chrome off, and keeps the title', () => {
+    const framed = renderToString(
+      <FigureFrame title="Loss" width={200} height={100}>
+        <span>x</span>
+      </FigureFrame>,
+    )
+    expect(framed).toContain('Expand')
+    const bare = renderToString(
+      <FigureFrame title="Loss" width={200} height={100} chrome={false}>
+        <span>x</span>
+      </FigureFrame>,
+    )
+    expect(bare).toContain('Loss')
+    expect(bare).not.toContain('Expand')
+    expect(bare).not.toContain('Export')
+    const s = structure(
+      'tree',
+      [
+        { id: 'r', label: 'root', role: 'internal' },
+        { id: 'l', label: 'leaf', role: 'leaf' },
+      ],
+      [{ from: 'r', to: 'l' }],
+    )
+    const view = renderToString(<StructureView structure={s} chrome={false} />)
+    expect(view).toContain('data-node-id="r"')
+    for (const gone of ['Zoom in', 'Expand', 'Export', 'Hover a node']) expect(view).not.toContain(gone)
+    const noZoom = renderToString(<StructureView structure={s} zoomControls={false} />)
+    expect(noZoom).not.toContain('Zoom in')
+    expect(noZoom).toContain('Hover a node')
+  })
+
+  it('draws drag handles as a bar, a square or a circle, hollow or solid', () => {
+    const projection = linearProjection({ x: [0, 10], y: [0, 1], width: 200, height: 100 })
+    const line = (handle?: { shape?: 'bar' | 'square' | 'circle'; size?: number; fill?: 'hollow' | 'solid' }): string =>
+      renderToString(
+        <InteractionOverlay projection={projection} width={200} height={100}>
+          <DraggableLine
+            axis="x"
+            value={4}
+            onChange={noop}
+            colour="red"
+            {...(handle === undefined ? {} : { handle })}
+          />
+        </InteractionOverlay>,
+      )
+    expect(line()).toContain('width="10" height="20"')
+    expect(line({ shape: 'square', size: 8, fill: 'solid' })).toMatch(/width="8" height="8"[^>]*fill="red"/)
+    expect(line({ shape: 'circle', size: 12 })).toContain('r="6"')
+    const dots = renderToString(
+      <InteractionOverlay projection={projection} width={200} height={100}>
+        <DraggablePoints points={[[2, 0.5]]} onChange={noop} shape="square" radius={4} />
+      </InteractionOverlay>,
+    )
+    expect(dots).toContain('width="8" height="8"')
+    expect(dots).not.toContain('<circle')
+  })
+
+  it('opens a select as the library menu instead of the native list', () => {
+    const native = renderToString(<Select label="m" value="a" options={['a', 'b']} onChange={noop} />)
+    expect(native).toContain('<select')
+    const menu = renderToString(<Select label="m" value="b" options={['a', 'b']} onChange={noop} appearance="menu" />)
+    expect(menu).not.toContain('<select')
+    expect(menu).toContain('aria-haspopup="listbox"')
+    expect(menu).toContain('>b<')
+  })
+
+  it('flushes a display equation left or right with a class', () => {
+    expect(renderToString(<Tex display>x</Tex>)).not.toContain('wb-tex-')
+    expect(
+      renderToString(
+        <Tex display align="left">
+          x
+        </Tex>,
+      ),
+    ).toContain('wb-tex-left')
+    expect(
+      renderToString(
+        <Tex display align="right" className="a">
+          x
+        </Tex>,
+      ),
+    ).toContain('class="a wb-tex-right"')
   })
 })

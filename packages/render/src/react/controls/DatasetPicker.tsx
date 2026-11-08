@@ -72,6 +72,8 @@ export interface DatasetPickerProps {
   /** Knobs to leave out (say `n`, when the page fixes the sample size). */
   readonly exclude?: readonly string[]
   readonly label?: ReactNode
+  /** How the entries open: the browser's `native` select (default) or the library's `menu` popup (see `Select`). */
+  readonly appearance?: 'native' | 'menu'
   readonly disabled?: boolean
 }
 
@@ -96,6 +98,7 @@ export function DatasetPicker(props: DatasetPickerProps): ReactNode {
         options={collection.entries.map((e) => ({ value: e.name, label: e.title }))}
         onChange={(name) => onChange(selectEntry(collection, name, value.seed))}
         disabled={disabled}
+        {...(props.appearance === undefined ? {} : { appearance: props.appearance })}
       />
       <DatasetKnobs
         entry={entry}

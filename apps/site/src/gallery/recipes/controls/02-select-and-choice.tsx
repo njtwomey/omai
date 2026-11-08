@@ -8,7 +8,7 @@ export const recipe: Recipe = {
   title: 'Select and choice',
   question: 'How do I let the reader pick from a list, and step through it without opening it?',
   explain:
-    '`Select` keeps its options in a menu, with previous and next arrows either side that cycle through them in place, wrapping at the ends; good for datasets and models. `Choice` shows two to five short options side by side; `cycle` gives it the arrows too. Options are values or `{ value, label }`.',
+    '`Select` keeps its options in a menu, with previous and next arrows either side that cycle through them in place, wrapping at the ends; good for datasets and models. `Choice` shows two to five short options side by side; `cycle` gives it the arrows too. Options are values or `{ value, label }`. `appearance="menu"` opens them in the library\'s own popup instead of the browser\'s list, so the list stays inside a scaled slide or island.',
 }
 
 const FIGURE = figure()
@@ -26,15 +26,19 @@ export default function SelectAndChoice(): ReactNode {
   const mode = useColourMode()
   const [curve, setCurve] = useState<CurveId>('sin')
   const [scale, setScale] = useState(1)
+  const [shift, setShift] = useState<'none' | 'up' | 'down'>('none')
   const option = useMemo(() => {
     const { f, label } = curves[curve]
-    return lineChart([{ x: xs, y: xs.map((x) => scale * f(x)), name: label }], {
-      mode,
-      figure: FIGURE,
-      x: { label: 'x' },
-      y: { label: 'y', limits: [-3, 3] },
-    })
-  }, [curve, scale, mode])
+    return lineChart(
+      [{ x: xs, y: xs.map((x) => scale * f(x) + (shift === 'up' ? 1 : shift === 'down' ? -1 : 0)), name: label }],
+      {
+        mode,
+        figure: FIGURE,
+        x: { label: 'x' },
+        y: { label: 'y', limits: [-3, 3] },
+      },
+    )
+  }, [curve, scale, shift, mode])
   return (
     <div className="flex flex-col gap-3">
       <ControlPanel columns={2}>
@@ -43,6 +47,17 @@ export default function SelectAndChoice(): ReactNode {
           value={curve}
           onChange={setCurve}
           options={Object.entries(curves).map(([value, c]) => ({ value: value as CurveId, label: c.label }))}
+        />
+        <Select
+          label="offset (menu)"
+          value={shift}
+          onChange={setShift}
+          appearance="menu"
+          options={[
+            { value: 'none', label: 'no offset' },
+            { value: 'up', label: 'up by one' },
+            { value: 'down', label: 'down by one' },
+          ]}
         />
         <Choice label="amplitude" value={scale} onChange={setScale} options={[0.5, 1, 2, 3]} cycle />
       </ControlPanel>

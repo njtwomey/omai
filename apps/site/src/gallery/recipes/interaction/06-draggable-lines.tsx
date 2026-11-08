@@ -18,7 +18,7 @@ export const recipe: Recipe = {
   title: 'Draggable lines',
   question: 'How do I let the reader drag a threshold or a level on the figure, in step with its control?',
   explain:
-    '`DraggableLine` draws a vertical (`axis="x"`) or horizontal (`axis="y"`) line inside an `InteractionOverlay` and calls `onChange` as the reader drags it. Bind its `value` and `onChange` to the same state as a `NumberField`, and the line and the control move together whichever one is used. It snaps to `step`, stays within `min` and `max`, and takes the arrow keys once focused (Shift for ten steps). Give the chart a fixed figure and fixed limits so nothing moves under the hand. Here: drag x to shade P(X ≤ x) under the normal density, and the level to mark where the density is at least that high.',
+    '`DraggableLine` draws a vertical (`axis="x"`) or horizontal (`axis="y"`) line inside an `InteractionOverlay` and calls `onChange` as the reader drags it. Bind its `value` and `onChange` to the same state as a `NumberField`, and the line and the control move together whichever one is used. It snaps to `step`, stays within `min` and `max`, and takes the arrow keys once focused (Shift for ten steps). Give the chart a fixed figure and fixed limits so nothing moves under the hand. `handle` sets the end handle: a `bar` (the default), a `square` or a `circle`, hollow or `solid`, and `DraggablePoints` takes `shape` too. Here: drag x to shade P(X ≤ x) under the normal density, and the level to mark where the density is at least that high.',
 }
 
 const FIGURE = figure({ width: 640, height: 360 })
@@ -83,6 +83,7 @@ export default function DraggableLines(): ReactNode {
                   max={0.4}
                   step={0.005}
                   colour="var(--wb-tab2)"
+                  handle={{ shape: 'square', size: 9, fill: 'solid' }}
                   label={`level ${level.toFixed(3)}`}
                 />
               </InteractionOverlay>
