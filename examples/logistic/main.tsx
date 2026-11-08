@@ -25,9 +25,11 @@ import {
 import { key } from 'mdml-engine/random'
 import { eye, matmul, mul, neg, tensor, toArray, toFlat, type Value } from 'mdml-engine/tensor'
 import { recorder, tracePolicy } from 'mdml-engine/trace'
-import { cartesian, contours, heatmap, lines, points } from 'mdml-render/charts'
+import { cartesian, contours, lines, points } from 'mdml-render/charts'
+import { figure } from 'mdml-render/figure'
 import type { ExampleModule, Outcome } from '../_shared/contract.ts'
-import { Row } from '../_shared/figure.tsx'
+import { Figure, Panel } from '../_shared/figure.tsx'
+import { axesOf, classMap, gridOfValues, gridRows, windowOf } from '../_shared/maps.ts'
 
 export const meta: ExampleModule['meta'] = {
   title: 'Bayesian logistic regression, approximated four ways',
@@ -42,9 +44,12 @@ interface Result {
   readonly labels: number[]
   readonly nuts: number[][]
   readonly ellipses: { readonly name: string; readonly colour: string; readonly sample: number[][] }[]
-  readonly grid: number[]
+  /** On the grid of `axesOf(windowOf(rows), GRID)`: the probability of class 1 from the NUTS draws, and the true one. */
+  readonly probability: number[][]
   readonly trueProbability: number[][]
 }
+
+const GRID = 60
 
 const mean = (p: Posterior) =>
   p
@@ -98,21 +103,30 @@ export function run(): Outcome<Result> {
 
   // What the figure draws: draws of each posterior, and the true class probability on a grid of the plane.
   const draws = (p: Posterior, k: number): number[][] => toArray(p.sample(key(k), 4000)['w'] as Value) as number[][]
-  const grid = Array.from({ length: 41 }, (_, i) => -8 + (i * 16) / 40)
   if (truth.posterior === undefined) throw new Error('blobs carries its class posterior')
-  const classes = toArray(truth.posterior(tensor(grid.flatMap((b) => grid.map((a) => [a, b]))))) as number[][]
+  const cells = gridRows(axesOf(windowOf(rows), GRID))
+  const classes = toArray(truth.posterior(tensor(cells))) as number[][]
+  // The predicted probability: the NUTS draws pushed through the logistic function over the plane, averaged.
+  const keep = draws(nuts, 5).filter((_, i) => i % 10 === 0)
+  const probability = cells.map(([a = 0, b = 0]) => {
+    const total = keep.reduce((acc, w) => acc + 1 / (1 + Math.exp(-((w[0] ?? 0) + (w[1] ?? 0) * a + (w[2] ?? 0) * b))), 0)
+    return total / keep.length
+  })
   const result: Result = {
     rows,
     labels: y,
     nuts: draws(nuts, 5),
     ellipses: [
       { name: 'NUTS', colour: '#222222', sample: draws(nuts, 5) },
-      { name: 'Laplace', colour: '#d95f02', sample: draws(laplace, 6) },
-      { name: 'mean-field VI', colour: '#7570b3', sample: draws(meanField, 7) },
-      { name: 'full-rank VI', colour: '#1b9e77', sample: draws(fullRank, 8) },
+      { name: 'Laplace', colour: '#d62728', sample: draws(laplace, 6) },
+      { name: 'mean-field VI', colour: '#9467bd', sample: draws(meanField, 7) },
+      { name: 'full-rank VI', colour: '#2ca02c', sample: draws(fullRank, 8) },
     ],
-    grid,
-    trueProbability: grid.map((_, i) => grid.map((__, j) => classes[i * grid.length + j]?.[1] ?? 0)),
+    probability: gridOfValues(probability, GRID),
+    trueProbability: gridOfValues(
+      classes.map((r) => r[1] ?? 0),
+      GRID,
+    ),
   }
   return { result, tapes: { 'full-rank-vi': tape.run() }, notes }
 }
@@ -136,6 +150,8 @@ function ellipse(draws: number[][]): { x: number[]; y: number[] } {
 
 export function View({ result }: { result: Result }) {
   const thin = result.nuts.filter((_, i) => i % 16 === 0)
+  const curves = result.ellipses.map((e) => ({ ...ellipse(e.sample), name: e.name, colour: e.colour, width: 2 }))
+  const window = windowOf([...thin.map((r) => [r[1] ?? 0, r[2] ?? 0]), ...curves.flatMap((c) => c.x.map((x, i) => [x, c.y[i] ?? 0]))], 0.04)
   const left = cartesian(
     [
       points([
@@ -146,65 +162,52 @@ export function View({ result }: { result: Result }) {
           colour: '#8a94a0',
           size: 3,
           opacity: 0.4,
+          outline: false,
         },
       ]),
-      lines(result.ellipses.map((e) => ({ ...ellipse(e.sample), name: e.name, colour: e.colour, width: 2 }))),
+      lines(curves),
     ],
-    { x: { label: 'weight of feature 1' }, y: { label: 'weight of feature 2' }, legend: true },
+    {
+      figure: figure({ width: 470, height: 400, padding: { top: 30, right: 12, bottom: 38, left: 46 } }),
+      x: { label: 'weight of feature 1', limits: [...window.x] },
+      y: { label: 'weight of feature 2', limits: [...window.y] },
+      legend: true,
+    },
   )
 
-  // The predicted probability: the NUTS draws pushed through the logistic function over the plane.
-  const keep = result.nuts.filter((_, i) => i % 10 === 0)
-  const probability = result.grid.map((b) =>
-    result.grid.map(
-      (a) =>
-        keep.reduce((acc, w) => acc + 1 / (1 + Math.exp(-((w[0] ?? 0) + (w[1] ?? 0) * a + (w[2] ?? 0) * b))), 0) /
-        keep.length,
-    ),
-  )
-  const right = cartesian(
-    [
-      heatmap(probability, {
-        x: result.grid,
-        y: result.grid,
-        smooth: 'contours',
-        levels: 10,
-        ramp: 'rdbu',
-        range: [0, 1],
-        label: 'P(class 1)',
-        opacity: 0.8,
-      }),
+  const mapWindow = windowOf(result.rows)
+  const axes = axesOf(mapWindow, GRID)
+  const right = classMap({
+    window: mapWindow,
+    field: result.probability,
+    centre: 0.5,
+    range: [0, 1],
+    label: 'P(class 1)',
+    boundary: 0.5,
+    extra: [
       contours(result.trueProbability, {
-        x: result.grid,
-        y: result.grid,
+        x: axes.x,
+        y: axes.y,
         levels: [0.5],
         labels: false,
         colour: 'fg',
-        width: 2.5,
+        width: 2,
         dash: 'dashed',
         name: 'true boundary',
       }),
-      points([
-        {
-          x: result.rows.map((r) => r[0] ?? 0),
-          y: result.rows.map((r) => r[1] ?? 0),
-          groups: result.labels,
-          groupNames: { 0: 'class 0', 1: 'class 1' },
-          size: 6,
-        },
-      ]),
     ],
-    { x: { label: 'feature 1' }, y: { label: 'feature 2' } },
-  )
+    rows: result.rows,
+    labels: result.labels,
+    classNames: ['class 0', 'class 1'],
+    width: 530,
+    height: 400,
+    xLabel: 'feature 1',
+    yLabel: 'feature 2',
+  })
   return (
-    <Row
-      alt={meta.alt}
-      width={420}
-      height={360}
-      panels={[
-        { title: 'the weights: 95% regions', still: left },
-        { title: 'predicted probability (NUTS) and the true boundary', still: right },
-      ]}
-    />
+    <Figure width={1000} height={426} title={meta.alt}>
+      <Panel x={0} width={470} height={400} title="posterior of the two slope weights: 95% regions" still={left} />
+      <Panel x={470} width={530} height={400} title="P(class 1) from NUTS, boundary at 0.5, true boundary dashed" still={right} />
+    </Figure>
   )
 }

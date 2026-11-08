@@ -80,6 +80,8 @@ export interface ClassMapOptions {
   /** Class index of each row (0 or 1). */
   readonly labels: readonly number[]
   readonly classNames: readonly [string, string]
+  /** Further layers drawn over the map and under the rows (for example a second contour, the true boundary). */
+  readonly extra?: readonly Layer[]
   /** Rows to ring (the support vectors), with the legend name. */
   readonly ringed?: readonly number[]
   readonly ringName?: string
@@ -119,6 +121,7 @@ export function classMap(o: ClassMapOptions): unknown {
         labels: false,
       }),
     )
+  layers.push(...(o.extra ?? []))
   for (const c of [0, 1] as const) {
     const idx = o.labels.flatMap((l, i) => (l === c ? [i] : []))
     layers.push(
@@ -221,4 +224,41 @@ export function densityMap(o: {
     y: { label: o.yLabel, limits: [...o.window.y] },
     legend: rows.length > 0 && o.names !== undefined,
   })
+}
+
+/**
+ * The layers of a field on one pale ramp with its own contours, to draw paths or rows over: the heat map covers exactly
+ * `window` (set the axes to the same window) and the contours follow the same field. {@link densityMap} is this plus
+ * rows; use this when the layers over it are lines.
+ */
+export function fieldLayers(o: {
+  readonly window: Window
+  readonly field: readonly (readonly number[])[]
+  readonly label: string
+  readonly levels?: number | readonly number[]
+  readonly colourBar?: boolean
+  /** The values at the two ends of the ramp (default the field's own extent; a density starts at 0). */
+  readonly range?: readonly [number, number]
+}): Layer[] {
+  const axes = axesOf(o.window, o.field.length)
+  return [
+    heatmap(o.field, {
+      x: o.window.x,
+      y: o.window.y,
+      ramp: DENSITY_RAMP,
+      range: o.range ?? [Math.min(...o.field.flat()), Math.max(...o.field.flat())],
+      resolution: 96,
+      label: o.label,
+      colourBar: o.colourBar ?? true,
+    }),
+    contours(o.field, {
+      x: axes.x,
+      y: axes.y,
+      levels: o.levels ?? 8,
+      colour: 'fg',
+      width: 1,
+      opacity: 0.45,
+      labels: false,
+    }),
+  ]
 }
