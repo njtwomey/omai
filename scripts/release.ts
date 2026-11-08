@@ -82,9 +82,7 @@ edits.push({ file: versionFile, text: versionOut })
 const tag = `v${next}`
 if (dry) {
   console.log(`release (dry run): would write ${edits.map((e) => e.file).join(', ')}`)
-  console.log(
-    `release (dry run): would commit "Release ${next}" and tag ${tag}${push ? ', then push' : ''}`,
-  )
+  console.log(`release (dry run): would commit "Release ${next}" and tag ${tag}${push ? ', then push' : ''}`)
   process.exit(0)
 }
 for (const e of edits) writeFileSync(join(ROOT, e.file), e.text)
