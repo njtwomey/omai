@@ -4,8 +4,9 @@
  * records: the draws over the true density contours, and the trace of one coordinate. The convergence diagnostics (R-hat
  * and effective sample size) are computed from the same draws.
  */
-import { banana, type Chains, nuts, parameterDraws, summary, thin } from 'mdml-engine/sampling'
+
 import { key } from 'mdml-engine/random'
+import { banana, type Chains, nuts, parameterDraws, summary, thin } from 'mdml-engine/sampling'
 import { toFlat } from 'mdml-engine/tensor'
 import { type Run, recorder, tracePolicy } from 'mdml-engine/trace'
 import { cartesian, contours, lines, points } from 'mdml-render/charts'

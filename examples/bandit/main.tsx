@@ -7,7 +7,7 @@
 import { banditAlgorithm, epsilonGreedyBandit, runBandit, thompsonBernoulli, ucb1 } from 'mdml-engine/agents'
 import { bernoulliBandit } from 'mdml-engine/environments'
 import { key } from 'mdml-engine/random'
-import { type Run, metricSeries, recorder, runAlgorithm, tracePolicy } from 'mdml-engine/trace'
+import { metricSeries, type Run, recorder, runAlgorithm, tracePolicy } from 'mdml-engine/trace'
 import { barChart } from 'mdml-render/charts'
 import { runsChart } from 'mdml-render/trace'
 import type { ExampleModule, Outcome } from '../_shared/contract.ts'
