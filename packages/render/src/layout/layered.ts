@@ -8,12 +8,14 @@ import { maxOf, minOf } from 'omai-engine/base'
 import {
   boxBoundary,
   type EdgeRoute,
+  type EdgeRouting,
   type GraphLayout,
   groupBoxes,
   type LayoutBox,
   type LayoutGraph,
   normaliseLayout,
 } from './graph.ts'
+import { separateRoutes, sideReach } from './orthogonal.ts'
 
 /** Options of {@link layered}. */
 export interface LayeredOptions {
@@ -27,6 +29,14 @@ export interface LayeredOptions {
   readonly sweeps?: number
   /** Space around the drawing (default 16). */
   readonly margin?: number
+  /**
+   * How edges are drawn (default `straight`: polylines through the dummies of the ranks they cross). `orthogonal`
+   * routes every edge through the channels between ranks: down from the source, across the channel, down through the
+   * column of each rank it skips (the dummy of a long edge), across the next channel, and into the target
+   * perpendicular to its side, with edges that leave or enter at one port merged and parallel runs in a channel on
+   * tracks of their own.
+   */
+  readonly route?: EdgeRouting
 }
 
 interface Item {
@@ -324,12 +334,16 @@ export function layered(graph: LayoutGraph, options: LayeredOptions = {}): Graph
 
   // Rank depths: each rank as tall as its tallest node.
   const rankY: number[] = []
+  const bandTop: number[] = []
+  const bandBottom: number[] = []
   let y = 0
   layers.forEach((layer, r) => {
     const h = Math.max(0, maxOf(layer.map((v) => items.get(v)?.height ?? 0)))
     if (r > 0) y += rankSep
+    bandTop.push(y)
     rankY.push(y + h / 2)
     y += h
+    bandBottom.push(y)
   })
   const place = (v: string): LayoutBox => {
     const it = items.get(v) as Item
@@ -341,6 +355,67 @@ export function layered(graph: LayoutGraph, options: LayeredOptions = {}): Graph
   }
   const nodes: Record<string, LayoutBox> = {}
   for (const v of ids) nodes[v] = place(v)
+  if (options.route === 'orthogonal') {
+    // Channel routes: each hop between ranks crosses its channel at a track in the middle of it, and a long edge runs
+    // straight through the column of its dummy in each rank between.
+    const reach = new Map(graph.nodes.flatMap((n) => (n.reach === undefined ? [] : [[n.id, n.reach] as const])))
+    const usable = (v: string): number => {
+      const it = items.get(v) as Item
+      if (it.dummy) return 0
+      const r = reach.get(v)
+      return r === undefined ? sideReach(it.width / 2) : Math.min(r, it.width / 2)
+    }
+    const at = (v: string): number => x.get(v) ?? 0
+    const within = (v: string, c: number): boolean => Math.abs(c - at(v)) <= usable(v) + 1e-6
+    const frame = (cross: number, along: number): [number, number] => (right ? [along, cross] : [cross, along])
+    const ortho: EdgeRoute[] = []
+    // Where edges meet at a node, a straight edge into it runs through its middle, the port the others share.
+    const degree = new Map<string, { out: number; in: number }>()
+    for (const e of real) {
+      const [u, v] = [degree.get(e.from) ?? { out: 0, in: 0 }, degree.get(e.to) ?? { out: 0, in: 0 }]
+      u.out++
+      v.in++
+      degree.set(e.from, u)
+      degree.set(e.to, v)
+    }
+    let n = 0
+    for (const e of real) {
+      const chain = chains[n] as string[]
+      n++
+      const hops = chain.length - 1
+      const [first, last] = [chain[0] as string, chain[hops] as string]
+      let [px0, pxn] = [at(first), at(last)]
+      if (hops === 1) {
+        const lo = Math.max(at(first) - usable(first), at(last) - usable(last))
+        const hi = Math.min(at(first) + usable(first), at(last) + usable(last))
+        if (lo <= hi + 1e-6) {
+          const [u, v] = [at(first), at(last)]
+          const held = (degree.get(e.to)?.in ?? 0) > 1 ? v : (degree.get(e.from)?.out ?? 0) > 1 ? u : undefined
+          px0 = pxn = held !== undefined && held >= lo - 1e-6 && held <= hi + 1e-6 ? held : (lo + hi) / 2
+        }
+      } else {
+        if (within(first, at(chain[1] as string))) px0 = at(chain[1] as string)
+        if (within(last, at(chain[hops - 1] as string))) pxn = at(chain[hops - 1] as string)
+      }
+      const rankOf = (v: string): number => rank.get(v) ?? 0
+      const pts: [number, number][] = [frame(px0, (rankY[rankOf(first)] ?? 0) + (items.get(first)?.height ?? 0) / 2)]
+      for (let h = 0; h < hops; h++) {
+        const r = rankOf(chain[h] as string)
+        const track = ((bandBottom[r] ?? 0) + (bandTop[r + 1] ?? 0)) / 2
+        const xa = h === 0 ? px0 : at(chain[h] as string)
+        const xb = h === hops - 1 ? pxn : at(chain[h + 1] as string)
+        pts.push(frame(xa, track), frame(xb, track))
+      }
+      pts.push(frame(pxn, (rankY[rankOf(last)] ?? 0) - (items.get(last)?.height ?? 0) / 2))
+      ortho.push({
+        from: e.from,
+        to: e.to,
+        points: chain[0] === e.from ? pts : pts.reverse(),
+        route: 'orthogonal',
+      })
+    }
+    return normaliseLayout(nodes, separateRoutes(ortho, { nodes }), groupBoxes(graph, nodes), margin)
+  }
   // Routes: through the dummies of each chain, clipped to the end boxes; reversed edges are turned back.
   const routes: EdgeRoute[] = []
   let k = 0

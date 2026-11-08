@@ -10,8 +10,8 @@ import type { NodeRole, Paint, StructureEdge, StructureGroup, StructureNodeShape
 export type NodeShape = StructureNodeShape
 
 /**
- * How one role of node is drawn. A node's own `look` (see `StructureNodeLook`) replaces fields of it, and a
- * `StructureEdgeLook` those of {@link EdgeLook}.
+ * How one role of node is drawn. A node's own `look` (see `StructureNodeLook`) replaces fields of it, an edge's
+ * `StructureEdgeLook` those of {@link EdgeLook}, and a group's `StructureGroupLook` those of {@link GroupLook}.
  */
 export interface NodeLook {
   readonly shape: NodeShape
@@ -38,6 +38,9 @@ export interface GroupLook {
   readonly fill: Paint
   readonly dash?: readonly number[]
   readonly radius: number
+  readonly strokeWidth?: number
+  /** The colour of the group's label and count (default: muted label, plain count). */
+  readonly text?: Paint
 }
 
 /** The visual language of one kind of structure: node looks by role, edge looks by kind, group looks by kind. */

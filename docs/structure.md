@@ -7278,8 +7278,14 @@ Design rules:
 - `linking.ts`: linked brushing and hover across figures, shared selections.
 
 `layout/` (positions only; no layout dependency)
-- `graph.ts`: the shared shapes: a graph to lay out (nodes with sizes and groups, edges) and a layout (node boxes, edge
-  routes, group boxes), with boundary clipping, straight routes, group boxes and normalisation.
+- `graph.ts`: the shared shapes: a graph to lay out (nodes with sizes and groups, edges with optional waypoints) and a
+  layout (node boxes, edge routes marked straight or orthogonal, group boxes), with boundary clipping, straight routes,
+  group boxes, normalisation, the manual layout (positions by hand, straight or orthogonal edges) and
+  `withOrthogonalRoutes` (any layout's edges re-routed with right angles).
+- `orthogonal.ts`: right-angled edge routing between node boxes: straight when the boxes overlap on an axis, else an L
+  or a Z (bend at the middle of the gap) that clears the other boxes, else a detour (Dijkstra over the grid of the
+  boxes' grown edges); waypoints and forced sides; `separateRoutes` puts parallel segments of different edges on their
+  own tracks, merges edges that leave or enter at one port and runs an edge beside the edge that enters where it leaves.
 - `layered.ts`: a Sugiyama-style layered layout, as dagre draws (cycle breaking, longest-path ranks, virtual points on
   long edges, barycentre crossing reduction keeping groups together, spacing-preserving coordinates; nodes of other groups kept clear of a group's box,
   nested groups from `LayoutGraph.groups`).
@@ -7290,9 +7296,12 @@ Design rules:
 
 `structures/` (any `Structure` to a diagram)
 - `diagram.ts`: `diagram(structure, layout, options)` to a `Scene`: node shapes by role (latent and observed variables,
-  factors, operations, tensors, decisions, utilities, states), edge routing (straight, orthogonal, splines), arrowheads,
-  edge labels, self-loops, groups (plates, repeated blocks with counts, clusters), layered, tree, circular, force
-  and bipartite (factor graphs) layouts, node sizes held steady across an animation's `frames`.
+  factors, operations, tensors, decisions, utilities, states), edge routing (straight by default; `route: 'orthogonal'`
+  for right-angled edges, through the rank channels of a layered layout), arrowheads, edge labels (several lines, TeX
+  per line, on the middle of a long segment), self-loops, groups (plates, repeated blocks with counts, clusters, each
+  with an optional `look`), node `note`s and detail lines, edge waypoints (`via`, manual layout), layered, tree,
+  circular, force and bipartite (factor graphs) layouts, node sizes held steady across an animation's `frames`. Text
+  beside a node (a factor's label, a note) takes the first free place under, above or beside it.
 - `styles.ts`: the visual language per structure kind: graphical models, computation graphs, neural architectures,
   decision and search trees, automata, pipelines, networks.
 - `architectures.ts`: views of a network structure: compact stack, expanded block, tensor-shape flow, parameter-count

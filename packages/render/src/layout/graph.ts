@@ -5,6 +5,7 @@
  */
 
 import { OmaiError } from 'omai-engine/base'
+import { type OrthogonalOptions, orthogonalRoutes } from './orthogonal.ts'
 
 /** A node to place: its id and box size in pixels, and the group it belongs to, if any. */
 export interface LayoutNode {
@@ -12,13 +13,30 @@ export interface LayoutNode {
   readonly width: number
   readonly height: number
   readonly group?: string
+  /**
+   * How far from the middle of a side an orthogonal edge may leave or enter the node, in pixels (default: half the side
+   * less 8, so an edge keeps off the corners). Round shapes, whose outline leaves the box away from its side centres,
+   * ask for less.
+   */
+  readonly reach?: number
 }
 
-/** An edge to route. */
+/**
+ * An edge to route. `via` lists waypoints the edge passes through, in the layout's own units: the `manual` layout
+ * honours them (a straight route is a polyline through them, an orthogonal one runs right-angled legs between them);
+ * the layouts that place nodes themselves ignore them.
+ */
 export interface LayoutEdge {
   readonly from: string
   readonly to: string
+  readonly via?: readonly (readonly [number, number])[]
 }
+
+/**
+ * How an edge's polyline is drawn: `straight` (the default) joins its points as they come, `orthogonal` runs only
+ * horizontal and vertical segments with right-angle bends.
+ */
+export type EdgeRouting = 'straight' | 'orthogonal'
 
 /**
  * A graph to lay out, with the nesting of its groups (a group inside another names it as `parent`).
@@ -39,11 +57,16 @@ export interface LayoutBox {
   readonly height: number
 }
 
-/** A routed edge: the points of its polyline, from the boundary of `from` to the boundary of `to`. */
+/**
+ * A routed edge: the points of its polyline, from the boundary of `from` to the boundary of `to`. A route of an
+ * orthogonal layout says so in `route` (every segment is then horizontal or vertical, and the last one enters `to`
+ * perpendicular to its side); a straight route leaves the field out.
+ */
 export interface EdgeRoute {
   readonly from: string
   readonly to: string
   readonly points: readonly (readonly [number, number])[]
+  readonly route?: EdgeRouting
 }
 
 /**
@@ -77,7 +100,8 @@ export function boxBoundary(box: LayoutBox, towards: readonly [number, number]):
 }
 
 /**
- * Straight edge routes between placed nodes, clipped to the node boxes.
+ * Straight edge routes between placed nodes, clipped to the node boxes. An edge with waypoints (`via`) is the polyline
+ * through them, clipped at its two ends.
  *
  * @param nodes - The node boxes.
  * @param edges - The edges.
@@ -88,7 +112,10 @@ export function straightRoutes(nodes: Readonly<Record<string, LayoutBox>>, edges
     const a = nodes[e.from]
     const b = nodes[e.to]
     if (a === undefined || b === undefined) return []
-    return [{ from: e.from, to: e.to, points: [boxBoundary(a, [b.x, b.y]), boxBoundary(b, [a.x, a.y])] }]
+    const via = e.via ?? []
+    const first = via[0] ?? ([b.x, b.y] as const)
+    const last = via[via.length - 1] ?? ([a.x, a.y] as const)
+    return [{ from: e.from, to: e.to, points: [boxBoundary(a, first), ...via, boxBoundary(b, last)] }]
   })
 }
 
@@ -168,12 +195,61 @@ export function normaliseLayout(
 }
 
 /**
+ * The ports of a graph for the orthogonal router: how far off the middle of a side each node lets an edge leave.
+ *
+ * @param graph - The graph.
+ * @returns The `reach` of every node that gives one, by id.
+ */
+export function portReach(graph: LayoutGraph): Record<string, number> {
+  return Object.fromEntries(graph.nodes.flatMap((n) => (n.reach === undefined ? [] : [[n.id, n.reach]])))
+}
+
+/**
+ * The same layout with right-angled edges: the nodes stay where they are and every edge of the graph is routed again
+ * by the orthogonal router (see `orthogonalRoutes`), then the whole is shifted to sit inside the margin. It turns any
+ * layout of straight edges (tree, circular, force, grid) into an orthogonal one.
+ *
+ * @param layout - The layout whose node boxes are kept.
+ * @param graph - The graph (its edges are routed; its nodes may carry a `reach`).
+ * @param options - The router's options (flow, clearance, spacing).
+ * @param margin - Space around the drawing (default 16).
+ * @returns The layout with orthogonal edge routes.
+ * @example
+ * ```ts
+ * import { manualLayout, withOrthogonalRoutes } from 'omai-render/layout'
+ * const g = { nodes: ['a', 'b'].map((id) => ({ id, width: 20, height: 10 })), edges: [{ from: 'a', to: 'b' }] }
+ * const l = withOrthogonalRoutes(manualLayout(g, { a: [0, 0], b: [100, 60] }), g)
+ * l.edges[0]?.route // => 'orthogonal'
+ * ```
+ */
+export function withOrthogonalRoutes(
+  layout: GraphLayout,
+  graph: LayoutGraph,
+  options: OrthogonalOptions = {},
+  margin = 16,
+): GraphLayout {
+  const edges = orthogonalRoutes(layout.nodes, graph.edges, { reach: portReach(graph), ...options })
+  return normaliseLayout(layout.nodes, edges, layout.groups, margin)
+}
+
+/** Options of {@link manualLayout}. */
+export interface ManualLayoutOptions {
+  /** Space around the drawing (default 16). */
+  readonly margin?: number
+  /** Edges as straight lines (the default) or with right angles. */
+  readonly route?: EdgeRouting
+  /** The direction the flow runs, which an orthogonal route prefers to enter along (default `down`). */
+  readonly flow?: 'down' | 'right'
+}
+
+/**
  * A layout from positions given by hand: each node's box is centred on its position (with the size the graph gives it),
- * edges are straight lines clipped to the boxes, and the whole is shifted to sit inside the margin.
+ * edges are straight lines clipped to the boxes (or, with `route: 'orthogonal'`, right-angled routes that clear the
+ * other boxes), and the whole is shifted to sit inside the margin. An edge with waypoints (`via`) passes through them.
  *
  * @param graph - The graph (nodes with sizes, and edges).
  * @param positions - The centre of every node by id, in the layout's own units.
- * @param margin - Space around the drawing (default 16).
+ * @param margin - Space around the drawing (default 16), or the options.
  * @returns The layout (group boxes are left to the caller, as for the other layouts' groups of a diagram).
  * @throws OmaiError `value` when a node has no position or a position is not finite.
  * @example
@@ -187,8 +263,9 @@ export function normaliseLayout(
 export function manualLayout(
   graph: LayoutGraph,
   positions: Readonly<Record<string, readonly [number, number]>>,
-  margin = 16,
+  margin: number | ManualLayoutOptions = 16,
 ): GraphLayout {
+  const options: ManualLayoutOptions = typeof margin === 'number' ? { margin } : margin
   const placed: Record<string, LayoutBox> = {}
   for (const n of graph.nodes) {
     const at = positions[n.id]
@@ -197,5 +274,12 @@ export function manualLayout(
       throw new OmaiError('value', `manualLayout: the position of '${n.id}' is not finite`)
     placed[n.id] = { x: at[0], y: at[1], width: n.width, height: n.height }
   }
-  return normaliseLayout(placed, straightRoutes(placed, graph.edges), {}, margin)
+  const routes =
+    options.route === 'orthogonal'
+      ? orthogonalRoutes(placed, graph.edges, {
+          reach: portReach(graph),
+          ...(options.flow === undefined ? {} : { flow: options.flow }),
+        })
+      : straightRoutes(placed, graph.edges)
+  return normaliseLayout(placed, routes, {}, options.margin ?? 16)
 }

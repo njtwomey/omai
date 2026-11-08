@@ -26,10 +26,12 @@ import { circularLayout, forceLayout } from '../layout/force.ts'
 import {
   boxBoundary,
   type EdgeRoute,
+  type EdgeRouting,
   type GraphLayout,
   type LayoutBox,
   type LayoutGraph,
   manualLayout,
+  withOrthogonalRoutes,
 } from '../layout/graph.ts'
 import { bipartiteLayout } from '../layout/grids.ts'
 import { layered } from '../layout/layered.ts'
@@ -65,6 +67,17 @@ export interface DiagramOptions {
    */
   readonly rankSep?: number
   readonly nodeSep?: number
+  /**
+   * How edges are drawn: `straight` (the default: lines, and polylines through the ranks a layered edge crosses) or
+   * `orthogonal`, with horizontal and vertical segments and right-angle bends. An orthogonal edge leaves its source
+   * on the side facing the target and enters the target perpendicular to its side, with its arrow head along the last
+   * segment: straight when the boxes overlap on an axis, else an L or a Z (bend at the middle of the gap) that clears
+   * the other nodes, else a detour; edges that leave or enter at one port merge, and parallel runs get tracks of their
+   * own. A layered layout routes through its rank channels (long edges down the column of each rank they skip). Meant
+   * for flowcharts and pipelines (layered and manual layouts); straight stays right for trees, networks and fan-in
+   * layers of a network. Edge `via` waypoints are honoured under the manual layout, by both routes.
+   */
+  readonly route?: EdgeRouting
 }
 
 const CHAR = 0.6
@@ -83,7 +96,7 @@ function lines(
   const out: Line[] = n.label.split('\n').map((text) => ({ text, main: true }))
   // Round shapes keep to their label (and badges); their detail shows on hover.
   const compact = look.shape === 'circle' || look.shape === 'dot' || look.shape === 'square'
-  if (n.detail !== undefined && !compact) out.push({ text: n.detail, main: false })
+  if (n.detail !== undefined && !compact) for (const text of n.detail.split('\n')) out.push({ text, main: false })
   if (badges !== undefined && Object.keys(badges).length > 0)
     out.push({
       text: Object.entries(badges)
@@ -195,17 +208,61 @@ function lineYs(look: NodeLook, count: number, b: LayoutBox, size: number): numb
   return Array.from({ length: count }, (_, i) => top + i * (size + 2))
 }
 
-function labelNodes(look: NodeLook, content: readonly Line[], b: LayoutBox, size: number): SceneNode[] {
+/** Where a block of text lines sits: its anchor, the centre of each line, and the box it covers. */
+interface Spot {
+  readonly x: number
+  readonly ys: readonly number[]
+  readonly anchor: 'start' | 'middle' | 'end'
+  readonly box: Rect
+}
+
+/** The box a block of lines covers: `width` wide from the anchor, a line's height above the first and below the last. */
+function spotBox(x: number, ys: readonly number[], width: number, anchor: Spot['anchor'], size: number): Rect {
+  const x0 = anchor === 'middle' ? x - width / 2 : anchor === 'end' ? x - width : x
+  return [x0, (ys[0] as number) - size / 2, x0 + width, (ys[ys.length - 1] as number) + size / 2]
+}
+
+/**
+ * The places a block of text may take around a node, in the order they are tried: below it (centred, then to the right
+ * and to the left of the middle, where an edge leaving the middle does not reach), above it the same way, then beside it
+ * (right, then left). `below` is the centre of the first line when it sits below the node.
+ */
+function spotsAround(b: LayoutBox, rows: readonly string[], sizes: readonly number[], below: number): Spot[] {
+  const size = sizes[0] as number
+  const step = size + 2
+  const n = rows.length
+  const width = maxOf(rows.map((r, i) => textWidth(r, sizes[i] as number)))
+  const sideX = b.width / 2 + 5
+  const mk = (x: number, first: number, anchor: Spot['anchor']): Spot => {
+    const ys = Array.from({ length: n }, (_, i) => first + i * step)
+    return { x, ys, anchor, box: spotBox(x, ys, width, anchor, size) }
+  }
+  const above = b.y - b.height / 2 - size - (n - 1) * step
+  const centred = b.y - ((n - 1) * step) / 2
+  return [
+    mk(b.x, below, 'middle'),
+    mk(b.x + 6, below, 'start'),
+    mk(b.x - 6, below, 'end'),
+    mk(b.x, above, 'middle'),
+    mk(b.x + 6, above, 'start'),
+    mk(b.x - 6, above, 'end'),
+    mk(b.x + sideX, centred, 'start'),
+    mk(b.x - sideX, centred, 'end'),
+  ]
+}
+
+function labelNodes(look: NodeLook, content: readonly Line[], b: LayoutBox, size: number, spot?: Spot): SceneNode[] {
   const outside = isOutside(look)
-  const ys = lineYs(look, content.length, b, size)
-  const x = frontOf(look, b).x
+  const ys = spot?.ys ?? lineYs(look, content.length, b, size)
+  const x = spot?.x ?? frontOf(look, b).x
+  const anchor = spot?.anchor ?? 'middle'
   return content.map((line, i) => {
     const y = ys[i] as number
     const fill = line.main && !outside ? look.text : 'muted'
     const sz = line.main ? size : size - 2
     return isTex(line.text)
-      ? tex(x, y, line.text.slice(1, -1), { size: sz + 2, fill, anchor: 'middle' })
-      : text(x, y, line.text, { size: sz, fill, anchor: 'middle', baseline: 'middle' })
+      ? tex(x, y, line.text.slice(1, -1), { size: sz + 2, fill, anchor })
+      : text(x, y, line.text, { size: sz, fill, anchor, baseline: 'middle' })
   })
 }
 
@@ -306,6 +363,89 @@ function pointAlong(points: readonly (readonly [number, number])[], t: number): 
   return [first[0], first[1]]
 }
 
+/** The plate that hides what is under a block of text: a box in the background colour, a little see-through. */
+const padded = (r: Rect): Rect => [r[0] - 2, r[1] - 2, r[2] + 2, r[3] + 2]
+
+const plateOf = (box: Rect): SceneNode =>
+  rect(box[0], box[1], box[2] - box[0], box[3] - box[1], { fill: 'bg', stroke: 'none', opacity: 0.9, radius: 3 })
+
+/** Whether the segment from `p` to `q` crosses the inside of a box (Liang and Barsky's clipping). */
+function segmentHits(p: readonly [number, number], q: readonly [number, number], r: Rect): boolean {
+  let [t0, t1] = [0, 1]
+  const [dx, dy] = [q[0] - p[0], q[1] - p[1]]
+  for (const [d, lo] of [
+    [-dx, p[0] - r[0]],
+    [dx, r[2] - p[0]],
+    [-dy, p[1] - r[1]],
+    [dy, r[3] - p[1]],
+  ] as const) {
+    if (d === 0) {
+      if (lo <= 0) return false
+    } else {
+      const t = lo / d
+      if (d < 0) t0 = Math.max(t0, t)
+      else t1 = Math.min(t1, t)
+      if (t0 >= t1) return false
+    }
+  }
+  return true
+}
+
+/** Whether any segment of a polyline crosses the inside of a box. */
+const polylineHits = (points: readonly (readonly [number, number])[], r: Rect): boolean =>
+  points.slice(1).some((q, i) => segmentHits(points[i] as readonly [number, number], q, r))
+
+/**
+ * Where a line along an axis, entering a node at `p` on its box, meets the node's outline: the box's own side for
+ * boxes, further in for the round shapes (a circle, an ellipse, a diamond) whose outline leaves the box at the middle
+ * of each side only.
+ */
+function enterOutline(
+  look: NodeLook,
+  b: LayoutBox,
+  p: readonly [number, number],
+  inward: readonly [number, number],
+): [number, number] {
+  const horizontal = Math.abs(inward[0]) > Math.abs(inward[1])
+  const [hw, hh] = [b.width / 2, b.height / 2]
+  // The half extent of the outline along the line's axis, at the line's offset from the node's centre.
+  const offset = horizontal ? p[1] - b.y : p[0] - b.x
+  const [along, across] = horizontal ? [hw, hh] : [hh, hw]
+  let half = along
+  if (look.shape === 'circle' || look.shape === 'dot') {
+    const r = Math.min(hw, hh)
+    half = Math.abs(offset) < r ? Math.sqrt(r * r - offset * offset) : along
+  } else if (look.shape === 'ellipse') {
+    half = Math.abs(offset) < across ? along * Math.sqrt(1 - (offset / across) ** 2) : along
+  } else if (look.shape === 'diamond') {
+    half = Math.abs(offset) < across ? along * (1 - Math.abs(offset) / across) : along
+  }
+  return horizontal ? [b.x - Math.sign(inward[0]) * half, p[1]] : [p[0], b.y - Math.sign(inward[1]) * half]
+}
+
+/** An orthogonal route with its two ends brought onto the outlines of the shapes they join. */
+function clipToOutlines(
+  points: readonly (readonly [number, number])[],
+  fromLook: NodeLook,
+  from: LayoutBox | undefined,
+  toLook: NodeLook,
+  to: LayoutBox | undefined,
+): (readonly [number, number])[] {
+  const out = points.map((p): [number, number] => [p[0], p[1]])
+  const [a, b, y, z] = [out[0], out[1], out[out.length - 2], out[out.length - 1]]
+  if (
+    from !== undefined &&
+    a !== undefined &&
+    b !== undefined &&
+    fromLook.shape !== 'rect' &&
+    fromLook.shape !== 'round'
+  )
+    out[0] = enterOutline(fromLook, from, a, [a[0] - b[0], a[1] - b[1]])
+  if (to !== undefined && y !== undefined && z !== undefined && toLook.shape !== 'rect' && toLook.shape !== 'round')
+    out[out.length - 1] = enterOutline(toLook, to, z, [z[0] - y[0], z[1] - y[1]])
+  return out
+}
+
 /** Every group's members, with the members of its descendant groups. */
 function groupMembers(s: Structure): Map<string, Set<string>> {
   const parent = new Map(s.groups.map((g) => [g.id, g.parent]))
@@ -388,24 +528,53 @@ export function diagram(s: Structure, options: DiagramOptions = {}): Scene {
     for (const t of s.edges) if (t !== e && t.from === e.to && t.to === e.from && !absorbed.has(t)) absorbed.add(t)
   }
   const routed = s.edges.filter((e) => e.from !== e.to && !absorbed.has(e))
-  const graph: LayoutGraph = {
-    nodes: s.nodes.map((n) => ({
-      id: n.id,
-      ...sizeOf(n),
-      ...(n.group === undefined ? {} : { group: n.group }),
-    })),
-    edges: routed.map((e) => ({ from: e.from, to: e.to })),
-    groups: s.groups.map((g) => ({ id: g.id, ...(g.parent === undefined ? {} : { parent: g.parent }) })),
-  }
   const direction = options.direction ?? s.direction ?? 'down'
   const placedByHand = s.nodes.length > 0 && s.nodes.every((n) => n.position !== undefined)
   const which = options.layout ?? (placedByHand ? 'manual' : style.layout)
+  const orthogonal = options.route === 'orthogonal'
+  // An orthogonal edge may leave or enter a round shape only near the middle of a side, where its outline is.
+  const reachOf = (look: NodeLook, box: { readonly width: number; readonly height: number }): number | undefined => {
+    switch (look.shape) {
+      case 'circle':
+      case 'ellipse':
+      case 'diamond':
+        return 0.35 * (Math.min(box.width, box.height) / 2)
+      case 'dot':
+      case 'square':
+        return 0
+      default:
+        return undefined
+    }
+  }
+  const graph: LayoutGraph = {
+    nodes: s.nodes.map((n) => {
+      const box = sizeOf(n)
+      const reach = orthogonal ? reachOf(looks.get(n.id) as NodeLook, box) : undefined
+      return {
+        id: n.id,
+        ...box,
+        ...(n.group === undefined ? {} : { group: n.group }),
+        ...(reach === undefined ? {} : { reach }),
+      }
+    }),
+    edges: routed.map((e) => ({
+      from: e.from,
+      to: e.to,
+      ...(which === 'manual' && e.via !== undefined && e.via.length > 0 ? { via: e.via } : {}),
+    })),
+    groups: s.groups.map((g) => ({ id: g.id, ...(g.parent === undefined ? {} : { parent: g.parent }) })),
+  }
   const widest = Math.max(10, maxOf(graph.nodes.map((v) => Math.max(v.width, v.height))))
-  const layout: GraphLayout =
+  const routing: EdgeRouting = orthogonal ? 'orthogonal' : 'straight'
+  const placed: GraphLayout =
     which === 'manual'
       ? manualLayout(
           graph,
           Object.fromEntries(s.nodes.flatMap((n) => (n.position === undefined ? [] : [[n.id, n.position]]))),
+          {
+            route: routing,
+            flow: direction,
+          },
         )
       : which === 'tree'
         ? tidyTree(graph, {
@@ -432,9 +601,15 @@ export function diagram(s: Structure, options: DiagramOptions = {}): Scene {
                 )
               : layered(graph, {
                   direction,
+                  route: routing,
                   ...(options.rankSep === undefined ? {} : { rankSep: options.rankSep }),
                   ...(options.nodeSep === undefined ? {} : { nodeSep: options.nodeSep }),
                 })
+  // The layouts that draw straight lines take right angles from the router, which keeps their node boxes.
+  const layout: GraphLayout =
+    orthogonal && which !== 'manual' && which !== 'layered'
+      ? withOrthogonalRoutes(placed, graph, { flow: direction })
+      : placed
 
   // Groups: deepest first, each around its members and its child groups, with room for its label.
   const members = groupMembers(s)
@@ -449,6 +624,15 @@ export function diagram(s: Structure, options: DiagramOptions = {}): Scene {
       y0 = Math.min(y0, b.y - b.height / 2)
       x1 = Math.max(x1, b.x + b.width / 2)
       y1 = Math.max(y1, b.y + b.height / 2)
+      // A note under a member is inside the group's frame.
+      const note = s.nodes.find((m) => m.id === id)?.note
+      if (note !== undefined) {
+        const rows = note.split('\n')
+        const half = maxOf(rows.map((r) => textWidth(r, size - 2))) / 2
+        x0 = Math.min(x0, b.x - half)
+        x1 = Math.max(x1, b.x + half)
+        y1 = Math.max(y1, b.y + b.height / 2 + 4 + rows.length * (size - 2 + 2))
+      }
     }
     for (const child of s.groups.filter((c) => c.parent === g.id)) {
       const c = boxes.get(child.id)
@@ -472,7 +656,7 @@ export function diagram(s: Structure, options: DiagramOptions = {}): Scene {
     .flatMap((g) => {
       const b = boxes.get(g.id)
       if (b === undefined) return []
-      const look = style.group(g)
+      const look = { ...style.group(g), ...g.look }
       const [x0, y0, x1, y1] = b
       const out: SceneNode[] = [
         rect(x0, y0, x1 - x0, y1 - y0, {
@@ -480,15 +664,16 @@ export function diagram(s: Structure, options: DiagramOptions = {}): Scene {
           fill: look.fill,
           stroke: look.stroke,
           radius: look.radius,
+          ...(look.strokeWidth === undefined ? {} : { strokeWidth: look.strokeWidth }),
           ...(look.dash === undefined ? {} : { dash: look.dash }),
         }),
-        text(x0 + 8, y0 + 14, g.label, { size: size - 1, fill: 'muted' }),
+        text(x0 + 8, y0 + 14, g.label, { size: size - 1, fill: look.text ?? 'muted' }),
       ]
       if (g.count !== undefined)
         out.push(
           text(x1 - 8, y1 - 7, g.kind === 'repeat' ? `× ${g.count}` : String(g.count), {
             size: size - 1,
-            fill: 'fg',
+            fill: look.text ?? 'fg',
             anchor: 'end',
           }),
         )
@@ -496,7 +681,8 @@ export function diagram(s: Structure, options: DiagramOptions = {}): Scene {
     })
 
   // An edge with a twin in the other direction bends to its left, so the pair (and their labels) separate: a straight
-  // edge into a bow, a routed one (through the ranks it crosses) with its inner points moved aside.
+  // edge into a bow, a routed one (through the ranks it crosses) with its inner points moved aside, an orthogonal one
+  // kept apart by the router.
   const pairs = new Set(s.edges.filter((e) => !absorbed.has(e)).map((e) => `${e.from}\u0000${e.to}`))
   const bend = (points: readonly (readonly [number, number])[]): (readonly [number, number])[] => {
     const a = points[0]
@@ -539,8 +725,16 @@ export function diagram(s: Structure, options: DiagramOptions = {}): Scene {
     const from: [number, number] = [a[0] + ((b[0] - a[0]) / len) * reach, a[1] + ((b[1] - a[1]) / len) * reach]
     return [path([from, [a[0], a[1]]], { id, stroke, strokeWidth, arrow: true })]
   }
+  // What is drawn of each edge, for the labels and notes that must keep off the lines.
+  const drawn: { readonly edge: StructureEdge; readonly points: readonly (readonly [number, number])[] }[] = []
   // Labels of straight and routed edges are drawn after the nodes, so they are collected here.
-  const pending: { readonly edge: StructureEdge; readonly points: readonly (readonly [number, number])[] }[] = []
+  const pending: {
+    readonly edge: StructureEdge
+    readonly points: readonly (readonly [number, number])[]
+    readonly orthogonal: boolean
+  }[] = []
+  const fs = size - 2
+  const step = fs + 2
   const edgeScene: SceneNode[] = s.edges.flatMap((e, i) => {
     if (absorbed.has(e)) return []
     const look = edgeLook(e)
@@ -553,6 +747,7 @@ export function diagram(s: Structure, options: DiagramOptions = {}): Scene {
       if (b === undefined) return []
       const loop = selfLoop(looks.get(e.from) as NodeLook, b, layout, e.from)
       for (const p of loop.points) loopExtent.push([p[0], p[1]])
+      drawn.push({ edge: e, points: loop.points })
       const out: SceneNode[] = [
         path(loop.points, {
           id: `edge:${i}`,
@@ -565,59 +760,155 @@ export function diagram(s: Structure, options: DiagramOptions = {}): Scene {
       ]
       if (e.label !== undefined) {
         const [lx, ly] = loop.label
-        const w = textWidth(e.label, size - 2)
+        const rows = e.label.split('\n')
+        const w = maxOf(rows.map((r) => textWidth(r, fs)))
+        const half = ((rows.length - 1) * step) / 2
         const anchor = Math.abs(loop.direction[0]) < 0.4 ? 'middle' : loop.direction[0] > 0 ? 'start' : 'end'
-        loopExtent.push([lx - w, ly - size], [lx + w, ly + size])
-        out.push(text(lx, ly, e.label, { size: size - 2, fill: 'muted', anchor, baseline: 'middle' }))
+        loopExtent.push([lx - w, ly - size - half], [lx + w, ly + size + half])
+        rows.forEach((row, k) => {
+          const y = ly - half + k * step
+          out.push(
+            isTex(row)
+              ? tex(lx, y, row.slice(1, -1), { size: fs + 2, fill: 'muted', anchor })
+              : text(lx, y, row, { size: fs, fill: 'muted', anchor, baseline: 'middle' }),
+          )
+        })
       }
       return out
     }
     const original = routeOf.get(e)
     if (original === undefined) return []
-    const route = pairs.has(`${e.to}\u0000${e.from}`) ? { ...original, points: bend(original.points) } : original
+    const orthogonalRoute = original.route === 'orthogonal'
+    const twin = pairs.has(`${e.to}\u0000${e.from}`)
+    let points: readonly (readonly [number, number])[] =
+      twin && !orthogonalRoute ? bend(original.points) : original.points
+    if (orthogonalRoute) {
+      points = clipToOutlines(
+        points,
+        looks.get(e.from) as NodeLook,
+        layout.nodes[e.from],
+        looks.get(e.to) as NodeLook,
+        layout.nodes[e.to],
+      )
+      for (const p of points) loopExtent.push([p[0], p[1]])
+    }
+    // Waypoints make corners, not curves.
+    const curved = !orthogonalRoute && !(which === 'manual' && (e.via?.length ?? 0) > 0)
+    drawn.push({ edge: e, points })
     const out: SceneNode[] = [
-      path(route.points, {
+      path(points, {
         id: `edge:${i}`,
         stroke,
         strokeWidth,
         arrow,
-        smooth: route.points.length > 2,
+        smooth: curved && points.length > 2,
         ...(look.dash === undefined ? {} : { dash: look.dash }),
       }),
-      ...(e.bidirectional === true ? tailArrow(route.points, `edge:${i}:tail`, stroke, strokeWidth) : []),
+      ...(e.bidirectional === true ? tailArrow(points, `edge:${i}:tail`, stroke, strokeWidth) : []),
     ]
-    if (e.label !== undefined) pending.push({ edge: e, points: route.points })
+    if (e.label !== undefined) pending.push({ edge: e, points, orthogonal: orthogonalRoute })
     return out
   })
 
+  // Text beside nodes (the labels of factors and dots, and notes) takes the first place that no edge, node or other
+  // text covers: under the node by default, then above, then to its right and its left.
+  const nodeBoxes = [...Object.values(layout.nodes)].map(
+    (b): Rect => [b.x - b.width / 2, b.y - b.height / 2, b.x + b.width / 2, b.y + b.height / 2],
+  )
+  const beside: Rect[] = []
+  const covered = (r: Rect): boolean =>
+    [...nodeBoxes, ...beside].some((q) => overlaps(r, q)) || drawn.some((d) => polylineHits(d.points, r))
   const nodeScene: SceneNode[] = s.nodes.flatMap((n) => {
     const b = layout.nodes[n.id]
     if (b === undefined) return []
     const look = looks.get(n.id) as NodeLook
+    const rows = content.get(n.id) ?? []
+    let spot: Spot | undefined
+    const plates: SceneNode[] = []
+    // Where the text beside the node ends, for its note to keep clear of.
+    let reach: Rect = [b.x - b.width / 2, b.y - b.height / 2, b.x + b.width / 2, b.y + b.height / 2]
+    const extend = (r: Rect): void => {
+      reach = [Math.min(reach[0], r[0]), Math.min(reach[1], r[1]), Math.max(reach[2], r[2]), Math.max(reach[3], r[3])]
+    }
+    if (isOutside(look) && rows.length > 0) {
+      const sizes = rows.map((l) => (l.main ? size : size - 2))
+      const spots = spotsAround(
+        b,
+        rows.map((l) => l.text),
+        sizes,
+        b.y + b.height / 2 + size,
+      )
+      const free = spots.find((sp) => !covered(sp.box))
+      spot = free ?? (spots[0] as Spot)
+      if (free === undefined) plates.push(plateOf(padded(spot.box)))
+      beside.push(spot.box)
+      extend(spot.box)
+      // Labels written beside a shape reach past its box.
+      const at = spot
+      rows.forEach((l, i) => {
+        const width = textWidth(l.text, sizes[i] as number)
+        const x0 = at.anchor === 'middle' ? at.x - width / 2 : at.anchor === 'end' ? at.x - width : at.x
+        const y = at.ys[i] as number
+        loopExtent.push([x0, y - size / 2], [x0 + width, y + size / 2])
+      })
+    }
+    const noteNodes: SceneNode[] = []
+    if (n.note !== undefined) {
+      const noteRows = n.note.split('\n')
+      const home: LayoutBox = {
+        x: b.x,
+        y: (reach[1] + reach[3]) / 2,
+        width: 2 * Math.max(b.x - reach[0], reach[2] - b.x),
+        height: reach[3] - reach[1],
+      }
+      const spots = spotsAround(
+        home,
+        noteRows,
+        noteRows.map(() => fs),
+        home.y + home.height / 2 + fs,
+      )
+      const free = spots.find((sp) => !covered(sp.box))
+      const at = free ?? (spots[0] as Spot)
+      if (free === undefined) plates.push(plateOf(padded(at.box)))
+      beside.push(at.box)
+      nodeBoxes.push(at.box)
+      loopExtent.push([at.box[0], at.box[1]], [at.box[2], at.box[3]])
+      noteRows.forEach((row, i) => {
+        const y = at.ys[i] as number
+        noteNodes.push(
+          isTex(row)
+            ? tex(at.x, y, row.slice(1, -1), { size: fs + 2, fill: 'muted', anchor: at.anchor })
+            : text(at.x, y, row, { size: fs, fill: 'muted', anchor: at.anchor, baseline: 'middle' }),
+        )
+      })
+    }
     return [
-      groupNode([...shapeNodes(look, b, active.has(n.id)), ...labelNodes(look, content.get(n.id) ?? [], b, size)], {
-        id: n.id,
-        title: [n.label.replaceAll('\n', ' '), n.detail].filter((x) => x !== undefined).join(': '),
-      }),
+      groupNode(
+        [...shapeNodes(look, b, active.has(n.id)), ...plates, ...labelNodes(look, rows, b, size, spot), ...noteNodes],
+        {
+          id: n.id,
+          title: [n.label.replaceAll('\n', ' '), n.detail?.replaceAll('\n', ' ')]
+            .filter((x) => x !== undefined)
+            .join(': '),
+        },
+      ),
     ]
   })
 
   // Edge labels, above the nodes and on a plate that hides what is under them; the middle of the edge is the default
-  // place, moved aside along the edge or to its other side when that would cover a node or an earlier label.
-  const fs = size - 2
-  const nodeBoxes = [...Object.values(layout.nodes)].map(
-    (b): Rect => [b.x - b.width / 2, b.y - b.height / 2, b.x + b.width / 2, b.y + b.height / 2],
-  )
+  // place (the middle of the longest segment, for an orthogonal edge), moved aside along the edge or to its other side
+  // when that would cover a node or an earlier label. A label may have several lines, each plain or TeX.
   const labelBoxes: Rect[] = []
-  const labelScene: SceneNode[] = pending.flatMap(({ edge, points }) => {
-    const label = edge.label as string
-    const w = textWidth(label, fs)
+  const labelScene: SceneNode[] = pending.flatMap(({ edge, points, orthogonal: right }) => {
+    const rows = (edge.label as string).split('\n')
+    const w = maxOf(rows.map((r) => textWidth(r, fs)))
+    const tall = fs + (rows.length - 1) * step
     // The text's box for an anchor, as drawn: centred (an explicit `labelAt`) or starting at the anchor.
     const boxAt = (x: number, y: number, centred: boolean): Rect => [
       (centred ? x - w / 2 : x) - 3,
-      y - fs * 0.5 - 2,
+      y - tall / 2 - 2,
       (centred ? x + w / 2 : x + w) + 3,
-      y + fs * 0.5 + 2,
+      y + tall / 2 + 2,
     ]
     let x: number
     let y: number
@@ -625,6 +916,47 @@ export function diagram(s: Structure, options: DiagramOptions = {}): Scene {
     if (edge.labelAt !== undefined) {
       ;[x, y] = pointAlong(points, edge.labelAt)
       centred = true
+    } else if (right) {
+      // On the middle of a long segment, on its plate; beside the segment when that is covered; never on a node.
+      const segs = points.slice(1).map((q, k) => ({
+        p: points[k] as readonly [number, number],
+        q,
+        k,
+        len: Math.hypot(
+          q[0] - (points[k] as readonly [number, number])[0],
+          q[1] - (points[k] as readonly [number, number])[1],
+        ),
+      }))
+      const mid = (segs.length - 1) / 2
+      segs.sort((a, b) => b.len - a.len || Math.abs(a.k - mid) - Math.abs(b.k - mid))
+      const on: { x: number; y: number; centred: boolean }[] = []
+      const off: { x: number; y: number; centred: boolean }[] = []
+      for (const sg of segs) {
+        const horizontal = Math.abs(sg.p[1] - sg.q[1]) < 1e-6
+        for (const t of [0.5, 0.3, 0.7]) {
+          const [cx, cy] = [sg.p[0] + (sg.q[0] - sg.p[0]) * t, sg.p[1] + (sg.q[1] - sg.p[1]) * t]
+          if (horizontal ? sg.len >= w + 12 : sg.len >= tall + 10) on.push({ x: cx, y: cy, centred: true })
+          if (horizontal)
+            off.push({ x: cx, y: cy - (tall / 2 + 7), centred: true }, { x: cx, y: cy + (tall / 2 + 7), centred: true })
+          else off.push({ x: cx + 7, y: cy, centred: false }, { x: cx - 7 - w, y: cy, centred: false })
+        }
+      }
+      const all = [...on, ...off]
+      const others = drawn.filter((d) => d.edge !== edge)
+      const free = (r: Rect, lines: boolean): boolean =>
+        ![...nodeBoxes, ...labelBoxes].some((q) => overlaps(r, q)) &&
+        (!lines || !others.some((d) => polylineHits(d.points, r)))
+      const pick =
+        all.find((c) => free(boxAt(c.x, c.y, c.centred), true)) ??
+        all.find((c) => free(boxAt(c.x, c.y, c.centred), false))
+      const first = segs[0]
+      if (pick === undefined && first === undefined) return []
+      const fallback =
+        first === undefined
+          ? undefined
+          : { x: (first.p[0] + first.q[0]) / 2, y: (first.p[1] + first.q[1]) / 2, centred: true }
+      const at = (pick ?? fallback) as { x: number; y: number; centred: boolean }
+      ;[x, y, centred] = [at.x, at.y, at.centred]
     } else {
       const k = Math.floor((points.length - 1) / 2)
       const mid = points[k]
@@ -656,14 +988,23 @@ export function diagram(s: Structure, options: DiagramOptions = {}): Scene {
     const box = boxAt(x, y, centred)
     labelBoxes.push(box)
     loopExtent.push([box[0], box[1]], [box[2], box[3]])
+    const top = y - ((rows.length - 1) * step) / 2
     return [
-      rect(box[0], box[1], box[2] - box[0], box[3] - box[1], { fill: 'bg', stroke: 'none', opacity: 0.9, radius: 3 }),
-      text(x, y, label, {
-        size: fs,
-        fill: 'muted',
-        baseline: 'middle',
-        ...(centred ? { anchor: 'middle' as const } : {}),
-      }),
+      plateOf(box),
+      ...rows.map((row, i) =>
+        isTex(row)
+          ? tex(x, top + i * step, row.slice(1, -1), {
+              size: fs + 2,
+              fill: 'muted',
+              anchor: centred ? 'middle' : 'start',
+            })
+          : text(x, top + i * step, row, {
+              size: fs,
+              fill: 'muted',
+              baseline: 'middle',
+              ...(centred ? { anchor: 'middle' as const } : {}),
+            }),
+      ),
     ]
   })
 
@@ -678,18 +1019,6 @@ export function diagram(s: Structure, options: DiagramOptions = {}): Scene {
     loopExtent.push([nx + textWidth(a.text, size - 2), ny + 4])
     return [text(nx, ny, a.text, { size: size - 2, fill })]
   })
-  // Labels written below a shape (factors and dots) reach past its box.
-  for (const n of s.nodes) {
-    const b = layout.nodes[n.id]
-    const look = looks.get(n.id) as NodeLook
-    if (b === undefined || !isOutside(look)) continue
-    const rows = content.get(n.id) ?? []
-    const ys = lineYs(look, rows.length, b, size)
-    rows.forEach((l, i) => {
-      const half = textWidth(l.text, l.main ? size : size - 2) / 2
-      loopExtent.push([b.x - half, (ys[i] as number) - size / 2], [b.x + half, (ys[i] as number) + size / 2])
-    })
-  }
 
   // Groups and notes can reach past the layout's own box: grow the scene to hold them.
   let [minX, minY, maxX, maxY] = [0, 0, layout.width, layout.height]
