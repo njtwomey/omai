@@ -1,0 +1,257 @@
+# Training-loop and learning-paradigm libraries. skorch, modAL and Opacus were enumerated from the installed packages;
+# Lightning, Ignite, learn2learn, higher, Avalanche, river, Snorkel, cleanlab, small-text and Flower are from memory.
+# Checked in the source: nn/training (earlyStopping, bestCheckpoint, reduceLROnPlateau, learningRateMonitor, accumulate,
+# trainOnly, fit), learn (active learning, dp-sgd and rdp accounting, weak supervision, noisy labels, drift detectors,
+# semi-supervised), data (streams, samplers, modifiers), rl (replay buffers).
+@lib skorch
+F | EarlyStopping | nn#earlyStopping | | | | |
+F | Checkpoint|TrainEndCheckpoint|LoadInitState | nn#bestCheckpoint, #saveState, #loadState | | | | |
+F | LRScheduler|WarmRestartLR | optim#schedules, #cosineWarmRestarts, nn#reduceLROnPlateau | | | | |
+F | GradientNormClipping | optim#clipByGlobalNorm | | | | |
+F | Freezer|Unfreezer | nn#trainOnly, #hasFrozen | | | | |
+F | Initializer | nn#xavierUniform, #kaimingNormal | | | | |
+F | ParamMapper | nn#trainOnly | | | | |
+F | CVSplit|predefined_split | learn/model-selection | | | | |
+F | EpochScoring|BatchScoring|PassthroughScoring|ScoringBase|convert_sklearn_metric_function | metrics, learn#makeScorer | | | | |
+P | NeuralNetClassifier|NeuralNetBinaryClassifier|NeuralNetRegressor|NeuralNet|MLPModule|make_classifier|make_binary_classifier|make_regressor | nn#fit, #mlp, learn#defineTrainer | a network wrapped as an estimator with fit and predict: `mlp` plus the trainer base; no one-line sklearn-shaped wrapper | | | |
+F | History | trace | the tape | | | |
+F | Dataset|SliceDataset|SliceDict|DataFrameTransformer|get_len|unpack_data|uses_placeholder_y | data | | | | |
+S | .* | | callbacks for loggers, progress bars, timers; device handling, exceptions and utilities | | | |
+
+@lib modal
+F | .*Learner|ActiveLearner|BayesianOptimizer|Committee|CommitteeRegressor|DeepActiveLearner|ActiveLearningModel|ActiveLearningModelCommittee | learn#activeLearning, learn/active-learning-options | | | | |
+F | uncertainty_sampling|margin_sampling|entropy_sampling|classifier_uncertainty|classifier_margin|classifier_entropy | learn#uncertaintySampling, #marginSampling, #entropySampling | | | | |
+F | vote_entropy|consensus_entropy|max_disagreement|KL_max_disagreement|vote_entropy_sampling|consensus_entropy_sampling|max_disagreement_sampling|max_std_sampling | learn#voteEntropySampling, #consensusEntropySampling, #maxDisagreementSampling | | | | |
+F | UCB|PI|EI|max_UCB|max_PI|max_EI|optimizer_UCB|optimizer_PI|optimizer_EI | tune#upperConfidenceBound, #probabilityOfImprovement, #expectedImprovement | | | | |
+F | information_density|density_weighted.* | learn#densityWeightedUncertainty | | | | |
+F | ranked_batch|uncertainty_batch_sampling|select_cold_start_instance|select_instance|ranked_batch.* | learn#rankedBatchSampling | | | | |
+F | expected_error_reduction|.*expected_error.*|expected_model_change.* | learn#expectedErrorReduction, #expectedModelChange | | | | |
+F | cluster.* | cluster | cluster-based sampling is a composition | | | | |
+F | .* | learn#activeLearning | | | | |
+
+@lib opacus
+P | PrivacyEngine | learn#dpSgdAlgorithm | the engine attaches DP-SGD to a PyTorch model; omai's `dpSgdAlgorithm` is the algorithm with per-example clipping and noise | | | |
+F | RDPAccountant|IAccountant|GaussianAccountant|PRVAccountant|create_accountant | learn#rdpAccountant, #subsampledGaussianRdp, #rdpToDp | RDP accounting is in; the Gaussian CLT and PRV accountants are variants | | | |
+A | PRVAccountant|GaussianAccountant | learn#rdpAccountant | privacy-loss-random-variable and CLT-based accountants (tighter epsilon than RDP) | learn/privacy.ts | S | low | privacy accountants
+F | DPOptimizer|DPPerLayerOptimizer|AdaClipDPOptimizer|DistributedDPOptimizer|DPOptimizer.* | learn#dpSgdStep, #clipPerExample, #privateGradient | per-layer and adaptive clipping are variants | | | |
+P | DPPerLayerOptimizer|AdaClipDPOptimizer | learn#clipPerExample | per-layer and adaptive clipping | learn/dp-sgd.ts | S | low | privacy accountants
+F | GradSampleModule|.*[Gg]rad[Ss]ample.*|compute_.*_grad_sample|create_or_accumulate_grad_sample|register_grad_sampler | learn#perExampleGradients | per-example gradients by vmap | | | | |
+S | DistributedDPOptimizer|DifferentiallyPrivateDistributedDataParallel|.*Distributed.*|.*Lightning.*|.*Ghost.*|.*FSDP.* | | distributed and fused implementations | | | |
+F | DPDataLoader|UniformWithReplacementSampler|DPSampler|wrap_collate_with_empty|BatchSplittingSampler|BatchMemoryManager|.*Sampler.* | data#batchSampler, #weightedRandomSampler | Poisson sampling of batches is done by `subsampledGaussianRdp`'s sampler assumption; the batch splitter is memory plumbing | | | | |
+P | StepNoise|NoiseScheduler|ConstantNoise|ExponentialNoise|LambdaNoise|StepNoise|.*Noise.*|get_noise_multiplier|ModuleValidator|.*Validator.* | learn#noiseMultiplierFor | noise multiplier for a target epsilon exists; noise schedules over epochs do not | learn/dp-sgd.ts | S | low | privacy accountants
+F | .* | learn | | | | |
+
+@lib pytorch_lightning
+@area callbacks
+F | EarlyStopping | nn#earlyStopping | | | | |
+F | LearningRateMonitor | nn#learningRateMonitor | | | | |
+F | ModelPruning | nn#iterativeMagnitudePruning | | | | |
+F | ModelSummary | nn#summary | | | | |
+P | ModelCheckpoint|OnExceptionCheckpoint | nn#bestCheckpoint | best-so-far weights in memory are there; checkpoint files on disk are not wanted | | | |
+P | GradientAccumulationScheduler | nn#accumulate | | | | |
+P | StochasticWeightAveraging | nn#swagCollect | SWAG keeps the first two moments; plain SWA (the average) is its mean | | | |
+P | BackboneFinetuning|BaseFinetuning | nn#trainOnly | | | | |
+A | LearningRateFinder | optim#schedules | the learning-rate range test (Smith 2017): a short run with the rate rising geometrically, the loss curve and the suggested rate; planned in the catalogue as `lr-finder.ts` | nn/training/lr-finder.ts | S | high | training-loop diagnostics
+A | BatchSizeFinder|SpikeDetection | | | nn/training | S | low | training-loop diagnostics
+S | RichProgressBar|TQDMProgressBar|DeviceStatsMonitor|Timer|ThroughputMonitor | | progress, devices, timing | | | |
+@area trainer
+F | accumulate_grad_batches|gradient_clip_val | nn#accumulate, optim#clipByGlobalNorm | | | | |
+P | Trainer|LightningModule|LightningDataModule|fit|validate|test|predict | nn#fitAlgorithm, learn#defineTrainer | the trainer base is a session on the tape; the module/datamodule split is not copied | | | |
+P | detect_anomaly|deterministic | | NaN checks and determinism: omai's randomness is explicit by keys | | | |
+A | overfit_batches|fast_dev_run | | the "overfit one batch" and smoke-run sanity checks | nn/training | S | low | training-loop diagnostics
+S | precision|limit_train_batches|val_check_interval|check_val_every_n_epoch|tune | | mixed precision and loop plumbing | | | |
+@area loggers
+S | .* | | loggers | | | |
+@area strategies
+S | .* | | distributed strategies | | | |
+
+@lib ignite
+@area engine
+P | Engine|Events|State|create_supervised_trainer|create_supervised_evaluator | trace#runAlgorithm | events and handlers are the tape and the probes | | | |
+@area handlers
+F | EarlyStopping | nn#earlyStopping | | | | |
+F | PiecewiseLinear|CosineAnnealingScheduler|LinearCyclicalScheduler|ConcatScheduler|ParamScheduler|ParamGroupScheduler|CreateStateDictLRScheduler|LRScheduler | optim#schedules, #piecewiseInterpolate, #joinSchedules, #cyclical, #cosineWarmRestarts | | | | |
+F | EMAHandler | optim#ema | | | | |
+P | ModelCheckpoint|Checkpoint|DiskSaver|global_step_from_engine | nn#bestCheckpoint | | | | |
+P | TerminateOnNan|TimeLimit | trace | stopping rules on the tape (`trace` has stop conditions); a NaN guard is not named | | | |
+A | FastaiLRFinder | | | nn/training/lr-finder.ts | S | high | training-loop diagnostics
+S | ProgressBar|Timer|EpochOutputStore|BasicTimeProfiler|HandlersTimeProfiler | | | | | |
+@area metrics
+F | .* | metrics | one named metric each in `metrics` (Accuracy, Precision, Recall, Fbeta, ConfusionMatrix, IoU, ROC_AUC, AveragePrecision, regression errors, SSIM, PSNR, FID, InceptionScore) | | | | |
+@area contrib
+S | .* | | loggers and GPU info | | | |
+
+@lib learn2learn
+@area algorithms
+A | MAML|FirstOrderMAML|MAMLpp|LightningMAML|GBML|ANIL|LightningANIL | autodiff (hessian, grad of grad) | optimisation-based meta-learning: an inner loop of gradient steps on a task's support set, an outer step through it. omai's autodiff nests, so second-order MAML is direct; the catalogue plans it (C5 in algorithm-gaps) | learn/meta-learning.ts | M | high | optimisation-based meta-learning
+A | Reptile|MetaSGD|MetaCurvature|KFO | | first-order and learned-learning-rate variants | learn/meta-learning.ts | M | medium | optimisation-based meta-learning
+A | ProtoNet|LightningPrototypicalNetworks|LightningMetaOptNet | losses#contrastive, nn | prototypical networks: class means of the support embeddings, nearest-prototype classification of queries, episode training; planned (`prototypical-networks`) | learn/few-shot.ts | M | high | metric-based few-shot learning
+@area data
+A | MetaDataset|TaskDataset|Taskset|FilterLabels|NWays|KShots|LoadData|RemapLabels|ConsecutiveLabels|DataDescription | data#stratifiedIndices, #generate | the N-way K-shot episode sampler: tasks as a distribution of labelled sets, with support and query splits. A generator with a known task distribution suits omai's "datasets carry their truth" rule. | learn/few-shot.ts | M | high | metric-based few-shot learning
+A | OmniglotFC|mini_imagenet|tiered_imagenet|cifarfs|fc100|fashion_mnist_fs | datasets | few-shot benchmark datasets (omai has no Omniglot; the catalogue notes it as a candidate to vendor) | datasets/images.ts | M | low | metric-based few-shot learning
+@area optim
+S | .* | | learned-optimiser plumbing | | | |
+@area rl
+A | MetaWorld|MAMLPolicy|meta_env|sampler | | meta-reinforcement learning environments and policies | agents/maml-policy.ts | M | low | optimisation-based meta-learning
+
+@lib higher
+S | .* | autodiff | not needed: omai's optimisers are functional (`optim` transforms) and `grad` composes, so unrolling an inner loop and differentiating through it needs no patched modules or differentiable-optimiser classes | | | |
+
+@lib avalanche
+@area strategies
+A | EWC|EWCPlugin|SynapticIntelligence|SynapticIntelligencePlugin|MAS|MASPlugin|RWalkPlugin | optim#empiricalFisher | regularisation-based continual learning: a penalty that protects weights important to earlier tasks (EWC uses the empirical Fisher, which `optim` has) | learn/continual.ts | M | high | continual learning
+A | Replay|ReplayPlugin|GDumb|DER|ER_ACE|ICaRL|ICaRLPlugin|BiC|GSS|AR1|CWRStar|CWRStarPlugin | rl#replayBuffer, random#reservoir | rehearsal: keep a few earlier examples and mix them in. The buffers exist for RL; a class-balanced or reservoir buffer for supervised streams of tasks does not | learn/continual.ts | M | high | continual learning
+A | LwF|LwFPlugin|LFL | losses#distillation | learning without forgetting: distil the old model's outputs on new data (the distillation loss exists) | learn/continual.ts | S | medium | continual learning
+A | GEM|GEMPlugin|AGEM|AGEMPlugin | | gradient projection onto the cone of non-increasing loss on memory | learn/continual.ts | M | low | continual learning
+P | Naive|JointTraining|Cumulative | nn#fitAlgorithm | the baselines (fine-tune on each task, train on all data jointly) are ordinary training | | | |
+S | StreamingLDA|ExpertGateStrategy|LearningToPrompt|EarlyStoppingPlugin|LRSchedulerPlugin | | | | | |
+@area plugins
+S | EarlyStoppingPlugin|LRSchedulerPlugin | | | | | |
+A | .* | | the remaining plugins are in the strategy groups above | learn/continual.ts | M | low | continual learning
+@area benchmarks
+A | SplitMNIST|PermutedMNIST|RotatedMNIST|SplitFMNIST|nc_benchmark|ni_benchmark|dataset_benchmark | datasets#digits, #fashionMnistTest | a stream of tasks built from a labelled set (class splits, pixel permutations, rotations) with the accuracy matrix: the standard setting that makes forgetting visible | datasets/task-streams.ts | M | high | continual learning
+S | SplitCIFAR10|SplitCIFAR100|CORe50|SplitTinyImageNet | | | | | |
+@area metrics
+A | forgetting_metrics|bwt_metrics|forward_transfer_metrics|accuracy_metrics|class_accuracy_metrics|loss_metrics|confusion_matrix_metrics | metrics#confusionMatrix | the accuracy matrix over tasks, forgetting, backward and forward transfer | metrics/continual.ts | S | high | continual learning
+S | cpu_usage_metrics | | | | | |
+@area training
+A | ReservoirSamplingBuffer|ClassBalancedBuffer|ParametricBuffer|ExemplarsBuffer|ReplayDataLoader | random#reservoir | | learn/continual.ts | S | medium | continual learning
+
+@lib river
+@area linear_model
+F | LinearRegression|LogisticRegression|PAClassifier|PARegressor|Perceptron|SoftmaxRegression | linear#perceptron, #passiveAggressive, #linearModel | | | | |
+F | BayesianLinearRegression | linear#bayesianOnlineLinear | | | | | |
+P | ALMAClassifier | linear | | | | |
+@area tree
+F | HoeffdingTreeClassifier | trees#hoeffdingTreeClassifier | | | | |
+A | HoeffdingAdaptiveTreeClassifier|HoeffdingAdaptiveTreeRegressor|ExtremelyFastDecisionTreeClassifier|HoeffdingTreeRegressor|SGTClassifier|SGTRegressor|iSOUPTreeRegressor|LabelCombinationHoeffdingTreeClassifier | trees#hoeffdingTreeClassifier, learn#adwin | adaptive and regression variants of the stream trees; the Hoeffding tree and the ADWIN detector they combine are both there | trees/hoeffding.ts | M | medium | stream trees and ensembles
+@area ensemble
+A | AdaptiveRandomForestClassifier|AdaptiveRandomForestRegressor|ADWINBaggingClassifier|BaggingClassifier|LeveragingBaggingClassifier|SRPClassifier|SRPRegressor|StreamingRandomPatchesClassifier|BOLEClassifier|AdaBoostClassifier | ensembles, learn#adwin | online bagging, boosting and adaptive random forests: ensembles that replace members when a drift detector fires | ensembles/online.ts | M | medium | stream trees and ensembles
+P | StackingClassifier|VotingClassifier | ensembles | batch stacking and voting exist | | | |
+@area neighbors
+P | KNNClassifier|KNNRegressor|SWINN|LazySearch | learn#kNeighboursClassifier | a sliding window of the last k points is a window over the index | | | |
+@area naive_bayes
+F | GaussianNB|MultinomialNB|BernoulliNB|ComplementNB | learn#naiveBayesPartialFit, #gaussianNaiveBayes | | | | |
+@area cluster
+P | KMeans|STREAMKMeans | cluster#miniBatchKMeansAlgorithm | | | | |
+A | DBSTREAM|CluStream|DenStream|TextClust | sketches, cluster#birchAlgorithm | micro-cluster summaries over a stream with decay (BIRCH is the batch-incremental relative) | cluster/stream.ts | M | low | stream clustering
+@area anomaly
+A | HalfSpaceTrees | anomaly#isolationForest | the stream anomaly detector of the isolation-forest family: half-space trees over a window | anomaly/half-space-trees.ts | S | medium | stream anomaly detectors
+F | OneClassSVM|LocalOutlierFactor | svm#oneClassSvm, anomaly#localOutlierFactor | | | | |
+P | QuantileFilter|ThresholdFilter|GaussianScorer | anomaly#quantileThreshold, #potThreshold | | | | |
+@area drift
+F | ADWIN|KSWIN|PageHinkley|DDM|EDDM | learn#adwin, #kswin, timeseries#pageHinkley, learn#ddm, #eddm | | | | |
+A | HDDM_A|HDDM_W | learn#ddm | Hoeffding-bound drift detectors | learn/drift.ts | S | low | drift detectors
+P | DriftDetector|BinaryDriftDetector | learn/drift.ts | | | | |
+@area drift_datasets
+S | .* | | | | | |
+@area preprocessing
+P | StandardScaler|MinMaxScaler|MaxAbsScaler|RobustScaler|Normalizer|Binarizer|OneHotEncoder|OrdinalEncoder|PolynomialExtender|FeatureHasher | learn/preprocessing | omai's are batch transformers; incremental `learn_one` versions (running mean and variance) are not named | learn/preprocessing | M | low | online preprocessing
+P | TargetStandardScaler|PredClipper|LDA | learn/preprocessing | | | | |
+@area feature_selection
+P | .* | learn#selectKBest, #varianceThreshold | batch | | | |
+@area metrics
+F | .* | metrics#streaming, metrics | rolling and streaming wrappers over the named metrics | | | | |
+@area optim
+F | .* | optim | | | | |
+@area forecast
+P | HoltWinters|HorizonMetric | timeseries (exponential smoothing) | | | | |
+A | SNARIMAX | timeseries#ArimaFit | online ARIMA with exogenous inputs, fitted by SGD | timeseries/online-arima.ts | S | low | online forecasting
+F | NBEATS | nn/blocks#NBeats | | | | |
+@area reco
+F | FunkMF|BiasedMF|RandomNormal|Baseline|FMRegressor|HOFMClassifier|FFMClassifier | nn/blocks#FactorisationMachine, #FieldAwareFm, numerics/linalg/completion | | | | |
+@area compose
+F | .* | learn#pipeline, #columnTransformer, #featureUnion | | | | |
+@area time_series
+A | SNARIMAX | timeseries#ArimaFit | online ARIMA with exogenous inputs, fitted by SGD | timeseries/online-arima.ts | S | low | online forecasting
+P | Detrender|GroupDetrender|evaluate | timeseries | | | | |
+@area bandit
+F | EpsilonGreedy|UCB|ThompsonSampling|RandomPolicy|Exp3|BayesUCB | agents#epsilonGreedyBandit, #ucb1, #thompsonGaussian, #exp3 | | | | |
+A | LinUCBDisjoint | agents | contextual bandits with a linear payoff (LinUCB) | agents/contextual-bandits.ts | S | medium | contextual bandits
+@area datasets
+P | .* | data#stream, #withConceptDrift | the stream generators with abrupt and gradual concept drift (SEA, Agrawal, Hyperplane, RandomRBF, Sine, Stagger, Mixed) are covered in spirit by `data#stream` with concept-drift modifiers; the named generators are not | datasets/streams.ts | S | medium | stream generators
+@area stats
+P | .* | stats/smoothing#runningMean, rl#runningMeanStd, sketches | running mean, variance, quantiles and moments exist piecemeal | | | |
+@area evaluate
+A | progressive_val_score|iter_progressive_val_score|evaluate | data#streamAlgorithm, metrics#streaming | prequential (test-then-train) evaluation with a rolling metric and the curve of it: the standard protocol of stream learning and an excellent tape | data/prequential.ts | S | high | prequential evaluation
+@area stream
+P | .* | data#stream | | | | |
+@area multioutput
+F | .* | learn#classifierChain, #regressorChain | | | | |
+@area active
+F | EntropySampler | learn#streamActiveLearning | | | | |
+@area proba
+P | .* | dists | | | | |
+@area sketch
+F | .* | sketches | | | | |
+@area imblearn
+P | .* | learn | | | | |
+
+@lib snorkel
+@area labeling
+P | labeling_function|LabelingFunction|LFApplier|PandasLFApplier|SparkLFApplier|DaskLFApplier|preprocessor | datasets#labellingFunctions, learn#labellingMatrixSummary | labelling functions as data exist (a generator with truth); the decorator-style applier over a table does not | learn/weak-supervision.ts | S | medium | weak-supervision workflow
+P | LFAnalysis | learn#labellingMatrixSummary | coverage, overlap and conflict of labelling functions | | | |
+P | filter_unlabeled_dataframe | learn#UNLABELLED | | | | |
+@area label_model
+F | LabelModel | learn#labelModel | | | | |
+F | MajorityLabelVoter|MajorityClassVoter | learn#majorityVote | | | | |
+@area augmentation
+A | transformation_function|TransformationFunction|RandomPolicy|MeanFieldPolicy|ApplyAllPolicy|ApplyOnePolicy|PandasTFApplier|TFApplier | data/modifiers | data augmentation by user-written transformation functions with sampling policies (TANDA) | learn/weak-supervision.ts | S | low | weak-supervision workflow
+@area slicing
+A | slicing_function|SlicingFunction|SlicedClassifier|PandasSFApplier|slice_dataframe | | slice-based learning: functions marking data subsets, with a head per slice | learn/weak-supervision.ts | M | low | weak-supervision workflow
+@area classification
+P | MultitaskClassifier|DictDataset|DictDataLoader|Task|Operation | | multi-task training with a task graph: `defineTrainer` and `nn` give the parts | | | |
+@area utils
+F | probs_to_preds|preds_to_probs | learn | | | | |
+@area analysis
+F | Scorer|metric_score | learn#makeScorer | | | | |
+
+@lib cleanlab
+@area filter
+F | find_label_issues|find_predicted_neq_given | learn#findLabelIssues | | | | |
+@area classification
+P | CleanLearning | learn#findLabelIssues, #confidentJoint | train a classifier on the data after pruning the label issues found: composition | learn/noisy-labels.ts | S | medium | data-centric diagnostics
+@area rank
+F | get_label_quality_scores|get_self_confidence_for_each_label|get_normalized_margin_for_each_label|get_confidence_weighted_entropy_for_each_label|get_label_quality_ensemble_scores | learn#labelQuality | | | | |
+@area count
+F | compute_confident_joint|estimate_joint|estimate_confident_joint_and_cv_pred_proba|num_label_issues|calibrate_confident_joint|estimate_latent|estimate_noise_matrices|estimate_py_and_noise_matrices_from_probabilities | learn#confidentJoint, #estimateNoiseTransition | | | | |
+@area dataset
+A | health_summary|find_overlapping_classes|overall_label_health_score|rank_classes_by_label_quality | learn#membershipReport | dataset-level summaries of label health (class overlap, per-class quality) | learn/noisy-labels.ts | S | low | data-centric diagnostics
+@area outlier
+A | OutOfDistribution | anomaly | OOD scores from features or predictions (distance to neighbours, softmax confidence, energy); `anomaly` has detectors but no prediction-based OOD scores | anomaly/ood.ts | S | medium | data-centric diagnostics
+@area regression
+A | .* | learn#findLabelIssues | label issues for regression targets (residual-based) | learn/noisy-labels.ts | S | low | data-centric diagnostics
+@area multilabel
+A | .* | learn#findLabelIssues | | learn/noisy-labels.ts | S | low | data-centric diagnostics
+@area token_classification
+A | .* | | label issues in sequence labels | learn/noisy-labels.ts | S | low | data-centric diagnostics
+@area object_detection
+S | .* | | | | | |
+@area segmentation
+S | .* | | | | | |
+@area datalab
+A | Datalab|find_issues|report|label_issues|outlier_issues|near_duplicate_issues|non_iid_issues|class_imbalance_issues|underperforming_group_issues|null_issues|data_valuation_issues|spurious_correlations | data (modifiers), text#nearDuplicates, explain (dataShapley), learn#findLabelIssues | the one-call audit that runs label, outlier, duplicate, non-IID, imbalance, null and subgroup checks and reports; omai has each check in a different domain and no combined report | learn/data-audit.ts | M | high | data-centric diagnostics
+@area benchmarking
+F | generate_noise_matrix_from_trace|generate_noisy_labels|noisy_labels_from_matrix | data#noiseTransition, #withLabelNoise | | | | |
+@area experimental
+S | .* | | | | | |
+
+@lib small_text
+@area query_strategies
+F | RandomSampling|LeastConfidence|PredictionEntropy|BreakingTies|EmbeddingKMeans|GreedyCoreset|BALD|BatchBALD|CoreSet|QueryByCommittee|DropoutQuery|ContrastiveActiveLearning|ExpectedGradientLength|DiscriminativeActiveLearning|SEALS|RandomSubsampling | learn#randomSampling, #leastConfidence, #entropySampling, #marginSampling, #coreSetSampling, #baldSampling, #batchBald, #voteEntropySampling, #badgeSampling | | | | |
+P | ConfidenceBasedStopping|KappaAverage|OverallUncertainty|StoppingCriterion | learn#activeLearningAlgorithm | stopping criteria for active learning (stop when the model stabilises); omai stops by budget | learn/active-learning.ts | S | medium | active-learning stopping
+@area active_learner
+F | .* | learn#activeLearning | | | | |
+@area initialization
+P | .* | data#semiSupervisedSplit, data#stratifiedIndices | | | | |
+@area classifiers
+S | .* | | text classifiers on pretrained transformers | | | |
+
+@lib flower
+@area strategies
+A | FedAvg|FedAvgM|FedOpt|FedAdam|FedAdagrad|FedYogi|FaultTolerantFedAvg | | federated averaging with server optimisers: clients with non-IID data train locally, the server averages; listed as C1 in algorithm-gaps and planned in the catalogue | learn/federated.ts | M | high | federated learning
+A | FedProx|QFedAvg|FedXgbBagging | | heterogeneity-aware variants | learn/federated.ts | S | medium | federated learning
+A | FedMedian|FedTrimmedAvg|Krum|Bulyan | | robust aggregation against corrupted clients | learn/federated.ts | S | low | federated learning
+P | DPFedAvgFixed|DPFedAvgAdaptive | learn#dpSgdAlgorithm | differentially private rounds: clipping and noise exist, the rounds do not | learn/federated.ts | S | medium | federated learning
+@area
+S | start_server|start_client|simulation|client_fn|NumPyClient|differential_privacy|secure_aggregation | | networking and secure aggregation | | | |

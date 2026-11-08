@@ -1,0 +1,103 @@
+{
+"library": "crf_libraries",
+"version": "0.5.0",
+"source": "introspection",
+"entries": [
+{
+"area": "pycrfsuite",
+"name": "BaseTrainer",
+"kind": "class",
+"doc": "BaseTrainer(algorithm=None, params=None, verbose=True)"
+},
+{
+"area": "pycrfsuite",
+"name": "CRFSuiteError",
+"kind": "class",
+"doc": "Common base class for all non-exit exceptions."
+},
+{
+"area": "pycrfsuite",
+"name": "ItemSequence",
+"kind": "class",
+"doc": "ItemSequence(pyseq)"
+},
+{
+"area": "pycrfsuite",
+"name": "Tagger",
+"kind": "class",
+"doc": "The tagger class."
+},
+{
+"area": "pycrfsuite",
+"name": "Trainer",
+"kind": "class",
+"doc": "The trainer class."
+},
+{
+"area": "sklearn_crfsuite",
+"name": "CRF",
+"kind": "class",
+"doc": "python-crfsuite wrapper with interface siimlar to scikit-learn."
+},
+{
+"area": "sklearn_crfsuite.metrics",
+"name": "flat_accuracy_score",
+"kind": "function",
+"doc": "Return accuracy score for sequence items."
+},
+{
+"area": "sklearn_crfsuite.metrics",
+"name": "flat_classification_report",
+"kind": "function",
+"doc": "Return classification report for sequence items."
+},
+{
+"area": "sklearn_crfsuite.metrics",
+"name": "flat_f1_score",
+"kind": "function",
+"doc": "Return F1 score for sequence items."
+},
+{
+"area": "sklearn_crfsuite.metrics",
+"name": "flat_fbeta_score",
+"kind": "function",
+"doc": "Return F-beta score for sequence items."
+},
+{
+"area": "sklearn_crfsuite.metrics",
+"name": "flat_precision_score",
+"kind": "function",
+"doc": "Return precision score for sequence items."
+},
+{
+"area": "sklearn_crfsuite.metrics",
+"name": "flat_recall_score",
+"kind": "function",
+"doc": "Return recall score for sequence items."
+},
+{
+"area": "sklearn_crfsuite.metrics",
+"name": "sequence_accuracy_score",
+"kind": "function",
+"doc": "Return sequence accuracy score. Match is counted only when two sequences"
+},
+{
+"area": "sklearn_crfsuite.utils",
+"name": "chain",
+"kind": "class",
+"doc": "Return a chain object whose .__next__() method returns elements from the"
+},
+{
+"area": "sklearn_crfsuite.utils",
+"name": "flatten",
+"kind": "function",
+"doc": "Flatten a list of lists."
+},
+{
+"area": "torchcrf",
+"name": "torchcrf.CRF",
+"kind": "class",
+"doc": "Conditional random field."
+}
+]
+}

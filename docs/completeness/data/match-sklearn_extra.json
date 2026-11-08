@@ -1,0 +1,12 @@
+[
+{"lib":"sklearn_extra","area":"cluster","name":"KMedoids","status":"full","how":"verdict","omai":"cluster#pamSolve, cluster#claraAlgorithm"},
+{"lib":"sklearn_extra","area":"cluster","name":"CommonNNClustering","status":"absent","how":"verdict","omai":"cluster#dbscan","note":"shared-nearest-neighbour density clustering","home":"cluster/density.ts","size":"S","priority":"low","group":"clustering extras"},
+{"lib":"sklearn_extra","area":"cluster","name":"CLARA","status":"full","how":"verdict","omai":"cluster#pamSolve, cluster#claraAlgorithm"},
+{"lib":"sklearn_extra","area":"cluster","name":"CLARANS","status":"absent","how":"verdict","omai":"cluster#pamSolve","note":"randomised neighbour search for medoids, for larger data","home":"cluster/medoids.ts","size":"S","priority":"low","group":"clustering extras"},
+{"lib":"sklearn_extra","area":"kernel_approximation","name":"Fastfood","status":"partial","how":"verdict","omai":"kernels#randomFourierFeatures"},
+{"lib":"sklearn_extra","area":"kernel_methods","name":"EigenProClassifier","status":"absent","how":"verdict","omai":"kernel-methods","note":"preconditioned stochastic gradient for kernel machines","home":"kernel-methods","size":"M","priority":"low","group":"clustering extras"},
+{"lib":"sklearn_extra","area":"kernel_methods","name":"EigenProRegressor","status":"absent","how":"verdict","omai":"kernel-methods","note":"preconditioned stochastic gradient for kernel machines","home":"kernel-methods","size":"M","priority":"low","group":"clustering extras"},
+{"lib":"sklearn_extra","area":"robust","name":"RobustWeightedClassifier","status":"absent","how":"verdict","omai":"linear (Huber, RANSAC and other robust fits)","note":"iteratively reweighted estimators robust to outliers (Holland and Ikeda)","home":"linear","size":"S","priority":"low","group":"clustering extras"},
+{"lib":"sklearn_extra","area":"robust","name":"RobustWeightedRegressor","status":"absent","how":"verdict","omai":"linear (Huber, RANSAC and other robust fits)","note":"iteratively reweighted estimators robust to outliers (Holland and Ikeda)","home":"linear","size":"S","priority":"low","group":"clustering extras"},
+{"lib":"sklearn_extra","area":"robust","name":"RobustWeightedKMeans","status":"absent","how":"verdict","omai":"linear (Huber, RANSAC and other robust fits)","note":"iteratively reweighted estimators robust to outliers (Holland and Ikeda)","home":"linear","size":"S","priority":"low","group":"clustering extras"}
+]

@@ -1,0 +1,54 @@
+# Structured prediction and sequence labelling. sklearn-crfsuite, python-crfsuite and pytorch-crf were enumerated from the
+# installed packages (`crf_libraries`); CRF++, AllenNLP, flair, pystruct, seqeval and the wider literature are from memory
+# (`crf_tools`: names and features, not an API inventory).
+# Verified in the source: pgm/models/crf.ts (linearChainCrf, crfScore, crfLogLikelihood, crfMarginals, crfDecode,
+# crfppCrf, crfppObservation, crfParameters, crfFeatureCounts, crfExpectedFeatureCounts, fitCrf, generalCrf, fitGeneralCrf
+# with exact or loopy BP), pgm/models/crf-training.ts (the solver slot, with the structured perceptron, the averaged
+# perceptron and passive-aggressive with cost-augmented decoding as modes; c1 and c2 penalties), text/templates.ts (CRF++
+# and Wapiti templates), text/attribute-templates.ts, metrics/sequence-labelling.ts (seqeval-style entity scores),
+# text (CKY, Earley, PCFG training, arc-standard and Eisner dependency parsing), pgm (HMM with Baum-Welch, HSMM).
+@lib crf_libraries
+@area pycrfsuite
+F | Trainer|BaseTrainer|ItemSequence|Tagger | pgm#fitCrf, #trainCrf, #crfTrainAlgorithm, #crfDecode, #crfMarginals | CRFsuite's trainer and tagger: lbfgs, l2sgd, passive-aggressive and the perceptron are modes of `crfSolvers`; AROW is not; L1 is by subgradient where CRFsuite uses OWL-QN (omai has `owlqn` in `optim`, not as a CRF solver) | | | | |
+S | CRFSuiteError | | | | | |
+@area sklearn_crfsuite
+P | CRF | pgm#fitCrf, #linearChainCrf | the estimator shape (`fit(X, y)`, `predict`, `predict_marginals`, `score`) over lists of feature dictionaries: the parts are all there, but as functions on a model record, not an estimator on the learn base | learn/crf-estimator.ts | S | medium | CRF estimator
+F | flat_accuracy_score|flat_classification_report|flat_f1_score|flat_fbeta_score|flat_precision_score|flat_recall_score | metrics#accuracyScore, #classificationReport, #f1Score, #fbetaScore | token-level scores over flattened sequences | | | | |
+P | sequence_accuracy_score | learn#tokenAccuracy, pgm#crfTrainAlgorithm | the share of sequences labelled entirely right is `sequenceError` on the training tape; no named metric | metrics/sequence-labelling.ts | S | low | CRF evaluation
+F | chain|flatten | | | | | |
+@area torchcrf
+A | torchcrf.CRF | pgm#crfLogLikelihood, #crfDecode | a CRF layer on top of a neural encoder: emission scores come from the network, transitions are parameters, the loss is the CRF negative log-likelihood and prediction is Viterbi; gradients flow into the encoder. The inference is in `pgm` on plain arrays; a differentiable version over tensors (so that a BiLSTM or transformer tagger can train end to end) does not exist. | nn/blocks/crf-layer.ts | M | high | neural CRF layer
+S | .* | | | | | |
+
+@lib crf_tools
+@area crf_plus_plus
+F | crf_learn|crf_test|template|unigram_features|bigram_features|L1_regularisation|L2_regularisation|cost_parameter|viterbi_decoding|marginal_probabilities | pgm#crfppCrf, #crfppObservation, text#parseCrfppTemplate, #crfppFeatures | CRF++ templates, unigram and bigram features, L1 and L2 | | | | |
+A | n_best | pgm#crfDecode | the n best label sequences (list Viterbi), with their probabilities | pgm/inference/chain.ts | S | medium | decoding variants
+@area crfsuite_algorithms
+F | lbfgs|l2sgd|ap|pa | pgm#crfSolvers | | | | |
+A | arow | pgm#crfSolvers | adaptive regularisation of weights, a confidence-weighted online update | pgm/models/crf-training.ts | S | low | structured learners
+@area allennlp
+P | ConditionalRandomField|CrfTagger | pgm#linearChainCrf | the CRF layer of AllenNLP; see torchcrf | nn/blocks/crf-layer.ts | M | high | neural CRF layer
+A | allowed_transitions|viterbi_tags | pgm#crfDecode | constrained decoding: forbid label pairs that the scheme does not allow (I-X after O) so that every decoded sequence is a valid entity sequence; `bioViolations` in `metrics` only detects them afterwards | pgm/inference/chain.ts | S | high | decoding variants
+@area flair
+A | SequenceTagger|BiLSTM-CRF|NERs | nn#LSTM, pgm#linearChainCrf | the BiLSTM-CRF tagger over word embeddings: the classic neural sequence labeller; omai has `LSTM`, embeddings and the CRF, and no assembled tagger | learn/sequence-tagger.ts | M | high | neural CRF layer
+@area pytorch_crf_extras
+P | CRF.decode|CRF.forward|emission_scores|transitions|start_transitions|end_transitions|mask|batch_first | pgm#crfDecode, #crfLogLikelihood | start and end transitions and masks for padded batches | nn/blocks/crf-layer.ts | S | medium | neural CRF layer
+@area pystruct
+F | ChainCRF|GraphCRF|EdgeFeatureGraphCRF|StructuredModel | pgm#linearChainCrf, #generalCrf, #fitGeneralCrf | chains and general graphs with exact or loopy-BP inference | | | | |
+P | StructuredPerceptron|AverageStructuredPerceptron|SubgradientSSVM|FrankWolfeSSVM|OneSlackSSVM|NSlackSSVM|SSVM|StructuredSVM | pgm#crfSolvers | the perceptron, the averaged perceptron and passive-aggressive with cost-augmented decoding are in; the batch max-margin learners (n-slack, one-slack cutting planes, block-coordinate Frank-Wolfe, subgradient) are not | pgm/models/structured-svm.ts | M | medium | structured learners
+A | CrammerSingerSVMModel|MultiClassClf|BinaryClf|MultiLabelClf|GridCRF|DirectionalGridCRF|LatentGraphCRF|LatentNodeCRF|LatentSSVM | pgm#generalCrf | structured models for multi-class and multi-label classification as special cases, grid CRFs for image labelling, and latent-variable structured models | pgm/models/crf.ts | M | low | structured learners
+A | lp_solver|ad3_inference|lp_relaxation_inference|qpbo_inference|max-product|dai_inference | pgm#mplpAlgorithm | MAP inference by LP relaxation (AD3, QPBO, graph cuts for submodular pairwise potentials): MPLP is in `pgm`; graph-cut MAP for binary pairwise models is a classic that `graph` has the max-flow for | pgm/inference/graph-cut-map.ts | M | medium | MAP inference for structured models
+@area seqeval
+F | classification_report|f1_score|precision_score|recall_score|accuracy_score|performance_measure|get_entities|IOB2|IOBES|BILOU|strict_mode|entity_level_metrics | metrics#entityScores, #entityF1, #entitySpans, #bioViolations, #classificationReport | the schemes (BIO, IOB1, BIOES, BILOU), strict and lenient matching, micro, macro and per-type scores | | | | |
+@area structured_prediction
+F | structured_perceptron|cost_augmented_inference|HMM_tagger|PCFG_inside_outside|CKY_parser|shift_reduce_parser|dependency_parser_MST|label_bias | pgm#crfSolvers, text#insideOutside, #cyk, #earley, #trainPcfg, #viterbiParse, #greedyArcStandard, #eisner | the structured perceptron and cost-augmented decoding in the CRF solver slot, chart parsers, PCFG training, transition-based and graph-based (Eisner) dependency parsing, HMMs with Baum-Welch; label bias is explained by the CRF against a locally normalised model, which omai can show only if a MEMM exists | | | | |
+A | structured_svm|max_margin_markov_networks|structured_hinge_loss|crammer_singer_structured_loss | | max-margin structured learning: a hinge loss over structures with margin rescaling | pgm/models/structured-svm.ts | M | medium | structured learners
+A | n_best_viterbi|k_best_decoding | | | pgm/inference/chain.ts | S | medium | decoding variants
+A | constrained_viterbi | | | pgm/inference/chain.ts | S | high | decoding variants
+A | MEMM|maximum_entropy_markov_model | | the locally normalised sequence model: a logistic classifier per position conditioned on the previous label. The standard foil for the CRF (label bias), short to build with `linearModel` and `viterbi`. | pgm/models/memm.ts | S | medium | CRF neighbours
+A | semi_markov_crf|higher_order_crf|skip_chain_crf | pgm#generalCrf, pgm/learning#hsmmFromHmm | semi-Markov CRFs label whole segments with a duration (the CRF counterpart of the HSMM, used for chunking, gene finding and segmentation); skip-chain and higher-order CRFs add long-range or longer-window cliques, which `generalCrf` can express with extra cliques but are not offered as models with their own feature templates | pgm/models/semi-markov-crf.ts | M | medium | CRF neighbours
+A | latent_variable_CRF|hidden_CRF|partial_label_CRF | pgm#generalCrf | CRFs with hidden states (HCRF, latent-dynamic CRF) and training from partial or ambiguous labels: the gradient is a difference of two expectations, one conditioned on the compatible labellings | pgm/models/latent-crf.ts | M | low | CRF neighbours
+A | neural_CRF|BiLSTM_CRF | | see flair and torchcrf | nn/blocks/crf-layer.ts | M | high | neural CRF layer
+A | biaffine_parser | text#eisner | neural graph-based dependency parsing (biaffine scorer over word encodings) | text/dependency-parsing.ts | M | low | CRF neighbours
+A | CRF_as_RNN|mean_field_inference|dense_CRF|pairwise_potentials_gaussian_kernel | pgm#meanField | dense CRFs with Gaussian-kernel pairwise potentials for refining a segmentation, and mean-field inference unrolled as network layers; `meanField` exists as an algorithm | pgm/models/dense-crf.ts | M | low | CRF neighbours

@@ -1,0 +1,319 @@
+{
+"library": "nashpy",
+"version": "0.0.43",
+"source": "introspection",
+"entries": [
+{
+"area": "nashpy.algorithms.lemke_howson",
+"name": "lemke_howson",
+"kind": "function",
+"doc": "Obtain the Nash equilibria using the Lemke Howson algorithm implemented"
+},
+{
+"area": "nashpy.algorithms.lemke_howson_lex",
+"name": "lemke_howson_lex",
+"kind": "function",
+"doc": "Obtain the Nash equilibria using the Lemke Howson algorithm implemented"
+},
+{
+"area": "nashpy.algorithms.support_enumeration",
+"name": "indifference_strategies",
+"kind": "function",
+"doc": "A generator for the strategies corresponding to the potential supports"
+},
+{
+"area": "nashpy.algorithms.support_enumeration",
+"name": "is_ne",
+"kind": "function",
+"doc": "Test if a given strategy pair is a pair of best responses"
+},
+{
+"area": "nashpy.algorithms.support_enumeration",
+"name": "obey_support",
+"kind": "function",
+"doc": "Test if a strategy obeys its support"
+},
+{
+"area": "nashpy.algorithms.support_enumeration",
+"name": "potential_support_pairs",
+"kind": "function",
+"doc": "A generator for the potential support pairs"
+},
+{
+"area": "nashpy.algorithms.support_enumeration",
+"name": "powerset",
+"kind": "function",
+"doc": "A power set of range(n)"
+},
+{
+"area": "nashpy.algorithms.support_enumeration",
+"name": "solve_indifference",
+"kind": "function",
+"doc": "Solve the indifference for a payoff matrix assuming support for the"
+},
+{
+"area": "nashpy.algorithms.support_enumeration",
+"name": "support_enumeration",
+"kind": "function",
+"doc": "Obtain the Nash equilibria using support enumeration."
+},
+{
+"area": "nashpy.algorithms.vertex_enumeration",
+"name": "vertex_enumeration",
+"kind": "function",
+"doc": "Obtain the Nash equilibria using enumeration of the vertices of the best"
+},
+{
+"area": "nashpy.egt.moran_process",
+"name": "fixation_probabilities",
+"kind": "function",
+"doc": "Return the fixation probabilities for all types of individuals."
+},
+{
+"area": "nashpy.egt.moran_process",
+"name": "get_complete_graph_adjacency_matrix",
+"kind": "function",
+"doc": "Return the adjacency matrix for the complete graph on a population."
+},
+{
+"area": "nashpy.egt.moran_process",
+"name": "is_population_not_fixed",
+"kind": "function",
+"doc": "Given a population vector and a set of population connected components this"
+},
+{
+"area": "nashpy.egt.moran_process",
+"name": "moran_process",
+"kind": "function",
+"doc": "Return a generator of population across the Moran process. The last"
+},
+{
+"area": "nashpy.egt.moran_process",
+"name": "score_all_individuals",
+"kind": "function",
+"doc": "Return the scores of all individuals when they play against all other"
+},
+{
+"area": "nashpy.egt.moran_process",
+"name": "update_population",
+"kind": "function",
+"doc": "Return the new population of all individuals given the scores of every"
+},
+{
+"area": "nashpy.game",
+"name": "Game",
+"kind": "class",
+"doc": "A class for a normal form game."
+},
+{
+"area": "nashpy.learning.fictitious_play",
+"name": "fictitious_play",
+"kind": "function",
+"doc": "Implement fictitious play"
+},
+{
+"area": "nashpy.learning.fictitious_play",
+"name": "get_best_response_to_play_count",
+"kind": "function",
+"doc": "Returns the best response to a belief based on the playing distribution of the opponent"
+},
+{
+"area": "nashpy.learning.fictitious_play",
+"name": "update_play_count",
+"kind": "function",
+"doc": "Update a belief vector with a given play"
+},
+{
+"area": "nashpy.learning.imitation_dynamics",
+"name": "imitation_dynamics",
+"kind": "function",
+"doc": "Simulate the imitation dynamics for a given game represented by payoff matrices A and B."
+},
+{
+"area": "nashpy.learning.imitation_dynamics",
+"name": "payoff",
+"kind": "function",
+"doc": "Calculate the payoff of a player given their strategy and the opponent's strategy."
+},
+{
+"area": "nashpy.learning.introspection_dynamics",
+"name": "introspection_dynamics",
+"kind": "function",
+"doc": "Run introspection dynamics."
+},
+{
+"area": "nashpy.learning.regret_minimization",
+"name": "compute_regrets",
+"kind": "function",
+"doc": "This function calculates the regrets for a player based on the strategy utilities and the current strategy."
+},
+{
+"area": "nashpy.learning.regret_minimization",
+"name": "generate_abs_strategy",
+"kind": "function",
+"doc": "This function will return most favorable utility by a player based on the max probability value."
+},
+{
+"area": "nashpy.learning.regret_minimization",
+"name": "regret_minimization",
+"kind": "function",
+"doc": "Obtain the Nash equilibria using regret minimization method using N number of itreations."
+},
+{
+"area": "nashpy.learning.regret_minimization",
+"name": "update_strategy",
+"kind": "function",
+"doc": "This function updates the player's strategy based on the regrets, the current strategy, and a fixed learning r"
+},
+{
+"area": "nashpy.learning.replicator_dynamics",
+"name": "asymmetric_replicator_dynamics",
+"kind": "function",
+"doc": "Implement asymmetric replicator dynamics"
+},
+{
+"area": "nashpy.learning.replicator_dynamics",
+"name": "get_derivative_of_asymmetric_fitness",
+"kind": "function",
+"doc": "Find the derivative of fitness function for the asymmetric replicator"
+},
+{
+"area": "nashpy.learning.replicator_dynamics",
+"name": "get_derivative_of_fitness",
+"kind": "function",
+"doc": "Find the derivative of fitness function"
+},
+{
+"area": "nashpy.learning.replicator_dynamics",
+"name": "replicator_dynamics",
+"kind": "function",
+"doc": "Implement replicator dynamics"
+},
+{
+"area": "nashpy.learning.stochastic_fictitious_play",
+"name": "get_distribution_response_to_play_count",
+"kind": "function",
+"doc": "Obtain a mixed strategy as a probability distribution as a response to a given play count"
+},
+{
+"area": "nashpy.learning.stochastic_fictitious_play",
+"name": "stochastic_fictitious_play",
+"kind": "function",
+"doc": "Return a given sequence of actions and mixed strategies through stochastic fictitious play. The"
+},
+{
+"area": "nashpy.linalg.minimax",
+"name": "get_A_eq",
+"kind": "function",
+"doc": "Return the equality linear coefficients for the LP that corresponds to the"
+},
+{
+"area": "nashpy.linalg.minimax",
+"name": "get_A_ub",
+"kind": "function",
+"doc": "Return the upper bound linear matrix for the objective function of the LP"
+},
+{
+"area": "nashpy.linalg.minimax",
+"name": "get_b_ub",
+"kind": "function",
+"doc": "Return the upper bound vector for the LP that corresponds to the minimax"
+},
+{
+"area": "nashpy.linalg.minimax",
+"name": "get_bounds",
+"kind": "function",
+"doc": "Return the bounds for each variable the LP that corresponds to the"
+},
+{
+"area": "nashpy.linalg.minimax",
+"name": "get_c",
+"kind": "function",
+"doc": "Return the coefficient vector for the objective function of the LP that"
+},
+{
+"area": "nashpy.linalg.minimax",
+"name": "linear_program",
+"kind": "function",
+"doc": "The Linear Program that corresponds to the minimax theorem. This builds and"
+},
+{
+"area": "nashpy.linalg.tableau",
+"name": "Tableau",
+"kind": "class",
+"doc": "An implementation of a standard Tableau"
+},
+{
+"area": "nashpy.linalg.tableau",
+"name": "TableauLex",
+"kind": "class",
+"doc": "A tableau with lexiographic sorting to break ties when pivoting."
+},
+{
+"area": "nashpy.linalg.tableau",
+"name": "create_col_tableau",
+"kind": "function",
+"doc": "Creates a column tableau"
+},
+{
+"area": "nashpy.linalg.tableau",
+"name": "create_row_tableau",
+"kind": "function",
+"doc": "Creates a row tableau"
+},
+{
+"area": "nashpy.polytope.polytope",
+"name": "build_halfspaces",
+"kind": "function",
+"doc": "Build a matrix representation for a halfspace corresponding to:"
+},
+{
+"area": "nashpy.polytope.polytope",
+"name": "find_feasible_point",
+"kind": "function",
+"doc": "Use linear programming to find a point inside the halfspaces (needed to"
+},
+{
+"area": "nashpy.polytope.polytope",
+"name": "labels",
+"kind": "function",
+"doc": "Return the labels of the facets on which lie a given vertex. This is"
+},
+{
+"area": "nashpy.polytope.polytope",
+"name": "non_trivial_vertices",
+"kind": "function",
+"doc": "Returns all vertex, label pairs (ignoring the origin)."
+},
+{
+"area": "nashpy.repeated_games",
+"name": "obtain_repeated_game",
+"kind": "function",
+"doc": "Obtain a nashpy.Game instance by repeating a given stage game. The rows and"
+},
+{
+"area": "nashpy.repeated_games",
+"name": "obtain_states",
+"kind": "function",
+"doc": "Yield all possible states for the row player in a repeated game."
+},
+{
+"area": "nashpy.repeated_games",
+"name": "obtain_strategy_space",
+"kind": "function",
+"doc": "Yield all possible strategies for the row player in a repeated game."
+},
+{
+"area": "nashpy.repeated_games",
+"name": "play_game",
+"kind": "function",
+"doc": "Obtain the utilities when repeating the game `game` for `repetitions`"
+},
+{
+"area": "nashpy.utils.is_best_response",
+"name": "is_best_response",
+"kind": "function",
+"doc": "Checks if sigma_r is a best response to sigma_c when A is the payoff matrix"
+}
+]
+}

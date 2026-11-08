@@ -1,0 +1,22 @@
+[
+{"lib":"lime","area":"lime.explanation","name":"DomainMapper","status":"partial","how":"verdict","omai":"exposition"},
+{"lib":"lime","area":"lime.explanation","name":"Explanation","status":"partial","how":"verdict","omai":"exposition"},
+{"lib":"lime","area":"lime.explanation","name":"id_generator","status":"partial","how":"verdict","omai":"exposition"},
+{"lib":"lime","area":"lime.lime_base","name":"LimeBase","status":"full","how":"verdict","omai":"explain#lime"},
+{"lib":"lime","area":"lime.lime_image","name":"ImageExplanation","status":"absent","how":"verdict","omai":"explain#lime, vision","note":"LIME over superpixels","home":"explain/lime-image.ts","size":"S","priority":"medium","group":"LIME variants"},
+{"lib":"lime","area":"lime.lime_image","name":"LimeImageExplainer","status":"absent","how":"verdict","omai":"explain#lime, vision","note":"LIME over superpixels","home":"explain/lime-image.ts","size":"S","priority":"medium","group":"LIME variants"},
+{"lib":"lime","area":"lime.lime_tabular","name":"BaseDiscretizer","status":"partial","how":"verdict","omai":"learn/preprocessing#kBinsDiscretizer","note":"LIME's discretisation of numeric features"},
+{"lib":"lime","area":"lime.lime_tabular","name":"DecileDiscretizer","status":"partial","how":"verdict","omai":"learn/preprocessing#kBinsDiscretizer","note":"LIME's discretisation of numeric features"},
+{"lib":"lime","area":"lime.lime_tabular","name":"EntropyDiscretizer","status":"partial","how":"verdict","omai":"learn/preprocessing#kBinsDiscretizer","note":"LIME's discretisation of numeric features"},
+{"lib":"lime","area":"lime.lime_tabular","name":"LimeTabularExplainer","status":"full","how":"verdict","omai":"explain#lime"},
+{"lib":"lime","area":"lime.lime_tabular","name":"QuartileDiscretizer","status":"partial","how":"verdict","omai":"learn/preprocessing#kBinsDiscretizer","note":"LIME's discretisation of numeric features"},
+{"lib":"lime","area":"lime.lime_tabular","name":"RecurrentTabularExplainer","status":"full","how":"verdict","omai":"explain#lime"},
+{"lib":"lime","area":"lime.lime_tabular","name":"StatsDiscretizer","status":"partial","how":"verdict","omai":"learn/preprocessing#kBinsDiscretizer","note":"LIME's discretisation of numeric features"},
+{"lib":"lime","area":"lime.lime_tabular","name":"TableDomainMapper","status":"full","how":"verdict","omai":"explain#lime"},
+{"lib":"lime","area":"lime.lime_tabular","name":"partial","status":"full","how":"verdict","omai":"explain#lime"},
+{"lib":"lime","area":"lime.lime_text","name":"IndexedCharacters","status":"partial","how":"verdict","omai":"explain#lime","note":"LIME over words (masking by removing words) is the same fit on a different perturbation; omai's explainers take a feature mask","home":"explain/lime-text.ts","size":"S","priority":"medium","group":"LIME variants"},
+{"lib":"lime","area":"lime.lime_text","name":"IndexedString","status":"partial","how":"verdict","omai":"explain#lime","note":"LIME over words (masking by removing words) is the same fit on a different perturbation; omai's explainers take a feature mask","home":"explain/lime-text.ts","size":"S","priority":"medium","group":"LIME variants"},
+{"lib":"lime","area":"lime.lime_text","name":"LimeTextExplainer","status":"partial","how":"verdict","omai":"explain#lime","note":"LIME over words (masking by removing words) is the same fit on a different perturbation; omai's explainers take a feature mask","home":"explain/lime-text.ts","size":"S","priority":"medium","group":"LIME variants"},
+{"lib":"lime","area":"lime.lime_text","name":"TextDomainMapper","status":"partial","how":"verdict","omai":"explain#lime","note":"LIME over words (masking by removing words) is the same fit on a different perturbation; omai's explainers take a feature mask","home":"explain/lime-text.ts","size":"S","priority":"medium","group":"LIME variants"},
+{"lib":"lime","area":"lime.submodular_pick","name":"SubmodularPick","status":"absent","how":"verdict","omai":"explain#lime","note":"picks a representative set of explanations to show (greedy coverage): global view from local ones","home":"explain/lime.ts","size":"S","priority":"low","group":"LIME variants"}
+]

@@ -1,0 +1,2047 @@
+{
+"library": "optax",
+"version": "0.2.8",
+"source": "introspection",
+"entries": [
+{
+"area": "optax",
+"name": "AdaptiveGradClipState",
+"kind": "class",
+"doc": "An empty state for the simplest stateless transformations."
+},
+{
+"area": "optax",
+"name": "AddDecayedWeightsState",
+"kind": "class",
+"doc": "An empty state for the simplest stateless transformations."
+},
+{
+"area": "optax",
+"name": "AddNoiseState",
+"kind": "class",
+"doc": "State for adding gradient noise. Contains a count for annealing."
+},
+{
+"area": "optax",
+"name": "ApplyEvery",
+"kind": "class",
+"doc": "Contains a counter and a gradient accumulator."
+},
+{
+"area": "optax",
+"name": "ApplyIfFiniteState",
+"kind": "class",
+"doc": "State of the `GradientTransformation` returned by `apply_if_finite`."
+},
+{
+"area": "optax",
+"name": "ClipByGlobalNormState",
+"kind": "class",
+"doc": "An empty state for the simplest stateless transformations."
+},
+{
+"area": "optax",
+"name": "ClipState",
+"kind": "class",
+"doc": "An empty state for the simplest stateless transformations."
+},
+{
+"area": "optax",
+"name": "ConditionallyMaskState",
+"kind": "class",
+"doc": "ConditionallyMaskState(step, inner_state)"
+},
+{
+"area": "optax",
+"name": "ConditionallyTransformState",
+"kind": "class",
+"doc": "Maintains inner transform state and adds a step counter."
+},
+{
+"area": "optax",
+"name": "DifferentiallyPrivateAggregateState",
+"kind": "class",
+"doc": "State containing PRNGKey for `differentially_private_aggregate`."
+},
+{
+"area": "optax",
+"name": "EmaState",
+"kind": "class",
+"doc": "Holds an exponential moving average of past updates."
+},
+{
+"area": "optax",
+"name": "EmptyState",
+"kind": "class",
+"doc": "An empty state for the simplest stateless transformations."
+},
+{
+"area": "optax",
+"name": "FactoredState",
+"kind": "class",
+"doc": "Overall state of the gradient transformation."
+},
+{
+"area": "optax",
+"name": "GradientTransformation",
+"kind": "class",
+"doc": "A pair of pure functions implementing a gradient transformation."
+},
+{
+"area": "optax",
+"name": "GradientTransformationExtraArgs",
+"kind": "class",
+"doc": "A specialization of GradientTransformation that supports extra args."
+},
+{
+"area": "optax",
+"name": "InjectHyperparamsState",
+"kind": "class",
+"doc": "Deprecated class kept for backwards compatibility."
+},
+{
+"area": "optax",
+"name": "LookaheadParams",
+"kind": "class",
+"doc": "Holds a pair of slow and fast parameters for the lookahead optimizer."
+},
+{
+"area": "optax",
+"name": "LookaheadState",
+"kind": "class",
+"doc": "State of the `GradientTransformation` returned by `lookahead`."
+},
+{
+"area": "optax",
+"name": "MaskedState",
+"kind": "class",
+"doc": "Maintains inner transform state for masked transformations."
+},
+{
+"area": "optax",
+"name": "MonitorState",
+"kind": "class",
+"doc": "MonitorState(measurements, measure_states)"
+},
+{
+"area": "optax",
+"name": "MultiSteps",
+"kind": "class",
+"doc": "An optimizer wrapper to accumulate gradients over multiple steps."
+},
+{
+"area": "optax",
+"name": "MultiStepsState",
+"kind": "class",
+"doc": "State of the `GradientTransformation` returned by `MultiSteps`."
+},
+{
+"area": "optax",
+"name": "MultiTransformState",
+"kind": "class",
+"doc": "PartitionState(inner_states,)"
+},
+{
+"area": "optax",
+"name": "NonNegativeParamsState",
+"kind": "class",
+"doc": "An empty state for the simplest stateless transformations."
+},
+{
+"area": "optax",
+"name": "PartitionState",
+"kind": "class",
+"doc": "PartitionState(inner_states,)"
+},
+{
+"area": "optax",
+"name": "ScaleByAdaDeltaState",
+"kind": "class",
+"doc": "State for the rescaling by Adadelta algorithm."
+},
+{
+"area": "optax",
+"name": "ScaleByAdamState",
+"kind": "class",
+"doc": "State for the Adam algorithm."
+},
+{
+"area": "optax",
+"name": "ScaleByAdanState",
+"kind": "class",
+"doc": "ScaleByAdanState(m, v, n, g, t)"
+},
+{
+"area": "optax",
+"name": "ScaleByAmsgradState",
+"kind": "class",
+"doc": "State for the AMSGrad algorithm."
+},
+{
+"area": "optax",
+"name": "ScaleByBacktrackingLinesearchState",
+"kind": "class",
+"doc": "State for :func:`optax.scale_by_backtracking_linesearch`."
+},
+{
+"area": "optax",
+"name": "ScaleByBeliefState",
+"kind": "class",
+"doc": "State for the rescaling by AdaBelief algorithm."
+},
+{
+"area": "optax",
+"name": "ScaleByLBFGSState",
+"kind": "class",
+"doc": "State for LBFGS solver."
+},
+{
+"area": "optax",
+"name": "ScaleByLionState",
+"kind": "class",
+"doc": "State for the Lion algorithm."
+},
+{
+"area": "optax",
+"name": "ScaleByNovogradState",
+"kind": "class",
+"doc": "State for Novograd."
+},
+{
+"area": "optax",
+"name": "ScaleByRStdDevState",
+"kind": "class",
+"doc": "State for centered exponential moving average of squares of updates."
+},
+{
+"area": "optax",
+"name": "ScaleByRmsState",
+"kind": "class",
+"doc": "State for exponential root mean-squared (RMS)-normalized updates."
+},
+{
+"area": "optax",
+"name": "ScaleByRpropState",
+"kind": "class",
+"doc": "ScaleByRpropState(step_sizes, prev_updates)"
+},
+{
+"area": "optax",
+"name": "ScaleByRssState",
+"kind": "class",
+"doc": "State holding the sum of gradient squares to date."
+},
+{
+"area": "optax",
+"name": "ScaleBySM3State",
+"kind": "class",
+"doc": "State for the SM3 algorithm."
+},
+{
+"area": "optax",
+"name": "ScaleByScheduleState",
+"kind": "class",
+"doc": "Maintains count for scale scheduling."
+},
+{
+"area": "optax",
+"name": "ScaleByTrustRatioState",
+"kind": "class",
+"doc": "An empty state for the simplest stateless transformations."
+},
+{
+"area": "optax",
+"name": "ScaleByZoomLinesearchState",
+"kind": "class",
+"doc": "State for scale_by_zoom_linesearch."
+},
+{
+"area": "optax",
+"name": "ScaleState",
+"kind": "class",
+"doc": "An empty state for the simplest stateless transformations."
+},
+{
+"area": "optax",
+"name": "ShouldSkipUpdateFunction",
+"kind": "class",
+"doc": "Base class for protocol classes."
+},
+{
+"area": "optax",
+"name": "TraceState",
+"kind": "class",
+"doc": "Holds an aggregation of past updates."
+},
+{
+"area": "optax",
+"name": "TransformInitFn",
+"kind": "class",
+"doc": "A callable type for the `init` step of a `GradientTransformation`."
+},
+{
+"area": "optax",
+"name": "TransformUpdateExtraArgsFn",
+"kind": "class",
+"doc": "An update function accepting additional keyword arguments."
+},
+{
+"area": "optax",
+"name": "TransformUpdateFn",
+"kind": "class",
+"doc": "A callable type for the `update` step of a `GradientTransformation`."
+},
+{
+"area": "optax",
+"name": "ZeroNansState",
+"kind": "class",
+"doc": "Contains a tree."
+},
+{
+"area": "optax",
+"name": "ZoomLinesearchInfo",
+"kind": "class",
+"doc": "Information about the zoom linesearch step, exposed for debugging."
+},
+{
+"area": "optax",
+"name": "adabelief",
+"kind": "function",
+"doc": "The AdaBelief optimizer."
+},
+{
+"area": "optax",
+"name": "adadelta",
+"kind": "function",
+"doc": "The Adadelta optimizer."
+},
+{
+"area": "optax",
+"name": "adafactor",
+"kind": "function",
+"doc": "The Adafactor optimizer."
+},
+{
+"area": "optax",
+"name": "adagrad",
+"kind": "function",
+"doc": "The Adagrad optimizer."
+},
+{
+"area": "optax",
+"name": "adam",
+"kind": "function",
+"doc": "The Adam optimizer."
+},
+{
+"area": "optax",
+"name": "adamax",
+"kind": "function",
+"doc": "A variant of the Adam optimizer that uses the infinity norm."
+},
+{
+"area": "optax",
+"name": "adamaxw",
+"kind": "function",
+"doc": "Adamax with weight decay regularization."
+},
+{
+"area": "optax",
+"name": "adamw",
+"kind": "function",
+"doc": "Adam with weight decay regularization."
+},
+{
+"area": "optax",
+"name": "adan",
+"kind": "function",
+"doc": "The ADAptive Nesterov momentum algorithm (Adan)."
+},
+{
+"area": "optax",
+"name": "adaptive_grad_clip",
+"kind": "function",
+"doc": "Clips updates to be at most ``clipping * parameter_norm``, unit-wise."
+},
+{
+"area": "optax",
+"name": "add_decayed_weights",
+"kind": "function",
+"doc": "Add parameter scaled by `weight_decay`."
+},
+{
+"area": "optax",
+"name": "add_noise",
+"kind": "function",
+"doc": "Add gradient noise."
+},
+{
+"area": "optax",
+"name": "amsgrad",
+"kind": "function",
+"doc": "The AMSGrad optimizer."
+},
+{
+"area": "optax",
+"name": "apply_every",
+"kind": "function",
+"doc": "Accumulate gradients and apply them every k steps."
+},
+{
+"area": "optax",
+"name": "apply_if_finite",
+"kind": "function",
+"doc": "A function that wraps an optimizer to make it robust to a few NaNs or Infs."
+},
+{
+"area": "optax",
+"name": "apply_updates",
+"kind": "function",
+"doc": "Applies an update to the corresponding parameters."
+},
+{
+"area": "optax",
+"name": "centralize",
+"kind": "function",
+"doc": "Centralizes gradients by subtracting their mean along leading dimension."
+},
+{
+"area": "optax",
+"name": "chain",
+"kind": "function",
+"doc": "Applies a list of chainable update transformations."
+},
+{
+"area": "optax",
+"name": "clip",
+"kind": "function",
+"doc": "Clips updates element-wise, to be in ``[-max_delta, +max_delta]``."
+},
+{
+"area": "optax",
+"name": "clip_by_block_rms",
+"kind": "function",
+"doc": "Clips updates to a max rms for the gradient of each param vector or matrix."
+},
+{
+"area": "optax",
+"name": "clip_by_global_norm",
+"kind": "function",
+"doc": "Clips updates using their global norm."
+},
+{
+"area": "optax",
+"name": "conditionally_mask",
+"kind": "function",
+"doc": "Calls the inner update function only at certain steps."
+},
+{
+"area": "optax",
+"name": "conditionally_transform",
+"kind": "function",
+"doc": "Calls the inner update function only at certain steps."
+},
+{
+"area": "optax",
+"name": "constant_schedule",
+"kind": "function",
+"doc": "Constructs a constant schedule."
+},
+{
+"area": "optax",
+"name": "convex_kl_divergence",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "optax",
+"name": "cosine_decay_schedule",
+"kind": "function",
+"doc": "Returns a function which implements cosine learning rate decay."
+},
+{
+"area": "optax",
+"name": "cosine_distance",
+"kind": "function",
+"doc": "Computes the cosine distance between targets and predictions."
+},
+{
+"area": "optax",
+"name": "cosine_onecycle_schedule",
+"kind": "function",
+"doc": "Returns a function which implements the onecycle learning rate schedule."
+},
+{
+"area": "optax",
+"name": "cosine_similarity",
+"kind": "function",
+"doc": "Computes the cosine similarity between targets and predictions."
+},
+{
+"area": "optax",
+"name": "ctc_loss",
+"kind": "function",
+"doc": "Computes CTC loss."
+},
+{
+"area": "optax",
+"name": "ctc_loss_with_forward_probs",
+"kind": "function",
+"doc": "Computes CTC loss and CTC forward-probabilities."
+},
+{
+"area": "optax",
+"name": "differentially_private_aggregate",
+"kind": "function",
+"doc": "Aggregates gradients based on the DPSGD algorithm."
+},
+{
+"area": "optax",
+"name": "dpsgd",
+"kind": "function",
+"doc": "The DPSGD optimizer."
+},
+{
+"area": "optax",
+"name": "ema",
+"kind": "function",
+"doc": "Compute an exponential moving average of past updates."
+},
+{
+"area": "optax",
+"name": "exponential_decay",
+"kind": "function",
+"doc": "Constructs a schedule with either continuous or discrete exponential decay."
+},
+{
+"area": "optax",
+"name": "flatten",
+"kind": "function",
+"doc": "Flattens parameters and gradients for init and update of inner transform."
+},
+{
+"area": "optax",
+"name": "fromage",
+"kind": "function",
+"doc": "The Frobenius matched gradient descent (Fromage) optimizer."
+},
+{
+"area": "optax",
+"name": "generalized_kl_divergence",
+"kind": "function",
+"doc": "Computes the generalized Kullback-Leibler divergence loss."
+},
+{
+"area": "optax",
+"name": "global_norm",
+"kind": "function",
+"doc": "Compute the global norm across a nested structure of tensors."
+},
+{
+"area": "optax",
+"name": "hinge_loss",
+"kind": "function",
+"doc": "Computes the hinge loss for binary classification."
+},
+{
+"area": "optax",
+"name": "huber_loss",
+"kind": "function",
+"doc": "Huber loss, similar to L2 loss close to zero, L1 loss away from zero."
+},
+{
+"area": "optax",
+"name": "identity",
+"kind": "function",
+"doc": "Stateless identity transformation that leaves input gradients untouched."
+},
+{
+"area": "optax",
+"name": "incremental_update",
+"kind": "function",
+"doc": "Incrementally update parameters via polyak averaging."
+},
+{
+"area": "optax",
+"name": "init_empty_state",
+"kind": "function",
+"doc": "Init function for a :class:`GradientTransformation` with empty state."
+},
+{
+"area": "optax",
+"name": "inject_hyperparams",
+"kind": "function",
+"doc": "Wrapper to injects stateful hyperparameters into GradientTransformations."
+},
+{
+"area": "optax",
+"name": "join_schedules",
+"kind": "function",
+"doc": "Sequentially apply multiple schedules."
+},
+{
+"area": "optax",
+"name": "keep_params_nonnegative",
+"kind": "function",
+"doc": "Modifies the updates to keep parameters non-negative, i.e. >= 0."
+},
+{
+"area": "optax",
+"name": "kl_divergence",
+"kind": "function",
+"doc": "Computes the Kullback-Leibler divergence (relative entropy) loss."
+},
+{
+"area": "optax",
+"name": "l2_loss",
+"kind": "function",
+"doc": "Calculates the L2 loss for a set of predictions."
+},
+{
+"area": "optax",
+"name": "lamb",
+"kind": "function",
+"doc": "The LAMB optimizer."
+},
+{
+"area": "optax",
+"name": "lars",
+"kind": "function",
+"doc": "The LARS optimizer."
+},
+{
+"area": "optax",
+"name": "lbfgs",
+"kind": "function",
+"doc": "L-BFGS optimizer."
+},
+{
+"area": "optax",
+"name": "linear_onecycle_schedule",
+"kind": "function",
+"doc": "Returns a learning rate with three linear phases."
+},
+{
+"area": "optax",
+"name": "linear_schedule",
+"kind": "function",
+"doc": "Schedule with linear transition from ``init_value`` to ``end_value``."
+},
+{
+"area": "optax",
+"name": "lion",
+"kind": "function",
+"doc": "The Lion optimizer."
+},
+{
+"area": "optax",
+"name": "log_cosh",
+"kind": "function",
+"doc": "Calculates the log-cosh loss for a set of predictions."
+},
+{
+"area": "optax",
+"name": "lookahead",
+"kind": "function",
+"doc": "Lookahead optimizer."
+},
+{
+"area": "optax",
+"name": "masked",
+"kind": "function",
+"doc": "Mask updates so only some are transformed, the rest are passed through."
+},
+{
+"area": "optax",
+"name": "matrix_inverse_pth_root",
+"kind": "function",
+"doc": "Computes `matrix^(-1/p)`, where `p` is a positive integer."
+},
+{
+"area": "optax",
+"name": "measure_with_ema",
+"kind": "function",
+"doc": "Take a measurement and record it with exponential moving average."
+},
+{
+"area": "optax",
+"name": "microbatch",
+"kind": "function",
+"doc": "A general microbatching transformation."
+},
+{
+"area": "optax",
+"name": "monitor",
+"kind": "function",
+"doc": "Monitors stateful measurements of updates in a chain."
+},
+{
+"area": "optax",
+"name": "multi_normal",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "optax",
+"name": "multi_transform",
+"kind": "function",
+"doc": "Partitions params and applies a different transformation to each subset."
+},
+{
+"area": "optax",
+"name": "nnls",
+"kind": "function",
+"doc": "Solves the non-negative least squares problem."
+},
+{
+"area": "optax",
+"name": "noisy_sgd",
+"kind": "function",
+"doc": "A variant of SGD with added noise."
+},
+{
+"area": "optax",
+"name": "novograd",
+"kind": "function",
+"doc": "NovoGrad optimizer."
+},
+{
+"area": "optax",
+"name": "ntxent",
+"kind": "function",
+"doc": "Normalized temperature scaled cross entropy loss (NT-Xent)."
+},
+{
+"area": "optax",
+"name": "partition",
+"kind": "function",
+"doc": "Partitions params and applies a different transformation to each subset."
+},
+{
+"area": "optax",
+"name": "per_example_global_norm_clip",
+"kind": "function",
+"doc": "Applies gradient clipping per-example using their global norm."
+},
+{
+"area": "optax",
+"name": "per_example_layer_norm_clip",
+"kind": "function",
+"doc": "Applies gradient clipping per-example using per-layer norms."
+},
+{
+"area": "optax",
+"name": "periodic_update",
+"kind": "function",
+"doc": "Periodically update all parameters with new values."
+},
+{
+"area": "optax",
+"name": "piecewise_constant_schedule",
+"kind": "function",
+"doc": "Piecewise constant schedule with scaled jumps at specific boundaries."
+},
+{
+"area": "optax",
+"name": "piecewise_interpolate_schedule",
+"kind": "function",
+"doc": "Piecewise interpolated schedule with linear or cosine transitions."
+},
+{
+"area": "optax",
+"name": "polyak_sgd",
+"kind": "function",
+"doc": "SGD with Polyak step-size."
+},
+{
+"area": "optax",
+"name": "polynomial_schedule",
+"kind": "function",
+"doc": "Constructs a schedule with polynomial transition from init to end value."
+},
+{
+"area": "optax",
+"name": "power_iteration",
+"kind": "function",
+"doc": "Power iteration algorithm."
+},
+{
+"area": "optax",
+"name": "radam",
+"kind": "function",
+"doc": "The Rectified Adam optimizer."
+},
+{
+"area": "optax",
+"name": "rmsprop",
+"kind": "function",
+"doc": "A flexible RMSProp optimizer."
+},
+{
+"area": "optax",
+"name": "rprop",
+"kind": "function",
+"doc": "The Rprop optimizer."
+},
+{
+"area": "optax",
+"name": "safe_increment",
+"kind": "function",
+"doc": "Increments counter by one while avoiding overflow."
+},
+{
+"area": "optax",
+"name": "safe_int32_increment",
+"kind": "function",
+"doc": "Increments counter by one while avoiding overflow."
+},
+{
+"area": "optax",
+"name": "safe_norm",
+"kind": "function",
+"doc": "Returns jnp.maximum(jnp.linalg.norm(x), min_norm) with correct gradients."
+},
+{
+"area": "optax",
+"name": "safe_root_mean_squares",
+"kind": "function",
+"doc": "Returns `maximum(sqrt(mean(abs_sq(x))), min_norm)` with correct grads."
+},
+{
+"area": "optax",
+"name": "scale",
+"kind": "function",
+"doc": "Scale updates by some fixed scalar `step_size`."
+},
+{
+"area": "optax",
+"name": "scale_by_adadelta",
+"kind": "function",
+"doc": "Rescale updates according to the Adadelta algorithm."
+},
+{
+"area": "optax",
+"name": "scale_by_adam",
+"kind": "function",
+"doc": "Rescale updates according to the Adam algorithm."
+},
+{
+"area": "optax",
+"name": "scale_by_adamax",
+"kind": "function",
+"doc": "Rescale updates according to the Adamax algorithm."
+},
+{
+"area": "optax",
+"name": "scale_by_adan",
+"kind": "function",
+"doc": "Rescale updates according to the Adan algorithm."
+},
+{
+"area": "optax",
+"name": "scale_by_amsgrad",
+"kind": "function",
+"doc": "Rescale updates according to the AMSGrad algorithm."
+},
+{
+"area": "optax",
+"name": "scale_by_backtracking_linesearch",
+"kind": "function",
+"doc": "Backtracking line-search ensuring sufficient decrease (Armijo criterion)."
+},
+{
+"area": "optax",
+"name": "scale_by_belief",
+"kind": "function",
+"doc": "Rescale updates according to the AdaBelief algorithm."
+},
+{
+"area": "optax",
+"name": "scale_by_factored_rms",
+"kind": "function",
+"doc": "Scaling by a factored estimate of the gradient rms (as in Adafactor)."
+},
+{
+"area": "optax",
+"name": "scale_by_lbfgs",
+"kind": "function",
+"doc": "Scales updates by L-BFGS."
+},
+{
+"area": "optax",
+"name": "scale_by_lion",
+"kind": "function",
+"doc": "Rescale updates according to the Lion algorithm."
+},
+{
+"area": "optax",
+"name": "scale_by_novograd",
+"kind": "function",
+"doc": "Computes NovoGrad updates."
+},
+{
+"area": "optax",
+"name": "scale_by_param_block_norm",
+"kind": "function",
+"doc": "Scale updates for each param block by the norm of that block's parameters."
+},
+{
+"area": "optax",
+"name": "scale_by_param_block_rms",
+"kind": "function",
+"doc": "Scale updates by rms of the gradient for each param vector or matrix."
+},
+{
+"area": "optax",
+"name": "scale_by_polyak",
+"kind": "function",
+"doc": "Scales the update by Polyak's step-size."
+},
+{
+"area": "optax",
+"name": "scale_by_radam",
+"kind": "function",
+"doc": "Rescale updates according to the Rectified Adam algorithm."
+},
+{
+"area": "optax",
+"name": "scale_by_rms",
+"kind": "function",
+"doc": "Rescale updates by the root of the exp. moving avg of the square."
+},
+{
+"area": "optax",
+"name": "scale_by_rprop",
+"kind": "function",
+"doc": "Scale with the Rprop optimizer."
+},
+{
+"area": "optax",
+"name": "scale_by_rss",
+"kind": "function",
+"doc": "Rescale updates by the root of the sum of all squared gradients to date."
+},
+{
+"area": "optax",
+"name": "scale_by_schedule",
+"kind": "function",
+"doc": "Scale updates using a custom schedule for the `step_size`."
+},
+{
+"area": "optax",
+"name": "scale_by_sign",
+"kind": "function",
+"doc": "Compute the signs of the gradient elements."
+},
+{
+"area": "optax",
+"name": "scale_by_sm3",
+"kind": "function",
+"doc": "Scale updates by `sm3`."
+},
+{
+"area": "optax",
+"name": "scale_by_stddev",
+"kind": "function",
+"doc": "Rescale updates by the root of the centered exp. moving average of squares."
+},
+{
+"area": "optax",
+"name": "scale_by_trust_ratio",
+"kind": "function",
+"doc": "Scale updates by `trust ratio`."
+},
+{
+"area": "optax",
+"name": "scale_by_yogi",
+"kind": "function",
+"doc": "Rescale updates according to the Yogi algorithm."
+},
+{
+"area": "optax",
+"name": "scale_by_zoom_linesearch",
+"kind": "function",
+"doc": "Linesearch ensuring sufficient decrease and small curvature."
+},
+{
+"area": "optax",
+"name": "scale_gradient",
+"kind": "function",
+"doc": "Scales gradients for the backwards pass."
+},
+{
+"area": "optax",
+"name": "set_to_zero",
+"kind": "function",
+"doc": "Stateless transformation that maps input gradients to zero."
+},
+{
+"area": "optax",
+"name": "sgd",
+"kind": "function",
+"doc": "A canonical Stochastic Gradient Descent optimizer."
+},
+{
+"area": "optax",
+"name": "sgdr_schedule",
+"kind": "function",
+"doc": "SGD with warm restarts."
+},
+{
+"area": "optax",
+"name": "sigmoid_binary_cross_entropy",
+"kind": "function",
+"doc": "Computes element-wise sigmoid cross entropy given logits and labels."
+},
+{
+"area": "optax",
+"name": "sign_sgd",
+"kind": "function",
+"doc": "A variant of SGD using only the signs of the gradient components."
+},
+{
+"area": "optax",
+"name": "signum",
+"kind": "function",
+"doc": "A variant of SGD using signs of the components of an EMA of the gradient."
+},
+{
+"area": "optax",
+"name": "skip_large_updates",
+"kind": "function",
+"doc": "Returns True if the global norm square of `updates` is small enough."
+},
+{
+"area": "optax",
+"name": "skip_not_finite",
+"kind": "function",
+"doc": "Returns True iff any of the `updates` contains an inf or a NaN."
+},
+{
+"area": "optax",
+"name": "sm3",
+"kind": "function",
+"doc": "The SM3 optimizer."
+},
+{
+"area": "optax",
+"name": "smooth_labels",
+"kind": "function",
+"doc": "Apply label smoothing."
+},
+{
+"area": "optax",
+"name": "softmax_cross_entropy",
+"kind": "function",
+"doc": "Computes the softmax cross entropy between sets of logits and labels."
+},
+{
+"area": "optax",
+"name": "softmax_cross_entropy_with_integer_labels",
+"kind": "function",
+"doc": "Computes softmax cross entropy between the logits and integer labels."
+},
+{
+"area": "optax",
+"name": "stateless",
+"kind": "function",
+"doc": "Creates a stateless transformation from an update-like function."
+},
+{
+"area": "optax",
+"name": "stateless_with_tree_map",
+"kind": "function",
+"doc": "Creates a stateless transformation from an update-like function for arrays."
+},
+{
+"area": "optax",
+"name": "trace",
+"kind": "function",
+"doc": "Compute a trace of past updates."
+},
+{
+"area": "optax",
+"name": "value_and_grad_from_state",
+"kind": "function",
+"doc": "Alternative to :func:`jax.value_and_grad` fetches value, grad from state."
+},
+{
+"area": "optax",
+"name": "warmup_cosine_decay_schedule",
+"kind": "function",
+"doc": "Linear warmup followed by cosine decay."
+},
+{
+"area": "optax",
+"name": "warmup_exponential_decay_schedule",
+"kind": "function",
+"doc": "Linear warmup followed by exponential decay."
+},
+{
+"area": "optax",
+"name": "yogi",
+"kind": "function",
+"doc": "The Yogi optimizer."
+},
+{
+"area": "optax",
+"name": "zero_nans",
+"kind": "function",
+"doc": "A transformation which replaces NaNs with 0."
+},
+{
+"area": "optax.contrib",
+"name": "COCOBState",
+"kind": "class",
+"doc": "State for COntinuous COin Betting."
+},
+{
+"area": "optax.contrib",
+"name": "DAdaptAdamWState",
+"kind": "class",
+"doc": "State of the `GradientTransformation` returned by `dadapt_adamw`."
+},
+{
+"area": "optax.contrib",
+"name": "DifferentiallyPrivateAggregateState",
+"kind": "class",
+"doc": "State containing PRNGKey for `differentially_private_aggregate`."
+},
+{
+"area": "optax.contrib",
+"name": "DoGState",
+"kind": "class",
+"doc": "State for DoG optimizer."
+},
+{
+"area": "optax.contrib",
+"name": "DoWGState",
+"kind": "class",
+"doc": "State for DoWG optimizer."
+},
+{
+"area": "optax.contrib",
+"name": "GaLoreDimensionNumbers",
+"kind": "class",
+"doc": "Specification for which weight axes form the 2D matrix for GaLore."
+},
+{
+"area": "optax.contrib",
+"name": "GaLoreState",
+"kind": "class",
+"doc": "State for the GaLore optimizer."
+},
+{
+"area": "optax.contrib",
+"name": "HutchinsonState",
+"kind": "class",
+"doc": "HutchinsonState(key,)"
+},
+{
+"area": "optax.contrib",
+"name": "MadgradState",
+"kind": "class",
+"doc": "State for the MADGRAD optimizer."
+},
+{
+"area": "optax.contrib",
+"name": "MechanicState",
+"kind": "class",
+"doc": "State of the `GradientTransformation` returned by `mechanize`."
+},
+{
+"area": "optax.contrib",
+"name": "MomoAdamState",
+"kind": "class",
+"doc": "State of the ``GradientTransformation`` returned by ``momo_adam``."
+},
+{
+"area": "optax.contrib",
+"name": "MomoState",
+"kind": "class",
+"doc": "State of the `GradientTransformation` returned by `momo`."
+},
+{
+"area": "optax.contrib",
+"name": "MuonDimensionNumbers",
+"kind": "class",
+"doc": "Specification for which weight axes participate in matrix projection."
+},
+{
+"area": "optax.contrib",
+"name": "MuonState",
+"kind": "class",
+"doc": "State for the Muon algorithm."
+},
+{
+"area": "optax.contrib",
+"name": "ProdigyState",
+"kind": "class",
+"doc": "State of the `GradientTransformation` returned by `prodigy`."
+},
+{
+"area": "optax.contrib",
+"name": "ReduceLROnPlateauState",
+"kind": "class",
+"doc": "State for the ReduceLROnPlateau callback."
+},
+{
+"area": "optax.contrib",
+"name": "SAMState",
+"kind": "class",
+"doc": "State of `GradientTransformation` returned by `sam`."
+},
+{
+"area": "optax.contrib",
+"name": "ScaleByAdemamixState",
+"kind": "class",
+"doc": "State for the Ademamix algorithm."
+},
+{
+"area": "optax.contrib",
+"name": "ScaleBySimplifiedAdEMAMixState",
+"kind": "class",
+"doc": "State for the Simplified AdEMAMix optimizer."
+},
+{
+"area": "optax.contrib",
+"name": "ScheduleFreeState",
+"kind": "class",
+"doc": "State for schedule_free."
+},
+{
+"area": "optax.contrib",
+"name": "SophiaState",
+"kind": "class",
+"doc": "State for Sophia Optimizer."
+},
+{
+"area": "optax.contrib",
+"name": "SplitRealAndImaginaryState",
+"kind": "class",
+"doc": "Maintains the inner transformation state for `split_real_and_imaginary`."
+},
+{
+"area": "optax.contrib",
+"name": "acprop",
+"kind": "function",
+"doc": "The ACProp optimizer."
+},
+{
+"area": "optax.contrib",
+"name": "ademamix",
+"kind": "function",
+"doc": "AdEMAMix."
+},
+{
+"area": "optax.contrib",
+"name": "adopt",
+"kind": "function",
+"doc": "ADOPT (Adaptive Optimization with Provable Theoretical guarantees)."
+},
+{
+"area": "optax.contrib",
+"name": "cocob",
+"kind": "function",
+"doc": "Rescale updates according to the COntinuous COin Betting algorithm."
+},
+{
+"area": "optax.contrib",
+"name": "dadapt_adamw",
+"kind": "function",
+"doc": "Learning rate free AdamW by D-Adaptation."
+},
+{
+"area": "optax.contrib",
+"name": "differentially_private_aggregate",
+"kind": "function",
+"doc": "Aggregates gradients based on the DPSGD algorithm."
+},
+{
+"area": "optax.contrib",
+"name": "dog",
+"kind": "function",
+"doc": "Distance over Gradients (DoG) optimizer."
+},
+{
+"area": "optax.contrib",
+"name": "dowg",
+"kind": "function",
+"doc": "Distance over weighted Gradients optimizer."
+},
+{
+"area": "optax.contrib",
+"name": "dpsgd",
+"kind": "function",
+"doc": "The DPSGD optimizer."
+},
+{
+"area": "optax.contrib",
+"name": "galore",
+"kind": "function",
+"doc": "GaLore: Memory-efficient training via gradient lowrank projection."
+},
+{
+"area": "optax.contrib",
+"name": "hutchinson_estimator_diag_hessian",
+"kind": "function",
+"doc": "Returns a GradientTransformationExtraArgs computing the Hessian diagonal."
+},
+{
+"area": "optax.contrib",
+"name": "madgrad",
+"kind": "function",
+"doc": "The MADGRAD optimizer."
+},
+{
+"area": "optax.contrib",
+"name": "mechanize",
+"kind": "function",
+"doc": "Mechanic - a black box learning rate tuner/optimizer."
+},
+{
+"area": "optax.contrib",
+"name": "momo",
+"kind": "function",
+"doc": "Adaptive Learning Rates for SGD with momentum."
+},
+{
+"area": "optax.contrib",
+"name": "momo_adam",
+"kind": "function",
+"doc": "Adaptive Learning Rates for Adam(W)."
+},
+{
+"area": "optax.contrib",
+"name": "muon",
+"kind": "function",
+"doc": "Muon: Momentum Orthogonalized by Newton-schulz."
+},
+{
+"area": "optax.contrib",
+"name": "normalize",
+"kind": "function",
+"doc": "Normalizes the gradient."
+},
+{
+"area": "optax.contrib",
+"name": "prodigy",
+"kind": "function",
+"doc": "Learning rate free AdamW with Prodigy."
+},
+{
+"area": "optax.contrib",
+"name": "reduce_on_plateau",
+"kind": "function",
+"doc": "Reduce learning rate when a metric has stopped improving."
+},
+{
+"area": "optax.contrib",
+"name": "sam",
+"kind": "function",
+"doc": "Implementation of SAM (Sharpness Aware Minimization)."
+},
+{
+"area": "optax.contrib",
+"name": "scale_by_acprop",
+"kind": "function",
+"doc": "Rescale updates according to ACProp (asynchronous version of AdaBelief)."
+},
+{
+"area": "optax.contrib",
+"name": "scale_by_ademamix",
+"kind": "function",
+"doc": "Scale updates according to the Ademamix algorithm."
+},
+{
+"area": "optax.contrib",
+"name": "scale_by_adopt",
+"kind": "function",
+"doc": "Rescale updates according to the ADOPT algorithm."
+},
+{
+"area": "optax.contrib",
+"name": "scale_by_cocob",
+"kind": "function",
+"doc": "Rescale updates according to the COntinuous COin Betting algorithm."
+},
+{
+"area": "optax.contrib",
+"name": "scale_by_galore",
+"kind": "function",
+"doc": "Scale updates using GaLore (Gradient Low-Rank Projection)."
+},
+{
+"area": "optax.contrib",
+"name": "scale_by_madgrad",
+"kind": "function",
+"doc": "Rescale updates according to the MADGRAD algorithm."
+},
+{
+"area": "optax.contrib",
+"name": "scale_by_muon",
+"kind": "function",
+"doc": "Rescale updates according to the Muon algorithm."
+},
+{
+"area": "optax.contrib",
+"name": "scale_by_simplified_ademamix",
+"kind": "function",
+"doc": "Scale updates according to the Simplified AdEMAMix optimizer."
+},
+{
+"area": "optax.contrib",
+"name": "schedule_free",
+"kind": "function",
+"doc": "Turn base_optimizer schedule_free."
+},
+{
+"area": "optax.contrib",
+"name": "schedule_free_adamw",
+"kind": "function",
+"doc": "Schedule-Free wrapper for AdamW."
+},
+{
+"area": "optax.contrib",
+"name": "schedule_free_eval_params",
+"kind": "function",
+"doc": "Params for evaluation of :func:`optax.contrib.schedule_free`."
+},
+{
+"area": "optax.contrib",
+"name": "schedule_free_sgd",
+"kind": "function",
+"doc": "Schedule-Free wrapper for SGD."
+},
+{
+"area": "optax.contrib",
+"name": "simplified_ademamix",
+"kind": "function",
+"doc": "Simplified AdEMAMix."
+},
+{
+"area": "optax.contrib",
+"name": "sophia",
+"kind": "function",
+"doc": "Sophia optimizer."
+},
+{
+"area": "optax.contrib",
+"name": "split_real_and_imaginary",
+"kind": "function",
+"doc": "Splits the real and imaginary components of complex updates into two."
+},
+{
+"area": "optax.losses",
+"name": "binary_dice_loss",
+"kind": "function",
+"doc": "Binary Dice Loss convenience function."
+},
+{
+"area": "optax.losses",
+"name": "convex_kl_divergence",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "optax.losses",
+"name": "cosine_distance",
+"kind": "function",
+"doc": "Computes the cosine distance between targets and predictions."
+},
+{
+"area": "optax.losses",
+"name": "cosine_similarity",
+"kind": "function",
+"doc": "Computes the cosine similarity between targets and predictions."
+},
+{
+"area": "optax.losses",
+"name": "ctc_loss",
+"kind": "function",
+"doc": "Computes CTC loss."
+},
+{
+"area": "optax.losses",
+"name": "ctc_loss_with_forward_probs",
+"kind": "function",
+"doc": "Computes CTC loss and CTC forward-probabilities."
+},
+{
+"area": "optax.losses",
+"name": "dice_loss",
+"kind": "function",
+"doc": "Computes the Dice Loss for multi-class segmentation."
+},
+{
+"area": "optax.losses",
+"name": "generalized_kl_divergence",
+"kind": "function",
+"doc": "Computes the generalized Kullback-Leibler divergence loss."
+},
+{
+"area": "optax.losses",
+"name": "hinge_loss",
+"kind": "function",
+"doc": "Computes the hinge loss for binary classification."
+},
+{
+"area": "optax.losses",
+"name": "huber_loss",
+"kind": "function",
+"doc": "Huber loss, similar to L2 loss close to zero, L1 loss away from zero."
+},
+{
+"area": "optax.losses",
+"name": "kl_divergence",
+"kind": "function",
+"doc": "Computes the Kullback-Leibler divergence (relative entropy) loss."
+},
+{
+"area": "optax.losses",
+"name": "kl_divergence_with_log_targets",
+"kind": "function",
+"doc": "Computes the Kullback-Leibler divergence (relative entropy) loss."
+},
+{
+"area": "optax.losses",
+"name": "l2_loss",
+"kind": "function",
+"doc": "Calculates the L2 loss for a set of predictions."
+},
+{
+"area": "optax.losses",
+"name": "log_cosh",
+"kind": "function",
+"doc": "Calculates the log-cosh loss for a set of predictions."
+},
+{
+"area": "optax.losses",
+"name": "make_fenchel_young_loss",
+"kind": "function",
+"doc": "Creates a Fenchel-Young loss from a max function."
+},
+{
+"area": "optax.losses",
+"name": "multiclass_generalized_dice_loss",
+"kind": "function",
+"doc": "Computes Multiclass Generalized Dice Loss with automatic class weighting."
+},
+{
+"area": "optax.losses",
+"name": "multiclass_hinge_loss",
+"kind": "function",
+"doc": "Multiclass hinge loss."
+},
+{
+"area": "optax.losses",
+"name": "multiclass_perceptron_loss",
+"kind": "function",
+"doc": "Multiclass perceptron loss."
+},
+{
+"area": "optax.losses",
+"name": "multiclass_sparsemax_loss",
+"kind": "function",
+"doc": "Multiclass sparsemax loss."
+},
+{
+"area": "optax.losses",
+"name": "ntxent",
+"kind": "function",
+"doc": "Normalized temperature scaled cross entropy loss (NT-Xent)."
+},
+{
+"area": "optax.losses",
+"name": "perceptron_loss",
+"kind": "function",
+"doc": "Binary perceptron loss."
+},
+{
+"area": "optax.losses",
+"name": "poly_loss_cross_entropy",
+"kind": "function",
+"doc": "Computes PolyLoss between logits and labels."
+},
+{
+"area": "optax.losses",
+"name": "ranking_softmax_loss",
+"kind": "function",
+"doc": "Ranking softmax loss."
+},
+{
+"area": "optax.losses",
+"name": "safe_softmax_cross_entropy",
+"kind": "function",
+"doc": "Computes the softmax cross entropy between sets of logits and labels."
+},
+{
+"area": "optax.losses",
+"name": "sigmoid_binary_cross_entropy",
+"kind": "function",
+"doc": "Computes element-wise sigmoid cross entropy given logits and labels."
+},
+{
+"area": "optax.losses",
+"name": "sigmoid_focal_loss",
+"kind": "function",
+"doc": "Sigmoid focal loss with numerical stability improvements."
+},
+{
+"area": "optax.losses",
+"name": "smooth_labels",
+"kind": "function",
+"doc": "Apply label smoothing."
+},
+{
+"area": "optax.losses",
+"name": "softmax_cross_entropy",
+"kind": "function",
+"doc": "Computes the softmax cross entropy between sets of logits and labels."
+},
+{
+"area": "optax.losses",
+"name": "softmax_cross_entropy_with_integer_labels",
+"kind": "function",
+"doc": "Computes softmax cross entropy between the logits and integer labels."
+},
+{
+"area": "optax.losses",
+"name": "sparsemax_loss",
+"kind": "function",
+"doc": "Binary sparsemax loss."
+},
+{
+"area": "optax.losses",
+"name": "squared_error",
+"kind": "function",
+"doc": "Calculates the squared error for a set of predictions."
+},
+{
+"area": "optax.losses",
+"name": "triplet_margin_loss",
+"kind": "function",
+"doc": "Returns the triplet loss for a batch of embeddings."
+},
+{
+"area": "optax.projections",
+"name": "projection_box",
+"kind": "function",
+"doc": "Projection onto box constraints."
+},
+{
+"area": "optax.projections",
+"name": "projection_halfspace",
+"kind": "function",
+"doc": "Projection onto a halfspace."
+},
+{
+"area": "optax.projections",
+"name": "projection_hypercube",
+"kind": "function",
+"doc": "Projection onto the (unit) hypercube."
+},
+{
+"area": "optax.projections",
+"name": "projection_hyperplane",
+"kind": "function",
+"doc": "Projection onto a hyperplane."
+},
+{
+"area": "optax.projections",
+"name": "projection_l1_ball",
+"kind": "function",
+"doc": "Projection onto the l1 ball."
+},
+{
+"area": "optax.projections",
+"name": "projection_l1_sphere",
+"kind": "function",
+"doc": "Projection onto the l1 sphere."
+},
+{
+"area": "optax.projections",
+"name": "projection_l2_ball",
+"kind": "function",
+"doc": "Projection onto the l2 ball."
+},
+{
+"area": "optax.projections",
+"name": "projection_l2_sphere",
+"kind": "function",
+"doc": "Projection onto the l2 sphere."
+},
+{
+"area": "optax.projections",
+"name": "projection_linf_ball",
+"kind": "function",
+"doc": "Projection onto the l-infinity ball."
+},
+{
+"area": "optax.projections",
+"name": "projection_non_negative",
+"kind": "function",
+"doc": "Projection onto the non-negative orthant."
+},
+{
+"area": "optax.projections",
+"name": "projection_simplex",
+"kind": "function",
+"doc": "Projection onto a simplex."
+},
+{
+"area": "optax.projections",
+"name": "projection_vector",
+"kind": "function",
+"doc": "Projection onto a vector."
+},
+{
+"area": "optax.schedules",
+"name": "InjectHyperparamsState",
+"kind": "class",
+"doc": "Deprecated class kept for backwards compatibility."
+},
+{
+"area": "optax.schedules",
+"name": "InjectStatefulHyperparamsState",
+"kind": "class",
+"doc": "Maintains inner transform state, hyperparameters, and step count."
+},
+{
+"area": "optax.schedules",
+"name": "WrappedSchedule",
+"kind": "class",
+"doc": "A stateful schedule that wraps a stateless schedule."
+},
+{
+"area": "optax.schedules",
+"name": "constant_schedule",
+"kind": "function",
+"doc": "Constructs a constant schedule."
+},
+{
+"area": "optax.schedules",
+"name": "cosine_decay_schedule",
+"kind": "function",
+"doc": "Returns a function which implements cosine learning rate decay."
+},
+{
+"area": "optax.schedules",
+"name": "cosine_onecycle_schedule",
+"kind": "function",
+"doc": "Returns a function which implements the onecycle learning rate schedule."
+},
+{
+"area": "optax.schedules",
+"name": "exponential_decay",
+"kind": "function",
+"doc": "Constructs a schedule with either continuous or discrete exponential decay."
+},
+{
+"area": "optax.schedules",
+"name": "inject_hyperparams",
+"kind": "function",
+"doc": "Wrapper to injects stateful hyperparameters into GradientTransformations."
+},
+{
+"area": "optax.schedules",
+"name": "inject_stateful_hyperparams",
+"kind": "function",
+"doc": "Wrapper to injects stateful hyperparameters into GradientTransformations."
+},
+{
+"area": "optax.schedules",
+"name": "join_schedules",
+"kind": "function",
+"doc": "Sequentially apply multiple schedules."
+},
+{
+"area": "optax.schedules",
+"name": "linear_onecycle_schedule",
+"kind": "function",
+"doc": "Returns a learning rate with three linear phases."
+},
+{
+"area": "optax.schedules",
+"name": "linear_schedule",
+"kind": "function",
+"doc": "Schedule with linear transition from ``init_value`` to ``end_value``."
+},
+{
+"area": "optax.schedules",
+"name": "piecewise_constant_schedule",
+"kind": "function",
+"doc": "Piecewise constant schedule with scaled jumps at specific boundaries."
+},
+{
+"area": "optax.schedules",
+"name": "piecewise_interpolate_schedule",
+"kind": "function",
+"doc": "Piecewise interpolated schedule with linear or cosine transitions."
+},
+{
+"area": "optax.schedules",
+"name": "polynomial_schedule",
+"kind": "function",
+"doc": "Constructs a schedule with polynomial transition from init to end value."
+},
+{
+"area": "optax.schedules",
+"name": "sgdr_schedule",
+"kind": "function",
+"doc": "SGD with warm restarts."
+},
+{
+"area": "optax.schedules",
+"name": "warmup_constant_schedule",
+"kind": "function",
+"doc": "Linear warmup followed by constant schedule i.e no decay."
+},
+{
+"area": "optax.schedules",
+"name": "warmup_cosine_decay_schedule",
+"kind": "function",
+"doc": "Linear warmup followed by cosine decay."
+},
+{
+"area": "optax.schedules",
+"name": "warmup_exponential_decay_schedule",
+"kind": "function",
+"doc": "Linear warmup followed by exponential decay."
+},
+{
+"area": "optax.second_order",
+"name": "fisher_diag",
+"kind": "function",
+"doc": "Computes the diagonal of the (observed) Fisher information matrix."
+},
+{
+"area": "optax.second_order",
+"name": "hessian_diag",
+"kind": "function",
+"doc": "Computes the diagonal hessian of `loss` at (`inputs`, `targets`)."
+},
+{
+"area": "optax.second_order",
+"name": "hvp",
+"kind": "function",
+"doc": "Performs an efficient vector-Hessian (of `loss`) product."
+},
+{
+"area": "optax.tree_utils",
+"name": "NamedTupleKey",
+"kind": "class",
+"doc": "KeyType for a NamedTuple in a tree."
+},
+{
+"area": "optax.tree_utils",
+"name": "tree_add",
+"kind": "function",
+"doc": "Add two (or more) pytrees."
+},
+{
+"area": "optax.tree_utils",
+"name": "tree_add_scale",
+"kind": "function",
+"doc": "Add two trees, where the second tree is scaled by a scalar."
+},
+{
+"area": "optax.tree_utils",
+"name": "tree_allclose",
+"kind": "function",
+"doc": "Check whether two trees are element-wise approximately equal within a tolerance."
+},
+{
+"area": "optax.tree_utils",
+"name": "tree_batch_shape",
+"kind": "function",
+"doc": "Add leading batch dimensions to each leaf of a pytree."
+},
+{
+"area": "optax.tree_utils",
+"name": "tree_bias_correction",
+"kind": "function",
+"doc": "Performs bias correction. It becomes a no-op as count goes to infinity."
+},
+{
+"area": "optax.tree_utils",
+"name": "tree_cast",
+"kind": "function",
+"doc": "Cast tree to given dtype, skip if None."
+},
+{
+"area": "optax.tree_utils",
+"name": "tree_cast_like",
+"kind": "function",
+"doc": "Cast tree to dtypes of other_tree."
+},
+{
+"area": "optax.tree_utils",
+"name": "tree_clip",
+"kind": "function",
+"doc": "Creates an identical tree where all tensors are clipped to `[min, max]`."
+},
+{
+"area": "optax.tree_utils",
+"name": "tree_conj",
+"kind": "function",
+"doc": "Compute the conjugate of a pytree."
+},
+{
+"area": "optax.tree_utils",
+"name": "tree_div",
+"kind": "function",
+"doc": "Divide two pytrees."
+},
+{
+"area": "optax.tree_utils",
+"name": "tree_dtype",
+"kind": "function",
+"doc": "Fetch dtype of tree."
+},
+{
+"area": "optax.tree_utils",
+"name": "tree_full_like",
+"kind": "function",
+"doc": "Creates an identical tree where all tensors are filled with ``fill_value``."
+},
+{
+"area": "optax.tree_utils",
+"name": "tree_get",
+"kind": "function",
+"doc": "Extract a value from a pytree matching a given key."
+},
+{
+"area": "optax.tree_utils",
+"name": "tree_get_all_with_path",
+"kind": "function",
+"doc": "Extract values of a pytree matching a given key."
+},
+{
+"area": "optax.tree_utils",
+"name": "tree_map_params",
+"kind": "function",
+"doc": "Apply a callable over all params in the given optimizer state."
+},
+{
+"area": "optax.tree_utils",
+"name": "tree_max",
+"kind": "function",
+"doc": "Compute the max of all the elements in a pytree."
+},
+{
+"area": "optax.tree_utils",
+"name": "tree_min",
+"kind": "function",
+"doc": "Compute the min of all the elements in a pytree."
+},
+{
+"area": "optax.tree_utils",
+"name": "tree_mul",
+"kind": "function",
+"doc": "Multiply two pytrees."
+},
+{
+"area": "optax.tree_utils",
+"name": "tree_norm",
+"kind": "function",
+"doc": "Compute the vector norm of the given ord of a pytree."
+},
+{
+"area": "optax.tree_utils",
+"name": "tree_ones_like",
+"kind": "function",
+"doc": "Creates an all-ones tree with the same structure."
+},
+{
+"area": "optax.tree_utils",
+"name": "tree_random_like",
+"kind": "function",
+"doc": "Create tree with random entries of the same shape as target tree."
+},
+{
+"area": "optax.tree_utils",
+"name": "tree_real",
+"kind": "function",
+"doc": "Compute the real part of a pytree."
+},
+{
+"area": "optax.tree_utils",
+"name": "tree_scale",
+"kind": "function",
+"doc": "Multiply a tree by a scalar."
+},
+{
+"area": "optax.tree_utils",
+"name": "tree_set",
+"kind": "function",
+"doc": "Creates a copy of tree with some values replaced as specified by kwargs."
+},
+{
+"area": "optax.tree_utils",
+"name": "tree_size",
+"kind": "function",
+"doc": "Total size of a pytree."
+},
+{
+"area": "optax.tree_utils",
+"name": "tree_split_key_like",
+"kind": "function",
+"doc": "Split keys to match structure of target tree."
+},
+{
+"area": "optax.tree_utils",
+"name": "tree_sub",
+"kind": "function",
+"doc": "Subtract two pytrees."
+},
+{
+"area": "optax.tree_utils",
+"name": "tree_sum",
+"kind": "function",
+"doc": "Compute the sum of all the elements in a pytree."
+},
+{
+"area": "optax.tree_utils",
+"name": "tree_unwrap_random_key_data",
+"kind": "function",
+"doc": "Unwrap random.key objects in a tree for numerical comparison."
+},
+{
+"area": "optax.tree_utils",
+"name": "tree_update_infinity_moment",
+"kind": "function",
+"doc": "Compute the exponential moving average of the infinity norm."
+},
+{
+"area": "optax.tree_utils",
+"name": "tree_update_moment",
+"kind": "function",
+"doc": "Compute the exponential moving average of the `order`-th moment."
+},
+{
+"area": "optax.tree_utils",
+"name": "tree_update_moment_per_elem_norm",
+"kind": "function",
+"doc": "Compute the EMA of the `order`-th moment of the element-wise norm."
+},
+{
+"area": "optax.tree_utils",
+"name": "tree_vdot",
+"kind": "function",
+"doc": "Compute the inner product between two pytrees."
+},
+{
+"area": "optax.tree_utils",
+"name": "tree_where",
+"kind": "function",
+"doc": "Select tree_x values if condition is true else tree_y values."
+},
+{
+"area": "optax.tree_utils",
+"name": "tree_zeros_like",
+"kind": "function",
+"doc": "Creates an all-zeros tree with the same structure."
+}
+]
+}

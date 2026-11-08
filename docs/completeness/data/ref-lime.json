@@ -1,0 +1,163 @@
+{
+"library": "lime",
+"version": "0.2.0.1",
+"source": "introspection",
+"entries": [
+{
+"area": "lime.discretize",
+"name": "BaseDiscretizer",
+"kind": "class",
+"doc": "Abstract class - Build a class that inherits from this class to implement"
+},
+{
+"area": "lime.discretize",
+"name": "DecileDiscretizer",
+"kind": "class",
+"doc": "Abstract class - Build a class that inherits from this class to implement"
+},
+{
+"area": "lime.discretize",
+"name": "EntropyDiscretizer",
+"kind": "class",
+"doc": "Abstract class - Build a class that inherits from this class to implement"
+},
+{
+"area": "lime.discretize",
+"name": "QuartileDiscretizer",
+"kind": "class",
+"doc": "Abstract class - Build a class that inherits from this class to implement"
+},
+{
+"area": "lime.discretize",
+"name": "StatsDiscretizer",
+"kind": "class",
+"doc": "Class to be used to supply the data stats info when discretize_continuous is true"
+},
+{
+"area": "lime.explanation",
+"name": "DomainMapper",
+"kind": "class",
+"doc": "Class for mapping features to the specific domain."
+},
+{
+"area": "lime.explanation",
+"name": "Explanation",
+"kind": "class",
+"doc": "Object returned by explainers."
+},
+{
+"area": "lime.explanation",
+"name": "id_generator",
+"kind": "function",
+"doc": "Helper function to generate random div ids. This is useful for embedding"
+},
+{
+"area": "lime.lime_base",
+"name": "LimeBase",
+"kind": "class",
+"doc": "Class for learning a locally linear sparse model from perturbed data"
+},
+{
+"area": "lime.lime_image",
+"name": "ImageExplanation",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "lime.lime_image",
+"name": "LimeImageExplainer",
+"kind": "class",
+"doc": "Explains predictions on Image (i.e. matrix) data."
+},
+{
+"area": "lime.lime_tabular",
+"name": "BaseDiscretizer",
+"kind": "class",
+"doc": "Abstract class - Build a class that inherits from this class to implement"
+},
+{
+"area": "lime.lime_tabular",
+"name": "DecileDiscretizer",
+"kind": "class",
+"doc": "Abstract class - Build a class that inherits from this class to implement"
+},
+{
+"area": "lime.lime_tabular",
+"name": "EntropyDiscretizer",
+"kind": "class",
+"doc": "Abstract class - Build a class that inherits from this class to implement"
+},
+{
+"area": "lime.lime_tabular",
+"name": "LimeTabularExplainer",
+"kind": "class",
+"doc": "Explains predictions on tabular (i.e. matrix) data."
+},
+{
+"area": "lime.lime_tabular",
+"name": "QuartileDiscretizer",
+"kind": "class",
+"doc": "Abstract class - Build a class that inherits from this class to implement"
+},
+{
+"area": "lime.lime_tabular",
+"name": "RecurrentTabularExplainer",
+"kind": "class",
+"doc": "An explainer for keras-style recurrent neural networks, where the"
+},
+{
+"area": "lime.lime_tabular",
+"name": "StatsDiscretizer",
+"kind": "class",
+"doc": "Class to be used to supply the data stats info when discretize_continuous is true"
+},
+{
+"area": "lime.lime_tabular",
+"name": "TableDomainMapper",
+"kind": "class",
+"doc": "Maps feature ids to names, generates table views, etc"
+},
+{
+"area": "lime.lime_tabular",
+"name": "partial",
+"kind": "class",
+"doc": "Create a new function with partial application of the given arguments"
+},
+{
+"area": "lime.lime_text",
+"name": "IndexedCharacters",
+"kind": "class",
+"doc": "String with various indexes."
+},
+{
+"area": "lime.lime_text",
+"name": "IndexedString",
+"kind": "class",
+"doc": "String with various indexes."
+},
+{
+"area": "lime.lime_text",
+"name": "LimeTextExplainer",
+"kind": "class",
+"doc": "Explains text classifiers."
+},
+{
+"area": "lime.lime_text",
+"name": "TextDomainMapper",
+"kind": "class",
+"doc": "Maps feature ids to words or word-positions"
+},
+{
+"area": "lime.lime_text",
+"name": "partial",
+"kind": "class",
+"doc": "Create a new function with partial application of the given arguments"
+},
+{
+"area": "lime.submodular_pick",
+"name": "SubmodularPick",
+"kind": "class",
+"doc": "Class for submodular pick"
+}
+]
+}

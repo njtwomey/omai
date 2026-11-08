@@ -2,25 +2,57 @@
  "omaiExports": 16750,
  "sources": {
   "arviz": "introspection",
+  "blackjax": "introspection",
   "captum": "introspection",
+  "causallearn": "introspection",
+  "cma": "introspection",
+  "control": "introspection",
+  "crf_libraries": "introspection",
+  "cvxpy": "introspection",
+  "datasketch": "introspection",
   "fairlearn": "introspection",
+  "filterpy": "introspection",
   "gensim": "introspection",
+  "gpytorch": "introspection",
   "gymnasium": "introspection",
   "hmmlearn": "introspection",
   "imblearn": "introspection",
+  "librosa": "introspection",
+  "lime": "introspection",
+  "mapie": "introspection",
+  "modal": "introspection",
+  "nashpy": "introspection",
   "networkx": "introspection",
   "nltk": "introspection",
+  "npeet": "introspection",
+  "numpy": "introspection",
   "numpyro": "introspection",
+  "opacus": "introspection",
+  "openspiel": "introspection",
+  "optax": "introspection",
   "optuna": "introspection",
   "pgmpy": "introspection",
+  "pingouin": "introspection",
+  "pot": "introspection",
+  "pyitlib": "introspection",
+  "pymoo": "introspection",
+  "pysindy": "introspection",
+  "pysubgroup": "introspection",
+  "ruptures": "introspection",
   "scipy": "introspection",
+  "sdeint": "introspection",
   "shap": "introspection",
+  "shapely": "introspection",
   "skimage": "introspection",
   "sklearn": "introspection",
+  "skorch": "introspection",
   "statsmodels": "introspection",
+  "stumpy": "introspection",
+  "sympy": "introspection",
   "torch": "introspection",
   "torchmetrics": "introspection",
   "torchvision": "introspection",
+  "torchvision_models": "introspection",
   "torch_geometric": "memory",
   "stable_baselines3": "memory",
   "cleanrl": "memory",
@@ -34,7 +66,66 @@
   "econml": "memory",
   "sktime": "memory",
   "tslearn": "memory",
-  "prophet": "memory"
+  "prophet": "memory",
+  "pytorch_metric_learning": "memory",
+  "metric_learn": "memory",
+  "faiss": "memory",
+  "lightly": "memory",
+  "solo_learn": "memory",
+  "sentence_transformers": "memory",
+  "pytorch_lightning": "memory",
+  "ignite": "memory",
+  "learn2learn": "memory",
+  "higher": "memory",
+  "avalanche": "memory",
+  "river": "memory",
+  "snorkel": "memory",
+  "cleanlab": "memory",
+  "small_text": "memory",
+  "flower": "memory",
+  "botorch": "memory",
+  "gpflow": "memory",
+  "skopt": "memory",
+  "pyro": "memory",
+  "interpret": "memory",
+  "imodels": "memory",
+  "category_encoders": "memory",
+  "feature_engine": "memory",
+  "mlxtend": "memory",
+  "skmultilearn": "memory",
+  "sklearn_extra": "memory",
+  "umap": "memory",
+  "hdbscan": "memory",
+  "trimap": "memory",
+  "pacmap": "memory",
+  "yellowbrick": "memory",
+  "scikitplot": "memory",
+  "xgboost_lightgbm_catboost": "memory",
+  "timm": "memory",
+  "torchaudio": "memory",
+  "torchtext": "memory",
+  "kornia": "memory",
+  "albumentations": "memory",
+  "torchinfo_fx_onnx": "memory",
+  "d3rlpy": "memory",
+  "imitation": "memory",
+  "pykalman": "memory",
+  "nevergrad": "memory",
+  "trimesh": "memory",
+  "problog": "memory",
+  "gcastle": "memory",
+  "uncertainty_toolbox": "memory",
+  "neuralforecast": "memory",
+  "darts": "memory",
+  "gluonts": "memory",
+  "surprise": "memory",
+  "implicit": "memory",
+  "lightfm": "memory",
+  "recbole": "memory",
+  "deepchecks": "memory",
+  "evidently": "memory",
+  "crf_tools": "memory",
+  "representation_learning": "memory"
  },
  "summary": {
   "arviz": {
@@ -63,6 +154,32 @@
     "skip": 12
    }
   },
+  "blackjax": {
+   "blackjax": {
+    "full": 18,
+    "partial": 4,
+    "absent": 37,
+    "skip": 10
+   },
+   "blackjax.diagnostics": {
+    "full": 11,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "blackjax.sgmcmc": {
+    "full": 0,
+    "partial": 0,
+    "absent": 0,
+    "skip": 2
+   },
+   "blackjax.smc": {
+    "full": 0,
+    "partial": 0,
+    "absent": 0,
+    "skip": 1
+   }
+  },
   "captum": {
    "captum.attr": {
     "full": 56,
@@ -85,6 +202,168 @@
    "captum.robust": {
     "full": 5,
     "partial": 0,
+    "absent": 0,
+    "skip": 0
+   }
+  },
+  "causallearn": {
+   "causallearn.graph.GeneralGraph": {
+    "full": 0,
+    "partial": 0,
+    "absent": 0,
+    "skip": 1
+   },
+   "causallearn.score.LocalScoreFunction": {
+    "full": 2,
+    "partial": 0,
+    "absent": 0,
+    "skip": 10
+   },
+   "causallearn.search.ConstraintBased.FCI": {
+    "full": 13,
+    "partial": 0,
+    "absent": 0,
+    "skip": 43
+   },
+   "causallearn.search.ConstraintBased.PC": {
+    "full": 5,
+    "partial": 0,
+    "absent": 8,
+    "skip": 0
+   },
+   "causallearn.search.FCMBased.ANM.ANM": {
+    "full": 0,
+    "partial": 0,
+    "absent": 1,
+    "skip": 0
+   },
+   "causallearn.search.FCMBased.PNL.PNL": {
+    "full": 0,
+    "partial": 0,
+    "absent": 3,
+    "skip": 0
+   },
+   "causallearn.search.FCMBased.lingam": {
+    "full": 2,
+    "partial": 0,
+    "absent": 10,
+    "skip": 0
+   },
+   "causallearn.search.Granger.Granger": {
+    "full": 0,
+    "partial": 1,
+    "absent": 0,
+    "skip": 0
+   },
+   "causallearn.search.HiddenCausal.GIN.GIN": {
+    "full": 0,
+    "partial": 0,
+    "absent": 13,
+    "skip": 0
+   },
+   "causallearn.search.PermutationBased.GRaSP": {
+    "full": 0,
+    "partial": 0,
+    "absent": 18,
+    "skip": 0
+   },
+   "causallearn.search.ScoreBased.ExactSearch": {
+    "full": 0,
+    "partial": 0,
+    "absent": 16,
+    "skip": 0
+   },
+   "causallearn.search.ScoreBased.GES": {
+    "full": 1,
+    "partial": 0,
+    "absent": 0,
+    "skip": 18
+   },
+   "causallearn.utils.GraphUtils": {
+    "full": 1,
+    "partial": 0,
+    "absent": 0,
+    "skip": 2
+   },
+   "causallearn.utils.KCI.KCI": {
+    "full": 4,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "causallearn.utils.PCUtils.BackgroundKnowledge": {
+    "full": 0,
+    "partial": 0,
+    "absent": 0,
+    "skip": 2
+   }
+  },
+  "cma": {
+   "cma": {
+    "full": 13,
+    "partial": 10,
+    "absent": 0,
+    "skip": 0
+   },
+   "cma.fitness_functions": {
+    "full": 0,
+    "partial": 3,
+    "absent": 0,
+    "skip": 0
+   }
+  },
+  "control": {
+   "control": {
+    "full": 72,
+    "partial": 21,
+    "absent": 11,
+    "skip": 74
+   }
+  },
+  "crf_libraries": {
+   "pycrfsuite": {
+    "full": 4,
+    "partial": 0,
+    "absent": 0,
+    "skip": 1
+   },
+   "sklearn_crfsuite": {
+    "full": 0,
+    "partial": 1,
+    "absent": 0,
+    "skip": 0
+   },
+   "sklearn_crfsuite.metrics": {
+    "full": 6,
+    "partial": 1,
+    "absent": 0,
+    "skip": 0
+   },
+   "sklearn_crfsuite.utils": {
+    "full": 2,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "torchcrf": {
+    "full": 0,
+    "partial": 0,
+    "absent": 1,
+    "skip": 0
+   }
+  },
+  "cvxpy": {
+   "cvxpy": {
+    "full": 0,
+    "partial": 124,
+    "absent": 29,
+    "skip": 10
+   }
+  },
+  "datasketch": {
+   "datasketch": {
+    "full": 13,
+    "partial": 2,
     "absent": 0,
     "skip": 0
    }
@@ -127,6 +406,62 @@
     "skip": 0
    }
   },
+  "filterpy": {
+   "filterpy.common": {
+    "full": 0,
+    "partial": 8,
+    "absent": 0,
+    "skip": 6
+   },
+   "filterpy.discrete_bayes": {
+    "full": 0,
+    "partial": 3,
+    "absent": 0,
+    "skip": 0
+   },
+   "filterpy.gh": {
+    "full": 0,
+    "partial": 0,
+    "absent": 7,
+    "skip": 0
+   },
+   "filterpy.hinfinity": {
+    "full": 0,
+    "partial": 0,
+    "absent": 1,
+    "skip": 1
+   },
+   "filterpy.kalman": {
+    "full": 12,
+    "partial": 0,
+    "absent": 10,
+    "skip": 0
+   },
+   "filterpy.leastsq": {
+    "full": 0,
+    "partial": 0,
+    "absent": 1,
+    "skip": 0
+   },
+   "filterpy.memory": {
+    "full": 0,
+    "partial": 0,
+    "absent": 1,
+    "skip": 0
+   },
+   "filterpy.monte_carlo": {
+    "full": 4,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "filterpy.stats": {
+    "full": 0,
+    "partial": 20,
+    "absent": 0,
+    "skip": 0
+   }
+  },
   "gensim": {
    "gensim.corpora": {
     "full": 1,
@@ -156,6 +491,98 @@
     "full": 4,
     "partial": 0,
     "absent": 6,
+    "skip": 0
+   }
+  },
+  "gpytorch": {
+   "gpytorch.constraints": {
+    "full": 0,
+    "partial": 0,
+    "absent": 0,
+    "skip": 4
+   },
+   "gpytorch.distributions": {
+    "full": 0,
+    "partial": 4,
+    "absent": 0,
+    "skip": 0
+   },
+   "gpytorch.functions": {
+    "full": 0,
+    "partial": 0,
+    "absent": 0,
+    "skip": 6
+   },
+   "gpytorch.kernels": {
+    "full": 13,
+    "partial": 7,
+    "absent": 13,
+    "skip": 2
+   },
+   "gpytorch.lazy": {
+    "full": 0,
+    "partial": 0,
+    "absent": 0,
+    "skip": 1
+   },
+   "gpytorch.likelihoods": {
+    "full": 0,
+    "partial": 7,
+    "absent": 8,
+    "skip": 4
+   },
+   "gpytorch.means": {
+    "full": 4,
+    "partial": 1,
+    "absent": 4,
+    "skip": 0
+   },
+   "gpytorch.metrics": {
+    "full": 3,
+    "partial": 3,
+    "absent": 0,
+    "skip": 0
+   },
+   "gpytorch.mlls": {
+    "full": 2,
+    "partial": 11,
+    "absent": 0,
+    "skip": 0
+   },
+   "gpytorch.models": {
+    "full": 2,
+    "partial": 2,
+    "absent": 3,
+    "skip": 0
+   },
+   "gpytorch.optim": {
+    "full": 0,
+    "partial": 0,
+    "absent": 1,
+    "skip": 0
+   },
+   "gpytorch.priors": {
+    "full": 0,
+    "partial": 0,
+    "absent": 13,
+    "skip": 0
+   },
+   "gpytorch.settings": {
+    "full": 0,
+    "partial": 0,
+    "absent": 0,
+    "skip": 18
+   },
+   "gpytorch.utils": {
+    "full": 0,
+    "partial": 0,
+    "absent": 0,
+    "skip": 3
+   },
+   "gpytorch.variational": {
+    "full": 0,
+    "partial": 0,
+    "absent": 20,
     "skip": 0
    }
   },
@@ -270,6 +697,328 @@
     "full": 3,
     "partial": 0,
     "absent": 8,
+    "skip": 0
+   }
+  },
+  "librosa": {
+   "librosa": {
+    "full": 0,
+    "partial": 0,
+    "absent": 0,
+    "skip": 4
+   },
+   "librosa.beat": {
+    "full": 1,
+    "partial": 0,
+    "absent": 1,
+    "skip": 0
+   },
+   "librosa.core": {
+    "full": 38,
+    "partial": 32,
+    "absent": 26,
+    "skip": 3
+   },
+   "librosa.decompose": {
+    "full": 0,
+    "partial": 1,
+    "absent": 2,
+    "skip": 0
+   },
+   "librosa.effects": {
+    "full": 4,
+    "partial": 0,
+    "absent": 5,
+    "skip": 0
+   },
+   "librosa.feature": {
+    "full": 11,
+    "partial": 12,
+    "absent": 0,
+    "skip": 0
+   },
+   "librosa.filters": {
+    "full": 5,
+    "partial": 6,
+    "absent": 0,
+    "skip": 0
+   },
+   "librosa.onset": {
+    "full": 3,
+    "partial": 1,
+    "absent": 0,
+    "skip": 0
+   },
+   "librosa.segment": {
+    "full": 0,
+    "partial": 7,
+    "absent": 1,
+    "skip": 0
+   },
+   "librosa.sequence": {
+    "full": 6,
+    "partial": 5,
+    "absent": 0,
+    "skip": 0
+   },
+   "librosa.util": {
+    "full": 0,
+    "partial": 6,
+    "absent": 0,
+    "skip": 36
+   }
+  },
+  "lime": {
+   "lime.explanation": {
+    "full": 0,
+    "partial": 3,
+    "absent": 0,
+    "skip": 0
+   },
+   "lime.lime_base": {
+    "full": 1,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "lime.lime_image": {
+    "full": 0,
+    "partial": 0,
+    "absent": 2,
+    "skip": 0
+   },
+   "lime.lime_tabular": {
+    "full": 4,
+    "partial": 5,
+    "absent": 0,
+    "skip": 0
+   },
+   "lime.lime_text": {
+    "full": 0,
+    "partial": 4,
+    "absent": 0,
+    "skip": 0
+   },
+   "lime.submodular_pick": {
+    "full": 0,
+    "partial": 0,
+    "absent": 1,
+    "skip": 0
+   }
+  },
+  "mapie": {
+   "mapie.calibration": {
+    "full": 1,
+    "partial": 0,
+    "absent": 4,
+    "skip": 4
+   },
+   "mapie.classification": {
+    "full": 3,
+    "partial": 0,
+    "absent": 0,
+    "skip": 12
+   },
+   "mapie.conformity_scores": {
+    "full": 11,
+    "partial": 2,
+    "absent": 0,
+    "skip": 0
+   },
+   "mapie.exchangeability_testing": {
+    "full": 0,
+    "partial": 3,
+    "absent": 4,
+    "skip": 0
+   },
+   "mapie.metrics.calibration": {
+    "full": 2,
+    "partial": 0,
+    "absent": 12,
+    "skip": 0
+   },
+   "mapie.metrics.classification": {
+    "full": 2,
+    "partial": 0,
+    "absent": 2,
+    "skip": 0
+   },
+   "mapie.metrics.regression": {
+    "full": 4,
+    "partial": 0,
+    "absent": 3,
+    "skip": 0
+   },
+   "mapie.regression": {
+    "full": 5,
+    "partial": 0,
+    "absent": 1,
+    "skip": 0
+   },
+   "mapie.risk_control": {
+    "full": 0,
+    "partial": 0,
+    "absent": 13,
+    "skip": 0
+   },
+   "mapie.subsample": {
+    "full": 0,
+    "partial": 3,
+    "absent": 0,
+    "skip": 0
+   }
+  },
+  "modal": {
+   "modAL.acquisition": {
+    "full": 9,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "modAL.batch": {
+    "full": 4,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "modAL.density": {
+    "full": 4,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "modAL.disagreement": {
+    "full": 7,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "modAL.models": {
+    "full": 5,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "modAL.multilabel": {
+    "full": 7,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "modAL.uncertainty": {
+    "full": 6,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "modAL.utils.selection": {
+    "full": 5,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   }
+  },
+  "nashpy": {
+   "nashpy.algorithms.lemke_howson": {
+    "full": 1,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "nashpy.algorithms.lemke_howson_lex": {
+    "full": 1,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "nashpy.algorithms.support_enumeration": {
+    "full": 2,
+    "partial": 5,
+    "absent": 0,
+    "skip": 0
+   },
+   "nashpy.algorithms.vertex_enumeration": {
+    "full": 1,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "nashpy.egt.moran_process": {
+    "full": 0,
+    "partial": 0,
+    "absent": 6,
+    "skip": 0
+   },
+   "nashpy.game": {
+    "full": 1,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "nashpy.learning.fictitious_play": {
+    "full": 1,
+    "partial": 2,
+    "absent": 0,
+    "skip": 0
+   },
+   "nashpy.learning.imitation_dynamics": {
+    "full": 2,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "nashpy.learning.introspection_dynamics": {
+    "full": 0,
+    "partial": 0,
+    "absent": 1,
+    "skip": 0
+   },
+   "nashpy.learning.regret_minimization": {
+    "full": 1,
+    "partial": 3,
+    "absent": 0,
+    "skip": 0
+   },
+   "nashpy.learning.replicator_dynamics": {
+    "full": 2,
+    "partial": 2,
+    "absent": 0,
+    "skip": 0
+   },
+   "nashpy.learning.stochastic_fictitious_play": {
+    "full": 1,
+    "partial": 1,
+    "absent": 0,
+    "skip": 0
+   },
+   "nashpy.linalg.minimax": {
+    "full": 1,
+    "partial": 5,
+    "absent": 0,
+    "skip": 0
+   },
+   "nashpy.linalg.tableau": {
+    "full": 0,
+    "partial": 4,
+    "absent": 0,
+    "skip": 0
+   },
+   "nashpy.polytope.polytope": {
+    "full": 0,
+    "partial": 4,
+    "absent": 0,
+    "skip": 0
+   },
+   "nashpy.repeated_games": {
+    "full": 0,
+    "partial": 0,
+    "absent": 4,
+    "skip": 0
+   },
+   "nashpy.utils.is_best_response": {
+    "full": 1,
+    "partial": 0,
+    "absent": 0,
     "skip": 0
    }
   },
@@ -457,6 +1206,40 @@
     "skip": 0
    }
   },
+  "npeet": {
+   "npeet": {
+    "full": 19,
+    "partial": 0,
+    "absent": 4,
+    "skip": 7
+   }
+  },
+  "numpy": {
+   "numpy": {
+    "full": 230,
+    "partial": 31,
+    "absent": 46,
+    "skip": 73
+   },
+   "numpy.fft": {
+    "full": 18,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "numpy.linalg": {
+    "full": 29,
+    "partial": 0,
+    "absent": 2,
+    "skip": 1
+   },
+   "numpy.random.Generator": {
+    "full": 41,
+    "partial": 0,
+    "absent": 3,
+    "skip": 1
+   }
+  },
   "numpyro": {
    "numpyro": {
     "full": 7,
@@ -528,6 +1311,126 @@
     "full": 8,
     "partial": 0,
     "absent": 1,
+    "skip": 0
+   }
+  },
+  "opacus": {
+   "opacus": {
+    "full": 0,
+    "partial": 1,
+    "absent": 0,
+    "skip": 0
+   },
+   "opacus.accountants": {
+    "full": 6,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "opacus.data_loader": {
+    "full": 6,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "opacus.grad_sample": {
+    "full": 19,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "opacus.layers": {
+    "full": 6,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "opacus.optimizers": {
+    "full": 5,
+    "partial": 0,
+    "absent": 0,
+    "skip": 2
+   },
+   "opacus.schedulers": {
+    "full": 4,
+    "partial": 4,
+    "absent": 0,
+    "skip": 0
+   },
+   "opacus.utils.batch_memory_manager": {
+    "full": 3,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "opacus.validators": {
+    "full": 1,
+    "partial": 2,
+    "absent": 0,
+    "skip": 0
+   }
+  },
+  "openspiel": {
+   "open_spiel.python.algorithms": {
+    "full": 31,
+    "partial": 0,
+    "absent": 18,
+    "skip": 54
+   },
+   "open_spiel.python.egt": {
+    "full": 0,
+    "partial": 6,
+    "absent": 0,
+    "skip": 7
+   },
+   "pyspiel.games": {
+    "full": 23,
+    "partial": 0,
+    "absent": 70,
+    "skip": 33
+   }
+  },
+  "optax": {
+   "optax": {
+    "full": 147,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "optax.contrib": {
+    "full": 34,
+    "partial": 0,
+    "absent": 23,
+    "skip": 0
+   },
+   "optax.losses": {
+    "full": 32,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "optax.projections": {
+    "full": 12,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "optax.schedules": {
+    "full": 19,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "optax.second_order": {
+    "full": 3,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "optax.tree_utils": {
+    "full": 36,
+    "partial": 0,
+    "absent": 0,
     "skip": 0
    }
   },
@@ -653,6 +1556,320 @@
     "partial": 0,
     "absent": 3,
     "skip": 14
+   }
+  },
+  "pingouin": {
+   "pingouin": {
+    "full": 67,
+    "partial": 0,
+    "absent": 9,
+    "skip": 0
+   }
+  },
+  "pot": {
+   "ot": {
+    "full": 2,
+    "partial": 0,
+    "absent": 0,
+    "skip": 5
+   },
+   "ot.batch": {
+    "full": 0,
+    "partial": 13,
+    "absent": 0,
+    "skip": 0
+   },
+   "ot.bregman": {
+    "full": 3,
+    "partial": 24,
+    "absent": 0,
+    "skip": 0
+   },
+   "ot.coot": {
+    "full": 0,
+    "partial": 2,
+    "absent": 0,
+    "skip": 0
+   },
+   "ot.da": {
+    "full": 0,
+    "partial": 16,
+    "absent": 0,
+    "skip": 0
+   },
+   "ot.datasets": {
+    "full": 0,
+    "partial": 4,
+    "absent": 0,
+    "skip": 0
+   },
+   "ot.factored": {
+    "full": 0,
+    "partial": 1,
+    "absent": 0,
+    "skip": 0
+   },
+   "ot.gaussian": {
+    "full": 0,
+    "partial": 17,
+    "absent": 0,
+    "skip": 0
+   },
+   "ot.gmm": {
+    "full": 0,
+    "partial": 9,
+    "absent": 0,
+    "skip": 0
+   },
+   "ot.gnn": {
+    "full": 0,
+    "partial": 4,
+    "absent": 0,
+    "skip": 0
+   },
+   "ot.gromov": {
+    "full": 2,
+    "partial": 65,
+    "absent": 0,
+    "skip": 0
+   },
+   "ot.lowrank": {
+    "full": 0,
+    "partial": 4,
+    "absent": 0,
+    "skip": 0
+   },
+   "ot.lp": {
+    "full": 5,
+    "partial": 14,
+    "absent": 0,
+    "skip": 1
+   },
+   "ot.mapping": {
+    "full": 0,
+    "partial": 4,
+    "absent": 0,
+    "skip": 0
+   },
+   "ot.partial": {
+    "full": 0,
+    "partial": 12,
+    "absent": 0,
+    "skip": 0
+   },
+   "ot.regpath": {
+    "full": 0,
+    "partial": 11,
+    "absent": 0,
+    "skip": 0
+   },
+   "ot.sliced": {
+    "full": 1,
+    "partial": 10,
+    "absent": 0,
+    "skip": 0
+   },
+   "ot.smooth": {
+    "full": 0,
+    "partial": 13,
+    "absent": 0,
+    "skip": 0
+   },
+   "ot.solvers": {
+    "full": 2,
+    "partial": 2,
+    "absent": 0,
+    "skip": 0
+   },
+   "ot.stochastic": {
+    "full": 0,
+    "partial": 12,
+    "absent": 0,
+    "skip": 0
+   },
+   "ot.unbalanced": {
+    "full": 2,
+    "partial": 13,
+    "absent": 0,
+    "skip": 0
+   },
+   "ot.weak": {
+    "full": 0,
+    "partial": 1,
+    "absent": 0,
+    "skip": 0
+   }
+  },
+  "pyitlib": {
+   "pyitlib": {
+    "full": 13,
+    "partial": 3,
+    "absent": 8,
+    "skip": 0
+   }
+  },
+  "pymoo": {
+   "pymoo.algorithms.moo": {
+    "full": 3,
+    "partial": 0,
+    "absent": 29,
+    "skip": 26
+   },
+   "pymoo.algorithms.soo.nonconvex": {
+    "full": 17,
+    "partial": 0,
+    "absent": 0,
+    "skip": 67
+   },
+   "pymoo.constraints": {
+    "full": 0,
+    "partial": 9,
+    "absent": 0,
+    "skip": 0
+   },
+   "pymoo.decomposition": {
+    "full": 6,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "pymoo.gradient": {
+    "full": 0,
+    "partial": 0,
+    "absent": 0,
+    "skip": 6
+   },
+   "pymoo.indicators": {
+    "full": 1,
+    "partial": 0,
+    "absent": 13,
+    "skip": 0
+   },
+   "pymoo.mcdm": {
+    "full": 0,
+    "partial": 0,
+    "absent": 5,
+    "skip": 0
+   },
+   "pymoo.operators.crossover": {
+    "full": 1,
+    "partial": 0,
+    "absent": 17,
+    "skip": 0
+   },
+   "pymoo.operators.mutation": {
+    "full": 1,
+    "partial": 0,
+    "absent": 6,
+    "skip": 0
+   },
+   "pymoo.operators.sampling": {
+    "full": 0,
+    "partial": 4,
+    "absent": 0,
+    "skip": 0
+   },
+   "pymoo.operators.selection": {
+    "full": 0,
+    "partial": 2,
+    "absent": 0,
+    "skip": 0
+   },
+   "pymoo.problems.many": {
+    "full": 0,
+    "partial": 0,
+    "absent": 56,
+    "skip": 0
+   },
+   "pymoo.problems.multi": {
+    "full": 0,
+    "partial": 0,
+    "absent": 57,
+    "skip": 0
+   },
+   "pymoo.problems.single": {
+    "full": 8,
+    "partial": 0,
+    "absent": 38,
+    "skip": 0
+   },
+   "pymoo.termination": {
+    "full": 0,
+    "partial": 10,
+    "absent": 0,
+    "skip": 0
+   },
+   "pymoo.visualization": {
+    "full": 0,
+    "partial": 12,
+    "absent": 0,
+    "skip": 0
+   }
+  },
+  "pysindy": {
+   "pysindy": {
+    "full": 1,
+    "partial": 0,
+    "absent": 1,
+    "skip": 2
+   },
+   "pysindy.differentiation": {
+    "full": 5,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "pysindy.feature_library": {
+    "full": 6,
+    "partial": 0,
+    "absent": 4,
+    "skip": 0
+   },
+   "pysindy.optimizers": {
+    "full": 7,
+    "partial": 0,
+    "absent": 5,
+    "skip": 0
+   }
+  },
+  "pysubgroup": {
+   "pysubgroup": {
+    "full": 112,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   }
+  },
+  "ruptures": {
+   "ruptures.costs": {
+    "full": 0,
+    "partial": 11,
+    "absent": 0,
+    "skip": 1
+   },
+   "ruptures.datasets": {
+    "full": 4,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "ruptures.detection": {
+    "full": 2,
+    "partial": 0,
+    "absent": 4,
+    "skip": 0
+   },
+   "ruptures.metrics": {
+    "full": 5,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "ruptures.show": {
+    "full": 1,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
    }
   },
   "scipy": {
@@ -801,6 +2018,14 @@
     "skip": 0
    }
   },
+  "sdeint": {
+   "sdeint": {
+    "full": 5,
+    "partial": 7,
+    "absent": 0,
+    "skip": 1
+   }
+  },
   "shap": {
    "shap": {
     "full": 23,
@@ -819,6 +2044,62 @@
     "partial": 0,
     "absent": 0,
     "skip": 0
+   }
+  },
+  "shapely": {
+   "shapely": {
+    "full": 31,
+    "partial": 0,
+    "absent": 41,
+    "skip": 66
+   },
+   "shapely.affinity": {
+    "full": 5,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "shapely.geometry": {
+    "full": 9,
+    "partial": 0,
+    "absent": 0,
+    "skip": 4
+   },
+   "shapely.ops": {
+    "full": 0,
+    "partial": 0,
+    "absent": 10,
+    "skip": 5
+   },
+   "shapely.plotting": {
+    "full": 0,
+    "partial": 0,
+    "absent": 0,
+    "skip": 4
+   },
+   "shapely.prepared": {
+    "full": 0,
+    "partial": 0,
+    "absent": 2,
+    "skip": 0
+   },
+   "shapely.strtree": {
+    "full": 0,
+    "partial": 0,
+    "absent": 1,
+    "skip": 0
+   },
+   "shapely.validation": {
+    "full": 0,
+    "partial": 0,
+    "absent": 1,
+    "skip": 1
+   },
+   "shapely.wkb": {
+    "full": 0,
+    "partial": 0,
+    "absent": 0,
+    "skip": 4
    }
   },
   "skimage": {
@@ -1159,6 +2440,116 @@
     "partial": 0,
     "absent": 0,
     "skip": 0
+   }
+  },
+  "skorch": {
+   "skorch.callbacks.base": {
+    "full": 0,
+    "partial": 0,
+    "absent": 0,
+    "skip": 1
+   },
+   "skorch.callbacks.logging": {
+    "full": 0,
+    "partial": 0,
+    "absent": 0,
+    "skip": 8
+   },
+   "skorch.callbacks.lr_scheduler": {
+    "full": 2,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "skorch.callbacks.regularization": {
+    "full": 1,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "skorch.callbacks.scoring": {
+    "full": 5,
+    "partial": 0,
+    "absent": 0,
+    "skip": 1
+   },
+   "skorch.callbacks.training": {
+    "full": 8,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "skorch.classifier": {
+    "full": 0,
+    "partial": 2,
+    "absent": 0,
+    "skip": 2
+   },
+   "skorch.cli": {
+    "full": 0,
+    "partial": 0,
+    "absent": 0,
+    "skip": 3
+   },
+   "skorch.dataset": {
+    "full": 5,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "skorch.exceptions": {
+    "full": 0,
+    "partial": 0,
+    "absent": 0,
+    "skip": 4
+   },
+   "skorch.helper": {
+    "full": 4,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "skorch.history": {
+    "full": 1,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "skorch.net": {
+    "full": 0,
+    "partial": 1,
+    "absent": 0,
+    "skip": 0
+   },
+   "skorch.regressor": {
+    "full": 0,
+    "partial": 1,
+    "absent": 0,
+    "skip": 1
+   },
+   "skorch.scoring": {
+    "full": 0,
+    "partial": 0,
+    "absent": 0,
+    "skip": 1
+   },
+   "skorch.setter": {
+    "full": 0,
+    "partial": 0,
+    "absent": 0,
+    "skip": 1
+   },
+   "skorch.toy": {
+    "full": 0,
+    "partial": 4,
+    "absent": 0,
+    "skip": 0
+   },
+   "skorch.utils": {
+    "full": 0,
+    "partial": 0,
+    "absent": 0,
+    "skip": 25
    }
   },
   "statsmodels": {
@@ -1553,6 +2944,160 @@
     "skip": 3
    }
   },
+  "stumpy": {
+   "stumpy": {
+    "full": 43,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   }
+  },
+  "sympy": {
+   "sympy.algebras": {
+    "full": 0,
+    "partial": 1,
+    "absent": 0,
+    "skip": 0
+   },
+   "sympy.assumptions": {
+    "full": 0,
+    "partial": 0,
+    "absent": 8,
+    "skip": 0
+   },
+   "sympy.calculus": {
+    "full": 0,
+    "partial": 17,
+    "absent": 0,
+    "skip": 0
+   },
+   "sympy.concrete": {
+    "full": 0,
+    "partial": 4,
+    "absent": 0,
+    "skip": 0
+   },
+   "sympy.core": {
+    "full": 0,
+    "partial": 84,
+    "absent": 0,
+    "skip": 0
+   },
+   "sympy.discrete": {
+    "full": 0,
+    "partial": 11,
+    "absent": 0,
+    "skip": 0
+   },
+   "sympy.external": {
+    "full": 0,
+    "partial": 0,
+    "absent": 0,
+    "skip": 1
+   },
+   "sympy.functions": {
+    "full": 0,
+    "partial": 175,
+    "absent": 0,
+    "skip": 0
+   },
+   "sympy.geometry": {
+    "full": 0,
+    "partial": 30,
+    "absent": 0,
+    "skip": 0
+   },
+   "sympy.integrals": {
+    "full": 0,
+    "partial": 30,
+    "absent": 0,
+    "skip": 0
+   },
+   "sympy.interactive": {
+    "full": 0,
+    "partial": 0,
+    "absent": 0,
+    "skip": 3
+   },
+   "sympy.logic": {
+    "full": 17,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "sympy.matrices": {
+    "full": 0,
+    "partial": 70,
+    "absent": 0,
+    "skip": 0
+   },
+   "sympy.ntheory": {
+    "full": 51,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "sympy.parsing": {
+    "full": 1,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "sympy.plotting": {
+    "full": 0,
+    "partial": 0,
+    "absent": 0,
+    "skip": 4
+   },
+   "sympy.polys": {
+    "full": 0,
+    "partial": 156,
+    "absent": 0,
+    "skip": 0
+   },
+   "sympy.printing": {
+    "full": 0,
+    "partial": 35,
+    "absent": 0,
+    "skip": 0
+   },
+   "sympy.series": {
+    "full": 17,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "sympy.sets": {
+    "full": 0,
+    "partial": 18,
+    "absent": 0,
+    "skip": 0
+   },
+   "sympy.simplify": {
+    "full": 31,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "sympy.solvers": {
+    "full": 0,
+    "partial": 40,
+    "absent": 0,
+    "skip": 0
+   },
+   "sympy.tensor": {
+    "full": 0,
+    "partial": 19,
+    "absent": 0,
+    "skip": 0
+   },
+   "sympy.utilities": {
+    "full": 0,
+    "partial": 0,
+    "absent": 0,
+    "skip": 24
+   }
+  },
   "torch": {
    "torch.autograd": {
     "full": 8,
@@ -1695,6 +3240,14 @@
     "partial": 0,
     "absent": 27,
     "skip": 25
+   }
+  },
+  "torchvision_models": {
+   "torchvision.models": {
+    "full": 0,
+    "partial": 62,
+    "absent": 29,
+    "skip": 30
    }
   },
   "torch_geometric": {
@@ -2173,6 +3726,2188 @@
     "partial": 11,
     "absent": 0,
     "skip": 4
+   }
+  },
+  "pytorch_metric_learning": {
+   "losses": {
+    "full": 7,
+    "partial": 6,
+    "absent": 30,
+    "skip": 0
+   },
+   "miners": {
+    "full": 0,
+    "partial": 0,
+    "absent": 11,
+    "skip": 0
+   },
+   "distances": {
+    "full": 3,
+    "partial": 3,
+    "absent": 0,
+    "skip": 0
+   },
+   "reducers": {
+    "full": 0,
+    "partial": 9,
+    "absent": 0,
+    "skip": 0
+   },
+   "regularizers": {
+    "full": 0,
+    "partial": 5,
+    "absent": 0,
+    "skip": 0
+   },
+   "samplers": {
+    "full": 0,
+    "partial": 0,
+    "absent": 4,
+    "skip": 0
+   },
+   "trainers": {
+    "full": 0,
+    "partial": 0,
+    "absent": 0,
+    "skip": 6
+   },
+   "testers": {
+    "full": 0,
+    "partial": 3,
+    "absent": 0,
+    "skip": 0
+   },
+   "utils": {
+    "full": 9,
+    "partial": 10,
+    "absent": 0,
+    "skip": 8
+   }
+  },
+  "metric_learn": {
+   "supervised": {
+    "full": 2,
+    "partial": 1,
+    "absent": 8,
+    "skip": 0
+   },
+   "weakly": {
+    "full": 0,
+    "partial": 0,
+    "absent": 5,
+    "skip": 0
+   },
+   "pairs_triplets_quadruplets": {
+    "full": 0,
+    "partial": 5,
+    "absent": 0,
+    "skip": 0
+   },
+   "utils": {
+    "full": 0,
+    "partial": 0,
+    "absent": 3,
+    "skip": 0
+   },
+   "base": {
+    "full": 0,
+    "partial": 1,
+    "absent": 0,
+    "skip": 1
+   }
+  },
+  "faiss": {
+   "indexes": {
+    "full": 5,
+    "partial": 4,
+    "absent": 0,
+    "skip": 6
+   },
+   "clustering": {
+    "full": 1,
+    "partial": 5,
+    "absent": 0,
+    "skip": 0
+   },
+   "utils": {
+    "full": 0,
+    "partial": 0,
+    "absent": 0,
+    "skip": 10
+   }
+  },
+  "lightly": {
+   "loss": {
+    "full": 3,
+    "partial": 2,
+    "absent": 10,
+    "skip": 0
+   },
+   "models": {
+    "full": 0,
+    "partial": 2,
+    "absent": 16,
+    "skip": 0
+   },
+   "heads_and_utils": {
+    "full": 1,
+    "partial": 14,
+    "absent": 7,
+    "skip": 2
+   },
+   "transforms": {
+    "full": 1,
+    "partial": 1,
+    "absent": 13,
+    "skip": 0
+   }
+  },
+  "solo_learn": {
+   "methods": {
+    "full": 0,
+    "partial": 1,
+    "absent": 18,
+    "skip": 0
+   },
+   "tricks": {
+    "full": 2,
+    "partial": 4,
+    "absent": 2,
+    "skip": 0
+   }
+  },
+  "sentence_transformers": {
+   "losses": {
+    "full": 5,
+    "partial": 2,
+    "absent": 11,
+    "skip": 1
+   },
+   "evaluation": {
+    "full": 1,
+    "partial": 3,
+    "absent": 3,
+    "skip": 2
+   },
+   "tools": {
+    "full": 3,
+    "partial": 4,
+    "absent": 2,
+    "skip": 0
+   }
+  },
+  "pytorch_lightning": {
+   "callbacks": {
+    "full": 4,
+    "partial": 6,
+    "absent": 3,
+    "skip": 5
+   },
+   "trainer": {
+    "full": 2,
+    "partial": 9,
+    "absent": 2,
+    "skip": 5
+   },
+   "loggers": {
+    "full": 0,
+    "partial": 0,
+    "absent": 0,
+    "skip": 6
+   },
+   "strategies": {
+    "full": 0,
+    "partial": 0,
+    "absent": 0,
+    "skip": 4
+   }
+  },
+  "ignite": {
+   "engine": {
+    "full": 0,
+    "partial": 5,
+    "absent": 0,
+    "skip": 0
+   },
+   "handlers": {
+    "full": 10,
+    "partial": 6,
+    "absent": 1,
+    "skip": 5
+   },
+   "metrics": {
+    "full": 26,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "contrib": {
+    "full": 0,
+    "partial": 0,
+    "absent": 0,
+    "skip": 5
+   }
+  },
+  "learn2learn": {
+   "algorithms": {
+    "full": 0,
+    "partial": 0,
+    "absent": 14,
+    "skip": 0
+   },
+   "data": {
+    "full": 0,
+    "partial": 0,
+    "absent": 16,
+    "skip": 0
+   },
+   "optim": {
+    "full": 0,
+    "partial": 0,
+    "absent": 0,
+    "skip": 5
+   },
+   "rl": {
+    "full": 0,
+    "partial": 0,
+    "absent": 4,
+    "skip": 0
+   }
+  },
+  "higher": {
+   "api": {
+    "full": 0,
+    "partial": 0,
+    "absent": 0,
+    "skip": 16
+   }
+  },
+  "avalanche": {
+   "strategies": {
+    "full": 0,
+    "partial": 3,
+    "absent": 16,
+    "skip": 3
+   },
+   "plugins": {
+    "full": 0,
+    "partial": 0,
+    "absent": 10,
+    "skip": 2
+   },
+   "benchmarks": {
+    "full": 0,
+    "partial": 0,
+    "absent": 7,
+    "skip": 4
+   },
+   "metrics": {
+    "full": 0,
+    "partial": 0,
+    "absent": 7,
+    "skip": 1
+   },
+   "training": {
+    "full": 0,
+    "partial": 0,
+    "absent": 5,
+    "skip": 0
+   }
+  },
+  "river": {
+   "linear_model": {
+    "full": 7,
+    "partial": 1,
+    "absent": 0,
+    "skip": 0
+   },
+   "tree": {
+    "full": 1,
+    "partial": 0,
+    "absent": 8,
+    "skip": 0
+   },
+   "ensemble": {
+    "full": 0,
+    "partial": 2,
+    "absent": 10,
+    "skip": 0
+   },
+   "neighbors": {
+    "full": 0,
+    "partial": 4,
+    "absent": 0,
+    "skip": 0
+   },
+   "naive_bayes": {
+    "full": 4,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "cluster": {
+    "full": 0,
+    "partial": 2,
+    "absent": 4,
+    "skip": 0
+   },
+   "anomaly": {
+    "full": 2,
+    "partial": 3,
+    "absent": 1,
+    "skip": 0
+   },
+   "drift": {
+    "full": 5,
+    "partial": 0,
+    "absent": 2,
+    "skip": 0
+   },
+   "drift_datasets": {
+    "full": 0,
+    "partial": 2,
+    "absent": 0,
+    "skip": 0
+   },
+   "preprocessing": {
+    "full": 0,
+    "partial": 13,
+    "absent": 0,
+    "skip": 0
+   },
+   "feature_selection": {
+    "full": 0,
+    "partial": 3,
+    "absent": 0,
+    "skip": 0
+   },
+   "metrics": {
+    "full": 23,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "optim": {
+    "full": 12,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "forecast": {
+    "full": 1,
+    "partial": 2,
+    "absent": 0,
+    "skip": 0
+   },
+   "reco": {
+    "full": 7,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "compose": {
+    "full": 7,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "time_series": {
+    "full": 0,
+    "partial": 3,
+    "absent": 1,
+    "skip": 0
+   },
+   "bandit": {
+    "full": 6,
+    "partial": 0,
+    "absent": 1,
+    "skip": 0
+   },
+   "datasets": {
+    "full": 0,
+    "partial": 16,
+    "absent": 0,
+    "skip": 0
+   },
+   "stats": {
+    "full": 0,
+    "partial": 15,
+    "absent": 0,
+    "skip": 0
+   },
+   "evaluate": {
+    "full": 0,
+    "partial": 0,
+    "absent": 2,
+    "skip": 0
+   },
+   "stream": {
+    "full": 0,
+    "partial": 6,
+    "absent": 0,
+    "skip": 0
+   },
+   "multioutput": {
+    "full": 4,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "active": {
+    "full": 1,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "proba": {
+    "full": 0,
+    "partial": 5,
+    "absent": 0,
+    "skip": 0
+   },
+   "sketch": {
+    "full": 4,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "imblearn": {
+    "full": 0,
+    "partial": 4,
+    "absent": 0,
+    "skip": 0
+   }
+  },
+  "snorkel": {
+   "labeling": {
+    "full": 0,
+    "partial": 9,
+    "absent": 0,
+    "skip": 0
+   },
+   "label_model": {
+    "full": 3,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "augmentation": {
+    "full": 0,
+    "partial": 0,
+    "absent": 8,
+    "skip": 0
+   },
+   "slicing": {
+    "full": 0,
+    "partial": 0,
+    "absent": 5,
+    "skip": 0
+   },
+   "classification": {
+    "full": 0,
+    "partial": 5,
+    "absent": 0,
+    "skip": 0
+   },
+   "utils": {
+    "full": 2,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "analysis": {
+    "full": 2,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   }
+  },
+  "cleanlab": {
+   "filter": {
+    "full": 1,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "classification": {
+    "full": 0,
+    "partial": 1,
+    "absent": 0,
+    "skip": 0
+   },
+   "rank": {
+    "full": 4,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "count": {
+    "full": 8,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "dataset": {
+    "full": 0,
+    "partial": 0,
+    "absent": 4,
+    "skip": 0
+   },
+   "outlier": {
+    "full": 0,
+    "partial": 0,
+    "absent": 1,
+    "skip": 0
+   },
+   "regression": {
+    "full": 0,
+    "partial": 0,
+    "absent": 1,
+    "skip": 0
+   },
+   "token_classification": {
+    "full": 0,
+    "partial": 0,
+    "absent": 3,
+    "skip": 0
+   },
+   "datalab": {
+    "full": 0,
+    "partial": 0,
+    "absent": 12,
+    "skip": 0
+   },
+   "benchmarking": {
+    "full": 3,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "experimental": {
+    "full": 0,
+    "partial": 0,
+    "absent": 0,
+    "skip": 2
+   }
+  },
+  "small_text": {
+   "query_strategies": {
+    "full": 16,
+    "partial": 4,
+    "absent": 0,
+    "skip": 0
+   },
+   "active_learner": {
+    "full": 5,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "initialization": {
+    "full": 0,
+    "partial": 3,
+    "absent": 0,
+    "skip": 0
+   },
+   "classifiers": {
+    "full": 0,
+    "partial": 0,
+    "absent": 0,
+    "skip": 5
+   }
+  },
+  "flower": {
+   "strategies": {
+    "full": 0,
+    "partial": 2,
+    "absent": 14,
+    "skip": 0
+   },
+   "tools": {
+    "full": 0,
+    "partial": 0,
+    "absent": 0,
+    "skip": 5
+   },
+   "privacy": {
+    "full": 0,
+    "partial": 0,
+    "absent": 0,
+    "skip": 2
+   }
+  },
+  "botorch": {
+   "acquisition": {
+    "full": 5,
+    "partial": 4,
+    "absent": 25,
+    "skip": 0
+   },
+   "models": {
+    "full": 0,
+    "partial": 7,
+    "absent": 13,
+    "skip": 0
+   },
+   "optim": {
+    "full": 2,
+    "partial": 0,
+    "absent": 8,
+    "skip": 0
+   },
+   "fit": {
+    "full": 1,
+    "partial": 1,
+    "absent": 0,
+    "skip": 0
+   },
+   "sampling": {
+    "full": 4,
+    "partial": 1,
+    "absent": 0,
+    "skip": 0
+   },
+   "utils": {
+    "full": 3,
+    "partial": 6,
+    "absent": 3,
+    "skip": 0
+   },
+   "transforms": {
+    "full": 0,
+    "partial": 10,
+    "absent": 1,
+    "skip": 0
+   },
+   "test_functions": {
+    "full": 5,
+    "partial": 0,
+    "absent": 25,
+    "skip": 0
+   },
+   "cross_validation": {
+    "full": 0,
+    "partial": 2,
+    "absent": 0,
+    "skip": 0
+   },
+   "risk_measures": {
+    "full": 0,
+    "partial": 0,
+    "absent": 5,
+    "skip": 0
+   }
+  },
+  "gpflow": {
+   "models": {
+    "full": 2,
+    "partial": 5,
+    "absent": 3,
+    "skip": 0
+   },
+   "kernels": {
+    "full": 14,
+    "partial": 1,
+    "absent": 7,
+    "skip": 0
+   },
+   "likelihoods": {
+    "full": 0,
+    "partial": 5,
+    "absent": 11,
+    "skip": 0
+   },
+   "mean_functions": {
+    "full": 5,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "inducing_variables": {
+    "full": 0,
+    "partial": 3,
+    "absent": 0,
+    "skip": 3
+   },
+   "conditionals": {
+    "full": 0,
+    "partial": 4,
+    "absent": 0,
+    "skip": 0
+   },
+   "expectations": {
+    "full": 0,
+    "partial": 2,
+    "absent": 0,
+    "skip": 0
+   },
+   "optimizers": {
+    "full": 0,
+    "partial": 2,
+    "absent": 0,
+    "skip": 0
+   },
+   "posteriors": {
+    "full": 0,
+    "partial": 5,
+    "absent": 0,
+    "skip": 0
+   },
+   "utilities": {
+    "full": 0,
+    "partial": 8,
+    "absent": 0,
+    "skip": 0
+   },
+   "monitor": {
+    "full": 0,
+    "partial": 0,
+    "absent": 0,
+    "skip": 4
+   },
+   "covariances": {
+    "full": 0,
+    "partial": 0,
+    "absent": 0,
+    "skip": 3
+   },
+   "base": {
+    "full": 0,
+    "partial": 0,
+    "absent": 0,
+    "skip": 3
+   },
+   "quadrature": {
+    "full": 0,
+    "partial": 3,
+    "absent": 0,
+    "skip": 0
+   },
+   "experimental": {
+    "full": 0,
+    "partial": 0,
+    "absent": 0,
+    "skip": 1
+   }
+  },
+  "skopt": {
+   "optimizers": {
+    "full": 0,
+    "partial": 8,
+    "absent": 0,
+    "skip": 0
+   },
+   "space": {
+    "full": 7,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "learning": {
+    "full": 0,
+    "partial": 1,
+    "absent": 3,
+    "skip": 0
+   },
+   "acquisition": {
+    "full": 7,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "callbacks": {
+    "full": 0,
+    "partial": 7,
+    "absent": 0,
+    "skip": 0
+   },
+   "plots": {
+    "full": 4,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "sampler": {
+    "full": 6,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "utils": {
+    "full": 0,
+    "partial": 5,
+    "absent": 0,
+    "skip": 0
+   }
+  },
+  "pyro": {
+   "infer": {
+    "full": 27,
+    "partial": 5,
+    "absent": 11,
+    "skip": 0
+   },
+   "poutine": {
+    "full": 13,
+    "partial": 0,
+    "absent": 8,
+    "skip": 1
+   },
+   "primitives": {
+    "full": 8,
+    "partial": 5,
+    "absent": 0,
+    "skip": 0
+   },
+   "optim": {
+    "full": 12,
+    "partial": 0,
+    "absent": 0,
+    "skip": 3
+   },
+   "distributions": {
+    "full": 14,
+    "partial": 0,
+    "absent": 11,
+    "skip": 0
+   },
+   "contrib_gp": {
+    "full": 0,
+    "partial": 21,
+    "absent": 3,
+    "skip": 0
+   },
+   "contrib_other": {
+    "full": 0,
+    "partial": 6,
+    "absent": 6,
+    "skip": 0
+   },
+   "nn": {
+    "full": 0,
+    "partial": 5,
+    "absent": 0,
+    "skip": 0
+   },
+   "transforms": {
+    "full": 0,
+    "partial": 16,
+    "absent": 0,
+    "skip": 0
+   }
+  },
+  "interpret": {
+   "glassbox": {
+    "full": 7,
+    "partial": 4,
+    "absent": 2,
+    "skip": 0
+   },
+   "blackbox": {
+    "full": 4,
+    "partial": 1,
+    "absent": 1,
+    "skip": 0
+   },
+   "data": {
+    "full": 0,
+    "partial": 0,
+    "absent": 0,
+    "skip": 1
+   },
+   "perf": {
+    "full": 3,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "utils": {
+    "full": 0,
+    "partial": 0,
+    "absent": 0,
+    "skip": 3
+   },
+   "ebm_features": {
+    "full": 1,
+    "partial": 11,
+    "absent": 1,
+    "skip": 0
+   }
+  },
+  "imodels": {
+   "rule_list": {
+    "full": 8,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "rule_set": {
+    "full": 1,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "trees": {
+    "full": 4,
+    "partial": 0,
+    "absent": 9,
+    "skip": 0
+   },
+   "algebraic": {
+    "full": 0,
+    "partial": 0,
+    "absent": 7,
+    "skip": 0
+   },
+   "util": {
+    "full": 0,
+    "partial": 0,
+    "absent": 0,
+    "skip": 5
+   },
+   "experimental": {
+    "full": 0,
+    "partial": 0,
+    "absent": 0,
+    "skip": 2
+   }
+  },
+  "category_encoders": {
+   "encoders": {
+    "full": 4,
+    "partial": 2,
+    "absent": 15,
+    "skip": 0
+   }
+  },
+  "feature_engine": {
+   "imputation": {
+    "full": 5,
+    "partial": 2,
+    "absent": 0,
+    "skip": 0
+   },
+   "encoding": {
+    "full": 0,
+    "partial": 7,
+    "absent": 0,
+    "skip": 0
+   },
+   "discretisation": {
+    "full": 2,
+    "partial": 0,
+    "absent": 3,
+    "skip": 0
+   },
+   "outliers": {
+    "full": 0,
+    "partial": 3,
+    "absent": 0,
+    "skip": 0
+   },
+   "transformation": {
+    "full": 7,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "creation": {
+    "full": 0,
+    "partial": 5,
+    "absent": 0,
+    "skip": 0
+   },
+   "selection": {
+    "full": 6,
+    "partial": 1,
+    "absent": 7,
+    "skip": 0
+   },
+   "datetime": {
+    "full": 0,
+    "partial": 0,
+    "absent": 2,
+    "skip": 0
+   },
+   "timeseries": {
+    "full": 4,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "preprocessing": {
+    "full": 0,
+    "partial": 0,
+    "absent": 0,
+    "skip": 2
+   },
+   "scaling": {
+    "full": 0,
+    "partial": 1,
+    "absent": 0,
+    "skip": 0
+   },
+   "wrappers": {
+    "full": 1,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   }
+  },
+  "mlxtend": {
+   "classifier": {
+    "full": 8,
+    "partial": 1,
+    "absent": 0,
+    "skip": 0
+   },
+   "regressor": {
+    "full": 3,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "feature_selection": {
+    "full": 2,
+    "partial": 0,
+    "absent": 1,
+    "skip": 0
+   },
+   "feature_extraction": {
+    "full": 3,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "frequent_patterns": {
+    "full": 3,
+    "partial": 2,
+    "absent": 0,
+    "skip": 0
+   },
+   "evaluate": {
+    "full": 18,
+    "partial": 6,
+    "absent": 0,
+    "skip": 0
+   },
+   "plotting": {
+    "full": 10,
+    "partial": 4,
+    "absent": 0,
+    "skip": 0
+   },
+   "preprocessing": {
+    "full": 0,
+    "partial": 10,
+    "absent": 0,
+    "skip": 0
+   },
+   "cluster": {
+    "full": 0,
+    "partial": 1,
+    "absent": 0,
+    "skip": 0
+   },
+   "data": {
+    "full": 0,
+    "partial": 8,
+    "absent": 0,
+    "skip": 0
+   },
+   "math": {
+    "full": 0,
+    "partial": 0,
+    "absent": 0,
+    "skip": 4
+   },
+   "text": {
+    "full": 0,
+    "partial": 0,
+    "absent": 0,
+    "skip": 2
+   },
+   "utils": {
+    "full": 0,
+    "partial": 0,
+    "absent": 0,
+    "skip": 4
+   }
+  },
+  "skmultilearn": {
+   "problem_transform": {
+    "full": 3,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "adapt": {
+    "full": 0,
+    "partial": 0,
+    "absent": 5,
+    "skip": 0
+   },
+   "ensemble": {
+    "full": 0,
+    "partial": 0,
+    "absent": 4,
+    "skip": 0
+   },
+   "cluster": {
+    "full": 0,
+    "partial": 0,
+    "absent": 6,
+    "skip": 0
+   },
+   "model_selection": {
+    "full": 0,
+    "partial": 0,
+    "absent": 2,
+    "skip": 0
+   },
+   "embedding": {
+    "full": 0,
+    "partial": 0,
+    "absent": 4,
+    "skip": 0
+   },
+   "dataset": {
+    "full": 0,
+    "partial": 0,
+    "absent": 0,
+    "skip": 2
+   },
+   "metrics": {
+    "full": 3,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   }
+  },
+  "sklearn_extra": {
+   "cluster": {
+    "full": 2,
+    "partial": 0,
+    "absent": 2,
+    "skip": 0
+   },
+   "kernel_approximation": {
+    "full": 0,
+    "partial": 1,
+    "absent": 0,
+    "skip": 0
+   },
+   "kernel_methods": {
+    "full": 0,
+    "partial": 0,
+    "absent": 2,
+    "skip": 0
+   },
+   "robust": {
+    "full": 0,
+    "partial": 0,
+    "absent": 3,
+    "skip": 0
+   }
+  },
+  "umap": {
+   "models": {
+    "full": 1,
+    "partial": 0,
+    "absent": 3,
+    "skip": 0
+   },
+   "plot": {
+    "full": 0,
+    "partial": 5,
+    "absent": 0,
+    "skip": 0
+   },
+   "utils": {
+    "full": 2,
+    "partial": 2,
+    "absent": 0,
+    "skip": 0
+   },
+   "validation": {
+    "full": 1,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   }
+  },
+  "hdbscan": {
+   "cluster": {
+    "full": 6,
+    "partial": 3,
+    "absent": 7,
+    "skip": 0
+   },
+   "plots": {
+    "full": 3,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   }
+  },
+  "trimap": {
+   "api": {
+    "full": 1,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   }
+  },
+  "pacmap": {
+   "api": {
+    "full": 1,
+    "partial": 0,
+    "absent": 1,
+    "skip": 0
+   }
+  },
+  "yellowbrick": {
+   "classifier": {
+    "full": 5,
+    "partial": 0,
+    "absent": 2,
+    "skip": 0
+   },
+   "regressor": {
+    "full": 1,
+    "partial": 2,
+    "absent": 1,
+    "skip": 0
+   },
+   "cluster": {
+    "full": 0,
+    "partial": 1,
+    "absent": 2,
+    "skip": 0
+   },
+   "features": {
+    "full": 4,
+    "partial": 3,
+    "absent": 1,
+    "skip": 0
+   },
+   "model_selection": {
+    "full": 2,
+    "partial": 4,
+    "absent": 0,
+    "skip": 0
+   },
+   "text": {
+    "full": 0,
+    "partial": 2,
+    "absent": 4,
+    "skip": 0
+   },
+   "target": {
+    "full": 0,
+    "partial": 0,
+    "absent": 2,
+    "skip": 0
+   },
+   "contrib": {
+    "full": 0,
+    "partial": 0,
+    "absent": 0,
+    "skip": 1
+   },
+   "datasets": {
+    "full": 0,
+    "partial": 0,
+    "absent": 0,
+    "skip": 11
+   },
+   "base": {
+    "full": 0,
+    "partial": 0,
+    "absent": 0,
+    "skip": 3
+   }
+  },
+  "scikitplot": {
+   "metrics": {
+    "full": 6,
+    "partial": 0,
+    "absent": 4,
+    "skip": 0
+   },
+   "estimators": {
+    "full": 2,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "cluster": {
+    "full": 1,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "decomposition": {
+    "full": 2,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   }
+  },
+  "xgboost_lightgbm_catboost": {
+   "features": {
+    "full": 18,
+    "partial": 0,
+    "absent": 24,
+    "skip": 1
+   }
+  },
+  "timm": {
+   "convnets": {
+    "full": 0,
+    "partial": 30,
+    "absent": 8,
+    "skip": 0
+   },
+   "transformers": {
+    "full": 0,
+    "partial": 22,
+    "absent": 5,
+    "skip": 0
+   },
+   "mlp_like": {
+    "full": 0,
+    "partial": 5,
+    "absent": 0,
+    "skip": 0
+   },
+   "text_image": {
+    "full": 0,
+    "partial": 0,
+    "absent": 0,
+    "skip": 3
+   },
+   "layers": {
+    "full": 19,
+    "partial": 7,
+    "absent": 0,
+    "skip": 0
+   },
+   "optim": {
+    "full": 16,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "scheduler": {
+    "full": 6,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "data": {
+    "full": 3,
+    "partial": 6,
+    "absent": 0,
+    "skip": 0
+   },
+   "loss": {
+    "full": 5,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "utils": {
+    "full": 0,
+    "partial": 13,
+    "absent": 0,
+    "skip": 0
+   }
+  },
+  "torchaudio": {
+   "transforms": {
+    "full": 26,
+    "partial": 6,
+    "absent": 0,
+    "skip": 0
+   },
+   "functional": {
+    "full": 32,
+    "partial": 0,
+    "absent": 7,
+    "skip": 0
+   },
+   "models": {
+    "full": 0,
+    "partial": 0,
+    "absent": 0,
+    "skip": 12
+   },
+   "pipelines": {
+    "full": 0,
+    "partial": 0,
+    "absent": 0,
+    "skip": 6
+   },
+   "datasets": {
+    "full": 0,
+    "partial": 0,
+    "absent": 0,
+    "skip": 11
+   },
+   "io": {
+    "full": 0,
+    "partial": 0,
+    "absent": 0,
+    "skip": 3
+   },
+   "compliance": {
+    "full": 0,
+    "partial": 3,
+    "absent": 0,
+    "skip": 0
+   }
+  },
+  "torchtext": {
+   "data": {
+    "full": 4,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "vocab": {
+    "full": 3,
+    "partial": 3,
+    "absent": 0,
+    "skip": 0
+   },
+   "transforms": {
+    "full": 12,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "datasets": {
+    "full": 0,
+    "partial": 26,
+    "absent": 0,
+    "skip": 0
+   },
+   "functional": {
+    "full": 4,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   }
+  },
+  "kornia": {
+   "augmentation": {
+    "full": 0,
+    "partial": 8,
+    "absent": 35,
+    "skip": 0
+   },
+   "filters": {
+    "full": 12,
+    "partial": 0,
+    "absent": 3,
+    "skip": 0
+   },
+   "color": {
+    "full": 10,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "geometry": {
+    "full": 21,
+    "partial": 7,
+    "absent": 0,
+    "skip": 0
+   },
+   "feature": {
+    "full": 8,
+    "partial": 0,
+    "absent": 0,
+    "skip": 9
+   },
+   "losses": {
+    "full": 11,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "metrics": {
+    "full": 8,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "morphology": {
+    "full": 7,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "enhance": {
+    "full": 16,
+    "partial": 1,
+    "absent": 0,
+    "skip": 0
+   },
+   "contrib": {
+    "full": 6,
+    "partial": 0,
+    "absent": 0,
+    "skip": 1
+   },
+   "models": {
+    "full": 0,
+    "partial": 0,
+    "absent": 0,
+    "skip": 4
+   },
+   "nerf": {
+    "full": 2,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   }
+  },
+  "albumentations": {
+   "geometric": {
+    "full": 0,
+    "partial": 11,
+    "absent": 19,
+    "skip": 0
+   },
+   "blur": {
+    "full": 0,
+    "partial": 3,
+    "absent": 5,
+    "skip": 0
+   },
+   "color": {
+    "full": 0,
+    "partial": 0,
+    "absent": 34,
+    "skip": 0
+   },
+   "mixing": {
+    "full": 2,
+    "partial": 0,
+    "absent": 1,
+    "skip": 0
+   },
+   "compose": {
+    "full": 0,
+    "partial": 8,
+    "absent": 0,
+    "skip": 0
+   },
+   "pytorch": {
+    "full": 0,
+    "partial": 0,
+    "absent": 0,
+    "skip": 1
+   }
+  },
+  "torchinfo_fx_onnx": {
+   "summary": {
+    "full": 3,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "fx": {
+    "full": 0,
+    "partial": 10,
+    "absent": 1,
+    "skip": 0
+   },
+   "export": {
+    "full": 0,
+    "partial": 0,
+    "absent": 6,
+    "skip": 0
+   },
+   "profiling": {
+    "full": 5,
+    "partial": 5,
+    "absent": 0,
+    "skip": 0
+   }
+  },
+  "d3rlpy": {
+   "algos": {
+    "full": 15,
+    "partial": 1,
+    "absent": 10,
+    "skip": 0
+   },
+   "dataset": {
+    "full": 7,
+    "partial": 0,
+    "absent": 0,
+    "skip": 2
+   },
+   "metrics": {
+    "full": 0,
+    "partial": 9,
+    "absent": 0,
+    "skip": 0
+   },
+   "ope": {
+    "full": 2,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "tools": {
+    "full": 0,
+    "partial": 0,
+    "absent": 0,
+    "skip": 3
+   }
+  },
+  "imitation": {
+   "algorithms": {
+    "full": 6,
+    "partial": 0,
+    "absent": 5,
+    "skip": 0
+   },
+   "data": {
+    "full": 4,
+    "partial": 0,
+    "absent": 1,
+    "skip": 0
+   },
+   "rewards": {
+    "full": 0,
+    "partial": 0,
+    "absent": 5,
+    "skip": 0
+   },
+   "policies": {
+    "full": 1,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   }
+  },
+  "pykalman": {
+   "filters": {
+    "full": 8,
+    "partial": 2,
+    "absent": 0,
+    "skip": 0
+   }
+  },
+  "nevergrad": {
+   "optimizers": {
+    "full": 20,
+    "partial": 0,
+    "absent": 14,
+    "skip": 0
+   },
+   "parametrization": {
+    "full": 0,
+    "partial": 10,
+    "absent": 0,
+    "skip": 0
+   },
+   "benchmark": {
+    "full": 0,
+    "partial": 0,
+    "absent": 0,
+    "skip": 1
+   },
+   "functions": {
+    "full": 0,
+    "partial": 0,
+    "absent": 0,
+    "skip": 1
+   }
+  },
+  "trimesh": {
+   "core": {
+    "full": 16,
+    "partial": 13,
+    "absent": 7,
+    "skip": 0
+   }
+  },
+  "problog": {
+   "api": {
+    "full": 21,
+    "partial": 0,
+    "absent": 2,
+    "skip": 0
+   }
+  },
+  "gcastle": {
+   "algorithms": {
+    "full": 7,
+    "partial": 0,
+    "absent": 17,
+    "skip": 0
+   },
+   "datasets": {
+    "full": 4,
+    "partial": 0,
+    "absent": 1,
+    "skip": 0
+   },
+   "metrics": {
+    "full": 1,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   }
+  },
+  "uncertainty_toolbox": {
+   "metrics": {
+    "full": 15,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "viz": {
+    "full": 0,
+    "partial": 11,
+    "absent": 0,
+    "skip": 0
+   },
+   "recalibration": {
+    "full": 5,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "data": {
+    "full": 0,
+    "partial": 1,
+    "absent": 0,
+    "skip": 0
+   }
+  },
+  "neuralforecast": {
+   "models": {
+    "full": 12,
+    "partial": 19,
+    "absent": 0,
+    "skip": 1
+   },
+   "losses": {
+    "full": 10,
+    "partial": 5,
+    "absent": 0,
+    "skip": 0
+   },
+   "tools": {
+    "full": 0,
+    "partial": 7,
+    "absent": 0,
+    "skip": 0
+   },
+   "scalers": {
+    "full": 0,
+    "partial": 2,
+    "absent": 0,
+    "skip": 0
+   }
+  },
+  "darts": {
+   "forecasting": {
+    "full": 18,
+    "partial": 17,
+    "absent": 0,
+    "skip": 2
+   },
+   "anomaly": {
+    "full": 0,
+    "partial": 10,
+    "absent": 0,
+    "skip": 0
+   },
+   "ad_aggregators": {
+    "full": 0,
+    "partial": 0,
+    "absent": 3,
+    "skip": 0
+   },
+   "metrics": {
+    "full": 11,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "timeseries": {
+    "full": 0,
+    "partial": 9,
+    "absent": 0,
+    "skip": 0
+   },
+   "dataprocessing": {
+    "full": 0,
+    "partial": 10,
+    "absent": 0,
+    "skip": 0
+   },
+   "explainability": {
+    "full": 0,
+    "partial": 2,
+    "absent": 0,
+    "skip": 0
+   },
+   "utils": {
+    "full": 0,
+    "partial": 4,
+    "absent": 0,
+    "skip": 0
+   },
+   "datasets": {
+    "full": 0,
+    "partial": 7,
+    "absent": 0,
+    "skip": 0
+   }
+  },
+  "gluonts": {
+   "models": {
+    "full": 0,
+    "partial": 18,
+    "absent": 0,
+    "skip": 0
+   },
+   "predictors": {
+    "full": 0,
+    "partial": 7,
+    "absent": 0,
+    "skip": 0
+   },
+   "distributions": {
+    "full": 13,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "evaluation": {
+    "full": 10,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "transform": {
+    "full": 0,
+    "partial": 9,
+    "absent": 0,
+    "skip": 0
+   },
+   "dataset": {
+    "full": 0,
+    "partial": 6,
+    "absent": 0,
+    "skip": 0
+   },
+   "backtest": {
+    "full": 0,
+    "partial": 2,
+    "absent": 0,
+    "skip": 0
+   }
+  },
+  "surprise": {
+   "prediction_algorithms": {
+    "full": 5,
+    "partial": 0,
+    "absent": 6,
+    "skip": 0
+   },
+   "model_selection": {
+    "full": 9,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "accuracy": {
+    "full": 4,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "similarities": {
+    "full": 4,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "dataset": {
+    "full": 6,
+    "partial": 0,
+    "absent": 0,
+    "skip": 1
+   },
+   "utils": {
+    "full": 0,
+    "partial": 0,
+    "absent": 2,
+    "skip": 0
+   }
+  },
+  "implicit": {
+   "als": {
+    "full": 1,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "bpr": {
+    "full": 1,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "lmf": {
+    "full": 0,
+    "partial": 1,
+    "absent": 0,
+    "skip": 0
+   },
+   "nearest_neighbours": {
+    "full": 0,
+    "partial": 0,
+    "absent": 7,
+    "skip": 0
+   },
+   "evaluation": {
+    "full": 7,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "datasets": {
+    "full": 0,
+    "partial": 0,
+    "absent": 0,
+    "skip": 5
+   },
+   "cpu_gpu": {
+    "full": 0,
+    "partial": 0,
+    "absent": 0,
+    "skip": 4
+   }
+  },
+  "lightfm": {
+   "model": {
+    "full": 1,
+    "partial": 6,
+    "absent": 0,
+    "skip": 0
+   },
+   "losses": {
+    "full": 0,
+    "partial": 2,
+    "absent": 2,
+    "skip": 0
+   },
+   "evaluation": {
+    "full": 4,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "data": {
+    "full": 0,
+    "partial": 5,
+    "absent": 0,
+    "skip": 0
+   },
+   "cross_validation": {
+    "full": 0,
+    "partial": 1,
+    "absent": 0,
+    "skip": 0
+   }
+  },
+  "recbole": {
+   "general": {
+    "full": 6,
+    "partial": 0,
+    "absent": 24,
+    "skip": 0
+   },
+   "sequential": {
+    "full": 0,
+    "partial": 0,
+    "absent": 27,
+    "skip": 0
+   },
+   "context": {
+    "full": 19,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "knowledge": {
+    "full": 0,
+    "partial": 0,
+    "absent": 9,
+    "skip": 0
+   },
+   "evaluation": {
+    "full": 16,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "sampling": {
+    "full": 0,
+    "partial": 5,
+    "absent": 0,
+    "skip": 0
+   }
+  },
+  "deepchecks": {
+   "tabular_checks": {
+    "full": 0,
+    "partial": 42,
+    "absent": 0,
+    "skip": 0
+   },
+   "suites": {
+    "full": 0,
+    "partial": 0,
+    "absent": 4,
+    "skip": 0
+   },
+   "vision": {
+    "full": 0,
+    "partial": 0,
+    "absent": 0,
+    "skip": 5
+   },
+   "nlp": {
+    "full": 0,
+    "partial": 0,
+    "absent": 0,
+    "skip": 4
+   }
+  },
+  "evidently": {
+   "presets": {
+    "full": 0,
+    "partial": 6,
+    "absent": 0,
+    "skip": 0
+   },
+   "metrics": {
+    "full": 0,
+    "partial": 26,
+    "absent": 0,
+    "skip": 0
+   },
+   "tests": {
+    "full": 0,
+    "partial": 15,
+    "absent": 0,
+    "skip": 0
+   },
+   "drift_methods": {
+    "full": 12,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "workspace": {
+    "full": 0,
+    "partial": 0,
+    "absent": 0,
+    "skip": 5
+   }
+  },
+  "crf_tools": {
+   "crf_plus_plus": {
+    "full": 10,
+    "partial": 0,
+    "absent": 1,
+    "skip": 0
+   },
+   "crfsuite_algorithms": {
+    "full": 4,
+    "partial": 0,
+    "absent": 1,
+    "skip": 0
+   },
+   "allennlp": {
+    "full": 0,
+    "partial": 2,
+    "absent": 2,
+    "skip": 0
+   },
+   "flair": {
+    "full": 0,
+    "partial": 0,
+    "absent": 3,
+    "skip": 0
+   },
+   "pytorch_crf_extras": {
+    "full": 0,
+    "partial": 8,
+    "absent": 0,
+    "skip": 0
+   },
+   "pystruct": {
+    "full": 4,
+    "partial": 8,
+    "absent": 15,
+    "skip": 0
+   },
+   "seqeval": {
+    "full": 12,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0
+   },
+   "structured_prediction": {
+    "full": 8,
+    "partial": 0,
+    "absent": 22,
+    "skip": 0
+   }
+  },
+  "representation_learning": {
+   "autoencoders": {
+    "full": 1,
+    "partial": 10,
+    "absent": 6,
+    "skip": 0
+   },
+   "contrastive_predictive": {
+    "full": 1,
+    "partial": 4,
+    "absent": 2,
+    "skip": 0
+   },
+   "disentanglement_metrics": {
+    "full": 0,
+    "partial": 0,
+    "absent": 9,
+    "skip": 0
+   },
+   "representation_diagnostics": {
+    "full": 4,
+    "partial": 3,
+    "absent": 3,
+    "skip": 0
+   },
+   "tokenisation_of_images": {
+    "full": 0,
+    "partial": 0,
+    "absent": 0,
+    "skip": 3
    }
   }
  }

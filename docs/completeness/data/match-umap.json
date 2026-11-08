@@ -1,0 +1,16 @@
+[
+{"lib":"umap","area":"models","name":"UMAP","status":"full","how":"verdict","omai":"manifold#umap"},
+{"lib":"umap","area":"models","name":"ParametricUMAP","status":"absent","how":"verdict","omai":"manifold#umap, nn","note":"UMAP with a neural encoder, so that new points embed without refitting (needs `nn` and the fuzzy-set loss)","home":"manifold/parametric-umap.ts","size":"M","priority":"medium","group":"embedding extras"},
+{"lib":"umap","area":"models","name":"AlignedUMAP","status":"absent","how":"verdict","omai":"manifold#umap","note":"embeddings of related datasets aligned to one another; density-preserving UMAP","home":"manifold/umap-variants.ts","size":"M","priority":"low","group":"embedding extras"},
+{"lib":"umap","area":"models","name":"DensMAP","status":"absent","how":"verdict","omai":"manifold#umap","note":"embeddings of related datasets aligned to one another; density-preserving UMAP","home":"manifold/umap-variants.ts","size":"M","priority":"low","group":"embedding extras"},
+{"lib":"umap","area":"plot","name":"points","status":"partial","how":"verdict","omai":"omai-render/views#embeddingFrames"},
+{"lib":"umap","area":"plot","name":"connectivity","status":"partial","how":"verdict","omai":"omai-render/views#embeddingFrames"},
+{"lib":"umap","area":"plot","name":"diagnostic","status":"partial","how":"verdict","omai":"omai-render/views#embeddingFrames"},
+{"lib":"umap","area":"plot","name":"interactive","status":"partial","how":"verdict","omai":"omai-render/views#embeddingFrames"},
+{"lib":"umap","area":"plot","name":"nearest_neighbour_distribution","status":"partial","how":"verdict","omai":"omai-render/views#embeddingFrames"},
+{"lib":"umap","area":"utils","name":"fuzzy_simplicial_set","status":"full","how":"verdict","omai":"manifold#fuzzySimplicialSet, #findAbParams"},
+{"lib":"umap","area":"utils","name":"simplicial_set_embedding","status":"partial","how":"verdict","omai":"manifold#umap","note":"the embedding optimisation and neighbour search are inside `umap`"},
+{"lib":"umap","area":"utils","name":"find_ab_params","status":"full","how":"verdict","omai":"manifold#fuzzySimplicialSet, #findAbParams"},
+{"lib":"umap","area":"utils","name":"nearest_neighbors","status":"partial","how":"verdict","omai":"manifold#umap","note":"the embedding optimisation and neighbour search are inside `umap`"},
+{"lib":"umap","area":"validation","name":"trustworthiness","status":"full","how":"verdict","omai":"manifold#trustworthiness"}
+]

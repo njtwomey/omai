@@ -1,0 +1,1921 @@
+{
+"library": "librosa",
+"version": "1.0.0",
+"source": "introspection",
+"entries": [
+{
+"area": "librosa",
+"name": "A4_to_tuning",
+"kind": "function",
+"doc": "Convert a reference pitch frequency (e.g., ``A4=435``) to a tuning estimation, in fractions of a bin per octav"
+},
+{
+"area": "librosa",
+"name": "A_weighting",
+"kind": "function",
+"doc": "Compute the A-weighting of a set of frequencies."
+},
+{
+"area": "librosa",
+"name": "B_weighting",
+"kind": "function",
+"doc": "Compute the B-weighting of a set of frequencies."
+},
+{
+"area": "librosa",
+"name": "C_weighting",
+"kind": "function",
+"doc": "Compute the C-weighting of a set of frequencies."
+},
+{
+"area": "librosa",
+"name": "D_weighting",
+"kind": "function",
+"doc": "Compute the D-weighting of a set of frequencies."
+},
+{
+"area": "librosa",
+"name": "LibrosaError",
+"kind": "class",
+"doc": "The root librosa exception class"
+},
+{
+"area": "librosa",
+"name": "ParameterError",
+"kind": "class",
+"doc": "Exception class for mal-formed inputs"
+},
+{
+"area": "librosa",
+"name": "Z_weighting",
+"kind": "function",
+"doc": "Apply no weighting curve (aka Z-weighting)."
+},
+{
+"area": "librosa",
+"name": "amplitude_to_db",
+"kind": "function",
+"doc": "Convert an amplitude spectrogram to dB-scaled spectrogram."
+},
+{
+"area": "librosa",
+"name": "autocorrelate",
+"kind": "function",
+"doc": "Bounded-lag auto-correlation"
+},
+{
+"area": "librosa",
+"name": "blocks_to_frames",
+"kind": "function",
+"doc": "Convert block indices to frame indices"
+},
+{
+"area": "librosa",
+"name": "blocks_to_samples",
+"kind": "function",
+"doc": "Convert block indices to sample indices"
+},
+{
+"area": "librosa",
+"name": "blocks_to_time",
+"kind": "function",
+"doc": "Convert block indices to time (in seconds)"
+},
+{
+"area": "librosa",
+"name": "cache",
+"kind": "function",
+"doc": "The librosa cache manager class wraps joblib.Memory"
+},
+{
+"area": "librosa",
+"name": "chirp",
+"kind": "function",
+"doc": "Construct a \"chirp\" or \"sine-sweep\" signal."
+},
+{
+"area": "librosa",
+"name": "cite",
+"kind": "function",
+"doc": "Print the citation information for librosa."
+},
+{
+"area": "librosa",
+"name": "clicks",
+"kind": "function",
+"doc": "Construct a \"click track\"."
+},
+{
+"area": "librosa",
+"name": "cqt",
+"kind": "function",
+"doc": "Compute the constant-Q transform of an audio signal."
+},
+{
+"area": "librosa",
+"name": "cqt_frequencies",
+"kind": "function",
+"doc": "Compute the center frequencies of Constant-Q bins."
+},
+{
+"area": "librosa",
+"name": "db_to_amplitude",
+"kind": "function",
+"doc": "Convert a dB-scaled spectrogram to an amplitude spectrogram."
+},
+{
+"area": "librosa",
+"name": "db_to_power",
+"kind": "function",
+"doc": "Convert dB-scale values to a power values."
+},
+{
+"area": "librosa",
+"name": "estimate_tuning",
+"kind": "function",
+"doc": "Estimate the tuning of an audio time series or spectrogram input."
+},
+{
+"area": "librosa",
+"name": "ex",
+"kind": "function",
+"doc": "Retrieve the example recording identified by 'key'."
+},
+{
+"area": "librosa",
+"name": "example",
+"kind": "function",
+"doc": "Retrieve the example recording identified by 'key'."
+},
+{
+"area": "librosa",
+"name": "f0_harmonics",
+"kind": "function",
+"doc": "Compute the energy at selected harmonics of a time-varying fundamental frequency."
+},
+{
+"area": "librosa",
+"name": "fft_frequencies",
+"kind": "function",
+"doc": "Alternative interface for `np.fft.rfftfreq`"
+},
+{
+"area": "librosa",
+"name": "fifths_to_note",
+"kind": "function",
+"doc": "Calculate the note name for a given number of perfect fifths from a specified unison."
+},
+{
+"area": "librosa",
+"name": "fmt",
+"kind": "function",
+"doc": "Fast Mellin transform (FMT)"
+},
+{
+"area": "librosa",
+"name": "fourier_tempo_frequencies",
+"kind": "function",
+"doc": "Compute the frequencies (in beats per minute) corresponding to a Fourier tempogram matrix."
+},
+{
+"area": "librosa",
+"name": "frames_to_samples",
+"kind": "function",
+"doc": "Convert frame indices to audio sample indices."
+},
+{
+"area": "librosa",
+"name": "frames_to_time",
+"kind": "function",
+"doc": "Convert frame counts to time (seconds)."
+},
+{
+"area": "librosa",
+"name": "frequency_weighting",
+"kind": "function",
+"doc": "Compute the weighting of a set of frequencies."
+},
+{
+"area": "librosa",
+"name": "get_duration",
+"kind": "function",
+"doc": "Compute the duration (in seconds) of an audio time series, feature matrix, or filename."
+},
+{
+"area": "librosa",
+"name": "get_samplerate",
+"kind": "function",
+"doc": "Get the sampling rate for a given file."
+},
+{
+"area": "librosa",
+"name": "griffinlim",
+"kind": "function",
+"doc": "Approximate magnitude spectrogram inversion using the \"fast\" Griffin-Lim algorithm."
+},
+{
+"area": "librosa",
+"name": "griffinlim_cqt",
+"kind": "function",
+"doc": "Approximate constant-Q magnitude spectrogram inversion using the \"fast\" Griffin-Lim algorithm."
+},
+{
+"area": "librosa",
+"name": "hybrid_cqt",
+"kind": "function",
+"doc": "Compute the hybrid constant-Q transform of an audio signal."
+},
+{
+"area": "librosa",
+"name": "hz_to_fjs",
+"kind": "function",
+"doc": "Convert one or more frequencies (in Hz) from a just intonation scale to notes in FJS notation."
+},
+{
+"area": "librosa",
+"name": "hz_to_mel",
+"kind": "function",
+"doc": "Convert Hz to Mels"
+},
+{
+"area": "librosa",
+"name": "hz_to_midi",
+"kind": "function",
+"doc": "Get MIDI note number(s) for given frequencies"
+},
+{
+"area": "librosa",
+"name": "hz_to_note",
+"kind": "function",
+"doc": "Convert one or more frequencies (in Hz) to the nearest note names."
+},
+{
+"area": "librosa",
+"name": "hz_to_octs",
+"kind": "function",
+"doc": "Convert frequencies (Hz) to (fractional) octave numbers."
+},
+{
+"area": "librosa",
+"name": "hz_to_svara_c",
+"kind": "function",
+"doc": "Convert frequencies (in Hz) to Carnatic svara"
+},
+{
+"area": "librosa",
+"name": "hz_to_svara_h",
+"kind": "function",
+"doc": "Convert frequencies (in Hz) to Hindustani svara"
+},
+{
+"area": "librosa",
+"name": "icqt",
+"kind": "function",
+"doc": "Compute the inverse constant-Q transform."
+},
+{
+"area": "librosa",
+"name": "iirt",
+"kind": "function",
+"doc": "Time-frequency representation using IIR filters"
+},
+{
+"area": "librosa",
+"name": "interp_harmonics",
+"kind": "function",
+"doc": "Compute the energy at harmonics of time-frequency representation."
+},
+{
+"area": "librosa",
+"name": "interval_frequencies",
+"kind": "function",
+"doc": "Construct a set of frequencies from an interval set"
+},
+{
+"area": "librosa",
+"name": "interval_to_fjs",
+"kind": "function",
+"doc": "Convert an interval to Functional Just System (FJS) notation."
+},
+{
+"area": "librosa",
+"name": "istft",
+"kind": "function",
+"doc": "Inverse short-time Fourier transform (ISTFT)."
+},
+{
+"area": "librosa",
+"name": "key_to_degrees",
+"kind": "function",
+"doc": "Construct the diatonic scale degrees for a given key."
+},
+{
+"area": "librosa",
+"name": "key_to_notes",
+"kind": "function",
+"doc": "List all 12 chromatic note names, as spelled according to a given key or mode."
+},
+{
+"area": "librosa",
+"name": "list_mela",
+"kind": "function",
+"doc": "List melakarta ragas by name and index."
+},
+{
+"area": "librosa",
+"name": "list_thaat",
+"kind": "function",
+"doc": "List supported thaats by name."
+},
+{
+"area": "librosa",
+"name": "load",
+"kind": "function",
+"doc": "Load an audio file as a floating point time series."
+},
+{
+"area": "librosa",
+"name": "loadx",
+"kind": "function",
+"doc": "Load an example audio file by key."
+},
+{
+"area": "librosa",
+"name": "lpc",
+"kind": "function",
+"doc": "Linear Prediction Coefficients via Burg's method"
+},
+{
+"area": "librosa",
+"name": "magphase",
+"kind": "function",
+"doc": "Separate a complex-valued spectrogram D into its magnitude (S) and phase (P) components, so that ``D = S * P``"
+},
+{
+"area": "librosa",
+"name": "mel_frequencies",
+"kind": "function",
+"doc": "Compute an array of acoustic frequencies tuned to the mel scale."
+},
+{
+"area": "librosa",
+"name": "mel_to_hz",
+"kind": "function",
+"doc": "Convert mel bin numbers to frequencies"
+},
+{
+"area": "librosa",
+"name": "mela_to_degrees",
+"kind": "function",
+"doc": "Construct the svara indices (degrees) for a given melakarta raga"
+},
+{
+"area": "librosa",
+"name": "mela_to_svara",
+"kind": "function",
+"doc": "Spell the Carnatic svara names for a given melakarta raga"
+},
+{
+"area": "librosa",
+"name": "midi_to_hz",
+"kind": "function",
+"doc": "Get the frequency (Hz) of MIDI note(s)"
+},
+{
+"area": "librosa",
+"name": "midi_to_note",
+"kind": "function",
+"doc": "Convert one or more MIDI numbers to note strings."
+},
+{
+"area": "librosa",
+"name": "midi_to_svara_c",
+"kind": "function",
+"doc": "Convert MIDI numbers to Carnatic svara within a given melakarta raga"
+},
+{
+"area": "librosa",
+"name": "midi_to_svara_h",
+"kind": "function",
+"doc": "Convert MIDI numbers to Hindustani svara"
+},
+{
+"area": "librosa",
+"name": "mu_compress",
+"kind": "function",
+"doc": "Compression by \u03bc-law"
+},
+{
+"area": "librosa",
+"name": "mu_expand",
+"kind": "function",
+"doc": "Expansion by \u03bc-law"
+},
+{
+"area": "librosa",
+"name": "multi_frequency_weighting",
+"kind": "function",
+"doc": "Compute multiple weightings of a set of frequencies."
+},
+{
+"area": "librosa",
+"name": "note_to_hz",
+"kind": "function",
+"doc": "Convert one or more note names to frequency (Hz)"
+},
+{
+"area": "librosa",
+"name": "note_to_midi",
+"kind": "function",
+"doc": "Convert one or more spelled notes to MIDI number(s)."
+},
+{
+"area": "librosa",
+"name": "note_to_svara_c",
+"kind": "function",
+"doc": "Convert western notes to Carnatic svara"
+},
+{
+"area": "librosa",
+"name": "note_to_svara_h",
+"kind": "function",
+"doc": "Convert western notes to Hindustani svara"
+},
+{
+"area": "librosa",
+"name": "octs_to_hz",
+"kind": "function",
+"doc": "Convert octaves numbers to frequencies."
+},
+{
+"area": "librosa",
+"name": "pcen",
+"kind": "function",
+"doc": "Per-channel energy normalization (PCEN)"
+},
+{
+"area": "librosa",
+"name": "perceptual_weighting",
+"kind": "function",
+"doc": "Perceptual weighting of a power spectrogram::"
+},
+{
+"area": "librosa",
+"name": "phase_vocoder",
+"kind": "function",
+"doc": "Phase vocoder.  Given an STFT matrix D, speed up by a factor of ``rate``"
+},
+{
+"area": "librosa",
+"name": "piptrack",
+"kind": "function",
+"doc": "Pitch tracking on thresholded parabolically-interpolated STFT."
+},
+{
+"area": "librosa",
+"name": "pitch_tuning",
+"kind": "function",
+"doc": "Given a collection of pitches, estimate its tuning offset relative to A440=440.0Hz."
+},
+{
+"area": "librosa",
+"name": "plimit_intervals",
+"kind": "function",
+"doc": "Construct p-limit intervals for a given set of prime factors."
+},
+{
+"area": "librosa",
+"name": "power_to_db",
+"kind": "function",
+"doc": "Convert a power spectrogram (amplitude squared) to decibel (dB) units"
+},
+{
+"area": "librosa",
+"name": "pseudo_cqt",
+"kind": "function",
+"doc": "Compute the pseudo constant-Q transform of an audio signal."
+},
+{
+"area": "librosa",
+"name": "pyin",
+"kind": "function",
+"doc": "Fundamental frequency (F0) estimation using probabilistic YIN (pYIN)."
+},
+{
+"area": "librosa",
+"name": "pythagorean_intervals",
+"kind": "function",
+"doc": "Pythagorean intervals"
+},
+{
+"area": "librosa",
+"name": "reassigned_spectrogram",
+"kind": "function",
+"doc": "Time-frequency reassigned spectrogram."
+},
+{
+"area": "librosa",
+"name": "resample",
+"kind": "function",
+"doc": "Resample a time series from orig_sr to target_sr"
+},
+{
+"area": "librosa",
+"name": "salience",
+"kind": "function",
+"doc": "Harmonic salience function."
+},
+{
+"area": "librosa",
+"name": "samples_like",
+"kind": "function",
+"doc": "Return an array of sample indices to match the time axis from a feature matrix."
+},
+{
+"area": "librosa",
+"name": "samples_to_frames",
+"kind": "function",
+"doc": "Convert sample indices into STFT frames."
+},
+{
+"area": "librosa",
+"name": "samples_to_time",
+"kind": "function",
+"doc": "Convert sample indices to time (in seconds)."
+},
+{
+"area": "librosa",
+"name": "show_versions",
+"kind": "function",
+"doc": "Return the version information for all librosa dependencies."
+},
+{
+"area": "librosa",
+"name": "stft",
+"kind": "function",
+"doc": "Short-time Fourier transform (STFT)."
+},
+{
+"area": "librosa",
+"name": "stream",
+"kind": "function",
+"doc": "Stream audio in fixed-length buffers."
+},
+{
+"area": "librosa",
+"name": "tempo_frequencies",
+"kind": "function",
+"doc": "Compute the frequencies (in beats per minute) corresponding to an onset auto-correlation or tempogram matrix."
+},
+{
+"area": "librosa",
+"name": "thaat_to_degrees",
+"kind": "function",
+"doc": "Construct the svara indices (degrees) for a given thaat"
+},
+{
+"area": "librosa",
+"name": "time_to_frames",
+"kind": "function",
+"doc": "Convert time stamps into STFT frames."
+},
+{
+"area": "librosa",
+"name": "time_to_samples",
+"kind": "function",
+"doc": "Convert timestamps (in seconds) to sample indices."
+},
+{
+"area": "librosa",
+"name": "times_like",
+"kind": "function",
+"doc": "Return an array of time values to match the time axis from a feature matrix."
+},
+{
+"area": "librosa",
+"name": "to_mono",
+"kind": "function",
+"doc": "Convert an audio signal to mono by averaging samples across channels."
+},
+{
+"area": "librosa",
+"name": "to_multi",
+"kind": "function",
+"doc": "Combine multiple signals into a multi-channel signal."
+},
+{
+"area": "librosa",
+"name": "to_stereo",
+"kind": "function",
+"doc": "Combine two signals into a stereo signal."
+},
+{
+"area": "librosa",
+"name": "tone",
+"kind": "function",
+"doc": "Construct a pure tone (cosine) signal at a given frequency."
+},
+{
+"area": "librosa",
+"name": "tuning_to_A4",
+"kind": "function",
+"doc": "Convert a tuning deviation (from 0) to a reference pitch frequency relative to A440."
+},
+{
+"area": "librosa",
+"name": "vqt",
+"kind": "function",
+"doc": "Compute the variable-Q transform of an audio signal."
+},
+{
+"area": "librosa",
+"name": "yin",
+"kind": "function",
+"doc": "Fundamental frequency (F0) estimation using the YIN algorithm."
+},
+{
+"area": "librosa",
+"name": "zero_crossings",
+"kind": "function",
+"doc": "Find the zero-crossings of a signal ``y``: indices ``i`` such that ``sign(y[i]) != sign(y[j])``."
+},
+{
+"area": "librosa.beat",
+"name": "beat_track",
+"kind": "function",
+"doc": "Dynamic programming beat tracker."
+},
+{
+"area": "librosa.beat",
+"name": "plp",
+"kind": "function",
+"doc": "Predominant local pulse (PLP) estimation. [#]_"
+},
+{
+"area": "librosa.core",
+"name": "A4_to_tuning",
+"kind": "function",
+"doc": "Convert a reference pitch frequency (e.g., ``A4=435``) to a tuning estimation, in fractions of a bin per octav"
+},
+{
+"area": "librosa.core",
+"name": "A_weighting",
+"kind": "function",
+"doc": "Compute the A-weighting of a set of frequencies."
+},
+{
+"area": "librosa.core",
+"name": "B_weighting",
+"kind": "function",
+"doc": "Compute the B-weighting of a set of frequencies."
+},
+{
+"area": "librosa.core",
+"name": "C_weighting",
+"kind": "function",
+"doc": "Compute the C-weighting of a set of frequencies."
+},
+{
+"area": "librosa.core",
+"name": "D_weighting",
+"kind": "function",
+"doc": "Compute the D-weighting of a set of frequencies."
+},
+{
+"area": "librosa.core",
+"name": "Z_weighting",
+"kind": "function",
+"doc": "Apply no weighting curve (aka Z-weighting)."
+},
+{
+"area": "librosa.core",
+"name": "amplitude_to_db",
+"kind": "function",
+"doc": "Convert an amplitude spectrogram to dB-scaled spectrogram."
+},
+{
+"area": "librosa.core",
+"name": "autocorrelate",
+"kind": "function",
+"doc": "Bounded-lag auto-correlation"
+},
+{
+"area": "librosa.core",
+"name": "blocks_to_frames",
+"kind": "function",
+"doc": "Convert block indices to frame indices"
+},
+{
+"area": "librosa.core",
+"name": "blocks_to_samples",
+"kind": "function",
+"doc": "Convert block indices to sample indices"
+},
+{
+"area": "librosa.core",
+"name": "blocks_to_time",
+"kind": "function",
+"doc": "Convert block indices to time (in seconds)"
+},
+{
+"area": "librosa.core",
+"name": "chirp",
+"kind": "function",
+"doc": "Construct a \"chirp\" or \"sine-sweep\" signal."
+},
+{
+"area": "librosa.core",
+"name": "clicks",
+"kind": "function",
+"doc": "Construct a \"click track\"."
+},
+{
+"area": "librosa.core",
+"name": "cqt",
+"kind": "function",
+"doc": "Compute the constant-Q transform of an audio signal."
+},
+{
+"area": "librosa.core",
+"name": "cqt_frequencies",
+"kind": "function",
+"doc": "Compute the center frequencies of Constant-Q bins."
+},
+{
+"area": "librosa.core",
+"name": "db_to_amplitude",
+"kind": "function",
+"doc": "Convert a dB-scaled spectrogram to an amplitude spectrogram."
+},
+{
+"area": "librosa.core",
+"name": "db_to_power",
+"kind": "function",
+"doc": "Convert dB-scale values to a power values."
+},
+{
+"area": "librosa.core",
+"name": "estimate_tuning",
+"kind": "function",
+"doc": "Estimate the tuning of an audio time series or spectrogram input."
+},
+{
+"area": "librosa.core",
+"name": "f0_harmonics",
+"kind": "function",
+"doc": "Compute the energy at selected harmonics of a time-varying fundamental frequency."
+},
+{
+"area": "librosa.core",
+"name": "fft_frequencies",
+"kind": "function",
+"doc": "Alternative interface for `np.fft.rfftfreq`"
+},
+{
+"area": "librosa.core",
+"name": "fifths_to_note",
+"kind": "function",
+"doc": "Calculate the note name for a given number of perfect fifths from a specified unison."
+},
+{
+"area": "librosa.core",
+"name": "fmt",
+"kind": "function",
+"doc": "Fast Mellin transform (FMT)"
+},
+{
+"area": "librosa.core",
+"name": "fourier_tempo_frequencies",
+"kind": "function",
+"doc": "Compute the frequencies (in beats per minute) corresponding to a Fourier tempogram matrix."
+},
+{
+"area": "librosa.core",
+"name": "frames_to_samples",
+"kind": "function",
+"doc": "Convert frame indices to audio sample indices."
+},
+{
+"area": "librosa.core",
+"name": "frames_to_time",
+"kind": "function",
+"doc": "Convert frame counts to time (seconds)."
+},
+{
+"area": "librosa.core",
+"name": "frequency_weighting",
+"kind": "function",
+"doc": "Compute the weighting of a set of frequencies."
+},
+{
+"area": "librosa.core",
+"name": "get_duration",
+"kind": "function",
+"doc": "Compute the duration (in seconds) of an audio time series, feature matrix, or filename."
+},
+{
+"area": "librosa.core",
+"name": "get_samplerate",
+"kind": "function",
+"doc": "Get the sampling rate for a given file."
+},
+{
+"area": "librosa.core",
+"name": "griffinlim",
+"kind": "function",
+"doc": "Approximate magnitude spectrogram inversion using the \"fast\" Griffin-Lim algorithm."
+},
+{
+"area": "librosa.core",
+"name": "griffinlim_cqt",
+"kind": "function",
+"doc": "Approximate constant-Q magnitude spectrogram inversion using the \"fast\" Griffin-Lim algorithm."
+},
+{
+"area": "librosa.core",
+"name": "hybrid_cqt",
+"kind": "function",
+"doc": "Compute the hybrid constant-Q transform of an audio signal."
+},
+{
+"area": "librosa.core",
+"name": "hz_to_fjs",
+"kind": "function",
+"doc": "Convert one or more frequencies (in Hz) from a just intonation scale to notes in FJS notation."
+},
+{
+"area": "librosa.core",
+"name": "hz_to_mel",
+"kind": "function",
+"doc": "Convert Hz to Mels"
+},
+{
+"area": "librosa.core",
+"name": "hz_to_midi",
+"kind": "function",
+"doc": "Get MIDI note number(s) for given frequencies"
+},
+{
+"area": "librosa.core",
+"name": "hz_to_note",
+"kind": "function",
+"doc": "Convert one or more frequencies (in Hz) to the nearest note names."
+},
+{
+"area": "librosa.core",
+"name": "hz_to_octs",
+"kind": "function",
+"doc": "Convert frequencies (Hz) to (fractional) octave numbers."
+},
+{
+"area": "librosa.core",
+"name": "hz_to_svara_c",
+"kind": "function",
+"doc": "Convert frequencies (in Hz) to Carnatic svara"
+},
+{
+"area": "librosa.core",
+"name": "hz_to_svara_h",
+"kind": "function",
+"doc": "Convert frequencies (in Hz) to Hindustani svara"
+},
+{
+"area": "librosa.core",
+"name": "icqt",
+"kind": "function",
+"doc": "Compute the inverse constant-Q transform."
+},
+{
+"area": "librosa.core",
+"name": "iirt",
+"kind": "function",
+"doc": "Time-frequency representation using IIR filters"
+},
+{
+"area": "librosa.core",
+"name": "interp_harmonics",
+"kind": "function",
+"doc": "Compute the energy at harmonics of time-frequency representation."
+},
+{
+"area": "librosa.core",
+"name": "interval_frequencies",
+"kind": "function",
+"doc": "Construct a set of frequencies from an interval set"
+},
+{
+"area": "librosa.core",
+"name": "interval_to_fjs",
+"kind": "function",
+"doc": "Convert an interval to Functional Just System (FJS) notation."
+},
+{
+"area": "librosa.core",
+"name": "istft",
+"kind": "function",
+"doc": "Inverse short-time Fourier transform (ISTFT)."
+},
+{
+"area": "librosa.core",
+"name": "key_to_degrees",
+"kind": "function",
+"doc": "Construct the diatonic scale degrees for a given key."
+},
+{
+"area": "librosa.core",
+"name": "key_to_notes",
+"kind": "function",
+"doc": "List all 12 chromatic note names, as spelled according to a given key or mode."
+},
+{
+"area": "librosa.core",
+"name": "list_mela",
+"kind": "function",
+"doc": "List melakarta ragas by name and index."
+},
+{
+"area": "librosa.core",
+"name": "list_thaat",
+"kind": "function",
+"doc": "List supported thaats by name."
+},
+{
+"area": "librosa.core",
+"name": "load",
+"kind": "function",
+"doc": "Load an audio file as a floating point time series."
+},
+{
+"area": "librosa.core",
+"name": "loadx",
+"kind": "function",
+"doc": "Load an example audio file by key."
+},
+{
+"area": "librosa.core",
+"name": "lpc",
+"kind": "function",
+"doc": "Linear Prediction Coefficients via Burg's method"
+},
+{
+"area": "librosa.core",
+"name": "magphase",
+"kind": "function",
+"doc": "Separate a complex-valued spectrogram D into its magnitude (S) and phase (P) components, so that ``D = S * P``"
+},
+{
+"area": "librosa.core",
+"name": "mel_frequencies",
+"kind": "function",
+"doc": "Compute an array of acoustic frequencies tuned to the mel scale."
+},
+{
+"area": "librosa.core",
+"name": "mel_to_hz",
+"kind": "function",
+"doc": "Convert mel bin numbers to frequencies"
+},
+{
+"area": "librosa.core",
+"name": "mela_to_degrees",
+"kind": "function",
+"doc": "Construct the svara indices (degrees) for a given melakarta raga"
+},
+{
+"area": "librosa.core",
+"name": "mela_to_svara",
+"kind": "function",
+"doc": "Spell the Carnatic svara names for a given melakarta raga"
+},
+{
+"area": "librosa.core",
+"name": "midi_to_hz",
+"kind": "function",
+"doc": "Get the frequency (Hz) of MIDI note(s)"
+},
+{
+"area": "librosa.core",
+"name": "midi_to_note",
+"kind": "function",
+"doc": "Convert one or more MIDI numbers to note strings."
+},
+{
+"area": "librosa.core",
+"name": "midi_to_svara_c",
+"kind": "function",
+"doc": "Convert MIDI numbers to Carnatic svara within a given melakarta raga"
+},
+{
+"area": "librosa.core",
+"name": "midi_to_svara_h",
+"kind": "function",
+"doc": "Convert MIDI numbers to Hindustani svara"
+},
+{
+"area": "librosa.core",
+"name": "mu_compress",
+"kind": "function",
+"doc": "Compression by \u03bc-law"
+},
+{
+"area": "librosa.core",
+"name": "mu_expand",
+"kind": "function",
+"doc": "Expansion by \u03bc-law"
+},
+{
+"area": "librosa.core",
+"name": "multi_frequency_weighting",
+"kind": "function",
+"doc": "Compute multiple weightings of a set of frequencies."
+},
+{
+"area": "librosa.core",
+"name": "note_to_hz",
+"kind": "function",
+"doc": "Convert one or more note names to frequency (Hz)"
+},
+{
+"area": "librosa.core",
+"name": "note_to_midi",
+"kind": "function",
+"doc": "Convert one or more spelled notes to MIDI number(s)."
+},
+{
+"area": "librosa.core",
+"name": "note_to_svara_c",
+"kind": "function",
+"doc": "Convert western notes to Carnatic svara"
+},
+{
+"area": "librosa.core",
+"name": "note_to_svara_h",
+"kind": "function",
+"doc": "Convert western notes to Hindustani svara"
+},
+{
+"area": "librosa.core",
+"name": "octs_to_hz",
+"kind": "function",
+"doc": "Convert octaves numbers to frequencies."
+},
+{
+"area": "librosa.core",
+"name": "pcen",
+"kind": "function",
+"doc": "Per-channel energy normalization (PCEN)"
+},
+{
+"area": "librosa.core",
+"name": "perceptual_weighting",
+"kind": "function",
+"doc": "Perceptual weighting of a power spectrogram::"
+},
+{
+"area": "librosa.core",
+"name": "phase_vocoder",
+"kind": "function",
+"doc": "Phase vocoder.  Given an STFT matrix D, speed up by a factor of ``rate``"
+},
+{
+"area": "librosa.core",
+"name": "piptrack",
+"kind": "function",
+"doc": "Pitch tracking on thresholded parabolically-interpolated STFT."
+},
+{
+"area": "librosa.core",
+"name": "pitch_tuning",
+"kind": "function",
+"doc": "Given a collection of pitches, estimate its tuning offset relative to A440=440.0Hz."
+},
+{
+"area": "librosa.core",
+"name": "plimit_intervals",
+"kind": "function",
+"doc": "Construct p-limit intervals for a given set of prime factors."
+},
+{
+"area": "librosa.core",
+"name": "power_to_db",
+"kind": "function",
+"doc": "Convert a power spectrogram (amplitude squared) to decibel (dB) units"
+},
+{
+"area": "librosa.core",
+"name": "pseudo_cqt",
+"kind": "function",
+"doc": "Compute the pseudo constant-Q transform of an audio signal."
+},
+{
+"area": "librosa.core",
+"name": "pyin",
+"kind": "function",
+"doc": "Fundamental frequency (F0) estimation using probabilistic YIN (pYIN)."
+},
+{
+"area": "librosa.core",
+"name": "pythagorean_intervals",
+"kind": "function",
+"doc": "Pythagorean intervals"
+},
+{
+"area": "librosa.core",
+"name": "reassigned_spectrogram",
+"kind": "function",
+"doc": "Time-frequency reassigned spectrogram."
+},
+{
+"area": "librosa.core",
+"name": "resample",
+"kind": "function",
+"doc": "Resample a time series from orig_sr to target_sr"
+},
+{
+"area": "librosa.core",
+"name": "salience",
+"kind": "function",
+"doc": "Harmonic salience function."
+},
+{
+"area": "librosa.core",
+"name": "samples_like",
+"kind": "function",
+"doc": "Return an array of sample indices to match the time axis from a feature matrix."
+},
+{
+"area": "librosa.core",
+"name": "samples_to_frames",
+"kind": "function",
+"doc": "Convert sample indices into STFT frames."
+},
+{
+"area": "librosa.core",
+"name": "samples_to_time",
+"kind": "function",
+"doc": "Convert sample indices to time (in seconds)."
+},
+{
+"area": "librosa.core",
+"name": "stft",
+"kind": "function",
+"doc": "Short-time Fourier transform (STFT)."
+},
+{
+"area": "librosa.core",
+"name": "stream",
+"kind": "function",
+"doc": "Stream audio in fixed-length buffers."
+},
+{
+"area": "librosa.core",
+"name": "tempo_frequencies",
+"kind": "function",
+"doc": "Compute the frequencies (in beats per minute) corresponding to an onset auto-correlation or tempogram matrix."
+},
+{
+"area": "librosa.core",
+"name": "thaat_to_degrees",
+"kind": "function",
+"doc": "Construct the svara indices (degrees) for a given thaat"
+},
+{
+"area": "librosa.core",
+"name": "time_to_frames",
+"kind": "function",
+"doc": "Convert time stamps into STFT frames."
+},
+{
+"area": "librosa.core",
+"name": "time_to_samples",
+"kind": "function",
+"doc": "Convert timestamps (in seconds) to sample indices."
+},
+{
+"area": "librosa.core",
+"name": "times_like",
+"kind": "function",
+"doc": "Return an array of time values to match the time axis from a feature matrix."
+},
+{
+"area": "librosa.core",
+"name": "to_mono",
+"kind": "function",
+"doc": "Convert an audio signal to mono by averaging samples across channels."
+},
+{
+"area": "librosa.core",
+"name": "to_multi",
+"kind": "function",
+"doc": "Combine multiple signals into a multi-channel signal."
+},
+{
+"area": "librosa.core",
+"name": "to_stereo",
+"kind": "function",
+"doc": "Combine two signals into a stereo signal."
+},
+{
+"area": "librosa.core",
+"name": "tone",
+"kind": "function",
+"doc": "Construct a pure tone (cosine) signal at a given frequency."
+},
+{
+"area": "librosa.core",
+"name": "tuning_to_A4",
+"kind": "function",
+"doc": "Convert a tuning deviation (from 0) to a reference pitch frequency relative to A440."
+},
+{
+"area": "librosa.core",
+"name": "vqt",
+"kind": "function",
+"doc": "Compute the variable-Q transform of an audio signal."
+},
+{
+"area": "librosa.core",
+"name": "yin",
+"kind": "function",
+"doc": "Fundamental frequency (F0) estimation using the YIN algorithm."
+},
+{
+"area": "librosa.core",
+"name": "zero_crossings",
+"kind": "function",
+"doc": "Find the zero-crossings of a signal ``y``: indices ``i`` such that ``sign(y[i]) != sign(y[j])``."
+},
+{
+"area": "librosa.decompose",
+"name": "decompose",
+"kind": "function",
+"doc": "Decompose a feature matrix."
+},
+{
+"area": "librosa.decompose",
+"name": "hpss",
+"kind": "function",
+"doc": "Median-filtering harmonic percussive source separation (HPSS)."
+},
+{
+"area": "librosa.decompose",
+"name": "nn_filter",
+"kind": "function",
+"doc": "Filter by nearest-neighbor aggregation."
+},
+{
+"area": "librosa.effects",
+"name": "deemphasis",
+"kind": "function",
+"doc": "De-emphasize an audio signal with the inverse operation of preemphasis():"
+},
+{
+"area": "librosa.effects",
+"name": "harmonic",
+"kind": "function",
+"doc": "Extract harmonic elements from an audio time-series."
+},
+{
+"area": "librosa.effects",
+"name": "hpss",
+"kind": "function",
+"doc": "Decompose an audio time series into harmonic and percussive components."
+},
+{
+"area": "librosa.effects",
+"name": "percussive",
+"kind": "function",
+"doc": "Extract percussive elements from an audio time-series."
+},
+{
+"area": "librosa.effects",
+"name": "pitch_shift",
+"kind": "function",
+"doc": "Shift the pitch of a waveform by ``n_steps`` steps."
+},
+{
+"area": "librosa.effects",
+"name": "preemphasis",
+"kind": "function",
+"doc": "Pre-emphasize an audio signal with a first-order differencing filter:"
+},
+{
+"area": "librosa.effects",
+"name": "remix",
+"kind": "function",
+"doc": "Remix an audio signal by re-ordering time intervals."
+},
+{
+"area": "librosa.effects",
+"name": "split",
+"kind": "function",
+"doc": "Split an audio signal into non-silent intervals."
+},
+{
+"area": "librosa.effects",
+"name": "time_stretch",
+"kind": "function",
+"doc": "Time-stretch an audio series by a fixed rate."
+},
+{
+"area": "librosa.effects",
+"name": "trim",
+"kind": "function",
+"doc": "Trim leading and trailing silence from an audio signal."
+},
+{
+"area": "librosa.feature",
+"name": "chroma_cens",
+"kind": "function",
+"doc": "Compute the chroma variant \"Chroma Energy Normalized\" (CENS)"
+},
+{
+"area": "librosa.feature",
+"name": "chroma_cqt",
+"kind": "function",
+"doc": "Constant-Q chromagram"
+},
+{
+"area": "librosa.feature",
+"name": "chroma_stft",
+"kind": "function",
+"doc": "Compute a chromagram from a waveform or power spectrogram."
+},
+{
+"area": "librosa.feature",
+"name": "chroma_vqt",
+"kind": "function",
+"doc": "Variable-Q chromagram"
+},
+{
+"area": "librosa.feature",
+"name": "delta",
+"kind": "function",
+"doc": "Compute delta features: local estimate of the derivative of the input data along the selected axis."
+},
+{
+"area": "librosa.feature",
+"name": "fourier_tempogram",
+"kind": "function",
+"doc": "Compute the Fourier tempogram: the short-time Fourier transform of the onset strength envelope. [#]_"
+},
+{
+"area": "librosa.feature",
+"name": "hybrid_tempogram",
+"kind": "function",
+"doc": "Compute a hybrid tempogram."
+},
+{
+"area": "librosa.feature",
+"name": "melspectrogram",
+"kind": "function",
+"doc": "Compute a mel-scaled spectrogram."
+},
+{
+"area": "librosa.feature",
+"name": "metrogram",
+"kind": "function",
+"doc": "Metrogram Transform. [1]_"
+},
+{
+"area": "librosa.feature",
+"name": "mfcc",
+"kind": "function",
+"doc": "Mel-frequency cepstral coefficients (MFCCs)"
+},
+{
+"area": "librosa.feature",
+"name": "poly_features",
+"kind": "function",
+"doc": "Get coefficients of fitting an nth-order polynomial to the columns of a spectrogram."
+},
+{
+"area": "librosa.feature",
+"name": "rms",
+"kind": "function",
+"doc": "Compute root-mean-square (RMS) value for each frame."
+},
+{
+"area": "librosa.feature",
+"name": "spectral_bandwidth",
+"kind": "function",
+"doc": "Compute p'th-order spectral bandwidth."
+},
+{
+"area": "librosa.feature",
+"name": "spectral_centroid",
+"kind": "function",
+"doc": "Compute the spectral centroid."
+},
+{
+"area": "librosa.feature",
+"name": "spectral_contrast",
+"kind": "function",
+"doc": "Compute spectral contrast"
+},
+{
+"area": "librosa.feature",
+"name": "spectral_flatness",
+"kind": "function",
+"doc": "Compute spectral flatness"
+},
+{
+"area": "librosa.feature",
+"name": "spectral_rolloff",
+"kind": "function",
+"doc": "Compute roll-off frequency."
+},
+{
+"area": "librosa.feature",
+"name": "stack_memory",
+"kind": "function",
+"doc": "Short-term history embedding: concatenate an array with delayed copies of itself."
+},
+{
+"area": "librosa.feature",
+"name": "tempo",
+"kind": "function",
+"doc": "Estimate the tempo (beats per minute)"
+},
+{
+"area": "librosa.feature",
+"name": "tempogram",
+"kind": "function",
+"doc": "Compute the tempogram: local autocorrelation of the onset strength envelope. [#]_"
+},
+{
+"area": "librosa.feature",
+"name": "tempogram_ratio",
+"kind": "function",
+"doc": "Tempogram ratio features, also known as spectral rhythm patterns. [1]_"
+},
+{
+"area": "librosa.feature",
+"name": "tonnetz",
+"kind": "function",
+"doc": "Compute the tonal centroid features (tonnetz)"
+},
+{
+"area": "librosa.feature",
+"name": "zero_crossing_rate",
+"kind": "function",
+"doc": "Compute the zero-crossing rate of an audio time series."
+},
+{
+"area": "librosa.filters",
+"name": "chroma",
+"kind": "function",
+"doc": "Create a chroma filter bank."
+},
+{
+"area": "librosa.filters",
+"name": "cq_to_chroma",
+"kind": "function",
+"doc": "Construct a linear transformation matrix to map Constant-Q bins onto chroma bins."
+},
+{
+"area": "librosa.filters",
+"name": "diagonal_filter",
+"kind": "function",
+"doc": "Build a two-dimensional diagonal filter."
+},
+{
+"area": "librosa.filters",
+"name": "get_window",
+"kind": "function",
+"doc": "Compute a window function."
+},
+{
+"area": "librosa.filters",
+"name": "mel",
+"kind": "function",
+"doc": "Create a Mel filter-bank."
+},
+{
+"area": "librosa.filters",
+"name": "mr_frequencies",
+"kind": "function",
+"doc": "Generate center frequencies and sample rate pairs."
+},
+{
+"area": "librosa.filters",
+"name": "semitone_filterbank",
+"kind": "function",
+"doc": "Construct a multi-rate IIR band-pass filter bank at specified center frequencies and sample rates."
+},
+{
+"area": "librosa.filters",
+"name": "wavelet",
+"kind": "function",
+"doc": "Construct a wavelet basis using windowed complex sinusoids."
+},
+{
+"area": "librosa.filters",
+"name": "wavelet_lengths",
+"kind": "function",
+"doc": "Return length of each filter in a wavelet basis."
+},
+{
+"area": "librosa.filters",
+"name": "window_bandwidth",
+"kind": "function",
+"doc": "Get the equivalent noise bandwidth (ENBW) of a window function."
+},
+{
+"area": "librosa.filters",
+"name": "window_sumsquare",
+"kind": "function",
+"doc": "Compute the sum-square envelope of a window function at a given hop length."
+},
+{
+"area": "librosa.onset",
+"name": "onset_backtrack",
+"kind": "function",
+"doc": "Backtrack detected onset events to the nearest preceding local minimum of an energy function."
+},
+{
+"area": "librosa.onset",
+"name": "onset_detect",
+"kind": "function",
+"doc": "Locate note onset events by picking peaks in an onset strength envelope."
+},
+{
+"area": "librosa.onset",
+"name": "onset_strength",
+"kind": "function",
+"doc": "Compute a spectral flux onset strength envelope."
+},
+{
+"area": "librosa.onset",
+"name": "onset_strength_multi",
+"kind": "function",
+"doc": "Compute a spectral flux onset strength envelope across multiple channels."
+},
+{
+"area": "librosa.segment",
+"name": "agglomerative",
+"kind": "function",
+"doc": "Bottom-up temporal segmentation."
+},
+{
+"area": "librosa.segment",
+"name": "cross_similarity",
+"kind": "function",
+"doc": "Compute cross-similarity from one data sequence to a reference sequence."
+},
+{
+"area": "librosa.segment",
+"name": "lag_to_recurrence",
+"kind": "function",
+"doc": "Convert a lag matrix into a recurrence matrix."
+},
+{
+"area": "librosa.segment",
+"name": "path_enhance",
+"kind": "function",
+"doc": "Multi-angle path enhancement for self- and cross-similarity matrices."
+},
+{
+"area": "librosa.segment",
+"name": "recurrence_matrix",
+"kind": "function",
+"doc": "Compute a recurrence matrix from a data matrix."
+},
+{
+"area": "librosa.segment",
+"name": "recurrence_to_lag",
+"kind": "function",
+"doc": "Convert a recurrence matrix into a lag matrix."
+},
+{
+"area": "librosa.segment",
+"name": "subsegment",
+"kind": "function",
+"doc": "Sub-divide a segmentation by feature clustering."
+},
+{
+"area": "librosa.segment",
+"name": "timelag_filter",
+"kind": "function",
+"doc": "Apply a filter in the time-lag domain."
+},
+{
+"area": "librosa.sequence",
+"name": "dtw",
+"kind": "function",
+"doc": "Dynamic time warping (DTW)."
+},
+{
+"area": "librosa.sequence",
+"name": "dtw_backtracking",
+"kind": "function",
+"doc": "Backtrack a warping path."
+},
+{
+"area": "librosa.sequence",
+"name": "path_to_steps",
+"kind": "function",
+"doc": "Convert a DTW warping path to an array of fractional steps."
+},
+{
+"area": "librosa.sequence",
+"name": "rqa",
+"kind": "function",
+"doc": "Recurrence quantification analysis (RQA)"
+},
+{
+"area": "librosa.sequence",
+"name": "transition_cycle",
+"kind": "function",
+"doc": "Construct a cyclic transition matrix over ``n_states``."
+},
+{
+"area": "librosa.sequence",
+"name": "transition_local",
+"kind": "function",
+"doc": "Construct a localized transition matrix."
+},
+{
+"area": "librosa.sequence",
+"name": "transition_loop",
+"kind": "function",
+"doc": "Construct a self-loop transition matrix over ``n_states``."
+},
+{
+"area": "librosa.sequence",
+"name": "transition_uniform",
+"kind": "function",
+"doc": "Construct a uniform transition matrix over ``n_states``."
+},
+{
+"area": "librosa.sequence",
+"name": "viterbi",
+"kind": "function",
+"doc": "Viterbi decoding from observation likelihoods."
+},
+{
+"area": "librosa.sequence",
+"name": "viterbi_binary",
+"kind": "function",
+"doc": "Viterbi decoding from binary (multi-label), discriminative state predictions."
+},
+{
+"area": "librosa.sequence",
+"name": "viterbi_discriminative",
+"kind": "function",
+"doc": "Viterbi decoding from discriminative state predictions."
+},
+{
+"area": "librosa.util",
+"name": "Deprecated",
+"kind": "class",
+"doc": "A placeholder class to catch usage of deprecated variable names"
+},
+{
+"area": "librosa.util",
+"name": "abs2",
+"kind": "function",
+"doc": "Compute the squared magnitude of a real or complex array."
+},
+{
+"area": "librosa.util",
+"name": "axis_sort",
+"kind": "function",
+"doc": "Sort an array along its rows or columns."
+},
+{
+"area": "librosa.util",
+"name": "buf_to_float",
+"kind": "function",
+"doc": "Convert an integer buffer to floating point values."
+},
+{
+"area": "librosa.util",
+"name": "cite",
+"kind": "function",
+"doc": "Print the citation information for librosa."
+},
+{
+"area": "librosa.util",
+"name": "count_unique",
+"kind": "function",
+"doc": "Count the number of unique values along a given axis."
+},
+{
+"area": "librosa.util",
+"name": "cyclic_gradient",
+"kind": "function",
+"doc": "Estimate the gradient of a function over a uniformly sampled, periodic domain."
+},
+{
+"area": "librosa.util",
+"name": "dtype_c2r",
+"kind": "function",
+"doc": "Find the real numpy dtype corresponding to a complex dtype."
+},
+{
+"area": "librosa.util",
+"name": "dtype_r2c",
+"kind": "function",
+"doc": "Find the complex numpy dtype corresponding to a real dtype."
+},
+{
+"area": "librosa.util",
+"name": "ex",
+"kind": "function",
+"doc": "Retrieve the example recording identified by 'key'."
+},
+{
+"area": "librosa.util",
+"name": "example",
+"kind": "function",
+"doc": "Retrieve the example recording identified by 'key'."
+},
+{
+"area": "librosa.util",
+"name": "example_info",
+"kind": "function",
+"doc": "Display licensing and metadata information for the given example recording."
+},
+{
+"area": "librosa.util",
+"name": "expand_to",
+"kind": "function",
+"doc": "Expand the dimensions of an input array with"
+},
+{
+"area": "librosa.util",
+"name": "fill_off_diagonal",
+"kind": "function",
+"doc": "Set all array entries to ``value`` if they lie outside a constraint region."
+},
+{
+"area": "librosa.util",
+"name": "find_files",
+"kind": "function",
+"doc": "Get a sorted list of (audio) files in a directory or directory sub-tree."
+},
+{
+"area": "librosa.util",
+"name": "fix_frames",
+"kind": "function",
+"doc": "Fix a list of frames to lie within [x_min, x_max]"
+},
+{
+"area": "librosa.util",
+"name": "fix_length",
+"kind": "function",
+"doc": "Fix the length an array ``data`` to exactly ``size`` along a target axis."
+},
+{
+"area": "librosa.util",
+"name": "frame",
+"kind": "function",
+"doc": "Slice a data array into (overlapping) frames."
+},
+{
+"area": "librosa.util",
+"name": "index_to_slice",
+"kind": "function",
+"doc": "Generate a slice array from an index array."
+},
+{
+"area": "librosa.util",
+"name": "interp_broadcast",
+"kind": "function",
+"doc": "Broadcast two arrays using interpolation"
+},
+{
+"area": "librosa.util",
+"name": "is_positive_int",
+"kind": "function",
+"doc": "Check that x is a positive integer, i.e. 1 or greater."
+},
+{
+"area": "librosa.util",
+"name": "is_unique",
+"kind": "function",
+"doc": "Determine if the input consists of all unique values along a given axis."
+},
+{
+"area": "librosa.util",
+"name": "list_examples",
+"kind": "function",
+"doc": "List the available audio recordings included with librosa."
+},
+{
+"area": "librosa.util",
+"name": "localmax",
+"kind": "function",
+"doc": "Find local maxima in an array"
+},
+{
+"area": "librosa.util",
+"name": "localmin",
+"kind": "function",
+"doc": "Find local minima in an array"
+},
+{
+"area": "librosa.util",
+"name": "match_events",
+"kind": "function",
+"doc": "Match one set of events to another."
+},
+{
+"area": "librosa.util",
+"name": "match_intervals",
+"kind": "function",
+"doc": "Match one set of time intervals to another."
+},
+{
+"area": "librosa.util",
+"name": "nnls",
+"kind": "function",
+"doc": "Non-negative least squares."
+},
+{
+"area": "librosa.util",
+"name": "normalize",
+"kind": "function",
+"doc": "Normalize an array along a chosen axis."
+},
+{
+"area": "librosa.util",
+"name": "pad_center",
+"kind": "function",
+"doc": "Pad an array to a target length along a target axis."
+},
+{
+"area": "librosa.util",
+"name": "peak_pick",
+"kind": "function",
+"doc": "Use a flexible heuristic to pick peaks in a signal."
+},
+{
+"area": "librosa.util",
+"name": "phasor",
+"kind": "function",
+"doc": "Construct a complex phasor representation from angles."
+},
+{
+"area": "librosa.util",
+"name": "rename_kw",
+"kind": "function",
+"doc": "Handle renamed arguments."
+},
+{
+"area": "librosa.util",
+"name": "shear",
+"kind": "function",
+"doc": "Shear an array (or matrix) by a given factor."
+},
+{
+"area": "librosa.util",
+"name": "softmask",
+"kind": "function",
+"doc": "Robustly compute a soft-mask operation."
+},
+{
+"area": "librosa.util",
+"name": "sparsify_rows",
+"kind": "function",
+"doc": "Return a row-sparse array approximating the input"
+},
+{
+"area": "librosa.util",
+"name": "stack",
+"kind": "function",
+"doc": "Stack one or more arrays along a target axis."
+},
+{
+"area": "librosa.util",
+"name": "sync",
+"kind": "function",
+"doc": "Aggregate a multi-dimensional array between specified boundaries."
+},
+{
+"area": "librosa.util",
+"name": "tiny",
+"kind": "function",
+"doc": "Compute the tiny-value corresponding to an input's data type."
+},
+{
+"area": "librosa.util",
+"name": "valid_audio",
+"kind": "function",
+"doc": "Determine whether a variable contains valid audio data."
+},
+{
+"area": "librosa.util",
+"name": "valid_int",
+"kind": "function",
+"doc": "Ensure that an input value is integer-typed."
+},
+{
+"area": "librosa.util",
+"name": "valid_intervals",
+"kind": "function",
+"doc": "Ensure that an array is a valid representation of time intervals:"
+}
+]
+}

@@ -1,0 +1,239 @@
+# Tabular, interpretable-model and feature libraries; visual diagnostics; embeddings and clusterers of the umap family.
+# lime was enumerated from the installed package; the rest is from memory.
+# Checked in the source: ensembles (explainableBoosting and cyclicBoosting = EBM, hist gradient boosting, stacking and
+# voting), rules (CN2, PRISM, RIPPER, CORELS, Bayesian rule lists, OneR, decision tables), explain (RuleFit, LIME,
+# anchors, glass-box terms), learn/preprocessing (one-hot, ordinal, target encoder, binning, imputers, samplers),
+# learn (feature selection, multilabel, stability selection), patterns (Apriori, FP-growth, Eclat, subgroup discovery),
+# manifold (t-SNE, UMAP, TriMap, PaCMAP), cluster (HDBSCAN, k-medoids) and omai-render charts and views.
+@lib interpret
+@area
+P | missing_handling|feature_types|outer_bags|inner_bags | ensembles#explainableBoosting | EBM options (bagging, missing and type handling) | | | |
+@area glassbox
+F | ExplainableBoostingClassifier|ExplainableBoostingRegressor | ensembles#explainableBoostingClassifier, #explainableBoostingRegressor | | | | |
+P | DPExplainableBoostingClassifier|DPExplainableBoostingRegressor | ensembles#explainableBoosting, learn#gaussianMechanism | the differentially private EBM adds noise to bin statistics; both parts exist | ensembles/ebm.ts | S | low | EBM extras
+A | APLRClassifier|APLRRegressor | | automatic piecewise linear regression | ensembles | M | low | EBM extras
+F | LinearRegression|LogisticRegression | linear#linearModel | | | | |
+F | ClassificationTree|RegressionTree|DecisionListClassifier | trees#decisionTreeClassifier, rules#bayesianRuleListClassifier | | | | |
+P | merge_ebms|EBMUtils | ensembles#glassBoxContributions | merging EBMs trained on different data: a federated or distributed trick | | | |
+@area blackbox
+F | LimeTabular|ShapKernel|PartialDependence|PermutationImportance | explain | | | | |
+A | MorrisSensitivity | | the Morris screening method for global sensitivity analysis | explain/sensitivity.ts | S | low | sensitivity analysis
+P | ClassHistogram | | | | | |
+@area ebm_features
+P | interactions|FAST|pairwise_interactions|purify|remove_terms|scale_terms|reorder_features | ensembles#glassBoxContributions, #termImportances | pairwise interaction terms are ranked by FAST in EBM; omai's EBM exposes terms and importances | | | |
+A | monotone_constraints | | monotone shape constraints on a term | ensembles | S | medium | monotone constraints
+@area data
+S | .* | | | | | |
+@area perf
+F | ROC|PR|RegressionPerf | metrics#rocCurve, #precisionRecallCurve | | | | |
+@area utils
+S | .* | | | | | |
+
+@lib imodels
+@area
+A | HierarchicalShrinkage | trees | hierarchical shrinkage: post-hoc shrinking of leaf values toward parents, a regulariser for trees that is one pass over a fitted tree | trees/shrinkage.ts | S | high | interpretable tree models
+@area rule_list
+F | BayesianRuleListClassifier|GreedyRuleListClassifier|OneRClassifier | rules#bayesianRuleListClassifier, #oneRClassifier | | | | |
+F | RuleFitClassifier|RuleFitRegressor | explain#RuleFitModel | | | | |
+F | SkopeRulesClassifier|BoostedRulesClassifier|SlipperClassifier | rules#coveringModel, ensembles#adaBoostClassifier | rule extraction from forests and boosted rules are compositions of covering and trees | | | |
+@area rule_set
+F | BayesianRuleSetClassifier|BoostedRulesClassifier|SlipperClassifier|SkopeRulesClassifier|RuleFitClassifier | rules | | | | |
+@area trees
+F | GreedyTreeClassifier|GreedyTreeRegressor|CartClassifier|C45TreeClassifier | trees#decisionTreeClassifier, #classicTreeClassifier | | | | |
+A | FIGSClassifier|FIGSRegressor|FIGS | trees#growTree | fast interpretable greedy-tree sums: grows several trees together, splitting the one that helps most (Tan et al. 2022) | trees/figs.ts | M | medium | interpretable tree models
+A | HSTreeClassifier|HSTreeRegressor|HSTreeClassifierCV|HierarchicalShrinkage | trees | hierarchical shrinkage: post-hoc shrinking of leaf values toward parents, a regulariser for trees that is one pass over a fitted tree | trees/shrinkage.ts | S | high | interpretable tree models
+A | OptimalTreeModel|OptimalRuleListClassifier|TaoTreeClassifier|TaoTreeRegressor | rules#corelsClassifier | globally optimal trees by search; CORELS is the optimal rule list and is in; tree alternating optimisation (TAO) and optimal trees are not | trees/optimal.ts | M | medium | interpretable tree models
+@area algebraic
+A | TreeGAMClassifier|TreeGAMRegressor|GamPlusPlusClassifier | ensembles#explainableBoosting | | ensembles | S | low | interpretable tree models
+A | SLIMClassifier|SLIMRegressor|SparseIntegerLinearClassifier | optim#milp | scoring systems with small integer coefficients (SLIM, RiskSLIM): a MILP over integer weights; `optim` has MILP | linear/scoring-system.ts | M | medium | scoring systems
+@area util
+S | .* | | wrappers and discretiser utilities | | | |
+@area experimental
+S | .* | | | | | |
+
+@lib category_encoders
+@area encoders
+F | OneHotEncoder|OrdinalEncoder | learn/preprocessing#oneHotEncoder, #ordinalEncoder | | | | |
+F | TargetEncoder|MEstimateEncoder | learn/preprocessing#targetEncoder | smoothed (m-estimate) target means | | | | |
+P | JamesSteinEncoder | stats#jamesStein | the shrinkage estimator exists; the encoder wrapper does not | learn/preprocessing/encoders.ts | S | low | categorical encoders
+P | HashingEncoder | text#hashingVectorize | | | | |
+A | WOEEncoder | | weight of evidence of a category against a binary target, the credit-scoring encoder | learn/preprocessing/encoders.ts | S | medium | categorical encoders
+A | CatBoostEncoder|LeaveOneOutEncoder|QuantileEncoder|SummaryEncoder|GeneralizedLinearMixedModelEncoder | learn/preprocessing#targetEncoder | target encodings that avoid leakage (ordered statistics, leave-one-out) | learn/preprocessing/encoders.ts | S | medium | categorical encoders
+A | CountEncoder|BinaryEncoder|BaseNEncoder|GrayEncoder|RankHotEncoder | | frequency and compact digit codings | learn/preprocessing/encoders.ts | S | low | categorical encoders
+A | BackwardDifferenceEncoder|HelmertEncoder|PolynomialEncoder|SumEncoder | | contrast codings of the regression textbooks (Helmert, sum, difference, orthogonal polynomial) | learn/preprocessing/encoders.ts | S | low | categorical encoders
+
+@lib feature_engine
+@area imputation
+F | MeanMedianImputer|ArbitraryNumberImputer|CategoricalImputer|RandomSampleImputer|AddMissingIndicator | learn/preprocessing#simpleImputer, #missingIndicator | | | | |
+P | EndTailImputer|DropMissingData | learn/preprocessing#simpleImputer | | | | |
+@area encoding
+P | OneHotEncoder|OrdinalEncoder|CountFrequencyEncoder|MeanEncoder|WoEEncoder|RareLabelEncoder|DecisionTreeEncoder|StringSimilarityEncoder | learn/preprocessing#oneHotEncoder, #targetEncoder | rare-label grouping and WoE are the missing ones | learn/preprocessing/encoders.ts | S | low | categorical encoders
+@area discretisation
+F | EqualWidthDiscretiser|EqualFrequencyDiscretiser | learn/preprocessing#kBinsDiscretizer | | | | |
+A | DecisionTreeDiscretiser|GeometricWidthDiscretiser|ArbitraryDiscretiser | | supervised (tree-based) binning | learn/preprocessing/discretise.ts | S | low | feature engineering
+@area outliers
+P | Winsorizer|ArbitraryOutlierCapper|OutlierTrimmer | stats#winsorize, anomaly#iqrThreshold, #madThreshold | winsorising exists in `stats`; capping at IQR or MAD fences and trimming as pipeline transformers do not | learn/preprocessing/outliers.ts | S | medium | feature engineering
+@area transformation
+F | LogTransformer|LogCpTransformer|ReciprocalTransformer|PowerTransformer|BoxCoxTransformer|YeoJohnsonTransformer|ArcsinTransformer | learn/preprocessing#powerTransformer, #functionTransformer | | | | |
+@area creation
+P | MathFeatures|RelativeFeatures|CombineWithReferenceFeature|CyclicalFeatures|DecisionTreeFeatures | learn/preprocessing#functionTransformer, #interactionFeatures, learn#deepFeatureSynthesis | cyclical (sine and cosine) encoding of hours and months is a function transform | | | |
+@area selection
+F | DropFeatures|SelectBySingleFeaturePerformance|RecursiveFeatureElimination|RecursiveFeatureAddition|MRMR|SelectByShuffling | learn#selectFromModel, #rfe, #sequentialFeatureSelector, #mrmr, explain#permutationImportance | | | | |
+A | DropConstantFeatures|DropDuplicateFeatures|DropCorrelatedFeatures|SmartCorrelatedSelection | learn#varianceThreshold | filters for constant, duplicated and highly correlated columns (the variance filter exists) | learn/feature-selection.ts | S | medium | feature selection filters
+P | DropHighPSIFeatures | learn#populationStabilityIndex | | | | |
+A | SelectByTargetMeanPerformance|SelectByInformationValue|ProbeFeatureSelection | learn#mutualInfoClassif | probe (shadow) features: keep the features that beat random noise columns (Boruta-style) | learn/feature-selection.ts | S | medium | feature selection filters
+@area datetime
+A | DatetimeFeatures|DatetimeSubtraction | learn/preprocessing#lagFeatures | calendar features (day of week, month, quarter) from timestamps | learn/preprocessing/datetime.ts | S | medium | feature engineering
+@area timeseries
+F | LagFeatures|WindowFeatures|ExpandingWindowFeatures | learn/preprocessing#lagFeatures, #rollingFeatures | | | | |
+@area preprocessing
+S | MatchCategories|MatchVariables | | | | | |
+@area scaling
+P | MeanNormalizationScaler | learn/preprocessing#standardScaler | | | | |
+@area wrappers
+F | SklearnTransformerWrapper | learn#columnTransformer | | | | |
+
+@lib mlxtend
+@area classifier
+F | StackingClassifier|StackingCVClassifier|EnsembleVoteClassifier|LogisticRegression|SoftmaxRegression|Perceptron|OneRClassifier|MultiLayerPerceptron | ensembles#stackingClassifier, #votingClassifier, linear#perceptron, rules#oneRClassifier | | | | |
+P | Adaline | linear | Adaline is gradient-descent least squares on a linear unit: `linearModel` with the `sgd` solver | | | |
+@area regressor
+F | LinearRegression|StackingRegressor|StackingCVRegressor | ensembles#stackingRegressor | | | | |
+@area feature_selection
+F | SequentialFeatureSelector|ColumnSelector | learn#sequentialFeatureSelector, #columnTransformer | | | | |
+A | ExhaustiveFeatureSelector | learn#sequentialFeatureSelector | best subset by trying every combination: a small exhaustive search | learn/feature-selection.ts | S | low | feature selection filters
+@area feature_extraction
+F | PrincipalComponentAnalysis|LinearDiscriminantAnalysis|RBFKernelPCA | decomposition#pca, learn#linearDiscriminant, kernels#kernelPca | | | | |
+@area frequent_patterns
+F | apriori|fpgrowth|association_rules | patterns#apriori, #fpGrowth, #associationRules | | | | |
+P | fpmax|hmine | patterns#maximalItemsets, #eclat | | | | |
+@area evaluate
+F | bias_variance_decomp|bootstrap|bootstrap_point632_score|mcnemar|mcnemar_table|mcnemar_tables|confusion_matrix|accuracy_score|cochrans_q|permutation_test|BootstrapOutOfBag|combined_ftest_5x2cv|ftest|paired_ttest_5x2cv|lift_score|feature_importance_permutation|GroupTimeSeriesSplit|proportion_difference | learn#biasVariance, learn/model-selection#bootstrap632Algorithm, metrics#mcnemarTest, stats/tests#cochranQ, learn/model-selection#fiveByTwoCvFTest, explain#permutationImportance | the classifier-comparison tests of Dietterich and Alpaydin are in `learn/model-selection` and `stats/tests` | | | | |
+P | paired_ttest_kfold_cv|paired_ttest_resampled|RandomHoldoutSplit|PredefinedHoldoutSplit|scoring|create_counterfactual | learn/model-selection | corrected resampled t-test (Nadeau and Bengio) is in `stats/tests`? not found by name; the other items are splitters and scoring helpers | learn/model-selection/comparison.ts | S | low | model comparison tests
+@area plotting
+F | plot_decision_regions|plot_learning_curves|plot_confusion_matrix|plot_linear_regression|plot_ecdf|ecdf|heatmap|scatterplotmatrix|category_scatter|stacked_barplot | omai-render/charts#decisionRegions, #learningCurveChart, #confusionMatrixChart, #ecdfCurve, #heatmapChart, #scatterMatrix | | | | |
+P | plot_sequential_feature_selection|plot_pca_correlation_graph|checkerboard_plot|enrichment_plot | omai-render/views#screePanel, #biplotPanel | | | | |
+@area preprocessing
+P | TransactionEncoder|OneHotEncoder|minmax_scaling|standardize|one_hot|MeanCenterer|DenseTransformer|CopyTransformer|shuffle_arrays_unison|lower_triangular_indices | learn/preprocessing, patterns#normaliseTransactions | | | | |
+@area cluster
+P | Kmeans | cluster#lloydAlgorithm | | | | |
+@area data
+P | iris_data|wine_data|three_blobs_data|make_multiplexer_dataset|autompg_data|boston_housing_data|mnist_data|loadlocal_mnist | datasets | iris, wine, auto-mpg and blobs are in `datasets`; the multiplexer problem and Boston housing (withdrawn for its ethics) are not | | | |
+S | .* | | maths, text and testing helpers | | | |
+@area
+S | num_combinations|num_permutations|vectorspace_dimensionality|vectorspace_orthonormalization|generalize_names|tokenizer_words_and_emoticons|Counter|assert_raises|check_Xy|format_kwarg_dictionaries | | helpers | | | |
+
+@lib skmultilearn
+F | BinaryRelevance|ClassifierChain|LabelPowerset | learn#binaryRelevance, #classifierChain, #labelPowerset | | | | |
+A | MLkNN|BRkNNaClassifier|BRkNNbClassifier|MLARAM|MLTSVM | learn#kNeighboursClassifier | multi-label k-NN (a posteriori counts of neighbours' labels): the native multi-label learners | learn/multilabel.ts | M | medium | native multi-label learners
+A | RakelD|RakelO|MajorityVotingClassifier|LabelSpacePartitioningClassifier | learn#labelPowerset | label-space partitioning (RAkEL: random k-label subsets, each a label powerset) | learn/multilabel.ts | S | medium | native multi-label learners
+A | NetworkXLabelGraphClusterer|IGraphLabelGraphClusterer|MatrixLabelSpaceClusterer|RandomLabelSpaceClusterer|FixedLabelSpaceClusterer|LabelCooccurrenceGraphBuilder | graph | label-graph clusterers that choose the partition | learn/multilabel.ts | S | low | native multi-label learners
+A | IterativeStratification|iterative_train_test_split | data#stratifiedIndices | stratified splits that keep every label's share in multi-label data (Sechidis et al.) | data/splits.ts | S | medium | native multi-label learners
+A | CLEMS|EmbeddingClassifier|OpenNetworkEmbedder|SKLearnEmbedder | | label-space embeddings | learn/multilabel.ts | S | low | native multi-label learners
+S | load_dataset|available_data_sets | | downloads | | | |
+F | hamming_loss|label_ranking_loss|coverage_error | metrics#hammingLoss, #labelRankingLoss, #coverageError | | | | |
+
+@lib sklearn_extra
+F | KMedoids|CLARA | cluster#pamSolve, cluster#claraAlgorithm | | | | |
+A | CLARANS | cluster#pamSolve | randomised neighbour search for medoids, for larger data | cluster/medoids.ts | S | low | clustering extras
+A | CommonNNClustering | cluster#dbscan | shared-nearest-neighbour density clustering | cluster/density.ts | S | low | clustering extras
+P | Fastfood | kernels#randomFourierFeatures | | | | |
+A | EigenProClassifier|EigenProRegressor | kernel-methods | preconditioned stochastic gradient for kernel machines | kernel-methods | M | low | clustering extras
+A | RobustWeightedClassifier|RobustWeightedRegressor|RobustWeightedKMeans | linear (Huber, RANSAC and other robust fits) | iteratively reweighted estimators robust to outliers (Holland and Ikeda) | linear | S | low | clustering extras
+
+@lib umap
+@area models
+F | UMAP | manifold#umap | | | | |
+A | ParametricUMAP | manifold#umap, nn | UMAP with a neural encoder, so that new points embed without refitting (needs `nn` and the fuzzy-set loss) | manifold/parametric-umap.ts | M | medium | embedding extras
+A | AlignedUMAP|DensMAP | manifold#umap | embeddings of related datasets aligned to one another; density-preserving UMAP | manifold/umap-variants.ts | M | low | embedding extras
+@area plot
+P | points|connectivity|diagnostic|nearest_neighbour_distribution|interactive | omai-render/views#embeddingFrames | | | | |
+@area utils
+F | fuzzy_simplicial_set|find_ab_params | manifold#fuzzySimplicialSet, #findAbParams | | | | |
+P | simplicial_set_embedding|nearest_neighbors | manifold#umap | the embedding optimisation and neighbour search are inside `umap` | | | |
+@area validation
+F | trustworthiness | manifold#trustworthiness | | | | |
+
+@lib hdbscan
+F | HDBSCAN|single_linkage_tree|minimum_spanning_tree|condensed_tree|prediction_data_|outlier_scores_ | cluster#hdbscan, #mutualReachabilityTree, #condenseTree, #singleLinkageTree | | | | |
+F | CondensedTree|SingleLinkageTree|MinimumSpanningTree | cluster#condenseTree, omai-render/views#reachabilityPlot | | | | |
+P | RobustSingleLinkage|exemplars|flat_clustering | cluster#singleLinkageTree, #cutTree | | | | |
+A | all_points_membership_vectors|membership_vector|approximate_predict|approximate_predict_scores|DBCV|validity_index|BranchDetector | cluster#selectClusters | predicting clusters for new points from a fitted HDBSCAN, soft membership vectors and the density-based cluster validity index DBCV | cluster/hdbscan.ts | S | medium | HDBSCAN extras
+
+@lib trimap
+F | TRIMAP | manifold#trimap | | | | |
+
+@lib pacmap
+F | PaCMAP | manifold#pacmap | | | | |
+A | LocalMAP | manifold#pacmap | PaCMAP with local pair adaptation | manifold | S | low | embedding extras
+
+@lib yellowbrick
+@area classifier
+F | ConfusionMatrix|ROCAUC|PrecisionRecallCurve|DiscriminationThreshold|ClassificationReport | omai-render/charts#confusionMatrixChart, #rocChart, #precisionRecallChart, omai-render/views#thresholdSweepView, metrics#classificationReport | | | | |
+A | ClassPredictionError|ClassBalance | omai-render/charts#barChart | stacked bars of what each true class was predicted as; class counts as bars | omai-render/charts/evaluation.ts | S | low | diagnostic charts
+@area regressor
+F | ResidualsPlot | omai-render/charts#residualChart | | | | |
+A | PredictionError | omai-render/charts#scatterChart | actual against predicted with the identity line | omai-render/charts/evaluation.ts | S | low | diagnostic charts
+P | AlphaSelection|ManualAlphaSelection | omai-render/views#regularisationPathView, #crossValidationView | | | | |
+@area cluster
+P | KElbowVisualizer | cluster#kmeansElbow | the data is there; the chart is `lineChart` | | | |
+A | SilhouetteVisualizer | metrics#silhouetteSamples | the silhouette plot: each cluster's samples sorted by silhouette width as bars (repertoire.md lists it) | omai-render/charts/clusters.ts | S | medium | diagnostic charts
+A | InterclusterDistance | | cluster centres as circles sized by membership, placed by MDS | omai-render/charts/clusters.ts | S | low | diagnostic charts
+@area features
+F | PCA|PCADecomposition|ParallelCoordinates|FeatureImportances|Manifold | omai-render/views#screePanel, #biplotPanel, charts#parallelCoordinates, #importanceChart, views#embeddingFrames | | | | |
+P | Rank1D|Rank2D|JointPlot|RFECV|DroppingCurve | omai-render/charts#correlationChart, #scatterMatrix | feature ranking by Shapiro or Pearson heat maps are `correlationChart`; jointplot (README item) and dropping curves are not | omai-render/charts/joint.ts | S | medium | diagnostic charts
+A | RadViz | | the radial visualisation of high-dimensional classes | omai-render/charts | S | low | diagnostic charts
+@area model_selection
+F | LearningCurve|CVScores | omai-render/charts#learningCurveChart, views#learningCurveView, #crossValidationView | | | | |
+P | ValidationCurve | learn/model-selection#validationCurve | | | | |
+P | FeatureImportances|RFECV|DroppingCurve | explain#permutationImportance | | | | |
+@area text
+P | TSNEVisualizer|UMAPVisualizer | omai-render/views#embeddingFrames | | | | |
+A | FreqDistVisualizer|DispersionPlot|PosTagVisualizer|WordCorrelationPlot | text | corpus plots (word frequencies, dispersion over a text, POS counts) | omai-render/charts/text.ts | S | low | diagnostic charts
+@area target
+A | BalancedBinningReference|FeatureCorrelation|ClassBalance | | | omai-render/charts | S | low | diagnostic charts
+@area contrib
+S | .* | | | | | |
+@area datasets
+S | .* | | downloaded datasets | | | |
+@area base
+S | .* | | | | | |
+
+@lib scikitplot
+F | plot_confusion_matrix|plot_roc|plot_roc_curve|plot_precision_recall|plot_precision_recall_curve|plot_calibration_curve|plot_learning_curve|plot_feature_importances|plot_pca_component_variance|plot_pca_2d_projection|plot_elbow_curve | omai-render/charts#confusionMatrixChart, #rocChart, #precisionRecallChart, #calibrationChart, #learningCurveChart, #importanceChart, views#screePanel | | | | |
+A | plot_silhouette | metrics#silhouetteSamples | | omai-render/charts/clusters.ts | S | medium | diagnostic charts
+A | plot_cumulative_gain|plot_lift_curve|plot_ks_statistic | omai-render/charts#prGainChart | gain, lift and KS charts for ranked classifiers (repertoire.md) | omai-render/charts/evaluation.ts | S | medium | diagnostic charts
+
+@lib lime
+@area lime.lime_tabular
+F | LimeTabularExplainer|TableDomainMapper|partial|RecurrentTabularExplainer | explain#lime | | | | |
+P | BaseDiscretizer|DecileDiscretizer|EntropyDiscretizer|QuartileDiscretizer|StatsDiscretizer | learn/preprocessing#kBinsDiscretizer | LIME's discretisation of numeric features | | | |
+@area lime.lime_text
+P | LimeTextExplainer|IndexedCharacters|IndexedString|TextDomainMapper|partial | explain#lime | LIME over words (masking by removing words) is the same fit on a different perturbation; omai's explainers take a feature mask | explain/lime-text.ts | S | medium | LIME variants
+@area lime.lime_image
+A | LimeImageExplainer|ImageExplanation | explain#lime, vision | LIME over superpixels | explain/lime-image.ts | S | medium | LIME variants
+@area lime.lime_base
+F | LimeBase | explain#lime | | | | |
+@area lime.submodular_pick
+A | SubmodularPick | explain#lime | picks a representative set of explanations to show (greedy coverage): global view from local ones | explain/lime.ts | S | low | LIME variants
+@area lime.explanation
+P | .* | exposition | | | | |
+@area lime.discretize
+P | .* | learn/preprocessing#kBinsDiscretizer | | | | |
+@area lime.exceptions
+S | .* | | | | | |
+@area lime.utils
+S | .* | | | | | |
+@area lime.wrappers
+S | .* | | | | | |
+
+@lib xgboost_lightgbm_catboost
+@area
+S | gpu_hist | | GPU | | | |
+@area features
+F | histogram_tree_method|exact_tree_method|early_stopping_rounds|feature_importance_gain|feature_importance_cover|sample_weight|custom_objective|custom_metric|cv_with_folds|learning_rate_decay|scale_pos_weight|poisson_objective|tweedie_objective|quantile_objective|missing_value_handling|shap_values_native|pred_contribs|pred_leaf | ensembles#histGradientBoostingClassifier, #gradientBoostingRegressor, explain#treeShap | histogram-based and exact split finding, second-order (Newton) leaf values, regularised leaves, early stopping, custom losses, missing-value routing and tree SHAP | | | | |
+A | monotone_constraints|interaction_constraints | ensembles | constraints that force a prediction to be non-decreasing in a feature, or restrict which features may interact in one tree: the standard way to put domain knowledge into boosting | ensembles/constraints.ts | S | high | boosting extras
+A | categorical_features_native|ordered_boosting|ordered_target_statistics|symmetric_oblivious_trees|feature_combinations|text_features|embedding_features|uncertainty_virtual_ensembles | learn/preprocessing#targetEncoder | CatBoost's way of handling categoricals without leakage, symmetric (oblivious) trees and virtual ensembles | ensembles/ordered-boosting.ts | M | medium | boosting extras
+A | dart_boosting|goss_sampling|extra_trees|linear_trees|cegb_cost_efficient|refit_leaves|snapshot_continue_training|warm_start_xgb_model|multi_output_trees | ensembles | dropouts for trees (DART), gradient-based one-side sampling (GOSS), trees with linear leaves, cost-efficient boosting | ensembles/gradient-boosting.ts | S | low | boosting extras
+A | lambdarank_objective|ndcg_objective|pairwise_ranking_objective | losses#lambdaRank, ensembles#boostingLosses | boosted trees with a ranking objective (LambdaMART): the loss exists, the booster's loss table does not list it | ensembles/gradient-boosting.ts | S | medium | boosting extras
+A | survival_cox_objective|survival_aft_objective | survival | boosting with Cox or AFT objectives | ensembles/gradient-boosting.ts | S | low | boosting extras

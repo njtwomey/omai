@@ -1,0 +1,493 @@
+{
+"library": "skorch",
+"version": "0.9.0",
+"source": "introspection",
+"entries": [
+{
+"area": "skorch.callbacks.base",
+"name": "Callback",
+"kind": "class",
+"doc": "Base class for callbacks."
+},
+{
+"area": "skorch.callbacks.logging",
+"name": "EpochTimer",
+"kind": "class",
+"doc": "Measures the duration of each epoch and writes it to the"
+},
+{
+"area": "skorch.callbacks.logging",
+"name": "NeptuneLogger",
+"kind": "class",
+"doc": "Logs results from history to Neptune"
+},
+{
+"area": "skorch.callbacks.logging",
+"name": "PrintLog",
+"kind": "class",
+"doc": "Print useful information from the model's history as a table."
+},
+{
+"area": "skorch.callbacks.logging",
+"name": "ProgressBar",
+"kind": "class",
+"doc": "Display a progress bar for each epoch."
+},
+{
+"area": "skorch.callbacks.logging",
+"name": "TensorBoard",
+"kind": "class",
+"doc": "Logs results from history to TensorBoard"
+},
+{
+"area": "skorch.callbacks.logging",
+"name": "WandbLogger",
+"kind": "class",
+"doc": "Logs best model and metrics to `Weights & Biases <https://docs.wandb.com/>`_"
+},
+{
+"area": "skorch.callbacks.logging",
+"name": "filter_log_keys",
+"kind": "function",
+"doc": "Filter out keys that are generally to be ignored."
+},
+{
+"area": "skorch.callbacks.logging",
+"name": "rename_tensorboard_key",
+"kind": "function",
+"doc": "Rename keys from history to keys in TensorBoard"
+},
+{
+"area": "skorch.callbacks.lr_scheduler",
+"name": "LRScheduler",
+"kind": "class",
+"doc": "Callback that sets the learning rate of each"
+},
+{
+"area": "skorch.callbacks.lr_scheduler",
+"name": "WarmRestartLR",
+"kind": "class",
+"doc": "Stochastic Gradient Descent with Warm Restarts (SGDR) scheduler."
+},
+{
+"area": "skorch.callbacks.regularization",
+"name": "GradientNormClipping",
+"kind": "class",
+"doc": "Clips gradient norm of a module's parameters."
+},
+{
+"area": "skorch.callbacks.scoring",
+"name": "BatchScoring",
+"kind": "class",
+"doc": "Callback that performs generic scoring on batches."
+},
+{
+"area": "skorch.callbacks.scoring",
+"name": "EpochScoring",
+"kind": "class",
+"doc": "Callback that performs generic scoring on predictions."
+},
+{
+"area": "skorch.callbacks.scoring",
+"name": "PassthroughScoring",
+"kind": "class",
+"doc": "Creates scores on epoch level based on batch level scores"
+},
+{
+"area": "skorch.callbacks.scoring",
+"name": "ScoringBase",
+"kind": "class",
+"doc": "Base class for scoring."
+},
+{
+"area": "skorch.callbacks.scoring",
+"name": "cache_net_infer",
+"kind": "function",
+"doc": "Caching context for ``skorch.NeuralNet`` instance."
+},
+{
+"area": "skorch.callbacks.scoring",
+"name": "convert_sklearn_metric_function",
+"kind": "function",
+"doc": "If ``scoring`` is a sklearn metric function, convert it to a"
+},
+{
+"area": "skorch.callbacks.training",
+"name": "Checkpoint",
+"kind": "class",
+"doc": "Save the model during training if the given metric improved."
+},
+{
+"area": "skorch.callbacks.training",
+"name": "EarlyStopping",
+"kind": "class",
+"doc": "Callback for stopping training when scores don't improve."
+},
+{
+"area": "skorch.callbacks.training",
+"name": "Freezer",
+"kind": "class",
+"doc": "Freeze matching parameters at the start of the first epoch. You may"
+},
+{
+"area": "skorch.callbacks.training",
+"name": "Initializer",
+"kind": "class",
+"doc": "Apply any function on matching parameters in the first epoch."
+},
+{
+"area": "skorch.callbacks.training",
+"name": "LoadInitState",
+"kind": "class",
+"doc": "Loads the model, optimizer, and history from a checkpoint into a"
+},
+{
+"area": "skorch.callbacks.training",
+"name": "ParamMapper",
+"kind": "class",
+"doc": "Map arbitrary functions over module parameters filtered by pattern"
+},
+{
+"area": "skorch.callbacks.training",
+"name": "TrainEndCheckpoint",
+"kind": "class",
+"doc": "Saves the model parameters, optimizer state, and history at the end of"
+},
+{
+"area": "skorch.callbacks.training",
+"name": "Unfreezer",
+"kind": "class",
+"doc": "Inverse operation of :class:`.Freezer`."
+},
+{
+"area": "skorch.classifier",
+"name": "NeuralNetBinaryClassifier",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "skorch.classifier",
+"name": "NeuralNetClassifier",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "skorch.classifier",
+"name": "get_neural_net_binary_clf_doc",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "skorch.classifier",
+"name": "get_neural_net_clf_doc",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "skorch.cli",
+"name": "parse_args",
+"kind": "function",
+"doc": "Apply command line arguments or show help."
+},
+{
+"area": "skorch.cli",
+"name": "parse_net_kwargs",
+"kind": "function",
+"doc": "Parse arguments for the estimator."
+},
+{
+"area": "skorch.cli",
+"name": "print_help",
+"kind": "function",
+"doc": "Print help for the command line arguments of the given model."
+},
+{
+"area": "skorch.dataset",
+"name": "CVSplit",
+"kind": "class",
+"doc": "Class that performs the internal train/valid split on a dataset."
+},
+{
+"area": "skorch.dataset",
+"name": "Dataset",
+"kind": "class",
+"doc": "General dataset wrapper that can be used in conjunction with"
+},
+{
+"area": "skorch.dataset",
+"name": "get_len",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "skorch.dataset",
+"name": "unpack_data",
+"kind": "function",
+"doc": "Unpack data returned by the net's iterator into a 2-tuple."
+},
+{
+"area": "skorch.dataset",
+"name": "uses_placeholder_y",
+"kind": "function",
+"doc": "If ``ds`` is a ``skorch.dataset.Dataset`` or a"
+},
+{
+"area": "skorch.exceptions",
+"name": "DeviceWarning",
+"kind": "class",
+"doc": "A problem with a device (e.g. CUDA) was detected."
+},
+{
+"area": "skorch.exceptions",
+"name": "NotInitializedError",
+"kind": "class",
+"doc": "Module is not initialized, please call the ``.initialize``"
+},
+{
+"area": "skorch.exceptions",
+"name": "SkorchException",
+"kind": "class",
+"doc": "Base skorch exception."
+},
+{
+"area": "skorch.exceptions",
+"name": "SkorchWarning",
+"kind": "class",
+"doc": "Base skorch warning."
+},
+{
+"area": "skorch.helper",
+"name": "DataFrameTransformer",
+"kind": "class",
+"doc": "Transform a DataFrame into a dict useful for working with skorch."
+},
+{
+"area": "skorch.helper",
+"name": "SliceDataset",
+"kind": "class",
+"doc": "Helper class that wraps a torch dataset to make it work with"
+},
+{
+"area": "skorch.helper",
+"name": "SliceDict",
+"kind": "class",
+"doc": "Wrapper for Python dict that makes it sliceable across values."
+},
+{
+"area": "skorch.helper",
+"name": "predefined_split",
+"kind": "function",
+"doc": "Uses ``dataset`` for validiation in :class:`.NeuralNet`."
+},
+{
+"area": "skorch.history",
+"name": "History",
+"kind": "class",
+"doc": "History contains the information about the training history of"
+},
+{
+"area": "skorch.net",
+"name": "NeuralNet",
+"kind": "class",
+"doc": "NeuralNet base class."
+},
+{
+"area": "skorch.regressor",
+"name": "NeuralNetRegressor",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "skorch.regressor",
+"name": "get_neural_net_reg_doc",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "skorch.scoring",
+"name": "loss_scoring",
+"kind": "function",
+"doc": "Calculate score using the criterion of the net"
+},
+{
+"area": "skorch.setter",
+"name": "optimizer_setter",
+"kind": "function",
+"doc": "Handle setting of optimizer parameters such as learning rate and"
+},
+{
+"area": "skorch.toy",
+"name": "MLPModule",
+"kind": "class",
+"doc": "A simple multi-layer perceptron module."
+},
+{
+"area": "skorch.toy",
+"name": "make_binary_classifier",
+"kind": "function",
+"doc": "Return a multi-layer perceptron to be used with"
+},
+{
+"area": "skorch.toy",
+"name": "make_classifier",
+"kind": "function",
+"doc": "Return a multi-layer perceptron to be used with"
+},
+{
+"area": "skorch.toy",
+"name": "make_regressor",
+"kind": "function",
+"doc": "Return a multi-layer perceptron to be used with"
+},
+{
+"area": "skorch.utils",
+"name": "Ansi",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "skorch.utils",
+"name": "FirstStepAccumulator",
+"kind": "class",
+"doc": "Store and retrieve the train step data."
+},
+{
+"area": "skorch.utils",
+"name": "TeeGenerator",
+"kind": "class",
+"doc": "Stores a generator and calls ``tee`` on it to create new generators"
+},
+{
+"area": "skorch.utils",
+"name": "check_indexing",
+"kind": "function",
+"doc": "Perform a check how incoming data should be indexed and return an"
+},
+{
+"area": "skorch.utils",
+"name": "check_is_fitted",
+"kind": "function",
+"doc": "Checks whether the net is initialized."
+},
+{
+"area": "skorch.utils",
+"name": "data_from_dataset",
+"kind": "function",
+"doc": "Try to access X and y attribute from dataset."
+},
+{
+"area": "skorch.utils",
+"name": "duplicate_items",
+"kind": "function",
+"doc": "Search for duplicate items in all collections."
+},
+{
+"area": "skorch.utils",
+"name": "flatten",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "skorch.utils",
+"name": "freeze_parameter",
+"kind": "function",
+"doc": "Convenience function to freeze a passed torch parameter."
+},
+{
+"area": "skorch.utils",
+"name": "get_dim",
+"kind": "function",
+"doc": "Return the number of dimensions of a torch tensor or numpy"
+},
+{
+"area": "skorch.utils",
+"name": "get_map_location",
+"kind": "function",
+"doc": "Determine the location to map loaded data (e.g., weights)"
+},
+{
+"area": "skorch.utils",
+"name": "is_dataset",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "skorch.utils",
+"name": "is_pandas_ndframe",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "skorch.utils",
+"name": "is_skorch_dataset",
+"kind": "function",
+"doc": "Checks if the supplied dataset is an instance of"
+},
+{
+"area": "skorch.utils",
+"name": "is_torch_data_type",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "skorch.utils",
+"name": "multi_indexing",
+"kind": "function",
+"doc": "Perform indexing on multiple data structures."
+},
+{
+"area": "skorch.utils",
+"name": "noop",
+"kind": "function",
+"doc": "No-op function that does nothing and returns ``None``."
+},
+{
+"area": "skorch.utils",
+"name": "open_file_like",
+"kind": "function",
+"doc": "Wrapper for opening a file"
+},
+{
+"area": "skorch.utils",
+"name": "params_for",
+"kind": "function",
+"doc": "Extract parameters that belong to a given sklearn module prefix from"
+},
+{
+"area": "skorch.utils",
+"name": "to_device",
+"kind": "function",
+"doc": "Generic function to modify the device type of the tensor(s) or module."
+},
+{
+"area": "skorch.utils",
+"name": "to_numpy",
+"kind": "function",
+"doc": "Generic function to convert a pytorch tensor to numpy."
+},
+{
+"area": "skorch.utils",
+"name": "to_tensor",
+"kind": "function",
+"doc": "Turn input data to torch tensor."
+},
+{
+"area": "skorch.utils",
+"name": "train_loss_score",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "skorch.utils",
+"name": "unfreeze_parameter",
+"kind": "function",
+"doc": "Convenience function to unfreeze a passed torch parameter."
+},
+{
+"area": "skorch.utils",
+"name": "valid_loss_score",
+"kind": "function",
+"doc": ""
+}
+]
+}

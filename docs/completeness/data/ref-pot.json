@@ -1,0 +1,1951 @@
+{
+"library": "pot",
+"version": "0.9.7.post1",
+"source": "introspection",
+"entries": [
+{
+"area": "ot",
+"name": "barycenter",
+"kind": "function",
+"doc": "Compute the entropic regularized wasserstein barycenter of distributions :math:`\\mathbf{A}`"
+},
+{
+"area": "ot",
+"name": "barycenter_unbalanced",
+"kind": "function",
+"doc": "Compute the entropic unbalanced wasserstein barycenter of :math:`\\mathbf{A}`."
+},
+{
+"area": "ot",
+"name": "binary_search_circle",
+"kind": "function",
+"doc": "Computes the Wasserstein distance on the circle using the Binary search algorithm proposed in [44]."
+},
+{
+"area": "ot",
+"name": "compute_bspot_bijection",
+"kind": "function",
+"doc": "This solver provides a good and fast approximation of the combinatorial problem of finding"
+},
+{
+"area": "ot",
+"name": "dist",
+"kind": "function",
+"doc": "Compute distance between samples in :math:`\\mathbf{x_1}` and :math:`\\mathbf{x_2}`"
+},
+{
+"area": "ot",
+"name": "dist_batch",
+"kind": "function",
+"doc": "Batched version of ot.dist, use it to compute many distance matrices in parallel."
+},
+{
+"area": "ot",
+"name": "emd",
+"kind": "function",
+"doc": "Solves the Earth Movers distance problem and returns the OT matrix"
+},
+{
+"area": "ot",
+"name": "emd2",
+"kind": "function",
+"doc": "Solves the Earth Movers distance problem and returns the loss"
+},
+{
+"area": "ot",
+"name": "emd2_1d",
+"kind": "function",
+"doc": "Solves the Earth Movers distance problem between 1d measures and returns"
+},
+{
+"area": "ot",
+"name": "emd2_lazy",
+"kind": "function",
+"doc": "Solves the Earth Movers distance problem with lazy cost computation and returns the loss"
+},
+{
+"area": "ot",
+"name": "emd_1d",
+"kind": "function",
+"doc": "Solves the Earth Movers distance problem between 1d measures and returns"
+},
+{
+"area": "ot",
+"name": "emd_1d_dual_backprop",
+"kind": "function",
+"doc": "Computes the 1 dimensional OT loss between two (batched) empirical"
+},
+{
+"area": "ot",
+"name": "expected_sliced_plan",
+"kind": "function",
+"doc": "Computes the Expected Sliced cost and plan between two  datasets `X_s` and"
+},
+{
+"area": "ot",
+"name": "factored_optimal_transport",
+"kind": "function",
+"doc": "Solves factored OT problem and return OT plans and intermediate distribution"
+},
+{
+"area": "ot",
+"name": "fused_gromov_wasserstein",
+"kind": "function",
+"doc": "Returns the Fused Gromov-Wasserstein transport between :math:`(\\mathbf{C_1}, \\mathbf{Y_1}, \\mathbf{p})` and :m"
+},
+{
+"area": "ot",
+"name": "fused_gromov_wasserstein2",
+"kind": "function",
+"doc": "Returns the Fused Gromov-Wasserstein distance between :math:`(\\mathbf{C_1}, \\mathbf{Y_1}, \\mathbf{p})` and :ma"
+},
+{
+"area": "ot",
+"name": "gromov_barycenters",
+"kind": "function",
+"doc": "Returns the Gromov-Wasserstein barycenters of `S` measured similarity matrices :math:`(\\mathbf{C}_s)_{1 \\leq s"
+},
+{
+"area": "ot",
+"name": "gromov_wasserstein",
+"kind": "function",
+"doc": "Returns the Gromov-Wasserstein transport between :math:`(\\mathbf{C_1}, \\mathbf{p})` and :math:`(\\mathbf{C_2}, "
+},
+{
+"area": "ot",
+"name": "gromov_wasserstein2",
+"kind": "function",
+"doc": "Returns the Gromov-Wasserstein loss :math:`\\mathbf{GW}` between :math:`(\\mathbf{C_1}, \\mathbf{p})` and :math:`"
+},
+{
+"area": "ot",
+"name": "linear_circular_ot",
+"kind": "function",
+"doc": "Computes the Linear Circular Optimal Transport distance from :ref:`[78] <references-lcot>` using :math:`\\eta=\\"
+},
+{
+"area": "ot",
+"name": "linear_sliced_wasserstein_sphere",
+"kind": "function",
+"doc": "Computes the linear spherical sliced wasserstein distance from :ref:`[79] <references-lssot>`."
+},
+{
+"area": "ot",
+"name": "lowrank_gromov_wasserstein_samples",
+"kind": "function",
+"doc": "Solve the entropic regularization Gromov-Wasserstein transport problem under low-nonnegative rank constraints"
+},
+{
+"area": "ot",
+"name": "lowrank_sinkhorn",
+"kind": "function",
+"doc": "Solve the entropic regularization optimal transport problem under low-nonnegative rank constraints"
+},
+{
+"area": "ot",
+"name": "max_sliced_wasserstein_distance",
+"kind": "function",
+"doc": "Computes a Monte-Carlo approximation of the max p-Sliced Wasserstein distance"
+},
+{
+"area": "ot",
+"name": "merge_bijections",
+"kind": "function",
+"doc": "Merge several bijections between two point clouds to obtain a new one with low transport cost."
+},
+{
+"area": "ot",
+"name": "min_sliced_transport_plan",
+"kind": "function",
+"doc": "Computes the cost and permutation associated to the min-Pivot Sliced"
+},
+{
+"area": "ot",
+"name": "semidiscrete_wasserstein2_unif_circle",
+"kind": "function",
+"doc": "Computes the closed-form for the 2-Wasserstein distance between samples and a uniform distribution on :math:`S"
+},
+{
+"area": "ot",
+"name": "sinkhorn",
+"kind": "function",
+"doc": "Solve the entropic regularization optimal transport problem and return the OT matrix"
+},
+{
+"area": "ot",
+"name": "sinkhorn2",
+"kind": "function",
+"doc": "Solve the entropic regularization optimal transport problem and return the loss"
+},
+{
+"area": "ot",
+"name": "sinkhorn_lpl1_mm",
+"kind": "function",
+"doc": "Solve the entropic regularization optimal transport problem with non-convex"
+},
+{
+"area": "ot",
+"name": "sinkhorn_unbalanced",
+"kind": "function",
+"doc": "Solve the unbalanced entropic regularization optimal transport problem"
+},
+{
+"area": "ot",
+"name": "sinkhorn_unbalanced2",
+"kind": "function",
+"doc": "Solve the entropic regularization unbalanced optimal transport problem and"
+},
+{
+"area": "ot",
+"name": "sliced_unbalanced_ot",
+"kind": "function",
+"doc": "Compute the Sliced Unbalanced Optimal Transport (SUOT) between two empirical distributions."
+},
+{
+"area": "ot",
+"name": "sliced_wasserstein_distance",
+"kind": "function",
+"doc": "Computes a Monte-Carlo approximation of the p-Sliced Wasserstein distance"
+},
+{
+"area": "ot",
+"name": "sliced_wasserstein_sphere",
+"kind": "function",
+"doc": "Compute the spherical sliced-Wasserstein discrepancy."
+},
+{
+"area": "ot",
+"name": "sliced_wasserstein_sphere_unif",
+"kind": "function",
+"doc": "Compute the 2-spherical sliced wasserstein w.r.t. a uniform distribution."
+},
+{
+"area": "ot",
+"name": "solve",
+"kind": "function",
+"doc": "Solve the discrete optimal transport problem and return :any:`OTResult` object"
+},
+{
+"area": "ot",
+"name": "solve_bary_sample",
+"kind": "function",
+"doc": "Solve the discrete OT barycenter problem over source distributions optimizing the barycenter support using Blo"
+},
+{
+"area": "ot",
+"name": "solve_batch",
+"kind": "function",
+"doc": "Return solutions of a batch of discrete optimal transport problems in a :any:`OTResult` object."
+},
+{
+"area": "ot",
+"name": "solve_gromov",
+"kind": "function",
+"doc": "Solve the discrete (Fused) Gromov-Wasserstein and return :any:`OTResult` object"
+},
+{
+"area": "ot",
+"name": "solve_gromov_batch",
+"kind": "function",
+"doc": "Solves a batch of Gromov-Wasserstein optimal transport problems using proximal gradient [12, 81]."
+},
+{
+"area": "ot",
+"name": "solve_sample",
+"kind": "function",
+"doc": "Solve the discrete optimal transport problem using the samples in the source and target domains."
+},
+{
+"area": "ot",
+"name": "solve_sample_batch",
+"kind": "function",
+"doc": "Return solutions of a batch of discrete optimal transport problems in a :any:`OTResult` object computed from b"
+},
+{
+"area": "ot",
+"name": "tic",
+"kind": "function",
+"doc": "Python implementation of Matlab tic() function"
+},
+{
+"area": "ot",
+"name": "toc",
+"kind": "function",
+"doc": "Python implementation of Matlab toc() function"
+},
+{
+"area": "ot",
+"name": "toq",
+"kind": "function",
+"doc": "Python implementation of Julia toc() function"
+},
+{
+"area": "ot",
+"name": "unbalanced_sliced_ot",
+"kind": "function",
+"doc": "Compute the Unbalanced Sliced Optimal Transpot (USOT) with KL regularization between two empirical distributio"
+},
+{
+"area": "ot",
+"name": "unif",
+"kind": "function",
+"doc": "Return a uniform histogram of length `n` (simplex)."
+},
+{
+"area": "ot",
+"name": "uot_1d",
+"kind": "function",
+"doc": "Solves the 1D unbalanced OT problem with KL regularization."
+},
+{
+"area": "ot",
+"name": "wasserstein_1d",
+"kind": "function",
+"doc": "Computes the 1 dimensional OT loss [15] between two (batched) empirical"
+},
+{
+"area": "ot",
+"name": "wasserstein_circle",
+"kind": "function",
+"doc": "Computes the Wasserstein distance on the circle using either :ref:`[45] <references-wasserstein-circle>` for p"
+},
+{
+"area": "ot",
+"name": "weak_optimal_transport",
+"kind": "function",
+"doc": "Solves the weak optimal transport problem between two empirical distributions"
+},
+{
+"area": "ot.batch",
+"name": "bregman_log_projection_batch",
+"kind": "function",
+"doc": "Apply Bregman projection to a batch of affinity matrices :math:`\\exp(\\mathbf{K})`."
+},
+{
+"area": "ot.batch",
+"name": "bregman_projection_batch",
+"kind": "function",
+"doc": "Apply Bregman projection to a batch of affinity matrices :math:`\\mathbf{K}`."
+},
+{
+"area": "ot.batch",
+"name": "dist_batch",
+"kind": "function",
+"doc": "Batched version of ot.dist, use it to compute many distance matrices in parallel."
+},
+{
+"area": "ot.batch",
+"name": "entropy_batch",
+"kind": "function",
+"doc": "Computes the entropy of a batch of transport plans T."
+},
+{
+"area": "ot.batch",
+"name": "loss_linear_batch",
+"kind": "function",
+"doc": "Computes the linear optimal transport loss given a batch cost matrices and transport plans."
+},
+{
+"area": "ot.batch",
+"name": "loss_linear_samples_batch",
+"kind": "function",
+"doc": "Computes the linear optimal transport loss given samples and transport plan. This is the equivalent of"
+},
+{
+"area": "ot.batch",
+"name": "loss_quadratic_batch",
+"kind": "function",
+"doc": "Computes the gromov-wasserstein for samples Ca, Cb and transport plan. Batched version."
+},
+{
+"area": "ot.batch",
+"name": "loss_quadratic_samples_batch",
+"kind": "function",
+"doc": "DEPRECATED: Use ot.batch.loss_quadratic_batch instead."
+},
+{
+"area": "ot.batch",
+"name": "proximal_bregman_log_plan_batch",
+"kind": "function",
+"doc": "Returns optimal transport plans for a batch of cost matrices :math:`\\mathbf{C}` using a Bregman divergence bas"
+},
+{
+"area": "ot.batch",
+"name": "solve_batch",
+"kind": "function",
+"doc": "Return solutions of a batch of discrete optimal transport problems in a :any:`OTResult` object."
+},
+{
+"area": "ot.batch",
+"name": "solve_gromov_batch",
+"kind": "function",
+"doc": "Solves a batch of Gromov-Wasserstein optimal transport problems using proximal gradient [12, 81]."
+},
+{
+"area": "ot.batch",
+"name": "solve_sample_batch",
+"kind": "function",
+"doc": "Return solutions of a batch of discrete optimal transport problems in a :any:`OTResult` object computed from b"
+},
+{
+"area": "ot.batch",
+"name": "tensor_batch",
+"kind": "function",
+"doc": "Compute the Gromov-Wasserstein cost tensor for a batch of problems."
+},
+{
+"area": "ot.bregman",
+"name": "barycenter",
+"kind": "function",
+"doc": "Compute the entropic regularized wasserstein barycenter of distributions :math:`\\mathbf{A}`"
+},
+{
+"area": "ot.bregman",
+"name": "barycenter_debiased",
+"kind": "function",
+"doc": "Compute the debiased Sinkhorn barycenter of distributions A"
+},
+{
+"area": "ot.bregman",
+"name": "barycenter_sinkhorn",
+"kind": "function",
+"doc": "Compute the entropic regularized wasserstein barycenter of distributions :math:`\\mathbf{A}`"
+},
+{
+"area": "ot.bregman",
+"name": "barycenter_stabilized",
+"kind": "function",
+"doc": "Compute the entropic regularized wasserstein barycenter of distributions :math:`\\mathbf{A}` with stabilization"
+},
+{
+"area": "ot.bregman",
+"name": "convolutional_barycenter2d",
+"kind": "function",
+"doc": "Compute the entropic regularized wasserstein barycenter of distributions :math:`\\mathbf{A}`"
+},
+{
+"area": "ot.bregman",
+"name": "convolutional_barycenter2d_debiased",
+"kind": "function",
+"doc": "Compute the debiased sinkhorn barycenter of distributions :math:`\\mathbf{A}`"
+},
+{
+"area": "ot.bregman",
+"name": "empirical_sinkhorn",
+"kind": "function",
+"doc": "Solve the entropic regularization optimal transport problem and return the"
+},
+{
+"area": "ot.bregman",
+"name": "empirical_sinkhorn2",
+"kind": "function",
+"doc": "Solve the entropic regularization optimal transport problem from empirical"
+},
+{
+"area": "ot.bregman",
+"name": "empirical_sinkhorn2_geomloss",
+"kind": "function",
+"doc": "Solve the entropic regularization optimal transport problem with geomloss"
+},
+{
+"area": "ot.bregman",
+"name": "empirical_sinkhorn_divergence",
+"kind": "function",
+"doc": "Compute the sinkhorn divergence loss from empirical data"
+},
+{
+"area": "ot.bregman",
+"name": "empirical_sinkhorn_nystroem",
+"kind": "function",
+"doc": "Solves the entropic regularization optimal transport problem with Sinkhorn and Nystroem factorization [76] and"
+},
+{
+"area": "ot.bregman",
+"name": "empirical_sinkhorn_nystroem2",
+"kind": "function",
+"doc": "Solves the entropic regularization optimal transport problem with Sinkhorn and Nystroem factorization [76] and"
+},
+{
+"area": "ot.bregman",
+"name": "free_support_sinkhorn_barycenter",
+"kind": "function",
+"doc": "Solves the free support (locations of the barycenters are optimized, not the weights) regularized Wasserstein "
+},
+{
+"area": "ot.bregman",
+"name": "geometricBar",
+"kind": "function",
+"doc": "return the weighted geometric mean of distributions"
+},
+{
+"area": "ot.bregman",
+"name": "geometricMean",
+"kind": "function",
+"doc": "return the  geometric mean of distributions"
+},
+{
+"area": "ot.bregman",
+"name": "greenkhorn",
+"kind": "function",
+"doc": "Solve the entropic regularization optimal transport problem and return the OT matrix"
+},
+{
+"area": "ot.bregman",
+"name": "jcpot_barycenter",
+"kind": "function",
+"doc": "Joint OT and proportion estimation for multi-source target shift as"
+},
+{
+"area": "ot.bregman",
+"name": "projC",
+"kind": "function",
+"doc": "return the KL projection on the column constraints"
+},
+{
+"area": "ot.bregman",
+"name": "projR",
+"kind": "function",
+"doc": "return the KL projection on the row constraints"
+},
+{
+"area": "ot.bregman",
+"name": "screenkhorn",
+"kind": "function",
+"doc": "Screening Sinkhorn Algorithm for Regularized Optimal Transport"
+},
+{
+"area": "ot.bregman",
+"name": "sinkhorn",
+"kind": "function",
+"doc": "Solve the entropic regularization optimal transport problem and return the OT matrix"
+},
+{
+"area": "ot.bregman",
+"name": "sinkhorn2",
+"kind": "function",
+"doc": "Solve the entropic regularization optimal transport problem and return the loss"
+},
+{
+"area": "ot.bregman",
+"name": "sinkhorn_epsilon_scaling",
+"kind": "function",
+"doc": "Solve the entropic regularization optimal transport problem with log"
+},
+{
+"area": "ot.bregman",
+"name": "sinkhorn_knopp",
+"kind": "function",
+"doc": "Solve the entropic regularization optimal transport problem and return the OT matrix"
+},
+{
+"area": "ot.bregman",
+"name": "sinkhorn_log",
+"kind": "function",
+"doc": "Solve the entropic regularization optimal transport problem in log space"
+},
+{
+"area": "ot.bregman",
+"name": "sinkhorn_stabilized",
+"kind": "function",
+"doc": "Solve the entropic regularization OT problem with log stabilization"
+},
+{
+"area": "ot.bregman",
+"name": "unmix",
+"kind": "function",
+"doc": "Compute the unmixing of an observation with a given dictionary using Wasserstein distance"
+},
+{
+"area": "ot.coot",
+"name": "co_optimal_transport",
+"kind": "function",
+"doc": "Compute the CO-Optimal Transport between two matrices."
+},
+{
+"area": "ot.coot",
+"name": "co_optimal_transport2",
+"kind": "function",
+"doc": "Compute the CO-Optimal Transport distance between two measures."
+},
+{
+"area": "ot.da",
+"name": "BaseTransport",
+"kind": "class",
+"doc": "Base class for OTDA objects"
+},
+{
+"area": "ot.da",
+"name": "EMDLaplaceTransport",
+"kind": "class",
+"doc": "Domain Adaptation OT method based on Earth Mover's Distance with Laplacian regularization"
+},
+{
+"area": "ot.da",
+"name": "EMDTransport",
+"kind": "class",
+"doc": "Domain Adaptation OT method based on Earth Mover's Distance"
+},
+{
+"area": "ot.da",
+"name": "JCPOTTransport",
+"kind": "class",
+"doc": "Domain Adaptation OT method for multi-source target shift based on Wasserstein barycenter algorithm."
+},
+{
+"area": "ot.da",
+"name": "LinearGWTransport",
+"kind": "class",
+"doc": "OT Gaussian Gromov-Wasserstein linear operator between empirical distributions"
+},
+{
+"area": "ot.da",
+"name": "LinearTransport",
+"kind": "class",
+"doc": "OT linear operator between empirical distributions"
+},
+{
+"area": "ot.da",
+"name": "MappingTransport",
+"kind": "class",
+"doc": "MappingTransport: DA methods that aims at jointly estimating a optimal"
+},
+{
+"area": "ot.da",
+"name": "NearestBrenierPotential",
+"kind": "class",
+"doc": "Smooth Strongly Convex Nearest Brenier Potentials (SSNB) is a method from :ref:`[58]` that computes"
+},
+{
+"area": "ot.da",
+"name": "SinkhornL1l2Transport",
+"kind": "class",
+"doc": "Domain Adaptation OT method based on sinkhorn algorithm +"
+},
+{
+"area": "ot.da",
+"name": "SinkhornLpl1Transport",
+"kind": "class",
+"doc": "Domain Adaptation OT method based on sinkhorn algorithm +"
+},
+{
+"area": "ot.da",
+"name": "SinkhornTransport",
+"kind": "class",
+"doc": "Domain Adaptation OT method based on Sinkhorn Algorithm"
+},
+{
+"area": "ot.da",
+"name": "UnbalancedSinkhornTransport",
+"kind": "class",
+"doc": "Domain Adaptation unbalanced OT method based on sinkhorn algorithm"
+},
+{
+"area": "ot.da",
+"name": "distribution_estimation_uniform",
+"kind": "function",
+"doc": "estimates a uniform distribution from an array of samples :math:`\\mathbf{X}`"
+},
+{
+"area": "ot.da",
+"name": "emd_laplace",
+"kind": "function",
+"doc": "Solve the optimal transport problem (OT) with Laplacian regularization"
+},
+{
+"area": "ot.da",
+"name": "sinkhorn_l1l2_gl",
+"kind": "function",
+"doc": "Solve the entropic regularization optimal transport problem with group"
+},
+{
+"area": "ot.da",
+"name": "sinkhorn_lpl1_mm",
+"kind": "function",
+"doc": "Solve the entropic regularization optimal transport problem with non-convex"
+},
+{
+"area": "ot.datasets",
+"name": "make_1D_gauss",
+"kind": "function",
+"doc": "return a 1D histogram for a gaussian distribution (`n` bins, mean `m` and std `s`)"
+},
+{
+"area": "ot.datasets",
+"name": "make_2D_samples_gauss",
+"kind": "function",
+"doc": "Return `n` samples drawn from 2D gaussian :math:`\\mathcal{N}(m, \\sigma)`"
+},
+{
+"area": "ot.datasets",
+"name": "make_data_classif",
+"kind": "function",
+"doc": "Dataset generation for classification problems"
+},
+{
+"area": "ot.datasets",
+"name": "make_gauss_hd",
+"kind": "function",
+"doc": "Generation of source and target domains from Gaussian HD distributions"
+},
+{
+"area": "ot.factored",
+"name": "factored_optimal_transport",
+"kind": "function",
+"doc": "Solves factored OT problem and return OT plans and intermediate distribution"
+},
+{
+"area": "ot.gaussian",
+"name": "bures_barycenter_fixpoint",
+"kind": "function",
+"doc": "Return the (Bures-)Wasserstein barycenter between centered Gaussian distributions."
+},
+{
+"area": "ot.gaussian",
+"name": "bures_barycenter_gradient_descent",
+"kind": "function",
+"doc": "Return the (Bures-)Wasserstein barycenter between centered Gaussian distributions."
+},
+{
+"area": "ot.gaussian",
+"name": "bures_distance",
+"kind": "function",
+"doc": "Return Bures distance."
+},
+{
+"area": "ot.gaussian",
+"name": "bures_wasserstein_barycenter",
+"kind": "function",
+"doc": "Return the (Bures-)Wasserstein barycenter between Gaussian distributions."
+},
+{
+"area": "ot.gaussian",
+"name": "bures_wasserstein_distance",
+"kind": "function",
+"doc": "Return Bures Wasserstein distance between samples."
+},
+{
+"area": "ot.gaussian",
+"name": "bures_wasserstein_distance_hd",
+"kind": "function",
+"doc": "Return the 2-Wassestein distance between HD Gaussian distritutions."
+},
+{
+"area": "ot.gaussian",
+"name": "bures_wasserstein_mapping",
+"kind": "function",
+"doc": "Return OT linear operator between samples."
+},
+{
+"area": "ot.gaussian",
+"name": "bures_wasserstein_mapping_hd",
+"kind": "function",
+"doc": "Return OT linear operator between HD Gaussian distritutions."
+},
+{
+"area": "ot.gaussian",
+"name": "empirical_bures_wasserstein_barycenter",
+"kind": "function",
+"doc": "Return OT linear operator between samples."
+},
+{
+"area": "ot.gaussian",
+"name": "empirical_bures_wasserstein_distance",
+"kind": "function",
+"doc": "Return Bures Wasserstein distance from mean and covariance of distribution."
+},
+{
+"area": "ot.gaussian",
+"name": "empirical_bures_wasserstein_distance_hd",
+"kind": "function",
+"doc": "Return 2D Wasserstein between high-dimensional (HD) Gaussian distributions."
+},
+{
+"area": "ot.gaussian",
+"name": "empirical_bures_wasserstein_mapping",
+"kind": "function",
+"doc": "Return OT linear operator between samples."
+},
+{
+"area": "ot.gaussian",
+"name": "empirical_bures_wasserstein_mapping_hd",
+"kind": "function",
+"doc": "Return OT HD linear operator between samples."
+},
+{
+"area": "ot.gaussian",
+"name": "empirical_gaussian_gromov_wasserstein_distance",
+"kind": "function",
+"doc": "Return Gaussian Gromov-Wasserstein distance between samples."
+},
+{
+"area": "ot.gaussian",
+"name": "empirical_gaussian_gromov_wasserstein_mapping",
+"kind": "function",
+"doc": "Return Gaussian Gromov-Wasserstein mapping between samples."
+},
+{
+"area": "ot.gaussian",
+"name": "gaussian_gromov_wasserstein_distance",
+"kind": "function",
+"doc": "Return the Gaussian Gromov-Wasserstein value from [57]."
+},
+{
+"area": "ot.gaussian",
+"name": "gaussian_gromov_wasserstein_mapping",
+"kind": "function",
+"doc": "Return the Gaussian Gromov-Wasserstein mapping from [57]."
+},
+{
+"area": "ot.gmm",
+"name": "dist_bures_squared",
+"kind": "function",
+"doc": "Compute the matrix of the squared Bures distances between the components of"
+},
+{
+"area": "ot.gmm",
+"name": "gaussian_logpdf",
+"kind": "function",
+"doc": "Compute the log of the probability density function of a multivariate"
+},
+{
+"area": "ot.gmm",
+"name": "gaussian_pdf",
+"kind": "function",
+"doc": "Compute the probability density function of a multivariate"
+},
+{
+"area": "ot.gmm",
+"name": "gmm_barycenter_fixed_point",
+"kind": "function",
+"doc": "Solves the Gaussian Mixture Model OT barycenter problem (defined in [69])"
+},
+{
+"area": "ot.gmm",
+"name": "gmm_ot_apply_map",
+"kind": "function",
+"doc": "Apply Gaussian Mixture Model (GMM) optimal transport (OT) mapping to input"
+},
+{
+"area": "ot.gmm",
+"name": "gmm_ot_loss",
+"kind": "function",
+"doc": "Compute the Gaussian Mixture Model (GMM) Optimal Transport distance between"
+},
+{
+"area": "ot.gmm",
+"name": "gmm_ot_plan",
+"kind": "function",
+"doc": "Compute the Gaussian Mixture Model (GMM) Optimal Transport plan between"
+},
+{
+"area": "ot.gmm",
+"name": "gmm_ot_plan_density",
+"kind": "function",
+"doc": "Compute the density of the Gaussian Mixture Model - Optimal Transport"
+},
+{
+"area": "ot.gmm",
+"name": "gmm_pdf",
+"kind": "function",
+"doc": "Compute the probability density function (PDF) of a"
+},
+{
+"area": "ot.gnn",
+"name": "FGW_distance_to_templates",
+"kind": "function",
+"doc": "Computes the FGW distances between a graph and templates."
+},
+{
+"area": "ot.gnn",
+"name": "TFGWPooling",
+"kind": "class",
+"doc": "Template Fused Gromov-Wasserstein (TFGW) layer. This layer is a pooling layer for graph neural networks."
+},
+{
+"area": "ot.gnn",
+"name": "TWPooling",
+"kind": "class",
+"doc": "Template Wasserstein (TW) layer, also known as OT-GNN layer. This layer is a pooling layer for graph neural ne"
+},
+{
+"area": "ot.gnn",
+"name": "wasserstein_distance_to_templates",
+"kind": "function",
+"doc": "Computes the Wasserstein distances between a graph and graph templates."
+},
+{
+"area": "ot.gromov",
+"name": "BAPG_fused_gromov_wasserstein",
+"kind": "function",
+"doc": "Returns the Fused Gromov-Wasserstein transport between :math:`(\\mathbf{C_1}, \\mathbf{Y_1}, \\mathbf{p})` and :m"
+},
+{
+"area": "ot.gromov",
+"name": "BAPG_fused_gromov_wasserstein2",
+"kind": "function",
+"doc": "Returns the Fused Gromov-Wasserstein loss between :math:`(\\mathbf{C_1}, \\mathbf{Y_1}, \\mathbf{p})` and :math:`"
+},
+{
+"area": "ot.gromov",
+"name": "BAPG_gromov_wasserstein",
+"kind": "function",
+"doc": "Returns the Gromov-Wasserstein transport between :math:`(\\mathbf{C_1}, \\mathbf{p})` and :math:`(\\mathbf{C_2}, "
+},
+{
+"area": "ot.gromov",
+"name": "BAPG_gromov_wasserstein2",
+"kind": "function",
+"doc": "Returns the Gromov-Wasserstein loss :math:`\\mathbf{GW}` between :math:`(\\mathbf{C_1}, \\mathbf{p})` and :math:`"
+},
+{
+"area": "ot.gromov",
+"name": "GW_distance_estimation",
+"kind": "function",
+"doc": "Returns an approximation of the Gromov-Wasserstein loss between :math:`(\\mathbf{C_1}, \\mathbf{p})` and :math:`"
+},
+{
+"area": "ot.gromov",
+"name": "div_between_product",
+"kind": "function",
+"doc": "Fast computation of the Bregman divergence between two product measures."
+},
+{
+"area": "ot.gromov",
+"name": "div_to_product",
+"kind": "function",
+"doc": "Fast computation of the Bregman divergence between an arbitrary measure and a product measure."
+},
+{
+"area": "ot.gromov",
+"name": "entropic_fused_gromov_barycenters",
+"kind": "function",
+"doc": "Returns the Fused Gromov-Wasserstein barycenters of `S` measurable networks with node features :math:`(\\mathbf"
+},
+{
+"area": "ot.gromov",
+"name": "entropic_fused_gromov_wasserstein",
+"kind": "function",
+"doc": "Returns the Fused Gromov-Wasserstein transport between :math:`(\\mathbf{C_1}, \\mathbf{Y_1}, \\mathbf{p})` and :m"
+},
+{
+"area": "ot.gromov",
+"name": "entropic_fused_gromov_wasserstein2",
+"kind": "function",
+"doc": "Returns the Fused Gromov-Wasserstein distance between :math:`(\\mathbf{C_1}, \\mathbf{Y_1}, \\mathbf{p})` and :ma"
+},
+{
+"area": "ot.gromov",
+"name": "entropic_gromov_barycenters",
+"kind": "function",
+"doc": "Returns the Gromov-Wasserstein barycenters of `S` measured similarity matrices :math:`(\\mathbf{C}_s)_{1 \\leq s"
+},
+{
+"area": "ot.gromov",
+"name": "entropic_gromov_wasserstein",
+"kind": "function",
+"doc": "Returns the Gromov-Wasserstein transport between :math:`(\\mathbf{C_1}, \\mathbf{p})` and :math:`(\\mathbf{C_2}, "
+},
+{
+"area": "ot.gromov",
+"name": "entropic_gromov_wasserstein2",
+"kind": "function",
+"doc": "Returns the Gromov-Wasserstein loss :math:`\\mathbf{GW}` between :math:`(\\mathbf{C_1}, \\mathbf{p})` and :math:`"
+},
+{
+"area": "ot.gromov",
+"name": "entropic_partial_fused_gromov_wasserstein",
+"kind": "function",
+"doc": "Returns the entropic partial Fused Gromov-Wasserstein transport between"
+},
+{
+"area": "ot.gromov",
+"name": "entropic_partial_fused_gromov_wasserstein2",
+"kind": "function",
+"doc": "Returns the entropic partial Fused Gromov-Wasserstein discrepancy between"
+},
+{
+"area": "ot.gromov",
+"name": "entropic_partial_gromov_wasserstein",
+"kind": "function",
+"doc": "Returns the partial Gromov-Wasserstein transport between"
+},
+{
+"area": "ot.gromov",
+"name": "entropic_partial_gromov_wasserstein2",
+"kind": "function",
+"doc": "Returns the partial Gromov-Wasserstein discrepancy between"
+},
+{
+"area": "ot.gromov",
+"name": "entropic_semirelaxed_fused_gromov_wasserstein",
+"kind": "function",
+"doc": "Computes the entropic-regularized semi-relaxed FGW transport between two graphs (see :ref:`[48] <references-se"
+},
+{
+"area": "ot.gromov",
+"name": "entropic_semirelaxed_fused_gromov_wasserstein2",
+"kind": "function",
+"doc": "Computes the entropic-regularized semi-relaxed FGW divergence between two graphs (see :ref:`[48] <references-s"
+},
+{
+"area": "ot.gromov",
+"name": "entropic_semirelaxed_gromov_wasserstein",
+"kind": "function",
+"doc": "Returns the entropic-regularized semi-relaxed gromov-wasserstein divergence"
+},
+{
+"area": "ot.gromov",
+"name": "entropic_semirelaxed_gromov_wasserstein2",
+"kind": "function",
+"doc": "Returns the entropic-regularized semi-relaxed gromov-wasserstein divergence"
+},
+{
+"area": "ot.gromov",
+"name": "fgw_barycenters",
+"kind": "function",
+"doc": "Returns the Fused Gromov-Wasserstein barycenters of `S` measurable networks with node features :math:`(\\mathbf"
+},
+{
+"area": "ot.gromov",
+"name": "format_partitioned_graph",
+"kind": "function",
+"doc": "Format an attributed graph :math:`(\\mathbf{C}, \\mathbf{F}, \\mathbf{p})`"
+},
+{
+"area": "ot.gromov",
+"name": "format_partitioned_samples",
+"kind": "function",
+"doc": "Format an attributed graph :math:`(\\mathbf{D}(\\mathbf{X}), \\mathbf{F}, \\mathbf{p})`"
+},
+{
+"area": "ot.gromov",
+"name": "fused_gromov_wasserstein",
+"kind": "function",
+"doc": "Returns the Fused Gromov-Wasserstein transport between :math:`(\\mathbf{C_1}, \\mathbf{Y_1}, \\mathbf{p})` and :m"
+},
+{
+"area": "ot.gromov",
+"name": "fused_gromov_wasserstein2",
+"kind": "function",
+"doc": "Returns the Fused Gromov-Wasserstein distance between :math:`(\\mathbf{C_1}, \\mathbf{Y_1}, \\mathbf{p})` and :ma"
+},
+{
+"area": "ot.gromov",
+"name": "fused_gromov_wasserstein_dictionary_learning",
+"kind": "function",
+"doc": "Infer Fused Gromov-Wasserstein linear dictionary :math:`\\{ (\\mathbf{C_{dict}[d]}, \\mathbf{Y_{dict}[d]}, \\mathb"
+},
+{
+"area": "ot.gromov",
+"name": "fused_gromov_wasserstein_linear_unmixing",
+"kind": "function",
+"doc": "Returns the Fused Gromov-Wasserstein linear unmixing of :math:`(\\mathbf{C},\\mathbf{Y},\\mathbf{p})` onto the at"
+},
+{
+"area": "ot.gromov",
+"name": "fused_unbalanced_across_spaces_cost",
+"kind": "function",
+"doc": "Return the fused unbalanced across-space divergence between two spaces"
+},
+{
+"area": "ot.gromov",
+"name": "fused_unbalanced_across_spaces_divergence",
+"kind": "function",
+"doc": "Compute the fused unbalanced cross-spaces divergence between two matrices equipped"
+},
+{
+"area": "ot.gromov",
+"name": "fused_unbalanced_gromov_wasserstein",
+"kind": "function",
+"doc": "Compute the lower bound of the fused unbalanced Gromov-Wasserstein (FUGW) between two similarity matrices."
+},
+{
+"area": "ot.gromov",
+"name": "fused_unbalanced_gromov_wasserstein2",
+"kind": "function",
+"doc": "Compute the lower bound of the fused unbalanced Gromov-Wasserstein (FUGW) between two similarity matrices."
+},
+{
+"area": "ot.gromov",
+"name": "get_graph_partition",
+"kind": "function",
+"doc": "Partitioning a given graph with structure matrix :math:`\\mathbf{C} \\in R^{n \\times n}`"
+},
+{
+"area": "ot.gromov",
+"name": "get_graph_representants",
+"kind": "function",
+"doc": "Get representative node for each partition given by :math:`\\mathbf{part} \\in R^{n}`"
+},
+{
+"area": "ot.gromov",
+"name": "get_partition_and_representants_samples",
+"kind": "function",
+"doc": "Compute `npart` partitions and representants over samples :math:`\\mathbf{X} \\in R^{n \\times d}`"
+},
+{
+"area": "ot.gromov",
+"name": "gromov_barycenters",
+"kind": "function",
+"doc": "Returns the Gromov-Wasserstein barycenters of `S` measured similarity matrices :math:`(\\mathbf{C}_s)_{1 \\leq s"
+},
+{
+"area": "ot.gromov",
+"name": "gromov_wasserstein",
+"kind": "function",
+"doc": "Returns the Gromov-Wasserstein transport between :math:`(\\mathbf{C_1}, \\mathbf{p})` and :math:`(\\mathbf{C_2}, "
+},
+{
+"area": "ot.gromov",
+"name": "gromov_wasserstein2",
+"kind": "function",
+"doc": "Returns the Gromov-Wasserstein loss :math:`\\mathbf{GW}` between :math:`(\\mathbf{C_1}, \\mathbf{p})` and :math:`"
+},
+{
+"area": "ot.gromov",
+"name": "gromov_wasserstein_dictionary_learning",
+"kind": "function",
+"doc": "Infer Gromov-Wasserstein linear dictionary :math:`\\{ (\\mathbf{C_{dict}[d]}, q) \\}_{d \\in [D]}`  from the list "
+},
+{
+"area": "ot.gromov",
+"name": "gromov_wasserstein_linear_unmixing",
+"kind": "function",
+"doc": "Returns the Gromov-Wasserstein linear unmixing of :math:`(\\mathbf{C},\\mathbf{p})` onto the dictionary :math:`\\"
+},
+{
+"area": "ot.gromov",
+"name": "gwggrad",
+"kind": "function",
+"doc": "Return the gradient for Gromov-Wasserstein"
+},
+{
+"area": "ot.gromov",
+"name": "gwloss",
+"kind": "function",
+"doc": "Return the Loss for Gromov-Wasserstein"
+},
+{
+"area": "ot.gromov",
+"name": "init_matrix",
+"kind": "function",
+"doc": "Return loss matrices and tensors for Gromov-Wasserstein fast computation"
+},
+{
+"area": "ot.gromov",
+"name": "init_matrix_semirelaxed",
+"kind": "function",
+"doc": "Return loss matrices and tensors for semi-relaxed Gromov-Wasserstein fast computation"
+},
+{
+"area": "ot.gromov",
+"name": "lowrank_gromov_wasserstein_samples",
+"kind": "function",
+"doc": "Solve the entropic regularization Gromov-Wasserstein transport problem under low-nonnegative rank constraints"
+},
+{
+"area": "ot.gromov",
+"name": "partial_fused_gromov_wasserstein",
+"kind": "function",
+"doc": "Returns the Partial Fused Gromov-Wasserstein transport between :math:`(\\mathbf{C_1}, \\mathbf{F_1}, \\mathbf{p})"
+},
+{
+"area": "ot.gromov",
+"name": "partial_fused_gromov_wasserstein2",
+"kind": "function",
+"doc": "Returns the Partial Fused Gromov-Wasserstein discrepancy between :math:`(\\mathbf{C_1}, \\mathbf{F_1}, \\mathbf{p"
+},
+{
+"area": "ot.gromov",
+"name": "partial_gromov_wasserstein",
+"kind": "function",
+"doc": "Returns the Partial Gromov-Wasserstein transport between :math:`(\\mathbf{C_1}, \\mathbf{p})`"
+},
+{
+"area": "ot.gromov",
+"name": "partial_gromov_wasserstein2",
+"kind": "function",
+"doc": "Returns the Partial Gromov-Wasserstein discrepancy between"
+},
+{
+"area": "ot.gromov",
+"name": "pointwise_gromov_wasserstein",
+"kind": "function",
+"doc": "Returns the gromov-wasserstein transport between :math:`(\\mathbf{C_1}, \\mathbf{p})` and :math:`(\\mathbf{C_2}, "
+},
+{
+"area": "ot.gromov",
+"name": "quantized_fused_gromov_wasserstein",
+"kind": "function",
+"doc": "Returns the quantized Fused Gromov-Wasserstein transport between"
+},
+{
+"area": "ot.gromov",
+"name": "quantized_fused_gromov_wasserstein_partitioned",
+"kind": "function",
+"doc": "Returns the quantized Fused Gromov-Wasserstein transport between"
+},
+{
+"area": "ot.gromov",
+"name": "quantized_fused_gromov_wasserstein_samples",
+"kind": "function",
+"doc": "Returns the quantized Fused Gromov-Wasserstein transport between samples"
+},
+{
+"area": "ot.gromov",
+"name": "sampled_gromov_wasserstein",
+"kind": "function",
+"doc": "Returns the gromov-wasserstein transport between :math:`(\\mathbf{C_1}, \\mathbf{p})` and :math:`(\\mathbf{C_2}, "
+},
+{
+"area": "ot.gromov",
+"name": "semirelaxed_fgw_barycenters",
+"kind": "function",
+"doc": "Returns the Semi-relaxed Fused Gromov-Wasserstein barycenters of `S` measurable networks"
+},
+{
+"area": "ot.gromov",
+"name": "semirelaxed_fused_gromov_wasserstein",
+"kind": "function",
+"doc": "Computes the semi-relaxed Fused Gromov-Wasserstein transport between two graphs (see [48])."
+},
+{
+"area": "ot.gromov",
+"name": "semirelaxed_fused_gromov_wasserstein2",
+"kind": "function",
+"doc": "Computes the semi-relaxed FGW divergence between two graphs (see [48])."
+},
+{
+"area": "ot.gromov",
+"name": "semirelaxed_gromov_barycenters",
+"kind": "function",
+"doc": "Returns the Semi-relaxed Gromov-Wasserstein barycenters of `S` measured similarity matrices"
+},
+{
+"area": "ot.gromov",
+"name": "semirelaxed_gromov_wasserstein",
+"kind": "function",
+"doc": "Returns the semi-relaxed Gromov-Wasserstein divergence transport from :math:`(\\mathbf{C_1}, \\mathbf{p})` to :m"
+},
+{
+"area": "ot.gromov",
+"name": "semirelaxed_gromov_wasserstein2",
+"kind": "function",
+"doc": "Returns the semi-relaxed Gromov-Wasserstein divergence from :math:`(\\mathbf{C_1}, \\mathbf{p})` to :math:`\\math"
+},
+{
+"area": "ot.gromov",
+"name": "semirelaxed_init_plan",
+"kind": "function",
+"doc": "Heuristics to initialize the semi-relaxed (F)GW transport plan"
+},
+{
+"area": "ot.gromov",
+"name": "solve_gromov_linesearch",
+"kind": "function",
+"doc": "Solve the linesearch in the FW iterations for any inner loss that decomposes as in Proposition 1 in :ref:`[12]"
+},
+{
+"area": "ot.gromov",
+"name": "solve_partial_gromov_linesearch",
+"kind": "function",
+"doc": "Solve the linesearch in the FW iterations of partial (F)GW following eq.5 of :ref:`[29]`."
+},
+{
+"area": "ot.gromov",
+"name": "solve_semirelaxed_gromov_linesearch",
+"kind": "function",
+"doc": "Solve the linesearch in the Conditional Gradient iterations for the semi-relaxed Gromov-Wasserstein divergence"
+},
+{
+"area": "ot.gromov",
+"name": "tensor_product",
+"kind": "function",
+"doc": "Return the tensor for Gromov-Wasserstein fast computation"
+},
+{
+"area": "ot.gromov",
+"name": "unbalanced_co_optimal_transport",
+"kind": "function",
+"doc": "Compute the unbalanced Co-Optimal Transport between two Euclidean point clouds"
+},
+{
+"area": "ot.gromov",
+"name": "unbalanced_co_optimal_transport2",
+"kind": "function",
+"doc": "Compute the unbalanced Co-Optimal Transport between two Euclidean point clouds"
+},
+{
+"area": "ot.gromov",
+"name": "uot_cost_matrix",
+"kind": "function",
+"doc": "The Block Coordinate Descent algorithm for FUGW and UCOOT"
+},
+{
+"area": "ot.gromov",
+"name": "uot_parameters_and_measures",
+"kind": "function",
+"doc": "The Block Coordinate Descent algorithm for FUGW and UCOOT"
+},
+{
+"area": "ot.gromov",
+"name": "update_barycenter_feature",
+"kind": "function",
+"doc": "Updates the feature with respect to the `S` :math:`\\mathbf{T}_s`"
+},
+{
+"area": "ot.gromov",
+"name": "update_barycenter_structure",
+"kind": "function",
+"doc": "Updates :math:`\\mathbf{C}` according to the inner loss L with the `S`"
+},
+{
+"area": "ot.lowrank",
+"name": "compute_lr_sqeuclidean_matrix",
+"kind": "function",
+"doc": "Compute the low rank decomposition of a squared euclidean distance matrix."
+},
+{
+"area": "ot.lowrank",
+"name": "kernel_nystroem",
+"kind": "function",
+"doc": "Compute left and right factors corresponding to the Nystroem method on the Gaussian kernel :math:`K(x^s_i, x^t"
+},
+{
+"area": "ot.lowrank",
+"name": "lowrank_sinkhorn",
+"kind": "function",
+"doc": "Solve the entropic regularization optimal transport problem under low-nonnegative rank constraints"
+},
+{
+"area": "ot.lowrank",
+"name": "sinkhorn_low_rank_kernel",
+"kind": "function",
+"doc": "Compute the Sinkhorn algorithm for a kernel :math:`\\mathbf{K}` that can be written as a low rank factorization"
+},
+{
+"area": "ot.lp",
+"name": "NorthWestMMGluing",
+"kind": "function",
+"doc": "Glue transport plans :math:`(\\pi_1, ..., \\pi_K)` which have a common first"
+},
+{
+"area": "ot.lp",
+"name": "barycenter",
+"kind": "function",
+"doc": "Compute the Wasserstein barycenter of distributions A"
+},
+{
+"area": "ot.lp",
+"name": "binary_search_circle",
+"kind": "function",
+"doc": "Computes the Wasserstein distance on the circle using the Binary search algorithm proposed in [44]."
+},
+{
+"area": "ot.lp",
+"name": "check_number_threads",
+"kind": "function",
+"doc": "Checks whether or not the requested number of threads has a valid value."
+},
+{
+"area": "ot.lp",
+"name": "dmmot_monge_1dgrid_loss",
+"kind": "function",
+"doc": "Compute the discrete multi-marginal optimal transport of distributions A."
+},
+{
+"area": "ot.lp",
+"name": "dmmot_monge_1dgrid_optimize",
+"kind": "function",
+"doc": "Minimize the d-dimensional EMD using gradient descent."
+},
+{
+"area": "ot.lp",
+"name": "emd",
+"kind": "function",
+"doc": "Solves the Earth Movers distance problem and returns the OT matrix"
+},
+{
+"area": "ot.lp",
+"name": "emd2",
+"kind": "function",
+"doc": "Solves the Earth Movers distance problem and returns the loss"
+},
+{
+"area": "ot.lp",
+"name": "emd2_1d",
+"kind": "function",
+"doc": "Solves the Earth Movers distance problem between 1d measures and returns"
+},
+{
+"area": "ot.lp",
+"name": "emd2_lazy",
+"kind": "function",
+"doc": "Solves the Earth Movers distance problem with lazy cost computation and returns the loss"
+},
+{
+"area": "ot.lp",
+"name": "emd_1d",
+"kind": "function",
+"doc": "Solves the Earth Movers distance problem between 1d measures and returns"
+},
+{
+"area": "ot.lp",
+"name": "emd_1d_dual_backprop",
+"kind": "function",
+"doc": "Computes the 1 dimensional OT loss between two (batched) empirical"
+},
+{
+"area": "ot.lp",
+"name": "emd_1d_sorted",
+"kind": "function",
+"doc": "Solves the Earth Movers distance problem between sorted 1d measures and"
+},
+{
+"area": "ot.lp",
+"name": "free_support_barycenter",
+"kind": "function",
+"doc": "Solves the free support (locations of the barycenters are optimized, not the weights) Wasserstein barycenter p"
+},
+{
+"area": "ot.lp",
+"name": "free_support_barycenter_generic_costs",
+"kind": "function",
+"doc": "Solves the OT barycenter problem [77] for generic costs using the fixed"
+},
+{
+"area": "ot.lp",
+"name": "generalized_free_support_barycenter",
+"kind": "function",
+"doc": "Solves the free support generalized Wasserstein barycenter problem: finding a barycenter (a discrete measure w"
+},
+{
+"area": "ot.lp",
+"name": "linear_circular_ot",
+"kind": "function",
+"doc": "Computes the Linear Circular Optimal Transport distance from :ref:`[78] <references-lcot>` using :math:`\\eta=\\"
+},
+{
+"area": "ot.lp",
+"name": "ot_barycenter_energy",
+"kind": "function",
+"doc": "Computes the energy of the OT barycenter functional for a given barycenter"
+},
+{
+"area": "ot.lp",
+"name": "semidiscrete_wasserstein2_unif_circle",
+"kind": "function",
+"doc": "Computes the closed-form for the 2-Wasserstein distance between samples and a uniform distribution on :math:`S"
+},
+{
+"area": "ot.lp",
+"name": "wasserstein_1d",
+"kind": "function",
+"doc": "Computes the 1 dimensional OT loss [15] between two (batched) empirical"
+},
+{
+"area": "ot.lp",
+"name": "wasserstein_circle",
+"kind": "function",
+"doc": "Computes the Wasserstein distance on the circle using either :ref:`[45] <references-wasserstein-circle>` for p"
+},
+{
+"area": "ot.mapping",
+"name": "joint_OT_mapping_kernel",
+"kind": "function",
+"doc": "Joint OT and nonlinear mapping estimation with kernels as proposed in"
+},
+{
+"area": "ot.mapping",
+"name": "joint_OT_mapping_linear",
+"kind": "function",
+"doc": "Joint OT and linear mapping estimation as proposed in"
+},
+{
+"area": "ot.mapping",
+"name": "nearest_brenier_potential_fit",
+"kind": "function",
+"doc": "Computes optimal values and gradients at X for a strongly convex potential :math:`\\varphi` with Lipschitz grad"
+},
+{
+"area": "ot.mapping",
+"name": "nearest_brenier_potential_predict_bounds",
+"kind": "function",
+"doc": "Compute the values of the lower and upper bounding potentials at the input points Y, using the potential optim"
+},
+{
+"area": "ot.partial",
+"name": "entropic_partial_gromov_wasserstein",
+"kind": "function",
+"doc": "Returns the partial Gromov-Wasserstein transport between"
+},
+{
+"area": "ot.partial",
+"name": "entropic_partial_gromov_wasserstein2",
+"kind": "function",
+"doc": "Returns the partial Gromov-Wasserstein discrepancy between"
+},
+{
+"area": "ot.partial",
+"name": "entropic_partial_wasserstein",
+"kind": "function",
+"doc": "Solves the partial optimal transport problem"
+},
+{
+"area": "ot.partial",
+"name": "entropic_partial_wasserstein_logscale",
+"kind": "function",
+"doc": "Solves the partial optimal transport problem"
+},
+{
+"area": "ot.partial",
+"name": "gwgrad_partial",
+"kind": "function",
+"doc": "Compute the GW gradient. Note: we can not use the trick in :ref:`[12] <references-gwgrad-partial>`"
+},
+{
+"area": "ot.partial",
+"name": "gwloss_partial",
+"kind": "function",
+"doc": "Compute the GW loss."
+},
+{
+"area": "ot.partial",
+"name": "partial_gromov_wasserstein",
+"kind": "function",
+"doc": "Solves the partial optimal transport problem"
+},
+{
+"area": "ot.partial",
+"name": "partial_gromov_wasserstein2",
+"kind": "function",
+"doc": "Solves the partial optimal transport problem"
+},
+{
+"area": "ot.partial",
+"name": "partial_wasserstein",
+"kind": "function",
+"doc": "Solves the partial optimal transport problem for the quadratic cost"
+},
+{
+"area": "ot.partial",
+"name": "partial_wasserstein2",
+"kind": "function",
+"doc": "Solves the partial optimal transport problem for the quadratic cost"
+},
+{
+"area": "ot.partial",
+"name": "partial_wasserstein_1d",
+"kind": "function",
+"doc": "Solves the partial Wasserstein distance problem between 1d measures and returns"
+},
+{
+"area": "ot.partial",
+"name": "partial_wasserstein_lagrange",
+"kind": "function",
+"doc": "Solves the partial optimal transport problem for the quadratic cost"
+},
+{
+"area": "ot.regpath",
+"name": "complement_schur",
+"kind": "function",
+"doc": "This function computes the inverse of the design matrix in the \\"
+},
+{
+"area": "ot.regpath",
+"name": "compute_next_removal",
+"kind": "function",
+"doc": "This function computes the next gamma value if a variable"
+},
+{
+"area": "ot.regpath",
+"name": "compute_transport_plan",
+"kind": "function",
+"doc": "Given the regularization path, this function computes the transport"
+},
+{
+"area": "ot.regpath",
+"name": "construct_augmented_H",
+"kind": "function",
+"doc": "This function constructs an augmented matrix for the first iteration"
+},
+{
+"area": "ot.regpath",
+"name": "fully_relaxed_path",
+"kind": "function",
+"doc": "This function gives the regularization path of l2-penalized UOT problem"
+},
+{
+"area": "ot.regpath",
+"name": "ot_next_gamma",
+"kind": "function",
+"doc": "This function computes the next value of gamma if a variable"
+},
+{
+"area": "ot.regpath",
+"name": "recast_ot_as_lasso",
+"kind": "function",
+"doc": "This function recasts the l2-penalized UOT problem as a Lasso problem."
+},
+{
+"area": "ot.regpath",
+"name": "recast_semi_relaxed_as_lasso",
+"kind": "function",
+"doc": "This function recasts the semi-relaxed l2-UOT problem as Lasso problem."
+},
+{
+"area": "ot.regpath",
+"name": "regularization_path",
+"kind": "function",
+"doc": "This function provides all the solutions of the regularization path \\"
+},
+{
+"area": "ot.regpath",
+"name": "semi_relaxed_next_gamma",
+"kind": "function",
+"doc": "This function computes the next value of gamma when a variable is"
+},
+{
+"area": "ot.regpath",
+"name": "semi_relaxed_path",
+"kind": "function",
+"doc": "This function gives the regularization path of semi-relaxed"
+},
+{
+"area": "ot.sliced",
+"name": "expected_sliced_plan",
+"kind": "function",
+"doc": "Computes the Expected Sliced cost and plan between two  datasets `X_s` and"
+},
+{
+"area": "ot.sliced",
+"name": "get_projections_sphere",
+"kind": "function",
+"doc": "Generates n_projections samples from the uniform distribution on the Stiefel manifold of dimension :math:`d\\ti"
+},
+{
+"area": "ot.sliced",
+"name": "get_random_projections",
+"kind": "function",
+"doc": "Generates n_projections samples from the uniform on the unit sphere of dimension :math:`d-1`: :math:`\\mathcal{"
+},
+{
+"area": "ot.sliced",
+"name": "linear_sliced_wasserstein_sphere",
+"kind": "function",
+"doc": "Computes the linear spherical sliced wasserstein distance from :ref:`[79] <references-lssot>`."
+},
+{
+"area": "ot.sliced",
+"name": "max_sliced_wasserstein_distance",
+"kind": "function",
+"doc": "Computes a Monte-Carlo approximation of the max p-Sliced Wasserstein distance"
+},
+{
+"area": "ot.sliced",
+"name": "min_sliced_transport_plan",
+"kind": "function",
+"doc": "Computes the cost and permutation associated to the min-Pivot Sliced"
+},
+{
+"area": "ot.sliced",
+"name": "projection_sphere_to_circle",
+"kind": "function",
+"doc": "Projection of :math:`x\\in S^{d-1}` on circles using coordinates on [0,1[."
+},
+{
+"area": "ot.sliced",
+"name": "sliced_plans",
+"kind": "function",
+"doc": "Computes all the permutations that sort the projections of two `(ns, nt)`"
+},
+{
+"area": "ot.sliced",
+"name": "sliced_wasserstein_distance",
+"kind": "function",
+"doc": "Computes a Monte-Carlo approximation of the p-Sliced Wasserstein distance"
+},
+{
+"area": "ot.sliced",
+"name": "sliced_wasserstein_sphere",
+"kind": "function",
+"doc": "Compute the spherical sliced-Wasserstein discrepancy."
+},
+{
+"area": "ot.sliced",
+"name": "sliced_wasserstein_sphere_unif",
+"kind": "function",
+"doc": "Compute the 2-spherical sliced wasserstein w.r.t. a uniform distribution."
+},
+{
+"area": "ot.smooth",
+"name": "NegEntropy",
+"kind": "class",
+"doc": "NegEntropy regularization"
+},
+{
+"area": "ot.smooth",
+"name": "Regularization",
+"kind": "class",
+"doc": "Base class for Regularization objects"
+},
+{
+"area": "ot.smooth",
+"name": "SparsityConstrained",
+"kind": "class",
+"doc": "Squared L2 regularization with sparsity constraints"
+},
+{
+"area": "ot.smooth",
+"name": "SquaredL2",
+"kind": "class",
+"doc": "Squared L2 regularization"
+},
+{
+"area": "ot.smooth",
+"name": "dual_obj_grad",
+"kind": "function",
+"doc": "Compute objective value and gradients of dual objective."
+},
+{
+"area": "ot.smooth",
+"name": "get_plan_from_dual",
+"kind": "function",
+"doc": "Retrieve optimal transportation plan from optimal dual potentials."
+},
+{
+"area": "ot.smooth",
+"name": "get_plan_from_semi_dual",
+"kind": "function",
+"doc": "Retrieve optimal transportation plan from optimal semi-dual potentials."
+},
+{
+"area": "ot.smooth",
+"name": "projection_simplex",
+"kind": "function",
+"doc": "Projection of :math:`\\mathbf{V}` onto the simplex, scaled by `z`"
+},
+{
+"area": "ot.smooth",
+"name": "semi_dual_obj_grad",
+"kind": "function",
+"doc": "Compute objective value and gradient of semi-dual objective."
+},
+{
+"area": "ot.smooth",
+"name": "smooth_ot_dual",
+"kind": "function",
+"doc": "Solve the regularized OT problem in the dual and return the OT matrix"
+},
+{
+"area": "ot.smooth",
+"name": "smooth_ot_semi_dual",
+"kind": "function",
+"doc": "Solve the regularized OT problem in the semi-dual and return the OT matrix"
+},
+{
+"area": "ot.smooth",
+"name": "solve_dual",
+"kind": "function",
+"doc": "Solve the \"smoothed\" dual objective."
+},
+{
+"area": "ot.smooth",
+"name": "solve_semi_dual",
+"kind": "function",
+"doc": "Solve the \"smoothed\" semi-dual objective."
+},
+{
+"area": "ot.solvers",
+"name": "solve",
+"kind": "function",
+"doc": "Solve the discrete optimal transport problem and return :any:`OTResult` object"
+},
+{
+"area": "ot.solvers",
+"name": "solve_bary_sample",
+"kind": "function",
+"doc": "Solve the discrete OT barycenter problem over source distributions optimizing the barycenter support using Blo"
+},
+{
+"area": "ot.solvers",
+"name": "solve_gromov",
+"kind": "function",
+"doc": "Solve the discrete (Fused) Gromov-Wasserstein and return :any:`OTResult` object"
+},
+{
+"area": "ot.solvers",
+"name": "solve_sample",
+"kind": "function",
+"doc": "Solve the discrete optimal transport problem using the samples in the source and target domains."
+},
+{
+"area": "ot.stochastic",
+"name": "averaged_sgd_entropic_transport",
+"kind": "function",
+"doc": "Compute the ASGD algorithm to solve the regularized semi continuous measures optimal transport max problem"
+},
+{
+"area": "ot.stochastic",
+"name": "batch_grad_dual",
+"kind": "function",
+"doc": "Computes the partial gradient of the dual optimal transport problem."
+},
+{
+"area": "ot.stochastic",
+"name": "c_transform_entropic",
+"kind": "function",
+"doc": "The goal is to recover u from the c-transform."
+},
+{
+"area": "ot.stochastic",
+"name": "coordinate_grad_semi_dual",
+"kind": "function",
+"doc": "Compute the coordinate gradient update for regularized discrete distributions for :math:`(i, :)`"
+},
+{
+"area": "ot.stochastic",
+"name": "loss_dual_entropic",
+"kind": "function",
+"doc": "Compute the dual loss of the entropic OT as in equation (6)-(7) of [19]"
+},
+{
+"area": "ot.stochastic",
+"name": "loss_dual_quadratic",
+"kind": "function",
+"doc": "Compute the dual loss of the quadratic regularized OT as in equation (6)-(7) of [19]"
+},
+{
+"area": "ot.stochastic",
+"name": "plan_dual_entropic",
+"kind": "function",
+"doc": "Compute the primal OT plan the entropic OT as in equation (8) of [19]"
+},
+{
+"area": "ot.stochastic",
+"name": "plan_dual_quadratic",
+"kind": "function",
+"doc": "Compute the primal OT plan the quadratic regularized OT as in equation (8) of [19]"
+},
+{
+"area": "ot.stochastic",
+"name": "sag_entropic_transport",
+"kind": "function",
+"doc": "Compute the SAG algorithm to solve the regularized discrete measures optimal transport max problem"
+},
+{
+"area": "ot.stochastic",
+"name": "sgd_entropic_regularization",
+"kind": "function",
+"doc": "Compute the sgd algorithm to solve the regularized discrete measures optimal transport dual problem"
+},
+{
+"area": "ot.stochastic",
+"name": "solve_dual_entropic",
+"kind": "function",
+"doc": "Compute the transportation matrix to solve the regularized discrete measures optimal transport dual problem"
+},
+{
+"area": "ot.stochastic",
+"name": "solve_semi_dual_entropic",
+"kind": "function",
+"doc": "Compute the transportation matrix to solve the regularized discrete measures optimal transport max problem"
+},
+{
+"area": "ot.unbalanced",
+"name": "barycenter_unbalanced",
+"kind": "function",
+"doc": "Compute the entropic unbalanced wasserstein barycenter of :math:`\\mathbf{A}`."
+},
+{
+"area": "ot.unbalanced",
+"name": "barycenter_unbalanced_sinkhorn",
+"kind": "function",
+"doc": "Compute the entropic unbalanced wasserstein barycenter of :math:`\\mathbf{A}`."
+},
+{
+"area": "ot.unbalanced",
+"name": "barycenter_unbalanced_stabilized",
+"kind": "function",
+"doc": "Compute the entropic unbalanced wasserstein barycenter of :math:`\\mathbf{A}` with stabilization."
+},
+{
+"area": "ot.unbalanced",
+"name": "lbfgsb_unbalanced",
+"kind": "function",
+"doc": "Solve the unbalanced optimal transport problem and return the OT plan using L-BFGS-B algorithm."
+},
+{
+"area": "ot.unbalanced",
+"name": "lbfgsb_unbalanced2",
+"kind": "function",
+"doc": "Solve the unbalanced optimal transport problem and return the OT cost using L-BFGS-B."
+},
+{
+"area": "ot.unbalanced",
+"name": "mm_unbalanced",
+"kind": "function",
+"doc": "Solve the unbalanced optimal transport problem and return the OT plan."
+},
+{
+"area": "ot.unbalanced",
+"name": "mm_unbalanced2",
+"kind": "function",
+"doc": "Solve the unbalanced optimal transport problem and return the OT cost."
+},
+{
+"area": "ot.unbalanced",
+"name": "sinkhorn_knopp_unbalanced",
+"kind": "function",
+"doc": "Solve the entropic regularization unbalanced optimal transport problem and"
+},
+{
+"area": "ot.unbalanced",
+"name": "sinkhorn_stabilized_unbalanced",
+"kind": "function",
+"doc": "Solve the entropic regularization unbalanced optimal transport"
+},
+{
+"area": "ot.unbalanced",
+"name": "sinkhorn_unbalanced",
+"kind": "function",
+"doc": "Solve the unbalanced entropic regularization optimal transport problem"
+},
+{
+"area": "ot.unbalanced",
+"name": "sinkhorn_unbalanced2",
+"kind": "function",
+"doc": "Solve the entropic regularization unbalanced optimal transport problem and"
+},
+{
+"area": "ot.unbalanced",
+"name": "sinkhorn_unbalanced_translation_invariant",
+"kind": "function",
+"doc": "Solve the entropic regularization unbalanced optimal transport problem and"
+},
+{
+"area": "ot.unbalanced",
+"name": "sliced_unbalanced_ot",
+"kind": "function",
+"doc": "Compute the Sliced Unbalanced Optimal Transport (SUOT) between two empirical distributions."
+},
+{
+"area": "ot.unbalanced",
+"name": "unbalanced_sliced_ot",
+"kind": "function",
+"doc": "Compute the Unbalanced Sliced Optimal Transpot (USOT) with KL regularization between two empirical distributio"
+},
+{
+"area": "ot.unbalanced",
+"name": "uot_1d",
+"kind": "function",
+"doc": "Solves the 1D unbalanced OT problem with KL regularization."
+},
+{
+"area": "ot.weak",
+"name": "weak_optimal_transport",
+"kind": "function",
+"doc": "Solves the weak optimal transport problem between two empirical distributions"
+}
+]
+}

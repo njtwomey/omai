@@ -1,0 +1,463 @@
+{
+"library": "pingouin",
+"version": "0.7.0",
+"source": "introspection",
+"entries": [
+{
+"area": "pingouin",
+"name": "ancova",
+"kind": "function",
+"doc": "ANCOVA with one or more covariate(s)."
+},
+{
+"area": "pingouin",
+"name": "anderson",
+"kind": "function",
+"doc": "Anderson-Darling test of distribution."
+},
+{
+"area": "pingouin",
+"name": "anova",
+"kind": "function",
+"doc": "One-way and *N*-way ANOVA."
+},
+{
+"area": "pingouin",
+"name": "bayesfactor_binom",
+"kind": "function",
+"doc": "Bayes factor of a binomial test with :math:`k` successes,"
+},
+{
+"area": "pingouin",
+"name": "bayesfactor_pearson",
+"kind": "function",
+"doc": "Bayes Factor of a Pearson correlation."
+},
+{
+"area": "pingouin",
+"name": "bayesfactor_ttest",
+"kind": "function",
+"doc": "Bayes Factor of a T-test."
+},
+{
+"area": "pingouin",
+"name": "box_m",
+"kind": "function",
+"doc": "Test equality of covariance matrices using the Box's M test."
+},
+{
+"area": "pingouin",
+"name": "chi2_independence",
+"kind": "function",
+"doc": "Chi-squared independence tests between two categorical variables."
+},
+{
+"area": "pingouin",
+"name": "chi2_mcnemar",
+"kind": "function",
+"doc": "Performs the exact and approximated versions of McNemar's test."
+},
+{
+"area": "pingouin",
+"name": "circ_axial",
+"kind": "function",
+"doc": "Transforms n-axial data to a common scale."
+},
+{
+"area": "pingouin",
+"name": "circ_corrcc",
+"kind": "function",
+"doc": "Correlation coefficient between two circular variables."
+},
+{
+"area": "pingouin",
+"name": "circ_corrcl",
+"kind": "function",
+"doc": "Correlation coefficient between one circular and one linear variable"
+},
+{
+"area": "pingouin",
+"name": "circ_mean",
+"kind": "function",
+"doc": "Mean direction for (binned) circular data."
+},
+{
+"area": "pingouin",
+"name": "circ_r",
+"kind": "function",
+"doc": "Mean resultant vector length for circular data."
+},
+{
+"area": "pingouin",
+"name": "circ_rayleigh",
+"kind": "function",
+"doc": "Rayleigh test for non-uniformity of circular data."
+},
+{
+"area": "pingouin",
+"name": "circ_vtest",
+"kind": "function",
+"doc": "V test for non-uniformity of circular data with a specified"
+},
+{
+"area": "pingouin",
+"name": "cochran",
+"kind": "function",
+"doc": "Cochran Q test. A special case of the Friedman test when the dependent"
+},
+{
+"area": "pingouin",
+"name": "compute_bootci",
+"kind": "function",
+"doc": "Bootstrapped confidence intervals of univariate and bivariate functions."
+},
+{
+"area": "pingouin",
+"name": "compute_effsize",
+"kind": "function",
+"doc": "Calculate effect size between two set of observations."
+},
+{
+"area": "pingouin",
+"name": "compute_effsize_from_t",
+"kind": "function",
+"doc": "Compute effect size from a T-value."
+},
+{
+"area": "pingouin",
+"name": "compute_esci",
+"kind": "function",
+"doc": "Parametric confidence intervals around a Cohen d or a correlation coefficient."
+},
+{
+"area": "pingouin",
+"name": "convert_angles",
+"kind": "function",
+"doc": "Element-wise conversion of arbitrary-unit circular quantities"
+},
+{
+"area": "pingouin",
+"name": "convert_effsize",
+"kind": "function",
+"doc": "Conversion between effect sizes."
+},
+{
+"area": "pingouin",
+"name": "corr",
+"kind": "function",
+"doc": "(Robust) correlation between two variables."
+},
+{
+"area": "pingouin",
+"name": "cronbach_alpha",
+"kind": "function",
+"doc": "Cronbach's alpha reliability measure."
+},
+{
+"area": "pingouin",
+"name": "dichotomous_crosstab",
+"kind": "function",
+"doc": "Generates a 2x2 contingency table from a :py:class:`pandas.DataFrame` that"
+},
+{
+"area": "pingouin",
+"name": "distance_corr",
+"kind": "function",
+"doc": "Distance correlation between two arrays."
+},
+{
+"area": "pingouin",
+"name": "epsilon",
+"kind": "function",
+"doc": "Epsilon adjustement factor for repeated measures."
+},
+{
+"area": "pingouin",
+"name": "friedman",
+"kind": "function",
+"doc": "Friedman test for repeated measurements."
+},
+{
+"area": "pingouin",
+"name": "harrelldavis",
+"kind": "function",
+"doc": "Harrell-Davis robust estimate of the :math:`q^{th}` quantile(s) of the data."
+},
+{
+"area": "pingouin",
+"name": "homoscedasticity",
+"kind": "function",
+"doc": "Test equality of variance."
+},
+{
+"area": "pingouin",
+"name": "intraclass_corr",
+"kind": "function",
+"doc": "Compute intraclass correlation (ICC) coefficients to assess measurement reliability."
+},
+{
+"area": "pingouin",
+"name": "kruskal",
+"kind": "function",
+"doc": "Kruskal-Wallis H-test for independent samples."
+},
+{
+"area": "pingouin",
+"name": "linear_regression",
+"kind": "function",
+"doc": "(Multiple) Linear regression."
+},
+{
+"area": "pingouin",
+"name": "list_dataset",
+"kind": "function",
+"doc": "List available example datasets."
+},
+{
+"area": "pingouin",
+"name": "logistic_regression",
+"kind": "function",
+"doc": "(Multiple) Binary logistic regression."
+},
+{
+"area": "pingouin",
+"name": "mad",
+"kind": "function",
+"doc": "Median Absolute Deviation (MAD) along given axis of an array."
+},
+{
+"area": "pingouin",
+"name": "madmedianrule",
+"kind": "function",
+"doc": "Robust outlier detection based on the MAD-median rule."
+},
+{
+"area": "pingouin",
+"name": "mediation_analysis",
+"kind": "function",
+"doc": "Mediation analysis using a bias-correct non-parametric bootstrap method."
+},
+{
+"area": "pingouin",
+"name": "mixed_anova",
+"kind": "function",
+"doc": "Mixed-design (split-plot) ANOVA."
+},
+{
+"area": "pingouin",
+"name": "multicomp",
+"kind": "function",
+"doc": "P-values correction for multiple comparisons."
+},
+{
+"area": "pingouin",
+"name": "multivariate_normality",
+"kind": "function",
+"doc": "Henze-Zirkler multivariate normality test."
+},
+{
+"area": "pingouin",
+"name": "multivariate_ttest",
+"kind": "function",
+"doc": "Hotelling T-squared test (= multivariate T-test)"
+},
+{
+"area": "pingouin",
+"name": "mwu",
+"kind": "function",
+"doc": "Mann-Whitney U Test (= Wilcoxon rank-sum test). It is the non-parametric"
+},
+{
+"area": "pingouin",
+"name": "normality",
+"kind": "function",
+"doc": "Univariate normality test."
+},
+{
+"area": "pingouin",
+"name": "pairwise_corr",
+"kind": "function",
+"doc": "Pairwise (partial) correlations between columns of a pandas dataframe."
+},
+{
+"area": "pingouin",
+"name": "pairwise_gameshowell",
+"kind": "function",
+"doc": "Pairwise Games-Howell post-hoc test."
+},
+{
+"area": "pingouin",
+"name": "pairwise_tests",
+"kind": "function",
+"doc": "Pairwise tests."
+},
+{
+"area": "pingouin",
+"name": "pairwise_ttests",
+"kind": "function",
+"doc": "This function has been deprecated . Use :py:func:`pingouin.pairwise_tests` instead."
+},
+{
+"area": "pingouin",
+"name": "pairwise_tukey",
+"kind": "function",
+"doc": "Pairwise Tukey-HSD post-hoc test."
+},
+{
+"area": "pingouin",
+"name": "partial_corr",
+"kind": "function",
+"doc": "Partial and semi-partial correlation."
+},
+{
+"area": "pingouin",
+"name": "pcorr",
+"kind": "function",
+"doc": "Partial correlation matrix (:py:class:`pandas.DataFrame` method)."
+},
+{
+"area": "pingouin",
+"name": "plot_blandaltman",
+"kind": "function",
+"doc": "Generate a Bland-Altman plot to compare two sets of measurements."
+},
+{
+"area": "pingouin",
+"name": "plot_circmean",
+"kind": "function",
+"doc": "Plot the circular mean and vector length of a set of angles"
+},
+{
+"area": "pingouin",
+"name": "plot_paired",
+"kind": "function",
+"doc": "Paired plot."
+},
+{
+"area": "pingouin",
+"name": "plot_rm_corr",
+"kind": "function",
+"doc": "Plot a repeated measures correlation."
+},
+{
+"area": "pingouin",
+"name": "power_anova",
+"kind": "function",
+"doc": "Evaluate power, sample size, effect size or significance level of a one-way balanced ANOVA."
+},
+{
+"area": "pingouin",
+"name": "power_chi2",
+"kind": "function",
+"doc": "Evaluate power, sample size, effect size or significance level of chi-squared tests."
+},
+{
+"area": "pingouin",
+"name": "power_corr",
+"kind": "function",
+"doc": "Evaluate power, sample size, correlation coefficient or significance level of a correlation"
+},
+{
+"area": "pingouin",
+"name": "power_rm_anova",
+"kind": "function",
+"doc": "Evaluate power, sample size, effect size or significance level of a balanced one-way"
+},
+{
+"area": "pingouin",
+"name": "power_ttest",
+"kind": "function",
+"doc": "Evaluate power, sample size, effect size or significance level of a one-sample T-test,"
+},
+{
+"area": "pingouin",
+"name": "power_ttest2n",
+"kind": "function",
+"doc": "Evaluate power, effect size or  significance level of an independent two-samples T-test"
+},
+{
+"area": "pingouin",
+"name": "print_table",
+"kind": "function",
+"doc": "Pretty display of table."
+},
+{
+"area": "pingouin",
+"name": "ptests",
+"kind": "function",
+"doc": "Pairwise T-test between columns of a dataframe."
+},
+{
+"area": "pingouin",
+"name": "qqplot",
+"kind": "function",
+"doc": "Quantile-Quantile plot."
+},
+{
+"area": "pingouin",
+"name": "rcorr",
+"kind": "function",
+"doc": "Correlation matrix of a dataframe with p-values and/or sample size on the"
+},
+{
+"area": "pingouin",
+"name": "read_dataset",
+"kind": "function",
+"doc": "Read example datasets."
+},
+{
+"area": "pingouin",
+"name": "remove_na",
+"kind": "function",
+"doc": "Remove missing values along a given axis in one or more (paired) numpy arrays."
+},
+{
+"area": "pingouin",
+"name": "rm_anova",
+"kind": "function",
+"doc": "One-way and two-way repeated measures ANOVA."
+},
+{
+"area": "pingouin",
+"name": "rm_corr",
+"kind": "function",
+"doc": "Repeated measures correlation."
+},
+{
+"area": "pingouin",
+"name": "set_default_options",
+"kind": "function",
+"doc": "Reset Pingouin's default global options (e.g. rounding)."
+},
+{
+"area": "pingouin",
+"name": "sphericity",
+"kind": "function",
+"doc": "Mauchly and JNS test for sphericity."
+},
+{
+"area": "pingouin",
+"name": "tost",
+"kind": "function",
+"doc": "Two One-Sided Test (TOST) for equivalence."
+},
+{
+"area": "pingouin",
+"name": "ttest",
+"kind": "function",
+"doc": "T-test."
+},
+{
+"area": "pingouin",
+"name": "welch_anova",
+"kind": "function",
+"doc": "One-way Welch ANOVA."
+},
+{
+"area": "pingouin",
+"name": "wilcoxon",
+"kind": "function",
+"doc": "Wilcoxon signed-rank test. It is the non-parametric version of the paired T-test."
+}
+]
+}

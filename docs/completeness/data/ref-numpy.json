@@ -1,0 +1,2911 @@
+{
+"library": "numpy",
+"version": "2.5.4",
+"source": "introspection",
+"entries": [
+{
+"area": "numpy",
+"name": "abs",
+"kind": "function",
+"doc": "absolute(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature])"
+},
+{
+"area": "numpy",
+"name": "absolute",
+"kind": "function",
+"doc": "absolute(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature])"
+},
+{
+"area": "numpy",
+"name": "acos",
+"kind": "function",
+"doc": "arccos(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature])"
+},
+{
+"area": "numpy",
+"name": "acosh",
+"kind": "function",
+"doc": "arccosh(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature])"
+},
+{
+"area": "numpy",
+"name": "add",
+"kind": "function",
+"doc": "add(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature])"
+},
+{
+"area": "numpy",
+"name": "all",
+"kind": "function",
+"doc": "Test whether all array elements along a given axis evaluate to True."
+},
+{
+"area": "numpy",
+"name": "allclose",
+"kind": "function",
+"doc": "Returns True if two arrays are element-wise equal within a tolerance."
+},
+{
+"area": "numpy",
+"name": "amax",
+"kind": "function",
+"doc": "Return the maximum of an array or maximum along an axis."
+},
+{
+"area": "numpy",
+"name": "amin",
+"kind": "function",
+"doc": "Return the minimum of an array or minimum along an axis."
+},
+{
+"area": "numpy",
+"name": "angle",
+"kind": "function",
+"doc": "Return the angle of the complex argument."
+},
+{
+"area": "numpy",
+"name": "any",
+"kind": "function",
+"doc": "Test whether any array element along a given axis evaluates to True."
+},
+{
+"area": "numpy",
+"name": "append",
+"kind": "function",
+"doc": "Append values to the end of an array."
+},
+{
+"area": "numpy",
+"name": "apply_along_axis",
+"kind": "function",
+"doc": "Apply a function to 1-D slices along the given axis."
+},
+{
+"area": "numpy",
+"name": "apply_over_axes",
+"kind": "function",
+"doc": "Apply a function repeatedly over multiple axes."
+},
+{
+"area": "numpy",
+"name": "arange",
+"kind": "function",
+"doc": "arange([start,] stop[, step,], dtype=None, *, device=None, like=None)"
+},
+{
+"area": "numpy",
+"name": "arccos",
+"kind": "function",
+"doc": "arccos(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature])"
+},
+{
+"area": "numpy",
+"name": "arccosh",
+"kind": "function",
+"doc": "arccosh(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature])"
+},
+{
+"area": "numpy",
+"name": "arcsin",
+"kind": "function",
+"doc": "arcsin(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature])"
+},
+{
+"area": "numpy",
+"name": "arcsinh",
+"kind": "function",
+"doc": "arcsinh(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature])"
+},
+{
+"area": "numpy",
+"name": "arctan",
+"kind": "function",
+"doc": "arctan(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature])"
+},
+{
+"area": "numpy",
+"name": "arctan2",
+"kind": "function",
+"doc": "arctan2(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature"
+},
+{
+"area": "numpy",
+"name": "arctanh",
+"kind": "function",
+"doc": "arctanh(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature])"
+},
+{
+"area": "numpy",
+"name": "argmax",
+"kind": "function",
+"doc": "Returns the indices of the maximum values along an axis."
+},
+{
+"area": "numpy",
+"name": "argmin",
+"kind": "function",
+"doc": "Returns the indices of the minimum values along an axis."
+},
+{
+"area": "numpy",
+"name": "argpartition",
+"kind": "function",
+"doc": "Perform an indirect partition along the given axis using the"
+},
+{
+"area": "numpy",
+"name": "argsort",
+"kind": "function",
+"doc": "Returns the indices that would sort an array."
+},
+{
+"area": "numpy",
+"name": "argwhere",
+"kind": "function",
+"doc": "Find the indices of array elements that are non-zero, grouped by element."
+},
+{
+"area": "numpy",
+"name": "around",
+"kind": "function",
+"doc": "Round an array to the given number of decimals."
+},
+{
+"area": "numpy",
+"name": "array",
+"kind": "function",
+"doc": "array(object, dtype=None, *, copy=True, order='K', subok=False, ndmin=0,"
+},
+{
+"area": "numpy",
+"name": "array2string",
+"kind": "function",
+"doc": "Return a string representation of an array."
+},
+{
+"area": "numpy",
+"name": "array_equal",
+"kind": "function",
+"doc": "True if two arrays have the same shape and elements, False otherwise."
+},
+{
+"area": "numpy",
+"name": "array_equiv",
+"kind": "function",
+"doc": "Returns True if input arrays are shape consistent and all elements equal."
+},
+{
+"area": "numpy",
+"name": "array_repr",
+"kind": "function",
+"doc": "Return the string representation of an array."
+},
+{
+"area": "numpy",
+"name": "array_split",
+"kind": "function",
+"doc": "Split an array into multiple sub-arrays."
+},
+{
+"area": "numpy",
+"name": "array_str",
+"kind": "function",
+"doc": "Return a string representation of the data in an array."
+},
+{
+"area": "numpy",
+"name": "asanyarray",
+"kind": "function",
+"doc": "asanyarray(a, dtype=None, order=None, *, device=None, copy=None, like=None)"
+},
+{
+"area": "numpy",
+"name": "asarray",
+"kind": "function",
+"doc": "asarray(a, dtype=None, order=None, *, device=None, copy=None, like=None)"
+},
+{
+"area": "numpy",
+"name": "asarray_chkfinite",
+"kind": "function",
+"doc": "Convert the input to an array, checking for NaNs or Infs."
+},
+{
+"area": "numpy",
+"name": "ascontiguousarray",
+"kind": "function",
+"doc": "ascontiguousarray(a, dtype=None, *, like=None)"
+},
+{
+"area": "numpy",
+"name": "asfortranarray",
+"kind": "function",
+"doc": "asfortranarray(a, dtype=None, *, like=None)"
+},
+{
+"area": "numpy",
+"name": "asin",
+"kind": "function",
+"doc": "arcsin(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature])"
+},
+{
+"area": "numpy",
+"name": "asinh",
+"kind": "function",
+"doc": "arcsinh(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature])"
+},
+{
+"area": "numpy",
+"name": "asmatrix",
+"kind": "function",
+"doc": "Interpret the input as a matrix."
+},
+{
+"area": "numpy",
+"name": "astype",
+"kind": "function",
+"doc": "Copies an array to a specified data type."
+},
+{
+"area": "numpy",
+"name": "atan",
+"kind": "function",
+"doc": "arctan(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature])"
+},
+{
+"area": "numpy",
+"name": "atan2",
+"kind": "function",
+"doc": "arctan2(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature"
+},
+{
+"area": "numpy",
+"name": "atanh",
+"kind": "function",
+"doc": "arctanh(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature])"
+},
+{
+"area": "numpy",
+"name": "atleast_1d",
+"kind": "function",
+"doc": "Convert inputs to arrays with at least one dimension."
+},
+{
+"area": "numpy",
+"name": "atleast_2d",
+"kind": "function",
+"doc": "View inputs as arrays with at least two dimensions."
+},
+{
+"area": "numpy",
+"name": "atleast_3d",
+"kind": "function",
+"doc": "View inputs as arrays with at least three dimensions."
+},
+{
+"area": "numpy",
+"name": "average",
+"kind": "function",
+"doc": "Compute the weighted average along the specified axis."
+},
+{
+"area": "numpy",
+"name": "bartlett",
+"kind": "function",
+"doc": "Return the Bartlett window."
+},
+{
+"area": "numpy",
+"name": "base_repr",
+"kind": "function",
+"doc": "Return a string representation of a number in the given base system."
+},
+{
+"area": "numpy",
+"name": "binary_repr",
+"kind": "function",
+"doc": "Return the binary representation of the input number as a string."
+},
+{
+"area": "numpy",
+"name": "bincount",
+"kind": "function",
+"doc": "bincount(x, /, weights=None, minlength=0)"
+},
+{
+"area": "numpy",
+"name": "bitwise_and",
+"kind": "function",
+"doc": "bitwise_and(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signa"
+},
+{
+"area": "numpy",
+"name": "bitwise_count",
+"kind": "function",
+"doc": "bitwise_count(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signatur"
+},
+{
+"area": "numpy",
+"name": "bitwise_invert",
+"kind": "function",
+"doc": "invert(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature])"
+},
+{
+"area": "numpy",
+"name": "bitwise_left_shift",
+"kind": "function",
+"doc": "left_shift(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signat"
+},
+{
+"area": "numpy",
+"name": "bitwise_not",
+"kind": "function",
+"doc": "invert(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature])"
+},
+{
+"area": "numpy",
+"name": "bitwise_or",
+"kind": "function",
+"doc": "bitwise_or(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signat"
+},
+{
+"area": "numpy",
+"name": "bitwise_right_shift",
+"kind": "function",
+"doc": "right_shift(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signa"
+},
+{
+"area": "numpy",
+"name": "bitwise_xor",
+"kind": "function",
+"doc": "bitwise_xor(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signa"
+},
+{
+"area": "numpy",
+"name": "blackman",
+"kind": "function",
+"doc": "Return the Blackman window."
+},
+{
+"area": "numpy",
+"name": "block",
+"kind": "function",
+"doc": "Assemble an nd-array from nested lists of blocks."
+},
+{
+"area": "numpy",
+"name": "bmat",
+"kind": "function",
+"doc": "Build a matrix object from a string, nested sequence, or array."
+},
+{
+"area": "numpy",
+"name": "broadcast_arrays",
+"kind": "function",
+"doc": "Broadcast any number of arrays against each other."
+},
+{
+"area": "numpy",
+"name": "broadcast_shapes",
+"kind": "function",
+"doc": "Broadcast the input shapes into a single shape."
+},
+{
+"area": "numpy",
+"name": "broadcast_to",
+"kind": "function",
+"doc": "Broadcast an array to a new shape."
+},
+{
+"area": "numpy",
+"name": "busday_count",
+"kind": "function",
+"doc": "busday_count("
+},
+{
+"area": "numpy",
+"name": "busday_offset",
+"kind": "function",
+"doc": "busday_offset("
+},
+{
+"area": "numpy",
+"name": "can_cast",
+"kind": "function",
+"doc": "can_cast(from_, to, casting='safe')"
+},
+{
+"area": "numpy",
+"name": "cbrt",
+"kind": "function",
+"doc": "cbrt(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature])"
+},
+{
+"area": "numpy",
+"name": "ceil",
+"kind": "function",
+"doc": "ceil(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature])"
+},
+{
+"area": "numpy",
+"name": "choose",
+"kind": "function",
+"doc": "Construct an array from an index array and a list of arrays to choose from."
+},
+{
+"area": "numpy",
+"name": "clip",
+"kind": "function",
+"doc": "Clip (limit) the values in an array."
+},
+{
+"area": "numpy",
+"name": "column_stack",
+"kind": "function",
+"doc": "Stack 1-D arrays as columns into a 2-D array."
+},
+{
+"area": "numpy",
+"name": "common_type",
+"kind": "function",
+"doc": "Return a scalar type which is common to the input arrays."
+},
+{
+"area": "numpy",
+"name": "compress",
+"kind": "function",
+"doc": "Return selected slices of an array along given axis."
+},
+{
+"area": "numpy",
+"name": "concat",
+"kind": "function",
+"doc": "Join a sequence of arrays along an existing axis."
+},
+{
+"area": "numpy",
+"name": "concatenate",
+"kind": "function",
+"doc": "Join a sequence of arrays along an existing axis."
+},
+{
+"area": "numpy",
+"name": "conj",
+"kind": "function",
+"doc": "conjugate(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature])"
+},
+{
+"area": "numpy",
+"name": "conjugate",
+"kind": "function",
+"doc": "conjugate(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature])"
+},
+{
+"area": "numpy",
+"name": "convolve",
+"kind": "function",
+"doc": "Returns the discrete, linear convolution of two one-dimensional sequences."
+},
+{
+"area": "numpy",
+"name": "copy",
+"kind": "function",
+"doc": "Return an array copy of the given object."
+},
+{
+"area": "numpy",
+"name": "copysign",
+"kind": "function",
+"doc": "copysign(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signatur"
+},
+{
+"area": "numpy",
+"name": "copyto",
+"kind": "function",
+"doc": "copyto(dst, src, casting='same_kind', where=True)"
+},
+{
+"area": "numpy",
+"name": "corrcoef",
+"kind": "function",
+"doc": "Return Pearson product-moment correlation coefficients."
+},
+{
+"area": "numpy",
+"name": "correlate",
+"kind": "function",
+"doc": "Cross-correlation of two 1-dimensional sequences."
+},
+{
+"area": "numpy",
+"name": "cos",
+"kind": "function",
+"doc": "cos(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature])"
+},
+{
+"area": "numpy",
+"name": "cosh",
+"kind": "function",
+"doc": "cosh(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature])"
+},
+{
+"area": "numpy",
+"name": "count_nonzero",
+"kind": "function",
+"doc": "Counts the number of non-zero values in the array ``a``."
+},
+{
+"area": "numpy",
+"name": "cov",
+"kind": "function",
+"doc": "Estimate a covariance matrix, given data and weights."
+},
+{
+"area": "numpy",
+"name": "cross",
+"kind": "function",
+"doc": "Return the cross product of two (arrays of) vectors."
+},
+{
+"area": "numpy",
+"name": "cumprod",
+"kind": "function",
+"doc": "Return the cumulative product of elements along a given axis."
+},
+{
+"area": "numpy",
+"name": "cumsum",
+"kind": "function",
+"doc": "Return the cumulative sum of the elements along a given axis."
+},
+{
+"area": "numpy",
+"name": "cumulative_prod",
+"kind": "function",
+"doc": "Return the cumulative product of elements along a given axis."
+},
+{
+"area": "numpy",
+"name": "cumulative_sum",
+"kind": "function",
+"doc": "Return the cumulative sum of the elements along a given axis."
+},
+{
+"area": "numpy",
+"name": "datetime_as_string",
+"kind": "function",
+"doc": "datetime_as_string(arr, unit=None, timezone='naive', casting='same_kind')"
+},
+{
+"area": "numpy",
+"name": "datetime_data",
+"kind": "function",
+"doc": "datetime_data(dtype, /)"
+},
+{
+"area": "numpy",
+"name": "deg2rad",
+"kind": "function",
+"doc": "deg2rad(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature])"
+},
+{
+"area": "numpy",
+"name": "degrees",
+"kind": "function",
+"doc": "degrees(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature])"
+},
+{
+"area": "numpy",
+"name": "delete",
+"kind": "function",
+"doc": "Return a new array with sub-arrays along an axis deleted. For a one"
+},
+{
+"area": "numpy",
+"name": "diag",
+"kind": "function",
+"doc": "Extract a diagonal or construct a diagonal array."
+},
+{
+"area": "numpy",
+"name": "diag_indices",
+"kind": "function",
+"doc": "Return the indices to access the main diagonal of an array."
+},
+{
+"area": "numpy",
+"name": "diag_indices_from",
+"kind": "function",
+"doc": "Return the indices to access the main diagonal of an n-dimensional array."
+},
+{
+"area": "numpy",
+"name": "diagflat",
+"kind": "function",
+"doc": "Create a two-dimensional array with the flattened input as a diagonal."
+},
+{
+"area": "numpy",
+"name": "diagonal",
+"kind": "function",
+"doc": "Return specified diagonals."
+},
+{
+"area": "numpy",
+"name": "diff",
+"kind": "function",
+"doc": "Calculate the n-th discrete difference along the given axis."
+},
+{
+"area": "numpy",
+"name": "digitize",
+"kind": "function",
+"doc": "Return the indices of the bins to which each value in input array belongs."
+},
+{
+"area": "numpy",
+"name": "divide",
+"kind": "function",
+"doc": "divide(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature]"
+},
+{
+"area": "numpy",
+"name": "divmod",
+"kind": "function",
+"doc": "divmod(x1, x2[, out1, out2], / [, out=(None, None)], *, where=True, casting='same_kind', order='K', dtype=None"
+},
+{
+"area": "numpy",
+"name": "dot",
+"kind": "function",
+"doc": "dot(a, b, out=None)"
+},
+{
+"area": "numpy",
+"name": "dsplit",
+"kind": "function",
+"doc": "Split array into multiple sub-arrays along the 3rd axis (depth)."
+},
+{
+"area": "numpy",
+"name": "dstack",
+"kind": "function",
+"doc": "Stack arrays in sequence depth wise (along third axis)."
+},
+{
+"area": "numpy",
+"name": "ediff1d",
+"kind": "function",
+"doc": "The differences between consecutive elements of an array."
+},
+{
+"area": "numpy",
+"name": "einsum",
+"kind": "function",
+"doc": "einsum(subscripts, *operands, out=None, dtype=None, order='K',"
+},
+{
+"area": "numpy",
+"name": "einsum_path",
+"kind": "function",
+"doc": "einsum_path(subscripts, *operands, optimize='greedy')"
+},
+{
+"area": "numpy",
+"name": "empty",
+"kind": "function",
+"doc": "empty(shape, dtype=None, order='C', *, device=None, like=None)"
+},
+{
+"area": "numpy",
+"name": "empty_like",
+"kind": "function",
+"doc": "Return a new array with the same shape and type as a given array."
+},
+{
+"area": "numpy",
+"name": "equal",
+"kind": "function",
+"doc": "equal(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature])"
+},
+{
+"area": "numpy",
+"name": "exp",
+"kind": "function",
+"doc": "exp(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature])"
+},
+{
+"area": "numpy",
+"name": "exp2",
+"kind": "function",
+"doc": "exp2(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature])"
+},
+{
+"area": "numpy",
+"name": "expand_dims",
+"kind": "function",
+"doc": "Expand the shape of an array."
+},
+{
+"area": "numpy",
+"name": "expm1",
+"kind": "function",
+"doc": "expm1(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature])"
+},
+{
+"area": "numpy",
+"name": "extract",
+"kind": "function",
+"doc": "Return the elements of an array that satisfy some condition."
+},
+{
+"area": "numpy",
+"name": "eye",
+"kind": "function",
+"doc": "Return a 2-D array with ones on the diagonal and zeros elsewhere."
+},
+{
+"area": "numpy",
+"name": "fabs",
+"kind": "function",
+"doc": "fabs(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature])"
+},
+{
+"area": "numpy",
+"name": "fill_diagonal",
+"kind": "function",
+"doc": "Fill the main diagonal of the given array of any dimensionality."
+},
+{
+"area": "numpy",
+"name": "fix",
+"kind": "function",
+"doc": "Round to nearest integer towards zero."
+},
+{
+"area": "numpy",
+"name": "flatnonzero",
+"kind": "function",
+"doc": "Return indices that are non-zero in the flattened version of a."
+},
+{
+"area": "numpy",
+"name": "flip",
+"kind": "function",
+"doc": "Reverse the order of elements in an array along the given axis."
+},
+{
+"area": "numpy",
+"name": "fliplr",
+"kind": "function",
+"doc": "Reverse the order of elements along axis 1 (left/right)."
+},
+{
+"area": "numpy",
+"name": "flipud",
+"kind": "function",
+"doc": "Reverse the order of elements along axis 0 (up/down)."
+},
+{
+"area": "numpy",
+"name": "float_power",
+"kind": "function",
+"doc": "float_power(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signa"
+},
+{
+"area": "numpy",
+"name": "floor",
+"kind": "function",
+"doc": "floor(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature])"
+},
+{
+"area": "numpy",
+"name": "floor_divide",
+"kind": "function",
+"doc": "floor_divide(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, sign"
+},
+{
+"area": "numpy",
+"name": "fmax",
+"kind": "function",
+"doc": "fmax(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature])"
+},
+{
+"area": "numpy",
+"name": "fmin",
+"kind": "function",
+"doc": "fmin(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature])"
+},
+{
+"area": "numpy",
+"name": "fmod",
+"kind": "function",
+"doc": "fmod(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature])"
+},
+{
+"area": "numpy",
+"name": "format_float_positional",
+"kind": "function",
+"doc": "Format a floating-point scalar as a decimal string in positional notation."
+},
+{
+"area": "numpy",
+"name": "format_float_scientific",
+"kind": "function",
+"doc": "Format a floating-point scalar as a decimal string in scientific notation."
+},
+{
+"area": "numpy",
+"name": "frexp",
+"kind": "function",
+"doc": "frexp(x[, out1, out2], / [, out=(None, None)], *, where=True, casting='same_kind', order='K', dtype=None, subo"
+},
+{
+"area": "numpy",
+"name": "from_dlpack",
+"kind": "function",
+"doc": "from_dlpack(x, /, *, device=None, copy=None)"
+},
+{
+"area": "numpy",
+"name": "frombuffer",
+"kind": "function",
+"doc": "frombuffer(buffer, dtype=np.float64, count=-1, offset=0, *, like=None)"
+},
+{
+"area": "numpy",
+"name": "fromfile",
+"kind": "function",
+"doc": "fromfile(file, dtype=np.float64, count=-1, sep='', offset=0, *, like=None)"
+},
+{
+"area": "numpy",
+"name": "fromfunction",
+"kind": "function",
+"doc": "Construct an array by executing a function over each coordinate."
+},
+{
+"area": "numpy",
+"name": "fromiter",
+"kind": "function",
+"doc": "fromiter(iter, dtype, count=-1, *, like=None)"
+},
+{
+"area": "numpy",
+"name": "frompyfunc",
+"kind": "function",
+"doc": "frompyfunc(func, /, nin, nout, *[, identity])"
+},
+{
+"area": "numpy",
+"name": "fromregex",
+"kind": "function",
+"doc": "Construct an array from a text file, using regular expression parsing."
+},
+{
+"area": "numpy",
+"name": "fromstring",
+"kind": "function",
+"doc": "fromstring(string, dtype=np.float64, count=-1, *, sep, like=None)"
+},
+{
+"area": "numpy",
+"name": "full",
+"kind": "function",
+"doc": "Return a new array of given shape and type, filled with `fill_value`."
+},
+{
+"area": "numpy",
+"name": "full_like",
+"kind": "function",
+"doc": "Return a full array with the same shape and type as a given array."
+},
+{
+"area": "numpy",
+"name": "gcd",
+"kind": "function",
+"doc": "gcd(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature])"
+},
+{
+"area": "numpy",
+"name": "genfromtxt",
+"kind": "function",
+"doc": "Load data from a text file, with missing values handled as specified."
+},
+{
+"area": "numpy",
+"name": "geomspace",
+"kind": "function",
+"doc": "Return numbers spaced evenly on a log scale (a geometric progression)."
+},
+{
+"area": "numpy",
+"name": "get_include",
+"kind": "function",
+"doc": "Return the directory that contains the NumPy \\*.h header files."
+},
+{
+"area": "numpy",
+"name": "get_printoptions",
+"kind": "function",
+"doc": "Return the current print options."
+},
+{
+"area": "numpy",
+"name": "getbufsize",
+"kind": "function",
+"doc": "Return the size of the buffer used in ufuncs."
+},
+{
+"area": "numpy",
+"name": "geterr",
+"kind": "function",
+"doc": "Get the current way of handling floating-point errors."
+},
+{
+"area": "numpy",
+"name": "geterrcall",
+"kind": "function",
+"doc": "Return the current callback function used on floating-point errors."
+},
+{
+"area": "numpy",
+"name": "gradient",
+"kind": "function",
+"doc": "Return the gradient of an N-dimensional array."
+},
+{
+"area": "numpy",
+"name": "greater",
+"kind": "function",
+"doc": "greater(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature"
+},
+{
+"area": "numpy",
+"name": "greater_equal",
+"kind": "function",
+"doc": "greater_equal(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, sig"
+},
+{
+"area": "numpy",
+"name": "hamming",
+"kind": "function",
+"doc": "Return the Hamming window."
+},
+{
+"area": "numpy",
+"name": "hanning",
+"kind": "function",
+"doc": "Return the Hanning window."
+},
+{
+"area": "numpy",
+"name": "heaviside",
+"kind": "function",
+"doc": "heaviside(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signatu"
+},
+{
+"area": "numpy",
+"name": "histogram",
+"kind": "function",
+"doc": "Compute the histogram of a dataset."
+},
+{
+"area": "numpy",
+"name": "histogram2d",
+"kind": "function",
+"doc": "Compute the bi-dimensional histogram of two data samples."
+},
+{
+"area": "numpy",
+"name": "histogram_bin_edges",
+"kind": "function",
+"doc": "Function to calculate only the edges of the bins used by the `histogram`"
+},
+{
+"area": "numpy",
+"name": "histogramdd",
+"kind": "function",
+"doc": "Compute the multidimensional histogram of some data."
+},
+{
+"area": "numpy",
+"name": "hsplit",
+"kind": "function",
+"doc": "Split an array into multiple sub-arrays horizontally (column-wise)."
+},
+{
+"area": "numpy",
+"name": "hstack",
+"kind": "function",
+"doc": "Stack arrays in sequence horizontally (column wise)."
+},
+{
+"area": "numpy",
+"name": "hypot",
+"kind": "function",
+"doc": "hypot(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature])"
+},
+{
+"area": "numpy",
+"name": "i0",
+"kind": "function",
+"doc": "Modified Bessel function of the first kind, order 0."
+},
+{
+"area": "numpy",
+"name": "identity",
+"kind": "function",
+"doc": "Return the identity array."
+},
+{
+"area": "numpy",
+"name": "imag",
+"kind": "function",
+"doc": "Return the imaginary part of the complex argument."
+},
+{
+"area": "numpy",
+"name": "indices",
+"kind": "function",
+"doc": "Return an array representing the indices of a grid."
+},
+{
+"area": "numpy",
+"name": "info",
+"kind": "function",
+"doc": "Get help information for an array, function, class, or module."
+},
+{
+"area": "numpy",
+"name": "inner",
+"kind": "function",
+"doc": "inner(a, b, /)"
+},
+{
+"area": "numpy",
+"name": "insert",
+"kind": "function",
+"doc": "Insert values along the given axis before the given indices."
+},
+{
+"area": "numpy",
+"name": "interp",
+"kind": "function",
+"doc": "One-dimensional linear interpolation for monotonically increasing sample points."
+},
+{
+"area": "numpy",
+"name": "intersect1d",
+"kind": "function",
+"doc": "Find the intersection of two arrays."
+},
+{
+"area": "numpy",
+"name": "invert",
+"kind": "function",
+"doc": "invert(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature])"
+},
+{
+"area": "numpy",
+"name": "is_busday",
+"kind": "function",
+"doc": "is_busday("
+},
+{
+"area": "numpy",
+"name": "isclose",
+"kind": "function",
+"doc": "Returns a boolean array where two arrays are element-wise equal within a"
+},
+{
+"area": "numpy",
+"name": "iscomplex",
+"kind": "function",
+"doc": "Returns a bool array, where True if input element is complex."
+},
+{
+"area": "numpy",
+"name": "iscomplexobj",
+"kind": "function",
+"doc": "Check for a complex type or an array of complex numbers."
+},
+{
+"area": "numpy",
+"name": "isdtype",
+"kind": "function",
+"doc": "Determine if a provided dtype is of a specified data type ``kind``."
+},
+{
+"area": "numpy",
+"name": "isfinite",
+"kind": "function",
+"doc": "isfinite(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature])"
+},
+{
+"area": "numpy",
+"name": "isfortran",
+"kind": "function",
+"doc": "Check if the array is Fortran contiguous but *not* C contiguous."
+},
+{
+"area": "numpy",
+"name": "isin",
+"kind": "function",
+"doc": "Calculates ``element in test_elements``, broadcasting over `element` only."
+},
+{
+"area": "numpy",
+"name": "isinf",
+"kind": "function",
+"doc": "isinf(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature])"
+},
+{
+"area": "numpy",
+"name": "isnan",
+"kind": "function",
+"doc": "isnan(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature])"
+},
+{
+"area": "numpy",
+"name": "isnat",
+"kind": "function",
+"doc": "isnat(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature])"
+},
+{
+"area": "numpy",
+"name": "isneginf",
+"kind": "function",
+"doc": "Test element-wise for negative infinity, return result as bool array."
+},
+{
+"area": "numpy",
+"name": "isposinf",
+"kind": "function",
+"doc": "Test element-wise for positive infinity, return result as bool array."
+},
+{
+"area": "numpy",
+"name": "isreal",
+"kind": "function",
+"doc": "Returns a bool array, where True if input element is real."
+},
+{
+"area": "numpy",
+"name": "isrealobj",
+"kind": "function",
+"doc": "Return True if x is a not complex type or an array of complex numbers."
+},
+{
+"area": "numpy",
+"name": "isscalar",
+"kind": "function",
+"doc": "Returns True if the type of `element` is a scalar type."
+},
+{
+"area": "numpy",
+"name": "issubdtype",
+"kind": "function",
+"doc": "Returns True if first argument is a typecode lower/equal in type hierarchy."
+},
+{
+"area": "numpy",
+"name": "iterable",
+"kind": "function",
+"doc": "Check whether or not an object can be iterated over."
+},
+{
+"area": "numpy",
+"name": "ix_",
+"kind": "function",
+"doc": "Construct an open mesh from multiple sequences."
+},
+{
+"area": "numpy",
+"name": "kaiser",
+"kind": "function",
+"doc": "Return the Kaiser window."
+},
+{
+"area": "numpy",
+"name": "kron",
+"kind": "function",
+"doc": "Kronecker product of two arrays."
+},
+{
+"area": "numpy",
+"name": "lcm",
+"kind": "function",
+"doc": "lcm(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature])"
+},
+{
+"area": "numpy",
+"name": "ldexp",
+"kind": "function",
+"doc": "ldexp(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature])"
+},
+{
+"area": "numpy",
+"name": "left_shift",
+"kind": "function",
+"doc": "left_shift(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signat"
+},
+{
+"area": "numpy",
+"name": "less",
+"kind": "function",
+"doc": "less(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature])"
+},
+{
+"area": "numpy",
+"name": "less_equal",
+"kind": "function",
+"doc": "less_equal(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signat"
+},
+{
+"area": "numpy",
+"name": "lexsort",
+"kind": "function",
+"doc": "lexsort(keys, axis=-1)"
+},
+{
+"area": "numpy",
+"name": "linspace",
+"kind": "function",
+"doc": "Return evenly spaced numbers over a specified interval."
+},
+{
+"area": "numpy",
+"name": "load",
+"kind": "function",
+"doc": "Load arrays or pickled objects from ``.npy``, ``.npz`` or pickled files."
+},
+{
+"area": "numpy",
+"name": "loadtxt",
+"kind": "function",
+"doc": "Load data from a text file."
+},
+{
+"area": "numpy",
+"name": "log",
+"kind": "function",
+"doc": "log(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature])"
+},
+{
+"area": "numpy",
+"name": "log10",
+"kind": "function",
+"doc": "log10(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature])"
+},
+{
+"area": "numpy",
+"name": "log1p",
+"kind": "function",
+"doc": "log1p(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature])"
+},
+{
+"area": "numpy",
+"name": "log2",
+"kind": "function",
+"doc": "log2(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature])"
+},
+{
+"area": "numpy",
+"name": "logaddexp",
+"kind": "function",
+"doc": "logaddexp(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signatu"
+},
+{
+"area": "numpy",
+"name": "logaddexp2",
+"kind": "function",
+"doc": "logaddexp2(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signat"
+},
+{
+"area": "numpy",
+"name": "logical_and",
+"kind": "function",
+"doc": "logical_and(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signa"
+},
+{
+"area": "numpy",
+"name": "logical_not",
+"kind": "function",
+"doc": "logical_not(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature]"
+},
+{
+"area": "numpy",
+"name": "logical_or",
+"kind": "function",
+"doc": "logical_or(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signat"
+},
+{
+"area": "numpy",
+"name": "logical_xor",
+"kind": "function",
+"doc": "logical_xor(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signa"
+},
+{
+"area": "numpy",
+"name": "logspace",
+"kind": "function",
+"doc": "Return numbers spaced evenly on a log scale."
+},
+{
+"area": "numpy",
+"name": "mask_indices",
+"kind": "function",
+"doc": "Return the indices to access (n, n) arrays, given a masking function."
+},
+{
+"area": "numpy",
+"name": "matmul",
+"kind": "function",
+"doc": "matmul(x1, x2, /, out=None, *, casting='same_kind', order='K', dtype=None, subok=True[, signature, axes, axis]"
+},
+{
+"area": "numpy",
+"name": "matrix_transpose",
+"kind": "function",
+"doc": "Transposes a matrix (or a stack of matrices) ``x``."
+},
+{
+"area": "numpy",
+"name": "matvec",
+"kind": "function",
+"doc": "matvec(x1, x2, /, out=None, *, casting='same_kind', order='K', dtype=None, subok=True[, signature, axes, axis]"
+},
+{
+"area": "numpy",
+"name": "max",
+"kind": "function",
+"doc": "Return the maximum of an array or maximum along an axis."
+},
+{
+"area": "numpy",
+"name": "maximum",
+"kind": "function",
+"doc": "maximum(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature"
+},
+{
+"area": "numpy",
+"name": "may_share_memory",
+"kind": "function",
+"doc": "may_share_memory(a, b, /, max_work=0)"
+},
+{
+"area": "numpy",
+"name": "mean",
+"kind": "function",
+"doc": "Compute the arithmetic mean along the specified axis."
+},
+{
+"area": "numpy",
+"name": "median",
+"kind": "function",
+"doc": "Compute the median along the specified axis."
+},
+{
+"area": "numpy",
+"name": "meshgrid",
+"kind": "function",
+"doc": "Return a tuple of coordinate matrices from coordinate vectors."
+},
+{
+"area": "numpy",
+"name": "min",
+"kind": "function",
+"doc": "Return the minimum of an array or minimum along an axis."
+},
+{
+"area": "numpy",
+"name": "min_scalar_type",
+"kind": "function",
+"doc": "min_scalar_type(a, /)"
+},
+{
+"area": "numpy",
+"name": "minimum",
+"kind": "function",
+"doc": "minimum(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature"
+},
+{
+"area": "numpy",
+"name": "mintypecode",
+"kind": "function",
+"doc": "Return the character for the minimum-size type to which given types can"
+},
+{
+"area": "numpy",
+"name": "mod",
+"kind": "function",
+"doc": "remainder(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signatu"
+},
+{
+"area": "numpy",
+"name": "modf",
+"kind": "function",
+"doc": "modf(x[, out1, out2], / [, out=(None, None)], *, where=True, casting='same_kind', order='K', dtype=None, subok"
+},
+{
+"area": "numpy",
+"name": "moveaxis",
+"kind": "function",
+"doc": "Move axes of an array to new positions."
+},
+{
+"area": "numpy",
+"name": "multiply",
+"kind": "function",
+"doc": "multiply(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signatur"
+},
+{
+"area": "numpy",
+"name": "nan_to_num",
+"kind": "function",
+"doc": "Replace NaN with zero and infinity with large finite numbers (default"
+},
+{
+"area": "numpy",
+"name": "nanargmax",
+"kind": "function",
+"doc": "Return the indices of the maximum values in the specified axis ignoring"
+},
+{
+"area": "numpy",
+"name": "nanargmin",
+"kind": "function",
+"doc": "Return the indices of the minimum values in the specified axis ignoring"
+},
+{
+"area": "numpy",
+"name": "nancumprod",
+"kind": "function",
+"doc": "Return the cumulative product of array elements over a given axis treating Not a"
+},
+{
+"area": "numpy",
+"name": "nancumsum",
+"kind": "function",
+"doc": "Return the cumulative sum of array elements over a given axis treating Not a"
+},
+{
+"area": "numpy",
+"name": "nanmax",
+"kind": "function",
+"doc": "Return the maximum of an array or maximum along an axis, ignoring any"
+},
+{
+"area": "numpy",
+"name": "nanmean",
+"kind": "function",
+"doc": "Compute the arithmetic mean along the specified axis, ignoring NaNs."
+},
+{
+"area": "numpy",
+"name": "nanmedian",
+"kind": "function",
+"doc": "Compute the median along the specified axis, while ignoring NaNs."
+},
+{
+"area": "numpy",
+"name": "nanmin",
+"kind": "function",
+"doc": "Return minimum of an array or minimum along an axis, ignoring any NaNs."
+},
+{
+"area": "numpy",
+"name": "nanpercentile",
+"kind": "function",
+"doc": "Compute the qth percentile of the data along the specified axis,"
+},
+{
+"area": "numpy",
+"name": "nanprod",
+"kind": "function",
+"doc": "Return the product of array elements over a given axis treating Not a"
+},
+{
+"area": "numpy",
+"name": "nanquantile",
+"kind": "function",
+"doc": "Compute the qth quantile of the data along the specified axis,"
+},
+{
+"area": "numpy",
+"name": "nanstd",
+"kind": "function",
+"doc": "Compute the standard deviation along the specified axis, while"
+},
+{
+"area": "numpy",
+"name": "nansum",
+"kind": "function",
+"doc": "Return the sum of array elements over a given axis treating Not a"
+},
+{
+"area": "numpy",
+"name": "nanvar",
+"kind": "function",
+"doc": "Compute the variance along the specified axis, while ignoring NaNs."
+},
+{
+"area": "numpy",
+"name": "ndim",
+"kind": "function",
+"doc": "Return the number of dimensions of an array."
+},
+{
+"area": "numpy",
+"name": "negative",
+"kind": "function",
+"doc": "negative(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature])"
+},
+{
+"area": "numpy",
+"name": "nested_iters",
+"kind": "function",
+"doc": "nested_iters(op, axes, flags=None, op_flags=None, op_dtypes=None,"
+},
+{
+"area": "numpy",
+"name": "nextafter",
+"kind": "function",
+"doc": "nextafter(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signatu"
+},
+{
+"area": "numpy",
+"name": "nonzero",
+"kind": "function",
+"doc": "Return the indices of the elements that are non-zero."
+},
+{
+"area": "numpy",
+"name": "not_equal",
+"kind": "function",
+"doc": "not_equal(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signatu"
+},
+{
+"area": "numpy",
+"name": "ones",
+"kind": "function",
+"doc": "Return a new array of given shape and type, filled with ones."
+},
+{
+"area": "numpy",
+"name": "ones_like",
+"kind": "function",
+"doc": "Return an array of ones with the same shape and type as a given array."
+},
+{
+"area": "numpy",
+"name": "outer",
+"kind": "function",
+"doc": "Compute the outer product of two vectors."
+},
+{
+"area": "numpy",
+"name": "packbits",
+"kind": "function",
+"doc": "packbits(a, /, axis=None, bitorder='big')"
+},
+{
+"area": "numpy",
+"name": "pad",
+"kind": "function",
+"doc": "Pad an array."
+},
+{
+"area": "numpy",
+"name": "partition",
+"kind": "function",
+"doc": "Return a partitioned copy of an array."
+},
+{
+"area": "numpy",
+"name": "percentile",
+"kind": "function",
+"doc": "Compute the q-th percentile of the data along the specified axis."
+},
+{
+"area": "numpy",
+"name": "permute_dims",
+"kind": "function",
+"doc": "Returns an array with axes transposed."
+},
+{
+"area": "numpy",
+"name": "piecewise",
+"kind": "function",
+"doc": "Evaluate a piecewise-defined function."
+},
+{
+"area": "numpy",
+"name": "place",
+"kind": "function",
+"doc": "Change elements of an array based on conditional and input values."
+},
+{
+"area": "numpy",
+"name": "poly",
+"kind": "function",
+"doc": "Find the coefficients of a polynomial with the given sequence of roots."
+},
+{
+"area": "numpy",
+"name": "polyadd",
+"kind": "function",
+"doc": "Find the sum of two polynomials."
+},
+{
+"area": "numpy",
+"name": "polyder",
+"kind": "function",
+"doc": "Return the derivative of the specified order of a polynomial."
+},
+{
+"area": "numpy",
+"name": "polydiv",
+"kind": "function",
+"doc": "Returns the quotient and remainder of polynomial division."
+},
+{
+"area": "numpy",
+"name": "polyfit",
+"kind": "function",
+"doc": "Least squares polynomial fit."
+},
+{
+"area": "numpy",
+"name": "polyint",
+"kind": "function",
+"doc": "Return an antiderivative (indefinite integral) of a polynomial."
+},
+{
+"area": "numpy",
+"name": "polymul",
+"kind": "function",
+"doc": "Find the product of two polynomials."
+},
+{
+"area": "numpy",
+"name": "polysub",
+"kind": "function",
+"doc": "Difference (subtraction) of two polynomials."
+},
+{
+"area": "numpy",
+"name": "polyval",
+"kind": "function",
+"doc": "Evaluate a polynomial at specific values."
+},
+{
+"area": "numpy",
+"name": "positive",
+"kind": "function",
+"doc": "positive(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature])"
+},
+{
+"area": "numpy",
+"name": "pow",
+"kind": "function",
+"doc": "power(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature])"
+},
+{
+"area": "numpy",
+"name": "power",
+"kind": "function",
+"doc": "power(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature])"
+},
+{
+"area": "numpy",
+"name": "printoptions",
+"kind": "function",
+"doc": "Context manager for setting print options."
+},
+{
+"area": "numpy",
+"name": "prod",
+"kind": "function",
+"doc": "Return the product of array elements over a given axis."
+},
+{
+"area": "numpy",
+"name": "promote_types",
+"kind": "function",
+"doc": "promote_types(type1, type2, /)"
+},
+{
+"area": "numpy",
+"name": "ptp",
+"kind": "function",
+"doc": "Range of values (maximum - minimum) along an axis."
+},
+{
+"area": "numpy",
+"name": "put",
+"kind": "function",
+"doc": "Replaces specified elements of an array with given values."
+},
+{
+"area": "numpy",
+"name": "put_along_axis",
+"kind": "function",
+"doc": "Put values into the destination array by matching 1d index and data slices."
+},
+{
+"area": "numpy",
+"name": "putmask",
+"kind": "function",
+"doc": "putmask(a, /, mask, values)"
+},
+{
+"area": "numpy",
+"name": "quantile",
+"kind": "function",
+"doc": "Compute the q-th quantile of the data along the specified axis."
+},
+{
+"area": "numpy",
+"name": "rad2deg",
+"kind": "function",
+"doc": "rad2deg(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature])"
+},
+{
+"area": "numpy",
+"name": "radians",
+"kind": "function",
+"doc": "radians(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature])"
+},
+{
+"area": "numpy",
+"name": "ravel",
+"kind": "function",
+"doc": "Return a contiguous flattened array."
+},
+{
+"area": "numpy",
+"name": "ravel_multi_index",
+"kind": "function",
+"doc": "ravel_multi_index(multi_index, dims, mode='raise', order='C')"
+},
+{
+"area": "numpy",
+"name": "real",
+"kind": "function",
+"doc": "Return the real part of the complex argument."
+},
+{
+"area": "numpy",
+"name": "real_if_close",
+"kind": "function",
+"doc": "If input is complex with all imaginary parts close to zero, return"
+},
+{
+"area": "numpy",
+"name": "reciprocal",
+"kind": "function",
+"doc": "reciprocal(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature])"
+},
+{
+"area": "numpy",
+"name": "remainder",
+"kind": "function",
+"doc": "remainder(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signatu"
+},
+{
+"area": "numpy",
+"name": "repeat",
+"kind": "function",
+"doc": "Repeat each element of an array after themselves"
+},
+{
+"area": "numpy",
+"name": "require",
+"kind": "function",
+"doc": "Return an ndarray of the provided type that satisfies requirements."
+},
+{
+"area": "numpy",
+"name": "reshape",
+"kind": "function",
+"doc": "Returns a reshaped ndarray without changing data."
+},
+{
+"area": "numpy",
+"name": "resize",
+"kind": "function",
+"doc": "Return a new array with the specified shape."
+},
+{
+"area": "numpy",
+"name": "result_type",
+"kind": "function",
+"doc": "result_type(*arrays_and_dtypes)"
+},
+{
+"area": "numpy",
+"name": "right_shift",
+"kind": "function",
+"doc": "right_shift(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signa"
+},
+{
+"area": "numpy",
+"name": "rint",
+"kind": "function",
+"doc": "rint(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature])"
+},
+{
+"area": "numpy",
+"name": "roll",
+"kind": "function",
+"doc": "Roll array elements along a given axis."
+},
+{
+"area": "numpy",
+"name": "rollaxis",
+"kind": "function",
+"doc": "Roll the specified axis backwards, until it lies in a given position."
+},
+{
+"area": "numpy",
+"name": "roots",
+"kind": "function",
+"doc": "Return the roots of a polynomial with coefficients given in p."
+},
+{
+"area": "numpy",
+"name": "rot90",
+"kind": "function",
+"doc": "Rotate an array by 90 degrees in the plane specified by axes."
+},
+{
+"area": "numpy",
+"name": "round",
+"kind": "function",
+"doc": "Evenly round to the given number of decimals."
+},
+{
+"area": "numpy",
+"name": "save",
+"kind": "function",
+"doc": "Save an array to a binary file in NumPy ``.npy`` format."
+},
+{
+"area": "numpy",
+"name": "savetxt",
+"kind": "function",
+"doc": "Save an array to a text file."
+},
+{
+"area": "numpy",
+"name": "savez",
+"kind": "function",
+"doc": "Save several arrays into a single file in uncompressed ``.npz`` format."
+},
+{
+"area": "numpy",
+"name": "savez_compressed",
+"kind": "function",
+"doc": "Save several arrays into a single file in compressed ``.npz`` format."
+},
+{
+"area": "numpy",
+"name": "searchsorted",
+"kind": "function",
+"doc": "Find indices where elements should be inserted to maintain order."
+},
+{
+"area": "numpy",
+"name": "select",
+"kind": "function",
+"doc": "Return an array drawn from elements in choicelist, depending on conditions."
+},
+{
+"area": "numpy",
+"name": "set_printoptions",
+"kind": "function",
+"doc": "Set printing options."
+},
+{
+"area": "numpy",
+"name": "setbufsize",
+"kind": "function",
+"doc": "Set the size of the buffer used in ufuncs."
+},
+{
+"area": "numpy",
+"name": "setdiff1d",
+"kind": "function",
+"doc": "Find the set difference of two arrays."
+},
+{
+"area": "numpy",
+"name": "seterr",
+"kind": "function",
+"doc": "Set how floating-point errors are handled."
+},
+{
+"area": "numpy",
+"name": "seterrcall",
+"kind": "function",
+"doc": "Set the floating-point error callback function or log object."
+},
+{
+"area": "numpy",
+"name": "setxor1d",
+"kind": "function",
+"doc": "Find the set exclusive-or of two arrays."
+},
+{
+"area": "numpy",
+"name": "shape",
+"kind": "function",
+"doc": "Return the shape of an array."
+},
+{
+"area": "numpy",
+"name": "shares_memory",
+"kind": "function",
+"doc": "shares_memory(a, b, /, max_work=-1)"
+},
+{
+"area": "numpy",
+"name": "show_config",
+"kind": "function",
+"doc": "Show libraries and system information on which NumPy was built"
+},
+{
+"area": "numpy",
+"name": "show_runtime",
+"kind": "function",
+"doc": "Print information about various resources in the system"
+},
+{
+"area": "numpy",
+"name": "sign",
+"kind": "function",
+"doc": "sign(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature])"
+},
+{
+"area": "numpy",
+"name": "signbit",
+"kind": "function",
+"doc": "signbit(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature])"
+},
+{
+"area": "numpy",
+"name": "sin",
+"kind": "function",
+"doc": "sin(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature])"
+},
+{
+"area": "numpy",
+"name": "sinc",
+"kind": "function",
+"doc": "Return the normalized sinc function."
+},
+{
+"area": "numpy",
+"name": "sinh",
+"kind": "function",
+"doc": "sinh(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature])"
+},
+{
+"area": "numpy",
+"name": "size",
+"kind": "function",
+"doc": "Return the number of elements along a given axis."
+},
+{
+"area": "numpy",
+"name": "sort",
+"kind": "function",
+"doc": "Return a sorted copy of an array."
+},
+{
+"area": "numpy",
+"name": "sort_complex",
+"kind": "function",
+"doc": "Sort a complex array using the real part first, then the imaginary part."
+},
+{
+"area": "numpy",
+"name": "spacing",
+"kind": "function",
+"doc": "spacing(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature])"
+},
+{
+"area": "numpy",
+"name": "split",
+"kind": "function",
+"doc": "Split an array into multiple sub-arrays as views into `ary`."
+},
+{
+"area": "numpy",
+"name": "sqrt",
+"kind": "function",
+"doc": "sqrt(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature])"
+},
+{
+"area": "numpy",
+"name": "square",
+"kind": "function",
+"doc": "square(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature])"
+},
+{
+"area": "numpy",
+"name": "squeeze",
+"kind": "function",
+"doc": "Remove axes of length one from `a`."
+},
+{
+"area": "numpy",
+"name": "stack",
+"kind": "function",
+"doc": "Join a sequence of arrays along a new axis."
+},
+{
+"area": "numpy",
+"name": "std",
+"kind": "function",
+"doc": "Compute the standard deviation along the specified axis."
+},
+{
+"area": "numpy",
+"name": "subtract",
+"kind": "function",
+"doc": "subtract(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signatur"
+},
+{
+"area": "numpy",
+"name": "sum",
+"kind": "function",
+"doc": "Sum of array elements over a given axis."
+},
+{
+"area": "numpy",
+"name": "swapaxes",
+"kind": "function",
+"doc": "Interchange two axes of an array."
+},
+{
+"area": "numpy",
+"name": "take",
+"kind": "function",
+"doc": "Take elements from an array along an axis."
+},
+{
+"area": "numpy",
+"name": "take_along_axis",
+"kind": "function",
+"doc": "Take values from the input array by matching 1d index and data slices."
+},
+{
+"area": "numpy",
+"name": "tan",
+"kind": "function",
+"doc": "tan(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature])"
+},
+{
+"area": "numpy",
+"name": "tanh",
+"kind": "function",
+"doc": "tanh(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature])"
+},
+{
+"area": "numpy",
+"name": "tensordot",
+"kind": "function",
+"doc": "Compute tensor dot product along specified axes."
+},
+{
+"area": "numpy",
+"name": "test",
+"kind": "function",
+"doc": "Pytest test runner."
+},
+{
+"area": "numpy",
+"name": "tile",
+"kind": "function",
+"doc": "Construct an array by repeating A the number of times given by reps."
+},
+{
+"area": "numpy",
+"name": "trace",
+"kind": "function",
+"doc": "Return the sum along diagonals of the array."
+},
+{
+"area": "numpy",
+"name": "transpose",
+"kind": "function",
+"doc": "Returns an array with axes transposed."
+},
+{
+"area": "numpy",
+"name": "trapezoid",
+"kind": "function",
+"doc": "Integrate along the given axis using the composite trapezoidal rule."
+},
+{
+"area": "numpy",
+"name": "tri",
+"kind": "function",
+"doc": "An array with ones at and below the given diagonal and zeros elsewhere."
+},
+{
+"area": "numpy",
+"name": "tril",
+"kind": "function",
+"doc": "Lower triangle of an array."
+},
+{
+"area": "numpy",
+"name": "tril_indices",
+"kind": "function",
+"doc": "Return the indices for the lower-triangle of an (n, m) array."
+},
+{
+"area": "numpy",
+"name": "tril_indices_from",
+"kind": "function",
+"doc": "Return the indices for the lower-triangle of arr."
+},
+{
+"area": "numpy",
+"name": "trim_zeros",
+"kind": "function",
+"doc": "Remove values along a dimension which are zero along all other."
+},
+{
+"area": "numpy",
+"name": "triu",
+"kind": "function",
+"doc": "Upper triangle of an array."
+},
+{
+"area": "numpy",
+"name": "triu_indices",
+"kind": "function",
+"doc": "Return the indices for the upper-triangle of an (n, m) array."
+},
+{
+"area": "numpy",
+"name": "triu_indices_from",
+"kind": "function",
+"doc": "Return the indices for the upper-triangle of arr."
+},
+{
+"area": "numpy",
+"name": "true_divide",
+"kind": "function",
+"doc": "divide(x1, x2, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature]"
+},
+{
+"area": "numpy",
+"name": "trunc",
+"kind": "function",
+"doc": "trunc(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature])"
+},
+{
+"area": "numpy",
+"name": "typename",
+"kind": "function",
+"doc": "Return a description for the given data type code."
+},
+{
+"area": "numpy",
+"name": "union1d",
+"kind": "function",
+"doc": "Find the union of two arrays."
+},
+{
+"area": "numpy",
+"name": "unique",
+"kind": "function",
+"doc": "Find the unique elements of an array."
+},
+{
+"area": "numpy",
+"name": "unique_all",
+"kind": "function",
+"doc": "Find the unique elements of an array, and counts, inverse, and indices."
+},
+{
+"area": "numpy",
+"name": "unique_counts",
+"kind": "function",
+"doc": "Find the unique elements and counts of an input array `x`."
+},
+{
+"area": "numpy",
+"name": "unique_inverse",
+"kind": "function",
+"doc": "Find the unique elements of `x` and indices to reconstruct `x`."
+},
+{
+"area": "numpy",
+"name": "unique_values",
+"kind": "function",
+"doc": "Returns the unique elements of an input array `x`."
+},
+{
+"area": "numpy",
+"name": "unpackbits",
+"kind": "function",
+"doc": "unpackbits(a, /, axis=None, count=None, bitorder='big')"
+},
+{
+"area": "numpy",
+"name": "unravel_index",
+"kind": "function",
+"doc": "unravel_index(indices, shape, order='C')"
+},
+{
+"area": "numpy",
+"name": "unstack",
+"kind": "function",
+"doc": "Split an array into a sequence of arrays along the given axis."
+},
+{
+"area": "numpy",
+"name": "unwrap",
+"kind": "function",
+"doc": "Unwrap by taking the complement of large deltas with respect to the period."
+},
+{
+"area": "numpy",
+"name": "vander",
+"kind": "function",
+"doc": "Generate a Vandermonde matrix."
+},
+{
+"area": "numpy",
+"name": "var",
+"kind": "function",
+"doc": "Compute the variance along the specified axis."
+},
+{
+"area": "numpy",
+"name": "vdot",
+"kind": "function",
+"doc": "vdot(a, b, /)"
+},
+{
+"area": "numpy",
+"name": "vecdot",
+"kind": "function",
+"doc": "vecdot(x1, x2, /, out=None, *, casting='same_kind', order='K', dtype=None, subok=True[, signature, axes, axis]"
+},
+{
+"area": "numpy",
+"name": "vecmat",
+"kind": "function",
+"doc": "vecmat(x1, x2, /, out=None, *, casting='same_kind', order='K', dtype=None, subok=True[, signature, axes, axis]"
+},
+{
+"area": "numpy",
+"name": "vsplit",
+"kind": "function",
+"doc": "Split an array into multiple sub-arrays vertically (row-wise)."
+},
+{
+"area": "numpy",
+"name": "vstack",
+"kind": "function",
+"doc": "Stack arrays in sequence vertically (row wise)."
+},
+{
+"area": "numpy",
+"name": "where",
+"kind": "function",
+"doc": "where(condition, [x, y], /)"
+},
+{
+"area": "numpy",
+"name": "zeros",
+"kind": "function",
+"doc": "zeros(shape, dtype=None, order='C', *, device=None, like=None)"
+},
+{
+"area": "numpy",
+"name": "zeros_like",
+"kind": "function",
+"doc": "Return an array of zeros with the same shape and type as a given array."
+},
+{
+"area": "numpy.fft",
+"name": "fft",
+"kind": "function",
+"doc": "Compute the one-dimensional discrete Fourier Transform."
+},
+{
+"area": "numpy.fft",
+"name": "fft2",
+"kind": "function",
+"doc": "Compute the 2-dimensional discrete Fourier Transform."
+},
+{
+"area": "numpy.fft",
+"name": "fftfreq",
+"kind": "function",
+"doc": "Return the Discrete Fourier Transform sample frequencies."
+},
+{
+"area": "numpy.fft",
+"name": "fftn",
+"kind": "function",
+"doc": "Compute the N-dimensional discrete Fourier Transform."
+},
+{
+"area": "numpy.fft",
+"name": "fftshift",
+"kind": "function",
+"doc": "Shift the zero-frequency component to the center of the spectrum."
+},
+{
+"area": "numpy.fft",
+"name": "hfft",
+"kind": "function",
+"doc": "Compute the FFT of a signal that has Hermitian symmetry, i.e., a real"
+},
+{
+"area": "numpy.fft",
+"name": "ifft",
+"kind": "function",
+"doc": "Compute the one-dimensional inverse discrete Fourier Transform."
+},
+{
+"area": "numpy.fft",
+"name": "ifft2",
+"kind": "function",
+"doc": "Compute the 2-dimensional inverse discrete Fourier Transform."
+},
+{
+"area": "numpy.fft",
+"name": "ifftn",
+"kind": "function",
+"doc": "Compute the N-dimensional inverse discrete Fourier Transform."
+},
+{
+"area": "numpy.fft",
+"name": "ifftshift",
+"kind": "function",
+"doc": "The inverse of `fftshift`. Although identical for even-length `x`, the"
+},
+{
+"area": "numpy.fft",
+"name": "ihfft",
+"kind": "function",
+"doc": "Compute the inverse FFT of a signal that has Hermitian symmetry."
+},
+{
+"area": "numpy.fft",
+"name": "irfft",
+"kind": "function",
+"doc": "Computes the inverse of `rfft`."
+},
+{
+"area": "numpy.fft",
+"name": "irfft2",
+"kind": "function",
+"doc": "Computes the inverse of `rfft2`."
+},
+{
+"area": "numpy.fft",
+"name": "irfftn",
+"kind": "function",
+"doc": "Computes the inverse of `rfftn`."
+},
+{
+"area": "numpy.fft",
+"name": "rfft",
+"kind": "function",
+"doc": "Compute the one-dimensional discrete Fourier Transform for real input."
+},
+{
+"area": "numpy.fft",
+"name": "rfft2",
+"kind": "function",
+"doc": "Compute the 2-dimensional FFT of a real array."
+},
+{
+"area": "numpy.fft",
+"name": "rfftfreq",
+"kind": "function",
+"doc": "Return the Discrete Fourier Transform sample frequencies"
+},
+{
+"area": "numpy.fft",
+"name": "rfftn",
+"kind": "function",
+"doc": "Compute the N-dimensional discrete Fourier Transform for real input."
+},
+{
+"area": "numpy.linalg",
+"name": "LinAlgError",
+"kind": "class",
+"doc": "Generic Python-exception-derived object raised by linalg functions."
+},
+{
+"area": "numpy.linalg",
+"name": "cholesky",
+"kind": "function",
+"doc": "Cholesky decomposition."
+},
+{
+"area": "numpy.linalg",
+"name": "cond",
+"kind": "function",
+"doc": "Compute the condition number of a matrix."
+},
+{
+"area": "numpy.linalg",
+"name": "cross",
+"kind": "function",
+"doc": "Returns the cross product of 3-element vectors."
+},
+{
+"area": "numpy.linalg",
+"name": "det",
+"kind": "function",
+"doc": "Compute the determinant of an array."
+},
+{
+"area": "numpy.linalg",
+"name": "diagonal",
+"kind": "function",
+"doc": "Returns specified diagonals of a matrix (or a stack of matrices) ``x``."
+},
+{
+"area": "numpy.linalg",
+"name": "eig",
+"kind": "function",
+"doc": "Compute the eigenvalues and right eigenvectors of a square array."
+},
+{
+"area": "numpy.linalg",
+"name": "eigh",
+"kind": "function",
+"doc": "Return the eigenvalues and eigenvectors of a complex Hermitian"
+},
+{
+"area": "numpy.linalg",
+"name": "eigvals",
+"kind": "function",
+"doc": "Compute the eigenvalues of a general matrix."
+},
+{
+"area": "numpy.linalg",
+"name": "eigvalsh",
+"kind": "function",
+"doc": "Compute the eigenvalues of a complex Hermitian or real symmetric matrix."
+},
+{
+"area": "numpy.linalg",
+"name": "inv",
+"kind": "function",
+"doc": "Compute the inverse of a matrix."
+},
+{
+"area": "numpy.linalg",
+"name": "lstsq",
+"kind": "function",
+"doc": "Return the least-squares solution to a linear matrix equation."
+},
+{
+"area": "numpy.linalg",
+"name": "matmul",
+"kind": "function",
+"doc": "Computes the matrix product."
+},
+{
+"area": "numpy.linalg",
+"name": "matrix_norm",
+"kind": "function",
+"doc": "Computes the matrix norm of a matrix (or a stack of matrices) ``x``."
+},
+{
+"area": "numpy.linalg",
+"name": "matrix_power",
+"kind": "function",
+"doc": "Raise a square matrix to the (integer) power `n`."
+},
+{
+"area": "numpy.linalg",
+"name": "matrix_rank",
+"kind": "function",
+"doc": "Return matrix rank of array using SVD method"
+},
+{
+"area": "numpy.linalg",
+"name": "matrix_transpose",
+"kind": "function",
+"doc": "Transposes a matrix (or a stack of matrices) ``x``."
+},
+{
+"area": "numpy.linalg",
+"name": "multi_dot",
+"kind": "function",
+"doc": "Compute the dot product of two or more arrays in a single function call,"
+},
+{
+"area": "numpy.linalg",
+"name": "norm",
+"kind": "function",
+"doc": "Matrix or vector norm."
+},
+{
+"area": "numpy.linalg",
+"name": "outer",
+"kind": "function",
+"doc": "Compute the outer product of two vectors."
+},
+{
+"area": "numpy.linalg",
+"name": "pinv",
+"kind": "function",
+"doc": "Compute the (Moore-Penrose) pseudo-inverse of a matrix."
+},
+{
+"area": "numpy.linalg",
+"name": "qr",
+"kind": "function",
+"doc": "Compute the qr factorization of a matrix."
+},
+{
+"area": "numpy.linalg",
+"name": "slogdet",
+"kind": "function",
+"doc": "Compute the sign and (natural) logarithm of the determinant of an array."
+},
+{
+"area": "numpy.linalg",
+"name": "solve",
+"kind": "function",
+"doc": "Solve a linear matrix equation, or system of linear scalar equations."
+},
+{
+"area": "numpy.linalg",
+"name": "svd",
+"kind": "function",
+"doc": "Singular Value Decomposition."
+},
+{
+"area": "numpy.linalg",
+"name": "svdvals",
+"kind": "function",
+"doc": "Returns the singular values of a matrix (or a stack of matrices) ``x``."
+},
+{
+"area": "numpy.linalg",
+"name": "tensordot",
+"kind": "function",
+"doc": "Compute tensor dot product along specified axes."
+},
+{
+"area": "numpy.linalg",
+"name": "tensorinv",
+"kind": "function",
+"doc": "Compute the 'inverse' of an N-dimensional array."
+},
+{
+"area": "numpy.linalg",
+"name": "tensorsolve",
+"kind": "function",
+"doc": "Solve the tensor equation ``a x = b`` for x."
+},
+{
+"area": "numpy.linalg",
+"name": "trace",
+"kind": "function",
+"doc": "Returns the sum along the specified diagonals of a matrix"
+},
+{
+"area": "numpy.linalg",
+"name": "vecdot",
+"kind": "function",
+"doc": "Computes the vector dot product."
+},
+{
+"area": "numpy.linalg",
+"name": "vector_norm",
+"kind": "function",
+"doc": "Computes the vector norm of a vector (or batch of vectors) ``x``."
+},
+{
+"area": "numpy.random.Generator",
+"name": "beta",
+"kind": "method",
+"doc": "beta(a, b, size=None)"
+},
+{
+"area": "numpy.random.Generator",
+"name": "binomial",
+"kind": "method",
+"doc": "binomial(n, p, size=None)"
+},
+{
+"area": "numpy.random.Generator",
+"name": "bit_generator",
+"kind": "method",
+"doc": "Gets the bit generator instance used by the generator"
+},
+{
+"area": "numpy.random.Generator",
+"name": "bytes",
+"kind": "method",
+"doc": "bytes(length)"
+},
+{
+"area": "numpy.random.Generator",
+"name": "chisquare",
+"kind": "method",
+"doc": "chisquare(df, size=None)"
+},
+{
+"area": "numpy.random.Generator",
+"name": "choice",
+"kind": "method",
+"doc": "choice(a, size=None, replace=True, p=None, axis=0, shuffle=True)"
+},
+{
+"area": "numpy.random.Generator",
+"name": "dirichlet",
+"kind": "method",
+"doc": "dirichlet(alpha, size=None)"
+},
+{
+"area": "numpy.random.Generator",
+"name": "exponential",
+"kind": "method",
+"doc": "exponential(scale=1.0, size=None)"
+},
+{
+"area": "numpy.random.Generator",
+"name": "f",
+"kind": "method",
+"doc": "f(dfnum, dfden, size=None)"
+},
+{
+"area": "numpy.random.Generator",
+"name": "gamma",
+"kind": "method",
+"doc": "gamma(shape, scale=1.0, size=None)"
+},
+{
+"area": "numpy.random.Generator",
+"name": "geometric",
+"kind": "method",
+"doc": "geometric(p, size=None)"
+},
+{
+"area": "numpy.random.Generator",
+"name": "gumbel",
+"kind": "method",
+"doc": "gumbel(loc=0.0, scale=1.0, size=None)"
+},
+{
+"area": "numpy.random.Generator",
+"name": "hypergeometric",
+"kind": "method",
+"doc": "hypergeometric(ngood, nbad, nsample, size=None)"
+},
+{
+"area": "numpy.random.Generator",
+"name": "integers",
+"kind": "method",
+"doc": "integers(low, high=None, size=None, dtype=np.int64, endpoint=False)"
+},
+{
+"area": "numpy.random.Generator",
+"name": "laplace",
+"kind": "method",
+"doc": "laplace(loc=0.0, scale=1.0, size=None)"
+},
+{
+"area": "numpy.random.Generator",
+"name": "logistic",
+"kind": "method",
+"doc": "logistic(loc=0.0, scale=1.0, size=None)"
+},
+{
+"area": "numpy.random.Generator",
+"name": "lognormal",
+"kind": "method",
+"doc": "lognormal(mean=0.0, sigma=1.0, size=None)"
+},
+{
+"area": "numpy.random.Generator",
+"name": "logseries",
+"kind": "method",
+"doc": "logseries(p, size=None)"
+},
+{
+"area": "numpy.random.Generator",
+"name": "multinomial",
+"kind": "method",
+"doc": "multinomial(n, pvals, size=None)"
+},
+{
+"area": "numpy.random.Generator",
+"name": "multivariate_hypergeometric",
+"kind": "method",
+"doc": "multivariate_hypergeometric(colors, nsample, size=None,"
+},
+{
+"area": "numpy.random.Generator",
+"name": "multivariate_normal",
+"kind": "method",
+"doc": "multivariate_normal(mean, cov, size=None, check_valid='warn',"
+},
+{
+"area": "numpy.random.Generator",
+"name": "negative_binomial",
+"kind": "method",
+"doc": "negative_binomial(n, p, size=None)"
+},
+{
+"area": "numpy.random.Generator",
+"name": "noncentral_chisquare",
+"kind": "method",
+"doc": "noncentral_chisquare(df, nonc, size=None)"
+},
+{
+"area": "numpy.random.Generator",
+"name": "noncentral_f",
+"kind": "method",
+"doc": "noncentral_f(dfnum, dfden, nonc, size=None)"
+},
+{
+"area": "numpy.random.Generator",
+"name": "normal",
+"kind": "method",
+"doc": "normal(loc=0.0, scale=1.0, size=None)"
+},
+{
+"area": "numpy.random.Generator",
+"name": "pareto",
+"kind": "method",
+"doc": "pareto(a, size=None)"
+},
+{
+"area": "numpy.random.Generator",
+"name": "permutation",
+"kind": "method",
+"doc": "permutation(x, axis=0)"
+},
+{
+"area": "numpy.random.Generator",
+"name": "permuted",
+"kind": "method",
+"doc": "permuted(x, axis=None, out=None)"
+},
+{
+"area": "numpy.random.Generator",
+"name": "poisson",
+"kind": "method",
+"doc": "poisson(lam=1.0, size=None)"
+},
+{
+"area": "numpy.random.Generator",
+"name": "power",
+"kind": "method",
+"doc": "power(a, size=None)"
+},
+{
+"area": "numpy.random.Generator",
+"name": "random",
+"kind": "method",
+"doc": "random(size=None, dtype=np.float64, out=None)"
+},
+{
+"area": "numpy.random.Generator",
+"name": "rayleigh",
+"kind": "method",
+"doc": "rayleigh(scale=1.0, size=None)"
+},
+{
+"area": "numpy.random.Generator",
+"name": "shuffle",
+"kind": "method",
+"doc": "shuffle(x, axis=0)"
+},
+{
+"area": "numpy.random.Generator",
+"name": "spawn",
+"kind": "method",
+"doc": "spawn(n_children)"
+},
+{
+"area": "numpy.random.Generator",
+"name": "standard_cauchy",
+"kind": "method",
+"doc": "standard_cauchy(size=None)"
+},
+{
+"area": "numpy.random.Generator",
+"name": "standard_exponential",
+"kind": "method",
+"doc": "standard_exponential(size=None, dtype=np.float64, method='zig', out=None)"
+},
+{
+"area": "numpy.random.Generator",
+"name": "standard_gamma",
+"kind": "method",
+"doc": "standard_gamma(shape, size=None, dtype=np.float64, out=None)"
+},
+{
+"area": "numpy.random.Generator",
+"name": "standard_normal",
+"kind": "method",
+"doc": "standard_normal(size=None, dtype=np.float64, out=None)"
+},
+{
+"area": "numpy.random.Generator",
+"name": "standard_t",
+"kind": "method",
+"doc": "standard_t(df, size=None)"
+},
+{
+"area": "numpy.random.Generator",
+"name": "triangular",
+"kind": "method",
+"doc": "triangular(left, mode, right, size=None)"
+},
+{
+"area": "numpy.random.Generator",
+"name": "uniform",
+"kind": "method",
+"doc": "uniform(low=0.0, high=1.0, size=None)"
+},
+{
+"area": "numpy.random.Generator",
+"name": "vonmises",
+"kind": "method",
+"doc": "vonmises(mu, kappa, size=None)"
+},
+{
+"area": "numpy.random.Generator",
+"name": "wald",
+"kind": "method",
+"doc": "wald(mean, scale, size=None)"
+},
+{
+"area": "numpy.random.Generator",
+"name": "weibull",
+"kind": "method",
+"doc": "weibull(a, size=None)"
+},
+{
+"area": "numpy.random.Generator",
+"name": "zipf",
+"kind": "method",
+"doc": "zipf(a, size=None)"
+}
+]
+}

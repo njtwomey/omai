@@ -1,0 +1,559 @@
+# Libraries next to omai's other domains: offline RL and imitation, control and filtering, change points and motifs,
+# optimisation (evolutionary, convex modelling, optimal transport, optimisers), geometry, symbolic algebra, probabilistic logic,
+# causal discovery, uncertainty and conformal prediction, forecasting zoos, recommenders, data checks and drift reports, game
+# theory, sketches, subgroup discovery and applied statistics.
+# Introspected from the installed environment: control, filterpy, ruptures, stumpy, pysindy, cma, pymoo, cvxpy, pot, optax,
+# shapely, sympy, causallearn, mapie, nashpy, openspiel (game names and algorithm modules), datasketch, pysubgroup, pingouin.
+# From memory: d3rlpy, imitation, pykalman, nevergrad, trimesh, problog, gcastle, uncertainty_toolbox, neuralforecast, darts,
+# gluonts, surprise, implicit, lightfm, recbole, deepchecks, evidently.
+# Libraries with hundreds of names (sympy, cvxpy, pymoo problems, POT, optax, shapely, causallearn internals) were judged by
+# group, not name by name; the groups are described in the notes. diffprivlib is installed but cannot be imported in this
+# environment (it needs a private scikit-learn symbol), so it was not enumerated; its mechanisms are covered under Opacus.
+
+@lib d3rlpy
+@area algos
+F | DQN|DoubleDQN|DDPG|TD3|SAC|BC|DiscreteBC|BCQ|DiscreteBCQ|CQL|DiscreteCQL|TD3PlusBC|IQL|DecisionTransformer|DiscreteDecisionTransformer | agents#dqn, #td3, #sac, #bcqLearner, #cqlLearner, #iqlLearner, #decisionTransformerAgent | | | | |
+P | DiscreteSAC | agents#sac | | | | |
+A | BEAR|AWAC|AWR|CRR|PLAS|PLASWithPerturbation|NFQ|MOPO|COMBO|RebRC | agents#cqlLearner | the other offline methods: advantage-weighted regression (AWR, AWAC, CRR) is a few lines on a trained critic; MOPO and COMBO are model-based offline RL | agents/offline-awr.ts | M | low | offline RL extras
+@area dataset
+F | MDPDataset|ReplayBuffer|FIFOBuffer|InfiniteBuffer|get_cartpole|get_pendulum|TransitionPickerProtocol | datasets#offlineMdp, data#trajectories, rl#replayBuffer | | | | |
+S | get_d4rl|get_atari | | downloaded benchmarks | | | |
+@area metrics
+P | TDErrorEvaluator|DiscountedSumOfAdvantageEvaluator|AverageValueEstimationEvaluator|InitialStateValueEstimationEvaluator|SoftOPCEvaluator|ContinuousActionDiffEvaluator|DiscreteActionMatchEvaluator|EnvironmentEvaluator|CompareContinuousActionDiffEvaluator | rl#fittedQEvaluation, agents | offline evaluation metrics: fitted Q evaluation exists; the rest are variants | | | |
+@area ope
+F | FQE|DiscreteFQE | rl#fittedQEvaluation | | | | |
+@area tools
+S | fit|fit_online|collect | | | | | |
+
+@lib imitation
+@area
+A | TrajectoryWithRew|RewardNet|BasicRewardNet|BasicShapedRewardNet|NormalizedRewardNet|RewardEnsemble | losses#bradleyTerry | reward models learned from preferences | agents/preference-reward.ts | M | medium | reward learning
+F | rollout.generate_trajectories|rollout.make_sample_until|flatten_trajectories|ExpertPolicy | rl#episodeStore, data#trajectories | rollouts and trajectory storage | | | | |
+@area algorithms
+F | BC|BCTrainer|DAgger|SimpleDAggerTrainer|GAIL|MCE_IRL | agents#daggerAlgorithm, #gail, #maxEntIrlAlgorithm | | | | |
+A | AIRL|SQIL|DensityTrainer|AdversarialTrainer | agents#gail | adversarial IRL (a discriminator that recovers a reward), soft Q imitation, density-based imitation | agents/airl.ts | M | low | imitation extras
+A | PreferenceComparisons|RewardNet|BasicRewardNet|BasicShapedRewardNet|NormalizedRewardNet|RewardEnsemble | losses#bradleyTerry | learning a reward from pairwise preferences between trajectories (the RLHF reward model on small environments); the Bradley-Terry loss exists for language models | agents/preference-reward.ts | M | medium | reward learning
+F | .* | agents | | | | |
+
+@lib control
+@area control
+F | tf|ss|zpk|ss2tf|tf2ss|series|parallel|feedback|append|connect|step_response|impulse_response|initial_response|forced_response|bode|nyquist|nichols|pole_zero_map|pzmap|root_locus|rlocus|margin|stability_margins|phase_crossover_frequencies|dcgain|evalfr|freqresp|frequency_response|poles|zeros|c2d|pade|minreal|balred|hsvd|hankel_singular_values|balanced_reduction|ctrb|obsv|gram|lqr|dlqr|lqe|dlqe|place|acker|place_acker|norm|system_norm|h2syn|hinfsyn|step_info|bandwidth|damp|isctime|isdtime|issiso|tfdata|ssdata|canonical_form|reachable_form|observable_form|modal_form|similarity_transform|rss|drss|sample_system|ss2io|tf2io | systems#tf, #ss, #zpk, #series, #feedback, #bode, #nyquist, #nichols, #margin, #stepInfo, #hsvd, #balred, #cont2discrete, dynamics/control#lqr, #dlqr, #lqe, #place, #acker, #hinfSynthesis | the LTI toolbox of python-control is nearly all present | | | | |
+F | care|dare | numerics/linalg#solveCare, #solveDare | the algebraic Riccati equations, continuous and discrete | | | | |
+F | linearize | autodiff#linearize | | | | | |
+P | lyap|dlyap|place_varga|bdschur|eigensys_realization|era|markov|modred|model_reduction|minimal_realization|mixsyn|augw|find_eqpt|find_operating_point|create_estimator_iosystem|create_statefbk_iosystem|disk_margins|gangof4|gangof4_response|isctime|solve_passivity_LMI|ispassive | dynamics/control#riccatiRecursion, #riccatiOde, autodiff#linearize | Lyapunov equation solvers, model reduction by modal truncation, mixed-sensitivity synthesis and the eigensystem realisation algorithm (ERA, identification of a state-space model from impulse responses) are not named; the equilibrium search of a nonlinear system is `dynamics#continueEquilibria` | systems/identification.ts | M | medium | control extras
+A | describing_function|describing_function_response|describing_function_plot|friction_backlash_nonlinearity|relay_hysteresis_nonlinearity|saturation_nonlinearity|DescribingFunctionNonlinearity|DescribingFunctionResponse | dynamics/control#relayAnalysis | describing-function analysis of limit cycles in systems with a nonlinearity | dynamics/control/describing-function.ts | S | low | control extras
+A | phase_plane_plot|phase_plot|box_grid | omai-render/charts#vectorField | phase portraits of two-state systems (a vector field with trajectories); the field and the integrator exist, the composed chart is a render item | omai-render/charts/phase-plane.ts | S | medium | control extras
+S | .* | | iosys plumbing (named signals, interconnection), plot containers, configuration and exceptions | | | |
+
+@lib filterpy
+@area
+S | pretty_str | | | | | |
+@area filterpy.kalman
+F | KalmanFilter|ExtendedKalmanFilter|UnscentedKalmanFilter|EnsembleKalmanFilter|MerweScaledSigmaPoints|JulierSigmaPoints|unscented_transform|rts_smoother|batch_filter|predict|update|logpdf|predict_steadystate|update_steadystate | dynamics/filtering#kalmanFilter, #extendedKalmanFilter, #unscentedKalmanFilter, #ensembleKalmanFilter, #merweSigmaPoints, #julierSigmaPoints, #rtsSmoother, #steadyStateKalman | | | | |
+A | IMMEstimator|MMAEFilterBank | dynamics/filtering | interacting multiple model and multiple-model adaptive estimation: a bank of filters with a Markov model switching between them (C6 in algorithm-gaps); the standard answer to a target that manoeuvres | dynamics/filtering/imm.ts | M | medium | filter variants
+A | CubatureKalmanFilter|ckf_transform|spherical_radial_sigmas|SimplexSigmaPoints | dynamics/filtering#unscentedTransform | cubature points (a sigma-point rule that stays stable in high dimensions) | dynamics/filtering/nonlinear.ts | S | low | filter variants
+A | FadingKalmanFilter|InformationFilter|SquareRootKalmanFilter|FixedLagSmoother | dynamics/filtering#kalmanFilter | numerically robust (square-root, information) and fixed-lag forms of the Kalman filter: the Cholesky-factor form is the standard lesson in numerical stability | dynamics/filtering/kalman-forms.ts | M | low | filter variants
+S | outer_product_sum|reshape_z|pretty_str | | | | | |
+@area filterpy.common
+P | Q_continuous_white_noise|Q_discrete_white_noise|kinematic_kf|kinematic_state_transition|linear_ode_discretation|van_loan_discretization|order_by_derivative|runge_kutta4 | systems#cont2discrete, dynamics/ode | process-noise matrices for kinematic models (constant velocity, constant acceleration) and Van Loan discretisation are the small helpers every tracking example uses | dynamics/filtering/kinematic.ts | S | medium | filter variants
+S | Saver|defaultdict|inv_diagonal|outer_product_sum|pprint|pretty_str|reshape_z | | | | | |
+@area filterpy.gh
+A | GHFilter|GHKFilter|GHFilterOrder|benedict_bornder_constants|critical_damping_parameters|least_squares_parameters|optimal_noise_smoothing | dynamics/filtering#steadyStateKalman | the g-h (alpha-beta) filter, the first filter of every tracking course, and its optimal gains | dynamics/filtering/kinematic.ts | S | medium | filter variants
+@area filterpy.hinfinity
+A | HInfinityFilter | dynamics/control#hinfStateFeedback | the H-infinity state estimator (worst-case rather than minimum variance) | dynamics/filtering/kalman-forms.ts | S | low | filter variants
+@area filterpy.leastsq
+A | LeastSquaresFilter | dynamics#rlsUpdate | | dynamics/filtering/kinematic.ts | S | low | filter variants
+@area filterpy.memory
+A | FadingMemoryFilter | | | dynamics/filtering/kalman-forms.ts | S | low | filter variants
+@area filterpy.discrete_bayes
+P | normalize|predict|update | learn#DiscreteBayesHyper, pgm#forwardFilter | the histogram filter ("where is the robot in a corridor") is a discrete Bayes filter; the HMM filter in `pgm` is the same recursion | | | |
+@area filterpy.monte_carlo
+F | multinomial_resample|residual_resample|stratified_resample|systematic_resample | sampling#multinomialResample, #residualResample, #stratifiedResample, #systematicResample | | | | |
+@area filterpy.stats
+P | gaussian|multivariate_gaussian|multivariate_multiply|mul|add|likelihood|log_likelihood|logpdf|mahalanobis|covariance_ellipse|NESS|norm_cdf|rand_student_t|mul_pdf|plot_covariance|plot_covariance_ellipse|plot_gaussian|plot_gaussian_cdf|plot_gaussian_pdf|plot_discrete_cdf|plot_3d_covariance | dynamics/filtering#nees, #nisTest, numerics/geometry#covarianceEllipse | Gaussian products and the NEES and NIS consistency checks exist | | | | |
+
+@lib pykalman
+F | KalmanFilter | dynamics/filtering#kalmanFilter, #kalmanEm | EM learning of all matrices included | | | | |
+P | UnscentedKalmanFilter|AdditiveUnscentedKalmanFilter | dynamics/filtering#unscentedKalmanFilter | | | | |
+F | .* | dynamics/filtering | | | | |
+
+@lib ruptures
+@area
+S | NotEnoughPoints | | | | | |
+@area ruptures
+F | Pelt|Binseg|pw_constant|pw_linear|pw_normal|pw_wavy|display | dynamics/filtering#pelt, #binarySegmentation, datasets#changepointSeries | | | | |
+A | Dynp|BottomUp|Window|KernelCPD | dynamics/filtering#pelt | optimal partitioning by dynamic programming with a fixed number of changes, bottom-up merging, sliding-window comparison and kernel change-point detection | dynamics/filtering/changepoints.ts | M | medium | change-point detectors
+@area ruptures.costs
+P | CostL2|CostL1|CostNormal|CostLinear|CostAR|CostCLinear|CostRank|CostRbf|CostCosine|CostMl|cost_factory | dynamics/filtering#segmentCosts | cost functions as a table (`segmentCosts`); kernel and rank costs are the missing ones | | | | |
+@area ruptures.metrics
+F | hamming|hausdorff|precision_recall|randindex|meantime | timeseries#changepointHausdorff, #changepointPrecisionRecall, #changepointCovering | | | | |
+@area ruptures.detection
+F | Pelt|Binseg | dynamics/filtering#pelt | | | | |
+A | Dynp|BottomUp|Window|KernelCPD | | | dynamics/filtering/changepoints.ts | M | medium | change-point detectors
+@area ruptures.datasets
+F | .* | datasets#changepointSeries | | | | |
+@area ruptures.show
+P | display | | | | | |
+
+@lib stumpy
+@area
+F | aamp_stimped | timeseries#stimp | | | | | |
+F | stump|stumped|stumpi|aamp|aamped|aampi|stimp|stimped|aamp_stimp|scrump|prescrump|scraamp|prescraamp|mstump|mstumped|maamp|maamped|maamp_mdl|maamp_subspace|mdl|subspace|motifs|aamp_motifs|mmotifs|aamp_mmotifs|match|aamp_match|mpdist|aampdist|mpdisted|aampdisted|snippets|aampdist_snippets|ostinato|aamp_ostinato|ostinatoed|aamp_ostinatoed|floss|fluss|mass|allc|atsc | timeseries#stump, #stompAlgorithm, #stampAlgorithm, #scrump, #prescrump, #mstump, #stimp, #motifs, #discords, #match, #mpdist, #snippets, #ostinato, #fluss, #flossUpdate, #stumpiUpdate, #allc, #atsc | stumpy is covered to the last function, as an algorithm on the tape | | | | |
+
+@lib pysindy
+F | SINDy|STLSQ|SR3|SSR|FROLS|PolynomialLibrary|FourierLibrary|CustomLibrary|FiniteDifference|SmoothedFiniteDifference|SpectralDerivative|SINDyDerivative|ConcatLibrary|GeneralizedLibrary|TensoredLibrary|BaseOptimizer|BaseDifferentiation|EnsembleOptimizer|WrappedOptimizer | dynamics#sindy, #stlsq | sparse identification of nonlinear dynamics with the sequentially thresholded least squares optimiser | | | | |
+A | ConstrainedSR3|StableLinearSR3|TrappingSR3|SBR|SINDyPI|SINDyPILibrary|WeakPDELibrary|PDELibrary|ParameterizedLibrary|DiscreteSINDy | dynamics#sindy | SINDy variants: constrained and stable models, implicit (SINDy-PI) and weak forms, PDE libraries (PDE-FIND), Bayesian thresholding | dynamics/sindy-variants.ts | M | low | system identification extras
+S | AxesArray|PackageNotFoundError | | | | | |
+
+@lib cma
+F | CMAEvolutionStrategy|CMA|fmin|fmin2|CMAOptions|BoundTransform|BoundPenalty|BoundNone|ScaleCoordinates|fmin_con|fmin_con2|AugmentedLagrangian|ConstrainedFitnessAL | optim#cmaes, tune#cmaesSampler | CMA-ES with restarts and bounds handling is in `optim` | | | | |
+P | BoundDomainTransform|NoiseHandler|fmin_lq_surr|fmin_lq_surr2|CMADataLogger|plot|plot_zip|disp|GlueArguments|FitnessFunctions|elli|sphere|cma_default_options_ | optim#cmaes | noise handling for noisy objectives and surrogate-assisted CMA | | | | |
+
+@lib pymoo
+@area
+S | GDE32NN|GDE3MNN|GDE3PCD|RankAndModifiedCrowdingSurvival|ReferenceDirectionSurvival|Repair|RestrictedMating|SPEA2Survival|SurvivalTruncation|ToBoundOutOfBoundsRepair|UniformReferenceDirectionFactory|VFDominator|Var.* | | framework classes, repair and survival operators of specific algorithms | | | |
+@area pymoo.algorithms.moo
+F | NSGA2|RankAndCrowding|NonDominatedSorting|CrowdingDistanceTournamentSurvival|RandomSelection|FloatRandomSampling|LHS | optim#nsga2, #nonDominatedSort, #crowdingDistance | | | | |
+A | NSGA3|UNSGA3|CTAEA|MOEAD|ParallelMOEAD|RVEA|AGEMOEA|AGEMOEA2|SMSEMOA|SPEA2|RNSGA2|RNSGA3|DNSGA2|GDE3|NSDE|NSDER|PINSGA2|KGB|MOPSO_CD|CMOPSO|OmniOptimizer|CADASurvival|APDSurvival|AspirationPointSurvival|LeastHypervolumeContributionSurvival|ASF|HyperplaneNormalization|NeighborhoodSelection|NeighborBasedTournamentSelection | optim#nsga2, #hypervolumeContributions | multi-objective evolutionary algorithms beyond NSGA-II: the reference-point and decomposition methods (NSGA-III, MOEA/D, RVEA) that scale to many objectives, and indicator-based SMS-EMOA | optim/moea.ts | M | medium | multi-objective evolutionary algorithms
+S | ABC|Algorithm|Any|AutomatedDM|DES|Dominator|GaussianNB|GeneticAlgorithm|Initialization|InfillCriterion|LinAlgError|LoopwiseAlgorithm|LooseDominator|MultiObjectiveArchive|MultiObjectiveOutput|NoDuplicateElimination|NoMutation|Output|PM|Population|PolynomialMutation|DefaultMultiObjectiveTermination|MaximumFunctionCallTermination|MaximumGenerationTermination|AGEMOEA2Survival|AGEMOEASurvival|OmniOptimizerSurvival|RankAndCrowdingSurvival|DNSGA2|RankAndCrowdingSurvival | | framework classes and plumbing | | | |
+@area pymoo.algorithms.soo.nonconvex
+F | DE|CMAES|BIPOPCMAES|PSO|NelderMead|GA|BGA|ES|BRKGA|ISRES|G3PCX|DIRECT|NRBO|PatternSearch|SRES|SA|EPPSO|NicheGA|MixedVariableGA | optim#differentialEvolution, #cmaes, #particleSwarm, #nelderMead, #hookeJeeves, #simulatedAnnealing, #dualAnnealing | evolution, swarm, direct-search and annealing methods | | | | |
+S | .* | | operators, terminations and framework classes of the nonconvex solvers | | | |
+@area pymoo.algorithms.soo.convex
+S | .* | | | | | |
+@area pymoo.constraints
+P | ConstraintsAsPenalty|ConstraintsAsObjective|AdaptiveConstraintHandling|AdaptiveEpsilonConstraintHandling|ConstraintsFromBounds|Evaluator|AttachConfigEvaluator|Meta|MetaAlgorithm|Individual|Population|Problem|Any | optim#penaltyMethod, #constraintSet | constraint handling: penalties and bounds exist; adaptive epsilon-constraint handling for evolutionary search does not | | | | |
+@area pymoo.decomposition
+F | WeightedSum|Tchebicheff|ASF|AASF|PBI|PerpendicularDistance|Decomposition|Any | optim#weightedSum, #chebyshev, #augmentedChebyshev, #epsilonConstraint | scalarisation of objectives | | | | |
+@area pymoo.gradient
+S | .* | | automatic differentiation of problems: omai's autodiff does this | | | |
+@area pymoo.indicators
+F | HV|Hypervolume | optim#hypervolume | | | | |
+A | IGD|IGDPlus|GD|GDPlus|MIGD|Epsilon|EpsilonIndicator|EpsilonMultiplicative|SpacingIndicator|KKTPM|RMetric|DistanceIndicator|Indicator|Callback | optim#hypervolume | the quality indicators of a front against a reference front (IGD, GD, additive epsilon): how one decides which of two Pareto approximations is better | optim/indicators.ts | S | medium | multi-objective evolutionary algorithms
+@area pymoo.mcdm
+A | CompromiseProgramming|HighTradeoffPoints|PseudoWeights|NeighborFinder|DecisionMaking | optim#paretoFront | multi-criteria decision making: choose one point from a Pareto front (pseudo-weights, compromise programming, high trade-off points) | optim/mcdm.ts | S | low | multi-objective evolutionary algorithms
+@area pymoo.operators.crossover
+F | SBX|SimulatedBinaryCrossover | optim#sbxCrossover | | | | |
+A | .* | optim#sbxCrossover | the other crossover operators (uniform, one- and two-point, order and edge recombination for permutations, differential evolution crossovers, parent-centric) | optim/operators.ts | S | low | evolutionary operators
+@area pymoo.operators.mutation
+F | PM|PolynomialMutation | optim#polynomialMutation | | | | |
+A | .* | optim#polynomialMutation | bit-flip, Gaussian, inversion and choice mutations | optim/operators.ts | S | low | evolutionary operators
+@area pymoo.operators.sampling
+P | .* | tune#latinHypercubeSampler | | | | |
+@area pymoo.operators.selection
+P | .* | optim#nsga2 | | | | |
+@area pymoo.problems.single
+F | Ackley|Griewank|Himmelblau|Rastrigin|Rosenbrock|Sphere|Zakharov|Schwefel | datasets#ackley, #rastrigin, #rosenbrock, #himmelblau | | | | |
+A | .* | datasets#TestFunction | constrained and combinatorial test problems (G-suite, knapsack, TSP, pressure vessel, beam) | datasets/objectives.ts | S | low | multi-objective test problems
+@area pymoo.problems.multi
+A | ZDT|ZDT1|ZDT2|ZDT3|ZDT4|ZDT5|ZDT6|Kursawe|BNH|OSY|SRN|TNK|CTP.*|Carside|Clutch|WeldedBeam|Truss2D|CSI|MW.*|DASCMOP.*|SYMPART.*|MODAct|OmniTest|WRM|ElementwiseProblem|Problem|Remote|Any | datasets#TestFunction | multi-objective test problems with known Pareto fronts: ZDT, Kursawe, Binh-Korn, the constrained suites. A front you can draw against the truth is exactly omai's "dataset with its truth" rule. | datasets/objectives.ts | S | high | multi-objective test problems
+@area pymoo.problems.many
+A | .* | datasets#TestFunction | many-objective suites (DTLZ, WFG) | datasets/objectives.ts | S | low | multi-objective test problems
+@area pymoo.termination
+P | .* | trace | termination by tolerance on x, f or the front's indicator, time and function calls are the stopping rules of the tape | | | |
+@area pymoo.visualization
+P | Scatter|PCP|Radar|Radviz|Petal|Heatmap|StarCoordinate|FitnessLandscape|Plot|LineCollection|ListedColormap|PatchCollection | omai-render/views#paretoFrontView, charts#parallelCoordinates, #radarChart | Pareto front views, parallel coordinates and radar charts exist; petal and star-coordinate plots do not | | | | |
+
+@lib nevergrad
+@area
+S | Experiment|ArtificialFunction | | benchmarking harness | | | |
+@area optimizers
+F | OnePlusOne|DE|TwoPointsDE|CMA|PSO|RandomSearch|HaltonSearch|SobolSearch|LHSSearch|Cobyla|NelderMead|Powell|SPSA|ScipyOptimizer|EDA|ES|DiscreteOnePlusOne|DiscreteDE|NoisyOnePlusOne|ScrHammersleySearch | optim, tune#haltonSampler, #sobolSampler, #latinHypercubeSampler | | | | |
+A | NGOpt|Shiwa|TBPSA|Portfolio|CMandAS2|MetaModel|BO|ParametrizedBO|SQP|PCEDA|ChainCMAPowell|MultiCMA|MultiScaleCMA|RecES | tune | wizards that choose an optimiser from the problem and meta-optimisers; test-based population size adaptation (TBPSA) for noisy problems | optim/portfolio.ts | M | low | optimiser portfolios
+@area parametrization
+P | Array|Scalar|Choice|Dict|Tuple|Instrumentation|Log|TransitionChoice|Constant|Data | space | typed search spaces are `space` | | | |
+S | .* | | | | | |
+
+@lib optax
+@area optax
+F | adam|adamw|adamax|adamaxw|adagrad|adadelta|adafactor|adabelief|amsgrad|adan|lamb|lars|lion|nadam|nadamw|novograd|radam|rmsprop|rprop|sgd|fromage|lbfgs|noisy_sgd|polyak_sgd|dpsgd|lookahead|chain|clip|clip_by_global_norm|clip_by_block_rms|adaptive_grad_clip|add_decayed_weights|add_noise|apply_updates|ema|global_norm|masked|multi_transform|scale|scale_by_.*|trace|identity|zero_nans|apply_if_finite|apply_every|MultiSteps|incremental_update|keep_params_nonnegative|per_example_global_norm_clip|per_example_layer_norm_clip|differentially_private_aggregate|inject_hyperparams|flatten|centralize|partition|conditionally_mask|conditionally_transform|multi_normal | optim (adam, adamw, lion, lamb, adafactor, sophia, optimisers, chain, clipByGlobalNorm, addDecayedWeights, ema, masked, multiTransform), learn#dpSgdStep | `optim` is optax-shaped: transformations chain, with state | | | | |
+P | adamaxw|adan|adabelief|fromage|novograd|lookahead|scale_by_belief|scale_by_adan|scale_by_novograd|scale_by_rstd_dev|scale_by_rss|scale_by_sm3|scale_by_schedule|scale_by_zoom_linesearch|scale_by_backtracking_linesearch|scale_by_lbfgs|lookahead|MultiSteps | optim#scaleByAdamax, #lbfgsb | | | | |
+A | acprop|ademamix|adopt|cocob|dadapt_adamw|dog|dowg|galore|madgrad|mechanize|momo|momo_adam|muon|prodigy|sam|schedule_free.*|simplified_ademamix|sophia|split_real_and_imaginary|hutchinson_estimator_diag_hessian | optim#sophiaLite, #hutchinsonDiagonal | the newer optimisers: Muon, Schedule-Free, SAM (sharpness-aware minimisation), Prodigy and D-adaptation (learning-rate free), MADGRAD, AdEMAMix. SAM and Schedule-Free are teachable; most are fashion. | optim/optimisers.ts | M | low | optimisers
+F | .* | optim | | | | |
+@area optax.losses
+F | .* | losses | hinge, Huber, log-cosh, KL, cosine, CTC, NT-Xent, triplet margin, Dice, sigmoid focal, sparsemax, Fenchel-Young, perceptron, poly-loss, ranking softmax: all as functions of `losses` | | | | |
+@area optax.contrib
+A | .* | optim | | optim/optimisers.ts | M | low | optimisers
+@area optax.projections
+F | .* | optim#projectBox, #projectSimplex, #projectL1Ball, #projectL2Ball, #projectNonnegative, #projectHalfspace, #projectAffine | | | | |
+@area optax.schedules
+F | .* | optim#schedules | | | | |
+@area optax.second_order
+P | .* | optim#empiricalFisher, #hutchinsonDiagonal, autodiff#hessian | | | | |
+@area optax.tree_utils
+S | .* | | pytree utilities: omai has typed parameter containers | | | |
+
+@lib cvxpy
+A | Variable|Parameter|CallbackParam|Constant|Problem|Minimize|Maximize|Objective|Constraint|Zero|NonNeg|NonPos|PSD|SOC|Cone|ExpCone|PowCone3D|PowCone3DApprox|PowConeND|FiniteSet|Expression|AddExpression|MulExpression|installed_solvers|promote|psd_wrap|symmetric_wrap|hermitian_wrap|skew_symmetric_wrap | optim#linprog, #quadprog, #qpInteriorPoint, #conicProgram, #sdp, #admm | the disciplined-convex-programming modelling language: declare variables and constraints with operators, build the objective from atoms of known curvature, check convexity by composition rules, compile to a conic program and hand it to a solver. omai solves every standard convex class (LP, QP, SOCP, SDP, exponential cone, ADMM, proximal methods) from arrays; what it lacks is the language in which a page would state a problem the way a textbook does. Large; the lesson it teaches (why a composition is convex) is a good one. | optim/dcp.ts | L | low | convex modelling language
+P | abs|exp|log|log1p|sqrt|square|power|pos|neg|sign|huber|logistic|entr|xexp|kl_div|rel_entr|log_sum_exp|loggamma|log_normcdf|norm|norm1|norm2|norm_inf|normNuc|pnorm|mixed_norm|sum_squares|sum|mean|std|var|max|min|maximum|minimum|prod|trace|diag|matmul|multiply|vdot|scalar_product|outer|kron|quad_form|quad_over_lin|matrix_frac|lambda_max|lambda_min|sigma_max|log_det|geo_mean|harmonic_mean|inv_pos|inv_prod|one_minus_pos|diff_pos|tv|cvar|sum_largest|sum_smallest|lambda_sum_largest|lambda_sum_smallest|tr_inv|gen_lambda_max|pf_eigenvalue|von_neumann_entr|quantum_rel_entr|quantum_cond_entr|OpRelEntrConeQuad|RelEntrConeQuad|GeoMean|GeoMeanApprox|MatrixFrac|Power|PowerApprox|Pnorm|PnormApprox|Prod|QuadForm|Sum|Trace|dotsort|eye_minus_inv|gmatmul|perspective|resolvent|scalene|suppfunc|dist_ratio|condition_number|ptp|length|linearize|std | tensor, numerics/special#relEntr, optim | the functions exist in `tensor`, `numerics/linalg` and `numerics/special`; as atoms with declared curvature and monotonicity (the part of the DCP language that checks convexity) they do not | | | | |
+P | bmat|broadcast_to|ceil|floor|concatenate|conj|imag|real|conv|convolve|cumsum|cumprod|cummax|deep_flatten|einsum|hstack|vstack|stack|moveaxis|permute_dims|reshape|squeeze|swapaxes|transpose|upper_tri|vec|vec_to_upper_tri|partial_trace|partial_transpose|diff | tensor | array manipulation: the same operations are tensor ops | | | |
+S | CvxpyDeprecationWarning|DCPError|DGPError|DPPError|SolverError|disable_warnings|enable_warnings|get_num_threads|set_num_threads|warnings_enabled | | | | | |
+
+@lib pot
+@area ot
+F | emd|emd2|emd_1d|emd2_1d|sinkhorn|sinkhorn2|sinkhorn_unbalanced|sinkhorn_unbalanced2|barycenter|wasserstein_1d|sliced_wasserstein_distance|gromov_wasserstein|gromov_wasserstein2|dist|unif|solve|solve_sample | optim#emd, #sinkhorn, #sinkhornUnbalanced, #sinkhornBarycenter, #wasserstein1d, #slicedWasserstein, #gromovWasserstein, losses#sinkhorn | exact transport by network simplex, entropic Sinkhorn (balanced and unbalanced), barycentres, 1-D and sliced Wasserstein, Gromov-Wasserstein: the central parts of POT | | | | |
+S | tic|toc|toq|binary_search_circle|compute_bspot_bijection|merge_bijections | | | | | |
+P | .* | optim | the long tail of POT: see the groups below | | | |
+@area ot.bregman
+P | barycenter_stabilized|barycenter_debiased|empirical_sinkhorn.*|sinkhorn_epsilon_scaling|sinkhorn_log|sinkhorn_knopp|sinkhorn_stabilized|greenkhorn|screenkhorn|convolutional_barycenter2d.*|free_support_sinkhorn_barycenter|jcpot_barycenter|projC|projR|unmix|geometricBar|geometricMean|barycenter_sinkhorn | optim#sinkhornAlgorithm, #sinkhornBarycenter | stabilised and log-domain Sinkhorn variants, Greenkhorn (greedy), screening, convolutional barycentres | | | | |
+@area ot.da
+A | EMDTransport|SinkhornTransport|SinkhornL1l2Transport|SinkhornLpl1Transport|EMDLaplaceTransport|MappingTransport|LinearTransport|LinearGWTransport|JCPOTTransport|UnbalancedSinkhornTransport|NearestBrenierPotential|BaseTransport|emd_laplace|sinkhorn_l1l2_gl|sinkhorn_lpl1_mm|distribution_estimation_uniform | optim#sinkhorn, learn#classifierDensityRatio | optimal-transport domain adaptation (OTDA): move source samples onto the target with a transport plan that respects class labels. Domain shift is a topic omai has (covariate shift, CORAL, MMD) and OT-based alignment is the usual alternative. | learn/domain-adaptation.ts | M | medium | optimal transport for domain adaptation
+@area ot.gromov
+P | entropic_gromov_wasserstein.*|gromov_wasserstein.*|gromov_barycenters|entropic_gromov_barycenters | optim#entropicGromovWasserstein | | | | |
+A | fused_.*|partial_.*|entropic_fused.*|entropic_partial.*|entropic_semirelaxed.*|semirelaxed.*|BAPG.*|fgw_barycenters|.*dictionary_learning|.*linear_unmixing|lowrank_gromov.*|pointwise_.*|GW_distance_estimation|div_.*|fused_unbalanced.*|gwggrad|gwloss|init_matrix.*|get_graph_.*|get_partition.*|format_partitioned.* | optim#gromovWassersteinAlgorithm | fused Gromov-Wasserstein (structure plus features: graph comparison), partial and semi-relaxed variants, dictionary learning on graphs | optim/transport-graphs.ts | M | low | optimal transport extras
+@area ot.partial
+A | .* | | partial optimal transport (move only a fraction of the mass) | optim/transport-extras.ts | S | low | optimal transport extras
+@area ot.unbalanced
+P | .* | optim#sinkhornUnbalanced | | | | |
+@area ot.gaussian
+A | .* | dists#wasserstein2Gaussian | Bures-Wasserstein distance, barycentres and maps between Gaussians (closed forms; the 2-Wasserstein between Gaussians is present) | optim/transport-extras.ts | S | low | optimal transport extras
+@area ot.sliced
+P | .* | losses#slicedWasserstein | max-sliced, sliced plans and spherical variants | | | |
+@area ot.smooth
+A | .* | | smooth OT with quadratic or sparsity-constrained regularisation | optim/transport-extras.ts | S | low | optimal transport extras
+@area ot.lp
+P | .* | optim#emd | free-support barycentres, circle OT, 1-D variants | | | |
+@area ot.stochastic
+A | .* | optim#sinkhorn | stochastic dual solvers for large-scale and semi-discrete OT | optim/transport-extras.ts | M | low | optimal transport extras
+@area ot.solvers
+P | .* | optim#emd | | | | |
+@area ot.lowrank
+A | .* | optim#sinkhorn | low-rank Sinkhorn | optim/transport-extras.ts | S | low | optimal transport extras
+@area ot.mapping
+A | .* | | | optim/transport-extras.ts | S | low | optimal transport extras
+@area ot.regpath
+A | .* | | | optim/transport-extras.ts | S | low | optimal transport extras
+@area ot.coot
+A | .* | | co-optimal transport | optim/transport-extras.ts | S | low | optimal transport extras
+@area ot.factored
+A | .* | | | optim/transport-extras.ts | S | low | optimal transport extras
+@area ot.weak
+A | .* | | | optim/transport-extras.ts | S | low | optimal transport extras
+@area ot.gmm
+A | .* | | | optim/transport-extras.ts | S | low | optimal transport extras
+@area ot.gnn
+S | .* | | graph neural network layers on OT distances | | | |
+@area ot.batch
+S | .* | | batched GPU solvers | | | |
+@area ot.datasets
+P | .* | datasets | | | | |
+
+@lib shapely
+@area shapely
+F | Point|LineString|LinearRing|Polygon|MultiPoint|MultiLineString|MultiPolygon|GeometryCollection|box|convex_hull|centroid|area|length|bounds|envelope|distance|contains|contains_xy|covers|intersects|intersects_xy|is_valid|is_simple|is_ccw|is_closed|hausdorff_distance|frechet_distance|minimum_bounding_circle|minimum_rotated_rectangle|oriented_envelope|delaunay_triangles|voronoi_polygons|concave_hull|simplify|line_interpolate_point|segmentize|reverse|get_coordinates|count_coordinates|rotate|scale|skew|translate|affine_transform|minimum_bounding_radius | numerics/geometry#polygonArea, #polygonCentroid, #convexHull, #pointInPolygon, #delaunay, #voronoi, #alphaShape, #segmentIntersection, #minkowskiSum, vision#minAreaRect, #minEnclosingCircle, #approxPolyDP, metrics#hausdorffDistance, metrics#frechetDistance | the computational geometry that algorithms courses teach (hulls, point in polygon, triangulations, Voronoi, closest points) is in; shapely's extra is general-purpose geometry objects with a predicate and overlay engine | | | | |
+A | buffer|union|unary_union|intersection|difference|symmetric_difference|union_all|intersection_all|clip_by_rect|polygonize|polygonize_full|make_valid|snap|split|shared_paths|linemerge|line_merge|build_area|coverage_.*|disjoint_subset_union.*|boundary|offset_curve|maximum_inscribed_circle|minimum_clearance.*|node|overlaps|touches|crosses|within|disjoint|relate|relate_pattern|equals|equals_exact|equals_identical|dwithin|covered_by|contains_properly|nearest_points|shortest_line|line_locate_point|line_merge|substring|reverse|STRtree|prep|prepare|PreparedGeometry|is_prepared|destroy_prepared | numerics/geometry#polygonClip | overlay operations on general polygons (union, intersection, difference, buffer with join styles), the full DE-9IM predicate set and an R-tree: the part of a GIS geometry engine. `polygonClip` clips against convex polygons; general polygon booleans and buffering are a classic algorithms topic (Weiler-Atherton, Greiner-Hormann, Martinez-Rueda) with a visual step-by-step form. | numerics/geometry/polygons.ts | L | low | polygon overlay
+S | .* | | geometry object plumbing (WKT, WKB, GeoJSON, SRID, precision, coordinate dimensions, ragged arrays, plotting, validity explanation) | | | |
+
+@lib trimesh
+F | creation.box|creation.icosphere|creation.cylinder|creation.capsule|creation.cone|creation.torus|creation.annulus|creation.uv_sphere|convex.convex_hull|sample.sample_surface|ray.ray_triangle|registration.icp|registration.procrustes|transformations|nsphere.minimum_nsphere|bounds.oriented_bounds | graphics, numerics/geometry#kabsch, #procrustes | basic meshes, hulls, ray casting and rigid registration (Procrustes and Kabsch; ICP is a loop on them) | | | | |
+P | Trimesh|PointCloud|Scene|Path2D|Path3D|load|load_mesh|load_path|proximity.closest_point|proximity.signed_distance|curvature.discrete_gaussian_curvature_measure|poses.compute_stable_poses|voxel.VoxelGrid | graphics, fields | meshes as arrays; closest point on a mesh, signed distance, voxelisation and curvature measures | graphics/mesh-queries.ts | M | low | mesh processing
+A | boolean|intersections.mesh_plane|smoothing.filter_laplacian|smoothing.filter_taubin|remesh.subdivide|simplify_quadric_decimation|repair.fill_holes | graphics | mesh booleans, slicing by a plane, Laplacian and Taubin smoothing, subdivision, quadric simplification (graphics-course algorithms with a step-by-step form) | graphics/mesh-processing.ts | L | low | mesh processing
+
+@lib sympy
+@area sympy.core
+P | .* | symbolic | expressions, symbols, rational numbers, substitution, assumption-free algebra | | | |
+@area sympy.functions
+P | .* | symbolic, numerics/special | the elementary functions, factorial, gamma, erf, floor, abs, sign, piecewise; the special-function families (Bessel, Airy, Lambert W, zeta, hypergeometric, orthogonal polynomials) exist numerically in `numerics/special` but not symbolically | symbolic | M | low | symbolic algebra extras
+@area sympy.polys
+P | .* | symbolic#poly, #polyGcd, #polyDiv, #resultant, #discriminant, #sturm, #exactRoots | univariate and multivariate polynomial arithmetic, GCD, resultants, factorisation, real-root isolation; Groebner bases and algebraic number fields are absent | symbolic/groebner.ts | M | medium | symbolic algebra extras
+@area sympy.matrices
+P | .* | symbolic#matrix, #det, #inverse, #eigenvals, #nullspace, #charpoly | exact matrices: determinant, inverse, nullspace, characteristic polynomial, eigenvalues; LU, QR, Jordan and Smith forms and sparse, block and immutable matrices are not | symbolic | M | low | symbolic algebra extras
+@area sympy.solvers
+P | .* | symbolic#solve, #solveLinearSystem | equations and linear systems with steps; ODE solving (`dsolve`), Diophantine equations, inequalities and recurrences are absent | symbolic/ode.ts | M | medium | symbolic algebra extras
+@area sympy.simplify
+F | .* | symbolic#simplify, #expand, #factor, #collect, #together, #cancel, #apart, #trigSimplify | with the step trace as an option | | | | |
+@area sympy.series
+F | .* | symbolic#series, #taylor, #limit, #residue, #pade, #bigO | | | | |
+@area sympy.integrals
+P | .* | symbolic#integrate, #definiteIntegral | indefinite and definite integrals with steps; integral transforms (Laplace, Fourier, Mellin) are absent | symbolic | M | low | symbolic algebra extras
+@area sympy.calculus
+P | .* | symbolic#diff, #limit | differentiation, limits; singularities, extrema over intervals and `AccumBounds` are not | | | |
+@area sympy.concrete
+P | .* | symbolic | symbolic sums and products (summation closed forms) are not provided | symbolic | M | low | symbolic algebra extras
+@area sympy.logic
+F | .* | logic | Boolean algebra, satisfiability, CNF and DNF conversion | | | | |
+@area sympy.ntheory
+F | .* | foundations | primes, factorisation, totient, modular inverse and power, Chinese remainder, continued fractions, divisors, partitions | | | | |
+@area sympy.sets
+P | .* | foundations | finite sets and intervals; symbolic set algebra (unions of intervals, images of sets) is not | | | |
+@area sympy.parsing
+F | .* | symbolic#parse, #parseLatex | | | | |
+@area sympy.printing
+P | .* | symbolic#toText, #toLatex | text and LaTeX output; code generation to C, JavaScript or Fortran is not (and not needed) | | | |
+@area sympy.geometry
+P | .* | numerics/geometry | planar geometry computed numerically, not symbolically | | | |
+@area sympy.tensor
+P | .* | tensor#einsum | | | | |
+@area sympy.assumptions
+A | .* | | the assumptions system (`Q.positive(x)`, `ask`, refine) | symbolic | M | low | symbolic algebra extras
+@area sympy.algebras
+P | .* | numerics/geometry#rotationFromQuat | | | | |
+@area sympy.discrete
+P | .* | numerics/fourier | discrete transforms and convolutions numerically | | | |
+@area sympy.plotting
+S | .* | | | | | |
+@area sympy.interactive
+S | .* | | | | | |
+@area sympy.external
+S | .* | | | | | |
+@area sympy.utilities
+S | .* | | | | | |
+
+@lib problog
+F | Term|Constant|Var|Clause|Not|And|Or|LogicProgram|PrologFile|PrologString|SimpleProgram|DefaultEngine|ground|compile|get_evaluatable|evaluate|ground_ProbLog_Program|tasks.sample | logic#groundProbabilistic, #proofSets, #successProbability, #conditionalProbability, #disjunctionProbability, #consult, #solve | probabilistic logic programs with independent probabilistic facts: grounding, proofs, exact success and conditional probabilities (`logic/problog.ts`) | | | | |
+F | learning.lfi|learning.Learning_from_interpretations|Distribution | logic#probLogEmAlgorithm, #learnProbabilities | learning the fact probabilities from interpretations by EM | | | | |
+A | ProbFOIL|tasks.dcprobability | logic#foil | learning probabilistic rules (ProbFOIL) and distributional clauses with continuous variables | logic/problog.ts | M | low | probabilistic logic programming
+S | .* | | | | | |
+
+@lib causallearn
+@area
+S | GraphUtils|cov_noise|cov_seard|cov_sum|dist2|eigdec|feval|gpr_multi_new|pdinv|solve_chol|sq_dist|AdjacencyConfusion|ArrowConfusion|BackgroundKnowledge|Node | | helper classes and linear-algebra routines inside causal-learn | | | |
+@area causallearn.search.ConstraintBased.PC
+F | pc|pc_alg|skeleton_correction|CausalGraph|FisherZ|Chisq_or_Gsq|D_Separation|BackgroundKnowledge|orient_by_background_knowledge | pgm/learning#pcAlgorithm, #fisherZTest, #chiSquareTest, #gSquareTest | | | | |
+A | mvpc_alg|detect_parent|get_parent|get_adjacancy_matrix|get_missingness_index|get_parent_missingness_pairs|MV_FisherZ|MC_FisherZ|isempty|matrix_diff | pgm/learning#pcAlgorithm | PC with missing data (test-wise deletion, missingness graph) | pgm/learning/pc-missing.ts | S | low | causal discovery extras
+P | KCI|KCI_CInd|KCI_UInd|FastKCI|FastKCI_CInd|FastKCI_UInd|RCIT|RCIT_CInd|RCIT_UInd|CIT|CIT_Base|register_ci_test | stats/tests#kernelCITest | the kernel conditional-independence test is in; the randomised (RCIT) and fast variants are not | | | |
+@area causallearn.search.ConstraintBased.FCI
+F | fci|fas|rule0|ruleR1|ruleR2|ruleR3|ruleR4B|ruleR5|ruleR6|ruleR7|rule8|rule9|rule10 | pgm/causal#fciAlgorithm | | | | |
+S | .* | | graph-traversal helper functions of the FCI implementation | | | |
+@area causallearn.search.ScoreBased.GES
+F | ges|local_score_BIC|local_score_BDeu|local_score_BIC_from_cov | pgm/causal#ges, pgm/learning#localScore, #discreteScorer, #gaussianScorer | | | | |
+P | local_score_cv_general|local_score_marginal_general|local_score_cv_multi|local_score_marginal_multi|gpr_multi_new | gp | generalised (nonparametric) scores via Gaussian-process likelihoods | | | |
+S | .* | | | | | |
+@area causallearn.search.ScoreBased.ExactSearch
+A | .* | pgm/learning#hillClimbAlgorithm | exact score-based structure search by dynamic programming or A* over subsets, feasible to about 20 variables (Silander and Myllymaki; the optimum, not a local one); listed with pgmpy's exhaustive search | pgm/learning/exact-search.ts | M | medium | exact structure learning
+@area causallearn.search.PermutationBased.GRaSP
+A | .* | pgm/causal#ges | permutation-based causal discovery (GRaSP, greedy relaxations of the sparsest permutation) | pgm/learning/permutation-search.ts | M | low | causal discovery extras
+@area causallearn.search.FCMBased.lingam
+F | DirectLiNGAM|ICALiNGAM | pgm/causal#directLingam | | | | |
+A | BottomUpParceLiNGAM|CausalEffect|LongitudinalLiNGAM|MultiGroupDirectLiNGAM|RCD|VARLiNGAM|VARMALiNGAM|BootstrapResult|LongitudinalBootstrapResult|TimeseriesBootstrapResult | pgm/causal#lingamContract | LiNGAM for time series (VAR-LiNGAM), several groups, latent confounders (RCD, ParceLiNGAM) and bootstrap confidence in edges | pgm/causal/lingam-extras.ts | M | low | causal discovery extras
+@area causallearn.search.FCMBased.ANM.ANM
+A | .* | | additive noise models for bivariate cause-effect direction | pgm/causal/bivariate.ts | S | medium | bivariate causal direction
+@area causallearn.search.FCMBased.PNL.PNL
+A | .* | | post-nonlinear models for direction | pgm/causal/bivariate.ts | S | low | bivariate causal direction
+@area causallearn.search.Granger.Granger
+P | .* | timeseries#engleGranger | Granger causality tests in the VAR setting (the Engle-Granger entry is a cointegration test; a pairwise Granger F test with a lag search is what is meant) | timeseries/granger.ts | S | medium | time-series causal discovery
+@area causallearn.search.HiddenCausal.GIN.GIN
+A | .* | | latent-variable causal structure by generalised independent noise | pgm/learning/latent-structure.ts | M | low | causal discovery extras
+S | .* | | graph, score and kernel helper classes | | | |
+
+@lib gcastle
+F | PC|GES|DirectLiNGAM|ICALiNGAM|Notears|NotearsLinear|NotearsNonlinear | pgm/learning#pcAlgorithm, pgm/causal#ges, #directLingam, #notears | | | | |
+A | NotearsLowRank|Notears_Low_Rank|GOLEM|DAG_GNN|GraNDAG|Gran_DAG|MCSL|PNL|ANMNonlinear|CORL|RL|TTPM|GAE|EXACT|SAM|Inventory|CausalDiscoveryEvaluator | pgm/causal#notears | continuous-optimisation structure learners beyond NOTEARS (GOLEM, DAG-GNN, GraN-DAG, MCSL) and reinforcement-learning search | pgm/causal/continuous-dag.ts | M | low | causal discovery extras
+F | IIDSimulation|DAG|Topology|load_dataset|MetricsDAG | datasets#linearScm, pgm/learning#structuralHammingDistance | the simulation of data from a random DAG and the DAG metrics (SHD, precision, recall) | | | | |
+A | THPSimulation | | topological Hawkes process simulation | | | | |
+
+@lib mapie
+@area mapie.regression
+F | SplitConformalRegressor|CrossConformalRegressor|ConformalizedQuantileRegressor|JackknifeAfterBootstrapRegressor|CrossConformalizedQuantileRegressor | learn#splitConformalRegressor, #crossConformalRegressor, #conformalizedQuantileRegressor | | | | |
+A | TimeSeriesRegressor | learn#adaptiveConformalInference | EnbPI: conformal intervals for time series from ensembles on bootstrap blocks | learn/conformal-timeseries.ts | S | medium | conformal extras
+@area mapie.classification
+F | SplitConformalClassifier|CrossConformalClassifier|RAPSConformityScore|EnsembleClassifier | learn#splitConformalClassifier, #tuneRaps | | | | |
+S | .* | | | | | |
+@area mapie.conformity_scores
+F | AbsoluteConformityScore|GammaConformityScore|ResidualNormalisedScore|LACConformityScore|APSConformityScore|TopKConformityScore|NaiveConformityScore|QuantileRegressionScore|AbsoluteQuantileRegressionScore|RAPSConformityScore|StdConformityScore | learn#splitConformalRegressor, #splitConformalClassifier | the score is an option of the conformal learners | | | | |
+P | BaseRegressionScore|BaseClassificationScore | learn | | | | |
+@area mapie.calibration
+F | TopLabelCalibrator | learn#calibratedClassifierCV | | | | |
+A | VennAbers|VennAbersCalibrator|VennAbersMultiClass|predict_proba_prefitted_va | learn#isotonicCalibration | Venn-Abers predictors: calibrated probabilities with a validity guarantee, as an interval of probabilities | learn/calibration.ts | S | medium | conformal extras
+S | BaseEstimator|ClassifierMixin|IsotonicRegression|NotFittedError|Pipeline|RegressorMixin|check_is_fitted | | | | | |
+@area mapie.risk_control
+A | BinaryClassificationController|BinaryClassificationRisk|BinaryRisk|ContinuousRisk|MultiClassificationLTTController|MultiLabelClassificationController|SemanticSegmentationController|RiskLoss|FWERBonferroniCorrection|FWERBonferroniHolm|FWERFixedSequenceTesting|FWERProcedure|control_fwer | learn#intervalCoverage, stats/tests | conformal risk control and Learn-then-Test: choose a threshold so that a chosen risk (false negative rate, miscoverage) is below alpha with high probability, by multiple testing over thresholds; the stepping is natural (each candidate threshold's p-value) | learn/risk-control.ts | M | high | conformal risk control
+@area mapie.exchangeability_testing
+P | PermutationTest|PValuePermutationTest|SequentialMonteCarloTest | stats#permutationTest, #monteCarloTest | permutation and Monte Carlo tests exist in `stats` as general tools | | | |
+A | .* | | testing whether data are exchangeable, the assumption conformal prediction rests on: permutation tests and online martingale tests (conformal test martingales) that raise an alarm when it breaks | learn/exchangeability.ts | M | medium | conformal extras
+@area mapie.metrics.regression
+F | regression_coverage_score|regression_mean_width_score|regression_mwi_score|coverage_width_based | learn#intervalCoverage, metrics#intervalScore, #meanScaledIntervalScore | | | | |
+A | regression_ssc|regression_ssc_score|hsic | metrics | size-stratified coverage: coverage as a function of interval width, which exposes intervals that are valid on average and wrong where it matters | metrics/conformal.ts | S | medium | conformal extras
+@area mapie.metrics.classification
+F | classification_coverage_score|classification_mean_width_score | learn#intervalCoverage | | | | |
+A | classification_ssc|classification_ssc_score | | | metrics/conformal.ts | S | medium | conformal extras
+@area mapie.metrics.calibration
+F | expected_calibration_error|top_label_ece | metrics#expectedCalibrationError | | | | |
+A | add_jitter|cumulative_differences|kolmogorov_smirnov_cdf|kolmogorov_smirnov_p_value|kolmogorov_smirnov_statistic|kuiper_cdf|kuiper_p_value|kuiper_statistic|length_scale|sort_xy_by_y|spiegelhalter_p_value|spiegelhalter_statistic | metrics#expectedCalibrationError | calibration tests with p-values (Kolmogorov-Smirnov on cumulative differences, Kuiper, Spiegelhalter): a test, not just a number | metrics/calibration-tests.ts | S | low | conformal extras
+@area mapie.subsample
+P | Subsample|BlockBootstrap|Any|BaseCrossValidator|RandomState | stats#jackknife, learn/model-selection | block bootstrap exists in `stats`; the splitter wrappers do not | | | |
+S | _.* | | | | | |
+
+@lib uncertainty_toolbox
+@area metrics
+F | mean_absolute_calibration_error|root_mean_squared_calibration_error|miscalibration_area|sharpness|nll|crps|interval_score|accuracy_metrics|get_all_metrics|get_proper_scoring_rule_metrics|get_all_accuracy_metrics|get_all_average_calibration|get_all_adversarial_group_calibration|get_all_sharpness_metrics|check | metrics#expectedCalibrationError, #crpsNormal, #intervalScore, #logScore, learn#quantileCalibrationCurve | | | | |
+@area viz
+P | plot_calibration|plot_intervals|plot_intervals_ordered|plot_xy|plot_sharpness|plot_adversarial_group_calibration|plot_ordered_intervals|plot_parity|plot_residuals|plot_density|plot_calibration_diagram | omai-render/charts#calibrationChart, #intervalChart, views#reliabilityView | | | | |
+@area recalibration
+F | iso_recal|optimize_recalibration_ratio|get_std_recalibrator|get_quantile_recalibrator|get_interval_recalibrator | learn#recalibratedQuantiles, #isotonicCalibration | | | | |
+@area data
+P | synthetic_sine_heteroscedastic | datasets#heteroscedastic | | | | |
+
+@lib neuralforecast
+@area models
+F | NBEATS|NBEATSx|MLP|LSTM|GRU|RNN|TCN|DeepAR|KAN|VanillaTransformer|DLinear|NLinear | nn/blocks#NBeats, #TCN, nn#LSTM, #GRU, #KanLayer, #Transformer, timeseries | | | | |
+P | NHITS|TFT|Informer|Autoformer|FEDformer|PatchTST|iTransformer|TimesNet|TiDE|TSMixer|TSMixerx|StemGNN|DilatedRNN|DeepNPTS|MLPMultivariate|HINT|BiTCN|SOFTS|TimeMixer | nn/blocks, nn#multiHeadAttention | the neural forecasting zoo: the blocks exist (NBeats, transformers, mixers, TCN) but assembled forecasters with windowing, covariates and a forecasting loss do not; N-HiTS is N-BEATS with pooling and interpolation; PatchTST is a transformer over patches | nn/blocks/forecasting.ts | M | medium | neural forecasters
+S | TimeLLM | | uses a pretrained language model | | | |
+@area losses
+F | MAE|MSE|RMSE|MAPE|SMAPE|MASE|QuantileLoss|MQLoss|HuberLoss|HuberMQLoss | metrics#meanAbsoluteError, #mape, #meanAbsoluteScaledError, #quantileLoss, losses#pinball | | | | |
+P | DistributionLoss|PMM|GMM|NBMM|IQLoss | losses#gaussianNll, dists | probabilistic forecasting heads: a loss that is the negative log-likelihood of a predicted distribution (Student-t, negative binomial, mixtures) | | | |
+@area tools
+P | NeuralForecast|fit|predict|cross_validation|auto_models.AutoNHITS|AutoNBEATS|AutoTFT | learn/model-selection, tune | the forecasting pipeline (windows, cross-validation across cutoffs, hyperparameter search): see sktime in the first pass, README item 4 | timeseries/forecasters.ts | M | high | forecasting pipeline
+@area scalers
+P | TemporalNorm|RevIN | learn/preprocessing | reversible instance normalisation, a one-liner on `layerNorm` statistics | | | |
+
+@lib darts
+@area
+P | ShapExplainer|TFTExplainer | explain | | | | |
+@area forecasting
+F | ARIMA|AutoARIMA|ExponentialSmoothing|Theta|FFT|Prophet|StatsForecastETS|BATS|TBATS|Croston|KalmanForecaster|NaiveMean|NaiveSeasonal|NaiveDrift|NaiveMovingAverage|LinearRegressionModel|RandomForest|VARIMA | timeseries (arima, exponentialSmoothing, ets, bats, tbats, croston, theta), dynamics/filtering | the classical univariate models; Theta and Prophet-style models are on the first-pass list (README item 4) | | | | |
+P | FourTheta|XGBModel|LightGBMModel|CatBoostModel|RegressionEnsembleModel|NaiveEnsembleModel|NBEATSModel|NHiTSModel|TFTModel|TCNModel|TransformerModel|DLinearModel|NLinearModel|TiDEModel|TSMixerModel|BlockRNNModel|RNNModel | ensembles, nn/blocks | gradient-boosted and neural global models on lagged windows: the learners exist; a forecaster that takes a series, builds lag features, trains one model across series and forecasts recursively or directly does not (README item 4) | timeseries/forecasters.ts | M | high | forecasting pipeline
+S | TimesFM|Chronos2Model | | pretrained foundation models | | | |
+@area anomaly
+P | ForecastingAnomalyModel|FilteringAnomalyModel|NormScorer|DifferenceScorer|KMeansScorer|WassersteinScorer|PyODScorer|ThresholdDetector|QuantileDetector|IQRDetector | anomaly, timeseries#discords | anomaly scoring of a series through forecast or filter residuals with a detector: parts exist | anomaly/series.ts | S | medium | series anomaly detection
+A | AndAggregator|OrAggregator|EnsembleSklearnAggregator | anomaly#combineScores | | anomaly/series.ts | S | low | series anomaly detection
+@area metrics
+F | mae|mse|rmse|mape|smape|mase|ope|rho_risk|r2_score|coefficient_of_variation|dtw_metric | metrics, signal#dtw | | | | |
+@area timeseries
+P | TimeSeries|concatenate|slice_intersect|statistics.check_seasonality|statistics.stationarity_tests|statistics.plot_acf|statistics.plot_pacf|statistics.extract_trend_and_seasonality|statistics.remove_trend | timeseries | the series type with a frequency (see repertoire.md); seasonality and stationarity checks are separate functions | timeseries | M | medium | forecasting pipeline
+@area dataprocessing
+P | Scaler|MissingValuesFiller|BoxCox|StaticCovariatesTransformer|InvertibleMapper|Diff|WindowTransformer|MIDAS|Pipeline|Mapper | learn/preprocessing, timeseries | invertible series transformers (a transformer that can undo itself so forecasts return to the original scale) | timeseries/transformers.ts | M | high | forecasting pipeline
+P | ShapExplainer|TFTExplainer | explain | | | | |
+@area utils
+P | backtest|historical_forecasts|gridsearch|residuals | learn/model-selection | expanding and rolling backtests (rolling splitters exist) | timeseries/forecasters.ts | S | high | forecasting pipeline
+@area datasets
+P | AirPassengersDataset|AusBeerDataset|ETTh1Dataset|ElectricityDataset|TaylorDataset|TrafficDataset|WeatherDataset | datasets | air passengers and a few more are in; the large benchmarks are downloads | | | |
+@area ad_aggregators
+A | .* | | | anomaly/series.ts | S | low | series anomaly detection
+
+@lib gluonts
+@area models
+P | DeepAREstimator|DeepStateEstimator|DeepVAREstimator|DeepFactorEstimator|GPVAREstimator|MQCNNEstimator|MQRNNEstimator|SimpleFeedForwardEstimator|TemporalFusionTransformerEstimator|WaveNetEstimator|NBEATSEstimator|TransformerEstimator|LagTSTEstimator|PatchTSTEstimator|TiDEEstimator|DLinearEstimator|DeepNPTSEstimator|SelfAttentionEstimator | nn/blocks, dists, timeseries | probabilistic forecasting with a network that outputs a distribution and is trained on windows: all the parts exist; the estimator does not | timeseries/forecasters.ts | M | medium | neural forecasters
+@area predictors
+P | SeasonalNaivePredictor|ConstantValuePredictor|MeanPredictor|MovingAveragePredictor|NPTSPredictor|ProphetPredictor|RForecastPredictor | timeseries | simple baselines (seasonal naive, mean) as forecasters that every comparison starts from | timeseries/forecasters.ts | S | high | forecasting pipeline
+@area distributions
+F | StudentTOutput|NegativeBinomialOutput|GaussianOutput|GammaOutput|BetaOutput|PoissonOutput|LaplaceOutput|MultivariateGaussianOutput|LowrankMultivariateGaussianOutput|PiecewiseLinearOutput|NormalizingFlowOutput|ImplicitQuantileOutput|GenParetoOutput | dists, losses#gaussianNll, #heteroscedasticGaussianNll | | | | |
+@area evaluation
+F | Evaluator|MeanWeightedQuantileLoss|CRPS|MSIS|ND|NRMSE|SMAPE|MASE|coverage|make_evaluation_predictions|backtest_metrics | metrics#crpsEnsemble, #meanScaledIntervalScore, #quantileLoss, #symmetricMeanAbsolutePercentageError, #meanAbsoluteScaledError | | | | |
+@area transform
+P | .* | learn/preprocessing#lagFeatures, data#padSequences | instance splitters and sampler for windows | | | |
+@area dataset
+P | ListDataset|PandasDataset|FileDataset|DatasetStatistics|get_dataset|get_dataset_names | data#timeSeries | | | | |
+@area backtest
+P | .* | learn/model-selection | | | | |
+
+@lib surprise
+@area
+S | jester | | downloaded dataset | | | |
+@area prediction_algorithms
+F | NormalPredictor|BaselineOnly|SVD|NMF|CoClustering | numerics/linalg/completion, decomposition#nmf | biased matrix factorisation by SGD or ALS, NMF, baselines and co-clustering are in the completion and decomposition code | | | | |
+A | KNNBasic|KNNWithMeans|KNNWithZScore|KNNBaseline|SlopeOne|SVDpp | learn#neighbourIndex | neighbourhood collaborative filtering (user-based and item-based k-NN with mean-centring), Slope One, and SVD++ (implicit feedback in the factor model): the baselines of every recommender course (repertoire.md) | learn/recommenders.ts | M | high | neighbourhood collaborative filtering
+@area model_selection
+F | cross_validate|GridSearchCV|RandomizedSearchCV|KFold|RepeatedKFold|ShuffleSplit|LeaveOneOut|PredefinedKFold|train_test_split | learn/model-selection | | | | |
+@area accuracy
+F | rmse|mse|mae|fcp | metrics#rootMeanSquaredError, #meanSquaredError, #meanAbsoluteError | | | | |
+@area similarities
+F | cosine|msd|pearson|pearson_baseline | distances#cosineSimilarity, #pearsonSimilarity | | | | |
+@area dataset
+F | Dataset|Reader|Trainset|load_builtin|ml-100k|ml-1m | datasets#movielensSmall, #parseMovieLens | MovieLens small only; Jester and the larger ones are downloads | | | | |
+@area utils
+A | get_top_n|precision_recall_at_k | metrics#precisionAtK, #recallAtK | top-N recommendation lists from rating predictions | learn/recommenders.ts | S | medium | neighbourhood collaborative filtering
+
+@lib implicit
+F | AlternatingLeastSquares|BayesianPersonalizedRanking | numerics/linalg#implicitAlsAlgorithm, losses#bpr | implicit-feedback ALS (Hu, Koren and Volinsky) is there; BPR has the loss and no model | | | | |
+P | LogisticMatrixFactorization | numerics/linalg/completion | | learn/recommenders.ts | S | low | neighbourhood collaborative filtering
+A | CosineRecommender|BM25Recommender|TFIDFRecommender|ItemItemRecommender|bm25_weight|tfidf_weight|normalize | text#bm25, #tfidfWeights | item-item neighbourhood models on implicit data with BM25 or TF-IDF weighting of the interaction matrix | learn/recommenders.ts | S | medium | neighbourhood collaborative filtering
+F | precision_at_k|mean_average_precision_at_k|ndcg_at_k|AUC_at_k|ranking_metrics_at_k|leave_k_out_split|train_test_split | metrics#precisionAtK, #meanAveragePrecision, #ndcgScore, #rocAucScore | | | | |
+S | movielens|lastfm|million_song_dataset|reddit|sketchfab|approximate_als|nmslib_als|annoy_als|faiss_als | | downloads and approximate-nearest-neighbour back ends | | | |
+
+@lib lightfm
+F | LightFM | nn/blocks#FactorisationMachine, losses#bpr | a hybrid factorisation with user and item features, trained with BPR or logistic loss; WARP loss (weighted approximate-rank pairwise, sampling negatives until a violation is found) is the one named loss not present | | | | |
+A | warp|warp-kos | losses#bpr | WARP ranking loss | losses/ranking.ts | S | low | neighbourhood collaborative filtering
+P | fit|fit_partial|predict|predict_rank|get_item_representations|get_user_representations|logistic|bpr | nn/blocks#NeuralCF | | | | |
+F | precision_at_k|recall_at_k|auc_score|reciprocal_rank | metrics | | | | |
+P | Dataset|fetch_movielens|build_interactions|build_item_features|build_user_features|random_train_test_split | data#interactions, datasets#movielensSmall | | | | |
+
+@lib recbole
+@area general
+F | BPR|NeuMF|FM|MultiVAE|MultiDAE|CDAE|Pop | losses#bpr, nn/blocks#NeuralCF, #FactorisationMachine | | | | |
+A | ItemKNN|EASE|SLIMElastic|ADMMSLIM|NCEPLRec|SimpleX|RecVAE|MacridVAE|RaCT|DiffRec|ConvNCF|DMF|FISM|NAIS|SpectralCF|GCMC|NGCF|LightGCN|DGCF|LINE|SGL|NCL|ENMF|NNCF | | linear and neighbourhood item models (ItemKNN, EASE and SLIM: EASE is a closed-form ridge regression of the item-item matrix and a famously strong baseline) and graph collaborative filtering (LightGCN, NGCF: message passing over the user-item graph, which `nn#gcnConv` can build) | learn/recommenders.ts | M | medium | graph and linear collaborative filtering
+@area sequential
+A | FPMC|GRU4Rec|NARM|STAMP|Caser|NextItNet|TransRec|SASRec|BERT4Rec|SRGNN|GCSAN|GRU4RecF|SASRecF|FDSA|S3Rec|GRU4RecKG|KSR|FOSSIL|SHAN|RepeatNet|HGN|HRM|NPE|LightSANs|SINE|CORE|FEARec | nn#GRU, nn/blocks#TransformerStack | session-based and sequential recommenders (GRU4Rec, SASRec, BERT4Rec): next-item prediction from a user's sequence with an RNN or transformer; the layers and the sequence data exist | learn/recommenders.ts | M | medium | sequential recommenders
+@area context
+F | LR|FM|FFM|FNN|DeepFM|NFM|AFM|AutoInt|DCN|DCNV2|xDeepFM|WideDeep|FwFM|PNN|DIN|DIEN|DSSM|FiGNN|FiBiNet | nn/blocks#FactorisationMachine, #FieldAwareFm, #DeepFm, #WideAndDeep, #CrossNetwork, #Dlrm | click-through-rate models: FM, FFM, DeepFM, Wide and Deep, DCN, DLRM are in; attention-based ones (AutoInt, DIN, DIEN, xDeepFM) are not | nn/blocks/recommender.ts | M | low | CTR models
+@area knowledge
+A | .* | | knowledge-aware recommenders over a knowledge graph (KGAT, RippleNet): the knowledge-graph embedding pieces exist in `embedding` | | | | |
+@area evaluation
+F | Recall|MRR|NDCG|Hit|MAP|Precision|GAUC|AUC|LogLoss|RMSE|MAE|ItemCoverage|AveragePopularity|GiniIndex|ShannonEntropy|TailPercentage | metrics#recallAtK, #meanReciprocalRank, #ndcgScore, #hitRate, #meanAveragePrecision, #catalogCoverage, #exposureGini, #novelty | | | | |
+@area sampling
+P | .* | data#weightedRandomSampler, rl | negative sampling for implicit feedback | | | |
+
+@lib deepchecks
+@area tabular_checks
+P | FeatureDrift|LabelDrift|PredictionDrift|TrainTestFeatureDrift|TrainTestLabelDrift|TrainTestPredictionDrift|DatasetsSizeComparison|TrainTestSamplesMix | learn#populationStabilityIndex, stats/tests, metrics#frechetDistance | the drift statistics exist (PSI, Kolmogorov-Smirnov and chi-squared tests, Wasserstein); a check that picks the test per column and returns a report does not | learn/data-audit.ts | M | high | data audit report
+P | DataDuplicates|ConflictingLabels|IsSingleValue|MixedNulls|MixedDataTypes|StringMismatch|StringMismatchComparison|SpecialCharacters|CategoryMismatchTrainTest|NewLabelTrainTest|NewCategoryTrainTest|PercentOfNulls|ColumnsInfo|OutlierSampleDetection | text#nearDuplicates, anomaly, learn#findLabelIssues | data integrity checks: duplicates, conflicting labels, single-valued columns, nulls, category mismatches between train and test | learn/data-audit.ts | M | high | data audit report
+P | FeatureLabelCorrelation|FeatureLabelCorrelationChange|FeatureFeatureCorrelation|IdentifierLabelCorrelation|SingleFeatureContribution|DominantFrequencyChange | information#mutualInformation, stats#distanceCorrelation | the predictive power score of single features, to catch leakage | learn/data-audit.ts | S | medium | data audit report
+P | DateTrainTestLeakageDuplicates|DateTrainTestLeakageOverlap|IndexTrainTestLeakage | data#withLeak, #leakModifier | leakage between train and test: omai can inject leakage as a modifier and has no detector | learn/data-audit.ts | S | medium | data audit report
+P | TrainTestPerformance|SingleDatasetPerformance|ConfusionMatrixReport|RocReport|CalibrationScore|SimpleModelComparison|BoostingOverfit|UnusedFeatures|WeakSegmentsPerformance|RegressionErrorDistribution|ModelInferenceTime | metrics, learn/model-selection | model evaluation checks: weak-segment search (find subgroups where the model is worst) maps to subgroup discovery, which `patterns` has | learn/data-audit.ts | M | medium | data audit report
+@area suites
+A | data_integrity|train_test_validation|model_evaluation|full_suite | | a suite that runs the checks and returns one report (cleanlab's Datalab is the same idea) | learn/data-audit.ts | M | high | data audit report
+@area vision
+S | .* | | image checks on pretrained pipelines | | | |
+@area nlp
+S | .* | | text checks that need pretrained embeddings | | | |
+
+@lib evidently
+@area drift_methods
+F | ks|chisquare|jensenshannon|psi|wasserstein|kl_div|hellinger|energy_distance|mmd|z|anderson|cramer_von_mises | stats/tests, learn#populationStabilityIndex, losses#jensenShannon, #klDivergence, #slicedWasserstein, kernels#mmdSquared | the drift statistics of Evidently are all single functions in omai | | | | |
+@area presets
+P | DataDriftPreset|DataQualityPreset|TargetDriftPreset|RegressionPreset|ClassificationPreset|TextOverviewPreset | metrics, learn | the preset reports: per-column test choice by data type and sample size, a share of drifted columns, a summary page; the drift primitives exist, the report does not (see deepchecks) | learn/data-audit.ts | M | high | data audit report
+@area metrics
+P | .* | metrics, learn | drift, quality, classification and regression metrics as report items: each exists as a function | | | |
+@area tests
+P | .* | metrics | tests are metrics with thresholds | | | |
+@area workspace
+S | Report|TestSuite|Workspace|Dashboard|ReportSnapshot | | report container and dashboards: a hosted-service feature | | | |
+
+@lib nashpy
+F | Game|support_enumeration|vertex_enumeration|lemke_howson|lemke_howson_lex|lemke_howson_enumeration|fictitious_play|stochastic_fictitious_play|replicator_dynamics|asymmetric_replicator_dynamics|imitation_dynamics|regret_minimization|linear_program|is_best_response|is_ne|payoff|best_response_dynamics | games#supportEnumeration, #vertexEnumeration, #lemkeHowson, #fictitiousPlay, #stochasticFictitiousPlay, #replicatorDynamics, #asymmetricReplicatorDynamics, #regretMatching, #solveZeroSum, #isNash, #bestResponses | | | | |
+A | moran_process|fixation_probabilities|score_all_individuals|update_population|get_complete_graph_adjacency_matrix|is_population_not_fixed|introspection_dynamics|obtain_repeated_game|obtain_states|obtain_strategy_space|play_game | games#replicatorDynamics | evolutionary game theory in finite populations (Moran process, fixation probabilities) and repeated games (strategy spaces of finite automata, Axelrod-style tournaments) | games/finite-populations.ts | M | medium | evolutionary and repeated games
+P | .* | games | helpers of the algorithms (tableaux, indifference strategies, support pairs, polytopes) are internal to omai's solvers | | | |
+
+@lib openspiel
+@area
+F | minimax_solver | search#minimax, agents | | | | | |
+S | dark_hex_ir|phantom_ttt_ir|yacht | | specialised imperfect-recall and dice variants | | | |
+S | .*_test|.*_utils|alpharank_visualizer.* | | tests and utilities of OpenSpiel's own algorithms module | | | |
+@area pyspiel.games
+F | tic_tac_toe|connect_four|go|nim|kuhn_poker|leduc_poker|blackjack|cliff_walking|matrix_pd|matrix_rps|matrix_mp|matrix_bos|matrix_sh|matrix_cd|matrix_coordination|matrix_rpsw|matrix_brps|matrix_shapleys_game|nfg_game|efg_game|catch|pursuit|repeated_game|markov_soccer | environments#ticTacToe, #connectFour, #go, #nim, #kuhnPoker, #leducPoker, #blackjack, #cliffWalking, games#prisonersDilemma, #rockPaperScissors, #matchingPennies, #battleOfTheSexes, #stagHunt, #shapleyGame, #matrixGame | | | | |
+A | chess|checkers|othello|hex|gomoku|mnk|backgammon|mancala|oware|breakthrough|amazons|quoridor|dots_and_boxes|nine_mens_morris|pentago|y|havannah|lines_of_action|connect_four|clobber|antichess|crazyhouse|shogi|xiangqi|twixt|ultimate_tic_tac_toe|dark_hex|dark_chess|phantom_ttt|phantom_go|kriegspiel|rbc|latent_ttt | environments#connectFour | the classic board games of AI courses: chess (README item 23), Othello, checkers, Hex, Gomoku and the rest of the abstract-strategy shelf; each is a game plus legal moves, which omai's AEC API and search library then use. Othello, checkers, Hex and mancala are the ones taught most after chess. | environments/board-games.ts | L | medium | classic board games
+A | hanabi|tiny_hanabi|bridge|bridge_uncontested_bidding|tiny_bridge_2p|tiny_bridge_4p|skat|tarok|hearts|spades|euchre|oh_hell|gin_rummy|cribbage|crazy_eights|go_fish|dou_dizhu|universal_poker|repeated_poker|repeated_leduc_poker|liars_dice|liars_dice_ir|goofspiel|pig|blotto|first_sealed_auction|negotiation|bargaining|colored_trails|trade_comm|coop_box_pushing|sheriff|oshi_zumo|lewis_signaling|coordinated_mp|matching_pennies_3p|restricted_nash_response|social_deduction | games#kuhnPoker, #leducPoker | imperfect-information, card and negotiation games used in game-theory and multi-agent research: Liar's Dice, Goofspiel, Oshi-Zumo, Colored Trails, Hanabi, tiny bridge and Texas hold'em (also README item 23); the first ones are small enough to solve with `cfr` | environments/card-games.ts | M | medium | imperfect-information games
+S | 2048|add_noise|amazons|battleship|banqi|cached_tree|capture_the_flag|chinese_checkers|coin_game|coop_to_1p|crossword|cursor_go|deep_sea|einstein_wurfelt_nicht|havannah|hive|laser_tag|maedn|mfg_.*|misere|morpion_solitaire|normal_form_extensive_game|pathfinding|snake|solitaire|start_at|stones_and_gems|turn_based_simultaneous_game|zerosum | | wrappers, puzzles and mean-field games of specialised research use | | | |
+@area open_spiel.python.algorithms
+F | cfr|cfr_br|discounted_cfr|mccfr|external_sampling_mccfr|outcome_sampling_mccfr|regret_matching|fictitious_play|best_response|exploitability|expected_game_score|action_value|action_value_vs_best_response|minimax|mcts|alpha_zero|tabular_qlearner|boltzmann_tabular_qlearner|tabular_multiagent_qlearner|value_iteration|sequence_form_lp|lp_solver|matrix_nash|nfg_utils|projected_replicator_dynamics|random_agent|evaluate_bots|get_all_states|generate_playthrough|policy_utils|noisy_policy | games#cfr, #cfrPlus, #mccfr, #regretMatching, #fictitiousPlay, #bestResponse, #exploitability, #solveSequenceForm, #solveZeroSum, agents#mctsAgent, search, rl | counterfactual regret minimisation and its sampling variants, best response, exploitability, sequence-form LP, MCTS, AlphaZero and tabular learners | | | | |
+A | psro_v2|double_oracle|jpsro|response_graph_ucb|response_graph_ucb_utils|nash_averaging|elo|stackelberg_lp|mmd_dilated|efr|adidas|adidas_utils|wolf_phc|async_mcts|ismcts|mip_nash|gambit|infostate_tree_test|policy_aggregator|policy_aggregator_joint|sample_some_states | games, agents#mctsAgent | population-based and meta-game methods (PSRO, double oracle, Nash averaging, Elo and alpha-rank evaluation of agents), Stackelberg equilibria, information-set MCTS and magnetic mirror descent: the multi-agent research layer on top of the equilibrium solvers | games/meta-games.ts | M | low | meta-game and population methods
+@area open_spiel.python.egt
+P | dynamics|alpharank|heuristic_payoff_table|utils|visualization|examples | games#replicatorDynamics | replicator dynamics and visualisation of the flow on the simplex exist; alpha-rank (a ranking of strategies from evolutionary dynamics) does not | | | |
+S | .* | | tests and visualisers | | | |
+
+@lib datasketch
+F | MinHash|LeanMinHash|bBitMinHash|MinHashLSH|MinHashLSHForest|MinHashLSHEnsemble|WeightedMinHash|WeightedMinHashGenerator|WeightedMinHashLSH|WeightedMinHashLSHForest|HyperLogLog|HyperLogLogPlusPlus|HNSW | numerics/spatial#minHash, #lshIndex, #hnswIndex, sketches#hyperLogLog | | | | |
+P | MinHashLSHBloom|AsyncMinHashLSH | sketches | | | | |
+
+@lib pysubgroup
+F | .* | patterns#discoverSubgroups, #subgroupQuality, #cn2Sd, #aprioriSd | subgroup discovery with quality functions (WRAcc, lift, chi-squared, binomial), beam, Apriori, DFS and best-first search; the first-pass index lists pysubgroup as the model for `patterns` | | | | |
+
+@lib pingouin
+@area pingouin
+F | anova|welch_anova|rm_anova|mixed_anova|kruskal|friedman|cochran|mwu|wilcoxon|ttest|pairwise_tests|pairwise_ttests|pairwise_tukey|pairwise_gameshowell|multicomp|normality|homoscedasticity|sphericity|epsilon|box_m|multivariate_normality|multivariate_ttest|chi2_independence|chi2_mcnemar|corr|partial_corr|pcorr|rcorr|pairwise_corr|distance_corr|rm_corr|intraclass_corr|cronbach_alpha|bayesfactor_ttest|bayesfactor_pearson|bayesfactor_binom|compute_effsize|compute_effsize_from_t|convert_effsize|compute_esci|compute_bootci|power_anova|power_chi2|power_corr|power_rm_anova|power_ttest|power_ttest2n|mediation_analysis|linear_regression|logistic_regression|tost|harrelldavis|mad|madmedianrule|circ_mean|circ_r|circ_rayleigh|circ_vtest|circ_corrcc|circ_corrcl|circ_axial|convert_angles|ancova|anderson|ptests|dichotomous_crosstab|remove_na | stats/tests, stats, metrics#intraclassCorrelation, linear, causal | pingouin is a thin layer over scipy and statsmodels; its tests are covered by omai's `stats/tests`, `stats` and `linear` at the level of names (checked by group, not individually: circular statistics, Cronbach's alpha, mediation, ANCOVA and the Harrell-Davis quantile estimator were the ones with no hit and are listed below) | | | | |
+A | cronbach_alpha|mediation_analysis|ancova|harrelldavis|circ_.*|convert_angles|dichotomous_crosstab|rm_corr|qqplot|plot_.*|list_dataset|read_dataset|print_table|set_default_options|ptests|madmedianrule | stats/tests | Cronbach's alpha (reliability), mediation analysis, ANCOVA, the Harrell-Davis quantile estimator, circular statistics (mean direction, Rayleigh test, circular correlation) and repeated-measures correlation | stats/tests/reliability.ts | S | medium | applied statistics extras
+
+@lib pyitlib
+F | entropy|entropy_pmf|entropy_joint|entropy_conditional|entropy_cross|entropy_cross_pmf|divergence_jensenshannon|divergence_jensenshannon_pmf|divergence_kullbackleibler|divergence_kullbackleibler_pmf|information_mutual|information_mutual_conditional|information_co | information#entropy, #jointEntropy, #conditionalEntropy, #crossEntropy, #jensenShannonDivergence, #relativeEntropy, #mutualInformation, #conditionalMutualInformation, #interactionInformation | the textbook quantities of Cover and Thomas | | | | |
+P | divergence_kullbackleibler_symmetrised|divergence_kullbackleibler_symmetrised_pmf|information_mutual_normalised | information#relativeEntropy, metrics#normalizedMutualInfoScore | | | | |
+A | information_multi|information_binding|information_enigmatic|information_exogenous_local|information_lautum|information_variation|entropy_residual|information_interaction | information#mutualInformation | the multivariate information measures: total correlation (multi-information), dual total correlation (binding information), the variation of information distance, lautum information, residual and enigmatic information. Total correlation and the variation of information are the two a learner meets (clustering comparison, independent components). | information/multivariate.ts | S | medium | multivariate information measures
+
+@lib npeet
+F | entropy|mi|cmi|kldiv|tc|ctc|midd|entropyd|cmidd|tcd|ctcd|micd|midc|centropy|centropyd|centropycd|centropydc|ctccd|ctcdc|tcd | information#kozachenkoLeonenkoEntropy, #ksgMutualInformation, #ksgConditionalMutualInformation, #knnKlDivergence, #mixedMutualInformation, #plugInEntropy | nearest-neighbour estimators of entropy and information for continuous, discrete and mixed variables | | | | |
+A | corex|corexd|corexcd|corexdc | information | CorEx: total-correlation explanation, a latent-factor model that maximises the information the factors explain | information/corex.ts | M | low | multivariate information measures
+S | add_noise|avgdigamma|build_tree|count_neighbors|lnc_correction|query_neighbors|shuffle_test | | helpers | | | |
+
+@lib sdeint
+F | itoEuler|itoint|stratHeun|stratint|deltaW | stochastic#sdeStep, #sdeint, #sdeSolver | Euler-Maruyama and Heun for Ito and Stratonovich SDEs | | | | |
+P | itoSRI2|stratKP2iS|stratSRS2|Ikpw|Iwik|Jkpw|Jwik | stochastic#sdeSolver | higher-order stochastic Runge-Kutta schemes (strong order 1.5) and the multiple stochastic integrals they need | stochastic/sde-schemes.ts | M | low | SDE schemes
+S | SDEValueError | | | | | |

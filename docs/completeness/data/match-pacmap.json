@@ -1,0 +1,4 @@
+[
+{"lib":"pacmap","area":"api","name":"PaCMAP","status":"full","how":"verdict","omai":"manifold#pacmap"},
+{"lib":"pacmap","area":"api","name":"LocalMAP","status":"absent","how":"verdict","omai":"manifold#pacmap","note":"PaCMAP with local pair adaptation","home":"manifold","size":"S","priority":"low","group":"embedding extras"}
+]

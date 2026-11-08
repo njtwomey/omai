@@ -1,0 +1,1615 @@
+{
+"library": "causallearn",
+"version": "0.1.4.8",
+"source": "introspection",
+"entries": [
+{
+"area": "causallearn.graph.GeneralGraph",
+"name": "Edge",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "causallearn.graph.GeneralGraph",
+"name": "Endpoint",
+"kind": "class",
+"doc": "Create a collection of name/value pairs."
+},
+{
+"area": "causallearn.graph.GeneralGraph",
+"name": "GeneralGraph",
+"kind": "class",
+"doc": "Helper class that provides a standard way to create an ABC using"
+},
+{
+"area": "causallearn.graph.GeneralGraph",
+"name": "Graph",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "causallearn.graph.GeneralGraph",
+"name": "GraphUtils",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "causallearn.graph.GeneralGraph",
+"name": "Node",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "causallearn.score.LocalScoreFunction",
+"name": "cov_noise",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.score.LocalScoreFunction",
+"name": "cov_seard",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.score.LocalScoreFunction",
+"name": "cov_sum",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.score.LocalScoreFunction",
+"name": "dist2",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.score.LocalScoreFunction",
+"name": "eigdec",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.score.LocalScoreFunction",
+"name": "feval",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.score.LocalScoreFunction",
+"name": "gpr_multi_new",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.score.LocalScoreFunction",
+"name": "kernel",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.score.LocalScoreFunction",
+"name": "local_score_BDeu",
+"kind": "function",
+"doc": "Calculate the *negative* local score with BDeu for the discrete case"
+},
+{
+"area": "causallearn.score.LocalScoreFunction",
+"name": "local_score_BIC",
+"kind": "function",
+"doc": "Local BIC score for the linear Gaussian case (higher is better)."
+},
+{
+"area": "causallearn.score.LocalScoreFunction",
+"name": "local_score_BIC_from_cov",
+"kind": "function",
+"doc": "Local BIC score from pre-computed covariance matrix (higher is better)."
+},
+{
+"area": "causallearn.score.LocalScoreFunction",
+"name": "local_score_cv_general",
+"kind": "function",
+"doc": "Calculate the local score"
+},
+{
+"area": "causallearn.score.LocalScoreFunction",
+"name": "local_score_cv_multi",
+"kind": "function",
+"doc": "Calculate the local score"
+},
+{
+"area": "causallearn.score.LocalScoreFunction",
+"name": "local_score_marginal_general",
+"kind": "function",
+"doc": "Calculate the local score by negative marginal log-likelihood"
+},
+{
+"area": "causallearn.score.LocalScoreFunction",
+"name": "local_score_marginal_multi",
+"kind": "function",
+"doc": "Calculate the local score by negative marginal log-likelihood"
+},
+{
+"area": "causallearn.score.LocalScoreFunction",
+"name": "minimize",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.score.LocalScoreFunction",
+"name": "pdinv",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.score.LocalScoreFunction",
+"name": "solve_chol",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.score.LocalScoreFunction",
+"name": "sq_dist",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.ConstraintBased.FCI",
+"name": "BackgroundKnowledge",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "causallearn.search.ConstraintBased.FCI",
+"name": "CIT",
+"kind": "function",
+"doc": "Parameters"
+},
+{
+"area": "causallearn.search.ConstraintBased.FCI",
+"name": "CIT_Base",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "causallearn.search.ConstraintBased.FCI",
+"name": "Chisq_or_Gsq",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "causallearn.search.ConstraintBased.FCI",
+"name": "ChoiceGenerator",
+"kind": "class",
+"doc": "Generates (nonrecursively) all of the combinations of a choose b, where a, b"
+},
+{
+"area": "causallearn.search.ConstraintBased.FCI",
+"name": "D_Separation",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "causallearn.search.ConstraintBased.FCI",
+"name": "DepthChoiceGenerator",
+"kind": "class",
+"doc": "Generates (nonrecursively) all of the combinations of a choose b, where a, b"
+},
+{
+"area": "causallearn.search.ConstraintBased.FCI",
+"name": "Edge",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "causallearn.search.ConstraintBased.FCI",
+"name": "Endpoint",
+"kind": "class",
+"doc": "Create a collection of name/value pairs."
+},
+{
+"area": "causallearn.search.ConstraintBased.FCI",
+"name": "FastKCI",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "causallearn.search.ConstraintBased.FCI",
+"name": "FastKCI_CInd",
+"kind": "class",
+"doc": "Python implementation of as speed-up version of the Kernel-based Conditional Independence (KCI) test."
+},
+{
+"area": "causallearn.search.ConstraintBased.FCI",
+"name": "FastKCI_UInd",
+"kind": "class",
+"doc": "Python implementation of as speed-up version of the Kernel-based Conditional Independence (KCI) test."
+},
+{
+"area": "causallearn.search.ConstraintBased.FCI",
+"name": "FisherZ",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "causallearn.search.ConstraintBased.FCI",
+"name": "GetUncoveredCirclePath",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.ConstraintBased.FCI",
+"name": "Graph",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "causallearn.search.ConstraintBased.FCI",
+"name": "GraphNode",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "causallearn.search.ConstraintBased.FCI",
+"name": "KCI",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "causallearn.search.ConstraintBased.FCI",
+"name": "KCI_CInd",
+"kind": "class",
+"doc": "Python implementation of Kernel-based Conditional Independence (KCI) test. Conditional version."
+},
+{
+"area": "causallearn.search.ConstraintBased.FCI",
+"name": "KCI_UInd",
+"kind": "class",
+"doc": "Python implementation of Kernel-based Conditional Independence (KCI) test. Unconditional version."
+},
+{
+"area": "causallearn.search.ConstraintBased.FCI",
+"name": "MC_FisherZ",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "causallearn.search.ConstraintBased.FCI",
+"name": "MV_FisherZ",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "causallearn.search.ConstraintBased.FCI",
+"name": "Node",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "causallearn.search.ConstraintBased.FCI",
+"name": "RCIT",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "causallearn.search.ConstraintBased.FCI",
+"name": "RCIT_CInd",
+"kind": "class",
+"doc": "Python implementation of Randomized Conditional Independence Test (RCIT) test."
+},
+{
+"area": "causallearn.search.ConstraintBased.FCI",
+"name": "RCIT_UInd",
+"kind": "class",
+"doc": "Python implementation of Randomized Independence Test (RIT) test."
+},
+{
+"area": "causallearn.search.ConstraintBased.FCI",
+"name": "ddpOrient",
+"kind": "function",
+"doc": "a method to search \"back from a\" to find a DDP. It is called with a"
+},
+{
+"area": "causallearn.search.ConstraintBased.FCI",
+"name": "defVisible",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.ConstraintBased.FCI",
+"name": "doDdpOrientation",
+"kind": "function",
+"doc": "Orients the edges inside the definite discriminating path triangle. Takes"
+},
+{
+"area": "causallearn.search.ConstraintBased.FCI",
+"name": "existOnePathWithPossibleParents",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.ConstraintBased.FCI",
+"name": "existsSemiDirectedPath",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.ConstraintBased.FCI",
+"name": "existsUncoveredPdPath",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.ConstraintBased.FCI",
+"name": "fas",
+"kind": "function",
+"doc": "Implements the \"fast adjacency search\" used in several causal algorithm in this file. In the fast adjacency"
+},
+{
+"area": "causallearn.search.ConstraintBased.FCI",
+"name": "fci",
+"kind": "function",
+"doc": "Perform Fast Causal Inference (FCI) algorithm for causal discovery"
+},
+{
+"area": "causallearn.search.ConstraintBased.FCI",
+"name": "fci_orient_bk",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.ConstraintBased.FCI",
+"name": "find_possible_children",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.ConstraintBased.FCI",
+"name": "getPath",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.ConstraintBased.FCI",
+"name": "getPossibleDsep",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.ConstraintBased.FCI",
+"name": "get_color_edges",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.ConstraintBased.FCI",
+"name": "isNoncollider",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.ConstraintBased.FCI",
+"name": "is_arrow_point_allowed",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.ConstraintBased.FCI",
+"name": "is_possible_parent",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.ConstraintBased.FCI",
+"name": "is_uncovered_path",
+"kind": "function",
+"doc": "Determines whether the given path is an uncovered path in this graph."
+},
+{
+"area": "causallearn.search.ConstraintBased.FCI",
+"name": "register_ci_test",
+"kind": "function",
+"doc": "Register a custom CI test implementation."
+},
+{
+"area": "causallearn.search.ConstraintBased.FCI",
+"name": "removeByPossibleDsep",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.ConstraintBased.FCI",
+"name": "reorientAllWith",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.ConstraintBased.FCI",
+"name": "rule0",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.ConstraintBased.FCI",
+"name": "rule10",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.ConstraintBased.FCI",
+"name": "rule8",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.ConstraintBased.FCI",
+"name": "rule9",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.ConstraintBased.FCI",
+"name": "ruleR1",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.ConstraintBased.FCI",
+"name": "ruleR2",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.ConstraintBased.FCI",
+"name": "ruleR3",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.ConstraintBased.FCI",
+"name": "ruleR4B",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.ConstraintBased.FCI",
+"name": "ruleR5",
+"kind": "function",
+"doc": "Rule R5 of the FCI algorithm."
+},
+{
+"area": "causallearn.search.ConstraintBased.FCI",
+"name": "ruleR6",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.ConstraintBased.FCI",
+"name": "ruleR7",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.ConstraintBased.FCI",
+"name": "rulesR1R2cycle",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.ConstraintBased.FCI",
+"name": "traverseCircle",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.ConstraintBased.FCI",
+"name": "traversePotentiallyDirected",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.ConstraintBased.FCI",
+"name": "traverseSemiDirected",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.ConstraintBased.FCI",
+"name": "visibleEdgeHelper",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.ConstraintBased.FCI",
+"name": "visibleEdgeHelperVisit",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.ConstraintBased.PC",
+"name": "BackgroundKnowledge",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "causallearn.search.ConstraintBased.PC",
+"name": "CIT",
+"kind": "function",
+"doc": "Parameters"
+},
+{
+"area": "causallearn.search.ConstraintBased.PC",
+"name": "CIT_Base",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "causallearn.search.ConstraintBased.PC",
+"name": "CausalGraph",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "causallearn.search.ConstraintBased.PC",
+"name": "Chisq_or_Gsq",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "causallearn.search.ConstraintBased.PC",
+"name": "D_Separation",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "causallearn.search.ConstraintBased.PC",
+"name": "FastKCI",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "causallearn.search.ConstraintBased.PC",
+"name": "FastKCI_CInd",
+"kind": "class",
+"doc": "Python implementation of as speed-up version of the Kernel-based Conditional Independence (KCI) test."
+},
+{
+"area": "causallearn.search.ConstraintBased.PC",
+"name": "FastKCI_UInd",
+"kind": "class",
+"doc": "Python implementation of as speed-up version of the Kernel-based Conditional Independence (KCI) test."
+},
+{
+"area": "causallearn.search.ConstraintBased.PC",
+"name": "FisherZ",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "causallearn.search.ConstraintBased.PC",
+"name": "KCI",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "causallearn.search.ConstraintBased.PC",
+"name": "KCI_CInd",
+"kind": "class",
+"doc": "Python implementation of Kernel-based Conditional Independence (KCI) test. Conditional version."
+},
+{
+"area": "causallearn.search.ConstraintBased.PC",
+"name": "KCI_UInd",
+"kind": "class",
+"doc": "Python implementation of Kernel-based Conditional Independence (KCI) test. Unconditional version."
+},
+{
+"area": "causallearn.search.ConstraintBased.PC",
+"name": "MC_FisherZ",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "causallearn.search.ConstraintBased.PC",
+"name": "MV_FisherZ",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "causallearn.search.ConstraintBased.PC",
+"name": "RCIT",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "causallearn.search.ConstraintBased.PC",
+"name": "RCIT_CInd",
+"kind": "class",
+"doc": "Python implementation of Randomized Conditional Independence Test (RCIT) test."
+},
+{
+"area": "causallearn.search.ConstraintBased.PC",
+"name": "RCIT_UInd",
+"kind": "class",
+"doc": "Python implementation of Randomized Independence Test (RIT) test."
+},
+{
+"area": "causallearn.search.ConstraintBased.PC",
+"name": "detect_parent",
+"kind": "function",
+"doc": "Detect the parents of a missingness indicator"
+},
+{
+"area": "causallearn.search.ConstraintBased.PC",
+"name": "get_adjacancy_matrix",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.ConstraintBased.PC",
+"name": "get_missingness_index",
+"kind": "function",
+"doc": "Detect the parents of missingness indicators"
+},
+{
+"area": "causallearn.search.ConstraintBased.PC",
+"name": "get_parent",
+"kind": "function",
+"doc": "Get the neighbors of missingness indicators which are the parents"
+},
+{
+"area": "causallearn.search.ConstraintBased.PC",
+"name": "get_parent_missingness_pairs",
+"kind": "function",
+"doc": "Detect the parents of missingness indicators"
+},
+{
+"area": "causallearn.search.ConstraintBased.PC",
+"name": "isempty",
+"kind": "function",
+"doc": "Test whether the parent of a missingness indicator is empty"
+},
+{
+"area": "causallearn.search.ConstraintBased.PC",
+"name": "matrix_diff",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.ConstraintBased.PC",
+"name": "mvpc_alg",
+"kind": "function",
+"doc": "Perform missing value Peter-Clark (PC) algorithm for causal discovery"
+},
+{
+"area": "causallearn.search.ConstraintBased.PC",
+"name": "orient_by_background_knowledge",
+"kind": "function",
+"doc": "orient the direction of edges using background background_knowledge after running skeleton_discovery in PC alg"
+},
+{
+"area": "causallearn.search.ConstraintBased.PC",
+"name": "pc",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.ConstraintBased.PC",
+"name": "pc_alg",
+"kind": "function",
+"doc": "Perform Peter-Clark (PC) algorithm for causal discovery"
+},
+{
+"area": "causallearn.search.ConstraintBased.PC",
+"name": "register_ci_test",
+"kind": "function",
+"doc": "Register a custom CI test implementation."
+},
+{
+"area": "causallearn.search.ConstraintBased.PC",
+"name": "skeleton_correction",
+"kind": "function",
+"doc": "Perform skeleton discovery"
+},
+{
+"area": "causallearn.search.FCMBased.ANM.ANM",
+"name": "ANM",
+"kind": "class",
+"doc": "Python implementation of additive noise model-based causal discovery."
+},
+{
+"area": "causallearn.search.FCMBased.ANM.ANM",
+"name": "KCI_UInd",
+"kind": "class",
+"doc": "Python implementation of Kernel-based Conditional Independence (KCI) test. Unconditional version."
+},
+{
+"area": "causallearn.search.FCMBased.PNL.PNL",
+"name": "MLP",
+"kind": "class",
+"doc": "Python implementation MLP, which is the same of G1 and G2"
+},
+{
+"area": "causallearn.search.FCMBased.PNL.PNL",
+"name": "PNL",
+"kind": "class",
+"doc": "Use of constrained nonlinear ICA for distinguishing cause from effect."
+},
+{
+"area": "causallearn.search.FCMBased.PNL.PNL",
+"name": "PairDataset",
+"kind": "class",
+"doc": "An abstract class representing a :class:`Dataset`."
+},
+{
+"area": "causallearn.search.FCMBased.lingam",
+"name": "BootstrapResult",
+"kind": "class",
+"doc": "The result of bootstrapping."
+},
+{
+"area": "causallearn.search.FCMBased.lingam",
+"name": "BottomUpParceLiNGAM",
+"kind": "class",
+"doc": "Implementation of ParceLiNGAM Algorithm [1]_"
+},
+{
+"area": "causallearn.search.FCMBased.lingam",
+"name": "CausalEffect",
+"kind": "class",
+"doc": "Implementation of causality and prediction. [1]_"
+},
+{
+"area": "causallearn.search.FCMBased.lingam",
+"name": "DirectLiNGAM",
+"kind": "class",
+"doc": "Implementation of DirectLiNGAM Algorithm [1]_ [2]_"
+},
+{
+"area": "causallearn.search.FCMBased.lingam",
+"name": "ICALiNGAM",
+"kind": "class",
+"doc": "Implementation of ICA-based LiNGAM Algorithm [1]_"
+},
+{
+"area": "causallearn.search.FCMBased.lingam",
+"name": "LongitudinalBootstrapResult",
+"kind": "class",
+"doc": "The result of bootstrapping for LongitudinalLiNGAM."
+},
+{
+"area": "causallearn.search.FCMBased.lingam",
+"name": "LongitudinalLiNGAM",
+"kind": "class",
+"doc": "Implementation of Longitudinal LiNGAM algorithm [1]_"
+},
+{
+"area": "causallearn.search.FCMBased.lingam",
+"name": "MultiGroupDirectLiNGAM",
+"kind": "class",
+"doc": "Implementation of DirectLiNGAM Algorithm with multiple groups [1]_"
+},
+{
+"area": "causallearn.search.FCMBased.lingam",
+"name": "RCD",
+"kind": "class",
+"doc": "Implementation of RCD Algorithm [1]_"
+},
+{
+"area": "causallearn.search.FCMBased.lingam",
+"name": "TimeseriesBootstrapResult",
+"kind": "class",
+"doc": "The result of bootstrapping for Time series algorithm."
+},
+{
+"area": "causallearn.search.FCMBased.lingam",
+"name": "VARLiNGAM",
+"kind": "class",
+"doc": "Implementation of VAR-LiNGAM Algorithm [1]_"
+},
+{
+"area": "causallearn.search.FCMBased.lingam",
+"name": "VARMALiNGAM",
+"kind": "class",
+"doc": "Implementation of VARMA-LiNGAM Algorithm [1]_"
+},
+{
+"area": "causallearn.search.Granger.Granger",
+"name": "Granger",
+"kind": "class",
+"doc": "Python implementation of granger causality, including 1) regression+hypothesis test and 2) lasso regression"
+},
+{
+"area": "causallearn.search.HiddenCausal.GIN.GIN",
+"name": "Edge",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "causallearn.search.HiddenCausal.GIN.GIN",
+"name": "Endpoint",
+"kind": "class",
+"doc": "Create a collection of name/value pairs."
+},
+{
+"area": "causallearn.search.HiddenCausal.GIN.GIN",
+"name": "GIN",
+"kind": "function",
+"doc": "Learning causal structure of Latent Variables for Linear Non-Gaussian Latent Variable Model"
+},
+{
+"area": "causallearn.search.HiddenCausal.GIN.GIN",
+"name": "GIN_MI",
+"kind": "function",
+"doc": "Learning causal structure of Latent Variables for Linear Non-Gaussian Latent Variable Model"
+},
+{
+"area": "causallearn.search.HiddenCausal.GIN.GIN",
+"name": "GeneralGraph",
+"kind": "class",
+"doc": "Helper class that provides a standard way to create an ABC using"
+},
+{
+"area": "causallearn.search.HiddenCausal.GIN.GIN",
+"name": "GraphNode",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "causallearn.search.HiddenCausal.GIN.GIN",
+"name": "KCI_UInd",
+"kind": "class",
+"doc": "Python implementation of Kernel-based Conditional Independence (KCI) test. Unconditional version."
+},
+{
+"area": "causallearn.search.HiddenCausal.GIN.GIN",
+"name": "NodeType",
+"kind": "class",
+"doc": "Create a collection of name/value pairs."
+},
+{
+"area": "causallearn.search.HiddenCausal.GIN.GIN",
+"name": "array_split",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.HiddenCausal.GIN.GIN",
+"name": "cal_dep_for_gin",
+"kind": "function",
+"doc": "Calculate the statistics of dependence via Generalized Independent Noise Condition"
+},
+{
+"area": "causallearn.search.HiddenCausal.GIN.GIN",
+"name": "cal_e_with_gin",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.HiddenCausal.GIN.GIN",
+"name": "find_root",
+"kind": "function",
+"doc": "Find the causal order by statistics of dependence"
+},
+{
+"area": "causallearn.search.HiddenCausal.GIN.GIN",
+"name": "fisher_test",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.HiddenCausal.GIN.GIN",
+"name": "hsic_test_gamma",
+"kind": "function",
+"doc": "get the HSIC statistic."
+},
+{
+"area": "causallearn.search.HiddenCausal.GIN.GIN",
+"name": "merge_overlaping_cluster",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.PermutationBased.GRaSP",
+"name": "GST",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "causallearn.search.PermutationBased.GRaSP",
+"name": "GeneralGraph",
+"kind": "class",
+"doc": "Helper class that provides a standard way to create an ABC using"
+},
+{
+"area": "causallearn.search.PermutationBased.GRaSP",
+"name": "GraphNode",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "causallearn.search.PermutationBased.GRaSP",
+"name": "LocalScoreClass",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "causallearn.search.PermutationBased.GRaSP",
+"name": "Order",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "causallearn.search.PermutationBased.GRaSP",
+"name": "dag2cpdag",
+"kind": "function",
+"doc": "Convert a DAG to its corresponding PDAG"
+},
+{
+"area": "causallearn.search.PermutationBased.GRaSP",
+"name": "dfs",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.PermutationBased.GRaSP",
+"name": "get_ancestors",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.PermutationBased.GRaSP",
+"name": "grasp",
+"kind": "function",
+"doc": "Perform a greedy relaxation of the sparsest permutation (GRaSP) algorithm"
+},
+{
+"area": "causallearn.search.PermutationBased.GRaSP",
+"name": "local_score_BDeu",
+"kind": "function",
+"doc": "Calculate the *negative* local score with BDeu for the discrete case"
+},
+{
+"area": "causallearn.search.PermutationBased.GRaSP",
+"name": "local_score_BIC",
+"kind": "function",
+"doc": "Local BIC score for the linear Gaussian case (higher is better)."
+},
+{
+"area": "causallearn.search.PermutationBased.GRaSP",
+"name": "local_score_BIC_from_cov",
+"kind": "function",
+"doc": "Local BIC score from pre-computed covariance matrix (higher is better)."
+},
+{
+"area": "causallearn.search.PermutationBased.GRaSP",
+"name": "local_score_cv_general",
+"kind": "function",
+"doc": "Calculate the local score"
+},
+{
+"area": "causallearn.search.PermutationBased.GRaSP",
+"name": "local_score_cv_multi",
+"kind": "function",
+"doc": "Calculate the local score"
+},
+{
+"area": "causallearn.search.PermutationBased.GRaSP",
+"name": "local_score_marginal_general",
+"kind": "function",
+"doc": "Calculate the local score by negative marginal log-likelihood"
+},
+{
+"area": "causallearn.search.PermutationBased.GRaSP",
+"name": "local_score_marginal_multi",
+"kind": "function",
+"doc": "Calculate the local score by negative marginal log-likelihood"
+},
+{
+"area": "causallearn.search.PermutationBased.GRaSP",
+"name": "tuck",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.PermutationBased.GRaSP",
+"name": "update",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.ScoreBased.ExactSearch",
+"name": "Dag",
+"kind": "class",
+"doc": "Helper class that provides a standard way to create an ABC using"
+},
+{
+"area": "causallearn.search.ScoreBased.ExactSearch",
+"name": "PriorityQueue",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "causallearn.search.ScoreBased.ExactSearch",
+"name": "astar_shortest_path",
+"kind": "function",
+"doc": "Search for the shortest path in the order graph using A star."
+},
+{
+"area": "causallearn.search.ScoreBased.ExactSearch",
+"name": "bic_exact_search",
+"kind": "function",
+"doc": "Search for the optimal graph using DP or A star."
+},
+{
+"area": "causallearn.search.ScoreBased.ExactSearch",
+"name": "bic_score_node",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.ScoreBased.ExactSearch",
+"name": "check_save",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.ScoreBased.ExactSearch",
+"name": "compute_dynamic_h",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.ScoreBased.ExactSearch",
+"name": "create_dynamic_pd",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.ScoreBased.ExactSearch",
+"name": "dp_shortest_path",
+"kind": "function",
+"doc": "Search for the shortest path in the order graph using DP (Bellman-Ford algorithm)."
+},
+{
+"area": "causallearn.search.ScoreBased.ExactSearch",
+"name": "expand",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.ScoreBased.ExactSearch",
+"name": "generate_parent_graph",
+"kind": "function",
+"doc": "Generate a parent graph for a single variable over its parents."
+},
+{
+"area": "causallearn.search.ScoreBased.ExactSearch",
+"name": "insort",
+"kind": "function",
+"doc": "parent_graph is a list of tuples with the form (structure, score) and is"
+},
+{
+"area": "causallearn.search.ScoreBased.ExactSearch",
+"name": "path_extension",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.ScoreBased.ExactSearch",
+"name": "query_best_structure",
+"kind": "function",
+"doc": "This function returns the first structure and corresponding score that is"
+},
+{
+"area": "causallearn.search.ScoreBased.ExactSearch",
+"name": "tuple_diff",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.ScoreBased.ExactSearch",
+"name": "tuple_union",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.ScoreBased.GES",
+"name": "Combinatorial",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.ScoreBased.GES",
+"name": "Edge",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "causallearn.search.ScoreBased.GES",
+"name": "Endpoint",
+"kind": "class",
+"doc": "Create a collection of name/value pairs."
+},
+{
+"area": "causallearn.search.ScoreBased.GES",
+"name": "GeneralGraph",
+"kind": "class",
+"doc": "Helper class that provides a standard way to create an ABC using"
+},
+{
+"area": "causallearn.search.ScoreBased.GES",
+"name": "GraphNode",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "causallearn.search.ScoreBased.GES",
+"name": "LocalScoreClass",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "causallearn.search.ScoreBased.GES",
+"name": "check_clique",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.ScoreBased.GES",
+"name": "check_clique_fast",
+"kind": "function",
+"doc": "Check if nodes form a clique (ignoring edge direction). No deepcopy."
+},
+{
+"area": "causallearn.search.ScoreBased.GES",
+"name": "cov_noise",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.ScoreBased.GES",
+"name": "cov_seard",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.ScoreBased.GES",
+"name": "cov_sum",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.ScoreBased.GES",
+"name": "dag2cpdag",
+"kind": "function",
+"doc": "Convert a DAG to its corresponding PDAG"
+},
+{
+"area": "causallearn.search.ScoreBased.GES",
+"name": "delete",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.ScoreBased.GES",
+"name": "delete_changed_score",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.ScoreBased.GES",
+"name": "delete_changed_score_fast",
+"kind": "function",
+"doc": "Compute score change for delete i-j/i->j using precomputed NA and Paj sets."
+},
+{
+"area": "causallearn.search.ScoreBased.GES",
+"name": "delete_validity_test",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.ScoreBased.GES",
+"name": "dist2",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.ScoreBased.GES",
+"name": "eigdec",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.ScoreBased.GES",
+"name": "feval",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.ScoreBased.GES",
+"name": "find_subset_include",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.ScoreBased.GES",
+"name": "ges",
+"kind": "function",
+"doc": "Perform greedy equivalence search (GES) algorithm"
+},
+{
+"area": "causallearn.search.ScoreBased.GES",
+"name": "gpr_multi_new",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.ScoreBased.GES",
+"name": "insert",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.ScoreBased.GES",
+"name": "insert_changed_score",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.ScoreBased.GES",
+"name": "insert_changed_score_fast",
+"kind": "function",
+"doc": "Compute score change for insert i->j using precomputed NA and Paj sets."
+},
+{
+"area": "causallearn.search.ScoreBased.GES",
+"name": "insert_validity_test1",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.ScoreBased.GES",
+"name": "insert_validity_test2",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.ScoreBased.GES",
+"name": "insert_vc2_fast",
+"kind": "function",
+"doc": "Check if every semi-directed path from j to i contains a node in NAT_set."
+},
+{
+"area": "causallearn.search.ScoreBased.GES",
+"name": "insert_vc2_new",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.ScoreBased.GES",
+"name": "kernel",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.ScoreBased.GES",
+"name": "local_score_BDeu",
+"kind": "function",
+"doc": "Calculate the *negative* local score with BDeu for the discrete case"
+},
+{
+"area": "causallearn.search.ScoreBased.GES",
+"name": "local_score_BIC",
+"kind": "function",
+"doc": "Local BIC score for the linear Gaussian case (higher is better)."
+},
+{
+"area": "causallearn.search.ScoreBased.GES",
+"name": "local_score_BIC_from_cov",
+"kind": "function",
+"doc": "Local BIC score from pre-computed covariance matrix (higher is better)."
+},
+{
+"area": "causallearn.search.ScoreBased.GES",
+"name": "local_score_cv_general",
+"kind": "function",
+"doc": "Calculate the local score"
+},
+{
+"area": "causallearn.search.ScoreBased.GES",
+"name": "local_score_cv_multi",
+"kind": "function",
+"doc": "Calculate the local score"
+},
+{
+"area": "causallearn.search.ScoreBased.GES",
+"name": "local_score_marginal_general",
+"kind": "function",
+"doc": "Calculate the local score by negative marginal log-likelihood"
+},
+{
+"area": "causallearn.search.ScoreBased.GES",
+"name": "local_score_marginal_multi",
+"kind": "function",
+"doc": "Calculate the local score by negative marginal log-likelihood"
+},
+{
+"area": "causallearn.search.ScoreBased.GES",
+"name": "minimize",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.ScoreBased.GES",
+"name": "pdag2dag",
+"kind": "function",
+"doc": "Convert a PDAG to its corresponding DAG"
+},
+{
+"area": "causallearn.search.ScoreBased.GES",
+"name": "pdinv",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.ScoreBased.GES",
+"name": "precompute_graph_info",
+"kind": "function",
+"doc": "Precompute neighbors, adjacent, parents, and semi-directed successors for all nodes."
+},
+{
+"area": "causallearn.search.ScoreBased.GES",
+"name": "score_g",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.ScoreBased.GES",
+"name": "solve_chol",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.search.ScoreBased.GES",
+"name": "sq_dist",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "causallearn.utils.DAG2CPDAG",
+"name": "Dag",
+"kind": "class",
+"doc": "Helper class that provides a standard way to create an ABC using"
+},
+{
+"area": "causallearn.utils.DAG2CPDAG",
+"name": "Edge",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "causallearn.utils.DAG2CPDAG",
+"name": "Endpoint",
+"kind": "class",
+"doc": "Create a collection of name/value pairs."
+},
+{
+"area": "causallearn.utils.DAG2CPDAG",
+"name": "GeneralGraph",
+"kind": "class",
+"doc": "Helper class that provides a standard way to create an ABC using"
+},
+{
+"area": "causallearn.utils.DAG2CPDAG",
+"name": "dag2cpdag",
+"kind": "function",
+"doc": "Convert a DAG to its corresponding PDAG"
+},
+{
+"area": "causallearn.utils.GraphUtils",
+"name": "AdjacencyConfusion",
+"kind": "class",
+"doc": "Compute the adjacency confusion between two graphs."
+},
+{
+"area": "causallearn.utils.GraphUtils",
+"name": "ArrowConfusion",
+"kind": "class",
+"doc": "Compute the arrow confusion between two graphs."
+},
+{
+"area": "causallearn.utils.GraphUtils",
+"name": "Edge",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "causallearn.utils.GraphUtils",
+"name": "Edges",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "causallearn.utils.GraphUtils",
+"name": "Endpoint",
+"kind": "class",
+"doc": "Create a collection of name/value pairs."
+},
+{
+"area": "causallearn.utils.GraphUtils",
+"name": "Graph",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "causallearn.utils.GraphUtils",
+"name": "GraphUtils",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "causallearn.utils.GraphUtils",
+"name": "Node",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "causallearn.utils.GraphUtils",
+"name": "NodeType",
+"kind": "class",
+"doc": "Create a collection of name/value pairs."
+},
+{
+"area": "causallearn.utils.KCI.KCI",
+"name": "GaussianKernel",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "causallearn.utils.KCI.KCI",
+"name": "KCI_CInd",
+"kind": "class",
+"doc": "Python implementation of Kernel-based Conditional Independence (KCI) test. Conditional version."
+},
+{
+"area": "causallearn.utils.KCI.KCI",
+"name": "KCI_UInd",
+"kind": "class",
+"doc": "Python implementation of Kernel-based Conditional Independence (KCI) test. Unconditional version."
+},
+{
+"area": "causallearn.utils.KCI.KCI",
+"name": "Kernel",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "causallearn.utils.KCI.KCI",
+"name": "LinearKernel",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "causallearn.utils.KCI.KCI",
+"name": "PolynomialKernel",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "causallearn.utils.PCUtils.BackgroundKnowledge",
+"name": "BackgroundKnowledge",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "causallearn.utils.PCUtils.BackgroundKnowledge",
+"name": "Node",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "causallearn.utils.cit",
+"name": "CIT",
+"kind": "function",
+"doc": "Parameters"
+},
+{
+"area": "causallearn.utils.cit",
+"name": "CIT_Base",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "causallearn.utils.cit",
+"name": "Chisq_or_Gsq",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "causallearn.utils.cit",
+"name": "D_Separation",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "causallearn.utils.cit",
+"name": "FastKCI",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "causallearn.utils.cit",
+"name": "FastKCI_CInd",
+"kind": "class",
+"doc": "Python implementation of as speed-up version of the Kernel-based Conditional Independence (KCI) test."
+},
+{
+"area": "causallearn.utils.cit",
+"name": "FastKCI_UInd",
+"kind": "class",
+"doc": "Python implementation of as speed-up version of the Kernel-based Conditional Independence (KCI) test."
+},
+{
+"area": "causallearn.utils.cit",
+"name": "FisherZ",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "causallearn.utils.cit",
+"name": "KCI",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "causallearn.utils.cit",
+"name": "KCI_CInd",
+"kind": "class",
+"doc": "Python implementation of Kernel-based Conditional Independence (KCI) test. Conditional version."
+},
+{
+"area": "causallearn.utils.cit",
+"name": "KCI_UInd",
+"kind": "class",
+"doc": "Python implementation of Kernel-based Conditional Independence (KCI) test. Unconditional version."
+},
+{
+"area": "causallearn.utils.cit",
+"name": "MC_FisherZ",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "causallearn.utils.cit",
+"name": "MV_FisherZ",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "causallearn.utils.cit",
+"name": "RCIT",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "causallearn.utils.cit",
+"name": "RCIT_CInd",
+"kind": "class",
+"doc": "Python implementation of Randomized Conditional Independence Test (RCIT) test."
+},
+{
+"area": "causallearn.utils.cit",
+"name": "RCIT_UInd",
+"kind": "class",
+"doc": "Python implementation of Randomized Independence Test (RIT) test."
+},
+{
+"area": "causallearn.utils.cit",
+"name": "register_ci_test",
+"kind": "function",
+"doc": "Register a custom CI test implementation."
+}
+]
+}

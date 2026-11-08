@@ -1,0 +1,23 @@
+[
+{"lib":"lightfm","area":"model","name":"LightFM","status":"full","how":"verdict","omai":"nn/blocks#FactorisationMachine, losses#bpr","note":"a hybrid factorisation with user and item features, trained with BPR or logistic loss; WARP loss (weighted approximate-rank pairwise, sampling negatives until a violation is found) is the one named loss not present"},
+{"lib":"lightfm","area":"model","name":"fit","status":"partial","how":"verdict","omai":"nn/blocks#NeuralCF"},
+{"lib":"lightfm","area":"model","name":"fit_partial","status":"partial","how":"verdict","omai":"nn/blocks#NeuralCF"},
+{"lib":"lightfm","area":"model","name":"predict","status":"partial","how":"verdict","omai":"nn/blocks#NeuralCF"},
+{"lib":"lightfm","area":"model","name":"predict_rank","status":"partial","how":"verdict","omai":"nn/blocks#NeuralCF"},
+{"lib":"lightfm","area":"model","name":"get_item_representations","status":"partial","how":"verdict","omai":"nn/blocks#NeuralCF"},
+{"lib":"lightfm","area":"model","name":"get_user_representations","status":"partial","how":"verdict","omai":"nn/blocks#NeuralCF"},
+{"lib":"lightfm","area":"losses","name":"logistic","status":"partial","how":"verdict","omai":"nn/blocks#NeuralCF"},
+{"lib":"lightfm","area":"losses","name":"bpr","status":"partial","how":"verdict","omai":"nn/blocks#NeuralCF"},
+{"lib":"lightfm","area":"losses","name":"warp","status":"absent","how":"verdict","omai":"losses#bpr","note":"WARP ranking loss","home":"losses/ranking.ts","size":"S","priority":"low","group":"neighbourhood collaborative filtering"},
+{"lib":"lightfm","area":"losses","name":"warp-kos","status":"absent","how":"verdict","omai":"losses#bpr","note":"WARP ranking loss","home":"losses/ranking.ts","size":"S","priority":"low","group":"neighbourhood collaborative filtering"},
+{"lib":"lightfm","area":"evaluation","name":"precision_at_k","status":"full","how":"verdict","omai":"metrics"},
+{"lib":"lightfm","area":"evaluation","name":"recall_at_k","status":"full","how":"verdict","omai":"metrics"},
+{"lib":"lightfm","area":"evaluation","name":"auc_score","status":"full","how":"verdict","omai":"metrics"},
+{"lib":"lightfm","area":"evaluation","name":"reciprocal_rank","status":"full","how":"verdict","omai":"metrics"},
+{"lib":"lightfm","area":"data","name":"Dataset","status":"partial","how":"verdict","omai":"data#interactions, datasets#movielensSmall"},
+{"lib":"lightfm","area":"data","name":"fetch_movielens","status":"partial","how":"verdict","omai":"data#interactions, datasets#movielensSmall"},
+{"lib":"lightfm","area":"data","name":"build_interactions","status":"partial","how":"verdict","omai":"data#interactions, datasets#movielensSmall"},
+{"lib":"lightfm","area":"data","name":"build_item_features","status":"partial","how":"verdict","omai":"data#interactions, datasets#movielensSmall"},
+{"lib":"lightfm","area":"data","name":"build_user_features","status":"partial","how":"verdict","omai":"data#interactions, datasets#movielensSmall"},
+{"lib":"lightfm","area":"cross_validation","name":"random_train_test_split","status":"partial","how":"verdict","omai":"data#interactions, datasets#movielensSmall"}
+]

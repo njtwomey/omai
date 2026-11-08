@@ -1,0 +1,247 @@
+{
+"library": "ruptures",
+"version": "1.1.10",
+"source": "introspection",
+"entries": [
+{
+"area": "ruptures",
+"name": "Binseg",
+"kind": "class",
+"doc": "Binary segmentation."
+},
+{
+"area": "ruptures",
+"name": "BottomUp",
+"kind": "class",
+"doc": "Bottom-up segmentation."
+},
+{
+"area": "ruptures",
+"name": "Dynp",
+"kind": "class",
+"doc": "Find optimal change points using dynamic programming."
+},
+{
+"area": "ruptures",
+"name": "KernelCPD",
+"kind": "class",
+"doc": "Find optimal change points (using dynamic programming or pelt) for the"
+},
+{
+"area": "ruptures",
+"name": "NotEnoughPoints",
+"kind": "class",
+"doc": "Raise this exception when there is not enough point to calculate a cost"
+},
+{
+"area": "ruptures",
+"name": "Pelt",
+"kind": "class",
+"doc": "Penalized change point detection."
+},
+{
+"area": "ruptures",
+"name": "Window",
+"kind": "class",
+"doc": "Window sliding method."
+},
+{
+"area": "ruptures",
+"name": "display",
+"kind": "function",
+"doc": "Display a signal and the change points provided in alternating colors."
+},
+{
+"area": "ruptures",
+"name": "pw_constant",
+"kind": "function",
+"doc": "Return a piecewise constant signal and the associated changepoints."
+},
+{
+"area": "ruptures",
+"name": "pw_linear",
+"kind": "function",
+"doc": "Return piecewise linear signal and the associated changepoints."
+},
+{
+"area": "ruptures",
+"name": "pw_normal",
+"kind": "function",
+"doc": "Return a 2D piecewise Gaussian signal and the associated changepoints."
+},
+{
+"area": "ruptures",
+"name": "pw_wavy",
+"kind": "function",
+"doc": "Return a 1D piecewise wavy signal and the associated changepoints."
+},
+{
+"area": "ruptures.costs",
+"name": "CostAR",
+"kind": "class",
+"doc": "Least-squares estimate for changes in autoregressive coefficients."
+},
+{
+"area": "ruptures.costs",
+"name": "CostCLinear",
+"kind": "class",
+"doc": "Piecewise linear approximation with a continuity constraint."
+},
+{
+"area": "ruptures.costs",
+"name": "CostCosine",
+"kind": "class",
+"doc": "Kernel change point detection with the cosine similarity."
+},
+{
+"area": "ruptures.costs",
+"name": "CostL1",
+"kind": "class",
+"doc": "Least absolute deviation."
+},
+{
+"area": "ruptures.costs",
+"name": "CostL2",
+"kind": "class",
+"doc": "Least squared deviation."
+},
+{
+"area": "ruptures.costs",
+"name": "CostLinear",
+"kind": "class",
+"doc": "Least-square estimate for linear changes."
+},
+{
+"area": "ruptures.costs",
+"name": "CostMl",
+"kind": "class",
+"doc": "Mahalanobis-type cost function."
+},
+{
+"area": "ruptures.costs",
+"name": "CostNormal",
+"kind": "class",
+"doc": "Gaussian process change."
+},
+{
+"area": "ruptures.costs",
+"name": "CostRank",
+"kind": "class",
+"doc": "Rank-based cost function."
+},
+{
+"area": "ruptures.costs",
+"name": "CostRbf",
+"kind": "class",
+"doc": "Kernel cost function (rbf kernel)."
+},
+{
+"area": "ruptures.costs",
+"name": "NotEnoughPoints",
+"kind": "class",
+"doc": "Raise this exception when there is not enough point to calculate a cost"
+},
+{
+"area": "ruptures.costs",
+"name": "cost_factory",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "ruptures.datasets",
+"name": "pw_constant",
+"kind": "function",
+"doc": "Return a piecewise constant signal and the associated changepoints."
+},
+{
+"area": "ruptures.datasets",
+"name": "pw_linear",
+"kind": "function",
+"doc": "Return piecewise linear signal and the associated changepoints."
+},
+{
+"area": "ruptures.datasets",
+"name": "pw_normal",
+"kind": "function",
+"doc": "Return a 2D piecewise Gaussian signal and the associated changepoints."
+},
+{
+"area": "ruptures.datasets",
+"name": "pw_wavy",
+"kind": "function",
+"doc": "Return a 1D piecewise wavy signal and the associated changepoints."
+},
+{
+"area": "ruptures.detection",
+"name": "Binseg",
+"kind": "class",
+"doc": "Binary segmentation."
+},
+{
+"area": "ruptures.detection",
+"name": "BottomUp",
+"kind": "class",
+"doc": "Bottom-up segmentation."
+},
+{
+"area": "ruptures.detection",
+"name": "Dynp",
+"kind": "class",
+"doc": "Find optimal change points using dynamic programming."
+},
+{
+"area": "ruptures.detection",
+"name": "KernelCPD",
+"kind": "class",
+"doc": "Find optimal change points (using dynamic programming or pelt) for the"
+},
+{
+"area": "ruptures.detection",
+"name": "Pelt",
+"kind": "class",
+"doc": "Penalized change point detection."
+},
+{
+"area": "ruptures.detection",
+"name": "Window",
+"kind": "class",
+"doc": "Window sliding method."
+},
+{
+"area": "ruptures.metrics",
+"name": "hamming",
+"kind": "function",
+"doc": "Modified Hamming distance for partitions. For all pair of points (x, y),"
+},
+{
+"area": "ruptures.metrics",
+"name": "hausdorff",
+"kind": "function",
+"doc": "Compute the Hausdorff distance between changepoints."
+},
+{
+"area": "ruptures.metrics",
+"name": "meantime",
+"kind": "function",
+"doc": "For each computed changepoint, the mean time error is the average number"
+},
+{
+"area": "ruptures.metrics",
+"name": "precision_recall",
+"kind": "function",
+"doc": "Calculate the precision/recall of an estimated segmentation compared"
+},
+{
+"area": "ruptures.metrics",
+"name": "randindex",
+"kind": "function",
+"doc": "Computes the Rand index (between 0 and 1) between two segmentations."
+},
+{
+"area": "ruptures.show",
+"name": "display",
+"kind": "function",
+"doc": "Display a signal and the change points provided in alternating colors."
+}
+]
+}

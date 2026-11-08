@@ -1,0 +1,289 @@
+{
+"library": "modal",
+"version": "0.4.2.1",
+"source": "introspection",
+"entries": [
+{
+"area": "modAL.acquisition",
+"name": "EI",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "modAL.acquisition",
+"name": "PI",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "modAL.acquisition",
+"name": "UCB",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "modAL.acquisition",
+"name": "max_EI",
+"kind": "function",
+"doc": "Maximum EI query strategy. Selects the instance with highest expected improvement."
+},
+{
+"area": "modAL.acquisition",
+"name": "max_PI",
+"kind": "function",
+"doc": "Maximum PI query strategy. Selects the instance with highest probability of improvement."
+},
+{
+"area": "modAL.acquisition",
+"name": "max_UCB",
+"kind": "function",
+"doc": "Maximum UCB query strategy. Selects the instance with highest upper confidence bound."
+},
+{
+"area": "modAL.acquisition",
+"name": "optimizer_EI",
+"kind": "function",
+"doc": "Expected improvement acquisition function for Bayesian optimization."
+},
+{
+"area": "modAL.acquisition",
+"name": "optimizer_PI",
+"kind": "function",
+"doc": "Probability of improvement acquisition function for Bayesian optimization."
+},
+{
+"area": "modAL.acquisition",
+"name": "optimizer_UCB",
+"kind": "function",
+"doc": "Upper confidence bound acquisition function for Bayesian optimization."
+},
+{
+"area": "modAL.batch",
+"name": "ranked_batch",
+"kind": "function",
+"doc": "Query our top :n_instances: to request for labeling."
+},
+{
+"area": "modAL.batch",
+"name": "select_cold_start_instance",
+"kind": "function",
+"doc": "Define what to do if our batch-mode sampling doesn't have any labeled data -- a cold start."
+},
+{
+"area": "modAL.batch",
+"name": "select_instance",
+"kind": "function",
+"doc": "Core iteration strategy for selecting another record from our unlabeled records."
+},
+{
+"area": "modAL.batch",
+"name": "uncertainty_batch_sampling",
+"kind": "function",
+"doc": "Batch sampling query strategy. Selects the least sure instances for labelling."
+},
+{
+"area": "modAL.density",
+"name": "cosine_similarity",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "modAL.density",
+"name": "euclidean_similarity",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "modAL.density",
+"name": "information_density",
+"kind": "function",
+"doc": "Calculates the information density metric of the given data using the given metric."
+},
+{
+"area": "modAL.density",
+"name": "similarize_distance",
+"kind": "function",
+"doc": "Takes a distance measure and converts it into a information_density measure."
+},
+{
+"area": "modAL.disagreement",
+"name": "KL_max_disagreement",
+"kind": "function",
+"doc": "Calculates the max disagreement for the Committee. First it computes the class probabilties of X for each lear"
+},
+{
+"area": "modAL.disagreement",
+"name": "consensus_entropy",
+"kind": "function",
+"doc": "Calculates the consensus entropy for the Committee. First it computes the class probabilties of X for each lea"
+},
+{
+"area": "modAL.disagreement",
+"name": "consensus_entropy_sampling",
+"kind": "function",
+"doc": "Consensus entropy sampling strategy."
+},
+{
+"area": "modAL.disagreement",
+"name": "max_disagreement_sampling",
+"kind": "function",
+"doc": "Maximum disagreement sampling strategy."
+},
+{
+"area": "modAL.disagreement",
+"name": "max_std_sampling",
+"kind": "function",
+"doc": "Regressor standard deviation sampling strategy."
+},
+{
+"area": "modAL.disagreement",
+"name": "vote_entropy",
+"kind": "function",
+"doc": "Calculates the vote entropy for the Committee. First it computes the predictions of X for each learner in the"
+},
+{
+"area": "modAL.disagreement",
+"name": "vote_entropy_sampling",
+"kind": "function",
+"doc": "Vote entropy sampling strategy."
+},
+{
+"area": "modAL.models",
+"name": "ActiveLearner",
+"kind": "class",
+"doc": "This class is an model of a general classic (machine learning) active learning algorithm."
+},
+{
+"area": "modAL.models",
+"name": "BayesianOptimizer",
+"kind": "class",
+"doc": "This class is an abstract model of a Bayesian optimizer algorithm."
+},
+{
+"area": "modAL.models",
+"name": "Committee",
+"kind": "class",
+"doc": "This class is an abstract model of a committee-based active learning algorithm."
+},
+{
+"area": "modAL.models",
+"name": "CommitteeRegressor",
+"kind": "class",
+"doc": "This class is an abstract model of a committee-based active learning regression."
+},
+{
+"area": "modAL.models",
+"name": "DeepActiveLearner",
+"kind": "class",
+"doc": "This class is an model of a general deep active learning algorithm."
+},
+{
+"area": "modAL.multilabel",
+"name": "SVM_binary_minimum",
+"kind": "function",
+"doc": "SVM binary minimum multilabel active learning strategy. For details see the paper"
+},
+{
+"area": "modAL.multilabel",
+"name": "avg_confidence",
+"kind": "function",
+"doc": "AvgConfidence query strategy for multilabel classification."
+},
+{
+"area": "modAL.multilabel",
+"name": "avg_score",
+"kind": "function",
+"doc": "AvgScore query strategy for multilabel classification."
+},
+{
+"area": "modAL.multilabel",
+"name": "max_loss",
+"kind": "function",
+"doc": "Max Loss query strategy for SVM multilabel classification."
+},
+{
+"area": "modAL.multilabel",
+"name": "max_score",
+"kind": "function",
+"doc": "MaxScore query strategy for multilabel classification."
+},
+{
+"area": "modAL.multilabel",
+"name": "mean_max_loss",
+"kind": "function",
+"doc": "Mean Max Loss query strategy for SVM multilabel classification."
+},
+{
+"area": "modAL.multilabel",
+"name": "min_confidence",
+"kind": "function",
+"doc": "MinConfidence query strategy for multilabel classification."
+},
+{
+"area": "modAL.uncertainty",
+"name": "classifier_entropy",
+"kind": "function",
+"doc": "Entropy of predictions of the for the provided samples."
+},
+{
+"area": "modAL.uncertainty",
+"name": "classifier_margin",
+"kind": "function",
+"doc": "Classification margin uncertainty of the classifier for the provided samples. This uncertainty measure takes t"
+},
+{
+"area": "modAL.uncertainty",
+"name": "classifier_uncertainty",
+"kind": "function",
+"doc": "Classification uncertainty of the classifier for the provided samples."
+},
+{
+"area": "modAL.uncertainty",
+"name": "entropy_sampling",
+"kind": "function",
+"doc": "Entropy sampling query strategy. Selects the instances where the class probabilities"
+},
+{
+"area": "modAL.uncertainty",
+"name": "margin_sampling",
+"kind": "function",
+"doc": "Margin sampling query strategy. Selects the instances where the difference between"
+},
+{
+"area": "modAL.uncertainty",
+"name": "uncertainty_sampling",
+"kind": "function",
+"doc": "Uncertainty sampling query strategy. Selects the least sure instances for labelling."
+},
+{
+"area": "modAL.utils.selection",
+"name": "multi_argmax",
+"kind": "function",
+"doc": "return the indices and values of the n_instances highest values."
+},
+{
+"area": "modAL.utils.selection",
+"name": "multi_argmin",
+"kind": "function",
+"doc": "return the indices and values of the n_instances smallest values."
+},
+{
+"area": "modAL.utils.selection",
+"name": "shuffled_argmax",
+"kind": "function",
+"doc": "Shuffles the values and sorts them afterwards. This can be used to break"
+},
+{
+"area": "modAL.utils.selection",
+"name": "shuffled_argmin",
+"kind": "function",
+"doc": "Shuffles the values and sorts them afterwards. This can be used to break"
+},
+{
+"area": "modAL.utils.selection",
+"name": "weighted_random",
+"kind": "function",
+"doc": "Returns n_instances indices based on the weights."
+}
+]
+}

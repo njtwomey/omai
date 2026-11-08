@@ -1,0 +1,985 @@
+{
+"library": "cvxpy",
+"version": "1.9.3",
+"source": "introspection",
+"entries": [
+{
+"area": "cvxpy",
+"name": "AddExpression",
+"kind": "class",
+"doc": "The sum of any number of expressions."
+},
+{
+"area": "cvxpy",
+"name": "CallbackParam",
+"kind": "class",
+"doc": "A parameter whose value is derived from a callback function."
+},
+{
+"area": "cvxpy",
+"name": "Cone",
+"kind": "class",
+"doc": "A base class for all conic constraints in CVXPY"
+},
+{
+"area": "cvxpy",
+"name": "Constant",
+"kind": "class",
+"doc": "A constant value."
+},
+{
+"area": "cvxpy",
+"name": "Constraint",
+"kind": "class",
+"doc": "The base class for constraints."
+},
+{
+"area": "cvxpy",
+"name": "CvxpyDeprecationWarning",
+"kind": "class",
+"doc": "Deprecation warning specific to CVXPY."
+},
+{
+"area": "cvxpy",
+"name": "DCPError",
+"kind": "class",
+"doc": "Error thrown for DCP violations."
+},
+{
+"area": "cvxpy",
+"name": "DGPError",
+"kind": "class",
+"doc": "Error thrown for DGP violations."
+},
+{
+"area": "cvxpy",
+"name": "DPPError",
+"kind": "class",
+"doc": "Error thrown for DPP violations."
+},
+{
+"area": "cvxpy",
+"name": "ExpCone",
+"kind": "class",
+"doc": "A reformulated exponential cone constraint."
+},
+{
+"area": "cvxpy",
+"name": "Expression",
+"kind": "class",
+"doc": "A mathematical expression in a convex optimization problem."
+},
+{
+"area": "cvxpy",
+"name": "FiniteSet",
+"kind": "class",
+"doc": "Constrain each entry of an Expression to take a value in a given set of real numbers."
+},
+{
+"area": "cvxpy",
+"name": "GeoMean",
+"kind": "class",
+"doc": "The (weighted) geometric mean of vector ``x``, with optional powers given by ``p``:"
+},
+{
+"area": "cvxpy",
+"name": "GeoMeanApprox",
+"kind": "class",
+"doc": "GeoMean with SOC-based canonicalization."
+},
+{
+"area": "cvxpy",
+"name": "MatrixFrac",
+"kind": "class",
+"doc": "tr X.T*P^-1*X"
+},
+{
+"area": "cvxpy",
+"name": "Maximize",
+"kind": "class",
+"doc": "An optimization objective for maximization."
+},
+{
+"area": "cvxpy",
+"name": "Minimize",
+"kind": "class",
+"doc": "An optimization objective for minimization."
+},
+{
+"area": "cvxpy",
+"name": "MulExpression",
+"kind": "class",
+"doc": "Matrix multiplication."
+},
+{
+"area": "cvxpy",
+"name": "NonNeg",
+"kind": "class",
+"doc": "A constraint of the form :math:`x \\geq 0`."
+},
+{
+"area": "cvxpy",
+"name": "NonPos",
+"kind": "class",
+"doc": "An inequality constraint of the form :math:`x \\leq 0`."
+},
+{
+"area": "cvxpy",
+"name": "Objective",
+"kind": "class",
+"doc": "An optimization objective."
+},
+{
+"area": "cvxpy",
+"name": "OpRelEntrConeQuad",
+"kind": "class",
+"doc": "An approximate construction of the operator relative entropy cone,"
+},
+{
+"area": "cvxpy",
+"name": "PSD",
+"kind": "class",
+"doc": "A constraint of the form :math:`\\frac{1}{2}(X + X^T) \\succcurlyeq_{S_n^+} 0`"
+},
+{
+"area": "cvxpy",
+"name": "Parameter",
+"kind": "class",
+"doc": "Parameters in optimization problems."
+},
+{
+"area": "cvxpy",
+"name": "Pnorm",
+"kind": "class",
+"doc": "The vector p-norm, for p not equal to 1 or infinity."
+},
+{
+"area": "cvxpy",
+"name": "PnormApprox",
+"kind": "class",
+"doc": "Pnorm with SOC-based rational approximation of p."
+},
+{
+"area": "cvxpy",
+"name": "PowCone3D",
+"kind": "class",
+"doc": "An object representing a collection of 3D power cone constraints"
+},
+{
+"area": "cvxpy",
+"name": "PowCone3DApprox",
+"kind": "class",
+"doc": "PowCone3D with SOC-based rational approximation."
+},
+{
+"area": "cvxpy",
+"name": "PowConeND",
+"kind": "class",
+"doc": "Represents a collection of N-dimensional power cone constraints"
+},
+{
+"area": "cvxpy",
+"name": "Power",
+"kind": "class",
+"doc": "Elementwise power function :math:`f(x) = x^p`."
+},
+{
+"area": "cvxpy",
+"name": "PowerApprox",
+"kind": "class",
+"doc": "Power with SOC-based rational approximation of p."
+},
+{
+"area": "cvxpy",
+"name": "Problem",
+"kind": "class",
+"doc": "A convex optimization problem."
+},
+{
+"area": "cvxpy",
+"name": "Prod",
+"kind": "class",
+"doc": "Multiply the entries of an expression."
+},
+{
+"area": "cvxpy",
+"name": "QuadForm",
+"kind": "class",
+"doc": "Abstract base class for atoms."
+},
+{
+"area": "cvxpy",
+"name": "RelEntrConeQuad",
+"kind": "class",
+"doc": "An approximation of the scalar relative entropy cone,"
+},
+{
+"area": "cvxpy",
+"name": "SOC",
+"kind": "class",
+"doc": "A second-order cone constraint for each row/column."
+},
+{
+"area": "cvxpy",
+"name": "SolverError",
+"kind": "class",
+"doc": "Error thrown when a solver encounters an error solving a problem."
+},
+{
+"area": "cvxpy",
+"name": "Sum",
+"kind": "class",
+"doc": "Sum the entries of an expression over a given axis."
+},
+{
+"area": "cvxpy",
+"name": "Trace",
+"kind": "class",
+"doc": "The sum of the diagonal entries of a matrix."
+},
+{
+"area": "cvxpy",
+"name": "Variable",
+"kind": "class",
+"doc": "The optimization variables in a problem."
+},
+{
+"area": "cvxpy",
+"name": "Zero",
+"kind": "class",
+"doc": "A constraint of the form :math:`x = 0`."
+},
+{
+"area": "cvxpy",
+"name": "abs",
+"kind": "class",
+"doc": "Elementwise absolute value."
+},
+{
+"area": "cvxpy",
+"name": "bmat",
+"kind": "function",
+"doc": "Constructs a block matrix."
+},
+{
+"area": "cvxpy",
+"name": "broadcast_to",
+"kind": "class",
+"doc": "Broadcast the expression given a shape input"
+},
+{
+"area": "cvxpy",
+"name": "ceil",
+"kind": "class",
+"doc": "Elementwise ceiling."
+},
+{
+"area": "cvxpy",
+"name": "concatenate",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "cvxpy",
+"name": "condition_number",
+"kind": "class",
+"doc": "Condition Number; :math:`\\lambda_{\\max}(A) / \\lambda_{\\min}(A)`."
+},
+{
+"area": "cvxpy",
+"name": "conj",
+"kind": "class",
+"doc": "Elementwise complex conjugate."
+},
+{
+"area": "cvxpy",
+"name": "conv",
+"kind": "class",
+"doc": "1D discrete convolution of two vectors."
+},
+{
+"area": "cvxpy",
+"name": "convolve",
+"kind": "class",
+"doc": "1D discrete convolution of two vectors."
+},
+{
+"area": "cvxpy",
+"name": "cummax",
+"kind": "class",
+"doc": "Cumulative maximum."
+},
+{
+"area": "cvxpy",
+"name": "cumprod",
+"kind": "class",
+"doc": "Cumulative product of the elements of an expression."
+},
+{
+"area": "cvxpy",
+"name": "cumsum",
+"kind": "class",
+"doc": "Cumulative sum of the elements of an expression."
+},
+{
+"area": "cvxpy",
+"name": "cvar",
+"kind": "function",
+"doc": "The conditional value at risk (CVaR) of a random variable represented by"
+},
+{
+"area": "cvxpy",
+"name": "deep_flatten",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "cvxpy",
+"name": "diag",
+"kind": "function",
+"doc": "Extracts the diagonal from a matrix or makes a vector a diagonal matrix."
+},
+{
+"area": "cvxpy",
+"name": "diff",
+"kind": "function",
+"doc": "Computes kth order differences along the specified axis."
+},
+{
+"area": "cvxpy",
+"name": "diff_pos",
+"kind": "function",
+"doc": "The difference :math:`x - y` with domain `\\{x, y : x > y > 0\\}`."
+},
+{
+"area": "cvxpy",
+"name": "disable_warnings",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "cvxpy",
+"name": "dist_ratio",
+"kind": "class",
+"doc": "norm(x - a)_2 / norm(x - b)_2, with norm(x - a)_2 <= norm(x - b)."
+},
+{
+"area": "cvxpy",
+"name": "dotsort",
+"kind": "class",
+"doc": "Computes :math:`\\langle sort\\left(vec(X)\\right), sort\\left(vec(W)\\right) \\rangle`,"
+},
+{
+"area": "cvxpy",
+"name": "einsum",
+"kind": "function",
+"doc": "Evaluates the Einstein summation convention on the given expressions."
+},
+{
+"area": "cvxpy",
+"name": "enable_warnings",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "cvxpy",
+"name": "entr",
+"kind": "class",
+"doc": "Elementwise :math:`-x\\log x`."
+},
+{
+"area": "cvxpy",
+"name": "exp",
+"kind": "class",
+"doc": "Elementwise exponential function."
+},
+{
+"area": "cvxpy",
+"name": "eye_minus_inv",
+"kind": "class",
+"doc": "The unity resolvent of a positive matrix, :math:`(I - X)^{-1}`."
+},
+{
+"area": "cvxpy",
+"name": "floor",
+"kind": "class",
+"doc": "Elementwise floor."
+},
+{
+"area": "cvxpy",
+"name": "gen_lambda_max",
+"kind": "class",
+"doc": "Maximum generalized eigenvalue; :math:`\\lambda_{\\max}(A, B)`."
+},
+{
+"area": "cvxpy",
+"name": "geo_mean",
+"kind": "function",
+"doc": "Factory function for (weighted) geometric mean."
+},
+{
+"area": "cvxpy",
+"name": "get_num_threads",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "cvxpy",
+"name": "gmatmul",
+"kind": "class",
+"doc": "Geometric matrix multiplication; :math:`A \\mathbin{\\diamond} X`."
+},
+{
+"area": "cvxpy",
+"name": "harmonic_mean",
+"kind": "function",
+"doc": "The harmonic mean of ``x``."
+},
+{
+"area": "cvxpy",
+"name": "hermitian_wrap",
+"kind": "class",
+"doc": "Asserts that a square matrix is Hermitian."
+},
+{
+"area": "cvxpy",
+"name": "hstack",
+"kind": "function",
+"doc": "Horizontal concatenation of an arbitrary number of Expressions."
+},
+{
+"area": "cvxpy",
+"name": "huber",
+"kind": "class",
+"doc": "The Huber function"
+},
+{
+"area": "cvxpy",
+"name": "imag",
+"kind": "class",
+"doc": "Extracts the imaginary part of an expression."
+},
+{
+"area": "cvxpy",
+"name": "installed_solvers",
+"kind": "function",
+"doc": "List the installed solvers."
+},
+{
+"area": "cvxpy",
+"name": "inv_pos",
+"kind": "function",
+"doc": ":math:`x^{-1}` for :math:`x > 0`."
+},
+{
+"area": "cvxpy",
+"name": "inv_prod",
+"kind": "function",
+"doc": "The reciprocal of a product of the entries of a vector ``x``."
+},
+{
+"area": "cvxpy",
+"name": "kl_div",
+"kind": "class",
+"doc": ":math:`x\\log(x/y) - x + y`"
+},
+{
+"area": "cvxpy",
+"name": "kron",
+"kind": "class",
+"doc": "Kronecker product."
+},
+{
+"area": "cvxpy",
+"name": "lambda_max",
+"kind": "class",
+"doc": "Maximum eigenvalue; :math:`\\lambda_{\\max}(A)`."
+},
+{
+"area": "cvxpy",
+"name": "lambda_min",
+"kind": "function",
+"doc": "Minimum eigenvalue; :math:`\\lambda_{\\min}(A)`."
+},
+{
+"area": "cvxpy",
+"name": "lambda_sum_largest",
+"kind": "class",
+"doc": "Sum of the largest k eigenvalues."
+},
+{
+"area": "cvxpy",
+"name": "lambda_sum_smallest",
+"kind": "function",
+"doc": "Sum of the smallest k eigenvalues."
+},
+{
+"area": "cvxpy",
+"name": "length",
+"kind": "class",
+"doc": "Length of a vector (index of last nonzero, ones-based)."
+},
+{
+"area": "cvxpy",
+"name": "linearize",
+"kind": "function",
+"doc": "Returns an affine approximation to the expression computed at the variable/parameter values."
+},
+{
+"area": "cvxpy",
+"name": "log",
+"kind": "class",
+"doc": "Elementwise natural logarithm."
+},
+{
+"area": "cvxpy",
+"name": "log1p",
+"kind": "class",
+"doc": "Elementwise :math:`\\log (1 + x)`."
+},
+{
+"area": "cvxpy",
+"name": "log_det",
+"kind": "class",
+"doc": ":math:`\\log\\det A`"
+},
+{
+"area": "cvxpy",
+"name": "log_normcdf",
+"kind": "function",
+"doc": "Elementwise log of the cumulative distribution function of a standard normal random variable."
+},
+{
+"area": "cvxpy",
+"name": "log_sum_exp",
+"kind": "class",
+"doc": ":math:`\\log\\sum_i e^{x_i}`"
+},
+{
+"area": "cvxpy",
+"name": "loggamma",
+"kind": "function",
+"doc": "Elementwise log of the gamma function."
+},
+{
+"area": "cvxpy",
+"name": "logistic",
+"kind": "class",
+"doc": ":math:`\\log(1 + e^{x})`"
+},
+{
+"area": "cvxpy",
+"name": "matmul",
+"kind": "function",
+"doc": "Matrix multiplication."
+},
+{
+"area": "cvxpy",
+"name": "matrix_frac",
+"kind": "function",
+"doc": "tr X.T*P^-1*X"
+},
+{
+"area": "cvxpy",
+"name": "max",
+"kind": "class",
+"doc": ":math:`\\max_{i,j}\\{X_{i,j}\\}`."
+},
+{
+"area": "cvxpy",
+"name": "maximum",
+"kind": "class",
+"doc": "Elementwise maximum of a sequence of expressions."
+},
+{
+"area": "cvxpy",
+"name": "mean",
+"kind": "function",
+"doc": "Returns the mean of x."
+},
+{
+"area": "cvxpy",
+"name": "min",
+"kind": "class",
+"doc": ":math:`\\min{i,j}\\{X_{i,j}\\}`."
+},
+{
+"area": "cvxpy",
+"name": "minimum",
+"kind": "class",
+"doc": "Elementwise minimum of a sequence of expressions."
+},
+{
+"area": "cvxpy",
+"name": "mixed_norm",
+"kind": "function",
+"doc": "Lp,q norm; :math:`(\\sum_k (\\sum_l \\lvert x_{k,l} \\rvert^p)^{q/p})^{1/q}`."
+},
+{
+"area": "cvxpy",
+"name": "moveaxis",
+"kind": "function",
+"doc": "Move axes of the expression to new positions."
+},
+{
+"area": "cvxpy",
+"name": "multiply",
+"kind": "class",
+"doc": "Multiplies two expressions elementwise."
+},
+{
+"area": "cvxpy",
+"name": "neg",
+"kind": "function",
+"doc": "Alias for -minimum{x, 0}."
+},
+{
+"area": "cvxpy",
+"name": "norm",
+"kind": "function",
+"doc": "Wrapper on the different norm atoms."
+},
+{
+"area": "cvxpy",
+"name": "norm1",
+"kind": "class",
+"doc": "An abstract base class for atoms that can be applied along an axis."
+},
+{
+"area": "cvxpy",
+"name": "norm2",
+"kind": "function",
+"doc": "The 2-norm of x."
+},
+{
+"area": "cvxpy",
+"name": "normNuc",
+"kind": "class",
+"doc": "Sum of the singular values."
+},
+{
+"area": "cvxpy",
+"name": "norm_inf",
+"kind": "class",
+"doc": "An abstract base class for atoms that can be applied along an axis."
+},
+{
+"area": "cvxpy",
+"name": "one_minus_pos",
+"kind": "class",
+"doc": "The difference :math:`1 - x` with domain `\\{x : 0 < x < 1\\}`."
+},
+{
+"area": "cvxpy",
+"name": "outer",
+"kind": "function",
+"doc": "Return the outer product of (x,y)."
+},
+{
+"area": "cvxpy",
+"name": "partial_trace",
+"kind": "function",
+"doc": "Assumes :math:`\\texttt{expr} = X_1 \\otimes \\cdots \\otimes X_n` is a 2D Kronecker"
+},
+{
+"area": "cvxpy",
+"name": "partial_transpose",
+"kind": "function",
+"doc": "Assumes :math:`\\texttt{expr} = X_1 \\otimes ... \\otimes X_n` is a 2D Kronecker"
+},
+{
+"area": "cvxpy",
+"name": "permute_dims",
+"kind": "function",
+"doc": "Permute the dimensions of the expression."
+},
+{
+"area": "cvxpy",
+"name": "perspective",
+"kind": "class",
+"doc": "Implements the perspective transform of a convex or concave scalar"
+},
+{
+"area": "cvxpy",
+"name": "pf_eigenvalue",
+"kind": "class",
+"doc": "The Perron-Frobenius eigenvalue of a positive matrix."
+},
+{
+"area": "cvxpy",
+"name": "pnorm",
+"kind": "function",
+"doc": "Factory function for a mathematical p-norm."
+},
+{
+"area": "cvxpy",
+"name": "pos",
+"kind": "function",
+"doc": "Alias for maximum{x,0}."
+},
+{
+"area": "cvxpy",
+"name": "power",
+"kind": "function",
+"doc": "Factory function for elementwise power."
+},
+{
+"area": "cvxpy",
+"name": "prod",
+"kind": "function",
+"doc": "Multiply the entries of an expression."
+},
+{
+"area": "cvxpy",
+"name": "promote",
+"kind": "function",
+"doc": "Promote a scalar expression to a vector/matrix."
+},
+{
+"area": "cvxpy",
+"name": "psd_wrap",
+"kind": "class",
+"doc": "Asserts that a square matrix is PSD."
+},
+{
+"area": "cvxpy",
+"name": "ptp",
+"kind": "function",
+"doc": "Range of values (maximum - minimum) along an axis."
+},
+{
+"area": "cvxpy",
+"name": "quad_form",
+"kind": "function",
+"doc": "Alias for :math:`x^T P x`."
+},
+{
+"area": "cvxpy",
+"name": "quad_over_lin",
+"kind": "class",
+"doc": ":math:`(sum_{ij}X^2_{ij})/y`"
+},
+{
+"area": "cvxpy",
+"name": "quantum_cond_entr",
+"kind": "function",
+"doc": "Returns (an approximation of) the quantum conditional entropy for a bipartite state,"
+},
+{
+"area": "cvxpy",
+"name": "quantum_rel_entr",
+"kind": "class",
+"doc": "An approximation of the quantum relative entropy between systems with (possibly un-normalized)"
+},
+{
+"area": "cvxpy",
+"name": "real",
+"kind": "class",
+"doc": "Extracts the real part of an expression."
+},
+{
+"area": "cvxpy",
+"name": "rel_entr",
+"kind": "class",
+"doc": ":math:`x\\log(x/y)`"
+},
+{
+"area": "cvxpy",
+"name": "reshape",
+"kind": "class",
+"doc": "Reshapes the expression."
+},
+{
+"area": "cvxpy",
+"name": "resolvent",
+"kind": "function",
+"doc": "The resolvent of a positive matrix, :math:`(sI - X)^{-1}`."
+},
+{
+"area": "cvxpy",
+"name": "scalar_product",
+"kind": "function",
+"doc": "Alias for vdot."
+},
+{
+"area": "cvxpy",
+"name": "scalene",
+"kind": "function",
+"doc": "Alias for ``alpha*pos(x) + beta*neg(x)``."
+},
+{
+"area": "cvxpy",
+"name": "set_num_threads",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "cvxpy",
+"name": "sigma_max",
+"kind": "class",
+"doc": "Maximum singular value."
+},
+{
+"area": "cvxpy",
+"name": "sign",
+"kind": "class",
+"doc": "Sign of an expression (-1 for x <= 0, +1 for x > 0)."
+},
+{
+"area": "cvxpy",
+"name": "skew_symmetric_wrap",
+"kind": "class",
+"doc": "Asserts that X is a real square matrix, satisfying X + X.T == 0."
+},
+{
+"area": "cvxpy",
+"name": "sqrt",
+"kind": "function",
+"doc": "The square root of an expression."
+},
+{
+"area": "cvxpy",
+"name": "square",
+"kind": "function",
+"doc": "The square of an expression."
+},
+{
+"area": "cvxpy",
+"name": "squeeze",
+"kind": "function",
+"doc": "Squeeze the expression."
+},
+{
+"area": "cvxpy",
+"name": "stack",
+"kind": "function",
+"doc": "Join a sequence of expressions along a new axis."
+},
+{
+"area": "cvxpy",
+"name": "std",
+"kind": "function",
+"doc": "Returns the standard deviation of x."
+},
+{
+"area": "cvxpy",
+"name": "sum",
+"kind": "function",
+"doc": "Sum the entries of an expression over a given axis."
+},
+{
+"area": "cvxpy",
+"name": "sum_largest",
+"kind": "class",
+"doc": "Sum of the largest k values in the expression X, optionally along an axis."
+},
+{
+"area": "cvxpy",
+"name": "sum_smallest",
+"kind": "function",
+"doc": "Sum of the smallest k values, optionally along an axis."
+},
+{
+"area": "cvxpy",
+"name": "sum_squares",
+"kind": "function",
+"doc": "The sum of the squares of the entries."
+},
+{
+"area": "cvxpy",
+"name": "suppfunc",
+"kind": "class",
+"doc": "Given a list of CVXPY Constraint objects :math:`\\texttt{constraints}`"
+},
+{
+"area": "cvxpy",
+"name": "swapaxes",
+"kind": "function",
+"doc": "Swap two axes of the expression."
+},
+{
+"area": "cvxpy",
+"name": "symmetric_wrap",
+"kind": "class",
+"doc": "Asserts that a real square matrix is symmetric"
+},
+{
+"area": "cvxpy",
+"name": "tr_inv",
+"kind": "class",
+"doc": ":math:`\\mathrm{tr}\\left(X^{-1} \\right),`"
+},
+{
+"area": "cvxpy",
+"name": "trace",
+"kind": "function",
+"doc": "TLDR: Use alternate formulation for trace(A@B) for more efficient computation."
+},
+{
+"area": "cvxpy",
+"name": "transpose",
+"kind": "class",
+"doc": "Transpose an expression."
+},
+{
+"area": "cvxpy",
+"name": "tv",
+"kind": "function",
+"doc": "Total variation of a vector, matrix, or list of matrices."
+},
+{
+"area": "cvxpy",
+"name": "upper_tri",
+"kind": "class",
+"doc": "The vectorized strictly upper-triangular entries."
+},
+{
+"area": "cvxpy",
+"name": "var",
+"kind": "function",
+"doc": "Returns the variance of x."
+},
+{
+"area": "cvxpy",
+"name": "vdot",
+"kind": "function",
+"doc": "Return the standard inner product (or \"scalar product\") of (x,y)."
+},
+{
+"area": "cvxpy",
+"name": "vec",
+"kind": "function",
+"doc": "Flattens the matrix X into a 1-d array."
+},
+{
+"area": "cvxpy",
+"name": "vec_to_upper_tri",
+"kind": "function",
+"doc": "Reshapes a vector into an upper triangular matrix in"
+},
+{
+"area": "cvxpy",
+"name": "von_neumann_entr",
+"kind": "class",
+"doc": "Represents the von Neumann Entropy of the positive-definite matrix :math:`X,`"
+},
+{
+"area": "cvxpy",
+"name": "vstack",
+"kind": "function",
+"doc": "Wrapper on vstack to ensure list argument."
+},
+{
+"area": "cvxpy",
+"name": "warnings_enabled",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "cvxpy",
+"name": "xexp",
+"kind": "class",
+"doc": "Elementwise :math:`{x}*e^{x}`."
+}
+]
+}

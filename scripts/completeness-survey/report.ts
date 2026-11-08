@@ -3,8 +3,10 @@
  *
  *   node scripts/completeness-survey/report.ts
  *
- * Output: `docs/completeness/<family>.md` (sklearn, scipy-statsmodels, probabilistic, graphical-models, rl, torch,
- * graph-neural-networks, other) and `docs/completeness/data/counts.json`. `README.md` and `repertoire.md` are written
+ * Output: `docs/completeness/<family>.md` (first pass: sklearn, scipy-statsmodels, probabilistic, graphical-models, rl, torch,
+ * graph-neural-networks, other; second pass: metric-learning, self-supervised, training-and-paradigms,
+ * bayesian-optimisation-and-gp, tabular-and-interpretable, torch-ecosystem, structured-prediction, adjacent) and
+ * `docs/completeness/data/counts.json`. `README.md` and `repertoire.md` are written
  * by hand. Run `match.ts` first. The prose of each family (what it covers, where omai is strong) is in this file.
  */
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs'
@@ -34,6 +36,12 @@ interface Family {
   libs: string[]
   intro: string
   strong: string[]
+  /** Libraries whose every entry is listed (covered ones too), for the families that were checked name by name. */
+  fullTables?: string[]
+  /** Libraries judged by area, not by name: shown in the summary but left out of the family totals. */
+  areaLevel?: string[]
+  /** Extra prose after the strengths (what the comparison cannot see, how the family was checked). */
+  after?: string[]
 }
 
 const FAMILIES: Family[] = [
@@ -180,6 +188,277 @@ const FAMILIES: Family[] = [
       'Text: tokenisers, stemmers, subword models, n-gram language models with smoothing, TF-IDF/BM25, Earley parsing and PCFG training, word2vec, fastText.',
     ],
   },
+
+  {
+    file: 'metric-learning',
+    title: 'Metric and similarity learning',
+    libs: ['pytorch_metric_learning', 'metric_learn', 'faiss'],
+    intro:
+      'pytorch-metric-learning (losses, miners, distances, reducers, regularizers, samplers, testers and the ' +
+      'AccuracyCalculator), metric-learn (the scikit-learn-contrib learners of a Mahalanobis metric) and FAISS ' +
+      '(the vector-index concepts: flat, IVF, product quantisation, HNSW, LSH). None is installed, so all three ' +
+      'lists are from memory; every name was then looked up in the export list and the source of omai.',
+    strong: [
+      'Losses: contrastive, triplet margin, InfoNCE and NT-Xent, supervised contrastive, ArcFace and CosFace, VICReg and Barlow Twins, alignment and uniformity, CLIP, plus the learning-to-rank losses (RankNet, LambdaRank, ListNet, ApproxNDCG) that a retrieval page also needs.',
+      'Learned metrics: NCA and LMNN as stepped algorithms with the solver as a slot, so the embedding at step t is on the tape (`fittedAt(t)`); metric-learn ships them as one-shot fits.',
+      'Retrieval and indexing: exact, k-d tree and ball-tree search under any registered distance, HNSW, IVF and LSH indexes with the graph and the buckets as traced runs, precision@k, recall@k, hit rate, MRR, NDCG, MAP and R-precision, trustworthiness and continuity.',
+      'omai ahead: a metric learner that can be watched converge, an HNSW build that can be replayed, and distances that are a registry rather than a flag.',
+    ],
+    fullTables: ['pytorch_metric_learning', 'metric_learn', 'faiss'],
+    after: [
+      'What is missing is concentrated in one place: everything that works on a labelled batch. pytorch-metric-learning is built around ' +
+        '"a loss over all pairs or triplets of a batch, a miner that selects the informative ones, a sampler that makes sure the batch ' +
+        'has positives". omai has the losses for explicit pairs and triplets and for in-batch positives, but no miners, no m-per-class sampler, ' +
+        'and none of the multi-similarity, lifted-structure, circle, N-pairs or proxy-based losses. The catalogue plans mining ' +
+        '(`representation-learning/triplet-and-margin`, "the mining as the mode") and the `learn/metric-learning` chapter, and neither is built. ' +
+        'A single file of mining and a second of batch-label losses would close most of it; the proxy losses build on the class weight ' +
+        'vectors that `arcFace` already has.',
+      'On the metric-learn side, omai has the two learners that sklearn itself ships (NCA, LMNN). The pair-constraint learners ' +
+        '(ITML above all, then LSML, SDML, MMC) and the local Fisher and kernel-regression variants (LFDA, MLKR) are absent, as is the data shape they ' +
+        'need (pairs, triplets and quadruplets of rows, built from labels).',
+    ],
+  },
+  {
+    file: 'self-supervised',
+    title: 'Self-supervised and representation learning',
+    libs: ['lightly', 'solo_learn', 'sentence_transformers', 'representation_learning'],
+    intro:
+      'lightly and solo-learn (SimCLR, MoCo, BYOL, SimSiam, DINO, SwAV, Barlow Twins, VICReg, MAE and their heads, ' +
+      'memory banks and augmentation recipes), sentence-transformers (bi-encoders trained with in-batch negatives, ' +
+      'evaluators), and the autoencoder, contrastive-predictive and disentanglement vocabulary of the literature. ' +
+      'All from memory; nothing is installed.',
+    strong: [
+      'Objectives: InfoNCE, NT-Xent, supervised contrastive, CLIP, Barlow Twins, VICReg, alignment and uniformity, distillation, Sinkhorn, vector quantisation with its EMA codebook, the ELBO with a beta weight, the importance-weighted bound and score-matching losses.',
+      'Representation diagnostics: linear probes, CKA, effective rank, alignment and uniformity, sparse autoencoders for activations, neighbour purity and analogy tests for word vectors.',
+      'The catalogue plans the trainers (`representation-learning`, `generative-models`); what exists is the loss side.',
+    ],
+    after: [
+      'The gap is the trainers: omai has the losses a self-supervised method needs and none of the assembled methods. A SimCLR or BYOL ' +
+        'page needs a two-view augmentation, a projection head, the loss, an EMA target for BYOL and a linear probe as the evaluation; ' +
+        'with the stepped tape, "why BYOL does not collapse" (the embedding rank at each step) is a better demonstration than the paper has. ' +
+        'The autoencoder family (plain, denoising, sparse, VAE, VQ-VAE) is the same: losses and the quantiser exist, the model and the ' +
+        'latent-traversal view do not.',
+    ],
+  },
+  {
+    file: 'training-and-paradigms',
+    title: 'Training loops and learning paradigms',
+    libs: [
+      'skorch',
+      'pytorch_lightning',
+      'ignite',
+      'learn2learn',
+      'higher',
+      'avalanche',
+      'river',
+      'modal',
+      'snorkel',
+      'cleanlab',
+      'small_text',
+      'opacus',
+      'flower',
+    ],
+    intro:
+      'The libraries that structure training and the paradigms beyond one dataset and one loss: skorch, PyTorch Lightning and Ignite ' +
+      '(callbacks, schedulers, accumulation, early stopping), learn2learn and higher (meta-learning), Avalanche (continual ' +
+      'learning), river (online learning and drift), Opacus (differential privacy), Flower (federated learning), modAL and small-text ' +
+      '(active learning), Snorkel (weak supervision) and cleanlab (noisy labels, data audits). Introspected: skorch, modAL, Opacus. The rest are from memory.',
+    strong: [
+      'Training loop: early stopping, best checkpoint, learning-rate monitors, plateau schedules, gradient accumulation and clipping, freezing, EMA and SWAG, all as pieces of one traced run (`nn/training`); the "callbacks" of Lightning and Ignite are the tape and its probes.',
+      'Active learning: every query strategy of modAL and small-text (uncertainty, margin, entropy, query-by-committee, BALD, BatchBALD, expected error and model change, core-set, BADGE, density weighting, stream-based), with the loop as an algorithm.',
+      'Privacy: DP-SGD with per-example clipping, RDP accounting, Gaussian, Laplace and exponential mechanisms, randomised response, membership, attribute and model-inversion attacks.',
+      'Weak supervision and noisy labels: label models (majority, Dawid-Skene, a Snorkel-style model), noise transition estimation, confident learning (`findLabelIssues`), co-teaching, forward and backward correction, PU learning.',
+      'Online learning: Hoeffding trees, the passive-aggressive and perceptron learners, online and kernel regressors, FTRL, bandits, drift detectors (ADWIN, KSWIN, Page-Hinkley, DDM, EDDM), streaming metrics, stream generators with concept drift.',
+    ],
+    after: [
+      'Three paradigms with a catalogue chapter have no code at all: meta-learning (MAML, Reptile, prototypical networks and an episode sampler), ' +
+        'continual learning (EWC, replay, LwF, a stream of tasks and the forgetting matrix) and federated learning (FedAvg, FedProx). Together with ' +
+        'prequential evaluation, they are the clearest gaps of this family. All three are inner-loop-over-trainers programs, and `autodiff`, ' +
+        '`rl#replayBuffer` and `optim#empiricalFisher` are what they would be built from.',
+      '`higher` is marked out of scope: its job (differentiating through an inner optimisation loop) is what `grad` of a function of functional ' +
+        'optimiser steps already does.',
+    ],
+  },
+  {
+    file: 'bayesian-optimisation-and-gp',
+    title: 'Bayesian optimisation, Gaussian processes, Pyro and BlackJAX',
+    libs: ['botorch', 'gpytorch', 'gpflow', 'skopt', 'pyro', 'blackjax'],
+    intro:
+      'BoTorch, scikit-optimize and the GP stacks GPyTorch and GPflow (acquisition functions, multi-output, variational and sparse GPs, ' +
+      'likelihoods, kernels), Pyro (guides, ELBO variants, the effect-handler vocabulary, contrib GPs and experimental design) and ' +
+      'BlackJAX (the sampler zoo). Introspected: GPyTorch and BlackJAX. BoTorch, GPflow, scikit-optimize and Pyro are from memory.',
+    strong: [
+      'Gaussian processes: exact regression with any kernel and the marginal likelihood, sparse GPs with SoR, DTC, FITC and VFE, Laplace and EP classification, relevance vector machines, kernels including ARD, spectral mixture, periodic and compositions.',
+      'Bayesian optimisation: EI, log-EI, PI, UCB with a GP surrogate, TPE, CMA-ES, quasi-random samplers, Hyperband, successive halving, pruners, importance by fANOVA.',
+      'Pyro vocabulary: SVI, Trace, mean-field and Renyi ELBOs, auto-guides (normal, delta, multivariate, low-rank, Laplace, IAF), the handlers (trace, replay, block, condition, do, mask, scale, seed, plate, markov, enumerate), `infer_discrete`, SMC and SVGD.',
+      'Samplers: HMC, NUTS, Riemannian HMC, MALA, SGLD, slice, elliptical slice, SMC, tempered SMC, annealed importance sampling, with the whole chain on the tape.',
+    ],
+    after: [
+      'The batch and information-theoretic acquisition functions of BoTorch, multi-output and variational GPs, and a few Pyro features ' +
+        '(reparametrisation handlers, enumerated ELBO, optimal experimental design) are the visible gaps. Nested sampling and the stochastic-gradient ' +
+        'HMC family (SGHMC, SGNHT) are the BlackJAX samplers a Bayesian course would meet that omai lacks.',
+    ],
+  },
+  {
+    file: 'tabular-and-interpretable',
+    title: 'Tabular, interpretable and feature libraries; diagnostic charts',
+    libs: [
+      'interpret',
+      'imodels',
+      'category_encoders',
+      'feature_engine',
+      'mlxtend',
+      'skmultilearn',
+      'sklearn_extra',
+      'umap',
+      'hdbscan',
+      'trimap',
+      'pacmap',
+      'yellowbrick',
+      'scikitplot',
+      'lime',
+      'xgboost_lightgbm_catboost',
+    ],
+    intro:
+      'interpret and imodels (explainable boosting, rule lists, optimal trees), category_encoders and feature-engine (encoders and feature ' +
+      'creation), mlxtend, scikit-multilearn, scikit-learn-extra, umap-learn, hdbscan, TriMap and PaCMAP, yellowbrick and scikit-plot ' +
+      '(diagnostic charts), LIME, and the feature set of XGBoost, LightGBM and CatBoost. Introspected: LIME. Everything else is from memory.',
+    strong: [
+      'Glass-box models: explainable boosting machines (cyclic boosting with pairwise terms), rule lists (CORELS, Bayesian rule lists, CN2, PRISM, RIPPER, OneR), RuleFit, decision tables, and `rules` as a folder of its own.',
+      'Dimension reduction and clustering: t-SNE, UMAP, TriMap, PaCMAP, HDBSCAN with the condensed tree, OPTICS reachability, k-medoids and CLARA.',
+      'Diagnostics: ROC, PR, calibration, confusion matrix, learning curve, residuals, decision regions, scree and biplot, importance, partial dependence and ICE, regularisation paths, threshold sweeps, reliability and conformal views.',
+      'Model comparison: McNemar, Cochran Q, the 5x2 cv F test, bootstrap .632, bias-variance decomposition; stacking and voting; sequential feature selection, RFE, mRMR, stability selection, knockoffs.',
+    ],
+    after: [
+      'The recurring gaps are small: categorical encoders (WoE, CatBoost-style ordered statistics, Helmert and sum contrasts), feature filters (constant, duplicate and ' +
+        'correlated columns, probe features), calendar features, monotone constraints and DART or GOSS in the boosters, FIGS and hierarchical shrinkage for interpretable trees, ' +
+        'multi-label learners (ML-kNN, RAkEL) and a handful of charts (silhouette, jointplot, cumulative gain and lift).',
+    ],
+  },
+  {
+    file: 'torch-ecosystem',
+    title: 'The torch ecosystem beyond torch: architectures, audio, text, augmentation and inspection',
+    libs: [
+      'torchvision_models',
+      'timm',
+      'torchaudio',
+      'librosa',
+      'torchtext',
+      'kornia',
+      'albumentations',
+      'torchinfo_fx_onnx',
+    ],
+    intro:
+      'torchvision.models and timm (the architecture families a learner expects), torchaudio and librosa (audio transforms and features), ' +
+      'torchtext (vocabularies and tokenisers), kornia and albumentations (augmentation and classical vision), and the inspection side of the ecosystem ' +
+      '(torchinfo, torch.fx, ONNX). Introspected: torchvision.models and librosa. The others are from memory. Pretrained weights, detection and video model zoos, ' +
+      'GPU kernels and serving are out of scope on purpose, and are marked so.',
+    strong: [
+      'Blocks: ResNet basic and bottleneck, squeeze-and-excitation, ConvNeXt, MBConv, U-Net stages, feature pyramids, transformer blocks and patch embedding, mixers, state-space layers, Mamba, RetNet, RWKV, KAN, neural operators.',
+      'Audio: spectrograms, mel and MFCC, chroma, pitch (YIN, pYIN), onset and beat tracking, tempograms, SpecAugment, time stretching and pitch shifting, gammatone and ERB scales, masking and source separation baselines; `signal` at scipy.signal width.',
+      'Vision (classical, OpenCV-shaped): filters, morphology, features (Harris, FAST, ORB, BRIEF, SIFT), matching, RANSAC, homography and essential matrices, stereo, calibration, bundle adjustment, optical flow, segmentation (SLIC, GrabCut, mean shift), tracking.',
+      'Text: tokenisers (regex, treebank, tweet, BPE, WordPiece, unigram), vocabularies, n-gram models, TF-IDF, BM25, word2vec, GloVe, fastText, parsers.',
+      'Inspection: `describe`, `summary`, layer tables, FLOP and memory estimates, receptive fields, and a scene layer that draws structures.',
+    ],
+    after: [
+      'omai has the parts of the architectures and none of the assembled, named networks. A learner who wants "ResNet-18 at a small scale, trained on 28x28 digits and ' +
+        'then described" has to wire it by hand; VGG-style plain stacks (the baseline for residual connections), a vision transformer and a small U-Net as builders with depth and width ' +
+        'as knobs would close that. The augmentation side is the same: crop, flip, cutout, mixup and cutmix exist, the colour and blur modifiers, the policies (RandAugment) and the ' +
+        'label-carrying geometric ones (boxes, keypoints, masks) do not.',
+    ],
+  },
+  {
+    file: 'structured-prediction',
+    title: 'Structured prediction and sequence labelling (CRFs and their neighbours)',
+    libs: ['crf_libraries', 'crf_tools'],
+    intro:
+      'sklearn-crfsuite, python-crfsuite (CRFsuite) and pytorch-crf (introspected from the installed packages), and from memory CRF++, AllenNLP and flair ' +
+      '(BiLSTM-CRF taggers), pystruct (structured SVMs and the structured perceptron), seqeval (entity-level scores) and the structured-prediction ' +
+      'literature (n-best and constrained decoding, semi-Markov, skip-chain and higher-order CRFs, latent and partial-label CRFs, CRF layers on neural encoders, ' +
+      'CRF-as-RNN, MEMMs, parsers). The source of omai was read for what each item corresponds to.',
+    strong: [
+      'Linear-chain CRFs in both the CRFsuite and CRF++ forms: score, log-likelihood, marginals, Viterbi, posterior decoding, feature counts and expected counts, template-driven features (CRF++ and Wapiti syntax), L1 and L2 penalties.',
+      'Training through a solver slot: L-BFGS, every generic smooth solver, stochastic gradient, and three online algorithms of structured prediction (perceptron, averaged perceptron, passive-aggressive with cost-augmented decoding) on the same tape, which neither CRFsuite nor pystruct offer side by side.',
+      'General CRFs on arbitrary graphs with exact or loopy-BP marginals; Gaussian MRFs, factor graphs, HMM, HSMM and IO-HMM, mean-field and MPLP inference.',
+      'seqeval-style entity metrics (BIO, IOB1, BIOES, BILOU; strict and lenient; micro, macro and per type) and scheme-violation counts; CKY, Earley, PCFG training, arc-standard and Eisner dependency parsing.',
+    ],
+    fullTables: ['crf_libraries'],
+    after: [
+      'CRFs are a strength, not a gap. What is still missing is a ring around them: constrained and n-best decoding (a decoder that cannot emit I-X after O), ' +
+        'a CRF layer over a neural encoder with gradients into the encoder (the BiLSTM-CRF), a max-margin structured SVM beside the perceptron, ' +
+        'the locally normalised MEMM as the foil that teaches label bias, semi-Markov CRFs, latent and partial-label CRFs, and graph-cut or AD3-style MAP for pairwise ' +
+        'models. Entity-level metrics, which one might expect to be missing, are present (`metrics/sequence-labelling.ts`). An sklearn-crfsuite-shaped estimator ' +
+        '(`fit`, `predict`, `predict_marginals`, `score` on lists of feature dictionaries) is also absent as a wrapper, though every part is there.',
+    ],
+  },
+  {
+    file: 'adjacent',
+    title:
+      'Adjacent libraries: offline RL, control, change points, optimisation, geometry, algebra, causal discovery, uncertainty, forecasting, recommenders, data checks, games',
+    libs: [
+      'd3rlpy',
+      'imitation',
+      'control',
+      'filterpy',
+      'pykalman',
+      'ruptures',
+      'stumpy',
+      'pysindy',
+      'cma',
+      'pymoo',
+      'nevergrad',
+      'optax',
+      'cvxpy',
+      'pot',
+      'shapely',
+      'trimesh',
+      'sympy',
+      'problog',
+      'causallearn',
+      'gcastle',
+      'mapie',
+      'uncertainty_toolbox',
+      'neuralforecast',
+      'darts',
+      'gluonts',
+      'surprise',
+      'implicit',
+      'lightfm',
+      'recbole',
+      'deepchecks',
+      'evidently',
+      'nashpy',
+      'openspiel',
+      'datasketch',
+      'pysubgroup',
+      'pingouin',
+      'pyitlib',
+      'npeet',
+      'sdeint',
+      'numpy',
+    ],
+    areaLevel: ['sympy', 'pot'],
+    intro:
+      'Libraries that sit next to the other domains of omai and were not in the first pass. Introspected from the installed environment: ' +
+      'control, filterpy, ruptures, stumpy, pysindy, cma, pymoo, cvxpy, POT, optax, shapely, SymPy, causal-learn, MAPIE, nashpy, OpenSpiel (game names and ' +
+      'algorithm modules), datasketch, pysubgroup, pingouin, pyitlib, npeet, sdeint, numpy (the array namespace, by group). From memory: d3rlpy, imitation, pykalman, nevergrad, trimesh, problog (found to be covered), gcastle, uncertainty-toolbox, ' +
+      'neuralforecast, darts, GluonTS, surprise, implicit, LightFM, RecBole, deepchecks, evidently. SymPy and POT have hundreds of names and were judged by ' +
+      'group, so they are in the summary and the tables but left out of the headline totals.',
+    strong: [
+      'Control and filtering: the LTI toolbox of python-control to the last function, LQR, LQG, pole placement, H-infinity, MPC, iLQR, PID tuning, and Kalman, extended, unscented, ensemble and particle filters with smoothers.',
+      'stumpy to the last function (matrix profile in six algorithms, motifs, discords, chains, snippets, FLUSS and FLOSS, MPdist) as stepped algorithms.',
+      'Game theory: OpenSpiel-style CFR, CFR+ and Monte Carlo CFR, sequence-form LPs, exploitability, support and vertex enumeration, Lemke-Howson, fictitious play, replicator dynamics, regret matching, coalition games, auctions and voting.',
+      'Conformal prediction in the MAPIE style: split, cross, jackknife+, CV+, CQR, Mondrian, adaptive, weighted, APS and RAPS.',
+      "Optimisation: optax at its full width (283 of 306 names), POT's exact, entropic, unbalanced and Gromov-Wasserstein solvers, NSGA-II, CMA-ES, differential evolution and swarm methods.",
+      'Recommenders: implicit-feedback ALS, matrix completion, factorisation machines, DeepFM, DLRM, two-tower, BPR and ranking losses, click models, MovieLens.',
+    ],
+    after: [
+      'The recurring gaps in this group are the evaluation and reporting layers (a data-audit report like deepchecks and Evidently, conformal risk control and ' +
+        'exchangeability tests from MAPIE), forecasting as a pipeline (windows, transformers, backtests, baselines), neighbourhood and graph collaborative filtering, ' +
+        'the classic board-game shelf (chess, Othello, checkers, Hex), multi-objective evolutionary algorithms beyond NSGA-II with the ZDT and DTLZ problems, and ' +
+        'optimal-transport domain adaptation.',
+    ],
+  },
 ]
 
 const PRI: Record<string, number> = { high: 3, medium: 2, low: 1 }
@@ -219,7 +498,7 @@ function main(): void {
     const out: string[] = []
     const famRows = rows.filter((r) => fam.libs.includes(r.lib))
     const tot = { full: 0, partial: 0, absent: 0, skip: 0, notLow: 0 }
-    for (const r of famRows) {
+    for (const r of famRows.filter((x) => !(fam.areaLevel ?? []).includes(x.lib))) {
       tot[r.status]++
       if ((r.status === 'absent' || r.status === 'partial') && (r.priority === 'high' || r.priority === 'medium'))
         tot.notLow++
@@ -262,6 +541,14 @@ function main(): void {
     out.push('## Where omai is already strong', '')
     for (const s of fam.strong) out.push(`- ${s}`)
     out.push('')
+    for (const a of fam.after ?? []) out.push(a, '')
+    if (fam.areaLevel?.length) {
+      out.push(
+        `${fam.areaLevel.map((l) => `\`${l}\``).join(' and ')} ${fam.areaLevel.length > 1 ? 'were' : 'was'} judged by area, not by name; ` +
+          'their rows are in the tables but not in the totals of `counts.json` and the README.',
+        '',
+      )
+    }
     out.push('## Absent and partial items', '')
     out.push(
       'Priority is high, medium or low by how many learners would expect the thing, how many pages it unlocks and how well ' +
@@ -294,7 +581,8 @@ function main(): void {
       for (const g of list) {
         const first = g[0]
         if (!first) continue
-        const withNote = g.find((r) => r.note) ?? first
+        const byPriority = [...g].sort((a, b) => (PRI[b.priority ?? 'low'] ?? 1) - (PRI[a.priority ?? 'low'] ?? 1))
+        const withNote = byPriority.find((r) => r.note) ?? first
         const pri = g.reduce(
           (m, r) => ((PRI[r.priority ?? 'low'] ?? 1) > (PRI[m] ?? 1) ? (r.priority ?? 'low') : m),
           'low',
@@ -309,6 +597,23 @@ function main(): void {
         const status = [...new Set(g.map((r) => r.status))].join('/')
         out.push(
           `| ${cell(label)} (${cell(areaSet.slice(0, 2).join(', '))}${areaSet.length > 2 ? ', ...' : ''}) | ${what} | ${cell(first.omai) || 'nothing close'} | ${cell(home) || 'to be placed'} | ${size || '-'} | ${pri} | ${status} |`,
+        )
+      }
+      out.push('')
+    }
+    for (const lib of fam.fullTables ?? []) {
+      const lr = famRows.filter((r) => r.lib === lib)
+      out.push(`## Every name checked: ${lib}`, '')
+      out.push(
+        'Each name of the reference list with the verdict and the nearest thing in omai (or what is missing). "covered" means the same method under omai\'s name.',
+        '',
+      )
+      out.push('| reference | area | verdict | nearest in omai, or what it is |')
+      out.push('| --- | --- | --- | --- |')
+      for (const r of lr) {
+        const status = r.status === 'skip' ? 'out of scope' : r.status === 'full' ? 'covered' : r.status
+        out.push(
+          `| \`${r.name}\` | ${shortArea(lib, r.area)} | ${status} | ${cell(r.omai) ? `${cell(r.omai)}${r.note ? `: ${cell(r.note)}` : ''}` : cell(r.note) || '-'} |`,
         )
       }
       out.push('')

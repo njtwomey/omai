@@ -1,0 +1,92 @@
+# Metric and similarity learning. pytorch-metric-learning, metric-learn and FAISS are from memory (not installed).
+# Each name was checked against the export list and the source of omai (losses/contrastive.ts, learn/metric-learning.ts,
+# learn/neighbours.ts, numerics/spatial, metrics/ranking.ts, data samplers). `nn#marginLoss` is a false friend (the
+# Carlini-Wagner margin), so MarginLoss is absent.
+@lib pytorch_metric_learning
+@area losses
+F | ContrastiveLoss | losses#contrastive | | | | |
+F | TripletMarginLoss | losses#tripletMargin | explicit (anchor, positive, negative) rows; no mining over a labelled batch | | | |
+F | NTXentLoss | losses#ntXent, #infoNce | | | | |
+F | SupConLoss | losses#supervisedContrastive | | | | |
+F | ArcFaceLoss | losses#arcFace | | | | |
+F | CosFaceLoss | losses#cosFace | | | | |
+F | VICRegLoss | losses#vicreg | | | | |
+P | SelfSupervisedLoss | losses#infoNce, #ntXent | a wrapper that makes the positive pair from two views of a batch; omai's losses take the two views | losses/contrastive.ts | S | low | wrapper losses
+P | NCALoss | learn#ncaValueAndGradient | the NCA objective exists as a fit of a linear map, not as a batch loss on any embedding network | losses/metric.ts | S | medium | batch-label pair and triplet losses
+P | GenericPairLoss|BaseMetricLossFunction|WeightRegularizerMixin|EmbeddingRegularizerMixin | losses/_reduce.ts | base classes: omai's losses take `reduction` and `weights` options | | | |
+A | MarginLoss | | Wu et al. 2017 distance-weighted sampling margin loss with a learnable class margin beta; `nn#marginLoss` is unrelated (Carlini-Wagner) | losses/metric.ts | S | medium | batch-label pair and triplet losses
+A | MultiSimilarityLoss | | Wang et al. 2019: weights each pair by its similarity to the others, with the multi-similarity miner; the standard strong pair loss | losses/metric.ts | S | high | batch-label pair and triplet losses
+A | NPairsLoss|TupletMarginLoss | | N-pairs (Sohn 2016): one positive and N-1 negatives per anchor, softmax over similarities (close to `infoNce` with labels, but with the L2 embedding penalty and the tuplet form) | losses/metric.ts | S | medium | batch-label pair and triplet losses
+A | LiftedStructureLoss|GeneralizedLiftedStructureLoss | | Lifted structured embedding (Oh Song et al. 2016): a smooth max over all negatives per positive pair | losses/metric.ts | S | medium | batch-label pair and triplet losses
+A | CircleLoss | | Sun et al. 2020: pair weights by distance from an optimum, one view of pair and class losses | losses/metric.ts | S | medium | batch-label pair and triplet losses
+A | AngularLoss | | Wang et al. 2017: a bound on the angle at the negative point of a triplet | losses/metric.ts | S | low | batch-label pair and triplet losses
+A | RankedListLoss|HistogramLoss|FastAPLoss|SmoothAPLoss|PNPLoss|ManifoldLoss|IntraPairVarianceLoss|CentroidTripletLoss|SignalToNoiseRatioContrastiveLoss|ThresholdedContrastive|DynamicSoftMarginLoss|ConvergenceTripletLoss|InstanceLoss | | the long tail of pair, list and average-precision-surrogate losses; SmoothAP and FastAP optimise retrieval AP directly and fit omai's `approxNdcg` pattern | losses/metric.ts | M | low | long tail of metric-learning losses
+A | ProxyNCALoss|ProxyAnchorLoss|NormalizedSoftmaxLoss|SoftTripleLoss|SubCenterArcFaceLoss | | proxy-based losses: one learnable vector per class replaces pair mining (ProxyNCA, Proxy-Anchor, normalised softmax, SoftTriple with several centres per class). `arcFace` and `cosFace` already hold class weight vectors, so these are small. | losses/proxy.ts | S | high | proxy-based losses
+A | SphereFaceLoss|LargeMarginSoftmaxLoss|P2SGradLoss | | multiplicative angular-margin softmax heads (L-Softmax, SphereFace); siblings of `arcFaceLogits` | losses/contrastive.ts | S | low | proxy-based losses
+A | CrossBatchMemory | | XBM / memory bank: keep recent embeddings so pair losses see more negatives; the queue of MoCo is the same device | learn/memory-bank.ts | S | medium | memory bank
+A | TuplesToWeightsSampler|SubCenterArcFaceLoss | | | | | |
+@area miners
+A | BatchHardMiner|BatchEasyHardMiner | | the hardest positive and hardest negative per anchor in a batch (Hermans et al. 2017); the catalogue plans mining as the mode of `triplet-and-margin` but there is no code | learn/mining.ts | S | high | miners
+A | TripletMarginMiner|AngularMiner|PairMarginMiner | | semi-hard and easy-positive triplet mining by margin (FaceNet) | learn/mining.ts | S | high | miners
+A | MultiSimilarityMiner|DistanceWeightedMiner|UniformHistogramMiner|HDCMiner|EmbeddingsAlreadyPackagedAsTriplets|BaseMiner | | distance-weighted sampling (Wu et al. 2017), multi-similarity mining, histogram-uniform mining | learn/mining.ts | S | medium | miners
+@area distances
+F | CosineSimilarity|DotProductSimilarity | distances#cosineSimilarity | dot product is `tensor` matmul | | | |
+F | LpDistance | distances#minkowskiDistance, #euclideanDistance | | | | |
+P | BatchedDistance|SNRDistance|BaseDistance | distances | the `distances` registry has the named metrics; a batched pairwise matrix and the signal-to-noise distance are not named | distances | S | low | distances
+@area reducers
+P | .* | losses/_reduce.ts | omai losses reduce by `mean`, `sum` or `none` with per-example weights; the reducers of the library (average over non-zero terms, per anchor, class-weighted, threshold) change how a mined loss is averaged and are one-liners over the unreduced loss | losses/_reduce.ts | S | low | reducers
+@area regularizers
+P | LpRegularizer|ZeroMeanRegularizer|CenterInvariantRegularizer|SparseCentersRegularizer|RegularFaceRegularizer | optim penalties | the embedding and class-weight regularisers; norm penalties exist for parameters (`optim`, weight decay) but not as embedding-batch regularisers | losses/metric.ts | S | low | regularizers
+@area samplers
+A | MPerClassSampler | data#balancedWeights, #weightedRandomSampler | m samples per class per batch, so that every batch holds positives for every anchor; the sampler every pair or triplet loss needs. `balancedWeights` balances class frequency, not the within-batch structure. | data/samplers.ts | S | high | samplers
+A | HierarchicalSampler|FixedSetOfTriplets|TuplesToWeightsSampler | | batch construction by a label hierarchy; fixed triplet sets | data/samplers.ts | S | low | samplers
+@area trainers
+S | .* | learn/bases | training-loop plumbing (the trainer classes only wire a model, loss, miner and sampler); omai's trainer base and `trainer` estimators do this | | | |
+@area testers
+P | .* | learn#neighbourIndex, metrics (precisionAtK, recallAtK, meanAveragePrecision) | computing embeddings and an accuracy table is a composition of omai's index and ranking metrics; no one-call tester | learn/retrieval-eval.ts | S | medium | retrieval evaluation
+@area utils
+F | r_precision | metrics#rPrecision | | | | |
+F | mean_average_precision | metrics#meanAveragePrecision | | | | |
+F | precision_at_1 | metrics#precisionAtK | | | | |
+F | NMI|normalized_mutual_info | metrics#normalizedMutualInfoScore | | | | |
+F | AMI|adjusted_mutual_info | metrics#adjustedMutualInfoScore | | | | |
+P | mean_average_precision_at_r | metrics#meanAveragePrecision | MAP@R (Musgrave et al. 2020) truncates each query's list at its own number of true matches R; `meanAveragePrecision` takes one k for all | metrics/ranking.ts | S | medium | retrieval evaluation
+F | FaissKNN|CustomKNN | learn#neighbourIndex, numerics/spatial#hnswIndex, #ivfIndex, #lshIndex | | | | |
+P | FaissKMeans | cluster#lloydAlgorithm | k-means on embeddings exists as an algorithm | | | |
+P | AccuracyCalculator | metrics | the six numbers of the calculator are separate metrics in `metrics`; no combined report | learn/retrieval-eval.ts | S | medium | retrieval evaluation
+P | get_all_triplets_indices|get_random_triplet_indices|convert_to_triplets|convert_to_pairs|get_matches_and_diffs|lmu_tuple|loss_and_miner_utils | manifold#trimapTriplets | label-based pair and triplet index helpers (TriMap's triplet sampler is the nearest) | learn/mining.ts | S | medium | miners
+S | LogitGetter|InferenceModel|HookContainer|common_functions|dataset_utils|MultipleLosses|ModelWrapper|EmbeddingNormalization|MeanReducer | | plumbing: logging hooks, model wrappers, inference helpers | | | |
+S | .* | | | | | |
+
+@lib metric_learn
+F | NCA | learn#neighbourhoodComponentsAnalysis | | | | |
+F | LMNN | learn#largeMarginNearestNeighbour | | | | |
+P | Covariance | covariance#mahalanobisDistances, distances#mahalanobisDistance | the inverse covariance as the metric: the pieces are there, no transformer wrapper | learn/metric-learning.ts | S | low | linear-map metric learners
+A | LFDA | learn#linearDiscriminant | local Fisher discriminant analysis (Sugiyama 2007): LDA that keeps local structure, closed form by a generalised eigenproblem | learn/metric-learning.ts | S | medium | linear-map metric learners
+A | MLKR | stats/smoothing#nadarayaWatson | metric learning for kernel regression (Weinberger and Tesauro 2007): a linear map minimising leave-one-out Nadaraya-Watson error; the regression sibling of NCA and the same shape as `ncaProblem` | learn/metric-learning.ts | S | medium | linear-map metric learners
+A | RCA|RCA_Supervised | learn#linearDiscriminant | relevant component analysis: whitens by the within-chunklet covariance; two lines of linear algebra | learn/metric-learning.ts | S | low | linear-map metric learners
+A | SCML|SCML_Supervised | | sparse compositional metric learning (Shi et al. 2014): a sparse combination of rank-one bases, learnt with triplets | learn/metric-learning.ts | M | low | linear-map metric learners
+A | ITML|ITML_Supervised | information#bregmanDivergence | information-theoretic metric learning (Davis et al. 2007): the Mahalanobis matrix closest in LogDet divergence to a prior that satisfies pair constraints; the textbook constraint-based learner, solved by Bregman projections (a traced loop over constraints) | learn/metric-learning.ts | M | high | pair-constraint metric learners
+A | LSML|LSML_Supervised | | least squares metric learning from quadruplets (Liu et al. 2012): closed form plus a projected step onto the PSD cone | learn/metric-learning.ts | S | medium | pair-constraint metric learners
+A | SDML|SDML_Supervised | covariance (graphical lasso) | sparse determinant metric learning (Qi et al. 2009): a graphical-lasso penalty on the metric learnt from similar pairs | learn/metric-learning.ts | M | low | pair-constraint metric learners
+A | MMC|MMC_Supervised | | Xing et al. 2002 (the first Mahalanobis learner, pairs and a convex program); only the name `MMC` matched, and that is a different omai export | learn/metric-learning.ts | M | medium | pair-constraint metric learners
+P | Mahalanobis_Matrix|MahalanobisMixin|MetricTransformer | learn#LinearMapVerbs, distances#mahalanobisDistance | omai metric learners learn a linear map `L` (M = L'L) and offer `fittedAt(t)`; the learners that learn M directly need a PSD projection | | | |
+P | PairsClassifierMixin|TripletsClassifierMixin|QuadrupletsClassifierMixin | | classifying pairs as similar or not by thresholding the learnt distance, and scoring triplets; data shapes omai does not have (pairs, triplets and quadruplets of rows as a dataset) | data/constraints.ts | S | medium | pair-constraint metric learners
+A | Constraints|wrap_pairs|pairs_from_labels | cluster#PairConstraints | building positive and negative pairs from a few labels (the semi-supervised metric-learning input); `PairConstraints` exists for constrained clustering | data/constraints.ts | S | medium | pair-constraint metric learners
+S | BilinearMixin|MetricTransformer | | | | | |
+
+@lib faiss
+@area indexes
+F | IndexFlatL2|IndexFlatIP | learn#neighbourIndex | exact search under any metric | | | |
+F | IndexHNSWFlat | numerics/spatial#hnswIndex | | | | |
+F | IndexLSH | numerics/spatial#lshIndex | | | | |
+F | IndexIVFFlat | numerics/spatial#ivfIndex | | | | |
+P | IndexPQ|IndexIVFPQ | numerics/spatial#kmeansCodebook | product quantisation compresses vectors to codebook ids; omai has the codebook (vector quantisation) but not the PQ index with asymmetric distance tables | numerics/spatial/pq.ts | M | medium | product quantisation
+P | IndexScalarQuantizer|IndexIVFScalarQuantizer | | scalar quantisation of vectors for search (omai has weight quantisation in `nn`, not an index) | numerics/spatial/pq.ts | S | low | product quantisation
+S | IndexIDMap|IndexRefine|IndexPreTransform|IndexBinaryFlat|IndexShards|IndexReplicas | | composition, id mapping, binary and sharded indexes: engineering | | | |
+@area clustering
+P | Kmeans | cluster#lloydAlgorithm | | | | |
+P | ProductQuantizer|ScalarQuantizer|OPQMatrix|RandomRotationMatrix | numerics/spatial#kmeansCodebook | | numerics/spatial/pq.ts | M | medium | product quantisation
+F | PCAMatrix | decomposition | | | | |
+@area utils
+S | .* | | file IO, GPU, factory strings: plumbing | | | |

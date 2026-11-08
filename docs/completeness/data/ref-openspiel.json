@@ -1,0 +1,1459 @@
+{
+"library": "openspiel",
+"version": "2.0.2",
+"source": "introspection",
+"entries": [
+{
+"area": "open_spiel.python.algorithms",
+"name": "action_value",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "action_value_test",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "action_value_vs_best_response",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "action_value_vs_best_response_test",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "adidas",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "adidas_test",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "adidas_utils",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "alpha_zero",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "async_mcts",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "async_mcts_test",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "best_response",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "best_response_test",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "boltzmann_tabular_qlearner",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "boltzmann_tabular_qlearner_test",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "cfr",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "cfr_br",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "cfr_br_test",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "cfr_test",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "discounted_cfr",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "discounted_cfr_test",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "double_oracle",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "double_oracle_test",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "efr",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "efr_test",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "elo",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "elo_test",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "evaluate_bots",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "evaluate_bots_test",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "expected_game_score",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "expected_game_score_test",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "exploitability",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "exploitability_test",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "external_sampling_mccfr",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "external_sampling_mccfr_test",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "fictitious_play",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "fictitious_play_test",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "gambit",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "gambit_test",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "generate_playthrough",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "generate_playthrough_test",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "get_all_states",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "get_all_states_test",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "infostate_tree_test",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "ismcts",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "ismcts_agent_test",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "ismcts_test",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "jpsro",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "jpsro_test",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "lp_solver",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "lp_solver_test",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "matrix_nash",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "mccfr",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "mcts",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "mcts_agent",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "mcts_agent_test",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "mcts_test",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "minimax",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "minimax_solver",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "minimax_solver_test",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "minimax_test",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "mip_nash",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "mip_nash_test",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "mmd_dilated",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "mmd_dilated_test",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "nash_averaging",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "nash_averaging_test",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "nfg_utils",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "nfg_utils_test",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "noisy_policy",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "noisy_policy_test",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "outcome_sampling_mccfr",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "outcome_sampling_mccfr_test",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "policy_aggregator",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "policy_aggregator_joint",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "policy_aggregator_joint_test",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "policy_aggregator_test",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "policy_utils",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "projected_replicator_dynamics",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "projected_replicator_dynamics_test",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "psro_v2",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "random_agent",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "random_agent_test",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "regret_matching",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "regret_matching_test",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "response_graph_ucb",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "response_graph_ucb_test",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "response_graph_ucb_utils",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "sample_some_states",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "sample_some_states_test",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "sequence_form_lp",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "sequence_form_lp_test",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "sequence_form_utils",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "sequence_form_utils_test",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "stackelberg_lp",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "stackelberg_lp_test",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "tabular_multiagent_qlearner",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "tabular_multiagent_qlearner_test",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "tabular_qlearner",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "tabular_qlearner_test",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "value_iteration",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "value_iteration_test",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "wolf_phc",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.algorithms",
+"name": "wolf_phc_test",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.egt",
+"name": "alpharank",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.egt",
+"name": "alpharank_test",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.egt",
+"name": "alpharank_visualizer",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.egt",
+"name": "alpharank_visualizer_test",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.egt",
+"name": "dynamics",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.egt",
+"name": "dynamics_test",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.egt",
+"name": "examples",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.egt",
+"name": "heuristic_payoff_table",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.egt",
+"name": "heuristic_payoff_table_test",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.egt",
+"name": "utils",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.egt",
+"name": "utils_test",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.egt",
+"name": "visualization",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "open_spiel.python.egt",
+"name": "visualization_test",
+"kind": "module",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "2048",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "add_noise",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "amazons",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "antichess",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "backgammon",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "banqi",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "bargaining",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "battleship",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "blackjack",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "blotto",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "breakthrough",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "bridge",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "bridge_uncontested_bidding",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "cached_tree",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "capture_the_flag",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "catch",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "checkers",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "chess",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "chinese_checkers",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "cliff_walking",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "clobber",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "coin_game",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "colored_trails",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "connect_four",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "coop_box_pushing",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "coop_to_1p",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "coordinated_mp",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "crazy_eights",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "crazyhouse",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "cribbage",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "crossword",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "cursor_go",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "dark_chess",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "dark_hex",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "dark_hex_ir",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "deep_sea",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "dots_and_boxes",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "dou_dizhu",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "efg_game",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "einstein_wurfelt_nicht",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "euchre",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "first_sealed_auction",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "gin_rummy",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "go",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "go_fish",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "gomoku",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "goofspiel",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "hanabi",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "havannah",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "hearts",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "hex",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "hive",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "kriegspiel",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "kuhn_poker",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "laser_tag",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "latent_ttt",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "leduc_poker",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "lewis_signaling",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "liars_dice",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "liars_dice_ir",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "lines_of_action",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "maedn",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "mancala",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "markov_soccer",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "matching_pennies_3p",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "matrix_bos",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "matrix_brps",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "matrix_cd",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "matrix_coordination",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "matrix_mp",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "matrix_pd",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "matrix_rps",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "matrix_rpsw",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "matrix_sh",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "matrix_shapleys_game",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "mfg_crowd_modelling",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "mfg_crowd_modelling_2d",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "mfg_dynamic_routing",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "mfg_garnet",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "misere",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "mnk",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "morpion_solitaire",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "negotiation",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "nfg_game",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "nim",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "nine_mens_morris",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "normal_form_extensive_game",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "oh_hell",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "oshi_zumo",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "othello",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "oware",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "pathfinding",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "pentago",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "phantom_go",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "phantom_ttt",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "phantom_ttt_ir",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "pig",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "quoridor",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "rbc",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "repeated_game",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "repeated_leduc_poker",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "repeated_poker",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "restricted_nash_response",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "sheriff",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "shogi",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "skat",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "snake",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "social_deduction",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "solitaire",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "spades",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "start_at",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "stones_and_gems",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "tarok",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "tic_tac_toe",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "tiny_bridge_2p",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "tiny_bridge_4p",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "tiny_hanabi",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "trade_comm",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "turn_based_simultaneous_game",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "twixt",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "ultimate_tic_tac_toe",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "universal_poker",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "xiangqi",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "y",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "yacht",
+"kind": "game",
+"doc": ""
+},
+{
+"area": "pyspiel.games",
+"name": "zerosum",
+"kind": "game",
+"doc": ""
+}
+]
+}

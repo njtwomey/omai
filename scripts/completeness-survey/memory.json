@@ -103,6 +103,472 @@
     },
     "prophet": {
       "model": "Prophet add_seasonality add_regressor add_country_holidays make_future_dataframe predict fit plot plot_components cross_validation performance_metrics diagnostics plot_cross_validation_metric changepoint_prior_scale seasonality_mode"
+    },
+    "pytorch_metric_learning": {
+      "losses": "AngularLoss ArcFaceLoss BaseMetricLossFunction CentroidTripletLoss CircleLoss ContrastiveLoss CosFaceLoss CrossBatchMemory DynamicSoftMarginLoss FastAPLoss GenericPairLoss HistogramLoss InstanceLoss IntraPairVarianceLoss LargeMarginSoftmaxLoss GeneralizedLiftedStructureLoss LiftedStructureLoss ManifoldLoss MarginLoss MultiSimilarityLoss NPairsLoss NCALoss NormalizedSoftmaxLoss NTXentLoss P2SGradLoss PNPLoss ProxyAnchorLoss ProxyNCALoss RankedListLoss SelfSupervisedLoss SignalToNoiseRatioContrastiveLoss SoftTripleLoss SphereFaceLoss SubCenterArcFaceLoss SupConLoss ThresholdedContrastive TripletMarginLoss TupletMarginLoss VICRegLoss WeightRegularizerMixin EmbeddingRegularizerMixin SmoothAPLoss ConvergenceTripletLoss",
+      "miners": "BaseMiner BatchEasyHardMiner BatchHardMiner DistanceWeightedMiner EmbeddingsAlreadyPackagedAsTriplets HDCMiner MultiSimilarityMiner PairMarginMiner TripletMarginMiner UniformHistogramMiner AngularMiner",
+      "distances": "BatchedDistance CosineSimilarity DotProductSimilarity LpDistance SNRDistance BaseDistance",
+      "reducers": "AvgNonZeroReducer BaseReducer ClassWeightedReducer DivisorReducer DoNothingReducer MeanReducer MultipleReducers PerAnchorReducer ThresholdReducer AvgNonZeroReducer",
+      "regularizers": "CenterInvariantRegularizer LpRegularizer RegularFaceRegularizer SparseCentersRegularizer ZeroMeanRegularizer",
+      "samplers": "MPerClassSampler HierarchicalSampler TuplesToWeightsSampler FixedSetOfTriplets",
+      "trainers": "MetricLossOnly TrainWithClassifier CascadedEmbeddings DeepAdversarialMetricLearning TwoStreamMetricLoss UnsupervisedEmbeddingsUsingAugmentations",
+      "testers": "BaseTester GlobalEmbeddingSpaceTester WithSameParentLabelTester",
+      "utils": "AccuracyCalculator precision_at_1 r_precision mean_average_precision mean_average_precision_at_r NMI AMI adjusted_mutual_info normalized_mutual_info LogitGetter InferenceModel FaissKNN FaissKMeans CustomKNN HookContainer common_functions loss_and_miner_utils get_all_triplets_indices get_random_triplet_indices convert_to_triplets convert_to_pairs get_matches_and_diffs lmu_tuple dataset_utils MultipleLosses ModelWrapper EmbeddingNormalization"
+    },
+    "metric_learn": {
+      "supervised": "NCA LMNN LFDA MLKR RCA LSML_Supervised ITML_Supervised SDML_Supervised MMC_Supervised SCML_Supervised Covariance",
+      "weakly": "ITML LSML SDML MMC SCML RCA MMC_Supervised",
+      "pairs_triplets_quadruplets": "Mahalanobis_Matrix MahalanobisMixin PairsClassifierMixin TripletsClassifierMixin QuadrupletsClassifierMixin",
+      "utils": "Constraints wrap_pairs pairs_from_labels",
+      "base": "BilinearMixin MetricTransformer"
+    },
+    "faiss": {
+      "indexes": "IndexFlatL2 IndexFlatIP IndexIVFFlat IndexIVFPQ IndexPQ IndexHNSWFlat IndexLSH IndexScalarQuantizer IndexIVFScalarQuantizer IndexIDMap IndexRefine IndexPreTransform IndexBinaryFlat IndexShards IndexReplicas",
+      "clustering": "Kmeans ProductQuantizer ScalarQuantizer PCAMatrix OPQMatrix RandomRotationMatrix",
+      "utils": "index_factory read_index write_index normalize_L2 knn range_search train add search reconstruct"
+    },
+    "lightly": {
+      "loss": "NTXentLoss DCLLoss DCLWLoss BarlowTwinsLoss VICRegLoss VICRegLLoss DINOLoss MSNLoss NegativeCosineSimilarity SwaVLoss SymNegCosineSimilarityLoss TiCoLoss MMCRLoss PMSNLoss TuplesLoss",
+      "models": "SimCLR MoCo BYOL SimSiam DINO SwaV BarlowTwins VICReg SMoG MAE SimMIM MSN PMSN TiCo NNCLR FastSiam VICRegL DenseCL",
+      "heads_and_utils": "SimCLRProjectionHead MoCoProjectionHead BYOLProjectionHead BYOLPredictionHead SimSiamProjectionHead SimSiamPredictionHead DINOProjectionHead SwaVProjectionHead SwaVPrototypes BarlowTwinsProjectionHead VICRegProjectionHead NNCLRProjectionHead NNMemoryBankModule MemoryBankModule update_momentum deactivate_requires_grad activate_requires_grad MaskedVisionTransformer random_token_mask repeat_token get_at_index set_at_index ExponentialMovingAverage cosine_schedule",
+      "transforms": "SimCLRTransform MoCoV2Transform BYOLTransform DINOTransform SwaVTransform SimSiamTransform MAETransform VICRegTransform FastSiamTransform MultiViewTransform GaussianBlur RandomRotate RandomSolarization Jigsaw GaussianNoise"
+    },
+    "solo_learn": {
+      "methods": "BarlowTwins BYOL DeepCluster DINO MoCoV2Plus MoCoV3 NNBYOL NNCLR NNSiam ReSSL SimCLR SimSiam SupCon SwAV VIbCReg VICReg WMSE MAE LinearClassifier",
+      "tricks": "MomentumUpdate LARS lr_scheduler warmup_cosine multicrop_augmentation online_linear_probe knn_eval nearest_neighbour_memory_bank"
+    },
+    "sentence_transformers": {
+      "losses": "MultipleNegativesRankingLoss MultipleNegativesSymmetricRankingLoss CosineSimilarityLoss CoSENTLoss AnglELoss ContrastiveLoss OnlineContrastiveLoss TripletLoss BatchHardTripletLoss BatchSemiHardTripletLoss BatchAllTripletLoss BatchHardSoftMarginTripletLoss SoftmaxLoss MarginMSELoss MSELoss CachedMultipleNegativesRankingLoss MatryoshkaLoss GISTEmbedLoss DenoisingAutoEncoderLoss TripletEvaluator",
+      "evaluation": "EmbeddingSimilarityEvaluator InformationRetrievalEvaluator BinaryClassificationEvaluator TripletEvaluator RerankingEvaluator ParaphraseMiningEvaluator TranslationEvaluator MSEEvaluator LabelAccuracyEvaluator",
+      "tools": "SentenceTransformer CrossEncoder semantic_search util.cos_sim util.dot_score util.paraphrase_mining util.community_detection util.mine_hard_negatives quantize_embeddings"
+    },
+    "pytorch_lightning": {
+      "callbacks": "EarlyStopping ModelCheckpoint LearningRateMonitor LearningRateFinder BatchSizeFinder GradientAccumulationScheduler StochasticWeightAveraging ModelPruning ModelSummary RichProgressBar TQDMProgressBar DeviceStatsMonitor Timer BackboneFinetuning BaseFinetuning ThroughputMonitor OnExceptionCheckpoint SpikeDetection",
+      "trainer": "Trainer LightningModule LightningDataModule fit validate test predict tune accumulate_grad_batches gradient_clip_val precision overfit_batches limit_train_batches val_check_interval check_val_every_n_epoch fast_dev_run detect_anomaly deterministic",
+      "loggers": "CSVLogger TensorBoardLogger WandbLogger MLFlowLogger CometLogger NeptuneLogger",
+      "strategies": "DDPStrategy FSDPStrategy DeepSpeedStrategy XLAStrategy"
+    },
+    "ignite": {
+      "engine": "Engine Events State create_supervised_trainer create_supervised_evaluator",
+      "handlers": "EarlyStopping ModelCheckpoint Checkpoint DiskSaver Timer TerminateOnNan LRScheduler PiecewiseLinear CosineAnnealingScheduler LinearCyclicalScheduler ConcatScheduler CreateStateDictLRScheduler ParamScheduler ParamGroupScheduler ProgressBar EpochOutputStore EMAHandler FastaiLRFinder TimeLimit global_step_from_engine BasicTimeProfiler HandlersTimeProfiler",
+      "metrics": "Accuracy Precision Recall Fbeta ConfusionMatrix IoU mIoU DiceCoefficient RocCurve ROC_AUC AveragePrecision PrecisionRecallCurve MeanAbsoluteError MeanSquaredError RootMeanSquaredError Loss TopKCategoricalAccuracy MultiLabelConfusionMatrix MutualInformation CohenKappa SSIM PSNR FID InceptionScore EpochMetric RunningAverage",
+      "contrib": "TensorboardLogger WandBLogger ClearMLLogger LRFinder GpuInfo "
+    },
+    "learn2learn": {
+      "algorithms": "MAML MetaSGD FirstOrderMAML Reptile ANIL LightningMAML LightningANIL LightningPrototypicalNetworks LightningMetaOptNet GBML MAMLpp ProtoNet MetaCurvature KFO",
+      "data": "MetaDataset TaskDataset Taskset FilterLabels NWays KShots LoadData RemapLabels ConsecutiveLabels DataDescription OmniglotFC mini_imagenet tiered_imagenet cifarfs fc100 fashion_mnist_fs",
+      "optim": "MetaCurvatureTransform KroneckerTransform LearnableOptimizer ModuleTransform ParameterUpdate",
+      "rl": "MetaWorld MAMLPolicy meta_env sampler"
+    },
+    "higher": {
+      "api": "innerloop_ctx monkeypatch patch.make_functional get_diff_optim DifferentiableOptimizer DifferentiableSGD DifferentiableAdam DifferentiableAdamW DifferentiableAdagrad DifferentiableAdadelta DifferentiableRMSprop DifferentiableAdamax DifferentiableASGD DifferentiableRprop DifferentiableSparseAdam DifferentiableLBFGS"
+    },
+    "avalanche": {
+      "strategies": "Naive JointTraining Cumulative Replay GDumb EWC SynapticIntelligence MAS LwF GEM AGEM CWRStar Replay ICaRL BiC LFL GSS AR1 Cumulative StreamingLDA DER ER_ACE LearningToPrompt ExpertGateStrategy",
+      "plugins": "EWCPlugin ReplayPlugin LwFPlugin GEMPlugin AGEMPlugin SynapticIntelligencePlugin MASPlugin EarlyStoppingPlugin LRSchedulerPlugin CWRStarPlugin ICaRLPlugin RWalkPlugin",
+      "benchmarks": "SplitMNIST PermutedMNIST RotatedMNIST SplitCIFAR10 SplitCIFAR100 CORe50 SplitFMNIST SplitTinyImageNet nc_benchmark ni_benchmark dataset_benchmark",
+      "metrics": "accuracy_metrics forgetting_metrics bwt_metrics forward_transfer_metrics cpu_usage_metrics loss_metrics confusion_matrix_metrics class_accuracy_metrics",
+      "training": "ReservoirSamplingBuffer ClassBalancedBuffer ParametricBuffer ExemplarsBuffer ReplayDataLoader"
+    },
+    "river": {
+      "linear_model": "LinearRegression LogisticRegression PAClassifier PARegressor Perceptron SoftmaxRegression BayesianLinearRegression ALMAClassifier",
+      "tree": "HoeffdingTreeClassifier HoeffdingAdaptiveTreeClassifier HoeffdingTreeRegressor HoeffdingAdaptiveTreeRegressor ExtremelyFastDecisionTreeClassifier SGTClassifier SGTRegressor iSOUPTreeRegressor LabelCombinationHoeffdingTreeClassifier",
+      "ensemble": "AdaptiveRandomForestClassifier AdaptiveRandomForestRegressor ADWINBaggingClassifier BaggingClassifier LeveragingBaggingClassifier SRPClassifier SRPRegressor StackingClassifier BOLEClassifier AdaBoostClassifier VotingClassifier StreamingRandomPatchesClassifier",
+      "neighbors": "KNNClassifier KNNRegressor SWINN LazySearch",
+      "naive_bayes": "GaussianNB MultinomialNB BernoulliNB ComplementNB",
+      "cluster": "KMeans DBSTREAM CluStream DenStream STREAMKMeans TextClust",
+      "anomaly": "HalfSpaceTrees OneClassSVM LocalOutlierFactor QuantileFilter ThresholdFilter GaussianScorer",
+      "drift": "ADWIN KSWIN PageHinkley DDM EDDM HDDM_A HDDM_W",
+      "drift_datasets": "DriftDetector BinaryDriftDetector",
+      "preprocessing": "StandardScaler MinMaxScaler MaxAbsScaler RobustScaler Normalizer Binarizer OneHotEncoder OrdinalEncoder TargetStandardScaler PredClipper FeatureHasher PolynomialExtender LDA",
+      "feature_selection": "VarianceThreshold SelectKBest PoissonInclusion",
+      "metrics": "Accuracy BalancedAccuracy F1 MacroF1 MicroF1 Precision Recall MAE MSE RMSE R2 LogLoss ROCAUC CohenKappa MCC Rolling TimeRolling ClassificationReport ConfusionMatrix Jaccard GeometricMean SMAPE RollingROCAUC",
+      "optim": "SGD Adam AdaGrad AdaDelta AdaMax RMSProp Nadam AMSGrad FTRLProximal NesterovMomentum Momentum AdaBound",
+      "forecast": "HoltWinters SNARIMAX NBEATS HorizonMetric ",
+      "reco": "FunkMF BiasedMF RandomNormal Baseline FMRegressor HOFMClassifier FFMClassifier",
+      "compose": "Pipeline TransformerUnion Select Discard Renamer TargetTransformRegressor FuncTransformer",
+      "time_series": "Detrender GroupDetrender evaluate SNARIMAX",
+      "bandit": "EpsilonGreedy UCB ThompsonSampling RandomPolicy LinUCBDisjoint BayesUCB Exp3",
+      "datasets": "Bananas Elec2 Higgs Phishing Insects SEA Agrawal Hyperplane RandomRBF Sine Mixed Stagger Friedman Waveform ConceptDriftStream AnomalySine",
+      "stats": "Mean Var Quantile EWMean Skew Kurtosis Min Max Sum PeakToPeak Cov PearsonCorr RollingQuantile IQR Entropy",
+      "evaluate": "progressive_val_score iter_progressive_val_score evaluate",
+      "stream": "iter_array iter_csv iter_sql shuffle simulate_qa Cache",
+      "multioutput": "ClassifierChain RegressorChain MonteCarloClassifierChain ProbabilisticClassifierChain",
+      "active": "EntropySampler",
+      "proba": "Gaussian Multinomial Beta Dirichlet MultivariateGaussian",
+      "sketch": "Counter HeavyHitters Histogram Set",
+      "imblearn": "RandomOverSampler RandomUnderSampler RandomSampler HardSamplingClassifier "
+    },
+    "snorkel": {
+      "labeling": "labeling_function LabelingFunction LFApplier PandasLFApplier LFAnalysis filter_unlabeled_dataframe preprocessor SparkLFApplier DaskLFApplier",
+      "label_model": "LabelModel MajorityLabelVoter MajorityClassVoter",
+      "augmentation": "transformation_function TransformationFunction RandomPolicy MeanFieldPolicy ApplyAllPolicy ApplyOnePolicy PandasTFApplier TFApplier",
+      "slicing": "slicing_function SlicingFunction SlicedClassifier PandasSFApplier slice_dataframe",
+      "classification": "MultitaskClassifier DictDataset DictDataLoader Task Operation",
+      "utils": "probs_to_preds preds_to_probs filter_unlabeled_dataframe",
+      "analysis": "Scorer metric_score"
+    },
+    "cleanlab": {
+      "filter": "find_label_issues find_predicted_neq_given",
+      "classification": "CleanLearning",
+      "rank": "get_label_quality_scores get_self_confidence_for_each_label get_normalized_margin_for_each_label get_confidence_weighted_entropy_for_each_label get_label_quality_ensemble_scores",
+      "count": "compute_confident_joint estimate_joint estimate_confident_joint_and_cv_pred_proba num_label_issues calibrate_confident_joint estimate_latent estimate_noise_matrices estimate_py_and_noise_matrices_from_probabilities",
+      "dataset": "health_summary find_overlapping_classes overall_label_health_score rank_classes_by_label_quality",
+      "outlier": "OutOfDistribution",
+      "regression": "CleanLearning learn.find_label_issues",
+      "multilabel": "find_label_issues get_label_quality_scores",
+      "token_classification": "find_label_issues get_label_quality_scores display_issues",
+      "object_detection": "find_label_issues get_label_quality_scores",
+      "segmentation": "find_label_issues get_label_quality_scores",
+      "datalab": "Datalab find_issues report label_issues outlier_issues near_duplicate_issues non_iid_issues class_imbalance_issues underperforming_group_issues null_issues data_valuation_issues spurious_correlations",
+      "benchmarking": "generate_noise_matrix_from_trace generate_noisy_labels noisy_labels_from_matrix",
+      "experimental": "cifar_cnn coteaching"
+    },
+    "small_text": {
+      "query_strategies": "RandomSampling LeastConfidence PredictionEntropy BreakingTies EmbeddingKMeans GreedyCoreset ContrastiveActiveLearning DiscriminativeActiveLearning BALD BatchBALD CoreSet ExpectedGradientLength SEALS QueryByCommittee DropoutQuery RandomSubsampling ConfidenceBasedStopping KappaAverage OverallUncertainty StoppingCriterion",
+      "active_learner": "PoolBasedActiveLearner initialize_data query update update_label_at",
+      "initialization": "random_initialization random_initialization_stratified random_initialization_balanced",
+      "classifiers": "KimCNNClassifier SetFitClassification TransformerBasedClassification ConfidenceEnhancedLinearSVC SklearnClassifier"
+    },
+    "flower": {
+      "strategies": "FedAvg FedProx FedAdam FedAdagrad FedYogi FedAvgM FedMedian FedTrimmedAvg Krum Bulyan QFedAvg FedOpt FaultTolerantFedAvg DPFedAvgFixed DPFedAvgAdaptive FedXgbBagging",
+      "tools": "start_server start_client simulation client_fn NumPyClient",
+      "privacy": "differential_privacy secure_aggregation"
+    },
+    "botorch": {
+      "acquisition": "ExpectedImprovement LogExpectedImprovement ProbabilityOfImprovement LogProbabilityOfImprovement UpperConfidenceBound qExpectedImprovement qLogExpectedImprovement qNoisyExpectedImprovement qLogNoisyExpectedImprovement qProbabilityOfImprovement qUpperConfidenceBound qSimpleRegret qKnowledgeGradient qMultiFidelityKnowledgeGradient qExpectedHypervolumeImprovement qLogExpectedHypervolumeImprovement qNoisyExpectedHypervolumeImprovement qNegIntegratedPosteriorVariance qMaxValueEntropy qJointEntropySearch qLowerBoundMaxValueEntropy PosteriorMean ConstrainedExpectedImprovement qLogNParEGO ProximalAcquisitionFunction PosteriorStandardDeviation qPredictiveEntropySearch ExpectedImprovementWithRiskMeasure qMultiObjectiveMaxValueEntropy qBayesianActiveLearningByDisagreement GenericMCObjective LinearMCObjective ConstrainedMCObjective ScalarizedPosteriorTransform",
+      "models": "SingleTaskGP FixedNoiseGP HeteroskedasticSingleTaskGP MultiTaskGP KroneckerMultiTaskGP ModelListGP SaasFullyBayesianSingleTaskGP SingleTaskMultiFidelityGP SingleTaskVariationalGP ApproximateGPyTorchModel GenericDeterministicModel PairwiseGP HigherOrderGP GaussianProcessNetwork ContextualGP ModelList AffineDeterministicModel PosteriorList FullyBayesianLinearSingleTaskGP SingleTaskVariationalGP LCEMGP",
+      "optim": "optimize_acqf optimize_acqf_list optimize_acqf_mixed optimize_acqf_discrete optimize_acqf_cyclic optimize_acqf_homotopy gen_batch_initial_conditions initialize_q_batch sample_perturbed_subset_dims FunctionSampler",
+      "fit": "fit_gpytorch_mll fit_fully_bayesian_model_nuts",
+      "sampling": "SobolQMCNormalSampler IIDNormalSampler draw_sobol_samples draw_sobol_normal_samples manual_seed",
+      "utils": "standardize normalize unnormalize t_batch_mode_transform get_best_candidates is_non_dominated infer_reference_point pareto hypervolume DominatedPartitioning NondominatedPartitioning FastNondominatedPartitioning",
+      "transforms": "Normalize Standardize Log10 Warp Round InputPerturbation InputStandardize ChainedOutcomeTransform Bilog Power LogNormalize",
+      "test_functions": "Branin Hartmann Ackley Rosenbrock Levy Griewank Michalewicz Shekel StyblinskiTang SixHumpCamel Beale Bukin Cosine8 DixonPrice EggHolder Powell Rastrigin ThreeHumpCamel BraninCurrin ZDT1 ZDT2 ZDT3 DTLZ2 VehicleSafety Penicillin GMM DiscBrake WeldedBeam SpeedReducer CarSideImpact",
+      "cross_validation": "batch_cross_validation gen_loo_cv_folds",
+      "risk_measures": "CVaR VaR WorstCase Expectation MeanVariance"
+    },
+    "gpflow": {
+      "models": "GPR SGPR GPMC SGPMC VGP SVGP GPLVM BayesianGPLVM VGPOpperArchambeau CGLB",
+      "kernels": "SquaredExponential Matern12 Matern32 Matern52 RationalQuadratic Exponential Linear Polynomial Periodic Cosine Constant White ArcCosine Coregion Sum Product ChangePoints Convolutional SharedIndependent SeparateIndependent LinearCoregionalization MultioutputKernel Combination IndependentLatent LinearCoregionalization Static Stationary",
+      "likelihoods": "Gaussian Bernoulli Poisson Beta Gamma Exponential StudentT Gumbel MultiClass Softmax RobustMax Ordinal Scalar HeteroskedasticTFPConditional SwitchedLikelihood MonteCarloLikelihood",
+      "mean_functions": "Zero Constant Linear Polynomial SwitchedMeanFunction",
+      "inducing_variables": "InducingPoints Multiscale InducingPointsBase SharedIndependentInducingVariables SeparateIndependentInducingVariables FallbackSharedIndependentInducingVariables",
+      "conditionals": "conditional uncertain_conditional base_conditional sample_conditional",
+      "expectations": "expectation quadrature_expectation",
+      "optimizers": "Scipy NaturalGradient",
+      "posteriors": "GPRPosterior SGPRPosterior VGPPosterior BasePosterior IndependentPosteriorSingleOutput",
+      "utilities": "set_trainable freeze to_default_float positive triangular ci_utils multilatent_conditional leave_one_out_cv_loglik",
+      "monitor": "Monitor ModelToTensorBoard ScalarToTensorBoard ExecuteCallback",
+      "covariances": "Kuu Kuf Kff",
+      "base": "Parameter Module Prior",
+      "quadrature": "NDiagGHQuadrature ndiagquad gauss_hermite_quadrature",
+      "experimental": "check_shapes"
+    },
+    "skopt": {
+      "optimizers": "gp_minimize forest_minimize gbrt_minimize dummy_minimize Optimizer BayesSearchCV load dump",
+      "space": "Real Integer Categorical Space Dimension Normalize LogN",
+      "learning": "GaussianProcessRegressor ExtraTreesRegressor RandomForestRegressor GradientBoostingQuantileRegressor",
+      "acquisition": "gaussian_ei gaussian_lcb gaussian_pi EI PI LCB gaussian_acquisition_1D",
+      "callbacks": "DeltaXStopper DeltaYStopper DeadlineStopper VerboseCallback CheckpointSaver TimerCallback EarlyStopper",
+      "plots": "plot_convergence plot_evaluations plot_objective plot_regret",
+      "sampler": "Lhs Sobol Halton Hammersly Grid InitialPointGenerator",
+      "utils": "cook_estimator expected_minimum use_named_args dimensions_aslist point_asdict"
+    },
+    "pyro": {
+      "infer": "SVI Trace_ELBO TraceMeanField_ELBO TraceEnum_ELBO TraceGraph_ELBO TraceTailAdaptive_ELBO TraceGMM_ELBO RenyiELBO JitTrace_ELBO JitTraceEnum_ELBO MCMC NUTS HMC RandomWalkKernel SMCFilter Importance Predictive EmpiricalMarginal infer_discrete config_enumerate BernoulliMarginal ReweightedWakeSleep CSIS Discrete SVGD IMQSteinKernel RBFSteinKernel autoguide.AutoNormal autoguide.AutoDiagonalNormal autoguide.AutoMultivariateNormal autoguide.AutoLowRankMultivariateNormal autoguide.AutoLaplaceApproximation autoguide.AutoIAFNormal autoguide.AutoDelta autoguide.AutoGuideList autoguide.AutoStructured autoguide.AutoGaussian autoguide.AutoDiscreteParallel autoguide.AutoContinuous autoguide.AutoNormalizingFlow autoguide.AutoHierarchicalNormalMessenger autoguide.AutoRegressiveMessenger autoguide.AutoMessenger",
+      "poutine": "trace replay block condition do mask scale lift enum escape infer_config reparam markov plate seed uncondition queue collapse equalize runtime handlers.broadcast handlers.pack handlers.mean",
+      "primitives": "sample param plate module factor deterministic subsample get_param_store clear_param_store random_module PyroModule PyroSample PyroParam",
+      "optim": "Adam ClippedAdam SGD Adagrad Adadelta AdamW RMSprop Rprop DCTAdam PyroLRScheduler MultiOptimizer HorovodOptimizer ExponentialLR OneCycleLR CosineAnnealingLR",
+      "distributions": "Delta Empirical ConditionalDistribution ZeroInflatedPoisson ZeroInflatedNegativeBinomial LKJ LKJCholesky MaskedMixture MixtureOfDiagNormals Stable Rejector SpanningTree Unit VonMises3D AVFMultivariateNormal TruncatedPolyaGamma ProjectedNormal OMTMultivariateNormal GaussianScaleMixture ImproperUniform FoldedDistribution AffineBeta SoftLaplace CoalescentTimes TransformedDistribution",
+      "contrib_gp": "GPRegression SparseGPRegression VariationalGP VariationalSparseGP GPLVM Kernel RBF Matern32 Matern52 Periodic Product Sum Warping Brownian Cosine Coregionalize DotProduct Exponential Isotropy Linear Polynomial RationalQuadratic Constant WhiteNoise",
+      "contrib_other": "forecast.Forecaster tracking.EKFState autoname epidemiology.SimpleSEIRModel timeseries.GaussianHMM funsor oed.eig.vnmc_eig oed.eig.laplace_eig oed.eig.marginal_eig oed.eig.nmc_eig oed.eig.donsker_varadhan_eig oed.eig.lfire_eig",
+      "nn": "AutoRegressiveNN ConditionalAutoRegressiveNN DenseNN ConditionalDenseNN MaskedLinear",
+      "transforms": "AffineAutoregressive AffineCoupling BatchNorm BlockAutoregressive Householder NeuralAutoregressive Planar Radial Spline SplineAutoregressive SplineCoupling Sylvester Permute Polynomial ELU LeakyReLU DiscreteCosineTransform "
+    },
+    "interpret": {
+      "glassbox": "ExplainableBoostingClassifier ExplainableBoostingRegressor APLRClassifier APLRRegressor LinearRegression LogisticRegression ClassificationTree RegressionTree DecisionListClassifier EBMUtils merge_ebms DPExplainableBoostingClassifier DPExplainableBoostingRegressor",
+      "blackbox": "LimeTabular ShapKernel MorrisSensitivity PartialDependence ClassHistogram PermutationImportance",
+      "data": "ClassHistogram Marginal",
+      "perf": "ROC PR RegressionPerf",
+      "utils": "show preserve set_visualize_provider",
+      "ebm_features": "interactions FAST pairwise_interactions monotone_constraints missing_handling feature_types outer_bags inner_bags purify remove_terms scale_terms reorder_features sweep"
+    },
+    "imodels": {
+      "rule_list": "BayesianRuleListClassifier GreedyRuleListClassifier OneRClassifier SkopeRulesClassifier BoostedRulesClassifier RuleFitClassifier RuleFitRegressor SlipperClassifier",
+      "rule_set": "BayesianRuleSetClassifier BoostedRulesClassifier SlipperClassifier SkopeRulesClassifier RuleFitClassifier",
+      "trees": "GreedyTreeClassifier GreedyTreeRegressor FIGSClassifier FIGSRegressor HSTreeClassifier HSTreeRegressor HSTreeClassifierCV OptimalTreeModel OptimalRuleListClassifier TaoTreeClassifier TaoTreeRegressor C45TreeClassifier CartClassifier",
+      "algebraic": "TreeGAMClassifier TreeGAMRegressor SLIMClassifier SLIMRegressor SparseIntegerLinearClassifier HierarchicalShrinkage GamPlusPlusClassifier",
+      "util": "ModelWrapper Discretizer BayesianCartClassifier BayesianTreeClassifier FIGS ",
+      "experimental": "MarginalShrinkage StableLinearClassifier"
+    },
+    "category_encoders": {
+      "encoders": "BackwardDifferenceEncoder BaseNEncoder BinaryEncoder CatBoostEncoder CountEncoder GeneralizedLinearMixedModelEncoder GrayEncoder HashingEncoder HelmertEncoder JamesSteinEncoder LeaveOneOutEncoder MEstimateEncoder OneHotEncoder OrdinalEncoder PolynomialEncoder QuantileEncoder RankHotEncoder SumEncoder SummaryEncoder TargetEncoder WOEEncoder"
+    },
+    "feature_engine": {
+      "imputation": "MeanMedianImputer ArbitraryNumberImputer EndTailImputer CategoricalImputer RandomSampleImputer AddMissingIndicator DropMissingData",
+      "encoding": "OneHotEncoder OrdinalEncoder CountFrequencyEncoder MeanEncoder WoEEncoder RareLabelEncoder DecisionTreeEncoder StringSimilarityEncoder",
+      "discretisation": "EqualWidthDiscretiser EqualFrequencyDiscretiser DecisionTreeDiscretiser GeometricWidthDiscretiser ArbitraryDiscretiser",
+      "outliers": "Winsorizer ArbitraryOutlierCapper OutlierTrimmer",
+      "transformation": "LogTransformer LogCpTransformer ReciprocalTransformer PowerTransformer BoxCoxTransformer YeoJohnsonTransformer ArcsinTransformer",
+      "creation": "MathFeatures RelativeFeatures CyclicalFeatures CombineWithReferenceFeature DecisionTreeFeatures",
+      "selection": "DropFeatures DropConstantFeatures DropDuplicateFeatures DropCorrelatedFeatures SmartCorrelatedSelection SelectByShuffling SelectBySingleFeaturePerformance SelectByTargetMeanPerformance RecursiveFeatureElimination RecursiveFeatureAddition DropHighPSIFeatures SelectByInformationValue ProbeFeatureSelection MRMR",
+      "datetime": "DatetimeFeatures DatetimeSubtraction",
+      "timeseries": "LagFeatures WindowFeatures ExpandingWindowFeatures OneHotEncoder",
+      "preprocessing": "MatchCategories MatchVariables",
+      "scaling": "MeanNormalizationScaler",
+      "wrappers": "SklearnTransformerWrapper"
+    },
+    "mlxtend": {
+      "classifier": "Perceptron Adaline LogisticRegression MultiLayerPerceptron SoftmaxRegression StackingClassifier StackingCVClassifier EnsembleVoteClassifier OneRClassifier",
+      "regressor": "LinearRegression StackingRegressor StackingCVRegressor",
+      "feature_selection": "SequentialFeatureSelector ExhaustiveFeatureSelector ColumnSelector",
+      "feature_extraction": "PrincipalComponentAnalysis LinearDiscriminantAnalysis RBFKernelPCA",
+      "frequent_patterns": "apriori fpgrowth fpmax association_rules hmine",
+      "evaluate": "bias_variance_decomp bootstrap bootstrap_point632_score cochrans_q confusion_matrix mcnemar mcnemar_table mcnemar_tables paired_ttest_5x2cv paired_ttest_kfold_cv paired_ttest_resampled combined_ftest_5x2cv ftest lift_score permutation_test accuracy_score feature_importance_permutation scoring BootstrapOutOfBag GroupTimeSeriesSplit RandomHoldoutSplit PredefinedHoldoutSplit proportion_difference create_counterfactual",
+      "plotting": "plot_decision_regions plot_learning_curves plot_confusion_matrix plot_sequential_feature_selection plot_linear_regression plot_pca_correlation_graph plot_ecdf checkerboard_plot category_scatter ecdf enrichment_plot heatmap scatterplotmatrix stacked_barplot plot_confusion_matrix",
+      "preprocessing": "TransactionEncoder CopyTransformer DenseTransformer MeanCenterer OneHotEncoder minmax_scaling standardize shuffle_arrays_unison one_hot lower_triangular_indices",
+      "cluster": "Kmeans",
+      "data": "iris_data mnist_data boston_housing_data wine_data three_blobs_data make_multiplexer_dataset loadlocal_mnist autompg_data",
+      "math": "num_combinations num_permutations vectorspace_dimensionality vectorspace_orthonormalization",
+      "text": "generalize_names tokenizer_words_and_emoticons",
+      "utils": "Counter assert_raises check_Xy format_kwarg_dictionaries"
+    },
+    "skmultilearn": {
+      "problem_transform": "BinaryRelevance ClassifierChain LabelPowerset",
+      "adapt": "MLkNN MLARAM BRkNNaClassifier BRkNNbClassifier MLTSVM",
+      "ensemble": "RakelD RakelO MajorityVotingClassifier LabelSpacePartitioningClassifier",
+      "cluster": "NetworkXLabelGraphClusterer IGraphLabelGraphClusterer MatrixLabelSpaceClusterer RandomLabelSpaceClusterer FixedLabelSpaceClusterer LabelCooccurrenceGraphBuilder",
+      "model_selection": "IterativeStratification iterative_train_test_split",
+      "embedding": "CLEMS EmbeddingClassifier OpenNetworkEmbedder SKLearnEmbedder",
+      "dataset": "load_dataset available_data_sets",
+      "metrics": "hamming_loss label_ranking_loss coverage_error"
+    },
+    "sklearn_extra": {
+      "cluster": "KMedoids CommonNNClustering CLARA CLARANS",
+      "kernel_approximation": "Fastfood",
+      "kernel_methods": "EigenProClassifier EigenProRegressor",
+      "robust": "RobustWeightedClassifier RobustWeightedRegressor RobustWeightedKMeans",
+      "ensemble": ""
+    },
+    "umap": {
+      "models": "UMAP ParametricUMAP AlignedUMAP DensMAP",
+      "plot": "points connectivity diagnostic interactive nearest_neighbour_distribution",
+      "utils": "fuzzy_simplicial_set simplicial_set_embedding find_ab_params nearest_neighbors",
+      "validation": "trustworthiness"
+    },
+    "hdbscan": {
+      "cluster": "HDBSCAN RobustSingleLinkage all_points_membership_vectors membership_vector approximate_predict approximate_predict_scores prediction_data_ validity_index condensed_tree single_linkage_tree minimum_spanning_tree exemplars outlier_scores_ DBCV BranchDetector flat_clustering",
+      "plots": "CondensedTree SingleLinkageTree MinimumSpanningTree"
+    },
+    "trimap": {
+      "api": "TRIMAP"
+    },
+    "pacmap": {
+      "api": "PaCMAP LocalMAP"
+    },
+    "yellowbrick": {
+      "classifier": "ClassificationReport ConfusionMatrix ROCAUC PrecisionRecallCurve ClassPredictionError DiscriminationThreshold ClassBalance",
+      "regressor": "ResidualsPlot PredictionError AlphaSelection ManualAlphaSelection",
+      "cluster": "KElbowVisualizer SilhouetteVisualizer InterclusterDistance",
+      "features": "Rank1D Rank2D PCA ParallelCoordinates RadViz JointPlot Manifold FeatureImportances RFECV CVScores LearningCurve ValidationCurve DroppingCurve PCADecomposition",
+      "model_selection": "LearningCurve ValidationCurve CVScores FeatureImportances RFECV DroppingCurve",
+      "text": "FreqDistVisualizer TSNEVisualizer UMAPVisualizer DispersionPlot PosTagVisualizer WordCorrelationPlot",
+      "target": "BalancedBinningReference ClassBalance FeatureCorrelation",
+      "contrib": "DecisionBoundariesVisualizer",
+      "datasets": "load_bikeshare load_concrete load_credit load_energy load_game load_hobbies load_mushroom load_occupancy load_spam load_walking load_nfl",
+      "base": "Visualizer ModelVisualizer ScoreVisualizer"
+    },
+    "scikitplot": {
+      "metrics": "plot_confusion_matrix plot_roc plot_roc_curve plot_precision_recall plot_precision_recall_curve plot_silhouette plot_calibration_curve plot_cumulative_gain plot_lift_curve plot_ks_statistic",
+      "estimators": "plot_learning_curve plot_feature_importances",
+      "cluster": "plot_elbow_curve",
+      "decomposition": "plot_pca_component_variance plot_pca_2d_projection"
+    },
+    "xgboost_lightgbm_catboost": {
+      "features": "histogram_tree_method exact_tree_method gpu_hist monotone_constraints interaction_constraints categorical_features_native missing_value_handling dart_boosting goss_sampling extra_trees linear_trees lambdarank_objective ndcg_objective quantile_objective tweedie_objective poisson_objective survival_cox_objective survival_aft_objective multi_output_trees early_stopping_rounds feature_importance_gain feature_importance_cover shap_values_native pred_contribs pred_leaf ordered_boosting ordered_target_statistics symmetric_oblivious_trees feature_combinations text_features embedding_features cv_with_folds learning_rate_decay scale_pos_weight sample_weight custom_objective custom_metric refit_leaves cegb_cost_efficient pairwise_ranking_objective uncertainty_virtual_ensembles snapshot_continue_training warm_start_xgb_model"
+    },
+    "timm": {
+      "convnets": "resnet resnext resnetv2 resnest seresnet senet densenet vgg inception_v3 inception_v4 inception_resnet_v2 xception mobilenetv2 mobilenetv3 mobilenetv4 efficientnet efficientnetv2 mixnet mnasnet ghostnet shufflenet regnet regnetx regnety res2net dpn dla hrnet nfnet nf_resnet convnext convnextv2 repvgg repvit ese_vovnet cspnet cspresnet darknet cait",
+      "transformers": "vit deit beit eva swin swinv2 maxvit coatnet cait levit mvitv2 pvt pvt_v2 twins crossvit tnt visformer volo xcit botnet mobilevit mobilevitv2 poolformer metaformer fastvit efficientformer caformer",
+      "mlp_like": "mlp_mixer resmlp gmlp convmixer vision_permutator",
+      "text_image": "vit_clip eva02 siglip",
+      "layers": "DropPath DropBlock2d SqueezeExcite EcaModule CbamModule BlurPool2d GroupNorm2d LayerNorm2d PatchEmbed Mlp GluMlp SwiGLU Attention AttentionPoolLatent RotaryEmbedding ClassifierHead SelectAdaptivePool2d AdaptiveAvgMaxPool2d create_conv2d create_act create_norm ConvNormAct EvoNorm FilterResponseNorm StdConv2d WeightStandardizedConv2d",
+      "optim": "AdamW Lamb Lars Lion Adan AdaBelief NAdamW RAdam Adafactor Adahessian MADGRAD NovoGrad SGDP AdamP Lookahead Sophia",
+      "scheduler": "CosineLRScheduler StepLRScheduler PlateauLRScheduler PolyLRScheduler TanhLRScheduler MultiStepLRScheduler",
+      "data": "create_transform Mixup CutMix FastCollateMixup RandAugment AutoAugment AugMix RandomErasing RepeatAugSampler Mixup",
+      "loss": "LabelSmoothingCrossEntropy SoftTargetCrossEntropy BinaryCrossEntropy JsdCrossEntropy AsymmetricLossMultiLabel",
+      "utils": "ModelEma ModelEmaV2 ModelEmaV3 AverageMeter accuracy CheckpointSaver NativeScaler model_parameters clip_grad adaptive_clip_grad freeze unfreeze reduce_bn"
+    },
+    "torchaudio": {
+      "transforms": "Spectrogram MelSpectrogram MFCC LFCC MelScale InverseMelScale AmplitudeToDB InverseSpectrogram GriffinLim Resample Fade Vol Vad SlidingWindowCmn TimeStretch FrequencyMasking TimeMasking PitchShift SpeedPerturbation Speed Preemphasis Deemphasis Loudness Convolve FFTConvolve AddNoise Energy MuLawEncoding MuLawDecoding ComputeDeltas SpectralCentroid BarkSpectrogram",
+      "functional": "spectrogram griffinlim amplitude_to_DB DB_to_amplitude melscale_fbanks create_dct mfcc compute_deltas detect_pitch_frequency phase_vocoder resample lowpass_biquad highpass_biquad bandpass_biquad bandreject_biquad allpass_biquad equalizer_biquad lfilter filtfilt gain dither contrast overdrive flanger phaser mu_law_encoding mu_law_decoding apply_codec rnnt_loss forced_align edit_distance fftconvolve convolve add_noise speed barkscale_fbanks deemphasis preemphasis loudness loudness",
+      "models": "Wav2Vec2Model HuBERT Conformer Tacotron2 WaveRNN DeepSpeech Emformer Conv_TasNet WavLM RNNT WaveRNN HDemucs SquimObjective",
+      "pipelines": "WAV2VEC2_BASE HUBERT_BASE TACOTRON2_WAVERNN_CHAR_LJSPEECH WAVERNN_10K_LJSPEECH EMFORMER_RNNT_BASE_LIBRISPEECH CONVTASNET_BASE_LIBRI2MIX",
+      "datasets": "LIBRISPEECH SPEECHCOMMANDS YESNO LJSPEECH VCTK GTZAN CMUARCTIC LIBRITTS TEDLIUM COMMONVOICE LIBRILIGHT",
+      "io": "load save info",
+      "compliance": "kaldi.fbank kaldi.spectrogram kaldi.mfcc"
+    },
+    "torchtext": {
+      "data": "get_tokenizer to_map_style_dataset bucketize_batch Field",
+      "vocab": "build_vocab_from_iterator vocab Vocab GloVe FastText CharNGram",
+      "transforms": "VocabTransform ToTensor LabelToIndex Truncate PadTransform AddToken Sequential SentencePieceTokenizer GPT2BPETokenizer CLIPTokenizer RegexTokenizer BERTTokenizer",
+      "datasets": "AG_NEWS IMDB SST2 YelpReviewPolarity AmazonReviewPolarity DBpedia Multi30k WikiText2 WikiText103 PennTreebank SQuAD1 CoNLL2000Chunking UDPOS EnWik9 IWSLT2016 IWSLT2017 SogouNews YahooAnswers CoLA MNLI MRPC QNLI QQP RTE STSB WNLI",
+      "functional": "to_tensor truncate add_token pad_sequence"
+    },
+    "kornia": {
+      "augmentation": "RandomAffine RandomRotation RandomPerspective RandomElasticTransform RandomThinPlateSpline RandomHorizontalFlip RandomVerticalFlip RandomCrop RandomResizedCrop RandomErasing RandomCutMixV2 RandomMixUpV2 RandomMosaic RandomJigsaw ColorJiggle ColorJitter RandomGrayscale RandomBrightness RandomContrast RandomGamma RandomHue RandomSaturation RandomGaussianBlur RandomGaussianNoise RandomMotionBlur RandomSharpness RandomSolarize RandomPosterize RandomEqualize RandomInvert RandomFisheye RandomPlasmaBrightness RandomPlasmaContrast RandomPlanckianJitter RandomRain RandomSnow RandomChannelShuffle RandomLinearIllumination AugmentationSequential AugmentationSequential PatchSequential RandomRGBShift RandomBoxBlur RandomMedianBlur",
+      "filters": "gaussian_blur2d box_blur median_blur bilateral_blur sobel spatial_gradient laplacian canny unsharp_mask motion_blur gabor filter2d guided_blur in_range joint_bilateral_blur",
+      "color": "rgb_to_hsv rgb_to_lab rgb_to_grayscale rgb_to_yuv rgb_to_xyz rgb_to_luv rgb_to_ycbcr rgb_to_hls rgb_to_bgr apply_colormap",
+      "geometry": "warp_affine warp_perspective get_perspective_transform homography_warp resize rotate rotate3d crop_and_resize center_crop pyrdown pyrup build_pyramid Rodrigues Se3 Se2 So3 So2 Quaternion PinholeCamera undistort_points project_points triangulate_points_dlt essential_from_fundamental find_fundamental find_homography_dlt ransac RANSAC epipolar",
+      "feature": "SIFTDescriptor HardNet SOSNet HyNet DISK LoFTR LightGlue DeDoDe HarrisResponse BlobHessian CornerGFTT match_nn match_mnn match_snn match_smnn LAFDescriptor ScaleSpaceDetector",
+      "losses": "dice_loss focal_loss tversky_loss lovasz_hinge_loss lovasz_softmax_loss ssim_loss ssim3d_loss psnr_loss total_variation charbonnier_loss binary_focal_loss_with_logits",
+      "metrics": "psnr ssim ssim3d mean_iou confusion_matrix accuracy mean_average_precision AverageMeter",
+      "morphology": "dilation erosion opening closing gradient top_hat bottom_hat",
+      "enhance": "adjust_gamma adjust_contrast adjust_brightness adjust_hue adjust_saturation equalize equalize_clahe histogram invert normalize denormalize ZCAWhitening Normalize sharpness solarize posterize jpeg_codec_differentiable",
+      "contrib": "EdgeDetector FaceDetector ImageStitcher DistanceTransform connected_components extract_tensor_patches combine_tensor_patches",
+      "models": "SegmentAnything RTDETR YuNet TinyViT",
+      "nerf": "NerfModel NerfSolver"
+    },
+    "albumentations": {
+      "geometric": "HorizontalFlip VerticalFlip Flip RandomRotate90 Rotate ShiftScaleRotate Affine Perspective ElasticTransform GridDistortion OpticalDistortion PiecewiseAffine Transpose Resize RandomScale LongestMaxSize SmallestMaxSize PadIfNeeded CenterCrop RandomCrop RandomResizedCrop RandomSizedCrop CropAndPad CropNonEmptyMaskIfExists GridDropout CoarseDropout MaskDropout Morphological SafeRotate Lambda",
+      "blur": "Blur GaussianBlur MedianBlur MotionBlur GlassBlur AdvancedBlur ZoomBlur Defocus",
+      "color": "RandomBrightnessContrast RandomGamma HueSaturationValue RGBShift ChannelShuffle CLAHE Equalize ToGray ToSepia InvertImg Solarize Posterize ColorJitter FancyPCA ISONoise GaussNoise MultiplicativeNoise ImageCompression Downscale Sharpen Emboss UnsharpMask RandomToneCurve ChannelDropout Normalize ToFloat FromFloat RandomShadow RandomSunFlare RandomFog RandomRain RandomSnow Spatter PixelDropout",
+      "mixing": "MixUp CutMix Mosaic",
+      "compose": "Compose OneOf SomeOf Sequential OneOrOther ReplayCompose BboxParams KeypointParams",
+      "pytorch": "ToTensorV2"
+    },
+    "torchinfo_fx_onnx": {
+      "summary": "summary ModelStatistics LayerInfo",
+      "fx": "symbolic_trace Tracer GraphModule Interpreter Transformer Graph Node replace_pattern passes.shape_prop get_graph_node_names create_feature_extractor",
+      "export": "torch.export.export torch.onnx.export onnx.checker onnx.helper onnx.shape_inference onnxruntime.InferenceSession",
+      "profiling": "FlopCountMode flop_counter thop.profile fvcore.FlopCountAnalysis ptflops.get_model_complexity_info torchviz.make_dot torchview.draw_graph netron hiddenlayer tensorboard.add_graph"
+    },
+    "d3rlpy": {
+      "algos": "DQN DoubleDQN DDPG TD3 SAC DiscreteSAC BC DiscreteBC BCQ DiscreteBCQ BEAR CQL DiscreteCQL AWAC AWR CRR PLAS PLASWithPerturbation TD3PlusBC IQL DecisionTransformer DiscreteDecisionTransformer NFQ MOPO COMBO RebRC",
+      "dataset": "MDPDataset ReplayBuffer FIFOBuffer InfiniteBuffer get_cartpole get_pendulum get_d4rl get_atari TransitionPickerProtocol",
+      "metrics": "TDErrorEvaluator DiscountedSumOfAdvantageEvaluator AverageValueEstimationEvaluator InitialStateValueEstimationEvaluator SoftOPCEvaluator ContinuousActionDiffEvaluator DiscreteActionMatchEvaluator EnvironmentEvaluator CompareContinuousActionDiffEvaluator",
+      "ope": "FQE DiscreteFQE",
+      "tools": "fit fit_online fit_online collect"
+    },
+    "imitation": {
+      "algorithms": "BC DAgger SimpleDAggerTrainer BCTrainer GAIL AIRL MCE_IRL DensityTrainer SQIL PreferenceComparisons AdversarialTrainer",
+      "data": "Trajectory TrajectoryWithRew rollout.generate_trajectories rollout.make_sample_until flatten_trajectories",
+      "rewards": "RewardNet BasicRewardNet BasicShapedRewardNet NormalizedRewardNet RewardEnsemble",
+      "policies": "ExpertPolicy"
+    },
+    "pykalman": {
+      "filters": "KalmanFilter UnscentedKalmanFilter AdditiveUnscentedKalmanFilter filter filter_update smooth em loglikelihood sample predict"
+    },
+    "nevergrad": {
+      "optimizers": "OnePlusOne DE TwoPointsDE CMA PSO TBPSA NGOpt CMandAS2 Shiwa Portfolio RandomSearch HaltonSearch SobolSearch ScrHammersleySearch LHSSearch DiscreteOnePlusOne DiscreteDE Cobyla NelderMead Powell SQP PCEDA BO ParametrizedBO MetaModel NoisyOnePlusOne SPSA EDA ES ChainCMAPowell MultiCMA MultiScaleCMA RecES ScipyOptimizer",
+      "parametrization": "Array Scalar Choice Dict Tuple Instrumentation Log TransitionChoice Constant Data",
+      "benchmark": "Experiment",
+      "functions": "ArtificialFunction "
+    },
+    "trimesh": {
+      "core": "Trimesh PointCloud Scene Path2D Path3D load load_mesh load_path boolean intersections.mesh_plane convex.convex_hull creation.box creation.icosphere creation.cylinder creation.capsule creation.cone creation.torus creation.annulus creation.uv_sphere sample.sample_surface smoothing.filter_laplacian smoothing.filter_taubin proximity.closest_point proximity.signed_distance ray.ray_triangle remesh.subdivide simplify_quadric_decimation registration.icp registration.procrustes transformations repair.fill_holes voxel.VoxelGrid curvature.discrete_gaussian_curvature_measure nsphere.minimum_nsphere bounds.oriented_bounds poses.compute_stable_poses"
+    },
+    "problog": {
+      "api": "Term Constant Var Clause Not And Or LogicProgram PrologFile PrologString SimpleProgram get_evaluatable ground compile evaluate DefaultEngine ground_ProbLog_Program Distribution learning.lfi learning.Learning_from_interpretations ProbFOIL tasks.sample tasks.dcprobability"
+    },
+    "gcastle": {
+      "algorithms": "PC GES ICALiNGAM DirectLiNGAM GOLEM NotearsLinear NotearsNonlinear NotearsLowRank DAG_GNN GraNDAG MCSL PNL ANMNonlinear CORL RL Notears Notears_Low_Rank TTPM GAE CORL PNL Gran_DAG DAG_GNN EXACT SAM Inventory CausalDiscoveryEvaluator",
+      "datasets": "IIDSimulation DAG THPSimulation Topology load_dataset",
+      "metrics": "MetricsDAG"
+    },
+    "uncertainty_toolbox": {
+      "metrics": "mean_absolute_calibration_error root_mean_squared_calibration_error miscalibration_area sharpness nll check interval_score crps accuracy_metrics get_all_metrics get_proper_scoring_rule_metrics get_all_accuracy_metrics get_all_average_calibration get_all_adversarial_group_calibration get_all_sharpness_metrics",
+      "viz": "plot_calibration plot_intervals plot_intervals_ordered plot_xy plot_sharpness plot_adversarial_group_calibration plot_ordered_intervals plot_parity plot_residuals plot_density plot_calibration_diagram",
+      "recalibration": "iso_recal optimize_recalibration_ratio get_std_recalibrator get_quantile_recalibrator get_interval_recalibrator",
+      "data": "synthetic_sine_heteroscedastic"
+    },
+    "neuralforecast": {
+      "models": "NBEATS NBEATSx NHITS DLinear NLinear TFT Informer Autoformer FEDformer PatchTST iTransformer TimesNet TiDE TSMixer TSMixerx StemGNN LSTM GRU RNN DilatedRNN TCN DeepAR DeepNPTS MLP MLPMultivariate KAN VanillaTransformer HINT BiTCN SOFTS TimeLLM TimeMixer Informer",
+      "losses": "MAE MSE RMSE MAPE SMAPE MASE QuantileLoss MQLoss DistributionLoss PMM GMM NBMM HuberLoss HuberMQLoss IQLoss",
+      "tools": "NeuralForecast fit predict cross_validation auto_models.AutoNHITS AutoNBEATS AutoTFT",
+      "scalers": "TemporalNorm RevIN"
+    },
+    "darts": {
+      "forecasting": "ARIMA AutoARIMA ExponentialSmoothing Theta FourTheta FFT Prophet StatsForecastETS BATS TBATS Croston KalmanForecaster NaiveMean NaiveSeasonal NaiveDrift NaiveMovingAverage LinearRegressionModel RandomForest XGBModel LightGBMModel CatBoostModel RegressionEnsembleModel NaiveEnsembleModel VARIMA NBEATSModel NHiTSModel TFTModel TCNModel TransformerModel DLinearModel NLinearModel TiDEModel TSMixerModel BlockRNNModel RNNModel TimesFM Chronos2Model",
+      "anomaly": "ForecastingAnomalyModel FilteringAnomalyModel NormScorer DifferenceScorer KMeansScorer WassersteinScorer PyODScorer ThresholdDetector QuantileDetector IQRDetector",
+      "ad_aggregators": "AndAggregator OrAggregator EnsembleSklearnAggregator",
+      "metrics": "mae mse rmse mape smape mase ope rho_risk r2_score coefficient_of_variation dtw_metric",
+      "timeseries": "TimeSeries concatenate slice_intersect statistics.check_seasonality statistics.stationarity_tests statistics.plot_acf statistics.plot_pacf statistics.extract_trend_and_seasonality statistics.remove_trend",
+      "dataprocessing": "Scaler MissingValuesFiller BoxCox StaticCovariatesTransformer InvertibleMapper Diff WindowTransformer MIDAS Pipeline Mapper",
+      "explainability": "ShapExplainer TFTExplainer",
+      "utils": "backtest historical_forecasts gridsearch residuals",
+      "datasets": "AirPassengersDataset AusBeerDataset ETTh1Dataset ElectricityDataset TaylorDataset TrafficDataset WeatherDataset"
+    },
+    "gluonts": {
+      "models": "DeepAREstimator DeepStateEstimator DeepVAREstimator DeepFactorEstimator GPVAREstimator MQCNNEstimator MQRNNEstimator SimpleFeedForwardEstimator TemporalFusionTransformerEstimator WaveNetEstimator NBEATSEstimator TransformerEstimator LagTSTEstimator PatchTSTEstimator TiDEEstimator DLinearEstimator DeepNPTSEstimator SelfAttentionEstimator",
+      "predictors": "SeasonalNaivePredictor ConstantValuePredictor MeanPredictor MovingAveragePredictor ProphetPredictor NPTSPredictor RForecastPredictor",
+      "distributions": "StudentTOutput NegativeBinomialOutput GaussianOutput PiecewiseLinearOutput NormalizingFlowOutput GammaOutput BetaOutput PoissonOutput LaplaceOutput MultivariateGaussianOutput LowrankMultivariateGaussianOutput ImplicitQuantileOutput GenParetoOutput",
+      "evaluation": "Evaluator make_evaluation_predictions MeanWeightedQuantileLoss CRPS MSIS ND NRMSE SMAPE MASE coverage",
+      "transform": "AddObservedValuesIndicator AddTimeFeatures AddAgeFeature InstanceSplitter ExpectedNumInstanceSampler ValidationSplitSampler Chain AsNumpyArray VstackFeatures",
+      "dataset": "ListDataset PandasDataset FileDataset DatasetStatistics get_dataset get_dataset_names",
+      "backtest": "backtest_metrics generate_forecasts"
+    },
+    "surprise": {
+      "prediction_algorithms": "NormalPredictor BaselineOnly KNNBasic KNNWithMeans KNNWithZScore KNNBaseline SVD SVDpp NMF SlopeOne CoClustering",
+      "model_selection": "cross_validate GridSearchCV RandomizedSearchCV KFold RepeatedKFold ShuffleSplit LeaveOneOut PredefinedKFold train_test_split",
+      "accuracy": "rmse mse mae fcp",
+      "similarities": "cosine msd pearson pearson_baseline",
+      "dataset": "Dataset Reader Trainset load_builtin ml-100k ml-1m jester",
+      "utils": "get_top_n precision_recall_at_k"
+    },
+    "implicit": {
+      "als": "AlternatingLeastSquares",
+      "bpr": "BayesianPersonalizedRanking",
+      "lmf": "LogisticMatrixFactorization",
+      "nearest_neighbours": "CosineRecommender BM25Recommender TFIDFRecommender ItemItemRecommender bm25_weight tfidf_weight normalize",
+      "evaluation": "precision_at_k mean_average_precision_at_k ndcg_at_k AUC_at_k train_test_split leave_k_out_split ranking_metrics_at_k",
+      "datasets": "movielens lastfm million_song_dataset reddit sketchfab",
+      "cpu_gpu": "approximate_als nmslib_als annoy_als faiss_als"
+    },
+    "lightfm": {
+      "model": "LightFM fit fit_partial predict predict_rank get_item_representations get_user_representations",
+      "losses": "logistic bpr warp warp-kos",
+      "evaluation": "precision_at_k recall_at_k auc_score reciprocal_rank",
+      "data": "Dataset fetch_movielens build_interactions build_item_features build_user_features",
+      "cross_validation": "random_train_test_split"
+    },
+    "recbole": {
+      "general": "Pop ItemKNN BPR NeuMF ConvNCF DMF FISM NAIS SpectralCF GCMC NGCF LightGCN DGCF LINE MultiVAE MultiDAE MacridVAE CDAE ENMF NNCF RaCT RecVAE EASE SLIMElastic SGL ADMMSLIM NCEPLRec SimpleX NCL DiffRec",
+      "sequential": "FPMC GRU4Rec NARM STAMP Caser NextItNet TransRec SASRec BERT4Rec SRGNN GCSAN GRU4RecF SASRecF FDSA S3Rec GRU4RecKG KSR FOSSIL SHAN RepeatNet HGN HRM NPE LightSANs SINE CORE FEARec",
+      "context": "LR FM FFM FNN DeepFM NFM AFM AutoInt DCN DCNV2 xDeepFM WideDeep FwFM PNN DIN DIEN DSSM FiGNN FiBiNet LR ",
+      "knowledge": "CKE CFKG KTUP KGAT KGIN RippleNet MKR KGCN KGNNLS",
+      "evaluation": "Recall MRR NDCG Hit MAP Precision GAUC AUC LogLoss RMSE MAE ItemCoverage AveragePopularity GiniIndex ShannonEntropy TailPercentage",
+      "sampling": "uniform popularity full leave_one_out ratio_split"
+    },
+    "deepchecks": {
+      "tabular_checks": "DatasetsSizeComparison FeatureDrift LabelDrift PredictionDrift TrainTestFeatureDrift TrainTestLabelDrift TrainTestPerformance TrainTestPredictionDrift MixedNulls MixedDataTypes StringMismatch StringMismatchComparison DataDuplicates ConflictingLabels IsSingleValue SpecialCharacters CategoryMismatchTrainTest NewLabelTrainTest NewCategoryTrainTest OutlierSampleDetection SingleDatasetPerformance ConfusionMatrixReport RocReport CalibrationScore SimpleModelComparison BoostingOverfit UnusedFeatures WeakSegmentsPerformance RegressionErrorDistribution ModelInferenceTime FeatureLabelCorrelation FeatureLabelCorrelationChange PercentOfNulls ColumnsInfo IdentifierLabelCorrelation DominantFrequencyChange DateTrainTestLeakageDuplicates DateTrainTestLeakageOverlap IndexTrainTestLeakage SingleFeatureContribution TrainTestSamplesMix FeatureFeatureCorrelation ",
+      "suites": "data_integrity train_test_validation model_evaluation full_suite",
+      "vision": "ImagePropertyDrift LabelPropertyOutliers ImageDatasetDrift ClassPerformance MeanAveragePrecisionReport",
+      "nlp": "TextPropertyOutliers PropertyDrift UnknownTokens TextEmbeddingsDrift"
+    },
+    "evidently": {
+      "presets": "DataDriftPreset DataQualityPreset TargetDriftPreset RegressionPreset ClassificationPreset TextOverviewPreset",
+      "metrics": "ColumnDriftMetric DatasetDriftMetric DataDriftTable ColumnSummaryMetric DatasetMissingValuesMetric DatasetSummaryMetric ColumnQuantileMetric ConflictPredictionMetric ClassificationQualityMetric ClassificationConfusionMatrix ClassificationClassBalance ClassificationQualityByClass ClassificationPRCurve ClassificationRocCurve ClassificationProbDistribution RegressionQualityMetric RegressionPredictedVsActualPlot RegressionErrorPlot RegressionErrorDistribution RegressionAbsPercentageErrorPlot RegressionTopErrorMetric ColumnCorrelationsMetric DatasetCorrelationsMetric ColumnValueRangeMetric ColumnValueListMetric ColumnRegExpMetric",
+      "tests": "TestNumberOfDriftedColumns TestShareOfDriftedColumns TestColumnDrift TestAccuracyScore TestPrecisionScore TestRecallScore TestF1Score TestRocAuc TestMeanError TestMAE TestRMSE TestShareOfMissingValues TestNumberOfConstantColumns TestNumberOfDuplicatedRows TestNumberOfOutRangeValues",
+      "drift_methods": "ks chisquare jensenshannon psi wasserstein kl_div z anderson cramer_von_mises hellinger energy_distance mmd",
+      "workspace": "Report TestSuite Workspace Dashboard ReportSnapshot"
+    },
+    "crf_tools": {
+      "crf_plus_plus": "crf_learn crf_test template unigram_features bigram_features L1_regularisation L2_regularisation cost_parameter n_best viterbi_decoding marginal_probabilities",
+      "crfsuite_algorithms": "lbfgs l2sgd ap pa arow",
+      "allennlp": "ConditionalRandomField allowed_transitions viterbi_tags CrfTagger",
+      "flair": "SequenceTagger BiLSTM-CRF NERs",
+      "pytorch_crf_extras": "CRF.decode CRF.forward emission_scores transitions start_transitions end_transitions mask batch_first",
+      "pystruct": "ChainCRF GraphCRF EdgeFeatureGraphCRF LatentGraphCRF LatentNodeCRF MultiLabelClf BinaryClf CrammerSingerSVMModel GridCRF DirectionalGridCRF MultiClassClf StructuredModel SSVM OneSlackSSVM NSlackSSVM FrankWolfeSSVM SubgradientSSVM LatentSSVM StructuredPerceptron StructuredSVM AverageStructuredPerceptron lp_solver ad3_inference lp_relaxation_inference qpbo_inference max-product dai_inference",
+      "seqeval": "classification_report f1_score precision_score recall_score accuracy_score performance_measure get_entities IOB2 IOBES BILOU strict_mode entity_level_metrics",
+      "structured_prediction": "structured_perceptron structured_svm max_margin_markov_networks structured_hinge_loss crammer_singer_structured_loss cost_augmented_inference n_best_viterbi constrained_viterbi k_best_decoding semi_markov_crf higher_order_crf skip_chain_crf latent_variable_crf hidden_CRF partial_label_CRF neural_CRF BiLSTM_CRF CRF_as_RNN mean_field_inference dense_crf pairwise_potentials_gaussian_kernel MEMM maximum_entropy_markov_model label_bias HMM_tagger CKY_parser PCFG_inside_outside shift_reduce_parser dependency_parser_MST biaffine_parser"
+    },
+    "representation_learning": {
+      "autoencoders": "Autoencoder DenoisingAutoencoder SparseAutoencoder ContractiveAutoencoder VAE BetaVAE IWAE VQVAE VQVAE2 InfoVAE FactorVAE BetaTCVAE WassersteinAutoencoder AdversarialAutoencoder ConditionalVAE HierarchicalVAE NVAE",
+      "contrastive_predictive": "CPC DeepInfoMax MINE InfoNCEBound CPCv2 wav2vec NoiseContrastiveEstimation",
+      "disentanglement_metrics": "BetaVAEScore FactorVAEScore MIG SAP DCI Modularity Explicitness IRS UDR",
+      "representation_diagnostics": "LinearProbe KnnProbe CKA SVCCA ProjectionWeightedCCA EffectiveRank AlignmentUniformity Wasserstein-dependency RankMe LiDAR",
+      "tokenisation_of_images": "VQGAN dVAE Gumbel-softmax-VAE"
     }
   }
 }

@@ -1,0 +1,529 @@
+{
+"library": "blackjax",
+"version": "1.7.1",
+"source": "introspection",
+"entries": [
+{
+"area": "blackjax",
+"name": "Callable",
+"kind": "algorithm",
+"doc": "Deprecated alias to collections.abc.Callable."
+},
+{
+"area": "blackjax",
+"name": "GeneratePathfinderAPI",
+"kind": "algorithm",
+"doc": "GeneratePathfinderAPI(differentiable: Callable, approximate: Callable, sample: Callable)"
+},
+{
+"area": "blackjax",
+"name": "GenerateSamplingAPI",
+"kind": "algorithm",
+"doc": "GenerateSamplingAPI(differentiable: Callable, init: Callable, build_kernel: Callable)"
+},
+{
+"area": "blackjax",
+"name": "GenerateVariationalAPI",
+"kind": "algorithm",
+"doc": "GenerateVariationalAPI(differentiable: Callable, init: Callable, step: Callable, sample: Callable)"
+},
+{
+"area": "blackjax",
+"name": "SamplingAlgorithm",
+"kind": "algorithm",
+"doc": "A pair of functions that represents a MCMC sampling algorithm."
+},
+{
+"area": "blackjax",
+"name": "VIAlgorithm",
+"kind": "algorithm",
+"doc": "A trio of functions that represents a Variational Inference algorithm."
+},
+{
+"area": "blackjax",
+"name": "adaptive_persistent_sampling_smc",
+"kind": "algorithm",
+"doc": "GenerateSamplingAPI(differentiable: Callable, init: Callable, build_kernel: Callable)"
+},
+{
+"area": "blackjax",
+"name": "adaptive_tempered_smc",
+"kind": "algorithm",
+"doc": "GenerateSamplingAPI(differentiable: Callable, init: Callable, build_kernel: Callable)"
+},
+{
+"area": "blackjax",
+"name": "additive_step_random_walk",
+"kind": "algorithm",
+"doc": "GenerateSamplingAPI(differentiable: Callable, init: Callable, build_kernel: Callable)"
+},
+{
+"area": "blackjax",
+"name": "adjusted_mclmc",
+"kind": "algorithm",
+"doc": "GenerateSamplingAPI(differentiable: Callable, init: Callable, build_kernel: Callable)"
+},
+{
+"area": "blackjax",
+"name": "adjusted_mclmc_dynamic",
+"kind": "algorithm",
+"doc": "GenerateSamplingAPI(differentiable: Callable, init: Callable, build_kernel: Callable)"
+},
+{
+"area": "blackjax",
+"name": "adjusted_mclmc_find_L_and_step_size",
+"kind": "algorithm",
+"doc": "Finds the optimal value of the parameters for the MH-MCHMC algorithm."
+},
+{
+"area": "blackjax",
+"name": "barker",
+"kind": "algorithm",
+"doc": "GenerateSamplingAPI(differentiable: Callable, init: Callable, build_kernel: Callable)"
+},
+{
+"area": "blackjax",
+"name": "barker_proposal",
+"kind": "algorithm",
+"doc": "GenerateSamplingAPI(differentiable: Callable, init: Callable, build_kernel: Callable)"
+},
+{
+"area": "blackjax",
+"name": "chees_adaptation",
+"kind": "algorithm",
+"doc": "Adapt the step size and trajectory length (number of integration steps / step size)"
+},
+{
+"area": "blackjax",
+"name": "coordinate_slice",
+"kind": "algorithm",
+"doc": "GenerateSamplingAPI(differentiable: Callable, init: Callable, build_kernel: Callable)"
+},
+{
+"area": "blackjax",
+"name": "csgld",
+"kind": "algorithm",
+"doc": "GenerateSamplingAPI(differentiable: Callable, init: Callable, build_kernel: Callable)"
+},
+{
+"area": "blackjax",
+"name": "dhmc",
+"kind": "algorithm",
+"doc": "GenerateSamplingAPI(differentiable: Callable, init: Callable, build_kernel: Callable)"
+},
+{
+"area": "blackjax",
+"name": "dmhmc",
+"kind": "algorithm",
+"doc": "GenerateSamplingAPI(differentiable: Callable, init: Callable, build_kernel: Callable)"
+},
+{
+"area": "blackjax",
+"name": "dynamic_hmc",
+"kind": "algorithm",
+"doc": "GenerateSamplingAPI(differentiable: Callable, init: Callable, build_kernel: Callable)"
+},
+{
+"area": "blackjax",
+"name": "elliptical_slice",
+"kind": "algorithm",
+"doc": "GenerateSamplingAPI(differentiable: Callable, init: Callable, build_kernel: Callable)"
+},
+{
+"area": "blackjax",
+"name": "ess",
+"kind": "algorithm",
+"doc": "Compute estimate of the effective sample size (ess)."
+},
+{
+"area": "blackjax",
+"name": "ess_bulk",
+"kind": "algorithm",
+"doc": "Bulk effective sample size (rank-normalized split-chain ESS)."
+},
+{
+"area": "blackjax",
+"name": "ess_tail",
+"kind": "algorithm",
+"doc": "Tail effective sample size."
+},
+{
+"area": "blackjax",
+"name": "fullrank_vi",
+"kind": "algorithm",
+"doc": "GenerateVariationalAPI(differentiable: Callable, init: Callable, step: Callable, sample: Callable)"
+},
+{
+"area": "blackjax",
+"name": "generate_top_level_api_from",
+"kind": "algorithm",
+"doc": ""
+},
+{
+"area": "blackjax",
+"name": "ghmc",
+"kind": "algorithm",
+"doc": "GenerateSamplingAPI(differentiable: Callable, init: Callable, build_kernel: Callable)"
+},
+{
+"area": "blackjax",
+"name": "gist_step_size",
+"kind": "algorithm",
+"doc": "GenerateSamplingAPI(differentiable: Callable, init: Callable, build_kernel: Callable)"
+},
+{
+"area": "blackjax",
+"name": "gist_trajectory_length",
+"kind": "algorithm",
+"doc": "GenerateSamplingAPI(differentiable: Callable, init: Callable, build_kernel: Callable)"
+},
+{
+"area": "blackjax",
+"name": "hmc",
+"kind": "algorithm",
+"doc": "GenerateSamplingAPI(differentiable: Callable, init: Callable, build_kernel: Callable)"
+},
+{
+"area": "blackjax",
+"name": "inner_kernel_tuning",
+"kind": "algorithm",
+"doc": "GenerateSamplingAPI(differentiable: Callable, init: Callable, build_kernel: Callable)"
+},
+{
+"area": "blackjax",
+"name": "irmh",
+"kind": "algorithm",
+"doc": "GenerateSamplingAPI(differentiable: Callable, init: Callable, build_kernel: Callable)"
+},
+{
+"area": "blackjax",
+"name": "irmh_as_top_level_api",
+"kind": "algorithm",
+"doc": "Implements the (basic) user interface for the independent RMH."
+},
+{
+"area": "blackjax",
+"name": "laplace_dhmc",
+"kind": "algorithm",
+"doc": "GenerateSamplingAPI(differentiable: Callable, init: Callable, build_kernel: Callable)"
+},
+{
+"area": "blackjax",
+"name": "laplace_dmhmc",
+"kind": "algorithm",
+"doc": "GenerateSamplingAPI(differentiable: Callable, init: Callable, build_kernel: Callable)"
+},
+{
+"area": "blackjax",
+"name": "laplace_hmc",
+"kind": "algorithm",
+"doc": "GenerateSamplingAPI(differentiable: Callable, init: Callable, build_kernel: Callable)"
+},
+{
+"area": "blackjax",
+"name": "laplace_mhmc",
+"kind": "algorithm",
+"doc": "GenerateSamplingAPI(differentiable: Callable, init: Callable, build_kernel: Callable)"
+},
+{
+"area": "blackjax",
+"name": "mala",
+"kind": "algorithm",
+"doc": "GenerateSamplingAPI(differentiable: Callable, init: Callable, build_kernel: Callable)"
+},
+{
+"area": "blackjax",
+"name": "mclmc",
+"kind": "algorithm",
+"doc": "GenerateSamplingAPI(differentiable: Callable, init: Callable, build_kernel: Callable)"
+},
+{
+"area": "blackjax",
+"name": "mclmc_find_L_and_step_size",
+"kind": "algorithm",
+"doc": "Finds the optimal value of the parameters for the MCLMC algorithm."
+},
+{
+"area": "blackjax",
+"name": "mclmc_lrd_warmup",
+"kind": "algorithm",
+"doc": "Scheme A (pilot-free) MCLMC warmup with Low-Rank Diagonal preconditioning."
+},
+{
+"area": "blackjax",
+"name": "meads_adaptation",
+"kind": "algorithm",
+"doc": "Adapt the parameters of the Generalized HMC algorithm."
+},
+{
+"area": "blackjax",
+"name": "meanfield_vi",
+"kind": "algorithm",
+"doc": "GenerateVariationalAPI(differentiable: Callable, init: Callable, step: Callable, sample: Callable)"
+},
+{
+"area": "blackjax",
+"name": "mgrad_gaussian",
+"kind": "algorithm",
+"doc": "GenerateSamplingAPI(differentiable: Callable, init: Callable, build_kernel: Callable)"
+},
+{
+"area": "blackjax",
+"name": "mhmc",
+"kind": "algorithm",
+"doc": "GenerateSamplingAPI(differentiable: Callable, init: Callable, build_kernel: Callable)"
+},
+{
+"area": "blackjax",
+"name": "multinomial_hmc",
+"kind": "algorithm",
+"doc": "GenerateSamplingAPI(differentiable: Callable, init: Callable, build_kernel: Callable)"
+},
+{
+"area": "blackjax",
+"name": "multipathfinder",
+"kind": "algorithm",
+"doc": "High-level multi-path Pathfinder interface."
+},
+{
+"area": "blackjax",
+"name": "normal_random_walk",
+"kind": "algorithm",
+"doc": "Parameters"
+},
+{
+"area": "blackjax",
+"name": "nss",
+"kind": "algorithm",
+"doc": "GenerateSamplingAPI(differentiable: Callable, init: Callable, build_kernel: Callable)"
+},
+{
+"area": "blackjax",
+"name": "nsswig",
+"kind": "algorithm",
+"doc": "GenerateSamplingAPI(differentiable: Callable, init: Callable, build_kernel: Callable)"
+},
+{
+"area": "blackjax",
+"name": "nuts",
+"kind": "algorithm",
+"doc": "GenerateSamplingAPI(differentiable: Callable, init: Callable, build_kernel: Callable)"
+},
+{
+"area": "blackjax",
+"name": "orbital_hmc",
+"kind": "algorithm",
+"doc": "GenerateSamplingAPI(differentiable: Callable, init: Callable, build_kernel: Callable)"
+},
+{
+"area": "blackjax",
+"name": "pareto_khat",
+"kind": "algorithm",
+"doc": "Pareto shape parameter k\u0302 for tail diagnosis."
+},
+{
+"area": "blackjax",
+"name": "partial_posteriors_smc",
+"kind": "algorithm",
+"doc": "GenerateSamplingAPI(differentiable: Callable, init: Callable, build_kernel: Callable)"
+},
+{
+"area": "blackjax",
+"name": "pathfinder",
+"kind": "algorithm",
+"doc": "GeneratePathfinderAPI(differentiable: Callable, approximate: Callable, sample: Callable)"
+},
+{
+"area": "blackjax",
+"name": "pathfinder_adaptation",
+"kind": "algorithm",
+"doc": "Adapt the value of the inverse mass matrix and step size parameters of"
+},
+{
+"area": "blackjax",
+"name": "persistent_sampling_smc",
+"kind": "algorithm",
+"doc": "GenerateSamplingAPI(differentiable: Callable, init: Callable, build_kernel: Callable)"
+},
+{
+"area": "blackjax",
+"name": "pretuning",
+"kind": "algorithm",
+"doc": "GenerateSamplingAPI(differentiable: Callable, init: Callable, build_kernel: Callable)"
+},
+{
+"area": "blackjax",
+"name": "progress_bar",
+"kind": "algorithm",
+"doc": "Add a progress bar to any BlackJAX sampling call."
+},
+{
+"area": "blackjax",
+"name": "rhat",
+"kind": "algorithm",
+"doc": "Rank-normalized split-R\u0302 (Vehtari et al. 2021)."
+},
+{
+"area": "blackjax",
+"name": "rmh",
+"kind": "algorithm",
+"doc": "GenerateSamplingAPI(differentiable: Callable, init: Callable, build_kernel: Callable)"
+},
+{
+"area": "blackjax",
+"name": "rmh_as_top_level_api",
+"kind": "algorithm",
+"doc": "Implements the user interface for the RMH."
+},
+{
+"area": "blackjax",
+"name": "rmhmc",
+"kind": "algorithm",
+"doc": "GenerateSamplingAPI(differentiable: Callable, init: Callable, build_kernel: Callable)"
+},
+{
+"area": "blackjax",
+"name": "schrodinger_follmer",
+"kind": "algorithm",
+"doc": "GenerateVariationalAPI(differentiable: Callable, init: Callable, step: Callable, sample: Callable)"
+},
+{
+"area": "blackjax",
+"name": "sghmc",
+"kind": "algorithm",
+"doc": "GenerateSamplingAPI(differentiable: Callable, init: Callable, build_kernel: Callable)"
+},
+{
+"area": "blackjax",
+"name": "sgld",
+"kind": "algorithm",
+"doc": "GenerateSamplingAPI(differentiable: Callable, init: Callable, build_kernel: Callable)"
+},
+{
+"area": "blackjax",
+"name": "sgnht",
+"kind": "algorithm",
+"doc": "GenerateSamplingAPI(differentiable: Callable, init: Callable, build_kernel: Callable)"
+},
+{
+"area": "blackjax",
+"name": "slice_sampling",
+"kind": "algorithm",
+"doc": "GenerateSamplingAPI(differentiable: Callable, init: Callable, build_kernel: Callable)"
+},
+{
+"area": "blackjax",
+"name": "staged_adaptation",
+"kind": "algorithm",
+"doc": "Adapt the step size and inverse mass matrix for HMC-family algorithms."
+},
+{
+"area": "blackjax",
+"name": "svgd",
+"kind": "algorithm",
+"doc": "GenerateSamplingAPI(differentiable: Callable, init: Callable, build_kernel: Callable)"
+},
+{
+"area": "blackjax",
+"name": "tempered_smc",
+"kind": "algorithm",
+"doc": "GenerateSamplingAPI(differentiable: Callable, init: Callable, build_kernel: Callable)"
+},
+{
+"area": "blackjax",
+"name": "window_adaptation",
+"kind": "algorithm",
+"doc": "Adapt the value of the inverse mass matrix and step size parameters of"
+},
+{
+"area": "blackjax",
+"name": "window_adaptation_low_rank",
+"kind": "algorithm",
+"doc": "Adapt step size and a low-rank mass matrix for HMC-family samplers."
+},
+{
+"area": "blackjax.diagnostics",
+"name": "DivergenceConcentrationReport",
+"kind": "class",
+"doc": "Per-run divergence-concentration diagnostic report."
+},
+{
+"area": "blackjax.diagnostics",
+"name": "divergence_concentration",
+"kind": "function",
+"doc": "Flag a run where sampling-phase divergences concentrate on a minority of chains."
+},
+{
+"area": "blackjax.diagnostics",
+"name": "divergence_concentration_from_counts",
+"kind": "function",
+"doc": "Same as :func:`divergence_concentration`, from precomputed per-chain counts."
+},
+{
+"area": "blackjax.diagnostics",
+"name": "effective_sample_size",
+"kind": "function",
+"doc": "Compute estimate of the effective sample size (ess)."
+},
+{
+"area": "blackjax.diagnostics",
+"name": "ess_bulk",
+"kind": "function",
+"doc": "Bulk effective sample size (rank-normalized split-chain ESS)."
+},
+{
+"area": "blackjax.diagnostics",
+"name": "ess_tail",
+"kind": "function",
+"doc": "Tail effective sample size."
+},
+{
+"area": "blackjax.diagnostics",
+"name": "format_divergence_warning",
+"kind": "function",
+"doc": "Render a :class:`DivergenceConcentrationReport` as a human-readable message."
+},
+{
+"area": "blackjax.diagnostics",
+"name": "pareto_khat",
+"kind": "function",
+"doc": "Pareto shape parameter k\u0302 for tail diagnosis."
+},
+{
+"area": "blackjax.diagnostics",
+"name": "potential_scale_reduction",
+"kind": "function",
+"doc": "Gelman and Rubin (1992)'s potential scale reduction for computing multiple MCMC chain convergence."
+},
+{
+"area": "blackjax.diagnostics",
+"name": "psis_weights",
+"kind": "function",
+"doc": "Pareto Smoothed Importance Sampling (PSIS) log weights."
+},
+{
+"area": "blackjax.diagnostics",
+"name": "rhat",
+"kind": "function",
+"doc": "Rank-normalized split-R\u0302 (Vehtari et al. 2021)."
+},
+{
+"area": "blackjax.sgmcmc",
+"name": "grad_estimator",
+"kind": "function",
+"doc": "Build a simple estimator for the gradient of the log-density."
+},
+{
+"area": "blackjax.sgmcmc",
+"name": "logdensity_estimator",
+"kind": "function",
+"doc": "Builds a simple estimator for the log-density."
+},
+{
+"area": "blackjax.smc",
+"name": "extend_params",
+"kind": "function",
+"doc": "Extend parameters to be used for all particles in SMC."
+}
+]
+}

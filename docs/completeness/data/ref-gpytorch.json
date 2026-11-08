@@ -1,0 +1,961 @@
+{
+"library": "gpytorch",
+"version": "1.15.2",
+"source": "introspection",
+"entries": [
+{
+"area": "gpytorch.constraints",
+"name": "GreaterThan",
+"kind": "class",
+"doc": "Base class for all neural network modules."
+},
+{
+"area": "gpytorch.constraints",
+"name": "Interval",
+"kind": "class",
+"doc": "Base class for all neural network modules."
+},
+{
+"area": "gpytorch.constraints",
+"name": "LessThan",
+"kind": "class",
+"doc": "Base class for all neural network modules."
+},
+{
+"area": "gpytorch.constraints",
+"name": "Positive",
+"kind": "class",
+"doc": "Base class for all neural network modules."
+},
+{
+"area": "gpytorch.distributions",
+"name": "Delta",
+"kind": "class",
+"doc": "Degenerate discrete distribution (a single point)."
+},
+{
+"area": "gpytorch.distributions",
+"name": "Distribution",
+"kind": "class",
+"doc": "The base class of Distributions. (Same as torch.distribution.Distribution"
+},
+{
+"area": "gpytorch.distributions",
+"name": "MultitaskMultivariateNormal",
+"kind": "class",
+"doc": "Constructs a multi-output multivariate Normal random variable, based on mean and covariance"
+},
+{
+"area": "gpytorch.distributions",
+"name": "MultivariateNormal",
+"kind": "class",
+"doc": "Constructs a multivariate normal random variable, based on mean and covariance."
+},
+{
+"area": "gpytorch.functions",
+"name": "MaternCovariance",
+"kind": "class",
+"doc": "Base class to create custom `autograd.Function`."
+},
+{
+"area": "gpytorch.functions",
+"name": "RBFCovariance",
+"kind": "class",
+"doc": "Base class to create custom `autograd.Function`."
+},
+{
+"area": "gpytorch.functions",
+"name": "inv_matmul",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "gpytorch.functions",
+"name": "log_normal_cdf",
+"kind": "function",
+"doc": "Computes the element-wise log standard normal CDF of an input tensor x."
+},
+{
+"area": "gpytorch.functions",
+"name": "logdet",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "gpytorch.functions",
+"name": "matmul",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "gpytorch.kernels",
+"name": "AdditiveKernel",
+"kind": "class",
+"doc": "A Kernel that supports summing over multiple component kernels."
+},
+{
+"area": "gpytorch.kernels",
+"name": "AdditiveStructureKernel",
+"kind": "class",
+"doc": "A Kernel decorator for kernels with additive structure. If a kernel decomposes"
+},
+{
+"area": "gpytorch.kernels",
+"name": "ArcKernel",
+"kind": "class",
+"doc": "Computes a covariance matrix based on the Arc Kernel"
+},
+{
+"area": "gpytorch.kernels",
+"name": "ConstantKernel",
+"kind": "class",
+"doc": "Constant covariance kernel for the probabilistic inference of constant coefficients."
+},
+{
+"area": "gpytorch.kernels",
+"name": "CosineKernel",
+"kind": "class",
+"doc": "Computes a covariance matrix based on the cosine kernel"
+},
+{
+"area": "gpytorch.kernels",
+"name": "CylindricalKernel",
+"kind": "class",
+"doc": "Computes a covariance matrix based on the Cylindrical Kernel between"
+},
+{
+"area": "gpytorch.kernels",
+"name": "DistributionalInputKernel",
+"kind": "class",
+"doc": "Computes a covariance matrix over __Gaussian__ distributions via exponentiating the"
+},
+{
+"area": "gpytorch.kernels",
+"name": "GaussianSymmetrizedKLKernel",
+"kind": "class",
+"doc": "Computes a kernel based on the symmetrized KL divergence, assuming that two Gaussian"
+},
+{
+"area": "gpytorch.kernels",
+"name": "GridInterpolationKernel",
+"kind": "class",
+"doc": "Implements the KISS-GP (or SKI) approximation for a given kernel."
+},
+{
+"area": "gpytorch.kernels",
+"name": "GridKernel",
+"kind": "class",
+"doc": "If the input data :math:`X` are regularly spaced on a grid, then"
+},
+{
+"area": "gpytorch.kernels",
+"name": "HammingIMQKernel",
+"kind": "class",
+"doc": "Computes a covariance matrix based on the inverse multiquadratic Hamming kernel"
+},
+{
+"area": "gpytorch.kernels",
+"name": "IndexKernel",
+"kind": "class",
+"doc": "A kernel for discrete indices. Kernel is defined by a lookup table."
+},
+{
+"area": "gpytorch.kernels",
+"name": "InducingPointKernel",
+"kind": "class",
+"doc": "Kernels in GPyTorch are implemented as a :class:`gpytorch.Module` that, when called on two :class:`torch.Tenso"
+},
+{
+"area": "gpytorch.kernels",
+"name": "Kernel",
+"kind": "class",
+"doc": "Kernels in GPyTorch are implemented as a :class:`gpytorch.Module` that, when called on two :class:`torch.Tenso"
+},
+{
+"area": "gpytorch.kernels",
+"name": "LCMKernel",
+"kind": "class",
+"doc": "This kernel supports the LCM kernel. It allows the user to specify a list of"
+},
+{
+"area": "gpytorch.kernels",
+"name": "LinearKernel",
+"kind": "class",
+"doc": "Computes a covariance matrix based on the Linear kernel"
+},
+{
+"area": "gpytorch.kernels",
+"name": "Matern52KernelGrad",
+"kind": "class",
+"doc": "Computes a covariance matrix of the Matern52 kernel that models the covariance"
+},
+{
+"area": "gpytorch.kernels",
+"name": "MaternKernel",
+"kind": "class",
+"doc": "Computes a covariance matrix based on the Matern kernel"
+},
+{
+"area": "gpytorch.kernels",
+"name": "MultiDeviceKernel",
+"kind": "class",
+"doc": "Allocates the covariance matrix on distributed devices, e.g. multiple GPUs."
+},
+{
+"area": "gpytorch.kernels",
+"name": "MultitaskKernel",
+"kind": "class",
+"doc": "Kernel supporting Kronecker style multitask Gaussian processes (where every data point is evaluated at every"
+},
+{
+"area": "gpytorch.kernels",
+"name": "NewtonGirardAdditiveKernel",
+"kind": "class",
+"doc": "Kernels in GPyTorch are implemented as a :class:`gpytorch.Module` that, when called on two :class:`torch.Tenso"
+},
+{
+"area": "gpytorch.kernels",
+"name": "PeriodicKernel",
+"kind": "class",
+"doc": "Computes a covariance matrix based on the periodic kernel"
+},
+{
+"area": "gpytorch.kernels",
+"name": "PiecewisePolynomialKernel",
+"kind": "class",
+"doc": "Computes a covariance matrix based on the Piecewise Polynomial kernel"
+},
+{
+"area": "gpytorch.kernels",
+"name": "PolynomialKernel",
+"kind": "class",
+"doc": "Computes a covariance matrix based on the Polynomial kernel"
+},
+{
+"area": "gpytorch.kernels",
+"name": "PolynomialKernelGrad",
+"kind": "class",
+"doc": "Computes a covariance matrix based on the Polynomial kernel"
+},
+{
+"area": "gpytorch.kernels",
+"name": "ProductKernel",
+"kind": "class",
+"doc": "A Kernel that supports elementwise multiplying multiple component kernels together."
+},
+{
+"area": "gpytorch.kernels",
+"name": "ProductStructureKernel",
+"kind": "class",
+"doc": "A Kernel decorator for kernels with product structure. If a kernel decomposes"
+},
+{
+"area": "gpytorch.kernels",
+"name": "RBFKernel",
+"kind": "class",
+"doc": "Computes a covariance matrix based on the RBF (squared exponential) kernel"
+},
+{
+"area": "gpytorch.kernels",
+"name": "RBFKernelGrad",
+"kind": "class",
+"doc": "Computes a covariance matrix of the RBF kernel that models the covariance"
+},
+{
+"area": "gpytorch.kernels",
+"name": "RBFKernelGradGrad",
+"kind": "class",
+"doc": "Computes a covariance matrix of the RBF kernel that models the covariance"
+},
+{
+"area": "gpytorch.kernels",
+"name": "RFFKernel",
+"kind": "class",
+"doc": "Computes a covariance matrix based on Random Fourier Features with the RBFKernel."
+},
+{
+"area": "gpytorch.kernels",
+"name": "RQKernel",
+"kind": "class",
+"doc": "Computes a covariance matrix based on the rational quadratic kernel"
+},
+{
+"area": "gpytorch.kernels",
+"name": "ScaleKernel",
+"kind": "class",
+"doc": "Decorates an existing kernel object with an output scale, i.e."
+},
+{
+"area": "gpytorch.kernels",
+"name": "SpectralDeltaKernel",
+"kind": "class",
+"doc": "A kernel that supports spectral learning for GPs, where the underlying spectral density is modeled as a mixtur"
+},
+{
+"area": "gpytorch.kernels",
+"name": "SpectralMixtureKernel",
+"kind": "class",
+"doc": "Computes a covariance matrix based on the Spectral Mixture Kernel"
+},
+{
+"area": "gpytorch.lazy",
+"name": "LazyEvaluatedKernelTensor",
+"kind": "class",
+"doc": "Base class for LinearOperators."
+},
+{
+"area": "gpytorch.likelihoods",
+"name": "BernoulliLikelihood",
+"kind": "class",
+"doc": "Implements the Bernoulli likelihood used for GP classification, using"
+},
+{
+"area": "gpytorch.likelihoods",
+"name": "BetaLikelihood",
+"kind": "class",
+"doc": "A Beta likelihood for regressing over percentages."
+},
+{
+"area": "gpytorch.likelihoods",
+"name": "DirichletClassificationLikelihood",
+"kind": "class",
+"doc": "A classification likelihood that treats the labels as regression targets with fixed heteroscedastic noise."
+},
+{
+"area": "gpytorch.likelihoods",
+"name": "FixedNoiseGaussianLikelihood",
+"kind": "class",
+"doc": "A Likelihood that assumes fixed heteroscedastic noise. This is useful when you have fixed, known observation"
+},
+{
+"area": "gpytorch.likelihoods",
+"name": "GaussianLikelihood",
+"kind": "class",
+"doc": "The standard likelihood for regression."
+},
+{
+"area": "gpytorch.likelihoods",
+"name": "GaussianLikelihoodWithMissingObs",
+"kind": "class",
+"doc": "The standard likelihood for regression with support for missing values."
+},
+{
+"area": "gpytorch.likelihoods",
+"name": "HadamardGaussianLikelihood",
+"kind": "class",
+"doc": "Likelihood for input-wise homoskedastic and task-wise heteroskedastic noise,"
+},
+{
+"area": "gpytorch.likelihoods",
+"name": "HeteroskedasticNoise",
+"kind": "class",
+"doc": "Base class for all neural network modules."
+},
+{
+"area": "gpytorch.likelihoods",
+"name": "LaplaceLikelihood",
+"kind": "class",
+"doc": "A Laplace likelihood/noise model for GP regression."
+},
+{
+"area": "gpytorch.likelihoods",
+"name": "Likelihood",
+"kind": "class",
+"doc": "Base class for all neural network modules."
+},
+{
+"area": "gpytorch.likelihoods",
+"name": "LikelihoodList",
+"kind": "class",
+"doc": "Base class for all neural network modules."
+},
+{
+"area": "gpytorch.likelihoods",
+"name": "MultitaskGaussianLikelihood",
+"kind": "class",
+"doc": "A convenient extension of the :class:`~gpytorch.likelihoods.GaussianLikelihood` to the multitask setting that "
+},
+{
+"area": "gpytorch.likelihoods",
+"name": "NegativeBinomialLikelihood",
+"kind": "class",
+"doc": "A Negative Binomial likelihood for regressing over count data."
+},
+{
+"area": "gpytorch.likelihoods",
+"name": "PoissonLikelihood",
+"kind": "class",
+"doc": "A Poisson likelihood for regressing over count data."
+},
+{
+"area": "gpytorch.likelihoods",
+"name": "SoftmaxLikelihood",
+"kind": "class",
+"doc": "Implements the Softmax (multiclass) likelihood used for GP classification."
+},
+{
+"area": "gpytorch.likelihoods",
+"name": "StudentTLikelihood",
+"kind": "class",
+"doc": "A Student T likelihood/noise model for GP regression."
+},
+{
+"area": "gpytorch.likelihoods",
+"name": "_GaussianLikelihoodBase",
+"kind": "class",
+"doc": "Base class for Gaussian Likelihoods, supporting general heteroskedastic noise models."
+},
+{
+"area": "gpytorch.likelihoods",
+"name": "_MultitaskGaussianLikelihoodBase",
+"kind": "class",
+"doc": "Base class for multi-task Gaussian Likelihoods, supporting general heteroskedastic noise models."
+},
+{
+"area": "gpytorch.likelihoods",
+"name": "_OneDimensionalLikelihood",
+"kind": "class",
+"doc": "A specific case of :obj:`~gpytorch.likelihoods.Likelihood` when the GP represents a one-dimensional"
+},
+{
+"area": "gpytorch.means",
+"name": "ConstantMean",
+"kind": "class",
+"doc": "A (non-zero) constant prior mean function, i.e.:"
+},
+{
+"area": "gpytorch.means",
+"name": "ConstantMeanGrad",
+"kind": "class",
+"doc": "Mean function."
+},
+{
+"area": "gpytorch.means",
+"name": "ConstantMeanGradGrad",
+"kind": "class",
+"doc": "A (non-zero) constant prior mean function and its first and second derivatives, i.e.:"
+},
+{
+"area": "gpytorch.means",
+"name": "LinearMean",
+"kind": "class",
+"doc": "Mean function."
+},
+{
+"area": "gpytorch.means",
+"name": "LinearMeanGrad",
+"kind": "class",
+"doc": "A linear prior mean function and its first derivative, i.e.:"
+},
+{
+"area": "gpytorch.means",
+"name": "LinearMeanGradGrad",
+"kind": "class",
+"doc": "A linear prior mean function and its first and second derivatives, i.e.:"
+},
+{
+"area": "gpytorch.means",
+"name": "Mean",
+"kind": "class",
+"doc": "Mean function."
+},
+{
+"area": "gpytorch.means",
+"name": "MultitaskMean",
+"kind": "class",
+"doc": "Convenience :class:`gpytorch.means.Mean` implementation for defining a different mean for each task in a multi"
+},
+{
+"area": "gpytorch.means",
+"name": "ZeroMean",
+"kind": "class",
+"doc": "Mean function."
+},
+{
+"area": "gpytorch.metrics",
+"name": "mean_absolute_error",
+"kind": "function",
+"doc": "Mean absolute error."
+},
+{
+"area": "gpytorch.metrics",
+"name": "mean_squared_error",
+"kind": "function",
+"doc": "Mean squared error."
+},
+{
+"area": "gpytorch.metrics",
+"name": "mean_standardized_log_loss",
+"kind": "function",
+"doc": "Mean standardized log loss."
+},
+{
+"area": "gpytorch.metrics",
+"name": "negative_log_predictive_density",
+"kind": "function",
+"doc": "Negative log predictive density."
+},
+{
+"area": "gpytorch.metrics",
+"name": "quantile_coverage_error",
+"kind": "function",
+"doc": "Quantile coverage error."
+},
+{
+"area": "gpytorch.metrics",
+"name": "standardized_mean_squared_error",
+"kind": "function",
+"doc": "Standardized mean squared error."
+},
+{
+"area": "gpytorch.mlls",
+"name": "AddedLossTerm",
+"kind": "class",
+"doc": "AddedLossTerms are registered onto GPyTorch models (or their children `gpytorch.Modules`)."
+},
+{
+"area": "gpytorch.mlls",
+"name": "DeepApproximateMLL",
+"kind": "class",
+"doc": "A wrapper to make a GPyTorch approximate marginal log likelihoods compatible with Deep GPs."
+},
+{
+"area": "gpytorch.mlls",
+"name": "DeepPredictiveLogLikelihood",
+"kind": "class",
+"doc": "An implementation of the predictive log likelihood extended to DSPPs as discussed in Jankowiak et al., 2020."
+},
+{
+"area": "gpytorch.mlls",
+"name": "ExactMarginalLogLikelihood",
+"kind": "class",
+"doc": "The exact marginal log likelihood (MLL) for an exact Gaussian process with a"
+},
+{
+"area": "gpytorch.mlls",
+"name": "GammaRobustVariationalELBO",
+"kind": "class",
+"doc": "An alternative to the variational evidence lower bound (ELBO), proposed by `Knoblauch, 2019`_."
+},
+{
+"area": "gpytorch.mlls",
+"name": "InducingPointKernelAddedLossTerm",
+"kind": "class",
+"doc": "An added loss term that computes the additional \"regularization trace term\" of the SGPR objective function."
+},
+{
+"area": "gpytorch.mlls",
+"name": "KLGaussianAddedLossTerm",
+"kind": "class",
+"doc": "This class is used by variational GPLVM models."
+},
+{
+"area": "gpytorch.mlls",
+"name": "LeaveOneOutPseudoLikelihood",
+"kind": "class",
+"doc": "The leave one out cross-validation (LOO-CV) likelihood from RW 5.4.2 for an exact Gaussian process with a"
+},
+{
+"area": "gpytorch.mlls",
+"name": "MarginalLogLikelihood",
+"kind": "class",
+"doc": "These are modules to compute (or approximate/bound) the marginal log likelihood"
+},
+{
+"area": "gpytorch.mlls",
+"name": "NoiseModelAddedLossTerm",
+"kind": "class",
+"doc": "AddedLossTerms are registered onto GPyTorch models (or their children `gpytorch.Modules`)."
+},
+{
+"area": "gpytorch.mlls",
+"name": "PredictiveLogLikelihood",
+"kind": "class",
+"doc": "An alternative objective function for approximate GPs, proposed in `Jankowiak et al., 2020`_."
+},
+{
+"area": "gpytorch.mlls",
+"name": "SumMarginalLogLikelihood",
+"kind": "class",
+"doc": "Sum of marginal log likelihoods, to be used with Multi-Output models."
+},
+{
+"area": "gpytorch.mlls",
+"name": "VariationalELBO",
+"kind": "class",
+"doc": "The variational evidence lower bound (ELBO). This is used to optimize"
+},
+{
+"area": "gpytorch.models",
+"name": "AbstractModelList",
+"kind": "class",
+"doc": "Base class for all neural network modules."
+},
+{
+"area": "gpytorch.models",
+"name": "ApproximateGP",
+"kind": "class",
+"doc": "The base class for any Gaussian process latent function to be used in conjunction"
+},
+{
+"area": "gpytorch.models",
+"name": "ExactGP",
+"kind": "class",
+"doc": "The base class for any Gaussian process latent function to be used in conjunction"
+},
+{
+"area": "gpytorch.models",
+"name": "GP",
+"kind": "class",
+"doc": "Base class for all neural network modules."
+},
+{
+"area": "gpytorch.models",
+"name": "IndependentModelList",
+"kind": "class",
+"doc": "Base class for all neural network modules."
+},
+{
+"area": "gpytorch.models",
+"name": "PyroGP",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "gpytorch.models",
+"name": "VariationalGP",
+"kind": "class",
+"doc": "The base class for any Gaussian process latent function to be used in conjunction"
+},
+{
+"area": "gpytorch.optim",
+"name": "NGD",
+"kind": "class",
+"doc": "Implements a natural gradient descent step."
+},
+{
+"area": "gpytorch.priors",
+"name": "GammaPrior",
+"kind": "class",
+"doc": "Gamma Prior parameterized by concentration and rate"
+},
+{
+"area": "gpytorch.priors",
+"name": "HalfCauchyPrior",
+"kind": "class",
+"doc": "Half-Cauchy prior."
+},
+{
+"area": "gpytorch.priors",
+"name": "HalfNormalPrior",
+"kind": "class",
+"doc": "Half-Normal prior."
+},
+{
+"area": "gpytorch.priors",
+"name": "HorseshoePrior",
+"kind": "class",
+"doc": "Horseshoe prior."
+},
+{
+"area": "gpytorch.priors",
+"name": "LKJCholeskyFactorPrior",
+"kind": "class",
+"doc": "LKJ prior over n x n (positive definite) Cholesky-decomposed"
+},
+{
+"area": "gpytorch.priors",
+"name": "LKJCovariancePrior",
+"kind": "class",
+"doc": "LKJCovariancePrior combines an LKJ prior over the correlation matrix"
+},
+{
+"area": "gpytorch.priors",
+"name": "LKJPrior",
+"kind": "class",
+"doc": "LKJ prior over n x n (positive definite) correlation matrices"
+},
+{
+"area": "gpytorch.priors",
+"name": "LogNormalPrior",
+"kind": "class",
+"doc": "Log Normal prior."
+},
+{
+"area": "gpytorch.priors",
+"name": "MultivariateNormalPrior",
+"kind": "class",
+"doc": "Multivariate Normal prior"
+},
+{
+"area": "gpytorch.priors",
+"name": "NormalPrior",
+"kind": "class",
+"doc": "Normal (Gaussian) Prior"
+},
+{
+"area": "gpytorch.priors",
+"name": "Prior",
+"kind": "class",
+"doc": "Base class for Priors in GPyTorch."
+},
+{
+"area": "gpytorch.priors",
+"name": "SmoothedBoxPrior",
+"kind": "class",
+"doc": "A smoothed approximation of a uniform prior."
+},
+{
+"area": "gpytorch.priors",
+"name": "UniformPrior",
+"kind": "class",
+"doc": "Uniform prior."
+},
+{
+"area": "gpytorch.settings",
+"name": "debug",
+"kind": "class",
+"doc": "Whether or not to perform \"safety\" checks on the supplied data."
+},
+{
+"area": "gpytorch.settings",
+"name": "detach_test_caches",
+"kind": "class",
+"doc": "Whether or not to detach caches computed for making predictions. In most cases, you will want this,"
+},
+{
+"area": "gpytorch.settings",
+"name": "eval_cg_tolerance",
+"kind": "class",
+"doc": "Relative residual tolerance to use for terminating CG when making predictions."
+},
+{
+"area": "gpytorch.settings",
+"name": "fast_pred_samples",
+"kind": "class",
+"doc": "Fast predictive samples using Lanczos Variance Estimates (LOVE)."
+},
+{
+"area": "gpytorch.settings",
+"name": "fast_pred_var",
+"kind": "class",
+"doc": "Fast predictive variances using Lanczos Variance Estimates (LOVE)"
+},
+{
+"area": "gpytorch.settings",
+"name": "lazily_evaluate_kernels",
+"kind": "class",
+"doc": "Lazily compute the entries of covariance matrices (set to True by default)."
+},
+{
+"area": "gpytorch.settings",
+"name": "max_eager_kernel_size",
+"kind": "class",
+"doc": "If the joint train/test covariance matrix is less than this size, then we will avoid as"
+},
+{
+"area": "gpytorch.settings",
+"name": "memory_efficient",
+"kind": "class",
+"doc": "Whether or not to use Toeplitz math with gridded data, grid inducing point modules"
+},
+{
+"area": "gpytorch.settings",
+"name": "min_variance",
+"kind": "class",
+"doc": "The minimum variance that can be returned from :obj:`~gpytorch.distributions.MultivariateNormal#variance`."
+},
+{
+"area": "gpytorch.settings",
+"name": "num_gauss_hermite_locs",
+"kind": "class",
+"doc": "The number of samples to draw from a latent GP when computing a likelihood"
+},
+{
+"area": "gpytorch.settings",
+"name": "num_likelihood_samples",
+"kind": "class",
+"doc": "The number of samples to draw from a latent GP when computing a likelihood"
+},
+{
+"area": "gpytorch.settings",
+"name": "observation_nan_policy",
+"kind": "class",
+"doc": "NaN handling policy for observations."
+},
+{
+"area": "gpytorch.settings",
+"name": "prior_mode",
+"kind": "class",
+"doc": "If set to true, GP models will be evaluated in prior mode."
+},
+{
+"area": "gpytorch.settings",
+"name": "sgpr_diagonal_correction",
+"kind": "class",
+"doc": "If set to true, during posterior prediction the variances of the InducingPointKernel"
+},
+{
+"area": "gpytorch.settings",
+"name": "skip_posterior_variances",
+"kind": "class",
+"doc": "Whether or not to skip the posterior covariance matrix when doing an ExactGP"
+},
+{
+"area": "gpytorch.settings",
+"name": "trace_mode",
+"kind": "class",
+"doc": "If set to True, we will generally try to avoid calling our built in PyTorch functions, because these cannot"
+},
+{
+"area": "gpytorch.settings",
+"name": "use_keops",
+"kind": "class",
+"doc": "Whether or not to use KeOps under the hood (when using any :class:`gpytorch.kernels.keops.KeOpsKernel`."
+},
+{
+"area": "gpytorch.settings",
+"name": "variational_cholesky_jitter",
+"kind": "class",
+"doc": "The jitter value used for Cholesky factorizations in variational models."
+},
+{
+"area": "gpytorch.utils",
+"name": "NNUtil",
+"kind": "class",
+"doc": "Utility for nearest neighbor search. It would first try to use `faiss`_ (requiring separate pacakge installmen"
+},
+{
+"area": "gpytorch.utils",
+"name": "cached",
+"kind": "function",
+"doc": "A decorator allowing for specifying the name of a cache, allowing it to be modified elsewhere."
+},
+{
+"area": "gpytorch.utils",
+"name": "sum_interaction_terms",
+"kind": "function",
+"doc": "Given a batch of D x N x N covariance matrices :math:`\\boldsymbol K_1, \\ldots, \\boldsymbol K_D`,"
+},
+{
+"area": "gpytorch.variational",
+"name": "AdditiveGridInterpolationVariationalStrategy",
+"kind": "class",
+"doc": "This strategy constrains the inducing points to a grid and applies a deterministic"
+},
+{
+"area": "gpytorch.variational",
+"name": "BatchDecoupledVariationalStrategy",
+"kind": "class",
+"doc": "A VariationalStrategy that uses a different set of inducing points for the"
+},
+{
+"area": "gpytorch.variational",
+"name": "CholeskyVariationalDistribution",
+"kind": "class",
+"doc": "A :obj:`~gpytorch.variational._VariationalDistribution` that is defined to be a multivariate normal distributi"
+},
+{
+"area": "gpytorch.variational",
+"name": "CiqVariationalStrategy",
+"kind": "class",
+"doc": "Similar to :class:`~gpytorch.variational.VariationalStrategy`,"
+},
+{
+"area": "gpytorch.variational",
+"name": "DeltaVariationalDistribution",
+"kind": "class",
+"doc": "This :obj:`~gpytorch.variational._VariationalDistribution` object replaces a variational distribution"
+},
+{
+"area": "gpytorch.variational",
+"name": "GridInterpolationVariationalStrategy",
+"kind": "class",
+"doc": "This strategy constrains the inducing points to a grid and applies a deterministic"
+},
+{
+"area": "gpytorch.variational",
+"name": "IndependentMultitaskVariationalStrategy",
+"kind": "class",
+"doc": "IndependentMultitaskVariationalStrategy wraps an existing"
+},
+{
+"area": "gpytorch.variational",
+"name": "LMCVariationalStrategy",
+"kind": "class",
+"doc": "LMCVariationalStrategy is an implementation of the \"Linear Model of Coregionalization\""
+},
+{
+"area": "gpytorch.variational",
+"name": "LargeBatchVariationalStrategy",
+"kind": "class",
+"doc": "A fast variational strategy implementation optimized for large batch stochastic training on data center GPUs."
+},
+{
+"area": "gpytorch.variational",
+"name": "MeanFieldVariationalDistribution",
+"kind": "class",
+"doc": "A :obj:`~gpytorch.variational._VariationalDistribution` that is defined to be a multivariate normal distributi"
+},
+{
+"area": "gpytorch.variational",
+"name": "MultitaskVariationalStrategy",
+"kind": "class",
+"doc": "IndependentMultitaskVariationalStrategy wraps an existing"
+},
+{
+"area": "gpytorch.variational",
+"name": "NNVariationalStrategy",
+"kind": "class",
+"doc": "This strategy sets all inducing point locations to observed inputs,"
+},
+{
+"area": "gpytorch.variational",
+"name": "NaturalVariationalDistribution",
+"kind": "class",
+"doc": "A multivariate normal :obj:`~gpytorch.variational._VariationalDistribution`,"
+},
+{
+"area": "gpytorch.variational",
+"name": "OrthogonallyDecoupledVariationalStrategy",
+"kind": "class",
+"doc": "Implements orthogonally decoupled VGPs as defined in `Salimbeni et al. (2018)`_."
+},
+{
+"area": "gpytorch.variational",
+"name": "TrilNaturalVariationalDistribution",
+"kind": "class",
+"doc": "A multivariate normal :obj:`~gpytorch.variational._VariationalDistribution`,"
+},
+{
+"area": "gpytorch.variational",
+"name": "UnwhitenedVariationalStrategy",
+"kind": "class",
+"doc": "Similar to :obj:`~gpytorch.variational.VariationalStrategy`, but does not perform the"
+},
+{
+"area": "gpytorch.variational",
+"name": "VariationalStrategy",
+"kind": "class",
+"doc": "The standard variational strategy, as defined by `Hensman et al. (2015)`_."
+},
+{
+"area": "gpytorch.variational",
+"name": "_NaturalVariationalDistribution",
+"kind": "class",
+"doc": "Any :obj:`~gpytorch.variational._VariationalDistribution` which calculates"
+},
+{
+"area": "gpytorch.variational",
+"name": "_VariationalDistribution",
+"kind": "class",
+"doc": "Abstract base class for all Variational Distributions."
+},
+{
+"area": "gpytorch.variational",
+"name": "_VariationalStrategy",
+"kind": "class",
+"doc": "Abstract base class for all Variational Strategies."
+}
+]
+}

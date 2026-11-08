@@ -1,0 +1,679 @@
+{
+"library": "pysubgroup",
+"version": "0.8.0",
+"source": "introspection",
+"entries": [
+{
+"area": "pysubgroup",
+"name": "ABC",
+"kind": "class",
+"doc": "Helper class that provides a standard way to create an ABC using"
+},
+{
+"area": "pysubgroup",
+"name": "AbstractInterestingnessMeasure",
+"kind": "class",
+"doc": "Helper class that provides a standard way to create an ABC using"
+},
+{
+"area": "pysubgroup",
+"name": "Apriori",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pysubgroup",
+"name": "AreaQF",
+"kind": "class",
+"doc": "Helper class that provides a standard way to create an ABC using"
+},
+{
+"area": "pysubgroup",
+"name": "BaseTarget",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pysubgroup",
+"name": "BeamSearch",
+"kind": "class",
+"doc": "Implements the BeamSearch algorithm. Its a basic implementation"
+},
+{
+"area": "pysubgroup",
+"name": "BestFirstSearch",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pysubgroup",
+"name": "BinaryTarget",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pysubgroup",
+"name": "BitSetRepresentation",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pysubgroup",
+"name": "BitSet_Conjunction",
+"kind": "class",
+"doc": "Helper class that provides a standard way to create an ABC using"
+},
+{
+"area": "pysubgroup",
+"name": "BitSet_Disjunction",
+"kind": "class",
+"doc": "Helper class that provides a standard way to create an ABC using"
+},
+{
+"area": "pysubgroup",
+"name": "BooleanExpressionBase",
+"kind": "class",
+"doc": "Helper class that provides a standard way to create an ABC using"
+},
+{
+"area": "pysubgroup",
+"name": "BoundedInterestingnessMeasure",
+"kind": "class",
+"doc": "Helper class that provides a standard way to create an ABC using"
+},
+{
+"area": "pysubgroup",
+"name": "ChiSquaredQF",
+"kind": "class",
+"doc": "ChiSquaredQF which test for statistical independence"
+},
+{
+"area": "pysubgroup",
+"name": "CombinedInterestingnessMeasure",
+"kind": "class",
+"doc": "Helper class that provides a standard way to create an ABC using"
+},
+{
+"area": "pysubgroup",
+"name": "Conjunction",
+"kind": "class",
+"doc": "Helper class that provides a standard way to create an ABC using"
+},
+{
+"area": "pysubgroup",
+"name": "CountCallsInterestingMeasure",
+"kind": "class",
+"doc": "Helper class that provides a standard way to create an ABC using"
+},
+{
+"area": "pysubgroup",
+"name": "CountQF",
+"kind": "class",
+"doc": "Helper class that provides a standard way to create an ABC using"
+},
+{
+"area": "pysubgroup",
+"name": "Counter",
+"kind": "class",
+"doc": "Dict subclass for counting hashable items.  Sometimes called a bag"
+},
+{
+"area": "pysubgroup",
+"name": "DFS",
+"kind": "class",
+"doc": "Implementation of a depth-first-search"
+},
+{
+"area": "pysubgroup",
+"name": "DFSNumeric",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pysubgroup",
+"name": "DNF",
+"kind": "class",
+"doc": "Helper class that provides a standard way to create an ABC using"
+},
+{
+"area": "pysubgroup",
+"name": "Disjunction",
+"kind": "class",
+"doc": "Helper class that provides a standard way to create an ABC using"
+},
+{
+"area": "pysubgroup",
+"name": "EMM_Likelihood",
+"kind": "class",
+"doc": "Helper class that provides a standard way to create an ABC using"
+},
+{
+"area": "pysubgroup",
+"name": "EqualitySelector",
+"kind": "class",
+"doc": "Helper class that provides a standard way to create an ABC using"
+},
+{
+"area": "pysubgroup",
+"name": "FITarget",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pysubgroup",
+"name": "GeneralisingBFS",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pysubgroup",
+"name": "GeneralizationAwareQF",
+"kind": "class",
+"doc": "A class that computes the generalization aware qf as follows:"
+},
+{
+"area": "pysubgroup",
+"name": "GeneralizationAwareQF_stats",
+"kind": "class",
+"doc": "An abstract base class that implements aggregation of stats of generalisations"
+},
+{
+"area": "pysubgroup",
+"name": "GeneralizationAware_StandardQF",
+"kind": "class",
+"doc": "An abstract base class that implements aggregation of stats of generalisations"
+},
+{
+"area": "pysubgroup",
+"name": "GeneralizationAware_StandardQFNumeric",
+"kind": "class",
+"doc": "An abstract base class that implements aggregation of stats of generalisations"
+},
+{
+"area": "pysubgroup",
+"name": "GpGrowth",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pysubgroup",
+"name": "IntervalSelector",
+"kind": "class",
+"doc": "Helper class that provides a standard way to create an ABC using"
+},
+{
+"area": "pysubgroup",
+"name": "Iterable",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pysubgroup",
+"name": "LiftQF",
+"kind": "class",
+"doc": "Lift Quality Function"
+},
+{
+"area": "pysubgroup",
+"name": "MinSupportConstraint",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pysubgroup",
+"name": "NegatedSelector",
+"kind": "class",
+"doc": "Helper class that provides a standard way to create an ABC using"
+},
+{
+"area": "pysubgroup",
+"name": "NumericTarget",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pysubgroup",
+"name": "NumpySetRepresentation",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pysubgroup",
+"name": "NumpySet_Conjunction",
+"kind": "class",
+"doc": "Helper class that provides a standard way to create an ABC using"
+},
+{
+"area": "pysubgroup",
+"name": "PolyRegression_ModelClass",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pysubgroup",
+"name": "RefinementOperator",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pysubgroup",
+"name": "RepresentationBase",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pysubgroup",
+"name": "SelectorBase",
+"kind": "class",
+"doc": "Helper class that provides a standard way to create an ABC using"
+},
+{
+"area": "pysubgroup",
+"name": "SetRepresentation",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pysubgroup",
+"name": "Set_Conjunction",
+"kind": "class",
+"doc": "Helper class that provides a standard way to create an ABC using"
+},
+{
+"area": "pysubgroup",
+"name": "SimpleBinomialQF",
+"kind": "class",
+"doc": "Simple Binomial Quality Function"
+},
+{
+"area": "pysubgroup",
+"name": "SimpleCountQF",
+"kind": "class",
+"doc": "Helper class that provides a standard way to create an ABC using"
+},
+{
+"area": "pysubgroup",
+"name": "SimpleDFS",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pysubgroup",
+"name": "SimplePositivesQF",
+"kind": "class",
+"doc": "Helper class that provides a standard way to create an ABC using"
+},
+{
+"area": "pysubgroup",
+"name": "SimpleSearch",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pysubgroup",
+"name": "StandardQF",
+"kind": "class",
+"doc": "StandardQF which weights the relative size against the difference in averages"
+},
+{
+"area": "pysubgroup",
+"name": "StandardQFNumeric",
+"kind": "class",
+"doc": "Helper class that provides a standard way to create an ABC using"
+},
+{
+"area": "pysubgroup",
+"name": "StandardQFNumericMedian",
+"kind": "class",
+"doc": "Helper class that provides a standard way to create an ABC using"
+},
+{
+"area": "pysubgroup",
+"name": "StandardQFNumericTscore",
+"kind": "class",
+"doc": "Helper class that provides a standard way to create an ABC using"
+},
+{
+"area": "pysubgroup",
+"name": "StaticGeneralizationOperator",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pysubgroup",
+"name": "StaticSpecializationOperator",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pysubgroup",
+"name": "SubgroupDiscoveryResult",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pysubgroup",
+"name": "SubgroupDiscoveryTask",
+"kind": "class",
+"doc": "Capsulates all parameters required to perform standard subgroup discovery"
+},
+{
+"area": "pysubgroup",
+"name": "WRAccQF",
+"kind": "class",
+"doc": "Weighted Relative Accuracy Quality Function"
+},
+{
+"area": "pysubgroup",
+"name": "abstractmethod",
+"kind": "function",
+"doc": "A decorator indicating abstract methods."
+},
+{
+"area": "pysubgroup",
+"name": "add_if_required",
+"kind": "function",
+"doc": "IMPORTANT:"
+},
+{
+"area": "pysubgroup",
+"name": "calc_sorted_median",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "pysubgroup",
+"name": "chain",
+"kind": "class",
+"doc": "Return a chain object whose .__next__() method returns elements from the"
+},
+{
+"area": "pysubgroup",
+"name": "combinations",
+"kind": "class",
+"doc": "Return successive r-length combinations of elements in the iterable."
+},
+{
+"area": "pysubgroup",
+"name": "conditional_invert",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "pysubgroup",
+"name": "constraints_satisfied",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "pysubgroup",
+"name": "count_bits",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "pysubgroup",
+"name": "create_nominal_selectors",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "pysubgroup",
+"name": "create_nominal_selectors_for_attribute",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "pysubgroup",
+"name": "create_numeric_selectors",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "pysubgroup",
+"name": "create_numeric_selectors_for_attribute",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "pysubgroup",
+"name": "create_selectors",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "pysubgroup",
+"name": "defaultdict",
+"kind": "class",
+"doc": "defaultdict(default_factory=None, /, [...]) --> dict with default factory"
+},
+{
+"area": "pysubgroup",
+"name": "derive_effective_sample_size",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "pysubgroup",
+"name": "equal_frequency_discretization",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "pysubgroup",
+"name": "find_set_bits",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "pysubgroup",
+"name": "float_formatter",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "pysubgroup",
+"name": "get_cover_array_and_size",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "pysubgroup",
+"name": "get_size",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "pysubgroup",
+"name": "intersect_of_ordered_list",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "pysubgroup",
+"name": "is_categorical_attribute",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "pysubgroup",
+"name": "is_numerical_attribute",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "pysubgroup",
+"name": "maximum_statistic_filter",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "pysubgroup",
+"name": "minimum_quality_filter",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "pysubgroup",
+"name": "minimum_required_quality",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "pysubgroup",
+"name": "minimum_statistic_filter",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "pysubgroup",
+"name": "namedtuple",
+"kind": "function",
+"doc": "Returns a new subclass of tuple with named fields."
+},
+{
+"area": "pysubgroup",
+"name": "njit",
+"kind": "function",
+"doc": "Legacy decorator that is equivalent to the preferred API: jit()."
+},
+{
+"area": "pysubgroup",
+"name": "overlap",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "pysubgroup",
+"name": "overlap_filter",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "pysubgroup",
+"name": "overlaps_list",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "pysubgroup",
+"name": "pandas_sparse_eq",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "pysubgroup",
+"name": "partial",
+"kind": "class",
+"doc": "Create a new function with partial application of the given arguments"
+},
+{
+"area": "pysubgroup",
+"name": "perc_formatter",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "pysubgroup",
+"name": "plot_distribution_numeric",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "pysubgroup",
+"name": "plot_npspace",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "pysubgroup",
+"name": "plot_roc",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "pysubgroup",
+"name": "plot_sgbars",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "pysubgroup",
+"name": "powerset",
+"kind": "function",
+"doc": "powerset([1,2,3]) --> () (1,) (2,) (3,) (1,2) (1,3) (2,3) (1,2,3)"
+},
+{
+"area": "pysubgroup",
+"name": "prepare_subgroup_discovery_result",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "pysubgroup",
+"name": "read_mean",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "pysubgroup",
+"name": "read_median",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "pysubgroup",
+"name": "remove_selectors_with_attributes",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "pysubgroup",
+"name": "remove_target_attributes",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "pysubgroup",
+"name": "results_df_autoround",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "pysubgroup",
+"name": "similarity_dendrogram",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "pysubgroup",
+"name": "similarity_sgs",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "pysubgroup",
+"name": "supportSetVisualization",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "pysubgroup",
+"name": "to_bits",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "pysubgroup",
+"name": "total_ordering",
+"kind": "function",
+"doc": "Class decorator that fills in missing ordering methods"
+},
+{
+"area": "pysubgroup",
+"name": "unique_attributes",
+"kind": "function",
+"doc": ""
+}
+]
+}

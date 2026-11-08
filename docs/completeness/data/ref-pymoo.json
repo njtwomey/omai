@@ -1,0 +1,2773 @@
+{
+"library": "pymoo",
+"version": "0.6.2",
+"source": "introspection",
+"entries": [
+{
+"area": "pymoo.algorithms.moo",
+"name": "ABC",
+"kind": "class",
+"doc": "Helper class that provides a standard way to create an ABC using"
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "AGEMOEA",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "AGEMOEA2",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "AGEMOEA2Survival",
+"kind": "class",
+"doc": "Base class for survival selection operators."
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "AGEMOEASurvival",
+"kind": "class",
+"doc": "Base class for survival selection operators."
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "APDSurvival",
+"kind": "class",
+"doc": "Base class for survival selection operators."
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "ASF",
+"kind": "class",
+"doc": "Achievement Scalarization Function."
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "Algorithm",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "Any",
+"kind": "class",
+"doc": "Special type indicating an unconstrained type."
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "AspirationPointSurvival",
+"kind": "class",
+"doc": "Base class for survival selection operators."
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "AutomatedDM",
+"kind": "class",
+"doc": "Helper class that provides a standard way to create an ABC using"
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "CADASurvival",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "CMOPSO",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "CTAEA",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "CrowdingDistanceTournamentSurvival",
+"kind": "class",
+"doc": "Base class for survival selection operators."
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "DES",
+"kind": "class",
+"doc": "DE-specific parent selection that returns index matrices for each variant."
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "DNSGA2",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "DefaultMultiObjectiveTermination",
+"kind": "class",
+"doc": "Base class for termination criteria."
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "Dominator",
+"kind": "class",
+"doc": "Utility class for computing dominance relations."
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "FloatRandomSampling",
+"kind": "class",
+"doc": "Random sampling operator for continuous variables."
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "GDE3",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "GDE32NN",
+"kind": "class",
+"doc": "GDE3 with 2NN crowding metric \u2014 recommended for many-objective problems."
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "GDE3MNN",
+"kind": "class",
+"doc": "GDE3 with MNN crowding metric \u2014 recommended for many-objective problems."
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "GDE3PCD",
+"kind": "class",
+"doc": "GDE3 with PCD crowding metric \u2014 recommended for bi-objective problems."
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "GaussianNB",
+"kind": "class",
+"doc": "Gaussian Naive Bayes (GaussianNB)."
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "GeneticAlgorithm",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "HyperplaneNormalization",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "InfillCriterion",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "Initialization",
+"kind": "class",
+"doc": "Initialize a population by sampling and applying repair and duplicate elimination."
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "KGB",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "LHS",
+"kind": "class",
+"doc": "Alias for LatinHypercubeSampling operator."
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "LeastHypervolumeContributionSurvival",
+"kind": "class",
+"doc": "Base class for survival selection operators."
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "LinAlgError",
+"kind": "class",
+"doc": "Generic Python-exception-derived object raised by linalg functions."
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "LoopwiseAlgorithm",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "LooseDominator",
+"kind": "class",
+"doc": "Modified (loose) epsilon-dominance used by the Omni-Optimizer [1]_."
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "MOEAD",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "MOPSO_CD",
+"kind": "class",
+"doc": "Multi-Objective Particle Swarm Optimization with Crowding Distance (MOPSO-CD) algorithm."
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "MaximumFunctionCallTermination",
+"kind": "class",
+"doc": "Base class for termination criteria."
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "MaximumGenerationTermination",
+"kind": "class",
+"doc": "Base class for termination criteria."
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "MultiObjectiveArchive",
+"kind": "class",
+"doc": "ndarray(shape, dtype=np.float64, buffer=None, offset=0, strides=None, order=None)"
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "MultiObjectiveOutput",
+"kind": "class",
+"doc": "Output columns for multi-objective optimization results."
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "NSDE",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "NSDER",
+"kind": "class",
+"doc": "Many-objective DE with reference-direction survival (NSDE-R)."
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "NSGA2",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "NSGA3",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "NeighborBasedTournamentSelection",
+"kind": "class",
+"doc": "Restricted binary tournament selection of the Omni-Optimizer [1]_."
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "NeighborhoodSelection",
+"kind": "class",
+"doc": "Base class for selection operators."
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "NoDuplicateElimination",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "NoMutation",
+"kind": "class",
+"doc": "Base class for mutation operators."
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "NonDominatedSorting",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "OmniOptimizer",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "OmniOptimizerSurvival",
+"kind": "class",
+"doc": "Rank and (objective + variable space) crowding survival of the Omni-Optimizer [1]_."
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "Output",
+"kind": "class",
+"doc": "Base class for displaying optimization output columns."
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "PINSGA2",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "PM",
+"kind": "class",
+"doc": "Alias for PolynomialMutation."
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "ParallelMOEAD",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "PolynomialMutation",
+"kind": "class",
+"doc": "Polynomial mutation operator for continuous variables."
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "Population",
+"kind": "class",
+"doc": "ndarray(shape, dtype=np.float64, buffer=None, offset=0, strides=None, order=None)"
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "RNSGA2",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "RNSGA3",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "RVEA",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "RandomSelection",
+"kind": "class",
+"doc": "Base class for selection operators."
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "RankAndCrowding",
+"kind": "class",
+"doc": "Rank and crowding based survival operator generalization of NSGA-II."
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "RankAndCrowdingSurvival",
+"kind": "class",
+"doc": "Rank and crowding based survival operator generalization of NSGA-II."
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "RankAndModifiedCrowdingSurvival",
+"kind": "class",
+"doc": "Base class for survival selection operators."
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "Real",
+"kind": "class",
+"doc": "Class for the representation of bounded, real decision variables."
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "ReferenceDirectionSurvival",
+"kind": "class",
+"doc": "Base class for survival selection operators."
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "Repair",
+"kind": "class",
+"doc": "Base class for all operators (sampling, crossover, mutation, selection)."
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "RestrictedMating",
+"kind": "class",
+"doc": "Restricted mating approach to balance convergence and diversity archives."
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "SBX",
+"kind": "class",
+"doc": "Base class for all operators (sampling, crossover, mutation, selection)."
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "SMSEMOA",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "SPEA2",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "SPEA2Survival",
+"kind": "class",
+"doc": "Base class for survival selection operators."
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "Sampling",
+"kind": "class",
+"doc": "Base class for all operators (sampling, crossover, mutation, selection)."
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "Selection",
+"kind": "class",
+"doc": "Base class for selection operators."
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "Survival",
+"kind": "class",
+"doc": "Base class for survival selection operators."
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "SurvivalTruncation",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "ToBoundOutOfBoundsRepair",
+"kind": "class",
+"doc": "Set-to-bounds repair operator for out-of-bounds variables."
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "TournamentSelection",
+"kind": "class",
+"doc": "Tournament selection operator for genetic algorithms."
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "UNSGA3",
+"kind": "class",
+"doc": "Unified NSGA-III algorithm for many-objective optimization."
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "UniformReferenceDirectionFactory",
+"kind": "class",
+"doc": "Factory for generating uniform reference directions using Das Dennis method."
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "VFDominator",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.algorithms.moo",
+"name": "VariantDE",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "Algorithm",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "BGA",
+"kind": "class",
+"doc": "Binary genetic algorithm using binary operators."
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "BIPOPCMAES",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "BRKGA",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "Binary",
+"kind": "class",
+"doc": "Class for the representation of a binary, bounded decision variable."
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "BinaryRandomSampling",
+"kind": "class",
+"doc": "Random sampling operator for binary variables."
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "BinomialCrossover",
+"kind": "class",
+"doc": "Base class for all operators (sampling, crossover, mutation, selection)."
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "BitflipMutation",
+"kind": "class",
+"doc": "Base class for mutation operators."
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "CMAES",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "CMAESOutput",
+"kind": "class",
+"doc": "Output columns for single-objective optimization results."
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "Choice",
+"kind": "class",
+"doc": "Class for the representation of a discrete, subset decision variable."
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "Column",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "ConstraintViolationTermination",
+"kind": "class",
+"doc": "Base class for termination criteria."
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "DE",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "DIRECT",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "DefaultDuplicateElimination",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "DefaultSingleObjectiveTermination",
+"kind": "class",
+"doc": "Base class for termination criteria."
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "DefaultTermination",
+"kind": "class",
+"doc": "Base class for termination criteria."
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "DesignSpaceTermination",
+"kind": "class",
+"doc": "Base class for termination criteria."
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "DuplicateElimination",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "EPPSO",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "ES",
+"kind": "class",
+"doc": "Evolutionary Strategy (ES) algorithm for single-objective optimization."
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "EliteBiasedSelection",
+"kind": "class",
+"doc": "Base class for selection operators."
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "EliteSurvival",
+"kind": "class",
+"doc": "Base class for survival selection operators."
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "EpsilonClearing",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "EpsilonClearingSurvival",
+"kind": "class",
+"doc": "Base class for survival selection operators."
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "EvolutionaryParameterControl",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "FitnessSurvival",
+"kind": "class",
+"doc": "Base class for survival selection operators."
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "FloatRandomSampling",
+"kind": "class",
+"doc": "Random sampling operator for continuous variables."
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "G3PCX",
+"kind": "class",
+"doc": "G3PCX algorithm for single-objective optimization."
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "GA",
+"kind": "class",
+"doc": "Genetic algorithm for single-objective optimization."
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "GeneticAlgorithm",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "ISRES",
+"kind": "class",
+"doc": "Evolutionary Strategy (ES) algorithm for single-objective optimization."
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "ImprovementReplacement",
+"kind": "class",
+"doc": "Base class for survival selection operators."
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "Individual",
+"kind": "class",
+"doc": "Base class for representing an individual in a population-based optimization."
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "InfillCriterion",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "Initialization",
+"kind": "class",
+"doc": "Initialize a population by sampling and applying repair and duplicate elimination."
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "Integer",
+"kind": "class",
+"doc": "Class for the representation of bounded, integer decision variables."
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "LHS",
+"kind": "class",
+"doc": "Alias for LatinHypercubeSampling operator."
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "LocalSearch",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "LoopwiseAlgorithm",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "MaximumFunctionCallTermination",
+"kind": "class",
+"doc": "Base class for termination criteria."
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "MaximumGenerationTermination",
+"kind": "class",
+"doc": "Base class for termination criteria."
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "NRBO",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "NelderAndMeadTermination",
+"kind": "class",
+"doc": "Base class for termination criteria."
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "NelderMead",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "NicheGA",
+"kind": "class",
+"doc": "Niching genetic algorithm for multi-modal optimization."
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "NicheOutput",
+"kind": "class",
+"doc": "Output columns for single-objective optimization results."
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "NicheSingleObjectiveSpaceToleranceTermination",
+"kind": "class",
+"doc": "Base class for termination criteria."
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "NicheTermination",
+"kind": "class",
+"doc": "Base class for termination criteria."
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "NoDuplicateElimination",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "NoMutation",
+"kind": "class",
+"doc": "Base class for mutation operators."
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "NoNormalization",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "NoParameterControl",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "NoRepair",
+"kind": "class",
+"doc": "Base class for all operators (sampling, crossover, mutation, selection)."
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "NoTermination",
+"kind": "class",
+"doc": "Termination criterion that never terminates."
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "NonDominatedSorting",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "Optuna",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "PCX",
+"kind": "class",
+"doc": "Base class for all operators (sampling, crossover, mutation, selection)."
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "PM",
+"kind": "class",
+"doc": "Alias for PolynomialMutation."
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "PSO",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "PSOFuzzyOutput",
+"kind": "class",
+"doc": "Output columns for single-objective optimization results."
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "PatternSearch",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "Population",
+"kind": "class",
+"doc": "ndarray(shape, dtype=np.float64, buffer=None, offset=0, strides=None, order=None)"
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "RandomSearch",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "RankAndCrowdingSurvival",
+"kind": "class",
+"doc": "Rank and crowding based survival operator generalization of NSGA-II."
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "Real",
+"kind": "class",
+"doc": "Class for the representation of bounded, real decision variables."
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "RobustTermination",
+"kind": "class",
+"doc": "Base class for termination criteria."
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "SBX",
+"kind": "class",
+"doc": "Base class for all operators (sampling, crossover, mutation, selection)."
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "SPX",
+"kind": "class",
+"doc": "Base class for all operators (sampling, crossover, mutation, selection)."
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "SRES",
+"kind": "class",
+"doc": "Evolutionary Strategy (ES) algorithm for single-objective optimization."
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "Selection",
+"kind": "class",
+"doc": "Base class for selection operators."
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "SimpleCMAES",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "SingleObjectiveOutput",
+"kind": "class",
+"doc": "Output columns for single-objective optimization results."
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "SingleObjectiveSpaceTermination",
+"kind": "class",
+"doc": "Base class for termination criteria."
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "SlidingWindow",
+"kind": "class",
+"doc": "Fixed-size sliding window implemented as a list."
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "StochasticRankingSurvival",
+"kind": "class",
+"doc": "Base class for survival selection operators."
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "Survival",
+"kind": "class",
+"doc": "Base class for survival selection operators."
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "Swarm",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "TPESampler",
+"kind": "class",
+"doc": "Sampler using TPE (Tree-structured Parzen Estimator) algorithm."
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "Termination",
+"kind": "class",
+"doc": "Base class for termination criteria."
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "TournamentSelection",
+"kind": "class",
+"doc": "Tournament selection operator for genetic algorithms."
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "Variant",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.algorithms.soo.nonconvex",
+"name": "ZeroToOneNormalization",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.constraints",
+"name": "AdaptiveConstraintHandling",
+"kind": "class",
+"doc": "Algorithm wrapper combining functionality with Meta delegation behavior."
+},
+{
+"area": "pymoo.constraints",
+"name": "AdaptiveEpsilonConstraintHandling",
+"kind": "class",
+"doc": "Algorithm wrapper combining functionality with Meta delegation behavior."
+},
+{
+"area": "pymoo.constraints",
+"name": "Any",
+"kind": "class",
+"doc": "Special type indicating an unconstrained type."
+},
+{
+"area": "pymoo.constraints",
+"name": "AttachConfigEvaluator",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.constraints",
+"name": "ConstraintsAsObjective",
+"kind": "class",
+"doc": "Dynamically wrap an object with mixin behavior from a target class."
+},
+{
+"area": "pymoo.constraints",
+"name": "ConstraintsAsPenalty",
+"kind": "class",
+"doc": "Dynamically wrap an object with mixin behavior from a target class."
+},
+{
+"area": "pymoo.constraints",
+"name": "ConstraintsFromBounds",
+"kind": "class",
+"doc": "Dynamically wrap an object with mixin behavior from a target class."
+},
+{
+"area": "pymoo.constraints",
+"name": "Evaluator",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.constraints",
+"name": "Individual",
+"kind": "class",
+"doc": "Base class for representing an individual in a population-based optimization."
+},
+{
+"area": "pymoo.constraints",
+"name": "Meta",
+"kind": "class",
+"doc": "Dynamically wrap an object with mixin behavior from a target class."
+},
+{
+"area": "pymoo.constraints",
+"name": "MetaAlgorithm",
+"kind": "class",
+"doc": "Algorithm wrapper combining functionality with Meta delegation behavior."
+},
+{
+"area": "pymoo.constraints",
+"name": "Population",
+"kind": "class",
+"doc": "ndarray(shape, dtype=np.float64, buffer=None, offset=0, strides=None, order=None)"
+},
+{
+"area": "pymoo.constraints",
+"name": "Problem",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.decomposition",
+"name": "AASF",
+"kind": "class",
+"doc": "Augmented Achievement Scalarization Function."
+},
+{
+"area": "pymoo.decomposition",
+"name": "ASF",
+"kind": "class",
+"doc": "Achievement Scalarization Function."
+},
+{
+"area": "pymoo.decomposition",
+"name": "Any",
+"kind": "class",
+"doc": "Special type indicating an unconstrained type."
+},
+{
+"area": "pymoo.decomposition",
+"name": "Decomposition",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.decomposition",
+"name": "PBI",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.decomposition",
+"name": "PerpendicularDistance",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.decomposition",
+"name": "Tchebicheff",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.decomposition",
+"name": "WeightedSum",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.gradient",
+"name": "AutomaticDifferentiation",
+"kind": "class",
+"doc": "Dynamically wrap an object with mixin behavior from a target class."
+},
+{
+"area": "pymoo.gradient",
+"name": "ComplexNumberGradient",
+"kind": "class",
+"doc": "Dynamically wrap an object with mixin behavior from a target class."
+},
+{
+"area": "pymoo.gradient",
+"name": "ElementwiseAutomaticDifferentiation",
+"kind": "class",
+"doc": "Dynamically wrap an object with mixin behavior from a target class."
+},
+{
+"area": "pymoo.gradient",
+"name": "ElementwiseEvaluationFunction",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.gradient",
+"name": "ElementwiseEvaluationFunctionWithGradient",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.gradient",
+"name": "Meta",
+"kind": "class",
+"doc": "Dynamically wrap an object with mixin behavior from a target class."
+},
+{
+"area": "pymoo.gradient",
+"name": "Problem",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.gradient",
+"name": "VJPNode",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.indicators",
+"name": "Callback",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.indicators",
+"name": "DistanceIndicator",
+"kind": "class",
+"doc": "Distance-based indicator for measuring solution quality."
+},
+{
+"area": "pymoo.indicators",
+"name": "Epsilon",
+"kind": "class",
+"doc": "Additive epsilon indicator."
+},
+{
+"area": "pymoo.indicators",
+"name": "EpsilonIndicator",
+"kind": "class",
+"doc": "Base class for epsilon indicators."
+},
+{
+"area": "pymoo.indicators",
+"name": "EpsilonMultiplicative",
+"kind": "class",
+"doc": "Multiplicative epsilon indicator."
+},
+{
+"area": "pymoo.indicators",
+"name": "GD",
+"kind": "class",
+"doc": "Generational Distance indicator for solution quality."
+},
+{
+"area": "pymoo.indicators",
+"name": "GDPlus",
+"kind": "class",
+"doc": "Generational Distance Plus indicator for solution quality."
+},
+{
+"area": "pymoo.indicators",
+"name": "HV",
+"kind": "class",
+"doc": "Alias for Hypervolume indicator."
+},
+{
+"area": "pymoo.indicators",
+"name": "Hypervolume",
+"kind": "class",
+"doc": "Hypervolume indicator for solution quality assessment."
+},
+{
+"area": "pymoo.indicators",
+"name": "IGD",
+"kind": "class",
+"doc": "Inverted Generational Distance (IGD) indicator."
+},
+{
+"area": "pymoo.indicators",
+"name": "IGDPlus",
+"kind": "class",
+"doc": "Inverted Generational Distance Plus indicator."
+},
+{
+"area": "pymoo.indicators",
+"name": "Indicator",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.indicators",
+"name": "KKTPM",
+"kind": "class",
+"doc": "Karush-Kuhn-Tucker Approximate Measure (KKTPM) indicator."
+},
+{
+"area": "pymoo.indicators",
+"name": "MIGD",
+"kind": "class",
+"doc": "Mean Inverted Generational Distance (MIGD) callback."
+},
+{
+"area": "pymoo.indicators",
+"name": "RMetric",
+"kind": "class",
+"doc": "R-Metric indicator for constrained regions of interest."
+},
+{
+"area": "pymoo.indicators",
+"name": "SpacingIndicator",
+"kind": "class",
+"doc": "Spacing indicator for Pareto front uniformity."
+},
+{
+"area": "pymoo.mcdm",
+"name": "CompromiseProgramming",
+"kind": "class",
+"doc": "Compromise programming decision making method."
+},
+{
+"area": "pymoo.mcdm",
+"name": "DecisionMaking",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.mcdm",
+"name": "HighTradeoffPoints",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.mcdm",
+"name": "NeighborFinder",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.mcdm",
+"name": "PseudoWeights",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.operators.crossover",
+"name": "BX",
+"kind": "class",
+"doc": "Base class for all operators (sampling, crossover, mutation, selection)."
+},
+{
+"area": "pymoo.operators.crossover",
+"name": "BinomialCrossover",
+"kind": "class",
+"doc": "Base class for all operators (sampling, crossover, mutation, selection)."
+},
+{
+"area": "pymoo.operators.crossover",
+"name": "Crossover",
+"kind": "class",
+"doc": "Base class for all operators (sampling, crossover, mutation, selection)."
+},
+{
+"area": "pymoo.operators.crossover",
+"name": "DEM",
+"kind": "class",
+"doc": "DE mutation operator (donor vector computation), usable as a standalone Crossover."
+},
+{
+"area": "pymoo.operators.crossover",
+"name": "DEX",
+"kind": "class",
+"doc": "Base class for all operators (sampling, crossover, mutation, selection)."
+},
+{
+"area": "pymoo.operators.crossover",
+"name": "ERX",
+"kind": "class",
+"doc": "Base class for all operators (sampling, crossover, mutation, selection)."
+},
+{
+"area": "pymoo.operators.crossover",
+"name": "EdgeRecombinationCrossover",
+"kind": "class",
+"doc": "Base class for all operators (sampling, crossover, mutation, selection)."
+},
+{
+"area": "pymoo.operators.crossover",
+"name": "ExponentialCrossover",
+"kind": "class",
+"doc": "Base class for all operators (sampling, crossover, mutation, selection)."
+},
+{
+"area": "pymoo.operators.crossover",
+"name": "HUX",
+"kind": "class",
+"doc": "Base class for all operators (sampling, crossover, mutation, selection)."
+},
+{
+"area": "pymoo.operators.crossover",
+"name": "HalfUniformCrossover",
+"kind": "class",
+"doc": "Base class for all operators (sampling, crossover, mutation, selection)."
+},
+{
+"area": "pymoo.operators.crossover",
+"name": "NoCrossover",
+"kind": "class",
+"doc": "Base class for all operators (sampling, crossover, mutation, selection)."
+},
+{
+"area": "pymoo.operators.crossover",
+"name": "OrderCrossover",
+"kind": "class",
+"doc": "Base class for all operators (sampling, crossover, mutation, selection)."
+},
+{
+"area": "pymoo.operators.crossover",
+"name": "PCX",
+"kind": "class",
+"doc": "Base class for all operators (sampling, crossover, mutation, selection)."
+},
+{
+"area": "pymoo.operators.crossover",
+"name": "ParentCentricCrossover",
+"kind": "class",
+"doc": "Base class for all operators (sampling, crossover, mutation, selection)."
+},
+{
+"area": "pymoo.operators.crossover",
+"name": "PointCrossover",
+"kind": "class",
+"doc": "Base class for all operators (sampling, crossover, mutation, selection)."
+},
+{
+"area": "pymoo.operators.crossover",
+"name": "Population",
+"kind": "class",
+"doc": "ndarray(shape, dtype=np.float64, buffer=None, offset=0, strides=None, order=None)"
+},
+{
+"area": "pymoo.operators.crossover",
+"name": "Real",
+"kind": "class",
+"doc": "Class for the representation of bounded, real decision variables."
+},
+{
+"area": "pymoo.operators.crossover",
+"name": "SBX",
+"kind": "class",
+"doc": "Base class for all operators (sampling, crossover, mutation, selection)."
+},
+{
+"area": "pymoo.operators.crossover",
+"name": "SPX",
+"kind": "class",
+"doc": "Base class for all operators (sampling, crossover, mutation, selection)."
+},
+{
+"area": "pymoo.operators.crossover",
+"name": "SimulatedBinaryCrossover",
+"kind": "class",
+"doc": "Base class for all operators (sampling, crossover, mutation, selection)."
+},
+{
+"area": "pymoo.operators.crossover",
+"name": "SinglePointCrossover",
+"kind": "class",
+"doc": "Base class for all operators (sampling, crossover, mutation, selection)."
+},
+{
+"area": "pymoo.operators.crossover",
+"name": "TwoPointCrossover",
+"kind": "class",
+"doc": "Base class for all operators (sampling, crossover, mutation, selection)."
+},
+{
+"area": "pymoo.operators.crossover",
+"name": "UX",
+"kind": "class",
+"doc": "Base class for all operators (sampling, crossover, mutation, selection)."
+},
+{
+"area": "pymoo.operators.crossover",
+"name": "UniformCrossover",
+"kind": "class",
+"doc": "Base class for all operators (sampling, crossover, mutation, selection)."
+},
+{
+"area": "pymoo.operators.mutation",
+"name": "BFM",
+"kind": "class",
+"doc": "Base class for mutation operators."
+},
+{
+"area": "pymoo.operators.mutation",
+"name": "BitflipMutation",
+"kind": "class",
+"doc": "Base class for mutation operators."
+},
+{
+"area": "pymoo.operators.mutation",
+"name": "ChoiceRandomMutation",
+"kind": "class",
+"doc": "Mutation operator that randomly samples values from a variable's choice set."
+},
+{
+"area": "pymoo.operators.mutation",
+"name": "GM",
+"kind": "class",
+"doc": "Base class for mutation operators."
+},
+{
+"area": "pymoo.operators.mutation",
+"name": "GaussianMutation",
+"kind": "class",
+"doc": "Base class for mutation operators."
+},
+{
+"area": "pymoo.operators.mutation",
+"name": "InversionMutation",
+"kind": "class",
+"doc": "Base class for mutation operators."
+},
+{
+"area": "pymoo.operators.mutation",
+"name": "Mutation",
+"kind": "class",
+"doc": "Base class for mutation operators."
+},
+{
+"area": "pymoo.operators.mutation",
+"name": "NoMutation",
+"kind": "class",
+"doc": "Base class for mutation operators."
+},
+{
+"area": "pymoo.operators.mutation",
+"name": "PM",
+"kind": "class",
+"doc": "Alias for PolynomialMutation."
+},
+{
+"area": "pymoo.operators.mutation",
+"name": "PolynomialMutation",
+"kind": "class",
+"doc": "Polynomial mutation operator for continuous variables."
+},
+{
+"area": "pymoo.operators.mutation",
+"name": "Real",
+"kind": "class",
+"doc": "Class for the representation of bounded, real decision variables."
+},
+{
+"area": "pymoo.operators.sampling",
+"name": "BinaryRandomSampling",
+"kind": "class",
+"doc": "Random sampling operator for binary variables."
+},
+{
+"area": "pymoo.operators.sampling",
+"name": "FloatRandomSampling",
+"kind": "class",
+"doc": "Random sampling operator for continuous variables."
+},
+{
+"area": "pymoo.operators.sampling",
+"name": "IntegerRandomSampling",
+"kind": "class",
+"doc": "Random sampling operator for integer variables."
+},
+{
+"area": "pymoo.operators.sampling",
+"name": "LHS",
+"kind": "class",
+"doc": "Alias for LatinHypercubeSampling operator."
+},
+{
+"area": "pymoo.operators.sampling",
+"name": "LatinHypercubeSampling",
+"kind": "class",
+"doc": "Latin Hypercube Sampling operator."
+},
+{
+"area": "pymoo.operators.sampling",
+"name": "PermutationRandomSampling",
+"kind": "class",
+"doc": "Random sampling operator for permutation variables."
+},
+{
+"area": "pymoo.operators.sampling",
+"name": "Sampling",
+"kind": "class",
+"doc": "Base class for all operators (sampling, crossover, mutation, selection)."
+},
+{
+"area": "pymoo.operators.selection",
+"name": "DES",
+"kind": "class",
+"doc": "DE-specific parent selection that returns index matrices for each variant."
+},
+{
+"area": "pymoo.operators.selection",
+"name": "RandomSelection",
+"kind": "class",
+"doc": "Base class for selection operators."
+},
+{
+"area": "pymoo.operators.selection",
+"name": "Selection",
+"kind": "class",
+"doc": "Base class for selection operators."
+},
+{
+"area": "pymoo.operators.selection",
+"name": "TournamentSelection",
+"kind": "class",
+"doc": "Tournament selection operator for genetic algorithms."
+},
+{
+"area": "pymoo.problems.many",
+"name": "C1DTLZ1",
+"kind": "class",
+"doc": "Constrained DTLZ1 problem with one inequality constraint."
+},
+{
+"area": "pymoo.problems.many",
+"name": "C1DTLZ3",
+"kind": "class",
+"doc": "Constrained DTLZ3 problem with one spherical inequality constraint."
+},
+{
+"area": "pymoo.problems.many",
+"name": "C2DTLZ2",
+"kind": "class",
+"doc": "Constrained DTLZ2 problem with one inequality constraint."
+},
+{
+"area": "pymoo.problems.many",
+"name": "C3DTLZ1",
+"kind": "class",
+"doc": "Constrained DTLZ1 problem with multiple linear inequality constraints."
+},
+{
+"area": "pymoo.problems.many",
+"name": "C3DTLZ4",
+"kind": "class",
+"doc": "Constrained DTLZ4 problem with multiple spherical inequality constraints."
+},
+{
+"area": "pymoo.problems.many",
+"name": "ConvexDTLZ2",
+"kind": "class",
+"doc": "Convex version of DTLZ2."
+},
+{
+"area": "pymoo.problems.many",
+"name": "ConvexDTLZ4",
+"kind": "class",
+"doc": "Convex version of DTLZ4."
+},
+{
+"area": "pymoo.problems.many",
+"name": "ConvexProblem",
+"kind": "class",
+"doc": "Wrapper to apply convex transformation to objectives."
+},
+{
+"area": "pymoo.problems.many",
+"name": "DC1DTLZ1",
+"kind": "class",
+"doc": "Degenerate constrained DTLZ1 problem with one inequality constraint."
+},
+{
+"area": "pymoo.problems.many",
+"name": "DC1DTLZ3",
+"kind": "class",
+"doc": "Degenerate constrained DTLZ3 problem with one inequality constraint."
+},
+{
+"area": "pymoo.problems.many",
+"name": "DC2DTLZ1",
+"kind": "class",
+"doc": "Degenerate constrained DTLZ1 problem with two inequality constraints."
+},
+{
+"area": "pymoo.problems.many",
+"name": "DC2DTLZ3",
+"kind": "class",
+"doc": "Degenerate constrained DTLZ3 problem with two inequality constraints."
+},
+{
+"area": "pymoo.problems.many",
+"name": "DC3DTLZ1",
+"kind": "class",
+"doc": "Degenerate constrained DTLZ1 problem with multiple inequality constraints."
+},
+{
+"area": "pymoo.problems.many",
+"name": "DC3DTLZ3",
+"kind": "class",
+"doc": "Degenerate constrained DTLZ3 problem with multiple inequality constraints."
+},
+{
+"area": "pymoo.problems.many",
+"name": "DTLZ",
+"kind": "class",
+"doc": "Base class for DTLZ test problems."
+},
+{
+"area": "pymoo.problems.many",
+"name": "DTLZ1",
+"kind": "class",
+"doc": "DTLZ1 test problem with a simple linear Pareto front."
+},
+{
+"area": "pymoo.problems.many",
+"name": "DTLZ2",
+"kind": "class",
+"doc": "DTLZ2 test problem with a spherical Pareto front."
+},
+{
+"area": "pymoo.problems.many",
+"name": "DTLZ3",
+"kind": "class",
+"doc": "DTLZ3 test problem with multimodal Pareto front."
+},
+{
+"area": "pymoo.problems.many",
+"name": "DTLZ4",
+"kind": "class",
+"doc": "DTLZ4 test problem with biased Pareto front."
+},
+{
+"area": "pymoo.problems.many",
+"name": "DTLZ5",
+"kind": "class",
+"doc": "DTLZ5 test problem with a degenerate curved Pareto front."
+},
+{
+"area": "pymoo.problems.many",
+"name": "DTLZ6",
+"kind": "class",
+"doc": "DTLZ6 test problem with a degenerate curved Pareto front (different g function)."
+},
+{
+"area": "pymoo.problems.many",
+"name": "DTLZ7",
+"kind": "class",
+"doc": "DTLZ7 test problem with a discontinuous Pareto front."
+},
+{
+"area": "pymoo.problems.many",
+"name": "InvertedDTLZ1",
+"kind": "class",
+"doc": "Inverted DTLZ1 problem with flipped objectives."
+},
+{
+"area": "pymoo.problems.many",
+"name": "Problem",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.many",
+"name": "Remote",
+"kind": "class",
+"doc": "Singleton class for loading remote data files."
+},
+{
+"area": "pymoo.problems.many",
+"name": "ScaledDTLZ1",
+"kind": "class",
+"doc": "Scaled version of DTLZ1."
+},
+{
+"area": "pymoo.problems.many",
+"name": "ScaledProblem",
+"kind": "class",
+"doc": "Wrapper to scale problem objectives by power factors."
+},
+{
+"area": "pymoo.problems.many",
+"name": "UniformReferenceDirectionFactory",
+"kind": "class",
+"doc": "Factory for generating uniform reference directions using Das Dennis method."
+},
+{
+"area": "pymoo.problems.many",
+"name": "WFG",
+"kind": "class",
+"doc": "Base class for WFG test problems."
+},
+{
+"area": "pymoo.problems.many",
+"name": "WFG1",
+"kind": "class",
+"doc": "WFG1 test problem with convex and mixed shapes."
+},
+{
+"area": "pymoo.problems.many",
+"name": "WFG2",
+"kind": "class",
+"doc": "WFG2 test problem with non-separable transformation."
+},
+{
+"area": "pymoo.problems.many",
+"name": "WFG3",
+"kind": "class",
+"doc": "WFG3 test problem with linear shape and degeneracy."
+},
+{
+"area": "pymoo.problems.many",
+"name": "WFG4",
+"kind": "class",
+"doc": "WFG4 test problem with multi-modal transformation."
+},
+{
+"area": "pymoo.problems.many",
+"name": "WFG5",
+"kind": "class",
+"doc": "WFG5 test problem with deceptive transformation."
+},
+{
+"area": "pymoo.problems.many",
+"name": "WFG6",
+"kind": "class",
+"doc": "WFG6 test problem with non-separable reduction."
+},
+{
+"area": "pymoo.problems.many",
+"name": "WFG7",
+"kind": "class",
+"doc": "WFG7 test problem with parameter-dependent transformation."
+},
+{
+"area": "pymoo.problems.many",
+"name": "WFG8",
+"kind": "class",
+"doc": "WFG8 test problem with cumulative parameter-dependent transformation."
+},
+{
+"area": "pymoo.problems.many",
+"name": "WFG9",
+"kind": "class",
+"doc": "WFG9 test problem with mixed transformations."
+},
+{
+"area": "pymoo.problems.many",
+"name": "ZCAT",
+"kind": "class",
+"doc": "ZCAT family of test problems for many-objective optimization."
+},
+{
+"area": "pymoo.problems.many",
+"name": "ZCAT1",
+"kind": "class",
+"doc": "ZCAT problem variant 1."
+},
+{
+"area": "pymoo.problems.many",
+"name": "ZCAT10",
+"kind": "class",
+"doc": "ZCAT problem variant 10."
+},
+{
+"area": "pymoo.problems.many",
+"name": "ZCAT11",
+"kind": "class",
+"doc": "ZCAT problem variant 11."
+},
+{
+"area": "pymoo.problems.many",
+"name": "ZCAT12",
+"kind": "class",
+"doc": "ZCAT problem variant 12."
+},
+{
+"area": "pymoo.problems.many",
+"name": "ZCAT13",
+"kind": "class",
+"doc": "ZCAT problem variant 13."
+},
+{
+"area": "pymoo.problems.many",
+"name": "ZCAT14",
+"kind": "class",
+"doc": "ZCAT problem variant 14."
+},
+{
+"area": "pymoo.problems.many",
+"name": "ZCAT15",
+"kind": "class",
+"doc": "ZCAT problem variant 15."
+},
+{
+"area": "pymoo.problems.many",
+"name": "ZCAT16",
+"kind": "class",
+"doc": "ZCAT problem variant 16."
+},
+{
+"area": "pymoo.problems.many",
+"name": "ZCAT17",
+"kind": "class",
+"doc": "ZCAT problem variant 17."
+},
+{
+"area": "pymoo.problems.many",
+"name": "ZCAT18",
+"kind": "class",
+"doc": "ZCAT problem variant 18."
+},
+{
+"area": "pymoo.problems.many",
+"name": "ZCAT19",
+"kind": "class",
+"doc": "ZCAT problem variant 19."
+},
+{
+"area": "pymoo.problems.many",
+"name": "ZCAT2",
+"kind": "class",
+"doc": "ZCAT problem variant 2."
+},
+{
+"area": "pymoo.problems.many",
+"name": "ZCAT20",
+"kind": "class",
+"doc": "ZCAT problem variant 20."
+},
+{
+"area": "pymoo.problems.many",
+"name": "ZCAT3",
+"kind": "class",
+"doc": "ZCAT problem variant 3."
+},
+{
+"area": "pymoo.problems.many",
+"name": "ZCAT4",
+"kind": "class",
+"doc": "ZCAT problem variant 4."
+},
+{
+"area": "pymoo.problems.many",
+"name": "ZCAT5",
+"kind": "class",
+"doc": "ZCAT problem variant 5."
+},
+{
+"area": "pymoo.problems.many",
+"name": "ZCAT6",
+"kind": "class",
+"doc": "ZCAT problem variant 6."
+},
+{
+"area": "pymoo.problems.many",
+"name": "ZCAT7",
+"kind": "class",
+"doc": "ZCAT problem variant 7."
+},
+{
+"area": "pymoo.problems.many",
+"name": "ZCAT8",
+"kind": "class",
+"doc": "ZCAT problem variant 8."
+},
+{
+"area": "pymoo.problems.many",
+"name": "ZCAT9",
+"kind": "class",
+"doc": "ZCAT problem variant 9."
+},
+{
+"area": "pymoo.problems.multi",
+"name": "Any",
+"kind": "class",
+"doc": "Special type indicating an unconstrained type."
+},
+{
+"area": "pymoo.problems.multi",
+"name": "BNH",
+"kind": "class",
+"doc": "Binh and Korn (BNH) constrained multi-objective test problem."
+},
+{
+"area": "pymoo.problems.multi",
+"name": "CSI",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.multi",
+"name": "CTP",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.multi",
+"name": "CTP1",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.multi",
+"name": "CTP2",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.multi",
+"name": "CTP3",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.multi",
+"name": "CTP4",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.multi",
+"name": "CTP5",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.multi",
+"name": "CTP6",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.multi",
+"name": "CTP7",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.multi",
+"name": "CTP8",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.multi",
+"name": "Carside",
+"kind": "class",
+"doc": "Car side impact problem: multi-objective design optimization."
+},
+{
+"area": "pymoo.problems.multi",
+"name": "Clutch",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.multi",
+"name": "DASCMOP",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.multi",
+"name": "DASCMOP1",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.multi",
+"name": "DASCMOP2",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.multi",
+"name": "DASCMOP3",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.multi",
+"name": "DASCMOP4",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.multi",
+"name": "DASCMOP5",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.multi",
+"name": "DASCMOP6",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.multi",
+"name": "DASCMOP7",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.multi",
+"name": "DASCMOP8",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.multi",
+"name": "DASCMOP9",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.multi",
+"name": "ElementwiseProblem",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.multi",
+"name": "Kursawe",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.multi",
+"name": "MODAct",
+"kind": "class",
+"doc": "Multi-objective design of actuators."
+},
+{
+"area": "pymoo.problems.multi",
+"name": "MW",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.multi",
+"name": "MW1",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.multi",
+"name": "MW10",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.multi",
+"name": "MW11",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.multi",
+"name": "MW12",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.multi",
+"name": "MW13",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.multi",
+"name": "MW14",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.multi",
+"name": "MW2",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.multi",
+"name": "MW3",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.multi",
+"name": "MW4",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.multi",
+"name": "MW5",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.multi",
+"name": "MW6",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.multi",
+"name": "MW7",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.multi",
+"name": "MW8",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.multi",
+"name": "MW9",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.multi",
+"name": "OSY",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.multi",
+"name": "OmniTest",
+"kind": "class",
+"doc": "Multi-objective Omni-test problem proposed by Deb."
+},
+{
+"area": "pymoo.problems.multi",
+"name": "Problem",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.multi",
+"name": "Remote",
+"kind": "class",
+"doc": "Singleton class for loading remote data files."
+},
+{
+"area": "pymoo.problems.multi",
+"name": "SRN",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.multi",
+"name": "SYMPART",
+"kind": "class",
+"doc": "SYM-PART test problem (non-rotated)."
+},
+{
+"area": "pymoo.problems.multi",
+"name": "SYMPARTRotated",
+"kind": "class",
+"doc": "The SYM-PART test problem proposed in [1]."
+},
+{
+"area": "pymoo.problems.multi",
+"name": "TNK",
+"kind": "class",
+"doc": "TNK test problem with constraints."
+},
+{
+"area": "pymoo.problems.multi",
+"name": "Truss2D",
+"kind": "class",
+"doc": "2D Truss structural optimization problem with two objectives and one constraint."
+},
+{
+"area": "pymoo.problems.multi",
+"name": "WRM",
+"kind": "class",
+"doc": "Water Resource Management problem with five objectives and seven constraints."
+},
+{
+"area": "pymoo.problems.multi",
+"name": "WeldedBeam",
+"kind": "class",
+"doc": "Welded beam structural design with two objectives and four constraints."
+},
+{
+"area": "pymoo.problems.multi",
+"name": "ZDT",
+"kind": "class",
+"doc": "Base class for ZDT test problems."
+},
+{
+"area": "pymoo.problems.multi",
+"name": "ZDT1",
+"kind": "class",
+"doc": "ZDT1 test problem."
+},
+{
+"area": "pymoo.problems.multi",
+"name": "ZDT2",
+"kind": "class",
+"doc": "ZDT2 test problem."
+},
+{
+"area": "pymoo.problems.multi",
+"name": "ZDT3",
+"kind": "class",
+"doc": "ZDT3 test problem with multiple disconnected Pareto fronts."
+},
+{
+"area": "pymoo.problems.multi",
+"name": "ZDT4",
+"kind": "class",
+"doc": "ZDT4 test problem with multimodal landscape."
+},
+{
+"area": "pymoo.problems.multi",
+"name": "ZDT5",
+"kind": "class",
+"doc": "ZDT5 test problem with binary variables."
+},
+{
+"area": "pymoo.problems.multi",
+"name": "ZDT6",
+"kind": "class",
+"doc": "ZDT6 test problem with non-uniform spacing."
+},
+{
+"area": "pymoo.problems.single",
+"name": "Ackley",
+"kind": "class",
+"doc": "Ackley benchmark function for single-objective optimization."
+},
+{
+"area": "pymoo.problems.single",
+"name": "Any",
+"kind": "class",
+"doc": "Special type indicating an unconstrained type."
+},
+{
+"area": "pymoo.problems.single",
+"name": "CantileveredBeam",
+"kind": "class",
+"doc": "Cantilevered beam design with one objective and two constraints."
+},
+{
+"area": "pymoo.problems.single",
+"name": "ElementwiseProblem",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.single",
+"name": "FlowshopScheduling",
+"kind": "class",
+"doc": "Flowshop scheduling problem."
+},
+{
+"area": "pymoo.problems.single",
+"name": "G",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.single",
+"name": "G1",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.single",
+"name": "G10",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.single",
+"name": "G11",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.single",
+"name": "G12",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.single",
+"name": "G13",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.single",
+"name": "G14",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.single",
+"name": "G15",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.single",
+"name": "G16",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.single",
+"name": "G17",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.single",
+"name": "G18",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.single",
+"name": "G19",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.single",
+"name": "G2",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.single",
+"name": "G20",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.single",
+"name": "G21",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.single",
+"name": "G22",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.single",
+"name": "G23",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.single",
+"name": "G24",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.single",
+"name": "G3",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.single",
+"name": "G4",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.single",
+"name": "G5",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.single",
+"name": "G6",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.single",
+"name": "G7",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.single",
+"name": "G8",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.single",
+"name": "G9",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.single",
+"name": "Griewank",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.single",
+"name": "Himmelblau",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.single",
+"name": "Knapsack",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.single",
+"name": "MOPTA08",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.single",
+"name": "MultiModalSimple1",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.single",
+"name": "MultiModalSimple2",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.single",
+"name": "MultiObjectiveKnapsack",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.single",
+"name": "PressureVessel",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.single",
+"name": "Problem",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.single",
+"name": "Rastrigin",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.single",
+"name": "Rosenbrock",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.single",
+"name": "Schwefel",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.single",
+"name": "SimpleMultiModal01",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.single",
+"name": "Sphere",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.problems.single",
+"name": "TravelingSalesman",
+"kind": "class",
+"doc": "A two-dimensional traveling salesman problem (TSP)."
+},
+{
+"area": "pymoo.problems.single",
+"name": "Zakharov",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.termination",
+"name": "ConstraintViolationTermination",
+"kind": "class",
+"doc": "Base class for termination criteria."
+},
+{
+"area": "pymoo.termination",
+"name": "DefaultMultiObjectiveTermination",
+"kind": "class",
+"doc": "Base class for termination criteria."
+},
+{
+"area": "pymoo.termination",
+"name": "DefaultSingleObjectiveTermination",
+"kind": "class",
+"doc": "Base class for termination criteria."
+},
+{
+"area": "pymoo.termination",
+"name": "DefaultTermination",
+"kind": "class",
+"doc": "Base class for termination criteria."
+},
+{
+"area": "pymoo.termination",
+"name": "DeltaToleranceTermination",
+"kind": "class",
+"doc": "Base class for termination criteria."
+},
+{
+"area": "pymoo.termination",
+"name": "DesignSpaceTermination",
+"kind": "class",
+"doc": "Base class for termination criteria."
+},
+{
+"area": "pymoo.termination",
+"name": "Hypervolume",
+"kind": "class",
+"doc": "Hypervolume indicator for solution quality assessment."
+},
+{
+"area": "pymoo.termination",
+"name": "IGD",
+"kind": "class",
+"doc": "Inverted Generational Distance (IGD) indicator."
+},
+{
+"area": "pymoo.termination",
+"name": "IndicatorTermination",
+"kind": "class",
+"doc": "Base class for termination criteria."
+},
+{
+"area": "pymoo.termination",
+"name": "MaximumFunctionCallTermination",
+"kind": "class",
+"doc": "Base class for termination criteria."
+},
+{
+"area": "pymoo.termination",
+"name": "MaximumGenerationTermination",
+"kind": "class",
+"doc": "Base class for termination criteria."
+},
+{
+"area": "pymoo.termination",
+"name": "MinimumFunctionValueTermination",
+"kind": "class",
+"doc": "Base class for termination criteria."
+},
+{
+"area": "pymoo.termination",
+"name": "MultiObjectiveSpaceTermination",
+"kind": "class",
+"doc": "Base class for termination criteria."
+},
+{
+"area": "pymoo.termination",
+"name": "MultiObjectiveSpaceTerminationWithRenormalization",
+"kind": "class",
+"doc": "Base class for termination criteria."
+},
+{
+"area": "pymoo.termination",
+"name": "RobustTermination",
+"kind": "class",
+"doc": "Base class for termination criteria."
+},
+{
+"area": "pymoo.termination",
+"name": "SingleObjectiveSpaceTermination",
+"kind": "class",
+"doc": "Base class for termination criteria."
+},
+{
+"area": "pymoo.termination",
+"name": "SlidingWindow",
+"kind": "class",
+"doc": "Fixed-size sliding window implemented as a list."
+},
+{
+"area": "pymoo.termination",
+"name": "Termination",
+"kind": "class",
+"doc": "Base class for termination criteria."
+},
+{
+"area": "pymoo.termination",
+"name": "TerminationCollection",
+"kind": "class",
+"doc": "Base class for termination criteria."
+},
+{
+"area": "pymoo.termination",
+"name": "TimeBasedTermination",
+"kind": "class",
+"doc": "Base class for termination criteria."
+},
+{
+"area": "pymoo.termination",
+"name": "UntilFeasibleTermination",
+"kind": "class",
+"doc": "Base class for termination criteria."
+},
+{
+"area": "pymoo.visualization",
+"name": "FitnessLandscape",
+"kind": "class",
+"doc": "Visualize the fitness landscape of optimization problems."
+},
+{
+"area": "pymoo.visualization",
+"name": "Heatmap",
+"kind": "class",
+"doc": "Visualize results as a heatmap."
+},
+{
+"area": "pymoo.visualization",
+"name": "LineCollection",
+"kind": "class",
+"doc": "Represents a sequence of `.Line2D`\\s that should be drawn together."
+},
+{
+"area": "pymoo.visualization",
+"name": "ListedColormap",
+"kind": "class",
+"doc": "Colormap object generated from a list of colors."
+},
+{
+"area": "pymoo.visualization",
+"name": "PCP",
+"kind": "class",
+"doc": "Parallel Coordinate Plot for multi-objective visualization."
+},
+{
+"area": "pymoo.visualization",
+"name": "PatchCollection",
+"kind": "class",
+"doc": "A generic collection of patches."
+},
+{
+"area": "pymoo.visualization",
+"name": "Petal",
+"kind": "class",
+"doc": "Petal diagram for multi-objective visualization."
+},
+{
+"area": "pymoo.visualization",
+"name": "Plot",
+"kind": "class",
+"doc": ""
+},
+{
+"area": "pymoo.visualization",
+"name": "Radar",
+"kind": "class",
+"doc": "Radar plot visualization."
+},
+{
+"area": "pymoo.visualization",
+"name": "Radviz",
+"kind": "class",
+"doc": "Radviz plot visualization."
+},
+{
+"area": "pymoo.visualization",
+"name": "Scatter",
+"kind": "class",
+"doc": "Scatter plot visualization."
+},
+{
+"area": "pymoo.visualization",
+"name": "StarCoordinate",
+"kind": "class",
+"doc": "Star coordinate plot visualization."
+}
+]
+}

@@ -1,0 +1,187 @@
+{
+"library": "npeet",
+"version": "1.0.1",
+"source": "introspection",
+"entries": [
+{
+"area": "npeet",
+"name": "add_noise",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "npeet",
+"name": "avgdigamma",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "npeet",
+"name": "build_tree",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "npeet",
+"name": "centropy",
+"kind": "function",
+"doc": "The classic K-L k-nearest neighbor continuous entropy estimator for the"
+},
+{
+"area": "npeet",
+"name": "centropycd",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "npeet",
+"name": "centropyd",
+"kind": "function",
+"doc": "The classic K-L k-nearest neighbor continuous entropy estimator for the"
+},
+{
+"area": "npeet",
+"name": "centropydc",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "npeet",
+"name": "cmi",
+"kind": "function",
+"doc": "Mutual information of x and y, conditioned on z"
+},
+{
+"area": "npeet",
+"name": "cmidd",
+"kind": "function",
+"doc": "Discrete mutual information estimator"
+},
+{
+"area": "npeet",
+"name": "corex",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "npeet",
+"name": "corexcd",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "npeet",
+"name": "corexd",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "npeet",
+"name": "corexdc",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "npeet",
+"name": "count_neighbors",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "npeet",
+"name": "ctc",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "npeet",
+"name": "ctccd",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "npeet",
+"name": "ctcd",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "npeet",
+"name": "ctcdc",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "npeet",
+"name": "entropy",
+"kind": "function",
+"doc": "The classic K-L k-nearest neighbor continuous entropy estimator"
+},
+{
+"area": "npeet",
+"name": "entropyd",
+"kind": "function",
+"doc": "Discrete entropy estimator"
+},
+{
+"area": "npeet",
+"name": "kldiv",
+"kind": "function",
+"doc": "KL Divergence between p and q for x~p(x), xp~q(x)"
+},
+{
+"area": "npeet",
+"name": "lnc_correction",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "npeet",
+"name": "mi",
+"kind": "function",
+"doc": "Mutual information of x and y (conditioned on z if z is not None)"
+},
+{
+"area": "npeet",
+"name": "micd",
+"kind": "function",
+"doc": "If x is continuous and y is discrete, compute mutual information"
+},
+{
+"area": "npeet",
+"name": "midc",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "npeet",
+"name": "midd",
+"kind": "function",
+"doc": "Discrete mutual information estimator"
+},
+{
+"area": "npeet",
+"name": "query_neighbors",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "npeet",
+"name": "shuffle_test",
+"kind": "function",
+"doc": "Shuffle test"
+},
+{
+"area": "npeet",
+"name": "tc",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "npeet",
+"name": "tcd",
+"kind": "function",
+"doc": ""
+}
+]
+}

@@ -1,0 +1,17 @@
+[
+{"lib":"datasketch","area":"datasketch","name":"AsyncMinHashLSH","status":"partial","how":"verdict","omai":"sketches"},
+{"lib":"datasketch","area":"datasketch","name":"HNSW","status":"full","how":"verdict","omai":"numerics/spatial#minHash, #lshIndex, #hnswIndex, sketches#hyperLogLog"},
+{"lib":"datasketch","area":"datasketch","name":"HyperLogLog","status":"full","how":"verdict","omai":"numerics/spatial#minHash, #lshIndex, #hnswIndex, sketches#hyperLogLog"},
+{"lib":"datasketch","area":"datasketch","name":"HyperLogLogPlusPlus","status":"full","how":"verdict","omai":"numerics/spatial#minHash, #lshIndex, #hnswIndex, sketches#hyperLogLog"},
+{"lib":"datasketch","area":"datasketch","name":"LeanMinHash","status":"full","how":"verdict","omai":"numerics/spatial#minHash, #lshIndex, #hnswIndex, sketches#hyperLogLog"},
+{"lib":"datasketch","area":"datasketch","name":"MinHash","status":"full","how":"verdict","omai":"numerics/spatial#minHash, #lshIndex, #hnswIndex, sketches#hyperLogLog"},
+{"lib":"datasketch","area":"datasketch","name":"MinHashLSH","status":"full","how":"verdict","omai":"numerics/spatial#minHash, #lshIndex, #hnswIndex, sketches#hyperLogLog"},
+{"lib":"datasketch","area":"datasketch","name":"MinHashLSHBloom","status":"partial","how":"verdict","omai":"sketches"},
+{"lib":"datasketch","area":"datasketch","name":"MinHashLSHEnsemble","status":"full","how":"verdict","omai":"numerics/spatial#minHash, #lshIndex, #hnswIndex, sketches#hyperLogLog"},
+{"lib":"datasketch","area":"datasketch","name":"MinHashLSHForest","status":"full","how":"verdict","omai":"numerics/spatial#minHash, #lshIndex, #hnswIndex, sketches#hyperLogLog"},
+{"lib":"datasketch","area":"datasketch","name":"WeightedMinHash","status":"full","how":"verdict","omai":"numerics/spatial#minHash, #lshIndex, #hnswIndex, sketches#hyperLogLog"},
+{"lib":"datasketch","area":"datasketch","name":"WeightedMinHashGenerator","status":"full","how":"verdict","omai":"numerics/spatial#minHash, #lshIndex, #hnswIndex, sketches#hyperLogLog"},
+{"lib":"datasketch","area":"datasketch","name":"WeightedMinHashLSH","status":"full","how":"verdict","omai":"numerics/spatial#minHash, #lshIndex, #hnswIndex, sketches#hyperLogLog"},
+{"lib":"datasketch","area":"datasketch","name":"WeightedMinHashLSHForest","status":"full","how":"verdict","omai":"numerics/spatial#minHash, #lshIndex, #hnswIndex, sketches#hyperLogLog"},
+{"lib":"datasketch","area":"datasketch","name":"bBitMinHash","status":"full","how":"verdict","omai":"numerics/spatial#minHash, #lshIndex, #hnswIndex, sketches#hyperLogLog"}
+]

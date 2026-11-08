@@ -1,0 +1,373 @@
+{
+"library": "opacus",
+"version": "1.6.0",
+"source": "introspection",
+"entries": [
+{
+"area": "opacus",
+"name": "GradSampleModule",
+"kind": "class",
+"doc": "Hooks-based implementation of AbstractGradSampleModule"
+},
+{
+"area": "opacus",
+"name": "GradSampleModuleFastGradientClipping",
+"kind": "class",
+"doc": "Hooks-based implementation of GradSampleModule with Fast Gradient and Ghost Clipping"
+},
+{
+"area": "opacus",
+"name": "PrivacyEngine",
+"kind": "class",
+"doc": "Main entry point to the Opacus API - use ``PrivacyEngine``  to enable differential"
+},
+{
+"area": "opacus.accountants",
+"name": "GaussianAccountant",
+"kind": "class",
+"doc": "Helper class that provides a standard way to create an ABC using"
+},
+{
+"area": "opacus.accountants",
+"name": "IAccountant",
+"kind": "class",
+"doc": "Helper class that provides a standard way to create an ABC using"
+},
+{
+"area": "opacus.accountants",
+"name": "PRVAccountant",
+"kind": "class",
+"doc": "Tracks privacy expenditure via numerical composition of Privacy loss Random"
+},
+{
+"area": "opacus.accountants",
+"name": "RDPAccountant",
+"kind": "class",
+"doc": "Helper class that provides a standard way to create an ABC using"
+},
+{
+"area": "opacus.accountants",
+"name": "create_accountant",
+"kind": "function",
+"doc": "Creates and returns an accountant instance for the specified privacy mechanism."
+},
+{
+"area": "opacus.accountants",
+"name": "register_accountant",
+"kind": "function",
+"doc": "Register a new accountant class to be used with a specified mechanism name."
+},
+{
+"area": "opacus.data_loader",
+"name": "CollateFnWithEmpty",
+"kind": "class",
+"doc": "Collate function wrapper that handles empty batches by preserving batch structure."
+},
+{
+"area": "opacus.data_loader",
+"name": "DPDataLoader",
+"kind": "class",
+"doc": "DataLoader subclass that always does Poisson sampling and supports empty batches"
+},
+{
+"area": "opacus.data_loader",
+"name": "dtype_safe",
+"kind": "function",
+"doc": "Exception-safe getter for ``dtype`` attribute."
+},
+{
+"area": "opacus.data_loader",
+"name": "shape_safe",
+"kind": "function",
+"doc": "Exception-safe getter for ``shape`` attribute."
+},
+{
+"area": "opacus.data_loader",
+"name": "switch_generator",
+"kind": "function",
+"doc": "Creates new instance of a ``DataLoader``, with the exact same behaviour of the"
+},
+{
+"area": "opacus.data_loader",
+"name": "wrap_collate_with_empty",
+"kind": "function",
+"doc": "Wraps given collate function to handle empty batches."
+},
+{
+"area": "opacus.grad_sample",
+"name": "AbstractGradSampleHooks",
+"kind": "class",
+"doc": "Attaches to nn.Module so that its parameter tensors have an extra field called .grad_sample."
+},
+{
+"area": "opacus.grad_sample",
+"name": "AbstractGradSampleModule",
+"kind": "class",
+"doc": "Extends nn.Module so that its parameter tensors have an extra field called .grad_sample."
+},
+{
+"area": "opacus.grad_sample",
+"name": "GradSampleHooks",
+"kind": "class",
+"doc": "Hooks-based implementation for computing per-sample gradients."
+},
+{
+"area": "opacus.grad_sample",
+"name": "GradSampleHooksFastGradientClipping",
+"kind": "class",
+"doc": "Hooks-based implementation for Fast Gradient and Ghost Clipping"
+},
+{
+"area": "opacus.grad_sample",
+"name": "GradSampleHooksFastGradientClippingFSDP",
+"kind": "class",
+"doc": "Hooks-based implementation for Fast Gradient and Ghost Clipping with FSDP support"
+},
+{
+"area": "opacus.grad_sample",
+"name": "GradSampleHooksFastGradientClippingTP",
+"kind": "class",
+"doc": "Hooks-based implementation for Fast Gradient and Ghost Clipping with TP support"
+},
+{
+"area": "opacus.grad_sample",
+"name": "GradSampleHooksNoOp",
+"kind": "class",
+"doc": "NoOp GradSampleHooks."
+},
+{
+"area": "opacus.grad_sample",
+"name": "GradSampleModule",
+"kind": "class",
+"doc": "Hooks-based implementation of AbstractGradSampleModule"
+},
+{
+"area": "opacus.grad_sample",
+"name": "GradSampleModuleExpandedWeights",
+"kind": "class",
+"doc": "ExpandedWeights-based implementation of AbstractGradSampleModule"
+},
+{
+"area": "opacus.grad_sample",
+"name": "GradSampleModuleFastGradientClipping",
+"kind": "class",
+"doc": "Hooks-based implementation of GradSampleModule with Fast Gradient and Ghost Clipping"
+},
+{
+"area": "opacus.grad_sample",
+"name": "GradSampleModuleFastGradientClippingFSDP",
+"kind": "class",
+"doc": "Hooks-based implementation of GradSampleModule with Fast Gradient and Ghost Clipping and FSDP support"
+},
+{
+"area": "opacus.grad_sample",
+"name": "GradSampleModuleFastGradientClippingTP",
+"kind": "class",
+"doc": "Hooks-based implementation of GradSampleModule with Fast Gradient and Ghost Clipping"
+},
+{
+"area": "opacus.grad_sample",
+"name": "GradSampleModuleNoOp",
+"kind": "class",
+"doc": "NoOp GradSampleModule."
+},
+{
+"area": "opacus.grad_sample",
+"name": "create_or_accumulate_grad_sample",
+"kind": "function",
+"doc": "Creates a ``_current_grad_sample`` attribute in the given parameter, or adds to it"
+},
+{
+"area": "opacus.grad_sample",
+"name": "get_gsm_class",
+"kind": "function",
+"doc": "Returns AbstractGradSampleModule subclass correspinding to the input mode."
+},
+{
+"area": "opacus.grad_sample",
+"name": "prepare_module",
+"kind": "function",
+"doc": "Prepares the model for gradient sample computation."
+},
+{
+"area": "opacus.grad_sample",
+"name": "register_grad_sampler",
+"kind": "function",
+"doc": "Registers the decorated function as the ``grad_sampler`` of ``target_class_or_classes``, which is"
+},
+{
+"area": "opacus.grad_sample",
+"name": "register_norm_sampler",
+"kind": "function",
+"doc": "Registers the decorated function as the ``norm_sampler`` of ``target_class_or_classes``, which is"
+},
+{
+"area": "opacus.grad_sample",
+"name": "wrap_model",
+"kind": "function",
+"doc": "Legacy alias for prepare_module(). Use prepare_module() in new code."
+},
+{
+"area": "opacus.layers",
+"name": "DPGRU",
+"kind": "class",
+"doc": "Applies a multi-layer gated recurrent unit (GRU) RNN to an input sequence."
+},
+{
+"area": "opacus.layers",
+"name": "DPLSTM",
+"kind": "class",
+"doc": "Applies a multi-layer long short-term memory (LSTM) RNN to an input"
+},
+{
+"area": "opacus.layers",
+"name": "DPMultiheadAttention",
+"kind": "class",
+"doc": "This is DP-friendly implementation of nn.MultiheadAttention."
+},
+{
+"area": "opacus.layers",
+"name": "DPRNN",
+"kind": "class",
+"doc": "Applies a multi-layer Elman RNN with :math:`    anh` or :math:` ext{ReLU}` non-linearity to an"
+},
+{
+"area": "opacus.layers",
+"name": "RenameParamsMixin",
+"kind": "class",
+"doc": "This class defines an nn.Module whose parameters are renamed. This is useful when you want to"
+},
+{
+"area": "opacus.layers",
+"name": "SequenceBias",
+"kind": "class",
+"doc": "Adds one bias element to the end of the sequence."
+},
+{
+"area": "opacus.optimizers",
+"name": "AdaClipDPOptimizer",
+"kind": "class",
+"doc": ":class:`~opacus.optimizers.optimizer.DPOptimizer` that implements"
+},
+{
+"area": "opacus.optimizers",
+"name": "DPOptimizer",
+"kind": "class",
+"doc": "``torch.optim.Optimizer`` wrapper that adds additional functionality to clip per"
+},
+{
+"area": "opacus.optimizers",
+"name": "DPOptimizerFastGradientClipping",
+"kind": "class",
+"doc": "``torch.optim.Optimizer`` wrapper to implement Fast Gradient and Ghost Clipping -- modifies DPOptimizer"
+},
+{
+"area": "opacus.optimizers",
+"name": "DPPerLayerOptimizer",
+"kind": "class",
+"doc": ":class:`~opacus.optimizers.optimizer.DPOptimizer` that implements"
+},
+{
+"area": "opacus.optimizers",
+"name": "DistributedDPOptimizer",
+"kind": "class",
+"doc": ":class:`~opacus.optimizers.optimizer.DPOptimizer` compatible with"
+},
+{
+"area": "opacus.optimizers",
+"name": "FSDPOptimizerFastGradientClipping",
+"kind": "class",
+"doc": "``torch.optim.Optimizer`` wrapper to implement Fast Gradient and Ghost Clipping -- modifies DPOptimizer"
+},
+{
+"area": "opacus.optimizers",
+"name": "SimpleDistributedPerLayerOptimizer",
+"kind": "class",
+"doc": ":class:`~opacus.optimizers.optimizer.DPOptimizer` that implements"
+},
+{
+"area": "opacus.schedulers",
+"name": "ExponentialGradClip",
+"kind": "class",
+"doc": "Multiplies the max_grad_norm by gamma every epoch (so the gamma factors accumulate)."
+},
+{
+"area": "opacus.schedulers",
+"name": "ExponentialNoise",
+"kind": "class",
+"doc": "Multiplies the noise_multiplier by gamma every epoch (so the gamma factors accumulate)."
+},
+{
+"area": "opacus.schedulers",
+"name": "LambdaGradClip",
+"kind": "class",
+"doc": "Multiplies your *base* `max_grad_norm` by the output of a `scheduler_function` given"
+},
+{
+"area": "opacus.schedulers",
+"name": "LambdaNoise",
+"kind": "class",
+"doc": "Multiplies your *base* `noise_multiplier` by the output of a `scheduler_function` given"
+},
+{
+"area": "opacus.schedulers",
+"name": "StepGradClip",
+"kind": "class",
+"doc": "Multiplies `max_grad_norm` by `gamma` every `step_size` epochs (so the `gamma` factors accumulate)."
+},
+{
+"area": "opacus.schedulers",
+"name": "StepNoise",
+"kind": "class",
+"doc": "Multiplies `noise_multiplier` by `gamma` every `step_size` epochs (so the `gamma` factors accumulate)."
+},
+{
+"area": "opacus.schedulers",
+"name": "_GradClipScheduler",
+"kind": "class",
+"doc": "Base class for gradient clipping schedulers. We follow the same API"
+},
+{
+"area": "opacus.schedulers",
+"name": "_NoiseScheduler",
+"kind": "class",
+"doc": "Base class for noise multiplier schedulers. We follow the same API"
+},
+{
+"area": "opacus.utils.batch_memory_manager",
+"name": "BatchMemoryManager",
+"kind": "class",
+"doc": "Context manager to manage memory consumption during training."
+},
+{
+"area": "opacus.utils.batch_memory_manager",
+"name": "BatchSplittingSampler",
+"kind": "class",
+"doc": "Samples according to the underlying instance of ``Sampler``, but splits"
+},
+{
+"area": "opacus.utils.batch_memory_manager",
+"name": "wrap_data_loader",
+"kind": "function",
+"doc": "Replaces batch_sampler in the input data loader with ``BatchSplittingSampler``"
+},
+{
+"area": "opacus.validators",
+"name": "ModuleValidator",
+"kind": "class",
+"doc": "Encapsulates all the validation logic required by Opacus."
+},
+{
+"area": "opacus.validators",
+"name": "register_module_fixer",
+"kind": "function",
+"doc": "Registers the decorated function as the ``fixer`` of ``target_class_or_classes``, which is"
+},
+{
+"area": "opacus.validators",
+"name": "register_module_validator",
+"kind": "function",
+"doc": "Registers the decorated function as the ``validator`` of ``target_class_or_classes``, which is"
+}
+]
+}

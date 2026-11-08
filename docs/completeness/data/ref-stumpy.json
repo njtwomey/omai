@@ -1,0 +1,265 @@
+{
+"library": "stumpy",
+"version": "1.14.1",
+"source": "introspection",
+"entries": [
+{
+"area": "stumpy",
+"name": "aamp",
+"kind": "function",
+"doc": "Compute the non-normalized (i.e., without z-normalization) matrix profile"
+},
+{
+"area": "stumpy",
+"name": "aamp_match",
+"kind": "function",
+"doc": "Find all matches of a query `Q` in a time series `T`, i.e. the indices"
+},
+{
+"area": "stumpy",
+"name": "aamp_mmotifs",
+"kind": "function",
+"doc": "Discover the top non-normalized motifs (i.e., without z-normalization) for the"
+},
+{
+"area": "stumpy",
+"name": "aamp_motifs",
+"kind": "function",
+"doc": "Discover the top non-normalized motifs (i.e., without z-normalization) for time"
+},
+{
+"area": "stumpy",
+"name": "aamp_ostinato",
+"kind": "function",
+"doc": "Find the non-normalized (i.e., without z-normalization) consensus motif of multiple"
+},
+{
+"area": "stumpy",
+"name": "aamp_ostinatoed",
+"kind": "function",
+"doc": "Find the non-normalized (i.e., without z-normalization) consensus motif of multiple"
+},
+{
+"area": "stumpy",
+"name": "aamp_stimp",
+"kind": "class",
+"doc": "Compute the Pan Matrix Profile"
+},
+{
+"area": "stumpy",
+"name": "aamp_stimped",
+"kind": "class",
+"doc": "Compute the Pan Matrix Profile with a `dask`/`ray` cluster"
+},
+{
+"area": "stumpy",
+"name": "aampdist",
+"kind": "function",
+"doc": "Compute the non-normalized (i.e., without z-normalization) matrix profile distance"
+},
+{
+"area": "stumpy",
+"name": "aampdist_snippets",
+"kind": "function",
+"doc": "Identify the top `k` snippets that best represent the time series, `T`"
+},
+{
+"area": "stumpy",
+"name": "aampdisted",
+"kind": "function",
+"doc": "Compute the non-normalized (i.e., without z-normalization) matrix profile distance"
+},
+{
+"area": "stumpy",
+"name": "aamped",
+"kind": "function",
+"doc": "Compute the non-normalized (i.e., without z-normalization) matrix profile"
+},
+{
+"area": "stumpy",
+"name": "aampi",
+"kind": "class",
+"doc": "Compute an incremental non-normalized (i.e., without z-normalization) matrix profile"
+},
+{
+"area": "stumpy",
+"name": "allc",
+"kind": "function",
+"doc": "Compute the all-chain set (ALLC)"
+},
+{
+"area": "stumpy",
+"name": "atsc",
+"kind": "function",
+"doc": "Compute the anchored time series chain (ATSC)"
+},
+{
+"area": "stumpy",
+"name": "floss",
+"kind": "class",
+"doc": "A class to compute the Fast Low-cost Online Semantic Segmentation (FLOSS) for"
+},
+{
+"area": "stumpy",
+"name": "fluss",
+"kind": "function",
+"doc": "Compute the Fast Low-cost Unipotent Semantic Segmentation (FLUSS)"
+},
+{
+"area": "stumpy",
+"name": "maamp",
+"kind": "function",
+"doc": "Compute the multi-dimensional non-normalized (i.e., without z-normalization) matrix"
+},
+{
+"area": "stumpy",
+"name": "maamp_mdl",
+"kind": "function",
+"doc": "Compute the multi-dimensional number of bits needed to compress one"
+},
+{
+"area": "stumpy",
+"name": "maamp_subspace",
+"kind": "function",
+"doc": "Compute the k-dimensional matrix profile subspace for a given subsequence index and"
+},
+{
+"area": "stumpy",
+"name": "maamped",
+"kind": "function",
+"doc": "Compute the multi-dimensional non-normalized (i.e., without z-normalization) matrix"
+},
+{
+"area": "stumpy",
+"name": "mass",
+"kind": "function",
+"doc": "Compute the distance profile using the MASS algorithm"
+},
+{
+"area": "stumpy",
+"name": "match",
+"kind": "function",
+"doc": "Find all matches of a query ``Q`` in a time series ``T``"
+},
+{
+"area": "stumpy",
+"name": "mdl",
+"kind": "function",
+"doc": "Compute the multi-dimensional number of bits needed to compress one"
+},
+{
+"area": "stumpy",
+"name": "mmotifs",
+"kind": "function",
+"doc": "Discover the top motifs for the multi-dimensional time series ``T``."
+},
+{
+"area": "stumpy",
+"name": "motifs",
+"kind": "function",
+"doc": "Discover the top motifs for time series ``T``"
+},
+{
+"area": "stumpy",
+"name": "mpdist",
+"kind": "function",
+"doc": "Compute the z-normalized matrix profile distance (MPdist) measure between any two"
+},
+{
+"area": "stumpy",
+"name": "mpdisted",
+"kind": "function",
+"doc": "Compute the z-normalized matrix profile distance (MPdist) measure between any two"
+},
+{
+"area": "stumpy",
+"name": "mstump",
+"kind": "function",
+"doc": "Compute the multi-dimensional z-normalized matrix profile"
+},
+{
+"area": "stumpy",
+"name": "mstumped",
+"kind": "function",
+"doc": "Compute the multi-dimensional z-normalized matrix profile with a"
+},
+{
+"area": "stumpy",
+"name": "ostinato",
+"kind": "function",
+"doc": "Find the z-normalized consensus motif of multiple time series"
+},
+{
+"area": "stumpy",
+"name": "ostinatoed",
+"kind": "function",
+"doc": "Find the z-normalized consensus motif of multiple time series with a"
+},
+{
+"area": "stumpy",
+"name": "prescraamp",
+"kind": "function",
+"doc": "A convenience wrapper around the Numba JIT-compiled parallelized `_prescraamp`"
+},
+{
+"area": "stumpy",
+"name": "prescrump",
+"kind": "function",
+"doc": "A convenience wrapper around the Numba JIT-compiled parallelized"
+},
+{
+"area": "stumpy",
+"name": "scraamp",
+"kind": "class",
+"doc": "Compute an approximate non-normalized (i.e., without z-normalization) matrix profile"
+},
+{
+"area": "stumpy",
+"name": "scrump",
+"kind": "function",
+"doc": "A class to ompute an approximate z-normalized matrix profile"
+},
+{
+"area": "stumpy",
+"name": "snippets",
+"kind": "function",
+"doc": "Identify the top ``k`` snippets that best represent the time series, ``T``"
+},
+{
+"area": "stumpy",
+"name": "stimp",
+"kind": "function",
+"doc": "A class to compute the Pan Matrix Profile"
+},
+{
+"area": "stumpy",
+"name": "stimped",
+"kind": "function",
+"doc": "A class to compute the Pan Matrix Profile with a ``dask``/``ray`` cluster"
+},
+{
+"area": "stumpy",
+"name": "stump",
+"kind": "function",
+"doc": "Compute the z-normalized matrix profile"
+},
+{
+"area": "stumpy",
+"name": "stumped",
+"kind": "function",
+"doc": "Compute the z-normalized matrix profile with a ``dask``/``ray`` cluster"
+},
+{
+"area": "stumpy",
+"name": "stumpi",
+"kind": "function",
+"doc": "A class to compute an incremental z-normalized matrix profile for streaming data"
+},
+{
+"area": "stumpy",
+"name": "subspace",
+"kind": "function",
+"doc": "Compute the ``k``-dimensional matrix profile subspace for a given subsequence index"
+}
+]
+}

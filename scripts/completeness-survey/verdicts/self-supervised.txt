@@ -1,0 +1,88 @@
+# Self-supervised and representation learning. lightly, solo-learn and sentence-transformers are from memory.
+# omai has the objectives (losses/contrastive.ts: infoNce, ntXent, supervisedContrastive, clipLoss, barlowTwins, vicreg,
+# alignment, uniformity; losses#distillation, #vectorQuantise, #negativeElbo, explain/sae) and the catalogue plans the
+# trainers (representation-learning, generative-models), but there are no joint-embedding or masked-modelling trainers.
+@lib lightly
+@area loss
+F | NTXentLoss | losses#ntXent | | | | |
+F | BarlowTwinsLoss | losses#barlowTwins | | | | |
+F | VICRegLoss | losses#vicreg | | | | |
+P | NegativeCosineSimilarity|SymNegCosineSimilarityLoss | losses#cosineEmbedding | the BYOL and SimSiam loss is minus the cosine of a prediction and a stopped target; two lines on `cosineEmbedding`, but the stop-gradient asymmetry is part of the method | losses/contrastive.ts | S | high | joint-embedding objectives
+A | DINOLoss|MSNLoss|PMSNLoss | losses#distillation | self-distillation with a centred, sharpened teacher (DINO) and prototype-matching (MSN) | losses/self-distillation.ts | S | medium | joint-embedding objectives
+A | SwaVLoss | losses#sinkhorn | cluster-assignment consistency with Sinkhorn-balanced codes; the Sinkhorn solver is in `losses` and `optim` | losses/self-distillation.ts | S | medium | joint-embedding objectives
+A | DCLLoss|DCLWLoss|VICRegLLoss|TiCoLoss|MMCRLoss|TuplesLoss | | decoupled contrastive and the other loss variants | losses/contrastive.ts | S | low | joint-embedding objectives
+@area models
+A | SimCLR | losses#ntXent | a trainer: two augmented views, an encoder, a projection head, NT-Xent and a linear-probe evaluation as a traced run. The catalogue plans it as `representation-learning/contrastive`; nothing is built. | learn/self-supervised.ts | M | high | joint-embedding trainers
+A | BYOL|SimSiam|FastSiam | | negative-free joint embedding with a predictor, a stop-gradient and for BYOL an EMA target network: the cleanest tape of "why it does not collapse" | learn/self-supervised.ts | M | high | joint-embedding trainers
+A | MoCo|NNCLR|SMoG | | a queue of negatives and a momentum encoder | learn/self-supervised.ts | M | medium | joint-embedding trainers
+A | DINO|SwaV|MSN|PMSN|TiCo|VICRegL|DenseCL | | self-distillation, prototype and dense-feature variants | learn/self-supervised.ts | M | medium | joint-embedding trainers
+P | BarlowTwins|VICReg | losses#barlowTwins, #vicreg | the objective is there, the two-view trainer is not | learn/self-supervised.ts | S | medium | joint-embedding trainers
+A | MAE|SimMIM | nn/blocks#TransformerBlock, nn#patchEmbedding | masked image modelling: patches hidden at random, a transformer encoder and a light decoder, loss on the hidden patches; planned in the catalogue (`representation-learning/masked`), all the pieces except the masking and decoder exist | nn/blocks/masked-autoencoder.ts | S | medium | masked modelling
+@area heads_and_utils
+P | SimCLRProjectionHead|MoCoProjectionHead|BYOLProjectionHead|BYOLPredictionHead|SimSiamProjectionHead|SimSiamPredictionHead|DINOProjectionHead|SwaVProjectionHead|SwaVPrototypes|BarlowTwinsProjectionHead|VICRegProjectionHead|NNCLRProjectionHead | nn#mlp | a projection or prediction head is an MLP with batch norm; `mlp` builds it | | | |
+A | NNMemoryBankModule|MemoryBankModule | | a FIFO memory of embeddings (also XBM in metric learning) | learn/memory-bank.ts | S | medium | memory bank
+P | update_momentum|ExponentialMovingAverage | optim#ema | `optim#ema` is the optax transform on updates; the EMA of parameters for a target network is a short function over parameter trees | optim | S | medium | joint-embedding trainers
+F | cosine_schedule | optim#cosineDecay, #warmupCosineDecay | | | | |
+S | deactivate_requires_grad|activate_requires_grad | | differentiation is opt-in in omai: there is nothing to switch off | | | |
+A | MaskedVisionTransformer|random_token_mask|repeat_token|get_at_index|set_at_index | | masking helpers of MAE | nn/blocks/masked-autoencoder.ts | S | medium | masked modelling
+@area transforms
+P | GaussianBlur | vision#gaussianBlur | exists as an image filter, not as a random modifier | data/modifiers/image.ts | S | medium | multi-view augmentation
+F | GaussianNoise | nn#gaussianNoise | | | | |
+A | SimCLRTransform|MoCoV2Transform|BYOLTransform|DINOTransform|SwaVTransform|SimSiamTransform|MAETransform|VICRegTransform|FastSiamTransform|MultiViewTransform | data#withRandomCrop, #withRandomFlip, #withCutout | the multi-view augmentation recipes (random resized crop, colour jitter, grayscale, blur, solarise, several crops per image); crop, flip, cutout, mixup and cutmix exist as modifiers, the colour and blur ones and the "k views of one row" wrapper do not | data/modifiers/image.ts | M | high | multi-view augmentation
+A | RandomRotate|RandomSolarization|Jigsaw | | rotation, solarisation and jigsaw pretext transforms | data/modifiers/image.ts | S | low | multi-view augmentation
+
+@lib solo_learn
+@area methods
+A | BarlowTwins|BYOL|NNBYOL|NNSiam|ReSSL|SimSiam|VIbCReg|VICReg|WMSE|DeepCluster|DINO|MoCoV2Plus|MoCoV3|NNCLR|SimCLR|SupCon|SwAV | | see lightly: a self-supervised trainer is a loss, a head, an augmentation recipe and a probe | learn/self-supervised.ts | M | high | joint-embedding trainers
+A | MAE | | | nn/blocks/masked-autoencoder.ts | S | medium | masked modelling
+P | LinearClassifier | explain#linearProbe | a linear probe on frozen features | | | |
+@area tricks
+P | MomentumUpdate|LARS | optim#ema, #scaleByTrustRatio | | | | |
+F | lr_scheduler|warmup_cosine | optim#warmupCosineDecay | | | | |
+P | online_linear_probe|knn_eval | learn#kNeighboursClassifier, explain#linearProbe | evaluating a representation by a linear probe and k-NN during training; both parts exist, the loop does not | learn/self-supervised.ts | S | medium | joint-embedding trainers
+A | multicrop_augmentation | | | data/modifiers/image.ts | S | medium | multi-view augmentation
+A | nearest_neighbour_memory_bank | | | learn/memory-bank.ts | S | medium | memory bank
+
+@lib sentence_transformers
+@area losses
+F | MultipleNegativesRankingLoss|MultipleNegativesSymmetricRankingLoss | losses#infoNce, #clipLoss | in-batch negatives | | | |
+F | ContrastiveLoss|TripletLoss | losses#contrastive, #tripletMargin | | | | |
+F | MSELoss | losses#distillation | | | | |
+P | CosineSimilarityLoss|SoftmaxLoss | losses#cosineEmbedding | regression on a pair's cosine, and a classifier on [u, v, |u-v|]; compositions of `distances` and `losses` | | | |
+A | OnlineContrastiveLoss|BatchHardTripletLoss|BatchSemiHardTripletLoss|BatchAllTripletLoss|BatchHardSoftMarginTripletLoss | | the batch-label mined variants; same item as miners in metric learning | learn/mining.ts | S | high | miners
+A | CoSENTLoss|AnglELoss|MarginMSELoss|GISTEmbedLoss|DenoisingAutoEncoderLoss|MatryoshkaLoss|TripletEvaluator | | cosine-ranking losses, nested-dimension (Matryoshka) training and guided in-batch negatives: variants of the above | losses/contrastive.ts | S | low | joint-embedding objectives
+S | CachedMultipleNegativesRankingLoss | | gradient caching to fit large batches in memory: engineering | | | |
+@area evaluation
+F | EmbeddingSimilarityEvaluator | embedding#similarityCorrelation | | | | |
+P | InformationRetrievalEvaluator|BinaryClassificationEvaluator|RerankingEvaluator | metrics (precisionAtK, recallAtK, meanReciprocalRank, ndcgScore, rocAucScore) | | learn/retrieval-eval.ts | S | medium | retrieval evaluation
+A | ParaphraseMiningEvaluator|TranslationEvaluator|TripletEvaluator | | | | S | low | retrieval evaluation
+S | MSEEvaluator|LabelAccuracyEvaluator | | | | | |
+@area tools
+A | SentenceTransformer | nn/blocks#TwoTower, text, embedding | a trainable text bi-encoder over omai's own tokenisers (mean-pooled encoder, in-batch negatives, evaluation on a corpus with known similarity); the pretrained models are out of scope | learn/bi-encoder.ts | M | medium | text bi-encoder
+P | CrossEncoder | nn/blocks#TransformerStack | a pair classifier over a transformer encoder is a composition | | | |
+F | semantic_search|util.cos_sim|util.dot_score | distances#cosineSimilarity, learn#neighbourIndex | | | | |
+P | util.community_detection|util.paraphrase_mining | graph (louvain, communities), learn#neighbourIndex | | | | |
+A | util.mine_hard_negatives | | | learn/mining.ts | S | medium | miners
+P | quantize_embeddings | numerics/spatial#kmeansCodebook | | numerics/spatial/pq.ts | S | low | product quantisation
+
+# Representation learning beyond a library: autoencoder families, contrastive predictive objectives, disentanglement metrics and
+# representation diagnostics, named from the literature (`representation_learning` in memory.json, not an API inventory).
+@lib representation_learning
+@area autoencoders
+P | Autoencoder|DenoisingAutoencoder|ContractiveAutoencoder | nn, losses#denoisingScoreMatching | an autoencoder is an MLP encoder and decoder with a reconstruction loss; the catalogue plans it as `generative-models/autoencoders`, with the regulariser as the mode, and no estimator exists | learn/autoencoder.ts | S | high | autoencoder estimators
+F | SparseAutoencoder | explain#saeAlgorithm, #saeEncode, #saeDecode | the sparse autoencoder of interpretability work | | | | |
+P | VAE|BetaVAE|IWAE|ConditionalVAE|InfoVAE | losses#negativeElbo, #importanceWeightedBound, #gaussianKl | the objectives (ELBO with a beta weight, the importance-weighted bound, the KL of a Gaussian posterior and the reparameterised sample) are in `losses`; the model (encoder, sampler, decoder) with a latent traversal is not | learn/autoencoder.ts | M | high | autoencoder estimators
+P | VQVAE|VQVAE2 | losses#vectorQuantise, #vqEmaUpdate | the quantiser with straight-through gradients and the EMA codebook update are in; the model is not | learn/autoencoder.ts | S | medium | autoencoder estimators
+A | FactorVAE|BetaTCVAE|WassersteinAutoencoder|AdversarialAutoencoder|HierarchicalVAE|NVAE | losses#negativeElbo | total-correlation and adversarial variants for disentangling, and hierarchical VAEs | learn/autoencoder.ts | M | low | autoencoder estimators
+@area contrastive_predictive
+P | CPC|CPCv2|InfoNCEBound|NoiseContrastiveEstimation | losses#infoNce, #noiseContrastive, information#infoNce | the InfoNCE bound and NCE are in; contrastive predictive coding (an autoregressive context network predicting future latents) is the sequence model around them | learn/self-supervised.ts | M | medium | joint-embedding trainers
+F | MINE | information#mineBound | the Donsker-Varadhan neural estimator | | | | |
+A | DeepInfoMax|wav2vec | information#infoNce | Deep InfoMax (maximise mutual information between local and global features) and wav2vec-style contrastive pretraining | learn/self-supervised.ts | S | medium | joint-embedding trainers
+@area disentanglement_metrics
+A | BetaVAEScore|FactorVAEScore|MIG|SAP|DCI|Modularity|Explicitness|IRS|UDR | | measures of whether latent units track the generative factors: the mutual information gap, SAP, DCI and the beta-VAE classifier score. Needs a generator with known factors, which `datasets/latent.ts` provides. | metrics/disentanglement.ts | S | medium | representation diagnostics
+@area representation_diagnostics
+F | LinearProbe|AlignmentUniformity|EffectiveRank|CKA | explain#linearProbe, learn#alignment, #uniformity, #effectiveRank, #cka | | | | |
+P | KnnProbe|RankMe|LiDAR | learn#kNeighboursClassifier, #effectiveRank | | | | |
+A | SVCCA|ProjectionWeightedCCA|Wasserstein-dependency | decomposition#plsCanonical | canonical-correlation similarity of layers (SVCCA, PWCCA); CKA is in | learn/representation.ts | S | low | representation diagnostics
+@area tokenisation_of_images
+S | .* | | | | | |

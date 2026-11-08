@@ -1,0 +1,85 @@
+{
+"library": "sdeint",
+"version": "0.3.0",
+"source": "introspection",
+"entries": [
+{
+"area": "sdeint",
+"name": "Ikpw",
+"kind": "function",
+"doc": "matrix I approximating repeated Ito integrals for each of N time"
+},
+{
+"area": "sdeint",
+"name": "Iwik",
+"kind": "function",
+"doc": "matrix I approximating repeated Ito integrals for each of N time"
+},
+{
+"area": "sdeint",
+"name": "Jkpw",
+"kind": "function",
+"doc": "matrix J approximating repeated Stratonovich integrals for each of N"
+},
+{
+"area": "sdeint",
+"name": "Jwik",
+"kind": "function",
+"doc": "matrix J approximating repeated Stratonovich integrals for each of N"
+},
+{
+"area": "sdeint",
+"name": "SDEValueError",
+"kind": "class",
+"doc": "Thrown if integration arguments fail some basic sanity checks"
+},
+{
+"area": "sdeint",
+"name": "deltaW",
+"kind": "function",
+"doc": "Generate sequence of Wiener increments for m independent Wiener"
+},
+{
+"area": "sdeint",
+"name": "itoEuler",
+"kind": "function",
+"doc": "Use the Euler-Maruyama algorithm to integrate the Ito equation"
+},
+{
+"area": "sdeint",
+"name": "itoSRI2",
+"kind": "function",
+"doc": "Use the Roessler2010 order 1.0 strong Stochastic Runge-Kutta algorithm"
+},
+{
+"area": "sdeint",
+"name": "itoint",
+"kind": "function",
+"doc": "Numerically integrate the Ito equation  dy = f(y,t)dt + G(y,t)dW"
+},
+{
+"area": "sdeint",
+"name": "stratHeun",
+"kind": "function",
+"doc": "Use the Stratonovich Heun algorithm to integrate Stratonovich equation"
+},
+{
+"area": "sdeint",
+"name": "stratKP2iS",
+"kind": "function",
+"doc": "Use the Kloeden and Platen two-step implicit order 1.0 strong algorithm"
+},
+{
+"area": "sdeint",
+"name": "stratSRS2",
+"kind": "function",
+"doc": "Use the Roessler2010 order 1.0 strong Stochastic Runge-Kutta algorithm"
+},
+{
+"area": "sdeint",
+"name": "stratint",
+"kind": "function",
+"doc": "Numerically integrate Stratonovich equation dy = f(y,t)dt + G(y,t).dW"
+}
+]
+}

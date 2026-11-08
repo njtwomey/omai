@@ -1,0 +1,733 @@
+{
+"library": "torchvision_models",
+"version": "0.29.1",
+"source": "introspection",
+"entries": [
+{
+"area": "torchvision.models",
+"name": "alexnet",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "convnext_base",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "convnext_large",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "convnext_small",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "convnext_tiny",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "deeplabv3_mobilenet_v3_large",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "deeplabv3_resnet101",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "deeplabv3_resnet50",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "densenet121",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "densenet161",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "densenet169",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "densenet201",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "efficientnet_b0",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "efficientnet_b1",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "efficientnet_b2",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "efficientnet_b3",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "efficientnet_b4",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "efficientnet_b5",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "efficientnet_b6",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "efficientnet_b7",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "efficientnet_v2_l",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "efficientnet_v2_m",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "efficientnet_v2_s",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "fasterrcnn_mobilenet_v3_large_320_fpn",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "fasterrcnn_mobilenet_v3_large_fpn",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "fasterrcnn_resnet50_fpn",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "fasterrcnn_resnet50_fpn_v2",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "fcn_resnet101",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "fcn_resnet50",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "fcos_resnet50_fpn",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "googlenet",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "inception_v3",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "keypointrcnn_resnet50_fpn",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "lraspp_mobilenet_v3_large",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "maskrcnn_resnet50_fpn",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "maskrcnn_resnet50_fpn_v2",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "maxvit_t",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "mc3_18",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "mnasnet0_5",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "mnasnet0_75",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "mnasnet1_0",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "mnasnet1_3",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "mobilenet_v2",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "mobilenet_v3_large",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "mobilenet_v3_small",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "mvit_v1_b",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "mvit_v2_s",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "quantized_googlenet",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "quantized_inception_v3",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "quantized_mobilenet_v2",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "quantized_mobilenet_v3_large",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "quantized_resnet18",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "quantized_resnet50",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "quantized_resnext101_32x8d",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "quantized_resnext101_64x4d",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "quantized_shufflenet_v2_x0_5",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "quantized_shufflenet_v2_x1_0",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "quantized_shufflenet_v2_x1_5",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "quantized_shufflenet_v2_x2_0",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "r2plus1d_18",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "r3d_18",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "raft_large",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "raft_small",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "regnet_x_16gf",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "regnet_x_1_6gf",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "regnet_x_32gf",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "regnet_x_3_2gf",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "regnet_x_400mf",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "regnet_x_800mf",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "regnet_x_8gf",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "regnet_y_128gf",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "regnet_y_16gf",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "regnet_y_1_6gf",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "regnet_y_32gf",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "regnet_y_3_2gf",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "regnet_y_400mf",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "regnet_y_800mf",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "regnet_y_8gf",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "resnet101",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "resnet152",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "resnet18",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "resnet34",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "resnet50",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "resnext101_32x8d",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "resnext101_64x4d",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "resnext50_32x4d",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "retinanet_resnet50_fpn",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "retinanet_resnet50_fpn_v2",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "s3d",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "shufflenet_v2_x0_5",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "shufflenet_v2_x1_0",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "shufflenet_v2_x1_5",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "shufflenet_v2_x2_0",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "squeezenet1_0",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "squeezenet1_1",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "ssd300_vgg16",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "ssdlite320_mobilenet_v3_large",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "swin3d_b",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "swin3d_s",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "swin3d_t",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "swin_b",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "swin_s",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "swin_t",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "swin_v2_b",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "swin_v2_s",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "swin_v2_t",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "vgg11",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "vgg11_bn",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "vgg13",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "vgg13_bn",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "vgg16",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "vgg16_bn",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "vgg19",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "vgg19_bn",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "vit_b_16",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "vit_b_32",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "vit_h_14",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "vit_l_16",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "vit_l_32",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "wide_resnet101_2",
+"kind": "model",
+"doc": ""
+},
+{
+"area": "torchvision.models",
+"name": "wide_resnet50_2",
+"kind": "model",
+"doc": ""
+}
+]
+}

@@ -1,0 +1,1249 @@
+{
+"library": "shapely",
+"version": "2.2.0",
+"source": "introspection",
+"entries": [
+{
+"area": "shapely",
+"name": "BufferCapStyle",
+"kind": "class",
+"doc": "Enumeration of buffer cap styles."
+},
+{
+"area": "shapely",
+"name": "BufferJoinStyle",
+"kind": "class",
+"doc": "Enumeration of buffer join styles."
+},
+{
+"area": "shapely",
+"name": "GEOSException",
+"kind": "class",
+"doc": "Common base class for all non-exit exceptions."
+},
+{
+"area": "shapely",
+"name": "Geometry",
+"kind": "class",
+"doc": "Geometry type"
+},
+{
+"area": "shapely",
+"name": "GeometryCollection",
+"kind": "class",
+"doc": "Collection of one or more geometries that can be of different types."
+},
+{
+"area": "shapely",
+"name": "GeometryType",
+"kind": "class",
+"doc": "The enumeration of GEOS geometry types."
+},
+{
+"area": "shapely",
+"name": "LineString",
+"kind": "class",
+"doc": "A geometry type composed of one or more line segments."
+},
+{
+"area": "shapely",
+"name": "LinearRing",
+"kind": "class",
+"doc": "Geometry type composed of one or more line segments that forms a closed loop."
+},
+{
+"area": "shapely",
+"name": "MultiLineString",
+"kind": "class",
+"doc": "A collection of one or more LineStrings."
+},
+{
+"area": "shapely",
+"name": "MultiPoint",
+"kind": "class",
+"doc": "A collection of one or more Points."
+},
+{
+"area": "shapely",
+"name": "MultiPolygon",
+"kind": "class",
+"doc": "A collection of one or more Polygons."
+},
+{
+"area": "shapely",
+"name": "Point",
+"kind": "class",
+"doc": "A geometry type that represents a single coordinate."
+},
+{
+"area": "shapely",
+"name": "Polygon",
+"kind": "class",
+"doc": "A geometry type representing an area that is enclosed by a linear ring."
+},
+{
+"area": "shapely",
+"name": "STRtree",
+"kind": "class",
+"doc": "A query-only R-tree spatial index."
+},
+{
+"area": "shapely",
+"name": "area",
+"kind": "function",
+"doc": "Compute the area of a (multi)polygon."
+},
+{
+"area": "shapely",
+"name": "boundary",
+"kind": "function",
+"doc": "Return the topological boundary of a geometry."
+},
+{
+"area": "shapely",
+"name": "bounds",
+"kind": "function",
+"doc": "Compute the bounds (extent) of a geometry."
+},
+{
+"area": "shapely",
+"name": "box",
+"kind": "function",
+"doc": "Create a box Polygon (or an array of boxes)."
+},
+{
+"area": "shapely",
+"name": "buffer",
+"kind": "function",
+"doc": "Compute the buffer of a geometry for positive and negative buffer distance."
+},
+{
+"area": "shapely",
+"name": "build_area",
+"kind": "function",
+"doc": "Create an areal geometry formed by the constituent linework of given geometry."
+},
+{
+"area": "shapely",
+"name": "centroid",
+"kind": "function",
+"doc": "Compute the geometric center (center-of-mass) of a geometry."
+},
+{
+"area": "shapely",
+"name": "clip_by_rect",
+"kind": "function",
+"doc": "Return the portion of a geometry within a rectangle."
+},
+{
+"area": "shapely",
+"name": "concave_hull",
+"kind": "function",
+"doc": "Compute a concave geometry that encloses an input geometry."
+},
+{
+"area": "shapely",
+"name": "constrained_delaunay_triangles",
+"kind": "function",
+"doc": "Compute the constrained Delaunay triangulation of polygons."
+},
+{
+"area": "shapely",
+"name": "contains",
+"kind": "function",
+"doc": "Return True if geometry B is completely inside geometry A."
+},
+{
+"area": "shapely",
+"name": "contains_properly",
+"kind": "function",
+"doc": "Return True if geometry B is completely inside geometry A, with no common"
+},
+{
+"area": "shapely",
+"name": "contains_xy",
+"kind": "function",
+"doc": "Return True if the Point (x, y) is completely inside geom."
+},
+{
+"area": "shapely",
+"name": "convex_hull",
+"kind": "function",
+"doc": "Compute the minimum convex geometry that encloses an input geometry."
+},
+{
+"area": "shapely",
+"name": "count_coordinates",
+"kind": "function",
+"doc": "Count the number of coordinate pairs in a geometry array."
+},
+{
+"area": "shapely",
+"name": "coverage_clean",
+"kind": "function",
+"doc": "Return a cleaned version of an input geometry."
+},
+{
+"area": "shapely",
+"name": "coverage_invalid_edges",
+"kind": "function",
+"doc": "Verify if a coverage is valid and return invalid edges."
+},
+{
+"area": "shapely",
+"name": "coverage_is_valid",
+"kind": "function",
+"doc": "Verify if a coverage is valid."
+},
+{
+"area": "shapely",
+"name": "coverage_simplify",
+"kind": "function",
+"doc": "Return a simplified version of an input geometry using coverage simplification."
+},
+{
+"area": "shapely",
+"name": "coverage_union",
+"kind": "function",
+"doc": "Merge multiple polygons into one."
+},
+{
+"area": "shapely",
+"name": "coverage_union_all",
+"kind": "function",
+"doc": "Return the union of multiple polygons of a geometry collection."
+},
+{
+"area": "shapely",
+"name": "covered_by",
+"kind": "function",
+"doc": "Return True if no point in geometry A is outside geometry B."
+},
+{
+"area": "shapely",
+"name": "covers",
+"kind": "function",
+"doc": "Return True if no point in geometry B is outside geometry A."
+},
+{
+"area": "shapely",
+"name": "crosses",
+"kind": "function",
+"doc": "Return True if A and B spatially cross."
+},
+{
+"area": "shapely",
+"name": "delaunay_triangles",
+"kind": "function",
+"doc": "Compute a Delaunay triangulation around the vertices of an input geometry."
+},
+{
+"area": "shapely",
+"name": "destroy_prepared",
+"kind": "function",
+"doc": "Destroy the prepared part of a geometry, freeing up memory."
+},
+{
+"area": "shapely",
+"name": "difference",
+"kind": "function",
+"doc": "Return the part of geometry A that does not intersect with geometry B."
+},
+{
+"area": "shapely",
+"name": "disjoint",
+"kind": "function",
+"doc": "Return True if A and B do not share any point in space."
+},
+{
+"area": "shapely",
+"name": "disjoint_subset_union",
+"kind": "function",
+"doc": "Merge multiple polygons into one using algorithm optimised for subsets."
+},
+{
+"area": "shapely",
+"name": "disjoint_subset_union_all",
+"kind": "function",
+"doc": "Return the union of multiple polygons."
+},
+{
+"area": "shapely",
+"name": "distance",
+"kind": "function",
+"doc": "Compute the Cartesian distance between two geometries."
+},
+{
+"area": "shapely",
+"name": "dwithin",
+"kind": "function",
+"doc": "Return True if the geometries are within a given distance."
+},
+{
+"area": "shapely",
+"name": "empty",
+"kind": "function",
+"doc": "Create a geometry array prefilled with None or with empty geometries."
+},
+{
+"area": "shapely",
+"name": "envelope",
+"kind": "function",
+"doc": "Compute the minimum bounding box that encloses an input geometry."
+},
+{
+"area": "shapely",
+"name": "equals",
+"kind": "function",
+"doc": "Return True if A and B are spatially equal."
+},
+{
+"area": "shapely",
+"name": "equals_exact",
+"kind": "function",
+"doc": "Return True if the geometries are structurally equivalent within a given"
+},
+{
+"area": "shapely",
+"name": "equals_identical",
+"kind": "function",
+"doc": "Return True if the geometries are identical."
+},
+{
+"area": "shapely",
+"name": "extract_unique_points",
+"kind": "function",
+"doc": "Return all distinct vertices of an input geometry as a multipoint."
+},
+{
+"area": "shapely",
+"name": "force_2d",
+"kind": "function",
+"doc": "Force the dimensionality of a geometry to 2D."
+},
+{
+"area": "shapely",
+"name": "force_3d",
+"kind": "function",
+"doc": "Force the dimensionality of a geometry to 3D."
+},
+{
+"area": "shapely",
+"name": "frechet_distance",
+"kind": "function",
+"doc": "Compute the discrete Fr\u00e9chet distance between two geometries."
+},
+{
+"area": "shapely",
+"name": "from_geojson",
+"kind": "function",
+"doc": "Create geometries from GeoJSON representations (strings)."
+},
+{
+"area": "shapely",
+"name": "from_ragged_array",
+"kind": "function",
+"doc": "Create geometries from a contiguous array of coordinates and offset arrays."
+},
+{
+"area": "shapely",
+"name": "from_wkb",
+"kind": "function",
+"doc": "Create geometries from the Well-Known Binary (WKB) representation."
+},
+{
+"area": "shapely",
+"name": "from_wkt",
+"kind": "function",
+"doc": "Create geometries from the Well-Known Text (WKT) representation."
+},
+{
+"area": "shapely",
+"name": "geometrycollections",
+"kind": "function",
+"doc": "Create an array of GeometryCollections."
+},
+{
+"area": "shapely",
+"name": "get_coordinate_dimension",
+"kind": "function",
+"doc": "Return the dimensionality of the coordinates in a geometry (2, 3 or 4)."
+},
+{
+"area": "shapely",
+"name": "get_coordinates",
+"kind": "function",
+"doc": "Get coordinates from a geometry array as an array of floats."
+},
+{
+"area": "shapely",
+"name": "get_dimensions",
+"kind": "function",
+"doc": "Return the inherent dimensionality of a geometry."
+},
+{
+"area": "shapely",
+"name": "get_exterior_ring",
+"kind": "function",
+"doc": "Return the exterior ring of a polygon."
+},
+{
+"area": "shapely",
+"name": "get_geometry",
+"kind": "function",
+"doc": "Return the nth geometry from a collection of geometries."
+},
+{
+"area": "shapely",
+"name": "get_interior_ring",
+"kind": "function",
+"doc": "Return the nth interior ring of a polygon."
+},
+{
+"area": "shapely",
+"name": "get_m",
+"kind": "function",
+"doc": "Return the m-coordinate of a point."
+},
+{
+"area": "shapely",
+"name": "get_num_coordinates",
+"kind": "function",
+"doc": "Return the total number of coordinates in a geometry."
+},
+{
+"area": "shapely",
+"name": "get_num_geometries",
+"kind": "function",
+"doc": "Return number of geometries in a collection."
+},
+{
+"area": "shapely",
+"name": "get_num_interior_rings",
+"kind": "function",
+"doc": "Return number of internal rings in a polygon."
+},
+{
+"area": "shapely",
+"name": "get_num_points",
+"kind": "function",
+"doc": "Return the number of points in a linestring or linearring."
+},
+{
+"area": "shapely",
+"name": "get_parts",
+"kind": "function",
+"doc": "Get parts of each GeometryCollection or Multi* geometry object."
+},
+{
+"area": "shapely",
+"name": "get_point",
+"kind": "function",
+"doc": "Return the nth point of a linestring or linearring."
+},
+{
+"area": "shapely",
+"name": "get_precision",
+"kind": "function",
+"doc": "Get the precision of a geometry."
+},
+{
+"area": "shapely",
+"name": "get_rings",
+"kind": "function",
+"doc": "Get rings of Polygon geometry object."
+},
+{
+"area": "shapely",
+"name": "get_segments",
+"kind": "function",
+"doc": "Get segments of each input linear geometry object."
+},
+{
+"area": "shapely",
+"name": "get_srid",
+"kind": "function",
+"doc": "Return the SRID of a geometry."
+},
+{
+"area": "shapely",
+"name": "get_type_id",
+"kind": "function",
+"doc": "Return the type ID of a geometry."
+},
+{
+"area": "shapely",
+"name": "get_x",
+"kind": "function",
+"doc": "Return the x-coordinate of a point."
+},
+{
+"area": "shapely",
+"name": "get_y",
+"kind": "function",
+"doc": "Return the y-coordinate of a point."
+},
+{
+"area": "shapely",
+"name": "get_z",
+"kind": "function",
+"doc": "Return the z-coordinate of a point."
+},
+{
+"area": "shapely",
+"name": "has_m",
+"kind": "function",
+"doc": "Return True if a geometry has M coordinates."
+},
+{
+"area": "shapely",
+"name": "has_z",
+"kind": "function",
+"doc": "Return True if a geometry has Z coordinates."
+},
+{
+"area": "shapely",
+"name": "hausdorff_distance",
+"kind": "function",
+"doc": "Compute the discrete, undirected Hausdorff distance between two geometries."
+},
+{
+"area": "shapely",
+"name": "intersection",
+"kind": "function",
+"doc": "Return the geometry that is shared between input geometries."
+},
+{
+"area": "shapely",
+"name": "intersection_all",
+"kind": "function",
+"doc": "Return the intersection of multiple geometries."
+},
+{
+"area": "shapely",
+"name": "intersects",
+"kind": "function",
+"doc": "Return True if A and B share any portion of space."
+},
+{
+"area": "shapely",
+"name": "intersects_xy",
+"kind": "function",
+"doc": "Return True if geom and the Point (x, y) share any portion of space."
+},
+{
+"area": "shapely",
+"name": "is_ccw",
+"kind": "function",
+"doc": "Return True if a linestring or linearring is counterclockwise."
+},
+{
+"area": "shapely",
+"name": "is_closed",
+"kind": "function",
+"doc": "Return True if a linestring's first and last points are equal."
+},
+{
+"area": "shapely",
+"name": "is_empty",
+"kind": "function",
+"doc": "Return True if a geometry is an empty point, polygon, etc."
+},
+{
+"area": "shapely",
+"name": "is_geometry",
+"kind": "function",
+"doc": "Return True if the object is a geometry."
+},
+{
+"area": "shapely",
+"name": "is_missing",
+"kind": "function",
+"doc": "Return True if the object is not a geometry (None)."
+},
+{
+"area": "shapely",
+"name": "is_prepared",
+"kind": "function",
+"doc": "Return True if a Geometry is prepared."
+},
+{
+"area": "shapely",
+"name": "is_ring",
+"kind": "function",
+"doc": "Return True if a linestring is closed and simple."
+},
+{
+"area": "shapely",
+"name": "is_simple",
+"kind": "function",
+"doc": "Return True if the geometry is simple."
+},
+{
+"area": "shapely",
+"name": "is_valid",
+"kind": "function",
+"doc": "Return True if a geometry is well formed."
+},
+{
+"area": "shapely",
+"name": "is_valid_input",
+"kind": "function",
+"doc": "Return True if the object is a geometry or None."
+},
+{
+"area": "shapely",
+"name": "is_valid_reason",
+"kind": "function",
+"doc": "Return a string stating if a geometry is valid and if not, why."
+},
+{
+"area": "shapely",
+"name": "length",
+"kind": "function",
+"doc": "Compute the length of a (multi)linestring or polygon perimeter."
+},
+{
+"area": "shapely",
+"name": "line_interpolate_point",
+"kind": "function",
+"doc": "Return a point interpolated at given distance on a line."
+},
+{
+"area": "shapely",
+"name": "line_locate_point",
+"kind": "function",
+"doc": "Return the distance to the line origin of given point."
+},
+{
+"area": "shapely",
+"name": "line_merge",
+"kind": "function",
+"doc": "Return (Multi)LineStrings formed by combining the lines in a MultiLineString."
+},
+{
+"area": "shapely",
+"name": "linearrings",
+"kind": "function",
+"doc": "Create an array of LinearRings."
+},
+{
+"area": "shapely",
+"name": "linestrings",
+"kind": "function",
+"doc": "Create an array of LineStrings."
+},
+{
+"area": "shapely",
+"name": "make_valid",
+"kind": "function",
+"doc": "Repair invalid geometries."
+},
+{
+"area": "shapely",
+"name": "maximum_inscribed_circle",
+"kind": "function",
+"doc": "Find the largest circle that is fully contained within the input geometry."
+},
+{
+"area": "shapely",
+"name": "minimum_bounding_circle",
+"kind": "function",
+"doc": "Compute the minimum bounding circle that encloses an input geometry."
+},
+{
+"area": "shapely",
+"name": "minimum_bounding_radius",
+"kind": "function",
+"doc": "Compute the radius of the minimum bounding circle of an input geometry."
+},
+{
+"area": "shapely",
+"name": "minimum_clearance",
+"kind": "function",
+"doc": "Compute the Minimum Clearance distance."
+},
+{
+"area": "shapely",
+"name": "minimum_clearance_line",
+"kind": "function",
+"doc": "Return a LineString whose endpoints define the minimum clearance."
+},
+{
+"area": "shapely",
+"name": "minimum_rotated_rectangle",
+"kind": "function",
+"doc": "Compute the oriented envelope (minimum rotated rectangle) of the input geometry."
+},
+{
+"area": "shapely",
+"name": "minimum_width",
+"kind": "function",
+"doc": "Compute the minimum width (minimum diameter) of a geometry."
+},
+{
+"area": "shapely",
+"name": "multilinestrings",
+"kind": "function",
+"doc": "Create an array of MultiLineStrings."
+},
+{
+"area": "shapely",
+"name": "multipoints",
+"kind": "function",
+"doc": "Create an array of MultiPoints."
+},
+{
+"area": "shapely",
+"name": "multipolygons",
+"kind": "function",
+"doc": "Create an array of MultiPolygons."
+},
+{
+"area": "shapely",
+"name": "node",
+"kind": "function",
+"doc": "Return the fully noded version of the linear input as MultiLineString."
+},
+{
+"area": "shapely",
+"name": "normalize",
+"kind": "function",
+"doc": "Convert Geometry to strict normal form (or canonical form)."
+},
+{
+"area": "shapely",
+"name": "offset_curve",
+"kind": "function",
+"doc": "Return a (Multi)LineString at a distance from the object."
+},
+{
+"area": "shapely",
+"name": "orient_polygons",
+"kind": "function",
+"doc": "Enforce a ring orientation on all polygonal elements in the input geometry."
+},
+{
+"area": "shapely",
+"name": "oriented_envelope",
+"kind": "function",
+"doc": "Compute the oriented envelope (minimum rotated rectangle) of the input geometry."
+},
+{
+"area": "shapely",
+"name": "overlaps",
+"kind": "function",
+"doc": "Return True if A and B spatially overlap."
+},
+{
+"area": "shapely",
+"name": "point_on_surface",
+"kind": "function",
+"doc": "Return a point that intersects an input geometry."
+},
+{
+"area": "shapely",
+"name": "points",
+"kind": "function",
+"doc": "Create an array of Points."
+},
+{
+"area": "shapely",
+"name": "polygonize",
+"kind": "function",
+"doc": "Create polygons formed from the linework of a set of Geometries."
+},
+{
+"area": "shapely",
+"name": "polygonize_full",
+"kind": "function",
+"doc": "Create polygons formed from the linework of a set of Geometries."
+},
+{
+"area": "shapely",
+"name": "polygons",
+"kind": "function",
+"doc": "Create an array of Polygons."
+},
+{
+"area": "shapely",
+"name": "prepare",
+"kind": "function",
+"doc": "Prepare a geometry, improving performance of other operations."
+},
+{
+"area": "shapely",
+"name": "relate",
+"kind": "function",
+"doc": "Return a string representation of the DE-9IM intersection matrix."
+},
+{
+"area": "shapely",
+"name": "relate_pattern",
+"kind": "function",
+"doc": "Return True if the DE-9IM relationship code satisfies the pattern."
+},
+{
+"area": "shapely",
+"name": "remove_repeated_points",
+"kind": "function",
+"doc": "Return a copy of a Geometry with repeated points removed."
+},
+{
+"area": "shapely",
+"name": "reverse",
+"kind": "function",
+"doc": "Return a copy of a Geometry with the order of coordinates reversed."
+},
+{
+"area": "shapely",
+"name": "segmentize",
+"kind": "function",
+"doc": "Add vertices to line segments based on maximum segment length."
+},
+{
+"area": "shapely",
+"name": "set_coordinates",
+"kind": "function",
+"doc": "Adapts the coordinates of a geometry array in-place."
+},
+{
+"area": "shapely",
+"name": "set_precision",
+"kind": "function",
+"doc": "Return geometry with the precision set to a precision grid size."
+},
+{
+"area": "shapely",
+"name": "set_srid",
+"kind": "function",
+"doc": "Return a geometry with its SRID set."
+},
+{
+"area": "shapely",
+"name": "setup_signal_checks",
+"kind": "function",
+"doc": "Enable Python signal checks in the ufunc inner loops."
+},
+{
+"area": "shapely",
+"name": "shared_paths",
+"kind": "function",
+"doc": "Return the shared paths between a and b."
+},
+{
+"area": "shapely",
+"name": "shortest_line",
+"kind": "function",
+"doc": "Return the shortest line between two geometries."
+},
+{
+"area": "shapely",
+"name": "simplify",
+"kind": "function",
+"doc": "Return a simplified version of an input geometry."
+},
+{
+"area": "shapely",
+"name": "snap",
+"kind": "function",
+"doc": "Snap the vertices and segments of the geometry to vertices of the reference."
+},
+{
+"area": "shapely",
+"name": "split",
+"kind": "function",
+"doc": "Split a geometry by another geometry."
+},
+{
+"area": "shapely",
+"name": "symmetric_difference",
+"kind": "function",
+"doc": "Return the geometry with the portions of input geometries that do not intersect."
+},
+{
+"area": "shapely",
+"name": "symmetric_difference_all",
+"kind": "function",
+"doc": "Return the symmetric difference of multiple geometries."
+},
+{
+"area": "shapely",
+"name": "to_geojson",
+"kind": "function",
+"doc": "Convert to the GeoJSON representation of a Geometry."
+},
+{
+"area": "shapely",
+"name": "to_ragged_array",
+"kind": "function",
+"doc": "Convert geometries to a ragged array representation."
+},
+{
+"area": "shapely",
+"name": "to_wkb",
+"kind": "function",
+"doc": "Convert to the Well-Known Binary (WKB) representation of a Geometry."
+},
+{
+"area": "shapely",
+"name": "to_wkt",
+"kind": "function",
+"doc": "Convert to the Well-Known Text (WKT) representation of a Geometry."
+},
+{
+"area": "shapely",
+"name": "total_bounds",
+"kind": "function",
+"doc": "Compute the total bounds (extent) of the geometry."
+},
+{
+"area": "shapely",
+"name": "touches",
+"kind": "function",
+"doc": "Return True if the only points shared between A and B are on their boundaries."
+},
+{
+"area": "shapely",
+"name": "transform",
+"kind": "function",
+"doc": "Apply a transformation to the coordinates in a geometry or geometry array."
+},
+{
+"area": "shapely",
+"name": "transform_coordseq",
+"kind": "function",
+"doc": "Apply a transformation to the coordinate sequences of a geometry (array)."
+},
+{
+"area": "shapely",
+"name": "unary_union",
+"kind": "function",
+"doc": "Return the union of multiple geometries."
+},
+{
+"area": "shapely",
+"name": "union",
+"kind": "function",
+"doc": "Merge geometries into one."
+},
+{
+"area": "shapely",
+"name": "union_all",
+"kind": "function",
+"doc": "Return the union of multiple geometries."
+},
+{
+"area": "shapely",
+"name": "voronoi_polygons",
+"kind": "function",
+"doc": "Compute a Voronoi diagram from the vertices of an input geometry."
+},
+{
+"area": "shapely",
+"name": "within",
+"kind": "function",
+"doc": "Return True if geometry A is completely inside geometry B."
+},
+{
+"area": "shapely.affinity",
+"name": "affine_transform",
+"kind": "function",
+"doc": "Return a transformed geometry using an affine transformation matrix."
+},
+{
+"area": "shapely.affinity",
+"name": "rotate",
+"kind": "function",
+"doc": "Return a rotated geometry on a 2D plane."
+},
+{
+"area": "shapely.affinity",
+"name": "scale",
+"kind": "function",
+"doc": "Return a scaled geometry, scaled by factors along each dimension."
+},
+{
+"area": "shapely.affinity",
+"name": "skew",
+"kind": "function",
+"doc": "Return a skewed geometry, sheared by angles along x and y dimensions."
+},
+{
+"area": "shapely.affinity",
+"name": "translate",
+"kind": "function",
+"doc": "Return a translated geometry shifted by offsets along each dimension."
+},
+{
+"area": "shapely.geometry",
+"name": "CAP_STYLE",
+"kind": "class",
+"doc": "Buffer cap styles."
+},
+{
+"area": "shapely.geometry",
+"name": "GeometryCollection",
+"kind": "class",
+"doc": "Collection of one or more geometries that can be of different types."
+},
+{
+"area": "shapely.geometry",
+"name": "JOIN_STYLE",
+"kind": "class",
+"doc": "Buffer join styles."
+},
+{
+"area": "shapely.geometry",
+"name": "LineString",
+"kind": "class",
+"doc": "A geometry type composed of one or more line segments."
+},
+{
+"area": "shapely.geometry",
+"name": "LinearRing",
+"kind": "class",
+"doc": "Geometry type composed of one or more line segments that forms a closed loop."
+},
+{
+"area": "shapely.geometry",
+"name": "MultiLineString",
+"kind": "class",
+"doc": "A collection of one or more LineStrings."
+},
+{
+"area": "shapely.geometry",
+"name": "MultiPoint",
+"kind": "class",
+"doc": "A collection of one or more Points."
+},
+{
+"area": "shapely.geometry",
+"name": "MultiPolygon",
+"kind": "class",
+"doc": "A collection of one or more Polygons."
+},
+{
+"area": "shapely.geometry",
+"name": "Point",
+"kind": "class",
+"doc": "A geometry type that represents a single coordinate."
+},
+{
+"area": "shapely.geometry",
+"name": "Polygon",
+"kind": "class",
+"doc": "A geometry type representing an area that is enclosed by a linear ring."
+},
+{
+"area": "shapely.geometry",
+"name": "box",
+"kind": "function",
+"doc": "Return a rectangular polygon with configurable normal vector."
+},
+{
+"area": "shapely.geometry",
+"name": "mapping",
+"kind": "function",
+"doc": "Return a GeoJSON-like mapping."
+},
+{
+"area": "shapely.geometry",
+"name": "shape",
+"kind": "function",
+"doc": "Return a new, independent geometry with coordinates copied from the context."
+},
+{
+"area": "shapely.ops",
+"name": "clip_by_rect",
+"kind": "function",
+"doc": "Return the portion of a geometry within a rectangle."
+},
+{
+"area": "shapely.ops",
+"name": "linemerge",
+"kind": "function",
+"doc": "Merge all connected lines from a source."
+},
+{
+"area": "shapely.ops",
+"name": "nearest_points",
+"kind": "function",
+"doc": "Return the calculated nearest points in the input geometries."
+},
+{
+"area": "shapely.ops",
+"name": "orient",
+"kind": "function",
+"doc": "Return a properly oriented copy of the given geometry."
+},
+{
+"area": "shapely.ops",
+"name": "polygonize",
+"kind": "function",
+"doc": "Create polygons from a source of lines."
+},
+{
+"area": "shapely.ops",
+"name": "polygonize_full",
+"kind": "function",
+"doc": "Create polygons from a source of lines."
+},
+{
+"area": "shapely.ops",
+"name": "shared_paths",
+"kind": "function",
+"doc": "Find paths shared between the two given lineal geometries."
+},
+{
+"area": "shapely.ops",
+"name": "snap",
+"kind": "function",
+"doc": "Snaps an input geometry (g1) to reference (g2) geometry's vertices."
+},
+{
+"area": "shapely.ops",
+"name": "split",
+"kind": "function",
+"doc": "Split a geometry by another geometry and return a collection of geometries."
+},
+{
+"area": "shapely.ops",
+"name": "substring",
+"kind": "function",
+"doc": "Return a line segment between specified distances along a LineString."
+},
+{
+"area": "shapely.ops",
+"name": "transform",
+"kind": "function",
+"doc": "Apply `func` to all coordinates of `geom`."
+},
+{
+"area": "shapely.ops",
+"name": "triangulate",
+"kind": "function",
+"doc": "Create the Delaunay triangulation and return a list of geometries."
+},
+{
+"area": "shapely.ops",
+"name": "unary_union",
+"kind": "function",
+"doc": "Return the union of a sequence of geometries."
+},
+{
+"area": "shapely.ops",
+"name": "validate",
+"kind": "function",
+"doc": "Return True if the geometry is valid."
+},
+{
+"area": "shapely.ops",
+"name": "voronoi_diagram",
+"kind": "function",
+"doc": "Construct a Voronoi Diagram [1] from the given geometry."
+},
+{
+"area": "shapely.plotting",
+"name": "patch_from_polygon",
+"kind": "function",
+"doc": "Get a Matplotlib patch from a (Multi)Polygon."
+},
+{
+"area": "shapely.plotting",
+"name": "plot_line",
+"kind": "function",
+"doc": "Plot a (Multi)LineString/LinearRing."
+},
+{
+"area": "shapely.plotting",
+"name": "plot_points",
+"kind": "function",
+"doc": "Plot a Point/MultiPoint or the vertices of any other geometry type."
+},
+{
+"area": "shapely.plotting",
+"name": "plot_polygon",
+"kind": "function",
+"doc": "Plot a (Multi)Polygon."
+},
+{
+"area": "shapely.prepared",
+"name": "PreparedGeometry",
+"kind": "class",
+"doc": "A geometry prepared for efficient comparison to a set of other geometries."
+},
+{
+"area": "shapely.prepared",
+"name": "prep",
+"kind": "function",
+"doc": "Create and return a prepared geometric object."
+},
+{
+"area": "shapely.strtree",
+"name": "STRtree",
+"kind": "class",
+"doc": "A query-only R-tree spatial index."
+},
+{
+"area": "shapely.validation",
+"name": "explain_validity",
+"kind": "function",
+"doc": "Explain the validity of the input geometry, if it is invalid."
+},
+{
+"area": "shapely.validation",
+"name": "make_valid",
+"kind": "function",
+"doc": "Make the input geometry valid according to the GEOS MakeValid algorithm."
+},
+{
+"area": "shapely.wkb",
+"name": "dump",
+"kind": "function",
+"doc": "Dump a geometry to an open file."
+},
+{
+"area": "shapely.wkb",
+"name": "dumps",
+"kind": "function",
+"doc": "Dump a WKB representation of a geometry to a byte string."
+},
+{
+"area": "shapely.wkb",
+"name": "load",
+"kind": "function",
+"doc": "Load a geometry from an open file."
+},
+{
+"area": "shapely.wkb",
+"name": "loads",
+"kind": "function",
+"doc": "Load a geometry from a WKB byte string."
+},
+{
+"area": "shapely.wkt",
+"name": "dump",
+"kind": "function",
+"doc": "Dump a geometry to an open file."
+},
+{
+"area": "shapely.wkt",
+"name": "dumps",
+"kind": "function",
+"doc": "Dump a WKT representation of a geometry to a string."
+},
+{
+"area": "shapely.wkt",
+"name": "load",
+"kind": "function",
+"doc": "Load a geometry from an open file."
+},
+{
+"area": "shapely.wkt",
+"name": "loads",
+"kind": "function",
+"doc": "Load a geometry from a WKT string."
+}
+]
+}

@@ -376,5 +376,896 @@
     "source": "introspection"
    }
   }
+ },
+ "metric-learning": {
+  "full": 27,
+  "partial": 52,
+  "absent": 61,
+  "skip": 31,
+  "notLow": 58,
+  "libs": {
+   "pytorch_metric_learning": {
+    "full": 19,
+    "partial": 36,
+    "absent": 45,
+    "skip": 14,
+    "notLow": 38,
+    "version": "",
+    "source": "memory"
+   },
+   "metric_learn": {
+    "full": 2,
+    "partial": 7,
+    "absent": 16,
+    "skip": 1,
+    "notLow": 14,
+    "version": "",
+    "source": "memory"
+   },
+   "faiss": {
+    "full": 6,
+    "partial": 9,
+    "absent": 0,
+    "skip": 16,
+    "notLow": 6,
+    "version": "",
+    "source": "memory"
+   }
+  }
+ },
+ "self-supervised": {
+  "full": 22,
+  "partial": 50,
+  "absent": 102,
+  "skip": 8,
+  "notLow": 101,
+  "libs": {
+   "lightly": {
+    "full": 5,
+    "partial": 19,
+    "absent": 46,
+    "skip": 2,
+    "notLow": 44,
+    "version": "",
+    "source": "memory"
+   },
+   "solo_learn": {
+    "full": 2,
+    "partial": 5,
+    "absent": 20,
+    "skip": 0,
+    "notLow": 22,
+    "version": "",
+    "source": "memory"
+   },
+   "sentence_transformers": {
+    "full": 9,
+    "partial": 9,
+    "absent": 16,
+    "skip": 3,
+    "notLow": 10,
+    "version": "",
+    "source": "memory"
+   },
+   "representation_learning": {
+    "full": 6,
+    "partial": 17,
+    "absent": 20,
+    "skip": 3,
+    "notLow": 25,
+    "version": "",
+    "source": "memory"
+   }
+  }
+ },
+ "training-and-paradigms": {
+  "full": 293,
+  "partial": 149,
+  "absent": 162,
+  "skip": 124,
+  "notLow": 134,
+  "libs": {
+   "skorch": {
+    "full": 26,
+    "partial": 8,
+    "absent": 0,
+    "skip": 47,
+    "notLow": 0,
+    "version": "0.9.0",
+    "source": "introspection"
+   },
+   "pytorch_lightning": {
+    "full": 6,
+    "partial": 15,
+    "absent": 5,
+    "skip": 20,
+    "notLow": 1,
+    "version": "",
+    "source": "memory"
+   },
+   "ignite": {
+    "full": 36,
+    "partial": 11,
+    "absent": 1,
+    "skip": 10,
+    "notLow": 1,
+    "version": "",
+    "source": "memory"
+   },
+   "learn2learn": {
+    "full": 0,
+    "partial": 0,
+    "absent": 34,
+    "skip": 5,
+    "notLow": 24,
+    "version": "",
+    "source": "memory"
+   },
+   "higher": {
+    "full": 0,
+    "partial": 0,
+    "absent": 0,
+    "skip": 16,
+    "notLow": 0,
+    "version": "",
+    "source": "memory"
+   },
+   "avalanche": {
+    "full": 0,
+    "partial": 3,
+    "absent": 45,
+    "skip": 10,
+    "notLow": 33,
+    "version": "",
+    "source": "memory"
+   },
+   "river": {
+    "full": 84,
+    "partial": 81,
+    "absent": 29,
+    "skip": 0,
+    "notLow": 38,
+    "version": "",
+    "source": "memory"
+   },
+   "modal": {
+    "full": 47,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0,
+    "notLow": 0,
+    "version": "0.4.2.1",
+    "source": "introspection"
+   },
+   "snorkel": {
+    "full": 7,
+    "partial": 14,
+    "absent": 13,
+    "skip": 0,
+    "notLow": 7,
+    "version": "",
+    "source": "memory"
+   },
+   "cleanlab": {
+    "full": 16,
+    "partial": 1,
+    "absent": 21,
+    "skip": 2,
+    "notLow": 14,
+    "version": "",
+    "source": "memory"
+   },
+   "small_text": {
+    "full": 21,
+    "partial": 7,
+    "absent": 0,
+    "skip": 5,
+    "notLow": 4,
+    "version": "",
+    "source": "memory"
+   },
+   "opacus": {
+    "full": 50,
+    "partial": 7,
+    "absent": 0,
+    "skip": 2,
+    "notLow": 0,
+    "version": "1.6.0",
+    "source": "introspection"
+   },
+   "flower": {
+    "full": 0,
+    "partial": 2,
+    "absent": 14,
+    "skip": 7,
+    "notLow": 12,
+    "version": "",
+    "source": "memory"
+   }
+  }
+ },
+ "bayesian-optimisation-and-gp": {
+  "full": 192,
+  "partial": 187,
+  "absent": 242,
+  "skip": 69,
+  "notLow": 188,
+  "libs": {
+   "botorch": {
+    "full": 20,
+    "partial": 31,
+    "absent": 80,
+    "skip": 0,
+    "notLow": 57,
+    "version": "",
+    "source": "memory"
+   },
+   "gpytorch": {
+    "full": 24,
+    "partial": 35,
+    "absent": 62,
+    "skip": 38,
+    "notLow": 40,
+    "version": "1.15.2",
+    "source": "introspection"
+   },
+   "gpflow": {
+    "full": 21,
+    "partial": 38,
+    "absent": 21,
+    "skip": 14,
+    "notLow": 18,
+    "version": "",
+    "source": "memory"
+   },
+   "skopt": {
+    "full": 24,
+    "partial": 21,
+    "absent": 3,
+    "skip": 0,
+    "notLow": 11,
+    "version": "",
+    "source": "memory"
+   },
+   "pyro": {
+    "full": 74,
+    "partial": 58,
+    "absent": 39,
+    "skip": 4,
+    "notLow": 32,
+    "version": "",
+    "source": "memory"
+   },
+   "blackjax": {
+    "full": 29,
+    "partial": 4,
+    "absent": 37,
+    "skip": 13,
+    "notLow": 30,
+    "version": "1.7.1",
+    "source": "introspection"
+   }
+  }
+ },
+ "tabular-and-interpretable": {
+  "full": 173,
+  "partial": 104,
+  "absent": 130,
+  "skip": 41,
+  "notLow": 78,
+  "libs": {
+   "interpret": {
+    "full": 15,
+    "partial": 16,
+    "absent": 4,
+    "skip": 4,
+    "notLow": 1,
+    "version": "",
+    "source": "memory"
+   },
+   "imodels": {
+    "full": 13,
+    "partial": 0,
+    "absent": 16,
+    "skip": 7,
+    "notLow": 13,
+    "version": "",
+    "source": "memory"
+   },
+   "category_encoders": {
+    "full": 4,
+    "partial": 2,
+    "absent": 15,
+    "skip": 0,
+    "notLow": 6,
+    "version": "",
+    "source": "memory"
+   },
+   "feature_engine": {
+    "full": 25,
+    "partial": 19,
+    "absent": 12,
+    "skip": 2,
+    "notLow": 12,
+    "version": "",
+    "source": "memory"
+   },
+   "mlxtend": {
+    "full": 47,
+    "partial": 32,
+    "absent": 1,
+    "skip": 10,
+    "notLow": 0,
+    "version": "",
+    "source": "memory"
+   },
+   "skmultilearn": {
+    "full": 6,
+    "partial": 0,
+    "absent": 21,
+    "skip": 2,
+    "notLow": 11,
+    "version": "",
+    "source": "memory"
+   },
+   "sklearn_extra": {
+    "full": 2,
+    "partial": 1,
+    "absent": 7,
+    "skip": 0,
+    "notLow": 0,
+    "version": "",
+    "source": "memory"
+   },
+   "umap": {
+    "full": 4,
+    "partial": 7,
+    "absent": 3,
+    "skip": 0,
+    "notLow": 1,
+    "version": "",
+    "source": "memory"
+   },
+   "hdbscan": {
+    "full": 9,
+    "partial": 3,
+    "absent": 7,
+    "skip": 0,
+    "notLow": 7,
+    "version": "",
+    "source": "memory"
+   },
+   "trimap": {
+    "full": 1,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0,
+    "notLow": 0,
+    "version": "",
+    "source": "memory"
+   },
+   "pacmap": {
+    "full": 1,
+    "partial": 0,
+    "absent": 1,
+    "skip": 0,
+    "notLow": 0,
+    "version": "",
+    "source": "memory"
+   },
+   "yellowbrick": {
+    "full": 12,
+    "partial": 12,
+    "absent": 12,
+    "skip": 15,
+    "notLow": 4,
+    "version": "",
+    "source": "memory"
+   },
+   "scikitplot": {
+    "full": 11,
+    "partial": 0,
+    "absent": 4,
+    "skip": 0,
+    "notLow": 4,
+    "version": "",
+    "source": "memory"
+   },
+   "lime": {
+    "full": 5,
+    "partial": 12,
+    "absent": 3,
+    "skip": 0,
+    "notLow": 6,
+    "version": "0.2.0.1",
+    "source": "introspection"
+   },
+   "xgboost_lightgbm_catboost": {
+    "full": 18,
+    "partial": 0,
+    "absent": 24,
+    "skip": 1,
+    "notLow": 13,
+    "version": "",
+    "source": "memory"
+   }
+  }
+ },
+ "torch-ecosystem": {
+  "full": 309,
+  "partial": 306,
+  "absent": 188,
+  "skip": 123,
+  "notLow": 302,
+  "libs": {
+   "torchvision_models": {
+    "full": 0,
+    "partial": 62,
+    "absent": 29,
+    "skip": 30,
+    "notLow": 79,
+    "version": "0.29.1",
+    "source": "introspection"
+   },
+   "timm": {
+    "full": 49,
+    "partial": 83,
+    "absent": 13,
+    "skip": 3,
+    "notLow": 58,
+    "version": "",
+    "source": "memory"
+   },
+   "torchaudio": {
+    "full": 58,
+    "partial": 9,
+    "absent": 7,
+    "skip": 32,
+    "notLow": 6,
+    "version": "",
+    "source": "memory"
+   },
+   "librosa": {
+    "full": 68,
+    "partial": 70,
+    "absent": 35,
+    "skip": 43,
+    "notLow": 51,
+    "version": "1.0.0",
+    "source": "introspection"
+   },
+   "torchtext": {
+    "full": 23,
+    "partial": 29,
+    "absent": 0,
+    "skip": 0,
+    "notLow": 0,
+    "version": "",
+    "source": "memory"
+   },
+   "kornia": {
+    "full": 101,
+    "partial": 16,
+    "absent": 38,
+    "skip": 14,
+    "notLow": 42,
+    "version": "",
+    "source": "memory"
+   },
+   "albumentations": {
+    "full": 2,
+    "partial": 22,
+    "absent": 59,
+    "skip": 1,
+    "notLow": 61,
+    "version": "",
+    "source": "memory"
+   },
+   "torchinfo_fx_onnx": {
+    "full": 8,
+    "partial": 15,
+    "absent": 7,
+    "skip": 0,
+    "notLow": 5,
+    "version": "",
+    "source": "memory"
+   }
+  }
+ },
+ "structured-prediction": {
+  "full": 50,
+  "partial": 20,
+  "absent": 45,
+  "skip": 1,
+  "notLow": 46,
+  "libs": {
+   "crf_libraries": {
+    "full": 12,
+    "partial": 2,
+    "absent": 1,
+    "skip": 1,
+    "notLow": 2,
+    "version": "0.5.0",
+    "source": "introspection"
+   },
+   "crf_tools": {
+    "full": 38,
+    "partial": 18,
+    "absent": 44,
+    "skip": 0,
+    "notLow": 44,
+    "version": "",
+    "source": "memory"
+   }
+  }
+ },
+ "adjacent": {
+  "full": 1513,
+  "partial": 611,
+  "absent": 798,
+  "skip": 580,
+  "notLow": 531,
+  "libs": {
+   "d3rlpy": {
+    "full": 24,
+    "partial": 10,
+    "absent": 10,
+    "skip": 5,
+    "notLow": 0,
+    "version": "",
+    "source": "memory"
+   },
+   "imitation": {
+    "full": 11,
+    "partial": 0,
+    "absent": 11,
+    "skip": 0,
+    "notLow": 7,
+    "version": "",
+    "source": "memory"
+   },
+   "control": {
+    "full": 72,
+    "partial": 21,
+    "absent": 11,
+    "skip": 74,
+    "notLow": 24,
+    "version": "0.10.2",
+    "source": "introspection"
+   },
+   "filterpy": {
+    "full": 16,
+    "partial": 31,
+    "absent": 20,
+    "skip": 7,
+    "notLow": 17,
+    "version": "1.4.5",
+    "source": "introspection"
+   },
+   "pykalman": {
+    "full": 8,
+    "partial": 2,
+    "absent": 0,
+    "skip": 0,
+    "notLow": 0,
+    "version": "",
+    "source": "memory"
+   },
+   "ruptures": {
+    "full": 12,
+    "partial": 11,
+    "absent": 4,
+    "skip": 1,
+    "notLow": 4,
+    "version": "1.1.10",
+    "source": "introspection"
+   },
+   "stumpy": {
+    "full": 43,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0,
+    "notLow": 0,
+    "version": "1.14.1",
+    "source": "introspection"
+   },
+   "pysindy": {
+    "full": 19,
+    "partial": 0,
+    "absent": 10,
+    "skip": 2,
+    "notLow": 0,
+    "version": "2.1.0",
+    "source": "introspection"
+   },
+   "cma": {
+    "full": 13,
+    "partial": 13,
+    "absent": 0,
+    "skip": 0,
+    "notLow": 0,
+    "version": "4.5.0",
+    "source": "introspection"
+   },
+   "pymoo": {
+    "full": 37,
+    "partial": 37,
+    "absent": 221,
+    "skip": 99,
+    "notLow": 99,
+    "version": "0.6.2",
+    "source": "introspection"
+   },
+   "nevergrad": {
+    "full": 20,
+    "partial": 10,
+    "absent": 14,
+    "skip": 2,
+    "notLow": 0,
+    "version": "",
+    "source": "memory"
+   },
+   "optax": {
+    "full": 283,
+    "partial": 0,
+    "absent": 23,
+    "skip": 0,
+    "notLow": 0,
+    "version": "0.2.8",
+    "source": "introspection"
+   },
+   "cvxpy": {
+    "full": 0,
+    "partial": 124,
+    "absent": 29,
+    "skip": 10,
+    "notLow": 0,
+    "version": "1.9.3",
+    "source": "introspection"
+   },
+   "pot": {
+    "full": 17,
+    "partial": 251,
+    "absent": 0,
+    "skip": 6,
+    "notLow": 0,
+    "version": "0.9.7.post1",
+    "source": "introspection"
+   },
+   "shapely": {
+    "full": 45,
+    "partial": 0,
+    "absent": 55,
+    "skip": 84,
+    "notLow": 0,
+    "version": "2.2.0",
+    "source": "introspection"
+   },
+   "trimesh": {
+    "full": 16,
+    "partial": 13,
+    "absent": 7,
+    "skip": 0,
+    "notLow": 0,
+    "version": "",
+    "source": "memory"
+   },
+   "sympy": {
+    "full": 117,
+    "partial": 690,
+    "absent": 8,
+    "skip": 32,
+    "notLow": 196,
+    "version": "1.14.0",
+    "source": "introspection"
+   },
+   "problog": {
+    "full": 21,
+    "partial": 0,
+    "absent": 2,
+    "skip": 0,
+    "notLow": 0,
+    "version": "",
+    "source": "memory"
+   },
+   "causallearn": {
+    "full": 28,
+    "partial": 1,
+    "absent": 69,
+    "skip": 76,
+    "notLow": 18,
+    "version": "0.1.4.8",
+    "source": "introspection"
+   },
+   "gcastle": {
+    "full": 12,
+    "partial": 0,
+    "absent": 18,
+    "skip": 0,
+    "notLow": 0,
+    "version": "",
+    "source": "memory"
+   },
+   "mapie": {
+    "full": 28,
+    "partial": 8,
+    "absent": 39,
+    "skip": 16,
+    "notLow": 27,
+    "version": "1.6.0",
+    "source": "introspection"
+   },
+   "uncertainty_toolbox": {
+    "full": 20,
+    "partial": 12,
+    "absent": 0,
+    "skip": 0,
+    "notLow": 0,
+    "version": "",
+    "source": "memory"
+   },
+   "neuralforecast": {
+    "full": 22,
+    "partial": 33,
+    "absent": 0,
+    "skip": 1,
+    "notLow": 26,
+    "version": "",
+    "source": "memory"
+   },
+   "darts": {
+    "full": 29,
+    "partial": 59,
+    "absent": 3,
+    "skip": 2,
+    "notLow": 50,
+    "version": "",
+    "source": "memory"
+   },
+   "gluonts": {
+    "full": 23,
+    "partial": 42,
+    "absent": 0,
+    "skip": 0,
+    "notLow": 25,
+    "version": "",
+    "source": "memory"
+   },
+   "surprise": {
+    "full": 28,
+    "partial": 0,
+    "absent": 8,
+    "skip": 1,
+    "notLow": 8,
+    "version": "",
+    "source": "memory"
+   },
+   "implicit": {
+    "full": 9,
+    "partial": 1,
+    "absent": 7,
+    "skip": 9,
+    "notLow": 7,
+    "version": "",
+    "source": "memory"
+   },
+   "lightfm": {
+    "full": 5,
+    "partial": 14,
+    "absent": 2,
+    "skip": 0,
+    "notLow": 0,
+    "version": "",
+    "source": "memory"
+   },
+   "recbole": {
+    "full": 41,
+    "partial": 5,
+    "absent": 60,
+    "skip": 0,
+    "notLow": 51,
+    "version": "",
+    "source": "memory"
+   },
+   "deepchecks": {
+    "full": 0,
+    "partial": 42,
+    "absent": 4,
+    "skip": 9,
+    "notLow": 46,
+    "version": "",
+    "source": "memory"
+   },
+   "evidently": {
+    "full": 12,
+    "partial": 47,
+    "absent": 0,
+    "skip": 5,
+    "notLow": 6,
+    "version": "",
+    "source": "memory"
+   },
+   "nashpy": {
+    "full": 15,
+    "partial": 26,
+    "absent": 11,
+    "skip": 0,
+    "notLow": 11,
+    "version": "0.0.43",
+    "source": "introspection"
+   },
+   "openspiel": {
+    "full": 54,
+    "partial": 6,
+    "absent": 88,
+    "skip": 94,
+    "notLow": 70,
+    "version": "2.0.2",
+    "source": "introspection"
+   },
+   "datasketch": {
+    "full": 13,
+    "partial": 2,
+    "absent": 0,
+    "skip": 0,
+    "notLow": 0,
+    "version": "2.0.0",
+    "source": "introspection"
+   },
+   "pysubgroup": {
+    "full": 112,
+    "partial": 0,
+    "absent": 0,
+    "skip": 0,
+    "notLow": 0,
+    "version": "0.8.0",
+    "source": "introspection"
+   },
+   "pingouin": {
+    "full": 67,
+    "partial": 0,
+    "absent": 9,
+    "skip": 0,
+    "notLow": 9,
+    "version": "0.7.0",
+    "source": "introspection"
+   },
+   "pyitlib": {
+    "full": 13,
+    "partial": 3,
+    "absent": 8,
+    "skip": 0,
+    "notLow": 8,
+    "version": "0.3.1",
+    "source": "introspection"
+   },
+   "npeet": {
+    "full": 19,
+    "partial": 0,
+    "absent": 4,
+    "skip": 7,
+    "notLow": 0,
+    "version": "1.0.1",
+    "source": "introspection"
+   },
+   "sdeint": {
+    "full": 5,
+    "partial": 7,
+    "absent": 0,
+    "skip": 1,
+    "notLow": 0,
+    "version": "0.3.0",
+    "source": "introspection"
+   },
+   "numpy": {
+    "full": 318,
+    "partial": 31,
+    "absent": 51,
+    "skip": 75,
+    "notLow": 18,
+    "version": "2.5.4",
+    "source": "introspection"
+   }
+  }
  }
 }

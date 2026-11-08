@@ -1,0 +1,505 @@
+{
+"library": "filterpy",
+"version": "1.4.5",
+"source": "introspection",
+"entries": [
+{
+"area": "filterpy.common",
+"name": "Q_continuous_white_noise",
+"kind": "function",
+"doc": "Returns the Q matrix for the Discretized Continuous White Noise"
+},
+{
+"area": "filterpy.common",
+"name": "Q_discrete_white_noise",
+"kind": "function",
+"doc": "Returns the Q matrix for the Discrete Constant White Noise"
+},
+{
+"area": "filterpy.common",
+"name": "Saver",
+"kind": "class",
+"doc": "Helper class to save the states of any filter object."
+},
+{
+"area": "filterpy.common",
+"name": "defaultdict",
+"kind": "class",
+"doc": "defaultdict(default_factory=None, /, [...]) --> dict with default factory"
+},
+{
+"area": "filterpy.common",
+"name": "inv_diagonal",
+"kind": "function",
+"doc": "Computes the inverse of a diagonal NxN np.array S. In general this will"
+},
+{
+"area": "filterpy.common",
+"name": "kinematic_kf",
+"kind": "function",
+"doc": "Returns a KalmanFilter using newtonian kinematics of arbitrary order"
+},
+{
+"area": "filterpy.common",
+"name": "kinematic_state_transition",
+"kind": "function",
+"doc": "create a state transition matrix of a given order for a given time"
+},
+{
+"area": "filterpy.common",
+"name": "linear_ode_discretation",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "filterpy.common",
+"name": "order_by_derivative",
+"kind": "function",
+"doc": "Given a matrix Q, ordered assuming state space"
+},
+{
+"area": "filterpy.common",
+"name": "outer_product_sum",
+"kind": "function",
+"doc": "Computes the sum of the outer products of the rows in A and B"
+},
+{
+"area": "filterpy.common",
+"name": "pprint",
+"kind": "function",
+"doc": "pretty prints an NumPy array using the function pretty_str. Keyword"
+},
+{
+"area": "filterpy.common",
+"name": "pretty_str",
+"kind": "function",
+"doc": "Generates a pretty printed NumPy array with an assignment. Optionally"
+},
+{
+"area": "filterpy.common",
+"name": "reshape_z",
+"kind": "function",
+"doc": "ensure z is a (dim_z, 1) shaped vector"
+},
+{
+"area": "filterpy.common",
+"name": "runge_kutta4",
+"kind": "function",
+"doc": "computes 4th order Runge-Kutta for dy/dx."
+},
+{
+"area": "filterpy.common",
+"name": "van_loan_discretization",
+"kind": "function",
+"doc": "Discretizes a linear differential equation which includes white noise"
+},
+{
+"area": "filterpy.discrete_bayes",
+"name": "normalize",
+"kind": "function",
+"doc": "Normalize distribution `pdf` in-place so it sums to 1.0."
+},
+{
+"area": "filterpy.discrete_bayes",
+"name": "predict",
+"kind": "function",
+"doc": "Performs the discrete Bayes filter prediction step, generating"
+},
+{
+"area": "filterpy.discrete_bayes",
+"name": "update",
+"kind": "function",
+"doc": "Computes the posterior of a discrete random variable given a"
+},
+{
+"area": "filterpy.gh",
+"name": "GHFilter",
+"kind": "class",
+"doc": "Implements the g-h filter. The topic is too large to cover in"
+},
+{
+"area": "filterpy.gh",
+"name": "GHFilterOrder",
+"kind": "class",
+"doc": "A g-h filter of aspecified order 0, 1, or 2."
+},
+{
+"area": "filterpy.gh",
+"name": "GHKFilter",
+"kind": "class",
+"doc": "Implements the g-h-k filter."
+},
+{
+"area": "filterpy.gh",
+"name": "benedict_bornder_constants",
+"kind": "function",
+"doc": "Computes the g,h constants for a Benedict-Bordner filter, which"
+},
+{
+"area": "filterpy.gh",
+"name": "critical_damping_parameters",
+"kind": "function",
+"doc": "Computes values for g and h (and k for g-h-k filter) for a"
+},
+{
+"area": "filterpy.gh",
+"name": "least_squares_parameters",
+"kind": "function",
+"doc": "An order 1 least squared filter can be computed by a g-h filter"
+},
+{
+"area": "filterpy.gh",
+"name": "optimal_noise_smoothing",
+"kind": "function",
+"doc": "provides g,h,k parameters for optimal smoothing of noise for a given"
+},
+{
+"area": "filterpy.gh",
+"name": "pretty_str",
+"kind": "function",
+"doc": "Generates a pretty printed NumPy array with an assignment. Optionally"
+},
+{
+"area": "filterpy.hinfinity",
+"name": "HInfinityFilter",
+"kind": "class",
+"doc": "H-Infinity filter. You are responsible for setting the"
+},
+{
+"area": "filterpy.hinfinity",
+"name": "pretty_str",
+"kind": "function",
+"doc": "Generates a pretty printed NumPy array with an assignment. Optionally"
+},
+{
+"area": "filterpy.kalman",
+"name": "CubatureKalmanFilter",
+"kind": "class",
+"doc": "Implements the Cubuture Kalman filter (UKF) as defined by"
+},
+{
+"area": "filterpy.kalman",
+"name": "EnsembleKalmanFilter",
+"kind": "class",
+"doc": "This implements the ensemble Kalman filter (EnKF). The EnKF uses"
+},
+{
+"area": "filterpy.kalman",
+"name": "ExtendedKalmanFilter",
+"kind": "class",
+"doc": "Implements an extended Kalman filter (EKF). You are responsible for"
+},
+{
+"area": "filterpy.kalman",
+"name": "FadingKalmanFilter",
+"kind": "class",
+"doc": "Fading memory Kalman filter. This implements a linear Kalman filter with"
+},
+{
+"area": "filterpy.kalman",
+"name": "FixedLagSmoother",
+"kind": "class",
+"doc": "Fixed Lag Kalman smoother."
+},
+{
+"area": "filterpy.kalman",
+"name": "IMMEstimator",
+"kind": "class",
+"doc": "Implements an Interacting Multiple-Model (IMM) estimator."
+},
+{
+"area": "filterpy.kalman",
+"name": "InformationFilter",
+"kind": "class",
+"doc": "Create a linear Information filter. Information filters"
+},
+{
+"area": "filterpy.kalman",
+"name": "JulierSigmaPoints",
+"kind": "class",
+"doc": "Generates sigma points and weights according to Simon J. Julier"
+},
+{
+"area": "filterpy.kalman",
+"name": "KalmanFilter",
+"kind": "class",
+"doc": "Implements a Kalman filter. You are responsible for setting the"
+},
+{
+"area": "filterpy.kalman",
+"name": "MMAEFilterBank",
+"kind": "class",
+"doc": "Implements the fixed Multiple Model Adaptive Estimator (MMAE). This"
+},
+{
+"area": "filterpy.kalman",
+"name": "MerweScaledSigmaPoints",
+"kind": "class",
+"doc": "Generates sigma points and weights according to Van der Merwe's"
+},
+{
+"area": "filterpy.kalman",
+"name": "SimplexSigmaPoints",
+"kind": "class",
+"doc": "Generates sigma points and weights according to the simplex"
+},
+{
+"area": "filterpy.kalman",
+"name": "SquareRootKalmanFilter",
+"kind": "class",
+"doc": "Create a Kalman filter which uses a square root implementation."
+},
+{
+"area": "filterpy.kalman",
+"name": "UnscentedKalmanFilter",
+"kind": "class",
+"doc": "Implements the Scaled Unscented Kalman filter (UKF) as defined by"
+},
+{
+"area": "filterpy.kalman",
+"name": "batch_filter",
+"kind": "function",
+"doc": "Batch processes a sequences of measurements."
+},
+{
+"area": "filterpy.kalman",
+"name": "ckf_transform",
+"kind": "function",
+"doc": "Compute mean and covariance of array of cubature points."
+},
+{
+"area": "filterpy.kalman",
+"name": "logpdf",
+"kind": "function",
+"doc": "Computes the log of the probability density function of the normal"
+},
+{
+"area": "filterpy.kalman",
+"name": "outer_product_sum",
+"kind": "function",
+"doc": "Computes the sum of the outer products of the rows in A and B"
+},
+{
+"area": "filterpy.kalman",
+"name": "predict",
+"kind": "function",
+"doc": "Predict next state (prior) using the Kalman filter state propagation"
+},
+{
+"area": "filterpy.kalman",
+"name": "predict_steadystate",
+"kind": "function",
+"doc": "Predict next state (prior) using the Kalman filter state propagation"
+},
+{
+"area": "filterpy.kalman",
+"name": "pretty_str",
+"kind": "function",
+"doc": "Generates a pretty printed NumPy array with an assignment. Optionally"
+},
+{
+"area": "filterpy.kalman",
+"name": "reshape_z",
+"kind": "function",
+"doc": "ensure z is a (dim_z, 1) shaped vector"
+},
+{
+"area": "filterpy.kalman",
+"name": "rts_smoother",
+"kind": "function",
+"doc": "Runs the Rauch-Tung-Striebal Kalman smoother on a set of"
+},
+{
+"area": "filterpy.kalman",
+"name": "spherical_radial_sigmas",
+"kind": "function",
+"doc": "Creates cubature points for the the specified state and covariance"
+},
+{
+"area": "filterpy.kalman",
+"name": "unscented_transform",
+"kind": "function",
+"doc": "Computes unscented transform of a set of sigma points and weights."
+},
+{
+"area": "filterpy.kalman",
+"name": "update",
+"kind": "function",
+"doc": "Add a new measurement (z) to the Kalman filter. If z is None, nothing"
+},
+{
+"area": "filterpy.kalman",
+"name": "update_steadystate",
+"kind": "function",
+"doc": "Add a new measurement (z) to the Kalman filter. If z is None, nothing"
+},
+{
+"area": "filterpy.leastsq",
+"name": "LeastSquaresFilter",
+"kind": "class",
+"doc": "Implements a Least Squares recursive filter. Formulation is per"
+},
+{
+"area": "filterpy.memory",
+"name": "FadingMemoryFilter",
+"kind": "class",
+"doc": "Creates a fading memory filter of order 0, 1, or 2."
+},
+{
+"area": "filterpy.memory",
+"name": "pretty_str",
+"kind": "function",
+"doc": "Generates a pretty printed NumPy array with an assignment. Optionally"
+},
+{
+"area": "filterpy.monte_carlo",
+"name": "multinomial_resample",
+"kind": "function",
+"doc": "This is the naive form of roulette sampling where we compute the"
+},
+{
+"area": "filterpy.monte_carlo",
+"name": "residual_resample",
+"kind": "function",
+"doc": "Performs the residual resampling algorithm used by particle filters."
+},
+{
+"area": "filterpy.monte_carlo",
+"name": "stratified_resample",
+"kind": "function",
+"doc": "Performs the stratified resampling algorithm used by particle filters."
+},
+{
+"area": "filterpy.monte_carlo",
+"name": "systematic_resample",
+"kind": "function",
+"doc": "Performs the systemic resampling algorithm used by particle filters."
+},
+{
+"area": "filterpy.stats",
+"name": "NESS",
+"kind": "function",
+"doc": "Computes the normalized estimated error squared test on a sequence"
+},
+{
+"area": "filterpy.stats",
+"name": "add",
+"kind": "function",
+"doc": "Add the Gaussians (mean1, var1) with (mean2, var2) and return the"
+},
+{
+"area": "filterpy.stats",
+"name": "covariance_ellipse",
+"kind": "function",
+"doc": "Returns a tuple defining the ellipse representing the 2 dimensional"
+},
+{
+"area": "filterpy.stats",
+"name": "gaussian",
+"kind": "function",
+"doc": "returns normal distribution (pdf) for x given a Gaussian with the"
+},
+{
+"area": "filterpy.stats",
+"name": "likelihood",
+"kind": "function",
+"doc": "Returns likelihood of the measurement z given the Gaussian"
+},
+{
+"area": "filterpy.stats",
+"name": "log_likelihood",
+"kind": "function",
+"doc": "Returns log-likelihood of the measurement z given the Gaussian"
+},
+{
+"area": "filterpy.stats",
+"name": "logpdf",
+"kind": "function",
+"doc": "Computes the log of the probability density function of the normal"
+},
+{
+"area": "filterpy.stats",
+"name": "mahalanobis",
+"kind": "function",
+"doc": "Computes the Mahalanobis distance between the state vector x from the"
+},
+{
+"area": "filterpy.stats",
+"name": "mul",
+"kind": "function",
+"doc": "Multiply Gaussian (mean1, var1) with (mean2, var2) and return the"
+},
+{
+"area": "filterpy.stats",
+"name": "mul_pdf",
+"kind": "function",
+"doc": "Multiply Gaussian (mean1, var1) with (mean2, var2) and return the"
+},
+{
+"area": "filterpy.stats",
+"name": "multivariate_gaussian",
+"kind": "function",
+"doc": "This is designed to replace scipy.stats.multivariate_normal"
+},
+{
+"area": "filterpy.stats",
+"name": "multivariate_multiply",
+"kind": "function",
+"doc": "Multiplies the two multivariate Gaussians together and returns the"
+},
+{
+"area": "filterpy.stats",
+"name": "norm_cdf",
+"kind": "function",
+"doc": "Computes the probability that a Gaussian distribution lies"
+},
+{
+"area": "filterpy.stats",
+"name": "plot_3d_covariance",
+"kind": "function",
+"doc": "Plots a covariance matrix `cov` as a 3D ellipsoid centered around"
+},
+{
+"area": "filterpy.stats",
+"name": "plot_covariance",
+"kind": "function",
+"doc": "Plots the covariance ellipse for the 2D normal defined by (mean, cov)"
+},
+{
+"area": "filterpy.stats",
+"name": "plot_covariance_ellipse",
+"kind": "function",
+"doc": "Deprecated function to plot a covariance ellipse. Use plot_covariance"
+},
+{
+"area": "filterpy.stats",
+"name": "plot_discrete_cdf",
+"kind": "function",
+"doc": "Plots a normal distribution CDF with the given mean and variance."
+},
+{
+"area": "filterpy.stats",
+"name": "plot_gaussian",
+"kind": "function",
+"doc": "DEPRECATED. Use plot_gaussian_pdf() instead. This is poorly named, as"
+},
+{
+"area": "filterpy.stats",
+"name": "plot_gaussian_cdf",
+"kind": "function",
+"doc": "Plots a normal distribution CDF with the given mean and variance."
+},
+{
+"area": "filterpy.stats",
+"name": "plot_gaussian_pdf",
+"kind": "function",
+"doc": "Plots a normal distribution PDF with the given mean and variance."
+},
+{
+"area": "filterpy.stats",
+"name": "rand_student_t",
+"kind": "function",
+"doc": "return random number distributed by student's t distribution with"
+}
+]
+}

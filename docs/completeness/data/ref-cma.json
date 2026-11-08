@@ -1,0 +1,163 @@
+{
+"library": "cma",
+"version": "4.5.0",
+"source": "introspection",
+"entries": [
+{
+"area": "cma",
+"name": "AugmentedLagrangian",
+"kind": "class",
+"doc": "Augmented Lagrangian with adaptation of the coefficients"
+},
+{
+"area": "cma",
+"name": "BoundDomainTransform",
+"kind": "class",
+"doc": "create a `callable` with unbounded domain from a function with bounded domain,"
+},
+{
+"area": "cma",
+"name": "BoundNone",
+"kind": "class",
+"doc": "no boundaries"
+},
+{
+"area": "cma",
+"name": "BoundPenalty",
+"kind": "class",
+"doc": "Compute a bound penalty and update coordinate-wise penalty weights."
+},
+{
+"area": "cma",
+"name": "BoundTransform",
+"kind": "class",
+"doc": "Handle boundaries by a smooth, piecewise linear and quadratic"
+},
+{
+"area": "cma",
+"name": "CMA",
+"kind": "class",
+"doc": "CMA-ES stochastic optimizer class with ask-and-tell interface."
+},
+{
+"area": "cma",
+"name": "CMADataLogger",
+"kind": "class",
+"doc": "data logger for class `CMAEvolutionStrategy`."
+},
+{
+"area": "cma",
+"name": "CMAEvolutionStrategy",
+"kind": "class",
+"doc": "CMA-ES stochastic optimizer class with ask-and-tell interface."
+},
+{
+"area": "cma",
+"name": "CMAOptions",
+"kind": "class",
+"doc": "a dictionary with the available options and their default values"
+},
+{
+"area": "cma",
+"name": "ConstrainedFitnessAL",
+"kind": "class",
+"doc": "Construct an unconstrained objective function from constraints."
+},
+{
+"area": "cma",
+"name": "GlueArguments",
+"kind": "class",
+"doc": "deprecated, use `functools.partial` or"
+},
+{
+"area": "cma",
+"name": "NoiseHandler",
+"kind": "class",
+"doc": "Noise handling according to [Hansen et al 2009, A Method for"
+},
+{
+"area": "cma",
+"name": "ScaleCoordinates",
+"kind": "class",
+"doc": "compose a (fitness) function with a preceding scaling and offset."
+},
+{
+"area": "cma",
+"name": "cma_default_options_",
+"kind": "function",
+"doc": "use this function to get keyword completion for `CMAOptions`."
+},
+{
+"area": "cma",
+"name": "disp",
+"kind": "function",
+"doc": "displays selected data from (files written by) the class"
+},
+{
+"area": "cma",
+"name": "fmin",
+"kind": "function",
+"doc": "DEPRECATED: use `fmin2` instead."
+},
+{
+"area": "cma",
+"name": "fmin2",
+"kind": "function",
+"doc": "functional interface to the stochastic optimizer CMA-ES"
+},
+{
+"area": "cma",
+"name": "fmin_con",
+"kind": "function",
+"doc": "DEPRECATED: use `cma.ConstrainedFitnessAL` or `cma.fmin_con2` instead."
+},
+{
+"area": "cma",
+"name": "fmin_con2",
+"kind": "function",
+"doc": "optimize f with inequality constraints g."
+},
+{
+"area": "cma",
+"name": "fmin_lq_surr",
+"kind": "function",
+"doc": "minimize `objective_function` with lq-CMA-ES."
+},
+{
+"area": "cma",
+"name": "fmin_lq_surr2",
+"kind": "function",
+"doc": "minimize `objective_function` with lq-CMA-ES."
+},
+{
+"area": "cma",
+"name": "plot",
+"kind": "function",
+"doc": "plot data from files written by a `CMADataLogger`,"
+},
+{
+"area": "cma",
+"name": "plot_zip",
+"kind": "function",
+"doc": "create tar file ``filename [+ ...] + '.tar.gz'`` of folder `name`."
+},
+{
+"area": "cma.fitness_functions",
+"name": "FitnessFunctions",
+"kind": "class",
+"doc": "collection of objective functions."
+},
+{
+"area": "cma.fitness_functions",
+"name": "elli",
+"kind": "function",
+"doc": "unbound test function, needed to test multiprocessor, as long"
+},
+{
+"area": "cma.fitness_functions",
+"name": "sphere",
+"kind": "function",
+"doc": ""
+}
+]
+}

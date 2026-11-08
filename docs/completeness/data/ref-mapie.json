@@ -1,0 +1,595 @@
+{
+"library": "mapie",
+"version": "1.6.0",
+"source": "introspection",
+"entries": [
+{
+"area": "mapie.calibration",
+"name": "BaseEstimator",
+"kind": "class",
+"doc": "Base class for all estimators in scikit-learn."
+},
+{
+"area": "mapie.calibration",
+"name": "ClassifierMixin",
+"kind": "class",
+"doc": "Mixin class for all classifiers in scikit-learn."
+},
+{
+"area": "mapie.calibration",
+"name": "IsotonicRegression",
+"kind": "class",
+"doc": "Isotonic regression model."
+},
+{
+"area": "mapie.calibration",
+"name": "NotFittedError",
+"kind": "class",
+"doc": "Exception class to raise if estimator is used before fitting."
+},
+{
+"area": "mapie.calibration",
+"name": "Pipeline",
+"kind": "class",
+"doc": "A sequence of data transformers with an optional final predictor."
+},
+{
+"area": "mapie.calibration",
+"name": "RegressorMixin",
+"kind": "class",
+"doc": "Mixin class for all regression estimators in scikit-learn."
+},
+{
+"area": "mapie.calibration",
+"name": "TopLabelCalibrator",
+"kind": "class",
+"doc": "Top-label calibration for multi-class problems."
+},
+{
+"area": "mapie.calibration",
+"name": "VennAbers",
+"kind": "class",
+"doc": "Implementation of the Venn-ABERS calibration for binary classification problems."
+},
+{
+"area": "mapie.calibration",
+"name": "VennAbersCalibrator",
+"kind": "class",
+"doc": "Venn-ABERS calibration for binary and multi-class problems."
+},
+{
+"area": "mapie.calibration",
+"name": "VennAbersMultiClass",
+"kind": "class",
+"doc": "Inductive (IVAP) or Cross (CVAP) Venn-ABERS prediction method"
+},
+{
+"area": "mapie.calibration",
+"name": "check_is_fitted",
+"kind": "function",
+"doc": "Check that .is_fitted property is True"
+},
+{
+"area": "mapie.calibration",
+"name": "predict_proba_prefitted_va",
+"kind": "function",
+"doc": "Generate Venn-ABERS calibrated probabilities"
+},
+{
+"area": "mapie.classification",
+"name": "Any",
+"kind": "class",
+"doc": "Special type indicating an unconstrained type."
+},
+{
+"area": "mapie.classification",
+"name": "BaseClassificationScore",
+"kind": "class",
+"doc": "Base conformity score class for classification task."
+},
+{
+"area": "mapie.classification",
+"name": "BaseCrossValidator",
+"kind": "class",
+"doc": "Base class for all cross-validators."
+},
+{
+"area": "mapie.classification",
+"name": "BaseEstimator",
+"kind": "class",
+"doc": "Base class for all estimators in scikit-learn."
+},
+{
+"area": "mapie.classification",
+"name": "BaseShuffleSplit",
+"kind": "class",
+"doc": "Base class for *ShuffleSplit."
+},
+{
+"area": "mapie.classification",
+"name": "ClassifierMixin",
+"kind": "class",
+"doc": "Mixin class for all classifiers in scikit-learn."
+},
+{
+"area": "mapie.classification",
+"name": "CrossConformalClassifier",
+"kind": "class",
+"doc": "Computes prediction sets using the cross conformal classification technique:"
+},
+{
+"area": "mapie.classification",
+"name": "EnsembleClassifier",
+"kind": "class",
+"doc": "This class implements methods to handle the training and usage of the"
+},
+{
+"area": "mapie.classification",
+"name": "LabelEncoder",
+"kind": "class",
+"doc": "Encode target labels with value between 0 and n_classes-1."
+},
+{
+"area": "mapie.classification",
+"name": "LogisticRegression",
+"kind": "class",
+"doc": "Logistic Regression (aka logit, MaxEnt) classifier."
+},
+{
+"area": "mapie.classification",
+"name": "RAPSConformityScore",
+"kind": "class",
+"doc": "Regularized Adaptive Prediction Sets (RAPS) method-based non-conformity"
+},
+{
+"area": "mapie.classification",
+"name": "SplitConformalClassifier",
+"kind": "class",
+"doc": "Computes prediction sets using the split conformal classification technique:"
+},
+{
+"area": "mapie.classification",
+"name": "check_and_select_conformity_score",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "mapie.classification",
+"name": "check_classification_conformity_score",
+"kind": "function",
+"doc": "Check parameter `conformity_score` for classification task."
+},
+{
+"area": "mapie.classification",
+"name": "check_is_fitted",
+"kind": "function",
+"doc": "Check that .is_fitted property is True"
+},
+{
+"area": "mapie.classification",
+"name": "check_proba_normalized",
+"kind": "function",
+"doc": "Check if for all the samples the sum of the probabilities is equal to one."
+},
+{
+"area": "mapie.classification",
+"name": "check_target",
+"kind": "function",
+"doc": "Check that if the type of target is binary,"
+},
+{
+"area": "mapie.conformity_scores",
+"name": "APSConformityScore",
+"kind": "class",
+"doc": "Adaptive Prediction Sets (APS) method-based non-conformity score."
+},
+{
+"area": "mapie.conformity_scores",
+"name": "AbsoluteConformityScore",
+"kind": "class",
+"doc": "Absolute conformity score."
+},
+{
+"area": "mapie.conformity_scores",
+"name": "AbsoluteQuantileRegressionScore",
+"kind": "class",
+"doc": "Absolute conformity score for quantile regression."
+},
+{
+"area": "mapie.conformity_scores",
+"name": "BaseClassificationScore",
+"kind": "class",
+"doc": "Base conformity score class for classification task."
+},
+{
+"area": "mapie.conformity_scores",
+"name": "BaseRegressionScore",
+"kind": "class",
+"doc": "Base conformity score class for regression task."
+},
+{
+"area": "mapie.conformity_scores",
+"name": "GammaConformityScore",
+"kind": "class",
+"doc": "Gamma conformity score."
+},
+{
+"area": "mapie.conformity_scores",
+"name": "LACConformityScore",
+"kind": "class",
+"doc": "Least Ambiguous set-valued Classifier (LAC) method-based"
+},
+{
+"area": "mapie.conformity_scores",
+"name": "NaiveConformityScore",
+"kind": "class",
+"doc": "Naive classification non-conformity score method that is based on the"
+},
+{
+"area": "mapie.conformity_scores",
+"name": "QuantileRegressionScore",
+"kind": "class",
+"doc": "Quantile conformity score for quantile regression."
+},
+{
+"area": "mapie.conformity_scores",
+"name": "RAPSConformityScore",
+"kind": "class",
+"doc": "Regularized Adaptive Prediction Sets (RAPS) method-based non-conformity"
+},
+{
+"area": "mapie.conformity_scores",
+"name": "ResidualNormalisedScore",
+"kind": "class",
+"doc": "Residual Normalised score."
+},
+{
+"area": "mapie.conformity_scores",
+"name": "StdConformityScore",
+"kind": "class",
+"doc": "Standardized non-conformity score."
+},
+{
+"area": "mapie.conformity_scores",
+"name": "TopKConformityScore",
+"kind": "class",
+"doc": "Top-K method-based non-conformity score."
+},
+{
+"area": "mapie.exchangeability_testing",
+"name": "FixedDatasetExchangeabilityTest",
+"kind": "class",
+"doc": "Run one or several exchangeability tests on a labeled dataset."
+},
+{
+"area": "mapie.exchangeability_testing",
+"name": "OnlineExchangeabilityTest",
+"kind": "class",
+"doc": "Monitor exchangeability online with one or several martingale tests."
+},
+{
+"area": "mapie.exchangeability_testing",
+"name": "OnlineMartingaleTest",
+"kind": "class",
+"doc": "Online test of exchangeability based on conformal p-values and test martingales."
+},
+{
+"area": "mapie.exchangeability_testing",
+"name": "PValuePermutationTest",
+"kind": "class",
+"doc": "Permutation test based on p-values computed from conformity scores."
+},
+{
+"area": "mapie.exchangeability_testing",
+"name": "PermutationTest",
+"kind": "class",
+"doc": "Base class for exchangeability tests based on permutations."
+},
+{
+"area": "mapie.exchangeability_testing",
+"name": "RiskMonitoring",
+"kind": "class",
+"doc": "Monitor a risk on an online stream relative to a reference set."
+},
+{
+"area": "mapie.exchangeability_testing",
+"name": "SequentialMonteCarloTest",
+"kind": "class",
+"doc": "Sequential Monte Carlo exchangeability test."
+},
+{
+"area": "mapie.metrics.calibration",
+"name": "add_jitter",
+"kind": "function",
+"doc": "Add a tiny normal distributed perturbation to an array x."
+},
+{
+"area": "mapie.metrics.calibration",
+"name": "cumulative_differences",
+"kind": "function",
+"doc": "Compute the cumulative difference between y_true and y_score, both ordered"
+},
+{
+"area": "mapie.metrics.calibration",
+"name": "expected_calibration_error",
+"kind": "function",
+"doc": "The Expected Calibration Error (ECE), which measures the difference"
+},
+{
+"area": "mapie.metrics.calibration",
+"name": "kolmogorov_smirnov_cdf",
+"kind": "function",
+"doc": "Compute the Kolmogorov-smirnov cumulative distribution"
+},
+{
+"area": "mapie.metrics.calibration",
+"name": "kolmogorov_smirnov_p_value",
+"kind": "function",
+"doc": "Compute Kolmogorov Smirnov p-value."
+},
+{
+"area": "mapie.metrics.calibration",
+"name": "kolmogorov_smirnov_statistic",
+"kind": "function",
+"doc": "Compute Kolmogorov-smirnov's statistic for calibration test."
+},
+{
+"area": "mapie.metrics.calibration",
+"name": "kuiper_cdf",
+"kind": "function",
+"doc": "Compute the Kuiper cumulative distribution function (CDF) for the float x."
+},
+{
+"area": "mapie.metrics.calibration",
+"name": "kuiper_p_value",
+"kind": "function",
+"doc": "Compute Kuiper statistic p-value."
+},
+{
+"area": "mapie.metrics.calibration",
+"name": "kuiper_statistic",
+"kind": "function",
+"doc": "Compute Kuiper's statistic for calibration test."
+},
+{
+"area": "mapie.metrics.calibration",
+"name": "length_scale",
+"kind": "function",
+"doc": "Compute the mean square root of the sum  of s * (1 - s)."
+},
+{
+"area": "mapie.metrics.calibration",
+"name": "sort_xy_by_y",
+"kind": "function",
+"doc": "Sort two arrays x and y according to y values."
+},
+{
+"area": "mapie.metrics.calibration",
+"name": "spiegelhalter_p_value",
+"kind": "function",
+"doc": "Compute Spiegelhalter statistic p-value."
+},
+{
+"area": "mapie.metrics.calibration",
+"name": "spiegelhalter_statistic",
+"kind": "function",
+"doc": "Compute Spiegelhalter's statistic for calibration test."
+},
+{
+"area": "mapie.metrics.calibration",
+"name": "top_label_ece",
+"kind": "function",
+"doc": "The Top-Label ECE which is a method adapted to fit the"
+},
+{
+"area": "mapie.metrics.classification",
+"name": "classification_coverage_score",
+"kind": "function",
+"doc": "Effective coverage score obtained by the prediction sets."
+},
+{
+"area": "mapie.metrics.classification",
+"name": "classification_mean_width_score",
+"kind": "function",
+"doc": "Mean width of prediction set output by"
+},
+{
+"area": "mapie.metrics.classification",
+"name": "classification_ssc",
+"kind": "function",
+"doc": "Compute Size-Stratified Coverage metrics proposed in [3] that is"
+},
+{
+"area": "mapie.metrics.classification",
+"name": "classification_ssc_score",
+"kind": "function",
+"doc": "Aggregate by the minimum for each confidence level the Size-Stratified Coverage [3]:"
+},
+{
+"area": "mapie.metrics.regression",
+"name": "coverage_width_based",
+"kind": "function",
+"doc": "Coverage Width-based Criterion (CWC) obtained by the prediction intervals."
+},
+{
+"area": "mapie.metrics.regression",
+"name": "hsic",
+"kind": "function",
+"doc": "Compute the square root of the hsic coefficient. HSIC is Hilbert-Schmidt"
+},
+{
+"area": "mapie.metrics.regression",
+"name": "regression_coverage_score",
+"kind": "function",
+"doc": "Effective coverage obtained by the prediction intervals."
+},
+{
+"area": "mapie.metrics.regression",
+"name": "regression_mean_width_score",
+"kind": "function",
+"doc": "Effective mean width score obtained by the prediction intervals."
+},
+{
+"area": "mapie.metrics.regression",
+"name": "regression_mwi_score",
+"kind": "function",
+"doc": "The Winkler score, proposed by Winkler (1972), is a measure used to"
+},
+{
+"area": "mapie.metrics.regression",
+"name": "regression_ssc",
+"kind": "function",
+"doc": "Compute Size-Stratified Coverage metrics proposed in [3] that is"
+},
+{
+"area": "mapie.metrics.regression",
+"name": "regression_ssc_score",
+"kind": "function",
+"doc": "Aggregate by the minimum for each confidence level the Size-Stratified Coverage [3]:"
+},
+{
+"area": "mapie.regression",
+"name": "ConformalizedQuantileRegressor",
+"kind": "class",
+"doc": "Computes prediction intervals using the conformalized quantile regression technique:"
+},
+{
+"area": "mapie.regression",
+"name": "CrossConformalRegressor",
+"kind": "class",
+"doc": "Computes prediction intervals using the cross conformal regression technique:"
+},
+{
+"area": "mapie.regression",
+"name": "CrossConformalizedQuantileRegressor",
+"kind": "class",
+"doc": "Computes prediction intervals using the cross-conformalized quantile regression technique."
+},
+{
+"area": "mapie.regression",
+"name": "JackknifeAfterBootstrapRegressor",
+"kind": "class",
+"doc": "Computes prediction intervals using the jackknife-after-bootstrap technique:"
+},
+{
+"area": "mapie.regression",
+"name": "SplitConformalRegressor",
+"kind": "class",
+"doc": "Computes prediction intervals using the split conformal regression technique:"
+},
+{
+"area": "mapie.regression",
+"name": "TimeSeriesRegressor",
+"kind": "class",
+"doc": "Prediction intervals with out-of-fold residuals for time series."
+},
+{
+"area": "mapie.risk_control",
+"name": "BinaryClassificationController",
+"kind": "class",
+"doc": "Controls the risk or performance of a binary classifier."
+},
+{
+"area": "mapie.risk_control",
+"name": "BinaryClassificationRisk",
+"kind": "class",
+"doc": "Deprecated alias for `BinaryRisk`."
+},
+{
+"area": "mapie.risk_control",
+"name": "BinaryRisk",
+"kind": "class",
+"doc": "Define a risk (or a performance metric) to be used with the"
+},
+{
+"area": "mapie.risk_control",
+"name": "ContinuousRisk",
+"kind": "class",
+"doc": "Define a continuous risk (or performance metric) to be used with a risk"
+},
+{
+"area": "mapie.risk_control",
+"name": "FWERBonferroniCorrection",
+"kind": "class",
+"doc": "Bonferroni procedure for controlling the FWER [1]."
+},
+{
+"area": "mapie.risk_control",
+"name": "FWERBonferroniHolm",
+"kind": "class",
+"doc": "Holm step-down procedure for controlling the FWER [1]."
+},
+{
+"area": "mapie.risk_control",
+"name": "FWERFixedSequenceTesting",
+"kind": "class",
+"doc": "Fixed Sequential Testing (ascending) procedure with multi-start"
+},
+{
+"area": "mapie.risk_control",
+"name": "FWERProcedure",
+"kind": "class",
+"doc": "Base class for procedures controlling the Family-Wise Error Rate (FWER)."
+},
+{
+"area": "mapie.risk_control",
+"name": "MultiClassificationLTTController",
+"kind": "class",
+"doc": "Controls the risk or performance of a multiclass classifier, treating each"
+},
+{
+"area": "mapie.risk_control",
+"name": "MultiLabelClassificationController",
+"kind": "class",
+"doc": "Prediction sets for multilabel-classification."
+},
+{
+"area": "mapie.risk_control",
+"name": "RiskLoss",
+"kind": "class",
+"doc": "Define a PyTorch-compatible loss for automatically adaptive CRC (AA-CRC)."
+},
+{
+"area": "mapie.risk_control",
+"name": "SemanticSegmentationController",
+"kind": "class",
+"doc": "Risk controller for semantic segmentation tasks,"
+},
+{
+"area": "mapie.risk_control",
+"name": "control_fwer",
+"kind": "function",
+"doc": "Apply a Family-Wise Error Rate (FWER) control procedure."
+},
+{
+"area": "mapie.subsample",
+"name": "Any",
+"kind": "class",
+"doc": "Special type indicating an unconstrained type."
+},
+{
+"area": "mapie.subsample",
+"name": "BaseCrossValidator",
+"kind": "class",
+"doc": "Base class for all cross-validators."
+},
+{
+"area": "mapie.subsample",
+"name": "BlockBootstrap",
+"kind": "class",
+"doc": "Generate a sampling method, that block bootstraps the training set."
+},
+{
+"area": "mapie.subsample",
+"name": "RandomState",
+"kind": "class",
+"doc": "Container for the slow Mersenne Twister pseudo-random number generator."
+},
+{
+"area": "mapie.subsample",
+"name": "Subsample",
+"kind": "class",
+"doc": "Generate a sampling method, that resamples the training set with"
+}
+]
+}

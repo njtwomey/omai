@@ -1,0 +1,175 @@
+# The torch ecosystem beyond torch itself: model architectures (torchvision.models enumerated from the installed package;
+# timm from memory), audio (librosa enumerated, torchaudio from memory), text pipelines (torchtext from memory),
+# augmentation (kornia, albumentations from memory) and model inspection (torchinfo, torch.fx, ONNX concepts from memory).
+# Pretrained weights, detection heads trained on COCO and video models are out of scope on purpose. What is measured is
+# whether the architecture exists as a small, trainable, describable network. omai has the blocks (nn/blocks/vision.ts:
+# ResNet basic and bottleneck blocks, squeeze-excitation, ConvNeXt, MBConv, U-Net stages, feature pyramid; transformer
+# blocks and patch embedding; mixers; state-space layers) and `nn#describe` and `nn#summary`; it has no assembled
+# named networks (ResNet-18, VGG, ViT, Swin, DenseNet, Inception).
+@lib torchvision_models
+P | resnet.*|resnext.*|wide_resnet.*|regnet.* | nn/blocks#BasicBlock, #Bottleneck | the blocks of the ResNet family exist; the assembled networks (stem, four stages, head) with depth and width as knobs do not | nn/architectures/resnet.ts | M | high | classic convolutional networks
+P | convnext.* | nn/blocks#ConvNeXtBlock | | nn/architectures/convnext.ts | S | medium | classic convolutional networks
+P | mobilenet.*|efficientnet.*|mnasnet.*|shufflenet.* | nn/blocks#MBConv, #SqueezeExcitation | inverted bottlenecks exist; shuffle units and the compound scaling do not | nn/architectures/mobile.ts | M | medium | classic convolutional networks
+A | vgg.*|alexnet|googlenet|inception.*|squeezenet.*|densenet.* | nn#conv2d | the plain stacks (LeNet, AlexNet, VGG: conv-pool stacks), inception modules and dense connectivity are not provided as networks; VGG is the baseline every depth-versus-residual demonstration needs | nn/architectures/classic.ts | M | high | classic convolutional networks
+P | vit.* | nn/blocks#TransformerStack, nn#patchEmbedding | a vision transformer is patch embedding, a class token, a transformer encoder and a head: all the parts exist | nn/architectures/vit.ts | S | high | vision transformers
+A | swin.*|swin3d.*|maxvit.*|mvit.* | nn#attention | shifted-window and hierarchical vision transformers | nn/architectures/swin.ts | M | low | vision transformers
+P | deeplabv3.*|fcn.*|lraspp.* | nn/blocks#UNetDown, #UNetUp | segmentation heads; the U-Net is the teaching one and its stages exist | nn/architectures/unet.ts | S | medium | segmentation networks
+S | fasterrcnn.*|fcos.*|keypointrcnn.*|maskrcnn.*|retinanet.*|ssd.*|ssdlite.*|raft.*|mc3.*|r2plus1d.*|r3d.*|s3d.*|quantized.* | | detection, video, optical-flow and quantised model zoo entries: pretrained-model territory | | | |
+S | .* | | | | | |
+
+@lib timm
+@area convnets
+P | resnet|resnext|resnetv2|resnest|seresnet|senet|res2net|dla|dpn|regnet|regnetx|regnety|nf_resnet|nfnet|cspnet|cspresnet|darknet|ese_vovnet | nn/blocks#BasicBlock, #Bottleneck, #SqueezeExcitation | the ResNet family and its variants (weight-standardised, normalisation-free, split-attention) | nn/architectures/resnet.ts | M | medium | classic convolutional networks
+P | convnext|convnextv2|repvgg|repvit|mixnet|mnasnet|ghostnet|efficientnet|efficientnetv2|mobilenetv2|mobilenetv3|mobilenetv4 | nn/blocks#ConvNeXtBlock, #MBConv | | nn/architectures | M | medium | classic convolutional networks
+A | vgg|densenet|inception_v3|inception_v4|inception_resnet_v2|xception|hrnet|shufflenet|cait | | | nn/architectures/classic.ts | M | low | classic convolutional networks
+@area transformers
+P | vit|deit|beit|eva|levit|cait|pvt|pvt_v2|twins|crossvit|tnt|visformer|volo|xcit|botnet|poolformer|metaformer|fastvit|efficientformer|caformer|mobilevit|mobilevitv2 | nn/blocks#TransformerStack | | nn/architectures/vit.ts | M | medium | vision transformers
+A | swin|swinv2|maxvit|coatnet|mvitv2 | | | nn/architectures/swin.ts | M | low | vision transformers
+@area mlp_like
+P | mlp_mixer|resmlp|gmlp|convmixer|vision_permutator | nn/blocks#MixerBlock | MLP-Mixer blocks exist | nn/architectures | S | low | vision transformers
+@area text_image
+S | .* | | CLIP-style pretrained towers | | | |
+@area layers
+F | DropPath|SqueezeExcite|EcaModule|BlurPool2d|GroupNorm2d|LayerNorm2d|PatchEmbed|Mlp|GluMlp|SwiGLU|Attention|RotaryEmbedding|SelectAdaptivePool2d|AdaptiveAvgMaxPool2d|create_conv2d|create_act|create_norm|ConvNormAct|ClassifierHead | nn#dropPath, nn/blocks#SqueezeExcitation, nn#patchEmbedding, nn#swiglu, nn#multiHeadAttention, nn#rotaryAngles, nn#adaptiveAvgPool, nn#groupNorm, nn#layerNorm | | | | |
+P | DropBlock2d|CbamModule|AttentionPoolLatent|EvoNorm|FilterResponseNorm|StdConv2d|WeightStandardizedConv2d | nn | | nn | S | low | layers
+@area optim
+F | AdamW|Lamb|Lars|Lion|Adafactor|RAdam|NAdamW|Sophia|Lookahead|AdaBelief|MADGRAD|NovoGrad|Adan|SGDP|AdamP|Adahessian | optim#adamw, #lamb, #lion, #adafactor, #radam, #nadam, #sophiaLite | the optax-shaped transforms cover most; Lookahead, AdaBelief, MADGRAD, Adan and the projection variants (AdamP, SGDP) are not named | | | | |
+@area scheduler
+F | .* | optim#schedules | cosine with restarts, step, multistep, plateau, polynomial, tanh and warmup | | | | |
+@area data
+P | create_transform|RandAugment|AutoAugment|AugMix|FastCollateMixup|RepeatAugSampler | data#withRandomCrop, #withMixup | the policy-based augmentations (RandAugment, AutoAugment, AugMix) are not there | data/modifiers/image.ts | M | medium | image augmentation policies
+F | Mixup|CutMix|RandomErasing | data#withMixup, #withCutmix, #withCutout | | | | |
+@area loss
+F | LabelSmoothingCrossEntropy|SoftTargetCrossEntropy|BinaryCrossEntropy|JsdCrossEntropy|AsymmetricLossMultiLabel | losses | label smoothing and soft targets are options of the cross-entropy slot; the Jensen-Shannon consistency loss and asymmetric loss are variants | | | | |
+@area utils
+P | ModelEma|ModelEmaV2|ModelEmaV3|AverageMeter|accuracy|CheckpointSaver|NativeScaler|model_parameters|clip_grad|adaptive_clip_grad|freeze|unfreeze|reduce_bn | optim#ema, #clipByGlobalNorm, nn#trainOnly | | | | |
+
+@lib torchaudio
+@area transforms
+F | Spectrogram|MelSpectrogram|MFCC|MelScale|AmplitudeToDB|InverseSpectrogram|Resample|Fade|Vol|Vad|TimeStretch|FrequencyMasking|TimeMasking|PitchShift|Preemphasis|Deemphasis|Loudness|Convolve|FFTConvolve|AddNoise|MuLawEncoding|MuLawDecoding|ComputeDeltas|SpectralCentroid|SlidingWindowCmn|Energy | signal/audio#spectrogram, #melSpectrogram, #mfcc, #amplitudeToDb, signal#istft, #muLawEncode, signal/audio#timeStretch, #pitchShift, #specAugment, #addNoise, #voiceActivity, numerics/convolution | | | | |
+P | LFCC|InverseMelScale|GriffinLim|BarkSpectrogram|SpeedPerturbation|Speed | signal/audio#hzToBark | Griffin-Lim phase reconstruction, LFCC and speed perturbation are not named | signal/audio.ts | S | medium | audio transforms
+@area functional
+F | spectrogram|amplitude_to_DB|DB_to_amplitude|melscale_fbanks|create_dct|mfcc|compute_deltas|detect_pitch_frequency|phase_vocoder|resample|lfilter|filtfilt|fftconvolve|convolve|add_noise|mu_law_encoding|mu_law_decoding|forced_align|edit_distance|preemphasis|deemphasis|loudness|gain|dither|equalizer_biquad|lowpass_biquad|highpass_biquad|bandpass_biquad|bandreject_biquad|allpass_biquad|speed|barkscale_fbanks | signal, signal/audio, losses#ctcForcedAlignment, text | | | | |
+A | griffinlim|contrast|overdrive|flanger|phaser|apply_codec|rnnt_loss | | Griffin-Lim, studio effects (flanger, phaser, overdrive, contrast) and the RNN-T loss | signal/audio.ts | S | low | audio transforms
+@area models
+S | .* | | pretrained speech models (wav2vec2, HuBERT, Conformer, Tacotron2, WaveRNN, Emformer, Conv-TasNet): large models | | | |
+@area pipelines
+S | .* | | | | | |
+@area datasets
+S | .* | | speech corpora are large downloads | | | |
+@area io
+S | .* | | | | | |
+@area compliance
+P | .* | signal/audio#mfcc | Kaldi-compatible filter banks | | | |
+
+@lib librosa
+@area librosa.core
+F | stft|istft|cqt_frequencies|amplitude_to_db|db_to_amplitude|power_to_db|db_to_power|autocorrelate|fft_frequencies|mel_frequencies|hz_to_mel|mel_to_hz|yin|pyin|phase_vocoder|reassigned_spectrogram|mu_compress|mu_expand|resample|zero_crossings|magphase|get_window|times_like|frames_to_time|time_to_frames|frames_to_samples|samples_to_frames|samples_to_time|time_to_samples|to_mono|get_duration|chirp|tone|clicks|piptrack|salience|fmt|iirt | signal#stft, #istft, #cqtFrequencies, signal/audio#amplitudeToDb, #powerToDb, #yin, #pyin, #hzToMel, signal#muLawEncode, signal#reassignedSpectrogram, #phaseVocoder | | | | |
+F | lpc | signal#lpc | | | | | |
+P | cqt|vqt|icqt|hybrid_cqt|pseudo_cqt|interp_harmonics|f0_harmonics|griffinlim|griffinlim_cqt|pcen|estimate_tuning|pitch_tuning|A4_to_tuning|tuning_to_A4|perceptual_weighting|frequency_weighting|A_weighting|B_weighting|C_weighting|D_weighting|Z_weighting|multi_frequency_weighting|fourier_tempo_frequencies|tempo_frequencies|interval_frequencies|plimit_intervals|pythagorean_intervals|blocks_to_frames|blocks_to_samples|blocks_to_time|samples_like|stream | signal#CqtFilters | the constant-Q filters exist; the CQT transform with its inverse and variants, Griffin-Lim, PCEN, LPC and tuning estimation are not named | signal/audio.ts | M | medium | audio analysis
+A | hz_to_midi|hz_to_note|hz_to_octs|midi_to_hz|midi_to_note|note_to_hz|note_to_midi|octs_to_hz|fifths_to_note|key_to_notes|key_to_degrees|hz_to_fjs|interval_to_fjs|hz_to_svara_c|hz_to_svara_h|midi_to_svara_c|midi_to_svara_h|note_to_svara_c|note_to_svara_h|list_mela|list_thaat|mela_to_degrees|mela_to_svara|thaat_to_degrees|to_multi|to_stereo | | pitch naming: MIDI numbers, note names, keys and Indian svara and just-intonation systems; small tables a music-ML page needs | signal/audio/pitch.ts | S | low | music analysis
+S | ex|example|cache|cite|LibrosaError|ParameterError|load|loadx|get_samplerate|show_versions|ex|example_info|Deprecated|rename_kw|list_examples|find_files|valid_audio|valid_int|valid_intervals|is_positive_int|is_unique|buf_to_float|dtype_c2r|dtype_r2c|fix_frames|fix_length|index_to_slice|expand_to|axis_sort|frame|pad_center|tiny|stack|abs2|fill_off_diagonal|sparsify_rows|count_unique|cyclic_gradient|interp_broadcast|phasor|shear|plimit_intervals|match_events|match_intervals|sync|nnls | | loading audio files, caching, data plumbing and validators | | | |
+@area librosa.feature
+F | melspectrogram|mfcc|rms|spectral_centroid|spectral_bandwidth|spectral_rolloff|spectral_flatness|zero_crossing_rate|chroma_stft|delta|tempogram | signal/audio | | | | |
+P | chroma_cqt|chroma_cens|chroma_vqt|poly_features|spectral_contrast|tonnetz|stack_memory|fourier_tempogram|hybrid_tempogram|metrogram|tempogram_ratio|tempo | signal/audio#chromaStft, #tempogram, #tempo | chroma from the CQT, CENS, spectral contrast, tonnetz and stacked-memory features | signal/audio.ts | S | medium | audio analysis
+@area librosa.beat
+F | beat_track | signal/audio#beatTrack | | | | |
+A | plp | signal/audio#tempogram | predominant local pulse | signal/audio.ts | S | low | audio analysis
+@area librosa.onset
+F | onset_detect|onset_strength|onset_strength_multi | signal/audio#onsetDetect, #onsetStrength | | | | |
+P | onset_backtrack | signal/audio#peakPick | | | | |
+@area librosa.effects
+F | time_stretch|pitch_shift|preemphasis|deemphasis | signal/audio#timeStretch, #pitchShift | | | | |
+A | harmonic|percussive|hpss|trim|split|remix | | harmonic-percussive source separation by median filtering (the textbook example of median filtering on a spectrogram), silence trimming and splitting | signal/audio.ts | S | medium | audio analysis
+@area librosa.decompose
+A | hpss|nn_filter | signal/image#medianFilter | | signal/audio.ts | S | medium | audio analysis
+P | decompose | decomposition#nmf | NMF of a spectrogram is `nmf` applied to magnitudes | | | |
+@area librosa.filters
+F | mel|get_window|window_bandwidth|window_sumsquare|chroma | signal/audio#melFilterBank, #chromaFilterBank, signal#getWindow | | | | |
+P | cq_to_chroma|diagonal_filter|mr_frequencies|semitone_filterbank|wavelet|wavelet_lengths | signal#waveletBank, #cqtFrequencies | | | | |
+@area librosa.segment
+P | recurrence_matrix|cross_similarity|lag_to_recurrence|recurrence_to_lag|timelag_filter|path_enhance|subsegment | dynamics#recurrenceQuantification | recurrence matrices of audio features; `dynamics` has recurrence quantification of trajectories | signal/audio.ts | S | low | audio analysis
+A | agglomerative | cluster | temporal segmentation by constrained agglomerative clustering | | S | low | audio analysis
+@area librosa.sequence
+F | dtw|dtw_backtracking|path_to_steps|viterbi|viterbi_binary|viterbi_discriminative | signal#dtw, information#viterbiAlgorithm, pgm | | | | |
+P | rqa|transition_cycle|transition_local|transition_loop|transition_uniform | dynamics#recurrenceQuantification, pgm | | | | |
+@area librosa.util
+P | softmask|localmax|localmin|peak_pick|normalize|frame | signal/audio#peakPick, #applyMask, #frame | | | | |
+
+@area librosa
+S | .* | | array and file utilities, exceptions, caching and example data that are not audio methods (the remaining librosa.util helpers were not checked one by one) | | | |
+
+@lib torchtext
+@area data
+F | get_tokenizer|to_map_style_dataset|bucketize_batch | text, data#bucketBy | | | | |
+@area vocab
+F | build_vocab_from_iterator|vocab|Vocab | text#buildVocabulary, embedding#word2vecVocabulary | | | | |
+P | GloVe|FastText|CharNGram | embedding#trainGlove, #trainWord2vec | trained vectors, not downloaded ones | | | |
+@area transforms
+F | VocabTransform|ToTensor|LabelToIndex|Truncate|PadTransform|AddToken|Sequential|SentencePieceTokenizer|GPT2BPETokenizer|RegexTokenizer|BERTTokenizer|CLIPTokenizer | text, text/subword, data#padSequences | BPE, WordPiece, unigram (SentencePiece) are in `text/subword` | | | | |
+@area datasets
+P | AG_NEWS|IMDB|SST2|YelpReviewPolarity|AmazonReviewPolarity|DBpedia|Multi30k|WikiText2|WikiText103|PennTreebank|SQuAD1|CoNLL2000Chunking|UDPOS|EnWik9|IWSLT2016|IWSLT2017|SogouNews|YahooAnswers|CoLA|MNLI|MRPC|QNLI|QQP|RTE|STSB|WNLI | datasets | small corpora with truth exist (topic corpus, spam, toy translation); the named benchmarks are downloads. A small real labelled text sample is on the repertoire list. | datasets/text-real.ts | S | low | text datasets
+@area functional
+F | to_tensor|truncate|add_token|pad_sequence | data#padSequences | | | | |
+
+@lib kornia
+@area augmentation
+P | RandomHorizontalFlip|RandomVerticalFlip|RandomCrop|RandomErasing|RandomCutMixV2|RandomMixUpV2|RandomGaussianNoise|AugmentationSequential | data#withRandomFlip, #withRandomCrop, #withCutout, #withCutmix, #withMixup | the random modifiers that exist | | | | |
+A | RandomAffine|RandomRotation|RandomPerspective|RandomElasticTransform|RandomThinPlateSpline|RandomResizedCrop|RandomFisheye|RandomMosaic|RandomJigsaw|PatchSequential|RandomChannelShuffle | signal/image#affineTransform, #warpPerspective | random geometric augmentation (the deterministic warps exist in `vision`) and mosaic | data/modifiers/image.ts | M | medium | image augmentation modifiers
+A | ColorJiggle|ColorJitter|RandomGrayscale|RandomBrightness|RandomContrast|RandomGamma|RandomHue|RandomSaturation|RandomGaussianBlur|RandomMotionBlur|RandomSharpness|RandomSolarize|RandomPosterize|RandomEqualize|RandomInvert|RandomPlasmaBrightness|RandomPlasmaContrast|RandomPlanckianJitter|RandomRain|RandomSnow|RandomLinearIllumination|RandomRGBShift|RandomBoxBlur|RandomMedianBlur | vision#adjustGamma, #gaussianBlur | random photometric augmentation; the operations are in `vision`, the random modifier form is not | data/modifiers/image.ts | M | medium | image augmentation modifiers
+@area filters
+F | gaussian_blur2d|box_blur|median_blur|bilateral_blur|sobel|spatial_gradient|laplacian|canny|filter2d|guided_blur|joint_bilateral_blur|gabor | vision#gaussianBlur, #blur, #medianBlur, signal/image#bilateralFilter, #sobel, #cannyStages, #gabor, vision#filter2D, #guidedFilter | | | | |
+A | unsharp_mask|motion_blur|in_range | | unsharp masking and motion blur kernels | vision | S | low | classical image operations
+@area color
+F | rgb_to_hsv|rgb_to_lab|rgb_to_grayscale|rgb_to_yuv|rgb_to_xyz|rgb_to_luv|rgb_to_ycbcr|rgb_to_hls|rgb_to_bgr|apply_colormap | vision#rgbToHsv, #rgbToLab, #rgbToXyz, #rgbToYcrcb, #rgbToGrey | | | | |
+@area geometry
+F | warp_affine|warp_perspective|get_perspective_transform|homography_warp|resize|rotate|crop_and_resize|center_crop|pyrdown|pyrup|build_pyramid|Rodrigues|undistort_points|project_points|triangulate_points_dlt|essential_from_fundamental|find_fundamental|find_homography_dlt|ransac|RANSAC|epipolar | vision, signal/image | the classical geometry of OpenCV is in `vision` | | | | |
+P | rotate3d|Se3|Se2|So3|So2|Quaternion|PinholeCamera | vision#rodrigues, fields#quaternionToMatrix, graphics | Lie-group types for poses (SO(3), SE(3), quaternions) with exp and log maps; the pieces are spread over `vision`, `graphics` and `fields` | numerics/geometry/lie.ts | M | medium | rotation and pose types
+@area feature
+F | HarrisResponse|SIFTDescriptor|CornerGFTT|match_nn|match_mnn|match_snn|match_smnn|BlobHessian | signal/image#cornerHarris, vision#siftDescriptors, #matchDescriptors, #ratioTestMatch | | | | |
+S | HardNet|SOSNet|HyNet|DISK|LoFTR|LightGlue|DeDoDe|LAFDescriptor|ScaleSpaceDetector | | learned detectors and descriptors that need pretrained weights | | | |
+@area losses
+F | dice_loss|focal_loss|tversky_loss|lovasz_hinge_loss|lovasz_softmax_loss|ssim_loss|ssim3d_loss|psnr_loss|total_variation|charbonnier_loss|binary_focal_loss_with_logits | losses#tversky, #focalTversky, #lovaszHinge, metrics#structuralSimilarity, #peakSignalNoiseRatio | | | | |
+@area metrics
+F | psnr|ssim|ssim3d|mean_iou|confusion_matrix|accuracy|mean_average_precision|AverageMeter | metrics#peakSignalNoiseRatio, #structuralSimilarity, #meanIou, #confusionMatrix, #detectionMeanAveragePrecision | | | | |
+@area morphology
+F | dilation|erosion|opening|closing|gradient|top_hat|bottom_hat | signal/image | | | | |
+@area enhance
+F | adjust_gamma|adjust_contrast|adjust_brightness|adjust_hue|adjust_saturation|equalize|equalize_clahe|histogram|invert|normalize|denormalize|ZCAWhitening|Normalize|sharpness|solarize|posterize | vision#adjustGamma, #equalizeHist, #clahe, #calcHist, #matchHistograms | | | | |
+P | jpeg_codec_differentiable | | | | | |
+@area contrib
+F | EdgeDetector|DistanceTransform|connected_components|extract_tensor_patches|combine_tensor_patches|ImageStitcher | signal/image, vision#connectedComponentsWithStats, #pyramidBlend, nn#unfold | | | | |
+S | FaceDetector | | | | | |
+@area models
+S | SegmentAnything|RTDETR|YuNet|TinyViT | | pretrained | | | |
+@area nerf
+F | NerfModel|NerfSolver | fields#fitNerfAlgorithm | | | | |
+
+@lib albumentations
+@area geometric
+P | HorizontalFlip|VerticalFlip|Flip|CenterCrop|RandomCrop|CoarseDropout|GridDropout|PadIfNeeded|Resize|Transpose|RandomRotate90 | data#withRandomFlip, #withRandomCrop, #withCutout | | | | |
+A | Rotate|ShiftScaleRotate|Affine|Perspective|ElasticTransform|GridDistortion|OpticalDistortion|PiecewiseAffine|RandomScale|LongestMaxSize|SmallestMaxSize|RandomResizedCrop|RandomSizedCrop|CropAndPad|CropNonEmptyMaskIfExists|MaskDropout|Morphological|SafeRotate|Lambda | | random geometric transforms that carry labels with them (bounding boxes, keypoints, masks); the box and keypoint bookkeeping is the part omai lacks | data/modifiers/image.ts | M | medium | image augmentation modifiers
+@area blur
+P | Blur|GaussianBlur|MedianBlur | vision#blur, #gaussianBlur, #medianBlur | | | | |
+A | MotionBlur|GlassBlur|AdvancedBlur|ZoomBlur|Defocus | | | data/modifiers/image.ts | S | low | image augmentation modifiers
+@area color
+A | RandomBrightnessContrast|RandomGamma|HueSaturationValue|RGBShift|ChannelShuffle|CLAHE|Equalize|ToGray|ToSepia|InvertImg|Solarize|Posterize|ColorJitter|FancyPCA|ISONoise|GaussNoise|MultiplicativeNoise|ImageCompression|Downscale|Sharpen|Emboss|UnsharpMask|RandomToneCurve|ChannelDropout|Normalize|ToFloat|FromFloat|RandomShadow|RandomSunFlare|RandomFog|RandomRain|RandomSnow|Spatter|PixelDropout | vision#adjustGamma, #clahe, #equalizeHist, nn#gaussianNoise | photometric and weather augmentations (the operations exist in part; not as random modifiers) | data/modifiers/image.ts | M | medium | image augmentation modifiers
+@area mixing
+F | MixUp|CutMix | data#withMixup, #withCutmix | | | | |
+A | Mosaic | | | data/modifiers/image.ts | S | low | image augmentation modifiers
+@area compose
+P | Compose|OneOf|SomeOf|Sequential|OneOrOther|ReplayCompose|BboxParams|KeypointParams | data#makeFromRecipe, #builtinModifiers | modifiers compose through recipes; choice among alternatives with probabilities (OneOf) and replay of the sampled parameters are not | data/recipes.ts | S | medium | image augmentation modifiers
+@area pytorch
+S | ToTensorV2 | | | | | |
+
+@lib torchinfo_fx_onnx
+@area summary
+F | summary|ModelStatistics|LayerInfo | nn#summary, #describe, #layerTable, #flops, #memoryEstimate | | | | |
+@area fx
+P | symbolic_trace|Tracer|GraphModule|Graph|Node|Interpreter|Transformer|get_graph_node_names|create_feature_extractor|passes.shape_prop | nn#describe, #describeFunction, scene (pipelineScene, structures) | omai's modules describe themselves as a structure (shapes, parameter counts, a drawable graph); tracing an arbitrary function into an editable graph IR with rewriting passes is not offered | nn/graph-ir.ts | L | low | graph export
+A | replace_pattern | | graph rewriting | nn/graph-ir.ts | M | low | graph export
+@area export
+A | torch.export.export|torch.onnx.export|onnx.checker|onnx.helper|onnx.shape_inference|onnxruntime.InferenceSession | | export to interchange formats: production serving is out of scope; only the concept of a serialisable graph with shape inference has teaching value | | | low | graph export
+@area profiling
+F | FlopCountMode|flop_counter|thop.profile|fvcore.FlopCountAnalysis|ptflops.get_model_complexity_info | nn#flops, #functionFlops | | | | |
+P | torchviz.make_dot|torchview.draw_graph|netron|hiddenlayer|tensorboard.add_graph | nn#describe, omai-render/views (pipelineScene, diagramScene) | drawing the network or the computation graph: omai's scene layer draws structures; a drawing of the autodiff graph of one function is a separate view | omai-render/views | M | medium | graph export

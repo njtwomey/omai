@@ -1,0 +1,1075 @@
+{
+"library": "control",
+"version": "0.10.2",
+"source": "introspection",
+"entries": [
+{
+"area": "control",
+"name": "ControlArgument",
+"kind": "class",
+"doc": "Raised when arguments to a function are not correct."
+},
+{
+"area": "control",
+"name": "ControlDimension",
+"kind": "class",
+"doc": "Raised when dimensions of system objects are not correct."
+},
+{
+"area": "control",
+"name": "ControlIndexError",
+"kind": "class",
+"doc": "Raised when arguments to an indexed object are not correct."
+},
+{
+"area": "control",
+"name": "ControlMIMONotImplemented",
+"kind": "class",
+"doc": "Function is not currently implemented for MIMO systems."
+},
+{
+"area": "control",
+"name": "ControlNotImplemented",
+"kind": "class",
+"doc": "Functionality is not yet implemented."
+},
+{
+"area": "control",
+"name": "ControlPlot",
+"kind": "class",
+"doc": "Return class for control platting functions."
+},
+{
+"area": "control",
+"name": "ControlSlycot",
+"kind": "class",
+"doc": "Slycot import failed."
+},
+{
+"area": "control",
+"name": "DescribingFunctionNonlinearity",
+"kind": "class",
+"doc": "Base class for nonlinear systems with a describing function."
+},
+{
+"area": "control",
+"name": "DescribingFunctionResponse",
+"kind": "class",
+"doc": "Results of describing function analysis."
+},
+{
+"area": "control",
+"name": "FRD",
+"kind": "class",
+"doc": "FrequencyResponseData(frdata, omega[, smooth])"
+},
+{
+"area": "control",
+"name": "FrequencyResponseData",
+"kind": "class",
+"doc": "FrequencyResponseData(frdata, omega[, smooth])"
+},
+{
+"area": "control",
+"name": "FrequencyResponseList",
+"kind": "class",
+"doc": "List of FrequencyResponseData objects with plotting capability."
+},
+{
+"area": "control",
+"name": "InputOutputSystem",
+"kind": "class",
+"doc": "Base class for input/output systems."
+},
+{
+"area": "control",
+"name": "InterconnectedSystem",
+"kind": "class",
+"doc": "Interconnection of a set of input/output systems."
+},
+{
+"area": "control",
+"name": "LTI",
+"kind": "class",
+"doc": "Parent class for linear time-invariant system objects."
+},
+{
+"area": "control",
+"name": "LinearICSystem",
+"kind": "class",
+"doc": "Interconnection of a set of linear input/output systems."
+},
+{
+"area": "control",
+"name": "NamedSignal",
+"kind": "class",
+"doc": "Named signal with label-based access."
+},
+{
+"area": "control",
+"name": "NonlinearIOSystem",
+"kind": "class",
+"doc": "Nonlinear input/output system model."
+},
+{
+"area": "control",
+"name": "NyquistResponseData",
+"kind": "class",
+"doc": "Nyquist response data object."
+},
+{
+"area": "control",
+"name": "NyquistResponseList",
+"kind": "class",
+"doc": "List of NyquistResponseData objects with plotting capability."
+},
+{
+"area": "control",
+"name": "OperatingPoint",
+"kind": "class",
+"doc": "Operating point of nonlinear I/O system."
+},
+{
+"area": "control",
+"name": "PoleZeroData",
+"kind": "class",
+"doc": "Pole/zero data object."
+},
+{
+"area": "control",
+"name": "PoleZeroList",
+"kind": "class",
+"doc": "List of PoleZeroData objects with plotting capability."
+},
+{
+"area": "control",
+"name": "StateSpace",
+"kind": "class",
+"doc": "StateSpace(A, B, C, D[, dt])"
+},
+{
+"area": "control",
+"name": "TimeResponseData",
+"kind": "class",
+"doc": "Input/output system time response data."
+},
+{
+"area": "control",
+"name": "TimeResponseList",
+"kind": "class",
+"doc": "List of TimeResponseData objects with plotting capability."
+},
+{
+"area": "control",
+"name": "TransferFunction",
+"kind": "class",
+"doc": "TransferFunction(num, den[, dt])"
+},
+{
+"area": "control",
+"name": "acker",
+"kind": "function",
+"doc": "Pole placement using Ackermann method."
+},
+{
+"area": "control",
+"name": "append",
+"kind": "function",
+"doc": "append(sys1, sys2[, ..., sysn])"
+},
+{
+"area": "control",
+"name": "augw",
+"kind": "function",
+"doc": "Augment plant for mixed sensitivity problem."
+},
+{
+"area": "control",
+"name": "balanced_reduction",
+"kind": "function",
+"doc": "Balanced reduced order model of system of a given order."
+},
+{
+"area": "control",
+"name": "balred",
+"kind": "function",
+"doc": "Balanced reduced order model of system of a given order."
+},
+{
+"area": "control",
+"name": "bandwidth",
+"kind": "function",
+"doc": "Find first frequency where gain drops by 3 dB."
+},
+{
+"area": "control",
+"name": "bdschur",
+"kind": "function",
+"doc": "Block-diagonal Schur decomposition."
+},
+{
+"area": "control",
+"name": "bode",
+"kind": "function",
+"doc": "Bode plot for a system."
+},
+{
+"area": "control",
+"name": "bode_plot",
+"kind": "function",
+"doc": "Bode plot for a system."
+},
+{
+"area": "control",
+"name": "box_grid",
+"kind": "function",
+"doc": "Generate list of points on edge of box."
+},
+{
+"area": "control",
+"name": "c2d",
+"kind": "function",
+"doc": "Convert a continuous-time system to discrete time by sampling."
+},
+{
+"area": "control",
+"name": "canonical_form",
+"kind": "function",
+"doc": "Convert a system into canonical form."
+},
+{
+"area": "control",
+"name": "care",
+"kind": "function",
+"doc": "Solves the continuous-time algebraic Riccati equation."
+},
+{
+"area": "control",
+"name": "combine_tf",
+"kind": "function",
+"doc": "Combine array of transfer functions into MIMO transfer function."
+},
+{
+"area": "control",
+"name": "combine_time_responses",
+"kind": "function",
+"doc": "Combine individual time responses into multi-trace response."
+},
+{
+"area": "control",
+"name": "common_timebase",
+"kind": "function",
+"doc": "Find the common timebase when interconnecting systems."
+},
+{
+"area": "control",
+"name": "connect",
+"kind": "function",
+"doc": "Index-based interconnection of an LTI system."
+},
+{
+"area": "control",
+"name": "connection_table",
+"kind": "function",
+"doc": "Print table of connections inside interconnected system."
+},
+{
+"area": "control",
+"name": "correlation",
+"kind": "function",
+"doc": "Compute the correlation of time signals."
+},
+{
+"area": "control",
+"name": "create_estimator_iosystem",
+"kind": "function",
+"doc": "Create an I/O system implementing a linear quadratic estimator."
+},
+{
+"area": "control",
+"name": "create_statefbk_iosystem",
+"kind": "function",
+"doc": "Create an I/O system using a (full) state feedback controller."
+},
+{
+"area": "control",
+"name": "ctrb",
+"kind": "function",
+"doc": "Controllability matrix."
+},
+{
+"area": "control",
+"name": "cvxopt_check",
+"kind": "function",
+"doc": "Return True if cvxopt is installed, otherwise False."
+},
+{
+"area": "control",
+"name": "damp",
+"kind": "function",
+"doc": "Compute system's natural frequencies, damping ratios, and poles."
+},
+{
+"area": "control",
+"name": "dare",
+"kind": "function",
+"doc": "Solves the discrete-time algebraic Riccati equation."
+},
+{
+"area": "control",
+"name": "db2mag",
+"kind": "function",
+"doc": "Convert a gain in decibels (dB) to a magnitude."
+},
+{
+"area": "control",
+"name": "dcgain",
+"kind": "function",
+"doc": "Return the zero-frequency (or DC) gain of the given system."
+},
+{
+"area": "control",
+"name": "defaults",
+"kind": "function",
+"doc": "Default parameters dictionary, with legacy warnings."
+},
+{
+"area": "control",
+"name": "describing_function",
+"kind": "function",
+"doc": "Numerically compute describing function of a nonlinear function."
+},
+{
+"area": "control",
+"name": "describing_function_plot",
+"kind": "function",
+"doc": "describing_function_plot(data, *args, **kwargs)"
+},
+{
+"area": "control",
+"name": "describing_function_response",
+"kind": "function",
+"doc": "Compute the describing function response of a system."
+},
+{
+"area": "control",
+"name": "disk_margins",
+"kind": "function",
+"doc": "Disk-based stability margins of loop transfer function."
+},
+{
+"area": "control",
+"name": "dlqe",
+"kind": "function",
+"doc": "dlqe(A, G, C, QN, RN, [, N])"
+},
+{
+"area": "control",
+"name": "dlqr",
+"kind": "function",
+"doc": "dlqr(A, B, Q, R[, N])"
+},
+{
+"area": "control",
+"name": "dlyap",
+"kind": "function",
+"doc": "Solves the discrete-time Lyapunov equation."
+},
+{
+"area": "control",
+"name": "drss",
+"kind": "function",
+"doc": "drss([states, outputs, inputs, strictly_proper])"
+},
+{
+"area": "control",
+"name": "eigensys_realization",
+"kind": "function",
+"doc": "eigensys_realization(YY, r)"
+},
+{
+"area": "control",
+"name": "era",
+"kind": "function",
+"doc": "eigensys_realization(YY, r)"
+},
+{
+"area": "control",
+"name": "evalfr",
+"kind": "function",
+"doc": "Evaluate transfer function of LTI system at complex frequency."
+},
+{
+"area": "control",
+"name": "feedback",
+"kind": "function",
+"doc": "Feedback interconnection between two I/O systems."
+},
+{
+"area": "control",
+"name": "find_eqpt",
+"kind": "function",
+"doc": "Find an operating point for an input/output system."
+},
+{
+"area": "control",
+"name": "find_operating_point",
+"kind": "function",
+"doc": "Find an operating point for an input/output system."
+},
+{
+"area": "control",
+"name": "forced_response",
+"kind": "function",
+"doc": "Compute the output of a linear system given the input."
+},
+{
+"area": "control",
+"name": "frd",
+"kind": "function",
+"doc": "frd(frdata, omega[, dt])"
+},
+{
+"area": "control",
+"name": "freqresp",
+"kind": "function",
+"doc": "Legacy version of frequency_response."
+},
+{
+"area": "control",
+"name": "frequency_response",
+"kind": "function",
+"doc": "Frequency response of an LTI system."
+},
+{
+"area": "control",
+"name": "friction_backlash_nonlinearity",
+"kind": "class",
+"doc": "Backlash nonlinearity for describing function analysis."
+},
+{
+"area": "control",
+"name": "gangof4",
+"kind": "function",
+"doc": "gangof4_plot(response)     gangof4_plot(P, C, omega)"
+},
+{
+"area": "control",
+"name": "gangof4_plot",
+"kind": "function",
+"doc": "gangof4_plot(response)     gangof4_plot(P, C, omega)"
+},
+{
+"area": "control",
+"name": "gangof4_response",
+"kind": "function",
+"doc": "Compute response of \"Gang of 4\" transfer functions."
+},
+{
+"area": "control",
+"name": "get_input_ff_index",
+"kind": "function",
+"doc": "Input feedforward passivity (IFP) index for a system."
+},
+{
+"area": "control",
+"name": "get_output_fb_index",
+"kind": "function",
+"doc": "Return the output feedback passivity (OFP) index for the system."
+},
+{
+"area": "control",
+"name": "get_plot_axes",
+"kind": "function",
+"doc": "Get a list of axes from an array of lines."
+},
+{
+"area": "control",
+"name": "gram",
+"kind": "function",
+"doc": "Gramian (controllability or observability)."
+},
+{
+"area": "control",
+"name": "h2syn",
+"kind": "function",
+"doc": "H2 control synthesis for plant P."
+},
+{
+"area": "control",
+"name": "hankel_singular_values",
+"kind": "function",
+"doc": "Calculate the Hankel singular values."
+},
+{
+"area": "control",
+"name": "hinfsyn",
+"kind": "function",
+"doc": "H-infinity control synthesis for plant P."
+},
+{
+"area": "control",
+"name": "hsvd",
+"kind": "function",
+"doc": "Calculate the Hankel singular values."
+},
+{
+"area": "control",
+"name": "impulse_response",
+"kind": "function",
+"doc": "Compute the impulse response for a linear system."
+},
+{
+"area": "control",
+"name": "initial_response",
+"kind": "function",
+"doc": "Compute the initial condition response for a linear system."
+},
+{
+"area": "control",
+"name": "input_output_response",
+"kind": "function",
+"doc": "Compute the output response of a system to a given input."
+},
+{
+"area": "control",
+"name": "interconnect",
+"kind": "function",
+"doc": "Interconnect a set of input/output systems."
+},
+{
+"area": "control",
+"name": "iosys_repr",
+"kind": "function",
+"doc": "Return representation of an I/O system."
+},
+{
+"area": "control",
+"name": "isctime",
+"kind": "function",
+"doc": "Check to see if a system is a continuous-time system."
+},
+{
+"area": "control",
+"name": "isdtime",
+"kind": "function",
+"doc": "Check to see if a system is a discrete-time system."
+},
+{
+"area": "control",
+"name": "ispassive",
+"kind": "function",
+"doc": "Indicate if a linear time invariant (LTI) system is passive."
+},
+{
+"area": "control",
+"name": "issiso",
+"kind": "function",
+"doc": "Check to see if a system is single input, single output."
+},
+{
+"area": "control",
+"name": "issys",
+"kind": "function",
+"doc": "Deprecated function to check if an object is an LTI system."
+},
+{
+"area": "control",
+"name": "linearize",
+"kind": "function",
+"doc": "Linearize an input/output system at a given state and input."
+},
+{
+"area": "control",
+"name": "linfnorm",
+"kind": "function",
+"doc": "L-infinity norm of a linear system."
+},
+{
+"area": "control",
+"name": "lqe",
+"kind": "function",
+"doc": "lqe(A, G, C, QN, RN, [, NN])"
+},
+{
+"area": "control",
+"name": "lqr",
+"kind": "function",
+"doc": "lqr(A, B, Q, R[, N])"
+},
+{
+"area": "control",
+"name": "lyap",
+"kind": "function",
+"doc": "Solves the continuous-time Lyapunov equation."
+},
+{
+"area": "control",
+"name": "mag2db",
+"kind": "function",
+"doc": "Convert a magnitude to decibels (dB)."
+},
+{
+"area": "control",
+"name": "margin",
+"kind": "function",
+"doc": "margin(sys)     margin(mag, phase, omega)"
+},
+{
+"area": "control",
+"name": "markov",
+"kind": "function",
+"doc": "markov(Y, U, [, m])"
+},
+{
+"area": "control",
+"name": "minimal_realization",
+"kind": "function",
+"doc": "Eliminate uncontrollable or unobservable states."
+},
+{
+"area": "control",
+"name": "minreal",
+"kind": "function",
+"doc": "Eliminate uncontrollable or unobservable states."
+},
+{
+"area": "control",
+"name": "mixsyn",
+"kind": "function",
+"doc": "Mixed-sensitivity H-infinity synthesis."
+},
+{
+"area": "control",
+"name": "modal_form",
+"kind": "function",
+"doc": "Convert a system into modal canonical form."
+},
+{
+"area": "control",
+"name": "model_reduction",
+"kind": "function",
+"doc": "Model reduction by input, output, or state elimination."
+},
+{
+"area": "control",
+"name": "modred",
+"kind": "function",
+"doc": "Model reduction by input, output, or state elimination."
+},
+{
+"area": "control",
+"name": "negate",
+"kind": "function",
+"doc": "Return the negative of a system."
+},
+{
+"area": "control",
+"name": "nichols",
+"kind": "function",
+"doc": "Nichols plot for a system."
+},
+{
+"area": "control",
+"name": "nichols_grid",
+"kind": "function",
+"doc": "Plot Nichols chart grid."
+},
+{
+"area": "control",
+"name": "nichols_plot",
+"kind": "function",
+"doc": "Nichols plot for a system."
+},
+{
+"area": "control",
+"name": "nlsys",
+"kind": "function",
+"doc": "Create a nonlinear input/output system."
+},
+{
+"area": "control",
+"name": "norm",
+"kind": "function",
+"doc": "Computes the input/output norm of system."
+},
+{
+"area": "control",
+"name": "nyquist",
+"kind": "function",
+"doc": "Nyquist plot for a system."
+},
+{
+"area": "control",
+"name": "nyquist_plot",
+"kind": "function",
+"doc": "Nyquist plot for a system."
+},
+{
+"area": "control",
+"name": "nyquist_response",
+"kind": "function",
+"doc": "Nyquist response for a system."
+},
+{
+"area": "control",
+"name": "observable_form",
+"kind": "function",
+"doc": "Convert a system into observable canonical form."
+},
+{
+"area": "control",
+"name": "obsv",
+"kind": "function",
+"doc": "Observability matrix."
+},
+{
+"area": "control",
+"name": "pade",
+"kind": "function",
+"doc": "Create a linear system that approximates a delay."
+},
+{
+"area": "control",
+"name": "pandas_check",
+"kind": "function",
+"doc": "Return True if pandas is installed, otherwise False."
+},
+{
+"area": "control",
+"name": "parallel",
+"kind": "function",
+"doc": "parallel(sys1, sys2[, ..., sysn])"
+},
+{
+"area": "control",
+"name": "phase_crossover_frequencies",
+"kind": "function",
+"doc": "Compute Nyquist plot real-axis crossover frequencies and gains."
+},
+{
+"area": "control",
+"name": "phase_plane_plot",
+"kind": "function",
+"doc": "Plot phase plane diagram."
+},
+{
+"area": "control",
+"name": "phase_plot",
+"kind": "function",
+"doc": "(legacy) Phase plot for 2D dynamical systems."
+},
+{
+"area": "control",
+"name": "place",
+"kind": "function",
+"doc": "Place closed loop eigenvalues."
+},
+{
+"area": "control",
+"name": "place_acker",
+"kind": "function",
+"doc": "Pole placement using Ackermann method."
+},
+{
+"area": "control",
+"name": "place_varga",
+"kind": "function",
+"doc": "Place closed loop eigenvalues using Varga method."
+},
+{
+"area": "control",
+"name": "pole_zero_map",
+"kind": "function",
+"doc": "Compute the pole/zero map for an LTI system."
+},
+{
+"area": "control",
+"name": "pole_zero_plot",
+"kind": "function",
+"doc": "Plot a pole/zero map for a linear system."
+},
+{
+"area": "control",
+"name": "pole_zero_subplots",
+"kind": "function",
+"doc": "Create axes for pole/zero plot."
+},
+{
+"area": "control",
+"name": "poles",
+"kind": "function",
+"doc": "Compute system poles."
+},
+{
+"area": "control",
+"name": "pzmap",
+"kind": "function",
+"doc": "Plot a pole/zero map for a linear system."
+},
+{
+"area": "control",
+"name": "reachable_form",
+"kind": "function",
+"doc": "Convert a system into reachable canonical form."
+},
+{
+"area": "control",
+"name": "relay_hysteresis_nonlinearity",
+"kind": "class",
+"doc": "Relay w/ hysteresis for describing function analysis."
+},
+{
+"area": "control",
+"name": "reset_defaults",
+"kind": "function",
+"doc": "Reset configuration values to their default (initial) values."
+},
+{
+"area": "control",
+"name": "reset_rcParams",
+"kind": "function",
+"doc": "Reset rcParams to default values for control plots."
+},
+{
+"area": "control",
+"name": "rlocus",
+"kind": "function",
+"doc": "Root locus plot."
+},
+{
+"area": "control",
+"name": "root_locus",
+"kind": "function",
+"doc": "Root locus plot."
+},
+{
+"area": "control",
+"name": "root_locus_map",
+"kind": "function",
+"doc": "Compute the root locus map for an LTI system."
+},
+{
+"area": "control",
+"name": "root_locus_plot",
+"kind": "function",
+"doc": "Root locus plot."
+},
+{
+"area": "control",
+"name": "rootlocus_pid_designer",
+"kind": "function",
+"doc": "Manual PID controller design based on root locus using Sisotool."
+},
+{
+"area": "control",
+"name": "rss",
+"kind": "function",
+"doc": "Create a stable random state space object."
+},
+{
+"area": "control",
+"name": "sample_system",
+"kind": "function",
+"doc": "Convert a continuous-time system to discrete time by sampling."
+},
+{
+"area": "control",
+"name": "saturation_nonlinearity",
+"kind": "class",
+"doc": "Saturation nonlinearity for describing function analysis."
+},
+{
+"area": "control",
+"name": "series",
+"kind": "function",
+"doc": "series(sys1, sys2[, ..., sysn])"
+},
+{
+"area": "control",
+"name": "set_defaults",
+"kind": "function",
+"doc": "Set default values of parameters for a module."
+},
+{
+"area": "control",
+"name": "similarity_transform",
+"kind": "function",
+"doc": "Similarity transformation, with optional time rescaling."
+},
+{
+"area": "control",
+"name": "singular_values_plot",
+"kind": "function",
+"doc": "Plot the singular values for a system."
+},
+{
+"area": "control",
+"name": "singular_values_response",
+"kind": "function",
+"doc": "Singular value response for a system."
+},
+{
+"area": "control",
+"name": "sisotool",
+"kind": "function",
+"doc": "Collection of plots inspired by MATLAB's sisotool."
+},
+{
+"area": "control",
+"name": "slycot_check",
+"kind": "function",
+"doc": "Return True if Slycot is installed, otherwise False."
+},
+{
+"area": "control",
+"name": "solve_passivity_LMI",
+"kind": "function",
+"doc": "Compute passivity indices and/or solves feasibility via a LMI."
+},
+{
+"area": "control",
+"name": "split_tf",
+"kind": "function",
+"doc": "Split MIMO transfer function into SISO transfer functions."
+},
+{
+"area": "control",
+"name": "ss",
+"kind": "function",
+"doc": "ss(A, B, C, D[, dt])"
+},
+{
+"area": "control",
+"name": "ss2io",
+"kind": "function",
+"doc": "ss2io(sys[, ...])"
+},
+{
+"area": "control",
+"name": "ss2tf",
+"kind": "function",
+"doc": "ss2tf(sys)"
+},
+{
+"area": "control",
+"name": "ssdata",
+"kind": "function",
+"doc": "Return state space data objects for a system."
+},
+{
+"area": "control",
+"name": "stability_margins",
+"kind": "function",
+"doc": "Stability margins and associated crossover frequencies."
+},
+{
+"area": "control",
+"name": "step_info",
+"kind": "function",
+"doc": "Step response characteristics (rise time, settling time, etc)."
+},
+{
+"area": "control",
+"name": "step_response",
+"kind": "function",
+"doc": "Compute the step response for a linear system."
+},
+{
+"area": "control",
+"name": "summing_junction",
+"kind": "function",
+"doc": "Create a summing junction as an input/output system."
+},
+{
+"area": "control",
+"name": "suptitle",
+"kind": "function",
+"doc": "Add a centered title to a figure."
+},
+{
+"area": "control",
+"name": "system_norm",
+"kind": "function",
+"doc": "Computes the input/output norm of system."
+},
+{
+"area": "control",
+"name": "tf",
+"kind": "function",
+"doc": "tf(num, den[, dt])"
+},
+{
+"area": "control",
+"name": "tf2io",
+"kind": "function",
+"doc": "tf2io(sys[, ...])"
+},
+{
+"area": "control",
+"name": "tf2ss",
+"kind": "function",
+"doc": "tf2ss(sys)"
+},
+{
+"area": "control",
+"name": "tfdata",
+"kind": "function",
+"doc": "Return transfer function data objects for a system."
+},
+{
+"area": "control",
+"name": "time_response_plot",
+"kind": "function",
+"doc": "Plot the time response of an input/output system."
+},
+{
+"area": "control",
+"name": "timebase",
+"kind": "function",
+"doc": "Return the timebase for a system."
+},
+{
+"area": "control",
+"name": "unwrap",
+"kind": "function",
+"doc": "Unwrap a phase angle to give a continuous curve."
+},
+{
+"area": "control",
+"name": "use_fbs_defaults",
+"kind": "function",
+"doc": "Use Feedback Systems (FBS) compatible settings."
+},
+{
+"area": "control",
+"name": "use_legacy_defaults",
+"kind": "function",
+"doc": "Sets the defaults to whatever they were in a given release."
+},
+{
+"area": "control",
+"name": "use_matlab_defaults",
+"kind": "function",
+"doc": "Use MATLAB compatible configuration settings."
+},
+{
+"area": "control",
+"name": "white_noise",
+"kind": "function",
+"doc": "Generate a white noise signal with specified intensity."
+},
+{
+"area": "control",
+"name": "zeros",
+"kind": "function",
+"doc": "Compute system zeros."
+},
+{
+"area": "control",
+"name": "zpk",
+"kind": "function",
+"doc": "zpk(zeros, poles, gain[, dt])"
+}
+]
+}

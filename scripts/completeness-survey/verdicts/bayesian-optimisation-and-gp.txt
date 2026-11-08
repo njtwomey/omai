@@ -1,0 +1,213 @@
+# Bayesian optimisation, Gaussian-process stacks, Pyro and BlackJAX. gpytorch and blackjax were enumerated from the
+# installed packages; BoTorch, GPflow, scikit-optimize and Pyro are from memory.
+# Checked in the source: tune (acquisitions, gpSampler, TPE, CMA-ES, pruners, multi-objective studies; a TODO in
+# tune/bayesian.ts names the missing hypervolume acquisition), gp (exact, sparse with SoR/DTC/FITC/VFE, Laplace and EP
+# classification, relevance vector machine), kernels (ARD, sums and products, spectral mixture, periodic, Matern), probprog
+# (svi, four ELBOs, auto-guides, handlers, infer_discrete, SMC, SVGD) and sampling (HMC, NUTS, RMHMC, SGLD, MALA, slice).
+@lib botorch
+@area acquisition
+F | ExpectedImprovement|LogExpectedImprovement|ProbabilityOfImprovement|LogProbabilityOfImprovement|UpperConfidenceBound | tune#expectedImprovement, #logExpectedImprovement, #probabilityOfImprovement, #logProbabilityOfImprovement, #upperConfidenceBound | | | | |
+P | PosteriorMean|PosteriorStandardDeviation|qSimpleRegret|ProximalAcquisitionFunction | tune#acquisitions | the posterior mean and standard deviation are one line on `gpPosterior` | | | |
+A | qExpectedImprovement|qLogExpectedImprovement|qNoisyExpectedImprovement|qLogNoisyExpectedImprovement|qProbabilityOfImprovement|qUpperConfidenceBound | tune#maximizeAcquisition | Monte Carlo batch acquisition: choose q points at once by sampling the joint posterior; omai's acquisitions pick one point at a time | tune/bayesian-batch.ts | M | medium | batch and Monte Carlo acquisition
+A | qKnowledgeGradient|qMultiFidelityKnowledgeGradient | | one-step lookahead on the posterior (knowledge gradient) | tune/bayesian-batch.ts | M | low | information-theoretic and lookahead acquisition
+A | qMaxValueEntropy|qLowerBoundMaxValueEntropy|qJointEntropySearch|qPredictiveEntropySearch|qNegIntegratedPosteriorVariance|qBayesianActiveLearningByDisagreement|qMultiObjectiveMaxValueEntropy | | entropy-search family: pick the point that most reduces uncertainty about the optimum's value or location; the information-theoretic view of acquisition | tune/entropy-search.ts | M | medium | information-theoretic and lookahead acquisition
+A | qExpectedHypervolumeImprovement|qLogExpectedHypervolumeImprovement|qNoisyExpectedHypervolumeImprovement|qLogNParEGO|DominatedPartitioning|NondominatedPartitioning|FastNondominatedPartitioning | optim#hypervolume, #hypervolumeContributions, #nonDominatedSort | multi-objective Bayesian optimisation. Pareto fronts and hypervolume exist; the acquisition does not (a TODO in tune/bayesian.ts) | tune/bayesian.ts | M | high | multi-objective Bayesian optimisation
+A | ConstrainedExpectedImprovement|ConstrainedMCObjective|GenericMCObjective|LinearMCObjective|ScalarizedPosteriorTransform|ExpectedImprovementWithRiskMeasure | probprog#feasibility | expected improvement weighted by the probability that the constraints hold, and scalarisations | tune/bayesian.ts | S | medium | constrained Bayesian optimisation
+@area models
+P | SingleTaskGP|FixedNoiseGP|ModelListGP|ModelList|PosteriorList|AffineDeterministicModel|GenericDeterministicModel | gp#gpRegression, tune#fitGpSurrogate | an exact GP with a kernel and a noise term; the fixed-noise and model-list wrappers are options and a list | | | |
+A | HeteroskedasticSingleTaskGP|ContextualGP|LCEMGP|HigherOrderGP|FullyBayesianLinearSingleTaskGP | gp#gpRegression | GP variants with input-dependent noise, contexts or tensor outputs | gp/heteroskedastic.ts | M | low | Gaussian-process variants
+A | MultiTaskGP|KroneckerMultiTaskGP | gp#gpRegression | correlated outputs through a task kernel (intrinsic coregionalisation): the way to share strength across related functions | gp/multitask.ts | M | medium | multi-output Gaussian processes
+A | SaasFullyBayesianSingleTaskGP|SingleTaskMultiFidelityGP | | a sparsity-inducing prior with NUTS on the hyperparameters (SAAS), and GPs over fidelity | gp/fully-bayesian.ts | M | low | Gaussian-process variants
+A | SingleTaskVariationalGP|ApproximateGPyTorchModel|PairwiseGP|GaussianProcessNetwork | gp#sparseGp | variational GPs with minibatches and non-Gaussian likelihoods; preference learning GPs (pairwise comparisons) | gp/variational.ts | M | medium | variational and non-Gaussian Gaussian processes
+@area optim
+F | optimize_acqf|optimize_acqf_list | tune#maximizeAcquisition | | | | |
+A | optimize_acqf_mixed|optimize_acqf_discrete|optimize_acqf_cyclic|optimize_acqf_homotopy|gen_batch_initial_conditions|initialize_q_batch|sample_perturbed_subset_dims|FunctionSampler | tune#maximizeAcquisition | mixed discrete and continuous maximisation, batch initialisation heuristics, trust-region style local perturbation (TuRBO) | tune/bayesian.ts | M | low | batch and Monte Carlo acquisition
+@area fit
+F | fit_gpytorch_mll | gp#gpRegression | the marginal likelihood is maximised inside the fit | | | |
+P | fit_fully_bayesian_model_nuts | sampling#nuts | | | | |
+@area sampling
+F | SobolQMCNormalSampler|draw_sobol_samples|draw_sobol_normal_samples|manual_seed | tune#sobolSampler, random | | | | |
+P | IIDNormalSampler | random | | | | |
+@area utils
+P | standardize|normalize|unnormalize|t_batch_mode_transform|get_best_candidates|infer_reference_point | learn/preprocessing | | | | |
+F | is_non_dominated|pareto|hypervolume | optim#nonDominatedSort, #paretoFront, #hypervolume | | | | |
+@area transforms
+P | Normalize|Standardize|Log10|Bilog|Power|LogNormalize|InputStandardize|ChainedOutcomeTransform|InputPerturbation|Round | learn/preprocessing#standardScaler, #powerTransformer | | | | |
+A | Warp | | Kumaraswamy input warping of the search space: lets a stationary kernel fit non-stationary functions | gp/warping.ts | S | low | Gaussian-process variants
+@area test_functions
+F | Branin|Ackley|Rosenbrock|Rastrigin|Beale | datasets#branin, #ackley, #rosenbrock, #rastrigin, #beale | six functions with gradients and known minima (also Himmelblau, Forrester, Gramacy-Lee) | | | | |
+A | Hartmann|Levy|Griewank|Michalewicz|Shekel|StyblinskiTang|SixHumpCamel|Bukin|Cosine8|DixonPrice|EggHolder|Powell|ThreeHumpCamel|BraninCurrin|ZDT1|ZDT2|ZDT3|DTLZ2|VehicleSafety|Penicillin|GMM|DiscBrake|WeldedBeam|SpeedReducer|CarSideImpact | datasets#TestFunction | more single-objective surfaces (Hartmann, Levy, Griewank, Styblinski-Tang...) and the multi-objective suites (ZDT, DTLZ) and engineering problems | datasets/objectives.ts | S | medium | multi-objective test problems
+@area cross_validation
+P | batch_cross_validation|gen_loo_cv_folds | kernel-methods#looPredictions | | | | |
+@area risk_measures
+A | CVaR|VaR|WorstCase|Expectation|MeanVariance | | risk measures over posterior samples for robust optimisation | tune/bayesian.ts | S | low | batch and Monte Carlo acquisition
+
+@area
+A | DominatedPartitioning|NondominatedPartitioning|FastNondominatedPartitioning | optim#hypervolumeContributions | box decomposition of the dominated region, the machinery of exact hypervolume improvement | tune/bayesian.ts | S | medium | multi-objective Bayesian optimisation
+
+@lib gpytorch
+@area gpytorch.means
+A | ConstantMeanGrad|ConstantMeanGradGrad|LinearMeanGrad|LinearMeanGradGrad | | mean functions for derivative-observation GPs | gp/derivative.ts | S | low | Gaussian-process variants
+@area gpytorch.kernels
+F | RBFKernel|MaternKernel|PeriodicKernel|LinearKernel|PolynomialKernel|RQKernel|ScaleKernel|AdditiveKernel|ProductKernel|CosineKernel|SpectralMixtureKernel|ConstantKernel|RFFKernel | kernels#rbfKernel, #maternKernel, #periodicKernel, #linearKernel, #polynomialKernel, #rationalQuadraticKernel, #scaleKernel, #sumKernel, #productKernel, #cosineKernel, #spectralMixtureKernel, #constantKernel, #randomFourierFeatures | | | | |
+P | AdditiveStructureKernel|ProductStructureKernel|NewtonGirardAdditiveKernel|PiecewisePolynomialKernel|SpectralDeltaKernel|ArcKernel|CylindricalKernel | kernels#onDimensions, #sumKernel | additive structure over subsets of inputs: `onDimensions` and `sumKernel` build it by hand | | | |
+A | GridKernel|GridInterpolationKernel|InducingPointKernel | gp#sparseGp | structured kernel interpolation (KISS-GP): inducing points on a grid with interpolation, so Toeplitz and Kronecker algebra make GPs scale | gp/ski.ts | L | low | scalable Gaussian-process inference
+A | MultitaskKernel|IndexKernel|LCMKernel|HammingIMQKernel|DistributionalInputKernel|GaussianSymmetrizedKLKernel | | multi-output (coregionalisation), categorical and distribution-input kernels | gp/multitask.ts | M | medium | multi-output Gaussian processes
+A | RBFKernelGrad|RBFKernelGradGrad|Matern52KernelGrad|PolynomialKernelGrad|ConstantMeanGrad|ConstantMeanGradGrad|LinearMeanGrad|LinearMeanGradGrad | | derivative observations: a GP conditioned on gradient data (used for Bayesian optimisation with gradients and for physical models) | gp/derivative.ts | M | low | Gaussian-process variants
+S | Kernel|MultiDeviceKernel|LazyEvaluatedKernelTensor | | | | | |
+@area gpytorch.likelihoods
+P | GaussianLikelihood|FixedNoiseGaussianLikelihood|GaussianLikelihoodWithMissingObs|HeteroskedasticNoise | gp#gpRegression | | | | |
+P | BernoulliLikelihood|SoftmaxLikelihood|DirichletClassificationLikelihood | gp#gpClassifier | Laplace and EP classification exist for the Bernoulli and softmax cases | | | |
+A | PoissonLikelihood|StudentTLikelihood|LaplaceLikelihood|NegativeBinomialLikelihood|BetaLikelihood | gp#gpClassifier | GP with count, heavy-tailed or bounded-response likelihoods, by Laplace or variational inference | gp/likelihoods.ts | M | medium | variational and non-Gaussian Gaussian processes
+A | MultitaskGaussianLikelihood|HadamardGaussianLikelihood|LikelihoodList | | | gp/multitask.ts | S | medium | multi-output Gaussian processes
+S | Likelihood|_GaussianLikelihoodBase|_MultitaskGaussianLikelihoodBase|_OneDimensionalLikelihood | | | | | |
+@area gpytorch.means
+F | ConstantMean|LinearMean|ZeroMean|Mean | gp#gpRegression | mean functions are options of the GP | | | | |
+P | MultitaskMean | | | | | |
+@area gpytorch.mlls
+F | ExactMarginalLogLikelihood|MarginalLogLikelihood | gp#logMarginalLikelihood, #negativeLogMarginalLikelihood | | | | |
+P | LeaveOneOutPseudoLikelihood | kernel-methods#looScore | LOO predictive likelihood of a GP in closed form | | | |
+P | VariationalELBO|GammaRobustVariationalELBO|PredictiveLogLikelihood|DeepApproximateMLL|DeepPredictiveLogLikelihood|SumMarginalLogLikelihood|AddedLossTerm|InducingPointKernelAddedLossTerm|KLGaussianAddedLossTerm|NoiseModelAddedLossTerm | gp#sparseBound | the VFE bound of sparse regression is a variational ELBO; the general ELBO with a likelihood and minibatches is not | gp/variational.ts | M | medium | variational and non-Gaussian Gaussian processes
+@area gpytorch.models
+F | ExactGP|GP | gp#gpRegression | | | | |
+P | IndependentModelList|AbstractModelList | | | | | |
+A | ApproximateGP|VariationalGP|PyroGP | gp#sparseGp | stochastic variational GP (SVGP, Hensman et al.): inducing points, a variational distribution over them, minibatch ELBO, any likelihood | gp/variational.ts | M | medium | variational and non-Gaussian Gaussian processes
+@area gpytorch.variational
+A | .* | | variational strategies and distributions (whitened, unwhitened, natural parameters, mean-field, delta, LMC multi-output, grid, nearest neighbour, orthogonally decoupled) | gp/variational.ts | M | low | variational and non-Gaussian Gaussian processes
+@area gpytorch.optim
+A | NGD | optim#naturalGradientDirection | natural-gradient steps for variational parameters | gp/variational.ts | S | low | variational and non-Gaussian Gaussian processes
+@area gpytorch.priors
+A | GammaPrior|HalfCauchyPrior|HalfNormalPrior|HorseshoePrior|LogNormalPrior|NormalPrior|UniformPrior|SmoothedBoxPrior|MultivariateNormalPrior|LKJCholeskyFactorPrior|LKJCovariancePrior|LKJPrior|Prior | dists | priors on kernel hyperparameters for MAP fitting or sampling (the distributions exist in `dists`; the GP fit takes no priors) | gp/regression.ts | S | medium | hyperparameter priors
+@area gpytorch.metrics
+F | mean_absolute_error|mean_squared_error|standardized_mean_squared_error | metrics#meanAbsoluteError, #meanSquaredError | | | | |
+P | mean_standardized_log_loss|negative_log_predictive_density|quantile_coverage_error | metrics#logScore, #intervalCoverage | | | | |
+@area gpytorch.constraints
+S | .* | | positivity and bound constraints on hyperparameters: omai's kernels carry log-parameters | | | |
+@area gpytorch.distributions
+P | MultivariateNormal|Distribution|Delta|MultitaskMultivariateNormal | dists | | | | |
+@area gpytorch.functions
+S | .* | | lazy-tensor algebra | | | |
+@area gpytorch.lazy
+S | .* | | | | | |
+@area gpytorch.settings
+S | .* | | | | | |
+@area gpytorch.utils
+S | .* | | | | | |
+
+@lib gpflow
+@area models
+F | GPR | gp#gpRegression | | | | |
+F | SGPR | gp#sparseGp | | | | |
+P | GPMC|SGPMC | gp#gpClassifier, sampling#hmc | MCMC over GP latents and hyperparameters is a composition of `hmc` and the GP likelihood | | | |
+P | VGP|VGPOpperArchambeau|CGLB | gp#gpClassifier | | | | |
+A | SVGP | gp#sparseGp | | gp/variational.ts | M | medium | variational and non-Gaussian Gaussian processes
+A | GPLVM|BayesianGPLVM | decomposition#probabilisticPca | latent variable GPs for dimension reduction (the nonlinear PPCA); a "could have" in repertoire.md | gp/gplvm.ts | M | low | Gaussian-process variants
+@area kernels
+F | SquaredExponential|Matern12|Matern32|Matern52|RationalQuadratic|Exponential|Linear|Polynomial|Periodic|Cosine|Constant|White|ArcCosine|Sum|Product|Static|Stationary|Combination | kernels | | | | |
+A | Coregion|SharedIndependent|SeparateIndependent|LinearCoregionalization|MultioutputKernel|IndependentLatent | | multi-output kernels | gp/multitask.ts | M | medium | multi-output Gaussian processes
+A | ChangePoints | | a kernel that switches between two kernels at a change point | kernels/change-points.ts | S | low | kernels
+P | Convolutional | kernels#wlSubtreeKernel | | | | |
+@area likelihoods
+P | Gaussian|Bernoulli|MultiClass|Softmax|RobustMax | gp#gpRegression, #gpClassifier | | | | |
+A | Poisson|Beta|Gamma|Exponential|StudentT|Gumbel|Ordinal|HeteroskedasticTFPConditional|SwitchedLikelihood|MonteCarloLikelihood|Scalar | | non-Gaussian likelihoods for GPs | gp/likelihoods.ts | M | medium | variational and non-Gaussian Gaussian processes
+@area mean_functions
+F | .* | gp | | | | |
+@area inducing_variables
+P | InducingPoints|InducingPointsBase|Multiscale | gp#sparseGp | | | | |
+S | .* | | multi-output inducing variable plumbing | | | |
+@area conditionals
+P | conditional|uncertain_conditional|base_conditional|sample_conditional | gp#gpRegression | | | | |
+@area expectations
+P | expectation|quadrature_expectation | numerics/quadrature | | | | |
+@area optimizers
+P | Scipy|NaturalGradient | optim#lbfgsb, #naturalGradientDirection | | | | |
+@area posteriors
+P | .* | gp | | | | |
+@area utilities
+P | .* | gp | | | | |
+@area monitor
+S | .* | | | | | |
+@area covariances
+S | .* | | | | | |
+@area base
+S | .* | | | | | |
+@area quadrature
+P | .* | numerics/quadrature | Gauss-Hermite quadrature exists | | | |
+@area experimental
+S | .* | | | | | |
+@area priors
+A | .* | dists | hyperparameter priors | gp/regression.ts | S | medium | hyperparameter priors
+
+@lib skopt
+@area optimizers
+P | gp_minimize|forest_minimize|gbrt_minimize|dummy_minimize|Optimizer|BayesSearchCV|load|dump | tune#tune, #gpSampler, #tpeSampler, #randomizedSearchCv | GP-based minimisation is `gpSampler`; tree-ensemble surrogates (random forest, extra trees, GBRT with quantile) as the surrogate model are not offered | tune/bayesian.ts | M | medium | surrogate models for Bayesian optimisation
+@area space
+F | Real|Integer|Categorical|Space|Dimension|Normalize|LogN | space (real, int, choice) | | | | |
+@area learning
+P | GaussianProcessRegressor | gp#gpRegression | | | | |
+A | ExtraTreesRegressor|RandomForestRegressor|GradientBoostingQuantileRegressor | ensembles | a forest with the spread of the trees as uncertainty (SMAC-style) | tune/bayesian.ts | M | medium | surrogate models for Bayesian optimisation
+@area acquisition
+F | gaussian_ei|gaussian_lcb|gaussian_pi|EI|PI|LCB|gaussian_acquisition_1D | tune#expectedImprovement, #lowerConfidenceBound, #probabilityOfImprovement | | | | |
+@area callbacks
+P | DeltaXStopper|DeltaYStopper|DeadlineStopper|VerboseCallback|CheckpointSaver|TimerCallback|EarlyStopper | trace, nn#earlyStopping | stopping rules on a study | | | |
+@area plots
+F | plot_convergence|plot_evaluations|plot_objective|plot_regret | tune#optimisationHistory, #sliceData, #contourData | the data for the plots exists; charts are in omai-render | | | |
+@area sampler
+F | Lhs|Sobol|Halton|Hammersly|Grid|InitialPointGenerator | tune#latinHypercubeSampler, #sobolSampler, #haltonSampler, #gridSampler | | | | |
+@area utils
+P | cook_estimator|expected_minimum|use_named_args|dimensions_aslist|point_asdict | tune | | | | |
+
+@lib pyro
+@area
+S | runtime | | the effect-handler runtime internals | | | |
+@area infer
+F | SVI | probprog#svi | | | | |
+F | Trace_ELBO|TraceMeanField_ELBO|RenyiELBO|JitTrace_ELBO | probprog#traceElbo, #traceMeanFieldElbo, #renyiElbo | | | | |
+P | TraceEnum_ELBO|JitTraceEnum_ELBO|TraceGMM_ELBO | probprog#enumerate, #elboAt | ELBO with discrete latents summed out exactly; the enumeration handler exists, the ELBO that uses it for the guide-free sites is not named | probprog/elbo.ts | M | medium | ELBO variants
+A | TraceGraph_ELBO|TraceTailAdaptive_ELBO|ReweightedWakeSleep|CSIS | sampling#scoreFunctionGradient | Rao-Blackwellised score-function ELBO, tail-adaptive f-divergence, wake-sleep and inference compilation | probprog/elbo.ts | M | low | ELBO variants
+F | MCMC|NUTS|HMC|RandomWalkKernel | probprog#mcmc, sampling#nuts, #hmc | | | | |
+F | SMCFilter|Importance|Predictive|EmpiricalMarginal|infer_discrete|config_enumerate|SVGD|IMQSteinKernel|RBFSteinKernel | probprog#particleFilter, #importanceInference, #posteriorPredictive, #inferDiscrete, #enumerate, sampling#svgd | | | | |
+P | BernoulliMarginal|Discrete | probprog#enumerationPosterior | | | | |
+F | autoguide.AutoNormal|autoguide.AutoDiagonalNormal|autoguide.AutoMultivariateNormal|autoguide.AutoLowRankMultivariateNormal|autoguide.AutoLaplaceApproximation|autoguide.AutoIAFNormal|autoguide.AutoDelta|autoguide.AutoContinuous|autoguide.AutoGuideList | probprog#autoNormal, #autoMultivariateNormal, #autoLowRankMultivariateNormal, #autoLaplace, #autoIafNormal, #autoDelta | | | | |
+A | autoguide.AutoStructured|autoguide.AutoGaussian|autoguide.AutoNormalizingFlow|autoguide.AutoDiscreteParallel|autoguide.AutoHierarchicalNormalMessenger|autoguide.AutoRegressiveMessenger|autoguide.AutoMessenger | probprog#autoIafNormal | guides that follow the model's dependency structure (AutoGaussian, AutoStructured) and flow guides of arbitrary bijectors | probprog/guides.ts | M | medium | guides
+@area poutine
+F | trace|replay|block|condition|do|mask|scale|enum|uncondition|seed|plate|markov|infer_config|queue | probprog#trace, #replay, #block, #condition, #doIntervention, #mask, #scale, #enumerate, #uncondition, #seed, #plate, #markov | the handler vocabulary | | | | |
+A | reparam|lift|collapse|escape|equalize|handlers.broadcast|handlers.pack|handlers.mean | probprog#handle | reparametrisation handlers (non-centred, location-scale, transform), lifting parameters to random variables and collapsing conjugate sites; README item 10 | probprog/handlers.ts | S | high | reparametrisation handlers
+@area primitives
+F | sample|param|plate|factor|deterministic|subsample|get_param_store|clear_param_store | probprog#sample, #param, #plate, #factor, #deterministic | | | | |
+P | module|random_module|PyroModule|PyroSample|PyroParam | nn | Bayesian neural networks as a module whose weights are random sites (omai has MC dropout, SWAG and ensembles but not this) | nn/bayesian.ts | M | medium | Bayesian neural networks
+@area optim
+F | Adam|ClippedAdam|SGD|Adagrad|Adadelta|AdamW|RMSprop|Rprop|PyroLRScheduler|ExponentialLR|OneCycleLR|CosineAnnealingLR | optim | | | | |
+S | DCTAdam|MultiOptimizer|HorovodOptimizer | | | | | |
+@area distributions
+F | Delta|Empirical|ZeroInflatedPoisson|ZeroInflatedNegativeBinomial|LKJ|LKJCholesky|MixtureOfDiagNormals|TransformedDistribution|Unit|ImproperUniform|MaskedMixture|GaussianScaleMixture|FoldedDistribution|AffineBeta | dists | | | | |
+A | Stable|SoftLaplace|TruncatedPolyaGamma|ProjectedNormal|VonMises3D|SpanningTree|Rejector|CoalescentTimes|AVFMultivariateNormal|OMTMultivariateNormal|ConditionalDistribution | dists | the long tail: stable laws, Polya-Gamma, projected normal, coalescent | dists/families | M | low | distributions
+@area contrib_gp
+P | GPRegression|SparseGPRegression|Kernel|RBF|Matern32|Matern52|Periodic|Product|Sum|Warping|Brownian|Cosine|Coregionalize|DotProduct|Exponential|Isotropy|Linear|Polynomial|RationalQuadratic|Constant|WhiteNoise | gp, kernels | | | | |
+A | VariationalGP|VariationalSparseGP|GPLVM | | | gp/variational.ts | M | medium | variational and non-Gaussian Gaussian processes
+@area contrib_other
+A | oed.eig.vnmc_eig|oed.eig.laplace_eig|oed.eig.marginal_eig|oed.eig.nmc_eig|oed.eig.donsker_varadhan_eig|oed.eig.lfire_eig | | Bayesian optimal experimental design: choose the experiment that maximises the expected information gain about the parameters (nested Monte Carlo, variational and Laplace estimators). A teaching topic that `information` and `probprog` have the parts for. | probprog/design.ts | M | medium | Bayesian experimental design
+P | forecast.Forecaster|timeseries.GaussianHMM|tracking.EKFState|epidemiology.SimpleSEIRModel|autoname | pgm, dynamics/filtering, dynamics | | | | |
+P | funsor | pgm | | | | |
+@area nn
+P | AutoRegressiveNN|ConditionalAutoRegressiveNN|DenseNN|ConditionalDenseNN|MaskedLinear | dists/bijectors#madeConditioner | | | | |
+@area transforms
+P | .* | dists/bijectors | omai has about 50 bijectors, including coupling and autoregressive flows | | | |
+
+@lib blackjax
+@area
+A | mgrad_gaussian | | marginal-gradient Gaussian sampler (latent Gaussian models) | sampling/latent-gaussian.ts | S | low | MCMC kernels
+@area blackjax
+F | hmc|nuts|mala|elliptical_slice|rmh|rmhmc|normal_random_walk|additive_step_random_walk|irmh|slice_sampling|sgld|svgd|tempered_smc|adaptive_tempered_smc|window_adaptation|rhat|ess|ess_bulk|ess_tail|pareto_khat|meanfield_vi|laplace_hmc | sampling#hmc, #nuts, #malaKernel, #ellipticalSlice, #randomWalkMetropolis, #independenceMetropolis, #sliceSampler, #sgldKernel, #svgd, #smcSampler, #windowAdaptation, #rhat, #ess, #paretoKHat | | | | |
+P | meanfield_vi|fullrank_vi|multipathfinder|pathfinder|pathfinder_adaptation | probprog#autoNormal, #svi | meanfield and full-rank VI are SVI with auto-guides; Pathfinder (quasi-Newton path to a Gaussian) is not | sampling/pathfinder.ts | S | low | MCMC kernels
+A | mclmc|adjusted_mclmc|adjusted_mclmc_dynamic|adjusted_mclmc_find_L_and_step_size|mclmc_find_L_and_step_size|mclmc_lrd_warmup|isokinetic | | microcanonical Langevin Monte Carlo: a newer gradient sampler with fixed-energy dynamics and cheap tuning | sampling/mclmc.ts | M | low | MCMC kernels
+A | sghmc|sgnht|csgld|ghmc|dhmc|dmhmc|dynamic_hmc|multinomial_hmc|mhmc|orbital_hmc|barker|barker_proposal|schrodinger_follmer|laplace_dhmc|laplace_dmhmc|laplace_mhmc|coordinate_slice | sampling#sgldKernel, #hmc | stochastic-gradient HMC and thermostats (SGHMC, SGNHT), cyclical SGLD, generalised HMC, Barker's proposal; the minibatch samplers beside SGLD | sampling/sg-mcmc.ts | M | medium | MCMC kernels
+A | nss|nsswig|partial_posteriors_smc|persistent_sampling_smc|adaptive_persistent_sampling_smc|inner_kernel_tuning|pretuning|staged_adaptation|window_adaptation_low_rank|meads_adaptation|chees_adaptation|gist_step_size|gist_trajectory_length | sampling#smcSampler | nested sampling (marginal likelihood and posterior from a shrinking prior volume), persistent SMC and other adaptation schemes (ChEES, MEADS, low-rank mass matrix) | sampling/nested.ts | M | medium | nested sampling and adaptation
+S | Callable|GeneratePathfinderAPI|GenerateSamplingAPI|GenerateVariationalAPI|SamplingAlgorithm|VIAlgorithm|generate_top_level_api_from|progress_bar|irmh_as_top_level_api|rmh_as_top_level_api|grad_estimator|logdensity_estimator|extend_params|coordinate_slice | | API plumbing | | | |
+@area blackjax.diagnostics
+F | .* | sampling#rhat, #ess, #divergenceReport | | | | |
+P | DivergenceConcentrationReport|divergence_concentration|divergence_concentration_from_counts|format_divergence_warning|psis_weights | sampling#divergenceReport, #paretoSmoothedWeights | | | | |
+@area blackjax.sgmcmc
+S | .* | | | | | |
+@area blackjax.smc
+S | .* | | | | | |

@@ -1,0 +1,12 @@
+[
+{"lib":"pykalman","area":"filters","name":"KalmanFilter","status":"full","how":"verdict","omai":"dynamics/filtering#kalmanFilter, #kalmanEm","note":"EM learning of all matrices included"},
+{"lib":"pykalman","area":"filters","name":"UnscentedKalmanFilter","status":"partial","how":"verdict","omai":"dynamics/filtering#unscentedKalmanFilter"},
+{"lib":"pykalman","area":"filters","name":"AdditiveUnscentedKalmanFilter","status":"partial","how":"verdict","omai":"dynamics/filtering#unscentedKalmanFilter"},
+{"lib":"pykalman","area":"filters","name":"filter","status":"full","how":"verdict","omai":"dynamics/filtering"},
+{"lib":"pykalman","area":"filters","name":"filter_update","status":"full","how":"verdict","omai":"dynamics/filtering"},
+{"lib":"pykalman","area":"filters","name":"smooth","status":"full","how":"verdict","omai":"dynamics/filtering"},
+{"lib":"pykalman","area":"filters","name":"em","status":"full","how":"verdict","omai":"dynamics/filtering"},
+{"lib":"pykalman","area":"filters","name":"loglikelihood","status":"full","how":"verdict","omai":"dynamics/filtering"},
+{"lib":"pykalman","area":"filters","name":"sample","status":"full","how":"verdict","omai":"dynamics/filtering"},
+{"lib":"pykalman","area":"filters","name":"predict","status":"full","how":"verdict","omai":"dynamics/filtering"}
+]

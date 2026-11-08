@@ -1,0 +1,5089 @@
+{
+"library": "sympy",
+"version": "1.14.0",
+"source": "introspection",
+"entries": [
+{
+"area": "sympy.algebras",
+"name": "Quaternion",
+"kind": "class",
+"doc": "Provides basic quaternion operations."
+},
+{
+"area": "sympy.assumptions",
+"name": "AppliedPredicate",
+"kind": "class",
+"doc": "The class of expressions resulting from applying ``Predicate`` to"
+},
+{
+"area": "sympy.assumptions",
+"name": "AssumptionsContext",
+"kind": "class",
+"doc": "Set containing default assumptions which are applied to the ``ask()``"
+},
+{
+"area": "sympy.assumptions",
+"name": "Predicate",
+"kind": "class",
+"doc": "Base class for mathematical predicates. It also serves as a"
+},
+{
+"area": "sympy.assumptions",
+"name": "ask",
+"kind": "function",
+"doc": "Function to evaluate the proposition with assumptions."
+},
+{
+"area": "sympy.assumptions",
+"name": "assuming",
+"kind": "function",
+"doc": "Context manager for assumptions."
+},
+{
+"area": "sympy.assumptions",
+"name": "refine",
+"kind": "function",
+"doc": "Simplify an expression using assumptions."
+},
+{
+"area": "sympy.assumptions",
+"name": "register_handler",
+"kind": "function",
+"doc": "Register a handler in the ask system. key must be a string and handler a"
+},
+{
+"area": "sympy.assumptions",
+"name": "remove_handler",
+"kind": "function",
+"doc": "Removes a handler from the ask system."
+},
+{
+"area": "sympy.calculus",
+"name": "AccumBounds",
+"kind": "class",
+"doc": "An accumulation bounds."
+},
+{
+"area": "sympy.calculus",
+"name": "apply_finite_diff",
+"kind": "function",
+"doc": "Calculates the finite difference approximation of"
+},
+{
+"area": "sympy.calculus",
+"name": "differentiate_finite",
+"kind": "function",
+"doc": "Differentiate expr and replace Derivatives with finite differences."
+},
+{
+"area": "sympy.calculus",
+"name": "euler_equations",
+"kind": "function",
+"doc": "Find the Euler-Lagrange equations [1]_ for a given Lagrangian."
+},
+{
+"area": "sympy.calculus",
+"name": "finite_diff_weights",
+"kind": "function",
+"doc": "Calculates the finite difference weights for an arbitrarily spaced"
+},
+{
+"area": "sympy.calculus",
+"name": "is_convex",
+"kind": "function",
+"doc": "Determines the  convexity of the function passed in the argument."
+},
+{
+"area": "sympy.calculus",
+"name": "is_decreasing",
+"kind": "function",
+"doc": "Return whether the function is decreasing in the given interval."
+},
+{
+"area": "sympy.calculus",
+"name": "is_increasing",
+"kind": "function",
+"doc": "Return whether the function is increasing in the given interval."
+},
+{
+"area": "sympy.calculus",
+"name": "is_monotonic",
+"kind": "function",
+"doc": "Return whether the function is monotonic in the given interval."
+},
+{
+"area": "sympy.calculus",
+"name": "is_strictly_decreasing",
+"kind": "function",
+"doc": "Return whether the function is strictly decreasing in the given interval."
+},
+{
+"area": "sympy.calculus",
+"name": "is_strictly_increasing",
+"kind": "function",
+"doc": "Return whether the function is strictly increasing in the given interval."
+},
+{
+"area": "sympy.calculus",
+"name": "maximum",
+"kind": "function",
+"doc": "Returns the maximum value of a function in the given domain."
+},
+{
+"area": "sympy.calculus",
+"name": "minimum",
+"kind": "function",
+"doc": "Returns the minimum value of a function in the given domain."
+},
+{
+"area": "sympy.calculus",
+"name": "not_empty_in",
+"kind": "function",
+"doc": "Finds the domain of the functions in ``finset_intersection`` in which the"
+},
+{
+"area": "sympy.calculus",
+"name": "periodicity",
+"kind": "function",
+"doc": "Tests the given function for periodicity in the given symbol."
+},
+{
+"area": "sympy.calculus",
+"name": "singularities",
+"kind": "function",
+"doc": "Find singularities of a given function."
+},
+{
+"area": "sympy.calculus",
+"name": "stationary_points",
+"kind": "function",
+"doc": "Returns the stationary points of a function (where derivative of the"
+},
+{
+"area": "sympy.concrete",
+"name": "Product",
+"kind": "class",
+"doc": "Represents unevaluated products."
+},
+{
+"area": "sympy.concrete",
+"name": "Sum",
+"kind": "class",
+"doc": "Represents unevaluated summation."
+},
+{
+"area": "sympy.concrete",
+"name": "product",
+"kind": "function",
+"doc": "Compute the product."
+},
+{
+"area": "sympy.concrete",
+"name": "summation",
+"kind": "function",
+"doc": "Compute the summation of f with respect to symbols."
+},
+{
+"area": "sympy.core",
+"name": "Add",
+"kind": "class",
+"doc": "Expression representing addition operation for algebraic group."
+},
+{
+"area": "sympy.core",
+"name": "AlgebraicNumber",
+"kind": "class",
+"doc": "Class for representing algebraic numbers in SymPy."
+},
+{
+"area": "sympy.core",
+"name": "Atom",
+"kind": "class",
+"doc": "A parent class for atomic things. An atom is an expression with no subexpressions."
+},
+{
+"area": "sympy.core",
+"name": "AtomicExpr",
+"kind": "class",
+"doc": "A parent class for object which are both atoms and Exprs."
+},
+{
+"area": "sympy.core",
+"name": "Basic",
+"kind": "class",
+"doc": "Base class for all SymPy objects."
+},
+{
+"area": "sympy.core",
+"name": "Derivative",
+"kind": "class",
+"doc": "Carries out differentiation of the given expression with respect to symbols."
+},
+{
+"area": "sympy.core",
+"name": "Dict",
+"kind": "class",
+"doc": "Wrapper around the builtin dict object."
+},
+{
+"area": "sympy.core",
+"name": "Dummy",
+"kind": "class",
+"doc": "Dummy symbols are each unique, even if they have the same name:"
+},
+{
+"area": "sympy.core",
+"name": "Eq",
+"kind": "class",
+"doc": "An equal relation between two objects."
+},
+{
+"area": "sympy.core",
+"name": "Equality",
+"kind": "class",
+"doc": "An equal relation between two objects."
+},
+{
+"area": "sympy.core",
+"name": "Expr",
+"kind": "class",
+"doc": "Base class for algebraic expressions."
+},
+{
+"area": "sympy.core",
+"name": "Float",
+"kind": "class",
+"doc": "Represent a floating-point number of arbitrary precision."
+},
+{
+"area": "sympy.core",
+"name": "Function",
+"kind": "class",
+"doc": "Base class for applied mathematical functions."
+},
+{
+"area": "sympy.core",
+"name": "FunctionClass",
+"kind": "class",
+"doc": "Base class for function classes. FunctionClass is a subclass of type."
+},
+{
+"area": "sympy.core",
+"name": "Ge",
+"kind": "class",
+"doc": "Class representations of inequalities."
+},
+{
+"area": "sympy.core",
+"name": "GreaterThan",
+"kind": "class",
+"doc": "Class representations of inequalities."
+},
+{
+"area": "sympy.core",
+"name": "Gt",
+"kind": "class",
+"doc": "Class representations of inequalities."
+},
+{
+"area": "sympy.core",
+"name": "Integer",
+"kind": "class",
+"doc": "Represents integer numbers of any size."
+},
+{
+"area": "sympy.core",
+"name": "Lambda",
+"kind": "class",
+"doc": "Lambda(x, expr) represents a lambda function similar to Python's"
+},
+{
+"area": "sympy.core",
+"name": "Le",
+"kind": "class",
+"doc": "Class representations of inequalities."
+},
+{
+"area": "sympy.core",
+"name": "LessThan",
+"kind": "class",
+"doc": "Class representations of inequalities."
+},
+{
+"area": "sympy.core",
+"name": "Lt",
+"kind": "class",
+"doc": "Class representations of inequalities."
+},
+{
+"area": "sympy.core",
+"name": "Mod",
+"kind": "class",
+"doc": "Represents a modulo operation on symbolic expressions."
+},
+{
+"area": "sympy.core",
+"name": "Mul",
+"kind": "class",
+"doc": "Expression representing multiplication operation for algebraic field."
+},
+{
+"area": "sympy.core",
+"name": "N",
+"kind": "function",
+"doc": "Calls x.evalf(n, \\*\\*options)."
+},
+{
+"area": "sympy.core",
+"name": "Ne",
+"kind": "class",
+"doc": "An unequal relation between two objects."
+},
+{
+"area": "sympy.core",
+"name": "Number",
+"kind": "class",
+"doc": "Represents atomic numbers in SymPy."
+},
+{
+"area": "sympy.core",
+"name": "NumberSymbol",
+"kind": "class",
+"doc": "A parent class for object which are both atoms and Exprs."
+},
+{
+"area": "sympy.core",
+"name": "PoleError",
+"kind": "class",
+"doc": "Common base class for all non-exit exceptions."
+},
+{
+"area": "sympy.core",
+"name": "Pow",
+"kind": "class",
+"doc": "Defines the expression x**y as \"x raised to a power y\""
+},
+{
+"area": "sympy.core",
+"name": "PrecisionExhausted",
+"kind": "class",
+"doc": "Base class for arithmetic errors."
+},
+{
+"area": "sympy.core",
+"name": "Rational",
+"kind": "class",
+"doc": "Represents rational numbers (p/q) of any size."
+},
+{
+"area": "sympy.core",
+"name": "RealNumber",
+"kind": "class",
+"doc": "Represent a floating-point number of arbitrary precision."
+},
+{
+"area": "sympy.core",
+"name": "Rel",
+"kind": "class",
+"doc": "Base class for all relation types."
+},
+{
+"area": "sympy.core",
+"name": "StrictGreaterThan",
+"kind": "class",
+"doc": "Class representations of inequalities."
+},
+{
+"area": "sympy.core",
+"name": "StrictLessThan",
+"kind": "class",
+"doc": "Class representations of inequalities."
+},
+{
+"area": "sympy.core",
+"name": "Subs",
+"kind": "class",
+"doc": "Represents unevaluated substitutions of an expression."
+},
+{
+"area": "sympy.core",
+"name": "Symbol",
+"kind": "class",
+"doc": "Symbol class is used to create symbolic variables."
+},
+{
+"area": "sympy.core",
+"name": "SympifyError",
+"kind": "class",
+"doc": "Inappropriate argument value (of correct type)."
+},
+{
+"area": "sympy.core",
+"name": "Tuple",
+"kind": "class",
+"doc": "Wrapper around the builtin tuple object."
+},
+{
+"area": "sympy.core",
+"name": "Unequality",
+"kind": "class",
+"doc": "An unequal relation between two objects."
+},
+{
+"area": "sympy.core",
+"name": "UnevaluatedExpr",
+"kind": "class",
+"doc": "Expression that is not evaluated unless released."
+},
+{
+"area": "sympy.core",
+"name": "Wild",
+"kind": "class",
+"doc": "A Wild symbol matches anything, or anything"
+},
+{
+"area": "sympy.core",
+"name": "WildFunction",
+"kind": "class",
+"doc": "A WildFunction function matches any function (with its arguments)."
+},
+{
+"area": "sympy.core",
+"name": "arity",
+"kind": "function",
+"doc": "Return the arity of the function if it is known, else None."
+},
+{
+"area": "sympy.core",
+"name": "bottom_up",
+"kind": "function",
+"doc": "Apply ``F`` to all expressions in an expression tree from the"
+},
+{
+"area": "sympy.core",
+"name": "cacheit",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "sympy.core",
+"name": "check_assumptions",
+"kind": "function",
+"doc": "Checks whether assumptions of ``expr`` match the T/F assumptions"
+},
+{
+"area": "sympy.core",
+"name": "comp",
+"kind": "function",
+"doc": "Return a bool indicating whether the error between z1 and z2"
+},
+{
+"area": "sympy.core",
+"name": "count_ops",
+"kind": "function",
+"doc": "Return a representation (integer or expression) of the operations in expr."
+},
+{
+"area": "sympy.core",
+"name": "default_sort_key",
+"kind": "function",
+"doc": "Return a key that can be used for sorting."
+},
+{
+"area": "sympy.core",
+"name": "diff",
+"kind": "function",
+"doc": "Differentiate f with respect to symbols."
+},
+{
+"area": "sympy.core",
+"name": "evaluate",
+"kind": "class",
+"doc": "Control automatic evaluation"
+},
+{
+"area": "sympy.core",
+"name": "expand",
+"kind": "function",
+"doc": "Expand an expression using methods given as hints."
+},
+{
+"area": "sympy.core",
+"name": "expand_complex",
+"kind": "function",
+"doc": "Wrapper around expand that only uses the complex hint.  See the expand"
+},
+{
+"area": "sympy.core",
+"name": "expand_func",
+"kind": "function",
+"doc": "Wrapper around expand that only uses the func hint.  See the expand"
+},
+{
+"area": "sympy.core",
+"name": "expand_log",
+"kind": "function",
+"doc": "Wrapper around expand that only uses the log hint.  See the expand"
+},
+{
+"area": "sympy.core",
+"name": "expand_mul",
+"kind": "function",
+"doc": "Wrapper around expand that only uses the mul hint.  See the expand"
+},
+{
+"area": "sympy.core",
+"name": "expand_multinomial",
+"kind": "function",
+"doc": "Wrapper around expand that only uses the multinomial hint.  See the expand"
+},
+{
+"area": "sympy.core",
+"name": "expand_power_base",
+"kind": "function",
+"doc": "Wrapper around expand that only uses the power_base hint."
+},
+{
+"area": "sympy.core",
+"name": "expand_power_exp",
+"kind": "function",
+"doc": "Wrapper around expand that only uses the power_exp hint."
+},
+{
+"area": "sympy.core",
+"name": "expand_trig",
+"kind": "function",
+"doc": "Wrapper around expand that only uses the trig hint.  See the expand"
+},
+{
+"area": "sympy.core",
+"name": "factor_nc",
+"kind": "function",
+"doc": "Return the factored form of ``expr`` while handling non-commutative"
+},
+{
+"area": "sympy.core",
+"name": "factor_terms",
+"kind": "function",
+"doc": "Remove common factors from terms in all arguments without"
+},
+{
+"area": "sympy.core",
+"name": "failing_assumptions",
+"kind": "function",
+"doc": "Return a dictionary containing assumptions with values not"
+},
+{
+"area": "sympy.core",
+"name": "gcd_terms",
+"kind": "function",
+"doc": "Compute the GCD of ``terms`` and put them together."
+},
+{
+"area": "sympy.core",
+"name": "ilcm",
+"kind": "function",
+"doc": "Computes integer least common multiple."
+},
+{
+"area": "sympy.core",
+"name": "integer_log",
+"kind": "function",
+"doc": "Returns ``(e, bool)`` where e is the largest nonnegative integer"
+},
+{
+"area": "sympy.core",
+"name": "integer_nthroot",
+"kind": "function",
+"doc": "Return a tuple containing x = floor(y**(1/n))"
+},
+{
+"area": "sympy.core",
+"name": "lazy_function",
+"kind": "function",
+"doc": "Create a lazy proxy for a function in a module."
+},
+{
+"area": "sympy.core",
+"name": "mod_inverse",
+"kind": "function",
+"doc": "Return the number $c$ such that, $a \\times c = 1 \\pmod{m}$"
+},
+{
+"area": "sympy.core",
+"name": "nfloat",
+"kind": "function",
+"doc": "Make all Rationals in expr Floats except those in exponents"
+},
+{
+"area": "sympy.core",
+"name": "num_digits",
+"kind": "function",
+"doc": "Return the number of digits needed to express n in give base."
+},
+{
+"area": "sympy.core",
+"name": "ordered",
+"kind": "function",
+"doc": "Return an iterator of the seq where keys are used to break ties"
+},
+{
+"area": "sympy.core",
+"name": "postorder_traversal",
+"kind": "function",
+"doc": "Do a postorder traversal of a tree."
+},
+{
+"area": "sympy.core",
+"name": "preorder_traversal",
+"kind": "class",
+"doc": "Do a pre-order traversal of a tree."
+},
+{
+"area": "sympy.core",
+"name": "prod",
+"kind": "function",
+"doc": "Return product of elements of a. Start with int 1 so if only"
+},
+{
+"area": "sympy.core",
+"name": "seterr",
+"kind": "function",
+"doc": "Should SymPy raise an exception on 0/0 or return a nan?"
+},
+{
+"area": "sympy.core",
+"name": "symbols",
+"kind": "function",
+"doc": "Transform strings into instances of :class:`Symbol` class."
+},
+{
+"area": "sympy.core",
+"name": "sympify",
+"kind": "function",
+"doc": "Converts an arbitrary expression to a type that can be used inside SymPy."
+},
+{
+"area": "sympy.core",
+"name": "trailing",
+"kind": "function",
+"doc": "Count the number of trailing zero digits in the binary"
+},
+{
+"area": "sympy.core",
+"name": "use",
+"kind": "function",
+"doc": "Use ``func`` to transform ``expr`` at the given level."
+},
+{
+"area": "sympy.core",
+"name": "var",
+"kind": "function",
+"doc": "Create symbols and inject them into the global namespace."
+},
+{
+"area": "sympy.core",
+"name": "vectorize",
+"kind": "class",
+"doc": "Generalizes a function taking scalars to accept multidimensional arguments."
+},
+{
+"area": "sympy.discrete",
+"name": "convolution",
+"kind": "function",
+"doc": "Performs convolution by determining the type of desired"
+},
+{
+"area": "sympy.discrete",
+"name": "covering_product",
+"kind": "function",
+"doc": "Returns the covering product of given sequences."
+},
+{
+"area": "sympy.discrete",
+"name": "fft",
+"kind": "function",
+"doc": "Performs the Discrete Fourier Transform (**DFT**) in the complex domain."
+},
+{
+"area": "sympy.discrete",
+"name": "fwht",
+"kind": "function",
+"doc": "Performs the Walsh Hadamard Transform (**WHT**), and uses Hadamard"
+},
+{
+"area": "sympy.discrete",
+"name": "ifft",
+"kind": "function",
+"doc": "Performs the Discrete Fourier Transform (**DFT**) in the complex domain."
+},
+{
+"area": "sympy.discrete",
+"name": "ifwht",
+"kind": "function",
+"doc": "Performs the Walsh Hadamard Transform (**WHT**), and uses Hadamard"
+},
+{
+"area": "sympy.discrete",
+"name": "intersecting_product",
+"kind": "function",
+"doc": "Returns the intersecting product of given sequences."
+},
+{
+"area": "sympy.discrete",
+"name": "intt",
+"kind": "function",
+"doc": "Performs the Number Theoretic Transform (**NTT**), which specializes the"
+},
+{
+"area": "sympy.discrete",
+"name": "inverse_mobius_transform",
+"kind": "function",
+"doc": "Performs the Mobius Transform for subset lattice with indices of"
+},
+{
+"area": "sympy.discrete",
+"name": "mobius_transform",
+"kind": "function",
+"doc": "Performs the Mobius Transform for subset lattice with indices of"
+},
+{
+"area": "sympy.discrete",
+"name": "ntt",
+"kind": "function",
+"doc": "Performs the Number Theoretic Transform (**NTT**), which specializes the"
+},
+{
+"area": "sympy.external",
+"name": "PythonRational",
+"kind": "class",
+"doc": "Rational number implementation that is intended to be compatible with"
+},
+{
+"area": "sympy.functions",
+"name": "Abs",
+"kind": "class",
+"doc": "Return the absolute value of the argument."
+},
+{
+"area": "sympy.functions",
+"name": "Chi",
+"kind": "class",
+"doc": "Cosh integral."
+},
+{
+"area": "sympy.functions",
+"name": "Ci",
+"kind": "class",
+"doc": "Cosine integral."
+},
+{
+"area": "sympy.functions",
+"name": "DiracDelta",
+"kind": "class",
+"doc": "The DiracDelta function and its derivatives."
+},
+{
+"area": "sympy.functions",
+"name": "E1",
+"kind": "function",
+"doc": "Classical case of the generalized exponential integral."
+},
+{
+"area": "sympy.functions",
+"name": "Ei",
+"kind": "class",
+"doc": "The classical exponential integral."
+},
+{
+"area": "sympy.functions",
+"name": "Eijk",
+"kind": "function",
+"doc": "Represent the Levi-Civita symbol."
+},
+{
+"area": "sympy.functions",
+"name": "FallingFactorial",
+"kind": "class",
+"doc": "Falling factorial (related to rising factorial) is a double valued"
+},
+{
+"area": "sympy.functions",
+"name": "Heaviside",
+"kind": "class",
+"doc": "Heaviside step function."
+},
+{
+"area": "sympy.functions",
+"name": "KroneckerDelta",
+"kind": "class",
+"doc": "The discrete, or Kronecker, delta function."
+},
+{
+"area": "sympy.functions",
+"name": "LambertW",
+"kind": "class",
+"doc": "The Lambert W function $W(z)$ is defined as the inverse"
+},
+{
+"area": "sympy.functions",
+"name": "LeviCivita",
+"kind": "class",
+"doc": "Represent the Levi-Civita symbol."
+},
+{
+"area": "sympy.functions",
+"name": "Li",
+"kind": "class",
+"doc": "The offset logarithmic integral."
+},
+{
+"area": "sympy.functions",
+"name": "Max",
+"kind": "class",
+"doc": "Return, if possible, the maximum value of the list."
+},
+{
+"area": "sympy.functions",
+"name": "Min",
+"kind": "class",
+"doc": "Return, if possible, the minimum value of the list."
+},
+{
+"area": "sympy.functions",
+"name": "Piecewise",
+"kind": "class",
+"doc": "Represents a piecewise function."
+},
+{
+"area": "sympy.functions",
+"name": "Rem",
+"kind": "class",
+"doc": "Returns the remainder when ``p`` is divided by ``q`` where ``p`` is finite"
+},
+{
+"area": "sympy.functions",
+"name": "RisingFactorial",
+"kind": "class",
+"doc": "Rising factorial (also called Pochhammer symbol [1]_) is a double valued"
+},
+{
+"area": "sympy.functions",
+"name": "Shi",
+"kind": "class",
+"doc": "Sinh integral."
+},
+{
+"area": "sympy.functions",
+"name": "Si",
+"kind": "class",
+"doc": "Sine integral."
+},
+{
+"area": "sympy.functions",
+"name": "SingularityFunction",
+"kind": "class",
+"doc": "Singularity functions are a class of discontinuous functions."
+},
+{
+"area": "sympy.functions",
+"name": "Ynm",
+"kind": "class",
+"doc": "Spherical harmonics defined as"
+},
+{
+"area": "sympy.functions",
+"name": "Ynm_c",
+"kind": "function",
+"doc": "Conjugate spherical harmonics defined as"
+},
+{
+"area": "sympy.functions",
+"name": "Znm",
+"kind": "class",
+"doc": "Real spherical harmonics defined as"
+},
+{
+"area": "sympy.functions",
+"name": "acos",
+"kind": "class",
+"doc": "The inverse cosine function."
+},
+{
+"area": "sympy.functions",
+"name": "acosh",
+"kind": "class",
+"doc": "``acosh(x)`` is the inverse hyperbolic cosine of ``x``."
+},
+{
+"area": "sympy.functions",
+"name": "acot",
+"kind": "class",
+"doc": "The inverse cotangent function."
+},
+{
+"area": "sympy.functions",
+"name": "acoth",
+"kind": "class",
+"doc": "``acoth(x)`` is the inverse hyperbolic cotangent of ``x``."
+},
+{
+"area": "sympy.functions",
+"name": "acsc",
+"kind": "class",
+"doc": "The inverse cosecant function."
+},
+{
+"area": "sympy.functions",
+"name": "acsch",
+"kind": "class",
+"doc": "``acsch(x)`` is the inverse hyperbolic cosecant of ``x``."
+},
+{
+"area": "sympy.functions",
+"name": "adjoint",
+"kind": "class",
+"doc": "Conjugate transpose or Hermite conjugation."
+},
+{
+"area": "sympy.functions",
+"name": "airyai",
+"kind": "class",
+"doc": "The Airy function $\\operatorname{Ai}$ of the first kind."
+},
+{
+"area": "sympy.functions",
+"name": "airyaiprime",
+"kind": "class",
+"doc": "The derivative $\\operatorname{Ai}^\\prime$ of the Airy function of the first"
+},
+{
+"area": "sympy.functions",
+"name": "airybi",
+"kind": "class",
+"doc": "The Airy function $\\operatorname{Bi}$ of the second kind."
+},
+{
+"area": "sympy.functions",
+"name": "airybiprime",
+"kind": "class",
+"doc": "The derivative $\\operatorname{Bi}^\\prime$ of the Airy function of the first"
+},
+{
+"area": "sympy.functions",
+"name": "andre",
+"kind": "class",
+"doc": "Andre numbers / Andre function"
+},
+{
+"area": "sympy.functions",
+"name": "appellf1",
+"kind": "class",
+"doc": "This is the Appell hypergeometric function of two variables as:"
+},
+{
+"area": "sympy.functions",
+"name": "arg",
+"kind": "class",
+"doc": "Returns the argument (in radians) of a complex number. The argument is"
+},
+{
+"area": "sympy.functions",
+"name": "asec",
+"kind": "class",
+"doc": "The inverse secant function."
+},
+{
+"area": "sympy.functions",
+"name": "asech",
+"kind": "class",
+"doc": "``asech(x)`` is the inverse hyperbolic secant of ``x``."
+},
+{
+"area": "sympy.functions",
+"name": "asin",
+"kind": "class",
+"doc": "The inverse sine function."
+},
+{
+"area": "sympy.functions",
+"name": "asinh",
+"kind": "class",
+"doc": "``asinh(x)`` is the inverse hyperbolic sine of ``x``."
+},
+{
+"area": "sympy.functions",
+"name": "assoc_laguerre",
+"kind": "class",
+"doc": "Returns the $n$th generalized Laguerre polynomial in $x$, $L_n(x)$."
+},
+{
+"area": "sympy.functions",
+"name": "assoc_legendre",
+"kind": "class",
+"doc": "``assoc_legendre(n, m, x)`` gives $P_n^m(x)$, where $n$ and $m$ are"
+},
+{
+"area": "sympy.functions",
+"name": "atan",
+"kind": "class",
+"doc": "The inverse tangent function."
+},
+{
+"area": "sympy.functions",
+"name": "atan2",
+"kind": "class",
+"doc": "The function ``atan2(y, x)`` computes `\\operatorname{atan}(y/x)` taking"
+},
+{
+"area": "sympy.functions",
+"name": "atanh",
+"kind": "class",
+"doc": "``atanh(x)`` is the inverse hyperbolic tangent of ``x``."
+},
+{
+"area": "sympy.functions",
+"name": "bell",
+"kind": "class",
+"doc": "Bell numbers / Bell polynomials"
+},
+{
+"area": "sympy.functions",
+"name": "bernoulli",
+"kind": "class",
+"doc": "Bernoulli numbers / Bernoulli polynomials / Bernoulli function"
+},
+{
+"area": "sympy.functions",
+"name": "besseli",
+"kind": "class",
+"doc": "Modified Bessel function of the first kind."
+},
+{
+"area": "sympy.functions",
+"name": "besselj",
+"kind": "class",
+"doc": "Bessel function of the first kind."
+},
+{
+"area": "sympy.functions",
+"name": "besselk",
+"kind": "class",
+"doc": "Modified Bessel function of the second kind."
+},
+{
+"area": "sympy.functions",
+"name": "bessely",
+"kind": "class",
+"doc": "Bessel function of the second kind."
+},
+{
+"area": "sympy.functions",
+"name": "beta",
+"kind": "class",
+"doc": "The beta integral is called the Eulerian integral of the first kind by"
+},
+{
+"area": "sympy.functions",
+"name": "betainc",
+"kind": "class",
+"doc": "The Generalized Incomplete Beta function is defined as"
+},
+{
+"area": "sympy.functions",
+"name": "betainc_regularized",
+"kind": "class",
+"doc": "The Generalized Regularized Incomplete Beta function is given by"
+},
+{
+"area": "sympy.functions",
+"name": "binomial",
+"kind": "class",
+"doc": "Implementation of the binomial coefficient. It can be defined"
+},
+{
+"area": "sympy.functions",
+"name": "bspline_basis_set",
+"kind": "function",
+"doc": "Return the ``len(knots)-d-1`` B-splines at *x* of degree *d*"
+},
+{
+"area": "sympy.functions",
+"name": "carmichael",
+"kind": "class",
+"doc": "Carmichael Numbers:"
+},
+{
+"area": "sympy.functions",
+"name": "catalan",
+"kind": "class",
+"doc": "Catalan numbers"
+},
+{
+"area": "sympy.functions",
+"name": "cbrt",
+"kind": "function",
+"doc": "Returns the principal cube root."
+},
+{
+"area": "sympy.functions",
+"name": "ceiling",
+"kind": "class",
+"doc": "Ceiling is a univariate function which returns the smallest integer"
+},
+{
+"area": "sympy.functions",
+"name": "chebyshevt",
+"kind": "class",
+"doc": "Chebyshev polynomial of the first kind, $T_n(x)$."
+},
+{
+"area": "sympy.functions",
+"name": "chebyshevt_root",
+"kind": "class",
+"doc": "``chebyshev_root(n, k)`` returns the $k$th root (indexed from zero) of"
+},
+{
+"area": "sympy.functions",
+"name": "chebyshevu",
+"kind": "class",
+"doc": "Chebyshev polynomial of the second kind, $U_n(x)$."
+},
+{
+"area": "sympy.functions",
+"name": "chebyshevu_root",
+"kind": "class",
+"doc": "``chebyshevu_root(n, k)`` returns the $k$th root (indexed from zero) of the"
+},
+{
+"area": "sympy.functions",
+"name": "conjugate",
+"kind": "class",
+"doc": "Returns the *complex conjugate* [1]_ of an argument."
+},
+{
+"area": "sympy.functions",
+"name": "cos",
+"kind": "class",
+"doc": "The cosine function."
+},
+{
+"area": "sympy.functions",
+"name": "cosh",
+"kind": "class",
+"doc": "``cosh(x)`` is the hyperbolic cosine of ``x``."
+},
+{
+"area": "sympy.functions",
+"name": "cot",
+"kind": "class",
+"doc": "The cotangent function."
+},
+{
+"area": "sympy.functions",
+"name": "coth",
+"kind": "class",
+"doc": "``coth(x)`` is the hyperbolic cotangent of ``x``."
+},
+{
+"area": "sympy.functions",
+"name": "csc",
+"kind": "class",
+"doc": "The cosecant function."
+},
+{
+"area": "sympy.functions",
+"name": "csch",
+"kind": "class",
+"doc": "``csch(x)`` is the hyperbolic cosecant of ``x``."
+},
+{
+"area": "sympy.functions",
+"name": "digamma",
+"kind": "class",
+"doc": "The ``digamma`` function is the first derivative of the ``loggamma``"
+},
+{
+"area": "sympy.functions",
+"name": "dirichlet_eta",
+"kind": "class",
+"doc": "Dirichlet eta function."
+},
+{
+"area": "sympy.functions",
+"name": "divisor_sigma",
+"kind": "class",
+"doc": "Calculate the divisor function `\\sigma_k(n)` for positive integer n"
+},
+{
+"area": "sympy.functions",
+"name": "elliptic_e",
+"kind": "class",
+"doc": "Called with two arguments $z$ and $m$, evaluates the"
+},
+{
+"area": "sympy.functions",
+"name": "elliptic_f",
+"kind": "class",
+"doc": "The Legendre incomplete elliptic integral of the first"
+},
+{
+"area": "sympy.functions",
+"name": "elliptic_k",
+"kind": "class",
+"doc": "The complete elliptic integral of the first kind, defined by"
+},
+{
+"area": "sympy.functions",
+"name": "elliptic_pi",
+"kind": "class",
+"doc": "Called with three arguments $n$, $z$ and $m$, evaluates the"
+},
+{
+"area": "sympy.functions",
+"name": "erf",
+"kind": "class",
+"doc": "The Gauss error function."
+},
+{
+"area": "sympy.functions",
+"name": "erf2",
+"kind": "class",
+"doc": "Two-argument error function."
+},
+{
+"area": "sympy.functions",
+"name": "erf2inv",
+"kind": "class",
+"doc": "Two-argument Inverse error function. The erf2inv function is defined as:"
+},
+{
+"area": "sympy.functions",
+"name": "erfc",
+"kind": "class",
+"doc": "Complementary Error Function."
+},
+{
+"area": "sympy.functions",
+"name": "erfcinv",
+"kind": "class",
+"doc": "Inverse Complementary Error Function. The erfcinv function is defined as:"
+},
+{
+"area": "sympy.functions",
+"name": "erfi",
+"kind": "class",
+"doc": "Imaginary error function."
+},
+{
+"area": "sympy.functions",
+"name": "erfinv",
+"kind": "class",
+"doc": "Inverse Error Function. The erfinv function is defined as:"
+},
+{
+"area": "sympy.functions",
+"name": "euler",
+"kind": "class",
+"doc": "Euler numbers / Euler polynomials / Euler function"
+},
+{
+"area": "sympy.functions",
+"name": "exp",
+"kind": "class",
+"doc": "The exponential function, :math:`e^x`."
+},
+{
+"area": "sympy.functions",
+"name": "exp_polar",
+"kind": "class",
+"doc": "Represent a *polar number* (see g-function Sphinx documentation)."
+},
+{
+"area": "sympy.functions",
+"name": "expint",
+"kind": "class",
+"doc": "Generalized exponential integral."
+},
+{
+"area": "sympy.functions",
+"name": "factorial",
+"kind": "class",
+"doc": "Implementation of factorial function over nonnegative integers."
+},
+{
+"area": "sympy.functions",
+"name": "factorial2",
+"kind": "class",
+"doc": "The double factorial `n!!`, not to be confused with `(n!)!`"
+},
+{
+"area": "sympy.functions",
+"name": "ff",
+"kind": "class",
+"doc": "Falling factorial (related to rising factorial) is a double valued"
+},
+{
+"area": "sympy.functions",
+"name": "fibonacci",
+"kind": "class",
+"doc": "Fibonacci numbers / Fibonacci polynomials"
+},
+{
+"area": "sympy.functions",
+"name": "floor",
+"kind": "class",
+"doc": "Floor is a univariate function which returns the largest integer"
+},
+{
+"area": "sympy.functions",
+"name": "frac",
+"kind": "class",
+"doc": "Represents the fractional part of x"
+},
+{
+"area": "sympy.functions",
+"name": "fresnelc",
+"kind": "class",
+"doc": "Fresnel integral C."
+},
+{
+"area": "sympy.functions",
+"name": "fresnels",
+"kind": "class",
+"doc": "Fresnel integral S."
+},
+{
+"area": "sympy.functions",
+"name": "gamma",
+"kind": "class",
+"doc": "The gamma function"
+},
+{
+"area": "sympy.functions",
+"name": "gegenbauer",
+"kind": "class",
+"doc": "Gegenbauer polynomial $C_n^{\\left(\\alpha\\right)}(x)$."
+},
+{
+"area": "sympy.functions",
+"name": "genocchi",
+"kind": "class",
+"doc": "Genocchi numbers / Genocchi polynomials / Genocchi function"
+},
+{
+"area": "sympy.functions",
+"name": "hankel1",
+"kind": "class",
+"doc": "Hankel function of the first kind."
+},
+{
+"area": "sympy.functions",
+"name": "hankel2",
+"kind": "class",
+"doc": "Hankel function of the second kind."
+},
+{
+"area": "sympy.functions",
+"name": "harmonic",
+"kind": "class",
+"doc": "Harmonic numbers"
+},
+{
+"area": "sympy.functions",
+"name": "hermite",
+"kind": "class",
+"doc": "``hermite(n, x)`` gives the $n$th Hermite polynomial in $x$, $H_n(x)$."
+},
+{
+"area": "sympy.functions",
+"name": "hermite_prob",
+"kind": "class",
+"doc": "``hermite_prob(n, x)`` gives the $n$th probabilist's Hermite polynomial"
+},
+{
+"area": "sympy.functions",
+"name": "hn1",
+"kind": "class",
+"doc": "Spherical Hankel function of the first kind."
+},
+{
+"area": "sympy.functions",
+"name": "hn2",
+"kind": "class",
+"doc": "Spherical Hankel function of the second kind."
+},
+{
+"area": "sympy.functions",
+"name": "hyper",
+"kind": "class",
+"doc": "The generalized hypergeometric function is defined by a series where"
+},
+{
+"area": "sympy.functions",
+"name": "im",
+"kind": "class",
+"doc": "Returns imaginary part of expression. This function performs only"
+},
+{
+"area": "sympy.functions",
+"name": "interpolating_spline",
+"kind": "function",
+"doc": "Return spline of degree *d*, passing through the given *X*"
+},
+{
+"area": "sympy.functions",
+"name": "jacobi",
+"kind": "class",
+"doc": "Jacobi polynomial $P_n^{\\left(\\alpha, \\beta\\right)}(x)$."
+},
+{
+"area": "sympy.functions",
+"name": "jacobi_normalized",
+"kind": "function",
+"doc": "Jacobi polynomial $P_n^{\\left(\\alpha, \\beta\\right)}(x)$."
+},
+{
+"area": "sympy.functions",
+"name": "jacobi_symbol",
+"kind": "class",
+"doc": "Returns the Jacobi symbol `(m / n)`."
+},
+{
+"area": "sympy.functions",
+"name": "jn",
+"kind": "class",
+"doc": "Spherical Bessel function of the first kind."
+},
+{
+"area": "sympy.functions",
+"name": "jn_zeros",
+"kind": "function",
+"doc": "Zeros of the spherical Bessel function of the first kind."
+},
+{
+"area": "sympy.functions",
+"name": "kronecker_symbol",
+"kind": "class",
+"doc": "Returns the Kronecker symbol `(a / n)`."
+},
+{
+"area": "sympy.functions",
+"name": "laguerre",
+"kind": "class",
+"doc": "Returns the $n$th Laguerre polynomial in $x$, $L_n(x)$."
+},
+{
+"area": "sympy.functions",
+"name": "legendre",
+"kind": "class",
+"doc": "``legendre(n, x)`` gives the $n$th Legendre polynomial of $x$, $P_n(x)$"
+},
+{
+"area": "sympy.functions",
+"name": "legendre_symbol",
+"kind": "class",
+"doc": "Returns the Legendre symbol `(a / p)`."
+},
+{
+"area": "sympy.functions",
+"name": "lerchphi",
+"kind": "class",
+"doc": "Lerch transcendent (Lerch phi function)."
+},
+{
+"area": "sympy.functions",
+"name": "li",
+"kind": "class",
+"doc": "The classical logarithmic integral."
+},
+{
+"area": "sympy.functions",
+"name": "ln",
+"kind": "class",
+"doc": "The natural logarithm function `\\ln(x)` or `\\log(x)`."
+},
+{
+"area": "sympy.functions",
+"name": "log",
+"kind": "class",
+"doc": "The natural logarithm function `\\ln(x)` or `\\log(x)`."
+},
+{
+"area": "sympy.functions",
+"name": "loggamma",
+"kind": "class",
+"doc": "The ``loggamma`` function implements the logarithm of the"
+},
+{
+"area": "sympy.functions",
+"name": "lowergamma",
+"kind": "class",
+"doc": "The lower incomplete gamma function."
+},
+{
+"area": "sympy.functions",
+"name": "lucas",
+"kind": "class",
+"doc": "Lucas numbers"
+},
+{
+"area": "sympy.functions",
+"name": "marcumq",
+"kind": "class",
+"doc": "The Marcum Q-function."
+},
+{
+"area": "sympy.functions",
+"name": "mathieuc",
+"kind": "class",
+"doc": "The Mathieu Cosine function $C(a,q,z)$."
+},
+{
+"area": "sympy.functions",
+"name": "mathieucprime",
+"kind": "class",
+"doc": "The derivative $C^{\\prime}(a,q,z)$ of the Mathieu Cosine function."
+},
+{
+"area": "sympy.functions",
+"name": "mathieus",
+"kind": "class",
+"doc": "The Mathieu Sine function $S(a,q,z)$."
+},
+{
+"area": "sympy.functions",
+"name": "mathieusprime",
+"kind": "class",
+"doc": "The derivative $S^{\\prime}(a,q,z)$ of the Mathieu Sine function."
+},
+{
+"area": "sympy.functions",
+"name": "meijerg",
+"kind": "class",
+"doc": "The Meijer G-function is defined by a Mellin-Barnes type integral that"
+},
+{
+"area": "sympy.functions",
+"name": "mobius",
+"kind": "class",
+"doc": "Mobius function maps natural number to {-1, 0, 1}"
+},
+{
+"area": "sympy.functions",
+"name": "motzkin",
+"kind": "class",
+"doc": "The nth Motzkin number is the number"
+},
+{
+"area": "sympy.functions",
+"name": "multigamma",
+"kind": "class",
+"doc": "The multivariate gamma function is a generalization of the gamma function"
+},
+{
+"area": "sympy.functions",
+"name": "partition",
+"kind": "class",
+"doc": "Partition numbers"
+},
+{
+"area": "sympy.functions",
+"name": "periodic_argument",
+"kind": "class",
+"doc": "Represent the argument on a quotient of the Riemann surface of the"
+},
+{
+"area": "sympy.functions",
+"name": "piecewise_exclusive",
+"kind": "function",
+"doc": "Rewrite :class:`Piecewise` with mutually exclusive conditions."
+},
+{
+"area": "sympy.functions",
+"name": "piecewise_fold",
+"kind": "function",
+"doc": "Takes an expression containing a piecewise function and returns the"
+},
+{
+"area": "sympy.functions",
+"name": "polar_lift",
+"kind": "class",
+"doc": "Lift argument to the Riemann surface of the logarithm, using the"
+},
+{
+"area": "sympy.functions",
+"name": "polarify",
+"kind": "function",
+"doc": "Turn all numbers in eq into their polar equivalents (under the standard"
+},
+{
+"area": "sympy.functions",
+"name": "polygamma",
+"kind": "class",
+"doc": "The function ``polygamma(n, z)`` returns ``log(gamma(z)).diff(n + 1)``."
+},
+{
+"area": "sympy.functions",
+"name": "polylog",
+"kind": "class",
+"doc": "Polylogarithm function."
+},
+{
+"area": "sympy.functions",
+"name": "primenu",
+"kind": "class",
+"doc": "Calculate the number of distinct prime factors for a positive integer n."
+},
+{
+"area": "sympy.functions",
+"name": "primeomega",
+"kind": "class",
+"doc": "Calculate the number of prime factors counting multiplicities for a"
+},
+{
+"area": "sympy.functions",
+"name": "primepi",
+"kind": "class",
+"doc": "Represents the prime counting function pi(n) = the number"
+},
+{
+"area": "sympy.functions",
+"name": "principal_branch",
+"kind": "class",
+"doc": "Represent a polar number reduced to its principal branch on a quotient"
+},
+{
+"area": "sympy.functions",
+"name": "re",
+"kind": "class",
+"doc": "Returns real part of expression. This function performs only"
+},
+{
+"area": "sympy.functions",
+"name": "real_root",
+"kind": "function",
+"doc": "Return the real *n*'th-root of *arg* if possible."
+},
+{
+"area": "sympy.functions",
+"name": "reduced_totient",
+"kind": "class",
+"doc": "Calculate the Carmichael reduced totient function lambda(n)"
+},
+{
+"area": "sympy.functions",
+"name": "rf",
+"kind": "class",
+"doc": "Rising factorial (also called Pochhammer symbol [1]_) is a double valued"
+},
+{
+"area": "sympy.functions",
+"name": "riemann_xi",
+"kind": "class",
+"doc": "Riemann Xi function."
+},
+{
+"area": "sympy.functions",
+"name": "root",
+"kind": "function",
+"doc": "Returns the *k*-th *n*-th root of ``arg``."
+},
+{
+"area": "sympy.functions",
+"name": "sec",
+"kind": "class",
+"doc": "The secant function."
+},
+{
+"area": "sympy.functions",
+"name": "sech",
+"kind": "class",
+"doc": "``sech(x)`` is the hyperbolic secant of ``x``."
+},
+{
+"area": "sympy.functions",
+"name": "sign",
+"kind": "class",
+"doc": "Returns the complex sign of an expression:"
+},
+{
+"area": "sympy.functions",
+"name": "sin",
+"kind": "class",
+"doc": "The sine function."
+},
+{
+"area": "sympy.functions",
+"name": "sinc",
+"kind": "class",
+"doc": "Represents an unnormalized sinc function:"
+},
+{
+"area": "sympy.functions",
+"name": "sinh",
+"kind": "class",
+"doc": "``sinh(x)`` is the hyperbolic sine of ``x``."
+},
+{
+"area": "sympy.functions",
+"name": "sqrt",
+"kind": "function",
+"doc": "Returns the principal square root."
+},
+{
+"area": "sympy.functions",
+"name": "stieltjes",
+"kind": "class",
+"doc": "Represents Stieltjes constants, $\\gamma_{k}$ that occur in"
+},
+{
+"area": "sympy.functions",
+"name": "subfactorial",
+"kind": "class",
+"doc": "The subfactorial counts the derangements of $n$ items and is"
+},
+{
+"area": "sympy.functions",
+"name": "tan",
+"kind": "class",
+"doc": "The tangent function."
+},
+{
+"area": "sympy.functions",
+"name": "tanh",
+"kind": "class",
+"doc": "``tanh(x)`` is the hyperbolic tangent of ``x``."
+},
+{
+"area": "sympy.functions",
+"name": "totient",
+"kind": "class",
+"doc": "Calculate the Euler totient function phi(n)"
+},
+{
+"area": "sympy.functions",
+"name": "transpose",
+"kind": "class",
+"doc": "Linear map transposition."
+},
+{
+"area": "sympy.functions",
+"name": "tribonacci",
+"kind": "class",
+"doc": "Tribonacci numbers / Tribonacci polynomials"
+},
+{
+"area": "sympy.functions",
+"name": "trigamma",
+"kind": "class",
+"doc": "The ``trigamma`` function is the second derivative of the ``loggamma``"
+},
+{
+"area": "sympy.functions",
+"name": "unbranched_argument",
+"kind": "function",
+"doc": "Returns periodic argument of arg with period as infinity."
+},
+{
+"area": "sympy.functions",
+"name": "unpolarify",
+"kind": "function",
+"doc": "If `p` denotes the projection from the Riemann surface of the logarithm to"
+},
+{
+"area": "sympy.functions",
+"name": "uppergamma",
+"kind": "class",
+"doc": "The upper incomplete gamma function."
+},
+{
+"area": "sympy.functions",
+"name": "yn",
+"kind": "class",
+"doc": "Spherical Bessel function of the second kind."
+},
+{
+"area": "sympy.functions",
+"name": "zeta",
+"kind": "class",
+"doc": "Hurwitz zeta function (or Riemann zeta function)."
+},
+{
+"area": "sympy.geometry",
+"name": "Circle",
+"kind": "class",
+"doc": "A circle in space."
+},
+{
+"area": "sympy.geometry",
+"name": "Curve",
+"kind": "class",
+"doc": "A curve in space."
+},
+{
+"area": "sympy.geometry",
+"name": "Ellipse",
+"kind": "class",
+"doc": "An elliptical GeometryEntity."
+},
+{
+"area": "sympy.geometry",
+"name": "GeometryError",
+"kind": "class",
+"doc": "An exception raised by classes in the geometry module."
+},
+{
+"area": "sympy.geometry",
+"name": "Line",
+"kind": "class",
+"doc": "An infinite line in space."
+},
+{
+"area": "sympy.geometry",
+"name": "Line2D",
+"kind": "class",
+"doc": "An infinite line in space 2D."
+},
+{
+"area": "sympy.geometry",
+"name": "Line3D",
+"kind": "class",
+"doc": "An infinite 3D line in space."
+},
+{
+"area": "sympy.geometry",
+"name": "Parabola",
+"kind": "class",
+"doc": "A parabolic GeometryEntity."
+},
+{
+"area": "sympy.geometry",
+"name": "Plane",
+"kind": "class",
+"doc": "A plane is a flat, two-dimensional surface. A plane is the two-dimensional"
+},
+{
+"area": "sympy.geometry",
+"name": "Point",
+"kind": "class",
+"doc": "A point in a n-dimensional Euclidean space."
+},
+{
+"area": "sympy.geometry",
+"name": "Point2D",
+"kind": "class",
+"doc": "A point in a 2-dimensional Euclidean space."
+},
+{
+"area": "sympy.geometry",
+"name": "Point3D",
+"kind": "class",
+"doc": "A point in a 3-dimensional Euclidean space."
+},
+{
+"area": "sympy.geometry",
+"name": "Polygon",
+"kind": "class",
+"doc": "A two-dimensional polygon."
+},
+{
+"area": "sympy.geometry",
+"name": "Ray",
+"kind": "class",
+"doc": "A Ray is a semi-line in the space with a source point and a direction."
+},
+{
+"area": "sympy.geometry",
+"name": "Ray2D",
+"kind": "class",
+"doc": "A Ray is a semi-line in the space with a source point and a direction."
+},
+{
+"area": "sympy.geometry",
+"name": "Ray3D",
+"kind": "class",
+"doc": "A Ray is a semi-line in the space with a source point and a direction."
+},
+{
+"area": "sympy.geometry",
+"name": "RegularPolygon",
+"kind": "class",
+"doc": "A regular polygon."
+},
+{
+"area": "sympy.geometry",
+"name": "Segment",
+"kind": "class",
+"doc": "A line segment in space."
+},
+{
+"area": "sympy.geometry",
+"name": "Segment2D",
+"kind": "class",
+"doc": "A line segment in 2D space."
+},
+{
+"area": "sympy.geometry",
+"name": "Segment3D",
+"kind": "class",
+"doc": "A line segment in a 3D space."
+},
+{
+"area": "sympy.geometry",
+"name": "Triangle",
+"kind": "class",
+"doc": "A polygon with three vertices and three sides."
+},
+{
+"area": "sympy.geometry",
+"name": "are_similar",
+"kind": "function",
+"doc": "Are two geometrical entities similar."
+},
+{
+"area": "sympy.geometry",
+"name": "centroid",
+"kind": "function",
+"doc": "Find the centroid (center of mass) of the collection containing only Points,"
+},
+{
+"area": "sympy.geometry",
+"name": "closest_points",
+"kind": "function",
+"doc": "Return the subset of points from a set of points that were"
+},
+{
+"area": "sympy.geometry",
+"name": "convex_hull",
+"kind": "function",
+"doc": "The convex hull surrounding the Points contained in the list of entities."
+},
+{
+"area": "sympy.geometry",
+"name": "deg",
+"kind": "function",
+"doc": "Return the degree value for the given radians (pi = 180 degrees)."
+},
+{
+"area": "sympy.geometry",
+"name": "farthest_points",
+"kind": "function",
+"doc": "Return the subset of points from a set of points that were"
+},
+{
+"area": "sympy.geometry",
+"name": "idiff",
+"kind": "function",
+"doc": "Return ``dy/dx`` assuming that ``eq == 0``."
+},
+{
+"area": "sympy.geometry",
+"name": "intersection",
+"kind": "function",
+"doc": "The intersection of a collection of GeometryEntity instances."
+},
+{
+"area": "sympy.geometry",
+"name": "rad",
+"kind": "function",
+"doc": "Return the radian value for the given degrees (pi = 180 degrees)."
+},
+{
+"area": "sympy.integrals",
+"name": "CosineTransform",
+"kind": "class",
+"doc": "Class representing unevaluated cosine transforms."
+},
+{
+"area": "sympy.integrals",
+"name": "FourierTransform",
+"kind": "class",
+"doc": "Class representing unevaluated Fourier transforms."
+},
+{
+"area": "sympy.integrals",
+"name": "HankelTransform",
+"kind": "class",
+"doc": "Class representing unevaluated Hankel transforms."
+},
+{
+"area": "sympy.integrals",
+"name": "Integral",
+"kind": "class",
+"doc": "Represents unevaluated integral."
+},
+{
+"area": "sympy.integrals",
+"name": "InverseCosineTransform",
+"kind": "class",
+"doc": "Class representing unevaluated inverse cosine transforms."
+},
+{
+"area": "sympy.integrals",
+"name": "InverseFourierTransform",
+"kind": "class",
+"doc": "Class representing unevaluated inverse Fourier transforms."
+},
+{
+"area": "sympy.integrals",
+"name": "InverseHankelTransform",
+"kind": "class",
+"doc": "Class representing unevaluated inverse Hankel transforms."
+},
+{
+"area": "sympy.integrals",
+"name": "InverseLaplaceTransform",
+"kind": "class",
+"doc": "Class representing unevaluated inverse Laplace transforms."
+},
+{
+"area": "sympy.integrals",
+"name": "InverseMellinTransform",
+"kind": "class",
+"doc": "Class representing unevaluated inverse Mellin transforms."
+},
+{
+"area": "sympy.integrals",
+"name": "InverseSineTransform",
+"kind": "class",
+"doc": "Class representing unevaluated inverse sine transforms."
+},
+{
+"area": "sympy.integrals",
+"name": "LaplaceTransform",
+"kind": "class",
+"doc": "Class representing unevaluated Laplace transforms."
+},
+{
+"area": "sympy.integrals",
+"name": "MellinTransform",
+"kind": "class",
+"doc": "Class representing unevaluated Mellin transforms."
+},
+{
+"area": "sympy.integrals",
+"name": "SineTransform",
+"kind": "class",
+"doc": "Class representing unevaluated sine transforms."
+},
+{
+"area": "sympy.integrals",
+"name": "cosine_transform",
+"kind": "function",
+"doc": "Compute the unitary, ordinary-frequency cosine transform of `f`, defined"
+},
+{
+"area": "sympy.integrals",
+"name": "fourier_transform",
+"kind": "function",
+"doc": "Compute the unitary, ordinary-frequency Fourier transform of ``f``, defined"
+},
+{
+"area": "sympy.integrals",
+"name": "hankel_transform",
+"kind": "function",
+"doc": "Compute the Hankel transform of `f`, defined as"
+},
+{
+"area": "sympy.integrals",
+"name": "integrate",
+"kind": "function",
+"doc": "integrate(f, var, ...)"
+},
+{
+"area": "sympy.integrals",
+"name": "inverse_cosine_transform",
+"kind": "function",
+"doc": "Compute the unitary, ordinary-frequency inverse cosine transform of `F`,"
+},
+{
+"area": "sympy.integrals",
+"name": "inverse_fourier_transform",
+"kind": "function",
+"doc": "Compute the unitary, ordinary-frequency inverse Fourier transform of `F`,"
+},
+{
+"area": "sympy.integrals",
+"name": "inverse_hankel_transform",
+"kind": "function",
+"doc": "Compute the inverse Hankel transform of `F` defined as"
+},
+{
+"area": "sympy.integrals",
+"name": "inverse_laplace_transform",
+"kind": "function",
+"doc": "Compute the inverse Laplace transform of `F(s)`, defined as"
+},
+{
+"area": "sympy.integrals",
+"name": "inverse_mellin_transform",
+"kind": "function",
+"doc": "Compute the inverse Mellin transform of `F(s)` over the fundamental"
+},
+{
+"area": "sympy.integrals",
+"name": "inverse_sine_transform",
+"kind": "function",
+"doc": "Compute the unitary, ordinary-frequency inverse sine transform of `F`,"
+},
+{
+"area": "sympy.integrals",
+"name": "laplace_correspondence",
+"kind": "function",
+"doc": "This helper function takes a function `f` that is the result of a"
+},
+{
+"area": "sympy.integrals",
+"name": "laplace_initial_conds",
+"kind": "function",
+"doc": "This helper function takes a function `f` that is the result of a"
+},
+{
+"area": "sympy.integrals",
+"name": "laplace_transform",
+"kind": "function",
+"doc": "Compute the Laplace Transform `F(s)` of `f(t)`,"
+},
+{
+"area": "sympy.integrals",
+"name": "line_integrate",
+"kind": "function",
+"doc": "line_integrate(field, Curve, variables)"
+},
+{
+"area": "sympy.integrals",
+"name": "mellin_transform",
+"kind": "function",
+"doc": "Compute the Mellin transform `F(s)` of `f(x)`,"
+},
+{
+"area": "sympy.integrals",
+"name": "sine_transform",
+"kind": "function",
+"doc": "Compute the unitary, ordinary-frequency sine transform of `f`, defined"
+},
+{
+"area": "sympy.integrals",
+"name": "singularityintegrate",
+"kind": "function",
+"doc": "This function handles the indefinite integrations of Singularity functions."
+},
+{
+"area": "sympy.interactive",
+"name": "init_printing",
+"kind": "function",
+"doc": "Initializes pretty-printer depending on the environment."
+},
+{
+"area": "sympy.interactive",
+"name": "init_session",
+"kind": "function",
+"doc": "Initialize an embedded IPython or Python session. The IPython session is"
+},
+{
+"area": "sympy.interactive",
+"name": "interactive_traversal",
+"kind": "function",
+"doc": "Traverse a tree asking a user which branch to choose."
+},
+{
+"area": "sympy.logic",
+"name": "And",
+"kind": "class",
+"doc": "Logical AND function."
+},
+{
+"area": "sympy.logic",
+"name": "Equivalent",
+"kind": "class",
+"doc": "Equivalence relation."
+},
+{
+"area": "sympy.logic",
+"name": "ITE",
+"kind": "class",
+"doc": "If-then-else clause."
+},
+{
+"area": "sympy.logic",
+"name": "Implies",
+"kind": "class",
+"doc": "Logical implication."
+},
+{
+"area": "sympy.logic",
+"name": "Nand",
+"kind": "class",
+"doc": "Logical NAND function."
+},
+{
+"area": "sympy.logic",
+"name": "Nor",
+"kind": "class",
+"doc": "Logical NOR function."
+},
+{
+"area": "sympy.logic",
+"name": "Not",
+"kind": "class",
+"doc": "Logical Not function (negation)"
+},
+{
+"area": "sympy.logic",
+"name": "Or",
+"kind": "class",
+"doc": "Logical OR function"
+},
+{
+"area": "sympy.logic",
+"name": "POSform",
+"kind": "function",
+"doc": "The POSform function uses simplified_pairs and a redundant-group"
+},
+{
+"area": "sympy.logic",
+"name": "SOPform",
+"kind": "function",
+"doc": "The SOPform function uses simplified_pairs and a redundant group-"
+},
+{
+"area": "sympy.logic",
+"name": "Xor",
+"kind": "class",
+"doc": "Logical XOR (exclusive OR) function."
+},
+{
+"area": "sympy.logic",
+"name": "bool_map",
+"kind": "function",
+"doc": "Return the simplified version of *bool1*, and the mapping of variables"
+},
+{
+"area": "sympy.logic",
+"name": "satisfiable",
+"kind": "function",
+"doc": "Check satisfiability of a propositional sentence."
+},
+{
+"area": "sympy.logic",
+"name": "simplify_logic",
+"kind": "function",
+"doc": "This function simplifies a boolean function to its simplified version"
+},
+{
+"area": "sympy.logic",
+"name": "to_cnf",
+"kind": "function",
+"doc": "Convert a propositional logical sentence ``expr`` to conjunctive normal"
+},
+{
+"area": "sympy.logic",
+"name": "to_dnf",
+"kind": "function",
+"doc": "Convert a propositional logical sentence ``expr`` to disjunctive normal"
+},
+{
+"area": "sympy.logic",
+"name": "to_nnf",
+"kind": "function",
+"doc": "Converts ``expr`` to Negation Normal Form (NNF)."
+},
+{
+"area": "sympy.matrices",
+"name": "Adjoint",
+"kind": "class",
+"doc": "The Hermitian adjoint of a matrix expression."
+},
+{
+"area": "sympy.matrices",
+"name": "BlockDiagMatrix",
+"kind": "class",
+"doc": "A sparse matrix with block matrices along its diagonals"
+},
+{
+"area": "sympy.matrices",
+"name": "BlockMatrix",
+"kind": "class",
+"doc": "A BlockMatrix is a Matrix comprised of other matrices."
+},
+{
+"area": "sympy.matrices",
+"name": "DeferredVector",
+"kind": "class",
+"doc": "A vector whose components are deferred (e.g. for use with lambdify)."
+},
+{
+"area": "sympy.matrices",
+"name": "Determinant",
+"kind": "class",
+"doc": "Matrix Determinant"
+},
+{
+"area": "sympy.matrices",
+"name": "DiagMatrix",
+"kind": "class",
+"doc": "Turn a vector into a diagonal matrix."
+},
+{
+"area": "sympy.matrices",
+"name": "DiagonalMatrix",
+"kind": "class",
+"doc": "DiagonalMatrix(M) will create a matrix expression that"
+},
+{
+"area": "sympy.matrices",
+"name": "DiagonalOf",
+"kind": "class",
+"doc": "DiagonalOf(M) will create a matrix expression that"
+},
+{
+"area": "sympy.matrices",
+"name": "DotProduct",
+"kind": "class",
+"doc": "Dot product of vector matrices"
+},
+{
+"area": "sympy.matrices",
+"name": "FunctionMatrix",
+"kind": "class",
+"doc": "Represents a matrix using a function (``Lambda``) which gives"
+},
+{
+"area": "sympy.matrices",
+"name": "GramSchmidt",
+"kind": "function",
+"doc": "Apply the Gram-Schmidt process to a set of vectors."
+},
+{
+"area": "sympy.matrices",
+"name": "HadamardPower",
+"kind": "class",
+"doc": "Elementwise power of matrix expressions"
+},
+{
+"area": "sympy.matrices",
+"name": "HadamardProduct",
+"kind": "class",
+"doc": "Elementwise product of matrix expressions"
+},
+{
+"area": "sympy.matrices",
+"name": "Identity",
+"kind": "class",
+"doc": "The Matrix Identity I - multiplicative identity"
+},
+{
+"area": "sympy.matrices",
+"name": "ImmutableDenseMatrix",
+"kind": "class",
+"doc": "Create an immutable version of a matrix."
+},
+{
+"area": "sympy.matrices",
+"name": "ImmutableMatrix",
+"kind": "class",
+"doc": "Create an immutable version of a matrix."
+},
+{
+"area": "sympy.matrices",
+"name": "ImmutableSparseMatrix",
+"kind": "class",
+"doc": "Create an immutable version of a sparse matrix."
+},
+{
+"area": "sympy.matrices",
+"name": "Inverse",
+"kind": "class",
+"doc": "The multiplicative inverse of a matrix expression"
+},
+{
+"area": "sympy.matrices",
+"name": "KroneckerProduct",
+"kind": "class",
+"doc": "The Kronecker product of two or more arguments."
+},
+{
+"area": "sympy.matrices",
+"name": "MatAdd",
+"kind": "class",
+"doc": "A Sum of Matrix Expressions"
+},
+{
+"area": "sympy.matrices",
+"name": "MatMul",
+"kind": "class",
+"doc": "A product of matrix expressions"
+},
+{
+"area": "sympy.matrices",
+"name": "MatPow",
+"kind": "class",
+"doc": "Superclass for Matrix Expressions"
+},
+{
+"area": "sympy.matrices",
+"name": "Matrix",
+"kind": "class",
+"doc": "Matrix implementation based on DomainMatrix as the internal representation"
+},
+{
+"area": "sympy.matrices",
+"name": "MatrixBase",
+"kind": "class",
+"doc": "All common matrix operations including basic arithmetic, shaping,"
+},
+{
+"area": "sympy.matrices",
+"name": "MatrixExpr",
+"kind": "class",
+"doc": "Superclass for Matrix Expressions"
+},
+{
+"area": "sympy.matrices",
+"name": "MatrixPermute",
+"kind": "class",
+"doc": "Symbolic representation for permuting matrix rows or columns."
+},
+{
+"area": "sympy.matrices",
+"name": "MatrixSlice",
+"kind": "class",
+"doc": "A MatrixSlice of a Matrix Expression"
+},
+{
+"area": "sympy.matrices",
+"name": "MatrixSymbol",
+"kind": "class",
+"doc": "Symbolic representation of a Matrix object"
+},
+{
+"area": "sympy.matrices",
+"name": "MutableDenseMatrix",
+"kind": "class",
+"doc": "Matrix implementation based on DomainMatrix as the internal representation"
+},
+{
+"area": "sympy.matrices",
+"name": "MutableMatrix",
+"kind": "class",
+"doc": "Matrix implementation based on DomainMatrix as the internal representation"
+},
+{
+"area": "sympy.matrices",
+"name": "MutableSparseMatrix",
+"kind": "class",
+"doc": "A sparse matrix (a matrix with a large number of zero elements)."
+},
+{
+"area": "sympy.matrices",
+"name": "NonSquareMatrixError",
+"kind": "class",
+"doc": "Wrong matrix shape"
+},
+{
+"area": "sympy.matrices",
+"name": "OneMatrix",
+"kind": "class",
+"doc": "Matrix whose all entries are ones."
+},
+{
+"area": "sympy.matrices",
+"name": "Permanent",
+"kind": "class",
+"doc": "Matrix Permanent"
+},
+{
+"area": "sympy.matrices",
+"name": "PermutationMatrix",
+"kind": "class",
+"doc": "A Permutation Matrix"
+},
+{
+"area": "sympy.matrices",
+"name": "ShapeError",
+"kind": "class",
+"doc": "Wrong matrix shape"
+},
+{
+"area": "sympy.matrices",
+"name": "SparseMatrix",
+"kind": "class",
+"doc": "A sparse matrix (a matrix with a large number of zero elements)."
+},
+{
+"area": "sympy.matrices",
+"name": "Trace",
+"kind": "class",
+"doc": "Matrix Trace"
+},
+{
+"area": "sympy.matrices",
+"name": "Transpose",
+"kind": "class",
+"doc": "The transpose of a matrix expression."
+},
+{
+"area": "sympy.matrices",
+"name": "ZeroMatrix",
+"kind": "class",
+"doc": "The Matrix Zero 0 - additive identity"
+},
+{
+"area": "sympy.matrices",
+"name": "banded",
+"kind": "function",
+"doc": "Returns a SparseMatrix from the given dictionary describing"
+},
+{
+"area": "sympy.matrices",
+"name": "block_collapse",
+"kind": "function",
+"doc": "Evaluates a block matrix expression"
+},
+{
+"area": "sympy.matrices",
+"name": "blockcut",
+"kind": "function",
+"doc": "Cut a matrix expression into Blocks"
+},
+{
+"area": "sympy.matrices",
+"name": "casoratian",
+"kind": "function",
+"doc": "Given linear difference operator L of order 'k' and homogeneous"
+},
+{
+"area": "sympy.matrices",
+"name": "det",
+"kind": "function",
+"doc": "Matrix Determinant"
+},
+{
+"area": "sympy.matrices",
+"name": "diag",
+"kind": "function",
+"doc": "Returns a matrix with the provided values placed on the"
+},
+{
+"area": "sympy.matrices",
+"name": "diagonalize_vector",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "sympy.matrices",
+"name": "eye",
+"kind": "function",
+"doc": "Create square identity matrix n x n"
+},
+{
+"area": "sympy.matrices",
+"name": "hadamard_product",
+"kind": "function",
+"doc": "Return the elementwise (aka Hadamard) product of matrices."
+},
+{
+"area": "sympy.matrices",
+"name": "hessian",
+"kind": "function",
+"doc": "Compute Hessian matrix for a function f wrt parameters in varlist"
+},
+{
+"area": "sympy.matrices",
+"name": "jordan_cell",
+"kind": "function",
+"doc": "Create a Jordan block:"
+},
+{
+"area": "sympy.matrices",
+"name": "kronecker_product",
+"kind": "function",
+"doc": "The Kronecker product of two or more arguments."
+},
+{
+"area": "sympy.matrices",
+"name": "list2numpy",
+"kind": "function",
+"doc": "Converts Python list of SymPy expressions to a NumPy array."
+},
+{
+"area": "sympy.matrices",
+"name": "matrix2numpy",
+"kind": "function",
+"doc": "Converts SymPy's matrix to a NumPy array."
+},
+{
+"area": "sympy.matrices",
+"name": "matrix_multiply_elementwise",
+"kind": "function",
+"doc": "Return the Hadamard product (elementwise product) of A and B"
+},
+{
+"area": "sympy.matrices",
+"name": "matrix_symbols",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "sympy.matrices",
+"name": "ones",
+"kind": "function",
+"doc": "Returns a matrix of ones with ``rows`` rows and ``cols`` columns;"
+},
+{
+"area": "sympy.matrices",
+"name": "per",
+"kind": "function",
+"doc": "Matrix Permanent"
+},
+{
+"area": "sympy.matrices",
+"name": "randMatrix",
+"kind": "function",
+"doc": "Create random matrix with dimensions ``r`` x ``c``. If ``c`` is omitted"
+},
+{
+"area": "sympy.matrices",
+"name": "rot_axis1",
+"kind": "function",
+"doc": "Returns a rotation matrix for a rotation of theta (in radians)"
+},
+{
+"area": "sympy.matrices",
+"name": "rot_axis2",
+"kind": "function",
+"doc": "Returns a rotation matrix for a rotation of theta (in radians)"
+},
+{
+"area": "sympy.matrices",
+"name": "rot_axis3",
+"kind": "function",
+"doc": "Returns a rotation matrix for a rotation of theta (in radians)"
+},
+{
+"area": "sympy.matrices",
+"name": "rot_ccw_axis1",
+"kind": "function",
+"doc": "Returns a rotation matrix for a rotation of theta (in radians)"
+},
+{
+"area": "sympy.matrices",
+"name": "rot_ccw_axis2",
+"kind": "function",
+"doc": "Returns a rotation matrix for a rotation of theta (in radians)"
+},
+{
+"area": "sympy.matrices",
+"name": "rot_ccw_axis3",
+"kind": "function",
+"doc": "Returns a rotation matrix for a rotation of theta (in radians)"
+},
+{
+"area": "sympy.matrices",
+"name": "rot_givens",
+"kind": "function",
+"doc": "Returns a a Givens rotation matrix, a a rotation in the"
+},
+{
+"area": "sympy.matrices",
+"name": "symarray",
+"kind": "function",
+"doc": "Create a numpy ndarray of symbols (as an object array)."
+},
+{
+"area": "sympy.matrices",
+"name": "trace",
+"kind": "function",
+"doc": "Trace of a Matrix.  Sum of the diagonal elements."
+},
+{
+"area": "sympy.matrices",
+"name": "wronskian",
+"kind": "function",
+"doc": "Compute Wronskian for [] of functions"
+},
+{
+"area": "sympy.matrices",
+"name": "zeros",
+"kind": "function",
+"doc": "Returns a matrix of zeros with ``rows`` rows and ``cols`` columns;"
+},
+{
+"area": "sympy.ntheory",
+"name": "Sieve",
+"kind": "class",
+"doc": "A list of prime numbers, implemented as a dynamically"
+},
+{
+"area": "sympy.ntheory",
+"name": "abundance",
+"kind": "function",
+"doc": "Returns the difference between the sum of the positive"
+},
+{
+"area": "sympy.ntheory",
+"name": "binomial_coefficients",
+"kind": "function",
+"doc": "Return a dictionary containing pairs :math:`{(k1,k2) : C_kn}` where"
+},
+{
+"area": "sympy.ntheory",
+"name": "binomial_coefficients_list",
+"kind": "function",
+"doc": "Return a list of binomial coefficients as rows of the Pascal's"
+},
+{
+"area": "sympy.ntheory",
+"name": "composite",
+"kind": "function",
+"doc": "Return the nth composite number, with the composite numbers indexed as"
+},
+{
+"area": "sympy.ntheory",
+"name": "compositepi",
+"kind": "function",
+"doc": "Return the number of positive composite numbers less than or equal to n."
+},
+{
+"area": "sympy.ntheory",
+"name": "continued_fraction",
+"kind": "function",
+"doc": "Return the continued fraction representation of a Rational or"
+},
+{
+"area": "sympy.ntheory",
+"name": "continued_fraction_convergents",
+"kind": "function",
+"doc": "Return an iterator over the convergents of a continued fraction (cf)."
+},
+{
+"area": "sympy.ntheory",
+"name": "continued_fraction_iterator",
+"kind": "function",
+"doc": "Return continued fraction expansion of x as iterator."
+},
+{
+"area": "sympy.ntheory",
+"name": "continued_fraction_periodic",
+"kind": "function",
+"doc": "Find the periodic continued fraction expansion of a quadratic irrational."
+},
+{
+"area": "sympy.ntheory",
+"name": "continued_fraction_reduce",
+"kind": "function",
+"doc": "Reduce a continued fraction to a rational or quadratic irrational."
+},
+{
+"area": "sympy.ntheory",
+"name": "cycle_length",
+"kind": "function",
+"doc": "For a given iterated sequence, return a generator that gives"
+},
+{
+"area": "sympy.ntheory",
+"name": "discrete_log",
+"kind": "function",
+"doc": "Compute the discrete logarithm of ``a`` to the base ``b`` modulo ``n``."
+},
+{
+"area": "sympy.ntheory",
+"name": "divisor_count",
+"kind": "function",
+"doc": "Return the number of divisors of ``n``. If ``modulus`` is not 1 then only"
+},
+{
+"area": "sympy.ntheory",
+"name": "divisors",
+"kind": "function",
+"doc": "Return all divisors of n sorted from 1..n by default."
+},
+{
+"area": "sympy.ntheory",
+"name": "egyptian_fraction",
+"kind": "function",
+"doc": "Return the list of denominators of an Egyptian fraction"
+},
+{
+"area": "sympy.ntheory",
+"name": "factorint",
+"kind": "function",
+"doc": "Given a positive integer ``n``, ``factorint(n)`` returns a dict containing"
+},
+{
+"area": "sympy.ntheory",
+"name": "factorrat",
+"kind": "function",
+"doc": "Given a Rational ``r``, ``factorrat(r)`` returns a dict containing"
+},
+{
+"area": "sympy.ntheory",
+"name": "is_abundant",
+"kind": "function",
+"doc": "Returns True if ``n`` is an abundant number, else False."
+},
+{
+"area": "sympy.ntheory",
+"name": "is_amicable",
+"kind": "function",
+"doc": "Returns True if the numbers `m` and `n` are \"amicable\", else False."
+},
+{
+"area": "sympy.ntheory",
+"name": "is_carmichael",
+"kind": "function",
+"doc": "Returns True if the numbers `n` is Carmichael number, else False."
+},
+{
+"area": "sympy.ntheory",
+"name": "is_deficient",
+"kind": "function",
+"doc": "Returns True if ``n`` is a deficient number, else False."
+},
+{
+"area": "sympy.ntheory",
+"name": "is_mersenne_prime",
+"kind": "function",
+"doc": "Returns True if  ``n`` is a Mersenne prime, else False."
+},
+{
+"area": "sympy.ntheory",
+"name": "is_nthpow_residue",
+"kind": "function",
+"doc": "Returns True if ``x**n == a (mod m)`` has solutions."
+},
+{
+"area": "sympy.ntheory",
+"name": "is_perfect",
+"kind": "function",
+"doc": "Returns True if ``n`` is a perfect number, else False."
+},
+{
+"area": "sympy.ntheory",
+"name": "is_primitive_root",
+"kind": "function",
+"doc": "Returns True if ``a`` is a primitive root of ``p``."
+},
+{
+"area": "sympy.ntheory",
+"name": "is_quad_residue",
+"kind": "function",
+"doc": "Returns True if ``a`` (mod ``p``) is in the set of squares mod ``p``,"
+},
+{
+"area": "sympy.ntheory",
+"name": "isprime",
+"kind": "function",
+"doc": "Test if n is a prime number (True) or not (False). For n < 2^64 the"
+},
+{
+"area": "sympy.ntheory",
+"name": "mersenne_prime_exponent",
+"kind": "function",
+"doc": "Returns the exponent ``i`` for the nth Mersenne prime (which"
+},
+{
+"area": "sympy.ntheory",
+"name": "multinomial_coefficients",
+"kind": "function",
+"doc": "Return a dictionary containing pairs ``{(k1,k2,..,km) : C_kn}``"
+},
+{
+"area": "sympy.ntheory",
+"name": "multiplicity",
+"kind": "function",
+"doc": "Find the greatest integer m such that p**m divides n."
+},
+{
+"area": "sympy.ntheory",
+"name": "n_order",
+"kind": "function",
+"doc": "Returns the order of ``a`` modulo ``n``."
+},
+{
+"area": "sympy.ntheory",
+"name": "nextprime",
+"kind": "function",
+"doc": "Return the ith prime greater than n."
+},
+{
+"area": "sympy.ntheory",
+"name": "npartitions",
+"kind": "function",
+"doc": "Calculate the partition function P(n), i.e. the number of ways that"
+},
+{
+"area": "sympy.ntheory",
+"name": "nthroot_mod",
+"kind": "function",
+"doc": "Find the solutions to ``x**n = a mod p``."
+},
+{
+"area": "sympy.ntheory",
+"name": "perfect_power",
+"kind": "function",
+"doc": "Return ``(b, e)`` such that ``n`` == ``b**e`` if ``n`` is a unique"
+},
+{
+"area": "sympy.ntheory",
+"name": "pollard_pm1",
+"kind": "function",
+"doc": "Use Pollard's p-1 method to try to extract a nontrivial factor"
+},
+{
+"area": "sympy.ntheory",
+"name": "pollard_rho",
+"kind": "function",
+"doc": "Use Pollard's rho method to try to extract a nontrivial factor"
+},
+{
+"area": "sympy.ntheory",
+"name": "prevprime",
+"kind": "function",
+"doc": "Return the largest prime smaller than n."
+},
+{
+"area": "sympy.ntheory",
+"name": "prime",
+"kind": "function",
+"doc": "Return the nth prime number, where primes are indexed starting from 1:"
+},
+{
+"area": "sympy.ntheory",
+"name": "primefactors",
+"kind": "function",
+"doc": "Return a sorted list of n's prime factors, ignoring multiplicity"
+},
+{
+"area": "sympy.ntheory",
+"name": "primerange",
+"kind": "function",
+"doc": "Generate a list of all prime numbers in the range [2, a),"
+},
+{
+"area": "sympy.ntheory",
+"name": "primitive_root",
+"kind": "function",
+"doc": "Returns a primitive root of ``p`` or None."
+},
+{
+"area": "sympy.ntheory",
+"name": "primorial",
+"kind": "function",
+"doc": "Returns the product of the first n primes (default) or"
+},
+{
+"area": "sympy.ntheory",
+"name": "proper_divisor_count",
+"kind": "function",
+"doc": "Return the number of proper divisors of ``n``."
+},
+{
+"area": "sympy.ntheory",
+"name": "proper_divisors",
+"kind": "function",
+"doc": "Return all divisors of n except n, sorted by default."
+},
+{
+"area": "sympy.ntheory",
+"name": "quadratic_congruence",
+"kind": "function",
+"doc": "Find the solutions to `a x^2 + b x + c \\equiv 0 \\pmod{n}`."
+},
+{
+"area": "sympy.ntheory",
+"name": "quadratic_residues",
+"kind": "function",
+"doc": "Returns the list of quadratic residues."
+},
+{
+"area": "sympy.ntheory",
+"name": "randprime",
+"kind": "function",
+"doc": "Return a random prime number in the range [a, b)."
+},
+{
+"area": "sympy.ntheory",
+"name": "sqrt_mod",
+"kind": "function",
+"doc": "Find a root of ``x**2 = a mod p``."
+},
+{
+"area": "sympy.ntheory",
+"name": "sqrt_mod_iter",
+"kind": "function",
+"doc": "Iterate over solutions to ``x**2 = a mod p``."
+},
+{
+"area": "sympy.parsing",
+"name": "parse_expr",
+"kind": "function",
+"doc": "Converts the string ``s`` to a SymPy expression, in ``local_dict``."
+},
+{
+"area": "sympy.plotting",
+"name": "plot",
+"kind": "function",
+"doc": "Plots a function of a single variable as a curve."
+},
+{
+"area": "sympy.plotting",
+"name": "plot_implicit",
+"kind": "function",
+"doc": "A plot function to plot implicit equations / inequalities."
+},
+{
+"area": "sympy.plotting",
+"name": "plot_parametric",
+"kind": "function",
+"doc": "Plots a 2D parametric curve."
+},
+{
+"area": "sympy.plotting",
+"name": "textplot",
+"kind": "function",
+"doc": "Print a crude ASCII art plot of the SymPy expression 'expr' (which"
+},
+{
+"area": "sympy.polys",
+"name": "AlgebraicField",
+"kind": "class",
+"doc": "Algebraic number field :ref:`QQ(a)`"
+},
+{
+"area": "sympy.polys",
+"name": "BasePolynomialError",
+"kind": "class",
+"doc": "Base class for polynomial related exceptions."
+},
+{
+"area": "sympy.polys",
+"name": "CRootOf",
+"kind": "class",
+"doc": "Represents an indexed complex root of a polynomial."
+},
+{
+"area": "sympy.polys",
+"name": "CoercionFailed",
+"kind": "class",
+"doc": "Base class for polynomial related exceptions."
+},
+{
+"area": "sympy.polys",
+"name": "ComplexField",
+"kind": "class",
+"doc": "Complex numbers up to the given precision."
+},
+{
+"area": "sympy.polys",
+"name": "ComplexRootOf",
+"kind": "class",
+"doc": "Represents an indexed complex root of a polynomial."
+},
+{
+"area": "sympy.polys",
+"name": "ComputationFailed",
+"kind": "class",
+"doc": "Base class for polynomial related exceptions."
+},
+{
+"area": "sympy.polys",
+"name": "Domain",
+"kind": "class",
+"doc": "Superclass for all domains in the polys domains system."
+},
+{
+"area": "sympy.polys",
+"name": "DomainError",
+"kind": "class",
+"doc": "Base class for polynomial related exceptions."
+},
+{
+"area": "sympy.polys",
+"name": "EvaluationFailed",
+"kind": "class",
+"doc": "Base class for polynomial related exceptions."
+},
+{
+"area": "sympy.polys",
+"name": "ExactQuotientFailed",
+"kind": "class",
+"doc": "Base class for polynomial related exceptions."
+},
+{
+"area": "sympy.polys",
+"name": "ExpressionDomain",
+"kind": "class",
+"doc": "A class for arbitrary expressions."
+},
+{
+"area": "sympy.polys",
+"name": "ExtraneousFactors",
+"kind": "class",
+"doc": "Base class for polynomial related exceptions."
+},
+{
+"area": "sympy.polys",
+"name": "FF",
+"kind": "class",
+"doc": "Finite field of prime order :ref:`GF(p)`"
+},
+{
+"area": "sympy.polys",
+"name": "FF_gmpy",
+"kind": "class",
+"doc": "Finite field based on GMPY integers."
+},
+{
+"area": "sympy.polys",
+"name": "FF_python",
+"kind": "class",
+"doc": "Finite field based on Python's integers."
+},
+{
+"area": "sympy.polys",
+"name": "FiniteField",
+"kind": "class",
+"doc": "Finite field of prime order :ref:`GF(p)`"
+},
+{
+"area": "sympy.polys",
+"name": "FlagError",
+"kind": "class",
+"doc": "Base class for polynomial related exceptions."
+},
+{
+"area": "sympy.polys",
+"name": "FractionField",
+"kind": "class",
+"doc": "A class for representing multivariate rational function fields."
+},
+{
+"area": "sympy.polys",
+"name": "GF",
+"kind": "class",
+"doc": "Finite field of prime order :ref:`GF(p)`"
+},
+{
+"area": "sympy.polys",
+"name": "GMPYFiniteField",
+"kind": "class",
+"doc": "Finite field based on GMPY integers."
+},
+{
+"area": "sympy.polys",
+"name": "GMPYIntegerRing",
+"kind": "class",
+"doc": "Integer ring based on GMPY's ``mpz`` type."
+},
+{
+"area": "sympy.polys",
+"name": "GMPYRationalField",
+"kind": "class",
+"doc": "Rational field based on GMPY's ``mpq`` type."
+},
+{
+"area": "sympy.polys",
+"name": "GeneratorsError",
+"kind": "class",
+"doc": "Base class for polynomial related exceptions."
+},
+{
+"area": "sympy.polys",
+"name": "GeneratorsNeeded",
+"kind": "class",
+"doc": "Base class for polynomial related exceptions."
+},
+{
+"area": "sympy.polys",
+"name": "GroebnerBasis",
+"kind": "class",
+"doc": "Represents a reduced Groebner basis."
+},
+{
+"area": "sympy.polys",
+"name": "HeuristicGCDFailed",
+"kind": "class",
+"doc": "Base class for polynomial related exceptions."
+},
+{
+"area": "sympy.polys",
+"name": "HomomorphismFailed",
+"kind": "class",
+"doc": "Base class for polynomial related exceptions."
+},
+{
+"area": "sympy.polys",
+"name": "IntegerRing",
+"kind": "class",
+"doc": "The domain ``ZZ`` representing the integers `\\mathbb{Z}`."
+},
+{
+"area": "sympy.polys",
+"name": "IsomorphismFailed",
+"kind": "class",
+"doc": "Base class for polynomial related exceptions."
+},
+{
+"area": "sympy.polys",
+"name": "LC",
+"kind": "function",
+"doc": "Return the leading coefficient of ``f``."
+},
+{
+"area": "sympy.polys",
+"name": "LM",
+"kind": "function",
+"doc": "Return the leading monomial of ``f``."
+},
+{
+"area": "sympy.polys",
+"name": "LT",
+"kind": "function",
+"doc": "Return the leading term of ``f``."
+},
+{
+"area": "sympy.polys",
+"name": "Monomial",
+"kind": "class",
+"doc": "Class representing a monomial, i.e. a product of powers."
+},
+{
+"area": "sympy.polys",
+"name": "MultivariatePolynomialError",
+"kind": "class",
+"doc": "Base class for polynomial related exceptions."
+},
+{
+"area": "sympy.polys",
+"name": "NotAlgebraic",
+"kind": "class",
+"doc": "Base class for polynomial related exceptions."
+},
+{
+"area": "sympy.polys",
+"name": "NotInvertible",
+"kind": "class",
+"doc": "Base class for polynomial related exceptions."
+},
+{
+"area": "sympy.polys",
+"name": "NotReversible",
+"kind": "class",
+"doc": "Base class for polynomial related exceptions."
+},
+{
+"area": "sympy.polys",
+"name": "OperationNotSupported",
+"kind": "class",
+"doc": "Base class for polynomial related exceptions."
+},
+{
+"area": "sympy.polys",
+"name": "OptionError",
+"kind": "class",
+"doc": "Base class for polynomial related exceptions."
+},
+{
+"area": "sympy.polys",
+"name": "Options",
+"kind": "class",
+"doc": "Options manager for polynomial manipulation module."
+},
+{
+"area": "sympy.polys",
+"name": "PolificationFailed",
+"kind": "class",
+"doc": "Base class for polynomial related exceptions."
+},
+{
+"area": "sympy.polys",
+"name": "Poly",
+"kind": "class",
+"doc": "Generic class for representing and operating on polynomial expressions."
+},
+{
+"area": "sympy.polys",
+"name": "PolynomialDivisionFailed",
+"kind": "class",
+"doc": "Base class for polynomial related exceptions."
+},
+{
+"area": "sympy.polys",
+"name": "PolynomialError",
+"kind": "class",
+"doc": "Base class for polynomial related exceptions."
+},
+{
+"area": "sympy.polys",
+"name": "PolynomialRing",
+"kind": "class",
+"doc": "A class for representing multivariate polynomial rings."
+},
+{
+"area": "sympy.polys",
+"name": "PurePoly",
+"kind": "class",
+"doc": "Class for representing pure polynomials."
+},
+{
+"area": "sympy.polys",
+"name": "PythonFiniteField",
+"kind": "class",
+"doc": "Finite field based on Python's integers."
+},
+{
+"area": "sympy.polys",
+"name": "PythonIntegerRing",
+"kind": "class",
+"doc": "Integer ring based on Python's ``int`` type."
+},
+{
+"area": "sympy.polys",
+"name": "QQ_gmpy",
+"kind": "class",
+"doc": "Rational field based on GMPY's ``mpq`` type."
+},
+{
+"area": "sympy.polys",
+"name": "QQ_python",
+"kind": "class",
+"doc": "Rational field based on :ref:`MPQ`."
+},
+{
+"area": "sympy.polys",
+"name": "RationalField",
+"kind": "class",
+"doc": "Abstract base class for the domain :ref:`QQ`."
+},
+{
+"area": "sympy.polys",
+"name": "RealField",
+"kind": "class",
+"doc": "Real numbers up to the given precision."
+},
+{
+"area": "sympy.polys",
+"name": "RefinementFailed",
+"kind": "class",
+"doc": "Base class for polynomial related exceptions."
+},
+{
+"area": "sympy.polys",
+"name": "RootOf",
+"kind": "class",
+"doc": "Represents a root of a univariate polynomial."
+},
+{
+"area": "sympy.polys",
+"name": "RootSum",
+"kind": "class",
+"doc": "Represents a sum of all roots of a univariate polynomial."
+},
+{
+"area": "sympy.polys",
+"name": "UnificationFailed",
+"kind": "class",
+"doc": "Base class for polynomial related exceptions."
+},
+{
+"area": "sympy.polys",
+"name": "UnivariatePolynomialError",
+"kind": "class",
+"doc": "Base class for polynomial related exceptions."
+},
+{
+"area": "sympy.polys",
+"name": "ZZ_gmpy",
+"kind": "class",
+"doc": "Integer ring based on GMPY's ``mpz`` type."
+},
+{
+"area": "sympy.polys",
+"name": "ZZ_python",
+"kind": "class",
+"doc": "Integer ring based on Python's ``int`` type."
+},
+{
+"area": "sympy.polys",
+"name": "all_roots",
+"kind": "function",
+"doc": "Returns the real and complex roots of ``f`` with multiplicities."
+},
+{
+"area": "sympy.polys",
+"name": "apart",
+"kind": "function",
+"doc": "Compute partial fraction decomposition of a rational function."
+},
+{
+"area": "sympy.polys",
+"name": "apart_list",
+"kind": "function",
+"doc": "Compute partial fraction decomposition of a rational function"
+},
+{
+"area": "sympy.polys",
+"name": "assemble_partfrac_list",
+"kind": "function",
+"doc": "Reassemble a full partial fraction decomposition"
+},
+{
+"area": "sympy.polys",
+"name": "cancel",
+"kind": "function",
+"doc": "Cancel common factors in a rational function ``f``."
+},
+{
+"area": "sympy.polys",
+"name": "chebyshevt_poly",
+"kind": "function",
+"doc": "Generates the Chebyshev polynomial of the first kind `T_n(x)`."
+},
+{
+"area": "sympy.polys",
+"name": "chebyshevu_poly",
+"kind": "function",
+"doc": "Generates the Chebyshev polynomial of the second kind `U_n(x)`."
+},
+{
+"area": "sympy.polys",
+"name": "cofactors",
+"kind": "function",
+"doc": "Compute GCD and cofactors of ``f`` and ``g``."
+},
+{
+"area": "sympy.polys",
+"name": "compose",
+"kind": "function",
+"doc": "Compute functional composition ``f(g)``."
+},
+{
+"area": "sympy.polys",
+"name": "construct_domain",
+"kind": "function",
+"doc": "Construct a minimal domain for a list of expressions."
+},
+{
+"area": "sympy.polys",
+"name": "content",
+"kind": "function",
+"doc": "Compute GCD of coefficients of ``f``."
+},
+{
+"area": "sympy.polys",
+"name": "count_roots",
+"kind": "function",
+"doc": "Return the number of roots of ``f`` in ``[inf, sup]`` interval."
+},
+{
+"area": "sympy.polys",
+"name": "cyclotomic_poly",
+"kind": "function",
+"doc": "Generates cyclotomic polynomial of order `n` in `x`."
+},
+{
+"area": "sympy.polys",
+"name": "decompose",
+"kind": "function",
+"doc": "Compute functional decomposition of ``f``."
+},
+{
+"area": "sympy.polys",
+"name": "degree",
+"kind": "function",
+"doc": "Return the degree of ``f`` in the given variable."
+},
+{
+"area": "sympy.polys",
+"name": "degree_list",
+"kind": "function",
+"doc": "Return a list of degrees of ``f`` in all variables."
+},
+{
+"area": "sympy.polys",
+"name": "discriminant",
+"kind": "function",
+"doc": "Compute discriminant of ``f``."
+},
+{
+"area": "sympy.polys",
+"name": "div",
+"kind": "function",
+"doc": "Compute polynomial division of ``f`` and ``g``."
+},
+{
+"area": "sympy.polys",
+"name": "exquo",
+"kind": "function",
+"doc": "Compute polynomial exact quotient of ``f`` and ``g``."
+},
+{
+"area": "sympy.polys",
+"name": "factor",
+"kind": "function",
+"doc": "Compute the factorization of expression, ``f``, into irreducibles. (To"
+},
+{
+"area": "sympy.polys",
+"name": "factor_list",
+"kind": "function",
+"doc": "Compute a list of irreducible factors of ``f``."
+},
+{
+"area": "sympy.polys",
+"name": "field",
+"kind": "function",
+"doc": "Construct new rational function field returning (field, x1, ..., xn)."
+},
+{
+"area": "sympy.polys",
+"name": "field_isomorphism",
+"kind": "function",
+"doc": "Find an embedding of one number field into another."
+},
+{
+"area": "sympy.polys",
+"name": "galois_group",
+"kind": "function",
+"doc": "Compute the Galois group for polynomials *f* up to degree 6."
+},
+{
+"area": "sympy.polys",
+"name": "gcd",
+"kind": "function",
+"doc": "Compute GCD of ``f`` and ``g``."
+},
+{
+"area": "sympy.polys",
+"name": "gcd_list",
+"kind": "function",
+"doc": "Compute GCD of a list of polynomials."
+},
+{
+"area": "sympy.polys",
+"name": "gcdex",
+"kind": "function",
+"doc": "Extended Euclidean algorithm of ``f`` and ``g``."
+},
+{
+"area": "sympy.polys",
+"name": "gff",
+"kind": "function",
+"doc": "Compute greatest factorial factorization of ``f``."
+},
+{
+"area": "sympy.polys",
+"name": "gff_list",
+"kind": "function",
+"doc": "Compute a list of greatest factorial factors of ``f``."
+},
+{
+"area": "sympy.polys",
+"name": "groebner",
+"kind": "function",
+"doc": "Computes the reduced Groebner basis for a set of polynomials."
+},
+{
+"area": "sympy.polys",
+"name": "ground_roots",
+"kind": "function",
+"doc": "Compute roots of ``f`` by factorization in the ground domain."
+},
+{
+"area": "sympy.polys",
+"name": "half_gcdex",
+"kind": "function",
+"doc": "Half extended Euclidean algorithm of ``f`` and ``g``."
+},
+{
+"area": "sympy.polys",
+"name": "hermite_poly",
+"kind": "function",
+"doc": "Generates the Hermite polynomial `H_n(x)`."
+},
+{
+"area": "sympy.polys",
+"name": "hermite_prob_poly",
+"kind": "function",
+"doc": "Generates the probabilist's Hermite polynomial `He_n(x)`."
+},
+{
+"area": "sympy.polys",
+"name": "horner",
+"kind": "function",
+"doc": "Rewrite a polynomial in Horner form."
+},
+{
+"area": "sympy.polys",
+"name": "interpolate",
+"kind": "function",
+"doc": "Construct an interpolating polynomial for the data points"
+},
+{
+"area": "sympy.polys",
+"name": "interpolating_poly",
+"kind": "function",
+"doc": "Construct Lagrange interpolating polynomial for ``n``"
+},
+{
+"area": "sympy.polys",
+"name": "intervals",
+"kind": "function",
+"doc": "Compute isolating intervals for roots of ``f``."
+},
+{
+"area": "sympy.polys",
+"name": "invert",
+"kind": "function",
+"doc": "Invert ``f`` modulo ``g`` when possible."
+},
+{
+"area": "sympy.polys",
+"name": "is_zero_dimensional",
+"kind": "function",
+"doc": "Checks if the ideal generated by a Groebner basis is zero-dimensional."
+},
+{
+"area": "sympy.polys",
+"name": "isolate",
+"kind": "function",
+"doc": "Find a rational isolating interval for a real algebraic number."
+},
+{
+"area": "sympy.polys",
+"name": "itermonomials",
+"kind": "function",
+"doc": "``max_degrees`` and ``min_degrees`` are either both integers or both lists."
+},
+{
+"area": "sympy.polys",
+"name": "jacobi_poly",
+"kind": "function",
+"doc": "Generates the Jacobi polynomial `P_n^{(a,b)}(x)`."
+},
+{
+"area": "sympy.polys",
+"name": "laguerre_poly",
+"kind": "function",
+"doc": "Generates the Laguerre polynomial `L_n^{(\\alpha)}(x)`."
+},
+{
+"area": "sympy.polys",
+"name": "lcm",
+"kind": "function",
+"doc": "Compute LCM of ``f`` and ``g``."
+},
+{
+"area": "sympy.polys",
+"name": "lcm_list",
+"kind": "function",
+"doc": "Compute LCM of a list of polynomials."
+},
+{
+"area": "sympy.polys",
+"name": "legendre_poly",
+"kind": "function",
+"doc": "Generates the Legendre polynomial `P_n(x)`."
+},
+{
+"area": "sympy.polys",
+"name": "minimal_polynomial",
+"kind": "function",
+"doc": "Computes the minimal polynomial of an algebraic element."
+},
+{
+"area": "sympy.polys",
+"name": "minpoly",
+"kind": "function",
+"doc": "This is a synonym for :py:func:`~.minimal_polynomial`."
+},
+{
+"area": "sympy.polys",
+"name": "monic",
+"kind": "function",
+"doc": "Divide all coefficients of ``f`` by ``LC(f)``."
+},
+{
+"area": "sympy.polys",
+"name": "nroots",
+"kind": "function",
+"doc": "Compute numerical approximations of roots of ``f``."
+},
+{
+"area": "sympy.polys",
+"name": "nth_power_roots_poly",
+"kind": "function",
+"doc": "Construct a polynomial with n-th powers of roots of ``f``."
+},
+{
+"area": "sympy.polys",
+"name": "parallel_poly_from_expr",
+"kind": "function",
+"doc": "Construct polynomials from expressions."
+},
+{
+"area": "sympy.polys",
+"name": "pdiv",
+"kind": "function",
+"doc": "Compute polynomial pseudo-division of ``f`` and ``g``."
+},
+{
+"area": "sympy.polys",
+"name": "pexquo",
+"kind": "function",
+"doc": "Compute polynomial exact pseudo-quotient of ``f`` and ``g``."
+},
+{
+"area": "sympy.polys",
+"name": "poly",
+"kind": "function",
+"doc": "Efficiently transform an expression into a polynomial."
+},
+{
+"area": "sympy.polys",
+"name": "poly_from_expr",
+"kind": "function",
+"doc": "Construct a polynomial from an expression."
+},
+{
+"area": "sympy.polys",
+"name": "pquo",
+"kind": "function",
+"doc": "Compute polynomial pseudo-quotient of ``f`` and ``g``."
+},
+{
+"area": "sympy.polys",
+"name": "prem",
+"kind": "function",
+"doc": "Compute polynomial pseudo-remainder of ``f`` and ``g``."
+},
+{
+"area": "sympy.polys",
+"name": "prime_decomp",
+"kind": "function",
+"doc": "Compute the decomposition of rational prime *p* in a number field."
+},
+{
+"area": "sympy.polys",
+"name": "prime_valuation",
+"kind": "function",
+"doc": "Compute the *P*-adic valuation for an integral ideal *I*."
+},
+{
+"area": "sympy.polys",
+"name": "primitive",
+"kind": "function",
+"doc": "Compute content and the primitive form of ``f``."
+},
+{
+"area": "sympy.polys",
+"name": "primitive_element",
+"kind": "function",
+"doc": "Find a single generator for a number field given by several generators."
+},
+{
+"area": "sympy.polys",
+"name": "quo",
+"kind": "function",
+"doc": "Compute polynomial quotient of ``f`` and ``g``."
+},
+{
+"area": "sympy.polys",
+"name": "random_poly",
+"kind": "function",
+"doc": "Generates a polynomial of degree ``n`` with coefficients in"
+},
+{
+"area": "sympy.polys",
+"name": "rational_interpolate",
+"kind": "function",
+"doc": "Returns a rational interpolation, where the data points are element of"
+},
+{
+"area": "sympy.polys",
+"name": "real_roots",
+"kind": "function",
+"doc": "Returns the real roots of ``f`` with multiplicities."
+},
+{
+"area": "sympy.polys",
+"name": "reduced",
+"kind": "function",
+"doc": "Reduces a polynomial ``f`` modulo a set of polynomials ``G``."
+},
+{
+"area": "sympy.polys",
+"name": "refine_root",
+"kind": "function",
+"doc": "Refine an isolating interval of a root to the given precision."
+},
+{
+"area": "sympy.polys",
+"name": "rem",
+"kind": "function",
+"doc": "Compute polynomial remainder of ``f`` and ``g``."
+},
+{
+"area": "sympy.polys",
+"name": "resultant",
+"kind": "function",
+"doc": "Compute resultant of ``f`` and ``g``."
+},
+{
+"area": "sympy.polys",
+"name": "ring",
+"kind": "function",
+"doc": "Construct a polynomial ring returning ``(ring, x_1, ..., x_n)``."
+},
+{
+"area": "sympy.polys",
+"name": "rootof",
+"kind": "function",
+"doc": "An indexed root of a univariate polynomial."
+},
+{
+"area": "sympy.polys",
+"name": "roots",
+"kind": "function",
+"doc": "Computes symbolic roots of a univariate polynomial."
+},
+{
+"area": "sympy.polys",
+"name": "round_two",
+"kind": "function",
+"doc": "Zassenhaus's \"Round 2\" algorithm."
+},
+{
+"area": "sympy.polys",
+"name": "sfield",
+"kind": "function",
+"doc": "Construct a field deriving generators and domain"
+},
+{
+"area": "sympy.polys",
+"name": "sqf",
+"kind": "function",
+"doc": "Compute square-free factorization of ``f``."
+},
+{
+"area": "sympy.polys",
+"name": "sqf_list",
+"kind": "function",
+"doc": "Compute a list of square-free factors of ``f``."
+},
+{
+"area": "sympy.polys",
+"name": "sqf_norm",
+"kind": "function",
+"doc": "Compute square-free norm of ``f``."
+},
+{
+"area": "sympy.polys",
+"name": "sqf_part",
+"kind": "function",
+"doc": "Compute square-free part of ``f``."
+},
+{
+"area": "sympy.polys",
+"name": "sring",
+"kind": "function",
+"doc": "Construct a ring deriving generators and domain from options and input expressions."
+},
+{
+"area": "sympy.polys",
+"name": "sturm",
+"kind": "function",
+"doc": "Compute Sturm sequence of ``f``."
+},
+{
+"area": "sympy.polys",
+"name": "subresultants",
+"kind": "function",
+"doc": "Compute subresultant PRS of ``f`` and ``g``."
+},
+{
+"area": "sympy.polys",
+"name": "swinnerton_dyer_poly",
+"kind": "function",
+"doc": "Generates n-th Swinnerton-Dyer polynomial in `x`."
+},
+{
+"area": "sympy.polys",
+"name": "symmetric_poly",
+"kind": "function",
+"doc": "Generates symmetric polynomial of order `n`."
+},
+{
+"area": "sympy.polys",
+"name": "symmetrize",
+"kind": "function",
+"doc": "Rewrite a polynomial in terms of elementary symmetric polynomials."
+},
+{
+"area": "sympy.polys",
+"name": "terms_gcd",
+"kind": "function",
+"doc": "Remove GCD of terms from ``f``."
+},
+{
+"area": "sympy.polys",
+"name": "to_number_field",
+"kind": "function",
+"doc": "Express one algebraic number in the field generated by another."
+},
+{
+"area": "sympy.polys",
+"name": "together",
+"kind": "function",
+"doc": "Denest and combine rational expressions using symbolic methods."
+},
+{
+"area": "sympy.polys",
+"name": "total_degree",
+"kind": "function",
+"doc": "Return the total_degree of ``f`` in the given variables."
+},
+{
+"area": "sympy.polys",
+"name": "trunc",
+"kind": "function",
+"doc": "Reduce ``f`` modulo a constant ``p``."
+},
+{
+"area": "sympy.polys",
+"name": "vfield",
+"kind": "function",
+"doc": "Construct new rational function field and inject generators into global namespace."
+},
+{
+"area": "sympy.polys",
+"name": "viete",
+"kind": "function",
+"doc": "Generate Viete's formulas for ``f``."
+},
+{
+"area": "sympy.polys",
+"name": "vring",
+"kind": "function",
+"doc": "Construct a polynomial ring and inject ``x_1, ..., x_n`` into the global namespace."
+},
+{
+"area": "sympy.polys",
+"name": "xfield",
+"kind": "function",
+"doc": "Construct new rational function field returning (field, (x1, ..., xn))."
+},
+{
+"area": "sympy.polys",
+"name": "xring",
+"kind": "function",
+"doc": "Construct a polynomial ring returning ``(ring, (x_1, ..., x_n))``."
+},
+{
+"area": "sympy.printing",
+"name": "StrPrinter",
+"kind": "class",
+"doc": "Generic printer"
+},
+{
+"area": "sympy.printing",
+"name": "TableForm",
+"kind": "class",
+"doc": "Create a nice table representation of data."
+},
+{
+"area": "sympy.printing",
+"name": "ccode",
+"kind": "function",
+"doc": "Converts an expr to a string of c code"
+},
+{
+"area": "sympy.printing",
+"name": "cxxcode",
+"kind": "function",
+"doc": "C++ equivalent of :func:`~.ccode`."
+},
+{
+"area": "sympy.printing",
+"name": "dotprint",
+"kind": "function",
+"doc": "DOT description of a SymPy expression tree"
+},
+{
+"area": "sympy.printing",
+"name": "fcode",
+"kind": "function",
+"doc": "Converts an expr to a string of fortran code"
+},
+{
+"area": "sympy.printing",
+"name": "glsl_code",
+"kind": "function",
+"doc": "Converts an expr to a string of GLSL code"
+},
+{
+"area": "sympy.printing",
+"name": "jscode",
+"kind": "function",
+"doc": "Converts an expr to a string of javascript code"
+},
+{
+"area": "sympy.printing",
+"name": "julia_code",
+"kind": "function",
+"doc": "Converts `expr` to a string of Julia code."
+},
+{
+"area": "sympy.printing",
+"name": "maple_code",
+"kind": "function",
+"doc": "Converts ``expr`` to a string of Maple code."
+},
+{
+"area": "sympy.printing",
+"name": "mathematica_code",
+"kind": "function",
+"doc": "Converts an expr to a string of the Wolfram Mathematica code"
+},
+{
+"area": "sympy.printing",
+"name": "multiline_latex",
+"kind": "function",
+"doc": "This function generates a LaTeX equation with a multiline right-hand side"
+},
+{
+"area": "sympy.printing",
+"name": "octave_code",
+"kind": "function",
+"doc": "Converts `expr` to a string of Octave (or Matlab) code."
+},
+{
+"area": "sympy.printing",
+"name": "pager_print",
+"kind": "function",
+"doc": "Prints expr using the pager, in pretty form."
+},
+{
+"area": "sympy.printing",
+"name": "pprint",
+"kind": "function",
+"doc": "Prints expr in pretty form."
+},
+{
+"area": "sympy.printing",
+"name": "pprint_try_use_unicode",
+"kind": "function",
+"doc": "See if unicode output is available and leverage it if possible"
+},
+{
+"area": "sympy.printing",
+"name": "pprint_use_unicode",
+"kind": "function",
+"doc": "Set whether pretty-printer should use unicode by default"
+},
+{
+"area": "sympy.printing",
+"name": "pretty_print",
+"kind": "function",
+"doc": "Prints expr in pretty form."
+},
+{
+"area": "sympy.printing",
+"name": "preview",
+"kind": "function",
+"doc": "View expression or LaTeX markup in PNG, DVI, PostScript or PDF form."
+},
+{
+"area": "sympy.printing",
+"name": "print_ccode",
+"kind": "function",
+"doc": "Prints C representation of the given expression."
+},
+{
+"area": "sympy.printing",
+"name": "print_fcode",
+"kind": "function",
+"doc": "Prints the Fortran representation of the given expression."
+},
+{
+"area": "sympy.printing",
+"name": "print_glsl",
+"kind": "function",
+"doc": "Prints the GLSL representation of the given expression."
+},
+{
+"area": "sympy.printing",
+"name": "print_gtk",
+"kind": "function",
+"doc": "Print to Gtkmathview, a gtk widget capable of rendering MathML."
+},
+{
+"area": "sympy.printing",
+"name": "print_jscode",
+"kind": "function",
+"doc": "Prints the Javascript representation of the given expression."
+},
+{
+"area": "sympy.printing",
+"name": "print_latex",
+"kind": "function",
+"doc": "Prints LaTeX representation of the given expression. Takes the same"
+},
+{
+"area": "sympy.printing",
+"name": "print_maple_code",
+"kind": "function",
+"doc": "Prints the Maple representation of the given expression."
+},
+{
+"area": "sympy.printing",
+"name": "print_mathml",
+"kind": "function",
+"doc": "Prints a pretty representation of the MathML code for expr. If printer is"
+},
+{
+"area": "sympy.printing",
+"name": "print_python",
+"kind": "function",
+"doc": "Print output of python() function"
+},
+{
+"area": "sympy.printing",
+"name": "print_rcode",
+"kind": "function",
+"doc": "Prints R representation of the given expression."
+},
+{
+"area": "sympy.printing",
+"name": "print_tree",
+"kind": "function",
+"doc": "Prints a tree representation of \"node\"."
+},
+{
+"area": "sympy.printing",
+"name": "pycode",
+"kind": "function",
+"doc": "Converts an expr to a string of Python code"
+},
+{
+"area": "sympy.printing",
+"name": "python",
+"kind": "function",
+"doc": "Return Python interpretation of passed expression"
+},
+{
+"area": "sympy.printing",
+"name": "rcode",
+"kind": "function",
+"doc": "Converts an expr to a string of r code"
+},
+{
+"area": "sympy.printing",
+"name": "rust_code",
+"kind": "function",
+"doc": "Converts an expr to a string of Rust code"
+},
+{
+"area": "sympy.printing",
+"name": "smtlib_code",
+"kind": "function",
+"doc": "Converts ``expr`` to a string of smtlib code."
+},
+{
+"area": "sympy.series",
+"name": "Limit",
+"kind": "class",
+"doc": "Represents an unevaluated limit."
+},
+{
+"area": "sympy.series",
+"name": "O",
+"kind": "class",
+"doc": "Represents the limiting behavior of some function."
+},
+{
+"area": "sympy.series",
+"name": "Order",
+"kind": "class",
+"doc": "Represents the limiting behavior of some function."
+},
+{
+"area": "sympy.series",
+"name": "SeqAdd",
+"kind": "class",
+"doc": "Represents term-wise addition of sequences."
+},
+{
+"area": "sympy.series",
+"name": "SeqFormula",
+"kind": "class",
+"doc": "Represents sequence based on a formula."
+},
+{
+"area": "sympy.series",
+"name": "SeqMul",
+"kind": "class",
+"doc": "Represents term-wise multiplication of sequences."
+},
+{
+"area": "sympy.series",
+"name": "SeqPer",
+"kind": "class",
+"doc": "Represents a periodic sequence."
+},
+{
+"area": "sympy.series",
+"name": "approximants",
+"kind": "function",
+"doc": "Return a generator for consecutive Pade approximants for a series."
+},
+{
+"area": "sympy.series",
+"name": "difference_delta",
+"kind": "function",
+"doc": "Difference Operator."
+},
+{
+"area": "sympy.series",
+"name": "fourier_series",
+"kind": "function",
+"doc": "Computes the Fourier trigonometric series expansion."
+},
+{
+"area": "sympy.series",
+"name": "fps",
+"kind": "function",
+"doc": "Generates Formal Power Series of ``f``."
+},
+{
+"area": "sympy.series",
+"name": "gruntz",
+"kind": "function",
+"doc": "Compute the limit of e(z) at the point z0 using the Gruntz algorithm."
+},
+{
+"area": "sympy.series",
+"name": "limit",
+"kind": "function",
+"doc": "Computes the limit of ``e(z)`` at the point ``z0``."
+},
+{
+"area": "sympy.series",
+"name": "limit_seq",
+"kind": "function",
+"doc": "Finds the limit of a sequence as index ``n`` tends to infinity."
+},
+{
+"area": "sympy.series",
+"name": "residue",
+"kind": "function",
+"doc": "Finds the residue of ``expr`` at the point x=x0."
+},
+{
+"area": "sympy.series",
+"name": "sequence",
+"kind": "function",
+"doc": "Returns appropriate sequence object."
+},
+{
+"area": "sympy.series",
+"name": "series",
+"kind": "function",
+"doc": "Series expansion of expr around point `x = x0`."
+},
+{
+"area": "sympy.sets",
+"name": "Complement",
+"kind": "class",
+"doc": "Represents the set difference or relative complement of a set with"
+},
+{
+"area": "sympy.sets",
+"name": "ComplexRegion",
+"kind": "class",
+"doc": "Represents the Set of all Complex Numbers. It can represent a"
+},
+{
+"area": "sympy.sets",
+"name": "ConditionSet",
+"kind": "class",
+"doc": "Set of elements which satisfies a given condition."
+},
+{
+"area": "sympy.sets",
+"name": "Contains",
+"kind": "class",
+"doc": "Asserts that x is an element of the set S."
+},
+{
+"area": "sympy.sets",
+"name": "DisjointUnion",
+"kind": "class",
+"doc": "Represents the disjoint union (also known as the external disjoint union)"
+},
+{
+"area": "sympy.sets",
+"name": "FiniteSet",
+"kind": "class",
+"doc": "Represents a finite set of Sympy expressions."
+},
+{
+"area": "sympy.sets",
+"name": "ImageSet",
+"kind": "class",
+"doc": "Image of a set under a mathematical function. The transformation"
+},
+{
+"area": "sympy.sets",
+"name": "Intersection",
+"kind": "class",
+"doc": "Represents an intersection of sets as a :class:`Set`."
+},
+{
+"area": "sympy.sets",
+"name": "Interval",
+"kind": "class",
+"doc": "Represents a real interval as a Set."
+},
+{
+"area": "sympy.sets",
+"name": "OmegaPower",
+"kind": "class",
+"doc": "Represents ordinal exponential and multiplication terms one of the"
+},
+{
+"area": "sympy.sets",
+"name": "Ordinal",
+"kind": "class",
+"doc": "Represents ordinals in Cantor normal form."
+},
+{
+"area": "sympy.sets",
+"name": "PowerSet",
+"kind": "class",
+"doc": "A symbolic object representing a power set."
+},
+{
+"area": "sympy.sets",
+"name": "ProductSet",
+"kind": "class",
+"doc": "Represents a Cartesian Product of Sets."
+},
+{
+"area": "sympy.sets",
+"name": "Range",
+"kind": "class",
+"doc": "Represents a range of integers. Can be called as ``Range(stop)``,"
+},
+{
+"area": "sympy.sets",
+"name": "Set",
+"kind": "class",
+"doc": "The base class for any kind of set."
+},
+{
+"area": "sympy.sets",
+"name": "SymmetricDifference",
+"kind": "class",
+"doc": "Represents the set of elements which are in either of the"
+},
+{
+"area": "sympy.sets",
+"name": "Union",
+"kind": "class",
+"doc": "Represents a union of sets as a :class:`Set`."
+},
+{
+"area": "sympy.sets",
+"name": "imageset",
+"kind": "function",
+"doc": "Return an image of the set under transformation ``f``."
+},
+{
+"area": "sympy.simplify",
+"name": "EPath",
+"kind": "class",
+"doc": "Manipulate expressions using paths."
+},
+{
+"area": "sympy.simplify",
+"name": "besselsimp",
+"kind": "function",
+"doc": "Simplify bessel-type functions."
+},
+{
+"area": "sympy.simplify",
+"name": "collect",
+"kind": "function",
+"doc": "Collect additive terms of an expression."
+},
+{
+"area": "sympy.simplify",
+"name": "collect_const",
+"kind": "function",
+"doc": "A non-greedy collection of terms with similar number coefficients in"
+},
+{
+"area": "sympy.simplify",
+"name": "combsimp",
+"kind": "function",
+"doc": "Simplify combinatorial expressions."
+},
+{
+"area": "sympy.simplify",
+"name": "cse",
+"kind": "function",
+"doc": "Perform common subexpression elimination on an expression."
+},
+{
+"area": "sympy.simplify",
+"name": "denom",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "sympy.simplify",
+"name": "epath",
+"kind": "function",
+"doc": "Manipulate parts of an expression selected by a path."
+},
+{
+"area": "sympy.simplify",
+"name": "exptrigsimp",
+"kind": "function",
+"doc": "Simplifies exponential / trigonometric / hyperbolic functions."
+},
+{
+"area": "sympy.simplify",
+"name": "fraction",
+"kind": "function",
+"doc": "Returns a pair with expression's numerator and denominator."
+},
+{
+"area": "sympy.simplify",
+"name": "fu",
+"kind": "function",
+"doc": "Attempt to simplify expression by using transformation rules given"
+},
+{
+"area": "sympy.simplify",
+"name": "gammasimp",
+"kind": "function",
+"doc": "Simplify expressions with gamma functions."
+},
+{
+"area": "sympy.simplify",
+"name": "hyperexpand",
+"kind": "function",
+"doc": "Expand hypergeometric functions. If allow_hyper is True, allow partial"
+},
+{
+"area": "sympy.simplify",
+"name": "hypersimilar",
+"kind": "function",
+"doc": "Returns True if ``f`` and ``g`` are hyper-similar."
+},
+{
+"area": "sympy.simplify",
+"name": "hypersimp",
+"kind": "function",
+"doc": "Given combinatorial term f(k) simplify its consecutive term ratio"
+},
+{
+"area": "sympy.simplify",
+"name": "kroneckersimp",
+"kind": "function",
+"doc": "Simplify expressions with KroneckerDelta."
+},
+{
+"area": "sympy.simplify",
+"name": "logcombine",
+"kind": "function",
+"doc": "Takes logarithms and combines them using the following rules:"
+},
+{
+"area": "sympy.simplify",
+"name": "nsimplify",
+"kind": "function",
+"doc": "Find a simple representation for a number or, if there are free symbols or"
+},
+{
+"area": "sympy.simplify",
+"name": "numer",
+"kind": "function",
+"doc": ""
+},
+{
+"area": "sympy.simplify",
+"name": "posify",
+"kind": "function",
+"doc": "Return ``eq`` (with generic symbols made positive) and a"
+},
+{
+"area": "sympy.simplify",
+"name": "powdenest",
+"kind": "function",
+"doc": "Collect exponents on powers as assumptions allow."
+},
+{
+"area": "sympy.simplify",
+"name": "powsimp",
+"kind": "function",
+"doc": "Reduce expression by combining powers with similar bases and exponents."
+},
+{
+"area": "sympy.simplify",
+"name": "radsimp",
+"kind": "function",
+"doc": "Rationalize the denominator by removing square roots."
+},
+{
+"area": "sympy.simplify",
+"name": "ratsimp",
+"kind": "function",
+"doc": "Put an expression over a common denominator, cancel and reduce."
+},
+{
+"area": "sympy.simplify",
+"name": "ratsimpmodprime",
+"kind": "function",
+"doc": "Simplifies a rational expression ``expr`` modulo the prime ideal"
+},
+{
+"area": "sympy.simplify",
+"name": "rcollect",
+"kind": "function",
+"doc": "Recursively collect sums in an expression."
+},
+{
+"area": "sympy.simplify",
+"name": "separatevars",
+"kind": "function",
+"doc": "Separates variables in an expression, if possible.  By"
+},
+{
+"area": "sympy.simplify",
+"name": "signsimp",
+"kind": "function",
+"doc": "Make all Add sub-expressions canonical wrt sign."
+},
+{
+"area": "sympy.simplify",
+"name": "simplify",
+"kind": "function",
+"doc": "Simplifies the given expression."
+},
+{
+"area": "sympy.simplify",
+"name": "sqrtdenest",
+"kind": "function",
+"doc": "Denests sqrts in an expression that contain other square roots"
+},
+{
+"area": "sympy.simplify",
+"name": "trigsimp",
+"kind": "function",
+"doc": "Returns a reduced expression by using known trig identities."
+},
+{
+"area": "sympy.solvers",
+"name": "checkodesol",
+"kind": "function",
+"doc": "Substitutes ``sol`` into ``ode`` and checks that the result is ``0``."
+},
+{
+"area": "sympy.solvers",
+"name": "checkpdesol",
+"kind": "function",
+"doc": "Checks if the given solution satisfies the partial differential"
+},
+{
+"area": "sympy.solvers",
+"name": "checksol",
+"kind": "function",
+"doc": "Checks whether sol is a solution of equation f == 0."
+},
+{
+"area": "sympy.solvers",
+"name": "classify_ode",
+"kind": "function",
+"doc": "Returns a tuple of possible :py:meth:`~sympy.solvers.ode.dsolve`"
+},
+{
+"area": "sympy.solvers",
+"name": "classify_pde",
+"kind": "function",
+"doc": "Returns a tuple of possible pdsolve() classifications for a PDE."
+},
+{
+"area": "sympy.solvers",
+"name": "decompogen",
+"kind": "function",
+"doc": "Computes General functional decomposition of ``f``."
+},
+{
+"area": "sympy.solvers",
+"name": "det_quick",
+"kind": "function",
+"doc": "Return ``det(M)`` assuming that either"
+},
+{
+"area": "sympy.solvers",
+"name": "diophantine",
+"kind": "function",
+"doc": "Simplify the solution procedure of diophantine equation ``eq`` by"
+},
+{
+"area": "sympy.solvers",
+"name": "dsolve",
+"kind": "function",
+"doc": "Solves any (supported) kind of ordinary differential equation and"
+},
+{
+"area": "sympy.solvers",
+"name": "factor_system",
+"kind": "function",
+"doc": "Factorizes a system of polynomial equations into"
+},
+{
+"area": "sympy.solvers",
+"name": "homogeneous_order",
+"kind": "function",
+"doc": "Returns the order `n` if `g` is homogeneous and ``None`` if it is not"
+},
+{
+"area": "sympy.solvers",
+"name": "inv_quick",
+"kind": "function",
+"doc": "Return the inverse of ``M``, assuming that either"
+},
+{
+"area": "sympy.solvers",
+"name": "linear_eq_to_matrix",
+"kind": "function",
+"doc": "Converts a given System of Equations into Matrix form. Here ``equations``"
+},
+{
+"area": "sympy.solvers",
+"name": "linsolve",
+"kind": "function",
+"doc": "Solve system of $N$ linear equations with $M$ variables; both"
+},
+{
+"area": "sympy.solvers",
+"name": "nonlinsolve",
+"kind": "function",
+"doc": "Solve system of $N$ nonlinear equations with $M$ variables, which means both"
+},
+{
+"area": "sympy.solvers",
+"name": "nsolve",
+"kind": "function",
+"doc": "Solve a nonlinear equation system numerically: ``nsolve(f, [args,] x0,"
+},
+{
+"area": "sympy.solvers",
+"name": "ode_order",
+"kind": "function",
+"doc": "Returns the order of a given differential"
+},
+{
+"area": "sympy.solvers",
+"name": "pde_separate",
+"kind": "function",
+"doc": "Separate variables in partial differential equation either by additive"
+},
+{
+"area": "sympy.solvers",
+"name": "pde_separate_add",
+"kind": "function",
+"doc": "Helper function for searching additive separable solutions."
+},
+{
+"area": "sympy.solvers",
+"name": "pde_separate_mul",
+"kind": "function",
+"doc": "Helper function for searching multiplicative separable solutions."
+},
+{
+"area": "sympy.solvers",
+"name": "pdsolve",
+"kind": "function",
+"doc": "Solves any (supported) kind of partial differential equation."
+},
+{
+"area": "sympy.solvers",
+"name": "reduce_abs_inequalities",
+"kind": "function",
+"doc": "Reduce a system of inequalities with nested absolute values."
+},
+{
+"area": "sympy.solvers",
+"name": "reduce_abs_inequality",
+"kind": "function",
+"doc": "Reduce an inequality with nested absolute values."
+},
+{
+"area": "sympy.solvers",
+"name": "reduce_inequalities",
+"kind": "function",
+"doc": "Reduce a system of inequalities with rational coefficients."
+},
+{
+"area": "sympy.solvers",
+"name": "rsolve",
+"kind": "function",
+"doc": "Solve univariate recurrence with rational coefficients."
+},
+{
+"area": "sympy.solvers",
+"name": "rsolve_hyper",
+"kind": "function",
+"doc": "Given linear recurrence operator `\\operatorname{L}` of order `k`"
+},
+{
+"area": "sympy.solvers",
+"name": "rsolve_poly",
+"kind": "function",
+"doc": "Given linear recurrence operator `\\operatorname{L}` of order"
+},
+{
+"area": "sympy.solvers",
+"name": "rsolve_ratio",
+"kind": "function",
+"doc": "Given linear recurrence operator `\\operatorname{L}` of order `k`"
+},
+{
+"area": "sympy.solvers",
+"name": "solve",
+"kind": "function",
+"doc": "Algebraically solves equations and systems of equations."
+},
+{
+"area": "sympy.solvers",
+"name": "solve_linear",
+"kind": "function",
+"doc": "Return a tuple derived from ``f = lhs - rhs`` that is one of"
+},
+{
+"area": "sympy.solvers",
+"name": "solve_linear_system",
+"kind": "function",
+"doc": "Solve system of $N$ linear equations with $M$ variables, which means"
+},
+{
+"area": "sympy.solvers",
+"name": "solve_linear_system_LU",
+"kind": "function",
+"doc": "Solves the augmented matrix system using ``LUsolve`` and returns a"
+},
+{
+"area": "sympy.solvers",
+"name": "solve_poly_inequality",
+"kind": "function",
+"doc": "Solve a polynomial inequality with rational coefficients."
+},
+{
+"area": "sympy.solvers",
+"name": "solve_poly_system",
+"kind": "function",
+"doc": "Return a list of solutions for the system of polynomial equations"
+},
+{
+"area": "sympy.solvers",
+"name": "solve_rational_inequalities",
+"kind": "function",
+"doc": "Solve a system of rational inequalities with rational coefficients."
+},
+{
+"area": "sympy.solvers",
+"name": "solve_triangulated",
+"kind": "function",
+"doc": "Solve a polynomial system using Gianni-Kalkbrenner algorithm."
+},
+{
+"area": "sympy.solvers",
+"name": "solve_undetermined_coeffs",
+"kind": "function",
+"doc": "Solve a system of equations in $k$ parameters that is formed by"
+},
+{
+"area": "sympy.solvers",
+"name": "solve_univariate_inequality",
+"kind": "function",
+"doc": "Solves a real univariate inequality."
+},
+{
+"area": "sympy.solvers",
+"name": "solveset",
+"kind": "function",
+"doc": "Solves a given inequality or equation with set as output"
+},
+{
+"area": "sympy.solvers",
+"name": "substitution",
+"kind": "function",
+"doc": "Solves the `system` using substitution method. It is used in"
+},
+{
+"area": "sympy.tensor",
+"name": "Array",
+"kind": "class",
+"doc": "N-dimensional array."
+},
+{
+"area": "sympy.tensor",
+"name": "DenseNDimArray",
+"kind": "class",
+"doc": "N-dimensional array."
+},
+{
+"area": "sympy.tensor",
+"name": "Idx",
+"kind": "class",
+"doc": "Represents an integer index as an ``Integer`` or integer expression."
+},
+{
+"area": "sympy.tensor",
+"name": "ImmutableDenseNDimArray",
+"kind": "class",
+"doc": "N-dimensional array."
+},
+{
+"area": "sympy.tensor",
+"name": "ImmutableSparseNDimArray",
+"kind": "class",
+"doc": "N-dimensional array."
+},
+{
+"area": "sympy.tensor",
+"name": "Indexed",
+"kind": "class",
+"doc": "Represents a mathematical object with indices."
+},
+{
+"area": "sympy.tensor",
+"name": "IndexedBase",
+"kind": "class",
+"doc": "Represent the base or stem of an indexed object"
+},
+{
+"area": "sympy.tensor",
+"name": "MutableDenseNDimArray",
+"kind": "class",
+"doc": "N-dimensional array."
+},
+{
+"area": "sympy.tensor",
+"name": "MutableSparseNDimArray",
+"kind": "class",
+"doc": "N-dimensional array."
+},
+{
+"area": "sympy.tensor",
+"name": "NDimArray",
+"kind": "class",
+"doc": "N-dimensional array."
+},
+{
+"area": "sympy.tensor",
+"name": "SparseNDimArray",
+"kind": "class",
+"doc": "N-dimensional array."
+},
+{
+"area": "sympy.tensor",
+"name": "derive_by_array",
+"kind": "function",
+"doc": "Derivative by arrays. Supports both arrays and scalars."
+},
+{
+"area": "sympy.tensor",
+"name": "get_contraction_structure",
+"kind": "function",
+"doc": "Determine dummy indices of ``expr`` and describe its structure"
+},
+{
+"area": "sympy.tensor",
+"name": "get_indices",
+"kind": "function",
+"doc": "Determine the outer indices of expression ``expr``"
+},
+{
+"area": "sympy.tensor",
+"name": "permutedims",
+"kind": "function",
+"doc": "Permutes the indices of an array."
+},
+{
+"area": "sympy.tensor",
+"name": "shape",
+"kind": "function",
+"doc": "Return the shape of the *expr* as a tuple. *expr* should represent"
+},
+{
+"area": "sympy.tensor",
+"name": "tensorcontraction",
+"kind": "function",
+"doc": "Contraction of an array-like object on the specified axes."
+},
+{
+"area": "sympy.tensor",
+"name": "tensordiagonal",
+"kind": "function",
+"doc": "Diagonalization of an array-like object on the specified axes."
+},
+{
+"area": "sympy.tensor",
+"name": "tensorproduct",
+"kind": "function",
+"doc": "Tensor product among scalars or array-like objects."
+},
+{
+"area": "sympy.utilities",
+"name": "capture",
+"kind": "function",
+"doc": "Return the printed output of func()."
+},
+{
+"area": "sympy.utilities",
+"name": "dict_merge",
+"kind": "function",
+"doc": "Merge dictionaries into a single dictionary."
+},
+{
+"area": "sympy.utilities",
+"name": "filldedent",
+"kind": "function",
+"doc": "Strips leading and trailing empty lines from a copy of ``s``, then dedents,"
+},
+{
+"area": "sympy.utilities",
+"name": "flatten",
+"kind": "function",
+"doc": "Recursively denest iterable containers."
+},
+{
+"area": "sympy.utilities",
+"name": "group",
+"kind": "function",
+"doc": "Splits a sequence into a list of lists of equal, adjacent elements."
+},
+{
+"area": "sympy.utilities",
+"name": "has_dups",
+"kind": "function",
+"doc": "Return True if there are any duplicate elements in ``seq``."
+},
+{
+"area": "sympy.utilities",
+"name": "has_variety",
+"kind": "function",
+"doc": "Return True if there are any different elements in ``seq``."
+},
+{
+"area": "sympy.utilities",
+"name": "lambdify",
+"kind": "function",
+"doc": "Convert a SymPy expression into a function that allows for fast"
+},
+{
+"area": "sympy.utilities",
+"name": "memoize_property",
+"kind": "function",
+"doc": "Property decorator that caches the value of potentially expensive"
+},
+{
+"area": "sympy.utilities",
+"name": "numbered_symbols",
+"kind": "function",
+"doc": "Generate an infinite stream of Symbols consisting of a prefix and"
+},
+{
+"area": "sympy.utilities",
+"name": "postfixes",
+"kind": "function",
+"doc": "Generate all postfixes of a sequence."
+},
+{
+"area": "sympy.utilities",
+"name": "prefixes",
+"kind": "function",
+"doc": "Generate all prefixes of a sequence."
+},
+{
+"area": "sympy.utilities",
+"name": "public",
+"kind": "function",
+"doc": "Append ``obj``'s name to global ``__all__`` variable (call site)."
+},
+{
+"area": "sympy.utilities",
+"name": "reshape",
+"kind": "function",
+"doc": "Reshape the sequence according to the template in ``how``."
+},
+{
+"area": "sympy.utilities",
+"name": "rotations",
+"kind": "function",
+"doc": "Return a generator giving the items in s as list where"
+},
+{
+"area": "sympy.utilities",
+"name": "sift",
+"kind": "function",
+"doc": "Sift the sequence, ``seq`` according to ``keyfunc``."
+},
+{
+"area": "sympy.utilities",
+"name": "subsets",
+"kind": "function",
+"doc": "Generates all `k`-subsets (combinations) from an `n`-element set, ``seq``."
+},
+{
+"area": "sympy.utilities",
+"name": "take",
+"kind": "function",
+"doc": "Return ``n`` items from ``iter`` iterator."
+},
+{
+"area": "sympy.utilities",
+"name": "threaded",
+"kind": "function",
+"doc": "Apply ``func`` to sub--elements of an object, including :class:`~.Add`."
+},
+{
+"area": "sympy.utilities",
+"name": "timed",
+"kind": "function",
+"doc": "Adaptively measure execution time of a function."
+},
+{
+"area": "sympy.utilities",
+"name": "topological_sort",
+"kind": "function",
+"doc": "Topological sort of graph's vertices."
+},
+{
+"area": "sympy.utilities",
+"name": "unflatten",
+"kind": "function",
+"doc": "Group ``iter`` into tuples of length ``n``. Raise an error if"
+},
+{
+"area": "sympy.utilities",
+"name": "variations",
+"kind": "function",
+"doc": "Returns an iterator over the n-sized variations of ``seq`` (size N)."
+},
+{
+"area": "sympy.utilities",
+"name": "xthreaded",
+"kind": "function",
+"doc": "Apply ``func`` to sub--elements of an object, excluding :class:`~.Add`."
+}
+]
+}

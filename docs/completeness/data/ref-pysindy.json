@@ -1,0 +1,355 @@
+{
+"library": "pysindy",
+"version": "2.1.0",
+"source": "introspection",
+"entries": [
+{
+"area": "pysindy",
+"name": "AxesArray",
+"kind": "class",
+"doc": "A numpy-like array that keeps track of the meaning of its axes."
+},
+{
+"area": "pysindy",
+"name": "BaseDifferentiation",
+"kind": "class",
+"doc": "Base class for differentiation methods."
+},
+{
+"area": "pysindy",
+"name": "BaseOptimizer",
+"kind": "class",
+"doc": "Base class for SINDy optimizers. Subclasses must implement"
+},
+{
+"area": "pysindy",
+"name": "ConcatLibrary",
+"kind": "class",
+"doc": "Concatenate multiple libraries into one library. All settings"
+},
+{
+"area": "pysindy",
+"name": "ConstrainedSR3",
+"kind": "class",
+"doc": "Sparse relaxed regularized regression with linear (in)equality constraints."
+},
+{
+"area": "pysindy",
+"name": "CustomLibrary",
+"kind": "class",
+"doc": "Generate a library with custom functions."
+},
+{
+"area": "pysindy",
+"name": "DiscreteSINDy",
+"kind": "class",
+"doc": "Sparse Identification of Nonlinear Dynamical Systems (SINDy) for discrete"
+},
+{
+"area": "pysindy",
+"name": "EnsembleOptimizer",
+"kind": "class",
+"doc": "Wrapper class for ensembling methods."
+},
+{
+"area": "pysindy",
+"name": "FROLS",
+"kind": "class",
+"doc": "Forward Regression Orthogonal Least-Squares (FROLS) optimizer."
+},
+{
+"area": "pysindy",
+"name": "FiniteDifference",
+"kind": "class",
+"doc": "Finite difference derivatives."
+},
+{
+"area": "pysindy",
+"name": "FourierLibrary",
+"kind": "class",
+"doc": "Generate a library with trigonometric functions."
+},
+{
+"area": "pysindy",
+"name": "GeneralizedLibrary",
+"kind": "class",
+"doc": "Put multiple libraries into one library. All settings"
+},
+{
+"area": "pysindy",
+"name": "PDELibrary",
+"kind": "class",
+"doc": "Generate a PDE library with custom functions."
+},
+{
+"area": "pysindy",
+"name": "PackageNotFoundError",
+"kind": "class",
+"doc": "The package was not found."
+},
+{
+"area": "pysindy",
+"name": "ParameterizedLibrary",
+"kind": "class",
+"doc": "A tensor product of two libraries with different inputs."
+},
+{
+"area": "pysindy",
+"name": "PolynomialLibrary",
+"kind": "class",
+"doc": "Generate polynomial and interaction features."
+},
+{
+"area": "pysindy",
+"name": "SBR",
+"kind": "class",
+"doc": "Sparse Bayesian Regression (SBR) optimizer. This uses the regularised"
+},
+{
+"area": "pysindy",
+"name": "SINDy",
+"kind": "class",
+"doc": "Sparse Identification of Nonlinear Dynamical Systems (SINDy)."
+},
+{
+"area": "pysindy",
+"name": "SINDyDerivative",
+"kind": "class",
+"doc": "Wrapper class for differentiation classes from the :doc:`derivative:index` package."
+},
+{
+"area": "pysindy",
+"name": "SINDyPI",
+"kind": "class",
+"doc": "SINDy-PI optimizer"
+},
+{
+"area": "pysindy",
+"name": "SINDyPILibrary",
+"kind": "class",
+"doc": "WARNING: This library is deprecated in PySINDy versions > 1.7. Please"
+},
+{
+"area": "pysindy",
+"name": "SR3",
+"kind": "class",
+"doc": "Sparse relaxed regularized regression."
+},
+{
+"area": "pysindy",
+"name": "SSR",
+"kind": "class",
+"doc": "Stepwise sparse regression (SSR) greedy algorithm."
+},
+{
+"area": "pysindy",
+"name": "STLSQ",
+"kind": "class",
+"doc": "Sequentially thresholded least squares algorithm."
+},
+{
+"area": "pysindy",
+"name": "SmoothedFiniteDifference",
+"kind": "class",
+"doc": "Smoothed finite difference derivatives."
+},
+{
+"area": "pysindy",
+"name": "SpectralDerivative",
+"kind": "class",
+"doc": "Spectral derivatives."
+},
+{
+"area": "pysindy",
+"name": "StableLinearSR3",
+"kind": "class",
+"doc": "Sparse relaxed regularized regression for building a-priori"
+},
+{
+"area": "pysindy",
+"name": "TensoredLibrary",
+"kind": "class",
+"doc": "Tensor multiple libraries together into one library. All settings"
+},
+{
+"area": "pysindy",
+"name": "TrappingSR3",
+"kind": "class",
+"doc": "Generalized trapping variant of sparse relaxed regularized regression."
+},
+{
+"area": "pysindy",
+"name": "WeakPDELibrary",
+"kind": "class",
+"doc": "Generate a weak formulation library with custom functions and,"
+},
+{
+"area": "pysindy",
+"name": "WrappedOptimizer",
+"kind": "class",
+"doc": "Wrapper class for generic optimizers/sparse regression methods"
+},
+{
+"area": "pysindy.differentiation",
+"name": "BaseDifferentiation",
+"kind": "class",
+"doc": "Base class for differentiation methods."
+},
+{
+"area": "pysindy.differentiation",
+"name": "FiniteDifference",
+"kind": "class",
+"doc": "Finite difference derivatives."
+},
+{
+"area": "pysindy.differentiation",
+"name": "SINDyDerivative",
+"kind": "class",
+"doc": "Wrapper class for differentiation classes from the :doc:`derivative:index` package."
+},
+{
+"area": "pysindy.differentiation",
+"name": "SmoothedFiniteDifference",
+"kind": "class",
+"doc": "Smoothed finite difference derivatives."
+},
+{
+"area": "pysindy.differentiation",
+"name": "SpectralDerivative",
+"kind": "class",
+"doc": "Spectral derivatives."
+},
+{
+"area": "pysindy.feature_library",
+"name": "ConcatLibrary",
+"kind": "class",
+"doc": "Concatenate multiple libraries into one library. All settings"
+},
+{
+"area": "pysindy.feature_library",
+"name": "CustomLibrary",
+"kind": "class",
+"doc": "Generate a library with custom functions."
+},
+{
+"area": "pysindy.feature_library",
+"name": "FourierLibrary",
+"kind": "class",
+"doc": "Generate a library with trigonometric functions."
+},
+{
+"area": "pysindy.feature_library",
+"name": "GeneralizedLibrary",
+"kind": "class",
+"doc": "Put multiple libraries into one library. All settings"
+},
+{
+"area": "pysindy.feature_library",
+"name": "PDELibrary",
+"kind": "class",
+"doc": "Generate a PDE library with custom functions."
+},
+{
+"area": "pysindy.feature_library",
+"name": "ParameterizedLibrary",
+"kind": "class",
+"doc": "A tensor product of two libraries with different inputs."
+},
+{
+"area": "pysindy.feature_library",
+"name": "PolynomialLibrary",
+"kind": "class",
+"doc": "Generate polynomial and interaction features."
+},
+{
+"area": "pysindy.feature_library",
+"name": "SINDyPILibrary",
+"kind": "class",
+"doc": "WARNING: This library is deprecated in PySINDy versions > 1.7. Please"
+},
+{
+"area": "pysindy.feature_library",
+"name": "TensoredLibrary",
+"kind": "class",
+"doc": "Tensor multiple libraries together into one library. All settings"
+},
+{
+"area": "pysindy.feature_library",
+"name": "WeakPDELibrary",
+"kind": "class",
+"doc": "Generate a weak formulation library with custom functions and,"
+},
+{
+"area": "pysindy.optimizers",
+"name": "BaseOptimizer",
+"kind": "class",
+"doc": "Base class for SINDy optimizers. Subclasses must implement"
+},
+{
+"area": "pysindy.optimizers",
+"name": "ConstrainedSR3",
+"kind": "class",
+"doc": "Sparse relaxed regularized regression with linear (in)equality constraints."
+},
+{
+"area": "pysindy.optimizers",
+"name": "EnsembleOptimizer",
+"kind": "class",
+"doc": "Wrapper class for ensembling methods."
+},
+{
+"area": "pysindy.optimizers",
+"name": "FROLS",
+"kind": "class",
+"doc": "Forward Regression Orthogonal Least-Squares (FROLS) optimizer."
+},
+{
+"area": "pysindy.optimizers",
+"name": "SBR",
+"kind": "class",
+"doc": "Sparse Bayesian Regression (SBR) optimizer. This uses the regularised"
+},
+{
+"area": "pysindy.optimizers",
+"name": "SINDyPI",
+"kind": "class",
+"doc": "SINDy-PI optimizer"
+},
+{
+"area": "pysindy.optimizers",
+"name": "SR3",
+"kind": "class",
+"doc": "Sparse relaxed regularized regression."
+},
+{
+"area": "pysindy.optimizers",
+"name": "SSR",
+"kind": "class",
+"doc": "Stepwise sparse regression (SSR) greedy algorithm."
+},
+{
+"area": "pysindy.optimizers",
+"name": "STLSQ",
+"kind": "class",
+"doc": "Sequentially thresholded least squares algorithm."
+},
+{
+"area": "pysindy.optimizers",
+"name": "StableLinearSR3",
+"kind": "class",
+"doc": "Sparse relaxed regularized regression for building a-priori"
+},
+{
+"area": "pysindy.optimizers",
+"name": "TrappingSR3",
+"kind": "class",
+"doc": "Generalized trapping variant of sparse relaxed regularized regression."
+},
+{
+"area": "pysindy.optimizers",
+"name": "WrappedOptimizer",
+"kind": "class",
+"doc": "Wrapper class for generic optimizers/sparse regression methods"
+}
+]
+}

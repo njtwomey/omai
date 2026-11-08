@@ -1,0 +1,151 @@
+{
+"library": "pyitlib",
+"version": "0.3.1",
+"source": "introspection",
+"entries": [
+{
+"area": "pyitlib",
+"name": "divergence_jensenshannon",
+"kind": "function",
+"doc": "Returns the Jensen-Shannon divergence [Lin91] between arrays X and Y, each"
+},
+{
+"area": "pyitlib",
+"name": "divergence_jensenshannon_pmf",
+"kind": "function",
+"doc": "Returns the Jensen-Shannon divergence [Lin91] between arrays P and Q, each"
+},
+{
+"area": "pyitlib",
+"name": "divergence_kullbackleibler",
+"kind": "function",
+"doc": "Returns the Kullback-Leibler divergence (see e.g. [CoTh06]) between arrays"
+},
+{
+"area": "pyitlib",
+"name": "divergence_kullbackleibler_pmf",
+"kind": "function",
+"doc": "Returns the Kullback-Leibler divergence (see e.g. [CoTh06]) between arrays"
+},
+{
+"area": "pyitlib",
+"name": "divergence_kullbackleibler_symmetrised",
+"kind": "function",
+"doc": "Returns the symmetrised Kullback-Leibler divergence [Lin91] between arrays"
+},
+{
+"area": "pyitlib",
+"name": "divergence_kullbackleibler_symmetrised_pmf",
+"kind": "function",
+"doc": "Returns the symmetrised Kullback-Leibler divergence [Lin91] between arrays"
+},
+{
+"area": "pyitlib",
+"name": "entropy",
+"kind": "function",
+"doc": "Returns the estimated entropy (see e.g. [CoTh06]) for an array X containing"
+},
+{
+"area": "pyitlib",
+"name": "entropy_conditional",
+"kind": "function",
+"doc": "Returns the conditional entropy (see e.g. [CoTh06]) between arrays X and Y,"
+},
+{
+"area": "pyitlib",
+"name": "entropy_cross",
+"kind": "function",
+"doc": "Returns the cross entropy (see e.g. [Murp12]) between arrays X and Y, each"
+},
+{
+"area": "pyitlib",
+"name": "entropy_cross_pmf",
+"kind": "function",
+"doc": "Returns the cross entropy (see e.g. [Murp12]) between arrays P and Q, each"
+},
+{
+"area": "pyitlib",
+"name": "entropy_joint",
+"kind": "function",
+"doc": "Returns the estimated joint entropy (see e.g. [CoTh06]) for an array X"
+},
+{
+"area": "pyitlib",
+"name": "entropy_pmf",
+"kind": "function",
+"doc": "Returns the entropy (see e.g. [CoTh06]) of an array P representing a"
+},
+{
+"area": "pyitlib",
+"name": "entropy_residual",
+"kind": "function",
+"doc": "Returns the estimated residual entropy [JaEC11] (also known as erasure"
+},
+{
+"area": "pyitlib",
+"name": "information_binding",
+"kind": "function",
+"doc": "Returns the estimated binding information [AbPl12] (also known as dual"
+},
+{
+"area": "pyitlib",
+"name": "information_co",
+"kind": "function",
+"doc": "Returns the estimated co-information [Bell03] for an array X containing"
+},
+{
+"area": "pyitlib",
+"name": "information_enigmatic",
+"kind": "function",
+"doc": "Returns the estimated enigmatic information [JaEC11] for an array X"
+},
+{
+"area": "pyitlib",
+"name": "information_exogenous_local",
+"kind": "function",
+"doc": "Returns the estimated exogenous local information [JaEC11] for an array X"
+},
+{
+"area": "pyitlib",
+"name": "information_interaction",
+"kind": "function",
+"doc": "Returns the estimated interaction information [JaBr03] for an array X"
+},
+{
+"area": "pyitlib",
+"name": "information_lautum",
+"kind": "function",
+"doc": "Returns the lautum information [PaVe08] between arrays X and Y, each"
+},
+{
+"area": "pyitlib",
+"name": "information_multi",
+"kind": "function",
+"doc": "Returns the estimated multi-information [StVe98] (also known as total"
+},
+{
+"area": "pyitlib",
+"name": "information_mutual",
+"kind": "function",
+"doc": "Returns the mutual information (see e.g. [CoTh06]) between arrays X and Y,"
+},
+{
+"area": "pyitlib",
+"name": "information_mutual_conditional",
+"kind": "function",
+"doc": "Returns the conditional mutual information (see e.g. [CoTh06]) between"
+},
+{
+"area": "pyitlib",
+"name": "information_mutual_normalised",
+"kind": "function",
+"doc": "Returns the normalised mutual information between arrays X and Y, each"
+},
+{
+"area": "pyitlib",
+"name": "information_variation",
+"kind": "function",
+"doc": "Returns the variation of information [Meil03] between arrays X and Y, each"
+}
+]
+}
