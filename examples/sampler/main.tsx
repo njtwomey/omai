@@ -53,8 +53,13 @@ export function run(): Outcome<Result> {
 }
 
 const GRID = 70
-const X = [-10, 10] as const
-const Y = [-4.5, 9] as const
+
+/** The extent of some values with a small margin: the axes of the figure. */
+const padded = (values: ArrayLike<number>): [number, number] => {
+  const lo = Math.min(...Array.from(values))
+  const hi = Math.max(...Array.from(values))
+  return [lo - 0.04 * (hi - lo), hi + 0.04 * (hi - lo)]
+}
 
 /** The draws of one chain for one coordinate. */
 const coordinate = (c: Chains, chain: number, dim: number): number[] =>
@@ -62,6 +67,8 @@ const coordinate = (c: Chains, chain: number, dim: number): number[] =>
 
 export function View({ result }: { result: Result }) {
   const { chains } = result
+  const X = padded(toFlat(parameterDraws(chains, 0)))
+  const Y = padded(toFlat(parameterDraws(chains, 1)))
   const xs = Array.from({ length: GRID }, (_, i) => X[0] + ((X[1] - X[0]) * i) / (GRID - 1))
   const ys = Array.from({ length: GRID }, (_, j) => Y[0] + ((Y[1] - Y[0]) * j) / (GRID - 1))
   const density = ys.map((y) => xs.map((x) => Math.exp(target.logDensity([x, y]))))
@@ -92,7 +99,11 @@ export function View({ result }: { result: Result }) {
       panels={[
         {
           title: 'draws over the true density',
-          still: cartesian([surface, samples], { x: { label: 'x[0]' }, y: { label: 'x[1]' }, legend: true }),
+          still: cartesian([surface, samples], {
+            x: { label: 'x[0]', limits: X },
+            y: { label: 'x[1]', limits: Y },
+            legend: true,
+          }),
         },
         {
           title: `trace of x[0]: R-hat ${result.rhat.toFixed(3)}, effective sample size ${result.ess.toFixed(0)}`,
