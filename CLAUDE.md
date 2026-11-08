@@ -16,6 +16,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Agents that need isolation work in a git worktree under `.claude/worktrees/` named `agent-<id>-<word>`: the agent's
   short id and one word for what it is doing (`agent-afa77c-vision`). One worktree per agent, removed once its branch
   is merged; never an unlabelled `worktree-agent-<hash>`.
+- **Where a demonstration goes.** The gallery (`apps/site`, `src/gallery/recipes/<section>/NN-slug.tsx`) shows what
+  omai-render can draw and the controls it offers: one recipe per render capability, toy data only. It is never for a
+  model, an estimator or an algorithm (sparse coding, a sampler, a classifier): those get a library module, tests and
+  TSDoc and nothing on the gallery, whatever they would look like. Add or extend a recipe only when a render option,
+  chart, panel, control or interaction is new. A proof of concept (`apps/pocs`, `make pocs`) is a single live page of
+  what the library can do, for development, and exists only because the user asked for it: never add one unasked, and
+  never edit one unasked. The docs (`apps/site`, generated from the TSDoc) are where a method is explained. Examples
+  (`examples/`) are programs with a figure and a tape, for the front page and the README.
 - **Every agent tests only its own changes.** Its own test files, tsc, barrels, layers, biome and its own examples,
   never the full suite, never `make check`, and never a repo-wide vitest. The main session alone decides when the gate
   runs, and does not run it unless asked.
