@@ -7,6 +7,18 @@ type Beliefs = Readonly<Record<string, readonly number[]>>
 const beliefsOf = (alg: ReturnType<typeof P.beliefPropagationAlgorithm>, state: P.BeliefPropagationState): Beliefs =>
   ((alg.observe?.(state, 0)?.frame as { beliefs: Beliefs } | undefined)?.beliefs ?? {}) as Beliefs
 
+interface SentMessage {
+  readonly kind: string
+  readonly from: string
+  readonly to: string
+}
+const sentOf = (
+  alg: ReturnType<typeof P.beliefPropagationAlgorithm>,
+  state: P.BeliefPropagationState,
+  t = 0,
+): SentMessage[] =>
+  ((alg.observe?.(state, t)?.frame as { sent?: SentMessage[] } | undefined)?.sent ?? []) as SentMessage[]
+
 describe('belief propagation at finer granularity', () => {
   const grid = P.isingModel({ rows: 2, cols: 3, coupling: 0.3, field: { s_0_0: 0.4, s_1_2: -0.3 } })
   const chain = P.isingModel({ rows: 1, cols: 4, coupling: 0.7, field: { s_0_0: 0.5, s_0_3: -0.4 } })
@@ -65,11 +77,11 @@ describe('belief propagation at finer granularity', () => {
   it('says which message each step sent, by name, in the frame', () => {
     const alg = P.beliefPropagationAlgorithm(chain, { granularity: 'message', schedule: 'sequential' })
     let state = alg.init(key(0))
-    expect((alg.observe?.(state, 0)?.frame as { sent: unknown[] }).sent).toEqual([])
+    expect(sentOf(alg, state)).toEqual([])
     const kinds: string[] = []
     for (let i = 0; i < 12; i++) {
       state = alg.step(state, {} as never)
-      const sent = (alg.observe?.(state, i)?.frame as { sent: { kind: string; from: string; to: string }[] }).sent
+      const sent = sentOf(alg, state, i)
       expect(sent).toHaveLength(1)
       const [m] = sent
       // A variable message goes from a variable to a factor, a factor message the other way.
@@ -82,7 +94,7 @@ describe('belief propagation at finer granularity', () => {
     // A whole sweep sends everything, so it lists nothing.
     const sweep = P.beliefPropagationAlgorithm(chain)
     const after = sweep.step(sweep.init(key(0)), {} as never)
-    expect((sweep.observe?.(after, 1)?.frame as { sent: unknown[] }).sent).toEqual([])
+    expect(sentOf(sweep, after, 1)).toEqual([])
   })
 
   it('keeps whole sweeps as the default', () => {
