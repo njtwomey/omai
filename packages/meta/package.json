@@ -1,6 +1,6 @@
 {
   "name": "omai-meta",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "omai documentation metadata: schema, docstring extractor, example runner, worker and concepts.",
   "license": "MIT",
   "type": "module",

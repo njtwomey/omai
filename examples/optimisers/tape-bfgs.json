@@ -6,7 +6,7 @@
       "runId": "bfgs:none",
       "name": "bfgs",
       "seed": null,
-      "version": "0.1.3",
+      "version": "0.1.4",
       "config": {},
       "channels": {
         "metrics": {

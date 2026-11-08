@@ -6,7 +6,7 @@
       "runId": "train:qLearning:0",
       "name": "train:qLearning",
       "seed": 0,
-      "version": "0.1.3",
+      "version": "0.1.4",
       "config": {
         "env": "CliffWalking-v1",
         "agent": {
