@@ -2,8 +2,10 @@
  * The reverse process of a diffusion model as stepped algorithms, and the network that is trained to run it: the DDPM
  * ancestral sampler, DDIM (deterministic or with noise eta), the probability-flow ODE with Euler and Heun steps, and
  * DPM-Solver-2, each an `Algorithm` whose state (the sample cloud, the prediction of the clean sample, the noise
- * level) serialises and logs on typed paths; a small network over (x_t, time features) for low-dimensional data, and the
- * `diffusionTrainer` that trains it, so a full train-and-sample loop runs on a toy mixture.
+ * level) serialises and logs on typed paths. The network and the trainer that fits it are in `diffusion-training.ts`, so
+ * a full train-and-sample loop runs on a toy mixture.
+ *
+ * @index module Reverse diffusion samplers as stepped algorithms: DDPM, DDIM, Euler, Heun, DPM-Solver-2.
  */
 
 import type { Json } from '../base/index.ts'
@@ -133,6 +135,7 @@ const sq = (x: number): number => x * x
  * @returns The algorithm; its paths are {@link DiffusionSamplerPath}.
  * @throws OmaiError with code `value` for an unknown method or times that do not decrease to zero.
  * @concept diffusion-models
+ * @index algorithm Reverse diffusion sampler: DDPM, DDIM, Euler, Heun or DPM-Solver-2.
  * @example
  * ```ts
  * import { diffusionSampler, gaussianMixtureTruth, linearSchedule } from 'omai-engine/stochastic'
@@ -267,6 +270,7 @@ function clipTo(x: Value, range: readonly [number, number]): Value {
  *
  * @param options - As {@link diffusionSampler}, without a method.
  * @returns The algorithm.
+ * @index algorithm DDPM ancestral sampler as a steppable Algorithm.
  * @example
  * ```ts
  * import { ddpmSampler, linearSchedule } from 'omai-engine/stochastic'
@@ -285,6 +289,7 @@ export function ddpmSampler(
  *
  * @param options - As {@link diffusionSampler}, without a method.
  * @returns The algorithm.
+ * @index algorithm DDIM sampler (deterministic, or noisy with eta) as a steppable Algorithm.
  * @example
  * ```ts
  * import { ddimSampler, linearSchedule } from 'omai-engine/stochastic'
@@ -304,6 +309,7 @@ export function ddimSampler(
  * @param options - As {@link diffusionSampler}.
  * @param key - The random key (default key 0).
  * @returns The final cloud (at zero noise) and the last clean-sample estimate.
+ * @index function Run a diffusion sampler to the end and return the samples.
  * @example
  * ```ts
  * import { gaussianMixtureTruth, linearSchedule, sampleDiffusion } from 'omai-engine/stochastic'
@@ -337,7 +343,11 @@ export interface SamplerProperties {
   readonly evaluationsPerStep: 1 | 2
 }
 
-/** The samplers' properties by method. */
+/**
+ * The samplers' properties by method.
+ *
+ * @index table Order, evaluations per step and stochasticity of each diffusion sampler.
+ */
 export const samplerProperties: Readonly<Record<SamplerMethod, SamplerProperties>> = {
   ddpm: { stochastic: true, order: 1, evaluationsPerStep: 1 },
   ddim: { stochastic: false, order: 1, evaluationsPerStep: 1 },

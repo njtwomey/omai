@@ -360,6 +360,7 @@ export function sinkhorn(x: TensorLike, y: TensorLike, options: SinkhornOptions 
  * @param options - projections (default 50), the order p (default 2) and `root` to return the p-th root SW_p rather
  *   than SW_p^p (default false: the power is smooth where the root has an infinite slope at zero).
  * @returns The scalar distance, differentiable in both samples.
+ * @index function Sliced Wasserstein distance by random projections; returns the power, root with a flag.
  * @example
  * ```ts
  * import { slicedWasserstein } from 'omai-engine/losses'

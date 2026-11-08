@@ -12,6 +12,7 @@ import {
   cosineDecay,
   cosineWarmRestarts,
   exponentialDecay,
+  inverseSqrtDecay,
   inverseTimeDecay,
   type LearningRateSchedule,
   linearSchedule,
@@ -86,6 +87,12 @@ export const schedules: OptionTable<ScheduleShape, ScheduleProperties> = optionT
       'the peak over one plus rate times step',
       dict({ decayRate: real(1e-4, 10, { log: true, default: 0.01, label: 'decay rate' }) }),
       (k) => (peak) => inverseTimeDecay(peak, k['decayRate'] as number),
+    ),
+    inverseSqrt: shape(
+      { warmup: false, decays: true, restarts: false },
+      'the peak over the square root of one plus rate times step',
+      dict({ decayRate: real(1e-4, 10, { log: true, default: 0.01, label: 'decay rate' }) }),
+      (k) => (peak) => inverseSqrtDecay(peak, k['decayRate'] as number),
     ),
     cosine: shape(
       { warmup: false, decays: true, restarts: false },

@@ -3,6 +3,8 @@
  * the time (`scoreNetwork`, built on `nn`'s modules), `networkModel` to hand its parameters to a sampler, and
  * `diffusionTrainer`, the training loop as an `Algorithm` (each step draws a minibatch, a time and noise per sample,
  * evaluates the weighted loss and takes an optimiser step), so a toy mixture can be learned and sampled end to end.
+ *
+ * @index module Training a diffusion model on low-dimensional data, then sampling it end to end.
  */
 
 import { type Module, mlp, SiLU, type TrainState, trainState, trainStep } from '../nn/index.ts'
@@ -38,7 +40,11 @@ import {
   weightedDiffusionLoss,
 } from './diffusion-models.ts'
 
-/** A network for low-dimensional diffusion: an MLP over [x_t, time features]. */
+/**
+ * A network for low-dimensional diffusion: an MLP over [x_t, time features].
+ *
+ * @index structure A score network: module, time encoding and size for diffusion data.
+ */
 export interface ScoreNetwork {
   readonly module: Module<Value, Value>
   readonly dim: number
@@ -56,6 +62,7 @@ export interface ScoreNetwork {
  *   a time (default Fourier of t) and the initialisation key.
  * @returns The network.
  * @concept diffusion-models
+ * @index module Small MLP over a noisy sample and a Fourier time encoding.
  * @example
  * ```ts
  * import { scoreNetwork } from 'omai-engine/stochastic'
@@ -101,6 +108,7 @@ export function scoreNetwork(options: {
  * @param network - The network.
  * @param params - Its parameters (a `TrainState`'s).
  * @returns The model: the network's output for a batch at a time.
+ * @index function A trained score network as a DiffusionModel for a sampler.
  * @example
  * ```ts
  * import { networkModel, scoreNetwork } from 'omai-engine/stochastic'
@@ -157,6 +165,7 @@ export interface DiffusionTrainerOptions {
  * @param options - Schedule, data, network, optimiser, batch size, steps, prediction and weighting.
  * @returns The algorithm; its paths are {@link DiffusionTrainPath}.
  * @concept diffusion-models
+ * @index algorithm Train a diffusion network: minibatch, time, noise, weighted loss, optimiser step.
  * @example
  * ```ts
  * import { diffusionTrainer, linearSchedule, scoreNetwork } from 'omai-engine/stochastic'

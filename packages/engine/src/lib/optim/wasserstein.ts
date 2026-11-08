@@ -147,6 +147,7 @@ export interface SlicedOptions {
  * @param options - Weights, projections (or their number and key) and the order.
  * @returns The distance (0-d).
  * @concept optimal-transport
+ * @index function Sliced Wasserstein distance with explicit projections; always the p-th root.
  * @example
  * ```ts
  * import { slicedWasserstein } from 'omai-engine/optim'

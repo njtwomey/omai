@@ -2,6 +2,8 @@
  * Two-dimensional target densities with exact, differentiable log densities and samplers, for testing MCMC, normalising
  * flows and diffusion models: rings, Gaussian mixtures on a circle or grid, the pinwheel, the banana, Neal's funnel and
  * the FFJORD checkerboard. `densitySamples` turns any of them into a labelled dataset.
+ *
+ * @index module Two-dimensional target densities with exact log densities, for MCMC, flows and diffusion models.
  */
 
 import { LOG_2PI, maxOf } from '../base/index.ts'
@@ -43,6 +45,8 @@ import { column, labels, matrix, stamp } from './_util.ts'
  * or ring) each came from.
  *
  * @concept densities
+ *
+ * @index structure A 2-D target with exact log density and sampler, for samplers and flows.
  */
 export interface Density {
   readonly name: string
@@ -75,6 +79,7 @@ export interface RingOptions {
  *
  * @param options - Radii and radial spread.
  * @returns The density.
+ * @index dataset Concentric rings with exact log density and sampler.
  * @example
  * ```ts
  * import { ringDensity } from 'omai-engine/datasets'
@@ -152,6 +157,7 @@ export interface MixtureDensityOptions {
  *
  * @param options - Layout, number of modes, radius or spacing, and spread.
  * @returns The density, with `means` for reference.
+ * @index dataset Eight Gaussians on a circle, or a 5 by 5 grid of them.
  * @example
  * ```ts
  * import { gaussianMixtureDensity } from 'omai-engine/datasets'
@@ -227,6 +233,7 @@ export interface PinwheelOptions {
  *
  * @param options - Arms, spreads and swirl rate.
  * @returns The density.
+ * @index dataset Pinwheel of swirled elongated Gaussians.
  * @example
  * ```ts
  * import { pinwheelDensity } from 'omai-engine/datasets'
@@ -296,6 +303,7 @@ export interface BananaOptions {
  *
  * @param options - Width and curvature.
  * @returns The density.
+ * @index dataset Haario's banana: a curved, correlated target for MCMC.
  * @example
  * ```ts
  * import { bananaDensity } from 'omai-engine/datasets'
@@ -337,6 +345,7 @@ export function bananaDensity(options: BananaOptions = {}): Density {
  *
  * @param scale - The standard deviation of `v` (default 3).
  * @returns The density.
+ * @index dataset Neal's funnel in two dimensions, whose neck defeats fixed step sizes.
  * @example
  * ```ts
  * import { funnelDensity } from 'omai-engine/datasets'
@@ -375,6 +384,7 @@ export function funnelDensity(scale = 3): Density {
  * (density 1/32 there, 0 elsewhere, so the log density is `-log 32` or `-Infinity`).
  *
  * @returns The density.
+ * @index dataset The FFJORD checkerboard: uniform on the dark squares of a 4 by 4 board.
  * @example
  * ```ts
  * import { checkerboardDensity } from 'omai-engine/datasets'
@@ -434,6 +444,7 @@ const DENSITIES: Readonly<Record<string, () => Density>> = {
  * Samples from one of the two-dimensional densities, labelled by the component (ring, mode or arm) each came from,
  * with the exact log density as `truth.logProb` and the density object in `truth.extra.density`.
  *
+ * @index dataset Labelled samples from any 2-D density, with the exact log density as truth.
  * @example
  * ```ts
  * import { generate } from 'omai-engine/data'

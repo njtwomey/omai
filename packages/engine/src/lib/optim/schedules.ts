@@ -138,6 +138,26 @@ export function inverseTimeDecay(init: number, decayRate: number, steps = 1, sta
 }
 
 /**
+ * Inverse-square-root decay: init / sqrt(1 + rate t / steps), the slower rate of the transformer schedule after its
+ * warmup (Vaswani et al., 2017) and of Adagrad-like methods.
+ *
+ * @param init - Initial value.
+ * @param decayRate - The rate (default 1).
+ * @param steps - The time scale (default 1).
+ * @returns The schedule.
+ * @index function Inverse-square-root decay of a learning rate.
+ * @example
+ * ```ts
+ * import { inverseSqrtDecay } from 'omai-engine/optim'
+ * inverseSqrtDecay(1, 1)(3) // => 0.5
+ * inverseSqrtDecay(2, 1, 10)(30) // => 1
+ * ```
+ */
+export function inverseSqrtDecay(init: number, decayRate = 1, steps = 1): LearningRateSchedule {
+  return (t) => init / Math.sqrt(1 + (decayRate * t) / steps)
+}
+
+/**
  * Cosine decay from init to alpha init over `decaySteps`, constant afterwards (optax.cosine_decay_schedule with its
  * exponent; torch CosineAnnealingLR up to T_max).
  *

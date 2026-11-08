@@ -9,6 +9,12 @@ describe('schedules without a library reference', () => {
     expect([stair(3), stair(4), stair(9)]).toEqual([2, 2 / 1.5, 1])
   })
 
+  it('inverse-square-root decay follows init / sqrt(1 + rate t / steps) and equals the root of inverse-time decay', () => {
+    const s = O.inverseSqrtDecay(2, 0.5, 4)
+    for (const t of [0, 1, 7, 100]) expect(s(t)).toBeCloseTo(2 / Math.sqrt(1 + (0.5 * t) / 4), 15)
+    for (const t of [0, 3, 50]) expect(O.inverseSqrtDecay(1)(t)).toBeCloseTo(Math.sqrt(O.inverseTimeDecay(1, 1)(t)), 15)
+  })
+
   it('constant and joined schedules', () => {
     expect(O.constantSchedule(3)(1e9)).toBe(3)
     expect(() => O.joinSchedules([O.constantSchedule(1)], [5])).toThrow(/one more/)

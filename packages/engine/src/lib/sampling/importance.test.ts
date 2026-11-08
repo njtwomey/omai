@@ -3,6 +3,7 @@ import { normal as normalDist } from '../dists/index.ts'
 import { key, normal } from '../random/index.ts'
 import {
   importanceEss,
+  importanceEstimate,
   importanceSampling,
   logEvidence,
   normaliseLogWeights,
@@ -75,6 +76,28 @@ describe('importance weights', () => {
         { key: key(0), n: 0 },
       ),
     ).toThrow()
+  })
+})
+
+describe('the ordinary importance estimate', () => {
+  it('averages the weighted values and reports sd(w f) / sqrt(n) as its error', () => {
+    const e = importanceEstimate([1, 2, 3], [0, 0, 0])
+    expect(e.value).toBe(2)
+    expect(e.standardError).toBeCloseTo(1 / Math.sqrt(3), 12)
+    expect(importanceEstimate([1, 1], [Math.log(2), 0]).value).toBeCloseTo(1.5, 12)
+  })
+
+  it('recovers E[x^2] = 1 under N(0, 1) from a wider proposal, within its own error', () => {
+    const t = numericTarget((x) => -0.5 * (x[0] ?? 0) ** 2 - 0.5 * Math.log(2 * Math.PI), 1)
+    const r = importanceSampling(t, proposalFromDistribution(normalDist(0, 2)), { key: key(3), n: 4000 })
+    const f = Array.from(r.draws.data, (x) => x * x)
+    const e = importanceEstimate(f, r.logWeights)
+    expect(Math.abs(e.value - 1)).toBeLessThan(4 * (e.standardError ?? 0))
+  })
+
+  it('refuses mismatched lengths and a single draw', () => {
+    expect(() => importanceEstimate([1, 2], [0])).toThrow(/2 values for 1 weights/)
+    expect(() => importanceEstimate([1], [0])).toThrow(/at least two/)
   })
 })
 

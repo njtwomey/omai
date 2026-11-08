@@ -1,8 +1,10 @@
 /**
  * Importance sampling, which estimates expectations under a target from weighted draws of a simpler proposal: weight
- * normalisation, Kish's effective sample size, self-normalised estimates and log-evidence with standard errors, the
+ * normalisation, Kish's effective sample size, ordinary and self-normalised estimates and log-evidence with standard errors, the
  * full `importanceSampling` routine, and Pareto-smoothed importance sampling (PSIS, as ArviZ) with its k-hat diagnostic
  * of whether the weights can be trusted.
+ *
+ * @index module Importance sampling: weights, effective sample size, estimates with errors, PSIS diagnostics.
  */
 
 import { type Estimate, logSumExpOf, OmaiError } from '../base/index.ts'
@@ -25,6 +27,7 @@ function values(x: TensorLike, name: string): Float64Array {
  * @returns The normalised weights.
  * @throws OmaiError with code `value` for an empty input.
  * @concept importance-sampling
+ * @index function Normalise log importance weights stably (a softmax).
  * @example
  * ```ts
  * import { normaliseLogWeights } from 'omai-engine/sampling'
@@ -44,6 +47,7 @@ export function normaliseLogWeights(logWeights: TensorLike): Float64Array {
  * @param logWeights - Log weights (normalised or not).
  * @returns The effective sample size.
  * @concept importance-sampling
+ * @index function Kish's effective sample size of importance weights.
  * @example
  * ```ts
  * import { importanceEss } from 'omai-engine/sampling'
@@ -68,6 +72,7 @@ export function importanceEss(logWeights: TensorLike): number {
  * @throws OmaiError with code `shape` when the lengths differ.
  * @concept importance-sampling
  * @reference A. B. Owen, Monte Carlo theory, methods and examples (2013), chapter 9.
+ * @index function Self-normalised importance estimate with delta-method standard error and ESS.
  * @example
  * ```ts
  * import { selfNormalisedEstimate } from 'omai-engine/sampling'
@@ -103,12 +108,52 @@ export function selfNormalisedEstimate(
 }
 
 /**
+ * The ordinary (unnormalised-weight) importance sampling estimate of E_pi[f] = (1/n) sum_i w_i f(x_i), with w_i =
+ * pi(x_i) / q(x_i) for a normalised target, and its standard error sd(w f) / sqrt(n). It is unbiased where
+ * {@link selfNormalisedEstimate} is not, but needs the weights on the scale of a normalised density; when the target is
+ * known only up to a constant, use the self-normalised form. The estimate's error shrinks as the proposal matches
+ * `pi |f|`, which is what the standard error shows.
+ *
+ * @param values - f(x_i) for each draw.
+ * @param logWeights - log pi(x_i) - log q(x_i) with both densities normalised.
+ * @returns The estimate, its standard error and 95% interval, and Kish's effective sample size.
+ * @concept importance-sampling
+ * @index function Unbiased importance sampling estimate with its standard error.
+ * @example
+ * ```ts
+ * import { importanceEstimate } from 'omai-engine/sampling'
+ * importanceEstimate([1, 1], [Math.log(2), 0]).value // => 1.5
+ * importanceEstimate([1, 2, 3], [0, 0, 0]).value // => 2
+ * ```
+ */
+export function importanceEstimate(values: TensorLike, logWeights: TensorLike): Estimate & { readonly ess: number } {
+  const f = Float64Array.from(toFlat(asTensor(values) as Tensor))
+  const l = Float64Array.from(toFlat(asTensor(logWeights) as Tensor))
+  const n = f.length
+  if (n !== l.length) throw new OmaiError('shape', `importanceEstimate: ${n} values for ${l.length} weights`)
+  if (n < 2) throw new OmaiError('value', 'importanceEstimate: needs at least two draws for a standard error')
+  const wf = f.map((v, i) => Math.exp(l[i] ?? Number.NEGATIVE_INFINITY) * v)
+  const mu = wf.reduce((a, b) => a + b, 0) / n
+  const variance = wf.reduce((a, b) => a + (b - mu) ** 2, 0) / (n - 1)
+  const se = Math.sqrt(variance / n)
+  return {
+    value: mu,
+    standardError: se,
+    interval: [mu - 1.959964 * se, mu + 1.959964 * se],
+    level: 0.95,
+    method: 'importance sampling',
+    ess: importanceEss(logWeights),
+  }
+}
+
+/**
  * The log of the normalising constant from importance weights, log Zhat = log (1/n) sum_i exp(l_i) (unbiased for Z on
  * the natural scale), with the delta-method standard error sd(w) / (sqrt(n) mean(w)) on the log scale.
  *
  * @param logWeights - log pi~(x_i) - log q(x_i) for an unnormalised pi~.
  * @returns The estimate of log Z.
  * @concept importance-sampling
+ * @index function Log normalising constant from importance weights, with standard error.
  * @example
  * ```ts
  * import { logEvidence } from 'omai-engine/sampling'
@@ -151,6 +196,7 @@ export interface ImportanceResult {
  * @throws OmaiError with code `shape` when the proposal's dimension differs from the target's, and `value` for a
  *   number of draws that is not a positive integer.
  * @concept importance-sampling
+ * @index function Importance sampling from a proposal: weighted draws, evidence and ESS.
  * @example
  * ```ts
  * import { importanceSampling, numericTarget, proposalFromDistribution } from 'omai-engine/sampling'
@@ -308,6 +354,7 @@ export interface ParetoSmoothedWeights {
  * @throws OmaiError with code `value` for fewer than 25 ratios or a constant tail.
  * @concept pareto-smoothed-importance-sampling
  * @reference A. Vehtari, D. Simpson, A. Gelman, Y. Yao and J. Gabry, Pareto smoothed importance sampling (JMLR 2024).
+ * @index function Pareto-smoothed importance weights (PSIS, as ArviZ).
  * @example
  * ```ts
  * import { paretoSmoothedWeights } from 'omai-engine/sampling'
@@ -358,6 +405,7 @@ export interface ParetoKOptions {
  * @returns k-hat.
  * @throws OmaiError with code `value` for too few draws or a constant tail.
  * @concept pareto-smoothed-importance-sampling
+ * @index function Pareto k-hat tail diagnostic of draws.
  * @example
  * ```ts
  * import { paretoKHat } from 'omai-engine/sampling'
@@ -416,6 +464,7 @@ export interface WeightDiagnostics {
  * @param logWeights - Log importance weights.
  * @returns The diagnostics.
  * @concept pareto-smoothed-importance-sampling
+ * @index function Diagnostics of importance weights: ESS, largest weight, k-hat and its threshold.
  * @example
  * ```ts
  * import { weightDiagnostics } from 'omai-engine/sampling'

@@ -17,6 +17,18 @@ import {
 } from './index.ts'
 
 describe('manifolds', () => {
+  it('Swiss roll with dimension 2 is the roll seen end on: its x and z columns', () => {
+    const three = generate(swissRoll, { key: key(0), knobs: { n: 50, noise: 0 } })
+    const two = generate(swissRoll, { key: key(0), knobs: { n: 50, noise: 0, dimension: 2 } })
+    expect(two.data.x.shape).toEqual([50, 2])
+    const a = toFlat(three.data.x)
+    const b = toFlat(two.data.x)
+    for (let i = 0; i < 50; i++) {
+      expect(b[2 * i]).toBe(a[3 * i])
+      expect(b[2 * i + 1]).toBe(a[3 * i + 2])
+    }
+  })
+
   it('Swiss roll points are the embedding of their latents, with noise on top', () => {
     const { data, truth } = generate(swissRoll, { key: key(0), knobs: { n: 200, noise: 0 } })
     const t = truth.latents?.['t'] as Tensor

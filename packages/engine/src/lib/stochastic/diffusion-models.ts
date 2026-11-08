@@ -7,6 +7,8 @@
  * min-SNR, the ELBO, EDM's); classifier and classifier-free guidance; and the exact score of a Gaussian mixture under the
  * forward process, a planted truth against which samplers and trained networks can be verified. The reverse samplers
  * and the trainable network are in `diffusion-samplers.ts`.
+ *
+ * @index module Diffusion models: noise schedules, forward process, losses, guidance, exact mixture score.
  */
 
 import { OmaiError } from '../base/index.ts'
@@ -41,6 +43,8 @@ import type { Sde } from './sde.ts'
  * 've' (variance exploding: alpha = 1).
  *
  * @concept diffusion-models
+ *
+ * @index structure A diffusion noise schedule: signal and noise scales, log-SNR, forward drift.
  */
 export interface NoiseSchedule {
   readonly name: string
@@ -79,6 +83,7 @@ export interface ScheduleSpec {
  *
  * @param spec - Name, kind, time range, alpha, sigma and optionally their derivatives.
  * @returns The schedule.
+ * @index function Build a custom diffusion noise schedule from its alpha and sigma.
  * @example
  * ```ts
  * import { defineSchedule } from 'omai-engine/stochastic'
@@ -112,6 +117,7 @@ export function defineSchedule(spec: ScheduleSpec): NoiseSchedule {
  * @param options - betaMin (default 0.1) and betaMax (default 20).
  * @returns The schedule, with `drift(t) = -beta(t) / 2` and `diffusionSquared(t) = beta(t)`.
  * @concept diffusion-models
+ * @index function Linear-beta variance-preserving noise schedule of the VP-SDE.
  * @example
  * ```ts
  * import { linearSchedule } from 'omai-engine/stochastic'
@@ -144,6 +150,7 @@ const ALPHA_BAR_FLOOR = 1e-5
  *
  * @param options - s, the offset that keeps beta small near zero (default 0.008).
  * @returns The schedule.
+ * @index function Cosine variance-preserving noise schedule (Nichol and Dhariwal).
  * @example
  * ```ts
  * import { cosineSchedule } from 'omai-engine/stochastic'
@@ -174,6 +181,7 @@ export function cosineSchedule(options: { readonly s?: number } = {}): NoiseSche
  *
  * @param options - start (default -3), end (default 3) and tau (default 1).
  * @returns The schedule.
+ * @index function Sigmoid variance-preserving noise schedule.
  * @example
  * ```ts
  * import { sigmoidSchedule } from 'omai-engine/stochastic'
@@ -241,6 +249,7 @@ export function cosineBetas(n: number, options: { readonly s?: number; readonly 
  * @param betas - The betas of the n steps.
  * @returns The schedule, with tMin = 1 / n and tMax = 1.
  * @throws OmaiError with code `value` for a beta outside [0, 1).
+ * @index function Noise schedule from a list of discrete DDPM betas.
  * @example
  * ```ts
  * import { discreteSchedule, linearBetas } from 'omai-engine/stochastic'
@@ -283,6 +292,7 @@ export function discreteSchedule(betas: readonly number[]): NoiseSchedule {
  *
  * @param options - sigmaMin (default 0.01) and sigmaMax (default 50).
  * @returns The schedule, with zero drift and `diffusionSquared(t) = 2 sigma(t)^2 log(sigmaMax / sigmaMin)`.
+ * @index function Variance-exploding noise schedule (NCSN, sigma from min to max).
  * @example
  * ```ts
  * import { veSchedule } from 'omai-engine/stochastic'
@@ -310,6 +320,7 @@ export function veSchedule(options: { readonly sigmaMin?: number; readonly sigma
  *
  * @param options - sigmaMin (default 0.002) and sigmaMax (default 80).
  * @returns The schedule.
+ * @index function EDM noise schedule where the time is the noise scale.
  * @example
  * ```ts
  * import { edmSchedule } from 'omai-engine/stochastic'
@@ -329,7 +340,20 @@ export function edmSchedule(options: { readonly sigmaMin?: number; readonly sigm
   })
 }
 
-/** The signal-to-noise ratio alpha^2 / sigma^2 at t. */
+/**
+ * The signal-to-noise ratio alpha^2 / sigma^2 of a schedule at a time: large near clean data, small near pure noise.
+ *
+ * @param schedule - The noise schedule.
+ * @param t - The time.
+ * @returns exp of the schedule's log-SNR at `t`.
+ * @index function Signal-to-noise ratio of a noise schedule at a time.
+ * @example
+ * ```ts
+ * import { linearSchedule, snr } from 'omai-engine/stochastic'
+ * const schedule = linearSchedule()
+ * snr(schedule, 0.1) > snr(schedule, 0.9) // => true
+ * ```
+ */
 export function snr(schedule: NoiseSchedule, t: number): number {
   return Math.exp(schedule.logSnr(t))
 }
@@ -343,6 +367,7 @@ export function snr(schedule: NoiseSchedule, t: number): number {
  * @param sigma - The noise level.
  * @param sigmaData - The data's standard deviation (default 0.5).
  * @returns The four coefficients.
+ * @index function EDM preconditioning of a network: skip, output and input scalings.
  * @example
  * ```ts
  * import { edmPreconditioning } from 'omai-engine/stochastic'
@@ -426,6 +451,7 @@ export function timeAtLogSnr(schedule: NoiseSchedule, logSnr: number): number {
  * @param n - The number of steps.
  * @param options - spacing (default 'uniform').
  * @returns `n + 1` decreasing times ending in 0.
+ * @index function Times a sampler visits: uniform, quadratic, log-SNR or Karras spacing.
  * @example
  * ```ts
  * import { linearSchedule, samplerTimes } from 'omai-engine/stochastic'
@@ -462,7 +488,20 @@ export function samplerTimes(
 
 // --- Forward process -------------------------------------------------------------------------------------------------
 
-/** The mean multiplier alpha and standard deviation sigma of q(x_t | x_0) at a time. */
+/**
+ * The mean multiplier alpha and standard deviation sigma of q(x_t | x_0) at a time: x_t is alpha x_0 plus sigma times
+ * standard normal noise.
+ *
+ * @param schedule - The noise schedule.
+ * @param t - The time.
+ * @returns `{ alpha, sigma }`.
+ * @index function Signal and noise scales of the forward process at a time.
+ * @example
+ * ```ts
+ * import { edmSchedule, forwardMarginal } from 'omai-engine/stochastic'
+ * forwardMarginal(edmSchedule(), 1) // => { alpha: 1, sigma: 1 }
+ * ```
+ */
 export function forwardMarginal(
   schedule: NoiseSchedule,
   t: number,
@@ -494,6 +533,7 @@ export interface ForwardSample {
  * @param k - The random key.
  * @returns x_t, the noise that made it, and alpha and sigma shaped to broadcast against x0.
  * @concept diffusion-models
+ * @index function Noise clean samples to a time in one step: q(x_t | x_0).
  * @example
  * ```ts
  * import { forwardSample, linearSchedule } from 'omai-engine/stochastic'
@@ -525,6 +565,7 @@ export function forwardSample(
  * @param options - betaMin and betaMax of the linear schedule (defaults 0.1 and 20).
  * @returns The forward SDE (`drift`, `diffusion`) and the schedule.
  * @concept diffusion-models
+ * @index function Variance-preserving SDE of a diffusion model, with reverse and flow forms.
  * @example
  * ```ts
  * import { vpSde } from 'omai-engine/stochastic'
@@ -540,6 +581,7 @@ export function vpSde(options: { readonly betaMin?: number; readonly betaMax?: n
  *
  * @param options - sigmaMin and sigmaMax (defaults 0.01 and 50).
  * @returns As {@link vpSde}.
+ * @index function Variance-exploding SDE of a diffusion model.
  * @example
  * ```ts
  * import { veSde } from 'omai-engine/stochastic'
@@ -550,7 +592,11 @@ export function veSde(options: { readonly sigmaMin?: number; readonly sigmaMax?:
   return diffusionSde(veSchedule(options))
 }
 
-/** A forward diffusion SDE with the schedule whose marginals it has. */
+/**
+ * A forward diffusion SDE with the schedule whose marginals it has.
+ *
+ * @index structure A diffusion's forward SDE together with its noise schedule.
+ */
 export interface DiffusionSde extends Sde {
   readonly schedule: NoiseSchedule
 }
@@ -572,7 +618,11 @@ function diffusionSde(schedule: NoiseSchedule): DiffusionSde {
  */
 export type DiffusionPrediction = 'epsilon' | 'x0' | 'v' | 'score'
 
-/** A model of the reverse process: a prediction for a batch `[N, ...]` of noisy samples at one time. */
+/**
+ * A model of the reverse process: a prediction for a batch `[N, ...]` of noisy samples at one time.
+ *
+ * @index structure A network function (x_t, t) giving a diffusion model's prediction.
+ */
 export type DiffusionModel = (xt: Value, t: number) => Value
 
 /**
@@ -586,6 +636,7 @@ export type DiffusionModel = (xt: Value, t: number) => Value
  * @returns The estimates of x0 and epsilon.
  * @throws OmaiError with code `value` for the velocity of a variance-exploding schedule.
  * @concept diffusion-models
+ * @index function Convert an epsilon, x0, v or score prediction to clean sample and noise.
  * @example
  * ```ts
  * import { toX0AndNoise } from 'omai-engine/stochastic'
@@ -739,6 +790,7 @@ export interface DiffusionLossOptions extends WeightingOptions {
  * @param options - The prediction, the weighting and their parameters.
  * @returns The scalar loss, differentiable in the output.
  * @concept diffusion-models
+ * @index function Diffusion training loss: simple, min-SNR, ELBO or EDM weighting.
  * @example
  * ```ts
  * import { linearSchedule, weightedDiffusionLoss } from 'omai-engine/stochastic'
@@ -793,6 +845,7 @@ export interface DiffusionBatch {
  * @param options - tMin and tMax (default the schedule's) and `logNormal` to draw sigma as EDM does (only for a schedule
  *   whose time is sigma).
  * @returns The batch.
+ * @index function A noised training batch for a diffusion model: times and x_t.
  * @example
  * ```ts
  * import { diffusionBatch, linearSchedule } from 'omai-engine/stochastic'
@@ -830,6 +883,7 @@ const key0 = (k: Key, i: number): Key => foldIn(k, i)
  * @param scale - The guidance scale s (default 1).
  * @returns The guided prediction.
  * @concept diffusion-models
+ * @index function Combine conditional and unconditional predictions with a guidance scale.
  * @example
  * ```ts
  * import { classifierFreeGuidance } from 'omai-engine/stochastic'
@@ -889,6 +943,7 @@ export function guidedNoise(noise: TensorLike, classifierGradient: TensorLike, s
  * @param unconditional - The unconditional model.
  * @param scale - The guidance scale.
  * @returns The guided model.
+ * @index function Classifier-free guided model from a conditional and an unconditional one.
  * @example
  * ```ts
  * import { guidedModel } from 'omai-engine/stochastic'
@@ -944,6 +999,7 @@ export interface GaussianMixtureTruth {
  * @returns The truth.
  * @throws OmaiError with code `value` for no components or non-positive spreads or weights.
  * @concept diffusion-models
+ * @index function Exact noised score of a Gaussian mixture, to verify samplers and networks.
  * @example
  * ```ts
  * import { gaussianMixtureTruth, linearSchedule } from 'omai-engine/stochastic'

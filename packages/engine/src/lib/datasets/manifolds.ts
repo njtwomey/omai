@@ -88,6 +88,17 @@ function manifoldData(
   }
 }
 
+/** The roll seen end on: the x and z columns of its three-dimensional rows, the spiral without its height. */
+function endOn(roll: Tensor): Tensor {
+  const [n = 0] = roll.shape
+  const flat = toFlat(roll)
+  return matrix(
+    Float64Array.from({ length: 2 * n }, (_, i) => flat[3 * Math.floor(i / 2) + (i % 2 === 0 ? 0 : 2)] ?? 0),
+    n,
+    2,
+  )
+}
+
 const n = int(1, 100_000, { description: 'The number of rows.', default: 100, label: 'samples' })
 const noise = real(0, 5, {
   description: 'The standard deviation of the Gaussian noise.',
@@ -97,13 +108,16 @@ const noise = real(0, 5, {
 
 /**
  * The Swiss roll (sklearn.datasets.make_swiss_roll), optionally with a hole: a rolled-up rectangle in 3-D with the
- * rectangle coordinates `t` (also the target, sklearn's colour) and `height` as `truth.latents`.
+ * rectangle coordinates `t` (also the target, sklearn's colour) and `height` as `truth.latents`. With `dimension: 2` the rows are the
+ * spiral seen end on (the x and z columns), the two-dimensional form of the roll.
  *
+ * @index dataset The Swiss roll in 3-D (sklearn make_swiss_roll), optionally with a hole.
  * @example
  * ```ts
  * import { generate } from 'omai-engine/data'
  * import { swissRoll } from 'omai-engine/datasets'
  * generate(swissRoll, { knobs: { n: 10 } }).data.x.shape // => [10, 3]
+ * generate(swissRoll, { knobs: { n: 10, dimension: 2 } }).data.x.shape // => [10, 2]
  * ```
  */
 export const swissRoll: DatasetGenerator<RegressionData> = {
@@ -117,6 +131,11 @@ export const swissRoll: DatasetGenerator<RegressionData> = {
       description: 'Remove a rectangle from the middle of the sheet.',
       default: false,
       label: 'cut a hole',
+    }),
+    dimension: int(2, 3, {
+      description: 'Rows in three dimensions, or the two-dimensional spiral the roll makes seen end on (its x and z).',
+      default: 3,
+      label: 'dimensions',
     }),
   }),
   generate: (k, knobs) => {
@@ -140,7 +159,7 @@ export const swissRoll: DatasetGenerator<RegressionData> = {
       swissRoll.description,
       knobs,
       k,
-      swissRollEmbedding(t, h),
+      knobs['dimension'] === 2 ? endOn(swissRollEmbedding(t, h)) : swissRollEmbedding(t, h),
       t,
       t.map((v, i) => [v, h[i] ?? 0]),
       ['t', 'height'],
