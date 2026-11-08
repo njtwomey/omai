@@ -528,8 +528,12 @@ export function matrix(z: TensorLike, options: MatrixOptions = {}): Layer {
 
 /** Options of {@link maskMatrix}. */
 export interface MaskOptions {
-  /** The colour of the cells that are on (default the first series colour, `tab0`): a token name or CSS colour. */
-  readonly on?: string
+  /**
+   * The colour of the cells that are on (default the first series colour, `tab0`): a token name or CSS colour, or a
+   * function of the cell's row and column giving one, to colour by part (the labels, the heads and the losses of an
+   * attention mask in three colours in one frame). The function is only asked about cells that are on.
+   */
+  readonly on?: string | ((row: number, col: number) => string)
   /** The colour of the cells that are off (default a light neutral). */
   readonly off?: string
   readonly rowLabels?: readonly string[]
@@ -578,10 +582,30 @@ export function maskMatrix(
           )
         })()
   const marks = options.marks
-  return matrix(values, {
+  const off = options.off === undefined ? t.grid : colourFor(options.off, mode)
+  // Cells are 0 for off and 1 to K for the K colours the `on` function gives, in order of first use; a ramp with one
+  // stop per value makes each value land on its own colour.
+  const onColours: string[] = []
+  const coded =
+    typeof options.on === 'function'
+      ? values.map((row, r) =>
+          row.map((v, c) => {
+            if (v === 0) return 0
+            const colour = colourFor((options.on as (row: number, col: number) => string)(r, c), mode)
+            const at = onColours.indexOf(colour)
+            if (at >= 0) return at + 1
+            onColours.push(colour)
+            return onColours.length
+          }),
+        )
+      : values
+  return matrix(coded, {
     mode,
-    ramp: [options.off === undefined ? t.grid : colourFor(options.off, mode), colourFor(options.on ?? 'tab0', mode)],
-    range: [0, 1],
+    ramp:
+      typeof options.on === 'function'
+        ? [off, ...(onColours.length > 0 ? onColours : [off])]
+        : [off, colourFor(options.on ?? 'tab0', mode)],
+    range: [0, Math.max(1, onColours.length)],
     annotate: false,
     colourBar: false,
     ...(options.rowLabels === undefined ? {} : { rowLabels: options.rowLabels }),

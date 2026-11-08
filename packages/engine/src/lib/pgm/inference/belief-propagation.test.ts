@@ -62,6 +62,29 @@ describe('belief propagation at finer granularity', () => {
     }
   })
 
+  it('says which message each step sent, by name, in the frame', () => {
+    const alg = P.beliefPropagationAlgorithm(chain, { granularity: 'message', schedule: 'sequential' })
+    let state = alg.init(key(0))
+    expect((alg.observe?.(state, 0)?.frame as { sent: unknown[] }).sent).toEqual([])
+    const kinds: string[] = []
+    for (let i = 0; i < 12; i++) {
+      state = alg.step(state, {} as never)
+      const sent = (alg.observe?.(state, i)?.frame as { sent: { kind: string; from: string; to: string }[] }).sent
+      expect(sent).toHaveLength(1)
+      const [m] = sent
+      // A variable message goes from a variable to a factor, a factor message the other way.
+      expect(
+        m?.kind === 'variableToFactor' ? m.to.startsWith('f') && !m.from.startsWith('f') : m?.from.startsWith('f'),
+      ).toBe(true)
+      kinds.push(m?.kind ?? '')
+    }
+    expect(new Set(kinds)).toEqual(new Set(['variableToFactor', 'factorToVariable']))
+    // A whole sweep sends everything, so it lists nothing.
+    const sweep = P.beliefPropagationAlgorithm(chain)
+    const after = sweep.step(sweep.init(key(0)), {} as never)
+    expect((sweep.observe?.(after, 1)?.frame as { sent: unknown[] }).sent).toEqual([])
+  })
+
   it('keeps whole sweeps as the default', () => {
     const a = run(grid, {})
     const b = run(grid, { granularity: 'sweep' })

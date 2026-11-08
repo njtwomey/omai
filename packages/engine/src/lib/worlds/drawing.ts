@@ -5,6 +5,7 @@
 
 import {
   circle,
+  group,
   line,
   type Paint,
   path,
@@ -193,6 +194,7 @@ export function toScene(w: World, options: WorldSceneOptions = {}): Scene {
       }
     }
   } else {
+    const walls: SceneNode[] = []
     for (let cell = 0; cell < w.n; cell++) {
       const cs = cellCorners(w, cell)
       for (let side = 0; side < cs.length; side++) {
@@ -200,9 +202,11 @@ export function toScene(w: World, options: WorldSceneOptions = {}): Scene {
         if (!hasWall(w, cell, side) || nb < cell) continue
         const [x1, y1] = at(cs[side] ?? [0, 0])
         const [x2, y2] = at(cs[(side + 1) % cs.length] ?? [0, 0])
-        nodes.push(line(x1, y1, x2, y2, { stroke: 'fg', strokeWidth: Math.max(2, k / 10) }))
+        walls.push(line(x1, y1, x2, y2, { stroke: 'fg', strokeWidth: Math.max(2, k / 10) }))
       }
     }
+    // One group, so `recolour(scene, { walls: ... })` and `SceneView`'s `tones` can restyle every wall at once.
+    if (walls.length > 0) nodes.push(group(walls, { id: 'walls' }))
   }
   const label = (cell: number, s: string, fill: Paint): void => {
     const [x, y] = at(cellCentre(w, cell))
@@ -228,7 +232,7 @@ export function toScene(w: World, options: WorldSceneOptions = {}): Scene {
     nodes.push(
       path(
         options.path.map((c) => at(cellCentre(w, c))),
-        { stroke: 'accent', strokeWidth: 3 },
+        { stroke: 'accent', strokeWidth: 3, id: 'path' },
       ),
     )
   }

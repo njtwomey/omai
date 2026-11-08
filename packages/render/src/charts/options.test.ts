@@ -80,6 +80,40 @@ describe('type size follows the figure', () => {
     expect(opt(bars(['a'], [1], { labels: true, labelSize: 8 }).series[0]).label.fontSize).toBe(8)
   })
 
+  it('spaces the lines of a colour bar label by more than the type size, so a second line does not touch the value', () => {
+    const make = (size: number): string => {
+      const l = layer(
+        [{ type: 'scatter', data: [[0.5, 0.5]] }],
+        { x: [0, 1], y: [0, 1] },
+        { colourBar: { min: 0, max: 6.79, colours: ['#fff', '#00f'], label: 'height\n(metres)' } },
+      )
+      return svgOf(cartesian([l], { figure: figure({ width: 700, height: 460, fontSize: size }) }), 700, 460)
+    }
+    for (const size of [11, 22]) {
+      const svg = make(size)
+      const ys = ['height', '(metres)', '6.79'].map((t) => {
+        const m = svg.match(
+          new RegExp(`<text[^>]* y="(-?[\\d.]+)"[^>]*>${t.replace('(', '\\(').replace(')', '\\)')}</text>`),
+        )
+        return Number(m?.[1])
+      })
+      const [a = 0, b = 0, c = 0] = ys
+      expect(b - a).toBeGreaterThanOrEqual((size - 1) * 1.25)
+      expect(c - b).toBeGreaterThanOrEqual((size - 1) * 1.25)
+    }
+  })
+
+  it('sets the font family and weight of tick labels, and the weight of point labels', () => {
+    const l = points([{ x: [0.5], y: [0.5], labels: ['a'], labelWeight: 'bold', labelFamily: 'monospace' }], {})
+    const o = opt(
+      cartesian([l], { x: { ticks: { fontFamily: 'ui-monospace', fontWeight: 'bold' } }, figure: figure() }),
+    ) as { xAxis: { axisLabel: Record<string, unknown> }[]; series: { label: Record<string, unknown> }[] }
+    expect(o.xAxis[0]?.axisLabel['fontFamily']).toBe('ui-monospace')
+    expect(o.xAxis[0]?.axisLabel['fontWeight']).toBe('bold')
+    expect(o.series[0]?.label['fontWeight']).toBe('bold')
+    expect(o.series[0]?.label['fontFamily']).toBe('monospace')
+  })
+
   it('sizes the colour bar text from the figure and reserves room from the label', () => {
     const bar = { min: 0, max: 1, colours: ['#000', '#fff'] }
     const make = (label?: string, extra: object = {}): ReturnType<typeof layer> =>
@@ -312,6 +346,20 @@ describe('matrix label colours and marks', () => {
 })
 
 describe('maskMatrix', () => {
+  it('colours the cells that are on by a function of the row and column, one stop per colour', () => {
+    const mask = [
+      [true, false, true],
+      [true, true, true],
+    ]
+    const l = maskMatrix(mask, { on: (row, col) => (col === 0 ? 'tab0' : row === 0 ? 'tab1' : 'tab2') })
+    const data = (l.series[0] as { data: number[][] }).data
+    // The first row is drawn at the top, so its y index is the largest.
+    const code = (r: number, c: number): number | undefined => data.find((d) => d[0] === c && d[1] === 1 - r)?.[2]
+    // Off is 0; the three colours are numbered by first use, scanning rows then columns.
+    expect([code(0, 0), code(0, 1), code(0, 2), code(1, 0), code(1, 1), code(1, 2)]).toEqual([1, 0, 2, 1, 3, 3])
+    expect(l.colourBar).toBeUndefined()
+  })
+
   const mask = [
     [true, false, false],
     [true, true, false],

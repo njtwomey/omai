@@ -6,6 +6,7 @@ import {
   cellCoords,
   cellCorners,
   cellIndex,
+  cliffWalkingWorld,
   destination,
   exits,
   fromAscii,
@@ -152,7 +153,8 @@ describe('blocks, structures and scenes', () => {
     expect([w.items.map((it) => it.kind), w.goals]).toEqual([['key', 'door', 'pickup'], [3]])
     const s = toScene(w, { values: [1, 2, 3, 0], path: [0, 2], agent: { x: 0.5, y: 0.5, heading: 0 }, title: 'maze' })
     expect(s.title).toBe('maze')
-    expect(s.children.filter((n) => n.kind === 'line' && n.stroke === 'fg').length).toBeGreaterThan(1)
+    const walls = s.children.find((n) => n.kind === 'group' && n.id === 'walls')
+    expect(walls?.kind === 'group' && walls.children.filter((n) => n.kind === 'line').length).toBeGreaterThan(0)
     expect(s.children.filter((n) => n.kind === 'circle' && n.fill === 'accent')).toHaveLength(4)
     const hex = toScene(fromAscii(['..', '..'], { topology: 'hex' }))
     expect(hex.children.filter((n) => n.kind === 'path')).toHaveLength(4)
@@ -191,5 +193,32 @@ describe('blocks, structures and scenes', () => {
     expect(greedyPath(w, [0, 1, 0, 3], 0)).toEqual([0, 1])
     expect(greedyPath(w, [0, 1, 2, 3], 0, { maxSteps: 2 })).toEqual([0, 1, 2])
     expect(greedyPath(w, [0, 1, 2, 3], 3)).toEqual([3])
+  })
+
+  it('does not step onto hazardous cells when walking up the values, however high a placeholder value there is', () => {
+    const w = cliffWalkingWorld().world
+    const goal = w.goals[0] ?? 0
+    // Negative number of moves to the goal over the open cells (breadth first, never through the cliff); the cliff cells
+    // hold 0, the highest value in the table.
+    const moves = new Map<number, number>([[goal, 0]])
+    for (const cell of moves.keys())
+      for (const next of neighbours(w, cell))
+        if (!moves.has(next) && !terrainOf(w, next).hazard) moves.set(next, (moves.get(cell) ?? 0) + 1)
+    const values = Array.from({ length: w.n }, (_, cell) => (terrainOf(w, cell).hazard ? 0 : -(moves.get(cell) ?? 99)))
+    const path = greedyPath(w, values, w.starts[0] ?? 0)
+    expect(path.some((cell) => terrainOf(w, cell).hazard)).toBe(false)
+    expect(path.at(-1)).toBe(goal)
+    // Walking anywhere, as before, falls into the cliff at once.
+    const rash = greedyPath(w, values, w.starts[0] ?? 0, { skip: () => false })
+    expect(terrainOf(w, rash[1] ?? 0).hazard).toBe(true)
+  })
+
+  it('names the path, the walls as one group, so a scene can be restyled by id', () => {
+    const w = fromAscii(['S#G', '...'], { format: 'cells' } as never)
+    const scene = toScene(w, { path: [0, 3, 4, 5, 2] })
+    const ids = scene.children.map((n) => n.id)
+    expect(ids).toContain('path')
+    const walled = toScene(fromAscii(['#####', '#S#G#', '#####'], { format: 'walls' }))
+    expect(walled.children.some((n) => n.kind === 'group' && n.id === 'walls')).toBe(true)
   })
 })

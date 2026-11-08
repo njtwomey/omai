@@ -1,6 +1,7 @@
 import { type ReactElement, useRef, useState } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { inAct, invoke, mountElement, resetGlobals } from '../_harness.tsx'
+import { placeInContainer } from './_placement.ts'
 import { Popover } from './Popover.tsx'
 
 afterEach(() => {
@@ -87,5 +88,37 @@ describe('Popover', () => {
     // Closing gives the anchor its focus back.
     expect(m.focused()?.text).toBe('anchor')
     await m.unmount()
+  })
+})
+
+describe('placing a popup inside a container', () => {
+  const box = (left: number, top: number, width: number, height: number) => ({
+    left,
+    top,
+    right: left + width,
+    bottom: top + height,
+    width,
+    height,
+  })
+  it("works in the container's own coordinates, undoing the scale it is drawn at", () => {
+    // A 400 by 300 container drawn at half scale at (100, 50): an anchor drawn at (120, 70), 40 by 20 on screen.
+    const at = placeInContainer({
+      anchor: box(120, 70, 40, 20),
+      container: box(100, 50, 200, 150),
+      size: { width: 400, height: 300 },
+      menu: { width: 60, height: 40 },
+      align: 'start',
+    })
+    expect(at).toEqual({ left: 40, top: 84 })
+  })
+  it('flips above the anchor when there is no room below, and stays inside the container', () => {
+    const near = {
+      anchor: box(10, 140, 40, 20),
+      container: box(0, 0, 200, 150),
+      size: { width: 200, height: 150 },
+      menu: { width: 80, height: 60 },
+    }
+    expect(placeInContainer({ ...near, align: 'start' }).top).toBe(76)
+    expect(placeInContainer({ ...near, align: 'end' }).left).toBe(8)
   })
 })

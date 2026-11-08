@@ -38,6 +38,9 @@ export interface PointSet {
   readonly labelPosition?: 'right' | 'top' | 'left' | 'bottom' | 'inside'
   /** Label colour (default the secondary text colour): a token name or any CSS colour. */
   readonly labelColour?: string
+  /** Label weight (default normal) and CSS font family (default the figure's). */
+  readonly labelWeight?: 'normal' | 'bold' | number
+  readonly labelFamily?: string
   readonly name?: string
   readonly colour?: string
   /** Marker size in pixels (default 7). */
@@ -151,6 +154,8 @@ export function points(
         label: {
           color: p.labelColour === undefined ? tokens(mode).fgSecondary : colourFor(p.labelColour, mode),
           ...(p.labelSize === undefined ? {} : { fontSize: p.labelSize }),
+          ...(p.labelWeight === undefined ? {} : { fontWeight: p.labelWeight }),
+          ...(p.labelFamily === undefined ? {} : { fontFamily: p.labelFamily }),
         },
         emphasis: { scale: 1.3 },
         clip: true,

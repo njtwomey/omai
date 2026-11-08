@@ -23,6 +23,8 @@ export interface SelectProps<T extends OptionValue> {
    * would open outside it.
    */
   readonly appearance?: 'native' | 'menu'
+  /** For `appearance="menu"`: draw the list into this element instead of the page (see `PopoverContainer`). */
+  readonly menuContainer?: HTMLElement | null
   readonly disabled?: boolean
   readonly className?: string
 }
@@ -83,7 +85,14 @@ export function Select<T extends OptionValue>(props: SelectProps<T>): ReactNode 
               >
                 {options[at]?.label ?? '(none)'}
               </button>
-              <Popover anchor={trigger} open={open} onClose={() => setOpen(false)} role="listbox" label="options">
+              <Popover
+                anchor={trigger}
+                open={open}
+                onClose={() => setOpen(false)}
+                role="listbox"
+                label="options"
+                {...(props.menuContainer === undefined ? {} : { container: props.menuContainer })}
+              >
                 {options.map((o, i) => (
                   <button
                     key={String(o.value)}

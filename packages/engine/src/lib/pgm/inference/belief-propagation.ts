@@ -75,6 +75,8 @@ export interface BeliefPropagationState {
   readonly cursor: number
   /** The largest message change so far in the iteration under way (finer granularity only). */
   readonly running: number
+  /** The directed message updates of the last step (empty for a whole sweep, which sends them all, and before the first step). */
+  readonly sent: readonly BpUnit[]
 }
 
 /** Result of {@link beliefPropagation}. */
@@ -165,8 +167,8 @@ function treeSchedule(c: Compiled): { kind: 'v2f' | 'f2v'; edge: number }[] {
   return [...collect, ...distribute]
 }
 
-/** One directed message update of a plan. */
-type BpUnit = { readonly kind: 'v2f' | 'f2v'; readonly edge: number }
+/** One directed message update: a variable-to-factor (`v2f`) or factor-to-variable (`f2v`) message on an edge of the graph. */
+export type BpUnit = { readonly kind: 'v2f' | 'f2v'; readonly edge: number }
 
 /**
  * The steps of one iteration of a finer-grained run: each step is a group of directed updates. Flooding computes every
@@ -242,7 +244,7 @@ export function beliefPropagationAlgorithm(
     init: () => {
       const f2v = c.edges.map((e) => uniform(c.card[e.variable] ?? 1))
       const v2f = c.edges.map((e) => uniform(c.card[e.variable] ?? 1))
-      return { f2v, v2f, residual: Number.POSITIVE_INFINITY, updates: 0, cursor: 0, running: 0 }
+      return { f2v, v2f, residual: Number.POSITIVE_INFINITY, updates: 0, cursor: 0, running: 0, sent: [] }
     },
     step: (state) => {
       const f2v = [...state.f2v]
@@ -274,7 +276,15 @@ export function beliefPropagationAlgorithm(
         residual = 0
         for (let e = 0; e < nEdges; e++)
           residual = Math.max(residual, messageChange(factorMessage(c, v2f, e, mode), f2v[e] as Float64Array))
-        return { f2v, v2f, residual, updates: state.updates + 1, cursor: 0, running: 0 }
+        return {
+          f2v,
+          v2f,
+          residual,
+          updates: state.updates + 1,
+          cursor: 0,
+          running: 0,
+          sent: best >= 0 ? [{ kind: 'f2v', edge: best }] : [],
+        }
       }
       if (granularity !== 'sweep') {
         const group = plan[state.cursor] ?? []
@@ -285,8 +295,8 @@ export function beliefPropagationAlgorithm(
         const running = Math.max(state.running, residual)
         const cursor = state.cursor + 1
         const updates = state.updates + group.length
-        if (cursor < plan.length) return { f2v, v2f, residual: state.residual, updates, cursor, running }
-        return { f2v, v2f, residual: schedule === 'tree' ? 0 : running, updates, cursor: 0, running: 0 }
+        if (cursor < plan.length) return { f2v, v2f, residual: state.residual, updates, cursor, running, sent: group }
+        return { f2v, v2f, residual: schedule === 'tree' ? 0 : running, updates, cursor: 0, running: 0, sent: group }
       }
       if (schedule === 'flooding') {
         for (let e = 0; e < nEdges; e++) v2f[e] = variableMessage(c, state.f2v, e, mode)
@@ -346,6 +356,7 @@ export function beliefPropagationAlgorithm(
         updates: state.updates + (schedule === 'tree' ? tree.length : nEdges),
         cursor: 0,
         running: 0,
+        sent: [],
       }
     },
     done: (state, t) =>
@@ -359,9 +370,19 @@ export function beliefPropagationAlgorithm(
       const beliefs: Record<string, number[]> = {}
       for (const [i, b] of current.variables.entries())
         beliefs[c.names[i] ?? String(i)] = Array.from(b, (lb) => Math.exp(lb))
+      // The messages of the last step by name (a variable, or `f<index>` for a factor), so a view of a stepped run can
+      // light the edges that just carried one without working out the plan.
+      const sent = state.sent.map((u) => {
+        const e = c.edges[u.edge]
+        const variable = c.names[e?.variable ?? 0] ?? ''
+        const factor = `f${e?.factor ?? 0}`
+        return u.kind === 'v2f'
+          ? { kind: 'variableToFactor', from: variable, to: factor }
+          : { kind: 'factorToVariable', from: factor, to: variable }
+      })
       return {
         metrics,
-        frame: { beliefs },
+        frame: { beliefs, sent },
         messages: c.edges.map((e, i) => ({
           kind: 'factorToVariable',
           payload: { factor: e.factor, variable: c.names[e.variable] ?? '', values: Array.from(state.f2v[i] ?? []) },

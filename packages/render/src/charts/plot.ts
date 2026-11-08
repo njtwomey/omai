@@ -110,8 +110,15 @@ export interface AxisSpec {
    * How the tick labels are set. `interval`: on a category axis how many labels to skip between shown ones (0 shows
    * every label, `'auto'` lets the chart hide overlaps), on a value axis the step between ticks. `rotate`: degrees
    * (positive anticlockwise). `fontSize`: the labels' size in pixels (default the figure's type size less one).
+   * `fontFamily` and `fontWeight`: a CSS font family (a monospace one for token labels, say) and weight.
    */
-  readonly ticks?: { readonly interval?: number | 'auto'; readonly rotate?: number; readonly fontSize?: number }
+  readonly ticks?: {
+    readonly interval?: number | 'auto'
+    readonly rotate?: number
+    readonly fontSize?: number
+    readonly fontFamily?: string
+    readonly fontWeight?: 'normal' | 'bold' | number
+  }
 }
 
 /** Options shared by every cartesian chart. */
@@ -354,6 +361,8 @@ export function panelParts(
         ...(ticks === undefined ? {} : { showMinLabel: ticks.showMinLabel, showMaxLabel: ticks.showMaxLabel }),
         ...(scale === 'category' || scale === 'time' ? {} : { formatter: formatter(spec, scale) }),
         ...(tick?.fontSize === undefined ? {} : { fontSize: tick.fontSize }),
+        ...(tick?.fontFamily === undefined ? {} : { fontFamily: tick.fontFamily }),
+        ...(tick?.fontWeight === undefined ? {} : { fontWeight: tick.fontWeight }),
         ...(tick?.rotate === undefined ? {} : { rotate: tick.rotate }),
         ...(typeof tick?.interval === 'number' && scale === 'category' ? { interval: tick.interval } : {}),
         ...(scale === 'category' && colours?.some((c) => c !== undefined) === true
@@ -400,7 +409,14 @@ export function panelParts(
         top: rect.y,
         itemWidth: 10,
         itemHeight: Math.max(40, rect.height - 24),
-        textStyle: { color: t.muted, fontSize: bar?.fontSize ?? fontSize - 1, fontFamily: t.font },
+        // A label of several lines needs room between them: the default line height is the type size itself, which
+        // puts a second line of the label against the value under it.
+        textStyle: {
+          color: t.muted,
+          fontSize: bar?.fontSize ?? fontSize - 1,
+          fontFamily: t.font,
+          lineHeight: Math.round((bar?.fontSize ?? fontSize - 1) * 1.3),
+        },
         ...(bar.label === undefined ? {} : { textGap: 6 }),
         formatter: (v: number | string) => (typeof v === 'number' ? formatNumber(v, { digits: 3 }) : v),
       }

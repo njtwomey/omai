@@ -3,9 +3,39 @@
  * scrolling or clipping container hides it.
  */
 
-import { type ReactNode, type RefObject, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import {
+  createContext,
+  type ReactNode,
+  type RefObject,
+  useCallback,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react'
 import { createPortal } from 'react-dom'
+import { placeInContainer } from './_placement.ts'
 import { cx, menuClass } from './classes.ts'
+
+const PopoverContainerContext = createContext<HTMLElement | null>(null)
+
+/**
+ * Where the popups below it are drawn: into the given element instead of `document.body`. Use it when the controls sit in a
+ * scaled or transformed container (a reveal.js slide, a zoomed island), where a popup on `document.body` would lose the
+ * container's theme variables and its scale. The element must be positioned (`position: relative` or the like); the popup
+ * is placed in its coordinates, corrected for the scale it is drawn at.
+ *
+ * @param props - The element (or `null` for the page) and the children.
+ * @returns The provider.
+ * @index function React component: draw popups of the controls inside a given element: `<PopoverContainer container={el}>`
+ */
+export function PopoverContainer(props: {
+  readonly container: HTMLElement | null
+  readonly children?: ReactNode
+}): ReactNode {
+  return <PopoverContainerContext.Provider value={props.container}>{props.children}</PopoverContainerContext.Provider>
+}
 
 /** Props of {@link Popover}. */
 export interface PopoverProps {
@@ -19,6 +49,11 @@ export interface PopoverProps {
   readonly role?: 'listbox' | 'menu' | 'dialog'
   readonly label?: string
   readonly className?: string
+  /**
+   * Draw the popup into this element rather than `document.body` (default the one given by an enclosing
+   * {@link PopoverContainer}, else the page). It must be positioned. See {@link PopoverContainer}.
+   */
+  readonly container?: HTMLElement | null
 }
 
 // The items of a menu or listbox, which the arrow keys move between.
@@ -36,19 +71,34 @@ const ITEMS = '[role="menuitem"],[role="option"]'
  */
 export function Popover(props: PopoverProps): ReactNode {
   const { anchor, open, onClose, align = 'start', children, role, label, className } = props
+  const inherited = useContext(PopoverContainerContext)
+  const container = props.container === undefined ? inherited : props.container
   const menu = useRef<HTMLDivElement>(null)
   const [at, setAt] = useState<{ readonly left: number; readonly top: number } | null>(null)
   const place = useCallback((): void => {
     const a = anchor.current?.getBoundingClientRect()
     const m = menu.current?.getBoundingClientRect()
     if (a === undefined) return
+    if (container !== null) {
+      // In a container: its own coordinates, corrected for the scale it is drawn at (a transform on it or above it).
+      setAt(
+        placeInContainer({
+          anchor: a,
+          container: container.getBoundingClientRect(),
+          size: { width: container.offsetWidth, height: container.offsetHeight },
+          menu: { width: m?.width ?? 0, height: m?.height ?? 0 },
+          align,
+        }),
+      )
+      return
+    }
     const height = m?.height ?? 0
     const width = m?.width ?? 0
     const below = a.bottom + 4
     const top = below + height > innerHeight - 8 && a.top - height - 4 > 8 ? a.top - height - 4 : below
     const left = align === 'end' ? a.right - width : a.left
     setAt({ left: Math.max(8, Math.min(left, innerWidth - width - 8)), top })
-  }, [anchor, align])
+  }, [anchor, align, container])
   useLayoutEffect(() => {
     if (open) place()
     else setAt(null)
@@ -116,12 +166,12 @@ export function Popover(props: PopoverProps): ReactNode {
         e.preventDefault()
         items[next]?.focus()
       }}
-      className={cx(menuClass, 'fixed', className)}
+      className={cx(menuClass, container === null ? 'fixed' : 'absolute', className)}
       // Measured hidden on the first frame, then placed.
       style={at === null ? { left: 0, top: 0, visibility: 'hidden' } : { left: at.left, top: at.top }}
     >
       {children}
     </div>,
-    document.body,
+    container ?? document.body,
   )
 }

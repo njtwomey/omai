@@ -83,25 +83,30 @@ export function worldView(w: World, options: WorldViewOptions = {}): Scene {
   const base = toScene(w, options)
   const under: SceneNode[] = []
   const over: SceneNode[] = []
+  const exploredNodes: SceneNode[] = []
+  const frontierNodes: SceneNode[] = []
   const cellShape = (cell: number, style: Parameters<typeof polygon>[1]): SceneNode =>
     polygon(
       cellCorners(w, cell).map(([x, y]): [number, number] => [x * k, y * k]),
       style,
     )
   if (w.topology.kind !== 'graph') {
-    for (const c of options.explored ?? []) under.push(cellShape(c, { fill: 'accent', opacity: 0.18 }))
+    for (const c of options.explored ?? []) exploredNodes.push(cellShape(c, { fill: 'accent', opacity: 0.18 }))
     for (const c of options.frontier ?? [])
-      over.push(cellShape(c, { fill: 'none', stroke: 'accent', strokeWidth: 2.5 }))
+      frontierNodes.push(cellShape(c, { fill: 'none', stroke: 'accent', strokeWidth: 2.5 }))
   } else {
     for (const c of options.explored ?? []) {
       const [x, y] = centre(w, c, k)
-      under.push(circle(x, y, k * 0.42, { fill: 'accent', opacity: 0.25 }))
+      exploredNodes.push(circle(x, y, k * 0.42, { fill: 'accent', opacity: 0.25 }))
     }
     for (const c of options.frontier ?? []) {
       const [x, y] = centre(w, c, k)
-      over.push(circle(x, y, k * 0.42, { fill: 'none', stroke: 'accent', strokeWidth: 2.5 }))
+      frontierNodes.push(circle(x, y, k * 0.42, { fill: 'none', stroke: 'accent', strokeWidth: 2.5 }))
     }
   }
+  // Named groups, so `recolour` and `SceneView`'s `tones` can restyle the overlays: `explored`, `frontier`.
+  if (exploredNodes.length > 0) under.push(group(exploredNodes, { id: 'explored' }))
+  if (frontierNodes.length > 0) over.push(group(frontierNodes, { id: 'frontier' }))
   const arrows: SceneNode[] = []
   if (options.policy !== undefined && w.topology.kind !== 'graph') {
     const names =
