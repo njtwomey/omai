@@ -7,10 +7,10 @@
     {
       "label": "session",
       "config": {
-        "learningRate": 0.03,
+        "learningRate": 0.05,
         "lambda": 0
       },
-      "head": 600,
+      "head": 200,
       "status": "completed",
       "run": {
         "schema": "mdml.run/1",
@@ -22,7 +22,7 @@
             "seed": 0,
             "version": "0.1.2",
             "config": {
-              "learningRate": 0.03,
+              "learningRate": 0.05,
               "lambda": 0
             },
             "channels": {
@@ -83,27 +83,12 @@
                     "$object": {
                       "$tensor": {
                         "dtype": "float64",
-                        "shape": [1,1,15],
+                        "shape": [1,1,12],
                         "data": [
                           -0.17690780629150596, 0.12699671028553527, -0.040030208286294944,
                           0.03492608114925515, 0.06299864383272849, 0.033272699768674086, 0.07369166020441911,
                           -0.07211929014368275, -0.14134637902327765, -0.13669461282977813,
-                          0.03703468038482961, 0.08101250798131891, -0.045916708042411165,
-                          0.08279336526022632, -0.10329849415720209
-                        ]
-                      }
-                    }
-                  },
-                  "knotLogits": {
-                    "$object": {
-                      "$tensor": {
-                        "dtype": "float64",
-                        "shape": [1,12],
-                        "data": [
-                          4.440892098500626e-16, 4.440892098500626e-16, 0, 8.881784197001252e-16,
-                          4.440892098500626e-16, -4.440892098500626e-16, 1.7763568394002505e-15,
-                          4.440892098500626e-16, 4.440892098500626e-16, 4.440892098500626e-16,
-                          4.440892098500626e-16, 4.440892098500626e-16
+                          0.03703468038482961, 0.08101250798131891
                         ]
                       }
                     }
@@ -114,7 +99,7 @@
                     "$tensor": {
                       "dtype": "float64",
                       "shape": [],
-                      "data": [-0.012796743311381734]
+                      "data": [0.025328911860784568]
                     }
                   }
                 }
@@ -138,16 +123,7 @@
                         "$object": {
                           "$tensor": {
                             "dtype": "float64",
-                            "shape": [1,1,15],
-                            "data": [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
-                          }
-                        }
-                      },
-                      "knotLogits": {
-                        "$object": {
-                          "$tensor": {
-                            "dtype": "float64",
-                            "shape": [1,12],
+                            "shape": [1,1,12],
                             "data": [0,0,0,0,0,0,0,0,0,0,0,0]
                           }
                         }
@@ -169,16 +145,7 @@
                         "$object": {
                           "$tensor": {
                             "dtype": "float64",
-                            "shape": [1,1,15],
-                            "data": [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
-                          }
-                        }
-                      },
-                      "knotLogits": {
-                        "$object": {
-                          "$tensor": {
-                            "dtype": "float64",
-                            "shape": [1,12],
+                            "shape": [1,1,12],
                             "data": [0,0,0,0,0,0,0,0,0,0,0,0]
                           }
                         }
@@ -195,7 +162,19 @@
                       "$tensor": {
                         "dtype": "float64",
                         "shape": [1,2],
-                        "data": [0.045937981311307,0.9793911316104421]
+                        "data": [0,1]
+                      }
+                    }
+                  },
+                  "interior": {
+                    "$object": {
+                      "$tensor": {
+                        "dtype": "float64",
+                        "shape": [1,8],
+                        "data": [
+                          0.1111111111111111, 0.2222222222222222, 0.3333333333333333, 0.4444444444444444,
+                          0.5555555555555556, 0.6666666666666666, 0.7777777777777778, 0.8888888888888888
+                        ]
                       }
                     }
                   }
@@ -204,12 +183,24 @@
                   "$object": {
                     "$tensor": {
                       "dtype": "float64",
-                      "shape": [16,1],
+                      "shape": [64,1],
                       "data": [
-                        0.045937981311307, 0.06457332670376525, 0.10306348411921462, 0.2226229482525729,
-                        0.2855038274279229, 0.3444042452450218, 0.45213344180308457, 0.5670355444758154,
-                        0.5822938693969723, 0.5943365208456504, 0.6390096743324623, 0.7012363040182217,
-                        0.7596223165128453, 0.8461612008982741, 0.975544165934352, 0.9793911316104421
+                        0, 0.010101010101010102, 0.030303030303030304, 0.04040404040404041,
+                        0.06060606060606061, 0.0707070707070707, 0.09090909090909091, 0.10101010101010101,
+                        0.12121212121212122, 0.1414141414141414, 0.15151515151515152, 0.1717171717171717,
+                        0.18181818181818182, 0.20202020202020202, 0.21212121212121213, 0.23232323232323232,
+                        0.25252525252525254, 0.26262626262626265, 0.2828282828282828, 0.29292929292929293,
+                        0.31313131313131315, 0.32323232323232326, 0.3434343434343434, 0.35353535353535354,
+                        0.37373737373737376, 0.3939393939393939, 0.40404040404040403, 0.42424242424242425,
+                        0.43434343434343436, 0.45454545454545453, 0.46464646464646464, 0.48484848484848486,
+                        0.5050505050505051, 0.5151515151515151, 0.5353535353535354, 0.5454545454545454,
+                        0.5656565656565656, 0.5757575757575758, 0.5959595959595959, 0.6060606060606061,
+                        0.6262626262626263, 0.6464646464646465, 0.6565656565656566, 0.6767676767676768,
+                        0.6868686868686869, 0.7070707070707071, 0.7171717171717171, 0.7373737373737373,
+                        0.7575757575757576, 0.7676767676767676, 0.7878787878787878, 0.797979797979798,
+                        0.8181818181818182, 0.8282828282828283, 0.8484848484848485, 0.8585858585858586,
+                        0.8787878787878788, 0.898989898989899, 0.9090909090909091, 0.9292929292929293,
+                        0.9393939393939394, 0.9595959595959596, 0.9696969696969697, 0.98989898989899
                       ]
                     }
                   }
@@ -237,1400 +228,1400 @@
             "runId": "additive-regressor:0",
             "step": 0,
             "name": "train/loss",
-            "value": 0.39825380441492164
+            "value": 0.46018035469351515
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 1,
             "name": "train/loss",
-            "value": 0.36658659846935204
+            "value": 0.4071648660415383
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 2,
             "name": "train/loss",
-            "value": 0.3370916482186688
+            "value": 0.3540483543245734
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 3,
             "name": "train/loss",
-            "value": 0.30982925916084014
+            "value": 0.3078608044748913
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 4,
             "name": "train/loss",
-            "value": 0.283755016149526
+            "value": 0.2665914204472841
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 5,
             "name": "train/loss",
-            "value": 0.25998066221897015
+            "value": 0.22826989152470037
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 6,
             "name": "train/loss",
-            "value": 0.2377496526764678
+            "value": 0.1934766356579534
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 7,
             "name": "train/loss",
-            "value": 0.21696018013748636
+            "value": 0.1629672025239367
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 8,
             "name": "train/loss",
-            "value": 0.19788067693811304
+            "value": 0.1368147750564398
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 9,
             "name": "train/loss",
-            "value": 0.18046660405666684
+            "value": 0.11441330904074601
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 10,
             "name": "train/loss",
-            "value": 0.1643893504924489
+            "value": 0.09516029865088939
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 11,
             "name": "train/loss",
-            "value": 0.14948266085554507
+            "value": 0.07891599542483303
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 12,
             "name": "train/loss",
-            "value": 0.13577732038570806
+            "value": 0.06575865318552768
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 13,
             "name": "train/loss",
-            "value": 0.12327892861804794
+            "value": 0.055615587685310004
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 14,
             "name": "train/loss",
-            "value": 0.11187427859875775
+            "value": 0.048098735390938396
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 15,
             "name": "train/loss",
-            "value": 0.1014583951240503
+            "value": 0.04263241437470899
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 16,
             "name": "train/loss",
-            "value": 0.09202771255388242
+            "value": 0.03873948892007609
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 17,
             "name": "train/loss",
-            "value": 0.08354747980219344
+            "value": 0.03615974779861739
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 18,
             "name": "train/loss",
-            "value": 0.07587817906628679
+            "value": 0.034737035016687214
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 19,
             "name": "train/loss",
-            "value": 0.06889658934092634
+            "value": 0.03425653195790981
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 20,
             "name": "train/loss",
-            "value": 0.06258871409363766
+            "value": 0.03438411999815951
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 21,
             "name": "train/loss",
-            "value": 0.05695542963206729
+            "value": 0.034758410071563856
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 22,
             "name": "train/loss",
-            "value": 0.051891852926891475
+            "value": 0.03513570571258966
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 23,
             "name": "train/loss",
-            "value": 0.04730383879357289
+            "value": 0.03543024567785676
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 24,
             "name": "train/loss",
-            "value": 0.043216942294301175
+            "value": 0.03563208427804401
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 25,
             "name": "train/loss",
-            "value": 0.03955446892480078
+            "value": 0.03570548950464702
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 26,
             "name": "train/loss",
-            "value": 0.036176551366764606
+            "value": 0.03556216527476683
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 27,
             "name": "train/loss",
-            "value": 0.03319623499650405
+            "value": 0.035123404981215196
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 28,
             "name": "train/loss",
-            "value": 0.030593749373429617
+            "value": 0.0343919201570259
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 29,
             "name": "train/loss",
-            "value": 0.028202876995577688
+            "value": 0.03345000271185183
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 30,
             "name": "train/loss",
-            "value": 0.026160872282187355
+            "value": 0.03239288163244901
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 31,
             "name": "train/loss",
-            "value": 0.024308775342317786
+            "value": 0.03127034761981861
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 32,
             "name": "train/loss",
-            "value": 0.022722917234731355
+            "value": 0.030090560704441542
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 33,
             "name": "train/loss",
-            "value": 0.0213260560799163
+            "value": 0.028870335638452333
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 34,
             "name": "train/loss",
-            "value": 0.020103201988998037
+            "value": 0.027667109792289816
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 35,
             "name": "train/loss",
-            "value": 0.018990940829542564
+            "value": 0.026557135882214835
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 36,
             "name": "train/loss",
-            "value": 0.018033315630250707
+            "value": 0.02558964673219795
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 37,
             "name": "train/loss",
-            "value": 0.017110554986923994
+            "value": 0.024768654862409624
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 38,
             "name": "train/loss",
-            "value": 0.016309118469490604
+            "value": 0.024078152990954397
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 39,
             "name": "train/loss",
-            "value": 0.015487376022409344
+            "value": 0.0235163439927635
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 40,
             "name": "train/loss",
-            "value": 0.014699095779772851
+            "value": 0.02309860418025382
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 41,
             "name": "train/loss",
-            "value": 0.013965742613045392
+            "value": 0.022831277666532177
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 42,
             "name": "train/loss",
-            "value": 0.013182147544658507
+            "value": 0.02269205313463659
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 43,
             "name": "train/loss",
-            "value": 0.012397781192484162
+            "value": 0.0226405872795811
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 44,
             "name": "train/loss",
-            "value": 0.011643228587721842
+            "value": 0.022644804441897468
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 45,
             "name": "train/loss",
-            "value": 0.010858998099672527
+            "value": 0.0226912781896199
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 46,
             "name": "train/loss",
-            "value": 0.010068640582311116
+            "value": 0.022771487178700495
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 47,
             "name": "train/loss",
-            "value": 0.009315243630297789
+            "value": 0.022865837137627545
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 48,
             "name": "train/loss",
-            "value": 0.008569900597275706
+            "value": 0.022946673319631836
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 49,
             "name": "train/loss",
-            "value": 0.00783437016434097
+            "value": 0.022994959187799625
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 50,
             "name": "train/loss",
-            "value": 0.007150928175227963
+            "value": 0.02300843903617376
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 51,
             "name": "train/loss",
-            "value": 0.006511170434235895
+            "value": 0.02299241622806127
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 52,
             "name": "train/loss",
-            "value": 0.005895276655250165
+            "value": 0.022947159505614136
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 53,
             "name": "train/loss",
-            "value": 0.005330123741479006
+            "value": 0.022867990077869327
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 54,
             "name": "train/loss",
-            "value": 0.004821215953136447
+            "value": 0.022755438406515918
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 55,
             "name": "train/loss",
-            "value": 0.0043412329785276855
+            "value": 0.022619991160061182
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 56,
             "name": "train/loss",
-            "value": 0.0039002385549667456
+            "value": 0.02247511947937519
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 57,
             "name": "train/loss",
-            "value": 0.003509858436835748
+            "value": 0.022328601219926664
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 58,
             "name": "train/loss",
-            "value": 0.003150535355174103
+            "value": 0.02218302948958818
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 59,
             "name": "train/loss",
-            "value": 0.0028256375863149963
+            "value": 0.022042684622927244
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 60,
             "name": "train/loss",
-            "value": 0.0025454791402890428
+            "value": 0.02191588204377367
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 61,
             "name": "train/loss",
-            "value": 0.002297637606310296
+            "value": 0.021809774340400944
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 62,
             "name": "train/loss",
-            "value": 0.002082637236770655
+            "value": 0.0217255214689051
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 63,
             "name": "train/loss",
-            "value": 0.0019052246788170434
+            "value": 0.021660291747207187
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 64,
             "name": "train/loss",
-            "value": 0.001752527368968035
+            "value": 0.021612355014143613
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 65,
             "name": "train/loss",
-            "value": 0.0016199883985353579
+            "value": 0.021581919953076154
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 66,
             "name": "train/loss",
-            "value": 0.0015095074231594944
+            "value": 0.021567561664549147
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 67,
             "name": "train/loss",
-            "value": 0.0014102359846201971
+            "value": 0.021564430342756777
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 68,
             "name": "train/loss",
-            "value": 0.0013157978855997962
+            "value": 0.02156701487788781
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 69,
             "name": "train/loss",
-            "value": 0.0012305074161122324
+            "value": 0.021572276109308817
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 70,
             "name": "train/loss",
-            "value": 0.0011516726659101556
+            "value": 0.02157898913877958
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 71,
             "name": "train/loss",
-            "value": 0.0010746228032989687
+            "value": 0.021585170405242632
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 72,
             "name": "train/loss",
-            "value": 0.001003427170294966
+            "value": 0.02158787455789928
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 73,
             "name": "train/loss",
-            "value": 0.0009400947604436091
+            "value": 0.021585409392692337
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 74,
             "name": "train/loss",
-            "value": 0.0008805577363429178
+            "value": 0.021578328903699987
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 75,
             "name": "train/loss",
-            "value": 0.0008237654964949715
+            "value": 0.0215678458625783
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 76,
             "name": "train/loss",
-            "value": 0.0007712088955605486
+            "value": 0.02155430599357457
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 77,
             "name": "train/loss",
-            "value": 0.0007212947906146845
+            "value": 0.021537822971886084
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 78,
             "name": "train/loss",
-            "value": 0.0006714078293179474
+            "value": 0.021519555746671987
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 79,
             "name": "train/loss",
-            "value": 0.0006222835776896759
+            "value": 0.021501361359198192
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 80,
             "name": "train/loss",
-            "value": 0.0005762280129811432
+            "value": 0.02148441215724968
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 81,
             "name": "train/loss",
-            "value": 0.0005336776603817982
+            "value": 0.021468905577274
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 82,
             "name": "train/loss",
-            "value": 0.0004942163507844128
+            "value": 0.02145502088390355
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 83,
             "name": "train/loss",
-            "value": 0.0004583406798894427
+            "value": 0.02144336557462838
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 84,
             "name": "train/loss",
-            "value": 0.00042658640142273187
+            "value": 0.02143428092623794
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 85,
             "name": "train/loss",
-            "value": 0.00039864904912955367
+            "value": 0.0214273176436761
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 86,
             "name": "train/loss",
-            "value": 0.00037371693861518114
+            "value": 0.02142175371856392
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 87,
             "name": "train/loss",
-            "value": 0.0003511421697483502
+            "value": 0.021417253240393768
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 88,
             "name": "train/loss",
-            "value": 0.00033054811442941045
+            "value": 0.02141368753165794
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 89,
             "name": "train/loss",
-            "value": 0.000311847299459612
+            "value": 0.021410633416599253
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 90,
             "name": "train/loss",
-            "value": 0.00029534310738551774
+            "value": 0.021407486845715914
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 91,
             "name": "train/loss",
-            "value": 0.00028126895716482623
+            "value": 0.021403961199844505
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 92,
             "name": "train/loss",
-            "value": 0.00026964098901342533
+            "value": 0.02140012606785608
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 93,
             "name": "train/loss",
-            "value": 0.0002602528308055588
+            "value": 0.021396008483517286
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 94,
             "name": "train/loss",
-            "value": 0.0002532025443322796
+            "value": 0.021391477621852527
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 95,
             "name": "train/loss",
-            "value": 0.0002486716354839747
+            "value": 0.021386536319518753
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 96,
             "name": "train/loss",
-            "value": 0.0002482488547142125
+            "value": 0.02138143807497837
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 97,
             "name": "train/loss",
-            "value": 0.00025342437218095677
+            "value": 0.02137642836097329
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 98,
             "name": "train/loss",
-            "value": 0.0002688775166347453
+            "value": 0.021371570773041318
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 99,
             "name": "train/loss",
-            "value": 0.00028401462721255676
+            "value": 0.021366904034394264
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 100,
             "name": "train/loss",
-            "value": 0.000288725401586114
+            "value": 0.021362582018611468
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 101,
             "name": "train/loss",
-            "value": 0.00024948708236488646
+            "value": 0.021358742243667773
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 102,
             "name": "train/loss",
-            "value": 0.00020788192273358375
+            "value": 0.021355362410836815
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 103,
             "name": "train/loss",
-            "value": 0.0002033222643105902
+            "value": 0.021352352065433528
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 104,
             "name": "train/loss",
-            "value": 0.0002265134064699023
+            "value": 0.021349689320595965
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 105,
             "name": "train/loss",
-            "value": 0.00023422343600001255
+            "value": 0.02134737138473171
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 106,
             "name": "train/loss",
-            "value": 0.00020558324889016595
+            "value": 0.02134531165623965
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 107,
             "name": "train/loss",
-            "value": 0.0001852226296044315
+            "value": 0.02134338772396001
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 108,
             "name": "train/loss",
-            "value": 0.00019562379204025992
+            "value": 0.021341544886067564
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 109,
             "name": "train/loss",
-            "value": 0.0002058267512306377
+            "value": 0.021339774587899155
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 110,
             "name": "train/loss",
-            "value": 0.0001926404631475401
+            "value": 0.021338033962509554
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 111,
             "name": "train/loss",
-            "value": 0.00017553370797435477
+            "value": 0.021336262657205132
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 112,
             "name": "train/loss",
-            "value": 0.00018003530867992458
+            "value": 0.021334451448199752
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 113,
             "name": "train/loss",
-            "value": 0.00018878341469587046
+            "value": 0.021332630085087546
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 114,
             "name": "train/loss",
-            "value": 0.00017935713148669607
+            "value": 0.02133080708842546
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 115,
             "name": "train/loss",
-            "value": 0.00016758622153057864
+            "value": 0.021328974199692693
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 116,
             "name": "train/loss",
-            "value": 0.00017022586098459547
+            "value": 0.02132715189920958
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 117,
             "name": "train/loss",
-            "value": 0.00017525155931680033
+            "value": 0.02132538142985504
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 118,
             "name": "train/loss",
-            "value": 0.0001692630663452338
+            "value": 0.021323681885114954
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 119,
             "name": "train/loss",
-            "value": 0.0001609533404976091
+            "value": 0.021322052137021028
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 120,
             "name": "train/loss",
-            "value": 0.000162276037434371
+            "value": 0.021320502804866793
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 121,
             "name": "train/loss",
-            "value": 0.0001656967243091616
+            "value": 0.021319052008707994
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 122,
             "name": "train/loss",
-            "value": 0.00016124861766965627
+            "value": 0.021317698155855724
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 123,
             "name": "train/loss",
-            "value": 0.0001551546394055012
+            "value": 0.021316424768304053
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 124,
             "name": "train/loss",
-            "value": 0.00015515535060922728
+            "value": 0.021315224591377933
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 125,
             "name": "train/loss",
-            "value": 0.00015709018802952834
+            "value": 0.021314096988894304
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 126,
             "name": "train/loss",
-            "value": 0.0001544746573078588
+            "value": 0.02131303056702311
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 127,
             "name": "train/loss",
-            "value": 0.00014963248330556166
+            "value": 0.02131200850685003
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 128,
             "name": "train/loss",
-            "value": 0.0001483574134279912
+            "value": 0.021311024482520133
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 129,
             "name": "train/loss",
-            "value": 0.00014940187823165416
+            "value": 0.021310078516127217
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 130,
             "name": "train/loss",
-            "value": 0.000147989968936681
+            "value": 0.02130916486883275
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 131,
             "name": "train/loss",
-            "value": 0.00014433734820820643
+            "value": 0.021308276707021984
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 132,
             "name": "train/loss",
-            "value": 0.00014206179481432923
+            "value": 0.021307415592113365
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 133,
             "name": "train/loss",
-            "value": 0.00014201784721845637
+            "value": 0.02130658624874488
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 134,
             "name": "train/loss",
-            "value": 0.00014156567546416398
+            "value": 0.02130578841900056
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 135,
             "name": "train/loss",
-            "value": 0.00013917064275633198
+            "value": 0.021305021040469302
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 136,
             "name": "train/loss",
-            "value": 0.00013648942025206058
+            "value": 0.021304287476761184
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 137,
             "name": "train/loss",
-            "value": 0.0001352187534810571
+            "value": 0.02130359051177706
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 138,
             "name": "train/loss",
-            "value": 0.0001348159587622236
+            "value": 0.021302927945900708
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 139,
             "name": "train/loss",
-            "value": 0.0001337397490128142
+            "value": 0.021302296953874703
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 140,
             "name": "train/loss",
-            "value": 0.0001316298235751816
+            "value": 0.02130169715717104
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 141,
             "name": "train/loss",
-            "value": 0.00012955756888369797
+            "value": 0.02130112692636704
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 142,
             "name": "train/loss",
-            "value": 0.00012831428106579735
+            "value": 0.02130058193279294
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 143,
             "name": "train/loss",
-            "value": 0.00012755956038397438
+            "value": 0.021300059044816962
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 144,
             "name": "train/loss",
-            "value": 0.00012648394901375404
+            "value": 0.021299557471861078
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 145,
             "name": "train/loss",
-            "value": 0.00012480443519283785
+            "value": 0.021299075788486825
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 146,
             "name": "train/loss",
-            "value": 0.00012298926821203545
+            "value": 0.021298611750796934
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 147,
             "name": "train/loss",
-            "value": 0.00012154558964558006
+            "value": 0.021298164852533268
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 148,
             "name": "train/loss",
-            "value": 0.00012050406578641928
+            "value": 0.021297735916659382
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 149,
             "name": "train/loss",
-            "value": 0.0001194974032760806
+            "value": 0.021297324857440382
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 150,
             "name": "train/loss",
-            "value": 0.00011820431351123947
+            "value": 0.021296931180345927
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 151,
             "name": "train/loss",
-            "value": 0.0001166594287689828
+            "value": 0.02129655542838363
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 152,
             "name": "train/loss",
-            "value": 0.00011511478546330063
+            "value": 0.02129619818624662
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 153,
             "name": "train/loss",
-            "value": 0.0001137802073980535
+            "value": 0.02129585886734362
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 154,
             "name": "train/loss",
-            "value": 0.00011264293215077444
+            "value": 0.021295536646959712
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 155,
             "name": "train/loss",
-            "value": 0.00011153504495363757
+            "value": 0.021295231192031267
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 156,
             "name": "train/loss",
-            "value": 0.00011031193808288545
+            "value": 0.021294941755390547
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 157,
             "name": "train/loss",
-            "value": 0.000108950312073028
+            "value": 0.02129466689700293
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 158,
             "name": "train/loss",
-            "value": 0.00010754834298100482
+            "value": 0.021294405455924394
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 159,
             "name": "train/loss",
-            "value": 0.00010621298526471644
+            "value": 0.021294156712606885
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 160,
             "name": "train/loss",
-            "value": 0.00010498868456031728
+            "value": 0.021293919704327112
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 161,
             "name": "train/loss",
-            "value": 0.00010384010633395535
+            "value": 0.0212936933879856
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 162,
             "name": "train/loss",
-            "value": 0.00010269549917188885
+            "value": 0.02129347723082721
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 163,
             "name": "train/loss",
-            "value": 0.00010150452813040612
+            "value": 0.021293270936961938
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 164,
             "name": "train/loss",
-            "value": 0.00010025924327271543
+            "value": 0.021293074015081747
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 165,
             "name": "train/loss",
-            "value": 0.00009899401445070351
+            "value": 0.02129288607505085
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 166,
             "name": "train/loss",
-            "value": 0.00009774913415628711
+            "value": 0.02129270703224487
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 167,
             "name": "train/loss",
-            "value": 0.00009655114668511903
+            "value": 0.021292536732225833
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 168,
             "name": "train/loss",
-            "value": 0.00009540023567895622
+            "value": 0.02129237482762125
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 169,
             "name": "train/loss",
-            "value": 0.00009427781101448462
+            "value": 0.02129222106970258
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 170,
             "name": "train/loss",
-            "value": 0.00009316141437380991
+            "value": 0.021292075281736426
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 171,
             "name": "train/loss",
-            "value": 0.00009203448377601905
+            "value": 0.021291937108452782
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 172,
             "name": "train/loss",
-            "value": 0.0000908945622120596
+            "value": 0.02129180611766447
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 173,
             "name": "train/loss",
-            "value": 0.00008974699937421509
+            "value": 0.02129168198831913
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 174,
             "name": "train/loss",
-            "value": 0.00008860376281738698
+            "value": 0.021291564389625046
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 175,
             "name": "train/loss",
-            "value": 0.00008747407327253288
+            "value": 0.02129145289558386
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 176,
             "name": "train/loss",
-            "value": 0.00008636410069005345
+            "value": 0.021291347140638846
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 177,
             "name": "train/loss",
-            "value": 0.00008527464176814146
+            "value": 0.021291246857739497
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 178,
             "name": "train/loss",
-            "value": 0.0000842032680227622
+            "value": 0.02129115175130859
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 179,
             "name": "train/loss",
-            "value": 0.00008314616422313106
+            "value": 0.021291061518222628
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 180,
             "name": "train/loss",
-            "value": 0.00008209932491914381
+            "value": 0.02129097594522073
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 181,
             "name": "train/loss",
-            "value": 0.00008106043816028499
+            "value": 0.021290894851280235
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 182,
             "name": "train/loss",
-            "value": 0.0000800277664233655
+            "value": 0.021290818020475277
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 183,
             "name": "train/loss",
-            "value": 0.00007900173307001048
+            "value": 0.021290745263556142
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 184,
             "name": "train/loss",
-            "value": 0.00007798235928603078
+            "value": 0.021290676437195222
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 185,
             "name": "train/loss",
-            "value": 0.00007697129993165761
+            "value": 0.021290611373812354
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 186,
             "name": "train/loss",
-            "value": 0.00007596898725556639
+            "value": 0.021290549883140573
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 187,
             "name": "train/loss",
-            "value": 0.00007497713720825897
+            "value": 0.021290491802415268
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 188,
             "name": "train/loss",
-            "value": 0.00007399610291826544
+            "value": 0.021290436972087556
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 189,
             "name": "train/loss",
-            "value": 0.00007302763264605527
+            "value": 0.02129038520569279
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 190,
             "name": "train/loss",
-            "value": 0.00007207234259204761
+            "value": 0.02129033632655488
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 191,
             "name": "train/loss",
-            "value": 0.00007113287712181933
+            "value": 0.021290290183261274
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 192,
             "name": "train/loss",
-            "value": 0.00007021125788448544
+            "value": 0.021290246619332702
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 193,
             "name": "train/loss",
-            "value": 0.0000693132181725268
+            "value": 0.021290205478983
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 194,
             "name": "train/loss",
-            "value": 0.00006844521995177095
+            "value": 0.02129016663343719
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 195,
             "name": "train/loss",
-            "value": 0.00006762238256790442
+            "value": 0.021290129966685174
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 196,
             "name": "train/loss",
-            "value": 0.00006686479763208017
+            "value": 0.021290095360275926
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 197,
             "name": "train/loss",
-            "value": 0.0000662171877187986
+            "value": 0.021290062710199075
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 198,
             "name": "train/loss",
-            "value": 0.00006574276381108585
+            "value": 0.021290031928696985
           },
           {
             "type": "metric",
             "runId": "additive-regressor:0",
             "step": 199,
             "name": "train/loss",
-            "value": 0.00006558446550501183
+            "value": 0.021290002925549147
           },
           {
             "type": "checkpoint",
@@ -1643,7 +1634,7 @@
                     "$tensor": {
                       "dtype": "float64",
                       "shape": [],
-                      "data": [-0.012796022550114392]
+                      "data": [0.022178144453029236]
                     }
                   }
                 },
@@ -1652,25 +1643,11 @@
                     "$object": {
                       "$tensor": {
                         "dtype": "float64",
-                        "shape": [1,1,15],
+                        "shape": [1,1,12],
                         "data": [
-                          0.1461880700341069, 0.4857987468431275, 0.8862200074117189, 1.384092825066233,
-                          0.7290500482198057, 0.12463061558948951, 1.0099896953359264, -1.4101613462806712,
-                          -0.7852148835986673, -0.5501399144946804, -1.0077538101018826, -0.8231146738453348,
-                          -0.5737045676016377, 0.3408465669658802, 0.07032566259464207
-                        ]
-                      }
-                    }
-                  },
-                  "knotLogits": {
-                    "$object": {
-                      "$tensor": {
-                        "dtype": "float64",
-                        "shape": [1,12],
-                        "data": [
-                          0.579808234731908, -0.27176029538746244, -0.1352764942224113, 1.0428014301712334,
-                          0.786812698855442, -0.1433515076689133, -0.6206941788068284, 0.193924128999453,
-                          0.3987088964735174, 0.04770349551668756, -0.3397250463171863, -0.4153503479006819
+                          -0.17101425857246735, 0.20048818585267714, 0.662254976417664, 1.1563756551636726,
+                          0.7244656278535034, 0.39380128813546394, -0.6287000303725255, -0.7776039745966425,
+                          -1.1932866263996469, -0.7909829020870132, -0.3787279977390222, 0.1152928169621305
                         ]
                       }
                     }
@@ -1687,7 +1664,7 @@
                         "$tensor": {
                           "dtype": "float64",
                           "shape": [],
-                          "data": [-4.977249105862822e-8]
+                          "data": [2.927090468522481e-7]
                         }
                       }
                     },
@@ -1696,27 +1673,12 @@
                         "$object": {
                           "$tensor": {
                             "dtype": "float64",
-                            "shape": [1,1,15],
+                            "shape": [1,1,12],
                             "data": [
-                              -0.000007761629291772342, -0.00012797354619142851, 0.0000420532389821695,
-                              0.0002321137276580597, 0.00004524028909692132, 0.00013453162017364312,
-                              -0.00022436530584775137, 0.00010984887081560204, -0.00013079867046607353,
-                              -0.000032225490055724926, 0.000027772518788425282, -0.00005323394711789049,
-                              -7.808293815633371e-7, -0.000002123774908211699, -0.000012297072254404377
-                            ]
-                          }
-                        }
-                      },
-                      "knotLogits": {
-                        "$object": {
-                          "$tensor": {
-                            "dtype": "float64",
-                            "shape": [1,12],
-                            "data": [
-                              0.000051544829129352056, -0.000008080269360366454, -0.000012719480653635028,
-                              0.000200105513246966, 0.00007837170062022194, -0.0000839649481155397,
-                              -0.000013821672852983129, 0.000006485521971396894, -0.00005652044217170131,
-                              -0.00006386341481913674, -0.00004980259131973968, -0.000047734745674834516
+                              0.000001248594383179352, -0.000014623818291947032, 0.0000533602507252149,
+                              -0.00009058141407314434, 0.00005212697780335664, -0.000010709695949013737,
+                              0.000019923179936177814, -0.00004067689505375986, 0.000051326342937498755,
+                              -0.00002957584924649329, 0.000008857793091633702, -6.754662627027604e-7
                             ]
                           }
                         }
@@ -1729,7 +1691,7 @@
                         "$tensor": {
                           "dtype": "float64",
                           "shape": [],
-                          "data": [0.000005607496912789657]
+                          "data": [0.00003246958169314547]
                         }
                       }
                     },
@@ -1738,27 +1700,12 @@
                         "$object": {
                           "$tensor": {
                             "dtype": "float64",
-                            "shape": [1,1,15],
+                            "shape": [1,1,12],
                             "data": [
-                              0.000011254031260113236, 0.000013658049626461152, 0.000015985531570983205,
-                              0.0001616894289480884, 0.00015221993439574425, 0.00002773144164130589,
-                              0.000009606992018162861, 0.000013729157959243716, 0.0001394825032653888,
-                              0.00010007472583635351, 0.00006822591711314581, 0.0000611084790666938,
-                              0.000004636438311936378, 2.6218470993195693e-8, 0.000003331497312825364
-                            ]
-                          }
-                        }
-                      },
-                      "knotLogits": {
-                        "$object": {
-                          "$tensor": {
-                            "dtype": "float64",
-                            "shape": [1,12],
-                            "data": [
-                              6.9332401057459e-7, 4.4974217975355986e-7, 3.638150718114969e-7,
-                              0.0000021248126211726832, 4.227587385250601e-7, 1.3469632755691834e-7,
-                              3.1627749180070763e-7, 9.69355318252466e-7, 9.159973461005919e-7,
-                              4.952633405304153e-7, 4.5497488506386484e-7, 4.1111287634867914e-7
+                              4.814950099847338e-7, 0.000009082720812874563, 0.00007122321788369505,
+                              0.00023136688749616257, 0.00012420764291065753, 0.000010580836112330808,
+                              0.000040249407731953276, 0.0001207148945593859, 0.00015665676505833222,
+                              0.000052424008692172495, 0.000007542278990831647, 3.3377676384536686e-7
                             ]
                           }
                         }
@@ -1773,23 +1720,47 @@
                   "$object": {
                     "$tensor": {
                       "dtype": "float64",
-                      "shape": [16,1],
+                      "shape": [64,1],
                       "data": [
-                        0.045937981311307, 0.06457332670376525, 0.10306348411921462, 0.2226229482525729,
-                        0.2855038274279229, 0.3444042452450218, 0.45213344180308457, 0.5670355444758154,
-                        0.5822938693969723, 0.5943365208456504, 0.6390096743324623, 0.7012363040182217,
-                        0.7596223165128453, 0.8461612008982741, 0.975544165934352, 0.9793911316104421
+                        0, 0.010101010101010102, 0.030303030303030304, 0.04040404040404041,
+                        0.06060606060606061, 0.0707070707070707, 0.09090909090909091, 0.10101010101010101,
+                        0.12121212121212122, 0.1414141414141414, 0.15151515151515152, 0.1717171717171717,
+                        0.18181818181818182, 0.20202020202020202, 0.21212121212121213, 0.23232323232323232,
+                        0.25252525252525254, 0.26262626262626265, 0.2828282828282828, 0.29292929292929293,
+                        0.31313131313131315, 0.32323232323232326, 0.3434343434343434, 0.35353535353535354,
+                        0.37373737373737376, 0.3939393939393939, 0.40404040404040403, 0.42424242424242425,
+                        0.43434343434343436, 0.45454545454545453, 0.46464646464646464, 0.48484848484848486,
+                        0.5050505050505051, 0.5151515151515151, 0.5353535353535354, 0.5454545454545454,
+                        0.5656565656565656, 0.5757575757575758, 0.5959595959595959, 0.6060606060606061,
+                        0.6262626262626263, 0.6464646464646465, 0.6565656565656566, 0.6767676767676768,
+                        0.6868686868686869, 0.7070707070707071, 0.7171717171717171, 0.7373737373737373,
+                        0.7575757575757576, 0.7676767676767676, 0.7878787878787878, 0.797979797979798,
+                        0.8181818181818182, 0.8282828282828283, 0.8484848484848485, 0.8585858585858586,
+                        0.8787878787878788, 0.898989898989899, 0.9090909090909091, 0.9292929292929293,
+                        0.9393939393939394, 0.9595959595959596, 0.9696969696969697, 0.98989898989899
                       ]
                     }
                   }
                 },
                 "t0": {
+                  "interior": {
+                    "$object": {
+                      "$tensor": {
+                        "dtype": "float64",
+                        "shape": [1,8],
+                        "data": [
+                          0.1111111111111111, 0.2222222222222222, 0.3333333333333333, 0.4444444444444444,
+                          0.5555555555555556, 0.6666666666666666, 0.7777777777777778, 0.8888888888888888
+                        ]
+                      }
+                    }
+                  },
                   "range": {
                     "$object": {
                       "$tensor": {
                         "dtype": "float64",
                         "shape": [1,2],
-                        "data": [0.045937981311307,0.9793911316104421]
+                        "data": [0,1]
                       }
                     }
                   }
@@ -1802,3160 +1773,8 @@
                 "kind": "key",
                 "words": [2464147285,3501557220]
               },
-              "loss": 0.00006558446550501183,
-              "gradNorm": 0.0032876862692946206,
-              "epochLossSum": 0,
-              "lrScale": 1
-            }
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 200,
-            "name": "train/loss",
-            "value": 0.00006594111965029432
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 201,
-            "name": "train/loss",
-            "value": 0.0000672853933141489
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 202,
-            "name": "train/loss",
-            "value": 0.00007018127223283106
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 203,
-            "name": "train/loss",
-            "value": 0.00007607224087984206
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 204,
-            "name": "train/loss",
-            "value": 0.00008574728306687268
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 205,
-            "name": "train/loss",
-            "value": 0.00010181741900851435
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 206,
-            "name": "train/loss",
-            "value": 0.00011896871711728621
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 207,
-            "name": "train/loss",
-            "value": 0.0001338481515568192
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 208,
-            "name": "train/loss",
-            "value": 0.00012323877126832217
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 209,
-            "name": "train/loss",
-            "value": 0.00009387036850135558
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 210,
-            "name": "train/loss",
-            "value": 0.00006192509144244182
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 211,
-            "name": "train/loss",
-            "value": 0.00005578209443262738
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 212,
-            "name": "train/loss",
-            "value": 0.00007308406868207943
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 213,
-            "name": "train/loss",
-            "value": 0.00008784932061443954
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 214,
-            "name": "train/loss",
-            "value": 0.00008274509543918537
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 215,
-            "name": "train/loss",
-            "value": 0.00006171772818884061
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 216,
-            "name": "train/loss",
-            "value": 0.00005062106670327566
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 217,
-            "name": "train/loss",
-            "value": 0.00005800885440085384
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 218,
-            "name": "train/loss",
-            "value": 0.00006884812669776335
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 219,
-            "name": "train/loss",
-            "value": 0.00006756266930879223
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 220,
-            "name": "train/loss",
-            "value": 0.00005493607887039161
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 221,
-            "name": "train/loss",
-            "value": 0.00004733526290949294
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 222,
-            "name": "train/loss",
-            "value": 0.00005130941202879849
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 223,
-            "name": "train/loss",
-            "value": 0.000057848910013951346
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 224,
-            "name": "train/loss",
-            "value": 0.00005693008706746627
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 225,
-            "name": "train/loss",
-            "value": 0.0000491437517512813
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 226,
-            "name": "train/loss",
-            "value": 0.000044242514160106825
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 227,
-            "name": "train/loss",
-            "value": 0.0000463009209265246
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 228,
-            "name": "train/loss",
-            "value": 0.00005015438541851938
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 229,
-            "name": "train/loss",
-            "value": 0.000049718046103371494
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 230,
-            "name": "train/loss",
-            "value": 0.000045001686759380766
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 231,
-            "name": "train/loss",
-            "value": 0.000041465670471460764
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 232,
-            "name": "train/loss",
-            "value": 0.0000419851579048262
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 233,
-            "name": "train/loss",
-            "value": 0.000044229319596069376
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 234,
-            "name": "train/loss",
-            "value": 0.0000444889995442986
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 235,
-            "name": "train/loss",
-            "value": 0.000041917779435184396
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 236,
-            "name": "train/loss",
-            "value": 0.00003915099955140409
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 237,
-            "name": "train/loss",
-            "value": 0.00003843950734858196
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 238,
-            "name": "train/loss",
-            "value": 0.00003943707044636242
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 239,
-            "name": "train/loss",
-            "value": 0.00004012258989352456
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 240,
-            "name": "train/loss",
-            "value": 0.000039177277790322356
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 241,
-            "name": "train/loss",
-            "value": 0.00003728994430010249
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 242,
-            "name": "train/loss",
-            "value": 0.000035901693664345365
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 243,
-            "name": "train/loss",
-            "value": 0.00003572094781453767
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 244,
-            "name": "train/loss",
-            "value": 0.00003616917505567114
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 245,
-            "name": "train/loss",
-            "value": 0.00003620717944161066
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 246,
-            "name": "train/loss",
-            "value": 0.0000354278407935472
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 247,
-            "name": "train/loss",
-            "value": 0.00003421534439916146
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 248,
-            "name": "train/loss",
-            "value": 0.00003329159585937475
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 249,
-            "name": "train/loss",
-            "value": 0.00003297642625265106
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 250,
-            "name": "train/loss",
-            "value": 0.00003302976621924184
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 251,
-            "name": "train/loss",
-            "value": 0.000032980310486957724
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 252,
-            "name": "train/loss",
-            "value": 0.00003253694284204252
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 253,
-            "name": "train/loss",
-            "value": 0.00003179620506042814
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 254,
-            "name": "train/loss",
-            "value": 0.00003104778958320905
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 255,
-            "name": "train/loss",
-            "value": 0.00003053966836124851
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 256,
-            "name": "train/loss",
-            "value": 0.000030300132586360623
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 257,
-            "name": "train/loss",
-            "value": 0.00003017573488012732
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 258,
-            "name": "train/loss",
-            "value": 0.00002998039685588048
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 259,
-            "name": "train/loss",
-            "value": 0.000029615074583936507
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 260,
-            "name": "train/loss",
-            "value": 0.00002911844606870894
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 261,
-            "name": "train/loss",
-            "value": 0.000028595488213700878
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 262,
-            "name": "train/loss",
-            "value": 0.000028150357649520527
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 263,
-            "name": "train/loss",
-            "value": 0.000027822664576986198
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 264,
-            "name": "train/loss",
-            "value": 0.000027585962541624802
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 265,
-            "name": "train/loss",
-            "value": 0.000027379009719609886
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 266,
-            "name": "train/loss",
-            "value": 0.000027143588099671742
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 267,
-            "name": "train/loss",
-            "value": 0.000026853599367730406
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 268,
-            "name": "train/loss",
-            "value": 0.000026512310206266246
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 269,
-            "name": "train/loss",
-            "value": 0.00002614803316394847
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 270,
-            "name": "train/loss",
-            "value": 0.00002579023403119713
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 271,
-            "name": "train/loss",
-            "value": 0.000025461789970418147
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 272,
-            "name": "train/loss",
-            "value": 0.00002517083719680062
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 273,
-            "name": "train/loss",
-            "value": 0.0000249137198456923
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 274,
-            "name": "train/loss",
-            "value": 0.00002467981308847987
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 275,
-            "name": "train/loss",
-            "value": 0.000024456863881973248
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 276,
-            "name": "train/loss",
-            "value": 0.00002423547193885733
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 277,
-            "name": "train/loss",
-            "value": 0.000024009425374551524
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 278,
-            "name": "train/loss",
-            "value": 0.000023777592108009276
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 279,
-            "name": "train/loss",
-            "value": 0.00002354013294152921
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 280,
-            "name": "train/loss",
-            "value": 0.000023300386561187205
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 281,
-            "name": "train/loss",
-            "value": 0.00002306035586337753
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 282,
-            "name": "train/loss",
-            "value": 0.000022823463235106762
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 283,
-            "name": "train/loss",
-            "value": 0.000022590989539604993
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 284,
-            "name": "train/loss",
-            "value": 0.000022365106903145716
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 285,
-            "name": "train/loss",
-            "value": 0.00002214627813664834
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 286,
-            "name": "train/loss",
-            "value": 0.000021936091485435074
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 287,
-            "name": "train/loss",
-            "value": 0.000021735154869219158
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 288,
-            "name": "train/loss",
-            "value": 0.000021545895475442324
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 289,
-            "name": "train/loss",
-            "value": 0.000021370586512314024
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 290,
-            "name": "train/loss",
-            "value": 0.000021214984003018197
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 291,
-            "name": "train/loss",
-            "value": 0.000021086261022671957
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 292,
-            "name": "train/loss",
-            "value": 0.000020999815860160975
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 293,
-            "name": "train/loss",
-            "value": 0.000020976875211542864
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 294,
-            "name": "train/loss",
-            "value": 0.000021061668346917053
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 295,
-            "name": "train/loss",
-            "value": 0.000021317515587176542
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 296,
-            "name": "train/loss",
-            "value": 0.000021879437877712586
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 297,
-            "name": "train/loss",
-            "value": 0.000022938078009524933
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 298,
-            "name": "train/loss",
-            "value": 0.00002491967570824576
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 299,
-            "name": "train/loss",
-            "value": 0.0000283642955921771
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 300,
-            "name": "train/loss",
-            "value": 0.00003455422266390465
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 301,
-            "name": "train/loss",
-            "value": 0.0000445290993116596
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 302,
-            "name": "train/loss",
-            "value": 0.00006103392169655977
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 303,
-            "name": "train/loss",
-            "value": 0.00008192729711839382
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 304,
-            "name": "train/loss",
-            "value": 0.0001062644422519491
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 305,
-            "name": "train/loss",
-            "value": 0.00011280328660378394
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 306,
-            "name": "train/loss",
-            "value": 0.00009606663973012506
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 307,
-            "name": "train/loss",
-            "value": 0.00005328295063348139
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 308,
-            "name": "train/loss",
-            "value": 0.000021717366653971492
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 309,
-            "name": "train/loss",
-            "value": 0.000023167845539408015
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 310,
-            "name": "train/loss",
-            "value": 0.00004677749579446056
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 311,
-            "name": "train/loss",
-            "value": 0.0000631617901417475
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 312,
-            "name": "train/loss",
-            "value": 0.00005157406363867879
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 313,
-            "name": "train/loss",
-            "value": 0.000027834502602046212
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 314,
-            "name": "train/loss",
-            "value": 0.000017462410155771583
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 315,
-            "name": "train/loss",
-            "value": 0.00002791004343404176
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 316,
-            "name": "train/loss",
-            "value": 0.00004162210943120907
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 317,
-            "name": "train/loss",
-            "value": 0.00003969183884294477
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 318,
-            "name": "train/loss",
-            "value": 0.000026042162565557975
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 319,
-            "name": "train/loss",
-            "value": 0.00001691454669116147
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 320,
-            "name": "train/loss",
-            "value": 0.000021065228316219645
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 321,
-            "name": "train/loss",
-            "value": 0.00002994644537646006
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 322,
-            "name": "train/loss",
-            "value": 0.000030897474875954185
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 323,
-            "name": "train/loss",
-            "value": 0.000023489887053948048
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 324,
-            "name": "train/loss",
-            "value": 0.00001671093025756049
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 325,
-            "name": "train/loss",
-            "value": 0.000017557123655778618
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 326,
-            "name": "train/loss",
-            "value": 0.000022869533764021247
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 327,
-            "name": "train/loss",
-            "value": 0.00002503116037534151
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 328,
-            "name": "train/loss",
-            "value": 0.000021722014077924973
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 329,
-            "name": "train/loss",
-            "value": 0.00001690692729203326
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 330,
-            "name": "train/loss",
-            "value": 0.000015675649098732952
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 331,
-            "name": "train/loss",
-            "value": 0.00001818777996019313
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 332,
-            "name": "train/loss",
-            "value": 0.000020631470239237905
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 333,
-            "name": "train/loss",
-            "value": 0.000020153261073535808
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 334,
-            "name": "train/loss",
-            "value": 0.00001736121843372078
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 335,
-            "name": "train/loss",
-            "value": 0.000015236943028605718
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 336,
-            "name": "train/loss",
-            "value": 0.000015450469345256747
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 337,
-            "name": "train/loss",
-            "value": 0.00001706787743129408
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 338,
-            "name": "train/loss",
-            "value": 0.00001802615221043812
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 339,
-            "name": "train/loss",
-            "value": 0.000017275364840658674
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 340,
-            "name": "train/loss",
-            "value": 0.000015658664968446207
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 341,
-            "name": "train/loss",
-            "value": 0.000014619812030910458
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 342,
-            "name": "train/loss",
-            "value": 0.000014817547502765717
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 343,
-            "name": "train/loss",
-            "value": 0.000015671859637293345
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 344,
-            "name": "train/loss",
-            "value": 0.000016145691743808012
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 345,
-            "name": "train/loss",
-            "value": 0.000015774039291572622
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 346,
-            "name": "train/loss",
-            "value": 0.000014888401448509383
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 347,
-            "name": "train/loss",
-            "value": 0.000014210887808647595
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 348,
-            "name": "train/loss",
-            "value": 0.000014137431024290322
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 349,
-            "name": "train/loss",
-            "value": 0.000014505667838438826
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 350,
-            "name": "train/loss",
-            "value": 0.000014849685182863295
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 351,
-            "name": "train/loss",
-            "value": 0.000014818802453877262
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 352,
-            "name": "train/loss",
-            "value": 0.000014431463168500155
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 353,
-            "name": "train/loss",
-            "value": 0.000013955107568350231
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 354,
-            "name": "train/loss",
-            "value": 0.000013673933380076546
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 355,
-            "name": "train/loss",
-            "value": 0.000013675198243273726
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 356,
-            "name": "train/loss",
-            "value": 0.000013839904932901799
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 357,
-            "name": "train/loss",
-            "value": 0.000013971797260486752
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 358,
-            "name": "train/loss",
-            "value": 0.000013938133082621
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 359,
-            "name": "train/loss",
-            "value": 0.000013743974402476936
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 360,
-            "name": "train/loss",
-            "value": 0.000013486246652828383
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 361,
-            "name": "train/loss",
-            "value": 0.000013281724719459846
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 362,
-            "name": "train/loss",
-            "value": 0.000013190750504696253
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 363,
-            "name": "train/loss",
-            "value": 0.000013200615989102099
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 364,
-            "name": "train/loss",
-            "value": 0.000013250810372270543
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 365,
-            "name": "train/loss",
-            "value": 0.000013275505547817248
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 366,
-            "name": "train/loss",
-            "value": 0.000013238650753235118
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 367,
-            "name": "train/loss",
-            "value": 0.000013139750060525035
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 368,
-            "name": "train/loss",
-            "value": 0.000013007979645128049
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 369,
-            "name": "train/loss",
-            "value": 0.000012878207425556048
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 370,
-            "name": "train/loss",
-            "value": 0.00001277746206202306
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 371,
-            "name": "train/loss",
-            "value": 0.000012715294003645334
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 372,
-            "name": "train/loss",
-            "value": 0.000012685730715158322
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 373,
-            "name": "train/loss",
-            "value": 0.000012673829559518926
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 374,
-            "name": "train/loss",
-            "value": 0.000012663205142809031
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 375,
-            "name": "train/loss",
-            "value": 0.000012642087132343026
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 376,
-            "name": "train/loss",
-            "value": 0.00001260463215688185
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 377,
-            "name": "train/loss",
-            "value": 0.000012551811236846816
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 378,
-            "name": "train/loss",
-            "value": 0.00001248759523073158
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 379,
-            "name": "train/loss",
-            "value": 0.000012418258371919199
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 380,
-            "name": "train/loss",
-            "value": 0.000012348915987164314
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 381,
-            "name": "train/loss",
-            "value": 0.000012283643596971045
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 382,
-            "name": "train/loss",
-            "value": 0.000012224373566154195
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 383,
-            "name": "train/loss",
-            "value": 0.000012171667337712238
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 384,
-            "name": "train/loss",
-            "value": 0.000012124944099102311
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 385,
-            "name": "train/loss",
-            "value": 0.000012083149030457533
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 386,
-            "name": "train/loss",
-            "value": 0.000012045119744503464
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 387,
-            "name": "train/loss",
-            "value": 0.000012009862723862945
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 388,
-            "name": "train/loss",
-            "value": 0.000011976728354065964
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 389,
-            "name": "train/loss",
-            "value": 0.000011945384488834578
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 390,
-            "name": "train/loss",
-            "value": 0.000011915961442650447
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 391,
-            "name": "train/loss",
-            "value": 0.000011888863117493642
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 392,
-            "name": "train/loss",
-            "value": 0.000011865120606765701
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 393,
-            "name": "train/loss",
-            "value": 0.00001184610655797152
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 394,
-            "name": "train/loss",
-            "value": 0.000011834384398211484
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 395,
-            "name": "train/loss",
-            "value": 0.00001183334458619211
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 396,
-            "name": "train/loss",
-            "value": 0.000011849189094361974
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 397,
-            "name": "train/loss",
-            "value": 0.000011890526647972573
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 398,
-            "name": "train/loss",
-            "value": 0.000011973376114359164
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 399,
-            "name": "train/loss",
-            "value": 0.00001212080056574796
-          },
-          {
-            "type": "checkpoint",
-            "runId": "additive-regressor:0",
-            "step": 400,
-            "state": {
-              "params": {
-                "intercept": {
-                  "$object": {
-                    "$tensor": {
-                      "dtype": "float64",
-                      "shape": [],
-                      "data": [-0.012796743318819035]
-                    }
-                  }
-                },
-                "t0": {
-                  "coef": {
-                    "$object": {
-                      "$tensor": {
-                        "dtype": "float64",
-                        "shape": [1,1,15],
-                        "data": [
-                          0.14694490760293996, 0.514431479051331, 0.8915719956844824, 1.3670965915081834,
-                          0.7169854197065232, 0.08377687297416565, 1.1345212896964698, -1.4504532344166978,
-                          -0.7716082003949255, -0.5469076004362651, -1.014350772957824, -0.8145816453456621,
-                          -0.5731944053223458, 0.34873207212037455, 0.07317305759050964
-                        ]
-                      }
-                    }
-                  },
-                  "knotLogits": {
-                    "$object": {
-                      "$tensor": {
-                        "dtype": "float64",
-                        "shape": [1,12],
-                        "data": [
-                          0.609399959653155, -0.2085506966410343, -0.04403067152613092, 0.9836879298702653,
-                          0.6965329097131876, 0.1289405570339012, -0.6364454185047986, 0.12021916801650828,
-                          0.37708147829296157, 0.06468183441234468, -0.3123964310023944, -0.3851582727936557
-                        ]
-                      }
-                    }
-                  }
-                }
-              },
-              "optState": [
-                null,
-                {
-                  "count": 400,
-                  "mu": {
-                    "intercept": {
-                      "$object": {
-                        "$tensor": {
-                          "dtype": "float64",
-                          "shape": [],
-                          "data": [-1.998999933713562e-12]
-                        }
-                      }
-                    },
-                    "t0": {
-                      "coef": {
-                        "$object": {
-                          "$tensor": {
-                            "dtype": "float64",
-                            "shape": [1,1,15],
-                            "data": [
-                              0.000003321925558634032, 0.00000575209101777891, -0.000014319433051919876,
-                              0.000012645253709798011, 0.000021893604848970834, 0.00002245351084127349,
-                              -0.00005448527258336667, 0.00000769895557574974, -0.000012143586326530024,
-                              -0.000001307426087241126, 0.00000983994009790569, -0.000005692270348873998,
-                              -9.242825202915387e-8, 4.6045841367738315e-7, 0.0000039746765861727725
-                            ]
-                          }
-                        }
-                      },
-                      "knotLogits": {
-                        "$object": {
-                          "$tensor": {
-                            "dtype": "float64",
-                            "shape": [1,12],
-                            "data": [
-                              -0.00003937013763154805, -0.000019011301433638214, -0.000026329318750575855,
-                              -0.000058760246167892074, -0.0000027792512375964974, -0.00000959993358300645,
-                              0.000009994053871209932, 0.00003971549429442783, 0.000043923746994992276,
-                              0.000028075360915397254, 0.000017868319422350358, 0.0000162732133058795
-                            ]
-                          }
-                        }
-                      }
-                    }
-                  },
-                  "nu": {
-                    "intercept": {
-                      "$object": {
-                        "$tensor": {
-                          "dtype": "float64",
-                          "shape": [],
-                          "data": [0.000004590570793350697]
-                        }
-                      }
-                    },
-                    "t0": {
-                      "coef": {
-                        "$object": {
-                          "$tensor": {
-                            "dtype": "float64",
-                            "shape": [1,1,15],
-                            "data": [
-                              0.000009225338114583576, 0.000011185448886021919, 0.000013087579511218196,
-                              0.00013236986463090048, 0.0001246166466058151, 0.000022704918215205677,
-                              0.000007966080535806986, 0.000011382038290538807, 0.00011419781578441211,
-                              0.00008192969516060694, 0.00005585527809788153, 0.00005002744552711507,
-                              0.000003795616274245195, 2.168396868790536e-8, 0.0000027394956866908282
-                            ]
-                          }
-                        }
-                      },
-                      "knotLogits": {
-                        "$object": {
-                          "$tensor": {
-                            "dtype": "float64",
-                            "shape": [1,12],
-                            "data": [
-                              0.000001455207343168086, 5.282357026124302e-7, 5.158962296289856e-7,
-                              0.0000036860494436419182, 7.336863476270177e-7, 1.1488991830612939e-7,
-                              3.0230702665886995e-7, 0.0000014295653359479076, 0.0000018160671686178222,
-                              9.610858290814574e-7, 6.296717311525427e-7, 5.565053647324647e-7
-                            ]
-                          }
-                        }
-                      }
-                    }
-                  }
-                },
-                {"count":400}
-              ],
-              "buffers": {
-                "reference": {
-                  "$object": {
-                    "$tensor": {
-                      "dtype": "float64",
-                      "shape": [16,1],
-                      "data": [
-                        0.045937981311307, 0.06457332670376525, 0.10306348411921462, 0.2226229482525729,
-                        0.2855038274279229, 0.3444042452450218, 0.45213344180308457, 0.5670355444758154,
-                        0.5822938693969723, 0.5943365208456504, 0.6390096743324623, 0.7012363040182217,
-                        0.7596223165128453, 0.8461612008982741, 0.975544165934352, 0.9793911316104421
-                      ]
-                    }
-                  }
-                },
-                "t0": {
-                  "range": {
-                    "$object": {
-                      "$tensor": {
-                        "dtype": "float64",
-                        "shape": [1,2],
-                        "data": [0.045937981311307,0.9793911316104421]
-                      }
-                    }
-                  }
-                }
-              },
-              "step": 400,
-              "updates": 400,
-              "epoch": 400,
-              "key": {
-                "kind": "key",
-                "words": [2464147285,3501557220]
-              },
-              "loss": 0.00001212080056574796,
-              "gradNorm": 0.001777713330640775,
-              "epochLossSum": 0,
-              "lrScale": 1
-            }
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 400,
-            "name": "train/loss",
-            "value": 0.000012376946322434524
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 401,
-            "name": "train/loss",
-            "value": 0.000012806258097604486
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 402,
-            "name": "train/loss",
-            "value": 0.000013536821344533963
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 403,
-            "name": "train/loss",
-            "value": 0.00001475198160603928
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 404,
-            "name": "train/loss",
-            "value": 0.000016832962626904696
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 405,
-            "name": "train/loss",
-            "value": 0.00002027818791751321
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 406,
-            "name": "train/loss",
-            "value": 0.000026174124442862275
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 407,
-            "name": "train/loss",
-            "value": 0.00003554667200673437
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 408,
-            "name": "train/loss",
-            "value": 0.000050749005988331675
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 409,
-            "name": "train/loss",
-            "value": 0.000071217466146933
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 410,
-            "name": "train/loss",
-            "value": 0.00009722277363774386
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 411,
-            "name": "train/loss",
-            "value": 0.00011397544044017025
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 412,
-            "name": "train/loss",
-            "value": 0.00011242452215742439
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 413,
-            "name": "train/loss",
-            "value": 0.00007723875978308337
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 414,
-            "name": "train/loss",
-            "value": 0.00003363503947822619
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 415,
-            "name": "train/loss",
-            "value": 0.000011562484123128136
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 416,
-            "name": "train/loss",
-            "value": 0.000023350288342640253
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 417,
-            "name": "train/loss",
-            "value": 0.00004923189035753381
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 418,
-            "name": "train/loss",
-            "value": 0.00005865646263978939
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 419,
-            "name": "train/loss",
-            "value": 0.0000433696599865122
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 420,
-            "name": "train/loss",
-            "value": 0.000019175528080328864
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 421,
-            "name": "train/loss",
-            "value": 0.000011461423250799696
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 422,
-            "name": "train/loss",
-            "value": 0.000023176056818791306
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 423,
-            "name": "train/loss",
-            "value": 0.000036370377797606485
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 424,
-            "name": "train/loss",
-            "value": 0.000035590752879245746
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 425,
-            "name": "train/loss",
-            "value": 0.000021982488164607188
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 426,
-            "name": "train/loss",
-            "value": 0.000011542357757742927
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 427,
-            "name": "train/loss",
-            "value": 0.000013528738457488099
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 428,
-            "name": "train/loss",
-            "value": 0.000022355863321165938
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 429,
-            "name": "train/loss",
-            "value": 0.00002658835108659614
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 430,
-            "name": "train/loss",
-            "value": 0.0000214596876186914
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 431,
-            "name": "train/loss",
-            "value": 0.000013484318388739959
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 432,
-            "name": "train/loss",
-            "value": 0.000010666248071538567
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 433,
-            "name": "train/loss",
-            "value": 0.000014314181151837055
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 434,
-            "name": "train/loss",
-            "value": 0.000018987255564024315
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 435,
-            "name": "train/loss",
-            "value": 0.000019235507817326023
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 436,
-            "name": "train/loss",
-            "value": 0.000015284823325484783
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 437,
-            "name": "train/loss",
-            "value": 0.000011265971563754566
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 438,
-            "name": "train/loss",
-            "value": 0.00001072511661317898
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 439,
-            "name": "train/loss",
-            "value": 0.000013167419564099151
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 440,
-            "name": "train/loss",
-            "value": 0.000015413505918167765
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 441,
-            "name": "train/loss",
-            "value": 0.000015183379131501078
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 442,
-            "name": "train/loss",
-            "value": 0.000012842625214857601
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 443,
-            "name": "train/loss",
-            "value": 0.000010717154354232718
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 444,
-            "name": "train/loss",
-            "value": 0.000010450463069121397
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 445,
-            "name": "train/loss",
-            "value": 0.000011734046476737579
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 446,
-            "name": "train/loss",
-            "value": 0.000012980742676452115
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 447,
-            "name": "train/loss",
-            "value": 0.000012943362388025725
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 448,
-            "name": "train/loss",
-            "value": 0.000011778115504329693
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 449,
-            "name": "train/loss",
-            "value": 0.000010545185121627837
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 450,
-            "name": "train/loss",
-            "value": 0.000010181175884861434
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 451,
-            "name": "train/loss",
-            "value": 0.000010713894304584507
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 452,
-            "name": "train/loss",
-            "value": 0.000011445092485742981
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 453,
-            "name": "train/loss",
-            "value": 0.0000116782501758815
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 454,
-            "name": "train/loss",
-            "value": 0.000011242384566118875
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 455,
-            "name": "train/loss",
-            "value": 0.000010538086265518039
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 456,
-            "name": "train/loss",
-            "value": 0.000010077789846247575
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 457,
-            "name": "train/loss",
-            "value": 0.000010096007588483174
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 458,
-            "name": "train/loss",
-            "value": 0.000010434268220886077
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 459,
-            "name": "train/loss",
-            "value": 0.000010743921164811219
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 460,
-            "name": "train/loss",
-            "value": 0.000010777396802913043
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 461,
-            "name": "train/loss",
-            "value": 0.000010522640788720795
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 462,
-            "name": "train/loss",
-            "value": 0.000010169119369648325
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 463,
-            "name": "train/loss",
-            "value": 0.000009926428185767756
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 464,
-            "name": "train/loss",
-            "value": 0.000009893388064388661
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 465,
-            "name": "train/loss",
-            "value": 0.000010020878418049055
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 466,
-            "name": "train/loss",
-            "value": 0.000010177167447248881
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 467,
-            "name": "train/loss",
-            "value": 0.000010245844286499878
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 468,
-            "name": "train/loss",
-            "value": 0.000010183948835088658
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 469,
-            "name": "train/loss",
-            "value": 0.00001003195554985921
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 470,
-            "name": "train/loss",
-            "value": 0.000009866547040638867
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 471,
-            "name": "train/loss",
-            "value": 0.000009756153519802727
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 472,
-            "name": "train/loss",
-            "value": 0.000009726931409369598
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 473,
-            "name": "train/loss",
-            "value": 0.000009761769636499194
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 474,
-            "name": "train/loss",
-            "value": 0.000009819121528755777
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 475,
-            "name": "train/loss",
-            "value": 0.000009857356427072976
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 476,
-            "name": "train/loss",
-            "value": 0.000009853579663888682
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 477,
-            "name": "train/loss",
-            "value": 0.000009806662532151297
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 478,
-            "name": "train/loss",
-            "value": 0.000009733843097990828
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 479,
-            "name": "train/loss",
-            "value": 0.000009657415793612114
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 480,
-            "name": "train/loss",
-            "value": 0.000009596447790295157
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 481,
-            "name": "train/loss",
-            "value": 0.000009560059185731018
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 482,
-            "name": "train/loss",
-            "value": 0.00000954743185788739
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 483,
-            "name": "train/loss",
-            "value": 0.000009550761480614197
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 484,
-            "name": "train/loss",
-            "value": 0.000009559654679326695
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 485,
-            "name": "train/loss",
-            "value": 0.00000956511264854986
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 486,
-            "name": "train/loss",
-            "value": 0.000009561319847457217
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 487,
-            "name": "train/loss",
-            "value": 0.000009546701135592849
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 488,
-            "name": "train/loss",
-            "value": 0.000009522365977802322
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 489,
-            "name": "train/loss",
-            "value": 0.000009491658456963702
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 490,
-            "name": "train/loss",
-            "value": 0.000009458003091463791
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 491,
-            "name": "train/loss",
-            "value": 0.000009424689241410615
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 492,
-            "name": "train/loss",
-            "value": 0.00000939380562307725
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 493,
-            "name": "train/loss",
-            "value": 0.000009366557285210545
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 494,
-            "name": "train/loss",
-            "value": 0.000009343166080433912
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 495,
-            "name": "train/loss",
-            "value": 0.000009323319212700844
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 496,
-            "name": "train/loss",
-            "value": 0.0000093063699026789
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 497,
-            "name": "train/loss",
-            "value": 0.000009291612824670805
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 498,
-            "name": "train/loss",
-            "value": 0.00000927842986214507
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 499,
-            "name": "train/loss",
-            "value": 0.000009266352962082805
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 500,
-            "name": "train/loss",
-            "value": 0.00000925514179586318
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 501,
-            "name": "train/loss",
-            "value": 0.000009244712926957813
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 502,
-            "name": "train/loss",
-            "value": 0.00000923524619006187
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 503,
-            "name": "train/loss",
-            "value": 0.00000922704705213919
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 504,
-            "name": "train/loss",
-            "value": 0.000009220772803839864
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 505,
-            "name": "train/loss",
-            "value": 0.000009217257869099466
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 506,
-            "name": "train/loss",
-            "value": 0.000009217976351339327
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 507,
-            "name": "train/loss",
-            "value": 0.000009224849708486976
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 508,
-            "name": "train/loss",
-            "value": 0.000009241215223741527
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 509,
-            "name": "train/loss",
-            "value": 0.000009271663446028624
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 510,
-            "name": "train/loss",
-            "value": 0.000009324259793233537
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 511,
-            "name": "train/loss",
-            "value": 0.000009410551654338183
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 512,
-            "name": "train/loss",
-            "value": 0.000009551256677763036
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 513,
-            "name": "train/loss",
-            "value": 0.000009776721971064105
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 514,
-            "name": "train/loss",
-            "value": 0.000010142986044092503
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 515,
-            "name": "train/loss",
-            "value": 0.000010732409864968745
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 516,
-            "name": "train/loss",
-            "value": 0.000011702538716712055
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 517,
-            "name": "train/loss",
-            "value": 0.000013278419136958455
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 518,
-            "name": "train/loss",
-            "value": 0.000015907350002559028
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 519,
-            "name": "train/loss",
-            "value": 0.000020166417446450718
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 520,
-            "name": "train/loss",
-            "value": 0.000027240520320071022
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 521,
-            "name": "train/loss",
-            "value": 0.00003819632353109874
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 522,
-            "name": "train/loss",
-            "value": 0.000055256728684116574
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 523,
-            "name": "train/loss",
-            "value": 0.00007745156470244865
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 524,
-            "name": "train/loss",
-            "value": 0.00010390900201919453
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 525,
-            "name": "train/loss",
-            "value": 0.00011974217610386689
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 526,
-            "name": "train/loss",
-            "value": 0.00011531992306342393
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 527,
-            "name": "train/loss",
-            "value": 0.00007848680303906154
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 528,
-            "name": "train/loss",
-            "value": 0.00003345153586921985
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 529,
-            "name": "train/loss",
-            "value": 0.000009747317711948304
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 530,
-            "name": "train/loss",
-            "value": 0.000019965854722852173
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 531,
-            "name": "train/loss",
-            "value": 0.00004616359424382409
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 532,
-            "name": "train/loss",
-            "value": 0.000058979739774671736
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 533,
-            "name": "train/loss",
-            "value": 0.0000470669874460538
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 534,
-            "name": "train/loss",
-            "value": 0.000022135784884268867
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 535,
-            "name": "train/loss",
-            "value": 0.00000914811277879084
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 536,
-            "name": "train/loss",
-            "value": 0.000016474960147597864
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 537,
-            "name": "train/loss",
-            "value": 0.00003137331194728351
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 538,
-            "name": "train/loss",
-            "value": 0.0000367391662316381
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 539,
-            "name": "train/loss",
-            "value": 0.00002705195963581476
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 540,
-            "name": "train/loss",
-            "value": 0.000013544931406012488
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 541,
-            "name": "train/loss",
-            "value": 0.000008811811629961657
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 542,
-            "name": "train/loss",
-            "value": 0.000014802048382117846
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 543,
-            "name": "train/loss",
-            "value": 0.00002284154634533225
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 544,
-            "name": "train/loss",
-            "value": 0.00002388057904558047
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 545,
-            "name": "train/loss",
-            "value": 0.00001764092022834185
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 546,
-            "name": "train/loss",
-            "value": 0.000010520026336925492
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 547,
-            "name": "train/loss",
-            "value": 0.000008813647420062119
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 548,
-            "name": "train/loss",
-            "value": 0.000012508513971934934
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 549,
-            "name": "train/loss",
-            "value": 0.00001671959966917874
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 550,
-            "name": "train/loss",
-            "value": 0.000017210985187252324
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 551,
-            "name": "train/loss",
-            "value": 0.000013747135747867432
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 552,
-            "name": "train/loss",
-            "value": 0.000009814353903185203
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 553,
-            "name": "train/loss",
-            "value": 0.000008566248208739824
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 554,
-            "name": "train/loss",
-            "value": 0.000010271773136587378
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 555,
-            "name": "train/loss",
-            "value": 0.000012643634004225917
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 556,
-            "name": "train/loss",
-            "value": 0.000013268952119886702
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 557,
-            "name": "train/loss",
-            "value": 0.000011755980725515111
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 558,
-            "name": "train/loss",
-            "value": 0.000009547896590594332
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 559,
-            "name": "train/loss",
-            "value": 0.000008456702864802449
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 560,
-            "name": "train/loss",
-            "value": 0.000009006595560584556
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 561,
-            "name": "train/loss",
-            "value": 0.000010286423025601872
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 562,
-            "name": "train/loss",
-            "value": 0.000010999911736898274
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 563,
-            "name": "train/loss",
-            "value": 0.0000105566110260893
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 564,
-            "name": "train/loss",
-            "value": 0.00000943512051116963
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 565,
-            "name": "train/loss",
-            "value": 0.000008533244273522211
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 566,
-            "name": "train/loss",
-            "value": 0.000008415292031830204
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 567,
-            "name": "train/loss",
-            "value": 0.000008941856268386363
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 568,
-            "name": "train/loss",
-            "value": 0.00000953194605445532
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 569,
-            "name": "train/loss",
-            "value": 0.000009690756937289744
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 570,
-            "name": "train/loss",
-            "value": 0.000009328078055092288
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 571,
-            "name": "train/loss",
-            "value": 0.00000875030672144607
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 572,
-            "name": "train/loss",
-            "value": 0.00000834280176523116
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 573,
-            "name": "train/loss",
-            "value": 0.000008302902828478421
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 574,
-            "name": "train/loss",
-            "value": 0.000008547830163932548
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 575,
-            "name": "train/loss",
-            "value": 0.000008833085585881787
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 576,
-            "name": "train/loss",
-            "value": 0.000008946001840675861
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 577,
-            "name": "train/loss",
-            "value": 0.000008823052087606226
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 578,
-            "name": "train/loss",
-            "value": 0.000008560124315153916
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 579,
-            "name": "train/loss",
-            "value": 0.000008311309404457505
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 580,
-            "name": "train/loss",
-            "value": 0.000008192545444317077
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 581,
-            "name": "train/loss",
-            "value": 0.000008223730708063813
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 582,
-            "name": "train/loss",
-            "value": 0.000008341848394227363
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 583,
-            "name": "train/loss",
-            "value": 0.000008454095937970825
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 584,
-            "name": "train/loss",
-            "value": 0.000008491062983386312
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 585,
-            "name": "train/loss",
-            "value": 0.000008437422341430214
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 586,
-            "name": "train/loss",
-            "value": 0.000008323444160210743
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 587,
-            "name": "train/loss",
-            "value": 0.000008202562953725962
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 588,
-            "name": "train/loss",
-            "value": 0.000008119231404868933
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 589,
-            "name": "train/loss",
-            "value": 0.000008092490788094701
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 590,
-            "name": "train/loss",
-            "value": 0.000008113498018927093
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 591,
-            "name": "train/loss",
-            "value": 0.000008156225299537728
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 592,
-            "name": "train/loss",
-            "value": 0.000008192481696720318
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 593,
-            "name": "train/loss",
-            "value": 0.000008203058242076368
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 594,
-            "name": "train/loss",
-            "value": 0.000008183387694160627
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 595,
-            "name": "train/loss",
-            "value": 0.000008140389701988991
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 596,
-            "name": "train/loss",
-            "value": 0.00000808796317168949
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 597,
-            "name": "train/loss",
-            "value": 0.00000803954518633242
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 598,
-            "name": "train/loss",
-            "value": 0.000008004436745090209
-          },
-          {
-            "type": "metric",
-            "runId": "additive-regressor:0",
-            "step": 599,
-            "name": "train/loss",
-            "value": 0.000007985717238852189
-          },
-          {
-            "type": "checkpoint",
-            "runId": "additive-regressor:0",
-            "step": 600,
-            "state": {
-              "params": {
-                "intercept": {
-                  "$object": {
-                    "$tensor": {
-                      "dtype": "float64",
-                      "shape": [],
-                      "data": [-0.012796743311381559]
-                    }
-                  }
-                },
-                "t0": {
-                  "coef": {
-                    "$object": {
-                      "$tensor": {
-                        "dtype": "float64",
-                        "shape": [1,1,15],
-                        "data": [
-                          0.14801963450219857, 0.5097838438881752, 0.8989237746747504, 1.3666581450158437,
-                          0.713129947193224, 0.07661587949184481, 1.1630003551431116, -1.4682084974591243,
-                          -0.7680167747552306, -0.5461032695086356, -1.0166773607555244, -0.8121138773688847,
-                          -0.5730502852699447, 0.35053299626196793, 0.07381414526543324
-                        ]
-                      }
-                    }
-                  },
-                  "knotLogits": {
-                    "$object": {
-                      "$tensor": {
-                        "dtype": "float64",
-                        "shape": [1,12],
-                        "data": [
-                          0.6073693865104975, -0.20667846061691267, -0.02956986096283036, 1.0034762956389405,
-                          0.6255642910904889, 0.21637647595410303, -0.643059757081455, 0.10482095893520935,
-                          0.3720662054448284, 0.06813900184536442, -0.3053034319313333, -0.377247744764247
-                        ]
-                      }
-                    }
-                  }
-                }
-              },
-              "optState": [
-                null,
-                {
-                  "count": 600,
-                  "mu": {
-                    "intercept": {
-                      "$object": {
-                        "$tensor": {
-                          "dtype": "float64",
-                          "shape": [],
-                          "data": [-9.115142256041684e-17]
-                        }
-                      }
-                    },
-                    "t0": {
-                      "coef": {
-                        "$object": {
-                          "$tensor": {
-                            "dtype": "float64",
-                            "shape": [1,1,15],
-                            "data": [
-                              -8.218682444104901e-7, 8.779211460379446e-7, -0.0000014404980350593196,
-                              -0.0000022961445048734616, 0.00000734135062567694, 0.0000026180302236397447,
-                              -0.000011070917911392016, 0.000011031815206285832, -0.000004371121577801351,
-                              -0.0000014169165957591153, 0.0000027138664837364647, -0.000002679592110641737,
-                              -5.998093982267815e-8, -6.600669737688355e-8, -3.5993706823989427e-7
-                            ]
-                          }
-                        }
-                      },
-                      "knotLogits": {
-                        "$object": {
-                          "$tensor": {
-                            "dtype": "float64",
-                            "shape": [1,12],
-                            "data": [
-                              0.0000034897124195855595, 0.0000013791128923828115, -3.8539605353982937e-7,
-                              -0.000011977405076821115, 0.000016639148434215587, -0.000005078643349765633,
-                              4.063635983732558e-7, 0.0000015766068740158074, -4.863639465003593e-7,
-                              -0.0000019334044296896045, -0.0000018262941488961572, -0.0000018034372133604063
-                            ]
-                          }
-                        }
-                      }
-                    }
-                  },
-                  "nu": {
-                    "intercept": {
-                      "$object": {
-                        "$tensor": {
-                          "dtype": "float64",
-                          "shape": [],
-                          "data": [0.000003758065406615362]
-                        }
-                      }
-                    },
-                    "t0": {
-                      "coef": {
-                        "$object": {
-                          "$tensor": {
-                            "dtype": "float64",
-                            "shape": [1,1,15],
-                            "data": [
-                              0.000007569527856494537, 0.000009162446496735653, 0.000010715546244700256,
-                              0.00010836717071819453, 0.00010201903029212387, 0.000018589972371658416,
-                              0.00000664906980749812, 0.000009515314781659124, 0.00009349912171296777,
-                              0.00006707638836193359, 0.00004572871686367979, 0.00004095635025329379,
-                              0.000003107279277384408, 1.805690769206662e-8, 0.0000022601077060557208
-                            ]
-                          }
-                        }
-                      },
-                      "knotLogits": {
-                        "$object": {
-                          "$tensor": {
-                            "dtype": "float64",
-                            "shape": [1,12],
-                            "data": [
-                              0.00000241914847963738, 6.616448021840349e-7, 7.475034681543435e-7,
-                              0.0000055156618824143185, 0.0000010058014619087334, 1.017900583862216e-7,
-                              3.019268305798309e-7, 0.0000019405017077927765, 0.000002853698741965635,
-                              0.00000153405752145992, 8.666468860317808e-7, 7.570814798221149e-7
-                            ]
-                          }
-                        }
-                      }
-                    }
-                  }
-                },
-                {"count":600}
-              ],
-              "buffers": {
-                "reference": {
-                  "$object": {
-                    "$tensor": {
-                      "dtype": "float64",
-                      "shape": [16,1],
-                      "data": [
-                        0.045937981311307, 0.06457332670376525, 0.10306348411921462, 0.2226229482525729,
-                        0.2855038274279229, 0.3444042452450218, 0.45213344180308457, 0.5670355444758154,
-                        0.5822938693969723, 0.5943365208456504, 0.6390096743324623, 0.7012363040182217,
-                        0.7596223165128453, 0.8461612008982741, 0.975544165934352, 0.9793911316104421
-                      ]
-                    }
-                  }
-                },
-                "t0": {
-                  "range": {
-                    "$object": {
-                      "$tensor": {
-                        "dtype": "float64",
-                        "shape": [1,2],
-                        "data": [0.045937981311307,0.9793911316104421]
-                      }
-                    }
-                  }
-                }
-              },
-              "step": 600,
-              "updates": 600,
-              "epoch": 600,
-              "key": {
-                "kind": "key",
-                "words": [2464147285,3501557220]
-              },
-              "loss": 0.000007985717238852189,
-              "gradNorm": 0.00003161397537072899,
+              "loss": 0.021290002925549147,
+              "gradNorm": 0.00010264401754816316,
               "epochLossSum": 0,
               "lrScale": 1
             }
@@ -4964,7 +1783,7 @@
             "type": "end",
             "runId": "additive-regressor:0",
             "status": "completed",
-            "steps": 600,
+            "steps": 200,
             "summary": {}
           }
         ]
@@ -4998,27 +1817,7 @@
           121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140,
           141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160,
           161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180,
-          181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200,
-          201, 202, 203, 204, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214, 215, 216, 217, 218, 219, 220,
-          221, 222, 223, 224, 225, 226, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 237, 238, 239, 240,
-          241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254, 255, 256, 257, 258, 259, 260,
-          261, 262, 263, 264, 265, 266, 267, 268, 269, 270, 271, 272, 273, 274, 275, 276, 277, 278, 279, 280,
-          281, 282, 283, 284, 285, 286, 287, 288, 289, 290, 291, 292, 293, 294, 295, 296, 297, 298, 299, 300,
-          301, 302, 303, 304, 305, 306, 307, 308, 309, 310, 311, 312, 313, 314, 315, 316, 317, 318, 319, 320,
-          321, 322, 323, 324, 325, 326, 327, 328, 329, 330, 331, 332, 333, 334, 335, 336, 337, 338, 339, 340,
-          341, 342, 343, 344, 345, 346, 347, 348, 349, 350, 351, 352, 353, 354, 355, 356, 357, 358, 359, 360,
-          361, 362, 363, 364, 365, 366, 367, 368, 369, 370, 371, 372, 373, 374, 375, 376, 377, 378, 379, 380,
-          381, 382, 383, 384, 385, 386, 387, 388, 389, 390, 391, 392, 393, 394, 395, 396, 397, 398, 399, 400,
-          401, 402, 403, 404, 405, 406, 407, 408, 409, 410, 411, 412, 413, 414, 415, 416, 417, 418, 419, 420,
-          421, 422, 423, 424, 425, 426, 427, 428, 429, 430, 431, 432, 433, 434, 435, 436, 437, 438, 439, 440,
-          441, 442, 443, 444, 445, 446, 447, 448, 449, 450, 451, 452, 453, 454, 455, 456, 457, 458, 459, 460,
-          461, 462, 463, 464, 465, 466, 467, 468, 469, 470, 471, 472, 473, 474, 475, 476, 477, 478, 479, 480,
-          481, 482, 483, 484, 485, 486, 487, 488, 489, 490, 491, 492, 493, 494, 495, 496, 497, 498, 499, 500,
-          501, 502, 503, 504, 505, 506, 507, 508, 509, 510, 511, 512, 513, 514, 515, 516, 517, 518, 519, 520,
-          521, 522, 523, 524, 525, 526, 527, 528, 529, 530, 531, 532, 533, 534, 535, 536, 537, 538, 539, 540,
-          541, 542, 543, 544, 545, 546, 547, 548, 549, 550, 551, 552, 553, 554, 555, 556, 557, 558, 559, 560,
-          561, 562, 563, 564, 565, 566, 567, 568, 569, 570, 571, 572, 573, 574, 575, 576, 577, 578, 579, 580,
-          581, 582, 583, 584, 585, 586, 587, 588, 589, 590, 591, 592, 593, 594, 595, 596, 597, 598, 599
+          181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199
         ],
         "train/epoch/end": [
           0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26,
@@ -5029,27 +1828,7 @@
           121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140,
           141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160,
           161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180,
-          181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200,
-          201, 202, 203, 204, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214, 215, 216, 217, 218, 219, 220,
-          221, 222, 223, 224, 225, 226, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 237, 238, 239, 240,
-          241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254, 255, 256, 257, 258, 259, 260,
-          261, 262, 263, 264, 265, 266, 267, 268, 269, 270, 271, 272, 273, 274, 275, 276, 277, 278, 279, 280,
-          281, 282, 283, 284, 285, 286, 287, 288, 289, 290, 291, 292, 293, 294, 295, 296, 297, 298, 299, 300,
-          301, 302, 303, 304, 305, 306, 307, 308, 309, 310, 311, 312, 313, 314, 315, 316, 317, 318, 319, 320,
-          321, 322, 323, 324, 325, 326, 327, 328, 329, 330, 331, 332, 333, 334, 335, 336, 337, 338, 339, 340,
-          341, 342, 343, 344, 345, 346, 347, 348, 349, 350, 351, 352, 353, 354, 355, 356, 357, 358, 359, 360,
-          361, 362, 363, 364, 365, 366, 367, 368, 369, 370, 371, 372, 373, 374, 375, 376, 377, 378, 379, 380,
-          381, 382, 383, 384, 385, 386, 387, 388, 389, 390, 391, 392, 393, 394, 395, 396, 397, 398, 399, 400,
-          401, 402, 403, 404, 405, 406, 407, 408, 409, 410, 411, 412, 413, 414, 415, 416, 417, 418, 419, 420,
-          421, 422, 423, 424, 425, 426, 427, 428, 429, 430, 431, 432, 433, 434, 435, 436, 437, 438, 439, 440,
-          441, 442, 443, 444, 445, 446, 447, 448, 449, 450, 451, 452, 453, 454, 455, 456, 457, 458, 459, 460,
-          461, 462, 463, 464, 465, 466, 467, 468, 469, 470, 471, 472, 473, 474, 475, 476, 477, 478, 479, 480,
-          481, 482, 483, 484, 485, 486, 487, 488, 489, 490, 491, 492, 493, 494, 495, 496, 497, 498, 499, 500,
-          501, 502, 503, 504, 505, 506, 507, 508, 509, 510, 511, 512, 513, 514, 515, 516, 517, 518, 519, 520,
-          521, 522, 523, 524, 525, 526, 527, 528, 529, 530, 531, 532, 533, 534, 535, 536, 537, 538, 539, 540,
-          541, 542, 543, 544, 545, 546, 547, 548, 549, 550, 551, 552, 553, 554, 555, 556, 557, 558, 559, 560,
-          561, 562, 563, 564, 565, 566, 567, 568, 569, 570, 571, 572, 573, 574, 575, 576, 577, 578, 579, 580,
-          581, 582, 583, 584, 585, 586, 587, 588, 589, 590, 591, 592, 593, 594, 595, 596, 597, 598, 599
+          181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199
         ]
       },
       "probes": []
