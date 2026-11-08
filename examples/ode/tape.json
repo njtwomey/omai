@@ -6,7 +6,7 @@
       "runId": "solveIvp:none",
       "name": "solveIvp",
       "seed": null,
-      "version": "0.1.5",
+      "version": "0.1.6",
       "config": {
         "method": "RK45",
         "rtol": 0.000001,
