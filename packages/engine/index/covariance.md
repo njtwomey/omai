@@ -2,8 +2,40 @@
 
 # covariance
 
-Covariance and precision matrix estimation: empirical and shrunk covariance estimators (fixed shrinkage, Ledoit-Wolf and oracle approximating shrinkage) with Mahalanobis distances and Gaussian log likelihoods, the robust minimum covariance determinant by FastMCD (concentration steps as a traced algorithm) with the elliptic envelope outlier detector, and the graphical lasso for sparse precision matrices by coordinate descent.
+Covariance and precision matrix estimation: empirical and shrunk covariance estimators (fixed shrinkage, Ledoit-Wolf and oracle approximating shrinkage) with Mahalanobis distances and Gaussian log likelihoods, shrinkage towards diagonal, constant-correlation and single-factor targets with analytic intensities and a traced path, analytical nonlinear shrinkage, the random-matrix cleaning of correlation matrices (Marchenko-Pastur denoising and detoning, the spiked-model thresholds), the nearest correlation and covariance matrix by Higham's alternating projections, the choice of an estimator by held-out likelihood, the robust minimum covariance determinant by FastMCD (concentration steps as a traced algorithm) with the elliptic envelope outlier detector, and the graphical lasso for sparse precision matrices by coordinate descent.
+
+- function `adaptiveGraphicalLasso`: Adaptive graphical lasso: entry-wise penalties reweighted from an initial precision estimate. `src/lib/covariance/adaptive-graphical-lasso.ts:194` `omai-engine/covariance`
+- function `bbpThreshold`: Baik-Ben Arous-Peche threshold of a spiked covariance eigenvalue. `src/lib/covariance/spectral.ts:116` `omai-engine/covariance`
+- function `clime`: CLIME precision estimate: one l1-minimising linear programme per column. `src/lib/covariance/neighbourhood.ts:268` `omai-engine/covariance`
+- function `clipCorrelation`: Fast correlation repair by eigenvalue clipping and rescaling. `src/lib/covariance/nearest.ts:244` `omai-engine/covariance`
+- function `denoiseCorrelation`: Denoise a correlation matrix: bulk eigenvalues below the Marchenko-Pastur edge replaced. `src/lib/covariance/spectral.ts:233` `omai-engine/covariance`
+- function `detoneCorrelation`: Detone a correlation matrix: remove the market mode (leading eigencomponents). `src/lib/covariance/spectral.ts:289` `omai-engine/covariance`
+- function `edgeRecovery`: Edge precision, recall, F1 and Hamming distance of an estimated graph against the true one. `src/lib/covariance/evaluation.ts:84` `omai-engine/covariance`
+- function `eigenSpectrum`: Eigenvalues and eigenvectors of a symmetric matrix, largest first. `src/lib/covariance/spectral.ts:55` `omai-engine/covariance`
+- function `glassoNonparanormal`: Graphical lasso on a nonparanormal (rank-based) correlation matrix. `src/lib/covariance/rank.ts:222` `omai-engine/covariance`
+- function `heldOutLogLikelihood`: Mean Gaussian log likelihood of held-out rows under a location and covariance. `src/lib/covariance/model-selection.ts:52` `omai-engine/covariance`
+- function `nearestCorrelation`: Nearest correlation matrix by Higham's alternating projections with Dykstra's correction. `src/lib/covariance/nearest.ts:209` `omai-engine/covariance`
+- function `nearestCovariance`: Nearest covariance matrix keeping the variances, by clipping or alternating projections. `src/lib/covariance/nearest.ts:298` `omai-engine/covariance`
+- function `nearestSpd`: Nearest symmetric positive semidefinite matrix in the Frobenius norm. `src/lib/covariance/nearest.ts:342` `omai-engine/covariance`
+- function `neighbourhoodSelection`: Meinshausen-Buhlmann neighbourhood selection: a lasso per node, "and" or "or" graph. `src/lib/covariance/neighbourhood.ts:164` `omai-engine/covariance`
+- function `nonparanormalCorrelation`: Latent correlation of a nonparanormal sample from Spearman, Kendall or normal scores. `src/lib/covariance/rank.ts:149` `omai-engine/covariance`
+- function `nonparanormalTransform`: Nonparanormal transform: normal scores of the Winsorised empirical distribution. `src/lib/covariance/rank.ts:73` `omai-engine/covariance`
+- function `quadraticInverseShrinkage`: Analytical nonlinear (quadratic-inverse) shrinkage of the covariance eigenvalues. `src/lib/covariance/nonlinear-shrinkage.ts:72` `omai-engine/covariance`
+- function `selectCovariance`: Choose a covariance estimator by cross-validated held-out Gaussian log likelihood. `src/lib/covariance/model-selection.ts:310` `omai-engine/covariance`
+- function `selectGraphicalLassoPenalty`: Choose the graphical-lasso penalty by CV, EBIC or StARS; returns the path and the graph. `src/lib/covariance/graph-selection.ts:650` `omai-engine/covariance`
+- function `shrinkagePath`: Shrinkage path: condition number, eigenvalue spread and held-out likelihood against intensity. `src/lib/covariance/shrinkage-targets.ts:470` `omai-engine/covariance`
+- function `shrinkageTargetMatrix`: Shrinkage target matrix: identity, diagonal, constant correlation or single factor. `src/lib/covariance/shrinkage-targets.ts:231` `omai-engine/covariance`
+- function `spikedEigenvalueLimit`: Limiting sample eigenvalue of a spiked population eigenvalue. `src/lib/covariance/spectral.ts:139` `omai-engine/covariance`
+- function `spikedEigenvectorOverlap`: Limiting overlap of a sample eigenvector with a spike direction. `src/lib/covariance/spectral.ts:162` `omai-engine/covariance`
+- function `targetShrinkage`: Covariance shrunk towards a diagonal, constant-correlation, single-factor or identity target. `src/lib/covariance/shrinkage-targets.ts:281` `omai-engine/covariance`
 
 - estimator `covarianceEstimator`: Empirical, Ledoit-Wolf and OAS shrunk covariance. `src/lib/covariance/shrinkage.ts:285` `omai-engine/covariance`
-- estimator `graphicalLassoEstimator`: Sparse precision matrix by graphical lasso. `src/lib/covariance/graphical-lasso.ts:258` `omai-engine/covariance`
+- estimator `covarianceSelectionEstimator`: Covariance estimator chosen by cross-validated held-out likelihood. `src/lib/covariance/model-selection.ts:370` `omai-engine/covariance`
+- estimator `graphicalLassoEstimator`: Sparse precision matrix by graphical lasso. `src/lib/covariance/graphical-lasso.ts:353` `omai-engine/covariance`
+- estimator `graphicalLassoSelectionEstimator`: Graphical lasso with the penalty chosen by cross-validation, EBIC or StARS. `src/lib/covariance/graph-selection.ts:728` `omai-engine/covariance`
 - estimator `minCovDet`: Robust minimum covariance determinant by FastMCD. `src/lib/covariance/robust.ts:318` `omai-engine/covariance`
+- estimator `nonlinearShrinkageEstimator`: Covariance by analytical nonlinear (quadratic-inverse) eigenvalue shrinkage. `src/lib/covariance/nonlinear-shrinkage.ts:261` `omai-engine/covariance`
+- estimator `spectralCleaningEstimator`: Covariance by denoising and detoning the correlation spectrum. `src/lib/covariance/spectral.ts:533` `omai-engine/covariance`
+- estimator `targetShrinkageEstimator`: Covariance shrunk to a diagonal, constant-correlation, factor or identity target. `src/lib/covariance/shrinkage-targets.ts:614` `omai-engine/covariance`
+
+- table `defaultCovarianceCandidates`: Default covariance candidates compared by held-out likelihood. `src/lib/covariance/model-selection.ts:87` `omai-engine/covariance`

@@ -11,7 +11,12 @@ Classical computer vision, OpenCV-shaped, available as `omai-engine/vision`: col
 - function `tracking.ts` (file): SORT tracking, mean shift and pyramidal point tracking over frames. `src/lib/vision/tracking.ts:1` `omai-engine/vision`
 
 - function `cvtColor`: Convert between colour spaces, like cv2.cvtColor. `src/lib/vision/colour.ts:361` `omai-engine/vision`
+- function `extractPatches2d`: Every overlapping window of an image, or a random sample of them. `src/lib/vision/patches.ts:90` `omai-engine/vision`
 - function `fast`: FAST-9 corner detector. `src/lib/vision/fast.ts:92` `omai-engine/vision`
 - function `findHomography`: Robust homography from point correspondences. `src/lib/vision/geometry.ts:257` `omai-engine/vision`
+- function `imgToGraph`: The pixel-grid graph of an image weighted by intensity differences. `src/lib/vision/patches.ts:286` `omai-engine/vision`
 - function `orb`: ORB keypoint descriptors; matchDescriptors in matching.ts. `src/lib/vision/descriptors.ts:230` `omai-engine/vision`
+- function `reconstructFromPatches2d`: Average overlapping patches back into an image. `src/lib/vision/patches.ts:131` `omai-engine/vision`
 - function `threshold`: Global thresholding: binary, truncate, to-zero and inverse variants. `src/lib/vision/thresholds.ts:40` `omai-engine/vision`
+
+- estimator `patchExtractor`: Cut the patches of a batch of images, all windows or random ones. `src/lib/vision/patches.ts:204` `omai-engine/vision`

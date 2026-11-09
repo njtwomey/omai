@@ -9,9 +9,13 @@ Linear and generalised linear models as library pieces: the design matrix, the s
 - function `paths.ts` (file): Regularisation paths over an alpha grid by warm-started coordinate descent. `src/lib/linear/paths.ts:1` `omai-engine/linear`
 - function `solvers.ts` (file): Solvers of the penalised GLM core: Cholesky, QR, SVD, coordinate descent. `src/lib/linear/solvers.ts:1` `omai-engine/linear`
 
+- estimator `ardRegression`: Linear regression with a learnt precision per weight; irrelevant features are pruned. `src/lib/linear/ard.ts:361` `omai-engine/linear`
 - estimator `huber`: Huber regression, robust to outliers. `src/lib/linear/robust.ts:501` `omai-engine/linear`
-- estimator `lars`: Least angle regression: the lasso path one knot per step. `src/lib/linear/lars.ts:387` `omai-engine/linear`
+- estimator `lars`: Least angle regression: the lasso path one knot per step. `src/lib/linear/lars.ts:450` `omai-engine/linear`
+- estimator `lassoLarsIC`: The lasso with its penalty chosen by AIC or BIC along the LARS path. `src/lib/linear/lars.ts:535` `omai-engine/linear`
 - estimator `linearModel`: One penalised GLM estimator; logistic, ridge and lasso are configurations of it. `src/lib/linear/model.ts:276` `omai-engine/linear`
 - estimator `mixedModel`: Linear mixed-effects model for grouped data. `src/lib/linear/mixed.ts:625` `omai-engine/linear`
 - estimator `multinomial`: Multinomial logistic (softmax) regression. `src/lib/linear/multinomial.ts:405` `omai-engine/linear`
 - estimator `ordinal`: Ordinal regression with cumulative-link families. `src/lib/linear/ordinal.ts:520` `omai-engine/linear`
+
+- algorithm `ardAlgorithm`: Automatic relevance determination by evidence maximisation, one iteration per step. `src/lib/linear/ard.ts:170` `omai-engine/linear`

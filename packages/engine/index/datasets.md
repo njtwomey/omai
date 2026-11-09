@@ -9,13 +9,14 @@ Ready-made datasets: generators with exact truths, vendored real datasets (iris,
 - table `collections.ts` (file): Themed dataset collections for pickers. `src/lib/datasets/collections.ts:1` `omai-engine/datasets`
 
 - module `densities.ts` (file): Two-dimensional target densities with exact log densities, for MCMC, flows and diffusion models. `src/lib/datasets/densities.ts:1` `omai-engine/datasets`
+- module `precision-graphs.ts` (file): Gaussian graphical models with a known sparse precision matrix, optionally nonparanormal. `src/lib/datasets/precision-graphs.ts:1` `omai-engine/datasets`
 
 - function `loadDataset`: Make or load a registry entry's data synchronously. `src/lib/datasets/registry.ts:345` `omai-engine/datasets`
 - function `whereDatasets`: Registry entries matching kind, modality, size or free text. `src/lib/datasets/registry.ts:269` `omai-engine/datasets`
 
 - structure `Density`: A 2-D target with exact log density and sampler, for samplers and flows. `src/lib/datasets/densities.ts:51` `omai-engine/datasets`
 
-- table `datasetRegistry`: Tagged registry of every generator, vendored and remote dataset. `src/lib/datasets/catalogue.ts:333` `omai-engine/datasets`
+- table `datasetRegistry`: Tagged registry of every generator, vendored and remote dataset. `src/lib/datasets/catalogue.ts:348` `omai-engine/datasets`
 
 - dataset `airPassengers`: Vendored monthly airline passenger series. `src/lib/datasets/timeseries.ts:404` `omai-engine/datasets`
 - dataset `bananaDensity`: Haario's banana: a curved, correlated target for MCMC. `src/lib/datasets/densities.ts:313` `omai-engine/datasets`
@@ -37,6 +38,7 @@ Ready-made datasets: generators with exact truths, vendored real datasets (iris,
 - dataset `shapes`: Images of circles, squares and triangles with labels. `src/lib/datasets/images.ts:64` `omai-engine/datasets`
 - dataset `signedDistance`: Exact signed distance samples of sphere, box, torus or union shapes. `src/lib/datasets/neural-fields.ts:125` `omai-engine/datasets`
 - dataset `sineCurve`: Noisy sine regression with known function. `src/lib/datasets/regression-curves.ts:137` `omai-engine/datasets`
+- dataset `sparseCodedSignal`: Signals of a few atoms each over a unit-norm dictionary, codes and dictionary as truth. `src/lib/datasets/latent.ts:307` `omai-engine/datasets`
 - dataset `spirals`: Interleaved spiral arms. `src/lib/datasets/classification.ts:460` `omai-engine/datasets`
 - dataset `swissRoll`: The Swiss roll in 3-D (sklearn make_swiss_roll), optionally with a hole. `src/lib/datasets/manifolds.ts:123` `omai-engine/datasets`
 - dataset `xor`: The XOR problem as four Gaussian blobs. `src/lib/datasets/classification.ts:393` `omai-engine/datasets`

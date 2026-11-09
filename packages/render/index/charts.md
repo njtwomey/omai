@@ -10,7 +10,7 @@ ECharts option builders. Start from a finished chart (`lineChart`, `scatterChart
 - function `band`: A filled band between two curves: `band([{ x, lower, upper }])`. `src/charts/lines.ts:128` `omai-render/charts`
 - function `barChart`: A bar chart over categories: `barChart(['a', 'b'], [3, 5])`. `src/charts/bars.ts:413` `omai-render/charts`
 - function `boxPlot`: Box plots of groups: `boxPlot([{ name: 'a', values }])`. `src/charts/distributions.ts:307` `omai-render/charts`
-- function `cartesian`: Draw layers on one pair of axes: `cartesian([lines(curves), points(sets)])`. `src/charts/plot.ts:646` `omai-render/charts`
+- function `cartesian`: Draw layers on one pair of axes: `cartesian([lines(curves), points(sets)])`. `src/charts/plot.ts:649` `omai-render/charts`
 - function `confusionMatrixChart`: A labelled confusion matrix: `confusionMatrixChart(counts, ['cat', 'dog'])`. `src/charts/matrices.ts:637` `omai-render/charts`
 - function `contours`: Contour lines of a 2-D array: `contours(z, { levels: 7 })`. `src/charts/fields.ts:60` `omai-render/charts`
 - function `decisionRegions`: A classifier's decision regions from class probability grids: `decisionRegions(probs, { x, y })`. `src/charts/fields.ts:200` `omai-render/charts`
@@ -24,7 +24,7 @@ ECharts option builders. Start from a finished chart (`lineChart`, `scatterChart
 - function `lines`: A layer of lines, steps or areas to combine: `lines([{ y: [1, 3, 2] }])`. `src/charts/lines.ts:63` `omai-render/charts`
 - function `maskMatrix`: A boolean matrix, an attention or causal mask: `maskMatrix(mask, { rowLabels })`. `src/charts/matrices.ts:570` `omai-render/charts`
 - function `parallelCoordinates`: Parallel coordinates of a table: `parallelCoordinates({ columns, rows })`. `src/charts/multivariate.ts:221` `omai-render/charts`
-- function `plotRectOf`: The pixel rectangle and ranges of a cartesian plot: `plotRectOf(layers, options)`. `src/charts/plot.ts:622` `omai-render/charts`
+- function `plotRectOf`: The pixel rectangle and ranges of a cartesian plot: `plotRectOf(layers, options)`. `src/charts/plot.ts:625` `omai-render/charts`
 - function `rocChart`: A ROC curve chart: `rocChart(curve)`. `src/charts/evaluation.ts:49` `omai-render/charts`
 - function `sankeyChart`: A Sankey diagram of flows: `sankeyChart([{ source, target, value }])`. `src/charts/flows.ts:33` `omai-render/charts`
 - function `scatterChart`: A scatter plot coloured by group: `scatterChart([{ x, y, groups }])`. `src/charts/points.ts:252` `omai-render/charts`

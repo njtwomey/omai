@@ -31,6 +31,40 @@ From the notes site's port off its local kit.
   to cancel a drag, and flipped axes handled. `Handle` is exported and shared with `DraggableLine`.
 - `NumberField`'s ladder popup (and `Select` menus of eleven options) no longer clips its last value: the menu was capped at 16 rem,
   and eleven rows need a little more.
+- `chartProjection` on ECharts 6: `cartesian()` (and so `subplots`, `lineChart`, `scatterChart`, `barChart` and the marginals) writes
+  `grid.outerBoundsMode: 'none'`, because ECharts 6's default `'auto'` shrinks the plotting box 20 to 40 px inside the box the option
+  names, which made `project`, `rect` and every overlay on them that far off. The projection takes the analytic path (no ECharts
+  call) only for a grid that says `'none'` (or says nothing and has no `containLabel`); a hand-written grid with `'auto'` or
+  `'same'` goes through ECharts' converters as before 0.1.10. A test draws real ECharts instances and checks the drawn box equals
+  the option's.
+- `Chart` takes `ratio` (the magnification: the canvas is made at `devicePixelRatio x ratio`) and `PixelRatioProvider ratio` /
+  `usePixelRatio()` set it for every chart below (nestable, the innermost wins); `ResponsiveChart` and `FigureGrid` pass it on. An
+  expanded `FigureFrame`'s scale composes with the provider's; an explicit `ratio` wins. Nothing is clamped (the host clamps);
+  SVG-rendered charts ignore it.
+- Engine, scikit-learn and imbalanced-learn gaps (`docs/completeness/sklearn.md`):
+  - Sparse coding and dictionary learning: `sparseCode`/`sparseCoder` (OMP, LARS, lasso-LARS, lasso by coordinate descent,
+    thresholding; `positive` where the solver has it), `dictionaryLearning` (batch; the atom update is a slot: coordinate descent,
+    MOD or K-SVD; unused atoms are replaced), `miniBatchDictionaryLearning` and `dictLearningOnline` (Mairal et al.), the
+    `sparseCodedSignal` generator; all stepped and traced.
+  - imbalanced-learn: SMOTEN, SMOTENC, SVM-SMOTE, K-means SMOTE, edited and repeated edited nearest neighbours, AllKNN, condensed
+    nearest neighbour, one-sided selection, the neighbourhood cleaning rule, instance hardness threshold, cluster centroids,
+    SMOTEENN, SMOTETomek, and the balanced ensembles (balanced bagging, balanced random forest, EasyEnsemble, RUSBoost); the
+    deterministic cleaners match imbalanced-learn index for index.
+  - Estimators and small items: `kMeans`, `miniBatchKMeans`, `kmeansPlusPlus`, `gaussianMixture`, `bayesianGaussianMixture`,
+    `dummyClassifier`, `dummyRegressor`, `fixedThresholdClassifier`, `tunedThresholdClassifierCV`, `truncatedSvd`, `miniBatchNmf`,
+    `ardRegression`, `lassoLarsIC`, `classLikelihoodRatios`, `addDummyFeature`, image patches (`extractPatches2d`,
+    `reconstructFromPatches2d`, `patchExtractor`, `imgToGraph`), `dictVectorize` and `featureHash`.
+  - `latentDirichletAllocation` (batch and online variational Bayes), spectral co-clustering and biclustering with
+    `consensusScore`, and `linearSvc` / `linearSvr` (liblinear's model: dual coordinate descent, OWL-QN for L1, the smooth solvers
+    for the squared losses).
+  - `larsPath` in lasso mode left the optimum on collinear columns and, more rarely, on ordinary designs after a variable left and
+    re-entered (30 of 1800 random paths); fixed, and `positive` added.
+- Covariance estimation (a new area in `docs/completeness/covariance.md`): the Marchenko-Pastur law (`dists`), spiked-model
+  thresholds, `denoiseCorrelation` and `detoneCorrelation`, shrinkage towards diagonal, constant-correlation and single-factor
+  targets with analytic intensities and a `shrinkagePath`, Ledoit-Wolf nonlinear shrinkage, `selectCovariance` by held-out
+  likelihood, nearest correlation and covariance matrices (Higham with Dykstra; matches statsmodels), `GraphicalLassoCV` with EBIC
+  and StARS penalty selection, neighbourhood selection, CLIME, nonparanormal correlations, the adaptive graphical lasso (the
+  graphical lasso takes a per-entry penalty matrix and a warm start), and generators with a known covariance or precision graph.
 - `Controls` (and so the `controls` of a `FigureFrame`) gives the number fields, selects and choices in it a default width of
   176 pixels (`controlWidth` on `Controls` to change it, a control's own `width` to override), so a row of fields and toggles
   lines up without a `width` on each; a toggle keeps its natural width. Outside a `Controls` row nothing changes.

@@ -15,6 +15,8 @@ The toolkit around models, scikit-learn style: the estimator protocol, preproces
 - estimator `calibratedClassifierCV`: Calibrate a classifier's probabilities by cross-validation. `src/lib/learn/calibration.ts:730` `omai-engine/learn`
 - estimator `columnTransformer`: Apply different transformers to different columns. `src/lib/learn/compose.ts:696` `omai-engine/learn`
 - estimator `discriminantAnalysis`: Linear and quadratic discriminant analysis. `src/lib/learn/discriminant.ts:381` `omai-engine/learn`
+- estimator `dummyClassifier`: Baseline classifier: prior, most frequent, stratified, uniform or constant. `src/lib/learn/dummy.ts:129` `omai-engine/learn`
+- estimator `dummyRegressor`: Baseline regressor: mean, median, quantile or constant. `src/lib/learn/dummy.ts:255` `omai-engine/learn`
 - estimator `kNeighboursClassifier`: k-nearest-neighbour classifier under any distance. `src/lib/learn/neighbours.ts:452` `omai-engine/learn`
 - estimator `labelPropagation`: Semi-supervised labelling by propagation over a neighbour graph. `src/lib/learn/semi-supervised.ts:1187` `omai-engine/learn`
 - estimator `naiveBayes`: Naive Bayes classifier with Gaussian, categorical or other likelihoods. `src/lib/learn/naive-bayes.ts:430` `omai-engine/learn`
@@ -42,10 +44,20 @@ Model selection, the `learn.modelSelection` namespace: cross-validation splitter
 - function `crossValidate`: Cross-validate an estimator with several scorers. `src/lib/learn/model-selection/cross-validation.ts:322` `omai-engine/learn/model-selection`
 - function `kFold`: K-fold splitter; stratified, group and shuffle variants beside it. `src/lib/learn/model-selection/splitters.ts:130` `omai-engine/learn/model-selection`
 
+- estimator `fixedThresholdClassifier`: Cut a binary classifier's probabilities or scores at a fixed threshold. `src/lib/learn/model-selection/threshold.ts:180` `omai-engine/learn/model-selection`
+- estimator `tunedThresholdClassifierCV`: Choose a binary classifier's decision threshold by cross-validation to maximise a metric. `src/lib/learn/model-selection/threshold.ts:249` `omai-engine/learn/model-selection`
+
 ## learn/preprocessing
 
-Data preprocessing, the `learn.preprocessing` namespace, scikit-learn and imbalanced-learn style: scalers and power transforms, categorical encoders, feature expansions and binning, missing-value imputation and resampling for imbalanced classes, all following the estimator protocol so they compose in pipelines.
+Data preprocessing, the `learn.preprocessing` namespace, scikit-learn and imbalanced-learn style: scalers and power transforms, categorical encoders, feature expansions and binning, missing-value imputation and resampling for imbalanced classes (over-sampling, under-sampling by editing and condensing, and combinations), all following the estimator protocol so they compose in pipelines.
 
+- estimator `editedNearestNeighbours`: Edited nearest neighbours under-sampling; repeated and all-k variants beside it. `src/lib/learn/preprocessing/undersampling.ts:124` `omai-engine/learn/preprocessing`
+- estimator `kMeansSmote`: SMOTE within k-means clusters of the class. `src/lib/learn/preprocessing/oversampling.ts:436` `omai-engine/learn/preprocessing`
 - estimator `oneHotEncoder`: One-hot encode categorical columns. `src/lib/learn/preprocessing/encoders.ts:174` `omai-engine/learn/preprocessing`
 - estimator `simpleImputer`: Fill missing values by mean, median or most frequent. `src/lib/learn/preprocessing/imputation.ts:185` `omai-engine/learn/preprocessing`
+- estimator `smoteEnn`: SMOTE then edited nearest neighbours. `src/lib/learn/preprocessing/combined.ts:83` `omai-engine/learn/preprocessing`
+- estimator `smoteTomek`: SMOTE then Tomek link removal. `src/lib/learn/preprocessing/combined.ts:114` `omai-engine/learn/preprocessing`
+- estimator `smoten`: SMOTE for categorical features, by the value difference metric. `src/lib/learn/preprocessing/oversampling.ts:174` `omai-engine/learn/preprocessing`
+- estimator `smotenc`: SMOTE for mixed continuous and categorical features. `src/lib/learn/preprocessing/oversampling.ts:236` `omai-engine/learn/preprocessing`
 - estimator `standardScaler`: Standardise features to zero mean and unit variance. `src/lib/learn/preprocessing/scalers.ts:85` `omai-engine/learn/preprocessing`
+- estimator `svmSmote`: SMOTE around the support vectors of an SVM. `src/lib/learn/preprocessing/oversampling.ts:338` `omai-engine/learn/preprocessing`

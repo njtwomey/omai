@@ -2,8 +2,10 @@
 
 # svm
 
-Support vector machines over the duals of `optim/smo.ts`: classification (C and nu forms, one-versus-one, Platt probabilities) and regression (epsilon and nu forms) as estimators whose fit is the stepped dual solve, with the kernel expansion over the support vectors as the decision function, and the one-class machine and the support vector data description for novelty detection.
+Support vector machines over the duals of `optim/smo.ts`: classification (C and nu forms, one-versus-one, Platt probabilities) and regression (epsilon and nu forms) as estimators whose fit is the stepped dual solve, with the kernel expansion over the support vectors as the decision function, the one-class machine and the support vector data description for novelty detection, and the linear machines of liblinear (`linearSvc`, `linearSvr`) in the primal, by dual coordinate descent, OWL-QN for the L1 penalty, or any smooth solver.
 
+- estimator `linearSvc`: Linear support vector classifier by dual coordinate descent or any smooth solver. `src/lib/svm/linear.ts:331` `omai-engine/svm`
+- estimator `linearSvr`: Linear support vector regressor by dual coordinate descent or any smooth solver. `src/lib/svm/linear.ts:460` `omai-engine/svm`
 - estimator `oneClassSvm`: One-class SVM for novelty detection. `src/lib/svm/one-class.ts:328` `omai-engine/svm`
 - estimator `svc`: Support vector classifier by SMO over any kernel. `src/lib/svm/classifier.ts:463` `omai-engine/svm`
 - estimator `svr`: Support vector regression. `src/lib/svm/regressor.ts:185` `omai-engine/svm`

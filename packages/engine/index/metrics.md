@@ -7,6 +7,7 @@ Evaluation metrics, scikit-learn and torchmetrics style: classification, regress
 - structure `metric.ts` (file): The metric contract: a spec plus a function returning a MetricResult. `src/lib/metrics/metric.ts:1` `omai-engine/metrics`
 
 - function `accuracyScore`: Classification accuracy, optionally weighted. `src/lib/metrics/classification.ts:434` `omai-engine/metrics`
+- function `classLikelihoodRatios`: Positive and negative likelihood ratios of a binary classifier together. `src/lib/metrics/classification-summary.ts:243` `omai-engine/metrics`
 - function `confusionMatrix`: Confusion matrix of labels and predictions. `src/lib/metrics/classification.ts:547` `omai-engine/metrics`
 - function `evaluate`: Compute many metrics of the same predictions in one pass. `src/lib/metrics/foundations.ts:375` `omai-engine/metrics`
 - function `f1Score`: F1 score, with precision, recall and F-beta beside it. `src/lib/metrics/classification.ts:335` `omai-engine/metrics`

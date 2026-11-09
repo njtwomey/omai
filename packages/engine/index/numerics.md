@@ -63,6 +63,7 @@ Dense linear algebra, numpy.linalg and scipy.linalg style: determinants and norm
 - function `eig`: Eigenvalues and eigenvectors of a general real matrix. `src/lib/numerics/linalg/eig.ts:120` `omai-engine/numerics/linalg`
 - function `eigh`: Symmetric eigendecomposition with derivatives. `src/lib/numerics/linalg/eigh.ts:140` `omai-engine/numerics/linalg`
 - function `expm`: Matrix exponential by Pade scaling and squaring. `src/lib/numerics/linalg/functions.ts:73` `omai-engine/numerics/linalg`
+- function `haarOrthogonal`: Haar-distributed random orthogonal matrix or orthonormal frame. `src/lib/numerics/linalg/randomized.ts:165` `omai-engine/numerics/linalg`
 - function `inv`: Matrix inverse, batched and differentiable. `src/lib/numerics/linalg/lu.ts:118` `omai-engine/numerics/linalg`
 - function `lstsq`: Least-squares solution of A x = b. `src/lib/numerics/linalg/qr.ts:179` `omai-engine/numerics/linalg`
 - function `norm`: Vector and matrix norms, like numpy.linalg.norm. `src/lib/numerics/linalg/basics.ts:154` `omai-engine/numerics/linalg`

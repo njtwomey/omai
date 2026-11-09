@@ -4,4 +4,7 @@
 
 Mixture models as traced `Algorithm`s: expectation-maximisation for a Gaussian mixture (full, tied, diagonal or spherical covariances, from a k-means start), its responsibilities and log density; the Bayesian Gaussian mixture by variational inference, with a Dirichlet or Dirichlet-process prior on the weights; and a mixture of linear experts (a softmax gate over linear-Gaussian experts), its gate, predictions and posterior. A state keeps no history; the tape records the log likelihood or lower bound, its change, the responsibilities and the parameters.
 
+- estimator `bayesianGaussianMixture`: Bayesian Gaussian mixture by variational inference; unused components fade out. `src/lib/mixture/estimators.ts:249` `omai-engine/mixture`
+- estimator `gaussianMixture`: Gaussian mixture by EM: predict, predictProba, scoreSamples, bic, aic. `src/lib/mixture/estimators.ts:124` `omai-engine/mixture`
+
 - algorithm `gaussianEmAlgorithm`: Gaussian mixture by EM, stepwise; no estimator wraps it. `src/lib/mixture/gaussian.ts:225` `omai-engine/mixture`

@@ -24,10 +24,13 @@ Distributions composed from other distributions, available as `omai-engine/dists
 
 ## dists/continuous
 
-Univariate continuous distributions, scipy.stats and torch.distributions style, part of `omai-engine/dists`: the normal family, the gamma family, bounded, heavy-tailed and extreme-value distributions, and the sampling distributions of test statistics, each with densities, CDFs, quantiles, moments and sampling.
+Univariate continuous distributions, scipy.stats and torch.distributions style, part of `omai-engine/dists`: the normal family, the gamma family, bounded, heavy-tailed and extreme-value distributions, the sampling distributions of test statistics and the Marchenko-Pastur law of random-matrix theory, each with densities, CDFs, quantiles, moments and sampling.
+
+- function `marchenkoPasturEdges`: Edges of the Marchenko-Pastur support from the aspect ratio. `src/lib/dists/continuous/random-matrix.ts:51` `omai-engine/dists`
 
 - distribution `beta`: Beta distribution. `src/lib/dists/continuous/bounded.ts:109` `omai-engine/dists`
 - distribution `gamma`: Gamma distribution with shape and rate. `src/lib/dists/continuous/gamma.ts:72` `omai-engine/dists`
+- distribution `marchenkoPastur`: Marchenko-Pastur law of sample covariance eigenvalues, by aspect ratio. `src/lib/dists/continuous/random-matrix.ts:83` `omai-engine/dists`
 - distribution `normal`: Normal distribution, scipy.stats.norm and torch Normal in one. `src/lib/dists/continuous/normal.ts:69` `omai-engine/dists`
 - distribution `studentT`: Student's t distribution. `src/lib/dists/continuous/heavy-tailed.ts:77` `omai-engine/dists`
 - distribution `uniform`: Continuous uniform distribution on an interval. `src/lib/dists/continuous/bounded.ts:68` `omai-engine/dists`

@@ -2,16 +2,21 @@
 
 # cluster
 
-Clustering as traced `Algorithm`s with estimators on the iterative base: k-means (Lloyd, mini-batch, Elkan's bounds, bisecting, kernel), density clustering (DBSCAN, OPTICS, HDBSCAN with its condensed tree, mean shift), hierarchical (agglomerative with the linkage matrix and cophenetic correlation, BIRCH), medoids (PAM, CLARA), fuzzy c-means, spectral clustering, affinity propagation, constrained k-means, and the choice of k (elbow, gap statistic, stability). States keep no history; the tape records the labels, centres and objectives of every step.
+Clustering as traced `Algorithm`s with estimators on the iterative base: k-means (Lloyd, mini-batch, Elkan's bounds, bisecting, kernel), density clustering (DBSCAN, OPTICS, HDBSCAN with its condensed tree, mean shift), hierarchical (agglomerative with the linkage matrix and cophenetic correlation, BIRCH), medoids (PAM, CLARA), fuzzy c-means, spectral clustering, spectral co-clustering and biclustering of a matrix with the consensus score, affinity propagation, constrained k-means, and the choice of k (elbow, gap statistic, stability). States keep no history; the tape records the labels, centres and objectives of every step.
 
 - function `gapStatistic`: Gap statistic for choosing the number of clusters. `src/lib/cluster/validity.ts:93` `omai-engine/cluster`
+- function `kmeansPlusPlus`: k-means++ seeding as a standalone function: centres and the rows they came from. `src/lib/cluster/kmeans.ts:302` `omai-engine/cluster`
 
 - estimator `agglomerativeClustering`: Agglomerative clustering with the linkage matrix. `src/lib/cluster/hierarchical.ts:418` `omai-engine/cluster`
 - estimator `bisectingKMeans`: Bisecting k-means; Elkan and kernel k-means beside it. `src/lib/cluster/kmeans-variants.ts:365` `omai-engine/cluster`
 - estimator `dbscan`: DBSCAN density clustering. `src/lib/cluster/density.ts:168` `omai-engine/cluster`
 - estimator `hdbscanClustering`: HDBSCAN with its condensed tree. `src/lib/cluster/density.ts:1182` `omai-engine/cluster`
+- estimator `kMeans`: k-means with restarts: predict, transform to centre distances, score as minus inertia. `src/lib/cluster/kmeans.ts:422` `omai-engine/cluster`
 - estimator `kMedoids`: k-medoids (PAM, CLARA). `src/lib/cluster/medoids.ts:301` `omai-engine/cluster`
+- estimator `miniBatchKMeans`: Mini-batch k-means with restarts; same verbs as kMeans. `src/lib/cluster/kmeans.ts:464` `omai-engine/cluster`
+- estimator `spectralBiclustering`: Spectral biclustering of a matrix into a checkerboard of biclusters. `src/lib/cluster/biclustering.ts:219` `omai-engine/cluster`
 - estimator `spectralClustering`: Spectral clustering on an affinity graph. `src/lib/cluster/spectral.ts:153` `omai-engine/cluster`
+- estimator `spectralCoclustering`: Spectral co-clustering of a matrix into diagonal biclusters. `src/lib/cluster/biclustering.ts:146` `omai-engine/cluster`
 
-- algorithm `lloydAlgorithm`: Lloyd's k-means, one step at a time; plain k-means has no estimator. `src/lib/cluster/kmeans.ts:155` `omai-engine/cluster`
-- algorithm `miniBatchKMeansAlgorithm`: Mini-batch k-means, one batch at a time; no estimator wraps it. `src/lib/cluster/kmeans.ts:228` `omai-engine/cluster`
+- algorithm `lloydAlgorithm`: Lloyd's k-means, one step at a time; the `kMeans` estimator wraps it. `src/lib/cluster/kmeans.ts:158` `omai-engine/cluster`
+- algorithm `miniBatchKMeansAlgorithm`: Mini-batch k-means, one batch at a time; the `miniBatchKMeans` estimator wraps it. `src/lib/cluster/kmeans.ts:231` `omai-engine/cluster`
