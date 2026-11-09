@@ -82,6 +82,15 @@
       "cases": 4
     },
     {
+      "fixture": "covariance/nearest.json",
+      "source": "oracle/cases/covariance/nearest.py",
+      "reference": {
+        "statsmodels": "0.15.0",
+        "numpy": "2.5.4"
+      },
+      "cases": 16
+    },
+    {
       "fixture": "covariance/robust.json",
       "source": "oracle/cases/covariance/robust.py",
       "reference": {
