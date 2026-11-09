@@ -91,6 +91,14 @@
       "cases": 16
     },
     {
+      "fixture": "covariance/nonlinear_shrinkage.json",
+      "source": "oracle/cases/covariance/nonlinear_shrinkage.py",
+      "reference": {
+        "numpy": "2.5.4"
+      },
+      "cases": 14
+    },
+    {
       "fixture": "covariance/robust.json",
       "source": "oracle/cases/covariance/robust.py",
       "reference": {
