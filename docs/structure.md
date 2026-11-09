@@ -4366,7 +4366,9 @@ the history; every state serialises (`stateToJson`). Estimators are `iterative(.
 `.method(data)`, `.session(data)` and `fittedAt(t)` exist and the standard `model/assignments` probe works at any step;
 the distance-based ones take a `metric` from `distances` (or `'precomputed'`, through `distanceMatrix`).
 - `kmeans.ts`: Lloyd's algorithm and mini-batch k-means, the initial centres (k-means++, random rows or given) and the
-  nearest-centre assignment. `kmeans-variants.ts`: Elkan's bounds (`elkanAlgorithm`, counting the distances computed and
+  nearest-centre assignment, `kmeansPlusPlus` (scikit-learn's greedy seeding as a function: centres and the rows they
+  came from) and the estimators `kMeans` and `miniBatchKMeans` (`KMeans`, `MiniBatchKMeans` and `k_means`: `nInit`
+  restarts keeping the lowest inertia, predict, transform to centre distances, score as minus the inertia). `kmeans-variants.ts`: Elkan's bounds (`elkanAlgorithm`, counting the distances computed and
   skipped), bisecting k-means (one split per step) and kernel k-means (`kernelKMeansAlgorithm` over a Gram matrix, with
   the spectral relaxation as an initial labelling), each with an estimator (`elkanKMeans`, `bisectingKMeans`,
   `kernelKMeans`).
@@ -4393,7 +4395,7 @@ the distance-based ones take a `metric` from `distances` (or `'precomputed'`, th
   `stabilityIndex` (adjusted Rand agreement of clusterings of subsamples). `_support.ts` is private to the folder.
 
 oracle: scikit-learn KMeans with fixed initial centres (`methods/cluster/kmeans` fixture, kept at its old path, also
-checked against Elkan's), DBSCAN, OPTICS and HDBSCAN (`methods/cluster/density`), affinity propagation
+checked against Elkan's and the `kMeans` estimator), DBSCAN, OPTICS and HDBSCAN (`methods/cluster/density`), affinity propagation
 (`methods/cluster/exemplar`), scipy linkage and cophenet (`methods/cluster/hierarchical`), BIRCH subcluster centres in
 leaf-chain order and labels (`cluster/birch`), mean shift centres, labels and bandwidth (`cluster/mean_shift`)
 ### 4.40a `decomposition/`: linear and factor decompositions (scikit-learn decomposition, cross_decomposition, random_projection)
@@ -4625,11 +4627,16 @@ and the responsibilities and per-row log density under a mixture. A state keeps 
 tensors `responsibilities`, `means`, `weights` (expected) and `covariances`, declared in the schema; the start is
 `initialResponsibilities` of `gaussian.ts` (k-means or random). The estimator factories, component selection and the
 density helpers stay parked; the method is `methods/mixture/bgmm`. The EM golden keeps its fixture under
-`methods/mixture/gaussian`.
+`methods/mixture/gaussian`. `estimators.ts` has the two estimators on the iterative base, `gaussianMixture`
+(`GaussianMixture`: every covariance type, a k-means, random or given start, `nInit` restarts by likelihood; the fitted
+value has predict, `predictProba`, `scoreSamples`, `score`, `bic` and `aic`) and `bayesianGaussianMixture`
+(`BayesianGaussianMixture`: either weight prior, the priors of scikit-learn, the same verbs without the criteria).
 
 oracle: `variational` starts scikit-learn's `BayesianGaussianMixture` from given responsibilities (its private
 `_initialize`) and compares a fixed number of iterations, for both weight priors and all four covariance types
-(`mixture/variational` fixture)
+(`mixture/variational` fixture); `gaussian_estimator` fits scikit-learn's `GaussianMixture` from given weights, means and
+precisions for every covariance type and compares the parameters, responsibilities, `score_samples`, `score`, BIC and
+AIC (`mixture/gaussian_estimator` fixture)
 (params), declared in the schema. The estimator factories, the Bayesian mixture, component selection and the density
 helpers stay parked. The golden keeps its fixture under `methods/mixture/gaussian`.
 - `experts.ts`: the mixture of linear experts (Jacobs and Jordan) by EM: `mixtureOfExpertsAlgorithm(x, y, { nExperts,

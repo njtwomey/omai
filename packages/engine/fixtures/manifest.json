@@ -2648,6 +2648,14 @@
       "cases": 84
     },
     {
+      "fixture": "mixture/gaussian_estimator.json",
+      "source": "oracle/cases/mixture/gaussian_estimator.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 4
+    },
+    {
       "fixture": "mixture/variational.json",
       "source": "oracle/cases/mixture/variational.py",
       "reference": {
