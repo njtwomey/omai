@@ -30,7 +30,7 @@
             "runId": "timeseries/bocpd-detector:0",
             "name": "timeseries/bocpd-detector",
             "seed": 0,
-            "version": "0.1.8",
+            "version": "0.1.9",
             "config": {
               "model": {
                 "kind": "mean",

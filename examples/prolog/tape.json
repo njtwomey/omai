@@ -6,7 +6,7 @@
       "runId": "sld-resolution:none",
       "name": "sld-resolution",
       "seed": null,
-      "version": "0.1.8",
+      "version": "0.1.9",
       "config": {
         "maxDepth": 100000,
         "occursCheck": false,

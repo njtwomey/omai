@@ -20,7 +20,7 @@
             "runId": "additive-regressor:0",
             "name": "additive-regressor",
             "seed": 0,
-            "version": "0.1.8",
+            "version": "0.1.9",
             "config": {
               "learningRate": 0.05,
               "lambda": 0

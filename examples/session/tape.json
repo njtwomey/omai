@@ -26,7 +26,7 @@
             "runId": "svm/svc:0",
             "name": "svm/svc",
             "seed": 0,
-            "version": "0.1.8",
+            "version": "0.1.9",
             "config": {
               "loss": "hinge",
               "solver": {

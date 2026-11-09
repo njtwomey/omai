@@ -15,4 +15,4 @@
  * typeof VERSION // => 'string'
  * ```
  */
-export const VERSION: string = '0.1.8'
+export const VERSION: string = '0.1.9'
