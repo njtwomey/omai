@@ -53,7 +53,8 @@ describe('EBIC with gamma = 0 is the BIC', () => {
         const out = selectGraphicalLassoPenalty(x, { method: 'ebic', gamma: 0, alphas: 8 })
         const bic = out.precisions.map((precision) => {
           let edges = 0
-          for (let a = 0; a < 5; a++) for (let b = a + 1; b < 5; b++) if (precision[a]?.[b] !== 0) edges++
+          for (let a = 0; a < 5; a++)
+            for (let b = a + 1; b < 5; b++) if (Math.abs(precision[a]?.[b] ?? 0) > 1e-10) edges++
           return -2 * n * gaussianLogLikelihood(s, precision) + edges * Math.log(n)
         })
         for (const [i, c] of out.criterion.entries()) expect(c).toBeCloseTo(bic[i] ?? 0, 7)
