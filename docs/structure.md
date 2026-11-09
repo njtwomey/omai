@@ -2237,6 +2237,10 @@ jellyfish, Biopython, pyphen
 - `shingles.ts`: character k-shingles, word n-gram shingles, w-shingling, skip-grams, the hashed character n-grams of
   fastText (bucketed with FNV hashing), weighted shingles; one extractor shared by matching, fingerprinting and fastText.
 - `features.ts`: count, TF-IDF and hashing vectorisers, word and character n-grams, BM25 and BM25+ weighting.
+- `feature-dicts.ts`: vectorisers over records instead of text: `dictVectorize`, `dictTransform` and `dictInverse`
+  (scikit-learn's `DictVectorizer`: numbers and booleans as columns, strings and lists of strings one-hot as `name=value`,
+  sorted or first-seen columns, unseen features ignored) and `featureHash` (`FeatureHasher` over records, pair lists or
+  bare strings, the hashing of `hashingVectorize` without normalisation). oracle: `text/feature_dicts`.
 - `templates.ts`: feature-template languages for sequence labellers. CRF++ templates (Kudo 2005): `U` (unigram, conjoined
   with the label) and `B` (bigram, conjoined with the label pair) lines, `%x[row,col]` macros over a token-by-attribute
   table, boundary padding (`_B-1`, `_B+1`), comments, and syntax errors with line and column. Wapiti patterns (`u`,

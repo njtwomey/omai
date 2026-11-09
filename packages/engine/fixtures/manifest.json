@@ -5225,6 +5225,14 @@
       "cases": 38
     },
     {
+      "fixture": "text/feature_dicts.json",
+      "source": "oracle/cases/text/feature_dicts.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 15
+    },
+    {
       "fixture": "text/features.json",
       "source": "oracle/cases/text/features.py",
       "reference": {
