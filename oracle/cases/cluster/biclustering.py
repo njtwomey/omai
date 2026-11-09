@@ -4,23 +4,28 @@ labels numbered by first appearance, so up to the permutation of the clusters (s
 
 from collections.abc import Callable
 from importlib.metadata import version
+from typing import Any
 
 import numpy as np
 from numpy.typing import NDArray
 from omai_oracle.fixture import Case, case
 from omai_oracle.helpers import rng
 from sklearn.cluster import SpectralBiclustering, SpectralCoclustering
-from sklearn.cluster._bicluster import _bistochastic_normalize, _log_normalize, _scale_normalize
+from sklearn.cluster._bicluster import (  # pyright: ignore[reportPrivateUsage]
+    _bistochastic_normalize,  # pyright: ignore[reportPrivateUsage]
+    _log_normalize,  # pyright: ignore[reportPrivateUsage]
+    _scale_normalize,  # pyright: ignore[reportPrivateUsage]
+)
 from sklearn.datasets import make_biclusters, make_checkerboard
 from sklearn.metrics import consensus_score
 
 REFERENCE: dict[str, str] = {"scikit-learn": version("scikit-learn"), "numpy": np.__version__}
 
 
-def canonical(labels: NDArray[np.int_]) -> NDArray[np.float64]:
+def canonical(labels: object) -> NDArray[np.float64]:
     """Labels renumbered by first appearance."""
     seen: dict[int, int] = {}
-    return np.array([seen.setdefault(int(v), len(seen)) for v in labels], dtype=np.float64)
+    return np.array([seen.setdefault(int(v), len(seen)) for v in np.asarray(labels)], dtype=np.float64)
 
 
 def indicators(n: int, k: int, g: np.random.Generator) -> NDArray[np.float64]:
@@ -52,9 +57,15 @@ def coclustering(data: NDArray[np.float64], k: int, random_state: int) -> Spectr
 
 
 def biclustering(data: NDArray[np.float64], shape: tuple[int, int], random_state: int) -> SpectralBiclustering:
-    return SpectralBiclustering(
-        n_clusters=shape, method="log", svd_method="arpack", n_components=6, n_best=3, random_state=random_state
-    ).fit(data)
+    options: dict[str, Any] = {
+        "n_clusters": shape,
+        "method": "log",
+        "svd_method": "arpack",
+        "n_components": 6,
+        "n_best": 3,
+        "random_state": random_state,
+    }
+    return SpectralBiclustering(**options).fit(data)
 
 
 def cases() -> list[Case]:

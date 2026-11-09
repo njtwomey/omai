@@ -27,7 +27,11 @@ class FixedState(np.random.RandomState):
         super().__init__(0)
         self._components = components
 
-    def gamma(self, shape: Any, scale: Any = 1.0, size: Any = None) -> Any:  # noqa: ANN401
+    def gamma(  # pyright: ignore[reportIncompatibleMethodOverride]
+        self, shape: float, scale: float = 1.0, size: tuple[int, ...] | None = None
+    ) -> NDArray[np.float64]:
+        if size is None:
+            raise ValueError("size is required")
         if tuple(size) == self._components.shape:
             return self._components.copy()
         return np.full(size, shape * scale)
