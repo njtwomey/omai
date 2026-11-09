@@ -8,3 +8,4 @@
 export * from './graphical-lasso.ts'
 export * from './robust.ts'
 export * from './shrinkage.ts'
+export * from './spectral.ts'
