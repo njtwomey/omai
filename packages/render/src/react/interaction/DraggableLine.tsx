@@ -4,10 +4,11 @@
  */
 
 import { type KeyboardEvent, type ReactNode, useState } from 'react'
+import { Handle, type HandleShape } from './Handle.tsx'
 import { useOverlay } from './InteractionOverlay.tsx'
 
 /** The shapes of a line's handle: a `bar` across the line (the default), a `square`, a `circle` or a `diamond`. */
-export type LineHandleShape = 'bar' | 'square' | 'circle' | 'diamond'
+export type LineHandleShape = HandleShape
 
 /** Props of {@link DraggableLine}. */
 export interface DraggableLineProps {
@@ -156,36 +157,4 @@ export function DraggableLine(props: DraggableLineProps): ReactNode {
       </g>
     </g>
   )
-}
-
-/**
- * The handle drawn at a line's end, centred on the end: a bar across the line, a square, a circle or a diamond (a
- * square turned on its corner, of the same width and height).
- *
- * @param props - The shape, size, direction of the line, fill and stroke.
- * @returns The handle's element.
- */
-function Handle(props: {
-  readonly shape: LineHandleShape
-  readonly size: number
-  readonly vertical: boolean
-  readonly fill: string
-  readonly stroke: string
-}): ReactNode {
-  const { shape, size, vertical, fill, stroke } = props
-  if (shape === 'circle') return <circle r={size / 2} fill={fill} stroke={stroke} strokeWidth={1.5} />
-  if (shape === 'diamond') {
-    const r = size / 2
-    return (
-      <polygon
-        points={`0,${-r} ${r},0 0,${r} ${-r},0`}
-        fill={fill}
-        stroke={stroke}
-        strokeWidth={1.5}
-        strokeLinejoin="round"
-      />
-    )
-  }
-  const [w, h] = shape === 'square' ? [size, size] : vertical ? [size, 2 * size] : [2 * size, size]
-  return <rect x={-w / 2} y={-h / 2} width={w} height={h} rx={3} fill={fill} stroke={stroke} strokeWidth={1.5} />
 }
