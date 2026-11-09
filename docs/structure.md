@@ -4425,6 +4425,12 @@ thin SVD with scikit-learn's sign convention, projection and reconstruction.
 - `nmf.ts`: `nmfAlgorithm` (multiplicative updates for the Frobenius or Kullback-Leibler loss, HALS sweeps for Frobenius;
   the stopping rule lives in the state, so a replay stops where the run did), `nndsvda`, `nmfDivergence`, the estimator
   `nmf` (transform solves W for new rows with H fixed).
+- `minibatch-nmf.ts`: `miniBatchNmfAlgorithm` (scikit-learn's online NMF, one batch per step: W of the batch by the
+  multiplicative rule or solved afresh, H from the discounted running numerator and denominator, any beta divergence,
+  l1 and l2 penalties, the two stopping rules; the state serialises), `betaDivergence`, `solveWeights` (the transform) and
+  the estimator `miniBatchNmf`; `nmf.ts` exports `initialNmfFactors`, the starts they share. oracle:
+  `decomposition/minibatch_nmf` against `MiniBatchNMF` from fixed factors (every beta, penalties, fresh restarts, both
+  stopping rules, the transform).
 - `cross-decomposition.ts`: `plsAlgorithm` (NIPALS for PLS regression, PLS canonical and CCA, one component per step, the
   score correlation on the tape), estimators `plsRegression`, `plsCanonical`, `cca`, and `plsSvd` (closed form).
 - `rank-regression.ts`: `pcr` (principal-component regression, closed form, the same fit as a scikit-learn PCA plus

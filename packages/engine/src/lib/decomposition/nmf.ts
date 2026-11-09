@@ -8,7 +8,7 @@
 import { OmaiError, toRows } from '../base/index.ts'
 import { type IterativeEstimator, iterative, matrixView } from '../learn/index.ts'
 import { dnrm2 } from '../numerics/linalg/index.ts'
-import { normal } from '../random/index.ts'
+import { type Key, normal } from '../random/index.ts'
 import { choice, dict, int } from '../space/index.ts'
 import { fromStorage, type Tensor, type TensorLike } from '../tensor/index.ts'
 import { type Algorithm, channels, runAlgorithm, stateFromJson, stateToJson } from '../trace/index.ts'
@@ -294,6 +294,49 @@ export interface NmfVerbs {
   readonly nFeaturesIn: number
 }
 
+/**
+ * The starting factors of an NMF fit: NNDSVD with the zeros filled by the mean (`nndsvda`), random draws scaled by
+ * `sqrt(mean(x) / k)` (`random`), or the given `wInit` and `hInit` (`custom`).
+ *
+ * @param x - Non-negative data `[n, d]`.
+ * @param hyper - The number of components, the rule and the given factors.
+ * @param key - Randomness for `random`.
+ * @returns Initial W `[n, k]` and H `[k, d]`.
+ * @throws OmaiError with code `value` for negative data, or `custom` without both factors.
+ * @example
+ * ```ts
+ * import { initialNmfFactors } from 'omai-engine/decomposition'
+ * import { key } from 'omai-engine/random'
+ * initialNmfFactors([[1, 2], [2, 4]], { nComponents: 1, init: 'random', wInit: null, hInit: null }, key(0)).h.length // => 1
+ * ```
+ */
+export function initialNmfFactors(
+  x: Rows,
+  hyper: Pick<NmfHyper, 'nComponents' | 'init' | 'wInit' | 'hInit'>,
+  key: Key,
+): { w: number[][]; h: number[][] } {
+  if (x.some((r) => r.some((v) => v < 0))) throw new OmaiError('value', 'nmf: the data must be non-negative')
+  const n = x.length
+  const d = x[0]?.length ?? 0
+  const k = hyper.nComponents
+  if (hyper.init === 'custom') {
+    if (hyper.wInit === null || hyper.hInit === null)
+      throw new OmaiError('value', "nmf: init 'custom' needs wInit and hInit")
+    return { w: hyper.wInit, h: hyper.hInit }
+  }
+  if (hyper.init === 'random') {
+    const avg = Math.sqrt(x.flat().reduce((a, v) => a + v, 0) / (n * d) / k)
+    const z = normal(key, [k * d + n * k]).data
+    return {
+      h: Array.from({ length: k }, (_, c) => Array.from({ length: d }, (_, j) => avg * Math.abs(z[c * d + j] ?? 0))),
+      w: Array.from({ length: n }, (_, i) =>
+        Array.from({ length: k }, (_, c) => avg * Math.abs(z[k * d + i * k + c] ?? 0)),
+      ),
+    }
+  }
+  return nndsvda(x, k)
+}
+
 const asRows = (x: TensorLike, who: string, d?: number): number[][] => {
   const m = matrixView(x, who, d === undefined ? {} : { nFeatures: d })
   return toRows(m.data, m.n, m.d)
@@ -340,24 +383,7 @@ export const nmf: IterativeEstimator<NmfHyper, NmfState, NmfParams, NmfVerbs> = 
     }),
   algorithm: (data, h, key) => {
     const x = asRows(data.x, 'nmf')
-    if (x.some((r) => r.some((v) => v < 0))) throw new OmaiError('value', 'nmf: the data must be non-negative')
-    const n = x.length
-    const d = x[0]?.length ?? 0
-    const k = h.nComponents
-    let w0: number[][]
-    let h0: number[][]
-    if (h.init === 'custom') {
-      if (h.wInit === null || h.hInit === null) throw new OmaiError('value', "nmf: init 'custom' needs wInit and hInit")
-      w0 = h.wInit
-      h0 = h.hInit
-    } else if (h.init === 'random') {
-      const avg = Math.sqrt(x.flat().reduce((a, v) => a + v, 0) / (n * d) / k)
-      const z = normal(key, [k * d + n * k]).data
-      h0 = Array.from({ length: k }, (_, c) => Array.from({ length: d }, (_, j) => avg * Math.abs(z[c * d + j] ?? 0)))
-      w0 = Array.from({ length: n }, (_, i) =>
-        Array.from({ length: k }, (_, c) => avg * Math.abs(z[k * d + i * k + c] ?? 0)),
-      )
-    } else ({ w: w0, h: h0 } = nndsvda(x, k))
+    const { w: w0, h: h0 } = initialNmfFactors(x, h, key)
     return nmfAlgorithm(x, w0, h0, { loss: h.betaLoss, solver: h.solver, tol: h.tol })
   },
   maxSteps: (h) => h.maxIter,

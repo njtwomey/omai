@@ -8,6 +8,7 @@
 export * from './convolutional-method.ts'
 export * from './cross-decomposition.ts'
 export * from './ica.ts'
+export * from './minibatch-nmf.ts'
 export * from './nmf.ts'
 export * from './pca.ts'
 export * from './probabilistic.ts'
