@@ -1,14 +1,13 @@
 import type { EChartsOption } from 'echarts'
 import { type ReactElement, type ReactNode, useCallback, useEffect, useMemo, useRef } from 'react'
 import { type Figure, figure as makeFigure, scaleFigure } from '../../figure/figure.ts'
-import { tokens } from '../../theme/tokens.ts'
 import type { TableData } from '../../trace/tables.ts'
 import type { ViewFrames } from '../../views/_view.ts'
 import { prefersReducedMotion } from '../_motion.ts'
 import { Chart, type ChartEventHandler } from '../Chart.tsx'
 import { FigureFrame, useFrameSize } from '../FigureFrame.tsx'
 import { Player } from '../Player.tsx'
-import { useColourMode } from '../theme.tsx'
+import { useColourMode, useTokens } from '../theme.tsx'
 import { usePlayback } from '../usePlayback.ts'
 
 /** Props every record view shares: the record, its figure and the frame's title, caption and file name. */
@@ -145,7 +144,7 @@ export function FramesPlayer(props: {
  * @returns The table.
  */
 export function DataTable(props: { readonly table: TableData; readonly highlight?: number }): ReactElement {
-  const t = tokens(useColourMode())
+  const t = useTokens()
   const cell = { padding: '3px 10px', textAlign: 'right' as const, borderBottom: `1px solid ${t.grid}` }
   return (
     <div style={{ overflowX: 'auto', maxWidth: '100%' }}>

@@ -7,9 +7,9 @@ import { type Paint, projectLayers, recolour, type Scene, type SceneNode, type S
 import { type CSSProperties, type PointerEvent, type ReactElement, type ReactNode, useMemo } from 'react'
 import { arrowHeadPoints, roundedPathData, smoothPathData, straightPathData } from '../svg/paths.ts'
 import { pngDataUrl } from '../svg/png.ts'
-import { type ColourMode, type Tokens, resolvePaint as themePaint, tokens as themeTokens } from '../theme/tokens.ts'
+import type { ColourMode, Tokens } from '../theme/tokens.ts'
 import { Tex } from './MathView.tsx'
-import { useColourMode } from './theme.tsx'
+import { useTokens } from './theme.tsx'
 
 /** Props of {@link SceneView}. */
 export interface SceneViewProps {
@@ -57,7 +57,10 @@ function Image(props: { readonly node: Extract<SceneNode, { kind: 'image' }> }):
 
 /** A scene paint for the theme, or `undefined` for none given. */
 function resolvePaint(paint: Paint | undefined, t: Tokens): string | undefined {
-  return paint === undefined ? undefined : themePaint(paint, t.mode)
+  if (paint === undefined) return undefined
+  if (paint === 'none') return 'none'
+  // Through the tokens in hand, so a host's overrides reach the scene (`resolvePaint` of the theme reads the mode's own).
+  return (t as unknown as Readonly<Record<string, string>>)[paint] ?? paint
 }
 
 interface Ctx {
@@ -266,15 +269,14 @@ function findNode(nodes: readonly SceneNode[], id: string): SceneNode | null {
  */
 export function SceneView(props: SceneViewProps): ReactElement {
   const { scene, onNodeClick, onNodeHover, highlight = [], children, className, style } = props
-  const pageMode = useColourMode()
-  const mode = props.mode ?? pageMode
+  const t = useTokens(props.mode)
   const toneKey = props.tones === undefined ? '' : JSON.stringify(props.tones)
   // biome-ignore lint/correctness/useExhaustiveDependencies: tones are compared by content (`toneKey`), not by identity
   const flat = useMemo(
     () => projectLayers(props.tones === undefined ? scene : recolour(scene, props.tones)),
     [scene, toneKey],
   )
-  const ctx: Ctx = useMemo(() => ({ t: themeTokens(mode), highlight: new Set(highlight) }), [mode, highlight])
+  const ctx: Ctx = useMemo(() => ({ t, highlight: new Set(highlight) }), [t, highlight])
   const width = props.width ?? scene.width
   const height = props.height ?? (props.width === undefined ? scene.height : (width * scene.height) / scene.width)
   const idAt = (e: PointerEvent<SVGSVGElement>): string | null =>

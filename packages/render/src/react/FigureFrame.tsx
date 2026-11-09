@@ -25,7 +25,7 @@ import type { Figure } from '../figure/figure.ts'
 import { texToHtml } from '../maths/tex.ts'
 import { chartToSvg, composeSvg, type FigurePart, svgDataUrl, svgToPixels, svgToPng } from '../svg/export.ts'
 import { escapeXml } from '../svg/svg.ts'
-import { type ColourMode, tokens } from '../theme/tokens.ts'
+import type { ColourMode } from '../theme/tokens.ts'
 import { nextPaint, saveBlob, saveUrl } from './_download.ts'
 import { prefersReducedMotion } from './_motion.ts'
 import { useFocusTrap } from './controls/_focus.ts'
@@ -33,7 +33,7 @@ import { menuItemClass } from './controls/classes.ts'
 import { Popover } from './controls/Popover.tsx'
 import { loadEcharts } from './echarts.ts'
 import { Controls, type ReadoutItem, Readouts } from './FigureParts.tsx'
-import { useColourMode } from './theme.tsx'
+import { useColourMode, useTokens } from './theme.tsx'
 
 /** The size a frame gives its content, and whether it is expanded in the modal. */
 export interface FrameSize {
@@ -341,7 +341,7 @@ export function figureSvg(
  */
 export function FigureFrame(props: FigureFrameProps): ReactElement {
   const mode = useColourMode()
-  const t = tokens(mode)
+  const t = useTokens()
   const width = props.width ?? props.figure?.width ?? 640
   const height = props.height ?? props.figure?.height ?? 400
   const aspect = width / height
