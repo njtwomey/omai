@@ -38,6 +38,8 @@ export interface SparseEncodeOptions {
   /** Coordinate descent tolerance and iteration cap (sklearn's 1e-4 and 1000). */
   readonly tol?: number
   readonly maxIterations?: number
+  /** Constrain the codes to be non-negative: `lassoCd` and `threshold` only (sklearn's `positive`; default false). */
+  readonly positive?: boolean
 }
 
 /**
@@ -63,6 +65,8 @@ export function sparseEncode(x: TensorLike, dictionary: TensorLike, options: Spa
   if (X.cols !== D.cols) throw new OmaiError('shape', 'sparseEncode: samples and atoms differ in length')
   const algorithm = options.algorithm ?? 'lassoCd'
   const alpha = options.alpha ?? 1
+  const positive = options.positive ?? false
+  if (positive && algorithm === 'omp') throw new OmaiError('value', 'sparseEncode: omp has no positive option')
   const k = D.rows
   const out = new Float64Array(X.rows * k)
   const dt = asTensorOf(transposed(D))
@@ -72,7 +76,9 @@ export function sparseEncode(x: TensorLike, dictionary: TensorLike, options: Spa
     if (algorithm === 'threshold') {
       code = Float64Array.from({ length: k }, (_, j) => {
         const c = ddot(row(D, j), xi)
-        return Math.sign(c) * Math.max(Math.abs(c) - alpha, 0)
+        // `+ 0` turns a negative zero into zero.
+        const v = Math.sign(c) * Math.max(Math.abs(c) - alpha, 0) + 0
+        return positive ? Math.max(v, 0) : v
       })
     } else if (algorithm === 'omp') {
       const nnz = options.nNonzeroCoefs ?? Math.min(Math.max(Math.floor(X.cols / 10), 1), k)
@@ -82,6 +88,7 @@ export function sparseEncode(x: TensorLike, dictionary: TensorLike, options: Spa
         lassoCoordinateDescent(dt, xi, alpha, {
           tol: options.tol ?? 1e-4,
           maxIterations: options.maxIterations ?? 1000,
+          positive,
         }).coef,
       )
     }

@@ -4,7 +4,7 @@ import { generate } from '../data/index.ts'
 import { inv, sqrtm, svdvals } from '../numerics/linalg/index.ts'
 import { key } from '../random/index.ts'
 import { fromStorage, matmul, type Tensor, toFlat, transpose } from '../tensor/index.ts'
-import { mixedSources, sparseDictionary, toySuperposition, twoViews } from './index.ts'
+import { mixedSources, sparseCodedSignal, sparseDictionary, toySuperposition, twoViews } from './index.ts'
 
 const mean = (xs: readonly number[]): number => xs.reduce((a, b) => a + b, 0) / Math.max(1, xs.length)
 const column = (t: Tensor, j: number): number[] => {
@@ -126,5 +126,37 @@ describe('sparseDictionary', () => {
     const x = toFlat(matmul(codes, d))
     for (let i = 0; i < x.length; i++) expect(x[i]).toBeCloseTo(data.x.data[i] ?? 0, 12)
     expect((truth.extra ?? {})['coherence'] as number).toBeLessThan(1)
+  })
+})
+
+describe('sparseCodedSignal', () => {
+  it('writes every signal from exactly k atoms of a unit-norm dictionary, exactly without noise', () => {
+    const { data, truth } = generate(sparseCodedSignal, {
+      key: key(3),
+      knobs: { n: 200, components: 9, dim: 12, nonzeros: 3, noise: 0 },
+    })
+    const extra = truth.extra ?? {}
+    const dictionary = extra['dictionary'] as number[][]
+    const supports = extra['supports'] as number[][]
+    for (const row of dictionary) expect(Math.hypot(...row)).toBeCloseTo(1, 12)
+    const codes = toFlat(data.y)
+    for (let i = 0; i < 200; i++) {
+      const row = codes.slice(i * 9, (i + 1) * 9)
+      expect(row.filter((v) => v !== 0)).toHaveLength(3)
+      expect(supports[i]).toEqual(row.flatMap((v, j) => (v === 0 ? [] : [j])))
+      for (const v of row) expect(v === 0 || (Math.abs(v) >= 0.5 && Math.abs(v) <= 1.5)).toBe(true)
+    }
+    expect(codes.some((v) => v < 0)).toBe(true)
+    const d = fromStorage(Float64Array.from(dictionary.flat()), [9, 12], 'float64')
+    const x = toFlat(matmul(data.y, d))
+    for (let i = 0; i < x.length; i++) expect(x[i]).toBeCloseTo(data.x.data[i] ?? 0, 12)
+    expect(extra['coherence'] as number).toBeLessThan(1)
+  })
+
+  it('can make all coefficients positive and is keyed', () => {
+    const knobs = { n: 50, components: 6, dim: 8, nonzeros: 2, signs: 'positive' } as const
+    const a = generate(sparseCodedSignal, { key: key(1), knobs })
+    expect(toFlat(a.data.y).every((v) => v >= 0)).toBe(true)
+    expect(toFlat(generate(sparseCodedSignal, { key: key(1), knobs }).data.x)).toEqual(toFlat(a.data.x))
   })
 })

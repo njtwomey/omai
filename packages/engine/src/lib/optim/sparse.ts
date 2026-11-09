@@ -607,6 +607,8 @@ export interface LassoCoordinateDescentOptions extends Partial<Omit<RunOptions, 
   readonly x0?: TensorLike
   /** The L2 weight of the elastic net (default 0, the lasso). */
   readonly l2?: number
+  /** Constrain the coefficients to be non-negative (sklearn's `positive=True`; default false). */
+  readonly positive?: boolean
 }
 
 /** State of {@link lassoCoordinateDescentAlgorithm}. */
@@ -626,7 +628,7 @@ export interface LassoCoordinateDescentState {
  * @param dictionary - The design `[m, k]`.
  * @param y - The response.
  * @param lambda - The L1 weight.
- * @param options - Tolerance, warm start and L2 weight.
+ * @param options - Tolerance, warm start, L2 weight and non-negativity.
  * @returns The algorithm.
  * @concept lasso
  * @example
@@ -644,6 +646,7 @@ export function lassoCoordinateDescentAlgorithm(
   const d = matrix(dictionary, 'lassoCoordinateDescent')
   const yv = vector(y)
   const l2 = options.l2 ?? 0
+  const positive = options.positive ?? false
   const tol = (options.tol ?? 1e-4) * ddot(yv, yv)
   const norms = Float64Array.from({ length: d.cols }, (_, j) => ddot(column(d, j), column(d, j)))
   const objective = (x: Float64Array, r: Float64Array): number => {
@@ -655,7 +658,7 @@ export function lassoCoordinateDescentAlgorithm(
     // sklearn's gap for the elastic net (in the scaling |r|^2 / 2 + lambda |x|_1 + l2 |x|^2 / 2).
     const xta = daxpy(-l2, x, correlations(d, r))
     let dualNorm = 0
-    for (const v of xta) dualNorm = Math.max(dualNorm, Math.abs(v))
+    for (const v of xta) dualNorm = Math.max(dualNorm, positive ? v : Math.abs(v))
     const rNorm2 = ddot(r, r)
     const wNorm2 = ddot(x, x)
     let constant = 1
@@ -671,7 +674,7 @@ export function lassoCoordinateDescentAlgorithm(
   }
   return {
     name: 'lassoCd',
-    config: { lambda, l2, tol } as Json,
+    config: { lambda, l2, tol, positive } as Json,
     schema: channels({
       metrics: {
         objective: { description: 'lasso objective', direction: 'lower' },
@@ -697,7 +700,9 @@ export function lassoCoordinateDescentAlgorithm(
         let rho = 0
         for (let i = 0; i < d.rows; i++) rho += (d.data[i * d.cols + j] ?? 0) * (r[i] ?? 0)
         rho += nj * old
-        const next = (Math.sign(rho) * Math.max(Math.abs(rho) - lambda, 0)) / (nj + l2)
+        const next = positive
+          ? Math.max(rho - lambda, 0) / (nj + l2)
+          : (Math.sign(rho) * Math.max(Math.abs(rho) - lambda, 0)) / (nj + l2)
         if (next !== old) {
           for (let i = 0; i < d.rows; i++) r[i] = (r[i] ?? 0) - (d.data[i * d.cols + j] ?? 0) * (next - old)
           x[j] = next
@@ -739,7 +744,7 @@ export function lassoCoordinateDescent(
   lambda: number,
   options: LassoCoordinateDescentOptions = {},
 ): L1Result {
-  const { tol: _t, x0: _x, l2: _l, maxIterations, ...run } = options
+  const { tol: _t, x0: _x, l2: _l, positive: _p, maxIterations, ...run } = options
   const result = runAlgorithm(lassoCoordinateDescentAlgorithm(dictionary, y, lambda, options), {
     ...run,
     maxSteps: maxIterations ?? 1000,

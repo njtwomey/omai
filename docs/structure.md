@@ -2011,8 +2011,8 @@ that records the objective, gradient norm, step size and (by policy) the iterate
   `convolutionalDictionaryContract` with the objective on the tape and the filters, maps and reconstruction as `curves`
   probes), `matchFilters` (learnt against known filters up to shift and sign). It sits here beside `dictionary.ts`
   (sparse representations are `optim`'s); the signal is a plain series, so a window of `TimeSeriesData.values` works.
-- `dictionary.ts`: `sparseEncode` (sklearn's sparse_encode: OMP, coordinate-descent lasso, thresholding; TODO: LARS
-  and lasso-LARS coding), dictionary learning (`ksvd`, `mod`, `onlineDictionaryLearning` of Mairal et al. with
+- `dictionary.ts`: `sparseEncode` (sklearn's sparse_encode: OMP, coordinate-descent lasso, thresholding, `positive`
+  for the last two; LARS and lasso-LARS coding are `decomposition`'s `sparseCode`, since `linear` imports `optim`), dictionary learning (`ksvd`, `mod`, `onlineDictionaryLearning` of Mairal et al. with
   minibatches from keys), recovery guarantees (`mutualCoherence`, `babelFunction`, `coherenceSparsityBound`,
   `ripEstimate` by sampled supports).
 - `linear-programming.ts`: `linprog` in scipy's form (the method a function value: `linprogSimplex`,
@@ -3094,7 +3094,7 @@ none of those weights. Each file builds its specs with `specOf(category, inputs,
   `text/shingles.ts`; private `_ter.ts`.
 - `latent.ts`: latent-factor data with the factors as truth: `mixedSources` (non-Gaussian sources and their mixing
   matrix, for ICA), `twoViews` (shared latent signals in two views, with the population canonical correlations, for CCA
-  and PLS), `toySuperposition` (sparse features with importances), `sparseDictionary` (sparse non-negative codes through a dictionary of unit directions, the plant a sparse autoencoder must recover; truth: codes, dictionary, coherence).
+  and PLS), `toySuperposition` (sparse features with importances), `sparseDictionary` (sparse non-negative codes through a dictionary of unit directions, the plant a sparse autoencoder must recover; truth: codes, dictionary, coherence). `sparseCodedSignal` (exactly k signed atoms per signal over a unit-norm dictionary, the plant of dictionary learning and sparse coding; truth: codes, dictionary, supports, coherence).
 - `audio.ts`: SNR, segmental SNR, SDR (BSS Eval with a distortion filter), SI-SDR and SI-SNR, permutation-invariant
   matching (`permutationInvariant`, Hungarian algorithm via `optim` `linearSumAssignment`), STOI and ESTOI (`shortTimeObjectiveIntelligibility`, pystoi with its
   resampling), log-spectral distance, mel-cepstral distortion from cepstra (optionally DTW-aligned), DNSMOS from a
@@ -4444,13 +4444,32 @@ thin SVD with scikit-learn's sign convention, projection and reconstruction.
   `convolutionalDictionaryLearningAlgorithm` of `optim`, with `cdl/planted` and `cdl/recovery` probes beside the
   learner's contract) and `convolutionalDictionaryProblem`. It is here and not in `optim` because `datasets` reaches
   `optim`, so `optim` cannot import the generator.
-- TODO: Infomax ICA, online and coordinate-descent NMF with penalties, truncated SVD and dictionary learning as
-  estimators (`text/representations.ts` and `optim/dictionary.ts` have the routines), kernel PCA pre-images.
+- `sparse-coding.ts`: `sparseCode` (sklearn's `sparse_encode` over a fixed dictionary: `omp`, `lars`, `lassoLars` and
+  `lassoCd`, `threshold`; the greedy, coordinate-descent and threshold coders are `optim/dictionary.ts`'s
+  `sparseEncode`, the least-angle ones run `linear/lars.ts` per signal; `positive` for `lassoCd` and `threshold`),
+  `splitSign`, `synthesise`, `coderOptions` and `sparseCoder` (`SparseCoder`, a transformer with nothing to fit).
+  `dictionary-learning.ts`: `dictionaryLearningAlgorithm` (alternating sparse coding with an atom update, one
+  iteration per step, the update a slot `dictUpdate`: `cd` block coordinate descent as scikit-learn, `mod` method of
+  optimal directions, `ksvd` K-SVD; unused atoms replaced by the worst-represented signals; the tape has the objective,
+  error, sparsity, coherence, unused atoms and the atoms and codes as tensors), `dictionaryLearning`
+  (`DictionaryLearning`, with `dict/atoms` and `dict/usage` probes and a components record) and `dictLearning`
+  (`dict_learning`). `dictionary-learning-online.ts`: `miniBatchDictionaryLearningAlgorithm` (Mairal et al. with
+  scikit-learn's statistics A and B, forgetting and stopping tests), `miniBatchDictionaryLearning` and
+  `dictLearningOnline`. Private `_dictionary.ts` has what the two learners share (coding as rows, the objective, the SVD
+  and sample initialisations, the block coordinate descent update with the replacement of unused atoms, the probes).
+  The plant is `sparseCodedSignal` in `datasets/latent.ts`. oracle: `decomposition/dictionary_learning` (SparseCoder for
+  every coder, `dict_learning` for 1, 4 and 12 iterations by LARS and coordinate descent, `dict_learning_online`
+  from a given dictionary without shuffling, and a loose band for a shuffled run from scikit-learn's own start).
+  Differences from scikit-learn: its randomised SVD start of the online learner is the exact SVD here, unused atoms
+  come from the worst-represented signals and not a random one, and `partial_fit` is a session advanced a step at a
+  time. `optim/dictionary.ts` keeps its standalone `ksvd`, `mod` and `onlineDictionaryLearning` routines (OMP coding).
+- TODO: Infomax ICA, online and coordinate-descent NMF with penalties, truncated SVD, kernel PCA pre-images.
 
 oracle: scikit-learn PCA, IncrementalPCA, FastICA (parallel, with fixed initial unmixing), NMF (`mu` from fixed factors),
 PLSRegression, PLSCanonical, CCA, PLSSVD and FactorAnalysis (`methods/decomposition/*` fixtures, kept at their old
 paths; PCA is also checked through power iteration), plus deflationary FastICA (`decomposition/ica_deflation`) and NMF
-by coordinate descent against HALS (`decomposition/nmf_hals`)
+by coordinate descent against HALS (`decomposition/nmf_hals`), and sparse coding and dictionary learning
+(`decomposition/dictionary_learning`)
 
 ### 4.40b `manifold/`: embeddings and manifold learning (scikit-learn manifold, umap-learn)
 

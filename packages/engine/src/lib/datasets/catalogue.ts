@@ -52,7 +52,7 @@ import { glmCurve } from './glm-curves.ts'
 import { contextualSbm, graphFamilies, karateClub, kinshipTriples, lesMiserables, smallMolecules } from './graphs.ts'
 import { dishonestCasino, regimeSwitching } from './hidden-markov.ts'
 import { barsAndStripes, digitGlyphs, fashionMnistTest, geometricScenes, shapes } from './images.ts'
-import { mixedSources, sparseDictionary, toySuperposition, twoViews } from './latent.ts'
+import { mixedSources, sparseCodedSignal, sparseDictionary, toySuperposition, twoViews } from './latent.ts'
 import { makeClassification, makeMultilabelClassification } from './make-classification.ts'
 import { sCurve, severedSphere, swissRoll, torus } from './manifolds.ts'
 import { multiViewImages } from './multiview.ts'
@@ -254,6 +254,7 @@ export const datasetGenerators: Readonly<Record<string, DatasetGenerator>> = {
   lineData,
   sinusoids,
   sortTask,
+  sparseCodedSignal,
   sparseDictionary,
   sparseUncorrelated,
   spatialPoisson,
@@ -401,6 +402,7 @@ export const datasetRegistry: DatasetRegistry = registry<DatasetEntry>([
     ['twoViews', 'Two views of shared factors'],
     ['toySuperposition', 'Toy model of superposition'],
     ['sparseDictionary', 'Sparse codes through a dictionary'],
+    ['sparseCodedSignal', 'Signals of a few atoms over a dictionary'],
   ]),
   ...g('image', [
     ['barsAndStripes', 'Bars and stripes'],
