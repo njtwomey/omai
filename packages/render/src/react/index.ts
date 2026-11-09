@@ -2,7 +2,8 @@
  * React 19 bindings of omai-render. Figures: `Chart` (an ECharts option), `SceneView`, `Scene3DView` and
  * `StructureView`, in a `FigureFrame` (fixed size, expand, export) or a `FigureGrid`; typeset and live maths (`Tex`,
  * `Equation`, `Derivation`); `ContingencyTable` and `ThresholdExplorer`; playback (`usePlayback`, `useLiveRun` and
- * the `Player` over their controller); and the colour-mode theme (`ThemeProvider`, `useColourMode`). Subfolders:
+ * the `Player` over their controller); the colour-mode theme (`ThemeProvider`, `useColourMode`) and the pixel ratio hosts
+ * magnify figures at (`PixelRatioProvider`). Subfolders:
  * `session` (`useSession`, `SessionPlayer`, `SessionPanels`: run a method live and draw it), `controls` (inputs and
  * controls generated from a `Space`), `interaction` (draggable overlays on a figure) and `views` (`ExpositionView`
  * and one view per exposition record kind).
@@ -23,6 +24,7 @@ export * from './StructureView.tsx'
 export * from './ThresholdExplorer.tsx'
 export * from './active.tsx'
 export * from './echarts.ts'
+export * from './pixel-ratio.tsx'
 export * from './playhead.ts'
 export * from './ring.ts'
 export * from './settled.ts'

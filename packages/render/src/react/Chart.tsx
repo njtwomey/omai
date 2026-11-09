@@ -15,6 +15,7 @@ import { echartsTheme, themeName } from '../theme/echarts.ts'
 import type { ColourMode } from '../theme/tokens.ts'
 import { loadEcharts } from './echarts.ts'
 import { useFrameSize } from './FigureFrame.tsx'
+import { usePixelRatio } from './pixel-ratio.tsx'
 import { type OmaiState, STATE_ATTRIBUTE } from './settled.ts'
 import { useChartTheme } from './theme.tsx'
 
@@ -94,6 +95,14 @@ export interface ChartProps {
   readonly mode?: ColourMode
   /** Canvas (default) or SVG rendering. */
   readonly renderer?: 'canvas' | 'svg'
+  /**
+   * The magnification the chart is shown at: its canvas is made at `devicePixelRatio x ratio`, so it stays sharp when the
+   * host scales it up (above 1) and spares memory when it scales it down. Wins over the ambient value; without it the
+   * chart takes an expanded {@link FigureFrame}'s scale times the {@link PixelRatioProvider} ratio, and when none is set
+   * the instance is made at the browser's own ratio. The instance is made again when it changes. Nothing is clamped.
+   * SVG charts (`renderer="svg"`) are vectors and ignore it.
+   */
+  readonly ratio?: number
   /** Event handlers by ECharts event name (`click`, `mouseover`, `datazoom`, ...). */
   readonly onEvents?: Readonly<Record<string, ChartEventHandler>>
   /** Called with the instance after it is created (for `dispatchAction`, export and the like). */
@@ -123,6 +132,10 @@ export interface ChartProps {
  *
  * Inside a {@link FigureFrame} it takes the frame's size by default, and the modal's size when the frame is expanded.
  *
+ * The canvas is drawn at the pixel ratio `props.ratio` if given, else the expanded frame's scale (the modal magnifies
+ * its content by a CSS transform) times the {@link PixelRatioProvider} ratio (each 1 when absent), all times the
+ * browser's `devicePixelRatio`. With none of the three set no ratio is passed to ECharts. Not clamped; the host clamps.
+ *
  * Its container carries `data-omai-state` for an exporter: `preparing` until ECharts has drawn the first frame (its
  * first `finished` event, after any entrance animation), then `ready`; it goes back to `preparing` only when the
  * instance is remade for another theme or renderer, and a later option does not change it. It is never `failed` (an
@@ -136,7 +149,12 @@ export function Chart(props: ChartProps): ReactElement {
   const { option, figure, renderer = 'canvas', onEvents, onInit, group, merge = false, label } = props
   const theme = useChartTheme(props.mode)
   const frame = useFrameSize()
-  const ratio = frame?.scale
+  const ambient = usePixelRatio()
+  // An explicit ratio wins; else the expanded frame's magnification (of content already drawn at the host's ratio) composes
+  // with the host's own; with neither, ECharts keeps the browser's.
+  const ratio =
+    props.ratio ??
+    (frame?.scale === undefined && ambient === undefined ? undefined : (frame?.scale ?? 1) * (ambient ?? 1))
   const ref = useRef<HTMLDivElement | null>(null)
   const [chart, setChart] = useState<EChartsInstance | null>(null)
   const [state, setState] = useState<OmaiState>('preparing')
@@ -158,7 +176,7 @@ export function Chart(props: ChartProps): ReactElement {
     if (el === null) return
     const echarts = loadEcharts()
     registerOverriddenTheme(echarts, theme)
-    // Magnified in an expanded frame: render at a pixel ratio to match, so the canvas stays sharp.
+    // Magnified (a prop, a host's provider, an expanded frame): render at a pixel ratio to match, so the canvas stays sharp.
     const instance = echarts.init(el, theme.name, {
       renderer,
       ...(ratio === undefined ? {} : { devicePixelRatio: (globalThis.devicePixelRatio || 1) * ratio }),

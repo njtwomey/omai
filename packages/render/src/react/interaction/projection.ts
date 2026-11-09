@@ -128,12 +128,15 @@ function geometryOf(option: unknown, gridIndex: number): Geometry | null {
   if (x === undefined || y === undefined || width === undefined || height === undefined) return null
   const rect: PlotBox = { x, y, width, height }
   // Zoom moves the axes' extent without changing the option, and a grid that contains its labels is smaller than
-  // its box: in both cases only ECharts knows the map.
+  // its box: in both cases only ECharts knows the map. So does ECharts 6's `outerBoundsMode: 'auto'` (the default it
+  // merges into a hand-written grid), which moves the box inside the one named to keep the axis labels in the figure:
+  // the box is where the option says only when the mode is 'none' (or not stated, as in an option not yet merged).
+  const mode = g?.['outerBoundsMode']
+  const pinned = mode === 'none' || (mode === undefined && g?.['containLabel'] !== true)
   const zoomed = Array.isArray(o.dataZoom) ? o.dataZoom.length > 0 : o.dataZoom !== undefined
   const xl = limitsOf(axisOf(o.xAxis, gridIndex))
   const yl = limitsOf(axisOf(o.yAxis, gridIndex))
-  const exact =
-    !zoomed && g?.['containLabel'] !== true && width > 0 && height > 0 && xl !== undefined && yl !== undefined
+  const exact = !zoomed && pinned && width > 0 && height > 0 && xl !== undefined && yl !== undefined
   const linear = exact
     ? linearProjection({
         x: xl,
@@ -149,11 +152,15 @@ function geometryOf(option: unknown, gridIndex: number): Geometry | null {
 /**
  * The projection of one grid (one set of axes) of a live ECharts chart, for overlays laid over the chart.
  *
- * When the chart's option places the grid with numbers (`left`, `top`, `width`, `height`) and the grid's axes are value
- * axes with numeric `min` and `max` (also `inverse`), the map is computed from the option alone and ECharts is never
- * asked: converting through ECharts logs a warning per call while it is between a change of option and its redraw,
- * which a drag turns into dozens. Log, category and time axes, auto-ranged axes, a grid that contains its labels and a
- * chart with `dataZoom` go through `convertToPixel` and `convertFromPixel`. While the chart is between an option
+ * When the chart's option places the grid with numbers (`left`, `top`, `width`, `height`), says that ECharts will not
+ * move the box (`outerBoundsMode: 'none'`, which omai's cartesian builders write), and the grid's axes are value axes
+ * with numeric `min` and `max` (also `inverse`), the map is computed from the option alone and ECharts is never asked:
+ * converting through ECharts logs a warning per call while it is between a change of option and its redraw, which a
+ * drag turns into dozens. Log, category and time axes, auto-ranged axes, a grid that contains its labels, a chart with
+ * `dataZoom` and a grid whose `outerBoundsMode` is `'auto'` (ECharts 6's default for a hand-written grid, which shrinks
+ * the plotting box to keep the labels in the figure, so the option's numbers are not where the axes are) or `'same'`
+ * go through `convertToPixel` and `convertFromPixel`; for a hand-written grid that means ECharts' warnings while it is
+ * between redraws. Add `outerBoundsMode: 'none'` to such a grid when its margins leave room for the labels. While the chart is between an option
  * change and its next redraw ECharts cannot convert; the projection then answers with the last linear map it saw (exact
  * for linear axes), so a drag never jumps to nowhere.
  *
@@ -174,7 +181,7 @@ function geometryOf(option: unknown, gridIndex: number): Geometry | null {
  * ```ts
  * import { chartProjection } from 'omai-render/react'
  * const option = {
- *   grid: [{ left: 50, top: 10, width: 200, height: 100 }],
+ *   grid: [{ left: 50, top: 10, width: 200, height: 100, outerBoundsMode: 'none' }],
  *   xAxis: [{ type: 'value', min: 0, max: 10 }],
  *   yAxis: [{ type: 'value', min: 0, max: 1 }],
  * }
