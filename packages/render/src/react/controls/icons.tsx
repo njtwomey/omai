@@ -5,14 +5,19 @@
 
 import type { ReactNode, SVGProps } from 'react'
 
-/** Props of an icon: any SVG attribute; `size` sets width and height in pixels (default 16). */
+/**
+ * Props of an icon: any SVG attribute; `size` sets width and height in pixels (default 16), times the host's
+ * `--omai-control-scale` (default 1), so icons scale with the controls that hold them.
+ */
 export type IconProps = SVGProps<SVGSVGElement> & { readonly size?: number }
 
-function Svg({ size = 16, children, ...props }: IconProps): ReactNode {
+function Svg({ size = 16, children, style, ...props }: IconProps): ReactNode {
+  const scaled = `calc(${size}px*var(--omai-control-scale,1))`
   return (
     <svg
       width={size}
       height={size}
+      style={{ width: scaled, height: scaled, ...style }}
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"

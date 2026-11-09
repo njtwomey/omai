@@ -38,7 +38,7 @@ describe('SettingsButton', () => {
         {() => null}
       </SettingsButton>,
     )
-    expect(control).toContain('size-8')
+    expect(control).toContain('size-[calc(2rem*')
     expect(toolbar).toContain('size-7')
   })
 })

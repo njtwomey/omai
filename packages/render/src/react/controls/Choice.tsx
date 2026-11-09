@@ -101,7 +101,7 @@ export function Choice<T extends OptionValue>(props: ChoiceProps<T>): ReactNode 
                 onClick={() => onChange(o.value)}
                 className={cx(
                   sized.text,
-                  'min-w-0 flex-auto truncate rounded-[5px] px-2 whitespace-nowrap outline-none focus-visible:ring-2 focus-visible:ring-(--wb-accent)/50 disabled:opacity-40',
+                  'min-w-0 flex-auto truncate rounded-[5px] px-[calc(0.5rem*var(--omai-control-scale,1))] whitespace-nowrap outline-none focus-visible:ring-2 focus-visible:ring-(--wb-accent)/50 disabled:opacity-40',
                   selected
                     ? 'bg-(--wb-bg) font-medium text-(--wb-fg) shadow-sm'
                     : 'text-(--wb-muted) hover:text-(--wb-fg)',

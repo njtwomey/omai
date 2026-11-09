@@ -37,12 +37,13 @@ describe('react bindings', () => {
   })
   it('default to dark, and follow an explicit mode', () => {
     expect(renderToString(<ModeProbe />)).toBe('dark:#0a0a0a')
+    // The provider's wrapper element (`display: contents`) is markup around the probe's text.
     expect(
       renderToString(
         <ThemeProvider mode="light">
           <ModeProbe />
         </ThemeProvider>,
-      ),
+      ).replace(/<[^>]+>/g, ''),
     ).toBe('light:#ffffff')
   })
   it('does the page-wide work once: one observer of the page class however many figures ask, a stable structure ref', async () => {

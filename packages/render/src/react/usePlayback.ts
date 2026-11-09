@@ -9,6 +9,7 @@ import type { Frame, Timeline } from 'omai-engine/scene'
 import { type Algorithm, iterate, type RunStatus } from 'omai-engine/trace'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { prefersReducedMotion } from './_motion.ts'
+import { useActive } from './active.tsx'
 import { advanceFrame, framesDue } from './playhead.ts'
 import { RingBuffer } from './ring.ts'
 import { DISPOSED, type SettledResult, settledStateOf, useRunSettled } from './settled.ts'
@@ -85,7 +86,7 @@ export interface PlaybackOptions {
   /** Start playing at once (default false). A reader who prefers reduced motion gets a paused player whatever this says. */
   readonly autoplay?: boolean
   /**
-   * Whether the clock runs (default true), with the meaning it has on `useLiveRun` and `useSession`. While false the
+   * Whether the clock runs (default the ambient `ActiveProvider` value, true without one), with the meaning it has on `useLiveRun` and `useSession`. While false the
    * clock is off and nothing advances; the frame, the rate and `playing` are kept (a player that was playing is still
    * `playing`), and it carries on from where it stood when this is true again, unless the caller paused it meanwhile.
    * Use it for a player on a page that is hidden (a slide that is not showing). A step or a seek by hand still moves.
@@ -107,7 +108,8 @@ export interface PlaybackOptions {
  * @index function React hook: drive n precomputed frames with play, step and seek: `usePlayback(n)`
  */
 export function usePlayback(count: number, options: PlaybackOptions = {}): PlaybackController {
-  const { loop = false, active = true } = options
+  const { loop = false } = options
+  const active = useActive(options.active)
   const [frame, setFrame] = useState(0)
   const [playing, setPlayingState] = useState(() => (options.autoplay ?? false) && !prefersReducedMotion())
   const [fps, setFps] = useState(options.fps ?? 10)
@@ -228,7 +230,7 @@ export interface LiveRunOptions extends PlaybackOptions {
   /** Called once when the whole run exists. */
   readonly onReady?: () => void
   /**
-   * Whether the run computes (default true). While false nothing computes: no priming, and a playing run does not move
+   * Whether the run computes (default the ambient `ActiveProvider` value, true without one). While false nothing computes: no priming, and a playing run does not move
    * on (its clock is off); the states and the cursor are kept, and it carries on from where it stood when this is true
    * again. Use it for a run on a page that is hidden (a slide that is not showing), where {@link LiveRun.dispose}
    * would throw the states away. A step taken by hand (`controller.step(1)`) still computes.
@@ -340,8 +342,8 @@ export function useLiveRun<S>(algorithm: Algorithm<S>, options: LiveRunOptions):
     catchUpMs = 40,
     history = 2000,
     start = 'play',
-    active = true,
   } = options
+  const active = useActive(options.active)
   const prime = start !== 'play'
   const capacity = prime ? Math.max(history, maxSteps + 1) : history
   const make = useCallback(() => {

@@ -31,7 +31,19 @@ import {
   tab10,
   toHex,
 } from './palettes.ts'
-import { cssText, cssVariables, isThemeToken, paintRgba, resolvePaint, tokens } from './tokens.ts'
+import {
+  cssText,
+  cssVariables,
+  isThemeToken,
+  mappedVariables,
+  paintRgba,
+  resolvePaint,
+  resolveTokenOverride,
+  tokens,
+  tokensWith,
+  tokenVariables,
+  tokenVariant,
+} from './tokens.ts'
 
 describe('tokens', () => {
   it('agree with the engine palettes for every scene token', () => {
@@ -141,5 +153,54 @@ describe('echarts theme', () => {
     expect(baseOption('light').color).toEqual(tab10)
     // ECharts describes every chart to a screen reader unless a view gives its own text.
     expect(echartsTheme('light')['aria']).toEqual({ enabled: true })
+  })
+})
+
+describe('token overrides', () => {
+  it('resolve an object, a per-mode pair and a function to the patch of a mode', () => {
+    expect(resolveTokenOverride({ accent: '#111' }, 'dark')).toEqual({ accent: '#111' })
+    expect(resolveTokenOverride({ light: { accent: '#111' } }, 'dark')).toEqual({})
+    expect(resolveTokenOverride({ light: { accent: '#111' }, dark: { accent: '#222' } }, 'dark')).toEqual({
+      accent: '#222',
+    })
+    expect(resolveTokenOverride((m) => ({ fg: m }), 'light')).toEqual({ fg: 'light' })
+  })
+
+  it('merge over the mode tokens, later over earlier, skipping undefined, keeping the mode', () => {
+    expect(tokensWith('dark')).toBe(tokens('dark'))
+    expect(tokensWith('dark', undefined, {})).toBe(tokens('dark'))
+    const t = tokensWith('dark', { accent: '#111', fg: '#222' }, { accent: '#333' })
+    expect([t.mode, t.accent, t.fg, t.bg]).toEqual(['dark', '#333', '#222', tokens('dark').bg])
+  })
+
+  it('write variables from a token object, all or some, and from a host mapping', () => {
+    const t = tokensWith('light', { accent: '#7c3aed' })
+    expect(tokenVariables(t)).toEqual({ ...cssVariables('light'), '--wb-accent': '#7c3aed' })
+    expect(tokenVariables(t, ['accent', 'fg'])).toEqual({ '--wb-accent': '#7c3aed', '--wb-fg': tokens('light').fg })
+    expect(mappedVariables({ fgSecondary: '--muted', tab3: 'red' }, 'x')).toEqual({
+      '--x-fg-secondary': 'var(--muted)',
+      '--x-tab3': 'red',
+    })
+    expect(mappedVariables({ fg: '' })).toEqual({})
+  })
+
+  it('name how tokens differ from the standard ones', () => {
+    expect(tokenVariant(tokens('light'))).toBeUndefined()
+    expect(tokenVariant(tokensWith('light', {}))).toBeUndefined()
+    const a = tokenVariant(tokensWith('light', { accent: '#111' }))
+    expect(a).toMatch(/^[0-9a-z]+$/)
+    expect(tokenVariant(tokensWith('light', { accent: '#111' }))).toBe(a)
+    expect(tokenVariant(tokensWith('light', { accent: '#222' }))).not.toBe(a)
+  })
+
+  it('make the ECharts theme from them, and keep tab10 unless a tab colour changed', () => {
+    const t = tokensWith('dark', { fg: '#123456', tooltip: '#abcdef' })
+    const theme = echartsTheme('dark', t)
+    expect((theme['textStyle'] as { color: string }).color).toBe('#123456')
+    expect((theme['tooltip'] as { backgroundColor: string }).backgroundColor).toBe('#abcdef')
+    expect(theme.color).toBe(echartsTheme('dark').color)
+    expect(echartsTheme('dark', tokensWith('dark', { tab2: '#00ff00' })).color[2]).toBe('#00ff00')
+    expect(themeName('dark', 'x1')).toBe('omai-dark-x1')
+    expect(axisStyle('dark', 11, t).axisLabel.color).toBe(t.muted)
   })
 })

@@ -5,22 +5,24 @@
  */
 
 import { tab10 } from './palettes.ts'
-import { type ColourMode, tokens } from './tokens.ts'
+import { type ColourMode, type Tokens, tokens } from './tokens.ts'
 
 /**
  * The name under which a mode's theme is registered with ECharts (`echarts.registerTheme(themeName(mode),
  * echartsTheme(mode))`, done once by `omai-render/react`'s `Chart`).
  *
  * @param mode - The colour mode.
+ * @param variant - A name for a theme made from overridden tokens (`omai-dark-<variant>`); none for the standard one.
  * @returns `omai-light` or `omai-dark`.
  * @example
  * ```ts
  * import { themeName } from 'omai-render/theme'
  * themeName('dark') // => 'omai-dark'
+ * themeName('light', 'a1') // => 'omai-light-a1'
  * ```
  */
-export function themeName(mode: ColourMode): string {
-  return `omai-${mode}`
+export function themeName(mode: ColourMode, variant?: string): string {
+  return variant === undefined ? `omai-${mode}` : `omai-${mode}-${variant}`
 }
 
 /**
@@ -28,6 +30,7 @@ export function themeName(mode: ColourMode): string {
  *
  * @param mode - The colour mode.
  * @param fontSize - The base font size in pixels (default 11).
+ * @param t - The tokens to draw from (default the mode's own; a host's overridden ones otherwise).
  * @returns An ECharts axis style fragment.
  * @example
  * ```ts
@@ -38,6 +41,7 @@ export function themeName(mode: ColourMode): string {
 export function axisStyle(
   mode: ColourMode,
   fontSize = 11,
+  t: Tokens = tokens(mode),
 ): {
   readonly axisLine: { readonly show: boolean; readonly lineStyle: { readonly color: string } }
   readonly axisTick: { readonly show: boolean }
@@ -61,7 +65,6 @@ export function axisStyle(
     }
   }
 } {
-  const t = tokens(mode)
   return {
     axisLine: { show: true, lineStyle: { color: t.axis } },
     axisTick: { show: false },
@@ -82,6 +85,7 @@ export function axisStyle(
  * and data zoom, and no animation (figures that update every frame must not tween).
  *
  * @param mode - The colour mode.
+ * @param t - The tokens to draw from (default the mode's own; `ThemeProvider`'s overridden ones in a themed host).
  * @returns A theme object for `echarts.registerTheme`.
  * @example
  * ```ts
@@ -89,20 +93,26 @@ export function axisStyle(
  * echartsTheme('light').color[0] // => '#1f77b4'
  * ```
  */
-export function echartsTheme(mode: ColourMode): {
+export function echartsTheme(
+  mode: ColourMode,
+  t: Tokens = tokens(mode),
+): {
   readonly color: readonly string[]
   readonly backgroundColor: string
   readonly [key: string]: unknown
 } {
-  const t = tokens(mode)
-  const axis = axisStyle(mode)
+  const axis = axisStyle(mode, 11, t)
+  // The series colours are tab10 unless a host has restyled the `tab0` to `tab9` tokens.
+  const tabs = [t.tab0, t.tab1, t.tab2, t.tab3, t.tab4, t.tab5, t.tab6, t.tab7, t.tab8, t.tab9]
+  const base = tokens(mode)
+  const restyled = tabs.some((c, i) => c !== base[`tab${i}` as 'tab0'])
   return {
-    color: tab10,
+    color: restyled ? tabs : tab10,
     backgroundColor: 'transparent',
     textStyle: { fontFamily: t.font, color: t.fg, fontSize: 11 },
     title: { textStyle: { color: t.fg, fontWeight: 600, fontSize: 13 }, subtextStyle: { color: t.muted } },
     legend: { textStyle: { color: t.fgSecondary }, inactiveColor: t.grid, pageTextStyle: { color: t.muted } },
-    tooltip: tooltipStyle(mode),
+    tooltip: tooltipStyle(mode, t),
     categoryAxis: { ...axis, splitLine: { show: false, lineStyle: axis.splitLine.lineStyle } },
     valueAxis: axis,
     logAxis: axis,
@@ -123,8 +133,7 @@ export function echartsTheme(mode: ColourMode): {
   }
 }
 
-function tooltipStyle(mode: ColourMode): Record<string, unknown> {
-  const t = tokens(mode)
+function tooltipStyle(mode: ColourMode, t: Tokens): Record<string, unknown> {
   return {
     confine: true,
     backgroundColor: t.tooltip,
@@ -165,7 +174,7 @@ export function baseOption(
     color: tab10,
     animation: false,
     textStyle: { fontFamily: t.font, color: t.fg, fontSize },
-    tooltip: tooltipStyle(mode),
+    tooltip: tooltipStyle(mode, t),
     legend: {
       show: false,
       top: 0,

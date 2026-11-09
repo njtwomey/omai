@@ -6,6 +6,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useActive } from './active.tsx'
 
 /** What a stage's `run` is given besides the previous result. */
 export interface JobContext {
@@ -41,7 +42,7 @@ export interface JobOptions {
   readonly stages: readonly JobStage[]
   /** Values the job depends on: a change of any (by `Object.is`) discards the running job and starts a new one. */
   readonly inputs?: readonly unknown[]
-  /** Whether the job may run (default true). While false nothing runs and no timer exists. */
+  /** Whether the job may run (default the ambient `ActiveProvider` value, true without one). While false nothing runs and no timer exists. */
   readonly active?: boolean
   /** How long a generator stage runs before it gives the page a frame, in milliseconds (default 8). */
   readonly sliceMs?: number
@@ -217,7 +218,8 @@ const sameInputs = (a: readonly unknown[], b: readonly unknown[]): boolean =>
  * ```
  */
 export function useJob<R = unknown>(options: JobOptions): Job<R> {
-  const { inputs = [], active = true, sliceMs = 8 } = options
+  const { inputs = [], sliceMs = 8 } = options
+  const active = useActive(options.active)
   const [state, setState] = useState<State>(IDLE)
   const [run, setRun] = useState(0)
   const latest = useRef(options)

@@ -5,7 +5,14 @@
  */
 
 import { type PointerEvent, type ReactNode, useCallback, useEffect, useId, useRef, useState } from 'react'
-import { cx, iconButtonClass, menuItemClass } from './controls/classes.ts'
+import {
+  type ControlSize,
+  controlSizes,
+  cx,
+  iconButtonClassFor,
+  menuItemClass,
+  text11Class,
+} from './controls/classes.ts'
 import {
   ChevronDownIcon,
   PauseIcon,
@@ -54,8 +61,16 @@ export interface PlayerProps {
   readonly stampFps?: number
   /** The rates the caret menu offers (default 1 to 60). */
   readonly fpsChoices?: readonly number[]
+  /**
+   * The size of the buttons, scrubber and text: `sm` (28px), `md` (32px, the default) or `lg` (40px), as on the controls,
+   * each times the host's `--omai-control-scale`.
+   */
+  readonly size?: ControlSize
   readonly className?: string
 }
+
+/** The side of an icon in each size, in pixels (before `--omai-control-scale`). */
+const ICON_PX: Readonly<Record<ControlSize, number>> = { sm: 12, md: 14, lg: 16 }
 
 /**
  * Playback controls for a precomputed timeline or a live algorithm, one row: a reset of the page's controls to their
@@ -72,7 +87,10 @@ export interface PlayerProps {
  * @index function React component: play, step and scrub a playback controller: `<Player controller={c} />`
  */
 export function Player(props: PlayerProps): ReactNode {
-  const { controller: c, stamp, stampFps, fpsChoices = FPS_CHOICES, className } = props
+  const { controller: c, stamp, stampFps, fpsChoices = FPS_CHOICES, className, size = 'md' } = props
+  const sized = controlSizes[size]
+  const iconButtonClass = iconButtonClassFor(size)
+  const px = ICON_PX[size]
   const label =
     stamp === true ? timeStamp(c.frame, stampFps ?? c.fps) : typeof stamp === 'function' ? stamp(c.frame) : null
   const toStart = (): void => {
@@ -121,7 +139,10 @@ export function Player(props: PlayerProps): ReactNode {
   return (
     // biome-ignore lint/a11y/noStaticElementInteractions: keyboard shortcuts for the whole player, which holds the buttons
     <div
-      className={cx('flex w-full min-w-64 items-center gap-2 text-(--wb-fg)', className)}
+      className={cx(
+        'flex w-full min-w-[calc(16rem*var(--omai-control-scale,1))] items-center gap-2 text-(--wb-fg)',
+        className,
+      )}
       onKeyDown={(e) => {
         if (fromControl(e.target, OWN_KEYS)) return
         if (e.key === ' ') c.toggle()
@@ -145,7 +166,7 @@ export function Player(props: PlayerProps): ReactNode {
                 title="Reset the controls to their defaults"
                 onClick={c.resetForm}
               >
-                <RewindIcon size={14} />
+                <RewindIcon size={px} />
               </button>
             )}
             {c.setEager === undefined ? null : (
@@ -166,7 +187,7 @@ export function Player(props: PlayerProps): ReactNode {
                 }
                 onClick={() => c.setEager?.(!eager)}
               >
-                <ZapIcon size={14} />
+                <ZapIcon size={px} />
               </button>
             )}
           </div>
@@ -180,7 +201,7 @@ export function Player(props: PlayerProps): ReactNode {
             disabled={c.frame <= 0}
             onClick={toStart}
           >
-            <SkipBackIcon size={14} />
+            <SkipBackIcon size={px} />
           </button>
           <button
             type="button"
@@ -189,7 +210,7 @@ export function Player(props: PlayerProps): ReactNode {
             disabled={c.count <= 1 && !c.open}
             onClick={c.toggle}
           >
-            {c.playing ? <PauseIcon size={14} /> : <PlayIcon size={14} />}
+            {c.playing ? <PauseIcon size={px} /> : <PlayIcon size={px} />}
           </button>
           <button
             type="button"
@@ -198,9 +219,9 @@ export function Player(props: PlayerProps): ReactNode {
             disabled={c.frame >= c.count - 1 && !c.open}
             onClick={toEnd}
           >
-            <SkipForwardIcon size={14} />
+            <SkipForwardIcon size={px} />
           </button>
-          <FpsMenu fps={c.fps} choices={fpsChoices} onPick={c.setFps} />
+          <FpsMenu fps={c.fps} choices={fpsChoices} onPick={c.setFps} size={size} />
         </div>
         {/* The frames: one back and one forward. */}
         <div className="flex">
@@ -211,7 +232,7 @@ export function Player(props: PlayerProps): ReactNode {
             disabled={c.frame <= 0}
             onClick={() => c.step(-1)}
           >
-            <StepBackIcon size={14} />
+            <StepBackIcon size={px} />
           </button>
           <button
             type="button"
@@ -220,13 +241,13 @@ export function Player(props: PlayerProps): ReactNode {
             disabled={c.frame >= c.count - 1 && !c.open}
             onClick={() => c.step(1)}
           >
-            <StepForwardIcon size={14} />
+            <StepForwardIcon size={px} />
           </button>
         </div>
       </div>
-      <Scrubber frame={c.frame} count={c.count} onSeek={c.seek} onGrab={c.pause} />
+      <Scrubber frame={c.frame} count={c.count} onSeek={c.seek} onGrab={c.pause} size={size} />
       {label === null ? null : (
-        <span className="shrink-0 font-mono text-xs text-(--wb-muted) tabular-nums">{label}</span>
+        <span className={cx('shrink-0 font-mono text-(--wb-muted) tabular-nums', sized.text)}>{label}</span>
       )}
     </div>
   )
@@ -236,8 +257,10 @@ function FpsMenu(props: {
   readonly fps: number
   readonly choices: readonly number[]
   readonly onPick: (fps: number) => void
+  readonly size: ControlSize
 }): ReactNode {
-  const { fps, choices, onPick } = props
+  const { fps, choices, onPick, size } = props
+  const px = ICON_PX[size]
   const [open, setOpen] = useState(false)
   const trigger = useRef<HTMLButtonElement>(null)
   const close = useCallback(() => setOpen(false), [])
@@ -246,7 +269,11 @@ function FpsMenu(props: {
       <button
         ref={trigger}
         type="button"
-        className={cx(iconButtonClass, 'w-auto gap-0.5 rounded-r-md px-1.5 font-mono text-[11px] tabular-nums')}
+        className={cx(
+          iconButtonClassFor(size),
+          'w-auto gap-0.5 rounded-r-md px-[calc(0.375rem*var(--omai-control-scale,1))] font-mono tabular-nums',
+          text11Class,
+        )}
         aria-label={`Frames per second: ${fps}`}
         aria-haspopup="listbox"
         aria-expanded={open}
@@ -254,7 +281,7 @@ function FpsMenu(props: {
         onClick={() => setOpen((o) => !o)}
       >
         {fps}
-        <ChevronDownIcon size={12} />
+        <ChevronDownIcon size={px - 2} />
       </button>
       <Popover anchor={trigger} open={open} onClose={close} role="listbox" label="Frames per second">
         {choices.map((f) => (
@@ -283,8 +310,9 @@ function Scrubber(props: {
   readonly count: number
   readonly onSeek: (frame: number) => void
   readonly onGrab: () => void
+  readonly size: ControlSize
 }): ReactNode {
-  const { frame, count, onSeek, onGrab } = props
+  const { frame, count, onSeek, onGrab, size } = props
   const track = useRef<HTMLDivElement>(null)
   const last = Math.max(count - 1, 0)
   const t = last === 0 ? 0 : frame / last
@@ -302,7 +330,10 @@ function Scrubber(props: {
       aria-valuemin={0}
       aria-valuemax={last}
       aria-valuenow={frame}
-      className="group relative h-8 min-w-24 flex-1 cursor-pointer touch-none outline-none select-none"
+      className={cx(
+        'group relative min-w-[calc(6rem*var(--omai-control-scale,1))] flex-1 cursor-pointer touch-none outline-none select-none',
+        controlSizes[size].height,
+      )}
       onPointerDown={(e) => {
         e.currentTarget.setPointerCapture(e.pointerId)
         onGrab()
@@ -319,11 +350,11 @@ function Scrubber(props: {
         e.stopPropagation()
       }}
     >
-      <div className="absolute inset-x-0 top-1/2 h-1 -translate-y-1/2 rounded-full bg-(--wb-grid)">
+      <div className="absolute inset-x-0 top-1/2 h-[calc(0.25rem*var(--omai-control-scale,1))] -translate-y-1/2 rounded-full bg-(--wb-grid)">
         <div className="h-full rounded-full bg-(--wb-accent)" style={{ width: `${t * 100}%` }} />
       </div>
       <div
-        className="absolute top-1/2 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-(--wb-accent) bg-(--wb-bg) group-hover:ring-3 group-hover:ring-(--wb-accent)/30 group-focus-visible:ring-3 group-focus-visible:ring-(--wb-accent)/50"
+        className="absolute top-1/2 size-[calc(0.75rem*var(--omai-control-scale,1))] -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-(--wb-accent) bg-(--wb-bg) group-hover:ring-3 group-hover:ring-(--wb-accent)/30 group-focus-visible:ring-3 group-focus-visible:ring-(--wb-accent)/50"
         style={{ left: `${t * 100}%` }}
       />
     </div>

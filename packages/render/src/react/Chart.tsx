@@ -11,12 +11,23 @@ import { reencodeImages } from '../charts/matrices.ts'
 import { colourSelection, type ImageEncoder } from '../charts/selection.ts'
 import type { Figure } from '../figure/figure.ts'
 import { pngDataUrl } from '../svg/png.ts'
-import { themeName } from '../theme/echarts.ts'
+import { echartsTheme, themeName } from '../theme/echarts.ts'
 import type { ColourMode } from '../theme/tokens.ts'
 import { loadEcharts } from './echarts.ts'
 import { useFrameSize } from './FigureFrame.tsx'
 import { type OmaiState, STATE_ATTRIBUTE } from './settled.ts'
-import { useColourMode } from './theme.tsx'
+import { useChartTheme } from './theme.tsx'
+
+// The ECharts themes made from a host's overridden tokens, registered once each (the standard two are registered with the core).
+const registeredThemes = new Set<string>()
+function registerOverriddenTheme(
+  echarts: ReturnType<typeof loadEcharts>,
+  theme: ReturnType<typeof useChartTheme>,
+): void {
+  if (theme.name === themeName(theme.mode) || registeredThemes.has(theme.name)) return
+  registeredThemes.add(theme.name)
+  echarts.registerTheme(theme.name, echartsTheme(theme.mode, theme.tokens))
+}
 
 /** An ECharts event handler: the event's parameters and the chart instance. */
 export type ChartEventHandler = (params: unknown, chart: EChartsInstance) => void
@@ -123,9 +134,8 @@ export interface ChartProps {
  */
 export function Chart(props: ChartProps): ReactElement {
   const { option, figure, renderer = 'canvas', onEvents, onInit, group, merge = false, label } = props
-  const contextMode = useColourMode()
+  const theme = useChartTheme(props.mode)
   const frame = useFrameSize()
-  const mode = props.mode ?? contextMode
   const ratio = frame?.scale
   const ref = useRef<HTMLDivElement | null>(null)
   const [chart, setChart] = useState<EChartsInstance | null>(null)
@@ -147,8 +157,9 @@ export function Chart(props: ChartProps): ReactElement {
     const el = ref.current
     if (el === null) return
     const echarts = loadEcharts()
+    registerOverriddenTheme(echarts, theme)
     // Magnified in an expanded frame: render at a pixel ratio to match, so the canvas stays sharp.
-    const instance = echarts.init(el, themeName(mode), {
+    const instance = echarts.init(el, theme.name, {
       renderer,
       ...(ratio === undefined ? {} : { devicePixelRatio: (globalThis.devicePixelRatio || 1) * ratio }),
     })
@@ -170,7 +181,7 @@ export function Chart(props: ChartProps): ReactElement {
       setChart(null)
       instance.dispose()
     }
-  }, [mode, renderer, ratio])
+  }, [theme, renderer, ratio])
 
   useEffect(() => {
     chart?.setOption(forRenderer(labelled(option, label), renderer), { notMerge: !merge, lazyUpdate: true })

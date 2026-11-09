@@ -106,7 +106,7 @@ export function Select<T extends OptionValue>(props: SelectProps<T>): ReactNode 
                 className={cx(
                   sized.height,
                   sized.text,
-                  'w-full min-w-0 truncate border border-(--wb-grid) bg-(--wb-bg) pr-7 pl-2.5 text-left text-(--wb-fg) outline-none focus-visible:z-10 focus-visible:border-(--wb-accent) focus-visible:ring-2 focus-visible:ring-(--wb-accent)/40 disabled:opacity-50',
+                  'w-full min-w-0 truncate border border-(--wb-grid) bg-(--wb-bg) pr-[calc(1.75rem*var(--omai-control-scale,1))] pl-[calc(0.625rem*var(--omai-control-scale,1))] text-left text-(--wb-fg) outline-none focus-visible:z-10 focus-visible:border-(--wb-accent) focus-visible:ring-2 focus-visible:ring-(--wb-accent)/40 disabled:opacity-50',
                   cycle ? 'rounded-none' : 'rounded-md',
                 )}
               >
@@ -155,7 +155,7 @@ export function Select<T extends OptionValue>(props: SelectProps<T>): ReactNode 
               className={cx(
                 sized.height,
                 sized.text,
-                'w-full min-w-0 appearance-none truncate border border-(--wb-grid) bg-(--wb-bg) pr-7 pl-2.5 text-(--wb-fg) outline-none focus-visible:z-10 focus-visible:border-(--wb-accent) focus-visible:ring-2 focus-visible:ring-(--wb-accent)/40 disabled:opacity-50',
+                'w-full min-w-0 appearance-none truncate border border-(--wb-grid) bg-(--wb-bg) pr-[calc(1.75rem*var(--omai-control-scale,1))] pl-[calc(0.625rem*var(--omai-control-scale,1))] text-(--wb-fg) outline-none focus-visible:z-10 focus-visible:border-(--wb-accent) focus-visible:ring-2 focus-visible:ring-(--wb-accent)/40 disabled:opacity-50',
                 cycle ? 'rounded-none' : 'rounded-md',
               )}
             >
@@ -169,7 +169,7 @@ export function Select<T extends OptionValue>(props: SelectProps<T>): ReactNode 
           )}
           <ChevronDownIcon
             size={14}
-            className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-(--wb-muted)"
+            className="pointer-events-none absolute top-1/2 right-[calc(0.5rem*var(--omai-control-scale,1))] -translate-y-1/2 text-(--wb-muted)"
           />
         </div>
         {cycle ? (

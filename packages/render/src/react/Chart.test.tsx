@@ -1,8 +1,10 @@
 import { type ReactElement, useState } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { themeName } from '../theme/echarts.ts'
+import { tokens } from '../theme/tokens.ts'
 import { inAct, mountElement, resetGlobals } from './_harness.tsx'
 import { Chart, type ChartProps } from './Chart.tsx'
+import { ThemeProvider } from './theme.tsx'
 
 interface FakeChart {
   readonly theme: string
@@ -16,6 +18,7 @@ interface FakeChart {
 // ECharts needs a real canvas: stand in for it with an instance that records what the component asks of it.
 const made: FakeChart[] = []
 const connected: string[] = []
+const registered: [string, { readonly textStyle: { readonly color: string } }][] = []
 vi.mock('./echarts.ts', () => ({
   loadEcharts: () => ({
     init: (_el: unknown, theme: string, options: { renderer: unknown }) => {
@@ -42,12 +45,14 @@ vi.mock('./echarts.ts', () => ({
       }
     },
     connect: (g: string) => connected.push(g),
+    registerTheme: (name: string, theme: (typeof registered)[number][1]) => registered.push([name, theme]),
   }),
 }))
 
 afterEach(() => {
   made.length = 0
   connected.length = 0
+  registered.length = 0
   resetGlobals()
 })
 
@@ -125,6 +130,35 @@ describe('Chart text alternative', () => {
     const drawn = setOptions(made.at(-1) as FakeChart).at(-1)?.[0] as { aria: unknown }
     expect(drawn.aria).toEqual({ enabled: true, label: { description: 'Loss over steps' } })
     await m.unmount()
+  })
+
+  it('follows a nested ThemeProvider: its mode names the theme, and overridden tokens register a theme of their own, once', async () => {
+    const m = await mountElement(
+      <ThemeProvider mode="dark">
+        <ThemeProvider mode="light">
+          <Chart option={{}} />
+        </ThemeProvider>
+        <Chart option={{}} />
+      </ThemeProvider>,
+    )
+    expect(made.map((c) => c.theme)).toEqual([themeName('light'), themeName('dark')])
+    // The standard themes are the core's own: nothing is registered for them.
+    expect(registered).toEqual([])
+    await m.unmount()
+
+    const styled = await mountElement(
+      <ThemeProvider mode="light" tokens={{ fg: '#123456' }}>
+        <Chart option={{}} />
+        <Chart option={{}} />
+      </ThemeProvider>,
+    )
+    const names = made.slice(2).map((c) => c.theme)
+    expect(names[0]).toMatch(/^omai-light-/)
+    expect(names[1]).toBe(names[0])
+    expect(registered.map(([n]) => n)).toEqual([names[0]])
+    expect(registered[0]?.[1].textStyle.color).toBe('#123456')
+    expect(registered[0]?.[1].textStyle.color).not.toBe(tokens('light').fg)
+    await styled.unmount()
   })
 })
 

@@ -128,6 +128,135 @@ export function cssVariables(mode: ColourMode = 'light', prefix = 'wb'): Record<
   return out
 }
 
+/** A partial set of design tokens: the ones a host restyles (`{ accent: '#7c3aed' }`). The mode cannot be changed. */
+export type TokenPatch = Readonly<Partial<Omit<Tokens, 'mode'>>>
+
+/**
+ * A host's restyling of the tokens: a patch for every mode, a patch for each mode (`{ light: {...}, dark: {...} }`), or
+ * a function of the mode.
+ */
+export type TokenOverride =
+  | TokenPatch
+  | { readonly light?: TokenPatch; readonly dark?: TokenPatch }
+  | ((mode: ColourMode) => TokenPatch)
+
+/**
+ * The patch a {@link TokenOverride} makes in a mode.
+ *
+ * @param override - The override.
+ * @param mode - The colour mode.
+ * @returns The patch (empty for a per-mode override with nothing for this mode).
+ * @example
+ * ```ts
+ * import { resolveTokenOverride } from 'omai-render/theme'
+ * resolveTokenOverride({ light: { accent: '#00f' }, dark: { accent: '#0ff' } }, 'dark') // => { accent: '#0ff' }
+ * resolveTokenOverride((mode) => ({ fg: mode === 'dark' ? '#fff' : '#000' }), 'light') // => { fg: '#000' }
+ * ```
+ */
+export function resolveTokenOverride(override: TokenOverride, mode: ColourMode): TokenPatch {
+  if (typeof override === 'function') return override(mode)
+  if ('light' in override || 'dark' in override)
+    return (override as { light?: TokenPatch; dark?: TokenPatch })[mode] ?? {}
+  return override as TokenPatch
+}
+
+/**
+ * The tokens of a theme with a host's overrides merged over them, later overrides over earlier ones.
+ *
+ * @param mode - The colour mode.
+ * @param overrides - The overrides, outermost first; `undefined` entries are skipped.
+ * @returns The tokens (the very object of `tokens(mode)` when nothing overrides it).
+ * @example
+ * ```ts
+ * import { tokensWith } from 'omai-render/theme'
+ * tokensWith('light', { accent: '#7c3aed' }).accent // => '#7c3aed'
+ * tokensWith('light', { accent: '#7c3aed' }).fg // => '#0a0a0a'
+ * ```
+ */
+export function tokensWith(mode: ColourMode, ...overrides: readonly (TokenOverride | undefined)[]): Tokens {
+  const base = tokens(mode)
+  let out: Tokens = base
+  for (const o of overrides) {
+    if (o === undefined) continue
+    const patch = resolveTokenOverride(o, mode)
+    const defined = Object.entries(patch).filter(([, v]) => v !== undefined)
+    if (defined.length > 0) out = { ...out, ...Object.fromEntries(defined), mode }
+  }
+  return out
+}
+
+/**
+ * A short key naming how a token object differs from the standard tokens of its mode: `undefined` for the standard
+ * tokens, otherwise a string that is the same for the same differences (used to name a registered chart theme).
+ *
+ * @param t - The tokens, from {@link tokensWith}.
+ * @returns The key, or `undefined`.
+ * @example
+ * ```ts
+ * import { tokenVariant, tokens, tokensWith } from 'omai-render/theme'
+ * tokenVariant(tokens('dark')) // => undefined
+ * tokenVariant(tokensWith('dark', { accent: '#f0f' })) === tokenVariant(tokensWith('dark', { accent: '#f0f' })) // => true
+ * ```
+ */
+export function tokenVariant(t: Tokens): string | undefined {
+  const base = tokens(t.mode) as unknown as Readonly<Record<string, string>>
+  const changed = Object.entries(t as unknown as Readonly<Record<string, string>>).filter(([k, v]) => base[k] !== v)
+  if (changed.length === 0) return undefined
+  let h = 5381
+  for (const ch of JSON.stringify(changed)) h = ((h << 5) + h + ch.charCodeAt(0)) | 0
+  return (h >>> 0).toString(36)
+}
+
+/** The names of the tokens a host can map to its own CSS variables: every token but the mode. */
+export type TokenName = Exclude<keyof Tokens, 'mode'>
+
+/** A map from a token name to the host's CSS variable (`{ fg: '--foreground' }`) or to any CSS value. */
+export type CssVariableMap = Readonly<Partial<Record<TokenName, string>>>
+
+/**
+ * The `--wb-*` custom properties that read a host's own variables: each token name mapped to a host variable (`--name`)
+ * becomes `--wb-<token>: var(--name)`, and a value that is not a bare variable name is used as written
+ * (`'hsl(var(--foreground))'`).
+ *
+ * @param map - Token names to the host's variables.
+ * @param prefix - The variable prefix (default `wb`).
+ * @returns Property names mapped to values, for a style attribute.
+ * @example
+ * ```ts
+ * import { mappedVariables } from 'omai-render/theme'
+ * mappedVariables({ fg: '--foreground', fgSecondary: 'hsl(var(--muted-foreground))' })
+ * // => { '--wb-fg': 'var(--foreground)', '--wb-fg-secondary': 'hsl(var(--muted-foreground))' }
+ * ```
+ */
+export function mappedVariables(map: CssVariableMap, prefix = 'wb'): Record<string, string> {
+  const out: Record<string, string> = {}
+  for (const [name, host] of Object.entries(map)) {
+    if (host === undefined || host === '') continue
+    out[`--${prefix}-${kebab(name)}`] = /^--[\w-]+$/.test(host) ? `var(${host})` : host
+  }
+  return out
+}
+
+/**
+ * The tokens as `--wb-*` custom properties, taken from a token object (the tokens of a mode with overrides) rather than
+ * from a mode.
+ *
+ * @param t - The tokens.
+ * @param only - Write only these names (default all).
+ * @param prefix - The variable prefix (default `wb`).
+ * @returns Property names mapped to values.
+ * @example
+ * ```ts
+ * import { tokenVariables, tokensWith } from 'omai-render/theme'
+ * tokenVariables(tokensWith('light', { accent: '#7c3aed' }), ['accent']) // => { '--wb-accent': '#7c3aed' }
+ * ```
+ */
+export function tokenVariables(t: Tokens, only?: readonly TokenName[], prefix = 'wb'): Record<string, string> {
+  const out: Record<string, string> = {}
+  for (const name of only ?? CSS_NAMES) if (name !== 'mode') out[`--${prefix}-${kebab(name)}`] = String(t[name])
+  return out
+}
+
 /**
  * The tokens of a theme as a CSS rule body (`--wb-fg: #0a0a0a; ...`), for a `<style>` block.
  *
