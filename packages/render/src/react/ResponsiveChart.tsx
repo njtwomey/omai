@@ -22,6 +22,7 @@ import { useFrameSize } from './FigureFrame.tsx'
 import { InteractionOverlay, Overlaid } from './interaction/InteractionOverlay.tsx'
 import type { PixelConverter, Projection } from './interaction/projection.ts'
 import { useChartProjection } from './interaction/useChartProjection.ts'
+import { type OmaiState, STATE_ATTRIBUTE } from './settled.ts'
 import { useColourMode } from './theme.tsx'
 
 /** What a {@link ResponsiveChart} overlay receives: the chart's projection and the size it is drawn at. */
@@ -89,6 +90,9 @@ function usable(width: number | undefined): number | undefined {
  *   ... />}`, drawn afresh at the larger size), else the page size, which the frame magnifies. `square` and the
  *   narrow switch do not apply to a frame's fixed size.
  *
+ * The box carries `data-omai-state` like a {@link Chart}: `preparing` until the first width is measured and the chart in
+ * it has drawn its first frame, then `ready`.
+ *
  * @param props - The builder, the shape (`aspect`, `narrowAspect`, `narrowBelow`, `square`), the type size, the
  *   overlay, and what a `Chart` takes (renderer, events, label, group).
  * @returns The box holding the chart.
@@ -112,6 +116,7 @@ export function ResponsiveChart(props: ResponsiveChartProps): ReactElement {
     square = false,
     overlay,
     onInit,
+    onState,
     ...chartProps
   } = props
   const contextMode = useColourMode()
@@ -156,6 +161,15 @@ export function ResponsiveChart(props: ResponsiveChartProps): ReactElement {
   }, [width, shape, fontSize, mode, square, modalHeight])
   const option = useMemo(() => (fig === undefined ? undefined : build(fig)), [build, fig])
 
+  // The box is `preparing` until the chart in it has drawn its first frame (and before there is a width to build for).
+  const [inner, setInner] = useState<OmaiState>('preparing')
+  const innerState = useCallback(
+    (state: OmaiState): void => {
+      setInner(state)
+      onState?.(state)
+    },
+    [onState],
+  )
   const { projection, onInit: onProjection } = useChartProjection()
   const init = useCallback(
     (chart: EChartsInstance): void => {
@@ -166,7 +180,13 @@ export function ResponsiveChart(props: ResponsiveChartProps): ReactElement {
   )
 
   return (
-    <div ref={box} className={props.className} style={{ width: '100%', ...props.style }} data-omai-responsive="">
+    <div
+      ref={box}
+      className={props.className}
+      style={{ width: '100%', ...props.style }}
+      data-omai-responsive=""
+      {...{ [STATE_ATTRIBUTE]: fig === undefined ? 'preparing' : inner }}
+    >
       {fig !== undefined && option !== undefined && (
         <Overlaid
           width={fig.width}
@@ -181,7 +201,7 @@ export function ResponsiveChart(props: ResponsiveChartProps): ReactElement {
             )
           }
         >
-          <Chart {...chartProps} option={option} figure={fig} mode={mode} onInit={init} />
+          <Chart {...chartProps} option={option} figure={fig} mode={mode} onInit={init} onState={innerState} />
         </Overlaid>
       )}
     </div>

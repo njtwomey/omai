@@ -6,6 +6,9 @@
 import { type KeyboardEvent, type ReactNode, useState } from 'react'
 import { useOverlay } from './InteractionOverlay.tsx'
 
+/** The shapes of a line's handle: a `bar` across the line (the default), a `square`, a `circle` or a `diamond`. */
+export type LineHandleShape = 'bar' | 'square' | 'circle' | 'diamond'
+
 /** Props of {@link DraggableLine}. */
 export interface DraggableLineProps {
   /** `x`: a vertical line at x = value, dragged left and right; `y`: a horizontal line at y = value, dragged up and down. */
@@ -24,15 +27,20 @@ export interface DraggableLineProps {
   /** A CSS colour or `var(--wb-…)` token (default the foreground). */
   readonly colour?: string
   /**
-   * The handle on the line's end. `shape`: a `bar` across the line (the default, 10 by 20), a `square` or a `circle`;
-   * `size`: the side of the square or the diameter of the circle (default 10); `fill`: `hollow` (the page colour, the
-   * default) or `solid` (the line's colour).
+   * The handle on the line's end. `shape`: a `bar` across the line (the default, 10 by 20), a `square`, a `circle` or
+   * a `diamond`; `size`: the side of the square, the diameter of the circle, the width and height of the diamond (a
+   * bar is `size` wide and twice that long; default 10); `fill`: `hollow` (the page colour, the default) or `solid`
+   * (the line's colour).
    */
   readonly handle?: {
-    readonly shape?: 'bar' | 'square' | 'circle'
+    readonly shape?: LineHandleShape
     readonly size?: number
     readonly fill?: 'hollow' | 'solid'
   }
+  /** The handle's shape, in place of `handle.shape` when both are given (default `bar`). */
+  readonly handleShape?: LineHandleShape
+  /** The handle's size in pixels, in place of `handle.size` when both are given (default 10; see `handle`). */
+  readonly handleSize?: number
 }
 
 /**
@@ -124,8 +132,8 @@ export function DraggableLine(props: DraggableLineProps): ReactNode {
       />
       <g transform={`translate(${top[0]}, ${top[1]})`}>
         <Handle
-          shape={props.handle?.shape ?? 'bar'}
-          size={props.handle?.size ?? 10}
+          shape={props.handleShape ?? props.handle?.shape ?? 'bar'}
+          size={props.handleSize ?? props.handle?.size ?? 10}
           vertical={vertical}
           fill={props.handle?.fill === 'solid' ? colour : 'var(--wb-bg)'}
           stroke={colour}
@@ -147,9 +155,15 @@ export function DraggableLine(props: DraggableLineProps): ReactNode {
   )
 }
 
-/** The handle drawn at a line's end: a bar across the line, a square or a circle, centred on the end. */
+/**
+ * The handle drawn at a line's end, centred on the end: a bar across the line, a square, a circle or a diamond (a
+ * square turned on its corner, of the same width and height).
+ *
+ * @param props - The shape, size, direction of the line, fill and stroke.
+ * @returns The handle's element.
+ */
 function Handle(props: {
-  readonly shape: 'bar' | 'square' | 'circle'
+  readonly shape: LineHandleShape
   readonly size: number
   readonly vertical: boolean
   readonly fill: string
@@ -157,6 +171,18 @@ function Handle(props: {
 }): ReactNode {
   const { shape, size, vertical, fill, stroke } = props
   if (shape === 'circle') return <circle r={size / 2} fill={fill} stroke={stroke} strokeWidth={1.5} />
+  if (shape === 'diamond') {
+    const r = size / 2
+    return (
+      <polygon
+        points={`0,${-r} ${r},0 0,${r} ${-r},0`}
+        fill={fill}
+        stroke={stroke}
+        strokeWidth={1.5}
+        strokeLinejoin="round"
+      />
+    )
+  }
   const [w, h] = shape === 'square' ? [size, size] : vertical ? [size, 2 * size] : [2 * size, size]
   return <rect x={-w / 2} y={-h / 2} width={w} height={h} rx={3} fill={fill} stroke={stroke} strokeWidth={1.5} />
 }

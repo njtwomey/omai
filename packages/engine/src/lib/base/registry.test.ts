@@ -21,6 +21,13 @@ describe('registries', () => {
     ).toThrow(/registered twice/)
   })
 
+  it('keep the same entry listed twice once, and still refuse two different entries of a name', () => {
+    const a: Item = { name: 'a', v: 1 }
+    expect(registry<Item>([a, { name: 'b', v: 2 }, a]).entries).toEqual([a, { name: 'b', v: 2 }])
+    expect(register(registry<Item>([]), [a, a]).entries).toEqual([a])
+    expect(() => register(registry<Item>([]), [a, { ...a }])).toThrow(/added twice/)
+  })
+
   it('extend into a new registry, replacing by name and leaving the old one untouched', () => {
     const base = registry<Item>([{ name: 'a', v: 1 }])
     const more = register(base, [

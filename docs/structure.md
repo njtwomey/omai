@@ -642,7 +642,8 @@ the import graph between them has no cycles (section 2). Each domain's own summa
   best-first search).
 - `registry.ts`: the shape the dataset and environment registries share: `Registry<E>` (named entries in order, a
   plain value), `registry`, `register` (a new registry with more entries, replacing by name; nothing registers itself
-  on import), `lookup`, `find`, `matchesText` (the search-box test of the registries' queries).
+  on import; the same entry object listed twice is kept once, two different entries of a name throw), `lookup`, `find`,
+  `matchesText` (the search-box test of the registries' queries).
 - `options.ts`: shared option shapes (`Reduction`, `Alternative`, `ConfidenceLevel`) and their defaults
   (`defaultReduction`, `defaultAlternative`, `defaultConfidenceLevel`, `resolveConfidenceLevel`).
 - `vectors.ts`: the canonical fixed-size tuples `Vec2`, `Vec3`, `Vec4` (labelled, readonly). A point, colour, complex number,
@@ -987,7 +988,10 @@ oracle: none; checked by properties (samples, neighbours and decoded values stay
 - `context.ts`: `Context` (seed, key derivation, tracer, trace policy),
   `createContext`, `ctx.key(...names)`, `derive(ctx, name)` (child contexts with a namespaced key path).
 - `default.ts`: `defaultContext`, `setDefaultContext` (the one documented piece of module state; read only by
-  convenience layers).
+  convenience layers; held on `globalThis` under `Symbol.for('omai-engine/defaultContext')`, so a second loaded copy
+  of the engine shares it; `second-copy.test.ts` loads the engine twice). Nothing else in the engine registers
+  itself at import (`definePrimitive` and the like return frozen values; registries are values), so a second copy
+  is harmless; the other module state (the autodiff level, caches) is per copy on purpose.
 - `resolve.ts`: `resolveKey(options, name)`, `resolveTracer(options)`, `resolvePolicy(options)`: the uniform rules every
   high-level function uses.
 ### 4.10 `numerics/`: numerical methods (scipy, numpy.linalg)
@@ -7415,7 +7419,8 @@ Design rules:
   (a `TapeDelta` per variant: events kept, appended, the step and status, event firings), `idle` (paused, lookahead, advanced,
   ended, failed), `probed`, `error`. `wireOptions` says what crosses (JSON; hooks by name, `On('name', options)`, resolved
   against `Method.hooks`; a hook function, a key or a start state cannot).
-- `registry.ts`: `methodRegistry`, methods by name, resolved on the worker's side and when a tape file is loaded.
+- `registry.ts`: `methodRegistry`, methods by name, resolved on the worker's side and when a tape file is loaded (the
+  same method listed twice is kept once, two different methods of a name throw).
 - `serve.ts`: `serveProducer(scope, registry)` / `serveWorker(registry)` (a worker entry is one line): makes sessions in live mode,
   computes in short slices (a pause, a cursor or a probe is heard between slices), stays within the lookahead of the cursor,
   streams deltas of the tape by identity of events (windows that forget are followed), answers probes with a duty cycle so they
@@ -7437,6 +7442,12 @@ Design rules:
   ignored), builds the option with `build(figure({ width, aspect, fontSize, mode }))`, rebuilds when the width changes
   by a pixel, switches to `narrowAspect` below `narrowBelow`, keeps the plotting area square with `square`, and draws an
   `overlay` (tools in an `InteractionOverlay`, given the projection and the size) over the fluid chart.
+- `settled.ts`: the settled signal for exporters. Every live figure (`SessionPlayer`, `SessionPanels`, `Chart`,
+  `ResponsiveChart`, `SceneView`, `StructureView`) carries `data-omai-state` (`preparing`, `ready`, `failed`; a chart is
+  ready after its first `finished` event, a scene after its first commit, a session figure once the whole tape exists);
+  a session handle carries `live.settled`, a promise that resolves `{ ok: true }` or `{ ok: false, error }` (error
+  `'disposed'` for a run let go of) and never rejects; `waitForSettled(root, { timeoutMs })` waits for every figure
+  under an element with a `MutationObserver`. No browser global is read at import.
 - `useJob.ts`: a heavy one-shot computation in named stages with progress, started when `active`, restarted by its
   `inputs`, painting between stages (and between slices of a generator stage); one result, never a state per step.
 - `SceneView.tsx`: a `Scene` as SVG elements, with hover and click hit-testing.
@@ -7487,7 +7498,7 @@ Design rules:
   `selection.ts`, `useLinkState` (a figure `LinkStore` in React) and `keys.ts` (`useHeldKeys`: keys captured while a
   figure has focus, per press and per frame, for playing worlds).
   `DraggableLine` (a vertical or horizontal line the reader drags, bound two-way to a control's value: thresholds,
-  cut-offs, levels; snaps to a step, keyboard-nudgeable).
+  cut-offs, levels; snaps to a step, keyboard-nudgeable; a bar, square, circle or diamond handle of a given size).
 - `MathView.tsx`: `Tex`, `Equation` (live), `Derivation`, `MathProvider` (KaTeX HTML with its stylesheet, MathML for
   assistive technology; live values highlighted).
 - `controls/` (shadcn/ui components): controls generated from a `Space` (`SpaceControls`); `NumberField` (type a
@@ -7780,6 +7791,10 @@ library for the same computation. They do not set a higher bar than that library
 - `scripts/agent-index.ts` (`make agent-index`): the agent index of the engine and render, and the repository-level
   `llms.txt`, written from the `@index` tags (section 2); `--check` (`make agent-index-check`) fails with the stale
   files (per package) or the invalid tags.
+- `scripts/import-safe.test.ts`: every entry of omai-engine and omai-render (derived from `exports`, wildcards
+  expanded over the folders) is imported in Node with the browser's globals (`window`, `document`, `navigator`,
+  `Worker`, `localStorage`, `requestAnimationFrame`...) removed and trapped: a read by the packages' own source at import
+  fails the test (a dependency's own guard does not). No exceptions: `omai-render/react` imports without a DOM too.
 - `scripts/layers.ts`, with its rules and tables in `scripts/layers-rules.ts` and their test beside it: no import cycles
   between core domains (a cycle is reported as its path, one import per step), the tiers of section 2 (foundation,
   machinery, listed exceptions), no new file-level cycle inside a domain, and the package rules (section 1).

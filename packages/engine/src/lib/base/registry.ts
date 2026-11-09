@@ -3,7 +3,9 @@
  * entries in registration order, names unique), `register` returns a new registry with more entries, `lookup` and
  * `find` get one by name, and `matchesText` is the search-box test the registries' queries use. Nothing registers
  * itself on import: the library builds its registries from its catalogues as values, and an app extends one with
- * `register` and keeps the result.
+ * `register` and keeps the result. Listing the very same entry object twice is harmless (a second loaded copy of a
+ * module that lists it again, or a list built by concatenating two that overlap), while two different entries under one
+ * name are an error, so a clash is still caught.
  *
  * @index structure Registries of named entries, the shape dataset and environment registries share.
  */
@@ -30,21 +32,26 @@ export interface Registry<E extends Named> {
  *
  * @param entries - The entries.
  * @returns The registry.
- * @throws OmaiError with code `value` when two entries share a name.
+ * @throws OmaiError with code `value` when two different entries share a name (the same entry listed twice is kept once).
  * @concept registries
  * @example
  * ```ts
  * import { registry } from 'omai-engine/base'
  * registry([{ name: 'a' }, { name: 'b' }]).entries.length // => 2
+ * const a = { name: 'a' }
+ * registry([a, a]).entries.length // => 1
+ * registry([{ name: 'a' }, { name: 'a' }]) // => throws value
  * ```
  */
 export function registry<E extends Named>(entries: readonly E[]): Registry<E> {
-  const seen = new Set<string>()
+  const seen = new Map<string, E>()
   for (const e of entries) {
-    if (seen.has(e.name)) throw new OmaiError('value', `registry: the name '${e.name}' is registered twice`)
-    seen.add(e.name)
+    const known = seen.get(e.name)
+    if (known !== undefined && known !== e)
+      throw new OmaiError('value', `registry: the name '${e.name}' is registered twice`)
+    seen.set(e.name, e)
   }
-  return { entries: [...entries] }
+  return { entries: [...seen.values()] }
 }
 
 /**
@@ -54,7 +61,7 @@ export function registry<E extends Named>(entries: readonly E[]): Registry<E> {
  * @param base - The registry to extend.
  * @param entries - The entries to add.
  * @returns The extended registry.
- * @throws OmaiError with code `value` when two of the added entries share a name.
+ * @throws OmaiError with code `value` when two different added entries share a name (the same entry twice is kept once).
  * @concept registries
  * @example
  * ```ts
@@ -66,11 +73,13 @@ export function registry<E extends Named>(entries: readonly E[]): Registry<E> {
  * ```
  */
 export function register<E extends Named>(base: Registry<E>, entries: readonly E[]): Registry<E> {
-  const added = new Set<string>()
+  const added = new Map<string, E>()
   const byName = new Map(base.entries.map((e) => [e.name, e] as const))
   for (const e of entries) {
-    if (added.has(e.name)) throw new OmaiError('value', `register: the name '${e.name}' is added twice`)
-    added.add(e.name)
+    const known = added.get(e.name)
+    if (known !== undefined && known !== e)
+      throw new OmaiError('value', `register: the name '${e.name}' is added twice`)
+    added.set(e.name, e)
     byName.set(e.name, e)
   }
   return { entries: [...byName.values()] }
