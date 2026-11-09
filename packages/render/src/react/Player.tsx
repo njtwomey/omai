@@ -26,6 +26,7 @@ import {
 } from './controls/icons.tsx'
 import { Popover } from './controls/Popover.tsx'
 import { FPS_CHOICES, timeStamp } from './playhead.ts'
+import { STATE_ATTRIBUTE } from './settled.ts'
 import type { PlaybackController } from './usePlayback.ts'
 
 /** How long after playback stops the arrow keys still step a frame from anywhere on the page, in milliseconds. */
@@ -80,6 +81,10 @@ const ICON_PX: Readonly<Record<ControlSize, number>> = { sm: 12, md: 14, lg: 16 
  * stamp. Space toggles play, the arrow keys step one frame and Home and End seek while the player has focus (on its
  * scrubber, not on a button or menu inside it: those keep their own keys). The arrow keys also step while the player is
  * playing and for ten seconds after, wherever the focus is except in a field, slider, tab list, radio group or menu.
+ *
+ * Its root carries `data-omai-state` from the controller's `state` (`preparing` while a live run is still computing,
+ * `ready` once it has ended or reached `maxSteps`, `failed` when it was let go of), so `waitForSettled` on a page
+ * waits for the run and not only for the chart beside it; a controller without a `state` gives no attribute.
  *
  * @param props - The controller (from `usePlayback`, `useTimelinePlayback`, `useLiveRun` or a session player) and the
  *   stamp.
@@ -143,6 +148,7 @@ export function Player(props: PlayerProps): ReactNode {
         'flex w-full min-w-[calc(16rem*var(--omai-control-scale,1))] items-center gap-2 text-(--wb-fg)',
         className,
       )}
+      {...(c.state === undefined ? {} : { [STATE_ATTRIBUTE]: c.state })}
       onKeyDown={(e) => {
         if (fromControl(e.target, OWN_KEYS)) return
         if (e.key === ' ') c.toggle()

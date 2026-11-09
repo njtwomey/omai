@@ -3,10 +3,11 @@ import type { Algorithm } from 'omai-engine/trace'
 import type { ReactElement } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { type FakeFrames, fakeFrames, inAct, mountElement, mountHook, resetGlobals } from './_harness.tsx'
+import { Player } from './Player.tsx'
 import { SceneView } from './SceneView.tsx'
 import { StructureView } from './StructureView.tsx'
 import { settledStateOf, waitForSettled } from './settled.ts'
-import { useLiveRun } from './usePlayback.ts'
+import { useLiveRun, usePlayback } from './usePlayback.ts'
 
 let frames: FakeFrames | undefined
 beforeEach(() => {
@@ -178,5 +179,79 @@ describe('useLiveRun settled', () => {
     await inAct(() => m.current.dispose())
     expect(m.current.disposed).toBe(true)
     expect(await second).toEqual({ ok: false, error: 'disposed' })
+  })
+})
+
+const ticking: Algorithm<number> = { name: 'counter', config: {}, init: () => 0, step: (s) => s + 1 }
+function Live(props: { readonly maxSteps: number }): ReactElement {
+  const live = useLiveRun(ticking, { maxSteps: props.maxSteps, start: 'first' })
+  return <Player controller={live.controller} />
+}
+function Fixed(): ReactElement {
+  return <Player controller={usePlayback(5)} />
+}
+function Bare(): ReactElement {
+  const { state: _state, ...rest } = usePlayback(5)
+  return <Player controller={rest} />
+}
+
+describe('Player settled signal', () => {
+  type Mount = Awaited<ReturnType<typeof mountElement>>
+  const stateOfPlayer = (m: Mount): unknown =>
+    m.elements().find((e) => e.props['aria-label'] === undefined)?.props['data-omai-state']
+  // The elements that carry a state, as a root for `waitForSettled` (the stand-in DOM has no document-level query).
+  const rootOf = (m: Mount, chart: Figure): { querySelectorAll: () => Figure[] } => ({
+    querySelectorAll: () => [
+      chart,
+      ...m
+        .elements()
+        .filter((e) => e.props['data-omai-state'] !== undefined)
+        .map((e) => ({ getAttribute: (n: string) => (n === 'data-omai-state' ? String(e.props[n]) : null) }) as Figure),
+    ],
+  })
+
+  it('follows a live run from preparing to ready, and a fixed number of frames is ready at once', async () => {
+    const m = await mountElement(<Live maxSteps={60} />)
+    expect(stateOfPlayer(m)).toBe('preparing')
+    let ready = false
+    for (let i = 0; i < 200 && !ready; i++) {
+      await (frames as FakeFrames).frame()
+      ready = stateOfPlayer(m) === 'ready'
+    }
+    expect(ready).toBe(true)
+    await m.unmount()
+    const fixed = await mountElement(<Fixed />)
+    expect(stateOfPlayer(fixed)).toBe('ready')
+    await fixed.unmount()
+  })
+
+  it('carries no attribute when its controller has no state', async () => {
+    const m = await mountElement(<Bare />)
+    expect(m.elements().some((e) => e.props['data-omai-state'] !== undefined)).toBe(false)
+    await m.unmount()
+  })
+
+  it('makes waitForSettled on a root holding a Player and a ready Chart wait for the run', async () => {
+    ;(globalThis as Record<string, unknown>)['MutationObserver'] = class {
+      constructor(readonly cb: () => void) {
+        observers.push(this)
+      }
+      observe(): void {}
+      disconnect(): void {}
+    }
+    const observers: { cb: () => void }[] = []
+    const m = await mountElement(<Live maxSteps={60} />)
+    const root = rootOf(m, new Figure('ready'))
+    let result: unknown
+    void waitForSettled(root as never).then((r) => {
+      result = r
+    })
+    await Promise.resolve()
+    expect(result).toBeUndefined()
+    for (let i = 0; i < 200 && stateOfPlayer(m) !== 'ready'; i++) await (frames as FakeFrames).frame()
+    for (const o of observers) o.cb()
+    await Promise.resolve()
+    expect(result).toEqual({ ok: true, ready: 2 })
+    await m.unmount()
   })
 })
