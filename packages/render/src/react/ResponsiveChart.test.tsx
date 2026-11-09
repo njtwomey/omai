@@ -67,6 +67,15 @@ function setup(props: Partial<ResponsiveChartProps> = {}): { readonly build: Ret
 }
 const host: { element: ReactElement } = { element: <div /> }
 
+describe('ResponsiveChart pixel ratio', () => {
+  it('hands its `ratio` to the chart it draws', async () => {
+    setup({ ratio: 1.5 })
+    await mountElement(host.element)
+    await measure(400)
+    expect(last().ratio).toBe(1.5)
+  })
+})
+
 describe('ResponsiveChart measuring', () => {
   it('draws nothing for a first measurement of 0 by 0, then builds for the width it gets', async () => {
     const { build } = setup()

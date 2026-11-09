@@ -62,6 +62,8 @@ export interface FigureGridProps extends Omit<SubplotOptions, 'figure' | 'mode' 
   /** React content for other cells by id (text, controls, readouts); `text` and `tex` cells show their content. */
   readonly cells?: Readonly<Record<string, ReactNode>>
   readonly figure?: Figure
+  /** The pixel ratio magnification of the chart (see the `ratio` of `Chart`). */
+  readonly ratio?: number
 }
 
 /**
@@ -137,7 +139,13 @@ export function FigureGrid(props: FigureGridProps): ReactElement {
   })
   return (
     <div style={{ position: 'relative', width: fig.width, height: fig.height, maxWidth: '100%' }}>
-      <Chart option={option} width={fig.width} height={fig.height} mode={mode} />
+      <Chart
+        option={option}
+        width={fig.width}
+        height={fig.height}
+        mode={mode}
+        {...(props.ratio === undefined ? {} : { ratio: props.ratio })}
+      />
       {overlays}
     </div>
   )

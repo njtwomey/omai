@@ -7797,6 +7797,10 @@ Design rules:
 - `active.tsx`: `ActiveProvider`, `useActive`: the ambient `active` of a subtree (the AND of every provider above, true
   without one), read by `useSession`, `useSessions`, `useLiveRun`, `usePlayback`, `useJob` and `SessionPlayer` when their
   own `active` is not given; an explicit option replaces it.
+- `pixel-ratio.tsx`: `PixelRatioProvider`, `usePixelRatio`: the magnification a host shows its figures at (nestable, the
+  innermost wins; no DOM). `Chart` makes its canvas at `devicePixelRatio x ratio`, with `ratio` its own prop, else
+  `(expanded frame scale ?? 1) x (provider ratio ?? 1)`, else no ratio at all; `ResponsiveChart` and `FigureGrid` pass
+  the prop through; SVG charts ignore it.
 
 ## 7. omai-meta, `packages/meta/src/`
 
