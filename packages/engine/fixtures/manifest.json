@@ -1510,6 +1510,14 @@
       "cases": 28
     },
     {
+      "fixture": "learn/model_selection/threshold.json",
+      "source": "oracle/cases/learn/model_selection/threshold.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 8
+    },
+    {
       "fixture": "learn/multiclass.json",
       "source": "oracle/cases/learn/multiclass.py",
       "reference": {

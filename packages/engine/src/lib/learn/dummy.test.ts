@@ -13,7 +13,7 @@ describe('dummyClassifier', () => {
     expect(f.classes).toEqual([0, 1, 2])
     expect(toFlat(f.predict([[1], [2]]))).toEqual([0, 0])
     expect(toArray(f.predictProba([[1]]))).toEqual([[0.5, 1 / 3, 1 / 6]])
-    expect(f.score({ x, y })).toBeCloseTo(0.5, 12)
+    expect(f.score?.({ x, y })).toBeCloseTo(0.5, 12)
   })
 
   it('most_frequent gives one-hot probabilities, constant gives its label, and an unseen constant throws', () => {
@@ -52,7 +52,7 @@ describe('dummyClassifier', () => {
         expect(proba.map((r) => r.indexOf(1))).toEqual(a)
       } else {
         for (const c of [0, 1, 2]) expect(share(c)).toBeCloseTo(1 / 3, 1)
-        expect(toArray(f.predictProba([[0]]))[0]?.[0]).toBeCloseTo(1 / 3, 12)
+        expect((toArray(f.predictProba([[0]])) as number[][])[0]?.[0]).toBeCloseTo(1 / 3, 12)
       }
     }
   })
@@ -113,6 +113,6 @@ describe('dummyRegressor', () => {
   })
 
   it('scores zero R^2 on its own training targets (mean)', () => {
-    expect(dummyRegressor().fit({ x: xr, y: yr }).score({ x: xr, y: yr })).toBeCloseTo(0, 12)
+    expect(dummyRegressor().fit({ x: xr, y: yr }).score?.({ x: xr, y: yr })).toBeCloseTo(0, 12)
   })
 })

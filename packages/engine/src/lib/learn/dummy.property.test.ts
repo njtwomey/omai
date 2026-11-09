@@ -40,7 +40,7 @@ describe('dummy properties', () => {
           expect(qlo).toBeLessThanOrEqual(qhi + 1e-12)
           expect(qlo).toBeGreaterThanOrEqual(Math.min(...y) - 1e-12)
           expect(qhi).toBeLessThanOrEqual(Math.max(...y) + 1e-12)
-          if (Math.max(...y) - Math.min(...y) > 1e-3) expect(dummyRegressor().fit({ x, y }).score({ x, y })).toBeCloseTo(0, 8)
+          if (Math.max(...y) - Math.min(...y) > 1e-3) expect(dummyRegressor().fit({ x, y }).score?.({ x, y })).toBeCloseTo(0, 8)
         },
       ),
     )

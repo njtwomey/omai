@@ -3540,6 +3540,12 @@ modAL for active learning, diffprivlib and opacus for privacy
 - `model-selection/search.ts`: parameter grids and samplers, `gridSearchCV` and `randomizedSearchCV` (traced, one
   child run per candidate), nested cross-validation. The general studies (samplers, pruners, multi-fidelity) are
   `lib/tune`; these are the sklearn-shaped searches it can generalise.
+- `model-selection/threshold.ts`: decision-threshold tuning of a binary classifier: `fixedThresholdClassifier` (a cut at a
+  number, or 0.5 for probabilities and 0 for decision scores) and `tunedThresholdClassifierCV` (the cut that maximises a
+  metric of the labels, scikit-learn's procedure: per-fold threshold grids over each fold's response range, the fold
+  curves interpolated onto a common grid and averaged, a refit on all rows; `params.curve` is the averaged curve), with
+  the `thresholdMetrics` table (accuracy, balanced accuracy, F1, precision, recall, Jaccard, Matthews) or a function.
+  oracle: `learn/model_selection/threshold` over GaussianNB.
 - `model-selection/criteria.ts`: AIC, AICc, BIC, Mallows' Cp, GCV, leave-one-out shortcuts for linear smoothers, the
   one-standard-error rule, the .632 and .632+ bootstrap.
 - `model-selection/compare.ts`: comparing learning algorithms from resampled scores: the plain and the corrected
