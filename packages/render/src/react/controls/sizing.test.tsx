@@ -24,9 +24,9 @@ describe('controlWidth', () => {
   it('swaps the md height of the shared classes for the size asked', () => {
     expect(iconButtonClassFor('md')).toBe(iconButtonClass)
     expect(inputBoxClassFor('md')).toBe(inputBoxClass)
-    expect(iconButtonClassFor('lg')).toContain('size-10')
-    expect(iconButtonClassFor('lg')).not.toContain('size-8')
-    expect(inputBoxClassFor('sm')).toContain('h-7')
+    expect(iconButtonClassFor('lg')).toContain('size-[calc(2.5rem*')
+    expect(iconButtonClassFor('lg')).not.toContain('size-[calc(2rem*')
+    expect(inputBoxClassFor('sm')).toContain('h-[calc(1.75rem*')
   })
 })
 
@@ -90,16 +90,16 @@ describe('size and width on the controls', () => {
     for (const make of [field, select, choice]) {
       const dflt = await html(make)
       expect(await html(make, 'md')).toBe(dflt)
-      expect(dflt).toMatch(/\bh-8\b|\bsize-8\b/)
-      expect(await html(make, 'sm')).toMatch(/\bh-7\b|\bsize-7\b/)
+      expect(dflt).toMatch(/\b(?:h|size)-\[calc\(2rem\*/)
+      expect(await html(make, 'sm')).toMatch(/\b(?:h|size)-\[calc\(1\.75rem\*/)
       const lg = await html(make, 'lg')
-      expect(lg).toMatch(/\bh-10\b|\bsize-10\b/)
-      expect(lg).toContain('text-sm')
-      expect(lg).not.toMatch(/\bh-8\b|\bsize-8\b/)
+      expect(lg).toMatch(/\b(?:h|size)-\[calc\(2\.5rem\*/)
+      expect(lg).toContain('calc(0.875rem*')
+      expect(lg).not.toMatch(/\b(?:h|size)-\[calc\(2rem\*/)
     }
     expect(await html(toggle, 'md')).toBe(await html(toggle))
-    expect(await html(toggle, 'sm')).toContain('w-[26px]')
-    expect(await html(toggle, 'lg')).toContain('w-10')
+    expect(await html(toggle, 'sm')).toContain('w-[calc(26px*')
+    expect(await html(toggle, 'lg')).toContain('w-[calc(2.5rem*')
   })
 
   it('wraps a label by default and truncates only when asked', async () => {

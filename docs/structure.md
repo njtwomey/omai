@@ -7233,9 +7233,11 @@ Design rules:
 
 `theme/`
 - `tokens.ts`: light and dark design tokens (`fg`, `bg`, `surface`, `muted`, `grid`, `accent`, semantic colours,
-  `tab0`..`tab9`), `tokens(mode)`, `cssVariables(mode)`.
+  `tab0`..`tab9`), `tokens(mode)`, `cssVariables(mode)`, and a host's restyling: `TokenOverride` (`tokensWith`,
+  `resolveTokenOverride`, `tokenVariant`), `tokenVariables`, `mappedVariables` (token name to the host's CSS variable).
 - `palettes.ts`: tab10, sequential and diverging ramps, colour interpolation, colour-blind checks.
-- `echarts.ts`: `echartsTheme(mode)` (registered light and dark themes with tab10), `baseOption`.
+- `echarts.ts`: `echartsTheme(mode, tokens?)` (registered light and dark themes with tab10, or a theme made from
+  overridden tokens), `themeName(mode, variant?)`, `baseOption`.
 - `format.ts`: number formatting, nice ticks, log ticks, time formatting.
 
 `charts/` (ECharts option builders; each returns an `EChartsOption`, built from layers)
@@ -7516,6 +7518,11 @@ Design rules:
   (selections, `makeSelection`, `firstFrame` of any environment form, `formatSpace` gymnasium-style)) and menus open
   in a `Popover` portal so no container clips them (it moves focus in, returns it, and moves among a menu's items with
   the arrow keys).
+  `scale.tsx`: `ControlScaleProvider` and the CSS variable `--omai-control-scale` (default 1) that every size of the
+  controls and the `Player` multiplies (the class tokens in `classes.ts` are `calc(<size> * var(--omai-control-scale, 1))`,
+  icons scale from their pixel size), and `usePortalStyle`, which gives a popup in a portal the scale and the theme
+  variables of the place it was opened from; it replaces CSS `zoom`, which a portal escapes. `Player` and `SessionPlayer`
+  take `size` (`sm`/`md`/`lg`).
 - `views/`: a React component per exposition view, one file per headless module (`paths.tsx`: `PathView`,
   `CrossValidationView`, `LearningCurveView`, `PruningPathView`; `trees.tsx`: `TreeView`; `steps.tsx`:
   `ClusteringPlayer`, `MixturePlayer`, `EmbeddingPlayer`, `DendrogramView`, `ReachabilityView`; `surfaces.tsx`,
@@ -7553,8 +7560,14 @@ Design rules:
   `useSessions`). The gallery's `pages/linear-classifier` is the template of a method page (a dataset picker, the
   objective's controls with validity greying, `SlotVariants` for the solvers, one player, curves overlaid and the
   decision surface of each solver side by side).
-- `theme.tsx`: `ThemeProvider`, `useColourMode`: the mode comes from the page (the `dark` class on the root element,
-  or a prop), dark by default; no system-preference detection.
+- `theme.tsx`: `ThemeProvider`, `useColourMode`, `useTokens`: the mode comes from the page (the `dark` class on the root
+  element, or a prop), dark by default; no system-preference detection. `ThemeProvider` nests (a slide pinning light in
+  a dark deck) and renders one `display: contents` wrapper with `data-theme` and the `--wb-*` variables: `tokens` (a patch,
+  per mode or a function of the mode) merged over `tokens(mode)`, `cssVariables` (token name to the host's variable);
+  `useChartTheme` names the ECharts theme `Chart` registers for overridden tokens; `useThemeVariables` is what popups copy.
+- `active.tsx`: `ActiveProvider`, `useActive`: the ambient `active` of a subtree (the AND of every provider above, true
+  without one), read by `useSession`, `useSessions`, `useLiveRun`, `usePlayback`, `useJob` and `SessionPlayer` when their
+  own `active` is not given; an explicit option replaces it.
 
 ## 7. omai-meta, `packages/meta/src/`
 

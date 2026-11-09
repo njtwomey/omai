@@ -3,7 +3,15 @@
  */
 
 import { type ReactNode, useId } from 'react'
-import { type ControlSize, type ControlWidth, controlSizes, controlWidth, cx, labelClassFor } from './classes.ts'
+import {
+  type ControlSize,
+  type ControlWidth,
+  controlSizes,
+  controlWidth,
+  cx,
+  labelClassFor,
+  textXsClass,
+} from './classes.ts'
 
 /** Props of {@link Toggle}. */
 export interface ToggleProps {
@@ -66,7 +74,7 @@ export function Toggle(props: ToggleProps): ReactNode {
         <label htmlFor={id} className={cx(labelClassFor(size, truncate), 'cursor-pointer text-(--wb-fg)')}>
           {label}
         </label>
-        {description === undefined ? null : <span className="text-xs text-(--wb-muted)">{description}</span>}
+        {description === undefined ? null : <span className={cx(textXsClass, 'text-(--wb-muted)')}>{description}</span>}
       </div>
     </div>
   )

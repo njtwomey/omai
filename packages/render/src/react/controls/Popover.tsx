@@ -17,6 +17,7 @@ import {
 import { createPortal } from 'react-dom'
 import { placeInContainer } from './_placement.ts'
 import { cx, menuClass } from './classes.ts'
+import { usePortalStyle } from './scale.tsx'
 
 const PopoverContainerContext = createContext<HTMLElement | null>(null)
 
@@ -76,6 +77,8 @@ export function Popover(props: PopoverProps): ReactNode {
   const inherited = useContext(PopoverContainerContext)
   const container = props.container === undefined ? inherited : props.container
   const menu = useRef<HTMLDivElement>(null)
+  // The popup is drawn outside the subtree it was opened from: it takes the control scale and the theme variables along.
+  const carried = usePortalStyle(anchor, open)
   const [at, setAt] = useState<{ readonly left: number; readonly top: number; readonly minWidth?: number } | null>(null)
   const place = useCallback((): void => {
     const a = anchor.current?.getBoundingClientRect()
@@ -177,12 +180,14 @@ export function Popover(props: PopoverProps): ReactNode {
         items[next]?.focus()
       }}
       className={cx(menuClass, container === null ? 'fixed' : 'absolute', className)}
+      {...(carried.theme === undefined ? {} : { 'data-theme': carried.theme })}
       // Measured hidden on the first frame, then placed.
-      style={
-        at === null
+      style={{
+        ...carried.style,
+        ...(at === null
           ? { left: 0, top: 0, visibility: 'hidden' }
-          : { left: at.left, top: at.top, ...(at.minWidth === undefined ? {} : { minWidth: at.minWidth }) }
-      }
+          : { left: at.left, top: at.top, ...(at.minWidth === undefined ? {} : { minWidth: at.minWidth }) }),
+      }}
     >
       {children}
     </div>,

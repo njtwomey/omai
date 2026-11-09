@@ -2,6 +2,10 @@
  * Class names shared by the controls. The controls are styled with Tailwind utilities over the page's `--wb-*` CSS
  * variables (the theme tokens), so a page that defines the variables and lets Tailwind scan this package gets them
  * drawn in its colours, light or dark.
+ *
+ * Every size is written as `calc(<standard size> * var(--omai-control-scale, 1))`, so a host (or `ControlScaleProvider`) scales
+ * the whole set with one number and, with the variable unset, the sizes are exactly the standard ones. The classes are spelled out
+ * in full so Tailwind finds them.
  */
 
 import type { CSSProperties } from 'react'
@@ -16,26 +20,39 @@ export function cx(...parts: readonly (string | false | null | undefined)[]): st
   return parts.filter((p) => typeof p === 'string' && p !== '').join(' ')
 }
 
+/** The 12px text size with its line height, scaled by `--omai-control-scale`. */
+export const textXsClass: string =
+  'text-[length:calc(0.75rem*var(--omai-control-scale,1))]/[calc(1rem*var(--omai-control-scale,1))]'
+
+/** The 12px text size without a line height (for text that sets its own), scaled by `--omai-control-scale`. */
+export const text12Class: string = 'text-[length:calc(0.75rem*var(--omai-control-scale,1))]'
+
+/** The 11px text size, scaled by `--omai-control-scale`. */
+export const text11Class: string = 'text-[length:calc(11px*var(--omai-control-scale,1))]'
+
 /** The class of a control's label. */
-export const labelClass: string = 'text-xs font-medium text-(--wb-muted) select-none'
+export const labelClass: string = `${textXsClass} font-medium text-(--wb-muted) select-none`
 
 /** The class of an outlined square icon button (step, cycle, play). */
 export const iconButtonClass: string =
-  'inline-flex size-8 shrink-0 items-center justify-center border border-(--wb-grid) bg-(--wb-bg) text-(--wb-fg) outline-none hover:bg-(--wb-surface) focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-(--wb-accent)/50 disabled:pointer-events-none disabled:opacity-40'
+  'inline-flex size-[calc(2rem*var(--omai-control-scale,1))] shrink-0 items-center justify-center border border-(--wb-grid) bg-(--wb-bg) text-(--wb-fg) outline-none hover:bg-(--wb-surface) focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-(--wb-accent)/50 disabled:pointer-events-none disabled:opacity-40'
 
 /** The class of a text input's box. */
 export const inputBoxClass: string =
-  'relative flex h-8 min-w-0 flex-1 items-center border border-(--wb-grid) bg-(--wb-bg) text-(--wb-fg) focus-within:z-10 focus-within:border-(--wb-accent) focus-within:ring-2 focus-within:ring-(--wb-accent)/40'
+  'relative flex h-[calc(2rem*var(--omai-control-scale,1))] min-w-0 flex-1 items-center border border-(--wb-grid) bg-(--wb-bg) text-(--wb-fg) focus-within:z-10 focus-within:border-(--wb-accent) focus-within:ring-2 focus-within:ring-(--wb-accent)/40'
 
 /** The class of a floating menu's panel (placed by `Popover`). */
 export const menuClass: string =
-  'z-[1200] max-h-64 min-w-24 overflow-y-auto rounded-md border border-(--wb-grid) bg-(--wb-bg) py-1 text-(--wb-fg) shadow-lg'
+  'z-[1200] max-h-[calc(16rem*var(--omai-control-scale,1))] min-w-[calc(6rem*var(--omai-control-scale,1))] overflow-y-auto rounded-md border border-(--wb-grid) bg-(--wb-bg) py-[calc(0.25rem*var(--omai-control-scale,1))] text-(--wb-fg) shadow-lg'
 
 /** The class of one item of a floating menu (`data-selected` marks the current one). */
 export const menuItemClass: string =
-  'flex w-full cursor-pointer items-center px-2.5 py-1 text-left text-xs outline-none hover:bg-(--wb-surface) focus-visible:bg-(--wb-surface) data-[selected=true]:font-semibold data-[selected=true]:text-(--wb-accent)'
+  'flex w-full cursor-pointer items-center px-[calc(0.625rem*var(--omai-control-scale,1))] py-[calc(0.25rem*var(--omai-control-scale,1))] text-left text-[length:calc(0.75rem*var(--omai-control-scale,1))]/[calc(1rem*var(--omai-control-scale,1))] outline-none hover:bg-(--wb-surface) focus-visible:bg-(--wb-surface) data-[selected=true]:font-semibold data-[selected=true]:text-(--wb-accent)'
 
-/** The size of a control: `sm` (compact, 28px), `md` (the default, 32px) or `lg` (touch-friendly, 40px). */
+/**
+ * The size of a control: `sm` (compact, 28px), `md` (the default, 32px) or `lg` (touch-friendly, 40px), each times the
+ * host's `--omai-control-scale` (default 1).
+ */
 export type ControlSize = 'sm' | 'md' | 'lg'
 
 /**
@@ -63,30 +80,30 @@ export interface ControlSizeClasses {
 /** The classes of each {@link ControlSize}, spelled out whole so Tailwind finds them. */
 export const controlSizes: Readonly<Record<ControlSize, ControlSizeClasses>> = {
   sm: {
-    height: 'h-7',
-    icon: 'size-7',
-    text: 'text-xs',
-    track: 'h-[14px] w-[26px]',
-    knob: 'size-2.5',
-    knobOn: 'translate-x-[13px]',
+    height: 'h-[calc(1.75rem*var(--omai-control-scale,1))]',
+    icon: 'size-[calc(1.75rem*var(--omai-control-scale,1))]',
+    text: 'text-[length:calc(0.75rem*var(--omai-control-scale,1))]/[calc(1rem*var(--omai-control-scale,1))]',
+    track: 'h-[calc(14px*var(--omai-control-scale,1))] w-[calc(26px*var(--omai-control-scale,1))]',
+    knob: 'size-[calc(0.625rem*var(--omai-control-scale,1))]',
+    knobOn: 'translate-x-[calc(13px*var(--omai-control-scale,1))]',
     knobOff: 'translate-x-px',
   },
   md: {
-    height: 'h-8',
-    icon: 'size-8',
-    text: 'text-xs',
-    track: 'h-[18px] w-8',
-    knob: 'size-3.5',
-    knobOn: 'translate-x-[15px]',
+    height: 'h-[calc(2rem*var(--omai-control-scale,1))]',
+    icon: 'size-[calc(2rem*var(--omai-control-scale,1))]',
+    text: 'text-[length:calc(0.75rem*var(--omai-control-scale,1))]/[calc(1rem*var(--omai-control-scale,1))]',
+    track: 'h-[calc(18px*var(--omai-control-scale,1))] w-[calc(2rem*var(--omai-control-scale,1))]',
+    knob: 'size-[calc(0.875rem*var(--omai-control-scale,1))]',
+    knobOn: 'translate-x-[calc(15px*var(--omai-control-scale,1))]',
     knobOff: 'translate-x-px',
   },
   lg: {
-    height: 'h-10',
-    icon: 'size-10',
-    text: 'text-sm',
-    track: 'h-[22px] w-10',
-    knob: 'size-[18px]',
-    knobOn: 'translate-x-[19px]',
+    height: 'h-[calc(2.5rem*var(--omai-control-scale,1))]',
+    icon: 'size-[calc(2.5rem*var(--omai-control-scale,1))]',
+    text: 'text-[length:calc(0.875rem*var(--omai-control-scale,1))]/[calc(1.25rem*var(--omai-control-scale,1))]',
+    track: 'h-[calc(22px*var(--omai-control-scale,1))] w-[calc(2.5rem*var(--omai-control-scale,1))]',
+    knob: 'size-[calc(18px*var(--omai-control-scale,1))]',
+    knobOn: 'translate-x-[calc(19px*var(--omai-control-scale,1))]',
     knobOff: 'translate-x-px',
   },
 }
@@ -113,7 +130,7 @@ export function labelClassFor(size: ControlSize, truncate = false): string {
  * @returns The class names.
  */
 export function iconButtonClassFor(size: ControlSize): string {
-  return iconButtonClass.replace('size-8', controlSizes[size].icon)
+  return iconButtonClass.replace(controlSizes.md.icon, controlSizes[size].icon)
 }
 
 /**
@@ -123,7 +140,7 @@ export function iconButtonClassFor(size: ControlSize): string {
  * @returns The class names.
  */
 export function inputBoxClassFor(size: ControlSize): string {
-  return inputBoxClass.replace('h-8', controlSizes[size].height)
+  return inputBoxClass.replace(controlSizes.md.height, controlSizes[size].height)
 }
 
 /**

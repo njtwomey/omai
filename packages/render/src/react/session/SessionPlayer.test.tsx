@@ -3,6 +3,7 @@ import { type Config, defineMethod, Log, type Method, scalar, stateFromJson, sta
 import { type ComponentProps, type ReactElement, useState } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { type FakeFrames, fakeFrames, inAct, mountElement, resetGlobals } from '../_harness.tsx'
+import { ActiveProvider } from '../active.tsx'
 import type { StartPolicy } from '../start.ts'
 import { type PlaybackController, useTicker } from '../usePlayback.ts'
 import { SessionPlayer } from './SessionPlayer.tsx'
@@ -42,6 +43,8 @@ const count: Method<S, Config> = defineMethod<S, Config>({
 const page: {
   at: number | null
   active: boolean
+  /** The ambient `ActiveProvider` around the page (the player reads it; the session's own `active` is `active`). */
+  ambient: boolean
   poke?: () => void
   setAt?: (at: number | null) => void
   /** Mount the clock that runs ahead of the player's own (it keeps a frame pending, which other tests count). */
@@ -53,6 +56,7 @@ const page: {
 } = {
   at: null,
   active: true,
+  ambient: true,
   playhead: { current: -1 },
 }
 
@@ -82,10 +86,10 @@ function Page(props: {
   page.at = at
   page.live = live
   return (
-    <>
+    <ActiveProvider active={page.ambient}>
       {page.ahead === true ? <Before /> : null}
       <SessionPlayer {...props.player} live={live} at={at} onScrub={setAt} playhead={page.playhead} />
-    </>
+    </ActiveProvider>
   )
 }
 
@@ -97,6 +101,7 @@ beforeEach(() => {
   frames = fakeFrames()
   page.at = null
   page.active = true
+  page.ambient = true
   page.ahead = false
   delete page.before
   page.playhead.current = -1
@@ -312,6 +317,48 @@ describe('the rate, the eager toggle and the statistics line', () => {
     await frames.frames(5)
     expect(live().head).toBeGreaterThan(0)
     expect(live().computing).toBe(true)
+  })
+})
+
+describe("the player's own active", () => {
+  // A finished run played at 60 steps a second: the cursor moves unless the player's clock is off.
+  async function playDone(player: Partial<ComponentProps<typeof SessionPlayer>> = {}): Promise<void> {
+    await mountElement(<Page start="first" player={player} />)
+    await untilDone()
+    await inAct(() => controller().setFps(60))
+    await inAct(() => controller().play())
+  }
+  const advance = async (): Promise<void> => {
+    await frames.frame()
+    for (let n = 0; n < 4; n++) await frames.frame(100)
+  }
+
+  it('keeps the clock off with active=false, whatever the session says, and the reader can still step', async () => {
+    await playDone({ active: false })
+    await advance()
+    expect(page.at).toBe(0)
+    expect(frames.pending).toBe(0)
+    await inAct(() => controller().step(1))
+    expect(page.at).toBe(1)
+  })
+
+  it('takes the ambient provider when the option is not given, and goes on when it flips', async () => {
+    page.ambient = false
+    await playDone()
+    await advance()
+    expect(page.at).toBe(0)
+    expect(frames.pending).toBe(0)
+    page.ambient = true
+    await inAct(() => page.poke?.())
+    await advance()
+    expect(page.at as number).toBeGreaterThan(1)
+  })
+
+  it('an explicit true plays under an inactive provider', async () => {
+    page.ambient = false
+    await playDone({ active: true })
+    await advance()
+    expect(page.at as number).toBeGreaterThan(1)
   })
 })
 

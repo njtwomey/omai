@@ -14,6 +14,8 @@ import {
   inputBoxClassFor,
   labelClassFor,
   menuItemClass,
+  text12Class,
+  textXsClass,
 } from './classes.ts'
 import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon } from './icons.tsx'
 import {
@@ -111,7 +113,7 @@ export function NumberField(props: NumberFieldProps): ReactNode {
         <label htmlFor={id} className={labelClassFor(size, truncate)}>
           {label}
         </label>
-        {unit === undefined ? null : <span className="text-xs text-(--wb-muted)">{unit}</span>}
+        {unit === undefined ? null : <span className={cx(textXsClass, 'text-(--wb-muted)')}>{unit}</span>}
       </div>
       <div className="flex w-full">
         <button
@@ -139,9 +141,11 @@ export function NumberField(props: NumberFieldProps): ReactNode {
             disabled={disabled}
             aria-describedby={error === null ? undefined : errorId}
             className={cx(
-              'h-full w-0 min-w-0 flex-1 bg-transparent pl-2 text-right font-mono tabular-nums outline-none',
+              'h-full w-0 min-w-0 flex-1 bg-transparent pl-[calc(0.5rem*var(--omai-control-scale,1))] text-right font-mono tabular-nums outline-none',
               sized.text,
-              ladder.length > 0 ? 'pr-0.5' : 'pr-2',
+              ladder.length > 0
+                ? 'pr-[calc(0.125rem*var(--omai-control-scale,1))]'
+                : 'pr-[calc(0.5rem*var(--omai-control-scale,1))]',
             )}
             {...draft.props}
           />
@@ -176,7 +180,7 @@ export function NumberField(props: NumberFieldProps): ReactNode {
         </button>
       </div>
       {error === null ? null : (
-        <p id={errorId} role="alert" className="text-xs leading-none text-(--wb-danger)">
+        <p id={errorId} role="alert" className={cx(text12Class, 'leading-none text-(--wb-danger)')}>
           {error}
         </p>
       )}
@@ -263,7 +267,7 @@ function Rail(props: {
       aria-valuetext={valueText}
       aria-disabled={disabled}
       className={cx(
-        'group absolute inset-x-0 -bottom-[5px] z-10 h-[10px] touch-none outline-none select-none',
+        'group absolute inset-x-0 -bottom-[5px] z-10 h-[calc(10px*var(--omai-control-scale,1))] touch-none outline-none select-none',
         disabled ? 'pointer-events-none' : 'cursor-pointer',
       )}
       onPointerDown={(e) => {
@@ -286,7 +290,7 @@ function Rail(props: {
         <div className="h-full bg-(--wb-accent)" style={{ width: `${fraction * 100}%` }} />
       </div>
       <div
-        className="absolute top-1/2 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border border-(--wb-accent) bg-(--wb-bg) transition-shadow motion-reduce:transition-none group-hover:ring-3 group-hover:ring-(--wb-accent)/30 group-focus-visible:ring-3 group-focus-visible:ring-(--wb-accent)/50"
+        className="absolute top-1/2 size-[calc(0.625rem*var(--omai-control-scale,1))] -translate-x-1/2 -translate-y-1/2 rounded-full border border-(--wb-accent) bg-(--wb-bg) transition-shadow motion-reduce:transition-none group-hover:ring-3 group-hover:ring-(--wb-accent)/30 group-focus-visible:ring-3 group-focus-visible:ring-(--wb-accent)/50"
         style={{ left: `${fraction * 100}%` }}
       />
     </div>

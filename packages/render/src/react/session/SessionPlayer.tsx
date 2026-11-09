@@ -15,6 +15,8 @@
 
 import type { Config } from 'omai-engine/trace'
 import { type MutableRefObject, type ReactElement, useEffect, useMemo, useRef, useState } from 'react'
+import { useActive } from '../active.tsx'
+import { type ControlSize, controlSizes, cx } from '../controls/classes.ts'
 import { Player } from '../Player.tsx'
 import type { StartPolicy } from '../start.ts'
 import { type PlaybackController, useTicker } from '../usePlayback.ts'
@@ -74,8 +76,17 @@ export function SessionPlayer<S, C extends Config>(props: {
   readonly eagerToggle?: boolean
   /** Show the statistics line (the tape's event counts and the milliseconds of the last slice; default true). */
   readonly statistics?: boolean
+  /**
+   * Whether the player's clock runs (default the ambient `ActiveProvider` value, true without one). While false the
+   * clock is off and the cursor stays where it is, as for the session's own `active`; the reader's step and seek
+   * still move it. The session's own `active` (`useSession`'s option) is separate: the clock runs when both are true.
+   */
+  readonly active?: boolean
+  /** The size of the buttons, scrubber and text: `sm`, `md` (the default) or `lg`, as on the controls. */
+  readonly size?: ControlSize
 }): ReactElement {
   const { live, at, onScrub } = props
+  const active = useActive(props.active)
   const statistics = props.statistics ?? true
   const variants = variantsOf(live)
   // Every variant is remade at once, so the first one's session stands for the remake.
@@ -121,6 +132,8 @@ export function SessionPlayer<S, C extends Config>(props: {
   }
   const cursor = useRef({ viewed, head, done: live.done })
   cursor.current = { viewed, head, done: live.done }
+  const activeNow = useRef(active)
+  activeNow.current = active
   const handlers = useRef({ onScrub, onReset: props.onReset, pause: live.pause, playingNow: live.playingNow })
   handlers.current = { onScrub, onReset: props.onReset, pause: live.pause, playingNow: live.playingNow }
   // The playhead: the step the clock has reached. Ticks add to it rather than to the step the page last rendered, so
@@ -167,11 +180,11 @@ export function SessionPlayer<S, C extends Config>(props: {
     setBufferingState(on)
   }
   useTicker(
-    ticking && live.active,
+    ticking && live.active && active,
     fps,
     (n) => {
       // A tick queued before the clock was stopped (here, or by the host's `live.pause()`) moves nothing.
-      if (!tickingNow.current || handlers.current.playingNow?.() === false) return
+      if (!tickingNow.current || !activeNow.current || handlers.current.playingNow?.() === false) return
       const { head: h, done } = cursor.current
       // Live and unfinished: wait for the preroll (at the start, and after catching up with the head).
       if (policy === 'play' && !done) {
@@ -361,9 +374,14 @@ export function SessionPlayer<S, C extends Config>(props: {
   const showsRow = statistics || live.producer?.fallback !== undefined || props.pageExport !== undefined
   return (
     <div className="flex flex-col gap-3">
-      <Player controller={controller} stamp={(f) => `step ${f} of ${head}${status}${where}`} fpsChoices={RATES} />
+      <Player
+        controller={controller}
+        stamp={(f) => `step ${f} of ${head}${status}${where}`}
+        fpsChoices={RATES}
+        {...(props.size === undefined ? {} : { size: props.size })}
+      />
       {showsRow ? (
-        <div className="flex flex-wrap items-center gap-3 text-xs text-muted">
+        <div className={cx('flex flex-wrap items-center gap-3 text-muted', controlSizes[props.size ?? 'md'].text)}>
           {statistics ? <span>{counts || 'nothing recorded'}</span> : null}
           {statistics ? <span>last slice {live.lastMs.toFixed(1)} ms</span> : null}
           {statistics && ticking && !live.done ? (
@@ -379,7 +397,13 @@ export function SessionPlayer<S, C extends Config>(props: {
         </div>
       ) : null}
       {live.error === undefined ? null : (
-        <div role="alert" className="rounded border border-red-500/50 px-2 py-1 text-xs text-red-500">
+        <div
+          role="alert"
+          className={cx(
+            'rounded border border-red-500/50 px-2 py-1 text-red-500',
+            controlSizes[props.size ?? 'md'].text,
+          )}
+        >
           the session failed: {live.error}
         </div>
       )}

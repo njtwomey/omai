@@ -13,6 +13,7 @@ import { ControlPanel } from './ControlPanel.tsx'
 import { cx, iconButtonClass } from './classes.ts'
 import { CloseIcon, SettingsIcon } from './icons.tsx'
 import { SpaceControls, type SpaceControlsProps } from './SpaceControls.tsx'
+import { usePortalStyle } from './scale.tsx'
 import { type SettingsState, sameSettings, settingsReducer } from './settings.ts'
 
 /** Props of {@link SettingsButton}. */
@@ -72,6 +73,7 @@ export function SettingsButton<T>(props: SettingsButtonProps<T>): ReactNode {
   const trigger = useRef<HTMLButtonElement>(null)
   const dialog = useRef<HTMLFormElement>(null)
   const titleId = useId()
+  const carried = usePortalStyle(trigger, state.open)
   const dirty = !equals(state.draft, value)
   const close = useCallback((): void => {
     dispatch({ type: 'cancel' })
@@ -117,6 +119,8 @@ export function SettingsButton<T>(props: SettingsButtonProps<T>): ReactNode {
             // (a select's list) sit above it.
             <div
               className="fixed inset-0 z-[1100] flex items-center justify-center bg-black/50 p-4"
+              style={carried.style}
+              {...(carried.theme === undefined ? {} : { 'data-theme': carried.theme })}
               onPointerDown={(e) => {
                 if (e.target === e.currentTarget) dispatch({ type: 'backdrop', dirty })
               }}
