@@ -28,6 +28,8 @@ export interface DualCdOptions {
   readonly fitIntercept?: boolean
   /** The value of the constant feature (liblinear's bias, sklearn's intercept_scaling; default 1). */
   readonly bias?: number
+  /** A multiplier of `C` for each row `[n]` (sample weights, class weights; liblinear's per-instance penalty; default 1). */
+  readonly weights?: TensorLike
 }
 
 /** State of {@link linearSvmDualCdAlgorithm}. */
@@ -98,7 +100,7 @@ function objectives(
   p: Problem,
   alpha: Float64Array,
   w: Float64Array,
-  C: number,
+  C: ArrayLike<number>,
   loss: DualCdLoss,
 ): { primal: number; dual: number } {
   let ww = 0
@@ -110,11 +112,11 @@ function objectives(
     let z = 0
     for (let j = 0; j < p.d; j++) z += (w[j] ?? 0) * (p.x[i * p.d + j] ?? 0)
     const slack = Math.max(0, 1 - (p.y[i] ?? 0) * z)
-    hinge += loss === 'l1' ? slack : slack * slack
+    hinge += (C[i] ?? 0) * (loss === 'l1' ? slack : slack * slack)
     a += alpha[i] ?? 0
-    aa += (alpha[i] ?? 0) ** 2
+    aa += (alpha[i] ?? 0) ** 2 / (C[i] ?? 1)
   }
-  return { primal: 0.5 * ww + C * hinge, dual: a - 0.5 * ww - (loss === 'l2' ? aa / (4 * C) : 0) }
+  return { primal: 0.5 * ww + hinge, dual: a - 0.5 * ww - (loss === 'l2' ? aa / 4 : 0) }
 }
 
 /**
@@ -152,16 +154,21 @@ export function linearSvmDualCdAlgorithm(
   const loss = options.loss ?? 'l1'
   const tol = options.tol ?? 1e-4
   const shrinking = options.shrinking ?? true
-  const upper = loss === 'l1' ? C : Number.POSITIVE_INFINITY
-  const diag = loss === 'l1' ? 0 : 1 / (2 * C)
+  const weights = options.weights === undefined ? undefined : toFlat(asTensor(options.weights))
+  if (weights !== undefined && (weights.length !== p.n || weights.some((v) => !(v > 0))))
+    throw new OmaiError('value', 'linearSvmDualCd: weights must be positive, one per row')
+  // The penalty of each row, and from it the bound and the diagonal term of its dual variable.
+  const cs = Float64Array.from({ length: p.n }, (_, i) => C * (weights?.[i] ?? 1))
+  const upperAt = (i: number): number => (loss === 'l1' ? (cs[i] ?? C) : Number.POSITIVE_INFINITY)
+  const diagAt = (i: number): number => (loss === 'l1' ? 0 : 1 / (2 * (cs[i] ?? C)))
   const qii = Float64Array.from({ length: p.n }, (_, i) => {
-    let s = diag
+    let s = diagAt(i)
     for (let j = 0; j < p.d; j++) s += (p.x[i * p.d + j] ?? 0) ** 2
     return s
   })
   return {
     name: 'linear-svm-dual-cd',
-    config: { n: p.n, d: p.d, C, loss, tol, shrinking } as Json,
+    config: { n: p.n, d: p.d, C, loss, tol, shrinking, weighted: weights !== undefined } as Json,
     schema: channels({
       metrics: {
         primal: { description: 'primal objective at the current weights', direction: 'lower' },
@@ -181,7 +188,7 @@ export function linearSvmDualCdAlgorithm(
       minViolation: Number.NEGATIVE_INFINITY,
       shrinkMax: Number.POSITIVE_INFINITY,
       shrinkMin: Number.NEGATIVE_INFINITY,
-      primal: C * p.n,
+      primal: cs.reduce((a, v) => a + v, 0),
       dual: 0,
       converged: false,
     }),
@@ -199,7 +206,8 @@ export function linearSvmDualCdAlgorithm(
         for (let j = 0; j < p.d; j++) z += (w[j] ?? 0) * (p.x[i * p.d + j] ?? 0)
         const yi = p.y[i] ?? 1
         const a = alpha[i] ?? 0
-        const g = yi * z - 1 + diag * a
+        const upper = upperAt(i)
+        const g = yi * z - 1 + diagAt(i) * a
         let pg = 0
         let drop = false
         if (a === 0) {
@@ -232,7 +240,7 @@ export function linearSvmDualCdAlgorithm(
           shrinkMin = Number.NEGATIVE_INFINITY
         }
       }
-      const { primal, dual } = objectives(p, alpha, w, C, loss)
+      const { primal, dual } = objectives(p, alpha, w, cs, loss)
       return {
         alpha,
         w,

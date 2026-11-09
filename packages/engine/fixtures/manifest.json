@@ -55,6 +55,15 @@
       "cases": 5
     },
     {
+      "fixture": "cluster/biclustering.json",
+      "source": "oracle/cases/cluster/biclustering.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 23
+    },
+    {
       "fixture": "cluster/birch.json",
       "source": "oracle/cases/cluster/birch.py",
       "reference": {
@@ -202,6 +211,15 @@
         "numpy": "2.5.4"
       },
       "cases": 6
+    },
+    {
+      "fixture": "decomposition/lda.json",
+      "source": "oracle/cases/decomposition/lda.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 21
     },
     {
       "fixture": "decomposition/nmf_hals.json",
@@ -4864,6 +4882,15 @@
         "scikit-learn": "1.9.1"
       },
       "cases": 16
+    },
+    {
+      "fixture": "svm/linear.json",
+      "source": "oracle/cases/svm/linear.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 48
     },
     {
       "fixture": "svm/one_class.json",

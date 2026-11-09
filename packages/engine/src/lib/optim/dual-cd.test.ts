@@ -128,4 +128,17 @@ describe('linear SVM by dual coordinate descent', () => {
     expect(() => linearSvmDualCd(x, new Array(200).fill(1), 1)).toThrow()
     expect(() => linearSvmDualCd(x, [1, -1], 1)).toThrow()
   })
+
+  it('row weights multiply C: weight 2 on a row equals repeating it, weights must be positive', () => {
+    const { x, y } = blobs(8, 30, 2, 1)
+    const w = y.map((_, i) => (i % 3 === 0 ? 2 : 1))
+    const weighted = linearSvmDualCd(x, y, 1, { weights: w, loss: 'l2', tol: 1e-10, maxSweeps: 5000 })
+    const rep = x.flatMap((row, i) => (i % 3 === 0 ? [row, row] : [row]))
+    const labels = y.flatMap((v, i) => (i % 3 === 0 ? [v, v] : [v]))
+    const repeated = linearSvmDualCd(rep, labels, 1, { loss: 'l2', tol: 1e-10, maxSweeps: 5000 })
+    for (const [j, v] of Array.from(weighted.coef).entries()) expect(v).toBeCloseTo(repeated.coef[j] ?? 0, 6)
+    expect(weighted.intercept).toBeCloseTo(repeated.intercept, 6)
+    expect(weighted.gap).toBeLessThan(1e-6)
+    expect(() => linearSvmDualCd(x, y, 1, { weights: y.map(() => 0) })).toThrow(/positive/)
+  })
 })

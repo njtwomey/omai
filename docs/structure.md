@@ -1991,6 +1991,11 @@ that records the objective, gradient norm, step size and (by policy) the iterate
   duality gap on the tape. It sits here beside SMO because `svm` imports `learn`; an SVM estimator takes it as a mode of its
   solver table. oracle: `optim/dual_cd` against `sklearn.svm.LinearSVC(dual=True)` (cases where liblinear hits its
   iteration cap are refused); also cross-checked in a test against `svcDual` on a symmetrised dataset (primal objective).
+  `weights` multiplies `C` per row (class and sample weights).
+- `dual-cd-svr.ts`: its regression companion (`linearSvrDualCdAlgorithm`, `linearSvrDualCd`; Ho and Lin 2012,
+  liblinear's SVR solver) for the epsilon-insensitive and squared epsilon-insensitive losses, one random sweep per step
+  (no shrinking), the primal, dual and gap on the tape, per-row weights. Checked through `svm/linear` against
+  `sklearn.svm.LinearSVR`.
 - `online-experts.ts`: prediction with expert advice as rules run by `expertsAlgorithm` with the regret on the tape (and
   against the best k-switching sequence by `bestSwitchingLoss`): weighted majority (deterministic and randomised, with the
   mistake bounds), follow the leader, follow the perturbed leader, Hedge, fixed share, variable share; `exp4Algorithm`
@@ -4406,13 +4411,26 @@ the distance-based ones take a `metric` from `distances` (or `'precomputed'`, th
   `affinityPropagationAlgorithm` (one damped round of messages per step, scikit-learn's tie-breaking noise from a key),
   `affinityPropagationFit`, `affinityPropagation`. `constrained.ts`: `copKMeansAlgorithm`, `constrainedAssignment`,
   `brokenConstraints`, `copKMeans`.
+- `bicluster-normalise.ts`, `bicluster-algorithms.ts`, `bicluster-score.ts`, `biclustering.ts`: spectral biclustering.
+  The normalisations (`makeNonnegative`, `scaleNormalize`, `logNormalize` and the bistochastic iteration as
+  `bistochasticNormalizeAlgorithm`, one scaling per step, with `bistochasticNormalize`); `spectralCoclusteringAlgorithm`
+  (the scaled singular vectors of rows and columns stacked, then Lloyd's steps on the `n + d` points) and
+  `spectralBiclusteringAlgorithm` (the most piecewise-constant singular vectors by 1-D k-means, then Lloyd's steps on
+  the rows, then on the columns, in the span of the other side's vectors; `BiclusteringState` is the two stages); the
+  SVD is exact by default (scikit-learn's `arpack`) or randomised, and `nInit` starts run to convergence with the best
+  one's initial centres replayed on the tape. `consensusScore` (the Jaccard matching of two sets of biclusters by the
+  assignment of `optim`), the estimators `spectralCoclustering` and `spectralBiclustering` (`getIndices`, `getShape`,
+  `getSubmatrix`; `bicluster/labels` and `bicluster/order` paths). `datasets#makeBiclusters` and `makeCheckerboard`
+  are the truth. Not offered: the mini-batch k-means option.
 - `validity.ts`: the choice of k: `kmeansElbow`, `gapStatistic` (Tibshirani's rule over uniform references) and
   `stabilityIndex` (adjusted Rand agreement of clusterings of subsamples). `_support.ts` is private to the folder.
 
 oracle: scikit-learn KMeans with fixed initial centres (`methods/cluster/kmeans` fixture, kept at its old path, also
 checked against Elkan's), DBSCAN, OPTICS and HDBSCAN (`methods/cluster/density`), affinity propagation
 (`methods/cluster/exemplar`), scipy linkage and cophenet (`methods/cluster/hierarchical`), BIRCH subcluster centres in
-leaf-chain order and labels (`cluster/birch`), mean shift centres, labels and bandwidth (`cluster/mean_shift`)
+leaf-chain order and labels (`cluster/birch`), mean shift centres, labels and bandwidth (`cluster/mean_shift`),
+the three normalisations, the consensus score and the partitions of co-clustering and biclustering on planted data where
+scikit-learn is stable under its random state, as labels up to permutation (`cluster/biclustering`)
 ### 4.40a `decomposition/`: linear and factor decompositions (scikit-learn decomposition, cross_decomposition, random_projection)
 
 Decompositions as transformers: each iterative routine is a traced `Algorithm` with a serialising state, each model an
@@ -4440,6 +4458,13 @@ thin SVD with scikit-learn's sign convention, projection and reconstruction.
   maximum-likelihood iteration, one per step), `factorAnalysis` with varimax and quartimax (`rotateLoadings`),
   `latentVerbs` and `latentCovariance`. `random-projection.ts`: `randomProjection` (Gaussian and sparse, the
   Johnson-Lindenstrauss dimension, a distortion report).
+- `lda.ts`: latent Dirichlet allocation by variational Bayes (Hoffman et al. 2010) with scikit-learn's E-step, M-step,
+  online weight, bound and perplexity: `ldaAlgorithm` (one EM update per step: the whole corpus in batch mode, one
+  mini-batch in online mode; the tape holds the bound, the perplexity, the topic-word parameters and the document
+  proportions, and the stopping rule on the perplexity lives in the state), `ldaBound`, and the estimator
+  `latentDirichletAllocation` (`componentsInit` and `docInit: 'constant'` make a run deterministic; `transform`,
+  `perplexity`, `score`; the `lda/topics` path and the final record are a `ComponentsRecord` with `space:
+  'vocabulary'`). The test bed is `datasets#topicCorpus` and `text#topicCoherence`.
 - `convolutional-method.ts`: `convolutionalDictionaryMethod` (a session over a `pulseTrain` signal and
   `convolutionalDictionaryLearningAlgorithm` of `optim`, with `cdl/planted` and `cdl/recovery` probes beside the
   learner's contract) and `convolutionalDictionaryProblem`. It is here and not in `optim` because `datasets` reaches
@@ -4468,8 +4493,9 @@ thin SVD with scikit-learn's sign convention, projection and reconstruction.
 oracle: scikit-learn PCA, IncrementalPCA, FastICA (parallel, with fixed initial unmixing), NMF (`mu` from fixed factors),
 PLSRegression, PLSCanonical, CCA, PLSSVD and FactorAnalysis (`methods/decomposition/*` fixtures, kept at their old
 paths; PCA is also checked through power iteration), plus deflationary FastICA (`decomposition/ica_deflation`) and NMF
-by coordinate descent against HALS (`decomposition/nmf_hals`), and sparse coding and dictionary learning
-(`decomposition/dictionary_learning`)
+by coordinate descent against HALS (`decomposition/nmf_hals`), sparse coding and dictionary learning
+(`decomposition/dictionary_learning`), and LDA batch and online from fixed initial topics (`decomposition/lda`;
+scikit-learn's own digamma is a fast approximation, so parity is 1e-6)
 
 ### 4.40b `manifold/`: embeddings and manifold learning (scikit-learn manifold, umap-learn)
 
@@ -4986,6 +5012,20 @@ resolved kernel), so `revive` rebuilds the verbs and `fittedAt(t)` gives the mod
   per pair the coefficients and intercept.
 - `regressor.ts`: `svr` (epsilon-SVR; `form: 'nu'` is NuSVR, also `nuSvr`), the tube width given or found
   (`params.tube`), the probe's margins being the residuals.
+- `linear.ts` (with the private `_linear.ts`): `linearSvc` and `linearSvr` (liblinear's models as estimators on the
+  iterative base): a penalty plus a hinge-type loss over the rows on the weights and the intercept as a constant feature
+  (`interceptScaling`, penalised with the weights as liblinear does), in the primal space (`d + 1` dimensions, not the
+  kernel expansion). Losses: the squared hinge (default) or the hinge, the L2 or L1 penalty (L1 with the squared hinge
+  only); epsilon-insensitive or its square for the regressor (`epsilon`); class weights (`balanced` or by label) and
+  sample weights (a zero weight drops the row). The solver is a slot (`linearSvcSolvers`, `linearSvrSolvers`): `dcd`
+  (default; `optim/dual-cd.ts` and `dual-cd-svr.ts`: one sweep per step, primal and dual and gap on the tape, either
+  loss under the L2 penalty), `owlqn` (the L1 penalty; the default `dcd` becomes it under `penalty: 'l1'`) and every
+  solver of `smoothSolvers` on the squared-hinge or squared epsilon-insensitive primal (analytic gradient and
+  generalised Hessian), which the hinge and the L1 norm do not admit. More than two classes are one-versus-rest in one
+  algorithm, one problem after another (`solver/problem`, `solver/weights` of every problem), the binary model
+  positive for the second class. Not offered: Crammer-Singer, `dual: 'auto'` (the solver slot is the choice), Pegasos.
+  oracle: `svm/linear` against `LinearSVC` and `LinearSVR` run to a tolerance of 1e-10 (weights, intercepts and decision
+  values to 1e-6 for the strictly convex L2 problems, 1e-4 for the L1 one).
 - `one-class.ts`: `oneClassSvm` (nu) and `svdd` (C, at least 1/n), the signed score positive inside the learnt region;
   with a kernel of constant diagonal they are one machine (C = 1 / (nu n)).
 - `probability.ts`: `pairwiseCoupling` (libsvm's second method of Wu, Lin and Weng).
@@ -6073,7 +6113,7 @@ built from: `optim/smo.ts`, `optim/quadratic.ts`, `kernels`, `learn/calibration.
 - `classifier.ts`: SVC and nu-SVC (one-versus-one multiclass, Platt probabilities), decision functions, support
   vectors, margins.
 - `regressor.ts`: SVR and nu-SVR.
-- `linear.ts`: linear SVM by dual coordinate descent, Pegasos, Crammer-Singer multiclass.
+- `linear.ts`: linear SVM and SVR by dual coordinate descent or any smooth solver, L1 penalty by OWL-QN (Pegasos, Crammer-Singer: not yet).
 - `one-class.ts`: one-class SVM, support vector data description.
 
 `kernel-methods/`
