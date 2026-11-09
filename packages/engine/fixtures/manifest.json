@@ -220,6 +220,14 @@
       "cases": 18
     },
     {
+      "fixture": "decomposition/truncated_svd.json",
+      "source": "oracle/cases/decomposition/truncated_svd.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 4
+    },
+    {
       "fixture": "distances/evaluate.json",
       "source": "oracle/cases/distances/evaluate.py",
       "reference": {

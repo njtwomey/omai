@@ -4425,6 +4425,11 @@ thin SVD with scikit-learn's sign convention, projection and reconstruction.
 - `nmf.ts`: `nmfAlgorithm` (multiplicative updates for the Frobenius or Kullback-Leibler loss, HALS sweeps for Frobenius;
   the stopping rule lives in the state, so a replay stops where the run did), `nndsvda`, `nmfDivergence`, the estimator
   `nmf` (transform solves W for new rows with H fixed).
+- `truncated-svd.ts`: `truncatedSvdAlgorithm` (the leading singular triplets of the uncentred data, exact or randomised with
+  scikit-learn's power iterations and oversampling; the explained variance is that of the scores) and the estimator
+  `truncatedSvd` (`TruncatedSVD`: transform `X V^T`, inverse transform, components, singular values). oracle:
+  `decomposition/truncated_svd` (ARPACK on tall, wide and low-rank data, the randomised solver on an exactly low-rank matrix;
+  signs fixed).
 - `minibatch-nmf.ts`: `miniBatchNmfAlgorithm` (scikit-learn's online NMF, one batch per step: W of the batch by the
   multiplicative rule or solved afresh, H from the discounted running numerator and denominator, any beta divergence,
   l1 and l2 penalties, the two stopping rules; the state serialises), `betaDivergence`, `solveWeights` (the transform) and
