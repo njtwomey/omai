@@ -2,6 +2,41 @@
  * The colour mode in React: `ThemeProvider` and `useColourMode` take the mode from a prop or from the page's root
  * `dark` class (dark by default, no system-preference detection), and `useTokens` gives the design tokens of the
  * current mode.
+ *
+ * ## Mapping a host's tokens
+ *
+ * The figures take their colours from two places, and a host that has its own design tokens connects both.
+ *
+ * Chrome that is HTML (the controls, `FigureFrame`'s title, purpose, readouts and caption, popovers, menus) reads these
+ * CSS custom properties, which the page defines (`cssText('dark', '.dark')` from `omai-render/theme` writes a whole
+ * set), with the tokens of the current mode as the fallback where one is not defined:
+ *
+ * - `--wb-fg`: text and icons. `--wb-bg`: the background of fields, menus and switch knobs.
+ * - `--wb-surface`: hover and segmented-control backgrounds. `--wb-muted`: labels, units, secondary text.
+ * - `--wb-grid`: borders and rules (and a switch's off track). `--wb-accent`: the on state, sliders, focus rings.
+ * - `--wb-danger`: a field's validation error. `--wb-font`: the text face of `ThresholdExplorer`'s notes.
+ * - `--wb-mono-font`: the face of typeset maths (`maths.css`).
+ *
+ * `cssVariables` also writes `--wb-fg-secondary`, `--wb-axis`, `--wb-tooltip`, `--wb-success`, `--wb-warning`,
+ * `--wb-info` and `--wb-tab0` to `--wb-tab9`, which the package's own styles do not read; they are there for a host's
+ * stylesheet. (`ControlPanel` sets `--wb-sidebar` itself, to its sidebar width; do not map it.)
+ *
+ * Charts and scenes are drawn from the values of `tokens(mode)`, not from CSS variables, so a host's CSS does not
+ * recolour them: they follow the mode (`ThemeProvider`, or the page's `dark` class), and a series with an explicit
+ * `colour` keeps it. The mode of the figures and the host's must agree: with a host that switches by a class other
+ * than `dark`, wrap the figures in `<ThemeProvider mode={...}>`.
+ *
+ * ```css
+ * :root {
+ *   --wb-fg: var(--foreground);
+ *   --wb-bg: var(--background);
+ *   --wb-surface: var(--card);
+ *   --wb-muted: var(--muted-foreground);
+ *   --wb-grid: var(--border);
+ *   --wb-accent: var(--primary);
+ *   --wb-danger: var(--destructive);
+ * }
+ * ```
  */
 
 import { createContext, type ReactElement, type ReactNode, useContext, useMemo, useSyncExternalStore } from 'react'

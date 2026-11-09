@@ -7460,7 +7460,10 @@ Design rules:
   (a grid of panels is one figure), exporting the whole figure (charts, scenes, overlay cells) as SVG or PNG, and given
   a `playback`, recording it as GIF or WebM. Fixed content is magnified in the modal; content that is a function of the
   size redraws at it; the expanded figure is a labelled modal that holds focus and returns it to its Expand button, and
-  the export menu is a `Popover`. `SceneFrame.tsx`: a scene as one framed figure (`fitScene`).
+  the export menu is a `Popover`. The frame also takes the figure's text as slots (`purpose`, `controls`, `readouts`,
+  `caption`), and its title is a permalink (`id`, `permalink`: a link to `#id` that copies the address; a page opened at
+  the hash scrolls to the frame and outlines it). `FigureParts.tsx`: `Controls` (a wrapping row of controls) and
+  `Readouts` (label and value pairs as a `dl`). `SceneFrame.tsx`: a scene as one framed figure (`fitScene`).
 - `FigureGrid.tsx`: a gridspec drawn as one subplot chart with text, TeX or React content in the other cells, scaled to
   fit their cells.
 - `echarts.ts`: `loadEcharts` for the React bindings.
@@ -7476,7 +7479,7 @@ Design rules:
 - `controls/` (shadcn/ui components): controls generated from a `Space` (`SpaceControls`); `NumberField` (type a
   value, slide it, step it, or pick from a dropdown of 11 increments between its bounds, as aifn-engine's); `Select`
   and `Choice` with previous and next arrows to cycle through options (datasets, models) without opening the menu;
-  `Toggle`, `SeedInput`; validity greying (`SpaceControls` takes `admissible` and `why`, and an option a rule rules out is
+  `Toggle` (these four take `size` `sm`/`md`/`lg`, `width` as pixels, a CSS length, `fill` or `auto`, and wrap their label unless `truncate`), `SeedInput`; validity greying (`SpaceControls` takes `admissible` and `why`, and an option a rule rules out is
   drawn disabled with the reason as its title; `validity.ts` reads the rule from the option tables: `tableSlot` (from the
   properties of a table of losses, penalties or schedules), `modeSlot` (from a mode table's `needs`), `tableRules`,
   `settleAdmissible`); `ModelSelector` (the options of a union as a list, each with a settings popover; the knobs set for

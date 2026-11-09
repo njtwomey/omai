@@ -2,6 +2,8 @@
  * The fixed-size figure area every figure sits in: content never resizes it, an expand button opens it full screen in a
  * modal, and its menu exports the whole figure (charts, scenes, typeset overlays) as SVG or PNG, or records a playback
  * as GIF or WebM; a settings button (a modal applied only on confirm) can sit beside them. `useFrameSize` tells content the size it is drawn at.
+ * The frame also holds the figure's text: a purpose line under the title, a row of controls, readouts and a caption,
+ * and its title is a permalink (a link to `#id`) so a reader can copy the address of this exact figure.
  */
 
 import type { Pixels } from 'omai-engine/scene'
@@ -25,10 +27,12 @@ import { chartToSvg, composeSvg, type FigurePart, svgDataUrl, svgToPixels, svgTo
 import { escapeXml } from '../svg/svg.ts'
 import { type ColourMode, tokens } from '../theme/tokens.ts'
 import { nextPaint, saveBlob, saveUrl } from './_download.ts'
+import { prefersReducedMotion } from './_motion.ts'
 import { useFocusTrap } from './controls/_focus.ts'
 import { menuItemClass } from './controls/classes.ts'
 import { Popover } from './controls/Popover.tsx'
 import { loadEcharts } from './echarts.ts'
+import { Controls, type ReadoutItem, Readouts } from './FigureParts.tsx'
 import { useColourMode } from './theme.tsx'
 
 /** The size a frame gives its content, and whether it is expanded in the modal. */
@@ -118,7 +122,30 @@ export interface FigureFrameProps {
   readonly width?: number
   readonly height?: number
   readonly title?: ReactNode
+  /** A short line under the title saying what the figure is for. */
+  readonly purpose?: ReactNode
+  /**
+   * The controls that drive the figure (`NumberField`, `Toggle`, `Select`, `Choice`), drawn in a wrapping {@link Controls}
+   * row between the title and the figure.
+   */
+  readonly controls?: ReactNode
+  /** Label and value pairs the figure reports, drawn as {@link Readouts} under the figure. */
+  readonly readouts?: readonly ReadoutItem[]
+  /** Text under the figure (and its readouts). */
   readonly caption?: ReactNode
+  /**
+   * Make the title a permalink (default true when there is a title): the title links to `#id`, a click sets the page's
+   * hash, scrolls the frame into view and copies the full address to the clipboard (announced politely as "Copied"),
+   * and a page opened at that hash scrolls to the frame and outlines it briefly (not animated for a reader who asked
+   * for less motion). False turns all of it off, and the frame gets an `id` only if one is given.
+   */
+  readonly permalink?: boolean
+  /**
+   * The frame's `id`, the fragment of its permalink. Default: a slug of a string `title` (`"Loss over time"` becomes
+   * `loss-over-time`), else one made by React that is stable within a page render but not between builds. Two frames
+   * on a page need different ids; give an explicit one wherever a link has to last.
+   */
+  readonly id?: string
   /** The content: nodes, or a function of the frame size (to draw larger in the modal). */
   readonly children: ReactNode | ((size: FrameSize) => ReactNode)
   /**
@@ -154,6 +181,35 @@ export interface FigureFrameProps {
 const ICON_EXPAND = 'M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5'
 const ICON_CLOSE = 'M6 6l12 12M18 6L6 18'
 const ICON_DOWNLOAD = 'M12 4v11m0 0l-4-4m4 4l4-4M5 20h14'
+const ICON_LINK = 'M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1'
+
+/** A fragment-safe slug of a title: lower case words joined by hyphens (empty when nothing is left). */
+function slugOf(title: string): string {
+  return title
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
+/** The hash of the page without its `#`, decoded; empty when there is none or no page. */
+function pageHash(): string {
+  const raw = globalThis.location?.hash ?? ''
+  const hash = raw.startsWith('#') ? raw.slice(1) : raw
+  try {
+    return decodeURIComponent(hash)
+  } catch {
+    return hash
+  }
+}
+
+/** The address of the page with its hash set to `id`. */
+function permalinkUrl(id: string): string {
+  const loc = globalThis.location
+  if (loc === undefined) return `#${id}`
+  return `${loc.origin ?? ''}${loc.pathname ?? ''}${loc.search ?? ''}#${id}`
+}
 
 function Icon(props: { readonly path: string }): ReactElement {
   return (
@@ -290,6 +346,20 @@ export function FigureFrame(props: FigureFrameProps): ReactElement {
   const height = props.height ?? props.figure?.height ?? 400
   const aspect = width / height
   const titleId = useId()
+  const purposeId = useId()
+  const fallbackId = `figure-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`
+  const permalink = (props.permalink ?? true) && props.title !== undefined
+  const slug = typeof props.title === 'string' ? slugOf(props.title) : ''
+  const frameId = props.id ?? (slug === '' ? fallbackId : slug)
+  const figureRef = useRef<HTMLElement | null>(null)
+  // Permalink state: the pointer or focus is on the title (its link icon shows), "Copied" is announced, the frame is outlined.
+  const [linkHot, setLinkHot] = useState(false)
+  const [copied, setCopied] = useState(false)
+  const [flash, setFlash] = useState(false)
+  // Read after mount, so a server-rendered frame and its hydration agree.
+  const [reduced, setReduced] = useState(false)
+  const copiedTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const flashTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const [expanded, setExpanded] = useState(false)
   // The export menu is open from the page's toolbar or from the modal's (never both).
   const [menu, setMenu] = useState<'page' | 'modal' | null>(null)
@@ -331,6 +401,50 @@ export function FigureFrame(props: FigureFrameProps): ReactElement {
       window.removeEventListener('keydown', onKey)
     }
   }, [expanded])
+
+  // A page opened at this frame's hash scrolls to it and outlines it; so does a later change of the hash to it.
+  useEffect(() => {
+    if (!permalink) return
+    setReduced(prefersReducedMotion())
+    const mark = (): void => {
+      setFlash(true)
+      clearTimeout(flashTimer.current)
+      flashTimer.current = setTimeout(() => setFlash(false), 1800)
+    }
+    if (pageHash() === frameId) {
+      figureRef.current?.scrollIntoView?.({ block: 'start' })
+      mark()
+    }
+    const onHash = (): void => {
+      if (pageHash() === frameId) mark()
+    }
+    window.addEventListener('hashchange', onHash)
+    return () => {
+      window.removeEventListener('hashchange', onHash)
+      clearTimeout(flashTimer.current)
+    }
+  }, [permalink, frameId])
+  useEffect(() => () => clearTimeout(copiedTimer.current), [])
+
+  const followLink = useCallback(
+    (e: { preventDefault: () => void }) => {
+      e.preventDefault()
+      const loc = globalThis.location
+      if (loc !== undefined) loc.hash = frameId
+      figureRef.current?.scrollIntoView?.({ block: 'start', behavior: prefersReducedMotion() ? 'auto' : 'smooth' })
+      const clipboard = globalThis.navigator?.clipboard
+      if (clipboard === undefined) return
+      clipboard.writeText(permalinkUrl(frameId)).then(
+        () => {
+          setCopied(true)
+          clearTimeout(copiedTimer.current)
+          copiedTimer.current = setTimeout(() => setCopied(false), 1800)
+        },
+        () => undefined,
+      )
+    },
+    [frameId],
+  )
 
   // Focus stays in the expanded figure and goes back to its Expand button when it closes.
   useFocusTrap(expanded, dialogRef)
@@ -480,21 +594,98 @@ export function FigureFrame(props: FigureFrameProps): ReactElement {
   )
   return (
     <figure
+      ref={figureRef}
       className={props.className}
-      style={{ margin: 0, width, maxWidth: '100%', ...props.style }}
+      style={{
+        margin: 0,
+        width,
+        maxWidth: '100%',
+        ...(permalink
+          ? {
+              scrollMarginTop: 16,
+              borderRadius: 4,
+              outline: `2px solid ${flash ? `var(--wb-accent, ${t.accent})` : 'transparent'}`,
+              outlineOffset: 6,
+              transition: reduced ? 'none' : 'outline-color 0.6s ease',
+            }
+          : {}),
+        ...props.style,
+      }}
+      {...(permalink || props.id !== undefined ? { id: frameId } : {})}
       {...(props.title === undefined ? {} : { 'aria-labelledby': titleId })}
+      {...(props.purpose === undefined ? {} : { 'aria-describedby': purposeId })}
     >
       {(props.title !== undefined || hasTools) && (
         // The title and the buttons sit above the figure area, so they never cover a legend or data.
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, minHeight: 28 }}>
           {props.title !== undefined && (
-            <div id={titleId} style={{ font: `600 13px ${t.font}`, color: t.fg }}>
-              {props.title}
+            <div id={titleId} style={{ font: `600 13px ${t.font}`, color: `var(--wb-fg, ${t.fg})` }}>
+              {permalink ? (
+                <a
+                  href={`#${frameId}`}
+                  title="Copy link to this figure"
+                  onClick={followLink}
+                  onPointerEnter={() => setLinkHot(true)}
+                  onPointerLeave={() => setLinkHot(false)}
+                  onFocus={() => setLinkHot(true)}
+                  onBlur={() => setLinkHot(false)}
+                  style={{
+                    color: 'inherit',
+                    textDecoration: 'none',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                  }}
+                >
+                  {props.title}
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      display: 'inline-flex',
+                      opacity: linkHot || copied ? 0.7 : 0,
+                      color: `var(--wb-muted, ${t.muted})`,
+                    }}
+                  >
+                    <svg
+                      width={14}
+                      height={14}
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                      aria-hidden="true"
+                    >
+                      <path d={ICON_LINK} strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </span>
+                </a>
+              ) : (
+                props.title
+              )}
             </div>
+          )}
+          {permalink && (
+            // Mounted always, so a screen reader announces the text when it appears.
+            <span
+              role="status"
+              aria-live="polite"
+              style={{ font: `11px ${t.monoFont}`, color: `var(--wb-muted, ${t.muted})` }}
+            >
+              {copied ? 'Copied' : ''}
+            </span>
           )}
           {hasTools && toolbar(false)}
         </div>
       )}
+      {props.purpose !== undefined && (
+        <p
+          id={purposeId}
+          style={{ margin: '0 0 8px', font: `12px/1.45 ${t.font}`, color: `var(--wb-muted, ${t.muted})` }}
+        >
+          {props.purpose}
+        </p>
+      )}
+      {props.controls !== undefined && <Controls style={{ marginBottom: 8 }}>{props.controls}</Controls>}
       <div
         ref={frameRef}
         style={{ position: 'relative', width, height, maxWidth: '100%', overflow: 'hidden' }}
@@ -502,8 +693,13 @@ export function FigureFrame(props: FigureFrameProps): ReactElement {
       >
         {!expanded && content(pageSize)}
       </div>
+      {props.readouts !== undefined && props.readouts.length > 0 && (
+        <Readouts items={props.readouts} style={{ marginTop: 8 }} />
+      )}
       {props.caption !== undefined && (
-        <figcaption style={{ font: `12px ${t.font}`, color: t.muted, marginTop: 6 }}>{props.caption}</figcaption>
+        <figcaption style={{ font: `12px ${t.font}`, color: `var(--wb-muted, ${t.muted})`, marginTop: 6 }}>
+          {props.caption}
+        </figcaption>
       )}
       {expanded && (
         // biome-ignore lint/a11y/useKeyWithClickEvents: Escape closes it (a window listener); the backdrop click is an extra
