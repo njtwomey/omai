@@ -54,8 +54,34 @@ describe('sparseCode', () => {
     expect(c[0]?.[1]).toBe(0)
   })
 
+  it('codes non-negatively by least angle regression, as by coordinate descent', () => {
+    const d = [
+      [1, 0],
+      [0, 1],
+      [0.6, 0.8],
+    ]
+    const signals = [
+      [3, -4],
+      [1, 2],
+      [-2, 0.5],
+    ]
+    const lars = toArray(sparseCode(signals, d, { algorithm: 'lassoLars', alpha: 0.3, positive: true })) as number[][]
+    const cd = toArray(
+      sparseCode(signals, d, { algorithm: 'lassoCd', alpha: 0.3, positive: true, tol: 1e-14 }),
+    ) as number[][]
+    for (const [i, row] of lars.entries()) {
+      for (const v of row) expect(v).toBeGreaterThanOrEqual(0)
+      // The objective is convex, so the minimisers agree in what they reconstruct.
+      const fit = (c: number[]): number[] => [0, 1].map((q) => c.reduce((a, v, k) => a + v * (d[k]?.[q] ?? 0), 0))
+      const a = fit(row)
+      const b = fit(cd[i] ?? [])
+      expect(a[0]).toBeCloseTo(b[0] ?? 0, 6)
+      expect(a[1]).toBeCloseTo(b[1] ?? 0, 6)
+    }
+  })
+
   it('refuses a positive code from the coders that cannot make one, and bad shapes', () => {
-    for (const algorithm of ['omp', 'lars', 'lassoLars'] as const)
+    for (const algorithm of ['omp', 'lars'] as const)
       expect(() => sparseCode(x, truth, { algorithm, positive: true })).toThrow(/positive/)
     expect(() =>
       sparseCode(

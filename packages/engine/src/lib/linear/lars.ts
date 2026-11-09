@@ -7,6 +7,7 @@
  * whose `fittedAt(t)` is the model at knot `t`.
  */
 
+import { OmaiError } from '../base/index.ts'
 import { type IterativeEstimator, iterative, type LearnData, targetVector } from '../learn/index.ts'
 import { ddot, dgemm, dgemv, solve } from '../numerics/linalg/index.ts'
 import { dict, real } from '../space/index.ts'
@@ -53,6 +54,11 @@ export interface LarsOptions {
   readonly maxFeatures?: number
   /** Whether to fit an intercept (by centring). */
   readonly fitIntercept?: boolean
+  /**
+   * Keep the coefficients non-negative (scikit-learn's `positive`; `lasso` only): only a variable with a positive
+   * correlation enters, and the path is that of the non-negative lasso.
+   */
+  readonly positive?: boolean
 }
 
 /** A LARS path: the knots, and the order in which variables entered. */
@@ -69,6 +75,8 @@ export type LarsPath = {
 
 const EPS = Number.EPSILON
 const TINY = 1e-30
+/** How close to the largest correlation counts as tied, relative to it, for a step that follows a variable leaving. */
+const TIE = 1e-10
 
 /**
  * The LARS path as a traced algorithm, one knot per step. It logs the metrics `alpha` (the penalty at the knot),
@@ -76,8 +84,9 @@ const TINY = 1e-30
  * tensor `coefficients` (`[d]`, the model at the knot) and the message `event` (a variable entering or leaving).
  *
  * @param design - Features, targets and weights (weights scale rows by their square roots).
- * @param options - The method, a penalty or size to stop at, and the intercept.
+ * @param options - The method, a penalty or size to stop at, the intercept and non-negativity.
  * @returns The algorithm.
+ * @throws OmaiError `value` when `positive` is asked of the `lar` method.
  * @reference B. Efron, T. Hastie, I. Johnstone and R. Tibshirani, Least angle regression, Annals of Statistics 32
  * (2004).
  * @example
@@ -92,6 +101,8 @@ const TINY = 1e-30
 export function larsAlgorithm(design: Design, options: LarsOptions = {}): Algorithm<LarsState, never> {
   const method = options.method ?? 'lasso'
   const fitIntercept = options.fitIntercept ?? true
+  const positive = options.positive ?? false
+  if (positive && method !== 'lasso') throw new OmaiError('value', 'larsAlgorithm: positive needs method lasso')
   const alphaMin = options.alphaMin ?? 0
   const { n, d } = design.x
   const c0 = centre(design, fitIntercept)
@@ -101,15 +112,17 @@ export function larsAlgorithm(design: Design, options: LarsOptions = {}): Algori
   const maxFeatures = Math.min(options.maxFeatures ?? d, d)
   const gram = dgemm(x, x, d, n, d, { transposeA: true })
   const correlationsOf = (r: ArrayLike<number>): Float64Array => dgemv(x, n, d, r, true)
+  // The size of a correlation: its absolute value, or (non-negative coefficients) only its positive side counts.
+  const sized = (v: number): number => (positive ? v : Math.abs(v))
   const largest = (c: ArrayLike<number>): number => {
-    let m = 0
-    for (let j = 0; j < d; j++) m = Math.max(m, Math.abs(c[j] ?? 0))
+    let m = positive ? Number.NEGATIVE_INFINITY : 0
+    for (let j = 0; j < d; j++) m = Math.max(m, sized(c[j] ?? 0))
     return m
   }
   const zeroCoef = new Array<number>(d).fill(0)
   return {
     name: `lars-${method}`,
-    config: { method, alphaMin, maxFeatures, fitIntercept },
+    config: { method, alphaMin, maxFeatures, fitIntercept, positive },
     schema: channels({
       metrics: {
         alpha: {
@@ -155,9 +168,9 @@ export function larsAlgorithm(design: Design, options: LarsOptions = {}): Algori
           let best = -1
           for (let j = 0; j < d; j++) {
             if (active.includes(j) || ignored.includes(j)) continue
-            if (best < 0 || Math.abs(c[j] ?? 0) > Math.abs(c[best] ?? 0)) best = j
+            if (best < 0 || sized(c[j] ?? 0) > sized(c[best] ?? 0)) best = j
           }
-          if (best < 0) return { ...s, ignored, finished: true }
+          if (best < 0 || (positive && (c[best] ?? 0) <= 0)) return { ...s, ignored, finished: true }
           if (independent(gram, d, active, best)) {
             active = [...active, best]
             signs = [...signs, (c[best] ?? 0) >= 0 ? 1 : -1]
@@ -182,14 +195,31 @@ export function larsAlgorithm(design: Design, options: LarsOptions = {}): Algori
         for (let i = 0; i < n; i++) u[i] = (u[i] ?? 0) + (x[i * d + j] ?? 0) * (w[p] ?? 0)
       }
       const cors = correlationsOf(u)
-      const top = active.reduce((mx, j) => Math.max(mx, Math.abs(c[j] ?? 0)), 0)
+      const top = active.reduce((mx, j) => Math.max(mx, sized(c[j] ?? 0)), 0)
       // How far along the direction before an inactive variable ties with the active ones, or the least squares point.
       let gamma = top / aa
+      // Right after a variable left, it and any copy of it are tied with the active ones at the knot itself and fall
+      // behind from there: that tie is not a point to stop at (letting it straight back in would move its coefficient
+      // against its sign).
+      const atKnot = s.justLeft ? TIE * top : -1
       for (let j = 0; j < d; j++) {
         if (active.includes(j) || ignored.includes(j)) continue
-        for (const g of [(top - (c[j] ?? 0)) / (aa - (cors[j] ?? 0)), (top + (c[j] ?? 0)) / (aa + (cors[j] ?? 0))]) {
-          if (g > TINY && g < gamma) gamma = g
+        let candidate = gamma
+        // A variable ties from above (its correlation reaching the active ones') or, unless non-negative, from below.
+        const ties = [[top - (c[j] ?? 0), aa - (cors[j] ?? 0)]] as [number, number][]
+        if (!positive) ties.push([top + (c[j] ?? 0), aa + (cors[j] ?? 0)])
+        for (const [num, den] of ties) {
+          const g = num / den
+          if (num > atKnot && g > TINY && g < candidate) candidate = g
         }
+        if (candidate >= gamma) continue
+        // A variable collinear with the active set stays tied to it all along the path: the "tie" it makes is
+        // rounding, and stopping there would let the next variable in off the equiangular line.
+        if (!independent(gram, d, active, j)) {
+          ignored = [...ignored, j]
+          continue
+        }
+        gamma = candidate
       }
       // Lasso: a coefficient reaching zero first leaves the active set.
       let leaving = -1
@@ -214,6 +244,8 @@ export function larsAlgorithm(design: Design, options: LarsOptions = {}): Algori
         coef[leaving] = 0
         active = active.filter((_, i) => i !== at)
         signs = signs.filter((_, i) => i !== at)
+        // The active set has changed, so what was collinear with it may not be any more.
+        ignored = []
         events.push({ kind: 'leave', feature: leaving })
       }
       const alpha = largest(correlationsOf(residual)) / scale
@@ -303,8 +335,9 @@ export interface LarsPathResult extends LarsPath {
  * The LARS path of a dataset, run to its end (scikit-learn's `lars_path` on centred data, the penalties its `alphas`).
  *
  * @param data - Features, targets and weights.
- * @param options - The method, where to stop and the intercept.
+ * @param options - The method, where to stop, the intercept and non-negativity.
  * @returns The knots, the intercepts and the entry order.
+ * @throws OmaiError `value` when `positive` is asked of the `lar` method.
  * @example
  * ```ts
  * import { larsPath } from 'omai-engine/linear'
@@ -340,6 +373,8 @@ export interface LarsHyper {
   /** Stop when this many variables are active. */
   readonly nNonzeroCoefs?: number
   readonly fitIntercept: boolean
+  /** Non-negative coefficients (`lasso` only). */
+  readonly positive: boolean
 }
 
 /** The fitted parameters of {@link lars}: the model at the stopping point, and the path. */
@@ -364,7 +399,7 @@ export interface LarsVerbs {
   readonly score: (data: LearnData) => number
 }
 
-const LARS_DEFAULTS: LarsHyper = { method: 'lasso', alpha: 0, fitIntercept: true }
+const LARS_DEFAULTS: LarsHyper = { method: 'lasso', alpha: 0, fitIntercept: true, positive: false }
 
 /**
  * Least angle regression and the lasso by LARS (`sklearn.linear_model.Lars` and `LassoLars`): the model is the point of
@@ -372,7 +407,8 @@ const LARS_DEFAULTS: LarsHyper = { method: 'lasso', alpha: 0, fitIntercept: true
  * path is part of the fit (`params.path`). A session adds one knot per step, so `fittedAt(t)` is the model at knot `t`,
  * with `solver/alpha`, `solver/active` and `solver/coefficients` logged.
  *
- * @param hyper - `method` (`lasso` or `lar`), `alpha`, `nNonzeroCoefs`, `fitIntercept`.
+ * @param hyper - `method` (`lasso` or `lar`), `alpha`, `nNonzeroCoefs`, `fitIntercept`, `positive` (non-negative
+ * coefficients, `lasso` only).
  * @returns The estimator.
  * @index estimator Least angle regression: the lasso path one knot per step.
  * @example
@@ -401,6 +437,7 @@ export function lars(
           method: h.method,
           alphaMin: h.alpha,
           fitIntercept: h.fitIntercept,
+          positive: h.positive,
           ...(h.nNonzeroCoefs === undefined ? {} : { maxFeatures: h.nNonzeroCoefs }),
         }),
       maxSteps: (_h, data) => 8 * Math.max(1, designOf(data, 'lars').x.d) + 8,
