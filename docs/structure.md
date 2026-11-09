@@ -4389,13 +4389,26 @@ the distance-based ones take a `metric` from `distances` (or `'precomputed'`, th
   `affinityPropagationAlgorithm` (one damped round of messages per step, scikit-learn's tie-breaking noise from a key),
   `affinityPropagationFit`, `affinityPropagation`. `constrained.ts`: `copKMeansAlgorithm`, `constrainedAssignment`,
   `brokenConstraints`, `copKMeans`.
+- `bicluster-normalise.ts`, `bicluster-algorithms.ts`, `bicluster-score.ts`, `biclustering.ts`: spectral biclustering.
+  The normalisations (`makeNonnegative`, `scaleNormalize`, `logNormalize` and the bistochastic iteration as
+  `bistochasticNormalizeAlgorithm`, one scaling per step, with `bistochasticNormalize`); `spectralCoclusteringAlgorithm`
+  (the scaled singular vectors of rows and columns stacked, then Lloyd's steps on the `n + d` points) and
+  `spectralBiclusteringAlgorithm` (the most piecewise-constant singular vectors by 1-D k-means, then Lloyd's steps on
+  the rows, then on the columns, in the span of the other side's vectors; `BiclusteringState` is the two stages); the
+  SVD is exact by default (scikit-learn's `arpack`) or randomised, and `nInit` starts run to convergence with the best
+  one's initial centres replayed on the tape. `consensusScore` (the Jaccard matching of two sets of biclusters by the
+  assignment of `optim`), the estimators `spectralCoclustering` and `spectralBiclustering` (`getIndices`, `getShape`,
+  `getSubmatrix`; `bicluster/labels` and `bicluster/order` paths). `datasets#makeBiclusters` and `makeCheckerboard`
+  are the truth. Not offered: the mini-batch k-means option.
 - `validity.ts`: the choice of k: `kmeansElbow`, `gapStatistic` (Tibshirani's rule over uniform references) and
   `stabilityIndex` (adjusted Rand agreement of clusterings of subsamples). `_support.ts` is private to the folder.
 
 oracle: scikit-learn KMeans with fixed initial centres (`methods/cluster/kmeans` fixture, kept at its old path, also
 checked against Elkan's), DBSCAN, OPTICS and HDBSCAN (`methods/cluster/density`), affinity propagation
 (`methods/cluster/exemplar`), scipy linkage and cophenet (`methods/cluster/hierarchical`), BIRCH subcluster centres in
-leaf-chain order and labels (`cluster/birch`), mean shift centres, labels and bandwidth (`cluster/mean_shift`)
+leaf-chain order and labels (`cluster/birch`), mean shift centres, labels and bandwidth (`cluster/mean_shift`),
+the three normalisations, the consensus score and the partitions of co-clustering and biclustering on planted data where
+scikit-learn is stable under its random state, as labels up to permutation (`cluster/biclustering`)
 ### 4.40a `decomposition/`: linear and factor decompositions (scikit-learn decomposition, cross_decomposition, random_projection)
 
 Decompositions as transformers: each iterative routine is a traced `Algorithm` with a serialising state, each model an

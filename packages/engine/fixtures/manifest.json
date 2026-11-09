@@ -55,6 +55,15 @@
       "cases": 5
     },
     {
+      "fixture": "cluster/biclustering.json",
+      "source": "oracle/cases/cluster/biclustering.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 23
+    },
+    {
       "fixture": "cluster/birch.json",
       "source": "oracle/cases/cluster/birch.py",
       "reference": {
