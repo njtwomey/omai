@@ -7707,9 +7707,9 @@ Design rules:
   fit their cells.
 - `echarts.ts`: `loadEcharts` for the React bindings.
 - `interaction/`: overlays laid over any figure through a projection (`projection.ts`: linear, or a live chart's via
-  `useChartProjection`, computed from the chart's option when its axes are linear and numeric and its grid is pinned
-  (`outerBoundsMode: 'none'`, which the cartesian builders write), so a drag never asks ECharts, else through ECharts'
-  converters; `project(x, y)` and `unproject(px, py)` beside `toPixel` and `toData`): `DraggablePoints` (drag, click to add, remove, keyboard nudges) with `constraints.ts` (on a
+  `useChartProjection`, linear and computed without asking ECharts during a drag when the axes are numeric value
+  axes: from the option when the grid is pinned (`outerBoundsMode: 'none'`), else from the two corners of the axes that
+  ECharts reports once per redraw (ECharts 6's `'auto'` moves the box); other axes through ECharts' converters; `project(x, y)` and `unproject(px, py)` beside `toPixel` and `toData`): `DraggablePoints` (drag, click to add, remove, keyboard nudges) with `constraints.ts` (on a
   graph, segment, polyline or circle, along an axis, on a grid, in a box, chained), `Brush`, `Probe`, `NearestHover`,
   `selection.ts`, `useLinkState` (a figure `LinkStore` in React) and `keys.ts` (`useHeldKeys`: keys captured while a
   figure has focus, per press and per frame, for playing worlds).

@@ -31,12 +31,13 @@ From the notes site's port off its local kit.
   to cancel a drag, and flipped axes handled. `Handle` is exported and shared with `DraggableLine`.
 - `NumberField`'s ladder popup (and `Select` menus of eleven options) no longer clips its last value: the menu was capped at 16 rem,
   and eleven rows need a little more.
-- `chartProjection` on ECharts 6: `cartesian()` (and so `subplots`, `lineChart`, `scatterChart`, `barChart` and the marginals) writes
-  `grid.outerBoundsMode: 'none'`, because ECharts 6's default `'auto'` shrinks the plotting box 20 to 40 px inside the box the option
-  names, which made `project`, `rect` and every overlay on them that far off. The projection takes the analytic path (no ECharts
-  call) only for a grid that says `'none'` (or says nothing and has no `containLabel`); a hand-written grid with `'auto'` or
-  `'same'` goes through ECharts' converters as before 0.1.10. A test draws real ECharts instances and checks the drawn box equals
-  the option's.
+- `chartProjection` on ECharts 6: ECharts 6's default `grid.outerBoundsMode: 'auto'` moves the plotting box inside the box a
+  chart's option names, by 20 to 40 px, to keep the axis labels and names in the figure; in 0.1.10 the analytic projection assumed
+  the box was where the option said, so `project`, `rect` and every overlay on them were that far off. Now a grid that says
+  `outerBoundsMode: 'none'` is computed from the option, as before, and any other grid with value axes and numeric limits is
+  read from ECharts once per redraw (the pixels of the two corners of the axes, after `finished`) and computed from those, so a
+  drag still makes no ECharts call and logs no warning, and `project`, `unproject` and `rect` are where the axes are drawn. The
+  charts themselves are unchanged. A test draws real ECharts instances and compares.
 - `Chart` takes `ratio` (the magnification: the canvas is made at `devicePixelRatio x ratio`) and `PixelRatioProvider ratio` /
   `usePixelRatio()` set it for every chart below (nestable, the innermost wins); `ResponsiveChart` and `FigureGrid` pass it on. An
   expanded `FigureFrame`'s scale composes with the provider's; an explicit `ratio` wins. Nothing is clamped (the host clamps);

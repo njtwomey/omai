@@ -469,9 +469,6 @@ export function panelParts(
       width: rect.width,
       height: rect.height,
       containLabel: false,
-      // ECharts 6 defaults to 'auto', which moves the plotting box inside the one named here to fit the axis labels;
-      // the figure's padding already leaves room for them, and overlays rely on the box being where the option says.
-      outerBoundsMode: 'none',
       show: false,
       borderColor: t.grid,
     },

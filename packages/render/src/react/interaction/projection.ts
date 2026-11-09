@@ -114,7 +114,26 @@ function limitsOf(axis: Dict | undefined): Point2 | undefined {
   return axis['inverse'] === true ? [max, min] : [min, max]
 }
 
-function geometryOf(option: unknown, gridIndex: number): Geometry | null {
+// The affine map of a value-axis grid from the pixels ECharts draws its two corners at: `a` is where the first limits
+// of both axes are, `b` where the second are.
+function affineOf(xl: Point2, yl: Point2, a: Point2, b: Point2): Projection {
+  const sx = (b[0] - a[0]) / (xl[1] - xl[0])
+  const sy = (b[1] - a[1]) / (yl[1] - yl[0])
+  return {
+    rect: {
+      x: Math.min(a[0], b[0]),
+      y: Math.min(a[1], b[1]),
+      width: Math.abs(b[0] - a[0]),
+      height: Math.abs(b[1] - a[1]),
+    },
+    toPixel: ([u, v]) => [a[0] + (u - xl[0]) * sx, a[1] + (v - yl[0]) * sy],
+    toData: ([px, py]) => [xl[0] + (px - a[0]) / sx, yl[0] + (py - a[1]) / sy],
+    project: (u, v) => [a[0] + (u - xl[0]) * sx, a[1] + (v - yl[0]) * sy],
+    unproject: (px, py) => [xl[0] + (px - a[0]) / sx, yl[0] + (py - a[1]) / sy],
+  }
+}
+
+function geometryOf(option: unknown, gridIndex: number, drawn?: PixelConverter): Geometry | null {
   const o = option as {
     readonly grid?: unknown
     readonly xAxis?: unknown
@@ -136,8 +155,9 @@ function geometryOf(option: unknown, gridIndex: number): Geometry | null {
   const zoomed = Array.isArray(o.dataZoom) ? o.dataZoom.length > 0 : o.dataZoom !== undefined
   const xl = limitsOf(axisOf(o.xAxis, gridIndex))
   const yl = limitsOf(axisOf(o.yAxis, gridIndex))
-  const exact = !zoomed && pinned && width > 0 && height > 0 && xl !== undefined && yl !== undefined
-  const linear = exact
+  const candidate = !zoomed && width > 0 && height > 0 && xl !== undefined && yl !== undefined
+  const exact = candidate && pinned
+  let linear: Projection | null = exact
     ? linearProjection({
         x: xl,
         y: yl,
@@ -146,23 +166,43 @@ function geometryOf(option: unknown, gridIndex: number): Geometry | null {
         margins: { left: x, top: y },
       })
     : null
-  return { rect, linear, key: JSON.stringify([rect, exact ? [xl, yl] : null]) }
+  let box = rect
+  if (candidate && !pinned && drawn !== undefined) {
+    // ECharts may have moved the box (the axis labels, the axis names): ask it once, where the corners of the axes are,
+    // and compute from that until the next redraw, so a drag makes no call and logs no warning. A chart between a
+    // change of option and its redraw answers nothing: then the converters are used, as before.
+    const finder = { gridIndex }
+    const corner = (u: number, v: number): Point2 | null => {
+      const out = drawn.convertToPixel(finder, [u, v])
+      return Array.isArray(out) && Number.isFinite(out[0]) && Number.isFinite(out[1])
+        ? [out[0] as number, out[1] as number]
+        : null
+    }
+    const a = corner(xl[0], yl[0])
+    const b = corner(xl[1], yl[1])
+    if (a !== null && b !== null && a[0] !== b[0] && a[1] !== b[1]) {
+      linear = affineOf(xl, yl, a, b)
+      box = linear.rect as PlotBox
+    }
+  }
+  return { rect: box, linear, key: JSON.stringify([box, linear === null ? null : [xl, yl]]) }
 }
 
 /**
  * The projection of one grid (one set of axes) of a live ECharts chart, for overlays laid over the chart.
  *
- * When the chart's option places the grid with numbers (`left`, `top`, `width`, `height`), says that ECharts will not
- * move the box (`outerBoundsMode: 'none'`, which omai's cartesian builders write), and the grid's axes are value axes
- * with numeric `min` and `max` (also `inverse`), the map is computed from the option alone and ECharts is never asked:
- * converting through ECharts logs a warning per call while it is between a change of option and its redraw, which a
- * drag turns into dozens. Log, category and time axes, auto-ranged axes, a grid that contains its labels, a chart with
- * `dataZoom` and a grid whose `outerBoundsMode` is `'auto'` (ECharts 6's default for a hand-written grid, which shrinks
- * the plotting box to keep the labels in the figure, so the option's numbers are not where the axes are) or `'same'`
- * go through `convertToPixel` and `convertFromPixel`; for a hand-written grid that means ECharts' warnings while it is
- * between redraws. Add `outerBoundsMode: 'none'` to such a grid when its margins leave room for the labels. While the chart is between an option
- * change and its next redraw ECharts cannot convert; the projection then answers with the last linear map it saw (exact
- * for linear axes), so a drag never jumps to nowhere.
+ * When the chart's option places the grid with numbers (`left`, `top`, `width`, `height`) and the grid's axes are value
+ * axes with numeric `min` and `max` (also `inverse`), the map is linear and a drag makes no call to ECharts: converting
+ * through ECharts logs a warning per call while it is between a change of option and its redraw, which a drag turns into
+ * dozens. Where the box is is read two ways. If the grid says `outerBoundsMode: 'none'` (ECharts will not move it) the map is
+ * computed from the option's numbers alone. Otherwise (ECharts 6's default `'auto'` moves the plotting box inside the one
+ * named, 20 to 40 px, to keep the axis labels and names in the figure, so the option's numbers are not where the axes are)
+ * the chart is asked once, for the pixels of the two corners of the axes, after each redraw (`finished`), and the map is
+ * computed from those, so `project` and `rect` are where the axes are drawn. A chart that reports no events is asked on
+ * every call instead. Log, category and time axes, auto-ranged axes, a grid that contains its labels and a chart with
+ * `dataZoom` go through `convertToPixel` and `convertFromPixel`, with ECharts' warnings while it is between redraws.
+ * While the chart is between an option change and its next redraw ECharts cannot convert; the projection then answers
+ * with the last linear map it saw (exact for linear axes), so a drag never jumps to nowhere.
  *
  * The option is read lazily and kept: a chart that reports events (`on`) is read once and again after each redraw
  * (`finished`), so a drag costs no more than arithmetic; one that does not is asked on every call and the answer is
@@ -210,7 +250,10 @@ export function chartProjection(chart: PixelConverter, gridIndex = 0, onChange?:
   const subscribed = typeof chart.on === 'function'
   const read = (): Geometry | null => {
     const option = chart.getOption?.()
-    cache = { option, geometry: option === undefined ? null : geometryOf(option, gridIndex) }
+    cache = {
+      option,
+      geometry: option === undefined ? null : geometryOf(option, gridIndex, subscribed ? chart : undefined),
+    }
     return cache.geometry
   }
   const geometry = (): Geometry | null => {
