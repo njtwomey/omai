@@ -100,6 +100,15 @@
       "cases": 4
     },
     {
+      "fixture": "covariance/nearest.json",
+      "source": "oracle/cases/covariance/nearest.py",
+      "reference": {
+        "statsmodels": "0.15.0",
+        "numpy": "2.5.4"
+      },
+      "cases": 16
+    },
+    {
       "fixture": "covariance/neighbourhood.json",
       "source": "oracle/cases/covariance/neighbourhood.py",
       "reference": {
@@ -108,6 +117,14 @@
         "numpy": "2.5.4"
       },
       "cases": 4
+    },
+    {
+      "fixture": "covariance/nonlinear_shrinkage.json",
+      "source": "oracle/cases/covariance/nonlinear_shrinkage.py",
+      "reference": {
+        "numpy": "2.5.4"
+      },
+      "cases": 14
     },
     {
       "fixture": "covariance/rank.json",
@@ -126,6 +143,15 @@
         "numpy": "2.5.4"
       },
       "cases": 4
+    },
+    {
+      "fixture": "covariance/shrinkage_targets.json",
+      "source": "oracle/cases/covariance/shrinkage_targets.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 45
     },
     {
       "fixture": "data/batching.json",
@@ -384,6 +410,15 @@
         "scipy": "1.18.1"
       },
       "cases": 148
+    },
+    {
+      "fixture": "dists/continuous/random_matrix.json",
+      "source": "oracle/cases/dists/continuous/random_matrix.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 32
     },
     {
       "fixture": "dists/continuous/sampling_distributions.json",

@@ -616,7 +616,7 @@ the import graph between them has no cycles (section 2). Each domain's own summa
 | `ensembles`      | bagging, random forests and extra trees, AdaBoost, gradient and histogram boosting, the cyclic booster of explainable boosting, voting and stacking, the balanced ensembles                                                                                                                                                   |
 | `kernel-methods` | kernel ridge regression with exact leave-one-out, online kernel recursive least squares (ALD, coherence, sliding window) and NORMA                                                                                                                                                                                            |
 | `gam`            | generalised additive models: smooth, tensor-product and parametric terms on the penalised bases of `stats/smoothing`, penalised IRLS with REML, GCV and UBRE smoothing selection, backfitting, effective degrees of freedom                                                                                                   |
-| `covariance`     | covariance and precision estimation: shrunk, Ledoit-Wolf and OAS estimators with Mahalanobis distances and likelihoods, FastMCD and the elliptic envelope, the graphical lasso                                                                                                                                                |
+| `covariance`     | covariance and precision estimation: shrunk, Ledoit-Wolf and OAS estimators, shrinkage to other targets with a traced path, nonlinear shrinkage, Marchenko-Pastur denoising and detoning, nearest correlation matrix, selection by held-out likelihood, FastMCD, the graphical lasso                                          |
 | `anomaly`        | outlier detection: isolation forest and its extended variant, local and connectivity-based outlier factors, k-nearest-neighbour distances, score normalisation and combination, threshold rules                                                                                                                               |
 | `sketches`       | probabilistic data structures for streams: Bloom, counting Bloom and cuckoo filters, HyperLogLog, Count-Min and Count sketches, Misra-Gries and Space-Saving, MinHash and LSH, reservoir samplers, GK, t-digest and KLL quantile sketches, the skip list                                                                      |
 | `survival`       | survival analysis of right-censored data: Kaplan-Meier and Nelson-Aalen, weighted log-rank tests, Cox proportional hazards with Breslow and Efron ties, accelerated-failure-time models, concordance, censoring-weighted Brier scores and time-dependent AUC                                                                  |
@@ -1048,7 +1048,8 @@ there) rejects a traced value with `not-differentiable`; its TSDoc says so.
 - `structured.ts`: `solveTridiagonal`, `solveBanded`, `toeplitz`, `solveToeplitz`, `circulant`, `hankel`, `blockDiag`,
   `kroneckerSolve`.
 - `randomized.ts`: `randomizedSvd`, `randomizedRangeFinder`, `randomProjectionMatrix`, `johnsonLindenstraussDim`,
-  `hutchinsonTrace`, `stochasticLogdet`.
+  `hutchinsonTrace`, `stochasticLogdet`, `haarOrthogonal` (a Haar-distributed orthogonal matrix or orthonormal frame:
+  the QR of a Gaussian with the signs of `R`'s diagonal; here and not in `random`, which `numerics` imports).
 - `subspace.ts`: `subspaceIterationAlgorithm` (a block power iteration, one block product and QR per step, with the
   Rayleigh-Ritz values and residuals), `subspaceIteration`.
 - `svd-steps.ts`: `jacobiSvdAlgorithm` (one-sided Jacobi, a step is a rotation or a sweep; the off-diagonal measure is
@@ -1519,6 +1520,11 @@ Reparameterisation comes in three forms:
 - `continuous/sampling-distributions.ts`: `fDistribution`, `noncentralChi2`, `noncentralT`, `noncentralF`
   (Poisson-weighted series).
 - `continuous/studentised-range.ts`: `studentisedRange` (double integrals by a product double-exponential rule).
+- `continuous/random-matrix.ts`: `marchenkoPastur` (the limiting eigenvalue law of a sample covariance of aspect ratio
+  `p / n` and noise variance: density, closed-form cdf, quantiles with the atom `1 - 1 / ratio` at zero above ratio 1,
+  sampling by the quantile, mean, variance, mode, entropy by quadrature) and `marchenkoPasturEdges`. oracle: scipy has no
+  such law, so the reference is a scipy `rv_continuous` defined by the textbook density alone (its cdf, quantiles,
+  entropy and moments are scipy's numerical integrals), not the closed form the library uses.
 - `discrete/binary.ts`: `bernoulli`, `binomial`, `betaBinomial`.
 - `discrete/categorical.ts`: `categorical`, `oneHotCategorical`, `discreteUniform`, `orderedLogistic`, `orderedProbit`,
   `orderedCategorical` (any cumulative link).
@@ -3105,6 +3111,13 @@ none of those weights. Each file builds its specs with `specOf(category, inputs,
 - `latent.ts`: latent-factor data with the factors as truth: `mixedSources` (non-Gaussian sources and their mixing
   matrix, for ICA), `twoViews` (shared latent signals in two views, with the population canonical correlations, for CCA
   and PLS), `toySuperposition` (sparse features with importances), `sparseDictionary` (sparse non-negative codes through a dictionary of unit directions, the plant a sparse autoencoder must recover; truth: codes, dictionary, coherence). `sparseCodedSignal` (exactly k signed atoms per signal over a unit-norm dictionary, the plant of dictionary learning and sparse coding; truth: codes, dictionary, supports, coherence).
+- `known-covariance.ts`: Gaussian data with a known population covariance, the test bed of the covariance estimators:
+  `factorCovarianceData` (loadings and uniquenesses), `spikedCovarianceData` (Haar-random spike directions in isotropic
+  noise; truth: the spikes, the BBP threshold of `p / n`, which spikes are detectable, the limiting sample eigenvalues and
+  eigenvector overlaps, from `covariance/spectral.ts`), `blockCovarianceData` (a global factor and a factor per block),
+  `toeplitzCovarianceData` (AR(1), MA(1) or fractional Gaussian noise autocorrelation) and `wishartCovarianceData` (the
+  covariance a Wishart draw, singular below `p` degrees of freedom). Every truth has `covariance`, `correlation`,
+  `precision`, `eigenvalues` (descending) and `conditionNumber`; the targets are the latent draws.
 - `audio.ts`: SNR, segmental SNR, SDR (BSS Eval with a distortion filter), SI-SDR and SI-SNR, permutation-invariant
   matching (`permutationInvariant`, Hungarian algorithm via `optim` `linearSumAssignment`), STOI and ESTOI (`shortTimeObjectiveIntelligibility`, pystoi with its
   resampling), log-spectral distance, mel-cepstral distortion from cepstra (optionally DTW-aligned), DNSMOS from a
@@ -5451,14 +5464,49 @@ per fold with the unpenalised row, and the refit; `covariance/graph_selection`),
 scipy's Spearman and Kendall and the normal scores (`covariance/rank`), neighbourhood selection against scikit-learn's
 `Lasso` per node and CLIME against scipy's `linprog` (`covariance/neighbourhood`), `MinCovDet` (default and 0.9
 support fraction) and `EllipticEnvelope` on data with planted outliers, where the oracle picks a data seed for which
+`spectral.ts` is the random-matrix toolkit: `eigenSpectrum`, `noiseVariance` (the median eigenvalue against the median of the
+unit-variance Marchenko-Pastur law of `dists`, through the spikes; for a ratio above 1 on the `p / ratio` non-zero
+eigenvalues), the spiked model of Baik, Ben Arous and Peche (`bbpThreshold`, `spikedEigenvalueLimit`,
+`spikedEigenvectorOverlap`), `denoiseCorrelation` (the eigenvalues inside the bulk edge `variance (1 + sqrt(ratio))^2`
+replaced by their mean, a target or zero, rescaled to a unit diagonal; the trace is kept), `detoneCorrelation` (the market
+mode removed) and `spectralCleaningEstimator` (the covariance estimator on the iterative base whose exposition is the
+eigenvalues against the Marchenko-Pastur quantiles with the signal count marked, the matrices before and after, and the
+anomaly scores). The default edge is the asymptotic one; the largest noise eigenvalue overshoots it by a Tracy-Widom
+fluctuation of order `n^(-2/3)`, which `margin` absorbs. `shrinkage-targets.ts` is shrinkage towards a diagonal,
+constant-correlation (Ledoit and Wolf 2003/2004), single-factor (market) or scaled-identity target
+(`shrinkageTargetMatrix`, `targetShrinkage`) with the analytic intensity `(pi - rho) / (gamma T)` of each, and the OAS and
+Rao-Blackwell Ledoit-Wolf intensities for the identity; `shrinkagePath` and `shrinkagePathAlgorithm` (one intensity per
+step: condition number, eigenvalue spread and held-out Gaussian log likelihood, the likelihood cross-validated when no
+rows are held out); `targetShrinkageEstimator` (exposition: the path as a `curveSet`, the chosen intensity marked).
+`nonlinear-shrinkage.ts` is Ledoit and Wolf's quadratic-inverse shrinkage (`quadraticInverseShrinkage`, the Cauchy-kernel
+Stein shrinker and its conjugate, the singular branch for `p > n`, the trace kept) and its estimator.
+`model-selection.ts` chooses an estimator by cross-validated held-out Gaussian log likelihood (`selectCovariance`,
+`selectCovarianceAlgorithm` one candidate per step, `defaultCovarianceCandidates`, `heldOutLogLikelihood`,
+`covarianceSelectionEstimator` whose exposition is the candidates as an `importances` record). `nearest.ts` is the nearest
+valid matrix: `nearestCorrelationAlgorithm` (Higham's alternating projections with Dykstra's correction; the distance, the
+negative eigenvalue count and the smallest eigenvalue per sweep), `nearestCorrelation`, `clipCorrelation`,
+`nearestCovariance` (statsmodels' `cov_nearest`, clipped or nearest), `nearestSpd`, `isCorrelationMatrix`. Private
+`_matrix.ts` holds the small dense helpers (eigendecompositions as arrays, correlation scaling, the held-out likelihood).
+
+oracle: scikit-learn `graphical_lasso` at two penalties (tolerances tightened), `MinCovDet` (default and 0.9 support
+fraction) and `EllipticEnvelope` on data with planted outliers, where the oracle picks a data seed for which
 scikit-learn's random starts all find the same minimum (the determinant has several nearby local minima on the clean
 rows, and a golden needs the global one). The shrinkage estimators are tested in `stats/covariance`. The adaptive
 graphical lasso, the penalty-matrix solution and the EBIC and StARS rules have no reference implementation here: they are
 checked by their optimality conditions and by the support recovered from `datasets/precision-graphs.ts`. TODO: the nested
 subsets of FastMCD for more than 500 rows, `assume_centered` in the MCD and the CV, the LARS-solved lasso mode, the
 node-wise Ising and Poisson models, SCIO, SPACE and TIGER beside CLIME.
+oracle (the spectral and shrinkage files): statsmodels' `corr_nearest`, `corr_clipped` and `cov_nearest` on indefinite
+matrices (the generator checks that statsmodels' sweep budget reached what a hundred times the budget reaches); the
+scaled-identity intensities and covariances against scikit-learn's `ledoit_wolf` and `oas`; the diagonal,
+constant-correlation and single-factor targets and intensities, the Rao-Blackwell intensity and the quadratic-inverse
+shrinkage against matrix-form numpy transcriptions of the published formulas (no installed library has them, so these
+goldens guard the implementation against transcription errors, not the formulas against themselves; the behaviour is
+tested in TypeScript against the sample and Ledoit-Wolf covariances on data with known truth). TODO: Higham's weighted
+and Newton (Qi and Sun) variants of the nearest correlation matrix, the nearest factor-structured correlation matrix,
+Gavish-Donoho optimal singular-value shrinkers, the Tracy-Widom edge correction as a default margin.
 built from: `stats` (covariance, ranks), `anomaly` (outlier verbs), `learn` (model-selection splitters), `numerics` (linalg,
-special), `optim` (lasso, simplex), `dists` (chi-squared, Kendall's tau matrix), `exposition`, `random`, `trace`
+special), `optim` (lasso, simplex), `dists` (chi-squared, Marchenko-Pastur, Kendall's tau matrix), `exposition`, `random`, `trace`
 
 ### 4.53 `anomaly/`: anomaly and outlier detection (scikit-learn ensemble and neighbors, PyOD ideas)
 

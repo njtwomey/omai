@@ -1,7 +1,8 @@
 /**
  * Univariate continuous distributions, scipy.stats and torch.distributions style, part of `omai-engine/dists`: the
- * normal family, the gamma family, bounded, heavy-tailed and extreme-value distributions, and the sampling
- * distributions of test statistics, each with densities, CDFs, quantiles, moments and sampling.
+ * normal family, the gamma family, bounded, heavy-tailed and extreme-value distributions, the sampling
+ * distributions of test statistics and the Marchenko-Pastur law of random-matrix theory, each with densities, CDFs,
+ * quantiles, moments and sampling.
  *
  * @inline
  */
@@ -11,5 +12,6 @@ export * from './extreme.ts'
 export * from './gamma.ts'
 export * from './heavy-tailed.ts'
 export * from './normal.ts'
+export * from './random-matrix.ts'
 export * from './sampling-distributions.ts'
 export * from './studentised-range.ts'
