@@ -20,7 +20,7 @@ import {
   spectralCoclusteringAlgorithm,
 } from './bicluster-algorithms.ts'
 import type { Biclusters } from './bicluster-score.ts'
-import type { LloydState, Rows } from './kmeans.ts'
+import type { LloydState } from './kmeans.ts'
 
 const rowsOfMatrix = (x: TensorLike, who: string): number[][] => {
   const m = matrixView(x, who, { minSamples: 2 })
