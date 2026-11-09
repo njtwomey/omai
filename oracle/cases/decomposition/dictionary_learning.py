@@ -68,7 +68,7 @@ def coder_cases() -> list[Case]:
                 **ts,
             )
         )  # pyright: ignore[reportArgumentType]
-    for algorithm, ours in [("lasso_cd", "lassoCd"), ("threshold", "threshold")]:
+    for algorithm, ours in [("lasso_lars", "lassoLars"), ("lasso_cd", "lassoCd"), ("threshold", "threshold")]:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             code = SparseCoder(

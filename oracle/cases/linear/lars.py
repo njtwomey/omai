@@ -1,5 +1,6 @@
 """Least angle regression against sklearn.linear_model.lars_path: the knots (penalties and coefficients) and the order
-in which variables enter, for the plain LARS and the lasso modification, and LassoLars at a fixed penalty."""
+in which variables enter, for the plain LARS and the lasso modification (non-negative too), and LassoLars at a fixed
+penalty (non-negative too)."""
 
 import numpy as np
 import sklearn
@@ -35,6 +36,22 @@ def cases() -> list[Case]:
                     method=method,
                 )
             )
+        # scikit-learn's last knot of a non-negative path is an interpolation against a negative correlation (the
+        # largest of the inactive ones) and lies off the optimum, so the knots compared stop before it.
+        alphas, active, coefs = lars_path(xc, yc, method="lasso", positive=True)  # pyright: ignore[reportArgumentType]
+        alphas, coefs = alphas[:-1], coefs[:, :-1]
+        out.append(
+            case(
+                f"path/{name}/lasso-positive",
+                "path",
+                [x, y],
+                {"alphas": alphas, "coefs": coefs.T, "order": np.array(active, dtype=np.float64)},
+                rtol=1e-8,
+                atol=1e-9,
+                method="lasso",
+                positive=1,
+            )
+        )
         for alpha in (0.4, 0.05):
             m = LassoLars(alpha=alpha, fit_intercept=True).fit(x, y)
             out.append(
@@ -46,6 +63,20 @@ def cases() -> list[Case]:
                     rtol=1e-8,
                     atol=1e-9,
                     alpha=alpha,
+                )
+            )
+        for alpha in (0.4, 0.37) if name == "small" else (0.4, 0.1):
+            m = LassoLars(alpha=alpha, fit_intercept=True, positive=True).fit(x, y)
+            out.append(
+                case(
+                    f"lassolars/{name}/positive-{alpha}",
+                    "lassoLars",
+                    [x, y],
+                    {"coef": m.coef_, "intercept": np.array(float(m.intercept_))},  # pyright: ignore[reportArgumentType]
+                    rtol=1e-8,
+                    atol=1e-9,
+                    alpha=alpha,
+                    positive=1,
                 )
             )
     return out

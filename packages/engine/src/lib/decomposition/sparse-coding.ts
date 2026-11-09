@@ -31,7 +31,7 @@ export interface SparseCodeOptions {
   readonly nNonzeroCoefs?: number
   /** The penalty of `lassoLars` and `lassoCd` on the objective |x - c D|^2 / 2 + alpha |c|_1, and the threshold of `threshold` (default 1). */
   readonly alpha?: number
-  /** Constrain the codes to be non-negative: `lassoCd` and `threshold` (the least-angle path has no such mode here). */
+  /** Constrain the codes to be non-negative: `lassoLars`, `lassoCd` and `threshold` (`omp` and `lars` have no such mode, as in scikit-learn). */
   readonly positive?: boolean
   /** The duality-gap tolerance of `lassoCd` relative to |x|^2 (default 1e-8, scikit-learn's in `sparse_encode`). */
   readonly tol?: number
@@ -58,7 +58,7 @@ function defaultNonzeroCoefs(nFeatures: number, nComponents: number): number {
  * @param dictionary - Atoms as rows `[nComponents, nFeatures]`.
  * @param options - Coder, sparsity or penalty, positivity and coordinate descent tolerances.
  * @returns The codes `[n, nComponents]`.
- * @throws OmaiError `value` when `positive` is asked of `omp`, `lars` or `lassoLars`; `shape` when signals and atoms
+ * @throws OmaiError `value` when `positive` is asked of `omp` or `lars`; `shape` when signals and atoms
  *   differ in length.
  * @concept sparse-coding
  * @index function Sparse codes of signals over a dictionary by OMP, LARS, lasso or thresholding.
@@ -79,8 +79,8 @@ export function sparseCode(x: TensorLike, dictionary: TensorLike, options: Spars
   const k = atoms.n
   const f = signals.d
   const positive = options.positive ?? false
-  if (positive && (algorithm === 'omp' || algorithm === 'lars' || algorithm === 'lassoLars'))
-    throw new OmaiError('value', `sparseCode: ${algorithm} has no positive option; use lassoCd or threshold`)
+  if (positive && (algorithm === 'omp' || algorithm === 'lars'))
+    throw new OmaiError('value', `sparseCode: ${algorithm} has no positive option; use lassoLars, lassoCd or threshold`)
   const nnz = options.nNonzeroCoefs ?? defaultNonzeroCoefs(f, k)
   if (algorithm === 'lars' || algorithm === 'lassoLars') {
     const out = new Float64Array(signals.n * k)
@@ -92,7 +92,7 @@ export function sparseCode(x: TensorLike, dictionary: TensorLike, options: Spars
         const path = larsPath({ x: design, y }, { method: 'lar', fitIntercept: false, maxFeatures: nnz })
         coef = path.coefs[path.coefs.length - 1] ?? new Array<number>(k).fill(0)
       } else {
-        const path = larsPath({ x: design, y }, { method: 'lasso', fitIntercept: false, alphaMin: alpha / f })
+        const path = larsPath({ x: design, y }, { method: 'lasso', fitIntercept: false, alphaMin: alpha / f, positive })
         coef = coefficientsAt(path, alpha / f)
       }
       out.set(coef, i * k)
