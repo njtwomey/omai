@@ -29,14 +29,12 @@ describe('addDummyFeature', () => {
   })
 
   it('property: the original features follow the constant, unchanged', () => {
-    const matrix = fc
-      .tuple(fc.integer({ min: 1, max: 8 }), fc.integer({ min: 1, max: 5 }))
-      .chain(([n, d]) =>
-        fc.array(fc.array(fc.double({ noNaN: true, min: -1e6, max: 1e6 }), { minLength: d, maxLength: d }), {
-          minLength: n,
-          maxLength: n,
-        }),
-      )
+    const matrix = fc.tuple(fc.integer({ min: 1, max: 8 }), fc.integer({ min: 1, max: 5 })).chain(([n, d]) =>
+      fc.array(fc.array(fc.double({ noNaN: true, min: -1e6, max: 1e6 }), { minLength: d, maxLength: d }), {
+        minLength: n,
+        maxLength: n,
+      }),
+    )
     fc.assert(
       fc.property(matrix, fc.double({ noNaN: true, min: -10, max: 10 }), (x, value) => {
         const out = toArray(addDummyFeature(x, value)) as number[][]

@@ -15,6 +15,13 @@ from sklearn.exceptions import ConvergenceWarning
 REFERENCE: dict[str, str] = {"scikit-learn": sklearn.__version__}
 
 
+def number(options: dict[str, object], key: str, default: float) -> float:
+    """A numeric option of a configuration, or its default."""
+    value = options.get(key, default)
+    assert isinstance(value, int | float)
+    return float(value)
+
+
 def parts(seed: int, n: int, d: int, k: int) -> tuple[FloatArray, FloatArray, FloatArray, FloatArray]:
     g = rng(seed)
     h_true = g.gamma(1.5, size=(k, d))
@@ -88,17 +95,19 @@ def cases() -> list[Case]:
                 },
                 rtol=1e-7,
                 atol=1e-9,
-                betaLoss=beta if isinstance(beta, str) else float(beta),
-                batchSize=int(options["batch_size"]),  # pyright: ignore[reportArgumentType]
-                maxIter=int(options["max_iter"]),  # pyright: ignore[reportArgumentType]
-                tol=float(options["tol"]),  # pyright: ignore[reportArgumentType]
-                maxNoImprovement=-1 if options["max_no_improvement"] is None else int(options["max_no_improvement"]),  # pyright: ignore[reportArgumentType]
-                alphaW=float(options.get("alpha_W", 0.0)),  # pyright: ignore[reportArgumentType]
-                alphaH=float(options.get("alpha_H", options.get("alpha_W", 0.0))),  # pyright: ignore[reportArgumentType]
-                l1Ratio=float(options.get("l1_ratio", 0.0)),  # pyright: ignore[reportArgumentType]
-                forgetFactor=float(options.get("forget_factor", 0.7)),  # pyright: ignore[reportArgumentType]
+                betaLoss=beta if isinstance(beta, str) else number(options, "beta_loss", 2.0),
+                batchSize=int(number(options, "batch_size", 1024)),
+                maxIter=int(number(options, "max_iter", 200)),
+                tol=number(options, "tol", 1e-4),
+                maxNoImprovement=-1
+                if options["max_no_improvement"] is None
+                else int(number(options, "max_no_improvement", 0)),
+                alphaW=number(options, "alpha_W", 0.0),
+                alphaH=number(options, "alpha_H", number(options, "alpha_W", 0.0)),
+                l1Ratio=number(options, "l1_ratio", 0.0),
+                forgetFactor=number(options, "forget_factor", 0.7),
                 freshRestarts=bool(options.get("fresh_restarts", False)),
-                freshRestartsMaxIter=int(options.get("fresh_restarts_max_iter", 30)),  # pyright: ignore[reportArgumentType]
+                freshRestartsMaxIter=int(number(options, "fresh_restarts_max_iter", 30)),
             )
         )
     return out

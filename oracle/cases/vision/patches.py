@@ -103,7 +103,7 @@ def cases() -> list[Case]:
         ("masked", image, mask),
         ("tiny", np.array([[1.0, 3.0], [2.0, 7.0]]), None),
     ]:
-        dense = img_to_graph(img, mask=m, return_as=np.ndarray)
+        dense = img_to_graph(img, mask=m, return_as=np.ndarray)  # pyright: ignore[reportArgumentType]
         inputs = [img] if m is None else [img, m.astype(np.float64)]
         out.append(
             case(f"graph/{name}", "graph", inputs, {"matrix": dense}, rtol=1e-12, atol=1e-12, masked=m is not None)

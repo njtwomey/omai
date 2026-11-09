@@ -1,7 +1,7 @@
-"""Automatic relevance determination against sklearn.linear_model.ARDRegression: the weights, intercept, noise and weight
-precisions, the posterior covariance of the kept weights, the iteration count, the last objective, and the predictive
-mean and standard deviation, for more rows than features and for fewer (the Woodbury path), with and without an
-intercept and with a prune threshold that removes irrelevant features."""
+"""Automatic relevance determination against sklearn.linear_model.ARDRegression: the weights, intercept, noise and
+weight precisions, the posterior covariance of the kept weights, the iteration count, the last objective, and the
+predictive mean and standard deviation, for more rows than features and for fewer (the Woodbury path), with and
+without an intercept and with a prune threshold that removes irrelevant features."""
 
 import numpy as np
 import sklearn

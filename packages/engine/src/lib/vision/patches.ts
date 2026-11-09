@@ -13,7 +13,7 @@ import { foldIn, type Key, randint } from '../random/index.ts'
 import { fromStorage, type Tensor, type TensorLike } from '../tensor/index.ts'
 import { type Raster, rasterOf, valuesOf } from './_image.ts'
 
-type Size2 = readonly [number, number]
+type Size2 = readonly [height: number, width: number]
 
 const sizeCheck = (who: string, name: string, [a, b]: Size2): void => {
   if (!(Number.isInteger(a) && Number.isInteger(b) && a >= 1 && b >= 1))

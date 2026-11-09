@@ -57,7 +57,7 @@ def cases() -> list[Case]:
         )
     for seed, threshold in [(1, 0.3), (2, 0.8), (3, 0.5)]:
         x, y, held = data(seed)
-        fixed = FixedThresholdClassifier(GaussianNB(), threshold=threshold).fit(x, y)
+        fixed = FixedThresholdClassifier(GaussianNB(), threshold=threshold).fit(x, y)  # pyright: ignore[reportArgumentType]
         out.append(
             case(
                 f"fixed/{threshold}",

@@ -32,7 +32,7 @@ def cases() -> list[Case]:
     means0 = centres + g.normal(scale=0.5, size=(k, d))
     out: list[Case] = []
     for covariance_type in ["full", "tied", "diag", "spherical"]:
-        # Initial covariances as full matrices (diagonal for diag and spherical), and the same as scikit-learn's precisions.
+        # Initial covariances as full matrices (diagonal for diag and spherical), and as scikit-learn's precisions.
         cov0 = np.stack([np.diag([1.0 + 0.2 * j, 1.5 - 0.1 * j]) for j in range(k)])
         if covariance_type == "tied":
             cov0 = np.repeat(cov0[:1], k, axis=0)
@@ -65,7 +65,7 @@ def cases() -> list[Case]:
                 {
                     "weights": model.weights_,
                     "means": model.means_,
-                    "covariances": as_full(model.covariances_, covariance_type, k, d),
+                    "covariances": as_full(np.asarray(model.covariances_, dtype=np.float64), covariance_type, k, d),
                     "predictProba": model.predict_proba(held),
                     "labels": model.predict(held).astype(np.float64),
                     "scoreSamples": model.score_samples(held),

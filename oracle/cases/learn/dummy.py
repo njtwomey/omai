@@ -1,10 +1,11 @@
-"""The baselines against sklearn.dummy: DummyClassifier (prior, most frequent, constant; weighted and unweighted class
-frequencies) and DummyRegressor (mean, median, quantile, constant; weighted mean), their predictions and probabilities."""
+"""The baselines against sklearn.dummy: DummyClassifier (prior, most frequent, constant; weighted and unweighted
+class frequencies) and DummyRegressor (mean, median, quantile, constant; weighted mean), their predictions and
+probabilities."""
 
 import numpy as np
 import sklearn
 from omai_oracle.fixture import Case, case
-from omai_oracle.helpers import FloatArray, rng
+from omai_oracle.helpers import rng
 from sklearn.dummy import DummyClassifier, DummyRegressor
 
 REFERENCE: dict[str, str] = {"scikit-learn": sklearn.__version__}
@@ -49,13 +50,14 @@ def cases() -> list[Case]:
         for weighted in [False, True]:
             if weighted and strategy in ("median", "quantile"):
                 continue  # scikit-learn's weighted percentile convention is not the one omai documents
+            label = strategy if quantile is None else f"{strategy}/{quantile}"
             w = weights if weighted else None
             model = DummyRegressor(strategy=strategy, quantile=quantile, constant=constant).fit(
                 x, y_reg, sample_weight=w
             )  # pyright: ignore[reportArgumentType]
             out.append(
                 case(
-                    f"regressor/{strategy}{'' if quantile is None else f'/{quantile}'}/{'weighted' if weighted else 'plain'}",
+                    f"regressor/{label}/{'weighted' if weighted else 'plain'}",
                     "regressor",
                     [x, y_reg, held, weights],
                     {"predict": model.predict(held)},

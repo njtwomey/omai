@@ -1,7 +1,7 @@
-"""Truncated SVD against sklearn.decomposition.TruncatedSVD: the components, singular values, explained variance and its
-ratio, and the scores of held-out rows, for the exact (ARPACK) solver on tall and wide data, and for the randomised solver on
-a matrix of exact low rank (where every solver finds the same subspace, so the random sketch does not matter). Signs are
-fixed so that the largest-magnitude loading of each component is positive."""
+"""Truncated SVD against sklearn.decomposition.TruncatedSVD: the components, singular values, explained variance and
+its ratio, and the scores of held-out rows, for the exact (ARPACK) solver on tall and wide data, and for the randomised
+solver on a matrix of exact low rank (where every solver finds the same subspace, so the random sketch does not
+matter). Signs are fixed so that the largest-magnitude loading of each component is positive."""
 
 import numpy as np
 import sklearn
@@ -37,8 +37,9 @@ def cases() -> list[Case]:
     )
     for name, x, held, k, algorithm in problems:
         model = TruncatedSVD(n_components=k, algorithm=algorithm, n_iter=7, random_state=0).fit(x)  # pyright: ignore[reportArgumentType]
-        components = fix_signs(model.components_)
-        flips = np.sign(np.sum(components * model.components_, axis=1))
+        raw = np.asarray(model.components_, dtype=np.float64)
+        components = fix_signs(raw)
+        flips = np.sign(np.sum(components * raw, axis=1))
         out.append(
             case(
                 name,
