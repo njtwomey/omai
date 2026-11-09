@@ -14,6 +14,7 @@ import {
   type IterativeEstimator,
   type IterativeFitted,
   iterative,
+  type LearnData,
   matrixView,
 } from '../learn/index.ts'
 import { linalg } from '../numerics/index.ts'
@@ -33,12 +34,23 @@ export interface GraphicalLassoState {
 }
 
 /**
+ * The L1 penalty of the graphical lasso: one number for every off-diagonal entry (scikit-learn's `alpha`), or a
+ * symmetric matrix with one penalty per entry (the `rho` matrix of the R package `glasso`; the diagonal is ignored).
+ */
+export type GraphicalLassoPenalty = number | readonly (readonly number[])[]
+
+/** The penalty of entry `(a, b)`. */
+function penaltyAt(alpha: GraphicalLassoPenalty, a: number, b: number): number {
+  return typeof alpha === 'number' ? alpha : (alpha[a]?.[b] ?? 0)
+}
+
+/**
  * The graphical lasso objective `-log det(Theta) + tr(S Theta) + alpha |Theta|_1` off the diagonal (scikit-learn's
- * convention).
+ * convention; with a penalty matrix the L1 term is `sum_ab alpha_ab |Theta_ab|`).
  *
  * @param s - The empirical covariance `[p][p]`.
  * @param precision - The precision matrix `[p][p]`.
- * @param alpha - The L1 penalty.
+ * @param alpha - The L1 penalty: a number, or a penalty per entry.
  * @returns The objective value.
  * @example
  * ```ts
@@ -49,7 +61,7 @@ export interface GraphicalLassoState {
 export function graphicalLassoObjective(
   s: readonly (readonly number[])[],
   precision: readonly (readonly number[])[],
-  alpha: number,
+  alpha: GraphicalLassoPenalty,
 ): number {
   const p = s.length
   let trace = 0
@@ -57,21 +69,45 @@ export function graphicalLassoObjective(
   for (let a = 0; a < p; a++)
     for (let b = 0; b < p; b++) {
       trace += (s[a]?.[b] ?? 0) * (precision[b]?.[a] ?? 0)
-      if (a !== b) l1 += Math.abs(precision[a]?.[b] ?? 0)
+      if (a !== b) l1 += penaltyAt(alpha, a, b) * Math.abs(precision[a]?.[b] ?? 0)
     }
-  return -item(linalg.slogdet(precision as number[][]).logabsdet) + trace + alpha * l1
+  return -item(linalg.slogdet(precision as number[][]).logabsdet) + trace + l1
 }
 
 /** sklearn's `_dual_gap`: tr(S Theta) - p + alpha |Theta|_1 off the diagonal. */
-function dualGap(s: readonly (readonly number[])[], precision: readonly (readonly number[])[], alpha: number): number {
+function dualGap(
+  s: readonly (readonly number[])[],
+  precision: readonly (readonly number[])[],
+  alpha: GraphicalLassoPenalty,
+): number {
   const p = s.length
   let gap = -p
   for (let a = 0; a < p; a++)
     for (let b = 0; b < p; b++) {
       gap += (s[a]?.[b] ?? 0) * (precision[b]?.[a] ?? 0)
-      if (a !== b) gap += alpha * Math.abs(precision[a]?.[b] ?? 0)
+      if (a !== b) gap += penaltyAt(alpha, a, b) * Math.abs(precision[a]?.[b] ?? 0)
     }
   return gap
+}
+
+/** The smallest penalty a per-entry penalty matrix is floored at: a zero entry is left effectively unpenalised. */
+const PENALTY_FLOOR = 1e-12
+
+/** A penalty matrix checked (square of the right size, symmetric, non-negative). */
+function checkPenalty(alpha: GraphicalLassoPenalty, p: number, who: string): void {
+  if (typeof alpha === 'number') {
+    if (!(alpha >= 0)) throw new OmaiError('value', `${who}: alpha must be non-negative`)
+    return
+  }
+  if (alpha.length !== p || alpha.some((r) => r.length !== p))
+    throw new OmaiError('shape', `${who}: the penalty matrix must be ${p} x ${p}`)
+  for (let a = 0; a < p; a++)
+    for (let b = 0; b < p; b++) {
+      const v = alpha[a]?.[b] ?? 0
+      if (a !== b && !(v >= 0)) throw new OmaiError('value', `${who}: penalties must be non-negative`)
+      if (a < b && Math.abs(v - (alpha[b]?.[a] ?? 0)) > 1e-12 * Math.max(1, Math.abs(v)))
+        throw new OmaiError('value', `${who}: the penalty matrix must be symmetric`)
+    }
 }
 
 function activeEdges(precision: readonly (readonly number[])[]): number {
@@ -87,6 +123,11 @@ export interface GraphicalLassoAlgorithmOptions {
   readonly tol?: number
   /** Tolerance on the inner coordinate-descent lasso solver (default 1e-4). */
   readonly enetTol?: number
+  /**
+   * A warm start: the covariance estimate of a neighbouring problem (the previous penalty on a path, as scikit-learn's
+   * `cov_init`). Its off-diagonal is scaled by 0.95 and its diagonal replaced by the data's, as scikit-learn does.
+   */
+  readonly start?: { readonly covariance: readonly (readonly number[])[] }
 }
 
 /**
@@ -95,9 +136,13 @@ export interface GraphicalLassoAlgorithmOptions {
  * `optim`'s lasso coordinate descent (the Gram matrix factored by Cholesky), and records the duality gap, objective
  * and number of active off-diagonal edges.
  *
- * @param s - The empirical covariance `[p][p]`.
- * @param alpha - The L1 penalty.
- * @param options - Tolerance on the duality gap (`1e-4`) and the inner lasso tolerance (`1e-4`).
+ * With `alpha` a matrix every entry has its own penalty (the weighted lasso of each column is the same lasso on columns
+ * rescaled by the penalty, so the inner solver is unchanged); a zero entry is floored at 1e-12. With a scalar `alpha` of
+ * zero the maximum likelihood estimate (the inverse of `s`) is returned, as scikit-learn does.
+ *
+ * @param s - The empirical covariance `[p][p]` (or any covariance matrix: the "precomputed" entry).
+ * @param alpha - The L1 penalty: a number, or a symmetric matrix of penalties per entry.
+ * @param options - Tolerance on the duality gap (`1e-4`), the inner lasso tolerance (`1e-4`) and a warm start.
  * @returns The algorithm.
  * @example
  * ```ts
@@ -109,14 +154,17 @@ export interface GraphicalLassoAlgorithmOptions {
  */
 export function graphicalLassoAlgorithm(
   s: readonly (readonly number[])[],
-  alpha: number,
+  alpha: GraphicalLassoPenalty,
   options: GraphicalLassoAlgorithmOptions = {},
 ): Algorithm<GraphicalLassoState> {
   const p = s.length
   const tol = options.tol ?? 1e-4
+  checkPenalty(alpha, p, 'graphicalLasso')
+  const unpenalised = alpha === 0
+  const weighted = typeof alpha !== 'number'
   return {
     name: 'graphical-lasso',
-    config: { alpha, tol },
+    config: { alpha: typeof alpha === 'number' ? alpha : 'matrix', tol },
     schema: channels({
       metrics: {
         gap: { description: 'the primal-dual gap', direction: 'lower' },
@@ -129,7 +177,12 @@ export function graphicalLassoAlgorithm(
       },
     }),
     init: () => {
-      const covariance = s.map((r, a) => r.map((v, b) => (a === b ? v : 0.95 * v)))
+      if (unpenalised) {
+        const precision = toArray(linalg.inv(s as number[][])) as number[][]
+        return { covariance: s.map((r) => [...r]), precision, gap: Number.POSITIVE_INFINITY, objective: Number.NaN }
+      }
+      const base = options.start?.covariance ?? s
+      const covariance = s.map((r, a) => r.map((v, b) => (a === b ? v : 0.95 * (base[a]?.[b] ?? 0))))
       const precision = toArray(linalg.pinv(covariance)) as number[][]
       return {
         covariance,
@@ -139,6 +192,13 @@ export function graphicalLassoAlgorithm(
       }
     },
     step: (st) => {
+      if (unpenalised)
+        return {
+          covariance: st.covariance,
+          precision: st.precision,
+          gap: dualGap(s, st.precision, 0),
+          objective: graphicalLassoObjective(s, st.precision, 0),
+        }
       const cov = st.covariance.map((r) => [...r])
       const prec = st.precision.map((r) => [...r])
       for (let idx = 0; idx < p; idx++) {
@@ -150,13 +210,20 @@ export function graphicalLassoAlgorithm(
         const l = toArray(linalg.cholesky(sub)) as number[][]
         const design = others.map((_, a) => others.map((__, b) => l[b]?.[a] ?? 0))
         const target = toFlat(linalg.solveTriangular(l, row, { lower: true }))
+        // A penalty per entry: the lasso on columns divided by the penalties, with the penalty 1, solves it.
+        const scale = weighted ? others.map((j) => Math.max(penaltyAt(alpha, idx, j), PENALTY_FLOOR)) : []
         const coefs = toFlat(
-          lassoCoordinateDescent(design, target, alpha, {
-            x0: start,
-            tol: options.enetTol ?? 1e-4,
-            maxIterations: 1000,
-          }).coef,
-        )
+          lassoCoordinateDescent(
+            weighted ? design.map((r) => r.map((v, k) => v / (scale[k] ?? 1))) : design,
+            target,
+            weighted ? 1 : (alpha as number),
+            {
+              x0: weighted ? start.map((v, k) => v * (scale[k] ?? 1)) : start,
+              tol: options.enetTol ?? 1e-4,
+              maxIterations: 1000,
+            },
+          ).coef,
+        ).map((v, k) => (weighted ? v / (scale[k] ?? 1) : v))
         const diag =
           1 / ((cov[idx]?.[idx] ?? 0) - others.reduce((a, j, k) => a + (cov[j]?.[idx] ?? 0) * (coefs[k] ?? 0), 0))
         ;(prec[idx] as number[])[idx] = diag
@@ -195,9 +262,9 @@ export function graphicalLassoAlgorithm(
 /**
  * Solve the graphical lasso from an empirical covariance matrix.
  *
- * @param s - The empirical covariance `[p, p]`.
- * @param alpha - The non-negative L1 penalty.
- * @param options - Tolerances and the iteration cap (default 100).
+ * @param s - The empirical covariance `[p, p]` (any covariance or correlation matrix: the precomputed entry).
+ * @param alpha - The non-negative L1 penalty, or a symmetric matrix of penalties per entry.
+ * @param options - Tolerances, a warm start (`start`) and the iteration cap (default 100).
  * @returns The covariance, precision, final duality gap, objective and iteration count.
  * @example
  * ```ts
@@ -207,11 +274,11 @@ export function graphicalLassoAlgorithm(
  */
 export function graphicalLasso(
   s: TensorLike,
-  alpha: number,
-  options: { readonly tol?: number; readonly enetTol?: number; readonly maxIter?: number } = {},
+  alpha: GraphicalLassoPenalty,
+  options: GraphicalLassoAlgorithmOptions & { readonly maxIter?: number } = {},
 ): GraphicalLassoState & { readonly nIter: number } {
   const rows = toArray(asTensor(s)) as number[][]
-  if (!(alpha >= 0)) throw new OmaiError('value', 'graphicalLasso: alpha must be non-negative')
+  checkPenalty(alpha, rows.length, 'graphicalLasso')
   const out = runAlgorithm(graphicalLassoAlgorithm(rows, alpha, options), { maxSteps: options.maxIter ?? 100 })
   return { ...out.state, nIter: out.steps }
 }
@@ -228,6 +295,34 @@ export interface GraphicalLassoHyper {
   readonly maxIter?: number
   /** Penalties of the exposition's regularisation path (default 8, log-spaced from the largest off-diagonal entry). */
   readonly pathPenalties?: readonly number[]
+  /**
+   * Whether the data `x` is itself the `[p, p]` covariance (or correlation) matrix, as scikit-learn's `graphical_lasso`
+   * takes it (default false: `x` holds samples). The location is then zero and the exposition has no Mahalanobis scores.
+   */
+  readonly precomputed?: boolean
+}
+
+/** The column means of the data, or zeros for a precomputed covariance. */
+function locationOf(data: LearnData, precomputed: boolean | undefined, d: number): number[] {
+  if (precomputed === true) return new Array<number>(d).fill(0)
+  const m = matrixView(data.x, 'graphicalLasso', { minSamples: 2 })
+  return Array.from({ length: m.d }, (_, j) => {
+    let t = 0
+    for (let i = 0; i < m.n; i++) t += m.data[i * m.d + j] ?? 0
+    return t / m.n
+  })
+}
+
+/** The empirical covariance of the data, or the data themselves when the covariance is precomputed. */
+function covarianceOfData(data: LearnData, precomputed: boolean | undefined): number[][] {
+  if (precomputed !== true) {
+    matrixView(data.x, 'graphicalLasso', { minSamples: 2 })
+    return toArray(empiricalCovariance(data.x)) as number[][]
+  }
+  const rows = toArray(asTensor(data.x)) as number[][]
+  if (rows.length < 2 || rows.some((r) => r.length !== rows.length))
+    throw new OmaiError('shape', 'graphicalLasso: a precomputed covariance must be a square matrix of at least 2 x 2')
+  return rows
 }
 
 /** Fitted parameters of the graphical lasso estimator. */
@@ -243,7 +338,7 @@ export type FittedGraphicalLasso = IterativeFitted<GraphicalLassoParams, Covaria
  * The graphical lasso estimator (sklearn.covariance.GraphicalLasso) on the iterative base: a sparse precision matrix,
  * traced sweep by sweep. Its exposition is a `regularisationPath` of the off-diagonal partial correlations over a
  * penalty grid (the edges of the precision-matrix graph entering as the penalty falls) and an `anomalyScores` record of
- * squared Mahalanobis distances.
+ * squared Mahalanobis distances. With `precomputed: true` the data is the covariance matrix itself.
  *
  * @param hyper - The penalty, tolerances, iteration cap and the regularisation path's penalties.
  * @returns The iterative estimator.
@@ -267,6 +362,7 @@ export function graphicalLassoEstimator(
       enetTol: hyper.enetTol ?? 1e-4,
       maxIter: hyper.maxIter ?? 100,
       ...(hyper.pathPenalties === undefined ? {} : { pathPenalties: hyper.pathPenalties }),
+      ...(hyper.precomputed === undefined ? {} : { precomputed: hyper.precomputed }),
     },
     hyperSpace: (h) =>
       dict({
@@ -274,8 +370,7 @@ export function graphicalLassoEstimator(
         maxIter: int(1, 500, { default: h.maxIter ?? 100, label: 'sweeps' }),
       }),
     algorithm: (data, h) => {
-      matrixView(data.x, 'graphicalLasso', { minSamples: 2 })
-      const s = toArray(empiricalCovariance(data.x)) as number[][]
+      const s = covarianceOfData(data, h.precomputed)
       const alpha = h.alpha ?? 0.01
       if (!(alpha >= 0)) throw new OmaiError('value', 'graphicalLasso: alpha must be non-negative')
       return graphicalLassoAlgorithm(s, alpha, {
@@ -284,13 +379,8 @@ export function graphicalLassoEstimator(
       })
     },
     maxSteps: (h) => h.maxIter ?? 100,
-    params: (st, data) => {
-      const m = matrixView(data.x, 'graphicalLasso', { minSamples: 2 })
-      const location = Array.from({ length: m.d }, (_, j) => {
-        let t = 0
-        for (let i = 0; i < m.n; i++) t += m.data[i * m.d + j] ?? 0
-        return t / m.n
-      })
+    params: (st, data, h) => {
+      const location = locationOf(data, h.precomputed, st.covariance.length)
       return {
         location,
         covariance: st.covariance,
@@ -302,21 +392,17 @@ export function graphicalLassoEstimator(
     },
     verbs: covarianceVerbs,
     records: (st, data, h) => {
-      const m = matrixView(data.x, 'graphicalLasso', { minSamples: 2 })
-      const s = toArray(empiricalCovariance(data.x)) as number[][]
+      const s = covarianceOfData(data, h.precomputed)
+      const d = s.length
       const alpha = h.alpha ?? 0.01
       const opts = {
         ...(h.tol === undefined ? {} : { tol: h.tol }),
         ...(h.enetTol === undefined ? {} : { enetTol: h.enetTol }),
       }
-      const location = Array.from({ length: m.d }, (_, j) => {
-        let t = 0
-        for (let i = 0; i < m.n; i++) t += m.data[i * m.d + j] ?? 0
-        return t / m.n
-      })
-      const names = featureNamesOf(data, m.d)
+      const location = locationOf(data, h.precomputed, d)
+      const names = featureNamesOf(data, d)
       const pairs: [number, number][] = []
-      for (let a = 0; a < m.d; a++) for (let b = a + 1; b < m.d; b++) pairs.push([a, b])
+      for (let a = 0; a < d; a++) for (let b = a + 1; b < d; b++) pairs.push([a, b])
       const largest = Math.max(maxOf(pairs.map(([a, b]) => Math.abs(s[a]?.[b] ?? 0))), 1e-12)
       const penalties = h.pathPenalties ?? Array.from({ length: 8 }, (_, i) => largest * 10 ** (-2 * (i / 7)))
       const path = penalties.map((pen) => {
@@ -343,7 +429,7 @@ export function graphicalLassoEstimator(
           gaps: path.map((r) => r.gap),
           chosen: alpha,
         }),
-        mahalanobisRecord('graphicalLasso', data.x, params),
+        ...(h.precomputed === true ? [] : [mahalanobisRecord('graphicalLasso', data.x, params)]),
       ]
     },
     logs: { 'solver/gap': Log(), 'solver/objective': Log(), 'solver/edges': Log() },

@@ -5420,15 +5420,45 @@ outlier verbs of `anomaly`, so `covariance` imports `anomaly` and `anomaly` neve
 through `optim`'s `lassoCoordinateDescent` in the Gram form, factored by Cholesky; the duality gap as the stopping rule),
 `graphicalLassoAlgorithm`, `graphicalLasso` and `graphicalLassoEstimator`, whose exposition is a `regularisationPath`
 of the partial correlations over a penalty grid. The block coordinate descent is intrinsic to the problem (the L1 term is
-not smooth, so it is not a `smoothSolvers` slot); the inner lasso is the library's.
+not smooth, so it is not a `smoothSolvers` slot); the inner lasso is the library's. The penalty may be a matrix with one
+entry per pair (the `rho` of R's `glasso`; the weighted lasso of a column is the same lasso on columns divided by the
+penalties), a run can be warm-started from a neighbouring problem's covariance (`start`, as scikit-learn's `cov_init`),
+a zero penalty is the inverse, and the `precomputed` hyperparameter makes the data the covariance matrix itself.
+`graph-selection.ts` chooses the penalty: `selectGraphicalLassoPenalty` and its algorithm
+`graphicalLassoSelectionAlgorithm` walk a descending grid of penalties, a step per penalty, each fit warm-started from
+the previous one, and pick one by the `method` slot: `'cv'` is `GraphicalLassoCV` (the held-out Gaussian log likelihood
+over k folds from a `Splitter`, `kFold(5)` by default, a grid of 4 refined around the best four times by scikit-learn's
+rules, a tenth of the sweeps in the paths, then a refit and the unpenalised score as the last row of the results),
+`'ebic'` is Foygel and Drton's extended BIC (`graphicalLassoEbic`, `gamma = 0` the BIC) and `'stars'` is the stability
+approach (subsamples drawn from the run's key, the mean edge instability made monotone along the path, the smallest
+penalty under `beta`). The state is the entries evaluated so far, so a viewer can play the path; the result holds the
+chosen penalty, the whole curve (`criterion`, `scores` per fold, `instability`, `edges`, the precision at each penalty),
+the refit, its graph and the records of `selectionRecords` (a `crossValidationCurve` with the choice marked and the
+`regularisationPath` of the partial correlations); `graphicalLassoSelectionEstimator` and `GraphicalLassoCV` are the
+estimators. `evaluation.ts` holds `precisionGraph`, `graphEdges` and `edgeRecovery` (precision, recall, F1 and Hamming
+distance of an estimated graph). `neighbourhood.ts` is the column-by-column graph estimators: Meinshausen and Buhlmann's
+neighbourhood selection (`neighbourhoodSelection`, a lasso per node through `optim`, an "and" and an "or" graph,
+`meinshausenBuhlmannPenalty`, a step per node) and CLIME (`clime`, `climeAlgorithm`: a linear programme per column through
+`optim`'s simplex, symmetrised by the smaller entry). `rank.ts` is the nonparanormal: `nonparanormalTransform` (normal
+scores of the Winsorised empirical distribution), `nonparanormalCorrelation` (Spearman and Kendall sine transforms, or
+the normal scores, repaired to be positive definite) and `glassoNonparanormal` (the graphical lasso on it).
+`adaptive-graphical-lasso.ts` is the adaptive graphical lasso (Fan, Feng and Wu) as an algorithm over reweighting rounds,
+each a graphical lasso with the penalty matrix `alpha (|theta| + epsilon)^-gamma` from the last round.
 
-oracle: scikit-learn `graphical_lasso` at two penalties (tolerances tightened), `MinCovDet` (default and 0.9 support
-fraction) and `EllipticEnvelope` on data with planted outliers, where the oracle picks a data seed for which
+oracle: scikit-learn `graphical_lasso` at two penalties (tolerances tightened), `GraphicalLassoCV` on a fixed contiguous
+k-fold split (an explicit grid, and a grid by count with refinements: the selected penalty, the whole path, the scores
+per fold with the unpenalised row, and the refit; `covariance/graph_selection`), the nonparanormal estimators against
+scipy's Spearman and Kendall and the normal scores (`covariance/rank`), neighbourhood selection against scikit-learn's
+`Lasso` per node and CLIME against scipy's `linprog` (`covariance/neighbourhood`), `MinCovDet` (default and 0.9
+support fraction) and `EllipticEnvelope` on data with planted outliers, where the oracle picks a data seed for which
 scikit-learn's random starts all find the same minimum (the determinant has several nearby local minima on the clean
-rows, and a golden needs the global one). The shrinkage estimators are tested in `stats/covariance`. TODO: the nested
-subsets of FastMCD for more than 500 rows, `assume_centered` in the MCD, `GraphicalLassoCV`, the LARS-solved lasso mode.
-built from: `stats` (covariance), `anomaly` (outlier verbs), `learn`, `numerics` (linalg), `optim` (lasso), `dists`
-(chi-squared), `random`, `trace`
+rows, and a golden needs the global one). The shrinkage estimators are tested in `stats/covariance`. The adaptive
+graphical lasso, the penalty-matrix solution and the EBIC and StARS rules have no reference implementation here: they are
+checked by their optimality conditions and by the support recovered from `datasets/precision-graphs.ts`. TODO: the nested
+subsets of FastMCD for more than 500 rows, `assume_centered` in the MCD and the CV, the LARS-solved lasso mode, the
+node-wise Ising and Poisson models, SCIO, SPACE and TIGER beside CLIME.
+built from: `stats` (covariance, ranks), `anomaly` (outlier verbs), `learn` (model-selection splitters), `numerics` (linalg,
+special), `optim` (lasso, simplex), `dists` (chi-squared, Kendall's tau matrix), `exposition`, `random`, `trace`
 
 ### 4.53 `anomaly/`: anomaly and outlier detection (scikit-learn ensemble and neighbors, PyOD ideas)
 
@@ -7111,6 +7141,12 @@ built from: `data`, `random`, `dists`, `probprog`, `stochastic`, `graph`, `text`
   the regression target and the true items in the truth) and `pottsSamples` (Swendsen-Wang samples of the Potts lattice at
   a multiple of the critical coupling, with each sample's magnetisation as the target and the energy, the critical
   coupling and Onsager's magnetisation in the truth).
+- `precision-graphs.ts`: Gaussian graphical models with a known sparse precision matrix for graph estimation:
+  `makeGaussianGraph` (a band, hub or random graph with chosen partial correlations on its edges, rescaled so the
+  precision is positive definite and the covariance has a unit diagonal: the precision, covariance, partial
+  correlations, adjacency and edges) and the generator `gaussianGraph` (samples from it, optionally observed through a
+  monotone marginal transform, `cubic` or `exp`, so a nonparanormal sample keeps the graph; `graphSeed` fixes the graph
+  across sample sizes; the latent Gaussian rows are the target and the model the truth).
 - `shapelet-series.ts`: `shapeletSeries`, noise series in which each class but the first carries one planted pattern
   (`shapeletPatterns`: a bump, a ramp, a pulse) at a random position; the patterns and positions are the truth.
 - `hidden-markov.ts`: sequences from hidden Markov chains with the states as labels: the occasionally dishonest casino

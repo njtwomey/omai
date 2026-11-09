@@ -82,6 +82,15 @@
       "cases": 7
     },
     {
+      "fixture": "covariance/graph_selection.json",
+      "source": "oracle/cases/covariance/graph_selection.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 8
+    },
+    {
       "fixture": "covariance/graphical_lasso.json",
       "source": "oracle/cases/covariance/graphical_lasso.py",
       "reference": {
@@ -89,6 +98,25 @@
         "numpy": "2.5.4"
       },
       "cases": 4
+    },
+    {
+      "fixture": "covariance/neighbourhood.json",
+      "source": "oracle/cases/covariance/neighbourhood.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "scipy": "1.18.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 4
+    },
+    {
+      "fixture": "covariance/rank.json",
+      "source": "oracle/cases/covariance/rank.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 8
     },
     {
       "fixture": "covariance/robust.json",
