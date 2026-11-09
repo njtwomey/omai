@@ -1587,7 +1587,7 @@
       "reference": {
         "scikit-learn": "1.9.1"
       },
-      "cases": 35
+      "cases": 36
     },
     {
       "fixture": "learn/preprocessing/imputation.json",
@@ -2499,6 +2499,14 @@
         "dtw-python": "1.9.0"
       },
       "cases": 19
+    },
+    {
+      "fixture": "metrics/class_likelihood_ratios.json",
+      "source": "oracle/cases/metrics/class_likelihood_ratios.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 18
     },
     {
       "fixture": "metrics/classification.json",

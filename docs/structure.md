@@ -3024,7 +3024,8 @@ none of those weights. Each file builds its specs with `specOf(category, inputs,
   precision, selection rate and accuracy at each, total cost and the cheapest when costs are given, ROC and PR points
   with their areas (golden against scikit-learn). Built.
 - `classification-summary.ts`: `matthewsCorrcoef`, `cohenKappaScore` (unweighted, linear, quadratic),
-  `quadraticWeightedKappa` (ordinal), likelihood ratios (`positiveLikelihoodRatio`, `negativeLikelihoodRatio`),
+  `quadraticWeightedKappa` (ordinal), likelihood ratios (`positiveLikelihoodRatio`, `negativeLikelihoodRatio`, and `classLikelihoodRatios`, the pair with
+  scikit-learn's `replace_undefined_by`; oracle `metrics/class_likelihood_ratios`),
   `diagnosticOddsRatio`, `hammingLoss`, `zeroOneLoss`, `topKAccuracyScore`, multi-label ranking
   (`labelRankingAveragePrecisionScore`, `coverageError`, `labelRankingLoss`) and `classificationReport` (data and
   sklearn's text).
@@ -3461,7 +3462,8 @@ modAL for active learning, diffprivlib and opacus for privacy
 - `preprocessing/scalers.ts`: standard, min-max, max-abs and robust scalers, normaliser, quantile and power
   transformers.
 - `preprocessing/encoders.ts`: one-hot, ordinal, label, target (cross-fitted), label and multi-label binarisers.
-- `preprocessing/features.ts`: polynomial features, spline features, binning, binariser, function transformers,
+- `preprocessing/features.ts`: polynomial features, spline features, binning, binariser, `addDummyFeature` (the constant
+  column), function transformers,
   interaction features.
 - `preprocessing/imputation.ts`: simple, k-NN and iterative imputers, missing indicators.
 - `preprocessing/aggregates.ts`: per-row group statistics (`groupAggregates`, pandas `groupby.transform`, with a
