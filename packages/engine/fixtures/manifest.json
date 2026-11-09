@@ -1453,6 +1453,14 @@
       "cases": 16
     },
     {
+      "fixture": "learn/dummy.json",
+      "source": "oracle/cases/learn/dummy.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 13
+    },
+    {
       "fixture": "learn/feature_selection.json",
       "source": "oracle/cases/learn/feature_selection.py",
       "reference": {

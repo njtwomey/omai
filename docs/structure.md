@@ -3524,6 +3524,10 @@ modAL for active learning, diffprivlib and opacus for privacy
   stage also moves the grid to the data (pykan's `update_grid_from_samples`); paths `kan/curves`, `kan/grids`, `kan/sparsity`,
   `kan/stage` and the events `kan/prune`, `kan/refine`, `kan/grid-update`; `progressivePlan` gives the phases of a
   hyperparameter set and `with({ plan })` replaces them. `kanVerbs` (in `kan.ts`) are the KAN verbs of any network and state.
+- `dummy.ts`: the baselines that ignore the features: `dummyClassifier` (`prior`, `most_frequent`, `stratified` and
+  `uniform` from a key kept in the fitted parameters, `constant`; weighted frequencies) and `dummyRegressor` (`mean`,
+  `median`, `quantile`, `constant`; weighted) with `weightedQuantile`. oracle: `learn/dummy` (sklearn.dummy, the
+  deterministic strategies).
 - `compose.ts`: `pipeline`, `featureUnion`, `columnTransformer`, `transformedTargetRegressor`, step inspection
   (intermediate outputs recorded by policy), caching of fitted steps.
 - `model-selection/splitters.ts`: the splitter contract; holdout and train/validation/test splits; k-fold,
