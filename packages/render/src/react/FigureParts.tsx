@@ -28,7 +28,7 @@ export interface ReadoutsProps {
  *
  * @param props - The pairs.
  * @returns The list, or `null` when there are no items.
- * @index function React component: label and value pairs as a dl: `<Readouts items={[{ label: 'loss', value: '0.31' }]} />`
+ * @index function React component: label and value pairs as a dl: `<Readouts items={...} />`
  * @example
  * ```tsx
  * import { Readouts } from 'omai-render/react'

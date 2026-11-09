@@ -23,8 +23,8 @@ import { inlineProducer } from '../../producer/inline.ts'
 import type { Variant } from '../../producer/make.ts'
 import type { Producer, ProducerFactory } from '../../producer/producer.ts'
 import { sharedHead } from '../../producer/step.ts'
-import { DISPOSED, type SettledResult, settledStateOf, useRunSettled } from '../settled.ts'
 import { useActive } from '../active.tsx'
+import { DISPOSED, type SettledResult, settledStateOf, useRunSettled } from '../settled.ts'
 import { DEFAULT_STEPS, type PlayStatus, progressOf, type StartPolicy, startOf, statusOf } from '../start.ts'
 
 export type { PlayStatus, SettledResult, StartPolicy, Variant }

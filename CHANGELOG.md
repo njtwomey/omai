@@ -32,6 +32,29 @@ What a notes page needs to use omai directly, with no local kit (the circular st
   (a wrapping row) components; the title is a permalink (`#id`, copies the address, scrolls to the figure when the page is
   opened at it; `id` and `permalink={false}` to set or turn off). The host-token mapping onto the `--wb-*` variables is documented
   in `react/theme.tsx`.
+- Ambient `active`: `ActiveProvider` (`omai-render/react`) says whether everything below it may compute and play; `useSession`,
+  `useSessions`, `useLiveRun`, `usePlayback`, `useJob` and `SessionPlayer` read it when their own `active` option is not given
+  (an explicit option replaces it). Providers nest: a figure is active only when every provider above it is.
+- `ThemeProvider` nests and carries the colour mode, token overrides (`tokens`: a patch, a `{ light, dark }` pair or a function of
+  the mode) and the host's CSS variable names (`cssVariables: { fg: '--foreground' }` writes `--wb-fg: var(--foreground)`), so a
+  deck can pin a light slide inside a dark deck and stop mapping `--wb-*` by hand. Charts (`Chart`, `ResponsiveChart`), scenes and
+  structures follow it; popups in a portal copy its variables. It now renders a `display: contents` wrapper. Colours a builder
+  writes from `tokens(mode)` itself stay the mode's (only the ECharts theme follows `tokens`).
+- Control scale: one CSS variable `--omai-control-scale` (or `ControlScaleProvider scale={1.3}`) scales the heights, text and
+  paddings of the controls and players, popups included, in place of CSS `zoom`; `Player` and `SessionPlayer` take `size`
+  (`sm`, `md`, `lg`). Unset, the sizes are the standard ones.
+- A settled signal for export: every live figure root carries `data-omai-state` (`preparing`, `ready` or `failed`: `SessionPlayer`,
+  `SessionPanels`, `Chart`, `ResponsiveChart`, `SceneView`, `StructureView`); a session handle has `settled`, a promise that never
+  rejects and resolves `{ ok: true }` when the whole tape exists, or `{ ok: false, error }` (`'disposed'` when the run was remade or
+  dropped first), so an exporter awaits it; `waitForSettled(root, { timeoutMs })` waits for every figure under a root. A run that
+  threw on the main thread is now reported (`live.error`, the player's alert) instead of escaping into the page.
+- Import safety is tested: every entry point of `omai-engine` and `omai-render` imports in Node with no `window`, `document`,
+  `Worker` or similar (`scripts/import-safe.test.ts`).
+- Registration is tolerant of a second copy of omai-engine: the same object listed twice in a registry is kept once (two different
+  objects under one name still throw), and the default context lives on a `Symbol.for('omai-engine/defaultContext')` holder, so
+  a seed set through one copy applies to all.
+- `DraggableLine`: `handleShape` (adds `diamond`) and `handleSize`. `NumberField`'s `format`, `parse` and `draftText` are documented
+  precisely (format is never applied to a focused draft).
 
 ## 0.1.9
 
