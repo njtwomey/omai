@@ -23,7 +23,9 @@ export interface NumberDraft {
 /**
  * The editing behaviour of a typed number: while focused the input holds a draft, validated as it is typed; Enter or
  * blur commits a valid draft (an invalid one is refused on Enter, with its message showing, and reverted on blur);
- * Escape reverts; ArrowUp and ArrowDown step (ten steps, or a decade, with Shift).
+ * Escape reverts; ArrowUp and ArrowDown step (ten steps, or a decade, with Shift). While focused the input holds the
+ * draft as typed (`parse` reads it to validate it, `format` is not applied to it), so a reformat never moves the caret;
+ * when not focused it holds `format(value)`. Focus, Enter, Escape and the arrow keys set the draft to `draftText(value)`.
  *
  * @param options - The value, its rules, how to show it and what to call with a committed value.
  * @returns The input's props and the current error.

@@ -7498,7 +7498,7 @@ Design rules:
   `selection.ts`, `useLinkState` (a figure `LinkStore` in React) and `keys.ts` (`useHeldKeys`: keys captured while a
   figure has focus, per press and per frame, for playing worlds).
   `DraggableLine` (a vertical or horizontal line the reader drags, bound two-way to a control's value: thresholds,
-  cut-offs, levels; snaps to a step, keyboard-nudgeable).
+  cut-offs, levels; snaps to a step, keyboard-nudgeable; a bar, square, circle or diamond handle of a given size).
 - `MathView.tsx`: `Tex`, `Equation` (live), `Derivation`, `MathProvider` (KaTeX HTML with its stylesheet, MathML for
   assistive technology; live values highlighted).
 - `controls/` (shadcn/ui components): controls generated from a `Space` (`SpaceControls`); `NumberField` (type a

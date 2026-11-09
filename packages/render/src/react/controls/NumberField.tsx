@@ -33,14 +33,24 @@ export interface NumberFieldProps extends NumberSpec {
   readonly label: ReactNode
   readonly value: number
   readonly onChange: (value: number) => void
-  /** How the value shows when not being edited (default {@link formatFieldValue}). */
+  /**
+   * How the committed value is shown (default {@link formatFieldValue}): in the input while it is not being edited
+   * (also again after blur), in the slider's readout (`aria-valuetext`) and in the dropdown's entries. It is never
+   * applied to what is being typed: while the field is focused it holds the draft exactly as typed, so the caret is
+   * never moved by a reformat. (The messages of a refused draft, "must be ≥ 0", still use the default format.)
+   */
   readonly format?: (value: number) => string
   /**
    * Reads what is typed (default: a decimal number), so a value shown as words by `format` ("none", "strong") can be
-   * typed back. Return `null` for text that is not a value. Bounds and `integer` still apply to what it returns.
+   * typed back. Return `null` for text that is not a value. It is applied as the reader types, to validate the draft
+   * (the field turns red and a message shows while the draft is unreadable or breaks a bound), and again when the draft
+   * is committed (Enter or blur); the draft itself stays as typed. Bounds and `integer` still apply to what it returns.
    */
   readonly parse?: (text: string) => number | null
-  /** The text the field holds when focused for editing (default the value as a plain number; use `format` to start from the words). */
+  /**
+   * The text the field holds when it gains focus, and after Enter or an arrow key commits (default the value as a
+   * plain number; pass `format` to start from the words). On blur the field goes back to `format`.
+   */
   readonly draftText?: (value: number) => string
   /** A unit shown beside the label. */
   readonly unit?: string
