@@ -8,5 +8,6 @@
 export * from './graphical-lasso.ts'
 export * from './nearest.ts'
 export * from './robust.ts'
+export * from './shrinkage-targets.ts'
 export * from './shrinkage.ts'
 export * from './spectral.ts'

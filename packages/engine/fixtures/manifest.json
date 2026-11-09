@@ -100,6 +100,15 @@
       "cases": 4
     },
     {
+      "fixture": "covariance/shrinkage_targets.json",
+      "source": "oracle/cases/covariance/shrinkage_targets.py",
+      "reference": {
+        "scikit-learn": "1.9.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 45
+    },
+    {
       "fixture": "data/batching.json",
       "source": "oracle/cases/data/batching.py",
       "reference": {
