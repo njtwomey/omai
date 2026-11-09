@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { invoke, mountElement, resetGlobals } from '../_harness.tsx'
+import { menuClass, menuItemClass } from './classes.ts'
 import { NumberField, type NumberFieldProps } from './NumberField.tsx'
+import { numberLadder } from './number.ts'
 
 afterEach(() => {
   resetGlobals()
@@ -76,5 +78,38 @@ describe('NumberField format and parse', () => {
     expect(onChange).not.toHaveBeenCalled()
     expect(shown()).toBe('weak')
     await m.unmount()
+  })
+})
+
+describe('NumberField ladder popup', () => {
+  // The rem of the first `calc(<n>rem*...)` after a prefix in a class string.
+  const rem = (classes: string, prefix: string): number => {
+    const found = new RegExp(`${prefix}\\[calc\\(([\\d.]+)rem`).exec(classes)
+    if (found === null) throw new Error(`no ${prefix} in ${classes}`)
+    return Number(found[1])
+  }
+
+  it('offers the bound itself as the last value: 0 to 2 ends ... 1.8, 2', async () => {
+    const ladder = numberLadder({ min: 0, max: 2 })
+    expect(ladder).toEqual([0, 0.2, 0.4, 0.6, 0.8, 1, 1.2, 1.4, 1.6, 1.8, 2])
+    const picked = vi.fn()
+    const m = await mountElement(<NumberField label="amplitude" value={1} min={0} max={2} onChange={picked} />, {
+      browser: true,
+    })
+    const trigger = m.elements().find((e) => e.props['aria-label'] === 'Pick a value')
+    await invoke(trigger, 'onClick')
+    const options = m.elements().filter((e) => e.props['role'] === 'option')
+    expect(options.map((o) => o.text)).toEqual(ladder.map(String))
+    // The last value is there and picking it sets the bound.
+    await invoke(options[10], 'onClick')
+    expect(picked).toHaveBeenCalledWith(2)
+    await m.unmount()
+  })
+
+  it('draws the popup tall enough for all 11 rows, so the last one is not clipped below a scroll', () => {
+    // A row is its two vertical paddings and its line height; the panel adds its own padding and a border (about 2px).
+    const row = 2 * rem(menuItemClass, 'py-') + rem(menuItemClass, '/')
+    const panel = 2 * rem(menuClass, 'py-') + 2 / 16
+    expect(rem(menuClass, 'max-h-')).toBeGreaterThanOrEqual(11 * row + panel)
   })
 })

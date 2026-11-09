@@ -41,9 +41,12 @@ export const iconButtonClass: string =
 export const inputBoxClass: string =
   'relative flex h-[calc(2rem*var(--omai-control-scale,1))] min-w-0 flex-1 items-center border border-(--wb-grid) bg-(--wb-bg) text-(--wb-fg) focus-within:z-10 focus-within:border-(--wb-accent) focus-within:ring-2 focus-within:ring-(--wb-accent)/40'
 
-/** The class of a floating menu's panel (placed by `Popover`). */
+/**
+ * The class of a floating menu's panel (placed by `Popover`). It is tall enough (18rem) for the 11 values of a number
+ * field's dropdown with their padding and border, so the last one is not cut off; a longer list scrolls.
+ */
 export const menuClass: string =
-  'z-[1200] max-h-[calc(16rem*var(--omai-control-scale,1))] min-w-[calc(6rem*var(--omai-control-scale,1))] overflow-y-auto rounded-md border border-(--wb-grid) bg-(--wb-bg) py-[calc(0.25rem*var(--omai-control-scale,1))] text-(--wb-fg) shadow-lg'
+  'z-[1200] max-h-[calc(18rem*var(--omai-control-scale,1))] min-w-[calc(6rem*var(--omai-control-scale,1))] overflow-y-auto rounded-md border border-(--wb-grid) bg-(--wb-bg) py-[calc(0.25rem*var(--omai-control-scale,1))] text-(--wb-fg) shadow-lg'
 
 /** The class of one item of a floating menu (`data-selected` marks the current one). */
 export const menuItemClass: string =
