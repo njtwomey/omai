@@ -142,6 +142,41 @@ export function johnsonLindenstraussDim(n: number, eps: number): number {
   return Math.floor((4 * Math.log(n)) / (eps ** 2 / 2 - eps ** 3 / 3))
 }
 
+/**
+ * A Haar-distributed random orthogonal matrix, or the first `columns` columns of one (a uniformly distributed
+ * orthonormal frame): the QR factorisation of a Gaussian matrix, with the columns of Q multiplied by the signs of the
+ * diagonal of R (Mezzadri 2007), so the law is invariant under every rotation and reflection. The rotation behind
+ * generators of covariances with chosen eigenvalues and random eigenvectors.
+ *
+ * @param key - The random key.
+ * @param n - The dimension.
+ * @param columns - How many orthonormal columns (default `n`, the whole matrix).
+ * @returns An `[n, columns]` matrix with orthonormal columns.
+ * @index function Haar-distributed random orthogonal matrix or orthonormal frame.
+ * @example
+ * ```ts
+ * import { haarOrthogonal } from 'omai-engine/numerics/linalg'
+ * import { key } from 'omai-engine/random'
+ * import { eye, item, matmul, norm, sub, transpose } from 'omai-engine/tensor'
+ * const q = haarOrthogonal(key(0), 4)
+ * item(norm(sub(matmul(transpose(q), q), eye(4)))) < 1e-12 // => true
+ * ```
+ */
+export function haarOrthogonal(key: Key, n: number, columns: number = n): Tensor {
+  if (!Number.isInteger(n) || n < 1)
+    throw new OmaiError('value', `haarOrthogonal: n must be a positive integer (got ${n})`)
+  if (!Number.isInteger(columns) || columns < 1 || columns > n)
+    throw new OmaiError('value', `haarOrthogonal: columns must be an integer in [1, ${n}] (got ${columns})`)
+  const { q, r } = qr(normal(key, [n, columns]))
+  const qd = concreteOrThrow(q as Tensor, 'haarOrthogonal').data as Float64Array
+  const rd = concreteOrThrow(r as Tensor, 'haarOrthogonal').data as Float64Array
+  const out = Float64Array.from(qd)
+  for (let j = 0; j < columns; j++) {
+    if ((rd[j * columns + j] ?? 1) < 0) for (let i = 0; i < n; i++) out[i * columns + j] = -(out[i * columns + j] ?? 0)
+  }
+  return fromStorage(out, [n, columns], 'float64')
+}
+
 /** A matrix, or a function computing its product with a vector. */
 export type Operator = TensorLike | ((x: Float64Array) => Float64Array)
 

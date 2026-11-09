@@ -52,6 +52,13 @@ import { glmCurve } from './glm-curves.ts'
 import { contextualSbm, graphFamilies, karateClub, kinshipTriples, lesMiserables, smallMolecules } from './graphs.ts'
 import { dishonestCasino, regimeSwitching } from './hidden-markov.ts'
 import { barsAndStripes, digitGlyphs, fashionMnistTest, geometricScenes, shapes } from './images.ts'
+import {
+  blockCovarianceData,
+  factorCovarianceData,
+  spikedCovarianceData,
+  toeplitzCovarianceData,
+  wishartCovarianceData,
+} from './known-covariance.ts'
 import { mixedSources, sparseCodedSignal, sparseDictionary, toySuperposition, twoViews } from './latent.ts'
 import { makeClassification, makeMultilabelClassification } from './make-classification.ts'
 import { sCurve, severedSphere, swissRoll, torus } from './manifolds.ts'
@@ -218,6 +225,8 @@ export const datasetGenerators: Readonly<Record<string, DatasetGenerator>> = {
   makeMultilabelClassification,
   makeRegression,
   miscalibratedPredictions,
+  blockCovarianceData,
+  factorCovarianceData,
   mixedSources,
   modularArithmetic,
   moons,
@@ -257,6 +266,7 @@ export const datasetGenerators: Readonly<Record<string, DatasetGenerator>> = {
   sparseCodedSignal,
   sparseDictionary,
   sparseUncorrelated,
+  spikedCovarianceData,
   spatialPoisson,
   spirals,
   spokenDigits,
@@ -266,6 +276,7 @@ export const datasetGenerators: Readonly<Record<string, DatasetGenerator>> = {
   syntheticControlPanel,
   taggedCorpus,
   topicCorpus,
+  toeplitzCovarianceData,
   torus,
   toySuperposition,
   treatmentEffects,
@@ -273,6 +284,7 @@ export const datasetGenerators: Readonly<Record<string, DatasetGenerator>> = {
   typoPairs,
   unequalVarianceBlobs,
   upliftData,
+  wishartCovarianceData,
   xor,
   zipfianCatalogue,
 } as Readonly<Record<string, DatasetGenerator>>
@@ -399,6 +411,11 @@ export const datasetRegistry: DatasetRegistry = registry<DatasetEntry>([
     ['networkExperiment', 'Network experiment with spillover'],
     ['carryoverExperiment', 'Chained experiments with carryover'],
     ['mixedSources', 'Mixed independent sources'],
+    ['factorCovarianceData', 'Data from a factor model with known covariance'],
+    ['spikedCovarianceData', 'Data from a spiked covariance (random-matrix phase transition)'],
+    ['blockCovarianceData', 'Data from correlated blocks with known covariance'],
+    ['toeplitzCovarianceData', 'Data from a Toeplitz covariance (AR(1), MA(1), long memory)'],
+    ['wishartCovarianceData', 'Data from a Wishart-distributed covariance'],
     ['twoViews', 'Two views of shared factors'],
     ['toySuperposition', 'Toy model of superposition'],
     ['sparseDictionary', 'Sparse codes through a dictionary'],

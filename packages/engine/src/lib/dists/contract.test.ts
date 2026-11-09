@@ -19,6 +19,7 @@ const families: readonly (readonly [string, () => D.Distribution])[] = [
   ['kumaraswamy', () => D.kumaraswamy(2, 3)],
   ['logitNormal', () => D.logitNormal(0, 1)],
   ['triangular', () => D.triangular(0, 1, 3)],
+  ['marchenkoPastur', () => D.marchenkoPastur(0.4, 1.5)],
   ['studentT', () => D.studentT(3, 0, 1)],
   ['cauchy', () => D.cauchy(0, 1)],
   ['halfCauchy', () => D.halfCauchy(1)],

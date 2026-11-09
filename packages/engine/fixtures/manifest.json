@@ -324,6 +324,15 @@
       "cases": 148
     },
     {
+      "fixture": "dists/continuous/random_matrix.json",
+      "source": "oracle/cases/dists/continuous/random_matrix.py",
+      "reference": {
+        "scipy": "1.18.1",
+        "numpy": "2.5.4"
+      },
+      "cases": 32
+    },
+    {
       "fixture": "dists/continuous/sampling_distributions.json",
       "source": "oracle/cases/dists/continuous/sampling_distributions.py",
       "reference": {
