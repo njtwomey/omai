@@ -20,6 +20,17 @@ From the notes site's port off its local kit.
   parallel tracks. A back edge over a row of nodes now sits clear of their tops, and the scene grows to contain it. Edges
   that share an end and a look and span one rank still merge into one trunk. `separate: false` with `clearance: 6` and
   `trackGap: 8` gives the previous routes exactly; straight routes ignore all three. The gallery entry has controls for them.
+- `Player` carries `data-omai-state` from the controller it plays: `useLiveRun`'s controller is `preparing` until the run ends or
+  reaches `maxSteps`, then `ready` (`failed` if the run was disposed first); `usePlayback` and `useTimelinePlayback` are `ready` at
+  once; a controller with no state gives no attribute. `waitForSettled` on a slide with a player and a chart now waits for the run.
+- The control scale (`--omai-control-scale`) also multiplies the default widths of `NumberField`, `Select`, `Choice`, `Toggle`
+  and `SeedInput` and the 176 px default of a `Controls` row, so a scaled field is as wide as under CSS zoom. A `width` passed in
+  pixels stays literal. Unset, the widths are the same.
+- `DraggableRect` (`omai-render/react`): a draggable, resizable rectangle in data coordinates with eight grips (`handles`:
+  `all`, `corners` or `edges`), a body that moves it, `min`/`max`, `minSize`, `step`, keyboard nudges (Shift for ten times), Escape
+  to cancel a drag, and flipped axes handled. `Handle` is exported and shared with `DraggableLine`.
+- `NumberField`'s ladder popup (and `Select` menus of eleven options) no longer clips its last value: the menu was capped at 16 rem,
+  and eleven rows need a little more.
 - `Controls` (and so the `controls` of a `FigureFrame`) gives the number fields, selects and choices in it a default width of
   176 pixels (`controlWidth` on `Controls` to change it, a control's own `width` to override), so a row of fields and toggles
   lines up without a `width` on each; a toggle keeps its natural width. Outside a `Controls` row nothing changes.
