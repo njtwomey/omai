@@ -4,7 +4,16 @@
  */
 
 import { type ReactNode, useId, useRef, useState } from 'react'
-import { cx, iconButtonClass, labelClass, menuItemClass } from './classes.ts'
+import {
+  type ControlSize,
+  type ControlWidth,
+  controlSizes,
+  controlWidth,
+  cx,
+  iconButtonClassFor,
+  labelClassFor,
+  menuItemClass,
+} from './classes.ts'
 import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon } from './icons.tsx'
 import { cycleOption, normaliseOptions, type OptionInput, type OptionValue } from './options.ts'
 import { Popover } from './Popover.tsx'
@@ -27,6 +36,15 @@ export interface SelectProps<T extends OptionValue> {
   readonly container?: HTMLElement | null
   /** The earlier name of `container`; `container` wins when both are given. */
   readonly menuContainer?: HTMLElement | null
+  /** The size: `sm` (28px high), `md` (32px, the default) or `lg` (40px); sets height, text and padding. */
+  readonly size?: ControlSize
+  /**
+   * The width: pixels, a CSS length, `'fill'` (the container's width) or `'auto'` (the content's). Not given: the
+   * container's width between a minimum and a maximum.
+   */
+  readonly width?: ControlWidth
+  /** Cut the label to one line with an ellipsis (default: it wraps). */
+  readonly truncate?: boolean
   readonly disabled?: boolean
   readonly className?: string
 }
@@ -41,7 +59,9 @@ export interface SelectProps<T extends OptionValue> {
  * @index function React component: a dropdown with cycling arrows: `<Select label="loss" value={v} options={names} onChange={setV} />`
  */
 export function Select<T extends OptionValue>(props: SelectProps<T>): ReactNode {
-  const { label, value, onChange, cycle = true, disabled = false, className } = props
+  const { label, value, onChange, cycle = true, disabled = false, className, size = 'md', truncate = false } = props
+  const frame = controlWidth(props.width, 'w-full min-w-36 max-w-xs')
+  const sized = controlSizes[size]
   const options = normaliseOptions(props.options)
   const id = useId()
   const [open, setOpen] = useState(false)
@@ -53,15 +73,18 @@ export function Select<T extends OptionValue>(props: SelectProps<T>): ReactNode 
     if (next !== undefined && next !== value) onChange(next)
   }
   return (
-    <div className={cx('flex w-full min-w-36 max-w-xs flex-col gap-1.5', className)}>
-      <label htmlFor={id} className={cx(labelClass, 'truncate')}>
+    <div
+      className={cx('flex flex-col gap-1.5', frame.className, className)}
+      {...(frame.style === undefined ? {} : { style: frame.style })}
+    >
+      <label htmlFor={id} className={labelClassFor(size, truncate)}>
         {label}
       </label>
       <div className="flex w-full">
         {cycle ? (
           <button
             type="button"
-            className={cx(iconButtonClass, 'rounded-l-md')}
+            className={cx(iconButtonClassFor(size), 'rounded-l-md')}
             aria-label="Previous option"
             disabled={disabled || options.length < 2}
             onClick={() => move(-1)}
@@ -81,7 +104,9 @@ export function Select<T extends OptionValue>(props: SelectProps<T>): ReactNode 
                 aria-expanded={open}
                 onClick={() => setOpen((o) => !o)}
                 className={cx(
-                  'h-8 w-full min-w-0 truncate border border-(--wb-grid) bg-(--wb-bg) pr-7 pl-2.5 text-left text-xs text-(--wb-fg) outline-none focus-visible:z-10 focus-visible:border-(--wb-accent) focus-visible:ring-2 focus-visible:ring-(--wb-accent)/40 disabled:opacity-50',
+                  sized.height,
+                  sized.text,
+                  'w-full min-w-0 truncate border border-(--wb-grid) bg-(--wb-bg) pr-7 pl-2.5 text-left text-(--wb-fg) outline-none focus-visible:z-10 focus-visible:border-(--wb-accent) focus-visible:ring-2 focus-visible:ring-(--wb-accent)/40 disabled:opacity-50',
                   cycle ? 'rounded-none' : 'rounded-md',
                 )}
               >
@@ -128,7 +153,9 @@ export function Select<T extends OptionValue>(props: SelectProps<T>): ReactNode 
                 if (picked !== undefined) onChange(picked.value)
               }}
               className={cx(
-                'h-8 w-full min-w-0 appearance-none truncate border border-(--wb-grid) bg-(--wb-bg) pr-7 pl-2.5 text-xs text-(--wb-fg) outline-none focus-visible:z-10 focus-visible:border-(--wb-accent) focus-visible:ring-2 focus-visible:ring-(--wb-accent)/40 disabled:opacity-50',
+                sized.height,
+                sized.text,
+                'w-full min-w-0 appearance-none truncate border border-(--wb-grid) bg-(--wb-bg) pr-7 pl-2.5 text-(--wb-fg) outline-none focus-visible:z-10 focus-visible:border-(--wb-accent) focus-visible:ring-2 focus-visible:ring-(--wb-accent)/40 disabled:opacity-50',
                 cycle ? 'rounded-none' : 'rounded-md',
               )}
             >
@@ -148,7 +175,7 @@ export function Select<T extends OptionValue>(props: SelectProps<T>): ReactNode 
         {cycle ? (
           <button
             type="button"
-            className={cx(iconButtonClass, 'rounded-r-md')}
+            className={cx(iconButtonClassFor(size), 'rounded-r-md')}
             aria-label="Next option"
             disabled={disabled || options.length < 2}
             onClick={() => move(1)}

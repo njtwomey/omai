@@ -8,6 +8,7 @@ import type { SeriesOption } from 'echarts'
 import { maxOf, minOf } from 'omai-engine/base'
 import { type ColourMode, tokens } from '../theme/tokens.ts'
 import { colourFor } from './_data.ts'
+import { deferMode, isModeless } from './_mode.ts'
 import { type Layer, layer } from './plot.ts'
 
 /** A shaded region of the plot: a rectangle (`x` and `y`), or a band across the whole plot (only one of them). */
@@ -54,6 +55,7 @@ export function annotations(
   notes: Annotations,
   options: { readonly mode?: ColourMode; readonly colour?: string; readonly fontSize?: number } = {},
 ): Layer {
+  if (isModeless(options)) return deferMode((mode) => annotations(notes, { ...options, mode }))
   const mode = options.mode ?? 'light'
   const t = tokens(mode)
   const colour = options.colour === undefined ? t.fg : colourFor(options.colour, mode, 0)

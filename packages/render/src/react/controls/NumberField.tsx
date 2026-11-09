@@ -4,7 +4,17 @@
  */
 
 import { type PointerEvent, type ReactNode, useCallback, useId, useRef, useState } from 'react'
-import { cx, iconButtonClass, inputBoxClass, labelClass, menuItemClass } from './classes.ts'
+import {
+  type ControlSize,
+  type ControlWidth,
+  controlSizes,
+  controlWidth,
+  cx,
+  iconButtonClassFor,
+  inputBoxClassFor,
+  labelClassFor,
+  menuItemClass,
+} from './classes.ts'
 import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon } from './icons.tsx'
 import {
   formatFieldValue,
@@ -38,6 +48,15 @@ export interface NumberFieldProps extends NumberSpec {
   readonly ladder?: readonly number[] | false
   /** Whether to show the slider along the field's bottom edge (default: when both bounds are finite). */
   readonly slider?: boolean
+  /** The size: `sm` (28px high), `md` (32px, the default) or `lg` (40px); sets height, text and padding. */
+  readonly size?: ControlSize
+  /**
+   * The width: pixels, a CSS length, `'fill'` (the container's width) or `'auto'` (the content's). Not given: the
+   * container's width between a minimum and a maximum.
+   */
+  readonly width?: ControlWidth
+  /** Cut the label to one line with an ellipsis (default: it wraps). */
+  readonly truncate?: boolean
   readonly disabled?: boolean
   readonly className?: string
 }
@@ -53,7 +72,9 @@ export interface NumberFieldProps extends NumberSpec {
  * @index function React component: a typed, stepped, slidable number: `<NumberField label="k" value={k} onChange={setK} min={1} />`
  */
 export function NumberField(props: NumberFieldProps): ReactNode {
-  const { label, value, onChange, unit, disabled = false, className } = props
+  const { label, value, onChange, unit, disabled = false, className, size = 'md', truncate = false } = props
+  const frame = controlWidth(props.width, 'w-full min-w-36 max-w-xs')
+  const sized = controlSizes[size]
   const spec: NumberSpec = {
     ...(props.min === undefined ? {} : { min: props.min }),
     ...(props.max === undefined ? {} : { max: props.max }),
@@ -82,9 +103,12 @@ export function NumberField(props: NumberFieldProps): ReactNode {
   const error = draft.error
 
   return (
-    <div className={cx('flex w-full min-w-36 max-w-xs flex-col gap-1.5', className)}>
+    <div
+      className={cx('flex flex-col gap-1.5', frame.className, className)}
+      {...(frame.style === undefined ? {} : { style: frame.style })}
+    >
       <div className="flex items-baseline justify-between gap-2">
-        <label htmlFor={id} className={cx(labelClass, 'min-w-0 truncate')}>
+        <label htmlFor={id} className={labelClassFor(size, truncate)}>
           {label}
         </label>
         {unit === undefined ? null : <span className="text-xs text-(--wb-muted)">{unit}</span>}
@@ -92,7 +116,7 @@ export function NumberField(props: NumberFieldProps): ReactNode {
       <div className="flex w-full">
         <button
           type="button"
-          className={cx(iconButtonClass, 'rounded-l-md')}
+          className={cx(iconButtonClassFor(size), 'rounded-l-md')}
           aria-label="Decrease"
           disabled={disabled || down === null}
           onClick={(e) => {
@@ -104,7 +128,7 @@ export function NumberField(props: NumberFieldProps): ReactNode {
         </button>
         <div
           className={cx(
-            inputBoxClass,
+            inputBoxClassFor(size),
             '-mx-px',
             disabled && 'opacity-50',
             error !== null && 'z-10 border-(--wb-danger) focus-within:border-(--wb-danger)',
@@ -115,7 +139,8 @@ export function NumberField(props: NumberFieldProps): ReactNode {
             disabled={disabled}
             aria-describedby={error === null ? undefined : errorId}
             className={cx(
-              'h-full w-0 min-w-0 flex-1 bg-transparent pl-2 text-right font-mono text-xs tabular-nums outline-none',
+              'h-full w-0 min-w-0 flex-1 bg-transparent pl-2 text-right font-mono tabular-nums outline-none',
+              sized.text,
               ladder.length > 0 ? 'pr-0.5' : 'pr-2',
             )}
             {...draft.props}
@@ -139,7 +164,7 @@ export function NumberField(props: NumberFieldProps): ReactNode {
         </div>
         <button
           type="button"
-          className={cx(iconButtonClass, 'rounded-r-md')}
+          className={cx(iconButtonClassFor(size), 'rounded-r-md')}
           aria-label="Increase"
           disabled={disabled || up === null}
           onClick={(e) => {

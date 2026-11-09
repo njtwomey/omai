@@ -11,6 +11,7 @@ import { extentOf } from '../figure/limits.ts'
 import { colourScale, sequentialRamp } from '../theme/palettes.ts'
 import { type ColourMode, tokens } from '../theme/tokens.ts'
 import { colourFor, modeOf, numbers } from './_data.ts'
+import { deferMode, isModeless } from './_mode.ts'
 import { cartesian, type Layer, layer, type PlotOptions } from './plot.ts'
 
 /** Marker shapes, so group identity need not rely on colour alone. */
@@ -84,6 +85,7 @@ export function points(
   sets: readonly PointSet[],
   options: { readonly mode?: ColourMode; readonly colourOffset?: number } = {},
 ): Layer {
+  if (isModeless(options)) return deferMode((mode) => points(sets, { ...options, mode }))
   const mode = options.mode ?? 'light'
   const bg = tokens(mode).bg
   let slot = options.colourOffset ?? 0
@@ -195,6 +197,7 @@ export function rug(
     readonly name?: string
   } = {},
 ): Layer {
+  if (isModeless(options)) return deferMode((mode) => rug(values, { ...options, mode }))
   const v = numbers(values).filter(Number.isFinite)
   const axis = options.axis ?? 'x'
   const length = options.length ?? 8
@@ -267,6 +270,7 @@ export function errorBars(
   data: readonly { readonly x: number; readonly y: number; readonly xErr?: number; readonly yErr?: number }[],
   options: { readonly mode?: ColourMode; readonly name?: string; readonly colour?: string; readonly cap?: number } = {},
 ): Layer {
+  if (isModeless(options)) return deferMode((mode) => errorBars(data, { ...options, mode }))
   const mode = options.mode ?? 'light'
   const colour = colourFor(options.colour, mode, 0)
   const xs = data.flatMap((d) => [d.x - (d.xErr ?? 0), d.x + (d.xErr ?? 0)])

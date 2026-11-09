@@ -12,6 +12,7 @@ import { extentOf } from '../figure/limits.ts'
 import { formatNumber } from '../theme/format.ts'
 import type { ColourMode } from '../theme/tokens.ts'
 import { colourFor, modeOf, numbers } from './_data.ts'
+import { deferMode, deferModes, isModeless } from './_mode.ts'
 import { cartesian, type Layer, layer, type PlotOptions } from './plot.ts'
 
 /** A named group of bar heights, one per category. */
@@ -94,6 +95,7 @@ export function bars(
   groups: readonly BarGroup[] | TensorLike | readonly number[],
   options: BarOptions = {},
 ): Layer {
+  if (isModeless(options)) return deferMode((mode) => bars(categories, groups, { ...options, mode }))
   const mode = options.mode ?? 'light'
   const list: readonly BarGroup[] =
     Array.isArray(groups) && groups.length > 0 && typeof groups[0] === 'object' && !Array.isArray(groups[0])
@@ -260,6 +262,7 @@ interface RectApi {
  * ```
  */
 export function histogram(values: TensorLike | readonly number[], options: HistogramLayerOptions = {}): Layer {
+  if (isModeless(options)) return deferMode((mode) => histogram(values, { ...options, mode }))
   const mode = options.mode ?? 'light'
   const { density = false, cumulative = false } = options
   const horizontal = options.horizontal === true
@@ -338,6 +341,7 @@ export function pareto(
   values: readonly number[],
   options: { readonly mode?: ColourMode } = {},
 ): Layer[] {
+  if (isModeless(options)) return deferModes((mode) => pareto(categories, values, { ...options, mode }))
   const mode = options.mode ?? 'light'
   const order = values.map((v, i) => [v, i] as const).sort((a, b) => b[0] - a[0])
   const sorted = order.map(([, i]) => categories[i] ?? String(i))

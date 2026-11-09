@@ -28,6 +28,7 @@ import {
 } from '../theme/palettes.ts'
 import { type ColourMode, tokens } from '../theme/tokens.ts'
 import { axisCoords, colourFor, type Grid2D, grid2d, modeOf } from './_data.ts'
+import { deferMode, isModeless } from './_mode.ts'
 import { type Resampling, repeatCells, resample } from './_resample.ts'
 import { cartesian, type Layer, layer, type PlotOptions } from './plot.ts'
 import { DIMMED_OPACITY, dimColour, type ImageEncoder, type ValueFilter } from './selection.ts'
@@ -260,6 +261,7 @@ function paintGrid(
  * ```
  */
 export function heatmap(z: TensorLike, options: HeatmapOptions = {}): Layer {
+  if (isModeless(options)) return deferMode((mode) => heatmap(z, { ...options, mode }))
   const mode = options.mode ?? 'light'
   const g = grid2d(z, 'heatmap')
   if (g.rows < 1 || g.cols < 1) throw new OmaiError('shape', 'heatmap: the grid is empty')
@@ -424,6 +426,7 @@ interface CellApi {
  * ```
  */
 export function matrix(z: TensorLike, options: MatrixOptions = {}): Layer {
+  if (isModeless(options)) return deferMode((mode) => matrix(z, { ...options, mode }))
   const mode = options.mode ?? 'light'
   const g: Grid2D = grid2d(z, 'matrix')
   const rows = options.rowLabels ?? Array.from({ length: g.rows }, (_, i) => String(i))
@@ -568,6 +571,7 @@ export function maskMatrix(
   mask: TensorLike | readonly (readonly (boolean | number)[])[],
   options: MaskOptions = {},
 ): Layer {
+  if (isModeless(options)) return deferMode((mode) => maskMatrix(mask, { ...options, mode }))
   const mode = options.mode ?? 'light'
   const t = tokens(mode)
   const rows =

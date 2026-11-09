@@ -15,6 +15,7 @@ import { formatNumber } from '../theme/format.ts'
 import { categoricalColour, colourScale, mixColours, parseColour, sequentialRamp } from '../theme/palettes.ts'
 import { type ColourMode, tokens } from '../theme/tokens.ts'
 import { axisCoords, colourFor, type Grid2D, grid2d, gridRows, numbers } from './_data.ts'
+import { deferMode, isModeless } from './_mode.ts'
 import { resample } from './_resample.ts'
 import { imageSeries, type RampSpec, rampStops } from './matrices.ts'
 import { type Layer, layer } from './plot.ts'
@@ -57,6 +58,7 @@ export interface ContourOptions {
  * ```
  */
 export function contours(z: TensorLike, options: ContourOptions = {}): Layer {
+  if (isModeless(options)) return deferMode((mode) => contours(z, { ...options, mode }))
   const mode = options.mode ?? 'light'
   const g = grid2d(z, 'contours')
   const x = axisCoords(options.x, g.cols)
@@ -196,6 +198,7 @@ export interface DecisionRegionOptions {
  * ```
  */
 export function decisionRegions(probabilities: readonly TensorLike[], options: DecisionRegionOptions = {}): Layer {
+  if (isModeless(options)) return deferMode((mode) => decisionRegions(probabilities, { ...options, mode }))
   const mode = options.mode ?? 'light'
   const grids: Grid2D[] = probabilities.map((p) => grid2d(p, 'decisionRegions'))
   const first = grids[0]
@@ -341,6 +344,7 @@ export function vectorField(
     readonly mode?: ColourMode
   } = {},
 ): Layer {
+  if (isModeless(options)) return deferMode((mode) => vectorField(arrows, { ...options, mode }))
   const mode = options.mode ?? 'light'
   const mags = arrows.map((a) => a.magnitude)
   const [lo, hi] = options.range ?? extentOf(mags) ?? [0, 1]
@@ -389,6 +393,7 @@ export function streamlines(
   paths: readonly (TensorLike | readonly (readonly [number, number])[])[],
   options: { readonly colour?: string; readonly width?: number; readonly mode?: ColourMode } = {},
 ): Layer {
+  if (isModeless(options)) return deferMode((mode) => streamlines(paths, { ...options, mode }))
   const mode = options.mode ?? 'light'
   const colour = colourFor(options.colour ?? 'muted', mode)
   const pts = paths.map((p) => {

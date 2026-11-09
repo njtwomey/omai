@@ -3,7 +3,7 @@
  */
 
 import { type ReactNode, useId } from 'react'
-import { cx, labelClass } from './classes.ts'
+import { type ControlSize, type ControlWidth, controlSizes, controlWidth, cx, labelClassFor } from './classes.ts'
 
 /** Props of {@link Toggle}. */
 export interface ToggleProps {
@@ -12,6 +12,15 @@ export interface ToggleProps {
   readonly onChange: (value: boolean) => void
   /** A line under the label. */
   readonly description?: ReactNode
+  /** The size: `sm` (28px high), `md` (32px, the default) or `lg` (40px); sets height, text and padding. */
+  readonly size?: ControlSize
+  /**
+   * The width: pixels, a CSS length, `'fill'` (the container's width) or `'auto'` (the content's). Not given: the
+   * container's width between a minimum and a maximum.
+   */
+  readonly width?: ControlWidth
+  /** Cut the label to one line with an ellipsis (default: it wraps). */
+  readonly truncate?: boolean
   readonly disabled?: boolean
   readonly className?: string
 }
@@ -23,10 +32,15 @@ export interface ToggleProps {
  * @returns The switch.
  */
 export function Toggle(props: ToggleProps): ReactNode {
-  const { label, value, onChange, description, disabled = false, className } = props
+  const { label, value, onChange, description, disabled = false, className, size = 'md', truncate = false } = props
+  const frame = controlWidth(props.width, 'min-w-36 max-w-xs')
+  const sized = controlSizes[size]
   const id = useId()
   return (
-    <div className={cx('flex min-w-36 max-w-xs items-center gap-2.5', className)}>
+    <div
+      className={cx('flex items-center gap-2.5', frame.className, className)}
+      {...(frame.style === undefined ? {} : { style: frame.style })}
+    >
       <button
         id={id}
         type="button"
@@ -35,19 +49,21 @@ export function Toggle(props: ToggleProps): ReactNode {
         disabled={disabled}
         onClick={() => onChange(!value)}
         className={cx(
-          'relative inline-flex h-[18px] w-8 shrink-0 items-center rounded-full border border-transparent outline-none transition-colors motion-reduce:transition-none focus-visible:ring-2 focus-visible:ring-(--wb-accent)/50 disabled:opacity-40',
+          'relative inline-flex shrink-0 items-center rounded-full border border-transparent outline-none transition-colors motion-reduce:transition-none focus-visible:ring-2 focus-visible:ring-(--wb-accent)/50 disabled:opacity-40',
+          sized.track,
           value ? 'bg-(--wb-accent)' : 'bg-(--wb-grid)',
         )}
       >
         <span
           className={cx(
-            'block size-3.5 rounded-full bg-(--wb-bg) shadow-sm transition-transform motion-reduce:transition-none',
-            value ? 'translate-x-[15px]' : 'translate-x-px',
+            'block rounded-full bg-(--wb-bg) shadow-sm transition-transform motion-reduce:transition-none',
+            sized.knob,
+            value ? sized.knobOn : sized.knobOff,
           )}
         />
       </button>
       <div className="flex min-w-0 flex-col">
-        <label htmlFor={id} className={cx(labelClass, 'cursor-pointer truncate text-(--wb-fg)')}>
+        <label htmlFor={id} className={cx(labelClassFor(size, truncate), 'cursor-pointer text-(--wb-fg)')}>
           {label}
         </label>
         {description === undefined ? null : <span className="text-xs text-(--wb-muted)">{description}</span>}
