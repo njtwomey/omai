@@ -4741,6 +4741,11 @@ built from: `signal/image`, `numerics/linalg` (blas `dgemm`, lapack), `numerics/
   `houghPeaksAlgorithm` (`edges.ts`, a peak per step), `floodFillAlgorithm` (`components.ts`, a span per step),
   `minEnclosingCircleAlgorithm` (`fitting.ts`, a point per step) and `approxPolyDPAlgorithm` (`contours.ts`, a segment per step); each
   old function runs its algorithm.
+- `patches.ts`: scikit-learn's `feature_extraction.image`: `extractPatches2d` (every window in raster order, or `maxPatches`
+  random ones from a key), `reconstructFromPatches2d` (the mean of the windows that cover each pixel; exact for any patch
+  size, where scikit-learn's divisor miscounts when a patch is more than half the image), the transformer `patchExtractor`
+  and `imgToGraph` (the pixel-grid graph weighted by absolute differences, with the node values and an optional mask).
+  oracle: `vision/patches`.
 - `segmentation.ts`: SLIC superpixels, seeded region growing (`regionGrowingAlgorithm`, a pixel per step), mean-shift segmentation, k-means colour quantisation
   (over `cluster`). `snakes.ts`: active contours. `grabcut.ts`: GrabCut with mixture colour models and min cuts.
   `seams.ts`: seam energy, minimum seams, removal, content-aware resizing (`seamCarveAlgorithm`, a seam per step, `seam/` paths, protect

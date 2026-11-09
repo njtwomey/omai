@@ -5749,6 +5749,14 @@
       "cases": 23
     },
     {
+      "fixture": "vision/patches.json",
+      "source": "oracle/cases/vision/patches.py",
+      "reference": {
+        "scikit-learn": "1.9.1"
+      },
+      "cases": 13
+    },
+    {
       "fixture": "vision/pyramids.json",
       "source": "oracle/cases/vision/pyramids.py",
       "reference": {
