@@ -23,6 +23,7 @@ import { inlineProducer } from '../../producer/inline.ts'
 import type { Variant } from '../../producer/make.ts'
 import type { Producer, ProducerFactory } from '../../producer/producer.ts'
 import { sharedHead } from '../../producer/step.ts'
+import { useActive } from '../active.tsx'
 import { DEFAULT_STEPS, type PlayStatus, progressOf, type StartPolicy, startOf, statusOf } from '../start.ts'
 
 export type { PlayStatus, StartPolicy, Variant }
@@ -189,7 +190,7 @@ export interface SessionHookOptions {
    */
   readonly producer?: ProducerFactory
   /**
-   * Whether the sessions compute (default true). While false nothing computes: no priming, the producer stopped (a
+   * Whether the sessions compute (default the ambient `ActiveProvider` value, true without one). While false nothing computes: no priming, the producer stopped (a
    * worker pauses), the player's clock off; the tape, the state and a change of options held are kept, and the work
    * carries on when it is true again. The declarative form of `halt()`, for a session on a page that is hidden (a slide
    * that is not showing), where `dispose()` would throw the tape away. `step` by hand still computes.
@@ -293,7 +294,7 @@ export function useSessions<S, C extends Config>(
   const [version, setVersion] = useState(0)
   const [wanted, setComputing] = useState(false)
   const [disposed, setDisposed] = useState(false)
-  const active = hook.active ?? true
+  const active = useActive(hook.active)
   // Computing is what is wanted and allowed: an inactive session keeps wanting, and carries on when it is active again.
   const computing = wanted && active
   const [playing, setPlaying] = useState(false)
