@@ -7270,7 +7270,8 @@ Design rules:
 - `downsample.ts`: LTTB and min-max decimation.
 
 `figure/` (the figure model; headless)
-- `figure.ts`: `Figure` (default size and box aspect, padding, title, theme), defaults per medium (page, blog, slide).
+- `figure.ts`: `Figure` (default size and box aspect, padding, title, theme), defaults per medium (page, blog, slide);
+  `squarePlot` makes the plotting area (not the figure) square.
 - `grid.ts`: grid specifications (rows, columns, spans, ratios, gaps down to zero), shared and linked axes, text and
   equation cells, marginal-axes helpers (`withMarginals`), bento layouts from named grid areas.
 - `aspect.ts`: box aspect versus data aspect (`equal`, numeric), and how ranges adjust to satisfy both.
@@ -7426,6 +7427,12 @@ Design rules:
 - `Chart.tsx`: an ECharts option as a live chart (theme from mode, resizing, disposal, events); its container is an image
   with a label (the `label` prop, else the option's `aria` description, else its title), and the theme turns ECharts'
   own description on.
+- `ResponsiveChart.tsx`: a `Chart` that fills its container: it measures the box (`ResizeObserver`, empty sizes
+  ignored), builds the option with `build(figure({ width, aspect, fontSize, mode }))`, rebuilds when the width changes
+  by a pixel, switches to `narrowAspect` below `narrowBelow`, keeps the plotting area square with `square`, and draws an
+  `overlay` (tools in an `InteractionOverlay`, given the projection and the size) over the fluid chart.
+- `useJob.ts`: a heavy one-shot computation in named stages with progress, started when `active`, restarted by its
+  `inputs`, painting between stages (and between slices of a generator stage); one result, never a state per step.
 - `SceneView.tsx`: a `Scene` as SVG elements, with hover and click hit-testing.
 - `Scene3DView.tsx`: a 3-D scene with drag-to-orbit camera, re-projected on interaction.
 - `StructureView.tsx`: a `Structure` in a frame (by default) with pan, zoom, hover details and overlay state (`frames`
@@ -7465,7 +7472,8 @@ Design rules:
   fit their cells.
 - `echarts.ts`: `loadEcharts` for the React bindings.
 - `interaction/`: overlays laid over any figure through a projection (`projection.ts`: linear, or a live chart's via
-  `useChartProjection`): `DraggablePoints` (drag, click to add, remove, keyboard nudges) with `constraints.ts` (on a
+  `useChartProjection`, computed from the chart's option when its axes are linear and numeric, so a drag never asks
+  ECharts, else through ECharts' converters; `project(x, y)` and `unproject(px, py)` beside `toPixel` and `toData`): `DraggablePoints` (drag, click to add, remove, keyboard nudges) with `constraints.ts` (on a
   graph, segment, polyline or circle, along an axis, on a grid, in a box, chained), `Brush`, `Probe`, `NearestHover`,
   `selection.ts`, `useLinkState` (a figure `LinkStore` in React) and `keys.ts` (`useHeldKeys`: keys captured while a
   figure has focus, per press and per frame, for playing worlds).
@@ -7476,7 +7484,8 @@ Design rules:
 - `controls/` (shadcn/ui components): controls generated from a `Space` (`SpaceControls`); `NumberField` (type a
   value, slide it, step it, or pick from a dropdown of 11 increments between its bounds, as aifn-engine's); `Select`
   and `Choice` with previous and next arrows to cycle through options (datasets, models) without opening the menu;
-  `Toggle`, `SeedInput`; validity greying (`SpaceControls` takes `admissible` and `why`, and an option a rule rules out is
+  `Toggle`, `SeedInput`; `useParams` (a figure's own knobs as one record: `set`, `reset`, `isDefault`);
+  validity greying (`SpaceControls` takes `admissible` and `why`, and an option a rule rules out is
   drawn disabled with the reason as its title; `validity.ts` reads the rule from the option tables: `tableSlot` (from the
   properties of a table of losses, penalties or schedules), `modeSlot` (from a mode table's `needs`), `tableRules`,
   `settleAdmissible`); `ModelSelector` (the options of a union as a list, each with a settings popover; the knobs set for
