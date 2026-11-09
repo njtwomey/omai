@@ -1,8 +1,10 @@
 /**
  * Latent-factor generators with their factors as truth: independent non-Gaussian sources mixed linearly (for
  * independent component analysis), two views of a shared latent signal (for canonical correlation and partial least
- * squares), sparse features with importances (the toy model of superposition), and sparse non-negative codes written
- * into a lower-dimensional space through a dictionary of unit directions (what a sparse autoencoder must recover).
+ * squares), sparse features with importances (the toy model of superposition), sparse non-negative codes written
+ * into a lower-dimensional space through a dictionary of unit directions (what a sparse autoencoder must recover), and
+ * signals with exactly `nonzeros` signed atoms each over a unit-norm dictionary (what dictionary learning and sparse
+ * coding must recover).
  */
 
 import { type DatasetGenerator, type RegressionData, xy } from '../data/index.ts'
@@ -281,6 +283,91 @@ export const sparseDictionary: DatasetGenerator<RegressionData> = {
         ...stamp('sparseDictionary', sparseDictionary.description, knobs),
       }),
       truth: { latents: { codes: matrix(codes, n, m) }, extra: { dictionary, sparsity, coherence } },
+    }
+  },
+}
+
+/**
+ * Sparse coded signals (the plant of dictionary learning, as scikit-learn's `make_sparse_coded_signal`): a dictionary
+ * of `components` unit-norm atoms in `dim` dimensions (rows), and signals `x = sum_j c_j d_j (+ noise)` each built from
+ * exactly `nonzeros` distinct atoms whose coefficients have magnitude uniform on [0.5, 1.5], with random signs or all
+ * positive. Features are the signals and targets the codes; the truth has the codes (latent `codes`), the dictionary
+ * (rows, as `dictionary`), the supports (one list of atom indices per signal), the number of nonzeros and the mutual
+ * coherence of the dictionary, which decides how many atoms per signal can be recovered.
+ *
+ * @index dataset Signals of a few atoms each over a unit-norm dictionary, codes and dictionary as truth.
+ * @example
+ * ```ts
+ * import { generate } from 'omai-engine/data'
+ * import { sparseCodedSignal } from 'omai-engine/datasets'
+ * const g = generate(sparseCodedSignal, { knobs: { n: 5, components: 6, dim: 8, nonzeros: 2 } })
+ * [g.data.x.shape, (g.truth.extra?.['supports'] as number[][])[0]?.length] // => [[5, 8], 2]
+ * ```
+ */
+export const sparseCodedSignal: DatasetGenerator<RegressionData> = {
+  name: 'sparseCodedSignal',
+  kind: 'regression',
+  description: 'Signals of exactly k signed atoms each over a unit-norm dictionary, codes and dictionary as truth.',
+  knobs: dict({
+    n: int(1, 10_000_000, { label: 'samples', description: 'The number of signals.', default: 300 }),
+    components: int(1, 1000, { label: 'atoms', description: 'The number of dictionary atoms.', default: 10 }),
+    dim: int(1, 1000, { label: 'dimension', description: 'The dimension the atoms live in.', default: 20 }),
+    nonzeros: int(1, 1000, { label: 'nonzeros', description: 'The atoms in each signal.', default: 2 }),
+    noise: real(0, 10, { label: 'noise', description: 'The standard deviation of the added noise.', default: 0 }),
+    signs: choice(['signed', 'positive'] as const, {
+      label: 'signs',
+      description: 'Whether coefficients take random signs or are all positive.',
+      default: 'signed',
+    }),
+  }),
+  generate: (k, knobs) => {
+    const n = knobs['n'] as number
+    const m = knobs['components'] as number
+    const d = knobs['dim'] as number
+    const nonzeros = Math.min(knobs['nonzeros'] as number, m)
+    const sd = knobs['noise'] as number
+    const signed = knobs['signs'] === 'signed'
+    const raw = normal(foldIn(k, 0), [m, d]).data
+    const dictionary = Array.from({ length: m }, (_, j) => {
+      const row = Array.from({ length: d }, (_, q) => raw[j * d + q] ?? 0)
+      const norm = Math.hypot(...row) || 1
+      return row.map((v) => v / norm)
+    })
+    const u = uniform(foldIn(k, 1), [n, m]).data
+    const magnitude = uniform(foldIn(k, 2), [n, m]).data
+    const sign = uniform(foldIn(k, 3), [n, m]).data
+    const eps = normal(foldIn(k, 4), [n, d]).data
+    const codes = new Float64Array(n * m)
+    const supports: number[][] = []
+    for (let i = 0; i < n; i++) {
+      // The atoms with the smallest uniform draws: a uniformly random support of exactly `nonzeros` atoms.
+      const chosen = Array.from({ length: m }, (_, j) => j)
+        .sort((a, b) => (u[i * m + a] ?? 0) - (u[i * m + b] ?? 0) || a - b)
+        .slice(0, nonzeros)
+        .sort((a, b) => a - b)
+      supports.push(chosen)
+      for (const j of chosen)
+        codes[i * m + j] = (0.5 + (magnitude[i * m + j] ?? 0)) * (signed && (sign[i * m + j] ?? 0) < 0.5 ? -1 : 1)
+    }
+    const x = new Float64Array(n * d)
+    for (let i = 0; i < n; i++)
+      for (let q = 0; q < d; q++) {
+        let acc = sd * (eps[i * d + q] ?? 0)
+        for (const j of supports[i] ?? []) acc += (codes[i * m + j] ?? 0) * (dictionary[j]?.[q] ?? 0)
+        x[i * d + q] = acc
+      }
+    let coherence = 0
+    for (let a = 0; a < m; a++)
+      for (let b = a + 1; b < m; b++) {
+        let dot = 0
+        for (let q = 0; q < d; q++) dot += (dictionary[a]?.[q] ?? 0) * (dictionary[b]?.[q] ?? 0)
+        coherence = Math.max(coherence, Math.abs(dot))
+      }
+    return {
+      data: xy(matrix(x, n, d), matrix(codes, n, m), {
+        ...stamp('sparseCodedSignal', sparseCodedSignal.description, knobs),
+      }),
+      truth: { latents: { codes: matrix(codes, n, m) }, extra: { dictionary, supports, nonzeros, coherence } },
     }
   },
 }
