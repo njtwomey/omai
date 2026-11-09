@@ -7500,7 +7500,11 @@ Design rules:
   `selection.ts`, `useLinkState` (a figure `LinkStore` in React) and `keys.ts` (`useHeldKeys`: keys captured while a
   figure has focus, per press and per frame, for playing worlds).
   `DraggableLine` (a vertical or horizontal line the reader drags, bound two-way to a control's value: thresholds,
-  cut-offs, levels; snaps to a step, keyboard-nudgeable; a bar, square, circle or diamond handle of a given size).
+  cut-offs, levels; snaps to a step, keyboard-nudgeable; a bar, square, circle or diamond handle of a given size),
+  `DraggableRect` (a rectangle in data coordinates dragged and resized by eight grips, `handles` `corners`, `edges` or
+  `all`, its body moving it whole; `min`/`max` bounds, `minSize`, `step` snapping, arrow keys with Shift for ten steps,
+  Escape cancels a drag; normalised whichever way the axes run) and `Handle.tsx` (the shared bar, square, circle or
+  diamond grip both draw).
 - `MathView.tsx`: `Tex`, `Equation` (live), `Derivation`, `MathProvider` (KaTeX HTML with its stylesheet, MathML for
   assistive technology; live values highlighted).
 - `controls/` (shadcn/ui components): controls generated from a `Space` (`SpaceControls`); `NumberField` (type a

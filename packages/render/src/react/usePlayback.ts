@@ -12,7 +12,7 @@ import { prefersReducedMotion } from './_motion.ts'
 import { useActive } from './active.tsx'
 import { advanceFrame, framesDue } from './playhead.ts'
 import { RingBuffer } from './ring.ts'
-import { DISPOSED, type SettledResult, settledStateOf, useRunSettled } from './settled.ts'
+import { DISPOSED, type OmaiState, type SettledResult, settledStateOf, useRunSettled } from './settled.ts'
 import { type PlayStatus, progressOf, type StartPolicy, statusOf } from './start.ts'
 
 /**
@@ -44,6 +44,14 @@ export interface PlaybackController {
   readonly setEager?: (on: boolean) => void
   /** Reset the page's controls to their defaults; absent when the page has none, and so no button. */
   readonly resetForm?: () => void
+  /**
+   * Where the run this controller drives is (see `OmaiState`): `preparing` while a live run is still computing its steps
+   * towards its end or `maxSteps`, `ready` once it has ended (and for precomputed frames, at once), `failed` when it
+   * was let go of before it ended. The {@link Player} carries it as `data-omai-state` on its root, so `waitForSettled`
+   * waits for the run and not only for the figure beside it. Absent on a controller that does not say: the player then
+   * carries no attribute.
+   */
+  readonly state?: OmaiState
 }
 
 /**
@@ -160,7 +168,7 @@ export function usePlayback(count: number, options: PlaybackOptions = {}): Playb
     }
   }, [moveTo, setPlaying, shownNow])
   return useMemo(
-    () => ({ frame: shown, count, playing, fps, open: false, ...verbs, setFps }),
+    () => ({ frame: shown, count, playing, fps, open: false, state: 'ready', ...verbs, setFps }),
     [shown, count, playing, fps, verbs],
   )
 }
@@ -392,7 +400,8 @@ export function useLiveRun<S>(algorithm: Algorithm<S>, options: LiveRunOptions):
   const r = run.current as ReturnType<typeof make>
   const last = r.states.last as NonNullable<typeof r.states.last>
   const finished = last.status !== undefined
-  const settled = useRunSettled(r, settledStateOf({ done: finished, disposed: released }), DISPOSED)
+  const runState = settledStateOf({ done: finished, disposed: released })
+  const settled = useRunSettled(r, runState, DISPOSED)
   // A fresh run (new algorithm or seed) starts from its first state (`at` was reset with it; a seek made since the
   // render is kept).
   // biome-ignore lint/correctness/useExhaustiveDependencies: reset exactly when the run is remade
@@ -537,6 +546,7 @@ export function useLiveRun<S>(algorithm: Algorithm<S>, options: LiveRunOptions):
     playing,
     fps,
     open: !finished,
+    state: runState,
     play: () => {
       parked.current = false
       disposed.current = false

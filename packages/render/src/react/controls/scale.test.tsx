@@ -45,7 +45,7 @@ describe('the class tokens', () => {
     expect(sizesIn(controlSizes.md.knob)).toEqual(['0.875rem'])
     expect(sizesIn(controlSizes.md.knobOn)).toEqual(['15px'])
     expect(sizesIn(menuItemClass)).toEqual(['0.625rem', '0.25rem', '0.75rem', '1rem'])
-    expect(sizesIn(menuClass)).toEqual(['16rem', '6rem', '0.25rem'])
+    expect(sizesIn(menuClass)).toEqual(['18rem', '6rem', '0.25rem'])
     expect(sizesIn(text11Class)).toEqual(['11px'])
     for (const size of ['sm', 'md', 'lg'] as const)
       for (const value of Object.values(controlSizes[size])) if (value.includes('calc')) expect(value).toContain(VAR)

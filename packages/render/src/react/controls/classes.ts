@@ -41,9 +41,12 @@ export const iconButtonClass: string =
 export const inputBoxClass: string =
   'relative flex h-[calc(2rem*var(--omai-control-scale,1))] min-w-0 flex-1 items-center border border-(--wb-grid) bg-(--wb-bg) text-(--wb-fg) focus-within:z-10 focus-within:border-(--wb-accent) focus-within:ring-2 focus-within:ring-(--wb-accent)/40'
 
-/** The class of a floating menu's panel (placed by `Popover`). */
+/**
+ * The class of a floating menu's panel (placed by `Popover`). It is tall enough (18rem) for the 11 values of a number
+ * field's dropdown with their padding and border, so the last one is not cut off; a longer list scrolls.
+ */
 export const menuClass: string =
-  'z-[1200] max-h-[calc(16rem*var(--omai-control-scale,1))] min-w-[calc(6rem*var(--omai-control-scale,1))] overflow-y-auto rounded-md border border-(--wb-grid) bg-(--wb-bg) py-[calc(0.25rem*var(--omai-control-scale,1))] text-(--wb-fg) shadow-lg'
+  'z-[1200] max-h-[calc(18rem*var(--omai-control-scale,1))] min-w-[calc(6rem*var(--omai-control-scale,1))] overflow-y-auto rounded-md border border-(--wb-grid) bg-(--wb-bg) py-[calc(0.25rem*var(--omai-control-scale,1))] text-(--wb-fg) shadow-lg'
 
 /** The class of one item of a floating menu (`data-selected` marks the current one). */
 export const menuItemClass: string =
@@ -58,7 +61,8 @@ export type ControlSize = 'sm' | 'md' | 'lg'
 /**
  * The width of a control: a number is pixels, a string is a CSS length (`'12rem'`, `'50%'`), `'fill'` takes the whole
  * width of its container and `'auto'` the natural width of its content. Not given, a control keeps its default of
- * filling its container between a minimum and a maximum width.
+ * filling its container between a minimum and a maximum width, which follow `--omai-control-scale`. A number is the host's
+ * explicit pixels and stays literal at any scale; a string such as `'calc(176px*var(--omai-control-scale,1))'` scales.
  */
 export type ControlWidth = number | string
 
@@ -143,19 +147,38 @@ export function inputBoxClassFor(size: ControlSize): string {
   return inputBoxClass.replace(controlSizes.md.height, controlSizes[size].height)
 }
 
+/** The default width of a number field or a select: its container's width between 9rem and 20rem, times the control scale. */
+export const fieldWidthClass: string =
+  'w-full min-w-[calc(9rem*var(--omai-control-scale,1))] max-w-[calc(20rem*var(--omai-control-scale,1))]'
+
+/** The default width of a segmented choice: its container's width between 9rem and 24rem, times the control scale. */
+export const choiceWidthClass: string =
+  'w-full min-w-[calc(9rem*var(--omai-control-scale,1))] max-w-[calc(24rem*var(--omai-control-scale,1))]'
+
+/** The default width of a switch: at least 9rem and at most 20rem, times the control scale. */
+export const toggleWidthClass: string =
+  'min-w-[calc(9rem*var(--omai-control-scale,1))] max-w-[calc(20rem*var(--omai-control-scale,1))]'
+
+/** The width of a control given `'auto'`: its content's, never below 9rem times the control scale. */
+export const autoWidthClass: string = 'w-fit min-w-[calc(9rem*var(--omai-control-scale,1))]'
+
 /**
  * The outer class and inline style that give a control its width: the control's own default when `width` is not given,
  * `w-full` for `'fill'`, the content's width for `'auto'` (never below 9rem), and an exact width for a number (pixels)
  * or a CSS length.
+ *
+ * The defaults and `'auto'` follow `--omai-control-scale` (the fallback classes are the scaled ones: see
+ * {@link fieldWidthClass}). A number is the host's explicit pixels and stays literal at any scale; to give a width that
+ * scales, pass a CSS length (`'calc(176px*var(--omai-control-scale,1))'`, as the `Controls` row does for its default).
  *
  * @param width - The `width` prop.
  * @param fallback - The control's default width classes.
  * @returns The class names and, for an exact width, the style.
  * @example
  * ```ts
- * import { controlWidth } from 'omai-render/react'
- * controlWidth(176, 'w-full max-w-xs').style // => { width: 176 }
- * controlWidth('fill', 'w-full max-w-xs').className // => 'w-full'
+ * import { controlWidth, fieldWidthClass } from 'omai-render/react'
+ * controlWidth(176, fieldWidthClass).style // => { width: 176 }
+ * controlWidth('fill', fieldWidthClass).className // => 'w-full'
  * ```
  */
 export function controlWidth(
@@ -164,6 +187,6 @@ export function controlWidth(
 ): { readonly className: string; readonly style?: CSSProperties } {
   if (width === undefined) return { className: fallback }
   if (width === 'fill') return { className: 'w-full' }
-  if (width === 'auto') return { className: 'w-fit min-w-36' }
+  if (width === 'auto') return { className: autoWidthClass }
   return { className: 'shrink-0', style: { width } }
 }

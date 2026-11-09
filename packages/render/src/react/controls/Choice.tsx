@@ -6,6 +6,7 @@ import type { ReactNode } from 'react'
 import {
   type ControlSize,
   type ControlWidth,
+  choiceWidthClass,
   controlSizes,
   controlWidth,
   cx,
@@ -47,7 +48,7 @@ export interface ChoiceProps<T extends OptionValue> {
  */
 export function Choice<T extends OptionValue>(props: ChoiceProps<T>): ReactNode {
   const { label, value, onChange, cycle = false, disabled = false, className, size = 'md', truncate = false } = props
-  const frame = controlWidth(useControlWidth(props.width), 'w-full min-w-36 max-w-sm')
+  const frame = controlWidth(useControlWidth(props.width), choiceWidthClass)
   const sized = controlSizes[size]
   const options = normaliseOptions(props.options)
   const move = (dir: 1 | -1): void => {

@@ -1,7 +1,8 @@
 /**
  * Interaction overlays laid over any figure through a projection between data and pixels: get the projection of a
  * `Chart` with `useChartProjection`, stack the figure and an `InteractionOverlay` with `Overlaid`, and put tools
- * inside: `DraggablePoints` (kept where a `Constraint` allows), `DraggableLine`, `Brush`, `Probe` and `NearestHover`.
+ * inside: `DraggablePoints` (kept where a `Constraint` allows), `DraggableLine`, `DraggableRect`, `Brush`, `Probe` and
+ * `NearestHover`.
  * `useLinkState` reads state shared between linked figures, and `useHeldKeys` captures the keys a game-like figure
  * reads.
  */
@@ -9,6 +10,8 @@
 export * from './Brush.tsx'
 export * from './DraggableLine.tsx'
 export * from './DraggablePoints.tsx'
+export * from './DraggableRect.tsx'
+export * from './Handle.tsx'
 export * from './InteractionOverlay.tsx'
 export * from './NearestHover.tsx'
 export * from './Probe.tsx'

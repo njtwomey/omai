@@ -6,7 +6,7 @@
 
 import type { CSSProperties, ReactElement, ReactNode } from 'react'
 import type { ControlWidth } from './controls/classes.ts'
-import { ControlWidthContext } from './controls/defaultWidth.ts'
+import { ControlWidthContext, DEFAULT_CONTROL_WIDTH } from './controls/defaultWidth.ts'
 import { useTokens } from './theme.tsx'
 
 /** One readout: a label and the value it shows. */
@@ -81,8 +81,8 @@ export interface ControlsProps {
   readonly label?: string
   /**
    * The width the number fields, selects and choices below take unless they have their own `width`: pixels, a CSS
-   * length, `'fill'` or `'auto'` (default 176 pixels, so a row of fields and toggles looks even). A toggle keeps its
-   * natural width.
+   * length, `'fill'` or `'auto'` (default 176 pixels times `--omai-control-scale`, so a row of fields and toggles looks even and follows the
+   * scale; a number given here is literal pixels at any scale). A toggle keeps its natural width.
    */
   readonly controlWidth?: ControlWidth
   readonly className?: string
@@ -92,7 +92,7 @@ export interface ControlsProps {
 /**
  * A row for a figure's controls: a wrapping flex row with a consistent gap (12px across, 12px between rows), the
  * controls aligned along their bottom so a field and a toggle share a baseline-ish line. The number fields, selects and choices in
- * it are 176 pixels wide unless `controlWidth` or their own `width` says otherwise.
+ * it are 176 pixels wide (times the control scale) unless `controlWidth` or their own `width` says otherwise.
  *
  * @param props - The controls and an optional group name.
  * @returns The row.
@@ -115,7 +115,9 @@ export function Controls(props: ControlsProps): ReactElement {
       className={props.className}
       style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', gap: 12, ...props.style }}
     >
-      <ControlWidthContext.Provider value={props.controlWidth === undefined ? 176 : props.controlWidth}>
+      <ControlWidthContext.Provider
+        value={props.controlWidth === undefined ? DEFAULT_CONTROL_WIDTH : props.controlWidth}
+      >
         {props.children}
       </ControlWidthContext.Provider>
     </div>
