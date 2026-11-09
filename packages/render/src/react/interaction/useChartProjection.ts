@@ -10,8 +10,9 @@ import { chartProjection, type PixelConverter, type Projection } from './project
  * The projection of a live chart's axes, for an {@link InteractionOverlay} laid over a `Chart`: pass `onInit` to the
  * chart, and the projection is set once the chart exists (and again if it is recreated, as on a change of colour mode).
  * Give the chart fixed axis limits so the projection does not move under the reader's hand; with numeric `min` and
- * `max` on its value axes (as omai's charts write them) the projection is computed from the chart's option and ECharts
- * is not asked at all (see {@link chartProjection}). The host renders again when a redraw moves the plotting box or the
+ * `max` on its value axes and `outerBoundsMode: 'none'` on the grid (as omai's cartesian charts write them) the
+ * projection is computed from the chart's option and ECharts is not asked at all; a hand-written grid (ECharts 6 merges
+ * `outerBoundsMode: 'auto'` into it, which moves the plotting box) goes through ECharts' converters (see {@link chartProjection}). The host renders again when a redraw moves the plotting box or the
  * ranges, so handles follow a chart that is resized.
  *
  * @param gridIndex - Which grid (set of axes) of the chart (default 0).

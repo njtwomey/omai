@@ -121,6 +121,8 @@ describe('chartProjection from the option', () => {
       ['half', optionOf({ min: 0 }, { min: 0, max: 5 })],
       ['zoom', optionOf({ min: 0, max: 5 }, { min: 0, max: 5 }, { dataZoom: [{ type: 'inside' }] })],
       ['labels', optionOf({ min: 0, max: 5 }, { min: 0, max: 5 }, {}, { ...grid, containLabel: true })],
+      ['auto bounds', optionOf({ min: 0, max: 5 }, { min: 0, max: 5 }, {}, { ...grid, outerBoundsMode: 'auto' })],
+      ['same bounds', optionOf({ min: 0, max: 5 }, { min: 0, max: 5 }, {}, { ...grid, outerBoundsMode: 'same' })],
       [
         'percent',
         optionOf({ min: 0, max: 5 }, { min: 0, max: 5 }, {}, { left: '10%', top: 20, width: 300, height: 200 }),
@@ -134,6 +136,25 @@ describe('chartProjection from the option', () => {
       expect(chart.calls.to, name).toBeGreaterThan(0)
       expect(chart.calls.from, name).toBeGreaterThan(0)
     }
+  })
+
+  it("takes the option's numbers only when the grid says ECharts will not move the box", () => {
+    const pinned = fakeChart(
+      optionOf({ min: 0, max: 10 }, { min: 0, max: 1 }, {}, { ...grid, outerBoundsMode: 'none', containLabel: false }),
+      true,
+    )
+    expect(chartProjection(pinned).toPixel([10, 0])).toEqual([350, 220])
+    expect(pinned.calls.to).toBe(0)
+    // The merged default of a hand-written grid: the converters, as before the analytic path.
+    const auto = fakeChart(
+      optionOf({ min: 0, max: 10 }, { min: 0, max: 1 }, {}, { ...grid, outerBoundsMode: 'auto' }),
+      true,
+    )
+    const p = chartProjection(auto)
+    p.toPixel([10, 0])
+    expect(auto.calls.to).toBeGreaterThan(0)
+    // The box stays the option's, for a caller that wants it.
+    expect(p.rect).toEqual({ x: 50, y: 20, width: 300, height: 200 })
   })
 
   it("answers a log axis with the converter's own values", () => {
